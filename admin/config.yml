@@ -1,4 +1,115 @@
 backend:
-  name: git-gateway
+  name: github
   repo: CELTIS1/Site-Christ-Livraison
   branch: main
+
+media_folder: "images/uploads"
+public_folder: "/images/uploads"
+
+locale: "fr"
+
+collections:
+  - name: "site"
+    label: "Site web"
+    files:
+      - file: "content/content.json"
+        label: "Contenu du site"
+        name: "content"
+        fields:
+          - label: "Bandeau d'accueil"
+            name: "hero"
+            widget: "object"
+            fields:
+              - { label: "Petit texte au-dessus du titre", name: "pill", widget: "string" }
+              - { label: "Titre principal", name: "title", widget: "string" }
+              - { label: "Texte d'introduction", name: "lead", widget: "text" }
+              - { label: "Photo (optionnelle)", name: "photo", widget: "image", required: false }
+
+          - label: "Services proposés"
+            name: "services"
+            widget: "list"
+            label_singular: "Service"
+            summary: "{{title}}"
+            fields:
+              - label: "Icône (si pas de photo)"
+                name: "icon"
+                widget: "select"
+                options:
+                  - { label: "Enveloppe (courrier)", value: "fa-envelope" }
+                  - { label: "Boîte (colis)", value: "fa-box" }
+                  - { label: "Avion en papier (expédition)", value: "fa-paper-plane" }
+                  - { label: "Panier (courses)", value: "fa-cart-shopping" }
+                  - { label: "Camion", value: "fa-truck" }
+                  - { label: "Moto", value: "fa-motorcycle" }
+                  - { label: "Colis empilés", value: "fa-boxes-packing" }
+              - { label: "Titre du service", name: "title", widget: "string" }
+              - { label: "Description", name: "text", widget: "text" }
+              - { label: "Photo (remplace l'icône si renseignée)", name: "photo", widget: "image", required: false }
+
+          - label: "Arguments clés (3 blocs)"
+            name: "trust"
+            widget: "list"
+            label_singular: "Argument"
+            summary: "{{title}}"
+            fields:
+              - label: "Icône"
+                name: "icon"
+                widget: "select"
+                options:
+                  - { label: "Éclair (rapidité / prix)", value: "fa-bolt" }
+                  - { label: "Localisation", value: "fa-location-dot" }
+                  - { label: "Horloge (disponibilité)", value: "fa-clock" }
+                  - { label: "Bouclier (sécurité)", value: "fa-shield-halved" }
+                  - { label: "Pouce (satisfaction)", value: "fa-thumbs-up" }
+                  - { label: "Étoile", value: "fa-star" }
+              - { label: "Titre", name: "title", widget: "string" }
+              - { label: "Description", name: "text", widget: "string" }
+
+          - label: "Zone de couverture"
+            name: "coverage"
+            widget: "object"
+            fields:
+              - { label: "Petit texte au-dessus du titre", name: "eyebrow", widget: "string" }
+              - { label: "Titre de la section", name: "title", widget: "string" }
+              - { label: "Sous-titre", name: "subtitle", widget: "text" }
+              - label: "Zones livrées"
+                name: "zones"
+                widget: "list"
+                label_singular: "Zone"
+                summary: "{{title}}"
+                fields:
+                  - { label: "Nom (affiché sur le bouton de sélection)", name: "name", widget: "string" }
+                  - label: "Groupe"
+                    name: "group"
+                    widget: "select"
+                    options:
+                      - { label: "Commune d'Abidjan", value: "communes" }
+                      - { label: "Périphérie", value: "peripherie" }
+                    default: "communes"
+                    hint: "Détermine sous quel titre (Communes d'Abidjan / Périphérie) le bouton apparaît."
+                  - { label: "Étiquette du badge (ex : Quartier d'affaires, Périphérie)", name: "tag", widget: "string" }
+                  - { label: "Titre de la carte", name: "title", widget: "string" }
+                  - { label: "Description", name: "text", widget: "text" }
+                  - { label: "Mots-clés (séparés par ·)", name: "keywords", widget: "string" }
+              - { label: "Titre de l'encart de fin", name: "cta_title", widget: "string" }
+              - { label: "Texte de l'encart de fin", name: "cta_text", widget: "string" }
+
+          - label: "Coordonnées de contact"
+            name: "contact"
+            widget: "object"
+            fields:
+              - { label: "Numéro WhatsApp (chiffres uniquement, ex : 2250546818640)", name: "whatsapp_number", widget: "string", hint: "Indicatif pays + numéro, sans + ni espaces" }
+              - { label: "Numéro WhatsApp affiché sur le site", name: "whatsapp_display", widget: "string" }
+              - { label: "Numéro de téléphone (ex : +2250711138693)", name: "phone_number", widget: "string" }
+              - { label: "Numéro de téléphone affiché", name: "phone_display", widget: "string" }
+              - { label: "Adresse email", name: "email", widget: "string" }
+              - { label: "Nom affiché sur Facebook", name: "facebook", widget: "string" }
+              - { label: "Nom affiché sur Instagram", name: "instagram", widget: "string" }
+
+          - label: "Mentions légales"
+            name: "legal"
+            widget: "object"
+            fields:
+              - { label: "Capital social", name: "capital", widget: "string" }
+              - { label: "Siège social", name: "siege", widget: "string" }
+              - { label: "Numéro RCCM", name: "rccm", widget: "string" }
