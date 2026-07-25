@@ -26,6 +26,13 @@
 <div class="page-sub">Tous les colis enregistrés par les fournisseurs, en temps réel.</div>
 
 <div class="card">
+<h2>Comptes en attente de validation</h2>
+<div id="pending-list">
+<div class="empty-state">Chargement...</div>
+</div>
+</div>
+
+<div class="card">
 <h2>Créer un compte livreur</h2>
 <div id="add-livreur-msg"></div>
 <form id="form-add-livreur">
@@ -86,6 +93,7 @@ let currentUser = null;
 let allColis = [];
 let fournisseurs = [];
 let livreurs = [];
+let pendingAccounts = [];
 let activeFilter = 'tous';
 
 function addMsg(text, type){
@@ -116,6 +124,61 @@ fournisseurs = data;
 const select = document.getElementById('add-fournisseur');
 select.innerHTML = '<option value="">— Sélectionner —</option>' +
 data.map(f => `<option value="${f.id}">${f.company_name || f.full_name || f.id}</option>`).join('');
+}
+
+function pendingRowHTML(p){
+return `
+<div class="colis-item" data-id="${p.id}">
+<div class="info">
+<div class="desc">${p.full_name || '(sans nom)'}${p.company_name ? ' — ' + p.company_name : ''}</div>
+<div class="meta">Rôle demandé : ${p.role || 'fournisseur'}${p.phone ? ' · Tél : ' + p.phone : ''}</div>
+</div>
+<div class="status-col">
+<button class="btn btn-sm btn-valider" style="margin-bottom:4px;">Valider</button>
+<button class="btn btn-sm btn-rejeter" style="background:#c0392b;">Rejeter</button>
+</div>
+</div>
+`;
+}
+
+function renderPending(){
+const box = document.getElementById('pending-list');
+if (!pendingAccounts.length) {
+box.innerHTML = `<div class="empty-state">Aucun compte en attente de validation.</div>`;
+return;
+}
+box.innerHTML = pendingAccounts.map(pendingRowHTML).join('');
+
+box.querySelectorAll('.btn-valider').forEach(btn => {
+btn.addEventListener('click', async () => {
+const id = btn.closest('.colis-item').dataset.id;
+btn.disabled = true; btn.textContent = '...';
+const { error } = await supabaseClient.from('profiles').update({ status: 'valide' }).eq('id', id);
+if (error) { alert("Erreur : " + error.message); btn.disabled = false; btn.textContent = 'Valider'; return; }
+await loadPending();
+});
+});
+box.querySelectorAll('.btn-rejeter').forEach(btn => {
+btn.addEventListener('click', async () => {
+const id = btn.closest('.colis-item').dataset.id;
+if (!confirm("Rejeter ce compte ?")) return;
+btn.disabled = true; btn.textContent = '...';
+const { error } = await supabaseClient.from('profiles').update({ status: 'rejete' }).eq('id', id);
+if (error) { alert("Erreur : " + error.message); btn.disabled = false; btn.textContent = 'Rejeter'; return; }
+await loadPending();
+});
+});
+}
+
+async function loadPending(){
+const { data, error } = await supabaseClient
+.from('profiles')
+.select('id, role, full_name, company_name, phone, status')
+.eq('status', 'en_attente')
+.order('full_name');
+if (error) { console.error(error); return; }
+pendingAccounts = data;
+renderPending();
 }
 
 async function loadLivreurs(){
@@ -292,6 +355,7 @@ return;
 document.getElementById('user-name').textContent = profile.full_name || '';
 
 renderFilters();
+await loadPending();
 await loadFournisseurs();
 await loadLivreurs();
 await loadColis();
@@ -301,6 +365,16 @@ supabaseClient
 .channel('colis-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, () => {
 loadColis();
+})
+.subscribe();
+
+// Mises à jour en temps réel sur les comptes en attente de validation
+supabaseClient
+.channel('profiles-equipe')
+.on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+loadPending();
+loadFournisseurs();
+loadLivreurs();
 })
 .subscribe();
 }
