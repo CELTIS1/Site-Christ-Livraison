@@ -92,11 +92,13 @@ document.getElementById('msg-box').innerHTML =
 '<div class="msg msg-' + type + '">' + text + '</div>';
 }
 
-// Convertit un numéro ivoirien saisi localement (ex: 07 00 00 00 00) au format international E.164 (+225XXXXXXXXXX)
+// Convertit un numéro ivoirien saisi localement (ex: 07 89 81 81 40) au format international E.164.
+// Depuis la reforme de 2021, les numeros ivoiriens ont 10 chiffres et commencent deja par 0
+// (ce 0 fait partie du numero, il ne s'agit pas d'un prefixe a retirer).
+// Format E.164 correct : +225 suivi des 10 chiffres tels quels (ex: +2250789818140).
 function toE164(raw){
 let digits = raw.replace(/[^\d]/g, '');
 if (digits.startsWith('225')) digits = digits.slice(3);
-if (digits.startsWith('0')) digits = digits.slice(1);
 return '+225' + digits;
 }
 
