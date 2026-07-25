@@ -94,6 +94,8 @@
   function redirectByRole(profile){
     if (profile && profile.role === 'equipe') {
       window.location.href = 'equipe.html';
+    } else if (profile && profile.role === 'livreur') {
+      window.location.href = 'livreur.html';
     } else {
       window.location.href = 'fournisseur.html';
     }
