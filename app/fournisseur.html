@@ -182,6 +182,10 @@
       window.location.href = 'equipe.html';
       return;
     }
+    if (profile && profile.role === 'livreur') {
+      window.location.href = 'livreur.html';
+      return;
+    }
 
     document.getElementById('user-name').textContent = profile ? (profile.company_name || profile.full_name || '') : '';
     document.getElementById('user-first-name').textContent = profile ? (profile.full_name || '') : '';
