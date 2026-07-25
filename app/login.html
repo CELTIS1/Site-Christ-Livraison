@@ -73,8 +73,8 @@
     <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-setpass">Enregistrer le mot de passe</button>
     </form>
 
-    <!-- INSCRIPTION : étape 1 (infos + téléphone) -->
-    <form id="form-inscription-phone" class="hidden">
+    <!-- INSCRIPTION : formulaire en une étape (compte activé après validation par l'équipe) -->
+    <form id="form-inscription" class="hidden">
     <div class="field">
     <label>Nom complet</label>
     <input type="text" id="reg-fullname" required placeholder="Votre nom">
@@ -87,21 +87,6 @@
     <label>Numéro de téléphone</label>
     <input type="tel" id="reg-phone" required placeholder="07 00 00 00 00">
     </div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-send">Recevoir le code par SMS</button>
-    </form>
-
-    <!-- INSCRIPTION : étape 2 (code OTP) -->
-    <form id="form-inscription-otp" class="hidden">
-    <div class="field">
-    <label>Code reçu par SMS</label>
-    <input type="text" id="reg-otp" required inputmode="numeric" maxlength="6" placeholder="123456">
-    </div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-verify">Vérifier le code</button>
-    <button type="button" id="btn-register-back" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Modifier mes informations</button>
-    </form>
-
-    <!-- INSCRIPTION : étape 3 (création du mot de passe) -->
-    <form id="form-inscription-password" class="hidden">
     <div class="field">
     <label>Créer un mot de passe</label>
     <input type="password" id="reg-password" required minlength="6" placeholder="6 caractères minimum">
@@ -110,7 +95,8 @@
     <label>Confirmer le mot de passe</label>
     <input type="password" id="reg-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
     </div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-setpass">Créer mon compte fournisseur</button>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-submit">Créer mon compte fournisseur</button>
+    <div style="margin-top:10px;font-size:12.5px;color:#6b7280;text-align:center;">Votre compte sera activé après validation par notre équipe.</div>
     </form>
 
     </div>
@@ -125,9 +111,7 @@
     document.getElementById('form-forgot-phone').classList.add('hidden');
     document.getElementById('form-forgot-otp').classList.add('hidden');
     document.getElementById('form-forgot-newpass').classList.add('hidden');
-    document.getElementById('form-inscription-phone').classList.toggle('hidden', which!=='inscription');
-    document.getElementById('form-inscription-otp').classList.add('hidden');
-    document.getElementById('form-inscription-password').classList.add('hidden');
+    document.getElementById('form-inscription').classList.toggle('hidden', which!=='inscription');
     document.getElementById('msg-box').innerHTML = '';
   }
 
@@ -136,21 +120,18 @@
       '<div class="msg msg-' + type + '">' + text + '</div>';
   }
 
-  // Convertit un numéro ivoirien saisi localement (ex: 07 89 81 81 40) au format international E.164.
-  // Depuis la reforme de 2021, les numeros ivoiriens ont 10 chiffres et commencent deja par 0
-  // (ce 0 fait partie du numero, il ne s'agit pas d'un prefixe a retirer).
-  // Format E.164 correct : +225 suivi des 10 chiffres tels quels (ex: +2250789818140).
   function toE164(raw){
     let digits = raw.replace(/[^\d]/g, '');
     if (digits.startsWith('225')) digits = digits.slice(3);
     return '+225' + digits;
   }
 
-  // Si déjà connecté, redirige directement vers le bon espace
   (async function checkSession(){
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
       const profile = await getProfile(session.user.id);
+      const ok = await checkAccountStatus(profile);
+      if (!ok) return;
       redirectByRole(profile);
     }
   })();
@@ -165,7 +146,20 @@
     }
   }
 
-  // ---------- CONNEXION (téléphone + mot de passe) ----------
+  async function checkAccountStatus(profile){
+    if (profile && profile.status === 'en_attente') {
+      await supabaseClient.auth.signOut();
+      showMsg("Votre compte est en attente de validation par notre équipe. Vous pourrez vous connecter dès qu'il sera validé.", "error");
+      return false;
+    }
+    if (profile && profile.status === 'rejete') {
+      await supabaseClient.auth.signOut();
+      showMsg("Votre demande de compte a été refusée. Contactez notre équipe pour plus d'informations.", "error");
+      return false;
+    }
+    return true;
+  }
+
   document.getElementById('form-connexion-login').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-login-submit');
@@ -183,10 +177,12 @@
     }
 
     const profile = await getProfile(data.user.id);
+    const ok = await checkAccountStatus(profile);
+    btn.disabled = false; btn.textContent = 'Se connecter';
+    if (!ok) return;
     redirectByRole(profile);
   });
 
-  // ---------- MOT DE PASSE OUBLIE / PREMIERE CONNEXION ----------
   let forgotPhone = '';
 
   document.getElementById('btn-goto-forgot').addEventListener('click', () => {
@@ -283,76 +279,19 @@
     }
 
     const profile = await getProfile(data.user.id);
+    const ok = await checkAccountStatus(profile);
+    btn.disabled = false; btn.textContent = 'Enregistrer le mot de passe';
+    if (!ok) return;
     redirectByRole(profile);
   });
 
-  // ---------- INSCRIPTION FOURNISSEUR ----------
-  let regPhone = '';
-
-  document.getElementById('form-inscription-phone').addEventListener('submit', async (e) => {
+  document.getElementById('form-inscription').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('btn-register-send');
-    btn.disabled = true; btn.textContent = 'Envoi du code...';
+    const btn = document.getElementById('btn-register-submit');
 
     const full_name = document.getElementById('reg-fullname').value.trim();
     const company_name = document.getElementById('reg-company').value.trim();
-    regPhone = toE164(document.getElementById('reg-phone').value.trim());
-
-    const { error } = await supabaseClient.auth.signInWithOtp({
-      phone: regPhone,
-      options: {
-        shouldCreateUser: true,
-        data: { full_name, company_name, phone: regPhone, role: 'fournisseur' }
-      }
-    });
-
-    if (error) {
-      showMsg("Erreur : " + error.message, "error");
-      btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
-      return;
-    }
-
-    showMsg("Code envoyé par SMS au " + regPhone + ".", "success");
-    document.getElementById('form-inscription-phone').classList.add('hidden');
-    document.getElementById('form-inscription-otp').classList.remove('hidden');
-    btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
-  });
-
-  document.getElementById('btn-register-back').addEventListener('click', () => {
-    document.getElementById('form-inscription-otp').classList.add('hidden');
-    document.getElementById('form-inscription-phone').classList.remove('hidden');
-    document.getElementById('msg-box').innerHTML = '';
-  });
-
-  document.getElementById('form-inscription-otp').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-register-verify');
-    btn.disabled = true; btn.textContent = 'Vérification...';
-
-    const token = document.getElementById('reg-otp').value.trim();
-
-    const { error } = await supabaseClient.auth.verifyOtp({
-      phone: regPhone,
-      token,
-      type: 'sms'
-    });
-
-    if (error) {
-      showMsg("Code incorrect ou expiré. Réessayez.", "error");
-      btn.disabled = false; btn.textContent = 'Vérifier le code';
-      return;
-    }
-
-    showMsg("Numéro vérifié. Choisissez votre mot de passe.", "success");
-    document.getElementById('form-inscription-otp').classList.add('hidden');
-    document.getElementById('form-inscription-password').classList.remove('hidden');
-    btn.disabled = false; btn.textContent = 'Vérifier le code';
-  });
-
-  document.getElementById('form-inscription-password').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-register-setpass');
-
+    const phone = toE164(document.getElementById('reg-phone').value.trim());
     const password = document.getElementById('reg-password').value;
     const confirm = document.getElementById('reg-password-confirm').value;
 
@@ -367,15 +306,29 @@
 
     btn.disabled = true; btn.textContent = 'Création...';
 
-    const { error } = await supabaseClient.auth.updateUser({ password });
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/inscrire-fournisseur`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY,
+        },
+        body: JSON.stringify({ full_name, company_name, phone, password }),
+      });
+      const result = await res.json();
 
-    if (error) {
-      showMsg("Erreur : " + error.message, "error");
-      btn.disabled = false; btn.textContent = 'Créer mon compte fournisseur';
-      return;
+      if (!res.ok) {
+        showMsg("Erreur : " + (result.error || 'création impossible'), "error");
+      } else {
+        showMsg("Compte créé avec succès. Il sera activé après validation par notre équipe — vous pourrez alors vous connecter.", "success");
+        e.target.reset();
+      }
+    } catch (err) {
+      showMsg("Erreur : " + err.message, "error");
     }
 
-    window.location.href = 'fournisseur.html';
+    btn.disabled = false; btn.textContent = 'Créer mon compte fournisseur';
   });
 </script>
 </body>
