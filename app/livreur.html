@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Livreur | Christ Livraison & Transport SARL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="logo-mark">CLT</div> Espace Colis — Livreur</div>
+  <div class="user-info">
+    <span id="user-name"></span>
+    <span class="role-pill">Livreur</span>
+    <button class="btn-logout" onclick="logout()">Déconnexion</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
+  <div class="page-sub">Voici les colis qui vous ont été assignés. Mettez à jour leur statut au fur et à mesure de la livraison.</div>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" id="tab-mes-colis" onclick="showTab('mes')">Mes colis assignés</div>
+      <div class="tab" id="tab-tous-colis" onclick="showTab('tous')">Tous les colis</div>
+    </div>
+
+    <div id="panel-mes">
+      <div class="filters" id="filters-mes"></div>
+      <div class="colis-list" id="mes-colis-list">
+        <div class="empty-state">Chargement...</div>
+      </div>
+    </div>
+
+    <div id="panel-tous" class="hidden">
+      <div class="filters" id="filters-tous"></div>
+      <div class="colis-list" id="tous-colis-list">
+        <div class="empty-state">Chargement...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+  let currentUser = null;
+  let allColis = [];
+  let profilesById = {};
+  let activeFilterMes = 'tous';
+  let activeFilterTous = 'tous';
+  let activePanel = 'mes';
+
+  const FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En livraison', livre: 'Livré', probleme: 'Problème' };
+
+  function showTab(which){
+    activePanel = which;
+    document.getElementById('tab-mes-colis').classList.toggle('active', which === 'mes');
+    document.getElementById('tab-tous-colis').classList.toggle('active', which === 'tous');
+    document.getElementById('panel-mes').classList.toggle('hidden', which !== 'mes');
+    document.getElementById('panel-tous').classList.toggle('hidden', which !== 'tous');
+  }
+
+  function renderFilters(containerId, activeFilter, onSelect){
+    const box = document.getElementById(containerId);
+    box.innerHTML = Object.keys(FILTER_LABELS).map(key =>
+      `<div class="filter-chip ${activeFilter===key?'active':''}" data-filter="${key}">${FILTER_LABELS[key]}</div>`
+    ).join('');
+    box.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => onSelect(chip.dataset.filter));
+    });
+  }
+
+  function fournisseurLabel(id){
+    const p = profilesById[id];
+    if (!p) return 'Fournisseur inconnu';
+    return p.company_name || p.full_name || id;
+  }
+
+  function livreurLabel(id){
+    if (!id) return null;
+    const p = profilesById[id];
+    if (!p) return null;
+    return p.full_name || 'Livreur';
+  }
+
+  // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
+  function mesColisRowHTML(c){
+    const thumb = c.photo_url
+      ? `<img src="${c.photo_url}" class="thumb">`
+      : `<div class="thumb-placeholder">Pas de photo</div>`;
+    const statutOptions = Object.keys(STATUTS).map(k =>
+      `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
+
+    return `
+      <div class="colis-item" data-id="${c.id}">
+        ${thumb}
+        <div class="info">
+          <div class="desc">${c.description || '(sans description)'}</div>
+          <div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+          <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+        </div>
+        <div class="status-col">
+          <select class="status-select">${statutOptions}</select>
+          <button class="btn btn-sm btn-save" style="margin-top:4px;">Enregistrer</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Ligne en lecture seule pour "Tous les colis"
+  function tousColisItemHTML(c){
+    const thumb = c.photo_url
+      ? `<img src="${c.photo_url}" class="thumb">`
+      : `<div class="thumb-placeholder">Pas de photo</div>`;
+    const lv = livreurLabel(c.livreur_id);
+    return `
+      <div class="colis-item">
+        ${thumb}
+        <div class="info">
+          <div class="desc">${c.description || '(sans description)'}</div>
+          <div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+          <div class="meta">Ajouté le ${formatDate(c.created_at)}${lv ? ' · Livreur : ' + lv : ''}</div>
+        </div>
+        <div class="status-col">${statutBadgeHTML(c.statut)}</div>
+      </div>
+    `;
+  }
+
+  function renderMesColis(){
+    const list = document.getElementById('mes-colis-list');
+    const mine = allColis.filter(c => c.livreur_id === currentUser.id);
+    const filtered = activeFilterMes === 'tous' ? mine : mine.filter(c => c.statut === activeFilterMes);
+    if (!filtered.length) {
+      list.innerHTML = `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' ? ' avec ce statut' : ''}.</div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(mesColisRowHTML).join('');
+
+    list.querySelectorAll('.btn-save').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const item = btn.closest('.colis-item');
+        const id = item.dataset.id;
+        const statut = item.querySelector('.status-select').value;
+        btn.disabled = true; btn.textContent = '...';
+        const { error } = await supabaseClient.from('colis').update({ statut }).eq('id', id);
+        btn.disabled = false; btn.textContent = 'Enregistrer';
+        if (error) { alert("Erreur : " + error.message); }
+      });
+    });
+  }
+
+  function renderTousColis(){
+    const list = document.getElementById('tous-colis-list');
+    const filtered = activeFilterTous === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilterTous);
+    if (!filtered.length) {
+      list.innerHTML = `<div class="empty-state">Aucun colis${activeFilterTous !== 'tous' ? ' avec ce statut' : ''}.</div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(tousColisItemHTML).join('');
+  }
+
+  function renderAll(){
+    renderMesColis();
+    renderTousColis();
+  }
+
+  async function loadProfiles(){
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('id, full_name, company_name, role');
+    if (error) { console.error(error); return; }
+    profilesById = {};
+    data.forEach(p => { profilesById[p.id] = p; });
+  }
+
+  async function loadColis(){
+    const { data, error } = await supabaseClient
+      .from('colis')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error(error); return; }
+    allColis = data;
+    renderAll();
+  }
+
+  async function init(){
+    const session = await requireAuth();
+    if (!session) return;
+    currentUser = session.user;
+
+    const profile = await getProfile(currentUser.id);
+    if (!profile || profile.role !== 'livreur') {
+      if (profile && profile.role === 'equipe') {
+        window.location.href = 'equipe.html';
+      } else {
+        window.location.href = 'fournisseur.html';
+      }
+      return;
+    }
+
+    document.getElementById('user-name').textContent = profile.full_name || '';
+    document.getElementById('user-first-name').textContent = profile.full_name || '';
+
+    function selectFilterMes(val){ activeFilterMes = val; renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
+    function selectFilterTous(val){ activeFilterTous = val; renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
+    renderFilters('filters-mes', activeFilterMes, selectFilterMes);
+    renderFilters('filters-tous', activeFilterTous, selectFilterTous);
+
+    await loadProfiles();
+    await loadColis();
+
+    // Mises à jour en temps réel sur tous les colis
+    supabaseClient
+      .channel('colis-livreur-' + currentUser.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, () => {
+        loadColis();
+      })
+      .subscribe();
+  }
+
+  init();
+</script>
+</body>
+</html>
