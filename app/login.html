@@ -14,107 +14,107 @@
   <div class="login-page">
     <div class="login-box">
       <div class="login-logo">
-        <div class="logo-mark">CLT</div>div>
-      </div>div>
-      <div class="login-title">Espace Colis</div>div>
-      <div class="login-sub">Christ Livraison & Transport SARL</div>div>
+        <div class="logo-mark">CLT</div>
+      </div>
+      <div class="login-title">Espace Colis</div>
+      <div class="login-sub">Christ Livraison & Transport SARL</div>
 
       <div class="tabs">
-        <div class="tab active" id="tab-connexion" onclick="showTab('connexion')">Connexion</div>div>
-        <div class="tab" id="tab-inscription" onclick="showTab('inscription')">Inscription fournisseur</div>div>
-      </div>div>
+        <div class="tab active" id="tab-connexion" onclick="showTab('connexion')">Connexion</div>
+        <div class="tab" id="tab-inscription" onclick="showTab('inscription')">Inscription fournisseur</div>
+      </div>
 
-      <div id="msg-box"></div>div>
+      <div id="msg-box"></div>
 
       <!-- CONNEXION : téléphone + mot de passe -->
       <form id="form-connexion-login">
         <div class="field">
           <label>Numéro de téléphone</label>
         <input type="tel" id="login-phone" required placeholder="07 00 00 00 00">
-        </div>div>
+        </div>
       <div class="field">
       <label>Mot de passe</label>
       <input type="password" id="login-password" required placeholder="Votre mot de passe">
-      </div>div>
-      <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-login-submit">Se connecter</button>button>
-      <button type="button" id="btn-goto-forgot" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Mot de passe oublié ou première connexion ?</button>button>
-      </form>form>
-    
+      </div>
+      <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-login-submit">Se connecter</button>
+      <button type="button" id="btn-goto-forgot" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Mot de passe oublié ou première connexion ?</button>
+      </form>
+
     <!-- MOT DE PASSE OUBLIE : étape 1 (téléphone) -->
     <form id="form-forgot-phone" class="hidden">
     <div class="field">
     <label>Numéro de téléphone</label>
     <input type="tel" id="forgot-phone" required placeholder="07 00 00 00 00">
-    </div>div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-send">Recevoir le code par SMS</button>button>
-    <button type="button" id="btn-forgot-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>button>
-    </form>form>
-    
+    </div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-send">Recevoir le code par SMS</button>
+    <button type="button" id="btn-forgot-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
+    </form>
+
     <!-- MOT DE PASSE OUBLIE : étape 2 (code OTP) -->
     <form id="form-forgot-otp" class="hidden">
     <div class="field">
     <label>Code reçu par SMS</label>
     <input type="text" id="forgot-otp" required inputmode="numeric" maxlength="6" placeholder="123456">
-    </div>div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-verify">Vérifier le code</button>button>
-    <button type="button" id="btn-forgot-back" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Modifier le numéro</button>button>
-    </form>form>
-    
+    </div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-verify">Vérifier le code</button>
+    <button type="button" id="btn-forgot-back" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Modifier le numéro</button>
+    </form>
+
     <!-- MOT DE PASSE OUBLIE : étape 3 (nouveau mot de passe) -->
     <form id="form-forgot-newpass" class="hidden">
     <div class="field">
     <label>Nouveau mot de passe</label>
     <input type="password" id="forgot-password" required minlength="6" placeholder="6 caractères minimum">
-    </div>div>
+    </div>
     <div class="field">
     <label>Confirmer le mot de passe</label>
     <input type="password" id="forgot-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
-    </div>div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-setpass">Enregistrer le mot de passe</button>button>
-    </form>form>
-    
+    </div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-setpass">Enregistrer le mot de passe</button>
+    </form>
+
     <!-- INSCRIPTION : étape 1 (infos + téléphone) -->
     <form id="form-inscription-phone" class="hidden">
     <div class="field">
     <label>Nom complet</label>
     <input type="text" id="reg-fullname" required placeholder="Votre nom">
-    </div>div>
+    </div>
     <div class="field">
     <label>Nom de l'entreprise (optionnel)</label>
     <input type="text" id="reg-company" placeholder="Nom de votre société">
-    </div>div>
+    </div>
     <div class="field">
     <label>Numéro de téléphone</label>
     <input type="tel" id="reg-phone" required placeholder="07 00 00 00 00">
-    </div>div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-send">Recevoir le code par SMS</button>button>
-    </form>form>
-    
+    </div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-send">Recevoir le code par SMS</button>
+    </form>
+
     <!-- INSCRIPTION : étape 2 (code OTP) -->
     <form id="form-inscription-otp" class="hidden">
     <div class="field">
     <label>Code reçu par SMS</label>
     <input type="text" id="reg-otp" required inputmode="numeric" maxlength="6" placeholder="123456">
-    </div>div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-verify">Vérifier le code</button>button>
-    <button type="button" id="btn-register-back" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Modifier mes informations</button>button>
-    </form>form>
-    
+    </div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-verify">Vérifier le code</button>
+    <button type="button" id="btn-register-back" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Modifier mes informations</button>
+    </form>
+
     <!-- INSCRIPTION : étape 3 (création du mot de passe) -->
     <form id="form-inscription-password" class="hidden">
     <div class="field">
     <label>Créer un mot de passe</label>
     <input type="password" id="reg-password" required minlength="6" placeholder="6 caractères minimum">
-    </div>div>
+    </div>
     <div class="field">
     <label>Confirmer le mot de passe</label>
     <input type="password" id="reg-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
-    </div>div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-setpass">Créer mon compte fournisseur</button>button>
-    </form>form>
-    
-    </div>div>
-  </div>div>
+    </div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-setpass">Créer mon compte fournisseur</button>
+    </form>
+
+    </div>
+  </div>
 
 <script src="config.js"></script>
 <script>
