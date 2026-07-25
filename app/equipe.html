@@ -26,6 +26,34 @@
   <div class="page-sub">Tous les colis enregistrés par les fournisseurs, en temps réel.</div>
 
   <div class="card">
+    <h2>Créer un compte livreur</h2>
+    <div id="add-livreur-msg"></div>
+    <form id="form-add-livreur">
+      <div class="field-row">
+        <div class="field">
+          <label>Nom complet</label>
+          <input type="text" id="lv-fullname" required placeholder="Nom du livreur">
+        </div>
+        <div class="field">
+          <label>Téléphone</label>
+          <input type="tel" id="lv-phone" placeholder="07 00 00 00 00">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Adresse e-mail</label>
+          <input type="email" id="lv-email" required placeholder="livreur@exemple.com">
+        </div>
+        <div class="field">
+          <label>Mot de passe</label>
+          <input type="password" id="lv-password" required minlength="6" placeholder="6 caractères minimum">
+        </div>
+      </div>
+      <button type="submit" class="btn" id="btn-submit-livreur">Créer le compte livreur</button>
+    </form>
+  </div>
+
+  <div class="card">
     <h2>Ajouter un colis pour un fournisseur</h2>
     <div id="add-msg"></div>
     <form id="form-add-colis">
@@ -67,10 +95,15 @@
   let currentUser = null;
   let allColis = [];
   let fournisseurs = [];
+  let livreurs = [];
   let activeFilter = 'tous';
 
   function addMsg(text, type){
     document.getElementById('add-msg').innerHTML = `<div class="msg msg-${type}">${text}</div>`;
+  }
+
+  function addLivreurMsg(text, type){
+    document.getElementById('add-livreur-msg').innerHTML = `<div class="msg msg-${type}">${text}</div>`;
   }
 
   async function uploadPhoto(file, userId){
@@ -94,6 +127,54 @@
     select.innerHTML = '<option value="">— Sélectionner —</option>' +
       data.map(f => `<option value="${f.id}">${f.company_name || f.full_name || f.id}</option>`).join('');
   }
+
+  async function loadLivreurs(){
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('id, full_name, phone')
+      .eq('role', 'livreur')
+      .order('full_name');
+    if (error) { console.error(error); return; }
+    livreurs = data;
+    renderColis();
+  }
+
+  document.getElementById('form-add-livreur').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-submit-livreur');
+    btn.disabled = true; btn.textContent = 'Création...';
+
+    const full_name = document.getElementById('lv-fullname').value.trim();
+    const phone = document.getElementById('lv-phone').value.trim();
+    const email = document.getElementById('lv-email').value.trim();
+    const password = document.getElementById('lv-password').value;
+
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/creer-livreur`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': SUPABASE_KEY,
+        },
+        body: JSON.stringify({ full_name, phone, email, password }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        addLivreurMsg("Erreur : " + (result.error || 'création impossible'), "error");
+      } else {
+        addLivreurMsg("Compte livreur créé avec succès.", "success");
+        e.target.reset();
+        await loadLivreurs();
+      }
+    } catch (err) {
+      addLivreurMsg("Erreur : " + err.message, "error");
+    }
+
+    btn.disabled = false; btn.textContent = 'Créer le compte livreur';
+  });
 
   document.getElementById('form-add-colis').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -153,6 +234,8 @@
       : `<div class="thumb-placeholder">Pas de photo</div>`;
     const statutOptions = Object.keys(STATUTS).map(k =>
       `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
+    const livreurOptions = '<option value="">— Aucun livreur —</option>' +
+      livreurs.map(l => `<option value="${l.id}" ${c.livreur_id===l.id?'selected':''}>${l.full_name || l.id}</option>`).join('');
 
     return `
       <div class="colis-item" data-id="${c.id}">
@@ -162,7 +245,8 @@
           <div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
           <div class="field" style="margin-top:8px;">
-            <input type="text" class="row-livreur" placeholder="Nom du livreur" value="${c.livreur_nom || ''}" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:180px;">
+            <label style="font-size:11.5px;">Livreur assigné</label>
+            <select class="row-livreur-select" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurOptions}</select>
           </div>
         </div>
         <div class="status-col">
@@ -187,9 +271,9 @@
         const item = btn.closest('.colis-item');
         const id = item.dataset.id;
         const statut = item.querySelector('.status-select').value;
-        const livreur_nom = item.querySelector('.row-livreur').value.trim();
+        const livreur_id = item.querySelector('.row-livreur-select').value || null;
         btn.disabled = true; btn.textContent = '...';
-        const { error } = await supabaseClient.from('colis').update({ statut, livreur_nom }).eq('id', id);
+        const { error } = await supabaseClient.from('colis').update({ statut, livreur_id }).eq('id', id);
         btn.disabled = false; btn.textContent = 'Enregistrer';
         if (error) { alert("Erreur : " + error.message); }
       });
@@ -213,7 +297,7 @@
 
     const profile = await getProfile(currentUser.id);
     if (!profile || profile.role !== 'equipe') {
-      window.location.href = 'fournisseur.html';
+      window.location.href = profile && profile.role === 'livreur' ? 'livreur.html' : 'fournisseur.html';
       return;
     }
 
@@ -221,6 +305,7 @@
 
     renderFilters();
     await loadFournisseurs();
+    await loadLivreurs();
     await loadColis();
 
     // Mises à jour en temps réel sur tous les colis
