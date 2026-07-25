@@ -1,241 +1,382 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Connexion — Espace Colis | Christ Livraison & Transport SARL</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — Espace Colis | Christ Livraison & Transport SARL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
 <body>
-<div class="login-page">
-<div class="login-box">
-<div class="login-logo">
-<div class="logo-mark">CLT</div>
-</div>
-<div class="login-title">Espace Colis</div>
-<div class="login-sub">Christ Livraison & Transport SARL</div>
+  <div class="login-page">
+    <div class="login-box">
+      <div class="login-logo">
+        <div class="logo-mark">CLT</div>div>
+      </div>div>
+      <div class="login-title">Espace Colis</div>div>
+      <div class="login-sub">Christ Livraison & Transport SARL</div>div>
 
-<div class="tabs">
-<div class="tab active" id="tab-connexion" onclick="showTab('connexion')">Connexion</div>
-<div class="tab" id="tab-inscription" onclick="showTab('inscription')">Inscription fournisseur</div>
-</div>
+      <div class="tabs">
+        <div class="tab active" id="tab-connexion" onclick="showTab('connexion')">Connexion</div>div>
+        <div class="tab" id="tab-inscription" onclick="showTab('inscription')">Inscription fournisseur</div>div>
+      </div>div>
 
-<div id="msg-box"></div>
+      <div id="msg-box"></div>div>
 
-<!-- CONNEXION : étape 1 (téléphone) -->
-<form id="form-connexion-phone">
-<div class="field">
-<label>Numéro de téléphone</label>
-<input type="tel" id="login-phone" required placeholder="07 00 00 00 00">
-</div>
-<button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-login-send">Recevoir le code par SMS</button>
-</form>
-
-<!-- CONNEXION : étape 2 (code OTP) -->
-<form id="form-connexion-otp" class="hidden">
-<div class="field">
-<label>Code reçu par SMS</label>
-<input type="text" id="login-otp" required inputmode="numeric" maxlength="6" placeholder="123456">
-</div>
-<button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-login-verify">Se connecter</button>
-<button type="button" id="btn-login-back" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Modifier le numéro</button>
-</form>
-
-<!-- INSCRIPTION : étape 1 (infos + téléphone) -->
-<form id="form-inscription-phone" class="hidden">
-<div class="field">
-<label>Nom complet</label>
-<input type="text" id="reg-fullname" required placeholder="Votre nom">
-</div>
-<div class="field">
-<label>Nom de l'entreprise (optionnel)</label>
-<input type="text" id="reg-company" placeholder="Nom de votre société">
-</div>
-<div class="field">
-<label>Numéro de téléphone</label>
-<input type="tel" id="reg-phone" required placeholder="07 00 00 00 00">
-</div>
-<button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-send">Recevoir le code par SMS</button>
-</form>
-
-<!-- INSCRIPTION : étape 2 (code OTP) -->
-<form id="form-inscription-otp" class="hidden">
-<div class="field">
-<label>Code reçu par SMS</label>
-<input type="text" id="reg-otp" required inputmode="numeric" maxlength="6" placeholder="123456">
-</div>
-<button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-verify">Créer mon compte fournisseur</button>
-<button type="button" id="btn-register-back" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Modifier mes informations</button>
-</form>
-
-</div>
-</div>
+      <!-- CONNEXION : téléphone + mot de passe -->
+      <form id="form-connexion-login">
+        <div class="field">
+          <label>Numéro de téléphone</label>
+        <input type="tel" id="login-phone" required placeholder="07 00 00 00 00">
+        </div>div>
+      <div class="field">
+      <label>Mot de passe</label>
+      <input type="password" id="login-password" required placeholder="Votre mot de passe">
+      </div>div>
+      <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-login-submit">Se connecter</button>button>
+      <button type="button" id="btn-goto-forgot" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Mot de passe oublié ou première connexion ?</button>button>
+      </form>form>
+    
+    <!-- MOT DE PASSE OUBLIE : étape 1 (téléphone) -->
+    <form id="form-forgot-phone" class="hidden">
+    <div class="field">
+    <label>Numéro de téléphone</label>
+    <input type="tel" id="forgot-phone" required placeholder="07 00 00 00 00">
+    </div>div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-send">Recevoir le code par SMS</button>button>
+    <button type="button" id="btn-forgot-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>button>
+    </form>form>
+    
+    <!-- MOT DE PASSE OUBLIE : étape 2 (code OTP) -->
+    <form id="form-forgot-otp" class="hidden">
+    <div class="field">
+    <label>Code reçu par SMS</label>
+    <input type="text" id="forgot-otp" required inputmode="numeric" maxlength="6" placeholder="123456">
+    </div>div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-verify">Vérifier le code</button>button>
+    <button type="button" id="btn-forgot-back" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Modifier le numéro</button>button>
+    </form>form>
+    
+    <!-- MOT DE PASSE OUBLIE : étape 3 (nouveau mot de passe) -->
+    <form id="form-forgot-newpass" class="hidden">
+    <div class="field">
+    <label>Nouveau mot de passe</label>
+    <input type="password" id="forgot-password" required minlength="6" placeholder="6 caractères minimum">
+    </div>div>
+    <div class="field">
+    <label>Confirmer le mot de passe</label>
+    <input type="password" id="forgot-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
+    </div>div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-setpass">Enregistrer le mot de passe</button>button>
+    </form>form>
+    
+    <!-- INSCRIPTION : étape 1 (infos + téléphone) -->
+    <form id="form-inscription-phone" class="hidden">
+    <div class="field">
+    <label>Nom complet</label>
+    <input type="text" id="reg-fullname" required placeholder="Votre nom">
+    </div>div>
+    <div class="field">
+    <label>Nom de l'entreprise (optionnel)</label>
+    <input type="text" id="reg-company" placeholder="Nom de votre société">
+    </div>div>
+    <div class="field">
+    <label>Numéro de téléphone</label>
+    <input type="tel" id="reg-phone" required placeholder="07 00 00 00 00">
+    </div>div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-send">Recevoir le code par SMS</button>button>
+    </form>form>
+    
+    <!-- INSCRIPTION : étape 2 (code OTP) -->
+    <form id="form-inscription-otp" class="hidden">
+    <div class="field">
+    <label>Code reçu par SMS</label>
+    <input type="text" id="reg-otp" required inputmode="numeric" maxlength="6" placeholder="123456">
+    </div>div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-verify">Vérifier le code</button>button>
+    <button type="button" id="btn-register-back" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Modifier mes informations</button>button>
+    </form>form>
+    
+    <!-- INSCRIPTION : étape 3 (création du mot de passe) -->
+    <form id="form-inscription-password" class="hidden">
+    <div class="field">
+    <label>Créer un mot de passe</label>
+    <input type="password" id="reg-password" required minlength="6" placeholder="6 caractères minimum">
+    </div>div>
+    <div class="field">
+    <label>Confirmer le mot de passe</label>
+    <input type="password" id="reg-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
+    </div>div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-setpass">Créer mon compte fournisseur</button>button>
+    </form>form>
+    
+    </div>div>
+  </div>div>
 
 <script src="config.js"></script>
 <script>
-function showTab(which){
-document.getElementById('tab-connexion').classList.toggle('active', which==='connexion');
-document.getElementById('tab-inscription').classList.toggle('active', which==='inscription');
-document.getElementById('form-connexion-phone').classList.toggle('hidden', which!=='connexion');
-document.getElementById('form-connexion-otp').classList.add('hidden');
-document.getElementById('form-inscription-phone').classList.toggle('hidden', which!=='inscription');
-document.getElementById('form-inscription-otp').classList.add('hidden');
-document.getElementById('msg-box').innerHTML = '';
-}
+  function showTab(which){
+    document.getElementById('tab-connexion').classList.toggle('active', which==='connexion');
+    document.getElementById('tab-inscription').classList.toggle('active', which==='inscription');
+    document.getElementById('form-connexion-login').classList.toggle('hidden', which!=='connexion');
+    document.getElementById('form-forgot-phone').classList.add('hidden');
+    document.getElementById('form-forgot-otp').classList.add('hidden');
+    document.getElementById('form-forgot-newpass').classList.add('hidden');
+    document.getElementById('form-inscription-phone').classList.toggle('hidden', which!=='inscription');
+    document.getElementById('form-inscription-otp').classList.add('hidden');
+    document.getElementById('form-inscription-password').classList.add('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+  }
 
-function showMsg(text, type){
-document.getElementById('msg-box').innerHTML =
-'<div class="msg msg-' + type + '">' + text + '</div>';
-}
+  function showMsg(text, type){
+    document.getElementById('msg-box').innerHTML =
+      '<div class="msg msg-' + type + '">' + text + '</div>';
+  }
 
-// Convertit un numéro ivoirien saisi localement (ex: 07 89 81 81 40) au format international E.164.
-// Depuis la reforme de 2021, les numeros ivoiriens ont 10 chiffres et commencent deja par 0
-// (ce 0 fait partie du numero, il ne s'agit pas d'un prefixe a retirer).
-// Format E.164 correct : +225 suivi des 10 chiffres tels quels (ex: +2250789818140).
-function toE164(raw){
-let digits = raw.replace(/[^\d]/g, '');
-if (digits.startsWith('225')) digits = digits.slice(3);
-return '+225' + digits;
-}
+  // Convertit un numéro ivoirien saisi localement (ex: 07 89 81 81 40) au format international E.164.
+  // Depuis la reforme de 2021, les numeros ivoiriens ont 10 chiffres et commencent deja par 0
+  // (ce 0 fait partie du numero, il ne s'agit pas d'un prefixe a retirer).
+  // Format E.164 correct : +225 suivi des 10 chiffres tels quels (ex: +2250789818140).
+  function toE164(raw){
+    let digits = raw.replace(/[^\d]/g, '');
+    if (digits.startsWith('225')) digits = digits.slice(3);
+    return '+225' + digits;
+  }
 
-// Si déjà connecté, redirige directement vers le bon espace
-(async function checkSession(){
-const { data: { session } } = await supabaseClient.auth.getSession();
-if (session) {
-const profile = await getProfile(session.user.id);
-redirectByRole(profile);
-}
-})();
+  // Si déjà connecté, redirige directement vers le bon espace
+  (async function checkSession(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      const profile = await getProfile(session.user.id);
+      redirectByRole(profile);
+    }
+  })();
 
-function redirectByRole(profile){
-if (profile && profile.role === 'equipe') {
-window.location.href = 'equipe.html';
-} else if (profile && profile.role === 'livreur') {
-window.location.href = 'livreur.html';
-} else {
-window.location.href = 'fournisseur.html';
-}
-}
+  function redirectByRole(profile){
+    if (profile && profile.role === 'equipe') {
+      window.location.href = 'equipe.html';
+    } else if (profile && profile.role === 'livreur') {
+      window.location.href = 'livreur.html';
+    } else {
+      window.location.href = 'fournisseur.html';
+    }
+  }
 
-// ---------- CONNEXION ----------
-let loginPhone = '';
+  // ---------- CONNEXION (téléphone + mot de passe) ----------
+  document.getElementById('form-connexion-login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-login-submit');
+    btn.disabled = true; btn.textContent = 'Connexion...';
 
-document.getElementById('form-connexion-phone').addEventListener('submit', async (e) => {
-e.preventDefault();
-const btn = document.getElementById('btn-login-send');
-btn.disabled = true; btn.textContent = 'Envoi du code...';
+    const phone = toE164(document.getElementById('login-phone').value.trim());
+    const password = document.getElementById('login-password').value;
 
-loginPhone = toE164(document.getElementById('login-phone').value.trim());
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ phone, password });
 
-const { error } = await supabaseClient.auth.signInWithOtp({
-phone: loginPhone,
-options: { shouldCreateUser: false }
-});
+    if (error) {
+      showMsg("Erreur : numéro ou mot de passe incorrect.", "error");
+      btn.disabled = false; btn.textContent = 'Se connecter';
+      return;
+    }
 
-if (error) {
-showMsg("Erreur : " + (error.message.includes('not found') || error.status === 400 ? "Aucun compte n'est associé à ce numéro." : error.message), "error");
-btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
-return;
-}
+    const profile = await getProfile(data.user.id);
+    redirectByRole(profile);
+  });
 
-showMsg("Code envoyé par SMS au " + loginPhone + ".", "success");
-document.getElementById('form-connexion-phone').classList.add('hidden');
-document.getElementById('form-connexion-otp').classList.remove('hidden');
-btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
-});
+  // ---------- MOT DE PASSE OUBLIE / PREMIERE CONNEXION ----------
+  let forgotPhone = '';
 
-document.getElementById('btn-login-back').addEventListener('click', () => {
-document.getElementById('form-connexion-otp').classList.add('hidden');
-document.getElementById('form-connexion-phone').classList.remove('hidden');
-document.getElementById('msg-box').innerHTML = '';
-});
+  document.getElementById('btn-goto-forgot').addEventListener('click', () => {
+    document.getElementById('form-connexion-login').classList.add('hidden');
+    document.getElementById('form-forgot-phone').classList.remove('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+  });
 
-document.getElementById('form-connexion-otp').addEventListener('submit', async (e) => {
-e.preventDefault();
-const btn = document.getElementById('btn-login-verify');
-btn.disabled = true; btn.textContent = 'Vérification...';
+  document.getElementById('btn-forgot-cancel').addEventListener('click', () => {
+    document.getElementById('form-forgot-phone').classList.add('hidden');
+    document.getElementById('form-connexion-login').classList.remove('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+  });
 
-const token = document.getElementById('login-otp').value.trim();
+  document.getElementById('form-forgot-phone').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-forgot-send');
+    btn.disabled = true; btn.textContent = 'Envoi du code...';
 
-const { data, error } = await supabaseClient.auth.verifyOtp({
-phone: loginPhone,
-token,
-type: 'sms'
-});
+    forgotPhone = toE164(document.getElementById('forgot-phone').value.trim());
 
-if (error) {
-showMsg("Code incorrect ou expiré. Réessayez.", "error");
-btn.disabled = false; btn.textContent = 'Se connecter';
-return;
-}
+    const { error } = await supabaseClient.auth.signInWithOtp({
+      phone: forgotPhone,
+      options: { shouldCreateUser: false }
+    });
 
-const profile = await getProfile(data.user.id);
-redirectByRole(profile);
-});
+    if (error) {
+      showMsg("Erreur : " + (error.message.includes('not found') || error.status === 400 ? "Aucun compte n'est associé à ce numéro." : error.message), "error");
+      btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
+      return;
+    }
 
-// ---------- INSCRIPTION FOURNISSEUR ----------
-let regPhone = '';
+    showMsg("Code envoyé par SMS au " + forgotPhone + ".", "success");
+    document.getElementById('form-forgot-phone').classList.add('hidden');
+    document.getElementById('form-forgot-otp').classList.remove('hidden');
+    btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
+  });
 
-document.getElementById('form-inscription-phone').addEventListener('submit', async (e) => {
-e.preventDefault();
-const btn = document.getElementById('btn-register-send');
-btn.disabled = true; btn.textContent = 'Envoi du code...';
+  document.getElementById('btn-forgot-back').addEventListener('click', () => {
+    document.getElementById('form-forgot-otp').classList.add('hidden');
+    document.getElementById('form-forgot-phone').classList.remove('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+  });
 
-const full_name = document.getElementById('reg-fullname').value.trim();
-const company_name = document.getElementById('reg-company').value.trim();
-regPhone = toE164(document.getElementById('reg-phone').value.trim());
+  document.getElementById('form-forgot-otp').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-forgot-verify');
+    btn.disabled = true; btn.textContent = 'Vérification...';
 
-const { error } = await supabaseClient.auth.signInWithOtp({
-phone: regPhone,
-options: {
-shouldCreateUser: true,
-data: { full_name, company_name, phone: regPhone, role: 'fournisseur' }
-}
-});
+    const token = document.getElementById('forgot-otp').value.trim();
 
-if (error) {
-showMsg("Erreur : " + error.message, "error");
-btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
-return;
-}
+    const { error } = await supabaseClient.auth.verifyOtp({
+      phone: forgotPhone,
+      token,
+      type: 'sms'
+    });
 
-showMsg("Code envoyé par SMS au " + regPhone + ".", "success");
-document.getElementById('form-inscription-phone').classList.add('hidden');
-document.getElementById('form-inscription-otp').classList.remove('hidden');
-btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
-});
+    if (error) {
+      showMsg("Code incorrect ou expiré. Réessayez.", "error");
+      btn.disabled = false; btn.textContent = 'Vérifier le code';
+      return;
+    }
 
-document.getElementById('btn-register-back').addEventListener('click', () => {
-document.getElementById('form-inscription-otp').classList.add('hidden');
-document.getElementById('form-inscription-phone').classList.remove('hidden');
-document.getElementById('msg-box').innerHTML = '';
-});
+    showMsg("Numéro vérifié. Choisissez votre nouveau mot de passe.", "success");
+    document.getElementById('form-forgot-otp').classList.add('hidden');
+    document.getElementById('form-forgot-newpass').classList.remove('hidden');
+    btn.disabled = false; btn.textContent = 'Vérifier le code';
+  });
 
-document.getElementById('form-inscription-otp').addEventListener('submit', async (e) => {
-e.preventDefault();
-const btn = document.getElementById('btn-register-verify');
-btn.disabled = true; btn.textContent = 'Vérification...';
+  document.getElementById('form-forgot-newpass').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-forgot-setpass');
 
-const token = document.getElementById('reg-otp').value.trim();
+    const password = document.getElementById('forgot-password').value;
+    const confirm = document.getElementById('forgot-password-confirm').value;
 
-const { data, error } = await supabaseClient.auth.verifyOtp({
-phone: regPhone,
-token,
-type: 'sms'
-});
+    if (password !== confirm) {
+      showMsg("Les deux mots de passe ne correspondent pas.", "error");
+      return;
+    }
+    if (password.length < 6) {
+      showMsg("Le mot de passe doit contenir au moins 6 caractères.", "error");
+      return;
+    }
 
-if (error) {
-showMsg("Code incorrect ou expiré. Réessayez.", "error");
-btn.disabled = false; btn.textContent = 'Créer mon compte fournisseur';
-return;
-}
+    btn.disabled = true; btn.textContent = 'Enregistrement...';
 
-window.location.href = 'fournisseur.html';
-});
+    const { data, error } = await supabaseClient.auth.updateUser({ password });
+
+    if (error) {
+      showMsg("Erreur : " + error.message, "error");
+      btn.disabled = false; btn.textContent = 'Enregistrer le mot de passe';
+      return;
+    }
+
+    const profile = await getProfile(data.user.id);
+    redirectByRole(profile);
+  });
+
+  // ---------- INSCRIPTION FOURNISSEUR ----------
+  let regPhone = '';
+
+  document.getElementById('form-inscription-phone').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-register-send');
+    btn.disabled = true; btn.textContent = 'Envoi du code...';
+
+    const full_name = document.getElementById('reg-fullname').value.trim();
+    const company_name = document.getElementById('reg-company').value.trim();
+    regPhone = toE164(document.getElementById('reg-phone').value.trim());
+
+    const { error } = await supabaseClient.auth.signInWithOtp({
+      phone: regPhone,
+      options: {
+        shouldCreateUser: true,
+        data: { full_name, company_name, phone: regPhone, role: 'fournisseur' }
+      }
+    });
+
+    if (error) {
+      showMsg("Erreur : " + error.message, "error");
+      btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
+      return;
+    }
+
+    showMsg("Code envoyé par SMS au " + regPhone + ".", "success");
+    document.getElementById('form-inscription-phone').classList.add('hidden');
+    document.getElementById('form-inscription-otp').classList.remove('hidden');
+    btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
+  });
+
+  document.getElementById('btn-register-back').addEventListener('click', () => {
+    document.getElementById('form-inscription-otp').classList.add('hidden');
+    document.getElementById('form-inscription-phone').classList.remove('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+  });
+
+  document.getElementById('form-inscription-otp').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-register-verify');
+    btn.disabled = true; btn.textContent = 'Vérification...';
+
+    const token = document.getElementById('reg-otp').value.trim();
+
+    const { error } = await supabaseClient.auth.verifyOtp({
+      phone: regPhone,
+      token,
+      type: 'sms'
+    });
+
+    if (error) {
+      showMsg("Code incorrect ou expiré. Réessayez.", "error");
+      btn.disabled = false; btn.textContent = 'Vérifier le code';
+      return;
+    }
+
+    showMsg("Numéro vérifié. Choisissez votre mot de passe.", "success");
+    document.getElementById('form-inscription-otp').classList.add('hidden');
+    document.getElementById('form-inscription-password').classList.remove('hidden');
+    btn.disabled = false; btn.textContent = 'Vérifier le code';
+  });
+
+  document.getElementById('form-inscription-password').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-register-setpass');
+
+    const password = document.getElementById('reg-password').value;
+    const confirm = document.getElementById('reg-password-confirm').value;
+
+    if (password !== confirm) {
+      showMsg("Les deux mots de passe ne correspondent pas.", "error");
+      return;
+    }
+    if (password.length < 6) {
+      showMsg("Le mot de passe doit contenir au moins 6 caractères.", "error");
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Création...';
+
+    const { error } = await supabaseClient.auth.updateUser({ password });
+
+    if (error) {
+      showMsg("Erreur : " + error.message, "error");
+      btn.disabled = false; btn.textContent = 'Créer mon compte fournisseur';
+      return;
+    }
+
+    window.location.href = 'fournisseur.html';
+  });
 </script>
 </body>
 </html>
