@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion — Espace Colis | Christ Livraison & Transport SARL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="login-page">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-mark">CLT</div>
+    </div>
+    <div class="login-title">Espace Colis</div>
+    <div class="login-sub">Christ Livraison & Transport SARL</div>
+
+    <div class="tabs">
+      <div class="tab active" id="tab-connexion" onclick="showTab('connexion')">Connexion</div>
+      <div class="tab" id="tab-inscription" onclick="showTab('inscription')">Inscription fournisseur</div>
+    </div>
+
+    <div id="msg-box"></div>
+
+    <!-- CONNEXION -->
+    <form id="form-connexion">
+      <div class="field">
+        <label>Adresse e-mail</label>
+        <input type="email" id="login-email" required placeholder="vous@exemple.com">
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input type="password" id="login-password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-login">Se connecter</button>
+    </form>
+
+    <!-- INSCRIPTION -->
+    <form id="form-inscription" class="hidden">
+      <div class="field">
+        <label>Nom complet</label>
+        <input type="text" id="reg-fullname" required placeholder="Votre nom">
+      </div>
+      <div class="field">
+        <label>Nom de l'entreprise (optionnel)</label>
+        <input type="text" id="reg-company" placeholder="Nom de votre société">
+      </div>
+      <div class="field">
+        <label>Téléphone</label>
+        <input type="tel" id="reg-phone" placeholder="07 00 00 00 00">
+      </div>
+      <div class="field">
+        <label>Adresse e-mail</label>
+        <input type="email" id="reg-email" required placeholder="vous@exemple.com">
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input type="password" id="reg-password" required minlength="6" placeholder="6 caractères minimum">
+      </div>
+      <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register">Créer mon compte fournisseur</button>
+    </form>
+
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+  function showTab(which){
+    document.getElementById('tab-connexion').classList.toggle('active', which==='connexion');
+    document.getElementById('tab-inscription').classList.toggle('active', which==='inscription');
+    document.getElementById('form-connexion').classList.toggle('hidden', which!=='connexion');
+    document.getElementById('form-inscription').classList.toggle('hidden', which!=='inscription');
+    document.getElementById('msg-box').innerHTML = '';
+  }
+
+  function showMsg(text, type){
+    document.getElementById('msg-box').innerHTML =
+      `<div class="msg msg-${type}">${text}</div>`;
+  }
+
+  // Si déjà connecté, redirige directement vers le bon espace
+  (async function checkSession(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      const profile = await getProfile(session.user.id);
+      redirectByRole(profile);
+    }
+  })();
+
+  function redirectByRole(profile){
+    if (profile && profile.role === 'equipe') {
+      window.location.href = 'equipe.html';
+    } else {
+      window.location.href = 'fournisseur.html';
+    }
+  }
+
+  document.getElementById('form-connexion').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-login');
+    btn.disabled = true; btn.textContent = 'Connexion...';
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      showMsg("Identifiants incorrects. Vérifiez votre e-mail et mot de passe.", "error");
+      btn.disabled = false; btn.textContent = 'Se connecter';
+      return;
+    }
+    const profile = await getProfile(data.user.id);
+    redirectByRole(profile);
+  });
+
+  document.getElementById('form-inscription').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-register');
+    btn.disabled = true; btn.textContent = 'Création...';
+
+    const full_name = document.getElementById('reg-fullname').value.trim();
+    const company_name = document.getElementById('reg-company').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+
+    const { data, error } = await supabaseClient.auth.signUp({
+      email, password,
+      options: { data: { full_name, company_name, phone, role: 'fournisseur' } }
+    });
+
+    if (error) {
+      showMsg("Erreur : " + error.message, "error");
+      btn.disabled = false; btn.textContent = 'Créer mon compte fournisseur';
+      return;
+    }
+
+    if (data.session) {
+      // Confirmation e-mail désactivée : connecté immédiatement
+      window.location.href = 'fournisseur.html';
+    } else {
+      showMsg("Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse, puis connectez-vous.", "success");
+      btn.disabled = false; btn.textContent = 'Créer mon compte fournisseur';
+      showTab('connexion');
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Fournisseur | Christ Livraison & Transport SARL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="logo-mark">CLT</div> Espace Colis — Fournisseur</div>
+  <div class="user-info">
+    <span id="user-name"></span>
+    <span class="role-pill">Fournisseur</span>
+    <button class="btn-logout" onclick="logout()">Déconnexion</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
+  <div class="page-sub">Ajoutez vos colis à livrer et suivez leur statut en temps réel.</div>
+
+  <div class="card">
+    <h2>Ajouter des colis</h2>
+    <div id="add-msg"></div>
+    <form id="form-add-colis">
+      <div id="colis-rows"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="btn-add-row" style="margin-bottom:18px;">+ Ajouter un autre colis</button>
+      <div>
+        <button type="submit" class="btn" id="btn-submit-colis">Enregistrer les colis</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Mes colis</h2>
+    <div class="colis-list" id="colis-list">
+      <div class="empty-state">Chargement...</div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+  let currentUser = null;
+  let rowCount = 0;
+
+  function newRowHTML(idx){
+    return `
+      <div class="colis-row" data-row="${idx}">
+        ${idx > 0 ? `<button type="button" class="remove-row" onclick="removeRow(${idx})">Retirer ✕</button>` : ''}
+        <div class="field">
+          <label>Description du colis</label>
+          <textarea class="row-desc" placeholder="Ex : Carton de vêtements, 5kg" required></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Destination</label>
+            <input type="text" class="row-dest" placeholder="Ex : Cocody, Angré">
+          </div>
+          <div class="field">
+            <label>Photo (optionnel)</label>
+            <input type="file" class="row-photo" accept="image/*">
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function addRow(){
+    document.getElementById('colis-rows').insertAdjacentHTML('beforeend', newRowHTML(rowCount));
+    rowCount++;
+  }
+  function removeRow(idx){
+    const el = document.querySelector(`.colis-row[data-row="${idx}"]`);
+    if (el) el.remove();
+  }
+  document.getElementById('btn-add-row').addEventListener('click', addRow);
+
+  function addMsg(text, type){
+    document.getElementById('add-msg').innerHTML = `<div class="msg msg-${type}">${text}</div>`;
+  }
+
+  async function uploadPhoto(file, userId){
+    const ext = file.name.split('.').pop();
+    const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const { error } = await supabaseClient.storage.from('colis-photos').upload(path, file);
+    if (error) { console.error(error); return null; }
+    const { data } = supabaseClient.storage.from('colis-photos').getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  document.getElementById('form-add-colis').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-submit-colis');
+    btn.disabled = true; btn.textContent = 'Enregistrement...';
+
+    const rows = document.querySelectorAll('.colis-row');
+    const inserts = [];
+
+    for (const row of rows) {
+      const description = row.querySelector('.row-desc').value.trim();
+      const destination = row.querySelector('.row-dest').value.trim();
+      const fileInput = row.querySelector('.row-photo');
+      let photo_url = null;
+
+      if (fileInput.files && fileInput.files[0]) {
+        photo_url = await uploadPhoto(fileInput.files[0], currentUser.id);
+      }
+
+      inserts.push({
+        fournisseur_id: currentUser.id,
+        description,
+        destination,
+        photo_url,
+      });
+    }
+
+    const { error } = await supabaseClient.from('colis').insert(inserts);
+    btn.disabled = false; btn.textContent = 'Enregistrer les colis';
+
+    if (error) {
+      addMsg("Erreur lors de l'enregistrement : " + error.message, "error");
+      return;
+    }
+
+    addMsg(`${inserts.length} colis enregistré(s) avec succès.`, "success");
+    document.getElementById('colis-rows').innerHTML = '';
+    rowCount = 0;
+    addRow();
+    loadColis();
+  });
+
+  function colisItemHTML(c){
+    const thumb = c.photo_url
+      ? `<img src="${c.photo_url}" class="thumb">`
+      : `<div class="thumb-placeholder">Pas de photo</div>`;
+    return `
+      <div class="colis-item">
+        ${thumb}
+        <div class="info">
+          <div class="desc">${c.description || '(sans description)'}</div>
+          <div class="meta">${c.destination ? 'Vers : ' + c.destination + ' · ' : ''}Ajouté le ${formatDate(c.created_at)}</div>
+          ${c.livreur_nom ? `<div class="meta">Livreur : ${c.livreur_nom}</div>` : ''}
+        </div>
+        <div class="status-col">${statutBadgeHTML(c.statut)}</div>
+      </div>
+    `;
+  }
+
+  async function loadColis(){
+    const { data, error } = await supabaseClient
+      .from('colis')
+      .select('*')
+      .eq('fournisseur_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    const list = document.getElementById('colis-list');
+    if (error) {
+      list.innerHTML = `<div class="empty-state">Erreur de chargement.</div>`;
+      return;
+    }
+    if (!data.length) {
+      list.innerHTML = `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`;
+      return;
+    }
+    list.innerHTML = data.map(colisItemHTML).join('');
+  }
+
+  async function init(){
+    const session = await requireAuth();
+    if (!session) return;
+    currentUser = session.user;
+
+    const profile = await getProfile(currentUser.id);
+    if (profile && profile.role === 'equipe') {
+      window.location.href = 'equipe.html';
+      return;
+    }
+
+    document.getElementById('user-name').textContent = profile ? (profile.company_name || profile.full_name || '') : '';
+    document.getElementById('user-first-name').textContent = profile ? (profile.full_name || '') : '';
+
+    addRow();
+    loadColis();
+
+    // Mises à jour en temps réel : tout changement sur mes colis rafraîchit la liste
+    supabaseClient
+      .channel('colis-fournisseur-' + currentUser.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'colis', filter: `fournisseur_id=eq.${currentUser.id}` }, () => {
+        loadColis();
+      })
+      .subscribe();
+  }
+
+  init();
+</script>
+</body>
+</html>
