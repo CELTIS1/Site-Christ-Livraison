@@ -16,7 +16,7 @@
 <div class="brand"><div class="logo-mark">CLT</div> Tableau de bord — Équipe</div>
 <div class="user-info">
 <span id="user-name"></span>
-<span class="role-pill">Équipe interne</span>
+<span class="role-pill" id="role-pill">Équipe interne</span>
 <button class="btn-logout" onclick="logout()">Déconnexion</button>
 </div>
 </div>
@@ -92,6 +92,47 @@
 <div class="empty-state">Chargement...</div>
 </div>
 </div>
+
+<div id="admin-section" class="hidden">
+
+<div class="card">
+<h2>Gérer les comptes équipe</h2>
+<div id="add-equipe-msg"></div>
+<form id="form-add-equipe">
+<div class="field-row">
+<div class="field">
+<label>Nom complet</label>
+<input type="text" id="eq-fullname" required placeholder="Nom du membre équipe">
+</div>
+<div class="field">
+<label>Téléphone</label>
+<input type="tel" id="eq-phone" required placeholder="07 00 00 00 00">
+</div>
+</div>
+<div class="field">
+<label>Mot de passe</label>
+<input type="password" id="eq-password" required minlength="6" placeholder="6 caractères minimum">
+</div>
+<button type="submit" class="btn" id="btn-submit-equipe">Créer le compte équipe</button>
+</form>
+</div>
+
+<div class="card">
+<h2>Tous les comptes</h2>
+<div class="filters" id="account-filters"></div>
+<div class="colis-list" id="all-accounts-list">
+<div class="empty-state">Chargement...</div>
+</div>
+</div>
+
+<div class="card">
+<h2>Journal d'activité</h2>
+<div class="colis-list" id="activity-log-list">
+<div class="empty-state">Chargement...</div>
+</div>
+</div>
+
+</div>
 </div>
 
 <script src="config.js"></script>
@@ -103,6 +144,9 @@ let livreurs = [];
 let pendingAccounts = [];
 let resetRequests = [];
 let activeFilter = 'tous';
+let isAdmin = false;
+let allAccounts = [];
+let activeAccountFilter = 'tous';
 
 function addMsg(text, type){
 document.getElementById('add-msg').innerHTML = `<div class="msg msg-${type}">${text}</div>`;
@@ -414,18 +458,196 @@ allColis = data;
 renderColis();
 }
 
+function addEquipeMsg(text, type){
+document.getElementById('add-equipe-msg').innerHTML = `<div class="msg msg-${type}">${text}</div>`;
+}
+
+async function callAdminFunction(name, body){
+const { data: { session } } = await supabaseClient.auth.getSession();
+const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+'Authorization': `Bearer ${session.access_token}`,
+'apikey': SUPABASE_KEY,
+},
+body: JSON.stringify(body),
+});
+const result = await res.json();
+if (!res.ok) throw new Error(result.error || 'Erreur');
+return result;
+}
+
+async function loadAllAccounts(){
+const { data, error } = await supabaseClient
+.from('profiles')
+.select('id, role, full_name, company_name, phone, status, created_at')
+.order('role')
+.order('full_name');
+if (error) { console.error(error); return; }
+allAccounts = data;
+renderAllAccounts();
+}
+
+const ACCOUNT_FILTER_LABELS = { tous: 'Tous', fournisseur: 'Fournisseurs', livreur: 'Livreurs', equipe: 'Équipe', admin: 'Admin' };
+
+function renderAccountFilters(){
+const box = document.getElementById('account-filters');
+box.innerHTML = Object.keys(ACCOUNT_FILTER_LABELS).map(key =>
+`<div class="filter-chip ${activeAccountFilter===key?'active':''}" data-filter="${key}">${ACCOUNT_FILTER_LABELS[key]}</div>`
+).join('');
+box.querySelectorAll('.filter-chip').forEach(chip => {
+chip.addEventListener('click', () => {
+activeAccountFilter = chip.dataset.filter;
+renderAccountFilters();
+renderAllAccounts();
+});
+});
+}
+
+function accountRowHTML(a){
+return `
+<div class="colis-item" data-id="${a.id}">
+<div class="info">
+<div class="desc">${a.full_name || '(sans nom)'}${a.company_name ? ' — ' + a.company_name : ''}</div>
+<div class="meta">Rôle : ${a.role}${a.phone ? ' · Tél : ' + a.phone : ''} · Statut : ${a.status || '-'}</div>
+</div>
+<div class="status-col">
+<button class="btn btn-sm btn-reset-pwd" style="margin-bottom:4px;">Réinitialiser mdp</button>
+<button class="btn btn-sm btn-delete-account" style="background:#c0392b;">Supprimer</button>
+</div>
+</div>
+`;
+}
+
+function renderAllAccounts(){
+const box = document.getElementById('all-accounts-list');
+const filtered = activeAccountFilter === 'tous' ? allAccounts : allAccounts.filter(a => a.role === activeAccountFilter);
+if (!filtered.length) {
+box.innerHTML = `<div class="empty-state">Aucun compte${activeAccountFilter !== 'tous' ? ' pour ce rôle' : ''}.</div>`;
+return;
+}
+box.innerHTML = filtered.map(accountRowHTML).join('');
+
+box.querySelectorAll('.btn-reset-pwd').forEach(btn => {
+btn.addEventListener('click', async () => {
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+const account = allAccounts.find(a => a.id === id);
+if (!confirm(`Générer un nouveau mot de passe pour ${account.full_name || account.phone} ?`)) return;
+btn.disabled = true; btn.textContent = '...';
+try {
+const result = await callAdminFunction('admin-reset-password', { user_id: id });
+alert(`Nouveau mot de passe pour ${account.full_name || account.phone} :\n\n${result.temp_password}\n\nCommuniquez-le à la personne concernée.`);
+} catch (err) {
+alert("Erreur : " + err.message);
+}
+btn.disabled = false; btn.textContent = 'Réinitialiser mdp';
+});
+});
+
+box.querySelectorAll('.btn-delete-account').forEach(btn => {
+btn.addEventListener('click', async () => {
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+const account = allAccounts.find(a => a.id === id);
+if (!confirm(`Supprimer définitivement le compte de ${account.full_name || account.phone} ? Cette action est irréversible.`)) return;
+btn.disabled = true; btn.textContent = '...';
+try {
+await callAdminFunction('admin-supprimer-compte', { user_id: id });
+await loadAllAccounts();
+await loadPending();
+await loadFournisseurs();
+await loadLivreurs();
+} catch (err) {
+alert("Erreur : " + err.message);
+btn.disabled = false; btn.textContent = 'Supprimer';
+}
+});
+});
+}
+
+document.getElementById('form-add-equipe').addEventListener('submit', async (e) => {
+e.preventDefault();
+const btn = document.getElementById('btn-submit-equipe');
+btn.disabled = true; btn.textContent = 'Création...';
+
+const full_name = document.getElementById('eq-fullname').value.trim();
+const phone = document.getElementById('eq-phone').value.trim();
+const password = document.getElementById('eq-password').value;
+
+try {
+await callAdminFunction('admin-creer-equipe', { full_name, phone, password });
+addEquipeMsg("Compte équipe créé avec succès.", "success");
+e.target.reset();
+await loadAllAccounts();
+} catch (err) {
+addEquipeMsg("Erreur : " + err.message, "error");
+}
+
+btn.disabled = false; btn.textContent = 'Créer le compte équipe';
+});
+
+const ACTIVITY_LABELS = {
+creation_compte_equipe: "Création d'un compte équipe",
+creation_compte_livreur: "Création d'un compte livreur",
+inscription_fournisseur: "Inscription d'un fournisseur",
+demande_reset_password: "Demande de réinitialisation de mot de passe",
+suppression_compte: "Suppression d'un compte",
+reinitialisation_mot_de_passe: "Réinitialisation d'un mot de passe",
+};
+
+function activityRowHTML(a){
+const label = ACTIVITY_LABELS[a.action] || a.action;
+const who = a.details && (a.details.full_name || a.details.phone)
+? ' — ' + [a.details.full_name, a.details.phone].filter(Boolean).join(' · ')
+: '';
+return `
+<div class="colis-item">
+<div class="info">
+<div class="desc">${label}${who}</div>
+<div class="meta">${formatDate(a.created_at)}</div>
+</div>
+</div>
+`;
+}
+
+async function loadActivityLog(){
+const { data, error } = await supabaseClient
+.from('activity_log')
+.select('*')
+.order('created_at', { ascending: false })
+.limit(50);
+if (error) { console.error(error); return; }
+const box = document.getElementById('activity-log-list');
+if (!data.length) {
+box.innerHTML = `<div class="empty-state">Aucune activité enregistrée.</div>`;
+return;
+}
+box.innerHTML = data.map(activityRowHTML).join('');
+}
+
 async function init(){
 const session = await requireAuth();
 if (!session) return;
 currentUser = session.user;
 
 const profile = await getProfile(currentUser.id);
-if (!profile || profile.role !== 'equipe') {
+if (!profile || (profile.role !== 'equipe' && profile.role !== 'admin')) {
 window.location.href = profile && profile.role === 'livreur' ? 'livreur.html' : 'fournisseur.html';
 return;
 }
 
+isAdmin = profile.role === 'admin';
 document.getElementById('user-name').textContent = profile.full_name || '';
+
+if (isAdmin) {
+document.getElementById('role-pill').textContent = 'Administrateur';
+document.getElementById('admin-section').classList.remove('hidden');
+renderAccountFilters();
+await loadAllAccounts();
+await loadActivityLog();
+}
 
 renderFilters();
 await loadPending();
@@ -449,6 +671,7 @@ supabaseClient
 loadPending();
 loadFournisseurs();
 loadLivreurs();
+if (isAdmin) loadAllAccounts();
 })
 .subscribe();
 
@@ -459,6 +682,16 @@ supabaseClient
 loadResetRequests();
 })
 .subscribe();
+
+// Mises à jour en temps réel sur le journal d'activité (admin uniquement)
+if (isAdmin) {
+supabaseClient
+.channel('activity-log-admin')
+.on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => {
+loadActivityLog();
+})
+.subscribe();
+}
 }
 
 init();
