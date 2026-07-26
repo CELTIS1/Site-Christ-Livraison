@@ -120,12 +120,19 @@
       '<div class="msg msg-' + type + '">' + text + '</div>';
   }
 
+  // Convertit un numéro ivoirien saisi localement (ex: 07 89 81 81 40) au format attendu par Supabase Auth.
+  // Depuis la reforme de 2021, les numeros ivoiriens ont 10 chiffres et commencent deja par 0
+  // (ce 0 fait partie du numero, il ne s'agit pas d'un prefixe a retirer).
+  // IMPORTANT : Supabase Auth stocke et compare les numéros de téléphone SANS le "+" initial
+  // (format "2250789818140", pas "+2250789818140"). Utiliser un "+" ici casse la connexion
+  // (le mot de passe peut être correct mais l'utilisateur ne sera jamais trouvé).
   function toE164(raw){
     let digits = raw.replace(/[^\d]/g, '');
     if (digits.startsWith('225')) digits = digits.slice(3);
-    return '+225' + digits;
+    return '225' + digits;
   }
 
+  // Si déjà connecté, redirige directement vers le bon espace
   (async function checkSession(){
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
@@ -146,6 +153,7 @@
     }
   }
 
+  // Vérifie que le compte est validé. Si en attente ou refusé, déconnecte et bloque l'accès.
   async function checkAccountStatus(profile){
     if (profile && profile.status === 'en_attente') {
       await supabaseClient.auth.signOut();
@@ -160,6 +168,7 @@
     return true;
   }
 
+  // ---------- CONNEXION (téléphone + mot de passe) ----------
   document.getElementById('form-connexion-login').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-login-submit');
@@ -183,6 +192,7 @@
     redirectByRole(profile);
   });
 
+  // ---------- MOT DE PASSE OUBLIE / PREMIERE CONNEXION ----------
   let forgotPhone = '';
 
   document.getElementById('btn-goto-forgot').addEventListener('click', () => {
@@ -285,6 +295,7 @@
     redirectByRole(profile);
   });
 
+  // ---------- INSCRIPTION FOURNISSEUR (compte créé en attente de validation) ----------
   document.getElementById('form-inscription').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-register-submit');
