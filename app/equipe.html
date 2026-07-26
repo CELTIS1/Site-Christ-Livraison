@@ -33,6 +33,13 @@
 </div>
 
 <div class="card">
+<h2>Demandes de réinitialisation de mot de passe</h2>
+<div id="reset-list">
+<div class="empty-state">Chargement...</div>
+</div>
+</div>
+
+<div class="card">
 <h2>Créer un compte livreur</h2>
 <div id="add-livreur-msg"></div>
 <form id="form-add-livreur">
@@ -94,6 +101,7 @@ let allColis = [];
 let fournisseurs = [];
 let livreurs = [];
 let pendingAccounts = [];
+let resetRequests = [];
 let activeFilter = 'tous';
 
 function addMsg(text, type){
@@ -179,6 +187,71 @@ const { data, error } = await supabaseClient
 if (error) { console.error(error); return; }
 pendingAccounts = data;
 renderPending();
+}
+
+function resetRowHTML(r){
+return `
+<div class="colis-item" data-id="${r.id}">
+<div class="info">
+<div class="desc">${r.full_name || '(sans nom)'}</div>
+<div class="meta">Tél : ${r.phone} · Demandé le ${formatDate(r.created_at)}</div>
+</div>
+<div class="status-col">
+<button class="btn btn-sm btn-reinitialiser">Réinitialiser</button>
+</div>
+</div>
+`;
+}
+
+function renderResetRequests(){
+const box = document.getElementById('reset-list');
+if (!resetRequests.length) {
+box.innerHTML = `<div class="empty-state">Aucune demande de réinitialisation en attente.</div>`;
+return;
+}
+box.innerHTML = resetRequests.map(resetRowHTML).join('');
+
+box.querySelectorAll('.btn-reinitialiser').forEach(btn => {
+btn.addEventListener('click', async () => {
+const id = btn.closest('.colis-item').dataset.id;
+if (!confirm("Générer un nouveau mot de passe temporaire pour ce compte ?")) return;
+btn.disabled = true; btn.textContent = '...';
+try {
+const { data: { session } } = await supabaseClient.auth.getSession();
+const res = await fetch(`${SUPABASE_URL}/functions/v1/reinitialiser-mot-de-passe`, {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+'Authorization': `Bearer ${session.access_token}`,
+'apikey': SUPABASE_KEY,
+},
+body: JSON.stringify({ demande_id: id }),
+});
+const result = await res.json();
+if (!res.ok) {
+alert("Erreur : " + (result.error || 'réinitialisation impossible'));
+btn.disabled = false; btn.textContent = 'Réinitialiser';
+return;
+}
+alert(`Nouveau mot de passe pour ${result.full_name || result.phone} (${result.phone}) :\n\n${result.temp_password}\n\nCommuniquez-le à la personne concernée.`);
+await loadResetRequests();
+} catch (err) {
+alert("Erreur : " + err.message);
+btn.disabled = false; btn.textContent = 'Réinitialiser';
+}
+});
+});
+}
+
+async function loadResetRequests(){
+const { data, error } = await supabaseClient
+.from('demandes_reset_password')
+.select('id, phone, full_name, created_at')
+.eq('status', 'en_attente')
+.order('created_at');
+if (error) { console.error(error); return; }
+resetRequests = data;
+renderResetRequests();
 }
 
 async function loadLivreurs(){
@@ -356,6 +429,7 @@ document.getElementById('user-name').textContent = profile.full_name || '';
 
 renderFilters();
 await loadPending();
+await loadResetRequests();
 await loadFournisseurs();
 await loadLivreurs();
 await loadColis();
@@ -375,6 +449,14 @@ supabaseClient
 loadPending();
 loadFournisseurs();
 loadLivreurs();
+})
+.subscribe();
+
+// Mises à jour en temps réel sur les demandes de réinitialisation de mot de passe
+supabaseClient
+.channel('reset-requests-equipe')
+.on('postgres_changes', { event: '*', schema: 'public', table: 'demandes_reset_password' }, () => {
+loadResetRequests();
 })
 .subscribe();
 }
