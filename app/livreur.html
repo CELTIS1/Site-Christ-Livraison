@@ -26,6 +26,24 @@
   <div class="page-sub">Voici les colis qui vous ont été assignés. Mettez à jour leur statut au fur et à mesure de la livraison.</div>
 
   <div class="card">
+    <h2>Mon compte</h2>
+    <div id="change-pwd-msg"></div>
+    <form id="form-change-password">
+      <div class="field-row">
+        <div class="field">
+          <label>Nouveau mot de passe</label>
+          <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
+        </div>
+        <div class="field">
+          <label>Confirmer le nouveau mot de passe</label>
+          <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
+        </div>
+      </div>
+      <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
+    </form>
+  </div>
+
+  <div class="card">
     <div class="tabs">
       <div class="tab active" id="tab-mes-colis" onclick="showTab('mes')">Mes colis assignés</div>
       <div class="tab" id="tab-tous-colis" onclick="showTab('tous')">Tous les colis</div>
@@ -223,6 +241,34 @@
       })
       .subscribe();
   }
+
+  document.getElementById('form-change-password').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-change-password');
+    const msgBox = document.getElementById('change-pwd-msg');
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('new-password-confirm').value;
+
+    if (newPassword !== confirmPassword) {
+      msgBox.innerHTML = `<div class="msg msg-error">Les deux mots de passe ne correspondent pas.</div>`;
+      return;
+    }
+    if (newPassword.length < 6) {
+      msgBox.innerHTML = `<div class="msg msg-error">Le mot de passe doit contenir au moins 6 caractères.</div>`;
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Modification...';
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+    btn.disabled = false; btn.textContent = 'Changer mon mot de passe';
+
+    if (error) {
+      msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${error.message}</div>`;
+    } else {
+      msgBox.innerHTML = `<div class="msg msg-success">Mot de passe modifié avec succès.</div>`;
+      e.target.reset();
+    }
+  });
 
   init();
 </script>
