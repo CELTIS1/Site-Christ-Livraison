@@ -120,7 +120,7 @@
   })();
 
   function redirectByRole(profile){
-    if (profile && profile.role === 'equipe') {
+    if (profile && (profile.role === 'equipe' || profile.role === 'admin')) {
       window.location.href = 'equipe.html';
     } else if (profile && profile.role === 'livreur') {
       window.location.href = 'livreur.html';
@@ -150,10 +150,19 @@
     const btn = document.getElementById('btn-login-submit');
     btn.disabled = true; btn.textContent = 'Connexion...';
 
-    const phone = toE164(document.getElementById('login-phone').value.trim());
+    const phoneNoPlus = toE164(document.getElementById('login-phone').value.trim());
+    const phonePlus = '+' + phoneNoPlus;
     const password = document.getElementById('login-password').value;
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ phone, password });
+    // Certains comptes ont été créés avec un numéro stocké au format "+225..." et d'autres
+    // au format "225..." (sans le +). On essaie les deux formats pour que la connexion
+    // fonctionne quel que soit le format sous lequel le compte a été enregistré.
+    let { data, error } = await supabaseClient.auth.signInWithPassword({ phone: phoneNoPlus, password });
+    if (error) {
+      const retry = await supabaseClient.auth.signInWithPassword({ phone: phonePlus, password });
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       showMsg("Erreur : numéro ou mot de passe incorrect.", "error");
@@ -266,3 +275,4 @@
 </script>
 </body>
 </html>
+
