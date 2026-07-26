@@ -40,37 +40,15 @@
       <button type="button" id="btn-goto-forgot" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Mot de passe oublié ou première connexion ?</button>
       </form>
 
-    <!-- MOT DE PASSE OUBLIE : étape 1 (téléphone) -->
+    <!-- MOT DE PASSE OUBLIE : demande transmise à l'équipe -->
     <form id="form-forgot-phone" class="hidden">
     <div class="field">
     <label>Numéro de téléphone</label>
     <input type="tel" id="forgot-phone" required placeholder="07 00 00 00 00">
     </div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-send">Recevoir le code par SMS</button>
+    <div style="margin-bottom:14px;font-size:12.5px;color:#6b7280;">Votre demande sera transmise à notre équipe, qui vous communiquera un nouveau mot de passe.</div>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-send">Demander une réinitialisation</button>
     <button type="button" id="btn-forgot-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
-    </form>
-
-    <!-- MOT DE PASSE OUBLIE : étape 2 (code OTP) -->
-    <form id="form-forgot-otp" class="hidden">
-    <div class="field">
-    <label>Code reçu par SMS</label>
-    <input type="text" id="forgot-otp" required inputmode="numeric" maxlength="6" placeholder="123456">
-    </div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-verify">Vérifier le code</button>
-    <button type="button" id="btn-forgot-back" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Modifier le numéro</button>
-    </form>
-
-    <!-- MOT DE PASSE OUBLIE : étape 3 (nouveau mot de passe) -->
-    <form id="form-forgot-newpass" class="hidden">
-    <div class="field">
-    <label>Nouveau mot de passe</label>
-    <input type="password" id="forgot-password" required minlength="6" placeholder="6 caractères minimum">
-    </div>
-    <div class="field">
-    <label>Confirmer le mot de passe</label>
-    <input type="password" id="forgot-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
-    </div>
-    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-setpass">Enregistrer le mot de passe</button>
     </form>
 
     <!-- INSCRIPTION : formulaire en une étape (compte activé après validation par l'équipe) -->
@@ -109,8 +87,6 @@
     document.getElementById('tab-inscription').classList.toggle('active', which==='inscription');
     document.getElementById('form-connexion-login').classList.toggle('hidden', which!=='connexion');
     document.getElementById('form-forgot-phone').classList.add('hidden');
-    document.getElementById('form-forgot-otp').classList.add('hidden');
-    document.getElementById('form-forgot-newpass').classList.add('hidden');
     document.getElementById('form-inscription').classList.toggle('hidden', which!=='inscription');
     document.getElementById('msg-box').innerHTML = '';
   }
@@ -210,89 +186,35 @@
   document.getElementById('form-forgot-phone').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-forgot-send');
-    btn.disabled = true; btn.textContent = 'Envoi du code...';
+    btn.disabled = true; btn.textContent = 'Envoi...';
 
     forgotPhone = toE164(document.getElementById('forgot-phone').value.trim());
 
-    const { error } = await supabaseClient.auth.signInWithOtp({
-      phone: forgotPhone,
-      options: { shouldCreateUser: false }
-    });
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/demander-reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY,
+        },
+        body: JSON.stringify({ phone: forgotPhone }),
+      });
+      const result = await res.json();
 
-    if (error) {
-      showMsg("Erreur : " + (error.message.includes('not found') || error.status === 400 ? "Aucun compte n'est associé à ce numéro." : error.message), "error");
-      btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
-      return;
+      if (!res.ok) {
+        showMsg("Erreur : " + (result.error || 'demande impossible'), "error");
+      } else {
+        showMsg("Votre demande a été transmise à notre équipe. Vous serez contacté avec votre nouveau mot de passe.", "success");
+        document.getElementById('form-forgot-phone').reset();
+        document.getElementById('form-forgot-phone').classList.add('hidden');
+        document.getElementById('form-connexion-login').classList.remove('hidden');
+      }
+    } catch (err) {
+      showMsg("Erreur réseau. Réessayez.", "error");
     }
 
-    showMsg("Code envoyé par SMS au " + forgotPhone + ".", "success");
-    document.getElementById('form-forgot-phone').classList.add('hidden');
-    document.getElementById('form-forgot-otp').classList.remove('hidden');
-    btn.disabled = false; btn.textContent = 'Recevoir le code par SMS';
-  });
-
-  document.getElementById('btn-forgot-back').addEventListener('click', () => {
-    document.getElementById('form-forgot-otp').classList.add('hidden');
-    document.getElementById('form-forgot-phone').classList.remove('hidden');
-    document.getElementById('msg-box').innerHTML = '';
-  });
-
-  document.getElementById('form-forgot-otp').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-forgot-verify');
-    btn.disabled = true; btn.textContent = 'Vérification...';
-
-    const token = document.getElementById('forgot-otp').value.trim();
-
-    const { error } = await supabaseClient.auth.verifyOtp({
-      phone: forgotPhone,
-      token,
-      type: 'sms'
-    });
-
-    if (error) {
-      showMsg("Code incorrect ou expiré. Réessayez.", "error");
-      btn.disabled = false; btn.textContent = 'Vérifier le code';
-      return;
-    }
-
-    showMsg("Numéro vérifié. Choisissez votre nouveau mot de passe.", "success");
-    document.getElementById('form-forgot-otp').classList.add('hidden');
-    document.getElementById('form-forgot-newpass').classList.remove('hidden');
-    btn.disabled = false; btn.textContent = 'Vérifier le code';
-  });
-
-  document.getElementById('form-forgot-newpass').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-forgot-setpass');
-
-    const password = document.getElementById('forgot-password').value;
-    const confirm = document.getElementById('forgot-password-confirm').value;
-
-    if (password !== confirm) {
-      showMsg("Les deux mots de passe ne correspondent pas.", "error");
-      return;
-    }
-    if (password.length < 6) {
-      showMsg("Le mot de passe doit contenir au moins 6 caractères.", "error");
-      return;
-    }
-
-    btn.disabled = true; btn.textContent = 'Enregistrement...';
-
-    const { data, error } = await supabaseClient.auth.updateUser({ password });
-
-    if (error) {
-      showMsg("Erreur : " + error.message, "error");
-      btn.disabled = false; btn.textContent = 'Enregistrer le mot de passe';
-      return;
-    }
-
-    const profile = await getProfile(data.user.id);
-    const ok = await checkAccountStatus(profile);
-    btn.disabled = false; btn.textContent = 'Enregistrer le mot de passe';
-    if (!ok) return;
-    redirectByRole(profile);
+    btn.disabled = false; btn.textContent = 'Demander une réinitialisation';
   });
 
   // ---------- INSCRIPTION FOURNISSEUR (compte créé en attente de validation) ----------
