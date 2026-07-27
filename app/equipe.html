@@ -1011,6 +1011,13 @@ window.location.href = profile && profile.role === 'livreur' ? 'livreur.html' : 
 return;
 }
 
+// Sécurité : un compte pas encore validé (ou refusé) ne doit jamais accéder au tableau de bord.
+if (profile.status !== 'valide') {
+await supabaseClient.auth.signOut();
+window.location.href = 'login.html';
+return;
+}
+
 isAdmin = profile.role === 'admin';
 document.getElementById('user-name').textContent = profile.full_name || '';
 
