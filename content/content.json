@@ -238,6 +238,16 @@
       }
     ]
   },
+  "partners_band": {
+    "label": "Ils nous font confiance",
+    "items": [
+      { "icon": "fa-store", "label": "Boutiques" },
+      { "icon": "fa-cart-shopping", "label": "E-commerçants" },
+      { "icon": "fa-utensils", "label": "Restaurants" },
+      { "icon": "fa-briefcase-medical", "label": "Pharmacies" },
+      { "icon": "fa-building", "label": "Entreprises" }
+    ]
+  },
   "testimonials": {
     "eyebrow": "TÉMOIGNAGES",
     "title": "Ce que disent nos clients",
@@ -260,6 +270,33 @@
         "role": "Boutique en ligne, Marcory",
         "rating": 4,
         "text": "Service fiable pour mes livraisons e-commerce, à un tarif clair."
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Questions fréquentes",
+    "subtitle": "Tout ce qu'il faut savoir avant de nous confier votre livraison.",
+    "items": [
+      {
+        "question": "Quels sont vos tarifs ?",
+        "answer": "Nos livraisons démarrent à 1000 FCFA. Le tarif final dépend de la distance, de la zone et de la nature de la livraison — contactez-nous pour un devis précis et gratuit."
+      },
+      {
+        "question": "Quelles zones couvrez-vous ?",
+        "answer": "Nous livrons dans les 13 communes du District d'Abidjan ainsi qu'à Bingerville, Anyama, Songon et Grand-Bassam. Votre zone n'est pas listée ? Contactez-nous, nous étudions toute demande."
+      },
+      {
+        "question": "Comment passer une commande ?",
+        "answer": "Contactez-nous par WhatsApp, par téléphone ou via le formulaire de devis du site. Nous confirmons les détails avec vous puis organisons le ramassage et la livraison."
+      },
+      {
+        "question": "Quels types de livraisons effectuez-vous ?",
+        "answer": "Livraison express, livraison programmée, livraison e-commerce, courses pour entreprises et expédition de colis vers différents points de la ville."
+      },
+      {
+        "question": "Comment vous contacter en cas d'urgence ou de question ?",
+        "answer": "Le plus simple est WhatsApp, en cliquant sur le bouton vert en bas de l'écran. Nous sommes joignables à tout moment, de préférence la veille ou tôt le matin."
       }
     ]
   },
