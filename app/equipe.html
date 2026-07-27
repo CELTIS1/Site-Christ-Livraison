@@ -120,8 +120,10 @@
 </div>
 
 <div id="panel-journal" class="hidden">
-<h3 class="panel-subtitle">Récapitulatif par fournisseur</h3>
-<div id="recap-fournisseur" class="recap-table-wrap">
+<h3 class="panel-subtitle collapsible-header" id="recap-toggle" onclick="toggleRecap()">
+<span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif par fournisseur
+</h3>
+<div id="recap-fournisseur" class="recap-table-wrap hidden">
 <div class="empty-state">Chargement...</div>
 </div>
 <h3 class="panel-subtitle" style="margin-top:28px;">Historique des actions</h3>
@@ -197,6 +199,7 @@ let isAdmin = false;
 let allAccounts = [];
 let activeAccountFilter = 'tous';
 let searchColis = '';
+window.__colisEditing = new Set();
 
 function matchesSearch(c, term){
 if (!term) return true;
@@ -486,6 +489,12 @@ if (!f) return 'Fournisseur inconnu';
 return f.company_name || f.full_name || id;
 }
 
+// Un colis est considéré comme "validé" une fois qu'il a été enregistré au moins une fois
+// par l'équipe/l'admin : son statut n'est plus "en_attente" et/ou une observation a été saisie.
+function colisEstValide(c){
+return c.statut !== 'en_attente' || !!c.observation;
+}
+
 function colisRowHTML(c){
 const thumb = c.photo_url
 ? `<img src="${c.photo_url}" class="thumb">`
@@ -495,19 +504,52 @@ const statutOptions = Object.keys(STATUTS).map(k =>
 const livreurOptions = '<option value="">— Aucun livreur —</option>' +
 livreurs.map(l => `<option value="${l.id}" ${c.livreur_id===l.id?'selected':''}>${l.full_name || l.id}</option>`).join('');
 
+const estValide = colisEstValide(c) && !window.__colisEditing?.has(c.id);
+
+const infoBlock = `
+<div class="info">
+<div class="desc">${c.description || '(sans description)'}</div>
+<div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+<div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
+${estValide ? '' : `
+<div class="field" style="margin-top:8px;">
+<label style="font-size:11.5px;">Livreur assigné</label>
+<select class="row-livreur-select" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurOptions}</select>
+</div>`}
+</div>
+`;
+
+if (estValide) {
+const livreurLabel = c.livreur_id ? (livreurs.find(l => l.id === c.livreur_id)?.full_name || 'Livreur') : 'Aucun livreur assigné';
 return `
 <div class="colis-item" data-id="${c.id}">
 ${thumb}
 <div class="info">
 <div class="desc">${c.description || '(sans description)'}</div>
 <div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
-<div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+<div class="meta">Ajouté le ${formatDate(c.created_at)} · ${livreurLabel}</div>
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
-<div class="field" style="margin-top:8px;">
-<label style="font-size:11.5px;">Livreur assigné</label>
-<select class="row-livreur-select" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurOptions}</select>
+${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
+</div>
+<div class="status-col" style="width:auto; flex-direction:row; align-items:center; gap:10px;">
+${statutBadgeHTML(c.statut)}
+<div class="actions-menu">
+<button type="button" class="actions-menu-btn" aria-label="Actions du colis">⋮</button>
+<div class="actions-dropdown">
+<button type="button" class="btn-modifier-colis">✏️ Modifier</button>
+<button type="button" class="btn-delete-colis danger">🗑 Supprimer</button>
 </div>
 </div>
+</div>
+</div>
+`;
+}
+
+return `
+<div class="colis-item" data-id="${c.id}">
+${thumb}
+${infoBlock}
 <div class="status-col">
 <select class="status-select">${statutOptions}</select>
 <textarea class="obs-textarea" placeholder="Observation (ex : client absent, colis refusé...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
@@ -547,17 +589,23 @@ btn.addEventListener('click', async () => {
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
 const statut = item.querySelector('.status-select').value;
-const livreur_id = item.querySelector('.row-livreur-select').value || null;
+const livreurSelect = item.querySelector('.row-livreur-select');
+const livreur_id = livreurSelect ? (livreurSelect.value || null) : undefined;
 const observation = item.querySelector('.obs-textarea').value.trim() || null;
+const updatePayload = { statut, observation };
+if (livreur_id !== undefined) updatePayload.livreur_id = livreur_id;
 btn.disabled = true; btn.textContent = '...';
-const { error } = await supabaseClient.from('colis').update({ statut, livreur_id, observation }).eq('id', id);
+const { error } = await supabaseClient.from('colis').update(updatePayload).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';
-if (error) { alert("Erreur : " + error.message); }
+if (error) { alert("Erreur : " + error.message); return; }
+if (window.__colisEditing) window.__colisEditing.delete(id);
 });
 });
 
 list.querySelectorAll('.btn-delete-colis').forEach(btn => {
-btn.addEventListener('click', async () => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
+const originalText = btn.textContent;
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
 if (!confirm("Supprimer définitivement ce colis ? Cette action est irréversible.")) return;
@@ -565,9 +613,30 @@ btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('colis').delete().eq('id', id);
 if (error) {
 alert("Erreur : " + error.message);
-btn.disabled = false; btn.textContent = 'Supprimer';
+btn.disabled = false; btn.textContent = originalText;
 return;
 }
+});
+});
+
+list.querySelectorAll('.actions-menu-btn').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const dropdown = btn.nextElementSibling;
+const wasOpen = dropdown.classList.contains('open');
+document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
+if (!wasOpen) dropdown.classList.add('open');
+});
+});
+
+list.querySelectorAll('.btn-modifier-colis').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+if (!window.__colisEditing) window.__colisEditing = new Set();
+window.__colisEditing.add(id);
+renderColis();
 });
 });
 }
@@ -856,6 +925,14 @@ box.innerHTML = `<div class="empty-state">Aucune activité enregistrée.</div>`;
 return;
 }
 box.innerHTML = data.map(activityRowHTML).join('');
+}
+
+let recapExpanded = false;
+
+function toggleRecap(){
+recapExpanded = !recapExpanded;
+document.getElementById('recap-fournisseur').classList.toggle('hidden', !recapExpanded);
+document.getElementById('recap-arrow').textContent = recapExpanded ? '▼' : '▶';
 }
 
 function renderRecapFournisseur(){
