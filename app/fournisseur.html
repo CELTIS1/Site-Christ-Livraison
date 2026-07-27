@@ -56,7 +56,22 @@
   </div>
 
   <div class="card">
+    <h2>Récapitulatif</h2>
+    <div class="recap-table-wrap" id="recap-statuts">
+      <div class="empty-state">Chargement...</div>
+    </div>
+    <div class="field" style="max-width:260px; margin-top:20px;">
+      <label>Vue par mois</label>
+      <select id="mois-select"></select>
+    </div>
+    <div id="recap-mois" style="margin-top:12px;">
+      <div class="empty-state">Chargement...</div>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Mes colis</h2>
+    <input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description ou destination...">
     <div class="colis-list" id="colis-list">
       <div class="empty-state">Chargement...</div>
     </div>
@@ -67,6 +82,16 @@
 <script>
   let currentUser = null;
   let rowCount = 0;
+  let mesColis = [];
+  let searchColis = '';
+
+  function matchesSearch(c, term){
+    if (!term) return true;
+    const t = term.toLowerCase();
+    const desc = (c.description || '').toLowerCase();
+    const dest = (c.destination || '').toLowerCase();
+    return desc.includes(t) || dest.includes(t);
+  }
 
   function newRowHTML(idx){
     return `
@@ -120,6 +145,7 @@
 
     const rows = document.querySelectorAll('.colis-row');
     const inserts = [];
+    let photoUploadFailed = false;
 
     for (const row of rows) {
       const description = row.querySelector('.row-desc').value.trim();
@@ -129,6 +155,7 @@
 
       if (fileInput.files && fileInput.files[0]) {
         photo_url = await uploadPhoto(fileInput.files[0], currentUser.id);
+        if (!photo_url) photoUploadFailed = true;
       }
 
       inserts.push({
@@ -147,7 +174,8 @@
       return;
     }
 
-    addMsg(`${inserts.length} colis enregistré(s) avec succès.`, "success");
+    const photoWarning = photoUploadFailed ? " (attention : l'envoi d'au moins une photo a échoué, le colis a été enregistré sans photo)" : "";
+    addMsg(`${inserts.length} colis enregistré(s) avec succès${photoWarning}.`, "success");
     document.getElementById('colis-rows').innerHTML = '';
     rowCount = 0;
     addRow();
@@ -159,16 +187,101 @@
       ? `<img src="${c.photo_url}" class="thumb">`
       : `<div class="thumb-placeholder">Pas de photo</div>`;
     return `
-      <div class="colis-item">
+      <div class="colis-item" data-id="${c.id}">
         ${thumb}
         <div class="info">
-          <div class="desc">${c.description || '(sans description)'}</div>
-          <div class="meta">${c.destination ? 'Vers : ' + c.destination + ' · ' : ''}Ajouté le ${formatDate(c.created_at)}</div>
-          ${c.livreur_nom ? `<div class="meta">Livreur : ${c.livreur_nom}</div>` : ''}
+          <div class="view-mode">
+            <div class="desc">${c.description || '(sans description)'}</div>
+            <div class="meta">${c.destination ? 'Vers : ' + c.destination + ' · ' : ''}Ajouté le ${formatDate(c.created_at)}</div>
+            ${c.livreur_nom ? `<div class="meta">Livreur : ${c.livreur_nom}</div>` : ''}
+            ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
+            ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
+          </div>
+          <div class="edit-mode hidden">
+            <div class="field">
+              <label>Description du colis</label>
+              <textarea class="edit-desc">${escapeHTML(c.description || '')}</textarea>
+            </div>
+            <div class="field">
+              <label>Destination</label>
+              <input type="text" class="edit-dest" value="${escapeHTML(c.destination || '')}">
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-sm btn-save-edit">Enregistrer</button>
+              <button type="button" class="btn btn-outline btn-sm btn-cancel-edit">Annuler</button>
+            </div>
+          </div>
         </div>
-        <div class="status-col">${statutBadgeHTML(c.statut)}</div>
+        <div class="status-col">
+          ${statutBadgeHTML(c.statut)}
+          <button type="button" class="btn btn-sm btn-outline btn-edit-colis" style="margin-top:8px;">Modifier</button>
+          ${c.statut === 'en_attente' ? `<button type="button" class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>` : ''}
+        </div>
       </div>
     `;
+  }
+
+  function attachColisHandlers(list){
+    list.querySelectorAll('.btn-edit-colis').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.closest('.colis-item');
+        item.querySelector('.view-mode').classList.add('hidden');
+        item.querySelector('.edit-mode').classList.remove('hidden');
+      });
+    });
+    list.querySelectorAll('.btn-cancel-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.closest('.colis-item');
+        item.querySelector('.edit-mode').classList.add('hidden');
+        item.querySelector('.view-mode').classList.remove('hidden');
+      });
+    });
+    list.querySelectorAll('.btn-save-edit').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const item = btn.closest('.colis-item');
+        const id = item.dataset.id;
+        const description = item.querySelector('.edit-desc').value.trim();
+        const destination = item.querySelector('.edit-dest').value.trim();
+        btn.disabled = true; btn.textContent = '...';
+        const { error } = await supabaseClient.from('colis').update({ description, destination }).eq('id', id);
+        if (error) {
+          alert("Erreur : " + error.message);
+          btn.disabled = false; btn.textContent = 'Enregistrer';
+          return;
+        }
+        loadColis();
+      });
+    });
+    list.querySelectorAll('.btn-delete-colis').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const item = btn.closest('.colis-item');
+        const id = item.dataset.id;
+        if (!confirm("Supprimer définitivement ce colis ? Cette action est irréversible.")) return;
+        btn.disabled = true; btn.textContent = '...';
+        const { error } = await supabaseClient.from('colis').delete().eq('id', id);
+        if (error) {
+          alert("Erreur : " + error.message);
+          btn.disabled = false; btn.textContent = 'Supprimer';
+          return;
+        }
+        loadColis();
+      });
+    });
+  }
+
+  function renderColisList(){
+    const list = document.getElementById('colis-list');
+    const filtered = mesColis.filter(c => matchesSearch(c, searchColis));
+    if (!mesColis.length) {
+      list.innerHTML = `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`;
+    } else if (!filtered.length) {
+      list.innerHTML = `<div class="empty-state">Aucun colis ne correspond à cette recherche.</div>`;
+    } else {
+      list.innerHTML = filtered.map(colisItemHTML).join('');
+      attachColisHandlers(list);
+    }
+    renderRecapStatuts();
+    populateMoisSelect();
   }
 
   async function loadColis(){
@@ -183,12 +296,84 @@
       list.innerHTML = `<div class="empty-state">Erreur de chargement.</div>`;
       return;
     }
-    if (!data.length) {
-      list.innerHTML = `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`;
+    mesColis = data;
+    renderColisList();
+  }
+
+  function renderRecapStatuts(){
+    const box = document.getElementById('recap-statuts');
+    if (!mesColis.length) {
+      box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
       return;
     }
-    list.innerHTML = data.map(colisItemHTML).join('');
+    const compte = {};
+    mesColis.forEach(c => { compte[c.statut] = (compte[c.statut] || 0) + 1; });
+    const statutKeys = Object.keys(STATUTS);
+    const cols = statutKeys.map(k => `<th>${STATUTS[k].label}</th>`).join('');
+    const vals = statutKeys.map(k => `<td>${compte[k] || 0}</td>`).join('');
+    box.innerHTML = `
+      <table class="recap-table">
+        <thead><tr><th>Total</th>${cols}</tr></thead>
+        <tbody><tr><td><strong>${mesColis.length}</strong></td>${vals}</tr></tbody>
+      </table>
+    `;
   }
+
+  function monthKey(iso){
+    if (!iso) return '';
+    return iso.slice(0, 7);
+  }
+
+  function monthLabel(key){
+    if (!key) return '';
+    const [y, m] = key.split('-');
+    const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+    return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  }
+
+  function populateMoisSelect(){
+    const select = document.getElementById('mois-select');
+    const keys = Array.from(new Set(mesColis.map(c => monthKey(c.created_at)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
+    const previousValue = select.value;
+    select.innerHTML = keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('');
+    if (keys.includes(previousValue)) {
+      select.value = previousValue;
+    } else if (keys.length) {
+      select.value = keys[0];
+    }
+    renderRecapMois();
+  }
+
+  function renderRecapMois(){
+    const box = document.getElementById('recap-mois');
+    const select = document.getElementById('mois-select');
+    const selected = select.value;
+    if (!selected) {
+      box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
+      return;
+    }
+    const colisDuMois = mesColis.filter(c => monthKey(c.created_at) === selected);
+    if (!colisDuMois.length) {
+      box.innerHTML = `<div class="empty-state">Aucun colis pour ce mois.</div>`;
+      return;
+    }
+    const compte = {};
+    colisDuMois.forEach(c => { compte[c.statut] = (compte[c.statut] || 0) + 1; });
+    const statutKeys = Object.keys(STATUTS);
+    const cols = statutKeys.map(k => `<th>${STATUTS[k].label}</th>`).join('');
+    const vals = statutKeys.map(k => `<td>${compte[k] || 0}</td>`).join('');
+    const livres = compte['livre'] || 0;
+    const taux = colisDuMois.length ? Math.round((livres / colisDuMois.length) * 100) : 0;
+    box.innerHTML = `
+      <div class="page-sub" style="margin-bottom:14px;">${colisDuMois.length} colis pour ${monthLabel(selected)} · Taux de livraison réussie : ${taux}%</div>
+      <table class="recap-table">
+        <thead><tr><th>Total</th>${cols}</tr></thead>
+        <tbody><tr><td><strong>${colisDuMois.length}</strong></td>${vals}</tr></tbody>
+      </table>
+    `;
+  }
+
+  document.getElementById('mois-select').addEventListener('change', renderRecapMois);
 
   async function init(){
     const session = await requireAuth();
@@ -210,6 +395,7 @@
 
     addRow();
     loadColis();
+    document.getElementById('search-colis').addEventListener('input', (e) => { searchColis = e.target.value; renderColisList(); });
 
     // Mises à jour en temps réel : tout changement sur mes colis rafraîchit la liste
     supabaseClient
