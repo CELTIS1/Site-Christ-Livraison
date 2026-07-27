@@ -390,6 +390,14 @@
       return;
     }
 
+    // Sécurité : un compte fournisseur pas encore validé (ou refusé) par l'équipe ne doit
+    // jamais accéder au tableau de bord, même si une session est restée active pendant l'attente.
+    if (!profile || profile.status !== 'valide') {
+      await supabaseClient.auth.signOut();
+      window.location.href = 'login.html';
+      return;
+    }
+
     document.getElementById('user-name').textContent = profile ? (profile.company_name || profile.full_name || '') : '';
     document.getElementById('user-first-name').textContent = profile ? (profile.full_name || '') : '';
 
