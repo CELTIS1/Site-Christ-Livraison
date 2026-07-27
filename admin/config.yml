@@ -23,7 +23,12 @@ collections:
               - { label: "Petit texte au-dessus du titre", name: "pill", widget: "string" }
               - { label: "Titre principal", name: "title", widget: "string" }
               - { label: "Texte d'introduction", name: "lead", widget: "text" }
-              - { label: "Photo (optionnelle)", name: "photo", widget: "image", required: false }
+              - label: "Photos (diaporama d'accueil)"
+                name: "photos"
+                widget: "list"
+                label_singular: "Photo"
+                hint: "Les photos s'affichent en diaporama (fondu enchaîné) sur la page d'accueil."
+                field: { label: "Photo", name: "image", widget: "image" }
 
           - label: "Services proposés"
             name: "services"
@@ -34,34 +39,57 @@ collections:
               - label: "Icône (si pas de photo)"
                 name: "icon"
                 widget: "select"
-                options:
+                options: &icon_options
                   - { label: "Enveloppe (courrier)", value: "fa-envelope" }
                   - { label: "Boîte (colis)", value: "fa-box" }
+                  - { label: "Boîte ouverte (réception)", value: "fa-box-open" }
+                  - { label: "Colis empilés", value: "fa-boxes-packing" }
                   - { label: "Avion en papier (expédition)", value: "fa-paper-plane" }
                   - { label: "Panier (courses)", value: "fa-cart-shopping" }
                   - { label: "Camion", value: "fa-truck" }
                   - { label: "Moto", value: "fa-motorcycle" }
-                  - { label: "Colis empilés", value: "fa-boxes-packing" }
+                  - { label: "Éclair (rapidité / prix)", value: "fa-bolt" }
+                  - { label: "Localisation", value: "fa-location-dot" }
+                  - { label: "Horloge (disponibilité)", value: "fa-clock" }
+                  - { label: "Bouclier (sécurité / fiabilité)", value: "fa-shield-halved" }
+                  - { label: "Pouce (satisfaction)", value: "fa-thumbs-up" }
+                  - { label: "Étoile", value: "fa-star" }
+                  - { label: "Poignée de main (partenariat)", value: "fa-handshake" }
+                  - { label: "Calendrier (planification)", value: "fa-calendar-check" }
+                  - { label: "Mallette (entreprise)", value: "fa-briefcase" }
+                  - { label: "Bulle de discussion (contact)", value: "fa-comment-dots" }
+                  - { label: "Boutique", value: "fa-store" }
+                  - { label: "Couverts (restaurant)", value: "fa-utensils" }
+                  - { label: "Mallette médicale (pharmacie)", value: "fa-briefcase-medical" }
+                  - { label: "Immeuble (entreprise)", value: "fa-building" }
               - { label: "Titre du service", name: "title", widget: "string" }
               - { label: "Description", name: "text", widget: "text" }
               - { label: "Photo (remplace l'icône si renseignée)", name: "photo", widget: "image", required: false }
 
-          - label: "Arguments clés (3 blocs)"
+          - label: "Comment ça marche"
+            name: "how_it_works"
+            widget: "object"
+            fields:
+              - { label: "Petit texte au-dessus du titre", name: "eyebrow", widget: "string" }
+              - { label: "Titre de la section", name: "title", widget: "string" }
+              - { label: "Sous-titre", name: "subtitle", widget: "text" }
+              - label: "Étapes"
+                name: "steps"
+                widget: "list"
+                label_singular: "Étape"
+                summary: "{{title}}"
+                fields:
+                  - { label: "Icône", name: "icon", widget: "select", options: *icon_options }
+                  - { label: "Titre", name: "title", widget: "string" }
+                  - { label: "Description", name: "text", widget: "text" }
+
+          - label: "Arguments clés"
             name: "trust"
             widget: "list"
             label_singular: "Argument"
             summary: "{{title}}"
             fields:
-              - label: "Icône"
-                name: "icon"
-                widget: "select"
-                options:
-                  - { label: "Éclair (rapidité / prix)", value: "fa-bolt" }
-                  - { label: "Localisation", value: "fa-location-dot" }
-                  - { label: "Horloge (disponibilité)", value: "fa-clock" }
-                  - { label: "Bouclier (sécurité)", value: "fa-shield-halved" }
-                  - { label: "Pouce (satisfaction)", value: "fa-thumbs-up" }
-                  - { label: "Étoile", value: "fa-star" }
+              - { label: "Icône", name: "icon", widget: "select", options: *icon_options }
               - { label: "Titre", name: "title", widget: "string" }
               - { label: "Description", name: "text", widget: "string" }
 
@@ -93,6 +121,79 @@ collections:
                   - { label: "Mots-clés (séparés par ·)", name: "keywords", widget: "string" }
               - { label: "Titre de l'encart de fin", name: "cta_title", widget: "string" }
               - { label: "Texte de l'encart de fin", name: "cta_text", widget: "string" }
+
+          - label: "À propos"
+            name: "about"
+            widget: "object"
+            fields:
+              - { label: "Petit texte au-dessus du titre", name: "eyebrow", widget: "string" }
+              - { label: "Titre de la section", name: "title", widget: "string" }
+              - { label: "Texte de présentation", name: "text", widget: "text" }
+              - label: "Nos valeurs"
+                name: "values"
+                widget: "list"
+                label_singular: "Valeur"
+                summary: "{{title}}"
+                fields:
+                  - { label: "Icône", name: "icon", widget: "select", options: *icon_options }
+                  - { label: "Titre", name: "title", widget: "string" }
+                  - { label: "Description", name: "text", widget: "text" }
+              - label: "Chiffres clés"
+                name: "stats"
+                widget: "list"
+                label_singular: "Statistique"
+                summary: "{{label}}"
+                fields:
+                  - { label: "Chiffre (ex : 49, 1000 FCFA)", name: "number", widget: "string" }
+                  - { label: "Légende", name: "label", widget: "string" }
+
+          - label: "Bandeau partenaires"
+            name: "partners_band"
+            widget: "object"
+            fields:
+              - { label: "Texte du bandeau", name: "label", widget: "string" }
+              - label: "Types de partenaires"
+                name: "items"
+                widget: "list"
+                label_singular: "Élément"
+                summary: "{{label}}"
+                fields:
+                  - { label: "Icône", name: "icon", widget: "select", options: *icon_options }
+                  - { label: "Libellé", name: "label", widget: "string" }
+
+          - label: "Témoignages"
+            name: "testimonials"
+            widget: "object"
+            fields:
+              - { label: "Petit texte au-dessus du titre", name: "eyebrow", widget: "string" }
+              - { label: "Titre de la section", name: "title", widget: "string" }
+              - { label: "Sous-titre", name: "subtitle", widget: "text" }
+              - label: "Avis clients"
+                name: "items"
+                widget: "list"
+                label_singular: "Témoignage"
+                summary: "{{name}}"
+                fields:
+                  - { label: "Nom du client", name: "name", widget: "string" }
+                  - { label: "Rôle / activité", name: "role", widget: "string" }
+                  - { label: "Note (1 à 5)", name: "rating", widget: "number", min: 1, max: 5, value_type: "int" }
+                  - { label: "Avis", name: "text", widget: "text" }
+
+          - label: "Questions fréquentes"
+            name: "faq"
+            widget: "object"
+            fields:
+              - { label: "Petit texte au-dessus du titre", name: "eyebrow", widget: "string" }
+              - { label: "Titre de la section", name: "title", widget: "string" }
+              - { label: "Sous-titre", name: "subtitle", widget: "text" }
+              - label: "Questions"
+                name: "items"
+                widget: "list"
+                label_singular: "Question"
+                summary: "{{question}}"
+                fields:
+                  - { label: "Question", name: "question", widget: "string" }
+                  - { label: "Réponse", name: "answer", widget: "text" }
 
           - label: "Coordonnées de contact"
             name: "contact"
