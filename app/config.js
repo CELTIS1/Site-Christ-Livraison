@@ -74,3 +74,11 @@ function formatDate(iso) {
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) +
     " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
+
+// Formate un montant en FCFA (retourne "" si vide/invalide)
+function formatMontant(n) {
+  if (n === null || n === undefined || n === "") return "";
+  const num = Number(n);
+  if (isNaN(num)) return "";
+  return num.toLocaleString("fr-FR") + " FCFA";
+}
