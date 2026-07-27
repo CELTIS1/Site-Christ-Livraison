@@ -77,17 +77,30 @@
     <div style="margin-top:10px;font-size:12.5px;color:#6b7280;text-align:center;">Votre compte sera activé après validation par notre équipe.</div>
     </form>
 
+    <!-- ATTENTE DE VALIDATION : affiché après l'inscription (ou une tentative de connexion sur un compte en attente).
+         Vérifie automatiquement si le compte a été validé, sans que la personne ait besoin de rafraîchir la page. -->
+    <div id="waiting-box" class="hidden waiting-box">
+      <div class="waiting-spinner"></div>
+      <div class="waiting-title">Demande en attente de validation</div>
+      <div class="waiting-text" id="waiting-text">Votre demande a été transmise à notre équipe. Cette page se met à jour automatiquement — dès que votre compte sera validé, vous serez connecté(e) directement.</div>
+      <div class="waiting-lastcheck" id="waiting-lastcheck"></div>
+      <button type="button" class="btn" style="width:100%; justify-content:center; margin-top:16px;" id="btn-waiting-check">Vérifier maintenant</button>
+      <button type="button" id="btn-waiting-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
+    </div>
+
     </div>
   </div>
 
 <script src="config.js"></script>
 <script>
   function showTab(which){
+    stopWaiting();
     document.getElementById('tab-connexion').classList.toggle('active', which==='connexion');
     document.getElementById('tab-inscription').classList.toggle('active', which==='inscription');
     document.getElementById('form-connexion-login').classList.toggle('hidden', which!=='connexion');
     document.getElementById('form-forgot-phone').classList.add('hidden');
     document.getElementById('form-inscription').classList.toggle('hidden', which!=='inscription');
+    document.getElementById('waiting-box').classList.add('hidden');
     document.getElementById('msg-box').innerHTML = '';
   }
 
@@ -129,11 +142,122 @@
     }
   }
 
+  // Tente une connexion en essayant les deux formats de numéro possibles ("225..." et "+225...").
+  // Ne touche pas à l'UI : utilisé à la fois par le formulaire de connexion et par la vérification
+  // automatique du statut du compte (attente de validation).
+  async function attemptSignIn(phoneNoPlus, password){
+    const phonePlus = '+' + phoneNoPlus;
+    let { data, error } = await supabaseClient.auth.signInWithPassword({ phone: phoneNoPlus, password });
+    if (error) {
+      const retry = await supabaseClient.auth.signInWithPassword({ phone: phonePlus, password });
+      data = retry.data;
+      error = retry.error;
+    }
+    return { data, error };
+  }
+
+  // ---------- ATTENTE DE VALIDATION DU COMPTE ----------
+  // Après une inscription (ou une tentative de connexion sur un compte "en_attente"), la page
+  // vérifie automatiquement — sans que la personne ait besoin de rafraîchir — si l'équipe a
+  // validé ou refusé le compte, et réagit immédiatement (connexion auto ou message de refus).
+  const WAITING_POLL_MS = 15000;
+  const WAITING_MAX_CHECKS = 240; // ~1h à 15s d'intervalle, au-delà on garde le bouton manuel
+  let waitingPhone = null;
+  let waitingPassword = null;
+  let waitingTimer = null;
+  let waitingChecks = 0;
+
+  function showWaiting(phoneNoPlus, password){
+    waitingPhone = phoneNoPlus;
+    waitingPassword = password;
+    waitingChecks = 0;
+    document.getElementById('form-connexion-login').classList.add('hidden');
+    document.getElementById('form-forgot-phone').classList.add('hidden');
+    document.getElementById('form-inscription').classList.add('hidden');
+    document.getElementById('waiting-box').classList.remove('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+    document.getElementById('waiting-text').textContent =
+      "Votre demande a été transmise à notre équipe. Cette page se met à jour automatiquement — dès que votre compte sera validé, vous serez connecté(e) directement.";
+    clearInterval(waitingTimer);
+    waitingTimer = setInterval(pollAccountStatus, WAITING_POLL_MS);
+    pollAccountStatus();
+  }
+
+  function stopWaiting(){
+    clearInterval(waitingTimer);
+    waitingTimer = null;
+    waitingPhone = null;
+    waitingPassword = null;
+  }
+
+  function setLastCheckTime(){
+    const el = document.getElementById('waiting-lastcheck');
+    if (el) el.textContent = 'Dernière vérification à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function pollAccountStatus(){
+    if (!waitingPhone || !waitingPassword) return;
+    waitingChecks++;
+    setLastCheckTime();
+
+    const { data, error } = await attemptSignIn(waitingPhone, waitingPassword);
+    if (error || !data || !data.user) {
+      // Ne bloque pas l'utilisateur : réessaiera au prochain intervalle.
+      return;
+    }
+
+    const profile = await getProfile(data.user.id);
+
+    if (profile && profile.status === 'valide'){
+      clearInterval(waitingTimer);
+      document.getElementById('waiting-text').textContent = "Votre compte a été validé ! Connexion en cours...";
+      setTimeout(() => redirectByRole(profile), 900);
+      return;
+    }
+
+    if (profile && profile.status === 'rejete'){
+      clearInterval(waitingTimer);
+      await supabaseClient.auth.signOut();
+      stopWaiting();
+      document.getElementById('waiting-box').classList.add('hidden');
+      document.getElementById('form-connexion-login').classList.remove('hidden');
+      showMsg("Votre demande de compte a été refusée. Contactez notre équipe pour plus d'informations.", "error");
+      return;
+    }
+
+    // Toujours en attente : on se déconnecte pour ne pas laisser de session active inutilement.
+    await supabaseClient.auth.signOut();
+
+    if (waitingChecks >= WAITING_MAX_CHECKS){
+      clearInterval(waitingTimer);
+      document.getElementById('waiting-text').textContent =
+        "Votre demande est toujours en attente de validation. La vérification automatique s'est arrêtée après un long moment — utilisez le bouton ci-dessous pour vérifier manuellement.";
+    }
+  }
+
+  document.getElementById('btn-waiting-check').addEventListener('click', () => {
+    document.getElementById('waiting-text').textContent = "Vérification en cours...";
+    if (!waitingTimer) waitingTimer = setInterval(pollAccountStatus, WAITING_POLL_MS);
+    pollAccountStatus();
+  });
+
+  document.getElementById('btn-waiting-cancel').addEventListener('click', () => {
+    stopWaiting();
+    document.getElementById('waiting-box').classList.add('hidden');
+    document.getElementById('form-connexion-login').classList.remove('hidden');
+  });
+
   // Vérifie que le compte est validé. Si en attente ou refusé, déconnecte et bloque l'accès.
-  async function checkAccountStatus(profile){
+  // phoneNoPlus / password sont optionnels : s'ils sont fournis et que le compte est "en_attente",
+  // la vérification automatique démarre immédiatement au lieu d'un simple message statique.
+  async function checkAccountStatus(profile, phoneNoPlus, password){
     if (profile && profile.status === 'en_attente') {
       await supabaseClient.auth.signOut();
-      showMsg("Votre compte est en attente de validation par notre équipe. Vous pourrez vous connecter dès qu'il sera validé.", "error");
+      if (phoneNoPlus && password) {
+        showWaiting(phoneNoPlus, password);
+      } else {
+        showMsg("Votre compte est en attente de validation par notre équipe. Vous pourrez vous connecter dès qu'il sera validé.", "error");
+      }
       return false;
     }
     if (profile && profile.status === 'rejete') {
@@ -151,18 +275,12 @@
     btn.disabled = true; btn.textContent = 'Connexion...';
 
     const phoneNoPlus = toE164(document.getElementById('login-phone').value.trim());
-    const phonePlus = '+' + phoneNoPlus;
     const password = document.getElementById('login-password').value;
 
     // Certains comptes ont été créés avec un numéro stocké au format "+225..." et d'autres
     // au format "225..." (sans le +). On essaie les deux formats pour que la connexion
     // fonctionne quel que soit le format sous lequel le compte a été enregistré.
-    let { data, error } = await supabaseClient.auth.signInWithPassword({ phone: phoneNoPlus, password });
-    if (error) {
-      const retry = await supabaseClient.auth.signInWithPassword({ phone: phonePlus, password });
-      data = retry.data;
-      error = retry.error;
-    }
+    const { data, error } = await attemptSignIn(phoneNoPlus, password);
 
     if (error) {
       showMsg("Erreur : numéro ou mot de passe incorrect.", "error");
@@ -171,7 +289,7 @@
     }
 
     const profile = await getProfile(data.user.id);
-    const ok = await checkAccountStatus(profile);
+    const ok = await checkAccountStatus(profile, phoneNoPlus, password);
     btn.disabled = false; btn.textContent = 'Se connecter';
     if (!ok) return;
     redirectByRole(profile);
@@ -263,8 +381,8 @@
       if (!res.ok) {
         showMsg("Erreur : " + (result.error || 'création impossible'), "error");
       } else {
-        showMsg("Compte créé avec succès. Il sera activé après validation par notre équipe — vous pourrez alors vous connecter.", "success");
         e.target.reset();
+        showWaiting(phone, password);
       }
     } catch (err) {
       showMsg("Erreur : " + err.message, "error");
@@ -275,4 +393,3 @@
 </script>
 </body>
 </html>
-
