@@ -111,7 +111,7 @@
 </div>
 
 <div id="panel-colis">
-<input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description, destination ou fournisseur...">
+<div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description, destination ou fournisseur..."></div>
 <div class="filters" id="filters"></div>
 <div id="alert-banner" class="alert-banner hidden"></div>
 <div class="colis-list" id="colis-list">
@@ -636,22 +636,38 @@ renderAllAccounts();
 }
 
 function accountRowHTML(a){
+const isSelf = currentUser && a.id === currentUser.id;
 const promoteBtn = a.role === 'equipe'
-? `<button class="btn btn-sm btn-promote-admin" style="margin-bottom:4px;">Promouvoir admin</button>`
+? `<button type="button" class="btn-promote-admin">⭐ Promouvoir admin</button>`
 : '';
+const deleteBtn = isSelf
+? `<button type="button" class="btn-delete-account danger" disabled title="Vous ne pouvez pas supprimer votre propre compte">🗑 Supprimer</button>`
+: `<button type="button" class="btn-delete-account danger">🗑 Supprimer</button>`;
 return `
 <div class="colis-item" data-id="${a.id}">
 <div class="info">
-<div class="desc">${a.full_name || '(sans nom)'}${a.company_name ? ' — ' + a.company_name : ''}</div>
+<div class="desc">${a.full_name || '(sans nom)'}${a.company_name ? ' — ' + a.company_name : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}</div>
 <div class="meta">Rôle : ${a.role}${a.phone ? ' · Tél : ' + a.phone : ''} · Statut : ${a.status || '-'}</div>
 </div>
-<div class="status-col">
+<div class="status-col" style="width:auto; flex-direction:row; align-items:center;">
+<div class="actions-menu">
+<button type="button" class="actions-menu-btn" aria-label="Actions du compte">⋮</button>
+<div class="actions-dropdown">
 ${promoteBtn}
-<button class="btn btn-sm btn-reset-pwd" style="margin-bottom:4px;">Réinitialiser mdp</button>
-<button class="btn btn-sm btn-delete-account" style="background:#c0392b;">Supprimer</button>
+<button type="button" class="btn-reset-pwd">🔑 Réinitialiser mdp</button>
+${deleteBtn}
+</div>
+</div>
 </div>
 </div>
 `;
+}
+
+if (!window.__accountsMenuOutsideHandlerAdded) {
+document.addEventListener('click', () => {
+document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
+});
+window.__accountsMenuOutsideHandlerAdded = true;
 }
 
 function renderAllAccounts(){
@@ -663,8 +679,19 @@ return;
 }
 box.innerHTML = filtered.map(accountRowHTML).join('');
 
+box.querySelectorAll('.actions-menu-btn').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const dropdown = btn.nextElementSibling;
+const wasOpen = dropdown.classList.contains('open');
+document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
+if (!wasOpen) dropdown.classList.add('open');
+});
+});
+
 box.querySelectorAll('.btn-promote-admin').forEach(btn => {
-btn.addEventListener('click', async () => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
 const account = allAccounts.find(a => a.id === id);
@@ -673,7 +700,7 @@ btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('profiles').update({ role: 'admin' }).eq('id', id);
 if (error) {
 alert("Erreur : " + error.message);
-btn.disabled = false; btn.textContent = 'Promouvoir admin';
+btn.disabled = false; btn.textContent = '⭐ Promouvoir admin';
 return;
 }
 try {
@@ -685,7 +712,8 @@ if (isAdmin) await loadActivityLog();
 });
 
 box.querySelectorAll('.btn-reset-pwd').forEach(btn => {
-btn.addEventListener('click', async () => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
 const account = allAccounts.find(a => a.id === id);
@@ -697,14 +725,19 @@ alert(`Nouveau mot de passe pour ${account.full_name || account.phone} :\n\n${re
 } catch (err) {
 alert("Erreur : " + err.message);
 }
-btn.disabled = false; btn.textContent = 'Réinitialiser mdp';
+btn.disabled = false; btn.textContent = '🔑 Réinitialiser mdp';
 });
 });
 
 box.querySelectorAll('.btn-delete-account').forEach(btn => {
-btn.addEventListener('click', async () => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
+if (currentUser && id === currentUser.id) {
+alert("Vous ne pouvez pas supprimer votre propre compte administrateur.");
+return;
+}
 const account = allAccounts.find(a => a.id === id);
 if (!confirm(`Supprimer définitivement le compte de ${account.full_name || account.phone} ? Cette action est irréversible.`)) return;
 btn.disabled = true; btn.textContent = '...';
@@ -716,7 +749,7 @@ await loadFournisseurs();
 await loadLivreurs();
 } catch (err) {
 alert("Erreur : " + err.message);
-btn.disabled = false; btn.textContent = 'Supprimer';
+btn.disabled = false; btn.textContent = '🗑 Supprimer';
 }
 });
 });
