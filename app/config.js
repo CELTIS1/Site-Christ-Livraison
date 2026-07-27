@@ -4,7 +4,18 @@
 const SUPABASE_URL = "https://xkfltqjbmolmdwdafzcx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// On utilise sessionStorage (et non le localStorage par défaut) pour que chaque onglet
+// du navigateur conserve sa propre session. Ainsi, on peut être connecté en même temps
+// avec plusieurs comptes différents (admin, équipe, livreur, fournisseur) dans des
+// onglets distincts du même navigateur, sans que l'un écrase la session de l'autre.
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    storage: window.sessionStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+  }
+});
 
 // Redirige vers la page de connexion si personne n'est connecté.
 // Retourne la session si elle existe.
@@ -42,12 +53,19 @@ const STATUTS = {
   recupere:     { label: "Récupéré",     color: "#1B4374", bg: "#e5edf5" },
   en_livraison: { label: "En livraison", color: "#E26313", bg: "#FBE2CE" },
   livre:        { label: "Livré",        color: "#1a7d3c", bg: "#e3f6ea" },
-  probleme:     { label: "Problème",     color: "#c0392b", bg: "#fce4e2" },
+  non_livre:    { label: "Non livré",    color: "#c0392b", bg: "#fce4e2" },
+  retour:       { label: "Retour",       color: "#8e44ad", bg: "#f2e8fa" },
 };
 
 function statutBadgeHTML(statut) {
   const s = STATUTS[statut] || STATUTS.en_attente;
   return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;
+}
+
+function escapeHTML(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 function formatDate(iso) {
