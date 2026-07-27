@@ -158,36 +158,78 @@
 
   // ---------- ATTENTE DE VALIDATION DU COMPTE ----------
   // Après une inscription (ou une tentative de connexion sur un compte "en_attente"), la page
-  // vérifie automatiquement — sans que la personne ait besoin de rafraîchir — si l'équipe a
-  // validé ou refusé le compte, et réagit immédiatement (connexion auto ou message de refus).
-  const WAITING_POLL_MS = 15000;
-  const WAITING_MAX_CHECKS = 240; // ~1h à 15s d'intervalle, au-delà on garde le bouton manuel
+  // écoute en direct (Supabase Realtime) le profil de la personne : dès que l'équipe valide ou
+  // refuse le compte, la page réagit INSTANTANÉMENT, sans que la personne ait besoin de
+  // rafraîchir ni d'attendre un quelconque délai.
+  // Un filet de sécurité (vérification de secours) reste en place au cas où la connexion
+  // en temps réel serait interrompue (perte réseau, etc.), pour ne jamais rester bloqué.
+  const WAITING_FALLBACK_MS = 20000;
+  const WAITING_MAX_FALLBACKS = 360; // plusieurs heures de filet de sécurité avant d'arrêter les essais auto
   let waitingPhone = null;
   let waitingPassword = null;
-  let waitingTimer = null;
-  let waitingChecks = 0;
+  let waitingUserId = null;
+  let waitingChannel = null;
+  let waitingFallbackTimer = null;
+  let waitingFallbackCount = 0;
 
   function showWaiting(phoneNoPlus, password){
     waitingPhone = phoneNoPlus;
     waitingPassword = password;
-    waitingChecks = 0;
+    waitingFallbackCount = 0;
     document.getElementById('form-connexion-login').classList.add('hidden');
     document.getElementById('form-forgot-phone').classList.add('hidden');
     document.getElementById('form-inscription').classList.add('hidden');
     document.getElementById('waiting-box').classList.remove('hidden');
     document.getElementById('msg-box').innerHTML = '';
     document.getElementById('waiting-text').textContent =
-      "Votre demande a été transmise à notre équipe. Cette page se met à jour automatiquement — dès que votre compte sera validé, vous serez connecté(e) directement.";
-    clearInterval(waitingTimer);
-    waitingTimer = setInterval(pollAccountStatus, WAITING_POLL_MS);
-    pollAccountStatus();
+      "Votre demande a été transmise à notre équipe. Cette page se met à jour automatiquement et instantanément dès que votre compte est validé.";
+    startWaitingRealtime();
+  }
+
+  // Se connecte une fois (nécessaire pour obtenir une session valide sur CE compte précis),
+  // vérifie le statut immédiatement, puis écoute les changements en direct sur ce profil.
+  async function startWaitingRealtime(){
+    setLastCheckTime();
+    const { data, error } = await attemptSignIn(waitingPhone, waitingPassword);
+    if (error || !data || !data.user) {
+      // Erreur réseau/temporaire : le filet de sécurité réessaiera.
+      scheduleWaitingFallback();
+      return;
+    }
+
+    waitingUserId = data.user.id;
+    const profile = await getProfile(data.user.id);
+    if (handleWaitingProfile(profile)) return;
+
+    subscribeWaitingChannel();
+    scheduleWaitingFallback();
+  }
+
+  function subscribeWaitingChannel(){
+    if (waitingChannel || !waitingUserId) return;
+    waitingChannel = supabaseClient
+      .channel('waiting-' + waitingUserId)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${waitingUserId}` }, (payload) => {
+        handleWaitingProfile(payload.new);
+      })
+      .subscribe();
+  }
+
+  function unsubscribeWaitingChannel(){
+    if (waitingChannel) {
+      supabaseClient.removeChannel(waitingChannel);
+      waitingChannel = null;
+    }
   }
 
   function stopWaiting(){
-    clearInterval(waitingTimer);
-    waitingTimer = null;
+    clearTimeout(waitingFallbackTimer);
+    waitingFallbackTimer = null;
+    unsubscribeWaitingChannel();
+    if (waitingUserId) supabaseClient.auth.signOut();
     waitingPhone = null;
     waitingPassword = null;
+    waitingUserId = null;
   }
 
   function setLastCheckTime(){
@@ -195,50 +237,69 @@
     if (el) el.textContent = 'Dernière vérification à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
-  async function pollAccountStatus(){
-    if (!waitingPhone || !waitingPassword) return;
-    waitingChecks++;
-    setLastCheckTime();
+  // Traite un statut de profil (reçu en direct ou via le filet de sécurité).
+  // Retourne true si une décision finale a été prise (validé ou refusé).
+  function handleWaitingProfile(profile){
+    if (!profile) return false;
 
-    const { data, error } = await attemptSignIn(waitingPhone, waitingPassword);
-    if (error || !data || !data.user) {
-      // Ne bloque pas l'utilisateur : réessaiera au prochain intervalle.
-      return;
-    }
-
-    const profile = await getProfile(data.user.id);
-
-    if (profile && profile.status === 'valide'){
-      clearInterval(waitingTimer);
+    if (profile.status === 'valide'){
+      clearTimeout(waitingFallbackTimer);
+      unsubscribeWaitingChannel();
       document.getElementById('waiting-text').textContent = "Votre compte a été validé ! Connexion en cours...";
-      setTimeout(() => redirectByRole(profile), 900);
-      return;
+      setTimeout(() => redirectByRole(profile), 600);
+      return true;
     }
 
-    if (profile && profile.status === 'rejete'){
-      clearInterval(waitingTimer);
-      await supabaseClient.auth.signOut();
+    if (profile.status === 'rejete'){
+      clearTimeout(waitingFallbackTimer);
+      unsubscribeWaitingChannel();
+      supabaseClient.auth.signOut();
+      waitingUserId = null;
       stopWaiting();
       document.getElementById('waiting-box').classList.add('hidden');
       document.getElementById('form-connexion-login').classList.remove('hidden');
       showMsg("Votre demande de compte a été refusée. Contactez notre équipe pour plus d'informations.", "error");
-      return;
+      return true;
     }
 
-    // Toujours en attente : on se déconnecte pour ne pas laisser de session active inutilement.
-    await supabaseClient.auth.signOut();
-
-    if (waitingChecks >= WAITING_MAX_CHECKS){
-      clearInterval(waitingTimer);
-      document.getElementById('waiting-text').textContent =
-        "Votre demande est toujours en attente de validation. La vérification automatique s'est arrêtée après un long moment — utilisez le bouton ci-dessous pour vérifier manuellement.";
-    }
+    return false;
   }
 
-  document.getElementById('btn-waiting-check').addEventListener('click', () => {
+  // Filet de sécurité : revérifie périodiquement (en plus de l'écoute en direct), au cas où
+  // la connexion temps réel serait momentanément interrompue.
+  function scheduleWaitingFallback(){
+    clearTimeout(waitingFallbackTimer);
+    waitingFallbackTimer = setTimeout(async () => {
+      waitingFallbackCount++;
+      setLastCheckTime();
+
+      if (waitingUserId) {
+        const profile = await getProfile(waitingUserId);
+        if (handleWaitingProfile(profile)) return;
+        subscribeWaitingChannel(); // se rabonne si jamais le canal avait été coupé
+      }
+
+      if (waitingFallbackCount >= WAITING_MAX_FALLBACKS){
+        document.getElementById('waiting-text').textContent =
+          "Votre demande est toujours en attente de validation. Utilisez le bouton ci-dessous pour vérifier manuellement.";
+        return;
+      }
+      scheduleWaitingFallback();
+    }, WAITING_FALLBACK_MS);
+  }
+
+  document.getElementById('btn-waiting-check').addEventListener('click', async () => {
     document.getElementById('waiting-text').textContent = "Vérification en cours...";
-    if (!waitingTimer) waitingTimer = setInterval(pollAccountStatus, WAITING_POLL_MS);
-    pollAccountStatus();
+    setLastCheckTime();
+    if (waitingUserId) {
+      const profile = await getProfile(waitingUserId);
+      if (!handleWaitingProfile(profile)) {
+        document.getElementById('waiting-text').textContent =
+          "Toujours en attente de validation. Vous serez averti automatiquement dès que ce sera fait.";
+      }
+    } else {
+      startWaitingRealtime();
+    }
   });
 
   document.getElementById('btn-waiting-cancel').addEventListener('click', () => {
