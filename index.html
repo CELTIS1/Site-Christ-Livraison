@@ -340,6 +340,59 @@
   }
   @media (prefers-reduced-motion: reduce){ .wa-float-pulse{animation:none; display:none;} }
   @media (max-width:480px){ .wa-float{right:16px; bottom:16px; width:52px; height:52px; font-size:25px;} }
+
+  /* ---------- HOVER MICRO-INTERACTIONS ---------- */
+  .service-card:hover{transform:translateY(-6px) scale(1.015); box-shadow:0 14px 28px rgba(27,67,116,0.1);}
+  .step-card{transition:transform .18s ease, box-shadow .18s ease;}
+  .step-card:hover{transform:translateY(-6px) scale(1.015); box-shadow:0 14px 28px rgba(27,67,116,0.1);}
+  .testimonial-card{transition:transform .18s ease, box-shadow .18s ease;}
+  .testimonial-card:hover{transform:translateY(-6px) scale(1.015); box-shadow:0 14px 28px rgba(27,67,116,0.1);}
+  .about-value{transition:transform .18s ease, box-shadow .18s ease;}
+  .about-value:hover{transform:translateY(-6px) scale(1.02); box-shadow:0 14px 28px rgba(27,67,116,0.08);}
+  @media (prefers-reduced-motion: reduce){
+    .service-card:hover, .step-card:hover, .testimonial-card:hover, .about-value:hover{transform:none;}
+  }
+
+  /* ---------- FAQ ---------- */
+  .faq-list{max-width:760px; margin:0 auto;}
+  .faq-item{border:1px solid #ECEFF3; border-radius:12px; margin-bottom:14px; overflow:hidden; background:var(--white);}
+  .faq-question{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:16px;
+    background:none; border:none; padding:20px 22px; text-align:left; font-family:inherit;
+    font-weight:700; font-size:15px; color:var(--navy); cursor:pointer;
+  }
+  .faq-question i{color:var(--orange); transition:transform .25s ease; flex-shrink:0;}
+  .faq-item.open .faq-question i{transform:rotate(180deg);}
+  .faq-answer{max-height:0; overflow:hidden; transition:max-height .3s ease;}
+  .faq-item.open .faq-answer{max-height:320px;}
+  .faq-answer p{padding:0 22px 20px 22px; font-size:14px; color:#5b6b7c;}
+  @media (prefers-reduced-motion: reduce){ .faq-answer{transition:none;} }
+
+  /* ---------- PARTNERS BAND ---------- */
+  .partners-band{margin-top:36px; text-align:center;}
+  .partners-label{font-size:12.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:16px;}
+  .partners-pills{display:flex; flex-wrap:wrap; gap:12px; justify-content:center;}
+  .partner-pill{
+    display:inline-flex; align-items:center; gap:8px; background:var(--grey-bg); color:var(--navy);
+    font-weight:600; font-size:13.5px; padding:10px 18px; border-radius:20px; border:1px solid #ECEFF3;
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .partner-pill:hover{transform:translateY(-2px) scale(1.03); box-shadow:0 8px 18px rgba(27,67,116,0.08);}
+  .partner-pill i{color:var(--orange);}
+
+  /* ---------- MOBILE STICKY CTA BAR ---------- */
+  .mobile-cta-bar{display:none;}
+  @media (max-width:680px){
+    .mobile-cta-bar{
+      display:block; position:fixed; left:0; right:0; bottom:0; z-index:400;
+      background:var(--white); padding:10px 16px calc(10px + env(safe-area-inset-bottom)) 16px;
+      box-shadow:0 -4px 16px rgba(0,0,0,0.1);
+    }
+    .mobile-cta-bar .btn{width:100%; justify-content:center; padding:13px 20px; font-size:14.5px;}
+    body{padding-bottom:70px;}
+    .wa-float{bottom:78px;}
+  }
+  @media (max-width:480px){ .wa-float{right:16px; bottom:78px; width:52px; height:52px; font-size:25px;} }
 </style>
 </head>
 <body>
@@ -363,6 +416,7 @@
       <li><a href="#couverture" onclick="closeMenu()">Zone de couverture</a></li>
       <li><a href="#a-propos" onclick="closeMenu()">À propos</a></li>
       <li><a href="#temoignages" onclick="closeMenu()">Témoignages</a></li>
+      <li><a href="#faq" onclick="closeMenu()">FAQ</a></li>
       <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
       <li><a href="app/login.html">Espace Colis</a></li>
       <li><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
@@ -390,6 +444,17 @@
   <div class="marquee-track" id="marqueeTrack"></div>
 </div>
 
+<section class="trust">
+  <div class="container">
+    <div class="trust-grid" id="trustGrid">
+      <div class="trust-item reveal"><i class="fa-solid fa-bolt"></i><div><h4>À partir de 1000 FCFA</h4><p>Un tarif clair et accessible pour vos livraisons en ville.</p></div></div>
+      <div class="trust-item reveal"><i class="fa-solid fa-location-dot"></i><div><h4>Abidjan et périphéries</h4><p>Nous livrons dans toute la ville et les zones environnantes.</p></div></div>
+      <div class="trust-item reveal"><i class="fa-solid fa-clock"></i><div><h4>Toujours joignables</h4><p>Contactez-nous à tout moment, de préférence la veille ou tôt le matin.</p></div></div>
+      <div class="trust-item reveal"><i class="fa-solid fa-handshake"></i><div><h4>Nos partenariats</h4><p>49 commerçants et entreprises nous confient déjà leurs livraisons à Abidjan.</p></div></div>
+    </div>
+  </div>
+</section>
+
 <section id="services">
   <div class="container">
     <h2 class="section-title reveal">Nos services</h2>
@@ -412,17 +477,6 @@
       <div class="step-card reveal"><div class="step-icon"><i class="fa-solid fa-comment-dots"></i></div><h3>1. Commander</h3><p>Vous nous contactez par WhatsApp, téléphone ou via le formulaire du site pour planifier votre livraison.</p></div>
       <div class="step-card reveal"><div class="step-icon"><i class="fa-solid fa-box-open"></i></div><h3>2. Récupération</h3><p>Notre livreur passe récupérer votre colis, courrier ou commande à l'adresse indiquée.</p></div>
       <div class="step-card reveal"><div class="step-icon"><i class="fa-solid fa-truck"></i></div><h3>3. Livraison</h3><p>Votre colis est livré directement à son destinataire, avec une confirmation dès la remise.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="trust">
-  <div class="container">
-    <div class="trust-grid" id="trustGrid">
-      <div class="trust-item reveal"><i class="fa-solid fa-bolt"></i><div><h4>À partir de 1000 FCFA</h4><p>Un tarif clair et accessible pour vos livraisons en ville.</p></div></div>
-      <div class="trust-item reveal"><i class="fa-solid fa-location-dot"></i><div><h4>Abidjan et périphéries</h4><p>Nous livrons dans toute la ville et les zones environnantes.</p></div></div>
-      <div class="trust-item reveal"><i class="fa-solid fa-clock"></i><div><h4>Toujours joignables</h4><p>Contactez-nous à tout moment, de préférence la veille ou tôt le matin.</p></div></div>
-      <div class="trust-item reveal"><i class="fa-solid fa-handshake"></i><div><h4>Nos partenariats</h4><p>49 commerçants et entreprises nous confient déjà leurs livraisons à Abidjan.</p></div></div>
     </div>
   </div>
 </section>
@@ -482,9 +536,19 @@
       <div class="about-value reveal"><i class="fa-solid fa-location-dot"></i><h4>Proximité</h4><p>Une équipe joignable et à l'écoute, toujours proche de ses clients et fournisseurs.</p></div>
     </div>
     <div class="about-stats reveal" id="aboutStats">
-      <div class="about-stat"><div class="stat-number">49</div><div class="stat-label">commerçants et entreprises partenaires</div></div>
-      <div class="about-stat"><div class="stat-number">14</div><div class="stat-label">zones desservies à Abidjan et environs</div></div>
-      <div class="about-stat"><div class="stat-number">1000 FCFA</div><div class="stat-label">tarif de départ pour vos livraisons</div></div>
+      <div class="about-stat"><div class="stat-number" data-raw="49">0</div><div class="stat-label">commerçants et entreprises partenaires</div></div>
+      <div class="about-stat"><div class="stat-number" data-raw="14">0</div><div class="stat-label">zones desservies à Abidjan et environs</div></div>
+      <div class="about-stat"><div class="stat-number" data-raw="1000 FCFA">0</div><div class="stat-label">tarif de départ pour vos livraisons</div></div>
+    </div>
+    <div class="partners-band reveal" id="partnersBand">
+      <p class="partners-label" id="partnersLabel">Ils nous font confiance</p>
+      <div class="partners-pills" id="partnersPills">
+        <span class="partner-pill"><i class="fa-solid fa-store"></i> Boutiques</span>
+        <span class="partner-pill"><i class="fa-solid fa-cart-shopping"></i> E-commerçants</span>
+        <span class="partner-pill"><i class="fa-solid fa-utensils"></i> Restaurants</span>
+        <span class="partner-pill"><i class="fa-solid fa-briefcase-medical"></i> Pharmacies</span>
+        <span class="partner-pill"><i class="fa-solid fa-building"></i> Entreprises</span>
+      </div>
     </div>
   </div>
 </section>
@@ -497,6 +561,36 @@
       <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Livraison rapide et livreurs sérieux. Un vrai gain de temps pour mon commerce."</p><div class="testimonial-name">Aïcha K.</div><div class="testimonial-role">Commerçante, Adjamé</div></div>
       <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Toujours joignables et à l'heure. Je recommande pour toute livraison à Abidjan."</p><div class="testimonial-name">Jean-Marc D.</div><div class="testimonial-role">Client particulier, Cocody</div></div>
       <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★☆</div><p class="testimonial-text">"Service fiable pour mes livraisons e-commerce, à un tarif clair."</p><div class="testimonial-name">Fatou S.</div><div class="testimonial-role">Boutique en ligne, Marcory</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="container">
+    <span class="pill pill-light reveal" id="faqEyebrow" style="display:block; text-align:center; margin:0 auto 16px auto; max-width:fit-content;"><i class="fa-solid fa-circle-question"></i> FAQ</span>
+    <h2 class="section-title reveal" id="faqTitle">Questions fréquentes</h2>
+    <p class="section-sub reveal" id="faqSubtitle">Tout ce qu'il faut savoir avant de nous confier votre livraison.</p>
+    <div class="faq-list reveal" id="faqList">
+      <div class="faq-item open">
+        <button class="faq-question" type="button"><span>Quels sont vos tarifs ?</span><i class="fa-solid fa-chevron-down"></i></button>
+        <div class="faq-answer"><p>Nos livraisons démarrent à 1000 FCFA. Le tarif final dépend de la distance, de la zone et de la nature de la livraison — contactez-nous pour un devis précis et gratuit.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" type="button"><span>Quelles zones couvrez-vous ?</span><i class="fa-solid fa-chevron-down"></i></button>
+        <div class="faq-answer"><p>Nous livrons dans les 13 communes du District d'Abidjan ainsi qu'à Bingerville, Anyama, Songon et Grand-Bassam. Votre zone n'est pas listée ? Contactez-nous, nous étudions toute demande.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" type="button"><span>Comment passer une commande ?</span><i class="fa-solid fa-chevron-down"></i></button>
+        <div class="faq-answer"><p>Contactez-nous par WhatsApp, par téléphone ou via le formulaire de devis du site. Nous confirmons les détails avec vous puis organisons le ramassage et la livraison.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" type="button"><span>Quels types de livraisons effectuez-vous ?</span><i class="fa-solid fa-chevron-down"></i></button>
+        <div class="faq-answer"><p>Livraison express, livraison programmée, livraison e-commerce, courses pour entreprises et expédition de colis vers différents points de la ville.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" type="button"><span>Comment vous contacter en cas d'urgence ou de question ?</span><i class="fa-solid fa-chevron-down"></i></button>
+        <div class="faq-answer"><p>Le plus simple est WhatsApp, en cliquant sur le bouton vert en bas de l'écran. Nous sommes joignables à tout moment, de préférence la veille ou tôt le matin.</p></div>
+      </div>
     </div>
   </div>
 </section>
@@ -611,6 +705,10 @@
   </div>
 </footer>
 
+<div class="mobile-cta-bar" id="mobileCtaBar">
+  <a href="#devis" class="btn btn-primary" id="mobileCtaBtn"><i class="fa-solid fa-paper-plane"></i> Demander un devis</a>
+</div>
+
 <a href="https://wa.me/2250546818640?text=Bonjour%2C%20je%20souhaite%20des%20informations%20sur%20vos%20services%20de%20livraison." class="wa-float wa-link" id="waFloat" target="_blank" rel="noopener" aria-label="Écrire sur WhatsApp">
   <span class="wa-float-pulse"></span>
   <i class="fa-brands fa-whatsapp"></i>
@@ -684,7 +782,18 @@
   }
 
   function aboutStatHTML(s){
-    return `<div class="about-stat"><div class="stat-number">${s.number}</div><div class="stat-label">${s.label}</div></div>`;
+    return `<div class="about-stat"><div class="stat-number" data-raw="${s.number}">0</div><div class="stat-label">${s.label}</div></div>`;
+  }
+
+  function partnersPillHTML(p){
+    return `<span class="partner-pill"><i class="fa-solid ${p.icon || 'fa-building'}"></i> ${p.label}</span>`;
+  }
+
+  function faqItemHTML(f, i){
+    return `<div class="faq-item${i === 0 ? ' open' : ''}">
+      <button class="faq-question" type="button"><span>${f.question}</span><i class="fa-solid fa-chevron-down"></i></button>
+      <div class="faq-answer"><p>${f.answer}</p></div>
+    </div>`;
   }
 
   function starsHTML(rating){
@@ -747,6 +856,68 @@
       if(!btn) return;
       selectZoneByIndex(parseInt(btn.dataset.index, 10));
     });
+  }
+
+  // Un seul écouteur délégué : fonctionne dès le chargement, avant même que content.json soit chargé
+  function initFaqAccordion(){
+    const list = document.getElementById('faqList');
+    if(!list) return;
+    list.addEventListener('click', (e) => {
+      const btn = e.target.closest('.faq-question');
+      if(!btn) return;
+      const item = btn.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      list.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+      if(!wasOpen) item.classList.add('open');
+    });
+  }
+
+  // ---------- Compteurs animés (stats "À propos") ----------
+  function parseStatNumber(raw){
+    const m = String(raw).match(/^(\D*)([\d][\d\s.,]*)(\D*)$/);
+    if(!m) return null;
+    const prefix = m[1] || "";
+    const numStr = m[2].replace(/[\s.,]/g, "");
+    const suffix = m[3] || "";
+    const target = parseInt(numStr, 10);
+    if(isNaN(target)) return null;
+    return { prefix, target, suffix };
+  }
+
+  function animateCount(el, target, prefix, suffix, duration){
+    const start = performance.now();
+    function tick(now){
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = Math.round(target * eased);
+      el.textContent = prefix + value.toLocaleString('fr-FR') + suffix;
+      if(progress < 1) requestAnimationFrame(tick);
+      else el.textContent = prefix + target.toLocaleString('fr-FR') + suffix;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  let statObserver;
+  function initStatCounters(){
+    const stats = document.querySelectorAll('.stat-number[data-raw]');
+    if(!stats.length) return;
+    if(reducedMotion){
+      stats.forEach(el => { el.textContent = el.dataset.raw; });
+      return;
+    }
+    if(statObserver) statObserver.disconnect();
+    statObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if(entry.isIntersecting){
+          const el = entry.target;
+          const parsed = parseStatNumber(el.dataset.raw);
+          if(parsed){ animateCount(el, parsed.target, parsed.prefix, parsed.suffix, 1400); }
+          else { el.textContent = el.dataset.raw; }
+          statObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.4 });
+    stats.forEach(el => statObserver.observe(el));
   }
 
   // ---------- Scroll reveal ----------
@@ -969,6 +1140,27 @@
         if(abStats) abStats.innerHTML = ab.stats.map(aboutStatHTML).join("");
       }
     }
+    // Partners band
+    if(data.partners_band){
+      const pb = data.partners_band;
+      const pbLabel = document.getElementById('partnersLabel'); if(pbLabel) pbLabel.textContent = pb.label || "";
+      if(Array.isArray(pb.items)){
+        const pbPills = document.getElementById('partnersPills');
+        if(pbPills) pbPills.innerHTML = pb.items.map(partnersPillHTML).join("");
+      }
+    }
+    // FAQ
+    if(data.faq){
+      const fq = data.faq;
+      const fqEyebrow = document.getElementById('faqEyebrow');
+      if(fqEyebrow) fqEyebrow.innerHTML = `<i class="fa-solid fa-circle-question"></i> ${fq.eyebrow || ""}`;
+      const fqTitle = document.getElementById('faqTitle'); if(fqTitle) fqTitle.textContent = fq.title || "";
+      const fqSub = document.getElementById('faqSubtitle'); if(fqSub) fqSub.textContent = fq.subtitle || "";
+      if(Array.isArray(fq.items)){
+        const fqList = document.getElementById('faqList');
+        if(fqList) fqList.innerHTML = fq.items.map(faqItemHTML).join("");
+      }
+    }
     // Testimonials
     if(data.testimonials){
       const tm = data.testimonials;
@@ -995,6 +1187,7 @@
 
     // Re-run reveal + cursor hover bindings on newly injected cards
     observeReveals();
+    initStatCounters();
     document.querySelectorAll('.service-card, .chip').forEach(el => {
       el.addEventListener('mouseenter', () => { const r = document.getElementById('cursorRing'); if(r) r.classList.add('hovering'); });
       el.addEventListener('mouseleave', () => { const r = document.getElementById('cursorRing'); if(r) r.classList.remove('hovering'); });
@@ -1024,6 +1217,8 @@
   initParticles();
   initCustomCursor();
   initZoneSelector();
+  initFaqAccordion();
+  initStatCounters();
   startTypewriter(["colis", "courriers", "expéditions", "courses"]);
   setMarquee(["Colis & plis", "Courriers & documents", "Expéditions", "Courses & divers"]);
 
