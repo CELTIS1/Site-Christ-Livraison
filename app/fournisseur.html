@@ -9,6 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -70,8 +73,30 @@
   </div>
 
   <div class="card">
+    <h2>Comptabilité</h2>
+    <div class="field-row">
+      <div class="field">
+        <label>Du</label>
+        <input type="date" id="compta-date-debut">
+      </div>
+      <div class="field">
+        <label>Au</label>
+        <input type="date" id="compta-date-fin">
+      </div>
+    </div>
+    <div id="compta-summary" style="margin:12px 0;"></div>
+    <div class="recap-table-wrap" id="compta-detail">
+      <div class="empty-state">Chargement...</div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button type="button" class="btn btn-outline btn-sm" id="btn-export-excel">Exporter en Excel</button>
+      <button type="button" class="btn btn-outline btn-sm" id="btn-export-pdf">Exporter en PDF</button>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Mes colis</h2>
-    <input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description ou destination...">
+    <div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description ou destination..."></div>
     <div class="colis-list" id="colis-list">
       <div class="empty-state">Chargement...</div>
     </div>
@@ -81,6 +106,7 @@
 <script src="config.js"></script>
 <script>
   let currentUser = null;
+  let currentProfile = null;
   let rowCount = 0;
   let mesColis = [];
   let searchColis = '';
@@ -107,9 +133,13 @@
             <input type="text" class="row-dest" placeholder="Ex : Cocody, Angré">
           </div>
           <div class="field">
-            <label>Photo (optionnel)</label>
-            <input type="file" class="row-photo" accept="image/*">
+            <label>Montant (optionnel)</label>
+            <input type="number" class="row-montant" placeholder="Ex : 5000" min="0" step="any">
           </div>
+        </div>
+        <div class="field">
+          <label>Photo (optionnel)</label>
+          <input type="file" class="row-photo" accept="image/*">
         </div>
       </div>
     `;
@@ -150,6 +180,8 @@
     for (const row of rows) {
       const description = row.querySelector('.row-desc').value.trim();
       const destination = row.querySelector('.row-dest').value.trim();
+      const montantRaw = row.querySelector('.row-montant').value.trim();
+      const montant = montantRaw === '' ? null : Number(montantRaw);
       const fileInput = row.querySelector('.row-photo');
       let photo_url = null;
 
@@ -162,6 +194,7 @@
         fournisseur_id: currentUser.id,
         description,
         destination,
+        montant,
         photo_url,
       });
     }
@@ -193,6 +226,7 @@
           <div class="view-mode">
             <div class="desc">${c.description || '(sans description)'}</div>
             <div class="meta">${c.destination ? 'Vers : ' + c.destination + ' · ' : ''}Ajouté le ${formatDate(c.created_at)}</div>
+            ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
             ${c.livreur_nom ? `<div class="meta">Livreur : ${c.livreur_nom}</div>` : ''}
             ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
             ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
@@ -202,9 +236,15 @@
               <label>Description du colis</label>
               <textarea class="edit-desc">${escapeHTML(c.description || '')}</textarea>
             </div>
-            <div class="field">
-              <label>Destination</label>
-              <input type="text" class="edit-dest" value="${escapeHTML(c.destination || '')}">
+            <div class="field-row">
+              <div class="field">
+                <label>Destination</label>
+                <input type="text" class="edit-dest" value="${escapeHTML(c.destination || '')}">
+              </div>
+              <div class="field">
+                <label>Montant</label>
+                <input type="number" class="edit-montant" min="0" step="any" value="${c.montant !== null && c.montant !== undefined ? c.montant : ''}">
+              </div>
             </div>
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn btn-sm btn-save-edit">Enregistrer</button>
@@ -242,8 +282,10 @@
         const id = item.dataset.id;
         const description = item.querySelector('.edit-desc').value.trim();
         const destination = item.querySelector('.edit-dest').value.trim();
+        const montantRaw = item.querySelector('.edit-montant').value.trim();
+        const montant = montantRaw === '' ? null : Number(montantRaw);
         btn.disabled = true; btn.textContent = '...';
-        const { error } = await supabaseClient.from('colis').update({ description, destination }).eq('id', id);
+        const { error } = await supabaseClient.from('colis').update({ description, destination, montant }).eq('id', id);
         if (error) {
           alert("Erreur : " + error.message);
           btn.disabled = false; btn.textContent = 'Enregistrer';
@@ -282,7 +324,102 @@
     }
     renderRecapStatuts();
     populateMoisSelect();
+    renderCompta();
   }
+
+  function comptaFiltered(){
+    const debut = document.getElementById('compta-date-debut').value;
+    const fin = document.getElementById('compta-date-fin').value;
+    return mesColis.filter(c => {
+      const d = (c.created_at || '').slice(0, 10);
+      if (debut && d < debut) return false;
+      if (fin && d > fin) return false;
+      return true;
+    });
+  }
+
+  function renderCompta(){
+    const rows = comptaFiltered();
+    const summary = document.getElementById('compta-summary');
+    const detail = document.getElementById('compta-detail');
+    if (!rows.length) {
+      summary.innerHTML = '';
+      detail.innerHTML = `<div class="empty-state">Aucun colis sur cette période.</div>`;
+      return;
+    }
+    const livres = rows.filter(c => c.statut === 'livre');
+    const totalMontant = rows.reduce((s, c) => s + (Number(c.montant) || 0), 0);
+    const totalMontantLivre = livres.reduce((s, c) => s + (Number(c.montant) || 0), 0);
+    summary.innerHTML = `
+      <div class="page-sub">
+        ${rows.length} colis · ${livres.length} livré(s) ·
+        Montant total : <strong>${formatMontant(totalMontant) || '0 FCFA'}</strong> ·
+        Montant livré : <strong>${formatMontant(totalMontantLivre) || '0 FCFA'}</strong>
+      </div>
+    `;
+    detail.innerHTML = `
+      <table class="recap-table">
+        <thead><tr><th>Colis</th><th>Destination</th><th>Statut</th><th>Montant</th><th>Date</th></tr></thead>
+        <tbody>
+          ${rows.map(c => `
+            <tr>
+              <td>${escapeHTML(c.description || '(sans description)')}</td>
+              <td>${escapeHTML(c.destination || '-')}</td>
+              <td>${STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut}</td>
+              <td>${formatMontant(c.montant) || '-'}</td>
+              <td>${formatDate(c.created_at)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  document.getElementById('compta-date-debut').addEventListener('change', renderCompta);
+  document.getElementById('compta-date-fin').addEventListener('change', renderCompta);
+
+  document.getElementById('btn-export-excel').addEventListener('click', () => {
+    const rows = comptaFiltered();
+    if (!rows.length) { alert("Aucune donnée à exporter."); return; }
+    const data = rows.map(c => ({
+      Colis: c.description || '',
+      Destination: c.destination || '',
+      Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
+      Montant: c.montant || 0,
+      Date: formatDate(c.created_at),
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Comptabilité');
+    const nom = (currentProfile && (currentProfile.company_name || currentProfile.full_name)) || 'fournisseur';
+    XLSX.writeFile(wb, `comptabilite-${nom}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  });
+
+  document.getElementById('btn-export-pdf').addEventListener('click', () => {
+    const rows = comptaFiltered();
+    if (!rows.length) { alert("Aucune donnée à exporter."); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const nom = (currentProfile && (currentProfile.company_name || currentProfile.full_name)) || 'Fournisseur';
+    const livres = rows.filter(c => c.statut === 'livre');
+    const totalMontant = rows.reduce((s, c) => s + (Number(c.montant) || 0), 0);
+    doc.setFontSize(14);
+    doc.text(`Comptabilité — ${nom}`, 14, 16);
+    doc.setFontSize(10);
+    doc.text(`${rows.length} colis · ${livres.length} livré(s) · Montant total : ${formatMontant(totalMontant) || '0 FCFA'}`, 14, 24);
+    doc.autoTable({
+      startY: 30,
+      head: [['Colis', 'Destination', 'Statut', 'Montant', 'Date']],
+      body: rows.map(c => [
+        c.description || '',
+        c.destination || '',
+        STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
+        formatMontant(c.montant) || '-',
+        formatDate(c.created_at),
+      ]),
+    });
+    doc.save(`comptabilite-${nom}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  });
 
   async function loadColis(){
     const { data, error } = await supabaseClient
@@ -398,6 +535,7 @@
       return;
     }
 
+    currentProfile = profile;
     document.getElementById('user-name').textContent = profile ? (profile.company_name || profile.full_name || '') : '';
     document.getElementById('user-first-name').textContent = profile ? (profile.full_name || '') : '';
 
