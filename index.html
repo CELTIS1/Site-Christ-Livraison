@@ -126,6 +126,47 @@
   .trust-item h4{color:var(--navy); font-size:15.5px; margin-bottom:4px;}
   .trust-item p{font-size:13.5px; color:#5b6b7c;}
 
+  /* ---------- HOW IT WORKS ---------- */
+  .steps-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:28px;}
+  .step-card{
+    background:var(--white); border:1px solid #ECEFF3; border-radius:14px; padding:30px 24px;
+    text-align:center; position:relative;
+  }
+  .step-icon{
+    width:60px; height:60px; border-radius:50%; background:var(--navy); color:var(--white);
+    display:flex; align-items:center; justify-content:center; font-size:24px; margin:0 auto 18px auto;
+  }
+  .step-card h3{font-size:16.5px; color:var(--navy); margin-bottom:8px;}
+  .step-card p{font-size:14px; color:#5b6b7c;}
+
+  /* ---------- ABOUT ---------- */
+  .about-text{max-width:720px; margin:0 auto 40px auto; text-align:center; color:#4E6B8A; font-size:15.5px;}
+  .about-values{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:26px; margin-bottom:44px;}
+  .about-value{
+    background:var(--grey-bg); border-radius:14px; padding:26px; text-align:center;
+  }
+  .about-value i{color:var(--orange); font-size:22px; margin-bottom:10px; display:block;}
+  .about-value h4{color:var(--navy); font-size:15.5px; margin-bottom:6px;}
+  .about-value p{font-size:13.5px; color:#5b6b7c;}
+  .about-stats{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:20px;
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%); border-radius:18px; padding:36px 28px;
+  }
+  .about-stat{text-align:center; color:var(--white);}
+  .about-stat .stat-number{font-family:'Poppins', Arial, sans-serif; font-weight:700; font-size:30px; color:var(--orange);}
+  .about-stat .stat-label{font-size:13px; color:#C7D1DB; margin-top:4px;}
+
+  /* ---------- TESTIMONIALS ---------- */
+  .testimonials{background:var(--grey-bg);}
+  .testimonials-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:26px;}
+  .testimonial-card{
+    background:var(--white); border:1px solid #ECEFF3; border-radius:14px; padding:28px 26px;
+  }
+  .testimonial-stars{color:var(--orange); font-size:14px; margin-bottom:12px;}
+  .testimonial-text{font-size:14.5px; color:#3d4a58; margin-bottom:18px; font-style:italic;}
+  .testimonial-name{color:var(--navy); font-weight:700; font-size:14.5px;}
+  .testimonial-role{color:#8a97a6; font-size:12.5px;}
+
   /* ---------- COVERAGE ---------- */
   .pill-light{
     background:var(--orange-light); color:var(--orange); font-size:12.5px; letter-spacing:1px;
@@ -318,7 +359,10 @@
     </a>
     <ul class="nav-links" id="navLinks">
       <li><a href="#services" onclick="closeMenu()">Services</a></li>
+      <li><a href="#comment-ca-marche" onclick="closeMenu()">Comment ça marche</a></li>
       <li><a href="#couverture" onclick="closeMenu()">Zone de couverture</a></li>
+      <li><a href="#a-propos" onclick="closeMenu()">À propos</a></li>
+      <li><a href="#temoignages" onclick="closeMenu()">Témoignages</a></li>
       <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
       <li><a href="app/login.html">Espace Colis</a></li>
       <li><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
@@ -351,10 +395,23 @@
     <h2 class="section-title reveal">Nos services</h2>
     <p class="section-sub reveal">Une équipe fiable pour toutes vos livraisons du quotidien, à Abidjan et ses périphéries.</p>
     <div class="services-grid" id="servicesGrid">
-      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-envelope"></i></div><h3>Courriers &amp; documents</h3><p>Envoi sécurisé de vos courriers et documents administratifs, remis directement en main propre.</p></div>
-      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-box"></i></div><h3>Colis &amp; plis</h3><p>Ramassage et livraison rapide de vos colis et plis, où que vous soyez à Abidjan.</p></div>
-      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-paper-plane"></i></div><h3>Expéditions</h3><p>Prise en charge de vos expéditions vers différents points de la ville, dans les meilleurs délais.</p></div>
-      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-cart-shopping"></i></div><h3>Courses &amp; divers</h3><p>Achats, courses et petites commissions : dites-nous ce dont vous avez besoin.</p></div>
+      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-bolt"></i></div><h3>Livraison express</h3><p>Vos colis livrés rapidement, en priorité, pour vos besoins urgents à Abidjan.</p></div>
+      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-calendar-check"></i></div><h3>Livraison programmée</h3><p>Planifiez vos livraisons à l'avance, à la date et l'heure qui vous conviennent.</p></div>
+      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-cart-shopping"></i></div><h3>Livraison e-commerce</h3><p>Nous livrons les commandes de votre boutique en ligne directement à vos clients.</p></div>
+      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-briefcase"></i></div><h3>Courses pour entreprises</h3><p>Un coursier dédié pour vos courses professionnelles : documents, achats, commissions diverses.</p></div>
+      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-paper-plane"></i></div><h3>Expédition</h3><p>Prise en charge de vos expéditions vers différents points de la ville, dans les meilleurs délais.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="comment-ca-marche">
+  <div class="container">
+    <h2 class="section-title reveal" id="howItWorksTitle">Un processus simple, en 3 étapes</h2>
+    <p class="section-sub reveal" id="howItWorksSubtitle">De la demande à la livraison, nous nous occupons de tout.</p>
+    <div class="steps-grid" id="stepsGrid">
+      <div class="step-card reveal"><div class="step-icon"><i class="fa-solid fa-comment-dots"></i></div><h3>1. Commander</h3><p>Vous nous contactez par WhatsApp, téléphone ou via le formulaire du site pour planifier votre livraison.</p></div>
+      <div class="step-card reveal"><div class="step-icon"><i class="fa-solid fa-box-open"></i></div><h3>2. Récupération</h3><p>Notre livreur passe récupérer votre colis, courrier ou commande à l'adresse indiquée.</p></div>
+      <div class="step-card reveal"><div class="step-icon"><i class="fa-solid fa-truck"></i></div><h3>3. Livraison</h3><p>Votre colis est livré directement à son destinataire, avec une confirmation dès la remise.</p></div>
     </div>
   </div>
 </section>
@@ -414,6 +471,36 @@
   </div>
 </section>
 
+<section id="a-propos">
+  <div class="container">
+    <span class="pill pill-light reveal" id="aboutEyebrow" style="display:block; text-align:center; margin:0 auto 16px auto; max-width:fit-content;"><i class="fa-solid fa-circle-info"></i> À PROPOS</span>
+    <h2 class="section-title reveal" id="aboutTitle">Qui sommes-nous ?</h2>
+    <p class="about-text reveal" id="aboutText">Christ Livraison &amp; Transport SARL est une société de livraison basée à Abidjan, Cocody (Lycée technique). Nous accompagnons particuliers, commerçants et entreprises dans leurs livraisons de colis, courriers, documents et courses, partout à Abidjan et ses périphéries.</p>
+    <div class="about-values" id="aboutValues">
+      <div class="about-value reveal"><i class="fa-solid fa-bolt"></i><h4>Rapidité</h4><p>Des livraisons traitées rapidement, avec des livreurs déployés selon les zones.</p></div>
+      <div class="about-value reveal"><i class="fa-solid fa-shield-halved"></i><h4>Fiabilité</h4><p>Un suivi rigoureux de chaque commande, du ramassage jusqu'à la remise.</p></div>
+      <div class="about-value reveal"><i class="fa-solid fa-location-dot"></i><h4>Proximité</h4><p>Une équipe joignable et à l'écoute, toujours proche de ses clients et fournisseurs.</p></div>
+    </div>
+    <div class="about-stats reveal" id="aboutStats">
+      <div class="about-stat"><div class="stat-number">49</div><div class="stat-label">commerçants et entreprises partenaires</div></div>
+      <div class="about-stat"><div class="stat-number">14</div><div class="stat-label">zones desservies à Abidjan et environs</div></div>
+      <div class="about-stat"><div class="stat-number">1000 FCFA</div><div class="stat-label">tarif de départ pour vos livraisons</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="temoignages" class="testimonials">
+  <div class="container">
+    <h2 class="section-title reveal" id="testimonialsTitle">Ce que disent nos clients</h2>
+    <p class="section-sub reveal" id="testimonialsSubtitle">Quelques retours de nos clients et partenaires.</p>
+    <div class="testimonials-grid" id="testimonialsGrid">
+      <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Livraison rapide et livreurs sérieux. Un vrai gain de temps pour mon commerce."</p><div class="testimonial-name">Aïcha K.</div><div class="testimonial-role">Commerçante, Adjamé</div></div>
+      <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Toujours joignables et à l'heure. Je recommande pour toute livraison à Abidjan."</p><div class="testimonial-name">Jean-Marc D.</div><div class="testimonial-role">Client particulier, Cocody</div></div>
+      <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★☆</div><p class="testimonial-text">"Service fiable pour mes livraisons e-commerce, à un tarif clair."</p><div class="testimonial-name">Fatou S.</div><div class="testimonial-role">Boutique en ligne, Marcory</div></div>
+    </div>
+  </div>
+</section>
+
 <section id="devis" class="devis">
   <div class="container">
     <h2 class="section-title reveal">Demander un devis</h2>
@@ -433,10 +520,11 @@
             <label for="service">Type de service *</label>
             <select id="service" required>
               <option value="">Sélectionnez un service</option>
-              <option>Livraison de courriers / documents administratifs</option>
-              <option>Livraison de colis et plis</option>
+              <option>Livraison express</option>
+              <option>Livraison programmée</option>
+              <option>Livraison e-commerce</option>
+              <option>Courses pour entreprises</option>
               <option>Expédition</option>
-              <option>Courses / divers</option>
               <option>Autre</option>
             </select>
           </div>
@@ -493,10 +581,11 @@
       <div class="footer-col">
         <h4>Nos services</h4>
         <ul class="footer-links" id="footerServicesList">
-          <li>Courriers &amp; documents</li>
-          <li>Colis &amp; plis</li>
-          <li>Expéditions</li>
-          <li>Courses &amp; divers</li>
+          <li>Livraison express</li>
+          <li>Livraison programmée</li>
+          <li>Livraison e-commerce</li>
+          <li>Courses pour entreprises</li>
+          <li>Expédition</li>
         </ul>
       </div>
       <div class="footer-col">
@@ -582,6 +671,30 @@
   function trustItemHTML(t, i){
     const delay = reducedMotion ? 0 : i * 0.12;
     return `<div class="trust-item reveal" style="transition-delay:${delay}s"><i class="fa-solid ${t.icon || 'fa-circle-check'}"></i><div><h4>${t.title}</h4><p>${t.text}</p></div></div>`;
+  }
+
+  function stepCardHTML(s, i){
+    const delay = reducedMotion ? 0 : (i % 3) * 0.12;
+    return `<div class="step-card reveal" style="transition-delay:${delay}s"><div class="step-icon"><i class="fa-solid ${s.icon || 'fa-truck'}"></i></div><h3>${s.title}</h3><p>${s.text}</p></div>`;
+  }
+
+  function aboutValueHTML(v, i){
+    const delay = reducedMotion ? 0 : i * 0.1;
+    return `<div class="about-value reveal" style="transition-delay:${delay}s"><i class="fa-solid ${v.icon || 'fa-circle-check'}"></i><h4>${v.title}</h4><p>${v.text}</p></div>`;
+  }
+
+  function aboutStatHTML(s){
+    return `<div class="about-stat"><div class="stat-number">${s.number}</div><div class="stat-label">${s.label}</div></div>`;
+  }
+
+  function starsHTML(rating){
+    const r = Math.max(0, Math.min(5, parseInt(rating, 10) || 0));
+    return "★".repeat(r) + "☆".repeat(5 - r);
+  }
+
+  function testimonialCardHTML(t, i){
+    const delay = reducedMotion ? 0 : (i % 3) * 0.12;
+    return `<div class="testimonial-card reveal" style="transition-delay:${delay}s"><div class="testimonial-stars">${starsHTML(t.rating)}</div><p class="testimonial-text">"${t.text}"</p><div class="testimonial-name">${t.name}</div><div class="testimonial-role">${t.role}</div></div>`;
   }
 
   function chipButtonHTML(z, i){
@@ -829,6 +942,42 @@
     // Trust
     if(Array.isArray(data.trust)){
       document.getElementById('trustGrid').innerHTML = data.trust.map(trustItemHTML).join("");
+    }
+    // How it works
+    if(data.how_it_works){
+      const hiw = data.how_it_works;
+      const hiwTitle = document.getElementById('howItWorksTitle'); if(hiwTitle) hiwTitle.textContent = hiw.title || "";
+      const hiwSub = document.getElementById('howItWorksSubtitle'); if(hiwSub) hiwSub.textContent = hiw.subtitle || "";
+      if(Array.isArray(hiw.steps)){
+        const stepsGrid = document.getElementById('stepsGrid');
+        if(stepsGrid) stepsGrid.innerHTML = hiw.steps.map(stepCardHTML).join("");
+      }
+    }
+    // About
+    if(data.about){
+      const ab = data.about;
+      const abEyebrow = document.getElementById('aboutEyebrow');
+      if(abEyebrow) abEyebrow.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${ab.eyebrow || ""}`;
+      const abTitle = document.getElementById('aboutTitle'); if(abTitle) abTitle.textContent = ab.title || "";
+      const abText = document.getElementById('aboutText'); if(abText) abText.textContent = ab.text || "";
+      if(Array.isArray(ab.values)){
+        const abValues = document.getElementById('aboutValues');
+        if(abValues) abValues.innerHTML = ab.values.map(aboutValueHTML).join("");
+      }
+      if(Array.isArray(ab.stats)){
+        const abStats = document.getElementById('aboutStats');
+        if(abStats) abStats.innerHTML = ab.stats.map(aboutStatHTML).join("");
+      }
+    }
+    // Testimonials
+    if(data.testimonials){
+      const tm = data.testimonials;
+      const tmTitle = document.getElementById('testimonialsTitle'); if(tmTitle) tmTitle.textContent = tm.title || "";
+      const tmSub = document.getElementById('testimonialsSubtitle'); if(tmSub) tmSub.textContent = tm.subtitle || "";
+      if(Array.isArray(tm.items)){
+        const tmGrid = document.getElementById('testimonialsGrid');
+        if(tmGrid) tmGrid.innerHTML = tm.items.map(testimonialCardHTML).join("");
+      }
     }
     // Coverage
     if(data.coverage){
