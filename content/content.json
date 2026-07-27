@@ -7,30 +7,58 @@
   },
   "services": [
     {
-      "icon": "fa-envelope",
-      "title": "Courriers & documents",
-      "text": "Envoi sécurisé de vos courriers et documents administratifs, remis directement en main propre.",
+      "icon": "fa-bolt",
+      "title": "Livraison express",
+      "text": "Vos colis livrés rapidement, en priorité, pour vos besoins urgents à Abidjan.",
       "photo": ""
     },
     {
-      "icon": "fa-box",
-      "title": "Colis & plis",
-      "text": "Ramassage et livraison rapide de vos colis et plis, où que vous soyez à Abidjan.",
+      "icon": "fa-calendar-check",
+      "title": "Livraison programmée",
+      "text": "Planifiez vos livraisons à l'avance, à la date et l'heure qui vous conviennent.",
+      "photo": ""
+    },
+    {
+      "icon": "fa-cart-shopping",
+      "title": "Livraison e-commerce",
+      "text": "Nous livrons les commandes de votre boutique en ligne directement à vos clients.",
+      "photo": ""
+    },
+    {
+      "icon": "fa-briefcase",
+      "title": "Courses pour entreprises",
+      "text": "Un coursier dédié pour vos courses professionnelles : documents, achats, commissions diverses.",
       "photo": ""
     },
     {
       "icon": "fa-paper-plane",
-      "title": "Expéditions",
+      "title": "Expédition",
       "text": "Prise en charge de vos expéditions vers différents points de la ville, dans les meilleurs délais.",
-      "photo": ""
-    },
-{
-      "icon": "fa-cart-shopping",
-      "title": "Courses & divers",
-      "text": "Achats, courses et petites commissions : dites-nous ce dont vous avez besoin.",
       "photo": ""
     }
   ],
+  "how_it_works": {
+    "eyebrow": "COMMENT ÇA MARCHE",
+    "title": "Un processus simple, en 3 étapes",
+    "subtitle": "De la demande à la livraison, nous nous occupons de tout.",
+    "steps": [
+      {
+        "icon": "fa-comment-dots",
+        "title": "1. Commander",
+        "text": "Vous nous contactez par WhatsApp, téléphone ou via le formulaire du site pour planifier votre livraison."
+      },
+      {
+        "icon": "fa-box-open",
+        "title": "2. Récupération",
+        "text": "Notre livreur passe récupérer votre colis, courrier ou commande à l'adresse indiquée."
+      },
+      {
+        "icon": "fa-truck",
+        "title": "3. Livraison",
+        "text": "Votre colis est livré directement à son destinataire, avec une confirmation dès la remise."
+      }
+    ]
+  },
   "trust": [
     {
       "icon": "fa-bolt",
@@ -173,6 +201,67 @@
     ],
     "cta_title": "Votre zone n'est pas listée ?",
     "cta_text": "Contactez-nous : nous étudions toute demande de livraison à Abidjan et alentours."
+  },
+  "about": {
+    "eyebrow": "À PROPOS",
+    "title": "Qui sommes-nous ?",
+    "text": "Christ Livraison & Transport SARL est une société de livraison basée à Abidjan, Cocody (Lycée technique). Nous accompagnons particuliers, commerçants et entreprises dans leurs livraisons de colis, courriers, documents et courses, partout à Abidjan et ses périphéries.",
+    "values": [
+      {
+        "icon": "fa-bolt",
+        "title": "Rapidité",
+        "text": "Des livraisons traitées rapidement, avec des livreurs déployés selon les zones."
+      },
+      {
+        "icon": "fa-shield-halved",
+        "title": "Fiabilité",
+        "text": "Un suivi rigoureux de chaque commande, du ramassage jusqu'à la remise."
+      },
+      {
+        "icon": "fa-location-dot",
+        "title": "Proximité",
+        "text": "Une équipe joignable et à l'écoute, toujours proche de ses clients et fournisseurs."
+      }
+    ],
+    "stats": [
+      {
+        "number": "49",
+        "label": "commerçants et entreprises partenaires"
+      },
+      {
+        "number": "14",
+        "label": "zones desservies à Abidjan et environs"
+      },
+      {
+        "number": "1000 FCFA",
+        "label": "tarif de départ pour vos livraisons"
+      }
+    ]
+  },
+  "testimonials": {
+    "eyebrow": "TÉMOIGNAGES",
+    "title": "Ce que disent nos clients",
+    "subtitle": "Quelques retours de nos clients et partenaires.",
+    "items": [
+      {
+        "name": "Aïcha K.",
+        "role": "Commerçante, Adjamé",
+        "rating": 5,
+        "text": "Livraison rapide et livreurs sérieux. Un vrai gain de temps pour mon commerce."
+      },
+      {
+        "name": "Jean-Marc D.",
+        "role": "Client particulier, Cocody",
+        "rating": 5,
+        "text": "Toujours joignables et à l'heure. Je recommande pour toute livraison à Abidjan."
+      },
+      {
+        "name": "Fatou S.",
+        "role": "Boutique en ligne, Marcory",
+        "rating": 4,
+        "text": "Service fiable pour mes livraisons e-commerce, à un tarif clair."
+      }
+    ]
   },
   "contact": {
     "whatsapp_number": "2250546818640",
