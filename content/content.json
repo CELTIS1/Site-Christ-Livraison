@@ -291,12 +291,12 @@
       {
         "icon": "fa-box-open",
         "title": "2. Récupération",
-        "text": "Notre livreur passe récupérer votre colis, courrier ou commande à l'adresse indiquée."
+        "text": "Notre livreur passera pour récupérer vos colis, courriers ou commandes à l'adresse indiquée."
       },
       {
         "icon": "fa-truck",
         "title": "3. Livraison",
-        "text": "Votre colis est livré directement à son destinataire, avec une confirmation dès la remise."
+        "text": "Vos colis sont livrés directement à l'adresse de vos destinataires, avec une confirmation dès la remise."
       }
     ]
   },
