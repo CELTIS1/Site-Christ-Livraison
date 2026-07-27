@@ -47,20 +47,28 @@
   }
   nav{
     display:flex; align-items:center; justify-content:space-between;
-    max-width:1120px; margin:0 auto; padding:12px 24px;
+    max-width:1280px; margin:0 auto; padding:12px 16px;
   }
-  .logo-svg{width:180px;}
-  .nav-links{display:flex; align-items:center; gap:30px; list-style:none;}
-  .nav-links a{font-weight:600; font-size:14.5px; color:var(--navy); letter-spacing:.2px;}
+  .logo-svg{width:150px;}
+  .nav-links{display:flex; align-items:center; gap:22px; list-style:none;}
+  .nav-links a{font-weight:600; font-size:13.5px; color:var(--navy); letter-spacing:.2px; white-space:nowrap;}
   .nav-links a:hover{color:var(--orange);}
   .nav-cta{
-    background:var(--orange); color:var(--white); padding:10px 20px; border-radius:24px;
-    font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px;
-    box-shadow:0 4px 12px rgba(226,99,19,0.3);
+    background:var(--orange); color:var(--white); padding:9px 16px; border-radius:24px;
+    font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px;
+    box-shadow:0 4px 12px rgba(226,99,19,0.3); white-space:nowrap;
   }
   .nav-cta:hover{background:#c9550f;}
   .burger{display:none; background:none; border:none; font-size:24px; color:var(--navy); cursor:pointer;}
   .nav-cta-mobile{display:none;}
+
+  @media (min-width:861px){
+    .nav-links li{position:relative;}
+    .nav-links li:not(:first-child):not(.nav-li-cta)::before{
+      content:""; position:absolute; left:-11px; top:50%; transform:translateY(-50%);
+      width:2px; height:16px; background:var(--orange); border-radius:2px; opacity:.55;
+    }
+  }
 
   @media (max-width:860px){
     .nav-links{
@@ -419,7 +427,7 @@
       <li><a href="#faq" onclick="closeMenu()">FAQ</a></li>
       <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
       <li><a href="app/login.html">Espace Colis</a></li>
-      <li><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
+      <li class="nav-li-cta"><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
     </ul>
     <a class="nav-cta" href="#devis">Demander un devis</a>
     <button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button>
