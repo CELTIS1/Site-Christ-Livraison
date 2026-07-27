@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<.services-grid!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -109,11 +109,12 @@
 
   /* ---------- SERVICES ---------- */
   .services-grid{
-    display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:28px;
+    display:flex; flex-wrap:wrap; justify-content:center; gap:28px;
   }
   .service-card{
     background:var(--white); border:1px solid #ECEFF3; border-radius:14px; padding:30px 24px;
     text-align:center; transition:transform .18s ease, box-shadow .18s ease;
+    flex:1 1 220px; max-width:260px; min-width:180px;
   }
   .service-card:hover{transform:translateY(-4px); box-shadow:0 12px 24px rgba(27,67,116,0.08);}
   .service-icon{
