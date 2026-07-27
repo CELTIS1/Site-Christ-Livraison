@@ -269,6 +269,13 @@
       return;
     }
 
+    // Sécurité : un compte pas encore validé (ou refusé) ne doit jamais accéder au tableau de bord.
+    if (profile.status !== 'valide') {
+      await supabaseClient.auth.signOut();
+      window.location.href = 'login.html';
+      return;
+    }
+
     document.getElementById('user-name').textContent = profile.full_name || '';
     document.getElementById('user-first-name').textContent = profile.full_name || '';
 
