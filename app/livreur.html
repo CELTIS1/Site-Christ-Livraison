@@ -50,6 +50,7 @@
     </div>
 
     <div id="panel-mes">
+      <input type="text" id="search-mes" class="search-input" placeholder="Rechercher par description, destination ou fournisseur...">
       <div class="filters" id="filters-mes"></div>
       <div class="colis-list" id="mes-colis-list">
         <div class="empty-state">Chargement...</div>
@@ -57,6 +58,7 @@
     </div>
 
     <div id="panel-tous" class="hidden">
+      <input type="text" id="search-tous" class="search-input" placeholder="Rechercher par description, destination ou fournisseur...">
       <div class="filters" id="filters-tous"></div>
       <div class="colis-list" id="tous-colis-list">
         <div class="empty-state">Chargement...</div>
@@ -73,8 +75,28 @@
   let activeFilterMes = 'tous';
   let activeFilterTous = 'tous';
   let activePanel = 'mes';
+  let searchMes = '';
+  let searchTous = '';
 
-  const FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En livraison', livre: 'Livré', probleme: 'Problème' };
+  async function uploadPhoto(file, userId){
+    const ext = file.name.split('.').pop();
+    const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const { error } = await supabaseClient.storage.from('colis-photos').upload(path, file);
+    if (error) { console.error(error); return null; }
+    const { data } = supabaseClient.storage.from('colis-photos').getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  function matchesSearch(c, term){
+    if (!term) return true;
+    const t = term.toLowerCase();
+    const desc = (c.description || '').toLowerCase();
+    const dest = (c.destination || '').toLowerCase();
+    const fourn = fournisseurLabel(c.fournisseur_id).toLowerCase();
+    return desc.includes(t) || dest.includes(t) || fourn.includes(t);
+  }
+
+  const FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
 
   function showTab(which){
     activePanel = which;
@@ -125,7 +147,13 @@
         </div>
         <div class="status-col">
           <select class="status-select">${statutOptions}</select>
-          <button class="btn btn-sm btn-save" style="margin-top:4px;">Enregistrer</button>
+          <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
+          <div class="field" style="margin-top:8px;">
+            <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée)' : '(optionnel)'}</label>
+            ${c.photo_livraison_url ? `<img src="${c.photo_livraison_url}" class="thumb" style="margin-bottom:6px;">` : ''}
+            <input type="file" accept="image/*" class="livraison-photo-input">
+          </div>
+          <button class="btn btn-sm btn-save" style="margin-top:8px;">Enregistrer</button>
         </div>
       </div>
     `;
@@ -144,6 +172,8 @@
           <div class="desc">${c.description || '(sans description)'}</div>
           <div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
           <div class="meta">Ajouté le ${formatDate(c.created_at)}${lv ? ' · Livreur : ' + lv : ''}</div>
+          ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
+          ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
         </div>
         <div class="status-col">${statutBadgeHTML(c.statut)}</div>
       </div>
@@ -153,9 +183,10 @@
   function renderMesColis(){
     const list = document.getElementById('mes-colis-list');
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
-    const filtered = activeFilterMes === 'tous' ? mine : mine.filter(c => c.statut === activeFilterMes);
+    let filtered = activeFilterMes === 'tous' ? mine : mine.filter(c => c.statut === activeFilterMes);
+    filtered = filtered.filter(c => matchesSearch(c, searchMes));
     if (!filtered.length) {
-      list.innerHTML = `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' ? ' avec ce statut' : ''}.</div>`;
+      list.innerHTML = `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`;
       return;
     }
     list.innerHTML = filtered.map(mesColisRowHTML).join('');
@@ -165,8 +196,23 @@
         const item = btn.closest('.colis-item');
         const id = item.dataset.id;
         const statut = item.querySelector('.status-select').value;
+        const observation = item.querySelector('.obs-textarea').value.trim() || null;
+        const photoInput = item.querySelector('.livraison-photo-input');
+        const existing = allColis.find(c => c.id === id);
+        let photo_livraison_url = existing ? existing.photo_livraison_url : null;
+
+        if (photoInput.files && photoInput.files[0]) {
+          btn.disabled = true; btn.textContent = 'Envoi photo...';
+          const uploaded = await uploadPhoto(photoInput.files[0], currentUser.id);
+          if (uploaded) {
+            photo_livraison_url = uploaded;
+          } else {
+            alert("L'envoi de la photo a échoué. Le colis sera enregistré sans la nouvelle photo. Vérifiez votre connexion et réessayez.");
+          }
+        }
+
         btn.disabled = true; btn.textContent = '...';
-        const { error } = await supabaseClient.from('colis').update({ statut }).eq('id', id);
+        const { error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url }).eq('id', id);
         btn.disabled = false; btn.textContent = 'Enregistrer';
         if (error) { alert("Erreur : " + error.message); }
       });
@@ -175,9 +221,10 @@
 
   function renderTousColis(){
     const list = document.getElementById('tous-colis-list');
-    const filtered = activeFilterTous === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilterTous);
+    let filtered = activeFilterTous === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilterTous);
+    filtered = filtered.filter(c => matchesSearch(c, searchTous));
     if (!filtered.length) {
-      list.innerHTML = `<div class="empty-state">Aucun colis${activeFilterTous !== 'tous' ? ' avec ce statut' : ''}.</div>`;
+      list.innerHTML = `<div class="empty-state">Aucun colis${activeFilterTous !== 'tous' || searchTous ? ' pour ces critères' : ''}.</div>`;
       return;
     }
     list.innerHTML = filtered.map(tousColisItemHTML).join('');
@@ -229,6 +276,9 @@
     function selectFilterTous(val){ activeFilterTous = val; renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
     renderFilters('filters-mes', activeFilterMes, selectFilterMes);
     renderFilters('filters-tous', activeFilterTous, selectFilterTous);
+
+    document.getElementById('search-mes').addEventListener('input', (e) => { searchMes = e.target.value; renderMesColis(); });
+    document.getElementById('search-tous').addEventListener('input', (e) => { searchTous = e.target.value; renderTousColis(); });
 
     await loadProfiles();
     await loadColis();
