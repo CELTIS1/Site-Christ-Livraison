@@ -59,16 +59,20 @@
   </div>
 
   <div class="card">
-    <h2>Récapitulatif</h2>
-    <div class="recap-table-wrap" id="recap-statuts">
-      <div class="empty-state">Chargement...</div>
-    </div>
-    <div class="field" style="max-width:260px; margin-top:20px;">
-      <label>Vue par mois</label>
-      <select id="mois-select"></select>
-    </div>
-    <div id="recap-mois" style="margin-top:12px;">
-      <div class="empty-state">Chargement...</div>
+    <h2 class="panel-subtitle collapsible-header" id="recap-toggle" onclick="toggleRecap()">
+      <span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif
+    </h2>
+    <div id="recap-content" class="hidden">
+      <div class="recap-table-wrap" id="recap-statuts">
+        <div class="empty-state">Chargement...</div>
+      </div>
+      <div class="field" style="max-width:260px; margin-top:20px;">
+        <label>Vue par mois</label>
+        <select id="mois-select"></select>
+      </div>
+      <div id="recap-mois" style="margin-top:12px;">
+        <div class="empty-state">Chargement...</div>
+      </div>
     </div>
   </div>
 
@@ -254,8 +258,10 @@
         </div>
         <div class="status-col">
           ${statutBadgeHTML(c.statut)}
-          <button type="button" class="btn btn-sm btn-outline btn-edit-colis" style="margin-top:8px;">Modifier</button>
-          ${c.statut === 'en_attente' ? `<button type="button" class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>` : ''}
+          ${c.statut === 'en_attente' ? `
+            <button type="button" class="btn btn-sm btn-outline btn-edit-colis" style="margin-top:8px;">Modifier</button>
+            <button type="button" class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>
+          ` : `<div class="meta" style="margin-top:8px; font-style:italic;">Pris en charge — modification réservée à l'équipe</div>`}
         </div>
       </div>
     `;
@@ -435,6 +441,14 @@
     }
     mesColis = data;
     renderColisList();
+  }
+
+  let recapExpanded = false;
+
+  function toggleRecap(){
+    recapExpanded = !recapExpanded;
+    document.getElementById('recap-content').classList.toggle('hidden', !recapExpanded);
+    document.getElementById('recap-arrow').textContent = recapExpanded ? '▼' : '▶';
   }
 
   function renderRecapStatuts(){
