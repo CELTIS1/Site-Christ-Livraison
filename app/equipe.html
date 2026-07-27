@@ -104,11 +104,49 @@
 </div>
 
 <div class="card">
-<h2>Tous les colis</h2>
+<div class="tabs">
+<div class="tab active" id="tab-colis" onclick="showMainTab('colis')">Tous les colis <span id="alert-badge" class="alert-badge hidden">0</span></div>
+<div class="tab" id="tab-journal" onclick="showMainTab('journal')">Journal de bord</div>
+<div class="tab" id="tab-rapports" onclick="showMainTab('rapports')">Rapports</div>
+</div>
+
+<div id="panel-colis">
+<input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description, destination ou fournisseur...">
 <div class="filters" id="filters"></div>
+<div id="alert-banner" class="alert-banner hidden"></div>
 <div class="colis-list" id="colis-list">
 <div class="empty-state">Chargement...</div>
 </div>
+</div>
+
+<div id="panel-journal" class="hidden">
+<h3 class="panel-subtitle">Récapitulatif par fournisseur</h3>
+<div id="recap-fournisseur" class="recap-table-wrap">
+<div class="empty-state">Chargement...</div>
+</div>
+<h3 class="panel-subtitle" style="margin-top:28px;">Historique des actions</h3>
+<div class="colis-list" id="activity-log-list">
+<div class="empty-state">Chargement...</div>
+</div>
+</div>
+
+<div id="panel-rapports" class="hidden">
+<div class="tabs" style="margin-bottom:20px;">
+<div class="tab active" id="subtab-jour" onclick="showRapportSubTab('jour')">Vue par jour</div>
+<div class="tab" id="subtab-mois" onclick="showRapportSubTab('mois')">Vue par mois</div>
+</div>
+<div id="rapport-jour">
+<div id="rapport-jour-content"><div class="empty-state">Chargement...</div></div>
+</div>
+<div id="rapport-mois" class="hidden">
+<div class="field" style="max-width:260px;">
+<label>Mois</label>
+<select id="mois-select"></select>
+</div>
+<div id="rapport-mois-content"><div class="empty-state">Chargement...</div></div>
+</div>
+</div>
+
 </div>
 
 <div id="admin-section" class="hidden">
@@ -143,13 +181,6 @@
 </div>
 </div>
 
-<div class="card">
-<h2>Journal d'activité</h2>
-<div class="colis-list" id="activity-log-list">
-<div class="empty-state">Chargement...</div>
-</div>
-</div>
-
 </div>
 </div>
 
@@ -165,6 +196,16 @@ let activeFilter = 'tous';
 let isAdmin = false;
 let allAccounts = [];
 let activeAccountFilter = 'tous';
+let searchColis = '';
+
+function matchesSearch(c, term){
+if (!term) return true;
+const t = term.toLowerCase();
+const desc = (c.description || '').toLowerCase();
+const dest = (c.destination || '').toLowerCase();
+const fourn = fournisseurLabel(c.fournisseur_id).toLowerCase();
+return desc.includes(t) || dest.includes(t) || fourn.includes(t);
+}
 
 function addMsg(text, type){
 document.getElementById('add-msg').innerHTML = `<div class="msg msg-${type}">${text}</div>`;
@@ -400,9 +441,11 @@ const destination = document.getElementById('add-dest').value.trim();
 const description = document.getElementById('add-desc').value.trim();
 const fileInput = document.getElementById('add-photo');
 let photo_url = null;
+let photoUploadFailed = false;
 
 if (fileInput.files && fileInput.files[0]) {
 photo_url = await uploadPhoto(fileInput.files[0], currentUser.id);
+if (!photo_url) photoUploadFailed = true;
 }
 
 const { error } = await supabaseClient.from('colis').insert([{
@@ -415,12 +458,13 @@ if (error) {
 addMsg("Erreur : " + error.message, "error");
 return;
 }
-addMsg("Colis ajouté avec succès.", "success");
+const photoWarning = photoUploadFailed ? " (attention : l'envoi de la photo a échoué, le colis a été enregistré sans photo)" : "";
+addMsg(`Colis ajouté avec succès${photoWarning}.`, "success");
 e.target.reset();
 loadColis();
 });
 
-const FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En livraison', livre: 'Livré', probleme: 'Problème' };
+const FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
 
 function renderFilters(){
 const box = document.getElementById('filters');
@@ -458,6 +502,7 @@ ${thumb}
 <div class="desc">${c.description || '(sans description)'}</div>
 <div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
 <div class="field" style="margin-top:8px;">
 <label style="font-size:11.5px;">Livreur assigné</label>
 <select class="row-livreur-select" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurOptions}</select>
@@ -465,19 +510,36 @@ ${thumb}
 </div>
 <div class="status-col">
 <select class="status-select">${statutOptions}</select>
+<textarea class="obs-textarea" placeholder="Observation (ex : client absent, colis refusé...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
 <button class="btn btn-sm btn-save" style="margin-top:4px;">Enregistrer</button>
+<button class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>
 </div>
 </div>
 `;
 }
 
-function renderColis(){
-const list = document.getElementById('colis-list');
-const filtered = activeFilter === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilter);
-if (!filtered.length) {
-list.innerHTML = `<div class="empty-state">Aucun colis${activeFilter !== 'tous' ? ' avec ce statut' : ''}.</div>`;
+function renderAlertIndicator(){
+const badge = document.getElementById('alert-badge');
+const banner = document.getElementById('alert-banner');
+const aRisque = allColis.filter(c => c.statut === 'non_livre' || c.statut === 'retour');
+if (!aRisque.length) {
+badge.classList.add('hidden');
+banner.classList.add('hidden');
 return;
 }
+badge.textContent = aRisque.length;
+badge.classList.remove('hidden');
+banner.classList.remove('hidden');
+banner.innerHTML = `⚠️ ${aRisque.length} colis à examiner (non livré ou retour).`;
+}
+
+function renderColis(){
+const list = document.getElementById('colis-list');
+let filtered = activeFilter === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilter);
+filtered = filtered.filter(c => matchesSearch(c, searchColis));
+if (!filtered.length) {
+list.innerHTML = `<div class="empty-state">Aucun colis${activeFilter !== 'tous' || searchColis ? ' pour ces critères' : ''}.</div>`;
+} else {
 list.innerHTML = filtered.map(colisRowHTML).join('');
 
 list.querySelectorAll('.btn-save').forEach(btn => {
@@ -486,12 +548,34 @@ const item = btn.closest('.colis-item');
 const id = item.dataset.id;
 const statut = item.querySelector('.status-select').value;
 const livreur_id = item.querySelector('.row-livreur-select').value || null;
+const observation = item.querySelector('.obs-textarea').value.trim() || null;
 btn.disabled = true; btn.textContent = '...';
-const { error } = await supabaseClient.from('colis').update({ statut, livreur_id }).eq('id', id);
+const { error } = await supabaseClient.from('colis').update({ statut, livreur_id, observation }).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';
 if (error) { alert("Erreur : " + error.message); }
 });
 });
+
+list.querySelectorAll('.btn-delete-colis').forEach(btn => {
+btn.addEventListener('click', async () => {
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+if (!confirm("Supprimer définitivement ce colis ? Cette action est irréversible.")) return;
+btn.disabled = true; btn.textContent = '...';
+const { error } = await supabaseClient.from('colis').delete().eq('id', id);
+if (error) {
+alert("Erreur : " + error.message);
+btn.disabled = false; btn.textContent = 'Supprimer';
+return;
+}
+});
+});
+}
+
+renderAlertIndicator();
+renderRecapFournisseur();
+renderRapportJour();
+populateMoisSelect();
 }
 
 async function loadColis(){
@@ -667,12 +751,54 @@ demande_reset_password: "Demande de réinitialisation de mot de passe",
 suppression_compte: "Suppression d'un compte",
 reinitialisation_mot_de_passe: "Réinitialisation d'un mot de passe",
 promotion_admin: "Promotion au rôle administrateur",
+creation_colis: "Nouveau colis ajouté",
+changement_statut_colis: "Changement de statut d'un colis",
+suppression_colis: "Suppression d'un colis",
 };
 
 function activityRowHTML(a){
 const label = ACTIVITY_LABELS[a.action] || a.action;
-const who = a.details && (a.details.full_name || a.details.phone)
-? ' — ' + [a.details.full_name, a.details.phone].filter(Boolean).join(' · ')
+const d = a.details || {};
+
+if (a.action === 'creation_colis') {
+return `
+<div class="colis-item">
+<div class="info">
+<div class="desc">${label} — ${d.fournisseur || 'Fournisseur inconnu'}</div>
+<div class="meta">${d.description || ''}</div>
+<div class="meta">${formatDate(a.created_at)}</div>
+</div>
+</div>
+`;
+}
+if (a.action === 'changement_statut_colis') {
+const ancien = STATUTS[d.ancien_statut] ? STATUTS[d.ancien_statut].label : (d.ancien_statut || '-');
+const nouveau = STATUTS[d.nouveau_statut] ? STATUTS[d.nouveau_statut].label : (d.nouveau_statut || '-');
+return `
+<div class="colis-item">
+<div class="info">
+<div class="desc">${label} — ${d.fournisseur || 'Fournisseur inconnu'}</div>
+<div class="meta">${ancien} → ${nouveau}</div>
+${d.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(d.observation)}</div>` : ''}
+<div class="meta">${formatDate(a.created_at)}</div>
+</div>
+</div>
+`;
+}
+if (a.action === 'suppression_colis') {
+return `
+<div class="colis-item">
+<div class="info">
+<div class="desc">${label} — ${d.fournisseur || 'Fournisseur inconnu'}</div>
+<div class="meta">${d.description || ''}${d.statut ? ' · Statut au moment de la suppression : ' + (STATUTS[d.statut] ? STATUTS[d.statut].label : d.statut) : ''}</div>
+<div class="meta">${formatDate(a.created_at)}</div>
+</div>
+</div>
+`;
+}
+
+const who = d.full_name || d.phone
+? ' — ' + [d.full_name, d.phone].filter(Boolean).join(' · ')
 : '';
 return `
 <div class="colis-item">
@@ -689,7 +815,7 @@ const { data, error } = await supabaseClient
 .from('activity_log')
 .select('*')
 .order('created_at', { ascending: false })
-.limit(50);
+.limit(200);
 if (error) { console.error(error); return; }
 const box = document.getElementById('activity-log-list');
 if (!data.length) {
@@ -697,6 +823,181 @@ box.innerHTML = `<div class="empty-state">Aucune activité enregistrée.</div>`;
 return;
 }
 box.innerHTML = data.map(activityRowHTML).join('');
+}
+
+function renderRecapFournisseur(){
+const box = document.getElementById('recap-fournisseur');
+if (!box) return;
+if (!allColis.length) {
+box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
+return;
+}
+
+const parFournisseur = {};
+allColis.forEach(c => {
+const key = c.fournisseur_id || 'inconnu';
+if (!parFournisseur[key]) parFournisseur[key] = { total: 0, statuts: {} };
+parFournisseur[key].total++;
+parFournisseur[key].statuts[c.statut] = (parFournisseur[key].statuts[c.statut] || 0) + 1;
+});
+
+const rows = Object.keys(parFournisseur)
+.map(id => ({ id, ...parFournisseur[id] }))
+.sort((a, b) => b.total - a.total);
+
+const statutKeys = Object.keys(STATUTS);
+const headerCols = statutKeys.map(k => `<th>${STATUTS[k].label}</th>`).join('');
+const bodyRows = rows.map(r => {
+const cols = statutKeys.map(k => `<td>${r.statuts[k] || 0}</td>`).join('');
+return `<tr><td>${fournisseurLabel(r.id)}</td>${cols}<td><strong>${r.total}</strong></td></tr>`;
+}).join('');
+
+box.innerHTML = `
+<table class="recap-table">
+<thead><tr><th>Fournisseur</th>${headerCols}<th>Total</th></tr></thead>
+<tbody>${bodyRows}</tbody>
+</table>
+`;
+}
+
+function groupColisByDay(list){
+const groups = {};
+list.forEach(c => {
+const key = (c.created_at || '').slice(0, 10);
+if (!groups[key]) groups[key] = [];
+groups[key].push(c);
+});
+return groups;
+}
+
+function dayLabel(dayKey){
+if (!dayKey) return 'Date inconnue';
+const d = new Date(dayKey + 'T00:00:00');
+return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function colisMiniHTML(c){
+const thumb = c.photo_url
+? `<img src="${c.photo_url}" class="thumb">`
+: `<div class="thumb-placeholder">Pas de photo</div>`;
+return `
+<div class="colis-item">
+${thumb}
+<div class="info">
+<div class="desc">${c.description || '(sans description)'}</div>
+<div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+<div class="meta">${formatDate(c.created_at)}</div>
+${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
+${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
+</div>
+<div class="status-col">${statutBadgeHTML(c.statut)}</div>
+</div>
+`;
+}
+
+function renderRapportJour(){
+const box = document.getElementById('rapport-jour-content');
+if (!box) return;
+if (!allColis.length) {
+box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
+return;
+}
+const groups = groupColisByDay(allColis);
+const days = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+box.innerHTML = days.map(day => `
+<div class="day-group">
+<div class="day-group-header">
+<span>${dayLabel(day)}</span>
+<span class="day-count">${groups[day].length} colis</span>
+</div>
+<div class="colis-list">${groups[day].map(colisMiniHTML).join('')}</div>
+</div>
+`).join('');
+}
+
+function monthKey(iso){
+if (!iso) return '';
+return iso.slice(0, 7);
+}
+
+function monthLabel(key){
+if (!key) return '';
+const [y, m] = key.split('-');
+const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+}
+
+function populateMoisSelect(){
+const select = document.getElementById('mois-select');
+if (!select) return;
+const keys = Array.from(new Set(allColis.map(c => monthKey(c.created_at)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
+const previousValue = select.value;
+select.innerHTML = keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('');
+if (keys.includes(previousValue)) {
+select.value = previousValue;
+} else if (keys.length) {
+select.value = keys[0];
+}
+renderRapportMois();
+}
+
+function renderRapportMois(){
+const box = document.getElementById('rapport-mois-content');
+const select = document.getElementById('mois-select');
+if (!box || !select) return;
+const selected = select.value;
+if (!selected) {
+box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
+return;
+}
+const colisDuMois = allColis.filter(c => monthKey(c.created_at) === selected);
+if (!colisDuMois.length) {
+box.innerHTML = `<div class="empty-state">Aucun colis pour ce mois.</div>`;
+return;
+}
+
+const parFournisseur = {};
+colisDuMois.forEach(c => {
+const key = c.fournisseur_id || 'inconnu';
+if (!parFournisseur[key]) parFournisseur[key] = { total: 0, statuts: {} };
+parFournisseur[key].total++;
+parFournisseur[key].statuts[c.statut] = (parFournisseur[key].statuts[c.statut] || 0) + 1;
+});
+
+const rows = Object.keys(parFournisseur)
+.map(id => ({ id, ...parFournisseur[id] }))
+.sort((a, b) => b.total - a.total);
+
+const statutKeys = Object.keys(STATUTS);
+const headerCols = statutKeys.map(k => `<th>${STATUTS[k].label}</th>`).join('');
+const bodyRows = rows.map(r => {
+const cols = statutKeys.map(k => `<td>${r.statuts[k] || 0}</td>`).join('');
+return `<tr><td>${fournisseurLabel(r.id)}</td>${cols}<td><strong>${r.total}</strong></td></tr>`;
+}).join('');
+
+box.innerHTML = `
+<div class="page-sub" style="margin-bottom:14px;">${colisDuMois.length} colis au total pour ${monthLabel(selected)}.</div>
+<table class="recap-table">
+<thead><tr><th>Fournisseur</th>${headerCols}<th>Total</th></tr></thead>
+<tbody>${bodyRows}</tbody>
+</table>
+`;
+}
+
+function showMainTab(which){
+document.getElementById('tab-colis').classList.toggle('active', which === 'colis');
+document.getElementById('tab-journal').classList.toggle('active', which === 'journal');
+document.getElementById('tab-rapports').classList.toggle('active', which === 'rapports');
+document.getElementById('panel-colis').classList.toggle('hidden', which !== 'colis');
+document.getElementById('panel-journal').classList.toggle('hidden', which !== 'journal');
+document.getElementById('panel-rapports').classList.toggle('hidden', which !== 'rapports');
+}
+
+function showRapportSubTab(which){
+document.getElementById('subtab-jour').classList.toggle('active', which === 'jour');
+document.getElementById('subtab-mois').classList.toggle('active', which === 'mois');
+document.getElementById('rapport-jour').classList.toggle('hidden', which !== 'jour');
+document.getElementById('rapport-mois').classList.toggle('hidden', which !== 'mois');
 }
 
 async function init(){
@@ -718,8 +1019,10 @@ document.getElementById('role-pill').textContent = 'Administrateur';
 document.getElementById('admin-section').classList.remove('hidden');
 renderAccountFilters();
 await loadAllAccounts();
-await loadActivityLog();
 }
+
+document.getElementById('mois-select').addEventListener('change', renderRapportMois);
+document.getElementById('search-colis').addEventListener('input', (e) => { searchColis = e.target.value; renderColis(); });
 
 renderFilters();
 await loadPending();
@@ -727,6 +1030,7 @@ await loadResetRequests();
 await loadFournisseurs();
 await loadLivreurs();
 await loadColis();
+await loadActivityLog();
 
 // Mises à jour en temps réel sur tous les colis
 supabaseClient
@@ -755,15 +1059,13 @@ loadResetRequests();
 })
 .subscribe();
 
-// Mises à jour en temps réel sur le journal d'activité (admin uniquement)
-if (isAdmin) {
+// Mises à jour en temps réel sur le journal d'activité
 supabaseClient
-.channel('activity-log-admin')
+.channel('activity-log-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => {
 loadActivityLog();
 })
 .subscribe();
-}
 }
 
 init();
