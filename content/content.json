@@ -1,7 +1,7 @@
 {
   "hero": {
     "pill": "CRÉDIBLE • SIMPLE • SÉCURISÉE",
-    "title": "Votre partenaire de livraison au quotidien, partout à Abidjan.",
+    "title": "Votre partenaire livraison au quotidien, partout à Abidjan.",
     "lead": "Colis, courriers, documents administratifs et courses : nous nous occupons de vos livraisons pour que vous n'ayez pas à le faire.",
     "photo": ""
   },
@@ -24,7 +24,7 @@
       "text": "Prise en charge de vos expéditions vers différents points de la ville, dans les meilleurs délais.",
       "photo": ""
     },
-    {
+{
       "icon": "fa-cart-shopping",
       "title": "Courses & divers",
       "text": "Achats, courses et petites commissions : dites-nous ce dont vous avez besoin.",
@@ -46,6 +46,11 @@
       "icon": "fa-clock",
       "title": "Toujours joignables",
       "text": "Contactez-nous à tout moment, de préférence la veille ou tôt le matin."
+    },
+    {
+      "icon": "fa-handshake",
+      "title": "Nos partenariats",
+      "text": "49 commerçants et entreprises nous confient déjà leurs livraisons à Abidjan."
     }
   ],
   "coverage": {
