@@ -36,7 +36,7 @@
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
       <span class="collapse-arrow">▶</span> Mon compte
     </h2>
-    <div id="compte-content" class="hidden">
+    <div id="compte-content" class="collapsible-content">
       <div id="change-pwd-msg"></div>
       <form id="form-change-password">
         <div class="field-row">
@@ -92,9 +92,50 @@
   function toggleSection(header, contentId){
     const content = document.getElementById(contentId);
     const arrow = header.querySelector('.collapse-arrow');
-    const isHidden = content.classList.toggle('hidden');
-    if (arrow) arrow.textContent = isHidden ? '▶' : '▼';
+    const isOpen = content.classList.toggle('open');
+    if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
   }
+
+  // Scroll-spy : met en surbrillance douce le lien du menu correspondant à la section visible,
+  // et ouvre automatiquement une section repliable + fait un léger flash sur son titre lors d'un clic.
+  (function initSubnavScrollSpy(){
+    const links = Array.from(document.querySelectorAll('.subnav a'));
+    if (!links.length) return;
+    const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+    if (!sections.length) return;
+
+    const setActive = (id) => {
+      links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+      if (visible.length) setActive(visible[0].target.id);
+    }, { rootMargin: '-72px 0px -60% 0px', threshold: [0, 0.1, 0.25, 0.5] });
+
+    sections.forEach(s => observer.observe(s));
+
+    links.forEach(a => {
+      a.addEventListener('click', () => {
+        const id = a.getAttribute('href').slice(1);
+        const section = document.getElementById(id);
+        if (!section) return;
+
+        const header = section.querySelector('.collapsible-header');
+        if (header) {
+          const content = header.nextElementSibling;
+          if (content && !content.classList.contains('open')) header.click();
+        }
+
+        const title = section.querySelector('.panel-subtitle, h2, h3');
+        if (title) {
+          title.classList.remove('section-flash-title');
+          void title.offsetWidth;
+          title.classList.add('section-flash-title');
+        }
+      });
+    });
+  })();
 
   async function uploadPhoto(file, userId){
     const ext = file.name.split('.').pop();
