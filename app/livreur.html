@@ -214,7 +214,11 @@
         btn.disabled = true; btn.textContent = '...';
         const { error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url }).eq('id', id);
         btn.disabled = false; btn.textContent = 'Enregistrer';
-        if (error) { alert("Erreur : " + error.message); }
+        if (error) { alert("Erreur : " + error.message); return; }
+        // Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel.
+        const idx = allColis.findIndex(c => c.id === id);
+        if (idx !== -1) Object.assign(allColis[idx], { statut, observation, photo_livraison_url });
+        renderAll();
       });
     });
   }
