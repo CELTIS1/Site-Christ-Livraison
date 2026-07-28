@@ -9,9 +9,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -24,41 +21,58 @@
   </div>
 </div>
 
+<div class="subnav">
+  <div class="subnav-inner">
+    <a href="#section-compte">Mon compte</a>
+    <a href="#section-ajouter">Ajouter des colis</a>
+    <a href="#section-recap">Récapitulatif</a>
+    <a href="#section-colis">Mes colis</a>
+  </div>
+</div>
+
 <div class="wrap">
   <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
   <div class="page-sub">Ajoutez vos colis à livrer et suivez leur statut en temps réel.</div>
 
-  <div class="card">
-    <h2>Mon compte</h2>
-    <div id="change-pwd-msg"></div>
-    <form id="form-change-password">
-      <div class="field-row">
-        <div class="field">
-          <label>Nouveau mot de passe</label>
-          <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
+  <div class="card" id="section-compte">
+    <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
+      <span class="collapse-arrow">▶</span> Mon compte
+    </h2>
+    <div id="compte-content" class="hidden">
+      <div id="change-pwd-msg"></div>
+      <form id="form-change-password">
+        <div class="field-row">
+          <div class="field">
+            <label>Nouveau mot de passe</label>
+            <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
+          </div>
+          <div class="field">
+            <label>Confirmer le nouveau mot de passe</label>
+            <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
+          </div>
         </div>
-        <div class="field">
-          <label>Confirmer le nouveau mot de passe</label>
-          <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
-        </div>
-      </div>
-      <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
-    </form>
+        <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
+      </form>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Ajouter des colis</h2>
-    <div id="add-msg"></div>
-    <form id="form-add-colis">
-      <div id="colis-rows"></div>
-      <button type="button" class="btn btn-outline btn-sm" id="btn-add-row" style="margin-bottom:18px;">+ Ajouter un autre colis</button>
-      <div>
-        <button type="submit" class="btn" id="btn-submit-colis">Enregistrer les colis</button>
-      </div>
-    </form>
+  <div class="card" id="section-ajouter">
+    <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'ajouter-content')">
+      <span class="collapse-arrow">▶</span> Ajouter des colis
+    </h2>
+    <div id="ajouter-content" class="hidden">
+      <div id="add-msg"></div>
+      <form id="form-add-colis">
+        <div id="colis-rows"></div>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-add-row" style="margin-bottom:18px;">+ Ajouter un autre colis</button>
+        <div>
+          <button type="submit" class="btn" id="btn-submit-colis">Enregistrer les colis</button>
+        </div>
+      </form>
+    </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="section-recap">
     <h2 class="panel-subtitle collapsible-header" id="recap-toggle" onclick="toggleRecap()">
       <span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif
     </h2>
@@ -76,29 +90,7 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>Comptabilité</h2>
-    <div class="field-row">
-      <div class="field">
-        <label>Du</label>
-        <input type="date" id="compta-date-debut">
-      </div>
-      <div class="field">
-        <label>Au</label>
-        <input type="date" id="compta-date-fin">
-      </div>
-    </div>
-    <div id="compta-summary" style="margin:12px 0;"></div>
-    <div class="recap-table-wrap" id="compta-detail">
-      <div class="empty-state">Chargement...</div>
-    </div>
-    <div style="display:flex; gap:8px; margin-top:14px;">
-      <button type="button" class="btn btn-outline btn-sm" id="btn-export-excel">Exporter en Excel</button>
-      <button type="button" class="btn btn-outline btn-sm" id="btn-export-pdf">Exporter en PDF</button>
-    </div>
-  </div>
-
-  <div class="card">
+  <div class="card" id="section-colis">
     <h2>Mes colis</h2>
     <div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description ou destination..."></div>
     <div class="colis-list" id="colis-list">
@@ -114,6 +106,13 @@
   let rowCount = 0;
   let mesColis = [];
   let searchColis = '';
+
+  function toggleSection(header, contentId){
+    const content = document.getElementById(contentId);
+    const arrow = header.querySelector('.collapse-arrow');
+    const isHidden = content.classList.toggle('hidden');
+    if (arrow) arrow.textContent = isHidden ? '▶' : '▼';
+  }
 
   function matchesSearch(c, term){
     if (!term) return true;
@@ -330,102 +329,7 @@
     }
     renderRecapStatuts();
     populateMoisSelect();
-    renderCompta();
   }
-
-  function comptaFiltered(){
-    const debut = document.getElementById('compta-date-debut').value;
-    const fin = document.getElementById('compta-date-fin').value;
-    return mesColis.filter(c => {
-      const d = (c.created_at || '').slice(0, 10);
-      if (debut && d < debut) return false;
-      if (fin && d > fin) return false;
-      return true;
-    });
-  }
-
-  function renderCompta(){
-    const rows = comptaFiltered();
-    const summary = document.getElementById('compta-summary');
-    const detail = document.getElementById('compta-detail');
-    if (!rows.length) {
-      summary.innerHTML = '';
-      detail.innerHTML = `<div class="empty-state">Aucun colis sur cette période.</div>`;
-      return;
-    }
-    const livres = rows.filter(c => c.statut === 'livre');
-    const totalMontant = rows.reduce((s, c) => s + (Number(c.montant) || 0), 0);
-    const totalMontantLivre = livres.reduce((s, c) => s + (Number(c.montant) || 0), 0);
-    summary.innerHTML = `
-      <div class="page-sub">
-        ${rows.length} colis · ${livres.length} livré(s) ·
-        Montant total : <strong>${formatMontant(totalMontant) || '0 FCFA'}</strong> ·
-        Montant livré : <strong>${formatMontant(totalMontantLivre) || '0 FCFA'}</strong>
-      </div>
-    `;
-    detail.innerHTML = `
-      <table class="recap-table">
-        <thead><tr><th>Colis</th><th>Destination</th><th>Statut</th><th>Montant</th><th>Date</th></tr></thead>
-        <tbody>
-          ${rows.map(c => `
-            <tr>
-              <td>${escapeHTML(c.description || '(sans description)')}</td>
-              <td>${escapeHTML(c.destination || '-')}</td>
-              <td>${STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut}</td>
-              <td>${formatMontant(c.montant) || '-'}</td>
-              <td>${formatDate(c.created_at)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  }
-
-  document.getElementById('compta-date-debut').addEventListener('change', renderCompta);
-  document.getElementById('compta-date-fin').addEventListener('change', renderCompta);
-
-  document.getElementById('btn-export-excel').addEventListener('click', () => {
-    const rows = comptaFiltered();
-    if (!rows.length) { alert("Aucune donnée à exporter."); return; }
-    const data = rows.map(c => ({
-      Colis: c.description || '',
-      Destination: c.destination || '',
-      Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-      Montant: c.montant || 0,
-      Date: formatDate(c.created_at),
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Comptabilité');
-    const nom = (currentProfile && (currentProfile.company_name || currentProfile.full_name)) || 'fournisseur';
-    XLSX.writeFile(wb, `comptabilite-${nom}-${new Date().toISOString().slice(0, 10)}.xlsx`);
-  });
-
-  document.getElementById('btn-export-pdf').addEventListener('click', () => {
-    const rows = comptaFiltered();
-    if (!rows.length) { alert("Aucune donnée à exporter."); return; }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const nom = (currentProfile && (currentProfile.company_name || currentProfile.full_name)) || 'Fournisseur';
-    const livres = rows.filter(c => c.statut === 'livre');
-    const totalMontant = rows.reduce((s, c) => s + (Number(c.montant) || 0), 0);
-    doc.setFontSize(14);
-    doc.text(`Comptabilité — ${nom}`, 14, 16);
-    doc.setFontSize(10);
-    doc.text(`${rows.length} colis · ${livres.length} livré(s) · Montant total : ${formatMontant(totalMontant) || '0 FCFA'}`, 14, 24);
-    doc.autoTable({
-      startY: 30,
-      head: [['Colis', 'Destination', 'Statut', 'Montant', 'Date']],
-      body: rows.map(c => [
-        c.description || '',
-        c.destination || '',
-        STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-        formatMontant(c.montant) || '-',
-        formatDate(c.created_at),
-      ]),
-    });
-    doc.save(`comptabilite-${nom}-${new Date().toISOString().slice(0, 10)}.pdf`);
-  });
 
   async function loadColis(){
     const { data, error } = await supabaseClient
