@@ -660,6 +660,12 @@ const { error } = await supabaseClient.from('colis').update(updatePayload).eq('i
 btn.disabled = false; btn.textContent = 'Enregistrer';
 if (error) { alert("Erreur : " + error.message); return; }
 if (window.__colisEditing) window.__colisEditing.delete(id);
+// Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel :
+// le colis quitte instantanément le mode édition (boutons Enregistrer/Supprimer) et repasse
+// dans le menu d'actions "⋮" replié.
+const idx = allColis.findIndex(c => c.id === id);
+if (idx !== -1) Object.assign(allColis[idx], updatePayload);
+renderColis();
 });
 });
 
@@ -677,6 +683,11 @@ alert("Erreur : " + error.message);
 btn.disabled = false; btn.textContent = originalText;
 return;
 }
+// Retrait immédiat de la liste locale : le colis disparaît instantanément de l'écran
+// au lieu d'attendre le rafraîchissement temps réel.
+allColis = allColis.filter(c => c.id !== id);
+if (window.__colisEditing) window.__colisEditing.delete(id);
+renderColis();
 });
 });
 
