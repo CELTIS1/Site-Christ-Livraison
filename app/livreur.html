@@ -21,29 +21,40 @@
   </div>
 </div>
 
+<div class="subnav">
+  <div class="subnav-inner">
+    <a href="#section-compte">Mon compte</a>
+    <a href="#section-main">Mes colis</a>
+  </div>
+</div>
+
 <div class="wrap">
   <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
   <div class="page-sub">Voici les colis qui vous ont été assignés. Mettez à jour leur statut au fur et à mesure de la livraison.</div>
 
-  <div class="card">
-    <h2>Mon compte</h2>
-    <div id="change-pwd-msg"></div>
-    <form id="form-change-password">
-      <div class="field-row">
-        <div class="field">
-          <label>Nouveau mot de passe</label>
-          <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
+  <div class="card" id="section-compte">
+    <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
+      <span class="collapse-arrow">▶</span> Mon compte
+    </h2>
+    <div id="compte-content" class="hidden">
+      <div id="change-pwd-msg"></div>
+      <form id="form-change-password">
+        <div class="field-row">
+          <div class="field">
+            <label>Nouveau mot de passe</label>
+            <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
+          </div>
+          <div class="field">
+            <label>Confirmer le nouveau mot de passe</label>
+            <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
+          </div>
         </div>
-        <div class="field">
-          <label>Confirmer le nouveau mot de passe</label>
-          <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
-        </div>
-      </div>
-      <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
-    </form>
+        <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
+      </form>
+    </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="section-main">
     <div class="tabs">
       <div class="tab active" id="tab-mes-colis" onclick="showTab('mes')">Mes colis assignés</div>
       <div class="tab" id="tab-tous-colis" onclick="showTab('tous')">Tous les colis</div>
@@ -77,6 +88,13 @@
   let activePanel = 'mes';
   let searchMes = '';
   let searchTous = '';
+
+  function toggleSection(header, contentId){
+    const content = document.getElementById(contentId);
+    const arrow = header.querySelector('.collapse-arrow');
+    const isHidden = content.classList.toggle('hidden');
+    if (arrow) arrow.textContent = isHidden ? '▶' : '▼';
+  }
 
   async function uploadPhoto(file, userId){
     const ext = file.name.split('.').pop();
