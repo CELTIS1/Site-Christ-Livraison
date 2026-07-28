@@ -39,9 +39,18 @@ input,textarea,select{font-family:inherit;}
 }
 .btn-logout{
   background:rgba(255,255,255,0.12); color:var(--white); border:1px solid rgba(255,255,255,0.25);
-  padding:8px 16px; border-radius:20px; font-size:13px; font-weight:600;
+  padding:8px 16px; border-radius:20px; font-size:13px; font-weight:600; flex-shrink:0;
 }
 .btn-logout:hover{background:rgba(255,255,255,0.22);}
+
+/* Sur mobile, la barre du haut passe en colonne pour que le bouton Déconnexion reste toujours visible */
+@media(max-width:640px){
+  .topbar{flex-wrap:wrap; gap:10px; padding:12px 16px;}
+  .topbar .brand{font-size:14px;}
+  .topbar .user-info{width:100%; justify-content:space-between; flex-wrap:wrap; gap:8px 10px; font-size:13px;}
+  .topbar .user-info #user-name{max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .btn-logout{padding:7px 14px; font-size:12.5px;}
+}
 
 /* ---------- SOUS-NAVIGATION ---------- */
 .subnav{
@@ -53,9 +62,27 @@ input,textarea,select{font-family:inherit;}
 }
 .subnav a{
   display:inline-block; padding:13px 12px; font-size:12.5px; font-weight:700; color:var(--muted);
-  white-space:nowrap; border-bottom:2.5px solid transparent; transition:color .15s ease, border-color .15s ease;
+  white-space:nowrap; border-bottom:2.5px solid transparent; transition:color .2s ease, border-color .2s ease;
 }
 .subnav a:hover{color:var(--navy);}
+.subnav a.active{color:var(--orange); border-bottom-color:var(--orange);}
+
+/* ---------- INDICATEUR "SECTION ACTIVE" (flash doux sur le titre) ---------- */
+@keyframes title-flash{
+  0%{ color:var(--orange); }
+  100%{ color:inherit; }
+}
+.section-flash-title{ animation:title-flash 1.3s ease; }
+
+/* ---------- SECTIONS REPLIABLES : ouverture/fermeture en fondu ---------- */
+.collapsible-content{
+  max-height:0; opacity:0; overflow:hidden;
+  transition:max-height .35s ease, opacity .25s ease;
+}
+.collapsible-content.open{
+  max-height:3000px; opacity:1; overflow-x:auto; overflow-y:visible;
+  margin-top:16px; transition:max-height .45s ease, opacity .4s ease .05s;
+}
 
 /* ---------- LAYOUT ---------- */
 .wrap{max-width:1080px; margin:0 auto; padding:32px 24px 60px 24px;}
@@ -105,26 +132,37 @@ input,textarea,select{font-family:inherit;}
 }
 
 /* ---------- COLIS LIST ---------- */
-.colis-list{display:flex; flex-direction:column; gap:12px;}
+.colis-list{display:flex; flex-direction:column; gap:14px;}
 .colis-item{
-  display:flex; gap:14px; align-items:flex-start; border:1px solid var(--border); border-radius:12px; padding:14px;
-  transition:box-shadow .15s ease, border-color .15s ease;
+  display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; background:var(--white);
+  border:1px solid var(--border); border-radius:14px; padding:16px;
+  box-shadow:0 1px 3px rgba(20,40,70,0.05);
+  transition:box-shadow .2s ease, border-color .2s ease, transform .15s ease;
 }
-.colis-item:hover{box-shadow:0 3px 12px rgba(20,40,70,0.07); border-color:#d8dee6;}
+.colis-item:hover{box-shadow:0 6px 18px rgba(20,40,70,0.1); border-color:#d8dee6; transform:translateY(-1px);}
 .colis-item .thumb{
-  width:64px; height:64px; border-radius:9px; object-fit:cover; background:var(--grey-bg); flex-shrink:0;
+  width:72px; height:72px; border-radius:11px; object-fit:cover; background:var(--grey-bg); flex-shrink:0;
 }
 .colis-item .thumb-placeholder{
-  width:64px; height:64px; border-radius:9px; background:var(--grey-bg); display:flex; align-items:center;
+  width:72px; height:72px; border-radius:11px; background:var(--grey-bg); display:flex; align-items:center;
   justify-content:center; color:var(--muted); font-size:11px; flex-shrink:0; text-align:center;
 }
-.colis-item .info{flex:1; min-width:0;}
-.colis-item .info .desc{font-size:14px; font-weight:700; color:#222; margin-bottom:3px;}
-.colis-item .info .meta{font-size:12.5px; color:var(--muted);}
+.colis-item .info{flex:1; min-width:180px;}
+.colis-item .info .desc{font-size:14.5px; font-weight:700; color:#222; margin-bottom:4px;}
+.colis-item .info .meta{font-size:12.5px; color:var(--muted); line-height:1.6;}
 .colis-item .status-col{display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0; width:220px;}
 
+/* Sur mobile : la colonne statut passe sous le reste de la carte, sur toute la largeur */
+@media(max-width:640px){
+  .colis-item{padding:14px;}
+  .colis-item .status-col{
+    width:100%; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    border-top:1px solid var(--border); margin-top:4px; padding-top:12px;
+  }
+}
+
 .badge{
-  display:inline-block; padding:5px 12px; border-radius:14px; font-size:12px; font-weight:700;
+  display:inline-block; padding:6px 14px; border-radius:16px; font-size:12px; font-weight:700; letter-spacing:.2px;
 }
 
 .obs-textarea{
