@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Espace Fournisseur | Christ Livraison & Transport SARL</title>
+<title>Espace Client | Christ Livraison & Transport SARL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
@@ -13,17 +13,17 @@
 <body>
 
 <div class="topbar">
-  <div class="brand"><div class="logo-mark">CLT</div> Espace Colis — Fournisseur</div>
+  <div class="brand"><div class="logo-mark">CLT</div> Espace Colis — Client</div>
   <div class="user-info">
     <span id="user-name"></span>
-    <span class="role-pill">Fournisseur</span>
+    <span class="role-pill">Client</span>
     <button class="btn-logout" onclick="logout()">Déconnexion</button>
   </div>
 </div>
 
 <div class="subnav">
   <div class="subnav-inner">
-    <a href="#section-compte">Mon compte</a>
+    <a href="#section-compte">Gérer mon mot de passe</a>
     <a href="#section-ajouter">Ajouter des colis</a>
     <a href="#section-recap">Récapitulatif</a>
     <a href="#section-colis">Mes colis</a>
@@ -36,7 +36,7 @@
 
   <div class="card" id="section-compte">
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-      <span class="collapse-arrow">▶</span> Mon compte
+      <span class="collapse-arrow">▶</span> Gérer mon mot de passe
     </h2>
     <div id="compte-content" class="collapsible-content">
       <div id="change-pwd-msg"></div>
@@ -107,11 +107,25 @@
   let mesColis = [];
   let searchColis = '';
 
+  function closeOtherSections(exceptContentId){
+    document.querySelectorAll('.card > .collapsible-content').forEach(c => {
+      if (c.id === exceptContentId) return;
+      if (c.classList.contains('open')){
+        c.classList.remove('open');
+        const h = c.previousElementSibling;
+        const arr = h && h.querySelector('.collapse-arrow');
+        if (arr) arr.textContent = '▶';
+      }
+    });
+  }
+
   function toggleSection(header, contentId){
     const content = document.getElementById(contentId);
+    const willOpen = !content.classList.contains('open');
+    if (willOpen) closeOtherSections(contentId);
+    content.classList.toggle('open', willOpen);
     const arrow = header.querySelector('.collapse-arrow');
-    const isOpen = content.classList.toggle('open');
-    if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
+    if (arrow) arrow.textContent = willOpen ? '▼' : '▶';
   }
 
   // Scroll-spy : met en surbrillance douce le lien du menu correspondant à la section visible,
@@ -388,12 +402,12 @@
     renderColisList();
   }
 
-  let recapExpanded = false;
-
   function toggleRecap(){
-    recapExpanded = !recapExpanded;
-    document.getElementById('recap-content').classList.toggle('open', recapExpanded);
-    document.getElementById('recap-arrow').textContent = recapExpanded ? '▼' : '▶';
+    const content = document.getElementById('recap-content');
+    const willOpen = !content.classList.contains('open');
+    if (willOpen) closeOtherSections('recap-content');
+    content.classList.toggle('open', willOpen);
+    document.getElementById('recap-arrow').textContent = willOpen ? '▼' : '▶';
   }
 
   function renderRecapStatuts(){
