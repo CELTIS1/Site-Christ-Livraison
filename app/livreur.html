@@ -15,6 +15,7 @@
 <div class="topbar">
   <div class="brand"><div class="logo-mark">CLT</div> Espace Colis — Livreur</div>
   <div class="user-info">
+    <span id="user-avatar-topbar"></span>
     <span id="user-name"></span>
     <span class="role-pill">Livreur</span>
     <button class="btn-logout" onclick="logout()">Déconnexion</button>
@@ -23,7 +24,7 @@
 
 <div class="subnav">
   <div class="subnav-inner">
-    <a href="#section-compte">Gérer mon mot de passe</a>
+    <a href="#section-compte">Mon compte</a>
     <a href="#section-main">Mes colis</a>
   </div>
 </div>
@@ -34,9 +35,18 @@
 
   <div class="card" id="section-compte">
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-      <span class="collapse-arrow">▼</span> Gérer mon mot de passe
+      <span class="collapse-arrow">▼</span> Mon compte
     </h2>
     <div id="compte-content" class="collapsible-content open">
+      <div class="avatar-upload-row">
+        <div id="avatar-preview"></div>
+        <div class="avatar-upload-actions">
+          <label class="btn btn-outline btn-sm" for="avatar-input" style="cursor:pointer;">📷 Changer ma photo</label>
+          <input type="file" id="avatar-input" accept="image/*" class="hidden">
+          <div class="avatar-upload-hint">Cette photo apparaît à côté de votre nom.</div>
+        </div>
+      </div>
+      <div id="avatar-msg"></div>
       <div id="change-pwd-msg"></div>
       <form id="form-change-password">
         <div class="field-row">
@@ -247,14 +257,18 @@
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb">`
       : `<div class="thumb-placeholder">Pas de photo</div>`;
-    const lv = livreurLabel(c.livreur_id);
+    const livreurProfile = c.livreur_id ? profilesById[c.livreur_id] : null;
+    const livreurLine = livreurProfile
+      ? `<div class="livreur-meta">${avatarHTML(livreurProfile, 20)} <span>Livreur : ${escapeHTML(livreurProfile.full_name || 'Livreur')}</span></div>`
+      : '';
     return `
       <div class="colis-item" data-id="${c.id}">
         ${thumb}
         <div class="info">
           <div class="desc">${c.description || '(sans description)'}</div>
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
-          <div class="meta">Ajouté le ${formatDate(c.created_at)}${lv ? ' · Livreur : ' + lv : ''}</div>
+          <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+          ${livreurLine}
           ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
           ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
         </div>
@@ -331,7 +345,7 @@
   async function loadProfiles(){
     const { data, error } = await supabaseClient
       .from('profiles')
-      .select('id, full_name, company_name, role');
+      .select('id, full_name, company_name, role, avatar_url');
     if (error) { console.error(error); return; }
     profilesById = {};
     data.forEach(p => { profilesById[p.id] = p; });
@@ -371,6 +385,7 @@
 
     document.getElementById('user-name').textContent = profile.full_name || '';
     document.getElementById('user-first-name').textContent = profile.full_name || '';
+    initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', inputId: 'avatar-input', statusId: 'avatar-msg' });
 
     function selectFilterMes(val){ activeFilterMes = val; renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
     function selectFilterTous(val){ activeFilterTous = val; renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
