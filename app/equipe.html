@@ -342,11 +342,14 @@ if (!links.length) return;
 const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
 if (!sections.length) return;
 
+let suppressUntil = 0;
+
 const setActive = (id) => {
 links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
 };
 
 const observer = new IntersectionObserver((entries) => {
+if (Date.now() < suppressUntil) return;
 const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
 if (visible.length) setActive(visible[0].target.id);
 }, { rootMargin: '-72px 0px -60% 0px', threshold: [0, 0.1, 0.25, 0.5] });
@@ -358,6 +361,13 @@ a.addEventListener('click', () => {
 const id = a.getAttribute('href').slice(1);
 const section = document.getElementById(id);
 if (!section) return;
+
+// Fixe immédiatement l'onglet actif sur la section cliquée, et ignore
+// temporairement le scroll-spy le temps que le saut d'ancre et l'animation
+// d'ouverture se terminent (sinon l'onglet en surbrillance peut sauter sur
+// la section voisine pendant la transition).
+setActive(id);
+suppressUntil = Date.now() + 900;
 
 const header = section.querySelector('.collapsible-header');
 if (header) {
