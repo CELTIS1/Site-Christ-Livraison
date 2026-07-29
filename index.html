@@ -60,24 +60,33 @@
   }
   .nav-cta:hover{background:#c9550f;}
   .nav-cta-login{
-        background:var(--orange-light); color:var(--navy); padding:9px 18px; border-radius:24px;
-        font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px;
-        border:1.5px solid var(--navy); white-space:nowrap;
-        transition:background .2s ease, color .2s ease, transform .15s ease, box-shadow .2s ease;
+    background:var(--orange-light); color:var(--navy); padding:9px 18px; border-radius:24px;
+    font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px;
+    border:1.5px solid var(--navy); white-space:nowrap;
+    transition:background .2s ease, color .2s ease, transform .15s ease, box-shadow .2s ease;
   }
-    .nav-links a.nav-cta-login:hover{background:var(--navy); color:var(--white); transform:translateY(-2px); box-shadow:0 6px 16px rgba(27,67,116,.3);}
+  .nav-links a.nav-cta-login:hover{background:var(--navy); color:var(--white); transform:translateY(-2px); box-shadow:0 6px 16px rgba(27,67,116,.3);}
   .burger{display:none; background:none; border:none; font-size:24px; color:var(--navy); cursor:pointer;}
   .nav-cta-mobile{display:none;}
+  .nav-social{display:flex; align-items:center; gap:10px;}
+  .nav-social a{
+    width:30px; height:30px; border-radius:50%; background:var(--orange-light); color:var(--navy);
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+    transition:background .2s ease, color .2s ease, transform .15s ease;
+  }
+  .nav-social a:hover{background:var(--navy); color:var(--white); transform:translateY(-2px);}
 
   @media (min-width:861px){
     .nav-links li{position:relative;}
-    .nav-links li:not(:first-child):not(.nav-li-cta)::before{
+    .nav-links li:not(:first-child):not(.nav-li-cta):not(.nav-li-social)::before{
       content:""; position:absolute; left:-11px; top:50%; transform:translateY(-50%);
       width:2px; height:16px; background:var(--orange); border-radius:2px; opacity:.55;
     }
+    .nav-links .nav-li-social{display:none;}
   }
 
   @media (max-width:860px){
+    .nav-social-desktop{display:none;}
     .nav-links{
       position:absolute; top:100%; left:0; right:0; background:var(--white);
       flex-direction:column; align-items:flex-start; gap:0; padding:8px 24px 18px 24px;
@@ -90,6 +99,9 @@
     .nav-cta{display:none;}
     .nav-links .nav-cta-mobile{display:inline-flex; margin:14px 0 4px 0;}
     .nav-links a.nav-cta-login{display:inline-flex; width:auto; padding:9px 18px; margin:10px 0 4px 0;}
+    .nav-links .nav-li-social{border-bottom:none;}
+    .nav-links .nav-social{padding:10px 0 4px 0; gap:14px;}
+    .nav-links .nav-social a{display:flex; padding:0;}
     .burger{display:block;}
   }
 
@@ -291,8 +303,9 @@
     display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;
   }
   .contact-line span{font-size:14.5px; font-weight:600;}
-  .social-row{display:flex; gap:20px; margin-top:6px;}
-  .social-row .social-item{display:flex; align-items:center; gap:8px; font-size:14px; color:#B8C4D0;}
+  .social-row{display:flex; gap:20px; margin-top:6px; flex-wrap:wrap;}
+  .social-row .social-item{display:flex; align-items:center; gap:8px; font-size:14px; color:#B8C4D0; transition:color .15s ease;}
+  .social-row .social-item:hover{color:var(--orange);}
   .social-row i{color:var(--orange); font-size:17px;}
   .footer-legal{font-size:12px; color:#8598AA; text-align:center; line-height:1.7;}
 
@@ -457,8 +470,20 @@
       <li><a href="#faq" onclick="closeMenu()">FAQ</a></li>
       <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
       <li><a href="app/login.html" class="nav-cta-login">Connexion</a></li>
+      <li class="nav-li-social">
+        <div class="nav-social">
+          <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+        </div>
+      </li>
       <li class="nav-li-cta"><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
     </ul>
+    <div class="nav-social nav-social-desktop">
+      <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+      <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+      <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+    </div>
     <a class="nav-cta" href="#devis">Demander un devis</a>
     <button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button>
   </nav>
@@ -738,8 +763,9 @@
           <span><a href="tel:+2250711138693" id="phoneFooterLink">07 11 13 86 93</a></span>
         </div>
         <div class="social-row">
-          <div class="social-item"><i class="fa-brands fa-facebook"></i> <span id="facebookText">Christ Livraison</span></div>
-          <div class="social-item"><i class="fa-brands fa-instagram"></i> <span id="instagramText">christ_livraison</span></div>
+          <a href="https://www.facebook.com/ChristLivraison/" class="social-item" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i> <span id="facebookText">Christ Livraison</span></a>
+          <a href="https://www.instagram.com/christ_livraison" class="social-item" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i> <span id="instagramText">christ_livraison</span></a>
+          <a href="https://www.tiktok.com/@christ_livraison_trans" class="social-item" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i> <span id="tiktokText">christ_livraison_trans</span></a>
         </div>
       </div>
     </div>
