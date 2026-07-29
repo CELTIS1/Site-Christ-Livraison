@@ -42,29 +42,34 @@
 
   /* ---------- TOP BAR ---------- */
   .topbar{
-    background:var(--navy-dark); color:#D9E2EC; font-size:12.5px;
+    background:var(--navy-dark); color:#D9E2EC; font-size:14px;
+    display:grid; grid-template-rows:1fr; transition:grid-template-rows .35s ease, opacity .3s ease;
   }
+  .topbar.topbar-hidden{grid-template-rows:0fr; opacity:0; pointer-events:none;}
   .topbar-inner{
-    max-width:1280px; margin:0 auto; padding:8px 16px;
-    display:flex; align-items:center; justify-content:flex-end; gap:14px;
+    max-width:1280px; margin:0 auto; padding:10px 16px;
+    display:flex; align-items:center; justify-content:flex-end; gap:16px;
+    overflow:hidden; min-height:0;
   }
   .topbar-item{display:inline-flex; align-items:center; gap:6px; color:#D9E2EC; white-space:nowrap; transition:color .2s ease;}
   .topbar-item:hover{color:var(--white);}
-  .topbar-item i{color:var(--orange); font-size:12px;}
-  .topbar-sep{width:1px; height:12px; background:rgba(255,255,255,0.25);}
-  .topbar-social{display:flex; align-items:center; gap:12px;}
-  .topbar-social a{color:#D9E2EC; font-size:13px; transition:color .2s ease, transform .15s ease;}
+  .topbar-item i{color:var(--orange); font-size:15px;}
+  .topbar-sep{width:1px; height:14px; background:rgba(255,255,255,0.25);}
+  .topbar-social{display:flex; align-items:center; gap:14px;}
+  .topbar-social a{color:#D9E2EC; font-size:17px; transition:color .2s ease, transform .15s ease;}
   .topbar-social a:hover{color:var(--orange); transform:translateY(-2px);}
-  @media (max-width:700px){ .topbar-item.topbar-email{display:none;} .topbar-sep.topbar-sep-email{display:none;} }
-  @media (max-width:480px){ .topbar-inner{justify-content:center;} }
-
-  /* ---------- NAV ---------- */
-  header{
-    position:sticky; top:0; z-index:100; background:var(--white);
-    box-shadow:0 2px 10px rgba(0,0,0,0.06);
-    transition:transform .35s ease;
+  .topbar-login{
+    background:var(--orange); color:var(--white); padding:7px 18px; border-radius:20px;
+    font-weight:700; font-size:12.5px; white-space:nowrap;
+    transition:background .2s ease, transform .15s ease, box-shadow .2s ease;
   }
-  header.nav-hidden{transform:translateY(-100%);}
+  .topbar-login:hover{background:#c9550f; transform:translateY(-1px); box-shadow:0 4px 12px rgba(226,99,19,0.35);}
+  @media (max-width:700px){ .topbar-item.topbar-email{display:none;} .topbar-sep.topbar-sep-email{display:none;} }
+  @media (max-width:480px){ .topbar-inner{justify-content:center; flex-wrap:wrap; row-gap:8px;} }
+
+  /* ---------- SITE HEADER (topbar + nav regroupés, bloc sticky) ---------- */
+  .site-header-fixed{position:sticky; top:0; z-index:100; box-shadow:0 2px 10px rgba(0,0,0,0.06);}
+  header{background:var(--white);}
   nav{
     display:flex; align-items:center; justify-content:space-between;
     max-width:1280px; margin:0 auto; padding:14px 16px;
@@ -80,14 +85,7 @@
     box-shadow:0 4px 12px rgba(226,99,19,0.3); white-space:nowrap;
   }
   .nav-cta:hover{background:#c9550f;}
-  .nav-cta-login{
-    background:var(--orange-light); color:var(--navy); padding:9px 18px; border-radius:24px;
-    font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px;
-    border:1.5px solid var(--navy); white-space:nowrap;
-    transition:background .2s ease, color .2s ease, transform .15s ease, box-shadow .2s ease;
-  }
-  .nav-links a.nav-cta-login:hover{background:var(--navy); color:var(--white); transform:translateY(-2px); box-shadow:0 6px 16px rgba(27,67,116,.3);}
-  .burger{display:none; background:none; border:none; font-size:24px; color:var(--navy); cursor:pointer;}
+  .burger{display:block; background:none; border:none; font-size:24px; color:var(--navy); cursor:pointer;}
   .nav-cta-mobile{display:none;}
   .nav-social{display:flex; align-items:center; gap:10px;}
   .nav-social a{
@@ -97,13 +95,7 @@
   }
   .nav-social a:hover{background:var(--navy); color:var(--white); transform:translateY(-2px);}
 
-  @media (min-width:861px){
-    .nav-links li{position:relative;}
-    .nav-links .nav-li-social{display:none;}
-    .nav-links .nav-li-login{display:none;}
-  }
-
-  /* ---------- NAV ACTIONS (login + social + CTA, à droite) ---------- */
+  /* ---------- NAV ACTIONS (réseaux + devis + menu, à droite) ---------- */
   .nav-actions{display:flex; align-items:center; gap:16px;}
   .nav-actions .nav-social{display:flex; align-items:center; gap:13px;}
   .nav-actions .nav-social a{
@@ -114,8 +106,17 @@
   .nav-actions .nav-social a:hover{background:none; color:var(--orange); transform:translateY(-2px);}
   @media (max-width:860px){ .nav-actions{display:none;} }
 
+  .nav-menu-btn{
+    width:38px; height:38px; border-radius:10px; background:var(--grey-bg); border:1.5px solid #ECEFF3;
+    display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:var(--navy); font-size:15px;
+    transition:background .2s ease, border-color .2s ease, transform .15s ease;
+  }
+  .nav-menu-btn:hover{background:var(--orange-light); border-color:var(--orange); transform:translateY(-1px);}
+  .nav-mobile-actions{display:none; align-items:center; gap:10px;}
+
   @media (max-width:860px){
     .nav-social-desktop{display:none;}
+    .nav-mobile-actions{display:flex;}
     .nav-links{
       position:absolute; top:100%; left:0; right:0; background:var(--white);
       flex-direction:column; align-items:flex-start; gap:0; padding:8px 24px 18px 24px;
@@ -127,12 +128,33 @@
     .nav-links a{display:block; padding:14px 0;}
     .nav-cta{display:none;}
     .nav-links .nav-cta-mobile{display:inline-flex; margin:14px 0 4px 0;}
-    .nav-links a.nav-cta-login{display:inline-flex; width:auto; padding:9px 18px; margin:10px 0 4px 0;}
-    .nav-links .nav-li-social{border-bottom:none;}
-    .nav-links .nav-social{padding:10px 0 4px 0; gap:14px;}
-    .nav-links .nav-social a{display:flex; padding:0;}
-    .burger{display:block;}
   }
+
+  /* ---------- SIDE PANEL (témoignages / FAQ / réseaux sociaux) ---------- */
+  .side-panel-overlay{
+    position:fixed; inset:0; background:rgba(10,20,35,0.45); z-index:590;
+    opacity:0; pointer-events:none; transition:opacity .3s ease;
+  }
+  .side-panel-overlay.open{opacity:1; pointer-events:auto;}
+  .side-panel{
+    position:fixed; top:0; right:-360px; width:320px; max-width:85vw; height:100%;
+    background:var(--navy-dark); z-index:600; padding:80px 32px 32px 32px;
+    display:flex; flex-direction:column; transition:right .35s ease;
+  }
+  .side-panel.open{right:0;}
+  .side-panel-close{
+    position:absolute; top:22px; right:22px; width:38px; height:38px; border-radius:10px;
+    background:rgba(255,255,255,0.08); border:none; color:#fff; font-size:20px; cursor:pointer;
+    transition:background .2s ease;
+  }
+  .side-panel-close:hover{background:rgba(255,255,255,0.18);}
+  .side-panel-links{list-style:none; margin-bottom:auto;}
+  .side-panel-links li{border-bottom:1px solid rgba(255,255,255,0.12);}
+  .side-panel-links a{display:block; padding:16px 0; color:#fff; font-weight:600; font-size:16.5px; transition:color .2s ease;}
+  .side-panel-links a:hover{color:var(--orange);}
+  .side-panel-social{display:flex; align-items:center; gap:20px; padding-top:28px;}
+  .side-panel-social a{color:#C7D1DB; font-size:20px; transition:color .2s ease, transform .15s ease;}
+  .side-panel-social a:hover{color:var(--orange); transform:translateY(-2px);}
 
   /* ---------- HERO ---------- */
   .hero{
@@ -477,63 +499,75 @@
 </head>
 <body>
 
-<div class="topbar" id="topbar">
-  <div class="topbar-inner">
-    <a href="mailto:celtisadje@gmail.com" class="topbar-item topbar-email"><i class="fa-solid fa-envelope"></i> celtisadje@gmail.com</a>
-    <span class="topbar-sep topbar-sep-email"></span>
-    <a href="tel:+2250711138693" class="topbar-item"><i class="fa-solid fa-phone"></i> 07 11 13 86 93</a>
-    <span class="topbar-sep"></span>
-    <div class="topbar-social">
-      <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-      <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-      <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-      <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-    </div>
-  </div>
-</div>
-<header>
-  <nav>
-    <a href="#top">
-      <svg class="logo-svg" viewBox="0 0 1400 450" xmlns="http://www.w3.org/2000/svg">
-        <rect x="50" y="45" width="360" height="360" rx="56" fill="#1B4374"/>
-        <text x="230" y="248" font-family="Arial" font-weight="700" font-size="150" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">CLT</text>
-        <rect x="140" y="278" width="180" height="9" rx="4.5" fill="#E26313"/>
-        <text x="460" y="205" font-family="Arial" font-weight="700" font-size="66" fill="#1B4374" letter-spacing="1">CHRIST LIVRAISON</text>
-        <text x="460" y="270" font-family="Arial" font-weight="500" font-size="66" fill="#1B4374" letter-spacing="1">&amp; TRANSPORT</text>
-        <line x1="462" y1="305" x2="700" y2="305" stroke="#C7D1DB" stroke-width="2"/>
-        <text x="460" y="335" font-family="Arial" font-weight="600" font-size="26" fill="#7A8B9C" letter-spacing="6">SARL</text>
-      </svg>
-    </a>
-    <ul class="nav-links" id="navLinks">
-      <li><a href="#services" onclick="closeMenu()">Services</a></li>
-      <li><a href="#comment-ca-marche" onclick="closeMenu()">Comment ça marche</a></li>
-      <li><a href="#couverture" onclick="closeMenu()">Zone de couverture</a></li>
-      <li><a href="#a-propos" onclick="closeMenu()">À propos</a></li>
-      <li><a href="#temoignages" onclick="closeMenu()">Témoignages</a></li>
-      <li><a href="#faq" onclick="closeMenu()">FAQ</a></li>
-      <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
-      <li class="nav-li-login"><a href="app/login.html" class="nav-cta-login">Se connecter</a></li>
-      <li class="nav-li-social">
-        <div class="nav-social">
-          <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-          <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-        </div>
-      </li>
-      <li class="nav-li-cta"><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
-    </ul>
-    <div class="nav-actions">
-      <div class="nav-social nav-social-desktop">
+<div class="site-header-fixed" id="siteHeaderFixed">
+  <div class="topbar" id="topbar">
+    <div class="topbar-inner">
+      <a href="mailto:celtisadje@gmail.com" class="topbar-item topbar-email"><i class="fa-solid fa-envelope"></i> celtisadje@gmail.com</a>
+      <span class="topbar-sep topbar-sep-email"></span>
+      <a href="tel:+2250711138693" class="topbar-item"><i class="fa-solid fa-phone"></i> 07 11 13 86 93</a>
+      <span class="topbar-sep"></span>
+      <div class="topbar-social">
+        <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
         <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
         <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
       </div>
-      <a href="app/login.html" class="nav-cta-login">Se connecter</a>
-      <a class="nav-cta" href="#devis">Demander un devis</a>
+      <span class="topbar-sep"></span>
+      <a href="app/login.html" class="topbar-login">Se connecter</a>
     </div>
-    <button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button>
-  </nav>
-</header>
+  </div>
+  <header>
+    <nav>
+      <a href="#top">
+        <svg class="logo-svg" viewBox="0 0 1400 450" xmlns="http://www.w3.org/2000/svg">
+          <rect x="50" y="45" width="360" height="360" rx="56" fill="#1B4374"/>
+          <text x="230" y="248" font-family="Arial" font-weight="700" font-size="150" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">CLT</text>
+          <rect x="140" y="278" width="180" height="9" rx="4.5" fill="#E26313"/>
+          <text x="460" y="205" font-family="Arial" font-weight="700" font-size="66" fill="#1B4374" letter-spacing="1">CHRIST LIVRAISON</text>
+          <text x="460" y="270" font-family="Arial" font-weight="500" font-size="66" fill="#1B4374" letter-spacing="1">&amp; TRANSPORT</text>
+          <line x1="462" y1="305" x2="700" y2="305" stroke="#C7D1DB" stroke-width="2"/>
+          <text x="460" y="335" font-family="Arial" font-weight="600" font-size="26" fill="#7A8B9C" letter-spacing="6">SARL</text>
+        </svg>
+      </a>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#services" onclick="closeMenu()">Services</a></li>
+        <li><a href="#comment-ca-marche" onclick="closeMenu()">Comment ça marche</a></li>
+        <li><a href="#couverture" onclick="closeMenu()">Zone de couverture</a></li>
+        <li><a href="#a-propos" onclick="closeMenu()">À propos</a></li>
+        <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
+        <li class="nav-li-cta"><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
+      </ul>
+      <div class="nav-actions">
+        <div class="nav-social nav-social-desktop">
+          <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+        </div>
+        <a class="nav-cta" href="#devis">Demander un devis</a>
+        <button class="nav-menu-btn" onclick="openSidePanel()" aria-label="Plus d'options"><i class="fa-solid fa-grip"></i></button>
+      </div>
+      <div class="nav-mobile-actions">
+        <button class="nav-menu-btn" onclick="openSidePanel()" aria-label="Plus d'options"><i class="fa-solid fa-grip"></i></button>
+        <button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button>
+      </div>
+    </nav>
+  </header>
+</div>
+
+<div class="side-panel-overlay" id="sidePanelOverlay" onclick="closeSidePanel()"></div>
+<div class="side-panel" id="sidePanel">
+  <button class="side-panel-close" onclick="closeSidePanel()" aria-label="Fermer">&times;</button>
+  <ul class="side-panel-links">
+    <li><a href="#temoignages" onclick="closeSidePanel()">Témoignages</a></li>
+    <li><a href="#faq" onclick="closeSidePanel()">FAQ</a></li>
+  </ul>
+  <div class="side-panel-social">
+    <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+    <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+    <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+    <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+  </div>
+</div>
 
 <div id="top"></div>
 <section class="hero">
@@ -694,7 +728,7 @@
       <div class="faq-item">
         <button class="faq-question" type="button"><span>Quelles zones couvrez-vous ?</span><i class="fa-solid fa-chevron-down"></i></button>
         <div class="faq-answer"><p>Nous livrons dans les 13 communes du District d'Abidjan ainsi qu'à Bingerville, Anyama, Songon et Grand-Bassam. Votre zone n'est pas listée ? Contactez-nous, nous étudions toute demande.</p></div>
-      </div>
+      </div>      </div>
       <div class="faq-item">
         <button class="faq-question" type="button"><span>Comment passer une commande ?</span><i class="fa-solid fa-chevron-down"></i></button>
         <div class="faq-answer"><p>Contactez-nous par WhatsApp, par téléphone ou via le formulaire de devis du site. Nous confirmons les détails avec vous puis organisons le ramassage et la livraison.</p></div>
@@ -841,19 +875,28 @@
   function closeMenu(){
     document.getElementById('navLinks').classList.remove('open');
   }
+  function openSidePanel(){
+    document.getElementById('sidePanel').classList.add('open');
+    document.getElementById('sidePanelOverlay').classList.add('open');
+  }
+  function closeSidePanel(){
+    document.getElementById('sidePanel').classList.remove('open');
+    document.getElementById('sidePanelOverlay').classList.remove('open');
+  }
 
-  // Effet de scroll sur l'en-tête : se masque quand on descend, réapparaît quand on remonte
+  // Effet de scroll sur la barre du haut (topbar) : se masque quand on descend, réapparaît dès qu'on remonte.
+  // La barre de navigation principale (logo, liens, devis) reste toujours visible en haut.
   (function(){
-    const headerEl = document.querySelector('header');
-    if(!headerEl) return;
+    const topbarEl = document.getElementById('topbar');
+    if(!topbarEl) return;
     let lastScroll = window.scrollY;
     let ticking = false;
     function onScroll(){
       const cur = window.scrollY;
-      if(cur > lastScroll && cur > 140){
-        headerEl.classList.add('nav-hidden');
+      if(cur > lastScroll && cur > 60){
+        topbarEl.classList.add('topbar-hidden');
       } else {
-        headerEl.classList.remove('nav-hidden');
+        topbarEl.classList.remove('topbar-hidden');
       }
       lastScroll = cur <= 0 ? 0 : cur;
       ticking = false;
