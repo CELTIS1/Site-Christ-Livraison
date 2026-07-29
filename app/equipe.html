@@ -26,7 +26,7 @@
 
 <div class="subnav">
 <div class="subnav-inner">
-<a href="#section-compte">Mon compte</a>
+<a href="#section-compte">Gérer mon mot de passe</a>
 <a href="#section-pending">Comptes en attente</a>
 <a href="#section-reset">Réinitialisations</a>
 <a href="#section-livreur">Créer un livreur</a>
@@ -39,11 +39,11 @@
 
 <div class="wrap">
 <div class="page-title">Suivi des colis</div>
-<div class="page-sub">Tous les colis enregistrés par les fournisseurs, en temps réel.</div>
+<div class="page-sub">Tous les colis enregistrés par les clients, en temps réel.</div>
 
 <div class="card" id="section-compte">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-<span class="collapse-arrow">▶</span> Mon compte
+<span class="collapse-arrow">▶</span> Gérer mon mot de passe
 </h2>
 <div id="compte-content" class="collapsible-content">
 <div id="change-pwd-msg"></div>
@@ -109,14 +109,14 @@
 
 <div class="card" id="section-ajouter-colis">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'ajouter-colis-content')">
-<span class="collapse-arrow">▶</span> Ajouter un colis pour un fournisseur
+<span class="collapse-arrow">▶</span> Ajouter un colis pour un client
 </h2>
 <div id="ajouter-colis-content" class="collapsible-content">
 <div id="add-msg"></div>
 <form id="form-add-colis">
 <div class="field-row">
 <div class="field">
-<label>Fournisseur</label>
+<label>Client</label>
 <select id="add-fournisseur" required>
 <option value="">— Sélectionner —</option>
 </select>
@@ -154,7 +154,7 @@
 </div>
 
 <div id="panel-colis">
-<div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description, destination ou fournisseur..."></div>
+<div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description, destination ou client..."></div>
 <div class="filters" id="filters"></div>
 <div id="alert-banner" class="alert-banner hidden"></div>
 <div class="colis-list" id="colis-list">
@@ -164,7 +164,7 @@
 
 <div id="panel-journal" class="hidden">
 <h3 class="panel-subtitle collapsible-header" id="recap-toggle" onclick="toggleRecap()">
-<span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif par fournisseur
+<span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif par client
 </h3>
 <div id="recap-fournisseur" class="recap-table-wrap collapsible-content">
 <div class="empty-state">Chargement...</div>
@@ -195,9 +195,9 @@
 <div id="panel-compta" class="hidden">
 <div class="field-row">
 <div class="field">
-<label>Fournisseur</label>
+<label>Client</label>
 <select id="compta-fournisseur">
-<option value="">Tous les fournisseurs</option>
+<option value="">Tous les clients</option>
 </select>
 </div>
 <div class="field">
@@ -282,11 +282,25 @@ let activeAccountFilter = 'tous';
 let searchColis = '';
 window.__colisEditing = new Set();
 
+function closeOtherSections(exceptContentId){
+document.querySelectorAll('.card > .collapsible-content').forEach(c => {
+if (c.id === exceptContentId) return;
+if (c.classList.contains('open')){
+c.classList.remove('open');
+const h = c.previousElementSibling;
+const arr = h && h.querySelector('.collapse-arrow');
+if (arr) arr.textContent = '▶';
+}
+});
+}
+
 function toggleSection(header, contentId){
 const content = document.getElementById(contentId);
+const willOpen = !content.classList.contains('open');
+if (willOpen) closeOtherSections(contentId);
+content.classList.toggle('open', willOpen);
 const arrow = header.querySelector('.collapse-arrow');
-const isOpen = content.classList.toggle('open');
-if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
+if (arrow) arrow.textContent = willOpen ? '▼' : '▶';
 }
 
 // Scroll-spy : met en surbrillance douce le lien du menu correspondant à la section visible,
@@ -374,9 +388,13 @@ function populateComptaFournisseurSelect(){
 const select = document.getElementById('compta-fournisseur');
 if (!select) return;
 const previousValue = select.value;
-select.innerHTML = '<option value="">Tous les fournisseurs</option>' +
+select.innerHTML = '<option value="">Tous les clients</option>' +
 fournisseurs.map(f => `<option value="${f.id}">${f.company_name || f.full_name || f.id}</option>`).join('');
 select.value = previousValue;
+}
+
+function roleDisplayLabel(role){
+return role === 'fournisseur' ? 'Client' : (role || 'Client');
 }
 
 function pendingRowHTML(p){
@@ -384,7 +402,7 @@ return `
 <div class="colis-item" data-id="${p.id}">
 <div class="info">
 <div class="desc">${p.full_name || '(sans nom)'}${p.company_name ? ' — ' + p.company_name : ''}</div>
-<div class="meta">Rôle demandé : ${p.role || 'fournisseur'}${p.phone ? ' · Tél : ' + p.phone : ''}</div>
+<div class="meta">Rôle demandé : ${roleDisplayLabel(p.role)}${p.phone ? ' · Tél : ' + p.phone : ''}</div>
 </div>
 <div class="status-col">
 <button class="btn btn-sm btn-valider" style="margin-bottom:4px;">Valider</button>
@@ -626,7 +644,7 @@ renderColis();
 
 function fournisseurLabel(id){
 const f = fournisseurs.find(x => x.id === id);
-if (!f) return 'Fournisseur inconnu';
+if (!f) return 'Client inconnu';
 return f.company_name || f.full_name || id;
 }
 
@@ -650,7 +668,7 @@ const estValide = colisEstValide(c) && !window.__colisEditing?.has(c.id);
 const infoBlock = `
 <div class="info">
 <div class="desc">${c.description || '(sans description)'}</div>
-<div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
@@ -673,7 +691,7 @@ return `
 ${thumb}
 <div class="info">
 <div class="desc">${c.description || '(sans description)'}</div>
-<div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
 <div class="meta">Ajouté le ${formatDate(c.created_at)} · ${livreurLabel}</div>
 ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
@@ -850,7 +868,7 @@ allAccounts = data;
 renderAllAccounts();
 }
 
-const ACCOUNT_FILTER_LABELS = { tous: 'Tous', fournisseur: 'Fournisseurs', livreur: 'Livreurs', equipe: 'Équipe', admin: 'Admin' };
+const ACCOUNT_FILTER_LABELS = { tous: 'Tous', fournisseur: 'Clients', livreur: 'Livreurs', equipe: 'Équipe', admin: 'Admin' };
 
 function renderAccountFilters(){
 const box = document.getElementById('account-filters');
@@ -878,7 +896,7 @@ return `
 <div class="colis-item" data-id="${a.id}">
 <div class="info">
 <div class="desc">${a.full_name || '(sans nom)'}${a.company_name ? ' — ' + a.company_name : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}</div>
-<div class="meta">Rôle : ${a.role}${a.phone ? ' · Tél : ' + a.phone : ''} · Statut : ${a.status || '-'}</div>
+<div class="meta">Rôle : ${roleDisplayLabel(a.role)}${a.phone ? ' · Tél : ' + a.phone : ''} · Statut : ${a.status || '-'}</div>
 </div>
 <div class="status-col" style="width:auto; flex-direction:row; align-items:center;">
 <div class="actions-menu">
@@ -1010,7 +1028,7 @@ btn.disabled = false; btn.textContent = 'Créer le compte équipe';
 const ACTIVITY_LABELS = {
 creation_compte_equipe: "Création d'un compte équipe",
 creation_compte_livreur: "Création d'un compte livreur",
-inscription_fournisseur: "Inscription d'un fournisseur",
+inscription_fournisseur: "Inscription d'un client",
 demande_reset_password: "Demande de réinitialisation de mot de passe",
 suppression_compte: "Suppression d'un compte",
 reinitialisation_mot_de_passe: "Réinitialisation d'un mot de passe",
@@ -1028,7 +1046,7 @@ if (a.action === 'creation_colis') {
 return `
 <div class="colis-item">
 <div class="info">
-<div class="desc">${label} — ${d.fournisseur || 'Fournisseur inconnu'}</div>
+<div class="desc">${label} — ${d.fournisseur || 'Client inconnu'}</div>
 <div class="meta">${d.description || ''}</div>
 <div class="meta">${formatDate(a.created_at)}</div>
 </div>
@@ -1041,7 +1059,7 @@ const nouveau = STATUTS[d.nouveau_statut] ? STATUTS[d.nouveau_statut].label : (d
 return `
 <div class="colis-item">
 <div class="info">
-<div class="desc">${label} — ${d.fournisseur || 'Fournisseur inconnu'}</div>
+<div class="desc">${label} — ${d.fournisseur || 'Client inconnu'}</div>
 <div class="meta">${ancien} → ${nouveau}</div>
 ${d.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(d.observation)}</div>` : ''}
 <div class="meta">${formatDate(a.created_at)}</div>
@@ -1053,7 +1071,7 @@ if (a.action === 'suppression_colis') {
 return `
 <div class="colis-item">
 <div class="info">
-<div class="desc">${label} — ${d.fournisseur || 'Fournisseur inconnu'}</div>
+<div class="desc">${label} — ${d.fournisseur || 'Client inconnu'}</div>
 <div class="meta">${d.description || ''}${d.statut ? ' · Statut au moment de la suppression : ' + (STATUTS[d.statut] ? STATUTS[d.statut].label : d.statut) : ''}</div>
 <div class="meta">${formatDate(a.created_at)}</div>
 </div>
@@ -1126,7 +1144,7 @@ return `<tr><td>${fournisseurLabel(r.id)}</td>${cols}<td><strong>${r.total}</str
 
 box.innerHTML = `
 <table class="recap-table">
-<thead><tr><th>Fournisseur</th>${headerCols}<th>Total</th></tr></thead>
+<thead><tr><th>Client</th>${headerCols}<th>Total</th></tr></thead>
 <tbody>${bodyRows}</tbody>
 </table>
 `;
@@ -1157,7 +1175,7 @@ return `
 ${thumb}
 <div class="info">
 <div class="desc">${c.description || '(sans description)'}</div>
-<div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
 <div class="meta">${formatDate(c.created_at)}</div>
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
@@ -1250,7 +1268,7 @@ return `<tr><td>${fournisseurLabel(r.id)}</td>${cols}<td><strong>${r.total}</str
 box.innerHTML = `
 <div class="page-sub" style="margin-bottom:14px;">${colisDuMois.length} colis au total pour ${monthLabel(selected)}.</div>
 <table class="recap-table">
-<thead><tr><th>Fournisseur</th>${headerCols}<th>Total</th></tr></thead>
+<thead><tr><th>Client</th>${headerCols}<th>Total</th></tr></thead>
 <tbody>${bodyRows}</tbody>
 </table>
 `;
@@ -1308,7 +1326,7 @@ const recapRows = Object.keys(parFournisseur)
 .sort((a, b) => b.total - a.total);
 recapBox.innerHTML = `
 <table class="recap-table">
-<thead><tr><th>Fournisseur</th><th>Colis</th><th>Livrés</th><th>Montant</th></tr></thead>
+<thead><tr><th>Client</th><th>Colis</th><th>Livrés</th><th>Montant</th></tr></thead>
 <tbody>
 ${recapRows.map(r => `
 <tr>
@@ -1325,7 +1343,7 @@ ${recapRows.map(r => `
 // Détail colis par colis
 detail.innerHTML = `
 <table class="recap-table">
-<thead><tr><th>Colis</th><th>Fournisseur</th><th>Statut</th><th>Montant</th><th>Date</th></tr></thead>
+<thead><tr><th>Colis</th><th>Client</th><th>Statut</th><th>Montant</th><th>Date</th></tr></thead>
 <tbody>
 ${rows.map(c => `
 <tr>
@@ -1364,7 +1382,7 @@ const rows = comptaFiltered();
 if (!rows.length) { alert("Aucune donnée à exporter."); return; }
 const data = rows.map(c => ({
 Colis: c.description || '',
-Fournisseur: fournisseurLabel(c.fournisseur_id),
+Client: fournisseurLabel(c.fournisseur_id),
 Destination: c.destination || '',
 Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
 Montant: c.montant || 0,
@@ -1389,7 +1407,7 @@ doc.setFontSize(10);
 doc.text(`${rows.length} colis · ${livres.length} livré(s) · Montant total : ${formatMontant(totalMontant) || '0 FCFA'}`, 14, 24);
 doc.autoTable({
 startY: 30,
-head: [['Colis', 'Fournisseur', 'Statut', 'Montant', 'Date']],
+head: [['Colis', 'Client', 'Statut', 'Montant', 'Date']],
 body: rows.map(c => [
 c.description || '',
 fournisseurLabel(c.fournisseur_id),
