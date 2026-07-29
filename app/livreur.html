@@ -23,7 +23,7 @@
 
 <div class="subnav">
   <div class="subnav-inner">
-    <a href="#section-compte">Mon compte</a>
+    <a href="#section-compte">Gérer mon mot de passe</a>
     <a href="#section-main">Mes colis</a>
   </div>
 </div>
@@ -34,7 +34,7 @@
 
   <div class="card" id="section-compte">
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-      <span class="collapse-arrow">▶</span> Mon compte
+      <span class="collapse-arrow">▶</span> Gérer mon mot de passe
     </h2>
     <div id="compte-content" class="collapsible-content">
       <div id="change-pwd-msg"></div>
@@ -61,7 +61,7 @@
     </div>
 
     <div id="panel-mes">
-      <div class="search-wrap"><input type="text" id="search-mes" class="search-input" placeholder="Rechercher par description, destination ou fournisseur..."></div>
+      <div class="search-wrap"><input type="text" id="search-mes" class="search-input" placeholder="Rechercher par description, destination ou client..."></div>
       <div class="filters" id="filters-mes"></div>
       <div class="colis-list" id="mes-colis-list">
         <div class="empty-state">Chargement...</div>
@@ -69,7 +69,7 @@
     </div>
 
     <div id="panel-tous" class="hidden">
-      <div class="search-wrap"><input type="text" id="search-tous" class="search-input" placeholder="Rechercher par description, destination ou fournisseur..."></div>
+      <div class="search-wrap"><input type="text" id="search-tous" class="search-input" placeholder="Rechercher par description, destination ou client..."></div>
       <div class="filters" id="filters-tous"></div>
       <div class="colis-list" id="tous-colis-list">
         <div class="empty-state">Chargement...</div>
@@ -89,11 +89,25 @@
   let searchMes = '';
   let searchTous = '';
 
+  function closeOtherSections(exceptContentId){
+    document.querySelectorAll('.card > .collapsible-content').forEach(c => {
+      if (c.id === exceptContentId) return;
+      if (c.classList.contains('open')){
+        c.classList.remove('open');
+        const h = c.previousElementSibling;
+        const arr = h && h.querySelector('.collapse-arrow');
+        if (arr) arr.textContent = '▶';
+      }
+    });
+  }
+
   function toggleSection(header, contentId){
     const content = document.getElementById(contentId);
+    const willOpen = !content.classList.contains('open');
+    if (willOpen) closeOtherSections(contentId);
+    content.classList.toggle('open', willOpen);
     const arrow = header.querySelector('.collapse-arrow');
-    const isOpen = content.classList.toggle('open');
-    if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
+    if (arrow) arrow.textContent = willOpen ? '▼' : '▶';
   }
 
   // Scroll-spy : met en surbrillance douce le lien du menu correspondant à la section visible,
@@ -177,7 +191,7 @@
 
   function fournisseurLabel(id){
     const p = profilesById[id];
-    if (!p) return 'Fournisseur inconnu';
+    if (!p) return 'Client inconnu';
     return p.company_name || p.full_name || id;
   }
 
@@ -201,7 +215,7 @@
         ${thumb}
         <div class="info">
           <div class="desc">${c.description || '(sans description)'}</div>
-          <div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
         </div>
         <div class="status-col">
@@ -229,7 +243,7 @@
         ${thumb}
         <div class="info">
           <div class="desc">${c.description || '(sans description)'}</div>
-          <div class="meta">Fournisseur : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
           <div class="meta">Ajouté le ${formatDate(c.created_at)}${lv ? ' · Livreur : ' + lv : ''}</div>
           ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
           ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
