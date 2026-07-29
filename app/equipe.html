@@ -294,6 +294,36 @@ if (arr) arr.textContent = '▶';
 });
 }
 
+// Sur mobile (surtout Safari/iOS), les colonnes/en-têtes "sticky" d'un tableau
+// qui était masqué (display:none ou max-height:0) ne se repositionnent pas
+// toujours correctement une fois la section/l'onglet ré-affiché. On force un
+// recalcul de mise en page (reflow) pour que le navigateur remette à jour
+// la position "sticky".
+function forceStickyReflow(container){
+if (!container) return;
+const wraps = container.classList.contains('recap-table-wrap')
+? [container]
+: container.querySelectorAll('.recap-table-wrap');
+wraps.forEach(w => {
+const prevDisplay = w.style.display;
+w.style.display = 'none';
+void w.offsetHeight; // force le reflow
+w.style.display = prevDisplay;
+});
+}
+
+// Variante utilisée pour les sections repliables animées (max-height) : on
+// attend la fin de la transition d'ouverture avant de forcer le reflow.
+function refreshStickyTables(container){
+if (!container) return;
+const onEnd = (e) => {
+if (e.target !== container || e.propertyName !== 'max-height') return;
+container.removeEventListener('transitionend', onEnd);
+forceStickyReflow(container);
+};
+container.addEventListener('transitionend', onEnd);
+}
+
 function toggleSection(header, contentId){
 const content = document.getElementById(contentId);
 const willOpen = !content.classList.contains('open');
@@ -301,6 +331,7 @@ if (willOpen) closeOtherSections(contentId);
 content.classList.toggle('open', willOpen);
 const arrow = header.querySelector('.collapse-arrow');
 if (arrow) arrow.textContent = willOpen ? '▼' : '▶';
+if (willOpen) refreshStickyTables(content);
 }
 
 // Scroll-spy : met en surbrillance douce le lien du menu correspondant à la section visible,
@@ -1113,8 +1144,10 @@ let recapExpanded = false;
 
 function toggleRecap(){
 recapExpanded = !recapExpanded;
-document.getElementById('recap-fournisseur').classList.toggle('open', recapExpanded);
+const recapBox = document.getElementById('recap-fournisseur');
+recapBox.classList.toggle('open', recapExpanded);
 document.getElementById('recap-arrow').textContent = recapExpanded ? '▼' : '▶';
+if (recapExpanded) refreshStickyTables(recapBox);
 }
 
 function renderRecapFournisseur(){
@@ -1370,6 +1403,10 @@ document.getElementById('panel-colis').classList.toggle('hidden', which !== 'col
 document.getElementById('panel-journal').classList.toggle('hidden', which !== 'journal');
 document.getElementById('panel-rapports').classList.toggle('hidden', which !== 'rapports');
 document.getElementById('panel-compta').classList.toggle('hidden', which !== 'compta');
+if (which === 'journal' || which === 'compta'){
+const panel = document.getElementById(which === 'journal' ? 'panel-journal' : 'panel-compta');
+requestAnimationFrame(() => forceStickyReflow(panel));
+}
 }
 
 function showRapportSubTab(which){
