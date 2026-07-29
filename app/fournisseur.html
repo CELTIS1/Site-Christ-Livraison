@@ -119,6 +119,28 @@
     });
   }
 
+  // Sur mobile (surtout Safari/iOS), les colonnes/en-têtes "sticky" d'un tableau
+  // qui était masqué (max-height:0) ne se repositionnent pas toujours correctement
+  // une fois la section ré-ouverte. On force un recalcul de mise en page une fois
+  // l'animation d'ouverture terminée.
+  function refreshStickyTables(container){
+    if (!container) return;
+    const onEnd = (e) => {
+      if (e.target !== container || e.propertyName !== 'max-height') return;
+      container.removeEventListener('transitionend', onEnd);
+      const wraps = container.classList.contains('recap-table-wrap')
+        ? [container]
+        : container.querySelectorAll('.recap-table-wrap');
+      wraps.forEach(w => {
+        const prevDisplay = w.style.display;
+        w.style.display = 'none';
+        void w.offsetHeight; // force le reflow
+        w.style.display = prevDisplay;
+      });
+    };
+    container.addEventListener('transitionend', onEnd);
+  }
+
   function toggleSection(header, contentId){
     const content = document.getElementById(contentId);
     const willOpen = !content.classList.contains('open');
@@ -126,6 +148,7 @@
     content.classList.toggle('open', willOpen);
     const arrow = header.querySelector('.collapse-arrow');
     if (arrow) arrow.textContent = willOpen ? '▼' : '▶';
+    if (willOpen) refreshStickyTables(content);
   }
 
   // Scroll-spy : met en surbrillance douce le lien du menu correspondant à la section visible,
@@ -410,6 +433,7 @@
     if (willOpen) closeOtherSections('recap-content');
     content.classList.toggle('open', willOpen);
     document.getElementById('recap-arrow').textContent = willOpen ? '▼' : '▶';
+    if (willOpen) refreshStickyTables(content);
   }
 
   function renderRecapStatuts(){
