@@ -40,17 +40,38 @@
     text-align:center; color:var(--muted); max-width:560px; margin:0 auto 44px auto; font-size:15px;
   }
 
+  /* ---------- TOP BAR ---------- */
+  .topbar{
+    background:var(--navy-dark); color:#D9E2EC; font-size:12.5px;
+  }
+  .topbar-inner{
+    max-width:1280px; margin:0 auto; padding:8px 16px;
+    display:flex; align-items:center; justify-content:flex-end; gap:14px;
+  }
+  .topbar-item{display:inline-flex; align-items:center; gap:6px; color:#D9E2EC; white-space:nowrap; transition:color .2s ease;}
+  .topbar-item:hover{color:var(--white);}
+  .topbar-item i{color:var(--orange); font-size:12px;}
+  .topbar-sep{width:1px; height:12px; background:rgba(255,255,255,0.25);}
+  .topbar-social{display:flex; align-items:center; gap:12px;}
+  .topbar-social a{color:#D9E2EC; font-size:13px; transition:color .2s ease, transform .15s ease;}
+  .topbar-social a:hover{color:var(--orange); transform:translateY(-2px);}
+  @media (max-width:700px){ .topbar-item.topbar-email{display:none;} .topbar-sep.topbar-sep-email{display:none;} }
+  @media (max-width:480px){ .topbar-inner{justify-content:center;} }
+
   /* ---------- NAV ---------- */
   header{
     position:sticky; top:0; z-index:100; background:var(--white);
     box-shadow:0 2px 10px rgba(0,0,0,0.06);
+    transition:transform .35s ease;
   }
+  header.nav-hidden{transform:translateY(-100%);}
   nav{
     display:flex; align-items:center; justify-content:space-between;
-    max-width:1280px; margin:0 auto; padding:12px 16px;
+    max-width:1280px; margin:0 auto; padding:14px 16px;
   }
   .logo-svg{width:150px;}
-  .nav-links{display:flex; align-items:center; gap:22px; list-style:none;}
+  @media (min-width:861px){ .logo-svg{width:190px;} }
+  .nav-links{display:flex; align-items:center; gap:18px; list-style:none;}
   .nav-links a{font-weight:600; font-size:13.5px; color:var(--navy); letter-spacing:.2px; white-space:nowrap;}
   .nav-links a:hover{color:var(--orange);}
   .nav-cta{
@@ -78,10 +99,6 @@
 
   @media (min-width:861px){
     .nav-links li{position:relative;}
-    .nav-links li:not(:first-child):not(.nav-li-cta):not(.nav-li-social)::before{
-      content:""; position:absolute; left:-11px; top:50%; transform:translateY(-50%);
-      width:2px; height:16px; background:var(--orange); border-radius:2px; opacity:.55;
-    }
     .nav-links .nav-li-social{display:none;}
   }
 
@@ -448,6 +465,20 @@
 </head>
 <body>
 
+<div class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <a href="mailto:celtisadje@gmail.com" class="topbar-item topbar-email"><i class="fa-solid fa-envelope"></i> celtisadje@gmail.com</a>
+    <span class="topbar-sep topbar-sep-email"></span>
+    <a href="tel:+2250711138693" class="topbar-item"><i class="fa-solid fa-phone"></i> 07 11 13 86 93</a>
+    <span class="topbar-sep"></span>
+    <div class="topbar-social">
+      <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+      <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+      <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+      <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+    </div>
+  </div>
+</div>
 <header>
   <nav>
     <a href="#top">
@@ -479,11 +510,6 @@
       </li>
       <li class="nav-li-cta"><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
     </ul>
-    <div class="nav-social nav-social-desktop">
-      <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-      <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-      <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-    </div>
     <a class="nav-cta" href="#devis">Demander un devis</a>
     <button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button>
   </nav>
@@ -795,6 +821,30 @@
   function closeMenu(){
     document.getElementById('navLinks').classList.remove('open');
   }
+
+  // Effet de scroll sur l'en-tête : se masque quand on descend, réapparaît quand on remonte
+  (function(){
+    const headerEl = document.querySelector('header');
+    if(!headerEl) return;
+    let lastScroll = window.scrollY;
+    let ticking = false;
+    function onScroll(){
+      const cur = window.scrollY;
+      if(cur > lastScroll && cur > 140){
+        headerEl.classList.add('nav-hidden');
+      } else {
+        headerEl.classList.remove('nav-hidden');
+      }
+      lastScroll = cur <= 0 ? 0 : cur;
+      ticking = false;
+    }
+    window.addEventListener('scroll', function(){
+      if(!ticking){
+        window.requestAnimationFrame(onScroll);
+        ticking = true;
+      }
+    }, {passive:true});
+  })();
 
   // Numéro WhatsApp par défaut (utilisé si content.json est introuvable)
   let SITE = {
