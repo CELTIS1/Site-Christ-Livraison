@@ -109,3 +109,81 @@ function formatMontant(n) {
   if (isNaN(num)) return "";
   return num.toLocaleString("fr-FR") + " FCFA";
 }
+
+// ---------- Photo de profil (avatar) ----------
+// Ces fonctions sont partagées par les 3 tableaux de bord (client, équipe, livreur) pour que
+// chaque utilisateur puisse mettre sa propre photo, affichée ensuite à côté de son nom partout
+// dans l'application (barre du haut, section "Mon compte", liste des colis...).
+
+// Initiales à partir d'un nom (ex : "Yapo Apo Josatta" -> "YJ"), utilisées comme avatar par
+// défaut tant que la personne n'a pas encore ajouté de photo.
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  const first = parts[0][0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (first + last).toUpperCase();
+}
+
+// Retourne le HTML d'un avatar : la photo de la personne si elle en a ajouté une, sinon un
+// rond avec ses initiales. `size` est le diamètre en pixels.
+function avatarHTML(profile, size) {
+  size = size || 36;
+  const name = profile ? (profile.company_name || profile.full_name) : "";
+  const style = `width:${size}px; height:${size}px; font-size:${Math.round(size * 0.38)}px;`;
+  if (profile && profile.avatar_url) {
+    return `<img src="${profile.avatar_url}" class="avatar" style="${style}" alt="Photo de ${escapeHTML(name || "")}">`;
+  }
+  return `<div class="avatar avatar-placeholder" style="${style}">${getInitials(name)}</div>`;
+}
+
+// Envoie une photo de profil dans le stockage et retourne son URL publique.
+async function uploadAvatar(file, userId) {
+  const ext = file.name.split(".").pop();
+  const path = `avatars/${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabaseClient.storage.from("colis-photos").upload(path, file);
+  if (error) { console.error(error); return null; }
+  const { data } = supabaseClient.storage.from("colis-photos").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// Met en place le bloc "photo de profil" d'une page : affiche l'avatar courant (dans la section
+// "Mon compte" et dans la barre du haut), puis, au choix d'un fichier, envoie la photo, met à
+// jour le profil en base et rafraîchit l'affichage partout où l'avatar apparaît sur la page.
+function initAvatarUpload({ profile, previewContainerId, topbarContainerId, inputId, statusId }) {
+  const preview = previewContainerId ? document.getElementById(previewContainerId) : null;
+  const topbar = topbarContainerId ? document.getElementById(topbarContainerId) : null;
+  const input = inputId ? document.getElementById(inputId) : null;
+  const status = statusId ? document.getElementById(statusId) : null;
+
+  function refresh() {
+    if (preview) preview.innerHTML = avatarHTML(profile, 84);
+    if (topbar) topbar.innerHTML = avatarHTML(profile, 34);
+  }
+  refresh();
+
+  if (input) {
+    input.addEventListener("change", async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      if (status) status.innerHTML = `<div class="msg" style="background:var(--grey-bg); color:var(--muted);">Envoi de la photo...</div>`;
+      const url = await uploadAvatar(file, profile.id);
+      if (!url) {
+        if (status) status.innerHTML = `<div class="msg msg-error">L'envoi de la photo a échoué. Vérifiez votre connexion et réessayez.</div>`;
+        return;
+      }
+      const { error } = await supabaseClient.from("profiles").update({ avatar_url: url }).eq("id", profile.id);
+      if (error) {
+        if (status) status.innerHTML = `<div class="msg msg-error">Erreur : ${error.message}</div>`;
+        return;
+      }
+      profile.avatar_url = url;
+      refresh();
+      if (status) status.innerHTML = `<div class="msg msg-success">Photo de profil mise à jour.</div>`;
+      input.value = "";
+    });
+  }
+
+  return refresh;
+}
