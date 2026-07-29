@@ -68,6 +68,33 @@ function escapeHTML(str) {
   return div.innerHTML;
 }
 
+// ---------- Préservation de la position de défilement lors du redessin d'une liste ----------
+// Quand une liste de colis est entièrement redessinée (ex : mise à jour en temps réel), le
+// navigateur ne se souvient pas de "quelle ligne" était sous les yeux de la personne : si de
+// nouveaux colis arrivent en haut de la liste ou qu'un accordéon change de hauteur au même
+// moment, tout le contenu se décale et donne une impression de "saut". Ces deux fonctions
+// repèrent l'élément (avec un attribut data-id) visible en haut de l'écran avant le redessin,
+// puis replacent le défilement pour que ce même élément reste exactement au même endroit après.
+function captureScrollAnchor(container) {
+  if (!container) return null;
+  const items = container.querySelectorAll("[data-id]");
+  for (const item of items) {
+    const rect = item.getBoundingClientRect();
+    if (rect.bottom > 0) {
+      return { id: item.dataset.id, top: rect.top };
+    }
+  }
+  return null;
+}
+
+function restoreScrollAnchor(container, anchor) {
+  if (!anchor || !container) return;
+  const newItem = container.querySelector(`[data-id="${CSS.escape(anchor.id)}"]`);
+  if (!newItem) return;
+  const delta = newItem.getBoundingClientRect().top - anchor.top;
+  if (delta) window.scrollBy(0, delta);
+}
+
 function formatDate(iso) {
   if (!iso) return "";
   const d = new Date(iso);
