@@ -34,9 +34,9 @@
 
   <div class="card" id="section-compte">
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-      <span class="collapse-arrow">▶</span> Gérer mon mot de passe
+      <span class="collapse-arrow">▼</span> Gérer mon mot de passe
     </h2>
-    <div id="compte-content" class="collapsible-content">
+    <div id="compte-content" class="collapsible-content open">
       <div id="change-pwd-msg"></div>
       <form id="form-change-password">
         <div class="field-row">
@@ -239,7 +239,7 @@
       : `<div class="thumb-placeholder">Pas de photo</div>`;
     const lv = livreurLabel(c.livreur_id);
     return `
-      <div class="colis-item">
+      <div class="colis-item" data-id="${c.id}">
         ${thumb}
         <div class="info">
           <div class="desc">${c.description || '(sans description)'}</div>
@@ -255,11 +255,13 @@
 
   function renderMesColis(){
     const list = document.getElementById('mes-colis-list');
+    const __anchor = captureScrollAnchor(list);
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
     let filtered = activeFilterMes === 'tous' ? mine : mine.filter(c => c.statut === activeFilterMes);
     filtered = filtered.filter(c => matchesSearch(c, searchMes));
     if (!filtered.length) {
       list.innerHTML = `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`;
+      restoreScrollAnchor(list, __anchor);
       return;
     }
     list.innerHTML = filtered.map(mesColisRowHTML).join('');
@@ -294,17 +296,21 @@
         renderAll();
       });
     });
+    restoreScrollAnchor(list, __anchor);
   }
 
   function renderTousColis(){
     const list = document.getElementById('tous-colis-list');
+    const __anchor = captureScrollAnchor(list);
     let filtered = activeFilterTous === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilterTous);
     filtered = filtered.filter(c => matchesSearch(c, searchTous));
     if (!filtered.length) {
       list.innerHTML = `<div class="empty-state">Aucun colis${activeFilterTous !== 'tous' || searchTous ? ' pour ces critères' : ''}.</div>`;
+      restoreScrollAnchor(list, __anchor);
       return;
     }
     list.innerHTML = filtered.map(tousColisItemHTML).join('');
+    restoreScrollAnchor(list, __anchor);
   }
 
   function renderAll(){
