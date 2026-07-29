@@ -21,7 +21,7 @@
     --grey-bg:#F7F8FA;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  html{scroll-behavior:smooth;}
+  html{scroll-behavior:smooth; scroll-padding-top:110px;}
   body{
     font-family:Arial, Helvetica, sans-serif;
     color:#222;
@@ -43,7 +43,7 @@
   /* ---------- TOP BAR ---------- */
   .topbar{
     background:var(--navy-dark); color:#D9E2EC; font-size:14px;
-    display:grid; grid-template-rows:1fr; transition:grid-template-rows .35s ease, opacity .3s ease;
+    display:grid; grid-template-rows:1fr; transition:grid-template-rows .22s ease, opacity .2s ease;
   }
   .topbar.topbar-hidden{grid-template-rows:0fr; opacity:0; pointer-events:none;}
   .topbar-inner{
@@ -58,12 +58,6 @@
   .topbar-social{display:flex; align-items:center; gap:14px;}
   .topbar-social a{color:#D9E2EC; font-size:17px; transition:color .2s ease, transform .15s ease;}
   .topbar-social a:hover{color:var(--orange); transform:translateY(-2px);}
-  .topbar-login{
-    background:var(--orange); color:var(--white); padding:7px 18px; border-radius:20px;
-    font-weight:700; font-size:12.5px; white-space:nowrap;
-    transition:background .2s ease, transform .15s ease, box-shadow .2s ease;
-  }
-  .topbar-login:hover{background:#c9550f; transform:translateY(-1px); box-shadow:0 4px 12px rgba(226,99,19,0.35);}
   @media (max-width:700px){ .topbar-item.topbar-email{display:none;} .topbar-sep.topbar-sep-email{display:none;} }
   @media (max-width:480px){ .topbar-inner{justify-content:center; flex-wrap:wrap; row-gap:8px;} }
 
@@ -74,8 +68,11 @@
     display:flex; align-items:center; justify-content:space-between;
     max-width:1280px; margin:0 auto; padding:14px 16px;
   }
-  .logo-svg{width:150px;}
-  @media (min-width:861px){ .logo-svg{width:190px;} }
+  .logo-svg{width:170px;}
+  @media (min-width:861px){
+    .logo-svg{width:225px;}
+    .nav-links .nav-only-mobile{display:none;}
+  }
   .nav-links{display:flex; align-items:center; gap:18px; list-style:none;}
   .nav-links a{font-weight:600; font-size:13.5px; color:var(--navy); letter-spacing:.2px; white-space:nowrap;}
   .nav-links a:hover{color:var(--orange);}
@@ -96,14 +93,21 @@
   .nav-social a:hover{background:var(--navy); color:var(--white); transform:translateY(-2px);}
 
   /* ---------- NAV ACTIONS (réseaux + devis + menu, à droite) ---------- */
-  .nav-actions{display:flex; align-items:center; gap:16px;}
-  .nav-actions .nav-social{display:flex; align-items:center; gap:13px;}
+  .nav-actions{display:flex; align-items:center; gap:14px;}
+  .nav-actions .nav-social{display:flex; align-items:center; gap:12px;}
   .nav-actions .nav-social a{
     width:auto; height:auto; background:none; color:var(--muted); font-size:15px;
     display:inline-flex; align-items:center; justify-content:center;
     transition:color .2s ease, transform .15s ease;
   }
   .nav-actions .nav-social a:hover{background:none; color:var(--orange); transform:translateY(-2px);}
+  .nav-btn-group{display:flex; align-items:center; gap:10px;}
+  .nav-login{
+    background:transparent; color:var(--navy); padding:9px 18px; border-radius:24px;
+    font-weight:700; font-size:13px; border:2px solid var(--navy); white-space:nowrap;
+    transition:background .2s ease, color .2s ease, transform .15s ease;
+  }
+  .nav-login:hover{background:var(--navy); color:var(--white);}
   @media (max-width:860px){ .nav-actions{display:none;} }
 
   .nav-menu-btn{
@@ -502,9 +506,9 @@
 <div class="site-header-fixed" id="siteHeaderFixed">
   <div class="topbar" id="topbar">
     <div class="topbar-inner">
-      <a href="mailto:celtisadje@gmail.com" class="topbar-item topbar-email"><i class="fa-solid fa-envelope"></i> celtisadje@gmail.com</a>
+      <span class="topbar-item topbar-email"><i class="fa-solid fa-envelope"></i> celtisadje@gmail.com</span>
       <span class="topbar-sep topbar-sep-email"></span>
-      <a href="tel:+2250711138693" class="topbar-item"><i class="fa-solid fa-phone"></i> 07 11 13 86 93</a>
+      <span class="topbar-item"><i class="fa-solid fa-phone"></i> 07 11 13 86 93</span>
       <span class="topbar-sep"></span>
       <div class="topbar-social">
         <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
@@ -512,8 +516,6 @@
         <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
         <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
       </div>
-      <span class="topbar-sep"></span>
-      <a href="app/login.html" class="topbar-login">Se connecter</a>
     </div>
   </div>
   <header>
@@ -532,9 +534,9 @@
       <ul class="nav-links" id="navLinks">
         <li><a href="#services" onclick="closeMenu()">Services</a></li>
         <li><a href="#comment-ca-marche" onclick="closeMenu()">Comment ça marche</a></li>
-        <li><a href="#couverture" onclick="closeMenu()">Zone de couverture</a></li>
+        <li class="nav-only-mobile"><a href="#couverture" onclick="closeMenu()">Zone de couverture</a></li>
         <li><a href="#a-propos" onclick="closeMenu()">À propos</a></li>
-        <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
+        <li class="nav-only-mobile"><a href="#contact" onclick="closeMenu()">Contact</a></li>
         <li class="nav-li-cta"><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
       </ul>
       <div class="nav-actions">
@@ -543,11 +545,13 @@
           <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
           <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
         </div>
-        <a class="nav-cta" href="#devis">Demander un devis</a>
+        <div class="nav-btn-group">
+          <a class="nav-cta" href="#devis">Demander un devis</a>
+          <a class="nav-login" href="app/login.html">Se connecter</a>
+        </div>
         <button class="nav-menu-btn" onclick="openSidePanel()" aria-label="Plus d'options"><i class="fa-solid fa-grip"></i></button>
       </div>
       <div class="nav-mobile-actions">
-        <button class="nav-menu-btn" onclick="openSidePanel()" aria-label="Plus d'options"><i class="fa-solid fa-grip"></i></button>
         <button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button>
       </div>
     </nav>
@@ -558,6 +562,8 @@
 <div class="side-panel" id="sidePanel">
   <button class="side-panel-close" onclick="closeSidePanel()" aria-label="Fermer">&times;</button>
   <ul class="side-panel-links">
+    <li><a href="#couverture" onclick="closeSidePanel()">Zone de couverture</a></li>
+    <li><a href="#contact" onclick="closeSidePanel()">Contact</a></li>
     <li><a href="#temoignages" onclick="closeSidePanel()">Témoignages</a></li>
     <li><a href="#faq" onclick="closeSidePanel()">FAQ</a></li>
   </ul>
@@ -728,7 +734,7 @@
       <div class="faq-item">
         <button class="faq-question" type="button"><span>Quelles zones couvrez-vous ?</span><i class="fa-solid fa-chevron-down"></i></button>
         <div class="faq-answer"><p>Nous livrons dans les 13 communes du District d'Abidjan ainsi qu'à Bingerville, Anyama, Songon et Grand-Bassam. Votre zone n'est pas listée ? Contactez-nous, nous étudions toute demande.</p></div>
-      </div>      </div>
+      </div>
       <div class="faq-item">
         <button class="faq-question" type="button"><span>Comment passer une commande ?</span><i class="fa-solid fa-chevron-down"></i></button>
         <div class="faq-answer"><p>Contactez-nous par WhatsApp, par téléphone ou via le formulaire de devis du site. Nous confirmons les détails avec vous puis organisons le ramassage et la livraison.</p></div>
