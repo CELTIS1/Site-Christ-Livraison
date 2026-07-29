@@ -16,10 +16,10 @@
       <div class="login-logo">
         <div class="logo-mark">CLT</div>
       </div>
-      <div class="login-title">Connexion</div>
+      <div class="login-title">Portail de Gestion</div>
       <div class="login-sub">Christ Livraison & Transport SARL</div>
 
-      <div class="tabs">
+      <div class="tabs hidden">
         <div class="tab active" id="tab-connexion" onclick="showTab('connexion')">Connexion</div>
         <div class="tab" id="tab-inscription" onclick="showTab('inscription')">Inscription client</div>
       </div>
@@ -76,6 +76,7 @@
     </div>
     <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-submit">Créer mon compte client</button>
     <div style="margin-top:10px;font-size:12.5px;color:#6b7280;text-align:center;">Votre compte sera activé après validation par notre équipe.</div>
+    <button type="button" id="btn-inscription-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
     </form>
 
     <!-- ATTENTE DE VALIDATION : affiché après l'inscription (ou une tentative de connexion sur un compte en attente).
@@ -374,6 +375,10 @@
 
   document.getElementById('btn-goto-inscription').addEventListener('click', () => {
     showTab('inscription');
+  });
+
+  document.getElementById('btn-inscription-cancel').addEventListener('click', () => {
+    showTab('connexion');
   });
 
   document.getElementById('form-forgot-phone').addEventListener('submit', async (e) => {
