@@ -36,9 +36,9 @@
 
   <div class="card" id="section-compte">
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-      <span class="collapse-arrow">▶</span> Gérer mon mot de passe
+      <span class="collapse-arrow">▼</span> Gérer mon mot de passe
     </h2>
-    <div id="compte-content" class="collapsible-content">
+    <div id="compte-content" class="collapsible-content open">
       <div id="change-pwd-msg"></div>
       <form id="form-change-password">
         <div class="field-row">
@@ -373,6 +373,7 @@
 
   function renderColisList(){
     const list = document.getElementById('colis-list');
+    const __anchor = captureScrollAnchor(list);
     const filtered = mesColis.filter(c => matchesSearch(c, searchColis));
     if (!mesColis.length) {
       list.innerHTML = `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`;
@@ -384,6 +385,7 @@
     }
     renderRecapStatuts();
     populateMoisSelect();
+    restoreScrollAnchor(list, __anchor);
   }
 
   async function loadColis(){
