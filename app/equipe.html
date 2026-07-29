@@ -1344,16 +1344,16 @@ ${recapRows.map(r => `
 
 // Détail colis par colis
 detail.innerHTML = `
-<table class="recap-table">
+<table class="recap-table recap-table-cards">
 <thead><tr><th>Colis</th><th>Client</th><th>Statut</th><th>Montant</th><th>Date</th></tr></thead>
 <tbody>
 ${rows.map(c => `
 <tr>
-<td>${escapeHTML(c.description || '(sans description)')}</td>
-<td>${fournisseurLabel(c.fournisseur_id)}</td>
-<td>${STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut}</td>
-<td>${formatMontant(c.montant) || '-'}</td>
-<td>${formatDate(c.created_at)}</td>
+<td data-label="Colis">${escapeHTML(c.description || '(sans description)')}</td>
+<td data-label="Client">${fournisseurLabel(c.fournisseur_id)}</td>
+<td data-label="Statut">${STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut}</td>
+<td data-label="Montant">${formatMontant(c.montant) || '-'}</td>
+<td data-label="Date">${formatDate(c.created_at)}</td>
 </tr>
 `).join('')}
 </tbody>
