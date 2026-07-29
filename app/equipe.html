@@ -43,9 +43,9 @@
 
 <div class="card" id="section-compte">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-<span class="collapse-arrow">▶</span> Gérer mon mot de passe
+<span class="collapse-arrow">▼</span> Gérer mon mot de passe
 </h2>
-<div id="compte-content" class="collapsible-content">
+<div id="compte-content" class="collapsible-content open">
 <div id="change-pwd-msg"></div>
 <form id="form-change-password">
 <div class="field-row">
@@ -742,6 +742,7 @@ banner.innerHTML = `⚠️ ${aRisque.length} colis à examiner (non livré ou re
 
 function renderColis(){
 const list = document.getElementById('colis-list');
+const __anchor = captureScrollAnchor(list);
 let filtered = activeFilter === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilter);
 filtered = filtered.filter(c => matchesSearch(c, searchColis));
 if (!filtered.length) {
@@ -825,6 +826,7 @@ renderRecapFournisseur();
 renderRapportJour();
 populateMoisSelect();
 renderCompta();
+restoreScrollAnchor(list, __anchor);
 }
 
 async function loadColis(){
