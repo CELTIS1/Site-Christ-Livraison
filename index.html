@@ -59,6 +59,13 @@
     box-shadow:0 4px 12px rgba(226,99,19,0.3); white-space:nowrap;
   }
   .nav-cta:hover{background:#c9550f;}
+  .nav-cta-login{
+    background:#DC2626; color:var(--white); padding:9px 18px; border-radius:24px;
+    font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px;
+    box-shadow:0 4px 12px rgba(220,38,38,.35); white-space:nowrap;
+    transition:background .2s ease, transform .15s ease, box-shadow .2s ease;
+  }
+  .nav-links a.nav-cta-login:hover{background:#B91C1C; color:var(--white); transform:translateY(-2px); box-shadow:0 6px 16px rgba(220,38,38,.45);}
   .burger{display:none; background:none; border:none; font-size:24px; color:var(--navy); cursor:pointer;}
   .nav-cta-mobile{display:none;}
 
@@ -448,7 +455,7 @@
       <li><a href="#temoignages" onclick="closeMenu()">Témoignages</a></li>
       <li><a href="#faq" onclick="closeMenu()">FAQ</a></li>
       <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
-      <li><a href="app/login.html">Espace Colis</a></li>
+      <li><a href="app/login.html" class="nav-cta-login">Connexion</a></li>
       <li class="nav-li-cta"><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
     </ul>
     <a class="nav-cta" href="#devis">Demander un devis</a>
