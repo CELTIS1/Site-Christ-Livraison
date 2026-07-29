@@ -18,6 +18,7 @@
 <div class="topbar">
 <div class="brand"><div class="logo-mark">CLT</div> Tableau de bord — Équipe</div>
 <div class="user-info">
+<span id="user-avatar-topbar"></span>
 <span id="user-name"></span>
 <span class="role-pill" id="role-pill">Équipe interne</span>
 <button class="btn-logout" onclick="logout()">Déconnexion</button>
@@ -26,7 +27,7 @@
 
 <div class="subnav">
 <div class="subnav-inner">
-<a href="#section-compte">Gérer mon mot de passe</a>
+<a href="#section-compte">Mon compte</a>
 <a href="#section-pending">Comptes en attente</a>
 <a href="#section-reset">Réinitialisations</a>
 <a href="#section-livreur">Créer un livreur</a>
@@ -38,14 +39,23 @@
 </div>
 
 <div class="wrap">
-<div class="page-title">Suivi des colis</div>
-<div class="page-sub">Tous les colis enregistrés par les clients, en temps réel.</div>
+<div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
+<div class="page-sub">Voici le suivi de tous les colis enregistrés par les clients, en temps réel.</div>
 
 <div class="card" id="section-compte">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-<span class="collapse-arrow">▼</span> Gérer mon mot de passe
+<span class="collapse-arrow">▼</span> Mon compte
 </h2>
 <div id="compte-content" class="collapsible-content open">
+<div class="avatar-upload-row">
+<div id="avatar-preview"></div>
+<div class="avatar-upload-actions">
+<label class="btn btn-outline btn-sm" for="avatar-input" style="cursor:pointer;">📷 Changer ma photo</label>
+<input type="file" id="avatar-input" accept="image/*" class="hidden">
+<div class="avatar-upload-hint">Cette photo apparaît à côté de votre nom.</div>
+</div>
+</div>
+<div id="avatar-msg"></div>
 <div id="change-pwd-msg"></div>
 <form id="form-change-password">
 <div class="field-row">
@@ -561,7 +571,7 @@ renderResetRequests();
 async function loadLivreurs(){
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, full_name, phone')
+.select('id, full_name, phone, avatar_url')
 .eq('role', 'livreur')
 .order('full_name');
 if (error) { console.error(error); return; }
@@ -726,14 +736,18 @@ ${estValide ? '' : `
 `;
 
 if (estValide) {
-const livreurLabel = c.livreur_id ? (livreurs.find(l => l.id === c.livreur_id)?.full_name || 'Livreur') : 'Aucun livreur assigné';
+const livreurAssigne = c.livreur_id ? livreurs.find(l => l.id === c.livreur_id) : null;
+const livreurLine = livreurAssigne
+? `<div class="livreur-meta">${avatarHTML(livreurAssigne, 20)} <span>Livreur : ${escapeHTML(livreurAssigne.full_name || 'Livreur')}</span></div>`
+: `<div class="meta">Aucun livreur assigné</div>`;
 return `
 <div class="colis-item" data-id="${c.id}">
 ${thumb}
 <div class="info">
 <div class="desc">${c.description || '(sans description)'}</div>
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
-<div class="meta">Ajouté le ${formatDate(c.created_at)} · ${livreurLabel}</div>
+<div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+${livreurLine}
 ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
@@ -1488,6 +1502,8 @@ return;
 
 isAdmin = profile.role === 'admin';
 document.getElementById('user-name').textContent = profile.full_name || '';
+document.getElementById('user-first-name').textContent = profile.full_name || '';
+initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', inputId: 'avatar-input', statusId: 'avatar-msg' });
 
 if (isAdmin) {
 document.getElementById('role-pill').textContent = 'Administrateur';
