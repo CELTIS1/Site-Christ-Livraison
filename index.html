@@ -100,7 +100,19 @@
   @media (min-width:861px){
     .nav-links li{position:relative;}
     .nav-links .nav-li-social{display:none;}
+    .nav-links .nav-li-login{display:none;}
   }
+
+  /* ---------- NAV ACTIONS (login + social + CTA, à droite) ---------- */
+  .nav-actions{display:flex; align-items:center; gap:16px;}
+  .nav-actions .nav-social{display:flex; align-items:center; gap:13px;}
+  .nav-actions .nav-social a{
+    width:auto; height:auto; background:none; color:var(--muted); font-size:15px;
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:color .2s ease, transform .15s ease;
+  }
+  .nav-actions .nav-social a:hover{background:none; color:var(--orange); transform:translateY(-2px);}
+  @media (max-width:860px){ .nav-actions{display:none;} }
 
   @media (max-width:860px){
     .nav-social-desktop{display:none;}
@@ -378,17 +390,17 @@
   .cur-el{position:fixed; top:0; left:0; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); opacity:0; transition:opacity .2s ease;}
   body.custom-cursor-active{cursor:none;}
   body.custom-cursor-active a, body.custom-cursor-active button{cursor:none;}
-  #cursorDot{width:6px; height:6px; background:#fff; border-radius:50%;}
-  #cursorPin{width:28px; height:28px;}
+  #cursorDot{width:5px; height:5px; background:#fff; border-radius:50%;}
+  #cursorPin{width:18px; height:18px;}
   #cursorPin .pin-shape{
     width:100%; height:100%; background:var(--orange); border-radius:50% 50% 50% 0;
-    transform:rotate(-45deg); box-shadow:0 3px 10px rgba(0,0,0,0.3); transition:width .18s ease, height .18s ease;
+    transform:rotate(-45deg); box-shadow:0 2px 6px rgba(0,0,0,0.18); transition:width .18s ease, height .18s ease;
   }
   #cursorPin .pin-dot{
-    position:absolute; top:50%; left:50%; width:8px; height:8px; background:#fff; border-radius:50%;
+    position:absolute; top:50%; left:50%; width:5px; height:5px; background:#fff; border-radius:50%;
     transform:translate(-50%,-60%);
   }
-  #cursorPin.hovering{width:38px; height:38px;}
+  #cursorPin.hovering{width:24px; height:24px;}
 
   /* ---------- FLOATING WHATSAPP BUTTON ---------- */
   .wa-float{
@@ -500,7 +512,7 @@
       <li><a href="#temoignages" onclick="closeMenu()">Témoignages</a></li>
       <li><a href="#faq" onclick="closeMenu()">FAQ</a></li>
       <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
-      <li><a href="app/login.html" class="nav-cta-login">Connexion</a></li>
+      <li class="nav-li-login"><a href="app/login.html" class="nav-cta-login">Se connecter</a></li>
       <li class="nav-li-social">
         <div class="nav-social">
           <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
@@ -510,7 +522,15 @@
       </li>
       <li class="nav-li-cta"><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
     </ul>
-    <a class="nav-cta" href="#devis">Demander un devis</a>
+    <div class="nav-actions">
+      <div class="nav-social nav-social-desktop">
+        <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+        <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+      </div>
+      <a href="app/login.html" class="nav-cta-login">Se connecter</a>
+      <a class="nav-cta" href="#devis">Demander un devis</a>
+    </div>
     <button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button>
   </nav>
 </header>
