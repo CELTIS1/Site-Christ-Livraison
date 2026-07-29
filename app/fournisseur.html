@@ -15,6 +15,7 @@
 <div class="topbar">
   <div class="brand"><div class="logo-mark">CLT</div> Espace Colis — Client</div>
   <div class="user-info">
+    <span id="user-avatar-topbar"></span>
     <span id="user-name"></span>
     <span class="role-pill">Client</span>
     <button class="btn-logout" onclick="logout()">Déconnexion</button>
@@ -23,7 +24,7 @@
 
 <div class="subnav">
   <div class="subnav-inner">
-    <a href="#section-compte">Gérer mon mot de passe</a>
+    <a href="#section-compte">Mon compte</a>
     <a href="#section-ajouter">Ajouter des colis</a>
     <a href="#section-recap">Récapitulatif</a>
     <a href="#section-colis">Mes colis</a>
@@ -36,9 +37,18 @@
 
   <div class="card" id="section-compte">
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-      <span class="collapse-arrow">▼</span> Gérer mon mot de passe
+      <span class="collapse-arrow">▼</span> Mon compte
     </h2>
     <div id="compte-content" class="collapsible-content open">
+      <div class="avatar-upload-row">
+        <div id="avatar-preview"></div>
+        <div class="avatar-upload-actions">
+          <label class="btn btn-outline btn-sm" for="avatar-input" style="cursor:pointer;">📷 Changer ma photo</label>
+          <input type="file" id="avatar-input" accept="image/*" class="hidden">
+          <div class="avatar-upload-hint">Cette photo apparaît à côté de votre nom.</div>
+        </div>
+      </div>
+      <div id="avatar-msg"></div>
       <div id="change-pwd-msg"></div>
       <form id="form-change-password">
         <div class="field-row">
@@ -106,6 +116,17 @@
   let rowCount = 0;
   let mesColis = [];
   let searchColis = '';
+  let livreursById = {};
+
+  async function loadLivreurs(){
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .eq('role', 'livreur');
+    if (error) { console.error(error); return; }
+    livreursById = {};
+    data.forEach(l => { livreursById[l.id] = l; });
+  }
 
   function closeOtherSections(exceptContentId){
     document.querySelectorAll('.card > .collapsible-content').forEach(c => {
@@ -310,6 +331,10 @@
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb">`
       : `<div class="thumb-placeholder">Pas de photo</div>`;
+    const livreur = c.livreur_id ? livreursById[c.livreur_id] : null;
+    const livreurBlock = livreur
+      ? `<div class="livreur-meta">${avatarHTML(livreur, 20)} <span>Livreur : ${escapeHTML(livreur.full_name || 'Livreur')}</span></div>`
+      : (c.statut !== 'en_attente' ? `<div class="meta">Livreur : en cours d'attribution</div>` : '');
     return `
       <div class="colis-item" data-id="${c.id}">
         ${thumb}
@@ -318,7 +343,7 @@
             <div class="desc">${c.description || '(sans description)'}</div>
             <div class="meta">${c.destination ? 'Vers : ' + c.destination + ' · ' : ''}Ajouté le ${formatDate(c.created_at)}</div>
             ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
-            ${c.livreur_nom ? `<div class="meta">Livreur : ${c.livreur_nom}</div>` : ''}
+            ${livreurBlock}
             ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
             ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
           </div>
@@ -547,8 +572,10 @@
     currentProfile = profile;
     document.getElementById('user-name').textContent = profile ? (profile.company_name || profile.full_name || '') : '';
     document.getElementById('user-first-name').textContent = profile ? (profile.full_name || '') : '';
+    initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', inputId: 'avatar-input', statusId: 'avatar-msg' });
 
     addRow();
+    await loadLivreurs();
     loadColis();
     document.getElementById('search-colis').addEventListener('input', (e) => { searchColis = e.target.value; renderColisList(); });
 
