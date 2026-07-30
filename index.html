@@ -270,6 +270,21 @@
   .testimonial-text{font-size:14.5px; color:#3d4a58; margin-bottom:18px; font-style:italic;}
   .testimonial-name{color:var(--navy); font-weight:700; font-size:14.5px;}
   .testimonial-role{color:#8a97a6; font-size:12.5px;}
+  @media (max-width:680px){
+    .testimonials-grid{grid-template-columns:1fr 1fr; gap:12px;}
+    .testimonial-card{padding:16px 14px; border-radius:12px;}
+    .testimonial-stars{font-size:11px; margin-bottom:8px;}
+    .testimonial-text{
+      font-size:12px; line-height:1.45; margin-bottom:10px;
+      display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden;
+    }
+    .testimonial-name{font-size:12.5px;}
+    .testimonial-role{font-size:10.5px;}
+  }
+  @media (max-width:380px){
+    .testimonials-grid{gap:8px;}
+    .testimonial-card{padding:12px 10px;}
+  }
 
   /* ---------- COVERAGE ---------- */
   .pill-light{
