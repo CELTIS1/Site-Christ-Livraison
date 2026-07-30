@@ -148,10 +148,10 @@
   .side-panel-links li{border-bottom:1px solid rgba(255,255,255,0.12);}
   .side-panel-links a{display:block; padding:16px 0; color:#fff; font-weight:600; font-size:16.5px; transition:color .2s ease;}
   .side-panel-links a:hover{color:var(--orange);}
-  .side-panel-social{display:flex; align-items:center; gap:20px; padding-top:28px;}
+  .side-panel-social{display:flex; align-items:center; justify-content:center; gap:20px; padding-top:22px;}
   .side-panel-social a{color:#C7D1DB; font-size:20px; transition:color .2s ease, transform .15s ease;}
   .side-panel-social a:hover{color:var(--orange); transform:translateY(-2px);}
-  .side-panel-login{margin-top:32px;}
+  .side-panel-login{margin-top:0;}
   .side-panel-login a{
     display:flex; align-items:center; justify-content:center; width:100%;
     background:transparent; color:#fff; border:2px solid rgba(255,255,255,0.35); border-radius:24px;
@@ -498,6 +498,7 @@
     .wa-float{bottom:78px;}
   }
   @media (max-width:480px){ .wa-float{right:16px; bottom:78px; width:52px; height:52px; font-size:25px;} }
+
 </style>
 </head>
 <body>
@@ -562,14 +563,14 @@
     <li><a href="#temoignages" onclick="closeSidePanel()">Témoignages</a></li>
     <li><a href="#faq" onclick="closeSidePanel()">FAQ</a></li>
   </ul>
+  <div class="side-panel-login">
+    <a href="app/login.html" onclick="closeSidePanel()">Se connecter</a>
+  </div>
   <div class="side-panel-social">
     <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
     <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
     <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
     <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-  </div>
-  <div class="side-panel-login">
-    <a href="app/login.html" onclick="closeSidePanel()">Se connecter</a>
   </div>
 </div>
 
@@ -899,7 +900,7 @@
       const cur = window.scrollY;
       if(cur > lastScroll && cur > 60){
         topbarEl.classList.add('topbar-hidden');
-      } else {
+      } else if(cur < lastScroll){
         topbarEl.classList.remove('topbar-hidden');
       }
       lastScroll = cur <= 0 ? 0 : cur;
