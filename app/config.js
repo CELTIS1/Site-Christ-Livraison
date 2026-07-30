@@ -119,7 +119,7 @@ function formatMontant(n) {
 // défaut tant que la personne n'a pas encore ajouté de photo.
 function getInitials(name) {
   if (!name) return "?";
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const parts = name.trim().split(/s+/).filter(Boolean);
   if (!parts.length) return "?";
   const first = parts[0][0] || "";
   const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
@@ -148,13 +148,70 @@ async function uploadAvatar(file, userId) {
   return data.publicUrl;
 }
 
+// Relie un ou plusieurs inputs de type "file" (ex : bouton "Prendre une photo" + bouton
+// "Bibliothèque") à une même fonction de traitement. Utilisé partout dans l'application pour
+// que le choix de la source d'une image se limite toujours à ces deux options, et pour garantir
+// qu'un même input peut être réutilisé indéfiniment (la valeur est systématiquement réinitialisée,
+// y compris en cas d'échec, ce qui évite qu'un input "bloqué" empêche de resélectionner un fichier).
+// ---------- Choix photo (colis / preuve de livraison) : caméra ou bibliothèque uniquement ----------
+// Même principe que pour l'avatar, mais pour les champs "photo du colis" qui ne s'envoient qu'au
+// moment de la validation d'un formulaire (pas immédiatement). Chaque champ est un conteneur
+// portant la classe "photo-pick-group" contenant un input ".pick-camera" et un input ".pick-library".
+// Cette écoute déléguée fonctionne aussi pour les groupes ajoutés dynamiquement (lignes de colis,
+// listes générées après coup), sans avoir besoin de rebrancher un écouteur à chaque redessin.
+document.addEventListener("change", (e) => {
+  const input = e.target;
+  if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
+  if (!input.classList.contains("pick-camera") && !input.classList.contains("pick-library")) return;
+  const group = input.closest(".photo-pick-group");
+  if (!group) return;
+  if (input.files && input.files[0]) {
+    const otherSelector = input.classList.contains("pick-camera") ? ".pick-library" : ".pick-camera";
+    const other = group.querySelector(otherSelector);
+    if (other) other.value = "";
+    const nameEl = group.querySelector(".photo-pick-filename");
+    if (nameEl) nameEl.textContent = "📎 " + input.files[0].name;
+  }
+});
+
+// Retourne le fichier actuellement choisi (caméra ou bibliothèque) dans un groupe ".photo-pick-group".
+function pickedGroupFile(group) {
+  if (!group) return null;
+  const cam = group.querySelector(".pick-camera");
+  const lib = group.querySelector(".pick-library");
+  return (cam && cam.files && cam.files[0]) || (lib && lib.files && lib.files[0]) || null;
+}
+
+function wireImagePicker(inputIds, onFile) {
+  const ids = Array.isArray(inputIds) ? inputIds : [inputIds];
+  ids.forEach((id) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener("change", async () => {
+      const file = input.files && input.files[0];
+      input.value = ""; // réinitialisé immédiatement : permet de rechoisir le même fichier ensuite
+      if (!file) return;
+      if (!file.type || !file.type.startsWith("image/")) {
+        alert("Veuillez choisir un fichier image.");
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        alert("L'image est trop volumineuse (8 Mo maximum).");
+        return;
+      }
+      await onFile(file);
+    });
+  });
+}
+
 // Met en place le bloc "photo de profil" d'une page : affiche l'avatar courant (dans la section
-// "Mon compte" et dans la barre du haut), puis, au choix d'un fichier, envoie la photo, met à
-// jour le profil en base et rafraîchit l'affichage partout où l'avatar apparaît sur la page.
-function initAvatarUpload({ profile, previewContainerId, topbarContainerId, inputId, statusId }) {
+// "Mon compte" et dans la barre du haut), puis, au choix d'un fichier (caméra ou bibliothèque),
+// envoie la photo, met à jour le profil en base et rafraîchit l'affichage partout où l'avatar
+// apparaît sur la page. Peut être appelé/rappelé sans limite : la photo reste modifiable à tout
+// moment, pas seulement lors du premier ajout.
+function initAvatarUpload({ profile, previewContainerId, topbarContainerId, inputId, cameraInputId, libraryInputId, statusId }) {
   const preview = previewContainerId ? document.getElementById(previewContainerId) : null;
   const topbar = topbarContainerId ? document.getElementById(topbarContainerId) : null;
-  const input = inputId ? document.getElementById(inputId) : null;
   const status = statusId ? document.getElementById(statusId) : null;
 
   function refresh() {
@@ -163,27 +220,26 @@ function initAvatarUpload({ profile, previewContainerId, topbarContainerId, inpu
   }
   refresh();
 
-  if (input) {
-    input.addEventListener("change", async () => {
-      const file = input.files && input.files[0];
-      if (!file) return;
-      if (status) status.innerHTML = `<div class="msg" style="background:var(--grey-bg); color:var(--muted);">Envoi de la photo...</div>`;
-      const url = await uploadAvatar(file, profile.id);
-      if (!url) {
-        if (status) status.innerHTML = `<div class="msg msg-error">L'envoi de la photo a échoué. Vérifiez votre connexion et réessayez.</div>`;
-        return;
-      }
-      const { error } = await supabaseClient.from("profiles").update({ avatar_url: url }).eq("id", profile.id);
-      if (error) {
-        if (status) status.innerHTML = `<div class="msg msg-error">Erreur : ${error.message}</div>`;
-        return;
-      }
-      profile.avatar_url = url;
-      refresh();
-      if (status) status.innerHTML = `<div class="msg msg-success">Photo de profil mise à jour.</div>`;
-      input.value = "";
-    });
+  async function handleFile(file) {
+    if (status) status.innerHTML = `<div class="msg" style="background:var(--grey-bg); color:var(--muted);">Envoi de la photo...</div>`;
+    const url = await uploadAvatar(file, profile.id);
+    if (!url) {
+      if (status) status.innerHTML = `<div class="msg msg-error">L'envoi de la photo a échoué. Vérifiez votre connexion et réessayez.</div>`;
+      return;
+    }
+    const { error } = await supabaseClient.from("profiles").update({ avatar_url: url }).eq("id", profile.id);
+    if (error) {
+      if (status) status.innerHTML = `<div class="msg msg-error">Erreur : ${error.message}</div>`;
+      return;
+    }
+    profile.avatar_url = url;
+    refresh();
+    if (status) status.innerHTML = `<div class="msg msg-success">Photo de profil mise à jour.</div>`;
   }
+
+  // Compatibilité : si un seul inputId est fourni (ancien format), on ne branche que celui-ci.
+  const ids = [cameraInputId, libraryInputId, inputId].filter(Boolean);
+  wireImagePicker(ids, handleFile);
 
   return refresh;
 }
