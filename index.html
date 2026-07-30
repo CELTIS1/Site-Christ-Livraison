@@ -68,9 +68,13 @@
   @media (max-width:700px){ .topbar-item.topbar-email{display:none;} .topbar-sep.topbar-sep-email{display:none;} }
   @media (max-width:480px){ .topbar-inner{justify-content:center; flex-wrap:wrap; row-gap:8px;} }
 
-  /* ---------- SITE HEADER (topbar + nav regroupés, bloc sticky) ---------- */
+  /* ---------- SITE HEADER (topbar + nav regroupés, bloc fixe) ---------- */
+  /* position:fixed (plutôt que sticky) : évite un bug de décalage où le header pouvait
+     se "décoller" du haut de la page pendant l'animation de la topbar. #headerSpacer
+     réserve la place du header dans le flux normal de la page. */
   .site-header-fixed{position:fixed; top:0; left:0; right:0; width:100%; z-index:100; box-shadow:0 2px 10px rgba(0,0,0,0.06);}
-  header{background:var(--white);} #headerSpacer{transition:height .22s ease;}
+  #headerSpacer{transition:height .22s ease;}
+  header{background:var(--white);}
   nav{
     display:flex; align-items:center; justify-content:space-between;
     max-width:1280px; margin:0 auto; padding:14px 16px;
@@ -498,7 +502,7 @@
     100%{ transform:scale(1.8); opacity:0; }
   }
   @media (prefers-reduced-motion: reduce){ .wa-float-pulse{animation:none; display:none;} }
-@media (max-width:480px){ .wa-float{right:16px; bottom:16px; width:52px; height:52px; font-size:25px;} }
+  @media (max-width:480px){ .wa-float{right:16px; bottom:16px; width:52px; height:52px; font-size:25px;} }
 
   /* ---------- BOUTON RETOUR EN HAUT ---------- */
   .back-to-top{
@@ -512,6 +516,7 @@
   .back-to-top:hover{background:var(--orange);}
   @media (max-width:680px){ .back-to-top{bottom:148px;} }
   @media (max-width:480px){ .back-to-top{right:16px; bottom:142px; width:42px; height:42px; font-size:16px;} }
+
   /* ---------- HOVER MICRO-INTERACTIONS ---------- */
   .service-card:hover{transform:translateY(-6px) scale(1.015); box-shadow:0 14px 28px rgba(27,67,116,0.1);}
   .step-card{transition:transform .18s ease, box-shadow .18s ease;}
@@ -564,7 +569,6 @@
     .wa-float{bottom:78px;}
   }
   @media (max-width:480px){ .wa-float{right:16px; bottom:78px; width:52px; height:52px; font-size:25px;} }
-
 </style>
 </head>
 <body>
@@ -624,8 +628,9 @@
     </nav>
   </header>
 </div>
+<div id="headerSpacer"></div>
 
-<div id="headerSpacer"></div><div class="side-panel-overlay" id="sidePanelOverlay" onclick="closeSidePanel()"></div>
+<div class="side-panel-overlay" id="sidePanelOverlay" onclick="closeSidePanel()"></div>
 <div class="side-panel" id="sidePanel">
   <button class="side-panel-close" onclick="closeSidePanel()" aria-label="Fermer">&times;</button>
   <ul class="side-panel-links">
@@ -714,37 +719,37 @@
       <h2 class="section-title reveal" id="coverageTitle">Toutes les zones couvertes</h2>
       <p class="section-sub reveal" id="coverageSubtitle">Nous livrons dans les 13 communes du District d'Abidjan, ainsi qu'à Grand-Bassam. Chaque zone a ses spécificités.</p>
     </div>
-      <div class="zone-selector reveal" id="zoneSelector">
-    <div class="chip-groups" id="chipGroups">
-      <p class="chip-group-label">Communes d'Abidjan</p>
-      <div class="chip-row" id="chipsCommunes">
-        <button class="chip active" data-index="0">Plateau<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="1">Cocody<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="2">Yopougon<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="3">Marcory<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="4">Treichville<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="5">Adjamé<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="6">Abobo<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="7">Port-Bouët<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="8">Koumassi<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="9">Attécoubé<i class="fa-solid fa-chevron-right"></i></button>
+    <div class="zone-selector reveal" id="zoneSelector">
+      <div class="chip-groups" id="chipGroups">
+        <p class="chip-group-label">Communes d'Abidjan</p>
+        <div class="chip-row" id="chipsCommunes">
+          <button class="chip active" data-index="0">Plateau <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="1">Cocody <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="2">Yopougon <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="3">Marcory <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="4">Treichville <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="5">Adjamé <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="6">Abobo <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="7">Port-Bouët <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="8">Koumassi <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="9">Attécoubé <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <p class="chip-group-label">Périphérie</p>
+        <div class="chip-row" id="chipsPeripherie">
+          <button class="chip" data-index="10">Bingerville <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="11">Anyama <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="12">Songon <i class="fa-solid fa-chevron-right"></i></button>
+          <button class="chip" data-index="13">Grand-Bassam <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
       </div>
-      <p class="chip-group-label">Périphérie</p>
-      <div class="chip-row" id="chipsPeripherie">
-        <button class="chip" data-index="10">Bingerville<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="11">Anyama<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="12">Songon<i class="fa-solid fa-chevron-right"></i></button>
-        <button class="chip" data-index="13">Grand-Bassam<i class="fa-solid fa-chevron-right"></i></button>
+      <div class="zone-detail-panel show" id="zoneDetailPanel">
+        <span class="zone-badge"><i class="fa-solid fa-location-dot"></i> Quartier d'affaires</span>
+        <h3>Plateau — courriers et documents administratifs</h3>
+        <p class="zone-text">Au cœur du quartier des affaires, nous livrons courriers, dossiers et documents administratifs aux banques, cabinets et administrations, avec remise en main propre.</p>
+        <div class="zone-divider"></div>
+        <p class="zone-keywords">Courriers · Documents administratifs · Remise en main propre</p>
       </div>
     </div>
-    <div class="zone-detail-panel show" id="zoneDetailPanel">
-      <span class="zone-badge"><i class="fa-solid fa-location-dot"></i> Quartier d'affaires</span>
-      <h3>Plateau — courriers et documents administratifs</h3>
-      <p class="zone-text">Au cœur du quartier des affaires, nous livrons courriers, dossiers et documents administratifs aux banques, cabinets et administrations, avec remise en main propre.</p>
-      <div class="zone-divider"></div>
-      <p class="zone-keywords">Courriers · Documents administratifs · Remise en main propre</p>
-    </div>
-  </div>
     <div class="zone-cta reveal" id="zoneCta">
       <h3 id="zoneCtaTitle">Votre zone n'est pas listée ?</h3>
       <p id="zoneCtaText">Contactez-nous : nous étudions toute demande de livraison à Abidjan et alentours.</p>
@@ -964,22 +969,37 @@
     document.getElementById('sidePanelOverlay').classList.remove('open');
   }
 
+  // Header fixe (position:fixed) : #headerSpacer réserve, dans le flux normal de la page,
+  // la place occupée par le header afin que le contenu ne soit pas masqué derrière lui.
+  // Sa hauteur est resynchronisée à chaque changement (chargement, redimensionnement,
+  // affichage/masquage de la topbar) pour rester toujours exacte.
+  function syncHeaderSpacer(){
+    const headerFixed = document.getElementById('siteHeaderFixed');
+    const spacer = document.getElementById('headerSpacer');
+    if(!headerFixed || !spacer) return;
+    spacer.style.height = headerFixed.offsetHeight + 'px';
+  }
+  syncHeaderSpacer();
+  window.addEventListener('load', syncHeaderSpacer);
+  window.addEventListener('resize', syncHeaderSpacer);
+
   // Effet de scroll sur la barre du haut (topbar) : se masque quand on descend, réapparaît dès qu'on remonte.
   // La barre de navigation principale (logo, liens, devis) reste toujours visible en haut.
   (function(){
-    function syncHeaderSpacer(){ const headerFixed = document.getElementById('siteHeaderFixed'); const spacer = document.getElementById('headerSpacer'); if(!headerFixed || !spacer) return; spacer.style.height = headerFixed.offsetHeight + 'px'; } syncHeaderSpacer(); window.addEventListener('load', syncHeaderSpacer); window.addEventListener('resize', syncHeaderSpacer); const topbarEl = document.getElementById('topbar');
-    if(!topbarEl) return; topbarEl.addEventListener('transitionend', syncHeaderSpacer);
+    const topbarEl = document.getElementById('topbar');
+    if(!topbarEl) return;
     let lastScroll = window.scrollY;
     let ticking = false;
     function onScroll(){
       const cur = window.scrollY;
       if(cur > lastScroll && cur > 60){
-        topbarEl.classList.add('topbar-hidden'); syncHeaderSpacer();
+        topbarEl.classList.add('topbar-hidden');
       } else if(cur < lastScroll){
-        topbarEl.classList.remove('topbar-hidden'); syncHeaderSpacer();
+        topbarEl.classList.remove('topbar-hidden');
       }
       lastScroll = cur <= 0 ? 0 : cur;
       ticking = false;
+      syncHeaderSpacer();
     }
     window.addEventListener('scroll', function(){
       if(!ticking){
@@ -987,6 +1007,7 @@
         ticking = true;
       }
     }, {passive:true});
+    topbarEl.addEventListener('transitionend', syncHeaderSpacer);
   })();
 
   // Numéro WhatsApp par défaut (utilisé si content.json est introuvable)
@@ -1020,24 +1041,32 @@
     { name:"Grand-Bassam", group:"peripherie", tag:"Périphérie", title:"Grand-Bassam", text:"Livraison vers Grand-Bassam, à prévoir avec un peu d'avance pour garantir le meilleur délai.", keywords:"Colis · Expéditions" }
   ];
 
+  // Échappe le texte avant de l'insérer dans du HTML : évite qu'un contenu du CMS (content.json)
+  // contenant des balises puisse s'exécuter comme du code dans le navigateur des visiteurs.
+  function escapeHTML(str){
+    const div = document.createElement("div");
+    div.textContent = (str === null || str === undefined) ? "" : String(str);
+    return div.innerHTML;
+  }
+
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function serviceCardHTML(s, i){
     const media = s.photo
-      ? `<img src="${s.photo}" alt="${s.title}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin:0 auto 18px auto;">`
+      ? `<img src="${escapeHTML(s.photo)}" alt="${escapeHTML(s.title)}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin:0 auto 18px auto;">`
       : `<div class="service-icon"><i class="fa-solid ${s.icon || 'fa-truck'}"></i></div>`;
     const delay = reducedMotion ? 0 : (i % 3) * 0.12;
-    return `<div class="service-card reveal" style="transition-delay:${delay}s">${media}<h3>${s.title}</h3><p>${s.text}</p></div>`;
+    return `<div class="service-card reveal" style="transition-delay:${delay}s">${media}<h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.text)}</p></div>`;
   }
 
   function trustItemHTML(t, i){
     const delay = reducedMotion ? 0 : i * 0.12;
-    return `<div class="trust-item reveal" style="transition-delay:${delay}s"><i class="fa-solid ${t.icon || 'fa-circle-check'}"></i><div><h4>${t.title}</h4><p>${t.text}</p></div></div>`;
+    return `<div class="trust-item reveal" style="transition-delay:${delay}s"><i class="fa-solid ${t.icon || 'fa-circle-check'}"></i><div><h4>${escapeHTML(t.title)}</h4><p>${escapeHTML(t.text)}</p></div></div>`;
   }
 
   function stepCardHTML(s, i){
     const delay = reducedMotion ? 0 : (i % 3) * 0.12;
-    return `<div class="step-card reveal" style="transition-delay:${delay}s"><div class="step-icon"><i class="fa-solid ${s.icon || 'fa-truck'}"></i></div><h3>${s.title}</h3><p>${s.text}</p></div>`;
+    return `<div class="step-card reveal" style="transition-delay:${delay}s"><div class="step-icon"><i class="fa-solid ${s.icon || 'fa-truck'}"></i></div><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.text)}</p></div>`;
   }
 
   function aboutValueHTML(v, i){
@@ -1050,13 +1079,13 @@
   }
 
   function partnersPillHTML(p){
-    return `<span class="partner-pill"><i class="fa-solid ${p.icon || 'fa-building'}"></i> ${p.label}</span>`;
+    return `<span class="partner-pill"><i class="fa-solid ${p.icon || 'fa-building'}"></i> ${escapeHTML(p.label)}</span>`;
   }
 
   function faqItemHTML(f, i){
     return `<div class="faq-item${i === 0 ? ' open' : ''}">
-      <button class="faq-question" type="button"><span>${f.question}</span><i class="fa-solid fa-chevron-down"></i></button>
-      <div class="faq-answer"><p>${f.answer}</p></div>
+      <button class="faq-question" type="button"><span>${escapeHTML(f.question)}</span><i class="fa-solid fa-chevron-down"></i></button>
+      <div class="faq-answer"><p>${escapeHTML(f.answer)}</p></div>
     </div>`;
   }
 
@@ -1067,19 +1096,19 @@
 
   function testimonialCardHTML(t, i){
     const delay = reducedMotion ? 0 : (i % 3) * 0.12;
-    return `<div class="testimonial-card reveal" style="transition-delay:${delay}s"><div class="testimonial-stars">${starsHTML(t.rating)}</div><p class="testimonial-text">"${t.text}"</p><div class="testimonial-name">${t.name}</div><div class="testimonial-role">${t.role}</div></div>`;
+    return `<div class="testimonial-card reveal" style="transition-delay:${delay}s"><div class="testimonial-stars">${starsHTML(t.rating)}</div><p class="testimonial-text">"${escapeHTML(t.text)}"</p><div class="testimonial-name">${escapeHTML(t.name)}</div><div class="testimonial-role">${escapeHTML(t.role)}</div></div>`;
   }
 
   function chipButtonHTML(z, i){
-    return `<button class="chip${i === 0 ? ' active' : ''}" data-index="${i}">${z.name} <i class="fa-solid fa-chevron-right"></i></button>`;
+    return `<button class="chip${i === 0 ? ' active' : ''}" data-index="${i}">${escapeHTML(z.name)} <i class="fa-solid fa-chevron-right"></i></button>`;
   }
 
   function zoneDetailHTML(z){
-    return `<span class="zone-badge zone-anim"><i class="fa-solid fa-location-dot"></i> ${z.tag || z.name}</span>
-      <h3 class="zone-anim" style="animation-delay:.06s">${z.title || z.name}</h3>
-      <p class="zone-text zone-anim" style="animation-delay:.12s">${z.text || ""}</p>
+    return `<span class="zone-badge zone-anim"><i class="fa-solid fa-location-dot"></i> ${escapeHTML(z.tag || z.name)}</span>
+      <h3 class="zone-anim" style="animation-delay:.06s">${escapeHTML(z.title || z.name)}</h3>
+      <p class="zone-text zone-anim" style="animation-delay:.12s">${escapeHTML(z.text || "")}</p>
       <div class="zone-divider zone-anim" style="animation-delay:.18s"></div>
-      <p class="zone-keywords zone-anim" style="animation-delay:.24s">${z.keywords || ""}</p>`;
+      <p class="zone-keywords zone-anim" style="animation-delay:.24s">${escapeHTML(z.keywords || "")}</p>`;
   }
 
   function selectZoneByIndex(idx){
@@ -1430,7 +1459,7 @@
     if(data.about){
       const ab = data.about;
       const abEyebrow = document.getElementById('aboutEyebrow');
-      if(abEyebrow) abEyebrow.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${ab.eyebrow || ""}`;
+      if(abEyebrow) abEyebrow.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${escapeHTML(ab.eyebrow || "")}`;
       const abTitle = document.getElementById('aboutTitle'); if(abTitle) abTitle.textContent = ab.title || "";
       const abText = document.getElementById('aboutText'); if(abText) abText.textContent = ab.text || "";
       if(Array.isArray(ab.values)){
@@ -1455,7 +1484,7 @@
     if(data.faq){
       const fq = data.faq;
       const fqEyebrow = document.getElementById('faqEyebrow');
-      if(fqEyebrow) fqEyebrow.innerHTML = `<i class="fa-solid fa-circle-question"></i> ${fq.eyebrow || ""}`;
+      if(fqEyebrow) fqEyebrow.innerHTML = `<i class="fa-solid fa-circle-question"></i> ${escapeHTML(fq.eyebrow || "")}`;
       const fqTitle = document.getElementById('faqTitle'); if(fqTitle) fqTitle.textContent = fq.title || "";
       const fqSub = document.getElementById('faqSubtitle'); if(fqSub) fqSub.textContent = fq.subtitle || "";
       if(Array.isArray(fq.items)){
@@ -1477,7 +1506,7 @@
     if(data.coverage){
       const cov = data.coverage;
       const eyebrowEl = document.getElementById('coverageEyebrow');
-      if(eyebrowEl) eyebrowEl.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${cov.eyebrow || ""}`;
+      if(eyebrowEl) eyebrowEl.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${escapeHTML(cov.eyebrow || "")}`;
       const covTitle = document.getElementById('coverageTitle'); if(covTitle) covTitle.textContent = cov.title || "";
       const covSub = document.getElementById('coverageSubtitle'); if(covSub) covSub.textContent = cov.subtitle || "";
       if(Array.isArray(cov.zones)){
@@ -1491,8 +1520,8 @@
     observeReveals();
     initStatCounters();
     document.querySelectorAll('.service-card, .chip').forEach(el => {
-      el.addEventListener('mouseenter', () => { const r = document.getElementById('cursorRing'); if(r) r.classList.add('hovering'); });
-      el.addEventListener('mouseleave', () => { const r = document.getElementById('cursorRing'); if(r) r.classList.remove('hovering'); });
+      el.addEventListener('mouseenter', () => { const r = document.getElementById('cursorPin'); if(r) r.classList.add('hovering'); });
+      el.addEventListener('mouseleave', () => { const r = document.getElementById('cursorPin'); if(r) r.classList.remove('hovering'); });
     });
 
     // Contact / footer
@@ -1502,7 +1531,7 @@
     const phoneLink = document.getElementById('phoneFooterLink');
     if(phoneLink){ phoneLink.href = "tel:" + c.phone_number; phoneLink.textContent = c.phone_display || ""; }
     const emailLink = document.getElementById('emailLink');
-    if(emailLink) emailLink.href = "mailto:" + c.email + "?subject=Demande%20de%20devis%20-%20Christ%20Livraison";
+    if(emailLink) emailLink.href = "mailto:" + encodeURIComponent(c.email || "") + "?subject=Demande%20de%20devis%20-%20Christ%20Livraison";
     const fbText = document.getElementById('facebookText'); if(fbText) fbText.textContent = c.facebook || "";
     const igText = document.getElementById('instagramText'); if(igText) igText.textContent = c.instagram || "";
 
