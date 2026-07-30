@@ -454,3 +454,32 @@ input,textarea,select{font-family:inherit;}
 @media(max-width:380px){
   .stat-tile-label{font-size:8.3px;}
 }
+
+/* ---------- MODALE MOT DE PASSE TEMPORAIRE ---------- */
+.reset-admin-note{
+  background:var(--orange-light); color:var(--orange); font-size:12.5px; font-weight:600;
+  padding:8px 12px; border-radius:9px; margin-bottom:12px;
+}
+.pwd-modal-overlay{
+  position:fixed; inset:0; background:rgba(18,50,82,0.55); z-index:1000;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.pwd-modal{
+  background:var(--white); border-radius:16px; padding:28px 24px; width:100%; max-width:360px;
+  text-align:center; box-shadow:0 20px 50px rgba(18,50,82,0.35);
+}
+.pwd-modal-icon{font-size:34px; margin-bottom:6px;}
+.pwd-modal-title{color:var(--navy); font-size:18px; margin-bottom:6px;}
+.pwd-modal-sub{color:var(--muted); font-size:13px; margin-bottom:18px;}
+.pwd-modal-value-row{
+  display:flex; gap:8px; margin-bottom:14px;
+}
+#pwd-modal-value{
+  flex:1; min-width:0; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px;
+  font-size:15px; font-weight:700; color:var(--navy); background:var(--grey-bg); text-align:center;
+  letter-spacing:0.5px;
+}
+#pwd-modal-copy{flex-shrink:0;}
+#pwd-modal-copy.copied{background:#1a7d3c; border-color:#1a7d3c; color:var(--white);}
+.pwd-modal-hint{color:var(--muted); font-size:12px; margin-bottom:18px; line-height:1.4;}
+.pwd-modal .btn#pwd-modal-close{width:100%;}
