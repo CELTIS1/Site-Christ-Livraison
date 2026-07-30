@@ -205,13 +205,20 @@ input,textarea,select{font-family:inherit;}
     background:var(--grey-bg); color:var(--muted); border-radius:12px; padding:2px 9px; font-size:11.5px; font-weight:700;
 }
 
-/* Sur mobile : la colonne statut passe sous le reste de la carte, sur toute la largeur */
+/* Sur mobile : carte resserrée pour que chaque colis prenne le moins d'espace possible et que
+   le suivi reste agréable sur petit écran (colonne statut repassée en ligne, sous la carte). */
 @media(max-width:640px){
-    .colis-item{padding:14px;}
-    .colis-item .status-col{
-          width:100%; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between;
-          border-top:1px solid var(--border); margin-top:4px; padding-top:12px;
-    }
+  .colis-list{gap:9px;}
+  .colis-item{padding:10px; gap:10px; border-radius:11px;}
+  .colis-item .thumb, .colis-item .thumb-placeholder{width:52px; height:52px; border-radius:9px; font-size:9.5px;}
+  .colis-item .info{min-width:0;}
+  .colis-item .info .desc{font-size:13.5px; margin-bottom:2px;}
+  .colis-item .info .meta{font-size:11.5px; line-height:1.45;}
+  .colis-item .status-col{
+    width:100%; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    border-top:1px solid var(--border); margin-top:2px; padding-top:8px; gap:6px;
+  }
+  .badge{padding:4px 11px; font-size:11px;}
 }
 
 .badge{
@@ -280,6 +287,23 @@ input,textarea,select{font-family:inherit;}
 }
 .search-input:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light);}
 .search-input::placeholder{color:#a7b0bc;}
+
+/* ---------- FILTRE PAR DATE (liste des colis) ---------- */
+.date-filter-wrap{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+.date-filter-wrap label{font-size:12.5px; font-weight:700; color:var(--navy);}
+.date-filter-input{
+  padding:8px 10px; border:1.5px solid var(--border); border-radius:9px; font-size:13px;
+  background:var(--white); color:#222;
+}
+.date-filter-input:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light);}
+.date-filter-clear{
+  background:none; border:none; color:var(--orange); font-size:12.5px; font-weight:700; padding:4px 2px;
+}
+.date-filter-clear:hover{text-decoration:underline;}
+@media(max-width:640px){
+  .date-filter-wrap{gap:6px 10px;}
+  .date-filter-input{flex:1; min-width:0;}
+}
 
 /* ---------- ALERTES ---------- */
 .alert-badge{
