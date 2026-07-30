@@ -50,8 +50,12 @@
 <div class="avatar-upload-row">
 <div id="avatar-preview"></div>
 <div class="avatar-upload-actions">
-<label class="btn btn-outline btn-sm" for="avatar-input" style="cursor:pointer;">📷 Changer ma photo</label>
-<input type="file" id="avatar-input" accept="image/*" class="hidden">
+<div class="avatar-upload-btns">
+<label class="btn btn-outline btn-sm" for="avatar-input-camera" style="cursor:pointer;">📷 Prendre une photo</label>
+<label class="btn btn-outline btn-sm" for="avatar-input-library" style="cursor:pointer;">🖼️ Bibliothèque</label>
+</div>
+<input type="file" id="avatar-input-camera" accept="image/*" capture="user" class="hidden">
+<input type="file" id="avatar-input-library" accept="image/*" class="hidden">
 <div class="avatar-upload-hint">Cette photo apparaît à côté de votre nom.</div>
 </div>
 </div>
@@ -143,7 +147,15 @@
 </div>
 <div class="field">
 <label>Photo (optionnel)</label>
-<input type="file" id="add-photo" accept="image/*">
+<div class="photo-pick-group" id="add-photo-group">
+<div class="avatar-upload-btns">
+<label class="btn btn-outline btn-sm" for="add-photo-camera" style="cursor:pointer;">📷 Prendre une photo</label>
+<label class="btn btn-outline btn-sm" for="add-photo-library" style="cursor:pointer;">🖼️ Bibliothèque</label>
+</div>
+<input type="file" id="add-photo-camera" accept="image/*" capture="user" class="hidden pick-camera">
+<input type="file" id="add-photo-library" accept="image/*" class="hidden pick-library">
+<div class="photo-pick-filename"></div>
+</div>
 </div>
 </div>
 <div class="field">
@@ -440,7 +452,7 @@ const select = document.getElementById('compta-fournisseur');
 if (!select) return;
 const previousValue = select.value;
 select.innerHTML = '<option value="">Tous les clients</option>' +
-fournisseurs.map(f => `<option value="${f.id}">${f.company_name || f.full_name || f.id}</option>`).join('');
+fournisseurs.map(f => `<option value="${f.id}">${escapeHTML(f.company_name || f.full_name || f.id)}</option>`).join('');
 select.value = previousValue;
 }
 
@@ -452,8 +464,8 @@ function pendingRowHTML(p){
 return `
 <div class="colis-item" data-id="${p.id}">
 <div class="info">
-<div class="desc">${p.full_name || '(sans nom)'}${p.company_name ? ' — ' + p.company_name : ''}</div>
-<div class="meta">Rôle demandé : ${roleDisplayLabel(p.role)}${p.phone ? ' · Tél : ' + p.phone : ''}</div>
+<div class="desc">${p.full_name ? escapeHTML(p.full_name) : '(sans nom)'}${p.company_name ? ' — ' + escapeHTML(p.company_name) : ''}</div>
+<div class="meta">Rôle demandé : ${escapeHTML(roleDisplayLabel(p.role))}${p.phone ? ' · Tél : ' + escapeHTML(p.phone) : ''}</div>
 </div>
 <div class="status-col">
 <button class="btn btn-sm btn-valider" style="margin-bottom:4px;">Valider</button>
@@ -507,8 +519,8 @@ function resetRowHTML(r){
 return `
 <div class="colis-item" data-id="${r.id}">
 <div class="info">
-<div class="desc">${r.full_name || '(sans nom)'}</div>
-<div class="meta">Tél : ${r.phone} · Demandé le ${formatDate(r.created_at)}</div>
+<div class="desc">${r.full_name ? escapeHTML(r.full_name) : '(sans nom)'}</div>
+<div class="meta">Tél : ${escapeHTML(r.phone || '')} · Demandé le ${formatDate(r.created_at)}</div>
 </div>
 <div class="status-col">
 <button class="btn btn-sm btn-reinitialiser">Réinitialiser</button>
@@ -652,12 +664,12 @@ const destination = document.getElementById('add-dest').value.trim();
 const description = document.getElementById('add-desc').value.trim();
 const montantRaw = document.getElementById('add-montant').value.trim();
 const montant = montantRaw === '' ? null : Number(montantRaw);
-const fileInput = document.getElementById('add-photo');
+const pickedPhoto = pickedGroupFile(document.getElementById('add-photo-group'));
 let photo_url = null;
 let photoUploadFailed = false;
 
-if (fileInput.files && fileInput.files[0]) {
-photo_url = await uploadPhoto(fileInput.files[0], currentUser.id);
+if (pickedPhoto) {
+photo_url = await uploadPhoto(pickedPhoto, currentUser.id);
 if (!photo_url) photoUploadFailed = true;
 }
 
@@ -674,6 +686,8 @@ return;
 const photoWarning = photoUploadFailed ? " (attention : l'envoi de la photo a échoué, le colis a été enregistré sans photo)" : "";
 addMsg(`Colis ajouté avec succès${photoWarning}.`, "success");
 e.target.reset();
+const addPhotoFilename = document.querySelector('#add-photo-group .photo-pick-filename');
+if (addPhotoFilename) addPhotoFilename.textContent = '';
 loadColis();
 });
 
@@ -696,7 +710,7 @@ renderColis();
 function fournisseurLabel(id){
 const f = fournisseurs.find(x => x.id === id);
 if (!f) return 'Client inconnu';
-return f.company_name || f.full_name || id;
+return escapeHTML(f.company_name || f.full_name || id);
 }
 
 // Un colis est considéré comme "validé" une fois qu'il a été enregistré au moins une fois
@@ -712,14 +726,14 @@ const thumb = c.photo_url
 const statutOptions = Object.keys(STATUTS).map(k =>
 `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
 const livreurOptions = '<option value="">— Aucun livreur —</option>' +
-livreurs.map(l => `<option value="${l.id}" ${c.livreur_id===l.id?'selected':''}>${l.full_name || l.id}</option>`).join('');
+livreurs.map(l => `<option value="${l.id}" ${c.livreur_id===l.id?'selected':''}>${escapeHTML(l.full_name || l.id)}</option>`).join('');
 
 const estValide = colisEstValide(c) && !window.__colisEditing?.has(c.id);
 
 const infoBlock = `
 <div class="info">
-<div class="desc">${c.description || '(sans description)'}</div>
-<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+<div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
@@ -744,8 +758,8 @@ return `
 <div class="colis-item" data-id="${c.id}">
 ${thumb}
 <div class="info">
-<div class="desc">${c.description || '(sans description)'}</div>
-<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+<div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${livreurLine}
 ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
@@ -952,8 +966,8 @@ const deleteBtn = isSelf
 return `
 <div class="colis-item" data-id="${a.id}">
 <div class="info">
-<div class="desc">${a.full_name || '(sans nom)'}${a.company_name ? ' — ' + a.company_name : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}</div>
-<div class="meta">Rôle : ${roleDisplayLabel(a.role)}${a.phone ? ' · Tél : ' + a.phone : ''} · Statut : ${a.status || '-'}</div>
+<div class="desc">${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}</div>
+<div class="meta">Rôle : ${escapeHTML(roleDisplayLabel(a.role))}${a.phone ? ' · Tél : ' + escapeHTML(a.phone) : ''} · Statut : ${escapeHTML(a.status || '-')}</div>
 </div>
 <div class="status-col" style="width:auto; flex-direction:row; align-items:center;">
 <div class="actions-menu">
@@ -980,7 +994,7 @@ function renderAllAccounts(){
 const box = document.getElementById('all-accounts-list');
 const filtered = activeAccountFilter === 'tous' ? allAccounts : allAccounts.filter(a => a.role === activeAccountFilter);
 if (!filtered.length) {
-box.innerHTML = `<div class="empty-state">Aucun compte${activeAccountFilter !== 'tous' ? ' pour ce rôle' : ''}.</div>`;
+box.innerHTML = `<div class="empty-state">Aucun compte${activeAccountFilter !== 'tous' ? ' pour ce r�4le' : ''}.</div>`;
 return;
 }
 box.innerHTML = filtered.map(accountRowHTML).join('');
@@ -1103,8 +1117,8 @@ if (a.action === 'creation_colis') {
 return `
 <div class="colis-item">
 <div class="info">
-<div class="desc">${label} — ${d.fournisseur || 'Client inconnu'}</div>
-<div class="meta">${d.description || ''}</div>
+<div class="desc">${escapeHTML(label)} — ${escapeHTML(d.fournisseur || 'Client inconnu')}</div>
+<div class="meta">${escapeHTML(d.description || '')}</div>
 <div class="meta">${formatDate(a.created_at)}</div>
 </div>
 </div>
@@ -1233,8 +1247,8 @@ return `
 <div class="colis-item">
 ${thumb}
 <div class="info">
-<div class="desc">${c.description || '(sans description)'}</div>
-<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+<div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
 <div class="meta">${formatDate(c.created_at)}</div>
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
@@ -1503,7 +1517,7 @@ return;
 isAdmin = profile.role === 'admin';
 document.getElementById('user-name').textContent = profile.full_name || '';
 document.getElementById('user-first-name').textContent = profile.full_name || '';
-initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', inputId: 'avatar-input', statusId: 'avatar-msg' });
+initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', cameraInputId: 'avatar-input-camera', libraryInputId: 'avatar-input-library', statusId: 'avatar-msg' });
 
 if (isAdmin) {
 document.getElementById('role-pill').textContent = 'Administrateur';
