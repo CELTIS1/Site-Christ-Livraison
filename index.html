@@ -58,6 +58,13 @@
   .topbar-social{display:flex; align-items:center; gap:14px;}
   .topbar-social a{color:#D9E2EC; font-size:17px; transition:color .2s ease, transform .15s ease;}
   .topbar-social a:hover{color:var(--orange); transform:translateY(-2px);}
+  .topbar-login{
+    display:none; align-items:center; color:#fff; font-weight:700; font-size:12px;
+    border:1.5px solid rgba(255,255,255,0.4); border-radius:16px; padding:4px 13px; white-space:nowrap;
+    transition:background .2s ease, border-color .2s ease, color .2s ease;
+  }
+  .topbar-login:hover{background:rgba(255,255,255,0.12); border-color:var(--orange); color:var(--orange);}
+  @media (max-width:860px){ .topbar-login{display:inline-flex;} }
   @media (max-width:700px){ .topbar-item.topbar-email{display:none;} .topbar-sep.topbar-sep-email{display:none;} }
   @media (max-width:480px){ .topbar-inner{justify-content:center; flex-wrap:wrap; row-gap:8px;} }
 
@@ -84,23 +91,9 @@
   .nav-cta:hover{background:#c9550f;}
   .burger{display:block; background:none; border:none; font-size:24px; color:var(--navy); cursor:pointer;}
   .nav-cta-mobile{display:none;}
-  .nav-social{display:flex; align-items:center; gap:10px;}
-  .nav-social a{
-    width:30px; height:30px; border-radius:50%; background:var(--orange-light); color:var(--navy);
-    display:flex; align-items:center; justify-content:center; font-size:13px;
-    transition:background .2s ease, color .2s ease, transform .15s ease;
-  }
-  .nav-social a:hover{background:var(--navy); color:var(--white); transform:translateY(-2px);}
 
-  /* ---------- NAV ACTIONS (réseaux + devis + menu, à droite) ---------- */
+  /* ---------- NAV ACTIONS (devis + connexion + menu, à droite) ---------- */
   .nav-actions{display:flex; align-items:center; gap:14px;}
-  .nav-actions .nav-social{display:flex; align-items:center; gap:12px;}
-  .nav-actions .nav-social a{
-    width:auto; height:auto; background:none; color:var(--muted); font-size:15px;
-    display:inline-flex; align-items:center; justify-content:center;
-    transition:color .2s ease, transform .15s ease;
-  }
-  .nav-actions .nav-social a:hover{background:none; color:var(--orange); transform:translateY(-2px);}
   .nav-btn-group{display:flex; align-items:center; gap:10px;}
   .nav-login{
     background:transparent; color:var(--navy); padding:9px 18px; border-radius:24px;
@@ -119,7 +112,6 @@
   .nav-mobile-actions{display:none; align-items:center; gap:10px;}
 
   @media (max-width:860px){
-    .nav-social-desktop{display:none;}
     .nav-mobile-actions{display:flex;}
     .nav-links{
       position:absolute; top:100%; left:0; right:0; background:var(--white);
@@ -159,6 +151,13 @@
   .side-panel-social{display:flex; align-items:center; gap:20px; padding-top:28px;}
   .side-panel-social a{color:#C7D1DB; font-size:20px; transition:color .2s ease, transform .15s ease;}
   .side-panel-social a:hover{color:var(--orange); transform:translateY(-2px);}
+  .side-panel-login{margin-top:32px;}
+  .side-panel-login a{
+    display:flex; align-items:center; justify-content:center; width:100%;
+    background:transparent; color:#fff; border:2px solid rgba(255,255,255,0.35); border-radius:24px;
+    padding:11px 20px; font-weight:700; font-size:14px; transition:background .2s ease, border-color .2s ease, color .2s ease;
+  }
+  .side-panel-login a:hover{background:rgba(255,255,255,0.12); border-color:var(--orange); color:var(--orange);}
 
   /* ---------- HERO ---------- */
   .hero{
@@ -516,6 +515,7 @@
         <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
         <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
       </div>
+      <a class="topbar-login" href="app/login.html">Se connecter</a>
     </div>
   </div>
   <header>
@@ -540,11 +540,6 @@
         <li class="nav-li-cta"><a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a></li>
       </ul>
       <div class="nav-actions">
-        <div class="nav-social nav-social-desktop">
-          <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-          <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-        </div>
         <div class="nav-btn-group">
           <a class="nav-cta" href="#devis">Demander un devis</a>
           <a class="nav-login" href="app/login.html">Se connecter</a>
@@ -572,6 +567,9 @@
     <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
     <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
     <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+  </div>
+  <div class="side-panel-login">
+    <a href="app/login.html" onclick="closeSidePanel()">Se connecter</a>
   </div>
 </div>
 
