@@ -103,6 +103,11 @@
   <div class="card" id="section-colis">
     <h2>Mes colis</h2>
     <div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description ou destination..."></div>
+    <div class="date-filter-wrap">
+      <label for="filtre-date-colis">📅 Date</label>
+      <input type="date" id="filtre-date-colis" class="date-filter-input">
+      <button type="button" id="btn-toutes-dates" class="date-filter-clear">Toutes les dates</button>
+    </div>
     <div class="colis-list" id="colis-list">
       <div class="empty-state">Chargement...</div>
     </div>
@@ -116,6 +121,7 @@
   let rowCount = 0;
   let mesColis = [];
   let searchColis = '';
+  let filtreDate = '';
   let livreursById = {};
 
   async function loadLivreurs(){
@@ -229,6 +235,16 @@
     const desc = (c.description || '').toLowerCase();
     const dest = (c.destination || '').toLowerCase();
     return desc.includes(t) || dest.includes(t);
+  }
+
+  function matchesDate(c, dateStr){
+    if (!dateStr) return true;
+    return dayKey(c.created_at) === dateStr;
+  }
+
+  function todayLocalISODate(){
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
 
   function newRowHTML(idx){
@@ -379,7 +395,7 @@
           ${c.statut === 'en_attente' ? `
             <button type="button" class="btn btn-sm btn-outline btn-edit-colis" style="margin-top:8px;">Modifier</button>
             <button type="button" class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>
-          ` : `<div class="meta" style="margin-top:8px; font-style:italic;">Pris en charge — modification réservée à l'équipe</div>`}
+          ` : ''}
         </div>
       </div>
     `;
@@ -438,11 +454,18 @@
   function renderColisList(){
     const list = document.getElementById('colis-list');
     const __anchor = captureScrollAnchor(list);
-    const filtered = mesColis.filter(c => matchesSearch(c, searchColis));
+    const filtered = mesColis.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDate));
     if (!mesColis.length) {
       list.innerHTML = `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`;
     } else if (!filtered.length) {
-      list.innerHTML = `<div class="empty-state">Aucun colis ne correspond à cette recherche.</div>`;
+      list.innerHTML = filtreDate
+        ? `<div class="empty-state">Aucun colis enregistré à cette date.</div>`
+        : `<div class="empty-state">Aucun colis ne correspond à cette recherche.</div>`;
+    } else if (filtreDate) {
+      // Une date précise est choisie : la liste est déjà limitée à cette journée,
+      // inutile de répéter l'en-tête "📅 ..." (déjà visible dans le sélecteur de date).
+      list.innerHTML = filtered.map(colisItemHTML).join('');
+      attachColisHandlers(list);
     } else {
       const groups = groupColisByDay(filtered);
       list.innerHTML = renderGroupedColisHTML(groups, colisItemHTML);
@@ -583,8 +606,16 @@
 
     addRow();
     await loadLivreurs();
+    filtreDate = todayLocalISODate();
+    document.getElementById('filtre-date-colis').value = filtreDate;
     loadColis();
     document.getElementById('search-colis').addEventListener('input', (e) => { searchColis = e.target.value; renderColisList(); });
+    document.getElementById('filtre-date-colis').addEventListener('change', (e) => { filtreDate = e.target.value; renderColisList(); });
+    document.getElementById('btn-toutes-dates').addEventListener('click', () => {
+      filtreDate = '';
+      document.getElementById('filtre-date-colis').value = '';
+      renderColisList();
+    });
 
     // Mises à jour en temps réel : tout changement sur mes colis rafraîchit la liste
     supabaseClient
