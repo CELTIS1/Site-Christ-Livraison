@@ -661,35 +661,37 @@
       <h2 class="section-title reveal" id="coverageTitle">Toutes les zones couvertes</h2>
       <p class="section-sub reveal" id="coverageSubtitle">Nous livrons dans les 13 communes du District d'Abidjan, ainsi qu'à Grand-Bassam. Chaque zone a ses spécificités.</p>
     </div>
-    <div class="chip-groups reveal" id="chipGroups">
+      <div class="zone-selector reveal" id="zoneSelector">
+    <div class="chip-groups" id="chipGroups">
       <p class="chip-group-label">Communes d'Abidjan</p>
       <div class="chip-row" id="chipsCommunes">
-        <button class="chip active" data-index="0">Plateau</button>
-        <button class="chip" data-index="1">Cocody</button>
-        <button class="chip" data-index="2">Yopougon</button>
-        <button class="chip" data-index="3">Marcory</button>
-        <button class="chip" data-index="4">Treichville</button>
-        <button class="chip" data-index="5">Adjamé</button>
-        <button class="chip" data-index="6">Abobo</button>
-        <button class="chip" data-index="7">Port-Bouët</button>
-        <button class="chip" data-index="8">Koumassi</button>
-        <button class="chip" data-index="9">Attécoubé</button>
+        <button class="chip active" data-index="0">Plateau<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="1">Cocody<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="2">Yopougon<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="3">Marcory<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="4">Treichville<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="5">Adjamé<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="6">Abobo<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="7">Port-Bouët<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="8">Koumassi<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="9">Attécoubé<i class="fa-solid fa-chevron-right"></i></button>
       </div>
       <p class="chip-group-label">Périphérie</p>
       <div class="chip-row" id="chipsPeripherie">
-        <button class="chip" data-index="10">Bingerville</button>
-        <button class="chip" data-index="11">Anyama</button>
-        <button class="chip" data-index="12">Songon</button>
-        <button class="chip" data-index="13">Grand-Bassam</button>
+        <button class="chip" data-index="10">Bingerville<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="11">Anyama<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="12">Songon<i class="fa-solid fa-chevron-right"></i></button>
+        <button class="chip" data-index="13">Grand-Bassam<i class="fa-solid fa-chevron-right"></i></button>
       </div>
     </div>
-    <div class="zone-detail-panel reveal show" id="zoneDetailPanel">
+    <div class="zone-detail-panel show" id="zoneDetailPanel">
       <span class="zone-badge"><i class="fa-solid fa-location-dot"></i> Quartier d'affaires</span>
       <h3>Plateau — courriers et documents administratifs</h3>
       <p class="zone-text">Au cœur du quartier des affaires, nous livrons courriers, dossiers et documents administratifs aux banques, cabinets et administrations, avec remise en main propre.</p>
       <div class="zone-divider"></div>
       <p class="zone-keywords">Courriers · Documents administratifs · Remise en main propre</p>
     </div>
+  </div>
     <div class="zone-cta reveal" id="zoneCta">
       <h3 id="zoneCtaTitle">Votre zone n'est pas listée ?</h3>
       <p id="zoneCtaText">Contactez-nous : nous étudions toute demande de livraison à Abidjan et alentours.</p>
@@ -888,6 +890,8 @@
   <i class="fa-brands fa-whatsapp"></i>
 </a>
 
+<button type="button" class="back-to-top" id="backToTop" aria-label="Remonter en haut de la page"><i class="fa-solid fa-arrow-up"></i></button>
+
 <div class="cur-el" id="cursorDot"></div>
 <div class="cur-el" id="cursorPin"><div class="pin-shape"><div class="pin-dot"></div></div></div>
 
@@ -1062,6 +1066,18 @@
       const btn = e.target.closest('.chip');
       if(!btn) return;
       selectZoneByIndex(parseInt(btn.dataset.index, 10));
+    });
+  }
+
+  // Bouton flottant "retour en haut"
+  function initBackToTop(){
+    const btn = document.getElementById('backToTop');
+    if(!btn) return;
+    const toggleBtn = () => { btn.classList.toggle('visible', window.scrollY > 420); };
+    toggleBtn();
+    window.addEventListener('scroll', toggleBtn, { passive:true });
+    btn.addEventListener('click', () => {
+      window.scrollTo({ top:0, behavior: reducedMotion ? 'auto' : 'smooth' });
     });
   }
 
@@ -1446,6 +1462,7 @@
   initCustomCursor();
   initZoneSelector();
   initFaqAccordion();
+  initBackToTop();
   initStatCounters();
   startTypewriter(["colis", "courriers", "expéditions", "courses"]);
   setMarquee(["Colis & plis", "Courriers & documents", "Expéditions", "Courses & divers"]);
