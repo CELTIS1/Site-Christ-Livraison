@@ -41,8 +41,12 @@
       <div class="avatar-upload-row">
         <div id="avatar-preview"></div>
         <div class="avatar-upload-actions">
-          <label class="btn btn-outline btn-sm" for="avatar-input" style="cursor:pointer;">📷 Changer ma photo</label>
-          <input type="file" id="avatar-input" accept="image/*" class="hidden">
+          <div class="avatar-upload-btns">
+            <label class="btn btn-outline btn-sm" for="avatar-input-camera" style="cursor:pointer;">📷 Prendre une photo</label>
+            <label class="btn btn-outline btn-sm" for="avatar-input-library" style="cursor:pointer;">🖼️ Bibliothèque</label>
+          </div>
+          <input type="file" id="avatar-input-camera" accept="image/*" capture="user" class="hidden">
+          <input type="file" id="avatar-input-library" accept="image/*" class="hidden">
           <div class="avatar-upload-hint">Cette photo apparaît à côté de votre nom.</div>
         </div>
       </div>
@@ -212,7 +216,7 @@
   function fournisseurLabel(id){
     const p = profilesById[id];
     if (!p) return 'Client inconnu';
-    return p.company_name || p.full_name || id;
+    return escapeHTML(p.company_name || p.full_name || id);
   }
 
   function livreurLabel(id){
@@ -234,17 +238,23 @@
       <div class="colis-item" data-id="${c.id}">
         ${thumb}
         <div class="info">
-          <div class="desc">${c.description || '(sans description)'}</div>
-          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+          <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
         </div>
         <div class="status-col">
           <select class="status-select">${statutOptions}</select>
           <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
           <div class="field" style="margin-top:8px;">
-            <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée)' : '(optionnel)'}</label>
+            <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
             ${c.photo_livraison_url ? `<img src="${c.photo_livraison_url}" class="thumb" style="margin-bottom:6px;">` : ''}
-            <input type="file" accept="image/*" class="livraison-photo-input">
+            <div class="photo-pick-group livraison-photo-input">
+              <div class="avatar-upload-btns">
+                <label class="btn btn-outline btn-sm" style="cursor:pointer;">📷 Prendre une photo<input type="file" accept="image/*" capture="user" class="hidden pick-camera"></label>
+                <label class="btn btn-outline btn-sm" style="cursor:pointer;">🖼️ Bibliothèque<input type="file" accept="image/*" class="hidden pick-library"></label>
+              </div>
+              <div class="photo-pick-filename"></div>
+            </div>
           </div>
           <button class="btn btn-sm btn-save" style="margin-top:8px;">Enregistrer</button>
         </div>
@@ -265,8 +275,8 @@
       <div class="colis-item" data-id="${c.id}">
         ${thumb}
         <div class="info">
-          <div class="desc">${c.description || '(sans description)'}</div>
-          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + c.destination : ''}</div>
+          <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
           ${livreurLine}
           ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
@@ -296,13 +306,13 @@
         const id = item.dataset.id;
         const statut = item.querySelector('.status-select').value;
         const observation = item.querySelector('.obs-textarea').value.trim() || null;
-        const photoInput = item.querySelector('.livraison-photo-input');
+        const pickedPhoto = pickedGroupFile(item.querySelector('.livraison-photo-input'));
         const existing = allColis.find(c => c.id === id);
         let photo_livraison_url = existing ? existing.photo_livraison_url : null;
 
-        if (photoInput.files && photoInput.files[0]) {
+        if (pickedPhoto) {
           btn.disabled = true; btn.textContent = 'Envoi photo...';
-          const uploaded = await uploadPhoto(photoInput.files[0], currentUser.id);
+          const uploaded = await uploadPhoto(pickedPhoto, currentUser.id);
           if (uploaded) {
             photo_livraison_url = uploaded;
           } else {
@@ -385,7 +395,7 @@
 
     document.getElementById('user-name').textContent = profile.full_name || '';
     document.getElementById('user-first-name').textContent = profile.full_name || '';
-    initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', inputId: 'avatar-input', statusId: 'avatar-msg' });
+    initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', cameraInputId: 'avatar-input-camera', libraryInputId: 'avatar-input-library', statusId: 'avatar-msg' });
 
     function selectFilterMes(val){ activeFilterMes = val; renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
     function selectFilterTous(val){ activeFilterTous = val; renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
