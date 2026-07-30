@@ -1479,7 +1479,7 @@
   setMarquee(["Colis & plis", "Courriers & documents", "Expéditions", "Courses & divers"]);
   initHeroSlideshow(["images/hero-livreur.jpg", "images/hero-livreur-2.jpg"]);
 
-  fetch('content/content.json')
+  fetch('content/content.json?v=' + Date.now(), {cache: 'no-store'})
     .then(r => r.json())
     .then(applyContent)
     .catch(err => console.error("Impossible de charger content/content.json :", err));
