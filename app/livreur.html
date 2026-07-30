@@ -41,13 +41,9 @@
       <div class="avatar-upload-row">
         <div id="avatar-preview"></div>
         <div class="avatar-upload-actions">
-          <div class="avatar-upload-btns">
-            <label class="btn btn-outline btn-sm" for="avatar-input-camera" style="cursor:pointer;">📷 Prendre une photo</label>
-            <label class="btn btn-outline btn-sm" for="avatar-input-library" style="cursor:pointer;">🖼️ Bibliothèque</label>
-          </div>
           <input type="file" id="avatar-input-camera" accept="image/*" capture="user" class="hidden">
           <input type="file" id="avatar-input-library" accept="image/*" class="hidden">
-          <div class="avatar-upload-hint">Cette photo apparaît à côté de votre nom.</div>
+          <div class="avatar-upload-hint">Cliquez sur la photo pour la modifier.</div>
         </div>
       </div>
       <div id="avatar-msg"></div>
@@ -298,7 +294,8 @@
       restoreScrollAnchor(list, __anchor);
       return;
     }
-    list.innerHTML = filtered.map(mesColisRowHTML).join('');
+    const groupsMes = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
+    list.innerHTML = renderGroupedColisHTML(groupsMes, mesColisRowHTML);
 
     list.querySelectorAll('.btn-save').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -343,7 +340,8 @@
       restoreScrollAnchor(list, __anchor);
       return;
     }
-    list.innerHTML = filtered.map(tousColisItemHTML).join('');
+    const groupsTous = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
+    list.innerHTML = renderGroupedColisHTML(groupsTous, tousColisItemHTML);
     restoreScrollAnchor(list, __anchor);
   }
 
