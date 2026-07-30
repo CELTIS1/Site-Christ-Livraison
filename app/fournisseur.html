@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20260730c">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -90,9 +90,15 @@
       <div id="recap-statuts">
         <div class="empty-state">Chargement...</div>
       </div>
-      <div class="field" style="max-width:260px; margin-top:20px;">
-        <label>Choisir un mois</label>
-        <select id="mois-select"></select>
+      <div class="recap-filters" style="margin-top:20px;">
+        <div class="field">
+          <label>Choisir un mois</label>
+          <select id="mois-select"></select>
+        </div>
+        <div class="field">
+          <label>Choisir un jour</label>
+          <select id="jour-select"><option value="">Tous les jours</option></select>
+        </div>
       </div>
       <div id="recap-mois" style="margin-top:12px;">
         <div class="empty-state">Chargement...</div>
@@ -564,25 +570,54 @@
     renderRecapMois();
   }
 
+  function populateJourSelect(groups){
+    const jourSelect = document.getElementById('jour-select');
+    const previousValue = jourSelect.value;
+    const options = groups.map(g => `<option value="${g.key}">${g.label}</option>`).join('');
+    jourSelect.innerHTML = `<option value="">Tous les jours</option>${options}`;
+    jourSelect.value = groups.some(g => g.key === previousValue) ? previousValue : '';
+  }
+
   function renderRecapMois(){
     const box = document.getElementById('recap-mois');
     const select = document.getElementById('mois-select');
     const selected = select.value;
     if (!selected) {
       box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
+      populateJourSelect([]);
       return;
     }
     const colisDuMois = mesColis.filter(c => monthKey(c.created_at) === selected);
     if (!colisDuMois.length) {
       box.innerHTML = `<div class="empty-state">Aucun colis pour ce mois.</div>`;
+      populateJourSelect([]);
       return;
     }
+    const groups = groupColisByDay(colisDuMois, 'created_at');
+    populateJourSelect(groups);
+    const jourSelected = document.getElementById('jour-select').value;
+
+    if (jourSelected) {
+      const g = groups.find(x => x.key === jourSelected);
+      if (g) {
+        const compteJour = {};
+        g.items.forEach(c => { compteJour[c.statut] = (compteJour[c.statut] || 0) + 1; });
+        const livresJour = compteJour['livre'] || 0;
+        const tauxJour = g.items.length ? Math.round((livresJour / g.items.length) * 100) : 0;
+        box.innerHTML = `
+          <div class="day-recap-back" onclick="selectRecapDay('')">← Voir tout le mois</div>
+          <p class="recap-phrase">Le <strong>${g.label}</strong>, vous avez enregistré <strong>${g.items.length} colis</strong>, dont <strong>${livresJour}</strong> livré${livresJour > 1 ? 's' : ''} avec succès (${tauxJour}%).</p>
+          ${statTilesHTML(compteJour, g.items.length)}
+        `;
+        return;
+      }
+    }
+
     const compte = {};
     colisDuMois.forEach(c => { compte[c.statut] = (compte[c.statut] || 0) + 1; });
     const livres = compte['livre'] || 0;
     const taux = colisDuMois.length ? Math.round((livres / colisDuMois.length) * 100) : 0;
 
-    const groups = groupColisByDay(colisDuMois, 'created_at');
     const joursHTML = groups.map(g => {
       const compteJour = {};
       g.items.forEach(c => { compteJour[c.statut] = (compteJour[c.statut] || 0) + 1; });
@@ -590,7 +625,7 @@
         <span class="mini-pill" style="--pill-color:${STATUTS[k].color}; --pill-bg:${STATUTS[k].bg}">${RECAP_ICONS[k] || ''} ${compteJour[k]} ${STATUTS[k].label}</span>
       `).join('');
       return `
-        <div class="day-recap-row">
+        <div class="day-recap-row" data-day-key="${g.key}" onclick="selectRecapDay('${g.key}')">
           <div class="day-recap-date">${g.label}</div>
           <div class="day-recap-count">${g.items.length} colis</div>
           <div class="day-recap-pills">${pills}</div>
@@ -605,7 +640,13 @@
     `;
   }
 
+  function selectRecapDay(key){
+    document.getElementById('jour-select').value = key;
+    renderRecapMois();
+  }
+
   document.getElementById('mois-select').addEventListener('change', renderRecapMois);
+  document.getElementById('jour-select').addEventListener('change', renderRecapMois);
 
   async function init(){
     const session = await requireAuth();
