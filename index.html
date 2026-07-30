@@ -69,8 +69,8 @@
   @media (max-width:480px){ .topbar-inner{justify-content:center; flex-wrap:wrap; row-gap:8px;} }
 
   /* ---------- SITE HEADER (topbar + nav regroupés, bloc sticky) ---------- */
-  .site-header-fixed{position:sticky; top:0; z-index:100; box-shadow:0 2px 10px rgba(0,0,0,0.06);}
-  header{background:var(--white);}
+  .site-header-fixed{position:fixed; top:0; left:0; right:0; width:100%; z-index:100; box-shadow:0 2px 10px rgba(0,0,0,0.06);}
+  header{background:var(--white);} #headerSpacer{transition:height .22s ease;}
   nav{
     display:flex; align-items:center; justify-content:space-between;
     max-width:1280px; margin:0 auto; padding:14px 16px;
@@ -554,7 +554,7 @@
   </header>
 </div>
 
-<div class="side-panel-overlay" id="sidePanelOverlay" onclick="closeSidePanel()"></div>
+<div id="headerSpacer"></div><div class="side-panel-overlay" id="sidePanelOverlay" onclick="closeSidePanel()"></div>
 <div class="side-panel" id="sidePanel">
   <button class="side-panel-close" onclick="closeSidePanel()" aria-label="Fermer">&times;</button>
   <ul class="side-panel-links">
@@ -892,16 +892,16 @@
   // Effet de scroll sur la barre du haut (topbar) : se masque quand on descend, réapparaît dès qu'on remonte.
   // La barre de navigation principale (logo, liens, devis) reste toujours visible en haut.
   (function(){
-    const topbarEl = document.getElementById('topbar');
-    if(!topbarEl) return;
+    function syncHeaderSpacer(){ const headerFixed = document.getElementById('siteHeaderFixed'); const spacer = document.getElementById('headerSpacer'); if(!headerFixed || !spacer) return; spacer.style.height = headerFixed.offsetHeight + 'px'; } syncHeaderSpacer(); window.addEventListener('load', syncHeaderSpacer); window.addEventListener('resize', syncHeaderSpacer); const topbarEl = document.getElementById('topbar');
+    if(!topbarEl) return; topbarEl.addEventListener('transitionend', syncHeaderSpacer);
     let lastScroll = window.scrollY;
     let ticking = false;
     function onScroll(){
       const cur = window.scrollY;
       if(cur > lastScroll && cur > 60){
-        topbarEl.classList.add('topbar-hidden');
+        topbarEl.classList.add('topbar-hidden'); syncHeaderSpacer();
       } else if(cur < lastScroll){
-        topbarEl.classList.remove('topbar-hidden');
+        topbarEl.classList.remove('topbar-hidden'); syncHeaderSpacer();
       }
       lastScroll = cur <= 0 ? 0 : cur;
       ticking = false;
