@@ -390,3 +390,47 @@ input,textarea,select{font-family:inherit;}
     background:var(--orange-light); color:var(--orange); padding:4px 12px; border-radius:14px; font-size:12px; font-weight:700;
     text-transform:none;
 }
+
+/* ---------- RECAPITULATIF (tuiles + resume simple) ---------- */
+.recap-phrase{
+  font-size:14.5px; line-height:1.6; color:#333; background:var(--grey-bg); border-radius:12px;
+  padding:14px 16px; margin:0 0 16px 0;
+}
+.recap-phrase strong{color:var(--navy);}
+.stat-tiles{
+  display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:8px;
+}
+.stat-tile{
+  background:var(--white); border:1.5px solid var(--border); border-radius:14px; padding:14px 10px;
+  text-align:center; display:flex; flex-direction:column; align-items:center; gap:4px;
+  border-top:3px solid var(--tile-color, var(--navy));
+}
+.stat-tile-total{background:var(--navy); border-color:var(--navy); border-top-color:var(--navy);}
+.stat-tile-total .stat-tile-value, .stat-tile-total .stat-tile-label{color:var(--white);}
+.stat-tile-icon{font-size:20px; line-height:1;}
+.stat-tile-value{font-size:20px; font-weight:800; color:var(--navy); line-height:1.2;}
+.stat-tile-label{font-size:11.5px; font-weight:600; color:var(--muted); line-height:1.3;}
+.stat-tile-total .stat-tile-label{color:rgba(255,255,255,0.85);}
+
+.day-recap-title{font-size:13.5px; font-weight:700; color:var(--navy); margin:22px 0 10px;}
+.day-recap-list{display:flex; flex-direction:column; gap:8px;}
+.day-recap-row{
+  background:var(--white); border:1px solid var(--border); border-radius:12px; padding:10px 14px;
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
+}
+.day-recap-date{font-weight:700; color:var(--navy); font-size:13px; text-transform:capitalize; flex-shrink:0;}
+.day-recap-count{
+  background:var(--orange-light); color:var(--orange); padding:2px 10px; border-radius:12px; font-size:11.5px; font-weight:700;
+  flex-shrink:0;
+}
+.day-recap-pills{display:flex; flex-wrap:wrap; gap:6px; flex:1 1 auto;}
+.mini-pill{
+  display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:12px; font-size:11.5px; font-weight:600;
+  color:var(--pill-color, var(--navy)); background:var(--pill-bg, var(--grey-bg)); white-space:nowrap;
+}
+
+@media(max-width:640px){
+  .stat-tiles{grid-template-columns:repeat(2, 1fr);}
+  .day-recap-row{padding:10px 12px;}
+  .day-recap-date{font-size:12.5px;}
+}
