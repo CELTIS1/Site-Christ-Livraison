@@ -43,8 +43,12 @@
       <div class="avatar-upload-row">
         <div id="avatar-preview"></div>
         <div class="avatar-upload-actions">
-          <label class="btn btn-outline btn-sm" for="avatar-input" style="cursor:pointer;">📷 Changer ma photo</label>
-          <input type="file" id="avatar-input" accept="image/*" class="hidden">
+          <div class="avatar-upload-btns">
+            <label class="btn btn-outline btn-sm" for="avatar-input-camera" style="cursor:pointer;">📷 Prendre une photo</label>
+            <label class="btn btn-outline btn-sm" for="avatar-input-library" style="cursor:pointer;">🖼️ Bibliothèque</label>
+          </div>
+          <input type="file" id="avatar-input-camera" accept="image/*" capture="user" class="hidden">
+          <input type="file" id="avatar-input-library" accept="image/*" class="hidden">
           <div class="avatar-upload-hint">Cette photo apparaît à côté de votre nom.</div>
         </div>
       </div>
@@ -251,7 +255,13 @@
         </div>
         <div class="field">
           <label>Photo (optionnel)</label>
-          <input type="file" class="row-photo" accept="image/*">
+          <div class="photo-pick-group">
+            <div class="avatar-upload-btns">
+              <label class="btn btn-outline btn-sm" style="cursor:pointer;">📷 Prendre une photo<input type="file" accept="image/*" capture="user" class="hidden pick-camera"></label>
+              <label class="btn btn-outline btn-sm" style="cursor:pointer;">🖼️ Bibliothèque<input type="file" accept="image/*" class="hidden pick-library"></label>
+            </div>
+            <div class="photo-pick-filename"></div>
+          </div>
         </div>
       </div>
     `;
@@ -268,7 +278,7 @@
   document.getElementById('btn-add-row').addEventListener('click', addRow);
 
   function addMsg(text, type){
-    document.getElementById('add-msg').innerHTML = `<div class="msg msg-${type}">${text}</div>`;
+    document.getElementById('add-msg').innerHTML = `<div class="msg msg-${type}">${escapeHTML(text)}</div>`;
   }
 
   async function uploadPhoto(file, userId){
@@ -294,11 +304,11 @@
       const destination = row.querySelector('.row-dest').value.trim();
       const montantRaw = row.querySelector('.row-montant').value.trim();
       const montant = montantRaw === '' ? null : Number(montantRaw);
-      const fileInput = row.querySelector('.row-photo');
+      const pickedPhoto = pickedGroupFile(row.querySelector('.photo-pick-group'));
       let photo_url = null;
 
-      if (fileInput.files && fileInput.files[0]) {
-        photo_url = await uploadPhoto(fileInput.files[0], currentUser.id);
+      if (pickedPhoto) {
+        photo_url = await uploadPhoto(pickedPhoto, currentUser.id);
         if (!photo_url) photoUploadFailed = true;
       }
 
@@ -340,8 +350,8 @@
         ${thumb}
         <div class="info">
           <div class="view-mode">
-            <div class="desc">${c.description || '(sans description)'}</div>
-            <div class="meta">${c.destination ? 'Vers : ' + c.destination + ' · ' : ''}Ajouté le ${formatDate(c.created_at)}</div>
+            <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+            <div class="meta">${c.destination ? 'Vers : ' + escapeHTML(c.destination) + ' · ' : ''}Ajouté le ${formatDate(c.created_at)}</div>
             ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
             ${livreurBlock}
             ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
@@ -572,7 +582,7 @@
     currentProfile = profile;
     document.getElementById('user-name').textContent = profile ? (profile.company_name || profile.full_name || '') : '';
     document.getElementById('user-first-name').textContent = profile ? (profile.full_name || '') : '';
-    initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', inputId: 'avatar-input', statusId: 'avatar-msg' });
+    initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', cameraInputId: 'avatar-input-camera', libraryInputId: 'avatar-input-library', statusId: 'avatar-msg' });
 
     addRow();
     await loadLivreurs();
