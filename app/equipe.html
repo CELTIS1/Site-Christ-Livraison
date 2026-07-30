@@ -50,13 +50,9 @@
 <div class="avatar-upload-row">
 <div id="avatar-preview"></div>
 <div class="avatar-upload-actions">
-<div class="avatar-upload-btns">
-<label class="btn btn-outline btn-sm" for="avatar-input-camera" style="cursor:pointer;">📷 Prendre une photo</label>
-<label class="btn btn-outline btn-sm" for="avatar-input-library" style="cursor:pointer;">🖼️ Bibliothèque</label>
-</div>
 <input type="file" id="avatar-input-camera" accept="image/*" capture="user" class="hidden">
 <input type="file" id="avatar-input-library" accept="image/*" class="hidden">
-<div class="avatar-upload-hint">Cette photo apparaît à côté de votre nom.</div>
+<div class="avatar-upload-hint">Cliquez sur la photo pour la modifier.</div>
 </div>
 </div>
 <div id="avatar-msg"></div>
@@ -817,7 +813,8 @@ filtered = filtered.filter(c => matchesSearch(c, searchColis));
 if (!filtered.length) {
 list.innerHTML = `<div class="empty-state">Aucun colis${activeFilter !== 'tous' || searchColis ? ' pour ces critères' : ''}.</div>`;
 } else {
-list.innerHTML = filtered.map(colisRowHTML).join('');
+const groups = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
+list.innerHTML = renderGroupedColisHTML(groups, colisRowHTML);
 
 list.querySelectorAll('.btn-save').forEach(btn => {
 btn.addEventListener('click', async () => {
@@ -994,7 +991,7 @@ function renderAllAccounts(){
 const box = document.getElementById('all-accounts-list');
 const filtered = activeAccountFilter === 'tous' ? allAccounts : allAccounts.filter(a => a.role === activeAccountFilter);
 if (!filtered.length) {
-box.innerHTML = `<div class="empty-state">Aucun compte${activeAccountFilter !== 'tous' ? ' pour ce r�4le' : ''}.</div>`;
+box.innerHTML = `<div class="empty-state">Aucun compte${activeAccountFilter !== 'tous' ? ' pour ce rôle' : ''}.</div>`;
 return;
 }
 box.innerHTML = filtered.map(accountRowHTML).join('');
