@@ -1220,7 +1220,7 @@ box.innerHTML = `
 `;
 }
 
-function groupColisByDay(list){
+function groupColisByDayLegacyReport(list){
 const groups = {};
 list.forEach(c => {
 const key = (c.created_at || '').slice(0, 10);
@@ -1230,7 +1230,7 @@ groups[key].push(c);
 return groups;
 }
 
-function dayLabel(dayKey){
+function dayLabelLegacyReport(dayKey){
 if (!dayKey) return 'Date inconnue';
 const d = new Date(dayKey + 'T00:00:00');
 return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
@@ -1262,12 +1262,12 @@ if (!allColis.length) {
 box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
 return;
 }
-const groups = groupColisByDay(allColis);
+const groups = groupColisByDayLegacyReport(allColis);
 const days = Object.keys(groups).sort((a, b) => b.localeCompare(a));
 box.innerHTML = days.map(day => `
 <div class="day-group">
 <div class="day-group-header">
-<span>${dayLabel(day)}</span>
+<span>${dayLabelLegacyReport(day)}</span>
 <span class="day-count">${groups[day].length} colis</span>
 </div>
 <div class="colis-list">${groups[day].map(colisMiniHTML).join('')}</div>
