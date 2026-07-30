@@ -108,7 +108,7 @@
 
   function showMsg(text, type){
     document.getElementById('msg-box').innerHTML =
-      '<div class="msg msg-' + type + '">' + text + '</div>';
+      '<div class="msg msg-' + type + '">' + escapeHTML(text) + '</div>';
   }
 
   // Convertit un numéro ivoirien saisi localement (ex: 07 89 81 81 40) au format attendu par Supabase Auth.
