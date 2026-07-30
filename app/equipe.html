@@ -89,6 +89,7 @@
 <span class="collapse-arrow">▶</span> Demandes de réinitialisation de mot de passe
 </h2>
 <div id="reset-content" class="collapsible-content">
+<p class="reset-admin-note hidden" id="reset-admin-note">Vous voyez ici aussi les demandes des membres de l'équipe et des administrateurs.</p>
 <div id="reset-list">
 <div class="empty-state">Chargement...</div>
 </div>
@@ -285,6 +286,20 @@
 </div>
 </div>
 
+<div id="pwd-modal-overlay" class="pwd-modal-overlay hidden">
+  <div class="pwd-modal">
+    <div class="pwd-modal-icon">🔑</div>
+    <h3 class="pwd-modal-title">Nouveau mot de passe</h3>
+    <p class="pwd-modal-sub" id="pwd-modal-sub"></p>
+    <div class="pwd-modal-value-row">
+      <input type="text" id="pwd-modal-value" readonly>
+      <button type="button" class="btn btn-sm" id="pwd-modal-copy">Copier</button>
+    </div>
+    <p class="pwd-modal-hint">Communiquez ce mot de passe à la personne concernée, puis fermez cette fenêtre.</p>
+    <button type="button" class="btn" id="pwd-modal-close">Fermer</button>
+  </div>
+</div>
+
 <script src="config.js?v=20260730"></script>
 <script>
 let currentUser = null;
@@ -299,6 +314,50 @@ let allAccounts = [];
 let activeAccountFilter = 'tous';
 let searchColis = '';
 window.__colisEditing = new Set();
+
+function showTempPasswordModal(personLabel, phone, tempPassword){
+  document.getElementById('pwd-modal-sub').textContent = `Pour ${personLabel}${phone ? ' (' + phone + ')' : ''}`;
+  const input = document.getElementById('pwd-modal-value');
+  input.value = tempPassword || '';
+  const copyBtn = document.getElementById('pwd-modal-copy');
+  copyBtn.textContent = 'Copier';
+  copyBtn.classList.remove('copied');
+  document.getElementById('pwd-modal-overlay').classList.remove('hidden');
+  setTimeout(() => { input.focus(); input.select(); }, 50);
+}
+
+function hideTempPasswordModal(){
+  document.getElementById('pwd-modal-overlay').classList.add('hidden');
+}
+
+document.getElementById('pwd-modal-copy').addEventListener('click', async () => {
+  const input = document.getElementById('pwd-modal-value');
+  const copyBtn = document.getElementById('pwd-modal-copy');
+  input.focus(); input.select(); input.setSelectionRange(0, 99999);
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(input.value);
+    copied = true;
+  } catch (e) {
+    try { copied = document.execCommand('copy'); } catch (e2) { copied = false; }
+  }
+  if (copied) {
+    copyBtn.textContent = 'Copié ✓';
+    copyBtn.classList.add('copied');
+    setTimeout(() => { copyBtn.textContent = 'Copier'; copyBtn.classList.remove('copied'); }, 2000);
+  } else {
+    copyBtn.textContent = 'Copie impossible';
+    setTimeout(() => { copyBtn.textContent = 'Copier'; }, 2000);
+  }
+});
+
+document.getElementById('pwd-modal-close').addEventListener('click', hideTempPasswordModal);
+document.getElementById('pwd-modal-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'pwd-modal-overlay') hideTempPasswordModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('pwd-modal-overlay').classList.contains('hidden')) hideTempPasswordModal();
+});
 
 function closeOtherSections(exceptContentId){
 document.querySelectorAll('.card > .collapsible-content').forEach(c => {
@@ -512,10 +571,13 @@ renderPending();
 }
 
 function resetRowHTML(r){
+const badge = (r.role === 'equipe' || r.role === 'admin')
+? `<span class="mini-pill" style="--pill-color:var(--orange);--pill-bg:var(--orange-light);">${r.role === 'admin' ? '🛡️ Admin' : '👤 Équipe'}</span>`
+: '';
 return `
 <div class="colis-item" data-id="${r.id}">
 <div class="info">
-<div class="desc">${r.full_name ? escapeHTML(r.full_name) : '(sans nom)'}</div>
+<div class="desc">${r.full_name ? escapeHTML(r.full_name) : '(sans nom)'} ${badge}</div>
 <div class="meta">Tél : ${escapeHTML(r.phone || '')} · Demandé le ${formatDate(r.created_at)}</div>
 </div>
 <div class="status-col">
@@ -555,7 +617,7 @@ alert("Erreur : " + (result.error || 'réinitialisation impossible'));
 btn.disabled = false; btn.textContent = 'Réinitialiser';
 return;
 }
-alert(`Nouveau mot de passe pour ${result.full_name || result.phone} (${result.phone}) :\n\n${result.temp_password}\n\nCommuniquez-le à la personne concernée.`);
+showTempPasswordModal(result.full_name || result.phone, result.phone, result.temp_password);
 await loadResetRequests();
 } catch (err) {
 alert("Erreur : " + err.message);
@@ -572,7 +634,32 @@ const { data, error } = await supabaseClient
 .eq('status', 'en_attente')
 .order('created_at');
 if (error) { console.error(error); return; }
-resetRequests = data;
+
+let rows = data || [];
+const phones = [...new Set(rows.map(r => r.phone).filter(Boolean))];
+if (phones.length) {
+const { data: profs, error: profErr } = await supabaseClient
+.from('profiles')
+.select('phone, role')
+.in('phone', phones);
+if (!profErr && profs) {
+const roleByPhone = {};
+profs.forEach(p => { roleByPhone[p.phone] = p.role; });
+rows = rows.map(r => ({ ...r, role: roleByPhone[r.phone] || null }));
+}
+}
+
+if (!isAdmin) {
+rows = rows.filter(r => r.role !== 'equipe' && r.role !== 'admin');
+}
+
+const note = document.getElementById('reset-admin-note');
+if (note) {
+const hasTeamRequest = rows.some(r => r.role === 'equipe' || r.role === 'admin');
+note.classList.toggle('hidden', !(isAdmin && hasTeamRequest));
+}
+
+resetRequests = rows;
 renderResetRequests();
 }
 
@@ -1038,7 +1125,7 @@ if (!confirm(`Générer un nouveau mot de passe pour ${account.full_name || acco
 btn.disabled = true; btn.textContent = '...';
 try {
 const result = await callAdminFunction('admin-reset-password', { user_id: id });
-alert(`Nouveau mot de passe pour ${account.full_name || account.phone} :\n\n${result.temp_password}\n\nCommuniquez-le à la personne concernée.`);
+showTempPasswordModal(account.full_name || account.phone, account.phone, result.temp_password);
 } catch (err) {
 alert("Erreur : " + err.message);
 }
