@@ -87,11 +87,11 @@
       <span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif
     </h2>
     <div id="recap-content" class="collapsible-content">
-      <div class="recap-table-wrap" id="recap-statuts">
+      <div id="recap-statuts">
         <div class="empty-state">Chargement...</div>
       </div>
       <div class="field" style="max-width:260px; margin-top:20px;">
-        <label>Vue par mois</label>
+        <label>Choisir un mois</label>
         <select id="mois-select"></select>
       </div>
       <div id="recap-mois" style="margin-top:12px;">
@@ -501,6 +501,26 @@
     if (willOpen) refreshStickyTables(content);
   }
 
+  const RECAP_ICONS = { en_attente:'⏳', recupere:'📦', en_livraison:'🚚', livre:'✅', non_livre:'⚠️', retour:'↩️' };
+
+  function statTilesHTML(compte, total){
+    const tiles = Object.keys(STATUTS).map(k => `
+      <div class="stat-tile" style="--tile-color:${STATUTS[k].color}; --tile-bg:${STATUTS[k].bg}">
+        <div class="stat-tile-icon">${RECAP_ICONS[k] || '📦'}</div>
+        <div class="stat-tile-value">${compte[k] || 0}</div>
+        <div class="stat-tile-label">${STATUTS[k].label}</div>
+      </div>`).join('');
+    return `
+      <div class="stat-tiles">
+        <div class="stat-tile stat-tile-total">
+          <div class="stat-tile-icon">📋</div>
+          <div class="stat-tile-value">${total}</div>
+          <div class="stat-tile-label">Total colis</div>
+        </div>
+        ${tiles}
+      </div>`;
+  }
+
   function renderRecapStatuts(){
     const box = document.getElementById('recap-statuts');
     if (!mesColis.length) {
@@ -509,14 +529,13 @@
     }
     const compte = {};
     mesColis.forEach(c => { compte[c.statut] = (compte[c.statut] || 0) + 1; });
-    const statutKeys = Object.keys(STATUTS);
-    const cols = statutKeys.map(k => `<th>${STATUTS[k].label}</th>`).join('');
-    const vals = statutKeys.map(k => `<td>${compte[k] || 0}</td>`).join('');
+    const livres = compte['livre'] || 0;
+    const enCours = (compte['en_attente']||0) + (compte['recupere']||0) + (compte['en_livraison']||0);
+    const taux = mesColis.length ? Math.round((livres / mesColis.length) * 100) : 0;
     box.innerHTML = `
-      <table class="recap-table">
-        <thead><tr><th>Total</th>${cols}</tr></thead>
-        <tbody><tr><td><strong>${mesColis.length}</strong></td>${vals}</tr></tbody>
-      </table>
+      <p class="recap-phrase">Depuis le début, vous avez enregistré <strong>${mesColis.length} colis</strong> au total.
+      <strong>${livres}</strong> ${livres > 1 ? 'ont' : 'a'} été livré${livres > 1 ? 's' : ''} avec succès (${taux}%)${enCours ? `, et <strong>${enCours}</strong> ${enCours > 1 ? 'sont' : 'est'} encore en cours.` : '.'}</p>
+      ${statTilesHTML(compte, mesColis.length)}
     `;
   }
 
@@ -560,17 +579,29 @@
     }
     const compte = {};
     colisDuMois.forEach(c => { compte[c.statut] = (compte[c.statut] || 0) + 1; });
-    const statutKeys = Object.keys(STATUTS);
-    const cols = statutKeys.map(k => `<th>${STATUTS[k].label}</th>`).join('');
-    const vals = statutKeys.map(k => `<td>${compte[k] || 0}</td>`).join('');
     const livres = compte['livre'] || 0;
     const taux = colisDuMois.length ? Math.round((livres / colisDuMois.length) * 100) : 0;
+
+    const groups = groupColisByDay(colisDuMois, 'created_at');
+    const joursHTML = groups.map(g => {
+      const compteJour = {};
+      g.items.forEach(c => { compteJour[c.statut] = (compteJour[c.statut] || 0) + 1; });
+      const pills = Object.keys(STATUTS).filter(k => compteJour[k]).map(k => `
+        <span class="mini-pill" style="--pill-color:${STATUTS[k].color}; --pill-bg:${STATUTS[k].bg}">${RECAP_ICONS[k] || ''} ${compteJour[k]} ${STATUTS[k].label}</span>
+      `).join('');
+      return `
+        <div class="day-recap-row">
+          <div class="day-recap-date">${g.label}</div>
+          <div class="day-recap-count">${g.items.length} colis</div>
+          <div class="day-recap-pills">${pills}</div>
+        </div>`;
+    }).join('');
+
     box.innerHTML = `
-      <div class="page-sub" style="margin-bottom:14px;">${colisDuMois.length} colis pour ${monthLabel(selected)} · Taux de livraison réussie : ${taux}%</div>
-      <table class="recap-table">
-        <thead><tr><th>Total</th>${cols}</tr></thead>
-        <tbody><tr><td><strong>${colisDuMois.length}</strong></td>${vals}</tr></tbody>
-      </table>
+      <p class="recap-phrase">En <strong>${monthLabel(selected)}</strong>, vous avez enregistré <strong>${colisDuMois.length} colis</strong>, dont <strong>${livres}</strong> livré${livres > 1 ? 's' : ''} avec succès (${taux}%).</p>
+      ${statTilesHTML(compte, colisDuMois.length)}
+      <div class="day-recap-title">Détail par jour</div>
+      <div class="day-recap-list">${joursHTML}</div>
     `;
   }
 
