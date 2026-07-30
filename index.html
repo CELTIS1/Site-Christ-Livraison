@@ -286,23 +286,25 @@
     margin:20px 0 12px 0;
   }
   .chip-group-label:first-child{margin-top:0;}
-  .chip-row{display:flex; flex-direction:column; gap:8px;}
+  .chip-row{display:flex; flex-wrap:wrap; gap:8px;}
   .chip{
-    background:var(--white); border:1.5px solid #E4E9EF; color:var(--navy); font-weight:600; font-size:14px;
-    padding:14px 18px; border-radius:12px; cursor:pointer; transition:.2s ease; font-family:inherit;
-    text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--white); border:1.5px solid #E4E9EF; color:var(--navy); font-weight:600; font-size:13px;
+    padding:9px 15px; border-radius:30px; cursor:pointer; transition:.2s ease; font-family:inherit;
+    display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
   }
-  .chip i{font-size:12px; color:#C7D1DB; transition:transform .25s ease, color .25s ease;}
-  .chip:hover{border-color:var(--orange);}
-  .chip:hover i{color:var(--orange); transform:translateX(3px);}
-  .chip.active{background:var(--navy); border-color:var(--navy); color:var(--white); box-shadow:0 10px 22px rgba(27,67,116,0.18);}
-  .chip.active i{color:var(--orange); transform:translateX(3px);}
+  .chip i{font-size:10px; color:#C7D1DB; transition:transform .25s ease, color .25s ease;}
+  .chip:hover{border-color:var(--orange); transform:translateY(-1px);}
+  .chip:hover i{color:var(--orange); transform:translateX(2px);}
+  .chip.active{background:var(--navy); border-color:var(--navy); color:var(--white); box-shadow:0 8px 18px rgba(27,67,116,0.2);}
+  .chip.active i{color:var(--orange); transform:translateX(2px);}
   .zone-detail-panel{
     background:var(--white); border:1px solid #ECEFF3; position:sticky; top:110px;
-    border-radius:18px; padding:38px; box-shadow:0 16px 40px rgba(27,67,116,0.08);
-    opacity:0; transform:translateX(24px); transition:opacity .4s cubic-bezier(.22,.61,.36,1), transform .4s cubic-bezier(.22,.61,.36,1);
+    border-radius:18px; padding:38px; box-shadow:0 16px 40px rgba(27,67,116,0.08); overflow:hidden;
+    opacity:0; transform:translateY(18px) scale(.97); transition:opacity .35s cubic-bezier(.22,.61,.36,1), transform .35s cubic-bezier(.22,.61,.36,1);
   }
-  .zone-detail-panel.show{opacity:1; transform:translateX(0);}
+  .zone-detail-panel.show{opacity:1; transform:translateY(0) scale(1);}
+  @keyframes zoneDetailIn{ from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:translateY(0);} }
+  .zone-detail-panel.show .zone-anim{animation:zoneDetailIn .55s cubic-bezier(.22,.61,.36,1) both;}
   .zone-detail-panel h3{color:var(--navy); font-size:19px; margin-bottom:12px;}
   .zone-badge{
     display:inline-flex; align-items:center; gap:6px; background:var(--orange-light); color:var(--orange);
@@ -311,8 +313,12 @@
   .zone-text{color:#5b6b7c; font-size:14px; margin-bottom:16px;}
   .zone-divider{border-top:1px solid #ECEFF3; margin-bottom:14px;}
   .zone-keywords{color:#8a97a6; font-size:12px; letter-spacing:.2px;}
-  @media (max-width:860px){ .zone-selector{grid-template-columns:1fr;} .zone-detail-panel{position:static; transform:translateY(14px);} .zone-detail-panel.show{transform:translateY(0);} }
+  @media (max-width:860px){ .zone-selector{grid-template-columns:1fr;} .zone-detail-panel{position:static; transform:translateY(14px) scale(.97);} .zone-detail-panel.show{transform:translateY(0) scale(1);} }
   @media (max-width:600px){ .zone-detail-panel{padding:26px 22px;} }
+  @media (prefers-reduced-motion: reduce){
+    .zone-detail-panel{transition:none;}
+    .zone-detail-panel.show .zone-anim{animation:none;}
+  }
   .zone-cta{
     background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%); border-radius:20px;
     padding:44px 32px; text-align:center; margin-top:44px; color:var(--white);
@@ -1022,11 +1028,11 @@
   }
 
   function zoneDetailHTML(z){
-    return `<span class="zone-badge"><i class="fa-solid fa-location-dot"></i> ${z.tag || z.name}</span>
-      <h3>${z.title || z.name}</h3>
-      <p class="zone-text">${z.text || ""}</p>
-      <div class="zone-divider"></div>
-      <p class="zone-keywords">${z.keywords || ""}</p>`;
+    return `<span class="zone-badge zone-anim"><i class="fa-solid fa-location-dot"></i> ${z.tag || z.name}</span>
+      <h3 class="zone-anim" style="animation-delay:.06s">${z.title || z.name}</h3>
+      <p class="zone-text zone-anim" style="animation-delay:.12s">${z.text || ""}</p>
+      <div class="zone-divider zone-anim" style="animation-delay:.18s"></div>
+      <p class="zone-keywords zone-anim" style="animation-delay:.24s">${z.keywords || ""}</p>`;
   }
 
   function selectZoneByIndex(idx){
@@ -1037,11 +1043,16 @@
     if(btn) btn.classList.add('active');
     const panel = document.getElementById('zoneDetailPanel');
     if(!panel) return;
+    if(reducedMotion){
+      panel.innerHTML = zoneDetailHTML(z);
+      panel.classList.add('show');
+      return;
+    }
     panel.classList.remove('show');
     setTimeout(() => {
       panel.innerHTML = zoneDetailHTML(z);
-      panel.classList.add('show');
-    }, 120);
+      requestAnimationFrame(() => panel.classList.add('show'));
+    }, 350);
   }
 
   function renderZoneChips(zones){
