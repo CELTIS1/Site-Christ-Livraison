@@ -74,7 +74,13 @@
      se "décoller" du haut de la page pendant l'animation de la topbar. #headerSpacer
      réserve la place du header dans le flux normal de la page. */
   .site-header-fixed{position:fixed; top:0; left:0; right:0; width:100%; z-index:100; box-shadow:0 2px 10px rgba(0,0,0,0.06);}
-  #headerSpacer{transition:height .22s ease;}
+  /* Hauteur par défaut (avant que le JS ne calcule la valeur exacte) : évite qu'au tout
+     premier affichage de la page (ex. connexion lente, polices pas encore chargées) le
+     contenu du hero ne remonte et ne chevauche la nav le temps que syncHeaderSpacer()
+     s'exécute. Le JS corrige ensuite cette valeur au pixel près. */
+  #headerSpacer{height:150px; transition:height .22s ease;}
+  @media (max-width:860px){ #headerSpacer{height:170px;} }
+  @media (max-width:480px){ #headerSpacer{height:190px;} }
   header{background:var(--white);}
   nav{
     display:flex; align-items:center; justify-content:space-between;
