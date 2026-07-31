@@ -87,10 +87,7 @@
       <span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif
     </h2>
     <div id="recap-content" class="collapsible-content">
-      <div id="recap-statuts">
-        <div class="empty-state">Chargement...</div>
-      </div>
-      <div class="recap-filters" style="margin-top:20px;">
+      <div class="recap-filters">
         <div class="field">
           <label>Choisir un mois</label>
           <select id="mois-select"></select>
@@ -477,7 +474,6 @@
       list.innerHTML = renderGroupedColisHTML(groups, colisItemHTML);
       attachColisHandlers(list);
     }
-    renderRecapStatuts();
     populateMoisSelect();
     restoreScrollAnchor(list, __anchor);
   }
@@ -525,24 +521,6 @@
         </div>
         ${tiles}
       </div>`;
-  }
-
-  function renderRecapStatuts(){
-    const box = document.getElementById('recap-statuts');
-    if (!mesColis.length) {
-      box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
-      return;
-    }
-    const compte = {};
-    mesColis.forEach(c => { compte[c.statut] = (compte[c.statut] || 0) + 1; });
-    const livres = compte['livre'] || 0;
-    const enCours = (compte['en_attente']||0) + (compte['recupere']||0) + (compte['en_livraison']||0);
-    const taux = mesColis.length ? Math.round((livres / mesColis.length) * 100) : 0;
-    box.innerHTML = `
-      <p class="recap-phrase">Depuis le début, vous avez enregistré <strong>${mesColis.length} colis</strong> au total.
-      <strong>${livres}</strong> ${livres > 1 ? 'ont' : 'a'} été livré${livres > 1 ? 's' : ''} avec succès (${taux}%)${enCours ? `, et <strong>${enCours}</strong> ${enCours > 1 ? 'sont' : 'est'} encore en cours.` : '.'}</p>
-      ${statTilesHTML(compte, mesColis.length)}
-    `;
   }
 
   function monthKey(iso){
