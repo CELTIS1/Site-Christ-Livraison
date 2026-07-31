@@ -21,32 +21,20 @@
 <span id="user-avatar-topbar"></span>
 <span id="user-name"></span>
 <span class="role-pill" id="role-pill">Équipe interne</span>
-<button class="btn-logout" onclick="logout()">Déconnexion</button>
+<div class="settings-menu">
+<button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️<span id="settings-notif-badge" class="alert-badge hidden">0</span></button>
+<div class="settings-dropdown" id="settings-dropdown">
+<button type="button" id="btn-mon-compte">👤 Mon compte</button>
+<button type="button" class="danger" onclick="logout()">🚪 Se déconnecter</button>
+</div>
+</div>
 </div>
 </div>
 
-<div class="subnav">
-<div class="subnav-inner">
-<a href="#section-compte">Mon compte</a>
-<a href="#section-pending">Comptes en attente</a>
-<a href="#section-reset">Réinitialisations</a>
-<a href="#section-livreur">Créer un livreur</a>
-<a href="#section-ajouter-colis">Ajouter un colis</a>
-<a href="#section-main">Colis</a>
-<a href="#section-gerer-equipe" id="subnav-gerer-equipe" class="hidden">Comptes équipe</a>
-<a href="#section-tous-comptes" id="subnav-tous-comptes" class="hidden">Tous les comptes</a>
-</div>
-</div>
-
-<div class="wrap">
-<div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
-<div class="page-sub">Voici le suivi de tous les colis enregistrés par les clients, en temps réel.</div>
-
-<div class="card" id="section-compte">
-<h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-<span class="collapse-arrow">▼</span> Mon compte
-</h2>
-<div id="compte-content" class="collapsible-content open">
+<div class="account-modal-overlay hidden" id="account-modal-overlay">
+<div class="account-modal">
+<button type="button" class="account-modal-close" id="account-modal-close" aria-label="Fermer">✕</button>
+<h2 class="account-modal-title">Mon compte</h2>
 <div class="avatar-upload-row">
 <div id="avatar-preview"></div>
 <div class="avatar-upload-actions">
@@ -73,9 +61,25 @@
 </div>
 </div>
 
+<div class="subnav">
+<div class="subnav-inner">
+<a href="#section-pending">Comptes en attente</a>
+<a href="#section-reset">Réinitialisations</a>
+<a href="#section-livreur">Créer un livreur</a>
+<a href="#section-ajouter-colis">Ajouter un colis</a>
+<a href="#section-main">Colis</a>
+<a href="#section-gerer-equipe" id="subnav-gerer-equipe" class="hidden">Comptes équipe</a>
+<a href="#section-tous-comptes" id="subnav-tous-comptes" class="hidden">Tous les comptes</a>
+</div>
+</div>
+
+<div class="wrap">
+<div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
+<div class="page-sub">Voici le suivi de tous les colis enregistrés par les clients, en temps réel.</div>
+
 <div class="card" id="section-pending">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'pending-content')">
-<span class="collapse-arrow">▶</span> Comptes en attente de validation
+<span class="collapse-arrow">▶</span> Comptes en attente de validation <span id="pending-badge" class="alert-badge hidden">0</span>
 </h2>
 <div id="pending-content" class="collapsible-content">
 <div id="pending-list">
@@ -86,7 +90,7 @@
 
 <div class="card" id="section-reset">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'reset-content')">
-<span class="collapse-arrow">▶</span> Demandes de réinitialisation de mot de passe
+<span class="collapse-arrow">▶</span> Demandes de réinitialisation de mot de passe <span id="reset-badge" class="alert-badge hidden">0</span>
 </h2>
 <div id="reset-content" class="collapsible-content">
 <p class="reset-admin-note hidden" id="reset-admin-note">Vous voyez ici aussi les demandes des membres de l'équipe et des administrateurs.</p>
@@ -530,7 +534,27 @@ return `
 `;
 }
 
+// Met à jour une bulle de notification (nombre) sur une section repliée ou sur l'icône réglages,
+// pour que l'équipe/l'administrateur voie immédiatement qu'une demande attend, sans avoir à dérouler.
+function updateNotifBadge(elId, count){
+const el = document.getElementById(elId);
+if (!el) return;
+if (count > 0) {
+el.textContent = count > 99 ? '99+' : count;
+el.classList.remove('hidden');
+} else {
+el.classList.add('hidden');
+}
+}
+
+function refreshSettingsBadge(){
+const total = (pendingAccounts ? pendingAccounts.length : 0) + (resetRequests ? resetRequests.length : 0);
+updateNotifBadge('settings-notif-badge', total);
+}
+
 function renderPending(){
+updateNotifBadge('pending-badge', pendingAccounts.length);
+refreshSettingsBadge();
 const box = document.getElementById('pending-list');
 if (!pendingAccounts.length) {
 box.innerHTML = `<div class="empty-state">Aucun compte en attente de validation.</div>`;
@@ -588,6 +612,8 @@ return `
 }
 
 function renderResetRequests(){
+updateNotifBadge('reset-badge', resetRequests.length);
+refreshSettingsBadge();
 const box = document.getElementById('reset-list');
 if (!resetRequests.length) {
 box.innerHTML = `<div class="empty-state">Aucune demande de réinitialisation en attente.</div>`;
@@ -1602,6 +1628,7 @@ isAdmin = profile.role === 'admin';
 document.getElementById('user-name').textContent = profile.full_name || '';
 document.getElementById('user-first-name').textContent = profile.full_name || '';
 initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', cameraInputId: 'avatar-input-camera', libraryInputId: 'avatar-input-library', statusId: 'avatar-msg' });
+initSettingsMenu();
 
 if (isAdmin) {
 document.getElementById('role-pill').textContent = 'Administrateur';
