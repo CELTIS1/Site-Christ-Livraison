@@ -95,10 +95,14 @@
     transition:background .2s ease, border-color .2s ease, transform .15s ease;
   }
   .nav-menu-btn:hover{background:var(--orange-light); border-color:var(--orange); transform:translateY(-1px);}
-  .nav-mobile-actions{display:none; align-items:center; gap:10px;}
+  .nav-mobile-actions{display:none; align-items:center; gap:14px;}
+  .nav-social-mobile{display:none; align-items:center; gap:12px;}
+  .nav-social-mobile a{color:var(--navy); font-size:16px; transition:color .2s ease, transform .15s ease;}
+  .nav-social-mobile a:hover{color:var(--orange); transform:translateY(-2px);}
 
   @media (max-width:860px){
     .nav-mobile-actions{display:flex;}
+    .nav-social-mobile{display:flex;}
     .nav-links{
       position:absolute; top:100%; left:0; right:0; background:var(--white);
       flex-direction:column; align-items:flex-start; gap:0; padding:8px 24px 18px 24px;
@@ -598,6 +602,12 @@
         <button class="nav-menu-btn" onclick="openSidePanel()" aria-label="Plus d'options"><i class="fa-solid fa-grip"></i></button>
       </div>
       <div class="nav-mobile-actions">
+        <div class="nav-social-mobile">
+          <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+        </div>
         <button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button>
       </div>
     </nav>
