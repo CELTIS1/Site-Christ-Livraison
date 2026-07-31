@@ -18,13 +18,48 @@
     <span id="user-avatar-topbar"></span>
     <span id="user-name"></span>
     <span class="role-pill">Client</span>
-    <button class="btn-logout" onclick="logout()">Déconnexion</button>
+    <div class="settings-menu">
+      <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
+      <div class="settings-dropdown" id="settings-dropdown">
+        <button type="button" id="btn-mon-compte">👤 Mon compte</button>
+        <button type="button" class="danger" onclick="logout()">🚪 Se déconnecter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="account-modal-overlay hidden" id="account-modal-overlay">
+  <div class="account-modal">
+    <button type="button" class="account-modal-close" id="account-modal-close" aria-label="Fermer">✕</button>
+    <h2 class="account-modal-title">Mon compte</h2>
+    <div class="avatar-upload-row">
+      <div id="avatar-preview"></div>
+      <div class="avatar-upload-actions">
+        <input type="file" id="avatar-input-camera" accept="image/*" capture="user" class="hidden">
+        <input type="file" id="avatar-input-library" accept="image/*" class="hidden">
+        <div class="avatar-upload-hint">Cliquez sur la photo pour la modifier.</div>
+      </div>
+    </div>
+    <div id="avatar-msg"></div>
+    <div id="change-pwd-msg"></div>
+    <form id="form-change-password">
+      <div class="field-row">
+        <div class="field">
+          <label>Nouveau mot de passe</label>
+          <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
+        </div>
+        <div class="field">
+          <label>Confirmer le nouveau mot de passe</label>
+          <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
+        </div>
+      </div>
+      <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
+    </form>
   </div>
 </div>
 
 <div class="subnav">
   <div class="subnav-inner">
-    <a href="#section-compte">Mon compte</a>
     <a href="#section-ajouter">Ajouter des colis</a>
     <a href="#section-recap">Récapitulatif</a>
     <a href="#section-colis">Mes colis</a>
@@ -34,37 +69,6 @@
 <div class="wrap">
   <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
   <div class="page-sub">Ajoutez vos colis à livrer et suivez leur statut en temps réel.</div>
-
-  <div class="card" id="section-compte">
-    <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'compte-content')">
-      <span class="collapse-arrow">▼</span> Mon compte
-    </h2>
-    <div id="compte-content" class="collapsible-content open">
-      <div class="avatar-upload-row">
-        <div id="avatar-preview"></div>
-        <div class="avatar-upload-actions">
-          <input type="file" id="avatar-input-camera" accept="image/*" capture="user" class="hidden">
-          <input type="file" id="avatar-input-library" accept="image/*" class="hidden">
-          <div class="avatar-upload-hint">Cliquez sur la photo pour la modifier.</div>
-        </div>
-      </div>
-      <div id="avatar-msg"></div>
-      <div id="change-pwd-msg"></div>
-      <form id="form-change-password">
-        <div class="field-row">
-          <div class="field">
-            <label>Nouveau mot de passe</label>
-            <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
-          </div>
-          <div class="field">
-            <label>Confirmer le nouveau mot de passe</label>
-            <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
-          </div>
-        </div>
-        <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
-      </form>
-    </div>
-  </div>
 
   <div class="card" id="section-ajouter">
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'ajouter-content')">
@@ -653,6 +657,7 @@
     document.getElementById('user-name').textContent = profile ? (profile.company_name || profile.full_name || '') : '';
     document.getElementById('user-first-name').textContent = profile ? (profile.full_name || '') : '';
     initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', cameraInputId: 'avatar-input-camera', libraryInputId: 'avatar-input-library', statusId: 'avatar-msg' });
+    initSettingsMenu();
 
     addRow();
     await loadLivreurs();
