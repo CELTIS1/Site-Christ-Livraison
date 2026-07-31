@@ -982,6 +982,11 @@
   syncHeaderSpacer();
   window.addEventListener('load', syncHeaderSpacer);
   window.addEventListener('resize', syncHeaderSpacer);
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(syncHeaderSpacer); }
+  if(window.ResizeObserver){
+    const headerFixedEl = document.getElementById('siteHeaderFixed');
+    if(headerFixedEl){ new ResizeObserver(syncHeaderSpacer).observe(headerFixedEl); }
+  }
 
   // Effet de scroll sur la barre du haut (topbar) : se masque quand on descend, réapparaît dès qu'on remonte.
   // La barre de navigation principale (logo, liens, devis) reste toujours visible en haut.
