@@ -41,46 +41,16 @@
     text-align:center; color:var(--muted); max-width:560px; margin:0 auto 44px auto; font-size:15px;
   }
 
-  /* ---------- TOP BAR ---------- */
-  .topbar{
-    background:var(--navy-dark); color:#D9E2EC; font-size:14px;
-    display:grid; grid-template-rows:1fr; transition:grid-template-rows .22s ease, opacity .2s ease;
-  }
-  .topbar.topbar-hidden{grid-template-rows:0fr; opacity:0; pointer-events:none;}
-  .topbar-inner{
-    max-width:1280px; margin:0 auto; padding:10px 16px;
-    display:flex; align-items:center; justify-content:flex-end; gap:16px;
-    overflow:hidden; min-height:0;
-  }
-  .topbar-item{display:inline-flex; align-items:center; gap:6px; color:#D9E2EC; white-space:nowrap; transition:color .2s ease;}
-  .topbar-item:hover{color:var(--white);}
-  .topbar-item i{color:var(--orange); font-size:15px;}
-  .topbar-sep{width:1px; height:14px; background:rgba(255,255,255,0.25);}
-  .topbar-social{display:flex; align-items:center; gap:14px;}
-  .topbar-social a{color:#D9E2EC; font-size:17px; transition:color .2s ease, transform .15s ease;}
-  .topbar-social a:hover{color:var(--orange); transform:translateY(-2px);}
-  .topbar-login{
-    display:none; align-items:center; color:#fff; font-weight:700; font-size:12px;
-    border:1.5px solid rgba(255,255,255,0.4); border-radius:16px; padding:4px 13px; white-space:nowrap;
-    transition:background .2s ease, border-color .2s ease, color .2s ease;
-  }
-  .topbar-login:hover{background:rgba(255,255,255,0.12); border-color:var(--orange); color:var(--orange);}
-  @media (max-width:860px){ .topbar-login{display:inline-flex;} }
-  @media (max-width:700px){ .topbar-item.topbar-email{display:none;} .topbar-sep.topbar-sep-email{display:none;} }
-  @media (max-width:480px){ .topbar-inner{justify-content:center; flex-wrap:wrap; row-gap:8px;} }
-
-  /* ---------- SITE HEADER (topbar + nav regroupés, bloc fixe) ---------- */
-  /* position:fixed (plutôt que sticky) : évite un bug de décalage où le header pouvait
-     se "décoller" du haut de la page pendant l'animation de la topbar. #headerSpacer
+  /* ---------- SITE HEADER (nav unique, bloc fixe) ---------- */
+  /* position:fixed (plutôt que sticky) : évite un bug de décalage. #headerSpacer
      réserve la place du header dans le flux normal de la page. */
   .site-header-fixed{position:fixed; top:0; left:0; right:0; width:100%; z-index:100; box-shadow:0 2px 10px rgba(0,0,0,0.06);}
   /* Hauteur par défaut (avant que le JS ne calcule la valeur exacte) : évite qu'au tout
      premier affichage de la page (ex. connexion lente, polices pas encore chargées) le
      contenu du hero ne remonte et ne chevauche la nav le temps que syncHeaderSpacer()
      s'exécute. Le JS corrige ensuite cette valeur au pixel près. */
-  #headerSpacer{height:150px; transition:height .22s ease;}
-  @media (max-width:860px){ #headerSpacer{height:170px;} }
-  @media (max-width:480px){ #headerSpacer{height:190px;} }
+  #headerSpacer{height:88px; transition:height .22s ease;}
+  @media (max-width:860px){ #headerSpacer{height:78px;} }
   header{background:var(--white);}
   nav{
     display:flex; align-items:center; justify-content:space-between;
@@ -102,10 +72,15 @@
   .nav-cta:hover{background:#c9550f;}
   .burger{display:block; background:none; border:none; font-size:24px; color:var(--navy); cursor:pointer;}
   .nav-cta-mobile{display:none;}
+  .nav-login-mobile{display:none;}
 
-  /* ---------- NAV ACTIONS (devis + connexion + menu, à droite) ---------- */
-  .nav-actions{display:flex; align-items:center; gap:14px;}
-  .nav-btn-group{display:flex; align-items:center; gap:10px;}
+  /* ---------- NAV ACTIONS (réseaux + devis + connexion + menu, à droite) ---------- */
+  .nav-actions{display:flex; align-items:center; gap:22px;}
+  .nav-social{display:flex; align-items:center; gap:14px;}
+  .nav-social a{color:var(--navy); font-size:17px; transition:color .2s ease, transform .15s ease;}
+  .nav-social a:hover{color:var(--orange); transform:translateY(-2px);}
+  @media (max-width:1080px){ .nav-social{display:none;} }
+  .nav-btn-group{display:flex; align-items:center; gap:10px; margin-left:6px;}
   .nav-login{
     background:transparent; color:var(--navy); padding:9px 18px; border-radius:24px;
     font-weight:700; font-size:13px; border:2px solid var(--navy); white-space:nowrap;
@@ -583,21 +558,6 @@
 <body>
 
 <div class="site-header-fixed" id="siteHeaderFixed">
-  <div class="topbar" id="topbar">
-    <div class="topbar-inner">
-      <span class="topbar-item topbar-email"><i class="fa-solid fa-envelope"></i> celtisadje@gmail.com</span>
-      <span class="topbar-sep topbar-sep-email"></span>
-      <span class="topbar-item"><i class="fa-solid fa-phone"></i> 07 11 13 86 93</span>
-      <span class="topbar-sep"></span>
-      <div class="topbar-social">
-        <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-        <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-        <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-        <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-      </div>
-      <a class="topbar-login" href="app/login.html">Se connecter</a>
-    </div>
-  </div>
   <header>
     <nav>
       <a href="#top">
@@ -625,6 +585,12 @@
         </li>
       </ul>
       <div class="nav-actions">
+        <div class="nav-social">
+          <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+        </div>
         <div class="nav-btn-group">
           <a class="nav-cta" href="#devis">Demander un devis</a>
           <a class="nav-login" href="app/login.html">Se connecter</a>
@@ -980,8 +946,7 @@
 
   // Header fixe (position:fixed) : #headerSpacer réserve, dans le flux normal de la page,
   // la place occupée par le header afin que le contenu ne soit pas masqué derrière lui.
-  // Sa hauteur est resynchronisée à chaque changement (chargement, redimensionnement,
-  // affichage/masquage de la topbar) pour rester toujours exacte.
+  // Sa hauteur est resynchronisée à chaque changement (chargement, redimensionnement, police).
   function syncHeaderSpacer(){
     const headerFixed = document.getElementById('siteHeaderFixed');
     const spacer = document.getElementById('headerSpacer');
@@ -996,33 +961,6 @@
     const headerFixedEl = document.getElementById('siteHeaderFixed');
     if(headerFixedEl){ new ResizeObserver(syncHeaderSpacer).observe(headerFixedEl); }
   }
-
-  // Effet de scroll sur la barre du haut (topbar) : se masque quand on descend, réapparaît dès qu'on remonte.
-  // La barre de navigation principale (logo, liens, devis) reste toujours visible en haut.
-  (function(){
-    const topbarEl = document.getElementById('topbar');
-    if(!topbarEl) return;
-    let lastScroll = window.scrollY;
-    let ticking = false;
-    function onScroll(){
-      const cur = window.scrollY;
-      if(cur > lastScroll && cur > 60){
-        topbarEl.classList.add('topbar-hidden');
-      } else if(cur < lastScroll){
-        topbarEl.classList.remove('topbar-hidden');
-      }
-      lastScroll = cur <= 0 ? 0 : cur;
-      ticking = false;
-      syncHeaderSpacer();
-    }
-    window.addEventListener('scroll', function(){
-      if(!ticking){
-        window.requestAnimationFrame(onScroll);
-        ticking = true;
-      }
-    }, {passive:true});
-    topbarEl.addEventListener('transitionend', syncHeaderSpacer);
-  })();
 
   // Numéro WhatsApp par défaut (utilisé si content.json est introuvable)
   let SITE = {
