@@ -19,6 +19,7 @@
     --muted:#4E6B8A;
     --white:#FFFFFF;
     --grey-bg:#F7F8FA;
+    --section-tint:#EEF3F9;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html{scroll-behavior:smooth; scroll-padding-top:110px;}
@@ -262,6 +263,7 @@
   .trust-item p{font-size:13.5px; color:#5b6b7c;}
 
   /* ---------- HOW IT WORKS ---------- */
+  #comment-ca-marche{background:var(--section-tint);}
   .steps-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:28px;}
   .step-card{
     background:var(--white); border:1px solid #ECEFF3; border-radius:14px; padding:30px 24px;
@@ -275,10 +277,11 @@
   .step-card p{font-size:14px; color:#5b6b7c;}
 
   /* ---------- ABOUT ---------- */
+  #a-propos{background:var(--section-tint);}
   .about-text{max-width:720px; margin:0 auto 40px auto; text-align:center; color:#4E6B8A; font-size:15.5px;}
   .about-values{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:26px; margin-bottom:44px;}
   .about-value{
-    background:var(--grey-bg); border-radius:14px; padding:26px; text-align:center;
+    background:var(--white); border:1px solid #ECEFF3; border-radius:14px; padding:26px; text-align:center;
   }
   .about-value i{color:var(--orange); font-size:22px; margin-bottom:10px; display:block;}
   .about-value h4{color:var(--navy); font-size:15.5px; margin-bottom:6px;}
