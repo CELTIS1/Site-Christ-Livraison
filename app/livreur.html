@@ -60,6 +60,7 @@
 
 <div class="subnav">
   <div class="subnav-inner">
+    <a href="#section-recap-tournee">Récapitulatif du jour</a>
     <a href="#section-main">Mes colis</a>
   </div>
 </div>
@@ -68,6 +69,12 @@
   <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
   <div class="page-sub">Voici les colis qui vous ont été assignés. Mettez à jour leur statut au fur et à mesure de la livraison.</div>
 
+  <div class="card" id="section-recap-tournee">
+      <div class="panel-subtitle" id="recap-tournee-title">📊 Récapitulatif du jour</div>
+      <div class="page-sub" style="margin-bottom:14px;">Nombre de vos colis par statut pour la date sélectionnée ci-dessous (« Mes colis assignés »).</div>
+      <div id="recap-tournee-tiles"></div>
+    </div>
+  
   <div class="offline-queue-banner hidden" id="offline-queue-banner">
     <span id="offline-queue-text"></span>
     <button type="button" class="btn btn-sm btn-outline" id="btn-sync-now">Synchroniser maintenant</button>
@@ -393,6 +400,44 @@
     return p.full_name || 'Livreur';
   }
 
+  // ---------- Récapitulatif de la tournée (nombre livré / non livré / retour) ----------
+  // Basé sur la même date sélectionnée que la liste "Mes colis assignés" (aujourd'hui par défaut).
+  const RECAP_TOURNEE_ICONS = { en_attente:'⏳', recupere:'📦', en_livraison:'🚚', livre:'✅', non_livre:'⚠️', retour:'↩️' };
+
+  function statTilesTourneeHTML(compte, total){
+    const tiles = Object.keys(STATUTS).map(k => `
+      <div class="stat-tile" style="--tile-color:${STATUTS[k].color}; --tile-bg:${STATUTS[k].bg}">
+        <div class="stat-tile-icon">${RECAP_TOURNEE_ICONS[k] || '📦'}</div>
+        <div class="stat-tile-value">${compte[k] || 0}</div>
+        <div class="stat-tile-label">${STATUTS[k].label}</div>
+      </div>`).join('');
+    return `
+      <div class="stat-tiles">
+        <div class="stat-tile stat-tile-total">
+          <div class="stat-tile-icon">📋</div>
+          <div class="stat-tile-value">${total}</div>
+          <div class="stat-tile-label">Total</div>
+        </div>
+        ${tiles}
+      </div>`;
+  }
+
+  function renderRecapTournee(){
+    const box = document.getElementById('recap-tournee-tiles');
+    if (!box) return;
+    const titleEl = document.getElementById('recap-tournee-title');
+    const mine = allColis.filter(c => c.livreur_id === (currentUser && currentUser.id));
+    const filtered = filtreDateMes ? mine.filter(c => matchesDate(c, filtreDateMes)) : mine;
+    if (titleEl) {
+      titleEl.textContent = filtreDateMes
+        ? ('📊 Récapitulatif du ' + dayLabel(filtreDateMes + 'T12:00:00'))
+        : '📊 Récapitulatif (toutes les dates)';
+    }
+    const compte = {};
+    filtered.forEach(c => { compte[c.statut] = (compte[c.statut] || 0) + 1; });
+    box.innerHTML = statTilesTourneeHTML(compte, filtered.length);
+  }
+
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
   function mesColisRowHTML(c){
     const thumb = c.photo_url
@@ -456,6 +501,7 @@
   }
 
   function renderMesColis(){
+    renderRecapTournee();
     const list = document.getElementById('mes-colis-list');
     const __anchor = captureScrollAnchor(list);
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
