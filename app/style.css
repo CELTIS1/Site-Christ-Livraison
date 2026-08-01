@@ -408,6 +408,11 @@ input,textarea,select{font-family:inherit;}
   padding:14px 16px; margin:0 0 16px 0;
 }
 .recap-phrase strong{color:var(--navy);}
+.recap-montant{
+  font-size:14.5px; line-height:1.6; color:#333; background:var(--orange-light); border-radius:12px;
+  padding:12px 16px; margin:0 0 16px 0; border:1px solid rgba(226,99,19,0.25);
+}
+.recap-montant strong{color:var(--orange);}
 .stat-tiles{
   display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:10px; margin-bottom:8px;
 }
