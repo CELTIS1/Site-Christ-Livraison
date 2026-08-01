@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260801">
+<link rel="stylesheet" href="style.css?v=20260801d">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -135,6 +135,7 @@
 </h2>
 <div id="ajouter-colis-content" class="collapsible-content">
 <div id="add-msg"></div>
+<div id="colis-draft-banner-wrap"></div>
 <form id="form-add-colis">
 <div class="field-row">
 <div class="field">
@@ -547,6 +548,120 @@ function addLivreurMsg(text, type){
 document.getElementById('add-livreur-msg').innerHTML = `<div class="msg msg-${type}">${text}</div>`;
 }
 
+/* ---------- AUTOSAUVEGARDE DU FORMULAIRE "AJOUTER UN COLIS" (brouillon local) ---------- */
+const COLIS_DRAFT_KEY = 'clt_equipe_colis_draft';
+let colisDraftSaveTimer = null;
+
+function getColisDraftFields(){
+return {
+fournisseur_id: document.getElementById('add-fournisseur').value,
+destination: document.getElementById('add-dest').value,
+montant: document.getElementById('add-montant').value,
+description: document.getElementById('add-desc').value
+};
+}
+
+function colisDraftIsEmpty(fields){
+return !fields.fournisseur_id && !fields.destination && !fields.montant && !fields.description;
+}
+
+function saveColisDraft(){
+const fields = getColisDraftFields();
+if (colisDraftIsEmpty(fields)) { try { localStorage.removeItem(COLIS_DRAFT_KEY); } catch(e){} return; }
+try {
+localStorage.setItem(COLIS_DRAFT_KEY, JSON.stringify(Object.assign({}, fields, { savedAt: Date.now() })));
+} catch(e) { /* stockage indisponible : on ignore silencieusement */ }
+}
+
+function clearColisDraft(){
+try { localStorage.removeItem(COLIS_DRAFT_KEY); } catch(e) {}
+const banner = document.getElementById('colis-draft-banner');
+if (banner) banner.remove();
+}
+
+function restoreColisDraftIfAny(){
+let raw;
+try { raw = localStorage.getItem(COLIS_DRAFT_KEY); } catch(e) { return; }
+if (!raw) return;
+let draft;
+try { draft = JSON.parse(raw); } catch(e) { return; }
+if (!draft || colisDraftIsEmpty(draft)) { clearColisDraft(); return; }
+
+const wrap = document.getElementById('colis-draft-banner-wrap');
+if (!wrap) return;
+
+const banner = document.createElement('div');
+banner.id = 'colis-draft-banner';
+banner.className = 'msg msg-info';
+banner.style.display = 'flex';
+banner.style.flexWrap = 'wrap';
+banner.style.justifyContent = 'space-between';
+banner.style.alignItems = 'center';
+banner.style.gap = '10px';
+
+const label = document.createElement('span');
+label.textContent = '📝 Une saisie non envoyée a été retrouvée pour ce formulaire. Voulez-vous la restaurer ?';
+banner.appendChild(label);
+
+const btnWrap = document.createElement('div');
+btnWrap.style.display = 'flex';
+btnWrap.style.gap = '8px';
+
+const btnRestore = document.createElement('button');
+btnRestore.type = 'button';
+btnRestore.className = 'btn btn-sm';
+btnRestore.textContent = 'Restaurer';
+btnRestore.addEventListener('click', () => {
+if (draft.fournisseur_id) document.getElementById('add-fournisseur').value = draft.fournisseur_id;
+document.getElementById('add-dest').value = draft.destination || '';
+document.getElementById('add-montant').value = draft.montant || '';
+document.getElementById('add-desc').value = draft.description || '';
+banner.remove();
+});
+
+const btnDiscard = document.createElement('button');
+btnDiscard.type = 'button';
+btnDiscard.className = 'btn btn-sm btn-outline';
+btnDiscard.textContent = 'Ignorer';
+btnDiscard.addEventListener('click', () => { clearColisDraft(); });
+
+btnWrap.appendChild(btnRestore);
+btnWrap.appendChild(btnDiscard);
+banner.appendChild(btnWrap);
+wrap.appendChild(banner);
+}
+
+function initColisDraftAutosave(){
+restoreColisDraftIfAny();
+const debouncedSave = () => {
+clearTimeout(colisDraftSaveTimer);
+colisDraftSaveTimer = setTimeout(saveColisDraft, 400);
+};
+document.getElementById('add-fournisseur').addEventListener('change', saveColisDraft);
+document.getElementById('add-dest').addEventListener('input', debouncedSave);
+document.getElementById('add-montant').addEventListener('input', debouncedSave);
+document.getElementById('add-desc').addEventListener('input', debouncedSave);
+}
+
+/* ---------- AVERTISSEMENT AVANT FERMETURE SI SAISIE NON ENREGISTRÉE ---------- */
+function fieldsHaveContent(ids){
+return ids.some(id => {
+const el = document.getElementById(id);
+if (!el) return false;
+return (el.value || '').trim() !== '';
+});
+}
+
+window.addEventListener('beforeunload', (e) => {
+const colisRempli = fieldsHaveContent(['add-dest','add-montant','add-desc']) || !!(document.getElementById('add-fournisseur') && document.getElementById('add-fournisseur').value);
+const livreurRempli = fieldsHaveContent(['lv-fullname','lv-phone']);
+const equipeRempli = fieldsHaveContent(['eq-fullname','eq-phone','eq-password']);
+if (colisRempli || livreurRempli || equipeRempli) {
+e.preventDefault();
+e.returnValue = '';
+}
+});
+
 async function uploadPhoto(file, userId){
 const ext = file.name.split('.').pop();
 const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
@@ -874,6 +989,7 @@ return;
 const photoWarning = photoUploadFailed ? " (attention : l'envoi de la photo a échoué, le colis a été enregistré sans photo)" : "";
 addMsg(`Colis ajouté avec succès${photoWarning}.`, "success");
 e.target.reset();
+clearColisDraft();
 const addPhotoFilename = document.querySelector('#add-photo-group .photo-pick-filename');
 if (addPhotoFilename) addPhotoFilename.textContent = '';
 loadColis();
@@ -1768,6 +1884,7 @@ await loadFournisseurs();
 await loadLivreurs();
 await loadColis();
 await loadActivityLog();
+initColisDraftAutosave();
 
 // Mises à jour en temps réel sur tous les colis
 supabaseClient
