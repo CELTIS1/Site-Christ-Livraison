@@ -93,6 +93,18 @@
     background:var(--section-tint); color:var(--navy); border-radius:10px; padding:14px 16px; font-size:14px; margin-top:24px;
   }
 
+  .live-indicator{
+    display:flex; align-items:center; gap:8px; margin-top:18px; font-size:12.5px; color:var(--muted);
+  }
+  .live-dot{
+    width:8px; height:8px; border-radius:50%; background:#1a7d3c; flex-shrink:0;
+    animation:live-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes live-pulse{
+    0%, 100%{opacity:1; box-shadow:0 0 0 0 rgba(26,125,60,0.35);}
+    50%{opacity:0.55; box-shadow:0 0 0 5px rgba(26,125,60,0);}
+  }
+
   @media (max-width:520px){
     .suivi-form{flex-direction:column;}
     .suivi-card{padding:32px 22px;}
@@ -185,34 +197,37 @@
   const btn = document.getElementById("suivi-btn");
   const resultBox = document.getElementById("suivi-result");
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const numero = input.value.trim();
-    if (!numero) return;
+  // ---------- Actualisation automatique ----------
+  // Une fois un colis trouvé, on ré-interroge silencieusement la même vue publique toutes les
+  // 15 secondes pour que le statut affiché reste à jour sans que le destinataire ait besoin de
+  // cliquer à nouveau sur "Rechercher". On choisit volontairement un rafraîchissement périodique
+  // (plutôt qu'un abonnement Supabase Realtime sur la table "colis") : une souscription Realtime
+  // porterait sur la table d'origine et non sur la vue restreinte "colis_suivi_public", avec le
+  // risque, selon la configuration des politiques de sécurité (RLS) et de la publication Realtime
+  // du projet, de transmettre au navigateur des colonnes sensibles (montant, identité du client,
+  // observations internes, photo de preuve de livraison) que cette page ne doit jamais exposer.
+  // Le rafraîchissement périodique, lui, repasse systématiquement par la vue publique et garantit
+  // donc que la même restriction de colonnes s'applique à chaque actualisation.
+  let refreshTimer = null;
+  let currentNumero = null;
 
-    btn.disabled = true;
-    btn.textContent = "Recherche...";
-    resultBox.className = "result-box visible";
-    resultBox.innerHTML = `<div class="msg-loading">Recherche en cours...</div>`;
+  function stopAutoRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = null;
+    currentNumero = null;
+  }
 
-    // On interroge une vue Supabase dédiée (colis_suivi_public), qui n'expose que les
-    // colonnes non sensibles. On n'interroge jamais directement la table "colis" ici :
-    // une politique RLS sur la table ne restreint que les lignes, pas les colonnes, donc
-    // seule une vue dédiée garantit que montant/client/observation/photo restent privés.
-    const { data, error } = await supabaseClient
+  async function fetchColis(numero) {
+    return await supabaseClient
       .from("colis_suivi_public")
       .select("id, statut, description, destination, created_at")
       .eq("id", numero)
       .maybeSingle();
+  }
 
-    btn.disabled = false;
-    btn.textContent = "Rechercher";
-
-    if (error || !data) {
-      resultBox.innerHTML = `<div class="msg-notfound">Aucun colis ne correspond à ce numéro. Vérifiez qu'il est correctement saisi, ou contactez-nous si le problème persiste.</div>`;
-      return;
-    }
-
+  function renderColis(data) {
+    const now = new Date();
+    const heure = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     resultBox.innerHTML = `
       <div class="result-row">
         <span class="label">Statut</span>
@@ -230,7 +245,61 @@
         <span class="label">Déposé le</span>
         <span class="value">${formatDate(data.created_at)}</span>
       </div>
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        Actualisation automatique active — dernière vérification à ${heure}
+      </div>
     `;
+  }
+
+  async function refreshSilently() {
+    if (!currentNumero) return;
+    const { data, error } = await fetchColis(currentNumero);
+    if (error || !data) return; // on ne perturbe pas l'affichage en cas d'erreur réseau ponctuelle
+    renderColis(data);
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const numero = input.value.trim();
+    if (!numero) return;
+
+    stopAutoRefresh();
+    btn.disabled = true;
+    btn.textContent = "Recherche...";
+    resultBox.className = "result-box visible";
+    resultBox.innerHTML = `<div class="msg-loading">Recherche en cours...</div>`;
+
+    // On interroge une vue Supabase dédiée (colis_suivi_public), qui n'expose que les
+    // colonnes non sensibles. On n'interroge jamais directement la table "colis" ici :
+    // une politique RLS sur la table ne restreint que les lignes, pas les colonnes, donc
+    // seule une vue dédiée garantit que montant/client/observation/photo restent privés.
+    const { data, error } = await fetchColis(numero);
+
+    btn.disabled = false;
+    btn.textContent = "Rechercher";
+
+    if (error || !data) {
+      resultBox.innerHTML = `<div class="msg-notfound">Aucun colis ne correspond à ce numéro. Vérifiez qu'il est correctement saisi, ou contactez-nous si le problème persiste.</div>`;
+      return;
+    }
+
+    renderColis(data);
+    currentNumero = numero;
+    refreshTimer = setInterval(refreshSilently, 15000);
+  });
+
+  // On arrête le rafraîchissement automatique quand l'onglet n'est plus visible, et on le
+  // relance immédiatement (avec une vérification tout de suite) quand la personne revient dessus.
+  document.addEventListener("visibilitychange", () => {
+    if (!currentNumero) return;
+    if (document.hidden) {
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = null;
+    } else {
+      refreshSilently();
+      if (!refreshTimer) refreshTimer = setInterval(refreshSilently, 15000);
+    }
   });
 </script>
 
