@@ -316,6 +316,19 @@
   </div>
 </div>
 
+<div id="confirm-modal-overlay" class="confirm-modal-overlay hidden">
+  <div class="confirm-modal">
+    <div class="confirm-modal-icon" id="confirm-modal-icon">⚠️</div>
+    <h3 class="confirm-modal-title" id="confirm-modal-title"></h3>
+    <div class="confirm-modal-detail" id="confirm-modal-detail"></div>
+    <p class="confirm-modal-sub" id="confirm-modal-sub"></p>
+    <div class="confirm-modal-actions">
+      <button type="button" class="btn" id="confirm-modal-cancel" style="background:#e5e9ef;color:#222;">Annuler</button>
+      <button type="button" class="btn" id="confirm-modal-ok">Confirmer</button>
+    </div>
+  </div>
+</div>
+
 <script src="config.js?v=20260730"></script>
 <script>
 let currentUser = null;
@@ -374,6 +387,34 @@ document.getElementById('pwd-modal-overlay').addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !document.getElementById('pwd-modal-overlay').classList.contains('hidden')) hideTempPasswordModal();
+});
+
+// ---------- Boîte de dialogue de confirmation contextualisée (remplace confirm() natif) ----------
+// Affiche le nom/l'élément concerné avant toute action destructrice ou sensible.
+let __confirmResolve = null;
+function showConfirm({ title, detail, sub, okLabel, danger }){
+  document.getElementById('confirm-modal-title').textContent = title || 'Confirmer';
+  const detailEl = document.getElementById('confirm-modal-detail');
+  if (detail) { detailEl.textContent = detail; detailEl.style.display = ''; } else { detailEl.style.display = 'none'; }
+  document.getElementById('confirm-modal-sub').textContent = sub || '';
+  document.getElementById('confirm-modal-icon').textContent = danger ? '🗑️' : '⚠️';
+  const okBtn = document.getElementById('confirm-modal-ok');
+  okBtn.textContent = okLabel || 'Confirmer';
+  okBtn.classList.toggle('danger-btn', !!danger);
+  document.getElementById('confirm-modal-overlay').classList.remove('hidden');
+  return new Promise((resolve) => { __confirmResolve = resolve; });
+}
+function hideConfirmModal(result){
+  document.getElementById('confirm-modal-overlay').classList.add('hidden');
+  if (__confirmResolve) { __confirmResolve(result); __confirmResolve = null; }
+}
+document.getElementById('confirm-modal-ok').addEventListener('click', () => hideConfirmModal(true));
+document.getElementById('confirm-modal-cancel').addEventListener('click', () => hideConfirmModal(false));
+document.getElementById('confirm-modal-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'confirm-modal-overlay') hideConfirmModal(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('confirm-modal-overlay').classList.contains('hidden')) hideConfirmModal(false);
 });
 
 function closeOtherSections(exceptContentId){
@@ -597,7 +638,15 @@ await loadPending();
 box.querySelectorAll('.btn-rejeter').forEach(btn => {
 btn.addEventListener('click', async () => {
 const id = btn.closest('.colis-item').dataset.id;
-if (!confirm("Rejeter ce compte ?")) return;
+const account = pendingAccounts.find(p => p.id === id);
+const ok = await showConfirm({
+  title: 'Rejeter ce compte ?',
+  detail: account ? (account.full_name || account.phone || '(sans nom)') : null,
+  sub: "La demande d'inscription sera rejetée. La personne pourra refaire une demande plus tard.",
+  okLabel: 'Rejeter',
+  danger: true
+});
+if (!ok) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('profiles').update({ status: 'rejete' }).eq('id', id);
 if (error) { alert("Erreur : " + error.message); btn.disabled = false; btn.textContent = 'Rejeter'; return; }
@@ -647,7 +696,14 @@ box.innerHTML = resetRequests.map(resetRowHTML).join('');
 box.querySelectorAll('.btn-reinitialiser').forEach(btn => {
 btn.addEventListener('click', async () => {
 const id = btn.closest('.colis-item').dataset.id;
-if (!confirm("Générer un nouveau mot de passe temporaire pour ce compte ?")) return;
+const account = resetRequests.find(r => r.id === id);
+const ok = await showConfirm({
+  title: 'Générer un nouveau mot de passe ?',
+  detail: account ? (account.full_name || account.phone || '(sans nom)') : null,
+  sub: 'Un mot de passe temporaire sera créé pour ce compte et devra lui être communiqué.',
+  okLabel: 'Générer'
+});
+if (!ok) return;
 btn.disabled = true; btn.textContent = '...';
 try {
 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -987,7 +1043,15 @@ e.stopPropagation();
 const originalText = btn.textContent;
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
-if (!confirm("Supprimer définitivement ce colis ? Cette action est irréversible.")) return;
+const colisASupprimer = allColis.find(c => c.id === id);
+const okDelete = await showConfirm({
+  title: 'Supprimer ce colis ?',
+  detail: colisASupprimer ? (colisASupprimer.description || '(sans description)') : null,
+  sub: 'Cette action est définitive et irréversible.',
+  okLabel: 'Supprimer',
+  danger: true
+});
+if (!okDelete) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('colis').delete().eq('id', id);
 if (error) {
@@ -1150,7 +1214,13 @@ e.stopPropagation();
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
 const account = allAccounts.find(a => a.id === id);
-if (!confirm(`Promouvoir ${account.full_name || account.phone} au rôle administrateur ? Cette personne aura alors accès à toutes les fonctions d'administration.`)) return;
+const okPromote = await showConfirm({
+  title: 'Promouvoir au rôle administrateur ?',
+  detail: account.full_name || account.phone,
+  sub: "Cette personne aura alors accès à toutes les fonctions d'administration.",
+  okLabel: 'Promouvoir'
+});
+if (!okPromote) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('profiles').update({ role: 'admin' }).eq('id', id);
 if (error) {
@@ -1172,7 +1242,13 @@ e.stopPropagation();
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
 const account = allAccounts.find(a => a.id === id);
-if (!confirm(`Générer un nouveau mot de passe pour ${account.full_name || account.phone} ?`)) return;
+const okResetPwd = await showConfirm({
+  title: 'Générer un nouveau mot de passe ?',
+  detail: account.full_name || account.phone,
+  sub: "Un nouveau mot de passe temporaire remplacera l'ancien pour ce compte.",
+  okLabel: 'Générer'
+});
+if (!okResetPwd) return;
 btn.disabled = true; btn.textContent = '...';
 try {
 const result = await callAdminFunction('admin-reset-password', { user_id: id });
@@ -1194,7 +1270,14 @@ alert("Vous ne pouvez pas supprimer votre propre compte administrateur.");
 return;
 }
 const account = allAccounts.find(a => a.id === id);
-if (!confirm(`Supprimer définitivement le compte de ${account.full_name || account.phone} ? Cette action est irréversible.`)) return;
+const okDeleteAccount = await showConfirm({
+  title: 'Supprimer ce compte ?',
+  detail: account.full_name || account.phone,
+  sub: 'Cette action est définitive et irréversible.',
+  okLabel: 'Supprimer',
+  danger: true
+});
+if (!okDeleteAccount) return;
 btn.disabled = true; btn.textContent = '...';
 try {
 await callAdminFunction('admin-supprimer-compte', { user_id: id });
