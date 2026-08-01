@@ -114,13 +114,17 @@ input,textarea,select{font-family:inherit;}
 .section-flash-title{ animation:title-flash 1.3s ease; }
 
 /* ---------- SECTIONS REPLIABLES : ouverture/fermeture en fondu ---------- */
+/* La hauteur max-height réelle (en px) est calculée et posée en JS (voir
+   expandCollapsible/collapseCollapsible dans config.js) au lieu d'une valeur
+   fixe arbitraire : la transition dure alors toujours le temps qu'il faut
+   pour la hauteur réelle du contenu, sans jamais sembler "trainer". */
 .collapsible-content{
   max-height:0; opacity:0; overflow:hidden;
-  transition:max-height .35s ease, opacity .25s ease;
+  transition:max-height .3s ease, opacity .2s ease;
 }
 .collapsible-content.open{
-  max-height:3000px; opacity:1; overflow:visible;
-  margin-top:16px; transition:max-height .45s ease, opacity .4s ease .05s;
+  opacity:1; overflow:visible;
+  margin-top:16px; transition:max-height .3s ease, opacity .25s ease;
 }
 
 /* ---------- LAYOUT ---------- */
