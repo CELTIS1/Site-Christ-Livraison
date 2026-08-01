@@ -416,6 +416,158 @@ function initAvatarUpload({ profile, previewContainerId, topbarContainerId, inpu
   return refresh;
 }
 
+// ---------- "Mon compte" : nom complet (+ société) modifiables ----------
+// Partagé par les 3 tableaux de bord. `companyNameId` n'est fourni que côté Client (fournisseur),
+// les rôles équipe/livreur n'ayant pas de champ "société". `primaryNameDisplayId` (généralement
+// "user-name", dans la barre du haut) affiche la société en priorité si elle existe (comme
+// partout ailleurs dans l'appli), sinon le nom complet ; `secondaryNameDisplayId` (généralement
+// "user-first-name", utilisé dans les messages de bienvenue) affiche toujours le nom complet.
+function initProfileInfoForm({ profile, formId, fullNameId, companyNameId, msgId, primaryNameDisplayId, secondaryNameDisplayId }) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  const fullNameInput = document.getElementById(fullNameId);
+  const companyInput = companyNameId ? document.getElementById(companyNameId) : null;
+  const msgBox = msgId ? document.getElementById(msgId) : null;
+  const btn = form.querySelector('button[type="submit"]');
+
+  if (fullNameInput) fullNameInput.value = profile.full_name || "";
+  if (companyInput) companyInput.value = profile.company_name || "";
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fullName = (fullNameInput ? fullNameInput.value : "").trim();
+    if (!fullName) {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Le nom complet est obligatoire.</div>`;
+      return;
+    }
+    const updates = { full_name: fullName };
+    if (companyInput) updates.company_name = companyInput.value.trim() || null;
+
+    if (btn) { btn.disabled = true; btn.textContent = "Enregistrement..."; }
+    const { error } = await supabaseClient.from("profiles").update(updates).eq("id", profile.id);
+    if (btn) { btn.disabled = false; btn.textContent = "Enregistrer"; }
+
+    if (error) {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`;
+      return;
+    }
+    profile.full_name = fullName;
+    if (companyInput) profile.company_name = updates.company_name;
+
+    if (primaryNameDisplayId) {
+      const el = document.getElementById(primaryNameDisplayId);
+      if (el) el.textContent = companyInput ? (profile.company_name || profile.full_name || "") : (profile.full_name || "");
+    }
+    if (secondaryNameDisplayId) {
+      const el = document.getElementById(secondaryNameDisplayId);
+      if (el) el.textContent = profile.full_name || "";
+    }
+    if (msgBox) msgBox.innerHTML = `<div class="msg msg-success">Informations mises à jour.</div>`;
+  });
+}
+
+// ---------- "Mon compte" : numéro de téléphone modifiable (confirmation par SMS) ----------
+// Le numéro de téléphone est aussi l'identifiant de connexion (Supabase Auth) : son changement
+// doit donc être confirmé par un code reçu par SMS avant d'être appliqué, exactement comme pour
+// n'importe quel changement d'identifiant de connexion. On utilise les méthodes natives de
+// Supabase Auth (updateUser + verifyOtp), sans passer par une nouvelle Edge Function.
+// Important : ceci suppose qu'un fournisseur SMS est configuré côté projet Supabase
+// (Authentication > Providers > Phone). Si ce n'est pas le cas, l'envoi du code échouera et
+// un message clair l'indiquera (voir friendlyErrorMessage).
+function toPhoneE164(raw) {
+  let digits = (raw || "").replace(/[^\d]/g, "");
+  if (digits.startsWith("225")) digits = digits.slice(3);
+  return "225" + digits;
+}
+
+function formatPhoneDisplay(e164) {
+  if (!e164) return "";
+  let digits = e164.replace(/[^\d]/g, "");
+  if (digits.startsWith("225")) digits = digits.slice(3);
+  return digits;
+}
+
+function initPhoneChangeForm({ profile, currentPhoneId, newPhoneId, otpRowId, otpCodeId, sendBtnId, confirmBtnId, cancelBtnId, msgId }) {
+  const currentInput = document.getElementById(currentPhoneId);
+  const newInput = document.getElementById(newPhoneId);
+  const otpRow = document.getElementById(otpRowId);
+  const otpInput = document.getElementById(otpCodeId);
+  const sendBtn = document.getElementById(sendBtnId);
+  const confirmBtn = document.getElementById(confirmBtnId);
+  const cancelBtn = cancelBtnId ? document.getElementById(cancelBtnId) : null;
+  const msgBox = msgId ? document.getElementById(msgId) : null;
+  if (!sendBtn || !confirmBtn) return;
+
+  if (currentInput) currentInput.value = formatPhoneDisplay(profile.phone);
+
+  let pendingPhone = null;
+
+  function resetToStep1() {
+    pendingPhone = null;
+    if (otpRow) otpRow.classList.add("hidden");
+    confirmBtn.classList.add("hidden");
+    if (cancelBtn) cancelBtn.classList.add("hidden");
+    sendBtn.classList.remove("hidden");
+    if (newInput) newInput.disabled = false;
+    if (otpInput) otpInput.value = "";
+  }
+
+  sendBtn.addEventListener("click", async () => {
+    const raw = newInput ? newInput.value.trim() : "";
+    if (!isValidPhoneCI(raw)) {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Numéro invalide. Format attendu : 10 chiffres commençant par 0 (ex : 07 00 00 00 00).</div>`;
+      return;
+    }
+    pendingPhone = toPhoneE164(raw);
+    sendBtn.disabled = true; sendBtn.textContent = "Envoi du code...";
+    const { error } = await supabaseClient.auth.updateUser({ phone: pendingPhone });
+    sendBtn.disabled = false; sendBtn.textContent = "Envoyer le code de confirmation";
+
+    if (error) {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Impossible d'envoyer le code : ${friendlyErrorMessage(error.message)}</div>`;
+      pendingPhone = null;
+      return;
+    }
+    if (msgBox) msgBox.innerHTML = `<div class="msg msg-info">Un code de confirmation a été envoyé par SMS au nouveau numéro. Saisissez-le ci-dessous.</div>`;
+    if (otpRow) otpRow.classList.remove("hidden");
+    confirmBtn.classList.remove("hidden");
+    if (cancelBtn) cancelBtn.classList.remove("hidden");
+    sendBtn.classList.add("hidden");
+    if (newInput) newInput.disabled = true;
+  });
+
+  confirmBtn.addEventListener("click", async () => {
+    const code = otpInput ? otpInput.value.trim() : "";
+    if (!pendingPhone || !code) {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Veuillez saisir le code reçu par SMS.</div>`;
+      return;
+    }
+    confirmBtn.disabled = true; confirmBtn.textContent = "Vérification...";
+    const { error } = await supabaseClient.auth.verifyOtp({ phone: pendingPhone, token: code, type: "phone_change" });
+    confirmBtn.disabled = false; confirmBtn.textContent = "Confirmer le nouveau numéro";
+
+    if (error) {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Code incorrect ou expiré : ${friendlyErrorMessage(error.message)}</div>`;
+      return;
+    }
+    await supabaseClient.from("profiles").update({ phone: pendingPhone }).eq("id", profile.id);
+    profile.phone = pendingPhone;
+    if (currentInput) currentInput.value = formatPhoneDisplay(pendingPhone);
+    if (newInput) newInput.value = "";
+    if (msgBox) msgBox.innerHTML = `<div class="msg msg-success">Numéro de téléphone mis à jour. Utilisez ce nouveau numéro pour vous connecter la prochaine fois.</div>`;
+    resetToStep1();
+  });
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      if (msgBox) msgBox.innerHTML = "";
+      resetToStep1();
+    });
+  }
+
+  resetToStep1();
+}
+
 // ---------- Menu "réglages" de la barre du haut (⚙ → Mon compte / Se déconnecter) ----------
 // Partagé par les 3 tableaux de bord (équipe, livreur, fournisseur). Remplace l'ancien bouton
 // "Déconnexion" affiché en permanence : au clic sur l'icône ⚙, un petit menu propose "Mon compte"
