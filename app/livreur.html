@@ -107,6 +107,18 @@
   </div>
 </div>
 
+<div id="confirm-modal-overlay" class="confirm-modal-overlay hidden">
+  <div class="confirm-modal">
+    <div class="confirm-modal-icon" id="confirm-modal-icon">⚠️</div>
+    <h3 class="confirm-modal-title" id="confirm-modal-title"></h3>
+    <div class="confirm-modal-detail" id="confirm-modal-detail"></div>
+    <p class="confirm-modal-sub" id="confirm-modal-sub"></p>
+    <div class="confirm-modal-actions">
+      <button type="button" class="btn" id="confirm-modal-cancel" style="background:#e5e9ef;color:#222;">Annuler</button>
+      <button type="button" class="btn" id="confirm-modal-ok">Confirmer</button>
+    </div>
+  </div>
+</div>
 <script src="config.js?v=20260730"></script>
 <script>
   let currentUser = null;
@@ -200,6 +212,34 @@
     const { data } = supabaseClient.storage.from('colis-photos').getPublicUrl(path);
     return data.publicUrl;
   }
+
+  // ---------- Boîte de dialogue de confirmation contextualisée (remplace confirm() natif) ----------
+  // Utilisée pour demander une confirmation explicite avant un changement de statut définitif.
+  let __confirmResolve = null;
+  function showConfirm({ title, detail, sub, okLabel, danger }){
+    document.getElementById('confirm-modal-title').textContent = title || 'Confirmer';
+    const detailEl = document.getElementById('confirm-modal-detail');
+    if (detail) { detailEl.textContent = detail; detailEl.style.display = ''; } else { detailEl.style.display = 'none'; }
+    document.getElementById('confirm-modal-sub').textContent = sub || '';
+    document.getElementById('confirm-modal-icon').textContent = danger ? '🗑️' : '⚠️';
+    const okBtn = document.getElementById('confirm-modal-ok');
+    okBtn.textContent = okLabel || 'Confirmer';
+    okBtn.classList.toggle('danger-btn', !!danger);
+    document.getElementById('confirm-modal-overlay').classList.remove('hidden');
+    return new Promise((resolve) => { __confirmResolve = resolve; });
+  }
+  function hideConfirmModal(result){
+    document.getElementById('confirm-modal-overlay').classList.add('hidden');
+    if (__confirmResolve) { __confirmResolve(result); __confirmResolve = null; }
+  }
+  document.getElementById('confirm-modal-ok').addEventListener('click', () => hideConfirmModal(true));
+  document.getElementById('confirm-modal-cancel').addEventListener('click', () => hideConfirmModal(false));
+  document.getElementById('confirm-modal-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'confirm-modal-overlay') hideConfirmModal(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !document.getElementById('confirm-modal-overlay').classList.contains('hidden')) hideConfirmModal(false);
+  });
 
   // ---------- File d'attente hors-ligne pour les mises à jour de statut ----------
   // Les livreurs travaillent souvent dans des zones peu couvertes par le réseau.
@@ -441,6 +481,18 @@
         const existing = allColis.find(c => c.id === id);
         let photo_livraison_url = existing ? existing.photo_livraison_url : null;
 
+        // Confirmation avant un changement de statut définitif (Livré / Non livré / Retour) :
+        // ces statuts marquent la fin du parcours du colis et sont plus difficiles à corriger après coup.
+        const DEFINITIVE_STATUTS = ['livre', 'non_livre', 'retour'];
+        if (DEFINITIVE_STATUTS.includes(statut) && (!existing || existing.statut !== statut)) {
+          const ok = await showConfirm({
+            title: 'Confirmer ce statut définitif ?',
+            detail: (existing && existing.description ? existing.description : 'Ce colis') + ' → ' + STATUTS[statut].label,
+            sub: 'Ce statut marque la fin de la livraison. Vérifiez qu\'il est correct avant de valider.',
+            okLabel: 'Confirmer'
+          });
+          if (!ok) return;
+        }
         // Hors connexion : on met la mise à jour en file d'attente au lieu de la perdre.
         if (!navigator.onLine) {
           btn.disabled = true; btn.textContent = 'Enregistrement...';
