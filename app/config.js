@@ -57,6 +57,36 @@ const STATUTS = {
   retour:       { label: "Retour",       color: "#8e44ad", bg: "#f2e8fa" },
 };
 
+// ---------- Sections repliables (accordéon) ----------
+// Anime l'ouverture/fermeture d'un bloc ".collapsible-content" en se basant sur sa hauteur
+// réelle (au lieu d'une valeur "max-height" fixe arbitraire) : la transition dure alors
+// toujours le temps qu'il faut pour le contenu réel, ce qui évite la lenteur perçue quand
+// une section courte mettait autant de temps à se refermer qu'une section très longue.
+// Partagé par les 3 tableaux de bord (équipe, livreur, fournisseur).
+function expandCollapsible(content) {
+  if (!content) return;
+  content.classList.add("open");
+  content.style.maxHeight = content.scrollHeight + "px";
+  const onEnd = (e) => {
+    if (e.target !== content || e.propertyName !== "max-height") return;
+    content.removeEventListener("transitionend", onEnd);
+    // Une fois ouvert, on repasse à "none" pour que le contenu puisse grandir
+    // librement ensuite (ex : ajout de lignes) sans être coupé.
+    if (content.classList.contains("open")) content.style.maxHeight = "none";
+  };
+  content.addEventListener("transitionend", onEnd);
+}
+
+function collapseCollapsible(content) {
+  if (!content) return;
+  // Si la hauteur est actuellement "none" (section ouverte), on la fixe d'abord à sa
+  // valeur réelle avant de la ramener à 0, sinon la transition ne peut pas s'animer.
+  content.style.maxHeight = content.scrollHeight + "px";
+  void content.offsetHeight; // force le recalcul de mise en page
+  content.classList.remove("open");
+  content.style.maxHeight = "0px";
+}
+
 function statutBadgeHTML(statut) {
   const s = STATUTS[statut] || STATUTS.en_attente;
   return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;
