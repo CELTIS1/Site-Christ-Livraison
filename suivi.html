@@ -195,8 +195,12 @@
     resultBox.className = "result-box visible";
     resultBox.innerHTML = `<div class="msg-loading">Recherche en cours...</div>`;
 
+    // On interroge une vue Supabase dédiée (colis_suivi_public), qui n'expose que les
+    // colonnes non sensibles. On n'interroge jamais directement la table "colis" ici :
+    // une politique RLS sur la table ne restreint que les lignes, pas les colonnes, donc
+    // seule une vue dédiée garantit que montant/client/observation/photo restent privés.
     const { data, error } = await supabaseClient
-      .from("colis")
+      .from("colis_suivi_public")
       .select("id, statut, description, destination, created_at")
       .eq("id", numero)
       .maybeSingle();
