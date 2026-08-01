@@ -390,6 +390,14 @@
   .btn-devis:hover{background:#c9550f;}
   .alt-contact{font-size:13.5px; color:#5b6b7c; text-align:center;}
   .alt-contact a{color:var(--navy); font-weight:700;}
+  .devis-confirm{
+    display:none; margin-top:18px; padding:16px 18px; border-radius:12px;
+    background:#E7F6EC; border:1.5px solid #34A853; color:#1E6B34;
+    font-size:14.5px; font-weight:600; align-items:flex-start; gap:10px;
+  }
+  .devis-confirm.show{display:flex;}
+  .devis-confirm i{font-size:19px; margin-top:1px; color:#34A853;}
+  .devis-confirm .devis-confirm-sub{display:block; margin-top:4px; font-weight:400; color:#2c5c3c;}
   @media (max-width:600px){ .form-grid{grid-template-columns:1fr;} .devis-box{padding:26px 20px;} }
 
   /* ---------- FOOTER ---------- */
@@ -869,6 +877,12 @@
         <div class="submit-row">
           <button type="submit" class="btn btn-devis"><i class="fa-brands fa-whatsapp"></i> Envoyer la demande via WhatsApp</button>
           <p class="alt-contact">Vous préférez par email ? Écrivez-nous à <a href="#" id="emailLink">celtisadje@gmail.com</a></p>
+        </div>
+        <div class="devis-confirm" id="devisConfirm" role="status" aria-live="polite">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>Votre demande a été transmise sur WhatsApp.
+            <span class="devis-confirm-sub">Si l'onglet WhatsApp ne s'est pas ouvert automatiquement, votre navigateur a peut-être bloqué la fenêtre : vérifiez vos onglets, ou contactez-nous directement au <span id="devisConfirmPhone">(+225) 05 46 81 86 40</span>.</span>
+          </span>
         </div>
       </form>
     </div>
@@ -1552,6 +1566,14 @@
 
     const url = "https://wa.me/" + (SITE.contact.whatsapp_number || "2250546818640") + "?text=" + encodeURIComponent(msg);
     window.open(url, "_blank");
+
+    const confirmBox = document.getElementById('devisConfirm');
+    const confirmPhone = document.getElementById('devisConfirmPhone');
+    if(confirmPhone) confirmPhone.textContent = (SITE.contact.whatsapp_display || "(+225) 05 46 81 86 40");
+    if(confirmBox){
+      confirmBox.classList.add('show');
+      confirmBox.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
   });
 </script>
 
