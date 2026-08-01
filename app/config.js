@@ -98,6 +98,38 @@ function escapeHTML(str) {
   return div.innerHTML;
 }
 
+// ---------- Validation de format (numéro de téléphone ivoirien, montant) ----------
+// Depuis la refonte du plan de numérotation, tous les numéros ivoiriens comptent 10 chiffres
+// et commencent par 0 (ex : 07 00 00 00 00). On tolère les espaces/points/tirets de saisie.
+function isValidPhoneCI(phone) {
+  const digits = (phone || "").replace(/[\s.\-]/g, "");
+  return /^0[1-9][0-9]{8}$/.test(digits);
+}
+
+function isValidMontant(value) {
+  if (value === null || value === undefined || value === "") return true; // champ facultatif
+  const num = Number(value);
+  return !isNaN(num) && num >= 0;
+}
+
+// Traduit les erreurs techniques (Postgres, Edge Functions) en messages compréhensibles.
+function friendlyErrorMessage(message) {
+  const m = (message || "").toLowerCase();
+  if (m.includes("duplicate") || m.includes("already") || m.includes("unique")) {
+    return "Ce numéro de téléphone est déjà utilisé par un autre compte.";
+  }
+  if (m.includes("phone") && (m.includes("invalid") || m.includes("format"))) {
+    return "Le numéro de téléphone n'est pas dans un format valide.";
+  }
+  if (m.includes("password") && m.includes("short")) {
+    return "Le mot de passe est trop court (6 caractères minimum).";
+  }
+  if (m.includes("network") || m.includes("fetch")) {
+    return "Problème de connexion réseau. Vérifiez votre connexion et réessayez.";
+  }
+  return message || "Une erreur inattendue s'est produite.";
+}
+
 // ---------- Préservation de la position de défilement lors du redessin d'une liste ----------
 // Quand une liste de colis est entièrement redessinée (ex : mise à jour en temps réel), le
 // navigateur ne se souvient pas de "quelle ligne" était sous les yeux de la personne : si de
