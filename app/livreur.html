@@ -76,6 +76,11 @@
 
     <div id="panel-mes">
       <div class="search-wrap"><input type="text" id="search-mes" class="search-input" placeholder="Rechercher par description, destination ou client..."></div>
+      <div class="date-filter-wrap">
+        <label for="filtre-date-mes">📅 Date</label>
+        <input type="date" id="filtre-date-mes" class="date-filter-input">
+        <button type="button" id="btn-toutes-dates-mes" class="date-filter-clear">Toutes les dates</button>
+      </div>
       <div class="filters" id="filters-mes"></div>
       <div class="colis-list" id="mes-colis-list">
         <div class="empty-state">Chargement...</div>
@@ -84,6 +89,11 @@
 
     <div id="panel-tous" class="hidden">
       <div class="search-wrap"><input type="text" id="search-tous" class="search-input" placeholder="Rechercher par description, destination ou client..."></div>
+      <div class="date-filter-wrap">
+        <label for="filtre-date-tous">📅 Date</label>
+        <input type="date" id="filtre-date-tous" class="date-filter-input">
+        <button type="button" id="btn-toutes-dates-tous" class="date-filter-clear">Toutes les dates</button>
+      </div>
       <div class="filters" id="filters-tous"></div>
       <div class="colis-list" id="tous-colis-list">
         <div class="empty-state">Chargement...</div>
@@ -102,6 +112,8 @@
   let activePanel = 'mes';
   let searchMes = '';
   let searchTous = '';
+  let filtreDateMes = '';
+  let filtreDateTous = '';
 
   function closeOtherSections(exceptContentId){
     document.querySelectorAll('.card > .collapsible-content').forEach(c => {
@@ -191,6 +203,16 @@
     const dest = (c.destination || '').toLowerCase();
     const fourn = fournisseurLabel(c.fournisseur_id).toLowerCase();
     return desc.includes(t) || dest.includes(t) || fourn.includes(t);
+  }
+
+  function matchesDate(c, dateStr){
+    if (!dateStr) return true;
+    return dayKey(c.created_at) === dateStr;
+  }
+
+  function todayLocalISODate(){
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
 
   const FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
@@ -292,9 +314,11 @@
     const __anchor = captureScrollAnchor(list);
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
     let filtered = activeFilterMes === 'tous' ? mine : mine.filter(c => c.statut === activeFilterMes);
-    filtered = filtered.filter(c => matchesSearch(c, searchMes));
+    filtered = filtered.filter(c => matchesSearch(c, searchMes) && matchesDate(c, filtreDateMes));
     if (!filtered.length) {
-      list.innerHTML = `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`;
+      list.innerHTML = filtreDateMes
+        ? `<div class="empty-state">Aucun colis assigné à cette date.</div>`
+        : `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`;
       restoreScrollAnchor(list, __anchor);
       return;
     }
@@ -338,9 +362,11 @@
     const list = document.getElementById('tous-colis-list');
     const __anchor = captureScrollAnchor(list);
     let filtered = activeFilterTous === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilterTous);
-    filtered = filtered.filter(c => matchesSearch(c, searchTous));
+    filtered = filtered.filter(c => matchesSearch(c, searchTous) && matchesDate(c, filtreDateTous));
     if (!filtered.length) {
-      list.innerHTML = `<div class="empty-state">Aucun colis${activeFilterTous !== 'tous' || searchTous ? ' pour ces critères' : ''}.</div>`;
+      list.innerHTML = filtreDateTous
+        ? `<div class="empty-state">Aucun colis à cette date.</div>`
+        : `<div class="empty-state">Aucun colis${activeFilterTous !== 'tous' || searchTous ? ' pour ces critères' : ''}.</div>`;
       restoreScrollAnchor(list, __anchor);
       return;
     }
@@ -407,6 +433,24 @@
 
     document.getElementById('search-mes').addEventListener('input', (e) => { searchMes = e.target.value; renderMesColis(); });
     document.getElementById('search-tous').addEventListener('input', (e) => { searchTous = e.target.value; renderTousColis(); });
+
+    filtreDateMes = todayLocalISODate();
+    document.getElementById('filtre-date-mes').value = filtreDateMes;
+    document.getElementById('filtre-date-mes').addEventListener('change', (e) => { filtreDateMes = e.target.value; renderMesColis(); });
+    document.getElementById('btn-toutes-dates-mes').addEventListener('click', () => {
+      filtreDateMes = '';
+      document.getElementById('filtre-date-mes').value = '';
+      renderMesColis();
+    });
+
+    filtreDateTous = todayLocalISODate();
+    document.getElementById('filtre-date-tous').value = filtreDateTous;
+    document.getElementById('filtre-date-tous').addEventListener('change', (e) => { filtreDateTous = e.target.value; renderTousColis(); });
+    document.getElementById('btn-toutes-dates-tous').addEventListener('click', () => {
+      filtreDateTous = '';
+      document.getElementById('filtre-date-tous').value = '';
+      renderTousColis();
+    });
 
     await loadProfiles();
     await loadColis();
