@@ -271,7 +271,8 @@ input,textarea,select{font-family:inherit;}
   display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px;
 }
 .login-title{text-align:center; font-size:19px; font-weight:700; color:var(--navy); margin-bottom:4px;}
-.login-sub{text-align:center; color:var(--muted); font-size:13.5px; margin-bottom:26px;}
+.login-sub{text-align:center; color:var(--muted); font-size:13.5px; margin-bottom:6px;}
+.login-helper{text-align:center; color:#8a94a3; font-size:12px; margin-bottom:22px; line-height:1.4;}
 .tabs{display:flex; border-bottom:1.5px solid var(--border); margin-bottom:22px;}
 .tab{flex:1; text-align:center; padding:10px; font-weight:700; font-size:13.5px; color:var(--muted); border-bottom:2.5px solid transparent; margin-bottom:-1.5px;}
 .tab.active{color:var(--orange); border-color:var(--orange);}
