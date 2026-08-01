@@ -178,6 +178,11 @@
 
 <div id="panel-colis">
 <div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description, destination ou client..."></div>
+<div class="date-filter-wrap">
+<label for="filtre-date-colis">📅 Date</label>
+<input type="date" id="filtre-date-colis" class="date-filter-input">
+<button type="button" id="btn-toutes-dates-colis" class="date-filter-clear">Toutes les dates</button>
+</div>
 <div class="filters" id="filters"></div>
 <div id="alert-banner" class="alert-banner hidden"></div>
 <div class="colis-list" id="colis-list">
@@ -317,6 +322,7 @@ let isAdmin = false;
 let allAccounts = [];
 let activeAccountFilter = 'tous';
 let searchColis = '';
+let filtreDateColis = '';
 window.__colisEditing = new Set();
 
 function showTempPasswordModal(personLabel, phone, tempPassword){
@@ -473,6 +479,16 @@ const desc = (c.description || '').toLowerCase();
 const dest = (c.destination || '').toLowerCase();
 const fourn = fournisseurLabel(c.fournisseur_id).toLowerCase();
 return desc.includes(t) || dest.includes(t) || fourn.includes(t);
+}
+
+function matchesDate(c, dateStr){
+if (!dateStr) return true;
+return dayKey(c.created_at) === dateStr;
+}
+
+function todayLocalISODate(){
+const d = new Date();
+return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
 
 function addMsg(text, type){
@@ -922,9 +938,11 @@ function renderColis(){
 const list = document.getElementById('colis-list');
 const __anchor = captureScrollAnchor(list);
 let filtered = activeFilter === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilter);
-filtered = filtered.filter(c => matchesSearch(c, searchColis));
+filtered = filtered.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDateColis));
 if (!filtered.length) {
-list.innerHTML = `<div class="empty-state">Aucun colis${activeFilter !== 'tous' || searchColis ? ' pour ces critères' : ''}.</div>`;
+list.innerHTML = filtreDateColis
+? `<div class="empty-state">Aucun colis à cette date.</div>`
+: `<div class="empty-state">Aucun colis${activeFilter !== 'tous' || searchColis ? ' pour ces critères' : ''}.</div>`;
 } else {
 const groups = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
 list.innerHTML = renderGroupedColisHTML(groups, colisRowHTML);
@@ -1641,6 +1659,14 @@ await loadAllAccounts();
 
 document.getElementById('mois-select').addEventListener('change', renderRapportMois);
 document.getElementById('search-colis').addEventListener('input', (e) => { searchColis = e.target.value; renderColis(); });
+filtreDateColis = todayLocalISODate();
+document.getElementById('filtre-date-colis').value = filtreDateColis;
+document.getElementById('filtre-date-colis').addEventListener('change', (e) => { filtreDateColis = e.target.value; renderColis(); });
+document.getElementById('btn-toutes-dates-colis').addEventListener('click', () => {
+filtreDateColis = '';
+document.getElementById('filtre-date-colis').value = '';
+renderColis();
+});
 document.getElementById('compta-fournisseur').addEventListener('change', renderCompta);
 document.getElementById('compta-date-debut').addEventListener('change', renderCompta);
 document.getElementById('compta-date-fin').addEventListener('change', renderCompta);
