@@ -406,6 +406,7 @@
         </div>
         <div class="status-col">
           ${statutBadgeHTML(c.statut)}
+          <button type="button" class="btn btn-sm btn-outline btn-duplicate-colis" style="margin-top:8px;">📋 Dupliquer</button>
           ${c.statut === 'en_attente' ? `
             <button type="button" class="btn btn-sm btn-outline btn-edit-colis" style="margin-top:8px;">Modifier</button>
             <button type="button" class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>
@@ -463,6 +464,35 @@
         loadColis();
       });
     });
+    list.querySelectorAll('.btn-duplicate-colis').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.closest('.colis-item');
+        const id = item.dataset.id;
+        const c = mesColis.find(x => String(x.id) === String(id));
+        if (c) duplicateColis(c);
+      });
+    });
+  }
+
+  // ---------- Dupliquer un colis existant ----------
+  // Ouvre la section "Ajouter des colis", ajoute une nouvelle ligne pré-remplie avec les mêmes
+  // description/destination/montant, pratique pour les envois répétitifs similaires.
+  function duplicateColis(c){
+    const header = document.querySelector('#section-ajouter .collapsible-header');
+    const content = document.getElementById('ajouter-content');
+    if (header && content && !content.classList.contains('open')) {
+      toggleSection(header, 'ajouter-content');
+    }
+    addRow();
+    const rows = document.querySelectorAll('.colis-row');
+    const row = rows[rows.length - 1];
+    if (row) {
+      row.querySelector('.row-desc').value = c.description || '';
+      row.querySelector('.row-dest').value = c.destination || '';
+      if (c.montant !== null && c.montant !== undefined) row.querySelector('.row-montant').value = c.montant;
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    addMsg('Colis dupliqué ci-dessous : vérifiez les informations puis enregistrez.', 'success');
   }
 
   function renderColisList(){
