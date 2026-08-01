@@ -121,7 +121,7 @@
 </div>
 <div class="field">
 <label>Téléphone</label>
-<input type="tel" id="lv-phone" required placeholder="07 00 00 00 00">
+<input type="tel" id="lv-phone" required placeholder="07 00 00 00 00" inputmode="tel" pattern="[0-9\s.\-]{10,14}" title="Numéro ivoirien à 10 chiffres, ex : 07 00 00 00 00">
 </div>
 </div>
 <button type="submit" class="btn" id="btn-submit-livreur">Créer le compte livreur</button>
@@ -276,7 +276,7 @@
 </div>
 <div class="field">
 <label>Téléphone</label>
-<input type="tel" id="eq-phone" required placeholder="07 00 00 00 00">
+<input type="tel" id="eq-phone" required placeholder="07 00 00 00 00" inputmode="tel" pattern="[0-9\s.\-]{10,14}" title="Numéro ivoirien à 10 chiffres, ex : 07 00 00 00 00">
 </div>
 </div>
 <div class="field">
@@ -930,6 +930,12 @@ btn.disabled = true; btn.textContent = 'Création...';
 const full_name = document.getElementById('lv-fullname').value.trim();
 const phone = document.getElementById('lv-phone').value.trim();
 
+if (!isValidPhoneCI(phone)) {
+addLivreurMsg("Numéro de téléphone invalide. Utilisez un numéro ivoirien à 10 chiffres (ex : 07 00 00 00 00).", "error");
+btn.disabled = false; btn.textContent = 'Créer le compte livreur';
+return;
+}
+
 try {
 const { data: { session } } = await supabaseClient.auth.getSession();
 const res = await fetch(`${SUPABASE_URL}/functions/v1/creer-livreur`, {
@@ -944,14 +950,14 @@ body: JSON.stringify({ full_name, phone }),
 const result = await res.json();
 
 if (!res.ok) {
-addLivreurMsg("Erreur : " + (result.error || 'création impossible'), "error");
+addLivreurMsg(friendlyErrorMessage(result.error || 'création impossible'), "error");
 } else {
 addLivreurMsg("Compte livreur créé avec succès.", "success");
 e.target.reset();
 await loadLivreurs();
 }
 } catch (err) {
-addLivreurMsg("Erreur : " + err.message, "error");
+addLivreurMsg(friendlyErrorMessage(err.message), "error");
 }
 
 btn.disabled = false; btn.textContent = 'Créer le compte livreur';
@@ -967,6 +973,13 @@ const destination = document.getElementById('add-dest').value.trim();
 const description = document.getElementById('add-desc').value.trim();
 const montantRaw = document.getElementById('add-montant').value.trim();
 const montant = montantRaw === '' ? null : Number(montantRaw);
+
+if (!isValidMontant(montantRaw === '' ? null : montantRaw)) {
+addMsg("Le montant doit être un nombre positif.", "error");
+btn.disabled = false; btn.textContent = 'Ajouter le colis';
+return;
+}
+
 const pickedPhoto = pickedGroupFile(document.getElementById('add-photo-group'));
 let photo_url = null;
 let photoUploadFailed = false;
@@ -983,7 +996,7 @@ fournisseur_id, destination, description, montant, photo_url
 btn.disabled = false; btn.textContent = 'Ajouter le colis';
 
 if (error) {
-addMsg("Erreur : " + error.message, "error");
+addMsg(friendlyErrorMessage(error.message), "error");
 return;
 }
 const photoWarning = photoUploadFailed ? " (attention : l'envoi de la photo a échoué, le colis a été enregistré sans photo)" : "";
@@ -1135,14 +1148,19 @@ const livreurSelect = item.querySelector('.row-livreur-select');
 const livreur_id = livreurSelect ? (livreurSelect.value || null) : undefined;
 const observation = item.querySelector('.obs-textarea').value.trim() || null;
 const montantInput = item.querySelector('.edit-montant');
-const montant = montantInput ? (montantInput.value.trim() === '' ? null : Number(montantInput.value.trim())) : undefined;
+const montantRaw = montantInput ? montantInput.value.trim() : '';
+if (montantInput && !isValidMontant(montantRaw === '' ? null : montantRaw)) {
+alert("Le montant doit être un nombre positif.");
+return;
+}
+const montant = montantInput ? (montantRaw === '' ? null : Number(montantRaw)) : undefined;
 const updatePayload = { statut, observation };
 if (livreur_id !== undefined) updatePayload.livreur_id = livreur_id;
 if (montant !== undefined) updatePayload.montant = montant;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('colis').update(updatePayload).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';
-if (error) { alert("Erreur : " + error.message); return; }
+if (error) { alert(friendlyErrorMessage(error.message)); return; }
 if (window.__colisEditing) window.__colisEditing.delete(id);
 // Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel :
 // le colis quitte instantanément le mode édition (boutons Enregistrer/Supprimer) et repasse
@@ -1418,13 +1436,24 @@ const full_name = document.getElementById('eq-fullname').value.trim();
 const phone = document.getElementById('eq-phone').value.trim();
 const password = document.getElementById('eq-password').value;
 
+if (!isValidPhoneCI(phone)) {
+addEquipeMsg("Numéro de téléphone invalide. Utilisez un numéro ivoirien à 10 chiffres (ex : 07 00 00 00 00).", "error");
+btn.disabled = false; btn.textContent = 'Créer le compte équipe';
+return;
+}
+if (password.length < 6) {
+addEquipeMsg("Le mot de passe doit contenir au moins 6 caractères.", "error");
+btn.disabled = false; btn.textContent = 'Créer le compte équipe';
+return;
+}
+
 try {
 await callAdminFunction('admin-creer-equipe', { full_name, phone, password });
 addEquipeMsg("Compte équipe créé avec succès.", "success");
 e.target.reset();
 await loadAllAccounts();
 } catch (err) {
-addEquipeMsg("Erreur : " + err.message, "error");
+addEquipeMsg(friendlyErrorMessage(err.message), "error");
 }
 
 btn.disabled = false; btn.textContent = 'Créer le compte équipe';
