@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260801">
+<link rel="stylesheet" href="style.css?v=20260801e">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -659,6 +659,7 @@
     box.innerHTML = `
       <p class="recap-phrase">En <strong>${monthLabel(selected)}</strong>, vous avez enregistré <strong>${colisDuMois.length} colis</strong>, dont <strong>${livres}</strong> livré${livres > 1 ? 's' : ''} avec succès (${taux}%).</p>
       <p class="recap-montant">💰 Montant total : <strong>${formatMontant(montantMois) || '0 FCFA'}</strong> · Montant livré : <strong>${formatMontant(montantLivreMois) || '0 FCFA'}</strong></p>
+      ${trendChartHTML(groups)}
       ${statTilesHTML(compte, colisDuMois.length)}
       <div class="day-recap-title">Détail par jour</div>
       <div class="day-recap-list">${joursHTML}</div>
@@ -668,6 +669,32 @@
   function selectRecapDay(key){
     document.getElementById('jour-select').value = key;
     renderRecapMois();
+  }
+
+  // ---------- Graphique d'évolution (barres) du nombre de colis par jour ----------
+  // Complète le texte narratif du récapitulatif par une vue visuelle rapide de la tendance
+  // sur le mois. N'affiche rien s'il n'y a qu'un seul jour de données (pas de tendance à voir).
+  function trendChartHTML(groups){
+    if (groups.length < 2) return '';
+    const sorted = [...groups].sort((a, b) => a.key.localeCompare(b.key));
+    const max = Math.max(...sorted.map(g => g.items.length), 1);
+    const bars = sorted.map(g => {
+      const count = g.items.length;
+      const livres = g.items.filter(c => c.statut === 'livre').length;
+      const heightPct = Math.max(Math.round((count / max) * 100), 6);
+      const dayNum = g.key.slice(8, 10);
+      const titre = `${g.label} : ${count} colis, dont ${livres} livré${livres > 1 ? 's' : ''}`;
+      return `
+        <div class="trend-bar-col" title="${escapeHTML(titre)}">
+          <div class="trend-bar-count">${count}</div>
+          <div class="trend-bar" style="height:${heightPct}%"></div>
+          <div class="trend-bar-day">${dayNum}</div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="trend-chart-title">📈 Évolution du nombre de colis par jour</div>
+      <div class="trend-chart">${bars}</div>
+    `;
   }
 
   // ---------- Export comptable (Excel / PDF) du récapitulatif actuellement affiché ----------
