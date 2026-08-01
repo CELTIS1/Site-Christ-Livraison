@@ -9,6 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20260801">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -103,6 +106,10 @@
       </div>
       <div id="recap-mois" style="margin-top:12px;">
         <div class="empty-state">Chargement...</div>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-export-excel-client">Exporter en Excel</button>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-export-pdf-client">Exporter en PDF</button>
       </div>
     </div>
   </div>
@@ -632,6 +639,62 @@
     document.getElementById('jour-select').value = key;
     renderRecapMois();
   }
+
+  // ---------- Export comptable (Excel / PDF) du récapitulatif actuellement affiché ----------
+  // Reprend exactement le mois/jour sélectionné dans les filtres du récapitulatif.
+  function recapRowsActuelles(){
+    const selected = document.getElementById('mois-select').value;
+    if (!selected) return [];
+    const colisDuMois = mesColis.filter(c => monthKey(c.created_at) === selected);
+    const jourSelected = document.getElementById('jour-select').value;
+    if (jourSelected) {
+      const groups = groupColisByDay(colisDuMois, 'created_at');
+      const g = groups.find(x => x.key === jourSelected);
+      return g ? g.items : [];
+    }
+    return colisDuMois;
+  }
+
+  document.getElementById('btn-export-excel-client').addEventListener('click', () => {
+    const rows = recapRowsActuelles();
+    if (!rows.length) { alert("Aucune donnée à exporter."); return; }
+    const data = rows.map(c => ({
+      Colis: c.description || '',
+      Destination: c.destination || '',
+      Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
+      Montant: c.montant || 0,
+      Date: formatDate(c.created_at),
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Récapitulatif');
+    XLSX.writeFile(wb, `recapitulatif-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  });
+
+  document.getElementById('btn-export-pdf-client').addEventListener('click', () => {
+    const rows = recapRowsActuelles();
+    if (!rows.length) { alert("Aucune donnée à exporter."); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const livres = rows.filter(c => c.statut === 'livre');
+    const totalMontant = rows.reduce((s, c) => s + (Number(c.montant) || 0), 0);
+    doc.setFontSize(14);
+    doc.text('Récapitulatif — Christ Livraison & Transport SARL', 14, 16);
+    doc.setFontSize(10);
+    doc.text(`${rows.length} colis · ${livres.length} livré(s) · Montant total : ${formatMontant(totalMontant) || '0 FCFA'}`, 14, 24);
+    doc.autoTable({
+      startY: 30,
+      head: [['Colis', 'Destination', 'Statut', 'Montant', 'Date']],
+      body: rows.map(c => [
+        c.description || '',
+        c.destination || '',
+        STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
+        formatMontant(c.montant) || '-',
+        formatDate(c.created_at),
+      ]),
+    });
+    doc.save(`recapitulatif-${new Date().toISOString().slice(0, 10)}.pdf`);
+  });
 
   document.getElementById('mois-select').addEventListener('change', renderRecapMois);
   document.getElementById('jour-select').addEventListener('change', renderRecapMois);
