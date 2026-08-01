@@ -441,7 +441,7 @@
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
   function mesColisRowHTML(c){
     const thumb = c.photo_url
-      ? `<img src="${c.photo_url}" class="thumb">`
+      ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
       : `<div class="thumb-placeholder">Pas de photo</div>`;
     const statutOptions = Object.keys(STATUTS).map(k =>
       `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
@@ -460,7 +460,7 @@
           <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
           <div class="field" style="margin-top:8px;">
             <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
-            ${c.photo_livraison_url ? `<img src="${c.photo_livraison_url}" class="thumb" style="margin-bottom:6px;">` : ''}
+            ${c.photo_livraison_url ? `<img src="${c.photo_livraison_url}" class="thumb" style="margin-bottom:6px;" alt="Photo de preuve de livraison déjà ajoutée">` : ''}
             <div class="photo-pick-group livraison-photo-input">
               <div class="avatar-upload-btns">
                 <label class="btn btn-outline btn-sm" style="cursor:pointer;">📷 Prendre une photo<input type="file" accept="image/*" capture="user" class="hidden pick-camera"></label>
@@ -478,7 +478,7 @@
   // Ligne en lecture seule pour "Tous les colis"
   function tousColisItemHTML(c){
     const thumb = c.photo_url
-      ? `<img src="${c.photo_url}" class="thumb">`
+      ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
       : `<div class="thumb-placeholder">Pas de photo</div>`;
     const livreurProfile = c.livreur_id ? profilesById[c.livreur_id] : null;
     const livreurLine = livreurProfile
@@ -493,7 +493,7 @@
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
           ${livreurLine}
           ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
-          ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
+          ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
         </div>
         <div class="status-col">${statutBadgeHTML(c.statut)}</div>
       </div>
