@@ -251,6 +251,7 @@ input,textarea,select{font-family:inherit;}
 .msg{padding:12px 16px; border-radius:9px; font-size:13.5px; margin-bottom:16px;}
 .msg-error{background:#fce4e2; color:#c0392b;}
 .msg-success{background:#e3f6ea; color:#1a7d3c;}
+.msg-info{background:#e8f1fb; color:#1c5a8a;}
 
 /* ---------- FILE D'ATTENTE HORS-LIGNE (Livreur) ---------- */
 .offline-queue-banner{
