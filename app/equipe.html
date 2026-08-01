@@ -1025,7 +1025,7 @@ return c.statut !== 'en_attente' || !!c.observation;
 
 function colisRowHTML(c){
 const thumb = c.photo_url
-? `<img src="${c.photo_url}" class="thumb">`
+? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
 : `<div class="thumb-placeholder">Pas de photo</div>`;
 const statutOptions = Object.keys(STATUTS).map(k =>
 `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
@@ -1040,7 +1040,7 @@ const infoBlock = `
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
-${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
+${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 ${estValide ? '' : `
 <div class="field" style="margin-top:8px;">
 <label style="font-size:11.5px;">Livreur assigné</label>
@@ -1067,7 +1067,7 @@ ${thumb}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${livreurLine}
 ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
-${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
+${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
 </div>
 <div class="status-col" style="width:auto; flex-direction:row; align-items:center; gap:10px;">
@@ -1575,7 +1575,7 @@ return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: '
 
 function colisMiniHTML(c){
 const thumb = c.photo_url
-? `<img src="${c.photo_url}" class="thumb">`
+? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
 : `<div class="thumb-placeholder">Pas de photo</div>`;
 return `
 <div class="colis-item">
@@ -1585,7 +1585,7 @@ ${thumb}
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
 <div class="meta">${formatDate(c.created_at)}</div>
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
-${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;"></div>` : ''}
+${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 </div>
 <div class="status-col">${statutBadgeHTML(c.statut)}</div>
 </div>
