@@ -68,6 +68,11 @@
   <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
   <div class="page-sub">Voici les colis qui vous ont été assignés. Mettez à jour leur statut au fur et à mesure de la livraison.</div>
 
+  <div class="offline-queue-banner hidden" id="offline-queue-banner">
+    <span id="offline-queue-text"></span>
+    <button type="button" class="btn btn-sm btn-outline" id="btn-sync-now">Synchroniser maintenant</button>
+  </div>
+
   <div class="card" id="section-main">
     <div class="tabs">
       <div class="tab active" id="tab-mes-colis" onclick="showTab('mes')">Mes colis assignés</div>
@@ -196,6 +201,106 @@
     return data.publicUrl;
   }
 
+  // ---------- File d'attente hors-ligne pour les mises à jour de statut ----------
+  // Les livreurs travaillent souvent dans des zones peu couvertes par le réseau.
+  // Plutôt que de perdre une mise à jour de statut en cas de coupure (ou de simplement
+  // afficher une alerte que le livreur risque d'oublier), on la stocke localement (IndexedDB)
+  // et on la synchronise automatiquement dès que la connexion revient.
+  const OFFLINE_DB_NAME = 'livreur-offline-queue';
+  const OFFLINE_STORE = 'updates';
+  let pendingSyncIds = new Set();
+  let syncInProgress = false;
+
+  function openQueueDB(){
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(OFFLINE_DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(OFFLINE_STORE)) {
+          db.createObjectStore(OFFLINE_STORE, { keyPath: 'key', autoIncrement: true });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function queueAdd(entry){
+    const db = await openQueueDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_STORE, 'readwrite');
+      tx.objectStore(OFFLINE_STORE).add(entry);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function queueGetAll(){
+    const db = await openQueueDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_STORE, 'readonly');
+      const req = tx.objectStore(OFFLINE_STORE).getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function queueDelete(key){
+    const db = await openQueueDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_STORE, 'readwrite');
+      tx.objectStore(OFFLINE_STORE).delete(key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function refreshOfflineBanner(){
+    let entries = [];
+    try { entries = await queueGetAll(); } catch(e) { console.error(e); }
+    pendingSyncIds = new Set(entries.map(e => e.colisId));
+    const banner = document.getElementById('offline-queue-banner');
+    const text = document.getElementById('offline-queue-text');
+    if (banner && text) {
+      if (entries.length === 0) {
+        banner.classList.add('hidden');
+      } else {
+        banner.classList.remove('hidden');
+        const label = navigator.onLine ? 'synchronisation en cours...' : 'en attente de connexion';
+        text.textContent = `📶 ${entries.length} mise${entries.length > 1 ? 's' : ''} à jour en attente (${label})`;
+      }
+    }
+    renderAll();
+  }
+
+  async function flushOfflineQueue(){
+    if (syncInProgress || !navigator.onLine) return;
+    syncInProgress = true;
+    try {
+      const entries = await queueGetAll();
+      for (const entry of entries) {
+        let photo_livraison_url = entry.photo_livraison_url;
+        if (entry.photoBlob) {
+          const uploaded = await uploadPhoto(entry.photoBlob, entry.userId);
+          if (!uploaded) break; // toujours hors-ligne ou échec réseau : on réessaiera plus tard
+          photo_livraison_url = uploaded;
+        }
+        const { error } = await supabaseClient.from('colis')
+          .update({ statut: entry.statut, observation: entry.observation, photo_livraison_url })
+          .eq('id', entry.colisId);
+        if (error) break; // échec réseau probable : on réessaiera plus tard
+        await queueDelete(entry.key);
+        const idx = allColis.findIndex(c => c.id === entry.colisId);
+        if (idx !== -1) Object.assign(allColis[idx], { statut: entry.statut, observation: entry.observation, photo_livraison_url });
+      }
+    } catch (e) {
+      console.error('Synchronisation hors-ligne :', e);
+    } finally {
+      syncInProgress = false;
+      await refreshOfflineBanner();
+    }
+  }
+
   function matchesSearch(c, term){
     if (!term) return true;
     const t = term.toLowerCase();
@@ -265,6 +370,7 @@
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
         </div>
         <div class="status-col">
+                    ${pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : ''}
           <select class="status-select">${statutOptions}</select>
           <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
           <div class="field" style="margin-top:8px;">
@@ -335,20 +441,48 @@
         const existing = allColis.find(c => c.id === id);
         let photo_livraison_url = existing ? existing.photo_livraison_url : null;
 
+        // Hors connexion : on met la mise à jour en file d'attente au lieu de la perdre.
+        if (!navigator.onLine) {
+          btn.disabled = true; btn.textContent = 'Enregistrement...';
+          try {
+            await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: pickedPhoto || null, userId: currentUser.id, timestamp: Date.now() });
+          } catch (e) { console.error(e); }
+          if (existing) Object.assign(existing, { statut, observation });
+          btn.disabled = false; btn.textContent = 'Enregistrer';
+          await refreshOfflineBanner();
+          return;
+        }
+
         if (pickedPhoto) {
           btn.disabled = true; btn.textContent = 'Envoi photo...';
           const uploaded = await uploadPhoto(pickedPhoto, currentUser.id);
           if (uploaded) {
             photo_livraison_url = uploaded;
           } else {
-            alert("L'envoi de la photo a échoué. Le colis sera enregistré sans la nouvelle photo. Vérifiez votre connexion et réessayez.");
+            // Échec probable de connexion pendant l'envoi de la photo : on met tout en file d'attente.
+            btn.disabled = true; btn.textContent = 'Enregistrement...';
+            try {
+              await queueAdd({ colisId: id, statut, observation, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: pickedPhoto, userId: currentUser.id, timestamp: Date.now() });
+            } catch (e) { console.error(e); }
+            if (existing) Object.assign(existing, { statut, observation });
+            btn.disabled = false; btn.textContent = 'Enregistrer';
+            await refreshOfflineBanner();
+            return;
           }
         }
 
         btn.disabled = true; btn.textContent = '...';
         const { error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url }).eq('id', id);
         btn.disabled = false; btn.textContent = 'Enregistrer';
-        if (error) { alert("Erreur : " + error.message); return; }
+        if (error) {
+          // Échec réseau probable : on met la mise à jour en file d'attente plutôt que de la perdre.
+          try {
+            await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: null, userId: currentUser.id, timestamp: Date.now() });
+          } catch (e) { console.error(e); }
+          if (existing) Object.assign(existing, { statut, observation, photo_livraison_url });
+          await refreshOfflineBanner();
+          return;
+        }
         // Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel.
         const idx = allColis.findIndex(c => c.id === id);
         if (idx !== -1) Object.assign(allColis[idx], { statut, observation, photo_livraison_url });
@@ -454,6 +588,8 @@
 
     await loadProfiles();
     await loadColis();
+    await refreshOfflineBanner();
+    flushOfflineQueue();
 
     // Mises à jour en temps réel sur tous les colis
     supabaseClient
@@ -491,6 +627,11 @@
       e.target.reset();
     }
   });
+
+  document.getElementById('btn-sync-now').addEventListener('click', () => { flushOfflineQueue(); });
+  window.addEventListener('online', () => { flushOfflineQueue(); });
+  window.addEventListener('offline', () => { refreshOfflineBanner(); });
+  setInterval(() => { if (navigator.onLine) flushOfflineQueue(); }, 20000);
 
   init();
 </script>
