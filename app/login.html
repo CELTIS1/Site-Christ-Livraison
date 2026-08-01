@@ -18,6 +18,7 @@
       </div>
       <div class="login-title">Portail de Gestion</div>
       <div class="login-sub">Christ Livraison & Transport SARL</div>
+      <div class="login-helper">Un compte unique pour l'équipe, les livreurs et nos clients.</div>
 
       <div class="tabs hidden">
         <div class="tab active" id="tab-connexion" onclick="showTab('connexion')">Connexion</div>
@@ -41,13 +42,14 @@
       <button type="button" id="btn-goto-inscription" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Pas encore de compte client ? Créer un compte</button>
       </form>
 
-    <!-- MOT DE PASSE OUBLIE : demande transmise à l'équipe -->
+    <!-- MOT DE PASSE OUBLIE / PREMIERE CONNEXION : demande transmise à l'équipe -->
     <form id="form-forgot-phone" class="hidden">
+    <div style="text-align:center;font-weight:700;color:#1B4374;font-size:15px;margin-bottom:10px;">Mot de passe oublié ou première connexion</div>
     <div class="field">
     <label>Numéro de téléphone</label>
     <input type="tel" id="forgot-phone" required placeholder="07 00 00 00 00">
     </div>
-    <div style="margin-bottom:14px;font-size:12.5px;color:#6b7280;">Votre demande sera transmise à notre équipe, qui vous communiquera un nouveau mot de passe.</div>
+    <div style="margin-bottom:14px;font-size:12.5px;color:#6b7280;">Première connexion ou mot de passe oublié : la démarche est la même dans les deux cas. Notre équipe vous communiquera un mot de passe par téléphone.</div>
     <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-send">Demander une réinitialisation</button>
     <button type="button" id="btn-forgot-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
     </form>
