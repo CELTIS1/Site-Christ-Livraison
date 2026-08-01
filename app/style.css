@@ -594,6 +594,8 @@ input,textarea,select{font-family:inherit;}
   background:var(--grey-bg); color:var(--muted); font-size:15px; display:flex; align-items:center; justify-content:center;
 }
 .account-modal-close:hover{background:#e7ebf1; color:#222;}
+.account-modal-divider{border:none; border-top:1px solid #EEF1F5; margin:22px 0;}
+.account-modal .btn-sm{margin-right:10px; margin-top:4px;}
 
 @media(max-width:640px){
   .settings-dropdown{min-width:170px;}
