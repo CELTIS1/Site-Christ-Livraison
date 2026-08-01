@@ -373,7 +373,7 @@ function closeOtherSections(exceptContentId){
 document.querySelectorAll('.card > .collapsible-content').forEach(c => {
 if (c.id === exceptContentId) return;
 if (c.classList.contains('open')){
-c.classList.remove('open');
+collapseCollapsible(c);
 const h = c.previousElementSibling;
 const arr = h && h.querySelector('.collapse-arrow');
 if (arr) arr.textContent = '▶';
@@ -415,7 +415,7 @@ function toggleSection(header, contentId){
 const content = document.getElementById(contentId);
 const willOpen = !content.classList.contains('open');
 if (willOpen) closeOtherSections(contentId);
-content.classList.toggle('open', willOpen);
+if (willOpen) { expandCollapsible(content); } else { collapseCollapsible(content); }
 const arrow = header.querySelector('.collapse-arrow');
 if (arrow) arrow.textContent = willOpen ? '▼' : '▶';
 if (willOpen) refreshStickyTables(content);
@@ -1311,7 +1311,7 @@ let recapExpanded = false;
 function toggleRecap(){
 recapExpanded = !recapExpanded;
 const recapBox = document.getElementById('recap-fournisseur');
-recapBox.classList.toggle('open', recapExpanded);
+if (recapExpanded) { expandCollapsible(recapBox); } else { collapseCollapsible(recapBox); }
 document.getElementById('recap-arrow').textContent = recapExpanded ? '▼' : '▶';
 if (recapExpanded) refreshStickyTables(recapBox);
 }
