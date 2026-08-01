@@ -211,13 +211,44 @@
     });
   })();
 
-  async function uploadPhoto(file, userId){
+  async function uploadPhoto(file, userId, onProgress){
     const ext = file.name.split('.').pop();
     const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-    const { error } = await supabaseClient.storage.from('colis-photos').upload(path, file);
-    if (error) { console.error(error); return null; }
-    const { data } = supabaseClient.storage.from('colis-photos').getPublicUrl(path);
-    return data.publicUrl;
+
+    // Sans callback de progression (ex : synchronisation hors-ligne en tâche de fond), on
+    // garde l'envoi simple via le SDK Supabase.
+    if (typeof onProgress !== 'function') {
+      const { error } = await supabaseClient.storage.from('colis-photos').upload(path, file);
+      if (error) { console.error(error); return null; }
+      const { data } = supabaseClient.storage.from('colis-photos').getPublicUrl(path);
+      return data.publicUrl;
+    }
+
+    // Avec callback de progression (envoi déclenché par le livreur) : on passe par XHR, seule
+    // API permettant de suivre la progression réelle de l'envoi (utile sur réseau lent/mobile).
+    return new Promise(async (resolve) => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const token = session ? session.access_token : SUPABASE_KEY;
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${SUPABASE_URL}/storage/v1/object/colis-photos/${path}`);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.setRequestHeader('apikey', SUPABASE_KEY);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const { data } = supabaseClient.storage.from('colis-photos').getPublicUrl(path);
+          resolve(data.publicUrl);
+        } else {
+          console.error("Échec de l'envoi de la photo :", xhr.status, xhr.responseText);
+          resolve(null);
+        }
+      };
+      xhr.onerror = () => resolve(null);
+      xhr.send(file);
+    });
   }
 
   // ---------- Boîte de dialogue de confirmation contextualisée (remplace confirm() natif) ----------
@@ -552,8 +583,10 @@
         }
 
         if (pickedPhoto) {
-          btn.disabled = true; btn.textContent = 'Envoi photo...';
-          const uploaded = await uploadPhoto(pickedPhoto, currentUser.id);
+          btn.disabled = true; btn.textContent = 'Envoi photo... 0%';
+          const uploaded = await uploadPhoto(pickedPhoto, currentUser.id, (pct) => {
+            btn.textContent = `Envoi photo... ${pct}%`;
+          });
           if (uploaded) {
             photo_livraison_url = uploaded;
           } else {
@@ -663,8 +696,20 @@
     renderFilters('filters-mes', activeFilterMes, selectFilterMes);
     renderFilters('filters-tous', activeFilterTous, selectFilterTous);
 
-    document.getElementById('search-mes').addEventListener('input', (e) => { searchMes = e.target.value; renderMesColis(); });
-    document.getElementById('search-tous').addEventListener('input', (e) => { searchTous = e.target.value; renderTousColis(); });
+    // Recherche avec anti-rebond (debounce) : évite de redessiner la liste à chaque frappe,
+    // ce qui est surtout sensible sur mobile avec une longue liste de colis.
+    let searchMesTimer = null;
+    let searchTousTimer = null;
+    document.getElementById('search-mes').addEventListener('input', (e) => {
+      const val = e.target.value;
+      clearTimeout(searchMesTimer);
+      searchMesTimer = setTimeout(() => { searchMes = val; renderMesColis(); }, 350);
+    });
+    document.getElementById('search-tous').addEventListener('input', (e) => {
+      const val = e.target.value;
+      clearTimeout(searchTousTimer);
+      searchTousTimer = setTimeout(() => { searchTous = val; renderTousColis(); }, 350);
+    });
 
     filtreDateMes = todayLocalISODate();
     document.getElementById('filtre-date-mes').value = filtreDateMes;
