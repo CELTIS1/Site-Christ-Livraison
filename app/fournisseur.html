@@ -586,9 +586,12 @@
         g.items.forEach(c => { compteJour[c.statut] = (compteJour[c.statut] || 0) + 1; });
         const livresJour = compteJour['livre'] || 0;
         const tauxJour = g.items.length ? Math.round((livresJour / g.items.length) * 100) : 0;
+        const montantJour = g.items.reduce((s, c) => s + (Number(c.montant) || 0), 0);
+        const montantLivreJour = g.items.filter(c => c.statut === 'livre').reduce((s, c) => s + (Number(c.montant) || 0), 0);
         box.innerHTML = `
           <div class="day-recap-back" onclick="selectRecapDay('')">← Voir tout le mois</div>
           <p class="recap-phrase">Le <strong>${g.label}</strong>, vous avez enregistré <strong>${g.items.length} colis</strong>, dont <strong>${livresJour}</strong> livré${livresJour > 1 ? 's' : ''} avec succès (${tauxJour}%).</p>
+          <p class="recap-montant">💰 Montant total : <strong>${formatMontant(montantJour) || '0 FCFA'}</strong> · Montant livré : <strong>${formatMontant(montantLivreJour) || '0 FCFA'}</strong></p>
           ${statTilesHTML(compteJour, g.items.length)}
         `;
         return;
@@ -599,6 +602,8 @@
     colisDuMois.forEach(c => { compte[c.statut] = (compte[c.statut] || 0) + 1; });
     const livres = compte['livre'] || 0;
     const taux = colisDuMois.length ? Math.round((livres / colisDuMois.length) * 100) : 0;
+    const montantMois = colisDuMois.reduce((s, c) => s + (Number(c.montant) || 0), 0);
+    const montantLivreMois = colisDuMois.filter(c => c.statut === 'livre').reduce((s, c) => s + (Number(c.montant) || 0), 0);
 
     const joursHTML = groups.map(g => {
       const compteJour = {};
@@ -616,6 +621,7 @@
 
     box.innerHTML = `
       <p class="recap-phrase">En <strong>${monthLabel(selected)}</strong>, vous avez enregistré <strong>${colisDuMois.length} colis</strong>, dont <strong>${livres}</strong> livré${livres > 1 ? 's' : ''} avec succès (${taux}%).</p>
+      <p class="recap-montant">💰 Montant total : <strong>${formatMontant(montantMois) || '0 FCFA'}</strong> · Montant livré : <strong>${formatMontant(montantLivreMois) || '0 FCFA'}</strong></p>
       ${statTilesHTML(compte, colisDuMois.length)}
       <div class="day-recap-title">Détail par jour</div>
       <div class="day-recap-list">${joursHTML}</div>
