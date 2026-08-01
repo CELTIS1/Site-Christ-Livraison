@@ -449,6 +449,23 @@ input,textarea,select{font-family:inherit;}
 .stat-tile-label{font-size:11.5px; font-weight:600; color:var(--muted); line-height:1.3;}
 .stat-tile-total .stat-tile-label{color:rgba(255,255,255,0.85);}
 
+.trend-chart-title{font-size:13.5px; font-weight:700; color:var(--navy); margin:0 0 10px;}
+.trend-chart{
+  display:flex; align-items:flex-end; gap:5px; height:130px; padding:20px 4px 0;
+  background:var(--white); border:1.5px solid var(--border); border-radius:14px; margin-bottom:16px;
+  overflow-x:auto;
+}
+.trend-bar-col{
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+  height:100%; flex:1 1 0; min-width:20px; cursor:default;
+}
+.trend-bar-count{font-size:10.5px; font-weight:700; color:var(--navy); margin-bottom:3px;}
+.trend-bar{
+  width:100%; max-width:24px; background:var(--orange); border-radius:5px 5px 0 0; min-height:4px;
+  transition:height .3s;
+}
+.trend-bar-day{font-size:9.5px; color:var(--muted); margin-top:5px; white-space:nowrap;}
+
 .day-recap-title{font-size:13.5px; font-weight:700; color:var(--navy); margin:22px 0 10px;}
 .day-recap-list{display:flex; flex-direction:column; gap:8px;}
 .day-recap-row{
@@ -479,6 +496,9 @@ input,textarea,select{font-family:inherit;}
   .stat-tile-label{font-size:9px; line-height:1.15;}
   .day-recap-row{padding:10px 12px;}
   .day-recap-date{font-size:12.5px;}
+  .trend-chart{height:100px;}
+  .trend-bar-count{font-size:9px;}
+  .trend-bar-day{font-size:8.5px;}
 }
 
 @media(max-width:380px){
