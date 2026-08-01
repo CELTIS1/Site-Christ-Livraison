@@ -513,6 +513,27 @@ input,textarea,select{font-family:inherit;}
 .pwd-modal-hint{color:var(--muted); font-size:12px; margin-bottom:18px; line-height:1.4;}
 .pwd-modal .btn#pwd-modal-close{width:100%;}
 
+/* ---------- MODALE DE CONFIRMATION CONTEXTUALISÉE ---------- */
+.confirm-modal-overlay{
+  position:fixed; inset:0; background:rgba(18,50,82,0.55); z-index:1100;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.confirm-modal{
+  background:var(--white); border-radius:16px; padding:28px 24px; width:100%; max-width:380px;
+  text-align:center; box-shadow:0 20px 50px rgba(18,50,82,0.35);
+}
+.confirm-modal-icon{font-size:34px; margin-bottom:6px;}
+.confirm-modal-title{color:var(--navy); font-size:18px; margin-bottom:10px;}
+.confirm-modal-detail{
+  background:var(--grey-bg); border-radius:10px; padding:12px 14px; margin-bottom:14px;
+  font-size:13.5px; color:#222; font-weight:700; text-align:left;
+}
+.confirm-modal-sub{color:var(--muted); font-size:13px; margin-bottom:22px; line-height:1.5;}
+.confirm-modal-actions{display:flex; gap:10px;}
+.confirm-modal-actions .btn{flex:1;}
+#confirm-modal-ok.danger-btn{background:#c0392b;}
+#confirm-modal-ok.danger-btn:hover{background:#a52f22;}
+
 /* ---------- MENU RÉGLAGES (barre du haut) ---------- */
 .settings-menu{position:relative;}
 .settings-menu-btn{
