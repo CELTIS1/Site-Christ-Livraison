@@ -165,13 +165,9 @@
   .side-panel-social{display:flex; align-items:center; justify-content:center; gap:20px; padding-top:22px;}
   .side-panel-social a{color:#C7D1DB; font-size:20px; transition:color .2s ease, transform .15s ease;}
   .side-panel-social a:hover{color:var(--orange); transform:translateY(-2px);}
-  .side-panel-login{margin-top:0;}
-  .side-panel-login a{
-    display:flex; align-items:center; justify-content:center; width:100%;
-    background:transparent; color:#fff; border:2px solid rgba(255,255,255,0.35); border-radius:24px;
-    padding:11px 20px; font-weight:700; font-size:14px; transition:background .2s ease, border-color .2s ease, color .2s ease;
+  .side-panel-hint{
+    margin-top:0; text-align:center; color:#C7D1DB; font-size:12.5px; line-height:1.5; padding:0 6px;
   }
-  .side-panel-login a:hover{background:rgba(255,255,255,0.12); border-color:var(--orange); color:var(--orange);}
 
   /* ---------- HERO ---------- */
   .hero{
@@ -643,9 +639,7 @@
     <li><a href="#temoignages" onclick="closeSidePanel()">Témoignages</a></li>
     <li><a href="#faq" onclick="closeSidePanel()">FAQ</a></li>
   </ul>
-  <div class="side-panel-login">
-    <a href="app/login.html" onclick="closeSidePanel()">Se connecter</a>
-  </div>
+  <div class="side-panel-hint">Espace client, livreur ou équipe : un seul bouton « Se connecter », en haut de la page.</div>
   <div class="side-panel-social">
     <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
     <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
