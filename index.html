@@ -211,8 +211,16 @@
     .hero-text-col{flex:0 0 66.6667%; max-width:66.6667%;}
     .hero-photo-col{flex:0 0 33.3333%; max-width:33.3333%; height:auto;}
     .hero-text h1, .hero-text p.lead, .hero-text .typewriter-line, .hero-text .pill{margin-left:0; margin-right:0;}
+    .hero-actions, .hero-audience{justify-content:flex-start;}
   }
-  .hero-actions{display:flex; gap:16px; justify-content:center; flex-wrap:wrap;}
+  .hero-actions{display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-bottom:26px;}
+  .hero-audience{display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
+  .hero-audience span{
+    display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.28); color:#C7D1DB; font-size:12.5px; font-weight:600;
+    padding:8px 16px; border-radius:20px;
+  }
+  .hero-audience span i{color:var(--orange);}
   .btn{
     display:inline-flex; align-items:center; gap:10px; padding:14px 28px; border-radius:28px;
     font-weight:700; font-size:15px; cursor:pointer; border:2px solid transparent;
@@ -669,6 +677,14 @@
           <h1 id="heroTitle">Votre partenaire livraison au quotidien, partout à Abidjan.</h1>
           <p class="lead" id="heroLead">Colis, courriers, documents administratifs et courses : nous nous occupons de vos livraisons pour que vous n'ayez pas à le faire.</p>
           <p class="typewriter-line">Ce que nous proposons : <span class="typewriter-word" id="typewriterWord"></span><span class="typewriter-cursor"></span></p>
+          <div class="hero-actions">
+            <a href="#devis" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Demander un devis</a>
+          </div>
+          <div class="hero-audience" id="heroAudience">
+            <span><i class="fa-solid fa-user"></i> Particuliers</span>
+            <span><i class="fa-solid fa-store"></i> Commerçants</span>
+            <span><i class="fa-solid fa-building"></i> Entreprises</span>
+          </div>
         </div>
       </div>
     </div>
