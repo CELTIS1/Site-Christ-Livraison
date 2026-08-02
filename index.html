@@ -191,11 +191,12 @@
   }
   .hero h1{font-size:34px; line-height:1.3; max-width:720px; margin:0 auto 18px auto;}
   .hero p.lead{color:#C7D1DB; max-width:560px; margin:0 auto 34px auto; font-size:16px;}
+  .hero{position:relative; overflow:hidden;}
   .hero-grid{display:flex; flex-direction:column;}
-  .hero-text-col{position:relative; overflow:hidden; width:100%; padding:72px 0 64px 0;}
+  .hero-text-col{position:relative; z-index:1; overflow:hidden; width:100%; padding:72px 0 64px 0;}
   .hero-text-inner{position:relative; z-index:1;}
   .hero-text{max-width:720px; width:100%; margin:0 auto;}
-  .hero-photo-col{position:relative; overflow:hidden; width:100%; height:240px;}
+  .hero-photo-col{position:absolute; inset:0; width:100%; height:100%; z-index:0;}
   .hero-photo-slide{
     position:absolute; inset:0; background-size:cover; background-position:center;
     opacity:0; transition:opacity 1.4s ease;
@@ -203,15 +204,16 @@
   .hero-photo-slide.active{opacity:1;}
   .hero-photo-col::after{
     content:""; position:absolute; inset:0;
-    background:linear-gradient(160deg, rgba(27,67,116,0.15) 0%, rgba(18,50,82,0.35) 100%);
+    background:linear-gradient(160deg, rgba(9,26,48,0.85) 0%, rgba(9,26,48,0.72) 100%);
   }
   @media (min-width:861px){
     .hero .container{text-align:left;}
-    .hero-grid{flex-direction:row; align-items:stretch;}
-    .hero-text-col{flex:0 0 66.6667%; max-width:66.6667%;}
-    .hero-photo-col{flex:0 0 33.3333%; max-width:33.3333%; height:auto;}
+    .hero-text-col{padding:118px 0 108px 0;}
     .hero-text h1, .hero-text p.lead, .hero-text .typewriter-line, .hero-text .pill{margin-left:0; margin-right:0;}
     .hero-actions, .hero-audience{justify-content:flex-start;}
+    .hero-photo-col::after{
+      background:linear-gradient(90deg, rgba(9,26,48,0.9) 0%, rgba(9,26,48,0.62) 48%, rgba(9,26,48,0.28) 100%);
+    }
   }
   .hero-actions{display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-bottom:26px;}
   .hero-audience{display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
@@ -272,17 +274,31 @@
 
   /* ---------- HOW IT WORKS ---------- */
   #comment-ca-marche{background:var(--section-tint);}
-  .steps-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:28px;}
+  .steps-grid{display:flex; flex-wrap:wrap; justify-content:center; align-items:stretch; gap:0;}
   .step-card{
     background:var(--white); border:1px solid #ECEFF3; border-radius:14px; padding:30px 24px;
-    text-align:center; position:relative;
+    text-align:center; position:relative; flex:1 1 220px; max-width:280px;
   }
   .step-icon{
-    width:60px; height:60px; border-radius:50%; background:var(--navy); color:var(--white);
+    position:relative; width:60px; height:60px; border-radius:50%; background:var(--navy); color:var(--white);
     display:flex; align-items:center; justify-content:center; font-size:24px; margin:0 auto 18px auto;
+  }
+  .step-num{
+    position:absolute; top:-6px; right:-6px; width:24px; height:24px; border-radius:50%;
+    background:var(--orange); color:var(--white); font-size:12px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; border:2px solid var(--white);
   }
   .step-card h3{font-size:16.5px; color:var(--navy); margin-bottom:8px;}
   .step-card p{font-size:14px; color:#5b6b7c;}
+  .step-arrow{
+    display:flex; align-items:center; justify-content:center; color:var(--orange);
+    font-size:22px; flex:0 0 50px;
+  }
+  @media (max-width:780px){
+    .steps-grid{flex-direction:column; align-items:center;}
+    .step-card{max-width:340px; width:100%;}
+    .step-arrow{transform:rotate(90deg); flex:0 0 34px;}
+  }
 
   /* ---------- ABOUT ---------- */
   #a-propos{background:var(--section-tint);}
@@ -729,9 +745,11 @@
     <h2 class="section-title reveal" id="howItWorksTitle">Un processus simple, en 3 étapes</h2>
     <p class="section-sub reveal" id="howItWorksSubtitle">De la demande à la livraison, nous nous occupons de tout.</p>
     <div class="steps-grid" id="stepsGrid">
-      <div class="step-card reveal"><div class="step-icon"><i class="fa-solid fa-comment-dots"></i></div><h3>1. Commander</h3><p>Vous nous contactez par WhatsApp, téléphone ou via le formulaire du site pour planifier votre livraison.</p></div>
-      <div class="step-card reveal"><div class="step-icon"><i class="fa-solid fa-box-open"></i></div><h3>2. Récupération</h3><p>Notre livreur passe récupérer votre colis, courrier ou commande à l'adresse indiquée.</p></div>
-      <div class="step-card reveal"><div class="step-icon"><i class="fa-solid fa-truck"></i></div><h3>3. Livraison</h3><p>Votre colis est livré directement à son destinataire, avec une confirmation dès la remise.</p></div>
+      <div class="step-card reveal"><div class="step-icon"><span class="step-num">1</span><i class="fa-solid fa-comment-dots"></i></div><h3>Commander</h3><p>Vous nous contactez par WhatsApp, téléphone ou via le formulaire du site pour planifier votre livraison.</p></div>
+      <div class="step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+      <div class="step-card reveal"><div class="step-icon"><span class="step-num">2</span><i class="fa-solid fa-box-open"></i></div><h3>Récupération</h3><p>Notre livreur passe récupérer votre colis, courrier ou commande à l'adresse indiquée.</p></div>
+      <div class="step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+      <div class="step-card reveal"><div class="step-icon"><span class="step-num">3</span><i class="fa-solid fa-truck"></i></div><h3>Livraison</h3><p>Votre colis est livré directement à son destinataire, avec une confirmation dès la remise.</p></div>
     </div>
   </div>
 </section>
@@ -1076,9 +1094,11 @@
     return `<div class="trust-item reveal" style="transition-delay:${delay}s"><i class="fa-solid ${t.icon || 'fa-circle-check'}"></i><div><h4>${escapeHTML(t.title)}</h4><p>${escapeHTML(t.text)}</p></div></div>`;
   }
 
-  function stepCardHTML(s, i){
+  function stepCardHTML(s, i, arr){
     const delay = reducedMotion ? 0 : (i % 3) * 0.12;
-    return `<div class="step-card reveal" style="transition-delay:${delay}s"><div class="step-icon"><i class="fa-solid ${s.icon || 'fa-truck'}"></i></div><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.text)}</p></div>`;
+    const card = `<div class="step-card reveal" style="transition-delay:${delay}s"><div class="step-icon"><span class="step-num">${i+1}</span><i class="fa-solid ${s.icon || 'fa-truck'}"></i></div><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.text)}</p></div>`;
+    const arrow = (arr && i < arr.length - 1) ? '<div class="step-arrow"><i class="fa-solid fa-arrow-right"></i></div>' : '';
+    return card + arrow;
   }
 
   function aboutValueHTML(v, i){
