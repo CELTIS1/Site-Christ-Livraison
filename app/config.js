@@ -69,11 +69,17 @@ window.addEventListener("pageshow", (event) => {
 // quelqu'un ferme l'onglet, perd la connexion ou se déconnecte — sans action supplémentaire.
 let presenceChannel = null;
 
-function initPresence(profile) {
+// `onSync` (optionnel) est appelé à chaque mise à jour de la liste des personnes connectées.
+// Important : il doit être attaché AVANT `.subscribe()`, sinon Supabase Realtime ignore
+// silencieusement le listener et l'affichage ne se met jamais à jour.
+function initPresence(profile, onSync) {
   if (!profile || presenceChannel) return presenceChannel;
   presenceChannel = supabaseClient.channel("presence-utilisateurs", {
     config: { presence: { key: profile.id } },
   });
+  if (typeof onSync === "function") {
+    presenceChannel.on("presence", { event: "sync" }, onSync);
+  }
   presenceChannel.subscribe(async (status) => {
     if (status === "SUBSCRIBED") {
       await presenceChannel.track({
