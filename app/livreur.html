@@ -510,9 +510,10 @@
       `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
 
     return `
-      <div class="colis-item" data-id="${c.id}">
+      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
         ${thumb}
         <div class="info">
+          ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
           <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
@@ -549,9 +550,10 @@
       ? `<div class="livreur-meta">${avatarHTML(livreurProfile, 20)} <span>Livreur : ${escapeHTML(livreurProfile.full_name || 'Livreur')}</span></div>`
       : '';
     return `
-      <div class="colis-item" data-id="${c.id}">
+      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
         ${thumb}
         <div class="info">
+          ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
           <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>

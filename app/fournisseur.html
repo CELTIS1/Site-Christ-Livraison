@@ -410,10 +410,11 @@
       ? `<div class="livreur-meta">${avatarHTML(livreur, 20)} <span>Livreur : ${escapeHTML(livreur.full_name || 'Livreur')}</span></div>`
       : (c.statut !== 'en_attente' ? `<div class="meta">Livreur : en cours d'attribution</div>` : '');
     return `
-      <div class="colis-item" data-id="${c.id}">
+      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
         ${thumb}
         <div class="info">
           <div class="view-mode">
+            ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
             <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
             <div class="meta">${c.destination ? 'Vers : ' + escapeHTML(c.destination) + ' · ' : ''}Ajouté le ${formatDate(c.created_at)}</div>
             ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}

@@ -1081,6 +1081,7 @@ const estValide = colisEstValide(c) && !window.__colisEditing?.has(c.id);
 
 const infoBlock = `
 <div class="info">
+${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
@@ -1105,9 +1106,10 @@ const livreurLine = livreurAssigne
 ? `<div class="livreur-meta">${avatarHTML(livreurAssigne, 20)} <span>Livreur : ${escapeHTML(livreurAssigne.full_name || 'Livreur')}</span></div>`
 : `<div class="meta">Aucun livreur assigné</div>`;
 return `
-<div class="colis-item" data-id="${c.id}">
+<div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
 ${thumb}
 <div class="info">
+${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
@@ -1132,7 +1134,7 @@ ${statutBadgeHTML(c.statut)}
 }
 
 return `
-<div class="colis-item" data-id="${c.id}">
+<div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
 ${thumb}
 ${infoBlock}
 <div class="status-col">

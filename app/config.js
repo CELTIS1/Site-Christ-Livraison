@@ -166,16 +166,21 @@ function formatDate(iso) {
 
 // ---------- Copier le lien de suivi public d'un colis ----------
 // Délégation d'événement globale : fonctionne pour n'importe quel bouton ".btn-copy-tracking"
-// présent dans un ".colis-item" (data-id = id du colis), sur les 3 interfaces (fournisseur,
-// équipe, livreur), sans avoir besoin de rattacher un écouteur après chaque rendu de liste.
+// présent dans un ".colis-item" (data-numero = numéro de suivi lisible du colis, ex :
+// CLT-260801-00007 ; data-id = ancien identifiant technique, conservé en repli), sur les 3
+// interfaces (fournisseur, équipe, livreur), sans avoir besoin de rattacher un écouteur après
+// chaque rendu de liste.
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest(".btn-copy-tracking");
   if (!btn) return;
   const item = btn.closest(".colis-item");
+  const numero = item && item.dataset.numero;
   const id = item && item.dataset.id;
-  if (!id) return;
+  if (!numero && !id) return;
 
-  const link = `${location.origin}/suivi.html?id=${id}`;
+  const link = numero
+    ? `${location.origin}/suivi.html?numero=${encodeURIComponent(numero)}`
+    : `${location.origin}/suivi.html?id=${id}`;
   const original = btn.textContent;
   try {
     await navigator.clipboard.writeText(link);
@@ -262,7 +267,7 @@ function renderGroupedColisHTML(groups, itemRenderFn) {
   }).join("");
 }
 
-// Formate un montant en FCFA (retorne "" si vide/invalide)
+// Formate un montant en FCFA (retourne "" si vide/invalide)
 function formatMontant(n) {
   if (n === null || n === undefined || n === "") return "";
   const num = Number(n);
@@ -311,7 +316,7 @@ async function uploadAvatar(file, userId) {
 // Relie un ou plusieurs inputs de type "file" (ex : bouton "Prendre une photo" + bouton
 // "Bibliothèque") à une même fonction de traitement. Utilisé partout dans l'application pour
 // que le choix de la source d'une image se limite toujours à ces deux options, et pour garantir
-// qu'un même input peut être réutilisé indéfiniment (la valeur est systématiquement rénitialisée,
+// qu'un même input peut être réutilisé indéfiniment (la valeur est systématiquement réinitialisée,
 // y compris en cas d'échec, ce qui évite qu'un input "bloqué" empêche de resélectionner un fichier).
 // ---------- Choix photo (colis / preuve de livraison) : caméra ou bibliothèque uniquement ----------
 // Même principe que pour l'avatar, mais pour les champs "photo du colis" qui ne s'envoient qu'au
@@ -396,7 +401,7 @@ function initAvatarUpload({ profile, previewContainerId, topbarContainerId, inpu
           <span class="avatar-edit-badge">✎</span>
           <div class="avatar-edit-menu">
             <button type="button" class="avatar-edit-option avatar-edit-camera">📷 Prendre une photo</button>
-            <button type="button" class="avatar-edit-option avatar-edit-library">🕮� Choisir depuis la bibliothèque</button>
+            <button type="button" class="avatar-edit-option avatar-edit-library">🖼️ Choisir depuis la bibliothèque</button>
           </div>
         </div>
       `;
