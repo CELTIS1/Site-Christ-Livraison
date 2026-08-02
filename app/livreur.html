@@ -516,6 +516,7 @@
           <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+          <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
         </div>
         <div class="status-col">
                     ${pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : ''}
@@ -557,6 +558,7 @@
           ${livreurLine}
           ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
           ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
+          <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
         </div>
         <div class="status-col">${statutBadgeHTML(c.statut)}</div>
       </div>
