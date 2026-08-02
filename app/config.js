@@ -164,6 +164,28 @@ function formatDate(iso) {
     " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
 
+// ---------- Copier le lien de suivi public d'un colis ----------
+// Délégation d'événement globale : fonctionne pour n'importe quel bouton ".btn-copy-tracking"
+// présent dans un ".colis-item" (data-id = id du colis), sur les 3 interfaces (fournisseur,
+// équipe, livreur), sans avoir besoin de rattacher un écouteur après chaque rendu de liste.
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn-copy-tracking");
+  if (!btn) return;
+  const item = btn.closest(".colis-item");
+  const id = item && item.dataset.id;
+  if (!id) return;
+
+  const link = `${location.origin}/suivi.html?id=${id}`;
+  const original = btn.textContent;
+  try {
+    await navigator.clipboard.writeText(link);
+    btn.textContent = "✅ Lien copié !";
+  } catch (err) {
+    btn.textContent = "⚠️ Copie impossible";
+  }
+  setTimeout(() => { btn.textContent = original; }, 2000);
+});
+
 // ---------- Regroupement des colis par jour (et par client) ----------
 // Utilisé sur les 4 interfaces (client, équipe, livreur, admin) pour afficher les colis
 // organisés par journée (la plus récente en premier) et, là où plusieurs clients sont visibles
