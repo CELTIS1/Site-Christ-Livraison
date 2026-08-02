@@ -97,6 +97,7 @@
 <div class="subnav-inner">
 <div class="subnav-group">
 <span class="subnav-label">Suivi quotidien</span>
+<a href="#section-presence">🟢 En ligne</a>
 <a href="#section-ajouter-colis">Ajouter un colis</a>
 <a href="#section-main">Colis</a>
 </div>
@@ -108,6 +109,7 @@
 <a href="#section-livreur">Créer un livreur</a>
 <a href="#section-gerer-equipe" id="subnav-gerer-equipe" class="hidden">Comptes équipe</a>
 <a href="#section-tous-comptes" id="subnav-tous-comptes" class="hidden">Tous les comptes</a>
+<a href="#section-stats" id="subnav-stats" class="hidden">Statistiques</a>
 </div>
 </div>
 </div>
@@ -115,6 +117,16 @@
 <div class="wrap">
 <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
 <div class="page-sub">Voici le suivi de tous les colis enregistrés par les clients, en temps réel.</div>
+
+<div class="card" id="section-presence">
+<h2 class="panel-subtitle">🟢 En ligne actuellement</h2>
+<div class="stat-tiles" id="presence-tiles">
+<div class="stat-tile stat-tile-total"><div class="stat-tile-icon">🟢</div><div class="stat-tile-value" id="stat-online-total">0</div><div class="stat-tile-label">En ligne</div></div>
+<div class="stat-tile"><div class="stat-tile-icon">📦</div><div class="stat-tile-value" id="stat-online-fournisseur">0</div><div class="stat-tile-label">Clients</div></div>
+<div class="stat-tile"><div class="stat-tile-icon">🚚</div><div class="stat-tile-value" id="stat-online-livreur">0</div><div class="stat-tile-label">Livreurs</div></div>
+<div class="stat-tile"><div class="stat-tile-icon">👥</div><div class="stat-tile-value" id="stat-online-equipe">0</div><div class="stat-tile-label">Équipe</div></div>
+</div>
+</div>
 
 <div class="card" id="section-pending">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'pending-content')">
@@ -328,6 +340,19 @@
 <div class="filters" id="account-filters"></div>
 <div class="colis-list" id="all-accounts-list">
 <div class="empty-state">Chargement...</div>
+</div>
+</div>
+</div>
+
+<div class="card" id="section-stats">
+<h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'stats-content')">
+<span class="collapse-arrow">▶</span> Statistiques du site
+</h2>
+<div id="stats-content" class="collapsible-content">
+<div class="stat-tiles" id="site-stats-tiles">
+<div class="stat-tile stat-tile-total"><div class="stat-tile-icon">📈</div><div class="stat-tile-value" id="stat-visits-total">—</div><div class="stat-tile-label">Visites au total</div></div>
+<div class="stat-tile"><div class="stat-tile-icon">📅</div><div class="stat-tile-value" id="stat-visits-today">—</div><div class="stat-tile-label">Aujourd'hui</div></div>
+<div class="stat-tile"><div class="stat-tile-icon">🗓️</div><div class="stat-tile-value" id="stat-visits-month">—</div><div class="stat-tile-label">Ce mois-ci</div></div>
 </div>
 </div>
 </div>
@@ -1326,6 +1351,8 @@ renderAllAccounts();
 
 function accountRowHTML(a){
 const isSelf = currentUser && a.id === currentUser.id;
+const isOnline = window.__presenceOnlineIds && window.__presenceOnlineIds.has(a.id);
+const onlineDot = `<span class="online-dot ${isOnline ? '' : 'online-dot-off'}" title="${isOnline ? 'En ligne actuellement' : 'Hors ligne'}"></span>`;
 const promoteBtn = a.role === 'equipe'
 ? `<button type="button" class="btn-promote-admin">⭐ Promouvoir admin</button>`
 : '';
@@ -1335,7 +1362,7 @@ const deleteBtn = isSelf
 return `
 <div class="colis-item" data-id="${a.id}">
 <div class="info">
-<div class="desc">${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}</div>
+<div class="desc">${onlineDot}${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}</div>
 <div class="meta">Rôle : ${escapeHTML(roleDisplayLabel(a.role))}${a.phone ? ' · Tél : ' + escapeHTML(a.phone) : ''} · Statut : ${escapeHTML(a.status || '-')}</div>
 </div>
 <div class="status-col" style="width:auto; flex-direction:row; align-items:center;">
@@ -1895,6 +1922,63 @@ formatDate(c.created_at),
 doc.save(`comptabilite-${new Date().toISOString().slice(0, 10)}.pdf`);
 });
 
+// ---------- Présence en ligne ----------
+// Met à jour les pastilles "En ligne actuellement" (visibles par toute l'équipe) et la liste des
+// identifiants actuellement connectés (utilisée pour le point vert dans "Tous les comptes").
+window.__presenceOnlineIds = new Set();
+
+function renderPresenceSummary(){
+const state = getPresenceState();
+const ids = Object.keys(state);
+window.__presenceOnlineIds = new Set(ids);
+const counts = { fournisseur: 0, livreur: 0, equipe: 0 };
+ids.forEach((id) => {
+const role = state[id].role === 'admin' ? 'equipe' : state[id].role;
+if (counts[role] !== undefined) counts[role]++;
+});
+const total = document.getElementById('stat-online-total');
+if (total) total.textContent = String(ids.length);
+const f = document.getElementById('stat-online-fournisseur');
+if (f) f.textContent = String(counts.fournisseur);
+const l = document.getElementById('stat-online-livreur');
+if (l) l.textContent = String(counts.livreur);
+const e = document.getElementById('stat-online-equipe');
+if (e) e.textContent = String(counts.equipe);
+}
+
+// ---------- Statistiques du site public (nombre de visites) ----------
+// Lit la table "site_visits" (alimentée par index.html à chaque visite du site public) pour
+// afficher le nombre total de visites, celles d'aujourd'hui et celles du mois en cours.
+// Réservé à l'administrateur (section-stats est à l'intérieur de #admin-section).
+async function loadSiteStats(){
+const totalEl = document.getElementById('stat-visits-total');
+const todayEl = document.getElementById('stat-visits-today');
+const monthEl = document.getElementById('stat-visits-month');
+if (!totalEl) return;
+
+const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
+const startMonth = new Date(startToday.getFullYear(), startToday.getMonth(), 1);
+
+try {
+const [totalRes, todayRes, monthRes] = await Promise.all([
+supabaseClient.from('site_visits').select('id', { count: 'exact', head: true }),
+supabaseClient.from('site_visits').select('id', { count: 'exact', head: true }).gte('visited_at', startToday.toISOString()),
+supabaseClient.from('site_visits').select('id', { count: 'exact', head: true }).gte('visited_at', startMonth.toISOString()),
+]);
+if (totalRes.error) throw totalRes.error;
+totalEl.textContent = String(totalRes.count ?? 0);
+todayEl.textContent = String(todayRes.count ?? 0);
+monthEl.textContent = String(monthRes.count ?? 0);
+} catch (err) {
+// La table "site_visits" n'existe peut-être pas encore (script SQL pas encore exécuté) :
+// on l'indique clairement plutôt que de laisser un tiret silencieux.
+console.error('Erreur chargement statistiques de visites:', err);
+totalEl.textContent = '—';
+todayEl.textContent = '—';
+monthEl.textContent = '—';
+}
+}
+
 async function init(){
 const session = await requireAuth();
 if (!session) return;
@@ -1921,13 +2005,32 @@ initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile
 initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
 initSettingsMenu();
 
+// Présence en ligne : visible par toute l'équipe (pas seulement l'administrateur).
+const presenceCh = initPresence(profile);
+if (presenceCh) {
+presenceCh.on('presence', { event: 'sync' }, () => {
+renderPresenceSummary();
+if (isAdmin) renderAllAccounts();
+});
+}
+
 if (isAdmin) {
 document.getElementById('role-pill').textContent = 'Administrateur';
 document.getElementById('admin-section').classList.remove('hidden');
 document.getElementById('subnav-gerer-equipe').classList.remove('hidden');
 document.getElementById('subnav-tous-comptes').classList.remove('hidden');
+document.getElementById('subnav-stats').classList.remove('hidden');
 renderAccountFilters();
 await loadAllAccounts();
+await loadSiteStats();
+
+// Mises à jour en temps réel du nombre de visites du site public
+supabaseClient
+.channel('site-visits-equipe')
+.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'site_visits' }, () => {
+loadSiteStats();
+})
+.subscribe();
 }
 
 document.getElementById('mois-select').addEventListener('change', renderRapportMois);

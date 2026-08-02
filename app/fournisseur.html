@@ -826,6 +826,7 @@
     initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', companyNameId: 'profile-company-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
     initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
     initSettingsMenu();
+    initPresence(profile);
 
     addRow();
     await loadLivreurs();

@@ -236,6 +236,12 @@ input,textarea,select{font-family:inherit;}
   display:inline-block; padding:6px 14px; border-radius:16px; font-size:12px; font-weight:700; letter-spacing:.2px;
 }
 
+.online-dot{
+  display:inline-block; width:8px; height:8px; border-radius:50%; background:#1a7d3c;
+  margin-right:7px; box-shadow:0 0 0 3px rgba(26,125,60,0.18); vertical-align:middle;
+}
+.online-dot-off{background:#c7cdd6; box-shadow:none;}
+
 .obs-textarea{
   width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; font-size:12.5px;
   resize:vertical; min-height:44px; transition:border-color .15s ease, box-shadow .15s ease;

@@ -61,6 +61,43 @@ window.addEventListener("pageshow", (event) => {
   }
 });
 
+// ---------- Présence en ligne (qui est connecté en ce moment) ----------
+// Utilise la fonctionnalité "Presence" de Supabase Realtime : chaque personne connectée
+// (client, livreur ou équipe) rejoint un canal partagé et y indique brièvement qui elle est
+// (rôle + nom). Rien n'est jamais écrit en base de données pour cela : la liste des personnes
+// "en ligne" se met à jour automatiquement des deux côtés, et disparaît d'elle-même dès que
+// quelqu'un ferme l'onglet, perd la connexion ou se déconnecte — sans action supplémentaire.
+let presenceChannel = null;
+
+function initPresence(profile) {
+  if (!profile || presenceChannel) return presenceChannel;
+  presenceChannel = supabaseClient.channel("presence-utilisateurs", {
+    config: { presence: { key: profile.id } },
+  });
+  presenceChannel.subscribe(async (status) => {
+    if (status === "SUBSCRIBED") {
+      await presenceChannel.track({
+        role: profile.role,
+        full_name: profile.company_name || profile.full_name || "",
+        online_at: new Date().toISOString(),
+      });
+    }
+  });
+  return presenceChannel;
+}
+
+// Retourne l'état courant de présence sous la forme { [userId]: { role, full_name, online_at } }.
+function getPresenceState() {
+  if (!presenceChannel) return {};
+  const state = presenceChannel.presenceState();
+  const result = {};
+  Object.keys(state).forEach((key) => {
+    const entries = state[key];
+    if (entries && entries[0]) result[key] = entries[0];
+  });
+  return result;
+}
+
 // Référentiel des statuts d'un colis (libellé + couleurs pour badges)
 const STATUTS = {
   en_attente:   { label: "En attente",   color: "#8a94a3", bg: "#eef0f3" },

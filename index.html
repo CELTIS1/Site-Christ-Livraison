@@ -1587,5 +1587,37 @@
   });
 </script>
 
+<!-- ---------- Compteur de visites (statistiques internes, non affichées publiquement) ----------
+     Enregistre une visite anonyme par jour et par visiteur (aucune donnée personnelle : ni IP, ni
+     nom, ni e-mail) dans Supabase, afin que l'équipe puisse suivre la fréquentation du site depuis
+     son tableau de bord. N'affecte jamais l'affichage du site en cas d'échec (ex : script bloqué,
+     pas de réseau, table pas encore créée côté Supabase). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  try {
+    var SUPABASE_URL = "https://xkfltqjbmolmdwdafzcx.supabase.co";
+    var SUPABASE_KEY = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
+    var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    var today = new Date().toISOString().slice(0, 10);
+    var lastVisitDay = localStorage.getItem('cl_last_visit_day');
+    if (lastVisitDay === today) return; // déjà comptée aujourd'hui pour ce visiteur
+
+    var visitorId = localStorage.getItem('cl_visitor_id');
+    if (!visitorId) {
+      visitorId = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('cl_visitor_id', visitorId);
+    }
+
+    sb.from('site_visits').insert([{ visitor_id: visitorId, page: 'index' }]).then(function(res){
+      if (!res.error) localStorage.setItem('cl_last_visit_day', today);
+    });
+  } catch (e) {
+    // Ne bloque jamais l'affichage du site en cas de problème.
+  }
+})();
+</script>
+
 </body>
 </html>
