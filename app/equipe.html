@@ -391,6 +391,19 @@
 <script>
 let currentUser = null;
 let allColis = [];
+// ---------- Pagination réelle des colis ----------
+// Plutôt qu'un chargement unique plafonné (risque de statistiques incomplètes en silence sur
+// un gros volume), la liste se charge par pages : la première page s'affiche immédiatement,
+// puis un bouton "Charger plus" permet de remonter tout l'historique par blocs successifs.
+const COLIS_PAGE_SIZE = 500;
+let colisOffset = 0;
+let colisHasMore = true;
+let colisLoadingMore = false;
+// ---------- Pagination réelle des comptes ----------
+const ACCOUNTS_PAGE_SIZE = 300;
+let accountsOffset = 0;
+let accountsHasMore = true;
+let accountsLoadingMore = false;
 
 // ---------- Nettoyage des abonnements temps réel ----------
 // Chaque abonnement "postgres_changes" ouvre une connexion Realtime qui reste active tant
@@ -1295,6 +1308,16 @@ renderColis();
 });
 }
 
+if (colisHasMore) {
+list.insertAdjacentHTML('beforeend', `
+<div class="load-more-row" style="text-align:center; padding:12px 0;">
+<div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Historique partiel : d'autres colis plus anciens restent à charger.</div>
+<button type="button" class="btn btn-outline btn-sm" id="btn-load-more-colis" ${colisLoadingMore ? 'disabled' : ''}>${colisLoadingMore ? 'Chargement…' : 'Charger plus de colis'}</button>
+</div>`);
+const btnLoadMoreColis = document.getElementById('btn-load-more-colis');
+if (btnLoadMoreColis) btnLoadMoreColis.addEventListener('click', loadMoreColis);
+}
+
 renderAlertIndicator();
 renderRecapFournisseur();
 renderRapportJour();
@@ -1303,24 +1326,39 @@ renderCompta();
 restoreScrollAnchor(list, __anchor);
 }
 
-// Garde-fou : au-delà de ce nombre, on ne charge que les colis les plus récents pour éviter de
-// ralentir/faire planter le navigateur si le volume de colis venait à beaucoup grossir. Si cette
-// limite est un jour atteinte, les statistiques (alertes, récap, rapports) ne portent plus que sur
-// ce sous-ensemble : il faudra alors migrer ces calculs vers des requêtes agrégées côté serveur
-// (SUM/COUNT en SQL) plutôt que de charger tous les colis en mémoire.
-const COLIS_LOAD_LIMIT = 5000;
-
+// Charge la première page de colis (les plus récents). Les statistiques (alertes, récap,
+// rapports) portent sur les colis effectivement chargés ; tant que l'historique complet n'a
+// pas été rapatrié via "Charger plus", elles peuvent ne refléter qu'un sous-ensemble récent —
+// un bandeau dans l'interface l'indique tant qu'il reste des pages à charger.
 async function loadColis(){
+colisOffset = 0;
+colisHasMore = true;
 const { data, error } = await supabaseClient
 .from('colis')
 .select('*')
 .order('created_at', { ascending: false })
-.limit(COLIS_LOAD_LIMIT);
+.range(0, COLIS_PAGE_SIZE - 1);
 if (error) { console.error(error); return; }
-if (data.length === COLIS_LOAD_LIMIT) {
-console.warn(`[Christ Livraison] Limite de ${COLIS_LOAD_LIMIT} colis atteinte : les statistiques (alertes, récap, rapports) peuvent être incomplètes. Il devient nécessaire de passer ces calculs en requêtes agrégées côté serveur.`);
-}
 allColis = data;
+colisOffset = data.length;
+colisHasMore = data.length === COLIS_PAGE_SIZE;
+renderColis();
+}
+
+async function loadMoreColis(){
+if (colisLoadingMore || !colisHasMore) return;
+colisLoadingMore = true;
+renderColis();
+const { data, error } = await supabaseClient
+.from('colis')
+.select('*')
+.order('created_at', { ascending: false })
+.range(colisOffset, colisOffset + COLIS_PAGE_SIZE - 1);
+colisLoadingMore = false;
+if (error) { console.error(error); renderColis(); return; }
+allColis = allColis.concat(data);
+colisOffset += data.length;
+colisHasMore = data.length === COLIS_PAGE_SIZE;
 renderColis();
 }
 
@@ -1345,14 +1383,36 @@ return result;
 }
 
 async function loadAllAccounts(){
+accountsOffset = 0;
+accountsHasMore = true;
 const { data, error } = await supabaseClient
 .from('profiles')
 .select('id, role, full_name, company_name, phone, status, created_at')
 .order('role')
 .order('full_name')
-.limit(2000); // garde-fou : le nombre de comptes réels reste toujours très inférieur à ça
+.range(0, ACCOUNTS_PAGE_SIZE - 1);
 if (error) { console.error(error); return; }
 allAccounts = data;
+accountsOffset = data.length;
+accountsHasMore = data.length === ACCOUNTS_PAGE_SIZE;
+renderAllAccounts();
+}
+
+async function loadMoreAccounts(){
+if (accountsLoadingMore || !accountsHasMore) return;
+accountsLoadingMore = true;
+renderAllAccounts();
+const { data, error } = await supabaseClient
+.from('profiles')
+.select('id, role, full_name, company_name, phone, status, created_at')
+.order('role')
+.order('full_name')
+.range(accountsOffset, accountsOffset + ACCOUNTS_PAGE_SIZE - 1);
+accountsLoadingMore = false;
+if (error) { console.error(error); renderAllAccounts(); return; }
+allAccounts = allAccounts.concat(data);
+accountsOffset += data.length;
+accountsHasMore = data.length === ACCOUNTS_PAGE_SIZE;
 renderAllAccounts();
 }
 
@@ -1414,6 +1474,7 @@ const box = document.getElementById('all-accounts-list');
 const filtered = activeAccountFilter === 'tous' ? allAccounts : allAccounts.filter(a => a.role === activeAccountFilter);
 if (!filtered.length) {
 box.innerHTML = `<div class="empty-state">Aucun compte${activeAccountFilter !== 'tous' ? ' pour ce rôle' : ''}.</div>`;
+appendAccountsLoadMore(box);
 return;
 }
 box.innerHTML = filtered.map(accountRowHTML).join('');
@@ -1511,6 +1572,19 @@ btn.disabled = false; btn.textContent = '🗑 Supprimer';
 }
 });
 });
+
+appendAccountsLoadMore(box);
+}
+
+// Ajoute, si nécessaire, le bouton "Charger plus" en bas de la liste des comptes.
+function appendAccountsLoadMore(box){
+if (!accountsHasMore) return;
+box.insertAdjacentHTML('beforeend', `
+<div class="load-more-row" style="text-align:center; padding:12px 0;">
+<button type="button" class="btn btn-outline btn-sm" id="btn-load-more-accounts" ${accountsLoadingMore ? 'disabled' : ''}>${accountsLoadingMore ? 'Chargement…' : 'Charger plus de comptes'}</button>
+</div>`);
+const btnLoadMoreAccounts = document.getElementById('btn-load-more-accounts');
+if (btnLoadMoreAccounts) btnLoadMoreAccounts.addEventListener('click', loadMoreAccounts);
 }
 
 document.getElementById('form-add-equipe').addEventListener('submit', async (e) => {
@@ -1798,9 +1872,9 @@ box.innerHTML = `
 
 // Si une période (début et/ou fin) est choisie, on interroge directement la base de données pour
 // cette période au lieu de filtrer uniquement les colis déjà chargés en mémoire (`allColis`) :
-// ceux-ci sont désormais plafonnés (voir COLIS_LOAD_LIMIT) et ne couvrent donc pas forcément
-// d'anciennes périodes une fois ce plafond atteint. Sans période choisie, on continue de filtrer
-// `allColis` en mémoire (instantané, pas d'aller-retour réseau) comme avant.
+// tant que l'historique complet n'a pas été rapatrié via "Charger plus" (voir COLIS_PAGE_SIZE),
+// `allColis` ne couvre pas forcément d'anciennes périodes. Sans période choisie, on continue de
+// filtrer `allColis` en mémoire (instantané, pas d'aller-retour réseau) comme avant.
 async function comptaFiltered(){
 const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
 const debut = document.getElementById('compta-date-debut')?.value || '';
