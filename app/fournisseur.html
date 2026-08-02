@@ -166,7 +166,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260801"></script>
+<script src="config.js?v=20260801b"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -175,6 +175,14 @@
   let searchColis = '';
   let filtreDate = '';
   let livreursById = {};
+
+  // Ferme proprement l'abonnement temps réel à la fermeture/déconnexion de la page (voir aussi
+  // équipe.html et livreur.html, qui appliquent le même principe).
+  const __realtimeChannels = [];
+  function trackChannel(channel){ __realtimeChannels.push(channel); return channel; }
+  window.addEventListener('beforeunload', () => {
+    __realtimeChannels.forEach(ch => supabaseClient.removeChannel(ch));
+  });
 
   async function loadLivreurs(){
     const { data, error } = await supabaseClient
@@ -258,10 +266,6 @@
         const section = document.getElementById(id);
         if (!section) return;
 
-        // Fixe immédiatement l'onglet actif sur la section cliquée, et ignore
-        // temporairement le scroll-spy le temps que le saut d'ancre et l'animation
-        // d'ouverture se terminent (sinon l'onglet en surbrillance peut sauter sur
-        // la section voisine pendant la transition).
         setActive(id);
         suppressUntil = Date.now() + 900;
 
@@ -514,9 +518,6 @@
     });
   }
 
-  // ---------- Dupliquer un colis existant ----------
-  // Ouvre la section "Ajouter des colis", ajoute une nouvelle ligne pré-remplie avec les mêmes
-  // description/destination/montant, pratique pour les envois répétitifs similaires.
   function duplicateColis(c){
     const header = document.querySelector('#section-ajouter .collapsible-header');
     const content = document.getElementById('ajouter-content');
@@ -546,8 +547,6 @@
         ? `<div class="empty-state">Aucun colis enregistré à cette date.</div>`
         : `<div class="empty-state">Aucun colis ne correspond à cette recherche.</div>`;
     } else if (filtreDate) {
-      // Une date précise est choisie : la liste est déjà limitée à cette journée,
-      // inutile de répéter l'en-tête "📅 ..." (déjà visible dans le sélecteur de date).
       list.innerHTML = filtered.map(colisItemHTML).join('');
       attachColisHandlers(list);
     } else {
@@ -564,7 +563,8 @@
       .from('colis')
       .select('*')
       .eq('fournisseur_id', currentUser.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(3000); // garde-fou : évite de charger un historique sans fin si le compte grossit beaucoup
 
     const list = document.getElementById('colis-list');
     if (error) {
@@ -711,9 +711,6 @@
     renderRecapMois();
   }
 
-  // ---------- Graphique d'évolution (barres) du nombre de colis par jour ----------
-  // Complète le texte narratif du récapitulatif par une vue visuelle rapide de la tendance
-  // sur le mois. N'affiche rien s'il n'y a qu'un seul jour de données (pas de tendance à voir).
   function trendChartHTML(groups){
     if (groups.length < 2) return '';
     const sorted = [...groups].sort((a, b) => a.key.localeCompare(b.key));
@@ -737,8 +734,6 @@
     `;
   }
 
-  // ---------- Export comptable (Excel / PDF) du récapitulatif actuellement affiché ----------
-  // Reprend exactement le mois/jour sélectionné dans les filtres du récapitulatif.
   function recapRowsActuelles(){
     const selected = document.getElementById('mois-select').value;
     if (!selected) return [];
@@ -811,8 +806,6 @@
       return;
     }
 
-    // Sécurité : un compte fournisseur pas encore validé (ou refusé) par l'équipe ne doit
-    // jamais accéder au tableau de bord, même si une session est restée active pendant l'attente.
     if (!profile || profile.status !== 'valide') {
       await supabaseClient.auth.signOut();
       window.location.href = 'login.html';
@@ -826,7 +819,6 @@
     initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', companyNameId: 'profile-company-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
     initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
     initSettingsMenu();
-    // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 
     addRow();
@@ -842,13 +834,12 @@
       renderColisList();
     });
 
-    // Mises à jour en temps réel : tout changement sur mes colis rafraîchit la liste
-    supabaseClient
+    trackChannel(supabaseClient
       .channel('colis-fournisseur-' + currentUser.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'colis', filter: `fournisseur_id=eq.${currentUser.id}` }, () => {
         loadColis();
       })
-      .subscribe();
+      .subscribe());
   }
 
   document.getElementById('form-change-password').addEventListener('submit', async (e) => {
