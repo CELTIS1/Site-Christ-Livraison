@@ -139,7 +139,7 @@
       <p class="sub">Entrez le numéro de suivi indiqué sur votre reçu ou reçu par message pour connaître l'état de votre colis.</p>
 
       <form class="suivi-form" id="suivi-form">
-        <input type="text" id="tracking-input" placeholder="Numéro de suivi (ex : 3f9a2b1c-...)" autocomplete="off" required>
+        <input type="text" id="tracking-input" placeholder="Numéro de suivi (ex : CLT-260801-00007)" autocomplete="off" required>
         <button type="submit" id="suivi-btn">Rechercher</button>
       </form>
       <p class="form-hint">Le numéro de suivi vous a été communiqué lors du dépôt du colis.</p>
@@ -158,9 +158,9 @@
 
   // ---------- Suivi public de colis, sans connexion ----------
   // Page volontairement autonome (hors du dossier /app) : accessible sans compte.
-  // La requête Supabase ne lit que des colonnes non sensibles (id, statut, description,
-  // destination, created_at), jamais le montant, l'identité du client/fournisseur, les
-  // observations internes ou la photo de preuve de livraison.
+  // La requête Supabase ne lit que des colonnes non sensibles (id, numero, statut,
+  // description, destination, created_at), jamais le montant, l'identité du
+  // client/fournisseur, les observations internes ou la photo de preuve de livraison.
   const SUPABASE_URL = "https://xkfltqjbmolmdwdafzcx.supabase.co";
   const SUPABASE_KEY = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -217,11 +217,18 @@
     currentNumero = null;
   }
 
-  async function fetchColis(numero) {
+  // Nouveau format de numéro de suivi, lisible : CLT-YYMMDD-NNNNO (date + compteur).
+  // On garde toutefois la compatibilité avec d'anciens liens qui contenaient l'ancien
+  // identifiant technique (UUID), au cas où l'un d'eux aurait déjà été partagé.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  async function fetchColis(query) {
+    const value = query.trim();
+    const column = UUID_RE.test(value) ? "id" : "numero";
     return await supabaseClient
       .from("colis_suivi_public")
-      .select("id, statut, description, destination, created_at")
-      .eq("id", numero)
+      .select("id, numero, statut, description, destination, created_at")
+      .eq(column, column === "numero" ? value.toUpperCase() : value)
       .maybeSingle();
   }
 
@@ -229,6 +236,10 @@
     const now = new Date();
     const heure = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     resultBox.innerHTML = `
+      <div class="result-row">
+        <span class="label">Numéro de suivi</span>
+        <span class="value">${escapeHTML(data.numero || "—")}</span>
+      </div>
       <div class="result-row">
         <span class="label">Statut</span>
         <span class="value">${statutBadgeHTML(data.statut)}</span>
@@ -292,15 +303,17 @@
     await runSearch(input.value.trim());
   });
 
-  // ---------- Ouverture directe via un lien de suivi (?id=...) ----------
+  // ---------- Ouverture directe via un lien de suivi (?numero=... ou ?id=...) ----------
   // Permet à un membre de l'équipe de partager un lien cliquable (généré par le bouton
   // "Copier le lien de suivi" des interfaces internes) : le destinataire n'a alors rien à
   // saisir, la recherche se lance automatiquement à l'ouverture de la page.
+  // "numero" est le nouveau paramètre (numéro de suivi lisible, ex : CLT-260801-00007) ;
+  // "id" est conservé pour d'anciens liens déjà partagés avant l'introduction de ce numéro.
   const urlParams = new URLSearchParams(location.search);
-  const idFromUrl = urlParams.get("id");
-  if (idFromUrl) {
-    input.value = idFromUrl;
-    runSearch(idFromUrl.trim());
+  const valueFromUrl = urlParams.get("numero") || urlParams.get("id");
+  if (valueFromUrl) {
+    input.value = valueFromUrl;
+    runSearch(valueFromUrl.trim());
   }
 
   // On arrête le rafraîchissement automatique quand l'onglet n'est plus visible, et on le
