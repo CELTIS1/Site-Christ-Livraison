@@ -44,17 +44,17 @@
     "steps": [
       {
         "icon": "fa-comment-dots",
-        "title": "1. Commander",
+        "title": "Commander",
         "text": "Vous nous contactez par WhatsApp, téléphone ou via le formulaire du site pour planifier votre livraison."
       },
       {
         "icon": "fa-box-open",
-        "title": "2. Récupération",
+        "title": "Récupération",
         "text": "Notre livreur passe récupérer votre colis, courrier ou commande à l'adresse indiquée."
       },
       {
         "icon": "fa-truck",
-        "title": "3. Livraison",
+        "title": "Livraison",
         "text": "Votre colis est livré directement à son destinataire, avec une confirmation dès la remise."
       }
     ]
