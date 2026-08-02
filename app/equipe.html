@@ -391,6 +391,17 @@
 <script>
 let currentUser = null;
 let allColis = [];
+
+// ---------- Nettoyage des abonnements temps réel ----------
+// Chaque abonnement "postgres_changes" ouvre une connexion Realtime qui reste active tant
+// qu'elle n'est pas explicitement fermée. Sans cela, quitter la page (navigation, fermeture
+// d'onglet, déconnexion) laissait ces connexions ouvertes côté Supabase. `trackChannel` les
+// enregistre au fur et à mesure ; elles sont toutes fermées ensemble juste avant de quitter la page.
+const __realtimeChannels = [];
+function trackChannel(channel){ __realtimeChannels.push(channel); return channel; }
+window.addEventListener('beforeunload', () => {
+__realtimeChannels.forEach(ch => supabaseClient.removeChannel(ch));
+});
 let fournisseurs = [];
 let livreurs = [];
 let pendingAccounts = [];
@@ -1292,12 +1303,23 @@ renderCompta();
 restoreScrollAnchor(list, __anchor);
 }
 
+// Garde-fou : au-delà de ce nombre, on ne charge que les colis les plus récents pour éviter de
+// ralentir/faire planter le navigateur si le volume de colis venait à beaucoup grossir. Si cette
+// limite est un jour atteinte, les statistiques (alertes, récap, rapports) ne portent plus que sur
+// ce sous-ensemble : il faudra alors migrer ces calculs vers des requêtes agrégées côté serveur
+// (SUM/COUNT en SQL) plutôt que de charger tous les colis en mémoire.
+const COLIS_LOAD_LIMIT = 5000;
+
 async function loadColis(){
 const { data, error } = await supabaseClient
 .from('colis')
 .select('*')
-.order('created_at', { ascending: false });
+.order('created_at', { ascending: false })
+.limit(COLIS_LOAD_LIMIT);
 if (error) { console.error(error); return; }
+if (data.length === COLIS_LOAD_LIMIT) {
+console.warn(`[Christ Livraison] Limite de ${COLIS_LOAD_LIMIT} colis atteinte : les statistiques (alertes, récap, rapports) peuvent être incomplètes. Il devient nécessaire de passer ces calculs en requêtes agrégées côté serveur.`);
+}
 allColis = data;
 renderColis();
 }
@@ -1327,7 +1349,8 @@ const { data, error } = await supabaseClient
 .from('profiles')
 .select('id, role, full_name, company_name, phone, status, created_at')
 .order('role')
-.order('full_name');
+.order('full_name')
+.limit(2000); // garde-fou : le nombre de comptes réels reste toujours très inférieur à ça
 if (error) { console.error(error); return; }
 allAccounts = data;
 renderAllAccounts();
@@ -1773,26 +1796,36 @@ box.innerHTML = `
 `;
 }
 
-function comptaFiltered(){
+// Si une période (début et/ou fin) est choisie, on interroge directement la base de données pour
+// cette période au lieu de filtrer uniquement les colis déjà chargés en mémoire (`allColis`) :
+// ceux-ci sont désormais plafonnés (voir COLIS_LOAD_LIMIT) et ne couvrent donc pas forcément
+// d'anciennes périodes une fois ce plafond atteint. Sans période choisie, on continue de filtrer
+// `allColis` en mémoire (instantané, pas d'aller-retour réseau) comme avant.
+async function comptaFiltered(){
 const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
 const debut = document.getElementById('compta-date-debut')?.value || '';
 const fin = document.getElementById('compta-date-fin')?.value || '';
-return allColis.filter(c => {
-if (fournisseurId && c.fournisseur_id !== fournisseurId) return false;
-const d = (c.created_at || '').slice(0, 10);
-if (debut && d < debut) return false;
-if (fin && d > fin) return false;
-return true;
-});
+
+if (debut || fin) {
+let query = supabaseClient.from('colis').select('*').order('created_at', { ascending: false });
+if (fournisseurId) query = query.eq('fournisseur_id', fournisseurId);
+if (debut) query = query.gte('created_at', debut + 'T00:00:00');
+if (fin) query = query.lte('created_at', fin + 'T23:59:59');
+const { data, error } = await query;
+if (error) { console.error(error); return []; }
+return data;
 }
 
-function renderCompta(){
+return fournisseurId ? allColis.filter(c => c.fournisseur_id === fournisseurId) : allColis;
+}
+
+async function renderCompta(){
 const summary = document.getElementById('compta-summary');
 const recapBox = document.getElementById('compta-recap');
 const detail = document.getElementById('compta-detail');
 if (!summary || !recapBox || !detail) return;
 
-const rows = comptaFiltered();
+const rows = await comptaFiltered();
 if (!rows.length) {
 summary.innerHTML = '';
 recapBox.innerHTML = `<div class="empty-state">Aucun colis sur cette période.</div>`;
@@ -1880,8 +1913,8 @@ document.getElementById('rapport-jour').classList.toggle('hidden', which !== 'jo
 document.getElementById('rapport-mois').classList.toggle('hidden', which !== 'mois');
 }
 
-document.getElementById('btn-export-excel').addEventListener('click', () => {
-const rows = comptaFiltered();
+document.getElementById('btn-export-excel').addEventListener('click', async () => {
+const rows = await comptaFiltered();
 if (!rows.length) { alert("Aucune donnée à exporter."); return; }
 const data = rows.map(c => ({
 Colis: c.description || '',
@@ -1897,8 +1930,8 @@ XLSX.utils.book_append_sheet(wb, ws, 'Comptabilité');
 XLSX.writeFile(wb, `comptabilite-${new Date().toISOString().slice(0, 10)}.xlsx`);
 });
 
-document.getElementById('btn-export-pdf').addEventListener('click', () => {
-const rows = comptaFiltered();
+document.getElementById('btn-export-pdf').addEventListener('click', async () => {
+const rows = await comptaFiltered();
 if (!rows.length) { alert("Aucune donnée à exporter."); return; }
 const { jsPDF } = window.jspdf;
 const doc = new jsPDF();
@@ -2028,12 +2061,12 @@ await loadAllAccounts();
 await loadSiteStats();
 
 // Mises à jour en temps réel du nombre de visites du site public
-supabaseClient
+trackChannel(supabaseClient
 .channel('site-visits-equipe')
 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'site_visits' }, () => {
 loadSiteStats();
 })
-.subscribe();
+.subscribe());
 }
 
 document.getElementById('mois-select').addEventListener('change', renderRapportMois);
@@ -2060,15 +2093,15 @@ await loadActivityLog();
 initColisDraftAutosave();
 
 // Mises à jour en temps réel sur tous les colis
-supabaseClient
+trackChannel(supabaseClient
 .channel('colis-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, () => {
 loadColis();
 })
-.subscribe();
+.subscribe());
 
 // Mises à jour en temps réel sur les comptes en attente de validation
-supabaseClient
+trackChannel(supabaseClient
 .channel('profiles-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
 loadPending();
@@ -2076,23 +2109,23 @@ loadFournisseurs();
 loadLivreurs();
 if (isAdmin) loadAllAccounts();
 })
-.subscribe();
+.subscribe());
 
 // Mises à jour en temps réel sur les demandes de réinitialisation de mot de passe
-supabaseClient
+trackChannel(supabaseClient
 .channel('reset-requests-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'demandes_reset_password' }, () => {
 loadResetRequests();
 })
-.subscribe();
+.subscribe());
 
 // Mises à jour en temps réel sur le journal d'activité
-supabaseClient
+trackChannel(supabaseClient
 .channel('activity-log-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => {
 loadActivityLog();
 })
-.subscribe();
+.subscribe());
 }
 
 init();
