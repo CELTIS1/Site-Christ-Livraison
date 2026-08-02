@@ -176,6 +176,13 @@
   let filtreDate = '';
   let livreursById = {};
 
+  // Pagination réelle : la première page se charge immédiatement, puis "Charger plus" permet
+  // de remonter tout l'historique par blocs successifs (voir aussi équipe.html et livreur.html).
+  const COLIS_PAGE_SIZE = 500;
+  let colisOffset = 0;
+  let colisHasMore = true;
+  let colisLoadingMore = false;
+
   // Ferme proprement l'abonnement temps réel à la fermeture/déconnexion de la page (voir aussi
   // équipe.html et livreur.html, qui appliquent le même principe).
   const __realtimeChannels = [];
@@ -266,6 +273,10 @@
         const section = document.getElementById(id);
         if (!section) return;
 
+        // Fixe immédiatement l'onglet actif sur la section cliquée, et ignore
+        // temporairement le scroll-spy le temps que le saut d'ancre et l'animation
+        // d'ouverture se terminent (sinon l'onglet en surbrillance peut sauter sur
+        // la section voisine pendant la transition).
         setActive(id);
         suppressUntil = Date.now() + 900;
 
@@ -518,6 +529,9 @@
     });
   }
 
+  // ---------- Dupliquer un colis existant ----------
+  // Ouvre la section "Ajouter des colis", ajoute une nouvelle ligne pré-remplie avec les mêmes
+  // description/destination/montant, pratique pour les envois répétitifs similaires.
   function duplicateColis(c){
     const header = document.querySelector('#section-ajouter .collapsible-header');
     const content = document.getElementById('ajouter-content');
@@ -547,6 +561,8 @@
         ? `<div class="empty-state">Aucun colis enregistré à cette date.</div>`
         : `<div class="empty-state">Aucun colis ne correspond à cette recherche.</div>`;
     } else if (filtreDate) {
+      // Une date précise est choisie : la liste est déjà limitée à cette journée,
+      // inutile de répéter l'en-tête "📅 ..." (déjà visible dans le sélecteur de date).
       list.innerHTML = filtered.map(colisItemHTML).join('');
       attachColisHandlers(list);
     } else {
@@ -554,17 +570,31 @@
       list.innerHTML = renderGroupedColisHTML(groups, colisItemHTML);
       attachColisHandlers(list);
     }
+    if (colisHasMore) {
+      list.insertAdjacentHTML('beforeend', `
+        <div class="load-more-row" style="text-align:center; padding:12px 0;">
+          <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Historique partiel : d'autres colis plus anciens restent à charger.</div>
+          <button type="button" class="btn btn-outline btn-sm" id="btn-load-more-colis" ${colisLoadingMore ? 'disabled' : ''}>${colisLoadingMore ? 'Chargement…' : 'Charger plus de colis'}</button>
+        </div>`);
+      const btnLoadMoreColis = document.getElementById('btn-load-more-colis');
+      if (btnLoadMoreColis) btnLoadMoreColis.addEventListener('click', loadMoreColis);
+    }
     populateMoisSelect();
     restoreScrollAnchor(list, __anchor);
   }
 
+  // Charge la première page de colis du fournisseur (les plus récents). Le récap et les
+  // exports ne portent que sur les colis effectivement chargés tant que l'historique complet
+  // n'a pas été rapatrié via "Charger plus" (voir COLIS_PAGE_SIZE).
   async function loadColis(){
+    colisOffset = 0;
+    colisHasMore = true;
     const { data, error } = await supabaseClient
       .from('colis')
       .select('*')
       .eq('fournisseur_id', currentUser.id)
       .order('created_at', { ascending: false })
-      .limit(3000); // garde-fou : évite de charger un historique sans fin si le compte grossit beaucoup
+      .range(0, COLIS_PAGE_SIZE - 1);
 
     const list = document.getElementById('colis-list');
     if (error) {
@@ -572,6 +602,26 @@
       return;
     }
     mesColis = data;
+    colisOffset = data.length;
+    colisHasMore = data.length === COLIS_PAGE_SIZE;
+    renderColisList();
+  }
+
+  async function loadMoreColis(){
+    if (colisLoadingMore || !colisHasMore) return;
+    colisLoadingMore = true;
+    renderColisList();
+    const { data, error } = await supabaseClient
+      .from('colis')
+      .select('*')
+      .eq('fournisseur_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .range(colisOffset, colisOffset + COLIS_PAGE_SIZE - 1);
+    colisLoadingMore = false;
+    if (error) { console.error(error); renderColisList(); return; }
+    mesColis = mesColis.concat(data);
+    colisOffset += data.length;
+    colisHasMore = data.length === COLIS_PAGE_SIZE;
     renderColisList();
   }
 
@@ -711,6 +761,9 @@
     renderRecapMois();
   }
 
+  // ---------- Graphique d'évolution (barres) du nombre de colis par jour ----------
+  // Complète le texte narratif du récapitulatif par une vue visuelle rapide de la tendance
+  // sur le mois. N'affiche rien s'il n'y a qu'un seul jour de données (pas de tendance à voir).
   function trendChartHTML(groups){
     if (groups.length < 2) return '';
     const sorted = [...groups].sort((a, b) => a.key.localeCompare(b.key));
@@ -734,6 +787,8 @@
     `;
   }
 
+  // ---------- Export comptable (Excel / PDF) du récapitulatif actuellement affiché ----------
+  // Reprend exactement le mois/jour sélectionné dans les filtres du récapitulatif.
   function recapRowsActuelles(){
     const selected = document.getElementById('mois-select').value;
     if (!selected) return [];
@@ -806,6 +861,8 @@
       return;
     }
 
+    // Sécurité : un compte fournisseur pas encore validé (ou refusé) par l'équipe ne doit
+    // jamais accéder au tableau de bord, même si une session est restée active pendant l'attente.
     if (!profile || profile.status !== 'valide') {
       await supabaseClient.auth.signOut();
       window.location.href = 'login.html';
@@ -819,6 +876,7 @@
     initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', companyNameId: 'profile-company-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
     initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
     initSettingsMenu();
+    // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 
     addRow();
@@ -834,6 +892,7 @@
       renderColisList();
     });
 
+    // Mises à jour en temps réel : tout changement sur mes colis rafraîchit la liste
     trackChannel(supabaseClient
       .channel('colis-fournisseur-' + currentUser.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'colis', filter: `fournisseur_id=eq.${currentUser.id}` }, () => {
