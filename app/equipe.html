@@ -387,7 +387,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260730"></script>
+<script src="config.js?v=20260801"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2006,12 +2006,16 @@ initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'pho
 initSettingsMenu();
 
 // Présence en ligne : visible par toute l'équipe (pas seulement l'administrateur).
+// Protégé par try/catch : une erreur ici ne doit jamais bloquer le reste du tableau de bord.
+try {
 const presenceCh = initPresence(profile);
 if (presenceCh) {
 presenceCh.on('presence', { event: 'sync' }, () => {
-renderPresenceSummary();
-if (isAdmin) renderAllAccounts();
+try { renderPresenceSummary(); if (isAdmin) renderAllAccounts(); } catch (e) { console.error('Erreur affichage présence', e); }
 });
+}
+} catch (e) {
+console.error('Erreur initialisation présence', e);
 }
 
 if (isAdmin) {

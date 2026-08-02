@@ -139,7 +139,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260730"></script>
+<script src="config.js?v=20260801"></script>
 <script>
   let currentUser = null;
   let allColis = [];
@@ -630,7 +630,8 @@
     initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
     initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
     initSettingsMenu();
-    initPresence(profile);
+    // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
+    try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 
     function selectFilterMes(val){ activeFilterMes = val; renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
     function selectFilterTous(val){ activeFilterTous = val; renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
