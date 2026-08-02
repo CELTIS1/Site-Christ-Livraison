@@ -259,9 +259,7 @@
     renderColis(data);
   }
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const numero = input.value.trim();
+  async function runSearch(numero) {
     if (!numero) return;
 
     stopAutoRefresh();
@@ -287,7 +285,23 @@
     renderColis(data);
     currentNumero = numero;
     refreshTimer = setInterval(refreshSilently, 15000);
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await runSearch(input.value.trim());
   });
+
+  // ---------- Ouverture directe via un lien de suivi (?id=...) ----------
+  // Permet à un membre de l'équipe de partager un lien cliquable (généré par le bouton
+  // "Copier le lien de suivi" des interfaces internes) : le destinataire n'a alors rien à
+  // saisir, la recherche se lance automatiquement à l'ouverture de la page.
+  const urlParams = new URLSearchParams(location.search);
+  const idFromUrl = urlParams.get("id");
+  if (idFromUrl) {
+    input.value = idFromUrl;
+    runSearch(idFromUrl.trim());
+  }
 
   // On arrête le rafraîchissement automatique quand l'onglet n'est plus visible, et on le
   // relance immédiatement (avec une vérification tout de suite) quand la personne revient dessus.
