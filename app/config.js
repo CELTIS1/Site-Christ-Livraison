@@ -47,6 +47,20 @@ async function logout() {
   window.location.href = "login.html";
 }
 
+// ---------- Sécurité : empêche l'accès à une page protégée via le geste "retour arrière" ----------
+// Certains navigateurs (en particulier sur mobile, avec le geste de retour ou le swipe) peuvent
+// restaurer une page entièrement depuis leur cache mémoire ("bfcache") au lieu de la recharger :
+// dans ce cas, le code de la page ne se réexécute pas, et le tableau de bord réapparaît tel qu'il
+// était juste avant de le quitter — même après une déconnexion, qui a pourtant bien effacé la
+// session. En forçant un rechargement complet dès qu'une page restaurée de cette façon est
+// détectée, requireAuth() est systématiquement relancé et renvoie vers la connexion si la
+// session n'existe plus.
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
+
 // Référentiel des statuts d'un colis (libellé + couleurs pour badges)
 const STATUTS = {
   en_attente:   { label: "En attente",   color: "#8a94a3", bg: "#eef0f3" },
@@ -390,9 +404,10 @@ function initAvatarUpload({ profile, previewContainerId, topbarContainerId, inpu
     if (preview && !preview.contains(e.target)) closeMenu();
   });
 
-  // La photo elle-même est cliquable : au clic, on affiche un petit menu proposant les deux
-  // seules options ("Prendre une photo" / "Choisir depuis la bibliothèque"), au lieu d'afficher
-  // ces deux boutons en permanence à côté de la photo. Plus compact, plus clair.
+  // La photo elle-même est cliquable : au clic, on affiche un petit menu proposant un seul
+  // bouton "Modifier". Ce n'est qu'en cliquant sur "Modifier" que les deux vraies options
+  // ("Prendre une photo" / "Choisir depuis la bibliothèque") apparaissent. Plus simple au
+  // premier coup d'œil, avec le choix détaillé accessible en un clic supplémentaire.
   function refresh() {
     if (preview) {
       preview.innerHTML = `
@@ -400,16 +415,36 @@ function initAvatarUpload({ profile, previewContainerId, topbarContainerId, inpu
           ${avatarHTML(profile, 84)}
           <span class="avatar-edit-badge">✎</span>
           <div class="avatar-edit-menu">
-            <button type="button" class="avatar-edit-option avatar-edit-camera">📷 Prendre une photo</button>
-            <button type="button" class="avatar-edit-option avatar-edit-library">🖼️ Choisir depuis la bibliothèque</button>
+            <button type="button" class="avatar-edit-option avatar-edit-start">✎ Modifier</button>
+            <div class="avatar-edit-choices hidden">
+              <button type="button" class="avatar-edit-option avatar-edit-camera">📷 Prendre une photo</button>
+              <button type="button" class="avatar-edit-option avatar-edit-library">🖼️ Choisir depuis la bibliothèque</button>
+            </div>
           </div>
         </div>
       `;
       const wrap = preview.querySelector(".avatar-editable");
       const menu = preview.querySelector(".avatar-edit-menu");
-      const toggleMenu = (e) => { e.stopPropagation(); menu.classList.toggle("open"); };
+      const startBtn = preview.querySelector(".avatar-edit-start");
+      const choices = preview.querySelector(".avatar-edit-choices");
+      const toggleMenu = (e) => {
+        e.stopPropagation();
+        const opening = !menu.classList.contains("open");
+        menu.classList.toggle("open", opening);
+        if (opening) {
+          // Rouvre toujours sur l'état initial (juste "Modifier"), même si on avait
+          // précédemment révélé les deux choix puis refermé le menu sans les utiliser.
+          startBtn.classList.remove("hidden");
+          choices.classList.add("hidden");
+        }
+      };
       wrap.addEventListener("click", toggleMenu);
       wrap.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleMenu(e); } });
+      startBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        startBtn.classList.add("hidden");
+        choices.classList.remove("hidden");
+      });
       const camBtn = preview.querySelector(".avatar-edit-camera");
       const libBtn = preview.querySelector(".avatar-edit-library");
       if (camBtn) camBtn.addEventListener("click", (e) => { e.stopPropagation(); closeMenu(); if (cameraInput) cameraInput.click(); });

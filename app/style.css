@@ -90,6 +90,7 @@ input,textarea,select{font-family:inherit;}
   cursor:pointer; color:var(--navy); font-family:'Poppins', Arial, sans-serif;
 }
 .avatar-edit-option:hover{background:var(--grey-bg);}
+.avatar-edit-choices{display:flex; flex-direction:column;}
 
 /* ---------- SOUS-NAVIGATION ---------- */
 .subnav{
