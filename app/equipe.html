@@ -2023,8 +2023,24 @@ return data;
 return fournisseurId ? allColis.filter(c => c.fournisseur_id === fournisseurId) : allColis;
 }
 
-async function renderCompta(){
-const summary = document.getElementById('compta-summary');
+// Le point du soir avec une vendeuse ne porte que sur le montant "article" qui lui revient :
+// la livraison est gérée et encaissée par la structure elle-même, jamais par la vendeuse. Ces
+// fonctions (utilisées uniquement dans l'onglet Comptabilité) excluent donc systématiquement
+// montant_livraison, contrairement à montantTotalColis()/montantResteAPercevoir() (config.js)
+// qui restent utilisées ailleurs (ex. "Tous les colis") pour représenter la valeur totale du colis.
+function montantArticleColis(c) {
+return colisADetailMontant(c) ? (Number(c.montant_article) || 0) : (Number(c.montant) || 0);
+}
+function resteArticleAPercevoir(c) {
+if (!colisADetailMontant(c)) return 0;
+return c.article_paye ? 0 : (Number(c.montant_article) || 0);
+}
+function articlePaiementLabel(c) {
+if (!colisADetailMontant(c)) return '—';
+return c.article_paye ? 'Payé' : 'Non payé';
+}
+
+async function renderCompta(){const summary = document.getElementById('compta-summary');
 const recapBox = document.getElementById('compta-recap');
 const detail = document.getElementById('compta-detail');
 if (!summary || !recapBox || !detail) return;
@@ -2037,10 +2053,11 @@ detail.innerHTML = '';
 return;
 }
 
+const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
 const livres = rows.filter(c => c.statut === 'livre');
-const totalMontant = rows.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
-const totalMontantLivre = livres.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
-const totalReste = rows.reduce((s, c) => s + (Number(montantResteAPercevoir(c)) || 0), 0);
+const totalMontant = rows.reduce((s, c) => s + (Number(montantArticleColis(c)) || 0), 0);
+const totalMontantLivre = livres.reduce((s, c) => s + (Number(montantArticleColis(c)) || 0), 0);
+const totalReste = rows.reduce((s, c) => s + (Number(resteArticleAPercevoir(c)) || 0), 0);
 summary.innerHTML = `
 <div class="page-sub">
 ${rows.length} colis · ${livres.length} livré(s) ·
@@ -2057,8 +2074,8 @@ const key = c.fournisseur_id || 'inconnu';
 if (!parFournisseur[key]) parFournisseur[key] = { total: 0, livres: 0, montant: 0, reste: 0 };
 parFournisseur[key].total++;
 if (c.statut === 'livre') parFournisseur[key].livres++;
-parFournisseur[key].montant += (Number(montantTotalColis(c)) || 0);
-parFournisseur[key].reste += (Number(montantResteAPercevoir(c)) || 0);
+parFournisseur[key].montant += (Number(montantArticleColis(c)) || 0);
+parFournisseur[key].reste += (Number(resteArticleAPercevoir(c)) || 0);
 });
 const recapRows = Object.keys(parFournisseur)
 .map(id => ({ id, ...parFournisseur[id] }))
@@ -2080,10 +2097,16 @@ ${recapRows.map(r => `
 </table>
 `;
 
-// Détail colis par colis — chaque ligne est éditable en direct : montant article, case
-// "Article payé" et observation (synchronisée avec l'observation du livreur), pour pouvoir
-// faire le point du soir avec la vendeuse. Le montant/statut de livraison n'est pas affiché ici
-// (la vendeuse n'en a pas besoin) mais reste géré ailleurs (côté livreur/équipe "Tous les colis").
+// Détail colis par colis, éditable en direct (montant article, case "Article payé", observation
+// synchronisée avec celle du livreur) — c'est le point du soir avec LA vendeuse. Pour ne jamais
+// mélanger plusieurs vendeuses dans une même séance d'édition, ce détail éditable n'apparaît que
+// lorsqu'une vendeuse précise est choisie dans le filtre "Client" ci-dessus ; sur "Tous les
+// clients", seul le récapitulatif global (par vendeuse) au-dessus reste visible. Le montant/statut
+// de livraison n'est jamais affiché ni compté ici (la vendeuse n'en a pas besoin, la structure
+// gère la livraison elle-même) mais reste géré ailleurs (côté livreur/équipe "Tous les colis").
+if (!fournisseurId) {
+detail.innerHTML = `<div class="empty-state">Choisissez une vendeuse dans le filtre "Client" ci-dessus pour afficher et modifier son récapitulatif détaillé.</div>`;
+} else {
 detail.innerHTML = `
 <table class="recap-table recap-table-cards">
 <thead><tr><th>Colis</th><th>Client</th><th>Statut</th><th>Article</th><th>Total</th><th>Paiement</th><th>Observation</th><th>Date</th><th></th></tr></thead>
@@ -2094,7 +2117,7 @@ ${rows.map(c => `
 <td data-label="Client">${fournisseurLabel(c.fournisseur_id)}</td>
 <td data-label="Statut">${STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut}</td>
 <td data-label="Article"><input type="number" class="compta-edit-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}"></td>
-<td data-label="Total" class="compta-row-total">${formatMontant(montantTotalColis(c)) || '-'}</td>
+<td data-label="Total" class="compta-row-total">${formatMontant(montantArticleColis(c)) || '-'}</td>
 <td data-label="Paiement">
 <div class="recap-row-checks">
 <label><input type="checkbox" class="compta-edit-article-paye" ${c.article_paye ? 'checked' : ''}> Article payé</label>
@@ -2135,6 +2158,7 @@ if (idx !== -1) Object.assign(allColis[idx], { montant, montant_article, article
 renderCompta();
 });
 });
+}
 }
 
 function showMainTab(which){
@@ -2180,9 +2204,9 @@ Client: fournisseurLabel(c.fournisseur_id),
 Destination: c.destination || '',
 Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
 'Montant article': c.montant_article || 0,
-Total: montantTotalColis(c) || 0,
-'Reste à percevoir': montantResteAPercevoir(c) || 0,
-Paiement: paiementInfo(c).label,
+Total: montantArticleColis(c) || 0,
+'Reste à percevoir': resteArticleAPercevoir(c) || 0,
+Paiement: articlePaiementLabel(c),
 Observation: c.observation || '',
 Date: formatDate(c.created_at),
 }));
@@ -2202,8 +2226,8 @@ if (!rows.length) { alert("Aucune donnée à exporter."); return; }
 const { jsPDF } = window.jspdf;
 const doc = new jsPDF();
 const livres = rows.filter(c => c.statut === 'livre');
-const totalMontant = rows.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
-const totalReste = rows.reduce((s, c) => s + (Number(montantResteAPercevoir(c)) || 0), 0);
+const totalMontant = rows.reduce((s, c) => s + (Number(montantArticleColis(c)) || 0), 0);
+const totalReste = rows.reduce((s, c) => s + (Number(resteArticleAPercevoir(c)) || 0), 0);
 const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
 
 doc.setFontSize(14);
@@ -2220,8 +2244,8 @@ rows.forEach(c => {
 const key = c.fournisseur_id || 'inconnu';
 if (!parFournisseur[key]) parFournisseur[key] = { total: 0, montant: 0, reste: 0 };
 parFournisseur[key].total++;
-parFournisseur[key].montant += (Number(montantTotalColis(c)) || 0);
-parFournisseur[key].reste += (Number(montantResteAPercevoir(c)) || 0);
+parFournisseur[key].montant += (Number(montantArticleColis(c)) || 0);
+parFournisseur[key].reste += (Number(resteArticleAPercevoir(c)) || 0);
 });
 doc.autoTable({
 startY,
@@ -2244,8 +2268,8 @@ c.description || '',
 fournisseurLabel(c.fournisseur_id),
 STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
 formatMontant(c.montant_article) || '-',
-formatMontant(montantTotalColis(c)) || '-',
-paiementInfo(c).label,
+formatMontant(montantArticleColis(c)) || '-',
+articlePaiementLabel(c),
 c.observation || '',
 formatDate(c.created_at),
 ]),
