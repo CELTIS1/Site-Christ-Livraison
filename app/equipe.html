@@ -2080,12 +2080,13 @@ ${recapRows.map(r => `
 </table>
 `;
 
-// Détail colis par colis — chaque ligne est éditable en direct : montant article/livraison
-// et cases "payé", pour pouvoir faire le point du soir avec la vendeuse et corriger un colis
-// déjà partiellement soldé (article payé, livraison pas encore, ou l'inverse).
+// Détail colis par colis — chaque ligne est éditable en direct : montant article, case
+// "Article payé" et observation (synchronisée avec l'observation du livreur), pour pouvoir
+// faire le point du soir avec la vendeuse. Le montant/statut de livraison n'est pas affiché ici
+// (la vendeuse n'en a pas besoin) mais reste géré ailleurs (côté livreur/équipe "Tous les colis").
 detail.innerHTML = `
 <table class="recap-table recap-table-cards">
-<thead><tr><th>Colis</th><th>Client</th><th>Statut</th><th>Article</th><th>Livraison</th><th>Total</th><th>Paiement</th><th>Date</th><th></th></tr></thead>
+<thead><tr><th>Colis</th><th>Client</th><th>Statut</th><th>Article</th><th>Total</th><th>Paiement</th><th>Observation</th><th>Date</th><th></th></tr></thead>
 <tbody>
 ${rows.map(c => `
 <tr data-id="${c.id}">
@@ -2093,14 +2094,13 @@ ${rows.map(c => `
 <td data-label="Client">${fournisseurLabel(c.fournisseur_id)}</td>
 <td data-label="Statut">${STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut}</td>
 <td data-label="Article"><input type="number" class="compta-edit-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}"></td>
-<td data-label="Livraison"><input type="number" class="compta-edit-livraison" min="0" step="any" value="${c.montant_livraison !== null && c.montant_livraison !== undefined ? c.montant_livraison : ''}"></td>
 <td data-label="Total" class="compta-row-total">${formatMontant(montantTotalColis(c)) || '-'}</td>
 <td data-label="Paiement">
 <div class="recap-row-checks">
 <label><input type="checkbox" class="compta-edit-article-paye" ${c.article_paye ? 'checked' : ''}> Article payé</label>
-<label><input type="checkbox" class="compta-edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée</label>
 </div>
 </td>
+<td data-label="Observation"><textarea class="compta-edit-observation" placeholder="Observation...">${c.observation ? escapeHTML(c.observation) : ''}</textarea></td>
 <td data-label="Date">${formatDate(c.created_at)}</td>
 <td><button type="button" class="btn btn-sm compta-save-row">Enregistrer</button></td>
 </tr>
@@ -2114,22 +2114,22 @@ btn.addEventListener('click', async () => {
 const tr = btn.closest('tr');
 const id = tr.dataset.id;
 const artRaw = tr.querySelector('.compta-edit-article').value.trim();
-const livRaw = tr.querySelector('.compta-edit-livraison').value.trim();
-if (!isValidMontant(artRaw === '' ? null : artRaw) || !isValidMontant(livRaw === '' ? null : livRaw)) {
-alert("Les montants doivent être des nombres positifs.");
+if (!isValidMontant(artRaw === '' ? null : artRaw)) {
+alert("Le montant doit être un nombre positif.");
 return;
 }
 const montant_article = artRaw === '' ? null : Number(artRaw);
-const montant_livraison = livRaw === '' ? null : Number(livRaw);
-const montant = (montant_article || 0) + (montant_livraison || 0);
 const article_paye = tr.querySelector('.compta-edit-article-paye').checked;
-const livraison_payee = tr.querySelector('.compta-edit-livraison-payee').checked;
+const observation = tr.querySelector('.compta-edit-observation').value.trim() || null;
+const existing = allColis.find(c => c.id === id);
+const montant_livraison = existing ? existing.montant_livraison : null;
+const montant = (montant_article || 0) + (Number(montant_livraison) || 0);
 btn.disabled = true; btn.textContent = '...';
-const { error } = await supabaseClient.from('colis').update({ montant, montant_article, montant_livraison, article_paye, livraison_payee }).eq('id', id);
+const { error } = await supabaseClient.from('colis').update({ montant, montant_article, article_paye, observation }).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';
 if (error) { alert(friendlyErrorMessage(error.message)); return; }
 const idx = allColis.findIndex(c => c.id === id);
-if (idx !== -1) Object.assign(allColis[idx], { montant, montant_article, montant_livraison, article_paye, livraison_payee });
+if (idx !== -1) Object.assign(allColis[idx], { montant, montant_article, article_paye, observation });
 renderCompta();
 });
 });
@@ -2178,10 +2178,10 @@ Client: fournisseurLabel(c.fournisseur_id),
 Destination: c.destination || '',
 Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
 'Montant article': c.montant_article || 0,
-'Montant livraison': c.montant_livraison || 0,
 Total: montantTotalColis(c) || 0,
 'Reste à percevoir': montantResteAPercevoir(c) || 0,
 Paiement: paiementInfo(c).label,
+Observation: c.observation || '',
 Date: formatDate(c.created_at),
 }));
 const ws = XLSX.utils.json_to_sheet(data);
@@ -2236,15 +2236,15 @@ startY = doc.lastAutoTable.finalY + 8;
 
 doc.autoTable({
 startY,
-head: [['Colis', 'Client', 'Statut', 'Article', 'Livraison', 'Total', 'Paiement', 'Date']],
+head: [['Colis', 'Client', 'Statut', 'Article', 'Total', 'Paiement', 'Observation', 'Date']],
 body: rows.map(c => [
 c.description || '',
 fournisseurLabel(c.fournisseur_id),
 STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
 formatMontant(c.montant_article) || '-',
-formatMontant(c.montant_livraison) || '-',
 formatMontant(montantTotalColis(c)) || '-',
 paiementInfo(c).label,
+c.observation || '',
 formatDate(c.created_at),
 ]),
 });
