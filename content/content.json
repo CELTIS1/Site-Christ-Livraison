@@ -196,10 +196,22 @@
     "subtitle": "Quelques retours de nos clients et partenaires.",
     "items": [
       {
+        "name": "Djény Jeans",
+        "role": "Vendeuse en ligne",
+        "rating": 5,
+        "text": "Si la fiabilité avait un visage, ce serait vous. Vous êtes notre livreur favori !"
+      },
+      {
         "name": "Aïcha K.",
         "role": "Commerçante, Adjamé",
         "rating": 5,
         "text": "Livraison rapide et livreurs sérieux. Un vrai gain de temps pour mon commerce."
+      },
+      {
+        "name": "Nelly",
+        "role": "Vendeuse, Abidjan",
+        "rating": 5,
+        "text": "Très fiable, rapide et efficace ! Tu es le meilleur."
       },
       {
         "name": "Jean-Marc D.",
@@ -214,22 +226,10 @@
         "text": "Service fiable pour mes livraisons e-commerce, à un tarif clair."
       },
       {
-        "name": "Djény Jeans",
-        "role": "Vendeuse en ligne",
-        "rating": 5,
-        "text": "Si la fiabilité avait un visage, ce serait vous. Vous êtes notre livreur favori !"
-      },
-      {
         "name": "L'intello",
         "role": "Cliente, Abidjan",
         "rating": 5,
         "text": "Livraison rapide, point détaillé en fin de journée et fluidité des transactions."
-      },
-      {
-        "name": "Nelly",
-        "role": "Vendeuse, Abidjan",
-        "rating": 5,
-        "text": "Très fiable, rapide et efficace ! Tu es le meilleur."
       }
     ]
   },
