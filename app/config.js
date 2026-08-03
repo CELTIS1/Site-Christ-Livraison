@@ -35,7 +35,7 @@ async function getProfile(userId) {
     // Colonnes explicites (plutôt que "*") : plus rapide et plus sûr si de nouvelles colonnes
     // (volumineuses ou sensibles) sont ajoutées un jour à la table, vu la fréquence d'appel
     // de cette fonction (à chaque chargement de page, sur les 3 tableaux de bord).
-    .select("id, role, full_name, company_name, phone, status, created_at, avatar_url")
+    .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation")
     .eq("id", userId)
     .single();
   if (error) {
@@ -116,6 +116,59 @@ const STATUTS = {
   non_livre:    { label: "Non livré",    color: "#c0392b", bg: "#fce4e2" },
   retour:       { label: "Retour",       color: "#8e44ad", bg: "#f2e8fa" },
 };
+
+// ---------- Communes couvertes & tarification automatique ----------
+// Liste des communes utilisées à la fois comme lieu de récupération (fournisseur) et comme
+// destination de livraison. Partagée par les 3 tableaux de bord pour peupler les listes
+// déroulantes et calculer automatiquement le prix de livraison suggéré (voir
+// computePrixLivraison ci-dessous).
+const COMMUNES = [
+  "Abobo", "Adjamé", "Anyama", "Bingerville", "Cocody", "Grand-Bassam",
+  "Koumassi", "Marcory", "Plateau", "Port-Bouët", "Treichville", "Yopougon",
+];
+
+// Grille tarifaire officielle (FCFA) entre communes, telle que définie dans les grilles
+// tarifaires par commune de l'entreprise. MATRICE_TARIFS[communeDépart][communeDestination]
+// donne le tarif brut. Ce tarif brut est ensuite ramené à l'un des 3 paliers utilisés dans
+// l'application (voir computePrixLivraison) : 1000 F (même commune), 1500 F (proche) ou
+// 2000 F (éloigné).
+const MATRICE_TARIFS = {
+  "Abobo":        { "Abobo": 1500, "Adjamé": 1500, "Anyama": 1500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 2000, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 2000 },
+  "Adjamé":       { "Abobo": 1500, "Adjamé": 1500, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 1500 },
+  "Anyama":       { "Abobo": 1500, "Adjamé": 2000, "Anyama": 1500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 2000, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 2000 },
+  "Bingerville":  { "Abobo": 3000, "Adjamé": 2000, "Anyama": 3000, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 2000, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 3000 },
+  "Cocody":       { "Abobo": 2000, "Adjamé": 1500, "Anyama": 3000, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 2000 },
+  "Grand-Bassam": { "Abobo": 3000, "Adjamé": 3000, "Anyama": 3000, "Bingerville": 2000, "Cocody": 2500, "Grand-Bassam": 1000, "Koumassi": 3000, "Marcory": 3000, "Plateau": 3000, "Port-Bouët": 3000, "Treichville": 3000, "Yopougon": 3000 },
+  "Koumassi":     { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2000, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 2000, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 2000 },
+  "Marcory":      { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2000, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 2000 },
+  "Plateau":      { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
+  "Port-Bouët":   { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2000, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 2000, "Port-Bouët": 1500, "Treichville": 2000, "Yopougon": 2000 },
+  "Treichville":  { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 2000 },
+  "Yopougon":     { "Abobo": 1500, "Adjamé": 1500, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
+};
+
+// Calcule le prix de livraison suggéré (FCFA) entre deux communes, ramené à 3 paliers simples :
+//   - 1000 F : même commune de départ et d'arrivée
+//   - 1500 F : commune différente mais proche (tarif officiel ≤ 1500 F)
+//   - 2000 F : commune plus éloignée (tarif officiel > 1500 F)
+// Reste toujours modifiable ensuite par la personne qui saisit le colis (cas particuliers,
+// tarifs négociés...). Retourne null si l'une des deux communes n'est pas reconnue.
+function computePrixLivraison(communeDepart, communeDestination) {
+  if (!communeDepart || !communeDestination) return null;
+  if (communeDepart === communeDestination) return 1000;
+  const raw = MATRICE_TARIFS[communeDepart] && MATRICE_TARIFS[communeDepart][communeDestination];
+  if (!raw) return null;
+  return raw <= 1500 ? 1500 : 2000;
+}
+
+// Construit les <option> d'une liste déroulante de communes. `selected` (optionnel) présélectionne
+// une valeur ; `placeholder` (optionnel) ajoute une première option vide/désactivée.
+function communesOptionsHTML(selected, placeholder) {
+  let html = "";
+  if (placeholder) html += `<option value="" ${!selected ? "selected" : ""} disabled>${escapeHTML(placeholder)}</option>`;
+  html += COMMUNES.map(c => `<option value="${escapeHTML(c)}" ${c === selected ? "selected" : ""}>${escapeHTML(c)}</option>`).join("");
+  return html;
+}
 
 // ---------- Sections repliables (accordéon) ----------
 // Anime l'ouverture/fermeture d'un bloc ".collapsible-content" en se basant sur sa hauteur
@@ -617,6 +670,50 @@ function initProfileInfoForm({ profile, formId, fullNameId, companyNameId, msgId
       if (el) el.textContent = profile.full_name || "";
     }
     if (msgBox) msgBox.innerHTML = `<div class="msg msg-success">Informations mises à jour.</div>`;
+  });
+}
+
+// ---------- "Mon compte" : lieu de récupération (client uniquement) ----------
+// Un client (fournisseur) fait toujours récupérer ses colis au même endroit : plutôt que de lui
+// redemander cette information à chaque colis, elle est saisie une seule fois ici (commune +
+// précision d'adresse) et réutilisée automatiquement pour calculer le tarif de livraison suggéré
+// de chaque nouveau colis (voir computePrixLivraison). Modifiable à tout moment si le client change
+// de lieu de récupération habituel.
+function initPickupAddressForm({ profile, formId, communeSelectId, adresseInputId, msgId, onSaved }) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  const communeSelect = document.getElementById(communeSelectId);
+  const adresseInput = adresseInputId ? document.getElementById(adresseInputId) : null;
+  const msgBox = msgId ? document.getElementById(msgId) : null;
+  const btn = form.querySelector('button[type="submit"]');
+
+  if (communeSelect) {
+    communeSelect.innerHTML = communesOptionsHTML(profile.commune_recuperation, "Choisir une commune");
+  }
+  if (adresseInput) adresseInput.value = profile.adresse_recuperation || "";
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const commune = communeSelect ? communeSelect.value : "";
+    if (!commune) {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Veuillez choisir votre commune de récupération.</div>`;
+      return;
+    }
+    const adresse = adresseInput ? adresseInput.value.trim() : "";
+    const updates = { commune_recuperation: commune, adresse_recuperation: adresse || null };
+
+    if (btn) { btn.disabled = true; btn.textContent = "Enregistrement..."; }
+    const { error } = await supabaseClient.from("profiles").update(updates).eq("id", profile.id);
+    if (btn) { btn.disabled = false; btn.textContent = "Enregistrer"; }
+
+    if (error) {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`;
+      return;
+    }
+    profile.commune_recuperation = commune;
+    profile.adresse_recuperation = updates.adresse_recuperation;
+    if (msgBox) msgBox.innerHTML = `<div class="msg msg-success">Lieu de récupération mis à jour.</div>`;
+    if (typeof onSaved === "function") onSaved(profile);
   });
 }
 
