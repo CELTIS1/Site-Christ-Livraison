@@ -322,15 +322,24 @@
           <label>Description du colis</label>
           <textarea class="row-desc" placeholder="Ex : Carton de vêtements, 5kg" required></textarea>
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label>Destination</label>
-            <input type="text" class="row-dest" placeholder="Ex : Cocody, Angré">
+        <div class="field">
+          <label>Destination</label>
+          <input type="text" class="row-dest" placeholder="Ex : Cocody, Angré">
+        </div>
+        <div class="montant-block">
+          <label>Montants (optionnel)</label>
+          <div class="montant-group">
+            <div class="montant-field">
+              <label>Montant article</label>
+              <input type="number" class="row-montant-article" placeholder="0" min="0" step="any">
+            </div>
+            <div class="montant-plus">+</div>
+            <div class="montant-field">
+              <label>Montant livraison</label>
+              <input type="number" class="row-montant-livraison" placeholder="0" min="0" step="any">
+            </div>
           </div>
-          <div class="field">
-            <label>Montant (optionnel)</label>
-            <input type="number" class="row-montant" placeholder="Ex : 5000" min="0" step="any">
-          </div>
+          <div class="montant-total-preview">Total : <strong class="row-montant-total">0 FCFA</strong></div>
         </div>
         <div class="field">
           <label>Photo (optionnel)</label>
@@ -346,8 +355,25 @@
     `;
   }
 
+  // Recalcule en direct le total affiché sous les deux champs "montant article" / "montant livraison"
+  // d'une ligne du formulaire d'ajout, dès que l'un des deux champs change.
+  function wireMontantPreview(row){
+    const artInput = row.querySelector('.row-montant-article');
+    const livInput = row.querySelector('.row-montant-livraison');
+    const totalEl = row.querySelector('.row-montant-total');
+    if (!artInput || !livInput || !totalEl) return;
+    const update = () => {
+      const total = (Number(artInput.value) || 0) + (Number(livInput.value) || 0);
+      totalEl.textContent = formatMontant(total) || '0 FCFA';
+    };
+    artInput.addEventListener('input', update);
+    livInput.addEventListener('input', update);
+  }
+
   function addRow(){
     document.getElementById('colis-rows').insertAdjacentHTML('beforeend', newRowHTML(rowCount));
+    const row = document.querySelector(`.colis-row[data-row="${rowCount}"]`);
+    if (row) wireMontantPreview(row);
     rowCount++;
   }
   function removeRow(idx){
@@ -381,8 +407,13 @@
     for (const row of rows) {
       const description = row.querySelector('.row-desc').value.trim();
       const destination = row.querySelector('.row-dest').value.trim();
-      const montantRaw = row.querySelector('.row-montant').value.trim();
-      const montant = montantRaw === '' ? null : Number(montantRaw);
+      const montantArticleRaw = row.querySelector('.row-montant-article').value.trim();
+      const montantLivraisonRaw = row.querySelector('.row-montant-livraison').value.trim();
+      const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
+      const montant_livraison = montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw);
+      const montant = (montant_article !== null || montant_livraison !== null)
+        ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
+        : null;
       const pickedPhoto = pickedGroupFile(row.querySelector('.photo-pick-group'));
       let photo_url = null;
 
@@ -396,6 +427,8 @@
         description,
         destination,
         montant,
+        montant_article,
+        montant_livraison,
         photo_url,
       });
     }
@@ -432,7 +465,9 @@
             ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
             <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
             <div class="meta">${c.destination ? 'Vers : ' + escapeHTML(c.destination) + ' · ' : ''}Ajouté le ${formatDate(c.created_at)}</div>
-            ${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
+            ${colisADetailMontant(c) ? `
+              <div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>
+            ` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
             ${livreurBlock}
             ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
             ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
@@ -443,15 +478,27 @@
               <label>Description du colis</label>
               <textarea class="edit-desc">${escapeHTML(c.description || '')}</textarea>
             </div>
-            <div class="field-row">
-              <div class="field">
-                <label>Destination</label>
-                <input type="text" class="edit-dest" value="${escapeHTML(c.destination || '')}">
+            <div class="field">
+              <label>Destination</label>
+              <input type="text" class="edit-dest" value="${escapeHTML(c.destination || '')}">
+            </div>
+            <div class="montant-block">
+              <label>Montants (optionnel)</label>
+              <div class="montant-group">
+                <div class="montant-field">
+                  <label>Montant article</label>
+                  <input type="number" class="edit-montant-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}">
+                </div>
+                <div class="montant-plus">+</div>
+                <div class="montant-field">
+                  <label>Montant livraison</label>
+                  <input type="number" class="edit-montant-livraison" min="0" step="any" value="${c.montant_livraison !== null && c.montant_livraison !== undefined ? c.montant_livraison : ''}">
+                </div>
               </div>
-              <div class="field">
-                <label>Montant</label>
-                <input type="number" class="edit-montant" min="0" step="any" value="${c.montant !== null && c.montant !== undefined ? c.montant : ''}">
-              </div>
+            </div>
+            <div class="payment-checks">
+              <label class="check-pill"><input type="checkbox" class="edit-article-paye" ${c.article_paye ? 'checked' : ''}> Article payé</label>
+              <label class="check-pill"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée</label>
             </div>
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn btn-sm btn-save-edit">Enregistrer</button>
@@ -492,10 +539,17 @@
         const id = item.dataset.id;
         const description = item.querySelector('.edit-desc').value.trim();
         const destination = item.querySelector('.edit-dest').value.trim();
-        const montantRaw = item.querySelector('.edit-montant').value.trim();
-        const montant = montantRaw === '' ? null : Number(montantRaw);
+        const montantArticleRaw = item.querySelector('.edit-montant-article').value.trim();
+        const montantLivraisonRaw = item.querySelector('.edit-montant-livraison').value.trim();
+        const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
+        const montant_livraison = montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw);
+        const montant = (montant_article !== null || montant_livraison !== null)
+          ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
+          : null;
+        const article_paye = item.querySelector('.edit-article-paye').checked;
+        const livraison_payee = item.querySelector('.edit-livraison-payee').checked;
         btn.disabled = true; btn.textContent = '...';
-        const { error } = await supabaseClient.from('colis').update({ description, destination, montant }).eq('id', id);
+        const { error } = await supabaseClient.from('colis').update({ description, destination, montant, montant_article, montant_livraison, article_paye, livraison_payee }).eq('id', id);
         if (error) {
           alert("Erreur : " + error.message);
           btn.disabled = false; btn.textContent = 'Enregistrer';
@@ -544,7 +598,13 @@
     if (row) {
       row.querySelector('.row-desc').value = c.description || '';
       row.querySelector('.row-dest').value = c.destination || '';
-      if (c.montant !== null && c.montant !== undefined) row.querySelector('.row-montant').value = c.montant;
+      if (colisADetailMontant(c)) {
+        if (c.montant_article !== null && c.montant_article !== undefined) row.querySelector('.row-montant-article').value = c.montant_article;
+        if (c.montant_livraison !== null && c.montant_livraison !== undefined) row.querySelector('.row-montant-livraison').value = c.montant_livraison;
+      } else if (c.montant !== null && c.montant !== undefined) {
+        row.querySelector('.row-montant-livraison').value = c.montant;
+      }
+      row.querySelector('.row-montant-article').dispatchEvent(new Event('input'));
       row.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     addMsg('Colis dupliqué ci-dessous : vérifiez les informations puis enregistrez.', 'success');
@@ -713,8 +773,8 @@
         g.items.forEach(c => { compteJour[c.statut] = (compteJour[c.statut] || 0) + 1; });
         const livresJour = compteJour['livre'] || 0;
         const tauxJour = g.items.length ? Math.round((livresJour / g.items.length) * 100) : 0;
-        const montantJour = g.items.reduce((s, c) => s + (Number(c.montant) || 0), 0);
-        const montantLivreJour = g.items.filter(c => c.statut === 'livre').reduce((s, c) => s + (Number(c.montant) || 0), 0);
+        const montantJour = g.items.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
+        const montantLivreJour = g.items.filter(c => c.statut === 'livre').reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
         box.innerHTML = `
           <div class="day-recap-back" onclick="selectRecapDay('')">← Voir tout le mois</div>
           <p class="recap-phrase">Le <strong>${g.label}</strong>, vous avez enregistré <strong>${g.items.length} colis</strong>, dont <strong>${livresJour}</strong> livré${livresJour > 1 ? 's' : ''} avec succès (${tauxJour}%).</p>
@@ -729,8 +789,8 @@
     colisDuMois.forEach(c => { compte[c.statut] = (compte[c.statut] || 0) + 1; });
     const livres = compte['livre'] || 0;
     const taux = colisDuMois.length ? Math.round((livres / colisDuMois.length) * 100) : 0;
-    const montantMois = colisDuMois.reduce((s, c) => s + (Number(c.montant) || 0), 0);
-    const montantLivreMois = colisDuMois.filter(c => c.statut === 'livre').reduce((s, c) => s + (Number(c.montant) || 0), 0);
+    const montantMois = colisDuMois.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
+    const montantLivreMois = colisDuMois.filter(c => c.statut === 'livre').reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
 
     const joursHTML = groups.map(g => {
       const compteJour = {};
@@ -809,7 +869,10 @@
       Colis: c.description || '',
       Destination: c.destination || '',
       Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-      Montant: c.montant || 0,
+      'Montant article': c.montant_article || 0,
+      'Montant livraison': c.montant_livraison || 0,
+      Total: montantTotalColis(c) || 0,
+      Paiement: paiementInfo(c).label,
       Date: formatDate(c.created_at),
     }));
     const ws = XLSX.utils.json_to_sheet(data);
@@ -824,19 +887,22 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const livres = rows.filter(c => c.statut === 'livre');
-    const totalMontant = rows.reduce((s, c) => s + (Number(c.montant) || 0), 0);
+    const totalMontant = rows.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
     doc.setFontSize(14);
     doc.text('Récapitulatif — Christ Livraison & Transport SARL', 14, 16);
     doc.setFontSize(10);
     doc.text(`${rows.length} colis · ${livres.length} livré(s) · Montant total : ${formatMontant(totalMontant) || '0 FCFA'}`, 14, 24);
     doc.autoTable({
       startY: 30,
-      head: [['Colis', 'Destination', 'Statut', 'Montant', 'Date']],
+      head: [['Colis', 'Destination', 'Statut', 'Article', 'Livraison', 'Total', 'Paiement', 'Date']],
       body: rows.map(c => [
         c.description || '',
         c.destination || '',
         STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-        formatMontant(c.montant) || '-',
+        formatMontant(c.montant_article) || '-',
+        formatMontant(c.montant_livraison) || '-',
+        formatMontant(montantTotalColis(c)) || '-',
+        paiementInfo(c).label,
         formatDate(c.created_at),
       ]),
     });
