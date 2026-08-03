@@ -86,6 +86,12 @@
   .result-row .label{color:var(--muted); flex-shrink:0;}
   .result-row .value{color:#222; font-weight:600; text-align:right;}
 
+  .result-photo-wrap{margin-top:4px;}
+  .result-photo{
+    width:100%; max-height:360px; object-fit:cover; border-radius:14px; margin-top:14px;
+    box-shadow:0 4px 14px rgba(27,67,116,0.12);
+  }
+
   .msg-error, .msg-notfound{
     background:#fce4e2; color:#c0392b; border-radius:10px; padding:14px 16px; font-size:14px; margin-top:24px;
   }
@@ -158,9 +164,12 @@
 
   // ---------- Suivi public de colis, sans connexion ----------
   // Page volontairement autonome (hors du dossier /app) : accessible sans compte.
-  // La requête Supabase ne lit que des colonnes non sensibles (id, numero, statut,
-  // description, destination, created_at), jamais le montant, l'identité du
-  // client/fournisseur, les observations internes ou la photo de preuve de livraison.
+  // La requête Supabase ne lit que des colonnes non sensibles (id, numero, statut, description,
+  // destination, commune_destination, photo_url, montant/montant_article/montant_livraison,
+  // created_at) : le destinataire peut ainsi voir la photo et le montant marqués sur son colis,
+  // ce qui l'aide à le reconnaître. En revanche, l'identité du client/fournisseur, les
+  // observations internes et la photo de preuve de livraison restent toujours exclues de cette
+  // vue publique.
   const SUPABASE_URL = "https://xkfltqjbmolmdwdafzcx.supabase.co";
   const SUPABASE_KEY = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -185,6 +194,23 @@
     const d = new Date(iso);
     return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) +
       " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  // Reprend la même logique que colisADetailMontant/montantTotalColis de l'application interne
+  // (config.js) : cette page publique étant autonome (ne charge pas config.js), on la duplique
+  // ici en version minimale, pour n'afficher qu'un seul montant total au destinataire.
+  function formatMontant(n) {
+    if (n === null || n === undefined || n === "") return "";
+    const num = Number(n);
+    if (isNaN(num)) return "";
+    return num.toLocaleString("fr-FR") + " FCFA";
+  }
+
+  function montantTotalColis(c) {
+    const aDetail = (c.montant_article !== null && c.montant_article !== undefined) ||
+      (c.montant_livraison !== null && c.montant_livraison !== undefined);
+    if (aDetail) return (Number(c.montant_article) || 0) + (Number(c.montant_livraison) || 0);
+    return c.montant;
   }
 
   function statutBadgeHTML(statut) {
@@ -217,7 +243,7 @@
     currentNumero = null;
   }
 
-  // Nouveau format de numéro de suivi, lisible : CLT-YYMMDD-NNNNO (date + compteur).
+  // Nouveau format de numéro de suivi, lisible : CLT-YYMMDD-NNNNN (date + compteur).
   // On garde toutefois la compatibilité avec d'anciens liens qui contenaient l'ancien
   // identifiant technique (UUID), au cas où l'un d'eux aurait déjà été partagé.
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -227,7 +253,7 @@
     const column = UUID_RE.test(value) ? "id" : "numero";
     return await supabaseClient
       .from("colis_suivi_public")
-      .select("id, numero, statut, description, destination, created_at")
+      .select("id, numero, statut, description, destination, commune_destination, photo_url, montant, montant_article, montant_livraison, created_at")
       .eq(column, column === "numero" ? value.toUpperCase() : value)
       .maybeSingle();
   }
@@ -235,7 +261,14 @@
   function renderColis(data) {
     const now = new Date();
     const heure = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const destinationLabel = [data.commune_destination, data.destination].filter(Boolean).join(" — ") || "—";
+    const montantTotal = formatMontant(montantTotalColis(data));
     resultBox.innerHTML = `
+      ${data.photo_url ? `
+        <div class="result-photo-wrap">
+          <img src="${data.photo_url}" class="result-photo" alt="Photo du colis${data.description ? ' : ' + escapeHTML(data.description) : ''}">
+        </div>
+      ` : ''}
       <div class="result-row">
         <span class="label">Numéro de suivi</span>
         <span class="value">${escapeHTML(data.numero || "—")}</span>
@@ -250,8 +283,14 @@
       </div>
       <div class="result-row">
         <span class="label">Destination</span>
-        <span class="value">${escapeHTML(data.destination || "—")}</span>
+        <span class="value">${escapeHTML(destinationLabel)}</span>
       </div>
+      ${montantTotal ? `
+        <div class="result-row">
+          <span class="label">Montant</span>
+          <span class="value">${montantTotal}</span>
+        </div>
+      ` : ''}
       <div class="result-row">
         <span class="label">Déposé le</span>
         <span class="value">${formatDate(data.created_at)}</span>
@@ -279,10 +318,11 @@
     resultBox.className = "result-box visible";
     resultBox.innerHTML = `<div class="msg-loading">Recherche en cours...</div>`;
 
-    // On interroge une vue Supabase dédiée (colis_suivi_public), qui n'expose que les
-    // colonnes non sensibles. On n'interroge jamais directement la table "colis" ici :
-    // une politique RLS sur la table ne restreint que les lignes, pas les colonnes, donc
-    // seule une vue dédiée garantit que montant/client/observation/photo restent privés.
+    // On interroge une vue Supabase dédiée (colis_suivi_public), qui n'expose que les colonnes
+    // volontairement publiques (voir plus haut). On n'interroge jamais directement la table
+    // "colis" ici : une politique RLS sur la table ne restreint que les lignes, pas les colonnes,
+    // donc seule une vue dédiée garantit que l'identité du client et les observations internes
+    // restent privées.
     const { data, error } = await fetchColis(numero);
 
     btn.disabled = false;
