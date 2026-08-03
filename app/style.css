@@ -181,6 +181,48 @@ input,textarea,select{font-family:inherit;}
   font-size:13px; font-weight:700;
 }
 
+/* ---------- MONTANTS (article + livraison) ---------- */
+/* Bloc raffiné regroupant les deux montants d'un colis : présenté comme une mini-carte avec un
+   séparateur "+" entre les deux champs, et le total recalculé en direct en dessous. Partagé par
+   les formulaires d'ajout et d'édition d'un colis sur les 2 interfaces (fournisseur, équipe). */
+.montant-block{
+  border:1.5px solid var(--border); border-radius:12px; padding:14px 14px 12px; background:var(--grey-bg);
+  margin-bottom:16px;
+}
+.montant-block > label{display:block; font-size:13px; font-weight:700; color:var(--navy); margin-bottom:10px;}
+.montant-group{display:flex; align-items:center; gap:10px;}
+.montant-group .montant-field{flex:1; min-width:0;}
+.montant-group .montant-field label{
+  display:block; font-size:11.5px; font-weight:700; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.3px;
+}
+.montant-group .montant-field input{
+  width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:9px; font-size:14px;
+  background:var(--white); transition:border-color .15s ease, box-shadow .15s ease;
+}
+.montant-group .montant-field input:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light);}
+.montant-plus{
+  flex-shrink:0; width:26px; height:26px; border-radius:50%; background:var(--orange-light); color:var(--orange);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; margin-top:16px;
+}
+@media(max-width:520px){
+  .montant-group{flex-wrap:wrap;}
+  .montant-plus{display:none;}
+}
+.montant-total-preview{
+  margin-top:10px; font-size:12.5px; color:var(--muted); text-align:right;
+}
+.montant-total-preview strong{color:var(--orange); font-size:14px;}
+
+/* ---------- PAIEMENT (article payé / livraison payée) ---------- */
+.payment-checks{display:flex; flex-wrap:wrap; gap:10px; margin:2px 0 16px;}
+.check-pill{
+  display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:20px;
+  border:1.5px solid var(--border); background:var(--white); font-size:12.5px; font-weight:600; color:var(--muted);
+  cursor:pointer; transition:border-color .15s ease, background .15s ease, color .15s ease;
+}
+.check-pill input{accent-color:var(--orange); width:15px; height:15px; margin:0;}
+.check-pill:has(input:checked){border-color:#1a7d3c; background:#e3f6ea; color:#1a7d3c;}
+
 /* ---------- COLIS LIST ---------- */
 .colis-list{display:flex; flex-direction:column; gap:14px;}
 .colis-item{
@@ -424,6 +466,18 @@ input,textarea,select{font-family:inherit;}
 .recap-table th:first-child, .recap-table td:first-child{position:sticky; left:0; z-index:1; background:var(--white);}
 .recap-table thead th:first-child{z-index:3; background:var(--grey-bg);}
 .recap-table tbody tr:hover td:first-child{background:var(--grey-bg);}
+.recap-table tfoot td{font-weight:700; background:var(--grey-bg); color:var(--navy);}
+
+/* Édition en ligne d'une ligne du récapitulatif comptable (montants + paiement) */
+.recap-table input[type=number]{
+  width:88px; padding:6px 8px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; background:var(--white);
+}
+.recap-table input[type=number]:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 2px var(--orange-light);}
+.recap-table .recap-row-checks{display:flex; flex-direction:column; gap:4px; font-size:11.5px; font-weight:600; color:var(--muted);}
+.recap-table .recap-row-checks label{display:flex; align-items:center; gap:5px; cursor:pointer;}
+.recap-table .recap-row-checks input{accent-color:var(--orange); width:13px; height:13px; margin:0;}
+.recap-table .btn-sm{padding:6px 11px; font-size:11.5px;}
+.compta-quick-dates{display:flex; gap:8px; margin:4px 0 14px; flex-wrap:wrap;}
 
 @media(max-width:640px){
   .recap-table-cards thead{display:none;}
