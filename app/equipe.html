@@ -2123,7 +2123,9 @@ const article_paye = tr.querySelector('.compta-edit-article-paye').checked;
 const observation = tr.querySelector('.compta-edit-observation').value.trim() || null;
 const existing = allColis.find(c => c.id === id);
 const montant_livraison = existing ? existing.montant_livraison : null;
-const montant = (montant_article || 0) + (Number(montant_livraison) || 0);
+const montant = (montant_article !== null || montant_livraison !== null)
+? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
+: (existing ? existing.montant : 0);
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('colis').update({ montant, montant_article, article_paye, observation }).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';
