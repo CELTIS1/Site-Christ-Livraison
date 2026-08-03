@@ -63,23 +63,6 @@
     </form>
     <hr class="account-modal-divider">
 
-    <div id="pickup-address-msg"></div>
-    <form id="form-pickup-address">
-      <div class="field-row">
-        <div class="field">
-          <label>Commune de récupération</label>
-          <select id="pickup-commune" required></select>
-        </div>
-        <div class="field">
-          <label>Adresse précise (quartier, repère...)</label>
-          <input type="text" id="pickup-adresse" placeholder="Ex : Angré 8e tranche, non loin de la pharmacie">
-        </div>
-      </div>
-      <div class="field-hint" style="font-size:12px; color:var(--muted); margin:-6px 0 10px;">Vos colis sont toujours récupérés au même endroit : indiquez-le ici une seule fois.</div>
-      <button type="submit" class="btn btn-outline btn-sm" id="btn-save-pickup-address">Enregistrer</button>
-    </form>
-    <hr class="account-modal-divider">
-
     <div id="phone-change-msg"></div>
     <div class="field-row">
       <div class="field">
@@ -136,6 +119,17 @@
     <div id="ajouter-content" class="collapsible-content">
       <div id="add-msg"></div>
       <form id="form-add-colis">
+        <div class="field-row" style="margin-bottom:2px;">
+          <div class="field">
+            <label>📍 Commune de récupération</label>
+            <select id="batch-pickup-commune" required></select>
+          </div>
+          <div class="field">
+            <label>Adresse précise (quartier, repère...)</label>
+            <input type="text" id="batch-pickup-adresse" placeholder="Ex : Angré 8e tranche, non loin de la pharmacie">
+          </div>
+        </div>
+        <div class="field-hint" style="font-size:12px; color:var(--muted); margin:-6px 0 16px;">Où le livreur doit-il récupérer les colis ajoutés ci-dessous ? Pré-rempli avec votre dernière adresse utilisée, mais modifiable à chaque nouvel envoi si vous changez de lieu.</div>
         <div id="colis-rows"></div>
         <button type="button" class="btn btn-outline btn-sm" id="btn-add-row" style="margin-bottom:18px;">+ Ajouter un autre colis</button>
         <div>
@@ -398,13 +392,33 @@
 
   // Dès que la commune de destination d'une ligne est choisie, propose automatiquement le
   // montant de livraison correspondant (voir computePrixLivraison), en se basant sur la commune
-  // de récupération enregistrée dans le profil du client. Reste modifiable ensuite à la main.
+  // de récupération choisie pour ce lot de colis (champ "batch-pickup-commune", au-dessus de la
+  // liste des colis). Reste modifiable ensuite à la main.
   function wireAutoPrix(row){
     const communeSelect = row.querySelector('.row-commune-dest');
     const livInput = row.querySelector('.row-montant-livraison');
     if (!communeSelect || !livInput) return;
     communeSelect.addEventListener('change', () => {
-      const depart = currentProfile && currentProfile.commune_recuperation;
+      const pickupSelect = document.getElementById('batch-pickup-commune');
+      const depart = pickupSelect && pickupSelect.value;
+      const prix = computePrixLivraison(depart, communeSelect.value);
+      if (prix !== null) {
+        livInput.value = prix;
+        livInput.dispatchEvent(new Event('input'));
+      }
+    });
+  }
+
+  // Si le client change la commune de récupération du lot en cours (au-dessus de la liste),
+  // on recalcule le prix suggéré de toutes les lignes déjà présentes dans le formulaire.
+  function recomputeAllRowsPrix(){
+    const pickupSelect = document.getElementById('batch-pickup-commune');
+    const depart = pickupSelect && pickupSelect.value;
+    if (!depart) return;
+    document.querySelectorAll('.colis-row').forEach(row => {
+      const communeSelect = row.querySelector('.row-commune-dest');
+      const livInput = row.querySelector('.row-montant-livraison');
+      if (!communeSelect || !livInput || !communeSelect.value) return;
       const prix = computePrixLivraison(depart, communeSelect.value);
       if (prix !== null) {
         livInput.value = prix;
@@ -441,6 +455,16 @@
   document.getElementById('form-add-colis').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-submit-colis');
+
+    const pickupCommuneSelect = document.getElementById('batch-pickup-commune');
+    const pickupAdresseInput = document.getElementById('batch-pickup-adresse');
+    const commune_recuperation = pickupCommuneSelect ? pickupCommuneSelect.value : '';
+    const adresse_recuperation = pickupAdresseInput ? pickupAdresseInput.value.trim() : '';
+    if (!commune_recuperation) {
+      addMsg("Veuillez choisir la commune de récupération des colis (en haut du formulaire).", "error");
+      return;
+    }
+
     btn.disabled = true; btn.textContent = 'Enregistrement...';
 
     const rows = document.querySelectorAll('.colis-row');
@@ -480,6 +504,8 @@
         montant_article,
         montant_livraison,
         photo_url,
+        commune_recuperation,
+        adresse_recuperation: adresse_recuperation || null,
       });
     }
 
@@ -489,6 +515,16 @@
     if (error) {
       addMsg("Erreur lors de l'enregistrement : " + error.message, "error");
       return;
+    }
+
+    // Mémorise ce lieu de récupération comme valeur par défaut pour la prochaine fois (pratique si
+    // le client récupère souvent au même endroit), sans jamais modifier les colis déjà enregistrés :
+    // chaque colis garde définitivement le lieu de récupération choisi au moment de son ajout.
+    if (currentProfile && (currentProfile.commune_recuperation !== commune_recuperation || currentProfile.adresse_recuperation !== (adresse_recuperation || null))) {
+      supabaseClient.from('profiles').update({ commune_recuperation, adresse_recuperation: adresse_recuperation || null }).eq('id', currentUser.id)
+        .then(({ error: profErr }) => { if (profErr) console.error(profErr); });
+      currentProfile.commune_recuperation = commune_recuperation;
+      currentProfile.adresse_recuperation = adresse_recuperation || null;
     }
 
     const photoWarning = photoUploadFailed ? " (attention : l'envoi d'au moins une photo a échoué, le colis a été enregistré sans photo)" : "";
@@ -1000,11 +1036,20 @@
     document.getElementById('user-first-name').textContent = profile ? (profile.full_name || '') : '';
     initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', cameraInputId: 'avatar-input-camera', libraryInputId: 'avatar-input-library', statusId: 'avatar-msg' });
     initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', companyNameId: 'profile-company-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
-    initPickupAddressForm({ profile, formId: 'form-pickup-address', communeSelectId: 'pickup-commune', adresseInputId: 'pickup-adresse', msgId: 'pickup-address-msg' });
     initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
     initSettingsMenu();
     // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
+
+    // Lieu de récupération du lot en cours (au-dessus de "Ajouter des colis") : pré-rempli avec le
+    // dernier lieu utilisé (mémorisé sur le profil), mais librement modifiable à chaque nouvel envoi.
+    const batchPickupCommune = document.getElementById('batch-pickup-commune');
+    const batchPickupAdresse = document.getElementById('batch-pickup-adresse');
+    if (batchPickupCommune) {
+      batchPickupCommune.innerHTML = communesOptionsHTML(profile.commune_recuperation, 'Choisir une commune');
+      batchPickupCommune.addEventListener('change', recomputeAllRowsPrix);
+    }
+    if (batchPickupAdresse) batchPickupAdresse.value = profile.adresse_recuperation || '';
 
     addRow();
     await loadLivreurs();
