@@ -497,6 +497,15 @@
     `;
   }
 
+  // Bouton d'action groupée "Récupérer tout" : affiché uniquement pour le groupe du jour même
+  // et seulement s'il reste au moins un colis "en attente" chez cette vendeuse.
+  function recupererToutActionHTML(day, client){
+    if (day.key !== todayLocalISODate()) return '';
+    const pending = client.items.filter(c => c.statut === 'en_attente');
+    if (!pending.length) return '';
+    return ` <button type="button" class="btn btn-sm btn-recuperer-tout" data-fournisseur="${client.key}" data-day="${day.key}" style="margin-left:8px;">📦 Récupérer tout (${pending.length})</button>`;
+  }
+
   function renderMesColis(){
     const list = document.getElementById('mes-colis-list');
     const __anchor = captureScrollAnchor(list);
@@ -511,7 +520,46 @@
       return;
     }
     const groupsMes = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
-    list.innerHTML = renderGroupedColisHTML(groupsMes, mesColisRowHTML);
+    list.innerHTML = renderGroupedColisHTML(groupsMes, mesColisRowHTML, recupererToutActionHTML);
+
+    list.querySelectorAll('.btn-recuperer-tout').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const fournisseurId = btn.dataset.fournisseur;
+        const dayKeyVal = btn.dataset.day;
+        const ids = mine
+          .filter(c => (c.fournisseur_id || "?") === fournisseurId && c.statut === 'en_attente' && dayKey(c.created_at) === dayKeyVal)
+          .map(c => c.id);
+        if (!ids.length) return;
+        if (!confirm(`Marquer les ${ids.length} colis du jour de cette vendeuse comme récupérés ?`)) return;
+        const originalLabel = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Récupération...';
+
+        if (!navigator.onLine) {
+          for (const id of ids) {
+            const existing = allColis.find(c => c.id === id);
+            try {
+              await queueAdd({ colisId: id, statut: 'recupere', observation: existing ? existing.observation : null, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: null, userId: currentUser.id, timestamp: Date.now() });
+            } catch (e) { console.error(e); }
+            if (existing) existing.statut = 'recupere';
+          }
+          await refreshOfflineBanner();
+          renderAll();
+          return;
+        }
+
+        const { error } = await supabaseClient.from('colis').update({ statut: 'recupere' }).in('id', ids);
+        if (error) {
+          alert("Erreur : " + error.message);
+          btn.disabled = false; btn.textContent = originalLabel;
+          return;
+        }
+        ids.forEach(id => {
+          const idx = allColis.findIndex(c => c.id === id);
+          if (idx !== -1) allColis[idx].statut = 'recupere';
+        });
+        renderAll();
+      });
+    });
 
     list.querySelectorAll('.btn-save').forEach(btn => {
       btn.addEventListener('click', async () => {
