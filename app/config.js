@@ -307,13 +307,15 @@ function groupColisByDayAndClient(list, clientKeyFn, clientLabelFn, dateField) {
 
 // Construit le HTML d'une liste de colis regroupée par jour (et par client si présent).
 // `itemRenderFn` est la fonction habituelle de rendu d'une ligne de colis de chaque page.
-function renderGroupedColisHTML(groups, itemRenderFn) {
+// `groupActionFn` (optionnel) reçoit (day, client) et peut retourner du HTML supplémentaire
+// (ex : un bouton d'action groupée) inséré dans l'en-tête de chaque groupe client.
+function renderGroupedColisHTML(groups, itemRenderFn, groupActionFn) {
   if (!groups.length) return "";
   return groups.map(day => {
     const body = day.clients
       ? day.clients.map(client => `
           <div class="client-group">
-            <div class="client-group-header">👤 ${client.label} <span class="group-count">${client.items.length}</span></div>
+            <div class="client-group-header">👤 ${client.label} <span class="group-count">${client.items.length}</span>${groupActionFn ? (groupActionFn(day, client) || '') : ''}</div>
             ${client.items.map(itemRenderFn).join("")}
           </div>
         `).join("")
