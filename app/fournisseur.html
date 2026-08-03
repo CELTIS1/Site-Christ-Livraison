@@ -551,6 +551,7 @@
             ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
             <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
             <div class="meta">${c.commune_destination ? 'Vers : ' + escapeHTML(c.commune_destination) + (c.destination ? ' (' + escapeHTML(c.destination) + ')' : '') + ' · ' : (c.destination ? 'Vers : ' + escapeHTML(c.destination) + ' · ' : '')}Ajouté le ${formatDate(c.created_at)}</div>
+            ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
             ${colisADetailMontant(c) ? `
               <div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>
             ` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
