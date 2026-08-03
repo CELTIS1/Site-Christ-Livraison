@@ -195,10 +195,20 @@
 <input type="text" id="add-dest" placeholder="Ex : Cocody, Angré">
 </div>
 </div>
-<div class="field-row">
-<div class="field">
-<label>Montant (optionnel)</label>
-<input type="number" id="add-montant" min="0" step="any" placeholder="Ex : 5000">
+<div class="montant-block">
+<label>Montants (optionnel)</label>
+<div class="montant-group">
+<div class="montant-field">
+<label>Montant article</label>
+<input type="number" id="add-montant-article" min="0" step="any" placeholder="0">
+</div>
+<div class="montant-plus">+</div>
+<div class="montant-field">
+<label>Montant livraison</label>
+<input type="number" id="add-montant-livraison" min="0" step="any" placeholder="0">
+</div>
+</div>
+<div class="montant-total-preview">Total : <strong id="add-montant-total">0 FCFA</strong></div>
 </div>
 <div class="field">
 <label>Photo (optionnel)</label>
@@ -210,7 +220,6 @@
 <input type="file" id="add-photo-camera" accept="image/*" capture="user" class="hidden pick-camera">
 <input type="file" id="add-photo-library" accept="image/*" class="hidden pick-library">
 <div class="photo-pick-filename"></div>
-</div>
 </div>
 </div>
 <div class="field">
@@ -290,6 +299,10 @@
 <label>Au</label>
 <input type="date" id="compta-date-fin">
 </div>
+</div>
+<div class="compta-quick-dates">
+<button type="button" class="btn btn-outline btn-sm" id="btn-compta-today">📅 Aujourd'hui</button>
+<button type="button" class="btn btn-outline btn-sm" id="btn-compta-clear-dates">Toutes les dates</button>
 </div>
 <div id="compta-summary" style="margin:12px 0;"></div>
 <div class="recap-table-wrap" id="compta-recap">
@@ -678,13 +691,14 @@ function getColisDraftFields(){
 return {
 fournisseur_id: document.getElementById('add-fournisseur').value,
 destination: document.getElementById('add-dest').value,
-montant: document.getElementById('add-montant').value,
+montant_article: document.getElementById('add-montant-article').value,
+montant_livraison: document.getElementById('add-montant-livraison').value,
 description: document.getElementById('add-desc').value
 };
 }
 
 function colisDraftIsEmpty(fields){
-return !fields.fournisseur_id && !fields.destination && !fields.montant && !fields.description;
+return !fields.fournisseur_id && !fields.destination && !fields.montant_article && !fields.montant_livraison && !fields.description;
 }
 
 function saveColisDraft(){
@@ -736,8 +750,10 @@ btnRestore.textContent = 'Restaurer';
 btnRestore.addEventListener('click', () => {
 if (draft.fournisseur_id) document.getElementById('add-fournisseur').value = draft.fournisseur_id;
 document.getElementById('add-dest').value = draft.destination || '';
-document.getElementById('add-montant').value = draft.montant || '';
+document.getElementById('add-montant-article').value = draft.montant_article || '';
+document.getElementById('add-montant-livraison').value = draft.montant_livraison || '';
 document.getElementById('add-desc').value = draft.description || '';
+document.getElementById('add-montant-article').dispatchEvent(new Event('input'));
 banner.remove();
 });
 
@@ -761,8 +777,21 @@ colisDraftSaveTimer = setTimeout(saveColisDraft, 400);
 };
 document.getElementById('add-fournisseur').addEventListener('change', saveColisDraft);
 document.getElementById('add-dest').addEventListener('input', debouncedSave);
-document.getElementById('add-montant').addEventListener('input', debouncedSave);
+document.getElementById('add-montant-article').addEventListener('input', debouncedSave);
+document.getElementById('add-montant-livraison').addEventListener('input', debouncedSave);
 document.getElementById('add-desc').addEventListener('input', debouncedSave);
+
+// Aperçu en direct du total (article + livraison) sous les deux champs de montant.
+const updateAddMontantTotal = () => {
+const artEl = document.getElementById('add-montant-article');
+const livEl = document.getElementById('add-montant-livraison');
+const totalEl = document.getElementById('add-montant-total');
+if (!artEl || !livEl || !totalEl) return;
+const total = (Number(artEl.value) || 0) + (Number(livEl.value) || 0);
+totalEl.textContent = formatMontant(total) || '0 FCFA';
+};
+document.getElementById('add-montant-article').addEventListener('input', updateAddMontantTotal);
+document.getElementById('add-montant-livraison').addEventListener('input', updateAddMontantTotal);
 }
 
 /* ---------- AVERTISSEMENT AVANT FERMETURE SI SAISIE NON ENREGISTRÉE ---------- */
@@ -775,7 +804,7 @@ return (el.value || '').trim() !== '';
 }
 
 window.addEventListener('beforeunload', (e) => {
-const colisRempli = fieldsHaveContent(['add-dest','add-montant','add-desc']) || !!(document.getElementById('add-fournisseur') && document.getElementById('add-fournisseur').value);
+const colisRempli = fieldsHaveContent(['add-dest','add-montant-article','add-montant-livraison','add-desc']) || !!(document.getElementById('add-fournisseur') && document.getElementById('add-fournisseur').value);
 const livreurRempli = fieldsHaveContent(['lv-fullname','lv-phone']);
 const equipeRempli = fieldsHaveContent(['eq-fullname','eq-phone','eq-password']);
 if (colisRempli || livreurRempli || equipeRempli) {
@@ -1113,14 +1142,20 @@ btn.disabled = true; btn.textContent = 'Ajout...';
 const fournisseur_id = document.getElementById('add-fournisseur').value;
 const destination = document.getElementById('add-dest').value.trim();
 const description = document.getElementById('add-desc').value.trim();
-const montantRaw = document.getElementById('add-montant').value.trim();
-const montant = montantRaw === '' ? null : Number(montantRaw);
+const montantArticleRaw = document.getElementById('add-montant-article').value.trim();
+const montantLivraisonRaw = document.getElementById('add-montant-livraison').value.trim();
 
-if (!isValidMontant(montantRaw === '' ? null : montantRaw)) {
-addMsg("Le montant doit être un nombre positif.", "error");
+if (!isValidMontant(montantArticleRaw === '' ? null : montantArticleRaw) || !isValidMontant(montantLivraisonRaw === '' ? null : montantLivraisonRaw)) {
+addMsg("Les montants doivent être des nombres positifs.", "error");
 btn.disabled = false; btn.textContent = 'Ajouter le colis';
 return;
 }
+
+const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
+const montant_livraison = montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw);
+const montant = (montant_article !== null || montant_livraison !== null)
+? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
+: null;
 
 const pickedPhoto = pickedGroupFile(document.getElementById('add-photo-group'));
 let photo_url = null;
@@ -1132,7 +1167,7 @@ if (!photo_url) photoUploadFailed = true;
 }
 
 const { error } = await supabaseClient.from('colis').insert([{
-fournisseur_id, destination, description, montant, photo_url
+fournisseur_id, destination, description, montant, montant_article, montant_livraison, photo_url
 }]);
 
 btn.disabled = false; btn.textContent = 'Ajouter le colis';
@@ -1145,6 +1180,8 @@ const photoWarning = photoUploadFailed ? " (attention : l'envoi de la photo a é
 addMsg(`Colis ajouté avec succès${photoWarning}.`, "success");
 e.target.reset();
 clearColisDraft();
+const addMontantTotalEl = document.getElementById('add-montant-total');
+if (addMontantTotalEl) addMontantTotalEl.textContent = '0 FCFA';
 const addPhotoFilename = document.querySelector('#add-photo-group .photo-pick-filename');
 if (addPhotoFilename) addPhotoFilename.textContent = '';
 loadColis();
@@ -1195,7 +1232,7 @@ ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> 
 <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
-${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
+${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
 ${estValide ? '' : `
@@ -1203,9 +1240,23 @@ ${estValide ? '' : `
 <label style="font-size:11.5px;">Livreur assigné</label>
 <select class="row-livreur-select" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurOptions}</select>
 </div>
-<div class="field" style="margin-top:8px;">
-<label style="font-size:11.5px;">Montant</label>
-<input type="number" class="edit-montant" min="0" step="any" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:140px;" value="${c.montant !== null && c.montant !== undefined ? c.montant : ''}">
+<div class="montant-block" style="margin-top:8px; max-width:340px;">
+<label style="font-size:11.5px;">Montants</label>
+<div class="montant-group">
+<div class="montant-field">
+<label>Article</label>
+<input type="number" class="edit-montant-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}">
+</div>
+<div class="montant-plus">+</div>
+<div class="montant-field">
+<label>Livraison</label>
+<input type="number" class="edit-montant-livraison" min="0" step="any" value="${c.montant_livraison !== null && c.montant_livraison !== undefined ? c.montant_livraison : ''}">
+</div>
+</div>
+</div>
+<div class="payment-checks">
+<label class="check-pill"><input type="checkbox" class="edit-article-paye" ${c.article_paye ? 'checked' : ''}> Article payé</label>
+<label class="check-pill"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée</label>
 </div>`}
 </div>
 `;
@@ -1224,7 +1275,7 @@ ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> 
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${livreurLine}
-${formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : ''}
+${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
 <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
@@ -1293,16 +1344,34 @@ const statut = item.querySelector('.status-select').value;
 const livreurSelect = item.querySelector('.row-livreur-select');
 const livreur_id = livreurSelect ? (livreurSelect.value || null) : undefined;
 const observation = item.querySelector('.obs-textarea').value.trim() || null;
-const montantInput = item.querySelector('.edit-montant');
-const montantRaw = montantInput ? montantInput.value.trim() : '';
-if (montantInput && !isValidMontant(montantRaw === '' ? null : montantRaw)) {
-alert("Le montant doit être un nombre positif.");
+const montantArticleInput = item.querySelector('.edit-montant-article');
+const montantLivraisonInput = item.querySelector('.edit-montant-livraison');
+const montantArticleRaw = montantArticleInput ? montantArticleInput.value.trim() : '';
+const montantLivraisonRaw = montantLivraisonInput ? montantLivraisonInput.value.trim() : '';
+if (montantArticleInput && !isValidMontant(montantArticleRaw === '' ? null : montantArticleRaw)) {
+alert("Le montant article doit être un nombre positif.");
 return;
 }
-const montant = montantInput ? (montantRaw === '' ? null : Number(montantRaw)) : undefined;
+if (montantLivraisonInput && !isValidMontant(montantLivraisonRaw === '' ? null : montantLivraisonRaw)) {
+alert("Le montant livraison doit être un nombre positif.");
+return;
+}
+const montant_article = montantArticleInput ? (montantArticleRaw === '' ? null : Number(montantArticleRaw)) : undefined;
+const montant_livraison = montantLivraisonInput ? (montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw)) : undefined;
+const montant = (montant_article !== undefined || montant_livraison !== undefined)
+? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
+: undefined;
+const articlePayeInput = item.querySelector('.edit-article-paye');
+const livraisonPayeeInput = item.querySelector('.edit-livraison-payee');
+const article_paye = articlePayeInput ? articlePayeInput.checked : undefined;
+const livraison_payee = livraisonPayeeInput ? livraisonPayeeInput.checked : undefined;
 const updatePayload = { statut, observation };
 if (livreur_id !== undefined) updatePayload.livreur_id = livreur_id;
 if (montant !== undefined) updatePayload.montant = montant;
+if (montant_article !== undefined) updatePayload.montant_article = montant_article;
+if (montant_livraison !== undefined) updatePayload.montant_livraison = montant_livraison;
+if (article_paye !== undefined) updatePayload.article_paye = article_paye;
+if (livraison_payee !== undefined) updatePayload.livraison_payee = livraison_payee;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('colis').update(updatePayload).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';
@@ -1969,31 +2038,34 @@ return;
 }
 
 const livres = rows.filter(c => c.statut === 'livre');
-const totalMontant = rows.reduce((s, c) => s + (Number(c.montant) || 0), 0);
-const totalMontantLivre = livres.reduce((s, c) => s + (Number(c.montant) || 0), 0);
+const totalMontant = rows.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
+const totalMontantLivre = livres.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
+const totalReste = rows.reduce((s, c) => s + (Number(montantResteAPercevoir(c)) || 0), 0);
 summary.innerHTML = `
 <div class="page-sub">
 ${rows.length} colis · ${livres.length} livré(s) ·
 Montant total : <strong>${formatMontant(totalMontant) || '0 FCFA'}</strong> ·
-Montant livré : <strong>${formatMontant(totalMontantLivre) || '0 FCFA'}</strong>
+Montant livré : <strong>${formatMontant(totalMontantLivre) || '0 FCFA'}</strong> ·
+Reste à percevoir : <strong style="color:${totalReste > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(totalReste) || '0 FCFA'}</strong>
 </div>
 `;
 
-// Récap par fournisseur (nb colis, livrés, montant)
+// Récap par fournisseur (nb colis, livrés, montant, reste à percevoir) — c'est le point du soir par vendeuse.
 const parFournisseur = {};
 rows.forEach(c => {
 const key = c.fournisseur_id || 'inconnu';
-if (!parFournisseur[key]) parFournisseur[key] = { total: 0, livres: 0, montant: 0 };
+if (!parFournisseur[key]) parFournisseur[key] = { total: 0, livres: 0, montant: 0, reste: 0 };
 parFournisseur[key].total++;
 if (c.statut === 'livre') parFournisseur[key].livres++;
-parFournisseur[key].montant += (Number(c.montant) || 0);
+parFournisseur[key].montant += (Number(montantTotalColis(c)) || 0);
+parFournisseur[key].reste += (Number(montantResteAPercevoir(c)) || 0);
 });
 const recapRows = Object.keys(parFournisseur)
 .map(id => ({ id, ...parFournisseur[id] }))
 .sort((a, b) => b.total - a.total);
 recapBox.innerHTML = `
 <table class="recap-table">
-<thead><tr><th>Client</th><th>Colis</th><th>Livrés</th><th>Montant</th></tr></thead>
+<thead><tr><th>Client</th><th>Colis</th><th>Livrés</th><th>Montant</th><th>Reste à percevoir</th></tr></thead>
 <tbody>
 ${recapRows.map(r => `
 <tr>
@@ -2001,29 +2073,66 @@ ${recapRows.map(r => `
 <td>${r.total}</td>
 <td>${r.livres}</td>
 <td>${formatMontant(r.montant) || '0 FCFA'}</td>
+<td style="color:${r.reste > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.reste) || '0 FCFA'}</td>
 </tr>
 `).join('')}
 </tbody>
 </table>
 `;
 
-// Détail colis par colis
+// Détail colis par colis — chaque ligne est éditable en direct : montant article/livraison
+// et cases "payé", pour pouvoir faire le point du soir avec la vendeuse et corriger un colis
+// déjà partiellement soldé (article payé, livraison pas encore, ou l'inverse).
 detail.innerHTML = `
 <table class="recap-table recap-table-cards">
-<thead><tr><th>Colis</th><th>Client</th><th>Statut</th><th>Montant</th><th>Date</th></tr></thead>
+<thead><tr><th>Colis</th><th>Client</th><th>Statut</th><th>Article</th><th>Livraison</th><th>Total</th><th>Paiement</th><th>Date</th><th></th></tr></thead>
 <tbody>
 ${rows.map(c => `
-<tr>
+<tr data-id="${c.id}">
 <td data-label="Colis">${escapeHTML(c.description || '(sans description)')}</td>
 <td data-label="Client">${fournisseurLabel(c.fournisseur_id)}</td>
 <td data-label="Statut">${STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut}</td>
-<td data-label="Montant">${formatMontant(c.montant) || '-'}</td>
+<td data-label="Article"><input type="number" class="compta-edit-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}"></td>
+<td data-label="Livraison"><input type="number" class="compta-edit-livraison" min="0" step="any" value="${c.montant_livraison !== null && c.montant_livraison !== undefined ? c.montant_livraison : ''}"></td>
+<td data-label="Total" class="compta-row-total">${formatMontant(montantTotalColis(c)) || '-'}</td>
+<td data-label="Paiement">
+<div class="recap-row-checks">
+<label><input type="checkbox" class="compta-edit-article-paye" ${c.article_paye ? 'checked' : ''}> Article payé</label>
+<label><input type="checkbox" class="compta-edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée</label>
+</div>
+</td>
 <td data-label="Date">${formatDate(c.created_at)}</td>
+<td><button type="button" class="btn btn-sm compta-save-row">Enregistrer</button></td>
 </tr>
 `).join('')}
 </tbody>
 </table>
 `;
+
+detail.querySelectorAll('.compta-save-row').forEach(btn => {
+btn.addEventListener('click', async () => {
+const tr = btn.closest('tr');
+const id = tr.dataset.id;
+const artRaw = tr.querySelector('.compta-edit-article').value.trim();
+const livRaw = tr.querySelector('.compta-edit-livraison').value.trim();
+if (!isValidMontant(artRaw === '' ? null : artRaw) || !isValidMontant(livRaw === '' ? null : livRaw)) {
+alert("Les montants doivent être des nombres positifs.");
+return;
+}
+const montant_article = artRaw === '' ? null : Number(artRaw);
+const montant_livraison = livRaw === '' ? null : Number(livRaw);
+const montant = (montant_article || 0) + (montant_livraison || 0);
+const article_paye = tr.querySelector('.compta-edit-article-paye').checked;
+const livraison_payee = tr.querySelector('.compta-edit-livraison-payee').checked;
+btn.disabled = true; btn.textContent = '...';
+const { error } = await supabaseClient.from('colis').update({ montant, montant_article, montant_livraison, article_paye, livraison_payee }).eq('id', id);
+btn.disabled = false; btn.textContent = 'Enregistrer';
+if (error) { alert(friendlyErrorMessage(error.message)); return; }
+const idx = allColis.findIndex(c => c.id === id);
+if (idx !== -1) Object.assign(allColis[idx], { montant, montant_article, montant_livraison, article_paye, livraison_payee });
+renderCompta();
+});
+});
 }
 
 function showMainTab(which){
@@ -2048,6 +2157,18 @@ document.getElementById('rapport-jour').classList.toggle('hidden', which !== 'jo
 document.getElementById('rapport-mois').classList.toggle('hidden', which !== 'mois');
 }
 
+document.getElementById('btn-compta-today').addEventListener('click', () => {
+const today = todayLocalISODate();
+document.getElementById('compta-date-debut').value = today;
+document.getElementById('compta-date-fin').value = today;
+renderCompta();
+});
+document.getElementById('btn-compta-clear-dates').addEventListener('click', () => {
+document.getElementById('compta-date-debut').value = '';
+document.getElementById('compta-date-fin').value = '';
+renderCompta();
+});
+
 document.getElementById('btn-export-excel').addEventListener('click', async () => {
 const rows = await comptaFiltered();
 if (!rows.length) { alert("Aucune donnée à exporter."); return; }
@@ -2056,7 +2177,11 @@ Colis: c.description || '',
 Client: fournisseurLabel(c.fournisseur_id),
 Destination: c.destination || '',
 Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-Montant: c.montant || 0,
+'Montant article': c.montant_article || 0,
+'Montant livraison': c.montant_livraison || 0,
+Total: montantTotalColis(c) || 0,
+'Reste à percevoir': montantResteAPercevoir(c) || 0,
+Paiement: paiementInfo(c).label,
 Date: formatDate(c.created_at),
 }));
 const ws = XLSX.utils.json_to_sheet(data);
@@ -2065,25 +2190,61 @@ XLSX.utils.book_append_sheet(wb, ws, 'Comptabilité');
 XLSX.writeFile(wb, `comptabilite-${new Date().toISOString().slice(0, 10)}.xlsx`);
 });
 
+// Export PDF : quand un seul client (vendeuse) est sélectionné, l'en-tête est personnalisé pour
+// pouvoir être partagé directement avec elle (liste de tous ses colis du jour, montants et total).
+// Quand "Tous les clients" est sélectionné, le tableau est regroupé par vendeuse avec un sous-total
+// par vendeuse avant le tableau détaillé, pour faciliter le point du soir global.
 document.getElementById('btn-export-pdf').addEventListener('click', async () => {
 const rows = await comptaFiltered();
 if (!rows.length) { alert("Aucune donnée à exporter."); return; }
 const { jsPDF } = window.jspdf;
 const doc = new jsPDF();
 const livres = rows.filter(c => c.statut === 'livre');
-const totalMontant = rows.reduce((s, c) => s + (Number(c.montant) || 0), 0);
+const totalMontant = rows.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
+const totalReste = rows.reduce((s, c) => s + (Number(montantResteAPercevoir(c)) || 0), 0);
+const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
+
 doc.setFontSize(14);
 doc.text('Comptabilité — Christ Livraison & Transport SARL', 14, 16);
 doc.setFontSize(10);
-doc.text(`${rows.length} colis · ${livres.length} livré(s) · Montant total : ${formatMontant(totalMontant) || '0 FCFA'}`, 14, 24);
+const titre = fournisseurId ? `Client : ${fournisseurLabel(fournisseurId)}` : 'Tous les clients';
+doc.text(titre, 14, 23);
+doc.text(`${rows.length} colis · ${livres.length} livré(s) · Montant total : ${formatMontant(totalMontant) || '0 FCFA'} · Reste à percevoir : ${formatMontant(totalReste) || '0 FCFA'}`, 14, 29);
+
+let startY = 35;
+if (!fournisseurId) {
+const parFournisseur = {};
+rows.forEach(c => {
+const key = c.fournisseur_id || 'inconnu';
+if (!parFournisseur[key]) parFournisseur[key] = { total: 0, montant: 0, reste: 0 };
+parFournisseur[key].total++;
+parFournisseur[key].montant += (Number(montantTotalColis(c)) || 0);
+parFournisseur[key].reste += (Number(montantResteAPercevoir(c)) || 0);
+});
 doc.autoTable({
-startY: 30,
-head: [['Colis', 'Client', 'Statut', 'Montant', 'Date']],
+startY,
+head: [['Client', 'Colis', 'Montant', 'Reste à percevoir']],
+body: Object.keys(parFournisseur).map(id => [
+fournisseurLabel(id),
+parFournisseur[id].total,
+formatMontant(parFournisseur[id].montant) || '-',
+formatMontant(parFournisseur[id].reste) || '-',
+]),
+});
+startY = doc.lastAutoTable.finalY + 8;
+}
+
+doc.autoTable({
+startY,
+head: [['Colis', 'Client', 'Statut', 'Article', 'Livraison', 'Total', 'Paiement', 'Date']],
 body: rows.map(c => [
 c.description || '',
 fournisseurLabel(c.fournisseur_id),
 STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-formatMontant(c.montant) || '-',
+formatMontant(c.montant_article) || '-',
+formatMontant(c.montant_livraison) || '-',
+formatMontant(montantTotalColis(c)) || '-',
+paiementInfo(c).label,
 formatDate(c.created_at),
 ]),
 });
