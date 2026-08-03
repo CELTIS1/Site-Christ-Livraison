@@ -31,6 +31,8 @@
 </div>
 </div>
 
+<div id="team-toast-container" class="team-toast-container"></div>
+
 <div class="account-modal-overlay hidden" id="account-modal-overlay">
 <div class="account-modal">
 <button type="button" class="account-modal-close" id="account-modal-close" aria-label="Fermer">✕</button>
@@ -420,6 +422,45 @@ let livreurs = [];
 let pendingAccounts = [];
 let resetRequests = [];
 let activeFilter = 'tous';
+
+// ---------- Alertes temps réel (visuelles + sonores) ----------
+// Prévient un membre de l'équipe, immédiatement, quand une action de sa part est requise
+// (nouvelle demande de compte, nouvelle demande de mot de passe) ou quand un événement
+// notable arrive pendant que la page est ouverte (nouveau colis ajouté par un client).
+let __teamAudioCtx = null;
+function playTeamAlertSound(){
+try {
+if (!__teamAudioCtx) __teamAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+if (__teamAudioCtx.state === 'suspended') __teamAudioCtx.resume();
+const now = __teamAudioCtx.currentTime;
+[[880, 0], [1180, 0.13]].forEach(([freq, delay]) => {
+const osc = __teamAudioCtx.createOscillator();
+const gain = __teamAudioCtx.createGain();
+osc.type = 'sine';
+osc.frequency.value = freq;
+gain.gain.setValueAtTime(0.0001, now + delay);
+gain.gain.exponentialRampToValueAtTime(0.22, now + delay + 0.02);
+gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.32);
+osc.connect(gain).connect(__teamAudioCtx.destination);
+osc.start(now + delay);
+osc.stop(now + delay + 0.34);
+});
+} catch (e) { /* audio non disponible (ex: interaction utilisateur requise) : on ignore */ }
+}
+
+function showTeamToast(icon, title, detail, withSound){
+const box = document.getElementById('team-toast-container');
+if (!box) return;
+if (withSound) playTeamAlertSound();
+const el = document.createElement('div');
+el.className = 'team-toast';
+el.innerHTML = `<span class="team-toast-icon">${icon}</span><div><div class="team-toast-title">${escapeHTML(title)}</div><div>${escapeHTML(detail || '')}</div></div>`;
+box.appendChild(el);
+setTimeout(() => {
+el.classList.add('leaving');
+setTimeout(() => el.remove(), 220);
+}, 7000);
+}
 let isAdmin = false;
 let allAccounts = [];
 let activeAccountFilter = 'tous';
@@ -851,6 +892,7 @@ await loadPending();
 });
 }
 
+let __pendingIdsSeen = null; // null = premier chargement : on ne veut pas d'alerte au démarrage de la page
 async function loadPending(){
 const { data, error } = await supabaseClient
 .from('profiles')
@@ -858,6 +900,15 @@ const { data, error } = await supabaseClient
 .eq('status', 'en_attente')
 .order('full_name');
 if (error) { console.error(error); return; }
+
+if (__pendingIdsSeen) {
+const nouveaux = data.filter(p => !__pendingIdsSeen.has(p.id));
+nouveaux.forEach(p => {
+showTeamToast('🔔', 'Nouvelle demande de compte', (p.full_name || p.phone || 'Un client') + ' souhaite se connecter / créer un compte — validation requise.', true);
+});
+}
+__pendingIdsSeen = new Set(data.map(p => p.id));
+
 pendingAccounts = data;
 renderPending();
 }
@@ -928,6 +979,7 @@ btn.disabled = false; btn.textContent = 'Réinitialiser';
 });
 }
 
+let __resetIdsSeen = null; // null = premier chargement : on ne veut pas d'alerte au démarrage de la page
 async function loadResetRequests(){
 const { data, error } = await supabaseClient
 .from('demandes_reset_password')
@@ -937,6 +989,15 @@ const { data, error } = await supabaseClient
 if (error) { console.error(error); return; }
 
 let rows = data || [];
+
+if (__resetIdsSeen) {
+const nouvelles = rows.filter(r => !__resetIdsSeen.has(r.id));
+nouvelles.forEach(r => {
+showTeamToast('🔑', 'Mot de passe oublié / première connexion', (r.full_name || r.phone || 'Un utilisateur') + ' demande un mot de passe.', true);
+});
+}
+__resetIdsSeen = new Set(rows.map(r => r.id));
+
 const phones = [...new Set(rows.map(r => r.phone).filter(Boolean))];
 if (phones.length) {
 const { data: profs, error: profErr } = await supabaseClient
@@ -2171,6 +2232,10 @@ trackChannel(supabaseClient
 .channel('colis-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, () => {
 loadColis();
+})
+.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'colis' }, (payload) => {
+const c = payload.new;
+showTeamToast('📦', 'Nouveau colis ajouté', (c.description || 'Colis') + ' → ' + (c.destination || '?'), false);
 })
 .subscribe());
 
