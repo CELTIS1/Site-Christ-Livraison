@@ -335,6 +335,50 @@ function formatMontant(n) {
   return num.toLocaleString("fr-FR") + " FCFA";
 }
 
+// ---------- Montant d'un colis : article + livraison ----------
+// Depuis l'ajout de la distinction "montant article" / "montant livraison", le montant total
+// d'un colis se calcule à partir de ces deux composantes. Pour les colis créés avant cette
+// évolution (qui n'ont qu'un ancien champ "montant" global, sans détail), on retombe sur cette
+// valeur historique tant qu'aucune des deux nouvelles colonnes n'a été renseignée.
+function colisADetailMontant(c) {
+  return (c.montant_article !== null && c.montant_article !== undefined) ||
+    (c.montant_livraison !== null && c.montant_livraison !== undefined);
+}
+
+function montantTotalColis(c) {
+  if (colisADetailMontant(c)) {
+    return (Number(c.montant_article) || 0) + (Number(c.montant_livraison) || 0);
+  }
+  return c.montant;
+}
+
+// Montant qui reste à percevoir sur un colis (partie article et/ou livraison pas encore payée).
+// Ne s'applique qu'aux colis avec détail article/livraison ; les anciens colis (montant global,
+// sans suivi de paiement) sont considérés hors de ce calcul (retourne 0).
+function montantResteAPercevoir(c) {
+  if (!colisADetailMontant(c)) return 0;
+  let reste = 0;
+  if (!c.article_paye) reste += Number(c.montant_article) || 0;
+  if (!c.livraison_payee) reste += Number(c.montant_livraison) || 0;
+  return reste;
+}
+
+// Libellé + couleurs du statut de paiement d'un colis (badge), pour le récapitulatif comptable.
+function paiementInfo(c) {
+  if (!colisADetailMontant(c)) return { label: "—", color: "#8a94a3", bg: "#eef0f3" };
+  const artOk = !!c.article_paye || !(Number(c.montant_article) > 0);
+  const livOk = !!c.livraison_payee || !(Number(c.montant_livraison) > 0);
+  if (artOk && livOk) return { label: "Soldé", color: "#1a7d3c", bg: "#e3f6ea" };
+  if (c.article_paye && !livOk) return { label: "Article payé", color: "#1B4374", bg: "#e5edf5" };
+  if (c.livraison_payee && !artOk) return { label: "Livraison payée", color: "#E26313", bg: "#FBE2CE" };
+  return { label: "Non soldé", color: "#c0392b", bg: "#fce4e2" };
+}
+
+function paiementBadgeHTML(c) {
+  const p = paiementInfo(c);
+  return `<span class="badge" style="color:${p.color}; background:${p.bg};">${p.label}</span>`;
+}
+
 // ---------- Photo de profil (avatar) ----------
 // Ces fonctions sont partagées par les 3 tableaux de bord (client, équipe, livreur) pour que
 // chaque utilisateur puisse mettre sa propre photo, affichée ensuite à côté de son nom partout
