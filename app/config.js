@@ -129,9 +129,9 @@ const COMMUNES = [
 
 // Grille tarifaire officielle (FCFA) entre communes, telle que définie dans les grilles
 // tarifaires par commune de l'entreprise. MATRICE_TARIFS[communeDépart][communeDestination]
-// donne le tarif brut. Ce tarif brut est ensuite ramené à l'un des 3 paliers utilisés dans
-// l'application (voir computePrixLivraison) : 1000 F (même commune), 1500 F (proche) ou
-// 2000 F (éloigné).
+// donne le tarif brut. Ce tarif brut est ensuite ramené à l'un des 4 paliers utilisés dans
+// l'application (voir computePrixLivraison) : 1000 F (même commune), 1500 F (proche),
+// 2000 F (moyen) ou 2500 F (éloigné).
 const MATRICE_TARIFS = {
   "Abobo":        { "Abobo": 1500, "Adjamé": 1500, "Anyama": 1500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 2000, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 2000 },
   "Adjamé":       { "Abobo": 1500, "Adjamé": 1500, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 1500 },
@@ -147,10 +147,12 @@ const MATRICE_TARIFS = {
   "Yopougon":     { "Abobo": 1500, "Adjamé": 1500, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
 };
 
-// Calcule le prix de livraison suggéré (FCFA) entre deux communes, ramené à 3 paliers simples :
+// Calcule le prix de livraison suggéré (FCFA) entre deux communes, ramené à 4 paliers simples,
+// qui montent avec l'éloignement réel indiqué par la grille tarifaire officielle :
 //   - 1000 F : même commune de départ et d'arrivée
 //   - 1500 F : commune différente mais proche (tarif officiel ≤ 1500 F)
-//   - 2000 F : commune plus éloignée (tarif officiel > 1500 F)
+//   - 2000 F : commune moyennement éloignée (tarif officiel = 2000 F)
+//   - 2500 F : commune éloignée (tarif officiel ≥ 2500 F)
 // Reste toujours modifiable ensuite par la personne qui saisit le colis (cas particuliers,
 // tarifs négociés...). Retourne null si l'une des deux communes n'est pas reconnue.
 function computePrixLivraison(communeDepart, communeDestination) {
@@ -158,7 +160,9 @@ function computePrixLivraison(communeDepart, communeDestination) {
   if (communeDepart === communeDestination) return 1000;
   const raw = MATRICE_TARIFS[communeDepart] && MATRICE_TARIFS[communeDepart][communeDestination];
   if (!raw) return null;
-  return raw <= 1500 ? 1500 : 2000;
+  if (raw <= 1500) return 1500;
+  if (raw <= 2000) return 2000;
+  return 2500;
 }
 
 // Construit les <option> d'une liste déroulante de communes. `selected` (optionnel) présélectionne
