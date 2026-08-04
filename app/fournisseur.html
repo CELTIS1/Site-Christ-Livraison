@@ -611,6 +611,123 @@
     `;
   }
 
+  // Carte de "brouillon" affichée en haut de la liste "Mes colis" quand on duplique un colis :
+  // contrairement à l'ancien comportement (qui renvoyait vers la section "Ajouter des colis"),
+  // la copie apparaît directement ici, déjà remplie et prête à être vérifiée/enregistrée, pendant
+  // que le colis d'origine reste inchangé à sa place.
+  function colisDraftHTML(c, draftId){
+    return `
+      <div class="colis-item colis-draft" id="${draftId}" style="border:2px solid var(--accent, #E26313); background:rgba(226,99,19,0.06);">
+        <div class="thumb-placeholder">Copie</div>
+        <div class="info">
+          <div class="edit-mode" style="display:block;">
+            <div class="meta" style="color:var(--accent, #E26313); font-weight:700; margin-bottom:8px;">🆕 Nouveau colis — copie de ${c.numero ? 'N° ' + escapeHTML(c.numero) : (c.description ? escapeHTML(c.description) : 'ce colis')}. Vérifiez puis enregistrez.</div>
+            <div class="field-row">
+              <div class="field">
+                <label>📍 Commune de récupération</label>
+                <select class="draft-pickup-commune">${communesOptionsHTML(c.commune_recuperation || '', 'Choisir une commune')}</select>
+              </div>
+              <div class="field">
+                <label>Adresse précise (quartier, repère...)</label>
+                <input type="text" class="draft-pickup-adresse" value="${escapeHTML(c.adresse_recuperation || '')}">
+              </div>
+            </div>
+            <div class="field">
+              <label>Description du colis</label>
+              <textarea class="draft-desc">${escapeHTML(c.description || '')}</textarea>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Commune de destination</label>
+                <select class="draft-commune-dest">${communesOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
+              </div>
+              <div class="field">
+                <label>Précision (quartier, repère...)</label>
+                <input type="text" class="draft-dest" value="${escapeHTML(c.destination || '')}">
+              </div>
+            </div>
+            <div class="montant-block">
+              <label>Montants (optionnel)</label>
+              <div class="montant-group">
+                <div class="montant-field">
+                  <label>Montant article</label>
+                  <input type="number" class="draft-montant-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}">
+                </div>
+                <div class="montant-plus">+</div>
+                <div class="montant-field">
+                  <label>Montant livraison</label>
+                  <input type="number" class="draft-montant-livraison" min="0" step="any" value="${c.montant_livraison !== null && c.montant_livraison !== undefined ? c.montant_livraison : ''}">
+                </div>
+              </div>
+            </div>
+            <div class="payment-checks">
+              <label class="check-pill"><input type="checkbox" class="draft-article-paye"> Article payé</label>
+              <label class="check-pill"><input type="checkbox" class="draft-livraison-payee"> Livraison payée</label>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-sm btn-save-duplicate">Enregistrer la copie</button>
+              <button type="button" class="btn btn-outline btn-sm btn-cancel-duplicate">Annuler</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Branche les boutons Enregistrer/Annuler d'une carte de brouillon (voir colisDraftHTML).
+  // "Enregistrer" crée un NOUVEAU colis (insert), ne modifie jamais le colis d'origine.
+  function attachDraftHandlers(draftEl){
+    const cancelBtn = draftEl.querySelector('.btn-cancel-duplicate');
+    const saveBtn = draftEl.querySelector('.btn-save-duplicate');
+    cancelBtn.addEventListener('click', () => { draftEl.remove(); });
+    saveBtn.addEventListener('click', async () => {
+      const description = draftEl.querySelector('.draft-desc').value.trim();
+      const commune_destination = draftEl.querySelector('.draft-commune-dest').value;
+      const destination = draftEl.querySelector('.draft-dest').value.trim();
+      const pickupCommune = draftEl.querySelector('.draft-pickup-commune').value;
+      const pickupAdresse = draftEl.querySelector('.draft-pickup-adresse').value.trim();
+      if (!pickupCommune) {
+        alert("Veuillez choisir la commune de récupération.");
+        return;
+      }
+      if (!commune_destination) {
+        alert("Veuillez choisir la commune de destination.");
+        return;
+      }
+      const montantArticleRaw = draftEl.querySelector('.draft-montant-article').value.trim();
+      const montantLivraisonRaw = draftEl.querySelector('.draft-montant-livraison').value.trim();
+      const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
+      const montant_livraison = montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw);
+      const montant = (montant_article !== null || montant_livraison !== null)
+        ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
+        : null;
+      const article_paye = draftEl.querySelector('.draft-article-paye').checked;
+      const livraison_payee = draftEl.querySelector('.draft-livraison-payee').checked;
+
+      saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement...';
+      const { error } = await supabaseClient.from('colis').insert({
+        fournisseur_id: currentUser.id,
+        description,
+        destination,
+        commune_destination,
+        montant,
+        montant_article,
+        montant_livraison,
+        article_paye,
+        livraison_payee,
+        commune_recuperation: pickupCommune,
+        adresse_recuperation: pickupAdresse || null,
+      });
+      if (error) {
+        alert("Erreur : " + error.message);
+        saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer la copie';
+        return;
+      }
+      draftEl.remove();
+      loadColis();
+    });
+  }
+
   function attachColisHandlers(list){
     list.querySelectorAll('.btn-edit-colis').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -679,37 +796,25 @@
   }
 
   // ---------- Dupliquer un colis existant ----------
-  // Ouvre la section "Ajouter des colis", ajoute une nouvelle ligne pré-remplie avec les mêmes
-  // description/destination/montant, pratique pour les envois répétitifs similaires.
+  // Insère directement dans "Mes colis" une carte de copie (voir colisDraftHTML), déjà remplie
+  // avec les infos du colis d'origine, en haut de la liste, prête à être vérifiée puis enregistrée.
+  // Le colis sur lequel on a appuyé "Dupliquer" n'est jamais modifié : il reste à sa place.
   function duplicateColis(c){
-    const header = document.querySelector('#section-ajouter .collapsible-header');
-    const content = document.getElementById('ajouter-content');
-    if (header && content && !content.classList.contains('open')) {
-      toggleSection(header, 'ajouter-content');
-    }
-    addRow();
-    const rows = document.querySelectorAll('.colis-row');
-    const row = rows[rows.length - 1];
-    if (row) {
-      row.querySelector('.row-desc').value = c.description || '';
-      row.querySelector('.row-dest').value = c.destination || '';
-      const communeSelect = row.querySelector('.row-commune-dest');
-      if (communeSelect && c.commune_destination) communeSelect.value = c.commune_destination;
-      if (colisADetailMontant(c)) {
-        if (c.montant_article !== null && c.montant_article !== undefined) row.querySelector('.row-montant-article').value = c.montant_article;
-        if (c.montant_livraison !== null && c.montant_livraison !== undefined) row.querySelector('.row-montant-livraison').value = c.montant_livraison;
-      } else if (c.montant !== null && c.montant !== undefined) {
-        row.querySelector('.row-montant-livraison').value = c.montant;
-      }
-      row.querySelector('.row-montant-article').dispatchEvent(new Event('input'));
-      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    addMsg('Colis dupliqué ci-dessous : vérifiez les informations puis enregistrez.', 'success');
+    document.querySelectorAll('.colis-draft').forEach(el => el.remove());
+    const list = document.getElementById('colis-list');
+    const draftId = 'draft-' + Date.now();
+    list.insertAdjacentHTML('afterbegin', colisDraftHTML(c, draftId));
+    const draftEl = document.getElementById(draftId);
+    attachDraftHandlers(draftEl);
+    draftEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function renderColisList(){
     const list = document.getElementById('colis-list');
     const __anchor = captureScrollAnchor(list);
+    // Conserve toute carte de duplication en attente (non encore enregistrée) lors d'un re-rendu
+    // (ex : mise à jour temps réel pendant que le fournisseur vérifie sa copie).
+    const __drafts = Array.from(list.querySelectorAll('.colis-draft'));
     const filtered = mesColis.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDate));
     if (!mesColis.length) {
       list.innerHTML = `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`;
@@ -736,6 +841,7 @@
       const btnLoadMoreColis = document.getElementById('btn-load-more-colis');
       if (btnLoadMoreColis) btnLoadMoreColis.addEventListener('click', loadMoreColis);
     }
+    __drafts.forEach(d => list.insertAdjacentElement('afterbegin', d));
     populateMoisSelect();
     restoreScrollAnchor(list, __anchor);
   }
