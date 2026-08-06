@@ -46,8 +46,18 @@ async function getProfile(userId) {
 }
 
 async function logout() {
-  // Arrête proprement le partage de position (le cas échéant) avant de se déconnecter.
+  // Arrête proprement le partage de position (le cas échéant) avant de se déconnecter, et
+  // supprime toute position enregistrée (minimisation des données : rien ne doit rester après la
+  // déconnexion). Sans effet pour les comptes qui n'ont jamais partagé de position.
   if (typeof stopPositionSharing === "function") stopPositionSharing();
+  try {
+    const { data } = await supabaseClient.auth.getUser();
+    if (data && data.user) {
+      await supabaseClient.from("livreur_positions").delete().eq("livreur_id", data.user.id);
+    }
+  } catch (e) {
+    console.error("Erreur suppression position à la déconnexion:", e);
+  }
   await supabaseClient.auth.signOut();
   window.location.href = "login.html";
 }

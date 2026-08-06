@@ -106,9 +106,26 @@
     <button type="button" class="btn btn-sm btn-outline" id="btn-sync-now">Synchroniser maintenant</button>
   </div>
 
-  <div class="card" id="position-sharing-card">
-    <strong>📍 Partage de ma position</strong>
-    <div class="page-sub" style="margin:4px 0 0;" id="position-sharing-desc">Désactivé — aucune livraison en cours.</div>
+  <!-- Notice de consentement RGPD-like (loi ivoirienne n° 2013-450) : n'apparaît que la première
+       fois qu'une livraison en cours nécessiterait de partager la position, et tant que le livreur
+       n'a pas explicitement accepté. Rien n'est envoyé avant cette acceptation. -->
+  <div class="card hidden" id="geoloc-consent-card">
+    <strong>📍 Partage de votre position pendant vos livraisons</strong>
+    <p class="page-sub" style="margin:8px 0;">
+      Pour que l'équipe puisse suivre vos livraisons en cours sur la carte, nous avons besoin de connaître votre position pendant que vous avez un colis récupéré ou en livraison.<br><br>
+      <strong>Quand :</strong> uniquement pendant vos tournées actives, jamais en dehors.<br>
+      <strong>Donnée collectée :</strong> votre position GPS approximative.<br>
+      <strong>Conservation :</strong> supprimée automatiquement dès la fin de votre tournée.<br>
+      <strong>Vos droits :</strong> vous pouvez demander l'accès, la correction ou la suppression de ces données à tout moment auprès de l'équipe.
+    </p>
+    <button type="button" class="btn btn-sm" id="btn-accept-geoloc-consent">J'ai compris et j'accepte</button>
+  </div>
+
+  <div class="card" id="position-sharing-card" style="padding:10px 14px;">
+    <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#64748b;">
+      <span>📍</span>
+      <span id="position-sharing-desc">Position non partagée — aucune livraison en cours.</span>
+    </div>
     <div id="position-sharing-msg"></div>
   </div>
 
@@ -149,6 +166,7 @@
 <script src="config.js?v=20260801b"></script>
 <script>
   let currentUser = null;
+  let currentProfile = null;
   let allColis = [];
   let profilesById = {};
 
@@ -684,7 +702,7 @@
   function renderAll(){
     renderMesColis();
     renderTousColis();
-    if (currentUser) updatePositionSharingFromColis();
+    if (currentUser && currentProfile) updatePositionSharingFromColis();
   }
 
   async function loadProfiles(){
@@ -752,6 +770,8 @@
       window.location.href = 'login.html';
       return;
     }
+
+    currentProfile = profile;
 
     document.getElementById('user-name').textContent = profile.full_name || '';
     document.getElementById('user-first-name').textContent = profile.full_name || '';
@@ -843,30 +863,64 @@
   });
 
   // Partage automatique de la position (voir startPositionSharing/stopPositionSharing dans
-  // config.js) : le livreur n'a plus de bouton pour l'activer/le désactiver lui-même. Le partage
+  // config.js) : le livreur n'a pas de bouton pour l'activer/le désactiver lui-même. Le partage
   // démarre automatiquement dès qu'il a au moins un colis "Récupéré" ou "En livraison" assigné,
   // et s'arrête automatiquement dès qu'il n'en a plus (livraisons terminées, en attente, etc.).
   // Ceci garantit que la position reste visible par l'équipe pendant toute tournée active, sans
   // que le livreur puisse la couper d'un simple clic pendant qu'il travaille.
+  //
+  // Conformité loi ivoirienne n° 2013-450 (protection des données à caractère personnel) : le
+  // partage ne démarre jamais avant que le livreur ait explicitement accepté la notice
+  // d'information (geoloc-consent-card, une seule fois, voir acceptGeolocConsent ci-dessous), et
+  // la position enregistrée est supprimée de la base dès la fin de la tournée — aucune donnée de
+  // localisation n'est conservée en dehors d'une livraison active.
   const STATUTS_EN_TOURNEE = ['recupere', 'en_livraison'];
   function updatePositionSharingFromColis(){
     const desc = document.getElementById('position-sharing-desc');
     const msg = document.getElementById('position-sharing-msg');
+    const consentCard = document.getElementById('geoloc-consent-card');
     const enTournee = allColis.some(c => c.livreur_id === currentUser.id && STATUTS_EN_TOURNEE.includes(c.statut));
 
-    if (enTournee) {
-      startPositionSharing(currentUser.id, (err) => {
-        msg.innerHTML = `<div class="msg msg-error">Impossible de partager votre position : ${err.message || 'accès refusé.'} Merci d'autoriser la géolocalisation pour cet appareil.</div>`;
-        desc.textContent = 'Activation impossible — vérifiez l\'autorisation de géolocalisation.';
-      });
-      desc.textContent = 'Activé — vous avez une livraison en cours, votre position est visible en direct par l\'équipe.';
-      msg.innerHTML = '';
-    } else {
+    if (!enTournee) {
       stopPositionSharing();
-      desc.textContent = 'Désactivé — aucune livraison en cours.';
+      consentCard.classList.add('hidden');
+      desc.textContent = 'Position non partagée — aucune livraison en cours.';
       msg.innerHTML = '';
+      // Minimisation des données : on ne garde aucune position au-delà d'une tournée active.
+      supabaseClient.from('livreur_positions').delete().eq('livreur_id', currentUser.id)
+        .then(({ error }) => { if (error) console.error('Erreur suppression position:', error); });
+      return;
     }
+
+    if (!currentProfile.geoloc_consent_at) {
+      consentCard.classList.remove('hidden');
+      desc.textContent = "En attente de votre accord pour partager votre position (voir ci-dessus).";
+      msg.innerHTML = '';
+      return;
+    }
+
+    consentCard.classList.add('hidden');
+    startPositionSharing(currentUser.id, (err) => {
+      msg.innerHTML = `<div class="msg msg-error">Impossible de partager votre position : ${err.message || 'accès refusé.'} Merci d'autoriser la géolocalisation pour cet appareil.</div>`;
+      desc.textContent = 'Activation impossible — vérifiez l\'autorisation de géolocalisation.';
+    });
+    desc.textContent = 'Position partagée avec l\'équipe pour cette livraison en cours.';
+    msg.innerHTML = '';
   }
+
+  // Enregistre le consentement explicite du livreur (une seule fois) avant tout partage de
+  // position, conformément à la loi n° 2013-450. Voir aussi supabase_geoloc_consent.sql.
+  async function acceptGeolocConsent(){
+    const btn = document.getElementById('btn-accept-geoloc-consent');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement...'; }
+    const nowIso = new Date().toISOString();
+    const { error } = await supabaseClient.from('profiles').update({ geoloc_consent_at: nowIso }).eq('id', currentUser.id);
+    if (btn) { btn.disabled = false; btn.textContent = "J'ai compris et j'accepte"; }
+    if (error) { console.error('Erreur enregistrement consentement:', error); return; }
+    currentProfile.geoloc_consent_at = nowIso;
+    updatePositionSharingFromColis();
+  }
+  document.getElementById('btn-accept-geoloc-consent').addEventListener('click', acceptGeolocConsent);
 
   document.getElementById('btn-sync-now').addEventListener('click', () => { flushOfflineQueue(); });
   window.addEventListener('online', () => { flushOfflineQueue(); });
