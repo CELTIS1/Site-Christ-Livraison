@@ -106,6 +106,17 @@
     <button type="button" class="btn btn-sm btn-outline" id="btn-sync-now">Synchroniser maintenant</button>
   </div>
 
+  <div class="card" id="position-sharing-card">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div>
+        <strong>📍 Partage de ma position</strong>
+        <div class="page-sub" style="margin:4px 0 0;" id="position-sharing-desc">Désactivé — l'équipe ne voit pas votre position actuelle.</div>
+      </div>
+      <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-position">Activer le partage</button>
+    </div>
+    <div id="position-sharing-msg"></div>
+  </div>
+
   <div class="card" id="section-main">
     <div class="tabs">
       <div class="tab active" id="tab-mes-colis" onclick="showTab('mes')">Mes colis assignés</div>
@@ -755,6 +766,13 @@
     // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 
+    // Reprend automatiquement le partage de position si le livreur l'avait activé plus tôt dans
+    // cet onglet (ex: rechargement de page pendant sa tournée). Le partage reste néanmoins
+    // désactivé par défaut à chaque nouvelle connexion, pour ne jamais suivre quelqu'un à son insu.
+    if (window.sessionStorage.getItem('position-sharing-on') === '1') {
+      togglePositionSharing(true);
+    }
+
     function selectFilterMes(val){ activeFilterMes = val; renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
     function selectFilterTous(val){ activeFilterTous = val; renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
     renderFilters('filters-mes', activeFilterMes, selectFilterMes);
@@ -834,6 +852,37 @@
       e.target.reset();
     }
   });
+
+  // Active/désactive le partage de position (voir startPositionSharing/stopPositionSharing
+  // dans config.js). Le choix du livreur est mémorisé pour la durée de l'onglet uniquement
+  // (sessionStorage), afin qu'il survive à un rechargement de page sans jamais persister
+  // au-delà de la session en cours.
+  function togglePositionSharing(forceOn){
+    const btn = document.getElementById('btn-toggle-position');
+    const desc = document.getElementById('position-sharing-desc');
+    const msg = document.getElementById('position-sharing-msg');
+    const shouldActivate = forceOn === true ? true : !isPositionSharingActive();
+
+    if (shouldActivate) {
+      startPositionSharing(currentUser.id, (err) => {
+        msg.innerHTML = `<div class="msg msg-error">Impossible d'activer le partage de position : ${err.message || 'accès refusé.'}</div>`;
+        window.sessionStorage.removeItem('position-sharing-on');
+        btn.textContent = 'Activer le partage';
+        desc.textContent = "Désactivé — l'équipe ne voit pas votre position actuelle.";
+      });
+      window.sessionStorage.setItem('position-sharing-on', '1');
+      btn.textContent = 'Désactiver le partage';
+      desc.textContent = 'Activé — votre position est visible en direct par l\'équipe.';
+      msg.innerHTML = '';
+    } else {
+      stopPositionSharing();
+      window.sessionStorage.removeItem('position-sharing-on');
+      btn.textContent = 'Activer le partage';
+      desc.textContent = "Désactivé — l'équipe ne voit pas votre position actuelle.";
+      msg.innerHTML = '';
+    }
+  }
+  document.getElementById('btn-toggle-position').addEventListener('click', () => togglePositionSharing());
 
   document.getElementById('btn-sync-now').addEventListener('click', () => { flushOfflineQueue(); });
   window.addEventListener('online', () => { flushOfflineQueue(); });

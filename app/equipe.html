@@ -9,10 +9,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20260801f">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
 
@@ -101,6 +103,7 @@
 <div class="subnav-group">
 <span class="subnav-label">Suivi quotidien</span>
 <a href="#section-presence">🟢 En ligne</a>
+<a href="#section-carte">🗺️ Carte livreurs</a>
 <a href="#section-ajouter-colis">Ajouter un colis</a>
 <a href="#section-main">Colis</a>
 </div>
@@ -128,6 +131,17 @@
 <div class="stat-tile"><div class="stat-tile-icon">📦</div><div class="stat-tile-value" id="stat-online-fournisseur">0</div><div class="stat-tile-label">Clients</div></div>
 <div class="stat-tile"><div class="stat-tile-icon">🚚</div><div class="stat-tile-value" id="stat-online-livreur">0</div><div class="stat-tile-label">Livreurs</div></div>
 <div class="stat-tile"><div class="stat-tile-icon">👥</div><div class="stat-tile-value" id="stat-online-equipe">0</div><div class="stat-tile-label">Équipe</div></div>
+</div>
+</div>
+
+<div class="card" id="section-carte">
+<h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'carte-content'); setTimeout(() => { if (window.livreurMap) window.livreurMap.invalidateSize(); }, 350);">
+<span class="collapse-arrow">▶</span> 🗺️ Carte des livreurs en direct
+</h2>
+<div id="carte-content" class="collapsible-content">
+<div class="page-sub" style="margin:0 0 12px;">Position des livreurs ayant activé le partage depuis leur téléphone. Un livreur disparaît automatiquement de la carte s'il n'a pas envoyé de nouvelle position depuis plus de 3 minutes (déconnexion, partage désactivé...).</div>
+<div id="carte-empty-state" class="empty-state">Aucun livreur ne partage sa position pour le moment.</div>
+<div id="carte-livreurs" style="height:480px; border-radius:12px; overflow:hidden; display:none;"></div>
 </div>
 </div>
 
@@ -2491,6 +2505,63 @@ trackChannel(supabaseClient
 loadActivityLog();
 })
 .subscribe());
+
+// Carte en direct des livreurs ayant activé le partage de position (voir livreur.html).
+initLivreurMap();
+await refreshLivreurPositions();
+trackChannel(supabaseClient
+.channel('livreur-positions-equipe')
+.on('postgres_changes', { event: '*', schema: 'public', table: 'livreur_positions' }, () => {
+refreshLivreurPositions();
+})
+.subscribe());
+// Filet de sécurité : même sans nouvel événement, un livreur qui a perdu la connexion sans
+// désactiver le partage doit disparaître de la carte au bout de POSITION_STALE_AFTER_MS.
+setInterval(refreshLivreurPositions, 30000);
+}
+
+// ---------- Carte en direct des livreurs (voir aussi startPositionSharing dans config.js) ----------
+let livreurMarkers = {}; // { [livreur_id]: L.Marker }
+
+function initLivreurMap(){
+if (window.livreurMap) return;
+// Centré sur Abidjan par défaut, tant qu'aucun livreur n'a encore envoyé de position.
+window.livreurMap = L.map('carte-livreurs').setView([5.3599517, -4.0082563], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+maxZoom: 19,
+}).addTo(window.livreurMap);
+}
+
+async function refreshLivreurPositions(){
+const { data, error } = await supabaseClient.from('livreur_positions').select('livreur_id, latitude, longitude, updated_at');
+if (error) { console.error(error); return; }
+
+const now = Date.now();
+const fresh = data.filter(p => now - new Date(p.updated_at).getTime() < POSITION_STALE_AFTER_MS);
+const freshIds = new Set(fresh.map(p => p.livreur_id));
+
+// Retire les marqueurs des livreurs qui ne partagent plus (désactivé, déconnecté...).
+Object.keys(livreurMarkers).forEach(id => {
+if (!freshIds.has(id)) { window.livreurMap.removeLayer(livreurMarkers[id]); delete livreurMarkers[id]; }
+});
+
+fresh.forEach(p => {
+const livreur = livreurs.find(l => l.id === p.livreur_id);
+const nom = livreur ? (livreur.full_name || 'Livreur') : 'Livreur';
+const heure = new Date(p.updated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+const popupHtml = `<strong>${escapeHTML(nom)}</strong><br>Mis à jour à ${heure}`;
+
+if (livreurMarkers[p.livreur_id]) {
+livreurMarkers[p.livreur_id].setLatLng([p.latitude, p.longitude]).setPopupContent(popupHtml);
+} else {
+livreurMarkers[p.livreur_id] = L.marker([p.latitude, p.longitude]).addTo(window.livreurMap).bindPopup(popupHtml);
+}
+});
+
+document.getElementById('carte-empty-state').classList.toggle('hidden', fresh.length > 0);
+document.getElementById('carte-livreurs').style.display = fresh.length > 0 ? '' : 'none';
+if (fresh.length > 0) setTimeout(() => window.livreurMap.invalidateSize(), 50);
 }
 
 init();

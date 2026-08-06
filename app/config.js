@@ -46,6 +46,8 @@ async function getProfile(userId) {
 }
 
 async function logout() {
+  // Arrête proprement le partage de position (le cas échéant) avant de se déconnecter.
+  if (typeof stopPositionSharing === "function") stopPositionSharing();
   await supabaseClient.auth.signOut();
   window.location.href = "login.html";
 }
@@ -106,6 +108,66 @@ function getPresenceState() {
   });
   return result;
 }
+
+// ---------- Suivi de position en temps réel des livreurs (carte équipe/admin) ----------
+// Le livreur choisit lui-même d'activer ou non le partage de sa position (bouton dans son
+// espace) : rien n'est jamais envoyé sans cette action explicite. Tant que c'est activé, la
+// position du téléphone est envoyée à intervalles réguliers dans la table "livreur_positions"
+// (une seule ligne par livreur, mise à jour à chaque envoi), rendue visible en direct sur la
+// carte des espaces équipe/admin via Supabase Realtime. Si le livreur ferme l'onglet ou perd
+// la connexion sans désactiver le partage, sa position cesse simplement d'être mise à jour :
+// la carte affiche alors ce livreur comme "hors ligne" dès que sa dernière position devient
+// trop ancienne (voir POSITION_STALE_AFTER_MS, utilisé côté équipe.html).
+const POSITION_STALE_AFTER_MS = 3 * 60 * 1000; // 3 minutes sans mise à jour = considéré hors ligne
+const POSITION_MIN_INTERVAL_MS = 10 * 1000; // au maximum une mise à jour toutes les 10 secondes
+let positionWatchId = null;
+
+function isPositionSharingActive() {
+  return positionWatchId !== null;
+}
+
+// `onError` (optionnel) est appelé si la géolocalisation échoue (permission refusée, appareil
+// non compatible, etc.) — utile pour afficher un message clair au livreur.
+function startPositionSharing(userId, onError) {
+  if (positionWatchId !== null) return; // déjà actif, rien à faire
+  if (!("geolocation" in navigator)) {
+    if (typeof onError === "function") onError(new Error("La géolocalisation n'est pas disponible sur cet appareil."));
+    return;
+  }
+  let lastSentAt = 0;
+  positionWatchId = navigator.geolocation.watchPosition(
+    async (pos) => {
+      const now = Date.now();
+      if (now - lastSentAt < POSITION_MIN_INTERVAL_MS) return;
+      lastSentAt = now;
+      const { latitude, longitude, accuracy } = pos.coords;
+      const { error } = await supabaseClient.from("livreur_positions").upsert({
+        livreur_id: userId,
+        latitude,
+        longitude,
+        accuracy,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) console.error("Erreur envoi position:", error);
+    },
+    (err) => {
+      console.error("Erreur géolocalisation:", err);
+      if (typeof onError === "function") onError(err);
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+  );
+}
+
+function stopPositionSharing() {
+  if (positionWatchId !== null) {
+    navigator.geolocation.clearWatch(positionWatchId);
+    positionWatchId = null;
+  }
+}
+
+window.addEventListener("beforeunload", () => {
+  if (positionWatchId !== null) navigator.geolocation.clearWatch(positionWatchId);
+});
 
 // Référentiel des statuts d'un colis (libellé + couleurs pour badges)
 const STATUTS = {
