@@ -475,6 +475,11 @@
       const description = row.querySelector('.row-desc').value.trim();
       const commune_destination = row.querySelector('.row-commune-dest').value;
       const destination = row.querySelector('.row-dest').value.trim();
+      if (!description) {
+        addMsg("Veuillez indiquer une description pour chaque colis.", "error");
+        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
+        return;
+      }
       if (!commune_destination) {
         addMsg("Veuillez choisir la commune de destination pour chaque colis.", "error");
         btn.disabled = false; btn.textContent = 'Enregistrer les colis';
@@ -482,6 +487,11 @@
       }
       const montantArticleRaw = row.querySelector('.row-montant-article').value.trim();
       const montantLivraisonRaw = row.querySelector('.row-montant-livraison').value.trim();
+      if (!isValidMontant(montantArticleRaw) || !isValidMontant(montantLivraisonRaw)) {
+        addMsg("Les montants doivent être des nombres positifs.", "error");
+        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
+        return;
+      }
       const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
       const montant_livraison = montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw);
       const montant = (montant_article !== null || montant_livraison !== null)
@@ -522,7 +532,8 @@
     // chaque colis garde définitivement le lieu de récupération choisi au moment de son ajout.
     if (currentProfile && (currentProfile.commune_recuperation !== commune_recuperation || currentProfile.adresse_recuperation !== (adresse_recuperation || null))) {
       supabaseClient.from('profiles').update({ commune_recuperation, adresse_recuperation: adresse_recuperation || null }).eq('id', currentUser.id)
-        .then(({ error: profErr }) => { if (profErr) console.error(profErr); });
+        .then(({ error: profErr }) => { if (profErr) console.error(profErr); })
+        .catch(err => console.error('Erreur mise à jour profil:', err));
       currentProfile.commune_recuperation = commune_recuperation;
       currentProfile.adresse_recuperation = adresse_recuperation || null;
     }
@@ -694,8 +705,16 @@
         alert("Veuillez choisir la commune de destination.");
         return;
       }
+      if (!description) {
+        alert("Veuillez indiquer une description pour le colis.");
+        return;
+      }
       const montantArticleRaw = draftEl.querySelector('.draft-montant-article').value.trim();
       const montantLivraisonRaw = draftEl.querySelector('.draft-montant-livraison').value.trim();
+      if (!isValidMontant(montantArticleRaw) || !isValidMontant(montantLivraisonRaw)) {
+        alert("Les montants doivent être des nombres positifs.");
+        return;
+      }
       const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
       const montant_livraison = montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw);
       const montant = (montant_article !== null || montant_livraison !== null)
@@ -753,6 +772,18 @@
         const commune_destination = communeSelect ? communeSelect.value : null;
         const montantArticleRaw = item.querySelector('.edit-montant-article').value.trim();
         const montantLivraisonRaw = item.querySelector('.edit-montant-livraison').value.trim();
+        if (!description) {
+          alert("Veuillez indiquer une description pour le colis.");
+          return;
+        }
+        if (!commune_destination) {
+          alert("Veuillez choisir la commune de destination.");
+          return;
+        }
+        if (!isValidMontant(montantArticleRaw) || !isValidMontant(montantLivraisonRaw)) {
+          alert("Les montants doivent être des nombres positifs.");
+          return;
+        }
         const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
         const montant_livraison = montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw);
         const montant = (montant_article !== null || montant_livraison !== null)
