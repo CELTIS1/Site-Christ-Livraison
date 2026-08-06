@@ -538,13 +538,21 @@
         btn.disabled = true; btn.textContent = 'Récupération...';
 
         if (!navigator.onLine) {
+          let queueFailed = false;
           for (const id of ids) {
             const existing = allColis.find(c => c.id === id);
             try {
               await queueAdd({ colisId: id, statut: 'recupere', observation: existing ? existing.observation : null, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: null, userId: currentUser.id, timestamp: Date.now() });
-            } catch (e) { console.error(e); }
-            if (existing) existing.statut = 'recupere';
+              if (existing) existing.statut = 'recupere';
+            } catch (e) {
+              console.error(e);
+              queueFailed = true;
+            }
           }
+          if (queueFailed) {
+            alert("Certaines mises à jour n'ont pas pu être enregistrées hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
+          }
+          btn.disabled = false; btn.textContent = originalLabel;
           await refreshOfflineBanner();
           renderAll();
           return;
@@ -579,8 +587,11 @@
           btn.disabled = true; btn.textContent = 'Enregistrement...';
           try {
             await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: pickedPhoto || null, userId: currentUser.id, timestamp: Date.now() });
-          } catch (e) { console.error(e); }
-          if (existing) Object.assign(existing, { statut, observation });
+            if (existing) Object.assign(existing, { statut, observation });
+          } catch (e) {
+            console.error(e);
+            alert("Impossible d'enregistrer cette mise à jour hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
+          }
           btn.disabled = false; btn.textContent = 'Enregistrer';
           await refreshOfflineBanner();
           return;
@@ -598,8 +609,11 @@
             btn.disabled = true; btn.textContent = 'Enregistrement...';
             try {
               await queueAdd({ colisId: id, statut, observation, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: pickedPhoto, userId: currentUser.id, timestamp: Date.now() });
-            } catch (e) { console.error(e); }
-            if (existing) Object.assign(existing, { statut, observation });
+              if (existing) Object.assign(existing, { statut, observation });
+            } catch (e) {
+              console.error(e);
+              alert("Impossible d'enregistrer cette mise à jour hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
+            }
             btn.disabled = false; btn.textContent = 'Enregistrer';
             await refreshOfflineBanner();
             return;
@@ -613,8 +627,11 @@
           // Échec réseau probable : on met la mise à jour en file d'attente plutôt que de la perdre.
           try {
             await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: null, userId: currentUser.id, timestamp: Date.now() });
-          } catch (e) { console.error(e); }
-          if (existing) Object.assign(existing, { statut, observation, photo_livraison_url });
+            if (existing) Object.assign(existing, { statut, observation, photo_livraison_url });
+          } catch (e) {
+            console.error(e);
+            alert("Erreur : " + error.message + "\n\nDe plus, la mise en file d'attente hors-ligne a échoué. Merci de réessayer.");
+          }
           await refreshOfflineBanner();
           return;
         }
