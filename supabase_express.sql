@@ -316,3 +316,43 @@ using (
     and profiles.role in ('equipe', 'admin')
   )
 );
+
+
+-- ----------------------------------------------------------------------------
+-- 5. Correctif : autoriser les Edge Functions (clé service role) à définir
+--    le rôle/statut du profil lors de l'inscription CLT Express.
+-- ----------------------------------------------------------------------------
+-- Un trigger existant sur auth.users ("on_auth_user_created" -> handle_new_user())
+-- crée automatiquement une ligne dans public.profiles dès la création du compte
+-- auth (avec role = 'fournisseur' par défaut). Les Edge Functions
+-- inscrire-client-express / inscrire-coursier-express font donc un UPSERT (et
+-- non un INSERT) pour écraser cette ligne par défaut avec le bon rôle
+-- ('client_express' / 'coursier_express').
+--
+-- Ce UPSERT-en-UPDATE se heurtait au trigger de garde
+-- "trg_prevent_role_change" -> prevent_role_change_by_non_admin(), qui bloquait
+-- TOUT changement de rôle non fait par un admin — y compris les appels
+-- service role (sans auth.uid()), provoquant l'erreur "Seul un administrateur
+-- peut modifier le role d'un compte." lors de chaque inscription.
+--
+-- Correctif : n'appliquer cette garde que lorsqu'un utilisateur authentifié
+-- (auth.uid() non nul) est à l'origine du changement, exactement comme le
+-- fait déjà le trigger jumeau prevent_profile_privileged_change(). Les
+-- utilisateurs non-admin authentifiés restent totalement bloqués pour
+-- modifier leur propre rôle ; seuls les appels service role (Edge Functions)
+-- sont désormais exemptés.
+create or replace function public.prevent_role_change_by_non_admin()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+begin
+  if auth.uid() is not null and new.role is distinct from old.role then
+    if not is_admin() then
+      raise exception 'Seul un administrateur peut modifier le role d''un compte.';
+    end if;
+  end if;
+  return new;
+end;
+$function$;

@@ -12,6 +12,13 @@
 // avec la clé service role, dans le bucket privé "express-kyc" créé par
 // supabase_express.sql, sous le chemin "<user_id>/piece-identite.<ext>".
 //
+// IMPORTANT : un trigger existant sur auth.users ("on_auth_user_created" ->
+// handle_new_user()) insère automatiquement une ligne dans public.profiles
+// dès la création du compte auth (avec role = 'fournisseur' par défaut,
+// faute de métadonnées). On utilise donc UPSERT (et non INSERT) ci-dessous
+// pour écraser cette ligne par défaut avec les bonnes valeurs, plutôt que
+// d'échouer sur un conflit de clé primaire ("duplicate key... profiles_pkey").
+//
 // Déploiement : Dashboard Supabase > Edge Functions > Create a new function
 // (nom : "inscrire-coursier-express"), coller ce fichier, puis "Deploy".
 // Variables d'environnement requises (déjà présentes pour les autres
@@ -113,14 +120,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { error: profileError } = await supabaseAdmin.from("profiles").insert({
-      id: userId,
-      full_name,
-      phone,
-      role: "coursier_express",
-      status: "en_attente",
-      piece_identite_path: piecePath,
-    });
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
+      {
+        id: userId,
+        full_name,
+        phone,
+        role: "coursier_express",
+        status: "en_attente",
+        piece_identite_path: piecePath,
+      },
+      { onConflict: "id" },
+    );
 
     if (profileError) {
       await supabaseAdmin.storage.from("express-kyc").remove([piecePath]);

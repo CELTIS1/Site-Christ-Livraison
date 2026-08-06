@@ -10,6 +10,13 @@
 // créer le compte via l'API admin (service role) puisque l'authentification
 // par téléphone du projet n'utilise pas d'envoi de SMS/OTP.
 //
+// IMPORTANT : un trigger existant sur auth.users ("on_auth_user_created" ->
+// handle_new_user()) insère automatiquement une ligne dans public.profiles
+// dès la création du compte auth (avec role = 'fournisseur' par défaut,
+// faute de métadonnées). On utilise donc UPSERT (et non INSERT) ci-dessous
+// pour écraser cette ligne par défaut avec les bonnes valeurs, plutôt que
+// d'échouer sur un conflit de clé primaire ("duplicate key... profiles_pkey").
+//
 // Déploiement : Dashboard Supabase > Edge Functions > Create a new function
 // (nom : "inscrire-client-express"), coller ce fichier, puis "Deploy".
 // Variables d'environnement requises (déjà présentes pour les autres
@@ -70,13 +77,16 @@ Deno.serve(async (req) => {
 
     const userId = created.user.id;
 
-    const { error: profileError } = await supabaseAdmin.from("profiles").insert({
-      id: userId,
-      full_name,
-      phone,
-      role: "client_express",
-      status: "valide",
-    });
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
+      {
+        id: userId,
+        full_name,
+        phone,
+        role: "client_express",
+        status: "valide",
+      },
+      { onConflict: "id" },
+    );
 
     if (profileError) {
       // Le profil n'a pas pu être créé : on supprime le compte auth créé
