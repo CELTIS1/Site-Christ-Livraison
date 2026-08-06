@@ -4,6 +4,18 @@
 const SUPABASE_URL = "https://xkfltqjbmolmdwdafzcx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
 
+// Enregistrement du service worker (permet l'installation de l'app en PWA sur téléphone/tablette
+// et un minimum de résilience hors-ligne pour la coquille de l'app). Le fichier sw.js est à la
+// racine du site pour pouvoir couvrir /app/ comme le reste ; ce script étant partagé par les 4
+// pages de l'app (équipe, livreur, fournisseur, login), l'enregistrement se fait une seule fois ici.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.error('Échec de l\'enregistrement du service worker :', err);
+    });
+  });
+}
+
 // On utilise sessionStorage (et non le localStorage par défaut) pour que chaque onglet
 // du navigateur conserve sa propre session. Ainsi, on peut être connecté en même temps
 // avec plusieurs comptes différents (admin, équipe, livreur, fournisseur) dans des
