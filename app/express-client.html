@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Client | CLT Express</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%236D28D9'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23FFFFFF'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest-client-express.json">
+<link rel="apple-touch-icon" href="/images/icons/apple-touch-icon-client-express.png">
+<meta name="theme-color" content="#6D28D9">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CLT Express">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260801">
+<style>
+  .topbar{ background:#6D28D9; }
+  .topbar .brand .logo-mark{ background:#4c1d95; }
+  .btn:not(.btn-outline){ background:#6D28D9 !important; }
+  .panel-subtitle.collapsible-header:hover, .role-pill{ }
+  .role-pill{ background:rgba(255,255,255,0.18) !important; }
+  .price-preview{
+    margin-top:10px; padding:12px 14px; border-radius:12px; background:#f4edfe; border:1.5px solid #ddd0fb;
+    font-size:13.5px; color:#4c1d95; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;
+  }
+  .price-preview strong{ font-size:16px; }
+  .course-item .coursier-info{ font-size:11.5px; color:var(--muted); margin-top:4px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="logo-mark">CLT</div> CLT Express — Client</div>
+  <div class="user-info">
+    <span id="user-avatar-topbar"></span>
+    <span id="user-name"></span>
+    <span class="role-pill">Client</span>
+    <div class="settings-menu">
+      <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
+      <div class="settings-dropdown" id="settings-dropdown">
+        <button type="button" id="btn-mon-compte">🔑 Changer mon mot de passe</button>
+        <button type="button" class="danger" onclick="logoutExpress()">🚪 Se déconnecter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="account-modal-overlay hidden" id="account-modal-overlay">
+  <div class="account-modal">
+    <button type="button" class="account-modal-close" id="account-modal-close" aria-label="Fermer">✕</button>
+    <h2 class="account-modal-title">Changer mon mot de passe</h2>
+    <div id="change-pwd-msg"></div>
+    <form id="form-change-password">
+      <div class="field-row">
+        <div class="field">
+          <label>Nouveau mot de passe</label>
+          <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
+        </div>
+        <div class="field">
+          <label>Confirmer le nouveau mot de passe</label>
+          <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
+        </div>
+      </div>
+      <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
+    </form>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
+  <div class="page-sub">Commandez une livraison, où que vous soyez à Abidjan.</div>
+
+  <div class="card" id="section-nouvelle">
+    <h2 class="panel-subtitle">🛵 Nouvelle course</h2>
+    <div id="new-msg"></div>
+    <form id="form-new-course">
+      <div class="field-row">
+        <div class="field">
+          <label>📍 Commune de récupération</label>
+          <select id="course-pickup-commune" required></select>
+        </div>
+        <div class="field">
+          <label>Adresse précise (quartier, repère...)</label>
+          <input type="text" id="course-pickup-adresse" required placeholder="Ex : Angré 8e tranche, non loin de la pharmacie">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>🎯 Commune de livraison</label>
+          <select id="course-dropoff-commune" required></select>
+        </div>
+        <div class="field">
+          <label>Adresse précise (quartier, repère...)</label>
+          <input type="text" id="course-dropoff-adresse" required placeholder="Ex : Riviera 3, immeuble Alpha">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Nom du destinataire</label>
+          <input type="text" id="course-dest-nom" placeholder="Optionnel si c'est vous">
+        </div>
+        <div class="field">
+          <label>Téléphone du destinataire</label>
+          <input type="tel" id="course-dest-tel" placeholder="07 00 00 00 00">
+        </div>
+      </div>
+      <div class="field">
+        <label>Que faut-il livrer ?</label>
+        <textarea id="course-description" rows="2" placeholder="Ex : une enveloppe de documents, un colis de vêtements..."></textarea>
+      </div>
+
+      <div class="price-preview hidden" id="price-preview">
+        <span>Distance estimée : <strong id="price-distance">—</strong></span>
+        <span>Prix estimé : <strong id="price-total">—</strong></span>
+      </div>
+
+      <button type="submit" class="btn" style="width:100%; justify-content:center; margin-top:14px;" id="btn-new-course">Commander cette livraison</button>
+      <div style="margin-top:8px;font-size:12px;color:#6b7280;text-align:center;">Paiement en espèces directement au coursier, à la livraison.</div>
+    </form>
+  </div>
+
+  <div class="card" id="section-courses">
+    <h2 class="panel-subtitle">📦 Mes courses</h2>
+    <div id="courses-list"></div>
+  </div>
+</div>
+
+<script src="express-config.js?v=20260806a"></script>
+<script>
+  let currentUser = null;
+  let currentProfile = null;
+  let expressConfig = null;
+  let myCourses = [];
+  let coursiersById = {};
+
+  const __realtimeChannels = [];
+  function trackChannel(channel){ __realtimeChannels.push(channel); return channel; }
+  window.addEventListener('beforeunload', () => {
+    __realtimeChannels.forEach(ch => supabaseClient.removeChannel(ch));
+  });
+
+  function updatePricePreview(){
+    const depart = document.getElementById('course-pickup-commune').value;
+    const arrivee = document.getElementById('course-dropoff-commune').value;
+    const box = document.getElementById('price-preview');
+    if (!depart || !arrivee || !expressConfig) { box.classList.add('hidden'); return; }
+    const est = estimatePrixExpress(depart, arrivee, expressConfig);
+    if (!est) { box.classList.add('hidden'); return; }
+    document.getElementById('price-distance').textContent = est.distanceKm.toLocaleString('fr-FR') + ' km';
+    document.getElementById('price-total').textContent = formatMontant(est.prixTotal);
+    box.classList.remove('hidden');
+  }
+
+  function courseRowHTML(c){
+    const coursier = c.coursier_id ? coursiersById[c.coursier_id] : null;
+    const coursierInfo = coursier
+      ? `<div class="coursier-info">🛵 Coursier : ${escapeHTML(coursier.full_name || '')}${coursier.phone ? ' · ' + formatPhoneLocal(coursier.phone) : ''}</div>`
+      : '';
+    const canCancel = c.status === 'en_attente';
+    return `
+      <div class="colis-item course-item" data-id="${c.id}">
+        <div class="info">
+          <div class="desc">${escapeHTML(c.adresse_recuperation)} → ${escapeHTML(c.adresse_livraison)}</div>
+          <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · Demandé le ${formatDate(c.created_at)}</div>
+          ${coursierInfo}
+        </div>
+        <div class="status-col">
+          ${expressStatutBadgeHTML(c.status)}
+          <div style="font-weight:700;color:var(--navy);">${formatMontant(c.prix_total)}</div>
+          ${canCancel ? `<button class="btn btn-sm btn-outline btn-cancel-course">Annuler</button>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function formatPhoneLocal(e164){
+    if (!e164) return '';
+    let digits = e164.replace(/[^\d]/g, '');
+    if (digits.startsWith('225')) digits = digits.slice(3);
+    return digits;
+  }
+
+  async function loadCoursiersFor(courses){
+    const ids = [...new Set(courses.filter(c => c.coursier_id).map(c => c.coursier_id))];
+    const missing = ids.filter(id => !coursiersById[id]);
+    if (!missing.length) return;
+    const { data, error } = await supabaseClient.from('profiles').select('id, full_name, phone').in('id', missing);
+    if (error) { console.error(error); return; }
+    data.forEach(p => { coursiersById[p.id] = p; });
+  }
+
+  function renderCourses(){
+    const box = document.getElementById('courses-list');
+    if (!myCourses.length) {
+      box.innerHTML = `<div class="empty-state">Aucune course pour le moment. Passez votre première commande ci-dessus !</div>`;
+      return;
+    }
+    box.innerHTML = myCourses.map(courseRowHTML).join('');
+    box.querySelectorAll('.btn-cancel-course').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('.course-item').dataset.id;
+        if (!confirm('Annuler cette course ?')) return;
+        btn.disabled = true;
+        const { error } = await supabaseClient.from('express_courses')
+          .update({ status: 'annulee', cancelled_at: new Date().toISOString() }).eq('id', id);
+        if (error) { alert('Erreur : ' + error.message); btn.disabled = false; return; }
+        await loadCourses();
+      });
+    });
+  }
+
+  async function loadCourses(){
+    const { data, error } = await supabaseClient
+      .from('express_courses')
+      .select('*')
+      .eq('client_id', currentUser.id)
+      .order('created_at', { ascending: false });
+    if (error) { console.error(error); return; }
+    myCourses = data;
+    await loadCoursiersFor(myCourses);
+    renderCourses();
+  }
+
+  document.getElementById('course-pickup-commune').addEventListener('change', updatePricePreview);
+  document.getElementById('course-dropoff-commune').addEventListener('change', updatePricePreview);
+
+  document.getElementById('form-new-course').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-new-course');
+    const msgBox = document.getElementById('new-msg');
+    msgBox.innerHTML = '';
+
+    const pickupCommune = document.getElementById('course-pickup-commune').value;
+    const dropoffCommune = document.getElementById('course-dropoff-commune').value;
+    const pickupAdresse = document.getElementById('course-pickup-adresse').value.trim();
+    const dropoffAdresse = document.getElementById('course-dropoff-adresse').value.trim();
+    const destNom = document.getElementById('course-dest-nom').value.trim();
+    const destTel = document.getElementById('course-dest-tel').value.trim();
+    const description = document.getElementById('course-description').value.trim();
+
+    if (!pickupCommune || !dropoffCommune) {
+      msgBox.innerHTML = `<div class="msg msg-error">Veuillez choisir la commune de récupération et de livraison.</div>`;
+      return;
+    }
+
+    const pickupCoords = EXPRESS_COMMUNE_COORDS[pickupCommune];
+    const dropoffCoords = EXPRESS_COMMUNE_COORDS[dropoffCommune];
+
+    btn.disabled = true; btn.textContent = 'Envoi...';
+    const { error } = await supabaseClient.from('express_courses').insert({
+      client_id: currentUser.id,
+      adresse_recuperation: `${pickupCommune} — ${pickupAdresse}`,
+      latitude_recuperation: pickupCoords ? pickupCoords.lat : null,
+      longitude_recuperation: pickupCoords ? pickupCoords.lng : null,
+      adresse_livraison: `${dropoffCommune} — ${dropoffAdresse}`,
+      latitude_livraison: dropoffCoords ? dropoffCoords.lat : null,
+      longitude_livraison: dropoffCoords ? dropoffCoords.lng : null,
+      destinataire_nom: destNom || null,
+      destinataire_telephone: destTel ? toE164(destTel) : null,
+      description_colis: description || null,
+    });
+    btn.disabled = false; btn.textContent = 'Commander cette livraison';
+
+    if (error) {
+      msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`;
+      return;
+    }
+    msgBox.innerHTML = `<div class="msg msg-success">Course envoyée ! Un coursier disponible va bientôt l'accepter.</div>`;
+    e.target.reset();
+    document.getElementById('price-preview').classList.add('hidden');
+    await loadCourses();
+  });
+
+  document.getElementById('form-change-password').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-change-password');
+    const msgBox = document.getElementById('change-pwd-msg');
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('new-password-confirm').value;
+    if (newPassword !== confirmPassword) { msgBox.innerHTML = `<div class="msg msg-error">Les deux mots de passe ne correspondent pas.</div>`; return; }
+    if (newPassword.length < 6) { msgBox.innerHTML = `<div class="msg msg-error">Le mot de passe doit contenir au moins 6 caractères.</div>`; return; }
+    btn.disabled = true; btn.textContent = 'Modification...';
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+    btn.disabled = false; btn.textContent = 'Changer mon mot de passe';
+    if (error) { msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${error.message}</div>`; }
+    else { msgBox.innerHTML = `<div class="msg msg-success">Mot de passe modifié avec succès.</div>`; e.target.reset(); }
+  });
+
+  function initSettingsMenu(){
+    const btn = document.getElementById('settings-menu-btn');
+    const dropdown = document.getElementById('settings-dropdown');
+    const monCompteBtn = document.getElementById('btn-mon-compte');
+    const overlay = document.getElementById('account-modal-overlay');
+    const closeBtn = document.getElementById('account-modal-close');
+    if (!btn || !dropdown) return;
+    btn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('open'); });
+    document.addEventListener('click', (e) => {
+      if (dropdown.classList.contains('open') && !dropdown.contains(e.target) && e.target !== btn) dropdown.classList.remove('open');
+    });
+    if (monCompteBtn) monCompteBtn.addEventListener('click', () => { dropdown.classList.remove('open'); overlay.classList.remove('hidden'); });
+    if (closeBtn) closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
+    if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.add('hidden'); });
+  }
+
+  async function init(){
+    const session = await requireAuth();
+    if (!session) return;
+    currentUser = session.user;
+
+    const profile = await getExpressProfile(currentUser.id);
+    if (!profile || profile.role !== 'client_express' || profile.status !== 'valide') {
+      await supabaseClient.auth.signOut();
+      window.location.href = 'express-login.html';
+      return;
+    }
+    currentProfile = profile;
+    document.getElementById('user-name').textContent = profile.full_name || '';
+    document.getElementById('user-first-name').textContent = (profile.full_name || '').split(' ')[0] || '';
+    document.getElementById('user-avatar-topbar').innerHTML = avatarHTML(profile, 34);
+    initSettingsMenu();
+
+    document.getElementById('course-pickup-commune').innerHTML = communesOptionsHTML(null, 'Choisir une commune');
+    document.getElementById('course-dropoff-commune').innerHTML = communesOptionsHTML(null, 'Choisir une commune');
+
+    const { data: cfg } = await supabaseClient.from('express_config').select('*').eq('id', 1).single();
+    expressConfig = cfg;
+
+    await loadCourses();
+
+    trackChannel(supabaseClient
+      .channel('express-courses-client-' + currentUser.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'express_courses', filter: `client_id=eq.${currentUser.id}` }, () => {
+        loadCourses();
+      })
+      .subscribe());
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -14,7 +14,7 @@
 
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même. */
 
-const CACHE_VERSION = 'clt-shell-v4';
+const CACHE_VERSION = 'clt-shell-v5';
 
 // Uniquement des ressources à URL stable (sans paramètre de version) : les fichiers versionnés
 // (style.css?v=..., config.js?v=...) sont mis en cache automatiquement au premier chargement réel
@@ -49,7 +49,27 @@ const PRECACHE_URLS = [
   '/images/icons/icon-512-fournisseur.png',
   '/images/icons/icon-maskable-192-fournisseur.png',
   '/images/icons/icon-maskable-512-fournisseur.png',
-  '/images/icons/apple-touch-icon-fournisseur.png'
+  '/images/icons/apple-touch-icon-fournisseur.png',
+
+  // CLT Express (marketplace grand public : clients & coursiers indépendants) — produit à part,
+  // avec ses propres pages/manifests/icônes, ajouté ici pour bénéficier du même minimum de
+  // résilience hors-ligne que le reste du site.
+  '/express.html',
+  '/app/express-login.html',
+  '/app/express-client.html',
+  '/app/express-coursier.html',
+  '/app/manifest-client-express.json',
+  '/app/manifest-coursier-express.json',
+  '/images/icons/icon-192-client-express.png',
+  '/images/icons/icon-512-client-express.png',
+  '/images/icons/icon-maskable-192-client-express.png',
+  '/images/icons/icon-maskable-512-client-express.png',
+  '/images/icons/apple-touch-icon-client-express.png',
+  '/images/icons/icon-192-coursier-express.png',
+  '/images/icons/icon-512-coursier-express.png',
+  '/images/icons/icon-maskable-192-coursier-express.png',
+  '/images/icons/icon-maskable-512-coursier-express.png',
+  '/images/icons/apple-touch-icon-coursier-express.png'
 ];
 
 self.addEventListener('install', (event) => {

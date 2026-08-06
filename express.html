@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLT Express — La livraison à la demande, partout à Abidjan</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%236D28D9'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23FFFFFF'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#6D28D9">
+<meta name="description" content="CLT Express : commandez une livraison en quelques instants, où que vous soyez à Abidjan, ou devenez coursier indépendant et gagnez de l'argent avec votre moto. Paiement en espèces, tarif calculé selon la distance.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CLT Express — La livraison à la demande, partout à Abidjan">
+<meta property="og:description" content="Commandez une livraison en quelques instants, ou devenez coursier indépendant et gagnez de l'argent. Disponible partout à Abidjan.">
+<meta property="og:url" content="https://christlivraison.ci/express.html">
+<meta property="og:image" content="https://christlivraison.ci/images/hero-livreur.jpg">
+<meta property="og:locale" content="fr_FR">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root{
+    --violet:#6D28D9; --violet-dark:#4c1d95; --violet-tint:#f4edfe;
+    --teal:#0D9488; --teal-dark:#0b6e64; --teal-tint:#e6fbf8;
+    --navy:#1B4374; --muted:#5b6b82; --white:#FFFFFF; --bg:#F7F8FA; --border:#ECEFF3;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Poppins', Arial, sans-serif; color:#20242c; line-height:1.6; background:var(--white);}
+  a{color:inherit; text-decoration:none;}
+  img{max-width:100%; display:block;}
+  .container{max-width:1120px; margin:0 auto; padding:0 24px;}
+  section{padding:76px 0;}
+  h1,h2,h3{font-weight:700;}
+  .section-title{font-size:28px; color:var(--navy); text-align:center; margin-bottom:12px;}
+  .section-sub{text-align:center; color:var(--muted); max-width:600px; margin:0 auto 44px auto; font-size:15px;}
+
+  /* ---------- NAV ---------- */
+  header{position:sticky; top:0; z-index:50; background:rgba(255,255,255,0.94); backdrop-filter:blur(6px); border-bottom:1px solid var(--border);}
+  nav{display:flex; align-items:center; justify-content:space-between; max-width:1200px; margin:0 auto; padding:14px 20px;}
+  .brand-logo{display:flex; align-items:center; gap:10px; font-weight:800; font-size:17px; color:var(--navy);}
+  .brand-logo .mark{width:38px; height:38px; border-radius:11px; background:linear-gradient(135deg, var(--violet), var(--teal)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;}
+  .brand-logo .sub{font-size:11px; font-weight:600; color:var(--muted); display:block; margin-top:-2px;}
+  .nav-links{display:flex; align-items:center; gap:26px; list-style:none;}
+  .nav-links a{font-weight:600; font-size:13.5px; color:var(--navy);}
+  .nav-links a:hover{color:var(--violet);}
+  .nav-actions{display:flex; align-items:center; gap:10px;}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:24px; font-weight:700; font-size:13.5px; border:2px solid transparent; cursor:pointer; transition:transform .15s ease, box-shadow .2s ease, background .2s ease;}
+  .btn:active{transform:scale(.97);}
+  .btn-violet{background:var(--violet); color:#fff; box-shadow:0 6px 16px rgba(109,40,217,0.28);}
+  .btn-violet:hover{background:var(--violet-dark);}
+  .btn-teal{background:var(--teal); color:#fff; box-shadow:0 6px 16px rgba(13,148,136,0.28);}
+  .btn-teal:hover{background:var(--teal-dark);}
+  .btn-outline-navy{background:transparent; border-color:var(--navy); color:var(--navy);}
+  .btn-outline-navy:hover{background:var(--navy); color:#fff;}
+  .burger{display:none; background:none; border:none; font-size:22px; color:var(--navy); cursor:pointer;}
+  @media (max-width:840px){
+    .nav-links, .nav-actions{display:none;}
+    .burger{display:block;}
+    .nav-links.open{
+      display:flex; position:absolute; top:100%; left:0; right:0; background:#fff; flex-direction:column;
+      padding:10px 24px 20px 24px; box-shadow:0 8px 16px rgba(0,0,0,0.08); gap:0;
+    }
+    .nav-links.open li{width:100%; border-bottom:1px solid var(--border);}
+    .nav-links.open a{display:block; padding:14px 0;}
+    .nav-links.open .nav-actions-mobile{display:flex; flex-direction:column; gap:10px; padding:16px 0 6px 0;}
+    .nav-actions-mobile .btn{width:100%; justify-content:center;}
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{background:linear-gradient(155deg, var(--violet) 0%, var(--violet-dark) 55%, var(--teal-dark) 100%); padding:64px 0 90px 0; color:#fff; position:relative; overflow:hidden;}
+  .hero-inner{display:grid; grid-template-columns:1.1fr 0.9fr; gap:48px; align-items:center;}
+  @media (max-width:900px){ .hero-inner{grid-template-columns:1fr;} }
+  .hero-pill{display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700; letter-spacing:.4px; margin-bottom:18px;}
+  .hero h1{font-size:38px; line-height:1.2; margin-bottom:16px;}
+  .hero p.lead{font-size:15.5px; color:rgba(255,255,255,0.88); max-width:520px; margin-bottom:28px;}
+  .hero-photo{border-radius:22px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.35); border:4px solid rgba(255,255,255,0.15);}
+  .hero-photo img{width:100%; height:340px; object-fit:cover;}
+
+  .choice-cards{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px;}
+  @media (max-width:560px){ .choice-cards{grid-template-columns:1fr;} }
+  .choice-card{background:rgba(255,255,255,0.1); border:1.5px solid rgba(255,255,255,0.25); border-radius:16px; padding:20px; backdrop-filter:blur(4px); transition:transform .15s ease, background .2s ease;}
+  .choice-card:hover{transform:translateY(-3px); background:rgba(255,255,255,0.16);}
+  .choice-card .icon{font-size:26px; margin-bottom:8px;}
+  .choice-card h3{font-size:16px; margin-bottom:6px;}
+  .choice-card p{font-size:12.5px; color:rgba(255,255,255,0.82); margin-bottom:14px;}
+  .choice-card .btn{width:100%; justify-content:center;}
+
+  /* ---------- TRUST STRIP ---------- */
+  .trust-strip{background:var(--bg); padding:22px 0; border-bottom:1px solid var(--border);}
+  .trust-strip .container{display:flex; flex-wrap:wrap; justify-content:center; gap:32px; text-align:center;}
+  .trust-item{font-size:12.5px; font-weight:600; color:var(--muted); display:flex; align-items:center; gap:8px;}
+  .trust-item i{color:var(--violet); font-size:15px;}
+
+  /* ---------- HOW IT WORKS (two columns) ---------- */
+  .hiw-grid{display:grid; grid-template-columns:1fr 1fr; gap:28px;}
+  @media (max-width:840px){ .hiw-grid{grid-template-columns:1fr;} }
+  .hiw-col{border-radius:18px; padding:28px 26px; border:1.5px solid var(--border);}
+  .hiw-col.client{background:var(--violet-tint);}
+  .hiw-col.coursier{background:var(--teal-tint);}
+  .hiw-col h3{font-size:18px; margin-bottom:6px; display:flex; align-items:center; gap:10px;}
+  .hiw-col.client h3{color:var(--violet-dark);}
+  .hiw-col.coursier h3{color:var(--teal-dark);}
+  .hiw-col .hiw-sub{font-size:12.5px; color:var(--muted); margin-bottom:20px;}
+  .hiw-step{display:flex; gap:14px; margin-bottom:18px;}
+  .hiw-step:last-child{margin-bottom:0;}
+  .hiw-step .num{flex-shrink:0; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:#fff;}
+  .hiw-col.client .hiw-step .num{background:var(--violet);}
+  .hiw-col.coursier .hiw-step .num{background:var(--teal);}
+  .hiw-step .txt strong{display:block; font-size:14px; color:#20242c; margin-bottom:2px;}
+  .hiw-step .txt span{font-size:12.5px; color:var(--muted);}
+  .hiw-col .btn{margin-top:22px; width:100%; justify-content:center;}
+
+  /* ---------- PRICING ---------- */
+  .pricing-box{background:var(--navy); color:#fff; border-radius:22px; padding:40px; display:grid; grid-template-columns:1.1fr 0.9fr; gap:36px; align-items:center;}
+  @media (max-width:840px){ .pricing-box{grid-template-columns:1fr; padding:30px 24px;} }
+  .pricing-box h2{font-size:24px; margin-bottom:12px;}
+  .pricing-box p{font-size:14px; color:rgba(255,255,255,0.82); margin-bottom:10px;}
+  .pricing-formula{background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); border-radius:14px; padding:20px;}
+  .pricing-formula .line{display:flex; justify-content:space-between; font-size:13.5px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.12);}
+  .pricing-formula .line:last-child{border-bottom:none;}
+  .pricing-formula .line span:last-child{font-weight:700;}
+  .pricing-note{font-size:12px; color:rgba(255,255,255,0.65); margin-top:14px;}
+
+  /* ---------- ZONES ---------- */
+  .zone-chips{display:flex; flex-wrap:wrap; gap:10px; justify-content:center;}
+  .zone-chip{background:var(--bg); border:1.5px solid var(--border); border-radius:20px; padding:9px 18px; font-size:13px; font-weight:600; color:var(--navy);}
+
+  /* ---------- FAQ ---------- */
+  .faq-list{max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:10px;}
+  .faq-item{border:1.5px solid var(--border); border-radius:14px; overflow:hidden;}
+  .faq-q{padding:16px 20px; font-weight:700; font-size:14px; color:var(--navy); cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .faq-q i{transition:transform .2s ease; color:var(--violet); flex-shrink:0;}
+  .faq-item.open .faq-q i{transform:rotate(180deg);}
+  .faq-a{max-height:0; overflow:hidden; transition:max-height .25s ease;}
+  .faq-a p{padding:0 20px 16px 20px; font-size:13.5px; color:var(--muted);}
+
+  /* ---------- FINAL CTA ---------- */
+  .final-cta{background:linear-gradient(120deg, var(--violet), var(--teal-dark)); color:#fff; text-align:center; border-radius:24px; padding:56px 24px; margin:0 24px;}
+  .final-cta h2{font-size:26px; margin-bottom:10px;}
+  .final-cta p{font-size:14.5px; color:rgba(255,255,255,0.86); max-width:480px; margin:0 auto 26px auto;}
+  .final-cta .btn-row{display:flex; gap:14px; justify-content:center; flex-wrap:wrap;}
+  .final-cta .btn-white{background:#fff; color:var(--violet-dark); box-shadow:0 8px 20px rgba(0,0,0,0.2);}
+  .final-cta .btn-white:hover{background:#f4edfe;}
+  .final-cta .btn-outline-white{background:transparent; border-color:rgba(255,255,255,0.7); color:#fff;}
+  .final-cta .btn-outline-white:hover{background:rgba(255,255,255,0.15);}
+
+  /* ---------- FOOTER ---------- */
+  footer{background:#151a23; color:#c9d0da; padding:52px 0 24px 0; margin-top:40px;}
+  .footer-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:32px; margin-bottom:36px;}
+  @media (max-width:700px){ .footer-grid{grid-template-columns:1fr;} }
+  .footer-brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:16px; color:#fff; margin-bottom:10px;}
+  .footer-brand .mark{width:32px; height:32px; border-radius:9px; background:linear-gradient(135deg, var(--violet), var(--teal)); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#fff;}
+  footer h4{color:#fff; font-size:13px; margin-bottom:14px; letter-spacing:.3px;}
+  footer ul{list-style:none;}
+  footer li{margin-bottom:9px; font-size:13px;}
+  footer a:hover{color:#fff;}
+  .footer-bottom{border-top:1px solid rgba(255,255,255,0.1); padding-top:20px; font-size:11.5px; color:#7c8695; text-align:center;}
+  .footer-bottom a{color:#9aa4b2; text-decoration:underline;}
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="express.html" class="brand-logo">
+      <div class="mark">CLT</div>
+      <div>CLT Express<span class="sub">by Christ Livraison &amp; Transport</span></div>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#comment-ca-marche">Comment ça marche</a></li>
+      <li><a href="#tarifs">Tarifs</a></li>
+      <li><a href="#zones">Zones couvertes</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li class="nav-actions-mobile">
+        <a href="app/express-login.html?role=coursier" class="btn btn-teal">🛵 Devenir coursier</a>
+        <a href="app/express-login.html?role=client" class="btn btn-violet">Commander une livraison</a>
+      </li>
+    </ul>
+    <div class="nav-actions">
+      <a href="app/express-login.html?role=coursier" class="btn btn-outline-navy">🛵 Devenir coursier</a>
+      <a href="app/express-login.html?role=client" class="btn btn-violet">Commander une livraison</a>
+    </div>
+    <button type="button" class="burger" id="burgerBtn" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="container hero-inner">
+    <div>
+      <span class="hero-pill">🚀 NOUVEAU — Lancement à Abidjan</span>
+      <h1>La livraison à la demande,<br>partout à Abidjan.</h1>
+      <p class="lead">CLT Express met en relation particuliers et coursiers indépendants : commandez une livraison en quelques instants, ou devenez coursier et gagnez de l'argent avec votre moto. Paiement en espèces, à la livraison.</p>
+
+      <div class="choice-cards">
+        <div class="choice-card">
+          <div class="icon">📦</div>
+          <h3>Je veux envoyer un colis</h3>
+          <p>Choisissez vos communes, obtenez un prix immédiat, un coursier disponible accepte votre course.</p>
+          <a href="app/express-login.html?role=client" class="btn btn-violet">Commander</a>
+        </div>
+        <div class="choice-card">
+          <div class="icon">🛵</div>
+          <h3>Je veux livrer &amp; gagner</h3>
+          <p>Inscrivez-vous, faites valider votre compte, puis acceptez les courses qui vous intéressent.</p>
+          <a href="app/express-login.html?role=coursier" class="btn btn-teal">Devenir coursier</a>
+        </div>
+      </div>
+    </div>
+    <div class="hero-photo">
+      <img src="images/hero-livreur.jpg" alt="Coursier CLT Express à moto, livraison à Abidjan">
+    </div>
+  </div>
+</section>
+
+<div class="trust-strip">
+  <div class="container">
+    <div class="trust-item"><i class="fa-solid fa-money-bill-wave"></i> Paiement en espèces à la livraison</div>
+    <div class="trust-item"><i class="fa-solid fa-route"></i> Prix calculé selon la distance</div>
+    <div class="trust-item"><i class="fa-solid fa-id-card"></i> Coursiers vérifiés par notre équipe</div>
+    <div class="trust-item"><i class="fa-solid fa-city"></i> Toutes les communes d'Abidjan</div>
+  </div>
+</div>
+
+<section id="comment-ca-marche">
+  <div class="container">
+    <h2 class="section-title">Comment ça marche</h2>
+    <p class="section-sub">Un fonctionnement simple, pensé pour aller vite — que vous commandiez une livraison ou que vous souhaitiez livrer.</p>
+    <div class="hiw-grid">
+      <div class="hiw-col client">
+        <h3>📦 Pour envoyer un colis</h3>
+        <div class="hiw-sub">Client — commandez en moins d'une minute</div>
+        <div class="hiw-step">
+          <div class="num">1</div>
+          <div class="txt"><strong>Créez votre compte</strong><span>Avec votre numéro de téléphone, en quelques secondes. Votre compte est actif immédiatement.</span></div>
+        </div>
+        <div class="hiw-step">
+          <div class="num">2</div>
+          <div class="txt"><strong>Choisissez vos communes</strong><span>Commune de récupération et de livraison : le prix estimé s'affiche tout de suite.</span></div>
+        </div>
+        <div class="hiw-step">
+          <div class="num">3</div>
+          <div class="txt"><strong>Un coursier accepte votre course</strong><span>Vous suivez le statut en temps réel et payez en espèces à la livraison.</span></div>
+        </div>
+        <a href="app/express-login.html?role=client" class="btn btn-violet">Commander une livraison</a>
+      </div>
+      <div class="hiw-col coursier">
+        <h3>🛵 Pour devenir coursier</h3>
+        <div class="hiw-sub">Coursier indépendant — gagnez de l'argent avec votre moto</div>
+        <div class="hiw-step">
+          <div class="num">1</div>
+          <div class="txt"><strong>Créez votre compte</strong><span>Avec une photo de votre pièce d'identité (CNI, permis, passeport...).</span></div>
+        </div>
+        <div class="hiw-step">
+          <div class="num">2</div>
+          <div class="txt"><strong>Votre compte est validé</strong><span>Notre équipe vérifie votre pièce d'identité, généralement rapidement.</span></div>
+        </div>
+        <div class="hiw-step">
+          <div class="num">3</div>
+          <div class="txt"><strong>Activez « Je suis disponible »</strong><span>Voyez les courses disponibles près de vous, acceptez celles qui vous intéressent, gardez votre part de chaque course.</span></div>
+        </div>
+        <a href="app/express-login.html?role=coursier" class="btn btn-teal">Devenir coursier</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tarifs" style="background:var(--bg);">
+  <div class="container">
+    <div class="pricing-box">
+      <div>
+        <h2>Un tarif clair, calculé automatiquement</h2>
+        <p>Chaque course a un prix calculé selon la distance entre le point de récupération et le point de livraison — pas de négociation, pas de surprise.</p>
+        <p>Le client paie directement le coursier, en espèces, à la livraison. Le coursier garde sa part sur chaque course.</p>
+      </div>
+      <div class="pricing-formula">
+        <div class="line"><span>Prix de base</span><span>≈ 500 FCFA</span></div>
+        <div class="line"><span>+ par kilomètre parcouru</span><span>≈ 150 FCFA/km</span></div>
+        <div class="line"><span>Paiement</span><span>Espèces, à la livraison</span></div>
+        <div class="pricing-note">Tarifs de lancement, pouvant évoluer. Le prix exact est toujours affiché avant l'envoi de la course.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="zones">
+  <div class="container">
+    <h2 class="section-title">Toutes les communes d'Abidjan</h2>
+    <p class="section-sub">CLT Express est disponible dans les communes suivantes, avec pour objectif de couvrir toute la ville.</p>
+    <div class="zone-chips">
+      <span class="zone-chip">Abobo</span>
+      <span class="zone-chip">Adjamé</span>
+      <span class="zone-chip">Anyama</span>
+      <span class="zone-chip">Bingerville</span>
+      <span class="zone-chip">Cocody</span>
+      <span class="zone-chip">Grand-Bassam</span>
+      <span class="zone-chip">Koumassi</span>
+      <span class="zone-chip">Marcory</span>
+      <span class="zone-chip">Plateau</span>
+      <span class="zone-chip">Port-Bouët</span>
+      <span class="zone-chip">Treichville</span>
+      <span class="zone-chip">Yopougon</span>
+    </div>
+  </div>
+</section>
+
+<section id="faq" style="background:var(--bg);">
+  <div class="container">
+    <h2 class="section-title">Questions fréquentes</h2>
+    <p class="section-sub">Tout ce qu'il faut savoir avant de commencer.</p>
+    <div class="faq-list" id="faqList">
+      <div class="faq-item">
+        <div class="faq-q">Comment se fait le paiement ?<i class="fa-solid fa-chevron-down"></i></div>
+        <div class="faq-a"><p>Le client paie directement le coursier en espèces, au moment de la livraison. Il n'y a pas de paiement en ligne pour le moment.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Comment le prix est-il calculé ?<i class="fa-solid fa-chevron-down"></i></div>
+        <div class="faq-a"><p>Le prix dépend de la distance entre la commune de récupération et la commune de livraison. Il est affiché avant l'envoi de la course, et ne change plus une fois la course créée.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Qui peut devenir coursier ?<i class="fa-solid fa-chevron-down"></i></div>
+        <div class="faq-a"><p>Toute personne disposant d'une moto et d'une pièce d'identité valide peut s'inscrire. Le compte est vérifié par notre équipe avant de pouvoir accepter des courses.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Puis-je annuler une course ?<i class="fa-solid fa-chevron-down"></i></div>
+        <div class="faq-a"><p>Oui, tant qu'aucun coursier ne l'a encore acceptée. Une fois une course acceptée, contactez directement le coursier ou notre équipe.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Quelle différence avec Christ Livraison &amp; Transport ?<i class="fa-solid fa-chevron-down"></i></div>
+        <div class="faq-a"><p>Christ Livraison &amp; Transport SARL reste votre partenaire livraison pour les entreprises et commerçants (colis, tournées, contrats). CLT Express est un service complémentaire, ouvert à tous, pour les livraisons ponctuelles à la demande.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="final-cta">
+    <h2>Prêt à commencer ?</h2>
+    <p>Que vous ayez un colis à envoyer ou que vous souhaitiez livrer avec votre moto, créez votre compte en quelques instants.</p>
+    <div class="btn-row">
+      <a href="app/express-login.html?role=client" class="btn btn-white">📦 Commander une livraison</a>
+      <a href="app/express-login.html?role=coursier" class="btn btn-outline-white">🛵 Devenir coursier</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><div class="mark">CLT</div> CLT Express</div>
+        <p style="font-size:13px; max-width:320px;">Un service de Christ Livraison &amp; Transport SARL. La livraison à la demande, pour tous, partout à Abidjan.</p>
+      </div>
+      <div>
+        <h4>LIENS</h4>
+        <ul>
+          <li><a href="#comment-ca-marche">Comment ça marche</a></li>
+          <li><a href="#tarifs">Tarifs</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="index.html">Christ Livraison &amp; Transport (entreprises)</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>CONTACT</h4>
+        <ul>
+          <li><a href="https://wa.me/2250546818640" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> (+225) 05 46 81 86 40</a></li>
+          <li><a href="tel:+2250711138693"><i class="fa-solid fa-phone"></i> 07 11 13 86 93</a></li>
+          <li><a href="mailto:contact@christlivraison.ci"><i class="fa-solid fa-envelope"></i> contact@christlivraison.ci</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      CHRIST LIVRAISON &amp; TRANSPORT SARL — Siège social : Abidjan, Cocody Lycée technique — N°RCCM : CI-ABJ-03-2026-B12-00184<br>
+      <a href="politique-confidentialite.html">Politique de confidentialité</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('burgerBtn').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const q = item.querySelector('.faq-q');
+    const a = item.querySelector('.faq-a');
+    q.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(other => {
+        if (other !== item) { other.classList.remove('open'); other.querySelector('.faq-a').style.maxHeight = null; }
+      });
+      item.classList.toggle('open', !isOpen);
+      a.style.maxHeight = !isOpen ? a.scrollHeight + 'px' : null;
+    });
+  });
+</script>
+</body>
+</html>

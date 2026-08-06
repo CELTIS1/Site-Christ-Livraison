@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion | CLT Express</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%236D28D9'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23FFFFFF'/%3E%3C/svg%3E">
+    <link rel="manifest" href="manifest-client-express.json">
+    <link rel="apple-touch-icon" href="/images/icons/apple-touch-icon-client-express.png">
+    <meta name="theme-color" content="#6D28D9">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CLT Express">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=20260801">
+  <style>
+    /* CLT Express utilise le violet comme couleur de marque, à la place du bleu marine du
+       portail interne, pour bien montrer qu'il s'agit d'un produit distinct. */
+    .login-page{ background: linear-gradient(160deg, #6D28D9 0%, #4c1d95 100%); }
+    .login-box .logo-mark{ background:#6D28D9; }
+    .login-box .login-title, .login-box .btn:not(.btn-outline){ color:inherit; }
+    .btn:not(.btn-outline){ background:#6D28D9 !important; }
+    .role-toggle{ display:flex; gap:8px; margin-bottom:16px; }
+    .role-toggle button{
+      flex:1; padding:10px 8px; border-radius:10px; border:1.5px solid var(--border);
+      background:#fff; font-family:inherit; font-weight:700; font-size:13.5px; color:var(--muted);
+      cursor:pointer; transition:all .15s ease;
+    }
+    .role-toggle button.active{ border-color:#6D28D9; color:#6D28D9; background:#f4edfe; }
+    .kyc-field{ margin-bottom:14px; }
+    .kyc-field label{ display:block; font-size:13px; font-weight:700; color:var(--navy); margin-bottom:6px; }
+    .kyc-buttons{ display:flex; gap:8px; }
+    .kyc-buttons button{
+      flex:1; padding:10px 8px; border-radius:10px; border:1.5px dashed var(--border);
+      background:#fafbfc; font-family:inherit; font-weight:600; font-size:12.5px; color:var(--muted); cursor:pointer;
+    }
+    .kyc-filename{ margin-top:6px; font-size:12px; color:#1a7d3c; font-weight:600; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+<body>
+  <div class="login-page">
+    <div class="login-box">
+      <div class="login-logo">
+        <div class="logo-mark">CLT</div>
+      </div>
+      <div class="login-title">CLT Express</div>
+      <div class="login-sub">Livraisons pour tous, à Abidjan</div>
+      <div class="login-helper">Un compte pour commander une livraison, ou pour devenir coursier indépendant.</div>
+
+      <div class="tabs">
+        <div class="tab active" id="tab-connexion" onclick="showTab('connexion')">Connexion</div>
+        <div class="tab" id="tab-inscription" onclick="showTab('inscription')">Créer un compte</div>
+      </div>
+
+      <div id="msg-box"></div>
+
+      <!-- CONNEXION -->
+      <form id="form-connexion-login">
+        <div class="field">
+          <label>Numéro de téléphone</label>
+          <input type="tel" id="login-phone" required placeholder="07 00 00 00 00">
+        </div>
+        <div class="field">
+          <label>Mot de passe</label>
+          <input type="password" id="login-password" required placeholder="Votre mot de passe">
+        </div>
+        <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-login-submit">Se connecter</button>
+        <button type="button" id="btn-goto-inscription" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Pas encore de compte ? Créer un compte</button>
+      </form>
+
+      <!-- INSCRIPTION -->
+      <form id="form-inscription" class="hidden">
+        <div class="role-toggle">
+          <button type="button" id="role-client" class="active">🧑 Je suis client</button>
+          <button type="button" id="role-coursier">🛵 Je suis coursier</button>
+        </div>
+
+        <div class="field">
+          <label>Nom complet</label>
+          <input type="text" id="reg-fullname" required placeholder="Votre nom">
+        </div>
+        <div class="field">
+          <label>Numéro de téléphone</label>
+          <input type="tel" id="reg-phone" required placeholder="07 00 00 00 00">
+        </div>
+        <div class="field">
+          <label>Créer un mot de passe</label>
+          <input type="password" id="reg-password" required minlength="6" placeholder="6 caractères minimum">
+        </div>
+        <div class="field">
+          <label>Confirmer le mot de passe</label>
+          <input type="password" id="reg-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
+        </div>
+
+        <div class="kyc-field hidden" id="kyc-field">
+          <label>Photo d'une pièce d'identité (CNI, permis, passeport...)</label>
+          <div class="kyc-buttons">
+            <button type="button" id="btn-kyc-camera">📷 Prendre une photo</button>
+            <button type="button" id="btn-kyc-library">🖼️ Depuis la bibliothèque</button>
+          </div>
+          <input type="file" id="kyc-input-camera" accept="image/*" capture="environment" class="hidden">
+          <input type="file" id="kyc-input-library" accept="image/*" class="hidden">
+          <div class="kyc-filename" id="kyc-filename"></div>
+          <div style="margin-top:8px;font-size:12px;color:#6b7280;">Nécessaire pour que notre équipe puisse valider votre compte coursier avant votre première course.</div>
+        </div>
+
+        <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-register-submit">Créer mon compte</button>
+        <div style="margin-top:10px;font-size:12.5px;color:#6b7280;text-align:center;" id="register-hint">Vous pourrez commander dès la création de votre compte.</div>
+        <button type="button" id="btn-inscription-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
+      </form>
+
+      <!-- ATTENTE DE VALIDATION (coursier uniquement) -->
+      <div id="waiting-box" class="hidden waiting-box">
+        <div class="waiting-spinner"></div>
+        <div class="waiting-title">Compte en attente de validation</div>
+        <div class="waiting-text" id="waiting-text">Votre demande a été transmise à notre équipe, avec votre pièce d'identité. Cette page se met à jour automatiquement — dès que votre compte sera validé, vous serez connecté(e) directement.</div>
+        <div class="waiting-lastcheck" id="waiting-lastcheck"></div>
+        <button type="button" class="btn" style="width:100%; justify-content:center; margin-top:16px;" id="btn-waiting-check">Vérifier maintenant</button>
+        <button type="button" id="btn-waiting-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
+      </div>
+
+    </div>
+  </div>
+
+<script src="express-config.js?v=20260806a"></script>
+<script>
+  let regRole = 'client_express';
+  let kycFile = null;
+
+  function showTab(which){
+    stopWaiting();
+    document.getElementById('tab-connexion').classList.toggle('active', which==='connexion');
+    document.getElementById('tab-inscription').classList.toggle('active', which==='inscription');
+    document.getElementById('form-connexion-login').classList.toggle('hidden', which!=='connexion');
+    document.getElementById('form-inscription').classList.toggle('hidden', which!=='inscription');
+    document.getElementById('waiting-box').classList.add('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+  }
+
+  function showMsg(text, type){
+    document.getElementById('msg-box').innerHTML =
+      '<div class="msg msg-' + type + '">' + escapeHTML(text) + '</div>';
+  }
+
+  function setRegRole(role){
+    regRole = role;
+    document.getElementById('role-client').classList.toggle('active', role === 'client_express');
+    document.getElementById('role-coursier').classList.toggle('active', role === 'coursier_express');
+    document.getElementById('kyc-field').classList.toggle('hidden', role !== 'coursier_express');
+    document.getElementById('register-hint').textContent = role === 'coursier_express'
+      ? "Votre compte sera activé après validation par notre équipe (vérification de votre pièce d'identité)."
+      : "Vous pourrez commander dès la création de votre compte.";
+  }
+  document.getElementById('role-client').addEventListener('click', () => setRegRole('client_express'));
+  document.getElementById('role-coursier').addEventListener('click', () => setRegRole('coursier_express'));
+
+  document.getElementById('btn-goto-inscription').addEventListener('click', () => showTab('inscription'));
+  document.getElementById('btn-inscription-cancel').addEventListener('click', () => showTab('connexion'));
+
+  // ---------- Photo de pièce d'identité : redimensionnée/compressée avant envoi ----------
+  document.getElementById('btn-kyc-camera').addEventListener('click', () => document.getElementById('kyc-input-camera').click());
+  document.getElementById('btn-kyc-library').addEventListener('click', () => document.getElementById('kyc-input-library').click());
+
+  function compressImage(file, maxWidth, quality){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = () => { img.src = reader.result; };
+      reader.onerror = reject;
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleKycFile(file){
+    if (!file) return;
+    document.getElementById('kyc-filename').textContent = 'Traitement de la photo...';
+    try {
+      const dataUrl = await compressImage(file, 1200, 0.72);
+      kycFile = { base64: dataUrl.split(',')[1], mime: 'image/jpeg' };
+      document.getElementById('kyc-filename').textContent = '✅ Photo prête (' + file.name + ')';
+    } catch (err) {
+      kycFile = null;
+      document.getElementById('kyc-filename').textContent = '⚠️ Impossible de lire cette photo, réessayez.';
+    }
+  }
+  document.getElementById('kyc-input-camera').addEventListener('change', (e) => { handleKycFile(e.target.files[0]); e.target.value=''; });
+  document.getElementById('kyc-input-library').addEventListener('change', (e) => { handleKycFile(e.target.files[0]); e.target.value=''; });
+
+  // Si déjà connecté, redirige directement vers le bon espace.
+  (async function checkSession(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      const profile = await getExpressProfile(session.user.id);
+      const ok = await checkAccountStatus(profile);
+      if (!ok) return;
+      redirectByRole(profile);
+    }
+  })();
+
+  function redirectByRole(profile){
+    if (profile && profile.role === 'coursier_express') {
+      window.location.href = 'express-coursier.html';
+    } else if (profile && profile.role === 'client_express') {
+      window.location.href = 'express-client.html';
+    } else {
+      // Compte existant mais d'un autre type d'espace (équipe, livreur, client B2B...) :
+      // CLT Express est un produit séparé, ce n'est pas ce compte qu'il faut utiliser ici.
+      supabaseClient.auth.signOut();
+      showMsg("Ce numéro est associé à un autre espace Christ Livraison (pas CLT Express). Utilisez la page de connexion habituelle.", "error");
+    }
+  }
+
+  async function attemptSignIn(phoneNoPlus, password){
+    const phonePlus = '+' + phoneNoPlus;
+    let { data, error } = await supabaseClient.auth.signInWithPassword({ phone: phoneNoPlus, password });
+    if (error) {
+      const retry = await supabaseClient.auth.signInWithPassword({ phone: phonePlus, password });
+      data = retry.data;
+      error = retry.error;
+    }
+    return { data, error };
+  }
+
+  // ---------- Attente de validation (coursier) ----------
+  const WAITING_FALLBACK_MS = 20000;
+  const WAITING_MAX_FALLBACKS = 360;
+  let waitingPhone = null, waitingPassword = null, waitingUserId = null, waitingChannel = null, waitingFallbackTimer = null, waitingFallbackCount = 0;
+
+  function showWaiting(phoneNoPlus, password){
+    waitingPhone = phoneNoPlus; waitingPassword = password; waitingFallbackCount = 0;
+    document.getElementById('form-connexion-login').classList.add('hidden');
+    document.getElementById('form-inscription').classList.add('hidden');
+    document.getElementById('waiting-box').classList.remove('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+    startWaitingRealtime();
+  }
+
+  async function startWaitingRealtime(){
+    setLastCheckTime();
+    const { data, error } = await attemptSignIn(waitingPhone, waitingPassword);
+    if (error || !data || !data.user) { scheduleWaitingFallback(); return; }
+    waitingUserId = data.user.id;
+    const profile = await getExpressProfile(data.user.id);
+    if (handleWaitingProfile(profile)) return;
+    subscribeWaitingChannel();
+    scheduleWaitingFallback();
+  }
+
+  function subscribeWaitingChannel(){
+    if (waitingChannel || !waitingUserId) return;
+    waitingChannel = supabaseClient
+      .channel('waiting-express-' + waitingUserId)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${waitingUserId}` }, (payload) => {
+        handleWaitingProfile(payload.new);
+      })
+      .subscribe();
+  }
+
+  function unsubscribeWaitingChannel(){
+    if (waitingChannel) { supabaseClient.removeChannel(waitingChannel); waitingChannel = null; }
+  }
+
+  function stopWaiting(){
+    clearTimeout(waitingFallbackTimer); waitingFallbackTimer = null;
+    unsubscribeWaitingChannel();
+    if (waitingUserId) supabaseClient.auth.signOut();
+    waitingPhone = null; waitingPassword = null; waitingUserId = null;
+  }
+
+  function setLastCheckTime(){
+    const el = document.getElementById('waiting-lastcheck');
+    if (el) el.textContent = 'Dernière vérification à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function handleWaitingProfile(profile){
+    if (!profile) return false;
+    if (profile.status === 'valide'){
+      clearTimeout(waitingFallbackTimer);
+      unsubscribeWaitingChannel();
+      document.getElementById('waiting-text').textContent = "Votre compte a été validé ! Connexion en cours...";
+      setTimeout(() => redirectByRole(profile), 600);
+      return true;
+    }
+    if (profile.status === 'rejete'){
+      clearTimeout(waitingFallbackTimer);
+      unsubscribeWaitingChannel();
+      supabaseClient.auth.signOut();
+      waitingUserId = null;
+      stopWaiting();
+      document.getElementById('waiting-box').classList.add('hidden');
+      document.getElementById('form-connexion-login').classList.remove('hidden');
+      showMsg("Votre demande de compte coursier a été refusée. Contactez notre équipe pour plus d'informations.", "error");
+      return true;
+    }
+    return false;
+  }
+
+  function scheduleWaitingFallback(){
+    clearTimeout(waitingFallbackTimer);
+    waitingFallbackTimer = setTimeout(async () => {
+      waitingFallbackCount++;
+      setLastCheckTime();
+      if (waitingUserId) {
+        const profile = await getExpressProfile(waitingUserId);
+        if (handleWaitingProfile(profile)) return;
+        subscribeWaitingChannel();
+      }
+      if (waitingFallbackCount >= WAITING_MAX_FALLBACKS){
+        document.getElementById('waiting-text').textContent = "Votre demande est toujours en attente de validation. Utilisez le bouton ci-dessous pour vérifier manuellement.";
+        return;
+      }
+      scheduleWaitingFallback();
+    }, WAITING_FALLBACK_MS);
+  }
+
+  document.getElementById('btn-waiting-check').addEventListener('click', async () => {
+    document.getElementById('waiting-text').textContent = "Vérification en cours...";
+    setLastCheckTime();
+    if (waitingUserId) {
+      const profile = await getExpressProfile(waitingUserId);
+      if (!handleWaitingProfile(profile)) {
+        document.getElementById('waiting-text').textContent = "Toujours en attente de validation. Vous serez averti automatiquement dès que ce sera fait.";
+      }
+    } else {
+      startWaitingRealtime();
+    }
+  });
+
+  document.getElementById('btn-waiting-cancel').addEventListener('click', () => {
+    stopWaiting();
+    document.getElementById('waiting-box').classList.add('hidden');
+    document.getElementById('form-connexion-login').classList.remove('hidden');
+  });
+
+  async function checkAccountStatus(profile, phoneNoPlus, password){
+    if (profile && profile.status === 'en_attente') {
+      await supabaseClient.auth.signOut();
+      if (phoneNoPlus && password) {
+        showWaiting(phoneNoPlus, password);
+      } else {
+        showMsg("Votre compte coursier est en attente de validation par notre équipe.", "error");
+      }
+      return false;
+    }
+    if (profile && profile.status === 'rejete') {
+      await supabaseClient.auth.signOut();
+      showMsg("Votre demande de compte a été refusée. Contactez notre équipe pour plus d'informations.", "error");
+      return false;
+    }
+    return true;
+  }
+
+  // ---------- CONNEXION ----------
+  document.getElementById('form-connexion-login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-login-submit');
+    btn.disabled = true; btn.textContent = 'Connexion...';
+
+    const phoneNoPlus = toE164(document.getElementById('login-phone').value.trim());
+    const password = document.getElementById('login-password').value;
+    const { data, error } = await attemptSignIn(phoneNoPlus, password);
+
+    if (error) {
+      showMsg("Erreur : numéro ou mot de passe incorrect.", "error");
+      btn.disabled = false; btn.textContent = 'Se connecter';
+      return;
+    }
+
+    const profile = await getExpressProfile(data.user.id);
+    const ok = await checkAccountStatus(profile, phoneNoPlus, password);
+    btn.disabled = false; btn.textContent = 'Se connecter';
+    if (!ok) return;
+    redirectByRole(profile);
+  });
+
+  // ---------- INSCRIPTION ----------
+  document.getElementById('form-inscription').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-register-submit');
+
+    const full_name = document.getElementById('reg-fullname').value.trim();
+    const phone = toE164(document.getElementById('reg-phone').value.trim());
+    const password = document.getElementById('reg-password').value;
+    const confirm = document.getElementById('reg-password-confirm').value;
+
+    if (password !== confirm) { showMsg("Les deux mots de passe ne correspondent pas.", "error"); return; }
+    if (password.length < 6) { showMsg("Le mot de passe doit contenir au moins 6 caractères.", "error"); return; }
+    if (regRole === 'coursier_express' && !kycFile) { showMsg("Veuillez ajouter une photo de votre pièce d'identité.", "error"); return; }
+
+    btn.disabled = true; btn.textContent = 'Création...';
+
+    try {
+      const functionName = regRole === 'coursier_express' ? 'inscrire-coursier-express' : 'inscrire-client-express';
+      const body = regRole === 'coursier_express'
+        ? { full_name, phone, password, piece_identite_base64: kycFile.base64, piece_identite_mime: kycFile.mime }
+        : { full_name, phone, password };
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY,
+        },
+        body: JSON.stringify(body),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        showMsg("Erreur : " + friendlyErrorMessage(result.error || 'création impossible'), "error");
+        btn.disabled = false; btn.textContent = 'Créer mon compte';
+        return;
+      }
+
+      e.target.reset();
+      if (regRole === 'coursier_express') {
+        showWaiting(phone, password);
+      } else {
+        // Client : compte validé automatiquement, on connecte directement.
+        const { data, error } = await attemptSignIn(phone, password);
+        btn.disabled = false; btn.textContent = 'Créer mon compte';
+        if (error || !data || !data.user) {
+          showTab('connexion');
+          showMsg("Compte créé ! Connectez-vous avec votre numéro et votre mot de passe.", "success");
+          return;
+        }
+        const profile = await getExpressProfile(data.user.id);
+        redirectByRole(profile);
+      }
+    } catch (err) {
+      showMsg("Erreur : " + err.message, "error");
+      btn.disabled = false; btn.textContent = 'Créer mon compte';
+    }
+  });
+
+  // Lien profond depuis la page publique (express.html) : ?role=coursier ou ?role=client
+  // ouvre directement l'onglet inscription avec le bon rôle pré-sélectionné.
+  (function applyRoleFromQuery(){
+    const params = new URLSearchParams(window.location.search);
+    const role = params.get('role');
+    if (role === 'coursier') {
+      showTab('inscription');
+      setRegRole('coursier_express');
+    } else if (role === 'client') {
+      showTab('inscription');
+      setRegRole('client_express');
+    }
+  })();
+</script>
+</body>
+</html>

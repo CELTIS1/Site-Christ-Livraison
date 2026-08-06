@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Coursier | CLT Express</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%230D9488'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23FFFFFF'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest-coursier-express.json">
+<link rel="apple-touch-icon" href="/images/icons/apple-touch-icon-coursier-express.png">
+<meta name="theme-color" content="#0D9488">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CLT Coursier">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260801">
+<style>
+  .topbar{ background:#0D9488; }
+  .topbar .brand .logo-mark{ background:#0b6e64; }
+  .btn:not(.btn-outline){ background:#0D9488 !important; }
+  .role-pill{ background:rgba(255,255,255,0.18) !important; }
+
+  .avail-card{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  .avail-text .avail-title{ font-weight:700; font-size:15px; color:var(--navy); }
+  .avail-text .avail-sub{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+
+  .switch{ position:relative; display:inline-block; width:52px; height:30px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch-slider{ position:absolute; cursor:pointer; inset:0; background:#d1d5db; border-radius:30px; transition:0.2s; }
+  .switch-slider::before{ position:absolute; content:""; height:24px; width:24px; left:3px; bottom:3px; background:white; border-radius:50%; transition:0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.25); }
+  .switch input:checked + .switch-slider{ background:#0D9488; }
+  .switch input:checked + .switch-slider::before{ transform:translateX(22px); }
+  .switch input:disabled + .switch-slider{ opacity:0.6; cursor:not-allowed; }
+
+  .stats-row{ display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; }
+  .stat-box{ flex:1; min-width:140px; background:#f0fdfb; border:1.5px solid #ccf3ec; border-radius:12px; padding:12px 14px; }
+  .stat-box .stat-value{ font-size:20px; font-weight:700; color:#0b6e64; }
+  .stat-box .stat-label{ font-size:12px; color:var(--muted); margin-top:2px; }
+
+  .course-item .client-info{ font-size:11.5px; color:var(--muted); margin-top:4px; }
+  .course-item .dest-info{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .btn-sm{ padding:7px 14px; font-size:12.5px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="logo-mark">CLT</div> CLT Express — Coursier</div>
+  <div class="user-info">
+    <span id="user-avatar-topbar"></span>
+    <span id="user-name"></span>
+    <span class="role-pill">Coursier</span>
+    <div class="settings-menu">
+      <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
+      <div class="settings-dropdown" id="settings-dropdown">
+        <button type="button" id="btn-mon-compte">🔑 Changer mon mot de passe</button>
+        <button type="button" class="danger" onclick="logoutExpress()">🚪 Se déconnecter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="account-modal-overlay hidden" id="account-modal-overlay">
+  <div class="account-modal">
+    <button type="button" class="account-modal-close" id="account-modal-close" aria-label="Fermer">✕</button>
+    <h2 class="account-modal-title">Changer mon mot de passe</h2>
+    <div id="change-pwd-msg"></div>
+    <form id="form-change-password">
+      <div class="field-row">
+        <div class="field">
+          <label>Nouveau mot de passe</label>
+          <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
+        </div>
+        <div class="field">
+          <label>Confirmer le nouveau mot de passe</label>
+          <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
+        </div>
+      </div>
+      <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
+    </form>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
+  <div class="page-sub">Voyez les courses disponibles près de chez vous et acceptez celles qui vous intéressent.</div>
+
+  <div class="card avail-card">
+    <div class="avail-text">
+      <div class="avail-title">Je suis disponible</div>
+      <div class="avail-sub" id="avail-sub-text">Activez pour voir apparaître les courses disponibles.</div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="avail-toggle">
+      <span class="switch-slider"></span>
+    </label>
+  </div>
+
+  <div class="card">
+    <h2 class="panel-subtitle">💰 Mes gains</h2>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-value" id="stat-livrees">—</div>
+        <div class="stat-label">Courses livrées</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-gains">—</div>
+        <div class="stat-label">Total encaissé (espèces)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-commission-due">—</div>
+        <div class="stat-label">Commission à reverser à CLT</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="section-disponibles">
+    <h2 class="panel-subtitle">🛵 Courses disponibles</h2>
+    <div id="disponibles-list"></div>
+  </div>
+
+  <div class="card" id="section-mescourses">
+    <h2 class="panel-subtitle">📦 Mes courses</h2>
+    <div id="mescourses-list"></div>
+  </div>
+</div>
+
+<script src="express-config.js?v=20260806a"></script>
+<script>
+  let currentUser = null;
+  let currentProfile = null;
+  let disponibles = [];
+  let mesCourses = [];
+  let clientsById = {};
+
+  const __realtimeChannels = [];
+  function trackChannel(channel){ __realtimeChannels.push(channel); return channel; }
+  window.addEventListener('beforeunload', () => {
+    __realtimeChannels.forEach(ch => supabaseClient.removeChannel(ch));
+  });
+
+  function formatPhoneLocal(e164){
+    if (!e164) return '';
+    let digits = e164.replace(/[^\d]/g, '');
+    if (digits.startsWith('225')) digits = digits.slice(3);
+    return digits;
+  }
+
+  async function loadClientsFor(courses){
+    const ids = [...new Set(courses.map(c => c.client_id).filter(Boolean))];
+    const missing = ids.filter(id => !clientsById[id]);
+    if (!missing.length) return;
+    const { data, error } = await supabaseClient.from('profiles').select('id, full_name, phone').in('id', missing);
+    if (error) { console.error(error); return; }
+    data.forEach(p => { clientsById[p.id] = p; });
+  }
+
+  function disponibleRowHTML(c){
+    return `
+      <div class="colis-item course-item" data-id="${c.id}">
+        <div class="info">
+          <div class="desc">${escapeHTML(c.adresse_recuperation)} → ${escapeHTML(c.adresse_livraison)}</div>
+          <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · ${c.distance_km != null ? c.distance_km.toLocaleString('fr-FR') + ' km' : ''} · Demandé le ${formatDate(c.created_at)}</div>
+        </div>
+        <div class="status-col">
+          <div style="font-weight:700;color:var(--navy);">${formatMontant(c.montant_coursier)}</div>
+          <button class="btn btn-sm btn-accept-course">Accepter</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function mesCourseRowHTML(c){
+    const client = c.client_id ? clientsById[c.client_id] : null;
+    const clientInfo = client
+      ? `<div class="client-info">👤 Client : ${escapeHTML(client.full_name || '')}${client.phone ? ' · ' + formatPhoneLocal(client.phone) : ''}</div>`
+      : '';
+    const destInfo = c.destinataire_nom || c.destinataire_telephone
+      ? `<div class="dest-info">📦 Destinataire : ${escapeHTML(c.destinataire_nom || '')}${c.destinataire_telephone ? ' · ' + formatPhoneLocal(c.destinataire_telephone) : ''}</div>`
+      : '';
+    const canDeliver = c.status === 'acceptee';
+    return `
+      <div class="colis-item course-item" data-id="${c.id}">
+        <div class="info">
+          <div class="desc">${escapeHTML(c.adresse_recuperation)} → ${escapeHTML(c.adresse_livraison)}</div>
+          <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · Accepté le ${formatDate(c.accepted_at)}</div>
+          ${clientInfo}
+          ${destInfo}
+        </div>
+        <div class="status-col">
+          ${expressStatutBadgeHTML(c.status)}
+          <div style="font-weight:700;color:var(--navy);">${formatMontant(c.montant_coursier)}</div>
+          ${canDeliver ? `<button class="btn btn-sm btn-deliver-course">Marquer livrée</button>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDisponibles(){
+    const box = document.getElementById('disponibles-list');
+    const section = document.getElementById('section-disponibles');
+    if (!currentProfile || !currentProfile.disponible_express) {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+    if (!disponibles.length) {
+      box.innerHTML = `<div class="empty-state">Aucune course disponible pour le moment. Restez disponible, une nouvelle demande peut arriver à tout moment.</div>`;
+      return;
+    }
+    box.innerHTML = disponibles.map(disponibleRowHTML).join('');
+    box.querySelectorAll('.btn-accept-course').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('.course-item').dataset.id;
+        btn.disabled = true; btn.textContent = 'Acceptation...';
+        const { error } = await supabaseClient.from('express_courses')
+          .update({ status: 'acceptee', coursier_id: currentUser.id, accepted_at: new Date().toISOString() })
+          .eq('id', id).eq('status', 'en_attente');
+        if (error) {
+          alert('Cette course vient peut-être d\'être acceptée par un autre coursier. Erreur : ' + error.message);
+          btn.disabled = false; btn.textContent = 'Accepter';
+          await loadDisponibles();
+          return;
+        }
+        await Promise.all([loadDisponibles(), loadMesCourses()]);
+      });
+    });
+  }
+
+  function renderMesCourses(){
+    const box = document.getElementById('mescourses-list');
+    if (!mesCourses.length) {
+      box.innerHTML = `<div class="empty-state">Aucune course acceptée pour le moment.</div>`;
+      return;
+    }
+    box.innerHTML = mesCourses.map(mesCourseRowHTML).join('');
+    box.querySelectorAll('.btn-deliver-course').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('.course-item').dataset.id;
+        if (!confirm('Confirmer que cette course a bien été livrée et payée par le client ?')) return;
+        btn.disabled = true; btn.textContent = 'Enregistrement...';
+        const { error } = await supabaseClient.from('express_courses')
+          .update({ status: 'livree', delivered_at: new Date().toISOString() })
+          .eq('id', id).eq('coursier_id', currentUser.id);
+        if (error) { alert('Erreur : ' + error.message); btn.disabled = false; btn.textContent = 'Marquer livrée'; return; }
+        await loadMesCourses();
+      });
+    });
+  }
+
+  function updateStats(){
+    const livrees = mesCourses.filter(c => c.status === 'livree');
+    const totalGains = livrees.reduce((sum, c) => sum + (Number(c.montant_coursier) || 0), 0);
+    const commissionDue = livrees.filter(c => !c.commission_reglee).reduce((sum, c) => sum + (Number(c.commission_montant) || 0), 0);
+    document.getElementById('stat-livrees').textContent = livrees.length;
+    document.getElementById('stat-gains').textContent = formatMontant(totalGains);
+    document.getElementById('stat-commission-due').textContent = formatMontant(commissionDue);
+  }
+
+  async function loadDisponibles(){
+    if (!currentProfile || !currentProfile.disponible_express) { disponibles = []; renderDisponibles(); return; }
+    const { data, error } = await supabaseClient
+      .from('express_courses')
+      .select('*')
+      .eq('status', 'en_attente')
+      .order('created_at', { ascending: true });
+    if (error) { console.error(error); return; }
+    disponibles = data;
+    renderDisponibles();
+  }
+
+  async function loadMesCourses(){
+    const { data, error } = await supabaseClient
+      .from('express_courses')
+      .select('*')
+      .eq('coursier_id', currentUser.id)
+      .order('created_at', { ascending: false });
+    if (error) { console.error(error); return; }
+    mesCourses = data;
+    await loadClientsFor(mesCourses);
+    renderMesCourses();
+    updateStats();
+  }
+
+  document.getElementById('avail-toggle').addEventListener('change', async (e) => {
+    const checkbox = e.target;
+    const newValue = checkbox.checked;
+    checkbox.disabled = true;
+    const { error } = await supabaseClient.from('profiles')
+      .update({ disponible_express: newValue }).eq('id', currentUser.id);
+    checkbox.disabled = false;
+    if (error) {
+      alert('Erreur : ' + error.message);
+      checkbox.checked = !newValue;
+      return;
+    }
+    currentProfile.disponible_express = newValue;
+    document.getElementById('avail-sub-text').textContent = newValue
+      ? 'Vous voyez les courses disponibles ci-dessous.'
+      : 'Activez pour voir apparaître les courses disponibles.';
+    await loadDisponibles();
+  });
+
+  document.getElementById('form-change-password').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-change-password');
+    const msgBox = document.getElementById('change-pwd-msg');
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('new-password-confirm').value;
+    if (newPassword !== confirmPassword) { msgBox.innerHTML = `<div class="msg msg-error">Les deux mots de passe ne correspondent pas.</div>`; return; }
+    if (newPassword.length < 6) { msgBox.innerHTML = `<div class="msg msg-error">Le mot de passe doit contenir au moins 6 caractères.</div>`; return; }
+    btn.disabled = true; btn.textContent = 'Modification...';
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+    btn.disabled = false; btn.textContent = 'Changer mon mot de passe';
+    if (error) { msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${error.message}</div>`; }
+    else { msgBox.innerHTML = `<div class="msg msg-success">Mot de passe modifié avec succès.</div>`; e.target.reset(); }
+  });
+
+  function initSettingsMenu(){
+    const btn = document.getElementById('settings-menu-btn');
+    const dropdown = document.getElementById('settings-dropdown');
+    const monCompteBtn = document.getElementById('btn-mon-compte');
+    const overlay = document.getElementById('account-modal-overlay');
+    const closeBtn = document.getElementById('account-modal-close');
+    if (!btn || !dropdown) return;
+    btn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('open'); });
+    document.addEventListener('click', (e) => {
+      if (dropdown.classList.contains('open') && !dropdown.contains(e.target) && e.target !== btn) dropdown.classList.remove('open');
+    });
+    if (monCompteBtn) monCompteBtn.addEventListener('click', () => { dropdown.classList.remove('open'); overlay.classList.remove('hidden'); });
+    if (closeBtn) closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
+    if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.add('hidden'); });
+  }
+
+  async function init(){
+    const session = await requireAuth();
+    if (!session) return;
+    currentUser = session.user;
+
+    const profile = await getExpressProfile(currentUser.id);
+    if (!profile || profile.role !== 'coursier_express' || profile.status !== 'valide') {
+      await supabaseClient.auth.signOut();
+      window.location.href = 'express-login.html';
+      return;
+    }
+    currentProfile = profile;
+    document.getElementById('user-name').textContent = profile.full_name || '';
+    document.getElementById('user-first-name').textContent = (profile.full_name || '').split(' ')[0] || '';
+    document.getElementById('user-avatar-topbar').innerHTML = avatarHTML(profile, 34);
+    initSettingsMenu();
+
+    document.getElementById('avail-toggle').checked = !!profile.disponible_express;
+    document.getElementById('avail-sub-text').textContent = profile.disponible_express
+      ? 'Vous voyez les courses disponibles ci-dessous.'
+      : 'Activez pour voir apparaître les courses disponibles.';
+
+    await Promise.all([loadDisponibles(), loadMesCourses()]);
+
+    trackChannel(supabaseClient
+      .channel('express-courses-coursier-' + currentUser.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'express_courses' }, () => {
+        loadDisponibles();
+        loadMesCourses();
+      })
+      .subscribe());
+  }
+
+  init();
+</script>
+</body>
+</html>

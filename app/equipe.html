@@ -129,6 +129,11 @@
 <a href="#section-tous-comptes" id="subnav-tous-comptes" class="hidden">Tous les comptes</a>
 <a href="#section-stats" id="subnav-stats" class="hidden">Statistiques</a>
 </div>
+<div class="subnav-divider"></div>
+<div class="subnav-group">
+<span class="subnav-label">CLT Express</span>
+<a href="#section-express-courses" id="subnav-express-courses" class="hidden">Courses</a>
+</div>
 </div>
 </div>
 
@@ -407,6 +412,26 @@
 <div class="stat-tile"><div class="stat-tile-icon">📅</div><div class="stat-tile-value" id="stat-visits-today">—</div><div class="stat-tile-label">Aujourd'hui</div></div>
 <div class="stat-tile"><div class="stat-tile-icon">🗓️</div><div class="stat-tile-value" id="stat-visits-month">—</div><div class="stat-tile-label">Ce mois-ci</div></div>
 </div>
+</div>
+</div>
+
+<div class="card" id="section-express-courses">
+<h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'express-courses-content')">
+<span class="collapse-arrow">▶</span> CLT Express — Courses
+</h2>
+<div id="express-courses-content" class="collapsible-content">
+<div class="stat-tiles" id="express-summary-tiles">
+<div class="stat-tile"><div class="stat-tile-icon">📦</div><div class="stat-tile-value" id="stat-express-total">0</div><div class="stat-tile-label">Courses totales</div></div>
+<div class="stat-tile"><div class="stat-tile-icon">✅</div><div class="stat-tile-value" id="stat-express-delivered">0</div><div class="stat-tile-label">Livrées</div></div>
+<div class="stat-tile"><div class="stat-tile-icon">💰</div><div class="stat-tile-value" id="stat-express-commissions-dues">0 FCFA</div><div class="stat-tile-label">Commissions dues</div></div>
+</div>
+
+<div class="filters" id="express-status-filters" style="margin-top:16px;"></div>
+
+<div class="colis-list" id="express-courses-list">
+<div class="empty-state">Chargement...</div>
+</div>
+<button type="button" class="btn btn-outline btn-sm" id="btn-refresh-express" style="margin-top:16px;">🔄 Rafraîchir</button>
 </div>
 </div>
 
@@ -997,10 +1022,17 @@ select.value = previousValue;
 }
 
 function roleDisplayLabel(role){
-return role === 'fournisseur' ? 'Client' : (role || 'Client');
+if (role === 'fournisseur') return 'Client';
+if (role === 'client_express') return 'Client Express';
+if (role === 'coursier_express') return 'Coursier Express';
+return role || 'Client';
 }
 
 function pendingRowHTML(p){
+let pieceHtml = '';
+if (p.role === 'coursier_express' && p.piece_identite_path) {
+pieceHtml = `<button class="btn btn-sm btn-voir-piece" style="margin-bottom:4px; margin-right:4px;">📷 Voir la pièce</button>`;
+}
 return `
 <div class="colis-item" data-id="${p.id}">
 <div class="info">
@@ -1008,6 +1040,7 @@ return `
 <div class="meta">Rôle demandé : ${escapeHTML(roleDisplayLabel(p.role))}${p.phone ? ' · Tél : ' + escapeHTML(p.phone) : ''}</div>
 </div>
 <div class="status-col">
+${pieceHtml}
 <button class="btn btn-sm btn-valider" style="margin-bottom:4px;">Valider</button>
 <button class="btn btn-sm btn-rejeter" style="background:#c0392b;">Rejeter</button>
 </div>
@@ -1043,6 +1076,35 @@ return;
 }
 box.innerHTML = pendingAccounts.map(pendingRowHTML).join('');
 
+box.querySelectorAll('.btn-voir-piece').forEach(btn => {
+btn.addEventListener('click', async () => {
+const id = btn.closest('.colis-item').dataset.id;
+const account = pendingAccounts.find(p => p.id === id);
+if (!account || !account.piece_identite_path) return;
+btn.disabled = true;
+btn.textContent = '...';
+try {
+const { data, error } = await supabaseClient
+.storage.from('express-kyc')
+.createSignedUrl(account.piece_identite_path, 60);
+if (error || !data) {
+alert('Erreur : impossible de charger la pièce d\'identité (fichier introuvable ou erreur réseau).');
+btn.disabled = false;
+btn.textContent = '📷 Voir la pièce';
+return;
+}
+window.open(data.signedUrl, '_blank');
+btn.disabled = false;
+btn.textContent = '📷 Voir la pièce';
+} catch (err) {
+console.error('Erreur lors de l\'accès à la pièce d\'identité :', err);
+alert('Erreur réseau. Vérifiez votre connexion et réessayez.');
+btn.disabled = false;
+btn.textContent = '📷 Voir la pièce';
+}
+});
+});
+
 box.querySelectorAll('.btn-valider').forEach(btn => {
 btn.addEventListener('click', async () => {
 const id = btn.closest('.colis-item').dataset.id;
@@ -1076,7 +1138,7 @@ let __pendingIdsSeen = null; // null = premier chargement : on ne veut pas d'ale
 async function loadPending(){
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, role, full_name, company_name, phone, status')
+.select('id, role, full_name, company_name, phone, status, piece_identite_path')
 .eq('status', 'en_attente')
 .order('full_name');
 if (error) { console.error(error); return; }
@@ -1790,7 +1852,7 @@ accountsHasMore = data.length === ACCOUNTS_PAGE_SIZE;
 renderAllAccounts();
 }
 
-const ACCOUNT_FILTER_LABELS = { tous: 'Tous', fournisseur: 'Clients', livreur: 'Livreurs', equipe: 'Équipe', admin: 'Admin' };
+const ACCOUNT_FILTER_LABELS = { tous: 'Tous', fournisseur: 'Clients', livreur: 'Livreurs', client_express: 'Clients Express', coursier_express: 'Coursiers Express', equipe: 'Équipe', admin: 'Admin' };
 
 function renderAccountFilters(){
 const box = document.getElementById('account-filters');
@@ -2632,6 +2694,164 @@ faviconLink.setAttribute('href', "data:image/svg+xml,%3Csvg xmlns='http://www.w3
 }
 }
 
+// ---------- CLT Express — Courses ----------
+let expressCourses = [];
+let expressStatusFilter = 'tous';
+
+const EXPRESS_STATUTS = {
+en_attente: { label: "En attente d'un coursier", color: "#8a94a3", bg: "#eef0f3" },
+acceptee:   { label: "Coursier en route",         color: "#0D9488", bg: "#dcf5f2" },
+livree:     { label: "Livrée",                    color: "#1a7d3c", bg: "#e3f6ea" },
+annulee:    { label: "Annulée",                   color: "#c0392b", bg: "#fce4e2" },
+};
+
+const EXPRESS_STATUS_FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', acceptee: 'Acceptées', livree: 'Livrées', annulee: 'Annulées' };
+
+function expressStatutBadgeHTML(statut) {
+const s = EXPRESS_STATUTS[statut] || EXPRESS_STATUTS.en_attente;
+return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;
+}
+
+function formatMontant(n) {
+if (n === null || n === undefined || n === "") return "";
+const num = Number(n);
+if (isNaN(num)) return "";
+return num.toLocaleString("fr-FR") + " FCFA";
+}
+
+function expressCoursRowHTML(course, clientName, courierName) {
+const isDelivered = course.status === 'livree';
+const commissionDue = isDelivered && !course.commission_reglee;
+let markerCommissionBtn = '';
+if (commissionDue) {
+markerCommissionBtn = `<button class="btn btn-sm btn-mark-commission" style="margin-right:4px;">✅ Commission reçue</button>`;
+}
+return `
+<div class="colis-item" data-id="${course.id}">
+<div class="info">
+<div class="desc">📦 ${escapeHTML(course.adresse_recuperation || 'Récupération ?')} → ${escapeHTML(course.adresse_livraison || 'Livraison ?')}</div>
+<div class="meta">Client : ${escapeHTML(clientName || '?')}${course.destinataire_nom ? ' · Destinataire : ' + escapeHTML(course.destinataire_nom) : ''}</div>
+<div class="meta">Coursier : ${escapeHTML(courierName || 'En attente')} · Distance : ${course.distance_km || '?'} km</div>
+<div class="meta">Prix : ${formatMontant(course.prix_total)} · Commission : ${formatMontant(course.commission_montant)}</div>
+${commissionDue ? `<div class="meta" style="color:#c0392b; font-weight:600;">💰 Commission due et non réglée</div>` : ''}
+</div>
+<div class="status-col" style="flex-direction:column; align-items:flex-end; gap:4px;">
+${markerCommissionBtn}
+${expressStatutBadgeHTML(course.status)}
+</div>
+</div>
+`;
+}
+
+async function loadExpressCourses() {
+const { data, error } = await supabaseClient
+.from('express_courses')
+.select('id, client_id, coursier_id, status, description_colis, adresse_recuperation, adresse_livraison, destinataire_nom, distance_km, prix_total, commission_montant, commission_reglee, created_at')
+.order('created_at', { ascending: false });
+if (error) { console.error(error); return; }
+expressCourses = data || [];
+renderExpressCourses();
+}
+
+async function loadExpressCoursesWithClients() {
+if (!expressCourses.length) return {};
+const clientIds = new Set(expressCourses.map(c => c.client_id).filter(Boolean));
+if (!clientIds.size) return {};
+const { data: clients, error: err } = await supabaseClient
+.from('profiles')
+.select('id, full_name')
+.in('id', Array.from(clientIds));
+if (err) { console.error(err); return {}; }
+const map = {};
+(clients || []).forEach(c => { map[c.id] = c.full_name || 'Client inconnu'; });
+return map;
+}
+
+async function loadExpressCoursesWithCouriers() {
+if (!expressCourses.length) return {};
+const courierIds = new Set(expressCourses.map(c => c.coursier_id).filter(Boolean));
+if (!courierIds.size) return {};
+const { data: couriers, error: err } = await supabaseClient
+.from('profiles')
+.select('id, full_name')
+.in('id', Array.from(courierIds));
+if (err) { console.error(err); return {}; }
+const map = {};
+(couriers || []).forEach(c => { map[c.id] = c.full_name || 'Coursier inconnu'; });
+return map;
+}
+
+function renderExpressCourses() {
+const box = document.getElementById('express-courses-list');
+if (!expressCourses.length) {
+box.innerHTML = `<div class="empty-state">Aucune course pour le moment.</div>`;
+updateExpressStats();
+return;
+}
+
+(async () => {
+const clientsMap = await loadExpressCoursesWithClients();
+const couriersMap = await loadExpressCoursesWithCouriers();
+
+const filtered = expressStatusFilter === 'tous' ? expressCourses : expressCourses.filter(c => c.status === expressStatusFilter);
+box.innerHTML = filtered.map(course => expressCoursRowHTML(course, clientsMap[course.client_id], couriersMap[course.coursier_id])).join('');
+
+box.querySelectorAll('.btn-mark-commission').forEach(btn => {
+btn.addEventListener('click', async () => {
+const id = btn.closest('.colis-item').dataset.id;
+btn.disabled = true; btn.textContent = '...';
+const { error } = await supabaseClient.from('express_courses').update({ commission_reglee: true }).eq('id', id);
+if (error) {
+alert("Erreur : " + error.message);
+btn.disabled = false; btn.textContent = '✅ Commission reçue';
+return;
+}
+await loadExpressCourses();
+});
+});
+
+updateExpressStats();
+})();
+}
+
+function updateExpressStats() {
+const totalElement = document.getElementById('stat-express-total');
+const deliveredElement = document.getElementById('stat-express-delivered');
+const commissionsElement = document.getElementById('stat-express-commissions-dues');
+
+if (totalElement) totalElement.textContent = expressCourses.length;
+if (deliveredElement) {
+const delivered = expressCourses.filter(c => c.status === 'livree').length;
+deliveredElement.textContent = delivered;
+}
+if (commissionsElement) {
+const commissionsDues = expressCourses
+.filter(c => c.status === 'livree' && !c.commission_reglee)
+.reduce((sum, c) => sum + (Number(c.commission_montant) || 0), 0);
+commissionsElement.textContent = formatMontant(commissionsDues);
+}
+}
+
+function renderExpressStatusFilters() {
+const box = document.getElementById('express-status-filters');
+box.innerHTML = Object.keys(EXPRESS_STATUS_FILTER_LABELS).map(key =>
+`<div class="filter-chip ${expressStatusFilter===key?'active':''}" data-filter="${key}">${EXPRESS_STATUS_FILTER_LABELS[key]}</div>`
+).join('');
+box.querySelectorAll('.filter-chip').forEach(chip => {
+chip.addEventListener('click', () => {
+expressStatusFilter = chip.dataset.filter;
+renderExpressStatusFilters();
+renderExpressCourses();
+});
+});
+}
+
+async function initExpressCourses() {
+await loadExpressCourses();
+renderExpressStatusFilters();
+document.getElementById('btn-refresh-express')?.addEventListener('click', loadExpressCourses);
+}
+
 async function init(){
 const session = await requireAuth();
 if (!session) return;
@@ -2677,6 +2897,7 @@ document.getElementById('admin-section').classList.remove('hidden');
 document.getElementById('subnav-gerer-equipe').classList.remove('hidden');
 document.getElementById('subnav-tous-comptes').classList.remove('hidden');
 document.getElementById('subnav-stats').classList.remove('hidden');
+document.getElementById('subnav-express-courses').classList.remove('hidden');
 renderAccountFilters();
 await loadAllAccounts();
 await loadSiteStats();
@@ -2711,6 +2932,7 @@ await loadFournisseurs();
 await loadLivreurs();
 await loadColis();
 await loadActivityLog();
+await initExpressCourses();
 initColisDraftAutosave();
 
 // Mises à jour en temps réel sur tous les colis
@@ -2749,6 +2971,14 @@ trackChannel(supabaseClient
 .channel('activity-log-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => {
 loadActivityLog();
+})
+.subscribe());
+
+// Mises à jour en temps réel sur les courses CLT Express
+trackChannel(supabaseClient
+.channel('express-courses-equipe')
+.on('postgres_changes', { event: '*', schema: 'public', table: 'express_courses' }, () => {
+loadExpressCourses();
 })
 .subscribe());
 
