@@ -210,6 +210,17 @@
 <input type="text" id="add-dest" placeholder="Ex : Cocody, Angré">
 </div>
 </div>
+<div class="field-row" style="margin-bottom:2px;">
+<div class="field">
+<label>📍 Commune de récupération</label>
+<select id="add-pickup-commune"></select>
+</div>
+<div class="field">
+<label>Adresse précise (optionnel)</label>
+<input type="text" id="add-pickup-adresse" placeholder="Ex : Angré 8e tranche, non loin de la pharmacie">
+</div>
+</div>
+<div class="field-hint" style="font-size:12px; color:var(--muted); margin:-6px 0 16px;">Où le livreur de collecte doit-il récupérer ce colis chez ce client ? Pré-rempli automatiquement si déjà connu ; utile surtout pour une vendeuse non présente sur place ou éloignée du dépôt.</div>
 <div class="montant-block">
 <label>Montants (optionnel)</label>
 <div class="montant-group">
@@ -794,9 +805,11 @@ const COLIS_DRAFT_KEY = 'clt_equipe_colis_draft';
 let colisDraftSaveTimer = null;
 
 function getColisDraftFields(){
+const pickupAdresseEl = document.getElementById('add-pickup-adresse');
 return {
 fournisseur_id: document.getElementById('add-fournisseur').value,
 destination: document.getElementById('add-dest').value,
+pickup_adresse: pickupAdresseEl ? pickupAdresseEl.value : '',
 montant_article: document.getElementById('add-montant-article').value,
 montant_livraison: document.getElementById('add-montant-livraison').value,
 description: document.getElementById('add-desc').value
@@ -804,7 +817,7 @@ description: document.getElementById('add-desc').value
 }
 
 function colisDraftIsEmpty(fields){
-return !fields.fournisseur_id && !fields.destination && !fields.montant_article && !fields.montant_livraison && !fields.description;
+return !fields.fournisseur_id && !fields.destination && !fields.pickup_adresse && !fields.montant_article && !fields.montant_livraison && !fields.description;
 }
 
 function saveColisDraft(){
@@ -856,6 +869,8 @@ btnRestore.textContent = 'Restaurer';
 btnRestore.addEventListener('click', () => {
 if (draft.fournisseur_id) document.getElementById('add-fournisseur').value = draft.fournisseur_id;
 document.getElementById('add-dest').value = draft.destination || '';
+fillPickupForSelectedFournisseur();
+if (draft.pickup_adresse) document.getElementById('add-pickup-adresse').value = draft.pickup_adresse;
 document.getElementById('add-montant-article').value = draft.montant_article || '';
 document.getElementById('add-montant-livraison').value = draft.montant_livraison || '';
 document.getElementById('add-desc').value = draft.description || '';
@@ -875,14 +890,32 @@ banner.appendChild(btnWrap);
 wrap.appendChild(banner);
 }
 
+// Pré-remplit le lieu de récupération (commune + adresse) dès qu'un client est sélectionné dans
+// le formulaire d'ajout, à partir de son profil (voir colonnes profiles.commune_recuperation /
+// adresse_recuperation) — reste modifiable pour ce colis précis si le lieu habituel a changé.
+function fillPickupForSelectedFournisseur(){
+const communeSelect = document.getElementById('add-pickup-commune');
+const adresseInput = document.getElementById('add-pickup-adresse');
+if (!communeSelect || !adresseInput) return;
+const fournisseurId = document.getElementById('add-fournisseur').value;
+const f = fournisseurs.find(x => x.id === fournisseurId);
+communeSelect.innerHTML = communesOptionsHTML(f ? f.commune_recuperation : '', 'Choisir une commune');
+adresseInput.value = f ? (f.adresse_recuperation || '') : '';
+}
+
 function initColisDraftAutosave(){
 restoreColisDraftIfAny();
+fillPickupForSelectedFournisseur();
 const debouncedSave = () => {
 clearTimeout(colisDraftSaveTimer);
 colisDraftSaveTimer = setTimeout(saveColisDraft, 400);
 };
-document.getElementById('add-fournisseur').addEventListener('change', saveColisDraft);
+document.getElementById('add-fournisseur').addEventListener('change', () => {
+fillPickupForSelectedFournisseur();
+saveColisDraft();
+});
 document.getElementById('add-dest').addEventListener('input', debouncedSave);
+document.getElementById('add-pickup-adresse').addEventListener('input', debouncedSave);
 document.getElementById('add-montant-article').addEventListener('input', debouncedSave);
 document.getElementById('add-montant-livraison').addEventListener('input', debouncedSave);
 document.getElementById('add-desc').addEventListener('input', debouncedSave);
@@ -1247,6 +1280,8 @@ btn.disabled = true; btn.textContent = 'Ajout...';
 
 const fournisseur_id = document.getElementById('add-fournisseur').value;
 const destination = document.getElementById('add-dest').value.trim();
+const commune_recuperation = document.getElementById('add-pickup-commune').value || null;
+const adresse_recuperation = document.getElementById('add-pickup-adresse').value.trim() || null;
 const description = document.getElementById('add-desc').value.trim();
 const montantArticleRaw = document.getElementById('add-montant-article').value.trim();
 const montantLivraisonRaw = document.getElementById('add-montant-livraison').value.trim();
@@ -1273,7 +1308,8 @@ if (!photo_url) photoUploadFailed = true;
 }
 
 const { error } = await supabaseClient.from('colis').insert([{
-fournisseur_id, destination, description, montant, montant_article, montant_livraison, photo_url
+fournisseur_id, destination, description, montant, montant_article, montant_livraison, photo_url,
+commune_recuperation, adresse_recuperation
 }]);
 
 btn.disabled = false; btn.textContent = 'Ajouter le colis';
@@ -1282,9 +1318,24 @@ if (error) {
 addMsg(friendlyErrorMessage(error.message), "error");
 return;
 }
+
+// Mémorise ce lieu de récupération comme valeur par défaut pour ce client (pratique s'il récupère
+// souvent au même endroit), sans jamais modifier les colis déjà enregistrés.
+if (fournisseur_id && commune_recuperation) {
+const f = fournisseurs.find(x => x.id === fournisseur_id);
+if (f && (f.commune_recuperation !== commune_recuperation || f.adresse_recuperation !== adresse_recuperation)) {
+supabaseClient.from('profiles').update({ commune_recuperation, adresse_recuperation }).eq('id', fournisseur_id)
+.then(({ error: profErr }) => { if (profErr) console.error(profErr); })
+.catch(err => console.error('Erreur mise à jour profil:', err));
+f.commune_recuperation = commune_recuperation;
+f.adresse_recuperation = adresse_recuperation;
+}
+}
+
 const photoWarning = photoUploadFailed ? " (attention : l'envoi de la photo a échoué, le colis a été enregistré sans photo)" : "";
 addMsg(`Colis ajouté avec succès${photoWarning}.`, "success");
 e.target.reset();
+fillPickupForSelectedFournisseur();
 clearColisDraft();
 const addMontantTotalEl = document.getElementById('add-montant-total');
 if (addMontantTotalEl) addMontantTotalEl.textContent = '0 FCFA';

@@ -223,36 +223,51 @@ input,textarea,select{font-family:inherit;}
 .check-pill input{accent-color:var(--orange); width:15px; height:15px; margin:0;}
 .check-pill:has(input:checked){border-color:#1a7d3c; background:#e3f6ea; color:#1a7d3c;}
 
-/* ---------- COLIS LIST ---------- */
-.colis-list{display:flex; flex-direction:column; gap:14px;}
+/* ---------- COLIS LIST ----------
+   Cartes volontairement compactes (padding/gap/tailles réduits) sur TOUS les écrans, pas
+   seulement sur mobile : chaque colis doit occuper le minimum d'espace vertical pour que la
+   liste reste lisible même avec beaucoup d'entrées. Les infos secondaires (date d'ajout,
+   détail montant, preuve de livraison) restent affichées mais en petite taille/faible contraste. */
+.colis-list{display:flex; flex-direction:column; gap:8px;}
 .colis-item{
-  display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; background:var(--white);
-  border:1px solid var(--border); border-radius:14px; padding:16px;
+  display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; background:var(--white);
+  border:1px solid var(--border); border-radius:10px; padding:10px 12px;
   box-shadow:0 1px 3px rgba(20,40,70,0.05);
   transition:box-shadow .2s ease, border-color .2s ease, transform .15s ease;
 }
 .colis-item:hover{box-shadow:0 6px 18px rgba(20,40,70,0.1); border-color:#d8dee6; transform:translateY(-1px);}
 .colis-item .thumb{
-  width:72px; height:72px; border-radius:11px; object-fit:cover; background:var(--grey-bg); flex-shrink:0;
+  width:48px; height:48px; border-radius:8px; object-fit:cover; background:var(--grey-bg); flex-shrink:0;
 }
 .colis-item .thumb-placeholder{
-  width:72px; height:72px; border-radius:11px; background:var(--grey-bg); display:flex; align-items:center;
-  justify-content:center; color:var(--muted); font-size:11px; flex-shrink:0; text-align:center;
+  width:48px; height:48px; border-radius:8px; background:var(--grey-bg); display:flex; align-items:center;
+  justify-content:center; color:var(--muted); font-size:9px; flex-shrink:0; text-align:center;
 }
 .colis-item .info{flex:1; min-width:180px;}
-.colis-item .info .desc{font-size:14.5px; font-weight:700; color:#222; margin-bottom:4px;}
-.colis-item .info .meta{font-size:12.5px; color:var(--muted); line-height:1.6;}
-.colis-item .status-col{display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0; width:220px;}
+.colis-item .info .desc{font-size:13px; font-weight:700; color:#222; margin-bottom:2px;}
+.colis-item .info .meta{font-size:11.5px; color:var(--muted); line-height:1.4;}
+.colis-item .status-col{display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; width:170px;}
+
+/* Éléments internes (formulaire d'édition inline, observation, montants) resserrés eux aussi,
+   uniquement dans le contexte d'une carte colis — les mêmes classes utilisées dans d'autres
+   formulaires (ex : "Ajouter un colis") gardent leur espacement habituel, plus confortable. */
+.colis-item .field{margin-bottom:8px;}
+.colis-item .montant-block{padding:8px 10px 6px; margin-bottom:8px;}
+.colis-item .montant-block > label{margin-bottom:6px; font-size:11.5px;}
+.colis-item .payment-checks{gap:6px; margin:2px 0 8px;}
+.colis-item .check-pill{padding:5px 10px; font-size:11.5px;}
+.colis-item .obs-textarea{min-height:36px; padding:6px 8px; font-size:11.5px;}
+.colis-item .obs-display{padding:6px 8px; margin-top:4px; font-size:11.5px;}
 
 /* ---------- Regroupement des colis par jour / par client ---------- */
-.day-group{display:flex; flex-direction:column; gap:14px; margin-bottom:24px;}
+.day-group{display:flex; flex-direction:column; gap:8px; margin-bottom:16px;}
 .day-group-header{
-  display:flex; align-items:center; gap:8px; font-size:14.5px; font-weight:700; color:var(--navy);
-  padding:8px 4px; border-bottom:2px solid var(--orange-light);
+  display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; color:var(--navy);
+  padding:6px 2px; border-bottom:2px solid var(--orange-light);
 }
-.client-group{display:flex; flex-direction:column; gap:14px; padding-left:14px; border-left:3px solid var(--border); margin-left:2px;}
+.client-group{display:flex; flex-direction:column; gap:8px; padding-left:12px; border-left:3px solid var(--border); margin-left:2px;}
 .client-group-header{
-  display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--muted); flex-wrap:wrap;
+  display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:var(--muted); flex-wrap:wrap;
 }
 .btn-recuperer-tout{background:var(--orange); color:#fff; border:none;}
 .btn-recuperer-tout:hover{filter:brightness(0.95);}
@@ -272,28 +287,22 @@ input,textarea,select{font-family:inherit;}
 }
 .group-collecte-assign .btn-assign-collecte{padding:4px 8px; font-size:12px;}
 
-/* Sur mobile : carte resserrée pour que chaque colis prenne le moins d'espace possible et que
-   le suivi reste agréable sur petit écran (colonne statut repassée en ligne, sous la carte). */
+/* Sur mobile : carte encore plus resserrée (la base est déjà compacte sur tous les écrans, voir
+   plus haut) et colonne statut repassée en ligne, sous la carte, pour éviter tout débordement
+   horizontal sur petit écran. */
 @media(max-width:640px){
-  .colis-list{gap:9px;}
-  .colis-item{padding:10px; gap:10px; border-radius:11px;}
-  .colis-item .thumb, .colis-item .thumb-placeholder{width:52px; height:52px; border-radius:9px; font-size:9.5px;}
+  .colis-item{padding:8px 10px; gap:8px; border-radius:9px;}
+  .colis-item .thumb, .colis-item .thumb-placeholder{width:40px; height:40px; border-radius:7px; font-size:8px;}
   .colis-item .info{min-width:0;}
-  .colis-item .info .desc{font-size:13.5px; margin-bottom:2px;}
-  .colis-item .info .meta{font-size:11.5px; line-height:1.45;}
   .colis-item .status-col{
     width:100%; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between;
-    border-top:1px solid var(--border); margin-top:2px; padding-top:8px; gap:6px;
+    border-top:1px solid var(--border); margin-top:2px; padding-top:6px; gap:6px;
   }
   .badge{padding:4px 11px; font-size:11px;}
 
-  /* En-têtes de groupe (jour / client) : espace resserré, actions groupées repassées sur leur
-     propre ligne pleine largeur au lieu de s'entasser à côté du nom, pour éviter tout débordement
-     horizontal sur petit écran. */
-  .day-group{gap:10px; margin-bottom:18px;}
-  .day-group-header{font-size:13.5px; padding:6px 2px;}
-  .client-group{gap:10px; padding-left:10px;}
-  .client-group-header{font-size:12.5px; gap:6px;}
+  /* En-têtes de groupe (jour / client) : actions groupées repassées sur leur propre ligne pleine
+     largeur au lieu de s'entasser à côté du nom, pour éviter tout débordement horizontal. */
+  .client-group{padding-left:10px;}
   .btn-edit-pickup, .group-collecte-assign, .btn-je-pars, .btn-recuperer-tout-collecte{
     margin-left:0 !important; margin-top:4px; flex-basis:100%;
   }
