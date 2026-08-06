@@ -104,7 +104,7 @@
     </div>
   </div>
 
-<script src="config.js?v=20260806a"></script>
+<script src="config.js?v=20260806b"></script>
 <script>
   function showTab(which){
     stopWaiting();
@@ -145,14 +145,39 @@
     }
   })();
 
-  function redirectByRole(profile){
+  // Redirige vers le tableau de bord correspondant au rôle, en recopiant d'abord la session
+  // dans le type de stockage attendu par cette page (voir config.js) : sessionStorage pour
+  // l'équipe (usage ordinateur, plusieurs comptes possibles dans plusieurs onglets),
+  // localStorage pour les livreurs et fournisseurs (connexion mémorisée durablement sur
+  // l'app installée sur téléphone). Sans cette étape, la page de destination ne retrouverait
+  // pas la session si elle utilise un stockage différent de celui de la page de connexion.
+  async function redirectByRole(profile){
+    let target, persistent;
     if (profile && (profile.role === 'equipe' || profile.role === 'admin')) {
-      window.location.href = 'equipe.html';
+      target = 'equipe.html'; persistent = false;
     } else if (profile && profile.role === 'livreur') {
-      window.location.href = 'livreur.html';
+      target = 'livreur.html'; persistent = true;
     } else {
-      window.location.href = 'fournisseur.html';
+      target = 'fournisseur.html'; persistent = true;
     }
+
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        const targetStorage = persistent ? window.localStorage : window.sessionStorage;
+        const targetClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+          auth: { storage: targetStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+        });
+        await targetClient.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        });
+      }
+    } catch (err) {
+      console.error('Échec de la recopie de session :', err);
+    }
+
+    window.location.href = target;
   }
 
   // Tente une connexion en essayant les deux formats de numéro possibles ("225..." et "+225...").

@@ -16,13 +16,25 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// On utilise sessionStorage (et non le localStorage par défaut) pour que chaque onglet
-// du navigateur conserve sa propre session. Ainsi, on peut être connecté en même temps
-// avec plusieurs comptes différents (admin, équipe, livreur, fournisseur) dans des
-// onglets distincts du même navigateur, sans que l'un écrase la session de l'autre.
+// Stockage de la session : selon la page.
+// - Équipe (usage principalement sur ordinateur) : sessionStorage, pour que chaque onglet
+//   du navigateur garde sa propre session et qu'on puisse être connecté en même temps avec
+//   plusieurs comptes différents (admin, équipe...) dans des onglets distincts.
+// - Livreurs et fournisseurs (usage quotidien depuis l'app installée sur téléphone) :
+//   localStorage, pour rester connecté même après une fermeture complète de l'app — comme
+//   une vraie application, sans avoir à se reconnecter à chaque ouverture.
+// La page de connexion (login.html) recopie la session dans le bon stockage au moment de
+// rediriger vers l'espace correspondant (voir redirectByRole dans login.html), donc peu
+// importe le stockage utilisé ici pour cette page-là.
+const _pwaCurrentPage = window.location.pathname.split('/').pop();
+const _pwaPersistentPages = ['livreur.html', 'fournisseur.html'];
+const _authStorage = _pwaPersistentPages.includes(_pwaCurrentPage)
+  ? window.localStorage
+  : window.sessionStorage;
+
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
-    storage: window.sessionStorage,
+    storage: _authStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
