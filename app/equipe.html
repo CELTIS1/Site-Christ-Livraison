@@ -4,11 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tableau de bord Équipe | Christ Livraison & Transport SARL</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%231B4374'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23E26313'/%3E%3C/svg%3E">
-<!-- PWA : permet d'installer ce tableau de bord comme une app sur téléphone/tablette -->
-<link rel="manifest" href="manifest-equipe.json">
-<link rel="apple-touch-icon" href="/images/icons/apple-touch-icon.png">
-<meta name="theme-color" content="#1B4374">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%231B4374'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23E26313'/%3E%3C/svg%3E" id="pwa-favicon-link">
+<!-- PWA : permet d'installer ce tableau de bord comme une app sur téléphone/tablette.
+     Par défaut (avant de connaître le rôle exact), on affiche l'icône « équipe » (bleu).
+     Dès que le rôle est connu (voir init(), plus bas), ces balises sont remplacées par la
+     variante « administrateur » (rouge) si l'utilisateur est admin, afin que l'icône ajoutée
+     à l'écran d'accueil corresponde bien à son rôle. -->
+<link rel="manifest" href="manifest-equipe.json" id="pwa-manifest-link">
+<link rel="apple-touch-icon" href="/images/icons/apple-touch-icon.png" id="pwa-apple-icon-link">
+<meta name="theme-color" content="#1B4374" id="pwa-theme-color-meta">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2610,6 +2614,24 @@ monthEl.textContent = '—';
 }
 }
 
+// Cette page (equipe.html) est partagée par deux rôles (administrateur et équipe interne).
+// On y affiche par défaut l'identité « équipe » (icône bleue), et on la remplace ici par
+// l'identité « administrateur » (icône rouge) une fois le rôle exact connu — afin que
+// l'icône ajoutée à l'écran d'accueil corresponde toujours au bon rôle.
+function applyPwaIdentityForRole(isAdminRole){
+if (!isAdminRole) return; // déjà en configuration « équipe » par défaut dans le HTML
+const manifestLink = document.getElementById('pwa-manifest-link');
+const appleIconLink = document.getElementById('pwa-apple-icon-link');
+const themeColorMeta = document.getElementById('pwa-theme-color-meta');
+const faviconLink = document.getElementById('pwa-favicon-link');
+if (manifestLink) manifestLink.setAttribute('href', 'manifest-admin.json');
+if (appleIconLink) appleIconLink.setAttribute('href', '/images/icons/apple-touch-icon-admin.png');
+if (themeColorMeta) themeColorMeta.setAttribute('content', '#C0392B');
+if (faviconLink) {
+faviconLink.setAttribute('href', "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%23C0392B'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23FFFFFF'/%3E%3C/svg%3E");
+}
+}
+
 async function init(){
 const session = await requireAuth();
 if (!session) return;
@@ -2629,6 +2651,7 @@ return;
 }
 
 isAdmin = profile.role === 'admin';
+applyPwaIdentityForRole(isAdmin);
 document.getElementById('user-name').textContent = profile.full_name || '';
 document.getElementById('user-first-name').textContent = profile.full_name || '';
 initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', cameraInputId: 'avatar-input-camera', libraryInputId: 'avatar-input-library', statusId: 'avatar-msg' });

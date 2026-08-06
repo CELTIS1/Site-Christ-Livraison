@@ -14,7 +14,7 @@
 
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même. */
 
-const CACHE_VERSION = 'clt-shell-v3';
+const CACHE_VERSION = 'clt-shell-v4';
 
 // Uniquement des ressources à URL stable (sans paramètre de version) : les fichiers versionnés
 // (style.css?v=..., config.js?v=...) sont mis en cache automatiquement au premier chargement réel
@@ -25,6 +25,7 @@ const PRECACHE_URLS = [
   '/app/livreur.html',
   '/app/fournisseur.html',
   '/app/manifest-equipe.json',
+  '/app/manifest-admin.json',
   '/app/manifest-livreur.json',
   '/app/manifest-fournisseur.json',
   '/app/manifest-login.json',
@@ -33,7 +34,22 @@ const PRECACHE_URLS = [
   '/images/icons/icon-512.png',
   '/images/icons/icon-maskable-192.png',
   '/images/icons/icon-maskable-512.png',
-  '/images/icons/apple-touch-icon.png'
+  '/images/icons/apple-touch-icon.png',
+  '/images/icons/icon-192-admin.png',
+  '/images/icons/icon-512-admin.png',
+  '/images/icons/icon-maskable-192-admin.png',
+  '/images/icons/icon-maskable-512-admin.png',
+  '/images/icons/apple-touch-icon-admin.png',
+  '/images/icons/icon-192-livreur.png',
+  '/images/icons/icon-512-livreur.png',
+  '/images/icons/icon-maskable-192-livreur.png',
+  '/images/icons/icon-maskable-512-livreur.png',
+  '/images/icons/apple-touch-icon-livreur.png',
+  '/images/icons/icon-192-fournisseur.png',
+  '/images/icons/icon-512-fournisseur.png',
+  '/images/icons/icon-maskable-192-fournisseur.png',
+  '/images/icons/icon-maskable-512-fournisseur.png',
+  '/images/icons/apple-touch-icon-fournisseur.png'
 ];
 
 self.addEventListener('install', (event) => {
