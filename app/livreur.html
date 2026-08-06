@@ -110,12 +110,12 @@
        fois qu'une livraison en cours nécessiterait de partager la position, et tant que le livreur
        n'a pas explicitement accepté. Rien n'est envoyé avant cette acceptation. -->
   <div class="card hidden" id="geoloc-consent-card">
-    <strong>📍 Partage de votre position pendant vos livraisons</strong>
+    <strong>📍 Partage de votre position pendant vos récupérations et livraisons</strong>
     <p class="page-sub" style="margin:8px 0;">
-      Pour que l'équipe puisse suivre vos livraisons en cours sur la carte, nous avons besoin de connaître votre position pendant que vous avez un colis récupéré ou en livraison.<br><br>
-      <strong>Quand :</strong> uniquement pendant vos tournées actives, jamais en dehors.<br>
+      Pour que l'équipe puisse suivre vos récupérations et livraisons en cours sur la carte, nous avons besoin de connaître votre position pendant que vous êtes en route pour une récupération, ou que vous avez un colis récupéré ou en livraison.<br><br>
+      <strong>Quand :</strong> uniquement pendant vos trajets actifs (récupération ou livraison), jamais en dehors.<br>
       <strong>Donnée collectée :</strong> votre position GPS approximative.<br>
-      <strong>Conservation :</strong> supprimée automatiquement dès la fin de votre tournée.<br>
+      <strong>Conservation :</strong> supprimée automatiquement dès la fin de votre récupération ou de votre tournée.<br>
       <strong>Vos droits :</strong> vous pouvez demander l'accès, la correction ou la suppression de ces données à tout moment auprès de l'équipe.
     </p>
     <button type="button" class="btn btn-sm" id="btn-accept-geoloc-consent">J'ai compris et j'accepte</button>
@@ -124,7 +124,7 @@
   <div class="card" id="position-sharing-card" style="padding:10px 14px;">
     <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#64748b;">
       <span>📍</span>
-      <span id="position-sharing-desc">Position non partagée — aucune livraison en cours.</span>
+      <span id="position-sharing-desc">Position non partagée — aucune récupération ou livraison en cours.</span>
     </div>
     <div id="position-sharing-msg"></div>
   </div>
@@ -132,6 +132,7 @@
   <div class="card" id="section-main">
     <div class="tabs">
       <div class="tab active" id="tab-mes-colis" onclick="showTab('mes')">Mes colis assignés</div>
+      <div class="tab" id="tab-recuperations" onclick="showTab('recup')">Récupérations <span class="alert-badge hidden" id="recup-badge">0</span></div>
       <div class="tab" id="tab-tous-colis" onclick="showTab('tous')">Tous les colis</div>
     </div>
 
@@ -144,6 +145,13 @@
       </div>
       <div class="filters" id="filters-mes"></div>
       <div class="colis-list" id="mes-colis-list">
+        <div class="empty-state">Chargement...</div>
+      </div>
+    </div>
+
+    <div id="panel-recup" class="hidden">
+      <div class="page-sub" style="margin:0 0 10px;">Colis d'une même cliente à récupérer en une seule tournée. Cliquez sur « Je pars » au moment où vous partez réellement : cela démarre le partage de votre position pour ce trajet.</div>
+      <div class="colis-list" id="recup-colis-list">
         <div class="empty-state">Chargement...</div>
       </div>
     </div>
@@ -388,8 +396,10 @@
           if (!uploaded) break; // toujours hors-ligne ou échec réseau : on réessaiera plus tard
           photo_livraison_url = uploaded;
         }
+        const flushPayload = { statut: entry.statut, observation: entry.observation, photo_livraison_url };
+        if (entry.clearCollecteDepart) flushPayload.collecte_depart_at = null;
         const { error } = await supabaseClient.from('colis')
-          .update({ statut: entry.statut, observation: entry.observation, photo_livraison_url })
+          .update(flushPayload)
           .eq('id', entry.colisId);
         if (error) break; // échec réseau probable : on réessaiera plus tard
         await queueDelete(entry.key);
@@ -428,8 +438,10 @@
   function showTab(which){
     activePanel = which;
     document.getElementById('tab-mes-colis').classList.toggle('active', which === 'mes');
+    document.getElementById('tab-recuperations').classList.toggle('active', which === 'recup');
     document.getElementById('tab-tous-colis').classList.toggle('active', which === 'tous');
     document.getElementById('panel-mes').classList.toggle('hidden', which !== 'mes');
+    document.getElementById('panel-recup').classList.toggle('hidden', which !== 'recup');
     document.getElementById('panel-tous').classList.toggle('hidden', which !== 'tous');
   }
 
@@ -456,6 +468,14 @@
     return p.full_name || 'Livreur';
   }
 
+  // Retourne la ligne d'info "Collecte : <nom>" quand un livreur de collecte est assigné
+  // (potentiellement différent du livreur de livraison courant) — voir colis.livreur_collecte_id.
+  function collecteLineHTML(c){
+    const p = c.livreur_collecte_id ? profilesById[c.livreur_collecte_id] : null;
+    if (!p) return '';
+    return `<div class="meta">🚚 Collecte : ${escapeHTML(p.full_name || 'Livreur')}${c.collecte_depart_at ? ' · en route depuis ' + formatDate(c.collecte_depart_at) : ''}</div>`;
+  }
+
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
   function mesColisRowHTML(c){
     const thumb = c.photo_url
@@ -472,6 +492,7 @@
           <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
           ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
+          ${collecteLineHTML(c)}
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
           <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
         </div>
@@ -513,6 +534,7 @@
           <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
           ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
+          ${collecteLineHTML(c)}
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
           ${livreurLine}
           ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
@@ -522,15 +544,6 @@
         <div class="status-col">${statutBadgeHTML(c.statut)}</div>
       </div>
     `;
-  }
-
-  // Bouton d'action groupée "Récupérer tout" : affiché uniquement pour le groupe du jour même
-  // et seulement s'il reste au moins un colis "en attente" chez cette vendeuse.
-  function recupererToutActionHTML(day, client){
-    if (day.key !== todayLocalISODate()) return '';
-    const pending = client.items.filter(c => c.statut === 'en_attente');
-    if (!pending.length) return '';
-    return ` <button type="button" class="btn btn-sm btn-recuperer-tout" data-fournisseur="${client.key}" data-day="${day.key}" style="margin-left:8px;">📦 Récupérer tout (${pending.length})</button>`;
   }
 
   function renderMesColis(){
@@ -547,54 +560,7 @@
       return;
     }
     const groupsMes = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
-    list.innerHTML = renderGroupedColisHTML(groupsMes, mesColisRowHTML, recupererToutActionHTML);
-
-    list.querySelectorAll('.btn-recuperer-tout').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const fournisseurId = btn.dataset.fournisseur;
-        const dayKeyVal = btn.dataset.day;
-        const ids = mine
-          .filter(c => (c.fournisseur_id || "?") === fournisseurId && c.statut === 'en_attente' && dayKey(c.created_at) === dayKeyVal)
-          .map(c => c.id);
-        if (!ids.length) return;
-        if (!confirm(`Marquer les ${ids.length} colis du jour de cette vendeuse comme récupérés ?`)) return;
-        const originalLabel = btn.textContent;
-        btn.disabled = true; btn.textContent = 'Récupération...';
-
-        if (!navigator.onLine) {
-          let queueFailed = false;
-          for (const id of ids) {
-            const existing = allColis.find(c => c.id === id);
-            try {
-              await queueAdd({ colisId: id, statut: 'recupere', observation: existing ? existing.observation : null, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: null, userId: currentUser.id, timestamp: Date.now() });
-              if (existing) existing.statut = 'recupere';
-            } catch (e) {
-              console.error(e);
-              queueFailed = true;
-            }
-          }
-          if (queueFailed) {
-            alert("Certaines mises à jour n'ont pas pu être enregistrées hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
-          }
-          btn.disabled = false; btn.textContent = originalLabel;
-          await refreshOfflineBanner();
-          renderAll();
-          return;
-        }
-
-        const { error } = await supabaseClient.from('colis').update({ statut: 'recupere' }).in('id', ids);
-        if (error) {
-          alert("Erreur : " + error.message);
-          btn.disabled = false; btn.textContent = originalLabel;
-          return;
-        }
-        ids.forEach(id => {
-          const idx = allColis.findIndex(c => c.id === id);
-          if (idx !== -1) allColis[idx].statut = 'recupere';
-        });
-        renderAll();
-      });
-    });
+    list.innerHTML = renderGroupedColisHTML(groupsMes, mesColisRowHTML);
 
     list.querySelectorAll('.btn-save').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -668,6 +634,144 @@
     restoreScrollAnchor(list, __anchor);
   }
 
+  // ---------- Onglet "Récupérations" ----------
+  // Colis en attente dont CE livreur est chargé d'aller récupérer TOUS les colis d'une même
+  // cliente/vendeuse en une seule tournée (colis.livreur_collecte_id), distinct du livreur de
+  // LIVRAISON (colis.livreur_id, assigné colis par colis, potentiellement à quelqu'un d'autre).
+  function mesRecuperationsList(){
+    return allColis.filter(c => c.livreur_collecte_id === currentUser.id && c.statut === 'en_attente');
+  }
+
+  function recupColisRowHTML(c){
+    const thumb = c.photo_url
+      ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
+      : `<div class="thumb-placeholder">Pas de photo</div>`;
+    return `
+      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
+        ${thumb}
+        <div class="info">
+          ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
+          <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+          ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
+          <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+        </div>
+        <div class="status-col">${statutBadgeHTML(c.statut)}</div>
+      </div>
+    `;
+  }
+
+  // En-tête de groupe client : tant que le trajet n'a pas commencé, propose "Je pars pour cette
+  // récupération" (démarre le partage de position — voir updatePositionSharingFromColis) ; une
+  // fois en route, propose "Récupéré, tout" pour clore la tournée chez cette cliente.
+  function recupActionsHTML(day, client){
+    const enAttente = client.items.filter(c => c.statut === 'en_attente');
+    if (!enAttente.length) return '';
+    const enRoute = enAttente.some(c => c.collecte_depart_at);
+    if (!enRoute) {
+      return ` <button type="button" class="btn btn-sm btn-je-pars" data-fournisseur="${client.key}" data-day="${day.key}" style="margin-left:8px;">🚚 Je pars pour cette récupération</button>`;
+    }
+    return ` <button type="button" class="btn btn-sm btn-recuperer-tout-collecte" data-fournisseur="${client.key}" data-day="${day.key}" style="margin-left:8px;">📦 Récupéré, tout (${enAttente.length})</button>`;
+  }
+
+  function renderRecuperations(){
+    const list = document.getElementById('recup-colis-list');
+    if (!list) return;
+    const __anchor = captureScrollAnchor(list);
+    const mine = mesRecuperationsList();
+
+    const badge = document.getElementById('recup-badge');
+    if (badge) {
+      if (mine.length) { badge.textContent = mine.length; badge.classList.remove('hidden'); }
+      else { badge.classList.add('hidden'); }
+    }
+
+    if (!mine.length) {
+      list.innerHTML = `<div class="empty-state">Aucune récupération à effectuer pour le moment.</div>`;
+      restoreScrollAnchor(list, __anchor);
+      return;
+    }
+
+    const groups = groupColisByDayAndClient(mine, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
+    list.innerHTML = renderGroupedColisHTML(groups, recupColisRowHTML, recupActionsHTML);
+
+    list.querySelectorAll('.btn-je-pars').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const fournisseurId = btn.dataset.fournisseur;
+        const dayKeyVal = btn.dataset.day;
+        const ids = mine
+          .filter(c => (c.fournisseur_id || "?") === fournisseurId && dayKey(c.created_at) === dayKeyVal && !c.collecte_depart_at)
+          .map(c => c.id);
+        if (!ids.length) return;
+        if (!confirm(`Démarrer le partage de votre position pour cette récupération (${ids.length} colis) ?`)) return;
+        const originalLabel = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Départ...';
+        const nowIso = new Date().toISOString();
+        const { error } = await supabaseClient.from('colis').update({ collecte_depart_at: nowIso }).in('id', ids);
+        btn.disabled = false; btn.textContent = originalLabel;
+        if (error) { alert("Erreur : " + error.message); return; }
+        ids.forEach(id => {
+          const idx = allColis.findIndex(c => c.id === id);
+          if (idx !== -1) allColis[idx].collecte_depart_at = nowIso;
+        });
+        renderAll();
+      });
+    });
+
+    list.querySelectorAll('.btn-recuperer-tout-collecte').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const fournisseurId = btn.dataset.fournisseur;
+        const dayKeyVal = btn.dataset.day;
+        const ids = mine
+          .filter(c => (c.fournisseur_id || "?") === fournisseurId && dayKey(c.created_at) === dayKeyVal)
+          .map(c => c.id);
+        if (!ids.length) return;
+        if (!confirm(`Marquer les ${ids.length} colis de cette cliente comme récupérés ?`)) return;
+        const originalLabel = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Récupération...';
+
+        if (!navigator.onLine) {
+          let queueFailed = false;
+          for (const id of ids) {
+            const existing = allColis.find(c => c.id === id);
+            try {
+              // clearCollecteDepart : demande à flushOfflineQueue d'effacer aussi collecte_depart_at
+              // dès que la synchronisation aboutira (minimisation des données).
+              await queueAdd({ colisId: id, statut: 'recupere', observation: existing ? existing.observation : null, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: null, clearCollecteDepart: true, userId: currentUser.id, timestamp: Date.now() });
+              if (existing) { existing.statut = 'recupere'; existing.collecte_depart_at = null; }
+            } catch (e) {
+              console.error(e);
+              queueFailed = true;
+            }
+          }
+          if (queueFailed) {
+            alert("Certaines mises à jour n'ont pas pu être enregistrées hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
+          }
+          btn.disabled = false; btn.textContent = originalLabel;
+          await refreshOfflineBanner();
+          renderAll();
+          return;
+        }
+
+        // Minimisation des données : on efface collecte_depart_at en même temps que le passage
+        // à "récupéré" — voir supabase_livreur_collecte.sql.
+        const { error } = await supabaseClient.from('colis').update({ statut: 'recupere', collecte_depart_at: null }).in('id', ids);
+        if (error) {
+          alert("Erreur : " + error.message);
+          btn.disabled = false; btn.textContent = originalLabel;
+          return;
+        }
+        ids.forEach(id => {
+          const idx = allColis.findIndex(c => c.id === id);
+          if (idx !== -1) { allColis[idx].statut = 'recupere'; allColis[idx].collecte_depart_at = null; }
+        });
+        renderAll();
+      });
+    });
+
+    restoreScrollAnchor(list, __anchor);
+  }
+
   function renderTousColis(){
     const list = document.getElementById('tous-colis-list');
     const __anchor = captureScrollAnchor(list);
@@ -701,6 +805,7 @@
 
   function renderAll(){
     renderMesColis();
+    renderRecuperations();
     renderTousColis();
     if (currentUser && currentProfile) updatePositionSharingFromColis();
   }
@@ -864,29 +969,36 @@
 
   // Partage automatique de la position (voir startPositionSharing/stopPositionSharing dans
   // config.js) : le livreur n'a pas de bouton pour l'activer/le désactiver lui-même. Le partage
-  // démarre automatiquement dès qu'il a au moins un colis "Récupéré" ou "En livraison" assigné,
-  // et s'arrête automatiquement dès qu'il n'en a plus (livraisons terminées, en attente, etc.).
-  // Ceci garantit que la position reste visible par l'équipe pendant toute tournée active, sans
-  // que le livreur puisse la couper d'un simple clic pendant qu'il travaille.
+  // démarre automatiquement dès qu'il a au moins un colis "Récupéré" ou "En livraison" assigné
+  // (livraison), OU dès qu'il a cliqué "Je pars pour cette récupération" pour une collecte en
+  // attente (voir collecte_depart_at, app/equipe.html et supabase_livreur_collecte.sql). Le
+  // partage s'arrête automatiquement dès qu'aucune de ces deux conditions n'est plus vraie.
+  // Ceci garantit que la position reste visible par l'équipe pendant tout trajet actif (aller
+  // vers une récupération ou tournée de livraison), sans que le livreur puisse la couper d'un
+  // simple clic pendant qu'il travaille.
   //
   // Conformité loi ivoirienne n° 2013-450 (protection des données à caractère personnel) : le
   // partage ne démarre jamais avant que le livreur ait explicitement accepté la notice
-  // d'information (geoloc-consent-card, une seule fois, voir acceptGeolocConsent ci-dessous), et
-  // la position enregistrée est supprimée de la base dès la fin de la tournée — aucune donnée de
-  // localisation n'est conservée en dehors d'une livraison active.
+  // d'information (geoloc-consent-card, une seule fois, voir acceptGeolocConsent ci-dessous), ni
+  // avant qu'il ait explicitement signalé son départ pour une récupération (jamais dès la simple
+  // assignation par l'équipe) ; la position enregistrée est supprimée de la base dès la fin du
+  // trajet — aucune donnée de localisation n'est conservée en dehors d'une récupération ou d'une
+  // livraison active.
   const STATUTS_EN_TOURNEE = ['recupere', 'en_livraison'];
   function updatePositionSharingFromColis(){
     const desc = document.getElementById('position-sharing-desc');
     const msg = document.getElementById('position-sharing-msg');
     const consentCard = document.getElementById('geoloc-consent-card');
-    const enTournee = allColis.some(c => c.livreur_id === currentUser.id && STATUTS_EN_TOURNEE.includes(c.statut));
+    const collecteEnRoute = allColis.some(c => c.livreur_collecte_id === currentUser.id && c.statut === 'en_attente' && c.collecte_depart_at);
+    const enLivraison = allColis.some(c => c.livreur_id === currentUser.id && STATUTS_EN_TOURNEE.includes(c.statut));
+    const enTournee = collecteEnRoute || enLivraison;
 
     if (!enTournee) {
       stopPositionSharing();
       consentCard.classList.add('hidden');
-      desc.textContent = 'Position non partagée — aucune livraison en cours.';
+      desc.textContent = 'Position non partagée — aucune récupération ou livraison en cours.';
       msg.innerHTML = '';
-      // Minimisation des données : on ne garde aucune position au-delà d'une tournée active.
+      // Minimisation des données : on ne garde aucune position au-delà d'un trajet actif.
       supabaseClient.from('livreur_positions').delete().eq('livreur_id', currentUser.id)
         .then(({ error }) => { if (error) console.error('Erreur suppression position:', error); });
       return;
@@ -904,7 +1016,9 @@
       msg.innerHTML = `<div class="msg msg-error">Impossible de partager votre position : ${err.message || 'accès refusé.'} Merci d'autoriser la géolocalisation pour cet appareil.</div>`;
       desc.textContent = 'Activation impossible — vérifiez l\'autorisation de géolocalisation.';
     });
-    desc.textContent = 'Position partagée avec l\'équipe pour cette livraison en cours.';
+    desc.textContent = enLivraison
+      ? 'Position partagée avec l\'équipe pour cette livraison en cours.'
+      : 'Position partagée avec l\'équipe pour ce trajet de récupération en cours.';
     msg.innerHTML = '';
   }
 
