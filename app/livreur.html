@@ -107,13 +107,8 @@
   </div>
 
   <div class="card" id="position-sharing-card">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-      <div>
-        <strong>📍 Partage de ma position</strong>
-        <div class="page-sub" style="margin:4px 0 0;" id="position-sharing-desc">Désactivé — l'équipe ne voit pas votre position actuelle.</div>
-      </div>
-      <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-position">Activer le partage</button>
-    </div>
+    <strong>📍 Partage de ma position</strong>
+    <div class="page-sub" style="margin:4px 0 0;" id="position-sharing-desc">Désactivé — aucune livraison en cours.</div>
     <div id="position-sharing-msg"></div>
   </div>
 
@@ -689,6 +684,7 @@
   function renderAll(){
     renderMesColis();
     renderTousColis();
+    if (currentUser) updatePositionSharingFromColis();
   }
 
   async function loadProfiles(){
@@ -765,13 +761,6 @@
     initSettingsMenu();
     // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
-
-    // Reprend automatiquement le partage de position si le livreur l'avait activé plus tôt dans
-    // cet onglet (ex: rechargement de page pendant sa tournée). Le partage reste néanmoins
-    // désactivé par défaut à chaque nouvelle connexion, pour ne jamais suivre quelqu'un à son insu.
-    if (window.sessionStorage.getItem('position-sharing-on') === '1') {
-      togglePositionSharing(true);
-    }
 
     function selectFilterMes(val){ activeFilterMes = val; renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
     function selectFilterTous(val){ activeFilterTous = val; renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
@@ -853,36 +842,31 @@
     }
   });
 
-  // Active/désactive le partage de position (voir startPositionSharing/stopPositionSharing
-  // dans config.js). Le choix du livreur est mémorisé pour la durée de l'onglet uniquement
-  // (sessionStorage), afin qu'il survive à un rechargement de page sans jamais persister
-  // au-delà de la session en cours.
-  function togglePositionSharing(forceOn){
-    const btn = document.getElementById('btn-toggle-position');
+  // Partage automatique de la position (voir startPositionSharing/stopPositionSharing dans
+  // config.js) : le livreur n'a plus de bouton pour l'activer/le désactiver lui-même. Le partage
+  // démarre automatiquement dès qu'il a au moins un colis "Récupéré" ou "En livraison" assigné,
+  // et s'arrête automatiquement dès qu'il n'en a plus (livraisons terminées, en attente, etc.).
+  // Ceci garantit que la position reste visible par l'équipe pendant toute tournée active, sans
+  // que le livreur puisse la couper d'un simple clic pendant qu'il travaille.
+  const STATUTS_EN_TOURNEE = ['recupere', 'en_livraison'];
+  function updatePositionSharingFromColis(){
     const desc = document.getElementById('position-sharing-desc');
     const msg = document.getElementById('position-sharing-msg');
-    const shouldActivate = forceOn === true ? true : !isPositionSharingActive();
+    const enTournee = allColis.some(c => c.livreur_id === currentUser.id && STATUTS_EN_TOURNEE.includes(c.statut));
 
-    if (shouldActivate) {
+    if (enTournee) {
       startPositionSharing(currentUser.id, (err) => {
-        msg.innerHTML = `<div class="msg msg-error">Impossible d'activer le partage de position : ${err.message || 'accès refusé.'}</div>`;
-        window.sessionStorage.removeItem('position-sharing-on');
-        btn.textContent = 'Activer le partage';
-        desc.textContent = "Désactivé — l'équipe ne voit pas votre position actuelle.";
+        msg.innerHTML = `<div class="msg msg-error">Impossible de partager votre position : ${err.message || 'accès refusé.'} Merci d'autoriser la géolocalisation pour cet appareil.</div>`;
+        desc.textContent = 'Activation impossible — vérifiez l\'autorisation de géolocalisation.';
       });
-      window.sessionStorage.setItem('position-sharing-on', '1');
-      btn.textContent = 'Désactiver le partage';
-      desc.textContent = 'Activé — votre position est visible en direct par l\'équipe.';
+      desc.textContent = 'Activé — vous avez une livraison en cours, votre position est visible en direct par l\'équipe.';
       msg.innerHTML = '';
     } else {
       stopPositionSharing();
-      window.sessionStorage.removeItem('position-sharing-on');
-      btn.textContent = 'Activer le partage';
-      desc.textContent = "Désactivé — l'équipe ne voit pas votre position actuelle.";
+      desc.textContent = 'Désactivé — aucune livraison en cours.';
       msg.innerHTML = '';
     }
   }
-  document.getElementById('btn-toggle-position').addEventListener('click', () => togglePositionSharing());
 
   document.getElementById('btn-sync-now').addEventListener('click', () => { flushOfflineQueue(); });
   window.addEventListener('online', () => { flushOfflineQueue(); });

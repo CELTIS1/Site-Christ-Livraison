@@ -110,14 +110,15 @@ function getPresenceState() {
 }
 
 // ---------- Suivi de position en temps réel des livreurs (carte équipe/admin) ----------
-// Le livreur choisit lui-même d'activer ou non le partage de sa position (bouton dans son
-// espace) : rien n'est jamais envoyé sans cette action explicite. Tant que c'est activé, la
-// position du téléphone est envoyée à intervalles réguliers dans la table "livreur_positions"
-// (une seule ligne par livreur, mise à jour à chaque envoi), rendue visible en direct sur la
-// carte des espaces équipe/admin via Supabase Realtime. Si le livreur ferme l'onglet ou perd
-// la connexion sans désactiver le partage, sa position cesse simplement d'être mise à jour :
-// la carte affiche alors ce livreur comme "hors ligne" dès que sa dernière position devient
-// trop ancienne (voir POSITION_STALE_AFTER_MS, utilisé côté équipe.html).
+// Le partage démarre et s'arrête automatiquement selon que le livreur a, ou non, au moins un
+// colis "Récupéré" ou "En livraison" assigné (voir updatePositionSharingFromColis dans
+// livreur.html) : le livreur n'a pas de bouton pour le couper lui-même pendant une tournée
+// active, afin que l'équipe puisse s'y fier. Tant que c'est activé, la position du téléphone est
+// envoyée à intervalles réguliers dans la table "livreur_positions" (une seule ligne par livreur,
+// mise à jour à chaque envoi), rendue visible en direct sur la carte des espaces équipe/admin via
+// Supabase Realtime. Si le livreur ferme l'onglet ou perd la connexion, sa position cesse
+// simplement d'être mise à jour : la carte affiche alors ce livreur comme "hors ligne" dès que sa
+// dernière position devient trop ancienne (voir POSITION_STALE_AFTER_MS, utilisé côté équipe.html).
 const POSITION_STALE_AFTER_MS = 3 * 60 * 1000; // 3 minutes sans mise à jour = considéré hors ligne
 const POSITION_MIN_INTERVAL_MS = 10 * 1000; // au maximum une mise à jour toutes les 10 secondes
 let positionWatchId = null;
