@@ -703,7 +703,6 @@
           .filter(c => (c.fournisseur_id || "?") === fournisseurId && dayKey(c.created_at) === dayKeyVal && !c.collecte_depart_at)
           .map(c => c.id);
         if (!ids.length) return;
-        if (!confirm(`Démarrer le partage de votre position pour cette récupération (${ids.length} colis) ?`)) return;
         const originalLabel = btn.textContent;
         btn.disabled = true; btn.textContent = 'Départ...';
         const nowIso = new Date().toISOString();

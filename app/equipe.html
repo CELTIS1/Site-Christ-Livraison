@@ -417,6 +417,33 @@
   </div>
 </div>
 
+<!-- Lieu de récupération d'une cliente/vendeuse : saisi une seule fois par l'équipe (utile pour
+     les vendeuses non présentes sur place ou éloignées du dépôt), réutilisé pour tous ses colis
+     à venir et reporté immédiatement sur ses colis "en attente" déjà enregistrés, pour que le
+     livreur de collecte sache où aller récupérer dès la notification. -->
+<div id="pickup-modal-overlay" class="pwd-modal-overlay hidden">
+  <div class="pwd-modal">
+    <div class="pwd-modal-icon">📍</div>
+    <h3 class="pwd-modal-title">Lieu de récupération</h3>
+    <p class="pwd-modal-sub" id="pickup-modal-sub"></p>
+    <form id="pickup-modal-form">
+      <div style="text-align:left; margin-bottom:12px;">
+        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Commune</label>
+        <select id="pickup-modal-commune" required style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;"></select>
+      </div>
+      <div style="text-align:left; margin-bottom:16px;">
+        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Adresse précise (optionnel)</label>
+        <input type="text" id="pickup-modal-adresse" placeholder="Ex : Rue des Jardins, Immeuble..." style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+      </div>
+      <div id="pickup-modal-msg"></div>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn" id="pickup-modal-cancel" style="flex:1; background:#e5e9ef; color:#222;">Annuler</button>
+        <button type="submit" class="btn" id="pickup-modal-save" style="flex:1;">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script src="config.js?v=20260801b"></script>
 <script>
 let currentUser = null;
@@ -566,6 +593,70 @@ document.getElementById('confirm-modal-overlay').addEventListener('click', (e) =
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !document.getElementById('confirm-modal-overlay').classList.contains('hidden')) hideConfirmModal(false);
+});
+
+// ---------- Lieu de récupération d'une cliente (saisi une seule fois par l'équipe) ----------
+let __pickupModalFournisseurId = null;
+function showPickupModal(fournisseurId){
+  const f = fournisseurs.find(x => x.id === fournisseurId);
+  if (!f) return;
+  __pickupModalFournisseurId = fournisseurId;
+  document.getElementById('pickup-modal-sub').textContent = f.company_name || f.full_name || 'Cliente';
+  document.getElementById('pickup-modal-commune').innerHTML = communesOptionsHTML(f.commune_recuperation, "Choisir une commune");
+  document.getElementById('pickup-modal-adresse').value = f.adresse_recuperation || '';
+  document.getElementById('pickup-modal-msg').innerHTML = '';
+  document.getElementById('pickup-modal-overlay').classList.remove('hidden');
+}
+function hidePickupModal(){
+  document.getElementById('pickup-modal-overlay').classList.add('hidden');
+  __pickupModalFournisseurId = null;
+}
+document.getElementById('pickup-modal-cancel').addEventListener('click', hidePickupModal);
+document.getElementById('pickup-modal-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'pickup-modal-overlay') hidePickupModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('pickup-modal-overlay').classList.contains('hidden')) hidePickupModal();
+});
+document.getElementById('pickup-modal-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fournisseurId = __pickupModalFournisseurId;
+  if (!fournisseurId) return;
+  const commune = document.getElementById('pickup-modal-commune').value;
+  const msgBox = document.getElementById('pickup-modal-msg');
+  if (!commune) {
+    msgBox.innerHTML = `<div class="msg msg-error">Veuillez choisir une commune.</div>`;
+    return;
+  }
+  const adresse = document.getElementById('pickup-modal-adresse').value.trim();
+  const saveBtn = document.getElementById('pickup-modal-save');
+  saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement...';
+  const { error } = await supabaseClient.from('profiles')
+    .update({ commune_recuperation: commune, adresse_recuperation: adresse || null })
+    .eq('id', fournisseurId);
+  saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer';
+  if (error) {
+    msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`;
+    return;
+  }
+  const f = fournisseurs.find(x => x.id === fournisseurId);
+  if (f) { f.commune_recuperation = commune; f.adresse_recuperation = adresse || null; }
+  // Reporte aussitôt ce lieu sur les colis "en attente" de cette cliente qui n'en ont pas encore,
+  // pour que le livreur de collecte le voie déjà sur les colis existants (pas seulement les futurs).
+  const idsToBackfill = allColis
+    .filter(c => c.fournisseur_id === fournisseurId && c.statut === 'en_attente' && !c.commune_recuperation)
+    .map(c => c.id);
+  if (idsToBackfill.length) {
+    await supabaseClient.from('colis')
+      .update({ commune_recuperation: commune, adresse_recuperation: adresse || null })
+      .in('id', idsToBackfill);
+    idsToBackfill.forEach(id => {
+      const idx = allColis.findIndex(c => c.id === id);
+      if (idx !== -1) { allColis[idx].commune_recuperation = commune; allColis[idx].adresse_recuperation = adresse || null; }
+    });
+  }
+  hidePickupModal();
+  renderColis();
 });
 
 function closeOtherSections(exceptContentId){
@@ -840,7 +931,7 @@ return data.publicUrl;
 async function loadFournisseurs(){
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, full_name, company_name')
+.select('id, full_name, company_name, commune_recuperation, adresse_recuperation')
 .eq('role', 'fournisseur')
 .order('full_name');
 if (error) { console.error(error); return; }
@@ -1364,13 +1455,18 @@ banner.innerHTML = `⚠️ ${aRisque.length} colis à examiner (non livré ou re
 // pour tous les colis en attente d'une même cliente/vendeuse.
 function equipeCollecteActionHTML(day, client){
 const pending = client.items.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id);
-if (!pending.length) return '';
+const f = fournisseurs.find(x => x.id === client.key);
+const pickupLabel = f && f.commune_recuperation ? `📍 ${escapeHTML(f.commune_recuperation)}` : '📍 Lieu de récupération';
+let html = ` <button type="button" class="btn btn-sm btn-edit-pickup" data-fournisseur="${client.key}" title="Définir le lieu de récupération de cette cliente">${pickupLabel}</button>`;
+if (pending.length) {
 const options = '<option value="">Assigner collecte à…</option>' +
 livreurs.map(l => `<option value="${l.id}">${escapeHTML(l.full_name || l.id)}</option>`).join('');
-return ` <span class="group-collecte-assign" style="margin-left:8px; display:inline-flex; gap:4px; align-items:center;">
-<select class="select-assign-collecte" style="font-size:12px; padding:4px 6px; border-radius:6px; border:1.5px solid var(--border);">${options}</select>
-<button type="button" class="btn btn-sm btn-assign-collecte" data-fournisseur="${client.key}" data-day="${day.key}" style="padding:4px 8px;">Assigner (${pending.length})</button>
+html += ` <span class="group-collecte-assign">
+<select class="select-assign-collecte">${options}</select>
+<button type="button" class="btn btn-sm btn-assign-collecte" data-fournisseur="${client.key}" data-day="${day.key}">Assigner (${pending.length})</button>
 </span>`;
+}
+return html;
 }
 
 function renderColis(){
@@ -1385,6 +1481,12 @@ list.innerHTML = filtreDateColis
 } else {
 const groups = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
 list.innerHTML = renderGroupedColisHTML(groups, colisRowHTML, equipeCollecteActionHTML);
+
+list.querySelectorAll('.btn-edit-pickup').forEach(btn => {
+btn.addEventListener('click', () => {
+showPickupModal(btn.dataset.fournisseur);
+});
+});
 
 list.querySelectorAll('.btn-assign-collecte').forEach(btn => {
 btn.addEventListener('click', async () => {

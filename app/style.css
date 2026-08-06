@@ -260,6 +260,18 @@ input,textarea,select{font-family:inherit;}
   background:var(--grey-bg); color:var(--muted); border-radius:12px; padding:2px 9px; font-size:11.5px; font-weight:700;
 }
 
+/* ---------- Actions groupées sur l'en-tête d'un groupe client (équipe : lieu de récupération,
+   assignation groupée du livreur de collecte) ---------- */
+.btn-edit-pickup{
+  margin-left:8px; padding:4px 8px; font-size:12px;
+  background:var(--grey-bg); color:var(--navy); border:1.5px solid var(--border);
+}
+.group-collecte-assign{margin-left:8px; display:inline-flex; gap:4px; align-items:center;}
+.select-assign-collecte{
+  font-size:12px; padding:4px 6px; border-radius:6px; border:1.5px solid var(--border); max-width:150px;
+}
+.group-collecte-assign .btn-assign-collecte{padding:4px 8px; font-size:12px;}
+
 /* Sur mobile : carte resserrée pour que chaque colis prenne le moins d'espace possible et que
    le suivi reste agréable sur petit écran (colonne statut repassée en ligne, sous la carte). */
 @media(max-width:640px){
@@ -274,6 +286,20 @@ input,textarea,select{font-family:inherit;}
     border-top:1px solid var(--border); margin-top:2px; padding-top:8px; gap:6px;
   }
   .badge{padding:4px 11px; font-size:11px;}
+
+  /* En-têtes de groupe (jour / client) : espace resserré, actions groupées repassées sur leur
+     propre ligne pleine largeur au lieu de s'entasser à côté du nom, pour éviter tout débordement
+     horizontal sur petit écran. */
+  .day-group{gap:10px; margin-bottom:18px;}
+  .day-group-header{font-size:13.5px; padding:6px 2px;}
+  .client-group{gap:10px; padding-left:10px;}
+  .client-group-header{font-size:12.5px; gap:6px;}
+  .btn-edit-pickup, .group-collecte-assign, .btn-je-pars, .btn-recuperer-tout-collecte{
+    margin-left:0 !important; margin-top:4px; flex-basis:100%;
+  }
+  .group-collecte-assign{width:100%;}
+  .select-assign-collecte{flex:1; min-width:0; max-width:none;}
+  .group-collecte-assign .btn-assign-collecte{flex-shrink:0;}
 }
 
 .badge{
@@ -335,6 +361,19 @@ input,textarea,select{font-family:inherit;}
 .tab{flex:1; text-align:center; padding:10px; font-weight:700; font-size:13.5px; color:var(--muted); border-bottom:2.5px solid transparent; margin-bottom:-1.5px;}
 .tab.active{color:var(--orange); border-color:var(--orange);}
 .hidden{display:none !important;}
+
+/* Onglets sur petit écran : avec 3-4 onglets, un partage à parts égales (flex:1) fait déborder
+   ou couper les libellés les plus longs. On repasse en rangée défilante horizontalement, avec un
+   texte resserré, pour que chaque onglet reste lisible en une seule ligne. */
+@media(max-width:640px){
+  .tabs{
+    overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; margin-bottom:16px;
+  }
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{
+    flex:0 0 auto; padding:9px 12px; font-size:12px; white-space:nowrap;
+  }
+}
 
 /* ---------- ATTENTE DE VALIDATION (login) ---------- */
 .waiting-box{text-align:center; padding:8px 4px 4px 4px;}
