@@ -1,86 +1,13 @@
 {
-  "hero": {
-    "pill": "CRÉDIBLE • SIMPLE • SÉCURISÉE",
-    "title": "Votre partenaire livraison au quotidien, partout à Abidjan.",
-    "lead": "Colis, courriers, documents administratifs et courses : nous nous occupons de vos livraisons pour que vous n'ayez pas à le faire.",
-    "photos": ["images/hero-livreur.jpg", "images/hero-livreur-2.jpg"]
+  "contact": {
+    "whatsapp_number": "2250546818640",
+    "whatsapp_display": "(+225) 05 46 81 86 40",
+    "phone_number": "+2250711138693",
+    "phone_display": "07 11 13 86 93",
+    "email": "contact@christlivraison.ci",
+    "facebook": "Christ Livraison",
+    "instagram": "christ_livraison"
   },
-  "services": [
-    {
-      "icon": "fa-bolt",
-      "title": "Livraison express",
-      "text": "Vos colis livrés rapidement, en priorité, pour vos besoins urgents à Abidjan.",
-      "photo": ""
-    },
-    {
-      "icon": "fa-calendar-check",
-      "title": "Livraison programmée",
-      "text": "Planifiez vos livraisons à l'avance, à la date et l'heure qui vous conviennent.",
-      "photo": ""
-    },
-    {
-      "icon": "fa-cart-shopping",
-      "title": "Livraison e-commerce",
-      "text": "Nous livrons les commandes de votre boutique en ligne directement à vos clients.",
-      "photo": ""
-    },
-    {
-      "icon": "fa-briefcase",
-      "title": "Courses pour entreprises",
-      "text": "Un coursier dédié pour vos courses professionnelles : documents, achats, commissions diverses.",
-      "photo": ""
-    },
-    {
-      "icon": "fa-paper-plane",
-      "title": "Expédition",
-      "text": "Prise en charge de vos expéditions vers différents points de la ville, dans les meilleurs délais.",
-      "photo": ""
-    }
-  ],
-  "how_it_works": {
-    "eyebrow": "COMMENT ÇA MARCHE",
-    "title": "Un processus simple, en 3 étapes",
-    "subtitle": "De la demande à la livraison, nous nous occupons de tout.",
-    "steps": [
-      {
-        "icon": "fa-comment-dots",
-        "title": "Commander",
-        "text": "Vous nous contactez par WhatsApp, téléphone ou via le formulaire du site pour planifier votre livraison."
-      },
-      {
-        "icon": "fa-box-open",
-        "title": "Récupération",
-        "text": "Notre livreur passe récupérer votre colis, courrier ou commande à l'adresse indiquée."
-      },
-      {
-        "icon": "fa-truck",
-        "title": "Livraison",
-        "text": "Votre colis est livré directement à son destinataire, avec une confirmation dès la remise."
-      }
-    ]
-  },
-  "trust": [
-    {
-      "icon": "fa-bolt",
-      "title": "À partir de 1000 FCFA",
-      "text": "Un tarif clair et accessible pour vos livraisons en ville."
-    },
-    {
-      "icon": "fa-location-dot",
-      "title": "Abidjan et périphéries",
-      "text": "Nous livrons dans toute la ville et les zones environnantes."
-    },
-    {
-      "icon": "fa-clock",
-      "title": "Toujours joignables",
-      "text": "Contactez-nous à tout moment, de préférence la veille ou tôt le matin."
-    },
-    {
-      "icon": "fa-handshake",
-      "title": "Nos partenariats",
-      "text": "49 commerçants et entreprises nous confient déjà leurs livraisons à Abidjan."
-    }
-  ],
   "coverage": {
     "eyebrow": "COUVERTURE GÉOGRAPHIQUE",
     "title": "Toutes les zones couvertes",
@@ -202,6 +129,31 @@
     "cta_title": "Votre zone n'est pas listée ?",
     "cta_text": "Contactez-nous : nous étudions toute demande de livraison à Abidjan et alentours."
   },
+  "partners_band": {
+    "label": "Ils nous font confiance",
+    "items": [
+      {
+        "icon": "fa-store",
+        "label": "Boutiques"
+      },
+      {
+        "icon": "fa-cart-shopping",
+        "label": "E-commerçants"
+      },
+      {
+        "icon": "fa-utensils",
+        "label": "Restaurants"
+      },
+      {
+        "icon": "fa-briefcase-medical",
+        "label": "Pharmacies"
+      },
+      {
+        "icon": "fa-building",
+        "label": "Entreprises"
+      }
+    ]
+  },
   "about": {
     "eyebrow": "À PROPOS",
     "title": "Qui sommes-nous ?",
@@ -236,16 +188,6 @@
         "number": "1000 FCFA",
         "label": "tarif de départ pour vos livraisons"
       }
-    ]
-  },
-  "partners_band": {
-    "label": "Ils nous font confiance",
-    "items": [
-      { "icon": "fa-store", "label": "Boutiques" },
-      { "icon": "fa-cart-shopping", "label": "E-commerçants" },
-      { "icon": "fa-utensils", "label": "Restaurants" },
-      { "icon": "fa-briefcase-medical", "label": "Pharmacies" },
-      { "icon": "fa-building", "label": "Entreprises" }
     ]
   },
   "testimonials": {
@@ -324,18 +266,94 @@
       }
     ]
   },
-  "contact": {
-    "whatsapp_number": "2250546818640",
-    "whatsapp_display": "(+225) 05 46 81 86 40",
-    "phone_number": "+2250711138693",
-    "phone_display": "07 11 13 86 93",
-    "email": "contact@christlivraison.ci",
-    "facebook": "Christ Livraison",
-    "instagram": "christ_livraison"
-  },
+  "trust": [
+    {
+      "icon": "fa-bolt",
+      "title": "À partir de 1000 FCFA",
+      "text": "Un tarif clair et accessible pour vos livraisons en ville."
+    },
+    {
+      "icon": "fa-location-dot",
+      "title": "Abidjan et périphéries",
+      "text": "Nous livrons dans toute la ville et les zones environnantes."
+    },
+    {
+      "icon": "fa-clock",
+      "title": "Toujours joignables",
+      "text": "Contactez-nous à tout moment, de préférence la veille ou tôt le matin."
+    },
+    {
+      "icon": "fa-handshake",
+      "title": "Nos partenariats",
+      "text": "49 commerçants et entreprises nous confient déjà leurs livraisons à Abidjan."
+    }
+  ],
   "legal": {
     "capital": "1 000 000 FCFA",
     "siege": "Abidjan, Cocody Lycée technique",
     "rccm": "CI-ABJ-03-2026-B12-00184"
-  }
+  },
+  "hero": {
+    "pill": "CRÉDIBLE • SIMPLE • SÉCURISÉE",
+    "title": "Votre partenaire de livraison au quotidien, partout à Abidjan.",
+    "lead": "Colis, courriers, documents administratifs et courses : nous nous occupons de vos livraisons pour que vous n'ayez pas à le faire.",
+    "photos": [
+      "images/hero-livreur.jpg",
+      "images/hero-livreur-2.jpg"
+    ]
+  },
+  "how_it_works": {
+    "eyebrow": "COMMENT ÇA MARCHE",
+    "title": "Un processus simple, en 3 étapes",
+    "subtitle": "De la demande à la livraison, nous nous occupons de tout.",
+    "steps": [
+      {
+        "icon": "fa-comment-dots",
+        "title": "Commander",
+        "text": "Vous nous contactez par WhatsApp, téléphone ou via le formulaire du site pour planifier votre livraison."
+      },
+      {
+        "icon": "fa-box-open",
+        "title": "Récupération",
+        "text": "Notre livreur passe récupérer votre colis, courrier ou commande à l'adresse indiquée."
+      },
+      {
+        "icon": "fa-truck",
+        "title": "Livraison",
+        "text": "Votre colis est livré directement à son destinataire, avec une confirmation dès la remise."
+      }
+    ]
+  },
+  "services": [
+    {
+      "icon": "fa-bolt",
+      "title": "Livraison express",
+      "text": "Vos colis livrés rapidement, en priorité, pour vos besoins urgents à Abidjan.",
+      "photo": ""
+    },
+    {
+      "icon": "fa-calendar-check",
+      "title": "Livraison programmée",
+      "text": "Planifiez vos livraisons à l'avance, à la date et l'heure qui vous conviennent.",
+      "photo": ""
+    },
+    {
+      "icon": "fa-cart-shopping",
+      "title": "Livraison e-commerce",
+      "text": "Nous livrons les commandes de votre boutique en ligne directement à vos clients.",
+      "photo": ""
+    },
+    {
+      "icon": "fa-briefcase",
+      "title": "Courses pour entreprises",
+      "text": "Un coursier dédié pour vos courses professionnelles : documents, achats, commissions diverses.",
+      "photo": ""
+    },
+    {
+      "icon": "fa-paper-plane",
+      "title": "Expédition",
+      "text": "Prise en charge de vos expéditions vers différents points de la ville, dans les meilleurs délais.",
+      "photo": ""
+    }
+  ]
 }
