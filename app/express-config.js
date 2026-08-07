@@ -216,10 +216,14 @@ function colisPhotoUrl(path) {
 // Ordre d'affichage et libellés des opérateurs. La clé correspond à la colonne
 // momo_<clé> de express_config (le numéro CLT qui reçoit la recharge).
 const EXPRESS_MOMO_OPERATEURS = [
-  { key: "wave",   label: "Wave",         emoji: "🌊" },
-  { key: "orange", label: "Orange Money", emoji: "🟠" },
-  { key: "mtn",    label: "MTN MoMo",     emoji: "🟡" },
-  { key: "moov",   label: "Moov Money",   emoji: "🔵" },
+  { key: "wave",   label: "Wave",         emoji: "🌊",
+    logo: `<svg class="momo-logo" viewBox="0 0 132 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wave"><rect width="132" height="40" rx="10" fill="#1FC3F4"/><text x="66" y="27" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="19" fill="#ffffff" letter-spacing="0.5">wave</text></svg>` },
+  { key: "orange", label: "Orange Money", emoji: "🟠",
+    logo: `<svg class="momo-logo" viewBox="0 0 132 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Orange Money"><rect width="132" height="40" rx="10" fill="#FF7900"/><text x="66" y="26" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="17" fill="#ffffff" letter-spacing="0.3">Orange</text></svg>` },
+  { key: "mtn",    label: "MTN MoMo",     emoji: "🟡",
+    logo: `<svg class="momo-logo" viewBox="0 0 132 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MTN MoMo"><rect width="132" height="40" rx="10" fill="#FFCB05"/><text x="66" y="27" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="19" fill="#00447C" letter-spacing="1">MTN</text></svg>` },
+  { key: "moov",   label: "Moov Money",   emoji: "🔵",
+    logo: `<svg class="momo-logo" viewBox="0 0 132 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Moov Money"><rect width="132" height="40" rx="10" fill="#0A50A2"/><text x="66" y="27" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="19" fill="#ffffff" letter-spacing="0.5">moov</text></svg>` },
 ];
 
 function momoOperateurLabel(key) {

@@ -60,12 +60,36 @@
   /* Modale de recharge */
   .momo-grid{ display:flex; gap:10px; flex-wrap:wrap; margin:6px 0 4px; }
   .momo-choice{
-    flex:1; min-width:120px; border:1.5px solid var(--border,#e5e7eb); border-radius:12px; padding:12px;
-    cursor:pointer; text-align:center; font-size:13.5px; font-weight:600; color:var(--navy); background:#fff; transition:0.15s;
+    flex:1; min-width:118px; border:1.5px solid var(--border,#e5e7eb); border-radius:14px; padding:12px 10px;
+    cursor:pointer; text-align:center; background:#fff; transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
   }
-  .momo-choice:hover{ border-color:#0D9488; }
-  .momo-choice.selected{ border-color:#0D9488; background:#f0fdfb; }
+  .momo-choice:hover{ border-color:#0D9488; transform:translateY(-2px); box-shadow:0 8px 18px rgba(11,110,100,0.12); }
+  .momo-choice.selected{ border-color:#0D9488; background:#f0fdfb; box-shadow:0 0 0 3px rgba(13,148,136,0.14); }
+  .momo-logo{ width:100%; max-width:116px; height:auto; display:block; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.10); }
+  .momo-choice-name{ font-size:12px; font-weight:600; color:var(--muted); }
+  .momo-choice.selected .momo-choice-name{ color:#0b6e64; }
   .momo-choice .momo-emoji{ font-size:22px; display:block; margin-bottom:4px; }
+
+  /* Champ « Montant envoyé » : finition moderne (le type=number n'héritait pas du
+     style des champs texte) + suffixe FCFA, comme le champ Référence juste en dessous. */
+  #form-recharge .amount-input{ position:relative; }
+  #form-recharge input[type=number]{
+    width:100%; padding:11px 60px 11px 13px; border:1.5px solid var(--border,#e5e7eb);
+    border-radius:9px; font-size:14px; font-weight:600; background:#fff;
+    transition:border-color .15s ease, box-shadow .15s ease; -moz-appearance:textfield; appearance:textfield;
+  }
+  #form-recharge input[type=number]::-webkit-outer-spin-button,
+  #form-recharge input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  #form-recharge input[type=number]:focus,
+  #form-recharge input[type=text]:focus{
+    outline:none; border-color:#0D9488; box-shadow:0 0 0 3px rgba(13,148,136,0.18);
+  }
+  #form-recharge .amount-suffix{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    font-size:11.5px; font-weight:700; letter-spacing:0.5px; color:#0b6e64;
+    background:#e6faf6; padding:4px 9px; border-radius:7px; pointer-events:none;
+  }
   .momo-number-box{
     background:#f0fdfb; border:1.5px solid #ccf3ec; border-radius:12px; padding:12px 14px; font-size:13.5px;
     color:#0b6e64; margin:8px 0;
@@ -242,8 +266,11 @@
       <div class="momo-number-box hidden" id="momo-number-box"></div>
 
       <div class="field" style="margin-top:8px;">
-        <label>2. Montant envoyé (FCFA)</label>
-        <input type="number" id="recharge-montant" min="100" step="100" required placeholder="Ex : 2000">
+        <label>2. Montant envoyé</label>
+        <div class="amount-input">
+          <input type="number" id="recharge-montant" min="100" step="100" required placeholder="Ex : 2000" inputmode="numeric">
+          <span class="amount-suffix">FCFA</span>
+        </div>
       </div>
       <div class="field">
         <label>3. Référence de la transaction (facultatif)</label>
@@ -570,7 +597,8 @@
     }
     grid.innerHTML = avail.map(op => `
       <div class="momo-choice" data-op="${op.key}">
-        <span class="momo-emoji">${op.emoji}</span>${escapeHTML(op.label)}
+        ${op.logo || `<span class="momo-emoji">${op.emoji}</span>`}
+        <span class="momo-choice-name">${escapeHTML(op.label)}</span>
       </div>
     `).join('');
     grid.querySelectorAll('.momo-choice').forEach(el => {
