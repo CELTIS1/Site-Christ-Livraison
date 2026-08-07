@@ -60,7 +60,7 @@
     <div class="settings-menu">
       <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
       <div class="settings-dropdown" id="settings-dropdown">
-        <button type="button" id="btn-mon-compte">🔑 Changer mon mot de passe</button>
+        <button type="button" id="btn-mon-compte">👤 Mon compte</button>
         <button type="button" class="danger" onclick="logoutExpress()">🚪 Se déconnecter</button>
       </div>
     </div>
@@ -70,21 +70,71 @@
 <div class="account-modal-overlay hidden" id="account-modal-overlay">
   <div class="account-modal">
     <button type="button" class="account-modal-close" id="account-modal-close" aria-label="Fermer">✕</button>
-    <h2 class="account-modal-title">Changer mon mot de passe</h2>
+    <h2 class="account-modal-title">Mon compte</h2>
+
+    <!-- Photo de profil -->
+    <div style="text-align:center;">
+      <div id="account-avatar-preview"></div>
+      <div id="account-avatar-status" style="margin-top:10px;"></div>
+    </div>
+    <input type="file" id="account-avatar-camera" accept="image/*" capture="environment" class="hidden">
+    <input type="file" id="account-avatar-library" accept="image/*" class="hidden">
+
+    <hr class="account-modal-divider">
+
+    <!-- Nom complet -->
+    <form id="form-account-name">
+      <div class="field">
+        <label>Nom complet</label>
+        <input type="text" id="account-full-name" required placeholder="Votre nom">
+      </div>
+      <div id="account-name-msg"></div>
+      <button type="submit" class="btn btn-sm">Enregistrer</button>
+    </form>
+
+    <hr class="account-modal-divider">
+
+    <!-- Numéro de téléphone -->
+    <form id="form-account-phone">
+      <div class="field">
+        <label>Numéro de téléphone</label>
+        <input type="tel" id="account-phone" required placeholder="07 89 81 81 40">
+      </div>
+      <div id="account-phone-msg"></div>
+      <button type="submit" class="btn btn-sm">Enregistrer</button>
+    </form>
+
+    <hr class="account-modal-divider">
+
+    <!-- Mot de passe -->
+    <h3 class="account-modal-title" style="font-size:15px; margin-bottom:12px;">Changer mon mot de passe</h3>
     <div id="change-pwd-msg"></div>
     <form id="form-change-password">
-      <div class="field-row">
-        <div class="field">
-          <label>Nouveau mot de passe</label>
-          <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
-        </div>
-        <div class="field">
-          <label>Confirmer le nouveau mot de passe</label>
-          <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
-        </div>
+      <div class="field">
+        <label>Nouveau mot de passe</label>
+        <input type="password" id="new-password" required minlength="6" placeholder="6 caractères minimum">
       </div>
-      <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
+      <div class="field">
+        <label>Confirmer le nouveau mot de passe</label>
+        <input type="password" id="new-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
+      </div>
+      <button type="submit" class="btn btn-sm" id="btn-change-password">Changer mon mot de passe</button>
     </form>
+
+    <hr class="account-modal-divider">
+
+    <!-- Suppression du compte -->
+    <h3 class="account-modal-title" style="font-size:15px; margin-bottom:6px;">Supprimer mon compte</h3>
+    <p style="font-size:12.5px; color:var(--muted); line-height:1.4; margin:0 0 12px;">
+      Cette action envoie une demande à l'équipe CLT Express. Votre compte ne sera pas supprimé immédiatement : l'équipe traitera votre demande. Vous pouvez l'annuler tant qu'elle n'a pas été traitée.
+    </p>
+    <div id="account-delete-state"></div>
+    <div id="account-delete-msg"></div>
+    <button type="button" class="btn btn-sm" id="btn-request-delete" style="background:#c0392b !important;">Demander la suppression</button>
+    <button type="button" class="btn btn-sm btn-outline hidden" id="btn-cancel-delete">Annuler ma demande</button>
+
+    <hr class="account-modal-divider">
+    <button type="button" class="btn btn-sm btn-outline" onclick="logoutExpress()">🚪 Se déconnecter</button>
   </div>
 </div>
 
@@ -157,7 +207,7 @@
   </div>
 </div>
 
-<script src="express-config.js?v=20260807a"></script>
+<script src="express-config.js?v=20260807b"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -392,6 +442,28 @@
     else { msgBox.innerHTML = `<div class="msg msg-success">Mot de passe modifié avec succès.</div>`; e.target.reset(); }
   });
 
+  // Branche toutes les sections de la modale « Mon compte » (photo, nom, numéro,
+  // mot de passe déjà branché plus haut, suppression du compte).
+  function initAccountModal(profile){
+    initAvatarUpload({
+      profile,
+      previewContainerId: 'account-avatar-preview',
+      topbarContainerId: 'user-avatar-topbar',
+      cameraInputId: 'account-avatar-camera',
+      libraryInputId: 'account-avatar-library',
+      statusId: 'account-avatar-status',
+    });
+    initExpressNameForm({
+      profile, formId: 'form-account-name', fullNameId: 'account-full-name',
+      msgId: 'account-name-msg', nameDisplayId: 'user-name', firstNameDisplayId: 'user-first-name',
+    });
+    initExpressPhoneForm({ profile, formId: 'form-account-phone', phoneId: 'account-phone', msgId: 'account-phone-msg' });
+    initExpressDeleteAccount({
+      profile, requestBtnId: 'btn-request-delete', cancelBtnId: 'btn-cancel-delete',
+      msgId: 'account-delete-msg', stateContainerId: 'account-delete-state',
+    });
+  }
+
   function initSettingsMenu(){
     const btn = document.getElementById('settings-menu-btn');
     const dropdown = document.getElementById('settings-dropdown');
@@ -424,6 +496,7 @@
     document.getElementById('user-first-name').textContent = (profile.full_name || '').split(' ')[0] || '';
     document.getElementById('user-avatar-topbar').innerHTML = avatarHTML(profile, 34);
     initSettingsMenu();
+    initAccountModal(profile);
 
     document.getElementById('course-pickup-commune').innerHTML = communesOptionsHTML(null, 'Choisir une commune');
     document.getElementById('course-dropoff-commune').innerHTML = communesOptionsHTML(null, 'Choisir une commune');

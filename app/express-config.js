@@ -44,7 +44,7 @@ async function requireAuth() {
 async function getExpressProfile(userId) {
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("id, role, full_name, phone, status, created_at, avatar_url, disponible_express")
+    .select("id, role, full_name, phone, status, created_at, avatar_url, disponible_express, suppression_demandee_at")
     .eq("id", userId)
     .single();
   if (error) {
@@ -237,4 +237,222 @@ const EXPRESS_RECHARGE_STATUTS = {
 function expressRechargeBadgeHTML(statut) {
   const s = EXPRESS_RECHARGE_STATUTS[statut] || EXPRESS_RECHARGE_STATUTS.en_attente;
   return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;
+}
+
+// =====================================================================
+// « Mon compte » — photo, nom et numéro modifiables (client & coursier)
+// =====================================================================
+
+// Envoie une photo de profil dans le bucket "express-colis" et retourne son URL
+// publique. On range l'avatar sous "{userId}/avatars/..." : le premier dossier du
+// chemin est l'identifiant de l'utilisateur, ce qui satisfait la policy d'envoi du
+// bucket ((storage.foldername(name))[1] = auth.uid()). Le bucket étant public,
+// l'URL retournée est directement affichable.
+async function uploadAvatarExpress(file, userId) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const path = `${userId}/avatars/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabaseClient.storage.from("express-colis")
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (error) { console.error("Upload avatar:", error); return null; }
+  const { data } = supabaseClient.storage.from("express-colis").getPublicUrl(path);
+  return data ? data.publicUrl : null;
+}
+
+// Relie un ou plusieurs inputs "file" (caméra + bibliothèque) à une même fonction
+// de traitement, en validant que c'est bien une image de moins de 8 Mo. La valeur
+// de l'input est réinitialisée à chaque fois pour permettre de rechoisir le même
+// fichier ensuite (identique à la logique de l'app interne).
+function wireImagePicker(inputIds, onFile) {
+  const ids = Array.isArray(inputIds) ? inputIds : [inputIds];
+  ids.forEach((id) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener("change", async () => {
+      const file = input.files && input.files[0];
+      input.value = "";
+      if (!file) return;
+      if (!file.type || !file.type.startsWith("image/")) { alert("Veuillez choisir un fichier image."); return; }
+      if (file.size > 8 * 1024 * 1024) { alert("L'image est trop volumineuse (8 Mo maximum)."); return; }
+      await onFile(file);
+    });
+  });
+}
+
+// Met en place le bloc « photo de profil » : affiche l'avatar courant (dans la
+// modale « Mon compte » et dans la barre du haut), puis, au choix d'un fichier,
+// envoie la photo, met à jour profiles.avatar_url et rafraîchit partout. Peut être
+// rappelé sans limite : la photo reste modifiable à tout moment.
+function initAvatarUpload({ profile, previewContainerId, topbarContainerId, cameraInputId, libraryInputId, statusId }) {
+  const preview = previewContainerId ? document.getElementById(previewContainerId) : null;
+  const topbar = topbarContainerId ? document.getElementById(topbarContainerId) : null;
+  const status = statusId ? document.getElementById(statusId) : null;
+  const cameraInput = cameraInputId ? document.getElementById(cameraInputId) : null;
+  const libraryInput = libraryInputId ? document.getElementById(libraryInputId) : null;
+
+  function closeMenu() {
+    const menu = preview && preview.querySelector(".avatar-edit-menu");
+    if (menu) menu.classList.remove("open");
+  }
+  document.addEventListener("click", (e) => { if (preview && !preview.contains(e.target)) closeMenu(); });
+
+  function refresh() {
+    if (preview) {
+      preview.innerHTML = `
+        <div class="avatar-editable" tabindex="0" role="button" aria-label="Modifier la photo de profil">
+          ${avatarHTML(profile, 84)}
+          <span class="avatar-edit-badge">✎</span>
+          <div class="avatar-edit-menu">
+            <button type="button" class="avatar-edit-option avatar-edit-start">✎ Modifier</button>
+            <div class="avatar-edit-choices hidden">
+              <button type="button" class="avatar-edit-option avatar-edit-camera">📷 Prendre une photo</button>
+              <button type="button" class="avatar-edit-option avatar-edit-library">🖼️ Choisir depuis la bibliothèque</button>
+            </div>
+          </div>
+        </div>`;
+      const wrap = preview.querySelector(".avatar-editable");
+      const menu = preview.querySelector(".avatar-edit-menu");
+      const startBtn = preview.querySelector(".avatar-edit-start");
+      const choices = preview.querySelector(".avatar-edit-choices");
+      const toggleMenu = (e) => {
+        e.stopPropagation();
+        const opening = !menu.classList.contains("open");
+        menu.classList.toggle("open", opening);
+        if (opening) { startBtn.classList.remove("hidden"); choices.classList.add("hidden"); }
+      };
+      wrap.addEventListener("click", toggleMenu);
+      wrap.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleMenu(e); } });
+      startBtn.addEventListener("click", (e) => { e.stopPropagation(); startBtn.classList.add("hidden"); choices.classList.remove("hidden"); });
+      const camBtn = preview.querySelector(".avatar-edit-camera");
+      const libBtn = preview.querySelector(".avatar-edit-library");
+      if (camBtn) camBtn.addEventListener("click", (e) => { e.stopPropagation(); closeMenu(); if (cameraInput) cameraInput.click(); });
+      if (libBtn) libBtn.addEventListener("click", (e) => { e.stopPropagation(); closeMenu(); if (libraryInput) libraryInput.click(); });
+    }
+    if (topbar) topbar.innerHTML = avatarHTML(profile, 34);
+  }
+  refresh();
+
+  async function handleFile(file) {
+    if (status) status.innerHTML = `<div class="msg" style="background:var(--grey-bg); color:var(--muted);">Envoi de la photo...</div>`;
+    const url = await uploadAvatarExpress(file, profile.id);
+    if (!url) { if (status) status.innerHTML = `<div class="msg msg-error">L'envoi de la photo a échoué. Vérifiez votre connexion et réessayez.</div>`; return; }
+    const { error } = await supabaseClient.from("profiles").update({ avatar_url: url }).eq("id", profile.id);
+    if (error) { if (status) status.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`; return; }
+    profile.avatar_url = url;
+    refresh();
+    if (status) status.innerHTML = `<div class="msg msg-success">Photo de profil mise à jour.</div>`;
+  }
+
+  wireImagePicker([cameraInputId, libraryInputId].filter(Boolean), handleFile);
+  return refresh;
+}
+
+// Nom complet modifiable. Met aussi à jour l'affichage de la barre du haut
+// (nom + prénom du message de bienvenue) sans recharger la page.
+function initExpressNameForm({ profile, formId, fullNameId, msgId, nameDisplayId, firstNameDisplayId }) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  const input = document.getElementById(fullNameId);
+  const msgBox = msgId ? document.getElementById(msgId) : null;
+  const btn = form.querySelector('button[type="submit"]');
+  if (input) input.value = profile.full_name || "";
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fullName = (input ? input.value : "").trim();
+    if (!fullName) { if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Le nom est obligatoire.</div>`; return; }
+    if (btn) { btn.disabled = true; btn.textContent = "Enregistrement..."; }
+    const { error } = await supabaseClient.from("profiles").update({ full_name: fullName }).eq("id", profile.id);
+    if (btn) { btn.disabled = false; btn.textContent = "Enregistrer"; }
+    if (error) { if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`; return; }
+    profile.full_name = fullName;
+    if (nameDisplayId) { const el = document.getElementById(nameDisplayId); if (el) el.textContent = fullName; }
+    if (firstNameDisplayId) { const el = document.getElementById(firstNameDisplayId); if (el) el.textContent = fullName.split(" ")[0] || ""; }
+    if (msgBox) msgBox.innerHTML = `<div class="msg msg-success">Nom mis à jour.</div>`;
+  });
+}
+
+// Numéro local (225XXXXXXXXXX en base) -> affichage local à 10 chiffres pour
+// pré-remplir le champ (ex : "0789818140").
+function formatPhoneDisplay(e164) {
+  let digits = (e164 || "").replace(/[^\d]/g, "");
+  if (digits.startsWith("225")) digits = digits.slice(3);
+  return digits;
+}
+
+// Changement DIRECT du numéro de téléphone (pas de SMS OTP) : on met à jour
+// l'identifiant de connexion côté Auth (auth.updateUser({phone})) ET la colonne
+// profiles.phone, pour que le compte reste cohérent (le client se connecte avec
+// son numéro). En cas de doublon, message clair.
+function initExpressPhoneForm({ profile, formId, phoneId, msgId }) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  const input = document.getElementById(phoneId);
+  const msgBox = msgId ? document.getElementById(msgId) : null;
+  const btn = form.querySelector('button[type="submit"]');
+  if (input) input.value = formatPhoneDisplay(profile.phone);
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const raw = (input ? input.value : "").trim();
+    if (!isValidPhoneCI(raw)) {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Numéro invalide. Format attendu : 10 chiffres commençant par 0 (ex : 07 89 81 81 40).</div>`;
+      return;
+    }
+    const e164 = toE164(raw);
+    if (btn) { btn.disabled = true; btn.textContent = "Enregistrement..."; }
+    // 1) Identifiant de connexion (Auth)
+    const { error: authErr } = await supabaseClient.auth.updateUser({ phone: e164 });
+    if (authErr) {
+      if (btn) { btn.disabled = false; btn.textContent = "Enregistrer"; }
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(authErr.message)}</div>`;
+      return;
+    }
+    // 2) Profil (affichage / recherche)
+    const { error: profErr } = await supabaseClient.from("profiles").update({ phone: e164 }).eq("id", profile.id);
+    if (btn) { btn.disabled = false; btn.textContent = "Enregistrer"; }
+    if (profErr) { if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(profErr.message)}</div>`; return; }
+    profile.phone = e164;
+    if (msgBox) msgBox.innerHTML = `<div class="msg msg-success">Numéro mis à jour. Vous vous connecterez désormais avec ce nouveau numéro.</div>`;
+  });
+}
+
+// Demande de suppression de compte (réversible côté utilisateur tant que l'équipe
+// n'a pas traité). On horodate profiles.suppression_demandee_at ; l'équipe traite
+// la suppression effective manuellement. Rien n'est supprimé automatiquement ici.
+function initExpressDeleteAccount({ profile, requestBtnId, cancelBtnId, msgId, stateContainerId }) {
+  const requestBtn = requestBtnId ? document.getElementById(requestBtnId) : null;
+  const cancelBtn = cancelBtnId ? document.getElementById(cancelBtnId) : null;
+  const msgBox = msgId ? document.getElementById(msgId) : null;
+  const state = stateContainerId ? document.getElementById(stateContainerId) : null;
+
+  function render() {
+    const pending = !!profile.suppression_demandee_at;
+    if (requestBtn) requestBtn.classList.toggle("hidden", pending);
+    if (cancelBtn) cancelBtn.classList.toggle("hidden", !pending);
+    if (state) {
+      state.innerHTML = pending
+        ? `<div class="msg msg-info">Votre demande de suppression a bien été enregistrée le ${formatDate(profile.suppression_demandee_at)}. Notre équipe la traitera prochainement. Vous pouvez encore l'annuler ci-dessous.</div>`
+        : "";
+    }
+  }
+  render();
+
+  async function setDemande(value) {
+    if (msgBox) msgBox.innerHTML = "";
+    const { error } = await supabaseClient.from("profiles")
+      .update({ suppression_demandee_at: value }).eq("id", profile.id);
+    if (error) { if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`; return; }
+    profile.suppression_demandee_at = value;
+    render();
+    if (msgBox) msgBox.innerHTML = value
+      ? `<div class="msg msg-success">Demande envoyée à l'équipe.</div>`
+      : `<div class="msg msg-success">Demande de suppression annulée.</div>`;
+  }
+
+  if (requestBtn) requestBtn.addEventListener("click", () => {
+    if (confirm("Envoyer une demande de suppression de votre compte à l'équipe CLT Express ? Vous pourrez l'annuler tant qu'elle n'a pas été traitée.")) {
+      setDemande(new Date().toISOString());
+    }
+  });
+  if (cancelBtn) cancelBtn.addEventListener("click", () => setDemande(null));
 }

@@ -1840,7 +1840,7 @@ accountsOffset = 0;
 accountsHasMore = true;
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, role, full_name, company_name, phone, status, created_at')
+.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at')
 .order('role')
 .order('full_name')
 .range(0, ACCOUNTS_PAGE_SIZE - 1);
@@ -1857,7 +1857,7 @@ accountsLoadingMore = true;
 renderAllAccounts();
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, role, full_name, company_name, phone, status, created_at')
+.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at')
 .order('role')
 .order('full_name')
 .range(accountsOffset, accountsOffset + ACCOUNTS_PAGE_SIZE - 1);
@@ -1898,8 +1898,8 @@ const deleteBtn = isSelf
 return `
 <div class="colis-item" data-id="${a.id}">
 <div class="info">
-<div class="desc">${onlineDot}${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}</div>
-<div class="meta">Rôle : ${escapeHTML(roleDisplayLabel(a.role))}${a.phone ? ' · Tél : ' + escapeHTML(a.phone) : ''} · Statut : ${escapeHTML(a.status || '-')}</div>
+<div class="desc">${onlineDot}${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}${a.suppression_demandee_at ? ' <span class="badge" style="color:#c0392b; background:#fce4e2;">🗑 Suppression demandée</span>' : ''}</div>
+<div class="meta">Rôle : ${escapeHTML(roleDisplayLabel(a.role))}${a.phone ? ' · Tél : ' + escapeHTML(a.phone) : ''} · Statut : ${escapeHTML(a.status || '-')}${a.suppression_demandee_at ? ' · <span style="color:#c0392b;">Suppression demandée le ' + escapeHTML(formatDate(a.suppression_demandee_at)) + '</span>' : ''}</div>
 </div>
 <div class="status-col" style="width:auto; flex-direction:row; align-items:center;">
 <div class="actions-menu">
