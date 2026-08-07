@@ -17,17 +17,94 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20260801">
 <style>
-  .topbar{ background:#6D28D9; }
-  .topbar .brand .logo-mark{ background:#4c1d95; }
-  .btn:not(.btn-outline){ background:#6D28D9 !important; }
-  .panel-subtitle.collapsible-header:hover, .role-pill{ }
-  .role-pill{ background:rgba(255,255,255,0.18) !important; }
-  .price-preview{
-    margin-top:10px; padding:12px 14px; border-radius:12px; background:#f4edfe; border:1.5px solid #ddd0fb;
-    font-size:13.5px; color:#4c1d95; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;
+  /* ===== Thème violet CLT Express + rafraîchissement visuel (2026) ===== */
+  :root{
+    --clt-violet:#6D28D9; --clt-violet-dark:#4c1d95; --clt-violet-tint:#f4edfe;
+    --clt-violet-line:#ddd0fb; --clt-teal:#0D9488;
   }
-  .price-preview strong{ font-size:16px; }
-  .course-item .coursier-info{ font-size:11.5px; color:var(--muted); margin-top:4px; }
+  body{ background:linear-gradient(180deg,#faf8ff 0%, #f4f5f8 100%); }
+
+  /* Barre du haut : léger dégradé + ombre douce */
+  .topbar{ background:linear-gradient(90deg,#6D28D9 0%, #7c3aed 100%); box-shadow:0 2px 14px rgba(76,29,149,0.28); }
+  .topbar .brand .logo-mark{ background:#4c1d95; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.15); }
+  .role-pill{ background:rgba(255,255,255,0.20) !important; }
+  .settings-menu-btn{ transition:.15s; }
+  .settings-menu-btn:hover{ background:rgba(255,255,255,0.18); border-radius:8px; }
+
+  /* Boutons principaux en violet */
+  .btn:not(.btn-outline){ background:#6D28D9 !important; }
+  .btn:not(.btn-outline):hover{ box-shadow:0 6px 18px rgba(109,40,217,0.32) !important; }
+
+  /* Titre de page plus chaleureux */
+  .page-title{ font-size:25px; color:var(--clt-violet-dark); }
+  .page-sub{ font-size:14.5px; }
+
+  /* Cartes : coins plus arrondis, ombre douce, petite animation à l'ouverture */
+  .wrap .card{
+    border-radius:18px; border:1px solid #ece7f6;
+    box-shadow:0 6px 26px rgba(76,29,149,0.07);
+    padding:22px 22px 24px; margin-bottom:22px;
+    animation:cltRise .45s ease both;
+  }
+  @keyframes cltRise{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:none;} }
+  .panel-subtitle{ font-size:16.5px; color:var(--clt-violet-dark); display:flex; align-items:center; gap:9px; }
+
+  /* Champs : focus violet (au lieu d'orange) sur cette page */
+  .field input:focus, .field textarea:focus, .field select:focus{
+    border-color:var(--clt-violet) !important; box-shadow:0 0 0 3px rgba(109,40,217,0.15) !important;
+  }
+
+  /* ===== Trajet visuel A → B ===== */
+  .route-visual{ display:flex; gap:14px; margin-bottom:4px; }
+  .route-rail{ display:flex; flex-direction:column; align-items:center; padding-top:26px; }
+  .route-dot{
+    width:26px; height:26px; border-radius:50%; color:#fff; font-weight:700; font-size:13px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 6px rgba(0,0,0,0.14);
+  }
+  .route-dot-a{ background:var(--clt-violet); }
+  .route-dot-b{ background:var(--clt-teal); }
+  .route-line{ flex:1; width:3px; margin:4px 0; border-radius:3px;
+    background:linear-gradient(180deg,var(--clt-violet),var(--clt-teal)); min-height:60px; }
+  .route-fields{ flex:1; min-width:0; }
+  .route-leg{ margin-bottom:8px; }
+  .route-leg:last-child{ margin-bottom:0; }
+  .route-leg-label{
+    font-size:11.5px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+    margin-bottom:8px; display:flex; align-items:center; gap:6px;
+  }
+  .route-leg-label.pickup{ color:var(--clt-violet); }
+  .route-leg-label.dropoff{ color:var(--clt-teal); }
+
+  /* ===== Carte prix estimé (dégradé) ===== */
+  .price-preview{
+    margin-top:16px; padding:16px 20px; border-radius:16px;
+    background:linear-gradient(120deg,#6D28D9 0%, #7c3aed 55%, #0D9488 160%);
+    color:#fff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+    box-shadow:0 8px 22px rgba(76,29,149,0.28);
+  }
+  .price-preview .pp-block{ display:flex; flex-direction:column; gap:2px; }
+  .price-preview .pp-label{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; opacity:.85; }
+  .price-preview .pp-value{ font-size:16px; font-weight:700; }
+  .price-preview .pp-total{ text-align:right; }
+  .price-preview .pp-total .pp-value{ font-size:26px; line-height:1.1; }
+
+  /* Bouton commander : pleine largeur, dégradé, plus haut */
+  #btn-new-course{
+    width:100%; justify-content:center; margin-top:16px; padding:15px; font-size:15.5px; border-radius:14px;
+    background:linear-gradient(90deg,#6D28D9,#7c3aed) !important;
+  }
+
+  /* ===== Liste « Mes courses » modernisée ===== */
+  .course-item{
+    border-radius:14px !important; border:1px solid #ece7f6 !important; padding:14px 16px !important;
+    transition:.15s; background:#fff;
+  }
+  .course-item:hover{ box-shadow:0 8px 22px rgba(76,29,149,0.10) !important; border-color:var(--clt-violet-line) !important; transform:translateY(-1px); }
+  .course-item .info .desc{ font-size:14px; }
+  .course-item .coursier-info{ font-size:12px; color:var(--clt-violet-dark); margin-top:5px; font-weight:600; }
+  .course-item .status-col > div{ color:var(--clt-violet-dark) !important; }
+
+  /* ===== Photo du colis ===== */
   .photo-field{ margin-top:14px; }
   .photo-drop{
     display:flex; align-items:center; gap:12px; padding:12px 14px; border:1.5px dashed #ddd0fb;
@@ -46,6 +123,12 @@
   .course-thumb{ width:46px; height:46px; border-radius:8px; object-fit:cover; border:1px solid var(--border,#e5e7eb); cursor:zoom-in; margin-top:6px; }
   .lightbox-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.82); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
   .lightbox-overlay img{ max-width:92vw; max-height:88vh; border-radius:10px; }
+
+  @media (max-width:560px){
+    .route-line{ min-height:48px; }
+    .price-preview .pp-total .pp-value{ font-size:23px; }
+    .price-preview{ padding:14px 16px; }
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -146,24 +229,39 @@
     <h2 class="panel-subtitle">🛵 Nouvelle course</h2>
     <div id="new-msg"></div>
     <form id="form-new-course">
-      <div class="field-row">
-        <div class="field">
-          <label>📍 Commune de récupération</label>
-          <select id="course-pickup-commune" required></select>
+      <div class="route-visual">
+        <div class="route-rail" aria-hidden="true">
+          <span class="route-dot route-dot-a">A</span>
+          <span class="route-line"></span>
+          <span class="route-dot route-dot-b">B</span>
         </div>
-        <div class="field">
-          <label>Adresse précise (quartier, repère...)</label>
-          <input type="text" id="course-pickup-adresse" required placeholder="Ex : Angré 8e tranche, non loin de la pharmacie">
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>🎯 Commune de livraison</label>
-          <select id="course-dropoff-commune" required></select>
-        </div>
-        <div class="field">
-          <label>Adresse précise (quartier, repère...)</label>
-          <input type="text" id="course-dropoff-adresse" required placeholder="Ex : Riviera 3, immeuble Alpha">
+        <div class="route-fields">
+          <div class="route-leg">
+            <div class="route-leg-label pickup">Point de récupération</div>
+            <div class="field-row">
+              <div class="field">
+                <label>Commune de récupération</label>
+                <select id="course-pickup-commune" required></select>
+              </div>
+              <div class="field">
+                <label>Adresse précise (quartier, repère...)</label>
+                <input type="text" id="course-pickup-adresse" required placeholder="Ex : Angré 8e tranche, non loin de la pharmacie">
+              </div>
+            </div>
+          </div>
+          <div class="route-leg">
+            <div class="route-leg-label dropoff">Point de livraison</div>
+            <div class="field-row">
+              <div class="field">
+                <label>Commune de livraison</label>
+                <select id="course-dropoff-commune" required></select>
+              </div>
+              <div class="field">
+                <label>Adresse précise (quartier, repère...)</label>
+                <input type="text" id="course-dropoff-adresse" required placeholder="Ex : Riviera 3, immeuble Alpha">
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="field-row">
@@ -192,8 +290,14 @@
       </div>
 
       <div class="price-preview hidden" id="price-preview">
-        <span>Distance estimée : <strong id="price-distance">—</strong></span>
-        <span>Prix estimé : <strong id="price-total">—</strong></span>
+        <div class="pp-block">
+          <span class="pp-label">Distance estimée</span>
+          <span class="pp-value" id="price-distance">—</span>
+        </div>
+        <div class="pp-block pp-total">
+          <span class="pp-label">Prix estimé</span>
+          <span class="pp-value" id="price-total">—</span>
+        </div>
       </div>
 
       <button type="submit" class="btn" style="width:100%; justify-content:center; margin-top:14px;" id="btn-new-course">Commander cette livraison</button>

@@ -653,6 +653,66 @@
   }
   @media (max-width:480px){ .wa-float{right:16px; bottom:78px; width:52px; height:52px; font-size:25px;} }
 </style>
+
+<!-- ===================================================================== -->
+<!-- Rafraîchissement visuel 2026 — surcouche additive (n'enlève rien).    -->
+<!-- Objectif : interface plus moderne, plus aérée et plus douce, sans     -->
+<!-- toucher au HTML ni au JavaScript existants.                            -->
+<!-- ===================================================================== -->
+<style id="clt-refresh-2026">
+  /* Titres de section un peu plus grands et plus aérés */
+  .section-title{ font-size:31px; letter-spacing:-.4px; margin-bottom:14px; }
+  .section-sub{ font-size:15.5px; margin-bottom:52px; }
+  section{ padding:84px 0; }
+  @media (max-width:680px){
+    .section-title{ font-size:24px; }
+    section{ padding:60px 0; }
+  }
+
+  /* Boutons : plus doux, léger soulèvement au survol */
+  .btn{ transition:transform .16s ease, box-shadow .2s ease, background .2s ease; }
+  .btn-primary{ box-shadow:0 8px 20px rgba(226,99,19,0.30); }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(226,99,19,0.38); }
+  .nav-cta{ transition:transform .16s ease, box-shadow .2s ease, background .2s ease; }
+  .nav-cta:hover{ transform:translateY(-1px); box-shadow:0 8px 18px rgba(226,99,19,0.40); }
+
+  /* Cartes : ombre douce dès le repos, coins plus arrondis, bordure plus claire */
+  .service-card, .step-card, .testimonial-card, .trust-item, .about-value{
+    border-radius:18px !important; border-color:#EEF2F7 !important;
+    box-shadow:0 6px 22px rgba(27,67,116,0.06);
+  }
+  .service-card{ padding:34px 26px; }
+  .service-card:hover{ transform:translateY(-5px); box-shadow:0 16px 32px rgba(27,67,116,0.12); }
+
+  /* Icônes de service : dégradé plus chaleureux + ombre douce, entourées d'un
+     léger anneau clair (via box-shadow, sans élément supplémentaire) */
+  .service-icon{
+    background:linear-gradient(135deg,#F26A21 0%, #E26313 100%);
+    box-shadow:0 8px 18px rgba(226,99,19,0.30), 0 0 0 8px var(--orange-light);
+  }
+
+  /* Étape : pastille de numéro un peu plus présente */
+  .step-icon{ box-shadow:0 8px 18px rgba(27,67,116,0.22); }
+  .step-num{ width:26px; height:26px; font-size:12.5px; box-shadow:0 2px 6px rgba(0,0,0,0.18); }
+
+  /* Bande de confiance : cartes plus douces */
+  .trust-item{ padding:24px 22px; }
+  .trust-item i{ font-size:24px; }
+
+  /* Avis clients : guillemet décoratif discret */
+  .testimonial-card{ position:relative; padding-top:30px; }
+  .testimonial-stars{ font-size:15px; }
+
+  /* FAQ : coins plus ronds, ombre légère, ouverture plus généreuse */
+  .faq-item{ border-radius:16px !important; border-color:#EEF2F7 !important; box-shadow:0 4px 16px rgba(27,67,116,0.05); }
+  .faq-item.open{ box-shadow:0 10px 26px rgba(27,67,116,0.09); }
+
+  /* Puce « pill » d'introduction un peu plus douce */
+  .pill-light{ border-radius:22px; }
+
+  /* Statistiques « À propos » : dégradé un poil plus profond + ombre */
+  .about-stats{ box-shadow:0 16px 36px rgba(18,50,82,0.22); }
+</style>
 </head>
 <body>
 
