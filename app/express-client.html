@@ -129,6 +129,24 @@
     .price-preview .pp-total .pp-value{ font-size:23px; }
     .price-preview{ padding:14px 16px; }
   }
+
+  /* ===== Pastilles de statut arrondies ===== */
+  .badge{ border-radius:999px !important; padding:5px 12px !important; font-weight:600 !important; font-size:12px !important; letter-spacing:.1px; }
+
+  /* ===== Frise d'étapes (stepper) d'une course : reflet visuel de l'avancement ===== */
+  .course-item{ flex-wrap:wrap !important; }
+  .clt-stepper{ display:flex; align-items:flex-start; width:100%; flex-basis:100%; order:-1; margin:0 0 12px; padding:2px 4px 12px; border-bottom:1px solid #ece7f6; }
+  .clt-stepper .st{ flex:1; text-align:center; position:relative; }
+  .clt-stepper .st .c{ width:26px; height:26px; border-radius:50%; margin:0 auto; position:relative; z-index:2; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:#eceaf3; color:#9aa3af; }
+  .clt-stepper .st.done .c{ background:#1a7d3c; color:#fff; }
+  .clt-stepper .st.now .c{ background:var(--clt-violet); color:#fff; box-shadow:0 0 0 4px rgba(109,40,217,.18); }
+  .clt-stepper .st .l{ font-size:10px; color:#6b7280; margin-top:5px; font-weight:500; line-height:1.2; }
+  .clt-stepper .st.now .l{ color:var(--clt-violet-dark); font-weight:700; }
+  .clt-stepper .st::before{ content:''; position:absolute; top:12px; left:-50%; width:100%; height:3px; background:#eceaf3; z-index:1; }
+  .clt-stepper .st:first-child::before{ display:none; }
+  .clt-stepper .st.done::before, .clt-stepper .st.now::before{ background:#1a7d3c; }
+  .clt-stepper.is-alert .st.now .c{ background:#c0392b; box-shadow:0 0 0 4px rgba(192,57,43,.18); }
+  .clt-stepper.is-alert .st.now .l{ color:#c0392b; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -347,6 +365,25 @@
     box.classList.remove('hidden');
   }
 
+  // Frise d'étapes (stepper) d'une course : dérivée du statut réel (c.status). Purement présentatif.
+  function courseStepperHTML(status){
+    const flow = [
+      { key:'en_attente', label:'En attente' },
+      { key:'acceptee',   label:'Coursier en route' },
+      { key:'livree',     label:'Livrée' },
+    ];
+    const alert = (status === 'annulee');
+    let idx = flow.findIndex(s => s.key === status);
+    if (idx === -1) idx = alert ? flow.length - 1 : 0;
+    const steps = flow.map((s, i) => {
+      const cls = i < idx ? 'done' : (i === idx ? 'now' : '');
+      const label = (alert && i === flow.length - 1) ? 'Annulée' : s.label;
+      const inner = i < idx ? '✓' : (i + 1);
+      return `<div class="st ${cls}"><div class="c">${inner}</div><div class="l">${label}</div></div>`;
+    }).join('');
+    return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
+  }
+
   function courseRowHTML(c){
     const coursier = c.coursier_id ? coursiersById[c.coursier_id] : null;
     const coursierInfo = coursier
@@ -357,6 +394,7 @@
     const photoThumb = photoUrl ? `<img src="${photoUrl}" class="course-thumb" data-photo="${photoUrl}" alt="Photo du colis">` : '';
     return `
       <div class="colis-item course-item" data-id="${c.id}">
+        ${courseStepperHTML(c.status)}
         <div class="info">
           <div class="desc">${escapeHTML(c.adresse_recuperation)} → ${escapeHTML(c.adresse_livraison)}</div>
           <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · Demandé le ${formatDate(c.created_at)}</div>
