@@ -28,6 +28,24 @@
   }
   .price-preview strong{ font-size:16px; }
   .course-item .coursier-info{ font-size:11.5px; color:var(--muted); margin-top:4px; }
+  .photo-field{ margin-top:14px; }
+  .photo-drop{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; border:1.5px dashed #ddd0fb;
+    border-radius:12px; background:#faf7ff; cursor:pointer; transition:0.15s;
+  }
+  .photo-drop:hover{ border-color:#6D28D9; background:#f4edfe; }
+  .photo-drop .photo-drop-icon{ font-size:26px; }
+  .photo-drop .photo-drop-text{ font-size:13px; color:#4c1d95; line-height:1.35; }
+  .photo-drop .photo-drop-text small{ color:#8a7fb0; }
+  .photo-preview-wrap{ position:relative; margin-top:10px; display:inline-block; }
+  .photo-preview-wrap img{ max-width:150px; max-height:150px; border-radius:12px; border:1.5px solid #ddd0fb; display:block; }
+  .photo-preview-remove{
+    position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; border:none;
+    background:#c0392b; color:#fff; font-size:13px; cursor:pointer; line-height:1; box-shadow:0 1px 4px rgba(0,0,0,0.3);
+  }
+  .course-thumb{ width:46px; height:46px; border-radius:8px; object-fit:cover; border:1px solid var(--border,#e5e7eb); cursor:zoom-in; margin-top:6px; }
+  .lightbox-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.82); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .lightbox-overlay img{ max-width:92vw; max-height:88vh; border-radius:10px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -113,6 +131,16 @@
         <textarea id="course-description" rows="2" placeholder="Ex : une enveloppe de documents, un colis de vêtements..."></textarea>
       </div>
 
+      <div class="field photo-field">
+        <label>Photo du colis (recommandé)</label>
+        <div class="photo-drop" id="photo-drop">
+          <span class="photo-drop-icon">📷</span>
+          <span class="photo-drop-text">Prendre ou choisir une photo du colis<br><small>Aide le coursier à reconnaître le colis. Optionnel.</small></span>
+        </div>
+        <input type="file" id="course-photo" accept="image/*" capture="environment" style="display:none;">
+        <div id="photo-preview" class="hidden"></div>
+      </div>
+
       <div class="price-preview hidden" id="price-preview">
         <span>Distance estimée : <strong id="price-distance">—</strong></span>
         <span>Prix estimé : <strong id="price-total">—</strong></span>
@@ -129,13 +157,23 @@
   </div>
 </div>
 
-<script src="express-config.js?v=20260806a"></script>
+<script src="express-config.js?v=20260807a"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
   let expressConfig = null;
   let myCourses = [];
   let coursiersById = {};
+  let selectedPhotoFile = null;
+
+  // ----- Lightbox (agrandir une photo) -----
+  function openLightbox(url){
+    const ov = document.createElement('div');
+    ov.className = 'lightbox-overlay';
+    ov.innerHTML = `<img src="${url}" alt="Photo du colis">`;
+    ov.addEventListener('click', () => ov.remove());
+    document.body.appendChild(ov);
+  }
 
   const __realtimeChannels = [];
   function trackChannel(channel){ __realtimeChannels.push(channel); return channel; }
@@ -161,12 +199,15 @@
       ? `<div class="coursier-info">🛵 Coursier : ${escapeHTML(coursier.full_name || '')}${coursier.phone ? ' · ' + formatPhoneLocal(coursier.phone) : ''}</div>`
       : '';
     const canCancel = c.status === 'en_attente';
+    const photoUrl = c.photo_colis_path ? colisPhotoUrl(c.photo_colis_path) : null;
+    const photoThumb = photoUrl ? `<img src="${photoUrl}" class="course-thumb" data-photo="${photoUrl}" alt="Photo du colis">` : '';
     return `
       <div class="colis-item course-item" data-id="${c.id}">
         <div class="info">
           <div class="desc">${escapeHTML(c.adresse_recuperation)} → ${escapeHTML(c.adresse_livraison)}</div>
           <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · Demandé le ${formatDate(c.created_at)}</div>
           ${coursierInfo}
+          ${photoThumb}
         </div>
         <div class="status-col">
           ${expressStatutBadgeHTML(c.status)}
@@ -200,6 +241,9 @@
       return;
     }
     box.innerHTML = myCourses.map(courseRowHTML).join('');
+    box.querySelectorAll('.course-thumb').forEach(img => {
+      img.addEventListener('click', () => openLightbox(img.dataset.photo));
+    });
     box.querySelectorAll('.btn-cancel-course').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.closest('.course-item').dataset.id;
@@ -227,6 +271,41 @@
 
   document.getElementById('course-pickup-commune').addEventListener('change', updatePricePreview);
   document.getElementById('course-dropoff-commune').addEventListener('change', updatePricePreview);
+
+  // ----- Photo du colis : sélection & aperçu -----
+  const photoInput = document.getElementById('course-photo');
+  document.getElementById('photo-drop').addEventListener('click', () => photoInput.click());
+  photoInput.addEventListener('change', () => {
+    const file = photoInput.files && photoInput.files[0];
+    const preview = document.getElementById('photo-preview');
+    if (!file) { selectedPhotoFile = null; preview.classList.add('hidden'); preview.innerHTML = ''; return; }
+    if (!file.type.startsWith('image/')) {
+      document.getElementById('new-msg').innerHTML = `<div class="msg msg-error">Veuillez choisir une image.</div>`;
+      photoInput.value = ''; return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      document.getElementById('new-msg').innerHTML = `<div class="msg msg-error">La photo est trop lourde (10 Mo maximum).</div>`;
+      photoInput.value = ''; return;
+    }
+    selectedPhotoFile = file;
+    const url = URL.createObjectURL(file);
+    preview.innerHTML = `<div class="photo-preview-wrap"><img src="${url}" alt="Aperçu du colis"><button type="button" class="photo-preview-remove" id="photo-remove" aria-label="Retirer la photo">✕</button></div>`;
+    preview.classList.remove('hidden');
+    document.getElementById('photo-remove').addEventListener('click', () => {
+      selectedPhotoFile = null; photoInput.value = ''; preview.classList.add('hidden'); preview.innerHTML = '';
+    });
+  });
+
+  // Envoie la photo dans le bucket "express-colis" et renvoie son chemin (ou null).
+  async function uploadPhotoColis(){
+    if (!selectedPhotoFile) return null;
+    const ext = (selectedPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const path = `${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabaseClient.storage.from('express-colis')
+      .upload(path, selectedPhotoFile, { contentType: selectedPhotoFile.type, upsert: false });
+    if (error) { console.error('Upload photo:', error); throw error; }
+    return path;
+  }
 
   document.getElementById('form-new-course').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -256,6 +335,20 @@
     const dropoffCoords = EXPRESS_COMMUNE_COORDS[dropoffCommune];
 
     btn.disabled = true; btn.textContent = 'Envoi...';
+
+    let photoPath = null;
+    if (selectedPhotoFile) {
+      btn.textContent = 'Envoi de la photo...';
+      try {
+        photoPath = await uploadPhotoColis();
+      } catch (err) {
+        btn.disabled = false; btn.textContent = 'Commander cette livraison';
+        msgBox.innerHTML = `<div class="msg msg-error">La photo n'a pas pu être envoyée : ${friendlyErrorMessage(err.message)}. Réessayez, ou commandez sans photo.</div>`;
+        return;
+      }
+    }
+
+    btn.textContent = 'Envoi...';
     const { error } = await supabaseClient.from('express_courses').insert({
       client_id: currentUser.id,
       adresse_recuperation: `${pickupCommune} — ${pickupAdresse}`,
@@ -267,6 +360,7 @@
       destinataire_nom: destNom || null,
       destinataire_telephone: destTel ? toE164(destTel) : null,
       description_colis: description || null,
+      photo_colis_path: photoPath,
     });
     btn.disabled = false; btn.textContent = 'Commander cette livraison';
 
@@ -276,6 +370,9 @@
     }
     msgBox.innerHTML = `<div class="msg msg-success">Course envoyée ! Un coursier disponible va bientôt l'accepter.</div>`;
     e.target.reset();
+    selectedPhotoFile = null;
+    const preview = document.getElementById('photo-preview');
+    preview.classList.add('hidden'); preview.innerHTML = '';
     document.getElementById('price-preview').classList.add('hidden');
     await loadCourses();
   });

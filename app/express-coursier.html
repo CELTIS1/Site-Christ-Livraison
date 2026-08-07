@@ -42,6 +42,37 @@
   .course-item .client-info{ font-size:11.5px; color:var(--muted); margin-top:4px; }
   .course-item .dest-info{ font-size:11.5px; color:var(--muted); margin-top:2px; }
   .btn-sm{ padding:7px 14px; font-size:12.5px; }
+
+  /* Portefeuille / solde */
+  .wallet-card{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .wallet-solde .wallet-label{ font-size:12.5px; color:var(--muted); }
+  .wallet-solde .wallet-value{ font-size:28px; font-weight:700; color:#0b6e64; line-height:1.1; }
+  .wallet-solde.is-low .wallet-value{ color:#c0392b; }
+  .wallet-min{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .low-balance-banner{
+    background:#fef2f2; border:1.5px solid #fecaca; color:#991b1b; border-radius:12px;
+    padding:12px 14px; font-size:13.5px; display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  }
+  .course-thumb{ width:46px; height:46px; border-radius:8px; object-fit:cover; border:1px solid var(--border,#e5e7eb); cursor:zoom-in; margin-top:6px; }
+  .lightbox-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.82); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .lightbox-overlay img{ max-width:92vw; max-height:88vh; border-radius:10px; }
+
+  /* Modale de recharge */
+  .momo-grid{ display:flex; gap:10px; flex-wrap:wrap; margin:6px 0 4px; }
+  .momo-choice{
+    flex:1; min-width:120px; border:1.5px solid var(--border,#e5e7eb); border-radius:12px; padding:12px;
+    cursor:pointer; text-align:center; font-size:13.5px; font-weight:600; color:var(--navy); background:#fff; transition:0.15s;
+  }
+  .momo-choice:hover{ border-color:#0D9488; }
+  .momo-choice.selected{ border-color:#0D9488; background:#f0fdfb; }
+  .momo-choice .momo-emoji{ font-size:22px; display:block; margin-bottom:4px; }
+  .momo-number-box{
+    background:#f0fdfb; border:1.5px solid #ccf3ec; border-radius:12px; padding:12px 14px; font-size:13.5px;
+    color:#0b6e64; margin:8px 0;
+  }
+  .momo-number-box strong{ font-size:16px; letter-spacing:0.5px; }
+  .recharge-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--border,#eee); font-size:13px; }
+  .recharge-item:first-child{ border-top:none; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -84,6 +115,33 @@
   </div>
 </div>
 
+<div class="account-modal-overlay hidden" id="recharge-modal-overlay">
+  <div class="account-modal">
+    <button type="button" class="account-modal-close" id="recharge-modal-close" aria-label="Fermer">✕</button>
+    <h2 class="account-modal-title">Recharger mon solde</h2>
+    <div id="recharge-msg"></div>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 8px;">
+      Envoyez le montant par Mobile Money au numéro de CLT ci-dessous, puis déclarez votre envoi.
+      L'équipe valide et votre solde est crédité.
+    </p>
+    <form id="form-recharge">
+      <label style="font-size:13px;font-weight:600;color:var(--navy);">1. Opérateur</label>
+      <div class="momo-grid" id="momo-grid"></div>
+      <div class="momo-number-box hidden" id="momo-number-box"></div>
+
+      <div class="field" style="margin-top:8px;">
+        <label>2. Montant envoyé (FCFA)</label>
+        <input type="number" id="recharge-montant" min="100" step="100" required placeholder="Ex : 2000">
+      </div>
+      <div class="field">
+        <label>3. Référence de la transaction (facultatif)</label>
+        <input type="text" id="recharge-reference" placeholder="Ex : ID Wave / Orange Money reçu par SMS">
+      </div>
+      <button type="submit" class="btn" id="btn-submit-recharge" style="width:100%;justify-content:center;margin-top:6px;">Déclarer mon envoi</button>
+    </form>
+  </div>
+</div>
+
 <div class="wrap">
   <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
   <div class="page-sub">Voyez les courses disponibles près de chez vous et acceptez celles qui vous intéressent.</div>
@@ -99,6 +157,15 @@
     </label>
   </div>
 
+  <div class="card wallet-card">
+    <div class="wallet-solde" id="wallet-solde-box">
+      <div class="wallet-label">💼 Mon solde</div>
+      <div class="wallet-value" id="wallet-solde">—</div>
+      <div class="wallet-min" id="wallet-min"></div>
+    </div>
+    <button type="button" class="btn" id="btn-open-recharge">➕ Recharger mon solde</button>
+  </div>
+
   <div class="card">
     <h2 class="panel-subtitle">💰 Mes gains</h2>
     <div class="stats-row">
@@ -111,10 +178,20 @@
         <div class="stat-label">Total encaissé (espèces)</div>
       </div>
       <div class="stat-box">
-        <div class="stat-value" id="stat-commission-due">—</div>
-        <div class="stat-label">Commission à reverser à CLT</div>
+        <div class="stat-value" id="stat-commission-payee">—</div>
+        <div class="stat-label">Commission déduite du solde</div>
       </div>
     </div>
+  </div>
+
+  <div class="card" id="section-recharges">
+    <h2 class="panel-subtitle collapsible-header" id="recharges-header">🧾 Mes recharges</h2>
+    <div id="recharges-list"></div>
+  </div>
+
+  <div class="low-balance-banner hidden" id="low-balance-banner">
+    <span style="font-size:20px;">⚠️</span>
+    <span>Votre solde est insuffisant pour accepter de nouvelles courses. Rechargez votre solde pour continuer à recevoir des livraisons.</span>
   </div>
 
   <div class="card" id="section-disponibles">
@@ -128,19 +205,34 @@
   </div>
 </div>
 
-<script src="express-config.js?v=20260806a"></script>
+<script src="express-config.js?v=20260807a"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
   let disponibles = [];
   let mesCourses = [];
   let clientsById = {};
+  let walletSolde = 0;
+  let soldeMinimum = 0;
+  let momoNumbers = {};       // { wave, orange, mtn, moov }
+  let mesRecharges = [];
+  let selectedOperateur = null;
 
   const __realtimeChannels = [];
   function trackChannel(channel){ __realtimeChannels.push(channel); return channel; }
   window.addEventListener('beforeunload', () => {
     __realtimeChannels.forEach(ch => supabaseClient.removeChannel(ch));
   });
+
+  function canAcceptCourses(){ return walletSolde >= soldeMinimum; }
+
+  function openLightbox(url){
+    const ov = document.createElement('div');
+    ov.className = 'lightbox-overlay';
+    ov.innerHTML = `<img src="${url}" alt="Photo du colis">`;
+    ov.addEventListener('click', () => ov.remove());
+    document.body.appendChild(ov);
+  }
 
   function formatPhoneLocal(e164){
     if (!e164) return '';
@@ -158,16 +250,23 @@
     data.forEach(p => { clientsById[p.id] = p; });
   }
 
+  function photoThumbHTML(c){
+    const url = c.photo_colis_path ? colisPhotoUrl(c.photo_colis_path) : null;
+    return url ? `<img src="${url}" class="course-thumb" data-photo="${url}" alt="Photo du colis">` : '';
+  }
+
   function disponibleRowHTML(c){
+    const blocked = !canAcceptCourses();
     return `
       <div class="colis-item course-item" data-id="${c.id}">
         <div class="info">
           <div class="desc">${escapeHTML(c.adresse_recuperation)} → ${escapeHTML(c.adresse_livraison)}</div>
           <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · ${c.distance_km != null ? c.distance_km.toLocaleString('fr-FR') + ' km' : ''} · Demandé le ${formatDate(c.created_at)}</div>
+          ${photoThumbHTML(c)}
         </div>
         <div class="status-col">
           <div style="font-weight:700;color:var(--navy);">${formatMontant(c.montant_coursier)}</div>
-          <button class="btn btn-sm btn-accept-course">Accepter</button>
+          <button class="btn btn-sm btn-accept-course"${blocked ? ' disabled title="Rechargez votre solde pour accepter des courses."' : ''}>Accepter</button>
         </div>
       </div>
     `;
@@ -189,6 +288,7 @@
           <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · Accepté le ${formatDate(c.accepted_at)}</div>
           ${clientInfo}
           ${destInfo}
+          ${photoThumbHTML(c)}
         </div>
         <div class="status-col">
           ${expressStatutBadgeHTML(c.status)}
@@ -212,17 +312,38 @@
       return;
     }
     box.innerHTML = disponibles.map(disponibleRowHTML).join('');
+    box.querySelectorAll('.course-thumb').forEach(img => {
+      img.addEventListener('click', () => openLightbox(img.dataset.photo));
+    });
     box.querySelectorAll('.btn-accept-course').forEach(btn => {
       btn.addEventListener('click', async () => {
+        if (!canAcceptCourses()) {
+          alert('Votre solde est insuffisant pour accepter des courses. Rechargez votre solde.');
+          openRechargeModal();
+          return;
+        }
         const id = btn.closest('.course-item').dataset.id;
         btn.disabled = true; btn.textContent = 'Acceptation...';
-        const { error } = await supabaseClient.from('express_courses')
+        const { data, error } = await supabaseClient.from('express_courses')
           .update({ status: 'acceptee', coursier_id: currentUser.id, accepted_at: new Date().toISOString() })
-          .eq('id', id).eq('status', 'en_attente');
+          .eq('id', id).eq('status', 'en_attente')
+          .select();
         if (error) {
           alert('Cette course vient peut-être d\'être acceptée par un autre coursier. Erreur : ' + error.message);
           btn.disabled = false; btn.textContent = 'Accepter';
           await loadDisponibles();
+          return;
+        }
+        if (!data || !data.length) {
+          // Aucune ligne modifiée : course déjà prise, ou solde insuffisant (bloqué côté serveur).
+          if (!canAcceptCourses()) {
+            alert('Votre solde est insuffisant pour accepter cette course. Rechargez votre solde.');
+            openRechargeModal();
+          } else {
+            alert('Cette course vient d\'être acceptée par un autre coursier.');
+          }
+          btn.disabled = false; btn.textContent = 'Accepter';
+          await Promise.all([loadWallet(), loadDisponibles()]);
           return;
         }
         await Promise.all([loadDisponibles(), loadMesCourses()]);
@@ -254,10 +375,93 @@
   function updateStats(){
     const livrees = mesCourses.filter(c => c.status === 'livree');
     const totalGains = livrees.reduce((sum, c) => sum + (Number(c.montant_coursier) || 0), 0);
-    const commissionDue = livrees.filter(c => !c.commission_reglee).reduce((sum, c) => sum + (Number(c.commission_montant) || 0), 0);
+    const commissionPayee = livrees.reduce((sum, c) => sum + (Number(c.commission_montant) || 0), 0);
     document.getElementById('stat-livrees').textContent = livrees.length;
     document.getElementById('stat-gains').textContent = formatMontant(totalGains);
-    document.getElementById('stat-commission-due').textContent = formatMontant(commissionDue);
+    document.getElementById('stat-commission-payee').textContent = formatMontant(commissionPayee);
+  }
+
+  // ---------- Portefeuille / solde ----------
+  function renderWallet(){
+    const box = document.getElementById('wallet-solde-box');
+    document.getElementById('wallet-solde').textContent = formatMontant(walletSolde);
+    document.getElementById('wallet-min').textContent = soldeMinimum > 0
+      ? `Minimum requis pour recevoir des courses : ${formatMontant(soldeMinimum)}`
+      : 'La commission de chaque course est déduite de ce solde.';
+    if (canAcceptCourses()) box.classList.remove('is-low'); else box.classList.add('is-low');
+    document.getElementById('low-balance-banner').classList.toggle('hidden', canAcceptCourses());
+  }
+
+  async function loadWallet(){
+    const { data, error } = await supabaseClient
+      .from('express_wallets').select('solde').eq('coursier_id', currentUser.id).maybeSingle();
+    if (error) { console.error('Solde:', error); }
+    walletSolde = data ? Number(data.solde) || 0 : 0;
+    renderWallet();
+    renderDisponibles();
+  }
+
+  async function loadRecharges(){
+    const { data, error } = await supabaseClient
+      .from('express_recharges').select('*')
+      .eq('coursier_id', currentUser.id)
+      .order('created_at', { ascending: false }).limit(20);
+    if (error) { console.error('Recharges:', error); return; }
+    mesRecharges = data || [];
+    renderRecharges();
+  }
+
+  function renderRecharges(){
+    const box = document.getElementById('recharges-list');
+    if (!mesRecharges.length) {
+      box.innerHTML = `<div class="empty-state">Aucune recharge pour le moment.</div>`;
+      return;
+    }
+    box.innerHTML = mesRecharges.map(r => `
+      <div class="recharge-item">
+        <div>
+          <div style="font-weight:600;color:var(--navy);">${formatMontant(r.montant)} · ${escapeHTML(momoOperateurLabel(r.operateur))}</div>
+          <div style="font-size:11.5px;color:var(--muted);">Déclarée le ${formatDate(r.created_at)}</div>
+        </div>
+        <div>${expressRechargeBadgeHTML(r.status)}</div>
+      </div>
+    `).join('');
+  }
+
+  // ---------- Modale de recharge ----------
+  function buildMomoGrid(){
+    const grid = document.getElementById('momo-grid');
+    const avail = EXPRESS_MOMO_OPERATEURS.filter(op => momoNumbers[op.key]);
+    if (!avail.length) {
+      grid.innerHTML = `<div style="font-size:13px;color:var(--muted);">Les numéros de recharge ne sont pas encore configurés. Contactez CLT Express.</div>`;
+      return;
+    }
+    grid.innerHTML = avail.map(op => `
+      <div class="momo-choice" data-op="${op.key}">
+        <span class="momo-emoji">${op.emoji}</span>${escapeHTML(op.label)}
+      </div>
+    `).join('');
+    grid.querySelectorAll('.momo-choice').forEach(el => {
+      el.addEventListener('click', () => {
+        selectedOperateur = el.dataset.op;
+        grid.querySelectorAll('.momo-choice').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        const numBox = document.getElementById('momo-number-box');
+        numBox.innerHTML = `Envoyez le montant sur ce numéro <strong>${momoOperateurLabel(selectedOperateur)}</strong> :<br><strong>${escapeHTML(momoNumbers[selectedOperateur])}</strong>`;
+        numBox.classList.remove('hidden');
+      });
+    });
+  }
+
+  function openRechargeModal(){
+    selectedOperateur = null;
+    document.getElementById('recharge-msg').innerHTML = '';
+    document.getElementById('momo-number-box').classList.add('hidden');
+    buildMomoGrid();
+    document.getElementById('recharge-modal-overlay').classList.remove('hidden');
+  }
+  function closeRechargeModal(){
+    document.getElementById('recharge-modal-overlay').classList.add('hidden');
   }
 
   async function loadDisponibles(){
@@ -319,6 +523,39 @@
     else { msgBox.innerHTML = `<div class="msg msg-success">Mot de passe modifié avec succès.</div>`; e.target.reset(); }
   });
 
+  // ----- Boutons / formulaire de recharge -----
+  document.getElementById('btn-open-recharge').addEventListener('click', openRechargeModal);
+  document.getElementById('recharge-modal-close').addEventListener('click', closeRechargeModal);
+  document.getElementById('recharge-modal-overlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('recharge-modal-overlay')) closeRechargeModal();
+  });
+
+  document.getElementById('form-recharge').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msgBox = document.getElementById('recharge-msg');
+    const btn = document.getElementById('btn-submit-recharge');
+    const montant = parseInt(document.getElementById('recharge-montant').value, 10);
+    const reference = document.getElementById('recharge-reference').value.trim();
+    if (!selectedOperateur) { msgBox.innerHTML = `<div class="msg msg-error">Choisissez un opérateur Mobile Money.</div>`; return; }
+    if (!montant || montant < 100) { msgBox.innerHTML = `<div class="msg msg-error">Indiquez un montant valide (100 FCFA minimum).</div>`; return; }
+    btn.disabled = true; btn.textContent = 'Envoi...';
+    const { error } = await supabaseClient.from('express_recharges').insert({
+      coursier_id: currentUser.id,
+      montant: montant,
+      operateur: selectedOperateur,
+      reference: reference || null,
+      status: 'en_attente',
+    });
+    btn.disabled = false; btn.textContent = 'Déclarer mon envoi';
+    if (error) { msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`; return; }
+    msgBox.innerHTML = `<div class="msg msg-success">Déclaration envoyée ! Dès que l'équipe l'aura validée, votre solde sera crédité.</div>`;
+    e.target.reset();
+    document.getElementById('momo-number-box').classList.add('hidden');
+    selectedOperateur = null;
+    await loadRecharges();
+    setTimeout(closeRechargeModal, 1800);
+  });
+
   function initSettingsMenu(){
     const btn = document.getElementById('settings-menu-btn');
     const dropdown = document.getElementById('settings-dropdown');
@@ -357,13 +594,34 @@
       ? 'Vous voyez les courses disponibles ci-dessous.'
       : 'Activez pour voir apparaître les courses disponibles.';
 
-    await Promise.all([loadDisponibles(), loadMesCourses()]);
+    // Grille tarifaire : solde minimum requis + numéros Mobile Money de CLT.
+    const { data: cfg } = await supabaseClient.from('express_config')
+      .select('solde_minimum, momo_wave, momo_orange, momo_mtn, momo_moov').eq('id', 1).single();
+    if (cfg) {
+      soldeMinimum = Number(cfg.solde_minimum) || 0;
+      momoNumbers = { wave: cfg.momo_wave, orange: cfg.momo_orange, mtn: cfg.momo_mtn, moov: cfg.momo_moov };
+    }
+
+    await Promise.all([loadWallet(), loadRecharges(), loadMesCourses()]);
+    await loadDisponibles();
 
     trackChannel(supabaseClient
       .channel('express-courses-coursier-' + currentUser.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'express_courses' }, () => {
         loadDisponibles();
         loadMesCourses();
+      })
+      .subscribe());
+
+    // Solde et recharges en temps réel (validation par l'équipe -> crédit immédiat).
+    trackChannel(supabaseClient
+      .channel('express-wallet-coursier-' + currentUser.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'express_wallets', filter: `coursier_id=eq.${currentUser.id}` }, () => {
+        loadWallet();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'express_recharges', filter: `coursier_id=eq.${currentUser.id}` }, () => {
+        loadRecharges();
+        loadWallet();
       })
       .subscribe());
   }

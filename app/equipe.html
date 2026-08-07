@@ -133,6 +133,7 @@
 <div class="subnav-group">
 <span class="subnav-label">CLT Express</span>
 <a href="#section-express-courses" id="subnav-express-courses" class="hidden">Courses</a>
+<a href="#section-express-recharges" id="subnav-express-recharges" class="hidden">Recharges</a>
 </div>
 </div>
 </div>
@@ -432,6 +433,22 @@
 <div class="empty-state">Chargement...</div>
 </div>
 <button type="button" class="btn btn-outline btn-sm" id="btn-refresh-express" style="margin-top:16px;">🔄 Rafraîchir</button>
+</div>
+</div>
+
+<div class="card" id="section-express-recharges">
+<h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'express-recharges-content')">
+<span class="collapse-arrow">▶</span> CLT Express — Recharges coursiers
+</h2>
+<div id="express-recharges-content" class="collapsible-content">
+<div class="stat-tiles">
+<div class="stat-tile"><div class="stat-tile-icon">⏳</div><div class="stat-tile-value" id="stat-recharges-attente">0</div><div class="stat-tile-label">En attente de validation</div></div>
+<div class="stat-tile"><div class="stat-tile-icon">💵</div><div class="stat-tile-value" id="stat-recharges-validees-jour">0 FCFA</div><div class="stat-tile-label">Validées aujourd'hui</div></div>
+</div>
+<div class="colis-list" id="express-recharges-list" style="margin-top:16px;">
+<div class="empty-state">Chargement...</div>
+</div>
+<button type="button" class="btn btn-outline btn-sm" id="btn-refresh-recharges" style="margin-top:16px;">🔄 Rafraîchir</button>
 </div>
 </div>
 
@@ -2852,6 +2869,108 @@ renderExpressStatusFilters();
 document.getElementById('btn-refresh-express')?.addEventListener('click', loadExpressCourses);
 }
 
+// ---------- CLT Express — Recharges coursiers (validation) ----------
+let expressRecharges = [];
+const EXPRESS_RECHARGE_STATUTS = {
+en_attente: { label: "En attente", color: "#8a6d00", bg: "#fdf3d6" },
+validee:    { label: "Validée",    color: "#1a7d3c", bg: "#e3f6ea" },
+refusee:    { label: "Refusée",    color: "#c0392b", bg: "#fce4e2" },
+};
+const MOMO_LABELS = { wave: 'Wave', orange: 'Orange Money', mtn: 'MTN MoMo', moov: 'Moov Money' };
+function expressRechargeBadgeHTML(statut) {
+const s = EXPRESS_RECHARGE_STATUTS[statut] || EXPRESS_RECHARGE_STATUTS.en_attente;
+return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;
+}
+
+async function loadExpressRecharges() {
+const { data, error } = await supabaseClient
+.from('express_recharges').select('*')
+.order('created_at', { ascending: false }).limit(200);
+if (error) { console.error(error); return; }
+expressRecharges = data || [];
+renderExpressRecharges();
+}
+
+async function rechargeCourierNames() {
+const ids = new Set(expressRecharges.map(r => r.coursier_id).filter(Boolean));
+if (!ids.size) return {};
+const { data, error } = await supabaseClient.from('profiles').select('id, full_name, phone').in('id', Array.from(ids));
+if (error) { console.error(error); return {}; }
+const map = {};
+(data || []).forEach(p => { map[p.id] = p; });
+return map;
+}
+
+function updateRechargeStats() {
+const attente = expressRecharges.filter(r => r.status === 'en_attente').length;
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const validJour = expressRecharges
+.filter(r => r.status === 'validee' && r.validated_at && new Date(r.validated_at) >= today)
+.reduce((s, r) => s + (Number(r.montant) || 0), 0);
+const a = document.getElementById('stat-recharges-attente'); if (a) a.textContent = attente;
+const v = document.getElementById('stat-recharges-validees-jour'); if (v) v.textContent = formatMontant(validJour);
+}
+
+function renderExpressRecharges() {
+const box = document.getElementById('express-recharges-list');
+updateRechargeStats();
+if (!expressRecharges.length) { box.innerHTML = `<div class="empty-state">Aucune recharge pour le moment.</div>`; return; }
+(async () => {
+const names = await rechargeCourierNames();
+box.innerHTML = expressRecharges.map(r => {
+const p = names[r.coursier_id];
+const who = p ? (p.full_name || 'Coursier') : 'Coursier';
+const pending = r.status === 'en_attente';
+const actions = pending
+? `<button class="btn btn-sm btn-valider-recharge">✅ Valider</button> <button class="btn btn-sm btn-outline btn-refuser-recharge" style="margin-left:4px;">Refuser</button>`
+: '';
+return `
+<div class="colis-item" data-id="${r.id}">
+<div class="info">
+<div class="desc">💰 ${formatMontant(r.montant)} · ${escapeHTML(MOMO_LABELS[r.operateur] || r.operateur || '')}</div>
+<div class="meta">Coursier : ${escapeHTML(who)}${p && p.phone ? ' · ' + escapeHTML(String(p.phone)) : ''}</div>
+<div class="meta">${r.reference ? 'Réf : ' + escapeHTML(r.reference) + ' · ' : ''}Déclarée le ${formatDate(r.created_at)}</div>
+</div>
+<div class="status-col" style="flex-direction:column; align-items:flex-end; gap:4px;">
+${actions}
+${expressRechargeBadgeHTML(r.status)}
+</div>
+</div>`;
+}).join('');
+
+box.querySelectorAll('.btn-valider-recharge').forEach(btn => {
+btn.addEventListener('click', async () => {
+const id = btn.closest('.colis-item').dataset.id;
+if (!confirm('Valider cette recharge ? Le solde du coursier sera crédité immédiatement.')) return;
+btn.disabled = true; btn.textContent = '...';
+const { error } = await supabaseClient.from('express_recharges').update({ status: 'validee' }).eq('id', id).eq('status', 'en_attente');
+if (error) { alert('Erreur : ' + error.message); btn.disabled = false; btn.textContent = '✅ Valider'; return; }
+await loadExpressRecharges();
+});
+});
+box.querySelectorAll('.btn-refuser-recharge').forEach(btn => {
+btn.addEventListener('click', async () => {
+const id = btn.closest('.colis-item').dataset.id;
+if (!confirm('Refuser cette recharge ? Le solde ne sera pas crédité.')) return;
+btn.disabled = true; btn.textContent = '...';
+const { error } = await supabaseClient.from('express_recharges').update({ status: 'refusee' }).eq('id', id).eq('status', 'en_attente');
+if (error) { alert('Erreur : ' + error.message); btn.disabled = false; btn.textContent = 'Refuser'; return; }
+await loadExpressRecharges();
+});
+});
+})();
+}
+
+async function initExpressRecharges() {
+document.getElementById('subnav-express-recharges')?.classList.remove('hidden');
+await loadExpressRecharges();
+document.getElementById('btn-refresh-recharges')?.addEventListener('click', loadExpressRecharges);
+trackChannel(supabaseClient
+.channel('express-recharges-equipe')
+.on('postgres_changes', { event: '*', schema: 'public', table: 'express_recharges' }, () => { loadExpressRecharges(); })
+.subscribe());
+}
+
 async function init(){
 const session = await requireAuth();
 if (!session) return;
@@ -2933,6 +3052,7 @@ await loadLivreurs();
 await loadColis();
 await loadActivityLog();
 await initExpressCourses();
+await initExpressRecharges();
 initColisDraftAutosave();
 
 // Mises à jour en temps réel sur tous les colis

@@ -201,3 +201,40 @@ function expressStatutBadgeHTML(statut) {
   const s = EXPRESS_STATUTS[statut] || EXPRESS_STATUTS.en_attente;
   return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;
 }
+
+// ---------- Photo du colis ----------
+// URL publique d'une photo stockée dans le bucket "express-colis" à partir de
+// son chemin (photo_colis_path). Le bucket est public : pas d'appel réseau ni
+// d'authentification nécessaires pour construire l'URL.
+function colisPhotoUrl(path) {
+  if (!path) return null;
+  const { data } = supabaseClient.storage.from("express-colis").getPublicUrl(path);
+  return data ? data.publicUrl : null;
+}
+
+// ---------- Mobile Money (recharge du solde coursier) ----------
+// Ordre d'affichage et libellés des opérateurs. La clé correspond à la colonne
+// momo_<clé> de express_config (le numéro CLT qui reçoit la recharge).
+const EXPRESS_MOMO_OPERATEURS = [
+  { key: "wave",   label: "Wave",         emoji: "🌊" },
+  { key: "orange", label: "Orange Money", emoji: "🟠" },
+  { key: "mtn",    label: "MTN MoMo",     emoji: "🟡" },
+  { key: "moov",   label: "Moov Money",   emoji: "🔵" },
+];
+
+function momoOperateurLabel(key) {
+  const op = EXPRESS_MOMO_OPERATEURS.find(o => o.key === key);
+  return op ? op.label : (key || "");
+}
+
+// Statuts d'une demande de recharge.
+const EXPRESS_RECHARGE_STATUTS = {
+  en_attente: { label: "En attente de validation", color: "#8a6d00", bg: "#fdf3d6" },
+  validee:    { label: "Validée",                  color: "#1a7d3c", bg: "#e3f6ea" },
+  refusee:    { label: "Refusée",                  color: "#c0392b", bg: "#fce4e2" },
+};
+
+function expressRechargeBadgeHTML(statut) {
+  const s = EXPRESS_RECHARGE_STATUTS[statut] || EXPRESS_RECHARGE_STATUTS.en_attente;
+  return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;
+}
