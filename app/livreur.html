@@ -208,6 +208,17 @@
       </div>
       <button type="submit" class="btn" id="btn-change-password">Changer mon mot de passe</button>
     </form>
+    <hr class="account-modal-divider">
+
+    <!-- Suppression du compte -->
+    <h3 class="account-modal-title" style="font-size:15px; margin-bottom:6px;">Supprimer mon compte</h3>
+    <p style="font-size:12.5px; color:var(--muted); line-height:1.4; margin:0 0 12px;">
+      Cette action envoie une demande à l'équipe CLT. Votre compte ne sera pas supprimé immédiatement : l'équipe traitera votre demande. Vous pouvez l'annuler tant qu'elle n'a pas été traitée.
+    </p>
+    <div id="account-delete-state"></div>
+    <div id="account-delete-msg"></div>
+    <button type="button" class="btn btn-sm" id="btn-request-delete" style="background:#c0392b !important; color:#fff !important;">Demander la suppression</button>
+    <button type="button" class="btn btn-sm btn-outline hidden" id="btn-cancel-delete">Annuler ma demande</button>
   </div>
 </div>
 
@@ -1025,6 +1036,7 @@
     initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
     initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
     initSettingsMenu();
+    initDeleteAccountRequest({ profile, requestBtnId: 'btn-request-delete', cancelBtnId: 'btn-cancel-delete', msgId: 'account-delete-msg', stateContainerId: 'account-delete-state' });
     // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 

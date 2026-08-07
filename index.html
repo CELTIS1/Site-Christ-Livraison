@@ -713,6 +713,68 @@
   /* Statistiques « À propos » : dégradé un poil plus profond + ombre */
   .about-stats{ box-shadow:0 16px 36px rgba(18,50,82,0.22); }
 </style>
+
+<!-- ===================================================================== -->
+<!-- Élévation visuelle 2026 — seconde surcouche additive (n'enlève rien). -->
+<!-- Micro-interactions modernes : en-tête en verre dépoli au défilement,  -->
+<!-- barre de progression, accents de titres, reflets de boutons, cartes   -->
+<!-- réactives, focus accessible. HTML et JS d'origine intacts.            -->
+<!-- ===================================================================== -->
+<style id="clt-elevation-2026">
+  /* Barre fine de progression de lecture, tout en haut de la page */
+  #cltScrollProgress{
+    position:fixed; top:0; left:0; height:3px; width:0%;
+    background:linear-gradient(90deg,#F7A85C,#E26313);
+    z-index:200; pointer-events:none; transition:width .12s linear;
+    box-shadow:0 0 8px rgba(226,99,19,0.5);
+  }
+
+  /* En-tête : verre dépoli + ombre plus marquée dès qu'on défile */
+  .site-header-fixed{ transition:box-shadow .25s ease; }
+  .site-header-fixed.is-scrolled{ box-shadow:0 8px 26px rgba(18,50,82,0.13); }
+  .site-header-fixed.is-scrolled header{
+    background:rgba(255,255,255,0.82);
+    -webkit-backdrop-filter:saturate(180%) blur(14px);
+    backdrop-filter:saturate(180%) blur(14px);
+  }
+
+  /* Titres de section : petit accent dégradé sous le titre */
+  .section-title::after{
+    content:""; display:block; width:54px; height:4px; margin:16px auto 0;
+    border-radius:999px; background:linear-gradient(90deg,#F7A85C,#E26313);
+  }
+
+  /* Boutons principaux : reflet lumineux qui balaie la surface au survol */
+  .btn-primary, .nav-cta{ position:relative; overflow:hidden; }
+  .btn-primary::after, .nav-cta::after{
+    content:""; position:absolute; top:0; left:-130%; width:65%; height:100%;
+    background:linear-gradient(120deg,transparent,rgba(255,255,255,0.45),transparent);
+    transform:skewX(-20deg); transition:left .6s ease; pointer-events:none;
+  }
+  .btn-primary:hover::after, .nav-cta:hover::after{ left:140%; }
+
+  /* Cartes de service : fine barre colorée qui apparaît en haut au survol */
+  .service-card{ position:relative; overflow:hidden; }
+  .service-card::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:4px;
+    background:linear-gradient(90deg,#F7A85C,#E26313);
+    transform:scaleX(0); transform-origin:left; transition:transform .3s ease;
+  }
+  .service-card:hover::before{ transform:scaleX(1); }
+
+  /* Accessibilité : anneau de focus net au clavier */
+  a:focus-visible, button:focus-visible, input:focus-visible,
+  select:focus-visible, textarea:focus-visible{
+    outline:3px solid rgba(226,99,19,0.55); outline-offset:2px; border-radius:8px;
+  }
+
+  /* Respect des préférences « animations réduites » */
+  @media (prefers-reduced-motion: reduce){
+    #cltScrollProgress{ display:none; }
+    .btn-primary::after, .nav-cta::after{ display:none; }
+    .service-card::before{ transition:none; }
+  }
+</style>
 </head>
 <body>
 
@@ -1773,6 +1835,38 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+</script>
+
+<script>
+// Élévation visuelle 2026 : barre de progression de lecture, en-tête au défilement,
+// et révélations en cascade. Purement additif : aucune dépendance au reste du code.
+(function(){
+  try{
+    var bar = document.createElement('div');
+    bar.id = 'cltScrollProgress';
+    document.body.appendChild(bar);
+    var header = document.getElementById('siteHeaderFixed');
+    function onScroll(){
+      var st = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var h = (document.documentElement.scrollHeight - window.innerHeight) || 0;
+      bar.style.width = (h > 0 ? Math.min(100, (st / h) * 100) : 0) + '%';
+      if(header){ header.classList.toggle('is-scrolled', st > 8); }
+    }
+    window.addEventListener('scroll', onScroll, { passive:true });
+    window.addEventListener('resize', onScroll, { passive:true });
+    onScroll();
+
+    // Léger décalage entre les cartes voisines d'une même grille pour une entrée en cascade.
+    var grids = document.querySelectorAll('.services-grid, .steps-grid, .trust-grid, .testimonials-grid, .about-values');
+    grids.forEach(function(grid){
+      var i = 0;
+      grid.querySelectorAll('.reveal').forEach(function(el){
+        el.style.transitionDelay = (i * 0.07).toFixed(2) + 's';
+        i++;
+      });
+    });
+  }catch(e){ /* Ne bloque jamais l'affichage du site. */ }
+})();
 </script>
 
 </body>

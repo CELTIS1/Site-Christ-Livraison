@@ -966,3 +966,46 @@ function initSettingsMenu() {
     if (e.key === "Escape" && overlay && !overlay.classList.contains("hidden")) closeAccountModal();
   });
 }
+
+// ---------- Demande de suppression de compte ----------
+// Réversible côté utilisateur tant que l'équipe n'a pas traité la demande. On se contente
+// d'horodater profiles.suppression_demandee_at ; l'équipe procède ensuite à la suppression
+// effective manuellement. Rien n'est supprimé automatiquement ici. Fonction partagée par les
+// tableaux de bord livreur, fournisseur et équipe (mêmes IDs conventionnels que côté Express).
+function initDeleteAccountRequest({ profile, requestBtnId, cancelBtnId, msgId, stateContainerId }) {
+  const requestBtn = requestBtnId ? document.getElementById(requestBtnId) : null;
+  const cancelBtn = cancelBtnId ? document.getElementById(cancelBtnId) : null;
+  const msgBox = msgId ? document.getElementById(msgId) : null;
+  const state = stateContainerId ? document.getElementById(stateContainerId) : null;
+
+  function render() {
+    const pending = !!profile.suppression_demandee_at;
+    if (requestBtn) requestBtn.classList.toggle("hidden", pending);
+    if (cancelBtn) cancelBtn.classList.toggle("hidden", !pending);
+    if (state) {
+      state.innerHTML = pending
+        ? `<div class="msg msg-info">Votre demande de suppression a bien été enregistrée le ${formatDate(profile.suppression_demandee_at)}. Notre équipe la traitera prochainement. Vous pouvez encore l'annuler ci-dessous.</div>`
+        : "";
+    }
+  }
+  render();
+
+  async function setDemande(value) {
+    if (msgBox) msgBox.innerHTML = "";
+    const { error } = await supabaseClient.from("profiles")
+      .update({ suppression_demandee_at: value }).eq("id", profile.id);
+    if (error) { if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`; return; }
+    profile.suppression_demandee_at = value;
+    render();
+    if (msgBox) msgBox.innerHTML = value
+      ? `<div class="msg msg-success">Demande envoyée à l'équipe.</div>`
+      : `<div class="msg msg-success">Demande de suppression annulée.</div>`;
+  }
+
+  if (requestBtn) requestBtn.addEventListener("click", () => {
+    if (confirm("Envoyer une demande de suppression de votre compte à l'équipe CLT ? Vous pourrez l'annuler tant qu'elle n'a pas été traitée.")) {
+      setDemande(new Date().toISOString());
+    }
+  });
+  if (cancelBtn) cancelBtn.addEventListener("click", () => setDemande(null));
+}
