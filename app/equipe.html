@@ -21,6 +21,48 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20260801f">
+<style>
+  /* ============================================================
+     MODERNISATION 2026 — Équipe (navy) — additif, non destructif
+     ============================================================ */
+  :root{ --clt-navy2:#1B4374; --clt-navy-dark:#12305a; }
+  body{
+    background:linear-gradient(180deg,#eef2f9 0%, #f5f7fa 260px, #f5f7fa 100%) !important;
+  }
+  .topbar{
+    background:linear-gradient(135deg,#22508a 0%, #1B4374 55%, #12305a 100%) !important;
+    box-shadow:0 6px 20px rgba(18,48,90,0.22) !important;
+  }
+  .wrap{ padding-top:26px; }
+  .page-title{ letter-spacing:-0.4px; }
+  .card{
+    border-radius:18px !important;
+    box-shadow:0 8px 26px rgba(18,48,90,0.07) !important;
+    border:1px solid rgba(27,67,116,0.08) !important;
+  }
+  .btn:not(.btn-outline){
+    background:linear-gradient(135deg,#22508a 0%, #12305a 100%) !important;
+    border-radius:12px !important;
+    box-shadow:0 8px 18px rgba(18,48,90,0.24) !important;
+    transition:transform .15s ease, box-shadow .15s ease !important;
+  }
+  .btn:not(.btn-outline):hover{
+    transform:translateY(-2px) !important;
+    box-shadow:0 12px 24px rgba(18,48,90,0.30) !important;
+  }
+  .colis-item{
+    border-radius:16px !important;
+    box-shadow:0 4px 16px rgba(18,48,90,0.06) !important;
+    transition:transform .15s ease, box-shadow .15s ease !important;
+  }
+  .colis-item:hover{
+    transform:translateY(-2px) !important;
+    box-shadow:0 10px 24px rgba(18,48,90,0.12) !important;
+  }
+  input[type="search"], input[type="text"], input[type="date"]{ border-radius:12px !important; }
+  /* Ne pas modifier la carte Leaflet : on la laisse telle quelle */
+  .leaflet-container{ border-radius:14px; }
+</style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>

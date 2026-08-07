@@ -73,6 +73,50 @@
   .momo-number-box strong{ font-size:16px; letter-spacing:0.5px; }
   .recharge-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--border,#eee); font-size:13px; }
   .recharge-item:first-child{ border-top:none; }
+
+  /* ============================================================
+     MODERNISATION 2026 — Coursier (teal) — additif, non destructif
+     ============================================================ */
+  :root{ --clt-teal:#0D9488; --clt-teal-dark:#0b6e64; }
+  body{
+    background:linear-gradient(180deg,#f2fbf9 0%, #f5f7fa 260px, #f5f7fa 100%) !important;
+  }
+  .topbar{
+    background:linear-gradient(135deg,#0f9b8e 0%, #0D9488 55%, #0b6e64 100%) !important;
+    box-shadow:0 6px 20px rgba(11,110,100,0.22) !important;
+  }
+  .wrap{ padding-top:26px; }
+  .page-title{ letter-spacing:-0.4px; }
+  .card{
+    border-radius:18px !important;
+    box-shadow:0 8px 26px rgba(11,110,100,0.07) !important;
+    border:1px solid rgba(13,148,136,0.08) !important;
+  }
+  .btn:not(.btn-outline){
+    background:linear-gradient(135deg,#0f9b8e 0%, #0b6e64 100%) !important;
+    border-radius:12px !important;
+    box-shadow:0 8px 18px rgba(11,110,100,0.24) !important;
+    transition:transform .15s ease, box-shadow .15s ease !important;
+  }
+  .btn:not(.btn-outline):hover{
+    transform:translateY(-2px) !important;
+    box-shadow:0 12px 24px rgba(11,110,100,0.30) !important;
+  }
+  .stat-box{
+    border-radius:16px !important;
+    background:linear-gradient(160deg,#f0fdfb 0%, #e6faf6 100%) !important;
+    box-shadow:0 4px 14px rgba(11,110,100,0.06) !important;
+  }
+  .course-item{
+    border-radius:16px !important;
+    box-shadow:0 4px 16px rgba(11,110,100,0.06) !important;
+    transition:transform .15s ease, box-shadow .15s ease !important;
+  }
+  .course-item:hover{
+    transform:translateY(-2px) !important;
+    box-shadow:0 10px 24px rgba(11,110,100,0.12) !important;
+  }
+  .wallet-solde .wallet-value{ letter-spacing:-0.5px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>

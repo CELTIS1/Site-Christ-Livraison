@@ -18,6 +18,48 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20260801f">
+<style>
+  /* ============================================================
+     MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
+     ============================================================ */
+  :root{ --clt-green:#1F8A5B; --clt-green-dark:#166b46; }
+  body{
+    background:linear-gradient(180deg,#eefaf3 0%, #f5f7fa 260px, #f5f7fa 100%) !important;
+  }
+  .topbar{
+    background:linear-gradient(135deg,#26996a 0%, #1F8A5B 55%, #166b46 100%) !important;
+    box-shadow:0 6px 20px rgba(22,107,70,0.22) !important;
+  }
+  .topbar .brand .logo-mark{ background:rgba(255,255,255,0.16) !important; }
+  .role-pill{ background:rgba(255,255,255,0.20) !important; }
+  .wrap{ padding-top:26px; }
+  .page-title{ letter-spacing:-0.4px; }
+  .card{
+    border-radius:18px !important;
+    box-shadow:0 8px 26px rgba(22,107,70,0.07) !important;
+    border:1px solid rgba(31,138,91,0.08) !important;
+  }
+  .btn:not(.btn-outline){
+    background:linear-gradient(135deg,#26996a 0%, #166b46 100%) !important;
+    border-radius:12px !important;
+    box-shadow:0 8px 18px rgba(22,107,70,0.24) !important;
+    transition:transform .15s ease, box-shadow .15s ease !important;
+  }
+  .btn:not(.btn-outline):hover{
+    transform:translateY(-2px) !important;
+    box-shadow:0 12px 24px rgba(22,107,70,0.30) !important;
+  }
+  .colis-item, .colis-draft{
+    border-radius:16px !important;
+    box-shadow:0 4px 16px rgba(22,107,70,0.06) !important;
+    transition:transform .15s ease, box-shadow .15s ease !important;
+  }
+  .colis-item:hover, .colis-draft:hover{
+    transform:translateY(-2px) !important;
+    box-shadow:0 10px 24px rgba(22,107,70,0.12) !important;
+  }
+  input[type="search"], input[type="text"], input[type="date"]{ border-radius:12px !important; }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
