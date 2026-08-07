@@ -58,8 +58,76 @@
     transform:translateY(-2px) !important;
     box-shadow:0 10px 24px rgba(193,79,10,0.12) !important;
   }
-  .tabs .tab.active, .tab.active{ font-weight:700 !important; }
   input[type="search"], input[type="text"], input[type="date"]{ border-radius:12px !important; }
+
+  /* ---- Onglets en "segmented control" ---- */
+  .tabs{
+    background:#f1f3f7; border-radius:14px; padding:5px; gap:4px !important;
+    border:none !important; display:flex;
+  }
+  .tabs .tab{
+    flex:1; text-align:center; border:none !important; border-radius:10px !important;
+    color:#6b7280 !important; font-weight:600 !important; padding:10px 8px !important;
+    transition:.15s; margin:0 !important;
+  }
+  .tabs .tab.active{
+    background:#fff !important; color:var(--clt-orange-dark) !important;
+    box-shadow:0 2px 8px rgba(193,79,10,.14) !important; font-weight:700 !important;
+  }
+
+  /* ---- Pastilles de statut arrondies ---- */
+  .badge{
+    border-radius:999px !important; padding:5px 12px !important; font-weight:600 !important;
+    font-size:12px !important; letter-spacing:.1px;
+  }
+
+  /* ---- Barre de recherche collante ---- */
+  .search-wrap{ position:sticky; top:8px; z-index:5; }
+  .search-input{
+    border-radius:12px !important; border:1px solid #e6eaf0 !important;
+    background:#f8fafc !important; padding:11px 14px !important;
+  }
+  .search-input:focus{ border-color:var(--clt-orange) !important; background:#fff !important; }
+  .filter-chip{ border-radius:999px !important; }
+  .filter-chip.active{ background:var(--clt-orange) !important; border-color:var(--clt-orange) !important; color:#fff !important; }
+
+  /* ---- Frise d'étapes (stepper) sur chaque colis assigné ---- */
+  .clt-stepper{ display:flex; align-items:flex-start; margin:2px 0 12px; width:100%; flex-basis:100%; order:-1; padding:4px 4px 10px; border-bottom:1px solid #f1f3f7; }
+  .clt-stepper .st{ flex:1; text-align:center; position:relative; }
+  .clt-stepper .st .c{
+    width:26px; height:26px; border-radius:50%; margin:0 auto; position:relative; z-index:2;
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;
+    background:#e9edf3; color:#9aa3af;
+  }
+  .clt-stepper .st.done .c{ background:#1a7d3c; color:#fff; }
+  .clt-stepper .st.now  .c{ background:var(--clt-orange); color:#fff; box-shadow:0 0 0 4px rgba(226,99,19,.18); }
+  .clt-stepper .st .l{ font-size:10px; color:#6b7280; margin-top:5px; font-weight:500; line-height:1.2; }
+  .clt-stepper .st.now .l{ color:var(--clt-orange-dark); font-weight:700; }
+  .clt-stepper .st::before{ content:''; position:absolute; top:12px; left:-50%; width:100%; height:3px; background:#e9edf3; z-index:1; }
+  .clt-stepper .st:first-child::before{ display:none; }
+  .clt-stepper .st.done::before, .clt-stepper .st.now::before{ background:#1a7d3c; }
+  .clt-stepper.is-alert .st.now .c{ background:#c0392b; box-shadow:0 0 0 4px rgba(192,57,43,.18); }
+  .clt-stepper.is-alert .st.now .l{ color:#c0392b; }
+
+  /* ---- Barre de navigation basse (mobile uniquement) ---- */
+  .clt-bottomnav{ display:none; }
+  @media(max-width:760px){
+    .clt-bottomnav{
+      display:flex; position:fixed; left:0; right:0; bottom:0; z-index:200;
+      background:#fff; border-top:1px solid #eef1f5;
+      padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+      box-shadow:0 -6px 20px rgba(0,0,0,.06); justify-content:space-around;
+    }
+    .clt-bottomnav .nav{
+      flex:1; background:none; border:none; cursor:pointer; font-family:inherit;
+      display:flex; flex-direction:column; align-items:center; gap:3px;
+      font-size:10.5px; font-weight:600; color:#8a94a3;
+    }
+    .clt-bottomnav .nav.active{ color:var(--clt-orange); }
+    .clt-bottomnav .nav svg{ width:22px; height:22px; }
+    body{ padding-bottom:74px; }
+    .subnav{ display:none !important; }
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -528,6 +596,27 @@
     return `<div class="meta">🚚 Collecte : ${escapeHTML(p.full_name || 'Livreur')}${c.collecte_depart_at ? ' · en route depuis ' + formatDate(c.collecte_depart_at) : ''}</div>`;
   }
 
+  // Frise d'étapes (stepper) : reflète visuellement l'avancement du colis à partir de son statut réel.
+  // Purement présentatif — dérivé de c.statut, ne modifie aucune donnée.
+  function stepperHTML(statut){
+    const flow = [
+      { key:'en_attente',   label:'Assigné' },
+      { key:'recupere',     label:'Récupéré' },
+      { key:'en_livraison', label:'En livraison' },
+      { key:'livre',        label:'Livré' },
+    ];
+    const alert = (statut === 'non_livre' || statut === 'retour');
+    let idx = flow.findIndex(s => s.key === statut);
+    if (idx === -1) idx = alert ? flow.length - 1 : 0;
+    const steps = flow.map((s, i) => {
+      const cls = i < idx ? 'done' : (i === idx ? 'now' : '');
+      const label = (alert && i === flow.length - 1 && STATUTS[statut]) ? STATUTS[statut].label : s.label;
+      const inner = i < idx ? '✓' : (i + 1);
+      return `<div class="st ${cls}"><div class="c">${inner}</div><div class="l">${label}</div></div>`;
+    }).join('');
+    return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
+  }
+
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
   function mesColisRowHTML(c){
     const thumb = c.photo_url
@@ -538,6 +627,7 @@
 
     return `
       <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
+        ${stepperHTML(c.statut)}
         ${thumb}
         <div class="info">
           ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
@@ -1093,6 +1183,47 @@
   setInterval(() => { if (navigator.onLine) flushOfflineQueue(); }, 20000);
 
   init();
+</script>
+
+<!-- Barre de navigation basse (mobile) : raccourcis vers les mêmes sections que les onglets. -->
+<nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
+  <button type="button" class="nav active" data-nav="mes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+    Mes colis
+  </button>
+  <button type="button" class="nav" data-nav="recup">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
+    Récup.
+  </button>
+  <button type="button" class="nav" data-nav="tous">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+    Tous
+  </button>
+  <button type="button" class="nav" data-nav="compte">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
+    Compte
+  </button>
+</nav>
+<script>
+  // Câblage de la barre du bas : réutilise showTab() (onglets existants) et le bouton "Mon compte".
+  (function(){
+    const bar = document.getElementById('clt-bottomnav');
+    if (!bar) return;
+    bar.querySelectorAll('.nav').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.nav;
+        bar.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b === btn));
+        if (target === 'compte'){
+          const acc = document.getElementById('btn-mon-compte');
+          if (acc) acc.click();
+          return;
+        }
+        if (typeof showTab === 'function') showTab(target);
+        const main = document.getElementById('section-main');
+        if (main) main.scrollIntoView({ behavior:'smooth', block:'start' });
+      });
+    });
+  })();
 </script>
 </body>
 </html>
