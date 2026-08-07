@@ -1,0 +1,27 @@
+# --- Fichiers système / éditeurs ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# --- Secrets & variables d'environnement (ne JAMAIS publier) ---
+.env
+.env.*
+*.env
+secrets.json
+service_role*.txt
+*.pem
+*.key
+
+# --- Dépendances ---
+node_modules/
+
+# --- Exports / dumps de base de données (schéma privé, ne pas publier) ---
+*.sql
+*.dump
+*.backup
+
+# --- Journaux ---
+*.log
+npm-debug.log*
