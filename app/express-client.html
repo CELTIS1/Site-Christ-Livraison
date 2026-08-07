@@ -104,8 +104,8 @@
           <input type="text" id="course-dest-nom" placeholder="Optionnel si c'est vous">
         </div>
         <div class="field">
-          <label>Téléphone du destinataire</label>
-          <input type="tel" id="course-dest-tel" placeholder="07 00 00 00 00">
+          <label>Téléphone du destinataire *</label>
+          <input type="tel" id="course-dest-tel" placeholder="07 00 00 00 00" required>
         </div>
       </div>
       <div class="field">
@@ -244,6 +244,11 @@
 
     if (!pickupCommune || !dropoffCommune) {
       msgBox.innerHTML = `<div class="msg msg-error">Veuillez choisir la commune de récupération et de livraison.</div>`;
+      return;
+    }
+
+    if (!destTel) {
+      msgBox.innerHTML = `<div class="msg msg-error">Le numéro de téléphone du destinataire est obligatoire pour la livraison.</div>`;
       return;
     }
 
