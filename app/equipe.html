@@ -671,7 +671,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260806b"></script>
+<script src="config.js?v=20260808a"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1541,7 +1541,20 @@ btn.disabled = true; btn.textContent = 'Ajout...';
 
 const fournisseur_id = document.getElementById('add-fournisseur').value;
 const destination = document.getElementById('add-dest').value.trim();
-const destinataire_telephone = (document.getElementById('add-dest-tel').value || '').trim() || null;
+let destinataire_telephone = (document.getElementById('add-dest-tel').value || '').trim();
+if (destinataire_telephone) {
+  // Nettoyage : ne garder que les chiffres et retirer l'indicatif 225 éventuel.
+  let telDigits = destinataire_telephone.replace(/[^0-9]/g, '');
+  if (telDigits.startsWith('225')) telDigits = telDigits.slice(3);
+  destinataire_telephone = telDigits;
+  if (!isValidPhoneCI(destinataire_telephone)) {
+    addMsg("Le téléphone du destinataire est invalide (format attendu : 10 chiffres, ex. 0546818640).", "error");
+    btn.disabled = false; btn.textContent = 'Ajouter le colis';
+    return;
+  }
+} else {
+  destinataire_telephone = null;
+}
 const commune_recuperation = document.getElementById('add-pickup-commune').value || null;
 const adresse_recuperation = document.getElementById('add-pickup-adresse').value.trim() || null;
 const description = document.getElementById('add-desc').value.trim();

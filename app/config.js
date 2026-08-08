@@ -435,7 +435,9 @@ document.addEventListener("click", (e) => {
   if (!btn) return;
   const item = btn.closest(".colis-item");
   if (!item) return;
-  const tel = (item.dataset.tel || "").replace(/[^0-9]/g, "");
+  const rawTel = (item.dataset.tel || "").replace(/[^0-9]/g, "");
+  // Normalise au format international 225… attendu par wa.me (sinon lien invalide).
+  const tel = rawTel ? toPhoneE164(rawTel) : "";
   const numero = item.dataset.numero;
   const id = item.dataset.id;
   const statut = item.dataset.statut || "";
