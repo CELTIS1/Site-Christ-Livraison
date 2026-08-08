@@ -10,6 +10,17 @@
 const SUPABASE_URL = "https://xkfltqjbmolmdwdafzcx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
 
+// --- Paiement Wave en ligne (recharge automatique du solde coursier) ---
+// Tant que ce drapeau vaut false, l'app se comporte EXACTEMENT comme avant :
+// la recharge Wave se déclare à la main et l'équipe la valide. Passez-le à true
+// UNIQUEMENT une fois que : (1) le compte Wave Business est créé, (2) les deux
+// Edge Functions "wave-initier-recharge" et "wave-webhook" sont déployées, et
+// (3) les secrets WAVE_API_KEY / WAVE_WEBHOOK_SECRET sont configurés dans
+// Supabase. Voir _sql-prive/GUIDE-WAVE.md. Quand c'est true, choisir Wave dans
+// la modale de recharge redirige le coursier vers un paiement en ligne, et son
+// solde est crédité automatiquement dès le paiement confirmé.
+const EXPRESS_WAVE_PAIEMENT_AUTO = false;
+
 // Service worker : même fichier que l'app interne (couvre tout le site), enregistré une seule
 // fois ici pour les 3 pages CLT Express.
 if ('serviceWorker' in navigator) {
@@ -307,10 +318,34 @@ function momoOperateurLabel(key) {
 
 // Statuts d'une demande de recharge.
 const EXPRESS_RECHARGE_STATUTS = {
+  initiee:    { label: "Paiement Wave en cours",   color: "#0b6e64", bg: "#e0f5f2" },
   en_attente: { label: "En attente de validation", color: "#8a6d00", bg: "#fdf3d6" },
   validee:    { label: "Validée",                  color: "#1a7d3c", bg: "#e3f6ea" },
   refusee:    { label: "Refusée",                  color: "#c0392b", bg: "#fce4e2" },
+  expiree:    { label: "Expirée / abandonnée",     color: "#6b7280", bg: "#eef0f3" },
 };
+
+// Démarre une recharge payée en ligne via Wave : appelle l'Edge Function
+// sécurisée (qui identifie le coursier via son jeton de connexion et crée la
+// session de paiement Wave), puis renvoie l'URL de paiement à ouvrir.
+async function initierRechargeWave(montant) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) throw new Error("Vous devez être connecté.");
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/wave-initier-recharge`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session.access_token}`,
+      "apikey": SUPABASE_KEY,
+    },
+    body: JSON.stringify({ montant }),
+  });
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok || !out.wave_launch_url) {
+    throw new Error(out.error || "Le paiement Wave n'a pas pu démarrer.");
+  }
+  return out.wave_launch_url;
+}
 
 function expressRechargeBadgeHTML(statut) {
   const s = EXPRESS_RECHARGE_STATUTS[statut] || EXPRESS_RECHARGE_STATUTS.en_attente;

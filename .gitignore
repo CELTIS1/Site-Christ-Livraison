@@ -22,6 +22,9 @@ node_modules/
 *.dump
 *.backup
 
+# --- Guides internes de configuration (dossier privé, ne pas publier) ---
+_sql-prive/*.md
+
 # --- Journaux ---
 *.log
 npm-debug.log*

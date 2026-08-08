@@ -317,7 +317,7 @@
           <span class="amount-suffix">FCFA</span>
         </div>
       </div>
-      <div class="field">
+      <div class="field" id="recharge-reference-field">
         <label>3. Référence de la transaction (facultatif)</label>
         <input type="text" id="recharge-reference" placeholder="Ex : ID Wave / Orange Money reçu par SMS">
       </div>
@@ -424,7 +424,7 @@
   </div>
 </div>
 
-<script src="express-config.js?v=20260808a"></script>
+<script src="express-config.js?v=20260808b"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -668,9 +668,13 @@
   }
 
   // ---------- Modale de recharge ----------
+  // Wave payé en ligne : disponible dès que le drapeau est actif, même si aucun
+  // numéro Wave manuel n'est configuré (le coursier ne fait plus de virement à la main).
+  function waveEnLigneActif(){ return typeof EXPRESS_WAVE_PAIEMENT_AUTO !== 'undefined' && EXPRESS_WAVE_PAIEMENT_AUTO; }
+
   function buildMomoGrid(){
     const grid = document.getElementById('momo-grid');
-    const avail = EXPRESS_MOMO_OPERATEURS.filter(op => momoNumbers[op.key]);
+    const avail = EXPRESS_MOMO_OPERATEURS.filter(op => momoNumbers[op.key] || (op.key === 'wave' && waveEnLigneActif()));
     if (!avail.length) {
       grid.innerHTML = `<div style="font-size:13px;color:var(--muted);">Les numéros de recharge ne sont pas encore configurés. Contactez CLT Express.</div>`;
       return;
@@ -686,17 +690,38 @@
         selectedOperateur = el.dataset.op;
         grid.querySelectorAll('.momo-choice').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
-        const numBox = document.getElementById('momo-number-box');
-        numBox.innerHTML = `Envoyez le montant sur ce numéro <strong>${momoOperateurLabel(selectedOperateur)}</strong> :<br><strong>${escapeHTML(momoNumbers[selectedOperateur])}</strong>`;
-        numBox.classList.remove('hidden');
+        applyRechargeMode();
       });
     });
+  }
+
+  // Adapte la modale selon l'opérateur choisi : Wave en ligne (paiement direct)
+  // ou déclaration manuelle (Orange/MTN/Moov, ou Wave si le paiement en ligne
+  // n'est pas activé).
+  function applyRechargeMode(){
+    const numBox = document.getElementById('momo-number-box');
+    const refField = document.getElementById('recharge-reference-field');
+    const btn = document.getElementById('btn-submit-recharge');
+    const wavePay = selectedOperateur === 'wave' && waveEnLigneActif();
+    if (wavePay) {
+      numBox.innerHTML = `💳 Vous allez payer directement avec <strong>Wave</strong>. Votre solde sera crédité automatiquement dès le paiement confirmé.`;
+      numBox.classList.remove('hidden');
+      refField.classList.add('hidden');
+      btn.textContent = 'Payer avec Wave';
+    } else {
+      numBox.innerHTML = `Envoyez le montant sur ce numéro <strong>${momoOperateurLabel(selectedOperateur)}</strong> :<br><strong>${escapeHTML(momoNumbers[selectedOperateur] || '')}</strong>`;
+      numBox.classList.toggle('hidden', !selectedOperateur);
+      refField.classList.remove('hidden');
+      btn.textContent = 'Déclarer mon envoi';
+    }
   }
 
   function openRechargeModal(){
     selectedOperateur = null;
     document.getElementById('recharge-msg').innerHTML = '';
     document.getElementById('momo-number-box').classList.add('hidden');
+    document.getElementById('recharge-reference-field').classList.remove('hidden');
+    document.getElementById('btn-submit-recharge').textContent = 'Déclarer mon envoi';
     buildMomoGrid();
     document.getElementById('recharge-modal-overlay').classList.remove('hidden');
   }
@@ -839,6 +864,22 @@
     const reference = document.getElementById('recharge-reference').value.trim();
     if (!selectedOperateur) { msgBox.innerHTML = `<div class="msg msg-error">Choisissez un opérateur Mobile Money.</div>`; return; }
     if (!montant || montant < 100) { msgBox.innerHTML = `<div class="msg msg-error">Indiquez un montant valide (100 FCFA minimum).</div>`; return; }
+
+    // --- Wave payé en ligne : redirection vers la page de paiement Wave ---
+    if (selectedOperateur === 'wave' && waveEnLigneActif()) {
+      btn.disabled = true; btn.textContent = 'Redirection vers Wave...';
+      try {
+        const url = await initierRechargeWave(montant);
+        msgBox.innerHTML = `<div class="msg msg-success">Redirection vers Wave…</div>`;
+        window.location.href = url;
+      } catch (err) {
+        btn.disabled = false; btn.textContent = 'Payer avec Wave';
+        msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(err.message)}</div>`;
+      }
+      return;
+    }
+
+    // --- Déclaration manuelle (Orange / MTN / Moov, ou Wave hors ligne) ---
     btn.disabled = true; btn.textContent = 'Envoi...';
     const { error } = await supabaseClient.from('express_recharges').insert({
       coursier_id: currentUser.id,
@@ -952,6 +993,29 @@
         loadWallet();
       })
       .subscribe());
+
+    // Retour depuis la page de paiement Wave (success_url / error_url).
+    handleWaveReturn();
+  }
+
+  // Affiche un message quand le coursier revient de Wave. Le crédit du solde se
+  // fait via le webhook (confirmation serveur) puis remonte en temps réel — on
+  // ne crédite donc jamais côté navigateur, on informe seulement.
+  function handleWaveReturn(){
+    const params = new URLSearchParams(window.location.search);
+    const r = params.get('recharge');
+    if (!r) return;
+    const box = document.getElementById('recharge-msg');
+    if (r === 'wave_ok') {
+      openRechargeModal();
+      if (box) box.innerHTML = `<div class="msg msg-success">Merci ! Votre paiement Wave est en cours de confirmation. Votre solde sera crédité automatiquement dans un instant.</div>`;
+      loadRecharges(); loadWallet();
+    } else if (r === 'wave_ko') {
+      openRechargeModal();
+      if (box) box.innerHTML = `<div class="msg msg-error">Le paiement Wave a été annulé ou n'a pas abouti. Vous pouvez réessayer.</div>`;
+    }
+    // Nettoie l'URL pour ne pas re-afficher le message au rechargement.
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 
   init();
