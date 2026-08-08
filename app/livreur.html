@@ -132,6 +132,27 @@
     body{ padding-bottom:74px; }
     .subnav{ display:none !important; }
   }
+
+  /* ---- Barre d'onglets segmentée (grands écrans) — cohérente avec le tableau de bord équipe ---- */
+  .clt-toptabs-wrap{
+    position:sticky; top:0; z-index:60; background:#f5f7fa;
+    padding:14px 0 6px; margin:0 0 18px;
+  }
+  .clt-toptabs{
+    display:flex; gap:6px; background:#eef1f6; border-radius:16px; padding:6px;
+    box-shadow:0 4px 16px rgba(18,48,90,0.06); border:1px solid rgba(0,0,0,0.05);
+  }
+  .clt-toptab{
+    flex:1; border:none; background:none; cursor:pointer; font-family:inherit;
+    padding:12px 10px; border-radius:12px; font-weight:700; font-size:14px; color:#5b6472;
+    display:flex; align-items:center; justify-content:center; gap:7px; white-space:nowrap;
+    transition:background .18s ease, color .18s ease, box-shadow .18s ease; -webkit-tap-highlight-color:transparent;
+  }
+  .clt-toptab:hover{ color:#E26313; }
+  .clt-toptab.active{ background:#fff; color:#E26313; box-shadow:0 4px 12px rgba(18,48,90,0.13); }
+  /* L'ancienne barre d'onglets interne est remplacée par la barre segmentée du haut. */
+  #section-main > .tabs{ display:none !important; }
+  @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -262,6 +283,14 @@
       <span id="position-sharing-desc">Position non partagée — aucune récupération ou livraison en cours.</span>
     </div>
     <div id="position-sharing-msg"></div>
+  </div>
+
+  <div class="clt-toptabs-wrap">
+  <div class="clt-toptabs" role="tablist">
+  <button type="button" class="clt-toptab active" data-clttab="mes">📦 Mes colis</button>
+  <button type="button" class="clt-toptab" data-clttab="recup">🔄 Récupérations</button>
+  <button type="button" class="clt-toptab" data-clttab="tous">📋 Tous</button>
+  </div>
   </div>
 
   <div class="card" id="section-main">
@@ -627,6 +656,7 @@
     document.getElementById('panel-mes').classList.toggle('hidden', which !== 'mes');
     document.getElementById('panel-recup').classList.toggle('hidden', which !== 'recup');
     document.getElementById('panel-tous').classList.toggle('hidden', which !== 'tous');
+    document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === which));
     syncBottomNav(which);
     try { localStorage.setItem('clt_livreur_tab', which); } catch(e){}
   }
@@ -1342,6 +1372,16 @@
       }
     } catch(e){}
   })();
+
+  // Câblage de la barre d'onglets du haut (grands écrans)
+  document.querySelectorAll('.clt-toptab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      showTab(btn.dataset.clttab);
+      window.scrollTo({ top:0, behavior:'smooth' });
+    });
+  });
+  // Initialise l'état actif de la barre du haut au chargement
+  showTab(activePanel || 'mes');
 </script>
 </body>
 </html>

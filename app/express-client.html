@@ -150,6 +150,28 @@
   .clt-stepper.is-alert .st.now .c{ background:#c0392b; box-shadow:0 0 0 4px rgba(192,57,43,.18); }
   .clt-stepper.is-alert .st.now .l{ color:#c0392b; }
 
+  /* ---- Barre d'onglets segmentée (grands écrans) — cohérente avec le tableau de bord équipe ---- */
+  .clt-toptabs-wrap{
+    position:sticky; top:0; z-index:60; background:#f4f5f8;
+    padding:14px 0 6px; margin:0 0 18px;
+  }
+  .clt-toptabs{
+    display:flex; gap:6px; background:#eef1f6; border-radius:16px; padding:6px;
+    box-shadow:0 4px 16px rgba(18,48,90,0.06); border:1px solid rgba(0,0,0,0.05);
+  }
+  .clt-toptab{
+    flex:1; border:none; background:none; cursor:pointer; font-family:inherit;
+    padding:12px 10px; border-radius:12px; font-weight:700; font-size:14px; color:#5b6472;
+    display:flex; align-items:center; justify-content:center; gap:7px; white-space:nowrap;
+    transition:background .18s ease, color .18s ease, box-shadow .18s ease; -webkit-tap-highlight-color:transparent;
+  }
+  .clt-toptab:hover{ color:#6D28D9; }
+  .clt-toptab.active{ background:#fff; color:#6D28D9; box-shadow:0 4px 12px rgba(18,48,90,0.13); }
+  @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
+
+  /* ---- Sections de contenu cachées/visibles ---- */
+  #section-nouvelle.hidden, #section-courses.hidden{ display:none !important; }
+
   /* ---- Barre de navigation basse (mobile uniquement) ---- */
   .clt-bottomnav{ display:none; }
   @media(max-width:760px){
@@ -266,6 +288,13 @@
 <div class="wrap">
   <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
   <div class="page-sub">Commandez une livraison, où que vous soyez à Abidjan.</div>
+
+  <div class="clt-toptabs-wrap">
+  <div class="clt-toptabs" role="tablist">
+  <button type="button" class="clt-toptab active" data-clttab="section-nouvelle">🛵 Nouvelle</button>
+  <button type="button" class="clt-toptab" data-clttab="section-courses">📦 Mes courses</button>
+  </div>
+  </div>
 
   <div class="card" id="section-nouvelle">
     <h2 class="panel-subtitle">🛵 Nouvelle course</h2>
@@ -646,6 +675,16 @@
     if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.add('hidden'); });
   }
 
+  function showExpressClientTab(key){
+    ['section-nouvelle','section-courses'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden', id !== key);
+    });
+    document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === key));
+    document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === key));
+    try { localStorage.setItem('clt_express_client_tab', key); } catch(e){}
+  }
+
   async function init(){
     const session = await requireAuth();
     if (!session) return;
@@ -699,35 +738,26 @@
   </button>
 </nav>
 <script>
-  // Câblage de la barre du bas : défile vers la section correspondante et ouvre "Mon compte".
+  // Câblage de la barre du bas et des onglets du haut : bascule entre sections, gestion "Mon compte".
   (function(){
     const bar = document.getElementById('clt-bottomnav');
-    if (!bar) return;
-    const buttons = Array.from(bar.querySelectorAll('.nav'));
-    function setActive(target){
-      buttons.forEach(b => b.classList.toggle('active', b.dataset.target === target));
+    const go = (target) => {
+      if (target === '__compte'){
+        document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === '__compte'));
+        const acc = document.getElementById('btn-mon-compte'); if (acc) acc.click();
+        return;
+      }
+      showExpressClientTab(target);
+      window.scrollTo({ top:0, behavior:'smooth' });
+    };
+    if (bar){
+      bar.querySelectorAll('.nav').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.target)));
     }
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const target = btn.dataset.target;
-        if (target === '__compte'){
-          setActive(target);
-          const acc = document.getElementById('btn-mon-compte');
-          if (acc) acc.click();
-          return;
-        }
-        const el = document.getElementById(target);
-        if (el){ setActive(target); el.scrollIntoView({ behavior:'smooth', block:'start' }); }
-      });
-    });
-    const sections = ['section-nouvelle','section-courses']
-      .map(id => document.getElementById(id)).filter(Boolean);
-    if ('IntersectionObserver' in window && sections.length){
-      const obs = new IntersectionObserver((entries) => {
-        entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
-      }, { rootMargin:'-45% 0px -45% 0px', threshold:0 });
-      sections.forEach(s => obs.observe(s));
-    }
+    document.querySelectorAll('.clt-toptab').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.clttab)));
+    let saved = 'section-nouvelle';
+    try { saved = localStorage.getItem('clt_express_client_tab') || 'section-nouvelle'; } catch(e){}
+    if (!['section-nouvelle','section-courses'].includes(saved)) saved = 'section-nouvelle';
+    showExpressClientTab(saved);
   })();
 </script>
 </body>

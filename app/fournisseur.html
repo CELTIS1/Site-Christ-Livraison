@@ -25,6 +25,7 @@
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
      ============================================================ */
   :root{ --clt-green:#1F8A5B; --clt-green-dark:#166b46; }
+  .hidden{ display:none !important; }
   body{
     background:linear-gradient(180deg,#eefaf3 0%, #f5f7fa 260px, #f5f7fa 100%) !important;
   }
@@ -101,6 +102,25 @@
     body{ padding-bottom:74px; }
     .subnav{ display:none !important; }
   }
+
+  /* ---- Barre d'onglets segmentée (grands écrans) — cohérente avec le tableau de bord équipe ---- */
+  .clt-toptabs-wrap{
+    position:sticky; top:0; z-index:60; background:#f5f7fa;
+    padding:14px 0 6px; margin:0 0 18px;
+  }
+  .clt-toptabs{
+    display:flex; gap:6px; background:#eef1f6; border-radius:16px; padding:6px;
+    box-shadow:0 4px 16px rgba(18,48,90,0.06); border:1px solid rgba(0,0,0,0.05);
+  }
+  .clt-toptab{
+    flex:1; border:none; background:none; cursor:pointer; font-family:inherit;
+    padding:12px 10px; border-radius:12px; font-weight:700; font-size:14px; color:#5b6472;
+    display:flex; align-items:center; justify-content:center; gap:7px; white-space:nowrap;
+    transition:background .18s ease, color .18s ease, box-shadow .18s ease; -webkit-tap-highlight-color:transparent;
+  }
+  .clt-toptab:hover{ color:#1F8A5B; }
+  .clt-toptab.active{ background:#fff; color:#1F8A5B; box-shadow:0 4px 12px rgba(18,48,90,0.13); }
+  @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -215,6 +235,14 @@
 <div class="wrap">
   <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
   <div class="page-sub">Ajoutez vos colis à livrer et suivez leur statut en temps réel.</div>
+
+  <div class="clt-toptabs-wrap">
+  <div class="clt-toptabs" role="tablist">
+  <button type="button" class="clt-toptab active" data-clttab="section-ajouter">➕ Ajouter</button>
+  <button type="button" class="clt-toptab" data-clttab="section-recap">📊 Récap</button>
+  <button type="button" class="clt-toptab" data-clttab="section-colis">📦 Mes colis</button>
+  </div>
+  </div>
 
   <div class="card" id="section-ajouter">
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'ajouter-content')">
@@ -349,6 +377,23 @@
       });
     };
     container.addEventListener('transitionend', onEnd);
+  }
+
+  function showFournisseurTab(key){
+    ['section-ajouter','section-recap','section-colis'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden', id !== key);
+    });
+    document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === key));
+    document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === key));
+    try { localStorage.setItem('clt_fournisseur_tab', key); } catch(e){}
+  }
+  function neutralizeCollapsibles(){
+    document.querySelectorAll('.collapsible-content').forEach(c => { c.classList.add('open'); c.style.maxHeight = 'none'; });
+    document.querySelectorAll('.collapsible-header').forEach(h => {
+      h.removeAttribute('onclick'); h.style.cursor = 'default';
+      const arr = h.querySelector('.collapse-arrow'); if (arr) arr.style.display = 'none';
+    });
   }
 
   function toggleSection(header, contentId){
@@ -1450,40 +1495,27 @@
   </button>
 </nav>
 <script>
-  // Câblage de la barre du bas : défile vers la section correspondante et ouvre "Mon compte".
-  // Un observateur met en surbrillance l'icône de la section actuellement visible pendant le défilement.
+  // Navigation par onglets : affiche une seule section à la fois, avec barre en haut (grand écran) et bas (petit écran).
   (function(){
+    neutralizeCollapsibles();
     const bar = document.getElementById('clt-bottomnav');
-    if (!bar) return;
-    const buttons = Array.from(bar.querySelectorAll('.nav'));
-    function setActive(target){
-      buttons.forEach(b => b.classList.toggle('active', b.dataset.target === target));
+    const go = (target) => {
+      if (target === '__compte'){
+        document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === '__compte'));
+        const acc = document.getElementById('btn-mon-compte'); if (acc) acc.click();
+        return;
+      }
+      showFournisseurTab(target);
+      window.scrollTo({ top:0, behavior:'smooth' });
+    };
+    if (bar){
+      bar.querySelectorAll('.nav').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.target)));
     }
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const target = btn.dataset.target;
-        if (target === '__compte'){
-          setActive(target);
-          const acc = document.getElementById('btn-mon-compte');
-          if (acc) acc.click();
-          return;
-        }
-        const el = document.getElementById(target);
-        if (el){
-          setActive(target);
-          el.scrollIntoView({ behavior:'smooth', block:'start' });
-        }
-      });
-    });
-    // Scroll-spy : suit la section visible pour garder la barre synchronisée.
-    const sections = ['section-ajouter','section-recap','section-colis']
-      .map(id => document.getElementById(id)).filter(Boolean);
-    if ('IntersectionObserver' in window && sections.length){
-      const obs = new IntersectionObserver((entries) => {
-        entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
-      }, { rootMargin:'-45% 0px -45% 0px', threshold:0 });
-      sections.forEach(s => obs.observe(s));
-    }
+    document.querySelectorAll('.clt-toptab').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.clttab)));
+    let saved = 'section-ajouter';
+    try { saved = localStorage.getItem('clt_fournisseur_tab') || 'section-ajouter'; } catch(e){}
+    if (!['section-ajouter','section-recap','section-colis'].includes(saved)) saved = 'section-ajouter';
+    showFournisseurTab(saved);
   })();
 </script>
 </body>

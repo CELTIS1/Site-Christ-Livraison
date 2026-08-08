@@ -14,7 +14,7 @@
 
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même. */
 
-const CACHE_VERSION = 'clt-shell-v6';
+const CACHE_VERSION = 'clt-shell-v7';
 
 // Uniquement des ressources à URL stable (sans paramètre de version) : les fichiers versionnés
 // (style.css?v=..., config.js?v=...) sont mis en cache automatiquement au premier chargement réel

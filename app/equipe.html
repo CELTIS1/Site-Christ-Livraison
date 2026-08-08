@@ -110,9 +110,14 @@
   .subnav{ display:none !important; }
 
   /* Barre d'onglets segmentée (grands écrans — Option B) */
+  /* Conteneur figé : fond opaque = couleur de page, masque le contenu qui défile derrière. */
+  .clt-toptabs-wrap{
+    position:sticky; top:0; z-index:60; background:#f5f7fa;
+    padding:14px 0 6px; margin:0 0 18px;
+  }
   .clt-toptabs{
     display:flex; gap:6px; background:#e9eef6; border-radius:16px; padding:6px;
-    margin:0 0 24px; box-shadow:0 4px 16px rgba(18,48,90,0.06);
+    box-shadow:0 4px 16px rgba(18,48,90,0.06);
     border:1px solid rgba(27,67,116,0.06);
   }
   .clt-toptab{
@@ -134,7 +139,7 @@
 
   /* Sur petit écran : la barre d'onglets du haut disparaît au profit de la barre du bas (Option C) */
   @media(max-width:760px){
-    .clt-toptabs{ display:none !important; }
+    .clt-toptabs-wrap{ display:none !important; }
   }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -271,12 +276,14 @@
 
 <!-- Barre d'onglets (grands écrans). Les panneaux sont remplis dynamiquement au chargement
      en déplaçant les sections existantes (voir relocateEquipeSections()). -->
+<div class="clt-toptabs-wrap">
 <div class="clt-toptabs" id="clt-toptabs" role="tablist">
 <button type="button" class="clt-toptab active" data-eqtab="colis">📦 Colis <span id="alert-badge-slot"></span></button>
 <button type="button" class="clt-toptab" data-eqtab="suivi">🗺️ Suivi</button>
 <button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
 <button type="button" class="clt-toptab" data-eqtab="comptes">👥 Comptes</button>
 <button type="button" class="clt-toptab hidden" id="eqtab-btn-express" data-eqtab="express">🏍️ Express</button>
+</div>
 </div>
 
 <div class="eq-tabpanel" id="eqpanel-colis"></div>
@@ -3563,6 +3570,11 @@ init();
     // 🏍️ Express : courses + recharges (onglet entièrement réservé à l'admin)
     put('eqpanel-express', byId('section-express-courses'));
     put('eqpanel-express', byId('section-express-recharges'));
+
+    // Ces panneaux démarraient masqués (ancienne navigation interne par onglets
+    // Colis/Journal/Rapports/Compta). Désormais rendus visibles en permanence
+    // dans leur nouvel onglet respectif (sections toujours ouvertes).
+    ['panel-journal','panel-rapports','panel-compta'].forEach(id => byId(id)?.classList.remove('hidden'));
 
     // Masque par défaut les éléments réservés à l'admin ; init() les réaffiche si l'utilisateur est admin.
     ['section-stats','section-gerer-equipe','section-tous-comptes',
