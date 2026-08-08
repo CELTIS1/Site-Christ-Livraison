@@ -298,6 +298,13 @@
 <input type="tel" id="lv-phone" required placeholder="07 00 00 00 00" inputmode="tel" pattern="[0-9\s.\-]{10,14}" title="Numéro ivoirien à 10 chiffres, ex : 07 00 00 00 00">
 </div>
 </div>
+<div class="field-row">
+<div class="field">
+<label>Mot de passe de connexion</label>
+<input type="password" id="lv-password" required minlength="6" placeholder="6 caractères minimum" autocomplete="new-password">
+<div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Communiquez ce mot de passe au livreur : il pourra se connecter immédiatement, puis le changer lui-même depuis « Mon compte ».</div>
+</div>
+</div>
 <button type="submit" class="btn" id="btn-submit-livreur">Créer le compte livreur</button>
 </form>
 </div>
@@ -321,6 +328,13 @@
 <div class="field">
 <label>Destination</label>
 <input type="text" id="add-dest" placeholder="Ex : Cocody, Angré">
+</div>
+</div>
+<div class="field-row">
+<div class="field">
+<label>Téléphone du destinataire (optionnel)</label>
+<input type="tel" id="add-dest-tel" placeholder="Ex : 07 01 02 03 04" inputmode="tel">
+<div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Permet au livreur de contacter le destinataire et de le prévenir par WhatsApp avec le lien de suivi.</div>
 </div>
 </div>
 <div class="field-row" style="margin-bottom:2px;">
@@ -1432,9 +1446,15 @@ btn.disabled = true; btn.textContent = 'Création...';
 
 const full_name = document.getElementById('lv-fullname').value.trim();
 const phone = document.getElementById('lv-phone').value.trim();
+const password = document.getElementById('lv-password').value;
 
 if (!isValidPhoneCI(phone)) {
 addLivreurMsg("Numéro de téléphone invalide. Utilisez un numéro ivoirien à 10 chiffres (ex : 07 00 00 00 00).", "error");
+btn.disabled = false; btn.textContent = 'Créer le compte livreur';
+return;
+}
+if (!password || password.length < 6) {
+addLivreurMsg("Le mot de passe doit contenir au moins 6 caractères.", "error");
 btn.disabled = false; btn.textContent = 'Créer le compte livreur';
 return;
 }
@@ -1448,7 +1468,7 @@ headers: {
 'Authorization': `Bearer ${session.access_token}`,
 'apikey': SUPABASE_KEY,
 },
-body: JSON.stringify({ full_name, phone }),
+body: JSON.stringify({ full_name, phone, password }),
 });
 const result = await res.json();
 
@@ -1473,6 +1493,7 @@ btn.disabled = true; btn.textContent = 'Ajout...';
 
 const fournisseur_id = document.getElementById('add-fournisseur').value;
 const destination = document.getElementById('add-dest').value.trim();
+const destinataire_telephone = (document.getElementById('add-dest-tel').value || '').trim() || null;
 const commune_recuperation = document.getElementById('add-pickup-commune').value || null;
 const adresse_recuperation = document.getElementById('add-pickup-adresse').value.trim() || null;
 const description = document.getElementById('add-desc').value.trim();
@@ -1500,10 +1521,19 @@ photo_url = await uploadPhoto(pickedPhoto, currentUser.id);
 if (!photo_url) photoUploadFailed = true;
 }
 
-const { error } = await supabaseClient.from('colis').insert([{
+const colisPayload = {
 fournisseur_id, destination, description, montant, montant_article, montant_livraison, photo_url,
-commune_recuperation, adresse_recuperation
-}]);
+commune_recuperation, adresse_recuperation, destinataire_telephone
+};
+let { error } = await supabaseClient.from('colis').insert([colisPayload]);
+// Rétro-compatibilité : si la colonne destinataire_telephone n'existe pas encore
+// (migration SQL pas encore exécutée), on réessaie sans ce champ pour ne jamais
+// bloquer l'enregistrement du colis. Le téléphone sera simplement ignoré tant
+// que la migration n'est pas lancée.
+if (error && /destinataire_telephone|column|colonne/i.test(error.message || '')) {
+const { destinataire_telephone: _omit, ...sansTel } = colisPayload;
+({ error } = await supabaseClient.from('colis').insert([sansTel]));
+}
 
 btn.disabled = false; btn.textContent = 'Ajouter le colis';
 
