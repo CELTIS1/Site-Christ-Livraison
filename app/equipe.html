@@ -104,6 +104,38 @@
     body{ padding-bottom:74px; }
     .subnav{ display:none !important; }
   }
+
+  /* ---- Refonte navigation par onglets ---- */
+  /* L'ancien sous-menu d'ancres est remplacé par une barre d'onglets. */
+  .subnav{ display:none !important; }
+
+  /* Barre d'onglets segmentée (grands écrans — Option B) */
+  .clt-toptabs{
+    display:flex; gap:6px; background:#e9eef6; border-radius:16px; padding:6px;
+    margin:0 0 24px; box-shadow:0 4px 16px rgba(18,48,90,0.06);
+    border:1px solid rgba(27,67,116,0.06);
+  }
+  .clt-toptab{
+    flex:1; border:none; background:none; cursor:pointer; font-family:inherit;
+    padding:12px 10px; border-radius:12px; font-weight:700; font-size:14px;
+    color:#5b6472; display:flex; align-items:center; justify-content:center; gap:7px;
+    white-space:nowrap; transition:background .18s ease, color .18s ease, box-shadow .18s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .clt-toptab:hover{ color:var(--clt-navy2,#1B4374); }
+  .clt-toptab.active{
+    background:#fff; color:var(--clt-navy-dark,#12305a);
+    box-shadow:0 4px 12px rgba(18,48,90,0.13);
+  }
+  .clt-toptab .alert-badge{ margin-left:2px; }
+
+  .eq-tabpanel{ animation:eqfade .18s ease; }
+  @keyframes eqfade{ from{ opacity:.35; } to{ opacity:1; } }
+
+  /* Sur petit écran : la barre d'onglets du haut disparaît au profit de la barre du bas (Option C) */
+  @media(max-width:760px){
+    .clt-toptabs{ display:none !important; }
+  }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -236,6 +268,22 @@
 <div class="wrap">
 <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
 <div class="page-sub">Voici le suivi de tous les colis enregistrés par les clients, en temps réel.</div>
+
+<!-- Barre d'onglets (grands écrans). Les panneaux sont remplis dynamiquement au chargement
+     en déplaçant les sections existantes (voir relocateEquipeSections()). -->
+<div class="clt-toptabs" id="clt-toptabs" role="tablist">
+<button type="button" class="clt-toptab active" data-eqtab="colis">📦 Colis <span id="alert-badge-slot"></span></button>
+<button type="button" class="clt-toptab" data-eqtab="suivi">🗺️ Suivi</button>
+<button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
+<button type="button" class="clt-toptab" data-eqtab="comptes">👥 Comptes</button>
+<button type="button" class="clt-toptab hidden" id="eqtab-btn-express" data-eqtab="express">🏍️ Express</button>
+</div>
+
+<div class="eq-tabpanel" id="eqpanel-colis"></div>
+<div class="eq-tabpanel hidden" id="eqpanel-suivi"></div>
+<div class="eq-tabpanel hidden" id="eqpanel-finances"></div>
+<div class="eq-tabpanel hidden" id="eqpanel-comptes"></div>
+<div class="eq-tabpanel hidden" id="eqpanel-express"></div>
 
 <div class="card" id="section-presence">
 <h2 class="panel-subtitle">🟢 En ligne actuellement</h2>
@@ -3256,6 +3304,10 @@ console.error('Erreur initialisation présence', e);
 if (isAdmin) {
 document.getElementById('role-pill').textContent = 'Administrateur';
 document.getElementById('admin-section').classList.remove('hidden');
+// Refonte par onglets : réaffiche les sections et l'onglet Express réservés à l'administrateur.
+['section-stats','section-gerer-equipe','section-tous-comptes',
+ 'section-express-courses','section-express-recharges',
+ 'eqtab-btn-express','bottomnav-express'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
 document.getElementById('subnav-gerer-equipe').classList.remove('hidden');
 document.getElementById('subnav-tous-comptes').classList.remove('hidden');
 document.getElementById('subnav-stats').classList.remove('hidden');
@@ -3406,55 +3458,141 @@ if (fresh.length > 0) setTimeout(() => window.livreurMap.invalidateSize(), 50);
 init();
 </script>
 
-<!-- Barre de navigation basse (mobile) : raccourcis vers les mêmes onglets que le haut. -->
+<!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
   <button type="button" class="nav active" data-nav="colis">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
     Colis
   </button>
-  <button type="button" class="nav" data-nav="journal">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-3 1.5V6a2 2 0 0 1 2-2z"/><path d="M8 8h7M8 12h7"/></svg>
-    Journal
+  <button type="button" class="nav" data-nav="suivi">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-11a7 7 0 0 0-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+    Suivi
   </button>
-  <button type="button" class="nav" data-nav="rapports">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>
-    Rapports
+  <button type="button" class="nav" data-nav="finances">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.2c0-1.1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.9c0 2.6-5 1.4-5 3.9 0 1.2 1.1 1.9 2.5 1.9s2.5-.6 2.5-1.7"/></svg>
+    Finances
   </button>
-  <button type="button" class="nav" data-nav="compta">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
-    Compta
+  <button type="button" class="nav" data-nav="comptes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.1 2.9-5.3 6.5-5.3s6.5 2.2 6.5 5.3"/><path d="M16.5 5.2a3 3 0 0 1 0 5.6M18 14.9c2.2.6 3.8 2.3 3.8 4.6"/></svg>
+    Comptes
   </button>
-  <button type="button" class="nav" data-nav="compte">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
-    Compte
+  <button type="button" class="nav hidden" id="bottomnav-express" data-nav="express">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="2.5"/><circle cx="18.5" cy="17" r="2.5"/><path d="M8 17h6l3-6h-4l-2-3H8"/><path d="M14 8h3"/></svg>
+    Express
   </button>
 </nav>
 <script>
-  // Câblage de la barre du bas : réutilise showMainTab() (onglets existants) et le bouton "Mon compte".
-  (function(){
-    const bar = document.getElementById('clt-bottomnav');
-    if (!bar) return;
-    bar.querySelectorAll('.nav').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const target = btn.dataset.nav;
-        if (target === 'compte'){
-          bar.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b === btn));
-          const acc = document.getElementById('btn-mon-compte');
-          if (acc) acc.click();
-          return;
-        }
-        if (typeof showMainTab === 'function') showMainTab(target);
-        const tabs = document.querySelector('.tabs');
-        if (tabs) tabs.scrollIntoView({ behavior:'smooth', block:'start' });
-      });
+  // ---------- Refonte : navigation par onglets (Option B en haut sur grand écran, Option C en bas sur mobile) ----------
+  // Les 5 onglets regroupent les anciennes sections. On DÉPLACE les sections existantes dans les
+  // panneaux d'onglets (sans réécrire leur HTML) pour préserver tous les identifiants, formulaires
+  // et écouteurs d'événements déjà câblés ailleurs dans le code.
+  const EQ_TABS = ['colis','suivi','finances','comptes','express'];
+
+  function showEquipeTab(key){
+    if (!EQ_TABS.includes(key)) key = 'colis';
+    // Ne jamais activer un onglet masqué (ex : Express réservé à l'admin).
+    const btn = document.querySelector('#clt-toptabs .clt-toptab[data-eqtab="'+key+'"]');
+    if (btn && btn.classList.contains('hidden')) key = 'colis';
+    EQ_TABS.forEach(k => {
+      const p = document.getElementById('eqpanel-'+k);
+      if (p) p.classList.toggle('hidden', k !== key);
     });
-    // Restaure le dernier onglet consulté après un rechargement.
-    try {
-      const saved = localStorage.getItem('clt_equipe_tab');
-      if (saved && ['colis','journal','rapports','compta'].includes(saved) && typeof showMainTab === 'function') {
-        showMainTab(saved);
-      }
-    } catch(e){}
+    document.querySelectorAll('#clt-toptabs .clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.eqtab === key));
+    document.querySelectorAll('#clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.nav === key));
+    // Réajuste les tableaux "sticky" et la carte Leaflet une fois le panneau réaffiché.
+    if (key === 'suivi'){
+      if (window.livreurMap) setTimeout(() => { try { window.livreurMap.invalidateSize(); } catch(e){} }, 60);
+      if (typeof forceStickyReflow === 'function') forceStickyReflow(document.getElementById('panel-journal'));
+    }
+    if (key === 'finances' && typeof forceStickyReflow === 'function'){
+      forceStickyReflow(document.getElementById('panel-rapports'));
+      forceStickyReflow(document.getElementById('panel-compta'));
+    }
+    try { localStorage.setItem('clt_equipe_tab_v2', key); } catch(e){}
+  }
+
+  function relocateEquipeSections(){
+    const wrapInCard = (el) => {
+      if (!el) return el;
+      const card = document.createElement('div');
+      card.className = 'card';
+      el.parentNode.insertBefore(card, el);
+      card.appendChild(el);
+      return card;
+    };
+    const put = (panelId, el) => {
+      const panel = document.getElementById(panelId);
+      if (panel && el) panel.appendChild(el);
+    };
+    const byId = (id) => document.getElementById(id);
+
+    // 📦 Colis : ajouter un colis + liste de tous les colis
+    put('eqpanel-colis', byId('section-ajouter-colis'));
+    put('eqpanel-colis', wrapInCard(byId('panel-colis')));
+
+    // 🗺️ Suivi : présence en ligne + carte + journal de bord
+    put('eqpanel-suivi', byId('section-presence'));
+    put('eqpanel-suivi', byId('section-carte'));
+    put('eqpanel-suivi', wrapInCard(byId('panel-journal')));
+
+    // 💰 Finances : rapports + comptabilité + statistiques (stats = admin)
+    put('eqpanel-finances', wrapInCard(byId('panel-rapports')));
+    put('eqpanel-finances', wrapInCard(byId('panel-compta')));
+    put('eqpanel-finances', byId('section-stats'));
+
+    // 👥 Comptes : créer livreur + comptes en attente + réinitialisations + (admin) équipe & tous les comptes
+    put('eqpanel-comptes', byId('section-livreur'));
+    put('eqpanel-comptes', byId('section-pending'));
+    put('eqpanel-comptes', byId('section-reset'));
+    put('eqpanel-comptes', byId('section-gerer-equipe'));
+    put('eqpanel-comptes', byId('section-tous-comptes'));
+
+    // 🏍️ Express : courses + recharges (onglet entièrement réservé à l'admin)
+    put('eqpanel-express', byId('section-express-courses'));
+    put('eqpanel-express', byId('section-express-recharges'));
+
+    // Masque par défaut les éléments réservés à l'admin ; init() les réaffiche si l'utilisateur est admin.
+    ['section-stats','section-gerer-equipe','section-tous-comptes',
+     'section-express-courses','section-express-recharges',
+     'eqtab-btn-express','bottomnav-express'].forEach(id => byId(id)?.classList.add('hidden'));
+
+    // Neutralise le comportement repliable : toutes les sections restent ouvertes.
+    document.querySelectorAll('.collapsible-content').forEach(c => { c.classList.add('open'); c.style.maxHeight = 'none'; });
+    document.querySelectorAll('.collapsible-header').forEach(h => {
+      h.removeAttribute('onclick');
+      h.style.cursor = 'default';
+      const arr = h.querySelector('.collapse-arrow');
+      if (arr) arr.style.display = 'none';
+    });
+
+    // Déplace la pastille d'alerte dans le bouton d'onglet « Colis ».
+    const badge = byId('alert-badge');
+    const slot = byId('alert-badge-slot');
+    if (badge && slot) slot.appendChild(badge);
+
+    // Retire l'ancienne barre d'onglets interne (désormais inutile).
+    byId('section-main')?.remove();
+  }
+
+  (function(){
+    relocateEquipeSections();
+
+    document.querySelectorAll('#clt-toptabs .clt-toptab').forEach(btn => {
+      btn.addEventListener('click', () => showEquipeTab(btn.dataset.eqtab));
+    });
+    const bar = document.getElementById('clt-bottomnav');
+    if (bar){
+      bar.querySelectorAll('.nav').forEach(btn => {
+        btn.addEventListener('click', () => {
+          showEquipeTab(btn.dataset.nav);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    }
+
+    let saved = 'colis';
+    try { saved = localStorage.getItem('clt_equipe_tab_v2') || 'colis'; } catch(e){}
+    showEquipeTab(saved);
   })();
 </script>
 </body>
