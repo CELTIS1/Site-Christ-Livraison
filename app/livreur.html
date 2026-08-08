@@ -405,8 +405,54 @@
     });
   })();
 
+  // Compresse/redimensionne une photo avant l'envoi. Les photos des téléphones font souvent
+  // plusieurs Mo, ce qui rend l'envoi long sur les données mobiles (surtout en zone à faible
+  // réseau). On réduit la plus grande dimension à `maxDim` px et on ré-encode en JPEG : le poids
+  // chute fortement tout en gardant une qualité largement suffisante pour une preuve de livraison.
+  // En cas d'échec (format non image, navigateur ancien...), on renvoie le fichier d'origine
+  // pour ne JAMAIS empêcher l'envoi.
+  async function compressImage(file, { maxDim = 1280, quality = 0.8 } = {}) {
+    try {
+      if (!file || !file.type || !file.type.indexOf || file.type.indexOf('image/') !== 0) return file;
+      const dataUrl = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
+      const img = await new Promise((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = reject;
+        im.src = dataUrl;
+      });
+      let width = img.naturalWidth || img.width;
+      let height = img.naturalHeight || img.height;
+      if (!width || !height) return file;
+      if (Math.max(width, height) > maxDim) {
+        const ratio = maxDim / Math.max(width, height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+      // On ne garde la version compressée que si elle est réellement plus légère.
+      return (blob && blob.size < file.size) ? blob : file;
+    } catch (e) {
+      console.warn("Compression de la photo impossible, envoi de l'original :", e);
+      return file;
+    }
+  }
+
   async function uploadPhoto(file, userId, onProgress){
-    const ext = file.name.split('.').pop();
+    file = await compressImage(file);
+    // Extension déduite du type MIME (une image compressée devient un Blob JPEG sans nom de
+    // fichier), avec repli sur l'extension du nom d'origine puis sur "jpg".
+    const mimeExt = (file.type && file.type.split('/')[1]) ? file.type.split('/')[1].replace('jpeg', 'jpg') : null;
+    const nameExt = (file.name && file.name.indexOf('.') !== -1) ? file.name.split('.').pop() : null;
+    const ext = mimeExt || nameExt || 'jpg';
     const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
 
     // Sans callback de progression (ex : synchronisation hors-ligne en tâche de fond), on

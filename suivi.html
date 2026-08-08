@@ -89,6 +89,8 @@
   .result-row .value{color:#222; font-weight:600; text-align:right;}
 
   .result-photo-wrap{margin-top:4px;}
+  .result-photo-label{margin-top:16px; font-size:12.5px; font-weight:700; color:var(--navy);}
+  .result-photo-label + .result-photo{margin-top:8px;}
   .result-photo{
     width:100%; max-height:360px; object-fit:cover; border-radius:14px; margin-top:14px;
     box-shadow:0 4px 14px rgba(27,67,116,0.12);
@@ -167,11 +169,11 @@
   // ---------- Suivi public de colis, sans connexion ----------
   // Page volontairement autonome (hors du dossier /app) : accessible sans compte.
   // La requête Supabase ne lit que des colonnes non sensibles (id, numero, statut, description,
-  // destination, commune_destination, photo_url, montant/montant_article/montant_livraison,
-  // created_at) : le destinataire peut ainsi voir la photo et le montant marqués sur son colis,
-  // ce qui l'aide à le reconnaître. En revanche, l'identité du client/fournisseur, les
-  // observations internes et la photo de preuve de livraison restent toujours exclues de cette
-  // vue publique.
+  // destination, commune_destination, photo_url, photo_livraison_url,
+  // montant/montant_article/montant_livraison, created_at) : le destinataire peut ainsi voir la
+  // photo et le montant marqués sur son colis (pour le reconnaître) ainsi que la photo de preuve
+  // de livraison une fois le colis livré. En revanche, l'identité du client/fournisseur et les
+  // observations internes restent toujours exclues de cette vue publique.
   const SUPABASE_URL = "https://xkfltqjbmolmdwdafzcx.supabase.co";
   const SUPABASE_KEY = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -232,8 +234,8 @@
   // (plutôt qu'un abonnement Supabase Realtime sur la table "colis") : une souscription Realtime
   // porterait sur la table d'origine et non sur la vue restreinte "colis_suivi_public", avec le
   // risque, selon la configuration des politiques de sécurité (RLS) et de la publication Realtime
-  // du projet, de transmettre au navigateur des colonnes sensibles (montant, identité du client,
-  // observations internes, photo de preuve de livraison) que cette page ne doit jamais exposer.
+  // du projet, de transmettre au navigateur des colonnes sensibles (identité du client,
+  // observations internes) que cette page ne doit jamais exposer.
   // Le rafraîchissement périodique, lui, repasse systématiquement par la vue publique et garantit
   // donc que la même restriction de colonnes s'applique à chaque actualisation.
   let refreshTimer = null;
@@ -250,14 +252,34 @@
   // identifiant technique (UUID), au cas où l'un d'eux aurait déjà été partagé.
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+  // Colonnes de base toujours exposées par la vue publique colis_suivi_public.
+  const SUIVI_COLS_BASE = "id, numero, statut, description, destination, commune_destination, photo_url, montant, montant_article, montant_livraison, created_at";
+  // photo_livraison_url (preuve de livraison prise par le livreur) n'est disponible que si la
+  // vue publique a été mise à jour pour l'exposer. Tant que ce n'est pas le cas, la requête
+  // renverrait une erreur « colonne inconnue » : on bascule alors définitivement sur les
+  // colonnes de base pour ne JAMAIS casser le suivi. Une fois la vue mise à jour côté Supabase,
+  // la photo de preuve apparaît automatiquement, sans nouvelle mise en ligne.
+  let suiviHasPhotoLivraison = true;
+
   async function fetchColis(query) {
     const value = query.trim();
     const column = UUID_RE.test(value) ? "id" : "numero";
-    return await supabaseClient
+    const key = column === "numero" ? value.toUpperCase() : value;
+    const cols = suiviHasPhotoLivraison ? SUIVI_COLS_BASE + ", photo_livraison_url" : SUIVI_COLS_BASE;
+    let res = await supabaseClient
       .from("colis_suivi_public")
-      .select("id, numero, statut, description, destination, commune_destination, photo_url, montant, montant_article, montant_livraison, created_at")
-      .eq(column, column === "numero" ? value.toUpperCase() : value)
+      .select(cols)
+      .eq(column, key)
       .maybeSingle();
+    if (res.error && suiviHasPhotoLivraison) {
+      suiviHasPhotoLivraison = false;
+      res = await supabaseClient
+        .from("colis_suivi_public")
+        .select(SUIVI_COLS_BASE)
+        .eq(column, key)
+        .maybeSingle();
+    }
+    return res;
   }
 
   function renderColis(data) {
@@ -269,6 +291,12 @@
       ${data.photo_url ? `
         <div class="result-photo-wrap">
           <img src="${data.photo_url}" class="result-photo" alt="Photo du colis${data.description ? ' : ' + escapeHTML(data.description) : ''}">
+        </div>
+      ` : ''}
+      ${data.photo_livraison_url ? `
+        <div class="result-photo-wrap">
+          <div class="result-photo-label">📸 Preuve de livraison</div>
+          <img src="${data.photo_livraison_url}" class="result-photo" alt="Photo de preuve de livraison">
         </div>
       ` : ''}
       <div class="result-row">
