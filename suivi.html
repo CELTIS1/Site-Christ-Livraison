@@ -169,11 +169,12 @@
   // ---------- Suivi public de colis, sans connexion ----------
   // Page volontairement autonome (hors du dossier /app) : accessible sans compte.
   // La requête Supabase ne lit que des colonnes non sensibles (id, numero, statut, description,
-  // destination, commune_destination, photo_url, photo_livraison_url,
-  // montant/montant_article/montant_livraison, created_at) : le destinataire peut ainsi voir la
-  // photo et le montant marqués sur son colis (pour le reconnaître) ainsi que la photo de preuve
-  // de livraison une fois le colis livré. En revanche, l'identité du client/fournisseur et les
-  // observations internes restent toujours exclues de cette vue publique.
+  // destination, commune_destination, photo_url, photo_livraison_url, montant_total, created_at,
+  // et — vue enrichie — livreur_nom/livreur_photo_url/creneau_estime) : le destinataire voit la
+  // photo et le montant total à régler, la preuve de livraison une fois livré, et le livreur en
+  // charge. Le DÉTAIL des montants (montant_article / montant_livraison) n'est plus exposé
+  // publiquement : la vue renvoie désormais un unique montant_total calculé côté serveur.
+  // L'identité du client/fournisseur et les observations internes restent toujours exclues.
   const SUPABASE_URL = "https://xkfltqjbmolmdwdafzcx.supabase.co";
   const SUPABASE_KEY = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -211,6 +212,11 @@
   }
 
   function montantTotalColis(c) {
+    // Nouvelle vue publique : la colonne montant_total est déjà calculée côté serveur, ce qui
+    // évite d'exposer publiquement le détail (montant_article / montant_livraison). On la
+    // privilégie dès qu'elle est disponible.
+    if (c.montant_total !== null && c.montant_total !== undefined) return c.montant_total;
+    // Ancienne vue (rétro-compatibilité, avant migration) : on recompose le total localement.
     const aDetail = (c.montant_article !== null && c.montant_article !== undefined) ||
       (c.montant_livraison !== null && c.montant_livraison !== undefined);
     if (aDetail) return (Number(c.montant_article) || 0) + (Number(c.montant_livraison) || 0);
@@ -252,32 +258,41 @@
   // identifiant technique (UUID), au cas où l'un d'eux aurait déjà été partagé.
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  // Colonnes de base toujours exposées par la vue publique colis_suivi_public.
-  const SUIVI_COLS_BASE = "id, numero, statut, description, destination, commune_destination, photo_url, montant, montant_article, montant_livraison, created_at";
-  // photo_livraison_url (preuve de livraison prise par le livreur) n'est disponible que si la
-  // vue publique a été mise à jour pour l'exposer. Tant que ce n'est pas le cas, la requête
-  // renverrait une erreur « colonne inconnue » : on bascule alors définitivement sur les
-  // colonnes de base pour ne JAMAIS casser le suivi. Une fois la vue mise à jour côté Supabase,
-  // la photo de preuve apparaît automatiquement, sans nouvelle mise en ligne.
-  let suiviHasPhotoLivraison = true;
+  // La vue publique colis_suivi_public a connu plusieurs versions. Pour ne JAMAIS casser le suivi
+  // quel que soit l'état de la base, on tente les jeux de colonnes du plus récent au plus ancien
+  // et on retient le premier qui répond sans erreur « colonne inconnue » :
+  //   1. Vue enrichie : montant_total (calculé côté serveur, sans exposer le détail article/
+  //      livraison), + preuve de livraison, + nom/ETA du livreur pour un suivi plus riche.
+  //   2. Vue avec montant_total + preuve de livraison seulement.
+  //   3. Ancienne vue : montant + détail (rétro-compatibilité avant migration).
+  const COLS_COMMON = "id, numero, statut, description, destination, commune_destination, photo_url, created_at";
+  const SUIVI_COL_VARIANTS = [
+    COLS_COMMON + ", montant_total, photo_livraison_url, livreur_nom, livreur_photo_url, creneau_estime",
+    COLS_COMMON + ", montant_total, photo_livraison_url",
+    COLS_COMMON + ", montant_total",
+    COLS_COMMON + ", montant, montant_article, montant_livraison, photo_livraison_url",
+    COLS_COMMON + ", montant, montant_article, montant_livraison",
+  ];
+  // Une fois qu'un variant fonctionne, on le mémorise pour éviter de re-tâtonner à chaque requête.
+  let suiviColsIndex = 0;
 
   async function fetchColis(query) {
     const value = query.trim();
     const column = UUID_RE.test(value) ? "id" : "numero";
     const key = column === "numero" ? value.toUpperCase() : value;
-    const cols = suiviHasPhotoLivraison ? SUIVI_COLS_BASE + ", photo_livraison_url" : SUIVI_COLS_BASE;
-    let res = await supabaseClient
-      .from("colis_suivi_public")
-      .select(cols)
-      .eq(column, key)
-      .maybeSingle();
-    if (res.error && suiviHasPhotoLivraison) {
-      suiviHasPhotoLivraison = false;
+    let res;
+    for (let i = suiviColsIndex; i < SUIVI_COL_VARIANTS.length; i++) {
       res = await supabaseClient
         .from("colis_suivi_public")
-        .select(SUIVI_COLS_BASE)
+        .select(SUIVI_COL_VARIANTS[i])
         .eq(column, key)
         .maybeSingle();
+      // Erreur de colonne inconnue : on essaie le variant suivant (moins riche).
+      if (res.error && /column|colonne|does not exist|n'existe pas/i.test(res.error.message || "")) {
+        continue;
+      }
+      suiviColsIndex = i; // ce variant marche : on s'y tient pour les prochaines requêtes.
+      return res;
     }
     return res;
   }
@@ -315,6 +330,21 @@
         <span class="label">Destination</span>
         <span class="value">${escapeHTML(destinationLabel)}</span>
       </div>
+      ${(data.livreur_nom && (data.statut === 'en_livraison' || data.statut === 'recupere')) ? `
+        <div class="result-row">
+          <span class="label">Livreur</span>
+          <span class="value" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
+            ${data.livreur_photo_url ? `<img src="${data.livreur_photo_url}" alt="Livreur" style="width:26px;height:26px;border-radius:50%;object-fit:cover;">` : ''}
+            ${escapeHTML(data.livreur_nom)}
+          </span>
+        </div>
+      ` : ''}
+      ${(data.creneau_estime && (data.statut === 'en_livraison' || data.statut === 'recupere')) ? `
+        <div class="result-row">
+          <span class="label">Créneau estimé</span>
+          <span class="value">${escapeHTML(data.creneau_estime)}</span>
+        </div>
+      ` : ''}
       ${montantTotal ? `
         <div class="result-row">
           <span class="label">Montant</span>

@@ -122,11 +122,13 @@
     }
     .clt-bottomnav .nav{
       flex:1; background:none; border:none; cursor:pointer; font-family:inherit;
-      display:flex; flex-direction:column; align-items:center; gap:3px;
-      font-size:10.5px; font-weight:600; color:#8a94a3;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+      font-size:11px; font-weight:600; color:#5b6472; min-height:52px;
+      border-radius:12px; transition:color .15s, background .15s;
+      -webkit-tap-highlight-color:transparent;
     }
-    .clt-bottomnav .nav.active{ color:var(--clt-orange); }
-    .clt-bottomnav .nav svg{ width:22px; height:22px; }
+    .clt-bottomnav .nav.active{ color:var(--clt-orange); background:rgba(232,114,44,.10); }
+    .clt-bottomnav .nav svg{ width:23px; height:23px; }
     body{ padding-bottom:74px; }
     .subnav{ display:none !important; }
   }
@@ -270,7 +272,7 @@
     </div>
 
     <div id="panel-mes">
-      <div class="search-wrap"><input type="text" id="search-mes" class="search-input" placeholder="Rechercher par description, destination ou client..."></div>
+      <div class="search-wrap"><input type="text" id="search-mes" class="search-input" placeholder="Rechercher par n° de suivi, téléphone, description, destination ou client..."></div>
       <div class="date-filter-wrap">
         <label for="filtre-date-mes">📅 Date</label>
         <input type="date" id="filtre-date-mes" class="date-filter-input">
@@ -290,7 +292,7 @@
     </div>
 
     <div id="panel-tous" class="hidden">
-      <div class="search-wrap"><input type="text" id="search-tous" class="search-input" placeholder="Rechercher par description, destination ou client..."></div>
+      <div class="search-wrap"><input type="text" id="search-tous" class="search-input" placeholder="Rechercher par n° de suivi, téléphone, description, destination ou client..."></div>
       <div class="date-filter-wrap">
         <label for="filtre-date-tous">📅 Date</label>
         <input type="date" id="filtre-date-tous" class="date-filter-input">
@@ -577,13 +579,14 @@
         }
         const flushPayload = { statut: entry.statut, observation: entry.observation, photo_livraison_url };
         if (entry.clearCollecteDepart) flushPayload.collecte_depart_at = null;
+        if (entry.extra) Object.assign(flushPayload, entry.extra); // code_confirme_at, tentatives_livraison, ...
         const { error } = await supabaseClient.from('colis')
           .update(flushPayload)
           .eq('id', entry.colisId);
         if (error) break; // échec réseau probable : on réessaiera plus tard
         await queueDelete(entry.key);
         const idx = allColis.findIndex(c => c.id === entry.colisId);
-        if (idx !== -1) Object.assign(allColis[idx], { statut: entry.statut, observation: entry.observation, photo_livraison_url });
+        if (idx !== -1) Object.assign(allColis[idx], { statut: entry.statut, observation: entry.observation, photo_livraison_url }, entry.extra || {});
       }
     } catch (e) {
       console.error('Synchronisation hors-ligne :', e);
@@ -599,7 +602,9 @@
     const desc = (c.description || '').toLowerCase();
     const dest = (c.destination || '').toLowerCase();
     const fourn = fournisseurLabel(c.fournisseur_id).toLowerCase();
-    return desc.includes(t) || dest.includes(t) || fourn.includes(t);
+    const numero = (c.numero || '').toLowerCase();
+    const tel = (c.destinataire_telephone || '').toLowerCase();
+    return desc.includes(t) || dest.includes(t) || fourn.includes(t) || numero.includes(t) || tel.includes(t);
   }
 
   function matchesDate(c, dateStr){
@@ -623,6 +628,7 @@
     document.getElementById('panel-recup').classList.toggle('hidden', which !== 'recup');
     document.getElementById('panel-tous').classList.toggle('hidden', which !== 'tous');
     syncBottomNav(which);
+    try { localStorage.setItem('clt_livreur_tab', which); } catch(e){}
   }
 
   // Garde la barre du bas synchronisée avec l'onglet actif, quelle que soit la source
@@ -694,8 +700,9 @@
     const statutOptions = Object.keys(STATUTS).map(k =>
       `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
 
+    const tentatives = Number(c.tentatives_livraison) || 0;
     return `
-      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
+      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
         ${stepperHTML(c.statut)}
         ${thumb}
         <div class="info">
@@ -704,8 +711,12 @@
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
           ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
           ${collecteLineHTML(c)}
+          ${tentatives > 0 ? `<div class="meta" style="color:#c0392b; font-weight:600;">🔁 Tentative(s) de livraison : ${tentatives}</div>` : ''}
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
-          <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
+            <button type="button" class="btn btn-outline btn-sm btn-copy-tracking">🔗 Copier le lien de suivi</button>
+            <button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button>
+          </div>
         </div>
         <div class="status-col">
           ${pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : ''}
@@ -783,12 +794,35 @@
         const existing = allColis.find(c => c.id === id);
         let photo_livraison_url = existing ? existing.photo_livraison_url : null;
 
+        // Champs additionnels calculés selon le statut (code de confirmation, tentatives).
+        const extra = {};
+
+        // --- Code de confirmation à la livraison (anti-fraude) ---
+        // Si un code à 4 chiffres a été attribué au colis et n'a pas encore été validé,
+        // on exige que le livreur saisisse celui remis par le destinataire avant de
+        // pouvoir marquer « Livré ». La vérification est locale (le code est déjà chargé),
+        // donc elle fonctionne aussi hors connexion.
+        if (statut === 'livre' && existing && existing.code_confirmation && !existing.code_confirme_at) {
+          const saisi = prompt('Code de confirmation à 4 chiffres remis par le destinataire :');
+          if (saisi === null || saisi.trim() === '') return; // annulé : on n'enregistre rien
+          if (saisi.trim() !== String(existing.code_confirmation)) {
+            alert("Code incorrect. La livraison n'a pas été enregistrée. Vérifiez le code auprès du destinataire.");
+            return;
+          }
+          extra.code_confirme_at = new Date().toISOString();
+        }
+
+        // --- Compteur de tentatives (workflow d'échec de livraison) ---
+        if (statut === 'non_livre' && existing && existing.statut !== 'non_livre') {
+          extra.tentatives_livraison = (Number(existing.tentatives_livraison) || 0) + 1;
+        }
+
         // Hors connexion : on met la mise à jour en file d'attente au lieu de la perdre.
         if (!navigator.onLine) {
           btn.disabled = true; btn.textContent = 'Enregistrement...';
           try {
-            await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: pickedPhoto || null, userId: currentUser.id, timestamp: Date.now() });
-            if (existing) Object.assign(existing, { statut, observation });
+            await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: pickedPhoto || null, extra, userId: currentUser.id, timestamp: Date.now() });
+            if (existing) Object.assign(existing, { statut, observation }, extra);
           } catch (e) {
             console.error(e);
             alert("Impossible d'enregistrer cette mise à jour hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
@@ -809,8 +843,8 @@
             // Échec probable de connexion pendant l'envoi de la photo : on met tout en file d'attente.
             btn.disabled = true; btn.textContent = 'Enregistrement...';
             try {
-              await queueAdd({ colisId: id, statut, observation, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: pickedPhoto, userId: currentUser.id, timestamp: Date.now() });
-              if (existing) Object.assign(existing, { statut, observation });
+              await queueAdd({ colisId: id, statut, observation, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: pickedPhoto, extra, userId: currentUser.id, timestamp: Date.now() });
+              if (existing) Object.assign(existing, { statut, observation }, extra);
             } catch (e) {
               console.error(e);
               alert("Impossible d'enregistrer cette mise à jour hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
@@ -822,13 +856,20 @@
         }
 
         btn.disabled = true; btn.textContent = '...';
-        const { error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url }).eq('id', id);
+        let { error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url, ...extra }).eq('id', id);
+        // Rétro-compatibilité : si les nouvelles colonnes (code_confirme_at, tentatives_livraison)
+        // n'existent pas encore (migration SQL pas lancée), on réessaie sans elles pour ne jamais
+        // bloquer la mise à jour de statut.
+        if (error && Object.keys(extra).length && /column|colonne|does not exist|n'existe pas/i.test(error.message || '')) {
+          ({ error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url }).eq('id', id));
+          if (!error) { for (const k in extra) delete extra[k]; }
+        }
         btn.disabled = false; btn.textContent = 'Enregistrer';
         if (error) {
           // Échec réseau probable : on met la mise à jour en file d'attente plutôt que de la perdre.
           try {
-            await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: null, userId: currentUser.id, timestamp: Date.now() });
-            if (existing) Object.assign(existing, { statut, observation, photo_livraison_url });
+            await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: null, extra, userId: currentUser.id, timestamp: Date.now() });
+            if (existing) Object.assign(existing, { statut, observation, photo_livraison_url }, extra);
           } catch (e) {
             console.error(e);
             alert("Erreur : " + error.message + "\n\nDe plus, la mise en file d'attente hors-ligne a échoué. Merci de réessayer.");
@@ -838,7 +879,7 @@
         }
         // Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel.
         const idx = allColis.findIndex(c => c.id === id);
-        if (idx !== -1) Object.assign(allColis[idx], { statut, observation, photo_livraison_url });
+        if (idx !== -1) Object.assign(allColis[idx], { statut, observation, photo_livraison_url }, extra);
         renderAll();
       });
     });
@@ -1293,6 +1334,13 @@
         if (main) main.scrollIntoView({ behavior:'smooth', block:'start' });
       });
     });
+    // Restaure le dernier onglet consulté après un rechargement.
+    try {
+      const saved = localStorage.getItem('clt_livreur_tab');
+      if (saved && ['mes','recup','tous'].includes(saved) && typeof showTab === 'function') {
+        showTab(saved);
+      }
+    } catch(e){}
   })();
 </script>
 </body>

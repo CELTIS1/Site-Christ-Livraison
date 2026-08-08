@@ -91,11 +91,13 @@
     }
     .clt-bottomnav .nav{
       flex:1; background:none; border:none; cursor:pointer; font-family:inherit;
-      display:flex; flex-direction:column; align-items:center; gap:3px;
-      font-size:10.5px; font-weight:600; color:#8a94a3;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+      font-size:11px; font-weight:600; color:#5b6472; min-height:52px;
+      border-radius:12px; transition:color .15s, background .15s;
+      -webkit-tap-highlight-color:transparent;
     }
-    .clt-bottomnav .nav.active{ color:#1F8A5B; }
-    .clt-bottomnav .nav svg{ width:22px; height:22px; }
+    .clt-bottomnav .nav.active{ color:#1F8A5B; background:rgba(31,138,91,.10); }
+    .clt-bottomnav .nav svg{ width:23px; height:23px; }
     body{ padding-bottom:74px; }
     .subnav{ display:none !important; }
   }
@@ -268,7 +270,7 @@
 
   <div class="card" id="section-colis">
     <h2>Mes colis</h2>
-    <div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description ou destination..."></div>
+    <div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par n° de suivi, téléphone, description ou destination..."></div>
     <div class="date-filter-wrap">
       <label for="filtre-date-colis">📅 Date</label>
       <input type="date" id="filtre-date-colis" class="date-filter-input">
@@ -416,7 +418,9 @@
     const desc = (c.description || '').toLowerCase();
     const dest = (c.destination || '').toLowerCase();
     const communeDest = (c.commune_destination || '').toLowerCase();
-    return desc.includes(t) || dest.includes(t) || communeDest.includes(t);
+    const numero = (c.numero || '').toLowerCase();
+    const tel = (c.destinataire_telephone || '').toLowerCase();
+    return desc.includes(t) || dest.includes(t) || communeDest.includes(t) || numero.includes(t) || tel.includes(t);
   }
 
   function matchesDate(c, dateStr){
@@ -446,6 +450,11 @@
             <label>Précision (quartier, repère...)</label>
             <input type="text" class="row-dest" placeholder="Ex : Angré 8e tranche">
           </div>
+        </div>
+        <div class="field">
+          <label>Téléphone du destinataire (optionnel)</label>
+          <input type="tel" class="row-dest-tel" placeholder="Ex : 07 01 02 03 04" inputmode="tel">
+          <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Permet de prévenir le destinataire par WhatsApp avec le lien de suivi.</div>
         </div>
         <div class="montant-block">
           <label>Montants</label>
@@ -651,6 +660,7 @@
         if (!photo_url) photoUploadFailed = true;
       }
 
+      const destinataire_telephone = (row.querySelector('.row-dest-tel')?.value || '').trim() || null;
       inserts.push({
         fournisseur_id: currentUser.id,
         description,
@@ -662,10 +672,19 @@
         photo_url,
         commune_recuperation,
         adresse_recuperation: adresse_recuperation || null,
+        destinataire_telephone,
       });
     }
 
-    const { error } = await supabaseClient.from('colis').insert(inserts);
+    let { error } = await supabaseClient.from('colis').insert(inserts);
+    // Rétro-compatibilité : si la colonne destinataire_telephone n'existe pas encore
+    // (migration SQL pas encore exécutée), on réessaie sans ce champ pour ne jamais
+    // bloquer l'enregistrement des colis. Le téléphone sera simplement ignoré tant que
+    // la migration n'est pas lancée.
+    if (error && /destinataire_telephone|column|colonne/i.test(error.message || '')) {
+      const insertsSansTel = inserts.map(({ destinataire_telephone, ...rest }) => rest);
+      ({ error } = await supabaseClient.from('colis').insert(insertsSansTel));
+    }
     btn.disabled = false; btn.textContent = 'Enregistrer les colis';
 
     if (error) {

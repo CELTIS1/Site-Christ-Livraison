@@ -94,10 +94,12 @@
     }
     .clt-bottomnav .nav{
       flex:1; background:none; border:none; cursor:pointer; font-family:inherit;
-      display:flex; flex-direction:column; align-items:center; gap:3px;
-      font-size:10px; font-weight:600; color:#8a94a3; padding:0 1px;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+      font-size:10.5px; font-weight:600; color:#5b6472; padding:0 1px; min-height:52px;
+      border-radius:12px; transition:color .15s, background .15s;
+      -webkit-tap-highlight-color:transparent;
     }
-    .clt-bottomnav .nav.active{ color:var(--clt-navy2,#1B4374); }
+    .clt-bottomnav .nav.active{ color:var(--clt-navy2,#1B4374); background:rgba(27,67,116,.10); }
     .clt-bottomnav .nav svg{ width:22px; height:22px; }
     body{ padding-bottom:74px; }
     .subnav{ display:none !important; }
@@ -377,7 +379,7 @@
 </div>
 
 <div id="panel-colis">
-<div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par description, destination ou client..."></div>
+<div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par n° de suivi, téléphone, description, destination ou client..."></div>
 <div class="date-filter-wrap">
 <label for="filtre-date-colis">📅 Date</label>
 <input type="date" id="filtre-date-colis" class="date-filter-input">
@@ -446,6 +448,11 @@
 <div class="empty-state">Chargement...</div>
 </div>
 <div class="recap-table-wrap" id="compta-detail" style="margin-top:20px;">
+<div class="empty-state">Chargement...</div>
+</div>
+<h3 class="panel-subtitle" style="margin-top:24px;">💵 Caisse par livreur (à remettre)</h3>
+<div class="page-sub" style="margin-bottom:8px;">Argent encaissé à la livraison par chaque livreur, et ce qu'il reste à remettre à l'entreprise.</div>
+<div class="recap-table-wrap" id="caisse-livreur">
 <div class="empty-state">Chargement...</div>
 </div>
 <div style="display:flex; gap:8px; margin-top:14px;">
@@ -926,7 +933,9 @@ const t = term.toLowerCase();
 const desc = (c.description || '').toLowerCase();
 const dest = (c.destination || '').toLowerCase();
 const fourn = fournisseurLabel(c.fournisseur_id).toLowerCase();
-return desc.includes(t) || dest.includes(t) || fourn.includes(t);
+const numero = (c.numero || '').toLowerCase();
+const tel = (c.destinataire_telephone || '').toLowerCase();
+return desc.includes(t) || dest.includes(t) || fourn.includes(t) || numero.includes(t) || tel.includes(t);
 }
 
 function matchesDate(c, dateStr){
@@ -1647,7 +1656,7 @@ const livreurLine = livreurAssigne
 ? `<div class="livreur-meta">${avatarHTML(livreurAssigne, 20)} <span>Livreur : ${escapeHTML(livreurAssigne.full_name || 'Livreur')}</span></div>`
 : `<div class="meta">Aucun livreur assigné</div>`;
 return `
-<div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
+<div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
 ${stepperHTML(c.statut)}
 ${thumb}
 <div class="info">
@@ -1658,10 +1667,14 @@ ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${livreurLine}
+${(Number(c.tentatives_livraison) || 0) > 0 ? `<div class="meta" style="color:#c0392b; font-weight:600;">🔁 Tentative(s) de livraison : ${Number(c.tentatives_livraison)}</div>` : ''}
 ${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
-<button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
+<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
+<button type="button" class="btn btn-outline btn-sm btn-copy-tracking">🔗 Copier le lien de suivi</button>
+<button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button>
+</div>
 </div>
 <div class="status-col" style="width:auto; flex-direction:row; align-items:center; gap:10px;">
 ${statutBadgeHTML(c.statut)}
@@ -2524,6 +2537,7 @@ if (!rows.length) {
 summary.innerHTML = '';
 recapBox.innerHTML = `<div class="empty-state">Aucun colis sur cette période.</div>`;
 detail.innerHTML = '';
+renderCaisseLivreur([]);
 return;
 }
 
@@ -2633,6 +2647,79 @@ renderCompta();
 });
 });
 }
+
+renderCaisseLivreur(rows);
+}
+
+// ---------- Réconciliation de caisse par livreur ----------
+// Pour les colis LIVRÉS de la période, calcule par livreur le total encaissé à la livraison
+// (montant total du colis) et ce qu'il reste à remettre à l'entreprise. L'équipe peut cocher
+// « Marquer comme remis » pour solder la caisse d'un livreur (colonne encaissement_remis).
+// Dégradation gracieuse : si la colonne encaissement_remis n'existe pas encore (migration SQL
+// non lancée), tout est considéré « à remettre » et le bouton informe qu'il faut lancer la migration.
+function renderCaisseLivreur(rows){
+const box = document.getElementById('caisse-livreur');
+if (!box) return;
+const livres = (rows || []).filter(c => c.statut === 'livre');
+if (!livres.length){
+box.innerHTML = `<div class="empty-state">Aucun colis livré sur cette période.</div>`;
+return;
+}
+const parLivreur = {};
+livres.forEach(c => {
+const key = c.livreur_id || 'inconnu';
+if (!parLivreur[key]) parLivreur[key] = { nb:0, total:0, remis:0, reste:0, idsAremettre:[] };
+const montant = Number(montantTotalColis(c)) || 0;
+parLivreur[key].nb++;
+parLivreur[key].total += montant;
+if (c.encaissement_remis){ parLivreur[key].remis += montant; }
+else { parLivreur[key].reste += montant; parLivreur[key].idsAremettre.push(c.id); }
+});
+const lignes = Object.keys(parLivreur).map(id => ({ id, ...parLivreur[id] })).sort((a,b) => b.reste - a.reste);
+box.innerHTML = `
+<table class="recap-table">
+<thead><tr><th>Livreur</th><th>Colis livrés</th><th>Total encaissé</th><th>Déjà remis</th><th>Reste à remettre</th><th></th></tr></thead>
+<tbody>
+${lignes.map(r => `
+<tr data-livreur="${r.id}">
+<td>${(collecteLivreurLabel(r.id) || 'Non attribué')}</td>
+<td>${r.nb}</td>
+<td>${formatMontant(r.total) || '0 FCFA'}</td>
+<td>${formatMontant(r.remis) || '0 FCFA'}</td>
+<td style="color:${r.reste > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.reste) || '0 FCFA'}</td>
+<td>${r.idsAremettre.length ? `<button type="button" class="btn btn-sm caisse-remis-btn">✔ Marquer comme remis</button>` : '<span style="color:#1a7d3c;">✓ Soldé</span>'}</td>
+</tr>
+`).join('')}
+</tbody>
+</table>
+`;
+box.querySelectorAll('.caisse-remis-btn').forEach(btn => {
+btn.addEventListener('click', async () => {
+const tr = btn.closest('tr');
+const livreurId = tr.dataset.livreur;
+const ligne = lignes.find(l => String(l.id) === String(livreurId));
+if (!ligne || !ligne.idsAremettre.length) return;
+if (!confirm(`Confirmer la remise de ${formatMontant(ligne.reste)} par ${collecteLivreurLabel(livreurId) || 'ce livreur'} ?`)) return;
+btn.disabled = true; btn.textContent = '...';
+const { error } = await supabaseClient.from('colis')
+.update({ encaissement_remis: true, encaissement_remis_at: new Date().toISOString() })
+.in('id', ligne.idsAremettre);
+btn.disabled = false; btn.textContent = '✔ Marquer comme remis';
+if (error){
+if (/encaissement_remis|column|colonne|does not exist|n'existe pas/i.test(error.message || '')){
+alert("Fonction de caisse pas encore activée : exécutez le script SQL de migration (_sql-prive/2026-08-ameliorations.sql) dans Supabase, puis réessayez.");
+} else {
+alert(friendlyErrorMessage(error.message));
+}
+return;
+}
+ligne.idsAremettre.forEach(id => {
+const idx = allColis.findIndex(c => c.id === id);
+if (idx !== -1){ allColis[idx].encaissement_remis = true; allColis[idx].encaissement_remis_at = new Date().toISOString(); }
+});
+renderCompta();
+});
+});
 }
 
 function showMainTab(which){
@@ -2649,6 +2736,7 @@ const panel = document.getElementById(which === 'journal' ? 'panel-journal' : 'p
 requestAnimationFrame(() => forceStickyReflow(panel));
 }
 syncBottomNav(which);
+try { localStorage.setItem('clt_equipe_tab', which); } catch(e){}
 }
 
 // Garde la barre du bas (mobile) synchronisée avec l'onglet actif, quelle que soit
@@ -3330,6 +3418,13 @@ init();
         if (tabs) tabs.scrollIntoView({ behavior:'smooth', block:'start' });
       });
     });
+    // Restaure le dernier onglet consulté après un rechargement.
+    try {
+      const saved = localStorage.getItem('clt_equipe_tab');
+      if (saved && ['colis','journal','rapports','compta'].includes(saved) && typeof showMainTab === 'function') {
+        showMainTab(saved);
+      }
+    } catch(e){}
   })();
 </script>
 </body>

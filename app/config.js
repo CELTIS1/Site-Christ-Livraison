@@ -392,9 +392,7 @@ document.addEventListener("click", async (e) => {
   const id = item && item.dataset.id;
   if (!numero && !id) return;
 
-  const link = numero
-    ? `${location.origin}/suivi.html?numero=${encodeURIComponent(numero)}`
-    : `${location.origin}/suivi.html?id=${id}`;
+  const link = buildTrackingLink(numero, id);
   const original = btn.textContent;
   try {
     await navigator.clipboard.writeText(link);
@@ -403,6 +401,52 @@ document.addEventListener("click", async (e) => {
     btn.textContent = "⚠️ Copie impossible";
   }
   setTimeout(() => { btn.textContent = original; }, 2000);
+});
+
+// ---------- Lien de suivi public + notification WhatsApp du destinataire ----------
+// Construit l'URL de suivi public (numéro lisible de préférence, ancien id en repli).
+function buildTrackingLink(numero, id) {
+  return numero
+    ? `${location.origin}/suivi.html?numero=${encodeURIComponent(numero)}`
+    : `${location.origin}/suivi.html?id=${id}`;
+}
+
+// Phrase adaptée au statut, du point de vue du destinataire.
+function statutMessageClient(statut) {
+  return ({
+    en_attente:   "est bien enregistré",
+    recupere:     "a été récupéré par notre livreur",
+    en_livraison: "est en cours de livraison",
+    livre:        "a bien été livré",
+    non_livre:    "n'a pas pu être livré (nous allons vous recontacter)",
+    retour:       "est en cours de retour",
+  })[statut] || "vient d'être mis à jour";
+}
+
+// Délégation d'événement pour tout bouton ".btn-notify-wa" (dans un ".colis-item").
+// Ouvre WhatsApp avec un message pré-rempli contenant le statut + le lien de suivi.
+// - data-tel   : téléphone du destinataire (si connu) → destinataire pré-rempli.
+// - data-numero/data-id : pour reconstruire le lien de suivi.
+// - data-statut : statut courant du colis.
+// Sans téléphone, WhatsApp s'ouvre quand même avec le message (le livreur choisit le contact).
+// Aucun envoi automatique : le livreur/l'équipe garde la main et appuie sur « Envoyer ».
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".btn-notify-wa");
+  if (!btn) return;
+  const item = btn.closest(".colis-item");
+  if (!item) return;
+  const tel = (item.dataset.tel || "").replace(/[^0-9]/g, "");
+  const numero = item.dataset.numero;
+  const id = item.dataset.id;
+  const statut = item.dataset.statut || "";
+  const link = buildTrackingLink(numero, id);
+  const refTxt = numero ? " " + numero : "";
+  const msg = `Bonjour, votre colis${refTxt} ${statutMessageClient(statut)}.\n` +
+    `Suivez-le en direct ici : ${link}\n\n— Christ Livraison & Transport`;
+  const wa = tel
+    ? `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(wa, "_blank");
 });
 
 // ---------- Regroupement des colis par jour (et par client) ----------
