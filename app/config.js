@@ -208,7 +208,7 @@ window.addEventListener("beforeunload", () => {
 const STATUTS = {
   en_attente:   { label: "En attente",   color: "#8a94a3", bg: "#eef0f3" },
   recupere:     { label: "Récupéré",     color: "#1B4374", bg: "#e5edf5" },
-  en_livraison: { label: "En livraison", color: "#E26313", bg: "#FBE2CE" },
+  en_livraison: { label: "En cours de livraison", color: "#E26313", bg: "#FBE2CE" },
   livre:        { label: "Livré",        color: "#1a7d3c", bg: "#e3f6ea" },
   non_livre:    { label: "Non livré",    color: "#c0392b", bg: "#fce4e2" },
   retour:       { label: "Retour",       color: "#8e44ad", bg: "#f2e8fa" },
@@ -463,6 +463,15 @@ function groupColisByDayAndClient(list, clientKeyFn, clientLabelFn, dateField) {
 // `itemRenderFn` est la fonction habituelle de rendu d'une ligne de colis de chaque page.
 // `groupActionFn` (optionnel) reçoit (day, client) et peut retourner du HTML supplémentaire
 // (ex : un bouton d'action groupée) inséré dans l'en-tête de chaque groupe client.
+// Badge du numéro d'ordre d'un colis au sein d'un même client (1..N). `n` peut être absent
+// (rendu vide) pour rester compatible avec un appel sans numéro. Le n° 1 est le premier colis
+// enregistré (le plus ancien) du lot ; les listes étant affichées du plus récent au plus ancien,
+// c'est renderGroupedColisHTML qui calcule ce numéro à partir de la position dans le groupe.
+function colisNumeroClientHTML(n) {
+  if (!n && n !== 0) return "";
+  return `<span class="colis-num-client" title="Colis n° ${n} de ce client" style="display:inline-block; min-width:22px; text-align:center; background:#1B4374; color:#fff; font-weight:700; font-size:11px; line-height:1.7; padding:0 8px; border-radius:999px; margin-right:6px; vertical-align:middle;">N°${n}</span>`;
+}
+
 function renderGroupedColisHTML(groups, itemRenderFn, groupActionFn) {
   if (!groups.length) return "";
   return groups.map(day => {
@@ -470,10 +479,10 @@ function renderGroupedColisHTML(groups, itemRenderFn, groupActionFn) {
       ? day.clients.map(client => `
           <div class="client-group">
             <div class="client-group-header">👤 ${client.label} <span class="group-count">${client.items.length}</span>${groupActionFn ? (groupActionFn(day, client) || '') : ''}</div>
-            ${client.items.map(itemRenderFn).join("")}
+            ${client.items.map((c, i) => itemRenderFn(c, client.items.length - i)).join("")}
           </div>
         `).join("")
-      : day.items.map(itemRenderFn).join("");
+      : day.items.map((c, i) => itemRenderFn(c, day.items.length - i)).join("");
     return `
       <div class="day-group">
         <div class="day-group-header">📅 ${day.label} <span class="group-count">${day.items.length}</span></div>

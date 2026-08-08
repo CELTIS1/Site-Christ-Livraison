@@ -634,7 +634,7 @@
     const flow = [
       { key:'en_attente',   label:'En attente' },
       { key:'recupere',     label:'Récupéré' },
-      { key:'en_livraison', label:'En livraison' },
+      { key:'en_livraison', label:'En cours de livraison' },
       { key:'livre',        label:'Livré' },
     ];
     const alert = (statut === 'non_livre' || statut === 'retour');
@@ -649,7 +649,7 @@
     return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
   }
 
-  function colisItemHTML(c){
+  function colisItemHTML(c, numeroClient){
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
       : `<div class="thumb-placeholder">Pas de photo</div>`;
@@ -664,7 +664,7 @@
         <div class="info">
           <div class="view-mode">
             ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
-            <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+            <div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
             <div class="meta">${c.commune_destination ? 'Vers : ' + escapeHTML(c.commune_destination) + (c.destination ? ' (' + escapeHTML(c.destination) + ')' : '') + ' · ' : (c.destination ? 'Vers : ' + escapeHTML(c.destination) + ' · ' : '')}Ajouté le ${formatDate(c.created_at)}</div>
             ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
             ${colisADetailMontant(c) ? `
@@ -960,7 +960,7 @@
     } else if (filtreDate) {
       // Une date précise est choisie : la liste est déjà limitée à cette journée,
       // inutile de répéter l'en-tête "📅 ..." (déjà visible dans le sélecteur de date).
-      list.innerHTML = filtered.map(colisItemHTML).join('');
+      list.innerHTML = filtered.map((c, i) => colisItemHTML(c, filtered.length - i)).join('');
       attachColisHandlers(list);
     } else {
       const groups = groupColisByDay(filtered);

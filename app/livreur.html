@@ -566,7 +566,7 @@
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
 
-  const FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
+  const FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En cours de livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
 
   function showTab(which){
     activePanel = which;
@@ -615,7 +615,7 @@
     const flow = [
       { key:'en_attente',   label:'Assigné' },
       { key:'recupere',     label:'Récupéré' },
-      { key:'en_livraison', label:'En livraison' },
+      { key:'en_livraison', label:'En cours de livraison' },
       { key:'livre',        label:'Livré' },
     ];
     const alert = (statut === 'non_livre' || statut === 'retour');
@@ -631,7 +631,7 @@
   }
 
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
-  function mesColisRowHTML(c){
+  function mesColisRowHTML(c, numeroClient){
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
       : `<div class="thumb-placeholder">Pas de photo</div>`;
@@ -644,7 +644,7 @@
         ${thumb}
         <div class="info">
           ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
-          <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+          <div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
           ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
           ${collecteLineHTML(c)}
@@ -673,7 +673,7 @@
   }
 
   // Ligne en lecture seule pour "Tous les colis"
-  function tousColisItemHTML(c){
+  function tousColisItemHTML(c, numeroClient){
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
       : `<div class="thumb-placeholder">Pas de photo</div>`;
@@ -686,7 +686,7 @@
         ${thumb}
         <div class="info">
           ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
-          <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+          <div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
           ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
           ${collecteLineHTML(c)}
