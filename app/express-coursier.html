@@ -330,6 +330,30 @@
   <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
   <div class="page-sub">Voyez les courses disponibles près de chez vous et acceptez celles qui vous intéressent.</div>
 
+  <!-- Notice de consentement (loi ivoirienne n° 2013-450) : n'apparaît que lorsqu'une course
+       acceptée est en cours et que le coursier n'a pas encore donné son accord. Rien n'est envoyé
+       avant cette acceptation explicite. -->
+  <div class="card hidden" id="geoloc-consent-card">
+    <strong>📍 Partage de votre position pendant vos courses</strong>
+    <p class="page-sub" style="margin:8px 0;">
+      Pour que le client et l'équipe CLT Express puissent suivre votre progression en direct pendant une course acceptée, nous avons besoin de connaître votre position tant que la course est en cours.<br><br>
+      <strong>Quand :</strong> uniquement pendant une course acceptée, jamais en dehors.<br>
+      <strong>Donnée collectée :</strong> votre position GPS approximative.<br>
+      <strong>Qui la voit :</strong> le client de la course en cours, l'équipe et l'administrateur — personne d'autre.<br>
+      <strong>Conservation :</strong> supprimée automatiquement dès la fin (ou l'annulation) de la course.<br>
+      <strong>Vos droits :</strong> vous pouvez demander l'accès, la correction ou la suppression de ces données à tout moment auprès de l'équipe.
+    </p>
+    <button type="button" class="btn btn-sm" id="btn-accept-geoloc-consent">J'ai compris et j'accepte</button>
+  </div>
+
+  <div class="card hidden" id="position-sharing-card" style="padding:10px 14px;">
+    <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#64748b;">
+      <span>📍</span>
+      <span id="position-sharing-desc">Position non partagée — aucune course en cours.</span>
+    </div>
+    <div id="position-sharing-msg"></div>
+  </div>
+
   <div class="clt-toptabs-wrap">
   <div class="clt-toptabs" role="tablist">
   <button type="button" class="clt-toptab active" data-clttab="section-disponibles">🛵 Dispo</button>
@@ -400,7 +424,7 @@
   </div>
 </div>
 
-<script src="express-config.js?v=20260807b"></script>
+<script src="express-config.js?v=20260808a"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -703,6 +727,67 @@
     await loadClientsFor(mesCourses);
     renderMesCourses();
     updateStats();
+    updatePositionSharingFromCourses();
+  }
+
+  // Partage automatique de la position (voir startPositionSharing/stopPositionSharing dans
+  // express-config.js) : le coursier n'a pas de bouton pour l'activer/le couper lui-même. Le
+  // partage démarre automatiquement dès qu'il a au moins une course "acceptée" (en cours), et
+  // s'arrête dès qu'il n'en a plus. Ainsi le client de la course et l'équipe peuvent suivre sa
+  // progression en direct sans qu'il puisse couper le suivi pendant qu'il livre.
+  //
+  // Conformité loi ivoirienne n° 2013-450 : le partage ne démarre jamais avant que le coursier
+  // ait explicitement accepté la notice d'information (geoloc-consent-card, une seule fois, voir
+  // acceptGeolocConsent) ; la position est supprimée de la base dès la fin (ou l'annulation) de
+  // la course — aucune donnée de localisation n'est conservée en dehors d'une course active.
+  function updatePositionSharingFromCourses(){
+    const card = document.getElementById('position-sharing-card');
+    const desc = document.getElementById('position-sharing-desc');
+    const msg = document.getElementById('position-sharing-msg');
+    const consentCard = document.getElementById('geoloc-consent-card');
+    const enCourse = mesCourses.some(c => c.status === 'acceptee');
+
+    if (!enCourse) {
+      stopPositionSharing();
+      consentCard.classList.add('hidden');
+      card.classList.add('hidden');
+      desc.textContent = 'Position non partagée — aucune course en cours.';
+      msg.innerHTML = '';
+      // Minimisation des données : on ne garde aucune position au-delà d'une course active.
+      supabaseClient.from('livreur_positions').delete().eq('livreur_id', currentUser.id)
+        .then(({ error }) => { if (error) console.error('Erreur suppression position:', error); });
+      return;
+    }
+
+    if (!currentProfile.geoloc_consent_at) {
+      consentCard.classList.remove('hidden');
+      card.classList.remove('hidden');
+      desc.textContent = "En attente de votre accord pour partager votre position (voir ci-dessus).";
+      msg.innerHTML = '';
+      return;
+    }
+
+    consentCard.classList.add('hidden');
+    card.classList.remove('hidden');
+    startPositionSharing(currentUser.id, (err) => {
+      msg.innerHTML = `<div class="msg msg-error">Impossible de partager votre position : ${err.message || 'accès refusé.'} Merci d'autoriser la géolocalisation pour cet appareil.</div>`;
+      desc.textContent = 'Activation impossible — vérifiez l\'autorisation de géolocalisation.';
+    });
+    desc.textContent = 'Position partagée avec le client et l\'équipe pour cette course en cours.';
+    msg.innerHTML = '';
+  }
+
+  // Enregistre le consentement explicite du coursier (une seule fois) avant tout partage de
+  // position, conformément à la loi n° 2013-450.
+  async function acceptGeolocConsent(){
+    const btn = document.getElementById('btn-accept-geoloc-consent');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement...'; }
+    const nowIso = new Date().toISOString();
+    const { error } = await supabaseClient.from('profiles').update({ geoloc_consent_at: nowIso }).eq('id', currentUser.id);
+    if (btn) { btn.disabled = false; btn.textContent = "J'ai compris et j'accepte"; }
+    if (error) { console.error('Erreur enregistrement consentement:', error); return; }
+    currentProfile.geoloc_consent_at = nowIso;
+    updatePositionSharingFromCourses();
   }
 
   document.getElementById('avail-toggle').addEventListener('change', async (e) => {
@@ -833,6 +918,9 @@
     document.getElementById('avail-sub-text').textContent = profile.disponible_express
       ? 'Vous voyez les courses disponibles ci-dessous.'
       : 'Activez pour voir apparaître les courses disponibles.';
+
+    const btnConsent = document.getElementById('btn-accept-geoloc-consent');
+    if (btnConsent) btnConsent.addEventListener('click', acceptGeolocConsent);
 
     // Grille tarifaire : solde minimum requis + numéros Mobile Money de CLT.
     const { data: cfg } = await supabaseClient.from('express_config')

@@ -44,7 +44,7 @@ async function requireAuth() {
 async function getExpressProfile(userId) {
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("id, role, full_name, phone, status, created_at, avatar_url, disponible_express, suppression_demandee_at")
+    .select("id, role, full_name, phone, status, created_at, avatar_url, disponible_express, suppression_demandee_at, geoloc_consent_at")
     .eq("id", userId)
     .single();
   if (error) {
@@ -55,9 +55,83 @@ async function getExpressProfile(userId) {
 }
 
 async function logoutExpress() {
+  // Arrête proprement le partage de position (le cas échéant) et supprime toute position
+  // enregistrée avant de se déconnecter (minimisation des données : rien ne doit rester après
+  // la déconnexion). Sans effet pour les comptes qui n'ont jamais partagé de position.
+  if (typeof stopPositionSharing === "function") stopPositionSharing();
+  try {
+    const { data } = await supabaseClient.auth.getUser();
+    if (data && data.user) {
+      await supabaseClient.from("livreur_positions").delete().eq("livreur_id", data.user.id);
+    }
+  } catch (e) {
+    console.error("Erreur suppression position à la déconnexion:", e);
+  }
   await supabaseClient.auth.signOut();
   window.location.href = "express-login.html";
 }
+
+// ---------- Suivi de position en temps réel des coursiers (carte client/équipe/admin) ----------
+// CLT Express réutilise la même table "livreur_positions" que l'application interne : un coursier
+// est aussi une ligne de "profiles", il peut donc écrire sa propre position (policy
+// "Livreur gere sa propre position"). Le partage démarre et s'arrête AUTOMATIQUEMENT selon que le
+// coursier a, ou non, au moins une course "acceptée" en cours (voir
+// updatePositionSharingFromCourses dans express-coursier.html) : pas de bouton pour le couper
+// pendant une course active, afin que le client et l'équipe puissent s'y fier. Tant que c'est
+// activé, la position du téléphone est envoyée à intervalles réguliers ; le client de la course
+// active (et l'équipe/admin) la voit en direct via Supabase Realtime. Si le coursier ferme
+// l'onglet ou perd la connexion, sa position cesse simplement d'être mise à jour et devient "hors
+// ligne" au bout de POSITION_STALE_AFTER_MS.
+const POSITION_STALE_AFTER_MS = 3 * 60 * 1000; // 3 minutes sans mise à jour = considéré hors ligne
+const POSITION_MIN_INTERVAL_MS = 10 * 1000; // au maximum une mise à jour toutes les 10 secondes
+let positionWatchId = null;
+
+function isPositionSharingActive() {
+  return positionWatchId !== null;
+}
+
+// `onError` (optionnel) est appelé si la géolocalisation échoue (permission refusée, appareil
+// non compatible, etc.) — utile pour afficher un message clair au coursier.
+function startPositionSharing(userId, onError) {
+  if (positionWatchId !== null) return; // déjà actif, rien à faire
+  if (!("geolocation" in navigator)) {
+    if (typeof onError === "function") onError(new Error("La géolocalisation n'est pas disponible sur cet appareil."));
+    return;
+  }
+  let lastSentAt = 0;
+  positionWatchId = navigator.geolocation.watchPosition(
+    async (pos) => {
+      const now = Date.now();
+      if (now - lastSentAt < POSITION_MIN_INTERVAL_MS) return;
+      lastSentAt = now;
+      const { latitude, longitude, accuracy } = pos.coords;
+      const { error } = await supabaseClient.from("livreur_positions").upsert({
+        livreur_id: userId,
+        latitude,
+        longitude,
+        accuracy,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) console.error("Erreur envoi position:", error);
+    },
+    (err) => {
+      console.error("Erreur géolocalisation:", err);
+      if (typeof onError === "function") onError(err);
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+  );
+}
+
+function stopPositionSharing() {
+  if (positionWatchId !== null) {
+    navigator.geolocation.clearWatch(positionWatchId);
+    positionWatchId = null;
+  }
+}
+
+window.addEventListener("beforeunload", () => {
+  if (positionWatchId !== null) navigator.geolocation.clearWatch(positionWatchId);
+});
 
 // Empêche qu'une page protégée réapparaisse depuis le cache mémoire du navigateur (bfcache)
 // après une déconnexion (même logique que config.js).

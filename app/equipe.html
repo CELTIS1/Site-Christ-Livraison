@@ -304,11 +304,11 @@
 
 <div class="card" id="section-carte">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'carte-content'); setTimeout(() => { if (window.livreurMap) window.livreurMap.invalidateSize(); }, 350);">
-<span class="collapse-arrow">▶</span> 🗺️ Carte des livreurs en direct
+<span class="collapse-arrow">▶</span> 🗺️ Carte des livreurs et coursiers en direct
 </h2>
 <div id="carte-content" class="collapsible-content">
-<div class="page-sub" style="margin:0 0 12px;">Position des livreurs ayant activé le partage depuis leur téléphone. Un livreur disparaît automatiquement de la carte s'il n'a pas envoyé de nouvelle position depuis plus de 3 minutes (déconnexion, partage désactivé...).</div>
-<div id="carte-empty-state" class="empty-state">Aucun livreur ne partage sa position pour le moment.</div>
+<div class="page-sub" style="margin:0 0 12px;">Position des livreurs (application interne) et des coursiers CLT Express ayant une course en cours, en direct depuis leur téléphone. Un point disparaît automatiquement de la carte si aucune nouvelle position n'a été envoyée depuis plus de 3 minutes (déconnexion, tournée/course terminée...).</div>
+<div id="carte-empty-state" class="empty-state">Aucun livreur ni coursier ne partage sa position pour le moment.</div>
 <div id="carte-livreurs" style="height:480px; border-radius:12px; overflow:hidden; display:none;"></div>
 </div>
 </div>
@@ -3433,6 +3433,7 @@ setInterval(refreshLivreurPositions, 30000);
 
 // ---------- Carte en direct des livreurs (voir aussi startPositionSharing dans config.js) ----------
 let livreurMarkers = {}; // { [livreur_id]: L.Marker }
+let positionProfilesById = {}; // cache { [id]: { id, full_name, role } } pour étiqueter les coursiers
 
 function initLivreurMap(){
 if (window.livreurMap) return;
@@ -3452,16 +3453,34 @@ const now = Date.now();
 const fresh = data.filter(p => now - new Date(p.updated_at).getTime() < POSITION_STALE_AFTER_MS);
 const freshIds = new Set(fresh.map(p => p.livreur_id));
 
-// Retire les marqueurs des livreurs qui ne partagent plus (désactivé, déconnecté...).
+// Retire les marqueurs des personnes qui ne partagent plus (désactivé, déconnecté...).
 Object.keys(livreurMarkers).forEach(id => {
 if (!freshIds.has(id)) { window.livreurMap.removeLayer(livreurMarkers[id]); delete livreurMarkers[id]; }
 });
 
+// La table livreur_positions est partagée par les livreurs internes ET les coursiers CLT
+// Express (voir express-config.js). Pour étiqueter correctement chaque marqueur (nom + rôle),
+// on complète, en une seule requête, les identifiants absents de la liste `livreurs` (donc les
+// coursiers) en lisant leur profil.
+const missingIds = fresh.map(p => p.livreur_id).filter(id => !livreurs.find(l => l.id === id));
+if (missingIds.length) {
+const { data: profs } = await supabaseClient.from('profiles').select('id, full_name, role').in('id', missingIds);
+(profs || []).forEach(pr => { if (!positionProfilesById[pr.id]) positionProfilesById[pr.id] = pr; });
+}
+
 fresh.forEach(p => {
 const livreur = livreurs.find(l => l.id === p.livreur_id);
-const nom = livreur ? (livreur.full_name || 'Livreur') : 'Livreur';
+let nom, roleLabel;
+if (livreur) {
+nom = livreur.full_name || 'Livreur';
+roleLabel = 'Livreur';
+} else {
+const pr = positionProfilesById[p.livreur_id];
+nom = pr ? (pr.full_name || 'Coursier') : 'Coursier';
+roleLabel = pr && pr.role === 'coursier_express' ? 'Coursier Express' : 'Coursier';
+}
 const heure = new Date(p.updated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-const popupHtml = `<strong>${escapeHTML(nom)}</strong><br>Mis à jour à ${heure}`;
+const popupHtml = `<strong>${escapeHTML(nom)}</strong><br>${escapeHTML(roleLabel)}<br>Mis à jour à ${heure}`;
 
 if (livreurMarkers[p.livreur_id]) {
 livreurMarkers[p.livreur_id].setLatLng([p.latitude, p.longitude]).setPopupContent(popupHtml);

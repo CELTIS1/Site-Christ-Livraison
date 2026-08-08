@@ -194,6 +194,8 @@
     .subnav{ display:none !important; }
   }
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -382,7 +384,7 @@
   </div>
 </div>
 
-<script src="express-config.js?v=20260807b"></script>
+<script src="express-config.js?v=20260808a"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -445,6 +447,14 @@
     const canCancel = c.status === 'en_attente';
     const photoUrl = c.photo_colis_path ? colisPhotoUrl(c.photo_colis_path) : null;
     const photoThumb = photoUrl ? `<img src="${photoUrl}" class="course-thumb" data-photo="${photoUrl}" alt="Photo du colis">` : '';
+    // Carte de suivi en direct : uniquement quand un coursier est en route (course acceptée).
+    // Elle montre les points de récupération et de livraison, et la position du coursier mise à
+    // jour en temps réel (voir initCourseMaps / refreshCoursierPositions).
+    const mapBlock = (c.status === 'acceptee' && c.coursier_id) ? `
+          <div style="margin-top:10px;">
+            <div id="course-map-status-${c.id}" style="font-size:12px;color:#64748b;margin-bottom:6px;">📍 Chargement de la position du coursier…</div>
+            <div id="course-map-${c.id}" style="height:220px;border-radius:12px;overflow:hidden;background:#eef1f5;"></div>
+          </div>` : '';
     return `
       <div class="colis-item course-item" data-id="${c.id}">
         ${courseStepperHTML(c.status)}
@@ -453,6 +463,7 @@
           <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · Demandé le ${formatDate(c.created_at)}</div>
           ${coursierInfo}
           ${photoThumb}
+          ${mapBlock}
         </div>
         <div class="status-col">
           ${expressStatutBadgeHTML(c.status)}
@@ -479,13 +490,92 @@
     data.forEach(p => { coursiersById[p.id] = p; });
   }
 
+  // ---------- Suivi en direct du coursier (carte Leaflet par course active) ----------
+  let courseMaps = {}; // { [courseId]: { map, coursierId, coursierMarker } }
+
+  function coursierMapIcon(){
+    return L.divIcon({
+      className: 'coursier-live-marker',
+      html: '<div style="font-size:26px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));">🛵</div>',
+      iconSize: [30, 30], iconAnchor: [15, 26], popupAnchor: [0, -24],
+    });
+  }
+
+  function destroyCourseMaps(){
+    Object.values(courseMaps).forEach(m => { try { m.map.remove(); } catch(e){} });
+    courseMaps = {};
+  }
+
+  // Recrée les cartes des courses en cours après chaque rendu de la liste (le innerHTML détruit
+  // les anciens conteneurs). Les cartes ne sont reconstruites qu'au changement de la liste des
+  // courses, pas à chaque mise à jour de position (celles-ci ne déplacent que le marqueur).
+  function initCourseMaps(){
+    destroyCourseMaps();
+    if (typeof L === 'undefined') return;
+    myCourses.filter(c => c.status === 'acceptee' && c.coursier_id).forEach(c => {
+      const el = document.getElementById('course-map-' + c.id);
+      if (!el) return;
+      const map = L.map(el);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 19,
+      }).addTo(map);
+      const pts = [];
+      if (c.latitude_recuperation != null && c.longitude_recuperation != null) {
+        L.marker([c.latitude_recuperation, c.longitude_recuperation]).addTo(map).bindPopup('📍 Récupération');
+        pts.push([c.latitude_recuperation, c.longitude_recuperation]);
+      }
+      if (c.latitude_livraison != null && c.longitude_livraison != null) {
+        L.marker([c.latitude_livraison, c.longitude_livraison]).addTo(map).bindPopup('🏁 Livraison');
+        pts.push([c.latitude_livraison, c.longitude_livraison]);
+      }
+      if (pts.length >= 2) map.fitBounds(pts, { padding: [30, 30] });
+      else if (pts.length === 1) map.setView(pts[0], 13);
+      else map.setView([5.3599517, -4.0082563], 12);
+      courseMaps[c.id] = { map, coursierId: c.coursier_id, coursierMarker: null };
+      setTimeout(() => { try { map.invalidateSize(); } catch(e){} }, 60);
+    });
+    refreshCoursierPositions();
+  }
+
+  // Interroge la position du/des coursier(s) des courses en cours et déplace leur marqueur. La
+  // policy RLS "Client lit la position du coursier de sa course active" garantit que le client ne
+  // reçoit QUE la position du coursier de sa propre course en cours.
+  async function refreshCoursierPositions(){
+    const entries = Object.entries(courseMaps);
+    if (!entries.length) return;
+    const ids = [...new Set(entries.map(([, m]) => m.coursierId).filter(Boolean))];
+    if (!ids.length) return;
+    const { data, error } = await supabaseClient.from('livreur_positions')
+      .select('livreur_id, latitude, longitude, updated_at').in('livreur_id', ids);
+    if (error) { console.error('Position coursier:', error); return; }
+    const now = Date.now();
+    const byId = {};
+    (data || []).forEach(p => { if (now - new Date(p.updated_at).getTime() < POSITION_STALE_AFTER_MS) byId[p.livreur_id] = p; });
+    entries.forEach(([courseId, m]) => {
+      const statusEl = document.getElementById('course-map-status-' + courseId);
+      const p = byId[m.coursierId];
+      if (!p) {
+        if (m.coursierMarker) { m.map.removeLayer(m.coursierMarker); m.coursierMarker = null; }
+        if (statusEl) statusEl.textContent = '📍 En attente de la position du coursier…';
+        return;
+      }
+      const heure = new Date(p.updated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const popup = '🛵 Votre coursier · ' + heure;
+      if (m.coursierMarker) m.coursierMarker.setLatLng([p.latitude, p.longitude]).setPopupContent(popup);
+      else m.coursierMarker = L.marker([p.latitude, p.longitude], { icon: coursierMapIcon() }).addTo(m.map).bindPopup(popup);
+      if (statusEl) statusEl.textContent = '📍 Position du coursier mise à jour à ' + heure;
+    });
+  }
+
   function renderCourses(){
     const box = document.getElementById('courses-list');
     if (!myCourses.length) {
+      destroyCourseMaps();
       box.innerHTML = `<div class="empty-state">Aucune course pour le moment. Passez votre première commande ci-dessus !</div>`;
       return;
     }
     box.innerHTML = myCourses.map(courseRowHTML).join('');
+    initCourseMaps();
     box.querySelectorAll('.course-thumb').forEach(img => {
       img.addEventListener('click', () => openLightbox(img.dataset.photo));
     });
@@ -717,6 +807,17 @@
         loadCourses();
       })
       .subscribe());
+
+    // Suivi en direct de la position du coursier pendant une course acceptée. On rafraîchit sur
+    // chaque changement de la table des positions, et périodiquement (filet de sécurité pour
+    // faire disparaître un coursier hors ligne, et pour rattraper d'éventuels événements manqués).
+    trackChannel(supabaseClient
+      .channel('coursier-positions-client-' + currentUser.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'livreur_positions' }, () => {
+        refreshCoursierPositions();
+      })
+      .subscribe());
+    setInterval(refreshCoursierPositions, 20000);
   }
 
   init();
