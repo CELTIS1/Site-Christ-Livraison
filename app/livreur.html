@@ -622,6 +622,16 @@
     document.getElementById('panel-mes').classList.toggle('hidden', which !== 'mes');
     document.getElementById('panel-recup').classList.toggle('hidden', which !== 'recup');
     document.getElementById('panel-tous').classList.toggle('hidden', which !== 'tous');
+    syncBottomNav(which);
+  }
+
+  // Garde la barre du bas synchronisée avec l'onglet actif, quelle que soit la source
+  // du changement (clic sur un onglet du haut OU sur la barre du bas). Corrige le cas
+  // où un clic en haut n'était pas répercuté sur la barre du bas.
+  function syncBottomNav(which){
+    const bar = document.getElementById('clt-bottomnav');
+    if (!bar) return;
+    bar.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.nav === which));
   }
 
   function renderFilters(containerId, activeFilter, onSelect){

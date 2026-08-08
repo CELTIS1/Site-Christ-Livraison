@@ -82,6 +82,26 @@
   .clt-stepper .st.done::before, .clt-stepper .st.now::before{ background:#1a7d3c; }
   .clt-stepper.is-alert .st.now .c{ background:#c0392b; box-shadow:0 0 0 4px rgba(192,57,43,.18); }
   .clt-stepper.is-alert .st.now .l{ color:#c0392b; }
+
+  /* ---- Barre de navigation basse (mobile uniquement) ---- */
+  .clt-bottomnav{ display:none; }
+  @media(max-width:760px){
+    .clt-bottomnav{
+      display:flex; position:fixed; left:0; right:0; bottom:0; z-index:200;
+      background:#fff; border-top:1px solid #eef1f5;
+      padding:8px 2px calc(8px + env(safe-area-inset-bottom));
+      box-shadow:0 -6px 20px rgba(0,0,0,.06); justify-content:space-around;
+    }
+    .clt-bottomnav .nav{
+      flex:1; background:none; border:none; cursor:pointer; font-family:inherit;
+      display:flex; flex-direction:column; align-items:center; gap:3px;
+      font-size:10px; font-weight:600; color:#8a94a3; padding:0 1px;
+    }
+    .clt-bottomnav .nav.active{ color:var(--clt-navy2,#1B4374); }
+    .clt-bottomnav .nav svg{ width:22px; height:22px; }
+    body{ padding-bottom:74px; }
+    .subnav{ display:none !important; }
+  }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2628,6 +2648,15 @@ if (which === 'journal' || which === 'compta'){
 const panel = document.getElementById(which === 'journal' ? 'panel-journal' : 'panel-compta');
 requestAnimationFrame(() => forceStickyReflow(panel));
 }
+syncBottomNav(which);
+}
+
+// Garde la barre du bas (mobile) synchronisée avec l'onglet actif, quelle que soit
+// la source du changement (clic sur un onglet du haut OU sur la barre du bas).
+function syncBottomNav(which){
+const bar = document.getElementById('clt-bottomnav');
+if (!bar) return;
+bar.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.nav === which));
 }
 
 function showRapportSubTab(which){
@@ -3257,6 +3286,51 @@ if (fresh.length > 0) setTimeout(() => window.livreurMap.invalidateSize(), 50);
 }
 
 init();
+</script>
+
+<!-- Barre de navigation basse (mobile) : raccourcis vers les mêmes onglets que le haut. -->
+<nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
+  <button type="button" class="nav active" data-nav="colis">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
+    Colis
+  </button>
+  <button type="button" class="nav" data-nav="journal">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-3 1.5V6a2 2 0 0 1 2-2z"/><path d="M8 8h7M8 12h7"/></svg>
+    Journal
+  </button>
+  <button type="button" class="nav" data-nav="rapports">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>
+    Rapports
+  </button>
+  <button type="button" class="nav" data-nav="compta">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+    Compta
+  </button>
+  <button type="button" class="nav" data-nav="compte">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
+    Compte
+  </button>
+</nav>
+<script>
+  // Câblage de la barre du bas : réutilise showMainTab() (onglets existants) et le bouton "Mon compte".
+  (function(){
+    const bar = document.getElementById('clt-bottomnav');
+    if (!bar) return;
+    bar.querySelectorAll('.nav').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.nav;
+        if (target === 'compte'){
+          bar.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b === btn));
+          const acc = document.getElementById('btn-mon-compte');
+          if (acc) acc.click();
+          return;
+        }
+        if (typeof showMainTab === 'function') showMainTab(target);
+        const tabs = document.querySelector('.tabs');
+        if (tabs) tabs.scrollIntoView({ behavior:'smooth', block:'start' });
+      });
+    });
+  })();
 </script>
 </body>
 </html>

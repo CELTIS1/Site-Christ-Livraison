@@ -79,6 +79,26 @@
   .clt-stepper .st.done::before, .clt-stepper .st.now::before{ background:#1a7d3c; }
   .clt-stepper.is-alert .st.now .c{ background:#c0392b; box-shadow:0 0 0 4px rgba(192,57,43,.18); }
   .clt-stepper.is-alert .st.now .l{ color:#c0392b; }
+
+  /* ---- Barre de navigation basse (mobile uniquement) ---- */
+  .clt-bottomnav{ display:none; }
+  @media(max-width:760px){
+    .clt-bottomnav{
+      display:flex; position:fixed; left:0; right:0; bottom:0; z-index:200;
+      background:#fff; border-top:1px solid #eef1f5;
+      padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+      box-shadow:0 -6px 20px rgba(0,0,0,.06); justify-content:space-around;
+    }
+    .clt-bottomnav .nav{
+      flex:1; background:none; border:none; cursor:pointer; font-family:inherit;
+      display:flex; flex-direction:column; align-items:center; gap:3px;
+      font-size:10.5px; font-weight:600; color:#8a94a3;
+    }
+    .clt-bottomnav .nav.active{ color:#1F8A5B; }
+    .clt-bottomnav .nav svg{ width:22px; height:22px; }
+    body{ padding-bottom:74px; }
+    .subnav{ display:none !important; }
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1389,6 +1409,63 @@
   });
 
   init();
+</script>
+
+<!-- Barre de navigation basse (mobile) : raccourcis qui font défiler vers chaque section. -->
+<nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
+  <button type="button" class="nav active" data-target="section-ajouter">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+    Ajouter
+  </button>
+  <button type="button" class="nav" data-target="section-recap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>
+    Récap
+  </button>
+  <button type="button" class="nav" data-target="section-colis">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
+    Mes colis
+  </button>
+  <button type="button" class="nav" data-target="__compte">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
+    Compte
+  </button>
+</nav>
+<script>
+  // Câblage de la barre du bas : défile vers la section correspondante et ouvre "Mon compte".
+  // Un observateur met en surbrillance l'icône de la section actuellement visible pendant le défilement.
+  (function(){
+    const bar = document.getElementById('clt-bottomnav');
+    if (!bar) return;
+    const buttons = Array.from(bar.querySelectorAll('.nav'));
+    function setActive(target){
+      buttons.forEach(b => b.classList.toggle('active', b.dataset.target === target));
+    }
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.target;
+        if (target === '__compte'){
+          setActive(target);
+          const acc = document.getElementById('btn-mon-compte');
+          if (acc) acc.click();
+          return;
+        }
+        const el = document.getElementById(target);
+        if (el){
+          setActive(target);
+          el.scrollIntoView({ behavior:'smooth', block:'start' });
+        }
+      });
+    });
+    // Scroll-spy : suit la section visible pour garder la barre synchronisée.
+    const sections = ['section-ajouter','section-recap','section-colis']
+      .map(id => document.getElementById(id)).filter(Boolean);
+    if ('IntersectionObserver' in window && sections.length){
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
+      }, { rootMargin:'-45% 0px -45% 0px', threshold:0 });
+      sections.forEach(s => obs.observe(s));
+    }
+  })();
 </script>
 </body>
 </html>
