@@ -103,7 +103,11 @@ function isPositionSharingActive() {
 
 // `onError` (optionnel) est appelé si la géolocalisation échoue (permission refusée, appareil
 // non compatible, etc.) — utile pour afficher un message clair au coursier.
-function startPositionSharing(userId, onError) {
+// `onPosition` (optionnel) est appelé à chaque position envoyée avec { latitude, longitude,
+// accuracy } : la page coursier s'en sert pour enregistrer la trace du trajet
+// (express_course_positions) de la course active, en réutilisant CE MÊME suivi GPS (pas de
+// second watchPosition, donc pas de double demande de permission ni de surconsommation batterie).
+function startPositionSharing(userId, onError, onPosition) {
   if (positionWatchId !== null) return; // déjà actif, rien à faire
   if (!("geolocation" in navigator)) {
     if (typeof onError === "function") onError(new Error("La géolocalisation n'est pas disponible sur cet appareil."));
@@ -124,6 +128,10 @@ function startPositionSharing(userId, onError) {
         updated_at: new Date().toISOString(),
       });
       if (error) console.error("Erreur envoi position:", error);
+      if (typeof onPosition === "function") {
+        try { await onPosition({ latitude, longitude, accuracy }); }
+        catch (e) { console.error("Erreur enregistrement trace:", e); }
+      }
     },
     (err) => {
       console.error("Erreur géolocalisation:", err);
@@ -368,6 +376,7 @@ function estimatePrixExpress(communeDepart, communeArrivee, config) {
 const EXPRESS_STATUTS = {
   en_attente: { label: "En attente d'un coursier", color: "#8a94a3", bg: "#eef0f3" },
   acceptee:   { label: "Coursier en route",         color: "#0D9488", bg: "#dcf5f2" },
+  recuperee:  { label: "Colis récupéré, en route",  color: "#b26a00", bg: "#fdeede" },
   livree:     { label: "Livrée",                    color: "#1a7d3c", bg: "#e3f6ea" },
   annulee:    { label: "Annulée",                   color: "#c0392b", bg: "#fce4e2" },
 };

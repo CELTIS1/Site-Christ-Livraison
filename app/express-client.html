@@ -193,6 +193,17 @@
     body{ padding-bottom:74px; }
     .subnav{ display:none !important; }
   }
+  /* Sélecteur de point précis sur carte (création de course) */
+  .btn-pin-toggle{
+    margin-top:6px; display:inline-flex; align-items:center; gap:6px;
+    background:none; border:1px dashed #cbd5e1; color:#0D9488;
+    font-size:12.5px; font-weight:600; padding:6px 10px; border-radius:9px;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .btn-pin-toggle:hover{ background:#f0fdfa; border-color:#0D9488; }
+  .btn-pin-toggle.is-set{ color:#047857; border-style:solid; border-color:#10b981; background:#ecfdf5; }
+  .pin-map{ height:200px; margin-top:8px; border-radius:12px; overflow:hidden; background:#eef1f5; }
+  .pin-status{ margin-top:6px; font-size:12px; color:#047857; }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -319,6 +330,9 @@
               <div class="field">
                 <label>Adresse précise (quartier, repère...)</label>
                 <input type="text" id="course-pickup-adresse" required placeholder="Ex : Angré 8e tranche, non loin de la pharmacie">
+                <button type="button" class="btn-pin-toggle" id="btn-pin-pickup" data-pin="pickup">📍 Placer le point précis sur la carte</button>
+                <div id="pin-map-pickup" class="pin-map hidden"></div>
+                <div id="pin-status-pickup" class="pin-status hidden"></div>
               </div>
             </div>
           </div>
@@ -332,6 +346,9 @@
               <div class="field">
                 <label>Adresse précise (quartier, repère...)</label>
                 <input type="text" id="course-dropoff-adresse" required placeholder="Ex : Riviera 3, immeuble Alpha">
+                <button type="button" class="btn-pin-toggle" id="btn-pin-dropoff" data-pin="dropoff">📍 Placer le point précis sur la carte</button>
+                <div id="pin-map-dropoff" class="pin-map hidden"></div>
+                <div id="pin-status-dropoff" class="pin-status hidden"></div>
               </div>
             </div>
           </div>
@@ -384,7 +401,7 @@
   </div>
 </div>
 
-<script src="express-config.js?v=20260811e"></script>
+<script src="express-config.js?v=20260811f"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -392,6 +409,13 @@
   let myCourses = [];
   let coursiersById = {};
   let selectedPhotoFile = null;
+
+  // Sélection facultative d'un point GPS précis (récupération / livraison) sur une petite carte.
+  // Si l'utilisateur ne s'en sert pas, on retombe sur le centroïde de la commune (comportement d'origine).
+  const pinPickers = {
+    pickup:  { coords: null, map: null, marker: null, communeSelId: 'course-pickup-commune',  mapElId: 'pin-map-pickup',  statusElId: 'pin-status-pickup',  btnId: 'btn-pin-pickup' },
+    dropoff: { coords: null, map: null, marker: null, communeSelId: 'course-dropoff-commune', mapElId: 'pin-map-dropoff', statusElId: 'pin-status-dropoff', btnId: 'btn-pin-dropoff' },
+  };
 
   // ----- Lightbox (agrandir une photo) -----
   function openLightbox(url){
@@ -425,6 +449,7 @@
     const flow = [
       { key:'en_attente', label:'En attente' },
       { key:'acceptee',   label:'Coursier en route' },
+      { key:'recuperee',  label:'Colis récupéré' },
       { key:'livree',     label:'Livrée' },
     ];
     const alert = (status === 'annulee');
@@ -450,10 +475,16 @@
     // Carte de suivi en direct : uniquement quand un coursier est en route (course acceptée).
     // Elle montre les points de récupération et de livraison, et la position du coursier mise à
     // jour en temps réel (voir initCourseMaps / refreshCoursierPositions).
-    const mapBlock = (c.status === 'acceptee' && c.coursier_id) ? `
+    const isActive = (c.status === 'acceptee' || c.status === 'recuperee') && c.coursier_id;
+    const mapBlock = isActive ? `
           <div style="margin-top:10px;">
             <div id="course-map-status-${c.id}" style="font-size:12px;color:#64748b;margin-bottom:6px;">📍 Chargement de la position du coursier…</div>
             <div id="course-map-${c.id}" style="height:220px;border-radius:12px;overflow:hidden;background:#eef1f5;"></div>
+          </div>` : '';
+    // Bandeau d'état quand le colis a été récupéré : le coursier se dirige vers la livraison.
+    const recupBlock = (c.status === 'recuperee') ? `
+          <div style="margin-top:8px; font-size:12.5px; color:#8a4b00; background:#fdeede; border:1px solid #f4d9bd; border-radius:10px; padding:8px 10px;">
+            📦 Colis récupéré — votre coursier est en route vers la livraison.
           </div>` : '';
     // Repère après commande : tant qu'aucun coursier n'a accepté, on explique clairement l'état
     // (recherche en cours) plutôt que de laisser le client dans le flou.
@@ -470,6 +501,7 @@
           ${coursierInfo}
           ${photoThumb}
           ${searchingBlock}
+          ${recupBlock}
           ${mapBlock}
         </div>
         <div class="status-col">
@@ -519,7 +551,7 @@
   function initCourseMaps(){
     destroyCourseMaps();
     if (typeof L === 'undefined') return;
-    myCourses.filter(c => c.status === 'acceptee' && c.coursier_id).forEach(c => {
+    myCourses.filter(c => (c.status === 'acceptee' || c.status === 'recuperee') && c.coursier_id).forEach(c => {
       const el = document.getElementById('course-map-' + c.id);
       if (!el) return;
       const map = L.map(el);
@@ -538,10 +570,30 @@
       if (pts.length >= 2) map.fitBounds(pts, { padding: [30, 30] });
       else if (pts.length === 1) map.setView(pts[0], 13);
       else map.setView([5.3599517, -4.0082563], 12);
-      courseMaps[c.id] = { map, coursierId: c.coursier_id, coursierMarker: null };
+      // Tracé du trajet réellement parcouru par le coursier (polyline enrichie au fil des positions).
+      const traceLayer = L.polyline([], { color: '#0D9488', weight: 4, opacity: 0.85 }).addTo(map);
+      courseMaps[c.id] = { map, coursierId: c.coursier_id, coursierMarker: null, traceLayer };
       setTimeout(() => { try { map.invalidateSize(); } catch(e){} }, 60);
     });
     refreshCoursierPositions();
+    refreshCourseTraces();
+  }
+
+  // Charge et dessine la trace GPS (express_course_positions) de chaque course active. La policy
+  // RLS « Client lit la trace de sa course » garantit que le client ne voit que ses propres courses.
+  async function refreshCourseTraces(){
+    const entries = Object.entries(courseMaps);
+    if (!entries.length) return;
+    for (const [courseId, m] of entries) {
+      if (!m.traceLayer) continue;
+      const { data, error } = await supabaseClient.from('express_course_positions')
+        .select('latitude, longitude, recorded_at')
+        .eq('course_id', courseId)
+        .order('recorded_at', { ascending: true });
+      if (error) { console.error('Trace course:', error); continue; }
+      const latlngs = (data || []).map(p => [p.latitude, p.longitude]);
+      m.traceLayer.setLatLngs(latlngs);
+    }
   }
 
   // Interroge la position du/des coursier(s) des courses en cours et déplace leur marqueur. La
@@ -627,6 +679,82 @@
   document.getElementById('course-pickup-commune').addEventListener('change', updatePricePreview);
   document.getElementById('course-dropoff-commune').addEventListener('change', updatePricePreview);
 
+  // ---------- Sélecteur de point précis sur carte ----------
+  function pinDefaultCenter(kind){
+    const p = pinPickers[kind];
+    const commune = document.getElementById(p.communeSelId).value;
+    const c = commune && EXPRESS_COMMUNE_COORDS[commune];
+    if (c) return { center: [c.lat, c.lng], zoom: 14 };
+    return { center: [5.3599517, -4.0082563], zoom: 12 }; // Abidjan par défaut
+  }
+
+  function setPinCoords(kind, lat, lng){
+    const p = pinPickers[kind];
+    p.coords = { lat, lng };
+    const statusEl = document.getElementById(p.statusElId);
+    statusEl.classList.remove('hidden');
+    statusEl.textContent = `✓ Point précis défini (${lat.toFixed(5)}, ${lng.toFixed(5)}). Vous pouvez déplacer l'épingle.`;
+    const btn = document.getElementById(p.btnId);
+    btn.classList.add('is-set');
+    btn.textContent = '📍 Point précis défini — modifier';
+  }
+
+  function openPinPicker(kind){
+    const p = pinPickers[kind];
+    const mapEl = document.getElementById(p.mapElId);
+    mapEl.classList.remove('hidden');
+    if (typeof L === 'undefined') { mapEl.textContent = 'Carte indisponible.'; return; }
+    const start = pinDefaultCenter(kind);
+    if (!p.map) {
+      const map = L.map(mapEl).setView(start.center, start.zoom);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 19,
+      }).addTo(map);
+      map.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        if (p.marker) p.marker.setLatLng([lat, lng]);
+        else {
+          p.marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+          p.marker.on('dragend', () => { const ll = p.marker.getLatLng(); setPinCoords(kind, ll.lat, ll.lng); });
+        }
+        setPinCoords(kind, lat, lng);
+      });
+      p.map = map;
+      setTimeout(() => { try { map.invalidateSize(); } catch(e){} }, 60);
+    } else {
+      if (!p.coords) p.map.setView(start.center, start.zoom);
+      setTimeout(() => { try { p.map.invalidateSize(); } catch(e){} }, 60);
+    }
+  }
+
+  function togglePinPicker(kind){
+    const p = pinPickers[kind];
+    const mapEl = document.getElementById(p.mapElId);
+    if (mapEl.classList.contains('hidden')) openPinPicker(kind);
+    else mapEl.classList.add('hidden');
+  }
+
+  function resetPinPicker(kind){
+    const p = pinPickers[kind];
+    p.coords = null;
+    if (p.marker && p.map) { try { p.map.removeLayer(p.marker); } catch(e){} p.marker = null; }
+    document.getElementById(p.mapElId).classList.add('hidden');
+    const statusEl = document.getElementById(p.statusElId);
+    statusEl.classList.add('hidden'); statusEl.textContent = '';
+    const btn = document.getElementById(p.btnId);
+    btn.classList.remove('is-set');
+    btn.textContent = '📍 Placer le point précis sur la carte';
+  }
+
+  ['pickup', 'dropoff'].forEach(kind => {
+    const p = pinPickers[kind];
+    document.getElementById(p.btnId).addEventListener('click', () => togglePinPicker(kind));
+    // Recentrer sur la commune choisie tant qu'aucun point n'a été posé manuellement.
+    document.getElementById(p.communeSelId).addEventListener('change', () => {
+      if (p.map && !p.coords) { const s = pinDefaultCenter(kind); p.map.setView(s.center, s.zoom); }
+    });
+  });
+
   // ----- Photo du colis : sélection & aperçu -----
   const photoInput = document.getElementById('course-photo');
   document.getElementById('photo-drop').addEventListener('click', () => photoInput.click());
@@ -697,8 +825,9 @@
     recapLignes.push(`Destinataire : ${destNom ? destNom + ' — ' : ''}${destTel}`);
     if (!(await cltConfirm({ title: 'Confirmer cette livraison ?', detail: est ? formatMontant(est.prixTotal) : '', sub: recapLignes.join('\n'), okLabel: 'Commander' }))) return;
 
-    const pickupCoords = EXPRESS_COMMUNE_COORDS[pickupCommune];
-    const dropoffCoords = EXPRESS_COMMUNE_COORDS[dropoffCommune];
+    // Point GPS : on privilégie l'épingle précise posée par le client ; sinon centroïde de la commune.
+    const pickupCoords = pinPickers.pickup.coords || EXPRESS_COMMUNE_COORDS[pickupCommune];
+    const dropoffCoords = pinPickers.dropoff.coords || EXPRESS_COMMUNE_COORDS[dropoffCommune];
 
     btn.disabled = true; btn.textContent = 'Envoi...';
 
@@ -740,6 +869,7 @@
     const preview = document.getElementById('photo-preview');
     preview.classList.add('hidden'); preview.innerHTML = '';
     document.getElementById('price-preview').classList.add('hidden');
+    resetPinPicker('pickup'); resetPinPicker('dropoff');
     await loadCourses();
   });
 
@@ -848,7 +978,14 @@
         refreshCoursierPositions();
       })
       .subscribe());
-    setInterval(refreshCoursierPositions, 20000);
+    // Trace du trajet : chaque nouveau point GPS enregistré allonge la polyline en direct.
+    trackChannel(supabaseClient
+      .channel('course-positions-client-' + currentUser.id)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'express_course_positions' }, () => {
+        refreshCourseTraces();
+      })
+      .subscribe());
+    setInterval(() => { refreshCoursierPositions(); refreshCourseTraces(); }, 20000);
   }
 
   init();

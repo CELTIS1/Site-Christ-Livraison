@@ -44,6 +44,11 @@
   .course-item .client-info{ font-size:11.5px; color:var(--muted); margin-top:4px; }
   .course-item .dest-info{ font-size:11.5px; color:var(--muted); margin-top:2px; }
   .btn-sm{ padding:7px 14px; font-size:12.5px; }
+  .course-proche{ font-weight:700; color:#0b6e64; }
+  .btn-itineraire{ display:inline-block; text-decoration:none; text-align:center; background:#0D9488; color:#fff; border:none; }
+  .btn-itineraire:hover{ background:#0b7a70; }
+  .dispatch-note{ font-size:12.5px; color:#0b6e64; background:#f0fdfb; border:1px solid #ccf3ec; border-radius:9px; padding:8px 11px; margin-bottom:10px; }
+  .dispatch-note-warn{ color:#8a5a00; background:#fff8ec; border-color:#f3e2c0; }
 
   /* Portefeuille / solde */
   .wallet-card{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
@@ -437,7 +442,7 @@
   </div>
 </div>
 
-<script src="express-config.js?v=20260811e"></script>
+<script src="express-config.js?v=20260811f"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -449,6 +454,9 @@
   let momoNumbers = {};       // { wave, orange, mtn, moov }
   let mesRecharges = [];
   let selectedOperateur = null;
+  let lastKnownPosition = null;        // { lat, lng } — dernière position ponctuelle du coursier
+  let dispatchMode = 'off';            // 'radius' | 'nolocation' | 'error' | 'off'
+  let activeTraceCourseId = null;      // course active dont on enregistre la trace du trajet
 
   const __realtimeChannels = [];
   function trackChannel(channel){ __realtimeChannels.push(channel); return channel; }
@@ -487,13 +495,26 @@
     return url ? `<img src="${url}" class="course-thumb" data-photo="${url}" alt="Photo du colis">` : '';
   }
 
+  // Lien "Itinéraire" : ouvre l'app de navigation par défaut (Google Maps / Waze / Plans) vers un
+  // point précis. Sur mobile, ce lien universel Google Maps bascule vers l'application installée.
+  // Repli sur l'adresse texte si les coordonnées manquent.
+  function mapsDirUrl(lat, lng, fallbackAddr){
+    if (lat != null && lng != null) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+    }
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fallbackAddr || '')}&travelmode=driving`;
+  }
+
   function disponibleRowHTML(c){
     const blocked = !canAcceptCourses();
+    const proche = (c.distance_pickup_km != null)
+      ? `<span class="course-proche">📍 à ${Number(c.distance_pickup_km).toLocaleString('fr-FR')} km de vous</span> · `
+      : '';
     return `
       <div class="colis-item course-item" data-id="${c.id}">
         <div class="info">
           <div class="desc">${escapeHTML(c.adresse_recuperation)} → ${escapeHTML(c.adresse_livraison)}</div>
-          <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · ${c.distance_km != null ? c.distance_km.toLocaleString('fr-FR') + ' km' : ''} · Demandé le ${formatDate(c.created_at)}</div>
+          <div class="meta">${proche}${escapeHTML(c.description_colis || 'Colis')} · ${c.distance_km != null ? c.distance_km.toLocaleString('fr-FR') + ' km' : ''} · Demandé le ${formatDate(c.created_at)}</div>
           ${photoThumbHTML(c)}
         </div>
         <div class="status-col">
@@ -509,6 +530,7 @@
     const flow = [
       { key:'en_attente', label:'En attente' },
       { key:'acceptee',   label:'En route' },
+      { key:'recuperee',  label:'Récupéré' },
       { key:'livree',     label:'Livrée' },
     ];
     const alert = (status === 'annulee');
@@ -531,7 +553,15 @@
     const destInfo = c.destinataire_nom || c.destinataire_telephone
       ? `<div class="dest-info">📦 Destinataire : ${escapeHTML(c.destinataire_nom || '')}${c.destinataire_telephone ? ' · ' + formatPhoneLocal(c.destinataire_telephone) : ''}</div>`
       : '';
-    const canDeliver = c.status === 'acceptee';
+    const canRecup = c.status === 'acceptee';   // pas encore récupéré → bouton "J'ai récupéré"
+    const canDeliver = c.status === 'recuperee'; // récupéré → bouton "Marquer livrée"
+    const active = canRecup || canDeliver;
+    // Cible de l'itinéraire : avant récupération → point de récupération ; après → point de livraison.
+    const itineraire = active
+      ? (canRecup
+          ? `<a class="btn btn-sm btn-itineraire" href="${mapsDirUrl(c.latitude_recuperation, c.longitude_recuperation, c.adresse_recuperation)}" target="_blank" rel="noopener">🧭 Itinéraire (récup.)</a>`
+          : `<a class="btn btn-sm btn-itineraire" href="${mapsDirUrl(c.latitude_livraison, c.longitude_livraison, c.adresse_livraison)}" target="_blank" rel="noopener">🧭 Itinéraire (livr.)</a>`)
+      : '';
     return `
       <div class="colis-item course-item" data-id="${c.id}">
         ${courseStepperHTML(c.status)}
@@ -545,6 +575,8 @@
         <div class="status-col">
           ${expressStatutBadgeHTML(c.status)}
           <div style="font-weight:700;color:var(--navy);">${formatMontant(c.montant_coursier)}</div>
+          ${itineraire}
+          ${canRecup ? `<button class="btn btn-sm btn-recup-course">J'ai récupéré le colis</button>` : ''}
           ${canDeliver ? `<button class="btn btn-sm btn-deliver-course">Marquer livrée</button>` : ''}
         </div>
       </div>
@@ -559,11 +591,19 @@
       return;
     }
     section.classList.remove('hidden');
+    let note = '';
+    if (dispatchMode === 'radius') {
+      note = `<div class="dispatch-note">📍 Courses proches de vous d'abord (rayon de livraison).</div>`;
+    } else if (dispatchMode === 'nolocation') {
+      note = `<div class="dispatch-note dispatch-note-warn">⚠️ Localisation indisponible : toutes les courses sont affichées. Activez la géolocalisation pour ne voir que les courses proches.</div>`;
+    } else if (dispatchMode === 'error') {
+      note = `<div class="dispatch-note dispatch-note-warn">⚠️ Impossible de charger les courses proches. Réessayez dans un instant.</div>`;
+    }
     if (!disponibles.length) {
-      box.innerHTML = `<div class="empty-state">Aucune course disponible pour le moment. Restez disponible, une nouvelle demande peut arriver à tout moment.</div>`;
+      box.innerHTML = note + `<div class="empty-state">Aucune course proche pour le moment. Restez disponible, une nouvelle demande peut arriver à tout moment.</div>`;
       return;
     }
-    box.innerHTML = disponibles.map(disponibleRowHTML).join('');
+    box.innerHTML = note + disponibles.map(disponibleRowHTML).join('');
     box.querySelectorAll('.course-thumb').forEach(img => {
       img.addEventListener('click', () => openLightbox(img.dataset.photo));
     });
@@ -608,6 +648,21 @@
       return;
     }
     box.innerHTML = mesCourses.map(mesCourseRowHTML).join('');
+    box.querySelectorAll('.course-thumb').forEach(img => {
+      img.addEventListener('click', () => openLightbox(img.dataset.photo));
+    });
+    box.querySelectorAll('.btn-recup-course').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('.course-item').dataset.id;
+        if (!(await cltConfirm({ title: 'Colis récupéré ?', sub: 'Confirmez que vous avez récupéré le colis et que vous partez vers le lieu de livraison.', okLabel: 'Oui, récupéré' }))) return;
+        btn.disabled = true; btn.textContent = 'Enregistrement...';
+        const { error } = await supabaseClient.from('express_courses')
+          .update({ status: 'recuperee', recuperee_at: new Date().toISOString() })
+          .eq('id', id).eq('coursier_id', currentUser.id);
+        if (error) { alert('Erreur : ' + error.message); btn.disabled = false; btn.textContent = "J'ai récupéré le colis"; return; }
+        await loadMesCourses();
+      });
+    });
     box.querySelectorAll('.btn-deliver-course').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.closest('.course-item').dataset.id;
@@ -765,16 +820,45 @@
     document.getElementById('recharge-modal-overlay').classList.add('hidden');
   }
 
+  // Position ponctuelle du coursier (une lecture GPS), utilisée pour proposer uniquement les
+  // courses proches (dispatch par rayon, comme Yango/Uber). Ne démarre pas de suivi continu.
+  function getCoursierPosition(){
+    return new Promise((resolve) => {
+      if (!('geolocation' in navigator)) { resolve(null); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { enableHighAccuracy: true, maximumAge: 30000, timeout: 15000 }
+      );
+    });
+  }
+
   async function loadDisponibles(){
-    if (!currentProfile || !currentProfile.disponible_express) { disponibles = []; renderDisponibles(); return; }
-    const { data, error } = await supabaseClient
-      .from('express_courses')
-      .select('*')
-      .eq('status', 'en_attente')
-      .order('created_at', { ascending: true });
-    if (error) { console.error(error); return; }
-    disponibles = data;
-    renderDisponibles();
+    if (!currentProfile || !currentProfile.disponible_express) { disponibles = []; dispatchMode = 'off'; renderDisponibles(); return; }
+    const pos = await getCoursierPosition();
+    if (pos) {
+      lastKnownPosition = pos;
+      // Filtrage CÔTÉ SERVEUR : seules les courses dont le point de récupération est dans le rayon
+      // (express_config.rayon_dispatch_km, 3 km par défaut) sont renvoyées, triées de la plus proche
+      // à la plus lointaine (distance coursier → récupération).
+      const { data, error } = await supabaseClient.rpc('express_courses_proximite', { p_lat: pos.lat, p_lng: pos.lng });
+      if (error) { console.error(error); disponibles = []; dispatchMode = 'error'; renderDisponibles(); return; }
+      disponibles = data || [];
+      dispatchMode = 'radius';
+      renderDisponibles();
+    } else {
+      // Sans position (permission refusée / GPS indisponible), on ne peut pas filtrer par rayon.
+      // Repli sûr : on affiche les courses en attente sans filtre, en prévenant le coursier.
+      const { data, error } = await supabaseClient
+        .from('express_courses')
+        .select('*')
+        .eq('status', 'en_attente')
+        .order('created_at', { ascending: true });
+      if (error) { console.error(error); return; }
+      disponibles = data;
+      dispatchMode = 'nolocation';
+      renderDisponibles();
+    }
   }
 
   async function loadMesCourses(){
@@ -801,12 +885,27 @@
   // ait explicitement accepté la notice d'information (geoloc-consent-card, une seule fois, voir
   // acceptGeolocConsent) ; la position est supprimée de la base dès la fin (ou l'annulation) de
   // la course — aucune donnée de localisation n'est conservée en dehors d'une course active.
+  // Enregistre un point de la trace du trajet (express_course_positions) de la course active.
+  // Appelé par startPositionSharing à chaque position envoyée, en réutilisant le même suivi GPS.
+  async function recordTracePoint({ latitude, longitude, accuracy }){
+    if (!activeTraceCourseId) return;
+    const { error } = await supabaseClient.from('express_course_positions').insert({
+      course_id: activeTraceCourseId,
+      coursier_id: currentUser.id,
+      latitude, longitude, accuracy,
+    });
+    if (error) console.error('Erreur enregistrement trace:', error);
+  }
+
   function updatePositionSharingFromCourses(){
     const card = document.getElementById('position-sharing-card');
     const desc = document.getElementById('position-sharing-desc');
     const msg = document.getElementById('position-sharing-msg');
     const consentCard = document.getElementById('geoloc-consent-card');
-    const enCourse = mesCourses.some(c => c.status === 'acceptee');
+    // Une course "active" = acceptée OU récupérée (le colis est pris mais pas encore livré).
+    const activeCourse = mesCourses.find(c => c.status === 'acceptee' || c.status === 'recuperee');
+    const enCourse = !!activeCourse;
+    activeTraceCourseId = activeCourse ? activeCourse.id : null;
 
     if (!enCourse) {
       stopPositionSharing();
@@ -833,7 +932,7 @@
     startPositionSharing(currentUser.id, (err) => {
       msg.innerHTML = `<div class="msg msg-error">Impossible de partager votre position : ${err.message || 'accès refusé.'} Merci d'autoriser la géolocalisation pour cet appareil.</div>`;
       desc.textContent = 'Activation impossible — vérifiez l\'autorisation de géolocalisation.';
-    });
+    }, recordTracePoint);
     desc.textContent = 'Position partagée avec le client et l\'équipe pour cette course en cours.';
     msg.innerHTML = '';
   }
