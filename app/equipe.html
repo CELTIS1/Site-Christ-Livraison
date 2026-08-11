@@ -1442,7 +1442,11 @@ rows = rows.map(r => ({ ...r, role: roleByPhone[r.phone] || null }));
 }
 
 if (!isAdmin) {
-rows = rows.filter(r => r.role !== 'equipe' && r.role !== 'admin');
+// Un membre d'équipe peut réinitialiser tous les comptes SAUF les comptes
+// admin (protection anti-élévation de privilèges, alignée avec la fonction
+// Edge reinitialiser-mot-de-passe). Il voit donc aussi les demandes des
+// autres membres de l'équipe, mais jamais celles d'un administrateur.
+rows = rows.filter(r => r.role !== 'admin');
 }
 
 const note = document.getElementById('reset-admin-note');
