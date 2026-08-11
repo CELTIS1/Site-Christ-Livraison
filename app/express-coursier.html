@@ -424,7 +424,7 @@
   </div>
 </div>
 
-<script src="express-config.js?v=20260808b"></script>
+<script src="express-config.js?v=20260811e"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -557,8 +557,7 @@
     box.querySelectorAll('.btn-accept-course').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!canAcceptCourses()) {
-          alert('Votre solde est insuffisant pour accepter des courses. Rechargez votre solde.');
-          openRechargeModal();
+          if (await cltConfirm({ title: 'Solde insuffisant', sub: 'Votre solde ne permet pas d\'accepter de nouvelles courses. Rechargez pour continuer.', okLabel: 'Recharger', cancelLabel: 'Plus tard' })) openRechargeModal();
           return;
         }
         const id = btn.closest('.course-item').dataset.id;
@@ -576,8 +575,7 @@
         if (!data || !data.length) {
           // Aucune ligne modifiée : course déjà prise, ou solde insuffisant (bloqué côté serveur).
           if (!canAcceptCourses()) {
-            alert('Votre solde est insuffisant pour accepter cette course. Rechargez votre solde.');
-            openRechargeModal();
+            if (await cltConfirm({ title: 'Solde insuffisant', sub: 'Votre solde ne permet pas d\'accepter cette course. Rechargez pour continuer.', okLabel: 'Recharger', cancelLabel: 'Plus tard' })) openRechargeModal();
           } else {
             alert('Cette course vient d\'être acceptée par un autre coursier.');
           }
@@ -600,7 +598,7 @@
     box.querySelectorAll('.btn-deliver-course').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.closest('.course-item').dataset.id;
-        if (!confirm('Confirmer que cette course a bien été livrée et payée par le client ?')) return;
+        if (!(await cltConfirm({ title: 'Confirmer la livraison ?', sub: 'Confirmez que la course a bien été livrée et payée par le client.', okLabel: 'Marquer livrée' }))) return;
         btn.disabled = true; btn.textContent = 'Enregistrement...';
         const { error } = await supabaseClient.from('express_courses')
           .update({ status: 'livree', delivered_at: new Date().toISOString() })

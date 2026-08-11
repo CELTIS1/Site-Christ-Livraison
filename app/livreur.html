@@ -338,7 +338,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260811d"></script>
+<script src="config.js?v=20260811e"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -836,10 +836,22 @@
         // pouvoir marquer « Livré ». La vérification est locale (le code est déjà chargé),
         // donc elle fonctionne aussi hors connexion.
         if (statut === 'livre' && existing && existing.code_confirmation && !existing.code_confirme_at) {
-          const saisi = prompt('Code de confirmation à 4 chiffres remis par le destinataire :');
+          const saisi = await cltPrompt({
+            title: 'Code de confirmation',
+            sub: 'Saisissez le code à 4 chiffres remis par le destinataire.',
+            placeholder: '● ● ● ●',
+            inputMode: 'numeric',
+            maxLength: 4,
+            okLabel: 'Valider la livraison',
+          });
           if (saisi === null || saisi.trim() === '') return; // annulé : on n'enregistre rien
           if (saisi.trim() !== String(existing.code_confirmation)) {
-            alert("Code incorrect. La livraison n'a pas été enregistrée. Vérifiez le code auprès du destinataire.");
+            await cltConfirm({
+              title: 'Code incorrect',
+              sub: "La livraison n'a pas été enregistrée. Vérifiez le code auprès du destinataire, puis réessayez.",
+              okLabel: "J'ai compris",
+              cancelLabel: 'Fermer',
+            });
             return;
           }
           extra.code_confirme_at = new Date().toISOString();
@@ -1010,7 +1022,7 @@
           .filter(c => (c.fournisseur_id || "?") === fournisseurId && dayKey(c.created_at) === dayKeyVal)
           .map(c => c.id);
         if (!ids.length) return;
-        if (!confirm(`Marquer les ${ids.length} colis de cette cliente comme récupérés ?`)) return;
+        if (!(await cltConfirm({ title: 'Marquer comme récupérés ?', sub: `Les ${ids.length} colis de cette cliente passeront au statut « récupéré ».`, okLabel: 'Marquer récupérés' }))) return;
         const originalLabel = btn.textContent;
         btn.disabled = true; btn.textContent = 'Récupération...';
 
@@ -1298,12 +1310,12 @@
 
     consentCard.classList.add('hidden');
     startPositionSharing(currentUser.id, (err) => {
-      msg.innerHTML = `<div class="msg msg-error">Impossible de partager votre position : ${err.message || 'accès refusé.'} Merci d'autoriser la géolocalisation pour cet appareil.</div>`;
-      desc.textContent = 'Activation impossible — vérifiez l\'autorisation de géolocalisation.';
+      msg.innerHTML = `<div class="msg msg-error">⚠️ Position non partagée : ${err.message || 'accès à la localisation refusé.'}<br>Vérifiez que la géolocalisation est autorisée pour cette application, que le GPS est activé, et que le mode économie de batterie ne le bloque pas.</div>`;
+      desc.textContent = '🔴 Position non partagée — action requise (voir ci-dessous).';
     });
     desc.textContent = enLivraison
-      ? 'Position partagée avec l\'équipe pour cette livraison en cours.'
-      : 'Position partagée avec l\'équipe pour ce trajet de récupération en cours.';
+      ? '🟢 Position partagée avec l\'équipe pour cette livraison en cours.'
+      : '🟢 Position partagée avec l\'équipe pour ce trajet de récupération en cours.';
     msg.innerHTML = '';
   }
 

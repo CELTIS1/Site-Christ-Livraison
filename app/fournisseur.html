@@ -315,7 +315,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260811d"></script>
+<script src="config.js?v=20260811e"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -710,7 +710,14 @@
         if (!photo_url) photoUploadFailed = true;
       }
 
-      const destinataire_telephone = (row.querySelector('.row-dest-tel')?.value || '').trim() || null;
+      const destTelRaw = (row.querySelector('.row-dest-tel')?.value || '').trim();
+      if (destTelRaw && !isValidCiPhone(destTelRaw)) {
+        addMsg("Le numéro du destinataire semble incorrect. Indiquez un numéro ivoirien (ex : 07 01 02 03 04), ou laissez le champ vide.", "error");
+        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
+        return;
+      }
+      // Normalisé au format international (225…) attendu par la notification WhatsApp.
+      const destinataire_telephone = destTelRaw ? toPhoneE164(destTelRaw) : null;
       inserts.push({
         fournisseur_id: currentUser.id,
         description,
@@ -1042,7 +1049,7 @@
       btn.addEventListener('click', async () => {
         const item = btn.closest('.colis-item');
         const id = item.dataset.id;
-        if (!confirm("Supprimer définitivement ce colis ? Cette action est irréversible.")) return;
+        if (!(await cltConfirm({ title: 'Supprimer définitivement ce colis ?', sub: 'Cette action est irréversible. Le colis sera retiré de votre liste.', okLabel: 'Supprimer', danger: true }))) return;
         btn.disabled = true; btn.textContent = '...';
         const { error } = await supabaseClient.from('colis').delete().eq('id', id);
         if (error) {

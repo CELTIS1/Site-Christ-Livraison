@@ -242,34 +242,6 @@
 </div>
 </div>
 
-<div class="subnav">
-<div class="subnav-inner">
-<div class="subnav-group">
-<span class="subnav-label">Suivi quotidien</span>
-<a href="#section-presence">🟢 En ligne</a>
-<a href="#section-carte">🗺️ Carte livreurs</a>
-<a href="#section-ajouter-colis">Ajouter un colis</a>
-<a href="#section-main">Colis</a>
-</div>
-<div class="subnav-divider"></div>
-<div class="subnav-group">
-<span class="subnav-label">Comptes</span>
-<a href="#section-pending">Comptes en attente</a>
-<a href="#section-reset">Réinitialisations</a>
-<a href="#section-livreur">Créer un livreur</a>
-<a href="#section-gerer-equipe" id="subnav-gerer-equipe" class="hidden">Comptes équipe</a>
-<a href="#section-tous-comptes" id="subnav-tous-comptes" class="hidden">Tous les comptes</a>
-<a href="#section-stats" id="subnav-stats" class="hidden">Statistiques</a>
-</div>
-<div class="subnav-divider"></div>
-<div class="subnav-group">
-<span class="subnav-label">CLT Express</span>
-<a href="#section-express-courses" id="subnav-express-courses" class="hidden">Courses</a>
-<a href="#section-express-recharges" id="subnav-express-recharges" class="hidden">Recharges</a>
-</div>
-</div>
-</div>
-
 <div class="wrap">
 <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
 <div class="page-sub">Voici le suivi de tous les colis enregistrés par les clients, en temps réel.</div>
@@ -676,7 +648,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260811d"></script>
+<script src="config.js?v=20260811e"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1875,7 +1847,7 @@ const ids = filtered
 .map(c => c.id);
 if (!ids.length) return;
 const label = collecteLivreurLabel(livreur_collecte_id) || 'ce livreur';
-if (!confirm(`Assigner ${label} à la collecte des ${ids.length} colis de cette cliente ?`)) return;
+if (!(await showConfirm({ title: 'Assigner la collecte ?', sub: `${label} sera chargé(e) de récupérer les ${ids.length} colis de cette cliente.`, okLabel: 'Assigner' }))) return;
 const originalLabel = btn.textContent;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('colis').update({ livreur_collecte_id }).in('id', ids);
@@ -3064,7 +3036,7 @@ const tr = btn.closest('tr');
 const livreurId = tr.dataset.livreur;
 const ligne = lignes.find(l => String(l.id) === String(livreurId));
 if (!ligne || !ligne.idsAremettre.length) return;
-if (!confirm(`Confirmer la remise de ${formatMontant(ligne.reste)} par ${collecteLivreurLabel(livreurId) || 'ce livreur'} ?`)) return;
+if (!(await showConfirm({ title: 'Confirmer la remise ?', detail: `${formatMontant(ligne.reste)}`, sub: `Remis par ${collecteLivreurLabel(livreurId) || 'ce livreur'}.`, okLabel: 'Confirmer la remise' }))) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('colis')
 .update({ encaissement_remis: true, encaissement_remis_at: new Date().toISOString() })
@@ -3546,7 +3518,7 @@ ${expressRechargeBadgeHTML(r.status)}
 box.querySelectorAll('.btn-valider-recharge').forEach(btn => {
 btn.addEventListener('click', async () => {
 const id = btn.closest('.colis-item').dataset.id;
-if (!confirm('Valider cette recharge ? Le solde du coursier sera crédité immédiatement.')) return;
+if (!(await showConfirm({ title: 'Valider cette recharge ?', sub: 'Le solde du coursier sera crédité immédiatement.', okLabel: 'Valider' }))) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('express_recharges').update({ status: 'validee' }).eq('id', id).eq('status', 'en_attente');
 if (error) { alert('Erreur : ' + error.message); btn.disabled = false; btn.textContent = '✅ Valider'; return; }
@@ -3556,7 +3528,7 @@ await loadExpressRecharges();
 box.querySelectorAll('.btn-refuser-recharge').forEach(btn => {
 btn.addEventListener('click', async () => {
 const id = btn.closest('.colis-item').dataset.id;
-if (!confirm('Refuser cette recharge ? Le solde ne sera pas crédité.')) return;
+if (!(await showConfirm({ title: 'Refuser cette recharge ?', sub: 'Le solde ne sera pas crédité.', okLabel: 'Refuser', danger: true }))) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('express_recharges').update({ status: 'refusee' }).eq('id', id).eq('status', 'en_attente');
 if (error) { alert('Erreur : ' + error.message); btn.disabled = false; btn.textContent = 'Refuser'; return; }
@@ -3567,7 +3539,6 @@ await loadExpressRecharges();
 }
 
 async function initExpressRecharges() {
-document.getElementById('subnav-express-recharges')?.classList.remove('hidden');
 await loadExpressRecharges();
 document.getElementById('btn-refresh-recharges')?.addEventListener('click', loadExpressRecharges);
 trackChannel(supabaseClient
@@ -3624,10 +3595,6 @@ document.getElementById('activity-log-section')?.classList.remove('hidden');
 ['section-stats','section-gerer-equipe','section-tous-comptes',
  'section-express-courses','section-express-recharges',
  'eqtab-btn-express','bottomnav-express'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
-document.getElementById('subnav-gerer-equipe').classList.remove('hidden');
-document.getElementById('subnav-tous-comptes').classList.remove('hidden');
-document.getElementById('subnav-stats').classList.remove('hidden');
-document.getElementById('subnav-express-courses').classList.remove('hidden');
 renderAccountFilters();
 await loadAllAccounts();
 await loadSiteStats();

@@ -187,6 +187,96 @@ function toE164(raw) {
   return "225" + digits;
 }
 
+// ---------- Validation d'un numéro de téléphone ivoirien ----------
+// Accepte les numéros locaux à 10 chiffres (plan actuel) ou 8 chiffres (ancien plan), avec ou sans
+// indicatif 225. Souple pour ne jamais bloquer un numéro légitime, mais repère une faute évidente.
+function isValidCiPhone(raw) {
+  let d = (raw || "").replace(/[^\d]/g, "");
+  if (d.startsWith("225")) d = d.slice(3);
+  return d.length === 10 || d.length === 8;
+}
+
+// ---------- Modale de confirmation / saisie réutilisable (remplace confirm/prompt natifs) ----------
+// Réutilise les classes .confirm-modal-* de style.css et injecte son conteneur dans le <body>.
+// cltConfirm(...) -> Promise<boolean> ; cltPrompt(...) -> Promise<string|null>.
+function __cltEnsureModal() {
+  let ov = document.getElementById("clt-modal-overlay");
+  if (ov) return ov;
+  ov = document.createElement("div");
+  ov.id = "clt-modal-overlay";
+  ov.className = "confirm-modal-overlay hidden";
+  ov.innerHTML =
+    '<div class="confirm-modal">' +
+    '<div class="confirm-modal-icon" id="clt-modal-icon">⚠️</div>' +
+    '<h3 class="confirm-modal-title" id="clt-modal-title"></h3>' +
+    '<div class="confirm-modal-detail" id="clt-modal-detail" style="display:none;"></div>' +
+    '<p class="confirm-modal-sub" id="clt-modal-sub" style="white-space:pre-line;"></p>' +
+    '<input type="text" id="clt-modal-input" style="display:none; width:100%; box-sizing:border-box; ' +
+    'padding:12px 14px; border:1.5px solid #d6dee8; border-radius:10px; font-size:16px; ' +
+    'text-align:center; margin-bottom:18px;" />' +
+    '<div class="confirm-modal-actions">' +
+    '<button type="button" class="btn" id="clt-modal-cancel" style="background:#e5e9ef;color:#222;">Annuler</button>' +
+    '<button type="button" class="btn" id="clt-modal-ok">Confirmer</button>' +
+    "</div></div>";
+  document.body.appendChild(ov);
+  ov.addEventListener("click", (e) => { if (e.target === ov) __cltCloseModal(__cltCancelValue); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !ov.classList.contains("hidden")) __cltCloseModal(__cltCancelValue);
+  });
+  return ov;
+}
+let __cltModalResolve = null;
+let __cltCancelValue = false;
+function __cltCloseModal(result) {
+  const ov = document.getElementById("clt-modal-overlay");
+  if (ov) ov.classList.add("hidden");
+  const r = __cltModalResolve;
+  __cltModalResolve = null;
+  if (r) r(result);
+}
+function cltConfirm({ title, detail, sub, okLabel, cancelLabel, danger } = {}) {
+  const ov = __cltEnsureModal();
+  __cltCancelValue = false;
+  document.getElementById("clt-modal-title").textContent = title || "Confirmer";
+  const d = document.getElementById("clt-modal-detail");
+  if (detail) { d.textContent = detail; d.style.display = ""; } else { d.style.display = "none"; }
+  document.getElementById("clt-modal-sub").textContent = sub || "";
+  document.getElementById("clt-modal-icon").textContent = danger ? "🗑️" : "⚠️";
+  document.getElementById("clt-modal-input").style.display = "none";
+  const ok = document.getElementById("clt-modal-ok");
+  ok.textContent = okLabel || "Confirmer";
+  ok.classList.toggle("danger-btn", !!danger);
+  document.getElementById("clt-modal-cancel").textContent = cancelLabel || "Annuler";
+  ov.classList.remove("hidden");
+  ok.onclick = () => __cltCloseModal(true);
+  document.getElementById("clt-modal-cancel").onclick = () => __cltCloseModal(false);
+  return new Promise((res) => { __cltModalResolve = res; });
+}
+function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, defaultValue } = {}) {
+  const ov = __cltEnsureModal();
+  __cltCancelValue = null;
+  document.getElementById("clt-modal-title").textContent = title || "Saisie";
+  document.getElementById("clt-modal-detail").style.display = "none";
+  document.getElementById("clt-modal-sub").textContent = sub || "";
+  document.getElementById("clt-modal-icon").textContent = "🔢";
+  const inp = document.getElementById("clt-modal-input");
+  inp.style.display = "";
+  inp.value = defaultValue || "";
+  inp.placeholder = placeholder || "";
+  if (inputMode) inp.setAttribute("inputmode", inputMode); else inp.removeAttribute("inputmode");
+  if (maxLength) inp.setAttribute("maxlength", String(maxLength)); else inp.removeAttribute("maxlength");
+  const ok = document.getElementById("clt-modal-ok");
+  ok.textContent = okLabel || "Valider";
+  ok.classList.remove("danger-btn");
+  document.getElementById("clt-modal-cancel").textContent = "Annuler";
+  ov.classList.remove("hidden");
+  setTimeout(() => { try { inp.focus(); } catch (e) {} }, 50);
+  ok.onclick = () => __cltCloseModal(inp.value);
+  document.getElementById("clt-modal-cancel").onclick = () => __cltCloseModal(null);
+  inp.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); __cltCloseModal(inp.value); } };
+  return new Promise((res) => { __cltModalResolve = res; });
+}
+
 function friendlyErrorMessage(message) {
   const m = (message || "").toLowerCase();
   if (m.includes("duplicate") || m.includes("already") || m.includes("unique")) {
@@ -562,10 +652,14 @@ function initExpressDeleteAccount({ profile, requestBtnId, cancelBtnId, msgId, s
       : `<div class="msg msg-success">Demande de suppression annulée.</div>`;
   }
 
-  if (requestBtn) requestBtn.addEventListener("click", () => {
-    if (confirm("Envoyer une demande de suppression de votre compte à l'équipe CLT Express ? Vous pourrez l'annuler tant qu'elle n'a pas été traitée.")) {
-      setDemande(new Date().toISOString());
-    }
+  if (requestBtn) requestBtn.addEventListener("click", async () => {
+    const ok = await cltConfirm({
+      title: "Demander la suppression de votre compte ?",
+      sub: "Une demande sera envoyée à l'équipe CLT Express. Vous pourrez l'annuler tant qu'elle n'a pas été traitée.",
+      okLabel: "Envoyer la demande",
+      danger: true,
+    });
+    if (ok) setDemande(new Date().toISOString());
   });
   if (cancelBtn) cancelBtn.addEventListener("click", () => setDemande(null));
 }

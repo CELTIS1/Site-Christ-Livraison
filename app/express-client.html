@@ -384,7 +384,7 @@
   </div>
 </div>
 
-<script src="express-config.js?v=20260808b"></script>
+<script src="express-config.js?v=20260811e"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -415,7 +415,7 @@
     if (!depart || !arrivee || !expressConfig) { box.classList.add('hidden'); return; }
     const est = estimatePrixExpress(depart, arrivee, expressConfig);
     if (!est) { box.classList.add('hidden'); return; }
-    document.getElementById('price-distance').textContent = est.distanceKm.toLocaleString('fr-FR') + ' km';
+    document.getElementById('price-distance').textContent = est.distanceKm.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' km';
     document.getElementById('price-total').textContent = formatMontant(est.prixTotal);
     box.classList.remove('hidden');
   }
@@ -582,7 +582,7 @@
     box.querySelectorAll('.btn-cancel-course').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.closest('.course-item').dataset.id;
-        if (!confirm('Annuler cette course ?')) return;
+        if (!(await cltConfirm({ title: 'Annuler cette course ?', sub: 'Le coursier sera notifié. Cette action est irréversible.', okLabel: 'Annuler la course', cancelLabel: 'Garder', danger: true }))) return;
         btn.disabled = true;
         const { error } = await supabaseClient.from('express_courses')
           .update({ status: 'annulee', cancelled_at: new Date().toISOString() }).eq('id', id);
@@ -665,6 +665,17 @@
       msgBox.innerHTML = `<div class="msg msg-error">Le numéro de téléphone du destinataire est obligatoire pour la livraison.</div>`;
       return;
     }
+
+    if (!isValidCiPhone(destTel)) {
+      msgBox.innerHTML = `<div class="msg msg-error">Le numéro du destinataire semble incorrect. Indiquez un numéro ivoirien (ex : 07 01 02 03 04).</div>`;
+      return;
+    }
+
+    const est = expressConfig ? estimatePrixExpress(pickupCommune, dropoffCommune, expressConfig) : null;
+    const recapLignes = [`Trajet : ${pickupCommune} → ${dropoffCommune}`];
+    if (est) recapLignes.push(`Distance : ${est.distanceKm.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km — Prix estimé : ${formatMontant(est.prixTotal)}`);
+    recapLignes.push(`Destinataire : ${destNom ? destNom + ' — ' : ''}${destTel}`);
+    if (!(await cltConfirm({ title: 'Confirmer cette livraison ?', detail: est ? formatMontant(est.prixTotal) : '', sub: recapLignes.join('\n'), okLabel: 'Commander' }))) return;
 
     const pickupCoords = EXPRESS_COMMUNE_COORDS[pickupCommune];
     const dropoffCoords = EXPRESS_COMMUNE_COORDS[dropoffCommune];
