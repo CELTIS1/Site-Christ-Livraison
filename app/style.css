@@ -33,9 +33,13 @@ input,textarea,select{font-family:inherit;}
   width:34px; height:34px; border-radius:9px; background:var(--orange);
   display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;
 }
-.topbar .user-info{display:flex; align-items:center; gap:14px; font-size:14px;}
+/* En-tête regroupé (tous les comptes) : la photo et le nom sont collés à gauche, la pastille de
+   rôle et l'icône ⚙️ à droite ; l'espace souple se place au milieu. Sur mobile la barre passe en
+   pleine largeur (voir @media 640px), ce qui donne l'espacement « rapproché-air-rapproché » voulu. */
+.topbar .user-info{display:flex; align-items:center; justify-content:flex-start; gap:8px; font-size:14px;}
 .topbar .user-info .role-pill{
   background:rgba(255,255,255,0.15); padding:4px 12px; border-radius:14px; font-size:12px; font-weight:600;
+  margin-left:auto;
 }
 .btn-logout{
   background:rgba(255,255,255,0.12); color:var(--white); border:1px solid rgba(255,255,255,0.25);
@@ -47,7 +51,7 @@ input,textarea,select{font-family:inherit;}
 @media(max-width:640px){
   .topbar{flex-wrap:wrap; gap:10px; padding:12px 16px;}
   .topbar .brand{font-size:14px;}
-  .topbar .user-info{width:100%; justify-content:space-between; flex-wrap:wrap; gap:8px 10px; font-size:13px;}
+  .topbar .user-info{width:100%; justify-content:flex-start; flex-wrap:wrap; gap:8px 10px; font-size:13px;}
   .topbar .user-info #user-name{max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .btn-logout{padding:7px 14px; font-size:12.5px;}
 }
@@ -149,6 +153,12 @@ input,textarea,select{font-family:inherit;}
 /* ---------- FORM ---------- */
 .field{margin-bottom:16px;}
 .field label{display:block; font-size:13px; font-weight:700; color:var(--navy); margin-bottom:6px;}
+/* Anti-zoom automatique (iOS Safari) : quand on tape dans un champ dont la police est < 16px,
+   le navigateur zoome tout seul (effet « ça grossit/dézoome seul »). On impose donc une police
+   d'au moins 16px sur tous les champs de saisie pour supprimer ce zoom intempestif. Le !important
+   couvre aussi les styles en ligne. La taille visuelle change à peine (14→16px). */
+input, select, textarea{ font-size:16px !important; }
+
 .field input[type=text], .field input[type=email], .field input[type=password], .field input[type=tel],
 .field textarea, .field select{
   width:100%; padding:11px 13px; border:1.5px solid var(--border); border-radius:9px; font-size:14px;
@@ -244,6 +254,10 @@ input,textarea,select{font-family:inherit;}
   justify-content:center; color:var(--muted); font-size:9px; flex-shrink:0; text-align:center;
 }
 .colis-item .info{flex:1; min-width:180px;}
+/* Actions rapides d'un colis (côté équipe) : « Copier le lien » et « WhatsApp » sur une seule
+   ligne, à largeur égale, pour occuper moins de hauteur et rester lisibles même sur petit écran. */
+.colis-quick-actions{display:flex; gap:6px; flex-wrap:nowrap; margin-top:6px;}
+.colis-quick-actions .btn{flex:1 1 0; min-width:0; justify-content:center; padding:7px 8px; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .colis-item .info .desc{font-size:13px; font-weight:700; color:#222; margin-bottom:2px;}
 .colis-item .info .meta{font-size:11.5px; color:var(--muted); line-height:1.4;}
 .colis-item .status-col{display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; width:170px;}
