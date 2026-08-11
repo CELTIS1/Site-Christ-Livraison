@@ -549,6 +549,34 @@ input,textarea,select{font-family:inherit;}
   }
   .recap-table-cards td:first-child{position:static; background:none;}
 }
+
+/* ---- Récapitulatif par client (par jour, cliquable) ---- */
+.recap-day-bar{display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-top:12px;}
+.recap-day-bar .field{margin:0; max-width:200px;}
+.recap-day-summary{margin:14px 0 10px; font-size:13.5px; color:var(--muted);}
+.recap-day-summary strong{color:var(--navy);}
+.recap-search-wrap{margin-bottom:12px;}
+.recap-search{
+  width:100%; max-width:360px; padding:10px 14px; font-size:14px; font-family:inherit;
+  border:1.5px solid var(--border); border-radius:10px; background:var(--white);
+}
+.recap-search:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 2px var(--orange-light);}
+.recap-client-list{display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px;}
+.recap-client-card{
+  display:flex; flex-direction:column; align-items:flex-start; gap:8px; text-align:left; cursor:pointer;
+  padding:14px 16px; background:var(--white); border:1.5px solid var(--border); border-radius:12px;
+  font-family:inherit; transition:border-color .15s ease, box-shadow .15s ease, transform .05s ease;
+}
+.recap-client-card:hover{border-color:var(--orange); box-shadow:0 2px 10px rgba(0,0,0,.06);}
+.recap-client-card:active{transform:scale(.99);}
+.recap-client-name{font-weight:700; color:var(--navy); font-size:14.5px; line-height:1.3;}
+.recap-client-meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.recap-client-count{background:var(--orange-light); color:var(--orange); padding:3px 10px; border-radius:12px; font-size:12px; font-weight:700;}
+.recap-client-amount{color:var(--muted); font-size:12.5px; font-weight:600;}
+.recap-bilan-head{display:flex; align-items:center; gap:12px; margin:14px 0 6px; flex-wrap:wrap;}
+.recap-bilan-title{font-weight:700; color:var(--navy); font-size:16px;}
+.recap-bilan-sub{font-size:13px; color:var(--muted); margin:0 0 6px;}
+.recap-bilan-sub strong{color:var(--navy);}
 .day-group{margin-bottom:26px;}
 .day-group-header{
   display:flex; align-items:center; justify-content:space-between; padding-bottom:8px; margin-bottom:12px;

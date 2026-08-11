@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260801f">
+<link rel="stylesheet" href="style.css?v=20260811a">
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -465,8 +465,17 @@
 <h3 class="panel-subtitle collapsible-header" id="recap-toggle" onclick="toggleRecap()">
 <span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif par client
 </h3>
-<div id="recap-fournisseur" class="recap-table-wrap collapsible-content">
+<div id="recap-fournisseur" class="collapsible-content">
+<div class="recap-day-bar">
+<div class="field">
+<label>Jour</label>
+<input type="date" id="recap-date">
+</div>
+<button type="button" class="btn btn-outline btn-sm" id="btn-recap-today">📅 Aujourd'hui</button>
+</div>
+<div id="recap-body">
 <div class="empty-state">Chargement...</div>
+</div>
 </div>
 <h3 class="panel-subtitle" style="margin-top:28px;">Historique des actions</h3>
 <div class="colis-list" id="activity-log-list">
@@ -2360,39 +2369,180 @@ document.getElementById('recap-arrow').textContent = recapExpanded ? '▼' : '�
 if (recapExpanded) refreshStickyTables(recapBox);
 }
 
+// ---- Récapitulatif par client (par jour, cliquable) ----
+// Le récapitulatif porte sur les clientes (vendeuses) dont au moins un colis a été
+// enregistré le jour sélectionné (aujourd'hui par défaut). On clique sur une cliente
+// pour afficher le bilan détaillé de SES colis du jour : téléphone du destinataire,
+// adresse de livraison, statut, montant article et observation. Conçu pour rester
+// lisible sur mobile (le tableau se transforme en cartes sous 640px).
+let recapSelectedDate = null;         // 'YYYY-MM-DD' ; null => aujourd'hui
+let recapSelectedFournisseur = null;  // cliente sélectionnée (ou null = vue liste)
+let recapSearchText = '';
+let recapDayCache = {};               // date -> colis[] (jours passés rapatriés de la base)
+let recapLoadingDay = false;
+
+function recapGetDate(){
+return recapSelectedDate || todayLocalISODate();
+}
+
+// Colis du jour sélectionné : aujourd'hui => on filtre les colis déjà en mémoire
+// (500 plus récents = tous ceux du jour, en direct) ; un jour passé => cache rapatrié.
+function recapDayColis(){
+const date = recapGetDate();
+if (date === todayLocalISODate()) {
+return allColis.filter(c => (c.created_at || '').slice(0, 10) === date);
+}
+return recapDayCache[date] || [];
+}
+
+// Rapatrie tous les colis d'un jour passé depuis la base (mis en cache), car `allColis`
+// ne couvre que les pages récentes tant que "Charger plus" n'a pas tout ramené.
+async function recapLoadPastDay(date){
+if (recapDayCache[date]) { renderRecapBody(); return; }
+recapLoadingDay = true;
+renderRecapBody();
+const { data, error } = await supabaseClient
+.from('colis')
+.select('*')
+.gte('created_at', date + 'T00:00:00')
+.lte('created_at', date + 'T23:59:59')
+.order('created_at', { ascending: false });
+recapLoadingDay = false;
+recapDayCache[date] = error ? [] : (data || []);
+renderRecapBody();
+}
+
+// Point d'entrée appelé par renderColis() : garde la barre (date) stable et ne
+// re-rend que le corps dynamique (liste des clientes ou bilan).
 function renderRecapFournisseur(){
-const box = document.getElementById('recap-fournisseur');
-if (!box) return;
-if (!allColis.length) {
-box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
+const dateInput = document.getElementById('recap-date');
+if (dateInput && !dateInput.value) dateInput.value = recapGetDate();
+renderRecapBody();
+}
+
+function renderRecapBody(){
+const body = document.getElementById('recap-body');
+if (!body) return;
+
+if (recapLoadingDay) {
+body.innerHTML = `<div class="empty-state">Chargement du jour…</div>`;
 return;
 }
 
-const parFournisseur = {};
-allColis.forEach(c => {
+const colisJour = recapDayColis();
+
+// Vue "bilan" d'une cliente choisie.
+if (recapSelectedFournisseur) {
+body.innerHTML = renderRecapBilan(recapSelectedFournisseur, colisJour);
+const back = document.getElementById('recap-back');
+if (back) back.addEventListener('click', () => { recapSelectedFournisseur = null; renderRecapBody(); });
+return;
+}
+
+// Vue "liste" : une carte cliquable par cliente ayant des colis ce jour-là.
+const parClient = {};
+colisJour.forEach(c => {
 const key = c.fournisseur_id || 'inconnu';
-if (!parFournisseur[key]) parFournisseur[key] = { total: 0, statuts: {} };
-parFournisseur[key].total++;
-parFournisseur[key].statuts[c.statut] = (parFournisseur[key].statuts[c.statut] || 0) + 1;
+if (!parClient[key]) parClient[key] = { id: key, nb: 0, montant: 0 };
+parClient[key].nb++;
+parClient[key].montant += montantArticleColis(c);
 });
+let clients = Object.values(parClient).sort((a, b) => b.nb - a.nb);
 
-const rows = Object.keys(parFournisseur)
-.map(id => ({ id, ...parFournisseur[id] }))
-.sort((a, b) => b.total - a.total);
+const q = recapSearchText.trim().toLowerCase();
+if (q) clients = clients.filter(c => fournisseurLabelPlain(c.id).toLowerCase().includes(q));
 
-const statutKeys = Object.keys(STATUTS);
-const headerCols = statutKeys.map(k => `<th>${STATUTS[k].label}</th>`).join('');
-const bodyRows = rows.map(r => {
-const cols = statutKeys.map(k => `<td>${r.statuts[k] || 0}</td>`).join('');
-return `<tr><td>${fournisseurLabel(r.id)}</td>${cols}<td><strong>${r.total}</strong></td></tr>`;
-}).join('');
+const dateLabel = recapDayLabel(recapGetDate());
+const totalColis = colisJour.length;
+const totalClients = Object.keys(parClient).length;
 
-box.innerHTML = `
-<table class="recap-table">
-<thead><tr><th>Client</th>${headerCols}<th>Total</th></tr></thead>
-<tbody>${bodyRows}</tbody>
+if (!totalColis) {
+body.innerHTML = `<div class="empty-state">Aucune cliente enregistrée pour ${dateLabel}.</div>`;
+return;
+}
+
+const cards = clients.map(c => `
+<button type="button" class="recap-client-card" data-fid="${escapeHTML(c.id)}">
+<span class="recap-client-name">${fournisseurLabel(c.id)}</span>
+<span class="recap-client-meta">
+<span class="recap-client-count">${c.nb} colis</span>
+<span class="recap-client-amount">${formatMontant(c.montant) || '0 FCFA'}</span>
+</span>
+</button>`).join('');
+
+body.innerHTML = `
+<div class="recap-day-summary">${dateLabel} · <strong>${totalClients}</strong> cliente${totalClients > 1 ? 's' : ''} · <strong>${totalColis}</strong> colis</div>
+${recapSearchBarHTML()}
+${clients.length ? `<div class="recap-client-list">${cards}</div>` : `<div class="empty-state">Aucune cliente ne correspond à « ${escapeHTML(recapSearchText)} ».</div>`}`;
+
+wireRecapSearch();
+body.querySelectorAll('.recap-client-card').forEach(btn => {
+btn.addEventListener('click', () => {
+recapSelectedFournisseur = btn.dataset.fid;
+renderRecapBody();
+});
+});
+}
+
+function recapSearchBarHTML(){
+return `
+<div class="recap-search-wrap">
+<input type="search" id="recap-search" class="recap-search" placeholder="Rechercher une cliente…" value="${escapeHTML(recapSearchText)}">
+</div>`;
+}
+
+// Ré-rend la liste à chaque frappe tout en conservant le focus et la position du curseur.
+function wireRecapSearch(){
+const input = document.getElementById('recap-search');
+if (!input) return;
+input.addEventListener('input', () => {
+recapSearchText = input.value;
+const pos = input.selectionStart;
+renderRecapBody();
+const again = document.getElementById('recap-search');
+if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) {} }
+});
+}
+
+// Bilan détaillé d'une cliente : ses colis du jour, colonnes téléphone / adresse /
+// statut / montant (article) / observation. Le tableau devient des cartes sous 640px.
+function renderRecapBilan(fid, colisJour){
+const list = colisJour.filter(c => (c.fournisseur_id || 'inconnu') === fid);
+const totalMontant = list.reduce((s, c) => s + montantArticleColis(c), 0);
+const rows = list.map(c => `
+<tr>
+<td data-label="Téléphone">${c.destinataire_telephone ? escapeHTML(c.destinataire_telephone) : '—'}</td>
+<td data-label="Adresse">${c.destination ? escapeHTML(c.destination) : '—'}</td>
+<td data-label="Statut">${statutBadgeHTML(c.statut)}</td>
+<td data-label="Montant">${formatMontant(montantArticleColis(c)) || '0 FCFA'}</td>
+<td data-label="Observation">${c.observation ? escapeHTML(c.observation) : '—'}</td>
+</tr>`).join('');
+
+return `
+<div class="recap-bilan-head">
+<button type="button" class="btn btn-outline btn-sm" id="recap-back">← Clientes</button>
+<div class="recap-bilan-title">${fournisseurLabel(fid)}</div>
+</div>
+<div class="recap-bilan-sub">${recapDayLabel(recapGetDate())} · <strong>${list.length}</strong> colis · Total article : <strong>${formatMontant(totalMontant) || '0 FCFA'}</strong></div>
+<div class="recap-table-wrap">
+<table class="recap-table recap-table-cards">
+<thead><tr><th>Téléphone</th><th>Adresse</th><th>Statut</th><th>Montant</th><th>Observation</th></tr></thead>
+<tbody>${rows}</tbody>
 </table>
-`;
+</div>`;
+}
+
+function fournisseurLabelPlain(id){
+const f = fournisseurs.find(x => x.id === id);
+if (!f) return 'Client inconnu';
+return (f.company_name || f.full_name || id || '').toString();
+}
+
+function recapDayLabel(dayKey){
+if (!dayKey) return '';
+const d = new Date(dayKey + 'T00:00:00');
+const label = d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+return dayKey === todayLocalISODate() ? `Aujourd'hui — ${label}` : label;
 }
 
 function groupColisByDayLegacyReport(list){
@@ -2799,6 +2949,32 @@ document.getElementById('compta-date-debut').value = '';
 document.getElementById('compta-date-fin').value = '';
 renderCompta();
 });
+
+// Contrôles du "Récapitulatif par client" (choix du jour). Le sélecteur par défaut = aujourd'hui.
+(function initRecapControls(){
+const dateInput = document.getElementById('recap-date');
+const todayBtn = document.getElementById('btn-recap-today');
+if (dateInput) {
+if (!dateInput.value) dateInput.value = todayLocalISODate();
+dateInput.addEventListener('change', () => {
+recapSelectedDate = dateInput.value || null;
+recapSelectedFournisseur = null;
+recapSearchText = '';
+const date = recapGetDate();
+if (date === todayLocalISODate()) { renderRecapBody(); }
+else { recapLoadPastDay(date); }
+});
+}
+if (todayBtn) {
+todayBtn.addEventListener('click', () => {
+recapSelectedDate = null;
+recapSelectedFournisseur = null;
+recapSearchText = '';
+if (dateInput) dateInput.value = todayLocalISODate();
+renderRecapBody();
+});
+}
+})();
 
 document.getElementById('btn-export-excel').addEventListener('click', async () => {
 const rows = await comptaFiltered();
