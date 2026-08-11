@@ -2,9 +2,12 @@
 // ----------------------------------------------------------------------------
 // Traite une demande de réinitialisation de mot de passe (table
 // public.demandes_reset_password) depuis le tableau de bord Équipe/Admin.
-// Génère un mot de passe temporaire, l'applique au compte concerné via l'API
-// admin (service role), marque la demande comme "traite", puis renvoie le mot
-// de passe temporaire pour qu'il soit communiqué à la personne.
+// Cas principal : la personne concernée, présente devant l'équipe, saisit et
+// confirme elle-même son nouveau mot de passe (console « Définir le mot de
+// passe ») ; le serveur l'applique au compte via l'API admin (service role) et
+// marque la demande comme "traite". Le mot de passe n'est jamais renvoyé.
+// Cas de secours (sans mot de passe fourni) : un mot de passe temporaire est
+// généré et renvoyé pour être communiqué à la personne.
 //
 // SÉCURITÉ (règles d'accès) :
 //   - L'appelant doit être connecté avec le rôle "equipe" ou "admin".
@@ -14,9 +17,18 @@
 //     connecter à sa place et prendre le contrôle total).
 //   - Un "admin" peut réinitialiser n'importe quel compte, y compris "equipe".
 //
-// Contrat (inchangé, appelé par app/equipe.html) :
-//   Entrée  : { demande_id: uuid }
-//   Sortie  : { success: true, full_name, phone, temp_password }
+// Contrat (appelé par app/equipe.html) :
+//   Entrée  : { demande_id: uuid, new_password?: string }
+//     - Si new_password est fourni (>= 6 caractères) : c'est la personne
+//       elle-même, présente devant l'équipe, qui a saisi et confirmé son
+//       mot de passe sur la console « Définir le mot de passe ». Le serveur
+//       applique CE mot de passe. Il n'est jamais renvoyé ni stocké en clair :
+//       personne d'autre que la personne concernée ne le connaît.
+//     - Si new_password est absent : ancien comportement de secours, un mot de
+//       passe temporaire aléatoire est généré et renvoyé pour être communiqué.
+//   Sortie  : { success: true, full_name, phone, mode, temp_password? }
+//     - mode = "user_set" (mot de passe choisi par la personne, non renvoyé)
+//     - mode = "temp"     (temp_password renvoyé, à communiquer)
 //
 // Schéma de demandes_reset_password :
 //   id uuid, user_id uuid (nullable), phone text, full_name text (nullable),
@@ -58,9 +70,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { demande_id } = await req.json();
+    const { demande_id, new_password } = await req.json();
     if (!demande_id) {
       return json({ error: "demande_id est requis." }, 400);
+    }
+
+    // Si un mot de passe est fourni (saisi par la personne sur la console),
+    // on valide sa longueur côté serveur — on ne fait jamais confiance
+    // uniquement à la validation du navigateur.
+    const hasChosenPassword = typeof new_password === "string" && new_password.length > 0;
+    if (hasChosenPassword && new_password.length < 6) {
+      return json({ error: "Le mot de passe doit contenir au moins 6 caractères." }, 400);
     }
 
     const supabaseAdmin = createClient(
@@ -139,9 +159,11 @@ Deno.serve(async (req) => {
     }
 
     // --- Application du nouveau mot de passe ---------------------------------
-    const tempPassword = genTempPassword();
+    // Priorité au mot de passe choisi par la personne ; sinon, mot de passe
+    // temporaire généré (secours). Le mot de passe choisi n'est jamais renvoyé.
+    const passwordToApply = hasChosenPassword ? new_password : genTempPassword();
     const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(targetId, {
-      password: tempPassword,
+      password: passwordToApply,
     });
     if (updErr) {
       return json({ error: "Échec de la mise à jour du mot de passe : " + updErr.message }, 400);
@@ -160,7 +182,9 @@ Deno.serve(async (req) => {
       success: true,
       full_name: demande.full_name,
       phone: demande.phone,
-      temp_password: tempPassword,
+      mode: hasChosenPassword ? "user_set" : "temp",
+      // temp_password uniquement en mode secours (mot de passe généré).
+      ...(hasChosenPassword ? {} : { temp_password: passwordToApply }),
     });
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "Erreur inconnue" }, 500);

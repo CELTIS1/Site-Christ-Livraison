@@ -638,6 +638,38 @@
   </div>
 </div>
 
+<!-- Console « Définir le mot de passe » : quand l'équipe traite une demande de
+     réinitialisation, elle remet l'appareil à la personne concernée (présente),
+     qui saisit et confirme elle-même son nouveau mot de passe. Celui-ci est
+     enregistré directement et n'est connu que d'elle (aucun mot de passe
+     temporaire à communiquer). -->
+<div id="pwd-set-modal-overlay" class="pwd-modal-overlay hidden">
+  <div class="pwd-modal">
+    <div class="pwd-modal-icon">🔑</div>
+    <h3 class="pwd-modal-title">Définir le mot de passe</h3>
+    <p class="pwd-modal-sub" id="pwd-set-modal-sub"></p>
+    <p class="pwd-modal-hint" style="margin-top:0;">Remettez l'appareil à la personne concernée : elle choisit et confirme elle-même son nouveau mot de passe ci-dessous.</p>
+    <form id="pwd-set-modal-form" autocomplete="off">
+      <div style="text-align:left; margin-bottom:12px;">
+        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Nouveau mot de passe</label>
+        <input type="password" id="pwd-set-modal-value" required minlength="6" autocomplete="new-password" placeholder="6 caractères minimum" style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+      </div>
+      <div style="text-align:left; margin-bottom:8px;">
+        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Confirmer le mot de passe</label>
+        <input type="password" id="pwd-set-modal-confirm" required minlength="6" autocomplete="new-password" placeholder="Retapez le mot de passe" style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+      </div>
+      <label style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--navy); margin-bottom:12px; cursor:pointer;">
+        <input type="checkbox" id="pwd-set-modal-show"> Afficher le mot de passe
+      </label>
+      <div id="pwd-set-modal-msg"></div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button type="button" class="btn" id="pwd-set-modal-cancel" style="background:#e5e9ef;color:#222;flex:1;">Annuler</button>
+        <button type="submit" class="btn" id="pwd-set-modal-save" style="flex:1;">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div id="confirm-modal-overlay" class="confirm-modal-overlay hidden">
   <div class="confirm-modal">
     <div class="confirm-modal-icon" id="confirm-modal-icon">⚠️</div>
@@ -799,6 +831,85 @@ document.getElementById('pwd-modal-overlay').addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !document.getElementById('pwd-modal-overlay').classList.contains('hidden')) hideTempPasswordModal();
+});
+
+// ---------- Console « Définir le mot de passe » (la personne saisit elle-même) ----------
+// Ouverte par l'équipe pour une demande de réinitialisation. L'équipe remet
+// l'appareil à la personne, qui choisit et confirme son mot de passe. Celui-ci
+// est envoyé à la fonction Edge reinitialiser-mot-de-passe et appliqué au compte
+// ciblé par la demande ; il n'est jamais affiché ni renvoyé à l'équipe.
+let __setPwdDemandeId = null;
+function showSetPasswordModal(demandeId, personLabel, phone){
+  __setPwdDemandeId = demandeId;
+  document.getElementById('pwd-set-modal-sub').textContent = `Pour ${personLabel}${phone ? ' (' + phone + ')' : ''}`;
+  const v = document.getElementById('pwd-set-modal-value');
+  const c = document.getElementById('pwd-set-modal-confirm');
+  v.value = ''; c.value = '';
+  v.type = 'password'; c.type = 'password';
+  document.getElementById('pwd-set-modal-show').checked = false;
+  document.getElementById('pwd-set-modal-msg').innerHTML = '';
+  const saveBtn = document.getElementById('pwd-set-modal-save');
+  saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer';
+  document.getElementById('pwd-set-modal-overlay').classList.remove('hidden');
+  setTimeout(() => { v.focus(); }, 50);
+}
+function hideSetPasswordModal(){
+  document.getElementById('pwd-set-modal-overlay').classList.add('hidden');
+  __setPwdDemandeId = null;
+}
+document.getElementById('pwd-set-modal-show').addEventListener('change', (e) => {
+  const t = e.target.checked ? 'text' : 'password';
+  document.getElementById('pwd-set-modal-value').type = t;
+  document.getElementById('pwd-set-modal-confirm').type = t;
+});
+document.getElementById('pwd-set-modal-cancel').addEventListener('click', hideSetPasswordModal);
+document.getElementById('pwd-set-modal-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'pwd-set-modal-overlay') hideSetPasswordModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('pwd-set-modal-overlay').classList.contains('hidden')) hideSetPasswordModal();
+});
+document.getElementById('pwd-set-modal-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const demandeId = __setPwdDemandeId;
+  if (!demandeId) return;
+  const v = document.getElementById('pwd-set-modal-value').value;
+  const c = document.getElementById('pwd-set-modal-confirm').value;
+  const msgBox = document.getElementById('pwd-set-modal-msg');
+  if (!v || v.length < 6) {
+    msgBox.innerHTML = `<div class="msg msg-error">Le mot de passe doit contenir au moins 6 caractères.</div>`;
+    return;
+  }
+  if (v !== c) {
+    msgBox.innerHTML = `<div class="msg msg-error">Les deux mots de passe ne correspondent pas.</div>`;
+    return;
+  }
+  const saveBtn = document.getElementById('pwd-set-modal-save');
+  saveBtn.disabled = true; saveBtn.textContent = '...';
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/reinitialiser-mot-de-passe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': SUPABASE_KEY,
+      },
+      body: JSON.stringify({ demande_id: demandeId, new_password: v }),
+    });
+    const result = await res.json();
+    if (!res.ok) {
+      msgBox.innerHTML = `<div class="msg msg-error">${escapeHTML(result.error || 'Réinitialisation impossible.')}</div>`;
+      saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer';
+      return;
+    }
+    hideSetPasswordModal();
+    showTeamToast('✅', 'Mot de passe enregistré', (result.full_name || result.phone || 'Le compte') + ' peut désormais se connecter avec son nouveau mot de passe.');
+    await loadResetRequests();
+  } catch (err) {
+    msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${escapeHTML(err.message)}</div>`;
+    saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer';
+  }
 });
 
 // ---------- Boîte de dialogue de confirmation contextualisée (remplace confirm() natif) ----------
@@ -1371,40 +1482,12 @@ return;
 box.innerHTML = resetRequests.map(resetRowHTML).join('');
 
 box.querySelectorAll('.btn-reinitialiser').forEach(btn => {
-btn.addEventListener('click', async () => {
+btn.addEventListener('click', () => {
+// Ouvre la console : la personne concernée (présente) saisit elle-même son
+// nouveau mot de passe. Rien n'est modifié tant qu'elle n'a pas validé.
 const id = btn.closest('.colis-item').dataset.id;
 const account = resetRequests.find(r => r.id === id);
-const ok = await showConfirm({
-  title: 'Générer un nouveau mot de passe ?',
-  detail: account ? (account.full_name || account.phone || '(sans nom)') : null,
-  sub: 'Un mot de passe temporaire sera créé pour ce compte et devra lui être communiqué.',
-  okLabel: 'Générer'
-});
-if (!ok) return;
-btn.disabled = true; btn.textContent = '...';
-try {
-const { data: { session } } = await supabaseClient.auth.getSession();
-const res = await fetch(`${SUPABASE_URL}/functions/v1/reinitialiser-mot-de-passe`, {
-method: 'POST',
-headers: {
-'Content-Type': 'application/json',
-'Authorization': `Bearer ${session.access_token}`,
-'apikey': SUPABASE_KEY,
-},
-body: JSON.stringify({ demande_id: id }),
-});
-const result = await res.json();
-if (!res.ok) {
-alert("Erreur : " + (result.error || 'réinitialisation impossible'));
-btn.disabled = false; btn.textContent = 'Réinitialiser';
-return;
-}
-showTempPasswordModal(result.full_name || result.phone, result.phone, result.temp_password);
-await loadResetRequests();
-} catch (err) {
-alert("Erreur : " + err.message);
-btn.disabled = false; btn.textContent = 'Réinitialiser';
-}
+showSetPasswordModal(id, account ? (account.full_name || account.phone || '(sans nom)') : '', account ? account.phone : '');
 });
 });
 }
