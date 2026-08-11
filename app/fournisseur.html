@@ -35,6 +35,15 @@
   }
   .topbar .brand .logo-mark{ background:rgba(255,255,255,0.16) !important; }
   .role-pill{ background:rgba(255,255,255,0.20) !important; }
+  /* Espacement de l'en-tête (grands écrans) : on rapproche le nom de l'entreprise de la photo,
+     on laisse un peu d'air au milieu, puis on colle la pastille « Client » à l'icône de réglages ⚙️.
+     On ne touche pas à la version mobile (≤760px), qui répartit les éléments sur toute la largeur. */
+  @media(min-width:761px){
+    .topbar .user-info{ gap:0 !important; }
+    .topbar .user-info #user-name{ margin-left:8px !important; }
+    .topbar .user-info .role-pill{ margin-left:22px !important; }
+    .topbar .user-info .settings-menu{ margin-left:8px !important; }
+  }
   .wrap{ padding-top:26px; }
   .page-title{ letter-spacing:-0.4px; }
   .card{
@@ -230,8 +239,8 @@
 <div class="subnav">
   <div class="subnav-inner">
     <a href="#section-ajouter">Ajouter des colis</a>
-    <a href="#section-recap">Récapitulatif</a>
     <a href="#section-colis">Mes colis</a>
+    <a href="#section-recap">Récapitulatif</a>
   </div>
 </div>
 
@@ -242,8 +251,8 @@
   <div class="clt-toptabs-wrap">
   <div class="clt-toptabs" role="tablist">
   <button type="button" class="clt-toptab active" data-clttab="section-ajouter">➕ Ajouter</button>
-  <button type="button" class="clt-toptab" data-clttab="section-recap">📊 Récap</button>
   <button type="button" class="clt-toptab" data-clttab="section-colis">📦 Mes colis</button>
+  <button type="button" class="clt-toptab" data-clttab="section-recap">📊 Récap</button>
   </div>
   </div>
 
@@ -1484,13 +1493,13 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
     Ajouter
   </button>
-  <button type="button" class="nav" data-target="section-recap">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>
-    Récap
-  </button>
   <button type="button" class="nav" data-target="section-colis">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
     Mes colis
+  </button>
+  <button type="button" class="nav" data-target="section-recap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>
+    Récap
   </button>
   <button type="button" class="nav" data-target="__compte">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
