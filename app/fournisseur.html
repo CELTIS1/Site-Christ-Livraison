@@ -1327,10 +1327,11 @@
 
   // ---------- Export comptable (Excel / PDF) du récapitulatif actuellement affiché ----------
   // Reprend exactement le mois/jour sélectionné dans les filtres du récapitulatif.
-  function recapRowsActuelles(){
+  function recapRowsActuelles(source){
+    const src = source || mesColis;
     const selected = document.getElementById('mois-select').value;
     if (!selected) return [];
-    const colisDuMois = mesColis.filter(c => monthKey(c.created_at) === selected);
+    const colisDuMois = src.filter(c => monthKey(c.created_at) === selected);
     const jourSelected = document.getElementById('jour-select').value;
     if (jourSelected) {
       const groups = groupColisByDay(colisDuMois, 'created_at');
@@ -1340,9 +1341,41 @@
     return colisDuMois;
   }
 
-  document.getElementById('btn-export-excel-client').addEventListener('click', () => {
-    const rows = recapRowsActuelles();
-    if (!rows.length) { alert("Aucune donnée à exporter."); return; }
+  // Récupère la TOTALITÉ des colis du fournisseur (toutes les pages via .range()), afin que les
+  // exports comptables soient toujours complets, même si l'écran n'a chargé qu'une première page.
+  async function fetchAllColisForExport(){
+    const PAGE = 1000;
+    let all = [], from = 0;
+    while (true) {
+      const { data, error } = await supabaseClient
+        .from('colis')
+        .select('*')
+        .eq('fournisseur_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  document.getElementById('btn-export-excel-client').addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget;
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Préparation…';
+    let rows;
+    try {
+      const all = await fetchAllColisForExport();
+      rows = recapRowsActuelles(all);
+    } catch (e) {
+      await cltConfirm({ title: "Export impossible", sub: "Les données n'ont pas pu être récupérées. Vérifiez votre connexion, puis réessayez.", okLabel: "J'ai compris", cancelLabel: 'Fermer' });
+      btn.disabled = false; btn.textContent = label;
+      return;
+    }
+    btn.disabled = false; btn.textContent = label;
+    if (!rows.length) { await cltConfirm({ title: "Aucune donnée à exporter", sub: "Il n'y a aucun colis pour la période sélectionnée.", okLabel: "J'ai compris", cancelLabel: 'Fermer' }); return; }
     const data = rows.map(c => ({
       Colis: c.description || '',
       Destination: [c.commune_destination, c.destination].filter(Boolean).join(' - '),
@@ -1359,9 +1392,21 @@
     XLSX.writeFile(wb, `recapitulatif-${new Date().toISOString().slice(0, 10)}.xlsx`);
   });
 
-  document.getElementById('btn-export-pdf-client').addEventListener('click', () => {
-    const rows = recapRowsActuelles();
-    if (!rows.length) { alert("Aucune donnée à exporter."); return; }
+  document.getElementById('btn-export-pdf-client').addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget;
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Préparation…';
+    let rows;
+    try {
+      const all = await fetchAllColisForExport();
+      rows = recapRowsActuelles(all);
+    } catch (e) {
+      await cltConfirm({ title: "Export impossible", sub: "Les données n'ont pas pu être récupérées. Vérifiez votre connexion, puis réessayez.", okLabel: "J'ai compris", cancelLabel: 'Fermer' });
+      btn.disabled = false; btn.textContent = label;
+      return;
+    }
+    btn.disabled = false; btn.textContent = label;
+    if (!rows.length) { await cltConfirm({ title: "Aucune donnée à exporter", sub: "Il n'y a aucun colis pour la période sélectionnée.", okLabel: "J'ai compris", cancelLabel: 'Fermer' }); return; }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const livres = rows.filter(c => c.statut === 'livre');

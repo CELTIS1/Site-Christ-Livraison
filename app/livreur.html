@@ -590,8 +590,11 @@
         banner.classList.add('hidden');
       } else {
         banner.classList.remove('hidden');
-        const label = navigator.onLine ? 'synchronisation en cours...' : 'en attente de connexion';
-        text.textContent = `📶 ${entries.length} mise${entries.length > 1 ? 's' : ''} à jour en attente (${label})`;
+        const n = entries.length;
+        const label = navigator.onLine
+          ? 'Connexion revenue : synchronisation en cours…'
+          : 'Enregistré sur cet appareil — sera envoyé dès le retour de la connexion.';
+        text.textContent = `📶 ${n} mise${n > 1 ? 's' : ''} à jour en attente. ${label}`;
       }
     }
     renderAll();

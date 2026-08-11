@@ -385,6 +385,14 @@
     <button type="button" class="btn" id="btn-open-recharge">➕ Recharger mon solde</button>
   </div>
 
+  <div class="card" id="card-wallet-help" style="background:#f4f9f8; border:1px solid #d8ebe7;">
+    <h2 class="panel-subtitle" style="margin-top:0;">ℹ️ Comment fonctionne mon portefeuille</h2>
+    <p style="font-size:13.5px; color:var(--muted); line-height:1.55; margin:0;">
+      À chaque course livrée, une <strong>commission</strong> est déduite de votre solde : vous encaissez le prix de la course en espèces auprès du client, et la part de la plateforme est prélevée sur votre portefeuille.
+      Pour continuer à recevoir des courses, votre solde doit rester au-dessus du <strong>minimum requis</strong> affiché ci-dessus. Rechargez à tout moment via « Recharger mon solde ».
+    </p>
+  </div>
+
   <div class="card" id="card-gains">
     <h2 class="panel-subtitle">💰 Mes gains</h2>
     <div class="stats-row">
@@ -406,6 +414,11 @@
   <div class="card" id="section-recharges">
     <h2 class="panel-subtitle collapsible-header" id="recharges-header">🧾 Mes recharges</h2>
     <div id="recharges-list"></div>
+  </div>
+
+  <div class="card" id="section-debits">
+    <h2 class="panel-subtitle">📉 Mes débits (commissions)</h2>
+    <div id="debits-list"></div>
   </div>
 
   <div class="low-balance-banner hidden" id="banner-lowbalance">
@@ -616,6 +629,31 @@
     document.getElementById('stat-livrees').textContent = livrees.length;
     document.getElementById('stat-gains').textContent = formatMontant(totalGains);
     document.getElementById('stat-commission-payee').textContent = formatMontant(commissionPayee);
+    renderDebits(livrees);
+  }
+
+  // Historique des débits : chaque course livrée prélève une commission sur le solde.
+  // Affiché à côté des recharges pour un portefeuille traçable (crédits vs débits).
+  function renderDebits(livrees){
+    const box = document.getElementById('debits-list');
+    if (!box) return;
+    const debits = (livrees || mesCourses.filter(c => c.status === 'livree'))
+      .filter(c => Number(c.commission_montant) > 0)
+      .slice()
+      .sort((a, b) => new Date(b.delivered_at || b.created_at) - new Date(a.delivered_at || a.created_at));
+    if (!debits.length) {
+      box.innerHTML = `<div class="empty-state">Aucun débit pour le moment. La commission d'une course livrée apparaîtra ici.</div>`;
+      return;
+    }
+    box.innerHTML = debits.map(c => `
+      <div class="recharge-item">
+        <div>
+          <div style="font-weight:600;color:var(--navy);">− ${formatMontant(c.commission_montant)} · commission</div>
+          <div style="font-size:11.5px;color:var(--muted);">Course livrée le ${formatDate(c.delivered_at || c.created_at)}</div>
+        </div>
+        <div style="font-weight:600;color:#c0392b;">Débit</div>
+      </div>
+    `).join('');
   }
 
   // ---------- Portefeuille / solde ----------
