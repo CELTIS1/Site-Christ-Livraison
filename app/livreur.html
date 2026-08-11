@@ -288,6 +288,13 @@
     <div id="position-sharing-msg"></div>
   </div>
 
+  <div class="card" id="tournee-summary-card" style="padding:10px 14px;">
+    <div style="font-size:12px; color:#64748b; margin-bottom:8px; font-weight:600;">📊 Ma tournée</div>
+    <div id="tournee-summary" style="display:flex; gap:8px; flex-wrap:wrap;">
+      <div style="font-size:13px; color:#94a3b8;">Chargement…</div>
+    </div>
+  </div>
+
   <div class="clt-toptabs-wrap">
   <div class="clt-toptabs" role="tablist">
   <button type="button" class="clt-toptab active" data-clttab="mes">📦 Mes colis</button>
@@ -1103,10 +1110,36 @@
   }
 
   function renderAll(){
+    renderTourneeSummary();
     renderMesColis();
     renderRecuperations();
     renderTousColis();
     if (currentUser && currentProfile) updatePositionSharingFromColis();
+  }
+
+  // Synthèse « Ma tournée » : compteurs rapides des colis assignés au livreur, par état,
+  // affichés en haut de page pour un coup d'œil sur la charge de travail du jour.
+  function renderTourneeSummary(){
+    const box = document.getElementById('tournee-summary');
+    if (!box || !currentUser) return;
+    const mine = allColis.filter(c => c.livreur_id === currentUser.id);
+    if (!mine.length){
+      box.innerHTML = `<div style="font-size:13px; color:#94a3b8;">Aucun colis assigné pour le moment.</div>`;
+      return;
+    }
+    const n = s => mine.filter(c => c.statut === s).length;
+    const buckets = [
+      { label: 'À récupérer', count: n('en_attente'), color: STATUTS.en_attente.color, bg: STATUTS.en_attente.bg },
+      { label: 'En cours',    count: n('recupere') + n('en_livraison'), color: STATUTS.en_livraison.color, bg: STATUTS.en_livraison.bg },
+      { label: 'Livrés',      count: n('livre'), color: STATUTS.livre.color, bg: STATUTS.livre.bg },
+      { label: 'Non livrés',  count: n('non_livre'), color: STATUTS.non_livre.color, bg: STATUTS.non_livre.bg },
+    ];
+    box.innerHTML = buckets.map(b => `
+      <div style="flex:1; min-width:70px; text-align:center; background:${b.bg}; border-radius:10px; padding:8px 6px;">
+        <div style="font-size:20px; font-weight:700; color:${b.color}; line-height:1;">${b.count}</div>
+        <div style="font-size:11px; color:${b.color}; margin-top:3px;">${b.label}</div>
+      </div>
+    `).join('');
   }
 
   async function loadProfiles(){
