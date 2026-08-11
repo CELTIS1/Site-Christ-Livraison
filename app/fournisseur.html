@@ -276,9 +276,9 @@
     </div>
   </div>
 
-  <!-- Récapitulatif du JOUR en priorité, présenté comme la carte « Ma tournée » du livreur :
-       compteurs par statut (À récupérer, En cours, Livrés, Non livrés). Par défaut la journée
-       du jour ; on peut choisir une autre date. Les graphiques mensuels restent en dessous. -->
+  <!-- Récapitulatif du JOUR (visible uniquement dans l'onglet Récap), présenté comme la carte
+       « Ma tournée » du livreur : compteurs par statut (Récupérés, En cours, Livrés, Non livrés).
+       Par défaut la journée du jour ; on peut choisir une autre date. Graphiques mensuels en dessous. -->
   <div class="card" id="section-colis-jour">
     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-bottom:4px;">
       <h2 class="panel-subtitle" style="margin:0;">📊 Statut des colis du jour</h2>
@@ -402,6 +402,9 @@
       const el = document.getElementById(id);
       if (el) el.classList.toggle('hidden', id !== key);
     });
+    // La carte « Statut des colis du jour » n'apparaît que dans l'onglet Récap.
+    const jour = document.getElementById('section-colis-jour');
+    if (jour) jour.classList.toggle('hidden', key !== 'section-recap');
     document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === key));
     document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === key));
     try { localStorage.setItem('clt_fournisseur_tab', key); } catch(e){}
@@ -1270,8 +1273,9 @@
     jourSelect.value = groups.some(g => g.key === previousValue) ? previousValue : '';
   }
 
-  // Récapitulatif du JOUR sélectionné, présenté exactement comme la carte « Ma tournée »
-  // du livreur : 4 compteurs de statut (À récupérer, En cours, Livrés, Non livrés).
+  // Récapitulatif du JOUR sélectionné, présenté comme la carte « Ma tournée » du livreur :
+  // 4 compteurs de statut (Récupérés, En cours, Livrés, Non livrés). Chaque tuile correspond
+  // à un statut précis (Récupérés = colis déjà récupérés par CLT).
   // Par défaut la date du jour ; le fournisseur peut choisir une autre journée (hier, etc.).
   function renderColisDuJour(){
     const box = document.getElementById('colis-du-jour');
@@ -1282,8 +1286,8 @@
     const duJour = mesColis.filter(c => dayKey(c.created_at) === jour);
     const n = (st) => duJour.filter(c => c.statut === st).length;
     const buckets = [
-      { label:'À récupérer', count:n('en_attente'), color:STATUTS.en_attente.color, bg:STATUTS.en_attente.bg },
-      { label:'En cours', count:n('recupere') + n('en_livraison'), color:STATUTS.en_livraison.color, bg:STATUTS.en_livraison.bg },
+      { label:'Récupérés', count:n('recupere'), color:STATUTS.recupere.color, bg:STATUTS.recupere.bg },
+      { label:'En cours', count:n('en_livraison'), color:STATUTS.en_livraison.color, bg:STATUTS.en_livraison.bg },
       { label:'Livrés', count:n('livre'), color:STATUTS.livre.color, bg:STATUTS.livre.bg },
       { label:'Non livrés', count:n('non_livre'), color:STATUTS.non_livre.color, bg:STATUTS.non_livre.bg },
     ];
@@ -1636,8 +1640,25 @@
   (function(){
     neutralizeCollapsibles();
     const bar = document.getElementById('clt-bottomnav');
+    // Onglet réellement affiché (hors « Compte », qui est une fenêtre modale et non une section).
+    function currentContentTab(){
+      let cur = 'section-ajouter';
+      try { cur = localStorage.getItem('clt_fournisseur_tab') || 'section-ajouter'; } catch(e){}
+      if (!['section-ajouter','section-recap','section-colis'].includes(cur)) cur = 'section-ajouter';
+      return cur;
+    }
+    // À la fermeture de la fenêtre « Mon compte », on ré-active l'onglet correspondant au
+    // contenu réellement affiché en dessous (Mes colis, Récap...), pour que « Compte » ne
+    // reste pas sélectionné alors qu'il n'y a plus de contenu « Compte » à l'écran.
+    function highlightContentTab(){
+      const cur = currentContentTab();
+      document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === cur));
+      document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === cur));
+    }
     const go = (target) => {
       if (target === '__compte'){
+        // Retour visuel pendant que la fenêtre est ouverte ; l'observateur ci-dessous
+        // rétablit l'onglet du contenu dès qu'elle se referme.
         document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === '__compte'));
         const acc = document.getElementById('btn-mon-compte'); if (acc) acc.click();
         return;
@@ -1649,10 +1670,18 @@
       bar.querySelectorAll('.nav').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.target)));
     }
     document.querySelectorAll('.clt-toptab').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.clttab)));
-    let saved = 'section-ajouter';
-    try { saved = localStorage.getItem('clt_fournisseur_tab') || 'section-ajouter'; } catch(e){}
-    if (!['section-ajouter','section-recap','section-colis'].includes(saved)) saved = 'section-ajouter';
-    showFournisseurTab(saved);
+    // Surveille la fermeture de la fenêtre « Mon compte » (croix, clic sur le fond, ou Échap)
+    // pour restaurer la sélection de l'onglet visible.
+    const accountOverlay = document.getElementById('account-modal-overlay');
+    if (accountOverlay){
+      let wasOpen = !accountOverlay.classList.contains('hidden');
+      new MutationObserver(() => {
+        const isOpen = !accountOverlay.classList.contains('hidden');
+        if (wasOpen && !isOpen) highlightContentTab();
+        wasOpen = isOpen;
+      }).observe(accountOverlay, { attributes:true, attributeFilter:['class'] });
+    }
+    showFournisseurTab(currentContentTab());
   })();
 </script>
 </body>
