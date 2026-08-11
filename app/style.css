@@ -65,7 +65,8 @@ input,textarea,select{font-family:inherit;}
   font-weight:700; letter-spacing:.3px; font-family:'Poppins', Arial, sans-serif;
 }
 .topbar .user-info .avatar, .topbar .user-info .avatar-placeholder{border:2px solid rgba(255,255,255,0.35);}
-.livreur-meta{display:flex; align-items:center; gap:6px; margin-top:2px;}
+.livreur-meta{display:flex; align-items:center; gap:6px; margin-top:2px; font-size:12px; color:var(--muted); min-width:0;}
+.livreur-meta span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
 .livreur-meta .avatar, .livreur-meta .avatar-placeholder{border:1px solid var(--border);}
 .avatar-upload-row{display:flex; align-items:center; gap:16px; margin-bottom:20px; flex-wrap:wrap;}
 .avatar-upload-actions{display:flex; flex-direction:column; gap:6px;}
@@ -247,8 +248,26 @@ input, select, textarea{ font-size:16px !important; }
 }
 .colis-item:hover{box-shadow:0 6px 18px rgba(20,40,70,0.1); border-color:#d8dee6; transform:translateY(-1px);}
 .colis-item .thumb{
-  width:48px; height:48px; border-radius:8px; object-fit:cover; background:var(--grey-bg); flex-shrink:0;
+  width:48px; height:48px; border-radius:8px; object-fit:cover; background:var(--grey-bg); flex-shrink:0; cursor:zoom-in;
 }
+
+/* Agrandissement d'une photo de colis au clic (lightbox partagée équipe/livreur/fournisseur).
+   Clic sur la vignette : ouverture ; clic sur le fond ou touche Échap : fermeture. */
+#clt-photo-lightbox{
+  position:fixed; inset:0; z-index:9999; display:none; align-items:center; justify-content:center;
+  background:rgba(10,20,35,0.82); padding:24px; cursor:zoom-out; -webkit-tap-highlight-color:transparent;
+}
+#clt-photo-lightbox.open{display:flex;}
+#clt-photo-lightbox img{
+  max-width:100%; max-height:100%; border-radius:12px; object-fit:contain;
+  box-shadow:0 12px 40px rgba(0,0,0,0.5); cursor:default;
+}
+#clt-photo-lightbox .clt-lightbox-close{
+  position:absolute; top:16px; right:20px; width:42px; height:42px; border-radius:50%;
+  background:rgba(255,255,255,0.15); color:#fff; border:none; font-size:24px; line-height:1;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+#clt-photo-lightbox .clt-lightbox-close:hover{background:rgba(255,255,255,0.28);}
 .colis-item .thumb-placeholder{
   width:48px; height:48px; border-radius:8px; background:var(--grey-bg); display:flex; align-items:center;
   justify-content:center; color:var(--muted); font-size:9px; flex-shrink:0; text-align:center;
@@ -256,8 +275,8 @@ input, select, textarea{ font-size:16px !important; }
 .colis-item .info{flex:1; min-width:180px;}
 /* Actions rapides d'un colis (côté équipe) : « Copier le lien » et « WhatsApp » sur une seule
    ligne, à largeur égale, pour occuper moins de hauteur et rester lisibles même sur petit écran. */
-.colis-quick-actions{display:flex; gap:6px; flex-wrap:nowrap; margin-top:6px;}
-.colis-quick-actions .btn{flex:1 1 0; min-width:0; justify-content:center; padding:7px 8px; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.colis-quick-actions{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
+.colis-quick-actions .btn{flex:1 1 auto; min-width:max-content; justify-content:center; padding:7px 10px; font-size:12.5px; white-space:nowrap;}
 .colis-item .info .desc{font-size:13px; font-weight:700; color:#222; margin-bottom:2px;}
 .colis-item .info .meta{font-size:11.5px; color:var(--muted); line-height:1.4;}
 .colis-item .status-col{display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; width:170px;}

@@ -64,6 +64,16 @@
   input[type="search"], input[type="text"], input[type="date"]{ border-radius:12px !important; }
   /* Ne pas modifier la carte Leaflet : on la laisse telle quelle */
   .leaflet-container{ border-radius:14px; }
+  /* La carte Leaflet crée des couches à z-index élevé (contrôles de zoom, tuiles, attribution)
+     qui, sur mobile, « débordaient » visuellement par-dessus les cartes situées en dessous.
+     On enferme ces z-index dans le conteneur (isolation + position) pour qu'ils ne remontent
+     plus par-dessus le reste de la page, et on réduit la hauteur sur petit écran. */
+  #section-carte{ position:relative; z-index:0; }
+  #carte-livreurs{ position:relative; z-index:0; isolation:isolate; }
+  #carte-livreurs .leaflet-top, #carte-livreurs .leaflet-bottom{ z-index:400; }
+  @media (max-width:640px){
+    #carte-livreurs{ height:340px !important; }
+  }
 
   /* ---- Pastilles de statut arrondies ---- */
   .badge{ border-radius:999px !important; padding:5px 12px !important; font-weight:600 !important; font-size:12px !important; letter-spacing:.1px; }

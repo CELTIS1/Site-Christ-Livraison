@@ -276,6 +276,19 @@
     </div>
   </div>
 
+  <!-- Récapitulatif du JOUR en priorité, présenté comme la carte « Ma tournée » du livreur :
+       compteurs par statut (À récupérer, En cours, Livrés, Non livrés). Par défaut la journée
+       du jour ; on peut choisir une autre date. Les graphiques mensuels restent en dessous. -->
+  <div class="card" id="section-colis-jour">
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-bottom:4px;">
+      <h2 class="panel-subtitle" style="margin:0;">📊 Statut des colis du jour</h2>
+      <input type="date" id="colis-jour-date" style="max-width:180px;">
+    </div>
+    <div id="colis-jour-libelle" style="font-size:12.5px; color:var(--muted); margin:2px 0 10px;"></div>
+    <div id="colis-du-jour" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+    <div id="colis-jour-montant" style="font-size:12.5px; color:var(--muted); margin-top:10px;"></div>
+  </div>
+
   <div class="card" id="section-recap">
     <h2 class="panel-subtitle collapsible-header" id="recap-toggle" onclick="toggleRecap()">
       <span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif
@@ -1149,6 +1162,7 @@
     }
     __drafts.forEach(d => list.insertAdjacentElement('afterbegin', d));
     populateMoisSelect();
+    renderColisDuJour();
     restoreScrollAnchor(list, __anchor);
   }
 
@@ -1254,6 +1268,40 @@
     const options = groups.map(g => `<option value="${g.key}">${g.label}</option>`).join('');
     jourSelect.innerHTML = `<option value="">Tous les jours</option>${options}`;
     jourSelect.value = groups.some(g => g.key === previousValue) ? previousValue : '';
+  }
+
+  // Récapitulatif du JOUR sélectionné, présenté exactement comme la carte « Ma tournée »
+  // du livreur : 4 compteurs de statut (À récupérer, En cours, Livrés, Non livrés).
+  // Par défaut la date du jour ; le fournisseur peut choisir une autre journée (hier, etc.).
+  function renderColisDuJour(){
+    const box = document.getElementById('colis-du-jour');
+    const dateInput = document.getElementById('colis-jour-date');
+    if (!box || !dateInput) return;
+    if (!dateInput.value) dateInput.value = todayLocalISODate();
+    const jour = dateInput.value;
+    const duJour = mesColis.filter(c => dayKey(c.created_at) === jour);
+    const n = (st) => duJour.filter(c => c.statut === st).length;
+    const buckets = [
+      { label:'À récupérer', count:n('en_attente'), color:STATUTS.en_attente.color, bg:STATUTS.en_attente.bg },
+      { label:'En cours', count:n('recupere') + n('en_livraison'), color:STATUTS.en_livraison.color, bg:STATUTS.en_livraison.bg },
+      { label:'Livrés', count:n('livre'), color:STATUTS.livre.color, bg:STATUTS.livre.bg },
+      { label:'Non livrés', count:n('non_livre'), color:STATUTS.non_livre.color, bg:STATUTS.non_livre.bg },
+    ];
+    box.innerHTML = buckets.map(b => `<div style="flex:1; min-width:70px; text-align:center; background:${b.bg}; border-radius:10px; padding:8px 6px;"><div style="font-size:20px; font-weight:700; color:${b.color}; line-height:1;">${b.count}</div><div style="font-size:11px; color:${b.color}; margin-top:3px;">${b.label}</div></div>`).join('');
+
+    const libelle = document.getElementById('colis-jour-libelle');
+    if (libelle) {
+      const jourTexte = duJour.length ? dayLabel(duJour[0].created_at) : (jour === todayLocalISODate() ? "Aujourd'hui" : new Date(jour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }));
+      libelle.textContent = `${jourTexte} · ${duJour.length} colis enregistré${duJour.length > 1 ? 's' : ''}`;
+    }
+    const montantEl = document.getElementById('colis-jour-montant');
+    if (montantEl) {
+      const montantJour = duJour.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
+      const montantLivre = duJour.filter(c => c.statut === 'livre').reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
+      montantEl.innerHTML = duJour.length
+        ? `💰 Montant total : <strong>${formatMontant(montantJour) || '0 FCFA'}</strong> · Montant livré : <strong>${formatMontant(montantLivre) || '0 FCFA'}</strong>`
+        : '';
+    }
   }
 
   function renderRecapMois(){
@@ -1465,6 +1513,7 @@
 
   document.getElementById('mois-select').addEventListener('change', renderRecapMois);
   document.getElementById('jour-select').addEventListener('change', renderRecapMois);
+  document.getElementById('colis-jour-date').addEventListener('change', renderColisDuJour);
 
   async function init(){
     const session = await requireAuth();

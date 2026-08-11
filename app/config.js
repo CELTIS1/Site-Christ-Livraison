@@ -324,6 +324,54 @@ function escapeHTML(str) {
   return div.innerHTML;
 }
 
+// ---------- Agrandissement des photos de colis (lightbox partagée) ----------
+// Au clic sur une vignette « .thumb » (photo d'un colis ou preuve de livraison), on affiche
+// la photo en grand par-dessus la page. Un clic sur le fond, sur le bouton de fermeture,
+// ou la touche Échap ramène l'affichage à la normale. Fonctionne sur les 3 tableaux de bord
+// (équipe, livreur, fournisseur) via délégation d'événement, sans modifier chaque carte.
+(function () {
+  let overlay = null;
+  function ensureOverlay() {
+    if (overlay) return overlay;
+    overlay = document.createElement("div");
+    overlay.id = "clt-photo-lightbox";
+    overlay.innerHTML =
+      '<button type="button" class="clt-lightbox-close" aria-label="Fermer">&times;</button><img alt="Photo agrandie">';
+    document.body.appendChild(overlay);
+    const close = () => closeLightbox();
+    overlay.addEventListener("click", (e) => {
+      // Fermer sauf si on clique sur l'image elle-même.
+      if (e.target.tagName !== "IMG") close();
+    });
+    return overlay;
+  }
+  function openLightbox(src, alt) {
+    const o = ensureOverlay();
+    const img = o.querySelector("img");
+    img.src = src;
+    if (alt) img.alt = alt;
+    o.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeLightbox() {
+    if (!overlay) return;
+    overlay.classList.remove("open");
+    document.body.style.overflow = "";
+    const img = overlay.querySelector("img");
+    if (img) img.removeAttribute("src");
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.tagName === "IMG" && t.classList.contains("thumb") && t.getAttribute("src")) {
+      e.preventDefault();
+      openLightbox(t.getAttribute("src"), t.getAttribute("alt") || "Photo");
+    }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeLightbox();
+  });
+})();
+
 // ---------- Validation de format (numéro de téléphone ivoirien, montant) ----------
 // Depuis la refonte du plan de numérotation, tous les numéros ivoiriens comptent 10 chiffres
 // et commencent par 0 (ex : 07 00 00 00 00). On tolère les espaces/points/tirets de saisie.
