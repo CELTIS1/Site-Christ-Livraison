@@ -834,13 +834,21 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ---------- Console « Définir le mot de passe » (la personne saisit elle-même) ----------
-// Ouverte par l'équipe pour une demande de réinitialisation. L'équipe remet
+// Ouverte par l'équipe soit pour une demande de réinitialisation (« mot de passe
+// oublié »), soit pour un compte choisi dans la liste des comptes. L'équipe remet
 // l'appareil à la personne, qui choisit et confirme son mot de passe. Celui-ci
 // est envoyé à la fonction Edge reinitialiser-mot-de-passe et appliqué au compte
-// ciblé par la demande ; il n'est jamais affiché ni renvoyé à l'équipe.
-let __setPwdDemandeId = null;
-function showSetPasswordModal(demandeId, personLabel, phone){
-  __setPwdDemandeId = demandeId;
+// ciblé ; il n'est jamais affiché ni renvoyé à l'équipe.
+//
+// target      : { demande_id } (flux « mot de passe oublié ») ou { user_id }
+//               (flux « liste des comptes »). Un seul des deux.
+// onSuccess   : rafraîchissement à exécuter après succès (loadResetRequests ou
+//               loadAllAccounts selon le point d'ouverture).
+let __setPwdTarget = null;
+let __setPwdOnSuccess = null;
+function showSetPasswordModal(target, personLabel, phone, onSuccess){
+  __setPwdTarget = target || null;
+  __setPwdOnSuccess = onSuccess || null;
   document.getElementById('pwd-set-modal-sub').textContent = `Pour ${personLabel}${phone ? ' (' + phone + ')' : ''}`;
   const v = document.getElementById('pwd-set-modal-value');
   const c = document.getElementById('pwd-set-modal-confirm');
@@ -855,7 +863,8 @@ function showSetPasswordModal(demandeId, personLabel, phone){
 }
 function hideSetPasswordModal(){
   document.getElementById('pwd-set-modal-overlay').classList.add('hidden');
-  __setPwdDemandeId = null;
+  __setPwdTarget = null;
+  __setPwdOnSuccess = null;
 }
 document.getElementById('pwd-set-modal-show').addEventListener('change', (e) => {
   const t = e.target.checked ? 'text' : 'password';
@@ -871,8 +880,9 @@ document.addEventListener('keydown', (e) => {
 });
 document.getElementById('pwd-set-modal-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const demandeId = __setPwdDemandeId;
-  if (!demandeId) return;
+  const target = __setPwdTarget;
+  const onSuccess = __setPwdOnSuccess;
+  if (!target) return;
   const v = document.getElementById('pwd-set-modal-value').value;
   const c = document.getElementById('pwd-set-modal-confirm').value;
   const msgBox = document.getElementById('pwd-set-modal-msg');
@@ -895,7 +905,9 @@ document.getElementById('pwd-set-modal-form').addEventListener('submit', async (
         'Authorization': `Bearer ${session.access_token}`,
         'apikey': SUPABASE_KEY,
       },
-      body: JSON.stringify({ demande_id: demandeId, new_password: v }),
+      // target = { demande_id } ou { user_id } ; le mot de passe choisi est
+      // envoyé au serveur qui l'applique sans jamais le renvoyer.
+      body: JSON.stringify({ ...target, new_password: v }),
     });
     const result = await res.json();
     if (!res.ok) {
@@ -905,7 +917,7 @@ document.getElementById('pwd-set-modal-form').addEventListener('submit', async (
     }
     hideSetPasswordModal();
     showTeamToast('✅', 'Mot de passe enregistré', (result.full_name || result.phone || 'Le compte') + ' peut désormais se connecter avec son nouveau mot de passe.');
-    await loadResetRequests();
+    if (onSuccess) { await onSuccess(); } else { await loadResetRequests(); }
   } catch (err) {
     msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${escapeHTML(err.message)}</div>`;
     saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer';
@@ -1487,7 +1499,7 @@ btn.addEventListener('click', () => {
 // nouveau mot de passe. Rien n'est modifié tant qu'elle n'a pas validé.
 const id = btn.closest('.colis-item').dataset.id;
 const account = resetRequests.find(r => r.id === id);
-showSetPasswordModal(id, account ? (account.full_name || account.phone || '(sans nom)') : '', account ? account.phone : '');
+showSetPasswordModal({ demande_id: id }, account ? (account.full_name || account.phone || '(sans nom)') : '', account ? account.phone : '', loadResetRequests);
 });
 });
 }
@@ -2284,26 +2296,24 @@ if (isAdmin) await loadActivityLog();
 });
 
 box.querySelectorAll('.btn-reset-pwd').forEach(btn => {
-btn.addEventListener('click', async (e) => {
+btn.addEventListener('click', (e) => {
 e.stopPropagation();
+// Ferme le menu déroulant d'actions avant d'ouvrir la console.
+document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
 const account = allAccounts.find(a => a.id === id);
-const okResetPwd = await showConfirm({
-  title: 'Générer un nouveau mot de passe ?',
-  detail: account.full_name || account.phone,
-  sub: "Un nouveau mot de passe temporaire remplacera l'ancien pour ce compte.",
-  okLabel: 'Générer'
-});
-if (!okResetPwd) return;
-btn.disabled = true; btn.textContent = '...';
-try {
-const result = await callAdminFunction('admin-reset-password', { user_id: id });
-showTempPasswordModal(account.full_name || account.phone, account.phone, result.temp_password);
-} catch (err) {
-alert("Erreur : " + err.message);
-}
-btn.disabled = false; btn.textContent = '🔑 Réinitialiser mdp';
+// Ouvre la console « Définir le mot de passe » : la personne concernée
+// (présente devant l'équipe) saisit elle-même son nouveau mot de passe.
+// Rien n'est modifié tant qu'elle n'a pas validé ; le mot de passe n'est
+// jamais affiché ni communiqué. Le serveur applique la même protection
+// anti-élévation de privilèges (un membre d'équipe ne peut pas viser un admin).
+showSetPasswordModal(
+  { user_id: id },
+  account ? (account.full_name || account.phone || '(sans nom)') : '',
+  account ? account.phone : '',
+  loadAllAccounts
+);
 });
 });
 
