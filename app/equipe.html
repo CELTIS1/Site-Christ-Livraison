@@ -673,7 +673,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260811a"></script>
+<script src="config.js?v=20260811d"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1559,10 +1559,16 @@ photo_url = await uploadPhoto(pickedPhoto, currentUser.id);
 if (!photo_url) photoUploadFailed = true;
 }
 
+// Proposition automatique du livreur de récupération : si cette cliente a déjà un livreur de
+// collecte assigné à un colis du jour, on l'attribue directement au nouveau colis (un seul livreur
+// récupère tous les colis d'une même cliente sur la journée). L'équipe pourra toujours le modifier.
+const livreurCollectePropose = clienteCollecteDriverToday(fournisseur_id);
+
 const colisPayload = {
 fournisseur_id, destination, description, montant, montant_article, montant_livraison, photo_url,
 commune_recuperation, adresse_recuperation, destinataire_telephone
 };
+if (livreurCollectePropose) colisPayload.livreur_collecte_id = livreurCollectePropose;
 let { error } = await supabaseClient.from('colis').insert([colisPayload]);
 // Rétro-compatibilité : si la colonne destinataire_telephone n'existe pas encore
 // (migration SQL pas encore exécutée), on réessaie sans ce champ pour ne jamais
@@ -1634,9 +1640,27 @@ return l ? escapeHTML(l.full_name || 'Livreur') : null;
 }
 
 // Un colis est considéré comme "validé" une fois qu'il a été enregistré au moins une fois
-// par l'équipe/l'admin : son statut n'est plus "en_attente" et/ou une observation a été saisie.
+// par l'équipe/l'admin : son statut n'est plus "en_attente", et/ou une observation a été saisie,
+// et/ou un livreur de récupération (collecte) lui a été assigné. Dès qu'un livreur de récupération
+// est désigné, le colis est "traité" (quelqu'un va aller le chercher) : il passe en vue compacte
+// et l'assignation est visible immédiatement partout.
 function colisEstValide(c){
-return c.statut !== 'en_attente' || !!c.observation;
+return c.statut !== 'en_attente' || !!c.observation || !!c.livreur_collecte_id;
+}
+
+// Renvoie l'id du livreur de récupération (collecte) déjà assigné aujourd'hui à un colis de cette
+// cliente, s'il existe. Sert à proposer/attribuer automatiquement le même livreur aux colis suivants
+// de la même cliente le même jour : un seul livreur récupère tous les colis d'une cliente sur la
+// journée. Le premier est assigné à la main, les suivants automatiquement (et restent modifiables).
+function clienteCollecteDriverToday(fournisseurId){
+if (!fournisseurId) return null;
+const jour = todayLocalISODate();
+const match = allColis.find(c =>
+c.fournisseur_id === fournisseurId &&
+c.livreur_collecte_id &&
+dayKey(c.created_at) === jour
+);
+return match ? match.livreur_collecte_id : null;
 }
 
 // Frise d'étapes (stepper) : reflète visuellement l'avancement du colis à partir de son statut réel.
@@ -1668,8 +1692,11 @@ const statutOptions = Object.keys(STATUTS).map(k =>
 `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
 const livreurOptions = '<option value="">— Aucun livreur —</option>' +
 livreurs.map(l => `<option value="${l.id}" ${c.livreur_id===l.id?'selected':''}>${escapeHTML(l.full_name || l.id)}</option>`).join('');
+// Livreur de récupération à pré-sélectionner : celui déjà posé sur ce colis, sinon (proposition
+// automatique) celui déjà assigné aujourd'hui aux autres colis de la même cliente.
+const collectePropose = c.livreur_collecte_id || clienteCollecteDriverToday(c.fournisseur_id);
 const livreurCollecteOptions = '<option value="">— Aucun —</option>' +
-livreurs.map(l => `<option value="${l.id}" ${c.livreur_collecte_id===l.id?'selected':''}>${escapeHTML(l.full_name || l.id)}</option>`).join('');
+livreurs.map(l => `<option value="${l.id}" ${collectePropose===l.id?'selected':''}>${escapeHTML(l.full_name || l.id)}</option>`).join('');
 
 const estValide = colisEstValide(c) && !window.__colisEditing?.has(c.id);
 const collecteLabel = collecteLivreurLabel(c.livreur_collecte_id);
@@ -1758,6 +1785,12 @@ ${statutBadgeHTML(c.statut)}
 `;
 }
 
+// Blocage de l'enregistrement tant qu'aucun livreur de récupération n'a été choisi : un colis pour
+// lequel personne n'a été désigné pour aller le récupérer ne peut pas encore être enregistré. Le
+// blocage ne concerne que les nouveaux colis en attente ; un colis rouvert via « Modifier » reste
+// librement enregistrable.
+const estEnEdition = !!window.__colisEditing?.has(c.id);
+const gateSave = !estEnEdition && c.statut === 'en_attente' && !c.observation && !collectePropose;
 return `
 <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
 ${thumb}
@@ -1765,7 +1798,8 @@ ${infoBlock}
 <div class="status-col">
 <select class="status-select">${statutOptions}</select>
 <textarea class="obs-textarea" placeholder="Observation (ex : client absent, colis refusé...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
-<button class="btn btn-sm btn-save" style="margin-top:4px;">Enregistrer</button>
+<button class="btn btn-sm btn-save" style="margin-top:4px;" ${gateSave ? 'disabled' : ''} data-gate="${gateSave ? '1' : '0'}">Enregistrer</button>
+${gateSave ? `<div class="save-hint" style="font-size:11.5px; color:#c0392b; margin-top:4px; max-width:230px; line-height:1.35;">Choisissez d'abord un livreur de récupération pour pouvoir enregistrer.</div>` : ''}
 <button class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>
 </div>
 </div>
@@ -1852,6 +1886,22 @@ renderColis();
 });
 });
 
+// Dès qu'on choisit un livreur de récupération dans la vue d'édition d'un colis bloqué,
+// on débloque le bouton « Enregistrer » (et on masque le message d'aide). Si on revient à
+// « — Aucun — », on rebloque.
+list.querySelectorAll('.row-livreur-collecte-select').forEach(sel => {
+sel.addEventListener('change', () => {
+const item = sel.closest('.colis-item');
+if (!item) return;
+const saveBtn = item.querySelector('.btn-save');
+if (!saveBtn || saveBtn.dataset.gate !== '1') return;
+const hasDriver = !!sel.value;
+saveBtn.disabled = !hasDriver;
+const hint = item.querySelector('.save-hint');
+if (hint) hint.style.display = hasDriver ? 'none' : '';
+});
+});
+
 list.querySelectorAll('.btn-save').forEach(btn => {
 btn.addEventListener('click', async () => {
 const item = btn.closest('.colis-item');
@@ -1861,6 +1911,12 @@ const livreurSelect = item.querySelector('.row-livreur-select');
 const livreur_id = livreurSelect ? (livreurSelect.value || null) : undefined;
 const livreurCollecteSelect = item.querySelector('.row-livreur-collecte-select');
 const livreur_collecte_id = livreurCollecteSelect ? (livreurCollecteSelect.value || null) : undefined;
+// Filet de sécurité : si l'enregistrement est bloqué (nouveau colis en attente) et qu'aucun livreur
+// de récupération n'a été choisi, on empêche la sauvegarde et on l'explique clairement.
+if (btn.dataset.gate === '1' && !livreur_collecte_id) {
+alert("Vous devez d'abord assigner un livreur de récupération avant d'enregistrer ce colis.");
+return;
+}
 const observation = item.querySelector('.obs-textarea').value.trim() || null;
 const montantArticleInput = item.querySelector('.edit-montant-article');
 const montantLivraisonInput = item.querySelector('.edit-montant-livraison');

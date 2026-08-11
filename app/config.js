@@ -95,7 +95,19 @@ async function logout() {
 // détectée, requireAuth() est systématiquement relancé et renvoie vers la connexion si la
 // session n'existe plus.
 window.addEventListener("pageshow", (event) => {
-  if (event.persisted) {
+  if (!event.persisted) return;
+  // On ne force le rechargement QUE sur les pages protégées (tableaux de bord) : c'est là,
+  // et seulement là, qu'une page restaurée depuis le cache mémoire pourrait ré-afficher un
+  // espace connecté après une déconnexion. La page de connexion (login.html), elle, est
+  // publique et n'a aucune raison d'être rechargée : la recharger inutilement provoquait,
+  // sur certains navigateurs, une boucle de rechargements en rafale à l'arrivée sur la page
+  // de connexion (écran qui "tremble", impossible de saisir quoi que ce soit). On l'exclut donc.
+  const _page = window.location.pathname.split("/").pop();
+  const _protectedPages = [
+    "equipe.html", "livreur.html", "fournisseur.html",
+    "express-client.html", "express-coursier.html",
+  ];
+  if (_protectedPages.includes(_page)) {
     window.location.reload();
   }
 });

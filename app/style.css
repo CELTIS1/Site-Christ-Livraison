@@ -354,9 +354,21 @@ input,textarea,select{font-family:inherit;}
 
 /* ---------- LOGIN ---------- */
 .login-page{
+  position:relative;
   min-height:100vh; display:flex; align-items:center; justify-content:center;
   background:linear-gradient(160deg, var(--navy) 0%, var(--navy-dark) 100%); padding:24px;
 }
+/* Lien "Accueil" en haut à gauche de la page de connexion, sur le fond bleu. Discret mais bien
+   visible et facilement cliquable (zone de clic confortable), avec un léger fond translucide. */
+.login-home-link{
+  position:fixed; top:16px; left:16px; z-index:10;
+  display:inline-flex; align-items:center; gap:6px;
+  color:#fff; text-decoration:none; font-weight:600; font-size:14px;
+  padding:8px 14px; border-radius:10px;
+  background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22);
+  transition:background .15s ease;
+}
+.login-home-link:hover{background:rgba(255,255,255,0.22);}
 .login-box{background:var(--white); border-radius:16px; padding:36px; max-width:420px; width:100%;}
 .login-logo{display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:6px;}
 .login-logo .logo-mark{

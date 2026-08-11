@@ -18,11 +18,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260801">
+  <link rel="stylesheet" href="style.css?v=20260811c">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
 <body>
   <div class="login-page">
+    <!-- Lien de retour vers la page d'accueil publique : utile pour toute personne qui n'arrive pas
+         à se connecter (ou un membre de l'équipe) et souhaite revenir au site vitrine sans devoir
+         retaper l'adresse. Placé en haut à gauche, discret mais toujours accessible. -->
+    <a href="/" class="login-home-link" aria-label="Retour à l'accueil">← Accueil</a>
     <div class="login-box">
       <div class="login-logo">
         <div class="logo-mark">CLT</div>
@@ -139,7 +143,7 @@
     </div>
   </div>
 
-<script src="config.js?v=20260811a"></script>
+<script src="config.js?v=20260811d"></script>
 <script>
   function showTab(which){
     stopWaiting();
