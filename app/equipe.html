@@ -624,52 +624,6 @@
 </div>
 </div>
 
-<div id="pwd-modal-overlay" class="pwd-modal-overlay hidden">
-  <div class="pwd-modal">
-    <div class="pwd-modal-icon">🔑</div>
-    <h3 class="pwd-modal-title">Nouveau mot de passe</h3>
-    <p class="pwd-modal-sub" id="pwd-modal-sub"></p>
-    <div class="pwd-modal-value-row">
-      <input type="text" id="pwd-modal-value" readonly>
-      <button type="button" class="btn btn-sm" id="pwd-modal-copy">Copier</button>
-    </div>
-    <p class="pwd-modal-hint">Communiquez ce mot de passe à la personne concernée, puis fermez cette fenêtre.</p>
-    <button type="button" class="btn" id="pwd-modal-close">Fermer</button>
-  </div>
-</div>
-
-<!-- Console « Définir le mot de passe » : quand l'équipe traite une demande de
-     réinitialisation, elle remet l'appareil à la personne concernée (présente),
-     qui saisit et confirme elle-même son nouveau mot de passe. Celui-ci est
-     enregistré directement et n'est connu que d'elle (aucun mot de passe
-     temporaire à communiquer). -->
-<div id="pwd-set-modal-overlay" class="pwd-modal-overlay hidden">
-  <div class="pwd-modal">
-    <div class="pwd-modal-icon">🔑</div>
-    <h3 class="pwd-modal-title">Définir le mot de passe</h3>
-    <p class="pwd-modal-sub" id="pwd-set-modal-sub"></p>
-    <p class="pwd-modal-hint" style="margin-top:0;">Remettez l'appareil à la personne concernée : elle choisit et confirme elle-même son nouveau mot de passe ci-dessous.</p>
-    <form id="pwd-set-modal-form" autocomplete="off">
-      <div style="text-align:left; margin-bottom:12px;">
-        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Nouveau mot de passe</label>
-        <input type="password" id="pwd-set-modal-value" required minlength="6" autocomplete="new-password" placeholder="6 caractères minimum" style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
-      </div>
-      <div style="text-align:left; margin-bottom:8px;">
-        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Confirmer le mot de passe</label>
-        <input type="password" id="pwd-set-modal-confirm" required minlength="6" autocomplete="new-password" placeholder="Retapez le mot de passe" style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
-      </div>
-      <label style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--navy); margin-bottom:12px; cursor:pointer;">
-        <input type="checkbox" id="pwd-set-modal-show"> Afficher le mot de passe
-      </label>
-      <div id="pwd-set-modal-msg"></div>
-      <div style="display:flex; gap:10px; margin-top:8px;">
-        <button type="button" class="btn" id="pwd-set-modal-cancel" style="background:#e5e9ef;color:#222;flex:1;">Annuler</button>
-        <button type="submit" class="btn" id="pwd-set-modal-save" style="flex:1;">Enregistrer</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <div id="confirm-modal-overlay" class="confirm-modal-overlay hidden">
   <div class="confirm-modal">
     <div class="confirm-modal-icon" id="confirm-modal-icon">⚠️</div>
@@ -788,141 +742,6 @@ let activeAccountFilter = 'tous';
 let searchColis = '';
 let filtreDateColis = '';
 window.__colisEditing = new Set();
-
-function showTempPasswordModal(personLabel, phone, tempPassword){
-  document.getElementById('pwd-modal-sub').textContent = `Pour ${personLabel}${phone ? ' (' + phone + ')' : ''}`;
-  const input = document.getElementById('pwd-modal-value');
-  input.value = tempPassword || '';
-  const copyBtn = document.getElementById('pwd-modal-copy');
-  copyBtn.textContent = 'Copier';
-  copyBtn.classList.remove('copied');
-  document.getElementById('pwd-modal-overlay').classList.remove('hidden');
-  setTimeout(() => { input.focus(); input.select(); }, 50);
-}
-
-function hideTempPasswordModal(){
-  document.getElementById('pwd-modal-overlay').classList.add('hidden');
-}
-
-document.getElementById('pwd-modal-copy').addEventListener('click', async () => {
-  const input = document.getElementById('pwd-modal-value');
-  const copyBtn = document.getElementById('pwd-modal-copy');
-  input.focus(); input.select(); input.setSelectionRange(0, 99999);
-  let copied = false;
-  try {
-    await navigator.clipboard.writeText(input.value);
-    copied = true;
-  } catch (e) {
-    try { copied = document.execCommand('copy'); } catch (e2) { copied = false; }
-  }
-  if (copied) {
-    copyBtn.textContent = 'Copié ✓';
-    copyBtn.classList.add('copied');
-    setTimeout(() => { copyBtn.textContent = 'Copier'; copyBtn.classList.remove('copied'); }, 2000);
-  } else {
-    copyBtn.textContent = 'Copie impossible';
-    setTimeout(() => { copyBtn.textContent = 'Copier'; }, 2000);
-  }
-});
-
-document.getElementById('pwd-modal-close').addEventListener('click', hideTempPasswordModal);
-document.getElementById('pwd-modal-overlay').addEventListener('click', (e) => {
-  if (e.target.id === 'pwd-modal-overlay') hideTempPasswordModal();
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !document.getElementById('pwd-modal-overlay').classList.contains('hidden')) hideTempPasswordModal();
-});
-
-// ---------- Console « Définir le mot de passe » (la personne saisit elle-même) ----------
-// Ouverte par l'équipe soit pour une demande de réinitialisation (« mot de passe
-// oublié »), soit pour un compte choisi dans la liste des comptes. L'équipe remet
-// l'appareil à la personne, qui choisit et confirme son mot de passe. Celui-ci
-// est envoyé à la fonction Edge reinitialiser-mot-de-passe et appliqué au compte
-// ciblé ; il n'est jamais affiché ni renvoyé à l'équipe.
-//
-// target      : { demande_id } (flux « mot de passe oublié ») ou { user_id }
-//               (flux « liste des comptes »). Un seul des deux.
-// onSuccess   : rafraîchissement à exécuter après succès (loadResetRequests ou
-//               loadAllAccounts selon le point d'ouverture).
-let __setPwdTarget = null;
-let __setPwdOnSuccess = null;
-function showSetPasswordModal(target, personLabel, phone, onSuccess){
-  __setPwdTarget = target || null;
-  __setPwdOnSuccess = onSuccess || null;
-  document.getElementById('pwd-set-modal-sub').textContent = `Pour ${personLabel}${phone ? ' (' + phone + ')' : ''}`;
-  const v = document.getElementById('pwd-set-modal-value');
-  const c = document.getElementById('pwd-set-modal-confirm');
-  v.value = ''; c.value = '';
-  v.type = 'password'; c.type = 'password';
-  document.getElementById('pwd-set-modal-show').checked = false;
-  document.getElementById('pwd-set-modal-msg').innerHTML = '';
-  const saveBtn = document.getElementById('pwd-set-modal-save');
-  saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer';
-  document.getElementById('pwd-set-modal-overlay').classList.remove('hidden');
-  setTimeout(() => { v.focus(); }, 50);
-}
-function hideSetPasswordModal(){
-  document.getElementById('pwd-set-modal-overlay').classList.add('hidden');
-  __setPwdTarget = null;
-  __setPwdOnSuccess = null;
-}
-document.getElementById('pwd-set-modal-show').addEventListener('change', (e) => {
-  const t = e.target.checked ? 'text' : 'password';
-  document.getElementById('pwd-set-modal-value').type = t;
-  document.getElementById('pwd-set-modal-confirm').type = t;
-});
-document.getElementById('pwd-set-modal-cancel').addEventListener('click', hideSetPasswordModal);
-document.getElementById('pwd-set-modal-overlay').addEventListener('click', (e) => {
-  if (e.target.id === 'pwd-set-modal-overlay') hideSetPasswordModal();
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !document.getElementById('pwd-set-modal-overlay').classList.contains('hidden')) hideSetPasswordModal();
-});
-document.getElementById('pwd-set-modal-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const target = __setPwdTarget;
-  const onSuccess = __setPwdOnSuccess;
-  if (!target) return;
-  const v = document.getElementById('pwd-set-modal-value').value;
-  const c = document.getElementById('pwd-set-modal-confirm').value;
-  const msgBox = document.getElementById('pwd-set-modal-msg');
-  if (!v || v.length < 6) {
-    msgBox.innerHTML = `<div class="msg msg-error">Le mot de passe doit contenir au moins 6 caractères.</div>`;
-    return;
-  }
-  if (v !== c) {
-    msgBox.innerHTML = `<div class="msg msg-error">Les deux mots de passe ne correspondent pas.</div>`;
-    return;
-  }
-  const saveBtn = document.getElementById('pwd-set-modal-save');
-  saveBtn.disabled = true; saveBtn.textContent = '...';
-  try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/reinitialiser-mot-de-passe`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-        'apikey': SUPABASE_KEY,
-      },
-      // target = { demande_id } ou { user_id } ; le mot de passe choisi est
-      // envoyé au serveur qui l'applique sans jamais le renvoyer.
-      body: JSON.stringify({ ...target, new_password: v }),
-    });
-    const result = await res.json();
-    if (!res.ok) {
-      msgBox.innerHTML = `<div class="msg msg-error">${escapeHTML(result.error || 'Réinitialisation impossible.')}</div>`;
-      saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer';
-      return;
-    }
-    hideSetPasswordModal();
-    showTeamToast('✅', 'Mot de passe enregistré', (result.full_name || result.phone || 'Le compte') + ' peut désormais se connecter avec son nouveau mot de passe.');
-    if (onSuccess) { await onSuccess(); } else { await loadResetRequests(); }
-  } catch (err) {
-    msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${escapeHTML(err.message)}</div>`;
-    saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer';
-  }
-});
 
 // ---------- Boîte de dialogue de confirmation contextualisée (remplace confirm() natif) ----------
 // Affiche le nom/l'élément concerné avant toute action destructrice ou sensible.
@@ -1477,7 +1296,7 @@ return `
 <div class="meta">Tél : ${escapeHTML(r.phone || '')} · Demandé le ${formatDate(r.created_at)}</div>
 </div>
 <div class="status-col">
-<button class="btn btn-sm btn-reinitialiser">Réinitialiser</button>
+<button class="btn btn-sm btn-reinitialiser">Approuver</button>
 </div>
 </div>
 `;
@@ -1495,13 +1314,56 @@ box.innerHTML = resetRequests.map(resetRowHTML).join('');
 
 box.querySelectorAll('.btn-reinitialiser').forEach(btn => {
 btn.addEventListener('click', () => {
-// Ouvre la console : la personne concernée (présente) saisit elle-même son
-// nouveau mot de passe. Rien n'est modifié tant qu'elle n'a pas validé.
+// L'équipe APPROUVE seulement. Elle ne saisit aucun mot de passe : une fois
+// approuvée, la personne qui a fait la demande définit elle-même, à distance
+// et depuis son propre appareil, son nouveau mot de passe.
 const id = btn.closest('.colis-item').dataset.id;
 const account = resetRequests.find(r => r.id === id);
-showSetPasswordModal({ demande_id: id }, account ? (account.full_name || account.phone || '(sans nom)') : '', account ? account.phone : '', loadResetRequests);
+approuverResetRequest(id, account, btn);
 });
 });
+}
+
+// ---------- Approbation d'une demande de réinitialisation (équipe/admin) ----------
+// L'équipe ne fait qu'AUTORISER. Après confirmation d'identité, on appelle la
+// fonction Edge privilégiée approuver-reset-password. La demande passe à
+// 'approuve' ; la personne pourra ensuite définir son mot de passe à distance,
+// depuis son propre appareil, dans une fenêtre de temps limitée. L'équipe ne
+// voit jamais le mot de passe et ne le saisit pas.
+async function approuverResetRequest(id, account, btn){
+  const label = account ? (account.full_name || account.phone || '(sans nom)') : '';
+  const ok = await showConfirm({
+    title: 'Approuver cette réinitialisation ?',
+    detail: label,
+    sub: "Vérifiez d'abord l'identité du demandeur. Après approbation, la personne définira elle-même son nouveau mot de passe, à distance, depuis son propre appareil.",
+    okLabel: 'Approuver',
+  });
+  if (!ok) return;
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/approuver-reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': SUPABASE_KEY,
+      },
+      body: JSON.stringify({ demande_id: id }),
+    });
+    const result = await res.json();
+    if (!res.ok) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Approuver'; }
+      showTeamToast('⚠️', 'Approbation impossible', result.error || 'Réessayez.', true);
+      await loadResetRequests();
+      return;
+    }
+    showTeamToast('✅', 'Demande approuvée', (result.full_name || result.phone || 'La personne') + ' peut maintenant définir son nouveau mot de passe depuis son propre appareil.');
+    await loadResetRequests();
+  } catch (err) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Approuver'; }
+    showTeamToast('⚠️', 'Erreur', err.message, true);
+  }
 }
 
 let __resetIdsSeen = null; // null = premier chargement : on ne veut pas d'alerte au démarrage de la page
@@ -1537,9 +1399,9 @@ rows = rows.map(r => ({ ...r, role: roleByPhone[r.phone] || null }));
 }
 
 if (!isAdmin) {
-// Un membre d'équipe peut réinitialiser tous les comptes SAUF les comptes
+// Un membre d'équipe peut approuver tous les comptes SAUF les comptes
 // admin (protection anti-élévation de privilèges, alignée avec la fonction
-// Edge reinitialiser-mot-de-passe). Il voit donc aussi les demandes des
+// Edge approuver-reset-password). Il voit donc aussi les demandes des
 // autres membres de l'équipe, mais jamais celles d'un administrateur.
 rows = rows.filter(r => r.role !== 'admin');
 }
@@ -2231,7 +2093,6 @@ return `
 <button type="button" class="actions-menu-btn" aria-label="Actions du compte">⋮</button>
 <div class="actions-dropdown">
 ${promoteBtn}
-<button type="button" class="btn-reset-pwd">🔑 Réinitialiser mdp</button>
 ${deleteBtn}
 </div>
 </div>
@@ -2292,28 +2153,6 @@ await supabaseClient.from('activity_log').insert([{ action: 'promotion_admin', d
 } catch (e) { /* non bloquant */ }
 await loadAllAccounts();
 if (isAdmin) await loadActivityLog();
-});
-});
-
-box.querySelectorAll('.btn-reset-pwd').forEach(btn => {
-btn.addEventListener('click', (e) => {
-e.stopPropagation();
-// Ferme le menu déroulant d'actions avant d'ouvrir la console.
-document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
-const item = btn.closest('.colis-item');
-const id = item.dataset.id;
-const account = allAccounts.find(a => a.id === id);
-// Ouvre la console « Définir le mot de passe » : la personne concernée
-// (présente devant l'équipe) saisit elle-même son nouveau mot de passe.
-// Rien n'est modifié tant qu'elle n'a pas validé ; le mot de passe n'est
-// jamais affiché ni communiqué. Le serveur applique la même protection
-// anti-élévation de privilèges (un membre d'équipe ne peut pas viser un admin).
-showSetPasswordModal(
-  { user_id: id },
-  account ? (account.full_name || account.phone || '(sans nom)') : '',
-  account ? account.phone : '',
-  loadAllAccounts
-);
 });
 });
 

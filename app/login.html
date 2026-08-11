@@ -60,9 +60,42 @@
     <label>Numéro de téléphone</label>
     <input type="tel" id="forgot-phone" required placeholder="07 00 00 00 00">
     </div>
-    <div style="margin-bottom:14px;font-size:12.5px;color:#6b7280;">Première connexion ou mot de passe oublié : la démarche est la même dans les deux cas. Notre équipe vous communiquera un mot de passe par téléphone.</div>
+    <div style="margin-bottom:14px;font-size:12.5px;color:#6b7280;">Première connexion ou mot de passe oublié : la démarche est la même. Après approbation par notre équipe, vous définirez vous-même votre nouveau mot de passe, directement sur cette page.</div>
     <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-send">Demander une réinitialisation</button>
     <button type="button" id="btn-forgot-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
+    </form>
+
+    <!-- RESET : ATTENTE D'APPROBATION PAR L'EQUIPE.
+         Après avoir demandé une réinitialisation, la personne attend ici que
+         l'équipe approuve. La page vérifie l'état automatiquement ; dès que la
+         demande est approuvée, le formulaire « nouveau mot de passe » s'affiche. -->
+    <div id="reset-waiting-box" class="hidden waiting-box">
+      <div class="waiting-spinner"></div>
+      <div class="waiting-title">Demande en attente d'approbation</div>
+      <div class="waiting-text" id="reset-waiting-text">Votre demande de réinitialisation a été transmise à notre équipe. Dès qu'elle sera approuvée, vous pourrez définir vous-même votre nouveau mot de passe ici. Cette page se met à jour automatiquement.</div>
+      <div class="waiting-lastcheck" id="reset-waiting-lastcheck"></div>
+      <button type="button" class="btn" style="width:100%; justify-content:center; margin-top:16px;" id="btn-reset-waiting-check">Vérifier maintenant</button>
+      <button type="button" id="btn-reset-waiting-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
+    </div>
+
+    <!-- RESET : DEFINIR LE NOUVEAU MOT DE PASSE (côté personne, à distance).
+         C'est la personne elle-même qui saisit et confirme son mot de passe.
+         Il est appliqué directement à son compte via finaliser-reset-password :
+         l'équipe ne le voit jamais. -->
+    <form id="form-reset-set" class="hidden">
+    <div style="text-align:center;font-weight:700;color:#1B4374;font-size:15px;margin-bottom:6px;">Définir votre nouveau mot de passe</div>
+    <div id="reset-set-sub" style="text-align:center;font-size:12.5px;color:#16794c;margin-bottom:12px;">Votre demande a été approuvée. Choisissez votre nouveau mot de passe.</div>
+    <div class="field">
+    <label>Nouveau mot de passe</label>
+    <input type="password" id="reset-set-password" required minlength="6" autocomplete="new-password" placeholder="6 caractères minimum">
+    </div>
+    <div class="field">
+    <label>Confirmer le mot de passe</label>
+    <input type="password" id="reset-set-confirm" required minlength="6" autocomplete="new-password" placeholder="Retapez le mot de passe">
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6b7280;margin-bottom:12px;cursor:pointer;"><input type="checkbox" id="reset-set-show"> Afficher le mot de passe</label>
+    <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-reset-set-submit">Enregistrer mon mot de passe</button>
+    <button type="button" id="btn-reset-set-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
     </form>
 
     <!-- INSCRIPTION : formulaire en une étape (compte activé après validation par l'équipe) -->
@@ -110,12 +143,15 @@
 <script>
   function showTab(which){
     stopWaiting();
+    stopResetPoll();
     document.getElementById('tab-connexion').classList.toggle('active', which==='connexion');
     document.getElementById('tab-inscription').classList.toggle('active', which==='inscription');
     document.getElementById('form-connexion-login').classList.toggle('hidden', which!=='connexion');
     document.getElementById('form-forgot-phone').classList.add('hidden');
     document.getElementById('form-inscription').classList.toggle('hidden', which!=='inscription');
     document.getElementById('waiting-box').classList.add('hidden');
+    document.getElementById('reset-waiting-box').classList.add('hidden');
+    document.getElementById('form-reset-set').classList.add('hidden');
     document.getElementById('msg-box').innerHTML = '';
   }
 
@@ -396,8 +432,15 @@
     redirectByRole(profile);
   });
 
-  // ---------- MOT DE PASSE OUBLIE / PREMIERE CONNEXION ----------
-  let forgotPhone = '';
+  // ---------- MOT DE PASSE OUBLIE / PREMIERE CONNEXION (réinitialisation à distance) ----------
+  // Modèle : la personne demande une réinitialisation -> l'équipe APPROUVE
+  // (elle ne saisit aucun mot de passe) -> la personne, ICI sur son propre
+  // appareil, définit et confirme elle-même son nouveau mot de passe.
+  // Elle peut reprendre depuis n'importe quel appareil en retapant son numéro :
+  // si sa demande est déjà approuvée, le formulaire de saisie s'affiche direct.
+  let resetPhone = '';
+  let resetPollTimer = null;
+  const RESET_POLL_MS = 4000;
 
   document.getElementById('btn-goto-forgot').addEventListener('click', () => {
     document.getElementById('form-connexion-login').classList.add('hidden');
@@ -419,38 +462,186 @@
     showTab('connexion');
   });
 
+  function stopResetPoll(){
+    clearTimeout(resetPollTimer);
+    resetPollTimer = null;
+  }
+
+  function setResetLastCheck(){
+    const el = document.getElementById('reset-waiting-lastcheck');
+    if (el) el.textContent = 'Dernière vérification à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Interroge l'état de la demande la plus récente pour ce numéro.
+  // Renvoie 'none' | 'en_attente' | 'approuve' | 'expire' | 'traite'.
+  async function checkResetState(phoneNoPlus){
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/finaliser-reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'apikey': SUPABASE_KEY,
+      },
+      body: JSON.stringify({ phone: phoneNoPlus }),
+    });
+    const result = await res.json();
+    return result.state || 'none';
+  }
+
+  function showResetWaiting(){
+    stopResetPoll();
+    document.getElementById('form-connexion-login').classList.add('hidden');
+    document.getElementById('form-forgot-phone').classList.add('hidden');
+    document.getElementById('form-inscription').classList.add('hidden');
+    document.getElementById('form-reset-set').classList.add('hidden');
+    document.getElementById('reset-waiting-box').classList.remove('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+    setResetLastCheck();
+    scheduleResetPoll();
+  }
+
+  function scheduleResetPoll(){
+    clearTimeout(resetPollTimer);
+    resetPollTimer = setTimeout(async () => {
+      setResetLastCheck();
+      try {
+        const state = await checkResetState(resetPhone);
+        if (state === 'approuve') { showResetSetForm(); return; }
+      } catch (e) { /* réseau : on réessaie */ }
+      scheduleResetPoll();
+    }, RESET_POLL_MS);
+  }
+
+  function showResetSetForm(){
+    stopResetPoll();
+    document.getElementById('form-connexion-login').classList.add('hidden');
+    document.getElementById('form-forgot-phone').classList.add('hidden');
+    document.getElementById('form-inscription').classList.add('hidden');
+    document.getElementById('reset-waiting-box').classList.add('hidden');
+    document.getElementById('reset-set-password').value = '';
+    document.getElementById('reset-set-confirm').value = '';
+    document.getElementById('form-reset-set').classList.remove('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+  }
+
+  document.getElementById('btn-reset-waiting-check').addEventListener('click', async () => {
+    setResetLastCheck();
+    document.getElementById('reset-waiting-text').textContent = 'Vérification en cours...';
+    try {
+      const state = await checkResetState(resetPhone);
+      if (state === 'approuve') { showResetSetForm(); return; }
+      document.getElementById('reset-waiting-text').textContent =
+        "Toujours en attente d'approbation. Vous serez basculé automatiquement dès que l'équipe aura approuvé.";
+    } catch (e) {
+      document.getElementById('reset-waiting-text').textContent = "Vérification impossible (réseau). Un nouvel essai automatique est en cours.";
+    }
+  });
+
+  document.getElementById('btn-reset-waiting-cancel').addEventListener('click', () => {
+    stopResetPoll();
+    document.getElementById('reset-waiting-box').classList.add('hidden');
+    document.getElementById('form-connexion-login').classList.remove('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+  });
+
+  document.getElementById('btn-reset-set-cancel').addEventListener('click', () => {
+    stopResetPoll();
+    document.getElementById('form-reset-set').classList.add('hidden');
+    document.getElementById('form-connexion-login').classList.remove('hidden');
+    document.getElementById('msg-box').innerHTML = '';
+  });
+
+  document.getElementById('reset-set-show').addEventListener('change', (e) => {
+    const t = e.target.checked ? 'text' : 'password';
+    document.getElementById('reset-set-password').type = t;
+    document.getElementById('reset-set-confirm').type = t;
+  });
+
   document.getElementById('form-forgot-phone').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-forgot-send');
-    btn.disabled = true; btn.textContent = 'Envoi...';
+    btn.disabled = true; btn.textContent = 'Vérification...';
 
-    forgotPhone = toE164(document.getElementById('forgot-phone').value.trim());
+    resetPhone = toE164(document.getElementById('forgot-phone').value.trim());
 
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/demander-reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'apikey': SUPABASE_KEY,
-        },
-        body: JSON.stringify({ phone: forgotPhone }),
-      });
-      const result = await res.json();
-
-      if (!res.ok) {
-        showMsg("Erreur : " + (result.error || 'demande impossible'), "error");
+      const state = await checkResetState(resetPhone);
+      if (state === 'approuve') {
+        // Demande déjà approuvée : la personne reprend et définit son mot de passe.
+        showResetSetForm();
+      } else if (state === 'en_attente') {
+        // Demande déjà en cours : on attend l'approbation, sans recréer de demande.
+        showResetWaiting();
       } else {
-        showMsg("Votre demande a été transmise à notre équipe. Vous serez contacté avec votre nouveau mot de passe.", "success");
-        document.getElementById('form-forgot-phone').reset();
-        document.getElementById('form-forgot-phone').classList.add('hidden');
-        document.getElementById('form-connexion-login').classList.remove('hidden');
+        // Aucune demande active (ou déjà traitée / expirée) : on en crée une nouvelle.
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/demander-reset-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'apikey': SUPABASE_KEY,
+          },
+          body: JSON.stringify({ phone: resetPhone }),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          showMsg("Erreur : " + (result.error || 'demande impossible'), "error");
+        } else {
+          showResetWaiting();
+        }
       }
     } catch (err) {
       showMsg("Erreur réseau. Réessayez.", "error");
     }
 
     btn.disabled = false; btn.textContent = 'Demander une réinitialisation';
+  });
+
+  document.getElementById('form-reset-set').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-reset-set-submit');
+    const p = document.getElementById('reset-set-password').value;
+    const c = document.getElementById('reset-set-confirm').value;
+
+    if (p !== c) { showMsg("Les deux mots de passe ne correspondent pas.", "error"); return; }
+    if (p.length < 6) { showMsg("Le mot de passe doit contenir au moins 6 caractères.", "error"); return; }
+
+    btn.disabled = true; btn.textContent = 'Enregistrement...';
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/finaliser-reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY,
+        },
+        body: JSON.stringify({ phone: resetPhone, new_password: p }),
+      });
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        showMsg("Erreur : " + (result.error || 'impossible de définir le mot de passe'), "error");
+        if (result.state === 'expire' || result.state === 'none') {
+          // L'approbation n'est plus valable : on renvoie vers une nouvelle demande.
+          document.getElementById('form-reset-set').classList.add('hidden');
+          document.getElementById('form-forgot-phone').classList.remove('hidden');
+        }
+      } else {
+        stopResetPoll();
+        document.getElementById('form-reset-set').classList.add('hidden');
+        document.getElementById('form-connexion-login').classList.remove('hidden');
+        // Pré-remplit le numéro pour faciliter la connexion immédiate.
+        const typed = document.getElementById('forgot-phone').value;
+        if (typed) document.getElementById('login-phone').value = typed;
+        document.getElementById('form-forgot-phone').reset();
+        showMsg("Votre mot de passe a été défini. Vous pouvez maintenant vous connecter.", "success");
+      }
+    } catch (err) {
+      showMsg("Erreur réseau. Réessayez.", "error");
+    }
+
+    btn.disabled = false; btn.textContent = 'Enregistrer mon mot de passe';
   });
 
   // ---------- INSCRIPTION FOURNISSEUR (compte créé en attente de validation) ----------
