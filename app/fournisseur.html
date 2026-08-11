@@ -506,6 +506,14 @@
           <input type="tel" class="row-dest-tel" placeholder="Ex : 07 01 02 03 04" inputmode="tel">
           <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Permet de prévenir le destinataire par WhatsApp avec le lien de suivi.</div>
         </div>
+        <div class="field">
+          <label>Code de confirmation à la livraison (optionnel)</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" class="row-code-confirmation" placeholder="Ex : 4827" inputmode="numeric" maxlength="4" style="flex:1;">
+            <button type="button" class="btn btn-outline btn-sm" style="white-space:nowrap;" onclick="genererCodeConfirmation(this)">🎲 Générer</button>
+          </div>
+          <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Anti-fraude : si vous indiquez un code à 4 chiffres, communiquez-le au destinataire. Le livreur devra le saisir pour valider la remise. Laissez vide pour ne pas l'utiliser.</div>
+        </div>
         <div class="montant-block">
           <label>Montants</label>
           <div class="montant-group">
@@ -597,6 +605,14 @@
   function removeRow(idx){
     const el = document.querySelector(`.colis-row[data-row="${idx}"]`);
     if (el) el.remove();
+  }
+  // Génère un code à 4 chiffres et le place dans le champ « Code de confirmation » de la ligne.
+  function genererCodeConfirmation(btn){
+    const row = btn.closest('.colis-row');
+    if (!row) return;
+    const input = row.querySelector('.row-code-confirmation');
+    if (!input) return;
+    input.value = String(Math.floor(1000 + Math.random() * 9000)); // 1000–9999, toujours 4 chiffres
   }
   document.getElementById('btn-add-row').addEventListener('click', addRow);
 
@@ -718,6 +734,17 @@
       }
       // Normalisé au format international (225…) attendu par la notification WhatsApp.
       const destinataire_telephone = destTelRaw ? toPhoneE164(destTelRaw) : null;
+
+      // Code de confirmation à la livraison (optionnel, anti-fraude). S'il est renseigné,
+      // il doit faire exactement 4 chiffres ; sinon on bloque l'enregistrement de la ligne.
+      const codeRaw = (row.querySelector('.row-code-confirmation')?.value || '').trim();
+      if (codeRaw && !/^\d{4}$/.test(codeRaw)) {
+        addMsg("Le code de confirmation doit contenir exactement 4 chiffres (ex : 4827), ou rester vide.", "error");
+        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
+        return;
+      }
+      const code_confirmation = codeRaw || null;
+
       inserts.push({
         fournisseur_id: currentUser.id,
         description,
@@ -730,17 +757,17 @@
         commune_recuperation,
         adresse_recuperation: adresse_recuperation || null,
         destinataire_telephone,
+        code_confirmation,
       });
     }
 
     let { error } = await supabaseClient.from('colis').insert(inserts);
-    // Rétro-compatibilité : si la colonne destinataire_telephone n'existe pas encore
-    // (migration SQL pas encore exécutée), on réessaie sans ce champ pour ne jamais
-    // bloquer l'enregistrement des colis. Le téléphone sera simplement ignoré tant que
-    // la migration n'est pas lancée.
-    if (error && /destinataire_telephone|column|colonne/i.test(error.message || '')) {
-      const insertsSansTel = inserts.map(({ destinataire_telephone, ...rest }) => rest);
-      ({ error } = await supabaseClient.from('colis').insert(insertsSansTel));
+    // Rétro-compatibilité : si l'une des colonnes récentes (destinataire_telephone,
+    // code_confirmation) n'existe pas encore (migration SQL pas lancée), on réessaie sans
+    // ces champs pour ne jamais bloquer l'enregistrement des colis.
+    if (error && /destinataire_telephone|code_confirmation|column|colonne/i.test(error.message || '')) {
+      const insertsSansExtras = inserts.map(({ destinataire_telephone, code_confirmation, ...rest }) => rest);
+      ({ error } = await supabaseClient.from('colis').insert(insertsSansExtras));
     }
     btn.disabled = false; btn.textContent = 'Enregistrer les colis';
 
@@ -810,6 +837,10 @@
             ${colisADetailMontant(c) ? `
               <div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>
             ` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
+            ${c.code_confirmation ? (c.code_confirme_at
+              ? `<div class="meta" style="color:#059669; font-weight:600;">✅ Livraison confirmée par code</div>`
+              : `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">🔐 Code de confirmation : ${escapeHTML(String(c.code_confirmation))} <span style="color:var(--muted); font-weight:400;">(à communiquer au destinataire)</span></div>`
+            ) : ''}
             ${livreurBlock}
             ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
             ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
