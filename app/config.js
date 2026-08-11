@@ -621,7 +621,7 @@ function avatarHTML(profile, size) {
 // Envoie une photo de profil dans le stockage et retourne son URL publique.
 async function uploadAvatar(file, userId) {
   const ext = file.name.split(".").pop();
-  const path = `avatars/${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const path = `${userId}/avatars/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await supabaseClient.storage.from("colis-photos").upload(path, file);
   if (error) { console.error(error); return null; }
   const { data } = supabaseClient.storage.from("colis-photos").getPublicUrl(path);
