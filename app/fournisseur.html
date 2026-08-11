@@ -35,15 +35,13 @@
   }
   .topbar .brand .logo-mark{ background:rgba(255,255,255,0.16) !important; }
   .role-pill{ background:rgba(255,255,255,0.20) !important; }
-  /* Espacement de l'en-tête (grands écrans) : on rapproche le nom de l'entreprise de la photo,
-     on laisse un peu d'air au milieu, puis on colle la pastille « Client » à l'icône de réglages ⚙️.
-     On ne touche pas à la version mobile (≤760px), qui répartit les éléments sur toute la largeur. */
-  @media(min-width:761px){
-    .topbar .user-info{ gap:0 !important; }
-    .topbar .user-info #user-name{ margin-left:8px !important; }
-    .topbar .user-info .role-pill{ margin-left:22px !important; }
-    .topbar .user-info .settings-menu{ margin-left:8px !important; }
-  }
+  /* Espacement de l'en-tête (toutes tailles d'écran) : la photo et le nom de l'entreprise
+     sont regroupés à gauche (rapprochés), un espace souple les sépare du groupe de droite,
+     et la pastille « Client » reste collée à l'icône de réglages ⚙️. Fonctionne aussi bien
+     sur mobile que sur grand écran (on remplace la répartition « space-between » d'origine). */
+  .topbar .user-info{ justify-content:flex-start !important; gap:8px !important; }
+  .topbar .user-info .role-pill{ margin-left:auto !important; }
+  .topbar .user-info .settings-menu{ margin-left:0 !important; }
   .wrap{ padding-top:26px; }
   .page-title{ letter-spacing:-0.4px; }
   .card{
