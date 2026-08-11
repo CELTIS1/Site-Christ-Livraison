@@ -1507,6 +1507,33 @@
         showTab(saved);
       }
     } catch(e){}
+
+    // Onglet réellement affiché (hors « Compte », qui est une fenêtre modale et non un panneau).
+    function currentContentTab(){
+      let cur = 'mes';
+      try { cur = localStorage.getItem('clt_livreur_tab') || 'mes'; } catch(e){}
+      if (!['mes','recup','tous'].includes(cur)) cur = 'mes';
+      return cur;
+    }
+    // À la fermeture de la fenêtre « Mon compte », on ré-active l'onglet correspondant au
+    // contenu réellement affiché en dessous (Mes colis, Récup., Tous), pour que « Compte »
+    // ne reste pas sélectionné alors qu'il n'y a plus de contenu « Compte » à l'écran.
+    function highlightContentTab(){
+      const cur = currentContentTab();
+      document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === cur));
+      bar.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.nav === cur));
+    }
+    // Surveille la fermeture de la fenêtre « Mon compte » (croix, clic sur le fond, ou Échap)
+    // pour restaurer la sélection de l'onglet visible.
+    const accountOverlay = document.getElementById('account-modal-overlay');
+    if (accountOverlay){
+      let wasOpen = !accountOverlay.classList.contains('hidden');
+      new MutationObserver(() => {
+        const isOpen = !accountOverlay.classList.contains('hidden');
+        if (wasOpen && !isOpen) highlightContentTab();
+        wasOpen = isOpen;
+      }).observe(accountOverlay, { attributes:true, attributeFilter:['class'] });
+    }
   })();
 
   // Câblage de la barre d'onglets du haut (grands écrans)
