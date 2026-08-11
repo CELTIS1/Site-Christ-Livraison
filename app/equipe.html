@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260811a">
+<link rel="stylesheet" href="style.css?v=20260811b">
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -2472,9 +2472,11 @@ const cards = clients.map(c => `
 
 body.innerHTML = `
 <div class="recap-day-summary">${dateLabel} · <strong>${totalClients}</strong> cliente${totalClients > 1 ? 's' : ''} · <strong>${totalColis}</strong> colis</div>
+${recapExportBarHTML()}
 ${recapSearchBarHTML()}
 ${clients.length ? `<div class="recap-client-list">${cards}</div>` : `<div class="empty-state">Aucune cliente ne correspond à « ${escapeHTML(recapSearchText)} ».</div>`}`;
 
+wireRecapExport();
 wireRecapSearch();
 body.querySelectorAll('.recap-client-card').forEach(btn => {
 btn.addEventListener('click', () => {
@@ -2543,6 +2545,120 @@ if (!dayKey) return '';
 const d = new Date(dayKey + 'T00:00:00');
 const label = d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 return dayKey === todayLocalISODate() ? `Aujourd'hui — ${label}` : label;
+}
+
+// ---- Export du récapitulatif du jour (toutes les clientes, une section par cliente) ----
+// Utilisé pour télécharger la journée en PDF ou en Excel et l'envoyer aux clientes.
+// L'export porte toujours sur TOUTE la journée sélectionnée (indépendamment de la recherche).
+function recapStatutLabel(s){
+return (typeof STATUTS !== 'undefined' && STATUTS[s]) ? STATUTS[s].label : (s || '—');
+}
+
+// Regroupe les colis du jour par cliente (fournisseur_id), triées par nombre de colis décroissant.
+function recapDayGroups(colisJour){
+const map = {};
+colisJour.forEach(c => {
+const key = c.fournisseur_id || 'inconnu';
+if (!map[key]) map[key] = { id: key, name: fournisseurLabelPlain(key), colis: [], total: 0 };
+map[key].colis.push(c);
+map[key].total += (Number(montantArticleColis(c)) || 0);
+});
+return Object.values(map).sort((a, b) => b.colis.length - a.colis.length);
+}
+
+function recapExportBaseName(){
+return `recapitulatif-${recapGetDate()}`;
+}
+
+function recapExportBarHTML(){
+return `
+<div class="recap-export-bar">
+<span class="recap-export-label">Télécharger la journée :</span>
+<button type="button" class="btn btn-outline btn-sm" id="recap-export-pdf">🖨️ PDF</button>
+<button type="button" class="btn btn-outline btn-sm" id="recap-export-excel">📊 Excel</button>
+</div>`;
+}
+
+function wireRecapExport(){
+const pdf = document.getElementById('recap-export-pdf');
+const xls = document.getElementById('recap-export-excel');
+if (pdf) pdf.addEventListener('click', exportRecapDayPDF);
+if (xls) xls.addEventListener('click', exportRecapDayExcel);
+}
+
+// Excel : une feuille, un titre + la date, puis une section par cliente (nom, colonnes, colis, sous-total).
+function exportRecapDayExcel(){
+const colisJour = recapDayColis();
+if (!colisJour.length) { alert("Aucune cliente enregistrée pour ce jour."); return; }
+const groups = recapDayGroups(colisJour);
+const dateLabel = recapDayLabel(recapGetDate());
+const aoa = [];
+aoa.push(['Récapitulatif par client — Christ Livraison & Transport SARL']);
+aoa.push([dateLabel]);
+aoa.push([`${groups.length} cliente(s) · ${colisJour.length} colis`]);
+aoa.push([]);
+const cols = ['Téléphone', 'Adresse', 'Statut', 'Montant (FCFA)', 'Observation'];
+groups.forEach(g => {
+aoa.push([g.name]);
+aoa.push(cols);
+g.colis.forEach(c => {
+aoa.push([
+c.destinataire_telephone || '',
+c.destination || '',
+recapStatutLabel(c.statut),
+Number(montantArticleColis(c)) || 0,
+c.observation || ''
+]);
+});
+aoa.push(['', '', 'Total', Number(g.total) || 0, `${g.colis.length} colis`]);
+aoa.push([]);
+});
+const ws = XLSX.utils.aoa_to_sheet(aoa);
+ws['!cols'] = [{ wch: 16 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 32 }];
+const wb = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb, ws, 'Récapitulatif');
+XLSX.writeFile(wb, `${recapExportBaseName()}.xlsx`);
+}
+
+// PDF : titre + date + totaux, puis une section par cliente (nom + total, puis tableau de ses colis).
+function exportRecapDayPDF(){
+const colisJour = recapDayColis();
+if (!colisJour.length) { alert("Aucune cliente enregistrée pour ce jour."); return; }
+const groups = recapDayGroups(colisJour);
+const dateLabel = recapDayLabel(recapGetDate());
+const grandTotal = groups.reduce((s, g) => s + (Number(g.total) || 0), 0);
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+doc.setFontSize(14);
+doc.text('Récapitulatif par client — Christ Livraison & Transport SARL', 14, 16);
+doc.setFontSize(10);
+doc.text(dateLabel, 14, 23);
+doc.text(`${groups.length} cliente(s) · ${colisJour.length} colis · Total article : ${formatMontant(grandTotal) || '0 FCFA'}`, 14, 29);
+let startY = 37;
+groups.forEach(g => {
+if (startY > 265) { doc.addPage(); startY = 20; }
+doc.setFontSize(11);
+doc.setTextColor(27, 67, 116);
+doc.text(`${g.name}  —  ${g.colis.length} colis · ${formatMontant(g.total) || '0 FCFA'}`, 14, startY);
+doc.setTextColor(0, 0, 0);
+startY += 3;
+doc.autoTable({
+startY,
+head: [['Téléphone', 'Adresse', 'Statut', 'Montant', 'Observation']],
+body: g.colis.map(c => [
+c.destinataire_telephone || '',
+c.destination || '',
+recapStatutLabel(c.statut),
+formatMontant(montantArticleColis(c)) || '-',
+c.observation || ''
+]),
+styles: { fontSize: 9, cellPadding: 2.5 },
+headStyles: { fillColor: [27, 67, 116] },
+margin: { left: 14, right: 14 },
+});
+startY = doc.lastAutoTable.finalY + 9;
+});
+doc.save(`${recapExportBaseName()}.pdf`);
 }
 
 function groupColisByDayLegacyReport(list){
@@ -2657,16 +2773,18 @@ const rows = Object.keys(parFournisseur)
 const statutKeys = Object.keys(STATUTS);
 const headerCols = statutKeys.map(k => `<th>${STATUTS[k].label}</th>`).join('');
 const bodyRows = rows.map(r => {
-const cols = statutKeys.map(k => `<td>${r.statuts[k] || 0}</td>`).join('');
-return `<tr><td>${fournisseurLabel(r.id)}</td>${cols}<td><strong>${r.total}</strong></td></tr>`;
+const cols = statutKeys.map(k => `<td data-label="${STATUTS[k].label}">${r.statuts[k] || 0}</td>`).join('');
+return `<tr><td data-label="Client">${fournisseurLabel(r.id)}</td>${cols}<td data-label="Total"><strong>${r.total}</strong></td></tr>`;
 }).join('');
 
 box.innerHTML = `
 <div class="page-sub" style="margin-bottom:14px;">${colisDuMois.length} colis au total pour ${monthLabel(selected)}.</div>
-<table class="recap-table">
+<div class="recap-table-wrap">
+<table class="recap-table recap-table-cards">
 <thead><tr><th>Client</th>${headerCols}<th>Total</th></tr></thead>
 <tbody>${bodyRows}</tbody>
 </table>
+</div>
 `;
 }
 

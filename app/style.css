@@ -555,6 +555,8 @@ input,textarea,select{font-family:inherit;}
 .recap-day-bar .field{margin:0; max-width:200px;}
 .recap-day-summary{margin:14px 0 10px; font-size:13.5px; color:var(--muted);}
 .recap-day-summary strong{color:var(--navy);}
+.recap-export-bar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:2px 0 14px;}
+.recap-export-label{font-size:13px; color:var(--muted); font-weight:600;}
 .recap-search-wrap{margin-bottom:12px;}
 .recap-search{
   width:100%; max-width:360px; padding:10px 14px; font-size:14px; font-family:inherit;
