@@ -550,6 +550,24 @@
 <div class="recap-table-wrap" id="clotures-historique" style="margin-top:12px;">
 <div class="empty-state">Chargement...</div>
 </div>
+
+<h3 class="panel-subtitle" style="margin-top:28px;">📊 Export mensuel de la comptabilité</h3>
+<div class="page-sub" style="margin-bottom:8px;">Génère le rapport complet d'un mois : résumé (recette, colis par statut, argent non remis, remises, écarts, dépenses, solde), détail par jour, par livreur, par vendeuse, dépenses et détail colis par colis. Les montants sont calculés côté serveur (comptés sur le paiement).</div>
+<div class="field-row" style="align-items:flex-end;">
+<div class="field">
+<label>Mois</label>
+<input type="month" id="export-mois">
+</div>
+<div class="field">
+<label>&nbsp;</label>
+<button type="button" class="btn btn-primary" id="btn-export-mois-xlsx">Excel (.xlsx)</button>
+</div>
+<div class="field">
+<label>&nbsp;</label>
+<button type="button" class="btn btn-outline" id="btn-export-mois-csv">CSV</button>
+</div>
+</div>
+<div id="export-mois-msg" style="margin:8px 0;"></div>
 </div>
 
 </div>
@@ -717,7 +735,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260812h"></script>
+<script src="config.js?v=20260812i"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3394,6 +3412,134 @@ btn.disabled = false;
 });
 }
 loadCloturesHistorique();
+})();
+
+// ---- Export mensuel de la comptabilité (Correctif 6) -----------------------
+// Récupère le rapport complet du mois via la fonction serveur rapport_mensuel_compta
+// (source de vérité, montants comptés sur le paiement), puis génère un classeur
+// Excel multi-feuilles ou un CSV (résumé journalier). Aucun calcul de montant
+// n'est refait ici : on met en forme les chiffres renvoyés par le serveur.
+(function initExportMensuel(){
+const moisInput = document.getElementById('export-mois');
+const btnXlsx = document.getElementById('btn-export-mois-xlsx');
+const btnCsv = document.getElementById('btn-export-mois-csv');
+const msg = document.getElementById('export-mois-msg');
+if (moisInput && !moisInput.value) moisInput.value = (todayLocalISODate() || '').slice(0, 7);
+
+const NOMS_MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const statutLabel = (s) => (typeof STATUTS !== 'undefined' && STATUTS[s]) ? STATUTS[s].label : (s || '');
+const num = (v) => Number(v) || 0;
+
+function parseMois(){
+const val = (moisInput && moisInput.value) ? moisInput.value : (todayLocalISODate() || '').slice(0, 7);
+const [a, m] = val.split('-').map(x => parseInt(x, 10));
+return { annee: a, mois: m, label: `${NOMS_MOIS[(m||1)-1]} ${a}` };
+}
+
+async function fetchRapport(){
+const { annee, mois } = parseMois();
+const { data, error } = await supabaseClient.rpc('rapport_mensuel_compta', { p_annee: annee, p_mois: mois });
+if (error) throw error;
+return data;
+}
+
+function setMsg(txt, isError){
+if (!msg) return;
+msg.innerHTML = txt ? `<div style="padding:8px 12px; border-radius:8px; font-weight:600; background:${isError?'#fdecec':'#eef2f7'}; color:${isError?'#c0392b':'#2c3e50'};">${escapeHTML(txt)}</div>` : '';
+}
+
+function downloadCSV(filename, rows){
+// rows = tableau de tableaux ; séparateur ';' + BOM UTF-8 pour Excel FR
+const esc = (v) => {
+const s = (v === null || v === undefined) ? '' : String(v);
+return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+};
+const csv = '\uFEFF' + rows.map(r => r.map(esc).join(';')).join('\r\n');
+const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url; a.download = filename;
+document.body.appendChild(a); a.click(); document.body.removeChild(a);
+setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+btnXlsx && btnXlsx.addEventListener('click', async () => {
+const { annee, mois, label } = parseMois();
+btnXlsx.disabled = true; setMsg('Génération du fichier Excel…', false);
+try {
+const d = await fetchRapport();
+const r = d.resume || {};
+const wb = XLSX.utils.book_new();
+
+const resume = [
+['Rapport comptabilité', label],
+[],
+['Recette totale (FCFA)', num(r.recette_totale)],
+['Colis (total)', num(r.nb_total)],
+['— Livrés', num(r.nb_livres)],
+['— Récupérés', num(r.nb_recuperes)],
+['— En attente', num(r.nb_en_attente)],
+['Argent non encore remis (FCFA)', num(r.argent_non_remis)],
+['Remises reçues (FCFA)', num(r.remises_total)],
+['Écarts de caisse (FCFA)', num(r.ecarts_total)],
+['Dépenses (FCFA)', num(r.depenses_total)],
+['Solde (recette − dépenses) (FCFA)', num(r.solde)],
+];
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resume), 'Résumé');
+
+const jours = [['Jour','Recette','Colis','Livrés','Récupérés','En attente','Argent non remis']]
+.concat((d.par_jour||[]).map(j => [j.jour, num(j.recette), num(j.nb), num(j.livres), num(j.recuperes), num(j.en_attente), num(j.non_remis)]));
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(jours), 'Par jour');
+
+const livreurs = [['Livreur','Colis','Recette','Argent non remis']]
+.concat((d.par_livreur||[]).map(l => [l.nom, num(l.nb), num(l.recette), num(l.non_remis)]));
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(livreurs), 'Par livreur');
+
+const vendeuses = [['Vendeuse','Colis','Montant article','Reste à percevoir']]
+.concat((d.par_fournisseur||[]).map(f => [f.nom, num(f.nb), num(f.montant_article), num(f.reste)]));
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(vendeuses), 'Par vendeuse');
+
+const dep = [['Date','Libellé','Montant','Catégorie']]
+.concat((d.depenses||[]).map(x => [x.date || '', x.libelle || '', num(x.montant), x.categorie || '']));
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dep), 'Dépenses');
+
+const colis = [['Jour','Colis','Client','Statut','Article','Livraison','Recette comptée','Encaissé','Remis','Livreur']]
+.concat((d.colis||[]).map(c => [c.jour, c.description || '', c.client || '', statutLabel(c.statut),
+num(c.montant_article), num(c.montant_livraison), num(c.recette_comptee),
+c.encaisse ? 'Oui' : 'Non', c.remis ? 'Oui' : 'Non', c.livreur || '']));
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(colis), 'Colis');
+
+XLSX.writeFile(wb, `comptabilite-${annee}-${String(mois).padStart(2,'0')}.xlsx`);
+setMsg(`Export Excel de ${label} téléchargé (${num(r.nb_total)} colis).`, false);
+} catch(e){
+setMsg((e && e.message) ? e.message : 'Erreur lors de la génération du fichier Excel.', true);
+} finally { btnXlsx.disabled = false; }
+});
+
+btnCsv && btnCsv.addEventListener('click', async () => {
+const { annee, mois, label } = parseMois();
+btnCsv.disabled = true; setMsg('Génération du fichier CSV…', false);
+try {
+const d = await fetchRapport();
+const r = d.resume || {};
+const rows = [];
+rows.push(['Rapport comptabilité', label]);
+rows.push([]);
+rows.push(['Recette totale (FCFA)', num(r.recette_totale)]);
+rows.push(['Argent non remis (FCFA)', num(r.argent_non_remis)]);
+rows.push(['Remises reçues (FCFA)', num(r.remises_total)]);
+rows.push(['Écarts (FCFA)', num(r.ecarts_total)]);
+rows.push(['Dépenses (FCFA)', num(r.depenses_total)]);
+rows.push(['Solde (FCFA)', num(r.solde)]);
+rows.push([]);
+rows.push(['Jour','Recette','Colis','Livrés','Récupérés','En attente','Argent non remis']);
+(d.par_jour||[]).forEach(j => rows.push([j.jour, num(j.recette), num(j.nb), num(j.livres), num(j.recuperes), num(j.en_attente), num(j.non_remis)]));
+downloadCSV(`comptabilite-${annee}-${String(mois).padStart(2,'0')}.csv`, rows);
+setMsg(`Export CSV de ${label} téléchargé.`, false);
+} catch(e){
+setMsg((e && e.message) ? e.message : 'Erreur lors de la génération du fichier CSV.', true);
+} finally { btnCsv.disabled = false; }
+});
 })();
 
 function showMainTab(which){
