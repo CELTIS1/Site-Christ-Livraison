@@ -735,7 +735,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260812i"></script>
+<script src="config.js?v=20260812j"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -4259,6 +4259,19 @@ await loadResetRequests();
 await loadFournisseurs();
 await loadLivreurs();
 await loadColis();
+
+// Lien profond : si on arrive via un clic sur une notification (?colis=<id>), on va
+// directement au colis concerné et on le surligne. En cas d'introuvable (colis d'un autre
+// jour que celui filtré par défaut), on retire le filtre de date puis on réessaie.
+cltFocusColisFromUrl({ onMiss: () => {
+  if (filtreDateColis) {
+    filtreDateColis = '';
+    const inp = document.getElementById('filtre-date-colis');
+    if (inp) inp.value = '';
+    renderColis();
+  }
+} });
+
 // L'historique des actions est réservé à l'administrateur.
 if (isAdmin) await loadActivityLog();
 await initExpressCourses();

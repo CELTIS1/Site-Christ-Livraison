@@ -438,6 +438,54 @@ function formatDate(iso) {
     " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
 
+// ---------- Lien profond vers un colis (clic sur une notification push) ----------
+// Une notification de changement de statut ouvre la page avec ?colis=<id>. Cette fonction fait
+// défiler l'écran jusqu'à la carte de ce colis et la surligne quelques secondes, pour amener la
+// personne DIRECTEMENT au bon colis. Le rendu de la liste pouvant arriver un peu après le
+// chargement de la page (données asynchrones), on réessaie brièvement jusqu'à trouver la carte.
+function __cltEnsureHighlightStyle() {
+  if (document.getElementById("clt-deeplink-style")) return;
+  const st = document.createElement("style");
+  st.id = "clt-deeplink-style";
+  st.textContent =
+    "@keyframes cltDeeplinkPulse{0%{box-shadow:0 0 0 0 rgba(226,99,19,.55);}" +
+    "70%{box-shadow:0 0 0 10px rgba(226,99,19,0);}100%{box-shadow:0 0 0 0 rgba(226,99,19,0);}}" +
+    ".colis-deeplink-highlight{animation:cltDeeplinkPulse 1.2s ease-out 3;" +
+    "outline:3px solid #E26313;outline-offset:2px;border-radius:10px;" +
+    "transition:outline .3s ease;}";
+  document.head.appendChild(st);
+}
+
+function cltFocusColisFromUrl(opts) {
+  opts = opts || {};
+  const param = opts.param || "colis";
+  const id = new URLSearchParams(location.search).get(param);
+  if (!id) return;
+  __cltEnsureHighlightStyle();
+  let tries = 0;
+  let missFired = false;
+  const maxTries = opts.maxTries || 25; // ~7,5 s max (25 × 300 ms)
+  const attempt = () => {
+    const el = document.querySelector('.colis-item[data-id="' + CSS.escape(id) + '"]');
+    if (el) {
+      try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { el.scrollIntoView(); }
+      el.classList.add("colis-deeplink-highlight");
+      setTimeout(() => el.classList.remove("colis-deeplink-highlight"), 4200);
+      // On retire le paramètre de l'URL pour ne pas re-surligner à chaque nouveau rendu.
+      try { history.replaceState(null, "", location.pathname); } catch (e) {}
+      return;
+    }
+    // Colis introuvable au bout de quelques essais : on laisse la page tenter d'élargir la vue
+    // (ex : retirer le filtre de date « aujourd'hui » côté équipe), une seule fois.
+    if (!missFired && tries >= 4 && typeof opts.onMiss === "function") {
+      missFired = true;
+      try { opts.onMiss(id); } catch (e) {}
+    }
+    if (tries++ < maxTries) setTimeout(attempt, 300);
+  };
+  attempt();
+}
+
 // ---------- Validation d'un numéro de téléphone ivoirien ----------
 // Accepte les numéros locaux à 10 chiffres (plan actuel : 01/05/07…) ou 8 chiffres (ancien plan),
 // avec ou sans indicatif 225. Volontairement souple pour ne jamais bloquer un numéro légitime,

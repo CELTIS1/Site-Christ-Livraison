@@ -346,7 +346,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260812c"></script>
+<script src="config.js?v=20260812j"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -359,6 +359,83 @@
   let colisOffset = 0;
   let colisHasMore = true;
   let colisLoadingMore = false;
+
+  // --- Garde anti-retour-arrière (Bug 1) -------------------------------------------------
+  // Quand le livreur enregistre un changement (statut, observation, livraison payée...), on
+  // mémorise localement les champs écrits pendant quelques secondes. Un rechargement temps réel
+  // (déclenché par cette même écriture ou par une autre activité) ne doit jamais « écraser » la
+  // valeur fraîche que le livreur vient d'enregistrer. Après ce court délai, la base fait foi.
+  const recentWrites = new Map(); // id -> { data, ts }
+  const RECENT_WRITE_TTL = 12000; // 12 s : marge large mais bornée
+  function rememberWrite(id, data){
+    recentWrites.set(id, { data: { ...data }, ts: Date.now() });
+  }
+  function applyRecentWrites(){
+    const now = Date.now();
+    for (const [id, entry] of recentWrites) {
+      if (now - entry.ts > RECENT_WRITE_TTL) { recentWrites.delete(id); continue; }
+      const idx = allColis.findIndex(c => c.id === id);
+      if (idx !== -1) Object.assign(allColis[idx], entry.data);
+    }
+  }
+
+  // Rechargement temps réel « anti-rebond » : plusieurs événements rapprochés (rafale de mises à
+  // jour) sont regroupés en un seul rechargement, ce qui évite de reconstruire la liste en plein
+  // milieu d'une saisie du livreur (et donc de perdre un choix de statut en cours).
+  let __realtimeReloadTimer = null;
+  function scheduleRealtimeReload(){
+    if (__realtimeReloadTimer) return;
+    __realtimeReloadTimer = setTimeout(() => {
+      __realtimeReloadTimer = null;
+      loadColis();
+    }, 450);
+  }
+
+  // Préserve les saisies en cours (statut choisi mais pas encore enregistré, observation en cours
+  // de frappe, et le focus) lorsqu'un rendu reconstruit la liste « Mes colis ». Sans cela, un
+  // rendu déclenché par le temps réel remettrait le menu déroulant sur l'ancien statut.
+  function capturePendingEdits(container){
+    const snap = {};
+    if (!container) return snap;
+    const active = document.activeElement;
+    container.querySelectorAll('.colis-item').forEach(item => {
+      const id = item.dataset.id;
+      if (!id) return;
+      const sel = item.querySelector('.status-select');
+      const obs = item.querySelector('.obs-textarea');
+      snap[id] = {
+        statut: sel ? sel.value : undefined,
+        observation: obs ? obs.value : undefined,
+        focus: (active && item.contains(active))
+          ? (active.classList.contains('status-select') ? 'status'
+            : active.classList.contains('obs-textarea') ? 'obs' : null)
+          : null,
+        selStart: (obs && active === obs) ? obs.selectionStart : null,
+        selEnd: (obs && active === obs) ? obs.selectionEnd : null,
+      };
+    });
+    return snap;
+  }
+  function restorePendingEdits(container, snap){
+    if (!container || !snap) return;
+    container.querySelectorAll('.colis-item').forEach(item => {
+      const id = item.dataset.id;
+      const s = snap[id];
+      if (!s) return;
+      const sel = item.querySelector('.status-select');
+      const obs = item.querySelector('.obs-textarea');
+      // On ne restaure une saisie en cours que si elle diffère de la valeur affichée par défaut
+      // (sinon rien à faire) — et jamais pour un colis qu'on vient d'enregistrer (recentWrites).
+      const justSaved = recentWrites.has(id);
+      if (sel && s.statut !== undefined && !justSaved && sel.value !== s.statut) sel.value = s.statut;
+      if (obs && s.observation !== undefined && !justSaved && obs.value !== s.observation) obs.value = s.observation;
+      if (s.focus === 'status' && sel) { sel.focus(); }
+      else if (s.focus === 'obs' && obs) {
+        obs.focus();
+        if (s.selStart != null) { try { obs.setSelectionRange(s.selStart, s.selEnd); } catch(e){} }
+      }
+    });
+  }
 
   // Ferme proprement l'abonnement temps réel à la fermeture/déconnexion de la page (voir aussi
   // équipe.html et fournisseur.html, qui appliquent le même principe).
@@ -765,6 +842,7 @@
         <div class="status-col">
           ${pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : ''}
           <select class="status-select">${statutOptions}</select>
+          <button type="button" class="btn btn-outline btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="margin-top:8px; width:100%; ${c.livraison_payee ? 'background:#1e8f4e; border-color:#1e8f4e; color:#fff;' : ''}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Marquer la livraison payée'}</button>
           <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
           <div class="field" style="margin-top:8px;">
             <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
@@ -815,6 +893,7 @@
   function renderMesColis(){
     const list = document.getElementById('mes-colis-list');
     const __anchor = captureScrollAnchor(list);
+    const __pending = capturePendingEdits(list);
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
     let filtered = activeFilterMes === 'tous' ? mine : mine.filter(c => c.statut === activeFilterMes);
     filtered = filtered.filter(c => matchesSearch(c, searchMes) && matchesDate(c, filtreDateMes));
@@ -934,11 +1013,87 @@
           return;
         }
         // Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel.
+        rememberWrite(id, { statut, observation, photo_livraison_url, ...extra });
         const idx = allColis.findIndex(c => c.id === id);
         if (idx !== -1) Object.assign(allColis[idx], { statut, observation, photo_livraison_url }, extra);
         renderAll();
       });
     });
+
+    // --- Bascule « Livraison payée » (Correctif 3) : enregistrement immédiat au clic ---------
+    // Toujours visible (quel que soit le statut) : le destinataire doit parfois payer la
+    // livraison même s'il ne prend pas le colis. Indépendant du bouton « Enregistrer ».
+    list.querySelectorAll('.btn-livraison-payee').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const item = btn.closest('.colis-item');
+        const id = item.dataset.id;
+        const existing = allColis.find(c => c.id === id);
+        const newVal = !(existing && existing.livraison_payee);
+
+        // Hors connexion : on met la bascule en file d'attente (sans toucher au statut ni à
+        // l'observation, que l'on renvoie inchangés pour ne pas les écraser au moment du flush).
+        if (!navigator.onLine) {
+          btn.disabled = true;
+          try {
+            await queueAdd({
+              colisId: id,
+              statut: existing ? existing.statut : null,
+              observation: existing ? existing.observation : null,
+              photo_livraison_url: existing ? existing.photo_livraison_url : null,
+              photoBlob: null,
+              extra: { livraison_payee: newVal },
+              userId: currentUser.id,
+              timestamp: Date.now(),
+            });
+            if (existing) existing.livraison_payee = newVal;
+            rememberWrite(id, { livraison_payee: newVal });
+          } catch (e) {
+            console.error(e);
+            alert("Impossible d'enregistrer « Livraison payée » hors connexion. Merci de réessayer une fois connecté(e).");
+          }
+          btn.disabled = false;
+          await refreshOfflineBanner();
+          renderAll();
+          return;
+        }
+
+        btn.disabled = true;
+        const prevText = btn.textContent;
+        btn.textContent = '…';
+        const { error } = await supabaseClient.from('colis').update({ livraison_payee: newVal }).eq('id', id);
+        btn.disabled = false;
+        if (error) {
+          // Échec réseau probable : on met la bascule en file d'attente plutôt que de la perdre.
+          try {
+            await queueAdd({
+              colisId: id,
+              statut: existing ? existing.statut : null,
+              observation: existing ? existing.observation : null,
+              photo_livraison_url: existing ? existing.photo_livraison_url : null,
+              photoBlob: null,
+              extra: { livraison_payee: newVal },
+              userId: currentUser.id,
+              timestamp: Date.now(),
+            });
+            if (existing) existing.livraison_payee = newVal;
+            rememberWrite(id, { livraison_payee: newVal });
+            await refreshOfflineBanner();
+          } catch (e) {
+            console.error(e);
+            btn.textContent = prevText;
+            alert("Erreur : " + error.message);
+            return;
+          }
+          renderAll();
+          return;
+        }
+        rememberWrite(id, { livraison_payee: newVal });
+        if (existing) existing.livraison_payee = newVal;
+        renderAll();
+      });
+    });
+
+    restorePendingEdits(list, __pending);
     restoreScrollAnchor(list, __anchor);
   }
 
@@ -1167,6 +1322,7 @@
     allColis = data;
     colisOffset = data.length;
     colisHasMore = data.length === COLIS_PAGE_SIZE;
+    applyRecentWrites(); // ne jamais écraser un changement que le livreur vient d'enregistrer
     renderAll();
   }
 
@@ -1348,11 +1504,15 @@
     await refreshOfflineBanner();
     flushOfflineQueue();
 
+    // Lien profond : si on arrive via un clic sur une notification (?colis=<id>), on va
+    // directement au colis concerné et on le surligne.
+    cltFocusColisFromUrl();
+
     // Mises à jour en temps réel sur tous les colis
     trackChannel(supabaseClient
       .channel('colis-livreur-' + currentUser.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, () => {
-        loadColis();
+        scheduleRealtimeReload();
       })
       .subscribe());
   }

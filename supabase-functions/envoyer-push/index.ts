@@ -103,7 +103,10 @@ Deno.serve(async (req) => {
     const results = await Promise.allSettled(
       subs.map(async (s) => {
         const isLivreur = s.role === "livreur";
-        const url = isLivreur ? "/app/livreur.html" : "/app/equipe.html";
+        const base = isLivreur ? "/app/livreur.html" : "/app/equipe.html";
+        // Lien profond : on ajoute l'identifiant du colis pour qu'un clic sur la notification
+        // amène directement au bon colis (la page fait défiler jusqu'à lui et le surligne).
+        const url = `${base}?colis=${record.id}`;
         const notif = JSON.stringify({ title: info.title, body, url, tag });
         const subscription = {
           endpoint: s.endpoint,
