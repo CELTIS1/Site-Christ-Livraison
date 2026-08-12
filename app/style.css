@@ -251,6 +251,9 @@ input, select, textarea{ font-size:16px !important; }
    que la livraison est effectuée et bien distinguer ces cartes des autres. */
 .colis-item[data-statut="livre"]{background:#eaf7ef; border-color:#bfe6cd;}
 .colis-item[data-statut="livre"]:hover{border-color:#9ed9b4;}
+/* Colis non livré : fond rouge doux pour signaler d'un coup d'œil un échec de livraison. */
+.colis-item[data-statut="non_livre"]{background:#fdecec; border-color:#f3c9c9;}
+.colis-item[data-statut="non_livre"]:hover{border-color:#ecb0b0;}
 /* Colis retourné : léger fond ambré pour le différencier également. */
 .colis-item[data-statut="retour"]{background:#fdf4e8; border-color:#f0d9b5;}
 .colis-item[data-statut="retour"]:hover{border-color:#e8c893;}

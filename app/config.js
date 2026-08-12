@@ -69,6 +69,31 @@ async function getProfile(userId) {
   return data;
 }
 
+// Efface TOUTE trace de session Supabase dans LES DEUX stockages (localStorage ET
+// sessionStorage), et pas seulement celui de la page courante.
+// Pourquoi c'est indispensable : la session est écrite dans sessionStorage par la page de
+// connexion, puis recopiée dans localStorage pour les livreurs/fournisseurs. Si la déconnexion
+// ne vidait que le stockage de la page courante, un reliquat de session subsistait dans l'autre
+// stockage. En revenant sur login.html (qui lit sessionStorage), ce reliquat relançait une
+// redirection vers l'espace connecté, d'où la boucle de rechargements ("écran qui tremble").
+// En nettoyant les deux stockages, il ne reste plus aucune session après une déconnexion :
+// la boucle est impossible.
+function clearAllAuthStorage() {
+  try {
+    [window.localStorage, window.sessionStorage].forEach((store) => {
+      if (!store) return;
+      const keys = [];
+      for (let i = 0; i < store.length; i++) {
+        const k = store.key(i);
+        if (k && /^sb-.*-auth-token/.test(k)) keys.push(k);
+      }
+      keys.forEach((k) => store.removeItem(k));
+    });
+  } catch (e) {
+    console.error("Nettoyage des sessions à la déconnexion :", e);
+  }
+}
+
 async function logout() {
   // Arrête proprement le partage de position (le cas échéant) avant de se déconnecter, et
   // supprime toute position enregistrée (minimisation des données : rien ne doit rester après la
@@ -82,7 +107,13 @@ async function logout() {
   } catch (e) {
     console.error("Erreur suppression position à la déconnexion:", e);
   }
-  await supabaseClient.auth.signOut();
+  try {
+    await supabaseClient.auth.signOut();
+  } catch (e) {
+    console.error("Erreur signOut à la déconnexion:", e);
+  }
+  // Filet définitif : on efface la session dans les DEUX stockages (voir clearAllAuthStorage).
+  clearAllAuthStorage();
   window.location.href = "login.html";
 }
 

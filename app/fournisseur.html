@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260812k">
+<link rel="stylesheet" href="style.css?v=20260812l">
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -328,7 +328,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260812j"></script>
+<script src="config.js?v=20260812l"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1538,6 +1538,7 @@
     // jamais accéder au tableau de bord, même si une session est restée active pendant l'attente.
     if (!profile || profile.status !== 'valide') {
       await supabaseClient.auth.signOut();
+      if (typeof clearAllAuthStorage === 'function') clearAllAuthStorage();
       window.location.href = 'login.html';
       return;
     }

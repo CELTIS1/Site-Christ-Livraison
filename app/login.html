@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260812k">
+  <link rel="stylesheet" href="style.css?v=20260812l">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
 <body>
@@ -143,7 +143,7 @@
     </div>
   </div>
 
-<script src="config.js?v=20260812j"></script>
+<script src="config.js?v=20260812l"></script>
 <script>
   function showTab(which){
     stopWaiting();
@@ -176,15 +176,28 @@
     return '225' + digits;
   }
 
-  // Si déjà connecté, redirige directement vers le bon espace
+  // Si déjà connecté, redirige directement vers le bon espace.
+  // IMPORTANT (anti-boucle) : on ne se fie PAS uniquement à la présence locale d'une session.
+  // Un reliquat de session (jeton encore stocké mais déjà révoqué/expiré côté serveur) pouvait
+  // relancer une redirection vers l'espace connecté, qui renvoyait aussitôt ici → boucle de
+  // rechargements ("écran qui tremble"). On valide donc la session auprès du serveur avec
+  // getUser() : si elle n'est plus valide, on la nettoie et on reste sagement sur la connexion.
   (async function checkSession(){
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
-      const profile = await getProfile(session.user.id);
-      const ok = await checkAccountStatus(profile);
-      if (!ok) return;
-      redirectByRole(profile);
+    if (!session) return;
+
+    const { data: { user }, error } = await supabaseClient.auth.getUser();
+    if (error || !user) {
+      // Session fantôme : on efface tout et on reste sur la page de connexion.
+      try { await supabaseClient.auth.signOut(); } catch (e) {}
+      if (typeof clearAllAuthStorage === 'function') clearAllAuthStorage();
+      return;
     }
+
+    const profile = await getProfile(session.user.id);
+    const ok = await checkAccountStatus(profile);
+    if (!ok) return;
+    redirectByRole(profile);
   })();
 
   // Redirige vers le tableau de bord correspondant au rôle, en recopiant d'abord la session

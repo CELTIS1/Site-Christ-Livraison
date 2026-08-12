@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260812k">
+<link rel="stylesheet" href="style.css?v=20260812l">
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -735,7 +735,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260812j"></script>
+<script src="config.js?v=20260812l"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -4169,6 +4169,7 @@ return;
 // Sécurité : un compte pas encore validé (ou refusé) ne doit jamais accéder au tableau de bord.
 if (profile.status !== 'valide') {
 await supabaseClient.auth.signOut();
+if (typeof clearAllAuthStorage === 'function') clearAllAuthStorage();
 window.location.href = 'login.html';
 return;
 }
@@ -4183,6 +4184,7 @@ if (profile.acces_paie === true || profile.acces_compta === true) {
 window.location.href = 'gestion.html';
 } else {
 await supabaseClient.auth.signOut();
+if (typeof clearAllAuthStorage === 'function') clearAllAuthStorage();
 window.location.href = 'login.html';
 }
 return;
