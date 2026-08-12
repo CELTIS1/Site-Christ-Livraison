@@ -529,6 +529,27 @@
 <button type="button" class="btn btn-outline btn-sm" id="btn-export-excel">Exporter en Excel</button>
 <button type="button" class="btn btn-outline btn-sm" id="btn-export-pdf">Exporter en PDF</button>
 </div>
+
+<h3 class="panel-subtitle" style="margin-top:28px;">🔒 Clôture de journée</h3>
+<div class="page-sub" style="margin-bottom:8px;">Fige un résumé complet du jour (recette, colis par statut, remises, écarts, argent non encore remis). Les totaux sont recalculés côté serveur au moment de la clôture. Une journée déjà clôturée ne peut être recalculée que par un administrateur.</div>
+<div class="field-row" style="align-items:flex-end;">
+<div class="field">
+<label>Jour à clôturer</label>
+<input type="date" id="cloture-jour">
+</div>
+<div class="field" style="flex:1;">
+<label>Note (facultatif)</label>
+<input type="text" id="cloture-note" placeholder="Ex. : clôture de fin de journée">
+</div>
+<div class="field">
+<label>&nbsp;</label>
+<button type="button" class="btn btn-primary" id="btn-cloturer-journee">Clôturer la journée</button>
+</div>
+</div>
+<div id="cloture-resultat" style="margin:8px 0;"></div>
+<div class="recap-table-wrap" id="clotures-historique" style="margin-top:12px;">
+<div class="empty-state">Chargement...</div>
+</div>
 </div>
 
 </div>
@@ -696,7 +717,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260812f"></script>
+<script src="config.js?v=20260812h"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3276,6 +3297,104 @@ return `<tr>
 </table>
 `;
 }
+
+// ---- Clôture de journée : fige un résumé complet du jour (Correctif 5) ------
+// Le calcul est fait côté serveur par la fonction cloturer_journee (source de
+// vérité). Ici on déclenche la clôture et on affiche l'historique en lecture.
+async function loadCloturesHistorique(){
+const box = document.getElementById('clotures-historique');
+if (!box) return;
+const { data, error } = await supabaseClient
+.from('clotures_journee')
+.select('jour, recette_totale, nb_total, nb_livres, nb_recuperes, nb_en_attente, remises_total, ecarts_total, argent_non_remis, detail_livreurs, note, updated_at')
+.order('jour', { ascending: false })
+.limit(30);
+if (error){
+box.innerHTML = `<div class="empty-state">Historique des clôtures indisponible pour le moment.</div>`;
+return;
+}
+const rows = data || [];
+if (!rows.length){
+box.innerHTML = `<div class="empty-state">Aucune journée clôturée pour l'instant.</div>`;
+return;
+}
+box.innerHTML = rows.map(r => {
+const jour = r.jour ? new Date(r.jour + 'T00:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' }) : '—';
+const ec = Number(r.ecarts_total) || 0;
+const ecCol = ec === 0 ? '#1a7d3c' : (ec < 0 ? '#c0392b' : '#b8860b');
+const nonRemis = Number(r.argent_non_remis) || 0;
+const detail = Array.isArray(r.detail_livreurs) ? r.detail_livreurs : [];
+const detailRows = detail.length ? detail.map(d => `<tr>
+<td>${escapeHTML(d.nom || 'Livreur')}</td>
+<td>${d.nb || 0}</td>
+<td>${formatMontant(d.recette) || '0 FCFA'}</td>
+<td style="color:${(Number(d.non_remis)||0) > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(d.non_remis) || '0 FCFA'}</td>
+</tr>`).join('') : `<tr><td colspan="4" class="empty-state">Aucun livreur ce jour-là.</td></tr>`;
+return `
+<details class="cloture-item" style="border:1px solid var(--border,#e2e2e2); border-radius:10px; padding:12px 14px; margin-bottom:10px;">
+<summary style="cursor:pointer; font-weight:700; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center;">
+<span>🔒 ${jour}</span>
+<span style="font-weight:600;">Recette : ${formatMontant(r.recette_totale) || '0 FCFA'}</span>
+<span style="font-weight:600; color:${nonRemis > 0 ? '#c0392b' : '#1a7d3c'};">Non remis : ${formatMontant(nonRemis) || '0 FCFA'}</span>
+</summary>
+<div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px 18px; font-size:.92em;">
+<span>Colis : <b>${r.nb_total || 0}</b></span>
+<span>Livrés : <b>${r.nb_livres || 0}</b></span>
+<span>Récupérés : <b>${r.nb_recuperes || 0}</b></span>
+<span>En attente : <b>${r.nb_en_attente || 0}</b></span>
+<span>Remises reçues : <b>${formatMontant(r.remises_total) || '0 FCFA'}</b></span>
+<span>Écarts : <b style="color:${ecCol};">${ec === 0 ? '0 FCFA' : (ec < 0 ? '−'+formatMontant(-ec) : '+'+formatMontant(ec))}</b></span>
+</div>
+<table class="recap-table" style="margin-top:10px;">
+<thead><tr><th>Livreur</th><th>Colis</th><th>Recette</th><th>Non remis</th></tr></thead>
+<tbody>${detailRows}</tbody>
+</table>
+${r.note ? `<div style="margin-top:8px; font-style:italic; color:var(--muted,#666);">Note : ${escapeHTML(r.note)}</div>` : ''}
+</details>`;
+}).join('');
+}
+
+(function initCloture(){
+const dateInput = document.getElementById('cloture-jour');
+const btn = document.getElementById('btn-cloturer-journee');
+if (dateInput && !dateInput.value) dateInput.value = todayLocalISODate();
+if (btn){
+btn.addEventListener('click', async () => {
+const jour = (dateInput && dateInput.value) ? dateInput.value : todayLocalISODate();
+const note = (document.getElementById('cloture-note')?.value || '').trim();
+const jourLabel = new Date(jour + 'T00:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' });
+const ok = await showConfirm({
+title: 'Clôturer la journée ?',
+detail: `Un résumé complet du ${jourLabel} sera figé (recette, colis, remises, écarts, argent non remis).`,
+sub: 'Si la journée est déjà clôturée, seul un administrateur peut la recalculer.',
+okLabel: 'Clôturer'
+});
+if (!ok) return;
+btn.disabled = true;
+const res = document.getElementById('cloture-resultat');
+if (res) res.innerHTML = `<div class="empty-state">Clôture en cours...</div>`;
+try {
+const { data, error } = await supabaseClient.rpc('cloturer_journee', { p_jour: jour, p_note: note || null });
+if (error) throw error;
+const c = Array.isArray(data) ? data[0] : data;
+if (res && c){
+res.innerHTML = `<div style="padding:10px 12px; border-radius:8px; background:#eafaf0; border:1px solid #bfe6cd; color:#1a7d3c; font-weight:600;">
+Journée clôturée : recette ${formatMontant(c.recette_totale) || '0 FCFA'}, ${c.nb_total || 0} colis, argent non remis ${formatMontant(c.argent_non_remis) || '0 FCFA'}.
+</div>`;
+}
+if (typeof showTeamToast === 'function') showTeamToast('✅', 'Journée clôturée', jourLabel, true);
+loadCloturesHistorique();
+} catch (e){
+const msg = (e && e.message) ? e.message : 'Erreur lors de la clôture.';
+if (res) res.innerHTML = `<div style="padding:10px 12px; border-radius:8px; background:#fdecec; border:1px solid #f3bcbc; color:#c0392b; font-weight:600;">${escapeHTML(msg)}</div>`;
+if (typeof showTeamToast === 'function') showTeamToast('⚠️', 'Clôture impossible', msg, false);
+} finally {
+btn.disabled = false;
+}
+});
+}
+loadCloturesHistorique();
+})();
 
 function showMainTab(which){
 document.getElementById('tab-colis').classList.toggle('active', which === 'colis');
