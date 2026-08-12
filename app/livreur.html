@@ -842,7 +842,7 @@
         <div class="status-col">
           ${pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : ''}
           <select class="status-select">${statutOptions}</select>
-          <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="margin-top:8px; width:100%; font-weight:700; ${c.livraison_payee ? 'background:#1e8f4e; border:1.5px solid #1e8f4e; color:#fff;' : 'background:#fff3d6; border:1.5px solid #e0a800; color:#8a6100;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Livraison payée ? — à cocher'}</button>
+          <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="margin-top:8px; width:100%; font-weight:600; ${c.livraison_payee ? 'background:#1e8f4e; border:2px solid #1e8f4e; color:#fff;' : 'background:transparent; border:2px solid #e0a800; color:#8a6100;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : 'Livraison payée ?'}</button>
           <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
           <div class="field" style="margin-top:8px;">
             <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
