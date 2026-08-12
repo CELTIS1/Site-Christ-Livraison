@@ -124,9 +124,10 @@
   <div class="page-sub">Comptabilité (recettes &amp; dépenses) et paie (salariés, bulletins). Accès réservé à l'administrateur.</div>
 
   <div class="tabs">
-    <div class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Tableau de bord</div>
-    <div class="tab" data-tab="compta" onclick="switchTab('compta')">💰 Comptabilité</div>
-    <div class="tab" data-tab="paie" onclick="switchTab('paie')">👥 Paie</div>
+    <div class="tab active" id="tab-dashboard" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Tableau de bord</div>
+    <div class="tab" id="tab-compta" data-tab="compta" onclick="switchTab('compta')">💰 Comptabilité</div>
+    <div class="tab" id="tab-paie" data-tab="paie" onclick="switchTab('paie')">👥 Paie</div>
+    <div class="tab" id="tab-journal" data-tab="journal" onclick="switchTab('journal')" style="display:none;">📜 Journal</div>
   </div>
 
   <!-- ============ TABLEAU DE BORD ============ -->
@@ -209,7 +210,7 @@
       <div class="subtab active" data-sub="salaries" onclick="switchSub('paie','salaries')">Salariés</div>
       <div class="subtab" data-sub="saisie" onclick="switchSub('paie','saisie')">Saisie mensuelle</div>
       <div class="subtab" data-sub="bulletins" onclick="switchSub('paie','bulletins')">Bulletins</div>
-      <div class="subtab" data-sub="parametres" onclick="switchSub('paie','parametres')">Paramètres</div>
+      <div class="subtab" id="sub-paie-parametres" data-sub="parametres" onclick="switchSub('paie','parametres')">Paramètres</div>
     </div>
 
     <div class="section active" id="paie-salaries">
@@ -264,6 +265,19 @@
       </div>
     </div>
   </div>
+
+  <!-- ============ JOURNAL D'ACTIVITÉ (admin uniquement) ============ -->
+  <div class="section" id="sec-journal">
+    <div class="card">
+      <h2>Journal d'activité</h2>
+      <div class="hint">Historique des ajouts, modifications et suppressions effectués dans le module Gestion, par chaque personne autorisée. Réservé à l'administrateur.</div>
+      <div class="period-bar">
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="loadJournal()">🔄 Actualiser</button>
+      </div>
+      <div class="g-table-wrap" id="journal-table"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Modale salarié -->
@@ -313,7 +327,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="config.js?v=20260811e"></script>
-<script src="gestion.js?v=20260812a"></script>
+<script src="config.js?v=20260812b"></script>
+<script src="gestion.js?v=20260812b"></script>
 </body>
 </html>

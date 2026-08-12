@@ -660,7 +660,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260811e"></script>
+<script src="config.js?v=20260812b"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2095,7 +2095,7 @@ accountsOffset = 0;
 accountsHasMore = true;
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at')
+.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta')
 .order('role')
 .order('full_name')
 .range(0, ACCOUNTS_PAGE_SIZE - 1);
@@ -2112,7 +2112,7 @@ accountsLoadingMore = true;
 renderAllAccounts();
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at')
+.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta')
 .order('role')
 .order('full_name')
 .range(accountsOffset, accountsOffset + ACCOUNTS_PAGE_SIZE - 1);
@@ -2147,6 +2147,11 @@ const onlineDot = `<span class="online-dot ${isOnline ? '' : 'online-dot-off'}" 
 const promoteBtn = a.role === 'equipe'
 ? `<button type="button" class="btn-promote-admin">⭐ Promouvoir admin</button>`
 : '';
+// Accès délégués au module Gestion (uniquement pour les comptes « équipe »).
+const accesBtns = a.role === 'equipe'
+? `<button type="button" class="btn-toggle-paie">${a.acces_paie ? '✅' : '⬜'} Accès Paie (RH)</button>
+<button type="button" class="btn-toggle-compta">${a.acces_compta ? '✅' : '⬜'} Accès Comptabilité</button>`
+: '';
 const deleteBtn = isSelf
 ? `<button type="button" class="btn-delete-account danger" disabled title="Vous ne pouvez pas supprimer votre propre compte">🗑 Supprimer</button>`
 : `<button type="button" class="btn-delete-account danger">🗑 Supprimer</button>`;
@@ -2161,6 +2166,7 @@ return `
 <button type="button" class="actions-menu-btn" aria-label="Actions du compte">⋮</button>
 <div class="actions-dropdown">
 ${promoteBtn}
+${accesBtns}
 ${deleteBtn}
 </div>
 </div>
@@ -2226,6 +2232,38 @@ await supabaseClient.from('activity_log').insert([{ action: 'promotion_admin', d
 await loadAllAccounts();
 if (isAdmin) await loadActivityLog();
 });
+});
+
+// Accès délégués : activer / retirer l'accès Paie ou Comptabilité (module Gestion).
+async function toggleAcces(btn, champ, libelle){
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+const account = allAccounts.find(a => a.id === id);
+const actif = !!(account && account[champ]);
+const ok = await showConfirm({
+  title: actif ? `Retirer l'accès « ${libelle} » ?` : `Donner l'accès « ${libelle} » ?`,
+  detail: (account && (account.full_name || account.phone)) || '',
+  sub: actif
+    ? "Cette personne perdra immédiatement l'accès à cette partie du module Gestion."
+    : "Cette personne pourra accéder à cette partie du module Gestion. Vous gardez le contrôle et pouvez retirer cet accès à tout moment ; toutes ses actions sont enregistrées dans le journal.",
+  okLabel: actif ? 'Retirer l’accès' : 'Donner l’accès',
+  danger: actif
+});
+if (!ok) return;
+btn.disabled = true;
+const { error } = await supabaseClient.from('profiles').update({ [champ]: !actif }).eq('id', id);
+if (error) { alert("Erreur : " + error.message); btn.disabled = false; return; }
+try {
+await supabaseClient.from('activity_log').insert([{ action: (!actif ? 'acces_gestion_accorde' : 'acces_gestion_retire'), details: { champ, full_name: account && account.full_name, phone: account && account.phone } }]);
+} catch (e) { /* non bloquant */ }
+await loadAllAccounts();
+if (isAdmin) await loadActivityLog();
+}
+box.querySelectorAll('.btn-toggle-paie').forEach(btn => {
+btn.addEventListener('click', (e) => { e.stopPropagation(); toggleAcces(btn, 'acces_paie', 'Paie (RH)'); });
+});
+box.querySelectorAll('.btn-toggle-compta').forEach(btn => {
+btn.addEventListener('click', (e) => { e.stopPropagation(); toggleAcces(btn, 'acces_compta', 'Comptabilité'); });
 });
 
 box.querySelectorAll('.btn-delete-account').forEach(btn => {
@@ -3761,6 +3799,12 @@ trackChannel(supabaseClient
 loadSiteStats();
 })
 .subscribe());
+}
+
+// Accès délégués au module Gestion : afficher le lien pour les membres autorisés (RH / Comptable),
+// même s'ils ne sont pas administrateurs. Le contrôle réel se fait côté base (RLS).
+if (!isAdmin && (profile.acces_paie === true || profile.acces_compta === true)) {
+document.getElementById('lien-gestion')?.classList.remove('hidden');
 }
 
 document.getElementById('mois-select').addEventListener('change', renderRapportMois);

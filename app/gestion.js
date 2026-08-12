@@ -20,6 +20,7 @@ let GRILLE = {};                // { '1A': 75000, ... }
 let SALARIES = [];              // salariés actifs + inactifs
 let CHAUFFEURS = [];            // référentiel compta
 let LIVREURS = [];              // profils livreurs (pour lier un salarié)
+let ACCES = { isAdmin:false, canPaie:false, canCompta:false }; // capacités de l'utilisateur connecté
 
 /* -------------------- Utilitaires -------------------- */
 function n(v){ const x = parseFloat(v); return isNaN(x) ? 0 : x; }
@@ -46,8 +47,9 @@ function showToast(msg, isErr){
 /* -------------------- Navigation onglets -------------------- */
 function switchTab(tab){
   document.querySelectorAll('.tabs .tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
-  ['dashboard','compta','paie'].forEach(s => document.getElementById('sec-'+s).classList.toggle('active', s === tab));
+  ['dashboard','compta','paie','journal'].forEach(s => { const el = document.getElementById('sec-'+s); if (el) el.classList.toggle('active', s === tab); });
   if (tab === 'dashboard') renderDashboard();
+  if (tab === 'journal') loadJournal();
 }
 function switchSub(group, sub){
   document.querySelectorAll(`#sec-${group} .subtab`).forEach(el => el.classList.toggle('active', el.dataset.sub === sub));
@@ -718,34 +720,90 @@ function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-back').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
 
 /* ============================================================================
+ * JOURNAL D'ACTIVITÉ (surveillance — admin uniquement)
+ * ==========================================================================*/
+const JOURNAL_TABLES = {
+  gestion_recettes:'Recettes', gestion_depenses:'Dépenses', gestion_objectifs:'Objectifs',
+  gestion_chauffeurs:'Chauffeurs', gestion_salaries:'Salariés', gestion_saisie_mensuelle:'Saisie mensuelle',
+  gestion_bulletins:'Bulletins', gestion_categories:'Grille catégorielle', gestion_parametres:'Paramètres'
+};
+const JOURNAL_ACTIONS = { INSERT:'Ajout', UPDATE:'Modification', DELETE:'Suppression' };
+async function loadJournal(){
+  const wrap = document.getElementById('journal-table'); if (!wrap) return;
+  wrap.innerHTML = '<div class="hint">Chargement…</div>';
+  const { data, error } = await supabaseClient
+    .from('gestion_journal')
+    .select('ts, acteur_nom, acteur_role, action, table_cible, ligne_id')
+    .order('ts', { ascending:false })
+    .limit(300);
+  if (error){ wrap.innerHTML = '<div class="hint">Impossible de charger le journal.</div>'; console.error(error); return; }
+  const rows = (data||[]);
+  if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucune activité enregistrée pour le moment.</div>'; return; }
+  const body = rows.map(r => {
+    const d = new Date(r.ts);
+    const dt = isNaN(d) ? escapeHTML(r.ts) : d.toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const acteur = escapeHTML(r.acteur_nom || '—') + (r.acteur_role ? ` <span class="hint" style="display:inline">(${escapeHTML(r.acteur_role)})</span>` : '');
+    const act = JOURNAL_ACTIONS[r.action] || escapeHTML(r.action);
+    const tbl = JOURNAL_TABLES[r.table_cible] || escapeHTML(r.table_cible);
+    return `<tr><td>${dt}</td><td>${acteur}</td><td>${act}</td><td>${tbl}</td></tr>`;
+  }).join('');
+  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Date &amp; heure</th><th>Auteur</th><th>Action</th><th>Rubrique</th></tr></thead><tbody>${body}</tbody></table>`;
+}
+
+/* ============================================================================
  * INITIALISATION
  * ==========================================================================*/
 async function init(){
   const session = await requireAuth(); if (!session) return;
   const profile = await getProfile(session.user.id);
-  if (!profile || profile.role !== 'admin'){
-    // Accès strictement réservé à l'administrateur.
-    alert('Accès réservé à l\'administrateur.');
-    window.location.href = (profile && (profile.role==='equipe')) ? 'equipe.html' : 'login.html';
+
+  // Capacités : l'admin a tout ; sinon on lit les droits délégués (acces_paie / acces_compta),
+  // qui sont eux-mêmes verrouillés côté base (RLS + trigger anti-auto-promotion).
+  const isAdmin   = !!profile && profile.role === 'admin';
+  const canPaie   = isAdmin || (!!profile && profile.acces_paie === true);
+  const canCompta = isAdmin || (!!profile && profile.acces_compta === true);
+  ACCES = { isAdmin, canPaie, canCompta };
+
+  if (!profile || (!isAdmin && !canPaie && !canCompta)){
+    // Aucun droit sur le module Gestion.
+    alert('Accès réservé à l\'administrateur et aux personnes autorisées.');
+    window.location.href = (profile && (profile.role==='equipe' || profile.role==='admin')) ? 'equipe.html' : 'login.html';
     return;
   }
-  document.getElementById('role-pill').textContent = '🛡️ Administrateur';
 
-  await Promise.all([loadParametres(), loadCategories(), loadSalaries(), loadChauffeurs(), loadLivreurs()]);
+  // Libellé du rôle affiché
+  document.getElementById('role-pill').textContent =
+      isAdmin ? '🛡️ Administrateur'
+    : (canPaie && canCompta) ? '🔑 Gestion'
+    : canPaie ? '👥 Paie (RH)'
+    : '💰 Comptabilité';
 
-  // Sélecteurs
+  // Onglets visibles selon les capacités
+  const setDisp = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+  setDisp('tab-dashboard', isAdmin);        // vue d'ensemble : patron seul
+  setDisp('tab-compta',    canCompta);
+  setDisp('tab-paie',      canPaie);
+  setDisp('tab-journal',   isAdmin);        // journal de surveillance : patron seul
+  setDisp('sub-paie-parametres', isAdmin);  // paramètres/grille : configuration réservée au patron
+
+  // Sélecteurs de période
   const nowM = new Date().getMonth()+1;
   ['dash-year','rec-year','dep-year','obj-year','sai-year','bul-year'].forEach(id => fillYearSelect(id));
   ['dash-month','rec-month','dep-month','sai-month','bul-month'].forEach(id => fillMonthSelect(id, nowM));
 
-  renderParametres();
-  renderSalaries();
-  renderChauffeurs();
-  renderDashboard();
-  loadRecettes();
-  loadDepenses();
-  loadObjectifs();
-  loadSaisie();
-  renderBulletins();
+  // Chargement des données strictement nécessaires aux capacités de la personne.
+  const tasks = [];
+  if (canPaie || canCompta) tasks.push(loadParametres());              // paramètres (lecture) : utiles au calcul de paie
+  if (canPaie)   tasks.push(loadCategories(), loadSalaries(), loadLivreurs());
+  if (canCompta) tasks.push(loadChauffeurs());
+  await Promise.all(tasks);
+
+  if (isAdmin) renderParametres();
+  if (canPaie){ renderSalaries(); loadSaisie(); renderBulletins(); }
+  if (canCompta){ renderChauffeurs(); loadRecettes(); loadDepenses(); loadObjectifs(); }
+  if (isAdmin) renderDashboard();
+
+  // Onglet ouvert par défaut selon le profil
+  switchTab(isAdmin ? 'dashboard' : (canPaie ? 'paie' : 'compta'));
 }
 init();
