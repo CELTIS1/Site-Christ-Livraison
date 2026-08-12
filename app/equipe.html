@@ -520,6 +520,11 @@
 <div class="recap-table-wrap" id="caisse-livreur">
 <div class="empty-state">Chargement...</div>
 </div>
+<h3 class="panel-subtitle" style="margin-top:24px;">🧾 Historique des remises &amp; écarts</h3>
+<div class="page-sub" style="margin-bottom:8px;">Chaque remise enregistre le montant réellement reçu et l'écart avec le montant attendu. Un écart négatif signale un manque à vérifier.</div>
+<div class="recap-table-wrap" id="remises-historique">
+<div class="empty-state">Chargement...</div>
+</div>
 <div style="display:flex; gap:8px; margin-top:14px;">
 <button type="button" class="btn btn-outline btn-sm" id="btn-export-excel">Exporter en Excel</button>
 <button type="button" class="btn btn-outline btn-sm" id="btn-export-pdf">Exporter en PDF</button>
@@ -660,7 +665,38 @@
   </div>
 </div>
 
-<script src="config.js?v=20260812c"></script>
+<!-- Remise de caisse : l'équipe saisit la somme réellement reçue d'un livreur ;
+     l'écart avec le montant attendu (reste à remettre) est calculé et conservé
+     pour contrôle, puis les colis couverts sont marqués « remis ». -->
+<div id="remise-modal-overlay" class="pwd-modal-overlay hidden">
+  <div class="pwd-modal">
+    <div class="pwd-modal-icon">💵</div>
+    <h3 class="pwd-modal-title">Remise de caisse</h3>
+    <p class="pwd-modal-sub" id="remise-modal-sub"></p>
+    <form id="remise-modal-form">
+      <div style="text-align:left; margin-bottom:10px;">
+        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Montant attendu</label>
+        <input type="text" id="remise-modal-attendu" readonly style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box; background:#f2f5f9; font-weight:700;">
+      </div>
+      <div style="text-align:left; margin-bottom:10px;">
+        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Montant réellement reçu (FCFA)</label>
+        <input type="number" id="remise-modal-recu" min="0" step="1" inputmode="numeric" required style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+      </div>
+      <div id="remise-modal-ecart" style="text-align:left; font-weight:700; margin-bottom:12px; font-size:13.5px;"></div>
+      <div style="text-align:left; margin-bottom:14px;">
+        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Note (optionnel)</label>
+        <input type="text" id="remise-modal-note" placeholder="Ex : différence réglée demain" style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+      </div>
+      <div id="remise-modal-msg"></div>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn" id="remise-modal-cancel" style="flex:1; background:#e5e9ef; color:#222;">Annuler</button>
+        <button type="submit" class="btn" id="remise-modal-save" style="flex:1;">Enregistrer la remise</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="config.js?v=20260812f"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -835,6 +871,90 @@ document.getElementById('pickup-modal-form').addEventListener('submit', async (e
   }
   hidePickupModal();
   renderColis();
+});
+
+// ---------- Remise de caisse (montant reçu + écart) ----------
+let __remiseCtx = null; // { livreurId, attendu, colisIds }
+function fmtFcfa(v){ return (formatMontant(Number(v)||0) || '0 FCFA'); }
+function majEcartRemise(){
+  const attendu = __remiseCtx ? Number(__remiseCtx.attendu) || 0 : 0;
+  const recu = Number(document.getElementById('remise-modal-recu').value) || 0;
+  const ecart = recu - attendu;
+  const box = document.getElementById('remise-modal-ecart');
+  if (!box) return;
+  if (ecart === 0){
+    box.innerHTML = `<span style="color:#1a7d3c;">✅ Écart : 0 FCFA — remise juste.</span>`;
+  } else if (ecart < 0){
+    box.innerHTML = `<span style="color:#c0392b;">⚠️ Manque ${fmtFcfa(-ecart)} — à vérifier.</span>`;
+  } else {
+    box.innerHTML = `<span style="color:#b8860b;">ℹ️ Trop-perçu ${fmtFcfa(ecart)} — à vérifier.</span>`;
+  }
+}
+function showRemiseModal(livreurId, attendu, colisIds, nbColis){
+  __remiseCtx = { livreurId, attendu: Number(attendu) || 0, colisIds: colisIds || [] };
+  const nom = collecteLivreurLabel(livreurId) || 'ce livreur';
+  document.getElementById('remise-modal-sub').textContent = `${nom} · ${nbColis} colis à solder`;
+  document.getElementById('remise-modal-attendu').value = fmtFcfa(__remiseCtx.attendu);
+  document.getElementById('remise-modal-recu').value = Math.round(__remiseCtx.attendu);
+  document.getElementById('remise-modal-note').value = '';
+  document.getElementById('remise-modal-msg').innerHTML = '';
+  majEcartRemise();
+  document.getElementById('remise-modal-overlay').classList.remove('hidden');
+  setTimeout(() => { const i = document.getElementById('remise-modal-recu'); if (i){ i.focus(); i.select(); } }, 50);
+}
+function hideRemiseModal(){
+  document.getElementById('remise-modal-overlay').classList.add('hidden');
+  __remiseCtx = null;
+}
+document.getElementById('remise-modal-recu').addEventListener('input', majEcartRemise);
+document.getElementById('remise-modal-cancel').addEventListener('click', hideRemiseModal);
+document.getElementById('remise-modal-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'remise-modal-overlay') hideRemiseModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('remise-modal-overlay').classList.contains('hidden')) hideRemiseModal();
+});
+document.getElementById('remise-modal-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!__remiseCtx) return;
+  const { livreurId, colisIds } = __remiseCtx;
+  if (!colisIds.length) { hideRemiseModal(); return; }
+  const recuRaw = document.getElementById('remise-modal-recu').value;
+  const recu = Number(recuRaw);
+  const msgBox = document.getElementById('remise-modal-msg');
+  if (recuRaw === '' || isNaN(recu) || recu < 0){
+    msgBox.innerHTML = `<div class="msg msg-error">Saisissez un montant reçu valide (0 ou plus).</div>`;
+    return;
+  }
+  const note = document.getElementById('remise-modal-note').value.trim() || null;
+  const saveBtn = document.getElementById('remise-modal-save');
+  saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement...';
+  const { data, error } = await supabaseClient.rpc('enregistrer_remise_caisse', {
+    p_livreur_id: livreurId, p_montant_remis: recu, p_colis_ids: colisIds, p_note: note
+  });
+  saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer la remise';
+  if (error){
+    if (/enregistrer_remise_caisse|does not exist|n'existe pas|function/i.test(error.message || '')){
+      msgBox.innerHTML = `<div class="msg msg-error">Fonction de remise pas encore activée : exécutez le script SQL _sql-prive/remises_caisse.sql dans Supabase, puis réessayez.</div>`;
+    } else {
+      msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`;
+    }
+    return;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  const ecart = row ? Number(row.ecart) : (recu - (__remiseCtx.attendu || 0));
+  colisIds.forEach(id => {
+    const idx = allColis.findIndex(c => c.id === id);
+    if (idx !== -1){ allColis[idx].encaissement_remis = true; allColis[idx].encaissement_remis_at = new Date().toISOString(); }
+  });
+  hideRemiseModal();
+  if (typeof showTeamToast === 'function'){
+    const detail = ecart === 0 ? 'Écart nul — remise juste.'
+      : ecart < 0 ? `Manque ${fmtFcfa(-ecart)} — à vérifier.`
+      : `Trop-perçu ${fmtFcfa(ecart)} — à vérifier.`;
+    showTeamToast(ecart === 0 ? '✅' : '⚠️', 'Remise enregistrée', detail, false);
+  }
+  renderCompta();
 });
 
 function closeOtherSections(exceptContentId){
@@ -3101,32 +3221,60 @@ ${lignes.map(r => `
 </table>
 `;
 box.querySelectorAll('.caisse-remis-btn').forEach(btn => {
-btn.addEventListener('click', async () => {
+btn.addEventListener('click', () => {
 const tr = btn.closest('tr');
 const livreurId = tr.dataset.livreur;
 const ligne = lignes.find(l => String(l.id) === String(livreurId));
 if (!ligne || !ligne.idsAremettre.length) return;
-if (!(await showConfirm({ title: 'Confirmer la remise ?', detail: `${formatMontant(ligne.reste)}`, sub: `Remis par ${collecteLivreurLabel(livreurId) || 'ce livreur'}.`, okLabel: 'Confirmer la remise' }))) return;
-btn.disabled = true; btn.textContent = '...';
-const { error } = await supabaseClient.from('colis')
-.update({ encaissement_remis: true, encaissement_remis_at: new Date().toISOString() })
-.in('id', ligne.idsAremettre);
-btn.disabled = false; btn.textContent = '✔ Marquer comme remis';
-if (error){
-if (/encaissement_remis|column|colonne|does not exist|n'existe pas/i.test(error.message || '')){
-alert("Fonction de caisse pas encore activée : exécutez le script SQL de migration (_sql-prive/2026-08-ameliorations.sql) dans Supabase, puis réessayez.");
-} else {
-alert(friendlyErrorMessage(error.message));
+// Ouvre la fenêtre « remise de caisse » : on saisit la somme réellement reçue,
+// l'écart est calculé et les colis couverts sont soldés de façon atomique côté serveur.
+showRemiseModal(livreurId, ligne.reste, ligne.idsAremettre, ligne.idsAremettre.length);
+});
+});
+loadRemisesHistorique();
 }
+
+// Historique des remises de caisse (dernières remises + écart), lecture seule.
+async function loadRemisesHistorique(){
+const box = document.getElementById('remises-historique');
+if (!box) return;
+const { data, error } = await supabaseClient
+.from('remises_caisse')
+.select('id, livreur_id, montant_attendu, montant_remis, ecart, nb_colis, note, created_at')
+.order('created_at', { ascending: false })
+.limit(30);
+if (error){
+box.innerHTML = `<div class="empty-state">Historique indisponible pour le moment.</div>`;
 return;
 }
-ligne.idsAremettre.forEach(id => {
-const idx = allColis.findIndex(c => c.id === id);
-if (idx !== -1){ allColis[idx].encaissement_remis = true; allColis[idx].encaissement_remis_at = new Date().toISOString(); }
-});
-renderCompta();
-});
-});
+const rows = data || [];
+if (!rows.length){
+box.innerHTML = `<div class="empty-state">Aucune remise enregistrée pour l'instant.</div>`;
+return;
+}
+box.innerHTML = `
+<table class="recap-table">
+<thead><tr><th>Date</th><th>Livreur</th><th>Colis</th><th>Attendu</th><th>Reçu</th><th>Écart</th><th>Note</th></tr></thead>
+<tbody>
+${rows.map(r => {
+const ec = Number(r.ecart) || 0;
+const col = ec === 0 ? '#1a7d3c' : (ec < 0 ? '#c0392b' : '#b8860b');
+const ecTxt = ec === 0 ? '0 FCFA' : (ec < 0 ? `−${formatMontant(-ec)}` : `+${formatMontant(ec)}`);
+const d = r.created_at ? new Date(r.created_at) : null;
+const dTxt = d ? d.toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+return `<tr>
+<td>${dTxt}</td>
+<td>${(collecteLivreurLabel(r.livreur_id) || 'Non attribué')}</td>
+<td>${r.nb_colis || 0}</td>
+<td>${formatMontant(r.montant_attendu) || '0 FCFA'}</td>
+<td>${formatMontant(r.montant_remis) || '0 FCFA'}</td>
+<td style="color:${col}; font-weight:700;">${ecTxt}</td>
+<td>${r.note ? escapeHTML(r.note) : ''}</td>
+</tr>`;
+}).join('')}
+</tbody>
+</table>
+`;
 }
 
 function showMainTab(which){
