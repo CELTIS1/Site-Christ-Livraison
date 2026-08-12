@@ -217,7 +217,7 @@
       </div>
     </div>
 
-    <!-- Caisse des livreurs (lecture seule, issue des colis livrés) -->
+    <!-- Caisse des livreurs (lecture seule, comptage sur le paiement) -->
     <div class="section" id="compta-caisse">
       <div class="period-bar">
         <label style="font-weight:600;color:var(--clt-teal-dark);">Du</label>
@@ -227,11 +227,11 @@
         <div class="spacer"></div>
         <button class="btn btn-outline btn-sm" onclick="loadCaisseLivreurs()">🔄 Actualiser</button>
       </div>
-      <div class="hint">Récapitulatif <strong>jour par jour</strong>, par livreur : argent de l'article et argent de la livraison séparés, calculés sur les colis livrés (date = jour où l'argent a été récupéré). Cliquez sur un montant pour le copier. Lecture seule.</div>
+      <div class="hint">Récapitulatif <strong>jour par jour</strong>, par livreur : argent de l'article et argent de la livraison séparés. L'argent est compté <strong>dès qu'il est marqué payé</strong> (l'article et la livraison sont comptés séparément, même si le colis n'est pas encore livré). Date = jour où l'argent a été récupéré. Cliquez sur un montant pour le copier. Lecture seule.</div>
       <div class="card"><div class="g-table-wrap" id="caisse-table"></div></div>
     </div>
 
-    <!-- Point des clients / vendeuses (lecture seule, issue des colis) -->
+    <!-- Point des clients / vendeuses (lecture seule, comptage sur le paiement) -->
     <div class="section" id="compta-clients">
       <div class="period-bar">
         <label style="font-weight:600;color:var(--clt-teal-dark);">Du</label>
@@ -241,7 +241,7 @@
         <div class="spacer"></div>
         <button class="btn btn-outline btn-sm" onclick="loadPointClients()">🔄 Actualiser</button>
       </div>
-      <div class="hint">Point <strong>jour par jour</strong>, par cliente (vendeuse) : argent de l'article et argent de la livraison séparés, sur les colis livrés. Cliquez sur un montant pour le copier. Lecture seule.</div>
+      <div class="hint">Point <strong>jour par jour</strong>, par cliente (vendeuse) : argent de l'article et argent de la livraison séparés. L'argent est compté <strong>dès qu'il est marqué payé</strong> (même si le colis n'est pas encore livré). Cliquez sur un montant pour le copier. Lecture seule.</div>
       <div class="card"><div class="g-table-wrap" id="clients-table"></div></div>
     </div>
   </div>
@@ -369,7 +369,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="config.js?v=20260812d"></script>
-<script src="gestion.js?v=20260812d"></script>
+<script src="config.js?v=20260812e"></script>
+<script src="gestion.js?v=20260812e"></script>
 </body>
 </html>
