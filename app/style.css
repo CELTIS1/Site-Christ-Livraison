@@ -247,6 +247,13 @@ input, select, textarea{ font-size:16px !important; }
   transition:box-shadow .2s ease, border-color .2s ease, transform .15s ease;
 }
 .colis-item:hover{box-shadow:0 6px 18px rgba(20,40,70,0.1); border-color:#d8dee6; transform:translateY(-1px);}
+/* Colis livré : fond vert doux (pas trop soutenu) pour montrer d'un coup d'œil
+   que la livraison est effectuée et bien distinguer ces cartes des autres. */
+.colis-item[data-statut="livre"]{background:#eaf7ef; border-color:#bfe6cd;}
+.colis-item[data-statut="livre"]:hover{border-color:#9ed9b4;}
+/* Colis retourné : léger fond ambré pour le différencier également. */
+.colis-item[data-statut="retour"]{background:#fdf4e8; border-color:#f0d9b5;}
+.colis-item[data-statut="retour"]:hover{border-color:#e8c893;}
 .colis-item .thumb{
   width:48px; height:48px; border-radius:8px; object-fit:cover; background:var(--grey-bg); flex-shrink:0; cursor:zoom-in;
 }
