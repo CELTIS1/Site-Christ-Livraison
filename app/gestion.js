@@ -34,6 +34,38 @@ function escapeHTML(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => (
 function pad2(x){ return String(x).padStart(2,'0'); }
 function joursDuMois(annee, mois){ return new Date(annee, mois, 0).getDate(); } // mois 1..12
 function periodeStr(annee, mois){ return `${annee}-${pad2(mois)}-01`; }
+function isoJour(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; } // Date -> 'YYYY-MM-DD'
+
+/* Formate un jour ISO 'YYYY-MM-DD' en date française lisible (ex. « mercredi 12 août 2026 ») */
+function frJour(iso){
+  const d = new Date(String(iso) + 'T00:00:00');
+  if (isNaN(d)) return escapeHTML(iso);
+  return d.toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+}
+
+/* Copie une valeur dans le presse-papiers (avec repli si l'API n'est pas dispo) */
+function copyVal(el){
+  const v = el.getAttribute('data-copy') ?? el.textContent;
+  const ok = () => showToast('Copié : ' + v);
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(ok).catch(() => fallbackCopy(v, ok));
+  } else { fallbackCopy(v, ok); }
+}
+function fallbackCopy(v, ok){
+  const ta = document.createElement('textarea');
+  ta.value = v; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); ok(); } catch(e){ showToast('Copie impossible', true); }
+  ta.remove();
+}
+/* Cellule de montant copiable : affiche « 12 345 F 📋 », copie la valeur BRUTE (sans espace ni F) */
+function copyCell(val, opts){
+  opts = opts || {};
+  const tag  = opts.th ? 'th' : 'td';
+  const bold = opts.bold ? 'font-weight:700;' : '';
+  const raw  = Math.round(n(val)).toString();
+  return `<${tag} style="text-align:right;${bold}"><span class="clt-copy" data-copy="${raw}" title="Cliquer pour copier ${raw}" onclick="copyVal(this)">${fmtF(val)} <span class="clt-copy-ic">📋</span></span></${tag}>`;
+}
 
 function showToast(msg, isErr){
   const w = document.getElementById('g-toast-wrap');
@@ -758,22 +790,59 @@ async function loadJournal(){
  * Le comptable n'a PAS d'accès direct à la table colis : ces chiffres agrégés
  * proviennent de fonctions SECURITY DEFINER protégées par a_acces_compta().
  * ==========================================================================*/
+/* Regroupe des lignes plates (triées jour desc) par jour → { jours:[...], map:{jour:[rows]} } */
+function grouperParJour(rows){
+  const jours = [], map = {};
+  rows.forEach(r => { if (!map[r.jour]){ map[r.jour] = []; jours.push(r.jour); } map[r.jour].push(r); });
+  return { jours, map };
+}
+
 async function loadCaisseLivreurs(){
   const wrap = document.getElementById('caisse-table');
   if (!wrap) return;
   const debut = document.getElementById('caisse-debut')?.value || null;
   const fin   = document.getElementById('caisse-fin')?.value || null;
   wrap.innerHTML = '<div class="hint">Chargement…</div>';
-  const { data, error } = await supabaseClient.rpc('compta_caisse_livreurs', { p_debut: debut, p_fin: fin });
+  const { data, error } = await supabaseClient.rpc('compta_caisse_livreurs_jour', { p_debut: debut, p_fin: fin });
   if (error){ wrap.innerHTML = `<div class="hint" style="color:#b00;">Erreur : ${escapeHTML(error.message)}</div>`; return; }
   const rows = data || [];
   if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucun colis livré sur la période.</div>'; return; }
-  let tTotal=0, tRemis=0, tReste=0, tNb=0;
-  const body = rows.map(r => {
-    tTotal += n(r.total); tRemis += n(r.remis); tReste += n(r.reste); tNb += Number(r.nb);
-    return `<tr><td>${escapeHTML(r.nom)}</td><td style="text-align:right;">${r.nb}</td><td style="text-align:right;">${fmtF(r.total)}</td><td style="text-align:right;">${fmtF(r.remis)}</td><td style="text-align:right;font-weight:700;">${fmtF(r.reste)}</td></tr>`;
-  }).join('');
-  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Livreur</th><th style="text-align:right;">Colis livrés</th><th style="text-align:right;">Total encaissé</th><th style="text-align:right;">Déjà remis</th><th style="text-align:right;">Reste à remettre</th></tr></thead><tbody>${body}</tbody><tfoot><tr><th>Total</th><th style="text-align:right;">${tNb}</th><th style="text-align:right;">${fmtF(tTotal)}</th><th style="text-align:right;">${fmtF(tRemis)}</th><th style="text-align:right;">${fmtF(tReste)}</th></tr></tfoot></table>`;
+
+  const { jours, map } = grouperParJour(rows);
+  let gArt=0, gLiv=0, gTot=0, gRemis=0, gReste=0, gNb=0;
+  let blocks = '';
+
+  jours.forEach(j => {
+    const list = map[j];
+    let jArt=0, jLiv=0, jTot=0, jRemis=0, jReste=0, jNb=0;
+    const body = list.map(r => {
+      jArt+=n(r.total_article); jLiv+=n(r.total_livraison); jTot+=n(r.total);
+      jRemis+=n(r.remis); jReste+=n(r.reste); jNb+=Number(r.nb);
+      return `<tr><td>${escapeHTML(r.nom)}</td><td style="text-align:right;">${r.nb}</td>`
+           + copyCell(r.total_article) + copyCell(r.total_livraison) + copyCell(r.total)
+           + copyCell(r.remis) + copyCell(r.reste, {bold:true}) + `</tr>`;
+    }).join('');
+    gArt+=jArt; gLiv+=jLiv; gTot+=jTot; gRemis+=jRemis; gReste+=jReste; gNb+=jNb;
+    blocks += `<div class="clt-day-block"><div class="clt-day-head">📅 ${frJour(j)}</div>`
+      + `<div class="g-table-wrap"><table class="g-table"><thead><tr>`
+      + `<th>Livreur</th><th style="text-align:right;">Colis</th>`
+      + `<th style="text-align:right;">Total article</th><th style="text-align:right;">Total livraison</th>`
+      + `<th style="text-align:right;">Total</th><th style="text-align:right;">Déjà remis</th>`
+      + `<th style="text-align:right;">Reste à remettre</th></tr></thead>`
+      + `<tbody>${body}</tbody>`
+      + `<tfoot><tr><th>Total du jour</th><th style="text-align:right;">${jNb}</th>`
+      + copyCell(jArt,{th:true}) + copyCell(jLiv,{th:true}) + copyCell(jTot,{th:true})
+      + copyCell(jRemis,{th:true}) + copyCell(jReste,{th:true,bold:true})
+      + `</tr></tfoot></table></div></div>`;
+  });
+
+  const resume = `<div class="clt-sum">`
+    + `<div class="kpi"><div class="lbl">Total article (période)</div><div class="val">${fmtF(gArt)}</div></div>`
+    + `<div class="kpi"><div class="lbl">Total livraison — recettes (période)</div><div class="val">${fmtF(gLiv)}</div></div>`
+    + `<div class="kpi"><div class="lbl">Déjà remis</div><div class="val">${fmtF(gRemis)}</div></div>`
+    + `<div class="kpi"><div class="lbl">Reste à remettre</div><div class="val">${fmtF(gReste)}</div></div>`
+    + `</div>`;
+  wrap.innerHTML = resume + blocks;
 }
 
 async function loadPointClients(){
@@ -782,16 +851,40 @@ async function loadPointClients(){
   const debut = document.getElementById('clients-debut')?.value || null;
   const fin   = document.getElementById('clients-fin')?.value || null;
   wrap.innerHTML = '<div class="hint">Chargement…</div>';
-  const { data, error } = await supabaseClient.rpc('compta_point_clients', { p_debut: debut, p_fin: fin });
+  const { data, error } = await supabaseClient.rpc('compta_point_clients_jour', { p_debut: debut, p_fin: fin });
   if (error){ wrap.innerHTML = `<div class="hint" style="color:#b00;">Erreur : ${escapeHTML(error.message)}</div>`; return; }
   const rows = data || [];
-  if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucun colis sur la période.</div>'; return; }
-  let tMontant=0, tReste=0, tNb=0, tLivres=0;
-  const body = rows.map(r => {
-    tMontant += n(r.montant); tReste += n(r.reste); tNb += Number(r.nb); tLivres += Number(r.livres);
-    return `<tr><td>${escapeHTML(r.client_nom)}</td><td style="text-align:right;">${r.nb}</td><td style="text-align:right;">${r.livres}</td><td style="text-align:right;">${fmtF(r.montant)}</td><td style="text-align:right;font-weight:700;">${fmtF(r.reste)}</td></tr>`;
-  }).join('');
-  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Cliente (vendeuse)</th><th style="text-align:right;">Colis</th><th style="text-align:right;">Livrés</th><th style="text-align:right;">Montant articles</th><th style="text-align:right;">Reste à percevoir</th></tr></thead><tbody>${body}</tbody><tfoot><tr><th>Total</th><th style="text-align:right;">${tNb}</th><th style="text-align:right;">${tLivres}</th><th style="text-align:right;">${fmtF(tMontant)}</th><th style="text-align:right;">${fmtF(tReste)}</th></tr></tfoot></table>`;
+  if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucun colis livré sur la période.</div>'; return; }
+
+  const { jours, map } = grouperParJour(rows);
+  let gArt=0, gLiv=0, gNb=0;
+  let blocks = '';
+
+  jours.forEach(j => {
+    const list = map[j];
+    let jArt=0, jLiv=0, jNb=0;
+    const body = list.map(r => {
+      jArt+=n(r.total_article); jLiv+=n(r.total_livraison); jNb+=Number(r.nb);
+      return `<tr><td>${escapeHTML(r.client_nom)}</td><td style="text-align:right;">${r.nb}</td>`
+           + copyCell(r.total_article) + copyCell(r.total_livraison) + `</tr>`;
+    }).join('');
+    gArt+=jArt; gLiv+=jLiv; gNb+=jNb;
+    blocks += `<div class="clt-day-block"><div class="clt-day-head">📅 ${frJour(j)}</div>`
+      + `<div class="g-table-wrap"><table class="g-table"><thead><tr>`
+      + `<th>Cliente (vendeuse)</th><th style="text-align:right;">Colis livrés</th>`
+      + `<th style="text-align:right;">Total article</th><th style="text-align:right;">Total livraison</th></tr></thead>`
+      + `<tbody>${body}</tbody>`
+      + `<tfoot><tr><th>Total du jour</th><th style="text-align:right;">${jNb}</th>`
+      + copyCell(jArt,{th:true}) + copyCell(jLiv,{th:true})
+      + `</tr></tfoot></table></div></div>`;
+  });
+
+  const resume = `<div class="clt-sum">`
+    + `<div class="kpi"><div class="lbl">Total article (période)</div><div class="val">${fmtF(gArt)}</div></div>`
+    + `<div class="kpi"><div class="lbl">Total livraison (période)</div><div class="val">${fmtF(gLiv)}</div></div>`
+    + `<div class="kpi"><div class="lbl">Colis livrés</div><div class="val">${gNb}</div></div>`
+    + `</div>`;
+  wrap.innerHTML = resume + blocks;
 }
 
 /* ============================================================================
@@ -837,6 +930,17 @@ async function init(){
   const nowM = new Date().getMonth()+1;
   ['dash-year','rec-year','dep-year','obj-year','sai-year','bul-year'].forEach(id => fillYearSelect(id));
   ['dash-month','rec-month','dep-month','sai-month','bul-month'].forEach(id => fillMonthSelect(id, nowM));
+
+  // Récapitulatifs comptables par jour : période par défaut = 7 derniers jours,
+  // pour afficher tout de suite aujourd'hui/hier/avant-hier sans surcharger l'écran.
+  if (canCompta){
+    const auj = new Date();
+    const il7 = new Date(); il7.setDate(auj.getDate() - 6);
+    [['caisse-debut', isoJour(il7)], ['caisse-fin', isoJour(auj)],
+     ['clients-debut', isoJour(il7)], ['clients-fin', isoJour(auj)]].forEach(([id, val]) => {
+      const el = document.getElementById(id); if (el && !el.value) el.value = val;
+    });
+  }
 
   // Chargement des données strictement nécessaires aux capacités de la personne.
   const tasks = [];

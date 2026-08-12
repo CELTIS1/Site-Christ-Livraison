@@ -68,6 +68,18 @@
   .num-pos{ color:var(--clt-green); font-weight:600; }
   .num-neg{ color:var(--clt-red); font-weight:600; }
 
+  /* Récapitulatifs comptables par jour */
+  .clt-day-block{ margin-bottom:18px; }
+  .clt-day-head{ font-weight:700; color:var(--clt-teal-dark); background:var(--clt-teal-light); padding:8px 12px; border-radius:10px; margin-bottom:8px; font-size:13.5px; text-transform:capitalize; }
+  .clt-sum{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .clt-sum .kpi{ flex:1; min-width:150px; }
+  .clt-sum .kpi .lbl{ font-size:11.5px; color:#6b7c79; font-weight:600; }
+  .clt-sum .kpi .val{ font-size:18px; font-weight:700; color:var(--clt-teal-dark); }
+  .clt-copy{ cursor:pointer; border-radius:6px; padding:2px 5px; transition:background .12s; display:inline-flex; align-items:center; gap:4px; }
+  .clt-copy:hover{ background:var(--clt-teal-light); }
+  .clt-copy .clt-copy-ic{ font-size:11px; opacity:.35; }
+  .clt-copy:hover .clt-copy-ic{ opacity:.9; }
+
   .row-actions{ display:flex; gap:6px; }
   .icon-btn{ border:none; background:var(--clt-teal-light); color:var(--clt-teal-dark); border-radius:8px; padding:6px 10px; font-size:12.5px; font-weight:600; cursor:pointer; }
   .icon-btn:hover{ background:#d3ebe7; }
@@ -215,7 +227,7 @@
         <div class="spacer"></div>
         <button class="btn btn-outline btn-sm" onclick="loadCaisseLivreurs()">🔄 Actualiser</button>
       </div>
-      <div class="hint">Recettes à percevoir auprès des livreurs, calculées à partir des colis livrés. Lecture seule.</div>
+      <div class="hint">Récapitulatif <strong>jour par jour</strong>, par livreur : argent de l'article et argent de la livraison séparés, calculés sur les colis livrés (date = jour où l'argent a été récupéré). Cliquez sur un montant pour le copier. Lecture seule.</div>
       <div class="card"><div class="g-table-wrap" id="caisse-table"></div></div>
     </div>
 
@@ -229,7 +241,7 @@
         <div class="spacer"></div>
         <button class="btn btn-outline btn-sm" onclick="loadPointClients()">🔄 Actualiser</button>
       </div>
-      <div class="hint">Point par cliente (vendeuse) : nombre de colis, livrés, montant et reste à percevoir. Lecture seule.</div>
+      <div class="hint">Point <strong>jour par jour</strong>, par cliente (vendeuse) : argent de l'article et argent de la livraison séparés, sur les colis livrés. Cliquez sur un montant pour le copier. Lecture seule.</div>
       <div class="card"><div class="g-table-wrap" id="clients-table"></div></div>
     </div>
   </div>
@@ -357,7 +369,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="config.js?v=20260812c"></script>
-<script src="gestion.js?v=20260812c"></script>
+<script src="config.js?v=20260812d"></script>
+<script src="gestion.js?v=20260812d"></script>
 </body>
 </html>
