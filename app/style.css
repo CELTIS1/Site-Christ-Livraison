@@ -352,6 +352,40 @@ input, select, textarea{ font-size:16px !important; }
   .group-collecte-assign{width:100%;}
   .select-assign-collecte{flex:1; min-width:0; max-width:none;}
   .group-collecte-assign .btn-assign-collecte{flex-shrink:0;}
+
+  /* Carte éditable "Mes colis" (livreur) sur petit écran : la colonne d'actions passe en pile
+     verticale pleine largeur (plutôt qu'en ligne serrée), pour une saisie claire et aérée.
+     Scopé à .mes-colis-item pour ne pas modifier les cartes de l'équipe. */
+  .colis-item.mes-colis-item .status-col{
+    flex-direction:column; align-items:stretch; justify-content:flex-start; gap:8px;
+  }
+  .colis-item.mes-colis-item .status-col .status-select{width:100%;}
+  .colis-item.mes-colis-item .status-col .btn-livraison-payee{align-self:flex-start;}
+  .colis-item.mes-colis-item .status-col .obs-textarea{width:100%;}
+  .colis-item.mes-colis-item .status-col .field{width:100%; margin:0;}
+  .colis-item.mes-colis-item .status-col .btn-save{align-self:stretch;}
+}
+
+/* ---------------------------------------------------------------------------
+   Carte éditable "Mes colis" (livreur) sur grand écran (≥641px)
+   ---------------------------------------------------------------------------
+   Avant : le formulaire d'action (statut, paiement, observation, photo, enregistrer) était
+   coincé dans une colonne étroite (170px) à droite. Comme la colonne d'infos est courte, cela
+   laissait un grand vide vertical sous les infos et entassait les options à droite.
+   Après : ce formulaire devient un bandeau horizontal pleine largeur SOUS les infos. La carte
+   est nettement plus courte et l'espace est réparti proprement. Scopé à .mes-colis-item pour
+   ne pas toucher les cartes de l'équipe ni la vue "Tous les colis" (lecture seule). */
+@media(min-width:641px){
+  .colis-item.mes-colis-item .status-col{
+    width:100%; flex-direction:row; flex-wrap:wrap; align-items:flex-start; justify-content:flex-start;
+    border-top:1px solid var(--border); margin-top:6px; padding-top:12px; gap:10px 12px;
+  }
+  .colis-item.mes-colis-item .status-col .sync-pending-badge{flex:1 1 100%;}
+  .colis-item.mes-colis-item .status-col .status-select{flex:0 0 190px;}
+  .colis-item.mes-colis-item .status-col .btn-livraison-payee{flex:0 0 auto;}
+  .colis-item.mes-colis-item .status-col .obs-textarea{flex:1 1 260px; min-width:240px;}
+  .colis-item.mes-colis-item .status-col .field{flex:1 1 240px; min-width:220px; margin:0;}
+  .colis-item.mes-colis-item .status-col .btn-save{flex:0 0 auto; margin-left:auto; align-self:flex-end;}
 }
 
 .badge{
