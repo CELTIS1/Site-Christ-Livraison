@@ -171,6 +171,7 @@
 <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️<span id="settings-notif-badge" class="alert-badge hidden">0</span></button>
 <div class="settings-dropdown" id="settings-dropdown">
 <button type="button" id="btn-mon-compte">👤 Mon compte</button>
+<a id="lien-gestion" class="hidden" href="gestion.html" style="text-decoration:none;color:#222;width:100%;text-align:left;padding:11px 13px;border-radius:8px;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;">📊 Gestion (compta &amp; paie)</a>
 <button type="button" id="btn-activer-push">🔔 Activer les notifications</button>
 <button type="button" class="danger" onclick="logout()">🚪 Se déconnecter</button>
 </div>
@@ -3742,6 +3743,7 @@ console.error('Erreur initialisation présence', e);
 
 if (isAdmin) {
 document.getElementById('role-pill').textContent = 'Administrateur';
+document.getElementById('lien-gestion')?.classList.remove('hidden');
 document.getElementById('admin-section').classList.remove('hidden');
 document.getElementById('activity-log-section')?.classList.remove('hidden');
 // Refonte par onglets : réaffiche les sections et l'onglet Express réservés à l'administrateur.
