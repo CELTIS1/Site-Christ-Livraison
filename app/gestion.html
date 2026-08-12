@@ -80,6 +80,15 @@
   .clt-copy .clt-copy-ic{ font-size:11px; opacity:.35; }
   .clt-copy:hover .clt-copy-ic{ opacity:.9; }
 
+  /* Alerte « argent non remis » */
+  .clt-alert{ border-radius:12px; padding:12px 14px; margin-bottom:16px; }
+  .clt-alert-warn{ background:#fff5e6; border:1px solid #ffcf8a; }
+  .clt-alert-ok{ background:#eaf7ee; border:1px solid #b6e2c4; color:#1c7a3f; font-weight:600; }
+  .clt-alert-head{ font-weight:700; color:#8a4b00; font-size:14px; margin-bottom:8px; }
+  .clt-alert-warn .g-table td, .clt-alert-warn .g-table th{ background:transparent; }
+  .clt-row-urgent{ background:#ffe3e0 !important; }
+  .clt-row-urgent td{ background:#ffe3e0 !important; color:#a11; font-weight:600; }
+
   .row-actions{ display:flex; gap:6px; }
   .icon-btn{ border:none; background:var(--clt-teal-light); color:var(--clt-teal-dark); border-radius:8px; padding:6px 10px; font-size:12.5px; font-weight:600; cursor:pointer; }
   .icon-btn:hover{ background:#d3ebe7; }
@@ -219,6 +228,7 @@
 
     <!-- Caisse des livreurs (lecture seule, comptage sur le paiement) -->
     <div class="section" id="compta-caisse">
+      <div id="alerte-non-remis"></div>
       <div class="period-bar">
         <label style="font-weight:600;color:var(--clt-teal-dark);">Du</label>
         <input type="date" id="caisse-debut" onchange="loadCaisseLivreurs()">
@@ -369,7 +379,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="config.js?v=20260812e"></script>
-<script src="gestion.js?v=20260812e"></script>
+<script src="config.js?v=20260812f"></script>
+<script src="gestion.js?v=20260812f"></script>
 </body>
 </html>

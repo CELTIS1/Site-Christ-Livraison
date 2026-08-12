@@ -797,7 +797,42 @@ function grouperParJour(rows){
   return { jours, map };
 }
 
+/* Alerte « argent non remis » : argent encaissé par les livreurs et pas encore
+ * remis à la société, avec ancienneté. Indépendant du filtre de période. */
+async function loadArgentNonRemis(){
+  const wrap = document.getElementById('alerte-non-remis');
+  if (!wrap) return;
+  const { data, error } = await supabaseClient.rpc('compta_argent_non_remis');
+  if (error){ wrap.innerHTML = ''; return; } // silencieux : l'alerte est un bonus
+  const rows = data || [];
+  if (!rows.length){
+    wrap.innerHTML = `<div class="clt-alert clt-alert-ok">✅ Tout l'argent encaissé a été remis. Rien en attente.</div>`;
+    return;
+  }
+  let tot = 0;
+  const items = rows.map(r => {
+    tot += n(r.total_non_remis);
+    const j = Number(r.jours_max) || 0;
+    const urgent = j >= 3;
+    return `<tr class="${urgent ? 'clt-row-urgent' : ''}">`
+      + `<td>${escapeHTML(r.nom)}</td>`
+      + copyCell(r.total_non_remis, {bold:true})
+      + `<td style="text-align:right;">${r.nb}</td>`
+      + `<td style="text-align:right;">${j} j${urgent ? ' ⚠️' : ''}</td>`
+      + `<td>${frJour(r.date_plus_ancien)}</td></tr>`;
+  }).join('');
+  wrap.innerHTML = `<div class="clt-alert clt-alert-warn">`
+    + `<div class="clt-alert-head">🔔 Argent encaissé non encore remis — total ${fmtF(tot)}</div>`
+    + `<div class="g-table-wrap"><table class="g-table"><thead><tr>`
+    + `<th>Livreur</th><th style="text-align:right;">Montant non remis</th>`
+    + `<th style="text-align:right;">Colis</th><th style="text-align:right;">Ancienneté</th>`
+    + `<th>Depuis le</th></tr></thead><tbody>${items}</tbody></table></div>`
+    + `<div class="hint" style="margin-top:6px;">Comptage sur le paiement. « Ancienneté » = nombre de jours depuis le plus ancien colis dont l'argent n'a pas été remis. ⚠️ = 3 jours ou plus.</div>`
+    + `</div>`;
+}
+
 async function loadCaisseLivreurs(){
+  loadArgentNonRemis();
   const wrap = document.getElementById('caisse-table');
   if (!wrap) return;
   const debut = document.getElementById('caisse-debut')?.value || null;
