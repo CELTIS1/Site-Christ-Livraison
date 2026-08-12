@@ -684,8 +684,14 @@ let accountsLoadingMore = false;
 // enregistre au fur et à mesure ; elles sont toutes fermées ensemble juste avant de quitter la page.
 const __realtimeChannels = [];
 function trackChannel(channel){ __realtimeChannels.push(channel); return channel; }
-window.addEventListener('beforeunload', () => {
-__realtimeChannels.forEach(ch => supabaseClient.removeChannel(ch));
+// On ne ferme les canaux QUE lors d'une vraie fermeture de page. Sur mobile, quitter l'app
+// déclenche 'pagehide' avec persisted=true (page mise en cache bfcache) : dans ce cas on NE ferme
+// PAS les abonnements, sinon au retour — la page étant restaurée depuis le cache sans ré-exécuter
+// init() — l'équipe n'aurait plus AUCUN abonnement temps réel. C'était la cause des mises à jour
+// (nouveaux comptes, nouveaux colis) qui n'arrivaient plus tant qu'on ne se reconnectait pas.
+window.addEventListener('pagehide', (e) => {
+if (e.persisted) return;
+__realtimeChannels.forEach(ch => { try { supabaseClient.removeChannel(ch); } catch (err) {} });
 });
 let fournisseurs = [];
 let livreurs = [];
@@ -2021,6 +2027,7 @@ restoreScrollAnchor(list, __anchor);
 // rapports) portent sur les colis effectivement chargés ; tant que l'historique complet n'a
 // pas été rapatrié via "Charger plus", elles peuvent ne refléter qu'un sous-ensemble récent —
 // un bandeau dans l'interface l'indique tant qu'il reste des pages à charger.
+let __colisIdsSeen = null;
 async function loadColis(){
 colisOffset = 0;
 colisHasMore = true;
@@ -2030,6 +2037,15 @@ const { data, error } = await supabaseClient
 .order('created_at', { ascending: false })
 .range(0, COLIS_PAGE_SIZE - 1);
 if (error) { console.error(error); return; }
+// Détection des nouveaux colis. Fonctionne quelle que soit la source du rafraîchissement
+// (Realtime OU filet de sécurité périodique) : on notifie l'équipe pour tout colis jamais vu.
+// Les colis étant triés du plus récent au plus ancien, un nouveau colis est toujours en 1re page.
+if (__colisIdsSeen) {
+data.filter(c => !__colisIdsSeen.has(c.id)).forEach(c => {
+showTeamToast('📦', 'Nouveau colis ajouté', (c.description || 'Colis') + ' → ' + (c.destination || '?'), false);
+});
+}
+__colisIdsSeen = new Set(data.map(c => c.id));
 allColis = data;
 colisOffset = data.length;
 colisHasMore = data.length === COLIS_PAGE_SIZE;
@@ -3644,6 +3660,45 @@ btn.textContent = '🔔 Notifications activées ✓';
 } catch (e) { /* silencieux */ }
 }
 
+// ---------- Filet de sécurité temps réel ----------
+// Le tableau de bord se met à jour via Supabase Realtime (WebSocket). Mais ce canal peut tomber
+// sans prévenir : mise en veille de l'appareil, coupure réseau, ou passage de l'app en arrière-plan
+// sur mobile (la page est alors gelée puis restaurée depuis le cache, sans ré-exécuter init()).
+// Sans filet, l'équipe ne voyait plus les nouveaux comptes ni les nouveaux colis tant qu'elle ne
+// rechargeait pas complètement (d'où le « je dois me déconnecter pour voir »). On ajoute donc :
+//  1) un rafraîchissement périodique, et 2) une reconnexion + rafraîchissement dès le retour au
+//     premier plan / réseau. Ainsi les mises à jour arrivent même si Realtime est hors service.
+let __teamRefreshing = false;
+async function refreshTeamLists(){
+if (__teamRefreshing || document.hidden) return;
+__teamRefreshing = true;
+try {
+const tasks = [loadPending(), loadResetRequests(), loadFournisseurs(), loadLivreurs()];
+// On ne réinitialise pas la pagination des colis si l'équipe a chargé des pages supplémentaires.
+if (typeof colisOffset === 'number' && colisOffset <= COLIS_PAGE_SIZE) tasks.push(loadColis());
+await Promise.allSettled(tasks);
+} catch (e) { console.error('refreshTeamLists', e); }
+finally { __teamRefreshing = false; }
+}
+
+let __lastReconnectAt = 0;
+async function reconnectRealtimeAndRefresh(){
+const now = Date.now();
+if (now - __lastReconnectAt < 3000) return; // anti-rebond (visibilitychange + focus se déclenchent ensemble)
+__lastReconnectAt = now;
+try {
+const rt = supabaseClient.realtime;
+if (rt && typeof rt.connect === 'function' && !rt.isConnected()) rt.connect();
+// Rejoint les canaux qui ne seraient pas (ou plus) actifs après une coupure de socket.
+supabaseClient.getChannels().forEach(ch => { if (ch.state !== 'joined') { try { ch.subscribe(); } catch (e) {} } });
+} catch (e) { console.error('reconnectRealtime', e); }
+try {
+const tasks = [loadColis(), loadPending(), loadResetRequests(), loadFournisseurs(), loadLivreurs()];
+if (isAdmin) tasks.push(loadAllAccounts());
+await Promise.allSettled(tasks);
+} catch (e) { console.error('reconnectRealtimeAndRefresh', e); }
+}
+
 async function init(){
 const session = await requireAuth();
 if (!session) return;
@@ -3732,15 +3787,13 @@ await initExpressCourses();
 await initExpressRecharges();
 initColisDraftAutosave();
 
-// Mises à jour en temps réel sur tous les colis
+// Mises à jour en temps réel sur tous les colis. La notification « Nouveau colis » est gérée
+// dans loadColis() (détection par différence d'identifiants), pour qu'elle se déclenche aussi
+// lors du rafraîchissement périodique de secours quand Realtime est indisponible.
 trackChannel(supabaseClient
 .channel('colis-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, () => {
 loadColis();
-})
-.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'colis' }, (payload) => {
-const c = payload.new;
-showTeamToast('📦', 'Nouveau colis ajouté', (c.description || 'Colis') + ' → ' + (c.destination || '?'), false);
 })
 .subscribe());
 
@@ -3793,6 +3846,16 @@ refreshLivreurPositions();
 // Filet de sécurité : même sans nouvel événement, un livreur qui a perdu la connexion sans
 // désactiver le partage doit disparaître de la carte au bout de POSITION_STALE_AFTER_MS.
 setInterval(refreshLivreurPositions, 30000);
+
+// ---- Filet de sécurité temps réel (voir refreshTeamLists / reconnectRealtimeAndRefresh) ----
+// 1) Rafraîchissement périodique : rattrape tout événement manqué si Realtime est tombé.
+setInterval(refreshTeamLists, 25000);
+// 2) Retour au premier plan / reconnexion réseau : on reconnecte Realtime et on rafraîchit tout de suite.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reconnectRealtimeAndRefresh(); });
+window.addEventListener('focus', () => reconnectRealtimeAndRefresh());
+window.addEventListener('online', () => reconnectRealtimeAndRefresh());
+// 3) Restauration depuis le cache (mobile qui rouvre l'app) : forcer une reconnexion immédiate.
+window.addEventListener('pageshow', (e) => { if (e.persisted) reconnectRealtimeAndRefresh(); });
 }
 
 // ---------- Carte en direct des livreurs (voir aussi startPositionSharing dans config.js) ----------
