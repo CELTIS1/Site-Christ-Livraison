@@ -329,7 +329,13 @@ async function loadRecettes(){
 }
 async function saveRecette(input){
   const chauffeur_id = input.dataset.ch, date_recette = input.dataset.date;
-  const montant = n(input.value);
+  let montant = n(input.value);
+  // Contrôle de saisie : pas de recette négative. On refuse et on vide la case.
+  if (montant < 0){
+    showToast('Montant négatif refusé : saisissez 0 ou plus.', true);
+    input.value = '';
+    montant = 0;
+  }
   try {
     if (montant === 0){
       await supabaseClient.from('gestion_recettes').delete().eq('chauffeur_id',chauffeur_id).eq('date_recette',date_recette);
@@ -399,11 +405,24 @@ async function addDepense(){
   const categorie = document.getElementById('dep-cat').value || null;
   const date = document.getElementById('dep-date').value || null;
   if (!libelle || montant<=0){ showToast('Renseignez un libellé et un montant.', true); return; }
+  // Contrôle de saisie : alerte doublon (même mois, même date, même libellé, même montant).
+  try {
+    let q = supabaseClient.from('gestion_depenses').select('id')
+      .eq('annee',annee).eq('mois',mois).eq('libelle',libelle).eq('montant',montant);
+    q = date ? q.eq('date_depense', date) : q.is('date_depense', null);
+    const { data: dup } = await q.limit(1);
+    if (dup && dup.length){
+      if (!confirm('Une dépense identique (même date, libellé et montant) existe déjà ce mois.\n\nL\'ajouter quand même ?')) return;
+    }
+  } catch(e){ /* si la vérification échoue, on n'empêche pas la saisie */ }
+  const btn = document.getElementById('dep-add-btn');
+  if (btn) btn.disabled = true;
   try {
     await supabaseClient.from('gestion_depenses').insert({ annee, mois, date_depense:date, libelle, montant, categorie });
     document.getElementById('dep-libelle').value=''; document.getElementById('dep-montant').value=''; document.getElementById('dep-date').value=''; document.getElementById('dep-cat').value='';
     showToast('Dépense ajoutée'); loadDepenses();
   } catch(e){ showToast('Erreur ajout dépense', true); console.error(e); }
+  finally { if (btn) btn.disabled = false; }
 }
 async function delDepense(id){
   if (!confirm('Supprimer cette dépense ?')) return;
