@@ -143,7 +143,7 @@
     </div>
   </div>
 
-<script src="config.js?v=20260811e"></script>
+<script src="config.js?v=20260812c"></script>
 <script>
   function showTab(which){
     stopWaiting();
@@ -196,7 +196,18 @@
   async function redirectByRole(profile){
     let target, persistent;
     if (profile && (profile.role === 'equipe' || profile.role === 'admin')) {
-      target = 'equipe.html'; persistent = false;
+      // Cloisonnement : l'admin et les profils « opérations » vont au tableau de
+      // bord Équipe ; un profil purement administratif (RH / Comptable, sans accès
+      // opérations) est dirigé vers le module Gestion, dont il a la capacité.
+      const isOps = profile.role === 'admin' || profile.acces_operations === true;
+      if (isOps) {
+        target = 'equipe.html';
+      } else if (profile.acces_paie === true || profile.acces_compta === true) {
+        target = 'gestion.html';
+      } else {
+        target = 'equipe.html'; // équipe sans aucun droit : page neutre (le gate gère la suite)
+      }
+      persistent = false;
     } else if (profile && profile.role === 'livreur') {
       target = 'livreur.html'; persistent = true;
     } else {

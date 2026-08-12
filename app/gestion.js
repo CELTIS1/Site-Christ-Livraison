@@ -55,6 +55,9 @@ function switchSub(group, sub){
   document.querySelectorAll(`#sec-${group} .subtab`).forEach(el => el.classList.toggle('active', el.dataset.sub === sub));
   document.querySelectorAll(`#sec-${group} > .section`).forEach(el => el.classList.remove('active'));
   document.getElementById(`${group}-${sub}`).classList.add('active');
+  // Rafraîchit les vues comptables issues des colis à l'ouverture de l'onglet.
+  if (group === 'compta' && sub === 'caisse')  loadCaisseLivreurs();
+  if (group === 'compta' && sub === 'clients') loadPointClients();
 }
 
 /* -------------------- Sélecteurs de période -------------------- */
@@ -751,6 +754,47 @@ async function loadJournal(){
 }
 
 /* ============================================================================
+ * VUES COMPTABLES ISSUES DES COLIS (lecture seule) — via RPC sécurisées.
+ * Le comptable n'a PAS d'accès direct à la table colis : ces chiffres agrégés
+ * proviennent de fonctions SECURITY DEFINER protégées par a_acces_compta().
+ * ==========================================================================*/
+async function loadCaisseLivreurs(){
+  const wrap = document.getElementById('caisse-table');
+  if (!wrap) return;
+  const debut = document.getElementById('caisse-debut')?.value || null;
+  const fin   = document.getElementById('caisse-fin')?.value || null;
+  wrap.innerHTML = '<div class="hint">Chargement…</div>';
+  const { data, error } = await supabaseClient.rpc('compta_caisse_livreurs', { p_debut: debut, p_fin: fin });
+  if (error){ wrap.innerHTML = `<div class="hint" style="color:#b00;">Erreur : ${escapeHTML(error.message)}</div>`; return; }
+  const rows = data || [];
+  if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucun colis livré sur la période.</div>'; return; }
+  let tTotal=0, tRemis=0, tReste=0, tNb=0;
+  const body = rows.map(r => {
+    tTotal += n(r.total); tRemis += n(r.remis); tReste += n(r.reste); tNb += Number(r.nb);
+    return `<tr><td>${escapeHTML(r.nom)}</td><td style="text-align:right;">${r.nb}</td><td style="text-align:right;">${fmtF(r.total)}</td><td style="text-align:right;">${fmtF(r.remis)}</td><td style="text-align:right;font-weight:700;">${fmtF(r.reste)}</td></tr>`;
+  }).join('');
+  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Livreur</th><th style="text-align:right;">Colis livrés</th><th style="text-align:right;">Total encaissé</th><th style="text-align:right;">Déjà remis</th><th style="text-align:right;">Reste à remettre</th></tr></thead><tbody>${body}</tbody><tfoot><tr><th>Total</th><th style="text-align:right;">${tNb}</th><th style="text-align:right;">${fmtF(tTotal)}</th><th style="text-align:right;">${fmtF(tRemis)}</th><th style="text-align:right;">${fmtF(tReste)}</th></tr></tfoot></table>`;
+}
+
+async function loadPointClients(){
+  const wrap = document.getElementById('clients-table');
+  if (!wrap) return;
+  const debut = document.getElementById('clients-debut')?.value || null;
+  const fin   = document.getElementById('clients-fin')?.value || null;
+  wrap.innerHTML = '<div class="hint">Chargement…</div>';
+  const { data, error } = await supabaseClient.rpc('compta_point_clients', { p_debut: debut, p_fin: fin });
+  if (error){ wrap.innerHTML = `<div class="hint" style="color:#b00;">Erreur : ${escapeHTML(error.message)}</div>`; return; }
+  const rows = data || [];
+  if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucun colis sur la période.</div>'; return; }
+  let tMontant=0, tReste=0, tNb=0, tLivres=0;
+  const body = rows.map(r => {
+    tMontant += n(r.montant); tReste += n(r.reste); tNb += Number(r.nb); tLivres += Number(r.livres);
+    return `<tr><td>${escapeHTML(r.client_nom)}</td><td style="text-align:right;">${r.nb}</td><td style="text-align:right;">${r.livres}</td><td style="text-align:right;">${fmtF(r.montant)}</td><td style="text-align:right;font-weight:700;">${fmtF(r.reste)}</td></tr>`;
+  }).join('');
+  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Cliente (vendeuse)</th><th style="text-align:right;">Colis</th><th style="text-align:right;">Livrés</th><th style="text-align:right;">Montant articles</th><th style="text-align:right;">Reste à percevoir</th></tr></thead><tbody>${body}</tbody><tfoot><tr><th>Total</th><th style="text-align:right;">${tNb}</th><th style="text-align:right;">${tLivres}</th><th style="text-align:right;">${fmtF(tMontant)}</th><th style="text-align:right;">${fmtF(tReste)}</th></tr></tfoot></table>`;
+}
+
+/* ============================================================================
  * INITIALISATION
  * ==========================================================================*/
 async function init(){
@@ -765,9 +809,12 @@ async function init(){
   ACCES = { isAdmin, canPaie, canCompta };
 
   if (!profile || (!isAdmin && !canPaie && !canCompta)){
-    // Aucun droit sur le module Gestion.
+    // Aucun droit sur le module Gestion. On renvoie vers le tableau de bord
+    // opérationnel UNIQUEMENT si la personne y a réellement accès (admin ou
+    // acces_operations), pour éviter une boucle de redirection equipe↔gestion.
     alert('Accès réservé à l\'administrateur et aux personnes autorisées.');
-    window.location.href = (profile && (profile.role==='equipe' || profile.role==='admin')) ? 'equipe.html' : 'login.html';
+    const versOps = profile && (profile.role === 'admin' || profile.acces_operations === true);
+    window.location.href = versOps ? 'equipe.html' : 'login.html';
     return;
   }
 
@@ -800,7 +847,7 @@ async function init(){
 
   if (isAdmin) renderParametres();
   if (canPaie){ renderSalaries(); loadSaisie(); renderBulletins(); }
-  if (canCompta){ renderChauffeurs(); loadRecettes(); loadDepenses(); loadObjectifs(); }
+  if (canCompta){ renderChauffeurs(); loadRecettes(); loadDepenses(); loadObjectifs(); loadCaisseLivreurs(); loadPointClients(); }
   if (isAdmin) renderDashboard();
 
   // Onglet ouvert par défaut selon le profil

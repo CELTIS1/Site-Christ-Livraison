@@ -660,7 +660,7 @@
   </div>
 </div>
 
-<script src="config.js?v=20260812b"></script>
+<script src="config.js?v=20260812c"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2095,7 +2095,7 @@ accountsOffset = 0;
 accountsHasMore = true;
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta')
+.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta, acces_operations')
 .order('role')
 .order('full_name')
 .range(0, ACCOUNTS_PAGE_SIZE - 1);
@@ -2112,7 +2112,7 @@ accountsLoadingMore = true;
 renderAllAccounts();
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta')
+.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta, acces_operations')
 .order('role')
 .order('full_name')
 .range(accountsOffset, accountsOffset + ACCOUNTS_PAGE_SIZE - 1);
@@ -2149,7 +2149,8 @@ const promoteBtn = a.role === 'equipe'
 : '';
 // Accès délégués au module Gestion (uniquement pour les comptes « équipe »).
 const accesBtns = a.role === 'equipe'
-? `<button type="button" class="btn-toggle-paie">${a.acces_paie ? '✅' : '⬜'} Accès Paie (RH)</button>
+? `<button type="button" class="btn-toggle-operations">${a.acces_operations ? '✅' : '⬜'} Accès Opérations (livraisons)</button>
+<button type="button" class="btn-toggle-paie">${a.acces_paie ? '✅' : '⬜'} Accès Paie (RH)</button>
 <button type="button" class="btn-toggle-compta">${a.acces_compta ? '✅' : '⬜'} Accès Comptabilité</button>`
 : '';
 const deleteBtn = isSelf
@@ -2259,6 +2260,9 @@ await supabaseClient.from('activity_log').insert([{ action: (!actif ? 'acces_ges
 await loadAllAccounts();
 if (isAdmin) await loadActivityLog();
 }
+box.querySelectorAll('.btn-toggle-operations').forEach(btn => {
+btn.addEventListener('click', (e) => { e.stopPropagation(); toggleAcces(btn, 'acces_operations', 'Opérations (livraisons)'); });
+});
 box.querySelectorAll('.btn-toggle-paie').forEach(btn => {
 btn.addEventListener('click', (e) => { e.stopPropagation(); toggleAcces(btn, 'acces_paie', 'Paie (RH)'); });
 });
@@ -3753,6 +3757,21 @@ return;
 if (profile.status !== 'valide') {
 await supabaseClient.auth.signOut();
 window.location.href = 'login.html';
+return;
+}
+
+// Cloisonnement : ce tableau de bord est OPÉRATIONNEL (colis, livreurs, express).
+// Un compte « équipe » purement administratif (RH / Comptable, sans accès opérations)
+// n'y a pas sa place. Le contrôle réel est côté base (RLS), mais on redirige aussi ici
+// pour l'expérience : vers Gestion s'il a la paie/compta, sinon déconnexion propre.
+const isOps = profile.role === 'admin' || profile.acces_operations === true;
+if (!isOps) {
+if (profile.acces_paie === true || profile.acces_compta === true) {
+window.location.href = 'gestion.html';
+} else {
+await supabaseClient.auth.signOut();
+window.location.href = 'login.html';
+}
 return;
 }
 

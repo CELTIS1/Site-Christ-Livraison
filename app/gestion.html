@@ -152,6 +152,8 @@
       <div class="subtab" data-sub="depenses" onclick="switchSub('compta','depenses')">Dépenses</div>
       <div class="subtab" data-sub="objectifs" onclick="switchSub('compta','objectifs')">Objectifs</div>
       <div class="subtab" data-sub="chauffeurs" onclick="switchSub('compta','chauffeurs')">Chauffeurs</div>
+      <div class="subtab" data-sub="caisse" onclick="switchSub('compta','caisse')">Caisse livreurs</div>
+      <div class="subtab" data-sub="clients" onclick="switchSub('compta','clients')">Point clients</div>
     </div>
 
     <div class="section active" id="compta-recettes">
@@ -201,6 +203,34 @@
           <button class="btn btn-sm" onclick="addChauffeur()">+ Ajouter</button>
         </div>
       </div>
+    </div>
+
+    <!-- Caisse des livreurs (lecture seule, issue des colis livrés) -->
+    <div class="section" id="compta-caisse">
+      <div class="period-bar">
+        <label style="font-weight:600;color:var(--clt-teal-dark);">Du</label>
+        <input type="date" id="caisse-debut" onchange="loadCaisseLivreurs()">
+        <label style="font-weight:600;color:var(--clt-teal-dark);">au</label>
+        <input type="date" id="caisse-fin" onchange="loadCaisseLivreurs()">
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="loadCaisseLivreurs()">🔄 Actualiser</button>
+      </div>
+      <div class="hint">Recettes à percevoir auprès des livreurs, calculées à partir des colis livrés. Lecture seule.</div>
+      <div class="card"><div class="g-table-wrap" id="caisse-table"></div></div>
+    </div>
+
+    <!-- Point des clients / vendeuses (lecture seule, issue des colis) -->
+    <div class="section" id="compta-clients">
+      <div class="period-bar">
+        <label style="font-weight:600;color:var(--clt-teal-dark);">Du</label>
+        <input type="date" id="clients-debut" onchange="loadPointClients()">
+        <label style="font-weight:600;color:var(--clt-teal-dark);">au</label>
+        <input type="date" id="clients-fin" onchange="loadPointClients()">
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="loadPointClients()">🔄 Actualiser</button>
+      </div>
+      <div class="hint">Point par cliente (vendeuse) : nombre de colis, livrés, montant et reste à percevoir. Lecture seule.</div>
+      <div class="card"><div class="g-table-wrap" id="clients-table"></div></div>
     </div>
   </div>
 
@@ -327,7 +357,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="config.js?v=20260812b"></script>
-<script src="gestion.js?v=20260812b"></script>
+<script src="config.js?v=20260812c"></script>
+<script src="gestion.js?v=20260812c"></script>
 </body>
 </html>

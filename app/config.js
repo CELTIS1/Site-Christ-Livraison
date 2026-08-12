@@ -59,7 +59,7 @@ async function getProfile(userId) {
     // Colonnes explicites (plutôt que "*") : plus rapide et plus sûr si de nouvelles colonnes
     // (volumineuses ou sensibles) sont ajoutées un jour à la table, vu la fréquence d'appel
     // de cette fonction (à chaque chargement de page, sur les 3 tableaux de bord).
-    .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta")
+    .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations")
     .eq("id", userId)
     .single();
   if (error) {
