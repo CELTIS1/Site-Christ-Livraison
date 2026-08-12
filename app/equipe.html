@@ -1958,19 +1958,46 @@ ${gateSave ? `<div class="save-hint" style="font-size:11.5px; color:#c0392b; mar
 `;
 }
 
-function renderAlertIndicator(){
-const badge = document.getElementById('alert-badge');
-const banner = document.getElementById('alert-banner');
-const aRisque = allColis.filter(c => c.statut === 'non_livre' || c.statut === 'retour');
-if (!aRisque.length) {
-badge.classList.add('hidden');
-banner.classList.add('hidden');
-return;
+// Clé de persistance (par appareil) des colis à risque déjà examinés par l'équipe/l'admin.
+// Objectif : le bandeau « colis à examiner » doit disparaître une fois qu'on a pris connaissance
+// des colis non livrés/retour, et rester masqué après déconnexion/reconnexion. Il ne réapparaît
+// que pour de NOUVEAUX colis à risque (un identifiant qu'on n'a pas encore marqué comme examiné).
+const ALERTES_VUES_KEY = 'clt_equipe_alertes_vues';
+function getAlertesVues(){
+  try { return new Set(JSON.parse(localStorage.getItem(ALERTES_VUES_KEY) || '[]')); }
+  catch(e){ return new Set(); }
 }
-badge.textContent = aRisque.length;
-badge.classList.remove('hidden');
-banner.classList.remove('hidden');
-banner.innerHTML = `⚠️ ${aRisque.length} colis à examiner (non livré ou retour).`;
+function setAlertesVues(set){
+  try { localStorage.setItem(ALERTES_VUES_KEY, JSON.stringify([...set])); } catch(e){}
+}
+function renderAlertIndicator(){
+  const badge = document.getElementById('alert-badge');
+  const banner = document.getElementById('alert-banner');
+  const aRisque = allColis.filter(c => c.statut === 'non_livre' || c.statut === 'retour');
+  const idsRisque = new Set(aRisque.map(c => c.id));
+  // On ne conserve « vus » que les colis encore à risque : la liste ne gonfle pas indéfiniment,
+  // et un colis résolu puis de nouveau non livré/retour redéclenche bien l'alerte.
+  const vues = getAlertesVues();
+  const vuesFiltrees = new Set([...vues].filter(id => idsRisque.has(id)));
+  if (vuesFiltrees.size !== vues.size) setAlertesVues(vuesFiltrees);
+  const nonVus = aRisque.filter(c => !vuesFiltrees.has(c.id));
+  if (!nonVus.length) {
+    badge.classList.add('hidden');
+    banner.classList.add('hidden');
+    banner.onclick = null;
+    return;
+  }
+  badge.textContent = nonVus.length;
+  badge.classList.remove('hidden');
+  banner.classList.remove('hidden');
+  banner.style.cursor = 'pointer';
+  banner.innerHTML = `⚠️ ${nonVus.length} colis à examiner (non livré ou retour). <span style="text-decoration:underline; white-space:nowrap;">Toucher une fois examinés ✓</span>`;
+  banner.onclick = () => {
+    const v = getAlertesVues();
+    aRisque.forEach(c => v.add(c.id));
+    setAlertesVues(v);
+    renderAlertIndicator();
+  };
 }
 
 // Bouton d'action groupée « Assigner collecte » : affiché dans l'en-tête de chaque groupe
