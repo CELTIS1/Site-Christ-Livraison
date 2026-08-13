@@ -21,6 +21,7 @@ let SALARIES = [];              // salariés actifs + inactifs
 let CHAUFFEURS = [];            // référentiel compta
 let LIVREURS = [];              // profils livreurs (pour lier un salarié)
 let ACCES = { isAdmin:false, canPaie:false, canCompta:false }; // capacités de l'utilisateur connecté
+let PUSH_USER = null;           // utilisateur connecté (pour l'abonnement aux notifications push)
 
 /* -------------------- Utilitaires -------------------- */
 function n(v){ const x = parseFloat(v); return isNaN(x) ? 0 : x; }
@@ -944,9 +945,94 @@ async function loadPointClients(){
 /* ============================================================================
  * INITIALISATION
  * ==========================================================================*/
+// ---------- Notifications push (Web Push) ----------
+// Permet à l'administrateur / gestionnaire de recevoir des notifications même quand l'app est
+// fermée (changements de statut des colis). L'abonnement est stocké dans push_subscriptions ;
+// l'envoi réel est assuré par l'Edge Function Supabase « envoyer-push ». La clé publique VAPID
+// n'est pas secrète.
+const VAPID_PUBLIC_KEY = 'BGoo20rDx0dlhYT83d7J4xBpaKD7ZWNWeKvk6WE9QAEYuYmgZCkrOEpJYGnyBsJlwG2IIF_gq1_FuIroGB3ICtw';
+
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function enregistrerAbonnementPush(subscription, role){
+  const json = subscription.toJSON();
+  const endpoint = json.endpoint;
+  const p256dh = json.keys && json.keys.p256dh;
+  const auth = json.keys && json.keys.auth;
+  if (!endpoint || !p256dh || !auth) return { error: { message: 'Abonnement incomplet' } };
+  return await supabaseClient.from('push_subscriptions').upsert({
+    user_id: PUSH_USER ? PUSH_USER.id : null,
+    role: role || null,
+    endpoint: endpoint,
+    p256dh: p256dh,
+    auth: auth,
+    user_agent: navigator.userAgent
+  }, { onConflict: 'endpoint' });
+}
+
+async function activerPush(role){
+  const btn = document.getElementById('btn-activer-push');
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      alert("Votre navigateur ne prend pas en charge les notifications push. Sur iPhone/iPad, installez d'abord l'application sur l'écran d'accueil (Partager → Sur l'écran d'accueil), ouvrez-la depuis l'icône, puis réessayez.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      alert("Notifications refusées. Vous pouvez les réactiver dans les réglages de votre navigateur.");
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const { error } = await enregistrerAbonnementPush(sub, role);
+    if (error) {
+      console.error('Enregistrement abonnement push échoué', error);
+      alert("Impossible d'enregistrer l'abonnement aux notifications. Réessayez plus tard.");
+      return;
+    }
+    if (btn) { btn.textContent = '🔔 Notifications activées ✓'; btn.disabled = true; }
+    alert("Notifications activées ! Vous serez averti des événements importants même quand l'app est fermée.");
+  } catch (e) {
+    console.error('Erreur activation push', e);
+    alert("Une erreur est survenue lors de l'activation des notifications.");
+  }
+}
+
+async function initPushButton(role){
+  const btn = document.getElementById('btn-activer-push');
+  if (!btn) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    btn.classList.add('hidden');
+    return;
+  }
+  btn.addEventListener('click', () => activerPush(role));
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub && Notification.permission === 'granted') {
+      await enregistrerAbonnementPush(sub, role);
+      btn.textContent = '🔔 Notifications activées ✓';
+    }
+  } catch (e) { /* silencieux */ }
+}
+
 async function init(){
   const session = await requireAuth(); if (!session) return;
   const profile = await getProfile(session.user.id);
+  PUSH_USER = session.user;
 
   // Capacités : l'admin a tout ; sinon on lit les droits délégués (acces_paie / acces_compta),
   // qui sont eux-mêmes verrouillés côté base (RLS + trigger anti-auto-promotion).
@@ -971,6 +1057,9 @@ async function init(){
     : (canPaie && canCompta) ? '🔑 Gestion'
     : canPaie ? '👥 Paie (RH)'
     : '💰 Comptabilité';
+
+  // Bouton d'activation des notifications push (réglage : accepter ou non les notifications).
+  initPushButton(profile.role);
 
   // Onglets visibles selon les capacités
   const setDisp = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };

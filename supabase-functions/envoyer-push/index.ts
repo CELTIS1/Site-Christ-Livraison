@@ -80,9 +80,17 @@ Deno.serve(async (req) => {
     const body = `${ref} ${info.verb}`;
     const tag = `colis-${record.id}`;
 
-    // Destinataires : équipe + admin, plus le livreur assigné (s'il existe).
+    // Statuts qui intéressent le CLIENT (fournisseur) : prise en charge + issues finales.
+    // On ne notifie PAS le client de "en_livraison" (trop fréquent / peu utile pour lui).
+    const CLIENT_STATUTS = new Set(["recupere", "livre", "non_livre", "retour"]);
+
+    // Destinataires : équipe + admin, plus le livreur assigné (s'il existe), plus le client
+    // propriétaire du colis uniquement pour les statuts ci-dessus.
     let orFilter = "role.in.(equipe,admin)";
     if (record.livreur_id) orFilter += `,user_id.eq.${record.livreur_id}`;
+    if (record.fournisseur_id && CLIENT_STATUTS.has(newStatut)) {
+      orFilter += `,user_id.eq.${record.fournisseur_id}`;
+    }
 
     const { data: subs, error } = await admin
       .from("push_subscriptions")
@@ -102,8 +110,11 @@ Deno.serve(async (req) => {
 
     const results = await Promise.allSettled(
       subs.map(async (s) => {
-        const isLivreur = s.role === "livreur";
-        const base = isLivreur ? "/app/livreur.html" : "/app/equipe.html";
+        const base = s.role === "livreur"
+          ? "/app/livreur.html"
+          : s.role === "fournisseur"
+            ? "/app/fournisseur.html"
+            : "/app/equipe.html";
         // Lien profond : on ajoute l'identifiant du colis pour qu'un clic sur la notification
         // amène directement au bon colis (la page fait défiler jusqu'à lui et le surligne).
         const url = `${base}?colis=${record.id}`;
