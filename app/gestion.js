@@ -29,6 +29,20 @@ let LIVREURS = [];              // profils livreurs (pour lier un salarié)
 let ACCES = { isAdmin:false, canPaie:false, canCompta:false }; // capacités de l'utilisateur connecté
 let PUSH_USER = null;           // utilisateur connecté (pour l'abonnement aux notifications push)
 
+/* Catégories de dépense LIÉES À LA PAIE : elles sont enregistrées comme mouvements
+ * mais NE sont PAS recomptées dans les états financiers, car la masse salariale
+ * (net + cotisations salariales + patronales) est déjà calculée par le module Paie.
+ * Cela évite le double comptage des salaires et charges sociales/fiscales sur salaires. */
+const CATS_PAIE = new Set([
+  'Salaire / Avance',
+  'ITS (impôt sur salaires)',
+  'CNPS (cotisations sociales)',
+  'CMU (salariés)'
+]);
+const COMPTA_BUCKET_JUSTIF = 'justificatifs'; // préfixe des justificatifs de dépense dans compta-entreprise
+let CLOTURES = new Set();       // mois clôturés : clés 'annee-mois' (verrouillage recettes/dépenses)
+const LC_BUCKET = 'compta-entreprise';
+
 /* -------------------- Utilitaires -------------------- */
 function n(v){ const x = parseFloat(v); return isNaN(x) ? 0 : x; }
 function fmt(v){
@@ -97,6 +111,9 @@ function switchSub(group, sub){
   // Rafraîchit les vues comptables issues des colis à l'ouverture de l'onglet.
   if (group === 'compta' && sub === 'caisse')  loadCaisseLivreurs();
   if (group === 'compta' && sub === 'clients') loadPointClients();
+  if (group === 'compta' && sub === 'livrecaisse') loadLivreCaisse();
+  if (group === 'compta' && sub === 'echeances')   loadEcheances();
+  if (group === 'compta' && sub === 'clotures')    loadClotures();
   // États annuels de paie / états financiers : chargés à la première ouverture.
   if (group === 'paie'   && sub === 'etats' && !ETATS_ANNEE) chargerEtatsAnnuels();
   if (group === 'compta' && sub === 'etats' && !ETATS_FIN)   chargerEtatsFinanciers();
@@ -501,6 +518,8 @@ async function loadRecettes(){
   const map = {}; (data||[]).forEach(r => { map[r.chauffeur_id+'|'+r.date_recette] = n(r.montant); });
   const nbJours = joursDuMois(annee, mois);
   const actifs = CHAUFFEURS.filter(c => c.actif !== false);
+  const verrou = moisCloture(annee, mois);
+  const dis = verrou ? ' readonly disabled' : '';
 
   let head = '<th>Chauffeur</th>';
   for (let j=1;j<=nbJours;j++) head += `<th>${pad2(j)}</th>`;
@@ -514,7 +533,7 @@ async function loadRecettes(){
       const date = `${annee}-${pad2(mois)}-${pad2(j)}`;
       const val = map[c.id+'|'+date] || 0;
       rowTot += val; colTot[j-1]+=val;
-      cells += `<td><input class="cell" type="number" min="0" step="1" value="${val||''}" data-ch="${c.id}" data-date="${date}" onblur="saveRecette(this)"></td>`;
+      cells += `<td><input class="cell" type="number" min="0" step="1" value="${val||''}" data-ch="${c.id}" data-date="${date}" onblur="saveRecette(this)"${dis}></td>`;
     }
     colTot[nbJours]+=rowTot;
     body += `<tr><td>${escapeHTML(c.nom)}</td>${cells}<td id="rt-${c.id}"><strong>${fmt(rowTot)}</strong></td></tr>`;
@@ -523,10 +542,20 @@ async function loadRecettes(){
   for (let j=1;j<=nbJours;j++) foot += `<td>${fmt(colTot[j-1])}</td>`;
   foot += `<td>${fmt(colTot[nbJours])}</td>`;
 
-  document.getElementById('rec-grid').innerHTML = `<table class="g-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>`;
+  const banniere = verrou
+    ? `<div class="clt-alert clt-alert-warn" style="margin-bottom:10px;">🔒 <strong>${MOIS_FR[mois-1]} ${annee} est clôturé.</strong> Les recettes de ce mois sont en lecture seule. Rouvrez le mois dans « Clôture mensuelle » pour les modifier.</div>`
+    : '';
+  document.getElementById('rec-grid').innerHTML = banniere + `<table class="g-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>`;
 }
 async function saveRecette(input){
   const chauffeur_id = input.dataset.ch, date_recette = input.dataset.date;
+  // Verrou de clôture : refuse toute écriture sur un mois clôturé.
+  const dParts = String(date_recette).split('-');
+  if (moisCloture(parseInt(dParts[0]), parseInt(dParts[1]))){
+    showToast('Mois clôturé : recette en lecture seule.', true);
+    loadRecettes();
+    return;
+  }
   let montant = n(input.value);
   // Contrôle de saisie : pas de recette négative. On refuse et on vide la case.
   if (montant < 0){
@@ -582,27 +611,53 @@ async function exportRecettes(){
 async function loadDepenses(){
   const annee = parseInt(document.getElementById('dep-year').value);
   const mois  = parseInt(document.getElementById('dep-month').value);
+  const verrou = moisCloture(annee, mois);
+  appliquerVerrouDepenses(verrou, annee, mois);
   const { data } = await supabaseClient.from('gestion_depenses').select('*').eq('annee',annee).eq('mois',mois).order('date_depense',{ascending:true,nullsFirst:true}).order('created_at',{ascending:true});
   const rows = (data||[]);
   let tot=0;
-  let body = rows.map(d => { tot+=n(d.montant); return `<tr>
+  let body = rows.map(d => {
+    tot+=n(d.montant);
+    const paie = CATS_PAIE.has(d.categorie);
+    const catCell = escapeHTML(d.categorie||'') + (paie ? ' <span title="Déjà comptée dans les charges de personnel — non recomptée dans les états financiers" style="color:#b45309;font-size:11px;">(paie)</span>' : '');
+    const justif = d.justif_chemin
+      ? `<a href="#" onclick="openJustifDepense('${d.id}');return false;" style="color:var(--clt-teal-dark);font-weight:600;">📎 Voir</a>`
+      : '<span style="color:var(--muted);">—</span>';
+    const suppr = verrou ? '' : `<div class="row-actions"><button class="icon-btn danger" onclick="delDepense('${d.id}')">Suppr.</button></div>`;
+    return `<tr>
     <td>${d.date_depense ? escapeHTML(d.date_depense) : '—'}</td>
     <td style="text-align:left;">${escapeHTML(d.libelle)}</td>
-    <td style="text-align:left;">${escapeHTML(d.categorie||'')}</td>
+    <td style="text-align:left;">${catCell}</td>
     <td>${fmt(d.montant)}</td>
-    <td><div class="row-actions"><button class="icon-btn danger" onclick="delDepense('${d.id}')">Suppr.</button></div></td></tr>`; }).join('');
-  if (!rows.length) body = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Aucune dépense pour ce mois.</td></tr>';
-  document.getElementById('dep-table').innerHTML = `<table class="g-table"><thead><tr><th>Date</th><th style="text-align:left;">Libellé</th><th style="text-align:left;">Catégorie</th><th>Montant</th><th></th></tr></thead>
-    <tbody>${body}</tbody><tfoot><tr><td colspan="3">TOTAL</td><td>${fmt(tot)}</td><td></td></tr></tfoot></table>`;
+    <td>${justif}</td>
+    <td>${suppr}</td></tr>`; }).join('');
+  if (!rows.length) body = '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aucune dépense pour ce mois.</td></tr>';
+  document.getElementById('dep-table').innerHTML = `<table class="g-table"><thead><tr><th>Date</th><th style="text-align:left;">Libellé</th><th style="text-align:left;">Catégorie</th><th>Montant</th><th>Justif.</th><th></th></tr></thead>
+    <tbody>${body}</tbody><tfoot><tr><td colspan="3">TOTAL</td><td>${fmt(tot)}</td><td colspan="2"></td></tr></tfoot></table>`;
+}
+/* Active/désactive le formulaire de dépense selon la clôture du mois affiché. */
+function appliquerVerrouDepenses(verrou, annee, mois){
+  const form = document.getElementById('dep-form');
+  const alerte = document.getElementById('dep-cloture-alerte');
+  if (form) form.style.display = verrou ? 'none' : '';
+  if (alerte){
+    alerte.innerHTML = verrou
+      ? `<div class="clt-alert clt-alert-warn">🔒 <strong>${MOIS_FR[mois-1]} ${annee} est clôturé.</strong> Les dépenses de ce mois sont verrouillées (aucun ajout ni suppression). Pour modifier, rouvrez le mois dans l'onglet « Clôture mensuelle ».</div>`
+      : '';
+  }
 }
 async function addDepense(){
   const annee = parseInt(document.getElementById('dep-year').value);
   const mois  = parseInt(document.getElementById('dep-month').value);
+  if (moisCloture(annee, mois)){ showToast(`${MOIS_FR[mois-1]} ${annee} est clôturé : ajout impossible.`, true); return; }
   const libelle = document.getElementById('dep-libelle').value.trim();
   const montant = n(document.getElementById('dep-montant').value);
   const categorie = document.getElementById('dep-cat').value || null;
   const date = document.getElementById('dep-date').value || null;
   if (!libelle || montant<=0){ showToast('Renseignez un libellé et un montant.', true); return; }
+  const justifInput = document.getElementById('dep-justif');
+  const justifFile = justifInput && justifInput.files && justifInput.files[0];
+  if (justifFile && justifFile.size > DOC_MAX_OCTETS){ showToast('Justificatif trop volumineux (max 20 Mo).', true); return; }
   // Contrôle de saisie : alerte doublon (même mois, même date, même libellé, même montant).
   try {
     let q = supabaseClient.from('gestion_depenses').select('id')
@@ -614,17 +669,45 @@ async function addDepense(){
     }
   } catch(e){ /* si la vérification échoue, on n'empêche pas la saisie */ }
   const btn = document.getElementById('dep-add-btn');
-  if (btn) btn.disabled = true;
+  if (btn){ btn.disabled = true; if (justifFile) btn.textContent = '⏳ Envoi…'; }
   try {
-    await supabaseClient.from('gestion_depenses').insert({ annee, mois, date_depense:date, libelle, montant, categorie });
+    // Téléversement du justificatif (facultatif) dans le bucket privé compta-entreprise.
+    let justif = { justif_chemin:null, justif_mime:null, justif_taille:null };
+    if (justifFile){
+      const chemin = `${COMPTA_BUCKET_JUSTIF}/${annee}/${pad2(mois)}/${Date.now()}-${slugFichier(justifFile.name)}`;
+      const { error: upErr } = await supabaseClient.storage.from(COMPTA_BUCKET)
+        .upload(chemin, justifFile, { contentType: justifFile.type, upsert:false });
+      if (upErr) throw upErr;
+      justif = { justif_chemin: chemin, justif_mime: justifFile.type||null, justif_taille: justifFile.size };
+    }
+    const { error: insErr } = await supabaseClient.from('gestion_depenses')
+      .insert(Object.assign({ annee, mois, date_depense:date, libelle, montant, categorie }, justif));
+    if (insErr){ if (justif.justif_chemin) await supabaseClient.storage.from(COMPTA_BUCKET).remove([justif.justif_chemin]); throw insErr; }
     document.getElementById('dep-libelle').value=''; document.getElementById('dep-montant').value=''; document.getElementById('dep-date').value=''; document.getElementById('dep-cat').value='';
+    if (justifInput) justifInput.value = '';
     showToast('Dépense ajoutée'); loadDepenses();
   } catch(e){ showToast('Erreur ajout dépense', true); console.error(e); }
-  finally { if (btn) btn.disabled = false; }
+  finally { if (btn){ btn.disabled = false; btn.textContent = '+ Ajouter'; } }
+}
+async function openJustifDepense(id){
+  try {
+    const { data: rows } = await supabaseClient.from('gestion_depenses').select('justif_chemin').eq('id',id).maybeSingle();
+    const chemin = rows && rows.justif_chemin; if (!chemin){ showToast('Aucun justificatif.', true); return; }
+    const { data, error } = await supabaseClient.storage.from(COMPTA_BUCKET).createSignedUrl(chemin, 120);
+    if (error || !data || !data.signedUrl) throw (error || new Error('url'));
+    window.open(data.signedUrl, '_blank', 'noopener');
+  } catch(e){ console.error('justif', e); showToast('Impossible d\'ouvrir le justificatif.', true); }
 }
 async function delDepense(id){
   if (!confirm('Supprimer cette dépense ?')) return;
-  try { await supabaseClient.from('gestion_depenses').delete().eq('id',id); loadDepenses(); showToast('Dépense supprimée'); }
+  try {
+    // Récupère le chemin du justificatif pour le supprimer aussi du stockage.
+    const { data: rows } = await supabaseClient.from('gestion_depenses').select('annee,mois,justif_chemin').eq('id',id).maybeSingle();
+    if (rows && moisCloture(rows.annee, rows.mois)){ showToast('Mois clôturé : suppression impossible.', true); return; }
+    await supabaseClient.from('gestion_depenses').delete().eq('id',id);
+    if (rows && rows.justif_chemin){ try { await supabaseClient.storage.from(COMPTA_BUCKET).remove([rows.justif_chemin]); } catch(e){ /* justificatif : nettoyage best-effort */ } }
+    loadDepenses(); showToast('Dépense supprimée');
+  }
   catch(e){ showToast('Erreur suppression', true); console.error(e); }
 }
 
@@ -1228,9 +1311,10 @@ async function chargerEtatsFinanciers(){
   const sel = document.getElementById('fin-year'); if (!sel) return;
   const annee = parseInt(sel.value);
   const recettes = new Array(12).fill(0);
-  const depenses = new Array(12).fill(0);
+  const depenses = new Array(12).fill(0);      // charges d'exploitation réelles (HORS paie)
+  const depensesPaie = new Array(12).fill(0);  // dépenses liées à la paie (info : déjà comptées)
   const personnel = new Array(12).fill(0);
-  const depParCat = {}; // { categorie: [12] }
+  const depParCat = {}; // { categorie: [12] } — toutes catégories, hors paie (pour le détail)
   try {
     // Produits : recettes de l'année
     const debut = `${annee}-01-01`, fin = `${annee+1}-01-01`;
@@ -1238,15 +1322,21 @@ async function chargerEtatsFinanciers(){
       .select('date_recette,montant').gte('date_recette',debut).lt('date_recette',fin);
     (recs||[]).forEach(r => { const m = new Date(r.date_recette+'T00:00:00').getMonth(); recettes[m] += n(r.montant); });
 
-    // Charges d'exploitation : dépenses de l'année (par mois + par catégorie)
+    // Charges d'exploitation : dépenses de l'année (par mois + par catégorie).
+    // Les catégories LIÉES À LA PAIE sont isolées et EXCLUES du résultat pour éviter
+    // le double comptage (la masse salariale est déjà calculée ci-dessous).
     const { data: deps } = await supabaseClient.from('gestion_depenses')
       .select('mois,categorie,montant').eq('annee',annee);
     (deps||[]).forEach(d => {
       const m = (parseInt(d.mois)||1) - 1; const v = n(d.montant);
-      depenses[m] += v;
       const cat = d.categorie || 'Autres';
-      if (!depParCat[cat]) depParCat[cat] = new Array(12).fill(0);
-      depParCat[cat][m] += v;
+      if (CATS_PAIE.has(cat)){
+        depensesPaie[m] += v;
+      } else {
+        depenses[m] += v;
+        if (!depParCat[cat]) depParCat[cat] = new Array(12).fill(0);
+        depParCat[cat][m] += v;
+      }
     });
 
     // Charges de personnel : coût total employeur, mois par mois
@@ -1266,13 +1356,14 @@ async function chargerEtatsFinanciers(){
     }
   } catch(e){ showToast('Erreur chargement des états financiers', true); console.error(e); return; }
 
-  ETATS_FIN = { annee, recettes, depenses, personnel, depParCat };
+  ETATS_FIN = { annee, recettes, depenses, depensesPaie, personnel, depParCat };
   renderEtatsFinanciers();
 }
 
 function renderEtatsFinanciers(){
   if (!ETATS_FIN) return;
-  const { annee, recettes, depenses, personnel, depParCat } = ETATS_FIN;
+  const { annee, recettes, depenses, depensesPaie, personnel, depParCat } = ETATS_FIN;
+  const infoPaieArr = depensesPaie || new Array(12).fill(0);
   const moisSel = parseInt((document.getElementById('fin-mois')||{}).value || '0');
   const somme = arr => arr.reduce((a,b)=>a+b,0);
   const val = arr => moisSel === 0 ? somme(arr) : arr[moisSel-1];
@@ -1282,6 +1373,7 @@ function renderEtatsFinanciers(){
   const produits = val(recettes);
   const chExpl   = val(depenses);
   const chPers   = val(personnel);
+  const infoPaie = val(infoPaieArr);
   const totCharges = chExpl + chPers;
   const resultat = produits - totCharges;
   const marge = produits ? (resultat/produits*100) : 0;
@@ -1308,6 +1400,7 @@ function renderEtatsFinanciers(){
     <tr style="font-weight:700;background:#f1f5f9;"><td style="text-align:left;">CHARGES DE PERSONNEL</td><td></td><td>${fmt(chPers)}</td></tr>
     <tr><td style="text-align:left;padding-left:22px;">Coût total employeur (net + cotisations)</td><td></td><td>${fmt(chPers)}</td></tr>
     <tr style="font-weight:700;"><td style="text-align:left;">TOTAL</td><td>${fmt(produits)}</td><td>${fmt(totCharges)}</td></tr>
+    ${infoPaie ? `<tr style="color:var(--muted);font-style:italic;"><td style="text-align:left;" colspan="3">Pour information — dépenses saisies « liées à la paie » (salaires, ITS, CNPS, CMU) : ${fmtF(infoPaie)}. Non ajoutées ci-dessus : déjà incluses dans les charges de personnel.</td></tr>` : ''}
     </tbody>
     <tfoot><tr><td style="text-align:left;">RÉSULTAT NET ${resultat>=0?'(bénéfice)':'(perte)'}</td><td colspan="2" style="text-align:right;color:${resultat>=0?'#0F766E':'#c0392b'};"><strong>${fmtF(resultat)}</strong></td></tr></tfoot></table>`;
 
@@ -1342,7 +1435,8 @@ function renderEtatsFinanciers(){
 
 function exportEtatsFinanciers(){
   if (!ETATS_FIN){ showToast('Générez d\'abord les états.', true); return; }
-  const { annee, recettes, depenses, personnel, depParCat } = ETATS_FIN;
+  const { annee, recettes, depenses, depensesPaie, personnel, depParCat } = ETATS_FIN;
+  const infoPaieArr = depensesPaie || new Array(12).fill(0);
   const somme = arr => arr.reduce((a,b)=>a+b,0);
   // Feuille 1 : évolution mensuelle
   const aoa1 = [['Mois','Recettes','Dépenses','Charges personnel','Résultat','Résultat cumulé']];
@@ -1361,6 +1455,11 @@ function exportEtatsFinanciers(){
   aoa2.push(['Coût total employeur', Math.round(somme(personnel))]);
   aoa2.push(['','']);
   aoa2.push(['RÉSULTAT NET', Math.round(somme(recettes)-somme(depenses)-somme(personnel))]);
+  if (somme(infoPaieArr)){
+    aoa2.push(['','']);
+    aoa2.push(['Pour information (non recompté) :','']);
+    aoa2.push(['Dépenses liées à la paie déjà comptées dans le personnel', Math.round(somme(infoPaieArr))]);
+  }
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa1), 'Mensuel');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa2), 'Compte de résultat');
@@ -1662,6 +1761,293 @@ async function initPushButton(role){
   } catch (e) { /* silencieux */ }
 }
 
+/* ============================================================================
+ * #3 — LIVRE DE CAISSE (solde d'ouverture + entrées / sorties + solde courant)
+ * ==========================================================================*/
+function frDateCourte(iso){ const d = new Date(String(iso)+'T00:00:00'); return isNaN(d) ? escapeHTML(iso) : d.toLocaleDateString('fr-FR'); }
+
+async function loadLivreCaisse(){
+  const yEl = document.getElementById('lc-year'); if (!yEl) return;
+  const annee = parseInt(yEl.value), mois = parseInt(document.getElementById('lc-month').value);
+  const soldeOuv = n(PARAMS && PARAMS.solde_ouverture);
+
+  // Solde d'ouverture : champ réservé à l'administrateur (RLS : écriture paramètres = admin).
+  const openM = document.getElementById('lc-open-montant');
+  const openD = document.getElementById('lc-open-date');
+  if (openM && document.activeElement !== openM) openM.value = soldeOuv ? Math.round(soldeOuv) : '';
+  if (openD && document.activeElement !== openD) openD.value = (PARAMS && PARAMS.date_solde_ouverture) || '';
+  const openBtn = document.getElementById('lc-open-btn');
+  if (openBtn){
+    openBtn.disabled = !ACCES.isAdmin;
+    if (openM) openM.disabled = !ACCES.isAdmin;
+    if (openD) openD.disabled = !ACCES.isAdmin;
+    const hint = document.getElementById('lc-open-hint');
+    if (hint && !ACCES.isAdmin) hint.textContent = 'Le solde d\'ouverture est défini par l\'administrateur.';
+  }
+
+  const debut = periodeStr(annee, mois);
+  const fin   = periodeStr(mois===12?annee+1:annee, mois===12?1:mois+1);
+  let soldeDebut = soldeOuv, entrees = 0, sorties = 0, solde;
+  let body = '';
+  try {
+    // Solde au début du mois = solde d'ouverture + net de tous les mouvements antérieurs.
+    const { data: avant } = await supabaseClient.from('gestion_caisse').select('sens,montant').lt('date_mouvement', debut);
+    (avant||[]).forEach(mv => { soldeDebut += (mv.sens==='entree'?1:-1) * n(mv.montant); });
+    solde = soldeDebut;
+    const { data: rows } = await supabaseClient.from('gestion_caisse').select('*')
+      .gte('date_mouvement', debut).lt('date_mouvement', fin)
+      .order('date_mouvement',{ascending:true}).order('created_at',{ascending:true});
+    body = (rows||[]).map(mv => {
+      const isE = mv.sens === 'entree'; const mt = n(mv.montant);
+      if (isE) entrees += mt; else sorties += mt;
+      solde += (isE?1:-1) * mt;
+      return `<tr>
+        <td>${escapeHTML(mv.date_mouvement)}</td>
+        <td style="text-align:left;">${escapeHTML(mv.libelle)}</td>
+        <td>${escapeHTML(mv.mode||'')}</td>
+        <td style="color:#0F766E;">${isE?fmt(mt):''}</td>
+        <td style="color:#c0392b;">${isE?'':fmt(mt)}</td>
+        <td><strong>${fmt(solde)}</strong></td>
+        <td><div class="row-actions"><button class="icon-btn danger" onclick="delMouvementCaisse('${mv.id}')">Suppr.</button></div></td></tr>`;
+    }).join('');
+    if (!rows || !rows.length) body = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Aucun mouvement ce mois.</td></tr>';
+  } catch(e){ showToast('Erreur chargement de la caisse', true); console.error(e); return; }
+
+  const soldeFin = soldeDebut + entrees - sorties;
+  document.getElementById('lc-table').innerHTML = `<table class="g-table"><thead><tr>
+    <th>Date</th><th style="text-align:left;">Libellé</th><th>Mode</th><th>Entrée</th><th>Sortie</th><th>Solde</th><th></th></tr></thead>
+    <tbody>
+      <tr style="background:#f1f5f9;font-weight:600;"><td colspan="5" style="text-align:left;">Solde au début de ${MOIS_FR[mois-1]} ${annee}</td><td>${fmt(soldeDebut)}</td><td></td></tr>
+      ${body}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="3" style="text-align:left;">TOTAUX DU MOIS</td><td style="color:#0F766E;">${fmt(entrees)}</td><td style="color:#c0392b;">${fmt(sorties)}</td><td></td><td></td></tr>
+      <tr style="font-weight:700;"><td colspan="5" style="text-align:left;">SOLDE DE CLÔTURE — ${MOIS_FR[mois-1]} ${annee}</td><td>${fmt(soldeFin)}</td><td></td></tr>
+    </tfoot></table>`;
+}
+
+async function saveSoldeOuverture(){
+  if (!ACCES.isAdmin){ showToast('Réservé à l\'administrateur.', true); return; }
+  const montant = n(document.getElementById('lc-open-montant').value);
+  const date = document.getElementById('lc-open-date').value || null;
+  const btn = document.getElementById('lc-open-btn'); if (btn) btn.disabled = true;
+  try {
+    const { error } = await supabaseClient.from('gestion_parametres')
+      .update({ solde_ouverture: montant, date_solde_ouverture: date }).eq('id',1);
+    if (error) throw error;
+    if (PARAMS){ PARAMS.solde_ouverture = montant; PARAMS.date_solde_ouverture = date; }
+    showToast('Solde d\'ouverture enregistré'); loadLivreCaisse();
+  } catch(e){ showToast('Erreur enregistrement du solde', true); console.error(e); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+async function addMouvementCaisse(){
+  const date = document.getElementById('lc-date').value || null;
+  const sens = document.getElementById('lc-sens').value;
+  const libelle = document.getElementById('lc-libelle').value.trim();
+  const mode = document.getElementById('lc-mode').value;
+  const montant = n(document.getElementById('lc-montant').value);
+  if (!date){ showToast('Renseignez la date du mouvement.', true); return; }
+  if (!libelle || montant<=0){ showToast('Renseignez un libellé et un montant.', true); return; }
+  const btn = document.getElementById('lc-add-btn'); if (btn) btn.disabled = true;
+  try {
+    const { error } = await supabaseClient.from('gestion_caisse').insert({ date_mouvement:date, sens, libelle, mode, montant });
+    if (error) throw error;
+    document.getElementById('lc-libelle').value=''; document.getElementById('lc-montant').value='';
+    // Aligne le mois affiché sur la date du mouvement pour le voir immédiatement.
+    const d = new Date(date+'T00:00:00');
+    if (!isNaN(d)){
+      const yEl = document.getElementById('lc-year'), mEl = document.getElementById('lc-month');
+      if (yEl && [...yEl.options].some(o=>parseInt(o.value)===d.getFullYear())) yEl.value = d.getFullYear();
+      if (mEl) mEl.value = d.getMonth()+1;
+    }
+    showToast('Mouvement ajouté'); loadLivreCaisse();
+  } catch(e){ showToast('Erreur ajout du mouvement', true); console.error(e); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+async function delMouvementCaisse(id){
+  if (!confirm('Supprimer ce mouvement de caisse ?')) return;
+  try { const { error } = await supabaseClient.from('gestion_caisse').delete().eq('id',id); if (error) throw error; loadLivreCaisse(); showToast('Mouvement supprimé'); }
+  catch(e){ showToast('Erreur suppression', true); console.error(e); }
+}
+
+async function exportLivreCaisse(){
+  const annee = parseInt(document.getElementById('lc-year').value), mois = parseInt(document.getElementById('lc-month').value);
+  const debut = periodeStr(annee,mois), fin = periodeStr(mois===12?annee+1:annee, mois===12?1:mois+1);
+  let soldeDebut = n(PARAMS && PARAMS.solde_ouverture);
+  try {
+    const { data: avant } = await supabaseClient.from('gestion_caisse').select('sens,montant').lt('date_mouvement',debut);
+    (avant||[]).forEach(mv => { soldeDebut += (mv.sens==='entree'?1:-1)*n(mv.montant); });
+    const { data: rows } = await supabaseClient.from('gestion_caisse').select('*')
+      .gte('date_mouvement',debut).lt('date_mouvement',fin)
+      .order('date_mouvement',{ascending:true}).order('created_at',{ascending:true});
+    const aoa = [['Date','Libellé','Mode','Entrée','Sortie','Solde']];
+    aoa.push(['', 'Solde au début du mois', '', '', '', Math.round(soldeDebut)]);
+    let solde = soldeDebut, entrees=0, sorties=0;
+    (rows||[]).forEach(mv => { const isE=mv.sens==='entree'; const mt=n(mv.montant); if(isE)entrees+=mt;else sorties+=mt; solde+=(isE?1:-1)*mt;
+      aoa.push([mv.date_mouvement, mv.libelle, mv.mode||'', isE?Math.round(mt):'', isE?'':Math.round(mt), Math.round(solde)]); });
+    aoa.push(['', 'TOTAUX DU MOIS', '', Math.round(entrees), Math.round(sorties), '']);
+    aoa.push(['', 'SOLDE DE CLÔTURE', '', '', '', Math.round(soldeDebut+entrees-sorties)]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), `${MOIS_FR[mois-1]} ${annee}`.slice(0,31));
+    XLSX.writeFile(wb, `Livre_de_caisse_${MOIS_FR[mois-1]}_${annee}.xlsx`);
+  } catch(e){ showToast('Erreur export caisse', true); console.error(e); }
+}
+
+/* ============================================================================
+ * #5 — ÉCHÉANCIER FISCAL & SOCIAL (repères indicatifs — à confirmer DGI/CNPS/CMU)
+ * ==========================================================================*/
+const OBLIG_MENS = [
+  { code:'ITS',  libelle:'Impôt sur les salaires (ITS)',        jour:15 },
+  { code:'CNPS', libelle:'Cotisations sociales CNPS',            jour:15 },
+  { code:'CMU',  libelle:'Couverture Maladie Universelle (CMU)', jour:15 },
+  { code:'TVA',  libelle:'TVA / TSE (si assujetti)',             jour:15 }
+];
+const OBLIG_ANN = [
+  { code:'PATENTE', libelle:'Patente (contribution des patentes)',           mois:1, jour:31 },
+  { code:'DFE',     libelle:'Déclaration annuelle des salaires (États)',      mois:4, jour:30 },
+  { code:'BIC',     libelle:'Impôt sur les bénéfices (BIC) — dépôt des états', mois:5, jour:30 }
+];
+function obligLibelle(code){ const o = OBLIG_MENS.concat(OBLIG_ANN).find(x=>x.code===code); return o ? o.libelle : code; }
+function echeanceMensuelle(annee, mois, jour){ let y=annee, m=mois+1; if (m>12){ m=1; y++; } return `${y}-${pad2(m)}-${pad2(jour)}`; }
+
+async function loadEcheances(){
+  const yEl = document.getElementById('ech-year'); if (!yEl) return;
+  const annee = parseInt(yEl.value), mois = parseInt(document.getElementById('ech-month').value);
+  const periodeM = `${annee}-${pad2(mois)}`, periodeA = `${annee}`;
+  const faits = {};
+  try {
+    const { data } = await supabaseClient.from('gestion_echeances').select('*').in('periode',[periodeM, periodeA]);
+    (data||[]).forEach(r => { faits[r.code+'|'+r.periode] = r; });
+  } catch(e){ console.error('echeances', e); }
+  const auj = isoJour(new Date());
+  const ligne = (o, periode, echeance, isAnnuel) => {
+    const row = faits[o.code+'|'+periode];
+    const fait = row && row.statut === 'fait';
+    let statutHTML, action, mtFait = '';
+    if (fait){
+      statutHTML = `<span style="color:#0F766E;font-weight:700;">✓ Fait</span>${row.date_fait?` <span style="color:var(--muted);font-size:11px;">le ${frDateCourte(row.date_fait)}</span>`:''}`;
+      action = `<button class="btn btn-outline btn-sm" onclick="annulerEcheance('${o.code}','${periode}')">Annuler</button>`;
+      mtFait = (row.montant!=null && row.montant!=='') ? fmt(row.montant) : '';
+    } else {
+      const retard = echeance && echeance < auj;
+      statutHTML = retard ? '<span style="color:#c0392b;font-weight:700;">⚠ En retard</span>' : '<span style="color:#b45309;font-weight:700;">À faire</span>';
+      action = `<input type="number" min="0" step="1" id="ech-mt-${o.code}-${periode}" placeholder="Montant" style="width:100px;">
+                <button class="btn btn-sm" onclick="marquerEcheance('${o.code}','${periode}','${echeance||''}')">✓ Marquer fait</button>`;
+    }
+    return `<tr>
+      <td style="text-align:left;">${escapeHTML(o.libelle)}${isAnnuel?' <span style="color:var(--muted);font-size:11px;">(annuel)</span>':''}</td>
+      <td>${echeance?frDateCourte(echeance):'—'}</td>
+      <td>${statutHTML}</td>
+      <td>${mtFait}</td>
+      <td>${action}</td></tr>`;
+  };
+  let body = `<tr style="background:#f1f5f9;font-weight:700;"><td colspan="5" style="text-align:left;">Mensuel — ${MOIS_FR[mois-1]} ${annee} (déclaré le mois suivant)</td></tr>`;
+  OBLIG_MENS.forEach(o => { body += ligne(o, periodeM, echeanceMensuelle(annee, mois, o.jour), false); });
+  body += `<tr style="background:#f1f5f9;font-weight:700;"><td colspan="5" style="text-align:left;">Annuel — ${annee}</td></tr>`;
+  OBLIG_ANN.forEach(o => { body += ligne(o, periodeA, `${annee}-${pad2(o.mois)}-${pad2(o.jour)}`, true); });
+  document.getElementById('ech-table').innerHTML = `<table class="g-table"><thead><tr>
+    <th style="text-align:left;">Obligation</th><th>Échéance (indicative)</th><th>État</th><th>Montant</th><th>Action</th></tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+
+async function marquerEcheance(code, periode, echeance){
+  const mtEl = document.getElementById(`ech-mt-${code}-${periode}`);
+  const montant = mtEl ? n(mtEl.value) : 0;
+  try {
+    const { error } = await supabaseClient.from('gestion_echeances').upsert({
+      code, libelle: obligLibelle(code), periode, echeance: echeance||null,
+      statut:'fait', date_fait: isoJour(new Date()), montant: montant||null
+    }, { onConflict:'code,periode' });
+    if (error) throw error;
+    showToast('Déclaration marquée « faite »'); loadEcheances();
+  } catch(e){ showToast('Erreur', true); console.error(e); }
+}
+
+async function annulerEcheance(code, periode){
+  if (!confirm('Repasser cette obligation à « à faire » ?')) return;
+  try {
+    const { error } = await supabaseClient.from('gestion_echeances').delete().eq('code',code).eq('periode',periode);
+    if (error) throw error;
+    showToast('Remis « à faire »'); loadEcheances();
+  } catch(e){ showToast('Erreur', true); console.error(e); }
+}
+
+/* ============================================================================
+ * #6 — CLÔTURE MENSUELLE (verrouille recettes + dépenses d'un mois arrêté)
+ * ==========================================================================*/
+function moisCloture(annee, mois){ return CLOTURES.has(annee+'-'+mois); }
+async function refreshCloturesSet(){
+  try {
+    const { data } = await supabaseClient.from('gestion_clotures').select('annee,mois,cloture');
+    CLOTURES = new Set((data||[]).filter(c => c.cloture !== false).map(c => c.annee+'-'+c.mois));
+  } catch(e){ console.error('clotures set', e); }
+}
+
+async function loadClotures(){
+  await refreshCloturesSet();
+  const sel = document.getElementById('clo-year'); if (!sel) return;
+  const annee = parseInt(sel.value);
+  const debut = `${annee}-01-01`, fin = `${annee+1}-01-01`;
+  const rec = new Array(12).fill(0), dep = new Array(12).fill(0);
+  try {
+    const { data: recs } = await supabaseClient.from('gestion_recettes').select('date_recette,montant').gte('date_recette',debut).lt('date_recette',fin);
+    (recs||[]).forEach(r => { rec[new Date(r.date_recette+'T00:00:00').getMonth()] += n(r.montant); });
+    const { data: deps } = await supabaseClient.from('gestion_depenses').select('mois,montant').eq('annee',annee);
+    (deps||[]).forEach(d => { dep[(parseInt(d.mois)||1)-1] += n(d.montant); });
+  } catch(e){ console.error('clotures data', e); }
+  const isAdmin = ACCES.isAdmin;
+  let body = '';
+  for (let m=1;m<=12;m++){
+    const closed = moisCloture(annee, m);
+    const badge = closed
+      ? '<span style="color:#b45309;font-weight:700;">🔒 Clôturé</span>'
+      : '<span style="color:#0F766E;font-weight:700;">Ouvert</span>';
+    let action;
+    if (closed){
+      action = isAdmin
+        ? `<button class="btn btn-outline btn-sm" onclick="rouvrirMois(${annee},${m})">🔓 Rouvrir</button>`
+        : '<span style="color:var(--muted);font-size:12px;">Réouverture : admin</span>';
+    } else {
+      action = `<button class="btn btn-sm" onclick="cloturerMois(${annee},${m})">🔒 Clôturer</button>`;
+    }
+    body += `<tr>
+      <td style="text-align:left;">${MOIS_FR[m-1]}</td>
+      <td>${fmt(rec[m-1])}</td>
+      <td>${fmt(dep[m-1])}</td>
+      <td>${badge}</td>
+      <td>${action}</td></tr>`;
+  }
+  document.getElementById('clo-table').innerHTML = `<table class="g-table"><thead><tr>
+    <th style="text-align:left;">Mois</th><th>Recettes</th><th>Dépenses (saisies)</th><th>État</th><th>Action</th></tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+
+async function cloturerMois(annee, mois){
+  if (!confirm(`Clôturer ${MOIS_FR[mois-1]} ${annee} ?\n\nLes recettes et dépenses de ce mois seront VERROUILLÉES (plus aucune saisie, modification ni suppression).\nUn administrateur pourra le rouvrir plus tard.`)) return;
+  try {
+    const { error } = await supabaseClient.from('gestion_clotures')
+      .upsert({ annee, mois, cloture:true, cloture_at:new Date().toISOString() }, { onConflict:'annee,mois' });
+    if (error) throw error;
+    CLOTURES.add(annee+'-'+mois);
+    showToast(`${MOIS_FR[mois-1]} ${annee} clôturé`);
+    loadClotures();
+  } catch(e){ showToast('Erreur clôture', true); console.error(e); }
+}
+
+async function rouvrirMois(annee, mois){
+  if (!ACCES.isAdmin){ showToast('Réouverture réservée à l\'administrateur.', true); return; }
+  if (!confirm(`Rouvrir ${MOIS_FR[mois-1]} ${annee} ? Les recettes et dépenses redeviendront modifiables.`)) return;
+  try {
+    const { error } = await supabaseClient.from('gestion_clotures').delete().eq('annee',annee).eq('mois',mois);
+    if (error) throw error;
+    CLOTURES.delete(annee+'-'+mois);
+    showToast(`${MOIS_FR[mois-1]} ${annee} rouvert`);
+    loadClotures();
+  } catch(e){ showToast('Erreur réouverture', true); console.error(e); }
+}
+
 async function init(){
   const session = await requireAuth(); if (!session) return;
   const profile = await getProfile(session.user.id);
@@ -1704,8 +2090,8 @@ async function init(){
 
   // Sélecteurs de période
   const nowM = new Date().getMonth()+1;
-  ['dash-year','rec-year','dep-year','obj-year','sai-year','bul-year','etat-year','fin-year'].forEach(id => fillYearSelect(id));
-  ['dash-month','rec-month','dep-month','sai-month','bul-month'].forEach(id => fillMonthSelect(id, nowM));
+  ['dash-year','rec-year','dep-year','obj-year','sai-year','bul-year','etat-year','fin-year','lc-year','ech-year','clo-year'].forEach(id => fillYearSelect(id));
+  ['dash-month','rec-month','dep-month','sai-month','bul-month','lc-month','ech-month'].forEach(id => fillMonthSelect(id, nowM));
 
   // Récapitulatifs comptables par jour : période par défaut = 7 derniers jours,
   // pour afficher tout de suite aujourd'hui/hier/avant-hier sans surcharger l'écran.
@@ -1722,7 +2108,7 @@ async function init(){
   const tasks = [];
   if (canPaie || canCompta) tasks.push(loadParametres());              // paramètres (lecture) : utiles au calcul de paie
   if (canPaie)   tasks.push(loadCategories(), loadSalaries(), loadLivreurs());
-  if (canCompta) tasks.push(loadChauffeurs());
+  if (canCompta) tasks.push(loadChauffeurs(), refreshCloturesSet());
   await Promise.all(tasks);
 
   if (isAdmin) renderParametres();

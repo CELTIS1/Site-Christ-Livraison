@@ -176,11 +176,14 @@
     <div class="subtabs">
       <div class="subtab active" data-sub="recettes" onclick="switchSub('compta','recettes')">Recettes</div>
       <div class="subtab" data-sub="depenses" onclick="switchSub('compta','depenses')">Dépenses</div>
+      <div class="subtab" data-sub="livrecaisse" onclick="switchSub('compta','livrecaisse')">💵 Livre de caisse</div>
       <div class="subtab" data-sub="objectifs" onclick="switchSub('compta','objectifs')">Objectifs</div>
       <div class="subtab" data-sub="chauffeurs" onclick="switchSub('compta','chauffeurs')">Chauffeurs</div>
       <div class="subtab" data-sub="caisse" onclick="switchSub('compta','caisse')">Caisse livreurs</div>
       <div class="subtab" data-sub="clients" onclick="switchSub('compta','clients')">Point clients</div>
       <div class="subtab" data-sub="etats" onclick="switchSub('compta','etats')">📊 États financiers</div>
+      <div class="subtab" data-sub="echeances" onclick="switchSub('compta','echeances')">🗓️ Échéancier fiscal</div>
+      <div class="subtab" data-sub="clotures" onclick="switchSub('compta','clotures')">🔒 Clôture mensuelle</div>
       <div class="subtab" data-sub="documents" onclick="switchSub('compta','documents')">📁 Documents entreprise</div>
     </div>
 
@@ -200,17 +203,84 @@
         <select id="dep-year" onchange="loadDepenses()"></select>
         <select id="dep-month" onchange="loadDepenses()"></select>
       </div>
+      <div id="dep-cloture-alerte"></div>
       <div class="card">
         <h2>Dépenses du mois</h2>
         <div class="g-table-wrap" id="dep-table"></div>
-        <div class="inline-form">
+        <div class="inline-form" id="dep-form">
           <div class="field"><label>Date</label><input type="date" id="dep-date"></div>
           <div class="field" style="flex:1;min-width:180px;"><label>Libellé</label><input type="text" id="dep-libelle" placeholder="Ex. Carburant moto Franck"></div>
           <div class="field"><label>Catégorie</label>
-            <select id="dep-cat"><option value="">—</option><option>Carburant</option><option>Entretien / Réparation</option><option>Salaire / Avance</option><option>Loyer / Charges</option><option>Équipement</option><option>Administratif</option><option>Autre</option></select>
+            <select id="dep-cat">
+              <option value="">—</option>
+              <optgroup label="Exploitation">
+                <option>Carburant</option>
+                <option>Entretien / Réparation</option>
+                <option>Loyer / Charges</option>
+                <option>Équipement</option>
+                <option>Fournitures</option>
+                <option>Assurance</option>
+                <option>Frais bancaires</option>
+                <option>Communication / Internet</option>
+                <option>Transport / Déplacement</option>
+                <option>Administratif</option>
+              </optgroup>
+              <optgroup label="Charges légales &amp; fiscales">
+                <option>Patente</option>
+                <option>Impôt BIC</option>
+                <option>TVA / TSE</option>
+                <option>Autres impôts &amp; taxes</option>
+                <option>Amendes / Pénalités</option>
+              </optgroup>
+              <optgroup label="Liées à la paie (déjà comptées)">
+                <option>Salaire / Avance</option>
+                <option>ITS (impôt sur salaires)</option>
+                <option>CNPS (cotisations sociales)</option>
+                <option>CMU (salariés)</option>
+              </optgroup>
+              <option>Autre</option>
+            </select>
           </div>
           <div class="field"><label>Montant (FCFA)</label><input type="number" id="dep-montant" min="0" step="1"></div>
+          <div class="field"><label>Justificatif (facultatif)</label><input type="file" id="dep-justif" accept="image/*,application/pdf"></div>
           <button class="btn btn-sm" id="dep-add-btn" onclick="addDepense()">+ Ajouter</button>
+        </div>
+        <div class="hint">Les catégories « Liées à la paie » (salaires, ITS, CNPS, CMU) sont enregistrées mais <strong>ne sont pas recomptées</strong> dans les états financiers : elles figurent déjà dans les charges de personnel calculées par la Paie. Joignez une photo ou un PDF du reçu comme justificatif.</div>
+      </div>
+    </div>
+
+    <!-- Livre de caisse : solde d'ouverture + entrées / sorties + solde courant -->
+    <div class="section" id="compta-livrecaisse">
+      <div class="period-bar">
+        <select id="lc-year" onchange="loadLivreCaisse()"></select>
+        <select id="lc-month" onchange="loadLivreCaisse()"></select>
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="exportLivreCaisse()">⬇️ Exporter (Excel)</button>
+      </div>
+      <div class="hint">Livre de caisse : <strong>solde d'ouverture + entrées − sorties = solde courant</strong>. Enregistrez chaque mouvement d'argent (espèces, banque, mobile money). Le solde se recalcule automatiquement, mois après mois.</div>
+      <div class="card">
+        <h2>Solde d'ouverture</h2>
+        <div class="hint" id="lc-open-hint">Montant réellement disponible en caisse au démarrage du suivi. À saisir une seule fois.</div>
+        <div class="inline-form" id="lc-open-form">
+          <div class="field"><label>Date d'ouverture</label><input type="date" id="lc-open-date"></div>
+          <div class="field"><label>Solde d'ouverture (FCFA)</label><input type="number" id="lc-open-montant" min="0" step="1"></div>
+          <button class="btn btn-sm" id="lc-open-btn" onclick="saveSoldeOuverture()">Enregistrer</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Mouvements du mois</h2>
+        <div class="g-table-wrap" id="lc-table"></div>
+        <div class="inline-form">
+          <div class="field"><label>Date</label><input type="date" id="lc-date"></div>
+          <div class="field"><label>Sens</label>
+            <select id="lc-sens"><option value="entree">Entrée (+)</option><option value="sortie">Sortie (−)</option></select>
+          </div>
+          <div class="field" style="flex:1;min-width:160px;"><label>Libellé</label><input type="text" id="lc-libelle" placeholder="Ex. Retrait banque, achat carburant…"></div>
+          <div class="field"><label>Mode</label>
+            <select id="lc-mode"><option>espèces</option><option>banque</option><option>mobile money</option></select>
+          </div>
+          <div class="field"><label>Montant (FCFA)</label><input type="number" id="lc-montant" min="0" step="1"></div>
+          <button class="btn btn-sm" id="lc-add-btn" onclick="addMouvementCaisse()">+ Ajouter</button>
         </div>
       </div>
     </div>
@@ -295,6 +365,30 @@
         <div class="hint">Vue synthétique de la trésorerie générée (résultats cumulés) et des sommes en circulation chez les livreurs. Un bilan comptable complet nécessite en plus l'inventaire des immobilisations et des dettes/créances, à renseigner séparément.</div>
         <div class="g-table-wrap" id="fin-bilan"></div>
       </div>
+    </div>
+
+    <!-- Échéancier fiscal & social : suivi des déclarations à effectuer -->
+    <div class="section" id="compta-echeances">
+      <div class="period-bar">
+        <select id="ech-year" onchange="loadEcheances()"></select>
+        <select id="ech-month" onchange="loadEcheances()"></select>
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="loadEcheances()">🔄 Actualiser</button>
+      </div>
+      <div class="clt-alert clt-alert-warn">⚠️ <strong>Dates indicatives.</strong> Les échéances affichées sont des repères habituels en Côte d'Ivoire. Confirmez toujours les dates et montants exacts auprès de la <strong>DGI</strong> (impôts), de la <strong>CNPS</strong> et de la <strong>CMU</strong> : ils peuvent varier selon votre régime d'imposition.</div>
+      <div class="hint">Cochez chaque obligation « faite » une fois la déclaration/paiement effectué. Ce qui n'est pas coché apparaît « à faire », et « en retard » si la date limite est dépassée.</div>
+      <div class="card"><div class="g-table-wrap" id="ech-table"></div></div>
+    </div>
+
+    <!-- Clôture mensuelle : verrouille recettes + dépenses d'un mois arrêté -->
+    <div class="section" id="compta-clotures">
+      <div class="period-bar">
+        <select id="clo-year" onchange="loadClotures()"></select>
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="loadClotures()">🔄 Actualiser</button>
+      </div>
+      <div class="hint">Clôturer un mois le <strong>verrouille</strong> : les recettes et dépenses de ce mois ne peuvent plus être saisies, modifiées ni supprimées. Cela protège les mois déjà arrêtés contre toute modification accidentelle. <strong>Seul l'administrateur peut rouvrir</strong> un mois clôturé.</div>
+      <div class="card"><div class="g-table-wrap" id="clo-table"></div></div>
     </div>
 
     <!-- Coffre à documents de l'entreprise (RCCM, DFE, statuts, patente…) -->
@@ -522,6 +616,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="config.js?v=20260812m"></script>
-<script src="gestion.js?v=20260814etats1"></script>
+<script src="gestion.js?v=20260814compta6"></script>
 </body>
 </html>
