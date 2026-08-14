@@ -1004,3 +1004,45 @@ html[data-theme="dark"] .momo-choice.selected{ background:#172a2a; }
    leur couleur de statut (vert / orange / rouge) pour rester lisibles. */
 html[data-theme="dark"] #colis-du-jour > div,
 html[data-theme="dark"] #tournee-summary > div{ background:#243247 !important; }
+
+/* =====================================================================
+   MODE SOMBRE — Corrections de contraste
+   Certains textes gardaient une couleur foncée (bleu marine #1B4374 ou
+   gris foncé #333) posée en dur, qui se confondait avec le fond sombre.
+   On éclaircit UNIQUEMENT ces cas ciblés (les badges sur pastille claire
+   ne sont pas touchés).
+   ===================================================================== */
+
+/* Page de connexion : liens et titres en bleu marine (style inline) */
+html[data-theme="dark"] button[style*="color:#1B4374"]{ color:#7FB0EA !important; }
+html[data-theme="dark"] div[style*="color:#1B4374"][style*="text-align:center"]{ color:#7FB0EA !important; }
+/* Indication grise sous « Mot de passe oublié » */
+html[data-theme="dark"] div[style*="color:#6b7280"]{ color:#9DB0C4 !important; }
+
+/* Tuiles de statut du jour : « Récupéré » (marine) et « À récupérer » (gris)
+   se fondaient dans la tuile sombre. Les autres statuts (orange / vert /
+   rouge) restent inchangés car déjà lisibles. */
+html[data-theme="dark"] #colis-du-jour div[style*="color:#1B4374"],
+html[data-theme="dark"] #tournee-summary div[style*="color:#1B4374"]{ color:#7FB0EA !important; }
+html[data-theme="dark"] #colis-du-jour div[style*="color:#8a94a3"],
+html[data-theme="dark"] #tournee-summary div[style*="color:#8a94a3"]{ color:#AEB9C7 !important; }
+
+/* Phrases de récapitulatif (« vous avez enregistré … colis ») : texte gris
+   foncé #333 sur fond sombre → texte clair, fond légèrement contrasté. */
+html[data-theme="dark"] .recap-phrase{ color:#C9D6E5; background:#141D29; }
+html[data-theme="dark"] .recap-montant{ color:#C9D6E5; }
+
+/* Espace Équipe : lien « Gestion » (gris foncé) dans le menu réglages. */
+html[data-theme="dark"] a[style*="color:#222"]{ color:#C9D6E5 !important; }
+/* Petites mentions vertes « Soldé / Écart 0 FCFA » posées sur fond sombre. */
+html[data-theme="dark"] span[style*="color:#1a7d3c"]{ color:#5FD98A !important; }
+/* Espace Express — nom du fichier KYC (vert) sur carte sombre. */
+html[data-theme="dark"] .kyc-filename{ color:#5FD98A; }
+
+/* Espace Coursier : le teal foncé #0b6e64 devient illisible sur les surfaces
+   sombres (solde du portefeuille, statistiques, course la plus proche,
+   moyen de paiement sélectionné) → teal clair. */
+html[data-theme="dark"] .stat-box .stat-value,
+html[data-theme="dark"] .wallet-solde .wallet-value,
+html[data-theme="dark"] .course-proche,
+html[data-theme="dark"] .momo-choice.selected .momo-choice-name{ color:#4FD1C0 !important; }
