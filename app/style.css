@@ -850,8 +850,13 @@ html[data-theme="dark"]{
   --shadow-lg:0 18px 44px rgba(0,0,0,.60);
 }
 
-/* Fond + texte de base */
-html[data-theme="dark"] body{ background:var(--grey-bg); color:#E6ECF3; }
+/* Fond + texte de base.
+   IMPORTANT : chaque page d'espace (livreur, équipe, gestion, fournisseur,
+   coursier…) impose son propre fond clair avec `body{ background:… !important }`.
+   On doit donc utiliser !important ici pour que TOUT le fond passe en sombre,
+   et pas seulement les cartes. Fond profond, uni et élégant. */
+html[data-theme="dark"] body{ background:#0F1824 !important; color:#E6ECF3; }
+html[data-theme="dark"] .wrap{ background:transparent; }
 
 /* Couleurs de texte fixes -> clair */
 html[data-theme="dark"] .colis-item .info .desc,
@@ -903,8 +908,15 @@ html[data-theme="dark"] .theme-toggle{
   background:var(--grad-orange);
   border-color:rgba(255,255,255,.14);
 }
-@media(max-width:640px){
-  .theme-toggle{ width:42px; height:42px; left:14px; bottom:14px; font-size:17px; }
+/* Sur mobile, la barre de navigation basse (.clt-bottomnav) occupe le bas de
+   l'écran. On déplace le bouton en bas à DROITE et on le remonte AU-DESSUS de
+   cette barre pour qu'il ne recouvre plus aucun onglet. */
+@media(max-width:760px){
+  .theme-toggle{
+    width:42px; height:42px; font-size:17px;
+    left:auto; right:14px;
+    bottom:calc(80px + env(safe-area-inset-bottom));
+  }
 }
 
 /* =====================================================================
@@ -944,3 +956,44 @@ html[data-theme="dark"] #card-wallet-help{ background:#1B2635 !important; border
 /* Express — page de connexion (choix de rôle / KYC) */
 html[data-theme="dark"] .role-toggle button{ background:#141D29; }
 html[data-theme="dark"] .kyc-buttons button{ background:#141D29; }
+
+/* =====================================================================
+   MODE SOMBRE — Espaces personnel (Livreur / Équipe / Gestion / Fournisseur)
+   Ces pages définissent des surfaces claires en dur dans leur propre <style>.
+   On assombrit les surfaces communes pour un rendu homogène : fond profond,
+   cartes légèrement plus claires (couleur distincte), accents de marque
+   conservés. On reprend !important là où le style interne l'utilise.
+   ===================================================================== */
+
+/* Contrôle segmenté ".tabs" (Livreur) */
+html[data-theme="dark"] .tabs{ background:#141D29; }
+html[data-theme="dark"] .tabs .tab{ color:#9DB0C4 !important; }
+html[data-theme="dark"] .tabs .tab.active{ background:#243247 !important; }
+
+/* Barre de recherche collante */
+html[data-theme="dark"] .search-input{ border-color:#2A3849 !important; }
+html[data-theme="dark"] .search-input:focus{ background:#1B2635 !important; }
+html[data-theme="dark"] .filter-chip{ background:#141D29; border-color:#2A3849; color:#C9D6E5; }
+
+/* Barre d'onglets segmentée du haut : passer le conteneur en sombre */
+html[data-theme="dark"] .clt-toptabs{ background:#141D29 !important; border-color:rgba(255,255,255,.06) !important; }
+html[data-theme="dark"] .clt-toptab.active{ background:#243247 !important; box-shadow:0 4px 12px rgba(0,0,0,.4) !important; }
+
+/* Espace Gestion (teal) : sous-onglets, cartes KPI, jauges, tableaux, modales */
+html[data-theme="dark"] .subtab{ background:#1B2635; color:#C9D6E5; border-color:#2A3849; }
+html[data-theme="dark"] .kpi{ background:#1B2635; border-color:#2A3849; }
+html[data-theme="dark"] .prog{ background:#243247; }
+html[data-theme="dark"] table.g-table{ background:#1B2635; }
+html[data-theme="dark"] table.g-table th:first-child,
+html[data-theme="dark"] table.g-table td:first-child{ background:#1B2635; }
+html[data-theme="dark"] table.g-table tr:hover td{ background:#243247; }
+html[data-theme="dark"] table.g-table tfoot td{ background:#202d3d; }
+html[data-theme="dark"] table.g-table input.cell:focus{ background:#141D29; }
+html[data-theme="dark"] .modal{ background:#1B2635; }
+html[data-theme="dark"] .bulletin{ background:#141D29; border-color:#2A3849; color:#C9D6E5; }
+html[data-theme="dark"] .g-toast{ background:#1B2635; }
+
+/* Espace Coursier (teal) : encarts d'aide et de statistiques */
+html[data-theme="dark"] .stat-box{ background:#141D29; border-color:#2A3849; }
+html[data-theme="dark"] .momo-choice{ background:#141D29; }
+html[data-theme="dark"] .momo-choice.selected{ background:#172a2a; }
