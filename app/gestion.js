@@ -164,6 +164,10 @@ function refreshStickyOffsets(){
 }
 let _stickyRaf = null;
 function scheduleStickyRefresh(){
+  // Mesure immédiate : indispensable car requestAnimationFrame ne se déclenche pas
+  // quand l'onglet est en arrière-plan (au chargement notamment).
+  refreshStickyOffsets();
+  // Recalage après la prochaine peinture, quand l'onglet est visible.
   if (_stickyRaf) cancelAnimationFrame(_stickyRaf);
   _stickyRaf = requestAnimationFrame(() => { _stickyRaf = null; refreshStickyOffsets(); });
 }
