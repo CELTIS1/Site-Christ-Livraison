@@ -158,30 +158,8 @@ window.addEventListener("pageshow", (event) => {
   if (event.persisted) window.location.reload();
 });
 
-function escapeHTML(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-function formatDate(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) +
-    " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-}
-
-function formatMontant(n) {
-  if (n === null || n === undefined || n === "") return "";
-  const num = Number(n);
-  if (isNaN(num)) return "";
-  return num.toLocaleString("fr-FR") + " FCFA";
-}
-
-function isValidPhoneCI(phone) {
-  const digits = (phone || "").replace(/[\s.\-]/g, "");
-  return /^0[1-9][0-9]{8}$/.test(digits);
-}
+// escapeHTML(), formatDate(), formatMontant(), isValidPhoneCI()
+// → déplacés dans clt-common.js (chargé avant ce fichier).
 
 // Numéro ivoirien local (ex: 07 00 00 00 00) -> format attendu par Supabase Auth pour ce
 // projet : "225" + les 10 chiffres locaux, SANS "+" (voir toE164 dans login.html — même
@@ -195,95 +173,9 @@ function toE164(raw) {
   return "225" + digits;
 }
 
-// ---------- Validation d'un numéro de téléphone ivoirien ----------
-// Accepte les numéros locaux à 10 chiffres (plan actuel) ou 8 chiffres (ancien plan), avec ou sans
-// indicatif 225. Souple pour ne jamais bloquer un numéro légitime, mais repère une faute évidente.
-function isValidCiPhone(raw) {
-  let d = (raw || "").replace(/[^\d]/g, "");
-  if (d.startsWith("225")) d = d.slice(3);
-  return d.length === 10 || d.length === 8;
-}
-
-// ---------- Modale de confirmation / saisie réutilisable (remplace confirm/prompt natifs) ----------
-// Réutilise les classes .confirm-modal-* de style.css et injecte son conteneur dans le <body>.
-// cltConfirm(...) -> Promise<boolean> ; cltPrompt(...) -> Promise<string|null>.
-function __cltEnsureModal() {
-  let ov = document.getElementById("clt-modal-overlay");
-  if (ov) return ov;
-  ov = document.createElement("div");
-  ov.id = "clt-modal-overlay";
-  ov.className = "confirm-modal-overlay hidden";
-  ov.innerHTML =
-    '<div class="confirm-modal">' +
-    '<div class="confirm-modal-icon" id="clt-modal-icon">⚠️</div>' +
-    '<h3 class="confirm-modal-title" id="clt-modal-title"></h3>' +
-    '<div class="confirm-modal-detail" id="clt-modal-detail" style="display:none;"></div>' +
-    '<p class="confirm-modal-sub" id="clt-modal-sub" style="white-space:pre-line;"></p>' +
-    '<input type="text" id="clt-modal-input" style="display:none; width:100%; box-sizing:border-box; ' +
-    'padding:12px 14px; border:1.5px solid #d6dee8; border-radius:10px; font-size:16px; ' +
-    'text-align:center; margin-bottom:18px;" />' +
-    '<div class="confirm-modal-actions">' +
-    '<button type="button" class="btn" id="clt-modal-cancel" style="background:#e5e9ef;color:#222;">Annuler</button>' +
-    '<button type="button" class="btn" id="clt-modal-ok">Confirmer</button>' +
-    "</div></div>";
-  document.body.appendChild(ov);
-  ov.addEventListener("click", (e) => { if (e.target === ov) __cltCloseModal(__cltCancelValue); });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !ov.classList.contains("hidden")) __cltCloseModal(__cltCancelValue);
-  });
-  return ov;
-}
-let __cltModalResolve = null;
-let __cltCancelValue = false;
-function __cltCloseModal(result) {
-  const ov = document.getElementById("clt-modal-overlay");
-  if (ov) ov.classList.add("hidden");
-  const r = __cltModalResolve;
-  __cltModalResolve = null;
-  if (r) r(result);
-}
-function cltConfirm({ title, detail, sub, okLabel, cancelLabel, danger } = {}) {
-  const ov = __cltEnsureModal();
-  __cltCancelValue = false;
-  document.getElementById("clt-modal-title").textContent = title || "Confirmer";
-  const d = document.getElementById("clt-modal-detail");
-  if (detail) { d.textContent = detail; d.style.display = ""; } else { d.style.display = "none"; }
-  document.getElementById("clt-modal-sub").textContent = sub || "";
-  document.getElementById("clt-modal-icon").textContent = danger ? "🗑️" : "⚠️";
-  document.getElementById("clt-modal-input").style.display = "none";
-  const ok = document.getElementById("clt-modal-ok");
-  ok.textContent = okLabel || "Confirmer";
-  ok.classList.toggle("danger-btn", !!danger);
-  document.getElementById("clt-modal-cancel").textContent = cancelLabel || "Annuler";
-  ov.classList.remove("hidden");
-  ok.onclick = () => __cltCloseModal(true);
-  document.getElementById("clt-modal-cancel").onclick = () => __cltCloseModal(false);
-  return new Promise((res) => { __cltModalResolve = res; });
-}
-function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, defaultValue } = {}) {
-  const ov = __cltEnsureModal();
-  __cltCancelValue = null;
-  document.getElementById("clt-modal-title").textContent = title || "Saisie";
-  document.getElementById("clt-modal-detail").style.display = "none";
-  document.getElementById("clt-modal-sub").textContent = sub || "";
-  document.getElementById("clt-modal-icon").textContent = "🔢";
-  const inp = document.getElementById("clt-modal-input");
-  inp.style.display = "";
-  inp.value = defaultValue || "";
-  inp.placeholder = placeholder || "";
-  if (inputMode) inp.setAttribute("inputmode", inputMode); else inp.removeAttribute("inputmode");
-  if (maxLength) inp.setAttribute("maxlength", String(maxLength)); else inp.removeAttribute("maxlength");
-  const ok = document.getElementById("clt-modal-ok");
-  ok.textContent = okLabel || "Valider";
-  ok.classList.remove("danger-btn");
-  document.getElementById("clt-modal-cancel").textContent = "Annuler";
-  ov.classList.remove("hidden");
-  setTimeout(() => { try { inp.focus(); } catch (e) {} }, 50);
-  ok.onclick = () => __cltCloseModal(inp.value);
-  document.getElementById("clt-modal-cancel").onclick = () => __cltCloseModal(null);
-  inp.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); __cltCloseModal(inp.value); } };
-  return new Promise((res) => { __cltModalResolve = res; });
-}
+// isValidCiPhone(), la modale cltConfirm()/cltPrompt() et son échafaudage
+// (__cltEnsureModal, __cltCloseModal, __cltModalResolve, __cltCancelValue)
+// → déplacés dans clt-common.js (chargé avant ce fichier).
 
 function friendlyErrorMessage(message) {
   const m = (message || "").toLowerCase();
@@ -299,14 +191,7 @@ function friendlyErrorMessage(message) {
   return message || "Une erreur inattendue s'est produite.";
 }
 
-function getInitials(name) {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "?";
-  const first = parts[0][0] || "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase();
-}
+// getInitials() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 function avatarHTML(profile, size) {
   size = size || 36;
@@ -474,21 +359,7 @@ async function uploadAvatarExpress(file, userId) {
 // de traitement, en validant que c'est bien une image de moins de 8 Mo. La valeur
 // de l'input est réinitialisée à chaque fois pour permettre de rechoisir le même
 // fichier ensuite (identique à la logique de l'app interne).
-function wireImagePicker(inputIds, onFile) {
-  const ids = Array.isArray(inputIds) ? inputIds : [inputIds];
-  ids.forEach((id) => {
-    const input = document.getElementById(id);
-    if (!input) return;
-    input.addEventListener("change", async () => {
-      const file = input.files && input.files[0];
-      input.value = "";
-      if (!file) return;
-      if (!file.type || !file.type.startsWith("image/")) { alert("Veuillez choisir un fichier image."); return; }
-      if (file.size > 8 * 1024 * 1024) { alert("L'image est trop volumineuse (8 Mo maximum)."); return; }
-      await onFile(file);
-    });
-  });
-}
+// wireImagePicker() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 // Met en place le bloc « photo de profil » : affiche l'avatar courant (dans la
 // modale « Mon compte » et dans la barre du haut), puis, au choix d'un fichier,

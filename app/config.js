@@ -349,11 +349,7 @@ function statutBadgeHTML(statut) {
   return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;
 }
 
-function escapeHTML(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
-}
+// escapeHTML() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 // ---------- Agrandissement des photos de colis (lightbox partagée) ----------
 // Au clic sur une vignette « .thumb » (photo d'un colis ou preuve de livraison), on affiche
@@ -406,10 +402,7 @@ function escapeHTML(str) {
 // ---------- Validation de format (numéro de téléphone ivoirien, montant) ----------
 // Depuis la refonte du plan de numérotation, tous les numéros ivoiriens comptent 10 chiffres
 // et commencent par 0 (ex : 07 00 00 00 00). On tolère les espaces/points/tirets de saisie.
-function isValidPhoneCI(phone) {
-  const digits = (phone || "").replace(/[\s.\-]/g, "");
-  return /^0[1-9][0-9]{8}$/.test(digits);
-}
+// isValidPhoneCI() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 function isValidMontant(value) {
   if (value === null || value === undefined || value === "") return true; // champ facultatif
@@ -462,12 +455,7 @@ function restoreScrollAnchor(container, anchor) {
   if (delta) window.scrollBy(0, delta);
 }
 
-function formatDate(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) +
-    " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-}
+// formatDate() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 // ---------- Lien profond vers un colis (clic sur une notification push) ----------
 // Une notification de changement de statut ouvre la page avec ?colis=<id>. Cette fonction fait
@@ -517,99 +505,9 @@ function cltFocusColisFromUrl(opts) {
   attempt();
 }
 
-// ---------- Validation d'un numéro de téléphone ivoirien ----------
-// Accepte les numéros locaux à 10 chiffres (plan actuel : 01/05/07…) ou 8 chiffres (ancien plan),
-// avec ou sans indicatif 225. Volontairement souple pour ne jamais bloquer un numéro légitime,
-// mais suffisant pour repérer une faute de frappe évidente (numéro trop court/trop long).
-function isValidCiPhone(raw) {
-  let d = (raw || "").replace(/[^\d]/g, "");
-  if (d.startsWith("225")) d = d.slice(3);
-  return d.length === 10 || d.length === 8;
-}
-
-// ---------- Modale de confirmation / saisie réutilisable (remplace confirm/prompt natifs) ----------
-// Réutilise les classes .confirm-modal-* de style.css (présentes sur toutes les pages) et injecte
-// son propre conteneur dans le <body>, sans qu'aucune page n'ait besoin de markup dédié.
-// cltConfirm(...) renvoie une promesse résolue à true/false ; cltPrompt(...) renvoie la saisie
-// (chaîne) ou null si annulé. Objectif : dialogues cohérents avec le style de l'app, lisibles sur
-// mobile, contrairement à confirm()/prompt() natifs.
-function __cltEnsureModal() {
-  let ov = document.getElementById("clt-modal-overlay");
-  if (ov) return ov;
-  ov = document.createElement("div");
-  ov.id = "clt-modal-overlay";
-  ov.className = "confirm-modal-overlay hidden";
-  ov.innerHTML =
-    '<div class="confirm-modal">' +
-    '<div class="confirm-modal-icon" id="clt-modal-icon">⚠️</div>' +
-    '<h3 class="confirm-modal-title" id="clt-modal-title"></h3>' +
-    '<div class="confirm-modal-detail" id="clt-modal-detail" style="display:none;"></div>' +
-    '<p class="confirm-modal-sub" id="clt-modal-sub" style="white-space:pre-line;"></p>' +
-    '<input type="text" id="clt-modal-input" style="display:none; width:100%; box-sizing:border-box; ' +
-    'padding:12px 14px; border:1.5px solid #d6dee8; border-radius:10px; font-size:16px; ' +
-    'text-align:center; margin-bottom:18px;" />' +
-    '<div class="confirm-modal-actions">' +
-    '<button type="button" class="btn" id="clt-modal-cancel" style="background:#e5e9ef;color:#222;">Annuler</button>' +
-    '<button type="button" class="btn" id="clt-modal-ok">Confirmer</button>' +
-    "</div></div>";
-  document.body.appendChild(ov);
-  ov.addEventListener("click", (e) => { if (e.target === ov) __cltCloseModal(__cltCancelValue); });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !ov.classList.contains("hidden")) __cltCloseModal(__cltCancelValue);
-  });
-  return ov;
-}
-let __cltModalResolve = null;
-let __cltCancelValue = false;
-function __cltCloseModal(result) {
-  const ov = document.getElementById("clt-modal-overlay");
-  if (ov) ov.classList.add("hidden");
-  const r = __cltModalResolve;
-  __cltModalResolve = null;
-  if (r) r(result);
-}
-function cltConfirm({ title, detail, sub, okLabel, cancelLabel, danger } = {}) {
-  const ov = __cltEnsureModal();
-  __cltCancelValue = false;
-  document.getElementById("clt-modal-title").textContent = title || "Confirmer";
-  const d = document.getElementById("clt-modal-detail");
-  if (detail) { d.textContent = detail; d.style.display = ""; } else { d.style.display = "none"; }
-  document.getElementById("clt-modal-sub").textContent = sub || "";
-  document.getElementById("clt-modal-icon").textContent = danger ? "🗑️" : "⚠️";
-  document.getElementById("clt-modal-input").style.display = "none";
-  const ok = document.getElementById("clt-modal-ok");
-  ok.textContent = okLabel || "Confirmer";
-  ok.classList.toggle("danger-btn", !!danger);
-  document.getElementById("clt-modal-cancel").textContent = cancelLabel || "Annuler";
-  ov.classList.remove("hidden");
-  ok.onclick = () => __cltCloseModal(true);
-  document.getElementById("clt-modal-cancel").onclick = () => __cltCloseModal(false);
-  return new Promise((res) => { __cltModalResolve = res; });
-}
-function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, defaultValue } = {}) {
-  const ov = __cltEnsureModal();
-  __cltCancelValue = null;
-  document.getElementById("clt-modal-title").textContent = title || "Saisie";
-  document.getElementById("clt-modal-detail").style.display = "none";
-  document.getElementById("clt-modal-sub").textContent = sub || "";
-  document.getElementById("clt-modal-icon").textContent = "🔢";
-  const inp = document.getElementById("clt-modal-input");
-  inp.style.display = "";
-  inp.value = defaultValue || "";
-  inp.placeholder = placeholder || "";
-  if (inputMode) inp.setAttribute("inputmode", inputMode); else inp.removeAttribute("inputmode");
-  if (maxLength) inp.setAttribute("maxlength", String(maxLength)); else inp.removeAttribute("maxlength");
-  const ok = document.getElementById("clt-modal-ok");
-  ok.textContent = okLabel || "Valider";
-  ok.classList.remove("danger-btn");
-  document.getElementById("clt-modal-cancel").textContent = "Annuler";
-  ov.classList.remove("hidden");
-  setTimeout(() => { try { inp.focus(); } catch (e) {} }, 50);
-  ok.onclick = () => __cltCloseModal(inp.value);
-  document.getElementById("clt-modal-cancel").onclick = () => __cltCloseModal(null);
-  inp.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); __cltCloseModal(inp.value); } };
-  return new Promise((res) => { __cltModalResolve = res; });
-}
+// isValidCiPhone(), la modale cltConfirm()/cltPrompt() et son échafaudage
+// (__cltEnsureModal, __cltCloseModal, __cltModalResolve, __cltCancelValue)
+// → déplacés dans clt-common.js (chargé avant ce fichier).
 
 // ---------- Copier le lien de suivi public d'un colis ----------
 // Délégation d'événement globale : fonctionne pour n'importe quel bouton ".btn-copy-tracking"
@@ -771,13 +669,7 @@ function renderGroupedColisHTML(groups, itemRenderFn, groupActionFn) {
   }).join("");
 }
 
-// Formate un montant en FCFA (retourne "" si vide/invalide)
-function formatMontant(n) {
-  if (n === null || n === undefined || n === "") return "";
-  const num = Number(n);
-  if (isNaN(num)) return "";
-  return num.toLocaleString("fr-FR") + " FCFA";
-}
+// formatMontant() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 // ---------- Montant d'un colis : article + livraison ----------
 // Depuis l'ajout de la distinction "montant article" / "montant livraison", le montant total
@@ -828,16 +720,7 @@ function paiementBadgeHTML(c) {
 // chaque utilisateur puisse mettre sa propre photo, affichée ensuite à côté de son nom partout
 // dans l'application (barre du haut, section "Mon compte", liste des colis...).
 
-// Initiales à partir d'un nom (ex : "Yapo Apo Josatta" -> "YJ"), utilisées comme avatar par
-// défaut tant que la personne n'a pas encore ajouté de photo.
-function getInitials(name) {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "?";
-  const first = parts[0][0] || "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase();
-}
+// getInitials() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 // Retourne le HTML d'un avatar : la photo de la personne si elle en a ajouté une, sinon un
 // rond avec ses initiales. `size` est le diamètre en pixels.
@@ -895,27 +778,7 @@ function pickedGroupFile(group) {
   return (cam && cam.files && cam.files[0]) || (lib && lib.files && lib.files[0]) || null;
 }
 
-function wireImagePicker(inputIds, onFile) {
-  const ids = Array.isArray(inputIds) ? inputIds : [inputIds];
-  ids.forEach((id) => {
-    const input = document.getElementById(id);
-    if (!input) return;
-    input.addEventListener("change", async () => {
-      const file = input.files && input.files[0];
-      input.value = ""; // réinitialisé immédiatement : permet de rechoisir le même fichier ensuite
-      if (!file) return;
-      if (!file.type || !file.type.startsWith("image/")) {
-        alert("Veuillez choisir un fichier image.");
-        return;
-      }
-      if (file.size > 8 * 1024 * 1024) {
-        alert("L'image est trop volumineuse (8 Mo maximum).");
-        return;
-      }
-      await onFile(file);
-    });
-  });
-}
+// wireImagePicker() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 // Met en place le bloc "photo de profil" d'une page : affiche l'avatar courant (dans la section
 // "Mon compte" et dans la barre du haut), puis, au choix d'un fichier (caméra ou bibliothèque),
