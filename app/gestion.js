@@ -20,6 +20,10 @@ let GRILLE = {};                // { '1A': 75000, ... }
 let SALARIES = [];              // salariés actifs + inactifs
 let PHOTO_URLS = {};            // { salarie_id: urlSignée } pour l'affichage des photos (bucket privé)
 const RH_BUCKET = 'rh-personnel';
+const COMPTA_BUCKET = 'compta-entreprise';
+let DOCS_PERSONNEL = [];        // documents du personnel (CNI, contrats…) — bucket privé rh-personnel
+let DOCS_ENTREPRISE = [];       // documents de l'entreprise (RCCM, DFE…) — bucket privé compta-entreprise
+const DOC_MAX_OCTETS = 20 * 1024 * 1024; // 20 Mo par fichier
 let CHAUFFEURS = [];            // référentiel compta
 let LIVREURS = [];              // profils livreurs (pour lier un salarié)
 let ACCES = { isAdmin:false, canPaie:false, canCompta:false }; // capacités de l'utilisateur connecté
@@ -93,6 +97,9 @@ function switchSub(group, sub){
   // Rafraîchit les vues comptables issues des colis à l'ouverture de l'onglet.
   if (group === 'compta' && sub === 'caisse')  loadCaisseLivreurs();
   if (group === 'compta' && sub === 'clients') loadPointClients();
+  // Coffres à documents : (re)chargés à l'ouverture de l'onglet.
+  if (group === 'paie'   && sub === 'dossiers')  { fillDocSalarieSelect(); loadDocuments('personnel').then(renderDocsPersonnel); }
+  if (group === 'compta' && sub === 'documents') { loadDocuments('entreprise').then(renderDocsEntreprise); }
 }
 
 /* -------------------- Sélecteurs de période -------------------- */
@@ -251,6 +258,171 @@ async function loadChauffeurs(){
 async function loadLivreurs(){
   const { data } = await supabaseClient.from('profiles').select('id, full_name').eq('role','livreur').order('full_name',{ascending:true});
   LIVREURS = data || [];
+}
+
+/* ============================================================================
+ * COFFRES À DOCUMENTS — personnel (RH) & entreprise (Comptabilité)
+ * Fichiers stockés dans des buckets PRIVÉS ; consultation via URL signée.
+ *   personnel  → bucket rh-personnel, préfixe « dossiers/ »
+ *   entreprise → bucket compta-entreprise
+ * ==========================================================================*/
+function docBucket(domaine){ return domaine === 'entreprise' ? COMPTA_BUCKET : RH_BUCKET; }
+
+// Octets -> libellé lisible (Ko / Mo)
+function fmtTaille(o){
+  o = n(o); if (!o) return '—';
+  if (o < 1024) return o + ' o';
+  if (o < 1024*1024) return (o/1024).toFixed(0) + ' Ko';
+  return (o/1024/1024).toFixed(1) + ' Mo';
+}
+// Nettoie un nom de fichier pour un chemin de stockage sûr.
+function slugFichier(nom){
+  return String(nom||'fichier').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-zA-Z0-9._-]/g,'_').replace(/_+/g,'_').slice(0,80) || 'fichier';
+}
+
+async function loadDocuments(domaine){
+  const { data, error } = await supabaseClient.from('gestion_documents')
+    .select('*').eq('domaine', domaine).order('created_at',{ascending:false});
+  if (error){ console.error('docs', error); return; }
+  if (domaine === 'entreprise') DOCS_ENTREPRISE = data || [];
+  else                          DOCS_PERSONNEL  = data || [];
+}
+
+// Remplit le sélecteur de salarié dans le formulaire des dossiers du personnel.
+function fillDocSalarieSelect(){
+  const sel = document.getElementById('doc-p-salarie'); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Non lié / général —</option>';
+  SALARIES.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.id;
+    o.textContent = `${s.matricule || ''} — ${[s.nom,s.prenom].filter(Boolean).join(' ') || '—'}`;
+    sel.appendChild(o);
+  });
+  sel.value = cur;
+}
+
+function renderDocsPersonnel(){
+  const wrap = document.getElementById('doc-p-table'); if (!wrap) return;
+  const salById = {}; SALARIES.forEach(s => salById[s.id] = s);
+  if (!DOCS_PERSONNEL.length){
+    wrap.innerHTML = '<p style="padding:14px;color:var(--muted);">Aucun document enregistré pour le moment.</p>';
+    return;
+  }
+  let h = '<table class="g-table"><thead><tr><th>Salarié</th><th>Type</th><th>Document</th><th>Taille</th><th>Ajouté le</th><th></th></tr></thead><tbody>';
+  DOCS_PERSONNEL.forEach(d => {
+    const s = d.salarie_id ? salById[d.salarie_id] : null;
+    const qui = s ? `${escapeHTML(s.matricule||'')} — ${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' '))}` : '<span style="color:var(--muted);">Général</span>';
+    h += `<tr>
+      <td style="text-align:left;">${qui}</td>
+      <td style="text-align:left;">${escapeHTML(d.categorie||'—')}</td>
+      <td style="text-align:left;"><a href="#" onclick="openDocument('${d.id}','personnel');return false;" style="color:var(--clt-teal-dark);font-weight:600;">📎 ${escapeHTML(d.titre||'Document')}</a></td>
+      <td>${fmtTaille(d.taille)}</td>
+      <td>${escapeHTML(new Date(d.created_at).toLocaleDateString('fr-FR'))}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" onclick="openDocument('${d.id}','personnel')" title="Consulter / télécharger">⬇️</button>
+        <button class="icon-btn danger" onclick="deleteDocument('${d.id}','personnel')" title="Supprimer">🗑</button>
+      </div></td></tr>`;
+  });
+  h += '</tbody></table>';
+  wrap.innerHTML = h;
+}
+
+function renderDocsEntreprise(){
+  const wrap = document.getElementById('doc-e-table'); if (!wrap) return;
+  if (!DOCS_ENTREPRISE.length){
+    wrap.innerHTML = '<p style="padding:14px;color:var(--muted);">Aucun document enregistré pour le moment.</p>';
+    return;
+  }
+  let h = '<table class="g-table"><thead><tr><th>Type</th><th>Document</th><th>Taille</th><th>Ajouté le</th><th></th></tr></thead><tbody>';
+  DOCS_ENTREPRISE.forEach(d => {
+    h += `<tr>
+      <td style="text-align:left;">${escapeHTML(d.categorie||'—')}</td>
+      <td style="text-align:left;"><a href="#" onclick="openDocument('${d.id}','entreprise');return false;" style="color:var(--clt-teal-dark);font-weight:600;">📎 ${escapeHTML(d.titre||'Document')}</a></td>
+      <td>${fmtTaille(d.taille)}</td>
+      <td>${escapeHTML(new Date(d.created_at).toLocaleDateString('fr-FR'))}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" onclick="openDocument('${d.id}','entreprise')" title="Consulter / télécharger">⬇️</button>
+        <button class="icon-btn danger" onclick="deleteDocument('${d.id}','entreprise')" title="Supprimer">🗑</button>
+      </div></td></tr>`;
+  });
+  h += '</tbody></table>';
+  wrap.innerHTML = h;
+}
+
+async function uploadDocument(domaine){
+  const pre = domaine === 'entreprise' ? 'doc-e' : 'doc-p';
+  const fileInput = document.getElementById(pre + '-file');
+  const file = fileInput && fileInput.files && fileInput.files[0];
+  if (!file){ showToast('Choisissez un fichier à ajouter.', true); return; }
+  if (file.size > DOC_MAX_OCTETS){ showToast('Fichier trop volumineux (max 20 Mo).', true); return; }
+
+  const type  = document.getElementById(pre + '-type').value || 'Autre';
+  const titre = (document.getElementById(pre + '-titre').value || '').trim() || type;
+  const btn = document.getElementById(pre + '-add-btn');
+  if (btn){ btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
+
+  try {
+    const bucket = docBucket(domaine);
+    const safe = slugFichier(file.name);
+    let chemin;
+    if (domaine === 'personnel'){
+      const salId = document.getElementById('doc-p-salarie').value || '';
+      const s = salId ? SALARIES.find(x => x.id === salId) : null;
+      const dossier = s ? (s.matricule || 'general') : 'general';
+      chemin = `dossiers/${dossier}/${Date.now()}-${safe}`;
+    } else {
+      chemin = `entreprise/${Date.now()}-${safe}`;
+    }
+    const { error: upErr } = await supabaseClient.storage.from(bucket)
+      .upload(chemin, file, { contentType: file.type, upsert: false });
+    if (upErr) throw upErr;
+
+    const rec = {
+      domaine, categorie: type, titre, chemin,
+      taille: file.size, mime: file.type || null,
+      salarie_id: domaine === 'personnel' ? (document.getElementById('doc-p-salarie').value || null) : null
+    };
+    const { error: insErr } = await supabaseClient.from('gestion_documents').insert(rec);
+    if (insErr){ await supabaseClient.storage.from(bucket).remove([chemin]); throw insErr; }
+
+    fileInput.value = '';
+    document.getElementById(pre + '-titre').value = '';
+    await loadDocuments(domaine);
+    if (domaine === 'entreprise') renderDocsEntreprise(); else renderDocsPersonnel();
+    showToast('Document ajouté');
+  } catch(e){
+    console.error('upload doc', e);
+    showToast('Échec de l\'ajout du document.', true);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = '+ Ajouter'; }
+  }
+}
+
+async function openDocument(id, domaine){
+  const list = domaine === 'entreprise' ? DOCS_ENTREPRISE : DOCS_PERSONNEL;
+  const d = list.find(x => x.id === id); if (!d) return;
+  try {
+    const { data, error } = await supabaseClient.storage.from(docBucket(domaine))
+      .createSignedUrl(d.chemin, 120);
+    if (error || !data || !data.signedUrl) throw (error || new Error('url'));
+    window.open(data.signedUrl, '_blank', 'noopener');
+  } catch(e){ console.error('open doc', e); showToast('Impossible d\'ouvrir le document.', true); }
+}
+
+async function deleteDocument(id, domaine){
+  const list = domaine === 'entreprise' ? DOCS_ENTREPRISE : DOCS_PERSONNEL;
+  const d = list.find(x => x.id === id); if (!d) return;
+  if (!confirm(`Supprimer définitivement « ${d.titre} » ? Cette action est irréversible.`)) return;
+  try {
+    await supabaseClient.storage.from(docBucket(domaine)).remove([d.chemin]);
+    const { error } = await supabaseClient.from('gestion_documents').delete().eq('id', id);
+    if (error) throw error;
+    await loadDocuments(domaine);
+    if (domaine === 'entreprise') renderDocsEntreprise(); else renderDocsPersonnel();
+    showToast('Document supprimé');
+  } catch(e){ console.error('del doc', e); showToast('Échec de la suppression.', true); }
 }
 
 /* ============================================================================

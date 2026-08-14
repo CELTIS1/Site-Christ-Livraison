@@ -177,6 +177,7 @@
       <div class="subtab" data-sub="chauffeurs" onclick="switchSub('compta','chauffeurs')">Chauffeurs</div>
       <div class="subtab" data-sub="caisse" onclick="switchSub('compta','caisse')">Caisse livreurs</div>
       <div class="subtab" data-sub="clients" onclick="switchSub('compta','clients')">Point clients</div>
+      <div class="subtab" data-sub="documents" onclick="switchSub('compta','documents')">📁 Documents entreprise</div>
     </div>
 
     <div class="section active" id="compta-recettes">
@@ -256,12 +257,42 @@
       <div class="hint">Point <strong>jour par jour</strong>, par cliente (vendeuse) : argent de l'article et argent de la livraison séparés. L'argent est compté <strong>dès qu'il est marqué payé</strong> (même si le colis n'est pas encore livré). Cliquez sur un montant pour le copier. Lecture seule.</div>
       <div class="card"><div class="g-table-wrap" id="clients-table"></div></div>
     </div>
+
+    <!-- Coffre à documents de l'entreprise (RCCM, DFE, statuts, patente…) -->
+    <div class="section" id="compta-documents">
+      <div class="card">
+        <h2>Documents de l'entreprise</h2>
+        <div class="hint">Coffre-fort sécurisé pour les documents officiels de la société : registre de commerce (RCCM), déclaration fiscale d'existence, statuts, patente, assurances, contrats… Fichiers PDF ou images. Conservation privée (accès Comptabilité uniquement).</div>
+        <div class="inline-form">
+          <div class="field" style="min-width:210px;"><label>Type de document</label>
+            <select id="doc-e-type">
+              <option value="Registre de commerce (RCCM)">Registre de commerce (RCCM)</option>
+              <option value="Déclaration fiscale d'existence (DFE)">Déclaration fiscale d'existence (DFE)</option>
+              <option value="Statuts de la société">Statuts de la société</option>
+              <option value="Attestation de régularité fiscale">Attestation de régularité fiscale</option>
+              <option value="Attestation CNPS">Attestation CNPS</option>
+              <option value="Patente">Patente</option>
+              <option value="Assurance">Assurance</option>
+              <option value="Contrat / Bail">Contrat / Bail</option>
+              <option value="Facture">Facture</option>
+              <option value="Relevé bancaire">Relevé bancaire</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+          <div class="field" style="flex:1;min-width:180px;"><label>Titre (facultatif)</label><input type="text" id="doc-e-titre" placeholder="Ex. RCCM 2026"></div>
+          <div class="field"><label>Fichier</label><input type="file" id="doc-e-file" accept="image/*,application/pdf"></div>
+          <button class="btn btn-sm" id="doc-e-add-btn" onclick="uploadDocument('entreprise')">+ Ajouter</button>
+        </div>
+        <div class="g-table-wrap" id="doc-e-table" style="margin-top:14px;"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ============ PAIE ============ -->
   <div class="section" id="sec-paie">
     <div class="subtabs">
       <div class="subtab active" data-sub="salaries" onclick="switchSub('paie','salaries')">Salariés</div>
+      <div class="subtab" data-sub="dossiers" onclick="switchSub('paie','dossiers')">📁 Dossiers</div>
       <div class="subtab" data-sub="saisie" onclick="switchSub('paie','saisie')">Saisie mensuelle</div>
       <div class="subtab" data-sub="bulletins" onclick="switchSub('paie','bulletins')">Bulletins</div>
       <div class="subtab" id="sub-paie-parametres" data-sub="parametres" onclick="switchSub('paie','parametres')">Paramètres</div>
@@ -272,6 +303,38 @@
         <h2>Salariés</h2>
         <div class="g-table-wrap" id="sal-table"></div>
         <div style="margin-top:14px;"><button class="btn btn-sm" onclick="openSalarie()">+ Nouveau salarié</button></div>
+      </div>
+    </div>
+
+    <!-- Coffre à documents du personnel (CNI, contrats, diplômes…) -->
+    <div class="section" id="paie-dossiers">
+      <div class="card">
+        <h2>Dossiers du personnel</h2>
+        <div class="hint">Coffre-fort sécurisé pour les pièces des salariés et livreurs : CNI, contrats, diplômes, attestations… Fichiers PDF ou images. Conservation privée (accès RH uniquement), consultables à tout moment.</div>
+        <div class="inline-form">
+          <div class="field" style="min-width:200px;"><label>Salarié concerné</label>
+            <select id="doc-p-salarie"><option value="">— Non lié / général —</option></select>
+          </div>
+          <div class="field" style="min-width:190px;"><label>Type de pièce</label>
+            <select id="doc-p-type">
+              <option value="Carte nationale d'identité">Carte nationale d'identité</option>
+              <option value="Passeport">Passeport</option>
+              <option value="Contrat de travail">Contrat de travail</option>
+              <option value="Diplôme / Certificat">Diplôme / Certificat</option>
+              <option value="Attestation CNPS">Attestation CNPS</option>
+              <option value="Casier judiciaire">Casier judiciaire</option>
+              <option value="Certificat médical">Certificat médical</option>
+              <option value="Photo d'identité">Photo d'identité</option>
+              <option value="RIB / Attestation bancaire">RIB / Attestation bancaire</option>
+              <option value="Permis de conduire">Permis de conduire</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+          <div class="field" style="flex:1;min-width:180px;"><label>Titre (facultatif)</label><input type="text" id="doc-p-titre" placeholder="Ex. CNI recto-verso"></div>
+          <div class="field"><label>Fichier</label><input type="file" id="doc-p-file" accept="image/*,application/pdf"></div>
+          <button class="btn btn-sm" id="doc-p-add-btn" onclick="uploadDocument('personnel')">+ Ajouter</button>
+        </div>
+        <div class="g-table-wrap" id="doc-p-table" style="margin-top:14px;"></div>
       </div>
     </div>
 
@@ -392,6 +455,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="config.js?v=20260812m"></script>
-<script src="gestion.js?v=20260814rh1"></script>
+<script src="gestion.js?v=20260814rh2"></script>
 </body>
 </html>
