@@ -817,3 +817,92 @@ input, select, textarea{ font-size:16px !important; }
   .settings-dropdown{min-width:170px;}
   .account-modal{padding:24px 18px;}
 }
+
+/* =====================================================================
+   MODE SOMBRE / MODE CLAIR  (ajouté 2026-08-14)
+   Le thème est piloté par l'attribut data-theme sur <html> :
+     - <html data-theme="dark">  -> mode sombre
+     - (aucun attribut / "light") -> mode clair (par défaut)
+   Le choix est mémorisé (localStorage) et géré par theme.js.
+   Approche : on redéfinit uniquement les VARIABLES de surface/texte,
+   les composants existants suivent automatiquement. Quelques réglages
+   ciblés couvrent les rares couleurs fixes (#1E2A38, champs, listes…).
+   La marque (bandeau navy, boutons orange) est conservée.
+   ===================================================================== */
+:root{ color-scheme:light; }
+html[data-theme="dark"]{ color-scheme:dark; }
+
+html[data-theme="dark"]{
+  /* Accents lisibles sur fond sombre */
+  --navy:#8FB8EC;            /* utilisé comme couleur de texte/accent */
+  --navy-dark:#0E2136;
+  --muted:#9DB0C4;
+  /* Surfaces & bordures */
+  --white:#1B2635;           /* cartes, champs, encarts */
+  --grey-bg:#0F1824;         /* fond de page */
+  --border:#2A3849;
+  --border-strong:#3A4B60;
+  --orange-light:#3A2617;    /* halo de focus discret */
+  /* Ombres plus profondes */
+  --shadow-xs:0 1px 2px rgba(0,0,0,.45);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.40), 0 2px 6px rgba(0,0,0,.45);
+  --shadow-md:0 6px 20px rgba(0,0,0,.50);
+  --shadow-lg:0 18px 44px rgba(0,0,0,.60);
+}
+
+/* Fond + texte de base */
+html[data-theme="dark"] body{ background:var(--grey-bg); color:#E6ECF3; }
+
+/* Couleurs de texte fixes -> clair */
+html[data-theme="dark"] .colis-item .info .desc,
+html[data-theme="dark"] .obs-display strong,
+html[data-theme="dark"] .settings-dropdown button,
+html[data-theme="dark"] .actions-dropdown button,
+html[data-theme="dark"] .account-modal-close:hover{ color:#E6ECF3; }
+
+/* Champs de saisie : surface sombre + texte clair */
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] .field input,
+html[data-theme="dark"] .field select,
+html[data-theme="dark"] .field textarea,
+html[data-theme="dark"] .date-filter-input,
+html[data-theme="dark"] .search-input{
+  background:#141D29 !important; color:#E6ECF3;
+}
+html[data-theme="dark"] ::placeholder{ color:#7E8CA0; }
+html[data-theme="dark"] .search-input::placeholder{ color:#7E8CA0; }
+
+/* Options de menus déroulants natifs */
+html[data-theme="dark"] option{ background:#141D29; color:#E6ECF3; }
+
+/* Survols clairs -> survols sombres */
+html[data-theme="dark"] .btn-outline:hover,
+html[data-theme="dark"] .settings-dropdown button:hover,
+html[data-theme="dark"] .actions-dropdown button:hover,
+html[data-theme="dark"] .panel-subtitle.collapsible-header:hover,
+html[data-theme="dark"] .account-modal-close{ background:#243247; }
+
+/* Séparateurs à couleur fixe */
+html[data-theme="dark"] .account-modal-divider{ border-top-color:#2A3849; }
+
+/* ---- Bouton flottant de bascule (injecté par theme.js) ---- */
+.theme-toggle{
+  position:fixed; left:18px; bottom:18px; z-index:1200;
+  width:46px; height:46px; border-radius:50%;
+  border:1px solid rgba(255,255,255,.18);
+  background:var(--grad-navy); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:19px; box-shadow:var(--shadow-md);
+  transition:transform .12s ease, box-shadow .15s ease, background .15s ease;
+}
+.theme-toggle:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lg); }
+.theme-toggle:active{ transform:translateY(0); }
+html[data-theme="dark"] .theme-toggle{
+  background:var(--grad-orange);
+  border-color:rgba(255,255,255,.14);
+}
+@media(max-width:640px){
+  .theme-toggle{ width:42px; height:42px; left:14px; bottom:14px; font-size:17px; }
+}
