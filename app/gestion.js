@@ -44,6 +44,15 @@ let CLOTURES = new Set();       // mois clôturés : clés 'annee-mois' (verroui
 const LC_BUCKET = 'compta-entreprise';
 
 /* -------------------- Utilitaires -------------------- */
+/* Garde-fou anti-faute de frappe sur les montants (ex. un zéro de trop).
+ * Au-delà de ce seuil, on demande une confirmation explicite plutôt que de bloquer,
+ * pour laisser passer une vraie grosse opération tout en évitant les erreurs. */
+const MONTANT_MAX = 100000000; // 100 000 000 FCFA
+/* Renvoie true si l'on peut poursuivre (montant normal, ou montant élevé confirmé). */
+function montantConfirme(montant, contexte){
+  if (!(montant > MONTANT_MAX)) return true;
+  return confirm(`Le montant saisi est très élevé :\n\n${fmtF(montant)}${contexte ? ' (' + contexte + ')' : ''}\n\nVérifiez qu'il n'y a pas d'erreur de frappe (un zéro de trop ?).\n\nConfirmer ce montant ?`);
+}
 function n(v){ const x = parseFloat(v); return isNaN(x) ? 0 : x; }
 function fmt(v){
   const x = Math.round(n(v) * 100) / 100;
@@ -714,12 +723,14 @@ function appliquerVerrouDepenses(verrou, annee, mois){
 async function addDepense(){
   const annee = parseInt(document.getElementById('dep-year').value);
   const mois  = parseInt(document.getElementById('dep-month').value);
-  if (moisCloture(annee, mois)){ showToast(`${MOIS_FR[mois-1]} ${annee} est clôturé : ajout impossible.`, true); return; }
+  await refreshCloturesSet(); // vérification live : évite d'écrire dans un mois clôturé entre-temps
+  if (moisCloture(annee, mois)){ showToast(`${MOIS_FR[mois-1]} ${annee} est clôturé : ajout impossible.`, true); loadDepenses(); return; }
   const libelle = document.getElementById('dep-libelle').value.trim();
   const montant = n(document.getElementById('dep-montant').value);
   const categorie = document.getElementById('dep-cat').value || null;
   const date = document.getElementById('dep-date').value || null;
   if (!libelle || montant<=0){ showToast('Renseignez un libellé et un montant.', true); return; }
+  if (!montantConfirme(montant, 'dépense')) return;
   const justifInput = document.getElementById('dep-justif');
   const justifFile = justifInput && justifInput.files && justifInput.files[0];
   if (justifFile && justifFile.size > DOC_MAX_OCTETS){ showToast('Justificatif trop volumineux (max 20 Mo).', true); return; }
@@ -764,13 +775,18 @@ async function openJustifDepense(id){
   } catch(e){ console.error('justif', e); showToast('Impossible d\'ouvrir le justificatif.', true); }
 }
 async function delDepense(id){
-  if (!confirm('Supprimer cette dépense ?')) return;
+  // Récupère le détail AVANT de confirmer : message explicite + nettoyage du justificatif.
+  let rows = null;
+  try { const r = await supabaseClient.from('gestion_depenses').select('annee,mois,date_depense,libelle,montant,justif_chemin').eq('id',id).maybeSingle(); rows = r.data; }
+  catch(e){ console.error('del dep lookup', e); }
+  if (!rows){ showToast('Dépense introuvable (déjà supprimée ?).', true); loadDepenses(); return; }
+  await refreshCloturesSet(); // vérification live du verrou de clôture
+  if (moisCloture(rows.annee, rows.mois)){ showToast('Mois clôturé : suppression impossible.', true); loadDepenses(); return; }
+  const detail = `${rows.libelle || '(sans libellé)'} — ${fmtF(rows.montant)}${rows.date_depense ? ' du ' + rows.date_depense : ''}`;
+  if (!confirm(`Supprimer définitivement cette dépense ?\n\n${detail}\n\nCette action est irréversible.`)) return;
   try {
-    // Récupère le chemin du justificatif pour le supprimer aussi du stockage.
-    const { data: rows } = await supabaseClient.from('gestion_depenses').select('annee,mois,justif_chemin').eq('id',id).maybeSingle();
-    if (rows && moisCloture(rows.annee, rows.mois)){ showToast('Mois clôturé : suppression impossible.', true); return; }
     await supabaseClient.from('gestion_depenses').delete().eq('id',id);
-    if (rows && rows.justif_chemin){ try { await supabaseClient.storage.from(COMPTA_BUCKET).remove([rows.justif_chemin]); } catch(e){ /* justificatif : nettoyage best-effort */ } }
+    if (rows.justif_chemin){ try { await supabaseClient.storage.from(COMPTA_BUCKET).remove([rows.justif_chemin]); } catch(e){ /* justificatif : nettoyage best-effort */ } }
     loadDepenses(); showToast('Dépense supprimée');
   }
   catch(e){ showToast('Erreur suppression', true); console.error(e); }
@@ -1656,7 +1672,7 @@ async function loadCaisseLivreurs(){
   const fin   = document.getElementById('caisse-fin')?.value || null;
   wrap.innerHTML = '<div class="hint">Chargement…</div>';
   const { data, error } = await supabaseClient.rpc('compta_caisse_livreurs_jour', { p_debut: debut, p_fin: fin });
-  if (error){ wrap.innerHTML = `<div class="hint" style="color:#b00;">Erreur : ${escapeHTML(error.message)}</div>`; return; }
+  if (error){ console.error('compta rpc', error); wrap.innerHTML = `<div class="hint" style="color:#b00;" title="${escapeHTML(error.message)}">⚠️ Impossible de charger ces données pour le moment. Réessayez dans un instant.</div>`; return; }
   const rows = data || [];
   if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucun colis livré sur la période.</div>'; return; }
 
@@ -1704,7 +1720,7 @@ async function loadPointClients(){
   const fin   = document.getElementById('clients-fin')?.value || null;
   wrap.innerHTML = '<div class="hint">Chargement…</div>';
   const { data, error } = await supabaseClient.rpc('compta_point_clients_jour', { p_debut: debut, p_fin: fin });
-  if (error){ wrap.innerHTML = `<div class="hint" style="color:#b00;">Erreur : ${escapeHTML(error.message)}</div>`; return; }
+  if (error){ console.error('compta rpc', error); wrap.innerHTML = `<div class="hint" style="color:#b00;" title="${escapeHTML(error.message)}">⚠️ Impossible de charger ces données pour le moment. Réessayez dans un instant.</div>`; return; }
   const rows = data || [];
   if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucun colis livré sur la période.</div>'; return; }
 
@@ -1914,6 +1930,7 @@ async function addMouvementCaisse(){
   const montant = n(document.getElementById('lc-montant').value);
   if (!date){ showToast('Renseignez la date du mouvement.', true); return; }
   if (!libelle || montant<=0){ showToast('Renseignez un libellé et un montant.', true); return; }
+  if (!montantConfirme(montant, sens === 'sortie' ? 'sortie de caisse' : 'entrée de caisse')) return;
   const btn = document.getElementById('lc-add-btn'); if (btn) btn.disabled = true;
   try {
     const { error } = await supabaseClient.from('gestion_caisse').insert({ date_mouvement:date, sens, libelle, mode, montant });
@@ -1932,7 +1949,14 @@ async function addMouvementCaisse(){
 }
 
 async function delMouvementCaisse(id){
-  if (!confirm('Supprimer ce mouvement de caisse ?')) return;
+  // Détail AVANT confirmation, pour éviter une suppression par réflexe.
+  let mv = null;
+  try { const r = await supabaseClient.from('gestion_caisse').select('date_mouvement,sens,libelle,montant').eq('id',id).maybeSingle(); mv = r.data; }
+  catch(e){ console.error('del caisse lookup', e); }
+  if (!mv){ showToast('Mouvement introuvable (déjà supprimé ?).', true); loadLivreCaisse(); return; }
+  const sensTxt = mv.sens === 'sortie' ? 'Sortie' : 'Entrée';
+  const detail = `${sensTxt} — ${mv.libelle || '(sans libellé)'} — ${fmtF(mv.montant)}${mv.date_mouvement ? ' du ' + mv.date_mouvement : ''}`;
+  if (!confirm(`Supprimer définitivement ce mouvement de caisse ?\n\n${detail}\n\nCette action est irréversible.`)) return;
   try { const { error } = await supabaseClient.from('gestion_caisse').delete().eq('id',id); if (error) throw error; loadLivreCaisse(); showToast('Mouvement supprimé'); }
   catch(e){ showToast('Erreur suppression', true); console.error(e); }
 }
