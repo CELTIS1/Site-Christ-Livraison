@@ -97,6 +97,9 @@ function switchSub(group, sub){
   // Rafraîchit les vues comptables issues des colis à l'ouverture de l'onglet.
   if (group === 'compta' && sub === 'caisse')  loadCaisseLivreurs();
   if (group === 'compta' && sub === 'clients') loadPointClients();
+  // États annuels de paie / états financiers : chargés à la première ouverture.
+  if (group === 'paie'   && sub === 'etats' && !ETATS_ANNEE) chargerEtatsAnnuels();
+  if (group === 'compta' && sub === 'etats' && !ETATS_FIN)   chargerEtatsFinanciers();
   // Coffres à documents : (re)chargés à l'ouverture de l'onglet.
   if (group === 'paie'   && sub === 'dossiers')  { fillDocSalarieSelect(); loadDocuments('personnel').then(renderDocsPersonnel); }
   if (group === 'compta' && sub === 'documents') { loadDocuments('entreprise').then(renderDocsEntreprise); }
@@ -970,6 +973,401 @@ async function exportRecapPaie(){
 }
 
 /* ============================================================================
+ * PAIE — ÉTATS ANNUELS (fiche individuelle + synthèse du personnel)
+ * ----------------------------------------------------------------------------
+ * Cumul de l'année reconstitué à partir des saisies mensuelles : pour chaque
+ * salarié actif et chaque mois RÉELLEMENT saisi, on recalcule le bulletin avec
+ * le même moteur que les bulletins mensuels. Les mois sans saisie ne sont pas
+ * comptés (colonne « Mois payés »), pour éviter de gonfler artificiellement les
+ * cumuls (ex. un salarié embauché en cours d'année).
+ * ==========================================================================*/
+let ETATS_ANNEE = null; // { annee, byEmp:{salId:[b|null ×12]}, salaries:[] }
+
+/* Rubriques de la fiche individuelle (lignes) — reprend le modèle « fiche
+ * individuelle » : gains, retenues salariales, net, puis coût employeur. */
+const FICHE_RUBRIQUES = [
+  { sec:'GAINS' },
+  { lbl:'Salaire catégoriel',        get:b=>b.gains.salaireCat },
+  { lbl:'Sursalaire',                get:b=>b.gains.sursalaire },
+  { lbl:"Prime d'ancienneté",        get:b=>b.gains.primeAnc },
+  { lbl:'Astreinte',                 get:b=>b.gains.astreinte },
+  { lbl:'Congé payé',                get:b=>b.gains.congePaye },
+  { lbl:'Gratification',             get:b=>b.gains.gratification },
+  { lbl:'Total brut imposable',      get:b=>b.baseImposable, tot:true },
+  { sec:'RETENUES SALARIALES' },
+  { lbl:'ITS (impôt sur salaires)',  get:b=>b.retenues.its },
+  { lbl:'CMU (part salariale)',      get:b=>b.retenues.cmuSal },
+  { lbl:'CNPS (6,3 %)',              get:b=>b.retenues.cnpsSal },
+  { lbl:'Total retenues salariales', get:b=>b.totalCotisSal, tot:true },
+  { sec:'NET' },
+  { lbl:'Prime de transport',        get:b=>b.primeTransport },
+  { lbl:'Retenue divers',            get:b=>b.retenueDivers },
+  { lbl:'NET À PAYER',               get:b=>b.net, tot:true },
+  { sec:'EMPLOYEUR' },
+  { lbl:'Charges patronales',        get:b=>b.totalCotisPat },
+  { lbl:'Coût total employeur',      get:b=>b.net + b.totalCotisSal + b.totalCotisPat, tot:true },
+];
+
+async function chargerEtatsAnnuels(){
+  const sel = document.getElementById('etat-year'); if (!sel) return;
+  const annee = parseInt(sel.value);
+  const actifs = SALARIES.filter(s=>s.actif!==false);
+  const periodes = Array.from({length:12},(_,i)=>periodeStr(annee,i+1));
+  let maps;
+  try {
+    maps = await Promise.all(periodes.map(p=>loadSaisieMap(p)));
+  } catch(e){ showToast('Erreur chargement des états annuels', true); console.error(e); return; }
+  const byEmp = {};
+  actifs.forEach(s => {
+    byEmp[s.id] = maps.map((map,i) => {
+      const sai = map[s.id];
+      if (!sai) return null; // mois non saisi → non compté
+      return computeBulletin(s, Object.assign({ periode: periodes[i] }, sai), PARAMS, GRILLE);
+    });
+  });
+  ETATS_ANNEE = { annee, byEmp, salaries: actifs, periodes };
+  document.getElementById('etat-annee-lbl').textContent = annee;
+  fillEtatSalarieSelect();
+  renderEtatSynthese();
+  renderFicheIndividuelle();
+}
+
+/* Cumul annuel d'un salarié sur une fonction d'accès (ignore les mois null). */
+function cumulFiche(bs, getter){
+  return bs.reduce((s,b)=> s + (b ? n(getter(b)) : 0), 0);
+}
+function moisPayes(bs){ return bs.filter(Boolean).length; }
+
+function fillEtatSalarieSelect(){
+  const sel = document.getElementById('etat-salarie'); if (!sel || !ETATS_ANNEE) return;
+  const prev = sel.value;
+  sel.innerHTML = ETATS_ANNEE.salaries.map(s =>
+    `<option value="${s.id}">${escapeHTML(s.matricule)} — ${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</option>`
+  ).join('');
+  if (prev && ETATS_ANNEE.byEmp[prev]) sel.value = prev;
+}
+
+function renderEtatSynthese(){
+  if (!ETATS_ANNEE){ return; }
+  const { byEmp, salaries } = ETATS_ANNEE;
+  let tBrut=0, tCotSal=0, tNet=0, tCotPat=0, tCout=0;
+  const body = salaries.map(s => {
+    const bs = byEmp[s.id] || [];
+    const brut = cumulFiche(bs, b=>b.baseImposable);
+    const cotSal = cumulFiche(bs, b=>b.totalCotisSal);
+    const net = cumulFiche(bs, b=>b.net);
+    const cotPat = cumulFiche(bs, b=>b.totalCotisPat);
+    const cout = net + cotSal + cotPat;
+    tBrut+=brut; tCotSal+=cotSal; tNet+=net; tCotPat+=cotPat; tCout+=cout;
+    return `<tr>
+      <td style="text-align:left;">${escapeHTML(s.matricule)}</td>
+      <td style="text-align:left;">${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</td>
+      <td>${moisPayes(bs)}</td>
+      <td>${fmt(brut)}</td>
+      <td>${fmt(cotSal)}</td>
+      <td><strong>${fmt(net)}</strong></td>
+      <td>${fmt(cotPat)}</td>
+      <td>${fmt(cout)}</td></tr>`;
+  }).join('');
+  const empty = !salaries.length ? '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Aucun salarié actif.</td></tr>' : '';
+
+  document.getElementById('etat-kpis').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Masse brute annuelle</div><div class="kpi-value">${fmtF(tBrut)}</div><div class="kpi-sub">${ETATS_ANNEE.annee}</div></div>
+    <div class="kpi"><div class="kpi-label">Net versé (année)</div><div class="kpi-value">${fmtF(tNet)}</div></div>
+    <div class="kpi"><div class="kpi-label">Charges patronales (année)</div><div class="kpi-value">${fmtF(tCotPat)}</div></div>
+    <div class="kpi"><div class="kpi-label">Coût total employeur (année)</div><div class="kpi-value">${fmtF(tCout)}</div></div>`;
+
+  document.getElementById('etat-synthese').innerHTML = `<table class="g-table"><thead><tr>
+    <th style="text-align:left;">Matricule</th><th style="text-align:left;">Nom</th><th>Mois payés</th>
+    <th>Brut imposable</th><th>Cotis. sal.</th><th>Net versé</th><th>Charges patr.</th><th>Coût total</th></tr></thead>
+    <tbody>${empty||body}</tbody>
+    <tfoot><tr><td colspan="3">TOTAL (${salaries.length})</td><td>${fmt(tBrut)}</td><td>${fmt(tCotSal)}</td><td><strong>${fmt(tNet)}</strong></td><td>${fmt(tCotPat)}</td><td>${fmt(tCout)}</td></tr></tfoot></table>`;
+}
+
+function ficheSalarieCourant(){
+  if (!ETATS_ANNEE) return null;
+  const sel = document.getElementById('etat-salarie');
+  const id = sel && sel.value;
+  const s = ETATS_ANNEE.salaries.find(x=>x.id===id);
+  if (!s) return null;
+  return { s, bs: ETATS_ANNEE.byEmp[s.id] || [] };
+}
+
+function renderFicheIndividuelle(){
+  const cont = document.getElementById('etat-fiche'); if (!cont || !ETATS_ANNEE) return;
+  const f = ficheSalarieCourant();
+  if (!f){ cont.innerHTML = '<div style="color:var(--muted);padding:10px;">Sélectionnez un salarié.</div>'; return; }
+  const { s, bs } = f;
+  // En-tête présence
+  let head = '<th style="text-align:left;">Rubrique</th>';
+  for (let m=1;m<=12;m++) head += `<th>${MOIS_FR[m-1].slice(0,4)}.</th>`;
+  head += '<th>Total</th>';
+
+  const presenceRow = () => {
+    let r = '<tr style="background:var(--clt-teal-soft,#e6f4f2);font-weight:600;"><td style="text-align:left;">Jours de présence</td>';
+    let tot=0;
+    bs.forEach(b => { const v = b ? b.jours : ''; if(b) tot+=b.jours; r += `<td>${v}</td>`; });
+    r += `<td>${tot}</td></tr>`;
+    return r;
+  };
+
+  const rows = FICHE_RUBRIQUES.map(rub => {
+    if (rub.sec){
+      return `<tr><td colspan="14" style="text-align:left;background:#f1f5f9;font-weight:700;letter-spacing:.03em;color:var(--clt-teal-dark);">${escapeHTML(rub.sec)}</td></tr>`;
+    }
+    let cells = '', tot = 0;
+    bs.forEach(b => {
+      if (!b){ cells += '<td></td>'; return; }
+      const v = n(rub.get(b)); tot += v;
+      cells += `<td>${v ? fmt(v) : ''}</td>`;
+    });
+    const style = rub.tot ? ' style="font-weight:700;background:#f8fafc;"' : '';
+    return `<tr${style}><td style="text-align:left;">${escapeHTML(rub.lbl)}</td>${cells}<td style="font-weight:700;">${fmt(tot)}</td></tr>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div style="margin:6px 0 10px;font-size:13px;color:var(--muted);">
+      <strong>${escapeHTML(s.matricule)}</strong> — ${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}
+      · ${escapeHTML(s.emploi||'—')} · Cat. ${escapeHTML(s.categorie||'—')} · ${moisPayes(bs)} mois payés en ${ETATS_ANNEE.annee}
+    </div>
+    <table class="g-table"><thead><tr>${head}</tr></thead>
+    <tbody>${presenceRow()}${rows}</tbody></table>`;
+}
+
+/* --- Exports Excel / PDF des états annuels --- */
+function exportSynthesePaieAnnuelle(){
+  if (!ETATS_ANNEE){ showToast('Générez d\'abord les états.', true); return; }
+  const { byEmp, salaries, annee } = ETATS_ANNEE;
+  const aoa = [['Matricule','Nom','Mois payés','Brut imposable','ITS','CMU','CNPS','Cotis. sal.','Prime transport','Net versé','Charges patr.','Coût total']];
+  let T=[0,0,0,0,0,0,0,0,0];
+  salaries.forEach(s => {
+    const bs = byEmp[s.id]||[];
+    const vals = {
+      brut: cumulFiche(bs,b=>b.baseImposable), its: cumulFiche(bs,b=>b.retenues.its),
+      cmu: cumulFiche(bs,b=>b.retenues.cmuSal), cnps: cumulFiche(bs,b=>b.retenues.cnpsSal),
+      cotSal: cumulFiche(bs,b=>b.totalCotisSal), transp: cumulFiche(bs,b=>b.primeTransport),
+      net: cumulFiche(bs,b=>b.net), cotPat: cumulFiche(bs,b=>b.totalCotisPat),
+    };
+    const cout = vals.net + vals.cotSal + vals.cotPat;
+    aoa.push([s.matricule, [s.nom,s.prenom].filter(Boolean).join(' '), moisPayes(bs),
+      Math.round(vals.brut), Math.round(vals.its), Math.round(vals.cmu), Math.round(vals.cnps),
+      Math.round(vals.cotSal), Math.round(vals.transp), Math.round(vals.net), Math.round(vals.cotPat), Math.round(cout)]);
+    T=[T[0]+vals.brut,T[1]+vals.its,T[2]+vals.cmu,T[3]+vals.cnps,T[4]+vals.cotSal,T[5]+vals.transp,T[6]+vals.net,T[7]+vals.cotPat,T[8]+cout];
+  });
+  aoa.push(['TOTAL','','', Math.round(T[0]),Math.round(T[1]),Math.round(T[2]),Math.round(T[3]),Math.round(T[4]),Math.round(T[5]),Math.round(T[6]),Math.round(T[7]),Math.round(T[8])]);
+  const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `Synthèse ${annee}`);
+  XLSX.writeFile(wb, `Synthese_Paie_${annee}.xlsx`);
+}
+
+function exportFicheIndividuelle(){
+  const f = ficheSalarieCourant();
+  if (!f){ showToast('Sélectionnez un salarié.', true); return; }
+  const { s, bs } = f; const annee = ETATS_ANNEE.annee;
+  const headMois = MOIS_FR.map(m=>m); // en-têtes mensuels
+  const aoa = [['Rubrique', ...headMois, 'Total']];
+  // Présence
+  const presTot = bs.reduce((t,b)=> t + (b?b.jours:0), 0);
+  aoa.push(['Jours de présence', ...bs.map(b=>b?b.jours:''), presTot]);
+  FICHE_RUBRIQUES.forEach(rub => {
+    if (rub.sec){ aoa.push([rub.sec]); return; }
+    let tot=0; const cells = bs.map(b=>{ if(!b) return ''; const v=n(rub.get(b)); tot+=v; return Math.round(v); });
+    aoa.push([rub.lbl, ...cells, Math.round(tot)]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Fiche');
+  const nomFic = (s.matricule||'salarie').replace(/[^\w-]+/g,'_');
+  XLSX.writeFile(wb, `Fiche_${nomFic}_${annee}.xlsx`);
+}
+
+function pdfFicheIndividuelle(){
+  const f = ficheSalarieCourant();
+  if (!f){ showToast('Sélectionnez un salarié.', true); return; }
+  const { s, bs } = f; const annee = ETATS_ANNEE.annee;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4', orientation:'landscape' });
+  const teal = [15,118,110];
+  doc.setFillColor(...teal); doc.rect(0,0,297,20,'F');
+  doc.setTextColor(255); doc.setFont('helvetica','bold'); doc.setFontSize(14);
+  doc.text('FICHE INDIVIDUELLE DE PAIE', 148, 9, { align:'center' });
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text(`${PARAMS.societe||''} — Exercice ${annee}`, 148, 15, { align:'center' });
+  doc.setTextColor(30); doc.setFontSize(9);
+  doc.text(`${s.matricule} — ${[s.nom,s.prenom].filter(Boolean).join(' ')||'—'}  ·  ${s.emploi||'—'}  ·  Cat. ${s.categorie||'—'}  ·  ${moisPayes(bs)} mois payés`, 12, 26);
+  const head = [['Rubrique', ...MOIS_FR.map(m=>m.slice(0,3)), 'Total']];
+  const body = [];
+  const presTot = bs.reduce((t,b)=> t + (b?b.jours:0), 0);
+  body.push([{content:'Jours de présence',styles:{fontStyle:'bold'}}, ...bs.map(b=>b?String(b.jours):''), {content:String(presTot),styles:{fontStyle:'bold'}}]);
+  FICHE_RUBRIQUES.forEach(rub => {
+    if (rub.sec){ body.push([{content:rub.sec, colSpan:14, styles:{fontStyle:'bold', fillColor:[241,245,249], textColor:teal}}]); return; }
+    let tot=0; const cells = bs.map(b=>{ if(!b) return ''; const v=n(rub.get(b)); tot+=v; return v?fmt(v):''; });
+    const st = rub.tot ? { fontStyle:'bold', fillColor:[248,250,252] } : {};
+    body.push([{content:rub.lbl,styles:Object.assign({halign:'left'},st)}, ...cells.map(c=>({content:c,styles:st})), {content:fmt(tot),styles:Object.assign({fontStyle:'bold'},st)}]);
+  });
+  doc.autoTable({
+    startY: 30, head, body, theme:'grid',
+    headStyles:{ fillColor: teal, halign:'right', fontSize:7 },
+    styles:{ fontSize:7, cellPadding:1.2, halign:'right' },
+    columnStyles:{ 0:{halign:'left', cellWidth:38} },
+  });
+  const nomFic = (s.matricule||'salarie').replace(/[^\w-]+/g,'_');
+  doc.save(`Fiche_${nomFic}_${annee}.pdf`);
+}
+
+/* ============================================================================
+ * COMPTABILITÉ — ÉTATS FINANCIERS (compte de résultat + bilan simplifié)
+ * ----------------------------------------------------------------------------
+ * Reconstruit automatiquement à partir des recettes (produits), des dépenses
+ * (charges d'exploitation) et de la paie (charges de personnel = coût total
+ * employeur). Vue mensuelle et annuelle. Le bilan reste simplifié (trésorerie
+ * générée) : immobilisations et dettes/créances doivent être ajoutées à part.
+ * ==========================================================================*/
+let ETATS_FIN = null; // { annee, recettes:[12], depenses:[12], depParCat:{}, personnel:[12] }
+
+async function chargerEtatsFinanciers(){
+  const sel = document.getElementById('fin-year'); if (!sel) return;
+  const annee = parseInt(sel.value);
+  const recettes = new Array(12).fill(0);
+  const depenses = new Array(12).fill(0);
+  const personnel = new Array(12).fill(0);
+  const depParCat = {}; // { categorie: [12] }
+  try {
+    // Produits : recettes de l'année
+    const debut = `${annee}-01-01`, fin = `${annee+1}-01-01`;
+    const { data: recs } = await supabaseClient.from('gestion_recettes')
+      .select('date_recette,montant').gte('date_recette',debut).lt('date_recette',fin);
+    (recs||[]).forEach(r => { const m = new Date(r.date_recette+'T00:00:00').getMonth(); recettes[m] += n(r.montant); });
+
+    // Charges d'exploitation : dépenses de l'année (par mois + par catégorie)
+    const { data: deps } = await supabaseClient.from('gestion_depenses')
+      .select('mois,categorie,montant').eq('annee',annee);
+    (deps||[]).forEach(d => {
+      const m = (parseInt(d.mois)||1) - 1; const v = n(d.montant);
+      depenses[m] += v;
+      const cat = d.categorie || 'Autres';
+      if (!depParCat[cat]) depParCat[cat] = new Array(12).fill(0);
+      depParCat[cat][m] += v;
+    });
+
+    // Charges de personnel : coût total employeur, mois par mois
+    const actifs = SALARIES.filter(s=>s.actif!==false);
+    if (actifs.length){
+      const periodes = Array.from({length:12},(_,i)=>periodeStr(annee,i+1));
+      const maps = await Promise.all(periodes.map(p=>loadSaisieMap(p)));
+      maps.forEach((map,i) => {
+        let cout = 0;
+        actifs.forEach(s => {
+          const sai = map[s.id]; if (!sai) return;
+          const b = computeBulletin(s, Object.assign({ periode: periodes[i] }, sai), PARAMS, GRILLE);
+          cout += b.net + b.totalCotisSal + b.totalCotisPat;
+        });
+        personnel[i] = cout;
+      });
+    }
+  } catch(e){ showToast('Erreur chargement des états financiers', true); console.error(e); return; }
+
+  ETATS_FIN = { annee, recettes, depenses, personnel, depParCat };
+  renderEtatsFinanciers();
+}
+
+function renderEtatsFinanciers(){
+  if (!ETATS_FIN) return;
+  const { annee, recettes, depenses, personnel, depParCat } = ETATS_FIN;
+  const moisSel = parseInt((document.getElementById('fin-mois')||{}).value || '0');
+  const somme = arr => arr.reduce((a,b)=>a+b,0);
+  const val = arr => moisSel === 0 ? somme(arr) : arr[moisSel-1];
+  const lblPeriode = moisSel === 0 ? `Année ${annee}` : `${MOIS_FR[moisSel-1]} ${annee}`;
+  document.getElementById('fin-periode-lbl').textContent = lblPeriode;
+
+  const produits = val(recettes);
+  const chExpl   = val(depenses);
+  const chPers   = val(personnel);
+  const totCharges = chExpl + chPers;
+  const resultat = produits - totCharges;
+  const marge = produits ? (resultat/produits*100) : 0;
+
+  // KPIs
+  document.getElementById('fin-kpis').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Produits (recettes)</div><div class="kpi-value">${fmtF(produits)}</div><div class="kpi-sub">${lblPeriode}</div></div>
+    <div class="kpi"><div class="kpi-label">Charges totales</div><div class="kpi-value">${fmtF(totCharges)}</div><div class="kpi-sub">Exploitation + personnel</div></div>
+    <div class="kpi"><div class="kpi-label">Résultat net</div><div class="kpi-value" style="color:${resultat>=0?'#0F766E':'#c0392b'};">${fmtF(resultat)}</div><div class="kpi-sub">Marge ${fmt(marge)} %</div></div>
+    <div class="kpi"><div class="kpi-label">Charges de personnel</div><div class="kpi-value">${fmtF(chPers)}</div><div class="kpi-sub">Coût total employeur</div></div>`;
+
+  // Compte de résultat détaillé
+  const catRows = Object.keys(depParCat).sort().map(cat => {
+    const v = moisSel===0 ? somme(depParCat[cat]) : depParCat[cat][moisSel-1];
+    if (!v) return '';
+    return `<tr><td style="text-align:left;padding-left:22px;">${escapeHTML(cat)}</td><td></td><td>${fmt(v)}</td></tr>`;
+  }).join('');
+  document.getElementById('fin-resultat').innerHTML = `<table class="g-table"><thead><tr>
+    <th style="text-align:left;">Poste</th><th>Produits</th><th>Charges</th></tr></thead><tbody>
+    <tr style="font-weight:700;background:#f1f5f9;"><td style="text-align:left;">PRODUITS D'EXPLOITATION</td><td>${fmt(produits)}</td><td></td></tr>
+    <tr><td style="text-align:left;padding-left:22px;">Recettes livraisons / transport</td><td>${fmt(produits)}</td><td></td></tr>
+    <tr style="font-weight:700;background:#f1f5f9;"><td style="text-align:left;">CHARGES D'EXPLOITATION</td><td></td><td>${fmt(chExpl)}</td></tr>
+    ${catRows || '<tr><td style="text-align:left;padding-left:22px;color:var(--muted);">Aucune dépense saisie</td><td></td><td>0</td></tr>'}
+    <tr style="font-weight:700;background:#f1f5f9;"><td style="text-align:left;">CHARGES DE PERSONNEL</td><td></td><td>${fmt(chPers)}</td></tr>
+    <tr><td style="text-align:left;padding-left:22px;">Coût total employeur (net + cotisations)</td><td></td><td>${fmt(chPers)}</td></tr>
+    <tr style="font-weight:700;"><td style="text-align:left;">TOTAL</td><td>${fmt(produits)}</td><td>${fmt(totCharges)}</td></tr>
+    </tbody>
+    <tfoot><tr><td style="text-align:left;">RÉSULTAT NET ${resultat>=0?'(bénéfice)':'(perte)'}</td><td colspan="2" style="text-align:right;color:${resultat>=0?'#0F766E':'#c0392b'};"><strong>${fmtF(resultat)}</strong></td></tr></tfoot></table>`;
+
+  // Évolution mensuelle (toujours l'année entière)
+  let mrows = '', cumRes = 0;
+  for (let m=0;m<12;m++){
+    const r = recettes[m], d = depenses[m], p = personnel[m], res = r - d - p; cumRes += res;
+    const hasData = r||d||p;
+    mrows += `<tr${moisSel===m+1?' style="background:#e6f4f2;font-weight:600;"':''}>
+      <td style="text-align:left;">${MOIS_FR[m]}</td>
+      <td>${hasData?fmt(r):''}</td><td>${hasData?fmt(d):''}</td><td>${hasData?fmt(p):''}</td>
+      <td style="color:${res>=0?'#0F766E':'#c0392b'};">${hasData?fmt(res):''}</td>
+      <td>${hasData?fmt(cumRes):''}</td></tr>`;
+  }
+  document.getElementById('fin-mensuel').innerHTML = `<table class="g-table"><thead><tr>
+    <th style="text-align:left;">Mois</th><th>Recettes</th><th>Dépenses</th><th>Personnel</th><th>Résultat</th><th>Résultat cumulé</th></tr></thead>
+    <tbody>${mrows}</tbody>
+    <tfoot><tr><td style="text-align:left;">ANNÉE ${annee}</td><td>${fmt(somme(recettes))}</td><td>${fmt(somme(depenses))}</td><td>${fmt(somme(personnel))}</td><td><strong>${fmt(somme(recettes)-somme(depenses)-somme(personnel))}</strong></td><td></td></tr></tfoot></table>`;
+
+  // Bilan simplifié : trésorerie générée = résultat cumulé jusqu'à la fin de la période
+  const finMois = moisSel === 0 ? 12 : moisSel;
+  let tresorerie = 0;
+  for (let m=0;m<finMois;m++) tresorerie += recettes[m]-depenses[m]-personnel[m];
+  document.getElementById('fin-bilan').innerHTML = `<table class="g-table"><thead><tr>
+    <th style="text-align:left;">ACTIF (emplois)</th><th>Montant</th><th style="text-align:left;">PASSIF (ressources)</th><th>Montant</th></tr></thead><tbody>
+    <tr><td style="text-align:left;">Trésorerie générée par l'activité</td><td>${fmt(tresorerie)}</td><td style="text-align:left;">Résultat accumulé (capitaux propres)</td><td>${fmt(tresorerie)}</td></tr>
+    <tr><td style="text-align:left;color:var(--muted);">+ Immobilisations (à saisir)</td><td>—</td><td style="text-align:left;color:var(--muted);">+ Dettes / emprunts (à saisir)</td><td>—</td></tr>
+    <tr style="font-weight:700;"><td style="text-align:left;">TOTAL ACTIF (partiel)</td><td>${fmt(tresorerie)}</td><td style="text-align:left;">TOTAL PASSIF (partiel)</td><td>${fmt(tresorerie)}</td></tr>
+    </tbody></table>
+    <div class="hint" style="margin-top:8px;">Trésorerie générée = résultats cumulés du 1<sup>er</sup> janvier à la fin de la période affichée (${moisSel===0?`toute l'année ${annee}`:`fin ${MOIS_FR[moisSel-1]} ${annee}`}).</div>`;
+}
+
+function exportEtatsFinanciers(){
+  if (!ETATS_FIN){ showToast('Générez d\'abord les états.', true); return; }
+  const { annee, recettes, depenses, personnel, depParCat } = ETATS_FIN;
+  const somme = arr => arr.reduce((a,b)=>a+b,0);
+  // Feuille 1 : évolution mensuelle
+  const aoa1 = [['Mois','Recettes','Dépenses','Charges personnel','Résultat','Résultat cumulé']];
+  let cum=0;
+  for (let m=0;m<12;m++){ const res=recettes[m]-depenses[m]-personnel[m]; cum+=res;
+    aoa1.push([MOIS_FR[m], Math.round(recettes[m]), Math.round(depenses[m]), Math.round(personnel[m]), Math.round(res), Math.round(cum)]); }
+  aoa1.push(['ANNÉE '+annee, Math.round(somme(recettes)), Math.round(somme(depenses)), Math.round(somme(personnel)), Math.round(somme(recettes)-somme(depenses)-somme(personnel)), '']);
+  // Feuille 2 : compte de résultat annuel par poste
+  const aoa2 = [['Compte de résultat — Année '+annee,''],['','Montant'],
+    ['PRODUITS',''],['Recettes livraisons / transport', Math.round(somme(recettes))],
+    ['','' ],['CHARGES D\'EXPLOITATION','']];
+  Object.keys(depParCat).sort().forEach(cat => aoa2.push([cat, Math.round(somme(depParCat[cat]))]));
+  aoa2.push(['Total charges d\'exploitation', Math.round(somme(depenses))]);
+  aoa2.push(['','']);
+  aoa2.push(['CHARGES DE PERSONNEL','']);
+  aoa2.push(['Coût total employeur', Math.round(somme(personnel))]);
+  aoa2.push(['','']);
+  aoa2.push(['RÉSULTAT NET', Math.round(somme(recettes)-somme(depenses)-somme(personnel))]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa1), 'Mensuel');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa2), 'Compte de résultat');
+  XLSX.writeFile(wb, `Etats_Financiers_${annee}.xlsx`);
+}
+
+/* ============================================================================
  * PARAMÈTRES + GRILLE
  * ==========================================================================*/
 function renderParametres(){
@@ -1306,7 +1704,7 @@ async function init(){
 
   // Sélecteurs de période
   const nowM = new Date().getMonth()+1;
-  ['dash-year','rec-year','dep-year','obj-year','sai-year','bul-year'].forEach(id => fillYearSelect(id));
+  ['dash-year','rec-year','dep-year','obj-year','sai-year','bul-year','etat-year','fin-year'].forEach(id => fillYearSelect(id));
   ['dash-month','rec-month','dep-month','sai-month','bul-month'].forEach(id => fillMonthSelect(id, nowM));
 
   // Récapitulatifs comptables par jour : période par défaut = 7 derniers jours,

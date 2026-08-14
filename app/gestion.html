@@ -177,6 +177,7 @@
       <div class="subtab" data-sub="chauffeurs" onclick="switchSub('compta','chauffeurs')">Chauffeurs</div>
       <div class="subtab" data-sub="caisse" onclick="switchSub('compta','caisse')">Caisse livreurs</div>
       <div class="subtab" data-sub="clients" onclick="switchSub('compta','clients')">Point clients</div>
+      <div class="subtab" data-sub="etats" onclick="switchSub('compta','etats')">📊 États financiers</div>
       <div class="subtab" data-sub="documents" onclick="switchSub('compta','documents')">📁 Documents entreprise</div>
     </div>
 
@@ -258,6 +259,41 @@
       <div class="card"><div class="g-table-wrap" id="clients-table"></div></div>
     </div>
 
+    <!-- États financiers : compte de résultat + bilan (mensuel / annuel) -->
+    <div class="section" id="compta-etats">
+      <div class="period-bar">
+        <label style="font-weight:600;color:var(--clt-teal-dark);">Année</label>
+        <select id="fin-year" onchange="chargerEtatsFinanciers()"></select>
+        <label style="font-weight:600;color:var(--clt-teal-dark);">Période</label>
+        <select id="fin-mois" onchange="renderEtatsFinanciers()">
+          <option value="0">Année entière</option>
+          <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+          <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+          <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+          <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="chargerEtatsFinanciers()">🔄 Actualiser</button>
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="exportEtatsFinanciers()">⬇️ États (Excel)</button>
+      </div>
+      <div class="hint">Compte de résultat et bilan simplifié construits automatiquement à partir des recettes, des dépenses et de la paie. Les charges de personnel intègrent la masse nette et les charges patronales.</div>
+      <div class="kpi-grid" id="fin-kpis"></div>
+      <div class="card">
+        <h2>Compte de résultat — <span id="fin-periode-lbl"></span></h2>
+        <div class="g-table-wrap" id="fin-resultat"></div>
+      </div>
+      <div class="card">
+        <h2>Évolution mensuelle de l'année</h2>
+        <div class="hint">Recettes, charges et résultat mois par mois (année entière), quel que soit le mois affiché ci-dessus.</div>
+        <div class="g-table-wrap" id="fin-mensuel"></div>
+      </div>
+      <div class="card">
+        <h2>Bilan simplifié au terme de la période</h2>
+        <div class="hint">Vue synthétique de la trésorerie générée (résultats cumulés) et des sommes en circulation chez les livreurs. Un bilan comptable complet nécessite en plus l'inventaire des immobilisations et des dettes/créances, à renseigner séparément.</div>
+        <div class="g-table-wrap" id="fin-bilan"></div>
+      </div>
+    </div>
+
     <!-- Coffre à documents de l'entreprise (RCCM, DFE, statuts, patente…) -->
     <div class="section" id="compta-documents">
       <div class="card">
@@ -295,6 +331,7 @@
       <div class="subtab" data-sub="dossiers" onclick="switchSub('paie','dossiers')">📁 Dossiers</div>
       <div class="subtab" data-sub="saisie" onclick="switchSub('paie','saisie')">Saisie mensuelle</div>
       <div class="subtab" data-sub="bulletins" onclick="switchSub('paie','bulletins')">Bulletins</div>
+      <div class="subtab" data-sub="etats" onclick="switchSub('paie','etats')">📊 États annuels</div>
       <div class="subtab" id="sub-paie-parametres" data-sub="parametres" onclick="switchSub('paie','parametres')">Paramètres</div>
     </div>
 
@@ -358,6 +395,33 @@
       </div>
       <div class="kpi-grid" id="bul-kpis"></div>
       <div class="card"><div class="g-table-wrap" id="bul-table"></div></div>
+    </div>
+
+    <div class="section" id="paie-etats">
+      <div class="period-bar">
+        <label style="font-weight:600;color:var(--clt-teal-dark);">Année</label>
+        <select id="etat-year" onchange="chargerEtatsAnnuels()"></select>
+        <button class="btn btn-outline btn-sm" onclick="chargerEtatsAnnuels()">🔄 Actualiser</button>
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="exportSynthesePaieAnnuelle()">⬇️ Synthèse (Excel)</button>
+      </div>
+      <div class="hint">Cumul de paie de l'année à partir des saisies mensuelles. Seuls les mois effectivement saisis sont comptabilisés (colonne « Mois payés »).</div>
+      <div class="kpi-grid" id="etat-kpis"></div>
+      <div class="card">
+        <h2>Synthèse annuelle du personnel — <span id="etat-annee-lbl"></span></h2>
+        <div class="g-table-wrap" id="etat-synthese"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <h2 style="margin:0;">Fiche individuelle</h2>
+          <select id="etat-salarie" onchange="renderFicheIndividuelle()" style="min-width:220px;"></select>
+          <div class="spacer"></div>
+          <button class="btn btn-outline btn-sm" onclick="exportFicheIndividuelle()">⬇️ Fiche (Excel)</button>
+          <button class="btn btn-sm" onclick="pdfFicheIndividuelle()">📄 Fiche (PDF)</button>
+        </div>
+        <div class="hint">Détail mois par mois des rubriques de paie du salarié, avec cumul annuel — modèle « fiche individuelle ».</div>
+        <div class="g-table-wrap" id="etat-fiche"></div>
+      </div>
     </div>
 
     <div class="section" id="paie-parametres">
@@ -455,6 +519,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="config.js?v=20260812m"></script>
-<script src="gestion.js?v=20260814rh2"></script>
+<script src="gestion.js?v=20260814etats1"></script>
 </body>
 </html>
