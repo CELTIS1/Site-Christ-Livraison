@@ -131,6 +131,18 @@
   @keyframes gslide{ from{ transform:translateX(20px); opacity:0; } to{ transform:none; opacity:1; } }
   .section{ display:none; }
   .section.active{ display:block; }
+
+  /* ===== En-tête figé : la barre du haut, les onglets, sous-onglets, la période
+     et le récapitulatif (KPI) restent visibles ; seuls les tableaux défilent dessous.
+     Les décalages verticaux (--h-topbar, --t-sub, --t-period, --t-kpi) sont mesurés
+     dynamiquement par gestion.js (refreshStickyOffsets) pour rester justes sur mobile. */
+  .topbar{ position:sticky; top:0; z-index:60; }
+  .navsticky{ position:sticky; top:var(--h-topbar,62px); z-index:56; background:#f5f7fa; padding-top:12px; margin-bottom:16px; }
+  .navsticky .tabs{ margin-bottom:0; }
+  #sec-compta > .subtabs, #sec-paie > .subtabs{ position:sticky; top:var(--t-sub,118px); z-index:54; background:#f5f7fa; padding-top:10px; }
+  .period-bar{ position:sticky; top:var(--t-period,150px); z-index:52; background:#f5f7fa; padding-top:10px; }
+  .kpi-grid{ position:sticky; top:var(--t-kpi,200px); z-index:50; background:#f5f7fa; padding-top:6px; }
+
   @media(max-width:640px){ .modal .grid2{ grid-template-columns:1fr; } }
 </style>
 </head>
@@ -149,11 +161,13 @@
   <div class="page-title">Espace de gestion</div>
   <div class="page-sub">Comptabilité (recettes &amp; dépenses) et paie (salariés, bulletins). Accès réservé à l'administrateur.</div>
 
+  <div class="navsticky">
   <div class="tabs">
     <div class="tab active" id="tab-dashboard" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Tableau de bord</div>
     <div class="tab" id="tab-compta" data-tab="compta" onclick="switchTab('compta')">💰 Comptabilité</div>
     <div class="tab" id="tab-paie" data-tab="paie" onclick="switchTab('paie')">👥 Paie</div>
     <div class="tab" id="tab-journal" data-tab="journal" onclick="switchTab('journal')" style="display:none;">📜 Journal</div>
+  </div>
   </div>
 
   <!-- ============ TABLEAU DE BORD ============ -->
@@ -616,6 +630,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="config.js?v=20260812m"></script>
-<script src="gestion.js?v=20260814compta6"></script>
+<script src="gestion.js?v=20260814sticky1"></script>
 </body>
 </html>

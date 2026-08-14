@@ -103,6 +103,7 @@ function switchTab(tab){
   ['dashboard','compta','paie','journal'].forEach(s => { const el = document.getElementById('sec-'+s); if (el) el.classList.toggle('active', s === tab); });
   if (tab === 'dashboard') renderDashboard();
   if (tab === 'journal') loadJournal();
+  scheduleStickyRefresh();
 }
 function switchSub(group, sub){
   document.querySelectorAll(`#sec-${group} .subtab`).forEach(el => el.classList.toggle('active', el.dataset.sub === sub));
@@ -120,6 +121,66 @@ function switchSub(group, sub){
   // Coffres à documents : (re)chargés à l'ouverture de l'onglet.
   if (group === 'paie'   && sub === 'dossiers')  { fillDocSalarieSelect(); loadDocuments('personnel').then(renderDocsPersonnel); }
   if (group === 'compta' && sub === 'documents') { loadDocuments('entreprise').then(renderDocsEntreprise); }
+  scheduleStickyRefresh();
+}
+
+/* -------------------- En-tête figé (sticky) --------------------
+   Mesure la hauteur réelle de la barre du haut, des onglets, des sous-onglets,
+   de la barre de période et du bloc KPI de la vue active, puis publie les
+   décalages verticaux en variables CSS. Ainsi chaque couche se cale exactement
+   sous la précédente, quelle que soit la taille de l'écran (desktop ou mobile). */
+function refreshStickyOffsets(){
+  try{
+    const rootStyle = document.documentElement.style;
+    const visible = el => !!el && el.getClientRects().length > 0;
+    const H = el => visible(el) ? el.getBoundingClientRect().height : 0;
+
+    const hTop = H(document.querySelector('.topbar'));
+    const hNav = H(document.querySelector('.navsticky'));
+
+    // Section de premier niveau active (dashboard / compta / paie / journal)
+    const activeTab = document.querySelector('.tabs .tab.active');
+    const secId = activeTab ? activeTab.dataset.tab : 'dashboard';
+    const sec = document.getElementById('sec-' + secId);
+
+    let hSub = 0, hPer = 0, hKpi = 0;
+    if (sec){
+      hSub = H(sec.querySelector(':scope > .subtabs'));
+      // Sous-section active (pour compta/paie) ou la section elle-même (dashboard)
+      const inner = sec.querySelector(':scope > .section.active') || sec;
+      hPer = H(inner.querySelector(':scope > .period-bar'));
+      hKpi = H(inner.querySelector(':scope > .kpi-grid'));
+    }
+
+    const tSub    = hTop + hNav;          // haut des sous-onglets
+    const tPeriod = tSub + hSub;          // haut de la barre de période
+    const tKpi    = tPeriod + hPer;       // haut du bloc KPI
+    const r = v => Math.round(v) + 'px';
+    rootStyle.setProperty('--h-topbar', r(hTop));
+    rootStyle.setProperty('--t-sub',    r(tSub));
+    rootStyle.setProperty('--t-period', r(tPeriod));
+    rootStyle.setProperty('--t-kpi',    r(tKpi));
+  }catch(_e){ /* sans effet sur le fonctionnement */ }
+}
+let _stickyRaf = null;
+function scheduleStickyRefresh(){
+  if (_stickyRaf) cancelAnimationFrame(_stickyRaf);
+  _stickyRaf = requestAnimationFrame(() => { _stickyRaf = null; refreshStickyOffsets(); });
+}
+function initStickyHeader(){
+  scheduleStickyRefresh();
+  window.addEventListener('resize', scheduleStickyRefresh);
+  window.addEventListener('orientationchange', scheduleStickyRefresh);
+  if (window.ResizeObserver){
+    const ro = new ResizeObserver(scheduleStickyRefresh);
+    ['.topbar', '.navsticky', '.wrap'].forEach(sel => {
+      const el = document.querySelector(sel); if (el) ro.observe(el);
+    });
+  }
+  // Recalage après le chargement des polices web (change les hauteurs).
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleStickyRefresh);
+  // Filet de sécurité au chargement initial.
+  setTimeout(scheduleStickyRefresh, 400);
 }
 
 /* -------------------- Sélecteurs de période -------------------- */
@@ -2118,5 +2179,8 @@ async function init(){
 
   // Onglet ouvert par défaut selon le profil
   switchTab(isAdmin ? 'dashboard' : (canPaie ? 'paie' : 'compta'));
+
+  // En-tête figé : mesure des décalages et mise en place des observateurs.
+  initStickyHeader();
 }
 init();
