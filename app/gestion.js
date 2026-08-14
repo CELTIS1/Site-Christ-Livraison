@@ -18,6 +18,8 @@ let PARAMS = null;
 let CATEGORIES = [];            // [{categorie, libelle, salaire_min, ordre}]
 let GRILLE = {};                // { '1A': 75000, ... }
 let SALARIES = [];              // salariés actifs + inactifs
+let PHOTO_URLS = {};            // { salarie_id: urlSignée } pour l'affichage des photos (bucket privé)
+const RH_BUCKET = 'rh-personnel';
 let CHAUFFEURS = [];            // référentiel compta
 let LIVREURS = [];              // profils livreurs (pour lier un salarié)
 let ACCES = { isAdmin:false, canPaie:false, canCompta:false }; // capacités de l'utilisateur connecté
@@ -221,6 +223,26 @@ async function loadCategories(){
 async function loadSalaries(){
   const { data } = await supabaseClient.from('gestion_salaries').select('*').order('matricule',{ascending:true});
   SALARIES = data || [];
+  await refreshPhotoUrls();
+}
+// Génère des URL signées (bucket privé) pour toutes les photos des salariés.
+async function refreshPhotoUrls(){
+  PHOTO_URLS = {};
+  const withPhoto = SALARIES.filter(s => s.photo_path);
+  if (!withPhoto.length) return;
+  try {
+    const paths = withPhoto.map(s => s.photo_path);
+    const { data } = await supabaseClient.storage.from(RH_BUCKET).createSignedUrls(paths, 3600);
+    (data || []).forEach((row, i) => { if (row && row.signedUrl) PHOTO_URLS[withPhoto[i].id] = row.signedUrl; });
+  } catch(e){ console.error('photos', e); }
+}
+// Petit avatar (photo ou initiales) affiché devant le nom du salarié.
+function avatarHTML(s){
+  const url = PHOTO_URLS[s.id];
+  const base = 'width:34px;height:34px;border-radius:50%;object-fit:cover;flex:0 0 auto;';
+  if (url) return `<img src="${url}" alt="" style="${base}border:1px solid var(--border,#d0d7e2);">`;
+  const ini = ((s.nom||' ')[0]||'').toUpperCase() + ((s.prenom||' ')[0]||'').toUpperCase();
+  return `<span style="${base}display:inline-flex;align-items:center;justify-content:center;background:#E26313;color:#fff;font-weight:700;font-size:13px;">${escapeHTML(ini.trim()||'?')}</span>`;
 }
 async function loadChauffeurs(){
   const { data } = await supabaseClient.from('gestion_chauffeurs').select('*').order('ordre',{ascending:true});
@@ -490,7 +512,7 @@ async function toggleChauffeur(id, actif){
 function renderSalaries(){
   let body = SALARIES.map(s => `<tr>
     <td style="text-align:left;">${escapeHTML(s.matricule)}</td>
-    <td style="text-align:left;">${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</td>
+    <td style="text-align:left;"><div style="display:flex;align-items:center;gap:9px;">${avatarHTML(s)}<span>${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</span></div></td>
     <td style="text-align:left;">${escapeHTML(s.emploi||'—')}</td>
     <td>${escapeHTML(s.categorie||'—')}</td>
     <td>${fmt(GRILLE[s.categorie]||0)}</td>
@@ -507,11 +529,21 @@ function fillLivreurSelect(sel, val){
   sel.innerHTML = '<option value="">— Aucun —</option>' + LIVREURS.map(l => `<option value="${l.id}">${escapeHTML(l.full_name||l.id)}</option>`).join('');
   if (val) sel.value = val;
 }
+/* Génère le prochain matricule au format CLT### (préfixe entreprise + n° sur 3 chiffres).
+   Reprend le plus grand numéro existant, quel que soit l'ancien préfixe (M001, CLT001…). */
+function nextMatricule(){
+  let max = 0;
+  SALARIES.forEach(s => {
+    const m = String(s.matricule||'').match(/(\d+)/);
+    if (m){ const num = parseInt(m[1],10); if (!isNaN(num) && num>max) max = num; }
+  });
+  return 'CLT' + String(max+1).padStart(3,'0');
+}
 function openSalarie(id){
   const s = id ? SALARIES.find(x=>x.id===id) : null;
   document.getElementById('modal-sal-title').textContent = s ? 'Modifier le salarié' : 'Nouveau salarié';
   document.getElementById('sal-id').value = s ? s.id : '';
-  document.getElementById('sal-matricule').value = s ? (s.matricule||'') : '';
+  document.getElementById('sal-matricule').value = s ? (s.matricule||'') : nextMatricule();
   document.getElementById('sal-nom').value = s ? (s.nom||'') : '';
   document.getElementById('sal-prenom').value = s ? (s.prenom||'') : '';
   document.getElementById('sal-embauche').value = s && s.date_embauche ? s.date_embauche : '';
@@ -525,8 +557,27 @@ function openSalarie(id){
   fillCategorieSelect(document.getElementById('sal-categorie'), s ? s.categorie : (CATEGORIES[0]&&CATEGORIES[0].categorie));
   fillLivreurSelect(document.getElementById('sal-livreur'), s ? s.livreur_id : '');
   document.getElementById('sal-actif').value = (s && s.actif===false) ? 'false' : 'true';
+  // Photo : réinitialise le champ fichier, mémorise le chemin actuel, affiche l'aperçu.
+  const fileInput = document.getElementById('sal-photo');
+  if (fileInput) fileInput.value = '';
+  document.getElementById('sal-photo-path').value = (s && s.photo_path) ? s.photo_path : '';
+  setPhotoPreview((s && PHOTO_URLS[s.id]) ? PHOTO_URLS[s.id] : '');
   document.getElementById('modal-salarie').classList.add('open');
 }
+// Affiche (ou masque) l'aperçu de la photo dans la modale.
+function setPhotoPreview(url){
+  const img = document.getElementById('sal-photo-preview');
+  const ph  = document.getElementById('sal-photo-placeholder');
+  if (url){ img.src = url; img.style.display = ''; if (ph) ph.style.display = 'none'; }
+  else    { img.removeAttribute('src'); img.style.display = 'none'; if (ph) ph.style.display = 'inline-flex'; }
+}
+// Aperçu instantané quand l'admin choisit un fichier.
+document.addEventListener('change', function(e){
+  if (e.target && e.target.id === 'sal-photo'){
+    const f = e.target.files && e.target.files[0];
+    if (f) setPhotoPreview(URL.createObjectURL(f));
+  }
+});
 async function saveSalarie(){
   const id = document.getElementById('sal-id').value;
   const rec = {
@@ -546,7 +597,19 @@ async function saveSalarie(){
     actif: document.getElementById('sal-actif').value === 'true',
   };
   if (!rec.matricule){ showToast('Le matricule est obligatoire.', true); return; }
+  // Photo : conserve le chemin actuel par défaut ; téléverse le nouveau fichier s'il y en a un.
+  rec.photo_path = document.getElementById('sal-photo-path').value || null;
+  const fileInput = document.getElementById('sal-photo');
+  const file = fileInput && fileInput.files && fileInput.files[0];
   try {
+    if (file){
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `photos/${rec.matricule}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabaseClient.storage.from(RH_BUCKET)
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+      rec.photo_path = path;
+    }
     if (id) await supabaseClient.from('gestion_salaries').update(rec).eq('id',id);
     else await supabaseClient.from('gestion_salaries').insert(rec);
     closeModal('modal-salarie');

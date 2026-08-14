@@ -339,8 +339,18 @@
   <div class="modal">
     <h3 id="modal-sal-title">Nouveau salarié</h3>
     <input type="hidden" id="sal-id">
+    <input type="hidden" id="sal-photo-path">
+    <div class="field" style="display:flex;align-items:center;gap:14px;">
+      <img id="sal-photo-preview" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid var(--border,#d0d7e2);display:none;">
+      <span id="sal-photo-placeholder" style="width:64px;height:64px;border-radius:50%;background:#E26313;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;">👤</span>
+      <div style="flex:1;">
+        <label>Photo du salarié</label>
+        <input type="file" id="sal-photo" accept="image/*">
+        <div class="hint" style="margin-top:4px;">Facultatif — JPEG/PNG. Conservée de façon sécurisée (accès RH uniquement).</div>
+      </div>
+    </div>
     <div class="grid2">
-      <div class="field"><label>Matricule</label><input type="text" id="sal-matricule" placeholder="M017"></div>
+      <div class="field"><label>Matricule</label><input type="text" id="sal-matricule" placeholder="CLT001"></div>
       <div class="field"><label>Nom</label><input type="text" id="sal-nom"></div>
       <div class="field"><label>Prénom</label><input type="text" id="sal-prenom"></div>
       <div class="field"><label>Date d'embauche</label><input type="date" id="sal-embauche"></div>
@@ -382,6 +392,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="config.js?v=20260812m"></script>
-<script src="gestion.js?v=20260813g"></script>
+<script src="gestion.js?v=20260814rh1"></script>
 </body>
 </html>
