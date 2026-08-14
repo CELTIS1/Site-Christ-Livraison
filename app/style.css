@@ -906,3 +906,41 @@ html[data-theme="dark"] .theme-toggle{
 @media(max-width:640px){
   .theme-toggle{ width:42px; height:42px; left:14px; bottom:14px; font-size:17px; }
 }
+
+/* =====================================================================
+   MODE SOMBRE — Espaces Express (Client violet / Coursier teal)
+   Ces pages ont leurs propres styles internes (surfaces claires codées
+   en dur). On assombrit uniquement les SURFACES ; les dégradés de marque
+   violet/teal sont conservés. Sélecteurs préfixés par html[data-theme]
+   pour l'emporter sur les styles internes.
+   ===================================================================== */
+html[data-theme="dark"] .course-item{ background:#1B2635; border-color:#2A3849; }
+html[data-theme="dark"] .photo-drop{ background:#141D29; border-color:#3A4B60; }
+html[data-theme="dark"] .photo-drop .photo-drop-text{ color:#C9D6E5; }
+
+/* Frise d'étapes */
+html[data-theme="dark"] .clt-stepper{ border-bottom-color:#2A3849; }
+html[data-theme="dark"] .clt-stepper .st .c{ background:#243247; color:#9DB0C4; }
+html[data-theme="dark"] .clt-stepper .st::before{ background:#243247; }
+html[data-theme="dark"] .clt-stepper .st .l{ color:#9DB0C4; }
+
+/* Barre d'onglets segmentée */
+html[data-theme="dark"] .clt-toptabs-wrap{ background:var(--grey-bg); }
+html[data-theme="dark"] .clt-toptabs{ background:#141D29; border-color:rgba(255,255,255,.06); }
+html[data-theme="dark"] .clt-toptab{ color:#9DB0C4; }
+html[data-theme="dark"] .clt-toptab.active{ background:#243247; }
+
+/* Barre de navigation basse (mobile) */
+html[data-theme="dark"] .clt-bottomnav{ background:#141D29; border-top-color:#2A3849; }
+html[data-theme="dark"] .clt-bottomnav .nav{ color:#9DB0C4; }
+
+/* Emplacements de carte + sélecteur de point */
+html[data-theme="dark"] .pin-map,
+html[data-theme="dark"] [id^="course-map-"]{ background:#243247; }
+
+/* Espace Coursier : encart d'aide portefeuille (style en ligne) */
+html[data-theme="dark"] #card-wallet-help{ background:#1B2635 !important; border-color:#2A3849 !important; }
+
+/* Express — page de connexion (choix de rôle / KYC) */
+html[data-theme="dark"] .role-toggle button{ background:#141D29; }
+html[data-theme="dark"] .kyc-buttons button{ background:#141D29; }
