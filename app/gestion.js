@@ -249,6 +249,35 @@ function personnesCMU(parts){
   return map[parts] !== undefined ? map[parts] : Math.max(1, Math.round(parts));
 }
 
+/* Taux/plafonds de cotisation : lus depuis les paramètres (base) avec repli sur
+ * la valeur légale par défaut. Tant qu'une colonne n'existe pas en base, le calcul
+ * reste STRICTEMENT identique à l'ancien code (mêmes valeurs codées en dur).
+ * NB : accepte la valeur 0 (contrairement à `|| defaut`), pour pouvoir annuler un taux. */
+function tauxParam(params, key, defaut){
+  const v = params ? params[key] : undefined;
+  if (v === null || v === undefined || v === '' || isNaN(Number(v))) return defaut;
+  return Number(v);
+}
+/* Barème par défaut (régime CNPS/ITS de Côte d'Ivoire). Une seule source de vérité,
+ * réutilisée par le moteur de paie ET par l'affichage des libellés.
+ * Chaque entrée = [colonne en base, valeur par défaut]. */
+const TAUX_DEFAUT = {
+  cnps_sal:           ['taux_cnps_sal', 6.3],
+  cnps_pat:           ['taux_cnps_pat', 7.7],
+  its_pat:            ['taux_its_pat', 1.2],
+  taxe_apprentissage: ['taux_taxe_apprentissage', 0.4],
+  fcp:                ['taux_fcp', 0.6],
+  pf:                 ['taux_pf', 5],
+  maternite:          ['taux_maternite', 0.75],
+  accident_travail:   ['taux_accident_travail', 3],
+  cmu_par_personne:   ['cmu_par_personne', 500],
+  plafond_social_pf:  ['plafond_social_pf', PLAFOND_SOCIAL_PF]
+};
+function txCfg(params, key){ const e = TAUX_DEFAUT[key]; return tauxParam(params, e[0], e[1]); }
+function txConfig(key){ return txCfg(PARAMS, key); }
+/* Formate un taux (nombre) en pourcentage à la française pour les libellés. */
+function pctFr(v){ return String(v).replace('.', ','); }
+
 function computeBulletin(sal, saisie, params, grille){
   const jours = n(saisie.jours_travailles) || 30;
   const parts = n(sal.nb_parts) || 1;
@@ -265,23 +294,24 @@ function computeBulletin(sal, saisie, params, grille){
   const gGratif       = n(saisie.gratification);
   const baseImposable = gSalaireCat + gSursalaire + gPrimeAnc + gAstreinte + gCongePaye + gGratif;
 
-  // Retenues salariales
+  // Retenues salariales (taux lus en base, repli sur le barème légal par défaut)
+  const cmuParPers = txCfg(params, 'cmu_par_personne');
   const its    = Math.max(0, calcITSbrut(baseImposable, jours) - creditParts(parts));
   const nbPers = personnesCMU(parts);
-  const cmuSal = 1000 * nbPers / 2;
-  const cnpsSal = baseImposable * 6.3 / 100;
+  const cmuSal = cmuParPers * nbPers;
+  const cnpsSal = baseImposable * txCfg(params, 'cnps_sal') / 100;
   const totalCotisSal = its + cmuSal + cnpsSal;
 
   // Charges patronales
-  const baseSocial = Math.min(baseImposable, PLAFOND_SOCIAL_PF);
-  const itsPat     = baseImposable * 1.2 / 100;
-  const cmuPat     = 1000 * nbPers / 2;
-  const cnpsPat    = baseImposable * 7.7 / 100;
-  const taxeApp    = baseImposable * 0.4 / 100;
-  const fcp        = baseImposable * 0.6 / 100;
-  const pf         = baseSocial * 5 / 100;
-  const maternite  = baseSocial * 0.75 / 100;
-  const tauxAT     = n(params.taux_accident_travail) || 3;
+  const baseSocial = Math.min(baseImposable, txCfg(params, 'plafond_social_pf'));
+  const itsPat     = baseImposable * txCfg(params, 'its_pat') / 100;
+  const cmuPat     = cmuParPers * nbPers;
+  const cnpsPat    = baseImposable * txCfg(params, 'cnps_pat') / 100;
+  const taxeApp    = baseImposable * txCfg(params, 'taxe_apprentissage') / 100;
+  const fcp        = baseImposable * txCfg(params, 'fcp') / 100;
+  const pf         = baseSocial * txCfg(params, 'pf') / 100;
+  const maternite  = baseSocial * txCfg(params, 'maternite') / 100;
+  const tauxAT     = txCfg(params, 'accident_travail');
   const accident   = baseSocial * tauxAT / 100;
   const totalCotisPat = itsPat + cmuPat + cnpsPat + taxeApp + fcp + pf + maternite + accident;
 
@@ -341,9 +371,21 @@ async function refreshPhotoUrls(){
 function avatarHTML(s){
   const url = PHOTO_URLS[s.id];
   const base = 'width:34px;height:34px;border-radius:50%;object-fit:cover;flex:0 0 auto;';
-  if (url) return `<img src="${url}" alt="" style="${base}border:1px solid var(--border,#d0d7e2);">`;
+  if (url) return `<img src="${url}" alt="" data-sid="${escapeHTML(String(s.id))}" onerror="healPhoto(this)" style="${base}border:1px solid var(--border,#d0d7e2);">`;
   const ini = ((s.nom||' ')[0]||'').toUpperCase() + ((s.prenom||' ')[0]||'').toUpperCase();
   return `<span style="${base}display:inline-flex;align-items:center;justify-content:center;background:#E26313;color:#fff;font-weight:700;font-size:13px;">${escapeHTML(ini.trim()||'?')}</span>`;
+}
+// Auto-réparation d'un avatar dont l'URL signée (1 h) a expiré dans une session
+// restée longtemps ouverte : régénère UNE seule URL fraîche, sans minuterie de fond.
+async function healPhoto(img){
+  if (!img || img.dataset.healed) return;   // une seule tentative → aucune boucle possible
+  img.dataset.healed = '1';
+  const sal = SALARIES.find(s => String(s.id) === String(img.dataset.sid));
+  if (!sal || !sal.photo_path) return;
+  try {
+    const { data } = await supabaseClient.storage.from(RH_BUCKET).createSignedUrl(sal.photo_path, 3600);
+    if (data && data.signedUrl){ PHOTO_URLS[sal.id] = data.signedUrl; img.src = data.signedUrl; }
+  } catch(e){ console.error('heal photo', e); }
 }
 async function loadChauffeurs(){
   const { data } = await supabaseClient.from('gestion_chauffeurs').select('*').order('ordre',{ascending:true});
@@ -1048,7 +1090,7 @@ function bulletinRowsHTML(b, annee, mois){
   <tr style="font-weight:700;"><td style="text-align:left;">Total brut imposable</td><td style="text-align:right;">${fmt(b.baseImposable)}</td><td></td></tr>
   <tr><td style="text-align:left;">ITS (impôt sur salaires)</td><td></td><td style="text-align:right;">${fmt(r.its)}</td></tr>
   <tr><td style="text-align:left;">CMU (part salariale)</td><td></td><td style="text-align:right;">${fmt(r.cmuSal)}</td></tr>
-  <tr><td style="text-align:left;">CNPS (6,3 %)</td><td></td><td style="text-align:right;">${fmt(r.cnpsSal)}</td></tr>
+  <tr><td style="text-align:left;">CNPS (${pctFr(txConfig('cnps_sal'))} %)</td><td></td><td style="text-align:right;">${fmt(r.cnpsSal)}</td></tr>
   <tr style="font-weight:700;"><td style="text-align:left;">Total retenues salariales</td><td></td><td style="text-align:right;">${fmt(b.totalCotisSal)}</td></tr>
   <tr><td style="text-align:left;">Prime de transport</td><td style="text-align:right;">${fmt(b.primeTransport)}</td><td></td></tr>
   ${b.retenueDivers?`<tr><td style="text-align:left;">Retenue divers</td><td></td><td style="text-align:right;">${fmt(b.retenueDivers)}</td></tr>`:''}`;
@@ -1106,7 +1148,7 @@ function generateBulletinPDF(b, annee, mois){
   rows.push([{content:'Total brut imposable',styles:{fontStyle:'bold'}}, {content:fmt(b.baseImposable),styles:{fontStyle:'bold'}}, '']);
   rows.push(['ITS (impôt sur salaires)', '', fmt(r.its)]);
   rows.push(['CMU (part salariale)', '', fmt(r.cmuSal)]);
-  rows.push(['CNPS (6,3 %)', '', fmt(r.cnpsSal)]);
+  rows.push([`CNPS (${pctFr(txConfig('cnps_sal'))} %)`, '', fmt(r.cnpsSal)]);
   rows.push([{content:'Total retenues salariales',styles:{fontStyle:'bold'}}, '', {content:fmt(b.totalCotisSal),styles:{fontStyle:'bold'}}]);
   rows.push(['Prime de transport', fmt(b.primeTransport), '']);
   if (b.retenueDivers) rows.push(['Retenue divers', '', fmt(b.retenueDivers)]);
@@ -1161,7 +1203,7 @@ const FICHE_RUBRIQUES = [
   { sec:'RETENUES SALARIALES' },
   { lbl:'ITS (impôt sur salaires)',  get:b=>b.retenues.its },
   { lbl:'CMU (part salariale)',      get:b=>b.retenues.cmuSal },
-  { lbl:'CNPS (6,3 %)',              get:b=>b.retenues.cnpsSal },
+  { lbl:'CNPS (part salariale)',     get:b=>b.retenues.cnpsSal },
   { lbl:'Total retenues salariales', get:b=>b.totalCotisSal, tot:true },
   { sec:'NET' },
   { lbl:'Prime de transport',        get:b=>b.primeTransport },
@@ -1557,6 +1599,17 @@ function renderParametres(){
   document.getElementById('p-cnps').value = PARAMS.num_cnps_employeur||'';
   document.getElementById('p-accident').value = PARAMS.taux_accident_travail!=null?PARAMS.taux_accident_travail:3;
   document.getElementById('p-transport').value = PARAMS.prime_transport_defaut!=null?PARAMS.prime_transport_defaut:30000;
+  // Taux de cotisation (repli sur le barème légal par défaut si non défini en base)
+  const setTx = (id, key) => { const el = document.getElementById(id); if (el) el.value = txConfig(key); };
+  setTx('p-cnps-sal', 'cnps_sal');
+  setTx('p-cnps-pat', 'cnps_pat');
+  setTx('p-its-pat', 'its_pat');
+  setTx('p-taxe-app', 'taxe_apprentissage');
+  setTx('p-fcp', 'fcp');
+  setTx('p-pf', 'pf');
+  setTx('p-maternite', 'maternite');
+  setTx('p-cmu', 'cmu_par_personne');
+  setTx('p-plafond', 'plafond_social_pf');
   // grille
   let body = CATEGORIES.map(c => `<tr>
     <td style="text-align:left;">${escapeHTML(c.categorie)}</td>
@@ -1574,6 +1627,17 @@ async function saveParametres(){
     prime_transport_defaut: n(document.getElementById('p-transport').value),
     updated_at: new Date().toISOString(),
   };
+  // Taux de cotisation : n'inclure ces colonnes QUE si elles existent déjà en base
+  // (migration SQL appliquée). Ainsi l'enregistrement reste possible avant migration.
+  if (PARAMS && 'taux_cnps_sal' in PARAMS){
+    const getTx = id => { const el = document.getElementById(id); return el ? n(el.value) : undefined; };
+    const champs = {
+      taux_cnps_sal:'p-cnps-sal', taux_cnps_pat:'p-cnps-pat', taux_its_pat:'p-its-pat',
+      taux_taxe_apprentissage:'p-taxe-app', taux_fcp:'p-fcp', taux_pf:'p-pf',
+      taux_maternite:'p-maternite', cmu_par_personne:'p-cmu', plafond_social_pf:'p-plafond'
+    };
+    for (const [col, id] of Object.entries(champs)){ const v = getTx(id); if (v !== undefined) rec[col] = v; }
+  }
   try { await supabaseClient.from('gestion_parametres').upsert(rec, { onConflict:'id' }); await loadParametres(); showToast('Paramètres enregistrés'); }
   catch(e){ showToast('Erreur enregistrement paramètres', true); console.error(e); }
 }
@@ -1596,26 +1660,58 @@ const JOURNAL_TABLES = {
   gestion_bulletins:'Bulletins', gestion_categories:'Grille catégorielle', gestion_parametres:'Paramètres'
 };
 const JOURNAL_ACTIONS = { INSERT:'Ajout', UPDATE:'Modification', DELETE:'Suppression' };
+const JOURNAL_PAGE = 100;   // nombre de lignes chargées par page
+let JOURNAL_OFFSET = 0;     // décalage de la prochaine page à charger
+let JOURNAL_LOADING = false;
+function journalRowHTML(r){
+  const d = new Date(r.ts);
+  const dt = isNaN(d) ? escapeHTML(r.ts) : d.toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const acteur = escapeHTML(r.acteur_nom || '—') + (r.acteur_role ? ` <span class="hint" style="display:inline">(${escapeHTML(r.acteur_role)})</span>` : '');
+  const act = JOURNAL_ACTIONS[r.action] || escapeHTML(r.action);
+  const tbl = JOURNAL_TABLES[r.table_cible] || escapeHTML(r.table_cible);
+  return `<tr><td>${dt}</td><td>${acteur}</td><td>${act}</td><td>${tbl}</td></tr>`;
+}
 async function loadJournal(){
   const wrap = document.getElementById('journal-table'); if (!wrap) return;
+  JOURNAL_OFFSET = 0; JOURNAL_LOADING = true;
   wrap.innerHTML = '<div class="hint">Chargement…</div>';
   const { data, error } = await supabaseClient
     .from('gestion_journal')
     .select('ts, acteur_nom, acteur_role, action, table_cible, ligne_id')
     .order('ts', { ascending:false })
-    .limit(300);
+    .range(0, JOURNAL_PAGE - 1);
+  JOURNAL_LOADING = false;
   if (error){ wrap.innerHTML = '<div class="hint">Impossible de charger le journal.</div>'; console.error(error); return; }
   const rows = (data||[]);
   if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucune activité enregistrée pour le moment.</div>'; return; }
-  const body = rows.map(r => {
-    const d = new Date(r.ts);
-    const dt = isNaN(d) ? escapeHTML(r.ts) : d.toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-    const acteur = escapeHTML(r.acteur_nom || '—') + (r.acteur_role ? ` <span class="hint" style="display:inline">(${escapeHTML(r.acteur_role)})</span>` : '');
-    const act = JOURNAL_ACTIONS[r.action] || escapeHTML(r.action);
-    const tbl = JOURNAL_TABLES[r.table_cible] || escapeHTML(r.table_cible);
-    return `<tr><td>${dt}</td><td>${acteur}</td><td>${act}</td><td>${tbl}</td></tr>`;
-  }).join('');
-  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Date &amp; heure</th><th>Auteur</th><th>Action</th><th>Rubrique</th></tr></thead><tbody>${body}</tbody></table>`;
+  JOURNAL_OFFSET = rows.length;
+  const body = rows.map(journalRowHTML).join('');
+  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Date &amp; heure</th><th>Auteur</th><th>Action</th><th>Rubrique</th></tr></thead><tbody id="journal-body">${body}</tbody></table>`
+    + `<div id="journal-more-wrap" style="text-align:center;margin-top:10px;"></div>`;
+  renderJournalMore(rows.length === JOURNAL_PAGE);
+}
+function renderJournalMore(hasMore){
+  const box = document.getElementById('journal-more-wrap'); if (!box) return;
+  box.innerHTML = hasMore
+    ? `<button class="btn btn-sm" onclick="loadMoreJournal()">Voir plus</button>`
+    : `<span class="hint">Fin du journal — ${JOURNAL_OFFSET} entrée(s) affichée(s).</span>`;
+}
+async function loadMoreJournal(){
+  if (JOURNAL_LOADING) return;
+  const tbody = document.getElementById('journal-body'); if (!tbody) return;
+  JOURNAL_LOADING = true;
+  const box = document.getElementById('journal-more-wrap'); if (box) box.innerHTML = '<span class="hint">Chargement…</span>';
+  const { data, error } = await supabaseClient
+    .from('gestion_journal')
+    .select('ts, acteur_nom, acteur_role, action, table_cible, ligne_id')
+    .order('ts', { ascending:false })
+    .range(JOURNAL_OFFSET, JOURNAL_OFFSET + JOURNAL_PAGE - 1);
+  JOURNAL_LOADING = false;
+  if (error){ if (box) box.innerHTML = `<button class="btn btn-sm" onclick="loadMoreJournal()">Réessayer</button>`; console.error(error); return; }
+  const rows = (data||[]);
+  tbody.insertAdjacentHTML('beforeend', rows.map(journalRowHTML).join(''));
+  JOURNAL_OFFSET += rows.length;
+  renderJournalMore(rows.length === JOURNAL_PAGE);
 }
 
 /* ============================================================================

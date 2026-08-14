@@ -547,6 +547,19 @@
             <div class="field"><label>Taux accident de travail (%)</label><input type="number" id="p-accident" step="0.01"></div>
             <div class="field"><label>Prime de transport par défaut (FCFA)</label><input type="number" id="p-transport" step="1"></div>
           </div>
+          <h3 style="margin:16px 0 4px;font-size:15px;">Taux de cotisation (CNPS / ITS / CMU)</h3>
+          <div class="hint">Valeurs légales par défaut du régime ivoirien. Ne les modifiez que si un taux change officiellement — cela impacte tous les bulletins recalculés. Le barème progressif de l'ITS reste géré automatiquement.</div>
+          <div class="grid2" style="margin-top:8px;">
+            <div class="field"><label>CNPS part salariale (%)</label><input type="number" id="p-cnps-sal" step="0.01"></div>
+            <div class="field"><label>CNPS part patronale (%)</label><input type="number" id="p-cnps-pat" step="0.01"></div>
+            <div class="field"><label>ITS part patronale (%)</label><input type="number" id="p-its-pat" step="0.01"></div>
+            <div class="field"><label>Taxe d'apprentissage (%)</label><input type="number" id="p-taxe-app" step="0.01"></div>
+            <div class="field"><label>FCP – formation professionnelle (%)</label><input type="number" id="p-fcp" step="0.01"></div>
+            <div class="field"><label>Prestations familiales (%)</label><input type="number" id="p-pf" step="0.01"></div>
+            <div class="field"><label>Maternité (%)</label><input type="number" id="p-maternite" step="0.01"></div>
+            <div class="field"><label>CMU par personne / mois (FCFA)</label><input type="number" id="p-cmu" step="1"></div>
+            <div class="field"><label>Plafond social PF/Mat./AT (FCFA)</label><input type="number" id="p-plafond" step="1"></div>
+          </div>
           <div style="margin-top:6px;"><button class="btn btn-sm" onclick="saveParametres()">Enregistrer les paramètres</button></div>
         </div>
       </div>
@@ -630,6 +643,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="config.js?v=20260812m"></script>
-<script src="gestion.js?v=20260814hard1"></script>
+<script src="gestion.js?v=20260814feat1"></script>
 </body>
 </html>
