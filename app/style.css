@@ -997,3 +997,10 @@ html[data-theme="dark"] .g-toast{ background:#1B2635; }
 html[data-theme="dark"] .stat-box{ background:#141D29; border-color:#2A3849; }
 html[data-theme="dark"] .momo-choice{ background:#141D29; }
 html[data-theme="dark"] .momo-choice.selected{ background:#172a2a; }
+
+/* Tuiles de statut du jour (« Ma tournée » livreur / « Statut des colis »
+   fournisseur) : le fond pastel clair est posé en style INLINE. On le
+   remplace par une surface sombre en creux ; les chiffres/labels gardent
+   leur couleur de statut (vert / orange / rouge) pour rester lisibles. */
+html[data-theme="dark"] #colis-du-jour > div,
+html[data-theme="dark"] #tournee-summary > div{ background:#243247 !important; }
