@@ -16,21 +16,6 @@ collections:
         label: "Contenu du site"
         name: "content"
         fields:
-          - label: "Bandeau d'accueil"
-            name: "hero"
-            widget: "object"
-            collapsed: true
-            fields:
-              - { label: "Petit texte au-dessus du titre", name: "pill", widget: "string" }
-              - { label: "Titre principal", name: "title", widget: "string" }
-              - { label: "Texte d'introduction", name: "lead", widget: "text" }
-              - label: "Photos (diaporama d'accueil)"
-                name: "photos"
-                widget: "list"
-                label_singular: "Photo"
-                hint: "Les photos s'affichent en diaporama (fondu enchaîné) sur la page d'accueil."
-                field: { label: "Photo", name: "image", widget: "image" }
-
           - label: "Services proposés"
             name: "services"
             widget: "list"
@@ -128,6 +113,34 @@ collections:
                 fields:
                   - { label: "Question", name: "question", widget: "string" }
                   - { label: "Réponse", name: "answer", widget: "text" }
+
+          - label: "Coordonnées de contact"
+            name: "contact"
+            widget: "object"
+            collapsed: true
+            fields:
+              - { label: "Numéro WhatsApp (chiffres uniquement, ex : 2250546818640)", name: "whatsapp_number", widget: "string", hint: "Indicatif pays + numéro, sans + ni espaces" }
+              - { label: "Numéro WhatsApp affiché sur le site", name: "whatsapp_display", widget: "string" }
+              - { label: "Numéro de téléphone (ex : +2250711138693)", name: "phone_number", widget: "string" }
+              - { label: "Numéro de téléphone affiché", name: "phone_display", widget: "string" }
+              - { label: "Adresse email", name: "email", widget: "string" }
+              - { label: "Nom affiché sur Facebook", name: "facebook", widget: "string" }
+              - { label: "Nom affiché sur Instagram", name: "instagram", widget: "string" }
+
+          - label: "Bandeau d'accueil"
+            name: "hero"
+            widget: "object"
+            collapsed: true
+            fields:
+              - { label: "Petit texte au-dessus du titre", name: "pill", widget: "string" }
+              - { label: "Titre principal", name: "title", widget: "string" }
+              - { label: "Texte d'introduction", name: "lead", widget: "text" }
+              - label: "Photos (diaporama d'accueil)"
+                name: "photos"
+                widget: "list"
+                label_singular: "Photo"
+                hint: "Les photos s'affichent en diaporama (fondu enchaîné) sur la page d'accueil."
+                field: { label: "Photo", name: "image", widget: "image" }
 
           - label: "Comment ça marche"
             name: "how_it_works"
@@ -264,19 +277,6 @@ collections:
                 fields:
                   - { label: "Question", name: "question", widget: "string" }
                   - { label: "Réponse", name: "answer", widget: "text" }
-
-          - label: "Coordonnées de contact"
-            name: "contact"
-            widget: "object"
-            collapsed: true
-            fields:
-              - { label: "Numéro WhatsApp (chiffres uniquement, ex : 2250546818640)", name: "whatsapp_number", widget: "string", hint: "Indicatif pays + numéro, sans + ni espaces" }
-              - { label: "Numéro WhatsApp affiché sur le site", name: "whatsapp_display", widget: "string" }
-              - { label: "Numéro de téléphone (ex : +2250711138693)", name: "phone_number", widget: "string" }
-              - { label: "Numéro de téléphone affiché", name: "phone_display", widget: "string" }
-              - { label: "Adresse email", name: "email", widget: "string" }
-              - { label: "Nom affiché sur Facebook", name: "facebook", widget: "string" }
-              - { label: "Nom affiché sur Instagram", name: "instagram", widget: "string" }
 
           - label: "Mentions légales"
             name: "legal"
