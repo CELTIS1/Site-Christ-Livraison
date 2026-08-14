@@ -1,22 +1,52 @@
+/* =====================================================================
+   Christ Livraison & Transport — Design system MODERNISÉ (production)
+   Direction : épuré & professionnel · police Inter · coins doux/modérés.
+   Mise en production : 2026-08-13. Ancienne version sauvegardée dans
+   « Sauvegardes design/ ». Les espaces Express gardent leur identité
+   (Client = violet, Coursier = teal) via leurs styles internes.
+   IMPORTANT : tous les sélecteurs d'origine sont conservés à l'identique,
+   seules les VALEURS visuelles changent (couleurs, rayons, ombres, police).
+   Aucune classe supprimée -> aucune fonctionnalité impactée.
+   ===================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 :root{
   --navy:#1B4374;
   --navy-dark:#123252;
   --orange:#E26313;
-  --orange-light:#FBE2CE;
-  --muted:#4E6B8A;
+  --orange-hover:#C9550F;
+  --orange-light:#FBE7D8;
+  --muted:#5B6B7C;
   --white:#FFFFFF;
-  --grey-bg:#F7F8FA;
-  --border:#E4E8EE;
+  --grey-bg:#F6F7F9;
+  --border:#EAEDF1;
+  --border-strong:#DDE2E9;
+  /* nouveaux tokens de modernisation */
+  --radius:16px;
+  --radius-sm:10px;
+  --radius-xs:8px;
+  --radius-pill:999px;
+  --shadow-xs:0 1px 2px rgba(16,40,70,.05);
+  --shadow-sm:0 1px 2px rgba(16,40,70,.04), 0 2px 6px rgba(16,40,70,.06);
+  --shadow-md:0 6px 20px rgba(16,40,70,.09);
+  --shadow-lg:0 18px 44px rgba(16,40,70,.16);
+  /* dégradés soignés (subtils, pour un rendu épuré) */
+  --grad-navy:linear-gradient(100deg, #1B4374 0%, #2A5B94 100%);
+  --grad-navy-deep:linear-gradient(160deg, #1B4374 0%, #123252 100%);
+  --grad-orange:linear-gradient(135deg, #EA7326 0%, #E26313 55%, #C9550F 100%);
+  --grad-orange-hover:linear-gradient(135deg, #E26313 0%, #C9550F 60%, #B14A0C 100%);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{
-  font-family:Arial, Helvetica, sans-serif;
-  color:#222;
+  font-family:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  color:#1E2A38;
   background:var(--grey-bg);
-  line-height:1.5;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
 }
-h1,h2,h3,.brand-word{font-family:'Poppins', Arial, sans-serif;}
+h1,h2,h3,.brand-word{font-family:'Inter', system-ui, Arial, sans-serif; letter-spacing:-0.01em;}
 a{color:inherit;text-decoration:none;}
 img{max-width:100%;display:block;}
 button{font-family:inherit;cursor:pointer;}
@@ -24,30 +54,28 @@ input,textarea,select{font-family:inherit;}
 
 /* ---------- TOPBAR ---------- */
 .topbar{
-  background:var(--navy); color:var(--white);
+  background:var(--grad-navy); color:var(--white);
   display:flex; align-items:center; justify-content:space-between;
-  padding:14px 24px; box-shadow:0 2px 10px rgba(0,0,0,0.08);
+  padding:14px 24px; box-shadow:0 1px 0 rgba(255,255,255,.04), var(--shadow-sm);
 }
-.topbar .brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:16px;}
+.topbar .brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:16px; letter-spacing:-0.01em;}
 .topbar .brand .logo-mark{
-  width:34px; height:34px; border-radius:9px; background:var(--orange);
+  width:34px; height:34px; border-radius:10px; background:var(--grad-orange);
   display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;
+  box-shadow:0 2px 8px rgba(226,99,19,.35);
 }
-/* En-tête regroupé (tous les comptes) : la photo et le nom sont collés à gauche, la pastille de
-   rôle et l'icône ⚙️ à droite ; l'espace souple se place au milieu. Sur mobile la barre passe en
-   pleine largeur (voir @media 640px), ce qui donne l'espacement « rapproché-air-rapproché » voulu. */
 .topbar .user-info{display:flex; align-items:center; justify-content:flex-start; gap:8px; font-size:14px;}
 .topbar .user-info .role-pill{
-  background:rgba(255,255,255,0.15); padding:4px 12px; border-radius:14px; font-size:12px; font-weight:600;
+  background:rgba(255,255,255,0.14); padding:4px 12px; border-radius:var(--radius-pill); font-size:12px; font-weight:600;
   margin-left:auto;
 }
 .btn-logout{
-  background:rgba(255,255,255,0.12); color:var(--white); border:1px solid rgba(255,255,255,0.25);
-  padding:8px 16px; border-radius:20px; font-size:13px; font-weight:600; flex-shrink:0;
+  background:rgba(255,255,255,0.10); color:var(--white); border:1px solid rgba(255,255,255,0.22);
+  padding:8px 16px; border-radius:var(--radius-pill); font-size:13px; font-weight:600; flex-shrink:0;
+  transition:background .15s ease;
 }
-.btn-logout:hover{background:rgba(255,255,255,0.22);}
+.btn-logout:hover{background:rgba(255,255,255,0.20);}
 
-/* Sur mobile, la barre du haut passe en colonne pour que le bouton Déconnexion reste toujours visible */
 @media(max-width:640px){
   .topbar{flex-wrap:wrap; gap:10px; padding:12px 16px;}
   .topbar .brand{font-size:14px;}
@@ -57,12 +85,10 @@ input,textarea,select{font-family:inherit;}
 }
 
 /* ---------- AVATAR / PHOTO DE PROFIL ---------- */
-.avatar{
-  border-radius:50%; object-fit:cover; flex-shrink:0; background:var(--grey-bg);
-}
+.avatar{border-radius:50%; object-fit:cover; flex-shrink:0; background:var(--grey-bg);}
 .avatar-placeholder{
   display:flex; align-items:center; justify-content:center; background:var(--orange); color:var(--white);
-  font-weight:700; letter-spacing:.3px; font-family:'Poppins', Arial, sans-serif;
+  font-weight:700; letter-spacing:.3px; font-family:'Inter', Arial, sans-serif;
 }
 .topbar .user-info .avatar, .topbar .user-info .avatar-placeholder{border:2px solid rgba(255,255,255,0.35);}
 .livreur-meta{display:flex; align-items:center; gap:6px; margin-top:2px; font-size:12px; color:var(--muted); min-width:0;}
@@ -75,8 +101,6 @@ input,textarea,select{font-family:inherit;}
 .photo-pick-filename{font-size:12px; color:var(--muted); word-break:break-all;}
 .avatar-upload-hint{font-size:12px; color:var(--muted);}
 
-/* Photo de profil cliquable : au clic, un petit menu propose "Prendre une photo" / "Bibliothèque"
-   au lieu d'afficher ces deux boutons en permanence à côté de la photo. */
 .avatar-editable{position:relative; display:inline-block; cursor:pointer; border-radius:50%;}
 .avatar-editable:focus{outline:2px solid var(--orange); outline-offset:2px;}
 .avatar-edit-badge{
@@ -86,50 +110,41 @@ input,textarea,select{font-family:inherit;}
 }
 .avatar-edit-menu{
   position:absolute; top:calc(100% + 8px); left:0; z-index:40; background:#fff; border:1px solid var(--border);
-  border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.15); padding:6px; display:none; flex-direction:column;
+  border-radius:12px; box-shadow:var(--shadow-md); padding:6px; display:none; flex-direction:column;
   min-width:230px;
 }
 .avatar-edit-menu.open{display:flex;}
 .avatar-edit-option{
-  background:none; border:none; text-align:left; padding:10px 12px; border-radius:7px; font-size:13.5px;
-  cursor:pointer; color:var(--navy); font-family:'Poppins', Arial, sans-serif;
+  background:none; border:none; text-align:left; padding:10px 12px; border-radius:var(--radius-xs); font-size:13.5px;
+  cursor:pointer; color:var(--navy); font-family:'Inter', Arial, sans-serif; font-weight:500;
 }
 .avatar-edit-option:hover{background:var(--grey-bg);}
 .avatar-edit-choices{display:flex; flex-direction:column;}
 
 /* ---------- SOUS-NAVIGATION ---------- */
 .subnav{
-  position:sticky; top:0; z-index:99; background:var(--white); border-bottom:1px solid var(--border);
-  box-shadow:0 2px 8px rgba(20,40,70,0.06);
+  position:sticky; top:0; z-index:99; background:rgba(255,255,255,.9); backdrop-filter:saturate(180%) blur(8px);
+  border-bottom:1px solid var(--border); box-shadow:var(--shadow-xs);
 }
 .subnav-inner{
   max-width:1080px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:6px; overflow-x:auto;
 }
 .subnav-group{display:flex; align-items:center; gap:2px; flex-shrink:0;}
 .subnav-label{
-  font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;
+  font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
   color:#9aa7b8; padding:0 8px 0 2px; white-space:nowrap;
 }
 .subnav-divider{width:1px; height:20px; background:var(--border); margin:0 6px; flex-shrink:0;}
 .subnav a{
-  display:inline-block; padding:13px 12px; font-size:12.5px; font-weight:700; color:var(--muted);
+  display:inline-block; padding:13px 12px; font-size:12.5px; font-weight:600; color:var(--muted);
   white-space:nowrap; border-bottom:2.5px solid transparent; transition:color .2s ease, border-color .2s ease;
 }
 .subnav a:hover{color:var(--navy);}
 .subnav a.active{color:var(--orange); border-bottom-color:var(--orange);}
 
-/* ---------- INDICATEUR "SECTION ACTIVE" (flash doux sur le titre) ---------- */
-@keyframes title-flash{
-  0%{ color:var(--orange); }
-  100%{ color:inherit; }
-}
+@keyframes title-flash{ 0%{ color:var(--orange); } 100%{ color:inherit; } }
 .section-flash-title{ animation:title-flash 1.3s ease; }
 
-/* ---------- SECTIONS REPLIABLES : ouverture/fermeture en fondu ---------- */
-/* La hauteur max-height réelle (en px) est calculée et posée en JS (voir
-   expandCollapsible/collapseCollapsible dans config.js) au lieu d'une valeur
-   fixe arbitraire : la transition dure alors toujours le temps qu'il faut
-   pour la hauteur réelle du contenu, sans jamais sembler "trainer". */
 .collapsible-content{
   max-height:0; opacity:0; overflow:hidden;
   transition:max-height .3s ease, opacity .2s ease;
@@ -141,28 +156,24 @@ input,textarea,select{font-family:inherit;}
 
 /* ---------- LAYOUT ---------- */
 .wrap{max-width:1080px; margin:0 auto; padding:32px 24px 60px 24px;}
-.page-title{font-size:22px; color:var(--navy); font-weight:700; margin-bottom:4px;}
+.page-title{font-size:24px; color:var(--navy); font-weight:800; margin-bottom:4px; letter-spacing:-0.02em;}
 .page-sub{color:var(--muted); font-size:14px; margin-bottom:28px;}
 
 /* ---------- CARD ---------- */
 .card{
-  background:var(--white); border:1px solid var(--border); border-radius:14px;
-  padding:24px; margin-bottom:24px; scroll-margin-top:64px;
+  background:var(--white); border:1px solid var(--border); border-radius:var(--radius);
+  padding:26px; margin-bottom:22px; scroll-margin-top:64px; box-shadow:var(--shadow-sm);
 }
-.card h2{font-size:16px; color:var(--navy); margin-bottom:16px;}
+.card h2{font-size:16.5px; color:var(--navy); margin-bottom:16px; font-weight:700;}
 
 /* ---------- FORM ---------- */
 .field{margin-bottom:16px;}
-.field label{display:block; font-size:13px; font-weight:700; color:var(--navy); margin-bottom:6px;}
-/* Anti-zoom automatique (iOS Safari) : quand on tape dans un champ dont la police est < 16px,
-   le navigateur zoome tout seul (effet « ça grossit/dézoome seul »). On impose donc une police
-   d'au moins 16px sur tous les champs de saisie pour supprimer ce zoom intempestif. Le !important
-   couvre aussi les styles en ligne. La taille visuelle change à peine (14→16px). */
+.field label{display:block; font-size:13px; font-weight:600; color:var(--navy); margin-bottom:6px;}
 input, select, textarea{ font-size:16px !important; }
 
 .field input[type=text], .field input[type=email], .field input[type=password], .field input[type=tel],
 .field textarea, .field select{
-  width:100%; padding:11px 13px; border:1.5px solid var(--border); border-radius:9px; font-size:14px;
+  width:100%; padding:11px 13px; border:1.5px solid var(--border-strong); border-radius:var(--radius-sm); font-size:14px;
   background:var(--white); transition:border-color .15s ease, box-shadow .15s ease;
 }
 .field textarea{resize:vertical; min-height:70px;}
@@ -171,43 +182,40 @@ input, select, textarea{ font-size:16px !important; }
 @media(max-width:640px){.field-row{grid-template-columns:1fr;}}
 
 .btn{
-  display:inline-flex; align-items:center; gap:8px; padding:12px 24px; border-radius:24px;
-  font-weight:700; font-size:14px; border:2px solid transparent; background:var(--orange); color:var(--white);
-  box-shadow:0 2px 8px rgba(226,99,19,0.25); transition:background .15s ease, box-shadow .15s ease, transform .1s ease;
+  display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:var(--radius-sm);
+  font-weight:600; font-size:14px; border:1.5px solid transparent; background:var(--grad-orange); color:var(--white);
+  box-shadow:0 1px 2px rgba(226,99,19,0.20); transition:background .15s ease, box-shadow .15s ease, transform .1s ease;
 }
-.btn:hover{background:#c9550f; box-shadow:0 4px 12px rgba(226,99,19,0.32);}
+.btn:hover{background:var(--grad-orange-hover); box-shadow:0 4px 12px rgba(226,99,19,0.26);}
 .btn:active{transform:translateY(1px);}
-.btn-outline{background:transparent; color:var(--navy); border-color:var(--border); box-shadow:none;}
-.btn-outline:hover{background:var(--grey-bg); box-shadow:none;}
-.btn-sm{padding:8px 16px; font-size:13px; box-shadow:none;}
+.btn-outline{background:var(--white); color:var(--navy); border-color:var(--border-strong); box-shadow:none;}
+.btn-outline:hover{background:var(--grey-bg); border-color:#cfd6df; box-shadow:none;}
+.btn-sm{padding:8px 14px; font-size:13px; box-shadow:none; border-radius:var(--radius-xs);}
 .btn-sm:hover{box-shadow:none;}
-.btn:disabled{opacity:.6; cursor:not-allowed; box-shadow:none; transform:none;}
+.btn:disabled{opacity:.55; cursor:not-allowed; box-shadow:none; transform:none;}
 
 /* ---------- COLIS ROWS (formulaire multi-ajout) ---------- */
 .colis-row{
-  border:1.5px dashed var(--border); border-radius:12px; padding:16px; margin-bottom:14px; position:relative;
+  border:1.5px dashed var(--border-strong); border-radius:var(--radius-sm); padding:16px; margin-bottom:14px; position:relative;
 }
 .colis-row .remove-row{
   position:absolute; top:10px; right:10px; background:none; border:none; color:#c0392b;
   font-size:13px; font-weight:700;
 }
 
-/* ---------- MONTANTS (article + livraison) ---------- */
-/* Bloc raffiné regroupant les deux montants d'un colis : présenté comme une mini-carte avec un
-   séparateur "+" entre les deux champs, et le total recalculé en direct en dessous. Partagé par
-   les formulaires d'ajout et d'édition d'un colis sur les 2 interfaces (fournisseur, équipe). */
+/* ---------- MONTANTS ---------- */
 .montant-block{
-  border:1.5px solid var(--border); border-radius:12px; padding:14px 14px 12px; background:var(--grey-bg);
+  border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:14px 14px 12px; background:var(--grey-bg);
   margin-bottom:16px;
 }
-.montant-block > label{display:block; font-size:13px; font-weight:700; color:var(--navy); margin-bottom:10px;}
+.montant-block > label{display:block; font-size:13px; font-weight:600; color:var(--navy); margin-bottom:10px;}
 .montant-group{display:flex; align-items:center; gap:10px;}
 .montant-group .montant-field{flex:1; min-width:0;}
 .montant-group .montant-field label{
   display:block; font-size:11.5px; font-weight:700; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.3px;
 }
 .montant-group .montant-field input{
-  width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:9px; font-size:14px;
+  width:100%; padding:10px 12px; border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); font-size:14px;
   background:var(--white); transition:border-color .15s ease, box-shadow .15s ease;
 }
 .montant-group .montant-field input:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light);}
@@ -219,50 +227,40 @@ input, select, textarea{ font-size:16px !important; }
   .montant-group{flex-wrap:wrap;}
   .montant-plus{display:none;}
 }
-.montant-total-preview{
-  margin-top:10px; font-size:12.5px; color:var(--muted); text-align:right;
-}
+.montant-total-preview{margin-top:10px; font-size:12.5px; color:var(--muted); text-align:right;}
 .montant-total-preview strong{color:var(--orange); font-size:14px;}
 
-/* ---------- PAIEMENT (article payé / livraison payée) ---------- */
+/* ---------- PAIEMENT ---------- */
 .payment-checks{display:flex; flex-wrap:wrap; gap:10px; margin:2px 0 16px;}
 .check-pill{
-  display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:20px;
-  border:1.5px solid var(--border); background:var(--white); font-size:12.5px; font-weight:600; color:var(--muted);
+  display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:var(--radius-pill);
+  border:1.5px solid var(--border-strong); background:var(--white); font-size:12.5px; font-weight:600; color:var(--muted);
   cursor:pointer; transition:border-color .15s ease, background .15s ease, color .15s ease;
 }
 .check-pill input{accent-color:var(--orange); width:15px; height:15px; margin:0;}
-.check-pill:has(input:checked){border-color:#1a7d3c; background:#e3f6ea; color:#1a7d3c;}
+.check-pill:has(input:checked){border-color:#1a7d3c; background:#e9f7ef; color:#1a7d3c;}
 
-/* ---------- COLIS LIST ----------
-   Cartes volontairement compactes (padding/gap/tailles réduits) sur TOUS les écrans, pas
-   seulement sur mobile : chaque colis doit occuper le minimum d'espace vertical pour que la
-   liste reste lisible même avec beaucoup d'entrées. Les infos secondaires (date d'ajout,
-   détail montant, preuve de livraison) restent affichées mais en petite taille/faible contraste. */
+/* ---------- COLIS LIST ---------- */
 .colis-list{display:flex; flex-direction:column; gap:8px;}
 .colis-item{
   display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; background:var(--white);
-  border:1px solid var(--border); border-radius:10px; padding:10px 12px;
-  box-shadow:0 1px 3px rgba(20,40,70,0.05);
+  border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px;
+  box-shadow:var(--shadow-xs);
+  border-left:3px solid transparent;
   transition:box-shadow .2s ease, border-color .2s ease, transform .15s ease;
 }
-.colis-item:hover{box-shadow:0 6px 18px rgba(20,40,70,0.1); border-color:#d8dee6; transform:translateY(-1px);}
-/* Colis livré : fond vert doux (pas trop soutenu) pour montrer d'un coup d'œil
-   que la livraison est effectuée et bien distinguer ces cartes des autres. */
-.colis-item[data-statut="livre"]{background:#eaf7ef; border-color:#bfe6cd;}
-.colis-item[data-statut="livre"]:hover{border-color:#9ed9b4;}
-/* Colis non livré : fond rouge doux pour signaler d'un coup d'œil un échec de livraison. */
-.colis-item[data-statut="non_livre"]{background:#fdecec; border-color:#f3c9c9;}
-.colis-item[data-statut="non_livre"]:hover{border-color:#ecb0b0;}
-/* Colis retourné : léger fond ambré pour le différencier également. */
-.colis-item[data-statut="retour"]{background:#fdf4e8; border-color:#f0d9b5;}
-.colis-item[data-statut="retour"]:hover{border-color:#e8c893;}
+.colis-item:hover{box-shadow:var(--shadow-md); border-color:var(--border-strong); transform:translateY(-1px);}
+/* Statuts : tint très léger + accent de couleur à gauche (plus épuré qu'un fond plein) */
+.colis-item[data-statut="livre"]{background:#F5FBF7; border-left-color:#39A56B;}
+.colis-item[data-statut="livre"]:hover{border-color:#cdeed9;}
+.colis-item[data-statut="non_livre"]{background:#FEF6F6; border-left-color:#D6534A;}
+.colis-item[data-statut="non_livre"]:hover{border-color:#f3d3d1;}
+.colis-item[data-statut="retour"]{background:#FEFAF2; border-left-color:#E0A64B;}
+.colis-item[data-statut="retour"]:hover{border-color:#f0e0bf;}
 .colis-item .thumb{
-  width:48px; height:48px; border-radius:8px; object-fit:cover; background:var(--grey-bg); flex-shrink:0; cursor:zoom-in;
+  width:48px; height:48px; border-radius:var(--radius-xs); object-fit:cover; background:var(--grey-bg); flex-shrink:0; cursor:zoom-in;
 }
 
-/* Agrandissement d'une photo de colis au clic (lightbox partagée équipe/livreur/fournisseur).
-   Clic sur la vignette : ouverture ; clic sur le fond ou touche Échap : fermeture. */
 #clt-photo-lightbox{
   position:fixed; inset:0; z-index:9999; display:none; align-items:center; justify-content:center;
   background:rgba(10,20,35,0.82); padding:24px; cursor:zoom-out; -webkit-tap-highlight-color:transparent;
@@ -279,21 +277,16 @@ input, select, textarea{ font-size:16px !important; }
 }
 #clt-photo-lightbox .clt-lightbox-close:hover{background:rgba(255,255,255,0.28);}
 .colis-item .thumb-placeholder{
-  width:48px; height:48px; border-radius:8px; background:var(--grey-bg); display:flex; align-items:center;
+  width:48px; height:48px; border-radius:var(--radius-xs); background:var(--grey-bg); display:flex; align-items:center;
   justify-content:center; color:var(--muted); font-size:9px; flex-shrink:0; text-align:center;
 }
 .colis-item .info{flex:1; min-width:180px;}
-/* Actions rapides d'un colis (côté équipe) : « Copier le lien » et « WhatsApp » sur une seule
-   ligne, à largeur égale, pour occuper moins de hauteur et rester lisibles même sur petit écran. */
 .colis-quick-actions{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
 .colis-quick-actions .btn{flex:1 1 auto; min-width:max-content; justify-content:center; padding:7px 10px; font-size:12.5px; white-space:nowrap;}
-.colis-item .info .desc{font-size:13px; font-weight:700; color:#222; margin-bottom:2px;}
-.colis-item .info .meta{font-size:11.5px; color:var(--muted); line-height:1.4;}
+.colis-item .info .desc{font-size:13.5px; font-weight:700; color:#1E2A38; margin-bottom:2px;}
+.colis-item .info .meta{font-size:11.5px; color:var(--muted); line-height:1.45;}
 .colis-item .status-col{display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; width:170px;}
 
-/* Éléments internes (formulaire d'édition inline, observation, montants) resserrés eux aussi,
-   uniquement dans le contexte d'une carte colis — les mêmes classes utilisées dans d'autres
-   formulaires (ex : "Ajouter un colis") gardent leur espacement habituel, plus confortable. */
 .colis-item .field{margin-bottom:8px;}
 .colis-item .montant-block{padding:8px 10px 6px; margin-bottom:8px;}
 .colis-item .montant-block > label{margin-bottom:6px; font-size:11.5px;}
@@ -302,7 +295,7 @@ input, select, textarea{ font-size:16px !important; }
 .colis-item .obs-textarea{min-height:36px; padding:6px 8px; font-size:11.5px;}
 .colis-item .obs-display{padding:6px 8px; margin-top:4px; font-size:11.5px;}
 
-/* ---------- Regroupement des colis par jour / par client ---------- */
+/* ---------- Regroupement des colis ---------- */
 .day-group{display:flex; flex-direction:column; gap:8px; margin-bottom:16px;}
 .day-group-header{
   display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; color:var(--navy);
@@ -312,29 +305,24 @@ input, select, textarea{ font-size:16px !important; }
 .client-group-header{
   display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:var(--muted); flex-wrap:wrap;
 }
-.btn-recuperer-tout{background:var(--orange); color:#fff; border:none;}
-.btn-recuperer-tout:hover{filter:brightness(0.95);}
+.btn-recuperer-tout{background:var(--grad-orange); color:#fff; border:none;}
+.btn-recuperer-tout:hover{filter:brightness(0.97);}
 .group-count{
-  background:var(--grey-bg); color:var(--muted); border-radius:12px; padding:2px 9px; font-size:11.5px; font-weight:700;
+  background:var(--grey-bg); color:var(--muted); border-radius:var(--radius-pill); padding:2px 9px; font-size:11.5px; font-weight:700;
 }
 
-/* ---------- Actions groupées sur l'en-tête d'un groupe client (équipe : lieu de récupération,
-   assignation groupée du livreur de collecte) ---------- */
 .btn-edit-pickup{
   margin-left:8px; padding:4px 8px; font-size:12px;
-  background:var(--grey-bg); color:var(--navy); border:1.5px solid var(--border);
+  background:var(--grey-bg); color:var(--navy); border:1.5px solid var(--border-strong);
 }
 .group-collecte-assign{margin-left:8px; display:inline-flex; gap:4px; align-items:center;}
 .select-assign-collecte{
-  font-size:12px; padding:4px 6px; border-radius:6px; border:1.5px solid var(--border); max-width:150px;
+  font-size:12px; padding:4px 6px; border-radius:var(--radius-xs); border:1.5px solid var(--border-strong); max-width:150px;
 }
 .group-collecte-assign .btn-assign-collecte{padding:4px 8px; font-size:12px;}
 
-/* Sur mobile : carte encore plus resserrée (la base est déjà compacte sur tous les écrans, voir
-   plus haut) et colonne statut repassée en ligne, sous la carte, pour éviter tout débordement
-   horizontal sur petit écran. */
 @media(max-width:640px){
-  .colis-item{padding:8px 10px; gap:8px; border-radius:9px;}
+  .colis-item{padding:10px 12px; gap:8px; border-radius:var(--radius-sm);}
   .colis-item .thumb, .colis-item .thumb-placeholder{width:40px; height:40px; border-radius:7px; font-size:8px;}
   .colis-item .info{min-width:0;}
   .colis-item .status-col{
@@ -342,9 +330,6 @@ input, select, textarea{ font-size:16px !important; }
     border-top:1px solid var(--border); margin-top:2px; padding-top:6px; gap:6px;
   }
   .badge{padding:4px 11px; font-size:11px;}
-
-  /* En-têtes de groupe (jour / client) : actions groupées repassées sur leur propre ligne pleine
-     largeur au lieu de s'entasser à côté du nom, pour éviter tout débordement horizontal. */
   .client-group{padding-left:10px;}
   .btn-edit-pickup, .group-collecte-assign, .btn-je-pars, .btn-recuperer-tout-collecte{
     margin-left:0 !important; margin-top:4px; flex-basis:100%;
@@ -352,10 +337,6 @@ input, select, textarea{ font-size:16px !important; }
   .group-collecte-assign{width:100%;}
   .select-assign-collecte{flex:1; min-width:0; max-width:none;}
   .group-collecte-assign .btn-assign-collecte{flex-shrink:0;}
-
-  /* Carte éditable "Mes colis" (livreur) sur petit écran : la colonne d'actions passe en pile
-     verticale pleine largeur (plutôt qu'en ligne serrée), pour une saisie claire et aérée.
-     Scopé à .mes-colis-item pour ne pas modifier les cartes de l'équipe. */
   .colis-item.mes-colis-item .status-col{
     flex-direction:column; align-items:stretch; justify-content:flex-start; gap:8px;
   }
@@ -366,15 +347,6 @@ input, select, textarea{ font-size:16px !important; }
   .colis-item.mes-colis-item .status-col .btn-save{align-self:stretch;}
 }
 
-/* ---------------------------------------------------------------------------
-   Carte éditable "Mes colis" (livreur) sur grand écran (≥641px)
-   ---------------------------------------------------------------------------
-   Avant : le formulaire d'action (statut, paiement, observation, photo, enregistrer) était
-   coincé dans une colonne étroite (170px) à droite. Comme la colonne d'infos est courte, cela
-   laissait un grand vide vertical sous les infos et entassait les options à droite.
-   Après : ce formulaire devient un bandeau horizontal pleine largeur SOUS les infos. La carte
-   est nettement plus courte et l'espace est réparti proprement. Scopé à .mes-colis-item pour
-   ne pas toucher les cartes de l'équipe ni la vue "Tous les colis" (lecture seule). */
 @media(min-width:641px){
   .colis-item.mes-colis-item .status-col{
     width:100%; flex-direction:row; flex-wrap:wrap; align-items:flex-start; justify-content:flex-start;
@@ -389,7 +361,7 @@ input, select, textarea{ font-size:16px !important; }
 }
 
 .badge{
-  display:inline-block; padding:6px 14px; border-radius:16px; font-size:12px; font-weight:700; letter-spacing:.2px;
+  display:inline-block; padding:6px 13px; border-radius:var(--radius-pill); font-size:12px; font-weight:700; letter-spacing:.2px;
 }
 
 .online-dot{
@@ -399,33 +371,33 @@ input, select, textarea{ font-size:16px !important; }
 .online-dot-off{background:#c7cdd6; box-shadow:none;}
 
 .obs-textarea{
-  width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; font-size:12.5px;
+  width:100%; padding:8px 10px; border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); font-size:12.5px;
   resize:vertical; min-height:44px; transition:border-color .15s ease, box-shadow .15s ease;
 }
 .obs-textarea:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light);}
 .obs-display{
   font-size:12.5px; color:var(--muted); margin-top:6px; padding:8px 10px; background:var(--grey-bg);
-  border-radius:8px; border:1px solid var(--border);
+  border-radius:var(--radius-xs); border:1px solid var(--border);
 }
-.obs-display strong{color:#222;}
+.obs-display strong{color:#1E2A38;}
 
-.empty-state{text-align:center; color:var(--muted); padding:36px 20px; font-size:14px;}
+.empty-state{text-align:center; color:var(--muted); padding:40px 20px; font-size:14px;}
 
-.msg{padding:12px 16px; border-radius:9px; font-size:13.5px; margin-bottom:16px;}
-.msg-error{background:#fce4e2; color:#c0392b;}
-.msg-success{background:#e3f6ea; color:#1a7d3c;}
-.msg-info{background:#e8f1fb; color:#1c5a8a;}
+.msg{padding:12px 16px; border-radius:var(--radius-sm); font-size:13.5px; margin-bottom:16px;}
+.msg-error{background:#fceceb; color:#c0392b;}
+.msg-success{background:#e9f7ef; color:#1a7d3c;}
+.msg-info{background:#eaf2fb; color:#1c5a8a;}
 
-/* ---------- FILE D'ATTENTE HORS-LIGNE (Livreur) ---------- */
+/* ---------- FILE D'ATTENTE HORS-LIGNE ---------- */
 .offline-queue-banner{
   display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-  background:#fff4e5; border:1.5px solid #f0c675; color:#8a5a00; border-radius:12px;
+  background:#fff6ea; border:1.5px solid #f0d09a; color:#8a5a00; border-radius:var(--radius-sm);
   padding:12px 16px; margin-bottom:16px; font-size:13.5px; font-weight:600;
 }
 .offline-queue-banner .btn{flex-shrink:0;}
 .sync-pending-badge{
-  display:inline-flex; align-items:center; gap:4px; background:#fff4e5; color:#8a5a00;
-  border:1px solid #f0c675; border-radius:10px; padding:3px 10px; font-size:11.5px; font-weight:700;
+  display:inline-flex; align-items:center; gap:4px; background:#fff6ea; color:#8a5a00;
+  border:1px solid #f0d09a; border-radius:var(--radius-xs); padding:3px 10px; font-size:11.5px; font-weight:700;
   margin-bottom:8px;
 }
 
@@ -435,45 +407,45 @@ input, select, textarea{ font-size:16px !important; }
   min-height:100vh; display:flex; align-items:center; justify-content:center;
   background:linear-gradient(160deg, var(--navy) 0%, var(--navy-dark) 100%); padding:24px;
 }
-/* Lien "Accueil" en haut à gauche de la page de connexion, sur le fond bleu. Discret mais bien
-   visible et facilement cliquable (zone de clic confortable), avec un léger fond translucide. */
+.login-page::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(600px 300px at 80% -10%, rgba(226,99,19,.18), transparent 60%),
+             radial-gradient(500px 260px at -10% 110%, rgba(255,255,255,.06), transparent 60%);
+}
 .login-home-link{
   position:fixed; top:16px; left:16px; z-index:10;
   display:inline-flex; align-items:center; gap:6px;
   color:#fff; text-decoration:none; font-weight:600; font-size:14px;
-  padding:8px 14px; border-radius:10px;
+  padding:8px 14px; border-radius:var(--radius-sm);
   background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22);
   transition:background .15s ease;
 }
 .login-home-link:hover{background:rgba(255,255,255,0.22);}
-.login-box{background:var(--white); border-radius:16px; padding:36px; max-width:420px; width:100%;}
+.login-box{
+  position:relative; background:var(--white); border-radius:20px; padding:38px; max-width:420px; width:100%;
+  box-shadow:var(--shadow-lg);
+}
 .login-logo{display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:6px;}
 .login-logo .logo-mark{
-  width:42px; height:42px; border-radius:11px; background:var(--orange); color:var(--white);
+  width:44px; height:44px; border-radius:13px; background:var(--grad-orange); color:var(--white);
   display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px;
+  box-shadow:0 4px 14px rgba(226,99,19,.4);
 }
-.login-title{text-align:center; font-size:19px; font-weight:700; color:var(--navy); margin-bottom:4px;}
+.login-title{text-align:center; font-size:20px; font-weight:800; color:var(--navy); margin-bottom:4px; letter-spacing:-0.02em;}
 .login-sub{text-align:center; color:var(--muted); font-size:13.5px; margin-bottom:6px;}
 .login-helper{text-align:center; color:#8a94a3; font-size:12px; margin-bottom:22px; line-height:1.4;}
-.tabs{display:flex; border-bottom:1.5px solid var(--border); margin-bottom:22px;}
-.tab{flex:1; text-align:center; padding:10px; font-weight:700; font-size:13.5px; color:var(--muted); border-bottom:2.5px solid transparent; margin-bottom:-1.5px;}
-.tab.active{color:var(--orange); border-color:var(--orange);}
+.tabs{display:flex; gap:4px; background:var(--grey-bg); padding:4px; border-radius:12px; margin-bottom:22px;}
+.tab{flex:1; text-align:center; padding:9px 10px; font-weight:600; font-size:13.5px; color:var(--muted); border-radius:9px; transition:background .15s ease, color .15s ease;}
+.tab.active{color:var(--navy); background:var(--white); box-shadow:var(--shadow-xs);}
 .hidden{display:none !important;}
 
-/* Onglets sur petit écran : avec 3-4 onglets, un partage à parts égales (flex:1) fait déborder
-   ou couper les libellés les plus longs. On repasse en rangée défilante horizontalement, avec un
-   texte resserré, pour que chaque onglet reste lisible en une seule ligne. */
 @media(max-width:640px){
-  .tabs{
-    overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; margin-bottom:16px;
-  }
+  .tabs{overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; margin-bottom:16px;}
   .tabs::-webkit-scrollbar{display:none;}
-  .tab{
-    flex:0 0 auto; padding:9px 12px; font-size:12px; white-space:nowrap;
-  }
+  .tab{flex:0 0 auto; padding:8px 14px; font-size:12px; white-space:nowrap;}
 }
 
-/* ---------- ATTENTE DE VALIDATION (login) ---------- */
+/* ---------- ATTENTE DE VALIDATION ---------- */
 .waiting-box{text-align:center; padding:8px 4px 4px 4px;}
 .waiting-spinner{
   width:38px; height:38px; margin:0 auto 18px auto; border-radius:50%;
@@ -495,18 +467,18 @@ input, select, textarea{ font-size:16px !important; }
   pointer-events:none;
 }
 .search-input{
-  width:100%; padding:12px 14px 12px 40px; border:1.5px solid var(--border); border-radius:11px; font-size:14px;
+  width:100%; padding:12px 14px 12px 40px; border:1.5px solid var(--border-strong); border-radius:var(--radius-sm); font-size:14px;
   background:var(--white); margin-bottom:0; transition:border-color .15s ease, box-shadow .15s ease;
 }
 .search-input:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light);}
 .search-input::placeholder{color:#a7b0bc;}
 
-/* ---------- FILTRE PAR DATE (liste des colis) ---------- */
+/* ---------- FILTRE PAR DATE ---------- */
 .date-filter-wrap{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
-.date-filter-wrap label{font-size:12.5px; font-weight:700; color:var(--navy);}
+.date-filter-wrap label{font-size:12.5px; font-weight:600; color:var(--navy);}
 .date-filter-input{
-  padding:8px 10px; border:1.5px solid var(--border); border-radius:9px; font-size:13px;
-  background:var(--white); color:#222;
+  padding:8px 10px; border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); font-size:13px;
+  background:var(--white); color:#1E2A38;
 }
 .date-filter-input:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light);}
 .date-filter-clear{
@@ -524,18 +496,18 @@ input, select, textarea{ font-size:16px !important; }
   border-radius:10px; background:#c0392b; color:var(--white); font-size:11px; font-weight:700; margin-left:6px;
 }
 .alert-banner{
-  background:#fce4e2; color:#c0392b; border:1px solid #f3b8b2; border-radius:10px; padding:12px 16px;
+  background:#fceceb; color:#c0392b; border:1px solid #f3b8b2; border-radius:var(--radius-sm); padding:12px 16px;
   font-size:13.5px; font-weight:600; margin-bottom:18px;
 }
 
-/* ---------- NOTIFICATIONS TEMPS REEL (toasts equipe) ---------- */
+/* ---------- TOASTS ---------- */
 .team-toast-container{
   position:fixed; top:80px; right:18px; z-index:999; display:flex; flex-direction:column; gap:10px;
   max-width:340px; pointer-events:none;
 }
 .team-toast{
-  background:var(--navy); color:var(--white); border-radius:12px; padding:14px 16px;
-  box-shadow:0 12px 30px rgba(20,40,70,0.28); font-size:13.5px; line-height:1.45;
+  background:var(--navy); color:var(--white); border-radius:14px; padding:14px 16px;
+  box-shadow:var(--shadow-lg); font-size:13.5px; line-height:1.45;
   display:flex; gap:10px; align-items:flex-start; pointer-events:auto;
   animation:team-toast-in .25s ease-out;
   border-left:4px solid var(--orange);
@@ -543,57 +515,49 @@ input, select, textarea{ font-size:16px !important; }
 .team-toast .team-toast-icon{font-size:19px; line-height:1;}
 .team-toast .team-toast-title{font-weight:700; margin-bottom:2px;}
 .team-toast.leaving{animation:team-toast-out .2s ease-in forwards;}
-@keyframes team-toast-in{
-  from{opacity:0; transform:translateX(24px);}
-  to{opacity:1; transform:translateX(0);}
-}
-@keyframes team-toast-out{
-  from{opacity:1; transform:translateX(0);}
-  to{opacity:0; transform:translateX(24px);}
-}
-@media(max-width:640px){
-  .team-toast-container{left:12px; right:12px; top:70px; max-width:none;}
-}
+@keyframes team-toast-in{ from{opacity:0; transform:translateX(24px);} to{opacity:1; transform:translateX(0);} }
+@keyframes team-toast-out{ from{opacity:1; transform:translateX(0);} to{opacity:0; transform:translateX(24px);} }
+@media(max-width:640px){ .team-toast-container{left:12px; right:12px; top:70px; max-width:none;} }
 
-/* ---------- MENU D'ACTIONS (compte) ---------- */
+/* ---------- MENU D'ACTIONS ---------- */
 .actions-menu{position:relative;}
 .actions-menu-btn{
-  width:34px; height:34px; border-radius:50%; border:1.5px solid var(--border); background:var(--white);
+  width:34px; height:34px; border-radius:50%; border:1.5px solid var(--border-strong); background:var(--white);
   display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:var(--muted);
   line-height:1; transition:background .15s ease, border-color .15s ease;
 }
-.actions-menu-btn:hover{background:var(--grey-bg); border-color:#d8dee6;}
+.actions-menu-btn:hover{background:var(--grey-bg); border-color:#cfd6df;}
 .actions-dropdown{
   position:absolute; right:0; top:calc(100% + 6px); min-width:200px; background:var(--white);
-  border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 28px rgba(20,40,70,0.16);
+  border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-md);
   padding:6px; z-index:20; display:none;
 }
 .actions-dropdown.open{display:block;}
 .actions-dropdown button{
-  width:100%; text-align:left; padding:10px 12px; border-radius:8px; background:none; border:none;
-  font-size:13.5px; font-weight:600; color:#222; display:flex; align-items:center; gap:8px;
+  width:100%; text-align:left; padding:10px 12px; border-radius:var(--radius-xs); background:none; border:none;
+  font-size:13.5px; font-weight:500; color:#1E2A38; display:flex; align-items:center; gap:8px;
 }
 .actions-dropdown button:hover{background:var(--grey-bg);}
 .actions-dropdown button.danger{color:#c0392b;}
-.actions-dropdown button.danger:hover{background:#fce4e2;}
+.actions-dropdown button.danger:hover{background:#fceceb;}
 .actions-dropdown button:disabled{opacity:.45; cursor:not-allowed; background:none;}
 
 /* ---------- TABLE (équipe) ---------- */
 .filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;}
 .filter-chip{
-  padding:7px 14px; border-radius:16px; font-size:12.5px; font-weight:600; border:1.5px solid var(--border);
-  color:var(--muted); background:var(--white);
+  padding:7px 14px; border-radius:var(--radius-pill); font-size:12.5px; font-weight:600; border:1.5px solid var(--border-strong);
+  color:var(--muted); background:var(--white); transition:all .15s ease;
 }
 .filter-chip.active{background:var(--navy); color:var(--white); border-color:var(--navy);}
-.status-select{padding:6px 10px; border-radius:8px; border:1.5px solid var(--border); font-size:12.5px; font-weight:600;}
+.status-select{padding:6px 10px; border-radius:var(--radius-xs); border:1.5px solid var(--border-strong); font-size:12.5px; font-weight:600;}
 
-/* ---------- JOURNAL DE BORD / RAPPORTS ---------- */
+/* ---------- JOURNAL / RAPPORTS ---------- */
 .panel-subtitle{font-size:15px; color:var(--navy); font-weight:700; margin-bottom:14px;}
 .panel-subtitle.collapsible-header{
   display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
-  padding:10px 14px; background:var(--grey-bg); border-radius:10px; margin-bottom:0;
+  padding:11px 14px; background:var(--grey-bg); border-radius:var(--radius-sm); margin-bottom:0;
 }
-.panel-subtitle.collapsible-header:hover{background:#e7ebf1;}
+.panel-subtitle.collapsible-header:hover{background:#eef1f5;}
 .collapse-arrow{display:inline-block; font-size:11px; color:var(--muted); transition:transform .15s ease;}
 .recap-table-wrap{overflow-x:auto; margin-top:12px;}
 .recap-table-wrap.hidden{display:none;}
@@ -607,13 +571,12 @@ input, select, textarea{ font-size:16px !important; }
 .recap-table tbody tr:hover td:first-child{background:var(--grey-bg);}
 .recap-table tfoot td{font-weight:700; background:var(--grey-bg); color:var(--navy);}
 
-/* Édition en ligne d'une ligne du récapitulatif comptable (montants + paiement) */
 .recap-table input[type=number]{
-  width:88px; padding:6px 8px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; background:var(--white);
+  width:88px; padding:6px 8px; font-size:12.5px; border:1.5px solid var(--border-strong); border-radius:7px; background:var(--white);
 }
 .recap-table input[type=number]:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 2px var(--orange-light);}
 .recap-table textarea.compta-edit-observation{
-  width:170px; min-height:44px; padding:6px 8px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px;
+  width:170px; min-height:44px; padding:6px 8px; font-size:12.5px; border:1.5px solid var(--border-strong); border-radius:7px;
   background:var(--white); resize:vertical; white-space:normal; font-family:inherit;
 }
 .recap-table textarea.compta-edit-observation:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 2px var(--orange-light);}
@@ -628,7 +591,7 @@ input, select, textarea{ font-size:16px !important; }
   .recap-table-cards, .recap-table-cards tbody, .recap-table-cards tr, .recap-table-cards td{display:block; width:100%;}
   .recap-table-cards{border:none;}
   .recap-table-cards tr{
-    background:var(--white); border:1px solid var(--border); border-radius:12px; padding:10px 14px; margin-bottom:10px;
+    background:var(--white); border:1px solid var(--border); border-radius:14px; padding:10px 14px; margin-bottom:10px;
   }
   .recap-table-cards td{
     border:none; padding:6px 0; white-space:normal; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; text-align:right;
@@ -639,7 +602,7 @@ input, select, textarea{ font-size:16px !important; }
   .recap-table-cards td:first-child{position:static; background:none;}
 }
 
-/* ---- Récapitulatif par client (par jour, cliquable) ---- */
+/* ---- Récapitulatif par client ---- */
 .recap-day-bar{display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-top:12px;}
 .recap-day-bar .field{margin:0; max-width:200px;}
 .recap-day-summary{margin:14px 0 10px; font-size:13.5px; color:var(--muted);}
@@ -649,20 +612,20 @@ input, select, textarea{ font-size:16px !important; }
 .recap-search-wrap{margin-bottom:12px;}
 .recap-search{
   width:100%; max-width:360px; padding:10px 14px; font-size:14px; font-family:inherit;
-  border:1.5px solid var(--border); border-radius:10px; background:var(--white);
+  border:1.5px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--white);
 }
 .recap-search:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 2px var(--orange-light);}
 .recap-client-list{display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px;}
 .recap-client-card{
   display:flex; flex-direction:column; align-items:flex-start; gap:8px; text-align:left; cursor:pointer;
-  padding:14px 16px; background:var(--white); border:1.5px solid var(--border); border-radius:12px;
-  font-family:inherit; transition:border-color .15s ease, box-shadow .15s ease, transform .05s ease;
+  padding:14px 16px; background:var(--white); border:1.5px solid var(--border); border-radius:14px;
+  font-family:inherit; box-shadow:var(--shadow-xs); transition:border-color .15s ease, box-shadow .15s ease, transform .05s ease;
 }
-.recap-client-card:hover{border-color:var(--orange); box-shadow:0 2px 10px rgba(0,0,0,.06);}
+.recap-client-card:hover{border-color:var(--orange); box-shadow:var(--shadow-sm);}
 .recap-client-card:active{transform:scale(.99);}
 .recap-client-name{font-weight:700; color:var(--navy); font-size:14.5px; line-height:1.3;}
 .recap-client-meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
-.recap-client-count{background:var(--orange-light); color:var(--orange); padding:3px 10px; border-radius:12px; font-size:12px; font-weight:700;}
+.recap-client-count{background:var(--orange-light); color:var(--orange); padding:3px 10px; border-radius:var(--radius-pill); font-size:12px; font-weight:700;}
 .recap-client-amount{color:var(--muted); font-size:12.5px; font-weight:600;}
 .recap-bilan-head{display:flex; align-items:center; gap:12px; margin:14px 0 6px; flex-wrap:wrap;}
 .recap-bilan-title{font-weight:700; color:var(--navy); font-size:16px;}
@@ -674,11 +637,11 @@ input, select, textarea{ font-size:16px !important; }
   border-bottom:1.5px solid var(--border); font-weight:700; color:var(--navy); font-size:14px; text-transform:capitalize;
 }
 .day-count{
-  background:var(--orange-light); color:var(--orange); padding:4px 12px; border-radius:14px; font-size:12px; font-weight:700;
+  background:var(--orange-light); color:var(--orange); padding:4px 12px; border-radius:var(--radius-pill); font-size:12px; font-weight:700;
   text-transform:none;
 }
 
-/* ---------- RECAPITULATIF (tuiles + resume simple) ---------- */
+/* ---------- RECAP tuiles ---------- */
 .recap-filters{display:flex; flex-wrap:wrap; gap:16px;}
 .recap-filters .field{max-width:260px; flex:1 1 200px;}
 .day-recap-back{
@@ -687,35 +650,35 @@ input, select, textarea{ font-size:16px !important; }
 }
 .day-recap-back:hover{text-decoration:underline;}
 .recap-phrase{
-  font-size:14.5px; line-height:1.6; color:#333; background:var(--grey-bg); border-radius:12px;
+  font-size:14.5px; line-height:1.6; color:#333; background:var(--grey-bg); border-radius:var(--radius-sm);
   padding:14px 16px; margin:0 0 16px 0;
 }
 .recap-phrase strong{color:var(--navy);}
 .recap-montant{
-  font-size:14.5px; line-height:1.6; color:#333; background:var(--orange-light); border-radius:12px;
+  font-size:14.5px; line-height:1.6; color:#333; background:var(--orange-light); border-radius:var(--radius-sm);
   padding:12px 16px; margin:0 0 16px 0; border:1px solid rgba(226,99,19,0.25);
 }
 .recap-montant strong{color:var(--orange);}
 .stat-tiles{
-  display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:10px; margin-bottom:8px;
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:12px; margin-bottom:8px;
 }
 .stat-tile{
-  background:var(--white); border:1.5px solid var(--border); border-radius:14px; padding:14px 10px;
-  text-align:center; display:flex; flex-direction:column; align-items:center; gap:4px;
-  border-top:3px solid var(--tile-color, var(--navy));
+  background:var(--white); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px 12px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:4px;
+  box-shadow:var(--shadow-xs);
 }
-.stat-tile-total{background:var(--navy); border-color:var(--navy); border-top-color:var(--navy);}
+.stat-tile-total{background:var(--grad-navy-deep); border-color:var(--navy-dark);}
 .stat-tile-total .stat-tile-value, .stat-tile-total .stat-tile-label{color:var(--white);}
 .stat-tile-icon{font-size:20px; line-height:1;}
-.stat-tile-value{font-size:20px; font-weight:800; color:var(--navy); line-height:1.2;}
+.stat-tile-value{font-size:22px; font-weight:800; color:var(--navy); line-height:1.2; letter-spacing:-0.02em;}
 .stat-tile-label{font-size:11.5px; font-weight:600; color:var(--muted); line-height:1.3;}
 .stat-tile-total .stat-tile-label{color:rgba(255,255,255,0.85);}
 
 .trend-chart-title{font-size:13.5px; font-weight:700; color:var(--navy); margin:0 0 10px;}
 .trend-chart{
   display:flex; align-items:flex-end; gap:5px; height:130px; padding:20px 4px 0;
-  background:var(--white); border:1.5px solid var(--border); border-radius:14px; margin-bottom:16px;
-  overflow-x:auto;
+  background:var(--white); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px;
+  overflow-x:auto; box-shadow:var(--shadow-xs);
 }
 .trend-bar-col{
   display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
@@ -723,7 +686,7 @@ input, select, textarea{ font-size:16px !important; }
 }
 .trend-bar-count{font-size:10.5px; font-weight:700; color:var(--navy); margin-bottom:3px;}
 .trend-bar{
-  width:100%; max-width:24px; background:var(--orange); border-radius:5px 5px 0 0; min-height:4px;
+  width:100%; max-width:24px; background:var(--orange); border-radius:6px 6px 0 0; min-height:4px;
   transition:height .3s;
 }
 .trend-bar-day{font-size:9.5px; color:var(--muted); margin-top:5px; white-space:nowrap;}
@@ -731,30 +694,27 @@ input, select, textarea{ font-size:16px !important; }
 .day-recap-title{font-size:13.5px; font-weight:700; color:var(--navy); margin:22px 0 10px;}
 .day-recap-list{display:flex; flex-direction:column; gap:8px;}
 .day-recap-row{
-  background:var(--white); border:1px solid var(--border); border-radius:12px; padding:10px 14px;
-  display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; cursor:pointer; transition:border-color .15s, background .15s;
+  background:var(--white); border:1px solid var(--border); border-radius:var(--radius-sm); padding:11px 14px;
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; cursor:pointer; box-shadow:var(--shadow-xs); transition:border-color .15s, background .15s;
 }
-.day-recap-row:hover{border-color:var(--orange); background:var(--orange-light);}
+.day-recap-row:hover{border-color:var(--orange); background:#fff9f4;}
 .day-recap-date{font-weight:700; color:var(--navy); font-size:13px; text-transform:capitalize; flex-shrink:0;}
 .day-recap-count{
-  background:var(--orange-light); color:var(--orange); padding:2px 10px; border-radius:12px; font-size:11.5px; font-weight:700;
+  background:var(--orange-light); color:var(--orange); padding:2px 10px; border-radius:var(--radius-pill); font-size:11.5px; font-weight:700;
   flex-shrink:0;
 }
 .day-recap-pills{display:flex; flex-wrap:wrap; gap:6px; flex:1 1 auto;}
 .mini-pill{
-  display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:12px; font-size:11.5px; font-weight:600;
+  display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:var(--radius-pill); font-size:11.5px; font-weight:600;
   color:var(--pill-color, var(--navy)); background:var(--pill-bg, var(--grey-bg)); white-space:nowrap;
 }
 
-@media(min-width:641px) and (max-width:1024px){
-  .stat-tiles{grid-template-columns:repeat(3, 1fr);}
-}
-
+@media(min-width:641px) and (max-width:1024px){ .stat-tiles{grid-template-columns:repeat(3, 1fr);} }
 @media(max-width:640px){
-  .stat-tiles{grid-template-columns:repeat(3, 1fr); gap:7px;}
-  .stat-tile{padding:9px 5px; gap:2px; border-radius:11px;}
+  .stat-tiles{grid-template-columns:repeat(3, 1fr); gap:8px;}
+  .stat-tile{padding:11px 6px; gap:2px; border-radius:12px;}
   .stat-tile-icon{font-size:15px;}
-  .stat-tile-value{font-size:15px;}
+  .stat-tile-value{font-size:16px;}
   .stat-tile-label{font-size:9px; line-height:1.15;}
   .day-recap-row{padding:10px 12px;}
   .day-recap-date{font-size:12.5px;}
@@ -762,32 +722,27 @@ input, select, textarea{ font-size:16px !important; }
   .trend-bar-count{font-size:9px;}
   .trend-bar-day{font-size:8.5px;}
 }
+@media(max-width:380px){ .stat-tile-label{font-size:8.3px;} }
 
-@media(max-width:380px){
-  .stat-tile-label{font-size:8.3px;}
-}
-
-/* ---------- MODALE MOT DE PASSE TEMPORAIRE ---------- */
+/* ---------- MODALES ---------- */
 .reset-admin-note{
   background:var(--orange-light); color:var(--orange); font-size:12.5px; font-weight:600;
-  padding:8px 12px; border-radius:9px; margin-bottom:12px;
+  padding:8px 12px; border-radius:var(--radius-xs); margin-bottom:12px;
 }
 .pwd-modal-overlay{
-  position:fixed; inset:0; background:rgba(18,50,82,0.55); z-index:1000;
+  position:fixed; inset:0; background:rgba(18,50,82,0.5); backdrop-filter:blur(2px); z-index:1000;
   display:flex; align-items:center; justify-content:center; padding:20px;
 }
 .pwd-modal{
-  background:var(--white); border-radius:16px; padding:28px 24px; width:100%; max-width:360px;
-  text-align:center; box-shadow:0 20px 50px rgba(18,50,82,0.35);
+  background:var(--white); border-radius:18px; padding:28px 24px; width:100%; max-width:360px;
+  text-align:center; box-shadow:var(--shadow-lg);
 }
 .pwd-modal-icon{font-size:34px; margin-bottom:6px;}
-.pwd-modal-title{color:var(--navy); font-size:18px; margin-bottom:6px;}
+.pwd-modal-title{color:var(--navy); font-size:18px; margin-bottom:6px; font-weight:700;}
 .pwd-modal-sub{color:var(--muted); font-size:13px; margin-bottom:18px;}
-.pwd-modal-value-row{
-  display:flex; gap:8px; margin-bottom:14px;
-}
+.pwd-modal-value-row{display:flex; gap:8px; margin-bottom:14px;}
 #pwd-modal-value{
-  flex:1; min-width:0; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px;
+  flex:1; min-width:0; border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); padding:10px 12px;
   font-size:15px; font-weight:700; color:var(--navy); background:var(--grey-bg); text-align:center;
   letter-spacing:0.5px;
 }
@@ -796,20 +751,19 @@ input, select, textarea{ font-size:16px !important; }
 .pwd-modal-hint{color:var(--muted); font-size:12px; margin-bottom:18px; line-height:1.4;}
 .pwd-modal .btn#pwd-modal-close{width:100%;}
 
-/* ---------- MODALE DE CONFIRMATION CONTEXTUALISÉE ---------- */
 .confirm-modal-overlay{
-  position:fixed; inset:0; background:rgba(18,50,82,0.55); z-index:1100;
+  position:fixed; inset:0; background:rgba(18,50,82,0.5); backdrop-filter:blur(2px); z-index:1100;
   display:flex; align-items:center; justify-content:center; padding:20px;
 }
 .confirm-modal{
-  background:var(--white); border-radius:16px; padding:28px 24px; width:100%; max-width:380px;
-  text-align:center; box-shadow:0 20px 50px rgba(18,50,82,0.35);
+  background:var(--white); border-radius:18px; padding:28px 24px; width:100%; max-width:380px;
+  text-align:center; box-shadow:var(--shadow-lg);
 }
 .confirm-modal-icon{font-size:34px; margin-bottom:6px;}
-.confirm-modal-title{color:var(--navy); font-size:18px; margin-bottom:10px;}
+.confirm-modal-title{color:var(--navy); font-size:18px; margin-bottom:10px; font-weight:700;}
 .confirm-modal-detail{
-  background:var(--grey-bg); border-radius:10px; padding:12px 14px; margin-bottom:14px;
-  font-size:13.5px; color:#222; font-weight:700; text-align:left;
+  background:var(--grey-bg); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:14px;
+  font-size:13.5px; color:#1E2A38; font-weight:700; text-align:left;
 }
 .confirm-modal-sub{color:var(--muted); font-size:13px; margin-bottom:22px; line-height:1.5;}
 .confirm-modal-actions{display:flex; gap:10px;}
@@ -817,7 +771,7 @@ input, select, textarea{ font-size:16px !important; }
 #confirm-modal-ok.danger-btn{background:#c0392b;}
 #confirm-modal-ok.danger-btn:hover{background:#a52f22;}
 
-/* ---------- MENU RÉGLAGES (barre du haut) ---------- */
+/* ---------- MENU RÉGLAGES ---------- */
 .settings-menu{position:relative;}
 .settings-menu-btn{
   position:relative; width:34px; height:34px; border-radius:50%;
@@ -829,33 +783,33 @@ input, select, textarea{ font-size:16px !important; }
 .settings-menu-btn .alert-badge{position:absolute; top:-5px; right:-5px; margin-left:0; border:2px solid var(--navy);}
 .settings-dropdown{
   position:absolute; right:0; top:calc(100% + 8px); min-width:190px; background:var(--white);
-  border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 28px rgba(20,40,70,0.22);
+  border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-md);
   padding:6px; z-index:300; display:none;
 }
 .settings-dropdown.open{display:block;}
 .settings-dropdown button{
-  width:100%; text-align:left; padding:11px 13px; border-radius:8px; background:none; border:none;
-  font-size:13.5px; font-weight:600; color:#222; display:flex; align-items:center; gap:8px;
+  width:100%; text-align:left; padding:11px 13px; border-radius:var(--radius-xs); background:none; border:none;
+  font-size:13.5px; font-weight:500; color:#1E2A38; display:flex; align-items:center; gap:8px;
 }
 .settings-dropdown button:hover{background:var(--grey-bg);}
 .settings-dropdown button.danger{color:#c0392b;}
-.settings-dropdown button.danger:hover{background:#fce4e2;}
+.settings-dropdown button.danger:hover{background:#fceceb;}
 
 /* ---------- MODALE "MON COMPTE" ---------- */
 .account-modal-overlay{
-  position:fixed; inset:0; background:rgba(18,50,82,0.55); z-index:1000;
+  position:fixed; inset:0; background:rgba(18,50,82,0.5); backdrop-filter:blur(2px); z-index:1000;
   display:flex; align-items:flex-start; justify-content:center; padding:40px 20px; overflow-y:auto;
 }
 .account-modal{
-  position:relative; background:var(--white); border-radius:16px; padding:30px 26px; width:100%;
-  max-width:480px; box-shadow:0 20px 50px rgba(18,50,82,0.35);
+  position:relative; background:var(--white); border-radius:18px; padding:30px 26px; width:100%;
+  max-width:480px; box-shadow:var(--shadow-lg);
 }
-.account-modal-title{color:var(--navy); font-size:18px; margin-bottom:18px;}
+.account-modal-title{color:var(--navy); font-size:18px; margin-bottom:18px; font-weight:700;}
 .account-modal-close{
   position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%; border:none;
   background:var(--grey-bg); color:var(--muted); font-size:15px; display:flex; align-items:center; justify-content:center;
 }
-.account-modal-close:hover{background:#e7ebf1; color:#222;}
+.account-modal-close:hover{background:#eef1f5; color:#1E2A38;}
 .account-modal-divider{border:none; border-top:1px solid #EEF1F5; margin:22px 0;}
 .account-modal .btn-sm{margin-right:10px; margin-top:4px;}
 
