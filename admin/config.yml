@@ -63,8 +63,65 @@ collections:
                   - { label: "Mallette médicale (pharmacie)", value: "fa-briefcase-medical" }
                   - { label: "Immeuble (entreprise)", value: "fa-building" }
               - { label: "Titre du service", name: "title", widget: "string" }
-              - { label: "Description", name: "text", widget: "text" }
+              - { label: "Description courte (carte d'accueil)", name: "text", widget: "text" }
               - { label: "Photo (remplace l'icône si renseignée)", name: "photo", widget: "image", required: false }
+              - label: "Identifiant de la page (dans l'adresse)"
+                name: "slug"
+                widget: "string"
+                required: false
+                hint: "Utilisé dans l'adresse de la page détail (ex : express → services.html?s=express). Lettres minuscules, sans espace ni accent. À ne pas modifier pour les services existants."
+              - label: "Accroche (page détail)"
+                name: "tag"
+                widget: "string"
+                required: false
+                hint: "Phrase courte affichée sous le titre, en haut de la page détail du service."
+              - label: "Présentation détaillée"
+                name: "intro"
+                widget: "text"
+                required: false
+                hint: "Paragraphe « Le service en détail » sur la page du service."
+              - label: "Ce qui est inclus"
+                name: "feats"
+                widget: "list"
+                required: false
+                label_singular: "Élément"
+                hint: "Liste des points inclus dans le service."
+                field: { label: "Élément", name: "value", widget: "string" }
+              - label: "Comment ça marche (étapes)"
+                name: "steps"
+                widget: "list"
+                required: false
+                label_singular: "Étape"
+                summary: "{{title}}"
+                fields:
+                  - { label: "Titre de l'étape", name: "title", widget: "string" }
+                  - { label: "Description", name: "text", widget: "text" }
+              - label: "Idéal pour"
+                name: "ideal"
+                widget: "list"
+                required: false
+                label_singular: "Cas d'usage"
+                hint: "À qui / à quoi ce service est destiné."
+                field: { label: "Cas d'usage", name: "value", widget: "string" }
+              - label: "Zones & délais"
+                name: "delais"
+                widget: "text"
+                required: false
+                hint: "Zones couvertes et délais indicatifs pour ce service."
+              - label: "Tarifs"
+                name: "tarif"
+                widget: "text"
+                required: false
+                hint: "Indication de prix affichée dans l'encart « Tarifs » de la page détail."
+              - label: "Questions fréquentes (ce service)"
+                name: "faq"
+                widget: "list"
+                required: false
+                label_singular: "Question"
+                summary: "{{question}}"
+                fields:
+                  - { label: "Question", name: "question", widget: "string" }
+                  - { label: "Réponse", name: "answer", widget: "text" }
 
           - label: "Comment ça marche"
             name: "how_it_works"

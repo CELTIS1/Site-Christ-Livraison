@@ -232,7 +232,8 @@
 
 <script>
 document.getElementById('year').textContent = new Date().getFullYear();
-const SERVICES = {
+// Contenu de secours : sert instantanément et reste affiché si le CMS (content.json) est indisponible (hors-ligne, erreur…).
+const FALLBACK = {
   express:{
     icon:"fa-bolt", name:"Livraison express",
     tag:"Vos colis livrés le jour même, en priorité, partout à Abidjan.",
@@ -294,13 +295,82 @@ const SERVICES = {
     faq:[["Emballez-vous les colis ?","Nous manipulons vos colis avec soin et veillons à un conditionnement adapté pour un transport sécurisé."],["Comment suivre mon expédition ?","Un suivi vous est communiqué dès la prise en charge, jusqu'à la remise au destinataire."]]
   }
 };
-const ORDER = ["express","programmee","ecommerce","entreprises","expedition"];
+const FALLBACK_ORDER = ["express","programmee","ecommerce","entreprises","expedition"];
+
+// Échappe le texte avant insertion en HTML (le contenu vient désormais du CMS).
+function esc(str){
+  return (str==null?'':String(str)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Fait correspondre un titre de service à son identifiant d'URL (même table que la page d'accueil).
+const SERVICE_SLUGS = {
+  "livraison express":"express",
+  "livraison programmee":"programmee",
+  "livraison programmée":"programmee",
+  "livraison e-commerce":"ecommerce",
+  "livraison ecommerce":"ecommerce",
+  "courses pour entreprises":"entreprises",
+  "expedition":"expedition",
+  "expédition":"expedition"
+};
+function slugify(t){
+  return (t||"").toString().trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+}
+function serviceSlug(title){
+  const key=(title||"").trim().toLowerCase();
+  return SERVICE_SLUGS[key] || slugify(title) || "";
+}
+// Accepte une étape/question au format objet {title,text}/{question,answer} OU tableau [t,x].
+function pair(v,a,b){
+  if(Array.isArray(v)) return {t:v[0]||"", x:v[1]||""};
+  return {t:(v&&v[a])||"", x:(v&&v[b])||""};
+}
+// Normalise une entrée (secours OU CMS) vers une forme interne unique. Chaque champ retombe sur le secours s'il est vide.
+function norm(raw, slug){
+  raw = raw || {};
+  const fb = FALLBACK[slug] || {};
+  const nonEmptyArr = (v)=> Array.isArray(v) && v.length ? v : null;
+  const pick = (k)=> (raw[k]!=null && raw[k]!=="") ? raw[k] : fb[k];
+  const stepsRaw = nonEmptyArr(raw.steps) || fb.steps || [];
+  const faqRaw   = nonEmptyArr(raw.faq)   || fb.faq   || [];
+  return {
+    icon:  raw.icon || fb.icon || "fa-truck",
+    name:  raw.name || raw.title || fb.name || "",
+    short: raw.short || raw.text || fb.short || "",
+    tag:   pick("tag")   || "",
+    intro: pick("intro") || "",
+    feats: nonEmptyArr(raw.feats) || fb.feats || [],
+    steps: stepsRaw.map(s=>pair(s,"title","text")),
+    ideal: nonEmptyArr(raw.ideal) || fb.ideal || [],
+    delais: pick("delais") || "",
+    tarif:  pick("tarif")  || "",
+    faq:   faqRaw.map(q=>pair(q,"question","answer"))
+  };
+}
+
+let SERVICES = {};
+let ORDER = [];
+function loadFallback(){
+  SERVICES = {}; ORDER = [...FALLBACK_ORDER];
+  ORDER.forEach(k => SERVICES[k] = norm(FALLBACK[k], k));
+}
+function loadFromCMS(list){
+  const map={}, order=[];
+  list.forEach(raw=>{
+    const slug = (raw.slug ? String(raw.slug).trim() : "") || serviceSlug(raw.title);
+    if(!slug) return;
+    map[slug] = norm(raw, slug);
+    order.push(slug);
+  });
+  if(order.length){ SERVICES = map; ORDER = order; }
+}
 
 function renderOverview(){
   document.getElementById('overview').style.display='block';
   document.getElementById('ovGrid').innerHTML = ORDER.map(k=>{
     const s=SERVICES[k];
-    return `<a class="svc-card" href="services.html?s=${k}"><div class="ic"><i class="fa-solid ${s.icon}"></i></div><h3>${s.name}</h3><p>${s.short}</p><span class="learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>`;
+    return `<a class="svc-card" href="services.html?s=${encodeURIComponent(k)}"><div class="ic"><i class="fa-solid ${esc(s.icon)}"></i></div><h3>${esc(s.name)}</h3><p>${esc(s.short)}</p><span class="learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>`;
   }).join('');
   document.title = "Nos services — Christ Livraison & Transport SARL";
 }
@@ -315,15 +385,28 @@ function renderDetail(key){
   document.getElementById('svcDelais').textContent = s.delais;
   document.getElementById('svcTarif').textContent = s.tarif;
   document.getElementById('ctaTitle').textContent = 'Besoin de « ' + s.name + ' » ?';
-  document.getElementById('feats').innerHTML = s.feats.map(f=>`<div class="feat"><i class="fa-solid fa-circle-check"></i><span>${f}</span></div>`).join('');
-  document.getElementById('steps').innerHTML = s.steps.map((st,i)=>`<div class="stp"><div class="n">${i+1}</div><h4>${st[0]}</h4><p>${st[1]}</p></div>`).join('');
-  document.getElementById('ideal').innerHTML = s.ideal.map(x=>`<span><i class="fa-solid fa-check"></i>${x}</span>`).join('');
-  document.getElementById('faq').innerHTML = s.faq.map(q=>`<div class="faq-q"><h4>${q[0]}</h4><p>${q[1]}</p></div>`).join('');
-  document.getElementById('otherRow').innerHTML = ORDER.filter(k=>k!==key).map(k=>`<a href="services.html?s=${k}"><i class="fa-solid ${SERVICES[k].icon}"></i> ${SERVICES[k].name}</a>`).join('');
+  document.getElementById('feats').innerHTML = s.feats.map(f=>`<div class="feat"><i class="fa-solid fa-circle-check"></i><span>${esc(f)}</span></div>`).join('');
+  document.getElementById('steps').innerHTML = s.steps.map((st,i)=>`<div class="stp"><div class="n">${i+1}</div><h4>${esc(st.t)}</h4><p>${esc(st.x)}</p></div>`).join('');
+  document.getElementById('ideal').innerHTML = s.ideal.map(x=>`<span><i class="fa-solid fa-check"></i>${esc(x)}</span>`).join('');
+  document.getElementById('faq').innerHTML = s.faq.map(q=>`<div class="faq-q"><h4>${esc(q.t)}</h4><p>${esc(q.x)}</p></div>`).join('');
+  document.getElementById('otherRow').innerHTML = ORDER.filter(k=>k!==key).map(k=>`<a href="services.html?s=${encodeURIComponent(k)}"><i class="fa-solid ${esc(SERVICES[k].icon)}"></i> ${esc(SERVICES[k].name)}</a>`).join('');
   document.title = s.name + " — Christ Livraison & Transport SARL";
 }
-const key = new URLSearchParams(location.search).get('s');
-if (key && SERVICES[key]) { renderDetail(key); } else { renderOverview(); }
+function route(){
+  const key = new URLSearchParams(location.search).get('s');
+  document.getElementById('overview').style.display='none';
+  document.getElementById('detail').style.display='none';
+  if (key && SERVICES[key]) { renderDetail(key); } else { renderOverview(); }
+}
+
+// 1) Rendu immédiat depuis le contenu de secours (jamais de page vide).
+loadFallback();
+route();
+// 2) Puis on met à jour avec le contenu éditable du CMS (content.json) dès qu'il est chargé.
+fetch('content/content.json?v=' + Date.now(), {cache:'no-store'})
+  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+  .then(d => { if (d && Array.isArray(d.services)) { loadFromCMS(d.services); route(); } })
+  .catch(err => console.warn('services.html : contenu CMS indisponible, contenu de secours utilisé.', err));
 </script>
 </body>
 </html>

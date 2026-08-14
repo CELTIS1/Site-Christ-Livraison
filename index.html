@@ -1340,8 +1340,8 @@
       ? `<img src="${escapeHTML(s.photo)}" alt="${escapeHTML(s.title)}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin:0 auto 18px auto;">`
       : `<div class="service-icon"><i class="fa-solid ${s.icon || 'fa-truck'}"></i></div>`;
     const delay = reducedMotion ? 0 : (i % 3) * 0.12;
-    const slug = serviceSlug(s.title);
-    const href = slug ? `services.html?s=${slug}` : `services.html`;
+    const slug = (s.slug ? String(s.slug).trim() : "") || serviceSlug(s.title);
+    const href = slug ? `services.html?s=${encodeURIComponent(slug)}` : `services.html`;
     return `<a class="service-card reveal" href="${href}" style="transition-delay:${delay}s">${media}<h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.text)}</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>`;
   }
 

@@ -329,31 +329,266 @@
       "icon": "fa-bolt",
       "title": "Livraison express",
       "text": "Vos colis livrés rapidement, en priorité, pour vos besoins urgents à Abidjan.",
-      "photo": ""
+      "photo": "",
+      "slug": "express",
+      "tag": "Vos colis livrés le jour même, en priorité, partout à Abidjan.",
+      "intro": "La livraison express de Christ Livraison est conçue pour vos envois urgents à Abidjan. Dès que vous nous contactez, un coursier est mobilisé en priorité pour récupérer votre colis et le remettre à son destinataire dans les meilleurs délais — le plus souvent en quelques heures, le jour même. Vous suivez chaque étape en temps réel, du départ jusqu'à la remise, et recevez une confirmation dès que le colis est livré. Idéal quand chaque minute compte.",
+      "feats": [
+        "Prise en charge prioritaire et immédiate",
+        "Coursier dédié mobilisé rapidement",
+        "Suivi en temps réel jusqu'à la remise",
+        "Confirmation dès la livraison",
+        "Coursiers vérifiés et professionnels",
+        "Paiement à la livraison possible (espèces, Wave, Orange Money)"
+      ],
+      "steps": [
+        {
+          "title": "Vous commandez",
+          "text": "Un message WhatsApp, un appel ou le formulaire du site suffisent."
+        },
+        {
+          "title": "Récupération rapide",
+          "text": "Un coursier passe prendre le colis à l'adresse indiquée."
+        },
+        {
+          "title": "Livraison le jour même",
+          "text": "Acheminement prioritaire vers le destinataire, en quelques heures."
+        },
+        {
+          "title": "Confirmation",
+          "text": "Vous êtes notifié dès la remise du colis."
+        }
+      ],
+      "ideal": [
+        "Documents et plis urgents",
+        "Commandes clients à livrer vite",
+        "Envois de dernière minute",
+        "Pièces et fournitures urgentes"
+      ],
+      "delais": "Le jour même, généralement en quelques heures selon la distance et le trafic. Couverture : les 13 communes du District d'Abidjan ainsi que Grand-Bassam.",
+      "tarif": "Nos livraisons démarrent à 1000 FCFA ; le tarif final dépend de la distance et du format du colis. Devis gratuit et immédiat sur WhatsApp, sans engagement.",
+      "faq": [
+        {
+          "question": "En combien de temps le colis est-il livré ?",
+          "answer": "En express, la livraison se fait le jour même, souvent en quelques heures selon la distance et les conditions de circulation."
+        },
+        {
+          "question": "Comment puis-je payer ?",
+          "answer": "En espèces, par Wave ou Orange Money. Le paiement peut se faire à la commande ou à la livraison."
+        }
+      ]
     },
     {
       "icon": "fa-calendar-check",
       "title": "Livraison programmée",
       "text": "Planifiez vos livraisons à l'avance, à la date et l'heure qui vous conviennent.",
-      "photo": ""
+      "photo": "",
+      "slug": "programmee",
+      "tag": "Choisissez le jour et l'heure : on s'occupe du reste.",
+      "intro": "Avec la livraison programmée, vous planifiez vos envois à l'avance selon le créneau qui vous arrange. Vous fixez la date et l'heure, et nous prenons en charge la récupération et la remise au moment convenu, sans que vous ayez à y penser. Ce service est parfait pour organiser sereinement vos livraisons régulières ou anticiper un envoi important, avec le même suivi en temps réel et la même fiabilité que nos autres services.",
+      "feats": [
+        "Créneau de livraison au choix (date et heure)",
+        "Planification à l'avance, sans stress",
+        "Livraisons récurrentes possibles",
+        "Rappel avant le passage du coursier",
+        "Suivi en temps réel jusqu'à la remise",
+        "Coursiers vérifiés et ponctuels"
+      ],
+      "steps": [
+        {
+          "title": "Vous planifiez",
+          "text": "Indiquez-nous la date, l'heure et l'adresse souhaitées."
+        },
+        {
+          "title": "Nous confirmons",
+          "text": "Le créneau est réservé et vous recevez une confirmation."
+        },
+        {
+          "title": "Récupération au créneau",
+          "text": "Le coursier passe exactement au moment convenu."
+        },
+        {
+          "title": "Livraison suivie",
+          "text": "Acheminement et remise, avec confirmation à l'arrivée."
+        }
+      ],
+      "ideal": [
+        "Livraisons régulières / hebdomadaires",
+        "Envois à anticiper",
+        "Commerces avec tournées fixes",
+        "Rendez-vous logistiques planifiés"
+      ],
+      "delais": "À la date et l'heure que vous choisissez. Couverture : les 13 communes du District d'Abidjan et Grand-Bassam. Des tournées récurrentes peuvent être mises en place sur mesure.",
+      "tarif": "Tarif selon la fréquence, la distance et le volume, à partir de 1000 FCFA. Formules récurrentes avantageuses sur demande — devis gratuit sur WhatsApp.",
+      "faq": [
+        {
+          "question": "Puis-je mettre en place des livraisons récurrentes ?",
+          "answer": "Oui. Nous organisons des tournées régulières (quotidiennes, hebdomadaires…) adaptées à votre activité."
+        },
+        {
+          "question": "Que se passe-t-il si je dois modifier le créneau ?",
+          "answer": "Il vous suffit de nous prévenir à l'avance sur WhatsApp et nous ajustons le passage."
+        }
+      ]
     },
     {
       "icon": "fa-cart-shopping",
       "title": "Livraison e-commerce",
       "text": "Nous livrons les commandes de votre boutique en ligne directement à vos clients.",
-      "photo": ""
+      "photo": "",
+      "slug": "ecommerce",
+      "tag": "La logistique de votre boutique en ligne, clé en main.",
+      "intro": "Vous vendez en ligne ? Christ Livraison devient le bras logistique de votre boutique. Nous livrons les commandes de vos clients partout à Abidjan, encaissons le paiement à la livraison lorsque c'est nécessaire et vous le reversons, et gérons les éventuels retours. Vos clients suivent leur commande en temps réel, et vous gagnez du temps pour vous concentrer sur vos ventes. Un partenaire fiable qui soigne l'image de votre marque à chaque livraison.",
+      "feats": [
+        "Livraison des commandes directement à vos clients",
+        "Encaissement à la livraison reversé (espèces, Wave, Orange Money)",
+        "Gestion des retours et échanges",
+        "Livraisons groupées / tournées optimisées",
+        "Suivi partagé avec vos clients",
+        "Tarifs dégressifs selon le volume"
+      ],
+      "steps": [
+        {
+          "title": "Vous transmettez les commandes",
+          "text": "Par WhatsApp ou selon le canal qui vous arrange."
+        },
+        {
+          "title": "Nous récupérons les colis",
+          "text": "Enlèvement chez vous, en boutique ou à l'entrepôt."
+        },
+        {
+          "title": "Livraison à vos clients",
+          "text": "Remise au destinataire avec encaissement si besoin."
+        },
+        {
+          "title": "Reversement & bilan",
+          "text": "Nous vous reversons les encaissements et faisons le point."
+        }
+      ],
+      "ideal": [
+        "Boutiques Instagram / TikTok",
+        "Sites e-commerce",
+        "Vendeurs en ligne indépendants",
+        "Marques en croissance à Abidjan"
+      ],
+      "delais": "Livraison le jour même ou programmée selon vos besoins, dans les 13 communes d'Abidjan et à Grand-Bassam. Volumes réguliers pris en charge.",
+      "tarif": "Tarifs dégressifs selon le nombre de livraisons (à partir de 1000 FCFA l'unité). Formule partenaire sur mesure pour les boutiques — devis gratuit sur WhatsApp.",
+      "faq": [
+        {
+          "question": "Reversez-vous l'argent encaissé auprès de mes clients ?",
+          "answer": "Oui. Nous encaissons à la livraison (espèces, Wave, Orange Money) et vous reversons les montants avec un récapitulatif clair."
+        },
+        {
+          "question": "Gérez-vous les retours ?",
+          "answer": "Oui, nous prenons en charge les retours et échanges dans le cadre de nos tournées."
+        }
+      ]
     },
     {
       "icon": "fa-briefcase",
       "title": "Courses pour entreprises",
       "text": "Un coursier dédié pour vos courses professionnelles : documents, achats, commissions diverses.",
-      "photo": ""
+      "photo": "",
+      "slug": "entreprises",
+      "tag": "Un coursier dédié pour toutes vos courses professionnelles.",
+      "intro": "Christ Livraison met à disposition des entreprises un coursier dédié pour toutes leurs courses du quotidien : dépôt et retrait de documents, plis administratifs, achats, commissions, dépôts en banque ou en administration. Vous déléguez vos déplacements chronophages à une équipe fiable et vérifiée, et vous concentrez vos ressources sur votre cœur de métier. Une facturation mensuelle et un contrat sur mesure peuvent être mis en place selon vos besoins.",
+      "feats": [
+        "Coursier dédié à votre entreprise",
+        "Dépôt et retrait de documents et plis",
+        "Achats et commissions diverses",
+        "Dépôts en banque et démarches administratives",
+        "Facturation mensuelle possible",
+        "Contrat et forfaits sur mesure"
+      ],
+      "steps": [
+        {
+          "title": "Vous nous confiez la course",
+          "text": "Un simple message précisant la mission et l'adresse."
+        },
+        {
+          "title": "Prise en charge",
+          "text": "Le coursier exécute la course (retrait, dépôt, achat…)."
+        },
+        {
+          "title": "Exécution suivie",
+          "text": "Vous êtes tenu informé de l'avancement en temps réel."
+        },
+        {
+          "title": "Compte rendu",
+          "text": "Remise et confirmation, avec justificatif si nécessaire."
+        }
+      ],
+      "ideal": [
+        "PME et commerces",
+        "Cabinets et professions libérales",
+        "Administrations et institutions",
+        "Équipes sans coursier interne"
+      ],
+      "delais": "À la demande ou selon un planning défini avec vous. Couverture : l'ensemble d'Abidjan et Grand-Bassam. Missions ponctuelles ou récurrentes.",
+      "tarif": "À la course, au forfait ou en abonnement mensuel selon votre volume. Devis et contrat sur mesure — parlons-en sur WhatsApp.",
+      "faq": [
+        {
+          "question": "Proposez-vous une facturation mensuelle ?",
+          "answer": "Oui. Pour les entreprises, nous mettons en place une facturation mensuelle et des forfaits adaptés."
+        },
+        {
+          "question": "Le coursier peut-il faire des achats pour nous ?",
+          "answer": "Oui, achats et commissions font partie du service, avec justificatifs à l'appui."
+        }
+      ]
     },
     {
       "icon": "fa-paper-plane",
       "title": "Expédition",
       "text": "Prise en charge de vos expéditions vers différents points de la ville, dans les meilleurs délais.",
-      "photo": ""
+      "photo": "",
+      "slug": "expedition",
+      "tag": "Vos envois vers différents points, en toute sécurité.",
+      "intro": "Le service d'expédition de Christ Livraison prend en charge vos envois vers différents points de la ville et au-delà, dans les meilleurs délais et en toute sécurité. Vos colis sont manipulés avec soin, suivis tout au long de l'acheminement et remis à leur destinataire de manière sécurisée. Que ce soit un envoi ponctuel ou régulier, vous bénéficiez d'un interlocuteur fiable qui veille sur votre colis du départ jusqu'à l'arrivée.",
+      "feats": [
+        "Prise en charge soignée de vos colis",
+        "Acheminement vers différents points",
+        "Emballage et manipulation avec soin",
+        "Suivi tout au long de l'acheminement",
+        "Remise sécurisée au destinataire",
+        "Envois ponctuels ou réguliers"
+      ],
+      "steps": [
+        {
+          "title": "Vous nous confiez l'envoi",
+          "text": "Précisez le contenu, le point de départ et la destination."
+        },
+        {
+          "title": "Préparation & prise en charge",
+          "text": "Nous récupérons et préparons le colis pour l'expédition."
+        },
+        {
+          "title": "Acheminement suivi",
+          "text": "Le colis est acheminé et suivi jusqu'à destination."
+        },
+        {
+          "title": "Remise sécurisée",
+          "text": "Livraison au destinataire avec confirmation."
+        }
+      ],
+      "ideal": [
+        "Envois vers proches et partenaires",
+        "Colis à acheminer hors quartier",
+        "Envois volumineux ou soignés",
+        "Besoins d'expédition récurrents"
+      ],
+      "delais": "Délais selon la destination, communiqués à la prise en charge. Couverture large sur Abidjan et ses périphéries, jusqu'à Grand-Bassam.",
+      "tarif": "Tarif selon la destination, le poids et le format, à partir de 1000 FCFA. Devis gratuit et transparent sur WhatsApp avant tout envoi.",
+      "faq": [
+        {
+          "question": "Emballez-vous les colis ?",
+          "answer": "Nous manipulons vos colis avec soin et veillons à un conditionnement adapté pour un transport sécurisé."
+        },
+        {
+          "question": "Comment suivre mon expédition ?",
+          "answer": "Un suivi vous est communiqué dès la prise en charge, jusqu'à la remise au destinataire."
+        }
+      ]
     }
   ]
 }
