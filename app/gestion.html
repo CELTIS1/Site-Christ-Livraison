@@ -61,7 +61,10 @@
   table.g-table th{ background:var(--clt-teal-light); color:var(--clt-teal-dark); font-weight:700; position:sticky; top:0; }
   table.g-table th:first-child, table.g-table td:first-child{ text-align:left; position:sticky; left:0; background:#fff; z-index:1; }
   table.g-table th:first-child{ background:var(--clt-teal-light); z-index:2; }
-  table.g-table tr:hover td{ background:#f7fbfa; }
+  /* Lignes alternées (zébrage) pour lecture facile */
+  table.g-table tbody tr:nth-child(even) td{ background:#eef7f5; }
+  table.g-table tbody tr:nth-child(even) td:first-child{ background:#eef7f5; }
+  table.g-table tbody tr:hover td, table.g-table tbody tr:hover td:first-child{ background:#d9efeb; }
   table.g-table tfoot td{ font-weight:700; background:#f0f7f5; border-top:2px solid var(--clt-teal-light); }
   table.g-table input.cell{ width:88px; text-align:right; border:1px solid transparent; background:transparent; border-radius:7px; padding:5px 7px; font-size:13px; font-family:inherit; }
   table.g-table input.cell:hover{ border-color:#dfe7e5; }
