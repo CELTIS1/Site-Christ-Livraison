@@ -21,10 +21,15 @@
   <style>
     /* CLT Express utilise le violet comme couleur de marque, à la place du bleu marine du
        portail interne, pour bien montrer qu'il s'agit d'un produit distinct. */
-    .login-page{ background: linear-gradient(160deg, #6D28D9 0%, #4c1d95 100%); }
-    .login-box .logo-mark{ background:#6D28D9; }
+    .login-page{ background: linear-gradient(160deg, #8b5cf6 0%, #6D28D9 45%, #4c1d95 100%); }
+    .login-box .logo-mark{ background:linear-gradient(160deg,#8b5cf6 0%, #4c1d95 100%); }
     .login-box .login-title, .login-box .btn:not(.btn-outline){ color:inherit; }
-    .btn:not(.btn-outline){ background:#6D28D9 !important; }
+    .btn:not(.btn-outline){
+      background:linear-gradient(135deg,#7c3aed 0%, #4c1d95 100%) !important;
+      box-shadow:0 8px 18px rgba(76,29,149,0.26) !important;
+      transition:transform .15s ease, box-shadow .15s ease !important;
+    }
+    .btn:not(.btn-outline):hover{ transform:translateY(-1px) !important; box-shadow:0 12px 24px rgba(76,29,149,0.32) !important; }
     .role-toggle{ display:flex; gap:8px; margin-bottom:16px; }
     .role-toggle button{
       flex:1; padding:10px 8px; border-radius:10px; border:1.5px solid var(--border);

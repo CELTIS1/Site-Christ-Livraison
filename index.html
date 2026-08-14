@@ -791,6 +791,58 @@
     .service-card::before{ transition:none; }
   }
 </style>
+
+<!-- ===================================================================== -->
+<!-- Harmonisation 2026 — surcouche additive (n'enlève rien, ne touche ni   -->
+<!-- au HTML ni au JS ni à la mise en page). Aligne la POLICE (Inter) et    -->
+<!-- les DÉGRADÉS (navy / orange) sur l'espace connecté, ajoute le          -->
+<!-- « En savoir plus » au survol des services et affine les boutons.       -->
+<!-- ===================================================================== -->
+<style id="clt-harmonisation-2026">
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  body{ font-family:'Inter','Poppins',Arial,Helvetica,sans-serif; }
+  h1,h2,h3,.brand-word,.section-title{ font-family:'Inter','Poppins',Arial,sans-serif; letter-spacing:-.3px; }
+
+  :root{
+    --grad-navy:linear-gradient(100deg,#1B4374 0%,#2A5B94 100%);
+    --grad-navy-deep:linear-gradient(160deg,#1B4374 0%,#123252 100%);
+    --grad-orange:linear-gradient(135deg,#EA7326 0%,#E26313 55%,#C9550F 100%);
+    --grad-orange-hover:linear-gradient(135deg,#E26313 0%,#C9550F 60%,#B14A0C 100%);
+  }
+
+  /* Boutons plus nets : coins doux (au lieu de très arrondis), dégradé soigné, meilleur relief */
+  .btn{ border-radius:14px; }
+  .btn-primary{ background:var(--grad-orange); border-color:transparent; }
+  .btn-primary:hover{ background:var(--grad-orange-hover); }
+  .nav-cta{ background:var(--grad-orange); border-radius:12px; }
+  .nav-cta:hover{ background:var(--grad-orange-hover); }
+  .nav-links .nav-cta-mobile{ background:var(--grad-orange); border-radius:12px; }
+  .btn-devis{ background:var(--grad-orange); border-radius:14px; }
+  .btn-devis:hover{ background:var(--grad-orange-hover); }
+
+  /* Pastille orange & icônes de service : même dégradé exact que l'app */
+  .pill{ background:var(--grad-orange); }
+  .service-icon{ background:var(--grad-orange) !important; }
+  .step-icon{ background:var(--grad-navy) !important; }
+
+  /* Hero : dégradé navy profond identique à l'app */
+  .hero{ background:var(--grad-navy-deep); }
+
+  /* Cartes de services cliquables : « En savoir plus → » qui apparaît au survol */
+  a.service-card{ display:block; cursor:pointer; color:inherit; text-decoration:none; }
+  .service-learn{
+    display:inline-flex; align-items:center; gap:7px; margin-top:16px;
+    font-size:14px; font-weight:700; color:var(--orange);
+    opacity:0; transform:translateY(4px);
+    transition:opacity .22s ease, transform .22s ease;
+  }
+  .service-learn i{ transition:transform .22s ease; }
+  .service-card:hover .service-learn{ opacity:1; transform:translateY(0); }
+  .service-card:hover .service-learn i{ transform:translateX(4px); }
+  /* Sur écrans tactiles : toujours visible (pas de survol) */
+  @media (hover:none){ .service-learn{ opacity:1; transform:none; } }
+  @media (max-width:680px){ .service-learn{ font-size:12px; margin-top:10px; } }
+</style>
 </head>
 <body>
 
@@ -917,11 +969,11 @@
     <h2 class="section-title reveal">Nos services</h2>
     <p class="section-sub reveal">Une équipe fiable pour toutes vos livraisons du quotidien, à Abidjan et ses périphéries.</p>
     <div class="services-grid" id="servicesGrid">
-      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-bolt"></i></div><h3>Livraison express</h3><p>Vos colis livrés rapidement, en priorité, pour vos besoins urgents à Abidjan.</p></div>
-      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-calendar-check"></i></div><h3>Livraison programmée</h3><p>Planifiez vos livraisons à l'avance, à la date et l'heure qui vous conviennent.</p></div>
-      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-cart-shopping"></i></div><h3>Livraison e-commerce</h3><p>Nous livrons les commandes de votre boutique en ligne directement à vos clients.</p></div>
-      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-briefcase"></i></div><h3>Courses pour entreprises</h3><p>Un coursier dédié pour vos courses professionnelles : documents, achats, commissions diverses.</p></div>
-      <div class="service-card reveal"><div class="service-icon"><i class="fa-solid fa-paper-plane"></i></div><h3>Expédition</h3><p>Prise en charge de vos expéditions vers différents points de la ville, dans les meilleurs délais.</p></div>
+      <a class="service-card reveal" href="services.html?s=express"><div class="service-icon"><i class="fa-solid fa-bolt"></i></div><h3>Livraison express</h3><p>Vos colis livrés rapidement, en priorité, pour vos besoins urgents à Abidjan.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
+      <a class="service-card reveal" href="services.html?s=programmee"><div class="service-icon"><i class="fa-solid fa-calendar-check"></i></div><h3>Livraison programmée</h3><p>Planifiez vos livraisons à l'avance, à la date et l'heure qui vous conviennent.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
+      <a class="service-card reveal" href="services.html?s=ecommerce"><div class="service-icon"><i class="fa-solid fa-cart-shopping"></i></div><h3>Livraison e-commerce</h3><p>Nous livrons les commandes de votre boutique en ligne directement à vos clients.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
+      <a class="service-card reveal" href="services.html?s=entreprises"><div class="service-icon"><i class="fa-solid fa-briefcase"></i></div><h3>Courses pour entreprises</h3><p>Un coursier dédié pour vos courses professionnelles : documents, achats, commissions diverses.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
+      <a class="service-card reveal" href="services.html?s=expedition"><div class="service-icon"><i class="fa-solid fa-paper-plane"></i></div><h3>Expédition</h3><p>Prise en charge de vos expéditions vers différents points de la ville, dans les meilleurs délais.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
     </div>
   </div>
 </section>
@@ -1267,12 +1319,30 @@
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Fait correspondre chaque service à sa page de détail (services.html?s=slug).
+  // Si le titre ne correspond à aucun service connu, on renvoie vers la vue d'ensemble.
+  const SERVICE_SLUGS = {
+    "livraison express":"express",
+    "livraison programmee":"programmee",
+    "livraison programmée":"programmee",
+    "livraison e-commerce":"ecommerce",
+    "livraison ecommerce":"ecommerce",
+    "courses pour entreprises":"entreprises",
+    "expedition":"expedition",
+    "expédition":"expedition"
+  };
+  function serviceSlug(title){
+    const key = (title || "").trim().toLowerCase();
+    return SERVICE_SLUGS[key] || null;
+  }
   function serviceCardHTML(s, i){
     const media = s.photo
       ? `<img src="${escapeHTML(s.photo)}" alt="${escapeHTML(s.title)}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin:0 auto 18px auto;">`
       : `<div class="service-icon"><i class="fa-solid ${s.icon || 'fa-truck'}"></i></div>`;
     const delay = reducedMotion ? 0 : (i % 3) * 0.12;
-    return `<div class="service-card reveal" style="transition-delay:${delay}s">${media}<h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.text)}</p></div>`;
+    const slug = serviceSlug(s.title);
+    const href = slug ? `services.html?s=${slug}` : `services.html`;
+    return `<a class="service-card reveal" href="${href}" style="transition-delay:${delay}s">${media}<h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.text)}</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>`;
   }
 
   function trustItemHTML(t, i){

@@ -26,16 +26,27 @@
   }
   body{ background:linear-gradient(180deg,#faf8ff 0%, #f4f5f8 100%); }
 
-  /* Barre du haut : léger dégradé + ombre douce */
-  .topbar{ background:linear-gradient(90deg,#6D28D9 0%, #7c3aed 100%); box-shadow:0 2px 14px rgba(76,29,149,0.28); }
-  .topbar .brand .logo-mark{ background:#4c1d95; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.15); }
+  /* Barre du haut : vrai dégradé violet (clair -> profond) + ombre douce */
+  .topbar{
+    background:linear-gradient(135deg,#8b5cf6 0%, #6D28D9 55%, #4c1d95 100%) !important;
+    box-shadow:0 6px 20px rgba(76,29,149,0.26) !important;
+  }
+  .topbar .brand .logo-mark{ background:linear-gradient(160deg,#8b5cf6 0%, #4c1d95 100%) !important; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.15); }
   .role-pill{ background:rgba(255,255,255,0.20) !important; }
   .settings-menu-btn{ transition:.15s; }
   .settings-menu-btn:hover{ background:rgba(255,255,255,0.18); border-radius:8px; }
 
-  /* Boutons principaux en violet */
-  .btn:not(.btn-outline){ background:#6D28D9 !important; }
-  .btn:not(.btn-outline):hover{ box-shadow:0 6px 18px rgba(109,40,217,0.32) !important; }
+  /* Boutons principaux : dégradé violet soigné, coins doux, léger soulèvement au survol */
+  .btn:not(.btn-outline){
+    background:linear-gradient(135deg,#7c3aed 0%, #4c1d95 100%) !important;
+    border-radius:12px !important;
+    box-shadow:0 8px 18px rgba(76,29,149,0.24) !important;
+    transition:transform .15s ease, box-shadow .15s ease !important;
+  }
+  .btn:not(.btn-outline):hover{
+    transform:translateY(-2px) !important;
+    box-shadow:0 12px 24px rgba(76,29,149,0.32) !important;
+  }
 
   /* Titre de page plus chaleureux */
   .page-title{ font-size:25px; color:var(--clt-violet-dark); }
@@ -93,7 +104,7 @@
   /* Bouton commander : pleine largeur, dégradé, plus haut */
   #btn-new-course{
     width:100%; justify-content:center; margin-top:16px; padding:15px; font-size:15.5px; border-radius:14px;
-    background:linear-gradient(90deg,#6D28D9,#7c3aed) !important;
+    background:linear-gradient(135deg,#7c3aed 0%, #6D28D9 55%, #4c1d95 100%) !important;
   }
 
   /* ===== Liste « Mes courses » modernisée ===== */

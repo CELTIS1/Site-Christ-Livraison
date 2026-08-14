@@ -14,12 +14,13 @@
 
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même. */
 
-const CACHE_VERSION = 'clt-shell-v16';
+const CACHE_VERSION = 'clt-shell-v17';
 
 // Uniquement des ressources à URL stable (sans paramètre de version) : les fichiers versionnés
 // (style.css?v=..., config.js?v=...) sont mis en cache automatiquement au premier chargement réel
 // via le gestionnaire "fetch" ci-dessous, ce qui évite tout risque de désynchronisation de version.
 const PRECACHE_URLS = [
+  '/services.html',
   '/app/login.html',
   '/app/equipe.html',
   '/app/livreur.html',
