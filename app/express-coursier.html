@@ -117,9 +117,13 @@
   body{
     background:linear-gradient(180deg,#f2fbf9 0%, #f5f7fa 260px, #f5f7fa 100%) !important;
   }
+  /* Dégradé signature CLT — sarcelle vif et remarquable, avec un halo lumineux en haut
+     à droite (même « langage » de dégradé sur tous les comptes = marque de fabrique). */
   .topbar{
-    background:linear-gradient(135deg,#0f9b8e 0%, #0D9488 55%, #0b6e64 100%) !important;
-    box-shadow:0 6px 20px rgba(11,110,100,0.22) !important;
+    background:
+      radial-gradient(130% 150% at 88% -35%, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 55%),
+      linear-gradient(135deg,#14c2b1 0%, #0D9488 48%, #085249 100%) !important;
+    box-shadow:0 8px 26px rgba(11,110,100,0.30) !important;
   }
   .wrap{ padding-top:26px; }
   .page-title{ letter-spacing:-0.4px; }
@@ -177,20 +181,24 @@
   @media(max-width:760px){
     .clt-bottomnav{
       display:flex; position:fixed; left:0; right:0; bottom:0; z-index:200;
+      align-items:center; justify-content:space-around;
+      height:60px; padding:0 4px; padding-bottom:env(safe-area-inset-bottom);
+      box-sizing:content-box; /* la hauteur 60px = zone des icônes (centrées) ; la safe-area
+                                 prolonge seulement le fond blanc sous la barre (indicateur d'accueil) */
       background:#fff; border-top:1px solid #eef1f5;
-      padding:8px 4px calc(8px + env(safe-area-inset-bottom));
-      box-shadow:0 -6px 20px rgba(0,0,0,.06); justify-content:space-around;
+      box-shadow:0 -6px 22px rgba(11,110,100,.09);
     }
     .clt-bottomnav .nav{
       flex:1; background:none; border:none; cursor:pointer; font-family:inherit;
       display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-      font-size:10.5px; font-weight:600; color:#5b6472; padding:0 1px; min-height:52px;
-      border-radius:12px; transition:color .15s, background .15s;
+      height:50px; font-size:10.5px; font-weight:600; color:#5b6472; padding:0 1px;
+      border-radius:14px; transition:color .15s, background .15s;
       -webkit-tap-highlight-color:transparent;
     }
-    .clt-bottomnav .nav.active{ color:#0D9488; background:rgba(13,148,136,.10); }
+    .clt-bottomnav .nav.active{ color:#0D9488; background:rgba(13,148,136,.12); }
     .clt-bottomnav .nav svg{ width:22px; height:22px; }
-    body{ padding-bottom:74px; }
+    /* On réserve la hauteur de la barre + la safe-area pour que le contenu ne passe pas dessous. */
+    body{ padding-bottom:calc(60px + env(safe-area-inset-bottom)); }
     .subnav{ display:none !important; }
   }
 
