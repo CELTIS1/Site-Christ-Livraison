@@ -575,7 +575,7 @@ async function renderDashboard(){
     supabaseClient.from('gestion_depenses').select('montant').eq('annee',annee).eq('mois',mois),
     supabaseClient.from('gestion_objectifs').select('mois,objectif').eq('annee',annee),
     supabaseClient.from('gestion_recettes').select('date_recette,montant').gte('date_recette',periodeStr(annee,1)).lt('date_recette',periodeStr(annee+1,1)),
-    supabaseClient.from('gestion_depenses').select('mois,montant').eq('annee',annee),
+    supabaseClient.from('gestion_depenses').select('mois,categorie,montant').eq('annee',annee),
     supabaseClient.rpc('compta_argent_non_remis'),
   ]);
 
@@ -591,12 +591,36 @@ async function renderDashboard(){
   const resteMois = recetteMois - depenseMois;
   const pct = objMois > 0 ? Math.round(recetteMois/objMois*100) : 0;
 
-  // Masse salariale nette du mois (bulletins calculés à la volée)
+  // Masse salariale nette du mois (bulletins calculés à la volée) + trésorerie exacte.
+  // La trésorerie reprend À L'IDENTIQUE la formule des « États financiers » :
+  //   Σ (janvier→mois affiché) de [ recettes − dépenses HORS catégories de paie − coût total employeur ].
+  // Le coût employeur = net + cotisations salariales + cotisations patronales, et les mois
+  // sans saisie de paie sont ignorés (comme dans chargerEtatsFinanciers).
   let masse = 0;
+  let tresorerie = 0;
   try {
-    const per = periodeStr(annee, mois);
-    const sai = await loadSaisieMap(per);
-    SALARIES.filter(s=>s.actif!==false).forEach(s => { masse += computeBulletin(s, sai[s.id]||{periode:per}, PARAMS, GRILLE).net; });
+    const actifs = SALARIES.filter(s=>s.actif!==false);
+    // Recettes par mois (année en cours) et dépenses par mois HORS paie
+    const recByM = new Array(13).fill(0);
+    (recY.data||[]).forEach(r => { const m = parseInt(r.date_recette.slice(5,7)); if (m>=1&&m<=12) recByM[m] += n(r.montant); });
+    const depHorsPaieByM = new Array(13).fill(0);
+    (depY.data||[]).forEach(d => { const m = parseInt(d.mois)||0; const cat = d.categorie || 'Autres';
+      if (m>=1 && m<=12 && !CATS_PAIE.has(cat)) depHorsPaieByM[m] += n(d.montant); });
+    // Coût employeur par mois (janvier→mois affiché), une seule série de requêtes
+    const periodes = Array.from({length:mois},(_,i)=>periodeStr(annee,i+1));
+    const maps = await Promise.all(periodes.map(p=>loadSaisieMap(p)));
+    const persByM = new Array(13).fill(0);
+    maps.forEach((map,i) => {
+      let cout = 0;
+      actifs.forEach(s => {
+        const sai = map[s.id]; if (!sai) return;
+        const b = computeBulletin(s, Object.assign({ periode: periodes[i] }, sai), PARAMS, GRILLE);
+        cout += b.net + b.totalCotisSal + b.totalCotisPat;
+        if (i+1 === mois) masse += b.net; // masse nette du mois affiché
+      });
+      persByM[i+1] = cout;
+    });
+    for (let m=1; m<=mois; m++) tresorerie += recByM[m] - depHorsPaieByM[m] - persByM[m];
   } catch(e){ console.error(e); }
 
   document.getElementById('dash-kpis').innerHTML = `
@@ -607,6 +631,8 @@ async function renderDashboard(){
       <div class="kpi-sub">${argentNonRemis>0 ? (anrRows.length + ' livreur(s)' + (anrUrgent ? ' · ⚠️ ≥ 3 j' : '')) : 'Tout est remis ✅'}</div></div>
     <div class="kpi"><div class="kpi-label">Dépenses du mois</div><div class="kpi-value">${fmtF(depenseMois)}</div></div>
     <div class="kpi ${resteMois>=0?'pos':'neg'}"><div class="kpi-label">Reste (recette − dépenses)</div><div class="kpi-value">${fmtF(resteMois)}</div></div>
+    <div class="kpi ${tresorerie>=0?'pos':'neg'}"><div class="kpi-label">Trésorerie (activité)</div><div class="kpi-value">${fmtF(tresorerie)}</div>
+      <div class="kpi-sub">Cumul janv. → ${MOIS_FR[mois-1]} · recettes − dépenses − personnel</div></div>
     <div class="kpi"><div class="kpi-label">Masse salariale nette</div><div class="kpi-value">${fmtF(masse)}</div>
       <div class="kpi-sub">${SALARIES.filter(s=>s.actif!==false).length} salariés actifs</div></div>`;
 
