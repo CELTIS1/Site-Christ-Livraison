@@ -7,7 +7,7 @@
   "id": "/app/fournisseur.html",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#F4F6F9",
+  "background_color": "#1F9E67",
   "theme_color": "#1F8A5B",
   "lang": "fr",
   "dir": "ltr",
