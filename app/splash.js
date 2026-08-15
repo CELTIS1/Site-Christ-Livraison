@@ -47,7 +47,7 @@
   +   'align-items:center;justify-content:center;overflow:hidden;'
   +   'background:radial-gradient(120% 110% at 50% 34%, ' + hexA(T.g[0],.16) + ' 0%, rgba(0,0,0,0) 60%),'
   +   'linear-gradient(160deg,' + T.g[0] + ' 0%,' + T.g[1] + ' 54%,' + T.g[2] + ' 100%);'
-  +   'opacity:1;transition:opacity .6s ease;'
+  +   'opacity:1;transition:opacity .42s ease;'
   +   '-webkit-font-smoothing:antialiased;font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}'
   + '#clt-splash.out{opacity:0;pointer-events:none;}'
 
@@ -117,18 +117,24 @@
   var root = document.body || document.documentElement;
   root.appendChild(wrap);
 
-  // Fond peint dès maintenant sur <html> pour supprimer tout « flash » blanc
-  // au tout premier rendu (on le retire à la fin du splash).
+  // Fond peint dès maintenant sur <html> UNIQUEMENT pour supprimer le « flash »
+  // blanc du tout premier rendu. On le retire dès que l'overlay a été peint
+  // (2 rAF) : ainsi, pendant le fondu de sortie, il ne reste aucune bande verte
+  // qui « traîne » en bas de l'écran — l'overlay se fond directement sur l'app.
   var prevBg = document.documentElement.style.background;
   document.documentElement.style.background = T.g[1];
+  var clearBg = function(){ document.documentElement.style.background = prevBg; };
+  if (window.requestAnimationFrame) {
+    requestAnimationFrame(function(){ requestAnimationFrame(clearBg); });
+  } else { setTimeout(clearBg, 60); }
 
   var life = 2100;
   setTimeout(function(){
+    clearBg();
     wrap.classList.add('out');
     setTimeout(function(){
       if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
-      document.documentElement.style.background = prevBg;
-    }, 650);
+    }, 430);
     try { sessionStorage.setItem('clt-splash-done','1'); } catch(e){}
   }, life);
 })();

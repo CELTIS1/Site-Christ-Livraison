@@ -89,10 +89,16 @@ input,textarea,select{font-family:inherit;}
 }
 
 /* Sur mobile, le header coloré reste ancré en haut pendant le défilement
-   (comportement d'app natif). Les onglets du haut sont masqués sous 760px
-   (barre du bas à la place), donc aucun conflit de "sticky". */
+   (comportement d'app natif). On utilise `position:fixed` (et non `sticky`) :
+   sur iOS en mode application installée (PWA), `position:sticky` souffre d'un
+   bug de repaint pendant le défilement inertiel — le header « décollait » puis
+   revenait d'un coup. `fixed` est peint par rapport à la fenêtre et ne bouge
+   jamais. La hauteur du header (variable : 2 lignes + safe-area) est mesurée
+   en JS (theme.js) qui applique un padding-top équivalent au <body> et publie
+   --clt-topbar-h / --h-topbar. Les onglets du haut sont masqués sous 760px
+   (barre du bas à la place), donc aucun conflit. */
 @media(max-width:760px){
-  .topbar{ position:sticky; top:0; z-index:100; }
+  .topbar{ position:fixed; top:0; left:0; right:0; z-index:100; }
 }
 
 /* ---------- AVATAR / PHOTO DE PROFIL ---------- */

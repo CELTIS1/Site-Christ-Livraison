@@ -71,4 +71,56 @@
       });
     } catch (e) {}
   }
+
+  // =====================================================================
+  //  EN-TÊTE FIXE (mobile) — réservation d'espace
+  //  Sous 760px, .topbar est en `position:fixed` (voir style.css) pour rester
+  //  parfaitement immobile pendant le défilement : sur iOS installé (PWA),
+  //  `position:sticky` « décollait » puis revenait d'un coup. Comme un élément
+  //  fixe sort du flux, on mesure sa hauteur réelle (2 lignes + safe-area) et
+  //  on réserve l'espace via padding-top sur <body>. On publie aussi
+  //  --clt-topbar-h et --h-topbar pour les sous-barres qui s'y adossent.
+  // =====================================================================
+  function cltSyncTopbar() {
+    var tb = document.querySelector('.topbar');
+    // On ne réserve d'espace QUE si le header est réellement `position:fixed`
+    // (comptes standard sous 760px). Sur les pages qui gardent un header en flux
+    // — desktop, ou le module Gestion qui pilote sa propre chaîne « sticky » —
+    // on ne touche à rien, pour ne pas créer de vide en haut ni écraser ses
+    // variables d'offset.
+    var pos = (tb && window.getComputedStyle) ? getComputedStyle(tb).position : '';
+    if (!tb || pos !== 'fixed') {
+      if (document.body) document.body.style.paddingTop = '';
+      root.style.removeProperty('--clt-topbar-h');
+      return;
+    }
+    var h = tb.offsetHeight || 0;
+    if (!h) return;
+    root.style.setProperty('--clt-topbar-h', h + 'px');
+    root.style.setProperty('--h-topbar', h + 'px');
+    if (document.body) document.body.style.paddingTop = h + 'px';
+  }
+  function cltSyncSoon() {
+    cltSyncTopbar();
+    setTimeout(cltSyncTopbar, 60);
+    setTimeout(cltSyncTopbar, 350);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', cltSyncSoon);
+  } else {
+    cltSyncSoon();
+  }
+  window.addEventListener('load', cltSyncTopbar);
+  window.addEventListener('resize', cltSyncTopbar);
+  window.addEventListener('orientationchange', function () { setTimeout(cltSyncTopbar, 120); });
+  // Recalcule si le header change de taille (ex. nom d'utilisateur chargé plus tard).
+  if (window.ResizeObserver) {
+    var attachRO = function () {
+      var t = document.querySelector('.topbar');
+      if (t) { try { new ResizeObserver(cltSyncTopbar).observe(t); } catch (e) {} }
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', attachRO);
+    } else { attachRO(); }
+  }
 })();
