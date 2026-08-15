@@ -2289,6 +2289,10 @@ async function init(){
     return;
   }
 
+  // --- Déverrouillage biométrique (Face ID / Touch ID / empreinte) — opt-in, par appareil ---
+  if (window.CLTBioLock) { try { await CLTBioLock.guard(session.user); } catch (e) {} }
+  setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(session.user); }, 2500);
+
   // Libellé du rôle affiché
   document.getElementById('role-pill').textContent =
       isAdmin ? '🛡️ Administrateur'

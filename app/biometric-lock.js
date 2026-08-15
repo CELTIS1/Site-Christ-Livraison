@@ -30,7 +30,7 @@
 (function () {
   'use strict';
 
-  var LOCK_PAGES = ['livreur.html', 'fournisseur.html', 'express-client.html', 'express-coursier.html'];
+  var LOCK_PAGES = ['livreur.html', 'fournisseur.html', 'express-client.html', 'express-coursier.html', 'equipe.html', 'gestion.html'];
   var page = (location.pathname.split('/').pop() || '').toLowerCase();
   if (LOCK_PAGES.indexOf(page) === -1) return; // module inactif ailleurs
 
@@ -44,7 +44,9 @@
     'fournisseur.html':      { c: '#1F9E67', icon: '/images/icons/icon-192-fournisseur.png' },
     'livreur.html':          { c: '#EE6A17', icon: '/images/icons/icon-192-livreur.png' },
     'express-client.html':   { c: '#6D28D9', icon: '/images/icons/icon-192-client-express.png' },
-    'express-coursier.html': { c: '#0D9488', icon: '/images/icons/icon-192-coursier-express.png' }
+    'express-coursier.html': { c: '#0D9488', icon: '/images/icons/icon-192-coursier-express.png' },
+    'equipe.html':           { c: '#1B4374', icon: '/images/icons/icon-192.png' },
+    'gestion.html':          { c: '#0F766E', icon: '/images/icons/icon-192.png' }
   };
   var T = THEMES[page] || { c: '#1B4374', icon: '/images/icons/icon-192.png' };
 
