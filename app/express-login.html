@@ -72,7 +72,7 @@
       <form id="form-connexion-login">
         <div class="field">
           <label>Numéro de téléphone</label>
-          <input type="tel" id="login-phone" required placeholder="07 00 00 00 00">
+          <input type="tel" id="login-phone" required placeholder="00 00 00 00 00">
         </div>
         <div class="field">
           <label>Mot de passe</label>
@@ -95,7 +95,7 @@
         </div>
         <div class="field">
           <label>Numéro de téléphone</label>
-          <input type="tel" id="reg-phone" required placeholder="07 00 00 00 00">
+          <input type="tel" id="reg-phone" required placeholder="00 00 00 00 00">
         </div>
         <div class="field">
           <label>Créer un mot de passe</label>
@@ -138,6 +138,7 @@
 
 <script src="clt-common.js?v=20260815premium1"></script>
 <script src="express-config.js?v=20260811f"></script>
+<script src="biometric-login.js?v=20260815bio1"></script>
 <script>
   let regRole = 'client_express';
   let kycFile = null;
@@ -396,6 +397,13 @@
     const ok = await checkAccountStatus(profile, phoneNoPlus, password);
     btn.disabled = false; btn.textContent = 'Se connecter';
     if (!ok) return;
+
+    // Connexion réussie : proposer (une fois) d'activer la connexion biométrique pour la suite.
+    const rawPhone = document.getElementById('login-phone').value.trim();
+    const bioLabel = (profile && profile.full_name) ? profile.full_name : rawPhone;
+    if (window.CLTBioLogin) {
+      try { await window.CLTBioLogin.maybeSetup(rawPhone, password, bioLabel); } catch (e) {}
+    }
     redirectByRole(profile);
   });
 

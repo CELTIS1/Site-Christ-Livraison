@@ -275,7 +275,20 @@
   function maybeOfferEnrollment(user) {
     var uid = user && user.id;
     if (!uid) return;
-    injectSettingsControl(user);                    // réglage Activer/Désactiver (si menu présent)
+    // Refonte (août 2026) : on n'affiche PLUS de bannière d'activation APRÈS la connexion
+    // (jugée inutile). L'activation se fait désormais : (1) à la page de connexion, juste
+    // après la première connexion réussie — voir biometric-login.js — pour un usage réel
+    // « déverrouiller = se connecter en un geste » ; (2) à tout moment via le réglage
+    // « Activer/Désactiver le déverrouillage » dans le menu. Ici on se contente donc
+    // d'installer ce réglage, sans rien imposer à l'écran.
+    injectSettingsControl(user);
+    return;
+  }
+
+  // Ancienne bannière d'activation post-connexion — conservée (inactive) pour référence.
+  function _legacyOfferBanner(user) {
+    var uid = user && user.id;
+    if (!uid) return;
     if (hasCredential(uid)) return;                 // déjà activé → pas de bannière
     try { if (localStorage.getItem(OFFER_KEY(uid))) return; } catch (e) {} // déjà refusé
 

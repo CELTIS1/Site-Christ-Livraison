@@ -38,11 +38,13 @@
   .subtab.active{ background:var(--clt-teal); color:#fff; border-color:var(--clt-teal); }
 
   /* Cartes chiffres (KPI) */
-  .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px; margin-bottom:22px; }
-  .kpi{ background:#fff; border-radius:16px; padding:18px 20px; border:1px solid rgba(15,118,110,0.10); box-shadow:0 6px 20px rgba(11,90,84,0.06); transition:padding .2s cubic-bezier(.22,1,.36,1), border-radius .2s ease; }
-  .kpi .kpi-label{ font-size:12.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.3px; transition:font-size .2s ease; }
-  .kpi .kpi-value{ font-size:26px; font-weight:700; color:var(--clt-teal-dark); margin-top:6px; font-family:'Poppins',sans-serif; transition:font-size .2s ease, margin-top .2s ease; }
-  .kpi .kpi-sub{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+  /* Cartes compactes en permanence : la zone KPI reste discrète pour laisser voir le
+     tableau, sans jamais changer de taille au défilement (aucun tremblement possible). */
+  .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:16px; }
+  .kpi{ background:#fff; border-radius:14px; padding:12px 15px; border:1px solid rgba(15,118,110,0.10); box-shadow:0 6px 20px rgba(11,90,84,0.06); }
+  .kpi .kpi-label{ font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+  .kpi .kpi-value{ font-size:21px; font-weight:700; color:var(--clt-teal-dark); margin-top:3px; font-family:'Poppins',sans-serif; }
+  .kpi .kpi-sub{ font-size:11.5px; color:var(--muted); margin-top:3px; }
   .kpi.pos .kpi-value{ color:var(--clt-green); }
   .kpi.neg .kpi-value{ color:var(--clt-red); }
 
@@ -61,7 +63,7 @@
      imbriqué et bloque le défilement vertical de la page au toucher (il fallait insister
      plusieurs fois). En le fixant à hidden, le tableau défile horizontalement au besoin
      mais les gestes verticaux repartent bien vers la page. */
-  .g-table-wrap{ overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; border-radius:14px; border:1px solid rgba(15,118,110,0.12); }
+  .g-table-wrap{ overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action:pan-x; border-radius:14px; border:1px solid rgba(15,118,110,0.12); }
   table.g-table{ border-collapse:collapse; width:100%; font-size:13.5px; background:#fff; }
   table.g-table th, table.g-table td{ padding:9px 11px; text-align:right; border-bottom:1px solid #eef2f1; white-space:nowrap; }
   table.g-table th{ background:var(--clt-teal-light); color:var(--clt-teal-dark); font-weight:700; position:sticky; top:0; }
@@ -147,21 +149,9 @@
   .navsticky .tabs{ margin-bottom:0; }
   #sec-compta > .subtabs, #sec-paie > .subtabs{ position:sticky; top:var(--t-sub,120px); z-index:54; background:#f5f7fa; padding-top:10px; }
   .period-bar{ position:sticky; top:var(--t-period,120px); z-index:52; background:#f5f7fa; padding-top:10px; }
-  .kpi-grid{ position:sticky; top:var(--t-kpi,172px); z-index:50; background:#f5f7fa; padding-top:6px; transition:gap .2s ease, padding .2s ease; }
-
-  /* État condensé : quand le bloc KPI se fige en haut au défilement (tableau de bord),
-     il rétrécit pour libérer de la place au tableau en dessous — cartes plus compactes,
-     rangées plus serrées, sous-libellés masqués. Un dégradé bas signale qu'on peut
-     encore défiler le tableau. Basculé par gestion.js (updateKpiCondensed). */
-  #sec-dashboard .kpi-grid.condensed{ grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; padding-top:4px; padding-bottom:8px; box-shadow:0 10px 12px -10px rgba(11,90,84,0.18); }
-  #sec-dashboard .kpi-grid.condensed .kpi{ padding:9px 13px; border-radius:12px; }
-  #sec-dashboard .kpi-grid.condensed .kpi .kpi-label{ font-size:10.5px; letter-spacing:.2px; }
-  #sec-dashboard .kpi-grid.condensed .kpi .kpi-value{ font-size:18px; margin-top:1px; }
-  #sec-dashboard .kpi-grid.condensed .kpi .kpi-sub{ display:none; }
-  #sec-dashboard .kpi-grid.condensed .kpi .prog{ display:none; }
-  @media (prefers-reduced-motion: reduce){
-    .kpi, .kpi .kpi-label, .kpi .kpi-value, .kpi-grid{ transition:none; }
-  }
+  /* Le bloc KPI n'est PAS figé : il défile normalement avec le contenu et s'efface vers
+     le haut au défilement, libérant toute la hauteur pour le tableau. Comme sa taille ne
+     change jamais pendant le défilement, il ne peut plus y avoir de tremblement. */
 
   @media(max-width:640px){ .modal .grid2{ grid-template-columns:1fr; } }
 </style>
@@ -664,7 +654,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="clt-common.js?v=20260815premium1"></script>
 <script src="config.js?v=20260812m"></script>
-<script src="biometric-lock.js?v=20260815bio3"></script>
-<script src="gestion.js?v=20260815feat2"></script>
+<script src="biometric-lock.js?v=20260815bio4"></script>
+<script src="gestion.js?v=20260815feat3"></script>
 </body>
 </html>

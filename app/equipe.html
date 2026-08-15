@@ -786,7 +786,7 @@
 
 <script src="clt-common.js?v=20260815premium1"></script>
 <script src="config.js?v=20260812m"></script>
-<script src="biometric-lock.js?v=20260815bio3"></script>
+<script src="biometric-lock.js?v=20260815bio4"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2661,8 +2661,25 @@ return;
 }
 
 try {
-await callAdminFunction('admin-creer-equipe', { full_name, phone, password });
-addEquipeMsg("Compte équipe créé avec succès.", "success");
+const res = await callAdminFunction('admin-creer-equipe', { full_name, phone, password });
+// Accès par défaut : un nouveau compte équipe reçoit l'accès « Opérations » afin de
+// pouvoir se connecter et travailler immédiatement. Sans droit, la garde du tableau de
+// bord le déconnecterait aussitôt (la connexion semblait alors « refusée »). L'admin peut
+// ensuite ajuster les droits (Opérations / Paie / Comptabilité) depuis la liste des comptes.
+try {
+let newId = res && res.user_id;
+if (!newId) {
+const normPhone = (typeof toPhoneE164 === 'function') ? toPhoneE164(phone) : phone;
+const { data: created } = await supabaseClient
+.from('profiles').select('id').eq('phone', normPhone).eq('role', 'equipe')
+.order('created_at', { ascending: false }).limit(1);
+if (created && created[0]) newId = created[0].id;
+}
+if (newId) {
+await supabaseClient.from('profiles').update({ acces_operations: true }).eq('id', newId);
+}
+} catch (accesErr) { console.warn('Attribution accès par défaut échouée :', accesErr); }
+addEquipeMsg("Compte équipe créé avec succès. Accès Opérations activé par défaut — vous pouvez l'ajuster dans la liste des comptes.", "success");
 e.target.reset();
 await loadAllAccounts();
 } catch (err) {
@@ -4316,9 +4333,12 @@ if (!isOps) {
 if (profile.acces_paie === true || profile.acces_compta === true) {
 window.location.href = 'gestion.html';
 } else {
+// Compte équipe sans aucun droit d'accès : au lieu d'un renvoi silencieux (qui donne
+// l'impression d'une connexion « refusée »), on explique clairement la situation sur la
+// page de connexion, pour que l'administrateur sache qu'il doit attribuer un droit d'accès.
 await supabaseClient.auth.signOut();
 if (typeof clearAllAuthStorage === 'function') clearAllAuthStorage();
-window.location.href = 'login.html';
+window.location.href = 'login.html?motif=sans-droits';
 }
 return;
 }

@@ -48,7 +48,7 @@
       <form id="form-connexion-login">
         <div class="field">
           <label>Numéro de téléphone</label>
-        <input type="tel" id="login-phone" required placeholder="07 00 00 00 00">
+        <input type="tel" id="login-phone" required placeholder="00 00 00 00 00">
         </div>
       <div class="field">
       <label>Mot de passe</label>
@@ -64,7 +64,7 @@
     <div style="text-align:center;font-weight:700;color:#1B4374;font-size:15px;margin-bottom:10px;">Mot de passe oublié ou première connexion</div>
     <div class="field">
     <label>Numéro de téléphone</label>
-    <input type="tel" id="forgot-phone" required placeholder="07 00 00 00 00">
+    <input type="tel" id="forgot-phone" required placeholder="00 00 00 00 00">
     </div>
     <div style="margin-bottom:14px;font-size:12.5px;color:#6b7280;">Première connexion ou mot de passe oublié : la démarche est la même. Après approbation par notre équipe, vous définirez vous-même votre nouveau mot de passe, directement sur cette page.</div>
     <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-send">Demander une réinitialisation</button>
@@ -116,7 +116,7 @@
     </div>
     <div class="field">
     <label>Numéro de téléphone</label>
-    <input type="tel" id="reg-phone" required placeholder="07 00 00 00 00">
+    <input type="tel" id="reg-phone" required placeholder="00 00 00 00 00">
     </div>
     <div class="field">
     <label>Créer un mot de passe</label>
@@ -147,6 +147,7 @@
 
 <script src="clt-common.js?v=20260815premium1"></script>
 <script src="config.js?v=20260812m"></script>
+<script src="biometric-login.js?v=20260815bio1"></script>
 <script>
   function showTab(which){
     stopWaiting();
@@ -201,6 +202,17 @@
     const ok = await checkAccountStatus(profile);
     if (!ok) return;
     redirectByRole(profile);
+  })();
+
+  // Message d'accueil si l'on a été renvoyé ici parce que le compte équipe n'a encore aucun
+  // droit d'accès : on l'explique clairement plutôt que de laisser croire à un échec de connexion.
+  (function showEntryNotice(){
+    try {
+      const params = new URLSearchParams(location.search);
+      if (params.get('motif') === 'sans-droits') {
+        showMsg("Votre compte est bien actif, mais aucun accès ne lui a encore été attribué. Demandez à l'administrateur de vous accorder un accès (Opérations, Paie ou Comptabilité) depuis la liste des comptes.", 'error');
+      }
+    } catch (e) {}
   })();
 
   // Redirige vers le tableau de bord correspondant au rôle, en recopiant d'abord la session
@@ -460,6 +472,16 @@
     const ok = await checkAccountStatus(profile, phoneNoPlus, password);
     btn.disabled = false; btn.textContent = 'Se connecter';
     if (!ok) return;
+
+    // Connexion réussie : proposer (une seule fois, sur cet appareil) d'activer la
+    // connexion biométrique pour les prochaines fois. On mémorise le numéro TEL QU'IL A
+    // ÉTÉ SAISI (pour reproduire exactement une connexion valide) et le mot de passe,
+    // restitués uniquement après une vérification Face ID / empreinte réussie.
+    const rawPhone = document.getElementById('login-phone').value.trim();
+    const bioLabel = (profile && profile.full_name) ? profile.full_name : rawPhone;
+    if (window.CLTBioLogin) {
+      try { await window.CLTBioLogin.maybeSetup(rawPhone, password, bioLabel); } catch (e) {}
+    }
     redirectByRole(profile);
   });
 

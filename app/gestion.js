@@ -178,34 +178,17 @@ function refreshStickyOffsets(){
     rootStyle.setProperty('--t-kpi',    r(tKpi));
   }catch(_e){ /* sans effet sur le fonctionnement */ }
 }
-// Bloc KPI du tableau de bord : passe en mode « condensé » lorsqu'il atteint sa
-// position figée en haut, pour rendre plus de place au tableau. Comme l'élément
-// est en position:sticky, une fois collé son haut reste exactement à --t-kpi :
-// la bascule est donc stable (pas de clignotement).
-function updateKpiCondensed(){
-  try{
-    const sec = document.getElementById('sec-dashboard');
-    if (!sec || !sec.classList.contains('active')) return;
-    const grid = sec.querySelector(':scope > .kpi-grid');
-    if (!grid) return;
-    const stuckTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--t-kpi')) || 0;
-    const stuck = grid.getBoundingClientRect().top <= stuckTop + 1;
-    grid.classList.toggle('condensed', stuck);
-  }catch(_e){ /* sans effet sur le fonctionnement */ }
-}
 let _stickyRaf = null;
 function scheduleStickyRefresh(){
   // Mesure immédiate : indispensable car requestAnimationFrame ne se déclenche pas
   // quand l'onglet est en arrière-plan (au chargement notamment).
   refreshStickyOffsets();
-  updateKpiCondensed();
   // Recalage après la prochaine peinture, quand l'onglet est visible.
   if (_stickyRaf) cancelAnimationFrame(_stickyRaf);
-  _stickyRaf = requestAnimationFrame(() => { _stickyRaf = null; refreshStickyOffsets(); updateKpiCondensed(); });
+  _stickyRaf = requestAnimationFrame(() => { _stickyRaf = null; refreshStickyOffsets(); });
 }
 function initStickyHeader(){
   scheduleStickyRefresh();
-  window.addEventListener('scroll', updateKpiCondensed, { passive:true });
   window.addEventListener('resize', scheduleStickyRefresh);
   window.addEventListener('orientationchange', scheduleStickyRefresh);
   if (window.ResizeObserver){
