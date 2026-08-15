@@ -22,7 +22,7 @@
 
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même. */
 
-const CACHE_VERSION = 'clt-shell-v26';
+const CACHE_VERSION = 'clt-shell-v27';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.
@@ -89,6 +89,7 @@ const PRECACHE_URLS = [
   '/app/express-login.html',
   '/app/express-client.html',
   '/app/express-coursier.html',
+  '/app/manifest-express-login.json',
   '/app/manifest-client-express.json',
   '/app/manifest-coursier-express.json',
   '/images/icons/icon-192-client-express.png',
