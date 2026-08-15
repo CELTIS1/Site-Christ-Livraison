@@ -257,6 +257,80 @@
   .btn-pin-toggle.is-set{ color:#047857; border-style:solid; border-color:#10b981; background:#ecfdf5; }
   .pin-map{ height:200px; margin-top:8px; border-radius:12px; overflow:hidden; background:#eef1f5; }
   .pin-status{ margin-top:6px; font-size:12px; color:#047857; }
+
+  /* ============================================================================
+     MODE SOMBRE — Espace client Express (palette nuit violette)
+     ----------------------------------------------------------------------------
+     La feuille partagée (style.css) ne gère que les composants génériques ; cette
+     page possède beaucoup de surfaces claires « en dur » (cartes de course, chat,
+     notation, paiement…). On les repeint ici avec une palette nocturne violette
+     douce et cohérente, agréable à lire la nuit. On garde intacts les dégradés de
+     marque (barre du haut, résumé de trajet) qui restent beaux sur fond sombre.
+     ============================================================================ */
+  html[data-theme="dark"] body{
+    background:linear-gradient(180deg,#141021 0%, #0e0c17 100%) !important;
+  }
+  html[data-theme="dark"] .panel{
+    border-color:#2c2745 !important;
+    box-shadow:0 6px 26px rgba(0,0,0,0.38) !important;
+  }
+  html[data-theme="dark"] .page-title,
+  html[data-theme="dark"] .panel-subtitle{ color:#c9b8ff !important; }
+
+  /* Cartes de course */
+  html[data-theme="dark"] .course-item{ background:#1b1830 !important; border-color:#2c2745 !important; }
+  html[data-theme="dark"] .course-item .coursier-info,
+  html[data-theme="dark"] .course-item .status-col > div{ color:#c9b8ff !important; }
+  html[data-theme="dark"] .coursier-rep{ background:#3a2c14 !important; color:#f2c98a !important; border-color:#5a4420 !important; }
+  html[data-theme="dark"] .coursier-rep.empty{ background:#241f38 !important; color:#a99fc4 !important; border-color:#332c4d !important; }
+
+  /* Notation (étoiles + avis) */
+  html[data-theme="dark"] .rating-block,
+  html[data-theme="dark"] .rating-done{ background:#1a1730 !important; border-color:#2c2745 !important; }
+  html[data-theme="dark"] .rating-title{ color:#c9b8ff !important; }
+  html[data-theme="dark"] .rating-comment{ background:#171426 !important; border-color:#332c4d !important; color:#E6ECF3 !important; }
+  html[data-theme="dark"] .stars .star{ color:#4a4166 !important; }
+  html[data-theme="dark"] .rating-done .rating-avis{ color:#b8afce !important; }
+
+  /* Chat client ↔ coursier */
+  html[data-theme="dark"] .chat-toggle{ background:#182a3a !important; color:#7cc0f0 !important; border-color:#2a4459 !important; }
+  html[data-theme="dark"] .chat-toggle:hover{ background:#1d3446 !important; }
+  html[data-theme="dark"] .chat-panel{ background:#171426 !important; border-color:#2c2745 !important; }
+  html[data-theme="dark"] .chat-msgs{ background:#12101f !important; }
+  html[data-theme="dark"] .chat-bubble.theirs{ background:#2a2440 !important; color:#E6ECF3 !important; }
+  html[data-theme="dark"] .chat-input-row{ background:#171426 !important; border-top-color:#2c2745 !important; }
+  html[data-theme="dark"] .chat-input{ background:#12101f !important; border-color:#332c4d !important; color:#E6ECF3 !important; }
+  html[data-theme="dark"] .chat-empty{ color:#8a80a4 !important; }
+
+  /* Suivi par étapes (stepper) */
+  html[data-theme="dark"] .clt-stepper .st .c{ background:#241f38 !important; color:#8a80a4 !important; }
+  html[data-theme="dark"] .clt-stepper .st::before{ background:#241f38 !important; }
+  html[data-theme="dark"] .clt-stepper .st .l{ color:#a99fc4 !important; }
+  html[data-theme="dark"] .clt-stepper .st.now .l{ color:#c9b8ff !important; }
+
+  /* Onglets du haut */
+  html[data-theme="dark"] .clt-toptabs-wrap{ background:#0e0c17 !important; }
+  html[data-theme="dark"] .clt-toptabs{ background:#171426 !important; border-color:#2c2745 !important; }
+  html[data-theme="dark"] .clt-toptab{ color:#a99fc4 !important; }
+  html[data-theme="dark"] .clt-toptab.active{ background:#241f38 !important; color:#c9b8ff !important; }
+
+  /* Dépôt de photo */
+  html[data-theme="dark"] .photo-drop{ background:#1a1730 !important; border-color:#332c4d !important; }
+  html[data-theme="dark"] .photo-drop .photo-drop-text{ color:#d8ccff !important; }
+  html[data-theme="dark"] .photo-drop .photo-drop-text small{ color:#a99fc4 !important; }
+
+  /* Adresses enregistrées + bloc paiement */
+  html[data-theme="dark"] .addr-chip{ background:#171426 !important; border-color:#332c4d !important; color:#cdd7e3 !important; }
+  html[data-theme="dark"] .addr-chip-save{ background:transparent !important; color:#f0a56a !important; border-color:#7a4a25 !important; }
+  html[data-theme="dark"] .pay-block{ background:#1a1730 !important; border-color:#2c2745 !important; }
+  html[data-theme="dark"] .pay-title{ color:#c9b8ff !important; }
+  html[data-theme="dark"] .pay-sub{ color:#a99fc4 !important; }
+  html[data-theme="dark"] .pay-block.pay-done{ background:#132a1e !important; border-color:#245239 !important; color:#7ee0a6 !important; }
+  html[data-theme="dark"] .pay-block.pay-pending{ background:#2b2410 !important; border-color:#5a4420 !important; }
+
+  /* Sélecteur de point précis sur carte */
+  html[data-theme="dark"] .btn-pin-toggle{ border-color:#3a4b60 !important; }
+  html[data-theme="dark"] .pin-map{ background:#141d29 !important; }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>

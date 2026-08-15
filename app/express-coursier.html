@@ -222,6 +222,71 @@
   .clt-tabpanel{ animation:clttabfade .18s ease; }
   @keyframes clttabfade{ from{opacity:.35;} to{opacity:1;} }
   @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
+
+  /* ============================================================================
+     MODE SOMBRE — Espace coursier Express (palette nuit sarcelle/teal)
+     ----------------------------------------------------------------------------
+     Mêmes principes que le client Express : la feuille partagée ne couvre que le
+     générique. On repeint ici les surfaces claires propres au coursier (stats,
+     portefeuille, recharge MoMo, dispatch, notation, chat…) avec une palette
+     nocturne teal douce et lisible. Les dégradés de marque restent inchangés.
+     ============================================================================ */
+  html[data-theme="dark"] body{
+    background:linear-gradient(180deg,#0d1614 0%, #0a1211 100%) !important;
+  }
+
+  /* Statistiques + portefeuille */
+  html[data-theme="dark"] .stat-box{ background:#152826 !important; border-color:#264541 !important; }
+  html[data-theme="dark"] .stat-box .stat-value{ color:#7fe4d6 !important; }
+  html[data-theme="dark"] .wallet-solde .wallet-value{ color:#7fe4d6 !important; }
+  html[data-theme="dark"] .low-balance-banner{ background:#2a1414 !important; border-color:#5a2626 !important; color:#f0a3a3 !important; }
+  html[data-theme="dark"] #card-wallet-help{ background:#132321 !important; border-color:#264541 !important; }
+
+  /* Étiquettes de paiement */
+  html[data-theme="dark"] .pay-tag-wave-paid{ background:#0e2a33 !important; color:#7cc9df !important; border-color:#1d4a58 !important; }
+  html[data-theme="dark"] .pay-tag-wave-wait{ background:#2b2410 !important; color:#e8b866 !important; border-color:#5a4420 !important; }
+  html[data-theme="dark"] .pay-tag-cash{ background:#1e2733 !important; color:#b8c4d2 !important; border-color:#34414f !important; }
+
+  /* Notes de dispatch */
+  html[data-theme="dark"] .dispatch-note{ background:#10231f !important; color:#7fe4d6 !important; border-color:#234a44 !important; }
+  html[data-theme="dark"] .dispatch-note-warn{ background:#2b2410 !important; color:#e0b45f !important; border-color:#5a4420 !important; }
+  html[data-theme="dark"] .course-proche{ color:#7fe4d6 !important; }
+
+  /* Recharge Mobile Money */
+  html[data-theme="dark"] .momo-choice{ background:#152220 !important; border-color:#264541 !important; }
+  html[data-theme="dark"] .momo-choice.selected{ background:#10231f !important; border-color:#0D9488 !important; }
+  html[data-theme="dark"] .momo-choice.selected .momo-choice-name{ color:#7fe4d6 !important; }
+  html[data-theme="dark"] #form-recharge input[type=number]{ background:#0f1917 !important; border-color:#2c4c47 !important; color:#E6ECF3 !important; }
+  html[data-theme="dark"] #form-recharge .amount-suffix{ background:#10231f !important; color:#7fe4d6 !important; }
+  html[data-theme="dark"] .momo-number-box{ background:#10231f !important; border-color:#234a44 !important; color:#7fe4d6 !important; }
+
+  /* Suivi par étapes (stepper) */
+  html[data-theme="dark"] .clt-stepper .st .c{ background:#1c2b29 !important; color:#8ba39e !important; }
+  html[data-theme="dark"] .clt-stepper .st::before{ background:#1c2b29 !important; }
+  html[data-theme="dark"] .clt-stepper .st .l{ color:#94b5b0 !important; }
+  html[data-theme="dark"] .clt-stepper .st.now .l{ color:#7fe4d6 !important; }
+
+  /* Onglets du haut */
+  html[data-theme="dark"] .clt-toptabs-wrap{ background:#0a1211 !important; }
+  html[data-theme="dark"] .clt-toptabs{ background:#0f1917 !important; border-color:#264541 !important; }
+  html[data-theme="dark"] .clt-toptab{ color:#94b5b0 !important; }
+  html[data-theme="dark"] .clt-toptab.active{ background:#1c2b29 !important; color:#7fe4d6 !important; }
+
+  /* Notation (2e bloc de styles) */
+  html[data-theme="dark"] .rating-block,
+  html[data-theme="dark"] .rating-done{ background:#132321 !important; border-color:#264541 !important; }
+  html[data-theme="dark"] .rating-title{ color:#7fe4d6 !important; }
+  html[data-theme="dark"] .stars .star{ color:#33514c !important; }
+
+  /* Chat coursier ↔ client */
+  html[data-theme="dark"] .chat-toggle{ background:#10231f !important; color:#7fe4d6 !important; border-color:#234a44 !important; }
+  html[data-theme="dark"] .chat-toggle:hover{ background:#143029 !important; }
+  html[data-theme="dark"] .chat-panel{ background:#0f1917 !important; border-color:#264541 !important; }
+  html[data-theme="dark"] .chat-msgs{ background:#0c1615 !important; }
+  html[data-theme="dark"] .chat-bubble.theirs{ background:#22322f !important; color:#E6ECF3 !important; }
+  html[data-theme="dark"] .chat-input-row{ background:#0f1917 !important; border-top-color:#264541 !important; }
+  html[data-theme="dark"] .chat-input{ background:#0c1615 !important; border-color:#2c4c47 !important; color:#E6ECF3 !important; }
+  html[data-theme="dark"] .chat-empty{ color:#7d938f !important; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
