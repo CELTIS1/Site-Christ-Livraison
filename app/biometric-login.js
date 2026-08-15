@@ -44,6 +44,11 @@
   var CRED_KEY = NS + 'cred';           // rawId WebAuthn (base64url)
   var DATA_KEY = NS + 'acct';           // JSON { phone, pass, label }
   var DISMISS_KEY = NS + 'setup-dismissed';
+  // Drapeau PARTAGÉ avec biometric-lock.js (clé volontairement NON namespacée) : posé
+  // juste après une connexion biométrique réussie, il indique à la page de destination
+  // que l'utilisateur vient de faire Face ID à l'instant → le verrou d'app ne doit PAS
+  // redemander une seconde vérification. C'est ce qui supprime la double authentification.
+  var JUST_UNLOCKED_KEY = 'clt-just-unlocked';
 
   // Identifiants des champs selon la page.
   var PHONE_ID = 'login-phone';
@@ -174,14 +179,18 @@
     verify().then(function () {
       var data = getData();
       if (!data) { attemptBusy = false; if (btn) btn.classList.remove('busy'); return; }
+      // Face ID validé à l'instant : on signale à la page de destination de NE PAS
+      // reverrouiller (anti double authentification), puis on remplit et on soumet.
+      try { localStorage.setItem(JUST_UNLOCKED_KEY, String(Date.now())); } catch (e2) {}
       var ok = fillAndSubmit(data);
-      if (!ok) { attemptBusy = false; if (btn) btn.classList.remove('busy'); if (errEl && !silent) errEl.textContent = 'Formulaire indisponible. Saisissez vos identifiants.'; }
-      // Si ok : le formulaire se soumet et la page redirige — on laisse l'état « busy ».
+      if (!ok) { try { localStorage.removeItem(JUST_UNLOCKED_KEY); } catch (e3) {} attemptBusy = false; if (btn) btn.classList.remove('busy'); if (errEl && !silent) errEl.textContent = 'Formulaire indisponible. Saisissez vos identifiants.'; }
+      // Si ok : le formulaire se soumet et la page redirige — on laisse l'écran « verrouillé »
+      // visible (état « busy ») jusqu'à la navigation, sans clignotement du formulaire.
     }).catch(function (e) {
       attemptBusy = false;
       if (btn) btn.classList.remove('busy');
       var name = e && e.name;
-      if (e && e.message === 'no-credential') { clear(); hideButton(); return; }
+      if (e && e.message === 'no-credential') { clear(); removeLockOverlay(); revealForm(); return; }
       // Tentative automatique (sans geste) : un refus/annulation est normal (iOS exige un
       // geste), on n'affiche donc AUCUNE erreur — le bouton reste prêt pour un appui manuel.
       if (silent) return;
@@ -192,70 +201,114 @@
     });
   }
 
-  function hideButton() {
-    var box = document.getElementById('clt-biologin-box');
-    if (box && box.parentNode) box.parentNode.removeChild(box);
+  function removeLockOverlay() {
+    var ov = document.getElementById('clt-biologin-lock');
+    if (!ov) return;
+    ov.classList.add('out');
+    setTimeout(function () { if (ov && ov.parentNode) ov.parentNode.removeChild(ov); }, 320);
   }
 
-  function renderButton() {
-    if (document.getElementById('clt-biologin-box')) return;
-    var form = document.getElementById(FORM_ID);
-    if (!form) return;
+  // Rend le formulaire téléphone + mot de passe visible (repli manuel), au cas où il
+  // aurait été masqué par le splash ou l'onglet.
+  function revealForm() {
+    try {
+      var form = document.getElementById(FORM_ID);
+      if (form) form.classList.remove('hidden');
+      var p = document.getElementById(PHONE_ID); if (p) p.focus();
+    } catch (e) {}
+  }
+
+  // Icône neutre de l'app (présente pour tous les espaces).
+  var LOCK_ICON = '/images/icons/icon-192.png';
+
+  // Écran plein « Espace verrouillé » — MÊME présentation que le verrou d'app
+  // (biometric-lock.js), pour une expérience unique et cohérente : que la session soit
+  // encore valide (verrou d'app) ou expirée (cette page de connexion), l'utilisateur voit
+  // toujours le même écran, fait UN seul Face ID, et entre.
+  function renderLockOverlay() {
+    if (document.getElementById('clt-biologin-lock')) return;
     var data = getData();
     var label = (data && data.label) || (data && data.phone) || '';
 
-    var box = document.createElement('div');
-    box.id = 'clt-biologin-box';
-    box.innerHTML =
+    var wrap = document.createElement('div');
+    wrap.id = 'clt-biologin-lock';
+    wrap.setAttribute('role', 'dialog');
+    wrap.setAttribute('aria-modal', 'true');
+    wrap.innerHTML =
       '<style>' +
-      '#clt-biologin-box{margin:0 0 18px;text-align:center;animation:cltBLup .4s cubic-bezier(.22,1.2,.32,1);}' +
-      '@keyframes cltBLup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}' +
-      '#clt-biologin-go{display:flex;align-items:center;justify-content:center;gap:11px;width:100%;box-sizing:border-box;' +
-      'border:0;border-radius:14px;padding:15px 18px;font-size:15.5px;font-weight:750;color:#fff;cursor:pointer;' +
-      'font-family:inherit;letter-spacing:.01em;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0)) , ' + ACCENT + ';' +
-      'box-shadow:0 10px 24px ' + ACCENT + '44, inset 0 1px 0 rgba(255,255,255,.22);transition:transform .12s ease,filter .12s ease;}' +
-      '#clt-biologin-go:active{transform:translateY(1px) scale(.995);filter:brightness(.97);}' +
-      '#clt-biologin-go.busy{opacity:.7;pointer-events:none;}' +
-      '#clt-biologin-go svg{width:21px;height:21px;flex-shrink:0;}' +
-      '#clt-biologin-sub{font-size:12.5px;color:#6b7280;margin-top:9px;}' +
-      '#clt-biologin-sub b{color:#374151;font-weight:600;}' +
-      '#clt-biologin-err{min-height:18px;font-size:12.5px;color:#c0392b;margin-top:8px;}' +
-      '#clt-biologin-other{display:inline-block;margin-top:6px;font-size:12.5px;color:' + ACCENT + ';text-decoration:underline;' +
-      'background:none;border:0;cursor:pointer;font-family:inherit;}' +
-      '#clt-biologin-divider{display:flex;align-items:center;gap:12px;margin:16px 0 4px;color:#9ca3af;font-size:12px;}' +
-      '#clt-biologin-divider::before,#clt-biologin-divider::after{content:"";flex:1;height:1px;background:#e5e7eb;}' +
-      'html[data-theme="dark"] #clt-biologin-sub{color:#9aa6b2;}' +
-      'html[data-theme="dark"] #clt-biologin-sub b{color:#e5eaf0;}' +
-      'html[data-theme="dark"] #clt-biologin-divider{color:#6b7684;}' +
-      'html[data-theme="dark"] #clt-biologin-divider::before,html[data-theme="dark"] #clt-biologin-divider::after{background:#2a3542;}' +
+      '#clt-biologin-lock{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;' +
+      'background:radial-gradient(125% 90% at 50% -10%, #17263f 0%, #0b1220 58%, #060b13 100%);' +
+      'color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;' +
+      'opacity:1;transition:opacity .35s ease;padding:24px;box-sizing:border-box;}' +
+      '#clt-biologin-lock.out{opacity:0;pointer-events:none;}' +
+      '#clt-biologin-lock .card{width:100%;max-width:344px;text-align:center;animation:cltBLcard .55s cubic-bezier(.22,1.2,.32,1) both;}' +
+      '@keyframes cltBLcard{from{opacity:0;transform:translateY(14px) scale(.96);}to{opacity:1;transform:none;}}' +
+      '#clt-biologin-lock .ic-wrap{position:relative;width:94px;height:94px;margin:0 auto 22px;}' +
+      '#clt-biologin-lock .ic{width:94px;height:94px;border-radius:25px;display:block;position:relative;z-index:1;' +
+      'box-shadow:0 14px 36px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.08);}' +
+      '#clt-biologin-lock .ic-glow{position:absolute;inset:-14px;border-radius:36px;z-index:0;filter:blur(9px);' +
+      'background:radial-gradient(circle, ' + ACCENT + 'aa 0%, transparent 68%);animation:cltBLglow 2.6s ease-in-out infinite;}' +
+      '@keyframes cltBLglow{0%,100%{opacity:.45;transform:scale(1);}50%{opacity:.85;transform:scale(1.06);}}' +
+      '#clt-biologin-lock h2{font-size:21px;font-weight:750;margin:0 0 8px;letter-spacing:-.01em;}' +
+      '#clt-biologin-lock p{font-size:14px;line-height:1.5;color:rgba(255,255,255,.66);margin:0 0 12px;}' +
+      '#clt-biologin-lock .who{font-size:13px;color:rgba(255,255,255,.8);margin:0 0 24px;}' +
+      '#clt-biologin-lock .who b{color:#fff;font-weight:700;}' +
+      '#clt-biologin-lock .go{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;box-sizing:border-box;' +
+      'border:0;border-radius:15px;padding:16px 18px;font-size:16px;font-weight:750;color:#fff;cursor:pointer;letter-spacing:.01em;' +
+      'background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0)) , ' + ACCENT + ';' +
+      'box-shadow:0 10px 26px ' + ACCENT + '55, 0 2px 6px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.22);' +
+      'transition:transform .12s ease,filter .12s ease,box-shadow .12s ease;}' +
+      '#clt-biologin-lock .go:active{transform:translateY(1px) scale(.995);filter:brightness(.96);}' +
+      '#clt-biologin-lock .go.busy{opacity:.7;pointer-events:none;}' +
+      '#clt-biologin-lock .go svg{width:20px;height:20px;}' +
+      '#clt-biologin-lock .err{min-height:20px;font-size:13px;color:#ff9d9d;margin:15px 0 0;transition:opacity .2s;}' +
+      '#clt-biologin-lock .pw{display:inline-block;margin-top:22px;font-size:14px;font-weight:600;color:rgba(255,255,255,.82);' +
+      'cursor:pointer;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);' +
+      'border-radius:999px;padding:9px 18px;transition:background .15s ease;}' +
+      '#clt-biologin-lock .pw:active{background:rgba(255,255,255,.16);}' +
+      '#clt-biologin-lock .other{display:block;margin:14px auto 0;font-size:12.5px;color:rgba(255,255,255,.5);' +
+      'background:none;border:0;cursor:pointer;font-family:inherit;text-decoration:underline;}' +
       '</style>' +
-      '<button type="button" id="clt-biologin-go">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="M12 11c-1.1 0-2 .9-2 2v1a2 2 0 0 0 4 0v-1c0-1.1-.9-2-2-2z"/>' +
-        '<path d="M7 8a5 5 0 0 1 10 0"/><path d="M4 12a8 8 0 0 1 3-6.2"/><path d="M20 12a8 8 0 0 0-3-6.2"/>' +
-        '<path d="M8 20a6 6 0 0 0 8 0"/></svg>' +
-        '<span>Se connecter avec Face&nbsp;ID</span>' +
-      '</button>' +
-      '<div id="clt-biologin-sub">' + (label ? 'Compte : <b>' + escapeLabel(label) + '</b>' : 'Déverrouillez pour vous connecter') + '</div>' +
-      '<div id="clt-biologin-err"></div>' +
-      '<button type="button" id="clt-biologin-other">Utiliser un autre compte</button>' +
-      '<div id="clt-biologin-divider">ou</div>';
+      '<div class="card">' +
+        '<div class="ic-wrap"><span class="ic-glow"></span><img class="ic" src="' + LOCK_ICON + '" alt=""></div>' +
+        '<h2>Espace verrouillé</h2>' +
+        '<p>Déverrouillez avec Face&nbsp;ID ou votre empreinte pour accéder à votre espace en toute sécurité.</p>' +
+        (label ? '<div class="who">Compte : <b>' + escapeLabel(label) + '</b></div>' : '<div class="who"></div>') +
+        '<button type="button" class="go" id="clt-biologin-go">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M12 11c-1.1 0-2 .9-2 2v1a2 2 0 0 0 4 0v-1c0-1.1-.9-2-2-2z"/>' +
+          '<path d="M7 8a5 5 0 0 1 10 0"/><path d="M4 12a8 8 0 0 1 3-6.2"/><path d="M20 12a8 8 0 0 0-3-6.2"/>' +
+          '<path d="M8 20a6 6 0 0 0 8 0"/></svg>' +
+          '<span>Déverrouiller</span>' +
+        '</button>' +
+        '<div class="err" id="clt-biologin-err"></div>' +
+        '<button type="button" class="pw" id="clt-biologin-pw">Se connecter avec mot de passe</button>' +
+        '<button type="button" class="other" id="clt-biologin-other">Utiliser un autre compte</button>' +
+      '</div>';
 
-    form.parentNode.insertBefore(box, form);
+    (document.body || document.documentElement).appendChild(wrap);
 
-    var btn = box.querySelector('#clt-biologin-go');
-    var errEl = box.querySelector('#clt-biologin-err');
+    var btn = wrap.querySelector('#clt-biologin-go');
+    var errEl = wrap.querySelector('#clt-biologin-err');
     btn.addEventListener('click', function () { attempt(btn, errEl); });
-    box.querySelector('#clt-biologin-other').addEventListener('click', function () {
+
+    // Repli mot de passe : on masque l'écran verrouillé et on révèle le formulaire.
+    // Les identifiants mémorisés restent en place (ce n'est pas un changement de compte).
+    wrap.querySelector('#clt-biologin-pw').addEventListener('click', function () {
+      removeLockOverlay();
+      revealForm();
+    });
+    // Changer de compte : on efface la config biométrique locale et on revient au formulaire.
+    wrap.querySelector('#clt-biologin-other').addEventListener('click', function () {
       clear();
-      hideButton();
-      var p = document.getElementById(PHONE_ID); if (p) p.focus();
+      removeLockOverlay();
+      revealForm();
     });
 
-    // Tentative automatique au chargement (best effort et SILENCIEUSE ; iOS exige souvent
-    // un geste → si l'appel automatique échoue faute d'interaction, aucun message d'erreur
-    // n'apparaît et le bouton reste disponible pour un appui manuel).
-    setTimeout(function () { attempt(btn, errEl, true); }, 300);
+    // Tentative automatique DERRIÈRE l'écran verrouillé (best effort, SILENCIEUSE). iOS
+    // exige souvent un geste : si l'appel échoue faute d'interaction, aucun message n'est
+    // affiché et le bouton « Déverrouiller » reste disponible pour un appui manuel.
+    setTimeout(function () { attempt(btn, errEl, true); }, 260);
   }
 
   function escapeLabel(s) {
@@ -338,12 +391,12 @@
     });
   }
 
-  // --- Démarrage : affiche le bouton si un accès biométrique est déjà mémorisé ----
+  // --- Démarrage : affiche l'écran « Espace verrouillé » si un accès est déjà mémorisé --
   function init() {
     if (!hasSaved()) return;
     isSupported().then(function (ok) {
       if (!ok) { return; }        // support disparu : on garde les données mais on n'affiche rien
-      renderButton();
+      renderLockOverlay();
     });
   }
   if (document.readyState === 'loading') {

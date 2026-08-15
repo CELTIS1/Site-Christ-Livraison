@@ -53,6 +53,25 @@
   var CRED_KEY = function (uid) { return 'clt-biolock-cred-' + uid; };
   var OFFER_KEY = function (uid) { return 'clt-biolock-offer-dismissed-' + uid; };
 
+  // Drapeau PARTAGÉ avec biometric-login.js : posé au moment d'une connexion biométrique
+  // réussie sur la page de connexion. S'il est récent, l'utilisateur vient de faire Face ID
+  // à l'instant → on NE redemande PAS de déverrouillage ici (suppression de la double
+  // authentification). Fenêtre volontairement courte, consommée dès usage.
+  var JUST_UNLOCKED_KEY = 'clt-just-unlocked';
+  var JUST_UNLOCKED_TTL = 120000; // 2 min : large pour couvrir une navigation lente.
+  function justUnlockedRecently() {
+    try {
+      var v = localStorage.getItem(JUST_UNLOCKED_KEY);
+      if (!v) return false;
+      var t = parseInt(v, 10);
+      if (!t || isNaN(t)) return false;
+      return (Date.now() - t) < JUST_UNLOCKED_TTL;
+    } catch (e) { return false; }
+  }
+  function consumeJustUnlocked() {
+    try { localStorage.removeItem(JUST_UNLOCKED_KEY); } catch (e) {}
+  }
+
   // --- Utilitaires base64url <-> ArrayBuffer ------------------------------------
   function bufToB64url(buf) {
     var bytes = new Uint8Array(buf), str = '';
@@ -149,7 +168,7 @@
           '<span>Déverrouiller</span>' +
         '</button>' +
         '<div class="err" id="clt-biolock-err"></div>' +
-        '<button type="button" class="pw" id="clt-biolock-pw">Utiliser le mot de passe</button>' +
+        '<button type="button" class="pw" id="clt-biolock-pw">Se connecter avec mot de passe</button>' +
       '</div>';
     var root = document.body || document.documentElement;
     root.appendChild(wrap);
@@ -161,6 +180,9 @@
     // Peint le verrou au plus tôt pour éviter tout flash de contenu si un identifiant
     // biométrique existe déjà sur cet appareil.
     if (!anyCredentialOnDevice()) return;
+    // Mais PAS si l'utilisateur vient de se déverrouiller par Face ID sur la page de
+    // connexion : on éviterait un second écran « Espace verrouillé » inutile.
+    if (justUnlockedRecently()) return;
     if (document.body) buildOverlay();
     else document.addEventListener('DOMContentLoaded', function () { buildOverlay(); });
   }
@@ -191,6 +213,11 @@
   function guard(user) {
     var uid = user && user.id;
     if (!uid || !hasCredential(uid)) { removeOverlay(); return Promise.resolve(); }
+
+    // Anti double authentification : si l'utilisateur vient de faire Face ID sur la page
+    // de connexion (drapeau récent), la session est « fraîchement déverrouillée » — on
+    // n'exige pas une seconde vérification ici. On consomme le drapeau (usage unique).
+    if (justUnlockedRecently()) { consumeJustUnlocked(); removeOverlay(); return Promise.resolve(); }
 
     var card = buildOverlay();
     var goBtn = card.querySelector('#clt-biolock-go');
