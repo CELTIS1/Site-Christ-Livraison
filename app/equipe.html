@@ -22,14 +22,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260815h">
+<link rel="stylesheet" href="style.css?v=20260815i">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260815h"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
      ============================================================ */
-  :root{ --clt-navy2:#1B4374; --clt-navy-dark:#12305a; }
+  :root{ --clt-navy2:#1B4374; --clt-navy-dark:#12305a; --clt-accent:#1B4374; }
   body{
     background:linear-gradient(180deg,#eef2f9 0%, #f5f7fa 260px, #f5f7fa 100%) !important;
   }
@@ -784,9 +784,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260814common1"></script>
+<script src="clt-common.js?v=20260815premium1"></script>
 <script src="config.js?v=20260812m"></script>
-<script src="biometric-lock.js?v=20260815bio1"></script>
+<script src="biometric-lock.js?v=20260815bio2"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3888,6 +3888,8 @@ monthEl.textContent = '—';
 // l'icône ajoutée à l'écran d'accueil corresponde toujours au bon rôle.
 function applyPwaIdentityForRole(isAdminRole){
 if (!isAdminRole) return; // déjà en configuration « équipe » par défaut dans le HTML
+// L'espace admin adopte le rouge de marque, y compris pour les toasts et dialogues.
+try { document.documentElement.style.setProperty('--clt-accent', '#C0392B'); } catch (e) {}
 const manifestLink = document.getElementById('pwa-manifest-link');
 const appleIconLink = document.getElementById('pwa-apple-icon-link');
 const themeColorMeta = document.getElementById('pwa-theme-color-meta');

@@ -1129,3 +1129,121 @@ html[data-theme="dark"] .clt-skel-line{ background:linear-gradient(90deg,#1B2635
   #section-recharges:not(.hidden), #section-debits:not(.hidden){ animation:none !important; }
   .btn:active{ transform:none; }
 }
+
+/* =====================================================================
+   FINITIONS PREMIUM — notifications (toasts) & boîtes de dialogue
+   Ajouté le 2026-08-15. Langage visuel commun : verre dépoli, ombres
+   étagées, accent par rôle (--clt-accent), animations « ressort ».
+   Utilisé par cltToast()/cltConfirm() (clt-common.js) et window.alert().
+   ===================================================================== */
+:root{
+  --clt-accent:#1B4374;        /* accent par défaut ; chaque espace le redéfinit */
+  --clt-accent-ink:#ffffff;
+  --clt-ok:#1F9E67;
+  --clt-warn:#C77400;
+  --clt-err:#C0392B;
+}
+
+/* ---------- Couche des toasts (haut de l'écran, centrée) ---------- */
+.clt-toast-layer{
+  position:fixed; top:0; left:0; right:0; z-index:2147482600;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 12px 0;
+  pointer-events:none;
+}
+.clt-toast{
+  pointer-events:auto; position:relative; box-sizing:border-box;
+  width:100%; max-width:392px; display:flex; align-items:flex-start; gap:12px;
+  padding:13px 14px 14px 16px; border-radius:16px; overflow:hidden;
+  background:rgba(255,255,255,.86);
+  -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid rgba(16,40,70,.07);
+  box-shadow:0 1px 2px rgba(16,40,70,.06), 0 14px 38px rgba(16,40,70,.20);
+  color:#14202E; font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  transform:translateY(-16px) scale(.97); opacity:0;
+  transition:transform .42s cubic-bezier(.22,1.2,.32,1), opacity .3s ease;
+  will-change:transform,opacity;
+}
+.clt-toast.in{ transform:translateY(0) scale(1); opacity:1; }
+.clt-toast.out{ transform:translateY(-12px) scale(.97); opacity:0;
+  transition:transform .28s ease-in, opacity .28s ease-in; }
+.clt-toast__accent{ position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:16px 0 0 16px; background:var(--clt-accent); }
+.clt-toast__icon{
+  flex-shrink:0; width:30px; height:30px; border-radius:50%; margin-top:1px;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; box-shadow:0 4px 12px rgba(16,40,70,.18);
+}
+.clt-toast__icon svg{ width:17px; height:17px; }
+.clt-toast__body{ flex:1; min-width:0; padding-top:1px; }
+.clt-toast__title{ font-size:14px; font-weight:750; letter-spacing:-.01em; margin-bottom:2px; line-height:1.25; }
+.clt-toast__msg{ font-size:13px; line-height:1.45; color:#4A5A6B; word-wrap:break-word; }
+.clt-toast__close{
+  flex-shrink:0; border:0; background:none; cursor:pointer; padding:2px 2px 2px 6px;
+  color:#9AA7B4; font-size:15px; line-height:1; margin:-2px -2px 0 0;
+  transition:color .15s ease;
+}
+.clt-toast__close:hover{ color:#5B6B7C; }
+.clt-toast__bar{
+  position:absolute; left:0; bottom:0; height:2.5px; width:100%;
+  transform-origin:left center; transform:scaleX(1);
+  background:var(--clt-accent);
+  background:linear-gradient(90deg, var(--clt-accent), color-mix(in srgb, var(--clt-accent) 55%, #ffffff));
+  opacity:.9;
+}
+/* Variantes de couleur */
+.clt-toast--success{ --clt-accent:var(--clt-ok); }
+.clt-toast--error{ --clt-accent:var(--clt-err); }
+.clt-toast--warning{ --clt-accent:var(--clt-warn); }
+.clt-toast--success .clt-toast__icon,
+.clt-toast--error .clt-toast__icon,
+.clt-toast--warning .clt-toast__icon,
+.clt-toast--info .clt-toast__icon{ background:var(--clt-accent); }
+
+/* Dark mode : carte sombre en verre dépoli */
+html[data-theme="dark"] .clt-toast{
+  background:rgba(24,33,46,.82); color:#EAF0F6; border-color:rgba(255,255,255,.08);
+  box-shadow:0 1px 2px rgba(0,0,0,.4), 0 16px 40px rgba(0,0,0,.5);
+}
+html[data-theme="dark"] .clt-toast__msg{ color:#AEBCCB; }
+html[data-theme="dark"] .clt-toast__close{ color:#7C8B9B; }
+
+/* ---------- Boîte de dialogue (confirm/prompt) — version raffinée ---------- */
+.confirm-modal-overlay{
+  background:rgba(11,18,32,.44);
+  -webkit-backdrop-filter:blur(6px) saturate(140%); backdrop-filter:blur(6px) saturate(140%);
+  animation:cltDlgFade .24s ease both;
+}
+.confirm-modal{
+  border-radius:22px; padding:26px 24px 22px;
+  box-shadow:0 2px 6px rgba(16,40,70,.10), 0 30px 70px rgba(16,40,70,.30);
+  border:1px solid rgba(255,255,255,.6);
+  animation:cltDlgPop .4s cubic-bezier(.22,1.2,.32,1) both;
+}
+.confirm-modal-icon{
+  width:56px; height:56px; margin:2px auto 12px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; font-size:27px;
+  background:#eef2f7;
+  background:color-mix(in srgb, var(--clt-accent) 12%, #ffffff);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--clt-accent) 22%, transparent);
+}
+.confirm-modal-title{ font-size:18.5px; letter-spacing:-.01em; }
+.confirm-modal-actions .btn{ border-radius:13px; padding:13px 16px; font-weight:700; }
+@keyframes cltDlgFade{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes cltDlgPop{ from{ opacity:0; transform:translateY(10px) scale(.94); } to{ opacity:1; transform:none; } }
+
+html[data-theme="dark"] .confirm-modal{
+  background:#1B2635; border-color:rgba(255,255,255,.08);
+  box-shadow:0 2px 6px rgba(0,0,0,.4), 0 30px 70px rgba(0,0,0,.6);
+}
+html[data-theme="dark"] .confirm-modal-title{ color:#EAF0F6; }
+html[data-theme="dark"] .confirm-modal-sub{ color:#AEBCCB; }
+html[data-theme="dark"] .confirm-modal-detail{ background:#141D29; color:#DCE6F0; }
+html[data-theme="dark"] .confirm-modal-icon{ background:color-mix(in srgb, var(--clt-accent) 26%, #141D29); }
+
+@media (prefers-reduced-motion: reduce){
+  .clt-toast{ transition:opacity .2s ease; transform:none; }
+  .clt-toast.in{ transform:none; }
+  .clt-toast.out{ transform:none; }
+  .clt-toast__bar{ display:none; }
+  .confirm-modal-overlay, .confirm-modal{ animation:none; }
+}

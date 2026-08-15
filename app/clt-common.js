@@ -178,6 +178,118 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
 }
 
 /* =====================================================================
+   NOTIFICATIONS PREMIUM — cltToast()
+   Bandeau discret en haut de l'écran (verre dépoli, accent par rôle,
+   animation « ressort », barre de progression, fermeture manuelle et
+   automatique). Remplace les alert() natifs pour un rendu soigné et
+   cohérent sur toute l'application. S'appuie sur les classes .clt-toast-*
+   de style.css.
+   Usage : cltToast("Message", { type:'success'|'error'|'warning'|'info',
+                                  title:'…', duration:ms })
+   ===================================================================== */
+(function () {
+  var ICONS = {
+    success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+    error:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v6"/><circle cx="12" cy="16.6" r="1.15" fill="currentColor" stroke="none"/></svg>',
+    info:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 11v5"/><circle cx="12" cy="7.4" r="1.15" fill="currentColor" stroke="none"/></svg>'
+  };
+  var TITLES = { success: 'C\u2019est fait', error: 'Une erreur', warning: 'Attention', info: 'Information' };
+
+  function ensureLayer() {
+    var l = document.getElementById('clt-toast-layer');
+    if (l) return l;
+    l = document.createElement('div');
+    l.id = 'clt-toast-layer';
+    l.className = 'clt-toast-layer';
+    (document.body || document.documentElement).appendChild(l);
+    return l;
+  }
+
+  function cltToast(message, opts) {
+    opts = opts || {};
+    var msg = (message == null ? '' : String(message)).trim();
+    if (!msg) return { dismiss: function () {} };
+    var type = opts.type && ICONS[opts.type] ? opts.type : 'info';
+    var title = ('title' in opts) ? opts.title : TITLES[type];
+    var duration = opts.duration || (type === 'error' ? 5400 : type === 'warning' ? 4200 : 3400);
+    var reduce = false;
+    try { reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+    var layer = ensureLayer();
+    var el = document.createElement('div');
+    el.className = 'clt-toast clt-toast--' + type;
+    el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    el.innerHTML =
+      '<span class="clt-toast__accent"></span>' +
+      '<span class="clt-toast__icon">' + ICONS[type] + '</span>' +
+      '<div class="clt-toast__body">' +
+        (title ? '<div class="clt-toast__title">' + escapeHTML(title) + '</div>' : '') +
+        '<div class="clt-toast__msg">' + escapeHTML(msg) + '</div>' +
+      '</div>' +
+      '<button type="button" class="clt-toast__close" aria-label="Fermer">\u2715</button>' +
+      '<span class="clt-toast__bar"></span>';
+    layer.appendChild(el);
+
+    // Entrée + barre de progression
+    var bar = el.querySelector('.clt-toast__bar');
+    requestAnimationFrame(function () {
+      el.classList.add('in');
+      if (bar && !reduce) {
+        bar.style.transition = 'transform ' + duration + 'ms linear';
+        requestAnimationFrame(function () { bar.style.transform = 'scaleX(0)'; });
+      }
+    });
+
+    var timer = null, done = false;
+    function dismiss() {
+      if (done) return; done = true;
+      if (timer) clearTimeout(timer);
+      el.classList.remove('in'); el.classList.add('out');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
+    }
+    function arm(ms) { if (timer) clearTimeout(timer); timer = setTimeout(dismiss, ms); }
+    arm(duration);
+
+    el.querySelector('.clt-toast__close').addEventListener('click', dismiss);
+    // Pause au survol (ordinateur) ; reprise ensuite.
+    el.addEventListener('mouseenter', function () {
+      if (timer) clearTimeout(timer);
+      if (bar) { bar.style.transition = 'none'; bar.style.transform = getComputedStyle(bar).transform; }
+    });
+    el.addEventListener('mouseleave', function () {
+      if (bar && !reduce) { bar.style.transition = 'transform 1600ms linear'; requestAnimationFrame(function () { bar.style.transform = 'scaleX(0)'; }); }
+      arm(1600);
+    });
+    return { dismiss: dismiss };
+  }
+  window.cltToast = cltToast;
+
+  // ---- Remplacement élégant de alert() : bandeau au lieu de la fenêtre système ----
+  // On classe le message (réussite / erreur / avertissement / info) d'après quelques
+  // mots-clés, pour choisir la couleur et l'icône adéquates. Le comportement d'origine
+  // (afficher un message, sans valeur de retour) est préservé.
+  function classify(s) {
+    var t = (s || '').toLowerCase();
+    if (/erreur|impossible|échou|echou|refus|invalide|incorrect|introuvable|non pris|indisponible|a échoué|problème|probleme/.test(t)) return 'error';
+    if (/veuillez|choisir|indiquer|doivent|obligatoire|manqu|renseign|trop (volumineux|grand|court|long)|valide/.test(t)) return 'warning';
+    if (/activé|activées|activees|enregistr|succès|succes|envoyé|envoye|ajouté|ajoute|mis à jour|mise à jour|supprimé|supprime|confirmé|confirme|réussi|reussi|copié|copie/.test(t)) return 'success';
+    return 'info';
+  }
+  try {
+    var __cltNativeAlert = window.alert ? window.alert.bind(window) : null;
+    window.alert = function (msg) {
+      try {
+        var s = (msg == null ? '' : String(msg));
+        cltToast(s, { type: classify(s) });
+      } catch (e) {
+        if (__cltNativeAlert) { try { __cltNativeAlert(msg); } catch (e2) {} }
+      }
+    };
+  } catch (e) { /* dégradation silencieuse */ }
+})();
+
+/* =====================================================================
    POLISSAGE EXPRESS — retour tactile (ripple) sur les boutons .btn
    Écoute déléguée : fonctionne pour tous les boutons présents ou créés
    dynamiquement. Désactivé si l'usager a demandé moins d'animations.

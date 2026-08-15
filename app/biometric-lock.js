@@ -110,26 +110,37 @@
     wrap.innerHTML =
       '<style>' +
       '#clt-biolock{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;' +
-      'background:#0b1220;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;' +
-      'opacity:1;transition:opacity .3s ease;padding:24px;box-sizing:border-box;}' +
+      'background:radial-gradient(125% 90% at 50% -10%, #17263f 0%, #0b1220 58%, #060b13 100%);' +
+      'color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;' +
+      'opacity:1;transition:opacity .35s ease;padding:24px;box-sizing:border-box;}' +
       '#clt-biolock.out{opacity:0;pointer-events:none;}' +
-      '#clt-biolock .card{width:100%;max-width:340px;text-align:center;}' +
-      '#clt-biolock .ic{width:84px;height:84px;border-radius:22px;margin:0 auto 20px;display:block;box-shadow:0 10px 30px rgba(0,0,0,.35);}' +
-      '#clt-biolock h2{font-size:20px;font-weight:700;margin:0 0 8px;letter-spacing:.2px;}' +
-      '#clt-biolock p{font-size:14px;line-height:1.5;color:rgba(255,255,255,.72);margin:0 0 26px;}' +
+      '#clt-biolock .card{width:100%;max-width:344px;text-align:center;animation:cltBioCard .55s cubic-bezier(.22,1.2,.32,1) both;}' +
+      '@keyframes cltBioCard{from{opacity:0;transform:translateY(14px) scale(.96);}to{opacity:1;transform:none;}}' +
+      '#clt-biolock .ic-wrap{position:relative;width:94px;height:94px;margin:0 auto 22px;}' +
+      '#clt-biolock .ic{width:94px;height:94px;border-radius:25px;display:block;position:relative;z-index:1;' +
+      'box-shadow:0 14px 36px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.08);}' +
+      '#clt-biolock .ic-glow{position:absolute;inset:-14px;border-radius:36px;z-index:0;filter:blur(9px);' +
+      'background:radial-gradient(circle, ' + T.c + 'aa 0%, transparent 68%);animation:cltBioGlow 2.6s ease-in-out infinite;}' +
+      '@keyframes cltBioGlow{0%,100%{opacity:.45;transform:scale(1);}50%{opacity:.85;transform:scale(1.06);}}' +
+      '#clt-biolock h2{font-size:21px;font-weight:750;margin:0 0 8px;letter-spacing:-.01em;}' +
+      '#clt-biolock p{font-size:14px;line-height:1.5;color:rgba(255,255,255,.66);margin:0 0 28px;}' +
       '#clt-biolock .go{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;box-sizing:border-box;' +
-      'border:0;border-radius:14px;padding:15px 18px;font-size:16px;font-weight:700;color:#fff;cursor:pointer;' +
-      'background:' + T.c + ';box-shadow:0 8px 24px rgba(0,0,0,.28);transition:transform .12s ease,filter .12s ease;}' +
-      '#clt-biolock .go:active{transform:translateY(1px);filter:brightness(.95);}' +
+      'border:0;border-radius:15px;padding:16px 18px;font-size:16px;font-weight:750;color:#fff;cursor:pointer;letter-spacing:.01em;' +
+      'background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0)) , ' + T.c + ';' +
+      'box-shadow:0 10px 26px ' + T.c + '55, 0 2px 6px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.22);' +
+      'transition:transform .12s ease,filter .12s ease,box-shadow .12s ease;}' +
+      '#clt-biolock .go:active{transform:translateY(1px) scale(.995);filter:brightness(.96);}' +
       '#clt-biolock .go svg{width:20px;height:20px;}' +
-      '#clt-biolock .err{min-height:20px;font-size:13px;color:#ffb4b4;margin:14px 0 0;}' +
-      '#clt-biolock .pw{display:inline-block;margin-top:22px;font-size:14px;color:rgba(255,255,255,.85);' +
-      'text-decoration:underline;text-underline-offset:3px;cursor:pointer;background:none;border:0;}' +
+      '#clt-biolock .err{min-height:20px;font-size:13px;color:#ff9d9d;margin:15px 0 0;transition:opacity .2s;}' +
+      '#clt-biolock .pw{display:inline-block;margin-top:22px;font-size:14px;font-weight:600;color:rgba(255,255,255,.82);' +
+      'cursor:pointer;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);' +
+      'border-radius:999px;padding:9px 18px;transition:background .15s ease;}' +
+      '#clt-biolock .pw:active{background:rgba(255,255,255,.16);}' +
       '</style>' +
       '<div class="card">' +
-        '<img class="ic" src="' + T.icon + '" alt="">' +
-        '<h2>Application verrouillée</h2>' +
-        '<p>Déverrouillez avec Face&nbsp;ID ou votre empreinte pour accéder à votre espace.</p>' +
+        '<div class="ic-wrap"><span class="ic-glow"></span><img class="ic" src="' + T.icon + '" alt=""></div>' +
+        '<h2>Espace verrouillé</h2>' +
+        '<p>Déverrouillez avec Face&nbsp;ID ou votre empreinte pour accéder à votre espace en toute sécurité.</p>' +
         '<button type="button" class="go" id="clt-biolock-go">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
           '<path d="M12 11c-1.1 0-2 .9-2 2v1a2 2 0 0 0 4 0v-1c0-1.1-.9-2-2-2z"/>' +
@@ -246,8 +257,9 @@
     try { localStorage.removeItem(CRED_KEY(uid)); } catch (e) {}
   }
 
-  // --- Bannière d'activation (opt-in, non intrusive) -----------------------------
-  function toast(msg) {
+  // --- Notification (délègue au toast premium commun si disponible) --------------
+  function toast(msg, type) {
+    if (typeof window.cltToast === 'function') { window.cltToast(msg, { type: type || 'info' }); return; }
     var t = document.createElement('div');
     t.textContent = msg;
     t.style.cssText = 'position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:2147483000;' +
@@ -258,10 +270,13 @@
     setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3100);
   }
 
+  // --- Bannière d'activation (opt-in, non intrusive) -----------------------------
+
   function maybeOfferEnrollment(user) {
     var uid = user && user.id;
     if (!uid) return;
-    if (hasCredential(uid)) return;                 // déjà activé
+    injectSettingsControl(user);                    // réglage Activer/Désactiver (si menu présent)
+    if (hasCredential(uid)) return;                 // déjà activé → pas de bannière
     try { if (localStorage.getItem(OFFER_KEY(uid))) return; } catch (e) {} // déjà refusé
 
     isSupported().then(function (ok) {
@@ -270,20 +285,31 @@
       bar.id = 'clt-biolock-offer';
       bar.innerHTML =
         '<style>' +
-        '#clt-biolock-offer{position:fixed;left:12px;right:12px;bottom:12px;z-index:2147482000;' +
-        'background:#fff;color:#0b1220;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;' +
-        'box-shadow:0 12px 34px rgba(0,0,0,.18);border:1px solid rgba(0,0,0,.06);' +
-        'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;animation:cltBioUp .35s ease;}' +
-        '@keyframes cltBioUp{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}' +
-        '#clt-biolock-offer .txt{flex:1;font-size:13.5px;line-height:1.4;}' +
-        '#clt-biolock-offer .txt b{display:block;font-size:14.5px;margin-bottom:2px;}' +
-        '#clt-biolock-offer .a{border:0;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer;' +
-        'color:#fff;background:' + T.c + ';white-space:nowrap;}' +
-        '#clt-biolock-offer .x{border:0;background:none;color:#6b7280;font-size:13px;cursor:pointer;padding:6px;}' +
+        '#clt-biolock-offer{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:2147482000;' +
+        'max-width:440px;margin:0 auto;color:#12202E;border-radius:18px;padding:14px 15px;display:flex;align-items:center;gap:13px;' +
+        'background:rgba(255,255,255,.9);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);' +
+        'box-shadow:0 1px 2px rgba(16,40,70,.06), 0 16px 40px rgba(16,40,70,.22);border:1px solid rgba(16,40,70,.07);' +
+        'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;animation:cltBioUp .45s cubic-bezier(.22,1.2,.32,1);}' +
+        '@keyframes cltBioUp{from{transform:translateY(18px);opacity:0}to{transform:none;opacity:1}}' +
+        '#clt-biolock-offer .ic{flex-shrink:0;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;' +
+        'color:#fff;background:linear-gradient(160deg, ' + T.c + ' 0%, ' + T.c + 'cc 100%);box-shadow:0 6px 16px ' + T.c + '44;}' +
+        '#clt-biolock-offer .ic svg{width:22px;height:22px;}' +
+        '#clt-biolock-offer .txt{flex:1;font-size:13px;line-height:1.4;color:#4A5A6B;min-width:0;}' +
+        '#clt-biolock-offer .txt b{display:block;font-size:14.5px;font-weight:750;color:#12202E;margin-bottom:2px;letter-spacing:-.01em;}' +
+        '#clt-biolock-offer .col{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}' +
+        '#clt-biolock-offer .a{border:0;border-radius:11px;padding:9px 15px;font-size:13.5px;font-weight:750;cursor:pointer;' +
+        'color:#fff;background:' + T.c + ';white-space:nowrap;box-shadow:0 4px 12px ' + T.c + '40;}' +
+        '#clt-biolock-offer .x{border:0;background:none;color:#8A97A4;font-size:12.5px;font-weight:600;cursor:pointer;padding:4px;}' +
+        'html[data-theme="dark"] #clt-biolock-offer{background:rgba(24,33,46,.86);color:#EAF0F6;border-color:rgba(255,255,255,.08);}' +
+        'html[data-theme="dark"] #clt-biolock-offer .txt{color:#AEBCCB;}' +
+        'html[data-theme="dark"] #clt-biolock-offer .txt b{color:#EAF0F6;}' +
         '</style>' +
-        '<div class="txt"><b>Déverrouillage rapide</b>Ouvrez l\'app avec Face&nbsp;ID ou votre empreinte, sans retaper le mot de passe.</div>' +
-        '<button type="button" class="a" id="clt-bio-on">Activer</button>' +
-        '<button type="button" class="x" id="clt-bio-later">Plus tard</button>';
+        '<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M12 11c-1.1 0-2 .9-2 2v1a2 2 0 0 0 4 0v-1c0-1.1-.9-2-2-2z"/><path d="M7 8a5 5 0 0 1 10 0"/>' +
+        '<path d="M4 12a8 8 0 0 1 3-6.2"/><path d="M20 12a8 8 0 0 0-3-6.2"/><path d="M8 20a6 6 0 0 0 8 0"/></svg></div>' +
+        '<div class="txt"><b>Déverrouillage rapide</b>Ouvrez votre espace avec Face&nbsp;ID ou votre empreinte, sans retaper le mot de passe.</div>' +
+        '<div class="col"><button type="button" class="a" id="clt-bio-on">Activer</button>' +
+        '<button type="button" class="x" id="clt-bio-later">Plus tard</button></div>';
       document.body.appendChild(bar);
 
       bar.querySelector('#clt-bio-later').addEventListener('click', function () {
@@ -293,12 +319,66 @@
       bar.querySelector('#clt-bio-on').addEventListener('click', function () {
         enroll(user).then(function (done) {
           if (bar.parentNode) bar.parentNode.removeChild(bar);
-          toast(done ? '✅ Déverrouillage biométrique activé sur cet appareil.'
-                     : "Impossible d'activer le déverrouillage sur cet appareil.");
+          if (done) { toast('Déverrouillage activé sur cet appareil.', 'success'); syncSettingsControl(uid); }
+          else toast("Impossible d'activer le déverrouillage sur cet appareil.", 'error');
         }).catch(function (e) {
           if (bar.parentNode) bar.parentNode.removeChild(bar);
-          if (!(e && e.name === 'NotAllowedError')) toast("Activation annulée ou non prise en charge.");
+          if (!(e && e.name === 'NotAllowedError')) toast("Activation annulée ou non prise en charge.", 'warning');
         });
+      });
+    });
+  }
+
+  // --- Réglage « Activer / Désactiver le déverrouillage » ------------------------
+  // S'installe tout seul dans le menu Réglages (#settings-dropdown) là où il existe
+  // (espaces fournisseur, livreur, client, coursier). Sur les espaces sans ce menu,
+  // l'appel est simplement sans effet.
+  function labelFor(uid) {
+    return hasCredential(uid)
+      ? '🔒 Déverrouillage activé'
+      : '🔓 Activer le déverrouillage';
+  }
+  function syncSettingsControl(uid) {
+    var btn = document.getElementById('clt-biolock-setting');
+    if (btn) btn.textContent = labelFor(uid);
+  }
+  function injectSettingsControl(user) {
+    var uid = user && user.id;
+    if (!uid) return;
+    var dropdown = document.getElementById('settings-dropdown');
+    if (!dropdown || document.getElementById('clt-biolock-setting')) return;
+    isSupported().then(function (ok) {
+      if (!ok || document.getElementById('clt-biolock-setting')) return;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'clt-biolock-setting';
+      btn.textContent = labelFor(uid);
+      // Insère juste après « Activer les notifications » si présent, sinon avant la déconnexion.
+      var pushBtn = document.getElementById('btn-activer-push');
+      var logoutBtn = dropdown.querySelector('.danger');
+      if (pushBtn && pushBtn.parentNode === dropdown) dropdown.insertBefore(btn, pushBtn.nextSibling);
+      else if (logoutBtn) dropdown.insertBefore(btn, logoutBtn);
+      else dropdown.appendChild(btn);
+
+      btn.addEventListener('click', function () {
+        if (hasCredential(uid)) {
+          // Désactivation — confirmation soignée si disponible.
+          var doDisable = function () { disable(uid); syncSettingsControl(uid); toast('Déverrouillage désactivé sur cet appareil.', 'info'); };
+          if (typeof window.cltConfirm === 'function') {
+            window.cltConfirm({
+              title: 'Désactiver le déverrouillage ?',
+              sub: 'Vous ouvrirez de nouveau votre espace sans Face ID ni empreinte, tant que la session reste active.',
+              okLabel: 'Désactiver', cancelLabel: 'Annuler'
+            }).then(function (yes) { if (yes) doDisable(); });
+          } else if (window.confirm('Désactiver le déverrouillage biométrique sur cet appareil ?')) { doDisable(); }
+        } else {
+          enroll(user).then(function (done) {
+            if (done) { syncSettingsControl(uid); toast('Déverrouillage activé sur cet appareil.', 'success'); }
+            else toast("Impossible d'activer le déverrouillage sur cet appareil.", 'error');
+          }).catch(function (e) {
+            if (!(e && e.name === 'NotAllowedError')) toast('Activation annulée ou non prise en charge.', 'warning');
+          });
+        }
       });
     });
   }
@@ -312,6 +392,7 @@
     guard: guard,
     enroll: enroll,
     disable: disable,
-    maybeOfferEnrollment: maybeOfferEnrollment
+    maybeOfferEnrollment: maybeOfferEnrollment,
+    injectSettingsControl: injectSettingsControl
   };
 })();
