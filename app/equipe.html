@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Tableau de bord Équipe | Christ Livraison & Transport SARL</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%231B4374'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23E26313'/%3E%3C/svg%3E" id="pwa-favicon-link">
 <!-- PWA : permet d'installer ce tableau de bord comme une app sur téléphone/tablette.
@@ -264,15 +264,24 @@
      des données déjà chargées. Lecture seule : chaque tuile renvoie vers l'onglet concerné.
      Rempli par renderAujourdhui(). -->
 <style>
-#section-aujourdhui .aujourdhui-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
-#section-aujourdhui .aujourdhui-bloc{ border:1px solid var(--border); border-radius:14px; padding:12px; }
-#section-aujourdhui .aujourdhui-bloc-titre{ font-size:13px; font-weight:700; margin:0 0 10px; }
+#section-aujourdhui{ padding:16px !important; }
+#section-aujourdhui .aujourdhui-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; }
+#section-aujourdhui .aujourdhui-bloc{ border:1px solid var(--border); border-radius:14px; padding:10px 12px; }
+#section-aujourdhui .aujourdhui-bloc-titre{ font-size:13px; font-weight:700; margin:0 0 8px; }
 #section-aujourdhui .aujourdhui-tile{ cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; }
 #section-aujourdhui .aujourdhui-tile:hover{ transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,0,0,0.10); }
+/* Sur mobile : carte plus compacte — on retire le paragraphe explicatif et on
+   resserre les espacements pour qu'elle occupe moins de place. */
+@media(max-width:640px){
+  #section-aujourdhui{ padding:13px !important; }
+  #section-aujourdhui .aujourdhui-sub{ display:none; }
+  #section-aujourdhui .aujourdhui-grid{ gap:8px; }
+  #section-aujourdhui .aujourdhui-bloc{ padding:9px 10px; }
+}
 </style>
 <div class="card" id="section-aujourdhui">
 <h2 class="panel-subtitle" style="margin:0 0 4px;">📌 Aujourd'hui — l'essentiel</h2>
-<div class="page-sub" style="margin:0 0 12px;">Ce qui demande une action, les anomalies et l'argent à récupérer, en un coup d'œil. Cliquez une tuile pour aller au bon onglet.</div>
+<div class="page-sub aujourdhui-sub" style="margin:0 0 12px;">Ce qui demande une action, les anomalies et l'argent à récupérer, en un coup d'œil. Cliquez une tuile pour aller au bon onglet.</div>
 <div class="aujourdhui-grid">
   <div class="aujourdhui-bloc">
     <div class="aujourdhui-bloc-titre">✅ Actions à faire</div>
@@ -4568,6 +4577,9 @@ init();
       const p = document.getElementById('eqpanel-'+k);
       if (p) p.classList.toggle('hidden', k !== key);
     });
+    // La synthèse « Aujourd'hui — l'essentiel » n'apparaît que sur l'onglet Colis
+    // (le tableau de bord d'accueil), pour ne plus encombrer les autres onglets.
+    document.getElementById('section-aujourdhui')?.classList.toggle('hidden', key !== 'colis');
     document.querySelectorAll('#clt-toptabs .clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.eqtab === key));
     document.querySelectorAll('#clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.nav === key));
     // Réajuste les tableaux "sticky" et la carte Leaflet une fois le panneau réaffiché.
