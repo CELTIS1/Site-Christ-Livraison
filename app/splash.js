@@ -75,7 +75,7 @@
   + '@keyframes cltUp{to{opacity:1;transform:translateY(0);}}'
 
   /* fin barre de chargement discrète */
-  + '#clt-splash .load{position:absolute;bottom:12%;left:50%;transform:translateX(-50%);'
+  + '#clt-splash .load{position:absolute;bottom:12%;left:0;right:0;margin-left:auto;margin-right:auto;'
   +   'width:120px;height:3px;border-radius:3px;background:rgba(255,255,255,.22);overflow:hidden;opacity:0;'
   +   'animation:cltUp .5s ease .9s forwards;}'
   + '#clt-splash .load i{position:absolute;left:50%;top:0;height:100%;width:34%;border-radius:3px;'
@@ -110,15 +110,25 @@
     +   '<div class="t2">Livraison &amp; transport · Abidjan</div></div>'
     + '<div class="load"><i></i></div>';
 
-  function mount(){
-    if (!document.body) { return setTimeout(mount, 15); }
-    document.body.appendChild(wrap);
-    var life = 2100;
+  // On monte l'overlay IMMÉDIATEMENT, sans attendre <body>. Le script est
+  // chargé dans <head> (bloquant), donc il s'exécute avant que le contenu de
+  // la page ne soit peint : on l'ajoute à <html> pour éviter le « flash »
+  // blanc puis le clignotement de la page de connexion avant le splash.
+  var root = document.body || document.documentElement;
+  root.appendChild(wrap);
+
+  // Fond peint dès maintenant sur <html> pour supprimer tout « flash » blanc
+  // au tout premier rendu (on le retire à la fin du splash).
+  var prevBg = document.documentElement.style.background;
+  document.documentElement.style.background = T.g[1];
+
+  var life = 2100;
+  setTimeout(function(){
+    wrap.classList.add('out');
     setTimeout(function(){
-      wrap.classList.add('out');
-      setTimeout(function(){ if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 650);
-      try { sessionStorage.setItem('clt-splash-done','1'); } catch(e){}
-    }, life);
-  }
-  mount();
+      if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+      document.documentElement.style.background = prevBg;
+    }, 650);
+    try { sessionStorage.setItem('clt-splash-done','1'); } catch(e){}
+  }, life);
 })();
