@@ -351,6 +351,29 @@ async function initierRechargeWave(montant) {
   return out.wave_launch_url;
 }
 
+// Démarre le paiement EN LIGNE d'une COURSE par le client via Wave : appelle
+// l'Edge Function sécurisée (qui identifie le client via son jeton, vérifie que
+// la course lui appartient et a été acceptée, puis crée la session de paiement
+// Wave pour le montant exact de la course), et renvoie l'URL de paiement.
+async function initierPaiementCourseWave(courseId) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) throw new Error("Vous devez être connecté.");
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/wave-payer-course`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session.access_token}`,
+      "apikey": SUPABASE_KEY,
+    },
+    body: JSON.stringify({ course_id: courseId }),
+  });
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok || !out.wave_launch_url) {
+    throw new Error(out.error || "Le paiement Wave n'a pas pu démarrer.");
+  }
+  return out.wave_launch_url;
+}
+
 function expressRechargeBadgeHTML(statut) {
   const s = EXPRESS_RECHARGE_STATUTS[statut] || EXPRESS_RECHARGE_STATUTS.en_attente;
   return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;

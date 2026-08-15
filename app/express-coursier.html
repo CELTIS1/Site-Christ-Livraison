@@ -44,6 +44,10 @@
 
   .course-item .client-info{ font-size:11.5px; color:var(--muted); margin-top:4px; }
   .course-item .dest-info{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .pay-tag{ display:inline-block; margin-top:6px; padding:5px 10px; border-radius:8px; font-size:12px; font-weight:700; }
+  .pay-tag-wave-paid{ background:#e6f7fd; color:#0a6e8a; border:1px solid #b9e8f6; }
+  .pay-tag-wave-wait{ background:#fff4e0; color:#9a5b00; border:1px solid #ffe0a8; }
+  .pay-tag-cash{ background:#eef2f7; color:#334155; border:1px solid #dbe3ec; }
   .btn-sm{ padding:7px 14px; font-size:12.5px; }
   .course-proche{ font-weight:700; color:#0b6e64; }
   .btn-itineraire{ display:inline-block; text-decoration:none; text-align:center; background:#0D9488; color:#fff; border:none; }
@@ -681,6 +685,20 @@
       </div>`;
   }
 
+  // Encart paiement affiché au coursier pour une course active.
+  // - Wave payé      → rien à encaisser (part créditée au portefeuille à la livraison).
+  // - Wave en attente → le client règle en ligne : ne pas encaisser d'espèces, ne pas livrer.
+  // - Espèces        → encaisser le total auprès du client à la livraison.
+  function paiementCoursierHTML(c){
+    if (c.paiement_mode === 'wave') {
+      if (c.paiement_status === 'paye') {
+        return `<div class="pay-tag pay-tag-wave-paid">💳 Payé en ligne (Wave) · rien à encaisser</div>`;
+      }
+      return `<div class="pay-tag pay-tag-wave-wait">⏳ Paiement en ligne en attente · n'encaissez rien, ne livrez pas encore</div>`;
+    }
+    return `<div class="pay-tag pay-tag-cash">💵 Espèces à encaisser : ${formatMontant(c.prix_total)}</div>`;
+  }
+
   function mesCourseRowHTML(c){
     const client = c.client_id ? clientsById[c.client_id] : null;
     const clientInfo = client
@@ -690,8 +708,10 @@
       ? `<div class="dest-info">📦 Destinataire : ${escapeHTML(c.destinataire_nom || '')}${c.destinataire_telephone ? ' · ' + formatPhoneLocal(c.destinataire_telephone) : ''}</div>`
       : '';
     const canRecup = c.status === 'acceptee';   // pas encore récupéré → bouton "J'ai récupéré"
-    const canDeliver = c.status === 'recuperee'; // récupéré → bouton "Marquer livrée"
-    const active = canRecup || canDeliver;
+    // Course Wave : on ne peut la marquer livrée qu'une fois le paiement en ligne confirmé.
+    const waveEnAttente = c.paiement_mode === 'wave' && c.paiement_status !== 'paye';
+    const canDeliver = c.status === 'recuperee' && !waveEnAttente; // récupéré (et payé si Wave) → "Marquer livrée"
+    const active = canRecup || c.status === 'recuperee';
     const chatBlock = active ? `
           <div class="chat-wrap" data-chat="${c.id}">
             <button type="button" class="chat-toggle" data-chat-toggle="${c.id}">💬 Discuter avec le client <span class="chat-unread" id="chat-unread-${c.id}"></span></button>
@@ -717,6 +737,7 @@
           <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · Accepté le ${formatDate(c.accepted_at)}</div>
           ${clientInfo}
           ${destInfo}
+          ${active ? paiementCoursierHTML(c) : ''}
           ${photoThumbHTML(c)}
           ${chatBlock}
           ${ratingClientBlockHTML(c)}
@@ -727,6 +748,7 @@
           ${itineraire}
           ${canRecup ? `<button class="btn btn-sm btn-recup-course">J'ai récupéré le colis</button>` : ''}
           ${canDeliver ? `<button class="btn btn-sm btn-deliver-course">Marquer livrée</button>` : ''}
+          ${c.status === 'recuperee' && waveEnAttente ? `<div class="pay-tag pay-tag-wave-wait">🔒 Livraison possible dès que le client a payé en ligne</div>` : ''}
         </div>
       </div>
     `;
@@ -817,7 +839,16 @@
     box.querySelectorAll('.btn-deliver-course').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.closest('.course-item').dataset.id;
-        if (!(await cltConfirm({ title: 'Confirmer la livraison ?', sub: 'Confirmez que la course a bien été livrée et payée par le client.', okLabel: 'Marquer livrée' }))) return;
+        const course = mesCourses.find(c => c.id === id);
+        // Garde-fou : une course Wave non confirmée ne peut pas être livrée.
+        if (course && course.paiement_mode === 'wave' && course.paiement_status !== 'paye') {
+          await cltConfirm({ title: 'Paiement en ligne en attente', sub: 'Le client règle cette course par Wave. Vous pourrez la marquer livrée dès que le paiement sera confirmé.', okLabel: 'Compris', cancelLabel: 'Fermer' });
+          return;
+        }
+        const sub = (course && course.paiement_mode === 'wave')
+          ? 'Cette course est payée en ligne (Wave). Confirmez que le colis a bien été livré. Votre part sera créditée sur votre portefeuille.'
+          : 'Confirmez que la course a bien été livrée et payée en espèces par le client.';
+        if (!(await cltConfirm({ title: 'Confirmer la livraison ?', sub, okLabel: 'Marquer livrée' }))) return;
         btn.disabled = true; btn.textContent = 'Enregistrement...';
         const { error } = await supabaseClient.from('express_courses')
           .update({ status: 'livree', delivered_at: new Date().toISOString() })

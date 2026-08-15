@@ -137,9 +137,9 @@ Deno.serve(async (req) => {
     return ok({ ignored: true, type, payment_status: data?.payment_status ?? null });
   }
 
-  const rechargeId = data?.client_reference || null;
+  const clientReference = data?.client_reference || null;
   const waveSessionId = data?.id || null;
-  if (!rechargeId && !waveSessionId) {
+  if (!clientReference && !waveSessionId) {
     return ok({ ignored: true, reason: "no_reference" });
   }
 
@@ -147,6 +147,56 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+
+  // ---- Cas A : paiement d'une COURSE (client_reference = "course_<id>") ----
+  // Le client a réglé sa course en ligne. On confirme le paiement ; le crédit de
+  // la part du coursier se fera automatiquement à la livraison (trigger).
+  if (typeof clientReference === "string" && clientReference.startsWith("course_")) {
+    const courseId = clientReference.slice("course_".length);
+
+    const { data: course, error: findCourseError } = await supabaseAdmin
+      .from("express_courses")
+      .select("id, prix_total, paiement_status")
+      .eq("id", courseId)
+      .maybeSingle();
+
+    if (findCourseError) {
+      return deny("Erreur base de données : " + findCourseError.message, 500);
+    }
+    if (!course) {
+      return ok({ ignored: true, reason: "course_not_found" });
+    }
+    // Idempotence : déjà payée -> ne rien refaire.
+    if (course.paiement_status === "paye") {
+      return ok({ already_processed: true });
+    }
+
+    // RE-VÉRIFICATION du montant : on ne confirme que si le montant payé
+    // correspond bien au prix de la course.
+    const paidAmountCourse = Number(data?.amount);
+    if (Number.isFinite(paidAmountCourse) && Number(course.prix_total) !== paidAmountCourse) {
+      return deny("Le montant payé ne correspond pas au prix de la course.", 409);
+    }
+
+    const { data: updatedCourse, error: updCourseError } = await supabaseAdmin
+      .from("express_courses")
+      .update({
+        paiement_status: "paye",
+        paid_at: new Date().toISOString(),
+        wave_session_id: waveSessionId ?? undefined,
+      })
+      .eq("id", course.id)
+      .neq("paiement_status", "paye")
+      .select("id");
+
+    if (updCourseError) {
+      return deny("Impossible de confirmer le paiement de la course : " + updCourseError.message, 500);
+    }
+    return ok({ course_paid: (updatedCourse?.length ?? 0) > 0, course_id: course.id });
+  }
+
+  // ---- Cas B : recharge du solde coursier (comportement historique) ----
+  const rechargeId = clientReference;
 
   // Retrouver la recharge (priorité au client_reference = id de la recharge).
   let query = supabaseAdmin.from("express_recharges").select("id, montant, status, coursier_id");
