@@ -98,7 +98,14 @@ function copyCell(val, opts){
 }
 
 function showToast(msg, isErr){
+  // Notifications premium partagées (carte en verre, teintée au thème de la gestion).
+  if (typeof window.cltToast === 'function'){
+    window.cltToast(msg, { type: isErr ? 'error' : 'success' });
+    return;
+  }
+  // Repli si clt-common.js n'est pas chargé.
   const w = document.getElementById('g-toast-wrap');
+  if (!w) return;
   const t = document.createElement('div');
   t.className = 'g-toast' + (isErr ? ' err' : '');
   t.textContent = msg;
@@ -171,17 +178,34 @@ function refreshStickyOffsets(){
     rootStyle.setProperty('--t-kpi',    r(tKpi));
   }catch(_e){ /* sans effet sur le fonctionnement */ }
 }
+// Bloc KPI du tableau de bord : passe en mode « condensé » lorsqu'il atteint sa
+// position figée en haut, pour rendre plus de place au tableau. Comme l'élément
+// est en position:sticky, une fois collé son haut reste exactement à --t-kpi :
+// la bascule est donc stable (pas de clignotement).
+function updateKpiCondensed(){
+  try{
+    const sec = document.getElementById('sec-dashboard');
+    if (!sec || !sec.classList.contains('active')) return;
+    const grid = sec.querySelector(':scope > .kpi-grid');
+    if (!grid) return;
+    const stuckTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--t-kpi')) || 0;
+    const stuck = grid.getBoundingClientRect().top <= stuckTop + 1;
+    grid.classList.toggle('condensed', stuck);
+  }catch(_e){ /* sans effet sur le fonctionnement */ }
+}
 let _stickyRaf = null;
 function scheduleStickyRefresh(){
   // Mesure immédiate : indispensable car requestAnimationFrame ne se déclenche pas
   // quand l'onglet est en arrière-plan (au chargement notamment).
   refreshStickyOffsets();
+  updateKpiCondensed();
   // Recalage après la prochaine peinture, quand l'onglet est visible.
   if (_stickyRaf) cancelAnimationFrame(_stickyRaf);
-  _stickyRaf = requestAnimationFrame(() => { _stickyRaf = null; refreshStickyOffsets(); });
+  _stickyRaf = requestAnimationFrame(() => { _stickyRaf = null; refreshStickyOffsets(); updateKpiCondensed(); });
 }
 function initStickyHeader(){
   scheduleStickyRefresh();
+  window.addEventListener('scroll', updateKpiCondensed, { passive:true });
   window.addEventListener('resize', scheduleStickyRefresh);
   window.addEventListener('orientationchange', scheduleStickyRefresh);
   if (window.ResizeObserver){
