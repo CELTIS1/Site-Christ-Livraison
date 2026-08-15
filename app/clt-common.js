@@ -176,3 +176,28 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
   inp.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); __cltCloseModal(inp.value); } };
   return new Promise((res) => { __cltModalResolve = res; });
 }
+
+/* =====================================================================
+   POLISSAGE EXPRESS — retour tactile (ripple) sur les boutons .btn
+   Écoute déléguée : fonctionne pour tous les boutons présents ou créés
+   dynamiquement. Désactivé si l'usager a demandé moins d'animations.
+   ===================================================================== */
+(function () {
+  try {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    document.addEventListener("click", function (e) {
+      var btn = e.target && e.target.closest ? e.target.closest(".btn") : null;
+      if (!btn || btn.disabled) return;
+      var rect = btn.getBoundingClientRect();
+      var size = Math.max(rect.width, rect.height);
+      var span = document.createElement("span");
+      span.className = "clt-ripple";
+      span.style.width = span.style.height = size + "px";
+      span.style.left = (e.clientX - rect.left) + "px";
+      span.style.top = (e.clientY - rect.top) + "px";
+      btn.appendChild(span);
+      setTimeout(function () { if (span.parentNode) span.parentNode.removeChild(span); }, 600);
+    }, true);
+  } catch (err) { /* dégradation silencieuse */ }
+})();

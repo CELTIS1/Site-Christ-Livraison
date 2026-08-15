@@ -1046,3 +1046,69 @@ html[data-theme="dark"] .stat-box .stat-value,
 html[data-theme="dark"] .wallet-solde .wallet-value,
 html[data-theme="dark"] .course-proche,
 html[data-theme="dark"] .momo-choice.selected .momo-choice-name{ color:#4FD1C0 !important; }
+
+/* =====================================================================
+   POLISSAGE EXPRESS — micro-animations partagées (client + coursier)
+   Toutes les animations respectent prefers-reduced-motion : si l'usager
+   a désactivé les animations, aucune ne se déclenche.
+   ===================================================================== */
+
+@keyframes cltRise{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+@keyframes cltFade{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:translateY(0); } }
+@keyframes cltStepPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.14); } }
+@keyframes cltStarPop{ 0%{ transform:scale(1); } 45%{ transform:scale(1.4); } 100%{ transform:scale(1); } }
+@keyframes cltIconBounce{ 0%{ transform:translateY(0); } 40%{ transform:translateY(-3px); } 100%{ transform:translateY(0); } }
+@keyframes cltRipple{ from{ transform:translate(-50%,-50%) scale(0); opacity:.3; } to{ transform:translate(-50%,-50%) scale(2.4); opacity:0; } }
+@keyframes cltShine{ 0%{ background-position:-140% 0; } 100%{ background-position:240% 0; } }
+
+/* 1. Montée échelonnée des cartes de course */
+.course-item{ animation:cltRise .38s cubic-bezier(.22,.61,.36,1) both; }
+.course-item:nth-child(2){ animation-delay:.05s; }
+.course-item:nth-child(3){ animation-delay:.10s; }
+.course-item:nth-child(4){ animation-delay:.15s; }
+.course-item:nth-child(5){ animation-delay:.20s; }
+.course-item:nth-child(n+6){ animation-delay:.24s; }
+
+/* 7. Fondu à l'apparition d'une section (changement d'onglet) */
+#section-nouvelle:not(.hidden), #section-courses:not(.hidden),
+#section-disponibles:not(.hidden), #section-mescourses:not(.hidden),
+#section-recharges:not(.hidden), #section-debits:not(.hidden){ animation:cltFade .32s ease; }
+
+/* 4. Étape « en cours » du suivi — pulsation douce (scale, sans couleur, donc
+   compatible avec le violet client ET le teal coursier) */
+.clt-stepper .st.now .c{ animation:cltStepPulse 1.8s ease-in-out infinite; }
+
+/* 8. Pop de l'étoile sélectionnée (scale seul → n'affecte pas le remplissage,
+   le survol/notation continue de fonctionner) */
+.stars .star.on{ animation:cltStarPop .34s ease; }
+
+/* 6. Barre de navigation basse — icône active qui remonte légèrement */
+.clt-bottomnav .nav{ transition:color .2s ease, transform .2s ease; }
+.clt-bottomnav .nav.active svg,
+.clt-bottomnav .nav.active img{ animation:cltIconBounce .4s ease; }
+
+/* 3. Retour tactile (ripple) sur les boutons — la vague est injectée par JS */
+.btn{ position:relative; overflow:hidden; }
+.btn:active{ transform:scale(.97); }
+.clt-ripple{ position:absolute; border-radius:50%; pointer-events:none; background:currentColor; opacity:.28; transform:translate(-50%,-50%) scale(0); animation:cltRipple .55s ease-out forwards; }
+
+/* 5. Squelette de chargement des courses (affiché pendant le fetch réseau) */
+@keyframes cltSkeleton{ 0%{ background-position:-160% 0; } 100%{ background-position:160% 0; } }
+.clt-skel-card{ border:1px solid #eee; border-radius:14px; padding:16px; margin-bottom:12px; }
+.clt-skel-line{ height:12px; border-radius:6px; margin:8px 0; background:linear-gradient(90deg,#eceaf3 25%,#f6f4fb 50%,#eceaf3 75%); background-size:200% 100%; animation:cltSkeleton 1.2s ease-in-out infinite; }
+.clt-skel-line.w40{ width:40%; } .clt-skel-line.w70{ width:70%; } .clt-skel-line.w90{ width:90%; }
+html[data-theme="dark"] .clt-skel-card{ border-color:#2A3849; }
+html[data-theme="dark"] .clt-skel-line{ background:linear-gradient(90deg,#1B2635 25%,#243247 50%,#1B2635 75%); background-size:200% 100%; }
+
+/* 2. Reflet animé sur le prix total mis à jour (classe ajoutée par JS) */
+.clt-price-shine{ background:linear-gradient(100deg, currentColor 30%, rgba(255,255,255,.85) 50%, currentColor 70%); background-size:220% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation:cltShine .9s ease-out; }
+
+@media (prefers-reduced-motion: reduce){
+  .course-item, .clt-stepper .st.now .c, .stars .star.on,
+  .clt-bottomnav .nav.active svg, .clt-bottomnav .nav.active img,
+  .clt-ripple, .clt-price-shine,
+  #section-nouvelle:not(.hidden), #section-courses:not(.hidden),
+  #section-disponibles:not(.hidden), #section-mescourses:not(.hidden),
+  #section-recharges:not(.hidden), #section-debits:not(.hidden){ animation:none !important; }
+  .btn:active{ transform:none; }
+}
