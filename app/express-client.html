@@ -133,6 +133,25 @@
   .rating-done .rating-avis{ margin-top:6px; font-size:12.5px; color:#5a5570; font-style:italic; }
   .rating-thanks{ font-size:12.5px; color:#1a7d3c; font-weight:600; margin-top:4px; }
 
+  /* ===== Chat course (client <-> coursier) ===== */
+  .chat-wrap{ width:100%; flex-basis:100%; margin-top:10px; }
+  .chat-toggle{ display:inline-flex; align-items:center; gap:8px; background:#eef6fd; color:#1d6fb8; border:1px solid #d3e6f7; border-radius:10px; padding:8px 12px; font-size:13px; font-weight:600; cursor:pointer; }
+  .chat-toggle:hover{ background:#e3f0fb; }
+  .chat-unread{ display:none; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#E26313; color:#fff; font-size:11px; font-weight:800; line-height:18px; text-align:center; }
+  .chat-unread.on{ display:inline-block; }
+  .chat-panel{ margin-top:8px; border:1px solid #ece7f6; border-radius:12px; background:#fff; overflow:hidden; }
+  .chat-msgs{ max-height:240px; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:7px; background:#faf9fd; }
+  .chat-empty{ text-align:center; color:#9aa3af; font-size:12.5px; padding:14px 0; }
+  .chat-bubble{ max-width:78%; padding:7px 11px; border-radius:13px; font-size:13px; line-height:1.35; word-wrap:break-word; }
+  .chat-bubble.theirs{ align-self:flex-start; background:#eceaf3; color:#26292e; border-bottom-left-radius:4px; }
+  .chat-bubble.mine{ align-self:flex-end; background:#6D28D9; color:#fff; border-bottom-right-radius:4px; }
+  .chat-bubble .chat-time{ display:block; font-size:10px; opacity:.7; margin-top:3px; }
+  .chat-input-row{ display:flex; gap:8px; padding:10px; border-top:1px solid #ece7f6; background:#fff; }
+  .chat-input{ flex:1; border:1px solid #ddd0fb; border-radius:10px; padding:9px 11px; font-size:13px; font-family:inherit; }
+  .chat-send{ background:#6D28D9; color:#fff; border:none; border-radius:10px; padding:0 16px; font-size:13px; font-weight:600; cursor:pointer; }
+  .chat-send:hover{ background:#5b21b6; }
+  .chat-send:disabled{ opacity:.5; cursor:default; }
+
   /* ===== Photo du colis ===== */
   .photo-field{ margin-top:14px; }
   .photo-drop{
@@ -554,6 +573,17 @@
     // Elle montre les points de récupération et de livraison, et la position du coursier mise à
     // jour en temps réel (voir initCourseMaps / refreshCoursierPositions).
     const isActive = (c.status === 'acceptee' || c.status === 'recuperee') && c.coursier_id;
+    const chatBlock = isActive ? `
+          <div class="chat-wrap" data-chat="${c.id}">
+            <button type="button" class="chat-toggle" data-chat-toggle="${c.id}">💬 Discuter avec le coursier <span class="chat-unread" id="chat-unread-${c.id}"></span></button>
+            <div class="chat-panel hidden" id="chat-panel-${c.id}">
+              <div class="chat-msgs" id="chat-msgs-${c.id}"><div class="chat-empty">Chargement…</div></div>
+              <div class="chat-input-row">
+                <input type="text" class="chat-input" id="chat-input-${c.id}" placeholder="Votre message…" maxlength="2000" autocomplete="off">
+                <button type="button" class="chat-send" data-chat-send="${c.id}">Envoyer</button>
+              </div>
+            </div>
+          </div>` : '';
     const mapBlock = isActive ? `
           <div style="margin-top:10px;">
             <div id="course-map-status-${c.id}" style="font-size:12px;color:#64748b;margin-bottom:6px;">📍 Chargement de la position du coursier…</div>
@@ -581,6 +611,7 @@
           ${searchingBlock}
           ${recupBlock}
           ${mapBlock}
+          ${chatBlock}
           ${ratingBlockHTML(c)}
         </div>
         <div class="status-col">
@@ -743,6 +774,119 @@
     });
     initRatingWidgets(box);
     loadCoursierReputations(box);
+    initChatWidgets(box);
+  }
+
+  // ---------- Chat course (client <-> coursier) ----------
+  const chatMessages = {};   // { courseId: [ {id, sender_id, body, created_at, read_at} ] }
+  const chatOpen = {};       // { courseId: bool }
+
+  function chatBubbleHTML(m){
+    const mine = m.sender_id === currentUser.id;
+    const heure = new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return `<div class="chat-bubble ${mine ? 'mine' : 'theirs'}">${escapeHTML(m.body)}<span class="chat-time">${heure}</span></div>`;
+  }
+
+  function renderChat(courseId){
+    const box = document.getElementById('chat-msgs-' + courseId);
+    if (!box) return;
+    const msgs = chatMessages[courseId] || [];
+    box.innerHTML = msgs.length
+      ? msgs.map(chatBubbleHTML).join('')
+      : '<div class="chat-empty">Aucun message. Écrivez au coursier (ex : « je suis devant le portail »).</div>';
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function updateChatUnread(courseId){
+    const badge = document.getElementById('chat-unread-' + courseId);
+    if (!badge) return;
+    const msgs = chatMessages[courseId] || [];
+    const n = msgs.filter(m => m.sender_id !== currentUser.id && !m.read_at).length;
+    badge.textContent = n;
+    badge.classList.toggle('on', n > 0);
+  }
+
+  async function loadChat(courseId){
+    const { data, error } = await supabaseClient.from('express_messages')
+      .select('*').eq('course_id', courseId).order('created_at', { ascending: true });
+    if (error) { console.error('Chat:', error); return; }
+    chatMessages[courseId] = data || [];
+    renderChat(courseId);
+    updateChatUnread(courseId);
+  }
+
+  async function markChatRead(courseId){
+    const msgs = chatMessages[courseId] || [];
+    if (!msgs.some(m => m.sender_id !== currentUser.id && !m.read_at)) return;
+    const { error } = await supabaseClient.rpc('express_messages_marquer_lus', { p_course_id: courseId });
+    if (error) { console.error('Chat lu:', error); return; }
+    msgs.forEach(m => { if (m.sender_id !== currentUser.id && !m.read_at) m.read_at = new Date().toISOString(); });
+    updateChatUnread(courseId);
+  }
+
+  async function toggleChat(courseId){
+    const panel = document.getElementById('chat-panel-' + courseId);
+    if (!panel) return;
+    const willOpen = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !willOpen);
+    chatOpen[courseId] = willOpen;
+    if (willOpen) {
+      await loadChat(courseId);
+      await markChatRead(courseId);
+      const input = document.getElementById('chat-input-' + courseId);
+      if (input) input.focus();
+    }
+  }
+
+  async function sendChat(courseId){
+    const input = document.getElementById('chat-input-' + courseId);
+    const btn = document.querySelector(`[data-chat-send="${courseId}"]`);
+    if (!input) return;
+    const body = (input.value || '').trim();
+    if (!body) return;
+    input.value = '';
+    if (btn) btn.disabled = true;
+    const { data, error } = await supabaseClient.from('express_messages')
+      .insert({ course_id: courseId, sender_id: currentUser.id, body }).select().single();
+    if (btn) btn.disabled = false;
+    if (error) { alert('Message non envoyé : ' + error.message); input.value = body; return; }
+    // Ajout optimiste (dédoublonné si le temps réel renvoie le même message).
+    if (data && !(chatMessages[courseId] || []).some(m => m.id === data.id)) {
+      (chatMessages[courseId] = chatMessages[courseId] || []).push(data);
+      renderChat(courseId);
+    }
+    input.focus();
+  }
+
+  // Réception temps réel d'un message : ajoute la bulle et gère le badge « non lus ».
+  function handleIncomingChat(m){
+    const courseId = m.course_id;
+    const list = (chatMessages[courseId] = chatMessages[courseId] || []);
+    if (list.some(x => x.id === m.id)) return;   // déjà présent (envoi optimiste)
+    list.push(m);
+    renderChat(courseId);
+    if (chatOpen[courseId] && m.sender_id !== currentUser.id) markChatRead(courseId);
+    else updateChatUnread(courseId);
+  }
+
+  function initChatWidgets(box){
+    box.querySelectorAll('[data-chat-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => toggleChat(btn.dataset.chatToggle));
+    });
+    box.querySelectorAll('[data-chat-send]').forEach(btn => {
+      btn.addEventListener('click', () => sendChat(btn.dataset.chatSend));
+    });
+    box.querySelectorAll('.chat-input').forEach(input => {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); sendChat(input.id.replace('chat-input-', '')); }
+      });
+    });
+    // Précharge les messages des courses actives pour afficher le badge « non lus »
+    // même quand le panneau est fermé.
+    box.querySelectorAll('.chat-wrap').forEach(w => {
+      const id = w.dataset.chat;
+      if (!chatOpen[id]) loadChat(id);
+    });
   }
 
   // ---------- Notation : sélecteur d'étoiles + envoi vers Supabase ----------
@@ -1304,6 +1448,15 @@
       })
       .subscribe());
     setInterval(() => { refreshCoursierPositions(); refreshCourseTraces(); }, 20000);
+
+    // Messagerie en temps réel : un nouveau message d'une de mes courses apparaît aussitôt.
+    trackChannel(supabaseClient
+      .channel('express-messages-client-' + currentUser.id)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'express_messages' }, (payload) => {
+        const m = payload.new;
+        if (m && myCourses.some(c => c.id === m.course_id)) handleIncomingChat(m);
+      })
+      .subscribe());
   }
 
   init();
