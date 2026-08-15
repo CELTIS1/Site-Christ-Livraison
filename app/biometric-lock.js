@@ -345,20 +345,33 @@
   function injectSettingsControl(user) {
     var uid = user && user.id;
     if (!uid) return;
+    if (document.getElementById('clt-biolock-setting')) return;
     var dropdown = document.getElementById('settings-dropdown');
-    if (!dropdown || document.getElementById('clt-biolock-setting')) return;
+    var pushBtn = document.getElementById('btn-activer-push');
+    // Il faut au moins un menu déroulant (fournisseur, livreur, client, coursier, équipe)
+    // ou, à défaut, un bouton « Activer les notifications » dans la barre (gestion).
+    if (!dropdown && !pushBtn) return;
     isSupported().then(function (ok) {
       if (!ok || document.getElementById('clt-biolock-setting')) return;
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.id = 'clt-biolock-setting';
       btn.textContent = labelFor(uid);
-      // Insère juste après « Activer les notifications » si présent, sinon avant la déconnexion.
-      var pushBtn = document.getElementById('btn-activer-push');
-      var logoutBtn = dropdown.querySelector('.danger');
-      if (pushBtn && pushBtn.parentNode === dropdown) dropdown.insertBefore(btn, pushBtn.nextSibling);
-      else if (logoutBtn) dropdown.insertBefore(btn, logoutBtn);
-      else dropdown.appendChild(btn);
+      if (dropdown) {
+        // Menu déroulant : insère juste après « Activer les notifications » si présent,
+        // sinon avant la déconnexion.
+        var logoutBtn = dropdown.querySelector('.danger');
+        if (pushBtn && pushBtn.parentNode === dropdown) dropdown.insertBefore(btn, pushBtn.nextSibling);
+        else if (logoutBtn) dropdown.insertBefore(btn, logoutBtn);
+        else dropdown.appendChild(btn);
+      } else {
+        // Repli barre supérieure (gestion) : bouton assorti au bouton notifications,
+        // placé juste à côté de lui.
+        var inlineStyle = pushBtn.getAttribute('style');
+        if (inlineStyle) btn.setAttribute('style', inlineStyle);
+        if (pushBtn.className) btn.className = pushBtn.className;
+        pushBtn.parentNode.insertBefore(btn, pushBtn.nextSibling);
+      }
 
       btn.addEventListener('click', function () {
         if (hasCredential(uid)) {
