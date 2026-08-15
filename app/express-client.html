@@ -117,6 +117,21 @@
   .course-item .info .desc{ font-size:14px; }
   .course-item .coursier-info{ font-size:12px; color:var(--clt-violet-dark); margin-top:5px; font-weight:600; }
   .course-item .status-col > div{ color:var(--clt-violet-dark) !important; }
+  .coursier-rep{ display:inline-flex; align-items:center; gap:3px; margin-left:6px; padding:1px 7px; border-radius:999px; background:#fff6e8; color:#8a4b00; font-weight:700; font-size:11px; border:1px solid #f4d9bd; }
+  .coursier-rep.empty{ background:#f3f0fa; color:#8a7fb0; border-color:#e7e1f5; font-weight:600; }
+
+  /* ===== Notation d'une course livrée (le client note le coursier) ===== */
+  .rating-block, .rating-done{ width:100%; flex-basis:100%; margin-top:12px; padding:12px 14px; border-radius:12px; background:#faf7ff; border:1px solid #ece7f6; }
+  .rating-title{ font-size:13px; font-weight:700; color:var(--clt-violet-dark); margin-bottom:8px; }
+  .stars{ display:flex; gap:4px; }
+  .stars .star{ background:none; border:none; cursor:pointer; font-size:28px; line-height:1; padding:0 2px; color:#d9d2ec; transition:.12s transform,.12s color; }
+  .stars .star:hover{ transform:scale(1.12); }
+  .stars .star.on{ color:#f5a623; }
+  .rating-comment{ width:100%; margin-top:10px; min-height:52px; resize:vertical; border:1px solid #ddd0fb; border-radius:10px; padding:8px 10px; font-size:13px; font-family:inherit; background:#fff; }
+  .rating-submit{ margin-top:10px; }
+  .stars-static{ font-size:22px; color:#f5a623; letter-spacing:1px; }
+  .rating-done .rating-avis{ margin-top:6px; font-size:12.5px; color:#5a5570; font-style:italic; }
+  .rating-thanks{ font-size:12.5px; color:#1a7d3c; font-weight:600; margin-top:4px; }
 
   /* ===== Photo du colis ===== */
   .photo-field{ margin-top:14px; }
@@ -499,10 +514,38 @@
     return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
   }
 
+  // Bloc de notation : n'apparaît que sur une course LIVRÉE. Si le client a déjà noté, on affiche
+  // sa note (et son avis) en lecture seule ; sinon on propose le sélecteur d'étoiles.
+  function ratingBlockHTML(c){
+    if (c.status !== 'livree' || !c.coursier_id) return '';
+    if (c.note_client != null) {
+      const full = '★'.repeat(c.note_client);
+      const empty = '☆'.repeat(5 - c.note_client);
+      const avis = c.avis_client ? `<div class="rating-avis">« ${escapeHTML(c.avis_client)} »</div>` : '';
+      return `
+        <div class="rating-done">
+          <div class="rating-title">Vous avez noté ce coursier</div>
+          <div class="stars-static">${full}<span style="color:#d9d2ec">${empty}</span></div>
+          ${avis}
+        </div>`;
+    }
+    const stars = [1,2,3,4,5].map(v =>
+      `<button type="button" class="star" data-val="${v}" aria-label="${v} étoile${v>1?'s':''}">★</button>`
+    ).join('');
+    return `
+      <div class="rating-block" data-id="${c.id}">
+        <div class="rating-title">⭐ Notez votre coursier</div>
+        <div class="stars" data-selected="0">${stars}</div>
+        <textarea class="rating-comment" maxlength="400" placeholder="Un mot sur la livraison (facultatif)"></textarea>
+        <button type="button" class="btn btn-sm btn-primary rating-submit" disabled>Envoyer ma note</button>
+      </div>`;
+  }
+
   function courseRowHTML(c){
     const coursier = c.coursier_id ? coursiersById[c.coursier_id] : null;
+    const repSpan = c.coursier_id ? `<span class="coursier-rep empty" data-coursier="${c.coursier_id}">☆ —</span>` : '';
     const coursierInfo = coursier
-      ? `<div class="coursier-info">🛵 Coursier : ${escapeHTML(coursier.full_name || '')}${coursier.phone ? ' · ' + formatPhoneLocal(coursier.phone) : ''}</div>`
+      ? `<div class="coursier-info">🛵 Coursier : ${escapeHTML(coursier.full_name || '')}${coursier.phone ? ' · ' + formatPhoneLocal(coursier.phone) : ''}${repSpan}</div>`
       : '';
     const canCancel = c.status === 'en_attente';
     const photoUrl = c.photo_colis_path ? colisPhotoUrl(c.photo_colis_path) : null;
@@ -538,6 +581,7 @@
           ${searchingBlock}
           ${recupBlock}
           ${mapBlock}
+          ${ratingBlockHTML(c)}
         </div>
         <div class="status-col">
           ${expressStatutBadgeHTML(c.status)}
@@ -697,6 +741,78 @@
         await loadCourses();
       });
     });
+    initRatingWidgets(box);
+    loadCoursierReputations(box);
+  }
+
+  // ---------- Notation : sélecteur d'étoiles + envoi vers Supabase ----------
+  function initRatingWidgets(box){
+    box.querySelectorAll('.rating-block').forEach(blk => {
+      const starsWrap = blk.querySelector('.stars');
+      const submit = blk.querySelector('.rating-submit');
+      const paint = (n) => starsWrap.querySelectorAll('.star').forEach(s => {
+        s.classList.toggle('on', Number(s.dataset.val) <= n);
+      });
+      starsWrap.querySelectorAll('.star').forEach(star => {
+        star.addEventListener('mouseenter', () => paint(Number(star.dataset.val)));
+        star.addEventListener('click', () => {
+          starsWrap.dataset.selected = star.dataset.val;
+          paint(Number(star.dataset.val));
+          submit.disabled = false;
+        });
+      });
+      starsWrap.addEventListener('mouseleave', () => paint(Number(starsWrap.dataset.selected || 0)));
+      submit.addEventListener('click', async () => {
+        const note = Number(starsWrap.dataset.selected || 0);
+        if (note < 1) return;
+        const avis = (blk.querySelector('.rating-comment').value || '').trim();
+        submit.disabled = true; submit.textContent = 'Envoi…';
+        const { error } = await supabaseClient.rpc('express_noter_coursier', {
+          p_course_id: blk.dataset.id, p_note: note, p_avis: avis || null,
+        });
+        if (error) {
+          alert('Impossible d’enregistrer la note : ' + error.message);
+          submit.disabled = false; submit.textContent = 'Envoyer ma note';
+          return;
+        }
+        // Mise à jour locale immédiate puis rechargement pour refléter la moyenne du coursier.
+        const c = myCourses.find(x => x.id === blk.dataset.id);
+        if (c) { c.note_client = note; c.avis_client = avis || null; }
+        blk.outerHTML = `<div class="rating-done"><div class="rating-title">Merci !</div>`
+          + `<div class="stars-static">${'★'.repeat(note)}<span style="color:#d9d2ec">${'☆'.repeat(5-note)}</span></div>`
+          + `<div class="rating-thanks">Votre note aide les autres clients.</div></div>`;
+        loadCoursierReputations(box);
+      });
+    });
+  }
+
+  // Affiche la réputation (moyenne + nb d'avis) de chaque coursier visible, via la fonction
+  // SECURITY DEFINER express_note_moyenne_coursier (le client peut voir la note d'un coursier
+  // même sur des courses qui ne sont pas les siennes).
+  const _repCache = {};
+  async function loadCoursierReputations(box){
+    const spans = [...box.querySelectorAll('.coursier-rep')];
+    const ids = [...new Set(spans.map(s => s.dataset.coursier).filter(Boolean))];
+    for (const id of ids) {
+      let rep = _repCache[id];
+      if (rep === undefined) {
+        const { data, error } = await supabaseClient.rpc('express_note_moyenne_coursier', { p_coursier_id: id });
+        rep = (!error && data && data[0]) ? data[0] : null;
+        _repCache[id] = rep;
+      }
+      const targets = spans.filter(s => s.dataset.coursier === id);
+      targets.forEach(s => {
+        if (rep && rep.nb > 0 && rep.moyenne != null) {
+          s.classList.remove('empty');
+          s.textContent = `★ ${Number(rep.moyenne).toFixed(1)} (${rep.nb})`;
+          s.title = `Moyenne ${Number(rep.moyenne).toFixed(1)}/5 sur ${rep.nb} avis`;
+        } else {
+          s.classList.add('empty');
+          s.textContent = '☆ Nouveau';
+          s.title = 'Ce coursier n’a pas encore d’avis';
+        }
+      });
+    }
   }
 
   async function loadCourses(){

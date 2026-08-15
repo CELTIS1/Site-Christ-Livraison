@@ -446,6 +446,16 @@
     .wait-timer.w-ok  { color:#0D9488; }
     .wait-timer.w-mid { color:#b26a00; }
     .wait-timer.w-hot { color:#c0392b; }
+    /* Notation d'une course livrée (le coursier note le client) */
+    .rating-block, .rating-done{ width:100%; flex-basis:100%; margin-top:12px; padding:12px 14px; border-radius:12px; background:#f7fbfa; border:1px solid #d7ebe7; }
+    .rating-title{ font-size:13px; font-weight:700; color:#0f766e; margin-bottom:8px; }
+    .stars{ display:flex; gap:4px; }
+    .stars .star{ background:none; border:none; cursor:pointer; font-size:28px; line-height:1; padding:0 2px; color:#cfe3df; transition:.12s transform,.12s color; }
+    .stars .star:hover{ transform:scale(1.12); }
+    .stars .star.on{ color:#f5a623; }
+    .rating-submit{ margin-top:10px; }
+    .stars-static{ font-size:22px; color:#f5a623; letter-spacing:1px; }
+    .rating-thanks{ font-size:12.5px; color:#1a7d3c; font-weight:600; margin-top:4px; }
   </style>
 
   <div class="card" id="section-disponibles">
@@ -632,6 +642,27 @@
     return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
   }
 
+  // Bloc de notation : n'apparaît que sur une course LIVRÉE. Le coursier note le client (1..5).
+  function ratingClientBlockHTML(c){
+    if (c.status !== 'livree') return '';
+    if (c.note_coursier != null) {
+      return `
+        <div class="rating-done">
+          <div class="rating-title">Vous avez noté ce client</div>
+          <div class="stars-static">${'★'.repeat(c.note_coursier)}<span style="color:#cfe3df">${'☆'.repeat(5 - c.note_coursier)}</span></div>
+        </div>`;
+    }
+    const stars = [1,2,3,4,5].map(v =>
+      `<button type="button" class="star" data-val="${v}" aria-label="${v} étoile${v>1?'s':''}">★</button>`
+    ).join('');
+    return `
+      <div class="rating-block" data-id="${c.id}">
+        <div class="rating-title">⭐ Notez ce client</div>
+        <div class="stars" data-selected="0">${stars}</div>
+        <button type="button" class="btn btn-sm rating-submit" disabled>Envoyer ma note</button>
+      </div>`;
+  }
+
   function mesCourseRowHTML(c){
     const client = c.client_id ? clientsById[c.client_id] : null;
     const clientInfo = client
@@ -658,6 +689,7 @@
           ${clientInfo}
           ${destInfo}
           ${photoThumbHTML(c)}
+          ${ratingClientBlockHTML(c)}
         </div>
         <div class="status-col">
           ${expressStatutBadgeHTML(c.status)}
@@ -762,6 +794,45 @@
           .eq('id', id).eq('coursier_id', currentUser.id);
         if (error) { alert('Erreur : ' + error.message); btn.disabled = false; btn.textContent = 'Marquer livrée'; return; }
         await loadMesCourses();
+      });
+    });
+    initClientRatingWidgets(box);
+  }
+
+  // ---------- Notation : le coursier note le client (sélecteur d'étoiles + envoi) ----------
+  function initClientRatingWidgets(box){
+    box.querySelectorAll('.rating-block').forEach(blk => {
+      const starsWrap = blk.querySelector('.stars');
+      const submit = blk.querySelector('.rating-submit');
+      const paint = (n) => starsWrap.querySelectorAll('.star').forEach(s => {
+        s.classList.toggle('on', Number(s.dataset.val) <= n);
+      });
+      starsWrap.querySelectorAll('.star').forEach(star => {
+        star.addEventListener('mouseenter', () => paint(Number(star.dataset.val)));
+        star.addEventListener('click', () => {
+          starsWrap.dataset.selected = star.dataset.val;
+          paint(Number(star.dataset.val));
+          submit.disabled = false;
+        });
+      });
+      starsWrap.addEventListener('mouseleave', () => paint(Number(starsWrap.dataset.selected || 0)));
+      submit.addEventListener('click', async () => {
+        const note = Number(starsWrap.dataset.selected || 0);
+        if (note < 1) return;
+        submit.disabled = true; submit.textContent = 'Envoi…';
+        const { error } = await supabaseClient.rpc('express_noter_client', {
+          p_course_id: blk.dataset.id, p_note: note,
+        });
+        if (error) {
+          alert('Impossible d’enregistrer la note : ' + error.message);
+          submit.disabled = false; submit.textContent = 'Envoyer ma note';
+          return;
+        }
+        const c = mesCourses.find(x => x.id === blk.dataset.id);
+        if (c) c.note_coursier = note;
+        blk.outerHTML = `<div class="rating-done"><div class="rating-title">Merci !</div>`
+          + `<div class="stars-static">${'★'.repeat(note)}<span style="color:#cfe3df">${'☆'.repeat(5-note)}</span></div>`
+          + `<div class="rating-thanks">Note enregistrée.</div></div>`;
       });
     });
   }
