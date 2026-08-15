@@ -567,6 +567,7 @@
 
 <script src="clt-common.js?v=20260814polish1"></script>
 <script src="express-config.js?v=20260811f"></script>
+<script src="biometric-lock.js?v=20260815bio1"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1579,6 +1580,10 @@
       window.location.href = 'express-login.html';
       return;
     }
+    // --- Déverrouillage biométrique (Face ID / Touch ID / empreinte) — opt-in, par appareil ---
+    if (window.CLTBioLock) { try { await CLTBioLock.guard(currentUser); } catch (e) {} }
+    setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);
+
     currentProfile = profile;
     document.getElementById('user-name').textContent = profile.full_name || '';
     document.getElementById('user-first-name').textContent = (profile.full_name || '').split(' ')[0] || '';

@@ -358,6 +358,7 @@
 
 <script src="clt-common.js?v=20260814common1"></script>
 <script src="config.js?v=20260812m"></script>
+<script src="biometric-lock.js?v=20260815bio1"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1461,6 +1462,12 @@
       window.location.href = 'login.html';
       return;
     }
+
+    // --- Déverrouillage biométrique (Face ID / Touch ID / empreinte) — opt-in, par appareil ---
+    // Verrou à l'ouverture si l'utilisateur l'a activé sur ce téléphone (sinon, sans effet).
+    if (window.CLTBioLock) { try { await CLTBioLock.guard(currentUser); } catch (e) {} }
+    // Proposer l'activation une seule fois (après le splash), si l'appareil est compatible et non déjà activé.
+    setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);
 
     currentProfile = profile;
 
