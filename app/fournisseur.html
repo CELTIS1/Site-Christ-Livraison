@@ -291,6 +291,20 @@
     <div id="colis-jour-montant" style="font-size:12.5px; color:var(--muted); margin-top:10px;"></div>
   </div>
 
+  <!-- Mon relevé : ce que CLT doit au fournisseur (montant des articles encaissés à la
+       livraison pour son compte, moins ce qui a déjà été reversé). Données agrégées côté
+       serveur par la vue releve_fournisseur (chaque fournisseur ne voit que son relevé). -->
+  <div class="card" id="section-releve">
+    <h2 class="panel-subtitle" style="margin:0 0 4px;">💰 Mon relevé — ce que CLT vous doit</h2>
+    <div id="releve-libelle" style="font-size:12.5px; color:var(--muted); margin:2px 0 12px;">
+      Montant des articles encaissés pour vous à la livraison, et ce qu'il reste à vous reverser. Les frais de livraison ne sont pas inclus (ils reviennent à CLT).
+    </div>
+    <div id="releve-tiles" class="stat-tiles">
+      <div class="empty-state">Chargement...</div>
+    </div>
+    <div id="releve-detail" style="margin-top:12px;"></div>
+  </div>
+
   <div class="card" id="section-recap">
     <h2 class="panel-subtitle collapsible-header" id="recap-toggle" onclick="toggleRecap()">
       <span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif
@@ -817,11 +831,12 @@
   // Frise d'étapes (stepper) : reflète visuellement l'avancement du colis à partir de son statut réel.
   // Purement présentatif — dérivé de c.statut, ne modifie aucune donnée.
   function stepperHTML(statut){
+    const L = (typeof STATUTS !== 'undefined') ? (k => STATUTS[k].label) : (k => k);
     const flow = [
-      { key:'en_attente',   label:'En attente' },
-      { key:'recupere',     label:'Récupéré' },
-      { key:'en_livraison', label:'En cours de livraison' },
-      { key:'livre',        label:'Livré' },
+      { key:'en_attente',   label:L('en_attente') },
+      { key:'recupere',     label:L('recupere') },
+      { key:'en_livraison', label:L('en_livraison') },
+      { key:'livre',        label:L('livre') },
     ];
     const alert = (statut === 'non_livre' || statut === 'retour');
     let idx = flow.findIndex(s => s.key === statut);
@@ -1214,6 +1229,62 @@
     renderColisList();
   }
 
+  // Charge le relevé fournisseur (« ce que CLT vous doit ») : totaux agrégés côté serveur
+  // par la vue releve_fournisseur (chaque fournisseur ne voit que son propre relevé grâce à
+  // la RLS de colis), puis la liste des colis livrés & encaissés pas encore reversés.
+  async function loadReleve(){
+    const tiles = document.getElementById('releve-tiles');
+    const detail = document.getElementById('releve-detail');
+    if (!tiles) return;
+    const { data, error } = await supabaseClient
+      .from('releve_fournisseur')
+      .select('*')
+      .maybeSingle();
+    if (error) {
+      tiles.innerHTML = `<div class="empty-state">Relevé indisponible pour le moment.</div>`;
+      if (detail) detail.innerHTML = '';
+      return;
+    }
+    const r = data || { colis_livres:0, total_encaisse_pour_vous:0, deja_reverse:0, reste_a_percevoir:0, colis_a_reverser:0 };
+    const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
+    const cards = [
+      { icon:'✅', value:(r.colis_livres || 0),           label:'Colis livrés',       color:STATUTS.livre.color, bg:STATUTS.livre.bg },
+      { icon:'💵', value:money(r.total_encaisse_pour_vous), label:'Encaissé pour vous', color:'#1B4374',          bg:'#e5edf5' },
+      { icon:'✔️', value:money(r.deja_reverse),            label:'Déjà reversé',       color:'#1a7d3c',           bg:'#e3f6ea' },
+      { icon:'⏳', value:money(r.reste_a_percevoir),       label:'Reste à percevoir',  color:'#E26313',           bg:'#FBE2CE' },
+    ];
+    tiles.innerHTML = cards.map(t => `
+      <div class="stat-tile" style="--tile-color:${t.color}; --tile-bg:${t.bg}">
+        <div class="stat-tile-icon">${t.icon}</div>
+        <div class="stat-tile-value">${t.value}</div>
+        <div class="stat-tile-label">${t.label}</div>
+      </div>`).join('');
+    if (!detail) return;
+    if (!r.colis_a_reverser) {
+      detail.innerHTML = `<div style="font-size:12.5px; color:var(--muted);">Aucun colis en attente de reversement. ✔️</div>`;
+      return;
+    }
+    // Détail des colis livrés & encaissés, pas encore reversés (les plus anciens d'abord).
+    const { data: aReverser, error: err2 } = await supabaseClient
+      .from('colis')
+      .select('numero, montant_article, created_at')
+      .eq('fournisseur_id', currentUser.id)
+      .eq('statut', 'livre')
+      .eq('article_paye', true)
+      .not('encaissement_remis', 'is', true)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    if (err2 || !aReverser || !aReverser.length) { detail.innerHTML = ''; return; }
+    const rows = aReverser.map(c => `
+      <div style="display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+        <span>${escapeHTML(c.numero || '—')}<span style="color:var(--muted); font-size:12px;"> · ${new Date(c.created_at).toLocaleDateString('fr-FR')}</span></span>
+        <strong>${formatMontant(Number(c.montant_article) || 0) || '0 FCFA'}</strong>
+      </div>`).join('');
+    detail.innerHTML = `
+      <div style="font-size:13px; font-weight:600; margin:4px 0 6px;">En attente de reversement (${aReverser.length})</div>
+      ${rows}`;
+  }
+
   function toggleRecap(){
     const content = document.getElementById('recap-content');
     const willOpen = !content.classList.contains('open');
@@ -1223,7 +1294,9 @@
     if (willOpen) refreshStickyTables(content);
   }
 
-  const RECAP_ICONS = { en_attente:'⏳', recupere:'📦', en_livraison:'🚚', livre:'✅', non_livre:'⚠️', retour:'↩️' };
+  // Icônes de statut : dérivées du référentiel central STATUTS (config.js) — source unique.
+  const RECAP_ICONS = (typeof STATUT_ICONS !== 'undefined') ? STATUT_ICONS
+    : { en_attente:'⏳', recupere:'📦', en_livraison:'🚚', livre:'✅', non_livre:'⚠️', retour:'↩️' };
 
   function statTilesHTML(compte, total){
     const tiles = Object.keys(STATUTS).map(k => `
@@ -1656,6 +1729,7 @@
     filtreDate = todayLocalISODate();
     document.getElementById('filtre-date-colis').value = filtreDate;
     loadColis();
+    loadReleve();
     document.getElementById('search-colis').addEventListener('input', (e) => { searchColis = e.target.value; renderColisList(); });
     document.getElementById('filtre-date-colis').addEventListener('change', (e) => { filtreDate = e.target.value; renderColisList(); });
     document.getElementById('btn-toutes-dates').addEventListener('click', () => {
@@ -1669,6 +1743,7 @@
       .channel('colis-fournisseur-' + currentUser.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'colis', filter: `fournisseur_id=eq.${currentUser.id}` }, () => {
         loadColis();
+        loadReleve();
       })
       .subscribe());
   }

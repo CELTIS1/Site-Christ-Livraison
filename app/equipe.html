@@ -1765,7 +1765,9 @@ if (addPhotoFilename) addPhotoFilename.textContent = '';
 loadColis();
 });
 
-const FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En cours de livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
+// Libellés de filtre : dérivés du référentiel central STATUTS (config.js) — source unique.
+const FILTER_LABELS = (typeof STATUT_FILTER_LABELS !== 'undefined') ? STATUT_FILTER_LABELS
+  : { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En cours de livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
 
 function renderFilters(){
 const box = document.getElementById('filters');
@@ -1820,11 +1822,12 @@ return match ? match.livreur_collecte_id : null;
 // Frise d'étapes (stepper) : reflète visuellement l'avancement du colis à partir de son statut réel.
 // Purement présentatif — dérivé de c.statut, ne modifie aucune donnée.
 function stepperHTML(statut){
+const L = (typeof STATUTS !== 'undefined') ? (k => STATUTS[k].label) : (k => k);
 const flow = [
-{ key:'en_attente',   label:'En attente' },
-{ key:'recupere',     label:'Récupéré' },
-{ key:'en_livraison', label:'En cours de livraison' },
-{ key:'livre',        label:'Livré' },
+{ key:'en_attente',   label:L('en_attente') },
+{ key:'recupere',     label:L('recupere') },
+{ key:'en_livraison', label:L('en_livraison') },
+{ key:'livre',        label:L('livre') },
 ];
 const alert = (statut === 'non_livre' || statut === 'retour');
 let idx = flow.findIndex(s => s.key === statut);
