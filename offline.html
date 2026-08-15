@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hors-ligne — Christ Livraison &amp; Transport</title>
+<style>
+  :root { --navy:#1B4374; --muted:#64748b; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         background:#f1f5f9; color:#0f172a; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; padding:24px; }
+  .card { max-width:420px; width:100%; background:#fff; border-radius:16px; padding:32px 28px;
+          box-shadow:0 10px 30px rgba(15,23,42,.08); text-align:center; }
+  .dot { width:64px; height:64px; margin:0 auto 18px; border-radius:50%; background:#e2e8f0;
+         display:flex; align-items:center; justify-content:center; font-size:30px; }
+  h1 { font-size:20px; margin:0 0 8px; color:var(--navy); }
+  p { margin:0 0 18px; color:var(--muted); line-height:1.5; font-size:15px; }
+  button { background:var(--navy); color:#fff; border:0; border-radius:10px; padding:12px 20px;
+           font-size:15px; font-weight:600; cursor:pointer; width:100%; }
+  button:active { opacity:.85; }
+  .state { margin-top:14px; font-size:13px; color:var(--muted); }
+  .online { color:#0F766E; font-weight:600; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="dot">📴</div>
+    <h1>Vous êtes hors-ligne</h1>
+    <p>Pas de connexion Internet pour le moment. L'application a besoin du réseau pour afficher les colis et les comptes à jour.</p>
+    <button id="retry" type="button">Réessayer</button>
+    <div class="state" id="state">Connexion : hors-ligne</div>
+  </div>
+<script>
+  var stateEl = document.getElementById('state');
+  function refreshState(){
+    if (navigator.onLine){
+      stateEl.innerHTML = 'Connexion : <span class="online">rétablie</span> — vous pouvez réessayer';
+    } else {
+      stateEl.textContent = 'Connexion : hors-ligne';
+    }
+  }
+  document.getElementById('retry').addEventListener('click', function(){
+    location.reload();
+  });
+  window.addEventListener('online', function(){ refreshState(); location.reload(); });
+  window.addEventListener('offline', refreshState);
+  refreshState();
+</script>
+</body>
+</html>
