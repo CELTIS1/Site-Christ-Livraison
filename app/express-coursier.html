@@ -433,6 +433,21 @@
     <span>Votre solde est insuffisant pour accepter de nouvelles courses. Rechargez votre solde pour continuer à recevoir des livraisons.</span>
   </div>
 
+  <style>
+    /* Alerte "nouvelle course" : mise en avant visuelle + minuteur d'attente */
+    .course-item.is-new { animation: cltPulseNew 1.1s ease-in-out 3; }
+    @keyframes cltPulseNew {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(226,99,19,0); }
+      50%      { box-shadow: 0 0 0 4px rgba(226,99,19,.28); }
+    }
+    .badge-new { display:inline-block; background:#E26313; color:#fff; font-size:11px; font-weight:800;
+      padding:2px 7px; border-radius:999px; margin-left:6px; letter-spacing:.3px; vertical-align:middle; }
+    .wait-timer { font-weight:700; }
+    .wait-timer.w-ok  { color:#0D9488; }
+    .wait-timer.w-mid { color:#b26a00; }
+    .wait-timer.w-hot { color:#c0392b; }
+  </style>
+
   <div class="card" id="section-disponibles">
     <h2 class="panel-subtitle">🛵 Courses disponibles</h2>
     <div id="disponibles-list"></div>
@@ -460,6 +475,12 @@
   let lastKnownPosition = null;        // { lat, lng } — dernière position ponctuelle du coursier
   let dispatchMode = 'off';            // 'radius' | 'nolocation' | 'error' | 'off'
   let activeTraceCourseId = null;      // course active dont on enregistre la trace du trajet
+  // Alerte "nouvelle course" : détection des courses fraîchement apparues pour jouer un son,
+  // faire vibrer, et afficher un badge NOUVEAU + un minuteur d'attente (incite à accepter vite).
+  let knownDispoIds = new Set();       // IDs de courses déjà vues (pour repérer les nouvelles)
+  let newlyArrived = new Set();        // IDs marqués NOUVEAU (badge temporaire ~30 s)
+  let dispoInitialized = false;        // évite l'alerte au tout premier chargement
+  let __audioCtx = null;               // contexte WebAudio (créé au 1er son)
 
   const __realtimeChannels = [];
   function trackChannel(channel){ __realtimeChannels.push(channel); return channel; }
@@ -513,11 +534,13 @@
     const proche = (c.distance_pickup_km != null)
       ? `<span class="course-proche">📍 à ${Number(c.distance_pickup_km).toLocaleString('fr-FR')} km de vous</span> · `
       : '';
+    const isNew = newlyArrived.has(c.id);
+    const badge = isNew ? '<span class="badge-new">NOUVEAU</span>' : '';
     return `
-      <div class="colis-item course-item" data-id="${c.id}">
+      <div class="colis-item course-item${isNew ? ' is-new' : ''}" data-id="${c.id}">
         <div class="info">
-          <div class="desc">${escapeHTML(c.adresse_recuperation)} → ${escapeHTML(c.adresse_livraison)}</div>
-          <div class="meta">${proche}${escapeHTML(c.description_colis || 'Colis')} · ${c.distance_km != null ? c.distance_km.toLocaleString('fr-FR') + ' km' : ''} · Demandé le ${formatDate(c.created_at)}</div>
+          <div class="desc">${escapeHTML(c.adresse_recuperation)} → ${escapeHTML(c.adresse_livraison)}${badge}</div>
+          <div class="meta">${proche}${escapeHTML(c.description_colis || 'Colis')} · ${c.distance_km != null ? c.distance_km.toLocaleString('fr-FR') + ' km' : ''} · <span class="wait-timer" data-created="${c.created_at}"></span></div>
           ${photoThumbHTML(c)}
         </div>
         <div class="status-col">
@@ -526,6 +549,67 @@
         </div>
       </div>
     `;
+  }
+
+  // Petit carillon à deux notes joué quand une nouvelle course apparaît (WebAudio, aucun fichier
+  // à charger). Le son ne peut démarrer qu'après une première interaction de l'utilisateur avec la
+  // page (politique des navigateurs) : c'est le cas ici, le coursier a activé "Je suis disponible".
+  function playNewCourseChime(){
+    try {
+      __audioCtx = __audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = __audioCtx;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      [880, 1175].forEach((freq, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = freq;
+        o.connect(g); g.connect(ctx.destination);
+        const t = now + i * 0.18;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        o.start(t); o.stop(t + 0.2);
+      });
+    } catch(e){}
+  }
+
+  // Compare la liste courante des courses dispo à la précédente ; toute course inconnue = nouvelle.
+  // Déclenche son + vibration, et marque la course NOUVEAU pendant ~30 s. Silencieux au 1er chargement
+  // et lorsque le coursier n'est pas disponible.
+  function detectNewDispo(){
+    if (!currentProfile || !currentProfile.disponible_express){
+      knownDispoIds = new Set(disponibles.map(c => c.id));
+      dispoInitialized = true;
+      return;
+    }
+    const ids = disponibles.map(c => c.id);
+    const fresh = [];
+    if (dispoInitialized){ ids.forEach(id => { if (!knownDispoIds.has(id)) fresh.push(id); }); }
+    knownDispoIds = new Set(ids);
+    dispoInitialized = true;
+    if (fresh.length){
+      fresh.forEach(id => { newlyArrived.add(id); setTimeout(() => newlyArrived.delete(id), 30000); });
+      playNewCourseChime();
+      try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch(e){}
+    }
+  }
+
+  function formatWaitLabel(sec){
+    if (sec < 60) return `en attente ${sec}s`;
+    const m = Math.floor(sec / 60);
+    return `en attente ${m} min`;
+  }
+
+  // Met à jour, chaque seconde, le minuteur d'attente de chaque course (couleur d'urgence croissante).
+  function refreshWaitTimers(){
+    document.querySelectorAll('#disponibles-list .wait-timer').forEach(el => {
+      const created = el.getAttribute('data-created');
+      if (!created) return;
+      const sec = Math.max(0, Math.floor((Date.now() - new Date(created).getTime()) / 1000));
+      el.textContent = formatWaitLabel(sec);
+      el.classList.remove('w-ok', 'w-mid', 'w-hot');
+      el.classList.add(sec < 60 ? 'w-ok' : (sec < 180 ? 'w-mid' : 'w-hot'));
+    });
   }
 
   // Frise d'étapes (stepper) d'une course : dérivée du statut réel (c.status). Purement présentatif.
@@ -587,6 +671,7 @@
   }
 
   function renderDisponibles(){
+    detectNewDispo();
     const box = document.getElementById('disponibles-list');
     const section = document.getElementById('section-disponibles');
     if (!currentProfile || !currentProfile.disponible_express) {
@@ -607,6 +692,7 @@
       return;
     }
     box.innerHTML = note + disponibles.map(disponibleRowHTML).join('');
+    refreshWaitTimers();
     box.querySelectorAll('.course-thumb').forEach(img => {
       img.addEventListener('click', () => openLightbox(img.dataset.photo));
     });
@@ -1216,6 +1302,9 @@
         loadWallet();
       })
       .subscribe());
+
+    // Minuteur d'attente des courses disponibles : rafraîchi chaque seconde.
+    setInterval(refreshWaitTimers, 1000);
 
     // Retour depuis la page de paiement Wave (success_url / error_url).
     handleWaveReturn();
