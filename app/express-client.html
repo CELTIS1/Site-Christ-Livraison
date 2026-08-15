@@ -412,6 +412,10 @@
           <span class="pp-label">Distance estimée</span>
           <span class="pp-value" id="price-distance">—</span>
         </div>
+        <div class="pp-block">
+          <span class="pp-label">Délai estimé</span>
+          <span class="pp-value" id="price-eta">—</span>
+        </div>
         <div class="pp-block pp-total">
           <span class="pp-label">Prix estimé</span>
           <span class="pp-value" id="price-total">—</span>
@@ -469,6 +473,8 @@
     const est = estimatePrixExpress(depart, arrivee, expressConfig);
     if (!est) { box.classList.add('hidden'); return; }
     document.getElementById('price-distance').textContent = est.distanceKm.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' km';
+    const eta = estimateEtaExpress(est.distanceKm, expressConfig);
+    document.getElementById('price-eta').textContent = eta ? eta.texte : '—';
     document.getElementById('price-total').textContent = formatMontant(est.prixTotal);
     box.classList.remove('hidden');
   }
@@ -849,8 +855,10 @@
     }
 
     const est = expressConfig ? estimatePrixExpress(pickupCommune, dropoffCommune, expressConfig) : null;
+    const eta = est ? estimateEtaExpress(est.distanceKm, expressConfig) : null;
     const recapLignes = [`Trajet : ${pickupCommune} → ${dropoffCommune}`];
     if (est) recapLignes.push(`Distance : ${est.distanceKm.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km — Prix estimé : ${formatMontant(est.prixTotal)}`);
+    if (eta) recapLignes.push(`Délai estimé : ${eta.texte}`);
     recapLignes.push(`Destinataire : ${destNom ? destNom + ' — ' : ''}${destTel}`);
     if (!(await cltConfirm({ title: 'Confirmer cette livraison ?', detail: est ? formatMontant(est.prixTotal) : '', sub: recapLignes.join('\n'), okLabel: 'Commander' }))) return;
 

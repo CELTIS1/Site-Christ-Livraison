@@ -257,6 +257,26 @@ function estimatePrixExpress(communeDepart, communeArrivee, config) {
   return { distanceKm, prixTotal };
 }
 
+// Estimation du délai de livraison affichée au client avant l'envoi.
+// Modèle simple et volontairement prudent (pas d'appel réseau de routage) :
+//  - la distance est "à vol d'oiseau" ; on la corrige d'un facteur route (~1,4x) ;
+//  - vitesse moyenne effective en ville à Abidjan ~18 km/h (trafic, feux) ;
+//  - on ajoute un temps de prise en charge (le coursier doit rejoindre le point A).
+// On renvoie une fourchette (min/max) arrondie à 5 min, pour ne pas sur-promettre.
+function estimateEtaExpress(distanceKm, config) {
+  if (distanceKm == null || isNaN(distanceKm)) return null;
+  const facteurRoute = 1.4;
+  const vitesseKmH = (config && config.vitesse_moy_kmh) ? config.vitesse_moy_kmh : 18;
+  const priseEnCharge = (config && config.delai_prise_en_charge_min) ? config.delai_prise_en_charge_min : 10;
+  const trajetMin = (distanceKm * facteurRoute) / vitesseKmH * 60;
+  const centre = priseEnCharge + trajetMin;
+  const arrondi5 = (m) => Math.max(5, Math.round(m / 5) * 5);
+  const min = arrondi5(centre * 0.85);
+  let max = arrondi5(centre * 1.25);
+  if (max <= min) max = min + 5;
+  return { min, max, texte: `~${min}\u2013${max} min` };
+}
+
 // ---------- Statuts d'une course ----------
 const EXPRESS_STATUTS = {
   en_attente: { label: "En attente d'un coursier", color: "#8a94a3", bg: "#eef0f3" },
