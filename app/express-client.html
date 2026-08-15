@@ -322,6 +322,19 @@
   </div>
   </div>
 
+  <style>
+    /* Carnet d'adresses : puces de remplissage rapide (Domicile, Bureau...) */
+    .addr-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .addr-chip { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px;
+      border:1.5px solid #d6dee8; background:#f6f8fb; color:#1B4374; font-size:13px; font-weight:600;
+      cursor:pointer; line-height:1; user-select:none; }
+    .addr-chip:hover { background:#eaf0f7; border-color:#1B4374; }
+    .addr-chip .addr-chip-del { color:#b42318; font-weight:700; font-size:15px; padding:0 3px; border-radius:50%; line-height:1; }
+    .addr-chip .addr-chip-del:hover { color:#fff; background:#b42318; }
+    .addr-chip-save { background:#fff; color:#E26313; border-style:dashed; border-color:#E26313; }
+    .addr-chip-save:hover { background:#FDF3EC; }
+  </style>
+
   <div class="card" id="section-nouvelle">
     <h2 class="panel-subtitle">🛵 Nouvelle course</h2>
     <div id="new-msg"></div>
@@ -348,6 +361,7 @@
                 <div id="pin-status-pickup" class="pin-status hidden"></div>
               </div>
             </div>
+            <div class="addr-chips" id="addr-chips-pickup" data-leg="pickup"></div>
           </div>
           <div class="route-leg">
             <div class="route-leg-label dropoff">Point de livraison</div>
@@ -364,6 +378,7 @@
                 <div id="pin-status-dropoff" class="pin-status hidden"></div>
               </div>
             </div>
+            <div class="addr-chips" id="addr-chips-dropoff" data-leg="dropoff"></div>
           </div>
         </div>
       </div>
@@ -1034,6 +1049,85 @@
     } catch (e) { /* silencieux */ }
   }
 
+  // ============================================================
+  //  Carnet d'adresses — adresses enregistrées (Domicile, Bureau...)
+  //  Stockées localement sur l'appareil du client (localStorage), par utilisateur.
+  //  Objectif : remplir départ/arrivée en un tap, sans tout ressaisir à chaque course.
+  // ============================================================
+  function addrEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function addrStorageKey(){ return 'clt_express_addresses_' + (currentUser ? currentUser.id : 'anon'); }
+  function loadSavedAddresses(){
+    try { const v = JSON.parse(localStorage.getItem(addrStorageKey()) || '[]'); return Array.isArray(v) ? v : []; }
+    catch(e){ return []; }
+  }
+  function saveSavedAddresses(list){
+    try { localStorage.setItem(addrStorageKey(), JSON.stringify(list)); } catch(e){}
+  }
+  function fillLegFromAddress(leg, commune, adresse){
+    const sel = document.getElementById('course-' + leg + '-commune');
+    const inp = document.getElementById('course-' + leg + '-adresse');
+    if (sel){ sel.value = commune || ''; sel.dispatchEvent(new Event('change')); }
+    if (inp){ inp.value = adresse || ''; }
+  }
+  function renderAddrChips(leg){
+    const box = document.getElementById('addr-chips-' + leg);
+    if (!box) return;
+    const list = loadSavedAddresses();
+    let html = '';
+    list.forEach(a => {
+      html += '<span class="addr-chip" data-id="' + addrEsc(a.id) + '" title="' + addrEsc(a.commune + ' — ' + a.adresse) + '">'
+        + '📍 ' + addrEsc(a.label)
+        + '<span class="addr-chip-del" data-del="' + addrEsc(a.id) + '" title="Supprimer" role="button" aria-label="Supprimer">×</span>'
+        + '</span>';
+    });
+    html += '<span class="addr-chip addr-chip-save" data-save="1" role="button">＋ Enregistrer cette adresse</span>';
+    box.innerHTML = html;
+  }
+  function renderAddrChipsAll(){ renderAddrChips('pickup'); renderAddrChips('dropoff'); }
+  async function saveCurrentLegAddress(leg){
+    const commune = document.getElementById('course-' + leg + '-commune').value;
+    const adresse = document.getElementById('course-' + leg + '-adresse').value.trim();
+    if (!commune || !adresse){
+      await cltConfirm({ title: 'Adresse incomplète', sub: "Choisissez d'abord une commune puis saisissez l'adresse précise, avant de l'enregistrer.", okLabel: 'OK', cancelLabel: 'Fermer' });
+      return;
+    }
+    const label = await cltPrompt({ title: "Nom de l'adresse", sub: commune + ' — ' + adresse, placeholder: 'Ex : Domicile, Bureau, Maman...', okLabel: 'Enregistrer', maxLength: 24 });
+    if (label === null) return;
+    const clean = (label || '').trim() || 'Adresse';
+    const list = loadSavedAddresses();
+    const dup = list.find(a => a.commune === commune && a.adresse === adresse);
+    if (dup){ dup.label = clean; }
+    else { list.push({ id: 'a' + Date.now() + Math.floor(Math.random() * 1000), label: clean, commune: commune, adresse: adresse }); }
+    saveSavedAddresses(list);
+    renderAddrChipsAll();
+  }
+  async function deleteSavedAddress(id){
+    const list = loadSavedAddresses();
+    const a = list.find(x => x.id === id);
+    if (!a) return;
+    if (!(await cltConfirm({ title: 'Supprimer cette adresse ?', sub: a.label + ' — ' + a.commune, okLabel: 'Supprimer', danger: true }))) return;
+    saveSavedAddresses(list.filter(x => x.id !== id));
+    renderAddrChipsAll();
+  }
+  function initAddrBook(){
+    ['pickup','dropoff'].forEach(leg => {
+      const box = document.getElementById('addr-chips-' + leg);
+      if (!box) return;
+      box.addEventListener('click', (e) => {
+        const del = e.target.closest('[data-del]');
+        if (del){ e.stopPropagation(); deleteSavedAddress(del.getAttribute('data-del')); return; }
+        const save = e.target.closest('[data-save]');
+        if (save){ saveCurrentLegAddress(leg); return; }
+        const chip = e.target.closest('.addr-chip[data-id]');
+        if (chip){
+          const a = loadSavedAddresses().find(x => x.id === chip.getAttribute('data-id'));
+          if (a) fillLegFromAddress(leg, a.commune, a.adresse);
+        }
+      });
+    });
+    renderAddrChipsAll();
+  }
+
   async function init(){
     const session = await requireAuth();
     if (!session) return;
@@ -1055,6 +1149,7 @@
 
     document.getElementById('course-pickup-commune').innerHTML = communesOptionsHTML(null, 'Choisir une commune');
     document.getElementById('course-dropoff-commune').innerHTML = communesOptionsHTML(null, 'Choisir une commune');
+    initAddrBook();
 
     const { data: cfg } = await supabaseClient.from('express_config').select('*').eq('id', 1).single();
     expressConfig = cfg;
