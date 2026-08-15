@@ -570,16 +570,22 @@ async function renderDashboard(){
   const debut = periodeStr(annee, mois);
   const fin   = periodeStr(mois===12?annee+1:annee, mois===12?1:mois+1);
 
-  const [recM, depM, objY, recY, depY] = await Promise.all([
+  const [recM, depM, objY, recY, depY, anr] = await Promise.all([
     supabaseClient.from('gestion_recettes').select('montant').gte('date_recette',debut).lt('date_recette',fin),
     supabaseClient.from('gestion_depenses').select('montant').eq('annee',annee).eq('mois',mois),
     supabaseClient.from('gestion_objectifs').select('mois,objectif').eq('annee',annee),
     supabaseClient.from('gestion_recettes').select('date_recette,montant').gte('date_recette',periodeStr(annee,1)).lt('date_recette',periodeStr(annee+1,1)),
     supabaseClient.from('gestion_depenses').select('mois,montant').eq('annee',annee),
+    supabaseClient.rpc('compta_argent_non_remis'),
   ]);
 
   const recetteMois = (recM.data||[]).reduce((s,r)=>s+n(r.montant),0);
   const depenseMois = (depM.data||[]).reduce((s,r)=>s+n(r.montant),0);
+  // Argent non remis : indépendant de la période choisie (dette de caisse en cours). Bonus non
+  // bloquant : en cas d'erreur RPC, on affiche 0 sans casser le tableau de bord.
+  const anrRows = (anr && !anr.error) ? (anr.data||[]) : [];
+  const argentNonRemis = anrRows.reduce((s,r)=>s+n(r.total_non_remis),0);
+  const anrUrgent = anrRows.some(r => (Number(r.jours_max)||0) >= 3);
   const objMap = {}; (objY.data||[]).forEach(o=>objMap[o.mois]=n(o.objectif));
   const objMois = objMap[mois] || 0;
   const resteMois = recetteMois - depenseMois;
@@ -597,6 +603,8 @@ async function renderDashboard(){
     <div class="kpi"><div class="kpi-label">Recette du mois</div><div class="kpi-value">${fmtF(recetteMois)}</div>
       <div class="kpi-sub">Objectif : ${fmtF(objMois)} · ${pct}%</div>
       <div class="prog"><span style="width:${Math.min(100,pct)}%"></span></div></div>
+    <div class="kpi ${argentNonRemis>0?'neg':'pos'}"><div class="kpi-label">Argent non remis</div><div class="kpi-value">${fmtF(argentNonRemis)}</div>
+      <div class="kpi-sub">${argentNonRemis>0 ? (anrRows.length + ' livreur(s)' + (anrUrgent ? ' · ⚠️ ≥ 3 j' : '')) : 'Tout est remis ✅'}</div></div>
     <div class="kpi"><div class="kpi-label">Dépenses du mois</div><div class="kpi-value">${fmtF(depenseMois)}</div></div>
     <div class="kpi ${resteMois>=0?'pos':'neg'}"><div class="kpi-label">Reste (recette − dépenses)</div><div class="kpi-value">${fmtF(resteMois)}</div></div>
     <div class="kpi"><div class="kpi-label">Masse salariale nette</div><div class="kpi-value">${fmtF(masse)}</div>

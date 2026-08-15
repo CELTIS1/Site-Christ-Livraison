@@ -259,6 +259,36 @@
 <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
 <div class="page-sub">Voici le suivi de tous les colis enregistrés par les clients, en temps réel.</div>
 
+<!-- Bandeau « Aujourd'hui » : triage synthétique en tête d'écran (toujours visible, au-dessus
+     des onglets). Trois blocs — actions à faire, anomalies, argent non remis — calculés à partir
+     des données déjà chargées. Lecture seule : chaque tuile renvoie vers l'onglet concerné.
+     Rempli par renderAujourdhui(). -->
+<style>
+#section-aujourdhui .aujourdhui-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+#section-aujourdhui .aujourdhui-bloc{ border:1px solid var(--border); border-radius:14px; padding:12px; }
+#section-aujourdhui .aujourdhui-bloc-titre{ font-size:13px; font-weight:700; margin:0 0 10px; }
+#section-aujourdhui .aujourdhui-tile{ cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; }
+#section-aujourdhui .aujourdhui-tile:hover{ transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,0,0,0.10); }
+</style>
+<div class="card" id="section-aujourdhui">
+<h2 class="panel-subtitle" style="margin:0 0 4px;">📌 Aujourd'hui — l'essentiel</h2>
+<div class="page-sub" style="margin:0 0 12px;">Ce qui demande une action, les anomalies et l'argent à récupérer, en un coup d'œil. Cliquez une tuile pour aller au bon onglet.</div>
+<div class="aujourdhui-grid">
+  <div class="aujourdhui-bloc">
+    <div class="aujourdhui-bloc-titre">✅ Actions à faire</div>
+    <div class="stat-tiles" id="aujourdhui-actions"><div class="empty-state">Chargement…</div></div>
+  </div>
+  <div class="aujourdhui-bloc">
+    <div class="aujourdhui-bloc-titre">⚠️ Anomalies</div>
+    <div class="stat-tiles" id="aujourdhui-anomalies"><div class="empty-state">Chargement…</div></div>
+  </div>
+  <div class="aujourdhui-bloc">
+    <div class="aujourdhui-bloc-titre">💰 Argent non remis</div>
+    <div class="stat-tiles" id="aujourdhui-argent"><div class="empty-state">Chargement…</div></div>
+  </div>
+</div>
+</div>
+
 <!-- Barre d'onglets (grands écrans). Les panneaux sont remplis dynamiquement au chargement
      en déplaçant les sections existantes (voir relocateEquipeSections()). -->
 <div class="clt-toptabs-wrap">
@@ -1425,6 +1455,7 @@ if (error) { alert("Erreur : " + error.message); btn.disabled = false; btn.textC
 await loadPending();
 });
 });
+renderAujourdhui();
 }
 
 let __pendingIdsSeen = null; // null = premier chargement : on ne veut pas d'alerte au démarrage de la page
@@ -1485,6 +1516,7 @@ const account = resetRequests.find(r => r.id === id);
 approuverResetRequest(id, account, btn);
 });
 });
+renderAujourdhui();
 }
 
 // ---------- Approbation d'une demande de réinitialisation (équipe/admin) ----------
@@ -2025,6 +2057,53 @@ html += ` <span class="group-collecte-assign">
 return html;
 }
 
+// Bandeau « Aujourd'hui » : synthèse de triage en tête d'écran (lecture seule). Recalculé à
+// partir des données déjà en mémoire (allColis, comptes & réinitialisations en attente). Chaque
+// tuile renvoie vers l'onglet concerné via showEquipeTab(). N'écrit aucune donnée.
+function renderAujourdhui(){
+if (!document.getElementById('aujourdhui-actions')) return;
+const colis = Array.isArray(allColis) ? allColis : [];
+const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? pendingAccounts.length : 0;
+const nbReset = (typeof resetRequests !== 'undefined' && resetRequests) ? resetRequests.length : 0;
+const nbAffecter = colis.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id).length;
+const nbNonLivre = colis.filter(c => c.statut === 'non_livre').length;
+const nbRetour = colis.filter(c => c.statut === 'retour').length;
+const nbTentative = colis.filter(c => (Number(c.tentatives_livraison) || 0) > 0).length;
+// Argent non remis : mêmes règles que la caisse livreur — colis livrés pas encore soldés.
+let resteARemettre = 0, nbASolder = 0;
+colis.forEach(c => {
+  if (c.statut === 'livre' && !c.encaissement_remis){
+    resteARemettre += (typeof montantTotalColis === 'function' ? Number(montantTotalColis(c)) : 0) || 0;
+    nbASolder++;
+  }
+});
+const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
+const tile = (icon, value, label, tab, color) => `
+  <div class="stat-tile aujourdhui-tile" data-eqtab="${tab}" role="button" tabindex="0" title="Aller à l'onglet concerné">
+    <div class="stat-tile-icon">${icon}</div>
+    <div class="stat-tile-value"${color ? ` style="color:${color};"` : ''}>${value}</div>
+    <div class="stat-tile-label">${label}</div>
+  </div>`;
+const AMBRE = '#E26313', ROUGE = '#c0392b';
+const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+set('aujourdhui-actions',
+  tile('🧾', nbPending,  'Comptes à valider', 'comptes', nbPending  ? AMBRE : '') +
+  tile('🔑', nbReset,    'Réinitialisations', 'comptes', nbReset    ? AMBRE : '') +
+  tile('📦', nbAffecter, 'Colis à affecter',  'colis',   nbAffecter ? AMBRE : ''));
+set('aujourdhui-anomalies',
+  tile('⚠️', nbNonLivre, 'Non livrés',     'colis', nbNonLivre  ? ROUGE : '') +
+  tile('↩️', nbRetour,   'Retours',        'colis', nbRetour    ? ROUGE : '') +
+  tile('🔁', nbTentative,'Avec tentative', 'colis', nbTentative ? ROUGE : ''));
+set('aujourdhui-argent',
+  tile('💵', money(resteARemettre), 'Reste à remettre', 'finances', resteARemettre ? ROUGE : '') +
+  tile('📦', nbASolder,             'Colis à solder',   'finances', nbASolder ? ROUGE : ''));
+document.querySelectorAll('#section-aujourdhui .aujourdhui-tile').forEach(t => {
+  const go = () => { if (typeof showEquipeTab === 'function') showEquipeTab(t.dataset.eqtab); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e){} };
+  t.addEventListener('click', go);
+  t.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+});
+}
+
 function renderColis(){
 const list = document.getElementById('colis-list');
 const __anchor = captureScrollAnchor(list);
@@ -2212,6 +2291,7 @@ renderRecapFournisseur();
 renderRapportJour();
 populateMoisSelect();
 renderCompta();
+renderAujourdhui();
 restoreScrollAnchor(list, __anchor);
 }
 
