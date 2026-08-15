@@ -40,14 +40,15 @@
   /* ---------- NAV ---------- */
   header{position:sticky; top:0; z-index:50; background:rgba(255,255,255,0.94); backdrop-filter:blur(6px); border-bottom:1px solid var(--border);}
   nav{display:flex; align-items:center; justify-content:space-between; max-width:1200px; margin:0 auto; padding:14px 20px;}
-  .brand-logo{display:flex; align-items:center; gap:10px; font-weight:800; font-size:17px; color:var(--navy);}
+  .brand-logo{display:flex; align-items:center; gap:10px; font-weight:800; font-size:17px; color:var(--navy); flex-shrink:0;}
   .brand-logo .mark{width:38px; height:38px; border-radius:11px; background:linear-gradient(135deg, var(--violet), var(--teal)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;}
   .brand-logo .sub{font-size:11px; font-weight:600; color:var(--muted); display:block; margin-top:-2px;}
   .nav-links{display:flex; align-items:center; gap:26px; list-style:none;}
   .nav-links a{font-weight:600; font-size:13.5px; color:var(--navy);}
   .nav-links a:hover{color:var(--violet);}
-  .nav-actions{display:flex; align-items:center; gap:10px;}
-  .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:24px; font-weight:700; font-size:13.5px; border:2px solid transparent; cursor:pointer; transition:transform .15s ease, box-shadow .2s ease, background .2s ease;}
+  .nav-actions-mobile{display:none;}
+  .nav-actions{display:flex; align-items:center; gap:12px; flex-shrink:0;}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 18px; border-radius:24px; font-weight:700; font-size:13.5px; border:2px solid transparent; cursor:pointer; white-space:nowrap; transition:transform .15s ease, box-shadow .2s ease, background .2s ease;}
   .btn:active{transform:scale(.97);}
   .btn-violet{background:var(--violet); color:#fff; box-shadow:0 6px 16px rgba(109,40,217,0.28);}
   .btn-violet:hover{background:var(--violet-dark);}
@@ -56,7 +57,7 @@
   .btn-outline-navy{background:transparent; border-color:var(--navy); color:var(--navy);}
   .btn-outline-navy:hover{background:var(--navy); color:#fff;}
   .burger{display:none; background:none; border:none; font-size:22px; color:var(--navy); cursor:pointer;}
-  @media (max-width:840px){
+  @media (max-width:960px){
     .nav-links, .nav-actions{display:none;}
     .burger{display:block;}
     .nav-links.open{
