@@ -128,13 +128,23 @@
     requestAnimationFrame(function(){ requestAnimationFrame(clearBg); });
   } else { setTimeout(clearBg, 60); }
 
+  // Signale (une seule fois) que l'écran d'ouverture est terminé. Les modules de
+  // déverrouillage biométrique écoutent cet événement pour n'afficher l'écran
+  // « Espace verrouillé » qu'APRÈS la fin propre du splash — jamais par-dessus.
+  function signalSplashEnd(){
+    if (window.__cltSplashEnded) return;
+    window.__cltSplashEnded = true;
+    try { window.dispatchEvent(new Event('clt-splash-end')); } catch(e){}
+  }
+
   var life = 2100;
   setTimeout(function(){
     clearBg();
     wrap.classList.add('out');
+    try { sessionStorage.setItem('clt-splash-done','1'); } catch(e){}
     setTimeout(function(){
       if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+      signalSplashEnd();
     }, 430);
-    try { sessionStorage.setItem('clt-splash-done','1'); } catch(e){}
   }, life);
 })();

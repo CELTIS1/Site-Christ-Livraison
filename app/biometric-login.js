@@ -391,12 +391,40 @@
     });
   }
 
+  // --- Coordination avec l'écran d'ouverture (splash.js) -------------------------
+  // On n'affiche l'écran « Espace verrouillé » qu'APRÈS la fin de l'animation de
+  // lancement : l'utilisateur voit d'abord le logo + la barre de chargement se
+  // terminer proprement, PUIS l'écran de déverrouillage apparaît (comme les apps
+  // modernes). Si aucun splash n'est en cours (navigation interne : déjà joué cette
+  // session), on affiche immédiatement.
+  function whenSplashDone(cb) {
+    var pending = false;
+    if (document.getElementById('clt-splash')) pending = true;
+    else { try { if (!sessionStorage.getItem('clt-splash-done')) pending = true; } catch (e) {} }
+    if (!pending) { cb(); return; }
+
+    var done = false;
+    function fire() {
+      if (done) return; done = true;
+      try { window.removeEventListener('clt-splash-end', fire); } catch (e) {}
+      cb();
+    }
+    try { window.addEventListener('clt-splash-end', fire); } catch (e) {}
+    // Filets de sécurité : sondage de la disparition de l'overlay, puis garde-fou absolu.
+    var iv = setInterval(function () {
+      if (document.getElementById('clt-splash')) return;
+      var d = false; try { d = !!sessionStorage.getItem('clt-splash-done'); } catch (e) {}
+      if (d) { clearInterval(iv); fire(); }
+    }, 90);
+    setTimeout(function () { clearInterval(iv); fire(); }, 4000);
+  }
+
   // --- Démarrage : affiche l'écran « Espace verrouillé » si un accès est déjà mémorisé --
   function init() {
     if (!hasSaved()) return;
     isSupported().then(function (ok) {
       if (!ok) { return; }        // support disparu : on garde les données mais on n'affiche rien
-      renderLockOverlay();
+      whenSplashDone(renderLockOverlay);
     });
   }
   if (document.readyState === 'loading') {

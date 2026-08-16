@@ -72,6 +72,32 @@
     try { localStorage.removeItem(JUST_UNLOCKED_KEY); } catch (e) {}
   }
 
+  // --- Coordination avec l'écran d'ouverture (splash.js) -------------------------
+  // Le verrou « Espace verrouillé » ne doit JAMAIS s'afficher par-dessus l'animation
+  // de lancement. On attend d'abord que le logo + la barre de chargement se terminent
+  // proprement, PUIS on présente l'écran de déverrouillage.
+  function splashActiveOrPending() {
+    if (document.getElementById('clt-splash')) return true;      // splash à l'écran
+    try { if (!sessionStorage.getItem('clt-splash-done')) return true; } catch (e) {} // va s'afficher
+    return false;
+  }
+  function whenSplashDone(cb) {
+    if (!splashActiveOrPending()) { cb(); return; }
+    var done = false;
+    function fire() {
+      if (done) return; done = true;
+      try { window.removeEventListener('clt-splash-end', fire); } catch (e) {}
+      cb();
+    }
+    try { window.addEventListener('clt-splash-end', fire); } catch (e) {}
+    var iv = setInterval(function () {
+      if (document.getElementById('clt-splash')) return;
+      var d = false; try { d = !!sessionStorage.getItem('clt-splash-done'); } catch (e) {}
+      if (d) { clearInterval(iv); fire(); }
+    }, 90);
+    setTimeout(function () { clearInterval(iv); fire(); }, 4000);
+  }
+
   // --- Utilitaires base64url <-> ArrayBuffer ------------------------------------
   function bufToB64url(buf) {
     var bytes = new Uint8Array(buf), str = '';
@@ -183,6 +209,10 @@
     // Mais PAS si l'utilisateur vient de se déverrouiller par Face ID sur la page de
     // connexion : on éviterait un second écran « Espace verrouillé » inutile.
     if (justUnlockedRecently()) return;
+    // Ni pendant l'écran d'ouverture : le splash couvre déjà tout l'écran, il n'y a donc
+    // aucun « flash » à masquer. L'écran de déverrouillage sera présenté par guard(),
+    // proprement, une fois le splash terminé.
+    if (splashActiveOrPending()) return;
     if (document.body) buildOverlay();
     else document.addEventListener('DOMContentLoaded', function () { buildOverlay(); });
   }
@@ -219,38 +249,42 @@
     // n'exige pas une seconde vérification ici. On consomme le drapeau (usage unique).
     if (justUnlockedRecently()) { consumeJustUnlocked(); removeOverlay(); return Promise.resolve(); }
 
-    var card = buildOverlay();
-    var goBtn = card.querySelector('#clt-biolock-go');
-    var pwBtn = card.querySelector('#clt-biolock-pw');
-    var errEl = card.querySelector('#clt-biolock-err');
-
     return new Promise(function (resolve) {
-      var busy = false;
-      function attempt() {
-        if (busy) return;
-        busy = true; errEl.textContent = '';
-        verify(uid).then(function () {
-          removeOverlay(); resolve();
-        }).catch(function (e) {
-          busy = false;
-          var name = e && e.name;
-          if (name === 'NotAllowedError') errEl.textContent = 'Déverrouillage annulé. Réessayez.';
-          else if (e && e.message === 'no-credential') { removeOverlay(); resolve(); }
-          else errEl.textContent = 'Échec du déverrouillage. Réessayez ou utilisez le mot de passe.';
+      // On n'affiche l'écran de déverrouillage et on ne lance Face ID qu'APRÈS la fin
+      // propre de l'écran d'ouverture (splash), jamais par-dessus.
+      whenSplashDone(function () {
+        var card = buildOverlay();
+        var goBtn = card.querySelector('#clt-biolock-go');
+        var pwBtn = card.querySelector('#clt-biolock-pw');
+        var errEl = card.querySelector('#clt-biolock-err');
+
+        var busy = false;
+        function attempt() {
+          if (busy) return;
+          busy = true; errEl.textContent = '';
+          verify(uid).then(function () {
+            removeOverlay(); resolve();
+          }).catch(function (e) {
+            busy = false;
+            var name = e && e.name;
+            if (name === 'NotAllowedError') errEl.textContent = 'Déverrouillage annulé. Réessayez.';
+            else if (e && e.message === 'no-credential') { removeOverlay(); resolve(); }
+            else errEl.textContent = 'Échec du déverrouillage. Réessayez ou utilisez le mot de passe.';
+          });
+        }
+        goBtn.addEventListener('click', attempt);
+        pwBtn.addEventListener('click', function () {
+          // Repli universel : on se déconnecte proprement → retour à la page de connexion.
+          try {
+            if (IS_EXPRESS && typeof logoutExpress === 'function') { logoutExpress(); return; }
+            if (!IS_EXPRESS && typeof logout === 'function') { logout(); return; }
+          } catch (e) {}
+          try { if (typeof clearAllAuthStorage === 'function') clearAllAuthStorage(); } catch (e) {}
+          location.href = LOGIN_PAGE;
         });
-      }
-      goBtn.addEventListener('click', attempt);
-      pwBtn.addEventListener('click', function () {
-        // Repli universel : on se déconnecte proprement → retour à la page de connexion.
-        try {
-          if (IS_EXPRESS && typeof logoutExpress === 'function') { logoutExpress(); return; }
-          if (!IS_EXPRESS && typeof logout === 'function') { logout(); return; }
-        } catch (e) {}
-        try { if (typeof clearAllAuthStorage === 'function') clearAllAuthStorage(); } catch (e) {}
-        location.href = LOGIN_PAGE;
+        // Tentative automatique (best effort ; sur iOS un geste peut être requis → le bouton reste).
+        setTimeout(attempt, 150);
       });
-      // Tentative automatique (best effort ; sur iOS un geste peut être requis → le bouton reste).
-      setTimeout(attempt, 150);
     });
   }
 
