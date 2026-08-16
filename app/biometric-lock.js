@@ -258,32 +258,41 @@
         var pwBtn = card.querySelector('#clt-biolock-pw');
         var errEl = card.querySelector('#clt-biolock-err');
 
-        var busy = false;
-        function attempt() {
-          if (busy) return;
-          busy = true; errEl.textContent = '';
-          verify(uid).then(function () {
-            removeOverlay(); resolve();
-          }).catch(function (e) {
-            busy = false;
-            var name = e && e.name;
-            if (name === 'NotAllowedError') errEl.textContent = 'Déverrouillage annulé. Réessayez.';
-            else if (e && e.message === 'no-credential') { removeOverlay(); resolve(); }
-            else errEl.textContent = 'Échec du déverrouillage. Réessayez ou utilisez le mot de passe.';
-          });
-        }
-        goBtn.addEventListener('click', attempt);
-        pwBtn.addEventListener('click', function () {
-          // Repli universel : on se déconnecte proprement → retour à la page de connexion.
+        // Repli universel : on se déconnecte proprement → retour à la page de connexion
+        // (numéro + mot de passe pour la saisie manuelle).
+        function fallbackToLogin() {
           try {
             if (IS_EXPRESS && typeof logoutExpress === 'function') { logoutExpress(); return; }
             if (!IS_EXPRESS && typeof logout === 'function') { logout(); return; }
           } catch (e) {}
           try { if (typeof clearAllAuthStorage === 'function') clearAllAuthStorage(); } catch (e) {}
           location.href = LOGIN_PAGE;
-        });
-        // Tentative automatique (best effort ; sur iOS un geste peut être requis → le bouton reste).
-        setTimeout(attempt, 150);
+        }
+
+        var busy = false;
+        // Après MAX_FAILS échecs « visibles », on bascule automatiquement vers la page de
+        // connexion. La 1re sonde automatique et silencieuse ne compte pas.
+        var failCount = 0, MAX_FAILS = 2;
+        function attempt(silent) {
+          if (busy) return;
+          busy = true; errEl.textContent = '';
+          verify(uid).then(function () {
+            removeOverlay(); resolve();
+          }).catch(function (e) {
+            busy = false;
+            if (e && e.message === 'no-credential') { removeOverlay(); resolve(); return; }
+            if (silent) return; // sonde automatique : ni erreur ni comptage
+            failCount++;
+            if (failCount >= MAX_FAILS) { fallbackToLogin(); return; }
+            var name = e && e.name;
+            if (name === 'NotAllowedError') errEl.textContent = 'Déverrouillage annulé. Réessayez.';
+            else errEl.textContent = 'Échec du déverrouillage. Réessayez ou utilisez le mot de passe.';
+          });
+        }
+        goBtn.addEventListener('click', function () { attempt(false); });
+        pwBtn.addEventListener('click', fallbackToLogin);
+        // Tentative automatique SILENCIEUSE (best effort ; sur iOS un geste peut être requis).
+        setTimeout(function () { attempt(true); }, 150);
       });
     });
   }

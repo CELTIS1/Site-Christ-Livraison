@@ -171,6 +171,12 @@
 
   // --- Bouton de connexion biométrique (à l'arrivée) -----------------------------
   var attemptBusy = false;
+  // Compteur d'échecs de déverrouillage. Après MAX_FAILS échecs « visibles » (appuis de
+  // l'utilisateur qui n'aboutissent pas), on révèle automatiquement le formulaire de
+  // connexion (numéro + mot de passe) pour la saisie manuelle — comme demandé.
+  // La 1re sonde automatique et silencieuse (silent=true) ne compte PAS.
+  var failCount = 0;
+  var MAX_FAILS = 2;
   function attempt(btn, errEl, silent) {
     if (attemptBusy) return;
     attemptBusy = true;
@@ -192,8 +198,17 @@
       var name = e && e.name;
       if (e && e.message === 'no-credential') { clear(); removeLockOverlay(); revealForm(); return; }
       // Tentative automatique (sans geste) : un refus/annulation est normal (iOS exige un
-      // geste), on n'affiche donc AUCUNE erreur — le bouton reste prêt pour un appui manuel.
+      // geste), on n'affiche donc AUCUNE erreur et on ne compte PAS — le bouton reste prêt.
       if (silent) return;
+      // Échec « visible » (l'utilisateur a essayé et ça n'a pas marché).
+      failCount++;
+      if (failCount >= MAX_FAILS) {
+        // Après deux échecs, on bascule automatiquement sur la saisie manuelle :
+        // on masque l'écran verrouillé et on révèle le formulaire numéro + mot de passe.
+        removeLockOverlay();
+        revealForm();
+        return;
+      }
       if (errEl) {
         if (name === 'NotAllowedError') errEl.textContent = 'Déverrouillage annulé. Réessayez ou saisissez votre mot de passe.';
         else errEl.textContent = 'Échec du déverrouillage. Réessayez ou saisissez votre mot de passe.';
