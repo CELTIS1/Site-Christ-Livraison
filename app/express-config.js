@@ -389,7 +389,16 @@ function expressRechargeBadgeHTML(statut) {
 // bucket ((storage.foldername(name))[1] = auth.uid()). Le bucket étant public,
 // l'URL retournée est directement affichable.
 async function uploadAvatarExpress(file, userId) {
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  // Une photo de profil s'affiche en petit : 512 px suffisent, ce qui fait passer une photo de
+  // téléphone de plusieurs Mo à quelques dizaines de Ko. Le nom d'origine est mémorisé AVANT
+  // compression, car le résultat compressé est un Blob sans nom de fichier.
+  const nomOrigine = file && file.name;
+  if (typeof cltCompressImage === "function") {
+    file = await cltCompressImage(file, { maxDim: 512, quality: 0.85 });
+  }
+  const ext = (typeof cltExtensionFichier === "function")
+    ? cltExtensionFichier(file, nomOrigine)
+    : ((String(nomOrigine || "").split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg");
   const path = `${userId}/avatars/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await supabaseClient.storage.from("express-colis")
     .upload(path, file, { contentType: file.type, upsert: false });

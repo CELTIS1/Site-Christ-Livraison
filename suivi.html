@@ -277,8 +277,39 @@
   // Une fois qu'un variant fonctionne, on le mémorise pour éviter de re-tâtonner à chaque requête.
   let suiviColsIndex = 0;
 
+  // Depuis le 17 août 2026, la recherche passe par la fonction serveur suivi_colis().
+  // Motif : le droit de lecture accordé au visiteur anonyme portait sur la vue ENTIÈRE. Un
+  // inconnu pouvait donc l'interroger sans aucun numéro de suivi et récupérer d'un coup la
+  // liste de tous les colis — avec l'adresse de destination et l'adresse des photos, qui
+  // montrent souvent l'étiquette du destinataire. La fonction, elle, exige le numéro en
+  // paramètre et ne renvoie qu'un seul colis. Colonnes et masquages identiques : l'affichage
+  // ne change pas d'un pixel pour le destinataire légitime.
+  //
+  // Repli : si la fonction n'existe pas encore côté base (site publié avant le script SQL, ou
+  // retour en arrière), on retombe automatiquement sur l'ancienne lecture de la vue. Le suivi
+  // public ne peut donc jamais tomber en panne à cause de cette bascule, dans un sens comme
+  // dans l'autre.
+  let rpcSuiviIndisponible = false;
+
   async function fetchColis(query) {
     const value = query.trim();
+    if (!rpcSuiviIndisponible) {
+      const res = await supabaseClient
+        .rpc("suivi_colis", { p_recherche: value })
+        .maybeSingle();
+      if (!res.error) return res;
+      // Fonction absente du schéma : on bascule sur l'ancienne méthode.
+      if (/function|does not exist|n'existe pas|schema cache|404/i.test(res.error.message || "")) {
+        rpcSuiviIndisponible = true;
+      } else {
+        return res; // vraie erreur (réseau, etc.) : on la remonte telle quelle
+      }
+    }
+    return fetchColisParLaVue(value);
+  }
+
+  // Ancienne méthode, conservée uniquement en secours.
+  async function fetchColisParLaVue(value) {
     const column = UUID_RE.test(value) ? "id" : "numero";
     const key = column === "numero" ? value.toUpperCase() : value;
     let res;

@@ -69,7 +69,7 @@ function getInitials(name) {
 
 // ---------- Choix d'image (caméra + bibliothèque) ----------
 // Relie un ou plusieurs inputs "file" à une même fonction de traitement, en validant que c'est
-// bien une image de moins de 8 Mo. La valeur de l'input est réinitialisée à chaque fois pour
+// bien une image de moins de 15 Mo. La valeur de l'input est réinitialisée à chaque fois pour
 // permettre de rechoisir le même fichier ensuite.
 function wireImagePicker(inputIds, onFile) {
   const ids = Array.isArray(inputIds) ? inputIds : [inputIds];
@@ -84,13 +84,76 @@ function wireImagePicker(inputIds, onFile) {
         alert("Veuillez choisir un fichier image.");
         return;
       }
-      if (file.size > 8 * 1024 * 1024) {
-        alert("L'image est trop volumineuse (8 Mo maximum).");
+      // Plafond aligné sur la limite réelle du stockage (15 Mo). Les photos sont compressées
+      // juste avant l'envoi : ce plafond ne sert donc qu'à écarter un fichier aberrant, il ne
+      // doit pas refuser une photo de téléphone récent, qui dépasse souvent 8 Mo.
+      if (file.size > 15 * 1024 * 1024) {
+        alert("L'image est trop volumineuse (15 Mo maximum).");
         return;
       }
       await onFile(file);
     });
   });
+}
+
+// ---------- Compression d'image avant envoi ----------
+// Les photos prises au téléphone font souvent plusieurs Mo. Envoyées telles quelles, elles
+// rendent l'envoi long sur les données mobiles (surtout en zone à faible réseau) et remplissent
+// vite l'espace de stockage. On réduit la plus grande dimension à `maxDim` px et on ré-encode en
+// JPEG : le poids chute fortement tout en gardant une qualité largement suffisante.
+//
+// Règle de sécurité : en cas d'échec (fichier non image, navigateur ancien, image corrompue...),
+// la fonction renvoie le fichier D'ORIGINE. Elle ne doit JAMAIS empêcher un envoi de se faire.
+// De même, la version compressée n'est conservée que si elle est réellement plus légère.
+//
+// Attention à l'appelant : le résultat peut être un Blob SANS nom de fichier. L'extension doit
+// donc être déduite du type MIME (voir cltExtensionFichier ci-dessous), jamais de file.name seul.
+async function cltCompressImage(file, { maxDim = 1280, quality = 0.8 } = {}) {
+  try {
+    if (!file || !file.type || file.type.indexOf("image/") !== 0) return file;
+    const dataUrl = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = reject;
+      fr.readAsDataURL(file);
+    });
+    const img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = dataUrl;
+    });
+    let width = img.naturalWidth || img.width;
+    let height = img.naturalHeight || img.height;
+    if (!width || !height) return file;
+    if (Math.max(width, height) > maxDim) {
+      const ratio = maxDim / Math.max(width, height);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    return (blob && blob.size < file.size) ? blob : file;
+  } catch (e) {
+    console.warn("Compression de la photo impossible, envoi de l'original :", e);
+    return file;
+  }
+}
+
+// Extension de fichier à utiliser pour un envoi : d'abord le type MIME (seule source fiable
+// après compression, car un Blob n'a pas de nom), puis le nom d'origine, puis "jpg" en dernier
+// recours. Le nettoyage évite qu'un nom exotique produise un chemin invalide dans le stockage.
+function cltExtensionFichier(fichier, nomOrigine) {
+  const depuisMime = (fichier && fichier.type && fichier.type.split("/")[1])
+    ? fichier.type.split("/")[1].replace("jpeg", "jpg")
+    : null;
+  const nom = nomOrigine || (fichier && fichier.name) || "";
+  const depuisNom = nom.indexOf(".") !== -1 ? nom.split(".").pop() : null;
+  const ext = (depuisMime || depuisNom || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return ext || "jpg";
 }
 
 // ---------- Modale de confirmation / saisie réutilisable (remplace confirm/prompt natifs) ----------

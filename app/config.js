@@ -747,7 +747,17 @@ function avatarHTML(profile, size) {
 
 // Envoie une photo de profil dans le stockage et retourne son URL publique.
 async function uploadAvatar(file, userId) {
-  const ext = file.name.split(".").pop();
+  // Une photo de profil s'affiche en petit (avatar) : 512 px suffisent largement, ce qui fait
+  // passer une photo de téléphone de plusieurs Mo à quelques dizaines de Ko. Le nom d'origine est
+  // mémorisé AVANT compression, car le résultat compressé est un Blob sans nom.
+  // Le `typeof` est une précaution : si clt-common.js manquait, on envoie l'original.
+  const nomOrigine = file && file.name;
+  if (typeof cltCompressImage === "function") {
+    file = await cltCompressImage(file, { maxDim: 512, quality: 0.85 });
+  }
+  const ext = (typeof cltExtensionFichier === "function")
+    ? cltExtensionFichier(file, nomOrigine)
+    : (String(nomOrigine || "").split(".").pop() || "jpg");
   const path = `${userId}/avatars/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await supabaseClient.storage.from("colis-photos").upload(path, file);
   if (error) { console.error(error); return null; }

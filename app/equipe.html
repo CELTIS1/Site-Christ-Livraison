@@ -784,8 +784,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260815premium1"></script>
-<script src="config.js?v=20260812m"></script>
+<script src="clt-common.js?v=20260817compress1"></script>
+<script src="config.js?v=20260817compress1"></script>
 <script src="biometric-lock.js?v=20260816seq2"></script>
 <script>
 let currentUser = null;
@@ -1332,7 +1332,16 @@ e.returnValue = '';
 });
 
 async function uploadPhoto(file, userId){
-const ext = file.name.split('.').pop();
+// Compression avant envoi (1280 px, qualité 0,8), comme sur les pages livreur et fournisseur :
+// une photo de téléphone de plusieurs Mo tombe à quelques centaines de Ko. Le nom d'origine est
+// mémorisé AVANT, car une image compressée est un Blob sans nom de fichier.
+const nomOrigine = file && file.name;
+if (typeof cltCompressImage === 'function') {
+file = await cltCompressImage(file, { maxDim: 1280, quality: 0.8 });
+}
+const ext = (typeof cltExtensionFichier === 'function')
+? cltExtensionFichier(file, nomOrigine)
+: (String(nomOrigine || '').split('.').pop() || 'jpg');
 const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
 const { error } = await supabaseClient.storage.from('colis-photos').upload(path, file);
 if (error) { console.error(error); return null; }

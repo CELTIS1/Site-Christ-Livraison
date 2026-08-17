@@ -561,8 +561,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260815premium1"></script>
-<script src="express-config.js?v=20260811f"></script>
+<script src="clt-common.js?v=20260817compress1"></script>
+<script src="express-config.js?v=20260817compress1"></script>
 <script src="biometric-lock.js?v=20260816seq2"></script>
 <script>
   let currentUser = null;
@@ -1246,8 +1246,11 @@
       document.getElementById('new-msg').innerHTML = `<div class="msg msg-error">Veuillez choisir une image.</div>`;
       photoInput.value = ''; return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      document.getElementById('new-msg').innerHTML = `<div class="msg msg-error">La photo est trop lourde (10 Mo maximum).</div>`;
+    // Plafond aligné sur la limite réelle du stockage (15 Mo). La photo est de toute façon
+    // compressée juste avant l'envoi, donc ce plafond ne sert qu'à écarter un fichier aberrant :
+    // il ne doit pas refuser une photo de téléphone récent, qui dépasse souvent 10 Mo.
+    if (file.size > 15 * 1024 * 1024) {
+      document.getElementById('new-msg').innerHTML = `<div class="msg msg-error">La photo est trop lourde (15 Mo maximum).</div>`;
       photoInput.value = ''; return;
     }
     selectedPhotoFile = file;
@@ -1262,10 +1265,21 @@
   // Envoie la photo dans le bucket "express-colis" et renvoie son chemin (ou null).
   async function uploadPhotoColis(){
     if (!selectedPhotoFile) return null;
-    const ext = (selectedPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    // Compression avant envoi (1280 px, qualité 0,8) : une photo de téléphone de plusieurs Mo
+    // tombe à quelques centaines de Ko, ce qui rend l'envoi bien plus rapide en données mobiles.
+    // On travaille sur une copie locale : `selectedPhotoFile` reste intact pour l'aperçu affiché.
+    let fichier = selectedPhotoFile;
+    if (typeof cltCompressImage === 'function') {
+      fichier = await cltCompressImage(fichier, { maxDim: 1280, quality: 0.8 });
+    }
+    // L'extension et le contentType viennent du fichier RÉELLEMENT envoyé : après compression
+    // c'est un Blob JPEG sans nom, d'où le repli sur le nom d'origine puis sur "jpg".
+    const ext = (typeof cltExtensionFichier === 'function')
+      ? cltExtensionFichier(fichier, selectedPhotoFile.name)
+      : ((String(selectedPhotoFile.name || '').split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg');
     const path = `${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error } = await supabaseClient.storage.from('express-colis')
-      .upload(path, selectedPhotoFile, { contentType: selectedPhotoFile.type, upsert: false });
+      .upload(path, fichier, { contentType: fichier.type || selectedPhotoFile.type, upsert: false });
     if (error) { console.error('Upload photo:', error); throw error; }
     return path;
   }

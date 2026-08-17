@@ -23,7 +23,10 @@ const RH_BUCKET = 'rh-personnel';
 const COMPTA_BUCKET = 'compta-entreprise';
 let DOCS_PERSONNEL = [];        // documents du personnel (CNI, contrats…) — bucket privé rh-personnel
 let DOCS_ENTREPRISE = [];       // documents de l'entreprise (RCCM, DFE…) — bucket privé compta-entreprise
-const DOC_MAX_OCTETS = 20 * 1024 * 1024; // 20 Mo par fichier
+// Plafond par fichier. IMPORTANT : il doit rester aligné sur la limite réelle des buckets
+// Supabase, fixée à 15 Mo le 17 août 2026. S'il était plus élevé, un fichier passerait le
+// contrôle de l'application puis serait refusé par le stockage, avec un message incompréhensible.
+const DOC_MAX_OCTETS = 15 * 1024 * 1024; // 15 Mo par fichier
 let CHAUFFEURS = [];            // référentiel compta
 let LIVREURS = [];              // profils livreurs (pour lier un salarié)
 let ACCES = { isAdmin:false, canPaie:false, canCompta:false }; // capacités de l'utilisateur connecté
@@ -499,7 +502,7 @@ async function uploadDocument(domaine){
   const fileInput = document.getElementById(pre + '-file');
   const file = fileInput && fileInput.files && fileInput.files[0];
   if (!file){ showToast('Choisissez un fichier à ajouter.', true); return; }
-  if (file.size > DOC_MAX_OCTETS){ showToast('Fichier trop volumineux (max 20 Mo).', true); return; }
+  if (file.size > DOC_MAX_OCTETS){ showToast('Fichier trop volumineux (max 15 Mo).', true); return; }
 
   const type  = document.getElementById(pre + '-type').value || 'Autre';
   const titre = (document.getElementById(pre + '-titre').value || '').trim() || type;
@@ -816,7 +819,7 @@ async function addDepense(){
   if (!montantConfirme(montant, 'dépense')) return;
   const justifInput = document.getElementById('dep-justif');
   const justifFile = justifInput && justifInput.files && justifInput.files[0];
-  if (justifFile && justifFile.size > DOC_MAX_OCTETS){ showToast('Justificatif trop volumineux (max 20 Mo).', true); return; }
+  if (justifFile && justifFile.size > DOC_MAX_OCTETS){ showToast('Justificatif trop volumineux (max 15 Mo).', true); return; }
   // Contrôle de saisie : alerte doublon (même mois, même date, même libellé, même montant).
   try {
     let q = supabaseClient.from('gestion_depenses').select('id')
@@ -1022,10 +1025,20 @@ async function saveSalarie(){
   // Photo : conserve le chemin actuel par défaut ; téléverse le nouveau fichier s'il y en a un.
   rec.photo_path = document.getElementById('sal-photo-path').value || null;
   const fileInput = document.getElementById('sal-photo');
-  const file = fileInput && fileInput.files && fileInput.files[0];
+  let file = fileInput && fileInput.files && fileInput.files[0];
   try {
     if (file){
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      // Photo d'identité d'un salarié : affichée en vignette dans la fiche, 800 px suffisent.
+      // La compression n'est appliquée QU'ICI, sur les portraits. Les documents et justificatifs
+      // (CNI, contrats, factures) sont volontairement envoyés tels quels : ce sont des pièces
+      // justificatives, dont la lisibilité et la fidélité à l'original ne doivent pas être touchées.
+      const nomOrigine = file.name;
+      if (typeof cltCompressImage === 'function') {
+        file = await cltCompressImage(file, { maxDim: 800, quality: 0.85 });
+      }
+      const ext = (typeof cltExtensionFichier === 'function')
+        ? cltExtensionFichier(file, nomOrigine)
+        : ((String(nomOrigine || '').split('.').pop() || 'jpg').toLowerCase());
       const path = `photos/${rec.matricule}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabaseClient.storage.from(RH_BUCKET)
         .upload(path, file, { contentType: file.type, upsert: false });

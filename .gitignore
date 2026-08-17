@@ -5,6 +5,11 @@ desktop.ini
 *.swp
 *~
 
+# Copies résiduelles laissées par le montage du dossier quand un fichier est réécrit alors
+# qu'il est encore ouvert. Ce sont d'anciennes versions complètes des pages de l'app : sans
+# cette règle, elles pourraient être publiées par erreur sur le site public.
+.fuse_hidden*
+
 # --- Secrets & variables d'environnement (ne JAMAIS publier) ---
 .env
 .env.*
