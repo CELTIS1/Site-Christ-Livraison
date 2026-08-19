@@ -26,11 +26,25 @@
    l'application. Le cache d'abord ci-dessous refuse donc de stocker ou de servir une réponse
    opaque lorsque la requête porte une empreinte — voir cacheFirst().
 
+   Le même jour, les six autres bibliothèques externes (Leaflet feuille de style et script, xlsx,
+   jsPDF, jsPDF-autotable, Font Awesome) ont reçu à leur tour une empreinte dans les pages. Elles
+   étaient déjà sur des versions exactes, mais rien ne vérifiait leur contenu. La garde de
+   cacheFirst() les couvre sans modification : elle réagit à la présence d'une empreinte sur la
+   requête, quelle que soit la bibliothèque.
+
+   Reste une exception assumée : la police Poppins (fonts.googleapis.com), qui ne peut PAS porter
+   d'empreinte — Google renvoie une feuille de style différente selon le navigateur, donc aucune
+   empreinte fixe n'existe. Elle continue d'être mise en cache normalement.
+
+   Toute montée de version d'une de ces bibliothèques doit être faite ICI et dans les pages, avec
+   recalcul de l'empreinte. Le contrôle .github/verifier-empreintes.py vérifie les deux et refuse
+   la publication si l'un des deux a été oublié.
+
    Repli hors-ligne : si une navigation échoue et n'est pas en cache, on sert /offline.html.
 
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même. */
 
-const CACHE_VERSION = 'clt-shell-v40';
+const CACHE_VERSION = 'clt-shell-v41';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.

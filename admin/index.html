@@ -3,11 +3,33 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Cette page était la seule des quinze du site sans aucune règle de sécurité du contenu.
+       Les trois directives ci-dessous sont posées le 19 août 2026 : elles interdisent les greffons
+       (`object-src`), empêchent la réécriture de l'adresse de base de la page (`base-uri`) et
+       interdisent à un formulaire d'expédier son contenu vers un serveur inconnu (`form-action`).
+       Ces trois-là ne peuvent rien casser ici : l'interface n'utilise ni greffon, ni balise de base,
+       ni formulaire à destination extérieure.
+       Volontairement absentes : `script-src` et `connect-src`, qui sont pourtant la vraie protection.
+       Les écrire au jugé casserait l'interface en silence — elle a besoin de joindre GitHub et
+       d'injecter ses propres styles. Elles demandent un essai en direct, connecté, avant d'être
+       posées. Tant que ce n'est pas fait, mieux vaut pas de règle qu'une règle fausse. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Administration — Christ Livraison & Transport</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%231B4374'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23E26313'/%3E%3C/svg%3E">
 </head>
 <body>
-  <!-- Interface d'administration Decap CMS. Ne pas modifier ce fichier. -->
-  <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <!-- Interface d'administration Decap CMS.
+       Figée le 19 août 2026. Elle était jusque-là chargée avec la plage « ^3.0.0 », c'est-à-dire
+       « la dernière 3.x, quelle qu'elle soit » : le jour de ce correctif, cette plage renvoyait la
+       3.15.1, soit quinze versions de dérive silencieuse. Or cette page ouvre une session GitHub
+       avec droit d'écriture sur le dépôt du site — c'est l'accès le plus sensible de l'ensemble.
+       Version exacte + empreinte de contrôle (SRI) : le navigateur refuse d'exécuter le fichier
+       si son empreinte ne correspond pas. Toute montée de version impose de recalculer
+       l'empreinte — voir .github/verifier-empreintes.py -->
+  <script src="https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js"
+          integrity="sha384-in6eHztHveqQ7uMZ1fDaKlDmacQLFuLH2wWrFTiymyuS8zQ5bixwL8U3AeRi8h/L"
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </body>
 </html>

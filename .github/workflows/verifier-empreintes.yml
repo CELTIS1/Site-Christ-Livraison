@@ -1,0 +1,38 @@
+# Contrôle automatique des bibliothèques chargées depuis l'extérieur du site.
+#
+# À quoi ça sert, en clair : les pages du site utilisent quelques bibliothèques hébergées
+# ailleurs. Chacune est verrouillée sur une version précise, avec une empreinte qui permet au
+# navigateur de refuser le fichier s'il a été modifié. Le risque, c'est d'oublier de recalculer
+# cette empreinte le jour où l'on change de version : les pages concernées cesseraient de
+# fonctionner d'un coup. Ce contrôle tourne tout seul à chaque publication et le jeudi matin,
+# et prévient par courriel si quelque chose cloche.
+#
+# Aucune configuration à faire, aucun secret, aucun coût : c'est gratuit sur un dépôt public.
+
+name: Vérifier les empreintes des bibliothèques externes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Jeudi 07h00 UTC, soit 07h00 à Abidjan. Le contrôle hebdomadaire sert à détecter
+    # qu'un fichier a changé sur le serveur du CDN sans que nous ayons rien touché.
+    - cron: "0 7 * * 4"
+  workflow_dispatch:
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le site
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Contrôler versions, empreintes et service worker
+        run: python3 .github/verifier-empreintes.py
