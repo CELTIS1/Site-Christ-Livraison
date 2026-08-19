@@ -159,7 +159,18 @@
       'color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;' +
       'opacity:1;transition:opacity .35s ease;padding:24px;box-sizing:border-box;}' +
       '#clt-biolock.out{opacity:0;pointer-events:none;}' +
-      '#clt-biolock .card{width:100%;max-width:344px;text-align:center;animation:cltBioCard .55s cubic-bezier(.22,1.2,.32,1) both;}' +
+      // CORRECTION DU 19 AOÛT 2026 — cet encadré s'appelait « card ». Or style.css définit
+      // une classe .card générale avec un fond blanc, une bordure et un padding, prévue pour
+      // les encadrés clairs des tableaux de bord. Elle s'appliquait donc aussi ici : l'écran
+      // de déverrouillage, conçu en sombre, se retrouvait avec une boîte blanche au milieu,
+      // sur laquelle le texte explicatif — écrit en blanc translucide — devenait illisible.
+      // Le nom est désormais « biocard », qui n'existe nulle part ailleurs, et les propriétés
+      // de boîte sont remises à zéro explicitement pour qu'aucune règle globale future ne
+      // puisse redéformer cet écran. Même raison pour les couleurs du titre et du paragraphe,
+      // fixées ici au lieu d'être seulement héritées.
+      '#clt-biolock .biocard{width:100%;max-width:344px;text-align:center;' +
+      'background:none;border:0;padding:0;margin:0;box-shadow:none;border-radius:0;' +
+      'animation:cltBioCard .55s cubic-bezier(.22,1.2,.32,1) both;}' +
       '@keyframes cltBioCard{from{opacity:0;transform:translateY(14px) scale(.96);}to{opacity:1;transform:none;}}' +
       '#clt-biolock .ic-wrap{position:relative;width:94px;height:94px;margin:0 auto 22px;}' +
       '#clt-biolock .ic{width:94px;height:94px;border-radius:25px;display:block;position:relative;z-index:1;' +
@@ -167,7 +178,7 @@
       '#clt-biolock .ic-glow{position:absolute;inset:-14px;border-radius:36px;z-index:0;filter:blur(9px);' +
       'background:radial-gradient(circle, ' + T.c + 'aa 0%, transparent 68%);animation:cltBioGlow 2.6s ease-in-out infinite;}' +
       '@keyframes cltBioGlow{0%,100%{opacity:.45;transform:scale(1);}50%{opacity:.85;transform:scale(1.06);}}' +
-      '#clt-biolock h2{font-size:21px;font-weight:750;margin:0 0 8px;letter-spacing:-.01em;}' +
+      '#clt-biolock h2{font-size:21px;font-weight:750;margin:0 0 8px;letter-spacing:-.01em;color:#fff;}' +
       '#clt-biolock p{font-size:14px;line-height:1.5;color:rgba(255,255,255,.66);margin:0 0 28px;}' +
       '#clt-biolock .go{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;box-sizing:border-box;' +
       'border:0;border-radius:15px;padding:16px 18px;font-size:16px;font-weight:750;color:#fff;cursor:pointer;letter-spacing:.01em;' +
@@ -182,7 +193,7 @@
       'border-radius:999px;padding:9px 18px;transition:background .15s ease;}' +
       '#clt-biolock .pw:active{background:rgba(255,255,255,.16);}' +
       '</style>' +
-      '<div class="card">' +
+      '<div class="biocard">' +
         '<div class="ic-wrap"><span class="ic-glow"></span><img class="ic" src="' + T.icon + '" alt=""></div>' +
         '<h2>Espace verrouillé</h2>' +
         '<p>Déverrouillez avec Face&nbsp;ID ou votre empreinte pour accéder à votre espace en toute sécurité.</p>' +

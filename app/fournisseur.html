@@ -265,6 +265,9 @@
       <span class="collapse-arrow">▶</span> Ajouter des colis
     </h2>
     <div id="ajouter-content" class="collapsible-content">
+      <!-- Bandeau « saisie retrouvée » (brouillon local). Conteneur distinct de #add-msg, dont le
+           contenu est remplacé à chaque message d'enregistrement. -->
+      <div id="colis-draft-banner-wrap"></div>
       <div id="add-msg"></div>
       <form id="form-add-colis">
         <div class="field-row" style="margin-bottom:2px;">
@@ -355,7 +358,7 @@
 
 <script src="clt-common.js?v=20260819saisie1"></script>
 <script src="config.js?v=20260819saisie1"></script>
-<script src="biometric-lock.js?v=20260816seq2"></script>
+<script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -663,6 +666,181 @@
   }
   document.getElementById('btn-add-row').addEventListener('click', addRow);
 
+  /* ---------- AUTOSAUVEGARDE DU FORMULAIRE « AJOUTER DES COLIS » (brouillon local) ----------
+     AJOUT DU 19 AOÛT 2026.
+     Le tableau de bord équipe disposait déjà de cette protection ; l'espace client, non.
+     Or c'est ici que la saisie est la plus longue : un client peut préparer cinq ou six colis
+     d'affilée. Un rechargement de page, un appel entrant, un basculement d'application ou une
+     coupure réseau au moment d'enregistrer, et tout était à refaire de zéro.
+
+     Ce que fait ce brouillon : à chaque frappe (regroupée par 400 ms pour ne pas écrire en
+     continu), la saisie en cours est copiée dans le stockage local de l'appareil — sur le
+     téléphone du client, jamais sur nos serveurs. À la réouverture de la page, si un brouillon
+     est retrouvé, un bandeau propose de le restaurer ou de l'ignorer. Rien n'est réinjecté
+     automatiquement : c'est le client qui décide.
+
+     Ce qui n'est pas mémorisé : les photos. Un fichier image ne peut pas être conservé de cette
+     façon, et le bandeau le dit clairement pour éviter toute mauvaise surprise.
+
+     Le brouillon est effacé dès que les colis sont réellement enregistrés, et dès que le
+     formulaire redevient vide. ------------------------------------------------------------ */
+  const COLIS_DRAFT_KEY = 'clt_fournisseur_colis_draft';
+  let colisDraftSaveTimer = null;
+  let colisDraftPret = false;   // tant que le formulaire n'est pas initialisé, on n'écrit rien
+
+  // Lit la saisie en cours. La commune et l'adresse de récupération sont pré-remplies depuis le
+  // profil : on les mémorise, mais elles ne suffisent jamais à considérer qu'il y a un brouillon.
+  function getColisDraft(){
+    const communeEl = document.getElementById('batch-pickup-commune');
+    const adresseEl = document.getElementById('batch-pickup-adresse');
+    const lignes = [];
+    document.querySelectorAll('.colis-row').forEach(row => {
+      const v = sel => { const el = row.querySelector(sel); return el ? el.value : ''; };
+      lignes.push({
+        description:       v('.row-desc'),
+        commune_dest:      v('.row-commune-dest'),
+        destination:       v('.row-dest'),
+        destinataire_tel:  v('.row-dest-tel'),
+        code_confirmation: v('.row-code-confirmation'),
+        montant_article:   v('.row-montant-article'),
+        montant_livraison: v('.row-montant-livraison')
+      });
+    });
+    return {
+      pickup_commune: communeEl ? communeEl.value : '',
+      pickup_adresse: adresseEl ? adresseEl.value : '',
+      lignes
+    };
+  }
+
+  // Un brouillon n'existe que si au moins une ligne de colis contient quelque chose.
+  function colisDraftEstVide(draft){
+    if (!draft || !Array.isArray(draft.lignes)) return true;
+    return !draft.lignes.some(l =>
+      (l.description || '').trim() || (l.commune_dest || '') || (l.destination || '').trim() ||
+      (l.destinataire_tel || '').trim() || (l.code_confirmation || '').trim() ||
+      (l.montant_article || '').trim() || (l.montant_livraison || '').trim()
+    );
+  }
+
+  function saveColisDraft(){
+    if (!colisDraftPret) return;
+    const draft = getColisDraft();
+    if (colisDraftEstVide(draft)) { try { localStorage.removeItem(COLIS_DRAFT_KEY); } catch(e){} return; }
+    try {
+      localStorage.setItem(COLIS_DRAFT_KEY, JSON.stringify(Object.assign({}, draft, { savedAt: Date.now() })));
+    } catch(e) { /* stockage indisponible (navigation privée, quota) : on ignore silencieusement */ }
+  }
+
+  function clearColisDraft(){
+    try { localStorage.removeItem(COLIS_DRAFT_KEY); } catch(e){}
+    const banner = document.getElementById('colis-draft-banner');
+    if (banner) banner.remove();
+  }
+
+  // Réinjecte le brouillon : on reconstruit exactement le bon nombre de lignes, puis on remplit.
+  function appliquerColisDraft(draft){
+    const communeEl = document.getElementById('batch-pickup-commune');
+    const adresseEl = document.getElementById('batch-pickup-adresse');
+    if (communeEl && draft.pickup_commune) communeEl.value = draft.pickup_commune;
+    if (adresseEl && draft.pickup_adresse) adresseEl.value = draft.pickup_adresse;
+
+    document.getElementById('colis-rows').innerHTML = '';
+    rowCount = 0;
+    draft.lignes.forEach(() => addRow());
+    if (!rowCount) addRow();
+
+    const rows = document.querySelectorAll('.colis-row');
+    draft.lignes.forEach((l, i) => {
+      const row = rows[i];
+      if (!row) return;
+      const set = (sel, val) => { const el = row.querySelector(sel); if (el) el.value = val || ''; };
+      set('.row-desc', l.description);
+      set('.row-commune-dest', l.commune_dest);
+      set('.row-dest', l.destination);
+      set('.row-dest-tel', l.destinataire_tel);
+      set('.row-code-confirmation', l.code_confirmation);
+      set('.row-montant-article', l.montant_article);
+      set('.row-montant-livraison', l.montant_livraison);
+      // Recalcule le total affiché sous les deux champs de montant.
+      const art = row.querySelector('.row-montant-article');
+      if (art) art.dispatchEvent(new Event('input'));
+    });
+  }
+
+  // Bandeau de proposition, construit sans innerHTML pour qu'aucune saisie du client ne puisse
+  // être interprétée comme du code.
+  function restoreColisDraftIfAny(){
+    let raw;
+    try { raw = localStorage.getItem(COLIS_DRAFT_KEY); } catch(e) { return; }
+    if (!raw) return;
+    let draft;
+    try { draft = JSON.parse(raw); } catch(e) { clearColisDraft(); return; }
+    if (colisDraftEstVide(draft)) { clearColisDraft(); return; }
+
+    const wrap = document.getElementById('colis-draft-banner-wrap');
+    if (!wrap) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'colis-draft-banner';
+    banner.className = 'msg msg-info';
+    banner.style.display = 'flex';
+    banner.style.flexWrap = 'wrap';
+    banner.style.justifyContent = 'space-between';
+    banner.style.alignItems = 'center';
+    banner.style.gap = '10px';
+
+    const nb = draft.lignes.length;
+    const label = document.createElement('span');
+    label.textContent = '📝 Une saisie non envoyée a été retrouvée (' + nb +
+      (nb > 1 ? ' colis commencés' : ' colis commencé') +
+      '). Voulez-vous la restaurer ? Les photos ne sont pas conservées.';
+    banner.appendChild(label);
+
+    const btnWrap = document.createElement('div');
+    btnWrap.style.display = 'flex';
+    btnWrap.style.gap = '8px';
+
+    const btnRestore = document.createElement('button');
+    btnRestore.type = 'button';
+    btnRestore.className = 'btn btn-sm';
+    btnRestore.textContent = 'Restaurer';
+    btnRestore.addEventListener('click', () => { appliquerColisDraft(draft); banner.remove(); });
+
+    const btnDiscard = document.createElement('button');
+    btnDiscard.type = 'button';
+    btnDiscard.className = 'btn btn-sm btn-outline';
+    btnDiscard.textContent = 'Ignorer';
+    btnDiscard.addEventListener('click', clearColisDraft);
+
+    btnWrap.appendChild(btnRestore);
+    btnWrap.appendChild(btnDiscard);
+    banner.appendChild(btnWrap);
+    wrap.appendChild(banner);
+  }
+
+  // Écoute posée une seule fois sur le formulaire entier : les lignes ajoutées plus tard sont
+  // couvertes automatiquement, sans avoir à rebrancher quoi que ce soit.
+  function initColisDraftAutosave(){
+    const form = document.getElementById('form-add-colis');
+    if (!form) return;
+    const debounced = () => {
+      clearTimeout(colisDraftSaveTimer);
+      colisDraftSaveTimer = setTimeout(saveColisDraft, 400);
+    };
+    form.addEventListener('input', debounced);
+    form.addEventListener('change', debounced);
+    // Retirer une ligne est aussi une modification à mémoriser.
+    form.addEventListener('click', e => {
+      if (e.target && e.target.classList && e.target.classList.contains('remove-row')) setTimeout(saveColisDraft, 0);
+    });
+    // Dernière sauvegarde au moment où la page est quittée ou mise en arrière-plan.
+    window.addEventListener('pagehide', saveColisDraft);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveColisDraft(); });
+    colisDraftPret = true;
+    restoreColisDraftIfAny();
+  }
+
   function addMsg(text, type){
     document.getElementById('add-msg').innerHTML = `<div class="msg msg-${type}">${escapeHTML(text)}</div>`;
   }
@@ -836,6 +1014,9 @@
 
     const photoWarning = photoUploadFailed ? " (attention : l'envoi d'au moins une photo a échoué, le colis a été enregistré sans photo)" : "";
     addMsg(`${inserts.length} colis enregistré(s) avec succès${photoWarning}.`, "success");
+    // Les colis sont en base : le brouillon local n'a plus de raison d'être, on l'efface avant de
+    // vider le formulaire pour qu'il ne soit jamais reproposé à la prochaine ouverture.
+    clearColisDraft();
     document.getElementById('colis-rows').innerHTML = '';
     rowCount = 0;
     addRow();
@@ -1745,6 +1926,9 @@
     if (batchPickupAdresse) batchPickupAdresse.value = profile.adresse_recuperation || '';
 
     addRow();
+    // Brouillon local : à brancher après la première ligne et après le pré-remplissage du lieu de
+    // récupération, pour que la restoration puisse écraser proprement ces valeurs par défaut.
+    initColisDraftAutosave();
     await loadLivreurs();
     filtreDate = todayLocalISODate();
     document.getElementById('filtre-date-colis').value = filtreDate;
