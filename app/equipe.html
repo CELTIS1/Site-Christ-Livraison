@@ -2014,8 +2014,13 @@ const livreurAssigne = c.livreur_id ? livreurs.find(l => l.id === c.livreur_id) 
 const livreurLine = livreurAssigne
 ? `<div class="livreur-meta">${avatarHTML(livreurAssigne, 20)} <span>Livreur : ${escapeHTML(livreurAssigne.full_name || 'Livreur')}</span></div>`
 : `<div class="meta">Aucun livreur assigné</div>`;
+// Carte bleue dès qu'un livreur de livraison est en place : en balayant la liste, on
+// distingue d'un coup d'œil les colis pris en charge de ceux qui attendent encore
+// quelqu'un. La couleur du statut reprend la main sur les colis livrés ou en anomalie
+// (voir la règle .est-assigne dans style.css).
+const classeAssigne = c.livreur_id ? ' est-assigne' : '';
 return `
-<div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
+<div class="colis-item${classeAssigne}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
 ${stepperHTML(c.statut)}
 ${thumb}
 <div class="info">
@@ -2056,7 +2061,7 @@ ${statutBadgeHTML(c.statut)}
 const estEnEdition = !!window.__colisEditing?.has(c.id);
 const gateSave = !estEnEdition && c.statut === 'en_attente' && !c.observation && !collectePropose;
 return `
-<div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
+<div class="colis-item${c.livreur_id ? ' est-assigne' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
 ${thumb}
 ${infoBlock}
 <div class="status-col">
@@ -2237,6 +2242,17 @@ const hasDriver = !!sel.value;
 saveBtn.disabled = !hasDriver;
 const hint = item.querySelector('.save-hint');
 if (hint) hint.style.display = hasDriver ? 'none' : '';
+});
+});
+
+// Retour visuel immédiat : choisir un livreur de livraison fait passer la carte au bleu
+// sans attendre l'enregistrement, et revenir à « — Aucun livreur — » la fait redevenir
+// blanche. Purement visuel : la classe est reposée proprement par colisRowHTML() au
+// prochain rendu, à partir de la valeur réellement enregistrée en base.
+list.querySelectorAll('.row-livreur-select').forEach(sel => {
+sel.addEventListener('change', () => {
+const item = sel.closest('.colis-item');
+if (item) item.classList.toggle('est-assigne', !!sel.value);
 });
 });
 

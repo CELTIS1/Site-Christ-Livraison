@@ -274,6 +274,30 @@ input, select, textarea{ font-size:16px !important; }
 .colis-item[data-statut="non_livre"]:hover{border-color:#f3d3d1;}
 .colis-item[data-statut="retour"]{background:#FEFAF2; border-left-color:#E0A64B;}
 .colis-item[data-statut="retour"]:hover{border-color:#f0e0bf;}
+/* Colis assigné : un livreur de livraison a été choisi. Même langage visuel que les
+   statuts ci-dessus (teinte légère + accent à gauche), en bleu de la marque.
+   Le bleu ne s'applique PAS aux colis livrés, non livrés ou en retour : à ce stade,
+   le résultat compte plus que le nom du livreur, et le vert/rouge/orange doit rester
+   lisible. D'où les `:not(...)`, qui évitent aussi de dépendre de l'ordre des règles. */
+.colis-item.est-assigne:not([data-statut="livre"]):not([data-statut="non_livre"]):not([data-statut="retour"]){
+  background:#F3F8FE; border-left-color:#2F6FC4;
+}
+.colis-item.est-assigne:not([data-statut="livre"]):not([data-statut="non_livre"]):not([data-statut="retour"]):hover{
+  border-color:#c9dcf4;
+}
+/* Mode sombre : les teintes ci-dessus sont des pastels conçus pour un fond blanc. Telles
+   quelles, elles font des cartes presque blanches sur lesquelles le texte clair du mode
+   sombre disparaît. On les décline donc en versions sombres — fond à peine coloré, liséré
+   de gauche plus lumineux — pour garder le même repérage d'un coup d'œil. */
+html[data-theme="dark"] .colis-item.est-assigne:not([data-statut="livre"]):not([data-statut="non_livre"]):not([data-statut="retour"]){
+  background:#16253A; border-left-color:#5B9BE8;
+}
+html[data-theme="dark"] .colis-item[data-statut="livre"]{background:#14261C; border-left-color:#5CC98A;}
+html[data-theme="dark"] .colis-item[data-statut="livre"]:hover{border-color:#2E5B41;}
+html[data-theme="dark"] .colis-item[data-statut="non_livre"]{background:#2A1917; border-left-color:#E8756B;}
+html[data-theme="dark"] .colis-item[data-statut="non_livre"]:hover{border-color:#5E3330;}
+html[data-theme="dark"] .colis-item[data-statut="retour"]{background:#2A2115; border-left-color:#E9B963;}
+html[data-theme="dark"] .colis-item[data-statut="retour"]:hover{border-color:#5C482A;}
 .colis-item .thumb{
   width:48px; height:48px; border-radius:var(--radius-xs); object-fit:cover; background:var(--grey-bg); flex-shrink:0; cursor:zoom-in;
 }
