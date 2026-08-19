@@ -30,6 +30,12 @@ node_modules/
 # --- Guides internes de configuration (dossier privé, ne pas publier) ---
 _sql-prive/*.md
 
+# --- Documents internes de sécurité (dépôt public : rien qui décrive les protections) ---
+# L'audit RLS décrit le nom des tables et le détail des politiques d'accès. Rien de secret au
+# sens strict (aucune clé, aucun mot de passe), mais aucune raison de l'offrir à la lecture :
+# il est conservé hors du dépôt, dans « 08 - Application & Technique ».
+AUDIT-SECURITE-*.md
+
 # --- Journaux ---
 *.log
 npm-debug.log*
