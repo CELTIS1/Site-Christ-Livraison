@@ -376,3 +376,92 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
     }, true);
   } catch (err) { /* dégradation silencieuse */ }
 })();
+
+/* =====================================================================
+   BOUTON « RETOUR EN HAUT » — ajout du 19 août 2026
+   ---------------------------------------------------------------------
+   Les écrans de l'application sont longs : la liste des colis du jour, le
+   relevé d'une cliente, les tableaux de la Gestion. Une fois descendu tout
+   en bas, remonter au menu demandait un long balayage du pouce. Ce bouton
+   apparaît dès qu'on a dépassé un écran et demi de défilement, et ramène
+   en haut d'un geste.
+
+   Il se pose tout seul sur chaque page qui charge ce fichier : aucune balise
+   à ajouter dans le HTML, aucun risque d'en oublier une. Il évite aussi de
+   se poser deux fois si la page en possède déjà un (le site public en a un,
+   défini dans index.html).
+
+   Détail d'implantation : plusieurs espaces (livreur, client Express,
+   coursier Express) affichent sur mobile une barre d'onglets fixée en bas de
+   l'écran. On la détecte pour décaler le bouton au-dessus d'elle, sinon il la
+   recouvrirait — et c'est justement là que se trouvent les boutons les plus
+   utilisés.
+   ===================================================================== */
+(function () {
+  try {
+    if (window.__cltBoutonHaut) return;           // déjà installé
+    window.__cltBoutonHaut = true;
+
+    function installer() {
+      // Le site public a son propre bouton (.back-to-top) : on ne double pas.
+      if (document.querySelector(".back-to-top") || document.querySelector(".clt-haut")) return;
+      if (!document.body) return;
+
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "clt-haut";
+      btn.setAttribute("aria-label", "Remonter en haut de la page");
+      btn.title = "Remonter en haut";
+      // Flèche dessinée en SVG : nette à toutes les tailles, et aucune
+      // dépendance à une police d'icônes que l'app ne charge pas.
+      btn.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>';
+      document.body.appendChild(btn);
+
+      // Décalage au-dessus de la barre d'onglets basse, si la page en a une.
+      if (document.querySelector(".clt-bottomnav")) btn.classList.add("clt-haut--barre");
+
+      var reduire = false;
+      try { reduire = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+
+      btn.addEventListener("click", function () {
+        try {
+          window.scrollTo({ top: 0, behavior: reduire ? "auto" : "smooth" });
+        } catch (e) {
+          window.scrollTo(0, 0);                   // navigateur ancien
+        }
+      });
+
+      // Seuil : un écran et demi. En dessous, remonter au doigt est immédiat et
+      // le bouton ne ferait qu'encombrer.
+      var visible = false;
+      function evaluer() {
+        var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+        var doitEtreVisible = y > Math.max(320, window.innerHeight * 1.5);
+        if (doitEtreVisible === visible) return;   // rien à faire : on évite de toucher au DOM
+        visible = doitEtreVisible;
+        btn.classList.toggle("visible", visible);
+      }
+
+      // Le défilement déclenche des dizaines d'évènements par seconde ; on ne
+      // recalcule qu'une fois par image affichée.
+      var enAttente = false;
+      function auDefilement() {
+        if (enAttente) return;
+        enAttente = true;
+        window.requestAnimationFrame(function () { enAttente = false; evaluer(); });
+      }
+      window.addEventListener("scroll", auDefilement, { passive: true });
+      window.addEventListener("resize", auDefilement);
+      evaluer();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", installer);
+    } else {
+      installer();
+    }
+  } catch (err) { /* dégradation silencieuse : l'absence du bouton ne casse rien */ }
+})();

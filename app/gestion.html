@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestion | Christ Livraison & Transport SARL</title>
@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260815i">
+<link rel="stylesheet" href="style.css?v=20260819rech1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -235,7 +235,7 @@
           <div class="field"><label>Date</label><input type="date" id="dep-date"></div>
           <div class="field" style="flex:1;min-width:180px;"><label>Libellé</label><input type="text" id="dep-libelle" placeholder="Ex. Carburant moto Franck"></div>
           <div class="field"><label>Catégorie</label>
-            <select id="dep-cat">
+            <select id="dep-cat" data-recherche data-recherche-placeholder="Catégorie…">
               <option value="">—</option>
               <optgroup label="Exploitation">
                 <option>Carburant</option>
@@ -422,7 +422,7 @@
         <div class="hint">Coffre-fort sécurisé pour les documents officiels de la société : registre de commerce (RCCM), déclaration fiscale d'existence, statuts, patente, assurances, contrats… Fichiers PDF ou images. Conservation privée (accès Comptabilité uniquement).</div>
         <div class="inline-form">
           <div class="field" style="min-width:210px;"><label>Type de document</label>
-            <select id="doc-e-type">
+            <select id="doc-e-type" data-recherche data-recherche-placeholder="Type de document…">
               <option value="Registre de commerce (RCCM)">Registre de commerce (RCCM)</option>
               <option value="Déclaration fiscale d'existence (DFE)">Déclaration fiscale d'existence (DFE)</option>
               <option value="Statuts de la société">Statuts de la société</option>
@@ -471,10 +471,10 @@
         <div class="hint">Coffre-fort sécurisé pour les pièces des salariés et livreurs : CNI, contrats, diplômes, attestations… Fichiers PDF ou images. Conservation privée (accès RH uniquement), consultables à tout moment.</div>
         <div class="inline-form">
           <div class="field" style="min-width:200px;"><label>Salarié concerné</label>
-            <select id="doc-p-salarie"><option value="">— Non lié / général —</option></select>
+            <select id="doc-p-salarie" data-recherche data-recherche-placeholder="Nom du salarié…"><option value="">— Non lié / général —</option></select>
           </div>
           <div class="field" style="min-width:190px;"><label>Type de pièce</label>
-            <select id="doc-p-type">
+            <select id="doc-p-type" data-recherche data-recherche-placeholder="Type de pièce…">
               <option value="Carte nationale d'identité">Carte nationale d'identité</option>
               <option value="Passeport">Passeport</option>
               <option value="Contrat de travail">Contrat de travail</option>
@@ -535,7 +535,7 @@
       <div class="card">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <h2 style="margin:0;">Fiche individuelle</h2>
-          <select id="etat-salarie" onchange="renderFicheIndividuelle()" style="min-width:220px;"></select>
+          <select id="etat-salarie" onchange="renderFicheIndividuelle()" data-recherche data-recherche-placeholder="Nom du salarié…" style="min-width:220px;"></select>
           <div class="spacer"></div>
           <button class="btn btn-outline btn-sm" onclick="exportFicheIndividuelle()">⬇️ Fiche (Excel)</button>
           <button class="btn btn-sm" onclick="pdfFicheIndividuelle()">📄 Fiche (PDF)</button>
@@ -622,10 +622,10 @@
       </div>
       <div class="field"><label>Nombre d'enfants</label><input type="number" id="sal-enfants" min="0" value="0"></div>
       <div class="field"><label>Nombre de parts</label><input type="number" id="sal-parts" min="1" step="0.5" value="1"></div>
-      <div class="field"><label>Catégorie</label><select id="sal-categorie"></select></div>
+      <div class="field"><label>Catégorie</label><select id="sal-categorie" data-recherche data-recherche-placeholder="Échelon…"></select></div>
       <div class="field"><label>Prime transport (FCFA, vide = défaut)</label><input type="number" id="sal-prime" step="1" placeholder="30000"></div>
       <div class="field"><label>RIB</label><input type="text" id="sal-rib"></div>
-      <div class="field"><label>Lié au compte livreur</label><select id="sal-livreur"><option value="">— Aucun —</option></select></div>
+      <div class="field"><label>Lié au compte livreur</label><select id="sal-livreur" data-recherche data-recherche-placeholder="Nom du livreur…"><option value="">— Aucun —</option></select></div>
       <div class="field"><label>Actif</label><select id="sal-actif"><option value="true">Oui</option><option value="false">Non</option></select></div>
     </div>
     <div class="modal-actions">
@@ -652,9 +652,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="clt-common.js?v=20260819saisie1"></script>
+<script src="clt-common.js?v=20260819rech1"></script>
 <script src="config.js?v=20260819saisie1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
+<script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script src="gestion.js?v=20260819saisie1"></script>
 </body>
 </html>

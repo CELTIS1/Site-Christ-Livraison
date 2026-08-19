@@ -3,6 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Sécurité — ajouté le 19 août 2026. C'était la seule page du site sans règle de
+     sécurité du contenu ni politique de référent. Elle est servie par le service worker
+     quand le réseau est coupé, donc rarement, mais elle reste une page du domaine.
+     La règle ci-dessous est volontairement plus stricte que celle des autres pages :
+     cette page ne charge STRICTEMENT RIEN de l'extérieur (styles et script en ligne,
+     polices système, aucune image). On interdit donc tout par défaut et on n'ouvre que
+     le strict nécessaire. img-src reste ouvert à 'self' uniquement pour la demande
+     automatique de favicon faite par le navigateur. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Hors-ligne — Christ Livraison &amp; Transport</title>
 <style>
   :root { --navy:#1B4374; --muted:#64748b; }

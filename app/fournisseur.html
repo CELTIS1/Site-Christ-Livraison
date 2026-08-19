@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Espace Client | Christ Livraison & Transport SARL</title>
@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260815i">
+<link rel="stylesheet" href="style.css?v=20260819rech1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -273,7 +273,7 @@
         <div class="field-row" style="margin-bottom:2px;">
           <div class="field">
             <label>📍 Commune de récupération</label>
-            <select id="batch-pickup-commune" required></select>
+            <select id="batch-pickup-commune" required data-recherche data-recherche-placeholder="Commune…"></select>
           </div>
           <div class="field">
             <label>Adresse précise (quartier, repère...)</label>
@@ -356,9 +356,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260819saisie1"></script>
+<script src="clt-common.js?v=20260819rech1"></script>
 <script src="config.js?v=20260819saisie1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
+<script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -544,7 +545,7 @@
         <div class="field-row">
           <div class="field">
             <label>Commune de destination</label>
-            <select class="row-commune-dest" required>${communesOptionsHTML('', 'Choisir une commune')}</select>
+            <select class="row-commune-dest" required data-recherche data-recherche-placeholder="Commune…">${communesOptionsHTML('', 'Choisir une commune')}</select>
           </div>
           <div class="field">
             <label>Précision (quartier, repère...)</label>
@@ -845,52 +846,29 @@
     document.getElementById('add-msg').innerHTML = `<div class="msg msg-${type}">${escapeHTML(text)}</div>`;
   }
 
-  // Compresse/redimensionne une photo avant l'envoi. Les photos des téléphones font souvent
-  // plusieurs Mo, ce qui rend l'ajout d'un colis long sur les données mobiles. On réduit la plus
-  // grande dimension à `maxDim` px et on ré-encode en JPEG : le poids chute fortement tout en
-  // gardant une qualité largement suffisante pour reconnaître le colis. En cas d'échec, on
-  // renvoie le fichier d'origine pour ne JAMAIS empêcher l'envoi.
-  async function compressImage(file, { maxDim = 1280, quality = 0.8 } = {}) {
-    try {
-      if (!file || !file.type || file.type.indexOf('image/') !== 0) return file;
-      const dataUrl = await new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = () => resolve(fr.result);
-        fr.onerror = reject;
-        fr.readAsDataURL(file);
-      });
-      const img = await new Promise((resolve, reject) => {
-        const im = new Image();
-        im.onload = () => resolve(im);
-        im.onerror = reject;
-        im.src = dataUrl;
-      });
-      let width = img.naturalWidth || img.width;
-      let height = img.naturalHeight || img.height;
-      if (!width || !height) return file;
-      if (Math.max(width, height) > maxDim) {
-        const ratio = maxDim / Math.max(width, height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width; canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
-      return (blob && blob.size < file.size) ? blob : file;
-    } catch (e) {
-      console.warn("Compression de la photo impossible, envoi de l'original :", e);
-      return file;
-    }
+  // Compression d'une photo avant l'envoi.
+  //
+  // L'implémentation vit désormais dans clt-common.js (cltCompressImage) : réduction de la plus
+  // grande dimension à `maxDim` px, ré-encodage JPEG, et retour du fichier D'ORIGINE dès que
+  // quoi que ce soit échoue. Cette page en gardait autrefois sa propre copie, mot pour mot ;
+  // elle a été supprimée le 19 août 2026 pour qu'une correction faite à un seul endroit profite
+  // à toutes les pages.
+  //
+  // Repli : si clt-common.js n'a pas pu être chargé, on renvoie la photo telle quelle. L'envoi
+  // sera plus lourd, mais il aboutira — l'ajout d'un colis ne doit JAMAIS être bloqué.
+  async function compressImage(file, options) {
+    if (typeof cltCompressImage !== 'function') return file;
+    return cltCompressImage(file, options);
   }
 
   async function uploadPhoto(file, userId){
+    const nomOrigine = file && file.name;
     file = await compressImage(file);
     // Extension déduite du type MIME (une image compressée devient un Blob JPEG sans nom de
-    // fichier), avec repli sur l'extension du nom d'origine puis sur "jpg".
-    const mimeExt = (file.type && file.type.split('/')[1]) ? file.type.split('/')[1].replace('jpeg', 'jpg') : null;
-    const nameExt = (file.name && file.name.indexOf('.') !== -1) ? file.name.split('.').pop() : null;
-    const ext = mimeExt || nameExt || 'jpg';
+    // fichier), avec repli sur l'extension du nom d'origine puis sur « jpg ».
+    const ext = (typeof cltExtensionFichier === 'function')
+      ? cltExtensionFichier(file, nomOrigine)
+      : ((file.type && file.type.split('/')[1]) || 'jpeg').replace('jpeg', 'jpg').toLowerCase();
     const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
     const { error } = await supabaseClient.storage.from('colis-photos').upload(path, file);
     if (error) { console.error(error); return null; }
@@ -1083,7 +1061,7 @@
             <div class="field-row">
               <div class="field">
                 <label>Commune de destination</label>
-                <select class="edit-commune-dest">${communesOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
+                <select class="edit-commune-dest" data-recherche data-recherche-placeholder="Commune…">${communesOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
               </div>
               <div class="field">
                 <label>Précision (quartier, repère...)</label>
@@ -1140,7 +1118,7 @@
             <div class="field-row">
               <div class="field">
                 <label>📍 Commune de récupération</label>
-                <select class="draft-pickup-commune">${communesOptionsHTML(c.commune_recuperation || '', 'Choisir une commune')}</select>
+                <select class="draft-pickup-commune" data-recherche data-recherche-placeholder="Commune…">${communesOptionsHTML(c.commune_recuperation || '', 'Choisir une commune')}</select>
               </div>
               <div class="field">
                 <label>Adresse précise (quartier, repère...)</label>
@@ -1154,7 +1132,7 @@
             <div class="field-row">
               <div class="field">
                 <label>Commune de destination</label>
-                <select class="draft-commune-dest">${communesOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
+                <select class="draft-commune-dest" data-recherche data-recherche-placeholder="Commune…">${communesOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
               </div>
               <div class="field">
                 <label>Précision (quartier, repère...)</label>

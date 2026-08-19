@@ -1247,3 +1247,171 @@ html[data-theme="dark"] .confirm-modal-icon{ background:color-mix(in srgb, var(-
   .clt-toast__bar{ display:none; }
   .confirm-modal-overlay, .confirm-modal{ animation:none; }
 }
+
+/* =====================================================================
+   LISTES DÉROULANTES AVEC RECHERCHE  (ajouté 2026-08-19)
+   Surcouche visuelle posée par clt-select-recherche.js par-dessus les
+   <select> marqués `data-recherche`. Le <select> d'origine reste dans la
+   page, transparent : c'est lui qui porte la valeur et la validation.
+   Le panneau est rattaché au <body> et positionné en `fixed` par le script,
+   afin de ne jamais être rogné par un tableau à débordement masqué.
+   ===================================================================== */
+.clt-rs{ position:relative; display:inline-block; vertical-align:top; }
+
+/* Le select d'origine : invisible mais bien présent et mesurable, pour que la
+   bulle « Veuillez sélectionner un élément » du navigateur s'affiche au bon
+   endroit. Surtout pas display:none — un champ obligatoire masqué ainsi bloque
+   l'envoi du formulaire sans message. */
+.clt-rs__natif{
+  position:absolute !important; left:0; top:0; width:100%; height:100%;
+  opacity:0; pointer-events:none; z-index:0; margin:0 !important;
+}
+
+/* Le champ visible. Il reprend trait pour trait l'allure d'un champ de
+   formulaire de l'app (.field select) pour que rien ne détonne. */
+.clt-rs__champ{
+  position:relative; z-index:1;
+  width:100%; display:flex; align-items:center; gap:8px;
+  padding:11px 13px; padding-right:34px;
+  border:1.5px solid var(--border-strong); border-radius:var(--radius-sm);
+  background:var(--white); color:inherit; font-size:14px; font-weight:500;
+  text-align:left; line-height:1.35; min-height:44px;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.clt-rs__champ:hover:not(:disabled){ border-color:var(--border-strong); }
+.clt-rs__champ:focus-visible,
+.clt-rs--ouvert .clt-rs__champ{
+  outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light);
+}
+.clt-rs__champ:disabled{ background:var(--grey-bg); color:var(--muted); cursor:not-allowed; }
+.clt-rs--invalide .clt-rs__champ{ border-color:#D64545; box-shadow:0 0 0 3px rgba(214,69,69,.14); }
+
+.clt-rs__libelle{
+  flex:1 1 auto; min-width:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.clt-rs__libelle--vide{ color:#9AA6B4; font-weight:400; }
+
+/* Chevron dessiné en CSS : pas d'image à charger, et il pivote à l'ouverture. */
+.clt-rs__chevron{
+  position:absolute; right:13px; top:50%; width:9px; height:9px;
+  border-right:2px solid var(--muted); border-bottom:2px solid var(--muted);
+  transform:translateY(-70%) rotate(45deg);
+  transition:transform .18s ease;
+}
+.clt-rs--ouvert .clt-rs__chevron{ transform:translateY(-25%) rotate(225deg); }
+
+/* ---------- Panneau ---------- */
+.clt-rs__panneau{
+  position:fixed; z-index:4000;
+  background:var(--white); border:1px solid var(--border);
+  border-radius:var(--radius); box-shadow:var(--shadow-lg);
+  display:flex; flex-direction:column; overflow:hidden;
+  animation:cltRsApparait .16s ease-out;
+}
+.clt-rs__panneau[hidden]{ display:none; }
+@keyframes cltRsApparait{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
+
+.clt-rs__barre{ position:relative; padding:10px 10px 8px; border-bottom:1px solid var(--border); flex:0 0 auto; }
+.clt-rs__barre[hidden]{ display:none; }
+.clt-rs__loupe{
+  position:absolute; left:22px; top:50%; transform:translateY(-55%);
+  font-size:13px; opacity:.55; pointer-events:none;
+}
+.clt-rs__saisie{
+  width:100%; padding:10px 12px 10px 34px;
+  border:1.5px solid var(--border-strong); border-radius:var(--radius-sm);
+  font-size:16px; background:var(--white); color:inherit;
+}
+.clt-rs__saisie:focus{ outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light); }
+.clt-rs__saisie::placeholder{ color:#a7b0bc; }
+
+.clt-rs__liste{ overflow-y:auto; overscroll-behavior:contain; padding:6px; flex:1 1 auto; -webkit-overflow-scrolling:touch; }
+
+.clt-rs__groupe{
+  padding:8px 10px 4px; font-size:11px; font-weight:700; letter-spacing:.04em;
+  text-transform:uppercase; color:var(--muted);
+}
+.clt-rs__option{
+  padding:11px 12px; border-radius:var(--radius-xs); font-size:14.5px;
+  cursor:pointer; white-space:normal; word-break:break-word; line-height:1.35;
+}
+.clt-rs__option--active{ background:var(--grey-bg); }
+.clt-rs__option--choisie{ font-weight:700; color:var(--navy); }
+.clt-rs__option--choisie::after{ content:' ✓'; color:var(--orange); }
+.clt-rs__option--vide{ color:var(--muted); font-style:italic; }
+.clt-rs__option--desactive{ opacity:.45; cursor:not-allowed; }
+.clt-rs__vide{ padding:18px 14px; text-align:center; color:var(--muted); font-size:13.5px; }
+.clt-rs__vide[hidden]{ display:none; }
+
+.clt-rs__voile{
+  position:fixed; inset:0; background:rgba(12,22,36,.42);
+  z-index:3999; animation:cltRsVoile .16s ease-out;
+}
+.clt-rs__voile[hidden]{ display:none; }
+@keyframes cltRsVoile{ from{ opacity:0; } to{ opacity:1; } }
+
+/* ---------- Sur téléphone : feuille qui monte du bas ----------
+   Un petit panneau flottant est difficile à viser au pouce, et le clavier
+   virtuel le recouvre. La feuille ancrée en bas règle les deux. */
+.clt-rs__panneau--feuille{
+  left:0 !important; right:0; bottom:0 !important; top:auto !important;
+  width:100% !important; max-height:72vh !important;
+  border-radius:20px 20px 0 0; border-left:none; border-right:none; border-bottom:none;
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+  animation:cltRsMonte .22s cubic-bezier(.22,1,.36,1);
+}
+@keyframes cltRsMonte{ from{ transform:translateY(100%); } to{ transform:none; } }
+.clt-rs__panneau--feuille .clt-rs__barre{ padding:14px 14px 10px; }
+.clt-rs__panneau--feuille .clt-rs__loupe{ left:26px; }
+.clt-rs__panneau--feuille .clt-rs__option{ padding:14px 12px; font-size:15.5px; }
+/* Poignée décorative, comme sur les feuilles natives d'iOS et d'Android. */
+.clt-rs__panneau--feuille::before{
+  content:''; display:block; width:38px; height:4px; border-radius:999px;
+  background:var(--border-strong); margin:8px auto 0; flex:0 0 auto;
+}
+.clt-rs__panneau--feuille.clt-rs__panneau--sans-barre::before{ margin-bottom:6px; }
+
+/* ---------- Mode sombre ---------- */
+html[data-theme="dark"] .clt-rs__champ{ background:#141D29; color:#E6ECF3; border-color:#2A3849; }
+html[data-theme="dark"] .clt-rs__champ:disabled{ background:#111925; color:#7E8CA0; }
+html[data-theme="dark"] .clt-rs__libelle--vide{ color:#7E8CA0; }
+html[data-theme="dark"] .clt-rs__panneau{ background:#1B2635; border-color:rgba(255,255,255,.08); }
+html[data-theme="dark"] .clt-rs__barre{ border-bottom-color:#2A3849; }
+html[data-theme="dark"] .clt-rs__saisie{ background:#141D29 !important; color:#E6ECF3; border-color:#2A3849; }
+html[data-theme="dark"] .clt-rs__option--active{ background:#243248; }
+html[data-theme="dark"] .clt-rs__option--choisie{ color:#8FB8EC; }
+html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
+
+@media (prefers-reduced-motion: reduce){
+  .clt-rs__panneau, .clt-rs__voile, .clt-rs__panneau--feuille{ animation:none; }
+  .clt-rs__chevron{ transition:none; }
+}
+
+/* =====================================================================
+   BOUTON « RETOUR EN HAUT »  (ajouté 2026-08-19)
+   Posé par clt-common.js sur les pages de l'application. Même allure que
+   celui du site public (index.html), pour une seule et même identité.
+   ===================================================================== */
+.clt-haut{
+  position:fixed; right:20px; bottom:22px; width:46px; height:46px; border-radius:50%;
+  background:var(--grad-navy); color:#FFFFFF; border:none;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 22px rgba(16,40,70,.28); z-index:1200; cursor:pointer;
+  opacity:0; visibility:hidden; transform:translateY(10px);
+  transition:opacity .25s ease, transform .25s ease, visibility .25s ease, box-shadow .2s ease;
+  padding:0;
+}
+.clt-haut.visible{ opacity:1; visibility:visible; transform:translateY(0); }
+.clt-haut:hover{ box-shadow:0 10px 26px rgba(16,40,70,.36); }
+.clt-haut:active{ transform:translateY(1px) scale(.95); }
+.clt-haut svg{ width:20px; height:20px; display:block; }
+@media (max-width:760px){ .clt-haut{ right:14px; width:44px; height:44px; } }
+/* Espaces livreur, client Express et coursier Express : une barre d'onglets de
+   60 px est fixée en bas de l'écran sur mobile. Le script ajoute cette classe
+   lorsqu'il en détecte une, pour que le bouton se pose juste au-dessus plutôt
+   que par-dessus. Les autres espaces gardent la position basse habituelle. */
+@media (max-width:760px){
+  .clt-haut--barre{ bottom:calc(74px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce){ .clt-haut{ transition:opacity .2s ease; transform:none; } }

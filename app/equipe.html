@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Tableau de bord Équipe | Christ Livraison & Transport SARL</title>
@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260815i">
+<link rel="stylesheet" href="style.css?v=20260819rech1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -409,7 +409,7 @@
 <div class="field-row">
 <div class="field">
 <label>Client</label>
-<select id="add-fournisseur" required>
+<select id="add-fournisseur" required data-recherche data-recherche-placeholder="Nom de la cliente…">
 <option value="">— Sélectionner —</option>
 </select>
 </div>
@@ -428,7 +428,7 @@
 <div class="field-row" style="margin-bottom:2px;">
 <div class="field">
 <label>📍 Commune de récupération</label>
-<select id="add-pickup-commune"></select>
+<select id="add-pickup-commune" data-recherche data-recherche-placeholder="Commune…"></select>
 </div>
 <div class="field">
 <label>Adresse précise (optionnel)</label>
@@ -540,7 +540,7 @@
 <div class="field-row">
 <div class="field">
 <label>Client</label>
-<select id="compta-fournisseur">
+<select id="compta-fournisseur" data-recherche data-recherche-placeholder="Nom de la cliente…">
 <option value="">Tous les clients</option>
 </select>
 </div>
@@ -738,7 +738,7 @@
     <form id="pickup-modal-form">
       <div style="text-align:left; margin-bottom:12px;">
         <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Commune</label>
-        <select id="pickup-modal-commune" required style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;"></select>
+        <select id="pickup-modal-commune" required data-recherche data-recherche-placeholder="Commune…" style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;"></select>
       </div>
       <div style="text-align:left; margin-bottom:16px;">
         <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Adresse précise (optionnel)</label>
@@ -784,9 +784,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260819saisie1"></script>
+<script src="clt-common.js?v=20260819rech1"></script>
 <script src="config.js?v=20260819saisie1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
+<script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1935,11 +1936,11 @@ ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c
 ${estValide ? '' : `
 <div class="field" style="margin-top:8px;">
 <label style="font-size:11.5px;">Livreur de collecte (récupération)</label>
-<select class="row-livreur-collecte-select" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurCollecteOptions}</select>
+<select class="row-livreur-collecte-select" data-recherche data-recherche-placeholder="Nom du livreur…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurCollecteOptions}</select>
 </div>
 <div class="field" style="margin-top:8px;">
 <label style="font-size:11.5px;">Livreur de livraison</label>
-<select class="row-livreur-select" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurOptions}</select>
+<select class="row-livreur-select" data-recherche data-recherche-placeholder="Nom du livreur…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurOptions}</select>
 </div>
 <div class="montant-block" style="margin-top:8px; max-width:340px;">
 <label style="font-size:11.5px;">Montants</label>
@@ -2078,7 +2079,7 @@ if (pending.length) {
 const options = '<option value="">Assigner collecte à…</option>' +
 livreurs.map(l => `<option value="${l.id}">${escapeHTML(l.full_name || l.id)}</option>`).join('');
 html += ` <span class="group-collecte-assign">
-<select class="select-assign-collecte">${options}</select>
+<select class="select-assign-collecte" data-recherche data-recherche-placeholder="Nom du livreur…">${options}</select>
 <button type="button" class="btn btn-sm btn-assign-collecte" data-fournisseur="${client.key}" data-day="${day.key}">Assigner (${pending.length})</button>
 </span>`;
 }

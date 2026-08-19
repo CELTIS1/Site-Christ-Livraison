@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Espace Livreur | Christ Livraison & Transport SARL</title>
@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260815i">
+<link rel="stylesheet" href="style.css?v=20260819rech1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -318,7 +318,7 @@
     <div class="tabs">
       <div class="tab active" id="tab-mes-colis" onclick="showTab('mes')">Mes colis assignés</div>
       <div class="tab" id="tab-recuperations" onclick="showTab('recup')">Récupérations <span class="alert-badge hidden" id="recup-badge">0</span></div>
-      <div class="tab" id="tab-tous-colis" onclick="showTab('tous')">Tous les colis</div>
+      <div class="tab" id="tab-tous-colis" onclick="showTab('tous')">Tout mon historique</div>
     </div>
 
     <div id="panel-mes">
@@ -342,6 +342,7 @@
     </div>
 
     <div id="panel-tous" class="hidden">
+      <div class="page-sub" style="margin:0 0 10px;">Tous les colis qui vous concernent — vos livraisons et vos récupérations, quel que soit leur statut. Vous ne voyez ici que vos propres colis : ceux des autres livreurs ne vous sont pas accessibles.</div>
       <div class="search-wrap"><input type="text" id="search-tous" class="search-input" placeholder="Rechercher par n° de suivi, téléphone, description, destination ou client..."></div>
       <div class="date-filter-wrap">
         <label for="filtre-date-tous">📅 Date</label>
@@ -356,7 +357,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260819saisie1"></script>
+<script src="clt-common.js?v=20260819rech1"></script>
 <script src="config.js?v=20260819saisie1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
@@ -536,54 +537,29 @@
     });
   })();
 
-  // Compresse/redimensionne une photo avant l'envoi. Les photos des téléphones font souvent
-  // plusieurs Mo, ce qui rend l'envoi long sur les données mobiles (surtout en zone à faible
-  // réseau). On réduit la plus grande dimension à `maxDim` px et on ré-encode en JPEG : le poids
-  // chute fortement tout en gardant une qualité largement suffisante pour une preuve de livraison.
-  // En cas d'échec (format non image, navigateur ancien...), on renvoie le fichier d'origine
-  // pour ne JAMAIS empêcher l'envoi.
-  async function compressImage(file, { maxDim = 1280, quality = 0.8 } = {}) {
-    try {
-      if (!file || !file.type || !file.type.indexOf || file.type.indexOf('image/') !== 0) return file;
-      const dataUrl = await new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = () => resolve(fr.result);
-        fr.onerror = reject;
-        fr.readAsDataURL(file);
-      });
-      const img = await new Promise((resolve, reject) => {
-        const im = new Image();
-        im.onload = () => resolve(im);
-        im.onerror = reject;
-        im.src = dataUrl;
-      });
-      let width = img.naturalWidth || img.width;
-      let height = img.naturalHeight || img.height;
-      if (!width || !height) return file;
-      if (Math.max(width, height) > maxDim) {
-        const ratio = maxDim / Math.max(width, height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width; canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
-      // On ne garde la version compressée que si elle est réellement plus légère.
-      return (blob && blob.size < file.size) ? blob : file;
-    } catch (e) {
-      console.warn("Compression de la photo impossible, envoi de l'original :", e);
-      return file;
-    }
+  // Compression d'une photo avant l'envoi.
+  //
+  // L'implémentation vit désormais dans clt-common.js (cltCompressImage) : réduction de la plus
+  // grande dimension à `maxDim` px, ré-encodage JPEG, et retour du fichier D'ORIGINE dès que
+  // quoi que ce soit échoue. Cette page en gardait autrefois sa propre copie, mot pour mot ;
+  // elle a été supprimée le 19 août 2026 pour qu'une correction faite à un seul endroit profite
+  // à toutes les pages (c'est ce doublon qui avait fait oublier la page équipe pendant des mois).
+  //
+  // Repli : si clt-common.js n'a pas pu être chargé, on renvoie la photo telle quelle. L'envoi
+  // sera plus lourd, mais il aboutira — une preuve de livraison ne doit JAMAIS être bloquée.
+  async function compressImage(file, options) {
+    if (typeof cltCompressImage !== 'function') return file;
+    return cltCompressImage(file, options);
   }
 
   async function uploadPhoto(file, userId, onProgress){
+    const nomOrigine = file && file.name;
     file = await compressImage(file);
     // Extension déduite du type MIME (une image compressée devient un Blob JPEG sans nom de
-    // fichier), avec repli sur l'extension du nom d'origine puis sur "jpg".
-    const mimeExt = (file.type && file.type.split('/')[1]) ? file.type.split('/')[1].replace('jpeg', 'jpg') : null;
-    const nameExt = (file.name && file.name.indexOf('.') !== -1) ? file.name.split('.').pop() : null;
-    const ext = mimeExt || nameExt || 'jpg';
+    // fichier), avec repli sur l'extension du nom d'origine puis sur « jpg ».
+    const ext = (typeof cltExtensionFichier === 'function')
+      ? cltExtensionFichier(file, nomOrigine)
+      : ((file.type && file.type.split('/')[1]) || 'jpeg').replace('jpeg', 'jpg').toLowerCase();
     const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
 
     // Sans callback de progression (ex : synchronisation hors-ligne en tâche de fond), on
@@ -875,7 +851,7 @@
     `;
   }
 
-  // Ligne en lecture seule pour "Tous les colis"
+  // Ligne en lecture seule pour « Tout mon historique »
   function tousColisItemHTML(c, numeroClient){
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
@@ -1151,6 +1127,10 @@
     return ` <button type="button" class="btn btn-sm btn-recuperer-tout-collecte" data-fournisseur="${client.key}" data-day="${day.key}" style="margin-left:8px;">📦 Récupéré, tout (${enAttente.length})</button>`;
   }
 
+  // Pas de capturePendingEdits ici, contrairement à « Mes colis assignés » : cette liste ne
+  // contient aucun champ de saisie (ni menu de statut, ni zone d'observation), uniquement des
+  // boutons d'action. Il n'y a donc rien à préserver quand le temps réel reconstruit la liste ;
+  // seule la position de défilement mérite d'être conservée.
   function renderRecuperations(){
     const list = document.getElementById('recup-colis-list');
     if (!list) return;
@@ -1248,6 +1228,8 @@
     restoreScrollAnchor(list, __anchor);
   }
 
+  // Comme « Récupérations », cette liste est strictement en lecture seule (voir tousColisItemHTML :
+  // aucun input, select ni textarea). capturePendingEdits n'y aurait donc rien à sauvegarder.
   function renderTousColis(){
     const list = document.getElementById('tous-colis-list');
     const __anchor = captureScrollAnchor(list);
@@ -1267,7 +1249,7 @@
     restoreScrollAnchor(list, __anchor);
   }
 
-  // Ajoute, si nécessaire, le bouton "Charger plus" en bas de la liste "Tous les colis".
+  // Ajoute, si nécessaire, le bouton « Charger plus » en bas de la liste « Tout mon historique ».
   function appendColisLoadMore(list){
     if (!colisHasMore) return;
     list.insertAdjacentHTML('beforeend', `
@@ -1321,9 +1303,18 @@
     data.forEach(p => { profilesById[p.id] = p; });
   }
 
-  // Charge la première page de colis (les plus récents). Le livreur voit l'ensemble des colis
-  // (choix intentionnel de l'équipe) ; tant que l'historique complet n'a pas été rapatrié via
-  // "Charger plus", les listes "Mes colis" et "Tous les colis" ne portent que sur ce sous-ensemble.
+  // Charge la première page de colis (les plus récents).
+  //
+  // Attention, ce commentaire disait autrefois que « le livreur voit l'ensemble des colis (choix
+  // intentionnel de l'équipe) ». Ce n'est PLUS vrai depuis le 19 août 2026 : la règle d'accès
+  // colis_select_livreur, en base, ne renvoie au livreur que les colis dont il est le livreur
+  // (livreur_id) ou le récupérateur (livreur_collecte_id). La requête ci-dessous demande donc
+  // « tous les colis », mais le serveur ne renvoie que les siens — c'est voulu, et c'est la
+  // base qui l'impose, pas le navigateur. L'onglet correspondant s'appelle pour cette raison
+  // « Tout mon historique » et non plus « Tous les colis ».
+  //
+  // Tant que l'historique complet n'a pas été rapatrié via « Charger plus », les trois listes ne
+  // portent que sur ce sous-ensemble.
   async function loadColis(){
     colisOffset = 0;
     colisHasMore = true;
