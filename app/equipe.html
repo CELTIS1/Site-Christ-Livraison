@@ -784,8 +784,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260817compress1"></script>
-<script src="config.js?v=20260817compress1"></script>
+<script src="clt-common.js?v=20260819saisie1"></script>
+<script src="config.js?v=20260819saisie1"></script>
 <script src="biometric-lock.js?v=20260816seq2"></script>
 <script>
 let currentUser = null;
@@ -2249,6 +2249,9 @@ if (window.__colisEditing) window.__colisEditing.delete(id);
 const idx = allColis.findIndex(c => c.id === id);
 if (idx !== -1) Object.assign(allColis[idx], updatePayload);
 renderColis();
+// La saisie est enregistrée : la zone redevient « propre » et le rafraîchissement de fond
+// qui patientait éventuellement peut repartir immédiatement.
+cltSaisieEnregistree(list);
 });
 });
 
@@ -2321,6 +2324,9 @@ populateMoisSelect();
 renderCompta();
 renderAujourdhui();
 restoreScrollAnchor(list, __anchor);
+// Nouvelle référence de saisie : tout ce qui sera modifié après ce point est considéré comme
+// « non enregistré » et protège la zone contre les rafraîchissements de fond (voir config.js).
+cltMarquerBaseSaisie(list);
 }
 
 // Charge la première page de colis (les plus récents). Les statistiques (alertes, récap,
@@ -2350,6 +2356,18 @@ allColis = data;
 colisOffset = data.length;
 colisHasMore = data.length === COLIS_PAGE_SIZE;
 renderColis();
+}
+
+// Version « de fond » de loadColis() : c'est celle qu'utilisent Realtime, le rafraîchissement
+// périodique et le retour au premier plan. Elle s'efface tant que quelqu'un est en train de
+// saisir quelque chose dans la liste (livreur choisi, montant corrigé, case cochée…), et repart
+// toute seule dès que la zone est de nouveau propre. Voir config.js pour le détail.
+// Les appels directs à loadColis() / renderColis() faits APRÈS une action de la personne
+// (enregistrement, filtre, recherche) restent volontairement immédiats.
+async function loadColisEnFond(){
+const list = document.getElementById('colis-list');
+if (cltDifferSiSaisie(list, loadColisEnFond)) return;
+await loadColis();
 }
 
 async function loadMoreColis(){
@@ -4290,7 +4308,7 @@ __teamRefreshing = true;
 try {
 const tasks = [loadPending(), loadResetRequests(), loadFournisseurs(), loadLivreurs()];
 // On ne réinitialise pas la pagination des colis si l'équipe a chargé des pages supplémentaires.
-if (typeof colisOffset === 'number' && colisOffset <= COLIS_PAGE_SIZE) tasks.push(loadColis());
+if (typeof colisOffset === 'number' && colisOffset <= COLIS_PAGE_SIZE) tasks.push(loadColisEnFond());
 await Promise.allSettled(tasks);
 } catch (e) { console.error('refreshTeamLists', e); }
 finally { __teamRefreshing = false; }
@@ -4308,7 +4326,7 @@ if (rt && typeof rt.connect === 'function' && !rt.isConnected()) rt.connect();
 supabaseClient.getChannels().forEach(ch => { if (ch.state !== 'joined') { try { ch.subscribe(); } catch (e) {} } });
 } catch (e) { console.error('reconnectRealtime', e); }
 try {
-const tasks = [loadColis(), loadPending(), loadResetRequests(), loadFournisseurs(), loadLivreurs()];
+const tasks = [loadColisEnFond(), loadPending(), loadResetRequests(), loadFournisseurs(), loadLivreurs()];
 if (isAdmin) tasks.push(loadAllAccounts());
 await Promise.allSettled(tasks);
 } catch (e) { console.error('reconnectRealtimeAndRefresh', e); }
@@ -4452,7 +4470,7 @@ initColisDraftAutosave();
 trackChannel(supabaseClient
 .channel('colis-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, () => {
-loadColis();
+loadColisEnFond();
 })
 .subscribe());
 

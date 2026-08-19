@@ -125,9 +125,20 @@ async function logout() {
 // session. En forçant un rechargement complet dès qu'une page restaurée de cette façon est
 // détectée, requireAuth() est systématiquement relancé et renvoie vers la connexion si la
 // session n'existe plus.
+// CORRECTION DU 19 AOÛT 2026 — on ne recharge plus à l'aveugle.
+// Le rechargement systématique protégeait bien contre le cas ci-dessus, mais il détruisait
+// aussi, à chaque retour dans l'app, TOUT ce qui était en cours de saisie. Or basculer vers
+// une autre application est le geste le plus banal du métier : on ouvre WhatsApp pour demander
+// l'adresse exacte du destinataire, on revient — et le formulaire était vide. C'est la cause
+// principale du « on doit ressaisir deux ou trois fois avant que ça passe » signalé par
+// l'exploitation.
+// Le besoin réel n'est pas « recharger », c'est « vérifier que la session est toujours là ».
+// On fait donc exactement cela : si la session a disparu (déconnexion entre-temps, expiration),
+// on quitte la page protégée comme avant ; si elle est toujours valide, il n'y a aucune raison
+// de recharger quoi que ce soit et la saisie en cours est préservée.
 window.addEventListener("pageshow", (event) => {
   if (!event.persisted) return;
-  // On ne force le rechargement QUE sur les pages protégées (tableaux de bord) : c'est là,
+  // On ne contrôle QUE sur les pages protégées (tableaux de bord) : c'est là,
   // et seulement là, qu'une page restaurée depuis le cache mémoire pourrait ré-afficher un
   // espace connecté après une déconnexion. La page de connexion (login.html), elle, est
   // publique et n'a aucune raison d'être rechargée : la recharger inutilement provoquait,
@@ -138,9 +149,22 @@ window.addEventListener("pageshow", (event) => {
     "equipe.html", "livreur.html", "fournisseur.html",
     "express-client.html", "express-coursier.html",
   ];
-  if (_protectedPages.includes(_page)) {
-    window.location.reload();
-  }
+  if (!_protectedPages.includes(_page)) return;
+
+  supabaseClient.auth.getSession()
+    .then(({ data: { session } }) => {
+      if (!session) {
+        // Plus de session : la page affichée n'a plus lieu d'être, on sort immédiatement.
+        window.location.replace("login.html");
+      }
+      // Session toujours valide : on ne touche à rien. Les pages se chargent de reconnecter
+      // Realtime de leur côté (voir reconnectRealtimeAndRefresh sur equipe.html).
+    })
+    .catch(() => {
+      // Impossible de statuer (réseau coupé au mauvais moment) : on reste prudent côté
+      // sécurité et on recharge, comme avant ce correctif.
+      window.location.reload();
+    });
 });
 
 // ---------- Présence en ligne (qui est connecté en ce moment) ----------
@@ -464,6 +488,174 @@ function restoreScrollAnchor(container, anchor) {
   if (!newItem) return;
   const delta = newItem.getBoundingClientRect().top - anchor.top;
   if (delta) window.scrollBy(0, delta);
+}
+
+// ---------- Protection de la saisie en cours pendant les rafraîchissements ----------
+// LE PROBLÈME (signalé le 19 août 2026)
+// « Quand on enregistre un colis ou qu'on fait une modification, ça s'actualise et les
+//   données saisies disparaissent. On doit ressaisir deux ou trois fois avant que ça passe. »
+//
+// POURQUOI
+// Les listes de colis sont redessinées d'un bloc (list.innerHTML = ...) à partir des données
+// du serveur. Or ces listes ne contiennent pas que de l'affichage : chaque carte de colis
+// embarque un mini-formulaire (livreur de collecte, livreur de livraison, statut, montant
+// article, montant livraison, cases « payé », observation…). Quand le redessin part, il
+// détruit les champs du DOM et les recrée à partir de l'état serveur — donc TOUT ce qui a
+// été tapé ou choisi sans être encore enregistré retourne à sa valeur d'origine.
+//
+// Ce redessin est déclenché en arrière-plan, sans que la personne ne fasse quoi que ce soit :
+//   • Realtime, à chaque changement sur la table colis — sur equipe.html l'abonnement porte
+//     sur TOUTE la table : chaque livreur qui change un statut sur le terrain fait sauter la
+//     saisie en cours de la personne au bureau ;
+//   • le filet de sécurité périodique (setInterval toutes les 25 s) ;
+//   • le retour au premier plan (visibilitychange / focus / online / pageshow) — typiquement
+//     quelqu'un qui bascule sur WhatsApp pour demander une adresse et revient.
+//
+// D'où la sensation de « il faut s'y reprendre à deux ou trois fois » : ce n'est pas
+// l'enregistrement qui échoue, c'est la saisie qui est effacée avant d'avoir pu être envoyée.
+//
+// LA RÈGLE RETENUE
+// On ne bloque JAMAIS un redessin demandé par la personne elle-même (elle vient d'enregistrer,
+// de filtrer, de rechercher : elle veut voir le résultat tout de suite). On ne diffère que les
+// rafraîchissements de FOND, et uniquement tant qu'il y a quelque chose à perdre. Dès que la
+// zone est de nouveau « propre », le rafraîchissement en attente part tout seul. Et pour que
+// personne ne reste devant des données périmées sans le savoir, une pastille discrète
+// « Mise à jour disponible » s'affiche pendant l'attente, avec la possibilité de forcer.
+//
+// Mode d'emploi sur une page :
+//   1. à la fin de la fonction de rendu :        cltMarquerBaseSaisie(conteneur);
+//   2. en tête de chaque rafraîchissement de fond : if (cltDifferSiSaisie(conteneur, moi)) return;
+//   3. juste après un enregistrement réussi :     cltSaisieEnregistree(conteneur);
+
+// Les champs dont la valeur doit être surveillée.
+const CLT_CHAMPS_SAISIE = "input, select, textarea";
+
+// Valeur courante d'un champ, sous forme de texte comparable.
+function __cltValeurChamp(el) {
+  if (el.type === "checkbox" || el.type === "radio") return el.checked ? "1" : "0";
+  if (el.type === "file") return el.files && el.files.length ? "fichier" : "";
+  return el.value == null ? "" : String(el.value);
+}
+
+// À appeler à la FIN de chaque fonction de rendu : on photographie la valeur de départ de
+// chaque champ, pour pouvoir détecter ensuite ce que la personne a modifié sans enregistrer.
+function cltMarquerBaseSaisie(conteneur) {
+  if (!conteneur) return;
+  conteneur.querySelectorAll(CLT_CHAMPS_SAISIE).forEach(el => {
+    el.dataset.cltBase = __cltValeurChamp(el);
+  });
+}
+
+// À appeler juste après un enregistrement réussi : ce qui est à l'écran devient la nouvelle
+// référence, la zone redevient « propre » et les rafraîchissements en attente peuvent partir.
+function cltSaisieEnregistree(conteneur) {
+  cltMarquerBaseSaisie(conteneur);
+  __cltRelancerSiPropre(conteneur);
+}
+
+// Y a-t-il, dans cette zone, une saisie qu'un redessin ferait disparaître ?
+function cltSaisieEnCours(conteneur) {
+  if (!conteneur) return false;
+  // 1. La personne a le curseur dans un champ de la zone : on ne lui coupe pas les mains.
+  const actif = document.activeElement;
+  if (actif && actif !== document.body && conteneur.contains(actif) && actif.matches(CLT_CHAMPS_SAISIE)) {
+    return true;
+  }
+  // 2. Un champ a été modifié sans être enregistré (cas du livreur choisi puis laissé en
+  //    attente pendant qu'on cherche l'adresse : le curseur n'est plus dedans, mais la
+  //    sélection serait bel et bien perdue).
+  for (const el of conteneur.querySelectorAll(CLT_CHAMPS_SAISIE)) {
+    if (el.dataset.cltBase !== undefined && __cltValeurChamp(el) !== el.dataset.cltBase) return true;
+  }
+  return false;
+}
+
+// Mémoire des rafraîchissements mis en attente, par zone.
+const __cltAttentes = new WeakMap();
+
+// En tête d'un rafraîchissement de FOND. Renvoie true si le rafraîchissement a été mis en
+// attente (l'appelant doit alors abandonner) ; false s'il peut se poursuivre normalement.
+function cltDifferSiSaisie(conteneur, relancer) {
+  if (!conteneur) return false;
+  if (!cltSaisieEnCours(conteneur)) {
+    __cltMasquerPastille(conteneur);
+    return false;
+  }
+  __cltAttentes.set(conteneur, relancer);
+  __cltPastilleMiseAJour(conteneur);
+  __cltSurveillerFinDeSaisie(conteneur);
+  return true;
+}
+
+// Une fois la zone redevenue propre, on rejoue le rafraîchissement qui attendait.
+function __cltRelancerSiPropre(conteneur) {
+  const relancer = __cltAttentes.get(conteneur);
+  if (!relancer) return;
+  if (cltSaisieEnCours(conteneur)) return;
+  __cltAttentes.delete(conteneur);
+  __cltMasquerPastille(conteneur);
+  try { relancer(); } catch (e) { console.error("Rafraîchissement différé :", e); }
+}
+
+// On réexamine la zone après chaque interaction (sortie de champ, frappe, changement), avec
+// un petit délai pour ne pas se déclencher entre deux touches.
+function __cltSurveillerFinDeSaisie(conteneur) {
+  if (conteneur.dataset.cltSurveille === "1") return;
+  conteneur.dataset.cltSurveille = "1";
+  let minuteur = null;
+  const revoir = () => {
+    clearTimeout(minuteur);
+    minuteur = setTimeout(() => __cltRelancerSiPropre(conteneur), 900);
+  };
+  conteneur.addEventListener("focusout", revoir);
+  conteneur.addEventListener("input", revoir);
+  conteneur.addEventListener("change", revoir);
+}
+
+// ---- Pastille « Mise à jour disponible » -----------------------------------------------
+// Discrète, en bas de l'écran, pour que personne ne reste devant des données figées sans le
+// savoir. Le bouton force le rafraîchissement : on prévient alors clairement que la saisie
+// en cours sera perdue, puisque c'est exactement ce que la pastille protégeait.
+function __cltPastilleMiseAJour(conteneur) {
+  let pastille = document.getElementById("clt-pastille-maj");
+  if (!pastille) {
+    pastille = document.createElement("div");
+    pastille.id = "clt-pastille-maj";
+    pastille.setAttribute("role", "status");
+    pastille.style.cssText =
+      "position:fixed; left:50%; transform:translateX(-50%); bottom:18px; z-index:9000;" +
+      "display:flex; align-items:center; gap:10px; padding:9px 14px; border-radius:999px;" +
+      "background:#1f2937; color:#fff; font-size:13px; line-height:1.3;" +
+      "box-shadow:0 6px 20px rgba(0,0,0,.28); max-width:calc(100vw - 24px);";
+    pastille.innerHTML =
+      '<span>🔄 Mise à jour disponible — votre saisie est conservée</span>' +
+      '<button type="button" id="clt-pastille-maj-btn" style="' +
+      "background:#fff; color:#1f2937; border:0; border-radius:999px; padding:5px 11px;" +
+      'font-size:12.5px; font-weight:700; cursor:pointer;">Actualiser</button>';
+    document.body.appendChild(pastille);
+  }
+  const btn = document.getElementById("clt-pastille-maj-btn");
+  if (btn) {
+    btn.onclick = async () => {
+      const ok = await cltConfirm({
+        title: "Actualiser maintenant ?",
+        sub: "Ce que vous avez saisi sans l'enregistrer sera remplacé par les données du serveur.",
+        okLabel: "Actualiser",
+        cancelLabel: "Continuer ma saisie",
+      });
+      if (!ok) return;
+      const relancer = __cltAttentes.get(conteneur);
+      __cltAttentes.delete(conteneur);
+      __cltMasquerPastille(conteneur);
+      if (relancer) relancer();
+    };
+  }
+  pastille.style.display = "flex";
+}
+
+function __cltMasquerPastille() {
+  const pastille = document.getElementById("clt-pastille-maj");
+  if (pastille) pastille.style.display = "none";
 }
 
 // formatDate() → déplacé dans clt-common.js (chargé avant ce fichier).

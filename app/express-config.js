@@ -153,9 +153,16 @@ window.addEventListener("beforeunload", () => {
 });
 
 // Empêche qu'une page protégée réapparaisse depuis le cache mémoire du navigateur (bfcache)
-// après une déconnexion (même logique que config.js).
+// après une déconnexion (même logique que config.js, y compris le correctif du 19 août 2026 :
+// on vérifie la session au lieu de recharger à l'aveugle, pour ne plus effacer la saisie en
+// cours de la personne qui revient d'une autre application).
 window.addEventListener("pageshow", (event) => {
-  if (event.persisted) window.location.reload();
+  if (!event.persisted) return;
+  supabaseClient.auth.getSession()
+    .then(({ data: { session } }) => {
+      if (!session) window.location.replace("express-login.html");
+    })
+    .catch(() => window.location.reload());
 });
 
 // escapeHTML(), formatDate(), formatMontant(), isValidPhoneCI()
