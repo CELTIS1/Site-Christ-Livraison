@@ -445,21 +445,73 @@ function isValidMontant(value) {
   return !isNaN(num) && num >= 0;
 }
 
+// Reconnaît le refus de la base quand une saisie de colis part deux fois (double appui, réseau
+// lent, brouillon renvoyé). On exige que ce soit bien la clé de saisie (cle_creation) qui soit en
+// double : une autre contrainte d'unicité — le numéro de colis, par exemple — reste une vraie
+// erreur qu'il faut montrer telle quelle, et non un doublon inoffensif.
+function estDoublonCleCreation(error) {
+  if (!error) return false;
+  const texte = [error.message, error.details, error.hint].filter(Boolean).join(' ').toLowerCase();
+  if (!texte.includes("cle_creation")) return false;
+  return error.code === "23505" || texte.includes("duplicate") || texte.includes("unique");
+}
+
 // Traduit les erreurs techniques (Postgres, Edge Functions) en messages compréhensibles.
+// Règle de conduite : dire ce qui s'est passé ET quoi faire ensuite. Un message que personne
+// ne comprend pousse à ressaisir, donc à créer des doublons ou à abandonner une opération.
 function friendlyErrorMessage(message) {
   const m = (message || "").toLowerCase();
+
+  // Doublon : le message dépend de CE QUI est en double. Auparavant, toute erreur d'unicité
+  // annonçait « ce numéro de téléphone est déjà utilisé », y compris pour un colis — ce qui
+  // était incompréhensible pour la personne devant l'écran.
   if (m.includes("duplicate") || m.includes("already") || m.includes("unique")) {
-    return "Ce numéro de téléphone est déjà utilisé par un autre compte.";
+    if (m.includes("cle_creation")) {
+      return "Ce colis avait déjà été enregistré : il n'a pas été créé une seconde fois.";
+    }
+    if (m.includes("email")) {
+      return "Cette adresse e-mail est déjà utilisée par un autre compte.";
+    }
+    if (m.includes("phone") || m.includes("telephone") || m.includes("already registered") || m.includes("user already")) {
+      return "Ce numéro de téléphone est déjà utilisé par un autre compte.";
+    }
+    return "Cet enregistrement existe déjà : rien n'a été créé en double.";
+  }
+
+  // Message d'échec de connexion le plus courant, jusqu'ici affiché en anglais sur l'écran de
+  // connexion — c'est-à-dire au pire moment, à quelqu'un qui n'entre pas encore dans l'app.
+  if (m.includes("invalid login credentials") || m.includes("invalid credentials")) {
+    return "Numéro ou mot de passe incorrect. Vérifiez votre saisie puis réessayez.";
   }
   if (m.includes("phone") && (m.includes("invalid") || m.includes("format"))) {
     return "Le numéro de téléphone n'est pas dans un format valide.";
   }
-  if (m.includes("password") && m.includes("short")) {
+  // Supabase écrit « Password should be at least 6 characters » : le seul test sur « short »
+  // laissait donc passer le message en anglais, qui est justement le plus fréquent à la création
+  // d'un compte.
+  if (m.includes("password") && (m.includes("short") || m.includes("at least") || m.includes("caract"))) {
     return "Le mot de passe est trop court (6 caractères minimum).";
   }
-  if (m.includes("network") || m.includes("fetch")) {
-    return "Problème de connexion réseau. Vérifiez votre connexion et réessayez.";
+
+  // Droits insuffisants (RLS) : sans traduction, l'application semble « ne rien faire ».
+  if (m.includes("row-level security") || m.includes("row level security")
+      || m.includes("permission denied") || m.includes("not authorized")
+      || m.includes("insufficient")) {
+    return "Vous n'avez pas les droits nécessaires pour cette action. Si cela vous semble anormal, prévenez la gestion.";
   }
+
+  // Session expirée : le geste utile est de rouvrir l'application, pas de réessayer en boucle.
+  if (m.includes("jwt") || m.includes("token") || (m.includes("session") && m.includes("expir"))) {
+    return "Votre session a expiré. Fermez puis rouvrez l'application, et reconnectez-vous si besoin.";
+  }
+
+  // Réseau. « load failed » est le message de Safari sur iPhone, très courant pour les livreurs :
+  // sans lui, l'erreur la plus fréquente du terrain s'affichait en anglais et sans conseil.
+  if (m.includes("network") || m.includes("fetch") || m.includes("load failed")
+      || m.includes("timeout") || m.includes("timed out") || m.includes("aborted")) {
+    return "Problème de connexion. Vérifiez votre réseau puis réessayez.";
+  }
+
   return message || "Une erreur inattendue s'est produite.";
 }
 

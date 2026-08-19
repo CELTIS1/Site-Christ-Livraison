@@ -441,6 +441,14 @@ html[data-theme="dark"] .colis-item[data-statut="retour"]:hover{border-color:#5C
   border:1px solid #f0d09a; border-radius:var(--radius-xs); padding:3px 10px; font-size:11.5px; font-weight:700;
   margin-bottom:8px;
 }
+/* Mise à jour définitivement refusée ou en conflit avec une modification de l'équipe : le
+   livreur doit la voir tout de suite, d'où le rouge plutôt que l'orange de l'attente. */
+.offline-queue-banner--bloquee{
+  background:#fdecea; border-color:#e9b0a8; color:#9a2b1c;
+}
+.sync-blocked-badge{
+  background:#fdecea; border-color:#e9b0a8; color:#9a2b1c;
+}
 
 /* ---------- LOGIN ---------- */
 .login-page{

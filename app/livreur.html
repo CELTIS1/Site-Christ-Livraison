@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260819rech1">
+<link rel="stylesheet" href="style.css?v=20260819fiab1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -364,7 +364,7 @@
 </div>
 
 <script src="clt-common.js?v=20260819rech1"></script>
-<script src="config.js?v=20260819saisie1"></script>
+<script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -611,7 +611,11 @@
   // et on la synchronise automatiquement dès que la connexion revient.
   const OFFLINE_DB_NAME = 'livreur-offline-queue';
   const OFFLINE_STORE = 'updates';
+  // Au-delà de ce nombre de tentatives, on cesse de réessayer en boucle : la mise à jour est
+  // signalée au livreur plutôt que de rester invisible dans la file. Voir flushOfflineQueue().
+  const QUEUE_MAX_TENTATIVES = 3;
   let pendingSyncIds = new Set();
+  let blockedSyncIds = new Set();
   let syncInProgress = false;
 
   function openQueueDB(){
@@ -629,6 +633,16 @@
   }
 
   async function queueAdd(entry){
+    // On mémorise l'état du colis tel que le livreur l'avait sous les yeux au moment où il a
+    // enregistré. C'est ce qui permettra, au retour du réseau, de détecter que quelqu'un d'autre
+    // (l'équipe, en général) a modifié le même colis entre-temps, au lieu de l'écraser en silence.
+    try {
+      const vu = allColis.find(c => c.id === entry.colisId);
+      if (vu) {
+        if (vu.updated_at) entry.baseUpdatedAt = vu.updated_at;
+        entry.baseStatut = vu.statut || null;
+      }
+    } catch(e) { /* si la liste n'est pas encore chargée, on enverra sans contrôle de conflit */ }
     const db = await openQueueDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(OFFLINE_STORE, 'readwrite');
@@ -658,55 +672,194 @@
     });
   }
 
+  // Réécrit une entrée déjà présente (pour mémoriser le nombre de tentatives, un blocage
+  // ou un conflit). On garde la même clé : l'ordre d'envoi n'est pas modifié.
+  async function queuePut(entry){
+    const db = await openQueueDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(OFFLINE_STORE, 'readwrite');
+      tx.objectStore(OFFLINE_STORE).put(entry);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  // Distingue une coupure réseau (on réessaiera, rien n'est perdu) d'un refus définitif du
+  // serveur (droits, colis supprimé, colonne inconnue). Cette distinction est ce qui évite
+  // qu'une seule entrée fautive bloque indéfiniment toutes celles qui la suivent.
+  function estPanneReseau(err){
+    if (!navigator.onLine) return true;
+    if (!err) return false;
+    if (err.status === 0 || err.status === 408 || err.status === 502
+        || err.status === 503 || err.status === 504) return true;
+    const m = String(err.message || err.error_description || err).toLowerCase();
+    return m.includes('fetch') || m.includes('network') || m.includes('networkerror')
+        || m.includes('load failed') || m.includes('timeout') || m.includes('délai');
+  }
+
   async function refreshOfflineBanner(){
     let entries = [];
     try { entries = await queueGetAll(); } catch(e) { console.error(e); }
-    pendingSyncIds = new Set(entries.map(e => e.colisId));
+    const bloquees = entries.filter(e => e.bloquee);
+    const enAttente = entries.filter(e => !e.bloquee);
+    pendingSyncIds = new Set(enAttente.map(e => e.colisId));
+    blockedSyncIds = new Set(bloquees.map(e => e.colisId));
     const banner = document.getElementById('offline-queue-banner');
     const text = document.getElementById('offline-queue-text');
     if (banner && text) {
       if (entries.length === 0) {
         banner.classList.add('hidden');
+        banner.classList.remove('offline-queue-banner--bloquee');
       } else {
         banner.classList.remove('hidden');
-        const n = entries.length;
-        const label = navigator.onLine
-          ? 'Connexion revenue : synchronisation en cours…'
-          : 'Enregistré sur cet appareil — sera envoyé dès le retour de la connexion.';
-        text.textContent = `📶 ${n} mise${n > 1 ? 's' : ''} à jour en attente. ${label}`;
+        banner.classList.toggle('offline-queue-banner--bloquee', bloquees.length > 0);
+        const parts = [];
+        if (enAttente.length) {
+          const n = enAttente.length;
+          const label = navigator.onLine
+            ? 'Connexion revenue : synchronisation en cours…'
+            : 'Enregistré sur cet appareil — sera envoyé dès le retour de la connexion.';
+          parts.push(`📶 ${n} mise${n > 1 ? 's' : ''} à jour en attente. ${label}`);
+        }
+        if (bloquees.length) {
+          const n = bloquees.length;
+          parts.push(`⚠️ ${n} mise${n > 1 ? 's' : ''} à jour n'${n > 1 ? 'ont' : 'a'} pas pu être enregistrée${n > 1 ? 's' : ''} : le${n > 1 ? 's' : ''} colis concerné${n > 1 ? 's' : ''} est signalé${n > 1 ? 's' : ''} dans la liste. Prévenez l'équipe.`);
+        }
+        text.textContent = parts.join(' ');
       }
     }
     renderAll();
   }
 
+  // Envoie UNE entrée de la file. Renvoie :
+  //   'ok'      : envoyée, l'entrée peut être supprimée de la file ;
+  //   'reseau'  : la connexion a lâché — inutile de continuer, on reprendra plus tard ;
+  //   'conflit' : le colis a été modifié par quelqu'un d'autre depuis l'enregistrement ;
+  //   'refus'   : le serveur a refusé pour une raison qui ne se réglera pas toute seule.
+  async function flushUneEntree(entry){
+    let photo_livraison_url = entry.photo_livraison_url;
+    if (entry.photoBlob) {
+      const uploaded = await uploadPhoto(entry.photoBlob, entry.userId);
+      if (uploaded) {
+        photo_livraison_url = uploaded;
+      } else if (!navigator.onLine) {
+        return 'reseau';
+      } else if ((entry.tentatives || 0) + 1 < QUEUE_MAX_TENTATIVES) {
+        return 'reseau';
+      } else {
+        // La photo ne passe décidément pas. Le statut de livraison compte davantage qu'une preuve
+        // photo : on envoie quand même la mise à jour, et on le dit au livreur.
+        entry.photoAbandonnee = true;
+      }
+    }
+
+    // La photo vient peut-être d'être envoyée à l'instant : on garde son adresse dans l'entrée,
+    // sinon l'affichage local retomberait sur l'ancienne valeur (vide) après la synchronisation.
+    entry.photo_livraison_url = photo_livraison_url;
+
+    const flushPayload = { statut: entry.statut, observation: entry.observation, photo_livraison_url };
+    if (entry.clearCollecteDepart) flushPayload.collecte_depart_at = null;
+    if (entry.extra) Object.assign(flushPayload, entry.extra); // code_confirme_at, tentatives_livraison, ...
+
+    let requete = supabaseClient.from('colis').update(flushPayload).eq('id', entry.colisId);
+    // Écriture conditionnelle : on n'écrase que si le colis n'a pas bougé depuis. Tant que la
+    // colonne updated_at n'existe pas en base, baseUpdatedAt est absent et l'envoi se fait
+    // comme avant, sans contrôle — l'app continue donc de fonctionner sans la migration.
+    if (entry.baseUpdatedAt) requete = requete.eq('updated_at', entry.baseUpdatedAt);
+
+    let data = null, error = null;
+    try {
+      ({ data, error } = await requete.select('id'));
+    } catch (e) {
+      return estPanneReseau(e) ? 'reseau' : 'refus';
+    }
+    if (error) return estPanneReseau(error) ? 'reseau' : 'refus';
+
+    if (Array.isArray(data) && data.length === 0) {
+      // Aucune ligne touchée. Soit le colis a changé entre-temps, soit l'écriture est bien
+      // passée mais la relecture nous est refusée. On va vérifier avant de crier au conflit.
+      try {
+        const { data: actuel } = await supabaseClient.from('colis')
+          .select('statut').eq('id', entry.colisId).maybeSingle();
+        if (actuel && actuel.statut === entry.statut) return 'ok'; // déjà à jour : rien à signaler
+        if (actuel) { entry.statutServeur = actuel.statut; return 'conflit'; }
+      } catch (e) {
+        if (estPanneReseau(e)) return 'reseau';
+      }
+      return 'conflit';
+    }
+    return 'ok';
+  }
+
+  // Message de conflit nommant le colis et les deux statuts en présence : un avertissement vague
+  // (« un colis a été modifié ») obligerait le livreur à deviner lequel, donc serait ignoré.
+  function decrireConflit(entry){
+    const colis = allColis.find(c => c.id === entry.colisId);
+    const nom = colis && colis.numero ? `Colis ${colis.numero}` : 'Un colis';
+    const libelle = s => (typeof STATUTS !== 'undefined' && s && STATUTS[s]) ? STATUTS[s].label : s;
+    const cote = entry.statutServeur && entry.statutServeur !== entry.baseStatut
+      ? ` Il est passé à « ${libelle(entry.statutServeur)} » de leur côté.`
+      : '';
+    // Certaines entrées ne portent pas de statut (bascule « livraison payée » seule).
+    const maj = entry.statut ? `Votre mise à jour « ${libelle(entry.statut)} »` : 'Votre modification';
+    return `${nom} a été modifié par l'équipe pendant que vous étiez hors réseau.${cote} ${maj} n'a pas été appliquée, pour ne pas effacer la leur — vérifiez ce colis avec l'équipe.`;
+  }
+
   async function flushOfflineQueue(){
     if (syncInProgress || !navigator.onLine) return;
     syncInProgress = true;
+    const avertissements = [];
     try {
       const entries = await queueGetAll();
       for (const entry of entries) {
-        let photo_livraison_url = entry.photo_livraison_url;
-        if (entry.photoBlob) {
-          const uploaded = await uploadPhoto(entry.photoBlob, entry.userId);
-          if (!uploaded) break; // toujours hors-ligne ou échec réseau : on réessaiera plus tard
-          photo_livraison_url = uploaded;
+        if (entry.bloquee) continue; // déjà signalée au livreur : on n'insiste plus, mais on ne bloque personne
+        let issue;
+        try {
+          issue = await flushUneEntree(entry);
+        } catch (e) {
+          console.error('Synchronisation hors-ligne :', e);
+          issue = estPanneReseau(e) ? 'reseau' : 'refus';
         }
-        const flushPayload = { statut: entry.statut, observation: entry.observation, photo_livraison_url };
-        if (entry.clearCollecteDepart) flushPayload.collecte_depart_at = null;
-        if (entry.extra) Object.assign(flushPayload, entry.extra); // code_confirme_at, tentatives_livraison, ...
-        const { error } = await supabaseClient.from('colis')
-          .update(flushPayload)
-          .eq('id', entry.colisId);
-        if (error) break; // échec réseau probable : on réessaiera plus tard
-        await queueDelete(entry.key);
-        const idx = allColis.findIndex(c => c.id === entry.colisId);
-        if (idx !== -1) Object.assign(allColis[idx], { statut: entry.statut, observation: entry.observation, photo_livraison_url }, entry.extra || {});
+
+        // Une coupure réseau est le seul cas où l'on arrête tout : rien ne sert d'insister,
+        // et rien n'est perdu. Tous les autres cas sont traités entrée par entrée.
+        if (issue === 'reseau') {
+          entry.tentatives = (entry.tentatives || 0) + 1;
+          await queuePut(entry);
+          break;
+        }
+
+        if (issue === 'ok') {
+          await queueDelete(entry.key);
+          const idx = allColis.findIndex(c => c.id === entry.colisId);
+          if (idx !== -1) Object.assign(allColis[idx],
+            { statut: entry.statut, observation: entry.observation, photo_livraison_url: entry.photo_livraison_url },
+            entry.extra || {});
+          if (entry.photoAbandonnee) {
+            avertissements.push("Une mise à jour est bien partie, mais sa photo de livraison n'a pas pu être envoyée.");
+          }
+          continue;
+        }
+
+        // 'conflit' ou 'refus' : on ne réessaie pas indéfiniment, et surtout on passe à la suite.
+        entry.tentatives = (entry.tentatives || 0) + 1;
+        entry.motif = issue;
+        if (issue === 'conflit' || entry.tentatives >= QUEUE_MAX_TENTATIVES) {
+          entry.bloquee = true;
+          avertissements.push(issue === 'conflit'
+            ? decrireConflit(entry)
+            : "Une mise à jour a été refusée par le serveur après plusieurs essais. Prévenez l'équipe.");
+        }
+        await queuePut(entry);
       }
     } catch (e) {
       console.error('Synchronisation hors-ligne :', e);
     } finally {
       syncInProgress = false;
       await refreshOfflineBanner();
+      if (avertissements.length && window.cltToast) {
+        cltToast([...new Set(avertissements)].join(' '), { type: 'warning', duration: 9000 });
+      }
     }
   }
 
@@ -836,7 +989,9 @@
           </div>
         </div>
         <div class="status-col">
-          ${pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : ''}
+          ${blockedSyncIds.has(c.id)
+            ? `<div class="sync-pending-badge sync-blocked-badge">⚠️ Non enregistré — prévenez l'équipe</div>`
+            : (pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : '')}
           <select class="status-select">${statutOptions}</select>
           <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Livraison payée ?'}</button>
           <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
@@ -1003,7 +1158,7 @@
             if (existing) Object.assign(existing, { statut, observation, photo_livraison_url }, extra);
           } catch (e) {
             console.error(e);
-            alert("Erreur : " + error.message + "\n\nDe plus, la mise en file d'attente hors-ligne a échoué. Merci de réessayer.");
+            alert(friendlyErrorMessage(error.message) + " De plus, la mise en attente hors connexion a échoué : cette mise à jour n'est PAS enregistrée, merci de la refaire.");
           }
           await refreshOfflineBanner();
           return;
@@ -1077,7 +1232,7 @@
           } catch (e) {
             console.error(e);
             btn.textContent = prevText;
-            alert("Erreur : " + error.message);
+            alert(friendlyErrorMessage(error.message));
             return;
           }
           renderAll();
@@ -1171,7 +1326,7 @@
         const nowIso = new Date().toISOString();
         const { error } = await supabaseClient.from('colis').update({ collecte_depart_at: nowIso }).in('id', ids);
         btn.disabled = false; btn.textContent = originalLabel;
-        if (error) { alert("Erreur : " + error.message); return; }
+        if (error) { alert(friendlyErrorMessage(error.message)); return; }
         ids.forEach(id => {
           const idx = allColis.findIndex(c => c.id === id);
           if (idx !== -1) allColis[idx].collecte_depart_at = nowIso;
@@ -1219,7 +1374,7 @@
         // à "récupéré" — voir supabase_livreur_collecte.sql.
         const { error } = await supabaseClient.from('colis').update({ statut: 'recupere', collecte_depart_at: null }).in('id', ids);
         if (error) {
-          alert("Erreur : " + error.message);
+          alert(friendlyErrorMessage(error.message));
           btn.disabled = false; btn.textContent = originalLabel;
           return;
         }

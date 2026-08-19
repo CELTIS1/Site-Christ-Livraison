@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260819rech1">
+<link rel="stylesheet" href="style.css?v=20260819fiab1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -831,7 +831,7 @@
 </div>
 
 <script src="clt-common.js?v=20260819rech1"></script>
-<script src="config.js?v=20260819saisie1"></script>
+<script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
@@ -1230,6 +1230,25 @@ document.getElementById('add-livreur-msg').innerHTML = `<div class="msg msg-${ty
 const COLIS_DRAFT_KEY = 'clt_equipe_colis_draft';
 let colisDraftSaveTimer = null;
 
+/* Clé d'identité de la saisie en cours.
+   Elle est engendrée une seule fois par colis saisi et envoyée à la base avec le colis. Si le même
+   envoi part deux fois (connexion lente, double appui sur « Ajouter », page rechargée puis brouillon
+   restauré), la base refuse le second et le colis n'existe qu'une fois. La clé n'est renouvelée
+   qu'après un enregistrement réussi : tant que l'envoi échoue, réessayer garde la même identité. */
+let cleColisCourante = null;
+
+function nouvelleCleColis(){
+try {
+if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+} catch(e) { /* environnement sans crypto : on retombe sur la solution ci-dessous */ }
+return 'c-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+
+function cleColisEnCours(){
+if (!cleColisCourante) cleColisCourante = nouvelleCleColis();
+return cleColisCourante;
+}
+
 function getColisDraftFields(){
 const pickupAdresseEl = document.getElementById('add-pickup-adresse');
 return {
@@ -1238,7 +1257,8 @@ destination: document.getElementById('add-dest').value,
 pickup_adresse: pickupAdresseEl ? pickupAdresseEl.value : '',
 montant_article: document.getElementById('add-montant-article').value,
 montant_livraison: document.getElementById('add-montant-livraison').value,
-description: document.getElementById('add-desc').value
+description: document.getElementById('add-desc').value,
+cle: cleColisEnCours()
 };
 }
 
@@ -1293,6 +1313,9 @@ btnRestore.type = 'button';
 btnRestore.className = 'btn btn-sm';
 btnRestore.textContent = 'Restaurer';
 btnRestore.addEventListener('click', () => {
+// On reprend la clé d'origine de la saisie : si l'envoi d'avant le rechargement avait en fait
+// abouti, réenvoyer ce brouillon ne créera pas un second colis.
+if (draft.cle) cleColisCourante = draft.cle;
 if (draft.fournisseur_id) document.getElementById('add-fournisseur').value = draft.fournisseur_id;
 document.getElementById('add-dest').value = draft.destination || '';
 fillPickupForSelectedFournisseur();
@@ -1508,7 +1531,7 @@ btn.addEventListener('click', async () => {
 const id = btn.closest('.colis-item').dataset.id;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('profiles').update({ status: 'valide' }).eq('id', id);
-if (error) { alert("Erreur : " + error.message); btn.disabled = false; btn.textContent = 'Valider'; return; }
+if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; btn.textContent = 'Valider'; return; }
 await loadPending();
 });
 });
@@ -1526,7 +1549,7 @@ const ok = await showConfirm({
 if (!ok) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('profiles').update({ status: 'rejete' }).eq('id', id);
-if (error) { alert("Erreur : " + error.message); btn.disabled = false; btn.textContent = 'Rejeter'; return; }
+if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; btn.textContent = 'Rejeter'; return; }
 await loadPending();
 });
 });
@@ -1827,25 +1850,37 @@ const livreurCollectePropose = clienteCollecteDriverToday(fournisseur_id);
 
 const colisPayload = {
 fournisseur_id, destination, description, montant, montant_article, montant_livraison, photo_url,
-commune_recuperation, adresse_recuperation, destinataire_telephone
+commune_recuperation, adresse_recuperation, destinataire_telephone,
+cle_creation: cleColisEnCours()
 };
 if (livreurCollectePropose) colisPayload.livreur_collecte_id = livreurCollectePropose;
 let { error } = await supabaseClient.from('colis').insert([colisPayload]);
-// Rétro-compatibilité : si la colonne destinataire_telephone n'existe pas encore
-// (migration SQL pas encore exécutée), on réessaie sans ce champ pour ne jamais
-// bloquer l'enregistrement du colis. Le téléphone sera simplement ignoré tant
-// que la migration n'est pas lancée.
-if (error && /destinataire_telephone|column|colonne/i.test(error.message || '')) {
-const { destinataire_telephone: _omit, ...sansTel } = colisPayload;
-({ error } = await supabaseClient.from('colis').insert([sansTel]));
+// Rétro-compatibilité : si une de ces colonnes n'existe pas encore (migration SQL pas encore
+// exécutée), on réessaie sans ces champs pour ne jamais bloquer l'enregistrement du colis.
+// Ils seront simplement ignorés tant que la migration n'est pas lancée.
+if (error && /destinataire_telephone|cle_creation|column|colonne/i.test(error.message || '')) {
+const { destinataire_telephone: _omitTel, cle_creation: _omitCle, ...sansExtras } = colisPayload;
+({ error } = await supabaseClient.from('colis').insert([sansExtras]));
 }
 
 btn.disabled = false; btn.textContent = 'Ajouter le colis';
+
+// Doublon refusé par la base : ce colis avait déjà été enregistré par un envoi précédent qui
+// semblait avoir échoué. Il existe bien, une seule fois — on traite donc ce refus comme un succès
+// plutôt que d'afficher une erreur qui pousserait à ressaisir le colis.
+let dejaEnregistre = false;
+if (estDoublonCleCreation(error)) {
+dejaEnregistre = true;
+error = null;
+}
 
 if (error) {
 addMsg(friendlyErrorMessage(error.message), "error");
 return;
 }
+
+// Le colis est en base : la saisie suivante doit repartir sur une nouvelle identité.
+cleColisCourante = null;
 
 // Mémorise ce lieu de récupération comme valeur par défaut pour ce client (pratique s'il récupère
 // souvent au même endroit), sans jamais modifier les colis déjà enregistrés.
@@ -1861,7 +1896,9 @@ f.adresse_recuperation = adresse_recuperation;
 }
 
 const photoWarning = photoUploadFailed ? " (attention : l'envoi de la photo a échoué, le colis a été enregistré sans photo)" : "";
-addMsg(`Colis ajouté avec succès${photoWarning}.`, "success");
+addMsg(dejaEnregistre
+? `Ce colis était déjà enregistré (envoi précédent qui avait abouti) : il n'a pas été créé une seconde fois${photoWarning}.`
+: `Colis ajouté avec succès${photoWarning}.`, dejaEnregistre ? "info" : "success");
 e.target.reset();
 fillPickupForSelectedFournisseur();
 clearColisDraft();
@@ -2336,7 +2373,7 @@ if (!okDelete) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('colis').delete().eq('id', id);
 if (error) {
-alert("Erreur : " + error.message);
+alert(friendlyErrorMessage(error.message));
 btn.disabled = false; btn.textContent = originalText;
 return;
 }
@@ -2603,7 +2640,7 @@ if (!okPromote) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('profiles').update({ role: 'admin' }).eq('id', id);
 if (error) {
-alert("Erreur : " + error.message);
+alert(friendlyErrorMessage(error.message));
 btn.disabled = false; btn.textContent = '⭐ Promouvoir admin';
 return;
 }
@@ -2633,7 +2670,7 @@ const ok = await showConfirm({
 if (!ok) return;
 btn.disabled = true;
 const { error } = await supabaseClient.from('profiles').update({ [champ]: !actif }).eq('id', id);
-if (error) { alert("Erreur : " + error.message); btn.disabled = false; return; }
+if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; return; }
 try {
 await supabaseClient.from('activity_log').insert([{ action: (!actif ? 'acces_gestion_accorde' : 'acces_gestion_retire'), details: { champ, full_name: account && account.full_name, phone: account && account.phone } }]);
 } catch (e) { /* non bloquant */ }
@@ -2710,7 +2747,7 @@ const isUnhelpful = !raw || raw === '{}' || raw === '[object Object]' || raw.toL
 const msg = isUnhelpful
   ? "La suppression a échoué et le serveur n'a pas renvoyé de détail exploitable. Cela peut venir d'éléments encore liés à ce compte (colis, historique, etc.) côté serveur, ou d'une erreur technique de la fonction de suppression. Réessayez, et si le problème persiste, consultez les journaux (logs) de la fonction 'admin-supprimer-compte' dans le tableau de bord Supabase."
   : raw;
-alert("Erreur : " + msg);
+alert(friendlyErrorMessage(msg));
 btn.disabled = false; btn.textContent = '🗑 Supprimer';
 }
 });
@@ -2858,7 +2895,10 @@ if (!data.length) {
 box.innerHTML = `<div class="empty-state">Aucune activité enregistrée.</div>`;
 return;
 }
-box.innerHTML = data.map(activityRowHTML).join('');
+// Le journal est volontairement limité aux 200 dernières activités (c'est un fil de suivi, pas
+// une archive). On l'écrit à l'écran plutôt que de laisser croire que tout y figure.
+box.innerHTML = data.map(activityRowHTML).join('')
++ (data.length >= 200 ? `<div style="margin-top:8px; font-size:.9em; color:#666;">Seules les 200 activités les plus récentes sont affichées.</div>` : '');
 }
 
 let recapExpanded = false;
@@ -3512,19 +3552,29 @@ loadRemisesHistorique();
 }
 
 // Historique des remises de caisse (dernières remises + écart), lecture seule.
+// L'affichage est paginé : les plus récentes d'abord, avec un bouton pour remonter plus loin.
+// Auparavant la liste s'arrêtait à 30 sans rien dire : une remise plus ancienne devenait
+// invisible, et rien à l'écran ne laissait deviner qu'il en existait d'autres.
+const REMISES_PAR_PAGE = 30;
+let remisesHistoriqueLimite = REMISES_PAR_PAGE;
+
 async function loadRemisesHistorique(){
 const box = document.getElementById('remises-historique');
 if (!box) return;
+// On demande un élément de plus que ce qu'on affiche : sa présence indique qu'il reste
+// de l'historique à charger, sans avoir à compter toute la table.
 const { data, error } = await supabaseClient
 .from('remises_caisse')
 .select('id, livreur_id, montant_attendu, montant_remis, ecart, nb_colis, note, created_at')
 .order('created_at', { ascending: false })
-.limit(30);
+.limit(remisesHistoriqueLimite + 1);
 if (error){
 box.innerHTML = `<div class="empty-state">Historique indisponible pour le moment.</div>`;
 return;
 }
-const rows = data || [];
+const toutes = data || [];
+const resteAcharger = toutes.length > remisesHistoriqueLimite;
+const rows = resteAcharger ? toutes.slice(0, remisesHistoriqueLimite) : toutes;
 if (!rows.length){
 box.innerHTML = `<div class="empty-state">Aucune remise enregistrée pour l'instant.</div>`;
 return;
@@ -3551,12 +3601,27 @@ return `<tr>
 }).join('')}
 </tbody>
 </table>
+<div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:.9em; color:#666;">
+<span>${rows.length} remise(s) affichée(s)${resteAcharger ? '' : ' — tout l\'historique est là.'}</span>
+${resteAcharger ? `<button type="button" class="btn btn-sm btn-outline" id="remises-plus">Afficher ${REMISES_PAR_PAGE} de plus</button>` : ''}
+</div>
 `;
+const btnPlus = document.getElementById('remises-plus');
+if (btnPlus) btnPlus.addEventListener('click', () => {
+remisesHistoriqueLimite += REMISES_PAR_PAGE;
+btnPlus.disabled = true; btnPlus.textContent = 'Chargement…';
+loadRemisesHistorique();
+});
 }
 
 // ---- Clôture de journée : fige un résumé complet du jour (Correctif 5) ------
 // Le calcul est fait côté serveur par la fonction cloturer_journee (source de
 // vérité). Ici on déclenche la clôture et on affiche l'historique en lecture.
+// Même principe que pour les remises : on affiche les journées les plus récentes et on permet
+// de remonter plus loin, au lieu de couper l'historique à 30 jours en silence.
+const CLOTURES_PAR_PAGE = 30;
+let cloturesHistoriqueLimite = CLOTURES_PAR_PAGE;
+
 async function loadCloturesHistorique(){
 const box = document.getElementById('clotures-historique');
 if (!box) return;
@@ -3564,12 +3629,14 @@ const { data, error } = await supabaseClient
 .from('clotures_journee')
 .select('jour, recette_totale, nb_total, nb_livres, nb_recuperes, nb_en_attente, remises_total, ecarts_total, argent_non_remis, detail_livreurs, note, updated_at')
 .order('jour', { ascending: false })
-.limit(30);
+.limit(cloturesHistoriqueLimite + 1);
 if (error){
 box.innerHTML = `<div class="empty-state">Historique des clôtures indisponible pour le moment.</div>`;
 return;
 }
-const rows = data || [];
+const toutes = data || [];
+const resteAcharger = toutes.length > cloturesHistoriqueLimite;
+const rows = resteAcharger ? toutes.slice(0, cloturesHistoriqueLimite) : toutes;
 if (!rows.length){
 box.innerHTML = `<div class="empty-state">Aucune journée clôturée pour l'instant.</div>`;
 return;
@@ -3607,7 +3674,17 @@ return `
 </table>
 ${r.note ? `<div style="margin-top:8px; font-style:italic; color:var(--muted,#666);">Note : ${escapeHTML(r.note)}</div>` : ''}
 </details>`;
-}).join('');
+}).join('') + `
+<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:.9em; color:#666;">
+<span>${rows.length} journée(s) affichée(s)${resteAcharger ? '' : ' — tout l\'historique est là.'}</span>
+${resteAcharger ? `<button type="button" class="btn btn-sm btn-outline" id="clotures-plus">Afficher ${CLOTURES_PAR_PAGE} de plus</button>` : ''}
+</div>`;
+const btnPlusClotures = document.getElementById('clotures-plus');
+if (btnPlusClotures) btnPlusClotures.addEventListener('click', () => {
+cloturesHistoriqueLimite += CLOTURES_PAR_PAGE;
+btnPlusClotures.disabled = true; btnPlusClotures.textContent = 'Chargement…';
+loadCloturesHistorique();
+});
 }
 
 (function initCloture(){
@@ -4117,7 +4194,7 @@ const id = btn.closest('.colis-item').dataset.id;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('express_courses').update({ commission_reglee: true }).eq('id', id);
 if (error) {
-alert("Erreur : " + error.message);
+alert(friendlyErrorMessage(error.message));
 btn.disabled = false; btn.textContent = '✅ Commission reçue';
 return;
 }
@@ -4244,7 +4321,7 @@ const id = btn.closest('.colis-item').dataset.id;
 if (!(await showConfirm({ title: 'Valider cette recharge ?', sub: 'Le solde du coursier sera crédité immédiatement.', okLabel: 'Valider' }))) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('express_recharges').update({ status: 'validee' }).eq('id', id).eq('status', 'en_attente');
-if (error) { alert('Erreur : ' + error.message); btn.disabled = false; btn.textContent = '✅ Valider'; return; }
+if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; btn.textContent = '✅ Valider'; return; }
 await loadExpressRecharges();
 });
 });
@@ -4254,7 +4331,7 @@ const id = btn.closest('.colis-item').dataset.id;
 if (!(await showConfirm({ title: 'Refuser cette recharge ?', sub: 'Le solde ne sera pas crédité.', okLabel: 'Refuser', danger: true }))) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('express_recharges').update({ status: 'refusee' }).eq('id', id).eq('status', 'en_attente');
-if (error) { alert('Erreur : ' + error.message); btn.disabled = false; btn.textContent = 'Refuser'; return; }
+if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; btn.textContent = 'Refuser'; return; }
 await loadExpressRecharges();
 });
 });

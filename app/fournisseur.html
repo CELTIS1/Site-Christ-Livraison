@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260819rech1">
+<link rel="stylesheet" href="style.css?v=20260819fiab1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -330,6 +330,9 @@
       <div class="empty-state">Chargement...</div>
     </div>
     <div id="releve-detail" style="margin-top:12px;"></div>
+    <!-- Historique des reversements : quand, combien, sur combien de colis. Reste vide tant que
+         la vue historique_reversements_fournisseur n'existe pas en base (dégradation gracieuse). -->
+    <div id="releve-historique" style="margin-top:14px;"></div>
   </div>
 
   <div class="card" id="section-recap">
@@ -372,7 +375,7 @@
 </div>
 
 <script src="clt-common.js?v=20260819rech1"></script>
-<script src="config.js?v=20260819saisie1"></script>
+<script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
@@ -549,9 +552,19 @@
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
 
-  function newRowHTML(idx){
+  // Chaque ligne de colis porte une clé unique, engendrée ici et conservée dans le brouillon.
+  // C'est elle qui empêche qu'un même colis parte deux fois si la connexion traîne et que la
+  // personne recharge la page pour recommencer : la base refuse la seconde insertion.
+  function nouvelleCleColis(){
+    try {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    } catch(e) { /* navigateur ancien : on retombe sur la méthode ci-dessous */ }
+    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+  }
+
+  function newRowHTML(idx, cle){
     return `
-      <div class="colis-row" data-row="${idx}">
+      <div class="colis-row" data-row="${idx}" data-cle="${cle || nouvelleCleColis()}">
         ${idx > 0 ? `<button type="button" class="remove-row" onclick="removeRow(${idx})">Retirer ✕</button>` : ''}
         <div class="field">
           <label>Description du colis</label>
@@ -662,8 +675,8 @@
     });
   }
 
-  function addRow(){
-    document.getElementById('colis-rows').insertAdjacentHTML('beforeend', newRowHTML(rowCount));
+  function addRow(cle){
+    document.getElementById('colis-rows').insertAdjacentHTML('beforeend', newRowHTML(rowCount, cle));
     const row = document.querySelector(`.colis-row[data-row="${rowCount}"]`);
     if (row) { wireMontantPreview(row); wireAutoPrix(row); }
     rowCount++;
@@ -713,6 +726,9 @@
     document.querySelectorAll('.colis-row').forEach(row => {
       const v = sel => { const el = row.querySelector(sel); return el ? el.value : ''; };
       lignes.push({
+        // La clé suit le brouillon : si la page est rechargée en cours de saisie, la ligne
+        // restaurée garde la même identité et ne pourra pas créer un colis en double.
+        cle:               row.dataset.cle || '',
         description:       v('.row-desc'),
         commune_dest:      v('.row-commune-dest'),
         destination:       v('.row-dest'),
@@ -763,7 +779,7 @@
 
     document.getElementById('colis-rows').innerHTML = '';
     rowCount = 0;
-    draft.lignes.forEach(() => addRow());
+    draft.lignes.forEach(l => addRow(l && l.cle ? l.cle : null));
     if (!rowCount) addRow();
 
     const rows = document.querySelectorAll('.colis-row');
@@ -976,21 +992,40 @@
         adresse_recuperation: adresse_recuperation || null,
         destinataire_telephone,
         code_confirmation,
+        cle_creation: row.dataset.cle || null,
       });
     }
 
     let { error } = await supabaseClient.from('colis').insert(inserts);
     // Rétro-compatibilité : si l'une des colonnes récentes (destinataire_telephone,
-    // code_confirmation) n'existe pas encore (migration SQL pas lancée), on réessaie sans
-    // ces champs pour ne jamais bloquer l'enregistrement des colis.
-    if (error && /destinataire_telephone|code_confirmation|column|colonne/i.test(error.message || '')) {
-      const insertsSansExtras = inserts.map(({ destinataire_telephone, code_confirmation, ...rest }) => rest);
+    // code_confirmation, cle_creation) n'existe pas encore (migration SQL pas lancée), on
+    // réessaie sans ces champs pour ne jamais bloquer l'enregistrement des colis.
+    if (error && /destinataire_telephone|code_confirmation|cle_creation|column|colonne/i.test(error.message || '')) {
+      const insertsSansExtras = inserts.map(({ destinataire_telephone, code_confirmation, cle_creation, ...rest }) => rest);
       ({ error } = await supabaseClient.from('colis').insert(insertsSansExtras));
     }
     btn.disabled = false; btn.textContent = 'Enregistrer les colis';
 
+    // Doublon détecté par la base : au moins un de ces colis avait déjà été enregistré lors
+    // d'un envoi précédent qui semblait avoir échoué (connexion lente, page rechargée).
+    // L'insertion est refusée en bloc par Postgres : on identifie donc ce qui existe déjà et
+    // on n'enregistre que le reste, pour ne perdre aucun colis réellement nouveau.
+    let dejaEnregistres = 0;
+    if (estDoublonCleCreation(error)) {
+      const cles = inserts.map(i => i.cle_creation).filter(Boolean);
+      const { data: existantes, error: errLecture } = await supabaseClient
+        .from('colis').select('cle_creation').in('cle_creation', cles);
+      if (!errLecture) {
+        const connues = new Set((existantes || []).map(r => r.cle_creation));
+        const restants = inserts.filter(i => !connues.has(i.cle_creation));
+        dejaEnregistres = inserts.length - restants.length;
+        error = null;
+        if (restants.length) ({ error } = await supabaseClient.from('colis').insert(restants));
+      }
+    }
+
     if (error) {
-      addMsg("Erreur lors de l'enregistrement : " + error.message, "error");
+      addMsg("Erreur lors de l'enregistrement : " + friendlyErrorMessage(error.message), "error");
       return;
     }
 
@@ -1006,7 +1041,18 @@
     }
 
     const photoWarning = photoUploadFailed ? " (attention : l'envoi d'au moins une photo a échoué, le colis a été enregistré sans photo)" : "";
-    addMsg(`${inserts.length} colis enregistré(s) avec succès${photoWarning}.`, "success");
+    // Si un envoi précédent avait en réalité abouti, on l'annonce clairement plutôt que de donner
+    // un total qui ne correspondrait pas à ce qui vient réellement d'être créé.
+    const nouveaux = inserts.length - dejaEnregistres;
+    let messageSucces;
+    if (dejaEnregistres === 0) {
+      messageSucces = `${inserts.length} colis enregistré(s) avec succès${photoWarning}.`;
+    } else if (nouveaux === 0) {
+      messageSucces = `Ces ${dejaEnregistres} colis étaient déjà enregistrés (envoi précédent qui avait abouti) : ils n'ont pas été créés une seconde fois${photoWarning}.`;
+    } else {
+      messageSucces = `${nouveaux} colis enregistré(s) avec succès. ${dejaEnregistres} l'étaient déjà et n'ont pas été dupliqué(s)${photoWarning}.`;
+    }
+    addMsg(messageSucces, "success");
     // Les colis sont en base : le brouillon local n'a plus de raison d'être, on l'efface avant de
     // vider le formulaire pour qu'il ne soit jamais reproposé à la prochaine ouverture.
     clearColisDraft();
@@ -1235,7 +1281,7 @@
         adresse_recuperation: pickupAdresse || null,
       });
       if (error) {
-        alert("Erreur : " + error.message);
+        alert(friendlyErrorMessage(error.message));
         saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer la copie';
         return;
       }
@@ -1291,7 +1337,7 @@
         btn.disabled = true; btn.textContent = '...';
         const { error } = await supabaseClient.from('colis').update({ description, destination, commune_destination, montant, montant_article, montant_livraison, article_paye, livraison_payee }).eq('id', id);
         if (error) {
-          alert("Erreur : " + error.message);
+          alert(friendlyErrorMessage(error.message));
           btn.disabled = false; btn.textContent = 'Enregistrer';
           return;
         }
@@ -1306,7 +1352,7 @@
         btn.disabled = true; btn.textContent = '...';
         const { error } = await supabaseClient.from('colis').delete().eq('id', id);
         if (error) {
-          alert("Erreur : " + error.message);
+          alert(friendlyErrorMessage(error.message));
           btn.disabled = false; btn.textContent = 'Supprimer';
           return;
         }
@@ -1447,6 +1493,9 @@
         <div class="stat-tile-value">${t.value}</div>
         <div class="stat-tile-label">${t.label}</div>
       </div>`).join('');
+    // L'historique se charge en parallèle : s'il est indisponible (vue pas encore créée), le
+    // relevé s'affiche quand même normalement.
+    loadHistoriqueReversements();
     if (!detail) return;
     if (!r.colis_a_reverser) {
       detail.innerHTML = `<div style="font-size:12.5px; color:var(--muted);">Aucun colis en attente de reversement. ✔️</div>`;
@@ -1468,9 +1517,61 @@
         <span>${escapeHTML(c.numero || '—')}<span style="color:var(--muted); font-size:12px;"> · ${new Date(c.created_at).toLocaleDateString('fr-FR')}</span></span>
         <strong>${formatMontant(Number(c.montant_article) || 0) || '0 FCFA'}</strong>
       </div>`).join('');
+    // La requête est plafonnée à 100 lignes. Si le plafond est atteint, on le dit : le total en
+    // FCFA affiché plus haut reste juste, mais ce détail ne montre alors que les plus anciens.
+    const plafondAtteint = aReverser.length >= 100;
     detail.innerHTML = `
-      <div style="font-size:13px; font-weight:600; margin:4px 0 6px;">En attente de reversement (${aReverser.length})</div>
+      <div style="font-size:13px; font-weight:600; margin:4px 0 6px;">En attente de reversement${plafondAtteint ? ' (100 plus anciens)' : ` (${aReverser.length})`}</div>
       ${rows}`;
+  }
+
+  // ---- Historique des reversements ------------------------------------------------------
+  // Le relevé indique un total « déjà reversé » sans aucune date : en cas de contestation, le
+  // fournisseur n'a rien à confronter. Cette liste montre chaque reversement (jour, nombre de
+  // colis, montant), à partir de la vue historique_reversements_fournisseur.
+  //
+  // Dégradation gracieuse : tant que la vue n'existe pas en base, la requête échoue et le bloc
+  // reste simplement vide — l'écran se comporte exactement comme avant.
+  const REVERSEMENTS_PAR_PAGE = 6;
+  let reversementsAffiches = REVERSEMENTS_PAR_PAGE;
+
+  async function loadHistoriqueReversements(){
+    const box = document.getElementById('releve-historique');
+    if (!box) return;
+    const { data, error } = await supabaseClient
+      .from('historique_reversements_fournisseur')
+      .select('jour, nb_colis, montant_reverse')
+      .order('jour', { ascending: false, nullsFirst: false });
+    if (error) { box.innerHTML = ''; return; }
+    const lignes = data || [];
+    if (!lignes.length) { box.innerHTML = ''; return; }
+
+    const visibles = lignes.slice(0, reversementsAffiches);
+    const resteAafficher = lignes.length > visibles.length;
+    const jourLabel = j => {
+      if (!j) return 'Date non enregistrée';
+      const d = new Date(j + 'T00:00:00');
+      return isNaN(d.getTime()) ? 'Date non enregistrée'
+        : d.toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+    };
+
+    box.innerHTML = `
+      <div style="font-size:13px; font-weight:600; margin:0 0 6px;">Historique des reversements</div>
+      ${visibles.map(l => `
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+          <span>${escapeHTML(jourLabel(l.jour))}<span style="color:var(--muted); font-size:12px;"> · ${Number(l.nb_colis) || 0} colis</span></span>
+          <strong style="color:#1a7d3c;">${formatMontant(Number(l.montant_reverse) || 0) || '0 FCFA'}</strong>
+        </div>`).join('')}
+      <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:12px; color:var(--muted);">
+        <span>${visibles.length} reversement(s) affiché(s)${resteAafficher ? '' : ' — historique complet.'}</span>
+        ${resteAafficher ? `<button type="button" class="btn btn-sm btn-outline" id="reversements-plus">Afficher plus</button>` : ''}
+      </div>`;
+
+    const btnPlus = document.getElementById('reversements-plus');
+    if (btnPlus) btnPlus.addEventListener('click', () => {
+      reversementsAffiches += REVERSEMENTS_PAR_PAGE;
+      loadHistoriqueReversements();
+    });
   }
 
   function toggleRecap(){
