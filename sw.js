@@ -18,11 +18,19 @@
    (servies immédiatement depuis le cache si présentes, sinon réseau puis mise en cache). Cela reste
    sans danger : ce sont des bibliothèques statiques, PAS des données Supabase.
 
+   Depuis le 19 août 2026, supabase-js est en outre protégé par une empreinte de contrôle (SRI)
+   déclarée dans les pages. Jusque-là son URL était `@2`, une plage de versions : le CDN pouvait
+   servir un contenu différent d'un jour à l'autre, ce qui rendait toute empreinte impossible.
+   Conséquence pour ce fichier : une réponse « opaque » (obtenue sans en-têtes CORS) ne peut PAS
+   être vérifiée par le navigateur. La servir à une page qui exige une empreinte revient à casser
+   l'application. Le cache d'abord ci-dessous refuse donc de stocker ou de servir une réponse
+   opaque lorsque la requête porte une empreinte — voir cacheFirst().
+
    Repli hors-ligne : si une navigation échoue et n'est pas en cache, on sert /offline.html.
 
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même. */
 
-const CACHE_VERSION = 'clt-shell-v39';
+const CACHE_VERSION = 'clt-shell-v40';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.
@@ -36,7 +44,7 @@ const CDN_HOSTS = new Set([
 // Bibliothèques CDN critiques pré-chargées dès l'installation (pré-cache tolérant : un échec
 // isolé n'interrompt pas les autres). URLs relevées dans les pages de l'app.
 const PRECACHE_CDN = [
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.js',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
@@ -178,18 +186,25 @@ self.addEventListener('fetch', (event) => {
 // "Cache d'abord" pour les bibliothèques CDN à version fixe : on sert la copie en cache si elle
 // existe (démarrage instantané, y compris hors-ligne) ; sinon on va au réseau et on met en cache.
 async function cacheFirst(req) {
+  // Une requête portant une empreinte de contrôle (SRI) ne tolère aucune réponse "opaque" :
+  // le navigateur ne peut pas en lire le contenu, donc pas en vérifier l'empreinte, et la page
+  // se retrouverait sans sa bibliothèque. Dans ce cas précis on préfère toujours le réseau.
+  const exigeVerification = !!req.integrity;
+
   const cache = await caches.open(CACHE_VERSION);
   const cached = await cache.match(req);
-  if (cached) return cached;
+  if (cached && !(exigeVerification && cached.type === 'opaque')) return cached;
   try {
     const res = await fetch(req);
-    // On accepte aussi les réponses "opaque" (no-cors) au cas où un CDN n'enverrait pas d'en-têtes CORS.
-    if (res && (res.ok || res.type === 'opaque')) {
+    // On accepte aussi les réponses "opaque" (no-cors) au cas où un CDN n'enverrait pas d'en-têtes
+    // CORS — sauf, précisément, quand une empreinte est exigée (voir ci-dessus).
+    if (res && (res.ok || (res.type === 'opaque' && !exigeVerification))) {
       cache.put(req, res.clone());
     }
     return res;
   } catch (e) {
-    return cached || Response.error();
+    if (cached && !(exigeVerification && cached.type === 'opaque')) return cached;
+    return Response.error();
   }
 }
 

@@ -335,7 +335,13 @@
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
+     Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
+     ne correspond pas. Si le CDN était compromis, le code étranger serait bloqué.
+     Toute mise à jour de version impose de recalculer l'empreinte. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.js"
+        integrity="sha384-qafw21c/iciq0VXsi9FzkfoQv5I/V0iqE4lSNcKXPnW9/UTJLnv5CcN4FHxVLnKg"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 
