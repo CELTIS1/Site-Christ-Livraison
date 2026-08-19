@@ -48,8 +48,15 @@
     box-shadow:0 8px 26px rgba(18,48,90,0.07) !important;
     border:1px solid rgba(27,67,116,0.08) !important;
   }
+  /* Fond navy par défaut des boutons pleins.
+     ATTENTION : pas de `!important` sur `background`. Un `!important` ici écrasait
+     la couleur propre de certains boutons (rouge « Supprimer »/« Rejeter », gris
+     « Annuler » des fenêtres) qui apparaissaient alors en navy comme les autres —
+     avec, en prime, du texte foncé devenu illisible. Le reste (arrondi, ombre,
+     transition) garde son `!important` : ce sont des réglages d'allure communs
+     à tous les boutons, sans incidence sur la lisibilité. */
   .btn:not(.btn-outline){
-    background:linear-gradient(135deg,#22508a 0%, #12305a 100%) !important;
+    background:linear-gradient(135deg,#22508a 0%, #12305a 100%);
     border-radius:12px !important;
     box-shadow:0 8px 18px rgba(18,48,90,0.24) !important;
     transition:transform .15s ease, box-shadow .15s ease !important;
@@ -57,6 +64,26 @@
   .btn:not(.btn-outline):hover{
     transform:translateY(-2px) !important;
     box-shadow:0 12px 24px rgba(18,48,90,0.30) !important;
+  }
+
+  /* ---- Pastille « 📍 Lieu de récupération » (en-tête de groupe client) ----
+     Ce n'est pas un bouton d'action principal mais un repère cliquable posé à côté
+     du nom de la cliente. Il lui faut donc une allure discrète : fond très clair,
+     bordure fine, texte navy — et surtout un contraste suffisant pour être lu.
+     On passe par les variables de thème pour que le mode sombre suive tout seul
+     (fond sombre + texte bleu clair). Sélecteur `.btn.btn-edit-pickup` afin de
+     l'emporter sur la règle navy ci-dessus. */
+  .btn.btn-edit-pickup{
+    background:var(--grey-bg, #F6F7F9);
+    color:var(--navy, #1B4374);
+    border:1.5px solid var(--border-strong, #C7D6E8);
+    font-weight:600;
+    box-shadow:none !important;
+  }
+  .btn.btn-edit-pickup:hover{
+    background:var(--white, #FFFFFF);
+    border-color:var(--navy, #1B4374);
+    box-shadow:none !important;
   }
   .colis-item{
     border-radius:16px !important;

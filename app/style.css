@@ -875,6 +875,16 @@ html[data-theme="dark"]{
 html[data-theme="dark"] body{ background:#0F1824 !important; color:#E6ECF3; }
 html[data-theme="dark"] .wrap{ background:transparent; }
 
+/* Boutons pleins : garder un texte réellement blanc.
+   `.btn` demande `color:var(--white)`, ce qui voulait dire « texte blanc sur bouton
+   coloré ». Mais en mode sombre `--white` est réaffecté à une couleur de SURFACE
+   (#1B2635, le fond des cartes) : le texte des boutons devenait donc presque noir
+   sur fond navy ou orange — illisible. On rétablit un blanc franc, uniquement ici.
+   Les boutons à contour (`.btn-outline`) sont exclus : ils gardent leur texte navy
+   sur fond sombre, et les boutons clairs (« Annuler ») imposent déjà leur propre
+   couleur en style en ligne, qui reste prioritaire. */
+html[data-theme="dark"] .btn:not(.btn-outline){ color:#FFFFFF; }
+
 /* Couleurs de texte fixes -> clair */
 html[data-theme="dark"] .colis-item .info .desc,
 html[data-theme="dark"] .obs-display strong,
