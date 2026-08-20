@@ -415,6 +415,56 @@
 </div>
 </div>
 
+<!-- Créer un compte client directement depuis l'équipe, sans attendre que le client
+     s'inscrive lui-même sur la page de connexion. Le compte est actif tout de suite :
+     c'est l'équipe qui le crée, la validation n'aurait pas de sens.
+     En base, ce compte porte le rôle "fournisseur" — c'est le même objet que le
+     « client » affiché partout dans l'interface (voir roleDisplayLabel()). -->
+<div class="card" id="section-client">
+<h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'client-content')">
+<span class="collapse-arrow">▶</span> Créer un compte client
+</h2>
+<div id="client-content" class="collapsible-content">
+<div id="add-client-msg"></div>
+<form id="form-add-client">
+<div class="field-row">
+<div class="field">
+<label>Nom complet</label>
+<input type="text" id="cl-fullname" required placeholder="Nom du client">
+</div>
+<div class="field">
+<label>Nom de la boutique <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
+<input type="text" id="cl-company" placeholder="Nom de l'entreprise">
+</div>
+</div>
+<div class="field-row">
+<div class="field">
+<label>Téléphone</label>
+<input type="tel" id="cl-phone" required placeholder="07 00 00 00 00" inputmode="tel" pattern="[0-9\s.\-]{10,14}" title="Numéro ivoirien à 10 chiffres, ex : 07 00 00 00 00">
+</div>
+<div class="field">
+<label>Mot de passe de connexion</label>
+<input type="password" id="cl-password" required minlength="6" placeholder="6 caractères minimum" autocomplete="new-password">
+<label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); margin-top:4px; cursor:pointer;"><input type="checkbox" id="cl-password-show"> Afficher le mot de passe</label>
+</div>
+</div>
+<div class="field-hint" style="font-size:12px; color:var(--muted); margin:-4px 0 10px;">Communiquez ce mot de passe au client : il pourra se connecter immédiatement à son espace, puis le changer lui-même depuis « Mon compte ».</div>
+<div class="field-row">
+<div class="field">
+<label>Commune de récupération <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
+<select id="cl-commune"></select>
+</div>
+<div class="field">
+<label>Adresse de récupération <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
+<input type="text" id="cl-adresse" placeholder="Repère, rue, immeuble...">
+</div>
+</div>
+<div class="field-hint" style="font-size:12px; color:var(--muted); margin:-4px 0 12px;">Renseignés ici, ces deux champs se rempliront tout seuls à chaque colis ajouté pour ce client.</div>
+<button type="submit" class="btn" id="btn-submit-client">Créer le compte client</button>
+</form>
+</div>
+</div>
+
 <div class="card" id="section-livreur">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'livreur-content')">
 <span class="collapse-arrow">▶</span> Créer un compte livreur
@@ -1226,6 +1276,15 @@ function addLivreurMsg(text, type){
 document.getElementById('add-livreur-msg').innerHTML = `<div class="msg msg-${type}">${text}</div>`;
 }
 
+/* ATTENTION : le texte est inséré tel quel dans la page (innerHTML), pour pouvoir
+   mettre un mot en gras. Tout ce qui vient d'une saisie — la sienne, celle d'un
+   client, ou un message d'erreur renvoyé par le serveur — DOIT donc passer par
+   escapeHTML() avant d'arriver ici. */
+function addClientMsg(text, type){
+const box = document.getElementById('add-client-msg');
+if (box) box.innerHTML = `<div class="msg msg-${type}">${text}</div>`;
+}
+
 /* ---------- AUTOSAUVEGARDE DU FORMULAIRE "AJOUTER UN COLIS" (brouillon local) ---------- */
 const COLIS_DRAFT_KEY = 'clt_equipe_colis_draft';
 let colisDraftSaveTimer = null;
@@ -1748,6 +1807,107 @@ e.target.reset();
 }
 });
 
+/* ---------- CRÉER UN COMPTE CLIENT ----------
+   Même mécanique que le formulaire livreur : la création réelle se fait dans la
+   fonction Edge « creer-client », côté serveur, car créer un compte exige une clé
+   d'administration qui n'a rien à faire dans une page web. Le navigateur envoie
+   simplement le jeton de la personne connectée ; la fonction relit son rôle en
+   base avant d'accepter quoi que ce soit. */
+(function initFormClient(){
+  const commune = document.getElementById('cl-commune');
+  if (commune && typeof communesOptionsHTML === 'function') {
+    commune.innerHTML = communesOptionsHTML('', 'Choisir une commune');
+  }
+  const showBox = document.getElementById('cl-password-show');
+  const pwd = document.getElementById('cl-password');
+  if (showBox && pwd) {
+    showBox.addEventListener('change', () => { pwd.type = showBox.checked ? 'text' : 'password'; });
+  }
+})();
+
+document.getElementById('form-add-client')?.addEventListener('submit', async (e) => {
+e.preventDefault();
+const btn = document.getElementById('btn-submit-client');
+const LIBELLE = 'Créer le compte client';
+btn.disabled = true; btn.textContent = 'Création...';
+const rendreLaMain = () => { btn.disabled = false; btn.textContent = LIBELLE; };
+
+const full_name = document.getElementById('cl-fullname').value.trim();
+const company_name = document.getElementById('cl-company').value.trim();
+const phone = document.getElementById('cl-phone').value.trim();
+const password = document.getElementById('cl-password').value;
+const commune_recuperation = document.getElementById('cl-commune').value || null;
+const adresse_recuperation = document.getElementById('cl-adresse').value.trim() || null;
+
+if (!full_name) {
+addClientMsg("Le nom du client est obligatoire.", "error");
+rendreLaMain(); return;
+}
+if (!isValidPhoneCI(phone)) {
+addClientMsg("Numéro de téléphone invalide. Utilisez un numéro ivoirien à 10 chiffres (ex : 07 00 00 00 00).", "error");
+rendreLaMain(); return;
+}
+if (!password || password.length < 6) {
+addClientMsg("Le mot de passe doit contenir au moins 6 caractères.", "error");
+rendreLaMain(); return;
+}
+
+try {
+const { data: { session } } = await supabaseClient.auth.getSession();
+if (!session) {
+addClientMsg("Votre session a expiré. Rechargez la page et reconnectez-vous.", "error");
+rendreLaMain(); return;
+}
+const res = await fetch(`${SUPABASE_URL}/functions/v1/creer-client`, {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+'Authorization': `Bearer ${session.access_token}`,
+'apikey': SUPABASE_KEY,
+},
+body: JSON.stringify({ full_name, company_name, phone, password, commune_recuperation, adresse_recuperation }),
+});
+const result = await res.json().catch(() => ({}));
+
+if (!res.ok) {
+/* Cas particulier, très probable juste après une mise en ligne : la fonction
+   « creer-client » n'est pas encore déployée dans Supabase. Le serveur répond
+   404 sans message exploitable, et l'équipe verrait une erreur générique
+   incompréhensible. On nomme le problème pour que la personne sache que ce
+   n'est pas sa saisie qui est en cause. */
+if (res.status === 404) {
+console.error('creer-client : fonction absente (404).');
+addClientMsg("La création de comptes clients n'est pas encore active sur le serveur. Ce n'est pas votre saisie : prévenez la gestion, il reste une étape à faire côté Supabase.", "error");
+rendreLaMain(); return;
+}
+/* Les messages renvoyés par la fonction peuvent contenir le nom d'un compte
+   existant, c'est-à-dire du texte saisi par quelqu'un d'autre. On l'échappe
+   avant de l'insérer dans la page. */
+const brut = result.compte_existant
+  ? result.error
+  : friendlyErrorMessage(result.error || `création impossible (erreur ${res.status})`);
+addClientMsg(escapeHTML(brut), "error");
+} else {
+const nom = company_name || full_name;
+addClientMsg(`Compte client créé : <strong>${escapeHTML(nom)}</strong>. Il peut se connecter dès maintenant avec son numéro et le mot de passe que vous venez de choisir.`, "success");
+e.target.reset();
+const commune = document.getElementById('cl-commune');
+if (commune && typeof communesOptionsHTML === 'function') commune.innerHTML = communesOptionsHTML('', 'Choisir une commune');
+const showBox = document.getElementById('cl-password-show');
+if (showBox) { showBox.checked = false; document.getElementById('cl-password').type = 'password'; }
+/* Le nouveau client doit apparaître tout de suite dans les listes déroulantes
+   (« Ajouter un colis pour un client », filtre de comptabilité) et, pour un
+   administrateur, dans « Tous les comptes ». */
+await loadFournisseurs();
+if (isAdmin && typeof loadAllAccounts === 'function') { try { await loadAllAccounts(); } catch (err) { console.error(err); } }
+}
+} catch (err) {
+addClientMsg(escapeHTML(friendlyErrorMessage(err.message)), "error");
+}
+
+rendreLaMain();
+});
+
 document.getElementById('form-add-livreur').addEventListener('submit', async (e) => {
 e.preventDefault();
 const btn = document.getElementById('btn-submit-livreur');
@@ -1770,6 +1930,14 @@ return;
 
 try {
 const { data: { session } } = await supabaseClient.auth.getSession();
+/* Sans cette vérification, une session expirée faisait planter la ligne suivante
+   (lecture de access_token sur une valeur absente) et l'équipe voyait un message
+   technique sans rapport avec le vrai problème. */
+if (!session) {
+addLivreurMsg("Votre session a expiré. Rechargez la page et reconnectez-vous.", "error");
+btn.disabled = false; btn.textContent = 'Créer le compte livreur';
+return;
+}
 const res = await fetch(`${SUPABASE_URL}/functions/v1/creer-livreur`, {
 method: 'POST',
 headers: {
@@ -4826,7 +4994,9 @@ init();
     put('eqpanel-finances', wrapInCard(byId('panel-compta')));
     put('eqpanel-finances', byId('section-stats'));
 
-    // 👥 Comptes : créer livreur + comptes en attente + réinitialisations + (admin) équipe & tous les comptes
+    // 👥 Comptes : créer client + créer livreur + comptes en attente + réinitialisations
+    //             + (admin) équipe & tous les comptes
+    put('eqpanel-comptes', byId('section-client'));
     put('eqpanel-comptes', byId('section-livreur'));
     put('eqpanel-comptes', byId('section-pending'));
     put('eqpanel-comptes', byId('section-reset'));

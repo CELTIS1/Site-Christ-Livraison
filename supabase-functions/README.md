@@ -22,6 +22,14 @@ fait depuis le tableau de bord Supabase, comme pour les fonctions existantes
 
 ## Ce que fait chaque fonction
 
+- **creer-client** *(août 2026)* : crée un compte **client** depuis le tableau de
+  bord Équipe, avec un mot de passe choisi par l'équipe, actif immédiatement
+  (`status = 'valide'`). En base, le rôle écrit est `fournisseur` — c'est le même
+  objet que le « client » affiché dans l'interface, voir le commentaire en tête du
+  fichier. Seule une personne connectée en `equipe` ou `admin` peut l'appeler : la
+  fonction relit le rôle de l'appelant en base avant d'accepter.
+  À ne pas confondre avec `inscrire-fournisseur`, qui sert à l'inscription depuis
+  la page de connexion et laisse le compte `en_attente` de validation.
 - **inscrire-client-express** : crée un compte grand public `client_express`,
   validé automatiquement (peut commander une livraison dès l'inscription).
 - **inscrire-coursier-express** : crée un compte `coursier_express`, avec la
