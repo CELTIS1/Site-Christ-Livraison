@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821lot1">
+<link rel="stylesheet" href="style.css?v=20260821lot2">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -1046,8 +1046,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821lot1"></script>
-<script src="config.js?v=20260821lot1"></script>
+<script src="clt-common.js?v=20260821lot2"></script>
+<script src="config.js?v=20260821lot2"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
@@ -2168,13 +2168,25 @@ function eqRefusDescriptionObligatoire(error){
   return /description/i.test(m) && /not[- ]?null|null value/i.test(m);
 }
 
+// La base se plaint-elle d'une colonne qui n'existe pas ?
+// Il ne suffit PAS que le message contienne le mot « column ». Le refus d'une description vide
+// dit « null value in column "description" » : s'en contenter faisait passer ce refus pour une
+// colonne manquante, et le colis repartait alors sans sa clé de création ni le numéro du
+// destinataire — donc réinscriptible en double, et sans notification possible. On exige les deux
+// signes : la colonne nommée, ET le fait qu'elle soit introuvable.
+function eqColonneInconnue(error){
+  const m = String((error && (error.message || '')) + ' ' + (error && (error.details || '')));
+  return /does not exist|schema cache|could not find|n'existe pas/i.test(m)
+      && /destinataire_telephone|cle_creation|column|colonne/i.test(m);
+}
+
 async function eqInsererColis(payload){
 let aEnvoyer = payload;
 let { error } = await supabaseClient.from('colis').insert([aEnvoyer]);
 // Rétro-compatibilité : si une de ces colonnes n'existe pas encore (migration SQL pas encore
 // exécutée), on réessaie sans ces champs pour ne jamais bloquer l'enregistrement du colis.
 // Ils seront simplement ignorés tant que la migration n'est pas lancée.
-if (error && /destinataire_telephone|cle_creation|column|colonne/i.test(error.message || '')) {
+if (error && eqColonneInconnue(error)) {
 const { destinataire_telephone: _omitTel, cle_creation: _omitCle, ...sansExtras } = aEnvoyer;
 aEnvoyer = sansExtras;
 ({ error } = await supabaseClient.from('colis').insert([aEnvoyer]));

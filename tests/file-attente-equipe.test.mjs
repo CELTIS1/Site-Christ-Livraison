@@ -48,6 +48,7 @@ function fonctionDeLaPage(nom){
 }
 const porteEcriture = [
   fonctionDeLaPage('eqRefusDescriptionObligatoire'),
+  fonctionDeLaPage('eqColonneInconnue'),
   fonctionDeLaPage('eqInsererColis')
 ].join('\n\n');
 

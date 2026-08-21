@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821lot1">
+<link rel="stylesheet" href="style.css?v=20260821lot2">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -396,8 +396,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821lot1"></script>
-<script src="config.js?v=20260821lot1"></script>
+<script src="clt-common.js?v=20260821lot2"></script>
+<script src="config.js?v=20260821lot2"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
@@ -591,6 +591,63 @@
     return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
   }
 
+  /* ==========================================================================================
+     LA PORTE UNIQUE D'ÉCRITURE DES COLIS — 21 août 2026
+     ------------------------------------------------------------------------------------------
+     Cette page écrivait des colis à deux endroits, chacun avec ses propres rattrapages. Résultat :
+     une correction apportée à l'un ne protégeait pas l'autre, et « Enregistrer la copie » restait
+     fragile là où « Enregistrer les colis » avait été durci. Tout passe désormais par ici, comme
+     l'espace Équipe passe par eqInsererColis. Une seule porte, donc un seul endroit à corriger.
+
+     Deux rattrapages y vivent, et un seul motif les justifie : ne jamais perdre un colis déjà
+     saisi à cause d'un décalage entre l'écran et la base.
+     ========================================================================================== */
+  const DESCRIPTION_PAR_DEFAUT = 'Colis';
+
+  // Postgres refuse une colonne NOT NULL laissée vide. Le message diffère selon la version, d'où
+  // la reconnaissance sur deux mots plutôt que sur une phrase exacte.
+  function frRefusDescriptionObligatoire(error){
+    const m = String((error && (error.message || '')) + ' ' + (error && (error.details || '')));
+    return /description/i.test(m) && /not[- ]?null|null value/i.test(m);
+  }
+
+  // La base se plaint-elle d'une colonne qui n'existe pas ?
+  // Il ne suffit PAS que le message contienne le mot « column ». Le refus d'une description vide
+  // dit « null value in column "description" » : s'en contenter faisait passer ce refus pour une
+  // colonne manquante, et le colis repartait alors sans sa clé de création ni le numéro du
+  // destinataire — donc réinscriptible en double, et sans notification possible. On exige les
+  // deux signes : la colonne nommée, ET le fait qu'elle soit introuvable.
+  function frColonneInconnue(error){
+    const m = String((error && (error.message || '')) + ' ' + (error && (error.details || '')));
+    return /does not exist|schema cache|could not find|n'existe pas/i.test(m)
+        && /destinataire_telephone|code_confirmation|cle_creation|column|colonne/i.test(m);
+  }
+
+  // `lignes` est toujours un tableau : cette page enregistre un lot entier d'un coup.
+  // Renvoie l'erreur restante, ou null si l'écriture a fini par passer.
+  async function frInsererColis(lignes){
+    let aEnvoyer = lignes;
+    let { error } = await supabaseClient.from('colis').insert(aEnvoyer);
+
+    // Rétro-compatibilité : si l'une des colonnes récentes n'existe pas encore (migration SQL pas
+    // lancée), on réessaie sans elles plutôt que de bloquer la vendeuse. Elles seront simplement
+    // ignorées jusqu'à la migration.
+    if (error && frColonneInconnue(error)) {
+      aEnvoyer = aEnvoyer.map(({ destinataire_telephone, code_confirmation, cle_creation, ...reste }) => reste);
+      ({ error } = await supabaseClient.from('colis').insert(aEnvoyer));
+    }
+
+    // La description est facultative à l'écran, mais la colonne peut encore être déclarée
+    // obligatoire en base. Plutôt que de perdre le colis, on réessaie une fois avec un texte
+    // neutre. L'insertion refusée n'a rien écrit : ce second envoi ne crée pas de doublon, et la
+    // clé de création le garantit de toute façon.
+    if (error && frRefusDescriptionObligatoire(error)) {
+      aEnvoyer = aEnvoyer.map(l => (l.description ? l : Object.assign({}, l, { description: DESCRIPTION_PAR_DEFAUT })));
+      ({ error } = await supabaseClient.from('colis').insert(aEnvoyer));
+    }
+    return error;
+  }
+
   function newRowHTML(idx, cle){
     return `
       <div class="colis-row" data-row="${idx}" data-cle="${cle || nouvelleCleColis()}">
@@ -609,8 +666,12 @@
           </div>
         </div>
         <div class="field">
-          <label>Description du colis</label>
-          <textarea class="row-desc" placeholder="Ex : Carton de vêtements, 5kg" required></textarea>
+          <!-- Facultative depuis le 21 août 2026, comme dans l'espace Équipe. La description
+               n'est écrite sur aucune étiquette : l'exiger obligeait à inventer un texte pour
+               chaque colis, que personne ne relit ensuite. Un colis se reconnaît à sa
+               destination, à son destinataire et à sa photo. -->
+          <label>Description du colis (optionnel)</label>
+          <textarea class="row-desc" placeholder="Ex : Carton de vêtements, 5kg"></textarea>
         </div>
         <div class="field-row">
           <div class="field">
@@ -1187,11 +1248,6 @@
       const description = row.querySelector('.row-desc').value.trim();
       const commune_destination = row.querySelector('.row-commune-dest').value;
       const destination = row.querySelector('.row-dest').value.trim();
-      if (!description) {
-        addMsg("Veuillez indiquer une description pour chaque colis.", "error");
-        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
-        return;
-      }
       if (!commune_destination) {
         addMsg("Veuillez choisir la commune de destination pour chaque colis.", "error");
         btn.disabled = false; btn.textContent = 'Enregistrer les colis';
@@ -1238,7 +1294,8 @@
 
       inserts.push({
         fournisseur_id: currentUser.id,
-        description,
+        // Vide veut dire vide : on n'invente pas un texte que personne n'a écrit.
+        description: description || null,
         destination,
         commune_destination,
         montant,
@@ -1253,14 +1310,7 @@
       });
     }
 
-    let { error } = await supabaseClient.from('colis').insert(inserts);
-    // Rétro-compatibilité : si l'une des colonnes récentes (destinataire_telephone,
-    // code_confirmation, cle_creation) n'existe pas encore (migration SQL pas lancée), on
-    // réessaie sans ces champs pour ne jamais bloquer l'enregistrement des colis.
-    if (error && /destinataire_telephone|code_confirmation|cle_creation|column|colonne/i.test(error.message || '')) {
-      const insertsSansExtras = inserts.map(({ destinataire_telephone, code_confirmation, cle_creation, ...rest }) => rest);
-      ({ error } = await supabaseClient.from('colis').insert(insertsSansExtras));
-    }
+    let error = await frInsererColis(inserts);
     btn.disabled = false; btn.textContent = 'Enregistrer les colis';
 
     // Doublon détecté par la base : au moins un de ces colis avait déjà été enregistré lors
@@ -1277,7 +1327,7 @@
         const restants = inserts.filter(i => !connues.has(i.cle_creation));
         dejaEnregistres = inserts.length - restants.length;
         error = null;
-        if (restants.length) ({ error } = await supabaseClient.from('colis').insert(restants));
+        if (restants.length) error = await frInsererColis(restants);
       }
     }
 
@@ -1509,10 +1559,6 @@
         alert("Veuillez choisir la commune de destination.");
         return;
       }
-      if (!description) {
-        alert("Veuillez indiquer une description pour le colis.");
-        return;
-      }
       const montantArticleRaw = draftEl.querySelector('.draft-montant-article').value.trim();
       const montantLivraisonRaw = draftEl.querySelector('.draft-montant-livraison').value.trim();
       if (!isValidMontant(montantArticleRaw) || !isValidMontant(montantLivraisonRaw)) {
@@ -1528,9 +1574,16 @@
       const livraison_payee = draftEl.querySelector('.draft-livraison-payee').checked;
 
       saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement...';
-      const { error } = await supabaseClient.from('colis').insert({
+
+      // La copie porte une clé de création, comme les lignes du formulaire d'ajout. Elle est
+      // engendrée une seule fois et gardée sur le brouillon : si l'enregistrement a en réalité
+      // abouti mais que la réponse s'est perdue, le second clic réutilisera la même clé et la
+      // base refusera d'écrire deux fois. Sans elle, ce bouton créait un colis à chaque essai.
+      if (!draftEl.dataset.cle) draftEl.dataset.cle = nouvelleCleColis();
+
+      const error = await frInsererColis([{
         fournisseur_id: currentUser.id,
-        description,
+        description: description || null,
         destination,
         commune_destination,
         montant,
@@ -1540,8 +1593,12 @@
         livraison_payee,
         commune_recuperation: pickupCommune,
         adresse_recuperation: pickupAdresse || null,
-      });
-      if (error) {
+        cle_creation: draftEl.dataset.cle,
+      }]);
+
+      // Doublon sur la clé : ce colis existe déjà, une seule fois. C'est le résultat voulu, pas
+      // une panne. Le dire « erreur » pousserait à recommencer, donc à en créer un troisième.
+      if (error && !estDoublonCleCreation(error)) {
         alert(friendlyErrorMessage(error.message));
         saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer la copie';
         return;
@@ -1576,10 +1633,6 @@
         const commune_destination = communeSelect ? communeSelect.value : null;
         const montantArticleRaw = item.querySelector('.edit-montant-article').value.trim();
         const montantLivraisonRaw = item.querySelector('.edit-montant-livraison').value.trim();
-        if (!description) {
-          alert("Veuillez indiquer une description pour le colis.");
-          return;
-        }
         if (!commune_destination) {
           alert("Veuillez choisir la commune de destination.");
           return;
@@ -1596,7 +1649,14 @@
         const article_paye = item.querySelector('.edit-article-paye').checked;
         const livraison_payee = item.querySelector('.edit-livraison-payee').checked;
         btn.disabled = true; btn.textContent = '...';
-        const { error } = await supabaseClient.from('colis').update({ description, destination, commune_destination, montant, montant_article, montant_livraison, article_paye, livraison_payee }).eq('id', id);
+        const champs = { description: description || null, destination, commune_destination, montant, montant_article, montant_livraison, article_paye, livraison_payee };
+        let { error } = await supabaseClient.from('colis').update(champs).eq('id', id);
+        // Même précaution qu'à l'insertion : vider la description ne doit pas faire perdre les
+        // autres corrections de la vendeuse si la colonne est encore obligatoire en base.
+        if (error && frRefusDescriptionObligatoire(error)) {
+          ({ error } = await supabaseClient.from('colis')
+            .update(Object.assign({}, champs, { description: DESCRIPTION_PAR_DEFAUT })).eq('id', id));
+        }
         if (error) {
           alert(friendlyErrorMessage(error.message));
           btn.disabled = false; btn.textContent = 'Enregistrer';
