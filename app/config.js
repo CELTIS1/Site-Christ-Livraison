@@ -907,21 +907,155 @@ function colisNumeroClientHTML(n) {
 function renderGroupedColisHTML(groups, itemRenderFn, groupActionFn) {
   if (!groups.length) return "";
   return groups.map(day => {
+    // `total` et `complet` n'existent que sur un groupe passé par limiterGroupesColis(), qui
+    // n'affiche qu'une tranche d'une longue liste. Deux choses doivent alors continuer à parler
+    // du lot ENTIER, pas de la tranche visible :
+    //   • le compteur du bandeau (une cliente qui a déposé 12 colis en a bien 12) ;
+    //   • la numérotation N° des colis, qui est le rang du colis dans le lot de la cliente. Le
+    //     6e colis reste le n°6 qu'on affiche 6 lignes ou seulement les 2 premières. Comme la
+    //     troncature garde toujours le DÉBUT de la liste, « total - i » donne le bon rang.
+    // Et `groupActionFn` reçoit le groupe complet, parce que les boutons d'action groupée
+    // annoncent un nombre de colis (« Assigner (7) », « Récupéré, tout (7) ») et agissent sur
+    // tout le lot : les tronquer ferait mentir le bouton sur ce qu'il va faire.
+    const totalJour = day.total != null ? day.total : day.items.length;
     const body = day.clients
-      ? day.clients.map(client => `
+      ? day.clients.map(client => {
+          const totalClient = client.total != null ? client.total : client.items.length;
+          return `
           <div class="client-group">
-            <div class="client-group-header">👤 ${client.label} <span class="group-count">${client.items.length}</span>${groupActionFn ? (groupActionFn(day, client) || '') : ''}</div>
-            ${client.items.map((c, i) => itemRenderFn(c, client.items.length - i)).join("")}
+            <div class="client-group-header">👤 ${client.label} <span class="group-count">${totalClient}</span>${groupActionFn ? (groupActionFn(day.complet || day, client.complet || client) || '') : ''}</div>
+            ${client.items.map((c, i) => itemRenderFn(c, totalClient - i)).join("")}
           </div>
-        `).join("")
-      : day.items.map((c, i) => itemRenderFn(c, day.items.length - i)).join("");
+        `;
+        }).join("")
+      : day.items.map((c, i) => itemRenderFn(c, totalJour - i)).join("");
     return `
       <div class="day-group">
-        <div class="day-group-header">📅 ${day.label} <span class="group-count">${day.items.length}</span></div>
+        <div class="day-group-header">📅 ${day.label} <span class="group-count">${totalJour}</span></div>
         ${body}
       </div>
     `;
   }).join("");
+}
+
+/* ================================================================================
+   AFFICHER UNE LONGUE LISTE PAR TRANCHES — ajout du 21 août 2026
+   --------------------------------------------------------------------------------
+   Le problème, en clair : la liste des colis dessinait TOUTES les lignes chargées, d'un
+   seul coup. Mesuré sur cette app, une ligne coûte une quarantaine de balises HTML. À
+   1 000 colis, ça fait 40 000 balises et 2,5 Mo de HTML à fabriquer puis à poser dans la
+   page — moins d'une seconde sur un ordinateur de bureau, mais plusieurs fois plus sur les
+   téléphones de l'équipe, pendant lesquelles l'écran ne répond plus. Et comme la recherche
+   redessinait la liste à chaque lettre tapée, on payait ce prix à CHAQUE caractère.
+
+   La solution retenue : ne construire que les ~60 premières lignes, puis la suite au fur et
+   à mesure qu'on descend. Le travail devient proportionnel à ce qu'on regarde vraiment, pas
+   à l'historique complet de l'entreprise.
+
+   Ce qui n'est volontairement PAS tronqué (voir renderGroupedColisHTML ci-dessus) : les
+   compteurs des bandeaux, la numérotation N° des colis, et les données que reçoivent les
+   boutons d'action groupée. Tronquer l'affichage ne doit jamais tronquer l'information.
+   ================================================================================ */
+
+// Nombre de lignes construites d'emblée, puis ajoutées à chaque « suite ». 60 remplit
+// largement un écran de téléphone (≈ 6 à 8 lignes visibles) : on garde donc une bonne marge
+// de défilement d'avance, sans jamais fabriquer un mur de HTML.
+const COLIS_TRANCHE = 60;
+
+// Ne garde que les `limite` premiers colis d'une liste déjà regroupée par jour (et par
+// client), en préservant l'ordre d'affichage. Ne modifie jamais les groupes reçus : elle en
+// construit de nouveaux, qui gardent un lien `complet` vers l'original.
+// Retourne { groups, affiches, total, reste }.
+function limiterGroupesColis(groups, limite) {
+  const total = (groups || []).reduce((n, day) => n + (day.items ? day.items.length : 0), 0);
+  // Pas de limite, limite absurde, ou liste déjà plus courte que la limite : rien à faire.
+  // On rend alors les groupes d'origine tels quels, pour que le cas courant (liste courte,
+  // c'est-à-dire la quasi-totalité des journées) ne paie aucun surcoût.
+  if (!limite || limite < 0 || limite >= total) {
+    return { groups: groups || [], affiches: total, total: total, reste: 0 };
+  }
+  let restant = limite;
+  const coupes = [];
+  for (let d = 0; d < groups.length && restant > 0; d++) {
+    const day = groups[d];
+    const jour = { key: day.key, label: day.label, total: day.items.length, complet: day };
+    if (day.clients) {
+      jour.clients = [];
+      let items = [];
+      for (let k = 0; k < day.clients.length && items.length < restant; k++) {
+        const client = day.clients[k];
+        const place = restant - items.length;
+        const tranche = client.items.slice(0, place);
+        jour.clients.push({ key: client.key, label: client.label, total: client.items.length, complet: client, items: tranche });
+        items = items.concat(tranche);
+      }
+      // `items` du jour = ce qui est réellement affiché ce jour-là. Le compteur du bandeau,
+      // lui, s'appuie sur `total` et continue d'annoncer le vrai nombre de colis du jour.
+      jour.items = items;
+    } else {
+      jour.items = day.items.slice(0, restant);
+    }
+    restant -= jour.items.length;
+    coupes.push(jour);
+  }
+  const affiches = coupes.reduce((n, day) => n + day.items.length, 0);
+  return { groups: coupes, affiches: affiches, total: total, reste: total - affiches };
+}
+
+// Rang d'un colis dans l'ORDRE D'AFFICHAGE (jour, puis client, puis colis) — c'est-à-dire l'ordre
+// exact dans lequel limiterGroupesColis() coupe. Sert au lien profond : quand on ouvre l'app en
+// cliquant sur une notification (?colis=<id>), le colis visé peut se trouver bien plus bas que la
+// tranche dessinée. Sans ce calcul, la carte n'existerait tout simplement pas dans la page et le
+// clic sur la notification n'amènerait nulle part. On ouvre donc la tranche juste jusqu'à ce rang.
+// Renvoie -1 si le colis n'est pas dans ces groupes (autre jour, autre filtre).
+function rangAffichageColis(groups, id) {
+  if (!groups || !groups.length || !id) return -1;
+  const cible = String(id);
+  let rang = 0;
+  for (let d = 0; d < groups.length; d++) {
+    const day = groups[d];
+    const listes = day.clients ? day.clients.map(c => c.items) : [day.items || []];
+    for (let k = 0; k < listes.length; k++) {
+      const items = listes[k] || [];
+      for (let i = 0; i < items.length; i++) {
+        if (String(items[i].id) === cible) return rang;
+        rang++;
+      }
+    }
+  }
+  return -1;
+}
+
+// Pied de liste affiché quand tout n'est pas montré. Il dit franchement où on en est
+// (« 60 colis affichés sur 312 ») pour que personne ne croie que des colis ont disparu, et
+// sert en même temps de repère à l'auto-chargement ci-dessous.
+function trancheColisPiedHTML(affiches, total) {
+  if (!total || affiches >= total) return "";
+  return `
+    <div class="liste-tranche" data-tranche-pied>
+      <span class="liste-tranche__compteur">${affiches} colis affichés sur ${total}</span>
+      <button type="button" class="btn btn-outline btn-sm" data-tranche-suite>Afficher la suite</button>
+    </div>`;
+}
+
+// Branche l'affichage de la suite. Deux déclencheurs volontairement redondants :
+//   • automatique quand le pied de liste approche de l'écran (400 px avant), pour que le
+//     défilement paraisse continu et qu'on n'ait rien à faire ;
+//   • le bouton, qui reste là pour qui préfère décider, et qui sert de secours si le
+//     navigateur ne connaît pas IntersectionObserver (vieux téléphones).
+// L'observateur se débranche avant d'appeler `surSuite` : le rendu suivant recrée un pied
+// neuf avec son propre observateur, ce qui évite qu'un même pied déclenche deux chargements.
+function brancherTrancheColis(list, surSuite) {
+  if (!list || typeof surSuite !== "function") return;
+  const pied = list.querySelector("[data-tranche-pied]");
+  if (!pied) return;
+  const btn = pied.querySelector("[data-tranche-suite]");
+  if (btn) btn.addEventListener("click", surSuite);
+  if (typeof IntersectionObserver !== "function") return;
+  const obs = new IntersectionObserver((entries) => {
+    if (entries.some(e => e.isIntersecting)) { obs.disconnect(); surSuite(); }
+  }, { rootMargin: "400px" });
+  obs.observe(pied);
 }
 
 // formatMontant() → déplacé dans clt-common.js (chargé avant ce fichier).

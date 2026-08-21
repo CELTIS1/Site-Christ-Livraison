@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821rapide2">
+<link rel="stylesheet" href="style.css?v=20260821fluide1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -363,7 +363,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821rapide2"></script>
+<script src="clt-common.js?v=20260821fluide1"></script>
 <script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
@@ -470,6 +470,19 @@
   let searchTous = '';
   let filtreDateMes = '';
   let filtreDateTous = '';
+
+  // Combien de lignes chaque liste DESSINE réellement. Rien à voir avec COLIS_PAGE_SIZE, qui dit
+  // combien de colis sont rapatriés du serveur : on peut avoir tout l'historique en mémoire (donc
+  // des compteurs justes) et n'en dessiner que 60. La suite s'ajoute au défilement. Chaque liste
+  // a son propre curseur, sinon dérouler « Tout mon historique » ferait aussi gonfler « Mes
+  // colis », qu'on n'a même pas sous les yeux.
+  let trancheMes = COLIS_TRANCHE;
+  let trancheRecup = COLIS_TRANCHE;
+  let trancheTous = COLIS_TRANCHE;
+  // Changer de filtre, de date ou de recherche, c'est demander une autre liste : on la reprend
+  // depuis le haut, sinon on garderait une page déjà déroulée sans raison.
+  function remettreTrancheMesAZero(){ trancheMes = COLIS_TRANCHE; }
+  function remettreTrancheTousAZero(){ trancheTous = COLIS_TRANCHE; }
 
   function closeOtherSections(exceptContentId){
     document.querySelectorAll('.card > .collapsible-content').forEach(c => {
@@ -1273,7 +1286,18 @@
       return;
     }
     const groupsMes = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
-    list.innerHTML = renderGroupedColisHTML(groupsMes, mesColisRowHTML);
+    // On ne dessine qu'une tranche ; le pied annonce le total et la suite arrive au défilement.
+    // Exception : arrivé par un clic sur une notification (?colis=<id>), le colis visé doit être
+    // dessiné même s'il est loin dans la liste, sinon le clic n'amènerait nulle part.
+    const cibleMes = new URLSearchParams(location.search).get('colis');
+    if (cibleMes) {
+      const rangMes = rangAffichageColis(groupsMes, cibleMes);
+      if (rangMes >= trancheMes) trancheMes = rangMes + 1;
+    }
+    const trMes = limiterGroupesColis(groupsMes, trancheMes);
+    list.innerHTML = renderGroupedColisHTML(trMes.groups, mesColisRowHTML)
+      + trancheColisPiedHTML(trMes.affiches, trMes.total);
+    brancherTrancheColis(list, () => { trancheMes += COLIS_TRANCHE; renderMesColis(); });
 
     list.querySelectorAll('.btn-save').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -1437,7 +1461,14 @@
     }
 
     const groups = groupColisByDayAndClient(mine, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
-    list.innerHTML = renderGroupedColisHTML(groups, recupColisRowHTML, recupActionsHTML);
+    // Les boutons de groupe (« Je pars », « Récupéré, tout (7) ») continuent de porter sur le lot
+    // ENTIER de la cliente : renderGroupedColisHTML() leur repasse le groupe complet, même quand
+    // seules les premières lignes sont dessinées. Un livreur qui appuie sur « Récupéré, tout »
+    // doit ramasser les 7 colis, pas seulement ceux qui tenaient à l'écran.
+    const trRecup = limiterGroupesColis(groups, trancheRecup);
+    list.innerHTML = renderGroupedColisHTML(trRecup.groups, recupColisRowHTML, recupActionsHTML)
+      + trancheColisPiedHTML(trRecup.affiches, trRecup.total);
+    brancherTrancheColis(list, () => { trancheRecup += COLIS_TRANCHE; renderRecuperations(); });
 
     list.querySelectorAll('.btn-je-pars').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -1531,8 +1562,14 @@
       return;
     }
     const groupsTous = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
-    list.innerHTML = renderGroupedColisHTML(groupsTous, tousColisItemHTML);
-    appendColisLoadMore(list);
+    const trTous = limiterGroupesColis(groupsTous, trancheTous);
+    list.innerHTML = renderGroupedColisHTML(trTous.groups, tousColisItemHTML)
+      + trancheColisPiedHTML(trTous.affiches, trTous.total);
+    brancherTrancheColis(list, () => { trancheTous += COLIS_TRANCHE; renderTousColis(); });
+    // Tant qu'il reste des colis déjà chargés mais pas encore dessinés, on ne propose pas en plus
+    // d'aller chercher de l'historique sur le serveur : deux invitations à charger côte à côte,
+    // c'est incompréhensible.
+    if (!trTous.reste) appendColisLoadMore(list);
     restoreScrollAnchor(list, __anchor);
   }
 
@@ -1760,8 +1797,8 @@
     // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 
-    function selectFilterMes(val){ activeFilterMes = val; renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
-    function selectFilterTous(val){ activeFilterTous = val; renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
+    function selectFilterMes(val){ activeFilterMes = val; remettreTrancheMesAZero(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
+    function selectFilterTous(val){ activeFilterTous = val; remettreTrancheTousAZero(); renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
     renderFilters('filters-mes', activeFilterMes, selectFilterMes);
     renderFilters('filters-tous', activeFilterTous, selectFilterTous);
 
@@ -1772,29 +1809,31 @@
     document.getElementById('search-mes').addEventListener('input', (e) => {
       const val = e.target.value;
       clearTimeout(searchMesTimer);
-      searchMesTimer = setTimeout(() => { searchMes = val; renderMesColis(); }, 350);
+      searchMesTimer = setTimeout(() => { searchMes = val; remettreTrancheMesAZero(); renderMesColis(); }, 350);
     });
     document.getElementById('search-tous').addEventListener('input', (e) => {
       const val = e.target.value;
       clearTimeout(searchTousTimer);
-      searchTousTimer = setTimeout(() => { searchTous = val; renderTousColis(); }, 350);
+      searchTousTimer = setTimeout(() => { searchTous = val; remettreTrancheTousAZero(); renderTousColis(); }, 350);
     });
 
     filtreDateMes = todayLocalISODate();
     document.getElementById('filtre-date-mes').value = filtreDateMes;
-    document.getElementById('filtre-date-mes').addEventListener('change', (e) => { filtreDateMes = e.target.value; renderMesColis(); });
+    document.getElementById('filtre-date-mes').addEventListener('change', (e) => { filtreDateMes = e.target.value; remettreTrancheMesAZero(); renderMesColis(); });
     document.getElementById('btn-toutes-dates-mes').addEventListener('click', () => {
       filtreDateMes = '';
       document.getElementById('filtre-date-mes').value = '';
+      remettreTrancheMesAZero();
       renderMesColis();
     });
 
     filtreDateTous = todayLocalISODate();
     document.getElementById('filtre-date-tous').value = filtreDateTous;
-    document.getElementById('filtre-date-tous').addEventListener('change', (e) => { filtreDateTous = e.target.value; renderTousColis(); });
+    document.getElementById('filtre-date-tous').addEventListener('change', (e) => { filtreDateTous = e.target.value; remettreTrancheTousAZero(); renderTousColis(); });
     document.getElementById('btn-toutes-dates-tous').addEventListener('click', () => {
       filtreDateTous = '';
       document.getElementById('filtre-date-tous').value = '';
+      remettreTrancheTousAZero();
       renderTousColis();
     });
 

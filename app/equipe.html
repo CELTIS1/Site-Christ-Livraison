@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821rapide2">
+<link rel="stylesheet" href="style.css?v=20260821fluide1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -891,7 +891,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821rapide2"></script>
+<script src="clt-common.js?v=20260821fluide1"></script>
 <script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
@@ -906,6 +906,12 @@ const COLIS_PAGE_SIZE = 500;
 let colisOffset = 0;
 let colisHasMore = true;
 let colisLoadingMore = false;
+// Combien de lignes sont réellement DESSINÉES. À ne pas confondre avec COLIS_PAGE_SIZE, qui
+// dit combien de colis sont RAPATRIÉS depuis le serveur. On peut avoir 500 colis en mémoire
+// (donc des statistiques justes) tout en n'en dessinant que 60 : c'est exactement le but.
+// Repart à zéro dès que les critères changent, via eqRemettreTrancheAZero().
+let colisTranche = COLIS_TRANCHE;
+function eqRemettreTrancheAZero(){ colisTranche = COLIS_TRANCHE; }
 // ---------- Pagination réelle des comptes ----------
 const ACCOUNTS_PAGE_SIZE = 300;
 let accountsOffset = 0;
@@ -2437,6 +2443,9 @@ box.innerHTML = Object.keys(FILTER_LABELS).map(key =>
 box.querySelectorAll('.filter-chip').forEach(chip => {
 chip.addEventListener('click', () => {
 activeFilter = chip.dataset.filter;
+// Changer de filtre, c'est demander une autre liste : on la reprend depuis le début, sinon on
+// tomberait sur « 180 colis affichés sur 12 » et sur une page déjà déroulée sans raison.
+eqRemettreTrancheAZero();
 renderFilters();
 renderColis();
 });
@@ -2856,18 +2865,54 @@ if (res.ok) eqAnnoncerChangementStatut(colis, statut, res);
 });
 }
 
+// ---------- Redessiner la liste : une seule fois par image, pas une fois par événement ----------
+// Redessiner coûte cher quand la liste est longue, et les demandes arrivent souvent en rafale :
+// le temps réel annonce trois colis d'un coup, une action met à jour l'état local puis la liste,
+// un chargement complémentaire arrive… Chaque demande refaisait alors tout le travail, pour un
+// résultat que personne n'a le temps de voir. renderColis() se contente désormais de NOTER qu'un
+// rendu est attendu ; le dessin réel a lieu une seule fois, juste avant le prochain
+// rafraîchissement de l'écran. Ce qui s'affiche est identique — seul le travail perdu disparaît.
+// requestAnimationFrame a un second mérite : dans un onglet en arrière-plan il ne se déclenche
+// pas, donc une app laissée ouverte toute la journée cesse de dessiner dans le vide.
+let colisRenduEnAttente = false;
 function renderColis(){
+if (typeof requestAnimationFrame !== 'function') { eqDessinerColis(); return; }
+if (colisRenduEnAttente) return;
+colisRenduEnAttente = true;
+requestAnimationFrame(() => { colisRenduEnAttente = false; eqDessinerColis(); });
+}
+
+function eqDessinerColis(){
 const list = document.getElementById('colis-list');
 const __anchor = captureScrollAnchor(list);
 let filtered = activeFilter === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilter);
 filtered = filtered.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDateColis));
+// Nombre de colis déjà chargés mais pas encore dessinés. Sert plus bas à ne pas proposer
+// « Charger plus de colis » (qui va chercher de l'historique sur le serveur) tant qu'il reste
+// des colis à afficher ici : deux invitations à charger en même temps, c'est déroutant.
+let resteAAfficher = 0;
 if (!filtered.length) {
 list.innerHTML = filtreDateColis
 ? `<div class="empty-state">Aucun colis à cette date.</div>`
 : `<div class="empty-state">Aucun colis${activeFilter !== 'tous' || searchColis ? ' pour ces critères' : ''}.</div>`;
 } else {
 const groups = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
-list.innerHTML = renderGroupedColisHTML(groups, colisRowHTML, equipeCollecteActionHTML);
+// On ne dessine qu'une tranche : la suite s'ajoute au défilement. Tout le reste du code
+// ci-dessous continue de travailler sur `filtered`, la liste ENTIÈRE — en particulier
+// l'assignation groupée d'une collecte, qui doit porter sur tous les colis concernés et pas
+// seulement sur ceux visibles à l'écran.
+// Exception : si on arrive par un clic sur une notification (?colis=<id>), le colis visé doit
+// être dessiné même s'il se trouve loin dans la liste — sinon le clic n'amène nulle part.
+const cibleLienProfond = new URLSearchParams(location.search).get('colis');
+if (cibleLienProfond) {
+const rangCible = rangAffichageColis(groups, cibleLienProfond);
+if (rangCible >= colisTranche) colisTranche = rangCible + 1;
+}
+const tranche = limiterGroupesColis(groups, colisTranche);
+resteAAfficher = tranche.reste;
+list.innerHTML = renderGroupedColisHTML(tranche.groups, colisRowHTML, equipeCollecteActionHTML)
++ trancheColisPiedHTML(tranche.affiches, tranche.total);
+brancherTrancheColis(list, () => { colisTranche += COLIS_TRANCHE; renderColis(); });
 
 eqBrancherActionsRapides(list);
 
@@ -3070,7 +3115,7 @@ renderColis();
 });
 }
 
-if (colisHasMore) {
+if (colisHasMore && !resteAAfficher) {
 list.insertAdjacentHTML('beforeend', `
 <div class="load-more-row" style="text-align:center; padding:12px 0;">
 <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Historique partiel : d'autres colis plus anciens restent à charger.</div>
@@ -5229,13 +5274,24 @@ document.getElementById('lien-gestion')?.classList.remove('hidden');
 }
 
 document.getElementById('mois-select').addEventListener('change', renderRapportMois);
-document.getElementById('search-colis').addEventListener('input', (e) => { searchColis = e.target.value; renderColis(); });
+// Recherche : on attend que la frappe se calme avant de redessiner. Taper « KOUAME » c'est six
+// frappes, donc six listes redessinées pour rien alors que seule la dernière compte — et sur un
+// téléphone modeste ça se sent, le champ devient poisseux. 220 ms, c'est plus court qu'une pause
+// entre deux lettres : personne ne voit l'attente, mais on ne dessine plus qu'une fois.
+// Toute recherche change les critères, donc on repart du haut de la liste (première tranche).
+let rechercheColisTimer = null;
+document.getElementById('search-colis').addEventListener('input', (e) => {
+searchColis = e.target.value;
+clearTimeout(rechercheColisTimer);
+rechercheColisTimer = setTimeout(() => { eqRemettreTrancheAZero(); renderColis(); }, 220);
+});
 filtreDateColis = todayLocalISODate();
 document.getElementById('filtre-date-colis').value = filtreDateColis;
-document.getElementById('filtre-date-colis').addEventListener('change', (e) => { filtreDateColis = e.target.value; renderColis(); });
+document.getElementById('filtre-date-colis').addEventListener('change', (e) => { filtreDateColis = e.target.value; eqRemettreTrancheAZero(); renderColis(); });
 document.getElementById('btn-toutes-dates-colis').addEventListener('click', () => {
 filtreDateColis = '';
 document.getElementById('filtre-date-colis').value = '';
+eqRemettreTrancheAZero();
 renderColis();
 });
 document.getElementById('compta-fournisseur').addEventListener('change', renderCompta);
@@ -5257,6 +5313,7 @@ cltFocusColisFromUrl({ onMiss: () => {
     filtreDateColis = '';
     const inp = document.getElementById('filtre-date-colis');
     if (inp) inp.value = '';
+    eqRemettreTrancheAZero();
     renderColis();
   }
 } });

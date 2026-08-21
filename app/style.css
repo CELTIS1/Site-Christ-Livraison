@@ -429,6 +429,16 @@ html[data-theme="dark"] .colis-item[data-statut="retour"]:hover{border-color:#5C
 html[data-theme="dark"] .colis-etapes .btn.btn-etape-echec{color:#f0938a; border-color:#6d3d38;}
 html[data-theme="dark"] .colis-etapes .btn.btn-etape-echec:hover{background:#3a2422; border-color:#8a4b44;}
 
+/* ---------- Pied d'une liste affichée par tranches ----------
+   Une liste tronquée doit le dire, sinon on croit que des colis ont disparu. Ce pied annonce
+   franchement « 60 colis affichés sur 312 ». La suite arrive normalement toute seule au
+   défilement ; le bouton reste là pour qui préfère décider, et comme secours. */
+.liste-tranche{
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center;
+  text-align:center; padding:14px 12px; margin-top:4px;
+}
+.liste-tranche__compteur{font-size:13px; color:var(--muted);}
+
 .badge{
   display:inline-block; padding:6px 13px; border-radius:var(--radius-pill); font-size:12px; font-weight:700; letter-spacing:.2px;
 }

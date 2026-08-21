@@ -33,3 +33,6 @@ jobs:
 
       - name: Actions rapides (un appui pour faire avancer un colis)
         run: node tests/actions-rapides.test.mjs
+
+      - name: Affichage par tranches (une longue liste reste fluide et exacte)
+        run: node tests/liste-longue.test.mjs

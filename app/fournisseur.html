@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821rapide2">
+<link rel="stylesheet" href="style.css?v=20260821fluide1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -374,7 +374,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821rapide2"></script>
+<script src="clt-common.js?v=20260821fluide1"></script>
 <script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
@@ -385,6 +385,13 @@
   let mesColis = [];
   let searchColis = '';
   let filtreDate = '';
+
+  // Combien de colis sont réellement DESSINÉS. Rien à voir avec COLIS_PAGE_SIZE, qui dit combien
+  // de colis sont rapatriés du serveur : une cliente peut avoir tout son historique en mémoire
+  // (donc des totaux justes) et n'en voir que 60 dessinés, la suite s'ajoutant au défilement.
+  let trancheColis = COLIS_TRANCHE;
+  // Recherche, date : changer de critère, c'est demander une autre liste — on la reprend du haut.
+  function remettreTrancheColisAZero(){ trancheColis = COLIS_TRANCHE; }
   let livreursById = {};
 
   // Pagination réelle : la première page se charge immédiatement, puis "Charger plus" permet
@@ -1390,6 +1397,8 @@
     // (ex : mise à jour temps réel pendant que le fournisseur vérifie sa copie).
     const __drafts = Array.from(list.querySelectorAll('.colis-draft'));
     const filtered = mesColis.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDate));
+    // Colis déjà chargés mais pas encore dessinés (voir plus bas, bouton « Charger plus »).
+    let resteAAfficher = 0;
     if (!mesColis.length) {
       list.innerHTML = `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`;
     } else if (!filtered.length) {
@@ -1399,14 +1408,28 @@
     } else if (filtreDate) {
       // Une date précise est choisie : la liste est déjà limitée à cette journée,
       // inutile de répéter l'en-tête "📅 ..." (déjà visible dans le sélecteur de date).
-      list.innerHTML = filtered.map((c, i) => colisItemHTML(c, filtered.length - i)).join('');
+      // On ne dessine qu'une tranche ; la numérotation reste celle du lot entier (le 40e colis
+      // de la journée garde son n°40 même si seuls les 10 premiers sont à l'écran), et le pied
+      // annonce le total pour que personne ne croie que des colis ont disparu.
+      const vus = filtered.slice(0, trancheColis);
+      resteAAfficher = filtered.length - vus.length;
+      list.innerHTML = vus.map((c, i) => colisItemHTML(c, filtered.length - i)).join('')
+        + trancheColisPiedHTML(vus.length, filtered.length);
       attachColisHandlers(list);
+      brancherTrancheColis(list, () => { trancheColis += COLIS_TRANCHE; renderColisList(); });
     } else {
       const groups = groupColisByDay(filtered);
-      list.innerHTML = renderGroupedColisHTML(groups, colisItemHTML);
+      const tranche = limiterGroupesColis(groups, trancheColis);
+      resteAAfficher = tranche.reste;
+      list.innerHTML = renderGroupedColisHTML(tranche.groups, colisItemHTML)
+        + trancheColisPiedHTML(tranche.affiches, tranche.total);
       attachColisHandlers(list);
+      brancherTrancheColis(list, () => { trancheColis += COLIS_TRANCHE; renderColisList(); });
     }
-    if (colisHasMore) {
+    // Tant qu'il reste des colis déjà chargés mais pas encore dessinés, on ne propose pas EN PLUS
+    // d'aller chercher de l'historique sur le serveur : deux invitations à charger côte à côte,
+    // c'est incompréhensible.
+    if (colisHasMore && !resteAAfficher) {
       list.insertAdjacentHTML('beforeend', `
         <div class="load-more-row" style="text-align:center; padding:12px 0;">
           <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Historique partiel : d'autres colis plus anciens restent à charger.</div>
@@ -2028,11 +2051,21 @@
     document.getElementById('filtre-date-colis').value = filtreDate;
     loadColis();
     loadReleve();
-    document.getElementById('search-colis').addEventListener('input', (e) => { searchColis = e.target.value; renderColisList(); });
-    document.getElementById('filtre-date-colis').addEventListener('change', (e) => { filtreDate = e.target.value; renderColisList(); });
+    // Recherche : on attend que la frappe se calme avant de redessiner. Taper « ABIDJAN », c'est
+    // sept frappes, donc sept listes redessinées alors que seule la dernière compte — et sur un
+    // téléphone modeste le champ en devient poisseux. 220 ms, c'est plus court qu'une pause entre
+    // deux lettres : l'attente ne se voit pas, mais on ne dessine plus qu'une fois.
+    let rechercheColisTimer = null;
+    document.getElementById('search-colis').addEventListener('input', (e) => {
+      searchColis = e.target.value;
+      clearTimeout(rechercheColisTimer);
+      rechercheColisTimer = setTimeout(() => { remettreTrancheColisAZero(); renderColisList(); }, 220);
+    });
+    document.getElementById('filtre-date-colis').addEventListener('change', (e) => { filtreDate = e.target.value; remettreTrancheColisAZero(); renderColisList(); });
     document.getElementById('btn-toutes-dates').addEventListener('click', () => {
       filtreDate = '';
       document.getElementById('filtre-date-colis').value = '';
+      remettreTrancheColisAZero();
       renderColisList();
     });
 

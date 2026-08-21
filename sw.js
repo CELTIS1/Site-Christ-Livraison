@@ -44,7 +44,7 @@
 
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même. */
 
-const CACHE_VERSION = 'clt-shell-v43';
+const CACHE_VERSION = 'clt-shell-v44';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.
