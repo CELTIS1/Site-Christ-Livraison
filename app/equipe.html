@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821lot1">
+<link rel="stylesheet" href="style.css?v=20260821carnet1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -532,6 +532,9 @@
 <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Permet au livreur de contacter le destinataire et de le prévenir par WhatsApp avec le lien de suivi.</div>
 </div>
 </div>
+<!-- Carnet d'adresses : rempli tout seul à partir des colis déjà envoyés par ce client.
+     Reste caché tant qu'aucun client n'est choisi, pour ne pas encombrer le formulaire. -->
+<div id="carnet-dest-wrap" class="carnet-wrap" style="display:none;"></div>
 <div class="field-row" style="margin-bottom:2px;">
 <div class="field">
 <label>📍 Commune de récupération</label>
@@ -894,8 +897,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821lot1"></script>
-<script src="config.js?v=20260819fiab1"></script>
+<script src="clt-common.js?v=20260821carnet1"></script>
+<script src="config.js?v=20260821carnet1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
@@ -1440,17 +1443,111 @@ communeSelect.innerHTML = communesOptionsHTML(f ? f.commune_recuperation : '', '
 adresseInput.value = f ? (f.adresse_recuperation || '') : '';
 }
 
+/* ---------- CARNET D'ADRESSES DU CLIENT SÉLECTIONNÉ ---------- */
+// Voir config.js pour le raisonnement complet. Ici, seulement le branchement à l'écran.
+//
+// Pourquoi une requête dédiée plutôt que de fouiller allColis : allColis ne contient que la
+// première page de colis (les plus récents, tous clients confondus). Un client qui n'a rien
+// envoyé cette semaine n'y figure pas du tout — son carnet paraîtrait vide alors qu'il a
+// trente destinataires connus. On interroge donc la base sur CE client précisément.
+const carnetParClient = new Map();
+
+async function chargerCarnetClient(fournisseurId){
+if (!fournisseurId) return [];
+if (carnetParClient.has(fournisseurId)) return carnetParClient.get(fournisseurId);
+let colonnes = 'destination, commune_destination, destinataire_telephone, created_at';
+let { data, error } = await supabaseClient.from('colis')
+  .select(colonnes).eq('fournisseur_id', fournisseurId)
+  .order('created_at', { ascending: false }).limit(300);
+// Rétro-compatibilité : si commune_destination n'existe pas encore dans cette base, on
+// réessaie sans elle plutôt que de priver l'écran de tout le carnet.
+if (error && /commune_destination|column|colonne/i.test(error.message || '')) {
+({ data, error } = await supabaseClient.from('colis')
+  .select('destination, destinataire_telephone, created_at').eq('fournisseur_id', fournisseurId)
+  .order('created_at', { ascending: false }).limit(300));
+}
+// Une coupure réseau ne doit rien casser : pas de carnet cette fois-ci, le formulaire reste
+// entièrement utilisable à la main. On ne met PAS en cache un échec, pour réessayer plus tard.
+if (error) { console.error('Carnet :', error); return []; }
+const carnet = construireCarnet(data || []);
+carnetParClient.set(fournisseurId, carnet);
+return carnet;
+}
+
+// Ce que la personne a déjà tapé sert de filtre : on tape « Yop » ou les premiers chiffres du
+// numéro, la liste se réduit d'elle-même. Pas de champ de recherche supplémentaire à remplir.
+function eqCarnetFiltre(carnet){
+const dest = (document.getElementById('add-dest') || {}).value || '';
+const tel = (document.getElementById('add-dest-tel') || {}).value || '';
+return chercherDansCarnet(chercherDansCarnet(carnet, dest), tel);
+}
+
+function eqDessinerCarnet(){
+const wrap = document.getElementById('carnet-dest-wrap');
+if (!wrap) return;
+const fournisseurId = (document.getElementById('add-fournisseur') || {}).value || '';
+if (!fournisseurId) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+const carnet = carnetParClient.get(fournisseurId);
+if (!carnet) { wrap.style.display = 'none'; return; }
+wrap.style.display = '';
+// carnetPanneauHTML reçoit la liste DÉJÀ filtrée et une saisie vide : le filtrage se fait ici
+// sur deux champs à la fois, ce qu'une seule chaîne de recherche ne saurait pas exprimer.
+wrap.innerHTML = carnetPanneauHTML(eqCarnetFiltre(carnet), '');
+}
+
+async function eqRafraichirCarnet(){
+const fournisseurId = (document.getElementById('add-fournisseur') || {}).value || '';
+if (fournisseurId) await chargerCarnetClient(fournisseurId);
+eqDessinerCarnet();
+}
+
+// Un seul écouteur posé une fois pour toutes sur le conteneur : les boutons sont recréés à
+// chaque frappe, leur attacher un écouteur individuel les laisserait derrière à chaque redessin.
+function eqBrancherCarnet(){
+const wrap = document.getElementById('carnet-dest-wrap');
+if (!wrap) return;
+wrap.addEventListener('click', (e) => {
+const btn = e.target.closest('.carnet-item');
+if (!btn) return;
+const commune = btn.getAttribute('data-carnet-commune') || '';
+const quartier = btn.getAttribute('data-carnet-dest') || '';
+// Cet écran n'a qu'un seul champ « Destination » en texte libre, pas de liste de communes
+// séparée. On y écrit donc le lieu complet, commune et quartier réunis.
+const lieu = [commune, quartier].filter(Boolean).join(' — ');
+const entree = { commune: '', destination: lieu, telephone: btn.getAttribute('data-carnet-tel') || '' };
+const destEl = document.getElementById('add-dest');
+const telEl = document.getElementById('add-dest-tel');
+const res = appliquerEntreeCarnet(entree, { destination: destEl ? destEl.value : '', telephone: telEl ? telEl.value : '' });
+if ('destination' in res.ecrits && destEl) destEl.value = res.ecrits.destination;
+if ('telephone' in res.ecrits && telEl) telEl.value = res.ecrits.telephone;
+// Le brouillon doit suivre : sans ça, un rafraîchissement de page perdrait ce qu'on vient
+// de reprendre du carnet, alors que tout le reste du formulaire est conservé.
+if (typeof saveColisDraft === 'function') saveColisDraft();
+if (window.cltToast) cltToast(resumeCarnetTexte(res, { commune: commune, destination: quartier, telephone: entree.telephone }), { type: res.conserves.length ? 'warning' : 'success' });
+eqDessinerCarnet();
+});
+}
+
 function initColisDraftAutosave(){
 restoreColisDraftIfAny();
 fillPickupForSelectedFournisseur();
+eqBrancherCarnet();
+// Un brouillon restauré peut déjà désigner un client : son carnet doit apparaître sans
+// attendre que quelqu'un rouvre la liste des clients.
+eqRafraichirCarnet();
 const debouncedSave = () => {
 clearTimeout(colisDraftSaveTimer);
 colisDraftSaveTimer = setTimeout(saveColisDraft, 400);
 };
 document.getElementById('add-fournisseur').addEventListener('change', () => {
 fillPickupForSelectedFournisseur();
+eqRafraichirCarnet();
 saveColisDraft();
 });
+// Le carnet se resserre au fil de la frappe dans les deux champs du destinataire. On redessine
+// seulement (eqDessinerCarnet), sans relire la base : le carnet du client est déjà en mémoire.
+document.getElementById('add-dest').addEventListener('input', eqDessinerCarnet);
+document.getElementById('add-dest-tel').addEventListener('input', eqDessinerCarnet);
 document.getElementById('add-dest').addEventListener('input', debouncedSave);
 document.getElementById('add-pickup-adresse').addEventListener('input', debouncedSave);
 document.getElementById('add-montant-article').addEventListener('input', debouncedSave);
@@ -2395,6 +2492,11 @@ addMsg("Pas de connexion : ce colis est enregistré sur cet appareil et sera env
 e.target.reset();
 fillPickupForSelectedFournisseur();
 clearColisDraft();
+// Le nouveau destinataire doit figurer au carnet dès le colis suivant : on oublie la copie
+// en mémoire de ce client, elle sera relue à la prochaine sélection. Hors-réseau aussi : le
+// colis part plus tard, mais le carnet est déduit de la base, donc la relecture suffira.
+carnetParClient.delete(fournisseur_id);
+eqRafraichirCarnet();
 const totalHorsLigneEl = document.getElementById('add-montant-total');
 if (totalHorsLigneEl) totalHorsLigneEl.textContent = '0 FCFA';
 const nomPhotoHorsLigne = document.querySelector('#add-photo-group .photo-pick-filename');
@@ -2436,6 +2538,11 @@ addMsg(dejaEnregistre
 e.target.reset();
 fillPickupForSelectedFournisseur();
 clearColisDraft();
+// Le nouveau destinataire doit figurer au carnet dès le colis suivant : on oublie la copie
+// en mémoire de ce client, elle sera relue à la prochaine sélection. Hors-réseau aussi : le
+// colis part plus tard, mais le carnet est déduit de la base, donc la relecture suffira.
+carnetParClient.delete(fournisseur_id);
+eqRafraichirCarnet();
 const addMontantTotalEl = document.getElementById('add-montant-total');
 if (addMontantTotalEl) addMontantTotalEl.textContent = '0 FCFA';
 const addPhotoFilename = document.querySelector('#add-photo-group .photo-pick-filename');

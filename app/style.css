@@ -495,6 +495,47 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
   background:var(--primary, #1B4374); background-image:none; border-color:var(--primary, #1B4374); color:#fff;
 }
 
+/* ------------------------------------------------------------------------------------------
+   CARNET D'ADRESSES — ajout du 21 août 2026
+   Une bande de boutons posée sous les champs du destinataire : un bouton par personne déjà
+   servie par ce client. Volontairement discrète (fond léger, bordure fine) car c'est une aide,
+   pas l'étape principale du formulaire — elle ne doit pas attirer l'œil avant les champs.
+   ------------------------------------------------------------------------------------------ */
+.carnet-wrap{
+  margin:-8px 0 16px; padding:10px 12px; border:1px solid var(--border, #e3e6ea);
+  border-radius:10px; background:var(--bg-soft, #f7f8fa);
+}
+.carnet-entete, .carnet-vide{
+  font-size:12px; color:var(--muted, #6b7480); margin-bottom:8px;
+}
+.carnet-vide{margin-bottom:0;}
+.carnet-liste{display:flex; flex-wrap:wrap; gap:8px;}
+/* Cible tactile d'au moins 40 px de haut : ces boutons se pressent au pouce, souvent debout
+   dans le dépôt. En-dessous, on rate le bouton une fois sur trois. */
+.carnet-item{
+  display:inline-flex; align-items:center; gap:8px; min-height:40px;
+  padding:7px 12px; border:1px solid var(--border, #d8dce2); border-radius:var(--radius-pill, 999px);
+  background:var(--card, #fff); cursor:pointer; font-size:13px; line-height:1.25;
+  text-align:left; max-width:100%;
+}
+.carnet-item:hover{border-color:var(--primary, #1B4374);}
+.carnet-item__lieu{font-weight:600; color:var(--text, #1c2229);}
+.carnet-item__tel{color:var(--muted, #6b7480); font-variant-numeric:tabular-nums;}
+/* Le compteur « 5× » dit combien de fois ce destinataire a déjà été servi : c'est ce qui
+   distingue l'habituée de la personne servie une seule fois il y a six mois. */
+.carnet-item__nb{
+  font-size:11px; font-weight:700; color:var(--primary, #1B4374);
+  background:rgba(27,67,116,.09); border-radius:var(--radius-pill, 999px); padding:2px 7px;
+}
+[data-theme="dark"] .carnet-wrap{background:rgba(255,255,255,.03); border-color:rgba(255,255,255,.10);}
+[data-theme="dark"] .carnet-item{background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.14);}
+[data-theme="dark"] .carnet-item__nb{background:rgba(255,255,255,.10); color:#cfe0f7;}
+/* Sur un écran de téléphone, les boutons s'étalent sur toute la largeur plutôt que de se
+   couper en deux lignes illisibles. */
+@media (max-width:640px){
+  .carnet-item{width:100%; justify-content:space-between;}
+}
+
 .badge{
   display:inline-block; padding:6px 13px; border-radius:var(--radius-pill); font-size:12px; font-weight:700; letter-spacing:.2px;
 }

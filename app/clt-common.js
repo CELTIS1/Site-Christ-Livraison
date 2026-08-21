@@ -17,10 +17,26 @@
 // globales, utilisables partout (y compris dans les gestionnaires onclick/onerror).
 
 // ---------- Échappement HTML ----------
+// CORRECTION DU 21 AOÛT 2026 — à lire avant de « simplifier » cette fonction.
+//
+// L'ancienne version passait par le navigateur (textContent puis innerHTML). Elle échappait
+// bien < > et &, mais PAS les guillemets. Or l'application écrit partout du HTML de la forme
+//   data-quelque-chose="${escapeHTML(valeur)}"
+// et une partie de ces valeurs vient de saisies libres : nom de quartier, description de colis,
+// nom d'entreprise. Il suffisait donc qu'une cliente tape un guillemet droit dans le quartier
+// de destination pour refermer l'attribut par accident — au mieux la ligne s'affichait de
+// travers, au pire on pouvait glisser un attribut supplémentaire dans la page de l'équipe.
+//
+// La version ci-dessous échappe aussi " et ', et ne dépend plus du navigateur : elle peut donc
+// être vérifiée par les contrôles automatiques (voir tests/carnet-adresses.test.mjs).
+// null et undefined donnent une chaîne vide, jamais le texte « undefined ».
 function escapeHTML(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
+  return String(str === null || str === undefined ? "" : str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // ---------- Dates ----------

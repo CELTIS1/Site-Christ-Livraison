@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821lot1">
+<link rel="stylesheet" href="style.css?v=20260821carnet1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -374,8 +374,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821lot1"></script>
-<script src="config.js?v=20260819fiab1"></script>
+<script src="clt-common.js?v=20260821carnet1"></script>
+<script src="config.js?v=20260821carnet1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
@@ -592,6 +592,9 @@
           <input type="tel" class="row-dest-tel" placeholder="Ex : 07 01 02 03 04" inputmode="tel">
           <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Permet de prévenir le destinataire par WhatsApp avec le lien de suivi.</div>
         </div>
+        <!-- Carnet d'adresses : vos destinataires déjà servis, déduits de vos colis passés.
+             Voir config.js pour le raisonnement. Caché tant qu'il n'y a rien à proposer. -->
+        <div class="carnet-wrap row-carnet" style="display:none;"></div>
         <div class="field">
           <label>Code de confirmation à la livraison (optionnel)</label>
           <div style="display:flex; gap:8px; align-items:center;">
@@ -682,10 +685,100 @@
     });
   }
 
+  /* ---------- CARNET D'ADRESSES : MES DESTINATAIRES DÉJÀ SERVIS ----------
+     Le raisonnement complet est dans config.js. Ici, seulement le branchement à l'écran.
+
+     Une cliente qui expédie tous les jours réexpédie souvent vers les mêmes personnes. Le
+     carnet se déduit de ses propres colis passés : rien à saisir, rien à tenir à jour, et
+     les droits d'accès sont ceux des colis (elle ne voit que les siens).
+
+     Il est chargé UNE fois pour la page, pas une fois par ligne : ajouter cinq colis d'un
+     coup ne doit pas déclencher cinq fois la même requête. */
+  let monCarnet = null;
+
+  async function chargerMonCarnet(){
+    if (monCarnet) return monCarnet;
+    if (!currentUser) return [];
+    let { data, error } = await supabaseClient.from('colis')
+      .select('destination, commune_destination, destinataire_telephone, created_at')
+      .eq('fournisseur_id', currentUser.id)
+      .order('created_at', { ascending: false }).limit(300);
+    // Rétro-compatibilité : base où commune_destination n'existe pas encore.
+    if (error && /commune_destination|column|colonne/i.test(error.message || '')) {
+      ({ data, error } = await supabaseClient.from('colis')
+        .select('destination, destinataire_telephone, created_at')
+        .eq('fournisseur_id', currentUser.id)
+        .order('created_at', { ascending: false }).limit(300));
+    }
+    // Réseau coupé : pas de carnet cette fois, le formulaire reste utilisable à la main. On ne
+    // mémorise pas l'échec, pour retenter au prochain passage.
+    if (error) { console.error('Carnet :', error); return []; }
+    monCarnet = construireCarnet(data || []);
+    return monCarnet;
+  }
+
+  // Le carnet d'une ligne se resserre au fil de ce qui est déjà tapé DANS CETTE LIGNE : commune,
+  // quartier, téléphone. Chaque ligne du formulaire filtre donc indépendamment des autres.
+  function dessinerCarnetLigne(row){
+    const wrap = row && row.querySelector('.row-carnet');
+    if (!wrap) return;
+    if (!monCarnet || !monCarnet.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+    const lire = (sel) => { const el = row.querySelector(sel); return el ? (el.value || '') : ''; };
+    let trouves = chercherDansCarnet(monCarnet, lire('.row-commune-dest'));
+    trouves = chercherDansCarnet(trouves, lire('.row-dest'));
+    trouves = chercherDansCarnet(trouves, lire('.row-dest-tel'));
+    wrap.style.display = '';
+    wrap.innerHTML = carnetPanneauHTML(trouves, '');
+  }
+
+  function wireCarnet(row){
+    if (!row) return;
+    ['.row-commune-dest', '.row-dest', '.row-dest-tel'].forEach(sel => {
+      const el = row.querySelector(sel);
+      if (el) el.addEventListener(sel === '.row-commune-dest' ? 'change' : 'input', () => dessinerCarnetLigne(row));
+    });
+    const wrap = row.querySelector('.row-carnet');
+    if (wrap) wrap.addEventListener('click', (e) => {
+      const btn = e.target.closest('.carnet-item');
+      if (!btn) return;
+      const entree = {
+        commune: btn.getAttribute('data-carnet-commune') || '',
+        destination: btn.getAttribute('data-carnet-dest') || '',
+        telephone: btn.getAttribute('data-carnet-tel') || ''
+      };
+      const communeEl = row.querySelector('.row-commune-dest');
+      const destEl = row.querySelector('.row-dest');
+      const telEl = row.querySelector('.row-dest-tel');
+      const res = appliquerEntreeCarnet(entree, {
+        commune: communeEl ? communeEl.value : '',
+        destination: destEl ? destEl.value : '',
+        telephone: telEl ? telEl.value : ''
+      });
+      if ('commune' in res.ecrits && communeEl) {
+        communeEl.value = res.ecrits.commune;
+        // La commune choisie commande le prix de livraison suggéré (voir wireAutoPrix) : sans
+        // ce signal, le montant resterait celui de l'ancienne commune, donc faux.
+        communeEl.dispatchEvent(new Event('change'));
+      }
+      if ('destination' in res.ecrits && destEl) destEl.value = res.ecrits.destination;
+      if ('telephone' in res.ecrits && telEl) telEl.value = res.ecrits.telephone;
+      if (typeof saveColisDraft === 'function') saveColisDraft();
+      if (window.cltToast) cltToast(resumeCarnetTexte(res, entree), { type: res.conserves.length ? 'warning' : 'success' });
+      dessinerCarnetLigne(row);
+    });
+    dessinerCarnetLigne(row);
+  }
+
+  // Après le chargement du carnet (ou après l'ajout de colis), les lignes déjà à l'écran doivent
+  // se mettre à jour : elles ont été dessinées quand le carnet était encore vide.
+  function redessinerTousLesCarnets(){
+    document.querySelectorAll('.colis-row').forEach(dessinerCarnetLigne);
+  }
+
   function addRow(cle){
     document.getElementById('colis-rows').insertAdjacentHTML('beforeend', newRowHTML(rowCount, cle));
     const row = document.querySelector(`.colis-row[data-row="${rowCount}"]`);
-    if (row) { wireMontantPreview(row); wireAutoPrix(row); }
+    if (row) { wireMontantPreview(row); wireAutoPrix(row); wireCarnet(row); }
     rowCount++;
   }
   function removeRow(idx){
@@ -1067,6 +1160,10 @@
     rowCount = 0;
     addRow();
     loadColis();
+    // Les destinataires qu'on vient de servir entrent au carnet : on oublie la copie en mémoire
+    // et on la relit, pour qu'ils soient proposés dès le prochain colis.
+    monCarnet = null;
+    chargerMonCarnet().then(redessinerTousLesCarnets).catch(e => console.error('Carnet :', e));
   });
 
   // Frise d'étapes (stepper) : reflète visuellement l'avancement du colis à partir de son statut réel.
@@ -2046,6 +2143,10 @@
     // Brouillon local : à brancher après la première ligne et après le pré-remplissage du lieu de
     // récupération, pour que la restoration puisse écraser proprement ces valeurs par défaut.
     initColisDraftAutosave();
+    // Carnet d'adresses : chargé sans bloquer l'affichage du reste. Les lignes déjà dessinées se
+    // mettent à jour dès qu'il arrive — c'est une aide, elle a le droit d'apparaître une seconde
+    // après le formulaire plutôt que de le retarder.
+    chargerMonCarnet().then(redessinerTousLesCarnets).catch(e => console.error('Carnet :', e));
     await loadLivreurs();
     filtreDate = todayLocalISODate();
     document.getElementById('filtre-date-colis').value = filtreDate;

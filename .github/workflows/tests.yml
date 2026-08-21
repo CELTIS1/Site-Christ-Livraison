@@ -39,3 +39,6 @@ jobs:
 
       - name: Actions en lot (traiter plusieurs colis d'un coup sans rien fausser)
         run: node tests/actions-en-lot.test.mjs
+
+      - name: Carnet d'adresses (proposer sans jamais écraser une saisie)
+        run: node tests/carnet-adresses.test.mjs

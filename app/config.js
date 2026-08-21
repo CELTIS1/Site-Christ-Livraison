@@ -1240,6 +1240,213 @@ function rafraichirBarreLot(barre, nb, total) {
   if (tout) tout.textContent = texteToutLot(nb, total);
 }
 
+/* ==========================================================================================
+   CARNET D'ADRESSES — ajout du 21 août 2026
+   ------------------------------------------------------------------------------------------
+   Le problème observé : une vendeuse expédie souvent vers les mêmes destinataires (sa cliente
+   fidèle de Yopougon, la boutique de Cocody qui recommande chaque semaine). À chaque nouveau
+   colis, quelqu'un retape la commune, le quartier et le numéro de téléphone — déjà saisis dix
+   fois. C'est du temps perdu, et surtout une source de fautes de frappe : un chiffre de travers
+   dans le numéro et le livreur ne joint plus personne.
+
+   Le choix de conception, et il est important : ON N'INVENTE AUCUNE NOUVELLE TABLE. Le carnet
+   n'est pas une liste à tenir à jour à la main — personne ne le ferait. Il se DÉDUIT des colis
+   déjà enregistrés pour ce client. Conséquences directes :
+     - rien à saisir, rien à maintenir, le carnet est juste par construction ;
+     - aucune migration SQL, donc aucun risque de désynchronisation entre le code et la base ;
+     - les droits d'accès sont ceux des colis (RLS) : une cliente ne voit que ses destinataires,
+       l'équipe voit ceux du client sélectionné. Rien à sécuriser en plus.
+
+   DEUX RÈGLES DE PRUDENCE qui gouvernent tout ce bloc :
+
+   1. LE CARNET PROPOSE, IL N'IMPOSE JAMAIS. Un remplissage automatique qui écrase une saisie en
+      cours est pire que pas de carnet du tout. On ne remplit donc un champ que sur un geste
+      explicite, et on ne touche jamais à un champ que la personne a déjà rempli sans le lui dire.
+
+   2. LE CARNET NE MENT PAS SUR LA FRAÎCHEUR. Les gens déménagent et changent de numéro. Une
+      entrée affiche donc TOUJOURS la valeur la PLUS RÉCENTE observée, jamais la plus fréquente,
+      même si l'ancienne adresse revient plus souvent dans l'historique.
+   ========================================================================================== */
+
+// Réduit un numéro ivoirien à sa forme comparable : chiffres seuls, sans l'indicatif 225.
+// Sert uniquement à reconnaître deux écritures du même numéro ("+225 07 01 02 03 04" et
+// "0701020304"), jamais à réécrire ce qui est enregistré en base.
+function cleTelCarnet(brut) {
+  let n = String(brut || "").replace(/[^0-9]/g, "");
+  if (n.startsWith("225")) n = n.slice(3);
+  return n;
+}
+
+// Réduit un texte libre à sa forme comparable : minuscules, sans accents, espaces et
+// ponctuation resserrés. "Cocody, Angré 8e" et "cocody angre 8e" sont alors le même endroit.
+function cleTexteCarnet(brut) {
+  return String(brut || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+// Construit le carnet à partir d'une liste de colis passés (les plus récents d'abord, tels que
+// les renvoie la base). Une entrée = un destinataire.
+//
+// Identité d'un destinataire : son numéro de téléphone quand il y en a un — c'est le seul
+// repère vraiment fiable. Sans numéro, on se rabat sur commune + quartier, ce qui reste utile
+// pour éviter de retaper une adresse, tout en sachant que deux personnes du même quartier
+// seront alors confondues : c'est assumé, l'entrée ne sert dans ce cas qu'à remplir l'adresse.
+function construireCarnet(colis) {
+  const entrees = new Map();
+  (colis || []).forEach(c => {
+    if (!c) return;
+    const tel = cleTelCarnet(c.destinataire_telephone);
+    const commune = (c.commune_destination || "").trim();
+    const dest = (c.destination || "").trim();
+    // Un colis sans aucune information de destinataire n'apprend rien : on l'ignore.
+    if (!tel && !commune && !dest) return;
+    const cle = tel ? "tel:" + tel : "lieu:" + cleTexteCarnet(commune + " " + dest);
+    const quand = c.created_at || "";
+    let e = entrees.get(cle);
+    if (!e) {
+      e = { cle: cle, telephone: c.destinataire_telephone || "", commune: commune, destination: dest, nb: 0, dernier: quand };
+      entrees.set(cle, e);
+    }
+    e.nb++;
+    // Règle 2 : la valeur la plus récente gagne. On ne remplace jamais une information connue
+    // par du vide — un colis récent saisi à la va-vite ne doit pas effacer une adresse connue.
+    if (!e.dernier || quand > e.dernier) {
+      e.dernier = quand;
+      if (commune) e.commune = commune;
+      if (dest) e.destination = dest;
+      if (c.destinataire_telephone) e.telephone = c.destinataire_telephone;
+    } else {
+      if (!e.commune && commune) e.commune = commune;
+      if (!e.destination && dest) e.destination = dest;
+      if (!e.telephone && c.destinataire_telephone) e.telephone = c.destinataire_telephone;
+    }
+  });
+  // Les habitués d'abord (c'est eux qu'on cherche), puis les plus récents. À égalité parfaite
+  // on trie par clé pour que l'ordre soit stable d'un affichage à l'autre : une liste dont les
+  // boutons changent de place entre deux ouvertures fait cliquer à côté.
+  return Array.from(entrees.values()).sort((a, b) => {
+    if (b.nb !== a.nb) return b.nb - a.nb;
+    if (a.dernier !== b.dernier) return a.dernier < b.dernier ? 1 : -1;
+    return a.cle < b.cle ? -1 : 1;
+  });
+}
+
+// Libellé d'une entrée tel qu'il s'affiche sur le bouton. Sans commune ni quartier, on montre
+// le numéro : mieux vaut un bouton qui dit « 07 01 02 03 04 » qu'un bouton muet.
+function libelleEntreeCarnet(e) {
+  if (!e) return "";
+  const lieu = [e.commune, e.destination].filter(Boolean).join(" — ");
+  return lieu || e.telephone || "Destinataire";
+}
+
+// Filtre le carnet sur ce que la personne est en train de taper. La recherche porte sur le
+// quartier, la commune ET le numéro à la fois : on cherche parfois « Yopougon », parfois « 0701 ».
+function chercherDansCarnet(carnet, saisie) {
+  const q = String(saisie || "").trim();
+  if (!q) return carnet || [];
+  const qTexte = cleTexteCarnet(q);
+  const qTel = cleTelCarnet(q);
+  return (carnet || []).filter(e => {
+    if (qTel && cleTelCarnet(e.telephone).indexOf(qTel) >= 0) return true;
+    if (!qTexte) return false;
+    return cleTexteCarnet(e.commune + " " + e.destination).indexOf(qTexte) >= 0;
+  });
+}
+
+// Phrase qui accompagne la liste. Elle doit rester exacte : si on n'affiche que les 8 premiers
+// d'un carnet qui en compte 40, on le dit, sinon on donne l'illusion d'un carnet vide.
+function texteCarnet(nbAffiches, nbTotal) {
+  if (!nbTotal) return "Aucun destinataire connu pour l'instant.";
+  if (nbAffiches >= nbTotal) return nbTotal > 1 ? (nbTotal + " destinataires déjà servis") : "1 destinataire déjà servi";
+  return nbAffiches + " sur " + nbTotal + " — affinez la recherche";
+}
+
+// Nombre maximum de boutons affichés d'un coup. Au-delà, la liste devient plus longue que le
+// formulaire et on scrolle plus qu'on ne saisit : la recherche prend le relais.
+const CARNET_MAX_AFFICHE = 8;
+
+// Un bouton par destinataire connu. Les valeurs voyagent dans des attributs data- plutôt que
+// dans une variable de portée : la liste est reconstruite à chaque frappe, un index de tableau
+// n'y survivrait pas.
+function carnetEntreeHTML(e) {
+  const lieu = libelleEntreeCarnet(e);
+  const tel = e.telephone ? String(e.telephone) : "";
+  return '<button type="button" class="carnet-item" data-carnet-cle="' + escapeHTML(e.cle) + '"' +
+    ' data-carnet-commune="' + escapeHTML(e.commune || "") + '"' +
+    ' data-carnet-dest="' + escapeHTML(e.destination || "") + '"' +
+    ' data-carnet-tel="' + escapeHTML(tel) + '">' +
+    '<span class="carnet-item__lieu">' + escapeHTML(lieu) + '</span>' +
+    (tel ? '<span class="carnet-item__tel">' + escapeHTML(tel) + '</span>' : "") +
+    (e.nb > 1 ? '<span class="carnet-item__nb">' + e.nb + '×</span>' : "") +
+    '</button>';
+}
+
+// Le panneau complet : la phrase de contexte puis les boutons.
+function carnetPanneauHTML(carnet, saisie) {
+  const total = (carnet || []).length;
+  if (!total) {
+    return '<div class="carnet-vide">Aucun destinataire connu pour ce client — le carnet se remplira tout seul au fil des colis.</div>';
+  }
+  const trouves = chercherDansCarnet(carnet, saisie);
+  if (!trouves.length) {
+    return '<div class="carnet-vide">Aucun destinataire connu ne correspond — continuez la saisie normalement.</div>';
+  }
+  const affiches = trouves.slice(0, CARNET_MAX_AFFICHE);
+  return '<div class="carnet-entete">' + escapeHTML(texteCarnet(affiches.length, trouves.length)) + '</div>' +
+    '<div class="carnet-liste">' + affiches.map(carnetEntreeHTML).join("") + '</div>';
+}
+
+// Décide champ par champ ce qu'un clic sur une entrée doit écrire.
+//
+// Règle 1 appliquée ici : un champ DÉJÀ REMPLI avec autre chose n'est pas écrasé en silence.
+// La fonction renvoie d'un côté ce qu'elle a écrit, de l'autre ce qu'elle a refusé de toucher,
+// pour que l'écran puisse le dire clairement plutôt que de laisser croire à un remplissage
+// complet. Elle ne touche à rien elle-même : c'est l'appelant qui applique, ce qui la rend
+// vérifiable sans navigateur.
+function appliquerEntreeCarnet(entree, actuel) {
+  const a = actuel || {};
+  const ecrits = {};
+  const conserves = [];
+  const champs = [
+    { nom: "commune", libelle: "la commune" },
+    { nom: "destination", libelle: "le quartier" },
+    { nom: "telephone", libelle: "le téléphone" }
+  ];
+  champs.forEach(ch => {
+    const propose = String((entree && entree[ch.nom]) || "").trim();
+    if (!propose) return;
+    const enPlace = String(a[ch.nom] || "").trim();
+    if (!enPlace) { ecrits[ch.nom] = propose; return; }
+    // Même valeur écrite autrement (accents, espaces, indicatif) : ce n'est pas un conflit.
+    const identique = ch.nom === "telephone"
+      ? cleTelCarnet(enPlace) === cleTelCarnet(propose)
+      : cleTexteCarnet(enPlace) === cleTexteCarnet(propose);
+    if (identique) return;
+    conserves.push(ch.libelle);
+  });
+  return { ecrits: ecrits, conserves: conserves };
+}
+
+// Le message affiché après un clic. Il doit dire la vérité y compris quand elle est partielle.
+function resumeCarnetTexte(resultat, entree) {
+  const r = resultat || {};
+  const nbEcrits = Object.keys(r.ecrits || {}).length;
+  const nom = libelleEntreeCarnet(entree);
+  if (!nbEcrits && !(r.conserves || []).length) return "Rien à reprendre pour ce destinataire.";
+  const gardes = r.conserves || [];
+  // Accord au singulier ou au pluriel : un message mal accordé fait douter de tout le reste.
+  const listeGardes = gardes.join(" et ");
+  const phraseGardes = gardes.length > 1
+    ? listeGardes + " que vous aviez saisis n'ont pas été touchés"
+    : listeGardes + " que vous aviez saisi n'a pas été touché";
+  if (!nbEcrits) return "Rien n'a été modifié : " + phraseGardes + ".";
+  if (!gardes.length) return nom + " repris.";
+  return nom + " repris — mais " + phraseGardes + ".";
+}
+
 // formatMontant() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 // ---------- Montant d'un colis : article + livraison ----------
