@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260819fiab1">
+<link rel="stylesheet" href="style.css?v=20260821rapide1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -363,7 +363,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260819rech1"></script>
+<script src="clt-common.js?v=20260821rapide1"></script>
 <script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
@@ -962,6 +962,222 @@
     return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
   }
 
+  /* ---------- CHEMIN UNIQUE D'ÉCRITURE D'UN CHANGEMENT DE STATUT ----------
+     Le bouton « Enregistrer » et les boutons d'action rapide (✅ Livré, 🚚 Je pars livrer,
+     ⚠️ Non livré) passent tous les deux par ici. Il n'y a donc qu'un seul comportement à
+     comprendre, à tester et à corriger : code de confirmation anti-fraude, compteur de
+     tentatives, envoi de la photo, file d'attente hors-réseau et repli sur les anciennes
+     colonnes se comportent à l'identique quel que soit le bouton utilisé.
+
+     Renvoie { ok, statutPrecedent, tentativesPrecedentes, extraApplique }.
+     ok === false signifie qu'absolument rien n'a été écrit (code de confirmation annulé ou
+     erroné, ou mise en file d'attente impossible) : l'appelant ne doit alors rien annoncer. */
+  async function appliquerStatutColis(o){
+    const id = o.id;
+    const statut = o.statut;
+    const btn = o.bouton || null;
+    const libelleBtn = btn ? btn.innerHTML : '';
+    const existing = allColis.find(c => c.id === id);
+    const statutPrecedent = existing ? (existing.statut || null) : null;
+    const tentativesPrecedentes = existing ? (Number(existing.tentatives_livraison) || 0) : 0;
+    // L'observation n'est reprise que si l'appelant en fournit une. Une action rapide ne doit
+    // jamais effacer l'observation déjà écrite pour ce colis.
+    const observation = ('observation' in o) ? o.observation : (existing ? (existing.observation || null) : null);
+    const pickedPhoto = o.photo || null;
+    let photo_livraison_url = existing ? existing.photo_livraison_url : null;
+    const echec = { ok: false, statutPrecedent, tentativesPrecedentes, extraApplique: {} };
+
+    // extraForce permet à l'annulation de réimposer une valeur exacte (ex : remettre le
+    // compteur de tentatives comme il était) au lieu de laisser les règles la recalculer.
+    const extra = Object.assign({}, o.extraForce || {});
+    const occuper = (txt) => { if (btn) { btn.disabled = true; btn.textContent = txt; } };
+    const liberer = () => { if (btn) { btn.disabled = false; btn.innerHTML = libelleBtn; } };
+
+    // --- Code de confirmation à la livraison (anti-fraude) ---
+    // Si un code à 4 chiffres a été attribué au colis et n'a pas encore été validé, on exige
+    // que le livreur saisisse celui remis par le destinataire avant de pouvoir marquer
+    // « Livré ». La vérification est locale (le code est déjà chargé) : elle marche donc
+    // aussi hors connexion. Une annulation (restauration d'un état déjà validé en son temps)
+    // n'a pas à repasser par cette étape.
+    if (!o.sansCodeConfirmation && statut === 'livre' && existing && existing.code_confirmation && !existing.code_confirme_at) {
+      const saisi = await cltPrompt({
+        title: 'Code de confirmation',
+        sub: 'Saisissez le code à 4 chiffres remis par le destinataire.',
+        placeholder: '● ● ● ●',
+        inputMode: 'numeric',
+        maxLength: 4,
+        okLabel: 'Valider la livraison',
+      });
+      if (saisi === null || saisi.trim() === '') return echec; // annulé : on n'enregistre rien
+      if (saisi.trim() !== String(existing.code_confirmation)) {
+        await cltConfirm({
+          title: 'Code incorrect',
+          sub: "La livraison n'a pas été enregistrée. Vérifiez le code auprès du destinataire, puis réessayez.",
+          okLabel: "J'ai compris",
+          cancelLabel: 'Fermer',
+        });
+        return echec;
+      }
+      extra.code_confirme_at = new Date().toISOString();
+    }
+
+    // --- Compteur de tentatives (workflow d'échec de livraison) ---
+    if (!('tentatives_livraison' in extra) && statut === 'non_livre' && existing && existing.statut !== 'non_livre') {
+      extra.tentatives_livraison = tentativesPrecedentes + 1;
+    }
+
+    // Hors connexion : on met la mise à jour en file d'attente au lieu de la perdre.
+    if (!navigator.onLine) {
+      occuper('Enregistrement...');
+      let miseEnFile = false;
+      try {
+        await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: pickedPhoto || null, extra, userId: currentUser.id, timestamp: Date.now() });
+        if (existing) Object.assign(existing, { statut, observation }, extra);
+        miseEnFile = true;
+      } catch (e) {
+        console.error(e);
+        alert("Impossible d'enregistrer cette mise à jour hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
+      }
+      liberer();
+      await refreshOfflineBanner();
+      return miseEnFile
+        ? { ok: true, horsReseau: true, statutPrecedent, tentativesPrecedentes, extraApplique: extra }
+        : echec;
+    }
+
+    if (pickedPhoto) {
+      occuper('Envoi photo... 0%');
+      const uploaded = await uploadPhoto(pickedPhoto, currentUser.id, (pct) => {
+        if (btn) btn.textContent = `Envoi photo... ${pct}%`;
+      });
+      if (uploaded) {
+        photo_livraison_url = uploaded;
+      } else {
+        // Échec probable de connexion pendant l'envoi de la photo : on met tout en file d'attente.
+        occuper('Enregistrement...');
+        let miseEnFile = false;
+        try {
+          await queueAdd({ colisId: id, statut, observation, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: pickedPhoto, extra, userId: currentUser.id, timestamp: Date.now() });
+          if (existing) Object.assign(existing, { statut, observation }, extra);
+          miseEnFile = true;
+        } catch (e) {
+          console.error(e);
+          alert("Impossible d'enregistrer cette mise à jour hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
+        }
+        liberer();
+        await refreshOfflineBanner();
+        return miseEnFile
+          ? { ok: true, horsReseau: true, statutPrecedent, tentativesPrecedentes, extraApplique: extra }
+          : echec;
+      }
+    }
+
+    occuper('...');
+    let { error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url, ...extra }).eq('id', id);
+    // Rétro-compatibilité : si les nouvelles colonnes (code_confirme_at, tentatives_livraison)
+    // n'existent pas encore (migration SQL pas lancée), on réessaie sans elles pour ne jamais
+    // bloquer la mise à jour de statut.
+    if (error && Object.keys(extra).length && /column|colonne|does not exist|n'existe pas/i.test(error.message || '')) {
+      ({ error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url }).eq('id', id));
+      if (!error) { for (const k in extra) delete extra[k]; }
+    }
+    liberer();
+    if (error) {
+      // Échec réseau probable : on met la mise à jour en file d'attente plutôt que de la perdre.
+      let miseEnFile = false;
+      try {
+        await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: null, extra, userId: currentUser.id, timestamp: Date.now() });
+        if (existing) Object.assign(existing, { statut, observation, photo_livraison_url }, extra);
+        miseEnFile = true;
+      } catch (e) {
+        console.error(e);
+        alert(friendlyErrorMessage(error.message) + " De plus, la mise en attente hors connexion a échoué : cette mise à jour n'est PAS enregistrée, merci de la refaire.");
+      }
+      await refreshOfflineBanner();
+      return miseEnFile
+        ? { ok: true, horsReseau: true, statutPrecedent, tentativesPrecedentes, extraApplique: extra }
+        : echec;
+    }
+    // Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel.
+    rememberWrite(id, { statut, observation, photo_livraison_url, ...extra });
+    const idx = allColis.findIndex(c => c.id === id);
+    if (idx !== -1) Object.assign(allColis[idx], { statut, observation, photo_livraison_url }, extra);
+    renderAll();
+    return { ok: true, horsReseau: false, statutPrecedent, tentativesPrecedentes, extraApplique: extra };
+  }
+
+  /* ---------- ACTIONS RAPIDES : faire avancer un colis en un seul appui ----------
+     Sur le terrain, marquer un colis livré demandait d'ouvrir la liste déroulante, de choisir
+     « Livré », puis d'appuyer sur « Enregistrer » — trois gestes, répétés des dizaines de fois
+     par jour, souvent debout et à une main. Ces boutons font la même chose en un appui.
+     La liste déroulante reste là pour tout le reste (retour, observation, photo). */
+  function actionsRapidesHTML(c){
+    const boutons = [];
+    if (c.statut !== 'livre') {
+      boutons.push(`<button type="button" class="btn btn-sm btn-etape btn-etape-livre" data-statut="livre">✅ Livré</button>`);
+    }
+    if (c.statut === 'en_attente' || c.statut === 'recupere') {
+      boutons.push(`<button type="button" class="btn btn-outline btn-sm btn-etape" data-statut="en_livraison">🚚 Je pars livrer</button>`);
+    }
+    if (c.statut === 'recupere' || c.statut === 'en_livraison') {
+      boutons.push(`<button type="button" class="btn btn-outline btn-sm btn-etape btn-etape-echec" data-statut="non_livre">⚠️ Non livré</button>`);
+    }
+    if (!boutons.length) return '';
+    return `<div class="colis-etapes">${boutons.join('')}</div>`;
+  }
+
+  // Branche les boutons d'action rapide d'une liste déjà rendue.
+  function brancherActionsRapides(list){
+    list.querySelectorAll('.btn-etape').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const item = btn.closest('.colis-item');
+        if (!item) return;
+        const id = item.dataset.id;
+        const statut = btn.dataset.statut;
+        const colis = allColis.find(c => c.id === id);
+        if (!colis || colis.statut === statut) return;
+        // On reprend l'observation telle qu'elle est actuellement à l'écran : si le livreur a
+        // commencé à écrire « client absent » avant d'appuyer, sa phrase ne doit pas être perdue.
+        const zoneObs = item.querySelector('.obs-textarea');
+        const opts = { id, statut, bouton: btn };
+        if (zoneObs) opts.observation = zoneObs.value.trim() || null;
+        const res = await appliquerStatutColis(opts);
+        if (!res.ok) return;
+        annoncerChangementStatut(colis, statut, res);
+      });
+    });
+  }
+
+  // Message de confirmation, avec un « Annuler » de quelques secondes : un appui malencontreux
+  // dans la poche ou en circulation ne doit pas coûter un appel à l'équipe pour corriger.
+  function annoncerChangementStatut(colis, statut, res){
+    const libelle = (STATUTS[statut] && STATUTS[statut].label) || statut;
+    const nom = colis.numero ? ('Colis ' + colis.numero) : 'Ce colis';
+    const suffixe = res.horsReseau ? " (sera envoyé au retour du réseau)" : '';
+    cltToast(`${nom} : ${libelle}.${suffixe}`, {
+      type: res.horsReseau ? 'info' : 'success',
+      title: res.horsReseau ? 'Enregistré sur cet appareil' : "C'est enregistré",
+      action: (res.statutPrecedent && res.statutPrecedent !== statut) ? {
+        label: '↩️ Annuler',
+        onClick: () => { annulerChangementStatut(colis.id, res); }
+      } : null
+    });
+  }
+
+  async function annulerChangementStatut(id, res){
+    // On réimpose explicitement l'ancien compteur de tentatives : sans cela, revenir à
+    // « Non livré » le ferait grimper une deuxième fois pour une seule vraie tentative.
+    const retour = await appliquerStatutColis({
+      id,
+      statut: res.statutPrecedent,
+      sansCodeConfirmation: true,
+      extraForce: { tentatives_livraison: res.tentativesPrecedentes }
+    });
+    if (!retour.ok) return;
+    const libelle = (STATUTS[res.statutPrecedent] && STATUTS[res.statutPrecedent].label) || res.statutPrecedent;
+    cltToast(`Retour à l'état précédent : ${libelle}.`, { type: 'info', title: 'Annulé' });
+  }
+
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
   function mesColisRowHTML(c, numeroClient){
     const thumb = c.photo_url
@@ -992,6 +1208,7 @@
           ${blockedSyncIds.has(c.id)
             ? `<div class="sync-pending-badge sync-blocked-badge">⚠️ Non enregistré — prévenez l'équipe</div>`
             : (pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : '')}
+          ${actionsRapidesHTML(c)}
           <select class="status-select">${statutOptions}</select>
           <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Livraison payée ?'}</button>
           <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
@@ -1062,114 +1279,23 @@
       btn.addEventListener('click', async () => {
         const item = btn.closest('.colis-item');
         const id = item.dataset.id;
+        const colis = allColis.find(c => c.id === id);
         const statut = item.querySelector('.status-select').value;
-        const observation = item.querySelector('.obs-textarea').value.trim() || null;
-        const pickedPhoto = pickedGroupFile(item.querySelector('.livraison-photo-input'));
-        const existing = allColis.find(c => c.id === id);
-        let photo_livraison_url = existing ? existing.photo_livraison_url : null;
-
-        // Champs additionnels calculés selon le statut (code de confirmation, tentatives).
-        const extra = {};
-
-        // --- Code de confirmation à la livraison (anti-fraude) ---
-        // Si un code à 4 chiffres a été attribué au colis et n'a pas encore été validé,
-        // on exige que le livreur saisisse celui remis par le destinataire avant de
-        // pouvoir marquer « Livré ». La vérification est locale (le code est déjà chargé),
-        // donc elle fonctionne aussi hors connexion.
-        if (statut === 'livre' && existing && existing.code_confirmation && !existing.code_confirme_at) {
-          const saisi = await cltPrompt({
-            title: 'Code de confirmation',
-            sub: 'Saisissez le code à 4 chiffres remis par le destinataire.',
-            placeholder: '● ● ● ●',
-            inputMode: 'numeric',
-            maxLength: 4,
-            okLabel: 'Valider la livraison',
-          });
-          if (saisi === null || saisi.trim() === '') return; // annulé : on n'enregistre rien
-          if (saisi.trim() !== String(existing.code_confirmation)) {
-            await cltConfirm({
-              title: 'Code incorrect',
-              sub: "La livraison n'a pas été enregistrée. Vérifiez le code auprès du destinataire, puis réessayez.",
-              okLabel: "J'ai compris",
-              cancelLabel: 'Fermer',
-            });
-            return;
-          }
-          extra.code_confirme_at = new Date().toISOString();
-        }
-
-        // --- Compteur de tentatives (workflow d'échec de livraison) ---
-        if (statut === 'non_livre' && existing && existing.statut !== 'non_livre') {
-          extra.tentatives_livraison = (Number(existing.tentatives_livraison) || 0) + 1;
-        }
-
-        // Hors connexion : on met la mise à jour en file d'attente au lieu de la perdre.
-        if (!navigator.onLine) {
-          btn.disabled = true; btn.textContent = 'Enregistrement...';
-          try {
-            await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: pickedPhoto || null, extra, userId: currentUser.id, timestamp: Date.now() });
-            if (existing) Object.assign(existing, { statut, observation }, extra);
-          } catch (e) {
-            console.error(e);
-            alert("Impossible d'enregistrer cette mise à jour hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
-          }
-          btn.disabled = false; btn.textContent = 'Enregistrer';
-          await refreshOfflineBanner();
-          return;
-        }
-
-        if (pickedPhoto) {
-          btn.disabled = true; btn.textContent = 'Envoi photo... 0%';
-          const uploaded = await uploadPhoto(pickedPhoto, currentUser.id, (pct) => {
-            btn.textContent = `Envoi photo... ${pct}%`;
-          });
-          if (uploaded) {
-            photo_livraison_url = uploaded;
-          } else {
-            // Échec probable de connexion pendant l'envoi de la photo : on met tout en file d'attente.
-            btn.disabled = true; btn.textContent = 'Enregistrement...';
-            try {
-              await queueAdd({ colisId: id, statut, observation, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: pickedPhoto, extra, userId: currentUser.id, timestamp: Date.now() });
-              if (existing) Object.assign(existing, { statut, observation }, extra);
-            } catch (e) {
-              console.error(e);
-              alert("Impossible d'enregistrer cette mise à jour hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
-            }
-            btn.disabled = false; btn.textContent = 'Enregistrer';
-            await refreshOfflineBanner();
-            return;
-          }
-        }
-
-        btn.disabled = true; btn.textContent = '...';
-        let { error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url, ...extra }).eq('id', id);
-        // Rétro-compatibilité : si les nouvelles colonnes (code_confirme_at, tentatives_livraison)
-        // n'existent pas encore (migration SQL pas lancée), on réessaie sans elles pour ne jamais
-        // bloquer la mise à jour de statut.
-        if (error && Object.keys(extra).length && /column|colonne|does not exist|n'existe pas/i.test(error.message || '')) {
-          ({ error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url }).eq('id', id));
-          if (!error) { for (const k in extra) delete extra[k]; }
-        }
-        btn.disabled = false; btn.textContent = 'Enregistrer';
-        if (error) {
-          // Échec réseau probable : on met la mise à jour en file d'attente plutôt que de la perdre.
-          try {
-            await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: null, extra, userId: currentUser.id, timestamp: Date.now() });
-            if (existing) Object.assign(existing, { statut, observation, photo_livraison_url }, extra);
-          } catch (e) {
-            console.error(e);
-            alert(friendlyErrorMessage(error.message) + " De plus, la mise en attente hors connexion a échoué : cette mise à jour n'est PAS enregistrée, merci de la refaire.");
-          }
-          await refreshOfflineBanner();
-          return;
-        }
-        // Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel.
-        rememberWrite(id, { statut, observation, photo_livraison_url, ...extra });
-        const idx = allColis.findIndex(c => c.id === id);
-        if (idx !== -1) Object.assign(allColis[idx], { statut, observation, photo_livraison_url }, extra);
-        renderAll();
+        const res = await appliquerStatutColis({
+          id,
+          statut,
+          bouton: btn,
+          observation: item.querySelector('.obs-textarea').value.trim() || null,
+          photo: pickedGroupFile(item.querySelector('.livraison-photo-input')),
+        });
+        // On n'annonce (et ne propose d'annuler) que si le statut a réellement bougé :
+        // appuyer sur « Enregistrer » pour ne corriger qu'une observation ou ajouter une
+        // photo ne doit pas faire apparaître un « Annuler » qui n'aurait rien à annuler.
+        if (res.ok && colis && res.statutPrecedent !== statut) annoncerChangementStatut(colis, statut, res);
       });
     });
+
+    brancherActionsRapides(list);
 
     // --- Bascule « Livraison payée » (Correctif 3) : enregistrement immédiat au clic ---------
     // Toujours visible (quel que soit le statut) : le destinataire doit parfois payer la

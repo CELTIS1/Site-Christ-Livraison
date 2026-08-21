@@ -386,6 +386,10 @@ html[data-theme="dark"] .colis-item[data-statut="retour"]:hover{border-color:#5C
   .colis-item.mes-colis-item .status-col .obs-textarea{width:100%;}
   .colis-item.mes-colis-item .status-col .field{width:100%; margin:0;}
   .colis-item.mes-colis-item .status-col .btn-save{align-self:stretch;}
+  .colis-item.mes-colis-item .status-col .colis-etapes{width:100%;}
+  /* Sur téléphone, l'action principale prend toute la largeur : c'est le geste du quotidien,
+     visé au pouce, souvent debout et à une main. */
+  .colis-etapes .btn-etape-livre{flex:1 1 100%;}
 }
 
 @media(min-width:641px){
@@ -399,7 +403,27 @@ html[data-theme="dark"] .colis-item[data-statut="retour"]:hover{border-color:#5C
   .colis-item.mes-colis-item .status-col .obs-textarea{flex:1 1 260px; min-width:240px;}
   .colis-item.mes-colis-item .status-col .field{flex:1 1 240px; min-width:220px; margin:0;}
   .colis-item.mes-colis-item .status-col .btn-save{flex:0 0 auto; margin-left:auto; align-self:flex-end;}
+  .colis-item.mes-colis-item .status-col .colis-etapes{flex:1 1 100%;}
 }
+
+/* ---------- Actions rapides d'avancement d'un colis (un seul appui) ----------
+   Faire avancer un colis est le geste le plus répété de la journée. Ces boutons le rendent
+   immédiat ; la liste déroulante reste disponible juste en dessous pour tous les autres cas. */
+.colis-etapes{display:flex; flex-wrap:wrap; gap:8px; align-items:stretch;}
+.colis-etapes .btn{
+  justify-content:center; min-height:44px; padding:10px 16px; font-size:13.5px; white-space:nowrap;
+}
+/* Vert franc et plein : c'est l'issue normale d'une course, elle doit se repérer sans lire. */
+.colis-etapes .btn-etape-livre{
+  background:#1a7d3c; border-color:#1a7d3c; color:#fff;
+  box-shadow:0 1px 2px rgba(26,125,60,.22); font-weight:700;
+}
+.colis-etapes .btn-etape-livre:hover{background:#166a33; border-color:#166a33; box-shadow:0 4px 12px rgba(26,125,60,.26);}
+/* L'échec reste en contour : présent quand il faut, jamais aussi tentant que « Livré ». */
+.colis-etapes .btn-etape-echec{color:#c0392b; border-color:#e3b7b2;}
+.colis-etapes .btn-etape-echec:hover{background:#fdf3f2; border-color:#d9a49e;}
+html[data-theme="dark"] .colis-etapes .btn-etape-echec{color:#f0938a; border-color:#6d3d38;}
+html[data-theme="dark"] .colis-etapes .btn-etape-echec:hover{background:#3a2422; border-color:#8a4b44;}
 
 .badge{
   display:inline-block; padding:6px 13px; border-radius:var(--radius-pill); font-size:12px; font-weight:700; letter-spacing:.2px;
@@ -1225,6 +1249,15 @@ html[data-theme="dark"] .clt-skel-line{ background:linear-gradient(90deg,#1B2635
   transition:color .15s ease;
 }
 .clt-toast__close:hover{ color:#5B6B7C; }
+/* Bouton d'action facultatif (« Annuler »). Cible large : il est visé au doigt, en marchant. */
+.clt-toast__action{
+  display:inline-block; margin-top:8px; padding:7px 14px; min-height:34px;
+  border:1.5px solid var(--clt-accent); border-radius:8px; background:transparent;
+  color:var(--clt-accent); font-size:13px; font-weight:700; cursor:pointer;
+  transition:background .15s ease, color .15s ease;
+}
+.clt-toast__action:hover{ background:var(--clt-accent); color:#fff; }
+.clt-toast__action:disabled{ opacity:.5; cursor:default; }
 .clt-toast__bar{
   position:absolute; left:0; bottom:0; height:2.5px; width:100%;
   transform-origin:left center; transform:scaleX(1);

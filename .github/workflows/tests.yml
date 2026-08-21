@@ -30,3 +30,6 @@ jobs:
 
       - name: File d'attente hors-réseau (espace Équipe)
         run: node tests/file-attente-equipe.test.mjs
+
+      - name: Actions rapides (un appui pour faire avancer un colis)
+        run: node tests/actions-rapides.test.mjs

@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260819fiab1">
+<link rel="stylesheet" href="style.css?v=20260821rapide1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -891,7 +891,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260819rech1"></script>
+<script src="clt-common.js?v=20260821rapide1"></script>
 <script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
@@ -2596,6 +2596,7 @@ ${(Number(c.tentatives_livraison) || 0) > 0 ? `<div class="meta" style="color:#c
 ${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
+${eqActionsRapidesHTML(c)}
 <div class="colis-quick-actions">
 <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" title="Copier le lien de suivi">🔗 Copier le lien</button>
 <button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 WhatsApp</button>
@@ -2745,6 +2746,116 @@ document.querySelectorAll('#section-aujourdhui .aujourdhui-tile').forEach(t => {
 });
 }
 
+/* ---------- ACTIONS RAPIDES : faire avancer un colis en un seul appui ----------
+   Depuis la liste, changer un statut demandait quatre gestes : ouvrir le menu ⋮, cliquer
+   « Modifier », choisir dans la liste déroulante, puis enregistrer. C'est l'opération la plus
+   répétée de la journée, souvent avec un livreur au téléphone. Ces boutons la ramènent à un
+   seul appui, et le menu ⋮ → Modifier reste là pour tout le reste (montants, observation,
+   changement de livreur, retour). */
+function eqActionsRapidesHTML(c){
+const boutons = [];
+if (c.statut !== 'livre') boutons.push(`<button type="button" class="btn btn-sm btn-etape btn-etape-livre" data-statut="livre">✅ Livré</button>`);
+if (c.statut === 'en_attente' || c.statut === 'recupere') boutons.push(`<button type="button" class="btn btn-outline btn-sm btn-etape" data-statut="en_livraison">🚚 En livraison</button>`);
+if (c.statut === 'recupere' || c.statut === 'en_livraison') boutons.push(`<button type="button" class="btn btn-outline btn-sm btn-etape btn-etape-echec" data-statut="non_livre">⚠️ Non livré</button>`);
+if (!boutons.length) return '';
+return `<div class="colis-etapes">${boutons.join('')}</div>`;
+}
+
+// Écriture d'un changement de statut venu d'une action rapide. Mêmes garanties que le bouton
+// « Enregistrer » : repli si les colonnes récentes n'existent pas encore, et mise en file
+// d'attente hors-réseau plutôt que perte de l'information.
+// Renvoie { ok, horsReseau, statutPrecedent, tentativesPrecedentes, extraApplique }.
+async function eqAppliquerStatutRapide(o){
+const id = o.id;
+const statut = o.statut;
+const btn = o.bouton || null;
+const libelleBtn = btn ? btn.innerHTML : '';
+const vu = allColis.find(c => c.id === id);
+const statutPrecedent = vu ? (vu.statut || null) : null;
+const tentativesPrecedentes = vu ? (Number(vu.tentatives_livraison) || 0) : 0;
+const echec = { ok: false, statutPrecedent, tentativesPrecedentes, extraApplique: {} };
+
+// extraForce permet à l'annulation de réimposer la valeur exacte d'avant, au lieu de laisser
+// les règles la recalculer et compter une tentative de livraison qui n'a jamais eu lieu.
+const extra = Object.assign({}, o.extraForce || {});
+if (!('tentatives_livraison' in extra) && statut === 'non_livre' && vu && vu.statut !== 'non_livre') {
+extra.tentatives_livraison = tentativesPrecedentes + 1;
+}
+
+if (btn) { btn.disabled = true; btn.textContent = '...'; }
+let { error } = await supabaseClient.from('colis').update(Object.assign({ statut }, extra)).eq('id', id);
+if (error && Object.keys(extra).length && /column|colonne|does not exist|n'existe pas/i.test(error.message || '')) {
+({ error } = await supabaseClient.from('colis').update({ statut }).eq('id', id));
+if (!error) { for (const k in extra) delete extra[k]; }
+}
+if (btn) { btn.disabled = false; btn.innerHTML = libelleBtn; }
+
+let horsReseau = false;
+if (error && eqEstPanneReseau(error)) {
+try {
+await eqQueueAjouter({
+type: 'maj-colis',
+colisId: id,
+payload: Object.assign({ statut }, extra),
+baseUpdatedAt: vu && vu.updated_at ? vu.updated_at : null,
+baseStatut: statutPrecedent
+});
+error = null;
+horsReseau = true;
+} catch (errFile) { console.error('Mise en file hors-réseau impossible :', errFile); }
+}
+if (error) { alert(friendlyErrorMessage(error.message)); return echec; }
+
+const idx = allColis.findIndex(c => c.id === id);
+if (idx !== -1) Object.assign(allColis[idx], { statut }, extra);
+renderColis();
+return { ok: true, horsReseau, statutPrecedent, tentativesPrecedentes, extraApplique: extra };
+}
+
+// Confirmation avec un « Annuler » de quelques secondes : un clic malencontreux ne doit pas
+// obliger à rouvrir la fiche pour réparer.
+function eqAnnoncerChangementStatut(colis, statut, res){
+const libelle = (STATUTS[statut] && STATUTS[statut].label) || statut;
+const nom = colis.numero ? ('Colis ' + colis.numero) : 'Ce colis';
+cltToast(`${nom} : ${libelle}.${res.horsReseau ? " Sera envoyé au retour du réseau." : ''}`, {
+type: res.horsReseau ? 'info' : 'success',
+title: res.horsReseau ? 'Enregistré sur cet appareil' : "C'est enregistré",
+action: (res.statutPrecedent && res.statutPrecedent !== statut) ? {
+label: '↩️ Annuler',
+onClick: () => { eqAnnulerChangementStatut(colis.id, res); }
+} : null
+});
+}
+
+async function eqAnnulerChangementStatut(id, res){
+const retour = await eqAppliquerStatutRapide({
+id,
+statut: res.statutPrecedent,
+extraForce: { tentatives_livraison: res.tentativesPrecedentes }
+});
+if (!retour.ok) return;
+const libelle = (STATUTS[res.statutPrecedent] && STATUTS[res.statutPrecedent].label) || res.statutPrecedent;
+cltToast(`Retour à l'état précédent : ${libelle}.`, { type: 'info', title: 'Annulé' });
+}
+
+function eqBrancherActionsRapides(list){
+list.querySelectorAll('.btn-etape').forEach(btn => {
+// Pas de stopPropagation ici : le clic doit poursuivre jusqu'au document, sinon un menu ⋮
+// resté ouvert ailleurs dans la liste ne se refermerait pas.
+btn.addEventListener('click', async () => {
+const item = btn.closest('.colis-item');
+if (!item) return;
+const colis = allColis.find(c => c.id === item.dataset.id);
+const statut = btn.dataset.statut;
+// Garde-fou : si l'affichage a pris du retard sur la réalité (temps réel, autre onglet),
+// on ne réécrit pas un statut déjà en place.
+if (!colis || colis.statut === statut) return;
+const res = await eqAppliquerStatutRapide({ id: colis.id, statut, bouton: btn });
+if (res.ok) eqAnnoncerChangementStatut(colis, statut, res);
+});
+});
+}
+
 function renderColis(){
 const list = document.getElementById('colis-list');
 const __anchor = captureScrollAnchor(list);
@@ -2757,6 +2868,8 @@ list.innerHTML = filtreDateColis
 } else {
 const groups = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
 list.innerHTML = renderGroupedColisHTML(groups, colisRowHTML, equipeCollecteActionHTML);
+
+eqBrancherActionsRapides(list);
 
 list.querySelectorAll('.btn-edit-pickup').forEach(btn => {
 btn.addEventListener('click', () => {

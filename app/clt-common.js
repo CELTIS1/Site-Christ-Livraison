@@ -275,7 +275,10 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
     if (!msg) return { dismiss: function () {} };
     var type = opts.type && ICONS[opts.type] ? opts.type : 'info';
     var title = ('title' in opts) ? opts.title : TITLES[type];
-    var duration = opts.duration || (type === 'error' ? 5400 : type === 'warning' ? 4200 : 3400);
+    // Un bouton d'action (typiquement « Annuler ») demande qu'on laisse le temps de le voir
+    // et de le viser au doigt : on allonge donc la durée par défaut dans ce cas.
+    var action = (opts.action && typeof opts.action.onClick === 'function') ? opts.action : null;
+    var duration = opts.duration || (action ? 8000 : type === 'error' ? 5400 : type === 'warning' ? 4200 : 3400);
     var reduce = false;
     try { reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
@@ -289,6 +292,7 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
       '<div class="clt-toast__body">' +
         (title ? '<div class="clt-toast__title">' + escapeHTML(title) + '</div>' : '') +
         '<div class="clt-toast__msg">' + escapeHTML(msg) + '</div>' +
+        (action ? '<button type="button" class="clt-toast__action">' + escapeHTML(action.label || 'Annuler') + '</button>' : '') +
       '</div>' +
       '<button type="button" class="clt-toast__close" aria-label="Fermer">\u2715</button>' +
       '<span class="clt-toast__bar"></span>';
@@ -315,6 +319,21 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
     arm(duration);
 
     el.querySelector('.clt-toast__close').addEventListener('click', dismiss);
+
+    // Bouton d'action facultatif. On le neutralise dès le premier clic : sur un téléphone,
+    // un double-appui involontaire ne doit pas déclencher deux fois l'annulation.
+    var btnAction = el.querySelector('.clt-toast__action');
+    if (btnAction && action) {
+      var dejaCliquee = false;
+      btnAction.addEventListener('click', function () {
+        if (dejaCliquee) return;
+        dejaCliquee = true;
+        btnAction.disabled = true;
+        try { action.onClick(); } catch (e) { console.error('Action de notification impossible :', e); }
+        dismiss();
+      });
+    }
+
     // Pause au survol (ordinateur) ; reprise ensuite.
     el.addEventListener('mouseenter', function () {
       if (timer) clearTimeout(timer);
