@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821livreur1">
+<link rel="stylesheet" href="style.css?v=20260821livreur2">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -916,8 +916,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821livreur1"></script>
-<script src="config.js?v=20260821livreur1"></script>
+<script src="clt-common.js?v=20260821livreur2"></script>
+<script src="config.js?v=20260821livreur2"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
@@ -4495,6 +4495,7 @@ ${perfCell('Livrés', s.livres, { fort: true })}
 ${perfCell('Non livrés', s.nonLivres)}
 ${perfCell('Retours', s.retours)}
 ${perfCell('En cours', s.enCours)}
+${perfCell('Pas encore pris', s.enAttente)}
 ${perfCell('Taux de réussite', tauxTexte(s.tauxReussite))}
 ${perfCell('Du premier coup', tauxTexte(s.tauxPremierCoup))}
 ${perfCell('Délai habituel', delaiTexte(s.__delai))}
@@ -4518,7 +4519,7 @@ box.innerHTML = `
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
 <thead><tr>
-<th>Livreur</th><th>Livrés</th><th>Non livrés</th><th>Retours</th><th>En cours</th>
+<th>Livreur</th><th>Livrés</th><th>Non livrés</th><th>Retours</th><th>En cours</th><th>Pas encore pris</th>
 <th>Taux de réussite</th><th>Du premier coup</th><th>Délai habituel</th>
 </tr></thead>
 <tbody>${corps}${ligne(totaux, 'Ensemble', true)}</tbody>

@@ -383,10 +383,30 @@ titre("Le total maison est la somme de ce qui est affiché");
   verifier('total des non livrés', t.nonLivres === 1);
   verifier('total des retours', t.retours === 1);
   verifier('total en cours', t.enCours === 1);
+  verifier('total pas encore pris', t.enAttente === 0);
   // 3 livrés sur 5 terminés = 60 %. Surtout PAS la moyenne des deux taux (66 % et 50 % → 58 %),
   // qui donnerait autant de poids à un livreur qui a fait 2 colis qu'à un qui en a fait 200.
   verifier('le taux maison est recalculé sur les colis, pas moyenné entre livreurs',
     Math.round(t.tauxReussite * 100) === 60, 'taux : ' + t.tauxReussite);
+
+  // Vérification d'honnêteté du tableau : l'en-tête annonce « N colis confiés », et les colonnes
+  // affichées doivent redonner exactement N. Le premier essai en vrai annonçait 45 colis pour
+  // 33 visibles — les 12 « pas encore pris » n'avaient pas de colonne. Un total qui ne retombe
+  // pas sur ses pieds fait douter de tout le tableau, même quand chaque chiffre est juste.
+  const colonnesAffichees = ['livres', 'nonLivres', 'retours', 'enCours', 'enAttente'];
+  const sommeColonnes = colonnesAffichees.reduce((s, k) => s + t[k], 0);
+  verifier('les colonnes affichées redonnent le total annoncé', sommeColonnes === t.total,
+    sommeColonnes + ' vs ' + t.total);
+
+  // Et par livreur aussi, ligne par ligne.
+  const toutStatuts = statistiquesParLivreur([
+    colis('A', 'livre'), colis('A', 'non_livre'), colis('A', 'retour'),
+    colis('A', 'en_livraison'), colis('A', 'recupere'), colis('A', 'en_attente'),
+  ], LIVREURS);
+  const a = parId(toutStatuts, 'A');
+  verifier('sur une ligne aussi, les colonnes redonnent le total de la ligne',
+    colonnesAffichees.reduce((s, k) => s + a[k], 0) === a.total,
+    colonnesAffichees.map(k => k + '=' + a[k]).join(' ') + ' vs total=' + a.total);
 
   const aucun = totauxParLivreur([]);
   verifier('un tableau vide ne fabrique pas un taux', aucun.tauxReussite === null);

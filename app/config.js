@@ -1648,6 +1648,7 @@ function totauxParLivreur(stats) {
     nonLivres: somme(l => l.nonLivres),
     retours: somme(l => l.retours),
     enCours: somme(l => l.enCours),
+    enAttente: somme(l => l.enAttente),
     termines: termines,
     duPremierCoup: somme(l => l.duPremierCoup),
     tauxReussite: termines > 0 ? livres / termines : null,
