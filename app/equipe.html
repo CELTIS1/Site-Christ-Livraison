@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821fluide1">
+<link rel="stylesheet" href="style.css?v=20260821fluide2">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -891,7 +891,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821fluide1"></script>
+<script src="clt-common.js?v=20260821fluide2"></script>
 <script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
@@ -2872,14 +2872,25 @@ if (res.ok) eqAnnoncerChangementStatut(colis, statut, res);
 // résultat que personne n'a le temps de voir. renderColis() se contente désormais de NOTER qu'un
 // rendu est attendu ; le dessin réel a lieu une seule fois, juste avant le prochain
 // rafraîchissement de l'écran. Ce qui s'affiche est identique — seul le travail perdu disparaît.
-// requestAnimationFrame a un second mérite : dans un onglet en arrière-plan il ne se déclenche
-// pas, donc une app laissée ouverte toute la journée cesse de dessiner dans le vide.
+// Attention au piège de l'onglet en arrière-plan : il ne reçoit PAS d'image, donc
+// requestAnimationFrame seul y resterait en attente indéfiniment et la liste ne serait jamais
+// reconstruite. Ça semble sans conséquence — personne ne regarde — sauf que du code LIT la liste :
+// un clic sur une notification cherche la carte du colis pendant quelques secondes, et l'app peut
+// très bien s'ouvrir dans un onglet d'arrière-plan. D'où le filet de sécurité ci-dessous : le
+// premier des deux déclencheurs dessine, l'autre ne fait rien. Onglet visible, c'est l'image
+// (≈16 ms, invisible à l'œil) ; onglet caché, c'est le minuteur. Dans les deux cas, une rafale
+// d'événements ne produit qu'un seul dessin — c'est tout l'intérêt.
 let colisRenduEnAttente = false;
+function eqDessinerColisUneFois(){
+if (!colisRenduEnAttente) return;
+colisRenduEnAttente = false;
+eqDessinerColis();
+}
 function renderColis(){
-if (typeof requestAnimationFrame !== 'function') { eqDessinerColis(); return; }
 if (colisRenduEnAttente) return;
 colisRenduEnAttente = true;
-requestAnimationFrame(() => { colisRenduEnAttente = false; eqDessinerColis(); });
+if (typeof requestAnimationFrame === 'function') requestAnimationFrame(eqDessinerColisUneFois);
+setTimeout(eqDessinerColisUneFois, 200);
 }
 
 function eqDessinerColis(){

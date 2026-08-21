@@ -208,7 +208,57 @@ titre('Le réglage de la tranche');
     COLIS_TRANCHE >= 20 && COLIS_TRANCHE <= 200, `obtenu ${COLIS_TRANCHE}`);
 }
 
-/* ---------- 6. Les écrans branchent bien la troncature ---------- */
+/* ---------- 6. Regrouper les rendus sans jamais laisser la liste en rade ---------- */
+// La liste n'est plus redessinée à chaque événement mais une fois par image, ce qui évite de
+// refaire dix fois le même travail quand le temps réel annonce plusieurs colis d'un coup.
+// Le piège : un onglet en arrière-plan ne reçoit AUCUNE image. Sans filet de sécurité, la liste
+// n'y serait jamais reconstruite — et un clic sur une notification, qui cherche la carte du colis
+// pendant quelques secondes, ne trouverait rien. On rejoue ici les deux situations.
+titre('Les rendus sont regroupés, y compris dans un onglet en arrière-plan');
+{
+  const codeRendu = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8')
+    .split('\n')
+    .slice(0) // on extrait le bloc du regroupement des rendus
+    .join('\n');
+  const debut = codeRendu.indexOf('let colisRenduEnAttente = false;');
+  const fin = codeRendu.indexOf('function eqDessinerColis(){');
+  if (debut === -1 || fin === -1) {
+    verifier('le bloc de regroupement des rendus existe', false, 'introuvable dans equipe.html');
+  } else {
+    const bac = { dessins: 0, minuteurs: [], images: [] };
+    const ctxRendu = vm.createContext({
+      eqDessinerColis: () => { bac.dessins++; },
+      setTimeout: (fn) => { bac.minuteurs.push(fn); return 1; },
+      requestAnimationFrame: (fn) => { bac.images.push(fn); return 1; },
+    });
+    vm.runInContext(codeRendu.slice(debut, fin), ctxRendu);
+
+    // Onglet visible : dix demandes en rafale, une seule image → un seul dessin.
+    for (let i = 0; i < 10; i++) ctxRendu.renderColis();
+    bac.images.shift()();
+    verifier('dix demandes en rafale ne donnent qu\'un seul dessin', bac.dessins === 1,
+      `obtenu ${bac.dessins}`);
+    // Le minuteur de secours part aussi, mais il ne doit PAS redessiner une seconde fois.
+    bac.minuteurs.shift()();
+    verifier('le filet de sécurité ne provoque pas de dessin en double', bac.dessins === 1,
+      `obtenu ${bac.dessins}`);
+
+    // Onglet en arrière-plan : aucune image n'arrive jamais. Le minuteur doit sauver la mise.
+    bac.dessins = 0; bac.images.length = 0; bac.minuteurs.length = 0;
+    ctxRendu.renderColis();
+    verifier('sans image (onglet caché), un minuteur de secours est bien armé', bac.minuteurs.length === 1);
+    bac.minuteurs.shift()();
+    verifier('… et la liste finit par être dessinée quand même', bac.dessins === 1,
+      `obtenu ${bac.dessins}`);
+
+    // Après un dessin, une nouvelle demande doit repartir normalement (pas de blocage définitif).
+    ctxRendu.renderColis();
+    bac.images.shift()();
+    verifier('une nouvelle demande après coup redessine bien', bac.dessins === 2, `obtenu ${bac.dessins}`);
+  }
+}
+
+/* ---------- 7. Les écrans branchent bien la troncature ---------- */
 // Un contrôle de vigilance : si quelqu'un ajoute plus tard une liste de colis sans la brancher,
 // on veut le savoir. On vérifie que chaque appel au rendu groupé passe par limiterGroupesColis.
 titre('Les trois espaces utilisent bien l\'affichage par tranches');
