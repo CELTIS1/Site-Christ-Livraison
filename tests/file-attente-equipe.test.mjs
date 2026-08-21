@@ -29,6 +29,28 @@ if (debut === -1 || fin === -1) { console.error('Bloc introuvable'); process.exi
 const moteur = source.slice(debut, fin).join('\n')
   + '\nglobalThis.__etat = () => ({ eqQueueEnMemoire, eqColisEnAttenteIds, eqColisBloquesIds });\n';
 
+/* La file écrit les colis par la MÊME porte que la saisie à l'écran : eqInsererColis(). C'est
+   tout l'intérêt de cette porte unique — un colis mis en attente hors-réseau ne doit pas être
+   refusé pour une différence de schéma que la saisie directe, elle, aurait absorbée.
+   Cette fonction est définie plus haut dans la page, hors du bloc « file d'attente ». On va
+   donc la chercher là où elle est, plutôt que de la remplacer par une imitation : une imitation
+   ne testerait plus le vrai chemin d'écriture. */
+const pageEntiere = source.join('\n');
+function fonctionDeLaPage(nom){
+  const debutFn = pageEntiere.search(new RegExp('(async\\s+)?function\\s+' + nom + '\\s*\\('));
+  if (debutFn === -1) { console.error(`Fonction ${nom} introuvable dans ${path.basename(CHEMIN)}`); process.exit(1); }
+  let i = pageEntiere.indexOf('{', debutFn), prof = 0;
+  for (; i < pageEntiere.length; i++) {
+    if (pageEntiere[i] === '{') prof++;
+    else if (pageEntiere[i] === '}') { prof--; if (prof === 0) return pageEntiere.slice(debutFn, i + 1); }
+  }
+  console.error(`Fin de ${nom} introuvable`); process.exit(1);
+}
+const porteEcriture = [
+  fonctionDeLaPage('eqRefusDescriptionObligatoire'),
+  fonctionDeLaPage('eqInsererColis')
+].join('\n\n');
+
 // Extraction de estDoublonCleCreation() depuis le vrai config.js, situé à côté de equipe.html.
 const configSrc = fs.readFileSync(CHEMIN.replace(/equipe\.html$/, 'config.js'), 'utf8');
 const detecteurDoublon = configSrc.slice(
@@ -120,6 +142,7 @@ function fabriquerContexte(reponses){
   // est un doublon inoffensif ou une vraie erreur. La remplacer par une imitation reviendrait à
   // ne rien tester du cas le plus important.
   vm.runInContext(detecteurDoublon, ctx);
+  vm.runInContext(porteEcriture, ctx);
   vm.runInContext(moteur, ctx);
   return ctx;
 }

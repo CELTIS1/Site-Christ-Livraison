@@ -1757,6 +1757,133 @@ function noteDoublonTexte(entree) {
 }
 
 /* ============================================================================================
+   SAISIE EN LOT À PARTIR DES PHOTOS D'ÉTIQUETTES — ajout du 21 août 2026
+
+   LE PROBLÈME RÉEL
+   ----------------
+   Les vendeuses collent une étiquette manuscrite sur chaque colis. Le livreur photographie
+   chaque colis et dépose les photos dans un groupe WhatsApp. Un membre de l'équipe ouvre
+   ensuite les images UNE PAR UNE et retape tout dans l'application. Dix colis pour une
+   vendeuse = dix allers-retours entre WhatsApp et le formulaire. À cent, deux cents, mille
+   colis, ce n'est plus tenable.
+
+   Ce qui coûte cher là-dedans n'est PAS la frappe : c'est l'aller-retour. Ouvrir l'image, la
+   retenir de tête, revenir, taper, enregistrer, repartir, retrouver sa place. Le lot supprime
+   l'aller-retour ; il ne coûte rien et ne dépend d'aucun service extérieur.
+
+   CE QUE FAIT CE BLOC
+   -------------------
+   Rien qui « devine ». Les mêmes garde-fous que « Coller la commande » s'appliquent :
+
+   1. ON NE REMPLIT JAMAIS PAR-DESSUS UN HUMAIN. Le carnet ne complète que les champs vides.
+   2. DEUX RÉPONSES POSSIBLES = AUCUNE RÉPONSE. Un numéro incomplet ne déclenche pas de
+      recherche au carnet : mieux vaut ne rien proposer qu'un mauvais destinataire.
+   3. UNE LIGNE VIDE N'EST PAS ENREGISTRÉE. Une photo pour laquelle personne n'a rien saisi
+      est un oubli, pas un colis. On la signale au lieu de créer un colis fantôme.
+   4. RIEN NE PART SANS UN GESTE HUMAIN. Le bouton « Enregistrer » reste le seul déclencheur.
+   ============================================================================================ */
+
+// Retrouve au carnet le destinataire correspondant à un numéro DÉJÀ COMPLET.
+//
+// Pourquoi exiger un numéro complet (garde-fou 2) : pendant la frappe, « 07 98 » correspond à
+// quinze destinataires. Proposer le premier venu remplirait une adresse fausse que personne ne
+// relirait. On ne cherche donc qu'une fois les dix chiffres posés, et on n'accepte qu'une
+// correspondance EXACTE — pas un « commence par ».
+//
+// Renvoie l'entrée du carnet, ou null. Ne modifie rien : c'est l'écran qui applique, via
+// appliquerEntreeCarnet(), qui lui refuse d'écraser une saisie humaine (garde-fou 1).
+function entreeCarnetParTelephone(carnet, telBrut) {
+  const num = numeroIvoirien(cleTelCarnet(telBrut));
+  if (!num) return null;
+  return (carnet || []).find(e => cleTelCarnet(e.telephone) === num) || null;
+}
+
+// Une ligne du lot contient-elle au moins une information ? Une photo seule ne suffit pas : la
+// photo est la SOURCE de la saisie, pas la saisie. Une ligne où rien n'a été tapé signifie
+// qu'on a sauté cette photo, et l'enregistrer créerait un colis sans destinataire ni montant,
+// impossible à livrer et pénible à retrouver.
+function ligneLotEstVide(ligne) {
+  const l = ligne || {};
+  return !String(l.destination || "").trim()
+      && !String(l.telephone || "").trim()
+      && !String(l.montantArticle || "").trim()
+      && !String(l.montantLivraison || "").trim()
+      && !String(l.description || "").trim();
+}
+
+// Contrôle tout le lot AVANT le moindre envoi.
+//
+// Pourquoi tout contrôler d'abord plutôt que ligne par ligne pendant l'envoi : à mi-parcours,
+// la moitié des colis serait en base et l'autre non, et personne ne saurait dire laquelle.
+// Ici, soit le lot part entier, soit rien ne part et on montre exactement quelles lignes
+// posent problème — avec leur numéro, pour qu'on sache où regarder.
+//
+// Renvoie { pretes: [ligne...], problemes: [{ rang, motif }] }.
+function verifierLotAvantEnvoi(lignes) {
+  const pretes = [];
+  const problemes = [];
+  (lignes || []).forEach((ligne, i) => {
+    const rang = i + 1;
+    if (ligneLotEstVide(ligne)) {
+      problemes.push({ rang: rang, motif: "rien n'a été saisi pour cette photo" });
+      return;
+    }
+    const telBrut = String(ligne.telephone || "").trim();
+    if (telBrut && !numeroIvoirien(cleTelCarnet(telBrut))) {
+      problemes.push({ rang: rang, motif: "le numéro du destinataire n'est pas un numéro ivoirien à 10 chiffres" });
+      return;
+    }
+    if (!isValidMontant(ligne.montantArticle === "" ? null : ligne.montantArticle)
+     || !isValidMontant(ligne.montantLivraison === "" ? null : ligne.montantLivraison)) {
+      problemes.push({ rang: rang, motif: "les montants doivent être des nombres positifs" });
+      return;
+    }
+    pretes.push(ligne);
+  });
+  return { pretes: pretes, problemes: problemes };
+}
+
+// La phrase qui accompagne un refus. Elle nomme les lignes concernées : « corrigez les erreurs »
+// oblige à tout relire, « colis 3 et 7 » dit où aller.
+function resumeProblemesLotTexte(problemes) {
+  const p = problemes || [];
+  if (!p.length) return "";
+  if (p.length === 1) return "Colis " + p[0].rang + " : " + p[0].motif + ".";
+  const parRang = p.map(x => "colis " + x.rang + " (" + x.motif + ")");
+  return "Rien n'a été enregistré. À corriger : " + parRang.join(" ; ") + ".";
+}
+
+// Le compte rendu après l'envoi. Il dit la vérité y compris quand elle est partielle : une
+// photo qui n'a pas pu être envoyée ne doit pas passer sous silence, sinon on croit avoir une
+// preuve en base alors qu'il n'y en a pas.
+function resumeEnvoiLotTexte(bilan) {
+  const b = bilan || {};
+  const crees = Number(b.crees) || 0;
+  const deja = Number(b.dejaEnregistres) || 0;
+  const photosPerdues = Number(b.photosPerdues) || 0;
+  const enAttente = Number(b.misEnAttente) || 0;
+  const morceaux = [];
+  if (crees) morceaux.push(crees > 1 ? (crees + " colis enregistrés") : "1 colis enregistré");
+  if (deja) morceaux.push(deja > 1
+    ? (deja + " étaient déjà enregistrés (envoi précédent qui avait abouti)")
+    : "1 était déjà enregistré (envoi précédent qui avait abouti)");
+  // Hors-réseau, le colis est écrit sur cet appareil et repartira seul. Le dire « enregistré »
+  // serait faux : on ne le retrouvera pas encore dans la liste des colis, et quelqu'un le
+  // ressaisirait. Cette nuance est tout l'intérêt de la file d'attente.
+  if (enAttente) morceaux.push(enAttente > 1
+    ? (enAttente + " colis sont en attente sur cet appareil (pas de connexion) et partiront dès le retour du réseau")
+    : "1 colis est en attente sur cet appareil (pas de connexion) et partira dès le retour du réseau");
+  if (!morceaux.length) return "Aucun colis n'a été enregistré.";
+  let phrase = morceaux.join(", ") + ".";
+  if (photosPerdues) {
+    phrase += photosPerdues > 1
+      ? " Attention : " + photosPerdues + " photos n'ont pas pu être envoyées — les colis existent, mais sans photo."
+      : " Attention : 1 photo n'a pas pu être envoyée — le colis existe, mais sans photo.";
+  }
+  return phrase;
+}
+
+/* ============================================================================================
    CHIFFRES PAR LIVREUR — ajout du 21 août 2026
 
    CE QUE ÇA RÉPOND
