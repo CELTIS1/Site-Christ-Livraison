@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821lot2">
+<link rel="stylesheet" href="style.css?v=20260821lot3">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -299,9 +299,66 @@
 
   <div class="card" id="section-ajouter">
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'ajouter-content')">
-      <span class="collapse-arrow">▶</span> Ajouter des colis
+      <span class="collapse-arrow">▶</span> 📸 Ajouter des colis à partir des photos
     </h2>
     <div id="ajouter-content" class="collapsible-content">
+
+      <!-- ========================================================================================
+           SAISIE À PARTIR DES PHOTOS D'ÉTIQUETTES — 21 août 2026
+           Le même écran que dans l'espace Équipe, avec les champs propres à la vendeuse.
+
+           CE QUI CHANGE PAR RAPPORT À L'ANCIEN FORMULAIRE, ET POURQUOI C'EST CELUI-CI QU'ON GARDE
+           ------------------------------------------------------------------------------------
+           L'ancien formulaire demandait de tout taper de mémoire, en revenant sans cesse à
+           WhatsApp pour relire l'étiquette suivante. Ici, la photo de l'étiquette est affichée
+           en grand À CÔTÉ des champs : on lit et on tape sans quitter la page, et la photo
+           reste attachée au colis comme preuve de ce qui a été confié.
+
+           LE LIEU DE RÉCUPÉRATION EST DEMANDÉ UNE SEULE FOIS, EN TÊTE
+           -----------------------------------------------------------
+           C'est la boutique de la vendeuse : elle est la même pour les vingt colis de la
+           fournée. Le redemander par colis serait vingt fois la même réponse, donc vingt
+           occasions de se tromper sur l'un d'eux. Ce qui varie d'un colis à l'autre — la
+           commune de destination, le destinataire, les montants — reste, lui, par colis.
+           ======================================================================================== -->
+      <div id="lotfr-msg"></div>
+
+      <div class="field-row" style="margin-bottom:2px;">
+        <div class="field">
+          <label>📍 Commune de récupération</label>
+          <select id="lotfr-pickup-commune" data-recherche data-recherche-placeholder="Commune…"></select>
+        </div>
+        <div class="field">
+          <label>Adresse précise (quartier, repère...)</label>
+          <input type="text" id="lotfr-pickup-adresse" placeholder="Ex : Angré 8e tranche, non loin de la pharmacie">
+        </div>
+      </div>
+      <div class="field-hint" style="font-size:12px; color:var(--muted); margin:-6px 0 14px;">Où le livreur doit-il récupérer les colis ci-dessous ? Pré-rempli avec votre dernière adresse, modifiable si vous changez de lieu.</div>
+
+      <div class="lot-depot" id="lotfr-depot">
+        <div class="lot-depot-icone">🖼️</div>
+        <div class="lot-depot-titre">Choisir les photos des étiquettes</div>
+        <div class="lot-depot-sous">Toutes celles de la fournée d'un coup — depuis la galerie du téléphone ou un dossier de l'ordinateur. Vous pouvez aussi les déposer ici.</div>
+        <div class="avatar-upload-btns" style="justify-content:center; margin-top:10px;">
+          <label class="btn btn-outline btn-sm" for="lotfr-photos-library" style="cursor:pointer;">🖼️ Choisir les photos</label>
+          <label class="btn btn-outline btn-sm" for="lotfr-photos-camera" style="cursor:pointer;">📷 Prendre une photo</label>
+        </div>
+        <input type="file" id="lotfr-photos-library" accept="image/*" multiple class="hidden">
+        <input type="file" id="lotfr-photos-camera" accept="image/*" capture="environment" multiple class="hidden">
+      </div>
+      <div class="field-hint" style="font-size:12px; color:var(--muted); margin:6px 0 0;">Pas de photo sous la main ? <button type="button" class="lien-nu" id="lotfr-ligne-vide">Ajouter un colis sans photo</button>.</div>
+
+      <div id="lotfr-lignes"></div>
+      <div id="lotfr-barre-wrap"></div>
+
+      <!-- L'ANCIEN FORMULAIRE, REPLIÉ ET NON SUPPRIMÉ — 21 août 2026
+           Il ne s'ouvre plus tout seul : l'écran ci-dessus le remplace, et laisser les deux
+           dépliés côte à côte reviendrait à demander « lequel dois-je remplir ? » à chaque
+           ouverture de la page. Il reste néanmoins accessible d'un clic pendant quelques jours,
+           le temps de s'assurer que le nouvel écran ne manque de rien. Une fois cette preuve
+           faite, ce bloc part pour de bon. -->
+      <details id="ancien-formulaire" style="margin-top:22px; border-top:1px solid var(--border,#dfe5ee); padding-top:14px;">
+        <summary style="cursor:pointer; font-size:13px; color:var(--muted);">Ancienne saisie, colis par colis (sans photo côte à côte)</summary>
       <!-- Bandeau « saisie retrouvée » (brouillon local). Conteneur distinct de #add-msg, dont le
            contenu est remplacé à chaque message d'enregistrement. -->
       <div id="colis-draft-banner-wrap"></div>
@@ -324,8 +381,20 @@
           <button type="submit" class="btn" id="btn-submit-colis">Enregistrer les colis</button>
         </div>
       </form>
+      </details>
     </div>
   </div>
+
+<!-- Loupe plein écran : sur une étiquette manuscrite photographiée de travers, l'aperçu ne suffit
+     pas toujours. Elle se ferme au clic n'importe où et à la touche Échap. -->
+<div id="lotfr-loupe" class="lot-loupe hidden">
+  <div class="lot-loupe-barre">
+    <button type="button" class="btn btn-sm" id="lotfr-loupe-moins">− Réduire</button>
+    <button type="button" class="btn btn-sm" id="lotfr-loupe-plus">+ Agrandir</button>
+    <button type="button" class="btn btn-sm" id="lotfr-loupe-fermer">✕ Fermer</button>
+  </div>
+  <img id="lotfr-loupe-img" src="" alt="Photo de l'étiquette en grand">
+</div>
 
   <!-- Récapitulatif du JOUR (visible uniquement dans l'onglet Récap), présenté comme la carte
        « Ma tournée » du livreur : compteurs par statut (Récupérés, En cours, Livrés, Non livrés).
@@ -396,10 +465,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821lot2"></script>
-<script src="config.js?v=20260821lot2"></script>
+<script src="clt-common.js?v=20260821lot3"></script>
+<script src="config.js?v=20260821lot3"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260819rech1"></script>
+<script src="clt-select-recherche.js?v=20260821lot3"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -429,6 +498,16 @@
   function trackChannel(channel){ __realtimeChannels.push(channel); return channel; }
   window.addEventListener('beforeunload', () => {
     __realtimeChannels.forEach(ch => supabaseClient.removeChannel(ch));
+  });
+
+  // Une liste de photos en cours de saisie n'est enregistrée nulle part : fermer l'onglet la
+  // perdrait entièrement, avec le travail de relecture de dix ou vingt étiquettes. On ne peut
+  // pas empêcher la fermeture, mais on peut faire poser la question.
+  window.addEventListener('beforeunload', (e) => {
+    if (typeof lotfrLignes !== 'undefined' && lotfrLignes.length) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
   });
 
   async function loadLivreurs(){
@@ -813,27 +892,41 @@
     return monCarnet;
   }
 
+  /* Les deux écrans de saisie ne nomment pas leurs champs pareil : l'ancien formulaire dit
+     `.row-…`, l'écran photo dit `.lotfr-…`. Le carnet, lui, est exactement le même travail.
+     On lui passe donc la carte des champs plutôt que d'écrire une seconde version : deux
+     carnets séparés, c'est une correction sur l'un qui ne protège pas l'autre, et on l'a déjà
+     payé une fois avec les deux portes d'écriture. */
+  const CARNET_CHAMPS_FORMULAIRE = { wrap:'.row-carnet',   commune:'.row-commune-dest', destination:'.row-dest', telephone:'.row-dest-tel' };
+  const CARNET_CHAMPS_PHOTO      = { wrap:'.lotfr-carnet', commune:'.lotfr-commune',    destination:'.lotfr-dest', telephone:'.lotfr-tel' };
+  function carnetChampsDe(row){
+    return (row && row.classList && row.classList.contains('lot-ligne'))
+      ? CARNET_CHAMPS_PHOTO : CARNET_CHAMPS_FORMULAIRE;
+  }
+
   // Le carnet d'une ligne se resserre au fil de ce qui est déjà tapé DANS CETTE LIGNE : commune,
   // quartier, téléphone. Chaque ligne du formulaire filtre donc indépendamment des autres.
   function dessinerCarnetLigne(row){
-    const wrap = row && row.querySelector('.row-carnet');
+    const C = carnetChampsDe(row);
+    const wrap = row && row.querySelector(C.wrap);
     if (!wrap) return;
     if (!monCarnet || !monCarnet.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
     const lire = (sel) => { const el = row.querySelector(sel); return el ? (el.value || '') : ''; };
-    let trouves = chercherDansCarnet(monCarnet, lire('.row-commune-dest'));
-    trouves = chercherDansCarnet(trouves, lire('.row-dest'));
-    trouves = chercherDansCarnet(trouves, lire('.row-dest-tel'));
+    let trouves = chercherDansCarnet(monCarnet, lire(C.commune));
+    trouves = chercherDansCarnet(trouves, lire(C.destination));
+    trouves = chercherDansCarnet(trouves, lire(C.telephone));
     wrap.style.display = '';
     wrap.innerHTML = carnetPanneauHTML(trouves, '');
   }
 
   function wireCarnet(row){
     if (!row) return;
-    ['.row-commune-dest', '.row-dest', '.row-dest-tel'].forEach(sel => {
+    const C = carnetChampsDe(row);
+    [C.commune, C.destination, C.telephone].forEach(sel => {
       const el = row.querySelector(sel);
-      if (el) el.addEventListener(sel === '.row-commune-dest' ? 'change' : 'input', () => dessinerCarnetLigne(row));
+      if (el) el.addEventListener(sel === C.commune ? 'change' : 'input', () => dessinerCarnetLigne(row));
     });
-    const wrap = row.querySelector('.row-carnet');
+    const wrap = row.querySelector(C.wrap);
     if (wrap) wrap.addEventListener('click', (e) => {
       const btn = e.target.closest('.carnet-item');
       if (!btn) return;
@@ -842,9 +935,9 @@
         destination: btn.getAttribute('data-carnet-dest') || '',
         telephone: btn.getAttribute('data-carnet-tel') || ''
       };
-      const communeEl = row.querySelector('.row-commune-dest');
-      const destEl = row.querySelector('.row-dest');
-      const telEl = row.querySelector('.row-dest-tel');
+      const communeEl = row.querySelector(C.commune);
+      const destEl = row.querySelector(C.destination);
+      const telEl = row.querySelector(C.telephone);
       const res = appliquerEntreeCarnet(entree, {
         commune: communeEl ? communeEl.value : '',
         destination: destEl ? destEl.value : '',
@@ -868,7 +961,546 @@
   // Après le chargement du carnet (ou après l'ajout de colis), les lignes déjà à l'écran doivent
   // se mettre à jour : elles ont été dessinées quand le carnet était encore vide.
   function redessinerTousLesCarnets(){
-    document.querySelectorAll('.colis-row').forEach(dessinerCarnetLigne);
+    document.querySelectorAll('.colis-row, .lot-ligne').forEach(dessinerCarnetLigne);
+  }
+
+  /* ============================================================================================
+     SAISIE À PARTIR DES PHOTOS D'ÉTIQUETTES — ESPACE VENDEUSE — 21 août 2026
+     --------------------------------------------------------------------------------------------
+     C'est le même écran que dans l'espace Équipe, et c'est voulu : une vendeuse qui appelle CLT
+     et une opératrice qui saisit pour elle doivent voir la même chose, sinon on explique deux
+     fois. Le contrôle des lignes est d'ailleurs LA MÊME fonction pour les deux espaces
+     (verifierLotAvantEnvoi, dans config.js, testée sans navigateur) : ce qui change ici tient
+     en une option, `communeObligatoire`.
+
+     POURQUOI LA COMMUNE EST OBLIGATOIRE ICI ET PAS CÔTÉ ÉQUIPE
+     -----------------------------------------------------------
+     Chez la vendeuse, la commune de destination fixe le prix de la livraison et la tournée du
+     livreur : un colis sans commune ne peut être ni tarifé ni affecté. Côté équipe, l'opératrice
+     recopie la destination telle qu'elle est écrite sur l'étiquette, en texte libre, et la
+     commune est reconnue ensuite. Deux besoins réels, un seul contrôle.
+
+     DEUX CHOIX DE CONSTRUCTION, REPRIS DE L'ÉCRAN ÉQUIPE
+     ----------------------------------------------------
+     1. Les champs ne sont JAMAIS redessinés pendant la saisie : une ligne est fabriquée une
+        fois, puis on n'y touche plus. Redessiner à chaque frappe ferait perdre le curseur.
+     2. Une ligne enregistrée QUITTE l'écran. Le numéro affiché (« colis 3 ») doit désigner
+        exactement la ligne dont parlent les messages ; garder des lignes mortes décalerait la
+        numérotation et enverrait relire la mauvaise photo.
+     ============================================================================================ */
+
+  let lotfrLignes = [];        // { id, file, url, cle, el }
+  let lotfrEnvoiEnCours = false;
+
+  /* Le message part en notification, pas seulement dans le bandeau en tête de section. Sur une
+     liste de seize colis, on est au milieu de la page quand on clique : un bandeau écrit tout
+     en haut est alors hors de l'écran, on croit que le bouton n'a rien fait, on reclique. Le
+     bandeau reste écrit quand même — la notification s'efface, le bandeau se relit. */
+  function lotfrMsg(text, type){
+    const el = document.getElementById('lotfr-msg');
+    if (el) el.innerHTML = `<div class="msg msg-${type}">${escapeHTML(text)}</div>`;
+    if (window.cltToast) {
+      cltToast(text, {
+        type: type === 'error' ? 'error' : (type === 'success' ? 'success' : (type === 'info' ? 'info' : 'warning')),
+        duration: type === 'error' ? 9000 : 6000
+      });
+    }
+  }
+
+  // Ce que contient une ligne, lu directement dans le formulaire. Le formulaire est la source de
+  // vérité : pas de copie en mémoire à resynchroniser, donc pas de risque d'envoyer autre chose
+  // que ce que la personne a sous les yeux.
+  function lotfrLireLigne(l){
+    const val = (sel) => {
+      const el = l.el ? l.el.querySelector(sel) : null;
+      return el ? String(el.value || '').trim() : '';
+    };
+    const coche = (sel) => {
+      const el = l.el ? l.el.querySelector(sel) : null;
+      return !!(el && el.checked);
+    };
+    return {
+      communeDestination: val('.lotfr-commune'),
+      destination: val('.lotfr-dest'),
+      telephone: val('.lotfr-tel'),
+      montantArticle: val('.lotfr-art'),
+      montantLivraison: val('.lotfr-liv'),
+      description: val('.lotfr-desc'),
+      codeConfirmation: val('.lotfr-code'),
+      articlePaye: coche('.lotfr-art-paye'),
+      livraisonPayee: coche('.lotfr-liv-payee')
+    };
+  }
+
+  function lotfrRenumeroter(){
+    lotfrLignes.forEach((l, i) => {
+      const num = l.el ? l.el.querySelector('.lot-num') : null;
+      if (num) num.textContent = 'Colis ' + (i + 1);
+    });
+    lotfrDessinerBarre();
+  }
+
+  function lotfrDessinerBarre(){
+    const wrap = document.getElementById('lotfr-barre-wrap');
+    if (!wrap) return;
+    const n = lotfrLignes.length;
+    if (!n) { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `
+      <div class="lot-barre-photos">
+        <div><strong>${n}</strong> colis à enregistrer</div>
+        <div class="lot-barre-photos-btns">
+          <button type="button" class="btn btn-outline btn-sm" id="lotfr-tout-effacer">Tout effacer</button>
+          <button type="button" class="btn" id="lotfr-enregistrer">Enregistrer ${n > 1 ? 'les ' + n + ' colis' : 'le colis'}</button>
+        </div>
+      </div>`;
+  }
+
+  // Fabrique la ligne. Aucune valeur saisie n'entre ici : la ligne naît vide, ce qui évite toute
+  // question d'échappement au moment du dessin.
+  function lotfrCreerElement(l){
+    const div = document.createElement('div');
+    div.className = 'lot-ligne';
+    div.dataset.lotId = l.id;
+    div.innerHTML = `
+      <div class="lot-photo">
+        ${l.url
+          ? `<img src="${l.url}" alt="Étiquette du colis" class="lot-img">`
+          : `<div class="lot-sansphoto">Colis sans photo</div>`}
+        ${l.url ? `<div style="font-size:12px; color:var(--muted); text-align:center;">Touchez la photo pour l'agrandir</div>` : ''}
+      </div>
+      <div class="lot-champs">
+        <div class="lot-entete">
+          <span class="lot-num">Colis</span>
+          <button type="button" class="lot-retirer">Retirer ce colis</button>
+        </div>
+        <div class="field">
+          <label>Commune de destination</label>
+          <select class="lotfr-commune" data-recherche data-recherche-placeholder="Commune…">${communesOptionsHTML('', 'Choisir une commune')}</select>
+        </div>
+        <div class="field">
+          <label>Précision (quartier, repère...)</label>
+          <input type="text" class="lotfr-dest" placeholder="Ex : Angré 8e tranche">
+        </div>
+        <div class="field">
+          <label>Téléphone du destinataire (optionnel)</label>
+          <input type="tel" class="lotfr-tel" inputmode="tel" placeholder="Ex : 07 01 02 03 04">
+        </div>
+        <!-- Carnet d'adresses : vos destinataires déjà servis, déduits de vos colis passés.
+             Caché tant qu'il n'y a rien à proposer. -->
+        <div class="carnet-wrap lotfr-carnet" style="display:none;"></div>
+        <div class="montant-group">
+          <div class="montant-field">
+            <label>Montant article</label>
+            <input type="number" class="lotfr-art" min="0" step="any" placeholder="0">
+          </div>
+          <div class="montant-plus">+</div>
+          <div class="montant-field">
+            <label>Montant livraison</label>
+            <input type="number" class="lotfr-liv" min="0" step="any" placeholder="0">
+          </div>
+        </div>
+        <div class="montant-total-preview">Total : <strong class="lotfr-total">0 FCFA</strong></div>
+        <!-- Ce qui est DÉJÀ payé se déclare colis par colis, jamais pour la fournée : une
+             acheteuse peut avoir réglé l'article d'avance et pas une autre, et cocher pour
+             tout le lot ferait réclamer au livreur de l'argent déjà encaissé. -->
+        <div class="lotfr-payes">
+          <label class="check-pill"><input type="checkbox" class="lotfr-art-paye"> Article déjà payé</label>
+          <label class="check-pill"><input type="checkbox" class="lotfr-liv-payee"> Livraison déjà payée</label>
+        </div>
+        <div class="field">
+          <label>Code de confirmation (optionnel)</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" class="lotfr-code" inputmode="numeric" maxlength="4" placeholder="Ex : 4827" style="flex:1;">
+            <button type="button" class="btn btn-outline btn-sm lotfr-code-generer" style="white-space:nowrap;">🎲 Générer</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Description (optionnel)</label>
+          <input type="text" class="lotfr-desc" placeholder="Rien à écrire si l'étiquette n'en dit pas">
+        </div>
+        <div class="lot-etat"></div>
+        <!-- Enregistrer ce colis-là, tout de suite. Ce bouton existe pour une raison précise :
+             sur téléphone, l'onglet est libéré par le système dès que l'écran se verrouille, et
+             toute la saisie non envoyée disparaît. Avec seize colis à remplir avant le bouton du
+             bas, un appel entrant suffisait à effacer un quart d'heure de travail. Ici, un colis
+             fini est un colis parti : au pire on perd celui qu'on avait sous les doigts. -->
+        <button type="button" class="btn btn-sm lot-enregistrer-un">✔ Enregistrer ce colis</button>
+      </div>`;
+    return div;
+  }
+
+  // Branche tout ce qui doit vivre dans une ligne : le total en direct, le prix suggéré, le
+  // carnet, le générateur de code. Fait une fois par ligne, à sa naissance.
+  function lotfrBrancherLigne(l){
+    const el = l.el;
+    if (!el) return;
+    const art = el.querySelector('.lotfr-art');
+    const liv = el.querySelector('.lotfr-liv');
+    const total = el.querySelector('.lotfr-total');
+    const majTotal = () => {
+      if (!total) return;
+      total.textContent = formatMontant((Number(art && art.value) || 0) + (Number(liv && liv.value) || 0)) || '0 FCFA';
+    };
+    if (art) art.addEventListener('input', majTotal);
+    if (liv) liv.addEventListener('input', majTotal);
+
+    // Le prix de livraison est SUGGÉRÉ, jamais imposé : il se pose au choix de la commune et
+    // reste modifiable ensuite. On n'écrase pas un montant déjà tapé — c'est la règle « ne
+    // jamais écrire par-dessus la main de quelqu'un », valable pour un prix comme pour un nom.
+    const commune = el.querySelector('.lotfr-commune');
+    if (commune) commune.addEventListener('change', () => {
+      const depart = (document.getElementById('lotfr-pickup-commune') || {}).value || '';
+      const prix = computePrixLivraison(depart, commune.value);
+      if (prix !== null && liv && !String(liv.value || '').trim()) {
+        liv.value = prix;
+        liv.dispatchEvent(new Event('input'));
+      }
+    });
+
+    wireCarnet(el);
+  }
+
+  function lotfrAjouterLigne(file){
+    const conteneur = document.getElementById('lotfr-lignes');
+    if (!conteneur) return null;
+    const l = {
+      id: nouvelleCleColis(),
+      file: file || null,
+      url: file ? URL.createObjectURL(file) : null,
+      // Une identité par colis, posée dès maintenant et conservée : si un envoi part deux fois
+      // (double appui, connexion lente), la base refuse le second et le colis n'existe qu'une fois.
+      cle: nouvelleCleColis(),
+      el: null
+    };
+    l.el = lotfrCreerElement(l);
+    lotfrLignes.push(l);
+    conteneur.appendChild(l.el);
+    lotfrBrancherLigne(l);
+    return l;
+  }
+
+  function lotfrAjouterFichiers(fichiers){
+    const images = Array.from(fichiers || []).filter(f => f && /^image\//.test(f.type || ''));
+    const ignores = Array.from(fichiers || []).length - images.length;
+    if (!images.length) {
+      lotfrMsg(ignores ? "Ces fichiers ne sont pas des images : rien n'a été ajouté." : "Aucune photo choisie.", 'error');
+      return;
+    }
+    images.forEach(lotfrAjouterLigne);
+    lotfrRenumeroter();
+    lotfrMsg(images.length > 1
+      ? `${images.length} photos ajoutées.${ignores ? ' ' + ignores + " fichier(s) ignoré(s) : ce n'étaient pas des images." : ''} Remplissez chaque colis en regardant sa photo à côté.`
+      : `1 photo ajoutée.${ignores ? ' ' + ignores + " fichier(s) ignoré(s) : ce n'étaient pas des images." : ''}`,
+      'info');
+  }
+
+  function lotfrRetirer(id){
+    const i = lotfrLignes.findIndex(l => l.id === id);
+    if (i < 0) return;
+    const l = lotfrLignes[i];
+    if (l.url) { try { URL.revokeObjectURL(l.url); } catch(e){} }
+    if (l.el && l.el.parentNode) l.el.parentNode.removeChild(l.el);
+    lotfrLignes.splice(i, 1);
+    lotfrRenumeroter();
+  }
+
+  function lotfrToutEffacer(){
+    lotfrLignes.slice().forEach(l => lotfrRetirer(l.id));
+    const conteneur = document.getElementById('lotfr-lignes');
+    if (conteneur) conteneur.innerHTML = '';
+    lotfrMsg('Liste vidée.', 'info');
+  }
+
+  /* ---------- Loupe plein écran ---------- */
+  let lotfrLoupeZoom = 1;
+  function lotfrOuvrirLoupe(src){
+    const box = document.getElementById('lotfr-loupe');
+    const img = document.getElementById('lotfr-loupe-img');
+    if (!box || !img) return;
+    lotfrLoupeZoom = 1;
+    img.style.transform = 'scale(1)';
+    img.src = src;
+    box.classList.remove('hidden');
+  }
+  function lotfrFermerLoupe(){
+    const box = document.getElementById('lotfr-loupe');
+    const img = document.getElementById('lotfr-loupe-img');
+    if (box) box.classList.add('hidden');
+    // On relâche l'image : garder une photo pleine résolution en mémoire à chaque ouverture
+    // finit par peser lourd sur un téléphone au bout de cent colis.
+    if (img) img.src = '';
+  }
+  function lotfrZoomer(pas){
+    const img = document.getElementById('lotfr-loupe-img');
+    if (!img) return;
+    lotfrLoupeZoom = Math.min(5, Math.max(1, lotfrLoupeZoom + pas));
+    img.style.transform = 'scale(' + lotfrLoupeZoom + ')';
+  }
+
+  /* ---------- Envoi ----------
+
+     DEUX PORTES DE SORTIE, ET POURQUOI IL EN FAUT DEUX
+     --------------------------------------------------
+     « Enregistrer ce colis » envoie la ligne qu'on vient de finir. « Enregistrer les N colis »
+     envoie tout ce qui reste. Les deux passent par la MÊME fonction d'envoi : deux chemins
+     d'écriture séparés finiraient par diverger, et c'est l'un des deux qui perdrait la clé
+     anti-doublon. La différence n'est pas dans l'envoi, elle est dans le contrôle qui le
+     précède : un colis seul n'est refusé que pour SES fautes ; le lot entier est refusé en bloc
+     si une seule ligne cloche, parce qu'un envoi interrompu à mi-parcours laisserait la moitié
+     des colis en base sans que personne sache laquelle.
+     -------------------------------------------------------------------------------------- */
+
+  // Le lieu de récupération, demandé une fois pour toute la fournée. Sans commune, aucun envoi
+  // n'a de sens : le livreur ne saurait pas où aller chercher les colis.
+  function lotfrLieuChoisi(){
+    const communeEl = document.getElementById('lotfr-pickup-commune');
+    const adresseEl = document.getElementById('lotfr-pickup-adresse');
+    const commune = (communeEl || {}).value || '';
+    if (!commune) {
+      lotfrMsg('Indiquez d\u2019abord la commune où le livreur doit récupérer ces colis.', 'error');
+      if (communeEl && communeEl.scrollIntoView) communeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return null;
+    }
+    return { commune_recuperation: commune, adresse_recuperation: ((adresseEl || {}).value || '').trim() };
+  }
+
+  // Envoie une ligne. Renvoie true si elle peut quitter l'écran, false si elle doit rester sous
+  // les yeux pour être corrigée.
+  async function lotfrEnvoyerUneLigne(l, rang, ctx, bilan, echecs){
+    const s = lotfrLireLigne(l);
+
+    let photo_url = null;
+    if (l.file) {
+      photo_url = await uploadPhoto(l.file, currentUser.id);
+      if (!photo_url) bilan.photosPerdues++;
+    }
+
+    const montant_article = s.montantArticle === '' ? null : Number(s.montantArticle);
+    const montant_livraison = s.montantLivraison === '' ? null : Number(s.montantLivraison);
+    const montant = (montant_article !== null || montant_livraison !== null)
+      ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
+      : null;
+
+    const payload = {
+      fournisseur_id: currentUser.id,
+      // Vide veut dire vide : on n'invente pas un texte que personne n'a écrit.
+      description: s.description || null,
+      destination: s.destination,
+      commune_destination: s.communeDestination,
+      montant, montant_article, montant_livraison, photo_url,
+      commune_recuperation: ctx.commune_recuperation,
+      adresse_recuperation: ctx.adresse_recuperation || null,
+      // Normalisé au format international (225…) attendu par la notification WhatsApp.
+      destinataire_telephone: s.telephone ? toPhoneE164(s.telephone) : null,
+      code_confirmation: s.codeConfirmation || null,
+      article_paye: !!s.articlePaye,
+      livraison_payee: !!s.livraisonPayee,
+      cle_creation: l.cle
+    };
+
+    const error = await frInsererColis([payload]);
+
+    // Doublon sur la clé de création : ce colis avait déjà été enregistré par un envoi précédent
+    // qui semblait avoir échoué. Il existe, une seule fois. C'est le résultat voulu.
+    if (estDoublonCleCreation(error)) { bilan.dejaEnregistres++; return true; }
+    if (!error) { bilan.crees++; return true; }
+    echecs.push({ rang, motif: friendlyErrorMessage(error.message) });
+    return false;
+  }
+
+  // Ce qu'il faut refaire une fois que des colis sont partis, quel que soit le chemin emprunté.
+  function lotfrApresEnvoi(ctx){
+    // Mémorise ce lieu comme valeur par défaut pour la prochaine fois, sans jamais toucher aux
+    // colis déjà enregistrés : chacun garde définitivement le lieu choisi au moment de son ajout.
+    if (currentProfile && (currentProfile.commune_recuperation !== ctx.commune_recuperation
+                        || currentProfile.adresse_recuperation !== (ctx.adresse_recuperation || null))) {
+      supabaseClient.from('profiles')
+        .update({ commune_recuperation: ctx.commune_recuperation, adresse_recuperation: ctx.adresse_recuperation || null })
+        .eq('id', currentUser.id)
+        .then(({ error: profErr }) => { if (profErr) console.error(profErr); })
+        .catch(err => console.error('Erreur mise à jour profil:', err));
+      currentProfile.commune_recuperation = ctx.commune_recuperation;
+      currentProfile.adresse_recuperation = ctx.adresse_recuperation || null;
+    }
+    // Les destinataires qu'on vient de servir entrent au carnet dès le colis suivant.
+    monCarnet = null;
+    chargerMonCarnet().then(redessinerTousLesCarnets).catch(e => console.error('Carnet :', e));
+    loadColis();
+  }
+
+  /* ---------- Un colis à la fois ---------- */
+  async function lotfrEnregistrerUn(id){
+    if (lotfrEnvoiEnCours) return;
+    const i = lotfrLignes.findIndex(l => l.id === id);
+    if (i === -1) return;
+    const l = lotfrLignes[i];
+    const rang = i + 1;
+
+    const ctx = lotfrLieuChoisi();
+    if (!ctx) return;
+
+    // Seules les fautes de CE colis le retiennent. Il est renuméroté à 1 le temps du contrôle,
+    // puis on remet son vrai rang dans le message : la personne cherche « colis 7 » à l'écran.
+    const { problemes } = verifierLotAvantEnvoi([lotfrLireLigne(l)], { communeObligatoire: true });
+    if (problemes.length) {
+      lotfrMsg('Colis ' + rang + ' : ' + problemes[0].motif + '.', 'error');
+      const champ = l.el && l.el.querySelector('.lotfr-commune');
+      if (champ && champ.scrollIntoView) champ.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    lotfrEnvoiEnCours = true;
+    const btn = l.el && l.el.querySelector('.lot-enregistrer-un');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+
+    const bilan = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
+    const echecs = [];
+    const partie = await lotfrEnvoyerUneLigne(l, rang, ctx, bilan, echecs);
+
+    lotfrEnvoiEnCours = false;
+    if (btn) { btn.disabled = false; btn.textContent = '✔ Enregistrer ce colis'; }
+
+    if (partie) {
+      lotfrRetirer(l.id);
+      lotfrMsg(resumeEnvoiLotTexte(bilan), bilan.photosPerdues ? 'info' : 'success');
+      lotfrApresEnvoi(ctx);
+    } else {
+      lotfrMsg(resumeProblemesLotTexte(echecs), 'error');
+    }
+  }
+
+  /* ---------- Tout ce qui reste, d'un coup ---------- */
+  async function lotfrEnregistrer(){
+    if (lotfrEnvoiEnCours) return;
+    const ctx = lotfrLieuChoisi();
+    if (!ctx) return;
+    if (!lotfrLignes.length) { lotfrMsg('Aucun colis à enregistrer.', 'error'); return; }
+
+    // Tout est contrôlé AVANT le moindre envoi : à mi-parcours, la moitié des colis serait en
+    // base et l'autre non, sans que personne sache laquelle.
+    const { problemes } = verifierLotAvantEnvoi(lotfrLignes.map(lotfrLireLigne), { communeObligatoire: true });
+    if (problemes.length) {
+      lotfrMsg(resumeProblemesLotTexte(problemes), 'error');
+      const premier = lotfrLignes[problemes[0].rang - 1];
+      if (premier && premier.el && premier.el.scrollIntoView) {
+        premier.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    lotfrEnvoiEnCours = true;
+    const btn = document.getElementById('lotfr-enregistrer');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+
+    const bilan = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
+    const echecs = [];
+    const reussies = [];
+
+    for (let i = 0; i < lotfrLignes.length; i++) {
+      const l = lotfrLignes[i];
+      const rang = i + 1;
+      if (btn) btn.textContent = `Enregistrement… ${rang}/${lotfrLignes.length}`;
+      const partie = await lotfrEnvoyerUneLigne(l, rang, ctx, bilan, echecs);
+      if (partie) { reussies.push(l); if (l.el) l.el.classList.add('lot-enregistree'); }
+    }
+
+    // Les lignes parties quittent l'écran : la numérotation restante doit continuer de désigner
+    // exactement le colis qu'on a sous les yeux.
+    reussies.forEach(l => lotfrRetirer(l.id));
+
+    lotfrEnvoiEnCours = false;
+    if (btn) btn.disabled = false;
+    lotfrDessinerBarre();
+
+    let texte = resumeEnvoiLotTexte(bilan);
+    if (echecs.length) texte += ' ' + resumeProblemesLotTexte(echecs).replace(/^Rien n\u2019a été enregistré\. À corriger : /, 'Non enregistré : ');
+    lotfrMsg(texte, echecs.length ? 'error' : (bilan.photosPerdues ? 'info' : 'success'));
+
+    lotfrApresEnvoi(ctx);
+  }
+
+  function initLotFournisseur(){
+    const depot = document.getElementById('lotfr-depot');
+    const conteneur = document.getElementById('lotfr-lignes');
+    if (!depot || !conteneur) return;
+
+    ['lotfr-photos-library', 'lotfr-photos-camera'].forEach(id => {
+      const input = document.getElementById(id);
+      if (!input) return;
+      input.addEventListener('change', () => {
+        if (input.files && input.files.length) lotfrAjouterFichiers(input.files);
+        // Toujours remettre à zéro, y compris après un échec : sinon le même champ reste
+        // « bloqué » sur sa sélection précédente et ne redéclenche plus rien.
+        input.value = '';
+      });
+    });
+
+    // Une étiquette peut manquer : commande prise au téléphone, colis préparé sans photo. La
+    // sortie de secours existe donc, mais discrètement — la photo reste la bonne façon de faire.
+    const vide = document.getElementById('lotfr-ligne-vide');
+    if (vide) vide.addEventListener('click', () => {
+      lotfrAjouterLigne(null);
+      lotfrRenumeroter();
+      lotfrMsg('Colis sans photo ajouté.', 'info');
+    });
+
+    // Dépôt par glisser-déposer, sur ordinateur. Le survol est signalé, sinon on ne sait pas si
+    // la zone accepte le lâcher.
+    ['dragenter', 'dragover'].forEach(ev => depot.addEventListener(ev, (e) => {
+      e.preventDefault(); depot.classList.add('survol');
+    }));
+    ['dragleave', 'drop'].forEach(ev => depot.addEventListener(ev, () => depot.classList.remove('survol')));
+    depot.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) lotfrAjouterFichiers(e.dataTransfer.files);
+    });
+
+    // Un seul écouteur pour toutes les lignes, posé une fois : les lignes vont et viennent, leur
+    // attacher des écouteurs individuels en laisserait derrière à chaque retrait.
+    conteneur.addEventListener('click', (e) => {
+      const retirer = e.target.closest('.lot-retirer');
+      if (retirer) {
+        const ligne = retirer.closest('.lot-ligne');
+        if (ligne) lotfrRetirer(ligne.dataset.lotId);
+        return;
+      }
+      const envoyerUn = e.target.closest('.lot-enregistrer-un');
+      if (envoyerUn) {
+        const ligne = envoyerUn.closest('.lot-ligne');
+        if (ligne) lotfrEnregistrerUn(ligne.dataset.lotId);
+        return;
+      }
+      const generer = e.target.closest('.lotfr-code-generer');
+      if (generer) {
+        const champ = generer.closest('.field').querySelector('.lotfr-code');
+        if (champ) champ.value = String(Math.floor(1000 + Math.random() * 9000)); // 1000–9999
+        return;
+      }
+      const img = e.target.closest('.lot-img');
+      if (img) lotfrOuvrirLoupe(img.src);
+    });
+
+    // Le surlignage jaune dit « c'est la machine qui a écrit ça, relisez-le ». Dès qu'un humain
+    // touche le champ, il l'a relu : le surlignage n'a plus lieu d'être.
+    conteneur.addEventListener('input', (e) => {
+      if (e.target.classList && e.target.classList.contains('rempli-auto')) e.target.classList.remove('rempli-auto');
+    });
+
+    const barreWrap = document.getElementById('lotfr-barre-wrap');
+    if (barreWrap) barreWrap.addEventListener('click', (e) => {
+      if (e.target.closest('#lotfr-enregistrer')) lotfrEnregistrer();
+      else if (e.target.closest('#lotfr-tout-effacer')) {
+        if (confirm('Retirer toutes les photos et tout ce qui a été saisi dans cette liste ?')) lotfrToutEffacer();
+      }
+    });
+
+    const loupe = document.getElementById('lotfr-loupe');
+    if (loupe) loupe.addEventListener('click', (e) => {
+      if (e.target.closest('#lotfr-loupe-plus')) { lotfrZoomer(0.5); return; }
+      if (e.target.closest('#lotfr-loupe-moins')) { lotfrZoomer(-0.5); return; }
+      lotfrFermerLoupe();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') lotfrFermerLoupe(); });
   }
 
   /* ---------- COLLER LA COMMANDE ----------
@@ -2355,6 +2987,15 @@
       batchPickupCommune.addEventListener('change', recomputeAllRowsPrix);
     }
     if (batchPickupAdresse) batchPickupAdresse.value = profile.adresse_recuperation || '';
+
+    // Même chose pour l'écran photo, qui est désormais la saisie principale. Ses deux champs
+    // sont distincts de ceux de l'ancien formulaire replié : partager un identifiant entre un
+    // bloc visible et un bloc caché revient à ne jamais savoir lequel des deux on lit.
+    const lotfrCommune = document.getElementById('lotfr-pickup-commune');
+    const lotfrAdresse = document.getElementById('lotfr-pickup-adresse');
+    if (lotfrCommune) lotfrCommune.innerHTML = communesOptionsHTML(profile.commune_recuperation, 'Choisir une commune');
+    if (lotfrAdresse) lotfrAdresse.value = profile.adresse_recuperation || '';
+    initLotFournisseur();
 
     addRow();
     // Brouillon local : à brancher après la première ligne et après le pré-remplissage du lieu de

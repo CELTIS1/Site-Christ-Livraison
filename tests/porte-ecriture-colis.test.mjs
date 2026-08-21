@@ -284,9 +284,13 @@ titre('Aucune écriture de colis ne contourne la porte');
   const appelsEquipe = (equipe.match(/await eqInsererColis\(/g) || []).length;
   verifier('les trois chemins de l’équipe passent par la porte (formulaire, lot, file d’attente)',
     appelsEquipe === 3, appelsEquipe + ' appels');
+  // Quatre depuis le 21 août 2026, et non plus trois : l'écran de saisie par photos est devenu
+  // la voie normale côté vendeuse, il s'ajoute donc aux chemins existants. Le compte est écrit
+  // en dur exprès — le jour où un cinquième apparaît, ce test doit obliger celui qui l'ajoute à
+  // venir ici constater que son chemin passe bien par la porte, plutôt que de le laisser filer.
   const appelsFournisseur = (fournisseur.match(/await frInsererColis\(/g) || []).length;
-  verifier('les trois chemins de la vendeuse passent par la porte (lot, reprise après doublon, copie)',
-    appelsFournisseur === 3, appelsFournisseur + ' appels');
+  verifier('les quatre chemins de la vendeuse passent par la porte (photos, collage, reprise après doublon, ancien formulaire)',
+    appelsFournisseur === 4, appelsFournisseur + ' appels');
 }
 
 /* ==========================================================================================

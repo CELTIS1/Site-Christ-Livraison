@@ -1539,7 +1539,13 @@ html[data-theme="dark"] .confirm-modal-icon{ background:color-mix(in srgb, var(-
 
 /* ---------- Sur téléphone : feuille qui monte du bas ----------
    Un petit panneau flottant est difficile à viser au pouce, et le clavier
-   virtuel le recouvre. La feuille ancrée en bas règle les deux. */
+   virtuel le recouvre. La feuille ancrée en bas règle les deux.
+
+   La page du dessous est figée tant que la feuille est ouverte. Le voile la cachait
+   déjà, mais il ne l'empêchait pas de défiler sous le doigt : on croyait faire glisser
+   la liste des noms, on déplaçait la page, et la liste se refermait. */
+html.clt-rs-fige, html.clt-rs-fige body{ overflow:hidden; touch-action:none; }
+
 .clt-rs__panneau--feuille{
   left:0 !important; right:0; bottom:0 !important; top:auto !important;
   width:100% !important; max-height:72vh !important;
@@ -1601,3 +1607,103 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
   .clt-haut--barre{ bottom:calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (prefers-reduced-motion: reduce){ .clt-haut{ transition:opacity .2s ease; transform:none; } }
+
+
+/* ==============================================================================================
+   SAISIE EN LOT À PARTIR DES PHOTOS D'ÉTIQUETTES
+   ----------------------------------------------------------------------------------------------
+   Ce style vit ici, et non dans une page, parce que le MÊME écran sert dans les deux espaces :
+   l'équipe saisit les colis d'une cliente, la cliente saisit les siens. Deux copies du style
+   auraient fini par diverger, et c'est toujours celle qu'on oublie qui repart en production avec
+   la photo trop petite qu'on venait de corriger dans l'autre.
+   ============================================================================================== */
+/* ---- Saisie en lot à partir des photos d'étiquettes (21 août 2026) ---- */
+/* Principe de l'écran : la photo et le formulaire côte à côte, pour ne plus jamais quitter
+   l'application entre deux colis. Sur téléphone la photo passe au-dessus du formulaire. */
+.lot-depot{
+  border:2px dashed #c3d0e2; border-radius:14px; background:#f8fafd;
+  padding:22px 16px; text-align:center; margin:14px 0 6px;
+  transition:border-color .15s, background .15s;
+}
+.lot-depot.survol{ border-color:var(--clt-navy2,#1B4374); background:#eef4fc; }
+.lot-depot-icone{ font-size:30px; line-height:1; margin-bottom:6px; }
+.lot-depot-titre{ font-weight:700; color:var(--clt-navy-dark,#12305a); font-size:15px; }
+.lot-depot-sous{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+
+/* La photo passe devant, et de loin. Ce qu'on fait ici, c'est LIRE une étiquette
+   manuscrite ; les champs, eux, reçoivent une commune et un numéro de téléphone,
+   ils n'ont aucun besoin de toute la largeur de l'écran. Une colonne de photo qui
+   ne dépasse pas 190 px obligeait à ouvrir la loupe pour chaque colis — un clic de
+   plus par colis, soit exactement l'aller-retour qu'on voulait supprimer. */
+.lot-ligne{
+  display:grid; grid-template-columns:minmax(300px, 1fr) minmax(320px, 1fr); gap:18px;
+  border:1px solid #e3e9f2; border-radius:14px; padding:14px; margin:14px 0;
+  background:#fff;
+}
+.lot-ligne.lot-enregistree{ opacity:.5; }
+.lot-photo{ display:flex; flex-direction:column; gap:8px; }
+/* `contain` et non `cover` : une étiquette recadrée est une étiquette dont il manque
+   un bout, et c'est toujours le bout coupé qui porte le numéro. On préfère des bords
+   vides à une information absente. */
+.lot-photo img{
+  width:100%; height:clamp(260px, 34vw, 460px); object-fit:contain; border-radius:10px;
+  background:#eef1f6; cursor:zoom-in; display:block;
+}
+.lot-sansphoto{
+  height:clamp(260px, 34vw, 460px); border-radius:10px; background:#f1f4f9; display:flex;
+  align-items:center; justify-content:center; color:var(--muted); font-size:13px;
+}
+.lot-entete{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.lot-num{ font-weight:700; color:var(--clt-navy-dark,#12305a); font-size:14px; }
+.lot-retirer{
+  border:none; background:none; cursor:pointer; font-family:inherit;
+  color:#b02a2a; font-size:12.5px; font-weight:600; padding:2px 4px;
+}
+.lot-champs .field{ margin-bottom:8px; }
+.lot-etat{ font-size:12.5px; margin-top:4px; }
+.lot-etat.ok{ color:#1c7c46; }
+.lot-etat.avertir{ color:#8a6100; }
+.lot-etat.erreur{ color:#b02a2a; font-weight:600; }
+.lot-enregistrer-un{ width:100%; margin-top:8px; }
+
+/* Champ rempli par la machine (carnet) et pas encore relu : surligné jusqu'à ce qu'on y touche. */
+.lot-champs .rempli-auto{ background:#fffbe6 !important; border-color:#e6c34a !important; }
+
+/* Barre de fin de lot : elle colle en bas pour rester atteignable quand la liste s'allonge. */
+.lot-barre-photos{
+  position:sticky; bottom:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  background:#fff; border:1px solid #e3e9f2; border-radius:14px;
+  padding:12px 14px; margin-top:14px;
+  box-shadow:0 -4px 16px rgba(18,48,90,0.08);
+}
+.lot-barre-photos-btns{ display:flex; gap:8px; align-items:center; }
+
+/* Loupe plein écran : indispensable pour relire une écriture à la main sur un téléphone. */
+.lot-loupe{
+  position:fixed; inset:0; z-index:4000; background:rgba(8,16,28,.94);
+  display:flex; align-items:center; justify-content:center; overflow:auto; padding:12px;
+}
+.lot-loupe img{ max-width:100%; max-height:100%; border-radius:8px; transition:transform .2s ease; }
+.lot-loupe-barre{
+  position:fixed; top:0; left:0; right:0; display:flex; gap:8px; justify-content:center;
+  padding:10px; background:rgba(8,16,28,.75);
+}
+
+@media(max-width:760px){
+  .lot-ligne{ grid-template-columns:1fr; }
+  .lot-photo img, .lot-sansphoto{ height:300px; }
+}
+
+/* Un bouton qui a l'air d'un lien. Il en faut un ici : « ajouter un colis sans photo » est une
+   sortie de secours, pas l'action principale ; lui donner l'allure d'un bouton la mettrait au
+   même rang que « Choisir les photos », et on finirait par la prendre par défaut. */
+.lien-nu{
+  border:none; background:none; padding:0; font:inherit; cursor:pointer;
+  color:var(--primary, #1B4374); text-decoration:underline;
+}
+
+/* Les deux cases « déjà payé » d'un colis, côte à côte. Elles tiennent sur une ligne tant que
+   la place le permet, et passent l'une sous l'autre sur un téléphone étroit plutôt que de
+   déborder — une case à moitié sortie de l'écran ne se coche pas. */
+.lotfr-payes{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 10px; }

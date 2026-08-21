@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821lot2">
+<link rel="stylesheet" href="style.css?v=20260821lot3">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -189,75 +189,6 @@
     .clt-toptabs-wrap{ display:none !important; }
   }
 
-  /* ---- Saisie en lot à partir des photos d'étiquettes (21 août 2026) ---- */
-  /* Principe de l'écran : la photo et le formulaire côte à côte, pour ne plus jamais quitter
-     l'application entre deux colis. Sur téléphone la photo passe au-dessus du formulaire. */
-  .lot-depot{
-    border:2px dashed #c3d0e2; border-radius:14px; background:#f8fafd;
-    padding:22px 16px; text-align:center; margin:14px 0 6px;
-    transition:border-color .15s, background .15s;
-  }
-  .lot-depot.survol{ border-color:var(--clt-navy2,#1B4374); background:#eef4fc; }
-  .lot-depot-icone{ font-size:30px; line-height:1; margin-bottom:6px; }
-  .lot-depot-titre{ font-weight:700; color:var(--clt-navy-dark,#12305a); font-size:15px; }
-  .lot-depot-sous{ font-size:12.5px; color:var(--muted); margin-top:4px; }
-
-  .lot-ligne{
-    display:grid; grid-template-columns:190px 1fr; gap:16px;
-    border:1px solid #e3e9f2; border-radius:14px; padding:14px; margin:14px 0;
-    background:#fff;
-  }
-  .lot-ligne.lot-enregistree{ opacity:.5; }
-  .lot-photo{ display:flex; flex-direction:column; gap:8px; }
-  /* La miniature reste haute : sur une étiquette manuscrite, un timbre-poste ne sert à rien. */
-  .lot-photo img{
-    width:100%; height:210px; object-fit:cover; border-radius:10px;
-    background:#eef1f6; cursor:zoom-in; display:block;
-  }
-  .lot-sansphoto{
-    height:210px; border-radius:10px; background:#f1f4f9; display:flex;
-    align-items:center; justify-content:center; color:var(--muted); font-size:13px;
-  }
-  .lot-entete{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-  .lot-num{ font-weight:700; color:var(--clt-navy-dark,#12305a); font-size:14px; }
-  .lot-retirer{
-    border:none; background:none; cursor:pointer; font-family:inherit;
-    color:#b02a2a; font-size:12.5px; font-weight:600; padding:2px 4px;
-  }
-  .lot-champs .field{ margin-bottom:8px; }
-  .lot-etat{ font-size:12.5px; margin-top:4px; }
-  .lot-etat.ok{ color:#1c7c46; }
-  .lot-etat.avertir{ color:#8a6100; }
-  .lot-etat.erreur{ color:#b02a2a; font-weight:600; }
-
-  /* Champ rempli par la machine (carnet) et pas encore relu : surligné jusqu'à ce qu'on y touche. */
-  .lot-champs .rempli-auto{ background:#fffbe6 !important; border-color:#e6c34a !important; }
-
-  /* Barre de fin de lot : elle colle en bas pour rester atteignable quand la liste s'allonge. */
-  .lot-barre{
-    position:sticky; bottom:0; z-index:20;
-    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-    background:#fff; border:1px solid #e3e9f2; border-radius:14px;
-    padding:12px 14px; margin-top:14px;
-    box-shadow:0 -4px 16px rgba(18,48,90,0.08);
-  }
-  .lot-barre-btns{ display:flex; gap:8px; align-items:center; }
-
-  /* Loupe plein écran : indispensable pour relire une écriture à la main sur un téléphone. */
-  .lot-loupe{
-    position:fixed; inset:0; z-index:4000; background:rgba(8,16,28,.94);
-    display:flex; align-items:center; justify-content:center; overflow:auto; padding:12px;
-  }
-  .lot-loupe img{ max-width:100%; max-height:100%; border-radius:8px; transition:transform .2s ease; }
-  .lot-loupe-barre{
-    position:fixed; top:0; left:0; right:0; display:flex; gap:8px; justify-content:center;
-    padding:10px; background:rgba(8,16,28,.75);
-  }
-
-  @media(max-width:760px){
-    .lot-ligne{ grid-template-columns:1fr; }
-    .lot-photo img, .lot-sansphoto{ height:250px; }
-  }
 </style>
 <!-- Versions exactes + empreintes de contrôle (SRI), posées le 19 août 2026 : le navigateur
      recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle ne correspond pas.
@@ -575,9 +506,15 @@
 </div>
 </div>
 
+<!-- L'ANCIENNE SAISIE, UN COLIS À LA FOIS — REPLIÉE ET NON SUPPRIMÉE, 21 août 2026
+     La saisie par photos ci-dessus la remplace : elle fait le même travail, avec la photo de
+     l'étiquette sous les yeux et sans le va-et-vient vers WhatsApp. Cette carte reste néanmoins
+     là, repliée, le temps de s'assurer qu'elle ne manque à personne — un cas d'usage qu'on
+     n'aurait pas vu se rappellerait alors sans bloquer la journée de quiconque. Ce constat
+     fait, elle part pour de bon. -->
 <div class="card" id="section-ajouter-colis">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'ajouter-colis-content')">
-<span class="collapse-arrow">▶</span> Ajouter un colis pour un client
+<span class="collapse-arrow">▶</span> Ancienne saisie, un colis à la fois
 </h2>
 <div id="ajouter-colis-content" class="collapsible-content">
 <div id="add-msg"></div>
@@ -1046,10 +983,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821lot2"></script>
-<script src="config.js?v=20260821lot2"></script>
+<script src="clt-common.js?v=20260821lot3"></script>
+<script src="config.js?v=20260821lot3"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260819rech1"></script>
+<script src="clt-select-recherche.js?v=20260821lot3"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1737,9 +1674,21 @@ document.getElementById('add-montant-livraison').addEventListener('input', updat
 let lotLignes = [];          // { id, file, url, cle, el }
 let lotEnvoiEnCours = false;
 
+/* Le message part en notification, pas seulement dans le bandeau en tête de section.
+   Raison : sur une liste de seize colis, on est au milieu de la page quand on clique. Un
+   bandeau écrit tout en haut est alors hors de l'écran — on croit que le bouton n'a rien
+   fait, on reclique, et on ne saura jamais qu'il manquait la cliente. La notification vient
+   se poser par-dessus la page, là où on regarde. Le bandeau reste écrit quand même : la
+   notification s'efface au bout de quelques secondes, le bandeau, lui, se relit. */
 function lotMsg(text, type){
 const el = document.getElementById('lot-msg');
 if (el) el.innerHTML = `<div class="msg msg-${type}">${escapeHTML(text)}</div>`;
+if (window.cltToast) {
+cltToast(text, {
+type: type === 'error' ? 'error' : (type === 'success' ? 'success' : (type === 'info' ? 'info' : 'warning')),
+duration: type === 'error' ? 9000 : 6000
+});
+}
 }
 
 // Ce que contient une ligne, lu directement dans le formulaire. Le formulaire est la source de
@@ -1773,9 +1722,9 @@ if (!wrap) return;
 const n = lotLignes.length;
 if (!n) { wrap.innerHTML = ''; return; }
 wrap.innerHTML = `
-<div class="lot-barre">
+<div class="lot-barre-photos">
 <div><strong>${n}</strong> ${n > 1 ? 'colis à enregistrer' : 'colis à enregistrer'}</div>
-<div class="lot-barre-btns">
+<div class="lot-barre-photos-btns">
 <button type="button" class="btn btn-outline btn-sm" id="lot-tout-effacer">Tout effacer</button>
 <button type="button" class="btn" id="lot-enregistrer">Enregistrer ${n > 1 ? 'les ' + n + ' colis' : 'le colis'}</button>
 </div>
@@ -1824,6 +1773,12 @@ ${l.url
 <input type="text" class="lot-desc" placeholder="Rien à écrire si l'étiquette n'en dit pas">
 </div>
 <div class="lot-etat"></div>
+<!-- Enregistrer ce colis-là, tout de suite. Ce bouton existe pour une raison précise : sur
+     téléphone, l'onglet est libéré par le système dès que l'écran se verrouille, et toute
+     la saisie non envoyée disparaît. Avec seize colis à remplir avant le bouton du bas,
+     un appel entrant suffisait à effacer un quart d'heure de travail. Ici, un colis fini
+     est un colis parti : au pire on perd celui qu'on avait sous les doigts. -->
+<button type="button" class="btn btn-sm lot-enregistrer-un">✔ Enregistrer ce colis</button>
 </div>`;
 return div;
 }
@@ -1934,42 +1889,25 @@ lotLoupeZoom = Math.min(5, Math.max(1, lotLoupeZoom + pas));
 img.style.transform = 'scale(' + lotLoupeZoom + ')';
 }
 
-/* ---------- Envoi du lot ---------- */
-async function lotEnregistrer(){
-if (lotEnvoiEnCours) return;
-const fournisseur_id = (document.getElementById('lot-fournisseur') || {}).value || '';
-if (!fournisseur_id) { lotMsg('Choisissez d\u2019abord la cliente à qui appartiennent ces colis.', 'error'); return; }
-if (!lotLignes.length) { lotMsg('Aucune photo à enregistrer.', 'error'); return; }
+/* ---------- Envoi du lot ----------
 
-// Tout est contrôlé AVANT le moindre envoi : à mi-parcours, la moitié des colis serait en base
-// et l'autre non, sans que personne sache laquelle.
-const saisies = lotLignes.map(lotLireLigne);
-const { problemes } = verifierLotAvantEnvoi(saisies);
-if (problemes.length) {
-lotMsg(resumeProblemesLotTexte(problemes), 'error');
-const premier = lotLignes[problemes[0].rang - 1];
-if (premier && premier.el) {
-premier.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-const champ = premier.el.querySelector('.lot-dest');
-if (champ) setTimeout(() => champ.focus(), 300);
-}
-return;
-}
+   DEUX PORTES DE SORTIE, ET POURQUOI IL EN FAUT DEUX
+   --------------------------------------------------
+   « Enregistrer ce colis » envoie une ligne, celle qu'on vient de finir. « Enregistrer les
+   N colis » envoie tout ce qui reste. Les deux passent par la MÊME fonction d'envoi
+   (lotEnvoyerUneLigne) : deux chemins d'écriture séparés finiraient tôt ou tard par diverger,
+   et c'est l'un des deux qui perdrait la clé anti-doublon ou la mise en attente hors réseau.
 
-lotEnvoiEnCours = true;
-const btn = document.getElementById('lot-enregistrer');
-if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+   La différence n'est pas dans l'envoi, elle est dans le contrôle qui le précède :
+   — un colis seul n'est refusé que pour SES propres fautes ;
+   — le lot entier est refusé en bloc si une seule ligne cloche, parce qu'un envoi interrompu
+     à mi-parcours laisserait la moitié des colis en base sans que personne sache laquelle.
+   -------------------------------------------------------------------------------------- */
 
-const livreurCollectePropose = clienteCollecteDriverToday(fournisseur_id);
-const bilan = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
-const echecs = [];
-const reussies = [];
-
-for (let i = 0; i < lotLignes.length; i++) {
-const l = lotLignes[i];
-const rang = i + 1;
-const s = saisies[i];
-if (btn) btn.textContent = `Enregistrement… ${rang}/${lotLignes.length}`;
+// Envoie une ligne. Renvoie true si elle peut quitter l'écran (écrite en base, déjà écrite, ou
+// mise en attente sur l'appareil), false si elle doit rester sous les yeux pour être corrigée.
+async function lotEnvoyerUneLigne(l, rang, ctx, bilan, echecs){
+const s = lotLireLigne(l);
 
 let photo_url = null;
 let photoAEnvoyerPlusTard = null;
@@ -1988,35 +1926,135 @@ const montant = (montant_article !== null || montant_livraison !== null)
 : null;
 
 const payload = {
-fournisseur_id,
+fournisseur_id: ctx.fournisseur_id,
 destination: s.destination,
 description: s.description || null,
 montant, montant_article, montant_livraison, photo_url,
 destinataire_telephone: s.telephone ? cleTelCarnet(s.telephone) : null,
 cle_creation: l.cle
 };
-if (livreurCollectePropose) payload.livreur_collecte_id = livreurCollectePropose;
+if (ctx.livreurCollectePropose) payload.livreur_collecte_id = ctx.livreurCollectePropose;
 
 let error = await eqInsererColis(payload);
 
 // Doublon sur la clé de création : ce colis avait déjà été enregistré par un envoi précédent
 // qui semblait avoir échoué. Il existe, une seule fois. C'est le résultat voulu.
-if (estDoublonCleCreation(error)) { bilan.dejaEnregistres++; error = null; reussies.push(l); }
-else if (!error) { bilan.crees++; reussies.push(l); }
-else if (eqEstPanneReseau(error)) {
+if (estDoublonCleCreation(error)) { bilan.dejaEnregistres++; return true; }
+if (!error) { bilan.crees++; return true; }
+if (eqEstPanneReseau(error)) {
 try {
 await eqQueueAjouter({ type: 'creation-colis', payload, photoBlob: photoAEnvoyerPlusTard, userId: currentUser.id });
 bilan.misEnAttente++;
-reussies.push(l);
-error = null;
+return true;
 } catch (errFile) {
 console.error('Mise en file hors-réseau impossible :', errFile);
 echecs.push({ rang, motif: 'pas de connexion, et la mise en attente sur cet appareil a échoué' });
+return false;
 }
 }
-if (error) echecs.push({ rang, motif: friendlyErrorMessage(error.message) });
+echecs.push({ rang, motif: friendlyErrorMessage(error.message) });
+return false;
+}
 
-if (reussies[reussies.length - 1] === l && l.el) l.el.classList.add('lot-enregistree');
+// La cliente est demandée une fois pour tout le lot. Sans elle, aucun envoi n'a de sens : on le
+// dit et on remonte jusqu'au champ, sinon le message parle d'un champ que l'on ne voit pas.
+function lotClienteChoisie(){
+const champ = document.getElementById('lot-fournisseur');
+const id = (champ || {}).value || '';
+if (!id) {
+lotMsg('Choisissez d\u2019abord la cliente à qui appartiennent ces colis.', 'error');
+const bloc = document.getElementById('section-lot-colis');
+if (bloc && bloc.scrollIntoView) bloc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+return id;
+}
+
+// Ce qu'il faut refaire une fois que des colis sont partis, quel que soit le chemin emprunté.
+function lotApresEnvoi(fournisseur_id){
+// Les destinataires du lot doivent figurer au carnet dès le colis suivant.
+carnetParClient.delete(fournisseur_id);
+eqRafraichirCarnet();
+loadColis();
+}
+
+/* ---------- Un colis à la fois ---------- */
+async function lotEnregistrerUn(id){
+if (lotEnvoiEnCours) return;
+const i = lotLignes.findIndex(l => l.id === id);
+if (i === -1) return;
+const l = lotLignes[i];
+const rang = i + 1;
+
+const fournisseur_id = lotClienteChoisie();
+if (!fournisseur_id) return;
+
+// Seules les fautes de CETTE ligne la retiennent. On la renumérote à 1 le temps du contrôle,
+// puis on remet son vrai rang dans le message : la personne cherche « colis 7 » à l'écran.
+const { problemes } = verifierLotAvantEnvoi([lotLireLigne(l)]);
+if (problemes.length) {
+lotMsg('Colis ' + rang + ' : ' + problemes[0].motif + '.', 'error');
+const champ = l.el && l.el.querySelector('.lot-dest');
+if (champ) champ.focus();
+return;
+}
+
+lotEnvoiEnCours = true;
+const btn = l.el && l.el.querySelector('.lot-enregistrer-un');
+if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+
+const bilan = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
+const echecs = [];
+const ctx = { fournisseur_id, livreurCollectePropose: clienteCollecteDriverToday(fournisseur_id) };
+const partie = await lotEnvoyerUneLigne(l, rang, ctx, bilan, echecs);
+
+lotEnvoiEnCours = false;
+if (btn) { btn.disabled = false; btn.textContent = '✔ Enregistrer ce colis'; }
+
+if (partie) {
+lotRetirer(l.id);
+lotMsg(resumeEnvoiLotTexte(bilan), bilan.photosPerdues ? 'info' : 'success');
+lotApresEnvoi(fournisseur_id);
+} else {
+lotMsg(resumeProblemesLotTexte(echecs), 'error');
+}
+}
+
+/* ---------- Tout ce qui reste, d'un coup ---------- */
+async function lotEnregistrer(){
+if (lotEnvoiEnCours) return;
+const fournisseur_id = lotClienteChoisie();
+if (!fournisseur_id) return;
+if (!lotLignes.length) { lotMsg('Aucune photo à enregistrer.', 'error'); return; }
+
+// Tout est contrôlé AVANT le moindre envoi : à mi-parcours, la moitié des colis serait en base
+// et l'autre non, sans que personne sache laquelle.
+const { problemes } = verifierLotAvantEnvoi(lotLignes.map(lotLireLigne));
+if (problemes.length) {
+lotMsg(resumeProblemesLotTexte(problemes), 'error');
+const premier = lotLignes[problemes[0].rang - 1];
+if (premier && premier.el) {
+premier.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+const champ = premier.el.querySelector('.lot-dest');
+if (champ) setTimeout(() => champ.focus(), 300);
+}
+return;
+}
+
+lotEnvoiEnCours = true;
+const btn = document.getElementById('lot-enregistrer');
+if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+
+const bilan = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
+const echecs = [];
+const reussies = [];
+const ctx = { fournisseur_id, livreurCollectePropose: clienteCollecteDriverToday(fournisseur_id) };
+
+for (let i = 0; i < lotLignes.length; i++) {
+const l = lotLignes[i];
+const rang = i + 1;
+if (btn) btn.textContent = `Enregistrement… ${rang}/${lotLignes.length}`;
+const partie = await lotEnvoyerUneLigne(l, rang, ctx, bilan, echecs);
+if (partie) { reussies.push(l); if (l.el) l.el.classList.add('lot-enregistree'); }
 }
 
 // Les lignes parties quittent l'écran : la numérotation restante doit continuer de désigner
@@ -2031,10 +2069,7 @@ let texte = resumeEnvoiLotTexte(bilan);
 if (echecs.length) texte += ' ' + resumeProblemesLotTexte(echecs).replace(/^Rien n\u2019a été enregistré\. À corriger : /, 'Non enregistré : ');
 lotMsg(texte, echecs.length ? 'error' : (bilan.photosPerdues ? 'info' : 'success'));
 
-// Les destinataires du lot doivent figurer au carnet dès le lot suivant.
-carnetParClient.delete(fournisseur_id);
-eqRafraichirCarnet();
-loadColis();
+lotApresEnvoi(fournisseur_id);
 }
 
 function initLotColis(){
@@ -2071,6 +2106,12 @@ const retirer = e.target.closest('.lot-retirer');
 if (retirer) {
 const ligne = retirer.closest('.lot-ligne');
 if (ligne) lotRetirer(ligne.dataset.lotId);
+return;
+}
+const envoyerUn = e.target.closest('.lot-enregistrer-un');
+if (envoyerUn) {
+const ligne = envoyerUn.closest('.lot-ligne');
+if (ligne) lotEnregistrerUn(ligne.dataset.lotId);
 return;
 }
 const img = e.target.closest('.lot-img');
@@ -6703,9 +6744,13 @@ init();
     };
     const byId = (id) => document.getElementById(id);
 
-    // 📦 Colis : ajouter un colis + liste de tous les colis
-    put('eqpanel-colis', byId('section-ajouter-colis'));
+    // 📦 Colis : la saisie par photos d'abord (c'est la voie normale depuis le 21 août 2026),
+    // l'ancienne saisie unitaire ensuite et repliée, puis la liste de tous les colis. L'ordre
+    // fait la moitié du message : la première carte de l'onglet est celle qu'on remplit, celle
+    // d'en dessous est celle qu'on garde sous la main le temps de vérifier qu'elle ne manque à
+    // personne.
     put('eqpanel-colis', byId('section-lot-colis'));
+    put('eqpanel-colis', byId('section-ajouter-colis'));
     put('eqpanel-colis', wrapInCard(byId('panel-colis')));
 
     // 🗺️ Suivi : présence en ligne + carte + journal de bord

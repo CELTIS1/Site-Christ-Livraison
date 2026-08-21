@@ -255,6 +255,59 @@ titre('Un montant à zéro est un vrai montant, pas un champ vide');
     ligneLotEstVide(ligne({ montantLivraison: '0' })) === false);
 }
 
+titre('Un code de confirmation mal formé est refusé partout, sans qu\u2019on ait à le demander');
+{
+  // Le code est facultatif — beaucoup d'étiquettes n'en portent pas. Mais un code à trois chiffres
+  // n'est pas « presque bon » : le livreur en saisira quatre à la remise, la remise sera refusée,
+  // et le colis reviendra à l'entrepôt après avoir fait le trajet. C'est pour cela que ce contrôle
+  // ne dépend d'aucune option : un code mal formé est faux dans les deux espaces, jamais seulement
+  // dans l'un des deux.
+  verifier('un code vide reste accepté',
+    verifierLotAvantEnvoi([ligne({ destination: 'Cocody', codeConfirmation: '' })]).pretes.length === 1);
+  verifier('un code à quatre chiffres passe',
+    verifierLotAvantEnvoi([ligne({ destination: 'Cocody', codeConfirmation: '4821' })]).pretes.length === 1);
+  const court = verifierLotAvantEnvoi([ligne({ destination: 'Cocody', codeConfirmation: '482' })]);
+  verifier('un code à trois chiffres est refusé', court.pretes.length === 0 && court.problemes.length === 1);
+  verifier('et le motif explique ce qu\u2019on attend',
+    /4 chiffres/.test(court.problemes[0].motif), court.problemes[0].motif);
+  verifier('un code avec des lettres est refusé',
+    verifierLotAvantEnvoi([ligne({ destination: 'Cocody', codeConfirmation: '48A1' })]).problemes.length === 1);
+}
+
+titre('Les exigences propres à chaque espace passent par une option, pas par un second contrôle');
+{
+  // Côté vendeuse, la commune de destination décide du tarif et de la tournée : un colis sans
+  // commune ne peut être affecté à personne. Côté équipe, la destination est écrite sur l'étiquette
+  // et la commune se déduit plus tard, donc l'exiger bloquerait une saisie parfaitement valable.
+  // Cette différence est UNE OPTION sur la même fonction, et non un second contrôle écrit à part :
+  // un contrôle jumeau aurait fini par diverger, et c'est toujours celui qu'on oublie de corriger
+  // qui repart en production.
+  const sansCommune = [ligne({ destination: 'Angré 8e tranche', montantArticle: '15000' })];
+  verifier('sans option, une ligne sans commune passe (c\u2019est le cas de l\u2019équipe)',
+    verifierLotAvantEnvoi(sansCommune).pretes.length === 1);
+  const refus = verifierLotAvantEnvoi(sansCommune, { communeObligatoire: true });
+  verifier('avec l\u2019option, la même ligne est refusée (c\u2019est le cas de la vendeuse)',
+    refus.pretes.length === 0 && refus.problemes.length === 1);
+  verifier('et le motif nomme ce qui manque',
+    /commune/.test(refus.problemes[0].motif), refus.problemes[0].motif);
+  verifier('la commune renseignée lève le refus',
+    verifierLotAvantEnvoi([ligne({ communeDestination: 'Cocody', destination: 'Angré' })],
+      { communeObligatoire: true }).pretes.length === 1);
+
+  // Même mécanique pour le destinataire, prévue pour le jour où un espace l'exigera.
+  const sansDest = [ligne({ communeDestination: 'Cocody', montantArticle: '9000' })];
+  verifier('sans option, une ligne sans destinataire passe', verifierLotAvantEnvoi(sansDest).pretes.length === 1);
+  verifier('avec l\u2019option, elle est refusée',
+    verifierLotAvantEnvoi(sansDest, { destinataireObligatoire: true }).problemes.length === 1);
+
+  // Garde-fou 3, qui doit garder la priorité : une photo pour laquelle personne n'a rien saisi est
+  // un oubli, et on doit le dire ainsi. Lui répondre « il manque la commune » enverrait relire une
+  // ligne où il n'y a rien à relire.
+  const vide = verifierLotAvantEnvoi([ligne({})], { communeObligatoire: true });
+  verifier('une ligne entièrement vide est signalée comme vide, pas comme incomplète',
+    /rien n['\u2019]a été saisi/.test(vide.problemes[0].motif), vide.problemes[0].motif);
+}
+
 /* ==========================================================================================
    4. Les messages : ils doivent dire OÙ regarder, et ne jamais mentir
    ========================================================================================== */
@@ -338,8 +391,15 @@ titre('L\u2019écran de saisie en lot est bien branché dans l\u2019espace Équi
   // Garde-fou 4 : rien ne part sans un geste humain. Le seul déclencheur est le bouton.
   verifier('l\u2019envoi n\u2019est déclenché que par le bouton « Enregistrer »',
     /e\.target\.closest\('#lot-enregistrer'\)\) lotEnregistrer\(\)/.test(equipe));
-  verifier('le lot est contrôlé avant le moindre envoi',
-    equipe.indexOf('verifierLotAvantEnvoi(saisies)') > -1);
+  // Il y a maintenant DEUX portes de sortie : le bouton de chaque colis, qui libère sa ligne dès
+  // qu'elle est bonne, et le bouton du bas qui enregistre tout ce qui reste. Les deux doivent
+  // contrôler avant d'écrire. On regarde donc à l'intérieur de chacune des deux fonctions plutôt
+  // que de chercher un appel unique dans la page : c'est exactement le cas où un chemin ajouté
+  // plus tard pourrait sauter le contrôle sans que rien ne le dise.
+  for (const nom of ['lotEnregistrerUn', 'lotEnregistrer']) {
+    verifier(`${nom} contrôle le lot avant le moindre envoi`,
+      /verifierLotAvantEnvoi\(/.test(blocDe(equipe, nom)));
+  }
 
   // La description est facultative des deux côtés : formulaire unitaire ET lot.
   verifier('la description n\u2019est plus obligatoire dans le formulaire unitaire',
@@ -360,10 +420,18 @@ titre('Les fichiers partagés portent tous la même étiquette de version');
 {
   // Une page qui charge l'ancien config.js appellerait des fonctions absentes : l'écran en lot
   // se figerait sans message. L'étiquette doit être bougée partout en même temps.
+  //
+  // clt-select-recherche.js fait partie du groupe depuis le 21 août 2026, et il y est entré à la
+  // suite d'une erreur évitée de peu. Ce fichier portait sa propre étiquette, plus ancienne. Le
+  // correctif de la liste de recherche sur téléphone — la liste qui se fermait au défilement et
+  // passait sous le clavier — vit précisément dedans. Le publier sans bouger son étiquette aurait
+  // laissé les téléphones sur l'ancienne copie : le bug signalé serait resté visible, les essais
+  // au vert, et personne n'aurait su où chercher. Les quatre fichiers de l'écran en lot bougent
+  // donc ensemble, et ce contrôle est là pour qu'on n'ait plus à y penser.
   const versions = new Map();
   fs.readdirSync(APP).filter(f => f.endsWith('.html')).forEach(f => {
     const src = fs.readFileSync(path.join(APP, f), 'utf8');
-    const re = /(?:src|href)="(config\.js|style\.css|clt-common\.js)\?v=([^"]+)"/g;
+    const re = /(?:src|href)="(config\.js|style\.css|clt-common\.js|clt-select-recherche\.js)\?v=([^"]+)"/g;
     let m;
     while ((m = re.exec(src))) {
       if (!versions.has(m[2])) versions.set(m[2], []);

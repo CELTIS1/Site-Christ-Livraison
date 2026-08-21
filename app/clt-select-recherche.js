@@ -337,14 +337,27 @@
     /* ---------- Positionnement du panneau ---------- */
     function positionner() {
       if (panneau.hidden) return;
-      if (estMobile()) {                       // feuille ancrée en bas de l'écran
+      if (estMobile()) {                       // feuille ancrée en bas de la zone VISIBLE
         panneau.classList.add('clt-rs__panneau--feuille');
         panneau.style.left = '';
         panneau.style.top = '';
         panneau.style.width = '';
-        panneau.style.maxHeight = '';
+        // On remonte la feuille de la hauteur exactement occupée par le clavier, et on limite
+        // sa hauteur à ce qui reste visible. Sans ça, la liste des noms se dessine sous le
+        // clavier : elle existe, elle est juste impossible à voir et à toucher.
+        var vv = window.visualViewport;
+        if (vv) {
+          var clavier = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+          panneau.style.setProperty('bottom', clavier + 'px', 'important');
+          panneau.style.setProperty('max-height', Math.max(220, vv.height - 20) + 'px', 'important');
+        } else {
+          panneau.style.removeProperty('bottom');
+          panneau.style.removeProperty('max-height');
+        }
         return;
       }
+      panneau.style.removeProperty('bottom');
+      panneau.style.removeProperty('max-height');
       panneau.classList.remove('clt-rs__panneau--feuille');
       var r = champ.getBoundingClientRect();
       var margeBas = window.innerHeight - r.bottom;
@@ -386,6 +399,10 @@
       rendre();
       positionner();
       voile.hidden = !estMobile();
+      // La page du dessous est figée pendant qu'on choisit. Le voile la cache déjà, mais il ne
+      // l'empêche pas de défiler sous le doigt : on se retrouvait ailleurs dans la page en
+      // croyant faire glisser la liste des noms.
+      if (estMobile()) document.documentElement.classList.add('clt-rs-fige');
       champ.setAttribute('aria-expanded', 'true');
       wrap.classList.add('clt-rs--ouvert');
 
@@ -403,6 +420,7 @@
       if (panneau.hidden) return;
       panneau.hidden = true;
       voile.hidden = true;
+      document.documentElement.classList.remove('clt-rs-fige');
       champ.setAttribute('aria-expanded', 'false');
       wrap.classList.remove('clt-rs--ouvert');
       if (instanceOuverte === api) instanceOuverte = null;
@@ -525,17 +543,37 @@
     if (!dansLePanneau && !dansLeChamp) instanceOuverte.fermer();
   }, true);
 
-  // Le panneau est positionné en `fixed` d'après la position du champ : dès que
-  // la page défile ou change de taille, il faut le replacer (ou le fermer si le
-  // champ est sorti de l'écran).
+  /* Le panneau est positionné en `fixed` d'après la position du champ : dès que la page
+     défile ou change de taille, il faut le replacer.
+
+     SUR TÉLÉPHONE, ON NE FERME PLUS AU DÉFILEMENT — 21 août 2026
+     -----------------------------------------------------------
+     La feuille de téléphone est ancrée au bas de l'écran ; elle ne suit pas le champ, donc
+     elle n'a aucune raison de disparaître parce que le champ est sorti de vue. Or c'est
+     exactement ce qui arrivait, et deux fois plutôt qu'une : d'abord parce qu'un doigt qui
+     parcourt une longue liste fait bouger la page derrière ; ensuite et surtout parce que
+     l'ouverture du clavier virtuel réduit la fenêtre et déclenche elle-même un défilement.
+     On perdait donc la liste au moment précis où l'on commençait à taper dedans, et le choix
+     n'était jamais enregistré. Sur téléphone : on replace, on ne ferme pas. */
   function repositionner() {
     if (!instanceOuverte) return;
+    if (window.innerWidth <= 640) { instanceOuverte.positionner(); return; }
     var r = instanceOuverte.wrap.getBoundingClientRect();
     if (r.bottom < 0 || r.top > window.innerHeight) { instanceOuverte.fermer(); return; }
     instanceOuverte.positionner();
   }
   window.addEventListener('scroll', repositionner, true);
   window.addEventListener('resize', repositionner);
+
+  /* Le clavier virtuel ne rétrécit pas la fenêtre au sens de `window.innerHeight` : il se pose
+     par-dessus. Une feuille collée à `bottom:0` se retrouve donc DERRIÈRE le clavier, et avec
+     elle toute la liste des noms — c'est ce qu'on voyait, un champ de recherche visible et
+     des résultats invisibles en dessous. Seul `visualViewport` sait quelle part de l'écran
+     reste réellement visible ; on l'écoute pour reposer la feuille au-dessus du clavier. */
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', repositionner);
+    window.visualViewport.addEventListener('scroll', repositionner);
+  }
 
   /* ---------- Balayage ---------- */
   function balayer(racine) {

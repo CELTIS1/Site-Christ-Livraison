@@ -1808,7 +1808,8 @@ function ligneLotEstVide(ligne) {
       && !String(l.telephone || "").trim()
       && !String(l.montantArticle || "").trim()
       && !String(l.montantLivraison || "").trim()
-      && !String(l.description || "").trim();
+      && !String(l.description || "").trim()
+      && !String(l.communeDestination || "").trim();
 }
 
 // Contrôle tout le lot AVANT le moindre envoi.
@@ -1819,13 +1820,29 @@ function ligneLotEstVide(ligne) {
 // posent problème — avec leur numéro, pour qu'on sache où regarder.
 //
 // Renvoie { pretes: [ligne...], problemes: [{ rang, motif }] }.
-function verifierLotAvantEnvoi(lignes) {
+//
+// `options` sert les différences entre les deux espaces, sans dédoubler le contrôle. Côté
+// vendeuse, la commune de destination est obligatoire : c'est elle qui décide du tarif et de
+// la tournée, un colis sans commune ne peut pas être affecté à un livreur. Côté équipe, la
+// personne qui saisit connaît déjà la destination écrite sur l'étiquette et la commune est
+// déduite plus tard. Un second contrôle écrit à part aurait fini par diverger de celui-ci ;
+// une option sur la MÊME fonction reste, elle, couverte par les mêmes tests.
+function verifierLotAvantEnvoi(lignes, options) {
+  const opt = options || {};
   const pretes = [];
   const problemes = [];
   (lignes || []).forEach((ligne, i) => {
     const rang = i + 1;
     if (ligneLotEstVide(ligne)) {
       problemes.push({ rang: rang, motif: "rien n'a été saisi pour cette photo" });
+      return;
+    }
+    if (opt.communeObligatoire && !String(ligne.communeDestination || "").trim()) {
+      problemes.push({ rang: rang, motif: "il manque la commune de destination" });
+      return;
+    }
+    if (opt.destinataireObligatoire && !String(ligne.destination || "").trim()) {
+      problemes.push({ rang: rang, motif: "il manque le nom du destinataire" });
       return;
     }
     const telBrut = String(ligne.telephone || "").trim();
@@ -1836,6 +1853,14 @@ function verifierLotAvantEnvoi(lignes) {
     if (!isValidMontant(ligne.montantArticle === "" ? null : ligne.montantArticle)
      || !isValidMontant(ligne.montantLivraison === "" ? null : ligne.montantLivraison)) {
       problemes.push({ rang: rang, motif: "les montants doivent être des nombres positifs" });
+      return;
+    }
+    // Le code de confirmation est facultatif, mais un code à trois chiffres ne l'est pas :
+    // le livreur en saisira quatre, la remise sera refusée, et le colis reviendra. Contrôlé
+    // sans option parce qu'un code mal formé est faux partout, jamais seulement ici.
+    const code = String(ligne.codeConfirmation || "").trim();
+    if (code && !/^\d{4}$/.test(code)) {
+      problemes.push({ rang: rang, motif: "le code de confirmation doit faire exactement 4 chiffres, ou rester vide" });
       return;
     }
     pretes.push(ligne);
