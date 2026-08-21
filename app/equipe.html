@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821livreur2">
+<link rel="stylesheet" href="style.css?v=20260821coller1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -916,8 +916,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821livreur2"></script>
-<script src="config.js?v=20260821livreur2"></script>
+<script src="clt-common.js?v=20260821coller1"></script>
+<script src="config.js?v=20260821coller1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
@@ -3369,10 +3369,21 @@ const livreurSelect = item.querySelector('.row-livreur-select');
 const livreur_id = livreurSelect ? (livreurSelect.value || null) : undefined;
 const livreurCollecteSelect = item.querySelector('.row-livreur-collecte-select');
 const livreur_collecte_id = livreurCollecteSelect ? (livreurCollecteSelect.value || null) : undefined;
-// Filet de sécurité : si l'enregistrement est bloqué (nouveau colis en attente) et qu'aucun livreur
-// de récupération n'a été choisi, on empêche la sauvegarde et on l'explique clairement.
+// Filet de sécurité : si l'enregistrement est bloqué (nouveau colis en attente) et qu'aucun
+// livreur de récupération n'a été choisi, on n'enregistre pas.
+//
+// CORRECTION DU 21 AOÛT 2026 : on ne se contente plus de refuser après coup avec une fenêtre
+// à fermer. Un refus qui laisse la personne chercher elle-même où cliquer coûte du temps à
+// chaque colis. On amène maintenant l'écran jusqu'au champ manquant, on l'ouvre, et le message
+// reste lisible à côté de lui au lieu de disparaître avec la fenêtre.
 if (btn.dataset.gate === '1' && !livreur_collecte_id) {
-alert("Vous devez d'abord assigner un livreur de récupération avant d'enregistrer ce colis.");
+const hint = item.querySelector('.save-hint');
+if (hint) hint.style.display = '';
+if (livreurCollecteSelect) {
+livreurCollecteSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+try { livreurCollecteSelect.focus({ preventScroll: true }); } catch(e) { livreurCollecteSelect.focus(); }
+}
+if (window.cltToast) cltToast("Choisissez le livreur de récupération, juste au-dessus, puis enregistrez.", { type: 'warning' });
 return;
 }
 const observation = item.querySelector('.obs-textarea').value.trim() || null;

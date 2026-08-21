@@ -1448,6 +1448,315 @@ function resumeCarnetTexte(resultat, entree) {
 }
 
 /* ============================================================================================
+   COLLER LA COMMANDE — ajout du 21 août 2026
+
+   CE QUE ÇA RÉPOND
+   ----------------
+   Un client reçoit sa commande par WhatsApp. Aujourd'hui il relit ce message et retape à la
+   main le numéro, la commune, le quartier et le montant. Pour cent colis, c'est cent fois
+   quatre champs recopiés à l'œil — c'est long, et c'est là que naissent les erreurs de chiffre.
+   Ces fonctions lisent le message collé et remplissent ce qu'elles savent lire.
+
+   LA RÈGLE QUI COMMANDE TOUT LE RESTE : NE JAMAIS DEVINER
+   ------------------------------------------------------
+   Un champ mal rempli est PIRE qu'un champ vide. Un champ vide, l'œil le voit et le remplit.
+   Un mauvais numéro recopié par la machine a l'air juste : personne ne le relit, et le colis
+   part chez quelqu'un d'autre. Donc, quand ces fonctions hésitent, elles laissent vide et le
+   disent. Elles préfèrent en faire trop peu que de se tromper.
+
+   Quatre garde-fous en découlent :
+   1. ON N'ÉCRASE JAMAIS CE QUE L'HUMAIN A DÉJÀ SAISI. Ce qui est tapé à la main fait foi.
+   2. DEUX RÉPONSES POSSIBLES = AUCUNE RÉPONSE. Deux numéros dans le message, deux montants,
+      deux communes citées : on laisse vide plutôt que de tirer au sort.
+   3. LE TÉLÉPHONE EST RETIRÉ DU TEXTE AVANT DE CHERCHER LE MONTANT. Sinon « 07 08 12 34 56 »
+      se lit très bien comme une somme. C'est le piège le plus évident, et le plus coûteux.
+   4. ON N'INVENTE PAS DE GÉOGRAPHIE. « Angré » est un quartier de Cocody, pas une commune —
+      mais ça, aucune liste ne le dit. On ne l'apprend que de l'historique du client lui-même,
+      et seulement s'il a toujours été livré dans la même commune.
+
+   Ces fonctions ne touchent à aucun champ : elles renvoient ce qu'elles proposent. C'est
+   l'écran qui applique, et c'est l'humain qui enregistre. Rien ne part en base tout seul.
+   ============================================================================================ */
+
+// Découpe un texte en « nombres ». Un nombre, c'est une suite de chiffres où un espace, un
+// point ou un tiret UNIQUE peut s'intercaler : « 07 08 12 34 56 » et « 15.000 » sont chacun
+// un seul nombre. Deux séparateurs d'affilée, une lettre ou un retour à la ligne coupent —
+// deux lignes du message sont deux informations différentes, jamais un seul chiffre.
+// On garde la position d'origine : elle sert ensuite à lire ce qui est écrit juste avant et
+// juste après (« F », « livraison »…), qui est ce qui donne son sens au nombre.
+function groupesDeChiffres(texte) {
+  const t = String(texte || "");
+  const estChiffre = c => c >= "0" && c <= "9";
+  const groupes = [];
+  let i = 0;
+  while (i < t.length) {
+    if (!estChiffre(t[i])) { i++; continue; }
+    let j = i, fin = i, chiffres = "";
+    while (j < t.length) {
+      const c = t[j];
+      if (estChiffre(c)) { chiffres += c; j++; fin = j; continue; }
+      if (" .-\u00A0".indexOf(c) >= 0 && j + 1 < t.length && estChiffre(t[j + 1])) { j++; continue; }
+      break;
+    }
+    groupes.push({ chiffres: chiffres, debut: i, fin: fin });
+    i = fin > i ? fin : i + 1;
+  }
+  return groupes;
+}
+
+// Un numéro de mobile ivoirien : dix chiffres commençant par 01, 05, 07, 25 ou 27, avec ou
+// sans l'indicatif 225 devant. Les anciens numéros à huit chiffres ne sont volontairement pas
+// acceptés : ils sont hors service depuis 2021 et ressemblent trop à des montants.
+function numeroIvoirien(chiffres) {
+  let n = String(chiffres || "");
+  if (n.length === 13 && n.startsWith("225")) n = n.slice(3);
+  return (n.length === 10 && /^(01|05|07|25|27)/.test(n)) ? n : "";
+}
+
+// Cherche LE numéro du destinataire, et renvoie aussi le texte débarrassé de tous les numéros.
+// C'est ce texte nettoyé qu'on fouillera ensuite pour le montant (garde-fou 3).
+// Deux numéros DIFFÉRENTS dans le message : on ne sait pas lequel est le destinataire, donc
+// on ne remplit pas. Le même numéro écrit deux fois de deux façons n'est pas un conflit.
+function telephoneDansTexte(texte) {
+  const t = String(texte || "");
+  const trouves = [];
+  let reste = t;
+  groupesDeChiffres(t).forEach(g => {
+    const num = numeroIvoirien(g.chiffres);
+    if (!num) return;
+    trouves.push(num);
+    // On remplace par des espaces de même longueur : le texte garde sa forme, donc les
+    // positions restent justes pour la lecture du montant.
+    reste = reste.slice(0, g.debut) + " ".repeat(g.fin - g.debut) + reste.slice(g.fin);
+  });
+  const distincts = trouves.filter((n, i) => trouves.indexOf(n) === i);
+  return {
+    numero: distincts.length === 1 ? distincts[0] : "",
+    plusieurs: distincts.length > 1,
+    reste: reste
+  };
+}
+
+// Cherche le prix de l'article. Un nombre ne devient un montant que s'il est ACCOMPAGNÉ :
+// soit suivi de F, FCFA, CFA ou franc, soit précédé de prix / montant / coût / somme / total.
+// Un nombre tout seul (« 3 robes », « rue 12 ») n'est jamais pris pour de l'argent.
+// Les montants annoncés comme frais de livraison sont mis de côté : le prix de la livraison
+// est calculé par l'application à partir des deux communes, on ne le recopie pas du message.
+function montantDansTexte(texte) {
+  const t = String(texte || "");
+  const candidats = [];
+  groupesDeChiffres(t).forEach(g => {
+    const valeur = parseInt(g.chiffres, 10);
+    // Bornes de bon sens : en dessous de 100 F ce n'est pas un prix d'article, au-dessus de
+    // dix millions c'est une référence ou un code, pas une somme qu'on livre.
+    if (!(valeur >= 100 && valeur <= 10000000)) return;
+    const avant = cleTexteCarnet(t.slice(Math.max(0, g.debut - 30), g.debut));
+    const apres = t.slice(g.fin, g.fin + 8);
+    const suiviDeMonnaie = /^\s*(f\b|fcfa|f\.|cfa|francs?)/i.test(apres);
+    const precedeDeLibelle = /(prix|montant|cout|somme|total|valeur)\s*$/.test(avant);
+    if (!suiviDeMonnaie && !precedeDeLibelle) return;
+    if (/(livraison|transport|course|frais)\s*\S{0,10}$/.test(avant)) return;
+    candidats.push(valeur);
+  });
+  const distincts = candidats.filter((v, i) => candidats.indexOf(v) === i);
+  return { montant: distincts.length === 1 ? distincts[0] : null, plusieurs: distincts.length > 1 };
+}
+
+// Mots trop courants pour servir de nom de quartier : les retenir ferait rattacher n'importe
+// quelle adresse à n'importe quelle commune.
+const MOTS_TROP_COURANTS = ["rue", "pres", "prs", "face", "vers", "cote", "quartier", "carrefour",
+  "derriere", "devant", "avenue", "boulevard", "cite", "residence", "immeuble", "villa", "porte",
+  "chez", "apres", "avant", "entre", "dans", "sur", "non", "loin", "grand", "petit", "nouveau"];
+
+// Apprend, à partir des colis passés du client lui-même, quel quartier appartient à quelle
+// commune. Aucune liste de quartiers n'est écrite en dur : ce serait à maintenir à la main et
+// ce serait faux pour les autres clients.
+// UN QUARTIER N'EST RETENU QUE S'IL N'A JAMAIS ÉTÉ VU AILLEURS. S'il apparaît un jour dans
+// deux communes différentes, on l'oublie définitivement plutôt que de choisir la plus fréquente.
+function dictionnaireQuartiers(carnet) {
+  const vus = {};
+  const communes = (typeof COMMUNES !== "undefined" ? COMMUNES : []).map(c => cleTexteCarnet(c));
+  (carnet || []).forEach(e => {
+    const commune = String((e && e.commune) || "").trim();
+    const dest = cleTexteCarnet((e && e.destination) || "");
+    if (!commune || !dest) return;
+    const cles = [];
+    // L'adresse entière (« angre 8e ») : c'est elle qui revient telle quelle chez les habitués.
+    cles.push(dest);
+    // Et son premier mot (« angre ») : c'est le nom du quartier, celui qu'on retrouvera dans
+    // une adresse écrite autrement.
+    const premier = dest.split(" ")[0];
+    if (premier && premier.length >= 4) cles.push(premier);
+    cles.forEach(cle => {
+      if (!cle || cle.length < 4) return;
+      if (communes.indexOf(cle) >= 0) return;           // une commune n'est pas un quartier
+      if (MOTS_TROP_COURANTS.indexOf(cle) >= 0) return;
+      if (!vus[cle]) vus[cle] = { commune: commune, texte: String(e.destination || "").trim(), sur: false };
+      else if (cleTexteCarnet(vus[cle].commune) !== cleTexteCarnet(commune)) vus[cle].sur = true;
+    });
+  });
+  const dico = {};
+  Object.keys(vus).forEach(cle => { if (!vus[cle].sur) dico[cle] = vus[cle]; });
+  return dico;
+}
+
+// Cherche la commune et le quartier dans le message.
+// La commune écrite noir sur blanc l'emporte toujours sur ce qu'on a appris : c'est l'humain
+// qui l'a écrite. Deux communes citées : on ne choisit pas.
+// Si le quartier appris désigne une AUTRE commune que celle écrite, on signale le désaccord
+// et on ne remplit pas le quartier — l'un des deux est faux, ce n'est pas à nous de trancher.
+function communeDansTexte(texte, dico) {
+  const norme = " " + cleTexteCarnet(texte) + " ";
+  const liste = (typeof COMMUNES !== "undefined" ? COMMUNES : []);
+  const citees = liste.filter(c => norme.indexOf(" " + cleTexteCarnet(c) + " ") >= 0);
+  const commune = citees.length === 1 ? citees[0] : "";
+
+  // Parmi les quartiers connus, on retient le libellé le plus long qui apparaît dans le
+  // message : « angre 8e » est plus informatif que « angre ».
+  let trouve = null;
+  Object.keys(dico || {}).forEach(cle => {
+    if (norme.indexOf(" " + cle + " ") < 0) return;
+    if (!trouve || cle.length > trouve.cle.length) trouve = { cle: cle, info: dico[cle] };
+  });
+
+  let quartier = "", conflit = false;
+  if (trouve) {
+    if (!commune || cleTexteCarnet(trouve.info.commune) === cleTexteCarnet(commune)) quartier = trouve.info.texte;
+    else conflit = true;
+  }
+  return {
+    commune: commune || (quartier ? trouve.info.commune : ""),
+    quartier: quartier,
+    plusieurs: citees.length > 1,
+    conflit: conflit
+  };
+}
+
+// Le chef d'orchestre : lit le message collé et dit, champ par champ, ce qu'il propose,
+// ce qu'il refuse de toucher, et ce qu'il n'a pas su lire.
+//
+// « actuel » est ce qui est déjà dans la ligne à l'écran. Un champ déjà rempli n'est jamais
+// écrasé (garde-fou 1) : il ressort dans « ignores » pour que l'écran puisse le dire.
+// « incertains » est la partie la plus importante du résultat : c'est là qu'on avoue ce qu'on
+// n'a pas rempli et pourquoi. Un remplissage muet ferait croire à un formulaire complet.
+function lireCommande(texte, carnet, actuel) {
+  const a = actuel || {};
+  const tel = telephoneDansTexte(texte);
+  const arg = montantDansTexte(tel.reste);
+  const lieu = communeDansTexte(tel.reste, dictionnaireQuartiers(carnet));
+  const propose = {};
+  const incertains = [];
+
+  if (tel.numero) propose.telephone = tel.numero;
+  else if (tel.plusieurs) incertains.push("plusieurs numéros différents dans le message — le téléphone n'a pas été rempli");
+  else incertains.push("aucun numéro à dix chiffres reconnu — le téléphone n'a pas été rempli");
+
+  // Un destinataire déjà livré vaut mieux que n'importe quelle lecture du message : son
+  // adresse a été écrite par le client lui-même et le colis est arrivé. On la reprend d'abord.
+  let entree = null;
+  if (tel.numero) {
+    entree = (carnet || []).find(e => e && cleTelCarnet(e.telephone) && cleTelCarnet(e.telephone) === tel.numero) || null;
+  }
+  if (entree) {
+    if (entree.commune) propose.commune = entree.commune;
+    if (entree.destination) propose.destination = entree.destination;
+  }
+  if (!propose.commune && lieu.commune) propose.commune = lieu.commune;
+  if (!propose.destination && lieu.quartier) propose.destination = lieu.quartier;
+
+  if (!propose.commune) {
+    incertains.push(lieu.plusieurs
+      ? "plusieurs communes citées — la commune est à choisir vous-même"
+      : "commune non reconnue — à choisir vous-même");
+  }
+  if (lieu.conflit) incertains.push("le quartier cité appartient à une autre commune — la précision n'a pas été remplie");
+
+  if (arg.montant !== null) propose.montantArticle = String(arg.montant);
+  else if (arg.plusieurs) incertains.push("plusieurs montants dans le message — le montant n'a pas été rempli");
+
+  // Application des propositions, avec la règle du non-écrasement.
+  const champs = [
+    { nom: "telephone", libelle: "le téléphone" },
+    { nom: "commune", libelle: "la commune" },
+    { nom: "destination", libelle: "la précision" },
+    { nom: "montantArticle", libelle: "le montant" }
+  ];
+  const ecrits = {};
+  const ignores = [];
+  champs.forEach(ch => {
+    const val = String(propose[ch.nom] || "").trim();
+    if (!val) return;
+    const enPlace = String(a[ch.nom] || "").trim();
+    if (!enPlace) { ecrits[ch.nom] = val; return; }
+    // Même valeur écrite autrement : ce n'est pas un conflit, on ne dérange pas l'utilisateur.
+    let identique;
+    if (ch.nom === "telephone") identique = cleTelCarnet(enPlace) === cleTelCarnet(val);
+    else if (ch.nom === "montantArticle") identique = parseInt(enPlace.replace(/[^0-9]/g, ""), 10) === parseInt(val, 10);
+    else identique = cleTexteCarnet(enPlace) === cleTexteCarnet(val);
+    if (!identique) ignores.push(ch.libelle);
+  });
+
+  return { ecrits: ecrits, ignores: ignores, incertains: incertains, connu: !!entree };
+}
+
+// Le message affiché après un collage. Il doit être lisible d'un coup d'œil et ne jamais
+// laisser croire que le formulaire est complet quand il ne l'est pas.
+function resumeCommandeTexte(resultat) {
+  const r = resultat || {};
+  const nb = Object.keys(r.ecrits || {}).length;
+  const bouts = [];
+  if (!nb) bouts.push("Rien n'a pu être rempli à partir de ce message.");
+  else bouts.push(nb > 1 ? nb + " champs remplis" + (r.connu ? " (destinataire déjà connu)" : "") + "." : "1 champ rempli.");
+  if ((r.ignores || []).length) {
+    const l = r.ignores.join(" et ");
+    bouts.push(r.ignores.length > 1
+      ? l + " que vous aviez saisis n'ont pas été touchés."
+      : l + " que vous aviez saisi n'a pas été touché.");
+  }
+  if ((r.incertains || []).length) bouts.push("À vérifier : " + r.incertains.join(" ; ") + ".");
+  return bouts.join(" ");
+}
+
+/* --------------------------------------------------------------------------------------------
+   NOTE ANTI-DOUBLE-SAISIE
+
+   Coller un message va vite — assez vite pour recommencer sans s'en apercevoir, surtout quand
+   on enchaîne cent colis et qu'on est interrompu. Cette fonction repère qu'un destinataire
+   identique a déjà reçu un colis dans les dernières vingt-quatre heures.
+
+   ELLE NE BLOQUE RIEN, ET C'EST VOULU. Un même acheteur qui commande deux fois dans la journée,
+   ça existe et c'est même bon signe. Un blocage empêcherait une vente réelle pour éviter une
+   erreur possible : le mauvais côté du compromis. On se contente de le signaler.
+   -------------------------------------------------------------------------------------------- */
+function colisRecentSimilaire(carnet, champs, maintenant) {
+  const c = champs || {};
+  const tel = cleTelCarnet(c.telephone);
+  const lieu = cleTexteCarnet((c.commune || "") + " " + (c.destination || ""));
+  if (!tel && lieu.length < 4) return null;
+  const t = maintenant ? new Date(maintenant).getTime() : Date.now();
+  const VINGT_QUATRE_HEURES = 24 * 60 * 60 * 1000;
+  return (carnet || []).find(e => {
+    if (!e || !e.dernier) return false;
+    const quand = new Date(e.dernier).getTime();
+    if (!(quand <= t && t - quand <= VINGT_QUATRE_HEURES)) return false;
+    // Le téléphone identifie une personne : c'est le seul rapprochement vraiment sûr.
+    if (tel) return cleTelCarnet(e.telephone) === tel;
+    // Sans téléphone, on se rabat sur l'adresse exacte — moins sûr, d'où la simple note.
+    return cleTexteCarnet((e.commune || "") + " " + (e.destination || "")) === lieu;
+  }) || null;
+}
+
+// La phrase affichée. Elle informe, elle n'accuse pas et elle ne demande pas de confirmation.
+function noteDoublonTexte(entree) {
+  if (!entree) return "";
+  const qui = String(entree.telephone || "").trim()
+    || [entree.destination, entree.commune].filter(Boolean).join(", ")
+    || "ce destinataire";
+  return "Vous avez déjà envoyé un colis à " + qui + " dans les dernières 24 h. "
+       + "Si c'est une nouvelle commande, continuez normalement.";
+}
+
+/* ============================================================================================
    CHIFFRES PAR LIVREUR — ajout du 21 août 2026
 
    CE QUE ÇA RÉPOND

@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821livreur2">
+<link rel="stylesheet" href="style.css?v=20260821coller1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -136,6 +136,28 @@
   .clt-toptab:hover{ color:#1F8A5B; }
   .clt-toptab.active{ background:#fff; color:#1F8A5B; box-shadow:0 4px 12px rgba(18,48,90,0.13); }
   @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
+
+  /* ---- Coller la commande (ajout du 21 août 2026) ----
+     Le bouton d'ouverture est discret et le formulaire reste EXACTEMENT le même pour qui ne
+     s'en sert pas : on ajoute une possibilité, on n'impose pas une nouvelle façon de faire. */
+  .coller-bloc{ margin:0 0 14px; }
+  .coller-ouvrir{ width:100%; justify-content:center; }
+  .coller-zone{
+    margin-top:10px; padding:12px; border-radius:12px;
+    background:#f6f9fc; border:1px solid #e3eaf2;
+  }
+  .coller-zone textarea{
+    width:100%; min-height:90px; resize:vertical; font-family:inherit; font-size:14px;
+    padding:10px; border-radius:10px; border:1px solid #d8e0ea; background:#fff;
+  }
+  .coller-actions{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .coller-resume{ margin-top:10px; font-size:13px; line-height:1.5; }
+  .coller-resume .ok{ color:#1F8A5B; font-weight:600; }
+  .coller-resume .avertir{ color:#9a6400; }
+  /* Un champ rempli par la machine reste marqué TANT QUE L'ŒIL N'EST PAS PASSÉ DESSUS : la
+     marque ne disparaît qu'au moment où la personne touche elle-même le champ. C'est ce qui
+     rend la relecture possible sur cent colis. */
+  .rempli-auto{ background:#fffbe6 !important; border-color:#e6c34a !important; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -374,8 +396,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821livreur2"></script>
-<script src="config.js?v=20260821livreur2"></script>
+<script src="clt-common.js?v=20260821coller1"></script>
+<script src="config.js?v=20260821coller1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
@@ -573,6 +595,19 @@
     return `
       <div class="colis-row" data-row="${idx}" data-cle="${cle || nouvelleCleColis()}">
         ${idx > 0 ? `<button type="button" class="remove-row" onclick="removeRow(${idx})">Retirer ✕</button>` : ''}
+        <!-- Coller la commande : lit le message du client et remplit ce qu'il sait lire.
+             Fermé au départ — qui préfère taper à la main ne voit rien changer. -->
+        <div class="coller-bloc">
+          <button type="button" class="btn btn-outline btn-sm coller-ouvrir row-coller-ouvrir">📋 Coller le message du client</button>
+          <div class="coller-zone row-coller-zone" style="display:none;">
+            <textarea class="row-coller-texte" placeholder="Collez ici le message WhatsApp de votre acheteur, puis appuyez sur « Remplir les champs »."></textarea>
+            <div class="coller-actions">
+              <button type="button" class="btn btn-primary btn-sm row-coller-lire">Remplir les champs</button>
+              <button type="button" class="btn btn-outline btn-sm row-coller-fermer">Fermer</button>
+            </div>
+            <div class="coller-resume row-coller-resume" style="display:none;"></div>
+          </div>
+        </div>
         <div class="field">
           <label>Description du colis</label>
           <textarea class="row-desc" placeholder="Ex : Carton de vêtements, 5kg" required></textarea>
@@ -775,10 +810,132 @@
     document.querySelectorAll('.colis-row').forEach(dessinerCarnetLigne);
   }
 
+  /* ---------- COLLER LA COMMANDE ----------
+     Le raisonnement complet est dans config.js. Ici, seulement le branchement à l'écran.
+
+     Ce que ce branchement doit garantir, en plus de ce que garantit la lecture elle-même :
+     - CE QUI A ÉTÉ REMPLI PAR LA MACHINE SE VOIT. Les champs concernés restent surlignés
+       jusqu'à ce que la personne les touche. Sans cette marque, on ne relit rien.
+     - RIEN N'EST ENREGISTRÉ. Le bouton remplit le formulaire, un point c'est tout. C'est
+       toujours « Enregistrer les colis » qui décide, et donc toujours un humain.
+     - CE QUI N'A PAS PU ÊTRE LU EST ÉCRIT NOIR SUR BLANC, sous les boutons, et ça reste
+       affiché. Un message qui s'efface tout seul n'est pas une information, c'est un décor. */
+  function marquerRempliAuto(el){
+    if (!el) return;
+    el.classList.add('rempli-auto');
+    // La marque disparaît au premier geste de la personne sur ce champ : à ce moment-là, elle
+    // l'a vu. On ne l'enlève jamais toute seule au bout de quelques secondes.
+    const oter = () => el.classList.remove('rempli-auto');
+    el.addEventListener('input', oter, { once: true });
+    el.addEventListener('change', oter, { once: true });
+    el.addEventListener('focus', oter, { once: true });
+  }
+
+  function wireColler(row){
+    if (!row) return;
+    const ouvrir = row.querySelector('.row-coller-ouvrir');
+    const zone   = row.querySelector('.row-coller-zone');
+    const texte  = row.querySelector('.row-coller-texte');
+    const lire   = row.querySelector('.row-coller-lire');
+    const fermer = row.querySelector('.row-coller-fermer');
+    const resume = row.querySelector('.row-coller-resume');
+    if (!ouvrir || !zone || !texte || !lire) return;
+
+    ouvrir.addEventListener('click', () => {
+      zone.style.display = '';
+      ouvrir.style.display = 'none';
+      texte.focus();
+    });
+    if (fermer) fermer.addEventListener('click', () => {
+      zone.style.display = 'none';
+      ouvrir.style.display = '';
+    });
+
+    lire.addEventListener('click', () => {
+      const communeEl = row.querySelector('.row-commune-dest');
+      const destEl    = row.querySelector('.row-dest');
+      const telEl     = row.querySelector('.row-dest-tel');
+      const artEl     = row.querySelector('.row-montant-article');
+      const res = lireCommande(texte.value, monCarnet || [], {
+        commune: communeEl ? communeEl.value : '',
+        destination: destEl ? destEl.value : '',
+        telephone: telEl ? telEl.value : '',
+        montantArticle: artEl ? artEl.value : ''
+      });
+      if ('telephone' in res.ecrits && telEl) { telEl.value = res.ecrits.telephone; marquerRempliAuto(telEl); }
+      if ('destination' in res.ecrits && destEl) { destEl.value = res.ecrits.destination; marquerRempliAuto(destEl); }
+      if ('montantArticle' in res.ecrits && artEl) {
+        artEl.value = res.ecrits.montantArticle;
+        marquerRempliAuto(artEl);
+        artEl.dispatchEvent(new Event('input')); // met à jour le total affiché
+      }
+      if ('commune' in res.ecrits && communeEl) {
+        communeEl.value = res.ecrits.commune;
+        marquerRempliAuto(communeEl);
+        // La commune commande le prix de livraison suggéré (voir wireAutoPrix) : sans ce
+        // signal, le montant resterait celui de l'ancienne commune, donc faux.
+        communeEl.dispatchEvent(new Event('change'));
+      }
+      if (resume) {
+        const nb = Object.keys(res.ecrits).length;
+        const parfait = nb > 0 && !res.ignores.length && !res.incertains.length;
+        // On écrit du TEXTE, pas du HTML : le résumé parle d'un message venu de l'extérieur,
+        // et rien de ce qui vient de l'extérieur ne doit pouvoir devenir du code dans la page.
+        resume.textContent = '';
+        resume.style.display = '';
+        const ligne = document.createElement('span');
+        ligne.className = parfait ? 'ok' : 'avertir';
+        ligne.textContent = (parfait ? '✅ ' : '⚠️ ') + resumeCommandeTexte(res);
+        resume.appendChild(ligne);
+        if (nb) {
+          const rappel = document.createElement('div');
+          rappel.style.color = 'var(--muted)';
+          rappel.textContent = "Vérifiez les champs surlignés avant d'enregistrer.";
+          resume.appendChild(rappel);
+        }
+      }
+      if (typeof saveColisDraft === 'function') saveColisDraft();
+      dessinerCarnetLigne(row);
+      noterDoublonEventuel(row);
+    });
+  }
+
+  /* ---------- NOTE ANTI-DOUBLE-SAISIE ----------
+     Elle apparaît sous le téléphone, elle n'empêche jamais d'enregistrer. Voir config.js. */
+  function noterDoublonEventuel(row){
+    if (!row) return;
+    let note = row.querySelector('.row-doublon');
+    const communeEl = row.querySelector('.row-commune-dest');
+    const destEl    = row.querySelector('.row-dest');
+    const telEl     = row.querySelector('.row-dest-tel');
+    const entree = colisRecentSimilaire(monCarnet || [], {
+      commune: communeEl ? communeEl.value : '',
+      destination: destEl ? destEl.value : '',
+      telephone: telEl ? telEl.value : ''
+    });
+    if (!entree) { if (note) note.remove(); return; }
+    if (!note) {
+      note = document.createElement('div');
+      note.className = 'row-doublon';
+      note.style.cssText = 'margin-top:6px; font-size:12px; color:#9a6400; background:#fff8e6;'
+        + ' border:1px solid #f0dca8; border-radius:8px; padding:7px 9px;';
+      (telEl ? telEl.parentNode : row).appendChild(note);
+    }
+    note.textContent = 'ℹ️ ' + noteDoublonTexte(entree);
+  }
+
   function addRow(cle){
     document.getElementById('colis-rows').insertAdjacentHTML('beforeend', newRowHTML(rowCount, cle));
     const row = document.querySelector(`.colis-row[data-row="${rowCount}"]`);
-    if (row) { wireMontantPreview(row); wireAutoPrix(row); wireCarnet(row); }
+    if (row) {
+      wireMontantPreview(row); wireAutoPrix(row); wireCarnet(row); wireColler(row);
+      ['.row-dest-tel', '.row-dest'].forEach(sel => {
+        const el = row.querySelector(sel);
+        if (el) el.addEventListener('input', () => noterDoublonEventuel(row));
+      });
+      const cd = row.querySelector('.row-commune-dest');
+      if (cd) cd.addEventListener('change', () => noterDoublonEventuel(row));
+    }
     rowCount++;
   }
   function removeRow(idx){

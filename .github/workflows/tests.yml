@@ -45,3 +45,6 @@ jobs:
 
       - name: Chiffres par livreur (ne jamais afficher un chiffre qu'on ne sait pas calculer)
         run: node tests/chiffres-par-livreur.test.mjs
+
+      - name: Coller la commande (remplir vite, sans jamais deviner)
+        run: node tests/coller-la-commande.test.mjs
