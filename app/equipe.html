@@ -1501,11 +1501,21 @@ fournisseurs.map(f => `<option value="${f.id}">${escapeHTML(f.company_name || f.
 select.value = previousValue;
 }
 
+// Traduit le rôle technique stocké en base en libellé lisible.
+// Tous les rôles sont listés explicitement pour que l'affichage reste homogène :
+// avant, seuls « fournisseur » et les rôles Express étaient traduits, et les autres
+// ressortaient bruts et en minuscule (« Rôle : livreur » à côté de « Rôle : Client »).
 function roleDisplayLabel(role){
 if (role === 'fournisseur') return 'Client';
 if (role === 'client_express') return 'Client Express';
 if (role === 'coursier_express') return 'Coursier Express';
-return role || 'Client';
+if (role === 'livreur') return 'Livreur';
+if (role === 'equipe') return 'Équipe';
+if (role === 'admin') return 'Administrateur';
+// Rôle inconnu (ajouté en base sans passer par ici) : on le montre tel quel plutôt
+// que de mentir en affichant « Client », mais avec une majuscule pour rester lisible.
+if (!role) return 'Rôle inconnu';
+return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 function pendingRowHTML(p){
