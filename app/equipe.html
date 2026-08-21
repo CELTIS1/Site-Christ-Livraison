@@ -314,6 +314,17 @@
 <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
 <div class="page-sub">Voici le suivi de tous les colis enregistrés par les clients, en temps réel.</div>
 
+<!-- Bandeau de la file d'attente hors-réseau. Placé au-dessus des onglets, donc visible quel que
+     soit l'onglet ouvert : une saisie non encore envoyée ne doit jamais pouvoir passer inaperçue.
+     Masqué tant que la file est vide. Rempli par eqQueueRafraichirBandeau(). -->
+<div class="offline-queue-banner hidden" id="eq-offline-banner">
+<div style="flex:1; min-width:220px;">
+<span id="eq-offline-text"></span>
+<div id="eq-offline-detail" style="font-weight:500; font-size:12.5px; margin-top:6px;"></div>
+</div>
+<button type="button" class="btn btn-sm btn-outline" id="btn-eq-sync-now">Envoyer maintenant</button>
+</div>
+
 <!-- Bandeau « Aujourd'hui » : triage synthétique en tête d'écran (toujours visible, au-dessus
      des onglets). Trois blocs — actions à faire, anomalies, argent non remis — calculés à partir
      des données déjà chargées. Lecture seule : chaque tuile renvoie vers l'onglet concerné.
@@ -1973,6 +1984,296 @@ addLivreurMsg(friendlyErrorMessage(err.message), "error");
 btn.disabled = false; btn.textContent = 'Créer le compte livreur';
 });
 
+/* ---------- FILE D'ATTENTE HORS-RÉSEAU (espace Équipe) ----------
+   Le bureau n'est pas mieux loti que la route : coupure de fibre, box qui redémarre, téléphone
+   qui bascule sur un réseau mobile saturé. Jusqu'ici, une saisie faite pendant une coupure
+   affichait une erreur et était perdue — en pratique la cliente était déjà repartie et le colis
+   n'existait nulle part.
+   Désormais, quand (et seulement quand) l'échec vient du réseau, l'opération est écrite sur
+   l'appareil (IndexedDB, qui survit à la fermeture de l'app) et renvoyée automatiquement dès le
+   retour de la connexion. Un refus du serveur (droits, données invalides) reste affiché tout de
+   suite : le mettre en file ne ferait que retarder un problème qui ne se résoudra pas seul.
+
+   Ce qui n'est PAS mis en file, volontairement :
+   • les suppressions de colis — rejouer plus tard un effacement dont on ne voit plus le contexte
+     est trop dangereux ;
+   • la création de comptes — elle passe par une fonction serveur avec un jeton de session qui
+     aurait expiré au moment de la reprise.
+   Même mécanique que la file des livreurs (livreur.html), volontairement, pour qu'il n'y ait
+   qu'un seul comportement à comprendre et à dépanner. */
+const EQ_QUEUE_DB = 'equipe-offline-queue';
+const EQ_QUEUE_STORE = 'operations';
+// Au-delà de ce nombre d'essais, on arrête de réessayer en boucle et on signale l'opération à
+// l'équipe : mieux vaut une alerte visible qu'une entrée qui tourne indéfiniment en silence.
+const EQ_QUEUE_MAX_TENTATIVES = 3;
+let eqSyncEnCours = false;
+// Copie en mémoire de la file, pour que l'affichage (bandeau + pastilles sur les colis) n'ait pas
+// à rouvrir la base à chaque rendu.
+let eqQueueEnMemoire = [];
+let eqColisEnAttenteIds = new Set();
+let eqColisBloquesIds = new Set();
+
+function eqOuvrirQueueDB(){
+return new Promise((resolve, reject) => {
+const req = indexedDB.open(EQ_QUEUE_DB, 1);
+req.onupgradeneeded = () => {
+const db = req.result;
+if (!db.objectStoreNames.contains(EQ_QUEUE_STORE)) {
+db.createObjectStore(EQ_QUEUE_STORE, { keyPath: 'key', autoIncrement: true });
+}
+};
+req.onsuccess = () => resolve(req.result);
+req.onerror = () => reject(req.error);
+});
+}
+
+async function eqQueueAjouter(entry){
+entry.creeLe = Date.now();
+const db = await eqOuvrirQueueDB();
+await new Promise((resolve, reject) => {
+const tx = db.transaction(EQ_QUEUE_STORE, 'readwrite');
+tx.objectStore(EQ_QUEUE_STORE).add(entry);
+tx.oncomplete = () => resolve();
+tx.onerror = () => reject(tx.error);
+});
+await eqQueueRafraichirBandeau();
+}
+
+async function eqQueueLireTout(){
+const db = await eqOuvrirQueueDB();
+return new Promise((resolve, reject) => {
+const tx = db.transaction(EQ_QUEUE_STORE, 'readonly');
+const req = tx.objectStore(EQ_QUEUE_STORE).getAll();
+req.onsuccess = () => resolve(req.result || []);
+req.onerror = () => reject(req.error);
+});
+}
+
+async function eqQueueSupprimer(key){
+const db = await eqOuvrirQueueDB();
+return new Promise((resolve, reject) => {
+const tx = db.transaction(EQ_QUEUE_STORE, 'readwrite');
+tx.objectStore(EQ_QUEUE_STORE).delete(key);
+tx.oncomplete = () => resolve();
+tx.onerror = () => reject(tx.error);
+});
+}
+
+// Réécrit une entrée existante (nombre de tentatives, blocage, motif) en gardant sa clé :
+// l'ordre d'envoi reste celui de la saisie.
+async function eqQueueRemplacer(entry){
+const db = await eqOuvrirQueueDB();
+return new Promise((resolve, reject) => {
+const tx = db.transaction(EQ_QUEUE_STORE, 'readwrite');
+tx.objectStore(EQ_QUEUE_STORE).put(entry);
+tx.oncomplete = () => resolve();
+tx.onerror = () => reject(tx.error);
+});
+}
+
+// Distingue une coupure réseau (on réessaiera, rien n'est perdu) d'un refus du serveur (droits,
+// données invalides, colis supprimé). Toute la valeur de la file tient dans cette distinction :
+// mettre un refus en file le rendrait invisible, et afficher une coupure comme une erreur
+// ferait ressaisir une opération déjà mémorisée.
+function eqEstPanneReseau(err){
+if (!navigator.onLine) return true;
+if (!err) return false;
+if (err.status === 0 || err.status === 408 || err.status === 502
+|| err.status === 503 || err.status === 504) return true;
+const m = String(err.message || err.error_description || err).toLowerCase();
+return m.includes('fetch') || m.includes('network') || m.includes('networkerror')
+|| m.includes('load failed') || m.includes('timeout') || m.includes('délai');
+}
+
+// Phrase courte décrivant une entrée, pour que le bandeau nomme ce qui attend plutôt que
+// d'annoncer « 2 opérations » — personne ne sait quoi faire d'un compteur anonyme.
+function eqDecrireEntree(entry){
+if (entry.type === 'creation-colis') {
+const p = entry.payload || {};
+const client = fournisseurLabel(p.fournisseur_id);
+const quoi = p.description ? escapeHTML(p.description) : '(sans description)';
+return `Nouveau colis — ${client} : ${quoi}`;
+}
+if (entry.type === 'maj-colis') {
+const c = allColis.find(x => x.id === entry.colisId);
+const nom = c && c.numero ? `Colis ${escapeHTML(c.numero)}` : 'Un colis';
+return `${nom} — modification enregistrée`;
+}
+if (entry.type === 'assignation-collecte') {
+const n = (entry.colisIds || []).length;
+const l = collecteLivreurLabel(entry.payload && entry.payload.livreur_collecte_id) || 'un livreur';
+return `Collecte de ${n} colis assignée à ${l}`;
+}
+return 'Opération en attente';
+}
+
+async function eqQueueRafraichirBandeau(){
+try { eqQueueEnMemoire = await eqQueueLireTout(); }
+catch(e) { console.error('Lecture de la file hors-réseau :', e); eqQueueEnMemoire = []; }
+
+const bloquees = eqQueueEnMemoire.filter(x => x.bloquee);
+const enAttente = eqQueueEnMemoire.filter(x => !x.bloquee);
+
+// Identifiants des colis concernés, pour poser une pastille sur les lignes correspondantes.
+const attenteIds = new Set(), bloquesIds = new Set();
+enAttente.forEach(x => (x.colisIds || (x.colisId ? [x.colisId] : [])).forEach(id => attenteIds.add(id)));
+bloquees.forEach(x => (x.colisIds || (x.colisId ? [x.colisId] : [])).forEach(id => bloquesIds.add(id)));
+const changement = attenteIds.size !== eqColisEnAttenteIds.size || bloquesIds.size !== eqColisBloquesIds.size;
+eqColisEnAttenteIds = attenteIds;
+eqColisBloquesIds = bloquesIds;
+
+const banner = document.getElementById('eq-offline-banner');
+const text = document.getElementById('eq-offline-text');
+const detail = document.getElementById('eq-offline-detail');
+if (banner && text && detail) {
+if (eqQueueEnMemoire.length === 0) {
+banner.classList.add('hidden');
+banner.classList.remove('offline-queue-banner--bloquee');
+detail.innerHTML = '';
+} else {
+banner.classList.remove('hidden');
+banner.classList.toggle('offline-queue-banner--bloquee', bloquees.length > 0);
+const parts = [];
+if (enAttente.length) {
+const n = enAttente.length;
+parts.push(navigator.onLine
+? `📶 ${n} enregistrement${n > 1 ? 's' : ''} en cours d'envoi…`
+: `📶 ${n} enregistrement${n > 1 ? 's' : ''} conservé${n > 1 ? 's' : ''} sur cet appareil — envoi automatique dès le retour de la connexion.`);
+}
+if (bloquees.length) {
+const n = bloquees.length;
+parts.push(`⚠️ ${n} enregistrement${n > 1 ? 's' : ''} n'${n > 1 ? 'ont' : 'a'} pas pu être envoyé${n > 1 ? 's' : ''}. Vérifiez ci-dessous et ressaisissez si besoin.`);
+}
+text.textContent = parts.join(' ');
+// Le détail nomme chaque opération : sans lui, l'équipe ne peut pas savoir quelle cliente
+// rappeler ni quel colis ressaisir.
+detail.innerHTML = eqQueueEnMemoire.map(x =>
+`<div>${x.bloquee ? '⚠️ ' : '• '}${eqDecrireEntree(x)}${x.bloquee && x.motif === 'conflit' ? ' — modifié entre-temps par quelqu\'un d\'autre' : ''}</div>`
+).join('');
+}
+}
+if (changement && typeof renderColis === 'function') renderColis();
+}
+
+// Envoie UNE entrée. Renvoie 'ok' | 'reseau' | 'conflit' | 'refus'.
+async function eqEnvoyerUneEntree(entry){
+// Une photo prise hors-réseau n'a pas pu partir au moment de la saisie : on l'envoie ici,
+// juste avant l'opération elle-même.
+if (entry.photoBlob) {
+const envoyee = await uploadPhoto(entry.photoBlob, entry.userId);
+if (envoyee) {
+entry.payload = Object.assign({}, entry.payload, { photo_url: envoyee });
+entry.photoBlob = null;
+} else if (!navigator.onLine || (entry.tentatives || 0) + 1 < EQ_QUEUE_MAX_TENTATIVES) {
+return 'reseau';
+} else {
+// La photo ne passe décidément pas. Le colis compte plus que sa photo : on enregistre
+// quand même, et on le signale.
+entry.photoAbandonnee = true;
+entry.photoBlob = null;
+}
+}
+
+try {
+if (entry.type === 'creation-colis') {
+let { error } = await supabaseClient.from('colis').insert([entry.payload]);
+// Même repli que lors de la saisie : si une colonne récente manque encore en base, on
+// réessaie sans elle plutôt que de bloquer le colis.
+if (error && /destinataire_telephone|cle_creation|column|colonne/i.test(error.message || '')) {
+const { destinataire_telephone: _t, cle_creation: _c, ...sansExtras } = entry.payload;
+({ error } = await supabaseClient.from('colis').insert([sansExtras]));
+}
+// Doublon sur la clé de création : le colis est déjà en base (un envoi précédent avait
+// abouti sans qu'on le sache). C'est exactement le résultat voulu, donc un succès.
+if (estDoublonCleCreation(error)) return 'ok';
+if (error) return eqEstPanneReseau(error) ? 'reseau' : 'refus';
+return 'ok';
+}
+
+if (entry.type === 'assignation-collecte') {
+const { error } = await supabaseClient.from('colis').update(entry.payload).in('id', entry.colisIds);
+if (error) return eqEstPanneReseau(error) ? 'reseau' : 'refus';
+return 'ok';
+}
+
+if (entry.type === 'maj-colis') {
+let requete = supabaseClient.from('colis').update(entry.payload).eq('id', entry.colisId);
+// Écriture conditionnelle : on n'écrase que si le colis n'a pas bougé depuis la saisie.
+// Tant que la colonne updated_at n'existe pas en base, baseUpdatedAt est absent et l'envoi
+// se fait sans ce contrôle — l'app fonctionne donc avec ou sans la migration.
+if (entry.baseUpdatedAt) requete = requete.eq('updated_at', entry.baseUpdatedAt);
+const { data, error } = await requete.select('id');
+if (error) return eqEstPanneReseau(error) ? 'reseau' : 'refus';
+if (Array.isArray(data) && data.length === 0) {
+// Aucune ligne touchée : soit le colis a changé entre-temps, soit l'écriture est passée
+// mais la relecture nous est refusée. On vérifie avant de crier au conflit.
+const { data: actuel } = await supabaseClient.from('colis')
+.select('statut').eq('id', entry.colisId).maybeSingle();
+if (actuel && entry.payload.statut && actuel.statut === entry.payload.statut) return 'ok';
+return 'conflit';
+}
+return 'ok';
+}
+} catch (e) {
+return eqEstPanneReseau(e) ? 'reseau' : 'refus';
+}
+return 'refus';
+}
+
+async function eqEnvoyerLaFile(){
+if (eqSyncEnCours || !navigator.onLine) return;
+eqSyncEnCours = true;
+const avertissements = [];
+let auMoinsUnEnvoi = false;
+try {
+const entries = await eqQueueLireTout();
+for (const entry of entries) {
+if (entry.bloquee) continue; // déjà signalée : on n'insiste plus, mais elle ne bloque pas les suivantes
+let issue;
+try { issue = await eqEnvoyerUneEntree(entry); }
+catch (e) { console.error('Envoi hors-réseau :', e); issue = eqEstPanneReseau(e) ? 'reseau' : 'refus'; }
+
+// La coupure réseau est le seul cas où l'on arrête tout : insister ne sert à rien et
+// rien n'est perdu. Les autres cas sont traités entrée par entrée.
+if (issue === 'reseau') {
+entry.tentatives = (entry.tentatives || 0) + 1;
+await eqQueueRemplacer(entry);
+break;
+}
+
+if (issue === 'ok') {
+await eqQueueSupprimer(entry.key);
+auMoinsUnEnvoi = true;
+if (entry.photoAbandonnee) {
+avertissements.push("Un colis est bien enregistré, mais sa photo n'a pas pu être envoyée.");
+}
+continue;
+}
+
+entry.tentatives = (entry.tentatives || 0) + 1;
+entry.motif = issue;
+if (issue === 'conflit' || entry.tentatives >= EQ_QUEUE_MAX_TENTATIVES) {
+entry.bloquee = true;
+avertissements.push(issue === 'conflit'
+? `${eqDecrireEntree(entry)} : ce colis a été modifié par quelqu'un d'autre pendant la coupure. Votre modification n'a pas été appliquée pour ne pas effacer la sienne — vérifiez ce colis.`
+: `${eqDecrireEntree(entry)} : refusé par le serveur après plusieurs essais.`);
+}
+await eqQueueRemplacer(entry);
+}
+} catch (e) {
+console.error('Envoi hors-réseau :', e);
+} finally {
+eqSyncEnCours = false;
+await eqQueueRafraichirBandeau();
+// Les colis envoyés doivent apparaître dans la liste : on relit depuis la base plutôt que
+// de bricoler l'état local, pour récupérer aussi le numéro de suivi attribué par la base.
+if (auMoinsUnEnvoi && typeof loadColis === 'function') loadColis();
+if (avertissements.length && window.cltToast) {
+cltToast([...new Set(avertissements)].join(' '), { type: 'warning', duration: 9000 });
+}
+}
+}
+
 document.getElementById('form-add-colis').addEventListener('submit', async (e) => {
 e.preventDefault();
 const btn = document.getElementById('btn-submit-colis');
@@ -2015,10 +2316,16 @@ const montant = (montant_article !== null || montant_livraison !== null)
 const pickedPhoto = pickedGroupFile(document.getElementById('add-photo-group'));
 let photo_url = null;
 let photoUploadFailed = false;
+// Photo conservée en vue d'un envoi différé, si c'est la connexion qui a manqué (voir la file
+// d'attente hors-réseau plus haut) : elle partira avec le colis, elle n'est pas perdue.
+let photoAEnvoyerPlusTard = null;
 
 if (pickedPhoto) {
 photo_url = await uploadPhoto(pickedPhoto, currentUser.id);
-if (!photo_url) photoUploadFailed = true;
+if (!photo_url) {
+if (navigator.onLine) photoUploadFailed = true;
+else photoAEnvoyerPlusTard = pickedPhoto;
+}
 }
 
 // Proposition automatique du livreur de récupération : si cette cliente a déjà un livreur de
@@ -2050,6 +2357,37 @@ let dejaEnregistre = false;
 if (estDoublonCleCreation(error)) {
 dejaEnregistre = true;
 error = null;
+}
+
+// Coupure réseau : la saisie n'est pas perdue. Le colis est écrit sur cet appareil et repartira
+// tout seul dès le retour de la connexion, ce qui permet à l'équipe de continuer à enregistrer
+// les clientes présentes au lieu de les faire attendre ou de noter sur un papier.
+if (error && eqEstPanneReseau(error)) {
+try {
+await eqQueueAjouter({
+type: 'creation-colis',
+payload: colisPayload,
+photoBlob: photoAEnvoyerPlusTard,
+userId: currentUser.id
+});
+// Le colis a désormais une identité mémorisée dans la file : la saisie suivante doit
+// repartir sur une nouvelle clé, sinon la base refuserait le second colis comme doublon.
+cleColisCourante = null;
+addMsg("Pas de connexion : ce colis est enregistré sur cet appareil et sera envoyé automatiquement dès le retour du réseau. Vous pouvez continuer à saisir.", "info");
+e.target.reset();
+fillPickupForSelectedFournisseur();
+clearColisDraft();
+const totalHorsLigneEl = document.getElementById('add-montant-total');
+if (totalHorsLigneEl) totalHorsLigneEl.textContent = '0 FCFA';
+const nomPhotoHorsLigne = document.querySelector('#add-photo-group .photo-pick-filename');
+if (nomPhotoHorsLigne) nomPhotoHorsLigne.textContent = '';
+return;
+} catch (errFile) {
+// La file elle-même est indisponible (navigation privée, quota de stockage saturé). On
+// retombe alors sur le message d'erreur normal : mieux vaut dire que ça n'a pas marché
+// que laisser croire à un enregistrement qui n'existe nulle part.
+console.error('Mise en file hors-réseau impossible :', errFile);
+}
 }
 
 if (error) {
@@ -2183,8 +2521,16 @@ const collecteLine = collecteLabel
 ? `<div class="meta">🚚 Collecte assignée : ${collecteLabel}${c.collecte_depart_at ? ' · en route depuis ' + formatDate(c.collecte_depart_at) : ''}</div>`
 : '';
 
+// Pastille de synchronisation : une modification faite hors réseau est déjà visible à l'écran
+// (elle est appliquée localement), donc rien ne distinguerait un colis réellement enregistré
+// d'un colis qui attend encore. Cette pastille fait la différence.
+const syncBadge = eqColisBloquesIds.has(c.id)
+? `<div class="sync-pending-badge sync-blocked-badge">⚠️ Modification non envoyée — à vérifier</div>`
+: (eqColisEnAttenteIds.has(c.id) ? `<div class="sync-pending-badge">📶 En attente d'envoi</div>` : '');
+
 const infoBlock = `
 <div class="info">
+${syncBadge}
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
@@ -2433,8 +2779,17 @@ const label = collecteLivreurLabel(livreur_collecte_id) || 'ce livreur';
 if (!(await showConfirm({ title: 'Assigner la collecte ?', sub: `${label} sera chargé(e) de récupérer les ${ids.length} colis de cette cliente.`, okLabel: 'Assigner' }))) return;
 const originalLabel = btn.textContent;
 btn.disabled = true; btn.textContent = '...';
-const { error } = await supabaseClient.from('colis').update({ livreur_collecte_id }).in('id', ids);
+let { error } = await supabaseClient.from('colis').update({ livreur_collecte_id }).in('id', ids);
 btn.disabled = false; btn.textContent = originalLabel;
+// Coupure réseau : l'assignation est conservée sur cet appareil et repartira seule. Le livreur
+// est de toute façon déjà prévenu de vive voix — perdre l'assignation obligerait à la refaire.
+if (error && eqEstPanneReseau(error)) {
+try {
+await eqQueueAjouter({ type: 'assignation-collecte', colisIds: ids, payload: { livreur_collecte_id } });
+error = null;
+if (window.cltToast) cltToast("Pas de connexion : l'assignation est enregistrée sur cet appareil et partira dès le retour du réseau.", { type: 'info', duration: 7000 });
+} catch (errFile) { console.error('Mise en file hors-réseau impossible :', errFile); }
+}
 if (error) { alert(friendlyErrorMessage(error.message)); return; }
 ids.forEach(id => {
 const idx = allColis.findIndex(c => c.id === id);
@@ -2517,8 +2872,25 @@ if (montant_livraison !== undefined) updatePayload.montant_livraison = montant_l
 if (article_paye !== undefined) updatePayload.article_paye = article_paye;
 if (livraison_payee !== undefined) updatePayload.livraison_payee = livraison_payee;
 btn.disabled = true; btn.textContent = '...';
-const { error } = await supabaseClient.from('colis').update(updatePayload).eq('id', id);
+let { error } = await supabaseClient.from('colis').update(updatePayload).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';
+// Coupure réseau : la modification est gardée sur cet appareil. On mémorise au passage l'état
+// du colis tel qu'il était à l'écran, pour détecter au retour du réseau qu'un livreur l'a
+// modifié entre-temps plutôt que d'écraser son travail en silence.
+if (error && eqEstPanneReseau(error)) {
+try {
+const vu = allColis.find(c => c.id === id);
+await eqQueueAjouter({
+type: 'maj-colis',
+colisId: id,
+payload: updatePayload,
+baseUpdatedAt: vu && vu.updated_at ? vu.updated_at : null,
+baseStatut: vu ? (vu.statut || null) : null
+});
+error = null;
+if (window.cltToast) cltToast("Pas de connexion : cette modification est enregistrée sur cet appareil et partira dès le retour du réseau.", { type: 'info', duration: 7000 });
+} catch (errFile) { console.error('Mise en file hors-réseau impossible :', errFile); }
+}
 if (error) { alert(friendlyErrorMessage(error.message)); return; }
 if (window.__colisEditing) window.__colisEditing.delete(id);
 // Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel :
@@ -4851,6 +5223,34 @@ window.addEventListener('focus', () => reconnectRealtimeAndRefresh());
 window.addEventListener('online', () => reconnectRealtimeAndRefresh());
 // 3) Restauration depuis le cache (mobile qui rouvre l'app) : forcer une reconnexion immédiate.
 window.addEventListener('pageshow', (e) => { if (e.persisted) reconnectRealtimeAndRefresh(); });
+
+// ---- File d'attente hors-réseau : reprise automatique ----
+// Trois déclencheurs volontairement redondants, parce qu'aucun n'est fiable seul :
+// le retour de connexion (que le navigateur annonce parfois trop tôt), le retour à l'écran
+// (téléphone rangé pendant la coupure), et une relance périodique en dernier filet.
+// Un envoi déjà en cours est ignoré (voir eqSyncEnCours), donc les trois ne se marchent pas dessus.
+await eqQueueRafraichirBandeau();
+eqEnvoyerLaFile();
+window.addEventListener('online', () => eqEnvoyerLaFile());
+window.addEventListener('offline', () => eqQueueRafraichirBandeau());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') eqEnvoyerLaFile(); });
+setInterval(() => { if (navigator.onLine) eqEnvoyerLaFile(); }, 20000);
+const btnEqSync = document.getElementById('btn-eq-sync-now');
+if (btnEqSync) btnEqSync.addEventListener('click', () => {
+if (!navigator.onLine) {
+if (window.cltToast) cltToast("Toujours pas de connexion. Vos enregistrements restent en sécurité sur cet appareil.", { type: 'info' });
+return;
+}
+// Les entrées signalées comme bloquées sont réarmées : l'équipe demande explicitement un
+// nouvel essai, souvent après avoir corrigé la cause (droits, colis recréé).
+eqQueueLireTout().then(async (entries) => {
+for (const x of entries.filter(y => y.bloquee)) {
+x.bloquee = false; x.tentatives = 0; x.motif = null;
+await eqQueueRemplacer(x);
+}
+eqEnvoyerLaFile();
+}).catch(e => console.error(e));
+});
 }
 
 // ---------- Carte en direct des livreurs (voir aussi startPositionSharing dans config.js) ----------

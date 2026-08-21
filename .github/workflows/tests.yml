@@ -1,0 +1,32 @@
+# Contrôles automatiques du comportement de l'application.
+#
+# À quoi ça sert, en clair : certains comportements ne se voient pas à l'œil nu et sont pénibles
+# à vérifier à la main — typiquement ce qui se passe quand la connexion tombe au milieu d'une
+# saisie. Ces contrôles rejouent ces situations tout seuls à chaque publication. Si une
+# modification casse l'un d'eux, on le sait avant que l'équipe s'en aperçoive sur le terrain.
+#
+# Aucune configuration à faire, aucun secret, aucun coût : c'est gratuit sur un dépôt public.
+
+name: Contrôles automatiques
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  tester:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le site
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: File d'attente hors-réseau (espace Équipe)
+        run: node tests/file-attente-equipe.test.mjs
