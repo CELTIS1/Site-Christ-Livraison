@@ -36,3 +36,6 @@ jobs:
 
       - name: Affichage par tranches (une longue liste reste fluide et exacte)
         run: node tests/liste-longue.test.mjs
+
+      - name: Actions en lot (traiter plusieurs colis d'un coup sans rien fausser)
+        run: node tests/actions-en-lot.test.mjs

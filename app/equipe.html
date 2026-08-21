@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821fluide2">
+<link rel="stylesheet" href="style.css?v=20260821lot1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -593,6 +593,9 @@
 <label for="filtre-date-colis">📅 Date</label>
 <input type="date" id="filtre-date-colis" class="date-filter-input">
 <button type="button" id="btn-toutes-dates-colis" class="date-filter-clear">Toutes les dates</button>
+<!-- Entrer en sélection multiple : assigner un livreur à toute une fournée de colis, ou
+     rattraper d'un coup les statuts d'une tournée entière. -->
+<button type="button" id="btn-mode-lot-colis" class="btn btn-outline btn-sm btn-mode-lot" style="margin-left:auto;">☑️ Sélection multiple</button>
 </div>
 <div class="filters" id="filters"></div>
 <div id="alert-banner" class="alert-banner hidden"></div>
@@ -891,7 +894,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821fluide2"></script>
+<script src="clt-common.js?v=20260821lot1"></script>
 <script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
@@ -912,6 +915,15 @@ let colisLoadingMore = false;
 // Repart à zéro dès que les critères changent, via eqRemettreTrancheAZero().
 let colisTranche = COLIS_TRANCHE;
 function eqRemettreTrancheAZero(){ colisTranche = COLIS_TRANCHE; }
+// ---------- Sélection multiple (actions en lot) ----------
+// La sélection est un Set d'IDENTIFIANTS, jamais l'état des cases du DOM : cette liste se
+// redessine sans prévenir (temps réel, tranche suivante, retour de la file hors-réseau), et une
+// sélection qui vivrait dans les cases s'effacerait à chacun de ces redessins.
+let eqLotActif = false;
+let eqLotIds = new Set();
+// Changer de filtre, de date ou de recherche vide la sélection : garder des colis cochés devenus
+// invisibles ferait agir un bouton sur des colis que personne n'a plus sous les yeux.
+function eqViderSelection(){ eqLotIds.clear(); }
 // ---------- Pagination réelle des comptes ----------
 const ACCOUNTS_PAGE_SIZE = 300;
 let accountsOffset = 0;
@@ -2446,6 +2458,7 @@ activeFilter = chip.dataset.filter;
 // Changer de filtre, c'est demander une autre liste : on la reprend depuis le début, sinon on
 // tomberait sur « 180 colis affichés sur 12 » et sur une page déjà déroulée sans raison.
 eqRemettreTrancheAZero();
+eqViderSelection();
 renderFilters();
 renderColis();
 });
@@ -2590,7 +2603,8 @@ const livreurLine = livreurAssigne
 // (voir la règle .est-assigne dans style.css).
 const classeAssigne = c.livreur_id ? ' est-assigne' : '';
 return `
-<div class="colis-item${classeAssigne}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
+<div class="colis-item${classeAssigne}${eqLotIds.has(c.id) ? ' lot-coche' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
+${caseLotHTML(c.id, eqLotIds.has(c.id))}
 ${stepperHTML(c.statut)}
 ${thumb}
 <div class="info">
@@ -2632,7 +2646,8 @@ ${statutBadgeHTML(c.statut)}
 const estEnEdition = !!window.__colisEditing?.has(c.id);
 const gateSave = !estEnEdition && c.statut === 'en_attente' && !c.observation && !collectePropose;
 return `
-<div class="colis-item${c.livreur_id ? ' est-assigne' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
+<div class="colis-item${c.livreur_id ? ' est-assigne' : ''}${eqLotIds.has(c.id) ? ' lot-coche' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
+${caseLotHTML(c.id, eqLotIds.has(c.id))}
 ${thumb}
 ${infoBlock}
 <div class="status-col">
@@ -2865,6 +2880,220 @@ if (res.ok) eqAnnoncerChangementStatut(colis, statut, res);
 });
 }
 
+/* ---------- ACTIONS EN LOT : traiter une fournée de colis d'un seul geste ----------
+   Deux besoins réels du bureau : assigner un livreur à toute une fournée d'un coup (aujourd'hui
+   il faut ouvrir chaque colis et choisir dans une liste déroulante), et rattraper d'un coup les
+   statuts d'une tournée qu'un livreur n'a pas saisie lui-même.
+   Les libellés sont exactement ceux des boutons d'une ligne : ce n'est pas une autre
+   fonctionnalité, c'est le même geste appliqué à plusieurs colis. */
+function eqBoutonsLot(){
+return [
+{ cle: 'assigner', libelle: '👤 Assigner', classe: 'btn-outline' },
+{ cle: 'livre', libelle: '✅ Livré', classe: 'btn-etape-livre' },
+{ cle: 'en_livraison', libelle: '🚚 En livraison', classe: 'btn-outline' },
+{ cle: 'non_livre', libelle: '⚠️ Non livré', classe: 'btn-outline btn-etape-echec' },
+];
+}
+
+// Le choix du livreur, posé dans la barre juste avant le bouton « Assigner ».
+function eqExtraLotHTML(){
+const options = '<option value="">Livreur…</option>'
++ '<option value="__aucun__">— Retirer le livreur —</option>'
++ livreurs.map(l => `<option value="${l.id}">${escapeHTML(l.full_name || l.id)}</option>`).join('');
+return `<select data-lot-livreur title="Livreur de livraison à appliquer à la sélection">${options}</select>`;
+}
+
+function eqBrancherBarreLot(list, filtered){
+const barre = list.querySelector('[data-lot-barre]');
+
+// Cocher ne redessine pas la liste : on retouche la ligne et le compteur. Un redessin ferait
+// sauter la position de défilement au milieu d'une sélection de quinze lignes.
+// Pas de stopPropagation ici, pour la même raison que sur les boutons d'action rapide : le
+// clic doit poursuivre jusqu'au document, sinon un menu ⋮ resté ouvert ailleurs dans la liste
+// ne se refermerait pas.
+list.querySelectorAll('.lot-check').forEach(cb => {
+cb.addEventListener('change', () => {
+const id = cb.dataset.lotId;
+if (cb.checked) eqLotIds.add(id); else eqLotIds.delete(id);
+const ligne = cb.closest('.colis-item');
+if (ligne) ligne.classList.toggle('lot-coche', cb.checked);
+rafraichirBarreLot(barre, eqLotIds.size, filtered.length);
+});
+});
+if (!barre) return;
+
+barre.querySelector('[data-lot-tout]').addEventListener('click', () => {
+// Porte sur TOUS les colis des critères courants, pas seulement sur les lignes dessinées :
+// c'est ce que le libellé annonce, donc c'est ce qu'il doit faire.
+if (eqLotIds.size >= filtered.length) eqViderSelection();
+else filtered.forEach(c => eqLotIds.add(c.id));
+renderColis();
+});
+barre.querySelector('[data-lot-quitter]').addEventListener('click', () => {
+eqLotActif = false;
+eqViderSelection();
+eqMajBoutonModeLot();
+renderColis();
+});
+barre.querySelectorAll('[data-lot-action]').forEach(btn => {
+btn.addEventListener('click', () => {
+const action = btn.dataset.lotAction;
+if (action === 'assigner') eqAssignerLot(barre, btn);
+else eqTraiterLot(action, btn);
+});
+});
+}
+
+function eqMajBoutonModeLot(){
+const b = document.getElementById('btn-mode-lot-colis');
+if (!b) return;
+b.classList.toggle('actif', eqLotActif);
+b.textContent = eqLotActif ? '✖️ Quitter la sélection' : '☑️ Sélection multiple';
+}
+
+// Assignation groupée d'un livreur de LIVRAISON. À ne pas confondre avec l'assignation de
+// collecte déjà présente dans l'en-tête de chaque cliente : celle-ci concerne qui va porter le
+// colis au destinataire, et se choisit ici colis par colis — d'où l'intérêt du lot.
+async function eqAssignerLot(barre, bouton){
+const select = barre.querySelector('[data-lot-livreur]');
+const valeur = select ? select.value : '';
+if (!valeur) { cltToast("Choisissez d'abord un livreur dans la liste, à côté du bouton.", { type: 'warning' }); return; }
+const livreur_id = valeur === '__aucun__' ? null : valeur;
+const choisis = allColis.filter(c => eqLotIds.has(c.id));
+// Un colis déjà chez ce livreur n'a pas à être réécrit : ça ne changerait rien et ça fausserait
+// le compte annoncé.
+const aChanger = choisis.filter(c => (c.livreur_id || null) !== livreur_id);
+if (!aChanger.length) {
+cltToast(choisis.length ? "Ces colis sont déjà chez ce livreur." : "Aucun colis sélectionné.", { type: 'info' });
+return;
+}
+const nom = livreur_id ? ((livreurs.find(l => l.id === livreur_id) || {}).full_name || 'ce livreur') : null;
+const ok = await showConfirm({
+title: livreur_id ? `Confier ${aChanger.length} colis à ${nom} ?` : `Retirer le livreur de ${aChanger.length} colis ?`,
+sub: livreur_id ? "Ces colis apparaîtront dans son espace « Mes colis assignés »." : "Ces colis n'apparaîtront plus dans l'espace du livreur qui les avait.",
+okLabel: livreur_id ? 'Oui, assigner' : 'Oui, retirer',
+});
+if (!ok) return;
+
+const avant = aChanger.map(c => ({ id: c.id, livreur_id: c.livreur_id || null }));
+const libelleBtn = bouton ? bouton.innerHTML : '';
+if (bouton) { bouton.disabled = true; bouton.textContent = 'Enregistrement…'; }
+const { error } = await supabaseClient.from('colis').update({ livreur_id }).in('id', aChanger.map(c => c.id));
+if (bouton) { bouton.disabled = false; bouton.innerHTML = libelleBtn; }
+if (error) { alert(friendlyErrorMessage(error.message)); return; }
+
+aChanger.forEach(c => {
+const idx = allColis.findIndex(x => x.id === c.id);
+if (idx !== -1) allColis[idx].livreur_id = livreur_id;
+eqLotIds.delete(c.id);
+});
+renderColis();
+cltToast(`${aChanger.length} colis ${livreur_id ? 'confiés à ' + nom : 'sans livreur'}.`, {
+type: 'success', title: "C'est enregistré", duration: 8000,
+action: { label: '↩️ Tout annuler', onClick: () => eqAnnulerAssignationLot(avant) },
+});
+}
+
+async function eqAnnulerAssignationLot(avant){
+// Chaque colis retourne à SON livreur d'avant — ils n'avaient pas forcément le même, donc on
+// regroupe par ancienne valeur au lieu d'écrire une valeur commune qui serait fausse.
+const map = new Map();
+avant.forEach(e => {
+const cle = String(e.livreur_id);
+if (!map.has(cle)) map.set(cle, { payload: { livreur_id: e.livreur_id }, ids: [] });
+map.get(cle).ids.push(e.id);
+});
+const res = await envoyerGroupesColis(supabaseClient, Array.from(map.values()));
+const reussis = new Set(res.reussis);
+avant.forEach(e => {
+if (!reussis.has(e.id)) return;
+const idx = allColis.findIndex(x => x.id === e.id);
+if (idx !== -1) allColis[idx].livreur_id = e.livreur_id;
+});
+renderColis();
+cltToast(`${res.reussis.length} colis remis chez leur livreur d'avant.`, { type: 'info', title: 'Annulé' });
+}
+
+async function eqTraiterLot(statut, bouton){
+const choisis = allColis.filter(c => eqLotIds.has(c.id));
+if (!choisis.length) return;
+const libelle = (STATUTS[statut] && STATUTS[statut].label) || statut;
+
+// Hors réseau, on ne fait rien à moitié : la file d'attente hors-ligne est faite pour des
+// gestes unitaires. Plutôt que de laisser croire que quinze colis sont enregistrés, on le dit.
+if (!navigator.onLine) {
+cltToast("Sans réseau, les actions en lot ne sont pas possibles. Traitez les colis un par un : ils seront mis en attente et partiront au retour de la connexion.", { type: 'warning', title: 'Hors connexion', duration: 9000 });
+return;
+}
+
+// `false` : sur cet écran, le geste unitaire n'exige pas le code de confirmation du
+// destinataire — le bureau doit pouvoir corriger un statut. La règle est de coller au geste
+// unitaire de l'écran, ni plus permissif, ni plus strict.
+const tri = repartirColisPourLot(choisis, statut, false);
+if (!tri.eligibles.length) {
+cltToast(tri.dejaAuStatut.length ? `Ces colis sont déjà « ${libelle} ».` : "Rien à modifier dans cette sélection.", { type: 'info' });
+return;
+}
+if (tri.eligibles.length >= 5) {
+const ok = await showConfirm({
+title: `Marquer ${tri.eligibles.length} colis « ${libelle} » ?`,
+sub: "Vous pourrez encore tout annuler pendant quelques secondes après l'enregistrement.",
+okLabel: 'Oui, tout marquer',
+});
+if (!ok) return;
+}
+
+// Photographie de l'état d'avant, colis par colis : les colis d'un même lot n'ont pas le même
+// passé, donc chacun doit pouvoir retourner au sien.
+const avant = tri.eligibles.map(c => ({
+id: c.id,
+statut: c.statut,
+tentatives_livraison: (c.tentatives_livraison === undefined || c.tentatives_livraison === null) ? null : Number(c.tentatives_livraison),
+}));
+
+const libelleBtn = bouton ? bouton.innerHTML : '';
+if (bouton) { bouton.disabled = true; bouton.textContent = 'Enregistrement…'; }
+const res = await envoyerGroupesColis(supabaseClient, grouperLotParPayload(tri.eligibles, statut));
+if (bouton) { bouton.disabled = false; bouton.innerHTML = libelleBtn; }
+
+// Seuls les colis réellement enregistrés changent à l'écran : afficher « Livré » sur un colis
+// dont l'enregistrement a échoué serait le pire des deux mondes.
+const reussis = new Set(res.reussis);
+tri.eligibles.forEach(c => {
+if (!reussis.has(c.id)) return;
+const idx = allColis.findIndex(x => x.id === c.id);
+if (idx !== -1) Object.assign(allColis[idx], payloadLotColis(c, statut));
+eqLotIds.delete(c.id);
+});
+renderColis();
+
+if (res.echecs.length) console.error('Actions en lot — échecs :', res.echecs);
+const annulables = avant.filter(e => reussis.has(e.id));
+cltToast(resumeLotTexte(res.reussis.length, res.echecs, libelle), {
+type: res.echecs.length ? 'warning' : 'success',
+title: res.echecs.length ? 'Enregistré en partie' : "C'est enregistré",
+duration: res.echecs.length ? 10000 : 8000,
+action: annulables.length ? { label: '↩️ Tout annuler', onClick: () => eqAnnulerLot(annulables) } : null,
+});
+}
+
+async function eqAnnulerLot(avant){
+const res = await envoyerGroupesColis(supabaseClient, grouperRetourLot(avant));
+const reussis = new Set(res.reussis);
+avant.forEach(e => {
+if (!reussis.has(e.id)) return;
+const idx = allColis.findIndex(x => x.id === e.id);
+if (idx === -1) return;
+allColis[idx].statut = e.statut;
+if (e.tentatives_livraison !== null) allColis[idx].tentatives_livraison = e.tentatives_livraison;
+});
+renderColis();
+cltToast(res.echecs.length
+? `${res.reussis.length} colis remis dans leur état d'avant, ${avant.length - res.reussis.length} non — vérifiez ceux-là.`
+: `${res.reussis.length} colis remis dans leur état d'avant.`,
+{ type: res.echecs.length ? 'warning' : 'info', title: 'Annulé' });
+}
+
 // ---------- Redessiner la liste : une seule fois par image, pas une fois par événement ----------
 // Redessiner coûte cher quand la liste est longue, et les demandes arrivent souvent en rafale :
 // le temps réel annonce trois colis d'un coup, une action met à jour l'état local puis la liste,
@@ -2902,10 +3131,16 @@ filtered = filtered.filter(c => matchesSearch(c, searchColis) && matchesDate(c, 
 // « Charger plus de colis » (qui va chercher de l'historique sur le serveur) tant qu'il reste
 // des colis à afficher ici : deux invitations à charger en même temps, c'est déroutant.
 let resteAAfficher = 0;
+// Un colis coché puis supprimé, ou sorti des critères entre deux rendus, ne doit plus compter
+// dans la sélection : sinon la barre annoncerait un nombre plus grand que ce qu'elle traiterait.
+eqLotIds.forEach(id => { if (!filtered.some(c => c.id === id)) eqLotIds.delete(id); });
+list.classList.toggle('lot-actif', eqLotActif);
 if (!filtered.length) {
-list.innerHTML = filtreDateColis
+list.innerHTML = (filtreDateColis
 ? `<div class="empty-state">Aucun colis à cette date.</div>`
-: `<div class="empty-state">Aucun colis${activeFilter !== 'tous' || searchColis ? ' pour ces critères' : ''}.</div>`;
+: `<div class="empty-state">Aucun colis${activeFilter !== 'tous' || searchColis ? ' pour ces critères' : ''}.</div>`)
++ (eqLotActif ? barreLotHTML(0, 0, eqBoutonsLot(), eqExtraLotHTML()) : '');
+if (eqLotActif) eqBrancherBarreLot(list, []);
 } else {
 const groups = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
 // On ne dessine qu'une tranche : la suite s'ajoute au défilement. Tout le reste du code
@@ -2921,9 +3156,13 @@ if (rangCible >= colisTranche) colisTranche = rangCible + 1;
 }
 const tranche = limiterGroupesColis(groups, colisTranche);
 resteAAfficher = tranche.reste;
+// La barre annonce `filtered.length`, pas le nombre de lignes dessinées : « Tout sélectionner
+// (312) » doit vraiment porter sur les 312 colis des critères courants.
 list.innerHTML = renderGroupedColisHTML(tranche.groups, colisRowHTML, equipeCollecteActionHTML)
-+ trancheColisPiedHTML(tranche.affiches, tranche.total);
++ trancheColisPiedHTML(tranche.affiches, tranche.total)
++ (eqLotActif ? barreLotHTML(eqLotIds.size, filtered.length, eqBoutonsLot(), eqExtraLotHTML()) : '');
 brancherTrancheColis(list, () => { colisTranche += COLIS_TRANCHE; renderColis(); });
+if (eqLotActif) eqBrancherBarreLot(list, filtered);
 
 eqBrancherActionsRapides(list);
 
@@ -5294,15 +5533,25 @@ let rechercheColisTimer = null;
 document.getElementById('search-colis').addEventListener('input', (e) => {
 searchColis = e.target.value;
 clearTimeout(rechercheColisTimer);
-rechercheColisTimer = setTimeout(() => { eqRemettreTrancheAZero(); renderColis(); }, 220);
+rechercheColisTimer = setTimeout(() => { eqRemettreTrancheAZero(); eqViderSelection(); renderColis(); }, 220);
 });
 filtreDateColis = todayLocalISODate();
 document.getElementById('filtre-date-colis').value = filtreDateColis;
-document.getElementById('filtre-date-colis').addEventListener('change', (e) => { filtreDateColis = e.target.value; eqRemettreTrancheAZero(); renderColis(); });
+document.getElementById('filtre-date-colis').addEventListener('change', (e) => { filtreDateColis = e.target.value; eqRemettreTrancheAZero(); eqViderSelection(); renderColis(); });
 document.getElementById('btn-toutes-dates-colis').addEventListener('click', () => {
 filtreDateColis = '';
 document.getElementById('filtre-date-colis').value = '';
 eqRemettreTrancheAZero();
+eqViderSelection();
+renderColis();
+});
+// Entrée/sortie du mode sélection multiple. En sortant on vide : laisser une sélection
+// invisible en mémoire ferait resurgir des colis cochés à la prochaine entrée, sans qu'on
+// comprenne d'où ils sortent.
+document.getElementById('btn-mode-lot-colis').addEventListener('click', () => {
+eqLotActif = !eqLotActif;
+if (!eqLotActif) eqViderSelection();
+eqMajBoutonModeLot();
 renderColis();
 });
 document.getElementById('compta-fournisseur').addEventListener('change', renderCompta);
@@ -5325,6 +5574,7 @@ cltFocusColisFromUrl({ onMiss: () => {
     const inp = document.getElementById('filtre-date-colis');
     if (inp) inp.value = '';
     eqRemettreTrancheAZero();
+    eqViderSelection();
     renderColis();
   }
 } });

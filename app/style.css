@@ -439,6 +439,62 @@ html[data-theme="dark"] .colis-etapes .btn.btn-etape-echec:hover{background:#3a2
 }
 .liste-tranche__compteur{font-size:13px; color:var(--muted);}
 
+/* ---------- Sélection multiple et barre d'actions en lot ----------
+   Rentrer de tournée avec quinze colis livrés et devoir les marquer un par un, c'est le geste
+   qui décourage le plus. La case à cocher n'apparaît qu'en mode sélection : le reste du temps
+   la liste ne doit pas être encombrée, et un appui distrait ne doit rien pouvoir cocher. */
+.lot-case{display:none;}
+.colis-list.lot-actif .lot-case{
+  display:flex; align-items:center; justify-content:center;
+  /* 44 px : la taille minimale d'une cible tactile confortable. En dessous, on rate la case
+     une fois sur trois quand on tient le guidon d'une main. */
+  min-width:44px; min-height:44px; margin:-6px 2px -6px -4px; cursor:pointer; flex:0 0 auto;
+}
+.colis-list.lot-actif .lot-case input{width:22px; height:22px; cursor:pointer; accent-color:var(--primary, #1B4374);}
+/* Le colis coché se voit d'un coup d'œil, sans avoir à chercher la case : c'est la ligne
+   entière qui change de fond. Indispensable quand on vérifie une sélection de quinze lignes. */
+.colis-list.lot-actif .colis-item.lot-coche{
+  background:rgba(27,67,116,.07); box-shadow:inset 3px 0 0 var(--primary, #1B4374);
+}
+html[data-theme="dark"] .colis-list.lot-actif .colis-item.lot-coche{background:rgba(90,140,210,.14);}
+
+/* La barre reste collée en bas de l'écran : la sélection se fait en défilant, donc les boutons
+   doivent rester sous le pouce du début à la fin, sans avoir à remonter en haut de la page. */
+.lot-barre{
+  position:sticky; bottom:0; z-index:30;
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+  padding:12px 14px; margin-top:10px;
+  background:var(--card, #fff); border:1.5px solid var(--border, #dfe5ee);
+  border-radius:14px; box-shadow:0 -6px 20px rgba(15,32,58,.14);
+}
+.lot-barre__compte{font-size:13.5px; font-weight:700; color:var(--text, #14213d); flex:0 0 auto;}
+.lot-barre__actions{display:flex; flex-wrap:wrap; gap:8px; align-items:center; flex:1 1 auto;}
+.lot-barre__fin{display:flex; flex-wrap:wrap; gap:8px; align-items:center; flex:0 0 auto;}
+.lot-barre .btn{min-height:40px;}
+.lot-barre select{
+  padding:8px 10px; font-size:12.5px; border:1.5px solid var(--border, #dfe5ee);
+  border-radius:8px; background:var(--card, #fff); color:var(--text, #14213d); max-width:190px;
+}
+/* Même vert franc que le bouton « Livré » d'une ligne : c'est la même action, elle doit se
+   reconnaître au même endroit du regard. Le sélecteur pèse lourd pour la même raison qu'en
+   ligne — la règle générale « .btn:not(.btn-outline) » repeindrait sinon tout en bleu. */
+.lot-barre .btn.btn-etape-livre{
+  background:#1a7d3c; background-image:none; border-color:#1a7d3c; color:#fff; font-weight:700;
+}
+.lot-barre .btn.btn-etape-livre:hover{background:#166a33; background-image:none; border-color:#166a33;}
+.lot-barre .btn.btn-etape-echec{color:#c0392b; border-color:#e3b7b2;}
+html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-color:#6d3d38;}
+@media (max-width:640px){
+  .lot-barre{gap:8px; padding:10px;}
+  .lot-barre__compte{flex:1 1 100%;}
+  .lot-barre__actions .btn, .lot-barre__fin .btn{flex:1 1 auto;}
+}
+/* Bouton qui entre en mode sélection, posé au-dessus de la liste. En contour tant qu'on n'y
+   est pas, plein dès qu'on y est : on doit savoir sans réfléchir dans quel mode on se trouve. */
+.btn-mode-lot.actif{
+  background:var(--primary, #1B4374); background-image:none; border-color:var(--primary, #1B4374); color:#fff;
+}
+
 .badge{
   display:inline-block; padding:6px 13px; border-radius:var(--radius-pill); font-size:12px; font-weight:700; letter-spacing:.2px;
 }

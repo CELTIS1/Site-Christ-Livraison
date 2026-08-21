@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821fluide2">
+<link rel="stylesheet" href="style.css?v=20260821lot1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -333,6 +333,9 @@
         <label for="filtre-date-mes">📅 Date</label>
         <input type="date" id="filtre-date-mes" class="date-filter-input">
         <button type="button" id="btn-toutes-dates-mes" class="date-filter-clear">Toutes les dates</button>
+        <!-- Entrer en sélection multiple : pour marquer d'un coup tous les colis d'une tournée
+             au retour, au lieu de les reprendre un par un. -->
+        <button type="button" id="btn-mode-lot-mes" class="btn btn-outline btn-sm btn-mode-lot" style="margin-left:auto;">☑️ Sélection multiple</button>
       </div>
       <div class="filters" id="filters-mes"></div>
       <div class="colis-list" id="mes-colis-list">
@@ -363,7 +366,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821fluide2"></script>
+<script src="clt-common.js?v=20260821lot1"></script>
 <script src="config.js?v=20260819fiab1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
@@ -483,6 +486,18 @@
   // depuis le haut, sinon on garderait une page déjà déroulée sans raison.
   function remettreTrancheMesAZero(){ trancheMes = COLIS_TRANCHE; }
   function remettreTrancheTousAZero(){ trancheTous = COLIS_TRANCHE; }
+
+  // ---------- Sélection multiple de « Mes colis assignés » ----------
+  // La sélection vit dans un Set d'IDENTIFIANTS, pas dans les cases du DOM : la liste se
+  // redessine sans prévenir (temps réel, tranche suivante chargée au défilement, retour du
+  // réseau), et une sélection qui vivrait dans les cases s'effacerait à chacun de ces redessins
+  // — au moment précis où le livreur en a coché douze.
+  let lotMesActif = false;
+  let lotMesIds = new Set();
+  // Changer de filtre, de date ou de recherche vide la sélection. C'est volontaire : sinon on
+  // garderait des colis cochés devenus invisibles, et le bouton « Livré (12) » agirait sur des
+  // colis que la personne ne voit plus. Un bouton qui agit sur ce qu'on ne voit pas est un piège.
+  function viderSelectionMes(){ lotMesIds.clear(); }
 
   function closeOtherSections(exceptContentId){
     document.querySelectorAll('.card > .collapsible-content').forEach(c => {
@@ -1191,6 +1206,157 @@
     cltToast(`Retour à l'état précédent : ${libelle}.`, { type: 'info', title: 'Annulé' });
   }
 
+  /* ---------- ACTIONS EN LOT : traiter toute une tournée d'un coup ----------
+     Boutons proposés. Volontairement les trois mêmes que sur une ligne, avec les mêmes mots :
+     ce n'est pas une autre fonctionnalité, c'est le même geste appliqué à plusieurs colis. */
+  function boutonsLotMes(){
+    return [
+      { cle: 'livre', libelle: '✅ Livré', classe: 'btn-etape-livre' },
+      { cle: 'en_livraison', libelle: '🚚 Je pars livrer', classe: 'btn-outline' },
+      { cle: 'non_livre', libelle: '⚠️ Non livré', classe: 'btn-outline btn-etape-echec' },
+    ];
+  }
+
+  function brancherBarreLotMes(list, filtered){
+    const barre = list.querySelector('[data-lot-barre]');
+
+    // Cases à cocher. On ne redessine PAS la liste à chaque case : on retouche la ligne et le
+    // compteur. Redessiner ferait sauter la position de défilement au milieu d'une sélection —
+    // insupportable quand on coche douze lignes à la suite.
+    list.querySelectorAll('.lot-check').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.dataset.lotId;
+        if (cb.checked) lotMesIds.add(id); else lotMesIds.delete(id);
+        const ligne = cb.closest('.colis-item');
+        if (ligne) ligne.classList.toggle('lot-coche', cb.checked);
+        rafraichirBarreLot(barre, lotMesIds.size, filtered.length);
+      });
+    });
+    if (!barre) return;
+
+    barre.querySelector('[data-lot-tout]').addEventListener('click', () => {
+      // Tout sélectionner porte sur TOUS les colis des critères courants, pas seulement sur les
+      // lignes dessinées : c'est ce qu'annonce le libellé, donc c'est ce qu'il doit faire.
+      if (lotMesIds.size >= filtered.length) lotMesIds.clear();
+      else filtered.forEach(c => lotMesIds.add(c.id));
+      renderMesColis();
+    });
+    barre.querySelector('[data-lot-quitter]').addEventListener('click', () => {
+      lotMesActif = false;
+      viderSelectionMes();
+      majBoutonModeLotMes();
+      renderMesColis();
+    });
+    barre.querySelectorAll('[data-lot-action]').forEach(btn => {
+      btn.addEventListener('click', () => traiterLotMes(btn.dataset.lotAction, btn));
+    });
+  }
+
+  function majBoutonModeLotMes(){
+    const b = document.getElementById('btn-mode-lot-mes');
+    if (!b) return;
+    b.classList.toggle('actif', lotMesActif);
+    b.textContent = lotMesActif ? '✖️ Quitter la sélection' : '☑️ Sélection multiple';
+  }
+
+  async function traiterLotMes(statut, bouton){
+    const choisis = allColis.filter(c => lotMesIds.has(c.id));
+    if (!choisis.length) return;
+    const libelle = (STATUTS[statut] && STATUTS[statut].label) || statut;
+
+    // Hors réseau, on ne fait rien à moitié. La file d'attente hors-ligne est conçue pour des
+    // gestes unitaires (elle garde l'observation, la photo, l'état d'origine de chaque colis) ;
+    // y verser quinze colis d'un coup demanderait des garanties qu'elle n'offre pas encore.
+    // Plutôt que de laisser croire que c'est enregistré, on le dit et on renvoie au geste
+    // unitaire, qui lui, hors réseau, met correctement en attente.
+    if (!navigator.onLine) {
+      cltToast("Sans réseau, les actions en lot ne sont pas possibles. Marquez les colis un par un : ils seront mis en attente et partiront au retour de la connexion.", { type: 'warning', title: 'Hors connexion', duration: 9000 });
+      return;
+    }
+
+    // Le tri AVANT d'écrire : c'est lui qui permet d'annoncer la vérité au lieu de la découvrir.
+    // `true` = on exige le code de confirmation, exactement comme le bouton d'une ligne le fait
+    // sur cet écran. Traiter vite ne doit pas servir à contourner le contrôle anti-fraude.
+    const tri = repartirColisPourLot(choisis, statut, true);
+    if (tri.bloquesCode.length) {
+      const noms = tri.bloquesCode.slice(0, 5).map(c => c.numero || 'colis sans numéro').join(', ');
+      const suite = tri.bloquesCode.length > 5 ? ` et ${tri.bloquesCode.length - 5} autre(s)` : '';
+      await cltConfirm({
+        title: `${tri.bloquesCode.length} colis attendent leur code`,
+        sub: `${noms}${suite} : le destinataire doit donner son code à 4 chiffres. Ces colis-là restent à faire un par un. Les autres vont être traités.`,
+        okLabel: 'Continuer',
+        cancelLabel: 'Fermer',
+      });
+    }
+    if (!tri.eligibles.length) {
+      cltToast(tri.dejaAuStatut.length ? `Ces colis sont déjà « ${libelle} ».` : "Rien à modifier dans cette sélection.", { type: 'info' });
+      return;
+    }
+
+    // Confirmation obligatoire au-delà d'une poignée : annuler quinze colis est bien plus lourd
+    // que d'en confirmer quinze, et un lot part sans possibilité de le rattraper au vol.
+    if (tri.eligibles.length >= 5) {
+      const ok = await cltConfirm({
+        title: `Marquer ${tri.eligibles.length} colis « ${libelle} » ?`,
+        sub: "Vous pourrez encore tout annuler pendant quelques secondes après l'enregistrement.",
+        okLabel: 'Oui, tout marquer',
+        cancelLabel: 'Non',
+      });
+      if (!ok) return;
+    }
+
+    // Photographie de l'état d'avant, colis par colis : c'est ce qui rend l'annulation exacte.
+    // Les colis d'un même lot n'ont pas forcément le même passé, donc on ne peut pas « revenir
+    // au statut précédent » en bloc — chacun retourne au sien.
+    const avant = tri.eligibles.map(c => ({
+      id: c.id,
+      statut: c.statut,
+      tentatives_livraison: (c.tentatives_livraison === undefined || c.tentatives_livraison === null) ? null : Number(c.tentatives_livraison),
+    }));
+
+    const libelleBtn = bouton ? bouton.innerHTML : '';
+    if (bouton) { bouton.disabled = true; bouton.textContent = 'Enregistrement…'; }
+    const res = await envoyerGroupesColis(supabaseClient, grouperLotParPayload(tri.eligibles, statut));
+    if (bouton) { bouton.disabled = false; bouton.innerHTML = libelleBtn; }
+
+    // Seuls les colis réellement enregistrés sont mis à jour à l'écran : afficher « Livré » sur
+    // un colis dont l'enregistrement a échoué serait le pire des deux mondes.
+    const reussis = new Set(res.reussis);
+    tri.eligibles.forEach(c => {
+      if (!reussis.has(c.id)) return;
+      const idx = allColis.findIndex(x => x.id === c.id);
+      if (idx !== -1) Object.assign(allColis[idx], payloadLotColis(c, statut));
+      lotMesIds.delete(c.id);
+    });
+    renderAll();
+
+    if (res.echecs.length) console.error('Actions en lot — échecs :', res.echecs);
+    const annulables = avant.filter(e => reussis.has(e.id));
+    cltToast(resumeLotTexte(res.reussis.length, res.echecs, libelle), {
+      type: res.echecs.length ? 'warning' : 'success',
+      title: res.echecs.length ? 'Enregistré en partie' : "C'est enregistré",
+      duration: res.echecs.length ? 10000 : 8000,
+      action: annulables.length ? { label: '↩️ Tout annuler', onClick: () => annulerLotMes(annulables) } : null,
+    });
+  }
+
+  async function annulerLotMes(avant){
+    const res = await envoyerGroupesColis(supabaseClient, grouperRetourLot(avant));
+    const reussis = new Set(res.reussis);
+    avant.forEach(e => {
+      if (!reussis.has(e.id)) return;
+      const idx = allColis.findIndex(x => x.id === e.id);
+      if (idx === -1) return;
+      allColis[idx].statut = e.statut;
+      if (e.tentatives_livraison !== null) allColis[idx].tentatives_livraison = e.tentatives_livraison;
+    });
+    renderAll();
+    cltToast(res.echecs.length
+      ? `${res.reussis.length} colis remis dans leur état d'avant, ${avant.length - res.reussis.length} non — vérifiez ceux-là.`
+      : `${res.reussis.length} colis remis dans leur état d'avant.`,
+      { type: res.echecs.length ? 'warning' : 'info', title: 'Annulé' });
+  }
+
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
   function mesColisRowHTML(c, numeroClient){
     const thumb = c.photo_url
@@ -1200,8 +1366,12 @@
       `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
 
     const tentatives = Number(c.tentatives_livraison) || 0;
+    // La case n'est visible qu'en mode sélection (CSS .colis-list.lot-actif), mais on la pose
+    // toujours : sortir du mode ne demande alors qu'à retirer une classe, sans redessiner.
+    const coche = lotMesIds.has(c.id);
     return `
-      <div class="colis-item mes-colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
+      <div class="colis-item mes-colis-item${coche ? ' lot-coche' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
+        ${caseLotHTML(c.id, coche)}
         ${stepperHTML(c.statut)}
         ${thumb}
         <div class="info">
@@ -1278,10 +1448,18 @@
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
     let filtered = activeFilterMes === 'tous' ? mine : mine.filter(c => c.statut === activeFilterMes);
     filtered = filtered.filter(c => matchesSearch(c, searchMes) && matchesDate(c, filtreDateMes));
+    // Un colis coché puis supprimé, réassigné à quelqu'un d'autre ou passé hors des critères ne
+    // doit plus compter dans la sélection : sinon le bouton annoncerait un nombre plus grand que
+    // ce qu'il traiterait vraiment. On recale donc la sélection sur la liste réelle à chaque
+    // rendu — c'est aussi ce qui garde le compteur de la barre exact.
+    lotMesIds.forEach(id => { if (!filtered.some(c => c.id === id)) lotMesIds.delete(id); });
+    list.classList.toggle('lot-actif', lotMesActif);
     if (!filtered.length) {
-      list.innerHTML = filtreDateMes
+      list.innerHTML = (filtreDateMes
         ? `<div class="empty-state">Aucun colis assigné à cette date.</div>`
-        : `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`;
+        : `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`)
+        + (lotMesActif ? barreLotHTML(0, 0, boutonsLotMes(), '') : '');
+      if (lotMesActif) brancherBarreLotMes(list, []);
       restoreScrollAnchor(list, __anchor);
       return;
     }
@@ -1295,9 +1473,14 @@
       if (rangMes >= trancheMes) trancheMes = rangMes + 1;
     }
     const trMes = limiterGroupesColis(groupsMes, trancheMes);
+    // La barre annonce `filtered.length` et non le nombre de lignes dessinées : « Tout
+    // sélectionner (103) » doit vraiment cocher les 103 colis qui correspondent aux critères,
+    // même si la liste n'en montre que 60 pour l'instant.
     list.innerHTML = renderGroupedColisHTML(trMes.groups, mesColisRowHTML)
-      + trancheColisPiedHTML(trMes.affiches, trMes.total);
+      + trancheColisPiedHTML(trMes.affiches, trMes.total)
+      + (lotMesActif ? barreLotHTML(lotMesIds.size, filtered.length, boutonsLotMes(), '') : '');
     brancherTrancheColis(list, () => { trancheMes += COLIS_TRANCHE; renderMesColis(); });
+    if (lotMesActif) brancherBarreLotMes(list, filtered);
 
     list.querySelectorAll('.btn-save').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -1797,7 +1980,7 @@
     // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 
-    function selectFilterMes(val){ activeFilterMes = val; remettreTrancheMesAZero(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
+    function selectFilterMes(val){ activeFilterMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
     function selectFilterTous(val){ activeFilterTous = val; remettreTrancheTousAZero(); renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
     renderFilters('filters-mes', activeFilterMes, selectFilterMes);
     renderFilters('filters-tous', activeFilterTous, selectFilterTous);
@@ -1809,7 +1992,7 @@
     document.getElementById('search-mes').addEventListener('input', (e) => {
       const val = e.target.value;
       clearTimeout(searchMesTimer);
-      searchMesTimer = setTimeout(() => { searchMes = val; remettreTrancheMesAZero(); renderMesColis(); }, 350);
+      searchMesTimer = setTimeout(() => { searchMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderMesColis(); }, 350);
     });
     document.getElementById('search-tous').addEventListener('input', (e) => {
       const val = e.target.value;
@@ -1819,11 +2002,22 @@
 
     filtreDateMes = todayLocalISODate();
     document.getElementById('filtre-date-mes').value = filtreDateMes;
-    document.getElementById('filtre-date-mes').addEventListener('change', (e) => { filtreDateMes = e.target.value; remettreTrancheMesAZero(); renderMesColis(); });
+    document.getElementById('filtre-date-mes').addEventListener('change', (e) => { filtreDateMes = e.target.value; remettreTrancheMesAZero(); viderSelectionMes(); renderMesColis(); });
     document.getElementById('btn-toutes-dates-mes').addEventListener('click', () => {
       filtreDateMes = '';
       document.getElementById('filtre-date-mes').value = '';
       remettreTrancheMesAZero();
+      viderSelectionMes();
+      renderMesColis();
+    });
+
+    // Entrée/sortie du mode sélection multiple. En sortant, on vide : laisser une sélection
+    // invisible en mémoire ferait resurgir douze colis cochés à la prochaine entrée, sans que
+    // personne ne sache d'où ils sortent.
+    document.getElementById('btn-mode-lot-mes').addEventListener('click', () => {
+      lotMesActif = !lotMesActif;
+      if (!lotMesActif) viderSelectionMes();
+      majBoutonModeLotMes();
       renderMesColis();
     });
 

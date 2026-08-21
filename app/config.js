@@ -1058,6 +1058,188 @@ function brancherTrancheColis(list, surSuite) {
   obs.observe(pied);
 }
 
+/* ================================================================================
+   TRAITER PLUSIEURS COLIS D'UN COUP — ajout du 21 août 2026
+   --------------------------------------------------------------------------------
+   Le problème, en clair : un livreur qui rentre de tournée avec quinze colis livrés doit
+   aujourd'hui les marquer un par un. Quinze fois : trouver la ligne, appuyer, attendre
+   l'aller-retour réseau, recommencer. C'est le geste le plus répété de la journée, et
+   c'est celui qui décourage le plus — au point qu'on repousse la saisie au soir, et que
+   l'équipe à Abidjan travaille toute la journée sur des statuts faux.
+
+   RÈGLE QUI GOUVERNE TOUT CE QUI SUIT : une action en lot doit offrir EXACTEMENT les mêmes
+   garanties que le geste unitaire du même écran, jamais moins. Traiter vite ne doit jamais
+   servir de porte dérobée pour contourner un contrôle. Concrètement :
+     • côté livreur, le geste unitaire exige le code de confirmation du destinataire avant
+       de marquer « Livré » — donc les colis qui attendent leur code sont ÉCARTÉS du lot et
+       nommément signalés, au lieu d'être passés en douce ;
+     • le compteur de tentatives de livraison s'incrémente colis par colis, comme à l'unité,
+       et pas d'une valeur commune qui serait fausse pour la moitié du lot ;
+     • ce qui échoue est dit, avec son nombre. Un lot n'est jamais annoncé « réussi » en bloc.
+
+   Et une règle d'honnêteté d'affichage, la même que pour les listes par tranches : un bouton
+   qui annonce un nombre doit agir sur ce nombre-là. « Tout sélectionner (103) » sélectionne
+   les 103 colis qui correspondent aux critères, pas seulement les 60 dessinés à l'écran.
+   ================================================================================ */
+
+// Colonnes à écrire pour faire passer CE colis-ci au statut demandé.
+// Le compteur de tentatives se calcule à partir du colis lui-même : deux colis d'un même lot
+// n'ont pas forcément le même passé (l'un en est à sa première tentative, l'autre à sa
+// troisième), donc pas la même valeur à écrire. C'est précisément ce que grouperLotParPayload()
+// ci-dessous exploite pour n'envoyer qu'une poignée de requêtes au lieu d'une par colis.
+function payloadLotColis(c, statut) {
+  const p = { statut: statut };
+  if (statut === "non_livre" && c && c.statut !== "non_livre") {
+    p.tentatives_livraison = (Number(c.tentatives_livraison) || 0) + 1;
+  }
+  return p;
+}
+
+// Trie une sélection en trois tas avant d'agir, pour que l'interface puisse dire la vérité
+// AVANT d'écrire quoi que ce soit :
+//   • eligibles     : ceux qu'on va réellement changer ;
+//   • bloquesCode   : ceux qui attendent le code à 4 chiffres du destinataire (anti-fraude).
+//                     `exigerCode` vaut true sur l'écran du livreur, où le geste unitaire
+//                     l'exige aussi ; il vaut false côté équipe, où le geste unitaire ne le
+//                     demande pas — la règle est de coller au geste unitaire de l'écran, pas
+//                     d'inventer un contrôle ici ;
+//   • dejaAuStatut  : ceux qui y sont déjà. Les réécrire ne ferait que du bruit (et une
+//                     notification de plus au client pour rien).
+function repartirColisPourLot(colis, statut, exigerCode) {
+  const eligibles = [], bloquesCode = [], dejaAuStatut = [];
+  (colis || []).forEach(c => {
+    if (!c) return;
+    if (c.statut === statut) { dejaAuStatut.push(c); return; }
+    if (exigerCode && statut === "livre" && c.code_confirmation && !c.code_confirme_at) {
+      bloquesCode.push(c); return;
+    }
+    eligibles.push(c);
+  });
+  return { eligibles: eligibles, bloquesCode: bloquesCode, dejaAuStatut: dejaAuStatut };
+}
+
+// Regroupe les colis qui doivent recevoir EXACTEMENT les mêmes colonnes, pour n'envoyer qu'une
+// requête par groupe. Quinze colis passés à « Livré » = une seule requête. Quinze colis passés
+// à « Non livré » avec des compteurs de tentatives différents = autant de requêtes que de
+// valeurs distinctes, en pratique deux ou trois. C'est ce qui fait la différence entre une
+// action instantanée et quinze allers-retours sur une connexion mobile d'Abidjan.
+function grouperLotParPayload(colis, statut) {
+  const map = new Map();
+  (colis || []).forEach(c => {
+    if (!c) return;
+    const payload = payloadLotColis(c, statut);
+    const cle = JSON.stringify(payload);
+    if (!map.has(cle)) map.set(cle, { payload: payload, ids: [] });
+    map.get(cle).ids.push(c.id);
+  });
+  return Array.from(map.values());
+}
+
+// Regroupe de la même façon des états à REMETTRE tels quels (annulation d'un lot). On réimpose
+// le compteur de tentatives d'origine au lieu de laisser les règles le recalculer : sans ça,
+// annuler un « Non livré » laisserait le compteur gonflé d'une tentative qui n'a jamais eu lieu.
+function grouperRetourLot(etats) {
+  const map = new Map();
+  (etats || []).forEach(e => {
+    if (!e) return;
+    const payload = { statut: e.statut };
+    if (e.tentatives_livraison !== undefined && e.tentatives_livraison !== null) {
+      payload.tentatives_livraison = e.tentatives_livraison;
+    }
+    const cle = JSON.stringify(payload);
+    if (!map.has(cle)) map.set(cle, { payload: payload, ids: [] });
+    map.get(cle).ids.push(e.id);
+  });
+  return Array.from(map.values());
+}
+
+// Envoie les groupes préparés ci-dessus. Reprend mot pour mot le repli des gestes unitaires :
+// si les colonnes récentes (tentatives_livraison) n'existent pas encore parce que la migration
+// SQL n'a pas été lancée, on réessaie sans elles plutôt que de bloquer le changement de statut.
+// Retourne { reussis: [ids], echecs: [{ids, message}] } — jamais un simple booléen : appeler un
+// lot « réussi » alors que trois colis sur quinze sont passés à la trappe serait un mensonge.
+async function envoyerGroupesColis(client, groupes) {
+  const reussis = [], echecs = [];
+  for (let i = 0; i < groupes.length; i++) {
+    const g = groupes[i];
+    let res = await client.from("colis").update(g.payload).in("id", g.ids);
+    let error = res && res.error;
+    if (error && "tentatives_livraison" in g.payload &&
+        /column|colonne|does not exist|n'existe pas/i.test(error.message || "")) {
+      res = await client.from("colis").update({ statut: g.payload.statut }).in("id", g.ids);
+      error = res && res.error;
+    }
+    if (error) echecs.push({ ids: g.ids, message: error.message || String(error) });
+    else reussis.push.apply(reussis, g.ids);
+  }
+  return { reussis: reussis, echecs: echecs };
+}
+
+// Phrase de compte rendu. Volontairement une phrase et pas un code de retour : c'est elle que
+// lit la personne qui vient de toucher le bouton, et elle doit pouvoir se fier au chiffre.
+function resumeLotTexte(nbReussis, echecs, libelleStatut) {
+  // « colis » est invariable en français : pas de pluriel à gérer sur le mot lui-même.
+  const nbEchecs = (echecs || []).reduce((n, e) => n + e.ids.length, 0);
+  if (!nbEchecs) return nbReussis + " colis : " + libelleStatut + ".";
+  if (!nbReussis) return "Aucun colis modifié — les " + nbEchecs + " ont échoué. Réessayez.";
+  return nbReussis + " colis : " + libelleStatut + ". " + nbEchecs + " n'ont pas pu être enregistrés — réessayez pour ceux-là.";
+}
+
+// Case à cocher d'une ligne de colis. `data-lot-id` porte l'identifiant : la sélection survit
+// ainsi aux redessins de la liste (temps réel, chargement d'une tranche suivante), puisqu'elle
+// vit dans un Set d'identifiants et non dans le DOM.
+function caseLotHTML(id, coche) {
+  return `<label class="lot-case" title="Sélectionner ce colis">
+    <input type="checkbox" class="lot-check" data-lot-id="${id}"${coche ? " checked" : ""}>
+  </label>`;
+}
+
+// Barre d'actions en lot, posée en bas d'écran pendant la sélection. `boutons` :
+// [{ cle, libelle, classe }]. `total` est le nombre de colis correspondant AUX CRITÈRES
+// COURANTS (pas au nombre de lignes dessinées) — voir la règle d'honnêteté en tête de section.
+function barreLotHTML(nb, total, boutons, extraHTML) {
+  // `data-lot-libelle` garde le libellé nu du bouton pour que rafraichirBarreLot() puisse
+  // recoller le compteur à chaque case cochée sans reconstruire la barre — reconstruire
+  // obligerait à rebrancher les clics, et un clic perdu au milieu d'une sélection de quinze
+  // colis est exactement le genre de bug qu'on ne remarque qu'une fois sur le terrain.
+  const actions = (boutons || []).map(b =>
+    `<button type="button" class="btn btn-sm ${b.classe || "btn-outline"}" data-lot-action="${b.cle}" data-lot-libelle="${b.libelle}"${nb ? "" : " disabled"}>${b.libelle}${nb ? " (" + nb + ")" : ""}</button>`
+  ).join("");
+  return `
+    <div class="lot-barre" data-lot-barre>
+      <div class="lot-barre__compte" data-lot-compte>${texteCompteLot(nb)}</div>
+      <div class="lot-barre__actions">${extraHTML || ""}${actions}</div>
+      <div class="lot-barre__fin">
+        <button type="button" class="btn btn-outline btn-sm" data-lot-tout>${texteToutLot(nb, total)}</button>
+        <button type="button" class="btn btn-outline btn-sm" data-lot-quitter>Quitter</button>
+      </div>
+    </div>`;
+}
+
+function texteCompteLot(nb) {
+  return nb ? (nb + " sélectionné" + (nb > 1 ? "s" : "")) : "Touchez les colis à traiter";
+}
+
+// « Tout décocher » n'apparaît qu'une fois tout coché : proposer « Tout sélectionner (103) »
+// alors que les 103 le sont déjà ne servirait à rien et ferait douter de ce qui est sélectionné.
+function texteToutLot(nb, total) {
+  return (total > 0 && nb >= total) ? "Tout décocher" : ("Tout sélectionner (" + total + ")");
+}
+
+// Remet la barre d'accord avec la sélection, sans la reconstruire (voir data-lot-libelle).
+function rafraichirBarreLot(barre, nb, total) {
+  if (!barre) return;
+  const compte = barre.querySelector("[data-lot-compte]");
+  if (compte) compte.textContent = texteCompteLot(nb);
+  barre.querySelectorAll("[data-lot-action]").forEach(b => {
+    b.disabled = !nb;
+    const nu = b.getAttribute("data-lot-libelle") || b.textContent;
+    b.textContent = nu + (nb ? " (" + nb + ")" : "");
+  });
+  const tout = barre.querySelector("[data-lot-tout]");
+  if (tout) tout.textContent = texteToutLot(nb, total);
+}
+
 // formatMontant() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 // ---------- Montant d'un colis : article + livraison ----------
