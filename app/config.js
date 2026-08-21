@@ -1447,6 +1447,228 @@ function resumeCarnetTexte(resultat, entree) {
   return nom + " repris — mais " + phraseGardes + ".";
 }
 
+/* ============================================================================================
+   CHIFFRES PAR LIVREUR — ajout du 21 août 2026
+
+   CE QUE ÇA RÉPOND
+   ----------------
+   Trois questions que l'équipe se posait sans pouvoir y répondre autrement qu'en comptant à la
+   main : qui a livré combien, en combien de temps, et avec quel taux d'échec.
+
+   TROIS RÈGLES QUE CES FONCTIONS S'IMPOSENT
+   -----------------------------------------
+   1. NE JAMAIS AFFICHER UN CHIFFRE QU'ON NE SAIT PAS CALCULER.
+      Un livreur qui n'a encore rien terminé n'a pas « 0 % de réussite » : il n'a pas de taux du
+      tout. On renvoie null, et l'écran affiche « — ». Un zéro inventé, c'est une accusation
+      gratuite ; sur un tableau que le patron regarde, ça se paie cher.
+
+   2. LE DÉLAI EST UNE MÉDIANE, PAS UNE MOYENNE.
+      Un seul colis oublié tout un week-end suffit à faire passer une moyenne de 3 h à 15 h. La
+      médiane, elle, décrit le colis ordinaire : la moitié plus vite, la moitié moins vite. C'est
+      la question que l'équipe se pose vraiment.
+
+   3. ON DIT TOUJOURS SUR COMBIEN DE COLIS LE DÉLAI EST MESURÉ.
+      Tant que la colonne livre_at n'existe pas en base (voir _sql-prive/), on ne connaît l'heure
+      de remise que pour les colis validés par code de confirmation — une minorité. Un délai
+      calculé sur 4 colis sur 130 n'est pas faux, mais il ne veut pas dire la même chose qu'un
+      délai calculé sur 130 sur 130. L'écran l'annonce plutôt que de laisser croire.
+
+   DÉLAI DE QUOI À QUOI
+   --------------------
+   De l'enregistrement du colis à sa remise. Ce délai contient donc l'attente au dépôt avant
+   qu'un livreur ne s'en saisisse — ce n'est PAS un jugement sur le livreur seul, et le libellé
+   à l'écran doit le dire. C'est en revanche exactement le délai que vit la cliente.
+   ============================================================================================ */
+
+// Heure de remise d'un colis, ou null si on ne la connaît pas.
+// Ordre de confiance : livre_at (posé par la base au passage à « livré ») puis, à défaut,
+// code_confirme_at (l'instant où la cliente a donné son code — donc le colis était bien là).
+// updated_at est délibérément ignoré : il bouge à CHAQUE modification de la ligne, y compris une
+// correction de montant faite trois jours plus tard. S'en servir donnerait des délais faux.
+function heureRemiseColis(c) {
+  if (!c) return null;
+  const brut = c.livre_at || c.code_confirme_at || null;
+  if (!brut) return null;
+  const t = new Date(brut).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+// Délai en heures entre l'enregistrement et la remise, ou null si l'un des deux manque.
+// Un délai négatif (horloges désynchronisées, saisie rétroactive) est traité comme inconnu :
+// mieux vaut un colis non mesuré qu'un chiffre absurde qui tire la médiane vers le bas.
+function delaiLivraisonHeures(c) {
+  const remise = heureRemiseColis(c);
+  if (remise === null || !c || !c.created_at) return null;
+  const depart = new Date(c.created_at).getTime();
+  if (!Number.isFinite(depart)) return null;
+  const heures = (remise - depart) / 3600000;
+  return heures >= 0 ? heures : null;
+}
+
+// Médiane d'une liste de nombres. Renvoie null pour une liste vide — pas 0.
+function medianeNombres(valeurs) {
+  const l = (valeurs || []).filter(v => typeof v === "number" && Number.isFinite(v)).sort((a, b) => a - b);
+  if (!l.length) return null;
+  const milieu = Math.floor(l.length / 2);
+  return l.length % 2 ? l[milieu] : (l[milieu - 1] + l[milieu]) / 2;
+}
+
+// Calcule les chiffres de chaque livreur à partir d'une liste de colis.
+// `livreurs` sert uniquement à donner un nom et à faire apparaître un livreur qui n'a aucun colis
+// sur la période — son absence du tableau serait ambiguë (rien fait ? ou pas dans la liste ?).
+function statistiquesParLivreur(colis, livreurs) {
+  const parId = new Map();
+  const nouveau = (id) => ({
+    livreur_id: id,
+    total: 0,
+    livres: 0,
+    nonLivres: 0,
+    retours: 0,
+    enCours: 0,
+    enAttente: 0,
+    duPremierCoup: 0,
+    tentatives: 0,
+    delais: [],
+  });
+
+  (livreurs || []).forEach(l => { if (l && l.id) parId.set(l.id, nouveau(l.id)); });
+
+  (colis || []).forEach(c => {
+    // Un colis sans livreur assigné n'est la performance de personne : on l'écarte plutôt que de
+    // l'imputer à un « inconnu » qui polluerait le tableau.
+    if (!c || !c.livreur_id) return;
+    if (!parId.has(c.livreur_id)) parId.set(c.livreur_id, nouveau(c.livreur_id));
+    const s = parId.get(c.livreur_id);
+    s.total++;
+    s.tentatives += Number(c.tentatives_livraison) || 0;
+    if (c.statut === "livre") {
+      s.livres++;
+      // « Du premier coup » = aucune tentative infructueuse enregistrée avant la remise.
+      if (!(Number(c.tentatives_livraison) > 0)) s.duPremierCoup++;
+      const d = delaiLivraisonHeures(c);
+      if (d !== null) s.delais.push(d);
+    } else if (c.statut === "non_livre") {
+      s.nonLivres++;
+    } else if (c.statut === "retour") {
+      s.retours++;
+    } else if (c.statut === "en_livraison" || c.statut === "recupere") {
+      s.enCours++;
+    } else if (c.statut === "en_attente") {
+      s.enAttente++;
+    }
+  });
+
+  return Array.from(parId.values()).map(s => {
+    // Le taux ne porte que sur les colis DONT LE SORT EST FIXÉ. Compter un colis encore en route
+    // comme un échec ferait chuter le taux d'un livreur simplement parce qu'il travaille encore.
+    const termines = s.livres + s.nonLivres + s.retours;
+    return {
+      livreur_id: s.livreur_id,
+      total: s.total,
+      livres: s.livres,
+      nonLivres: s.nonLivres,
+      retours: s.retours,
+      enCours: s.enCours,
+      enAttente: s.enAttente,
+      termines: termines,
+      tentatives: s.tentatives,
+      duPremierCoup: s.duPremierCoup,
+      tauxReussite: termines > 0 ? s.livres / termines : null,
+      tauxPremierCoup: s.livres > 0 ? s.duPremierCoup / s.livres : null,
+      delaiMedianHeures: medianeNombres(s.delais),
+      nbMesures: s.delais.length,
+    };
+  }).sort((a, b) =>
+    // D'abord le plus de colis livrés : c'est ce que l'équipe vient regarder en premier.
+    // À égalité, le plus actif ; puis l'identifiant, pour que deux affichages successifs
+    // du même tableau donnent exactement le même ordre.
+    (b.livres - a.livres) || (b.total - a.total) || String(a.livreur_id).localeCompare(String(b.livreur_id))
+  );
+}
+
+// Un pourcentage, ou « — » quand il n'y a rien à mesurer. Jamais « 0 % » par défaut.
+function tauxTexte(taux) {
+  if (taux === null || taux === undefined) return "—";
+  return Math.round(taux * 100) + " %";
+}
+
+// Une durée lisible par quelqu'un qui n'a pas envie de convertir des heures décimales.
+function delaiTexte(heures) {
+  if (heures === null || heures === undefined) return "—";
+  if (heures < 1) {
+    const minutes = Math.max(1, Math.round(heures * 60));
+    return minutes + " min";
+  }
+  // Au-delà d'une journée on bascule en jours : « 1 j 2 h » se comprend d'un coup d'œil,
+  // « 26 h » oblige à compter de tête.
+  if (heures < 24) {
+    const h = Math.floor(heures);
+    const m = Math.round((heures - h) * 60);
+    // 3 h 60 n'existe pas : l'arrondi des minutes doit remonter sur les heures.
+    if (m === 60) return (h + 1) + " h";
+    return m ? h + " h " + m + " min" : h + " h";
+  }
+  // Les heures restantes sont tronquées, pas arrondies : 47 h 30 doit s'écrire « 1 j 23 h ».
+  // Arrondir donnerait « 2 j », c'est-à-dire un délai annoncé plus long qu'il ne l'a été —
+  // et sur un tableau qui juge le travail de quelqu'un, l'erreur ne doit jamais aller
+  // dans le sens défavorable.
+  const j = Math.floor(heures / 24);
+  const reste = Math.floor(heures - j * 24);
+  return reste ? j + " j " + reste + " h" : j + " j";
+}
+
+// Phrase qui dit honnêtement sur quoi le délai repose. Affichée sous le tableau, pas en note de
+// bas de page : quelqu'un qui lit « 2 h 30 » doit voir tout de suite si c'est mesuré sur 3 colis.
+function couvertureMesureTexte(stats) {
+  const lignes = stats || [];
+  const livres = lignes.reduce((s, l) => s + l.livres, 0);
+  const mesures = lignes.reduce((s, l) => s + l.nbMesures, 0);
+  if (!livres) return "Aucun colis livré sur cette période.";
+  if (!mesures) {
+    return "Le délai n'est mesurable sur aucun des " + livres + " colis livrés : "
+      + "l'heure de remise n'est pas encore enregistrée. Elle le sera pour tous les colis livrés à partir de maintenant.";
+  }
+  if (mesures === livres) {
+    return "Délai mesuré sur la totalité des " + livres + " colis livrés.";
+  }
+  return "Délai mesuré sur " + mesures + " des " + livres + " colis livrés — "
+    + "les autres ont été remis avant que l'heure de remise ne soit enregistrée.";
+}
+
+// Ligne de synthèse tous livreurs confondus, pour donner un point de comparaison :
+// un taux de 78 % ne veut rien dire tant qu'on ne sait pas si la maison tourne à 95 % ou à 70 %.
+function totauxParLivreur(stats) {
+  const lignes = stats || [];
+  const somme = (f) => lignes.reduce((s, l) => s + f(l), 0);
+  const livres = somme(l => l.livres);
+  const termines = somme(l => l.termines);
+  return {
+    total: somme(l => l.total),
+    livres: livres,
+    nonLivres: somme(l => l.nonLivres),
+    retours: somme(l => l.retours),
+    enCours: somme(l => l.enCours),
+    termines: termines,
+    duPremierCoup: somme(l => l.duPremierCoup),
+    tauxReussite: termines > 0 ? livres / termines : null,
+    tauxPremierCoup: livres > 0 ? somme(l => l.duPremierCoup) / livres : null,
+    nbMesures: somme(l => l.nbMesures),
+  };
+}
+
+// Médiane maison, recalculée sur tous les colis d'un coup.
+// Attention au piège : on ne peut PAS faire la médiane des médianes des livreurs — ça ne donne
+// pas la médiane de l'ensemble. Il faut repartir des colis eux-mêmes.
+function delaiMedianGlobalHeures(colis) {
+  const delais = [];
+  (colis || []).forEach(c => {
+    if (!c || c.statut !== "livre" || !c.livreur_id) return;
+    const d = delaiLivraisonHeures(c);
+    if (d !== null) delais.push(d);
+  });
+  return medianeNombres(delais);
+}
+
 // formatMontant() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 // ---------- Montant d'un colis : article + livraison ----------

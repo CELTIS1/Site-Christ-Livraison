@@ -42,3 +42,6 @@ jobs:
 
       - name: Carnet d'adresses (proposer sans jamais écraser une saisie)
         run: node tests/carnet-adresses.test.mjs
+
+      - name: Chiffres par livreur (ne jamais afficher un chiffre qu'on ne sait pas calculer)
+        run: node tests/chiffres-par-livreur.test.mjs

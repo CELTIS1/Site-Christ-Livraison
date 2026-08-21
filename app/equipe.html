@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821carnet1">
+<link rel="stylesheet" href="style.css?v=20260821livreur1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -636,6 +636,7 @@
 <div class="tabs" style="margin-bottom:20px;">
 <div class="tab active" id="subtab-jour" onclick="showRapportSubTab('jour')">Vue par jour</div>
 <div class="tab" id="subtab-mois" onclick="showRapportSubTab('mois')">Vue par mois</div>
+<div class="tab" id="subtab-livreur" onclick="showRapportSubTab('livreur')">Par livreur</div>
 </div>
 <div id="rapport-jour">
 <div id="rapport-jour-content"><div class="empty-state">Chargement...</div></div>
@@ -646,6 +647,24 @@
 <select id="mois-select"></select>
 </div>
 <div id="rapport-mois-content"><div class="empty-state">Chargement...</div></div>
+</div>
+<div id="rapport-livreur" class="hidden">
+<div class="field-row">
+<div class="field">
+<label>Du</label>
+<input type="date" id="perf-date-debut">
+</div>
+<div class="field">
+<label>Au</label>
+<input type="date" id="perf-date-fin">
+</div>
+</div>
+<div class="compta-quick-dates">
+<button type="button" class="btn btn-outline btn-sm" id="btn-perf-7j">7 derniers jours</button>
+<button type="button" class="btn btn-outline btn-sm" id="btn-perf-30j">30 derniers jours</button>
+<button type="button" class="btn btn-outline btn-sm" id="btn-perf-tout">Depuis le début</button>
+</div>
+<div id="rapport-livreur-content"><div class="empty-state">Chargement...</div></div>
 </div>
 </div>
 
@@ -897,8 +916,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821carnet1"></script>
-<script src="config.js?v=20260821carnet1"></script>
+<script src="clt-common.js?v=20260821livreur1"></script>
+<script src="config.js?v=20260821livreur1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260819rech1"></script>
 <script>
@@ -4395,6 +4414,144 @@ box.innerHTML = `
 `;
 }
 
+/* ============================================================================================
+   RAPPORT « PAR LIVREUR »
+
+   Ce tableau répond à : qui a livré combien, en combien de temps, avec quel taux d'échec.
+   Tous les calculs sont dans config.js (statistiquesParLivreur & co.) et n'ont besoin d'aucun
+   accès au navigateur — c'est ce qui permet de les vérifier automatiquement à chaque publication.
+   Ici, on ne fait que choisir la période, appeler ces calculs, et habiller le résultat.
+
+   Le tableau ne classe pas les gens : il montre des chiffres, avec la ligne « Ensemble » juste
+   en dessous pour donner l'échelle. Un taux de 82 % ne veut rien dire tant qu'on ne sait pas si
+   la maison tourne à 95 % ou à 80 %.
+   ============================================================================================ */
+
+// Comme pour la comptabilité : dès qu'une période est choisie, on interroge la base plutôt que de
+// se contenter de `allColis` (qui ne contient que la première page tant qu'on n'a pas cliqué sur
+// « Charger plus »). Sinon un rapport « depuis le début » afficherait un mois d'activité.
+async function perfColisPeriode(){
+const debut = document.getElementById('perf-date-debut')?.value || '';
+const fin = document.getElementById('perf-date-fin')?.value || '';
+if (!debut && !fin) {
+// « Depuis le début » : on va vraiment chercher tout l'historique.
+const { data, error } = await supabaseClient.from('colis').select('*').order('created_at', { ascending: false });
+if (error) { console.error('Rapport par livreur :', error); return null; }
+return data || [];
+}
+let query = supabaseClient.from('colis').select('*').order('created_at', { ascending: false });
+if (debut) query = query.gte('created_at', debut + 'T00:00:00');
+if (fin) query = query.lte('created_at', fin + 'T23:59:59');
+const { data, error } = await query;
+if (error) { console.error('Rapport par livreur :', error); return null; }
+return data || [];
+}
+
+function perfPeriodeTexte(){
+const debut = document.getElementById('perf-date-debut')?.value || '';
+const fin = document.getElementById('perf-date-fin')?.value || '';
+const jour = (v) => new Date(v + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+if (debut && fin) return debut === fin ? ('Le ' + jour(debut)) : ('Du ' + jour(debut) + ' au ' + jour(fin));
+if (debut) return 'À partir du ' + jour(debut);
+if (fin) return "Jusqu'au " + jour(fin);
+return 'Depuis le début';
+}
+
+// Une cellule de chiffre qui vaut zéro est affichée en gris pâle : sur une ligne de dix nombres,
+// l'œil doit accrocher ce qui existe, pas ce qui est vide.
+function perfCell(label, valeur, options){
+const o = options || {};
+const vide = (valeur === 0 || valeur === '—');
+const style = vide ? ' style="color:var(--muted);"' : (o.style ? ' style="' + o.style + '"' : '');
+return `<td data-label="${label}"${style}>${o.fort && !vide ? '<strong>' + valeur + '</strong>' : valeur}</td>`;
+}
+
+async function renderRapportLivreur(){
+const box = document.getElementById('rapport-livreur-content');
+if (!box) return;
+box.innerHTML = `<div class="empty-state">Calcul en cours…</div>`;
+
+const colis = await perfColisPeriode();
+if (colis === null) {
+// Un échec réseau ne doit surtout pas ressembler à « personne n'a rien livré ».
+box.innerHTML = `<div class="empty-state">Les chiffres n'ont pas pu être chargés. Vérifiez la connexion, puis rechoisissez la période.</div>`;
+return;
+}
+
+const stats = statistiquesParLivreur(colis, livreurs);
+const avecActivite = stats.filter(s => s.total > 0);
+if (!avecActivite.length) {
+box.innerHTML = `<div class="page-sub" style="margin-bottom:10px;">${escapeHTML(perfPeriodeTexte())}</div>
+<div class="empty-state">Aucun colis confié à un livreur sur cette période.</div>`;
+return;
+}
+
+const totaux = totauxParLivreur(avecActivite);
+const medianeMaison = delaiMedianGlobalHeures(colis);
+
+const ligne = (s, nom, gras) => `<tr${gras ? ' style="background:var(--grey-bg);"' : ''}>
+<td data-label="Livreur">${gras ? '<strong>' + nom + '</strong>' : nom}</td>
+${perfCell('Livrés', s.livres, { fort: true })}
+${perfCell('Non livrés', s.nonLivres)}
+${perfCell('Retours', s.retours)}
+${perfCell('En cours', s.enCours)}
+${perfCell('Taux de réussite', tauxTexte(s.tauxReussite))}
+${perfCell('Du premier coup', tauxTexte(s.tauxPremierCoup))}
+${perfCell('Délai habituel', delaiTexte(s.__delai))}
+</tr>`;
+
+const corps = avecActivite.map(s => {
+s.__delai = s.delaiMedianHeures;
+return ligne(s, collecteLivreurLabel(s.livreur_id) || 'Livreur retiré de la liste', false);
+}).join('');
+
+totaux.__delai = medianeMaison;
+
+// Les livreurs sans aucun colis sur la période sont nommés à part plutôt que d'être absents :
+// une ligne manquante laisse penser à un oubli, une phrase explicite ne laisse aucun doute.
+const inactifs = stats.filter(s => s.total === 0)
+.map(s => collecteLivreurLabel(s.livreur_id))
+.filter(Boolean);
+
+box.innerHTML = `
+<div class="page-sub" style="margin-bottom:12px;">${escapeHTML(perfPeriodeTexte())} · ${totaux.total} colis confiés à ${avecActivite.length} livreur(s).</div>
+<div class="recap-table-wrap">
+<table class="recap-table recap-table-cards">
+<thead><tr>
+<th>Livreur</th><th>Livrés</th><th>Non livrés</th><th>Retours</th><th>En cours</th>
+<th>Taux de réussite</th><th>Du premier coup</th><th>Délai habituel</th>
+</tr></thead>
+<tbody>${corps}${ligne(totaux, 'Ensemble', true)}</tbody>
+</table>
+</div>
+<div class="page-sub" style="margin-top:12px; line-height:1.6;">
+<div><strong>Taux de réussite</strong> : colis livrés rapportés aux colis dont le sort est fixé (livrés, non livrés, retours). Un colis encore en route n'est compté nulle part — il n'est ni une réussite ni un échec.</div>
+<div style="margin-top:4px;"><strong>Du premier coup</strong> : part des colis livrés sans aucun passage infructueux enregistré.</div>
+<div style="margin-top:4px;"><strong>Délai habituel</strong> : temps écoulé entre l'enregistrement du colis et sa remise, pour le colis du milieu (la moitié plus vite, la moitié moins vite). Ce délai inclut l'attente au dépôt avant qu'un livreur ne prenne le colis — ce n'est donc pas à lui seul un jugement sur le livreur.</div>
+<div style="margin-top:4px;">${escapeHTML(couvertureMesureTexte(avecActivite))}</div>
+${inactifs.length ? `<div style="margin-top:4px;">Sans aucun colis sur cette période : ${inactifs.join(', ')}.</div>` : ''}
+</div>
+`;
+}
+
+// Boutons de période. Ils remplissent les deux dates puis relancent le calcul, exactement comme
+// si l'utilisateur avait choisi les dates à la main — un seul chemin de code à vérifier.
+function perfSetPeriode(joursEnArriere){
+const debut = document.getElementById('perf-date-debut');
+const fin = document.getElementById('perf-date-fin');
+if (!debut || !fin) return;
+if (joursEnArriere === null) {
+debut.value = '';
+fin.value = '';
+} else {
+const d = new Date();
+fin.value = todayLocalISODate();
+d.setDate(d.getDate() - (joursEnArriere - 1));
+debut.value = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+}
+renderRapportLivreur();
+}
+
 // Si une période (début et/ou fin) est choisie, on interroge directement la base de données pour
 // cette période au lieu de filtrer uniquement les colis déjà chargés en mémoire (`allColis`) :
 // tant que l'historique complet n'a pas été rapatrié via "Charger plus" (voir COLIS_PAGE_SIZE),
@@ -4950,9 +5107,37 @@ bar.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset
 function showRapportSubTab(which){
 document.getElementById('subtab-jour').classList.toggle('active', which === 'jour');
 document.getElementById('subtab-mois').classList.toggle('active', which === 'mois');
+document.getElementById('subtab-livreur').classList.toggle('active', which === 'livreur');
 document.getElementById('rapport-jour').classList.toggle('hidden', which !== 'jour');
 document.getElementById('rapport-mois').classList.toggle('hidden', which !== 'mois');
+document.getElementById('rapport-livreur').classList.toggle('hidden', which !== 'livreur');
+// Le rapport par livreur interroge la base : on ne le calcule qu'à l'ouverture de l'onglet,
+// et pas au chargement de la page — sinon chaque visite paierait une requête que personne
+// ne regarde. Il se recalcule ensuite à chaque retour sur l'onglet, donc jamais périmé.
+if (which === 'livreur') renderRapportLivreur();
 }
+
+// Période par défaut : les 30 derniers jours. « Depuis le début » reste à un clic, mais ouvrir
+// l'onglet ne doit pas rapatrier tout l'historique sans qu'on l'ait demandé.
+(function initPerfControls(){
+const debut = document.getElementById('perf-date-debut');
+const fin = document.getElementById('perf-date-fin');
+if (debut && fin && !debut.value && !fin.value) {
+const d = new Date();
+fin.value = todayLocalISODate();
+d.setDate(d.getDate() - 29);
+debut.value = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+}
+if (debut) debut.addEventListener('change', renderRapportLivreur);
+if (fin) fin.addEventListener('change', renderRapportLivreur);
+const brancher = (id, jours) => {
+const b = document.getElementById(id);
+if (b) b.addEventListener('click', () => perfSetPeriode(jours));
+};
+brancher('btn-perf-7j', 7);
+brancher('btn-perf-30j', 30);
+brancher('btn-perf-tout', null);
+})();
 
 document.getElementById('btn-compta-today').addEventListener('click', () => {
 const today = todayLocalISODate();
