@@ -114,9 +114,14 @@ function contexteLivreur(o){
     renderAll(){ ctx.__rendus = (ctx.__rendus || 0) + 1; },
     friendlyErrorMessage: m => String(m),
     alert: m => { ctx.__alertes = (ctx.__alertes || []).concat(String(m)); },
-    // Réponses préprogrammées aux boîtes de dialogue du code de confirmation.
-    cltPrompt: async () => { ctx.__promptsAffiches = (ctx.__promptsAffiches || 0) + 1; return o.codeSaisi === undefined ? null : o.codeSaisi; },
-    cltConfirm: async () => { ctx.__refusAffiches = (ctx.__refusAffiches || 0) + 1; return true; },
+    // Les deux boîtes de dialogue restent branchées et comptées, alors que plus rien ne les
+    // appelle depuis le retrait du code de confirmation. C'est justement le point : partir de
+    // zéro et non de `undefined` permet d'écrire « aucune question n'a été posée » comme une
+    // vérification, et non comme un champ qu'on aurait oublié de remplir.
+    __promptsAffiches: 0,
+    __refusAffiches: 0,
+    cltPrompt: async () => { ctx.__promptsAffiches++; return o.codeSaisi === undefined ? null : o.codeSaisi; },
+    cltConfirm: async () => { ctx.__refusAffiches++; return true; },
     __journal: journal, __toasts: toasts, __file: file
   };
   vm.createContext(ctx);
@@ -232,44 +237,59 @@ async function equipeBoutonsProposes(){
     !enAttente.includes('data-statut="non_livre"'), enAttente);
 }
 
-async function livreurCodeFaux(){
-  console.log('\n8. Livreur — un code de confirmation erroné n’enregistre rien');
+/* Les scénarios 8, 9 et 10 vérifiaient le code de confirmation à quatre chiffres : un code faux
+   n'enregistrait rien, un code juste validait la livraison, et l'annulation ne le redemandait
+   pas. Ils ont été réécrits le 21 août 2026, jour où le code a été retiré de toute
+   l'application.
+
+   Ils n'ont pas été supprimés, et c'est important : le vrai risque, en retirant un contrôle,
+   n'est pas qu'il manque, c'est qu'il reste à moitié. Un colis enregistré AVANT ce jour porte
+   toujours un `code_confirmation` en base. Si la vérification survivait quelque part — dans un
+   chemin d'écriture oublié, dans un repli, dans un test qu'on n'aurait pas relu — elle ne se
+   déclencherait que sur ces colis-là. Autrement dit : sur les colis les plus anciens, ceux qu'on
+   met le plus longtemps à livrer, et personne ne comprendrait pourquoi seuls ceux-là bloquent.
+   Ces trois scénarios rejouent donc exactement les mêmes situations, avec le même colis portant
+   le même code, et contrôlent qu'il ne se passe plus rien. */
+
+async function livreurAncienCodeNeBloquePlus(){
+  console.log('\n8. Livreur — un colis portant encore un code en base se livre sans rien demander');
   const ctx = contexteLivreur({
     codeSaisi: '1111',
     colis: [{ id: 'C1', numero: 'CLT-001', statut: 'en_livraison', code_confirmation: 4321, code_confirme_at: null, observation: null, tentatives_livraison: 0 }]
   });
   const res = await ctx.appliquerStatutColis({ id: 'C1', statut: 'livre' });
-  verifier('le code est demandé', ctx.__promptsAffiches === 1);
-  verifier("l'erreur est expliquée au livreur", ctx.__refusAffiches === 1);
-  verifier('rien n’est envoyé à la base', ctx.__journal.length === 0);
-  verifier('le raccourci se déclare en échec', res.ok === false);
-  verifier("le colis reste « en livraison »", ctx.allColis[0].statut === 'en_livraison');
+  verifier('aucun code n’est demandé', ctx.__promptsAffiches === 0, String(ctx.__promptsAffiches));
+  verifier('aucun refus n’est affiché', ctx.__refusAffiches === 0, String(ctx.__refusAffiches));
+  verifier('la livraison est bien envoyée à la base', ctx.__journal.length === 1);
+  verifier('le raccourci aboutit', res.ok === true);
+  verifier('le colis passe à « livré »', ctx.allColis[0].statut === 'livre', ctx.allColis[0].statut);
 }
 
-async function livreurCodeJuste(){
-  console.log('\n9. Livreur — le bon code valide la livraison en un appui');
+async function livreurLivraisonEnUnAppui(){
+  console.log('\n9. Livreur — la livraison se fait en un seul appui');
   const ctx = contexteLivreur({
-    codeSaisi: '4321',
     colis: [{ id: 'C1', numero: 'CLT-001', statut: 'en_livraison', code_confirmation: 4321, code_confirme_at: null, observation: 'Portail bleu', tentatives_livraison: 0 }]
   });
   const res = await ctx.appliquerStatutColis({ id: 'C1', statut: 'livre' });
   verifier('le changement aboutit', res.ok === true);
   verifier('le statut envoyé est « livré »', ctx.__journal[0].statut === 'livre');
-  verifier("l'horodatage de validation du code est enregistré", !!ctx.__journal[0].code_confirme_at);
+  // Plus aucun horodatage de validation n'est écrit : il n'y a plus de validation. Ceux déjà en
+  // base restent lus par heureRemiseColis() pour les statistiques, mais on n'en produit plus.
+  verifier('plus aucun horodatage de code n’est écrit',
+    !('code_confirme_at' in ctx.__journal[0]), JSON.stringify(ctx.__journal[0]));
   verifier("l'observation déjà saisie n'est pas effacée",
     ctx.__journal[0].observation === 'Portail bleu', JSON.stringify(ctx.__journal[0].observation));
 }
 
-async function livreurAnnulationSansRedemanderCode(){
-  console.log('\n10. Livreur — annuler ne redemande pas le code au destinataire');
+async function livreurAnnulationSansRienRedemander(){
+  console.log('\n10. Livreur — annuler ne redemande rien au destinataire');
   const ctx = contexteLivreur({
-    codeSaisi: '4321',
     colis: [{ id: 'C1', numero: 'CLT-001', statut: 'en_livraison', code_confirmation: 4321, code_confirme_at: null, observation: null, tentatives_livraison: 0 }]
   });
   const res = await ctx.appliquerStatutColis({ id: 'C1', statut: 'livre' });
-  const promptsAvant = ctx.__promptsAffiches;
   await ctx.annulerChangementStatut('C1', res);
-  verifier('le code n’est pas redemandé', ctx.__promptsAffiches === promptsAvant, String(ctx.__promptsAffiches));
+  verifier('aucune question n’est posée, ni à l’aller ni au retour',
+    ctx.__promptsAffiches === 0, String(ctx.__promptsAffiches));
   verifier("le colis revient à « en livraison »", ctx.allColis[0].statut === 'en_livraison', ctx.allColis[0].statut);
 }
 
@@ -304,6 +324,13 @@ async function livreurMemeCheminQueEnregistrer(){
   verifier("appliquerStatutColis est le seul point d'écriture d'un statut", appels >= 4, String(appels));
   verifier("le bouton « Enregistrer » ne réécrit plus sa propre logique de statut",
     !/btn-save[\s\S]{0,900}code_confirmation/.test(source));
+  // Contrôle de non-retour : plus aucune ligne exécutable de cet écran ne doit demander ni
+  // comparer un code. On ignore les commentaires, qui eux racontent volontairement l'histoire du
+  // retrait — c'est leur travail, et les effacer ferait perdre la raison de la décision.
+  const sansCommentaires = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  verifier("plus aucun code de confirmation n'est demandé au livreur",
+    !/code_confirmation|sansCodeConfirmation|bloquesCode/.test(sansCommentaires),
+    'une trace exécutable subsiste');
   const boutonsDansLaLigne = source.includes('${actionsRapidesHTML(c)}');
   verifier('les boutons rapides sont bien posés dans la ligne du colis', boutonsDansLaLigne);
 }
@@ -312,7 +339,7 @@ async function livreurMemeCheminQueEnregistrer(){
 console.log('Contrôle des actions rapides (un seul appui pour faire avancer un colis)');
 for (const s of [equipeUnAppuiLivre, equipeAnnulation, equipeTentatives, equipeCoupureReseau,
                  equipeVraieErreur, equipeColonneAbsente, equipeBoutonsProposes,
-                 livreurCodeFaux, livreurCodeJuste, livreurAnnulationSansRedemanderCode,
+                 livreurAncienCodeNeBloquePlus, livreurLivraisonEnUnAppui, livreurAnnulationSansRienRedemander,
                  livreurObservationPreservee, livreurHorsConnexion, livreurMemeCheminQueEnregistrer]) {
   try { await s(); }
   catch (e) { echoues++; console.log('  ❌ ' + s.name + ' a planté → ' + (e && e.stack || e)); }

@@ -1070,9 +1070,8 @@ function brancherTrancheColis(list, surSuite) {
    RÈGLE QUI GOUVERNE TOUT CE QUI SUIT : une action en lot doit offrir EXACTEMENT les mêmes
    garanties que le geste unitaire du même écran, jamais moins. Traiter vite ne doit jamais
    servir de porte dérobée pour contourner un contrôle. Concrètement :
-     • côté livreur, le geste unitaire exige le code de confirmation du destinataire avant
-       de marquer « Livré » — donc les colis qui attendent leur code sont ÉCARTÉS du lot et
-       nommément signalés, au lieu d'être passés en douce ;
+     • un colis déjà au statut demandé est ÉCARTÉ du lot plutôt que réécrit : le réécrire ne
+       changerait rien en base mais renverrait au client une notification de plus, pour rien ;
      • le compteur de tentatives de livraison s'incrémente colis par colis, comme à l'unité,
        et pas d'une valeur commune qui serait fausse pour la moitié du lot ;
      • ce qui échoue est dit, avec son nombre. Un lot n'est jamais annoncé « réussi » en bloc.
@@ -1095,27 +1094,29 @@ function payloadLotColis(c, statut) {
   return p;
 }
 
-// Trie une sélection en trois tas avant d'agir, pour que l'interface puisse dire la vérité
+// Trie une sélection en deux tas avant d'agir, pour que l'interface puisse dire la vérité
 // AVANT d'écrire quoi que ce soit :
 //   • eligibles     : ceux qu'on va réellement changer ;
-//   • bloquesCode   : ceux qui attendent le code à 4 chiffres du destinataire (anti-fraude).
-//                     `exigerCode` vaut true sur l'écran du livreur, où le geste unitaire
-//                     l'exige aussi ; il vaut false côté équipe, où le geste unitaire ne le
-//                     demande pas — la règle est de coller au geste unitaire de l'écran, pas
-//                     d'inventer un contrôle ici ;
 //   • dejaAuStatut  : ceux qui y sont déjà. Les réécrire ne ferait que du bruit (et une
 //                     notification de plus au client pour rien).
-function repartirColisPourLot(colis, statut, exigerCode) {
-  const eligibles = [], bloquesCode = [], dejaAuStatut = [];
+//
+// Il y avait ici un troisième tas, `bloquesCode` : les colis qui attendaient le code à quatre
+// chiffres du destinataire. Il a disparu le 21 août 2026 avec le code lui-même. La raison n'est
+// pas qu'il gênait, c'est qu'il ne protégeait rien : le code devait être généré à la saisie puis
+// transmis au destinataire par la vendeuse elle-même, ce qui n'arrivait presque jamais. Il
+// restait donc vide sur la quasi-totalité des colis — et les rares fois où il ne l'était pas,
+// c'est le livreur qui se retrouvait bloqué devant la porte, face à quelqu'un qui n'avait jamais
+// reçu de code. Un contrôle qui ne s'applique pas au cas normal et qui pénalise le cas
+// exceptionnel n'est pas un garde-fou, c'est un piège. Les valeurs déjà en base sont conservées
+// telles quelles ; on a simplement cessé de les lire.
+function repartirColisPourLot(colis, statut) {
+  const eligibles = [], dejaAuStatut = [];
   (colis || []).forEach(c => {
     if (!c) return;
     if (c.statut === statut) { dejaAuStatut.push(c); return; }
-    if (exigerCode && statut === "livre" && c.code_confirmation && !c.code_confirme_at) {
-      bloquesCode.push(c); return;
-    }
     eligibles.push(c);
   });
-  return { eligibles: eligibles, bloquesCode: bloquesCode, dejaAuStatut: dejaAuStatut };
+  return { eligibles: eligibles, dejaAuStatut: dejaAuStatut };
 }
 
 // Regroupe les colis qui doivent recevoir EXACTEMENT les mêmes colonnes, pour n'envoyer qu'une
@@ -1827,6 +1828,12 @@ function ligneLotEstVide(ligne) {
 // personne qui saisit connaît déjà la destination écrite sur l'étiquette et la commune est
 // déduite plus tard. Un second contrôle écrit à part aurait fini par diverger de celui-ci ;
 // une option sur la MÊME fonction reste, elle, couverte par les mêmes tests.
+//
+// `telephoneObligatoire` est une option elle aussi, alors qu'elle est aujourd'hui posée des deux
+// côtés. On aurait pu l'écrire en dur — c'eût été plus court d'une ligne. Mais cette fonction est
+// aussi celle qui contrôlera demain une reprise de colis anciens ou un import, où le numéro
+// manque par nature et où le refuser bloquerait tout. Laisser l'appelant le dire, c'est garder
+// la règle à un seul endroit tout en laissant chaque écran assumer la sienne.
 function verifierLotAvantEnvoi(lignes, options) {
   const opt = options || {};
   const pretes = [];
@@ -1845,7 +1852,19 @@ function verifierLotAvantEnvoi(lignes, options) {
       problemes.push({ rang: rang, motif: "il manque le nom du destinataire" });
       return;
     }
+    // Le numéro du destinataire est exigé dans les DEUX espaces depuis le 21 août 2026. Il a
+    // longtemps été facultatif ; l'expérience du terrain a tranché autrement. Un colis sans
+    // numéro ne se livre pas : le livreur arrive dans une commune, ne trouve pas la porte, et
+    // n'a personne à appeler. Il repart avec, le colis revient, et il faut retrouver la vendeuse
+    // pour lui demander le numéro qu'elle avait sous les yeux au moment de la saisie. Exiger
+    // dix chiffres coûte cinq secondes à un moment où l'information est là ; ne pas les exiger
+    // coûte une tournée. C'est la seule colonne dont l'absence rend le colis intraitable, et
+    // c'est pour ça qu'elle est la seule à être obligatoire des deux côtés.
     const telBrut = String(ligne.telephone || "").trim();
+    if (opt.telephoneObligatoire && !telBrut) {
+      problemes.push({ rang: rang, motif: "il manque le numéro du destinataire" });
+      return;
+    }
     if (telBrut && !numeroIvoirien(cleTelCarnet(telBrut))) {
       problemes.push({ rang: rang, motif: "le numéro du destinataire n'est pas un numéro ivoirien à 10 chiffres" });
       return;
@@ -1853,14 +1872,6 @@ function verifierLotAvantEnvoi(lignes, options) {
     if (!isValidMontant(ligne.montantArticle === "" ? null : ligne.montantArticle)
      || !isValidMontant(ligne.montantLivraison === "" ? null : ligne.montantLivraison)) {
       problemes.push({ rang: rang, motif: "les montants doivent être des nombres positifs" });
-      return;
-    }
-    // Le code de confirmation est facultatif, mais un code à trois chiffres ne l'est pas :
-    // le livreur en saisira quatre, la remise sera refusée, et le colis reviendra. Contrôlé
-    // sans option parce qu'un code mal formé est faux partout, jamais seulement ici.
-    const code = String(ligne.codeConfirmation || "").trim();
-    if (code && !/^\d{4}$/.test(code)) {
-      problemes.push({ rang: rang, motif: "le code de confirmation doit faire exactement 4 chiffres, ou rester vide" });
       return;
     }
     pretes.push(ligne);
@@ -1943,7 +1954,12 @@ function resumeEnvoiLotTexte(bilan) {
 
 // Heure de remise d'un colis, ou null si on ne la connaît pas.
 // Ordre de confiance : livre_at (posé par la base au passage à « livré ») puis, à défaut,
-// code_confirme_at (l'instant où la cliente a donné son code — donc le colis était bien là).
+// code_confirme_at (l'instant où la cliente avait donné son code — donc le colis était bien là).
+// Ce second recours reste EN PLACE alors que le code de confirmation a été retiré le 21 août
+// 2026 : il ne sert plus à contrôler quoi que ce soit, il ne fait que lire des horodatages déjà
+// écrits, sur des colis livrés avant cette date. Les effacer par souci de propreté aurait
+// raccourci l'historique des délais sans rien gagner ; on garde les faits, on a seulement cessé
+// d'en produire de nouveaux.
 // updated_at est délibérément ignoré : il bouge à CHAQUE modification de la ligne, y compris une
 // correction de montant faite trois jours plus tard. S'en servir donnerait des délais faux.
 function heureRemiseColis(c) {

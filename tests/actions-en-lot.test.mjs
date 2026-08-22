@@ -98,37 +98,52 @@ function faireClient(options = {}){
   return client;
 }
 
-/* ---------- 1. Le code de confirmation ne se contourne pas ---------- */
-titre('Le contrôle anti-fraude survit au traitement en lot');
+/* ---------- 1. Le lot ne traite que ce qu'il y a à traiter ---------- */
+// Cette section contrôlait autrefois que le traitement en lot n'était pas une porte dérobée pour
+// contourner le code de confirmation à quatre chiffres. Le code a été retiré de toute
+// l'application le 21 août 2026 : il n'était pas transmis aux destinataires, donc il ne bloquait
+// jamais un fraudeur, seulement le livreur qui se présentait à la bonne porte.
+//
+// La règle de fond, elle, n'a pas changé d'un mot : UN LOT FAIT EXACTEMENT CE QUE FAIT LE GESTE
+// UNITAIRE DU MÊME ÉCRAN, jamais plus, jamais moins. C'est elle qu'on vérifie maintenant sous sa
+// forme restante — un colis déjà au bon statut est écarté au lieu d'être réécrit. Ce n'est pas de
+// la coquetterie : réécrire ne change rien en base mais renvoie au client une notification de
+// plus, et le client ne fait pas la différence entre « on te réécrit » et « ton colis a bougé ».
+titre('Le tri en lot écarte ce qui n\'a pas à être réécrit');
 {
   const selection = [
     { id: 'a', statut: 'en_livraison' },
-    { id: 'b', statut: 'en_livraison', code_confirmation: '4821' },              // attend son code
-    { id: 'c', statut: 'en_livraison', code_confirmation: '9033', code_confirme_at: '2026-08-21T10:00:00Z' }, // déjà validé
-    { id: 'd', statut: 'livre' },                                                // déjà livré
+    { id: 'b', statut: 'en_livraison' },
+    { id: 'c', statut: 'en_livraison' },
+    { id: 'd', statut: 'livre' },   // déjà au statut demandé
   ];
-  const tri = repartirColisPourLot(selection, 'livre', true);
-  verifier('le colis qui attend son code est écarté du lot',
-    tri.bloquesCode.length === 1 && tri.bloquesCode[0].id === 'b',
-    JSON.stringify(tri.bloquesCode.map(c => c.id)));
-  verifier('un code déjà validé ne bloque plus rien',
-    tri.eligibles.some(c => c.id === 'c'), JSON.stringify(tri.eligibles.map(c => c.id)));
+  const tri = repartirColisPourLot(selection, 'livre');
   verifier('un colis déjà livré n\'est pas réécrit pour rien',
     tri.dejaAuStatut.length === 1 && tri.dejaAuStatut[0].id === 'd');
-  verifier('les colis traitables sont exactement a et c',
-    tri.eligibles.map(c => c.id).join(',') === 'a,c', tri.eligibles.map(c => c.id).join(','));
+  verifier('tous les autres sont traitables',
+    tri.eligibles.map(c => c.id).join(',') === 'a,b,c', tri.eligibles.map(c => c.id).join(','));
 
-  // Côté équipe, le geste unitaire n'exige PAS le code : le lot ne doit donc pas l'exiger non
-  // plus. La règle est de coller au geste unitaire de l'écran, ni plus permissif, ni plus strict.
-  const triEquipe = repartirColisPourLot(selection, 'livre', false);
-  verifier('côté équipe (pas de code exigé à l\'unité), rien n\'est bloqué par le code',
-    triEquipe.bloquesCode.length === 0 && triEquipe.eligibles.length === 3,
-    `${triEquipe.bloquesCode.length} bloqué(s), ${triEquipe.eligibles.length} traitable(s)`);
+  // Un code encore présent en base sur d'anciens colis ne doit plus rien bloquer : c'était le
+  // seul cas où l'ancienne règle se déclenchait, et c'est précisément celui qui immobilisait des
+  // colis livrables. On le rejoue ici pour que le retrait soit constaté, pas supposé.
+  const anciens = [
+    { id: 'e', statut: 'en_livraison', code_confirmation: '4821' },
+    { id: 'f', statut: 'en_livraison', code_confirmation: '9033', code_confirme_at: '2026-08-21T10:00:00Z' },
+  ];
+  const triAnciens = repartirColisPourLot(anciens, 'livre');
+  verifier('un colis portant encore un code en base passe sans être retenu',
+    triAnciens.eligibles.length === 2, JSON.stringify(triAnciens.eligibles.map(c => c.id)));
+  verifier('le tri ne renvoie plus de tas « bloqués par le code »',
+    triAnciens.bloquesCode === undefined);
 
-  // Le code ne concerne que « Livré ». Marquer « Non livré » n'a pas à l'exiger.
-  const triNonLivre = repartirColisPourLot(selection, 'non_livre', true);
-  verifier('le code n\'est demandé que pour « Livré », pas pour « Non livré »',
-    triNonLivre.bloquesCode.length === 0, JSON.stringify(triNonLivre.bloquesCode.map(c => c.id)));
+  // Le même tri, quel que soit le statut visé : plus aucune règle particulière à « Livré ».
+  verifier('« Non livré » se comporte comme « Livré »',
+    repartirColisPourLot(anciens, 'non_livre').eligibles.length === 2);
+
+  // Et la règle a bien quitté la source, pas seulement le résultat : sans cette lecture, on
+  // pourrait la remettre derrière un paramètre optionnel sans qu'aucun essai ne s'en aperçoive.
+  verifier('la source du tri ne mentionne plus le code de confirmation',
+    !/code_confirmation/.test(bloc('repartirColisPourLot')));
 }
 
 /* ---------- 2. Le compteur de tentatives reste juste, colis par colis ---------- */
@@ -345,9 +360,9 @@ titre('La sélection survit aux redessins de la liste');
 // réelle, on veut le savoir avant la publication — c'est exactement le genre d'oubli qui fait
 // agir un bouton sur des colis que personne n'a sous les yeux.
 titre('Les écrans qui proposent la sélection multiple respectent les garde-fous');
-for (const [fichier, vider, exigeCode] of [
-  ['livreur.html', 'viderSelectionMes', true],
-  ['equipe.html', 'eqViderSelection', false],
+for (const [fichier, vider] of [
+  ['livreur.html', 'viderSelectionMes'],
+  ['equipe.html', 'eqViderSelection'],
 ]) {
   const src = fs.readFileSync(path.join(APP, fichier), 'utf8');
   const appelsVider = (src.match(new RegExp(vider + '\\(\\)', 'g')) || []).length;
@@ -359,9 +374,14 @@ for (const [fichier, vider, exigeCode] of [
     /forEach\(id => \{ if \(!filtered\.some/.test(src), 'recalage introuvable');
   verifier(`${fichier} : le lot refuse de s'exécuter hors réseau plutôt que de faire semblant`,
     /navigator\.onLine[\s\S]{0,400}actions en lot ne sont pas possibles/.test(src), 'garde-fou hors réseau introuvable');
-  verifier(`${fichier} : le tri anti-fraude est appelé avec le bon réglage`,
-    new RegExp('repartirColisPourLot\\([^)]*, ' + (exigeCode ? 'true' : 'false') + '\\)').test(src),
-    `attendu exigerCode=${exigeCode}`);
+  // Les deux écrans passaient ici un troisième argument, true ou false, pour dire s'ils exigeaient
+  // le code de confirmation. Le code retiré, ce réglage a disparu — et on contrôle qu'il n'est
+  // revenu ni d'un côté ni de l'autre : un seul des deux écrans qui le repasserait suffirait à
+  // recréer la divergence de comportement qu'on vient de supprimer.
+  verifier(`${fichier} : le tri est appelé sans réglage de code, comme la fonction l'attend`,
+    /repartirColisPourLot\((?:choisis|[A-Za-z_$][\w$]*), statut\)/.test(src)
+    && !/repartirColisPourLot\([^)]*,[^)]*,/.test(src),
+    'un troisième argument est réapparu');
   verifier(`${fichier} : l'état d'avant est photographié pour permettre l'annulation`,
     /tentatives_livraison: \(c\.tentatives_livraison === undefined/.test(src), 'photographie introuvable');
   verifier(`${fichier} : seuls les colis réellement enregistrés changent à l'écran`,

@@ -3,7 +3,8 @@
    Ajouté le 2026-08-14.
    - Applique data-theme="dark" sur <html> selon le choix mémorisé,
      sinon selon la préférence du système.
-   - Injecte un bouton flottant (en bas à gauche) pour basculer.
+   - Pose le bouton de bascule DANS la barre du haut quand la page en a une,
+     et seulement à défaut en bouton flottant (voir buildButton).
    - Mémorise le choix dans localStorage ("clt-theme").
    À inclure sur chaque page de l'application :  <script src="theme.js"></script>
    ===================================================================== */
@@ -42,18 +43,52 @@
   // Application immédiate pour limiter le clignotement au chargement.
   apply(resolved());
 
+  // OÙ SE POSE LE BOUTON — révisé le 21 août 2026
+  // ---------------------------------------------------------------------
+  // Il flottait en bas à droite sur téléphone, remonté au-dessus de la barre
+  // d'onglets. Or le bouton « remonter en haut » se pose exactement au même
+  // endroit, à six pixels près, et les deux sont des ronds sombres de la même
+  // taille : sur le terrain, on ne savait plus lequel on visait, et un doigt
+  // qui voulait remonter la page basculait l'écran en mode sombre.
+  //
+  // La correction ne consiste pas à décaler l'un des deux de quelques pixels —
+  // ça n'aurait fait que rapprocher le problème sans le supprimer. Les deux
+  // boutons n'ont pas la même nature : « remonter en haut » accompagne la
+  // lecture et doit rester sous le pouce, tandis que changer d'éclairage est un
+  // réglage, qu'on fait une fois et qu'on oublie. Un réglage a sa place dans
+  // l'en-tête, à côté de la roue dentée. Le bas de l'écran est rendu à la
+  // navigation, et il n'y a plus rien à confondre, quelle que soit la taille de
+  // l'écran.
+  //
+  // Les pages sans en-tête (les deux écrans de connexion) gardent le bouton
+  // flottant : elles n'ont pas de barre d'onglets, donc aucune confusion
+  // possible, et elles ont besoin qu'on puisse changer d'éclairage avant même
+  // d'être identifié.
   function buildButton() {
     if (document.getElementById('cltThemeToggle') || !document.body) return;
     var b = document.createElement('button');
     b.id = 'cltThemeToggle';
     b.type = 'button';
-    b.className = 'theme-toggle';
     b.addEventListener('click', function () {
       var next = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
       try { localStorage.setItem(KEY, next); } catch (e) {}
       apply(next);
     });
-    document.body.appendChild(b);
+
+    // On vise le groupe de droite de l'en-tête (avatar, nom, rôle, réglages) et
+    // on s'insère juste AVANT la roue dentée : le réglage d'éclairage se lit
+    // alors comme ce qu'il est, un voisin des réglages, et la roue reste le
+    // dernier élément de la barre, là où la main la cherche déjà.
+    var groupeEntete = document.querySelector('.topbar .user-info');
+    var reglages = groupeEntete && groupeEntete.querySelector('.settings-menu');
+    if (groupeEntete) {
+      b.className = 'theme-toggle theme-toggle--entete';
+      if (reglages) groupeEntete.insertBefore(b, reglages);
+      else groupeEntete.appendChild(b);
+    } else {
+      b.className = 'theme-toggle';
+      document.body.appendChild(b);
+    }
     apply(resolved());
   }
 

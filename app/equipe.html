@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821lot3">
+<link rel="stylesheet" href="style.css?v=20260822tel1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -534,9 +534,9 @@
 </div>
 <div class="field-row">
 <div class="field">
-<label>Téléphone du destinataire (optionnel)</label>
-<input type="tel" id="add-dest-tel" placeholder="Ex : 07 01 02 03 04" inputmode="tel">
-<div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Permet au livreur de contacter le destinataire et de le prévenir par WhatsApp avec le lien de suivi.</div>
+<label>Téléphone du destinataire <span class="champ-requis">obligatoire</span></label>
+<input type="tel" id="add-dest-tel" placeholder="Ex : 07 01 02 03 04" inputmode="tel" required>
+<div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Sans lui, le livreur ne peut ni prévenir de son passage ni se faire ouvrir. Sert aussi à envoyer le lien de suivi par WhatsApp.</div>
 </div>
 </div>
 <!-- Carnet d'adresses : rempli tout seul à partir des colis déjà envoyés par ce client.
@@ -983,10 +983,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821lot3"></script>
-<script src="config.js?v=20260821lot3"></script>
+<script src="clt-common.js?v=20260822tel1"></script>
+<script src="config.js?v=20260822tel1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260821lot3"></script>
+<script src="clt-select-recherche.js?v=20260822tel1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1753,8 +1753,12 @@ ${l.url
 <label>Destination</label>
 <input type="text" class="lot-dest" placeholder="Ex : Cocody, Angré">
 </div>
+<!-- Le seul champ obligatoire de cet écran depuis le 21 août 2026, et le même que côté vendeuse.
+     Un colis sans numéro ne se livre pas : le livreur arrive dans la commune et n'a personne à
+     appeler. La destination, elle, reste facultative ici — au bureau on a l'étiquette sous les
+     yeux et elle se précise ensuite. -->
 <div class="field">
-<label>Téléphone du destinataire</label>
+<label>Téléphone du destinataire <span class="champ-requis">obligatoire</span></label>
 <input type="tel" class="lot-tel" inputmode="tel" placeholder="Ex : 07 01 02 03 04">
 </div>
 <div class="montant-group">
@@ -1990,7 +1994,7 @@ if (!fournisseur_id) return;
 
 // Seules les fautes de CETTE ligne la retiennent. On la renumérote à 1 le temps du contrôle,
 // puis on remet son vrai rang dans le message : la personne cherche « colis 7 » à l'écran.
-const { problemes } = verifierLotAvantEnvoi([lotLireLigne(l)]);
+const { problemes } = verifierLotAvantEnvoi([lotLireLigne(l)], { telephoneObligatoire: true });
 if (problemes.length) {
 lotMsg('Colis ' + rang + ' : ' + problemes[0].motif + '.', 'error');
 const champ = l.el && l.el.querySelector('.lot-dest');
@@ -2028,7 +2032,11 @@ if (!lotLignes.length) { lotMsg('Aucune photo à enregistrer.', 'error'); return
 
 // Tout est contrôlé AVANT le moindre envoi : à mi-parcours, la moitié des colis serait en base
 // et l'autre non, sans que personne sache laquelle.
-const { problemes } = verifierLotAvantEnvoi(lotLignes.map(lotLireLigne));
+// `telephoneObligatoire` est posé ici aussi, et pas seulement côté vendeuse : un colis sans
+// numéro est intraitable quel que soit l'écran où il a été saisi. La commune, elle, reste
+// facultative de ce côté — la personne qui saisit au bureau a l'étiquette sous les yeux et la
+// commune se déduit ensuite ; l'exiger ferait rejeter des colis parfaitement livrables.
+const { problemes } = verifierLotAvantEnvoi(lotLignes.map(lotLireLigne), { telephoneObligatoire: true });
 if (problemes.length) {
 lotMsg(resumeProblemesLotTexte(problemes), 'error');
 const premier = lotLignes[problemes[0].rang - 1];
@@ -3037,8 +3045,16 @@ btn.disabled = true; btn.textContent = 'Ajout...';
 
 const fournisseur_id = document.getElementById('add-fournisseur').value;
 const destination = document.getElementById('add-dest').value.trim();
+// Le numéro est exigé depuis le 21 août 2026, comme sur l'écran photo. Ce formulaire écrit dans
+// la même table et ses colis partent dans les mêmes tournées : le laisser accepter ce que
+// l'autre refuse en aurait fait la porte de sortie de la règle.
 let destinataire_telephone = (document.getElementById('add-dest-tel').value || '').trim();
-if (destinataire_telephone) {
+if (!destinataire_telephone) {
+  addMsg("Le téléphone du destinataire est obligatoire : sans lui, le livreur ne peut pas se faire ouvrir.", "error");
+  btn.disabled = false; btn.textContent = 'Ajouter le colis';
+  return;
+}
+{
   // Nettoyage : ne garder que les chiffres et retirer l'indicatif 225 éventuel.
   let telDigits = destinataire_telephone.replace(/[^0-9]/g, '');
   if (telDigits.startsWith('225')) telDigits = telDigits.slice(3);
@@ -3048,8 +3064,6 @@ if (destinataire_telephone) {
     btn.disabled = false; btn.textContent = 'Ajouter le colis';
     return;
   }
-} else {
-  destinataire_telephone = null;
 }
 const commune_recuperation = document.getElementById('add-pickup-commune').value || null;
 const adresse_recuperation = document.getElementById('add-pickup-adresse').value.trim() || null;
@@ -3770,10 +3784,10 @@ cltToast("Sans réseau, les actions en lot ne sont pas possibles. Traitez les co
 return;
 }
 
-// `false` : sur cet écran, le geste unitaire n'exige pas le code de confirmation du
-// destinataire — le bureau doit pouvoir corriger un statut. La règle est de coller au geste
-// unitaire de l'écran, ni plus permissif, ni plus strict.
-const tri = repartirColisPourLot(choisis, statut, false);
+// Cet appel portait un troisième argument, `false`, pour dire que cet écran n'exigeait pas le
+// code de confirmation du destinataire. Le code ayant été retiré partout le 21 août 2026, la
+// question ne se pose plus et l'argument a disparu de la fonction elle-même.
+const tri = repartirColisPourLot(choisis, statut);
 if (!tri.eligibles.length) {
 cltToast(tri.dejaAuStatut.length ? `Ces colis sont déjà « ${libelle} ».` : "Rien à modifier dans cette sélection.", { type: 'info' });
 return;

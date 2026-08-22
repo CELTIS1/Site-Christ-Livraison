@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821lot3">
+<link rel="stylesheet" href="style.css?v=20260822tel1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -366,8 +366,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821lot3"></script>
-<script src="config.js?v=20260821lot3"></script>
+<script src="clt-common.js?v=20260822tel1"></script>
+<script src="config.js?v=20260822tel1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -993,13 +993,13 @@
   /* ---------- CHEMIN UNIQUE D'ÉCRITURE D'UN CHANGEMENT DE STATUT ----------
      Le bouton « Enregistrer » et les boutons d'action rapide (✅ Livré, 🚚 Je pars livrer,
      ⚠️ Non livré) passent tous les deux par ici. Il n'y a donc qu'un seul comportement à
-     comprendre, à tester et à corriger : code de confirmation anti-fraude, compteur de
-     tentatives, envoi de la photo, file d'attente hors-réseau et repli sur les anciennes
-     colonnes se comportent à l'identique quel que soit le bouton utilisé.
+     comprendre, à tester et à corriger : compteur de tentatives, envoi de la photo, file
+     d'attente hors-réseau et repli sur les anciennes colonnes se comportent à l'identique quel
+     que soit le bouton utilisé.
 
      Renvoie { ok, statutPrecedent, tentativesPrecedentes, extraApplique }.
-     ok === false signifie qu'absolument rien n'a été écrit (code de confirmation annulé ou
-     erroné, ou mise en file d'attente impossible) : l'appelant ne doit alors rien annoncer. */
+     ok === false signifie qu'absolument rien n'a été écrit (mise en file d'attente impossible,
+     envoi refusé) : l'appelant ne doit alors rien annoncer. */
   async function appliquerStatutColis(o){
     const id = o.id;
     const statut = o.statut;
@@ -1021,33 +1021,16 @@
     const occuper = (txt) => { if (btn) { btn.disabled = true; btn.textContent = txt; } };
     const liberer = () => { if (btn) { btn.disabled = false; btn.innerHTML = libelleBtn; } };
 
-    // --- Code de confirmation à la livraison (anti-fraude) ---
-    // Si un code à 4 chiffres a été attribué au colis et n'a pas encore été validé, on exige
-    // que le livreur saisisse celui remis par le destinataire avant de pouvoir marquer
-    // « Livré ». La vérification est locale (le code est déjà chargé) : elle marche donc
-    // aussi hors connexion. Une annulation (restauration d'un état déjà validé en son temps)
-    // n'a pas à repasser par cette étape.
-    if (!o.sansCodeConfirmation && statut === 'livre' && existing && existing.code_confirmation && !existing.code_confirme_at) {
-      const saisi = await cltPrompt({
-        title: 'Code de confirmation',
-        sub: 'Saisissez le code à 4 chiffres remis par le destinataire.',
-        placeholder: '● ● ● ●',
-        inputMode: 'numeric',
-        maxLength: 4,
-        okLabel: 'Valider la livraison',
-      });
-      if (saisi === null || saisi.trim() === '') return echec; // annulé : on n'enregistre rien
-      if (saisi.trim() !== String(existing.code_confirmation)) {
-        await cltConfirm({
-          title: 'Code incorrect',
-          sub: "La livraison n'a pas été enregistrée. Vérifiez le code auprès du destinataire, puis réessayez.",
-          okLabel: "J'ai compris",
-          cancelLabel: 'Fermer',
-        });
-        return echec;
-      }
-      extra.code_confirme_at = new Date().toISOString();
-    }
+    // Le livreur devait ici saisir un code à quatre chiffres avant de pouvoir marquer « Livré ».
+    // Cette étape a été retirée le 21 août 2026, et pas seulement pour les colis à venir : elle
+    // ne s'applique plus non plus aux colis qui portent déjà un code en base. C'est volontaire.
+    // Le contrôle ne tenait que si le destinataire avait reçu son code, or il fallait pour cela
+    // que la vendeuse le lui transmette elle-même après la saisie — ce qui n'était pas dans sa
+    // façon de travailler. La conséquence, sur le terrain, était toujours la même : le livreur
+    // arrivait, le destinataire n'avait aucun code, et le colis repartait alors qu'il était
+    // devant la bonne porte, avec la bonne personne. Laisser la vérification en place pour les
+    // seuls anciens colis aurait gardé exactement cette panne-là, en la rendant imprévisible.
+    // La colonne et les valeurs restent en base ; on a simplement cessé de les exiger.
 
     // --- Compteur de tentatives (workflow d'échec de livraison) ---
     if (!('tentatives_livraison' in extra) && statut === 'non_livre' && existing && existing.statut !== 'non_livre') {
@@ -1198,7 +1181,6 @@
     const retour = await appliquerStatutColis({
       id,
       statut: res.statutPrecedent,
-      sansCodeConfirmation: true,
       extraForce: { tentatives_livraison: res.tentativesPrecedentes }
     });
     if (!retour.ok) return;
@@ -1275,19 +1257,12 @@
     }
 
     // Le tri AVANT d'écrire : c'est lui qui permet d'annoncer la vérité au lieu de la découvrir.
-    // `true` = on exige le code de confirmation, exactement comme le bouton d'une ligne le fait
-    // sur cet écran. Traiter vite ne doit pas servir à contourner le contrôle anti-fraude.
-    const tri = repartirColisPourLot(choisis, statut, true);
-    if (tri.bloquesCode.length) {
-      const noms = tri.bloquesCode.slice(0, 5).map(c => c.numero || 'colis sans numéro').join(', ');
-      const suite = tri.bloquesCode.length > 5 ? ` et ${tri.bloquesCode.length - 5} autre(s)` : '';
-      await cltConfirm({
-        title: `${tri.bloquesCode.length} colis attendent leur code`,
-        sub: `${noms}${suite} : le destinataire doit donner son code à 4 chiffres. Ces colis-là restent à faire un par un. Les autres vont être traités.`,
-        okLabel: 'Continuer',
-        cancelLabel: 'Fermer',
-      });
-    }
+    // Il séparait aussi les colis qui attendaient leur code de confirmation, pour prévenir avant
+    // d'agir. Le code ayant été retiré le 21 août 2026 du geste unitaire de cet écran, le garder
+    // ici aurait été pire qu'inutile : le lot aurait refusé des colis que le bouton d'une seule
+    // ligne, juste à côté, acceptait sans rien demander. La règle reste la même qu'avant — le
+    // traitement en lot fait exactement ce que fait le geste unitaire, jamais plus, jamais moins.
+    const tri = repartirColisPourLot(choisis, statut);
     if (!tri.eligibles.length) {
       cltToast(tri.dejaAuStatut.length ? `Ces colis sont déjà « ${libelle} ».` : "Rien à modifier dans cette sélection.", { type: 'info' });
       return;

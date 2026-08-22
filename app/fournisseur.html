@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260821lot3">
+<link rel="stylesheet" href="style.css?v=20260822tel1">
 <script src="theme.js?v=20260815h"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
@@ -465,10 +465,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260821lot3"></script>
-<script src="config.js?v=20260821lot3"></script>
+<script src="clt-common.js?v=20260822tel1"></script>
+<script src="config.js?v=20260822tel1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260821lot3"></script>
+<script src="clt-select-recherche.js?v=20260822tel1"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -699,7 +699,7 @@
   function frColonneInconnue(error){
     const m = String((error && (error.message || '')) + ' ' + (error && (error.details || '')));
     return /does not exist|schema cache|could not find|n'existe pas/i.test(m)
-        && /destinataire_telephone|code_confirmation|cle_creation|column|colonne/i.test(m);
+        && /destinataire_telephone|cle_creation|column|colonne/i.test(m);
   }
 
   // `lignes` est toujours un tableau : cette page enregistre un lot entier d'un coup.
@@ -712,7 +712,7 @@
     // lancée), on réessaie sans elles plutôt que de bloquer la vendeuse. Elles seront simplement
     // ignorées jusqu'à la migration.
     if (error && frColonneInconnue(error)) {
-      aEnvoyer = aEnvoyer.map(({ destinataire_telephone, code_confirmation, cle_creation, ...reste }) => reste);
+      aEnvoyer = aEnvoyer.map(({ destinataire_telephone, cle_creation, ...reste }) => reste);
       ({ error } = await supabaseClient.from('colis').insert(aEnvoyer));
     }
 
@@ -763,21 +763,15 @@
           </div>
         </div>
         <div class="field">
-          <label>Téléphone du destinataire (optionnel)</label>
-          <input type="tel" class="row-dest-tel" placeholder="Ex : 07 01 02 03 04" inputmode="tel">
-          <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Permet de prévenir le destinataire par WhatsApp avec le lien de suivi.</div>
+          <label>Téléphone du destinataire <span class="champ-requis">obligatoire</span></label>
+          <input type="tel" class="row-dest-tel" placeholder="Ex : 07 01 02 03 04" inputmode="tel" required>
+          <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Sans lui, le livreur ne peut ni prévenir de son passage ni se faire ouvrir. Sert aussi à envoyer le lien de suivi par WhatsApp.</div>
         </div>
         <!-- Carnet d'adresses : vos destinataires déjà servis, déduits de vos colis passés.
              Voir config.js pour le raisonnement. Caché tant qu'il n'y a rien à proposer. -->
         <div class="carnet-wrap row-carnet" style="display:none;"></div>
-        <div class="field">
-          <label>Code de confirmation à la livraison (optionnel)</label>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <input type="text" class="row-code-confirmation" placeholder="Ex : 4827" inputmode="numeric" maxlength="4" style="flex:1;">
-            <button type="button" class="btn btn-outline btn-sm" style="white-space:nowrap;" onclick="genererCodeConfirmation(this)">🎲 Générer</button>
-          </div>
-          <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Anti-fraude : si vous indiquez un code à 4 chiffres, communiquez-le au destinataire. Le livreur devra le saisir pour valider la remise. Laissez vide pour ne pas l'utiliser.</div>
-        </div>
+        <!-- Le code de confirmation à la livraison a été retiré le 21 août 2026, ici comme sur
+             l'écran photo. Voir le commentaire là-bas pour le pourquoi. -->
         <div class="montant-block">
           <label>Montants</label>
           <div class="montant-group">
@@ -1026,7 +1020,6 @@
       montantArticle: val('.lotfr-art'),
       montantLivraison: val('.lotfr-liv'),
       description: val('.lotfr-desc'),
-      codeConfirmation: val('.lotfr-code'),
       articlePaye: coche('.lotfr-art-paye'),
       livraisonPayee: coche('.lotfr-liv-payee')
     };
@@ -1081,8 +1074,13 @@
           <label>Précision (quartier, repère...)</label>
           <input type="text" class="lotfr-dest" placeholder="Ex : Angré 8e tranche">
         </div>
+        <!-- Le seul champ vraiment obligatoire de cet écran, depuis le 21 août 2026. On l'écrit
+             ici plutôt que de laisser la personne le découvrir au moment d'enregistrer : un colis
+             sans numéro ne se livre pas, le livreur arrive dans la commune et n'a personne à
+             appeler. Le repère rouge est volontaire — c'est le seul de la carte, et il doit se
+             voir comme tel. -->
         <div class="field">
-          <label>Téléphone du destinataire (optionnel)</label>
+          <label>Téléphone du destinataire <span class="champ-requis">obligatoire</span></label>
           <input type="tel" class="lotfr-tel" inputmode="tel" placeholder="Ex : 07 01 02 03 04">
         </div>
         <!-- Carnet d'adresses : vos destinataires déjà servis, déduits de vos colis passés.
@@ -1104,16 +1102,14 @@
              acheteuse peut avoir réglé l'article d'avance et pas une autre, et cocher pour
              tout le lot ferait réclamer au livreur de l'argent déjà encaissé. -->
         <div class="lotfr-payes">
-          <label class="check-pill"><input type="checkbox" class="lotfr-art-paye"> Article déjà payé</label>
-          <label class="check-pill"><input type="checkbox" class="lotfr-liv-payee"> Livraison déjà payée</label>
+          <label class="check-pill"><input type="checkbox" class="lotfr-art-paye"> Article payé</label>
+          <label class="check-pill"><input type="checkbox" class="lotfr-liv-payee"> Livraison payée</label>
         </div>
-        <div class="field">
-          <label>Code de confirmation (optionnel)</label>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <input type="text" class="lotfr-code" inputmode="numeric" maxlength="4" placeholder="Ex : 4827" style="flex:1;">
-            <button type="button" class="btn btn-outline btn-sm lotfr-code-generer" style="white-space:nowrap;">🎲 Générer</button>
-          </div>
-        </div>
+        <!-- Le code de confirmation à quatre chiffres a été retiré le 21 août 2026. Il n'entrait
+             pas dans la façon de travailler : il fallait le générer, le transmettre soi-même au
+             destinataire, puis compter qu'il l'ait sous la main au moment de la remise. En
+             pratique il restait vide, et quand il ne l'était pas il bloquait le livreur devant la
+             porte. Il occupait deux champs pleine largeur sur un écran où chaque ligne compte. -->
         <div class="field">
           <label>Description (optionnel)</label>
           <input type="text" class="lotfr-desc" placeholder="Rien à écrire si l'étiquette n'en dit pas">
@@ -1292,7 +1288,6 @@
       adresse_recuperation: ctx.adresse_recuperation || null,
       // Normalisé au format international (225…) attendu par la notification WhatsApp.
       destinataire_telephone: s.telephone ? toPhoneE164(s.telephone) : null,
-      code_confirmation: s.codeConfirmation || null,
       article_paye: !!s.articlePaye,
       livraison_payee: !!s.livraisonPayee,
       cle_creation: l.cle
@@ -1341,7 +1336,7 @@
 
     // Seules les fautes de CE colis le retiennent. Il est renuméroté à 1 le temps du contrôle,
     // puis on remet son vrai rang dans le message : la personne cherche « colis 7 » à l'écran.
-    const { problemes } = verifierLotAvantEnvoi([lotfrLireLigne(l)], { communeObligatoire: true });
+    const { problemes } = verifierLotAvantEnvoi([lotfrLireLigne(l)], { communeObligatoire: true, telephoneObligatoire: true });
     if (problemes.length) {
       lotfrMsg('Colis ' + rang + ' : ' + problemes[0].motif + '.', 'error');
       const champ = l.el && l.el.querySelector('.lotfr-commune');
@@ -1378,7 +1373,7 @@
 
     // Tout est contrôlé AVANT le moindre envoi : à mi-parcours, la moitié des colis serait en
     // base et l'autre non, sans que personne sache laquelle.
-    const { problemes } = verifierLotAvantEnvoi(lotfrLignes.map(lotfrLireLigne), { communeObligatoire: true });
+    const { problemes } = verifierLotAvantEnvoi(lotfrLignes.map(lotfrLireLigne), { communeObligatoire: true, telephoneObligatoire: true });
     if (problemes.length) {
       lotfrMsg(resumeProblemesLotTexte(problemes), 'error');
       const premier = lotfrLignes[problemes[0].rang - 1];
@@ -1468,12 +1463,6 @@
       if (envoyerUn) {
         const ligne = envoyerUn.closest('.lot-ligne');
         if (ligne) lotfrEnregistrerUn(ligne.dataset.lotId);
-        return;
-      }
-      const generer = e.target.closest('.lotfr-code-generer');
-      if (generer) {
-        const champ = generer.closest('.field').querySelector('.lotfr-code');
-        if (champ) champ.value = String(Math.floor(1000 + Math.random() * 9000)); // 1000–9999
         return;
       }
       const img = e.target.closest('.lot-img');
@@ -1635,14 +1624,6 @@
     const el = document.querySelector(`.colis-row[data-row="${idx}"]`);
     if (el) el.remove();
   }
-  // Génère un code à 4 chiffres et le place dans le champ « Code de confirmation » de la ligne.
-  function genererCodeConfirmation(btn){
-    const row = btn.closest('.colis-row');
-    if (!row) return;
-    const input = row.querySelector('.row-code-confirmation');
-    if (!input) return;
-    input.value = String(Math.floor(1000 + Math.random() * 9000)); // 1000–9999, toujours 4 chiffres
-  }
   document.getElementById('btn-add-row').addEventListener('click', addRow);
 
   /* ---------- AUTOSAUVEGARDE DU FORMULAIRE « AJOUTER DES COLIS » (brouillon local) ----------
@@ -1683,7 +1664,6 @@
         commune_dest:      v('.row-commune-dest'),
         destination:       v('.row-dest'),
         destinataire_tel:  v('.row-dest-tel'),
-        code_confirmation: v('.row-code-confirmation'),
         montant_article:   v('.row-montant-article'),
         montant_livraison: v('.row-montant-livraison')
       });
@@ -1700,7 +1680,7 @@
     if (!draft || !Array.isArray(draft.lignes)) return true;
     return !draft.lignes.some(l =>
       (l.description || '').trim() || (l.commune_dest || '') || (l.destination || '').trim() ||
-      (l.destinataire_tel || '').trim() || (l.code_confirmation || '').trim() ||
+      (l.destinataire_tel || '').trim() ||
       (l.montant_article || '').trim() || (l.montant_livraison || '').trim()
     );
   }
@@ -1741,7 +1721,6 @@
       set('.row-commune-dest', l.commune_dest);
       set('.row-dest', l.destination);
       set('.row-dest-tel', l.destinataire_tel);
-      set('.row-code-confirmation', l.code_confirmation);
       set('.row-montant-article', l.montant_article);
       set('.row-montant-livraison', l.montant_livraison);
       // Recalcule le total affiché sous les deux champs de montant.
@@ -1905,24 +1884,22 @@
         if (!photo_url) photoUploadFailed = true;
       }
 
+      // Le numéro est exigé depuis le 21 août 2026, ici comme sur l'écran photo. Ce formulaire
+      // écrit dans la même table et ses colis partent dans les mêmes tournées : le laisser
+      // accepter ce que l'autre refuse aurait fait de lui la porte de sortie de la règle.
       const destTelRaw = (row.querySelector('.row-dest-tel')?.value || '').trim();
-      if (destTelRaw && !isValidCiPhone(destTelRaw)) {
-        addMsg("Le numéro du destinataire semble incorrect. Indiquez un numéro ivoirien (ex : 07 01 02 03 04), ou laissez le champ vide.", "error");
+      if (!destTelRaw) {
+        addMsg("Le numéro du destinataire est obligatoire : sans lui, le livreur ne peut pas se faire ouvrir.", "error");
+        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
+        return;
+      }
+      if (!isValidCiPhone(destTelRaw)) {
+        addMsg("Le numéro du destinataire semble incorrect. Indiquez un numéro ivoirien à 10 chiffres (ex : 07 01 02 03 04).", "error");
         btn.disabled = false; btn.textContent = 'Enregistrer les colis';
         return;
       }
       // Normalisé au format international (225…) attendu par la notification WhatsApp.
       const destinataire_telephone = destTelRaw ? toPhoneE164(destTelRaw) : null;
-
-      // Code de confirmation à la livraison (optionnel, anti-fraude). S'il est renseigné,
-      // il doit faire exactement 4 chiffres ; sinon on bloque l'enregistrement de la ligne.
-      const codeRaw = (row.querySelector('.row-code-confirmation')?.value || '').trim();
-      if (codeRaw && !/^\d{4}$/.test(codeRaw)) {
-        addMsg("Le code de confirmation doit contenir exactement 4 chiffres (ex : 4827), ou rester vide.", "error");
-        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
-        return;
-      }
-      const code_confirmation = codeRaw || null;
 
       inserts.push({
         fournisseur_id: currentUser.id,
@@ -1937,7 +1914,6 @@
         commune_recuperation,
         adresse_recuperation: adresse_recuperation || null,
         destinataire_telephone,
-        code_confirmation,
         cle_creation: row.dataset.cle || null,
       });
     }
@@ -2048,10 +2024,11 @@
             ${colisADetailMontant(c) ? `
               <div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>
             ` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
-            ${c.code_confirmation ? (c.code_confirme_at
-              ? `<div class="meta" style="color:#059669; font-weight:600;">✅ Livraison confirmée par code</div>`
-              : `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">🔐 Code de confirmation : ${escapeHTML(String(c.code_confirmation))} <span style="color:var(--muted); font-weight:400;">(à communiquer au destinataire)</span></div>`
-            ) : ''}
+            <!-- Le code de confirmation ne s'affiche plus ici depuis le 21 août 2026. Le livreur
+                 ne le demande plus à la remise : continuer à écrire « à communiquer au
+                 destinataire » sous un colis serait donc une consigne fausse, et c'est pire que
+                 pas de consigne du tout. Les valeurs déjà en base sont conservées telles quelles,
+                 on cesse simplement de les lire ; le statut du colis dit déjà s'il est livré. -->
             ${livreurBlock}
             ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
             ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}

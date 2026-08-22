@@ -186,6 +186,21 @@ input,textarea,select{font-family:inherit;}
 /* ---------- FORM ---------- */
 .field{margin-bottom:16px;}
 .field label{display:block; font-size:13px; font-weight:600; color:var(--navy); margin-bottom:6px;}
+
+/* Le repère « obligatoire » posé à côté d'une étiquette de champ. Ajouté le 21 août 2026 avec
+   le numéro du destinataire, qui est aujourd'hui le seul champ à le porter — et c'est justement
+   ce qui le rend lisible : une page où trois champs sur quatre sont marqués n'apprend plus rien
+   à personne. Le mot est écrit en toutes lettres plutôt qu'en astérisque, parce qu'un astérisque
+   se lit comme une note de bas de page qu'on cherche ensuite en vain. */
+.champ-requis{
+  display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px;
+  font-size:10.5px; font-weight:700; letter-spacing:.02em; text-transform:uppercase;
+  color:#a4262c; background:#fdecea; border:1px solid #f5c6c2; vertical-align:middle;
+}
+html[data-theme="dark"] .champ-requis{
+  color:#ffb4ad; background:rgba(255,120,110,0.14); border-color:rgba(255,120,110,0.34);
+}
+
 input, select, textarea{ font-size:16px !important; }
 
 .field input[type=text], .field input[type=email], .field input[type=password], .field input[type=tel],
@@ -1102,15 +1117,48 @@ html[data-theme="dark"] .theme-toggle{
   background:var(--grad-orange);
   border-color:rgba(255,255,255,.14);
 }
-/* Sur mobile, la barre de navigation basse (.clt-bottomnav) occupe le bas de
-   l'écran. On déplace le bouton en bas à DROITE et on le remonte AU-DESSUS de
-   cette barre pour qu'il ne recouvre plus aucun onglet. */
+/* Sur les pages sans en-tête (les écrans de connexion), le bouton reste flottant.
+   Elles n'ont pas de barre d'onglets basse, donc rien ne vient s'y superposer. */
 @media(max-width:760px){
   .theme-toggle{
     width:42px; height:42px; font-size:17px;
     left:auto; right:14px;
-    bottom:calc(80px + env(safe-area-inset-bottom));
+    bottom:calc(18px + env(safe-area-inset-bottom));
   }
+}
+
+/* ---- Le même bouton, mais posé dans la barre du haut — 21 août 2026 ----
+   Il flottait auparavant en bas à droite sur téléphone, à l'endroit exact où le
+   bouton « remonter en haut » apparaît quand la page est longue : deux ronds
+   sombres de même taille, superposés à quelques pixels près, impossibles à
+   distinguer au doigt. Le décaler n'aurait fait que déplacer la gêne.
+
+   Il rejoint donc la roue dentée dans l'en-tête, parce qu'il est de la même
+   famille : un réglage qu'on choisit une fois, pas un geste de lecture. On
+   reprend exactement les mesures de .settings-menu-btn pour que les deux ronds
+   soient jumeaux — un bouton voisin qui aurait deux pixels de plus se lirait
+   comme une erreur d'alignement. Les règles de position du bouton flottant sont
+   remises à zéro, sans quoi il resterait collé en bas de l'écran. */
+.theme-toggle--entete{
+  position:static; inset:auto; z-index:auto;
+  width:34px; height:34px; border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0.3);
+  background:rgba(255,255,255,0.12); color:var(--white);
+  font-size:16px; box-shadow:none; flex-shrink:0;
+  transition:background .15s ease;
+}
+.theme-toggle--entete:hover{ background:rgba(255,255,255,0.22); transform:none; box-shadow:none; }
+.theme-toggle--entete:active{ transform:none; }
+/* En mode sombre, le bouton flottant vire à l'orange pour se signaler. Dans
+   l'en-tête ce serait un contresens : il jurerait avec la roue dentée juste à
+   côté, alors qu'il doit lui ressembler. On garde donc le même fond translucide
+   dans les deux modes — c'est l'icône, soleil ou lune, qui dit où l'on est. */
+html[data-theme="dark"] .theme-toggle--entete{
+  background:rgba(255,255,255,0.12);
+  border-color:rgba(255,255,255,0.3);
+}
+@media(max-width:760px){
+  .theme-toggle--entete{ width:34px; height:34px; font-size:15px; }
 }
 
 /* =====================================================================
@@ -1703,7 +1751,18 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
   color:var(--primary, #1B4374); text-decoration:underline;
 }
 
-/* Les deux cases « déjà payé » d'un colis, côte à côte. Elles tiennent sur une ligne tant que
-   la place le permet, et passent l'une sous l'autre sur un téléphone étroit plutôt que de
-   déborder — une case à moitié sortie de l'écran ne se coche pas. */
+/* Les deux cases « payé » d'un colis, côte à côte.
+   Révisé le 21 août 2026 : elles passaient l'une sous l'autre sur téléphone et mangeaient une
+   ligne entière dans un écran où l'on en remplit vingt à la suite. Les libellés ont été
+   raccourcis (« Article déjà payé » → « Article payé ») et la pastille resserrée juste ce qu'il
+   faut pour que les deux tiennent côte à côte sur un écran étroit.
+
+   Le retour à la ligne reste autorisé : c'est le filet, pas la mise en page voulue. Un nom de
+   langue plus long, un réglage de police plus gros côté système, et les deux cases ne tiennent
+   plus — mieux vaut alors qu'elles s'empilent proprement qu'une case à moitié sortie de l'écran,
+   qui ne se coche pas. */
 .lotfr-payes{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 10px; }
+@media(max-width:760px){
+  .lotfr-payes .check-pill{ padding:7px 10px; font-size:11.5px; gap:6px; }
+  .lotfr-payes .check-pill input{ width:14px; height:14px; }
+}

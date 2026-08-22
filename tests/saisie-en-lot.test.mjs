@@ -255,23 +255,56 @@ titre('Un montant à zéro est un vrai montant, pas un champ vide');
     ligneLotEstVide(ligne({ montantLivraison: '0' })) === false);
 }
 
-titre('Un code de confirmation mal formé est refusé partout, sans qu\u2019on ait à le demander');
+titre('Le code de confirmation ne doit plus rien contrôler nulle part');
 {
-  // Le code est facultatif — beaucoup d'étiquettes n'en portent pas. Mais un code à trois chiffres
-  // n'est pas « presque bon » : le livreur en saisira quatre à la remise, la remise sera refusée,
-  // et le colis reviendra à l'entrepôt après avoir fait le trajet. C'est pour cela que ce contrôle
-  // ne dépend d'aucune option : un code mal formé est faux dans les deux espaces, jamais seulement
-  // dans l'un des deux.
-  verifier('un code vide reste accepté',
-    verifierLotAvantEnvoi([ligne({ destination: 'Cocody', codeConfirmation: '' })]).pretes.length === 1);
-  verifier('un code à quatre chiffres passe',
-    verifierLotAvantEnvoi([ligne({ destination: 'Cocody', codeConfirmation: '4821' })]).pretes.length === 1);
-  const court = verifierLotAvantEnvoi([ligne({ destination: 'Cocody', codeConfirmation: '482' })]);
-  verifier('un code à trois chiffres est refusé', court.pretes.length === 0 && court.problemes.length === 1);
-  verifier('et le motif explique ce qu\u2019on attend',
-    /4 chiffres/.test(court.problemes[0].motif), court.problemes[0].motif);
-  verifier('un code avec des lettres est refusé',
-    verifierLotAvantEnvoi([ligne({ destination: 'Cocody', codeConfirmation: '48A1' })]).problemes.length === 1);
+  // Il y avait ici cinq contrôles sur le code à quatre chiffres. Ils ont été remplacés par
+  // celui-ci le 21 août 2026, quand le code a été retiré de toute l'application. Le supprimer
+  // sans rien mettre à la place aurait été la mauvaise façon de faire : personne n'aurait
+  // remarqué le jour où un chemin de saisie se remet à envoyer un `codeConfirmation`, et l'on
+  // retomberait dans la panne d'origine — un livreur bloqué devant une porte, face à quelqu'un
+  // qui n'a jamais reçu de code. On vérifie donc l'inverse de ce qu'on vérifiait : un code posé
+  // sur une ligne ne change plus RIEN à la décision, quelle que soit sa forme.
+  for (const valeur of ['', '4821', '482', '48A1', 'nimportequoi']) {
+    const res = verifierLotAvantEnvoi([ligne({ destination: 'Cocody', codeConfirmation: valeur })]);
+    verifier(`un « code » de la forme « ${valeur || '(vide)'} » n\u2019influe plus sur le contrôle`,
+      res.pretes.length === 1 && res.problemes.length === 0, JSON.stringify(res.problemes));
+  }
+  // Et la fonction elle-même ne doit plus contenir la règle : la lire dans la source évite qu'on
+  // la remette silencieusement en place « au cas où », derrière une option qui traînerait.
+  verifier('la règle des 4 chiffres a bien disparu de la source du contrôle',
+    !/codeConfirmation/.test(bloc('verifierLotAvantEnvoi')));
+}
+
+titre('Le numéro du destinataire est exigé quand l\u2019écran le demande');
+{
+  // Rendu obligatoire des deux côtés le 21 août 2026, sur la seule justification qui tienne :
+  // un colis sans numéro ne se livre pas. Le livreur arrive dans la commune, ne trouve pas la
+  // porte, et n'a personne à appeler. C'est la seule colonne dont l'absence rend le colis
+  // intraitable — d'où le fait qu'elle soit la seule à être exigée partout.
+  const sansTel = [ligne({ communeDestination: 'Cocody', destination: 'Angré', montantArticle: '9000' })];
+  verifier('sans option, une ligne sans numéro passe encore (reprise d\u2019anciens colis, import)',
+    verifierLotAvantEnvoi(sansTel).pretes.length === 1);
+  const refus = verifierLotAvantEnvoi(sansTel, { telephoneObligatoire: true });
+  verifier('avec l\u2019option, la ligne sans numéro est refusée',
+    refus.pretes.length === 0 && refus.problemes.length === 1);
+  verifier('et le motif nomme ce qui manque',
+    /numéro du destinataire/.test(refus.problemes[0].motif), refus.problemes[0].motif);
+  verifier('un numéro ivoirien complet lève le refus',
+    verifierLotAvantEnvoi([ligne({ destination: 'Angré', telephone: '07 01 02 03 04' })],
+      { telephoneObligatoire: true }).pretes.length === 1);
+
+  // Un numéro PRÉSENT mais incomplet ne doit pas être confondu avec un numéro absent : les deux
+  // motifs envoient la personne faire deux gestes différents, taper le numéro ou le corriger.
+  const tronque = verifierLotAvantEnvoi([ligne({ destination: 'Angré', telephone: '07 01 02' })],
+    { telephoneObligatoire: true });
+  verifier('un numéro incomplet est refusé pour sa forme, pas pour son absence',
+    /10 chiffres/.test(tronque.problemes[0].motif), tronque.problemes[0].motif);
+
+  // Priorité de la ligne vide, ici aussi : une photo pour laquelle personne n'a rien saisi est un
+  // oubli. Lui répondre « il manque le numéro » enverrait relire une ligne où il n'y a rien.
+  const vide = verifierLotAvantEnvoi([ligne({})], { telephoneObligatoire: true });
+  verifier('une ligne entièrement vide reste signalée comme vide, pas comme sans numéro',
+    /rien n['\u2019]a été saisi/.test(vide.problemes[0].motif), vide.problemes[0].motif);
 }
 
 titre('Les exigences propres à chaque espace passent par une option, pas par un second contrôle');
