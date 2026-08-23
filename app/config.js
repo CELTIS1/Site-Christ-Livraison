@@ -1940,10 +1940,15 @@ function resumeEnvoiLotTexte(bilan) {
       la question que l'équipe se pose vraiment.
 
    3. ON DIT TOUJOURS SUR COMBIEN DE COLIS LE DÉLAI EST MESURÉ.
-      Tant que la colonne livre_at n'existe pas en base (voir _sql-prive/), on ne connaît l'heure
-      de remise que pour les colis validés par code de confirmation — une minorité. Un délai
-      calculé sur 4 colis sur 130 n'est pas faux, mais il ne veut pas dire la même chose qu'un
-      délai calculé sur 130 sur 130. L'écran l'annonce plutôt que de laisser croire.
+      La colonne livre_at est en place en base depuis le 21 août 2026, remplie par un déclencheur
+      au passage à « livré » (voir _sql-prive/2026-08-chiffres-par-livreur.sql). Chaque colis livré
+      depuis porte donc son heure. Mais les colis livrés AVANT n'en ont pas, et n'en auront jamais :
+      on ne peut pas inventer une heure passée. Au constat du 23 août 2026, aucun des 21 colis
+      livrés de l'historique n'en portait — aucun n'avait de code de confirmation à récupérer.
+      La couverture part donc de zéro et grandit chaque jour. Un délai calculé sur 4 colis sur 130
+      n'est pas faux, mais il ne veut pas dire la même chose qu'un délai calculé sur 130 sur 130.
+      L'écran l'annonce plutôt que de laisser croire. Cette règle reste vraie même quand la
+      couverture sera complète : elle ne coûte rien et elle protège de l'erreur inverse.
 
    DÉLAI DE QUOI À QUOI
    --------------------
