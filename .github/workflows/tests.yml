@@ -20,11 +20,18 @@ jobs:
   tester:
     runs-on: ubuntu-latest
     steps:
+      # Ces deux outils sont fournis par GitHub, pas par nous. Ils étaient restés en v4,
+      # trois versions en arrière : GitHub avertissait à chaque publication qu'ils tournent
+      # sur une version de Node qu'il ne veut plus faire tourner. Un avertissement de ce
+      # genre finit toujours par devenir une panne, et le jour où elle tombe, ce n'est
+      # jamais le bon jour. Les seuls changements de fond entre v4 et v7 concernent la
+      # récupération du code d'une branche extérieure (« fork ») — ce dépôt n'en reçoit
+      # pas — et le passage à une version de Node plus récente.
       - name: Récupérer le site
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Installer Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
 

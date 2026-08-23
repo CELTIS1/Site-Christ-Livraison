@@ -26,11 +26,13 @@ jobs:
   verifier:
     runs-on: ubuntu-latest
     steps:
+      # Même remise à niveau que dans tests.yml : ces outils viennent de GitHub et étaient
+      # restés en arrière, au point que chaque exécution laissait un avertissement.
       - name: Récupérer le site
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Installer Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
