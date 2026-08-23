@@ -31,6 +31,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { controlerEtiquettesDeVersion } from './etiquettes-de-version.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
@@ -450,31 +451,11 @@ titre('L\u2019écran de saisie en lot est bien branché dans l\u2019espace Équi
 }
 
 titre('Les fichiers partagés portent tous la même étiquette de version');
-{
-  // Une page qui charge l'ancien config.js appellerait des fonctions absentes : l'écran en lot
-  // se figerait sans message. L'étiquette doit être bougée partout en même temps.
-  //
-  // clt-select-recherche.js fait partie du groupe depuis le 21 août 2026, et il y est entré à la
-  // suite d'une erreur évitée de peu. Ce fichier portait sa propre étiquette, plus ancienne. Le
-  // correctif de la liste de recherche sur téléphone — la liste qui se fermait au défilement et
-  // passait sous le clavier — vit précisément dedans. Le publier sans bouger son étiquette aurait
-  // laissé les téléphones sur l'ancienne copie : le bug signalé serait resté visible, les essais
-  // au vert, et personne n'aurait su où chercher. Les quatre fichiers de l'écran en lot bougent
-  // donc ensemble, et ce contrôle est là pour qu'on n'ait plus à y penser.
-  const versions = new Map();
-  fs.readdirSync(APP).filter(f => f.endsWith('.html')).forEach(f => {
-    const src = fs.readFileSync(path.join(APP, f), 'utf8');
-    const re = /(?:src|href)="(config\.js|style\.css|clt-common\.js|clt-select-recherche\.js)\?v=([^"]+)"/g;
-    let m;
-    while ((m = re.exec(src))) {
-      if (!versions.has(m[2])) versions.set(m[2], []);
-      versions.get(m[2]).push(f + ' → ' + m[1]);
-    }
-  });
-  const etiquettes = Array.from(versions.keys());
-  verifier('une seule étiquette pour tous', etiquettes.length === 1,
-    etiquettes.map(v => v + ' : ' + versions.get(v).join(', ')).join('\n       → '));
-}
+// Une page qui charge l'ancien config.js appellerait des fonctions absentes : l'écran en lot se
+// figerait sans message. L'étiquette doit donc être bougée partout en même temps. Le contrôle
+// et la liste des fichiers concernés vivent dans tests/etiquettes-de-version.mjs, qui explique
+// aussi pourquoi clt-select-recherche.js et theme.js en font partie.
+controlerEtiquettesDeVersion({ APP, verifier });
 
 /* ---------- Bilan ---------- */
 console.log('\n———');

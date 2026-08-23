@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { controlerEtiquettesDeVersion } from './etiquettes-de-version.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
@@ -497,24 +498,8 @@ titre('Le code inséré dans les pages se lit sans erreur de syntaxe');
    11. Le cache des navigateurs ne servira pas une version périmée
    ========================================================================================== */
 titre('Tous les fichiers partagés portent la même étiquette de version');
-{
-  // Même contrôle que dans le banc d'essai du carnet : config.js est déjà resté deux jours en
-  // retard sans que rien ne le signale, et une page récente appelait alors des fonctions
-  // absentes de l'ancien config.js.
-  const versions = new Map();
-  fs.readdirSync(APP).filter(f => f.endsWith('.html')).forEach(f => {
-    const src = fs.readFileSync(path.join(APP, f), 'utf8');
-    const re = /(?:src|href)="(config\.js|style\.css|clt-common\.js)\?v=([^"]+)"/g;
-    let m;
-    while ((m = re.exec(src))) {
-      if (!versions.has(m[2])) versions.set(m[2], []);
-      versions.get(m[2]).push(f + ' → ' + m[1]);
-    }
-  });
-  const etiquettes = Array.from(versions.keys());
-  verifier('une seule étiquette pour tous', etiquettes.length === 1,
-    etiquettes.map(v => v + ' : ' + versions.get(v).join(', ')).join('\n       → '));
-}
+// Contrôle unique, partagé avec les trois autres bancs d'essai : tests/etiquettes-de-version.mjs.
+controlerEtiquettesDeVersion({ APP, verifier });
 
 /* ---------- Bilan ---------- */
 console.log('\n———');

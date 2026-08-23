@@ -25,6 +25,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { controlerEtiquettesDeVersion } from './etiquettes-de-version.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
@@ -462,27 +463,10 @@ titre("Les deux écrans qui proposent le carnet le branchent correctement");
    10. Les étiquettes de version des fichiers partagés
    ========================================================================================== */
 titre("Les fichiers partagés portent tous la même étiquette de version");
-{
-  // Pourquoi ce contrôle existe : config.js, style.css et clt-common.js sont chargés avec un
-  // « ?v=… » qui force les navigateurs à reprendre le fichier après une mise à jour. Le jour
-  // où l'un des trois est oublié, il continue d'être servi depuis le cache — et une page
-  // récente appelle alors des fonctions qui n'existent pas encore dans l'ancien config.js.
-  // C'est arrivé : config.js est resté deux jours en retard sans que rien ne le signale.
-  const versions = new Map();
-  fs.readdirSync(APP).filter(f => f.endsWith('.html')).forEach(f => {
-    const src = fs.readFileSync(path.join(APP, f), 'utf8');
-    const re = /(?:src|href)="(config\.js|style\.css|clt-common\.js)\?v=([^"]+)"/g;
-    let m;
-    while ((m = re.exec(src))) {
-      if (!versions.has(m[2])) versions.set(m[2], []);
-      versions.get(m[2]).push(f + ' → ' + m[1]);
-    }
-  });
-  const etiquettes = Array.from(versions.keys());
-  verifier('une seule étiquette de version pour tous les fichiers partagés',
-    etiquettes.length === 1,
-    etiquettes.map(v => v + ' : ' + versions.get(v).join(', ')).join('\n       → '));
-}
+// Le contrôle lui-même vit dans tests/etiquettes-de-version.mjs. Il était recopié dans quatre
+// bancs d'essai, les copies ont divergé en une journée, et c'est ainsi que theme.js a échappé
+// à la surveillance jusqu'au 23 août 2026. Une seule version, appelée depuis les quatre.
+controlerEtiquettesDeVersion({ APP, verifier });
 
 /* ---------- Bilan ---------- */
 console.log('\n———');

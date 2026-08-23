@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { controlerEtiquettesDeVersion } from './etiquettes-de-version.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
@@ -446,24 +447,8 @@ titre('config.js reste chargeable par un navigateur');
 }
 
 titre('Une seule étiquette de version pour tous les fichiers');
-{
-  // Si config.js et style.css ne portent pas la même étiquette, un navigateur peut charger un
-  // écran neuf avec un ancien code — c'est-à-dire des boutons qui appellent des fonctions
-  // absentes de l'ancien config.js.
-  const versions = new Map();
-  fs.readdirSync(APP).filter(f => f.endsWith('.html')).forEach(f => {
-    const src = fs.readFileSync(path.join(APP, f), 'utf8');
-    const re = /(?:src|href)="(config\.js|style\.css|clt-common\.js)\?v=([^"]+)"/g;
-    let m;
-    while ((m = re.exec(src))) {
-      if (!versions.has(m[2])) versions.set(m[2], []);
-      versions.get(m[2]).push(f + ' → ' + m[1]);
-    }
-  });
-  const etiquettes = Array.from(versions.keys());
-  verifier('une seule étiquette pour tous', etiquettes.length === 1,
-    etiquettes.map(v => v + ' : ' + versions.get(v).join(', ')).join('\n       → '));
-}
+// Contrôle unique, partagé avec les trois autres bancs d'essai : tests/etiquettes-de-version.mjs.
+controlerEtiquettesDeVersion({ APP, verifier });
 
 /* ---------- Bilan ---------- */
 console.log('\n———');

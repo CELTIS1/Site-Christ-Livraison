@@ -48,3 +48,29 @@ jobs:
 
       - name: Coller la commande (remplir vite, sans jamais deviner)
         run: node tests/coller-la-commande.test.mjs
+
+      - name: Saisie en lot par photos d'étiquettes (une ligne vide n'est pas un colis)
+        run: node tests/saisie-en-lot.test.mjs
+
+      - name: Porte d'écriture des colis (ni doublon, ni colis dépouillé de son numéro)
+        run: node tests/porte-ecriture-colis.test.mjs
+
+      # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
+      # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
+      # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,
+      # 157 vérifications sur 614 ne tournaient à chaque publication que si quelqu'un y
+      # pensait, et personne n'y pensait. Ce contrôle compare le contenu du dossier tests/
+      # à ce qui est réellement lancé ci-dessus, et refuse la publication si l'un manque.
+      # Il est placé en dernier pour qu'un vrai échec de contrôle se voie avant lui.
+      - name: Aucune série de contrôles laissée de côté
+        run: |
+          manquantes=""
+          for f in tests/*.test.mjs; do
+            grep -qF "node $f" .github/workflows/tests.yml || manquantes="$manquantes $f"
+          done
+          if [ -n "$manquantes" ]; then
+            echo "Ces séries de contrôles existent mais ne sont lancées nulle part :$manquantes"
+            echo "Ajoutez-leur une étape « - name: … / run: node <fichier> » dans .github/workflows/tests.yml."
+            exit 1
+          fi
+          echo "Les $(ls tests/*.test.mjs | wc -l) séries du dossier tests/ sont toutes branchées."
