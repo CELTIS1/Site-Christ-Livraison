@@ -55,6 +55,9 @@ jobs:
       - name: Porte d'écriture des colis (ni doublon, ni colis dépouillé de son numéro)
         run: node tests/porte-ecriture-colis.test.mjs
 
+      - name: États de paie par période (un mois non saisi n'est pas un mois à zéro)
+        run: node tests/etats-par-periode.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,

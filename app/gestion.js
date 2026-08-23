@@ -134,9 +134,9 @@ function switchSub(group, sub){
   if (group === 'compta' && sub === 'livrecaisse') loadLivreCaisse();
   if (group === 'compta' && sub === 'echeances')   loadEcheances();
   if (group === 'compta' && sub === 'clotures')    loadClotures();
-  // États annuels de paie / états financiers : chargés à la première ouverture.
-  if (group === 'paie'   && sub === 'etats' && !ETATS_ANNEE) chargerEtatsAnnuels();
-  if (group === 'compta' && sub === 'etats' && !ETATS_FIN)   chargerEtatsFinanciers();
+  // États de paie par période / états financiers : chargés à la première ouverture.
+  if (group === 'paie'   && sub === 'etats' && !ETATS_PERIODE) chargerEtatsPeriode();
+  if (group === 'compta' && sub === 'etats' && !ETATS_FIN)     chargerEtatsFinanciers();
   // Coffres à documents : (re)chargés à l'ouverture de l'onglet.
   if (group === 'paie'   && sub === 'dossiers')  { fillDocSalarieSelect(); loadDocuments('personnel').then(renderDocsPersonnel); }
   if (group === 'compta' && sub === 'documents') { loadDocuments('entreprise').then(renderDocsEntreprise); }
@@ -220,6 +220,97 @@ function fillMonthSelect(id, def){
   sel.innerHTML = '';
   MOIS_FR.forEach((m,i) => { const o=document.createElement('option'); o.value=i+1; o.textContent=m; sel.appendChild(o); });
   sel.value = def || (new Date().getMonth()+1);
+}
+
+/* -------------------- Période sur plusieurs mois --------------------
+ * Un état de paie se lit rarement sur une année pleine. On veut « de janvier à
+ * mai », « le premier trimestre », et parfois une période à cheval sur deux
+ * années (novembre 2025 → février 2026 : exercice décalé, contrôle CNPS,
+ * régularisation).
+ *
+ * Le choix de fond : une période est représentée par LA LISTE ORDONNÉE DE SES
+ * MOIS, pas par un couple (année, mois). Tout ce qui vient ensuite — tableaux,
+ * cumuls, exports Excel, PDF, impression — travaille sur cette liste sans jamais
+ * connaître sa longueur. C'est ce qui permet au même écran de servir un mois,
+ * cinq mois ou vingt-quatre mois sans le moindre cas particulier, là où l'ancien
+ * code écrivait « 12 » à sept endroits différents.
+ */
+const MAX_MOIS_PERIODE = 36; // Garde-fou : trois ans. Au-delà, le tableau devient
+                             // illisible et le chargement fait autant d'allers-retours
+                             // vers la base qu'il y a de mois.
+
+/* Liste les mois entre un début et une fin (bornes comprises).
+ * Renvoie [] si la période est à l'envers : on ne devine pas l'intention de
+ * l'utilisateur, l'écran le lui dit.
+ * La liste porte un drapeau .tronquee quand la demande dépassait le garde-fou. */
+function listerMoisPeriode(anneeDeb, moisDeb, anneeFin, moisFin){
+  const aD = Number(anneeDeb), mD = Number(moisDeb), aF = Number(anneeFin), mF = Number(moisFin);
+  if (![aD, mD, aF, mF].every(Number.isFinite)) return [];
+  if (mD < 1 || mD > 12 || mF < 1 || mF > 12) return [];
+  const debut = aD * 12 + (mD - 1);
+  const fin   = aF * 12 + (mF - 1);
+  if (fin < debut) return [];
+  const out = [];
+  for (let k = debut; k <= fin && out.length < MAX_MOIS_PERIODE; k++){
+    const annee = Math.floor(k / 12), mois = (k % 12) + 1;
+    out.push({ annee, mois, periode: periodeStr(annee, mois), libelle: `${MOIS_FR[mois-1]} ${annee}` });
+  }
+  out.tronquee = (fin - debut + 1) > MAX_MOIS_PERIODE;
+  return out;
+}
+
+/* Deux « janv. » côte à côte ne se distinguent pas : dès que la période touche
+   deux années, les en-têtes de colonnes portent l'année. */
+function periodeSurPlusieursAnnees(mois){
+  return new Set((mois || []).map(m => m.annee)).size > 1;
+}
+function enTeteMois(m, avecAnnee){
+  const base = MOIS_FR[m.mois-1].slice(0,4) + '.';
+  return avecAnnee ? `${base} ${String(m.annee).slice(-2)}` : base;
+}
+function enTetesMois(mois){
+  const avec = periodeSurPlusieursAnnees(mois);
+  return (mois || []).map(m => enTeteMois(m, avec));
+}
+
+/* « Janvier 2026 » si la période tient en un mois, « Janvier 2026 → Mai 2026 » sinon. */
+function libellePeriode(mois){
+  if (!mois || !mois.length) return '—';
+  const a = mois[0], z = mois[mois.length-1];
+  return a.periode === z.periode ? a.libelle : `${a.libelle} → ${z.libelle}`;
+}
+/* Fragment de nom de fichier, sans espace ni accent : « 2026-01_2026-05 ». */
+function clePeriode(mois){
+  if (!mois || !mois.length) return 'periode';
+  const k = m => `${m.annee}-${pad2(m.mois)}`;
+  const a = mois[0], z = mois[mois.length-1];
+  return a.periode === z.periode ? k(a) : `${k(a)}_${k(z)}`;
+}
+
+/* Lit une période dans les quatre listes déroulantes d'une barre « <prefixe>-debut-month »,
+   « <prefixe>-debut-year », « <prefixe>-fin-month », « <prefixe>-fin-year ». */
+function lirePeriodeSelects(prefixe){
+  const v = suffixe => {
+    const el = document.getElementById(prefixe + suffixe);
+    return el ? parseInt(el.value, 10) : NaN;
+  };
+  return listerMoisPeriode(v('-debut-year'), v('-debut-month'), v('-fin-year'), v('-fin-month'));
+}
+/* Remplit les quatre listes d'une barre de période et pose la valeur de départ. */
+function initPeriodeSelects(prefixe, def){
+  fillYearSelect(prefixe + '-debut-year');
+  fillYearSelect(prefixe + '-fin-year');
+  fillMonthSelect(prefixe + '-debut-month', def.moisDeb);
+  fillMonthSelect(prefixe + '-fin-month',   def.moisFin);
+  const sd = document.getElementById(prefixe + '-debut-year'); if (sd) sd.value = def.anneeDeb;
+  const sf = document.getElementById(prefixe + '-fin-year');   if (sf) sf.value = def.anneeFin;
+}
+/* Raccourcis (« Année entière », « 1er semestre »…) : pose les quatre listes, puis relance. */
+function poserPeriode(prefixe, anneeDeb, moisDeb, anneeFin, moisFin, apres){
+  const set = (suf, val) => { const el = document.getElementById(prefixe + suf); if (el) el.value = val; };
+  set('-debut-year', anneeDeb); set('-debut-month', moisDeb);
+  set('-fin-year',   anneeFin); set('-fin-month',   moisFin);
+  if (typeof apres === 'function') apres();
 }
 
 /* ============================================================================
@@ -1093,19 +1184,58 @@ async function saveSaisie(input){
 /* ============================================================================
  * PAIE — BULLETINS
  * ==========================================================================*/
-let LAST_BULLETINS = [];
-async function renderBulletins(){
-  const annee = parseInt(document.getElementById('bul-year').value);
-  const mois  = parseInt(document.getElementById('bul-month').value);
-  const per = periodeStr(annee, mois);
-  const map = await loadSaisieMap(per);
-  const actifs = SALARIES.filter(s=>s.actif!==false);
-  LAST_BULLETINS = actifs.map(s => computeBulletin(s, map[s.id]||{periode:per}, PARAMS, GRILLE));
+/* Le récap des bulletins accepte lui aussi une période.
+ *
+ * Un bulletin de paie reste un document MENSUEL — on n'en fabrique pas un « de
+ * janvier à mai ». Ce qui s'étend, c'est la liste : sur plusieurs mois, chaque
+ * ligne est un bulletin réel (un salarié, un mois), le mois apparaît en colonne,
+ * et chaque ligne garde son bouton « Aperçu / PDF ». Sur un seul mois, l'écran
+ * est exactement celui d'avant, la colonne « Mois » en moins.
+ *
+ * Chaque élément de LAST_BULLETINS porte donc son mois avec lui : sans cela,
+ * l'aperçu relirait la liste déroulante et daterait tous les bulletins du même
+ * mois — une erreur silencieuse sur un document qui part au salarié. */
+let LAST_BULLETINS = []; // [{ b, annee, mois }]
 
-  let masseNet=0, totCotSal=0, totCotPat=0, totBrut=0;
-  let body = LAST_BULLETINS.map((b,i) => {
-    masseNet+=b.net; totCotSal+=b.totalCotisSal; totCotPat+=b.totalCotisPat; totBrut+=b.brut;
+async function renderBulletins(){
+  const tbl = document.getElementById('bul-table'); if (!tbl) return;
+  const mois = lirePeriodeSelects('bul');
+  if (!mois.length){
+    LAST_BULLETINS = [];
+    document.getElementById('bul-kpis').innerHTML = '';
+    tbl.innerHTML = '<div class="clt-alert clt-alert-warn" style="margin:0;">Le mois de fin est avant le mois de début : choisissez une période dans l\'ordre.</div>';
+    return;
+  }
+  if (mois.tronquee) showToast(`Période ramenée à ${MAX_MOIS_PERIODE} mois.`, true);
+
+  const actifs = SALARIES.filter(s=>s.actif!==false);
+  let maps;
+  try {
+    maps = await Promise.all(mois.map(m => loadSaisieMap(m.periode)));
+  } catch(e){ showToast('Erreur chargement des bulletins', true); console.error(e); return; }
+
+  // Un mois : tous les salariés actifs, y compris ceux sans saisie (bulletin à zéro,
+  // c'est le comportement historique et il sert à repérer un oubli de saisie).
+  // Plusieurs mois : seules les lignes réellement saisies, sinon la liste se remplit
+  // de bulletins vides et les totaux perdent leur sens.
+  const unSeulMois = mois.length === 1;
+  LAST_BULLETINS = [];
+  mois.forEach((m, i) => {
+    actifs.forEach(s => {
+      const sai = maps[i][s.id];
+      if (!sai && !unSeulMois) return;
+      const b = computeBulletin(s, Object.assign({ periode: m.periode }, sai || {}), PARAMS, GRILLE);
+      LAST_BULLETINS.push({ b, annee: m.annee, mois: m.mois });
+    });
+  });
+
+  let masseNet=0, totCotSal=0, totCotPat=0, totBrut=0, totTransp=0;
+  let body = LAST_BULLETINS.map((L,i) => {
+    const b = L.b;
+    masseNet+=b.net; totCotSal+=b.totalCotisSal; totCotPat+=b.totalCotisPat;
+    totBrut+=b.baseImposable; totTransp+=b.primeTransport;
     return `<tr>
+      ${unSeulMois ? '' : `<td style="text-align:left;">${escapeHTML(MOIS_FR[L.mois-1] + ' ' + L.annee)}</td>`}
       <td style="text-align:left;">${escapeHTML(b.matricule)}</td>
       <td style="text-align:left;">${escapeHTML([b.nom,b.prenom].filter(Boolean).join(' ')||'—')}</td>
       <td>${escapeHTML(b.categorie||'—')}</td>
@@ -1115,18 +1245,22 @@ async function renderBulletins(){
       <td><strong>${fmt(b.net)}</strong></td>
       <td><div class="row-actions"><button class="icon-btn" onclick="previewBulletin(${i})">Aperçu / PDF</button></div></td></tr>`;
   }).join('');
-  if (!actifs.length) body = '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Aucun salarié actif.</td></tr>';
+  const nbCol = unSeulMois ? 8 : 9;
+  if (!LAST_BULLETINS.length){
+    body = `<tr><td colspan="${nbCol}" style="text-align:center;color:var(--muted);">${actifs.length ? 'Aucune paie saisie sur cette période.' : 'Aucun salarié actif.'}</td></tr>`;
+  }
 
   document.getElementById('bul-kpis').innerHTML = `
-    <div class="kpi"><div class="kpi-label">Masse salariale nette</div><div class="kpi-value">${fmtF(masseNet)}</div><div class="kpi-sub">${MOIS_FR[mois-1]} ${annee}</div></div>
+    <div class="kpi"><div class="kpi-label">Masse salariale nette</div><div class="kpi-value">${fmtF(masseNet)}</div><div class="kpi-sub">${escapeHTML(libellePeriode(mois))}</div></div>
     <div class="kpi"><div class="kpi-label">Total cotisations salariales</div><div class="kpi-value">${fmtF(totCotSal)}</div></div>
     <div class="kpi"><div class="kpi-label">Total charges patronales</div><div class="kpi-value">${fmtF(totCotPat)}</div></div>
     <div class="kpi"><div class="kpi-label">Coût total employeur</div><div class="kpi-value">${fmtF(masseNet+totCotSal+totCotPat)}</div></div>`;
 
-  document.getElementById('bul-table').innerHTML = `<table class="g-table"><thead><tr>
+  tbl.innerHTML = `<table class="g-table"><thead><tr>
+    ${unSeulMois ? '' : '<th style="text-align:left;">Mois</th>'}
     <th style="text-align:left;">Matricule</th><th style="text-align:left;">Nom</th><th>Cat.</th><th>Brut imposable</th><th>Cotis. sal.</th><th>Prime transp.</th><th>NET À PAYER</th><th></th></tr></thead>
     <tbody>${body}</tbody>
-    <tfoot><tr><td colspan="3">TOTAL (${LAST_BULLETINS.length})</td><td>${fmt(LAST_BULLETINS.reduce((s,b)=>s+b.baseImposable,0))}</td><td>${fmt(totCotSal)}</td><td>${fmt(LAST_BULLETINS.reduce((s,b)=>s+b.primeTransport,0))}</td><td><strong>${fmt(masseNet)}</strong></td><td></td></tr></tfoot></table>`;
+    <tfoot><tr><td colspan="${unSeulMois ? 3 : 4}">TOTAL (${LAST_BULLETINS.length} bulletin${LAST_BULLETINS.length>1?'s':''})</td><td>${fmt(totBrut)}</td><td>${fmt(totCotSal)}</td><td>${fmt(totTransp)}</td><td><strong>${fmt(masseNet)}</strong></td><td></td></tr></tfoot></table>`;
 }
 
 function bulletinRowsHTML(b, annee, mois){
@@ -1150,8 +1284,8 @@ function bulletinRowsHTML(b, annee, mois){
   ${b.retenueDivers?`<tr><td style="text-align:left;">Retenue divers</td><td></td><td style="text-align:right;">${fmt(b.retenueDivers)}</td></tr>`:''}`;
 }
 function previewBulletin(i){
-  const b = LAST_BULLETINS[i]; if (!b) return;
-  const annee = parseInt(document.getElementById('bul-year').value), mois = parseInt(document.getElementById('bul-month').value);
+  const L = LAST_BULLETINS[i]; if (!L) return;
+  const b = L.b, annee = L.annee, mois = L.mois;
   const html = `<div class="bulletin">
     <h4>BULLETIN DE PAIE</h4>
     <div style="text-align:center;font-size:12px;color:var(--muted);">${escapeHTML(PARAMS.societe||'')} — ${MOIS_FR[mois-1]} ${annee}</div>
@@ -1218,30 +1352,159 @@ function generateBulletinPDF(b, annee, mois){
   doc.text(`Charges patronales : ${fmtF(b.totalCotisPat)}  ·  Coût total employeur : ${fmtF(b.net + b.totalCotisSal + b.totalCotisPat)}`, 14, yy+8);
   doc.save(`Bulletin_${b.matricule}_${MOIS_FR[mois-1]}_${annee}.pdf`);
 }
+/* Les lignes du récap, construites une fois pour Excel et pour l'impression. */
+function recapBulletinsLignes(){
+  const tot = { brut:0, its:0, cmu:0, cnps:0, cotSal:0, transp:0, net:0, cotPat:0 };
+  const lignes = LAST_BULLETINS.map(L => {
+    const b = L.b;
+    tot.brut += b.baseImposable; tot.its += b.retenues.its; tot.cmu += b.retenues.cmuSal;
+    tot.cnps += b.retenues.cnpsSal; tot.cotSal += b.totalCotisSal; tot.transp += b.primeTransport;
+    tot.net += b.net; tot.cotPat += b.totalCotisPat;
+    return { L, b, mois: `${MOIS_FR[L.mois-1]} ${L.annee}` };
+  });
+  return { lignes, tot };
+}
+
 async function exportRecapPaie(){
   if (!LAST_BULLETINS.length){ showToast('Générez d\'abord les bulletins.', true); return; }
-  const annee = parseInt(document.getElementById('bul-year').value), mois = parseInt(document.getElementById('bul-month').value);
-  const aoa = [['Matricule','Nom','Emploi','Catégorie','Brut imposable','ITS','CMU','CNPS','Total cotis. sal.','Prime transport','NET À PAYER','Charges patronales']];
-  LAST_BULLETINS.forEach(b => aoa.push([b.matricule, [b.nom,b.prenom].filter(Boolean).join(' '), b.emploi||'', b.categorie||'',
+  const mois = lirePeriodeSelects('bul');
+  const { lignes, tot } = recapBulletinsLignes();
+  const aoa = [
+    [`Récapitulatif de paie — ${libellePeriode(mois)}`],
+    [`${(PARAMS && PARAMS.societe) || ''} — édité le ${frJour(isoJour(new Date()))}`],
+    [],
+    ['Mois','Matricule','Nom','Emploi','Catégorie','Brut imposable','ITS','CMU','CNPS','Total cotis. sal.','Prime transport','NET À PAYER','Charges patronales'],
+  ];
+  lignes.forEach(({ b, mois: lblMois }) => aoa.push([lblMois, b.matricule, [b.nom,b.prenom].filter(Boolean).join(' '), b.emploi||'', b.categorie||'',
     Math.round(b.baseImposable), Math.round(b.retenues.its), Math.round(b.retenues.cmuSal), Math.round(b.retenues.cnpsSal),
     Math.round(b.totalCotisSal), Math.round(b.primeTransport), Math.round(b.net), Math.round(b.totalCotisPat)]));
-  const tot = LAST_BULLETINS.reduce((a,b)=>({net:a.net+b.net, sal:a.sal+b.totalCotisSal, pat:a.pat+b.totalCotisPat, brut:a.brut+b.baseImposable}),{net:0,sal:0,pat:0,brut:0});
-  aoa.push(['TOTAL','','','', Math.round(tot.brut),'','','', Math.round(tot.sal),'', Math.round(tot.net), Math.round(tot.pat)]);
+  aoa.push(['TOTAL','','','','', Math.round(tot.brut), Math.round(tot.its), Math.round(tot.cmu), Math.round(tot.cnps),
+    Math.round(tot.cotSal), Math.round(tot.transp), Math.round(tot.net), Math.round(tot.cotPat)]);
   const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `Paie ${MOIS_FR[mois-1]}`);
-  XLSX.writeFile(wb, `Recap_Paie_${MOIS_FR[mois-1]}_${annee}.xlsx`);
+  XLSX.utils.book_append_sheet(wb, ws, `Paie ${clePeriode(mois)}`.slice(0,31));
+  XLSX.writeFile(wb, `Recap_Paie_${clePeriode(mois)}.xlsx`);
+}
+
+function imprimerRecapBulletins(){
+  if (!LAST_BULLETINS.length){ showToast('Générez d\'abord les bulletins.', true); return; }
+  const mois = lirePeriodeSelects('bul');
+  const { lignes, tot } = recapBulletinsLignes();
+  const unSeulMois = mois.length === 1;
+  const corps = lignes.map(({ b, mois: lblMois }) => `<tr>
+      ${unSeulMois ? '' : `<td>${escapeHTML(lblMois)}</td>`}
+      <td>${escapeHTML(b.matricule)}</td>
+      <td>${escapeHTML([b.nom,b.prenom].filter(Boolean).join(' ')||'—')}</td>
+      <td>${escapeHTML(b.categorie||'—')}</td>
+      <td>${fmt(b.baseImposable)}</td><td>${fmt(b.retenues.its)}</td>
+      <td>${fmt(b.retenues.cmuSal)}</td><td>${fmt(b.retenues.cnpsSal)}</td>
+      <td>${fmt(b.totalCotisSal)}</td><td>${fmt(b.primeTransport)}</td>
+      <td><strong>${fmt(b.net)}</strong></td><td>${fmt(b.totalCotisPat)}</td>
+    </tr>`).join('');
+  const html = enteteDocumentImprimable('Récapitulatif de paie', libellePeriode(mois))
+    + `<table>
+        <thead><tr>
+          ${unSeulMois ? '' : '<th>Mois</th>'}
+          <th>Matricule</th><th>Nom</th><th>Cat.</th><th>Brut imposable</th><th>ITS</th>
+          <th>CMU</th><th>CNPS</th><th>Cotis. sal.</th><th>Prime transp.</th>
+          <th>NET À PAYER</th><th>Charges patr.</th>
+        </tr></thead>
+        <tbody>${corps}</tbody>
+        <tfoot><tr>
+          <td colspan="${unSeulMois ? 4 : 5}">TOTAL — ${lignes.length} bulletin(s)</td>
+          <td>${fmt(tot.brut)}</td><td>${fmt(tot.its)}</td><td>${fmt(tot.cmu)}</td><td>${fmt(tot.cnps)}</td>
+          <td>${fmt(tot.cotSal)}</td><td>${fmt(tot.transp)}</td><td><strong>${fmt(tot.net)}</strong></td><td>${fmt(tot.cotPat)}</td>
+        </tr></tfoot>
+      </table>`
+    + `<div class="doc-signatures">
+        <div><span>Le comptable</span></div>
+        <div><span>La direction</span></div>
+       </div>`
+    + piedDocumentImprimable('Montants en francs CFA.');
+  ouvrirApercuImpression(html);
 }
 
 /* ============================================================================
- * PAIE — ÉTATS ANNUELS (fiche individuelle + synthèse du personnel)
+ * APERÇU IMPRIMABLE
  * ----------------------------------------------------------------------------
- * Cumul de l'année reconstitué à partir des saisies mensuelles : pour chaque
- * salarié actif et chaque mois RÉELLEMENT saisi, on recalcule le bulletin avec
- * le même moteur que les bulletins mensuels. Les mois sans saisie ne sont pas
- * comptés (colonne « Mois payés »), pour éviter de gonfler artificiellement les
- * cumuls (ex. un salarié embauché en cours d'année).
+ * Un état qu'on ne peut pas poser sur un bureau ne sert qu'à moitié : la banque,
+ * la CNPS, l'expert-comptable et le salarié lui-même demandent du papier.
+ *
+ * Le principe : on fabrique un document autonome (en-tête société, tableau,
+ * pied de page) dans une fenêtre d'aperçu, et une règle @media print masque
+ * TOUT le reste de la page à l'impression — menus, onglets, boutons. Ce que
+ * l'utilisateur voit à l'écran est donc exactement ce qui sortira de
+ * l'imprimante, avec ⌘P comme avec le bouton « Imprimer ».
+ *
+ * Pourquoi pas une nouvelle fenêtre : elle se fait bloquer par les navigateurs
+ * (surtout sur téléphone, où l'application tourne en mode installé) et elle
+ * perd la feuille de style. Ici, rien à autoriser.
  * ==========================================================================*/
-let ETATS_ANNEE = null; // { annee, byEmp:{salId:[b|null ×12]}, salaries:[] }
+
+/* En-tête du document : qui édite, quoi, sur quelle période, et quand. La date
+   d'édition n'est pas décorative — deux tirages d'un même état à deux semaines
+   d'écart peuvent différer si des saisies ont été complétées entre-temps. */
+function enteteDocumentImprimable(titre, sousTitre){
+  const p = PARAMS || {};
+  const coord = [p.activite, p.adresse, p.num_cnps_employeur ? 'N° CNPS employeur : ' + p.num_cnps_employeur : null]
+    .filter(Boolean).map(escapeHTML).join('<br>');
+  return `<div class="doc-entete">
+    <div>
+      <div class="doc-societe">${escapeHTML(p.societe || 'CHRIST LIVRAISON & TRANSPORT SARL')}</div>
+      <div class="doc-coord">${coord}</div>
+    </div>
+    <div>
+      <div class="doc-titre">${escapeHTML(titre)}</div>
+      <div class="doc-periode">${escapeHTML(sousTitre)}</div>
+      <div class="doc-periode doc-edite">Édité le ${escapeHTML(frJour(isoJour(new Date())))}</div>
+    </div>
+  </div>`;
+}
+
+function piedDocumentImprimable(note){
+  return `<div class="doc-pied">
+    <span>${escapeHTML(note || '')}</span>
+    <span>${escapeHTML((PARAMS && PARAMS.societe) || '')} — document interne</span>
+  </div>`;
+}
+
+function ouvrirApercuImpression(html){
+  const zone = document.getElementById('impression-zone'); if (!zone) return;
+  zone.innerHTML = html;
+  document.body.classList.add('impression-ouverte');
+  const m = document.getElementById('modal-impression'); if (m) m.classList.add('open');
+  zone.scrollTop = 0;
+}
+function fermerApercuImpression(){
+  document.body.classList.remove('impression-ouverte');
+  const m = document.getElementById('modal-impression'); if (m) m.classList.remove('open');
+}
+function lancerImpression(){ window.print(); }
+
+/* La fenêtre peut aussi se fermer par un clic sur le fond ou par Échap : dans ces
+   deux cas la classe du corps de page doit partir, sinon un ⌘P plus tard
+   n'imprimerait qu'une feuille blanche. */
+(function brancherFermetureApercu(){
+  const m = document.getElementById('modal-impression');
+  if (m) m.addEventListener('click', e => { if (e.target === m) fermerApercuImpression(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.body.classList.contains('impression-ouverte')) fermerApercuImpression();
+  });
+})();
+
+/* ============================================================================
+ * PAIE — ÉTATS PAR PÉRIODE (fiche individuelle + synthèse du personnel)
+ * ----------------------------------------------------------------------------
+ * Cumul reconstitué à partir des saisies mensuelles : pour chaque salarié actif
+ * et chaque mois RÉELLEMENT saisi de la période choisie, on recalcule le bulletin
+ * avec le même moteur que les bulletins mensuels. Les mois sans saisie ne sont pas
+ * comptés (colonne « Mois payés »), pour éviter de gonfler artificiellement les
+ * cumuls (ex. un salarié embauché en cours de période).
+ *
+ * La période est libre : un mois, un trimestre, un semestre, une année, ou une
+ * plage à cheval sur deux années. Par défaut l'écran s'ouvre sur janvier →
+ * décembre de l'année courante, c'est-à-dire exactement l'ancien état annuel.
+ * ==========================================================================*/
+let ETATS_PERIODE = null; // { mois:[{annee,mois,periode,libelle}], byEmp:{salId:[b|null ×mois]}, salaries:[] }
 
 /* Rubriques de la fiche individuelle (lignes) — reprend le modèle « fiche
  * individuelle » : gains, retenues salariales, net, puis coût employeur. */
@@ -1268,182 +1531,251 @@ const FICHE_RUBRIQUES = [
   { lbl:'Coût total employeur',      get:b=>b.net + b.totalCotisSal + b.totalCotisPat, tot:true },
 ];
 
-async function chargerEtatsAnnuels(){
-  const sel = document.getElementById('etat-year'); if (!sel) return;
-  const annee = parseInt(sel.value);
+async function chargerEtatsPeriode(){
+  const contSynth = document.getElementById('etat-synthese'); if (!contSynth) return;
+  const lbl   = document.getElementById('etat-periode-lbl');
+  const kpis  = document.getElementById('etat-kpis');
+  const fiche = document.getElementById('etat-fiche');
+  const mois = lirePeriodeSelects('etat');
+
+  if (!mois.length){
+    // Période à l'envers : on ne corrige pas en douce, on le dit.
+    ETATS_PERIODE = null;
+    if (lbl) lbl.textContent = '—';
+    if (kpis) kpis.innerHTML = '';
+    if (fiche) fiche.innerHTML = '';
+    contSynth.innerHTML = '<div class="clt-alert clt-alert-warn" style="margin:0;">Le mois de fin est avant le mois de début : choisissez une période dans l\'ordre.</div>';
+    showToast('Le mois de fin est avant le mois de début.', true);
+    return;
+  }
+  if (mois.tronquee) showToast(`Période ramenée à ${MAX_MOIS_PERIODE} mois.`, true);
+
   const actifs = SALARIES.filter(s=>s.actif!==false);
-  const periodes = Array.from({length:12},(_,i)=>periodeStr(annee,i+1));
   let maps;
   try {
-    maps = await Promise.all(periodes.map(p=>loadSaisieMap(p)));
-  } catch(e){ showToast('Erreur chargement des états annuels', true); console.error(e); return; }
+    maps = await Promise.all(mois.map(m => loadSaisieMap(m.periode)));
+  } catch(e){ showToast('Erreur chargement des états', true); console.error(e); return; }
   const byEmp = {};
   actifs.forEach(s => {
     byEmp[s.id] = maps.map((map,i) => {
       const sai = map[s.id];
       if (!sai) return null; // mois non saisi → non compté
-      return computeBulletin(s, Object.assign({ periode: periodes[i] }, sai), PARAMS, GRILLE);
+      return computeBulletin(s, Object.assign({ periode: mois[i].periode }, sai), PARAMS, GRILLE);
     });
   });
-  ETATS_ANNEE = { annee, byEmp, salaries: actifs, periodes };
-  document.getElementById('etat-annee-lbl').textContent = annee;
+  ETATS_PERIODE = { mois, byEmp, salaries: actifs };
+  if (lbl) lbl.textContent = libellePeriode(mois);
   fillEtatSalarieSelect();
   renderEtatSynthese();
   renderFicheIndividuelle();
 }
 
-/* Cumul annuel d'un salarié sur une fonction d'accès (ignore les mois null). */
+/* Raccourcis de période. « Année entière » reproduit l'ancien état annuel. */
+function periodeRaccourci(quoi){
+  const sel = document.getElementById('etat-debut-year');
+  const a = sel ? parseInt(sel.value, 10) : ANNEE_COURANTE;
+  const plages = {
+    annee:   [a, 1,  a, 12],
+    sem1:    [a, 1,  a, 6],
+    sem2:    [a, 7,  a, 12],
+    tri1:    [a, 1,  a, 3],
+    precedente: [a-1, 1, a-1, 12],
+  };
+  const p = plages[quoi]; if (!p) return;
+  poserPeriode('etat', p[0], p[1], p[2], p[3], chargerEtatsPeriode);
+}
+
+/* Cumul d'un salarié sur la période, pour une fonction d'accès (ignore les mois null). */
 function cumulFiche(bs, getter){
   return bs.reduce((s,b)=> s + (b ? n(getter(b)) : 0), 0);
 }
 function moisPayes(bs){ return bs.filter(Boolean).length; }
 
 function fillEtatSalarieSelect(){
-  const sel = document.getElementById('etat-salarie'); if (!sel || !ETATS_ANNEE) return;
+  const sel = document.getElementById('etat-salarie'); if (!sel || !ETATS_PERIODE) return;
   const prev = sel.value;
-  sel.innerHTML = ETATS_ANNEE.salaries.map(s =>
+  sel.innerHTML = ETATS_PERIODE.salaries.map(s =>
     `<option value="${s.id}">${escapeHTML(s.matricule)} — ${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</option>`
   ).join('');
-  if (prev && ETATS_ANNEE.byEmp[prev]) sel.value = prev;
+  if (prev && ETATS_PERIODE.byEmp[prev]) sel.value = prev;
+}
+
+/* ---------------------------------------------------------------------------
+ * Les CHIFFRES de la synthèse, calculés une seule fois et servis à l'écran, à
+ * Excel et à l'impression. Trois recopies du même calcul finissent toujours par
+ * diverger en silence — et ici la divergence porterait sur des salaires.
+ * ------------------------------------------------------------------------- */
+function synthesePeriodeLignes(){
+  if (!ETATS_PERIODE) return null;
+  const { byEmp, salaries } = ETATS_PERIODE;
+  const lignes = salaries.map(s => {
+    const bs = byEmp[s.id] || [];
+    const v = {
+      brut:   cumulFiche(bs, b=>b.baseImposable),
+      its:    cumulFiche(bs, b=>b.retenues.its),
+      cmu:    cumulFiche(bs, b=>b.retenues.cmuSal),
+      cnps:   cumulFiche(bs, b=>b.retenues.cnpsSal),
+      cotSal: cumulFiche(bs, b=>b.totalCotisSal),
+      transp: cumulFiche(bs, b=>b.primeTransport),
+      net:    cumulFiche(bs, b=>b.net),
+      cotPat: cumulFiche(bs, b=>b.totalCotisPat),
+    };
+    v.cout = v.net + v.cotSal + v.cotPat;
+    return { s, bs, payes: moisPayes(bs), v };
+  });
+  const total = {};
+  ['brut','its','cmu','cnps','cotSal','transp','net','cotPat','cout']
+    .forEach(k => { total[k] = lignes.reduce((t,l) => t + l.v[k], 0); });
+  return { lignes, total };
+}
+
+/* Les LIGNES de la fiche individuelle, même principe : une seule construction
+ * pour le tableau, le fichier Excel, le PDF et la feuille imprimée.
+ * Une cellule vaut null quand le mois n'a pas été saisi — c'est différent de
+ * zéro, et l'affichage doit pouvoir faire la différence. */
+function ficheLignes(bs){
+  const lignes = [{
+    type: 'presence', lbl: 'Jours de présence',
+    cells: bs.map(b => b ? b.jours : null),
+    total: bs.reduce((t,b) => t + (b ? b.jours : 0), 0),
+  }];
+  FICHE_RUBRIQUES.forEach(rub => {
+    if (rub.sec){ lignes.push({ type:'sec', lbl: rub.sec }); return; }
+    let tot = 0;
+    const cells = bs.map(b => { if (!b) return null; const v = n(rub.get(b)); tot += v; return v; });
+    lignes.push({ type: rub.tot ? 'total' : 'ligne', lbl: rub.lbl, cells, total: tot });
+  });
+  return lignes;
 }
 
 function renderEtatSynthese(){
-  if (!ETATS_ANNEE){ return; }
-  const { byEmp, salaries } = ETATS_ANNEE;
-  let tBrut=0, tCotSal=0, tNet=0, tCotPat=0, tCout=0;
-  const body = salaries.map(s => {
-    const bs = byEmp[s.id] || [];
-    const brut = cumulFiche(bs, b=>b.baseImposable);
-    const cotSal = cumulFiche(bs, b=>b.totalCotisSal);
-    const net = cumulFiche(bs, b=>b.net);
-    const cotPat = cumulFiche(bs, b=>b.totalCotisPat);
-    const cout = net + cotSal + cotPat;
-    tBrut+=brut; tCotSal+=cotSal; tNet+=net; tCotPat+=cotPat; tCout+=cout;
-    return `<tr>
-      <td style="text-align:left;">${escapeHTML(s.matricule)}</td>
-      <td style="text-align:left;">${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</td>
-      <td>${moisPayes(bs)}</td>
-      <td>${fmt(brut)}</td>
-      <td>${fmt(cotSal)}</td>
-      <td><strong>${fmt(net)}</strong></td>
-      <td>${fmt(cotPat)}</td>
-      <td>${fmt(cout)}</td></tr>`;
-  }).join('');
-  const empty = !salaries.length ? '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Aucun salarié actif.</td></tr>' : '';
+  const d = synthesePeriodeLignes(); if (!d) return;
+  const { lignes, total } = d;
+  const nbMois = ETATS_PERIODE.mois.length;
 
+  const body = lignes.map(l => `<tr>
+      <td style="text-align:left;">${escapeHTML(l.s.matricule)}</td>
+      <td style="text-align:left;">${escapeHTML([l.s.nom,l.s.prenom].filter(Boolean).join(' ')||'—')}</td>
+      <td>${l.payes}${l.payes < nbMois ? ` <span style="color:var(--muted);">/ ${nbMois}</span>` : ''}</td>
+      <td>${fmt(l.v.brut)}</td>
+      <td>${fmt(l.v.cotSal)}</td>
+      <td><strong>${fmt(l.v.net)}</strong></td>
+      <td>${fmt(l.v.cotPat)}</td>
+      <td>${fmt(l.v.cout)}</td></tr>`).join('');
+  const empty = !lignes.length ? '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Aucun salarié actif.</td></tr>' : '';
+
+  const sub = libellePeriode(ETATS_PERIODE.mois) + ` · ${nbMois} mois`;
   document.getElementById('etat-kpis').innerHTML = `
-    <div class="kpi"><div class="kpi-label">Masse brute annuelle</div><div class="kpi-value">${fmtF(tBrut)}</div><div class="kpi-sub">${ETATS_ANNEE.annee}</div></div>
-    <div class="kpi"><div class="kpi-label">Net versé (année)</div><div class="kpi-value">${fmtF(tNet)}</div></div>
-    <div class="kpi"><div class="kpi-label">Charges patronales (année)</div><div class="kpi-value">${fmtF(tCotPat)}</div></div>
-    <div class="kpi"><div class="kpi-label">Coût total employeur (année)</div><div class="kpi-value">${fmtF(tCout)}</div></div>`;
+    <div class="kpi"><div class="kpi-label">Masse brute de la période</div><div class="kpi-value">${fmtF(total.brut)}</div><div class="kpi-sub">${escapeHTML(sub)}</div></div>
+    <div class="kpi"><div class="kpi-label">Net versé (période)</div><div class="kpi-value">${fmtF(total.net)}</div></div>
+    <div class="kpi"><div class="kpi-label">Charges patronales (période)</div><div class="kpi-value">${fmtF(total.cotPat)}</div></div>
+    <div class="kpi"><div class="kpi-label">Coût total employeur (période)</div><div class="kpi-value">${fmtF(total.cout)}</div></div>`;
 
   document.getElementById('etat-synthese').innerHTML = `<table class="g-table"><thead><tr>
     <th style="text-align:left;">Matricule</th><th style="text-align:left;">Nom</th><th>Mois payés</th>
     <th>Brut imposable</th><th>Cotis. sal.</th><th>Net versé</th><th>Charges patr.</th><th>Coût total</th></tr></thead>
     <tbody>${empty||body}</tbody>
-    <tfoot><tr><td colspan="3">TOTAL (${salaries.length})</td><td>${fmt(tBrut)}</td><td>${fmt(tCotSal)}</td><td><strong>${fmt(tNet)}</strong></td><td>${fmt(tCotPat)}</td><td>${fmt(tCout)}</td></tr></tfoot></table>`;
+    <tfoot><tr><td colspan="3">TOTAL (${lignes.length})</td><td>${fmt(total.brut)}</td><td>${fmt(total.cotSal)}</td><td><strong>${fmt(total.net)}</strong></td><td>${fmt(total.cotPat)}</td><td>${fmt(total.cout)}</td></tr></tfoot></table>`;
 }
 
 function ficheSalarieCourant(){
-  if (!ETATS_ANNEE) return null;
+  if (!ETATS_PERIODE) return null;
   const sel = document.getElementById('etat-salarie');
   const id = sel && sel.value;
-  const s = ETATS_ANNEE.salaries.find(x=>x.id===id);
+  const s = ETATS_PERIODE.salaries.find(x=>x.id===id);
   if (!s) return null;
-  return { s, bs: ETATS_ANNEE.byEmp[s.id] || [] };
+  return { s, bs: ETATS_PERIODE.byEmp[s.id] || [] };
+}
+
+/* Ligne d'identité rappelée en tête de fiche, à l'écran comme au papier. */
+function identiteSalarieTexte(s, bs){
+  return `${s.matricule} — ${[s.nom,s.prenom].filter(Boolean).join(' ')||'—'}`
+       + ` · ${s.emploi||'—'} · Cat. ${s.categorie||'—'}`
+       + ` · ${moisPayes(bs)} mois payés sur ${ETATS_PERIODE.mois.length}`;
 }
 
 function renderFicheIndividuelle(){
-  const cont = document.getElementById('etat-fiche'); if (!cont || !ETATS_ANNEE) return;
+  const cont = document.getElementById('etat-fiche'); if (!cont || !ETATS_PERIODE) return;
   const f = ficheSalarieCourant();
   if (!f){ cont.innerHTML = '<div style="color:var(--muted);padding:10px;">Sélectionnez un salarié.</div>'; return; }
   const { s, bs } = f;
-  // En-tête présence
-  let head = '<th style="text-align:left;">Rubrique</th>';
-  for (let m=1;m<=12;m++) head += `<th>${MOIS_FR[m-1].slice(0,4)}.</th>`;
-  head += '<th>Total</th>';
+  const entetes = enTetesMois(ETATS_PERIODE.mois);
+  const largeur = entetes.length + 2; // Rubrique + les mois + Total
 
-  const presenceRow = () => {
-    let r = '<tr style="background:var(--clt-teal-soft,#e6f4f2);font-weight:600;"><td style="text-align:left;">Jours de présence</td>';
-    let tot=0;
-    bs.forEach(b => { const v = b ? b.jours : ''; if(b) tot+=b.jours; r += `<td>${v}</td>`; });
-    r += `<td>${tot}</td></tr>`;
-    return r;
-  };
+  const head = '<th style="text-align:left;">Rubrique</th>'
+    + entetes.map(e => `<th>${escapeHTML(e)}</th>`).join('')
+    + '<th>Total</th>';
 
-  const rows = FICHE_RUBRIQUES.map(rub => {
-    if (rub.sec){
-      return `<tr><td colspan="14" style="text-align:left;background:#f1f5f9;font-weight:700;letter-spacing:.03em;color:var(--clt-teal-dark);">${escapeHTML(rub.sec)}</td></tr>`;
+  const rows = ficheLignes(bs).map(l => {
+    if (l.type === 'sec'){
+      return `<tr><td colspan="${largeur}" style="text-align:left;background:#f1f5f9;font-weight:700;letter-spacing:.03em;color:var(--clt-teal-dark);">${escapeHTML(l.lbl)}</td></tr>`;
     }
-    let cells = '', tot = 0;
-    bs.forEach(b => {
-      if (!b){ cells += '<td></td>'; return; }
-      const v = n(rub.get(b)); tot += v;
-      cells += `<td>${v ? fmt(v) : ''}</td>`;
-    });
-    const style = rub.tot ? ' style="font-weight:700;background:#f8fafc;"' : '';
-    return `<tr${style}><td style="text-align:left;">${escapeHTML(rub.lbl)}</td>${cells}<td style="font-weight:700;">${fmt(tot)}</td></tr>`;
+    const cells = l.cells.map(v => `<td>${v == null ? '' : (l.type === 'presence' ? v : (v ? fmt(v) : ''))}</td>`).join('');
+    const style = l.type === 'presence' ? ' style="background:var(--clt-teal-soft,#e6f4f2);font-weight:600;"'
+                : l.type === 'total'    ? ' style="font-weight:700;background:#f8fafc;"' : '';
+    const tot = l.type === 'presence' ? l.total : fmt(l.total);
+    return `<tr${style}><td style="text-align:left;">${escapeHTML(l.lbl)}</td>${cells}<td style="font-weight:700;">${tot}</td></tr>`;
   }).join('');
 
   cont.innerHTML = `
     <div style="margin:6px 0 10px;font-size:13px;color:var(--muted);">
-      <strong>${escapeHTML(s.matricule)}</strong> — ${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}
-      · ${escapeHTML(s.emploi||'—')} · Cat. ${escapeHTML(s.categorie||'—')} · ${moisPayes(bs)} mois payés en ${ETATS_ANNEE.annee}
+      ${escapeHTML(identiteSalarieTexte(s, bs))} · ${escapeHTML(libellePeriode(ETATS_PERIODE.mois))}
     </div>
     <table class="g-table"><thead><tr>${head}</tr></thead>
-    <tbody>${presenceRow()}${rows}</tbody></table>`;
+    <tbody>${rows}</tbody></table>`;
 }
 
-/* --- Exports Excel / PDF des états annuels --- */
-function exportSynthesePaieAnnuelle(){
-  if (!ETATS_ANNEE){ showToast('Générez d\'abord les états.', true); return; }
-  const { byEmp, salaries, annee } = ETATS_ANNEE;
-  const aoa = [['Matricule','Nom','Mois payés','Brut imposable','ITS','CMU','CNPS','Cotis. sal.','Prime transport','Net versé','Charges patr.','Coût total']];
-  let T=[0,0,0,0,0,0,0,0,0];
-  salaries.forEach(s => {
-    const bs = byEmp[s.id]||[];
-    const vals = {
-      brut: cumulFiche(bs,b=>b.baseImposable), its: cumulFiche(bs,b=>b.retenues.its),
-      cmu: cumulFiche(bs,b=>b.retenues.cmuSal), cnps: cumulFiche(bs,b=>b.retenues.cnpsSal),
-      cotSal: cumulFiche(bs,b=>b.totalCotisSal), transp: cumulFiche(bs,b=>b.primeTransport),
-      net: cumulFiche(bs,b=>b.net), cotPat: cumulFiche(bs,b=>b.totalCotisPat),
-    };
-    const cout = vals.net + vals.cotSal + vals.cotPat;
-    aoa.push([s.matricule, [s.nom,s.prenom].filter(Boolean).join(' '), moisPayes(bs),
-      Math.round(vals.brut), Math.round(vals.its), Math.round(vals.cmu), Math.round(vals.cnps),
-      Math.round(vals.cotSal), Math.round(vals.transp), Math.round(vals.net), Math.round(vals.cotPat), Math.round(cout)]);
-    T=[T[0]+vals.brut,T[1]+vals.its,T[2]+vals.cmu,T[3]+vals.cnps,T[4]+vals.cotSal,T[5]+vals.transp,T[6]+vals.net,T[7]+vals.cotPat,T[8]+cout];
+/* --- Exports Excel / PDF / impression des états par période --- */
+function exportSynthesePaiePeriode(){
+  const d = synthesePeriodeLignes();
+  if (!d){ showToast('Générez d\'abord les états.', true); return; }
+  const mois = ETATS_PERIODE.mois;
+  const aoa = [
+    [`Synthèse de paie — ${libellePeriode(mois)}`],
+    [`${(PARAMS && PARAMS.societe) || ''} — édité le ${frJour(isoJour(new Date()))}`],
+    [],
+    ['Matricule','Nom','Emploi','Mois payés','Mois de la période','Brut imposable','ITS','CMU','CNPS','Cotis. sal.','Prime transport','Net versé','Charges patr.','Coût total'],
+  ];
+  d.lignes.forEach(l => {
+    const v = l.v;
+    aoa.push([l.s.matricule, [l.s.nom,l.s.prenom].filter(Boolean).join(' '), l.s.emploi||'', l.payes, mois.length,
+      Math.round(v.brut), Math.round(v.its), Math.round(v.cmu), Math.round(v.cnps),
+      Math.round(v.cotSal), Math.round(v.transp), Math.round(v.net), Math.round(v.cotPat), Math.round(v.cout)]);
   });
-  aoa.push(['TOTAL','','', Math.round(T[0]),Math.round(T[1]),Math.round(T[2]),Math.round(T[3]),Math.round(T[4]),Math.round(T[5]),Math.round(T[6]),Math.round(T[7]),Math.round(T[8])]);
+  const T = d.total;
+  aoa.push(['TOTAL','','','','', Math.round(T.brut), Math.round(T.its), Math.round(T.cmu), Math.round(T.cnps),
+    Math.round(T.cotSal), Math.round(T.transp), Math.round(T.net), Math.round(T.cotPat), Math.round(T.cout)]);
   const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `Synthèse ${annee}`);
-  XLSX.writeFile(wb, `Synthese_Paie_${annee}.xlsx`);
+  // Un nom d'onglet Excel ne supporte ni les crochets, ni plus de 31 caractères :
+  // on y met la clé de période, courte et sans surprise.
+  XLSX.utils.book_append_sheet(wb, ws, `Synthese ${clePeriode(mois)}`.slice(0,31));
+  XLSX.writeFile(wb, `Synthese_Paie_${clePeriode(mois)}.xlsx`);
 }
 
 function exportFicheIndividuelle(){
   const f = ficheSalarieCourant();
   if (!f){ showToast('Sélectionnez un salarié.', true); return; }
-  const { s, bs } = f; const annee = ETATS_ANNEE.annee;
-  const headMois = MOIS_FR.map(m=>m); // en-têtes mensuels
-  const aoa = [['Rubrique', ...headMois, 'Total']];
-  // Présence
-  const presTot = bs.reduce((t,b)=> t + (b?b.jours:0), 0);
-  aoa.push(['Jours de présence', ...bs.map(b=>b?b.jours:''), presTot]);
-  FICHE_RUBRIQUES.forEach(rub => {
-    if (rub.sec){ aoa.push([rub.sec]); return; }
-    let tot=0; const cells = bs.map(b=>{ if(!b) return ''; const v=n(rub.get(b)); tot+=v; return Math.round(v); });
-    aoa.push([rub.lbl, ...cells, Math.round(tot)]);
+  const { s, bs } = f; const mois = ETATS_PERIODE.mois;
+  const aoa = [
+    [`Fiche individuelle de paie — ${libellePeriode(mois)}`],
+    [identiteSalarieTexte(s, bs)],
+    [],
+    ['Rubrique', ...mois.map(m => m.libelle), 'Total'],
+  ];
+  ficheLignes(bs).forEach(l => {
+    if (l.type === 'sec'){ aoa.push([l.lbl]); return; }
+    aoa.push([l.lbl, ...l.cells.map(v => v == null ? '' : Math.round(v)), Math.round(l.total)]);
   });
   const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Fiche');
   const nomFic = (s.matricule||'salarie').replace(/[^\w-]+/g,'_');
-  XLSX.writeFile(wb, `Fiche_${nomFic}_${annee}.xlsx`);
+  XLSX.writeFile(wb, `Fiche_${nomFic}_${clePeriode(mois)}.xlsx`);
 }
 
 function pdfFicheIndividuelle(){
   const f = ficheSalarieCourant();
   if (!f){ showToast('Sélectionnez un salarié.', true); return; }
-  const { s, bs } = f; const annee = ETATS_ANNEE.annee;
+  const { s, bs } = f; const mois = ETATS_PERIODE.mois;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'mm', format:'a4', orientation:'landscape' });
   const teal = [15,118,110];
@@ -1451,27 +1783,97 @@ function pdfFicheIndividuelle(){
   doc.setTextColor(255); doc.setFont('helvetica','bold'); doc.setFontSize(14);
   doc.text('FICHE INDIVIDUELLE DE PAIE', 148, 9, { align:'center' });
   doc.setFontSize(9); doc.setFont('helvetica','normal');
-  doc.text(`${PARAMS.societe||''} — Exercice ${annee}`, 148, 15, { align:'center' });
+  doc.text(`${(PARAMS && PARAMS.societe) || ''} — ${libellePeriode(mois)}`, 148, 15, { align:'center' });
   doc.setTextColor(30); doc.setFontSize(9);
-  doc.text(`${s.matricule} — ${[s.nom,s.prenom].filter(Boolean).join(' ')||'—'}  ·  ${s.emploi||'—'}  ·  Cat. ${s.categorie||'—'}  ·  ${moisPayes(bs)} mois payés`, 12, 26);
-  const head = [['Rubrique', ...MOIS_FR.map(m=>m.slice(0,3)), 'Total']];
-  const body = [];
-  const presTot = bs.reduce((t,b)=> t + (b?b.jours:0), 0);
-  body.push([{content:'Jours de présence',styles:{fontStyle:'bold'}}, ...bs.map(b=>b?String(b.jours):''), {content:String(presTot),styles:{fontStyle:'bold'}}]);
-  FICHE_RUBRIQUES.forEach(rub => {
-    if (rub.sec){ body.push([{content:rub.sec, colSpan:14, styles:{fontStyle:'bold', fillColor:[241,245,249], textColor:teal}}]); return; }
-    let tot=0; const cells = bs.map(b=>{ if(!b) return ''; const v=n(rub.get(b)); tot+=v; return v?fmt(v):''; });
-    const st = rub.tot ? { fontStyle:'bold', fillColor:[248,250,252] } : {};
-    body.push([{content:rub.lbl,styles:Object.assign({halign:'left'},st)}, ...cells.map(c=>({content:c,styles:st})), {content:fmt(tot),styles:Object.assign({fontStyle:'bold'},st)}]);
+  doc.text(identiteSalarieTexte(s, bs), 12, 26);
+
+  const entetes = enTetesMois(mois);
+  const largeur = entetes.length + 2;
+  const head = [['Rubrique', ...entetes, 'Total']];
+  const body = ficheLignes(bs).map(l => {
+    if (l.type === 'sec'){
+      return [{ content:l.lbl, colSpan:largeur, styles:{ fontStyle:'bold', fillColor:[241,245,249], textColor:teal, halign:'left' } }];
+    }
+    const st = (l.type === 'total' || l.type === 'presence') ? { fontStyle:'bold', fillColor:[248,250,252] } : {};
+    const cells = l.cells.map(v => v == null ? '' : (l.type === 'presence' ? String(v) : (v ? fmt(v) : '')));
+    const tot = l.type === 'presence' ? String(l.total) : fmt(l.total);
+    return [
+      { content:l.lbl, styles:Object.assign({ halign:'left' }, st) },
+      ...cells.map(c => ({ content:c, styles:st })),
+      { content:tot, styles:Object.assign({ fontStyle:'bold' }, st) },
+    ];
   });
+  // Plus la période est longue, plus les colonnes sont étroites : on rétrécit la
+  // police et la colonne des libellés pour que tout tienne sur la largeur d'une A4.
+  const nb = entetes.length;
+  const corps = nb > 18 ? 5.2 : nb > 12 ? 6 : 7;
   doc.autoTable({
     startY: 30, head, body, theme:'grid',
-    headStyles:{ fillColor: teal, halign:'right', fontSize:7 },
-    styles:{ fontSize:7, cellPadding:1.2, halign:'right' },
-    columnStyles:{ 0:{halign:'left', cellWidth:38} },
+    headStyles:{ fillColor: teal, halign:'right', fontSize: corps },
+    styles:{ fontSize: corps, cellPadding: nb > 12 ? 0.9 : 1.2, halign:'right', overflow:'linebreak' },
+    columnStyles:{ 0:{ halign:'left', cellWidth: nb > 12 ? 32 : 38 } },
   });
   const nomFic = (s.matricule||'salarie').replace(/[^\w-]+/g,'_');
-  doc.save(`Fiche_${nomFic}_${annee}.pdf`);
+  doc.save(`Fiche_${nomFic}_${clePeriode(mois)}.pdf`);
+}
+
+/* --- Feuilles imprimables --- */
+function imprimerSynthesePeriode(){
+  const d = synthesePeriodeLignes();
+  if (!d){ showToast('Générez d\'abord les états.', true); return; }
+  const mois = ETATS_PERIODE.mois;
+  const corps = d.lignes.map(l => `<tr>
+      <td>${escapeHTML(l.s.matricule)}</td>
+      <td>${escapeHTML([l.s.nom,l.s.prenom].filter(Boolean).join(' ')||'—')}</td>
+      <td>${escapeHTML(l.s.emploi||'—')}</td>
+      <td>${l.payes} / ${mois.length}</td>
+      <td>${fmt(l.v.brut)}</td><td>${fmt(l.v.cotSal)}</td><td>${fmt(l.v.transp)}</td>
+      <td>${fmt(l.v.net)}</td><td>${fmt(l.v.cotPat)}</td><td>${fmt(l.v.cout)}</td>
+    </tr>`).join('');
+  const T = d.total;
+  const html = enteteDocumentImprimable('Synthèse de paie du personnel', libellePeriode(mois))
+    + `<table>
+        <thead><tr>
+          <th>Matricule</th><th>Nom</th><th>Emploi</th><th>Mois payés</th>
+          <th>Brut imposable</th><th>Cotis. sal.</th><th>Prime transp.</th>
+          <th>Net versé</th><th>Charges patr.</th><th>Coût employeur</th>
+        </tr></thead>
+        <tbody>${corps || '<tr><td colspan="10" style="text-align:center;">Aucun salarié actif.</td></tr>'}</tbody>
+        <tfoot><tr>
+          <td colspan="4">TOTAL — ${d.lignes.length} salarié(s)</td>
+          <td>${fmt(T.brut)}</td><td>${fmt(T.cotSal)}</td><td>${fmt(T.transp)}</td>
+          <td>${fmt(T.net)}</td><td>${fmt(T.cotPat)}</td><td>${fmt(T.cout)}</td>
+        </tr></tfoot>
+      </table>`
+    + piedDocumentImprimable(`Montants en francs CFA. Seuls les mois effectivement saisis sont comptés (colonne « Mois payés »).`);
+  ouvrirApercuImpression(html);
+}
+
+function imprimerFicheIndividuelle(){
+  const f = ficheSalarieCourant();
+  if (!f){ showToast('Sélectionnez un salarié.', true); return; }
+  const { s, bs } = f; const mois = ETATS_PERIODE.mois;
+  const entetes = enTetesMois(mois);
+  const largeur = entetes.length + 2;
+  const corps = ficheLignes(bs).map(l => {
+    if (l.type === 'sec') return `<tr class="lig-sec"><td colspan="${largeur}">${escapeHTML(l.lbl)}</td></tr>`;
+    const cls = l.type === 'total' ? ' class="lig-tot"' : l.type === 'presence' ? ' class="lig-pres"' : '';
+    const cells = l.cells.map(v => `<td>${v == null ? '' : (l.type === 'presence' ? v : (v ? fmt(v) : ''))}</td>`).join('');
+    const tot = l.type === 'presence' ? l.total : fmt(l.total);
+    return `<tr${cls}><td>${escapeHTML(l.lbl)}</td>${cells}<td><strong>${tot}</strong></td></tr>`;
+  }).join('');
+  const html = enteteDocumentImprimable('Fiche individuelle de paie', libellePeriode(mois))
+    + `<div class="doc-identite">${escapeHTML(identiteSalarieTexte(s, bs))}</div>`
+    + `<table>
+        <thead><tr><th>Rubrique</th>${entetes.map(e=>`<th>${escapeHTML(e)}</th>`).join('')}<th>Total</th></tr></thead>
+        <tbody>${corps}</tbody>
+      </table>`
+    + `<div class="doc-signatures">
+        <div><span>Le salarié</span></div>
+        <div><span>La direction</span></div>
+       </div>`
+    + piedDocumentImprimable('Montants en francs CFA. Une colonne vide signale un mois non saisi, à distinguer d\'un mois à zéro.');
+  ouvrirApercuImpression(html);
 }
 
 /* ============================================================================
@@ -2333,8 +2735,14 @@ async function init(){
 
   // Sélecteurs de période
   const nowM = new Date().getMonth()+1;
-  ['dash-year','rec-year','dep-year','obj-year','sai-year','bul-year','etat-year','fin-year','lc-year','ech-year','clo-year'].forEach(id => fillYearSelect(id));
-  ['dash-month','rec-month','dep-month','sai-month','bul-month','lc-month','ech-month'].forEach(id => fillMonthSelect(id, nowM));
+  ['dash-year','rec-year','dep-year','obj-year','sai-year','fin-year','lc-year','ech-year','clo-year'].forEach(id => fillYearSelect(id));
+  ['dash-month','rec-month','dep-month','sai-month','lc-month','ech-month'].forEach(id => fillMonthSelect(id, nowM));
+
+  // Barres de période (début → fin). Valeurs de départ choisies pour que rien ne
+  // change pour qui ouvrait ces écrans avant : le récap s'ouvre sur le mois en
+  // cours, les états sur l'année entière — l'ancien « état annuel ».
+  initPeriodeSelects('bul',  { anneeDeb: ANNEE_COURANTE, moisDeb: nowM, anneeFin: ANNEE_COURANTE, moisFin: nowM });
+  initPeriodeSelects('etat', { anneeDeb: ANNEE_COURANTE, moisDeb: 1,    anneeFin: ANNEE_COURANTE, moisFin: 12 });
 
   // Récapitulatifs comptables par jour : période par défaut = 7 derniers jours,
   // pour afficher tout de suite aujourd'hui/hier/avant-hier sans surcharger l'écran.

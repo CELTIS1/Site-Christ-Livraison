@@ -153,7 +153,64 @@
      le haut au défilement, libérant toute la hauteur pour le tableau. Comme sa taille ne
      change jamais pendant le défilement, il ne peut plus y avoir de tremblement. */
 
+  /* ===== Barre de période « début → fin » ===== */
+  .per-fleche{ color:var(--muted); font-weight:700; }
+  .per-raccourcis{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 12px; font-size:12.5px; color:var(--muted); }
+  .per-raccourcis button{ border:1.5px solid var(--clt-teal-light); background:#fff; color:var(--clt-teal-dark); border-radius:999px; padding:4px 12px; font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer; }
+  .per-raccourcis button:hover{ background:var(--clt-teal-light); }
+
+  /* ===== Document imprimable =====
+     Feuille autonome (en-tête société, tableau, pied de page) affichée dans la
+     fenêtre d'aperçu. Volontairement sobre et sans couleur de fond pleine : une
+     imprimante de bureau rend mal les aplats, et l'encre coûte cher. */
+  .modal-impression{ max-width:1040px; }
+  .doc-imprimable{ background:#fff; color:#1f2937; font-size:12px; }
+  .doc-imprimable .doc-entete{ display:flex; justify-content:space-between; align-items:flex-start; gap:20px; border-bottom:2px solid var(--clt-teal); padding-bottom:10px; margin-bottom:14px; }
+  .doc-imprimable .doc-societe{ font-family:'Poppins',sans-serif; font-weight:700; font-size:16px; color:var(--clt-teal-dark); }
+  .doc-imprimable .doc-coord{ font-size:11px; color:#64748b; line-height:1.55; margin-top:3px; }
+  .doc-imprimable .doc-titre{ text-align:right; font-weight:700; font-size:14px; color:var(--clt-teal-dark); text-transform:uppercase; letter-spacing:.04em; }
+  .doc-imprimable .doc-periode{ text-align:right; font-size:12px; color:#475569; margin-top:3px; }
+  .doc-imprimable .doc-edite{ font-size:10.5px; color:#94a3b8; }
+  .doc-imprimable .doc-identite{ font-size:12px; color:#334155; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:7px 10px; margin-bottom:10px; }
+  .doc-imprimable table{ width:100%; border-collapse:collapse; font-size:11px; }
+  .doc-imprimable th, .doc-imprimable td{ border:1px solid #cbd5e1; padding:4px 6px; text-align:right; white-space:nowrap; }
+  .doc-imprimable th{ background:var(--clt-teal-light); color:var(--clt-teal-dark); font-weight:700; }
+  .doc-imprimable th:first-child, .doc-imprimable td:first-child{ text-align:left; }
+  .doc-imprimable tfoot td{ font-weight:700; background:#f1f5f9; }
+  .doc-imprimable tr.lig-sec td{ background:#f1f5f9; font-weight:700; color:var(--clt-teal-dark); text-align:left; letter-spacing:.03em; }
+  .doc-imprimable tr.lig-tot td{ font-weight:700; background:#f8fafc; }
+  .doc-imprimable tr.lig-pres td{ font-weight:600; background:#eef7f5; }
+  .doc-imprimable .doc-signatures{ display:flex; gap:60px; margin-top:26px; }
+  .doc-imprimable .doc-signatures > div{ flex:1; border-top:1px solid #94a3b8; padding-top:5px; font-size:11px; color:#64748b; }
+  .doc-imprimable .doc-pied{ display:flex; justify-content:space-between; gap:16px; margin-top:16px; padding-top:8px; border-top:1px solid #e2e8f0; font-size:10px; color:#94a3b8; }
+
   @media(max-width:640px){ .modal .grid2{ grid-template-columns:1fr; } }
+
+  /* ===== IMPRESSION =====
+     Quand l'aperçu est ouvert, ⌘P ne doit sortir QUE le document : ni barre du
+     haut, ni onglets, ni boutons. On masque tous les enfants directs du corps de
+     page, puis on ré-affiche la seule fenêtre d'aperçu en la sortant de sa mise
+     en forme de modale pour qu'elle occupe la feuille entière.
+     La classe est posée sur <body> par ouvrirApercuImpression() et retirée à la
+     fermeture — y compris par Échap et par clic sur le fond, sinon un ⌘P plus
+     tard n'imprimerait qu'une page blanche. */
+  @media print {
+    @page{ size:A4 landscape; margin:10mm; }
+    body.impression-ouverte > *{ display:none !important; }
+    body.impression-ouverte #modal-impression{
+      display:block !important; position:static; inset:auto; background:none; padding:0; }
+    body.impression-ouverte #modal-impression .modal{
+      box-shadow:none; border-radius:0; padding:0; max-width:none; max-height:none; overflow:visible; }
+    .no-print{ display:none !important; }
+    .doc-imprimable{ font-size:10px; }
+    .doc-imprimable table{ font-size:9px; page-break-inside:auto; }
+    /* Un salarié ne doit jamais être coupé en deux par un saut de page, et
+       l'en-tête du tableau se répète en haut de chaque feuille. */
+    .doc-imprimable tr{ page-break-inside:avoid; }
+    .doc-imprimable thead{ display:table-header-group; }
+    .doc-imprimable tfoot{ display:table-footer-group; }
+    .doc-imprimable .doc-signatures{ page-break-inside:avoid; }
+  }
 </style>
 </head>
 <body>
@@ -452,7 +509,7 @@
       <div class="subtab" data-sub="dossiers" onclick="switchSub('paie','dossiers')">📁 Dossiers</div>
       <div class="subtab" data-sub="saisie" onclick="switchSub('paie','saisie')">Saisie mensuelle</div>
       <div class="subtab" data-sub="bulletins" onclick="switchSub('paie','bulletins')">Bulletins</div>
-      <div class="subtab" data-sub="etats" onclick="switchSub('paie','etats')">📊 États annuels</div>
+      <div class="subtab" data-sub="etats" onclick="switchSub('paie','etats')">📊 États par période</div>
       <div class="subtab" id="sub-paie-parametres" data-sub="parametres" onclick="switchSub('paie','parametres')">Paramètres</div>
     </div>
 
@@ -507,12 +564,18 @@
     </div>
 
     <div class="section" id="paie-bulletins">
+      <!-- Période libre : un seul mois par défaut (l'écran d'avant), mais on peut
+           demander plusieurs mois d'un coup pour un récapitulatif de trimestre. -->
       <div class="period-bar">
         <label style="font-weight:600;color:var(--clt-teal-dark);">Mois de paie</label>
-        <select id="bul-year" onchange="renderBulletins()"></select>
-        <select id="bul-month" onchange="renderBulletins()"></select>
+        <select id="bul-debut-month" onchange="renderBulletins()"></select>
+        <select id="bul-debut-year" onchange="renderBulletins()"></select>
+        <span class="per-fleche">→</span>
+        <select id="bul-fin-month" onchange="renderBulletins()"></select>
+        <select id="bul-fin-year" onchange="renderBulletins()"></select>
         <div class="spacer"></div>
         <button class="btn btn-outline btn-sm" onclick="exportRecapPaie()">⬇️ Récap (Excel)</button>
+        <button class="btn btn-outline btn-sm" onclick="imprimerRecapBulletins()">🖨️ Imprimer</button>
       </div>
       <div class="kpi-grid" id="bul-kpis"></div>
       <div class="card"><div class="g-table-wrap" id="bul-table"></div></div>
@@ -520,16 +583,29 @@
 
     <div class="section" id="paie-etats">
       <div class="period-bar">
-        <label style="font-weight:600;color:var(--clt-teal-dark);">Année</label>
-        <select id="etat-year" onchange="chargerEtatsAnnuels()"></select>
-        <button class="btn btn-outline btn-sm" onclick="chargerEtatsAnnuels()">🔄 Actualiser</button>
+        <label style="font-weight:600;color:var(--clt-teal-dark);">Période</label>
+        <select id="etat-debut-month" onchange="chargerEtatsPeriode()"></select>
+        <select id="etat-debut-year" onchange="chargerEtatsPeriode()"></select>
+        <span class="per-fleche">→</span>
+        <select id="etat-fin-month" onchange="chargerEtatsPeriode()"></select>
+        <select id="etat-fin-year" onchange="chargerEtatsPeriode()"></select>
+        <button class="btn btn-outline btn-sm" onclick="chargerEtatsPeriode()">🔄 Actualiser</button>
         <div class="spacer"></div>
-        <button class="btn btn-outline btn-sm" onclick="exportSynthesePaieAnnuelle()">⬇️ Synthèse (Excel)</button>
+        <button class="btn btn-outline btn-sm" onclick="exportSynthesePaiePeriode()">⬇️ Synthèse (Excel)</button>
+        <button class="btn btn-outline btn-sm" onclick="imprimerSynthesePeriode()">🖨️ Imprimer</button>
       </div>
-      <div class="hint">Cumul de paie de l'année à partir des saisies mensuelles. Seuls les mois effectivement saisis sont comptabilisés (colonne « Mois payés »).</div>
+      <div class="per-raccourcis">
+        <span>Raccourcis :</span>
+        <button type="button" onclick="periodeRaccourci('annee')">Année entière</button>
+        <button type="button" onclick="periodeRaccourci('tri1')">1er trimestre</button>
+        <button type="button" onclick="periodeRaccourci('sem1')">1er semestre</button>
+        <button type="button" onclick="periodeRaccourci('sem2')">2e semestre</button>
+        <button type="button" onclick="periodeRaccourci('precedente')">Année précédente</button>
+      </div>
+      <div class="hint">Cumul de paie sur la période choisie, reconstitué à partir des saisies mensuelles. La période peut être à cheval sur deux années (novembre 2025 → février 2026). Seuls les mois effectivement saisis sont comptabilisés (colonne « Mois payés »).</div>
       <div class="kpi-grid" id="etat-kpis"></div>
       <div class="card">
-        <h2>Synthèse annuelle du personnel — <span id="etat-annee-lbl"></span></h2>
+        <h2>Synthèse du personnel — <span id="etat-periode-lbl"></span></h2>
         <div class="g-table-wrap" id="etat-synthese"></div>
       </div>
       <div class="card">
@@ -538,9 +614,10 @@
           <select id="etat-salarie" onchange="renderFicheIndividuelle()" data-recherche data-recherche-placeholder="Nom du salarié…" style="min-width:220px;"></select>
           <div class="spacer"></div>
           <button class="btn btn-outline btn-sm" onclick="exportFicheIndividuelle()">⬇️ Fiche (Excel)</button>
-          <button class="btn btn-sm" onclick="pdfFicheIndividuelle()">📄 Fiche (PDF)</button>
+          <button class="btn btn-outline btn-sm" onclick="pdfFicheIndividuelle()">📄 Fiche (PDF)</button>
+          <button class="btn btn-sm" onclick="imprimerFicheIndividuelle()">🖨️ Imprimer</button>
         </div>
-        <div class="hint">Détail mois par mois des rubriques de paie du salarié, avec cumul annuel — modèle « fiche individuelle ».</div>
+        <div class="hint">Détail mois par mois des rubriques de paie du salarié, avec cumul sur la période — modèle « fiche individuelle ». Une colonne vide signale un mois non saisi, à distinguer d'un mois à zéro.</div>
         <div class="g-table-wrap" id="etat-fiche"></div>
       </div>
     </div>
@@ -646,6 +723,22 @@
   </div>
 </div>
 
+<!-- Aperçu imprimable. Ce qui est visible ici est exactement ce qui sortira de
+     l'imprimante : la règle @media print (plus haut) masque tout le reste de la
+     page. Le contenu est fabriqué par les fonctions imprimer*() de gestion.js. -->
+<div class="modal-back" id="modal-impression">
+  <div class="modal modal-impression">
+    <div class="modal-actions no-print" style="margin:0 0 16px;">
+      <button class="btn btn-outline btn-sm" onclick="fermerApercuImpression()">Fermer</button>
+      <button class="btn btn-sm" onclick="lancerImpression()">🖨️ Imprimer</button>
+    </div>
+    <div class="no-print" style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Aperçu avant impression — vous pouvez aussi faire ⌘P (ou Ctrl+P). Pour obtenir un PDF, choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.
+    </div>
+    <div id="impression-zone" class="doc-imprimable"></div>
+  </div>
+</div>
+
 <div class="g-toast-wrap" id="g-toast-wrap"></div>
 
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
@@ -671,6 +764,6 @@
 <script src="config.js?v=20260823livre1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script src="clt-select-recherche.js?v=20260823livre1"></script>
-<script src="gestion.js?v=20260819saisie1"></script>
+<script src="gestion.js?v=20260823periode1"></script>
 </body>
 </html>
