@@ -918,6 +918,13 @@
     <h3 class="confirm-modal-title" id="confirm-modal-title"></h3>
     <div class="confirm-modal-detail" id="confirm-modal-detail"></div>
     <p class="confirm-modal-sub" id="confirm-modal-sub"></p>
+    <!-- Champ libre facultatif : certaines confirmations demandent une précision
+         (le motif d'une suspension, par exemple). Masqué par défaut, il n'apparaît
+         que si l'appel à showConfirm() le réclame. -->
+    <div id="confirm-modal-saisie-box" style="text-align:left; margin:0 0 14px;">
+      <label id="confirm-modal-saisie-label" for="confirm-modal-saisie" style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;"></label>
+      <input type="text" id="confirm-modal-saisie" style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+    </div>
     <div class="confirm-modal-actions">
       <button type="button" class="btn" id="confirm-modal-cancel" style="background:#e5e9ef;color:#222;">Annuler</button>
       <button type="button" class="btn" id="confirm-modal-ok">Confirmer</button>
@@ -947,6 +954,42 @@
       <div style="display:flex; gap:10px;">
         <button type="button" class="btn" id="pickup-modal-cancel" style="flex:1; background:#e5e9ef; color:#222;">Annuler</button>
         <button type="submit" class="btn" id="pickup-modal-save" style="flex:1;">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Correction de la fiche d'un compte : nom, société, numéro de téléphone.
+     Sert à réparer une faute de frappe sans supprimer puis recréer le compte —
+     ce qui faisait perdre l'historique et les colis rattachés.
+     Le numéro est aussi l'identifiant de connexion : sa modification passe par
+     la fonction serveur admin-modifier-compte, qui met à jour l'authentification
+     ET la fiche ensemble. -->
+<div id="fiche-modal-overlay" class="pwd-modal-overlay hidden">
+  <div class="pwd-modal">
+    <div class="pwd-modal-icon">✏️</div>
+    <h3 class="pwd-modal-title">Corriger la fiche</h3>
+    <p class="pwd-modal-sub" id="fiche-modal-sub"></p>
+    <form id="fiche-modal-form">
+      <div style="text-align:left; margin-bottom:12px;">
+        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Nom complet</label>
+        <input type="text" id="fiche-modal-nom" required style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+      </div>
+      <div style="text-align:left; margin-bottom:12px;" id="fiche-modal-societe-box">
+        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Société (optionnel)</label>
+        <input type="text" id="fiche-modal-societe" style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+      </div>
+      <div style="text-align:left; margin-bottom:8px;">
+        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Téléphone</label>
+        <input type="tel" id="fiche-modal-tel" required inputmode="tel" placeholder="07 00 00 00 00" style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+      </div>
+      <p style="text-align:left; font-size:12px; color:var(--muted); margin:0 0 14px;">
+        Ce numéro sert aussi à se connecter. S'il change, prévenez la personne : l'ancien ne fonctionnera plus.
+      </p>
+      <div id="fiche-modal-msg"></div>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn" id="fiche-modal-cancel" style="flex:1; background:#e5e9ef; color:#222;">Annuler</button>
+        <button type="submit" class="btn" id="fiche-modal-save" style="flex:1;">Enregistrer</button>
       </div>
     </form>
   </div>
@@ -1089,21 +1132,48 @@ window.__colisEditing = new Set();
 // ---------- Boîte de dialogue de confirmation contextualisée (remplace confirm() natif) ----------
 // Affiche le nom/l'élément concerné avant toute action destructrice ou sensible.
 let __confirmResolve = null;
-function showConfirm({ title, detail, sub, okLabel, danger }){
+let __confirmSaisieActive = false;
+// `saisie` est facultatif : { label, placeholder }. Quand il est fourni, la
+// promesse ne renvoie plus un booléen mais le TEXTE saisi — ou null si on annule.
+// Un champ laissé vide renvoie donc "" : une réponse valable, pas un refus. Les
+// appels qui utilisent `saisie` doivent tester « === null » et non la simple
+// fausseté. Les appels qui ne l'utilisent pas gardent le booléen d'avant et
+// continuent de fonctionner à l'identique.
+function showConfirm({ title, detail, sub, okLabel, danger, saisie }){
   document.getElementById('confirm-modal-title').textContent = title || 'Confirmer';
   const detailEl = document.getElementById('confirm-modal-detail');
   if (detail) { detailEl.textContent = detail; detailEl.style.display = ''; } else { detailEl.style.display = 'none'; }
   document.getElementById('confirm-modal-sub').textContent = sub || '';
   document.getElementById('confirm-modal-icon').textContent = danger ? '🗑️' : '⚠️';
+  const saisieBox = document.getElementById('confirm-modal-saisie-box');
+  const saisieInput = document.getElementById('confirm-modal-saisie');
+  __confirmSaisieActive = !!saisie;
+  if (saisie) {
+    document.getElementById('confirm-modal-saisie-label').textContent = saisie.label || '';
+    saisieInput.placeholder = saisie.placeholder || '';
+    saisieInput.value = '';
+    saisieBox.style.display = '';
+  } else {
+    saisieBox.style.display = 'none';
+  }
   const okBtn = document.getElementById('confirm-modal-ok');
   okBtn.textContent = okLabel || 'Confirmer';
   okBtn.classList.toggle('danger-btn', !!danger);
   document.getElementById('confirm-modal-overlay').classList.remove('hidden');
+  if (saisie) setTimeout(() => saisieInput.focus(), 40);
   return new Promise((resolve) => { __confirmResolve = resolve; });
 }
 function hideConfirmModal(result){
   document.getElementById('confirm-modal-overlay').classList.add('hidden');
-  if (__confirmResolve) { __confirmResolve(result); __confirmResolve = null; }
+  if (__confirmResolve) {
+    let valeur = result;
+    if (__confirmSaisieActive) {
+      valeur = result ? document.getElementById('confirm-modal-saisie').value.trim() : null;
+    }
+    __confirmResolve(valeur);
+    __confirmResolve = null;
+  }
+  __confirmSaisieActive = false;
 }
 document.getElementById('confirm-modal-ok').addEventListener('click', () => hideConfirmModal(true));
 document.getElementById('confirm-modal-cancel').addEventListener('click', () => hideConfirmModal(false));
@@ -4234,15 +4304,44 @@ if (!res.ok) throw new Error(result.error || 'Erreur');
 return result;
 }
 
+// Colonnes lues pour la liste des comptes. Les quatre dernières n'existent
+// qu'une fois exécuté _sql-prive/2026-08-comptes-du-personnel.sql. Comme ce
+// script se lance à la main dans le tableau de bord Supabase, l'écran peut être
+// publié avant lui : on prévoit donc une lecture de repli, sinon la liste
+// resterait vide sans que personne comprenne pourquoi.
+const COLONNES_COMPTES_BASE = 'id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta, acces_operations';
+const COLONNES_COMPTES_SUSPENSION = COLONNES_COMPTES_BASE + ', suspendu_at, suspendu_motif, statut_avant_suspension';
+// Passe à false si la base ne connaît pas encore les colonnes de suspension.
+let suspensionDisponible = true;
+
+// Une seule lecture, utilisée par le premier chargement comme par « charger plus ».
+async function lireComptes(debut, fin){
+  const requete = (colonnes) => supabaseClient
+    .from('profiles')
+    .select(colonnes)
+    .order('role')
+    .order('full_name')
+    .range(debut, fin);
+
+  if (suspensionDisponible) {
+    const res = await requete(COLONNES_COMPTES_SUSPENSION);
+    if (!res.error) return res;
+    // Colonnes absentes : la base n'a pas encore reçu le script. On le note une
+    // fois pour toutes et on continue sans la suspension plutôt que d'échouer.
+    if (/column|colonne/i.test(res.error.message || '')) {
+      suspensionDisponible = false;
+      console.warn("Colonnes de suspension absentes : exécutez _sql-prive/2026-08-comptes-du-personnel.sql.");
+    } else {
+      return res;
+    }
+  }
+  return await requete(COLONNES_COMPTES_BASE);
+}
+
 async function loadAllAccounts(){
 accountsOffset = 0;
 accountsHasMore = true;
-const { data, error } = await supabaseClient
-.from('profiles')
-.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta, acces_operations')
-.order('role')
-.order('full_name')
-.range(0, ACCOUNTS_PAGE_SIZE - 1);
+const { data, error } = await lireComptes(0, ACCOUNTS_PAGE_SIZE - 1);
 if (error) { console.error(error); return; }
 allAccounts = data;
 accountsOffset = data.length;
@@ -4254,12 +4353,7 @@ async function loadMoreAccounts(){
 if (accountsLoadingMore || !accountsHasMore) return;
 accountsLoadingMore = true;
 renderAllAccounts();
-const { data, error } = await supabaseClient
-.from('profiles')
-.select('id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta, acces_operations')
-.order('role')
-.order('full_name')
-.range(accountsOffset, accountsOffset + ACCOUNTS_PAGE_SIZE - 1);
+const { data, error } = await lireComptes(accountsOffset, accountsOffset + ACCOUNTS_PAGE_SIZE - 1);
 accountsLoadingMore = false;
 if (error) { console.error(error); renderAllAccounts(); return; }
 allAccounts = allAccounts.concat(data);
@@ -4268,7 +4362,23 @@ accountsHasMore = data.length === ACCOUNTS_PAGE_SIZE;
 renderAllAccounts();
 }
 
-const ACCOUNT_FILTER_LABELS = { tous: 'Tous', fournisseur: 'Clients', livreur: 'Livreurs', client_express: 'Clients Express', coursier_express: 'Coursiers Express', equipe: 'Équipe', admin: 'Admin' };
+// « Suspendus » n'est pas un rôle mais un statut : il traverse tous les rôles.
+// Il est placé en fin de liste pour ne pas laisser croire à un rôle de plus, et
+// il est là parce qu'un compte suspendu qu'on oublie de réactiver est un compte
+// perdu — on veut pouvoir les retrouver d'un coup d'œil.
+const ACCOUNT_FILTER_LABELS = { tous: 'Tous', fournisseur: 'Clients', livreur: 'Livreurs', client_express: 'Clients Express', coursier_express: 'Coursiers Express', equipe: 'Équipe', admin: 'Admin', suspendus: 'Suspendus' };
+
+// Libellé lisible d'un statut de compte : « valide » ne veut rien dire pour qui
+// n'a pas écrit la base.
+const STATUT_COMPTE_LABELS = {
+  valide: 'Actif',
+  en_attente: 'En attente de validation',
+  rejete: 'Refusé',
+  suspendu: 'Suspendu',
+};
+function statutCompteLabel(statut){
+  return STATUT_COMPTE_LABELS[statut] || statut || '-';
+}
 
 function renderAccountFilters(){
 const box = document.getElementById('account-filters');
@@ -4288,8 +4398,16 @@ function accountRowHTML(a){
 const isSelf = currentUser && a.id === currentUser.id;
 const isOnline = window.__presenceOnlineIds && window.__presenceOnlineIds.has(a.id);
 const onlineDot = `<span class="online-dot ${isOnline ? '' : 'online-dot-off'}" title="${isOnline ? 'En ligne actuellement' : 'Hors ligne'}"></span>`;
+const estSuspendu = a.status === 'suspendu';
 const promoteBtn = a.role === 'equipe'
 ? `<button type="button" class="btn-promote-admin">⭐ Promouvoir admin</button>`
+: '';
+// Rétrograder un administrateur en équipe. Proposé aussi pour son PROPRE compte :
+// c'est la seule façon de transmettre le rôle (on nomme d'abord le successeur,
+// puis on se retire). Le retrait du dernier administrateur actif est refusé par
+// la base, pas par cet écran.
+const demoteBtn = a.role === 'admin'
+? `<button type="button" class="btn-demote-admin">↩️ Rétrograder en équipe</button>`
 : '';
 // Accès délégués au module Gestion (uniquement pour les comptes « équipe »).
 const accesBtns = a.role === 'equipe'
@@ -4297,21 +4415,44 @@ const accesBtns = a.role === 'equipe'
 <button type="button" class="btn-toggle-paie">${a.acces_paie ? '✅' : '⬜'} Accès Paie (RH)</button>
 <button type="button" class="btn-toggle-compta">${a.acces_compta ? '✅' : '⬜'} Accès Comptabilité</button>`
 : '';
+const editBtn = `<button type="button" class="btn-edit-account">✏️ Corriger la fiche</button>`;
+// Réinitialisation : inutile sur un compte suspendu (il ne peut pas se connecter)
+// et inutile sur le sien (on change son mot de passe depuis « Mon compte »).
+const resetBtn = (isSelf || estSuspendu)
+? ''
+: `<button type="button" class="btn-reset-account">🔑 Réinitialiser le mot de passe</button>`;
+// Suspension : l'alternative mesurée à la suppression. Jamais sur son propre compte.
+const suspendBtn = isSelf
+? ''
+: (estSuspendu
+  ? `<button type="button" class="btn-reactivate-account">✅ Réactiver le compte</button>`
+  : `<button type="button" class="btn-suspend-account">⏸ Suspendre le compte</button>`);
 const deleteBtn = isSelf
 ? `<button type="button" class="btn-delete-account danger" disabled title="Vous ne pouvez pas supprimer votre propre compte">🗑 Supprimer</button>`
 : `<button type="button" class="btn-delete-account danger">🗑 Supprimer</button>`;
+const suspenduBadge = estSuspendu
+? ' <span class="badge" style="color:#8a6100; background:#fdf0d5;">⏸ Suspendu</span>'
+: '';
+const suspenduDetail = estSuspendu
+? '<div class="meta" style="color:#8a6100;">Suspendu' + (a.suspendu_at ? ' le ' + escapeHTML(formatDate(a.suspendu_at)) : '') + (a.suspendu_motif ? ' · Motif : ' + escapeHTML(a.suspendu_motif) : ' · Aucun motif indiqué') + '</div>'
+: '';
 return `
-<div class="colis-item" data-id="${a.id}">
+<div class="colis-item" data-id="${a.id}"${estSuspendu ? ' style="opacity:.72;"' : ''}>
 <div class="info">
-<div class="desc">${onlineDot}${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}${a.suppression_demandee_at ? ' <span class="badge" style="color:#c0392b; background:#fce4e2;">🗑 Suppression demandée</span>' : ''}</div>
-<div class="meta">Rôle : ${escapeHTML(roleDisplayLabel(a.role))}${a.phone ? ' · Tél : ' + escapeHTML(a.phone) : ''} · Statut : ${escapeHTML(a.status || '-')}${a.suppression_demandee_at ? ' · <span style="color:#c0392b;">Suppression demandée le ' + escapeHTML(formatDate(a.suppression_demandee_at)) + '</span>' : ''}</div>
+<div class="desc">${onlineDot}${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}${suspenduBadge}${a.suppression_demandee_at ? ' <span class="badge" style="color:#c0392b; background:#fce4e2;">🗑 Suppression demandée</span>' : ''}</div>
+<div class="meta">Rôle : ${escapeHTML(roleDisplayLabel(a.role))}${a.phone ? ' · Tél : ' + escapeHTML(a.phone) : ''} · Statut : ${escapeHTML(statutCompteLabel(a.status))}${a.suppression_demandee_at ? ' · <span style="color:#c0392b;">Suppression demandée le ' + escapeHTML(formatDate(a.suppression_demandee_at)) + '</span>' : ''}</div>
+${suspenduDetail}
 </div>
 <div class="status-col" style="width:auto; flex-direction:row; align-items:center;">
 <div class="actions-menu">
 <button type="button" class="actions-menu-btn" aria-label="Actions du compte">⋮</button>
 <div class="actions-dropdown">
+${editBtn}
+${resetBtn}
 ${promoteBtn}
+${demoteBtn}
 ${accesBtns}
+${suspendBtn}
 ${deleteBtn}
 </div>
 </div>
@@ -4333,9 +4474,14 @@ function renderAllAccounts(){
 // verts restent gris pour les personnes déjà connectées (course entre chargement et présence).
 try { window.__presenceOnlineIds = new Set(Object.keys(getPresenceState())); } catch (e) { /* présence indisponible : on garde l'ensemble courant */ }
 const box = document.getElementById('all-accounts-list');
-const filtered = activeAccountFilter === 'tous' ? allAccounts : allAccounts.filter(a => a.role === activeAccountFilter);
+// « suspendus » filtre sur le statut, les autres sur le rôle.
+const filtered = activeAccountFilter === 'tous'
+? allAccounts
+: (activeAccountFilter === 'suspendus'
+  ? allAccounts.filter(a => a.status === 'suspendu')
+  : allAccounts.filter(a => a.role === activeAccountFilter));
 if (!filtered.length) {
-box.innerHTML = `<div class="empty-state">Aucun compte${activeAccountFilter !== 'tous' ? ' pour ce rôle' : ''}.</div>`;
+box.innerHTML = `<div class="empty-state">${activeAccountFilter === 'suspendus' ? 'Aucun compte suspendu.' : 'Aucun compte' + (activeAccountFilter !== 'tous' ? ' pour ce rôle' : '') + '.'}</div>`;
 appendAccountsLoadMore(box);
 return;
 }
@@ -4372,10 +4518,155 @@ btn.disabled = false; btn.textContent = '⭐ Promouvoir admin';
 return;
 }
 try {
-await supabaseClient.from('activity_log').insert([{ action: 'promotion_admin', details: { full_name: account.full_name, phone: account.phone } }]);
+// actor_id / actor_role sont renseignés par la base (déclencheur
+// trg_journal_renseigne_auteur) : le navigateur ne peut pas signer une
+// action au nom de quelqu'un d'autre.
+await supabaseClient.from('activity_log').insert([{ action: 'promotion_admin', target_id: id, target_type: 'profiles', details: { full_name: account.full_name, phone: account.phone } }]);
 } catch (e) { /* non bloquant */ }
 await loadAllAccounts();
 if (isAdmin) await loadActivityLog();
+});
+});
+
+// ---- Rétrograder un administrateur en compte équipe -----------------------
+// Le compte garde l'accès « Opérations » pour continuer à travailler ; c'est le
+// rôle qui change, pas la place dans l'entreprise.
+box.querySelectorAll('.btn-demote-admin').forEach(btn => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+const account = allAccounts.find(a => a.id === id);
+const soiMeme = currentUser && id === currentUser.id;
+const okDemote = await showConfirm({
+  title: soiMeme ? 'Retirer VOTRE rôle administrateur ?' : 'Rétrograder cet administrateur ?',
+  detail: (account && (account.full_name || account.phone)) || '',
+  sub: soiMeme
+    ? "Vous perdrez immédiatement l'accès à cet écran et ne pourrez plus le reprendre vous-même : il faudra qu'un autre administrateur vous le rende. Assurez-vous qu'un successeur est déjà nommé."
+    : "Cette personne redevient un compte équipe et perd les fonctions d'administration. Elle garde l'accès Opérations pour continuer son travail.",
+  okLabel: 'Rétrograder',
+  danger: true
+});
+if (!okDemote) return;
+btn.disabled = true; btn.textContent = '...';
+const { error } = await supabaseClient
+  .from('profiles')
+  .update({ role: 'equipe', acces_operations: true })
+  .eq('id', id);
+if (error) {
+// Le refus du dernier administrateur actif vient d'ici : c'est la base qui
+// tranche, et son message est déjà écrit pour être lu.
+alert(friendlyErrorMessage(error.message));
+btn.disabled = false; btn.textContent = '↩️ Rétrograder en équipe';
+return;
+}
+try {
+await supabaseClient.from('activity_log').insert([{ action: 'retrogradation_admin', target_id: id, target_type: 'profiles', details: { full_name: account && account.full_name, phone: account && account.phone } }]);
+} catch (e) { /* non bloquant */ }
+if (soiMeme) {
+alert("Votre rôle administrateur a été retiré. La page va se recharger.");
+window.location.reload();
+return;
+}
+await loadAllAccounts();
+if (isAdmin) await loadActivityLog();
+});
+});
+
+// ---- Corriger la fiche (nom, société, téléphone) --------------------------
+box.querySelectorAll('.btn-edit-account').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const id = btn.closest('.colis-item').dataset.id;
+showFicheModal(id);
+});
+});
+
+// ---- Réinitialisation de mot de passe lancée par l'administrateur ---------
+// L'administrateur ouvre la porte ; c'est la personne qui choisit son mot de
+// passe, depuis son propre téléphone. Rien n'est dicté ni transmis.
+box.querySelectorAll('.btn-reset-account').forEach(btn => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+const account = allAccounts.find(a => a.id === id);
+const okReset = await showConfirm({
+  title: 'Réinitialiser ce mot de passe ?',
+  detail: (account && (account.full_name || account.phone)) || '',
+  sub: "Vous n'aurez aucun mot de passe à communiquer. La personne ouvrira la page de connexion, cliquera sur « Mot de passe oublié », saisira son numéro et choisira elle-même son nouveau mot de passe. Assurez-vous d'abord de savoir à qui vous parlez.",
+  okLabel: 'Réinitialiser'
+});
+if (!okReset) return;
+btn.disabled = true; btn.textContent = '...';
+try {
+const res = await callAdminFunction('admin-lancer-reset', { user_id: id });
+const minutes = (res && res.minutes) || 30;
+const qui = (res && (res.full_name || res.phone)) || (account && account.full_name) || 'cette personne';
+alert(`C'est ouvert pour ${qui}.\n\nDites-lui d'aller sur la page de connexion, de cliquer sur « Mot de passe oublié », d'entrer son numéro et de choisir son nouveau mot de passe.\n\nElle a ${minutes} minutes. Passé ce délai, il faudra recommencer.`);
+if (isAdmin) await loadActivityLog();
+} catch (err) {
+alert(friendlyErrorMessage(err.message));
+}
+btn.disabled = false; btn.textContent = '🔑 Réinitialiser le mot de passe';
+});
+});
+
+// ---- Suspendre / réactiver -------------------------------------------------
+box.querySelectorAll('.btn-suspend-account').forEach(btn => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+const account = allAccounts.find(a => a.id === id);
+// La saisie renvoie "" si le champ est laissé vide : c'est une réponse
+// valable (motif facultatif). Seul null signifie « annulé ».
+const motif = await showConfirm({
+  title: 'Suspendre ce compte ?',
+  detail: (account && (account.full_name || account.phone)) || '',
+  sub: "L'accès est coupé immédiatement : cette personne ne pourra plus se connecter. Rien n'est effacé — le compte, son historique et ses colis restent en place, et vous pourrez le réactiver quand vous voudrez.",
+  okLabel: 'Suspendre',
+  danger: true,
+  saisie: { label: 'Motif (facultatif, visible dans la liste et le journal)', placeholder: 'Ex : absence prolongée' }
+});
+if (motif === null) return;
+btn.disabled = true; btn.textContent = '...';
+try {
+await callAdminFunction('admin-suspendre-compte', { user_id: id, suspendre: true, motif });
+await loadAllAccounts();
+if (isAdmin) await loadActivityLog();
+} catch (err) {
+alert(friendlyErrorMessage(err.message));
+btn.disabled = false; btn.textContent = '⏸ Suspendre le compte';
+}
+});
+});
+
+box.querySelectorAll('.btn-reactivate-account').forEach(btn => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+const account = allAccounts.find(a => a.id === id);
+const avant = account && account.statut_avant_suspension;
+const okReactivate = await showConfirm({
+  title: 'Réactiver ce compte ?',
+  detail: (account && (account.full_name || account.phone)) || '',
+  sub: avant && avant !== 'valide'
+    ? `Le compte retrouvera exactement le statut qu'il avait avant sa suspension : « ${statutCompteLabel(avant)} ».`
+    : "La personne pourra de nouveau se connecter et retrouvera ses accès d'avant.",
+  okLabel: 'Réactiver'
+});
+if (!okReactivate) return;
+btn.disabled = true; btn.textContent = '...';
+try {
+await callAdminFunction('admin-suspendre-compte', { user_id: id, suspendre: false });
+await loadAllAccounts();
+if (isAdmin) await loadActivityLog();
+} catch (err) {
+alert(friendlyErrorMessage(err.message));
+btn.disabled = false; btn.textContent = '✅ Réactiver le compte';
+}
 });
 });
 
@@ -4399,7 +4690,7 @@ btn.disabled = true;
 const { error } = await supabaseClient.from('profiles').update({ [champ]: !actif }).eq('id', id);
 if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; return; }
 try {
-await supabaseClient.from('activity_log').insert([{ action: (!actif ? 'acces_gestion_accorde' : 'acces_gestion_retire'), details: { champ, full_name: account && account.full_name, phone: account && account.phone } }]);
+await supabaseClient.from('activity_log').insert([{ action: (!actif ? 'acces_gestion_accorde' : 'acces_gestion_retire'), target_id: id, target_type: 'profiles', details: { champ, libelle, full_name: account && account.full_name, phone: account && account.phone } }]);
 } catch (e) { /* non bloquant */ }
 await loadAllAccounts();
 if (isAdmin) await loadActivityLog();
@@ -4481,7 +4772,108 @@ btn.disabled = false; btn.textContent = '🗑 Supprimer';
 });
 
 appendAccountsLoadMore(box);
+
+// Les comptes viennent d'arriver : le journal peut enfin nommer ses auteurs.
+// (renderActivityLog ne redessine que le journal — aucun aller-retour possible.)
+if (typeof renderActivityLog === 'function' && derniereActivite.length) renderActivityLog();
 }
+
+// ---------- Correction de la fiche d'un compte ----------
+// Réparer une faute de frappe sans détruire le compte. Le nom et la société
+// pourraient passer par une simple mise à jour, mais le téléphone est
+// l'identifiant de connexion : il vit dans l'authentification ET dans la fiche,
+// et seule la fonction serveur peut toucher aux deux. Tout passe donc par elle,
+// pour qu'il n'y ait qu'un seul chemin à relire.
+let __ficheCompteId = null;
+
+function showFicheModal(id){
+  const a = allAccounts.find(x => x.id === id);
+  if (!a) return;
+  __ficheCompteId = id;
+  document.getElementById('fiche-modal-sub').textContent =
+    roleDisplayLabel(a.role) + (a.phone ? ' · ' + a.phone : '');
+  document.getElementById('fiche-modal-nom').value = a.full_name || '';
+  document.getElementById('fiche-modal-societe').value = a.company_name || '';
+  document.getElementById('fiche-modal-tel').value = a.phone || '';
+  // La société ne concerne que les comptes clients : l'afficher partout
+  // inviterait à remplir un champ qui ne sert nulle part ailleurs.
+  document.getElementById('fiche-modal-societe-box').style.display =
+    (a.role === 'fournisseur') ? '' : 'none';
+  document.getElementById('fiche-modal-msg').innerHTML = '';
+  document.getElementById('fiche-modal-overlay').classList.remove('hidden');
+}
+
+function hideFicheModal(){
+  document.getElementById('fiche-modal-overlay').classList.add('hidden');
+  __ficheCompteId = null;
+}
+
+document.getElementById('fiche-modal-cancel').addEventListener('click', hideFicheModal);
+document.getElementById('fiche-modal-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'fiche-modal-overlay') hideFicheModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('fiche-modal-overlay').classList.contains('hidden')) hideFicheModal();
+});
+
+document.getElementById('fiche-modal-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!__ficheCompteId) return;
+  const id = __ficheCompteId;
+  const compte = allAccounts.find(x => x.id === id);
+  const msg = document.getElementById('fiche-modal-msg');
+  const btn = document.getElementById('fiche-modal-save');
+
+  const nom = document.getElementById('fiche-modal-nom').value.trim();
+  const tel = document.getElementById('fiche-modal-tel').value.trim();
+  const societe = document.getElementById('fiche-modal-societe').value.trim();
+
+  if (!nom) {
+    msg.innerHTML = '<div class="msg msg-error">Le nom ne peut pas être vide.</div>';
+    return;
+  }
+  if (!isValidPhoneCI(tel)) {
+    msg.innerHTML = '<div class="msg msg-error">Numéro de téléphone invalide. Utilisez un numéro ivoirien à 10 chiffres (ex : 07 00 00 00 00).</div>';
+    return;
+  }
+
+  // On prévient AVANT d'écrire, tant que le geste est encore annulable : la
+  // personne ne pourra plus se connecter avec son ancien numéro.
+  const ancienNormalise = (typeof toPhoneE164 === 'function') ? toPhoneE164(String(compte && compte.phone || '')) : (compte && compte.phone);
+  const nouveauNormalise = (typeof toPhoneE164 === 'function') ? toPhoneE164(tel) : tel;
+  if (ancienNormalise !== nouveauNormalise) {
+    const okTel = await showConfirm({
+      title: 'Changer le numéro de connexion ?',
+      detail: (compte && (compte.full_name || compte.phone)) || '',
+      sub: `Cette personne devra désormais se connecter avec ${nouveauNormalise}. L'ancien numéro ne fonctionnera plus. Prévenez-la.`,
+      okLabel: 'Changer le numéro'
+    });
+    if (!okTel) return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+  msg.innerHTML = '';
+  try {
+    const charge = { user_id: id, full_name: nom, phone: tel };
+    // On n'envoie la société que pour les comptes où elle a un sens : sinon on
+    // effacerait sans le vouloir une valeur qu'on n'a même pas affichée.
+    if (compte && compte.role === 'fournisseur') charge.company_name = societe;
+    const res = await callAdminFunction('admin-modifier-compte', charge);
+    hideFicheModal();
+    if (res && res.inchange) {
+      // Rien à dire de plus : on referme sans faire croire à une modification.
+    }
+    await loadAllAccounts();
+    if (typeof loadFournisseurs === 'function') { try { await loadFournisseurs(); } catch (err) { /* liste secondaire */ } }
+    if (typeof loadLivreurs === 'function') { try { await loadLivreurs(); } catch (err) { /* liste secondaire */ } }
+    if (isAdmin) await loadActivityLog();
+  } catch (err) {
+    msg.innerHTML = '<div class="msg msg-error">' + escapeHTML(friendlyErrorMessage(err.message)) + '</div>';
+    btn.disabled = false; btn.textContent = 'Enregistrer';
+    return;
+  }
+  btn.disabled = false; btn.textContent = 'Enregistrer';
+});
 
 // Ajoute, si nécessaire, le bouton "Charger plus" en bas de la liste des comptes.
 function appendAccountsLoadMore(box){
@@ -4548,17 +4940,43 @@ creation_compte_equipe: "Création d'un compte équipe",
 creation_compte_livreur: "Création d'un compte livreur",
 inscription_fournisseur: "Inscription d'un client",
 demande_reset_password: "Demande de réinitialisation de mot de passe",
+lancement_reset_password: "Réinitialisation de mot de passe lancée",
 suppression_compte: "Suppression d'un compte",
 reinitialisation_mot_de_passe: "Réinitialisation d'un mot de passe",
 promotion_admin: "Promotion au rôle administrateur",
+retrogradation_admin: "Retrait du rôle administrateur",
+suspension_compte: "Suspension d'un compte",
+reactivation_compte: "Réactivation d'un compte",
+modification_compte: "Correction d'une fiche de compte",
+acces_gestion_accorde: "Accès Gestion accordé",
+acces_gestion_retire: "Accès Gestion retiré",
 creation_colis: "Nouveau colis ajouté",
 changement_statut_colis: "Changement de statut d'un colis",
 suppression_colis: "Suppression d'un colis",
 };
 
+// Qui a fait l'action. actor_id est renseigné par la base depuis août 2026
+// (déclencheur trg_journal_renseigne_auteur) ; les lignes plus anciennes n'ont
+// pas d'auteur et il vaut mieux l'écrire que laisser deviner.
+function activityAuteur(a){
+  if (!a.actor_id) return '';
+  const compte = allAccounts.find(x => x.id === a.actor_id);
+  const nom = compte ? (compte.full_name || compte.phone) : null;
+  if (nom) return 'Par ' + nom;
+  // Nom introuvable. Deux causes possibles, à ne pas confondre : soit la liste
+  // des comptes n'est pas encore chargée (course au démarrage), soit le compte a
+  // réellement été supprimé depuis. On ne l'affirme donc que si la liste est là.
+  if (!a.actor_role) return '';
+  return allAccounts.length
+    ? 'Par un compte ' + a.actor_role + ' (supprimé depuis)'
+    : 'Par un compte ' + a.actor_role;
+}
+
 function activityRowHTML(a){
 const label = ACTIVITY_LABELS[a.action] || a.action;
 const d = a.details || {};
+const auteur = activityAuteur(a);
+const auteurHTML = auteur ? '<div class="meta">' + escapeHTML(auteur) + '</div>' : '';
 
 if (a.action === 'creation_colis') {
 return `
@@ -4566,6 +4984,7 @@ return `
 <div class="info">
 <div class="desc">${escapeHTML(label)} — ${escapeHTML(d.fournisseur || 'Client inconnu')}</div>
 <div class="meta">${escapeHTML(d.description || '')}</div>
+${auteurHTML}
 <div class="meta">${formatDate(a.created_at)}</div>
 </div>
 </div>
@@ -4580,6 +4999,7 @@ return `
 <div class="desc">${label} — ${d.fournisseur || 'Client inconnu'}</div>
 <div class="meta">${ancien} → ${nouveau}</div>
 ${d.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(d.observation)}</div>` : ''}
+${auteurHTML}
 <div class="meta">${formatDate(a.created_at)}</div>
 </div>
 </div>
@@ -4591,6 +5011,7 @@ return `
 <div class="info">
 <div class="desc">${label} — ${d.fournisseur || 'Client inconnu'}</div>
 <div class="meta">${d.description || ''}${d.statut ? ' · Statut au moment de la suppression : ' + (STATUTS[d.statut] ? STATUTS[d.statut].label : d.statut) : ''}</div>
+${auteurHTML}
 <div class="meta">${formatDate(a.created_at)}</div>
 </div>
 </div>
@@ -4600,14 +5021,49 @@ return `
 const who = d.full_name || d.phone
 ? ' — ' + [d.full_name, d.phone].filter(Boolean).join(' · ')
 : '';
+// Précisions propres à certaines actions : sans elles, « Suspension d'un compte »
+// ou « Correction d'une fiche » ne dit pas ce qui a changé.
+let precision = '';
+if (a.action === 'suspension_compte') {
+precision = d.motif ? 'Motif : ' + d.motif : 'Aucun motif indiqué';
+} else if (a.action === 'acces_gestion_accorde' || a.action === 'acces_gestion_retire') {
+precision = d.libelle || d.champ || '';
+} else if (a.action === 'modification_compte' && d.modifications) {
+const CHAMPS = { full_name: 'Nom', phone: 'Téléphone', company_name: 'Société' };
+precision = Object.keys(d.modifications).map(champ => {
+const m = d.modifications[champ];
+return (CHAMPS[champ] || champ) + ' : ' + (m.avant || '(vide)') + ' → ' + (m.apres || '(vide)');
+}).join(' · ');
+}
 return `
 <div class="colis-item">
 <div class="info">
-<div class="desc">${label}${who}</div>
+<div class="desc">${escapeHTML(label)}${escapeHTML(who)}</div>
+${precision ? '<div class="meta">' + escapeHTML(precision) + '</div>' : ''}
+${auteurHTML}
 <div class="meta">${formatDate(a.created_at)}</div>
 </div>
 </div>
 `;
+}
+
+// Le journal est gardé en mémoire pour pouvoir être RÉAFFICHÉ sans être
+// rechargé. C'est nécessaire depuis qu'on y montre l'auteur : le journal et la
+// liste des comptes se chargent en parallèle, et si le journal arrive le premier
+// il n'a encore aucun nom à afficher. On le redessine quand les comptes arrivent.
+let derniereActivite = [];
+
+function renderActivityLog(){
+const box = document.getElementById('activity-log-list');
+if (!box) return;
+if (!derniereActivite.length) {
+box.innerHTML = `<div class="empty-state">Aucune activité enregistrée.</div>`;
+return;
+}
+// Le journal est volontairement limité aux 200 dernières activités (c'est un fil de suivi, pas
+// une archive). On l'écrit à l'écran plutôt que de laisser croire que tout y figure.
+box.innerHTML = derniereActivite.map(activityRowHTML).join('')
++ (derniereActivite.length >= 200 ? `<div style="margin-top:8px; font-size:.9em; color:#666;">Seules les 200 activités les plus récentes sont affichées.</div>` : '');
 }
 
 async function loadActivityLog(){
@@ -4617,15 +5073,8 @@ const { data, error } = await supabaseClient
 .order('created_at', { ascending: false })
 .limit(200);
 if (error) { console.error(error); return; }
-const box = document.getElementById('activity-log-list');
-if (!data.length) {
-box.innerHTML = `<div class="empty-state">Aucune activité enregistrée.</div>`;
-return;
-}
-// Le journal est volontairement limité aux 200 dernières activités (c'est un fil de suivi, pas
-// une archive). On l'écrit à l'écran plutôt que de laisser croire que tout y figure.
-box.innerHTML = data.map(activityRowHTML).join('')
-+ (data.length >= 200 ? `<div style="margin-top:8px; font-size:.9em; color:#666;">Seules les 200 activités les plus récentes sont affichées.</div>` : '');
+derniereActivite = data || [];
+renderActivityLog();
 }
 
 let recapExpanded = false;

@@ -36,6 +36,16 @@ _sql-prive/*.md
 # il est conservé hors du dépôt, dans « 08 - Application & Technique ».
 AUDIT-SECURITE-*.md
 
+# --- Les deux anciennes consoles de mot de passe (à supprimer du serveur) ---
+# Ces deux fonctions fabriquent un mot de passe provisoire et le renvoient pour qu'on le
+# dicte. Plus aucun écran ne les appelle ; elles sont en cours de suppression du tableau de
+# bord Supabase. Leur code ne contient aucune clé, mais il décrit exactement ce que chaque
+# point d'entrée accepte, et l'historique d'un dépôt public est définitif : publier
+# aujourd'hui ce qu'on efface ce soir n'a que des inconvénients. Les fichiers restent sur le
+# poste, dans supabase-functions/, tant que la suppression n'est pas confirmée côté serveur.
+supabase-functions/admin-reset-password/
+supabase-functions/reinitialiser-mot-de-passe/
+
 # --- Journaux ---
 *.log
 npm-debug.log*

@@ -65,6 +65,23 @@ jobs:
       - name: États de paie par période (un mois non saisi n'est pas un mois à zéro)
         run: node tests/etats-par-periode.test.mjs
 
+      # Celle-ci ne se contente pas de relire du texte : elle ouvre le VRAI code des
+      # fonctions serveur (des fichiers .ts) et le fait tourner, avec une fausse base de
+      # données qui note tout ce qu'on lui demande d'écrire. C'est ce qui permet de
+      # vérifier l'ordre des écritures — couper l'accès aux données AVANT de bloquer la
+      # connexion — et pas seulement leur présence. Elle a besoin d'une version de Node
+      # capable de lire du TypeScript sans outil supplémentaire : c'est le cas de la 22
+      # installée plus haut.
+      - name: Comptes du personnel (suspendre, corriger, réinitialiser sans mot de passe en clair)
+        run: node tests/comptes-du-personnel.test.mjs
+
+      # Même principe, pour les comptes clients et CLT Express. Deux des fonctions
+      # mises à l'épreuve ici sont ouvertes à tout Internet (elles servent au « mot
+      # de passe oublié », donc avant toute connexion) : ce sont exactement celles
+      # qu'il vaut mieux ne pas casser sans s'en rendre compte.
+      - name: Comptes clients et Express (code SMS, mot de passe oublié, coupure des données)
+        run: node tests/comptes-clients-et-express.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,

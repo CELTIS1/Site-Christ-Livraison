@@ -87,6 +87,14 @@ Deno.serve(async (req) => {
       return json({ error: "Numéro de téléphone requis." }, 400);
     }
 
+    // Fonction PUBLIQUE : le contenu de "phone" est choisi par l'appelant. On
+    // exige un vrai numéro (chiffres, "+" facultatif) avant de s'en servir dans
+    // une recherche, pour qu'un texte bricolé ne puisse jamais être interprété
+    // comme autre chose qu'un numéro.
+    if (!/^\+?[0-9]{8,15}$/.test(String(phone).trim())) {
+      return json({ error: "Numéro de téléphone invalide." }, 400);
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -143,17 +151,55 @@ Deno.serve(async (req) => {
     }
 
     // --- Résolution du compte cible -----------------------------------------
+    // Normalement la demande porte déjà l'identifiant du compte (user_id) : c'est
+    // le chemin sûr, il ne peut désigner qu'un seul compte. Le repli par numéro
+    // ne sert qu'aux demandes anciennes, créées avant que user_id soit rempli.
     let targetId: string | null = demande.user_id ?? null;
     if (!targetId) {
-      const { data: tp } = await supabaseAdmin
+      // On demande une LISTE, pas une ligne unique. Et si plusieurs fiches
+      // portent ce numéro, on REFUSE au lieu d'en choisir une : choisir, ici,
+      // reviendrait à changer le mot de passe d'un compte au hasard parmi
+      // plusieurs — c'est-à-dire, une fois sur deux, remettre le compte de
+      // quelqu'un d'autre entre les mains du demandeur.
+      const { data: tps } = await supabaseAdmin
         .from("profiles")
         .select("id")
-        .in("phone", phoneVariants(demande.phone))
-        .single();
-      targetId = tp?.id ?? null;
+        .in("phone", phoneVariants(demande.phone));
+      const ids = Array.isArray(tps) ? tps.map((p) => p?.id).filter(Boolean) : [];
+      if (ids.length > 1) {
+        return json(
+          { error: "Plusieurs comptes portent ce numéro. Contactez notre équipe : elle doit d'abord corriger les fiches." },
+          409,
+        );
+      }
+      targetId = ids[0] ?? null;
     }
     if (!targetId) {
       return json({ error: "Compte associé introuvable." }, 404);
+    }
+
+    // --- Dernier contrôle : le compte est-il toujours ouvert ? ---------------
+    // L'approbation vaut 30 minutes. Un compte peut donc être suspendu APRÈS
+    // avoir été approuvé, et c'est même l'ordre le plus probable : on découvre
+    // un problème, on ferme le compte — pendant qu'une approbation dort encore.
+    // Sans ce contrôle, la personne disposerait d'une demi-heure pour se donner
+    // un mot de passe neuf sur un compte qu'on vient de fermer.
+    // Ce contrôle est le filet SERVEUR : il ne dépend d'aucun écran, et il tient
+    // même si l'approbation a été donnée avant la suspension.
+    const { data: cible } = await supabaseAdmin
+      .from("profiles")
+      .select("status")
+      .eq("id", targetId)
+      .maybeSingle();
+
+    if (cible?.status === "suspendu") {
+      return json(
+        {
+          error: "Ce compte est suspendu. Contactez notre équipe : elle doit d'abord le réactiver.",
+          state: "suspendu",
+        },
+        409,
+      );
     }
 
     // --- Application du nouveau mot de passe (jamais renvoyé) ----------------

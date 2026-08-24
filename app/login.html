@@ -433,9 +433,15 @@
     document.getElementById('form-connexion-login').classList.remove('hidden');
   });
 
-  // Vérifie que le compte est validé. Si en attente ou refusé, déconnecte et bloque l'accès.
+  // Vérifie que le compte est actif. Sinon : déconnexion et message expliquant
+  // POURQUOI, car un refus muet est vécu comme une panne et fait appeler l'équipe.
   // phoneNoPlus / password sont optionnels : s'ils sont fournis et que le compte est "en_attente",
   // la vérification automatique démarre immédiatement au lieu d'un simple message statique.
+  //
+  // Un compte suspendu est déjà banni côté Supabase Auth : en principe il
+  // n'arrive même pas jusqu'ici, la connexion échoue avant. Ce contrôle reste
+  // utile pour deux raisons : il nomme la cause au lieu de laisser une erreur
+  // technique, et il tient encore si le bannissement n'a pas pu être posé.
   async function checkAccountStatus(profile, phoneNoPlus, password){
     if (profile && profile.status === 'en_attente') {
       await supabaseClient.auth.signOut();
@@ -449,6 +455,22 @@
     if (profile && profile.status === 'rejete') {
       await supabaseClient.auth.signOut();
       showMsg("Votre demande de compte a été refusée. Contactez notre équipe pour plus d'informations.", "error");
+      return false;
+    }
+    if (profile && profile.status === 'suspendu') {
+      await supabaseClient.auth.signOut();
+      showMsg("Votre accès a été suspendu par l'administrateur. Votre compte et votre historique sont conservés : contactez l'équipe pour le rétablir.", "error");
+      return false;
+    }
+    // Écrit en positif : seul le statut « valide » ouvre la porte. Un statut
+    // ajouté plus tard sans qu'on repense à ce fichier sera refusé par défaut
+    // plutôt qu'autorisé par oubli — c'est le sens de marche le moins dangereux.
+    // Un profil absent est laissé passer : ce cas-là se traite plus loin, à la
+    // lecture du profil, et le confondre avec un compte inactif brouillerait le
+    // message.
+    if (profile && profile.status && profile.status !== 'valide') {
+      await supabaseClient.auth.signOut();
+      showMsg("Votre compte n'est pas actif. Contactez notre équipe.", "error");
       return false;
     }
     return true;

@@ -396,14 +396,24 @@
 
     <hr class="account-modal-divider">
 
-    <!-- Numéro de téléphone -->
+    <!-- Numéro de téléphone
+         Ce numéro est l'identifiant de connexion. Le changement n'est appliqué
+         qu'après saisie du code reçu par SMS SUR LE NOUVEAU NUMÉRO : c'est ce
+         qui empêche une faute de frappe d'enfermer quelqu'un dehors, puisqu'un
+         numéro erroné ne recevra jamais de code et que rien ne bougera. -->
     <form id="form-account-phone">
       <div class="field">
         <label>Numéro de téléphone</label>
         <input type="tel" id="account-phone" required placeholder="07 89 81 81 40">
       </div>
+      <div class="field hidden" id="account-phone-otp-row">
+        <label for="account-phone-otp">Code reçu par SMS</label>
+        <input type="text" id="account-phone-otp" inputmode="numeric" autocomplete="one-time-code" placeholder="6 chiffres">
+      </div>
       <div id="account-phone-msg"></div>
-      <button type="submit" class="btn btn-sm">Enregistrer</button>
+      <button type="submit" class="btn btn-sm" id="account-phone-send">Envoyer le code</button>
+      <button type="button" class="btn btn-sm hidden" id="account-phone-confirm">Confirmer le nouveau numéro</button>
+      <button type="button" class="btn btn-sm btn-outline hidden" id="account-phone-cancel">Annuler</button>
     </form>
 
     <hr class="account-modal-divider">

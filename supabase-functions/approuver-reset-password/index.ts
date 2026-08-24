@@ -111,28 +111,80 @@ Deno.serve(async (req) => {
       return json({ error: "Cette demande a déjà été traitée." }, 409);
     }
 
-    // --- Rôle du compte cible (anti-élévation de privilèges) -----------------
+    // --- Rôle ET STATUT du compte cible --------------------------------------
+    // Le rôle sert au garde-fou anti-élévation (plus bas). Le statut sert à ne
+    // pas rouvrir en douce un compte qu'on a délibérément fermé : voir le refus
+    // juste après.
     let targetRole: string | null = null;
+    let targetStatus: string | null = null;
     if (d.user_id) {
       const { data: tp } = await supabaseAdmin
         .from("profiles")
-        .select("role")
+        .select("role, status")
         .eq("id", d.user_id)
         .single();
       targetRole = tp?.role ?? null;
+      targetStatus = tp?.status ?? null;
     } else if (d.phone) {
-      const { data: tp } = await supabaseAdmin
+      // On demande une LISTE, pas une ligne unique. Avec .single(), deux profils
+      // portant le même numéro sous deux écritures (« 225… » et « +225… », ce
+      // qui existe en base) faisaient répondre la base par une ERREUR : `tp`
+      // restait vide, targetRole retombait à null, et le garde-fou juste en
+      // dessous ne voyait plus l'administrateur qu'il devait protéger. Un
+      // membre de l'équipe aurait alors pu approuver la réinitialisation d'un
+      // administrateur — c'est-à-dire prendre son compte.
+      // Si plusieurs profils sortent, on retient le rôle le PLUS élevé : en cas
+      // d'ambiguïté, on protège au lieu de laisser passer.
+      const { data: tps } = await supabaseAdmin
         .from("profiles")
-        .select("role")
-        .in("phone", phoneVariants(d.phone))
-        .single();
-      targetRole = tp?.role ?? null;
+        .select("role, status")
+        .in("phone", phoneVariants(d.phone));
+      const roles = Array.isArray(tps) ? tps.map((p) => p?.role).filter(Boolean) : [];
+      targetRole = roles.includes("admin")
+        ? "admin"
+        : (roles.includes("equipe") ? "equipe" : (roles[0] ?? null));
+      // Même principe que pour le rôle : en cas d'ambiguïté, on retient le cas
+      // le plus fermé plutôt que le plus ouvert.
+      const statuts = Array.isArray(tps) ? tps.map((p) => p?.status).filter(Boolean) : [];
+      targetStatus = statuts.includes("suspendu") ? "suspendu" : (statuts[0] ?? null);
     }
 
     if (targetRole === "admin" && callerRole !== "admin") {
       return json(
         { error: "Un membre de l'équipe ne peut pas approuver la demande d'un administrateur." },
         403,
+      );
+    }
+
+    // --- Un compte suspendu ne se rouvre pas par la petite porte -------------
+    // La règle existait déjà pour la réinitialisation lancée par un
+    // administrateur (admin-lancer-reset la refuse explicitement). Elle
+    // manquait ici, sur le chemin en libre-service — et c'est le chemin qu'une
+    // personne suspendue emprunterait, justement.
+    //
+    // Le danger n'est pas qu'elle se reconnecte : le bannissement dans
+    // l'authentification l'en empêche, même avec un mot de passe tout neuf.
+    // Le danger est double, et plus discret :
+    //   - la demande arrive à l'équipe SANS dire que le compte a été fermé
+    //     exprès ; un collègue approuve de bonne foi et défait, sans le savoir,
+    //     une décision prise par quelqu'un d'autre ;
+    //   - si le bannissement avait échoué au moment de la suspension (ce cas
+    //     est prévu et signalé par admin-suspendre-compte, qui répond alors une
+    //     erreur), il ne resterait plus que ce refus-ci entre la personne
+    //     suspendue et un mot de passe qui fonctionne.
+    //
+    // Le refus est posé ICI, au moment de l'approbation, et non au moment de la
+    // demande : la demande est publique et volontairement muette — elle répond
+    // la même chose pour un numéro connu et pour un numéro inconnu, afin de ne
+    // pas révéler qui possède un compte. Refuser dès la demande apprendrait à
+    // un inconnu que tel numéro correspond à un compte suspendu.
+    if (targetStatus === "suspendu") {
+      return json(
+        {
+          error: "Ce compte est suspendu : il ne peut pas se connecter, même avec un nouveau mot de passe. " +
+            "Réactivez-le d'abord si vous voulez lui rendre l'accès.",
+        },
+        409,
       );
     }
 

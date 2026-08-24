@@ -2694,6 +2694,21 @@ async function init(){
   const profile = await getProfile(session.user.id);
   PUSH_USER = session.user;
 
+  // Le compte est-il actif ? Ce module ne le vérifiait pas : un compte suspendu
+  // dont la session était encore ouverte arrivait jusqu'ici. Les données, elles,
+  // étaient bien refusées par la base (a_acces_paie / a_acces_compta exigent un
+  // statut « valide »), mais la personne se retrouvait devant une page vide et
+  // des erreurs, sans savoir pourquoi. On coupe donc franchement, et on le dit.
+  // Les autres tableaux de bord (equipe, livreur, fournisseur, Express) font
+  // déjà ce contrôle ; celui-ci manquait.
+  if (!profile || profile.status !== 'valide') {
+    alert(profile && profile.status === 'suspendu'
+      ? "Votre accès a été suspendu par l'administrateur. Contactez l'équipe pour le rétablir."
+      : "Votre compte n'est pas actif. Contactez l'équipe.");
+    try { await logout(); } catch (e) { window.location.href = 'login.html'; }
+    return;
+  }
+
   // Capacités : l'admin a tout ; sinon on lit les droits délégués (acces_paie / acces_compta),
   // qui sont eux-mêmes verrouillés côté base (RLS + trigger anti-auto-promotion).
   const isAdmin   = !!profile && profile.role === 'admin';

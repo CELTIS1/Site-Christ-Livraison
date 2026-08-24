@@ -521,41 +521,132 @@ function formatPhoneDisplay(e164) {
   return digits;
 }
 
-// Changement DIRECT du numéro de téléphone (pas de SMS OTP) : on met à jour
-// l'identifiant de connexion côté Auth (auth.updateUser({phone})) ET la colonne
-// profiles.phone, pour que le compte reste cohérent (le client se connecte avec
-// son numéro). En cas de doublon, message clair.
-function initExpressPhoneForm({ profile, formId, phoneId, msgId }) {
+// Changement du numéro de téléphone, CONFIRMÉ PAR SMS.
+//
+// Pourquoi cette confirmation. Ce numéro n'est pas un simple champ de fiche :
+// c'est l'identifiant avec lequel on se connecte. Jusqu'au 24 août 2026, il
+// suffisait ici de taper un numéro et de valider — le changement était appliqué
+// sur-le-champ, des deux côtés. Deux ennuis en découlaient, et le second est le
+// plus grave :
+//   - on pouvait déplacer un compte vers un numéro qu'on ne possède pas ;
+//   - une simple faute de frappe suffisait à se retrouver dehors, définitivement,
+//     puisque le volet Express n'avait alors aucun « mot de passe oublié ». Pour
+//     un coursier, cela voulait dire refaire sa pièce d'identité et perdre son
+//     solde.
+// Avec la confirmation, un numéro mal tapé ne recevra jamais de code : la
+// personne reste sur son ancien numéro et ne perd rien.
+//
+// C'est le parcours en deux temps déjà utilisé côté Clients et Livreurs
+// (config.js, initPhoneChangeForm), transposé aux écrans Express.
+//
+// Suppose un fournisseur SMS configuré dans Supabase (Authentication >
+// Providers > Phone). S'il ne l'est pas, l'envoi échoue et le message le dit.
+function initExpressPhoneForm({ profile, formId, phoneId, msgId, otpRowId, otpId, sendId, confirmId, cancelId }) {
   const form = document.getElementById(formId);
   if (!form) return;
   const input = document.getElementById(phoneId);
   const msgBox = msgId ? document.getElementById(msgId) : null;
-  const btn = form.querySelector('button[type="submit"]');
+
+  // Les identifiants des nouveaux éléments suivent le nom du champ existant.
+  // On les prend par défaut, pour ne pas avoir à modifier les deux écrans qui
+  // appellent cette fonction.
+  const otpRow  = document.getElementById(otpRowId  || (phoneId + "-otp-row"));
+  const otpInput = document.getElementById(otpId    || (phoneId + "-otp"));
+  const sendBtn = document.getElementById(sendId    || (phoneId + "-send"))
+               || form.querySelector('button[type="submit"]');
+  const confirmBtn = document.getElementById(confirmId || (phoneId + "-confirm"));
+  const cancelBtn  = document.getElementById(cancelId  || (phoneId + "-cancel"));
+
   if (input) input.value = formatPhoneDisplay(profile.phone);
 
+  // Numéro en attente de confirmation. Tant qu'il n'est pas confirmé, RIEN
+  // n'est écrit : ni dans l'authentification, ni dans la fiche.
+  let numeroEnAttente = null;
+
+  function revenirAuDepart() {
+    numeroEnAttente = null;
+    if (otpRow) otpRow.classList.add("hidden");
+    if (otpInput) otpInput.value = "";
+    if (confirmBtn) confirmBtn.classList.add("hidden");
+    if (cancelBtn) cancelBtn.classList.add("hidden");
+    if (sendBtn) { sendBtn.classList.remove("hidden"); sendBtn.disabled = false; sendBtn.textContent = "Envoyer le code"; }
+    if (input) input.disabled = false;
+  }
+
+  // Étape 1 — demander le code. auth.updateUser({phone}) n'applique pas le
+  // changement : il envoie un SMS au nouveau numéro et met la modification en
+  // attente. C'est verifyOtp, à l'étape 2, qui l'applique vraiment.
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (numeroEnAttente) return;           // on est déjà à l'étape 2
     const raw = (input ? input.value : "").trim();
     if (!isValidPhoneCI(raw)) {
       if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Numéro invalide. Format attendu : 10 chiffres commençant par 0 (ex : 07 89 81 81 40).</div>`;
       return;
     }
     const e164 = toE164(raw);
-    if (btn) { btn.disabled = true; btn.textContent = "Enregistrement..."; }
-    // 1) Identifiant de connexion (Auth)
-    const { error: authErr } = await supabaseClient.auth.updateUser({ phone: e164 });
-    if (authErr) {
-      if (btn) { btn.disabled = false; btn.textContent = "Enregistrer"; }
-      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(authErr.message)}</div>`;
+    if (e164 === profile.phone) {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-info">C'est déjà votre numéro actuel.</div>`;
       return;
     }
-    // 2) Profil (affichage / recherche)
-    const { error: profErr } = await supabaseClient.from("profiles").update({ phone: e164 }).eq("id", profile.id);
-    if (btn) { btn.disabled = false; btn.textContent = "Enregistrer"; }
-    if (profErr) { if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(profErr.message)}</div>`; return; }
-    profile.phone = e164;
-    if (msgBox) msgBox.innerHTML = `<div class="msg msg-success">Numéro mis à jour. Vous vous connecterez désormais avec ce nouveau numéro.</div>`;
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = "Envoi du code..."; }
+    const { error: authErr } = await supabaseClient.auth.updateUser({ phone: e164 });
+    if (authErr) {
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = "Envoyer le code"; }
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Impossible d'envoyer le code : ${friendlyErrorMessage(authErr.message)}</div>`;
+      return;
+    }
+    numeroEnAttente = e164;
+    if (msgBox) msgBox.innerHTML = `<div class="msg msg-info">Un code vient d'être envoyé par SMS au ${formatPhoneDisplay(e164)}. Saisissez-le ci-dessous. Tant que vous ne l'aurez pas fait, votre numéro actuel reste valable.</div>`;
+    if (otpRow) otpRow.classList.remove("hidden");
+    if (confirmBtn) confirmBtn.classList.remove("hidden");
+    if (cancelBtn) cancelBtn.classList.remove("hidden");
+    if (sendBtn) sendBtn.classList.add("hidden");
+    if (input) input.disabled = true;
+    if (otpInput) otpInput.focus();
   });
+
+  // Étape 2 — confirmer. L'authentification est validée par le code, PUIS la
+  // fiche est alignée. Si la fiche refusait la mise à jour, on le dit au lieu
+  // de laisser croire que tout va bien : la personne se connecterait avec un
+  // numéro que l'écran n'affiche pas.
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", async () => {
+      const code = (otpInput ? otpInput.value : "").trim();
+      if (!numeroEnAttente || !code) {
+        if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Veuillez saisir le code reçu par SMS.</div>`;
+        return;
+      }
+      confirmBtn.disabled = true; confirmBtn.textContent = "Vérification...";
+      const { error: otpErr } = await supabaseClient.auth.verifyOtp({ phone: numeroEnAttente, token: code, type: "phone_change" });
+      confirmBtn.disabled = false; confirmBtn.textContent = "Confirmer le nouveau numéro";
+      if (otpErr) {
+        if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Code incorrect ou expiré : ${friendlyErrorMessage(otpErr.message)}</div>`;
+        return;
+      }
+      const confirme = numeroEnAttente;
+      const { error: profErr } = await supabaseClient.from("profiles").update({ phone: confirme }).eq("id", profile.id);
+      if (profErr) {
+        if (msgBox) msgBox.innerHTML = `<div class="msg msg-error">Votre numéro de connexion est bien ${formatPhoneDisplay(confirme)}, mais votre fiche n'a pas pu être mise à jour : ${friendlyErrorMessage(profErr.message)}. Signalez-le à l'équipe.</div>`;
+        revenirAuDepart();
+        return;
+      }
+      profile.phone = confirme;
+      revenirAuDepart();
+      if (input) input.value = formatPhoneDisplay(confirme);
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-success">Numéro mis à jour. Vous vous connecterez désormais avec le ${formatPhoneDisplay(confirme)}.</div>`;
+    });
+  }
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      if (msgBox) msgBox.innerHTML = `<div class="msg msg-info">Changement annulé. Votre numéro n'a pas été modifié.</div>`;
+      if (input) input.value = formatPhoneDisplay(profile.phone);
+      revenirAuDepart();
+    });
+  }
+
+  revenirAuDepart();
 }
 
 // Demande de suppression de compte (réversible côté utilisateur tant que l'équipe

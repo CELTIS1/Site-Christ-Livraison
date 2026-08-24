@@ -86,6 +86,54 @@
         </div>
         <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-login-submit">Se connecter</button>
         <button type="button" id="btn-goto-inscription" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Pas encore de compte ? Créer un compte</button>
+        <button type="button" id="btn-goto-forgot" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Mot de passe oublié ?</button>
+      </form>
+
+      <!-- MOT DE PASSE OUBLIÉ — ÉTAPE 1 : LA DEMANDE
+           Ce parcours manquait entièrement au volet Express : quelqu'un qui
+           oubliait son mot de passe n'avait d'autre issue que de recréer un
+           compte, ce qui, pour un coursier, voulait dire refaire sa pièce
+           d'identité et perdre son solde et son historique.
+           C'est exactement le parcours du site principal (login.html), et il
+           s'appuie sur les mêmes fonctions serveur, déjà en service : personne
+           ne saisit ni ne dicte le mot de passe de quelqu'un d'autre — la
+           personne choisit le sien, elle-même, sur son propre téléphone. -->
+      <form id="form-forgot-phone" class="hidden">
+        <div style="text-align:center;font-weight:700;color:#6D28D9;font-size:15px;margin-bottom:10px;">Mot de passe oublié</div>
+        <div class="field">
+          <label>Numéro de téléphone</label>
+          <input type="tel" id="forgot-phone" required placeholder="00 00 00 00 00">
+        </div>
+        <div style="margin-bottom:14px;font-size:12.5px;color:#6b7280;">Notre équipe vérifie la demande, puis vous définissez vous-même votre nouveau mot de passe, ici. Votre compte, votre historique et votre solde sont conservés.</div>
+        <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-forgot-send">Demander une réinitialisation</button>
+        <button type="button" id="btn-forgot-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
+      </form>
+
+      <!-- MOT DE PASSE OUBLIÉ — ÉTAPE 2 : L'ATTENTE -->
+      <div id="reset-waiting-box" class="hidden waiting-box">
+        <div class="waiting-spinner"></div>
+        <div class="waiting-title">Demande transmise</div>
+        <div class="waiting-text" id="reset-waiting-text">Votre demande a été transmise à notre équipe. Dès qu'elle sera approuvée, vous pourrez définir vous-même votre nouveau mot de passe ici. Cette page se met à jour automatiquement.</div>
+        <div class="waiting-lastcheck" id="reset-waiting-lastcheck"></div>
+        <button type="button" class="btn" style="width:100%; justify-content:center; margin-top:16px;" id="btn-reset-waiting-check">Vérifier maintenant</button>
+        <button type="button" id="btn-reset-waiting-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
+      </div>
+
+      <!-- MOT DE PASSE OUBLIÉ — ÉTAPE 3 : LA PERSONNE CHOISIT SON MOT DE PASSE -->
+      <form id="form-reset-set" class="hidden">
+        <div style="text-align:center;font-weight:700;color:#6D28D9;font-size:15px;margin-bottom:10px;">Nouveau mot de passe</div>
+        <div style="text-align:center;font-size:12.5px;color:#16794c;margin-bottom:12px;">Votre demande a été approuvée. Choisissez votre nouveau mot de passe.</div>
+        <div class="field">
+          <label>Nouveau mot de passe</label>
+          <input type="password" id="reset-set-password" required minlength="6" autocomplete="new-password" placeholder="6 caractères minimum">
+        </div>
+        <div class="field">
+          <label>Confirmer le mot de passe</label>
+          <input type="password" id="reset-set-confirm" required minlength="6" autocomplete="new-password" placeholder="Retapez le mot de passe">
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6b7280;margin-bottom:12px;cursor:pointer;"><input type="checkbox" id="reset-set-show"> Afficher le mot de passe</label>
+        <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-reset-set-submit">Enregistrer mon mot de passe</button>
+        <button type="button" id="btn-reset-set-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
       </form>
 
       <!-- INSCRIPTION -->
@@ -151,11 +199,19 @@
 
   function showTab(which){
     stopWaiting();
+    // Le parcours « mot de passe oublié » occupe la même zone que les deux
+    // onglets. Sans ce rangement, cliquer sur « Connexion » pendant une
+    // réinitialisation laissait DEUX écrans affichés l'un sous l'autre, et le
+    // compte à rebours continuait de tourner en arrière-plan.
+    stopResetPoll();
     document.getElementById('tab-connexion').classList.toggle('active', which==='connexion');
     document.getElementById('tab-inscription').classList.toggle('active', which==='inscription');
     document.getElementById('form-connexion-login').classList.toggle('hidden', which!=='connexion');
     document.getElementById('form-inscription').classList.toggle('hidden', which!=='inscription');
     document.getElementById('waiting-box').classList.add('hidden');
+    document.getElementById('form-forgot-phone').classList.add('hidden');
+    document.getElementById('reset-waiting-box').classList.add('hidden');
+    document.getElementById('form-reset-set').classList.add('hidden');
     document.getElementById('msg-box').innerHTML = '';
   }
 
@@ -260,6 +316,12 @@
   let waitingPhone = null, waitingPassword = null, waitingUserId = null, waitingChannel = null, waitingFallbackTimer = null, waitingFallbackCount = 0;
 
   function showWaiting(phoneNoPlus, password){
+    // Par précaution : on ne devrait pas pouvoir arriver ici avec la
+    // vérification du mot de passe oublié encore en marche (tous les chemins qui
+    // mènent au formulaire de connexion l'arrêtent déjà), mais deux minuteries
+    // qui tournent en même temps sur la même page est le genre de détail qui
+    // survit mal aux modifications suivantes.
+    stopResetPoll();
     waitingPhone = phoneNoPlus; waitingPassword = password; waitingFallbackCount = 0;
     document.getElementById('form-connexion-login').classList.add('hidden');
     document.getElementById('form-inscription').classList.add('hidden');
@@ -380,6 +442,18 @@
       showMsg("Votre demande de compte a été refusée. Contactez notre équipe pour plus d'informations.", "error");
       return false;
     }
+    if (profile && profile.status === 'suspendu') {
+      await supabaseClient.auth.signOut();
+      showMsg("Votre accès a été suspendu par l'administrateur. Votre compte et votre historique sont conservés : contactez l'équipe pour le rétablir.", "error");
+      return false;
+    }
+    // Même règle que sur login.html : seul « valide » ouvre la porte, pour qu'un
+    // statut ajouté plus tard soit refusé par défaut plutôt qu'autorisé par oubli.
+    if (profile && profile.status && profile.status !== 'valide') {
+      await supabaseClient.auth.signOut();
+      showMsg("Votre compte n'est pas actif. Contactez notre équipe.", "error");
+      return false;
+    }
     return true;
   }
 
@@ -411,6 +485,213 @@
       try { await window.CLTBioLogin.maybeSetup(rawPhone, password, bioLabel); } catch (e) {}
     }
     redirectByRole(profile);
+  });
+
+  // ---------- MOT DE PASSE OUBLIÉ (réinitialisation à distance) ----------
+  // Exactement le même parcours que sur le site principal (login.html), et
+  // volontairement : ce sont les mêmes fonctions serveur, donc une seule
+  // mécanique à comprendre, à surveiller et à corriger.
+  //
+  //   1) la personne demande une réinitialisation depuis chez elle ;
+  //   2) l'équipe APPROUVE (elle ne saisit aucun mot de passe) ;
+  //   3) la personne définit elle-même son mot de passe, ici, dans les 30 min.
+  //
+  // Le mot de passe ne passe donc jamais par l'équipe. Et comme l'approbation
+  // est le seul garde-fou, l'équipe doit vérifier l'identité du demandeur
+  // (appel téléphonique) avant d'approuver — c'est écrit côté équipe.
+  //
+  // La personne peut reprendre depuis n'importe quel appareil en retapant son
+  // numéro : si sa demande est déjà approuvée, le formulaire de saisie
+  // s'affiche directement, sans repasser par une nouvelle demande.
+  let resetPhone = '';
+  let resetPollTimer = null;
+  const RESET_POLL_MS = 4000;
+
+  function stopResetPoll(){
+    clearTimeout(resetPollTimer);
+    resetPollTimer = null;
+  }
+
+  function setResetLastCheck(){
+    const el = document.getElementById('reset-waiting-lastcheck');
+    if (el) el.textContent = 'Dernière vérification à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Interroge l'état de la demande la plus récente pour ce numéro.
+  // Renvoie 'none' | 'en_attente' | 'approuve' | 'expire' | 'traite'.
+  async function checkResetState(phoneNoPlus){
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/finaliser-reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'apikey': SUPABASE_KEY,
+      },
+      body: JSON.stringify({ phone: phoneNoPlus }),
+    });
+    const result = await res.json();
+    return result.state || 'none';
+  }
+
+  // Chaque écran du parcours range tous les autres : c'est ce qui garantit
+  // qu'on ne se retrouve jamais avec deux formulaires empilés.
+  function hideAllAuthScreens(){
+    ['form-connexion-login', 'form-inscription', 'waiting-box',
+     'form-forgot-phone', 'reset-waiting-box', 'form-reset-set']
+      .forEach(id => document.getElementById(id).classList.add('hidden'));
+    document.getElementById('msg-box').innerHTML = '';
+  }
+
+  function showResetWaiting(){
+    stopResetPoll();
+    hideAllAuthScreens();
+    document.getElementById('reset-waiting-box').classList.remove('hidden');
+    setResetLastCheck();
+    scheduleResetPoll();
+  }
+
+  function scheduleResetPoll(){
+    clearTimeout(resetPollTimer);
+    resetPollTimer = setTimeout(async () => {
+      setResetLastCheck();
+      try {
+        const state = await checkResetState(resetPhone);
+        if (state === 'approuve') { showResetSetForm(); return; }
+      } catch (e) { /* réseau : on réessaie au tour suivant */ }
+      scheduleResetPoll();
+    }, RESET_POLL_MS);
+  }
+
+  function showResetSetForm(){
+    stopResetPoll();
+    hideAllAuthScreens();
+    document.getElementById('reset-set-password').value = '';
+    document.getElementById('reset-set-confirm').value = '';
+    document.getElementById('form-reset-set').classList.remove('hidden');
+  }
+
+  function backToLogin(){
+    stopResetPoll();
+    hideAllAuthScreens();
+    document.getElementById('form-connexion-login').classList.remove('hidden');
+  }
+
+  document.getElementById('btn-goto-forgot').addEventListener('click', () => {
+    stopResetPoll();
+    hideAllAuthScreens();
+    document.getElementById('form-forgot-phone').classList.remove('hidden');
+  });
+
+  document.getElementById('btn-forgot-cancel').addEventListener('click', backToLogin);
+  document.getElementById('btn-reset-waiting-cancel').addEventListener('click', backToLogin);
+  document.getElementById('btn-reset-set-cancel').addEventListener('click', backToLogin);
+
+  document.getElementById('btn-reset-waiting-check').addEventListener('click', async () => {
+    setResetLastCheck();
+    document.getElementById('reset-waiting-text').textContent = 'Vérification en cours...';
+    try {
+      const state = await checkResetState(resetPhone);
+      if (state === 'approuve') { showResetSetForm(); return; }
+      document.getElementById('reset-waiting-text').textContent =
+        "Toujours en attente d'approbation. Vous serez basculé automatiquement dès que l'équipe aura approuvé.";
+    } catch (e) {
+      document.getElementById('reset-waiting-text').textContent =
+        "Vérification impossible (réseau). Un nouvel essai automatique est en cours.";
+    }
+  });
+
+  document.getElementById('reset-set-show').addEventListener('change', (e) => {
+    const t = e.target.checked ? 'text' : 'password';
+    document.getElementById('reset-set-password').type = t;
+    document.getElementById('reset-set-confirm').type = t;
+  });
+
+  document.getElementById('form-forgot-phone').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-forgot-send');
+    btn.disabled = true; btn.textContent = 'Vérification...';
+
+    resetPhone = toE164(document.getElementById('forgot-phone').value.trim());
+
+    try {
+      const state = await checkResetState(resetPhone);
+      if (state === 'approuve') {
+        // Demande déjà approuvée : la personne reprend et définit son mot de passe.
+        showResetSetForm();
+      } else if (state === 'en_attente') {
+        // Demande déjà en cours : on attend l'approbation, sans en recréer une.
+        showResetWaiting();
+      } else {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/demander-reset-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'apikey': SUPABASE_KEY,
+          },
+          body: JSON.stringify({ phone: resetPhone }),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          showMsg("Erreur : " + (result.error || 'demande impossible'), "error");
+        } else {
+          showResetWaiting();
+        }
+      }
+    } catch (err) {
+      showMsg("Erreur réseau. Réessayez.", "error");
+    }
+
+    btn.disabled = false; btn.textContent = 'Demander une réinitialisation';
+  });
+
+  document.getElementById('form-reset-set').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-reset-set-submit');
+    const p = document.getElementById('reset-set-password').value;
+    const c = document.getElementById('reset-set-confirm').value;
+
+    if (p !== c) { showMsg("Les deux mots de passe ne correspondent pas.", "error"); return; }
+    if (p.length < 6) { showMsg("Le mot de passe doit contenir au moins 6 caractères.", "error"); return; }
+
+    btn.disabled = true; btn.textContent = 'Enregistrement...';
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/finaliser-reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY,
+        },
+        body: JSON.stringify({ phone: resetPhone, new_password: p }),
+      });
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        showMsg("Erreur : " + (result.error || 'impossible de définir le mot de passe'), "error");
+        if (result.state === 'expire' || result.state === 'none') {
+          // L'approbation n'est plus valable (30 min dépassées) : plutôt que de
+          // laisser la personne buter sur un formulaire mort, on la ramène à
+          // l'étape « demander », d'où elle peut repartir immédiatement.
+          document.getElementById('form-reset-set').classList.add('hidden');
+          document.getElementById('form-forgot-phone').classList.remove('hidden');
+        }
+      } else {
+        stopResetPoll();
+        document.getElementById('form-reset-set').classList.add('hidden');
+        document.getElementById('form-connexion-login').classList.remove('hidden');
+        // Pré-remplit le numéro pour enchaîner directement sur la connexion.
+        const typed = document.getElementById('forgot-phone').value;
+        if (typed) document.getElementById('login-phone').value = typed;
+        document.getElementById('form-forgot-phone').reset();
+        showMsg("Votre mot de passe a été défini. Vous pouvez maintenant vous connecter.", "success");
+      }
+    } catch (err) {
+      showMsg("Erreur réseau. Réessayez.", "error");
+    }
+
+    btn.disabled = false; btn.textContent = 'Enregistrer mon mot de passe';
   });
 
   // ---------- INSCRIPTION ----------
