@@ -41,13 +41,17 @@ maladroite en ligne n'aurait laissé aucune trace.
 
 **Une fonction est dans le dépôt sans être déployée** : `wave-initier-recharge`.
 Elle est pourtant appelée par `app/express-config.js`. Tant qu'elle n'est pas
-déployée, la recharge de compte Express échoue côté client.
+déployée, la recharge de compte Express échoue côté client. **C'est le seul
+écart encore ouvert à ce jour** ; il est laissé de côté volontairement, le
+chantier Wave venant après celui des comptes.
 
-**Une fonction est déployée sans être appelée nulle part** :
-`admin-reset-password`. Elle fonctionne, elle est protégée correctement, mais
-aucun écran ne l'utilise — la capacité existe et dort. Voir juste en dessous.
+**Une fonction était déployée sans être appelée nulle part** :
+`admin-reset-password`. Elle fonctionnait, elle était protégée correctement,
+mais aucun écran ne l'utilisait — la capacité existait et dormait. Elle a été
+supprimée du serveur le 24 août 2026, en même temps que
+`reinitialiser-mot-de-passe`. Voir juste en dessous.
 
-## Trois fonctions ajoutées le 24 août 2026, et deux à retirer
+## Trois fonctions ajoutées le 24 août 2026, et deux retirées
 
 L'écran Comptes savait créer, valider, supprimer et promouvoir. Il ne savait ni
 corriger une fiche, ni retirer un accès sans détruire le compte, ni dépanner
@@ -55,50 +59,50 @@ quelqu'un qui n'arrive pas à demander lui-même une réinitialisation. Ces troi
 manques sont comblés par `admin-suspendre-compte`, `admin-modifier-compte` et
 `admin-lancer-reset`, décrites plus bas.
 
-**`admin-reset-password` est à supprimer du serveur.** Elle fabrique un mot de
-passe provisoire que l'administrateur doit ensuite dicter — au téléphone, par
+**`admin-reset-password` a été supprimée du serveur.** Elle fabriquait un mot de
+passe provisoire que l'administrateur devait ensuite dicter — au téléphone, par
 message. Un mot de passe dicté est un mot de passe connu d'au moins deux
 personnes et écrit quelque part. `admin-lancer-reset` obtient le même résultat
 sans cet inconvénient : elle ouvre une fenêtre de 30 minutes pendant laquelle la
 personne choisit elle-même son mot de passe, depuis son propre téléphone. Tant
-que l'ancienne fonction reste déployée, la capacité de dicter un mot de passe
-reste ouverte à qui obtient un jeton d'administrateur.
+que l'ancienne fonction restait déployée, la capacité de dicter un mot de passe
+restait ouverte à qui obtenait un jeton d'administrateur.
 
-**`reinitialiser-mot-de-passe` est à supprimer aussi**, et c'est la plus
-importante des deux. Elle a été relue le 24 août : elle offre exactement la
+**`reinitialiser-mot-de-passe` a été supprimée aussi**, et c'était la plus
+importante des deux. Elle a été relue le 24 août : elle offrait exactement la
 même chose — un mot de passe provisoire de 8 caractères, fabriqué par le
 serveur et renvoyé à l'appelant pour être dicté — mais dans des conditions plus
 larges que sa jumelle :
 
-- elle est ouverte à **toute l'équipe**, pas au seul administrateur ;
-- elle accepte un `user_id` **direct**, sans qu'aucune demande n'ait été faite
-  ni approuvée : celui qui l'appelle n'a besoin de rien d'autre que le numéro
-  interne du compte visé ;
-- elle **ne regarde pas** si le compte est suspendu ; un compte fermé exprès
-  peut donc recevoir un mot de passe neuf par ce chemin ;
-- **aucun écran ne l'appelle.** Elle a été vérifiée dans tout le dépôt : zéro
-  appel. C'est une porte qui ne sert plus et que personne ne surveille.
+- elle était ouverte à **toute l'équipe**, pas au seul administrateur ;
+- elle acceptait un `user_id` **direct**, sans qu'aucune demande n'ait été faite
+  ni approuvée : celui qui l'appelait n'avait besoin de rien d'autre que le
+  numéro interne du compte visé ;
+- elle **ne regardait pas** si le compte était suspendu ; un compte fermé exprès
+  pouvait donc recevoir un mot de passe neuf par ce chemin ;
+- **aucun écran ne l'appelait.** Elle a été vérifiée dans tout le dépôt : zéro
+  appel. C'était une porte qui ne servait plus et que personne ne surveillait.
 
-Le seul garde-fou qui tienne encore est l'anti-élévation (un membre `equipe` ne
-peut pas viser un compte `admin`), et il repose sur un `.single()` sur le
+Le seul garde-fou qui tenait encore était l'anti-élévation (un membre `equipe`
+ne peut pas viser un compte `admin`), et il reposait sur un `.single()` sur le
 numéro de téléphone — la construction qui, dans `approuver-reset-password`, a
-justement produit une faille. Ici elle échoue du bon côté (le compte n'est pas
-trouvé, la fonction répond 404), mais c'est une chance, pas une intention.
+justement produit une faille. Là elle échouait du bon côté (le compte n'est pas
+trouvé, la fonction répond 404), mais c'était une chance, pas une intention.
 
-Supprimer `admin-reset-password` sans supprimer celle-ci ne fermerait donc
-rien : la capacité de dicter un mot de passe resterait ouverte, et à plus de
-monde. Les deux se suppriment ensemble, ou la première suppression ne sert à
-rien.
+Supprimer `admin-reset-password` sans supprimer celle-ci n'aurait donc rien
+fermé : la capacité de dicter un mot de passe serait restée ouverte, et à plus
+de monde. Les deux devaient partir ensemble ; elles sont parties ensemble, le
+24 août 2026.
 
-**Où est passé leur code ?** Il est resté sur le poste, dans
-`supabase-functions/admin-reset-password/` et
-`supabase-functions/reinitialiser-mot-de-passe/`, mais il n'est plus publié :
-les deux dossiers sont désormais dans `.gitignore`. Ce dépôt est public et son
-historique est définitif. Ce code ne contient aucune clé, mais il décrit
-précisément ce que chaque point d'entrée accepte — et il n'y a aucune raison de
-publier pour toujours la notice d'utilisation de deux portes qu'on ferme le
-soir même. Une fois la suppression confirmée dans le tableau de bord, les deux
-dossiers peuvent être effacés du poste aussi.
+**Où est passé leur code ?** Nulle part, volontairement. Il a d'abord été gardé
+sur le poste, hors publication (les deux dossiers sont dans `.gitignore`), le
+temps que la suppression soit confirmée dans le tableau de bord. Elle l'a été,
+et les dossiers ont ensuite été effacés du poste. Ce dépôt est public et son
+historique est définitif : ce code ne contenait aucune clé, mais il décrivait
+précisément ce que chaque point d'entrée acceptait, et il n'y avait aucune
+raison de publier pour toujours la notice d'utilisation de deux portes qu'on
+ferme le soir même. Les deux lignes de `.gitignore` restent en place : elles
+empêchent qu'un dossier du même nom réapparaisse par mégarde dans le dépôt.
 
 ## Ce que fait chaque fonction
 
@@ -129,8 +133,9 @@ dossiers peuvent être effacés du poste aussi.
   l'administrateur, alors qu'*approuver* est ouvert à l'équipe — parce
   qu'approuver suppose que la personne s'est manifestée, tandis que lancer ne
   suppose rien : qui peut lancer peut prendre la main sur le compte visé.
-- **admin-reset-password** *(à supprimer)* : donne un mot de passe provisoire de
-  8 caractères, à dicter. Remplacée par `admin-lancer-reset`.
+- **admin-reset-password** *(supprimée le 24 août 2026)* : donnait un mot de
+  passe provisoire de 8 caractères, à dicter. Remplacée par
+  `admin-lancer-reset`.
 
 ### Livreurs et clients
 
@@ -161,9 +166,10 @@ Trois fonctions se partagent ce parcours, et leurs noms se ressemblent :
   son mot de passe dans les 30 minutes qui suivent l'approbation. C'est la
   seule des trois qui touche réellement au mot de passe, et il ne passe par
   personne d'autre qu'elle.
-- **reinitialiser-mot-de-passe** *(à supprimer)* : ancienne console de
-  réinitialisation faite devant l'équipe. Plus appelée par aucun écran. Voir
-  plus haut : elle doit partir en même temps que `admin-reset-password`.
+- **reinitialiser-mot-de-passe** *(supprimée le 24 août 2026)* : ancienne
+  console de réinitialisation faite devant l'équipe. N'était plus appelée par
+  aucun écran. Voir plus haut : elle est partie en même temps
+  qu'`admin-reset-password`.
 
 ### Express
 
@@ -181,11 +187,17 @@ Trois fonctions se partagent ce parcours, et leurs noms se ressemblent :
 
 - **envoyer-push** : notifications. Voir `PUSH-SETUP.md`.
 
-## À déployer, dans cet ordre
+## Ce qui a été déployé le 24 août 2026, dans cet ordre
 
-Rien de tout cela ne part tout seul. Tant que ces étapes ne sont pas faites, le
-site publié appellera des fonctions qui n'existent pas et l'écran Comptes
-affichera des erreurs.
+Rien de tout cela ne part tout seul : chaque étape a été faite à la main dans le
+tableau de bord, dans l'ordre ci-dessous, et vérifiée après coup. L'ordre n'est
+pas cosmétique — il est reproduit ici tel quel, parce que c'est celui qu'il
+faudra suivre le jour où ce chantier sera rejoué sur un autre projet.
+
+Chaque collage a été contrôlé au caractère près : une empreinte du fichier local
+et une empreinte du contenu réellement présent dans l'éditeur ont été comparées
+avant chaque déploiement. Compter les lignes ne suffit pas — deux textes
+peuvent avoir le même nombre de lignes et différer.
 
 1. **D'abord le script SQL** `_sql-prive/2026-08-comptes-du-personnel.sql`, à
    coller dans **Supabase > SQL Editor**. Il ajoute les colonnes de suspension,
@@ -198,10 +210,13 @@ affichera des erreurs.
 2. **Puis les trois fonctions nouvelles**, une par une, dans **Edge Functions >
    Deploy a new function**, avec **Verify JWT ACTIVÉ** :
    `admin-suspendre-compte`, `admin-modifier-compte`, `admin-lancer-reset`.
-3. **Puis les trois fonctions déjà en ligne, à REDÉPLOYER.** Elles existent déjà
-   sur Supabase : leur code a été corrigé ici, mais la version en ligne est
-   encore l'ancienne. Tant qu'elles ne sont pas redéployées, les corrections
-   n'existent que dans le dépôt.
+3. **Puis les trois fonctions déjà en ligne, REDÉPLOYÉES.** Elles existaient
+   déjà sur Supabase : leur code avait été corrigé ici, mais la version en ligne
+   était encore l'ancienne. Ce n'était pas une hypothèse — au moment du
+   redéploiement, `demander-reset-password` faisait bien 101 lignes en ligne
+   contre 152 dans le dépôt : la faille décrite plus bas était donc réellement
+   ouverte en production jusqu'à ce jour-là. Tant qu'une correction n'est pas
+   redéployée, elle n'existe que dans le dépôt.
    - `approuver-reset-password` — **corrige une faille.** Deux fiches portant le
      même numéro sous deux écritures (« 225… » et « +225… », ce qui existe en
      base) faisaient échouer la recherche du rôle du compte visé. Le garde-fou
@@ -219,10 +234,15 @@ affichera des erreurs.
      portent le même numéro, au lieu d'en choisir un. Choisir, ici, reviendrait
      à remettre une fois sur deux le compte de quelqu'un d'autre entre les mains
      du demandeur.
-4. **Enfin, supprimer les deux anciennes consoles** du tableau de bord :
+4. **Enfin, les deux anciennes consoles supprimées** du tableau de bord :
    `admin-reset-password` **et** `reinitialiser-mot-de-passe`. Les deux
-   fabriquent un mot de passe à dicter ; aucun écran ne les appelle plus.
-   Supprimer l'une sans l'autre ne ferme rien — voir plus haut.
+   fabriquaient un mot de passe à dicter ; aucun écran ne les appelait plus.
+   Supprimer l'une sans l'autre n'aurait rien fermé — voir plus haut.
+
+Après ces quatre étapes, le projet compte **16 fonctions déployées**, et le
+parcours « mot de passe oublié » n'a plus qu'une seule issue possible : la
+personne le choisit elle-même, sur son propre appareil, dans une fenêtre de
+30 minutes. Aucun point d'entrée ne produit plus de mot de passe à dicter.
 
 ### Un réglage à vérifier AVANT de publier
 
@@ -231,7 +251,8 @@ Le changement de numéro côté Express est désormais **confirmé par un code S
 SMS actif dans **Supabase > Authentication > Providers > Phone**. S'il ne l'est
 pas, l'envoi échoue, la personne voit un message d'erreur et son numéro n'est
 pas modifié : rien n'est cassé, mais le changement de numéro devient impossible
-côté Express. À vérifier avant, donc, pas après.
+côté Express. À vérifier avant, donc, pas après. *(Vérifié le 24 août 2026 :
+Vonage est actif.)*
 
 L'écran Comptes est écrit pour survivre à une étape 1 oubliée : s'il ne trouve
 pas les colonnes de suspension, il recharge la liste sans elles et laisse un

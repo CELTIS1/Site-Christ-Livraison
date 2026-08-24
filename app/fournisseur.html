@@ -2003,6 +2003,30 @@
     return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
   }
 
+  // ---------- Jusqu'où une cliente peut corriger son propre colis ----------
+  // Une adresse fausse ou absente ne se découvre presque jamais avant le départ : elle se
+  // découvre quand le livreur est devant la mauvaise porte et qu'il appelle. Jusqu'ici, c'est
+  // exactement l'instant où cet écran retirait tous ses boutons. On sépare donc deux choses
+  // qui étaient confondues sous un seul « en attente » :
+  //
+  //   • ce qui engage l'argent et le parcours (montants, cases payé, suppression) se fige dès
+  //     que le colis est récupéré — à partir de là, il est entre nos mains ;
+  //   • ce qui sert à trouver la porte (commune, précision, téléphone, description) reste
+  //     corrigeable tant que le colis n'est pas arrivé au bout de son histoire.
+  //
+  // Ces deux fenêtres ne sont pas seulement dessinées ici : la base les applique elle-même,
+  // colonne par colonne (voir _sql-prive/2026-08-corriger-adresse-colis.sql). Une interface ne
+  // protège rien toute seule.
+  const COLIS_ADRESSE_CORRIGEABLE = ['en_attente', 'recupere', 'en_livraison', 'non_livre'];
+
+  function colisToutModifiable(c){
+    return (c && c.statut) === 'en_attente';
+  }
+
+  function colisAdresseCorrigeable(c){
+    return COLIS_ADRESSE_CORRIGEABLE.includes((c && c.statut) || '');
+  }
+
   function colisItemHTML(c, numeroClient){
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
@@ -2020,6 +2044,7 @@
             ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
             <div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
             <div class="meta">${c.commune_destination ? 'Vers : ' + escapeHTML(c.commune_destination) + (c.destination ? ' (' + escapeHTML(c.destination) + ')' : '') + ' · ' : (c.destination ? 'Vers : ' + escapeHTML(c.destination) + ' · ' : '')}Ajouté le ${formatDate(c.created_at)}</div>
+            ${(!c.commune_destination && !c.destination && colisAdresseCorrigeable(c)) ? `<div class="meta" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — sans elle, le livreur ne peut pas partir.</div>` : ''}
             ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
             ${colisADetailMontant(c) ? `
               <div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>
@@ -2035,6 +2060,10 @@
             <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
           </div>
           <div class="edit-mode hidden">
+            ${colisToutModifiable(c) ? '' : `
+            <div class="meta" style="background:rgba(226,99,19,0.08); border-left:3px solid var(--accent, #E26313); padding:8px 10px; border-radius:6px; margin-bottom:10px; line-height:1.4;">
+              Ce colis est déjà entre nos mains. Vous pouvez encore corriger l'adresse de livraison, le téléphone du destinataire et la description — c'est ce dont le livreur a besoin pour trouver la porte. Les montants, eux, sont figés : appelez-nous s'il faut les revoir.
+            </div>`}
             <div class="field">
               <label>Description du colis</label>
               <textarea class="edit-desc">${escapeHTML(c.description || '')}</textarea>
@@ -2049,6 +2078,12 @@
                 <input type="text" class="edit-dest" value="${escapeHTML(c.destination || '')}">
               </div>
             </div>
+            <div class="field">
+              <label>Téléphone du destinataire</label>
+              <input type="tel" class="edit-tel-destinataire" inputmode="tel" data-tel-origine="${escapeHTML(c.destinataire_telephone || '')}" value="${escapeHTML(typeof formatPhoneDisplay === 'function' ? formatPhoneDisplay(c.destinataire_telephone || '') : (c.destinataire_telephone || ''))}" placeholder="Ex : 07 01 02 03 04">
+              <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Sans lui, le livreur ne peut pas se faire ouvrir.</div>
+            </div>
+            ${colisToutModifiable(c) ? `
             <div class="montant-block">
               <label>Montants (optionnel)</label>
               <div class="montant-group">
@@ -2066,7 +2101,7 @@
             <div class="payment-checks">
               <label class="check-pill"><input type="checkbox" class="edit-article-paye" ${c.article_paye ? 'checked' : ''}> Article payé</label>
               <label class="check-pill"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée</label>
-            </div>
+            </div>` : ''}
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn btn-sm btn-save-edit">Enregistrer</button>
               <button type="button" class="btn btn-outline btn-sm btn-cancel-edit">Annuler</button>
@@ -2076,10 +2111,12 @@
         <div class="status-col">
           ${statutBadgeHTML(c.statut)}
           <button type="button" class="btn btn-sm btn-outline btn-duplicate-colis" style="margin-top:8px;">📋 Dupliquer</button>
-          ${c.statut === 'en_attente' ? `
+          ${colisToutModifiable(c) ? `
             <button type="button" class="btn btn-sm btn-outline btn-edit-colis" style="margin-top:8px;">Modifier</button>
             <button type="button" class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>
-          ` : ''}
+          ` : (colisAdresseCorrigeable(c) ? `
+            <button type="button" class="btn btn-sm btn-outline btn-edit-colis" style="margin-top:8px;">📍 Corriger l'adresse</button>
+          ` : '')}
         </div>
       </div>
     `;
@@ -2240,25 +2277,61 @@
         const destination = item.querySelector('.edit-dest').value.trim();
         const communeSelect = item.querySelector('.edit-commune-dest');
         const commune_destination = communeSelect ? communeSelect.value : null;
-        const montantArticleRaw = item.querySelector('.edit-montant-article').value.trim();
-        const montantLivraisonRaw = item.querySelector('.edit-montant-livraison').value.trim();
         if (!commune_destination) {
           alert("Veuillez choisir la commune de destination.");
           return;
         }
-        if (!isValidMontant(montantArticleRaw) || !isValidMontant(montantLivraisonRaw)) {
-          alert("Les montants doivent être des nombres positifs.");
-          return;
+        // Téléphone du destinataire. Comme sur l'écran de l'équipe, on ne le réécrit que s'il a
+        // vraiment été touché : le même numéro dort en base sous deux formes selon l'écran qui a
+        // créé le colis, et le renormaliser à chaque enregistrement modifierait des numéros que
+        // personne n'a corrigés.
+        const telInput = item.querySelector('.edit-tel-destinataire');
+        let destinataire_telephone;
+        if (telInput) {
+          const telSaisi = telInput.value.trim();
+          const telOrigine = telInput.dataset.telOrigine || '';
+          const telOrigineAffiche = (typeof formatPhoneDisplay === 'function') ? formatPhoneDisplay(telOrigine) : telOrigine;
+          if (telSaisi === telOrigineAffiche) {
+            destinataire_telephone = undefined;
+          } else if (!telSaisi) {
+            destinataire_telephone = null;
+          } else {
+            let telDigits = telSaisi.replace(/[^0-9]/g, '');
+            if (telDigits.startsWith('225')) telDigits = telDigits.slice(3);
+            if (typeof isValidPhoneCI === 'function' && !isValidPhoneCI(telDigits)) {
+              alert("Le téléphone du destinataire est invalide (10 chiffres attendus, ex. 0546818640). Corrigez-le ou laissez la case vide.");
+              telInput.focus();
+              return;
+            }
+            destinataire_telephone = toPhoneE164(telDigits);
+          }
         }
-        const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
-        const montant_livraison = montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw);
-        const montant = (montant_article !== null || montant_livraison !== null)
-          ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
-          : null;
-        const article_paye = item.querySelector('.edit-article-paye').checked;
-        const livraison_payee = item.querySelector('.edit-livraison-payee').checked;
+        // Les champs d'argent n'existent à l'écran que tant que le colis n'est pas parti. Passé
+        // ce point, on ne les envoie pas du tout : la base les refuserait, et à juste titre.
+        const montantArticleInput = item.querySelector('.edit-montant-article');
+        const montantLivraisonInput = item.querySelector('.edit-montant-livraison');
+        const champs = { description: description || null, destination, commune_destination };
+        if (destinataire_telephone !== undefined) champs.destinataire_telephone = destinataire_telephone;
+        if (montantArticleInput && montantLivraisonInput) {
+          const montantArticleRaw = montantArticleInput.value.trim();
+          const montantLivraisonRaw = montantLivraisonInput.value.trim();
+          if (!isValidMontant(montantArticleRaw) || !isValidMontant(montantLivraisonRaw)) {
+            alert("Les montants doivent être des nombres positifs.");
+            return;
+          }
+          const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
+          const montant_livraison = montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw);
+          champs.montant_article = montant_article;
+          champs.montant_livraison = montant_livraison;
+          champs.montant = (montant_article !== null || montant_livraison !== null)
+            ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
+            : null;
+          const articlePayeInput = item.querySelector('.edit-article-paye');
+          const livraisonPayeeInput = item.querySelector('.edit-livraison-payee');
+          if (articlePayeInput) champs.article_paye = articlePayeInput.checked;
+          if (livraisonPayeeInput) champs.livraison_payee = livraisonPayeeInput.checked;
+        }
         btn.disabled = true; btn.textContent = '...';
-        const champs = { description: description || null, destination, commune_destination, montant, montant_article, montant_livraison, article_paye, livraison_payee };
         let { error } = await supabaseClient.from('colis').update(champs).eq('id', id);
         // Même précaution qu'à l'insertion : vider la description ne doit pas faire perdre les
         // autres corrections de la vendeuse si la colonne est encore obligatoire en base.

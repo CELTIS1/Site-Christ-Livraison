@@ -528,8 +528,14 @@
 </select>
 </div>
 <div class="field">
-<label>Destination</label>
-<input type="text" id="add-dest" placeholder="Ex : Cocody, Angré">
+<label>Commune de destination</label>
+<select id="add-commune-dest" data-recherche data-recherche-placeholder="Commune…"></select>
+</div>
+</div>
+<div class="field-row">
+<div class="field">
+<label>Destination (précision : quartier, repère…)</label>
+<input type="text" id="add-dest" placeholder="Ex : Angré 8e tranche, en face de la pharmacie">
 </div>
 </div>
 <div class="field-row">
@@ -1498,9 +1504,11 @@ return cleColisCourante;
 
 function getColisDraftFields(){
 const pickupAdresseEl = document.getElementById('add-pickup-adresse');
+const communeDestEl = document.getElementById('add-commune-dest');
 return {
 fournisseur_id: document.getElementById('add-fournisseur').value,
 destination: document.getElementById('add-dest').value,
+commune_destination: communeDestEl ? communeDestEl.value : '',
 pickup_adresse: pickupAdresseEl ? pickupAdresseEl.value : '',
 montant_article: document.getElementById('add-montant-article').value,
 montant_livraison: document.getElementById('add-montant-livraison').value,
@@ -1566,6 +1574,10 @@ if (draft.cle) cleColisCourante = draft.cle;
 if (draft.fournisseur_id) document.getElementById('add-fournisseur').value = draft.fournisseur_id;
 document.getElementById('add-dest').value = draft.destination || '';
 fillPickupForSelectedFournisseur();
+if (draft.commune_destination) {
+const communeDestEl = document.getElementById('add-commune-dest');
+if (communeDestEl) communeDestEl.value = draft.commune_destination;
+}
 if (draft.pickup_adresse) document.getElementById('add-pickup-adresse').value = draft.pickup_adresse;
 document.getElementById('add-montant-article').value = draft.montant_article || '';
 document.getElementById('add-montant-livraison').value = draft.montant_livraison || '';
@@ -1590,6 +1602,9 @@ wrap.appendChild(banner);
 // le formulaire d'ajout, à partir de son profil (voir colonnes profiles.commune_recuperation /
 // adresse_recuperation) — reste modifiable pour ce colis précis si le lieu habituel a changé.
 function fillPickupForSelectedFournisseur(){
+// La commune de destination se remplit en même temps, et une seule fois : elle ne dépend pas
+// de la cliente choisie, contrairement au lieu de récupération.
+remplirCommuneDestinationAjout();
 const communeSelect = document.getElementById('add-pickup-commune');
 const adresseInput = document.getElementById('add-pickup-adresse');
 if (!communeSelect || !adresseInput) return;
@@ -1597,6 +1612,16 @@ const fournisseurId = document.getElementById('add-fournisseur').value;
 const f = fournisseurs.find(x => x.id === fournisseurId);
 communeSelect.innerHTML = communesOptionsHTML(f ? f.commune_recuperation : '', 'Choisir une commune');
 adresseInput.value = f ? (f.adresse_recuperation || '') : '';
+}
+
+// Commune de destination du formulaire d'ajout. L'espace client la demandait depuis toujours,
+// cet écran non : les colis saisis par l'équipe arrivaient donc en base avec une destination
+// en texte libre et une commune vide, invisible dans les filtres et les tournées. On aligne.
+function remplirCommuneDestinationAjout(){
+  const sel = document.getElementById('add-commune-dest');
+  if (!sel || typeof communesOptionsHTML !== 'function') return;
+  if (sel.options && sel.options.length) return;
+  sel.innerHTML = communesOptionsHTML('', 'Choisir une commune');
 }
 
 /* ---------- CARNET D'ADRESSES DU CLIENT SÉLECTIONNÉ ---------- */
@@ -1705,6 +1730,10 @@ saveColisDraft();
 document.getElementById('add-dest').addEventListener('input', eqDessinerCarnet);
 document.getElementById('add-dest-tel').addEventListener('input', eqDessinerCarnet);
 document.getElementById('add-dest').addEventListener('input', debouncedSave);
+{
+const communeDestEl = document.getElementById('add-commune-dest');
+if (communeDestEl) communeDestEl.addEventListener('change', debouncedSave);
+}
 document.getElementById('add-pickup-adresse').addEventListener('input', debouncedSave);
 document.getElementById('add-montant-article').addEventListener('input', debouncedSave);
 document.getElementById('add-montant-livraison').addEventListener('input', debouncedSave);
@@ -3115,6 +3144,8 @@ btn.disabled = true; btn.textContent = 'Ajout...';
 
 const fournisseur_id = document.getElementById('add-fournisseur').value;
 const destination = document.getElementById('add-dest').value.trim();
+const communeDestChamp = document.getElementById('add-commune-dest');
+const commune_destination = communeDestChamp ? (communeDestChamp.value || null) : null;
 // Le numéro est exigé depuis le 21 août 2026, comme sur l'écran photo. Ce formulaire écrit dans
 // la même table et ses colis partent dans les mêmes tournées : le laisser accepter ce que
 // l'autre refuse en aurait fait la porte de sortie de la règle.
@@ -3176,7 +3207,7 @@ const livreurCollectePropose = clienteCollecteDriverToday(fournisseur_id);
 const colisPayload = {
 // Description vide = colonne vide. On n'écrit pas un texte de remplissage à la place : une
 // colonne pleine de « Colis » ne renseigne personne et fausse la recherche.
-fournisseur_id, destination, description: description || null,
+fournisseur_id, destination, commune_destination, description: description || null,
 montant, montant_article, montant_livraison, photo_url,
 commune_recuperation, adresse_recuperation, destinataire_telephone,
 cle_creation: cleColisEnCours()
@@ -3351,6 +3382,28 @@ return `<div class="st ${cls}"><div class="c">${inner}</div><div class="l">${lab
 return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
 }
 
+// Adresse de destination telle qu'on la lit à voix haute au téléphone : la commune d'abord,
+// puis le repère. Les deux champs existent depuis toujours en base, mais cet écran n'affichait
+// que le second — une commune saisie par la cliente restait invisible ici.
+function eqDestinationTexte(c){
+  const parts = [];
+  if (c.commune_destination) parts.push(c.commune_destination);
+  if (c.destination) parts.push(c.destination);
+  return parts.join(' — ');
+}
+
+// Une adresse absente doit se voir, pas se deviner : c'est le premier motif d'appel du livreur.
+function eqLigneDestinationHTML(c){
+  const txt = eqDestinationTexte(c);
+  const tel = c.destinataire_telephone
+    ? ` · 📞 ${escapeHTML(c.destinataire_telephone)}`
+    : '';
+  if (!txt) {
+    return `<div class="meta adresse-absente" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — à renseigner${tel}</div>`;
+  }
+  return `<div class="meta">Vers : ${escapeHTML(txt)}${tel}</div>`;
+}
+
 function colisRowHTML(c, numeroClient){
 const thumb = c.photo_url
 ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
@@ -3383,7 +3436,8 @@ const infoBlock = `
 ${syncBadge}
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
-<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
+<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+${eqLigneDestinationHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
@@ -3398,6 +3452,32 @@ ${estValide ? '' : `
 <div class="field" style="margin-top:8px;">
 <label style="font-size:11.5px;">Livreur de livraison</label>
 <select class="row-livreur-select" data-recherche data-recherche-placeholder="Nom du livreur…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurOptions}</select>
+</div>
+<div class="adresse-block" style="margin-top:10px; padding:10px; border:1.5px dashed var(--border); border-radius:8px; max-width:340px;">
+<label style="font-size:11.5px; font-weight:700; display:block; margin-bottom:6px;">Adresse de livraison</label>
+<div class="field" style="margin-bottom:6px;">
+<label style="font-size:11.5px;">Commune de destination</label>
+<select class="edit-commune-dest" data-recherche data-recherche-placeholder="Commune…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">${communesOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
+</div>
+<div class="field" style="margin-bottom:6px;">
+<label style="font-size:11.5px;">Précision (quartier, repère…)</label>
+<input type="text" class="edit-dest" value="${escapeHTML(c.destination || '')}" placeholder="Ex : Sicogi, en face de la pharmacie" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>
+<div class="field">
+<label style="font-size:11.5px;">Téléphone du destinataire</label>
+<input type="tel" class="edit-tel-destinataire" data-tel-origine="${escapeHTML(c.destinataire_telephone || '')}" value="${escapeHTML(typeof formatPhoneDisplay === 'function' ? formatPhoneDisplay(c.destinataire_telephone || '') : (c.destinataire_telephone || ''))}" placeholder="Ex : 07 00 00 00 00" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>
+${c.statut === 'en_attente' ? `
+<label style="font-size:11.5px; font-weight:700; display:block; margin:10px 0 6px;">Adresse de récupération</label>
+<div class="field" style="margin-bottom:6px;">
+<label style="font-size:11.5px;">Commune de récupération</label>
+<select class="edit-commune-recup" data-recherche data-recherche-placeholder="Commune…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">${communesOptionsHTML(c.commune_recuperation || '', 'Choisir une commune')}</select>
+</div>
+<div class="field">
+<label style="font-size:11.5px;">Précision du lieu de récupération</label>
+<input type="text" class="edit-adresse-recup" value="${escapeHTML(c.adresse_recuperation || '')}" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>` : `
+<div class="meta" style="margin-top:8px; font-size:11.5px; opacity:.75;">📍 Récupération : ${c.commune_recuperation ? escapeHTML(c.commune_recuperation) + (c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : '') : 'non renseignée'} — le colis est déjà collecté, ce point ne se change plus.</div>`}
 </div>
 <div class="montant-block" style="margin-top:8px; max-width:340px;">
 <label style="font-size:11.5px;">Montants</label>
@@ -3438,7 +3518,8 @@ ${thumb}
 <div class="info">
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
-<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
+<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+${eqLigneDestinationHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
@@ -4110,9 +4191,54 @@ const articlePayeInput = item.querySelector('.edit-article-paye');
 const livraisonPayeeInput = item.querySelector('.edit-livraison-payee');
 const article_paye = articlePayeInput ? articlePayeInput.checked : undefined;
 const livraison_payee = livraisonPayeeInput ? livraisonPayeeInput.checked : undefined;
+// Adresse de livraison. C'est le motif d'appel numéro un du livreur, et jusqu'ici cet écran
+// ne permettait pas d'y toucher : la personne qui décroche était précisément celle qui ne
+// pouvait rien corriger. Les champs ne sont envoyés que s'ils existent à l'écran, pour que
+// les autres chemins d'enregistrement (lot, statut rapide) restent inchangés.
+const communeDestSelect = item.querySelector('.edit-commune-dest');
+const destInput = item.querySelector('.edit-dest');
+const telDestInput = item.querySelector('.edit-tel-destinataire');
+const commune_destination = communeDestSelect ? (communeDestSelect.value || null) : undefined;
+const destination = destInput ? (destInput.value.trim() || null) : undefined;
+// Le numéro du destinataire dort en base sous deux formes selon l'écran qui a créé le colis :
+// « 2250546818640 » quand il vient de l'espace client, « 0546818640 » quand il vient d'ici.
+// Réécrire le champ à chaque enregistrement changerait donc silencieusement des numéros que
+// personne n'a touchés — et ferait apparaître une correction d'adresse dans le journal là où
+// il n'y en a pas eu. On ne l'envoie que s'il a réellement été modifié.
+let destinataire_telephone;
+if (telDestInput) {
+const telSaisi = telDestInput.value.trim();
+const telOrigine = telDestInput.dataset.telOrigine || '';
+const telOrigineAffiche = (typeof formatPhoneDisplay === 'function') ? formatPhoneDisplay(telOrigine) : telOrigine;
+if (telSaisi === telOrigineAffiche) {
+destinataire_telephone = undefined;
+} else if (!telSaisi) {
+destinataire_telephone = null;
+} else {
+let telDigits = telSaisi.replace(/[^0-9]/g, '');
+if (telDigits.startsWith('225')) telDigits = telDigits.slice(3);
+if (typeof isValidPhoneCI === 'function' && !isValidPhoneCI(telDigits)) {
+alert("Le téléphone du destinataire est invalide (10 chiffres attendus, ex. 0546818640). Corrigez-le ou laissez la case vide.");
+telDestInput.focus();
+return;
+}
+destinataire_telephone = telDigits;
+}
+}
+// Adresse de récupération : modifiable seulement tant que le colis n'est pas parti. Une fois
+// collecté, changer le point de départ ne veut plus rien dire — le champ n'est alors pas affiché.
+const communeRecupSelect = item.querySelector('.edit-commune-recup');
+const adresseRecupInput = item.querySelector('.edit-adresse-recup');
+const commune_recuperation = communeRecupSelect ? (communeRecupSelect.value || null) : undefined;
+const adresse_recuperation = adresseRecupInput ? (adresseRecupInput.value.trim() || null) : undefined;
 const updatePayload = { statut, observation };
 if (livreur_id !== undefined) updatePayload.livreur_id = livreur_id;
 if (livreur_collecte_id !== undefined) updatePayload.livreur_collecte_id = livreur_collecte_id;
+if (commune_destination !== undefined) updatePayload.commune_destination = commune_destination;
+if (destination !== undefined) updatePayload.destination = destination;
+if (destinataire_telephone !== undefined) updatePayload.destinataire_telephone = destinataire_telephone;
+if (commune_recuperation !== undefined) updatePayload.commune_recuperation = commune_recuperation;
+if (adresse_recuperation !== undefined) updatePayload.adresse_recuperation = adresse_recuperation;
 if (montant !== undefined) updatePayload.montant = montant;
 if (montant_article !== undefined) updatePayload.montant_article = montant_article;
 if (montant_livraison !== undefined) updatePayload.montant_livraison = montant_livraison;
@@ -5404,7 +5530,8 @@ return `
 ${thumb}
 <div class="info">
 <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
-<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
+<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+${eqLigneDestinationHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 <div class="meta">${formatDate(c.created_at)}</div>
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
