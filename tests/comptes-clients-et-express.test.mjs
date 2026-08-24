@@ -37,12 +37,16 @@ const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
 const FONCTIONS = path.join(RACINE, 'supabase-functions');
 
-let reussies = 0, echouees = 0;
+let reussies = 0, echouees = 0, ignorees = 0;
 function verifier(titreVerif, condition, detail){
   if (condition) { reussies++; console.log('  ✅ ' + titreVerif); }
   else { echouees++; console.log('  ❌ ' + titreVerif + (detail ? '\n       → ' + detail : '')); }
 }
 function titre(t){ console.log('\n' + t); }
+function ignorer(quoi, pourquoi){
+  ignorees++;
+  console.log('  ⏭️  NON VÉRIFIÉ ici : ' + quoi + '\n       → ' + pourquoi);
+}
 
 /* ---------- Chargement d'une fonction serveur (voir comptes-du-personnel.test.mjs) ---------- */
 function chargerFonction(nom, faireClient){
@@ -676,8 +680,18 @@ titre('Les pages Express offrent le même filet de sécurité que le site princi
    5) LA BASE — la suspension coupe les données, tout de suite
    ============================================================================ */
 titre('Le script SQL coupe l’accès aux données des clients et des comptes Express');
-{
-  const sql = fs.readFileSync(path.join(RACINE, '_sql-prive', '2026-08-comptes-du-personnel.sql'), 'utf8');
+sqlDesComptes: {
+  // Même remarque que dans comptes-du-personnel.test.mjs : ce script n'est pas publié, donc
+  // il manque partout ailleurs que sur le poste. On annonce l'absence et on continue.
+  const CHEMIN_SQL = path.join(RACINE, '_sql-prive', '2026-08-comptes-du-personnel.sql');
+  if (!fs.existsSync(CHEMIN_SQL)) {
+    ignorer('la coupure des données côté base (section 5)',
+      'Le script _sql-prive/2026-08-comptes-du-personnel.sql n’est pas dans ce dossier. ' +
+      'C’est normal hors du poste : il n’est pas publié. Relancez cette série là où il se ' +
+      'trouve avant toute mise en ligne touchant aux comptes.');
+    break sqlDesComptes;
+  }
+  const sql = fs.readFileSync(CHEMIN_SQL, 'utf8');
 
   // Bannir empêche d'obtenir un NOUVEAU jeton, mais celui déjà en main reste
   // valable environ une heure. Sans coupure côté données, une personne suspendue
@@ -714,5 +728,10 @@ titre('Le script SQL coupe l’accès aux données des clients et des comptes Ex
 
 /* ---------- Verdict ---------- */
 console.log('\n———');
-console.log(`${reussies} vérifications réussies, ${echouees} échouées`);
+console.log(`${reussies} vérifications réussies, ${echouees} échouées`
+  + (ignorees ? `, ${ignorees} groupe(s) NON VÉRIFIÉ(S) faute du script SQL` : ''));
+if (ignorees) {
+  console.log('Relancez cette série sur le poste qui détient _sql-prive/ : c’est le seul');
+  console.log('endroit où les garde-fous de la base sont réellement contrôlés.');
+}
 if (echouees) process.exit(1);

@@ -82,6 +82,13 @@ jobs:
       - name: Comptes clients et Express (code SMS, mot de passe oublié, coupure des données)
         run: node tests/comptes-clients-et-express.test.mjs
 
+      # Corriger l'adresse d'un colis déjà parti : les fenêtres de modification doivent dire
+      # la même chose dans l'écran et dans la base. Une partie de cette série relit le script
+      # SQL, qui n'est pas publié ; ici elle annonce ce qu'elle ne peut pas vérifier au lieu
+      # de s'arrêter. Le reste — ce que chaque écran envoie réellement — tourne bel et bien.
+      - name: Correction d'adresse d'un colis (l'écran et la base disent la même chose)
+        run: node tests/corriger-adresse-colis.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,

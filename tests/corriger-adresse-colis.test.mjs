@@ -40,8 +40,15 @@ const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
 const config = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
 const commun = fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8');
-const sql = fs.readFileSync(
-  path.join(RACINE, '_sql-prive', '2026-08-corriger-adresse-colis.sql'), 'utf8');
+/* Le script SQL est volontairement hors du dépôt (`_sql-prive/*.sql` est ignoré par Git).
+   Sur le poste qui l'a, les sections 5 et 6 comparent vraiment le SQL aux écrans. Ailleurs —
+   typiquement sur les serveurs de GitHub, qui ne clonent que ce qui est publié — le fichier
+   n'existe pas. Le lire sans précaution faisait tomber toute la série d'un coup, y compris
+   les vérifications qui n'ont aucun besoin de lui : une panne sèche là où il fallait une
+   absence déclarée. Ce qui manque est donc COMPTÉ ET ANNONCÉ, jamais passé sous silence —
+   un contrôle qui s'arrête discrètement ressemble en tout point à un contrôle qui passe. */
+const CHEMIN_SQL = path.join(RACINE, '_sql-prive', '2026-08-corriger-adresse-colis.sql');
+const sql = fs.existsSync(CHEMIN_SQL) ? fs.readFileSync(CHEMIN_SQL, 'utf8') : null;
 
 /* ---------- Extraction du vrai code, pas d'une copie ----------
    Recopier le code dans le test le ferait diverger en silence. On le prend dans les fichiers
@@ -106,12 +113,16 @@ function aidesCommunes(){
 }
 
 /* ---------- Petit échafaudage de vérification ---------- */
-let reussies = 0, echouees = 0;
+let reussies = 0, echouees = 0, ignorees = 0;
 function verifier(titreVerif, condition, detail){
   if (condition) { reussies++; console.log('  ✅ ' + titreVerif); }
   else { echouees++; console.log('  ❌ ' + titreVerif + (detail ? '\n       → ' + detail : '')); }
 }
 function titre(t){ console.log('\n' + t); }
+function ignorer(quoi, pourquoi){
+  ignorees++;
+  console.log('  ⏭️  NON VÉRIFIÉ ici : ' + quoi + '\n       → ' + pourquoi);
+}
 
 const memeContenu = (a, b) => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
 
@@ -322,6 +333,13 @@ titre('Une adresse absente saute aux yeux au lieu de se deviner');
    ========================================================================================== */
 titre('La base refuse d’elle-même ce que l’écran ne propose plus');
 
+if (!sql) {
+  ignorer('tout ce qui compare le SQL aux écrans (sections 5 et 6)',
+    'Le script _sql-prive/2026-08-corriger-adresse-colis.sql n’est pas dans ce dossier. ' +
+    'C’est normal hors du poste : il n’est pas publié. Ces vérifications-là ne tournent ' +
+    'donc que là où le script existe, et il faut les y lancer avant toute mise en ligne.');
+} else {
+
 function listeSql(apres){
   const i = sql.indexOf(apres);
   if (i === -1) return null;
@@ -458,6 +476,8 @@ verifier('la vendeuse peut relire les corrections de SES colis, et rien d’autr
 verifier('cette lecture est limitée à l’action de correction d’adresse',
   /action = 'colis_adresse_modifiee'\s+and target_type = 'colis'/.test(sql));
 
+} // fin des sections qui ont besoin du script SQL
+
 /* ==========================================================================================
    7. Que personne ne repasse à côté
    ========================================================================================== */
@@ -499,5 +519,10 @@ titre('Les garde-fous des deux écrans sont toujours en place');
 
 /* ---------- Verdict ---------- */
 console.log('\n———');
-console.log(`${reussies} vérifications réussies, ${echouees} échouées`);
+console.log(`${reussies} vérifications réussies, ${echouees} échouées`
+  + (ignorees ? `, ${ignorees} groupe(s) NON VÉRIFIÉ(S) faute du script SQL` : ''));
+if (ignorees) {
+  console.log('Relancez cette série sur le poste qui détient _sql-prive/ : c’est le seul');
+  console.log('endroit où l’accord entre les écrans et la base est réellement contrôlé.');
+}
 if (echouees) process.exit(1);

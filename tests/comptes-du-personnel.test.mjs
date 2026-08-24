@@ -45,12 +45,16 @@ const APP = path.join(RACINE, 'app');
 const FONCTIONS = path.join(RACINE, 'supabase-functions');
 
 /* ---------- Petit échafaudage de vérification ---------- */
-let reussies = 0, echouees = 0;
+let reussies = 0, echouees = 0, ignorees = 0;
 function verifier(titreVerif, condition, detail){
   if (condition) { reussies++; console.log('  ✅ ' + titreVerif); }
   else { echouees++; console.log('  ❌ ' + titreVerif + (detail ? '\n       → ' + detail : '')); }
 }
 function titre(t){ console.log('\n' + t); }
+function ignorer(quoi, pourquoi){
+  ignorees++;
+  console.log('  ⏭️  NON VÉRIFIÉ ici : ' + quoi + '\n       → ' + pourquoi);
+}
 
 /* ---------- Chargement d'une fonction serveur ----------
    Les fonctions tournent sur Deno et sont écrites en TypeScript. On retire la ligne d'import
@@ -572,8 +576,22 @@ titre('Les portes d’entrée refusent un compte suspendu, et le disent');
    5) LA BASE — ce qui ne doit dépendre d'aucun écran
    ============================================================================ */
 titre('Le script SQL pose les garde-fous là où on ne peut pas les contourner');
-{
-  const sql = fs.readFileSync(path.join(RACINE, '_sql-prive', '2026-08-comptes-du-personnel.sql'), 'utf8');
+sqlDesComptes: {
+  // Ce script n'est pas publié (`_sql-prive/*.sql` est ignoré par Git). Là où il manque —
+  // sur les serveurs de GitHub, par exemple, qui ne clonent que ce qui est publié — le lire
+  // sans précaution arrêtait la série entière sur une erreur de fichier introuvable, et les
+  // 80 vérifications précédentes ne servaient plus à rien. On déclare l'absence et on
+  // continue, en la comptant : un contrôle qui s'arrête en silence a exactement la même
+  // allure qu'un contrôle qui passe.
+  const CHEMIN_SQL = path.join(RACINE, '_sql-prive', '2026-08-comptes-du-personnel.sql');
+  if (!fs.existsSync(CHEMIN_SQL)) {
+    ignorer('les garde-fous posés en base (section 5)',
+      'Le script _sql-prive/2026-08-comptes-du-personnel.sql n’est pas dans ce dossier. ' +
+      'C’est normal hors du poste : il n’est pas publié. Relancez cette série là où il se ' +
+      'trouve avant toute mise en ligne touchant aux comptes.');
+    break sqlDesComptes;
+  }
+  const sql = fs.readFileSync(CHEMIN_SQL, 'utf8');
 
   // Les quatre fonctions de capacité commandent toutes les règles d'accès. Si l'une d'elles
   // oublie le statut, la suspension devient décorative pour tout un pan de l'application.
@@ -600,5 +618,10 @@ titre('Le script SQL pose les garde-fous là où on ne peut pas les contourner')
 
 /* ---------- Verdict ---------- */
 console.log('\n———');
-console.log(`${reussies} vérifications réussies, ${echouees} échouées`);
+console.log(`${reussies} vérifications réussies, ${echouees} échouées`
+  + (ignorees ? `, ${ignorees} groupe(s) NON VÉRIFIÉ(S) faute du script SQL` : ''));
+if (ignorees) {
+  console.log('Relancez cette série sur le poste qui détient _sql-prive/ : c’est le seul');
+  console.log('endroit où les garde-fous de la base sont réellement contrôlés.');
+}
 if (echouees) process.exit(1);
