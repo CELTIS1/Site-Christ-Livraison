@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825caisse">
-<script src="theme.js?v=20260825caisse"></script>
+<link rel="stylesheet" href="style.css?v=20260825ecran">
+<script src="theme.js?v=20260825ecran"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1033,10 +1033,39 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825caisse"></script>
-<script src="config.js?v=20260825caisse"></script>
+<!-- « Son écran » : ce que voit un livreur, ou ce que voit une cliente, tel qu'il le voit.
+     Demandé le 25 août 2026 : « je devrais pouvoir voir ce que chaque livreur a reçu pour la
+     journée, ses affectations et ses colis du jour », et pour les vendeuses « ce qu'elles
+     perçoivent, ce qu'elles voient — et pouvoir éventuellement les corriger ».
+
+     Le contenu n'est PAS un tableau qui ressemble au sien : il est rendu par les mêmes
+     fonctions de config.js que son propre écran appelle, sur les mêmes colis. Un écart entre
+     les deux ne peut donc venir que d'une différence de colis regardés, jamais d'un calcul.
+
+     Il ne s'agit pas de se connecter à sa place : rien n'est fait ici en son nom. On regarde,
+     et les corrections passent par la porte habituelle, sous le compte de qui les fait. -->
+<div id="fiche-ecran-overlay" class="fiche-ecran-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="fiche-ecran-titre">
+  <div class="fiche-ecran">
+    <div class="fiche-ecran-tete">
+      <div>
+        <h3 class="fiche-ecran-titre" id="fiche-ecran-titre">Son écran</h3>
+        <p class="fiche-ecran-sub" id="fiche-ecran-sub"></p>
+      </div>
+      <button type="button" class="fiche-ecran-fermer" id="fiche-ecran-fermer" aria-label="Fermer cette fiche">✕</button>
+    </div>
+    <div class="fiche-ecran-barre">
+      <label for="fiche-ecran-date">Journée</label>
+      <input type="date" id="fiche-ecran-date">
+      <button type="button" class="btn btn-outline btn-sm" id="fiche-ecran-aujourdhui">Aujourd'hui</button>
+    </div>
+    <div class="fiche-ecran-corps" id="fiche-ecran-corps"></div>
+  </div>
+</div>
+
+<script src="clt-common.js?v=20260825ecran"></script>
+<script src="config.js?v=20260825ecran"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260825caisse"></script>
+<script src="clt-select-recherche.js?v=20260825ecran"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -5322,6 +5351,7 @@ acces_gestion_retire: "Accès Gestion retiré",
 creation_colis: "Nouveau colis ajouté",
 changement_statut_colis: "Changement de statut d'un colis",
 suppression_colis: "Suppression d'un colis",
+correction_colis: "Correction d'un colis depuis la fiche « Son écran »",
 };
 
 // Qui a fait l'action. actor_id est renseigné par la base depuis août 2026
@@ -5523,6 +5553,10 @@ if (recapSelectedFournisseur) {
 if (!cltPoserHTML(body, renderRecapBilan(recapSelectedFournisseur, colisJour))) return;
 const back = document.getElementById('recap-back');
 if (back) back.addEventListener('click', () => { recapSelectedFournisseur = null; renderRecapBody(); });
+// « Son écran » ouvre la fiche sur la journée déjà choisie ici : c'est le même jour que
+// le tableau qu'on est en train de lire, sinon les deux ne parleraient pas des mêmes colis.
+const ecran = document.getElementById('recap-ecran');
+if (ecran) ecran.addEventListener('click', () => ouvrirFicheEcran('cliente', recapSelectedFournisseur, recapGetDate()));
 return;
 }
 
@@ -5634,6 +5668,7 @@ return `
 <div class="recap-bilan-head">
 <button type="button" class="btn btn-outline btn-sm" id="recap-back">← Clientes</button>
 <div class="recap-bilan-title">${fournisseurLabel(fid)}</div>
+<button type="button" class="btn btn-outline btn-sm" id="recap-ecran" title="Voir sa journée telle qu'elle la voit dans son espace">👁 Son écran</button>
 </div>
 <div class="recap-bilan-sub">${recapDayLabel(recapGetDate())} · <strong>${list.length}</strong> colis · <strong>${t.nbLivres}</strong> livré${t.nbLivres > 1 ? 's' : ''} · Articles encaissés : <strong>${formatMontant(t.articleEncaisse) || '0 FCFA'}</strong></div>
 <div class="recap-table-wrap">
@@ -6286,6 +6321,359 @@ renderCaisseLivreur(rows);
 // Le second ne doit jamais être marqué « remis » : le jour de la livraison, son argent sera
 // réclamé en entier. Seule la date de remboursement de l'avance y est posée, pour que l'avance
 // ne soit pas déduite une seconde fois.
+/* ==========================================================================================
+   « SON ÉCRAN » — la fiche qui montre ce qu'un livreur, ou une cliente, voit chez lui
+   ==========================================================================================
+   Demandé le 25 août 2026 : « toutes les assignations qui sont faites au livreur, je n'ai pas
+   un moyen de pouvoir les vérifier […] je devrais pouvoir voir ce que chaque livreur a reçu
+   pour la journée, ses affectations et ses colis du jour », et pour les vendeuses « ce qu'elles
+   perçoivent, ce qu'elles voient et pouvoir éventuellement les corriger ».
+
+   LA TENTATION À NE PAS SUIVRE. La façon rapide de répondre serait de redessiner ici un tableau
+   qui ressemble à celui du livreur. Un écran qui RESSEMBLE à un autre finit toujours par en
+   différer : une correction est portée d'un côté et pas de l'autre, et l'aperçu devient un
+   TROISIÈME chiffre qui contredit les deux premiers. On aurait fabriqué, à grands frais, la
+   panne qu'on cherchait justement à détecter. C'est arrivé le 25 août : le téléphone d'un
+   livreur affichait 11 000 en main, le tableau de l'équipe lui en réclamait 14 000, et personne
+   n'avait tort — deux écrans posaient la même question et comptaient différemment.
+
+   CE QUI EST FAIT À LA PLACE. Tout ce que cette fiche affiche est rendu par les fonctions
+   partagées de config.js : tourneeTuilesHTML, argentTuilesHTML, argentResumeHTML,
+   financeTableauHTML, releveClienteTuilesHTML, argentClienteLigneHTML. Ce sont exactement les
+   fonctions que livreur.html et fournisseur.html appellent pour se dessiner. Ce n'est pas une
+   ressemblance : c'est le même code, sur les mêmes colis. Un écart entre la fiche et l'écran
+   réel ne peut donc plus venir d'un calcul — seulement d'une différence dans les colis
+   regardés, et c'est une question à laquelle on sait répondre.
+
+   CE QUE CETTE FICHE N'EST PAS. Ce n'est pas une connexion à la place de quelqu'un. Rien n'est
+   fait ici au nom du livreur ou de la cliente : on regarde ses colis, et les corrections partent
+   sous le compte de celui qui les fait, avec sa trace au journal. */
+
+// Le contexte de la fiche ouverte. `qui` vaut 'livreur' ou 'cliente'.
+let __ficheCtx = null;
+// Les lignes dépliées de la fiche, retenues d'un redessin à l'autre — même raison que côté
+// livreur : la fiche se redessine après chaque correction, et le détail qu'on est en train de
+// lire se refermerait sous les yeux au moment précis où on le consulte.
+const ficheEcranDepliees = new Set();
+
+function ouvrirFicheEcran(qui, id, jour){
+if (!id) return;
+__ficheCtx = { qui, id, jour: jour || todayLocalISODate() };
+ficheEcranDepliees.clear();
+const champ = document.getElementById('fiche-ecran-date');
+if (champ) champ.value = __ficheCtx.jour;
+const overlay = document.getElementById('fiche-ecran-overlay');
+if (overlay) overlay.classList.remove('hidden');
+renderFicheEcran();
+}
+
+function fermerFicheEcran(){
+__ficheCtx = null;
+const overlay = document.getElementById('fiche-ecran-overlay');
+if (overlay) overlay.classList.add('hidden');
+}
+
+// Les colis de la personne, pour la journée choisie. Le jour est celui de la RÉCEPTION
+// (created_at), comme partout ailleurs : c'est la journée telle que le livreur et la gestion la
+// découpent quand ils font le point le soir. Prendre ici la date de LIVRAISON donnerait un autre
+// paquet de colis que celui de son téléphone — et donc, à nouveau, deux chiffres.
+function ficheEcranColis(){
+if (!__ficheCtx) return [];
+const champ = __ficheCtx.qui === 'livreur' ? 'livreur_id' : 'fournisseur_id';
+return (allColis || []).filter(c => c && c[champ] === __ficheCtx.id && dayKey(c.created_at) === __ficheCtx.jour);
+}
+
+function renderFicheEcran(){
+const corps = document.getElementById('fiche-ecran-corps');
+if (!corps || !__ficheCtx) return;
+const estLivreur = __ficheCtx.qui === 'livreur';
+const nom = estLivreur
+? (collecteLivreurLabel(__ficheCtx.id) || 'ce livreur')
+: (fournisseurLabel(__ficheCtx.id) || 'cette cliente');
+
+const titre = document.getElementById('fiche-ecran-titre');
+if (titre) cltPoserHTML(titre, `${estLivreur ? '🛵' : '🧺'} ${nom}`);
+const sub = document.getElementById('fiche-ecran-sub');
+if (sub) sub.textContent = estLivreur
+? "L'écran de ce livreur, dessiné par le même code que son téléphone."
+: "L'écran de cette cliente, dessiné par le même code que son espace.";
+
+const colis = ficheEcranColis();
+if (!colis.length){
+cltPoserHTML(corps, `<div class="empty-state">Aucun colis reçu le ${ficheJourEnClair(__ficheCtx.jour)}.</div>
+<div class="fiche-ecran-avertissement">Si vous attendiez des colis ici, ils sont peut-être plus anciens que ce qui est chargé : ouvrez la comptabilité et remontez l'historique avec « Charger plus », puis revenez.</div>`);
+return;
+}
+
+const t = totauxArgent(colis);
+const corpsHTML = estLivreur ? ficheLivreurHTML(colis, t) : ficheClienteHTML(colis, t);
+if (!cltPoserHTML(corps, corpsHTML)) return;
+brancherFinanceDepliage(corps, ficheEcranDepliees);
+brancherFicheCorrections(corps);
+}
+
+// Ce que voit le livreur : sa tournée, son argent, ses colis cliente par cliente.
+// Les trois blocs sortent des fonctions de config.js — les mêmes que livreur.html appelle.
+function ficheLivreurHTML(colis, t){
+return `
+<div class="fiche-ecran-bloc">
+<div class="fiche-ecran-bloc-titre">Sa tournée du jour</div>
+<div style="display:flex; gap:8px; flex-wrap:wrap;">${tourneeTuilesHTML(colis)}</div>
+</div>
+<div class="fiche-ecran-bloc">
+<div class="fiche-ecran-bloc-titre">Son argent du jour</div>
+<div style="display:flex; gap:8px; flex-wrap:wrap;">${argentTuilesHTML(t)}</div>
+${argentResumeHTML(t, 'equipe')}
+</div>
+<div class="fiche-ecran-bloc">
+<div class="fiche-ecran-bloc-titre">Ses colis, cliente par cliente</div>
+${financeTableauHTML(colis, {
+titreGroupe: 'Cliente',
+cleDe: c => c.fournisseur_id || 'inconnu',
+nomDe: fournisseurLabel,
+depliees: ficheEcranDepliees,
+actionsHTML: ficheCorrectionsHTML,
+})}
+<div class="fiche-ecran-avertissement">Ce total est celui que son téléphone affiche pour cette journée, au franc près : il sort de la même fonction de calcul. Un écart ne pourrait venir que d'une journée différente — vérifiez la date ci-dessus.</div>
+</div>`;
+}
+
+// Ce que voit la cliente : son relevé, sa ligne d'argent, ses colis livreur par livreur.
+// Le groupement change de bout de chaîne — elle voit qui livre, il voit pour qui il livre —
+// mais c'est le même tableau, la même ligne de total et les mêmes cartes de colis.
+function ficheClienteHTML(colis, t){
+return `
+<div class="fiche-ecran-bloc">
+<div class="fiche-ecran-bloc-titre">Son relevé, sur cette journée</div>
+<div class="stat-tiles">${releveClienteTuilesHTML(colis)}</div>
+<div class="fiche-ecran-avertissement">Ces tuiles ne portent que sur la journée choisie. Le relevé qu'elle a sous les yeux, lui, cumule depuis le début : « Déjà reversé » et « CLT lui doit » y seront donc plus élevés. Les deux sont justes — ils ne répondent pas à la même question.</div>
+</div>
+<div class="fiche-ecran-bloc">
+<div class="fiche-ecran-bloc-titre">Ce qu'elle lit sur son récapitulatif du jour</div>
+<p class="recap-montant">${argentClienteLigneHTML(colis)}</p>
+</div>
+<div class="fiche-ecran-bloc">
+<div class="fiche-ecran-bloc-titre">Ses colis, livreur par livreur</div>
+${financeTableauHTML(colis, {
+titreGroupe: 'Livreur',
+cleDe: c => c.livreur_id || 'inconnu',
+nomDe: (k) => (collecteLivreurLabel(k) || 'Non attribué'),
+depliees: ficheEcranDepliees,
+actionsHTML: ficheCorrectionsHTML,
+})}
+<div class="fiche-ecran-avertissement">La colonne <strong>Articles</strong> est son argent ; la colonne <strong>Livraison</strong> est le revenu de CLT et ne lui revient pas. Les deux poches ne se mélangent nulle part dans ce tableau.</div>
+</div>`;
+}
+
+function ficheJourEnClair(jour){
+const d = new Date(jour + 'T12:00:00');
+if (isNaN(d.getTime())) return jour;
+return d.toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+}
+
+/* ---- Constater, puis corriger sur place --------------------------------------------------
+   Trois corrections seulement, celles qui se décident en regardant l'écran de quelqu'un :
+     • réaffecter le colis à un autre livreur — l'erreur d'assignation, la plus fréquente ;
+     • marquer l'article encaissé, ou au contraire non encaissé ;
+     • corriger un montant — qui renvoie vers l'écran d'édition habituel, et n'écrit rien ici.
+
+   Le troisième mérite un mot. Corriger un montant depuis cette fiche demanderait de recopier
+   ici la validation des montants, le repli sur la colonne `montant` des colis anciens, la
+   détection de conflit avec un livreur qui modifierait en même temps, et la mise en file
+   hors-réseau. Une seconde copie de tout cela finirait par diverger de la première — c'est le
+   défaut même qu'on passe la journée à corriger ailleurs. La fiche envoie donc vers la porte
+   déjà en place, plutôt que d'en percer une deuxième à côté. */
+function ficheCorrectionsHTML(c){
+if (!c || !c.id) return '';
+const id = echapperAttribut(c.id);
+const encaisse = !c.article_non_encaisse;
+// Réaffecter se fait par une liste déroulante, comme partout ailleurs dans l'application :
+// on choisit un nom, on ne tape pas un numéro. Le livreur actuel y est déjà sélectionné, si
+// bien que la liste dit d'abord QUI L'A, avant même qu'on la déroule.
+const options = ['<option value="">— Aucun livreur —</option>'].concat(
+(livreurs || []).map(l => `<option value="${echapperAttribut(l.id)}"${l.id === c.livreur_id ? ' selected' : ''}>${escapeHTML(l.full_name || l.phone || 'Livreur')}</option>`)
+).join('');
+return `
+<select class="btn-corriger fiche-livreur-select" data-fiche-action="reaffecter" data-colis="${id}" aria-label="Livreur de ce colis">${options}</select>
+<button type="button" class="btn-corriger est-argent" data-fiche-action="encaisse" data-colis="${id}">${encaisse ? '↩️ Marquer non encaissé' : '💵 Marquer encaissé'}</button>
+<button type="button" class="btn-corriger" data-fiche-action="montants" data-colis="${id}">✏️ Corriger les montants</button>`;
+}
+
+function brancherFicheCorrections(racine){
+if (!racine) return;
+racine.querySelectorAll('[data-fiche-action]').forEach(el => {
+// La carte du colis est à l'intérieur d'une ligne de tableau qui, elle, se replie au clic.
+// Sans cette coupure, toucher un bouton refermerait le détail qu'on est en train de lire —
+// et dérouler une liste la refermerait avant même d'avoir pu choisir.
+el.addEventListener('click', (e) => e.stopPropagation());
+el.addEventListener('keydown', (e) => e.stopPropagation());
+const action = el.dataset.ficheAction;
+if (action === 'reaffecter'){
+el.addEventListener('change', () => ficheReaffecter(el.dataset.colis, el));
+return;
+}
+el.addEventListener('click', () => {
+const id = el.dataset.colis;
+if (action === 'encaisse') ficheBasculerEncaisse(id, el);
+else if (action === 'montants') ficheAllerCorrigerMontants(id);
+});
+});
+}
+
+/* LA PORTE DE CORRECTION, une et une seule.
+   Toutes les corrections de cette fiche passent par ici : même écriture, même repli hors-réseau,
+   même trace au journal, même remise à jour de l'écran. Ajouter demain une quatrième correction
+   qui écrirait directement dans la table, c'est se rouvrir la porte des chemins divergents.
+
+   La trace au journal est posée après l'écriture et jamais avant : un journal qui annonce une
+   correction que la base a refusée est pire que pas de journal du tout. Et si c'est le journal
+   seul qui échoue, la correction reste faite — on ne défait pas une correction juste parce que
+   la note n'a pas pu être écrite. */
+async function eqCorrigerColis(id, patch, options){
+const o = options || {};
+const avant = (allColis || []).find(c => c.id === id) || null;
+let { error } = await supabaseClient.from('colis').update(patch).eq('id', id);
+
+// Coupure réseau : la correction est gardée sur cet appareil et repartira toute seule.
+if (error && eqEstPanneReseau(error)) {
+try {
+await eqQueueAjouter({
+type: 'maj-colis',
+colisId: id,
+payload: patch,
+baseUpdatedAt: avant && avant.updated_at ? avant.updated_at : null,
+baseStatut: avant ? (avant.statut || null) : null
+});
+error = null;
+if (window.cltToast) cltToast("Pas de connexion : cette correction est enregistrée sur cet appareil et partira dès le retour du réseau.", { type: 'info', duration: 7000 });
+} catch (errFile) { console.error('Mise en file hors-réseau impossible :', errFile); }
+}
+if (error) { alert(friendlyErrorMessage(error.message)); return false; }
+
+// Le journal : qui a corrigé quoi, et depuis où. Sans cette ligne, une correction faite d'un
+// coup de pouce dans une fiche serait la seule action de l'application dont il ne resterait
+// aucune trace — et c'est justement celle qui déplace de l'argent.
+try {
+await supabaseClient.from('activity_log').insert([{
+action: 'correction_colis',
+target_id: id,
+target_type: 'colis',
+details: Object.assign({ depuis: 'fiche-ecran', numero: avant ? (avant.numero || null) : null }, o.details || {}, { champs: patch })
+}]);
+} catch (errJournal) { console.warn('Trace au journal impossible :', errJournal); }
+
+const idx = (allColis || []).findIndex(c => c.id === id);
+if (idx !== -1) Object.assign(allColis[idx], patch);
+if (o.message && window.cltToast) cltToast(o.message, { type: 'success', title: "C'est corrigé", duration: 6000 });
+renderColis();
+renderFicheEcran();
+return true;
+}
+
+// Réaffecter : l'erreur la plus fréquente, et celle qu'on voit le mieux depuis cette fiche —
+// un colis apparaît dans la tournée de quelqu'un qui ne l'a jamais eu en main.
+async function ficheReaffecter(id, select){
+const c = (allColis || []).find(x => x.id === id);
+if (!c || !select) return;
+const ancien = c.livreur_id || null;
+const nouveau = select.value || null;
+if (nouveau === ancien) return;
+const nom = nouveau ? (collecteLivreurLabel(nouveau) || 'ce livreur') : null;
+const ok = await showConfirm({
+title: nouveau ? `Confier ce colis à ${nom} ?` : 'Retirer le livreur de ce colis ?',
+detail: (c.numero ? c.numero + ' · ' : '') + (c.destination || 'sans destination'),
+sub: nouveau
+? "Il apparaîtra dans sa tournée et son argent lui sera compté ce soir. Il disparaîtra de celle du livreur qui l'avait."
+: "Ce colis n'apparaîtra plus dans la tournée de personne.",
+okLabel: nouveau ? 'Oui, réaffecter' : 'Oui, retirer',
+});
+// Refusé : la liste doit revenir sur le livreur réel, sinon elle affiche un nom qui n'est
+// pas celui du colis — un mensonge silencieux jusqu'au prochain rendu.
+if (!ok) { select.value = ancien || ''; return; }
+select.disabled = true;
+await eqCorrigerColis(id, { livreur_id: nouveau }, {
+message: nom ? `Colis confié à ${nom}.` : 'Livreur retiré de ce colis.',
+details: { avant_livreur_id: ancien, apres_livreur_id: nouveau }
+});
+select.disabled = false;
+}
+
+/* Marquer encaissé, ou non encaissé.
+   Ce bouton ne touche QUE `article_non_encaisse` — l'argent de la cliente. Il ne touche ni la
+   recette de livraison, ni la remise de caisse du soir, ni le reversement à la cliente : ce
+   sont trois évènements distincts et les confondre est l'erreur que tout le reste du code
+   s'emploie à empêcher. Un colis marqué encaissé alors qu'il ne l'est pas réclame le soir au
+   livreur un argent qu'il n'a pas ; l'inverse le lui offre. D'où la confirmation. */
+async function ficheBasculerEncaisse(id, btn){
+const c = (allColis || []).find(x => x.id === id);
+if (!c) return;
+const etaitEncaisse = !c.article_non_encaisse;
+const montant = formatMontant(montantArticleColis(c)) || '0 FCFA';
+const ok = await showConfirm({
+title: etaitEncaisse ? 'Marquer cet article NON encaissé ?' : 'Marquer cet article encaissé ?',
+detail: (c.numero ? c.numero + ' · ' : '') + montant,
+sub: etaitEncaisse
+? "Ce montant sortira de ce que le livreur doit remettre, et de ce que CLT doit à la cliente. À faire quand le destinataire n'a pas payé."
+: "Ce montant entrera dans ce que le livreur doit remettre ce soir, et dans ce que CLT doit à la cliente.",
+okLabel: 'Oui, corriger',
+danger: etaitEncaisse,
+});
+if (!ok) return;
+if (btn) btn.disabled = true;
+await eqCorrigerColis(id, { article_non_encaisse: etaitEncaisse }, {
+message: etaitEncaisse ? 'Article marqué non encaissé.' : 'Article marqué encaissé.',
+details: { avant_article_non_encaisse: !!c.article_non_encaisse }
+});
+if (btn) btn.disabled = false;
+}
+
+// Corriger un montant : on referme la fiche et on ouvre le colis dans l'écran d'édition
+// habituel, celui qui sait déjà valider les montants, gérer les colis anciens et détecter un
+// conflit avec un livreur qui modifierait au même moment. Une deuxième porte d'écriture ne
+// vaudrait pas les quelques secondes qu'elle ferait gagner.
+function ficheAllerCorrigerMontants(id){
+fermerFicheEcran();
+if (!window.__colisEditing) window.__colisEditing = new Set();
+window.__colisEditing.add(id);
+if (typeof showMainTab === 'function') showMainTab('colis');
+renderColis();
+// Le rendu vient d'avoir lieu : la ligne existe, on peut aller la chercher et la montrer.
+setTimeout(() => {
+// On compare les identifiants un à un plutôt que d'en fabriquer un sélecteur CSS : l'échapper
+// proprement demanderait CSS.escape, qui manque encore sur les vieux Android de l'équipe.
+let item = null;
+document.querySelectorAll('.colis-item').forEach(el => { if (el.dataset.id === id) item = el; });
+if (item && item.scrollIntoView) item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}, 60);
+}
+
+// La fenêtre elle-même : fermeture, changement de journée.
+(function initFicheEcran(){
+const overlay = document.getElementById('fiche-ecran-overlay');
+if (!overlay) return;
+const fermer = document.getElementById('fiche-ecran-fermer');
+if (fermer) fermer.addEventListener('click', fermerFicheEcran);
+overlay.addEventListener('click', (e) => { if (e.target === overlay) fermerFicheEcran(); });
+document.addEventListener('keydown', (e) => {
+if (e.key === 'Escape' && !overlay.classList.contains('hidden')) fermerFicheEcran();
+});
+const champ = document.getElementById('fiche-ecran-date');
+if (champ) champ.addEventListener('change', () => {
+if (!__ficheCtx) return;
+__ficheCtx.jour = champ.value || todayLocalISODate();
+ficheEcranDepliees.clear();
+renderFicheEcran();
+});
+const btnJour = document.getElementById('fiche-ecran-aujourdhui');
+if (btnJour) btnJour.addEventListener('click', () => {
+if (!__ficheCtx || !champ) return;
+champ.value = todayLocalISODate();
+__ficheCtx.jour = champ.value;
+ficheEcranDepliees.clear();
+renderFicheEcran();
+});
+})();
+
 function renderCaisseLivreur(rows){
 const box = document.getElementById('caisse-livreur');
 if (!box) return;
@@ -6347,7 +6735,10 @@ ${cellulesGare(`<td data-label="Avancé à la gare" title="Argent que le livreur
 <td data-label="Total en main">${formatMontant(r.total) || '0 FCFA'}</td>
 <td data-label="Déjà remis">${formatMontant(r.remis) || '0 FCFA'}</td>
 <td data-label="Reste à remettre" style="color:${r.reste > 0 ? '#c0392b' : r.reste < 0 ? '#E26313' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.reste) || '0 FCFA'}${r.reste < 0 ? ` <span style="font-weight:400;" title="L'avance de gare dépasse l'argent encaissé : c'est CLT qui doit au livreur">(CLT lui doit)</span>` : ''}</td>
-<td>${(r.idsAremettre.length || r.idsFraisARembourser.length) ? `<button type="button" class="btn btn-sm caisse-remis-btn">✔ Marquer comme remis</button>` : '<span style="color:#1a7d3c;">✓ Soldé</span>'}</td>
+<td><div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+<button type="button" class="btn btn-outline btn-sm caisse-ecran-btn" title="Voir sa journée telle qu'il la voit sur son téléphone">👁 Son écran</button>
+${(r.idsAremettre.length || r.idsFraisARembourser.length) ? `<button type="button" class="btn btn-sm caisse-remis-btn">✔ Marquer comme remis</button>` : '<span style="color:#1a7d3c; align-self:center;">✓ Soldé</span>'}
+</div></td>
 </tr>
 `).join('')}
 </tbody>
@@ -6365,6 +6756,16 @@ ${piedTotalHTML([
 </table>
 </div>
 `)) { loadRemisesHistorique(); return; }
+// « Son écran » ouvre la fiche sur la journée d'aujourd'hui. On ne prend pas la période
+// du filtre de comptabilité : elle couvre souvent plusieurs semaines, alors que la fiche
+// reproduit une JOURNÉE — celle que son téléphone lui affiche. La date reste changeable
+// dans la fiche elle-même.
+box.querySelectorAll('.caisse-ecran-btn').forEach(btn => {
+btn.addEventListener('click', () => {
+const tr = btn.closest('tr');
+if (tr && tr.dataset.livreur && tr.dataset.livreur !== 'inconnu') ouvrirFicheEcran('livreur', tr.dataset.livreur);
+});
+});
 box.querySelectorAll('.caisse-remis-btn').forEach(btn => {
 btn.addEventListener('click', () => {
 const tr = btn.closest('tr');

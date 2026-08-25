@@ -2713,6 +2713,321 @@ function paiementBadgeHTML(c) {
   return `<span class="badge" style="color:${p.color}; background:${p.bg};">${p.label}</span>`;
 }
 
+/* ==========================================================================================
+   BRIQUES D'AFFICHAGE DE L'ARGENT — une seule source pour l'écran réel et son aperçu
+   ==========================================================================================
+
+   Demandé le 25 août 2026 : « je devrais pouvoir voir ce que chaque livreur a reçu pour la
+   journée, ses affectations et ses colis du jour », et « ce qu'elles perçoivent, ce qu'elles
+   voient » pour chaque vendeuse — afin de pouvoir constater, et corriger.
+
+   La façon évidente de répondre serait de redessiner, côté équipe, un tableau qui ressemble à
+   celui du livreur. C'est exactement ce qu'il ne faut pas faire. Un écran qui RESSEMBLE à un
+   autre finit toujours par en différer : une correction est portée d'un côté et pas de l'autre,
+   et l'aperçu devient un troisième chiffre qui contredit les deux premiers. On aurait fabriqué
+   la panne qu'on cherchait justement à détecter.
+
+   Ces fonctions rendent donc le HTML lui-même, une fois, sans toucher au document. L'écran du
+   livreur les appelle pour se dessiner ; l'écran de l'équipe les appelle pour montrer l'écran
+   du livreur. Ce n'est pas une ressemblance : c'est le même code, avec les mêmes colis. Si les
+   deux affichaient un jour un chiffre différent, ce serait qu'ils ne regardent pas les mêmes
+   colis — et c'est une question à laquelle on sait répondre.
+
+   Aucune de ces fonctions ne lit le document ni ne pose de gestionnaire d'événement, sauf
+   brancherFinanceDepliage() qui ne fait que cela. C'est ce qui les rend vérifiables hors d'un
+   navigateur, et donc réellement vérifiées. */
+
+// Les tuiles du haut : articles encaissés, livraisons encaissées, éventuellement l'avance de
+// gare, puis le total en main. La tuile « Payé à la gare » n'apparaît que les jours où de
+// l'argent est réellement parti à la gare : une tuile « 0 FCFA » toute l'année occuperait la
+// place et l'attention sans rien apprendre.
+function argentTuilesHTML(t) {
+  const m = n => formatMontant(n) || '0 FCFA';
+  return [
+    { v: m(t.articleEncaisse),    l: 'Articles encaissés',   c: '#1B4374', bg: '#e5edf5' },
+    { v: m(t.livraisonEncaissee), l: 'Livraisons encaissées', c: '#E26313', bg: '#FBE2CE' },
+  ].concat(t.fraisExpedition > 0
+    ? [{ v: '−' + m(t.fraisExpedition), l: 'Payé à la gare', c: '#8a4b12', bg: '#fff0dd' }]
+    : []
+  ).concat([
+    { v: m(t.totalEnMain),        l: 'Total en main',        c: '#1a7d3c', bg: '#e3f6ea' },
+  ]).map(x => `
+      <div style="flex:1; min-width:104px; text-align:center; background:${x.bg}; border-radius:10px; padding:8px 6px;">
+        <div style="font-size:17px; font-weight:700; color:${x.c}; line-height:1.15;">${x.v}</div>
+        <div style="font-size:11px; color:${x.c}; margin-top:3px;">${x.l}</div>
+      </div>`).join('');
+}
+
+// Ce qui accompagne les tuiles : la phrase de contexte, la note de gare, l'alerte.
+// `pourQui` change les personnes du texte — le livreur lit « vous », l'équipe lit « il ».
+// Le CHIFFRE, lui, ne change pas : seule la formulation s'adapte à qui regarde.
+function argentResumeHTML(t, pourQui) {
+  const m = n => formatMontant(n) || '0 FCFA';
+  const cotEquipe = (pourQui === 'equipe');
+  const remet = cotEquipe ? 'il les remet à CLT' : 'vous les remettez à CLT';
+  const garde = cotEquipe ? 'le reçu de la gare est sa seule preuve' : 'gardez le reçu de la gare';
+
+  const phrase = `
+      <div style="margin-top:8px; font-size:12px; color:#64748b;">
+        ${t.nbLivres} colis livré${t.nbLivres > 1 ? 's' : ''} sur ${t.nb} reçu${t.nb > 1 ? 's' : ''} ce jour-là.
+        Les articles (${m(t.articleEncaisse)}) appartiennent aux clientes : ${remet}.
+      </div>`;
+
+  // Une avance faite pour le compte d'une cliente n'est pas une dépense du livreur : il faut
+  // savoir, au moment de la remise du soir, pourquoi le total est plus bas.
+  const noteGare = t.fraisExpedition > 0
+    ? `<div style="margin-top:6px; font-size:12px; color:#8a4b12; font-weight:600;">🚌 ${m(t.fraisExpedition)} payé${t.nbExpeditions > 1 ? 's' : ''} au transporteur pour ${t.nbExpeditions} expédition${t.nbExpeditions > 1 ? 's' : ''}. Cette somme est retenue sur l'argent de la cliente, pas sur l'argent des livraisons — ${garde}.</div>`
+    : '';
+
+  // Colis remis sans que l'argent rentre : on le dit franchement plutôt que de laisser un écart
+  // inexpliqué entre ce que l'écran annonce et ce qu'il y a réellement dans la poche.
+  const alerte = t.manquantALaLivraison > 0
+    ? `<div style="margin-top:8px; font-size:12px; color:#c0392b; font-weight:600;">⚠️ ${m(t.manquantALaLivraison)} non encaissé sur des colis pourtant remis. Ce montant n'est pas compté dans le total ci-dessus.</div>`
+    : '';
+
+  return phrase + noteGare + alerte;
+}
+
+// Les colis d'un groupe, en cartes, sous la ligne dépliée. Lecture seule : rien à modifier ici,
+// on vient y lire le détail de ce qui a été encaissé ou pas.
+//
+// L'ordre annonce d'abord OÙ, puis le contenu du carton : un relevé d'argent se relit le soir
+// en se rappelant des courses faites, pas des articles vus.
+//
+// `actionsHTML`, s'il est fourni, reçoit le colis et rend les boutons de correction que
+// l'équipe seule voit. Le livreur, lui, appelle la fonction sans rien : sa fiche reste en
+// lecture seule et pas une ligne de code ne diffère entre les deux.
+function financeColisHTML(colis, actionsHTML) {
+  const m = n => formatMontant(n) || '0 FCFA';
+  const ordre = { livre: 0, en_livraison: 1, recupere: 2, en_attente: 3, non_livre: 4, retour: 5 };
+  const liste = (colis || []).slice().sort((a, b) => {
+    const da = (ordre[a.statut] === undefined ? 9 : ordre[a.statut]);
+    const db = (ordre[b.statut] === undefined ? 9 : ordre[b.statut]);
+    if (da !== db) return da - db;
+    return new Date(a.created_at) - new Date(b.created_at);
+  });
+  return liste.map(c => {
+    const art = montantArticleColis(c);
+    const liv = montantLivraisonColis(c);
+    const gare = fraisExpeditionColis(c);
+    const enMain = montantEnMainDuLivreur(c);
+    const manque = montantManquantALaLivraison(c);
+    const quoi = colisDescriptionTexte(c);
+    const actions = typeof actionsHTML === 'function' ? (actionsHTML(c) || '') : '';
+    return `
+        <div class="finance-colis" data-colis="${echapperAttribut(c.id || '')}">
+          <div class="finance-colis-tete">
+            <div class="finance-colis-titre">
+              ${c.numero ? `<span class="finance-colis-num">${escapeHTML(c.numero)}</span>` : ''}
+              <span>${colisDestinationHTML(c)}</span>
+            </div>
+            <div class="finance-colis-badges">${statutBadgeHTML(c.statut)}${paiementBadgeHTML(c)}</div>
+          </div>
+          ${quoi ? `<div class="finance-colis-quoi">📦 ${escapeHTML(quoi)}</div>` : ''}
+          <div class="finance-colis-lignes">
+            <div><span>Article</span><strong>${art ? m(art) : '—'}</strong></div>
+            <div><span>Livraison</span><strong>${liv ? m(liv) : '—'}</strong></div>
+            ${gare ? `<div><span>Payé à la gare</span><strong style="color:#8a4b12;">−${m(gare)}</strong></div>` : ''}
+            <div><span>En main</span><strong style="color:${enMain ? '#1a7d3c' : '#94a3b8'};">${enMain ? m(enMain) : '—'}</strong></div>
+          </div>
+          ${manque > 0 ? `<div class="finance-colis-alerte">⚠️ ${m(manque)} non encaissé sur ce colis pourtant remis.</div>` : ''}
+          ${c.destination ? `<div class="finance-colis-meta">Vers : ${escapeHTML(c.destination)}</div>` : ''}
+          ${c.observation ? `<div class="finance-colis-meta">Observation : ${escapeHTML(c.observation)}</div>` : ''}
+          ${actions ? `<div class="finance-colis-actions">${actions}</div>` : ''}
+        </div>`;
+  }).join('') || `<div class="finance-colis-meta">Aucun colis.</div>`;
+}
+
+/* Le tableau groupé, dépliable, avec sa ligne de total.
+   Une ligne dit « 2 / 4 livrés » et un total : ça suffit pour faire la remise, mais pas pour
+   répondre à « lesquels ? » — et c'est justement la question qui se pose quand le compte ne
+   tombe pas juste. Toucher la ligne déplie les colis du groupe, juste en dessous.
+
+   `options` :
+     titreGroupe  — l'en-tête de la première colonne (« Cliente » côté livreur, « Livreur »
+                    côté vendeuse : chacun voit l'autre bout de la chaîne).
+     cleDe        — colis → identifiant du groupe.
+     nomDe        — identifiant → nom AFFICHABLE, déjà échappé par l'appelant.
+     depliees     — un Set des groupes ouverts. Ce tableau est redessiné à chaque changement en
+                    temps réel : sans cette mémoire, le détail qu'on est en train de lire se
+                    refermerait tout seul sous les yeux de celui qui le lit.
+     id           — identifiant du conteneur, facultatif.
+     actionsHTML  — voir financeColisHTML().
+
+   La colonne « Gare » n'existe que les jours où de l'argent est réellement parti à la gare. Une
+   colonne de tirets toute l'année rétrécirait un tableau qui se lit debout, le soir, sur un
+   petit écran. Les jours où elle apparaît, en revanche, elle est indispensable : sans elle le
+   total ne correspondrait plus à la somme des colonnes précédentes, et on croirait à une
+   erreur de l'application. */
+function financeTableauHTML(colis, options) {
+  const o = options || {};
+  const m = n => formatMontant(n) || '0 FCFA';
+  const cleDe = o.cleDe || (c => c.fournisseur_id || 'inconnu');
+  const nomDe = o.nomDe || (k => escapeHTML(String(k)));
+  const depliees = o.depliees || new Set();
+  const titreGroupe = o.titreGroupe || 'Cliente';
+
+  const t = totauxArgent(colis);
+
+  const groupes = {};
+  (colis || []).forEach(c => {
+    const k = cleDe(c);
+    (groupes[k] = groupes[k] || []).push(c);
+  });
+  const lignes = Object.keys(groupes).map(k => ({
+    cle: k,
+    nom: nomDe(k),
+    colis: groupes[k],
+    t: totauxArgent(groupes[k]),
+  })).sort((a, b) => b.t.totalEncaisse - a.t.totalEncaisse);
+
+  const colonneGare = t.fraisExpedition > 0;
+  const nbColonnes = colonneGare ? 6 : 5;
+
+  // Un groupe qui n'a plus de colis ne doit pas rester « déplié » en mémoire.
+  const clesPresentes = new Set(lignes.map(l => l.cle));
+  Array.from(depliees).forEach(k => { if (!clesPresentes.has(k)) depliees.delete(k); });
+
+  const corpsLignes = lignes.map(l => {
+    const ouverte = depliees.has(l.cle);
+    const cle = echapperAttribut(l.cle);
+    return `
+      <tr class="finance-ligne${ouverte ? ' ouverte' : ''}" data-cliente="${cle}" role="button" tabindex="0" aria-expanded="${ouverte ? 'true' : 'false'}">
+        <td data-label="${echapperAttribut(titreGroupe)}"><span class="finance-cliente"><span class="finance-chevron" aria-hidden="true">${ouverte ? '▾' : '▸'}</span>${l.nom}</span></td>
+        <td data-label="Livrés">${l.t.nbLivres} / ${l.t.nb}</td>
+        <td data-label="Articles">${l.t.articleEncaisse ? m(l.t.articleEncaisse) : '<span style="color:#94a3b8;">—</span>'}</td>
+        <td data-label="Livraison">${l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '<span style="color:#94a3b8;">—</span>'}</td>
+        ${colonneGare ? `<td data-label="Gare">${l.t.fraisExpedition ? '−' + m(l.t.fraisExpedition) : '<span style="color:#94a3b8;">—</span>'}</td>` : ''}
+        <td data-label="Total"><strong>${l.t.totalEnMain ? m(l.t.totalEnMain) : '—'}</strong></td>
+      </tr>
+      <tr class="finance-detail-ligne${ouverte ? '' : ' hidden'}" data-detail="${cle}">
+        <td class="finance-detail-cell" colspan="${nbColonnes}">${financeColisHTML(l.colis, o.actionsHTML)}</td>
+      </tr>`;
+  }).join('');
+
+  return `
+      <div class="recap-table-wrap"${o.id ? ` id="${echapperAttribut(o.id)}"` : ''}>
+        <table class="recap-table recap-table-cards argent-jour-table">
+          <thead><tr><th>${escapeHTML(titreGroupe)}</th><th>Livrés</th><th>Articles</th><th>Livraison</th>${colonneGare ? '<th>Gare</th>' : ''}<th>Total</th></tr></thead>
+          <tbody>${corpsLignes}</tbody>
+          ${piedTotalHTML([
+            { texte: 'TOTAL' },
+            { texte: t.nbLivres + ' / ' + t.nb, label: 'Livrés' },
+            { texte: m(t.articleEncaisse), label: 'Articles' },
+            { texte: m(t.livraisonEncaissee), label: 'Livraison' },
+          ].concat(colonneGare
+            ? [{ texte: '−' + m(t.fraisExpedition), couleur: '#8a4b12', label: 'Gare' }]
+            : []
+          ).concat([
+            { texte: m(t.totalEnMain), couleur: '#1a7d3c', label: 'Total' },
+          ]))}
+        </table>
+      </div>`;
+}
+
+// Ouvre/ferme une ligne. On agit sur les classes plutôt que de tout redessiner : le tableau ne
+// bouge pas, seule la ligne concernée s'ouvre, et la position à l'écran est conservée.
+//
+// Le bloc de détail est TOUJOURS le <tr> qui suit immédiatement sa ligne : on le prend par le
+// voisinage plutôt que par un sélecteur construit autour de l'identifiant. Un identifiant glissé
+// dans un sélecteur CSS doit être échappé, et la seule façon propre de le faire — CSS.escape —
+// manque encore sur les vieux navigateurs Android que ces téléphones embarquent : le dépliage
+// n'aurait tout simplement pas fonctionné chez eux. Le voisinage, lui, marche partout.
+function brancherFinanceDepliage(racine, depliees) {
+  if (!racine) return;
+  const memoire = depliees || new Set();
+  racine.querySelectorAll('.finance-ligne').forEach(tr => {
+    const basculer = () => {
+      const cle = tr.dataset.cliente;
+      const bloc = tr.nextElementSibling;
+      if (!bloc || !bloc.classList.contains('finance-detail-ligne')) return;
+      const ouvre = bloc.classList.contains('hidden');
+      bloc.classList.toggle('hidden', !ouvre);
+      tr.classList.toggle('ouverte', ouvre);
+      tr.setAttribute('aria-expanded', ouvre ? 'true' : 'false');
+      const chevron = tr.querySelector('.finance-chevron');
+      if (chevron) chevron.textContent = ouvre ? '▾' : '▸';
+      if (ouvre) memoire.add(cle); else memoire.delete(cle);
+    };
+    tr.addEventListener('click', basculer);
+    // Au clavier : Entrée ou Espace, comme un bouton.
+    tr.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); basculer(); }
+    });
+  });
+}
+
+/* Le résumé d'argent d'une CLIENTE, en une ligne.
+   Une seule façon de l'écrire dans toute l'application, pour que le récap du jour de la cliente,
+   celui du mois, et la fiche que l'équipe consulte racontent la même histoire.
+
+   Deux chiffres, jamais mélangés :
+     • « Vos articles »           = ce que la cliente a confié, et ce qui lui revient une fois livré.
+     • « Frais de livraison CLT » = le prix du service, qui est le revenu de CLT.
+   L'ancien affichage additionnait les deux sous le nom « Montant total » : un chiffre qui n'était
+   l'argent de personne. */
+function argentClienteLigneHTML(colis) {
+  const t = totauxArgent(colis);
+  const m = n => formatMontant(n) || '0 FCFA';
+  return `
+      <span class="argent-cliente-principal">💰 Vos articles : <strong>${m(t.articleEnregistre)}</strong>
+        <span class="argent-cliente-livre">dont <strong>${m(t.articleEncaisse)}</strong> livré${t.nbLivres > 1 ? 's' : ''} et encaissé${t.nbLivres > 1 ? 's' : ''}</span></span>
+      <span class="argent-cliente-frais">Frais de livraison CLT : ${m(t.livraisonEnregistree)}</span>`;
+}
+
+/* Les tuiles du relevé d'une cliente, pour un ensemble de colis donné.
+   Elles ne parlent QUE de l'argent des articles — celui qui lui appartient. Les frais de
+   livraison sont le revenu de CLT et n'ont rien à faire ici : les mélanger donnerait un « CLT
+   vous doit » que CLT ne lui doit pas.
+
+   `dejaReverse` se lit sur les colis eux-mêmes (reverse_au_fournisseur_at), et non sur un total
+   annoncé : c'est ce qui permet de recomposer le chiffre ligne par ligne quand il est contesté.
+   La tuile « Frais d'expédition » n'apparaît que s'il y a réellement une avance à retenir : une
+   tuile « 0 FCFA » permanente ferait naître la question « c'est quoi, ces frais ? » chez toutes
+   les clientes qui n'expédient jamais à l'intérieur. */
+function releveClienteTuilesHTML(colis) {
+  const liste = colis || [];
+  const t = totauxArgent(liste);
+  const m = n => formatMontant(Number(n) || 0) || '0 FCFA';
+  const dejaReverse = liste.reduce(
+    (s, c) => s + (c && c.reverse_au_fournisseur_at ? montantArticleEncaisse(c) : 0), 0);
+
+  return [
+    { icon:'✅', value:t.nbLivres,               label:'Colis livrés',       color:STATUTS.livre.color, bg:STATUTS.livre.bg },
+    { icon:'📦', value:m(t.articleEnregistre),   label:'Ses articles',       color:'#5b6b7f',           bg:'#eef1f5' },
+    { icon:'💵', value:m(t.articleEncaisse),     label:'Articles encaissés', color:'#1B4374',           bg:'#e5edf5' },
+    { icon:'✔️', value:m(dejaReverse),           label:'Déjà reversé',       color:'#1a7d3c',           bg:'#e3f6ea' },
+  ].concat(t.fraisExpeditionADevoir > 0
+    ? [{ icon:'🚌', value:'−' + m(t.fraisExpeditionADevoir), label:"Frais d'expédition", color:'#8a4b12', bg:'#fff0dd' }]
+    : []
+  ).concat([
+    { icon:'⏳', value:m(t.netADevoir), label:'CLT lui doit', color:'#E26313', bg:'#FBE2CE' },
+  ]).map(x => `
+      <div class="stat-tile" style="--tile-color:${x.color}; --tile-bg:${x.bg}">
+        <div class="stat-tile-icon">${x.icon}</div>
+        <div class="stat-tile-value">${x.value}</div>
+        <div class="stat-tile-label">${x.label}</div>
+      </div>`).join('');
+}
+
+// Les tuiles de tournée : combien de colis à récupérer, en cours, livrés, non livrés.
+// Le livreur les voit en haut de « Mes colis » ; l'équipe les voit dans sa fiche d'aperçu.
+function tourneeTuilesHTML(colis) {
+  const liste = colis || [];
+  const n = s => liste.filter(c => c.statut === s).length;
+  return [
+    { label: 'À récupérer', count: n('en_attente'), color: STATUTS.en_attente.color, bg: STATUTS.en_attente.bg },
+    { label: 'En cours',    count: n('recupere') + n('en_livraison'), color: STATUTS.en_livraison.color, bg: STATUTS.en_livraison.bg },
+    { label: 'Livrés',      count: n('livre'), color: STATUTS.livre.color, bg: STATUTS.livre.bg },
+    { label: 'Non livrés',  count: n('non_livre'), color: STATUTS.non_livre.color, bg: STATUTS.non_livre.bg },
+  ].map(b => `
+      <div style="flex:1; min-width:70px; text-align:center; background:${b.bg}; border-radius:10px; padding:8px 6px;">
+        <div style="font-size:20px; font-weight:700; color:${b.color}; line-height:1;">${b.count}</div>
+        <div style="font-size:11px; color:${b.color}; margin-top:3px;">${b.label}</div>
+      </div>
+    `).join('');
+}
+
 // ---------- Photo de profil (avatar) ----------
 // Ces fonctions sont partagées par les 3 tableaux de bord (client, équipe, livreur) pour que
 // chaque utilisateur puisse mettre sa propre photo, affichée ensuite à côté de son nom partout

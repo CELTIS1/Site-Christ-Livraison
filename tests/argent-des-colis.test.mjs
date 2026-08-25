@@ -513,9 +513,11 @@ titre('Chaque tableau d\'argent porte sa ligne de total');
   const tableaux = [
     ['équipe · récapitulatif par client (le tableau visé par la demande)', equipe, 'renderRecapBilan'],
     ['équipe · comptabilité',                                             equipe, 'renderCompta'],
-    // Le tableau du livreur a déménagé dans l'onglet Finance le 25 août 2026 : il n'est plus
-    // dessiné par renderArgentDuJour (la carte) mais par renderFinanceDetail (le panneau).
-    ['livreur · le point d\'argent de la journée',                        livreur, 'renderFinanceDetail'],
+    // Le tableau du livreur a déménagé deux fois le 25 août 2026 : d'abord de la carte vers
+    // l'onglet Finance, puis de livreur.html vers config.js, pour que l'écran du livreur et sa
+    // fiche d'aperçu côté équipe soient dessinés par le MÊME code. La ligne de total se vérifie
+    // donc là où elle est écrite — et elle n'est plus écrite qu'à un seul endroit.
+    ['livreur et équipe · le point d\'argent de la journée',              sourceConfig, 'financeTableauHTML'],
   ];
   tableaux.forEach(([nom, src, fn]) => {
     const bloc = blocDe(src, fn);
@@ -655,6 +657,12 @@ titre('L\'onglet Finance du livreur');
 
 {
   const code = sansCommentaires(livreur);
+  /* Depuis le 25 août 2026, le tableau lui-même n'est plus écrit dans livreur.html : il est
+     rendu par financeTableauHTML() et financeColisHTML(), dans config.js, appelées à la fois
+     par l'écran du livreur et par la fiche d'aperçu de l'équipe. Les vérifications de mise en
+     forme qui suivent visent donc le code partagé — c'est bien le seul endroit où ce tableau
+     existe encore, et le seul endroit où il peut se casser. */
+  const partage = sansCommentaires(sourceConfig);
 
   // -- Le nom, aux trois endroits où il s'affiche ------------------------------------------
   verifier('le troisième onglet du bandeau s\'appelle Finance',
@@ -707,44 +715,47 @@ titre('L\'onglet Finance du livreur');
 
   // -- Chaque ligne cliente se déplie sur ses colis -------------------------------------------
   verifier('chaque ligne cliente est annoncée comme cliquable',
-    /class="finance-ligne[^"]*"[^>]*role="button"[^>]*tabindex="0"/.test(code),
+    /class="finance-ligne[^"]*"[^>]*role="button"[^>]*tabindex="0"/.test(partage),
     'une ligne qui réagit au doigt sans le dire ne sera jamais touchée');
   verifier('elle dit si elle est ouverte ou fermée',
-    /aria-expanded="\$\{ouverte \? 'true' : 'false'\}"/.test(code));
+    /aria-expanded="\$\{ouverte \? 'true' : 'false'\}"/.test(partage));
   verifier('le bloc de détail est rattaché à SA cliente',
-    /data-cliente="\$\{cle\}"/.test(code) && /data-detail="\$\{cle\}"/.test(code),
+    /data-cliente="\$\{cle\}"/.test(partage) && /data-detail="\$\{cle\}"/.test(partage),
     'sans ce lien, un clic ouvrirait le détail de la voisine');
   verifier('l\'identifiant de cliente est échappé avant d\'entrer dans un attribut',
-    /const cle = echapperAttribut\(l\.cle\);/.test(code));
+    /const cle = echapperAttribut\(l\.cle\);/.test(partage));
   /* Le tableau gagne une colonne « Gare » les jours où de l'argent est parti au transporteur.
      Le colspan du bloc déplié doit suivre : figé à 5, il laisserait le détail plus étroit que
      le tableau ces jours-là, et le navigateur reconstruirait une colonne fantôme à droite. On
      vérifie donc le lien, pas un nombre — c'est le lien qui peut se rompre. */
   verifier('le détail occupe toute la largeur de la ligne, colonne « Gare » comprise',
-    /class="finance-detail-cell" colspan="\$\{nbColonnes\}"/.test(code) &&
-    /const nbColonnes = colonneGare \? 6 : 5;/.test(code));
+    /class="finance-detail-cell" colspan="\$\{nbColonnes\}"/.test(partage) &&
+    /const nbColonnes = colonneGare \? 6 : 5;/.test(partage));
   verifier('la colonne « Gare » apparaît en tête, en corps et en pied d\'un même mouvement',
-    /\$\{colonneGare \? '<th>Gare<\/th>' : ''\}/.test(code) &&
-    /\$\{colonneGare \? `<td data-label="Gare">/.test(code) &&
-    /colonneGare[\s\S]{0,120}texte: '−' \+ m\(t\.fraisExpedition\)/.test(code),
+    /\$\{colonneGare \? '<th>Gare<\/th>' : ''\}/.test(partage) &&
+    /\$\{colonneGare \? `<td data-label="Gare">/.test(partage) &&
+    /colonneGare[\s\S]{0,120}texte: '−' \+ m\(t\.fraisExpedition\)/.test(partage),
     'une colonne présente en tête mais absente en corps décale tous les chiffres d\'un cran');
   verifier('un second appui referme',
-    blocDe(livreur, 'brancherFinanceDepliage').includes("bloc.classList.toggle('hidden', !ouvre)"));
+    blocDe(sourceConfig, 'brancherFinanceDepliage').includes("bloc.classList.toggle('hidden', !ouvre)"));
   verifier('le détail se trouve par voisinage, pas par un sélecteur CSS',
-    blocDe(livreur, 'brancherFinanceDepliage').includes('tr.nextElementSibling')
-    && !code.includes('CSS.escape'),
+    blocDe(sourceConfig, 'brancherFinanceDepliage').includes('tr.nextElementSibling')
+    && !code.includes('CSS.escape')
+    && !blocDe(sourceConfig, 'brancherFinanceDepliage').includes('CSS.escape')
+    && !blocDe(sourceConfig, 'financeTableauHTML').includes('CSS.escape'),
     'CSS.escape manque sur les vieux navigateurs Android : le dépliage n\'y marcherait pas');
   verifier('le clavier ouvre aussi (Entrée ou Espace)',
-    blocDe(livreur, 'brancherFinanceDepliage').includes("e.key === 'Enter' || e.key === ' '"));
+    blocDe(sourceConfig, 'brancherFinanceDepliage').includes("e.key === 'Enter' || e.key === ' '"));
   verifier('une ligne ouverte le reste quand le tableau se redessine',
-    blocDe(livreur, 'renderFinanceDetail').includes('financeDepliees.has(l.cle)'),
+    blocDe(sourceConfig, 'financeTableauHTML').includes('depliees.has(l.cle)')
+    && blocDe(livreur, 'renderFinanceDetail').includes('depliees: financeDepliees'),
     'le temps réel redessine sans prévenir : le détail qu\'on lit se refermerait tout seul');
   verifier('une cliente qui sort de la journée est oubliée',
-    blocDe(livreur, 'renderFinanceDetail').includes('financeDepliees.delete(k)'),
+    blocDe(sourceConfig, 'financeTableauHTML').includes('depliees.delete(k)'),
     'une mémoire qui ne se vide jamais finit par rouvrir des lignes sans raison');
 
   // -- Ce que le détail montre de chaque colis -------------------------------------------------
-  const detailColis = blocDe(livreur, 'financeColisHTML');
+  const detailColis = blocDe(sourceConfig, 'financeColisHTML');
   verifier('le détail montre le statut de chaque colis',
     detailColis.includes('statutBadgeHTML(c.statut)'),
     'c\'est la demande exacte : « les quatre colis avec les différents statuts en face »');
@@ -802,7 +813,7 @@ titre('Le détail déplié n\'hérite pas de la mise en forme du tableau');
      poussière sur l'écran — et personne ne pense à toucher la ligne. */
   verifier('le chevron reste collé au nom de la cliente',
     /<span class="finance-cliente"><span class="finance-chevron"[\s\S]{0,90}\$\{l\.nom\}<\/span>/
-      .test(sansCommentaires(livreur)),
+      .test(sansCommentaires(sourceConfig)),
     'seul, il se pose au milieu de la ligne sur téléphone et ne veut plus rien dire');
   verifier('… et l\'enveloppe qui les tient est bien définie',
     /\.finance-cliente\{[^}]*display:inline-flex/.test(style));

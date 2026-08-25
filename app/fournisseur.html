@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825caisse">
-<script src="theme.js?v=20260825caisse"></script>
+<link rel="stylesheet" href="style.css?v=20260825ecran">
+<script src="theme.js?v=20260825ecran"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -466,10 +466,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825caisse"></script>
-<script src="config.js?v=20260825caisse"></script>
+<script src="clt-common.js?v=20260825ecran"></script>
+<script src="config.js?v=20260825ecran"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260825caisse"></script>
+<script src="clt-select-recherche.js?v=20260825ecran"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2789,22 +2789,11 @@
     if (montantEl) cltPoserHTML(montantEl, duJour.length ? ligneArgentCliente(duJour) : '');
   }
 
-  // Une seule façon d'écrire l'argent dans tout l'espace cliente, pour que le récap du jour,
-  // celui du mois et le relevé racontent la même histoire.
-  //
-  // Deux chiffres, jamais mélangés :
-  //   • « Vos articles » = ce que la cliente a confié, et ce qui lui revient une fois livré.
-  //   • « Frais de livraison CLT » = le prix du service, qui est le revenu de CLT.
-  // L'ancien affichage additionnait les deux sous le nom « Montant total », ce qui donnait un
-  // chiffre qui n'était l'argent de personne — et « Montant livré » comptait la livraison des
-  // colis livrés comme si elle appartenait à la cliente.
+  // La ligne d'argent de la cliente est écrite par argentClienteLigneHTML() (config.js) : la
+  // MÊME fonction sert au récap du jour, au récap du mois, et à la fiche que l'équipe consulte
+  // pour voir ce que la cliente voit. Trois écrans, une seule façon de compter.
   function ligneArgentCliente(colis){
-    const t = totauxArgent(colis);
-    const m = n => formatMontant(n) || '0 FCFA';
-    return `
-      <span class="argent-cliente-principal">💰 Vos articles : <strong>${m(t.articleEnregistre)}</strong>
-        <span class="argent-cliente-livre">dont <strong>${m(t.articleEncaisse)}</strong> livré${t.nbLivres > 1 ? 's' : ''} et encaissé${t.nbLivres > 1 ? 's' : ''}</span></span>
-      <span class="argent-cliente-frais">Frais de livraison CLT : ${m(t.livraisonEnregistree)}</span>`;
+    return argentClienteLigneHTML(colis);
   }
 
   function renderRecapMois(){

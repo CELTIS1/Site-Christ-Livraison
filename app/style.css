@@ -868,7 +868,9 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
 .recap-client-count{background:var(--orange-light); color:var(--orange); padding:3px 10px; border-radius:var(--radius-pill); font-size:12px; font-weight:700;}
 .recap-client-amount{color:var(--muted); font-size:12.5px; font-weight:600;}
 .recap-bilan-head{display:flex; align-items:center; gap:12px; margin:14px 0 6px; flex-wrap:wrap;}
-.recap-bilan-title{font-weight:700; color:var(--navy); font-size:16px;}
+/* `flex:1` pousse le bouton « Son écran » à droite du bandeau, loin du « ← Clientes » de
+   gauche : deux boutons collés se touchent l'un pour l'autre au pouce. */
+.recap-bilan-title{flex:1; min-width:120px; font-weight:700; color:var(--navy); font-size:16px;}
 .recap-bilan-sub{font-size:13px; color:var(--muted); margin:0 0 6px;}
 .recap-bilan-sub strong{color:var(--navy);}
 .day-group{margin-bottom:26px;}
@@ -1009,6 +1011,78 @@ html[data-theme="dark"] .btn-frais-vite.est-choisi{background:#E9B27A; color:#1B
 .finance-colis-lignes strong{font-size:13px; color:var(--navy); font-weight:700;}
 .finance-colis-alerte{margin-top:8px; font-size:11.5px; color:#c0392b; font-weight:600;}
 .finance-colis-meta{margin-top:6px; font-size:11.5px; color:var(--muted); line-height:1.45;}
+
+/* ---- Corriger sur place, depuis la fiche « Son écran » (25/08/2026) ----------------------
+   La carte d'un colis est d'abord faite pour être LUE : c'est le relevé du soir. Les boutons de
+   correction vivent donc en dessous, séparés par un trait, et n'apparaissent que dans la fiche
+   consultée par l'équipe — le livreur, lui, appelle la même fonction sans boutons. */
+.finance-colis-actions{
+  display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;
+  padding-top:8px; border-top:1px dashed var(--border);
+}
+.finance-colis-actions .btn-corriger{
+  flex:1 1 auto; min-width:104px; padding:7px 8px; font-size:12px; font-weight:600;
+  border:1.5px solid var(--border-strong); border-radius:8px; background:var(--white);
+  color:var(--navy); cursor:pointer; line-height:1.2; font-family:inherit;
+}
+.finance-colis-actions .btn-corriger:hover{background:var(--grey-bg);}
+.finance-colis-actions .btn-corriger:disabled{opacity:0.55; cursor:default;}
+.finance-colis-actions .btn-corriger.est-argent{border-color:#8fc9a5; color:#1a7d3c;}
+.finance-colis-actions .btn-corriger.est-argent:hover{background:#e3f6ea;}
+
+/* ---- Fiche « Son écran » : l'équipe regarde l'écran d'un livreur ou d'une cliente ---------
+   Plus large et plus haute que les autres fenêtres de l'application, parce qu'elle porte un
+   tableau d'argent qui doit rester lisible sans être rogné. Le corps défile tout seul : la
+   tête et le choix de la journée restent visibles pendant qu'on descend dans les colis. */
+.fiche-ecran-overlay{
+  position:fixed; inset:0; background:rgba(18,50,82,0.5); backdrop-filter:blur(2px); z-index:1050;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.fiche-ecran{
+  background:var(--white); border-radius:18px; width:100%; max-width:860px;
+  max-height:calc(100vh - 40px); display:flex; flex-direction:column;
+  box-shadow:var(--shadow-lg); overflow:hidden;
+}
+.fiche-ecran-tete{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  padding:18px 20px 12px; border-bottom:1px solid var(--border);
+}
+.fiche-ecran-titre{color:var(--navy); font-size:17px; font-weight:700; margin:0;}
+.fiche-ecran-sub{color:var(--muted); font-size:12.5px; margin:4px 0 0; line-height:1.45;}
+.fiche-ecran-fermer{
+  flex-shrink:0; width:32px; height:32px; border-radius:50%; border:1.5px solid var(--border-strong);
+  background:var(--white); color:var(--navy); font-size:15px; cursor:pointer; line-height:1;
+}
+.fiche-ecran-fermer:hover{background:var(--grey-bg);}
+.fiche-ecran-barre{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:10px 20px; border-bottom:1px solid var(--border); background:var(--grey-bg);
+}
+.fiche-ecran-barre label{font-size:12.5px; font-weight:600; color:var(--navy);}
+.fiche-ecran-barre input[type="date"]{
+  border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); padding:7px 10px;
+  font-size:13px; font-family:inherit; color:var(--navy); background:var(--white);
+}
+.fiche-ecran-corps{padding:16px 20px 22px; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+.fiche-ecran-bloc{margin-bottom:18px;}
+.fiche-ecran-bloc:last-child{margin-bottom:0;}
+.fiche-ecran-bloc-titre{
+  font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;
+  letter-spacing:0.4px; margin-bottom:8px;
+}
+/* Ce que la fiche ne prétend PAS montrer. Une fiche qui affiche un chiffre de journée sous le
+   même nom qu'un cumul de relevé fabrique un troisième chiffre — exactement ce qu'on évite. */
+.fiche-ecran-avertissement{
+  font-size:12px; line-height:1.55; color:var(--muted);
+  border-left:3px solid var(--border-strong); padding-left:10px; margin-top:10px;
+}
+@media(max-width:640px){
+  .fiche-ecran-overlay{padding:0;}
+  .fiche-ecran{max-width:none; border-radius:0; max-height:100vh; height:100vh;}
+  .fiche-ecran-tete{padding:14px 14px 10px;}
+  .fiche-ecran-barre{padding:8px 14px;}
+  .fiche-ecran-corps{padding:14px 12px 24px;}
+}
 
 .stat-tiles{
   display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:12px; margin-bottom:8px;

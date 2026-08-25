@@ -121,6 +121,18 @@ jobs:
       - name: L'écran ne se réécrit plus à l'identique (les saisies ne s'effacent plus)
         run: node tests/ecran-qui-ne-bouge-pas.test.mjs
 
+      # La fiche « Son écran ». Jusqu'ici, personne à l'équipe ne pouvait voir ce qu'un livreur —
+      # ou une vendeuse — a réellement sous les yeux : on assignait des colis toute la journée
+      # sans jamais pouvoir vérifier l'autre bout. La fiche répond à ça, mais la façon évidente
+      # de l'écrire aurait été de redessiner un tableau RESSEMBLANT à celui du livreur — donc un
+      # TROISIÈME chiffre, et le seul dont personne n'aurait su lequel des deux autres il
+      # contredit. Cette série exécute réellement les deux écrans sur les mêmes colis et compare
+      # les tableaux produits CARACTÈRE POUR CARACTÈRE. Elle garde aussi la porte de correction :
+      # une seule écriture dans toute la fiche, la trace au journal posée après l'écriture et
+      # jamais avant, et « corriger les montants » qui n'écrit rien du tout.
+      - name: La fiche « Son écran » (l'équipe voit exactement ce que le livreur voit)
+        run: node tests/fiche-son-ecran.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,
