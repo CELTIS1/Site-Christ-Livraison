@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825finance1">
-<script src="theme.js?v=20260825finance1"></script>
+<link rel="stylesheet" href="style.css?v=20260825finance2">
+<script src="theme.js?v=20260825finance2"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -379,8 +379,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825finance1"></script>
-<script src="config.js?v=20260825finance1"></script>
+<script src="clt-common.js?v=20260825finance2"></script>
+<script src="config.js?v=20260825finance2"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -1934,7 +1934,7 @@
       const cle = echapperAttribut(l.cle);
       return `
       <tr class="finance-ligne${ouverte ? ' ouverte' : ''}" data-cliente="${cle}" role="button" tabindex="0" aria-expanded="${ouverte ? 'true' : 'false'}">
-        <td data-label="Cliente"><span class="finance-chevron" aria-hidden="true">${ouverte ? '▾' : '▸'}</span> ${l.nom}</td>
+        <td data-label="Cliente"><span class="finance-cliente"><span class="finance-chevron" aria-hidden="true">${ouverte ? '▾' : '▸'}</span>${l.nom}</span></td>
         <td data-label="Livrés">${l.t.nbLivres} / ${l.t.nb}</td>
         <td data-label="Articles">${l.t.articleEncaisse ? m(l.t.articleEncaisse) : '<span style="color:#94a3b8;">—</span>'}</td>
         <td data-label="Livraison">${l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '<span style="color:#94a3b8;">—</span>'}</td>

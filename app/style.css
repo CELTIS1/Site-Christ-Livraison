@@ -934,7 +934,13 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
 .finance-ligne:hover td{background:var(--grey-bg);}
 .finance-ligne.ouverte td{background:var(--grey-bg);}
 .finance-ligne:focus-visible{outline:2px solid var(--navy); outline-offset:-2px;}
-.finance-chevron{display:inline-block; width:12px; color:var(--muted); font-size:11px;}
+/* Le chevron et le nom de la cliente ne font qu'un seul bloc. Sur téléphone, la cellule se
+   replie en « étiquette à gauche, valeur à droite » (display:flex + space-between) : sans
+   cette enveloppe, le chevron comptait pour un troisième élément et se retrouvait posé tout
+   seul au milieu de la ligne, loin du nom qu'il annonce. On le lisait comme une poussière à
+   l'écran, pas comme le signe que la ligne s'ouvre. */
+.finance-cliente{display:inline-flex; align-items:center; gap:6px; text-align:left;}
+.finance-chevron{flex-shrink:0; width:12px; color:var(--muted); font-size:11px;}
 .finance-detail-ligne.hidden{display:none;}
 
 /* La cellule qui porte le détail ne suit AUCUNE des règles du tableau : ni le nowrap qui

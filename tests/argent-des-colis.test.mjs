@@ -633,6 +633,18 @@ titre('Le détail déplié n\'hérite pas de la mise en forme du tableau');
     'deux cartes séparées, et le détail aurait l\'air d\'appartenir à la cliente suivante');
   verifier('une ligne cliente se voit cliquable',
     /\.finance-ligne\{cursor:pointer/.test(style));
+
+  /* Vu à l'écran, en 390 px, avant la mise en ligne : le chevron flottait tout seul au milieu
+     de la ligne, à mi-chemin entre l'étiquette « Cliente » et le nom. La cellule repliée est
+     un flex en space-between ; le chevron y comptait pour un élément à part entière. Il faut
+     qu'il voyage avec le nom, sinon le seul signe « cette ligne s'ouvre » ressemble à une
+     poussière sur l'écran — et personne ne pense à toucher la ligne. */
+  verifier('le chevron reste collé au nom de la cliente',
+    /<span class="finance-cliente"><span class="finance-chevron"[\s\S]{0,90}\$\{l\.nom\}<\/span>/
+      .test(sansCommentaires(livreur)),
+    'seul, il se pose au milieu de la ligne sur téléphone et ne veut plus rien dire');
+  verifier('… et l\'enveloppe qui les tient est bien définie',
+    /\.finance-cliente\{[^}]*display:inline-flex/.test(style));
 }
 
 /* ==========================================================================================
