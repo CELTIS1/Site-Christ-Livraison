@@ -858,6 +858,43 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
   padding:12px 16px; margin:0 0 16px 0; border:1px solid rgba(226,99,19,0.25);
 }
 .recap-montant strong{color:var(--orange);}
+
+/* ---- L'argent, tel qu'il se lit (règle du 25/08/2026) ------------------------------------
+   Deux poches, deux traitements visuels, jamais additionnées :
+     • l'argent des ARTICLES appartient à la cliente → en grand, en premier ;
+     • les FRAIS DE LIVRAISON sont le revenu de CLT → en dessous, plus petits et discrets.
+   La hiérarchie de taille n'est pas décorative : c'est elle qui empêche de relire de travers
+   un écran où les deux chiffres, écrits pareil, finissaient par se confondre. */
+.argent-cliente-principal{display:block; font-size:15.5px;}
+.argent-cliente-livre{font-weight:400; color:var(--muted); font-size:13px;}
+.argent-cliente-frais{
+  display:block; margin-top:5px; font-size:12.5px; color:var(--muted); font-weight:600;
+}
+
+/* Ligne de total en bas des tableaux. Elle doit se détacher franchement du corps du tableau :
+   c'est la ligne qu'on lit en dernier et sur laquelle on s'appuie pour décider. */
+.recap-total-row td{
+  font-weight:800; background:var(--grey-bg); color:var(--navy);
+  border-top:2px solid var(--navy) !important;
+}
+
+/* Chiffres d'argent posés sous une carte cliente dans le récapitulatif de l'équipe. */
+.recap-client-encaisse{font-size:12px; color:#1a7d3c; font-weight:700; margin-top:2px;}
+.recap-day-money{
+  display:flex; gap:16px; flex-wrap:wrap; margin:10px 0 4px; padding:10px 14px;
+  background:var(--grey-bg); border-radius:var(--radius-sm); font-size:13px; color:var(--muted);
+}
+.recap-day-money strong{color:var(--navy); font-weight:700;}
+
+/* Note sous un tableau d'argent : elle dit ce que chaque colonne veut dire. Sans elle, deux
+   personnes lisent le même tableau et en tirent deux conclusions différentes. */
+.recap-bilan-note{
+  margin-top:8px; font-size:12px; line-height:1.55; color:var(--muted);
+  border-left:3px solid var(--border-strong); padding-left:10px;
+}
+.recap-row-etat{font-size:11.5px; font-weight:600; color:var(--muted); margin-top:3px;}
+.argent-jour-table th, .argent-jour-table td{padding:8px 10px; font-size:12.5px;}
+
 .stat-tiles{
   display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:12px; margin-bottom:8px;
 }
@@ -1273,6 +1310,18 @@ html[data-theme="dark"] #tournee-summary div[style*="color:#8a94a3"]{ color:#AEB
    foncé #333 sur fond sombre → texte clair, fond légèrement contrasté. */
 html[data-theme="dark"] .recap-phrase{ color:#C9D6E5; background:#141D29; }
 html[data-theme="dark"] .recap-montant{ color:#C9D6E5; }
+
+/* Les blocs d'argent en thème sombre. Un chiffre d'argent qu'on ne lit pas bien est un chiffre
+   qu'on recopie de travers : ces règles ne sont pas cosmétiques. */
+html[data-theme="dark"] .argent-cliente-frais,
+html[data-theme="dark"] .argent-cliente-livre{ color:#AEB9C7; }
+html[data-theme="dark"] .recap-total-row td{ background:#141D29; color:#E6ECF3; border-top-color:#7FB0EA !important; }
+html[data-theme="dark"] .recap-client-encaisse{ color:#5FD98A; }
+html[data-theme="dark"] .recap-day-money{ background:#141D29; color:#AEB9C7; }
+html[data-theme="dark"] .recap-day-money strong{ color:#E6ECF3; }
+html[data-theme="dark"] .recap-bilan-note{ color:#AEB9C7; border-left-color:#3A4B60; }
+html[data-theme="dark"] .recap-row-etat{ color:#AEB9C7; }
+html[data-theme="dark"] #argent-jour-corps div[style*="color:#1B4374"]{ color:#7FB0EA !important; }
 
 /* Espace Équipe : lien « Gestion » (gris foncé) dans le menu réglages. */
 html[data-theme="dark"] a[style*="color:#222"]{ color:#C9D6E5 !important; }

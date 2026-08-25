@@ -89,6 +89,16 @@ jobs:
       - name: Correction d'adresse d'un colis (l'écran et la base disent la même chose)
         run: node tests/corriger-adresse-colis.test.mjs
 
+      # L'argent. Un bouton mal placé, on le signale ; un total faux, on le RECOPIE — dans un
+      # carnet, dans un message, dans la remise du soir — et il devient quelques jours plus
+      # tard la version des faits que plus personne ne peut contester. Cette série tient les
+      # cinq règles arrêtées le 25 août : les deux poches ne se mélangent jamais, livré =
+      # encaissé, encaissé n'est pas reversé, enregistré n'est pas encaissé, et l'invariant
+      # encaissé = déjà reversé + reste dû. Comme la précédente, sa dernière section relit un
+      # script SQL non publié et s'annonce non applicable ici plutôt que de tout arrêter.
+      - name: L'argent des colis (deux poches, jamais mélangées)
+        run: node tests/argent-des-colis.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,

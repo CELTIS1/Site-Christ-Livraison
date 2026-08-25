@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260823livre1">
-<script src="theme.js?v=20260823livre1"></script>
+<link rel="stylesheet" href="style.css?v=20260825argent1">
+<script src="theme.js?v=20260825argent1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1032,10 +1032,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260823livre1"></script>
-<script src="config.js?v=20260823livre1"></script>
+<script src="clt-common.js?v=20260825argent1"></script>
+<script src="config.js?v=20260825argent1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260823livre1"></script>
+<script src="clt-select-recherche.js?v=20260825argent1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3441,7 +3441,7 @@ ${eqLigneDestinationHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
-${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
+${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · <span title="Ce que le destinataire remet en main propre : l'article de la cliente plus nos frais. Ce n'est pas un chiffre d'affaires.">Le destinataire remet : ${formatMontant(montantTotalColis(c)) || '0 FCFA'}</span> ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
 ${estValide ? '' : `
@@ -3494,8 +3494,8 @@ ${c.statut === 'en_attente' ? `
 </div>
 </div>
 <div class="payment-checks">
-<label class="check-pill"><input type="checkbox" class="edit-article-paye" ${c.article_paye ? 'checked' : ''}> Article payé</label>
-<label class="check-pill"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée</label>
+<label class="check-pill" title="À cocher seulement si le colis a été remis sans que l'argent de l'article rentre."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article non encaissé</label>
+<label class="check-pill"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
 </div>`}
 </div>
 `;
@@ -3525,7 +3525,7 @@ ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${livreurLine}
 ${(Number(c.tentatives_livraison) || 0) > 0 ? `<div class="meta" style="color:#c0392b; font-weight:600;">🔁 Tentative(s) de livraison : ${Number(c.tentatives_livraison)}</div>` : ''}
-${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
+${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · <span title="Ce que le destinataire remet en main propre : l'article de la cliente plus nos frais. Ce n'est pas un chiffre d'affaires.">Le destinataire remet : ${formatMontant(montantTotalColis(c)) || '0 FCFA'}</span> ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
 ${eqActionsRapidesHTML(c)}
@@ -4187,9 +4187,9 @@ const montant_livraison = montantLivraisonInput ? (montantLivraisonRaw === '' ? 
 const montant = (montant_article !== undefined || montant_livraison !== undefined)
 ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
 : undefined;
-const articlePayeInput = item.querySelector('.edit-article-paye');
+const articleNonEncaisseInput = item.querySelector('.edit-article-non-encaisse');
 const livraisonPayeeInput = item.querySelector('.edit-livraison-payee');
-const article_paye = articlePayeInput ? articlePayeInput.checked : undefined;
+const article_non_encaisse = articleNonEncaisseInput ? articleNonEncaisseInput.checked : undefined;
 const livraison_payee = livraisonPayeeInput ? livraisonPayeeInput.checked : undefined;
 // Adresse de livraison. C'est le motif d'appel numéro un du livreur, et jusqu'ici cet écran
 // ne permettait pas d'y toucher : la personne qui décroche était précisément celle qui ne
@@ -4242,7 +4242,7 @@ if (adresse_recuperation !== undefined) updatePayload.adresse_recuperation = adr
 if (montant !== undefined) updatePayload.montant = montant;
 if (montant_article !== undefined) updatePayload.montant_article = montant_article;
 if (montant_livraison !== undefined) updatePayload.montant_livraison = montant_livraison;
-if (article_paye !== undefined) updatePayload.article_paye = article_paye;
+if (article_non_encaisse !== undefined) updatePayload.article_non_encaisse = article_non_encaisse;
 if (livraison_payee !== undefined) updatePayload.livraison_payee = livraison_payee;
 btn.disabled = true; btn.textContent = '...';
 let { error } = await supabaseClient.from('colis').update(updatePayload).eq('id', id);
@@ -5287,11 +5287,12 @@ return;
 const parClient = {};
 colisJour.forEach(c => {
 const key = c.fournisseur_id || 'inconnu';
-if (!parClient[key]) parClient[key] = { id: key, nb: 0, montant: 0 };
-parClient[key].nb++;
-parClient[key].montant += montantArticleColis(c);
+if (!parClient[key]) parClient[key] = { id: key, colis: [] };
+parClient[key].colis.push(c);
 });
-let clients = Object.values(parClient).sort((a, b) => b.nb - a.nb);
+let clients = Object.values(parClient)
+.map(c => ({ id: c.id, nb: c.colis.length, t: totauxArgent(c.colis) }))
+.sort((a, b) => b.nb - a.nb);
 
 const q = recapSearchText.trim().toLowerCase();
 if (q) clients = clients.filter(c => fournisseurLabelPlain(c.id).toLowerCase().includes(q));
@@ -5305,17 +5306,27 @@ body.innerHTML = `<div class="empty-state">Aucune cliente enregistrée pour ${da
 return;
 }
 
+// Sur la vignette de chaque cliente : ce qui est parti, et en dessous ce qui est rentré.
+// Le second chiffre est celui dont on se sert pour la payer, il est donc distingué.
 const cards = clients.map(c => `
 <button type="button" class="recap-client-card" data-fid="${escapeHTML(c.id)}">
 <span class="recap-client-name">${fournisseurLabel(c.id)}</span>
 <span class="recap-client-meta">
-<span class="recap-client-count">${c.nb} colis</span>
-<span class="recap-client-amount">${formatMontant(c.montant) || '0 FCFA'}</span>
+<span class="recap-client-count">${c.nb} colis · ${c.t.nbLivres} livré${c.t.nbLivres > 1 ? 's' : ''}</span>
+<span class="recap-client-amount">${formatMontant(c.t.articleEnregistre) || '0 FCFA'}</span>
+<span class="recap-client-encaisse">encaissé : ${formatMontant(c.t.articleEncaisse) || '0 FCFA'}</span>
 </span>
 </button>`).join('');
 
+const tJour = totauxArgent(colisJour);
+
 body.innerHTML = `
-<div class="recap-day-summary">${dateLabel} · <strong>${totalClients}</strong> cliente${totalClients > 1 ? 's' : ''} · <strong>${totalColis}</strong> colis</div>
+<div class="recap-day-summary">${dateLabel} · <strong>${totalClients}</strong> cliente${totalClients > 1 ? 's' : ''} · <strong>${totalColis}</strong> colis · <strong>${tJour.nbLivres}</strong> livré${tJour.nbLivres > 1 ? 's' : ''}</div>
+<div class="recap-day-money">
+Articles enregistrés : <strong>${formatMontant(tJour.articleEnregistre) || '0 FCFA'}</strong> ·
+Articles encaissés : <strong>${formatMontant(tJour.articleEncaisse) || '0 FCFA'}</strong> ·
+Frais de livraison encaissés : <strong>${formatMontant(tJour.livraisonEncaissee) || '0 FCFA'}</strong>
+</div>
 ${recapExportBarHTML()}
 ${recapSearchBarHTML()}
 ${clients.length ? `<div class="recap-client-list">${cards}</div>` : `<div class="empty-state">Aucune cliente ne correspond à « ${escapeHTML(recapSearchText)} ».</div>`}`;
@@ -5350,31 +5361,53 @@ if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e)
 });
 }
 
-// Bilan détaillé d'une cliente : ses colis du jour, colonnes téléphone / adresse /
-// statut / montant (article) / observation. Le tableau devient des cartes sous 640px.
+// Bilan détaillé d'une cliente : ses colis du jour, colonnes téléphone / adresse / statut /
+// article / encaissé / observation. Le tableau devient des cartes sous 640px.
+//
+// Deux colonnes d'argent et non plus une seule, avec une ligne de TOTAL en pied. C'est ce
+// tableau qu'on lit à la cliente au téléphone en fin de journée : il doit donner tout seul la
+// somme exacte qui lui revient, sans qu'on ait à additionner de tête ligne par ligne. Le
+// « Total article » annoncé au-dessus comptait tous les colis, livrés ou non — donc de l'argent
+// qui n'était pas rentré et qui ne rentrerait peut-être jamais.
 function renderRecapBilan(fid, colisJour){
 const list = colisJour.filter(c => (c.fournisseur_id || 'inconnu') === fid);
-const totalMontant = list.reduce((s, c) => s + montantArticleColis(c), 0);
-const rows = list.map(c => `
+const t = totauxArgent(list);
+const rows = list.map(c => {
+const encaisse = montantArticleEncaisse(c);
+return `
 <tr>
 <td data-label="Téléphone">${c.destinataire_telephone ? escapeHTML(c.destinataire_telephone) : '—'}</td>
 <td data-label="Adresse">${c.destination ? escapeHTML(c.destination) : '—'}</td>
 <td data-label="Statut">${statutBadgeHTML(c.statut)}</td>
-<td data-label="Montant">${formatMontant(montantArticleColis(c)) || '0 FCFA'}</td>
+<td data-label="Article">${formatMontant(montantArticleColis(c)) || '0 FCFA'}</td>
+<td data-label="Encaissé" style="${encaisse ? 'font-weight:700;' : 'color:#8a94a3;'}">${encaisse ? formatMontant(encaisse) : '—'}</td>
 <td data-label="Observation">${c.observation ? escapeHTML(c.observation) : '—'}</td>
-</tr>`).join('');
+</tr>`;
+}).join('');
 
 return `
 <div class="recap-bilan-head">
 <button type="button" class="btn btn-outline btn-sm" id="recap-back">← Clientes</button>
 <div class="recap-bilan-title">${fournisseurLabel(fid)}</div>
 </div>
-<div class="recap-bilan-sub">${recapDayLabel(recapGetDate())} · <strong>${list.length}</strong> colis · Total article : <strong>${formatMontant(totalMontant) || '0 FCFA'}</strong></div>
+<div class="recap-bilan-sub">${recapDayLabel(recapGetDate())} · <strong>${list.length}</strong> colis · <strong>${t.nbLivres}</strong> livré${t.nbLivres > 1 ? 's' : ''} · Articles encaissés : <strong>${formatMontant(t.articleEncaisse) || '0 FCFA'}</strong></div>
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
-<thead><tr><th>Téléphone</th><th>Adresse</th><th>Statut</th><th>Montant</th><th>Observation</th></tr></thead>
+<thead><tr><th>Téléphone</th><th>Adresse</th><th>Statut</th><th>Article</th><th>Encaissé</th><th>Observation</th></tr></thead>
 <tbody>${rows}</tbody>
+${piedTotalHTML([
+{ texte: 'TOTAL' },
+{ texte: '' },
+{ texte: t.nbLivres + ' / ' + t.nb + ' livré(s)' },
+{ texte: formatMontant(t.articleEnregistre) || '0 FCFA' },
+{ texte: formatMontant(t.articleEncaisse) || '0 FCFA', couleur: '#1a7d3c' },
+{ texte: '' },
+])}
 </table>
+</div>
+<div class="recap-bilan-note">
+La colonne <strong>Article</strong> dit ce qui a été enregistré, la colonne <strong>Encaissé</strong> ce qui est réellement rentré (colis livrés).
+C'est le total <strong>Encaissé</strong> qui revient à la cliente. Les frais de livraison ne figurent pas dans ce tableau : ils reviennent à CLT.
 </div>`;
 }
 
@@ -5795,21 +5828,27 @@ return data;
 return fournisseurId ? allColis.filter(c => c.fournisseur_id === fournisseurId) : allColis;
 }
 
-// Le point du soir avec une vendeuse ne porte que sur le montant "article" qui lui revient :
-// la livraison est gérée et encaissée par la structure elle-même, jamais par la vendeuse. Ces
-// fonctions (utilisées uniquement dans l'onglet Comptabilité) excluent donc systématiquement
-// montant_livraison, contrairement à montantTotalColis()/montantResteAPercevoir() (config.js)
-// qui restent utilisées ailleurs (ex. "Tous les colis") pour représenter la valeur totale du colis.
-function montantArticleColis(c) {
-return colisADetailMontant(c) ? (Number(c.montant_article) || 0) : (Number(c.montant) || 0);
-}
-function resteArticleAPercevoir(c) {
-if (!colisADetailMontant(c)) return 0;
-return c.article_paye ? 0 : (Number(c.montant_article) || 0);
+// Le point du soir avec une vendeuse ne porte que sur le montant « article » qui lui revient :
+// la livraison est gérée et encaissée par la structure elle-même, jamais par la vendeuse.
+//
+// montantArticleColis() vivait ici, en double de config.js, et c'est ainsi que les deux écrans
+// se sont mis à dire deux choses différentes avec les mêmes mots : « Montant total » voulait
+// dire article seul côté équipe et article + livraison côté cliente. La définition est
+// désormais unique, dans config.js, avec tout le reste du calcul d'argent. Ne pas la recopier.
+//
+// Ce qui reste ici, ce sont les deux lectures propres à l'onglet Comptabilité.
+
+// Ce que CLT doit encore à la vendeuse sur ce colis (article encaissé, pas encore reversé).
+// Attention au nom d'avant, « resteArticleAPercevoir » : il disait « à percevoir » alors qu'il
+// s'agit d'une dette envers elle, pas d'une créance. Le mot comptait plus qu'il n'y paraît.
+function resteArticleADevoir(c) {
+return montantArticleADevoir(c);
 }
 function articlePaiementLabel(c) {
-if (!colisADetailMontant(c)) return '—';
-return c.article_paye ? 'Payé' : 'Non payé';
+if (!c) return '—';
+if (c.statut !== 'livre') return 'Pas encore encaissé';
+if (c.article_non_encaisse) return 'Article non encaissé';
+return c.reverse_au_fournisseur_at ? 'Encaissé et reversé' : 'Encaissé, à reverser';
 }
 
 async function renderCompta(){
@@ -5828,62 +5867,75 @@ return;
 }
 
 const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
-const livres = rows.filter(c => c.statut === 'livre');
-const totalMontant = rows.reduce((s, c) => s + (Number(montantArticleColis(c)) || 0), 0);
-const totalMontantLivre = livres.reduce((s, c) => s + (Number(montantArticleColis(c)) || 0), 0);
-const totalReste = rows.reduce((s, c) => s + (Number(resteArticleAPercevoir(c)) || 0), 0);
+const t = totauxArgent(rows);
+// Trois chiffres, trois natures. On les nomme en toutes lettres plutôt que « montant total » /
+// « montant livré », qui ne disaient ni de quelle poche il s'agissait ni dans quel état.
 summary.innerHTML = `
 <div class="page-sub">
-${rows.length} colis · ${livres.length} livré(s) ·
-Montant total : <strong>${formatMontant(totalMontant) || '0 FCFA'}</strong> ·
-Montant livré : <strong>${formatMontant(totalMontantLivre) || '0 FCFA'}</strong> ·
-Reste à percevoir : <strong style="color:${totalReste > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(totalReste) || '0 FCFA'}</strong>
+${t.nb} colis · ${t.nbLivres} livré(s) ·
+Articles enregistrés : <strong>${formatMontant(t.articleEnregistre) || '0 FCFA'}</strong> ·
+Articles encaissés : <strong>${formatMontant(t.articleEncaisse) || '0 FCFA'}</strong> ·
+À reverser aux clientes : <strong style="color:${t.articleADevoir > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(t.articleADevoir) || '0 FCFA'}</strong>
+${t.manquantALaLivraison > 0 ? ` · <strong style="color:#c0392b;">Non encaissé à la livraison : ${formatMontant(t.manquantALaLivraison)}</strong>` : ''}
 </div>
 `;
 
-// Récap par fournisseur (nb colis, livrés, montant, reste à percevoir) — c'est le point du soir par vendeuse.
+// Récap par vendeuse — c'est le point du soir. On sépare ce qui a été enregistré (activité) de
+// ce qui a été encaissé (argent) : additionner les deux dans une seule colonne « Montant »
+// donnait un chiffre avec lequel on ne pouvait payer personne.
 const parFournisseur = {};
 rows.forEach(c => {
 const key = c.fournisseur_id || 'inconnu';
-if (!parFournisseur[key]) parFournisseur[key] = { total: 0, livres: 0, montant: 0, reste: 0 };
-parFournisseur[key].total++;
-if (c.statut === 'livre') parFournisseur[key].livres++;
-parFournisseur[key].montant += (Number(montantArticleColis(c)) || 0);
-parFournisseur[key].reste += (Number(resteArticleAPercevoir(c)) || 0);
+if (!parFournisseur[key]) parFournisseur[key] = [];
+parFournisseur[key].push(c);
 });
 const recapRows = Object.keys(parFournisseur)
-.map(id => ({ id, ...parFournisseur[id] }))
-.sort((a, b) => b.total - a.total);
+.map(id => ({ id, t: totauxArgent(parFournisseur[id]) }))
+.sort((a, b) => b.t.nb - a.t.nb);
 recapBox.innerHTML = `
 <table class="recap-table">
-<thead><tr><th>Client</th><th>Colis</th><th>Livrés</th><th>Montant</th><th>Reste à percevoir</th></tr></thead>
+<thead><tr><th>Client</th><th>Colis</th><th>Livrés</th><th>Articles enregistrés</th><th>Articles encaissés</th><th>À reverser</th></tr></thead>
 <tbody>
 ${recapRows.map(r => `
 <tr>
 <td>${fournisseurLabel(r.id)}</td>
-<td>${r.total}</td>
-<td>${r.livres}</td>
-<td>${formatMontant(r.montant) || '0 FCFA'}</td>
-<td style="color:${r.reste > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.reste) || '0 FCFA'}</td>
+<td>${r.t.nb}</td>
+<td>${r.t.nbLivres}</td>
+<td>${formatMontant(r.t.articleEnregistre) || '0 FCFA'}</td>
+<td>${formatMontant(r.t.articleEncaisse) || '0 FCFA'}</td>
+<td style="color:${r.t.articleADevoir > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.t.articleADevoir) || '0 FCFA'}</td>
 </tr>
 `).join('')}
 </tbody>
+${piedTotalHTML([
+{ texte: 'TOTAL' },
+{ texte: t.nb },
+{ texte: t.nbLivres },
+{ texte: formatMontant(t.articleEnregistre) || '0 FCFA' },
+{ texte: formatMontant(t.articleEncaisse) || '0 FCFA' },
+{ texte: formatMontant(t.articleADevoir) || '0 FCFA', couleur: t.articleADevoir > 0 ? '#c0392b' : '#1a7d3c' },
+])}
 </table>
 `;
 
-// Détail colis par colis, éditable en direct (montant article, case "Article payé", observation
-// synchronisée avec celle du livreur) — c'est le point du soir avec LA vendeuse. Pour ne jamais
-// mélanger plusieurs vendeuses dans une même séance d'édition, ce détail éditable n'apparaît que
-// lorsqu'une vendeuse précise est choisie dans le filtre "Client" ci-dessus ; sur "Tous les
-// clients", seul le récapitulatif global (par vendeuse) au-dessus reste visible. Le montant/statut
-// de livraison n'est jamais affiché ni compté ici (la vendeuse n'en a pas besoin, la structure
-// gère la livraison elle-même) mais reste géré ailleurs (côté livreur/équipe "Tous les colis").
+// Détail colis par colis, éditable en direct — c'est le point du soir avec LA vendeuse. Pour ne
+// jamais mélanger plusieurs vendeuses dans une même séance d'édition, ce détail éditable
+// n'apparaît que lorsqu'une vendeuse précise est choisie dans le filtre "Client" ci-dessus ; sur
+// "Tous les clients", seul le récapitulatif global (par vendeuse) au-dessus reste visible. Le
+// montant de livraison n'est ni affiché ni compté ici : il ne la regarde pas, c'est la recette
+// de CLT. Il reste géré côté livreur et dans "Tous les colis".
+//
+// La case a changé de sens le 25 août 2026. Avant : « Article payé », à cocher pour que l'argent
+// compte — personne ne la cochait, et le relevé de chaque vendeuse affichait donc zéro.
+// Maintenant : « Argent non encaissé », à cocher pour signaler l'EXCEPTION. Par défaut, un colis
+// livré compte comme encaissé, ce qui est le cas neuf fois sur dix.
 if (!fournisseurId) {
 detail.innerHTML = `<div class="empty-state">Choisissez une vendeuse dans le filtre "Client" ci-dessus pour afficher et modifier son récapitulatif détaillé.</div>`;
 } else {
+const tDetail = totauxArgent(rows);
 detail.innerHTML = `
 <table class="recap-table recap-table-cards">
-<thead><tr><th>Colis</th><th>Client</th><th>Statut</th><th>Article</th><th>Total</th><th>Paiement</th><th>Observation</th><th>Date</th><th></th></tr></thead>
+<thead><tr><th>Colis</th><th>Client</th><th>Statut</th><th>Article</th><th>Encaissé</th><th>Argent</th><th>Observation</th><th>Date</th><th></th></tr></thead>
 <tbody>
 ${rows.map(c => `
 <tr data-id="${c.id}">
@@ -5891,10 +5943,11 @@ ${rows.map(c => `
 <td data-label="Client">${fournisseurLabel(c.fournisseur_id)}</td>
 <td data-label="Statut">${STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut}</td>
 <td data-label="Article"><input type="number" class="compta-edit-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}"></td>
-<td data-label="Total" class="compta-row-total">${formatMontant(montantArticleColis(c)) || '-'}</td>
-<td data-label="Paiement">
+<td data-label="Encaissé" class="compta-row-encaisse">${formatMontant(montantArticleEncaisse(c)) || '0 FCFA'}</td>
+<td data-label="Argent">
 <div class="recap-row-checks">
-<label><input type="checkbox" class="compta-edit-article-paye" ${c.article_paye ? 'checked' : ''}> Article payé</label>
+<label title="À cocher seulement si le colis a été remis sans que l'argent de l'article rentre."><input type="checkbox" class="compta-edit-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Argent non encaissé</label>
+<div class="recap-row-etat">${articlePaiementLabel(c)}</div>
 </div>
 </td>
 <td data-label="Observation"><textarea class="compta-edit-observation" placeholder="Observation...">${c.observation ? escapeHTML(c.observation) : ''}</textarea></td>
@@ -5903,6 +5956,17 @@ ${rows.map(c => `
 </tr>
 `).join('')}
 </tbody>
+${piedTotalHTML([
+{ texte: 'TOTAL' },
+{ texte: '' },
+{ texte: tDetail.nbLivres + ' livré(s)' },
+{ texte: formatMontant(tDetail.articleEnregistre) || '0 FCFA' },
+{ texte: formatMontant(tDetail.articleEncaisse) || '0 FCFA' },
+{ texte: 'À reverser : ' + (formatMontant(tDetail.articleADevoir) || '0 FCFA'), couleur: tDetail.articleADevoir > 0 ? '#c0392b' : '#1a7d3c' },
+{ texte: '' },
+{ texte: '' },
+{ texte: '' },
+])}
 </table>
 `;
 
@@ -5916,7 +5980,7 @@ alert("Le montant doit être un nombre positif.");
 return;
 }
 const montant_article = artRaw === '' ? null : Number(artRaw);
-const article_paye = tr.querySelector('.compta-edit-article-paye').checked;
+const article_non_encaisse = tr.querySelector('.compta-edit-non-encaisse').checked;
 const observation = tr.querySelector('.compta-edit-observation').value.trim() || null;
 const existing = allColis.find(c => c.id === id);
 const montant_livraison = existing ? existing.montant_livraison : null;
@@ -5924,11 +5988,11 @@ const montant = (montant_article !== null || montant_livraison !== null)
 ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
 : (existing ? existing.montant : 0);
 btn.disabled = true; btn.textContent = '...';
-const { error } = await supabaseClient.from('colis').update({ montant, montant_article, article_paye, observation }).eq('id', id);
+const { error } = await supabaseClient.from('colis').update({ montant, montant_article, article_non_encaisse, observation }).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';
 if (error) { alert(friendlyErrorMessage(error.message)); return; }
 const idx = allColis.findIndex(c => c.id === id);
-if (idx !== -1) Object.assign(allColis[idx], { montant, montant_article, article_paye, observation });
+if (idx !== -1) Object.assign(allColis[idx], { montant, montant_article, article_non_encaisse, observation });
 renderCompta();
 });
 });
@@ -5938,9 +6002,15 @@ renderCaisseLivreur(rows);
 }
 
 // ---------- Réconciliation de caisse par livreur ----------
-// Pour les colis LIVRÉS de la période, calcule par livreur le total encaissé à la livraison
-// (montant total du colis) et ce qu'il reste à remettre à l'entreprise. L'équipe peut cocher
-// « Marquer comme remis » pour solder la caisse d'un livreur (colonne encaissement_remis).
+// Pour les colis LIVRÉS de la période, calcule par livreur ce qu'il a réellement en main et ce
+// qu'il reste à remettre à l'entreprise. Ici — et ici seulement — les deux poches s'additionnent :
+// le livreur porte physiquement l'argent de l'article ET les frais de livraison. C'est le seul
+// endroit de l'application où ce total a un sens.
+//
+// Correction du 25 août 2026 : le total comptait montantTotalColis(), c'est-à-dire le montant
+// écrit sur le colis, même quand le colis avait été remis sans que l'argent rentre. On lui
+// réclamait alors une somme qu'il n'avait jamais eue. On compte désormais ce qui est encaissé.
+//
 // Dégradation gracieuse : si la colonne encaissement_remis n'existe pas encore (migration SQL
 // non lancée), tout est considéré « à remettre » et le bouton informe qu'il faut lancer la migration.
 function renderCaisseLivreur(rows){
@@ -5954,22 +6024,29 @@ return;
 const parLivreur = {};
 livres.forEach(c => {
 const key = c.livreur_id || 'inconnu';
-if (!parLivreur[key]) parLivreur[key] = { nb:0, total:0, remis:0, reste:0, idsAremettre:[] };
-const montant = Number(montantTotalColis(c)) || 0;
+if (!parLivreur[key]) parLivreur[key] = { nb:0, article:0, livraison:0, total:0, remis:0, reste:0, manquant:0, idsAremettre:[] };
+const montant = Number(montantEnMainDuLivreur(c)) || 0;
 parLivreur[key].nb++;
+parLivreur[key].article += Number(montantArticleEncaisse(c)) || 0;
+parLivreur[key].livraison += Number(montantLivraisonEncaissee(c)) || 0;
 parLivreur[key].total += montant;
+parLivreur[key].manquant += Number(montantManquantALaLivraison(c)) || 0;
 if (c.encaissement_remis){ parLivreur[key].remis += montant; }
 else { parLivreur[key].reste += montant; parLivreur[key].idsAremettre.push(c.id); }
 });
 const lignes = Object.keys(parLivreur).map(id => ({ id, ...parLivreur[id] })).sort((a,b) => b.reste - a.reste);
+const somme = (champ) => lignes.reduce((s, r) => s + (Number(r[champ]) || 0), 0);
+const totalManquant = somme('manquant');
 box.innerHTML = `
 <table class="recap-table">
-<thead><tr><th>Livreur</th><th>Colis livrés</th><th>Total encaissé</th><th>Déjà remis</th><th>Reste à remettre</th><th></th></tr></thead>
+<thead><tr><th>Livreur</th><th>Colis livrés</th><th>Articles</th><th>Livraisons</th><th>Total en main</th><th>Déjà remis</th><th>Reste à remettre</th><th></th></tr></thead>
 <tbody>
 ${lignes.map(r => `
 <tr data-livreur="${r.id}">
 <td>${(collecteLivreurLabel(r.id) || 'Non attribué')}</td>
-<td>${r.nb}</td>
+<td>${r.nb}${r.manquant > 0 ? ` <span title="Colis remis sans que l'argent rentre" style="color:#c0392b;">(−${formatMontant(r.manquant)})</span>` : ''}</td>
+<td>${formatMontant(r.article) || '0 FCFA'}</td>
+<td>${formatMontant(r.livraison) || '0 FCFA'}</td>
 <td>${formatMontant(r.total) || '0 FCFA'}</td>
 <td>${formatMontant(r.remis) || '0 FCFA'}</td>
 <td style="color:${r.reste > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.reste) || '0 FCFA'}</td>
@@ -5977,6 +6054,16 @@ ${lignes.map(r => `
 </tr>
 `).join('')}
 </tbody>
+${piedTotalHTML([
+{ texte: 'TOTAL' },
+{ texte: livres.length + (totalManquant > 0 ? ` (−${formatMontant(totalManquant)})` : '') },
+{ texte: formatMontant(somme('article')) || '0 FCFA' },
+{ texte: formatMontant(somme('livraison')) || '0 FCFA' },
+{ texte: formatMontant(somme('total')) || '0 FCFA' },
+{ texte: formatMontant(somme('remis')) || '0 FCFA' },
+{ texte: formatMontant(somme('reste')) || '0 FCFA', couleur: somme('reste') > 0 ? '#c0392b' : '#1a7d3c' },
+{ texte: '' },
+])}
 </table>
 `;
 box.querySelectorAll('.caisse-remis-btn').forEach(btn => {
@@ -6252,7 +6339,7 @@ const livreurs = [['Livreur','Colis','Recette','Argent non remis']]
 .concat((d.par_livreur||[]).map(l => [l.nom, num(l.nb), num(l.recette), num(l.non_remis)]));
 XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(livreurs), 'Par livreur');
 
-const vendeuses = [['Vendeuse','Colis','Montant article','Reste à percevoir']]
+const vendeuses = [['Vendeuse','Colis','Articles','À reverser à la cliente']]
 .concat((d.par_fournisseur||[]).map(f => [f.nom, num(f.nb), num(f.montant_article), num(f.reste)]));
 XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(vendeuses), 'Par vendeuse');
 
@@ -6400,18 +6487,38 @@ renderRecapBody();
 document.getElementById('btn-export-excel').addEventListener('click', async () => {
 const rows = await comptaFiltered();
 if (!rows.length) { alert("Aucune donnée à exporter."); return; }
+// Colonnes volontairement séparées : l'article appartient à la cliente, la livraison est le
+// revenu de CLT. Aucune colonne ne mélange les deux (règle d'argent commune, voir config.js).
 const data = rows.map(c => ({
 Colis: c.description || '',
 Client: fournisseurLabel(c.fournisseur_id),
 Destination: c.destination || '',
 Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-'Montant article': c.montant_article || 0,
-Total: montantArticleColis(c) || 0,
-'Reste à percevoir': resteArticleAPercevoir(c) || 0,
-Paiement: articlePaiementLabel(c),
+'Article enregistré': montantArticleColis(c) || 0,
+'Article encaissé': montantArticleEncaisse(c) || 0,
+'Livraison enregistrée': montantLivraisonColis(c) || 0,
+'Livraison encaissée': montantLivraisonEncaissee(c) || 0,
+'À reverser à la cliente': resteArticleADevoir(c) || 0,
+"État de l'argent": articlePaiementLabel(c),
 Observation: c.observation || '',
 Date: formatDate(c.created_at),
 }));
+// Dernière ligne du fichier : le total, pour n'avoir jamais à le recalculer à la main.
+const tExport = totauxArgent(rows);
+data.push({
+Colis: 'TOTAL',
+Client: `${tExport.nb} colis · ${tExport.nbLivres} livré(s)`,
+Destination: '',
+Statut: '',
+'Article enregistré': tExport.articleEnregistre,
+'Article encaissé': tExport.articleEncaisse,
+'Livraison enregistrée': tExport.livraisonEnregistree,
+'Livraison encaissée': tExport.livraisonEncaissee,
+'À reverser à la cliente': tExport.articleADevoir,
+"État de l'argent": '',
+Observation: '',
+Date: '',
+});
 const ws = XLSX.utils.json_to_sheet(data);
 const wb = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb, ws, 'Comptabilité');
@@ -6427,9 +6534,7 @@ const rows = await comptaFiltered();
 if (!rows.length) { alert("Aucune donnée à exporter."); return; }
 const { jsPDF } = window.jspdf;
 const doc = new jsPDF();
-const livres = rows.filter(c => c.statut === 'livre');
-const totalMontant = rows.reduce((s, c) => s + (Number(montantArticleColis(c)) || 0), 0);
-const totalReste = rows.reduce((s, c) => s + (Number(resteArticleAPercevoir(c)) || 0), 0);
+const t = totauxArgent(rows);
 const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
 
 doc.setFontSize(14);
@@ -6437,44 +6542,68 @@ doc.text('Comptabilité — Christ Livraison & Transport SARL', 14, 16);
 doc.setFontSize(10);
 const titre = fournisseurId ? `Client : ${fournisseurLabel(fournisseurId)}` : 'Tous les clients';
 doc.text(titre, 14, 23);
-doc.text(`${rows.length} colis · ${livres.length} livré(s) · Montant total : ${formatMontant(totalMontant) || '0 FCFA'} · Reste à percevoir : ${formatMontant(totalReste) || '0 FCFA'}`, 14, 29);
+// Deux lignes séparées : l'argent des clientes d'un côté, celui de CLT de l'autre.
+doc.text(`${t.nb} colis · ${t.nbLivres} livré(s)`, 14, 29);
+doc.text(`Articles : ${formatMontant(t.articleEnregistre) || '0 FCFA'} enregistrés · ${formatMontant(t.articleEncaisse) || '0 FCFA'} encaissés · ${formatMontant(t.articleADevoir) || '0 FCFA'} à reverser aux clientes`, 14, 35);
+doc.text(`Frais de livraison CLT : ${formatMontant(t.livraisonEncaissee) || '0 FCFA'} encaissés`, 14, 41);
 
-let startY = 35;
+let startY = 47;
 if (!fournisseurId) {
 const parFournisseur = {};
 rows.forEach(c => {
 const key = c.fournisseur_id || 'inconnu';
-if (!parFournisseur[key]) parFournisseur[key] = { total: 0, montant: 0, reste: 0 };
-parFournisseur[key].total++;
-parFournisseur[key].montant += (Number(montantArticleColis(c)) || 0);
-parFournisseur[key].reste += (Number(resteArticleAPercevoir(c)) || 0);
+if (!parFournisseur[key]) parFournisseur[key] = [];
+parFournisseur[key].push(c);
 });
+const ids = Object.keys(parFournisseur);
+const totaux = {};
+ids.forEach(id => { totaux[id] = totauxArgent(parFournisseur[id]); });
 doc.autoTable({
 startY,
-head: [['Client', 'Colis', 'Montant', 'Reste à percevoir']],
-body: Object.keys(parFournisseur).map(id => [
+head: [['Client', 'Colis', 'Livrés', 'Articles enregistrés', 'Articles encaissés', 'À reverser']],
+body: ids.map(id => [
 fournisseurLabel(id),
-parFournisseur[id].total,
-formatMontant(parFournisseur[id].montant) || '-',
-formatMontant(parFournisseur[id].reste) || '-',
+totaux[id].nb,
+totaux[id].nbLivres,
+formatMontant(totaux[id].articleEnregistre) || '0 FCFA',
+formatMontant(totaux[id].articleEncaisse) || '0 FCFA',
+formatMontant(totaux[id].articleADevoir) || '0 FCFA',
 ]),
+foot: [[
+'TOTAL',
+t.nb,
+t.nbLivres,
+formatMontant(t.articleEnregistre) || '0 FCFA',
+formatMontant(t.articleEncaisse) || '0 FCFA',
+formatMontant(t.articleADevoir) || '0 FCFA',
+]],
 });
 startY = doc.lastAutoTable.finalY + 8;
 }
 
 doc.autoTable({
 startY,
-head: [['Colis', 'Client', 'Statut', 'Article', 'Total', 'Paiement', 'Observation', 'Date']],
+head: [['Colis', 'Client', 'Statut', 'Article', 'Encaissé', 'Livraison', 'État de l\u2019argent', 'Date']],
 body: rows.map(c => [
 c.description || '',
 fournisseurLabel(c.fournisseur_id),
 STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-formatMontant(c.montant_article) || '-',
-formatMontant(montantArticleColis(c)) || '-',
+formatMontant(montantArticleColis(c)) || '0 FCFA',
+formatMontant(montantArticleEncaisse(c)) || '—',
+formatMontant(montantLivraisonColis(c)) || '—',
 articlePaiementLabel(c),
-c.observation || '',
 formatDate(c.created_at),
 ]),
+foot: [[
+'TOTAL',
+`${t.nb} colis`,
+`${t.nbLivres} livré(s)`,
+formatMontant(t.articleEnregistre) || '0 FCFA',
+formatMontant(t.articleEncaisse) || '0 FCFA',
+formatMontant(t.livraisonEnregistree) || '0 FCFA',
+'',
+'',
+]],
 });
 doc.save(`comptabilite-${new Date().toISOString().slice(0, 10)}.pdf`);
 });

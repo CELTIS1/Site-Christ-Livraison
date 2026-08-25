@@ -2154,43 +2154,216 @@ function delaiMedianGlobalHeures(colis) {
 
 // formatMontant() → déplacé dans clt-common.js (chargé avant ce fichier).
 
-// ---------- Montant d'un colis : article + livraison ----------
-// Depuis l'ajout de la distinction "montant article" / "montant livraison", le montant total
-// d'un colis se calcule à partir de ces deux composantes. Pour les colis créés avant cette
-// évolution (qui n'ont qu'un ancien champ "montant" global, sans détail), on retombe sur cette
-// valeur historique tant qu'aucune des deux nouvelles colonnes n'a été renseignée.
+/* ============================================================================================
+   L'ARGENT D'UN COLIS — deux poches qui ne se mélangent jamais
+   --------------------------------------------------------------------------------------------
+   Un colis porte deux sommes de nature complètement différente, et les confondre est la source
+   de presque toutes les erreurs de comptes :
+
+     • L'ARTICLE appartient à la CLIENTE. CLT ne fait que l'encaisser à sa place et doit le lui
+       reverser intégralement. Ce n'est jamais une recette de CLT.
+     • La LIVRAISON est la recette de CLT. Elle ne doit jamais apparaître dans ce qu'on doit à
+       la cliente.
+
+   Un chiffre qui additionne les deux ne veut rien dire pour personne : ni pour la cliente (qui
+   y voit de l'argent qui n'est pas le sien), ni pour nous (qui y voyons de l'argent qu'on doit
+   rendre). C'est exactement ce qui affichait « Montant livré : 47 000 FCFA » à une cliente à
+   qui on devait en réalité 34 500 — les 12 500 de différence étaient nos frais de livraison.
+
+   RÈGLE DE LA MAISON : aucun écran n'additionne de l'argent à la main. Tout passe par les
+   fonctions de ce fichier, qui est chargé par les cinq écrans. Une somme écrite ailleurs est
+   une somme qui divergera.
+   ============================================================================================ */
+
+// Un colis « à détail » porte le découpage article / livraison. Les colis créés avant cette
+// évolution n'ont qu'un ancien champ « montant » global : on retombe dessus, et on le compte
+// comme de l'article, puisque c'est ce qu'il représentait à l'époque.
 function colisADetailMontant(c) {
   return (c.montant_article !== null && c.montant_article !== undefined) ||
     (c.montant_livraison !== null && c.montant_livraison !== undefined);
 }
 
+// L'argent de la cliente. Toujours un nombre, jamais null : un montant absent vaut zéro, et
+// zéro s'additionne — alors que null contamine toute une colonne de totaux.
+function montantArticleColis(c) {
+  if (!c) return 0;
+  return colisADetailMontant(c) ? (Number(c.montant_article) || 0) : (Number(c.montant) || 0);
+}
+
+// La recette de CLT. Un ancien colis sans détail n'a pas de frais de livraison identifiables :
+// on ne les invente pas, on répond zéro.
+function montantLivraisonColis(c) {
+  if (!c) return 0;
+  return colisADetailMontant(c) ? (Number(c.montant_livraison) || 0) : 0;
+}
+
+// Ce que le destinataire remet en main propre au livreur : les deux poches réunies. Ce total
+// n'a de sens que là — dans la poche du livreur. Il ne doit jamais servir à dire à une cliente
+// ce qu'on lui doit.
 function montantTotalColis(c) {
-  if (colisADetailMontant(c)) {
-    return (Number(c.montant_article) || 0) + (Number(c.montant_livraison) || 0);
-  }
-  return c.montant;
+  return montantArticleColis(c) + montantLivraisonColis(c);
 }
 
-// Montant qui reste à percevoir sur un colis (partie article et/ou livraison pas encore payée).
-// Ne s'applique qu'aux colis avec détail article/livraison ; les anciens colis (montant global,
-// sans suivi de paiement) sont considérés hors de ce calcul (retourne 0).
-function montantResteAPercevoir(c) {
-  if (!colisADetailMontant(c)) return 0;
-  let reste = 0;
-  if (!c.article_paye) reste += Number(c.montant_article) || 0;
-  if (!c.livraison_payee) reste += Number(c.montant_livraison) || 0;
-  return reste;
+/* --------------------------------------------------------------------------------------------
+   L'ARGENT EST-IL RENTRÉ ?
+
+   Règle arrêtée le 25 août 2026 : UN COLIS LIVRÉ, C'EST DE L'ARGENT RENTRÉ.
+
+   Ce que cette règle remplace : jusqu'ici, tout dépendait de deux cases à cocher,
+   « article payé » et « livraison payée ». Le relevé de chaque cliente, le reste à percevoir,
+   la chaîne entière des reversements en découlaient. Or personne ne les cochait — non par
+   négligence, mais parce que le livreur n'avait aucun bouton pour le faire, et qu'il n'y avait
+   donc aucun moment naturel dans la journée où quelqu'un s'en occupait. Relevé en base le
+   25 août 2026 : 48 colis livrés, 183 500 FCFA d'articles encaissés, et ZÉRO colis coché.
+   Résultat, chaque cliente lisait « Aucun colis en attente de reversement ✔️ » pendant qu'on
+   détenait son argent. Un écran qui affiche l'inverse de la vérité sur de l'argent est pire
+   qu'un écran vide.
+
+   Une règle qui dépend d'un geste que personne ne fait n'est pas une règle, c'est un piège.
+   D'où le renversement : l'encaissement se déduit du statut, qui lui est tenu à jour tous les
+   jours parce que tout le monde en a besoin. On ne coche plus pour dire que l'argent est
+   rentré ; on coche pour signaler l'EXCEPTION, le cas où le colis a été remis sans que
+   l'argent suive. C'est rare, donc c'est le bon endroit pour un geste manuel.
+   -------------------------------------------------------------------------------------------- */
+
+// Vrai si l'argent de l'article est réputé encaissé par CLT (donc dû à la cliente).
+function articleEncaisse(c) {
+  if (!c) return false;
+  if (c.statut !== 'livre') return false;
+  return !c.article_non_encaisse;
 }
 
-// Libellé + couleurs du statut de paiement d'un colis (badge), pour le récapitulatif comptable.
+// Vrai si les frais de livraison sont réputés encaissés par CLT.
+// Deux chemins, et c'est voulu : la livraison peut être réglée AVANT la remise (le destinataire
+// paie d'avance, ou la cliente a prépayé) — c'est ce que le bouton « Livraison payée » du
+// livreur enregistre depuis le début, et on ne casse pas cet usage.
+function livraisonEncaissee(c) {
+  if (!c) return false;
+  if (c.livraison_payee) return true;
+  if (c.statut !== 'livre') return false;
+  return !c.livraison_non_encaissee;
+}
+
+// Argent réellement rentré, poche par poche (0 si le colis n'est pas encaissé).
+function montantArticleEncaisse(c)   { return articleEncaisse(c)   ? montantArticleColis(c)   : 0; }
+function montantLivraisonEncaissee(c){ return livraisonEncaissee(c) ? montantLivraisonColis(c) : 0; }
+
+/* Ce que CLT doit encore à la cliente sur ce colis : l'article encaissé qu'on ne lui a pas
+   encore reversé. Dès que le reversement est marqué, ça tombe à zéro.
+
+   ATTENTION AU PIÈGE, corrigé le 25 août 2026 : ce calcul lisait `encaissement_remis`, qui ne
+   veut PAS dire ça. Cette colonne dit que le LIVREUR a remis sa caisse à CLT — un mouvement
+   interne, entre le livreur et l'entreprise. La cliente, elle, n'a toujours rien reçu. Lire
+   l'un pour l'autre revenait à afficher « déjà reversé » à une vendeuse au moment précis où
+   l'argent arrivait dans notre caisse au lieu de la sienne.
+
+   Ce sont deux événements distincts, dans cet ordre :
+     1. le destinataire paie le livreur        → articleEncaisse()
+     2. le livreur remet sa caisse à CLT       → encaissement_remis
+     3. CLT reverse à la cliente               → reverse_au_fournisseur_at
+
+   Aucun colis n'était encore concerné en base (zéro remise enregistrée), donc la séparation se
+   fait sans rien réécrire de l'historique. */
+function montantArticleADevoir(c) {
+  if (!articleEncaisse(c)) return 0;
+  if (c && c.reverse_au_fournisseur_at) return 0;
+  return montantArticleColis(c);
+}
+
+// Ce que le livreur a réellement en main sur ce colis : les deux poches, mais seulement si
+// elles sont rentrées. Un colis remis sans que l'argent suive ne pèse rien dans sa caisse.
+function montantEnMainDuLivreur(c) {
+  return montantArticleEncaisse(c) + montantLivraisonEncaissee(c);
+}
+
+// Argent qu'on aurait dû encaisser à la livraison et qui manque (l'exception cochée).
+// À ne surtout pas confondre avec le précédent : celui-ci est un manque dans NOTRE caisse,
+// l'autre est une dette envers la cliente.
+function montantManquantALaLivraison(c) {
+  if (!c || c.statut !== 'livre') return 0;
+  let manque = 0;
+  if (c.article_non_encaisse) manque += montantArticleColis(c);
+  if (!c.livraison_payee && c.livraison_non_encaissee) manque += montantLivraisonColis(c);
+  return manque;
+}
+
+/* --------------------------------------------------------------------------------------------
+   TOTAUX D'UN LOT DE COLIS
+
+   Le second piège, après le mélange des deux poches : additionner des colis qui ne sont pas
+   dans le même état. « Montant total » comptait les colis en attente, non livrés et retournés
+   au même titre que les livrés — de l'argent qui ne rentrera peut-être jamais, additionné à de
+   l'argent déjà en caisse. Un total pareil ne permet de payer personne.
+
+   D'où deux familles de chiffres, tenues séparées partout et jamais confondues :
+     • ENREGISTRÉ : ce qui est parti, tous statuts confondus. Une mesure d'activité.
+     • ENCAISSÉ   : ce qui est rentré, colis livrés seulement. Une mesure d'argent.
+   -------------------------------------------------------------------------------------------- */
+function totauxArgent(colis) {
+  const liste = Array.isArray(colis) ? colis : [];
+  const t = {
+    nb: liste.length,
+    nbLivres: 0,
+    nbEncaisses: 0,
+    nbADevoir: 0,
+    // Activité : tout ce qui a été enregistré, quel que soit le statut.
+    articleEnregistre: 0,
+    livraisonEnregistree: 0,
+    totalEnregistre: 0,
+    // Argent : uniquement ce qui est rentré.
+    articleEncaisse: 0,
+    livraisonEncaissee: 0,
+    totalEncaisse: 0,
+    // Ce qu'on doit encore à la cliente, et ce qui manque dans notre caisse.
+    articleADevoir: 0,
+    manquantALaLivraison: 0,
+  };
+  liste.forEach(c => {
+    if (!c) return;
+    if (c.statut === 'livre') t.nbLivres++;
+    t.articleEnregistre    += montantArticleColis(c);
+    t.livraisonEnregistree += montantLivraisonColis(c);
+    const art = montantArticleEncaisse(c);
+    const liv = montantLivraisonEncaissee(c);
+    if (art || liv) t.nbEncaisses++;
+    t.articleEncaisse    += art;
+    t.livraisonEncaissee += liv;
+    const du = montantArticleADevoir(c);
+    if (du) t.nbADevoir++;
+    t.articleADevoir += du;
+    t.manquantALaLivraison += montantManquantALaLivraison(c);
+  });
+  t.totalEnregistre = t.articleEnregistre + t.livraisonEnregistree;
+  t.totalEncaisse   = t.articleEncaisse + t.livraisonEncaissee;
+  return t;
+}
+
+// Pied de tableau : la ligne de total.
+// Un tableau d'argent sans ligne de total oblige celui qui le lit à additionner de tête, et
+// c'est exactement là qu'on se trompe — surtout au téléphone, le soir, en fin de journée.
+// `cellules` est une liste de { texte, couleur? } dans l'ordre des colonnes.
+// La classe `recap-total-row` sert aussi de repère aux contrôles automatiques.
+function piedTotalHTML(cellules) {
+  const tds = (cellules || []).map(c => {
+    const style = c && c.couleur ? ` style="color:${c.couleur};"` : '';
+    const texte = (c && c.texte !== undefined && c.texte !== null) ? c.texte : '';
+    return `<td${style}>${texte}</td>`;
+  }).join('');
+  return `<tfoot><tr class="recap-total-row">${tds}</tr></tfoot>`;
+}
+
+// Libellé + couleurs de l'état d'argent d'un colis (badge).
+// L'ordre des cas compte : on annonce d'abord ce qui appelle une action.
 function paiementInfo(c) {
-  if (!colisADetailMontant(c)) return { label: "—", color: "#8a94a3", bg: "#eef0f3" };
-  const artOk = !!c.article_paye || !(Number(c.montant_article) > 0);
-  const livOk = !!c.livraison_payee || !(Number(c.montant_livraison) > 0);
-  if (artOk && livOk) return { label: "Soldé", color: "#1a7d3c", bg: "#e3f6ea" };
-  if (c.article_paye && !livOk) return { label: "Article payé", color: "#1B4374", bg: "#e5edf5" };
-  if (c.livraison_payee && !artOk) return { label: "Livraison payée", color: "#E26313", bg: "#FBE2CE" };
-  return { label: "Non soldé", color: "#c0392b", bg: "#fce4e2" };
+  if (!c) return { label: "—", color: "#8a94a3", bg: "#eef0f3" };
+  if (c.statut !== 'livre') {
+    if (c.livraison_payee) return { label: "Livraison payée d'avance", color: "#E26313", bg: "#FBE2CE" };
+    return { label: "Pas encore encaissé", color: "#8a94a3", bg: "#eef0f3" };
+  }
+  const manque = montantManquantALaLivraison(c);
+  if (manque > 0) return { label: "Argent non encaissé", color: "#c0392b", bg: "#fce4e2" };
+  if (c.reverse_au_fournisseur_at) return { label: "Encaissé et reversé", color: "#1a7d3c", bg: "#e3f6ea" };
+  return { label: "Encaissé", color: "#1B4374", bg: "#e5edf5" };
 }
 
 function paiementBadgeHTML(c) {

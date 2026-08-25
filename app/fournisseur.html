@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260823livre1">
-<script src="theme.js?v=20260823livre1"></script>
+<link rel="stylesheet" href="style.css?v=20260825argent1">
+<script src="theme.js?v=20260825argent1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -465,10 +465,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260823livre1"></script>
-<script src="config.js?v=20260823livre1"></script>
+<script src="clt-common.js?v=20260825argent1"></script>
+<script src="config.js?v=20260825argent1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260823livre1"></script>
+<script src="clt-select-recherche.js?v=20260825argent1"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1020,7 +1020,6 @@
       montantArticle: val('.lotfr-art'),
       montantLivraison: val('.lotfr-liv'),
       description: val('.lotfr-desc'),
-      articlePaye: coche('.lotfr-art-paye'),
       livraisonPayee: coche('.lotfr-liv-payee')
     };
   }
@@ -1102,8 +1101,10 @@
              acheteuse peut avoir réglé l'article d'avance et pas une autre, et cocher pour
              tout le lot ferait réclamer au livreur de l'argent déjà encaissé. -->
         <div class="lotfr-payes">
-          <label class="check-pill"><input type="checkbox" class="lotfr-art-paye"> Article payé</label>
-          <label class="check-pill"><input type="checkbox" class="lotfr-liv-payee"> Livraison payée</label>
+          <!-- La case « Article payé » a été retirée le 25/08/2026 : au moment où la cliente
+               enregistre son colis, personne n'a encore payé quoi que ce soit. La régle est
+               désormais « livré = encaissé », et l'exception se coche à la livraison. -->
+          <label class="check-pill"><input type="checkbox" class="lotfr-liv-payee"> Livraison déjà payée</label>
         </div>
         <!-- Le code de confirmation à quatre chiffres a été retiré le 21 août 2026. Il n'entrait
              pas dans la façon de travailler : il fallait le générer, le transmettre soi-même au
@@ -1288,7 +1289,6 @@
       adresse_recuperation: ctx.adresse_recuperation || null,
       // Normalisé au format international (225…) attendu par la notification WhatsApp.
       destinataire_telephone: s.telephone ? toPhoneE164(s.telephone) : null,
-      article_paye: !!s.articlePaye,
       livraison_payee: !!s.livraisonPayee,
       cle_creation: l.cle
     };
@@ -2046,9 +2046,13 @@
             <div class="meta">${c.commune_destination ? 'Vers : ' + escapeHTML(c.commune_destination) + (c.destination ? ' (' + escapeHTML(c.destination) + ')' : '') + ' · ' : (c.destination ? 'Vers : ' + escapeHTML(c.destination) + ' · ' : '')}Ajouté le ${formatDate(c.created_at)}</div>
             ${(!c.commune_destination && !c.destination && colisAdresseCorrigeable(c)) ? `<div class="meta" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — sans elle, le livreur ne peut pas partir.</div>` : ''}
             ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
+            <!-- L'argent de la cliente d'abord, les frais de CLT ensuite et plus discrètement.
+                 On n'affiche plus de « Total » article + livraison : cette somme ne correspond
+                 à la poche de personne. L'article revient à la cliente, la livraison à CLT. -->
             ${colisADetailMontant(c) ? `
-              <div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · Total : ${formatMontant(montantTotalColis(c)) || '0 FCFA'} ${paiementBadgeHTML(c)}</div>
-            ` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
+              <div class="meta"><strong>Votre article : ${formatMontant(montantArticleColis(c)) || '0 FCFA'}</strong> ${paiementBadgeHTML(c)}</div>
+              <div class="meta" style="font-size:12px; color:var(--muted);">Frais de livraison CLT : ${formatMontant(montantLivraisonColis(c)) || '0 FCFA'}</div>
+            ` : (formatMontant(c.montant) ? `<div class="meta"><strong>Votre article : ${formatMontant(c.montant)}</strong> ${paiementBadgeHTML(c)}</div>` : '')}
             <!-- Le code de confirmation ne s'affiche plus ici depuis le 21 août 2026. Le livreur
                  ne le demande plus à la remise : continuer à écrire « à communiquer au
                  destinataire » sous un colis serait donc une consigne fausse, et c'est pire que
@@ -2099,8 +2103,7 @@
               </div>
             </div>
             <div class="payment-checks">
-              <label class="check-pill"><input type="checkbox" class="edit-article-paye" ${c.article_paye ? 'checked' : ''}> Article payé</label>
-              <label class="check-pill"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée</label>
+              <label class="check-pill"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison déjà payée</label>
             </div>` : ''}
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn btn-sm btn-save-edit">Enregistrer</button>
@@ -2172,8 +2175,7 @@
               </div>
             </div>
             <div class="payment-checks">
-              <label class="check-pill"><input type="checkbox" class="draft-article-paye"> Article payé</label>
-              <label class="check-pill"><input type="checkbox" class="draft-livraison-payee"> Livraison payée</label>
+              <label class="check-pill"><input type="checkbox" class="draft-livraison-payee"> Livraison déjà payée</label>
             </div>
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn btn-sm btn-save-duplicate">Enregistrer la copie</button>
@@ -2216,7 +2218,6 @@
       const montant = (montant_article !== null || montant_livraison !== null)
         ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
         : null;
-      const article_paye = draftEl.querySelector('.draft-article-paye').checked;
       const livraison_payee = draftEl.querySelector('.draft-livraison-payee').checked;
 
       saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement...';
@@ -2235,7 +2236,6 @@
         montant,
         montant_article,
         montant_livraison,
-        article_paye,
         livraison_payee,
         commune_recuperation: pickupCommune,
         adresse_recuperation: pickupAdresse || null,
@@ -2326,9 +2326,7 @@
           champs.montant = (montant_article !== null || montant_livraison !== null)
             ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
             : null;
-          const articlePayeInput = item.querySelector('.edit-article-paye');
           const livraisonPayeeInput = item.querySelector('.edit-livraison-payee');
-          if (articlePayeInput) champs.article_paye = articlePayeInput.checked;
           if (livraisonPayeeInput) champs.livraison_payee = livraisonPayeeInput.checked;
         }
         btn.disabled = true; btn.textContent = '...';
@@ -2500,11 +2498,14 @@
     }
     const r = data || { colis_livres:0, total_encaisse_pour_vous:0, deja_reverse:0, reste_a_percevoir:0, colis_a_reverser:0 };
     const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
+    // Les quatre chiffres du relevé ne parlent QUE de l'argent des articles — celui qui
+    // appartient à la cliente. Les frais de livraison sont le revenu de CLT et n'ont rien à
+    // faire ici ; les mélanger donnerait un « reste à percevoir » que CLT ne lui doit pas.
     const cards = [
-      { icon:'✅', value:(r.colis_livres || 0),           label:'Colis livrés',       color:STATUTS.livre.color, bg:STATUTS.livre.bg },
-      { icon:'💵', value:money(r.total_encaisse_pour_vous), label:'Encaissé pour vous', color:'#1B4374',          bg:'#e5edf5' },
-      { icon:'✔️', value:money(r.deja_reverse),            label:'Déjà reversé',       color:'#1a7d3c',           bg:'#e3f6ea' },
-      { icon:'⏳', value:money(r.reste_a_percevoir),       label:'Reste à percevoir',  color:'#E26313',           bg:'#FBE2CE' },
+      { icon:'✅', value:(r.colis_livres || 0),            label:'Colis livrés',            color:STATUTS.livre.color, bg:STATUTS.livre.bg },
+      { icon:'💵', value:money(r.total_encaisse_pour_vous), label:'Articles encaissés',      color:'#1B4374',           bg:'#e5edf5' },
+      { icon:'✔️', value:money(r.deja_reverse),             label:'Déjà reversé',            color:'#1a7d3c',           bg:'#e3f6ea' },
+      { icon:'⏳', value:money(r.reste_a_percevoir),        label:'CLT vous doit',           color:'#E26313',           bg:'#FBE2CE' },
     ];
     tiles.innerHTML = cards.map(t => `
       <div class="stat-tile" style="--tile-color:${t.color}; --tile-bg:${t.bg}">
@@ -2526,8 +2527,8 @@
       .select('numero, montant_article, created_at')
       .eq('fournisseur_id', currentUser.id)
       .eq('statut', 'livre')
-      .eq('article_paye', true)
-      .not('encaissement_remis', 'is', true)
+      .not('article_non_encaisse', 'is', true)
+      .is('reverse_au_fournisseur_at', null)
       .order('created_at', { ascending: true })
       .limit(100);
     if (err2 || !aReverser || !aReverser.length) { detail.innerHTML = ''; return; }
@@ -2683,13 +2684,25 @@
       libelle.textContent = `${jourTexte} · ${duJour.length} colis enregistré${duJour.length > 1 ? 's' : ''}`;
     }
     const montantEl = document.getElementById('colis-jour-montant');
-    if (montantEl) {
-      const montantJour = duJour.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
-      const montantLivre = duJour.filter(c => c.statut === 'livre').reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
-      montantEl.innerHTML = duJour.length
-        ? `💰 Montant total : <strong>${formatMontant(montantJour) || '0 FCFA'}</strong> · Montant livré : <strong>${formatMontant(montantLivre) || '0 FCFA'}</strong>`
-        : '';
-    }
+    if (montantEl) montantEl.innerHTML = duJour.length ? ligneArgentCliente(duJour) : '';
+  }
+
+  // Une seule façon d'écrire l'argent dans tout l'espace cliente, pour que le récap du jour,
+  // celui du mois et le relevé racontent la même histoire.
+  //
+  // Deux chiffres, jamais mélangés :
+  //   • « Vos articles » = ce que la cliente a confié, et ce qui lui revient une fois livré.
+  //   • « Frais de livraison CLT » = le prix du service, qui est le revenu de CLT.
+  // L'ancien affichage additionnait les deux sous le nom « Montant total », ce qui donnait un
+  // chiffre qui n'était l'argent de personne — et « Montant livré » comptait la livraison des
+  // colis livrés comme si elle appartenait à la cliente.
+  function ligneArgentCliente(colis){
+    const t = totauxArgent(colis);
+    const m = n => formatMontant(n) || '0 FCFA';
+    return `
+      <span class="argent-cliente-principal">💰 Vos articles : <strong>${m(t.articleEnregistre)}</strong>
+        <span class="argent-cliente-livre">dont <strong>${m(t.articleEncaisse)}</strong> livré${t.nbLivres > 1 ? 's' : ''} et encaissé${t.nbLivres > 1 ? 's' : ''}</span></span>
+      <span class="argent-cliente-frais">Frais de livraison CLT : ${m(t.livraisonEnregistree)}</span>`;
   }
 
   function renderRecapMois(){
@@ -2718,12 +2731,10 @@
         g.items.forEach(c => { compteJour[c.statut] = (compteJour[c.statut] || 0) + 1; });
         const livresJour = compteJour['livre'] || 0;
         const tauxJour = g.items.length ? Math.round((livresJour / g.items.length) * 100) : 0;
-        const montantJour = g.items.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
-        const montantLivreJour = g.items.filter(c => c.statut === 'livre').reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
         box.innerHTML = `
           <div class="day-recap-back" onclick="selectRecapDay('')">← Voir tout le mois</div>
           <p class="recap-phrase">Le <strong>${g.label}</strong>, vous avez enregistré <strong>${g.items.length} colis</strong>, dont <strong>${livresJour}</strong> livré${livresJour > 1 ? 's' : ''} avec succès (${tauxJour}%).</p>
-          <p class="recap-montant">💰 Montant total : <strong>${formatMontant(montantJour) || '0 FCFA'}</strong> · Montant livré : <strong>${formatMontant(montantLivreJour) || '0 FCFA'}</strong></p>
+          <p class="recap-montant">${ligneArgentCliente(g.items)}</p>
           ${statTilesHTML(compteJour, g.items.length)}
         `;
         return;
@@ -2734,9 +2745,6 @@
     colisDuMois.forEach(c => { compte[c.statut] = (compte[c.statut] || 0) + 1; });
     const livres = compte['livre'] || 0;
     const taux = colisDuMois.length ? Math.round((livres / colisDuMois.length) * 100) : 0;
-    const montantMois = colisDuMois.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
-    const montantLivreMois = colisDuMois.filter(c => c.statut === 'livre').reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
-
     const joursHTML = groups.map(g => {
       const compteJour = {};
       g.items.forEach(c => { compteJour[c.statut] = (compteJour[c.statut] || 0) + 1; });
@@ -2753,7 +2761,7 @@
 
     box.innerHTML = `
       <p class="recap-phrase">En <strong>${monthLabel(selected)}</strong>, vous avez enregistré <strong>${colisDuMois.length} colis</strong>, dont <strong>${livres}</strong> livré${livres > 1 ? 's' : ''} avec succès (${taux}%).</p>
-      <p class="recap-montant">💰 Montant total : <strong>${formatMontant(montantMois) || '0 FCFA'}</strong> · Montant livré : <strong>${formatMontant(montantLivreMois) || '0 FCFA'}</strong></p>
+      <p class="recap-montant">${ligneArgentCliente(colisDuMois)}</p>
       ${trendChartHTML(groups)}
       ${statTilesHTML(compte, colisDuMois.length)}
       <div class="day-recap-title">Détail par jour</div>
@@ -2843,16 +2851,30 @@
     }
     btn.disabled = false; btn.textContent = label;
     if (!rows.length) { await cltConfirm({ title: "Aucune donnée à exporter", sub: "Il n'y a aucun colis pour la période sélectionnée.", okLabel: "J'ai compris", cancelLabel: 'Fermer' }); return; }
+    // Mêmes colonnes que l'écran : l'argent de la cliente d'un côté, les frais de CLT de
+    // l'autre. Plus de colonne « Total » qui additionnait les deux.
     const data = rows.map(c => ({
       Colis: c.description || '',
       Destination: [c.commune_destination, c.destination].filter(Boolean).join(' - '),
       Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-      'Montant article': c.montant_article || 0,
-      'Montant livraison': c.montant_livraison || 0,
-      Total: montantTotalColis(c) || 0,
+      'Votre article': montantArticleColis(c) || 0,
+      'Article encaissé': montantArticleEncaisse(c) || 0,
+      'Frais de livraison CLT': montantLivraisonColis(c) || 0,
       Paiement: paiementInfo(c).label,
       Date: formatDate(c.created_at),
     }));
+    // Dernière ligne : le total, pour ne jamais avoir à le refaire à la main.
+    const tX = totauxArgent(rows);
+    data.push({
+      Colis: 'TOTAL',
+      Destination: `${tX.nb} colis · ${tX.nbLivres} livré(s)`,
+      Statut: '',
+      'Votre article': tX.articleEnregistre,
+      'Article encaissé': tX.articleEncaisse,
+      'Frais de livraison CLT': tX.livraisonEnregistree,
+      Paiement: '',
+      Date: '',
+    });
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Récapitulatif');
@@ -2876,25 +2898,36 @@
     if (!rows.length) { await cltConfirm({ title: "Aucune donnée à exporter", sub: "Il n'y a aucun colis pour la période sélectionnée.", okLabel: "J'ai compris", cancelLabel: 'Fermer' }); return; }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    const livres = rows.filter(c => c.statut === 'livre');
-    const totalMontant = rows.reduce((s, c) => s + (Number(montantTotalColis(c)) || 0), 0);
+    const t = totauxArgent(rows);
     doc.setFontSize(14);
     doc.text('Récapitulatif — Christ Livraison & Transport SARL', 14, 16);
     doc.setFontSize(10);
-    doc.text(`${rows.length} colis · ${livres.length} livré(s) · Montant total : ${formatMontant(totalMontant) || '0 FCFA'}`, 14, 24);
+    doc.text(`${t.nb} colis · ${t.nbLivres} livré(s)`, 14, 24);
+    doc.text(`Vos articles : ${formatMontant(t.articleEnregistre) || '0 FCFA'} enregistrés · ${formatMontant(t.articleEncaisse) || '0 FCFA'} livrés et encaissés`, 14, 30);
+    doc.text(`Frais de livraison CLT : ${formatMontant(t.livraisonEnregistree) || '0 FCFA'}`, 14, 36);
     doc.autoTable({
-      startY: 30,
-      head: [['Colis', 'Destination', 'Statut', 'Article', 'Livraison', 'Total', 'Paiement', 'Date']],
+      startY: 42,
+      head: [['Colis', 'Destination', 'Statut', 'Votre article', 'Encaissé', 'Livraison CLT', 'Paiement', 'Date']],
       body: rows.map(c => [
         c.description || '',
         [c.commune_destination, c.destination].filter(Boolean).join(' - '),
         STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-        formatMontant(c.montant_article) || '-',
-        formatMontant(c.montant_livraison) || '-',
-        formatMontant(montantTotalColis(c)) || '-',
+        formatMontant(montantArticleColis(c)) || '0 FCFA',
+        formatMontant(montantArticleEncaisse(c)) || '—',
+        formatMontant(montantLivraisonColis(c)) || '—',
         paiementInfo(c).label,
         formatDate(c.created_at),
       ]),
+      foot: [[
+        'TOTAL',
+        `${t.nb} colis`,
+        `${t.nbLivres} livré(s)`,
+        formatMontant(t.articleEnregistre) || '0 FCFA',
+        formatMontant(t.articleEncaisse) || '0 FCFA',
+        formatMontant(t.livraisonEnregistree) || '0 FCFA',
+        '',
+        '',
+      ]],
     });
     doc.save(`recapitulatif-${new Date().toISOString().slice(0, 10)}.pdf`);
   });

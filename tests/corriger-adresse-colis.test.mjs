@@ -180,7 +180,6 @@ async function enregistrerClient({ tel, telOrigine, avecMontants }){
     Object.assign(champsEcran, {
       '.edit-montant-article': { value: '10000' },
       '.edit-montant-livraison': { value: '1500' },
-      '.edit-article-paye': { checked: true },
       '.edit-livraison-payee': { checked: false },
     });
   }
@@ -227,8 +226,14 @@ async function enregistrerClient({ tel, telOrigine, avecMontants }){
   verifier('sur un colis en attente, les montants repartent normalement',
     champs.montant_article === 10000 && champs.montant_livraison === 1500 && champs.montant === 11500,
     JSON.stringify(champs));
-  verifier('les cases « payé » suivent l’écran',
-    champs.article_paye === true && champs.livraison_payee === false);
+  verifier('la case « livraison déjà payée » suit l’écran',
+    champs.livraison_payee === false, JSON.stringify(champs));
+  // Depuis le 25/08/2026, « Article payé » n'existe plus dans l'espace client. La règle est
+  // « livré = encaissé », et l'exception ne se coche que par ceux qui étaient sur place — la
+  // cliente n'y était pas. Cette colonne ne doit donc plus partir depuis cet écran, même sur
+  // un colis encore en attente où tout le reste est modifiable.
+  verifier('« article_paye » ne part plus jamais depuis l’espace client',
+    !('article_paye' in champs), JSON.stringify(champs));
 }
 
 /* ==========================================================================================
@@ -258,7 +263,7 @@ async function enregistrerEquipe({ tel, telOrigine, avecRecuperation }){
   ctx.alert = ecran.alert;
   const prelude = `var statut = 'en_livraison', observation = null, livreur_id = undefined,
     livreur_collecte_id = undefined, montant = undefined, montant_article = undefined,
-    montant_livraison = undefined, article_paye = undefined, livraison_payee = undefined;`;
+    montant_livraison = undefined, article_non_encaisse = undefined, livraison_payee = undefined;`;
   vm.runInContext(
     `globalThis.__lancer = async function(){\n${prelude}\n${CODE_EQUIPE}\nreturn updatePayload;\n};`, ctx);
   const payload = await ctx.__lancer();
