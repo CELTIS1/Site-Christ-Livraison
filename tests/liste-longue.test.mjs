@@ -262,7 +262,10 @@ titre('Les rendus sont regroupés, y compris dans un onglet en arrière-plan');
 // Un contrôle de vigilance : si quelqu'un ajoute plus tard une liste de colis sans la brancher,
 // on veut le savoir. On vérifie que chaque appel au rendu groupé passe par limiterGroupesColis.
 titre('Les trois espaces utilisent bien l\'affichage par tranches');
-for (const [fichier, attendus] of [['equipe.html', 1], ['livreur.html', 3], ['fournisseur.html', 1]]) {
+// livreur.html : 2 listes depuis le 25 août 2026 (Mes colis, Récupérations). La troisième,
+// « Tout mon historique », a laissé sa place à l'onglet Finance — un point d'argent, pas une
+// liste de colis : il n'y a donc plus de tranche à couper de ce côté.
+for (const [fichier, attendus] of [['equipe.html', 1], ['livreur.html', 2], ['fournisseur.html', 1]]) {
   const src = fs.readFileSync(path.join(APP, fichier), 'utf8');
   // On compte les APPELS (« innerHTML = renderGroupedColisHTML(… »), pas les mentions du nom
   // dans les commentaires explicatifs, sinon le contrôle se déclencherait à tort.

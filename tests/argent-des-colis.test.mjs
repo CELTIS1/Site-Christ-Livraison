@@ -362,7 +362,9 @@ titre('Chaque tableau d\'argent porte sa ligne de total');
   const tableaux = [
     ['équipe · récapitulatif par client (le tableau visé par la demande)', equipe, 'renderRecapBilan'],
     ['équipe · comptabilité',                                             equipe, 'renderCompta'],
-    ['livreur · l\'argent de ma journée',                                 livreur, 'renderArgentDuJour'],
+    // Le tableau du livreur a déménagé dans l'onglet Finance le 25 août 2026 : il n'est plus
+    // dessiné par renderArgentDuJour (la carte) mais par renderFinanceDetail (le panneau).
+    ['livreur · le point d\'argent de la journée',                        livreur, 'renderFinanceDetail'],
   ];
   tableaux.forEach(([nom, src, fn]) => {
     const bloc = blocDe(src, fn);
@@ -480,38 +482,157 @@ titre('Un tableau d\'argent reste lisible sur un téléphone');
 }
 
 /* ==========================================================================================
-   7 ter. LE TABLEAU DÉTAILLÉ DU LIVREUR NE S'AFFICHE QUE LÀ OÙ IL SERT
+   7 ter. L'ONGLET FINANCE DU LIVREUR
 
-   Demande du 25 août, formulée devant l'écran : sur « Mes colis », le livreur veut le compte
-   de sa journée en trois chiffres et le commentaire dessous, rien de plus. Le détail par
-   cliente ne l'intéresse qu'au moment de la remise — donc sur l'onglet Récupérations.
+   Demande du 25 août, formulée devant l'écran. Le troisième onglet listait « tout mon
+   historique » : une liste de colis avec sa recherche et ses filtres. À la place, le livreur
+   voulait un onglet qui fasse le point d'argent — c'est-à-dire exactement ce qui venait
+   d'être construit : les trois chiffres de la journée et le tableau cliente par cliente. Et
+   surtout : « si on clique dedans, il faudrait que ça affiche les quatre colis avec les
+   différents statuts en face, y compris les montants, les détails ».
 
-   La carte, elle, reste visible partout : c'est le détail seul qui se retire.
+   Le partage retenu, onglet par onglet :
+     • Mes colis      → la carte (trois chiffres). Elle « reste intacte ».
+     • Récupérations  → rien de tout ça. « Il ne faudrait pas que ça apparaisse. »
+     • Finance        → la carte ET le tableau détaillé, dépliable ligne par ligne.
+
+   La recherche du troisième onglet disparaît avec la liste : c'est un choix assumé, à une
+   condition, vérifiée en bas de section — que le calendrier de la carte puisse toujours
+   remonter à n'importe quelle date, y compris au-delà de ce que le navigateur a en mémoire.
    ========================================================================================== */
-titre('Le détail par cliente ne s\'affiche que sur l\'onglet Récupérations');
+titre('L\'onglet Finance du livreur');
 
 {
   const code = sansCommentaires(livreur);
-  verifier('le tableau détaillé est repérable par un identifiant propre',
-    /id="argent-jour-detail"/.test(code),
-    'sans identifiant, on ne peut ni le montrer ni le cacher');
-  verifier('une seule fonction décide de le montrer ou non',
-    (code.match(/function syncArgentDetail\s*\(/g) || []).length === 1);
-  verifier('elle le cache partout sauf sur Récupérations',
-    /classList\.toggle\('hidden',\s*activePanel !== 'recup'\)/.test(code),
+
+  // -- Le nom, aux trois endroits où il s'affiche ------------------------------------------
+  verifier('le troisième onglet du bandeau s\'appelle Finance',
+    /data-clttab="finance"/.test(code) && !/data-clttab="tous"/.test(code));
+  verifier('l\'onglet correspondant porte le même nom',
+    /id="tab-finance"[^>]*onclick="showTab\('finance'\)"/.test(code));
+  verifier('la barre du bas aussi',
+    /data-nav="finance"/.test(code) && !/data-nav="tous"/.test(code),
+    'un raccourci du bas qui pointe sur un panneau disparu ne fait plus rien');
+
+  // -- Un téléphone qui avait gardé l'ancien nom en mémoire ---------------------------------
+  verifier('l\'ancien nom d\'onglet est traduit, pas ignoré',
+    /if \(nom === 'tous'\) return 'finance';/.test(code),
+    'sinon le livreur qui avait laissé son application sur le 3e onglet retombe sur le 1er');
+  verifier('showTab traduit le nom qu\'on lui donne',
+    blocDe(livreur, 'showTab').includes('normaliserOnglet(which)'));
+
+  // -- L'ancienne liste est bien partie, pas seulement cachée -------------------------------
+  ['renderTousColis', 'tousColisItemHTML', 'activeFilterTous', 'searchTous', 'filtreDateTous',
+   'trancheTous', 'tous-colis-list', 'search-tous', 'filters-tous', 'filtre-date-tous',
+  ].forEach(reste => {
+    verifier(`plus aucune trace de « ${reste} »`,
+      !code.includes(reste),
+      'du code mort qui référence un élément absent finit par lever une erreur');
+  });
+
+  // -- Le tableau vit désormais dans le panneau Finance -------------------------------------
+  verifier('le panneau Finance existe et porte le conteneur du détail',
+    /id="panel-finance"/.test(code) && /id="finance-detail"/.test(code));
+  verifier('le tableau détaillé est dessiné dans ce conteneur',
+    blocDe(livreur, 'renderFinanceDetail').includes("getElementById('finance-detail')"));
+  verifier('la carte, elle, ne dessine plus que les trois chiffres',
+    !blocDe(livreur, 'renderArgentDuJour').includes('recap-table'),
+    'le tableau dans la carte, c\'est ce qui allongeait « Mes colis » sans qu\'on l\'ait demandé');
+  verifier('la carte et le tableau parlent de la même journée',
+    blocDe(livreur, 'renderArgentDuJour').includes('renderFinanceDetail(duJour, t, jour)'),
+    'deux journées différentes affichées côte à côte, c\'est la pire des ambiguïtés');
+
+  // -- La carte s'efface sur Récupérations ---------------------------------------------------
+  verifier('une seule fonction décide de montrer la carte ou non',
+    (code.match(/function syncArgentCard\s*\(/g) || []).length === 1);
+  verifier('elle cache la carte sur Récupérations, et là seulement',
+    /carte\.classList\.toggle\('hidden',\s*activePanel === 'recup'\)/.test(code),
     'la condition doit nommer l\'onglet, pas une position dans une liste');
   verifier('elle est rappelée à chaque changement d\'onglet',
-    blocDe(livreur, 'showTab').includes('syncArgentDetail()'),
-    'sinon le tableau reste affiché après avoir quitté Récupérations');
-  verifier('elle est rappelée après chaque redessin de la carte',
-    blocDe(livreur, 'renderArgentDuJour').includes('syncArgentDetail()'),
-    'un tableau redessiné revient sans la classe qui le cachait');
-  verifier('elle supporte le cas où la carte n\'affiche aucun tableau',
-    /const detail = document\.getElementById\('argent-jour-detail'\);\s*if \(!detail\) return;/.test(code),
-    'les jours sans colis n\'ont pas de tableau du tout');
-  verifier('la carte d\'argent, elle, n\'est pas cachée avec le tableau',
-    !/argent-jour-card[\s\S]{0,200}activePanel !== 'recup'/.test(code),
-    'les trois chiffres de la journée doivent rester visibles sur les trois onglets');
+    blocDe(livreur, 'showTab').includes('syncArgentCard()'),
+    'sinon la carte reste affichée après être passé sur Récupérations');
+  verifier('elle supporte l\'absence de carte',
+    /const carte = document\.getElementById\('argent-jour-card'\);\s*if \(!carte\) return;/.test(code));
+
+  // -- Chaque ligne cliente se déplie sur ses colis -------------------------------------------
+  verifier('chaque ligne cliente est annoncée comme cliquable',
+    /class="finance-ligne[^"]*"[^>]*role="button"[^>]*tabindex="0"/.test(code),
+    'une ligne qui réagit au doigt sans le dire ne sera jamais touchée');
+  verifier('elle dit si elle est ouverte ou fermée',
+    /aria-expanded="\$\{ouverte \? 'true' : 'false'\}"/.test(code));
+  verifier('le bloc de détail est rattaché à SA cliente',
+    /data-cliente="\$\{cle\}"/.test(code) && /data-detail="\$\{cle\}"/.test(code),
+    'sans ce lien, un clic ouvrirait le détail de la voisine');
+  verifier('l\'identifiant de cliente est échappé avant d\'entrer dans un attribut',
+    /const cle = echapperAttribut\(l\.cle\);/.test(code));
+  verifier('le détail occupe toute la largeur de la ligne',
+    /class="finance-detail-cell" colspan="5"/.test(code));
+  verifier('un second appui referme',
+    blocDe(livreur, 'brancherFinanceDepliage').includes("bloc.classList.toggle('hidden', !ouvre)"));
+  verifier('le détail se trouve par voisinage, pas par un sélecteur CSS',
+    blocDe(livreur, 'brancherFinanceDepliage').includes('tr.nextElementSibling')
+    && !code.includes('CSS.escape'),
+    'CSS.escape manque sur les vieux navigateurs Android : le dépliage n\'y marcherait pas');
+  verifier('le clavier ouvre aussi (Entrée ou Espace)',
+    blocDe(livreur, 'brancherFinanceDepliage').includes("e.key === 'Enter' || e.key === ' '"));
+  verifier('une ligne ouverte le reste quand le tableau se redessine',
+    blocDe(livreur, 'renderFinanceDetail').includes('financeDepliees.has(l.cle)'),
+    'le temps réel redessine sans prévenir : le détail qu\'on lit se refermerait tout seul');
+  verifier('une cliente qui sort de la journée est oubliée',
+    blocDe(livreur, 'renderFinanceDetail').includes('financeDepliees.delete(k)'),
+    'une mémoire qui ne se vide jamais finit par rouvrir des lignes sans raison');
+
+  // -- Ce que le détail montre de chaque colis -------------------------------------------------
+  const detailColis = blocDe(livreur, 'financeColisHTML');
+  verifier('le détail montre le statut de chaque colis',
+    detailColis.includes('statutBadgeHTML(c.statut)'),
+    'c\'est la demande exacte : « les quatre colis avec les différents statuts en face »');
+  verifier('il montre aussi où en est l\'argent du colis',
+    detailColis.includes('paiementBadgeHTML(c)'));
+  verifier('il sépare les deux poches, article et livraison',
+    detailColis.includes('montantArticleColis(c)') && detailColis.includes('montantLivraisonColis(c)'),
+    'les mélanger, c\'est l\'erreur que tout le reste du fichier s\'emploie à empêcher');
+  verifier('il dit ce que le livreur a réellement en main sur ce colis',
+    detailColis.includes('montantEnMainDuLivreur(c)'));
+  verifier('il signale un colis remis dont l\'argent n\'est pas rentré',
+    detailColis.includes('montantManquantALaLivraison(c)'),
+    'un écart passé sous silence se retrouve dans la caisse du livreur, à sa charge');
+  verifier('les colis livrés se lisent en premier',
+    /const ordre = \{ livre: 0/.test(detailColis),
+    'on cherche d\'abord ce qui a rapporté de l\'argent');
+
+  // -- La contrepartie promise à la disparition de la recherche ---------------------------------
+  verifier('l\'onglet Finance peut aller chercher les journées plus anciennes',
+    blocDe(livreur, 'renderFinanceDetail').includes('appendColisLoadMore(detail)'),
+    'sans la recherche, le calendrier est le seul chemin vers le passé : il doit y arriver');
+  verifier('y compris quand la journée choisie paraît vide',
+    blocDe(livreur, 'renderArgentDuJour').includes('appendColisLoadMore(detail)'),
+    '« Aucun colis reçu ce jour-là » sur une journée non chargée serait un mensonge');
+}
+
+/* ==========================================================================================
+   7 ter bis. LE DÉTAIL DÉPLIÉ N'HÉRITE PAS DE LA MISE EN FORME DU TABLEAU
+
+   Le repliage mobile (section 7 bis) transforme chaque cellule en « étiquette à gauche,
+   valeur à droite ». Appliqué à la cellule qui porte le détail, il collerait tout un pavé de
+   colis contre le bord droit de l'écran. Cette cellule doit y échapper explicitement.
+   ========================================================================================== */
+titre('Le détail déplié n\'hérite pas de la mise en forme du tableau');
+
+{
+  const style = fs.readFileSync(path.join(APP, 'style.css'), 'utf8');
+  verifier('la cellule de détail ne subit pas le nowrap des tableaux',
+    /\.finance-detail-cell\{[^}]*white-space:normal !important/.test(style),
+    'sinon une description un peu longue repousse la largeur du tableau');
+  verifier('sur téléphone, elle redevient un bloc de texte',
+    /\.recap-table-cards td\.finance-detail-cell\{[^}]*display:block[^}]*text-align:left/.test(style));
+  verifier('et ne porte pas d\'étiquette de colonne',
+    /\.recap-table-cards td\.finance-detail-cell::before\{content:none/.test(style));
+  verifier('la ligne ouverte et son détail se lisent comme un seul bloc',
+    /\.recap-table-cards tr\.finance-detail-ligne\{[^}]*border-top:none/.test(style),
+    'deux cartes séparées, et le détail aurait l\'air d\'appartenir à la cliente suivante');
+  verifier('une ligne cliente se voit cliquable',
+    /\.finance-ligne\{cursor:pointer/.test(style));
 }
 
 /* ==========================================================================================

@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825tableaux3">
-<script src="theme.js?v=20260825tableaux3"></script>
+<link rel="stylesheet" href="style.css?v=20260825finance1">
+<script src="theme.js?v=20260825finance1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -331,7 +331,7 @@
   <div class="clt-toptabs" role="tablist">
   <button type="button" class="clt-toptab active" data-clttab="mes">📦 Mes colis</button>
   <button type="button" class="clt-toptab" data-clttab="recup">🔄 Récupérations</button>
-  <button type="button" class="clt-toptab" data-clttab="tous">📋 Tous</button>
+  <button type="button" class="clt-toptab" data-clttab="finance">💰 Finance</button>
   </div>
   </div>
 
@@ -339,7 +339,7 @@
     <div class="tabs">
       <div class="tab active" id="tab-mes-colis" onclick="showTab('mes')">Mes colis assignés</div>
       <div class="tab" id="tab-recuperations" onclick="showTab('recup')">Récupérations <span class="alert-badge hidden" id="recup-badge">0</span></div>
-      <div class="tab" id="tab-tous-colis" onclick="showTab('tous')">Tout mon historique</div>
+      <div class="tab" id="tab-finance" onclick="showTab('finance')">Finance</div>
     </div>
 
     <div id="panel-mes">
@@ -365,24 +365,22 @@
       </div>
     </div>
 
-    <div id="panel-tous" class="hidden">
-      <div class="page-sub" style="margin:0 0 10px;">Tous les colis qui vous concernent — vos livraisons et vos récupérations, quel que soit leur statut. Vous ne voyez ici que vos propres colis : ceux des autres livreurs ne vous sont pas accessibles.</div>
-      <div class="search-wrap"><input type="text" id="search-tous" class="search-input" placeholder="Rechercher par n° de suivi, téléphone, description, destination ou client..."></div>
-      <div class="date-filter-wrap">
-        <label for="filtre-date-tous">📅 Date</label>
-        <input type="date" id="filtre-date-tous" class="date-filter-input">
-        <button type="button" id="btn-toutes-dates-tous" class="date-filter-clear">Toutes les dates</button>
-      </div>
-      <div class="filters" id="filters-tous"></div>
-      <div class="colis-list" id="tous-colis-list">
+    <!-- Onglet « Finance » — anciennement « Tout mon historique ».
+         Cet onglet ne liste plus les colis : il fait le point d'argent. La journée se choisit
+         avec le calendrier de la carte « L'argent de ma journée », juste au-dessus, qui remonte
+         à n'importe quelle date. Le tableau ci-dessous détaille cette même journée cliente par
+         cliente, et chaque ligne se déplie sur ses colis. -->
+    <div id="panel-finance" class="hidden">
+      <div class="page-sub" style="margin:0 0 10px;">Le point d'argent de la journée choisie au-dessus, cliente par cliente. Touchez une ligne pour voir ses colis un par un : statut, montants et détails.</div>
+      <div id="finance-detail">
         <div class="empty-state">Chargement...</div>
       </div>
     </div>
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825tableaux3"></script>
-<script src="config.js?v=20260825tableaux3"></script>
+<script src="clt-common.js?v=20260825finance1"></script>
+<script src="config.js?v=20260825finance1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -482,25 +480,20 @@
     __realtimeChannels.forEach(ch => supabaseClient.removeChannel(ch));
   });
   let activeFilterMes = 'tous';
-  let activeFilterTous = 'tous';
   let activePanel = 'mes';
   let searchMes = '';
-  let searchTous = '';
   let filtreDateMes = '';
-  let filtreDateTous = '';
 
   // Combien de lignes chaque liste DESSINE réellement. Rien à voir avec COLIS_PAGE_SIZE, qui dit
   // combien de colis sont rapatriés du serveur : on peut avoir tout l'historique en mémoire (donc
   // des compteurs justes) et n'en dessiner que 60. La suite s'ajoute au défilement. Chaque liste
-  // a son propre curseur, sinon dérouler « Tout mon historique » ferait aussi gonfler « Mes
-  // colis », qu'on n'a même pas sous les yeux.
+  // a son propre curseur, sinon dérouler « Récupérations » ferait aussi gonfler « Mes colis »,
+  // qu'on n'a même pas sous les yeux.
   let trancheMes = COLIS_TRANCHE;
   let trancheRecup = COLIS_TRANCHE;
-  let trancheTous = COLIS_TRANCHE;
   // Changer de filtre, de date ou de recherche, c'est demander une autre liste : on la reprend
   // depuis le haut, sinon on garderait une page déjà déroulée sans raison.
   function remettreTrancheMesAZero(){ trancheMes = COLIS_TRANCHE; }
-  function remettreTrancheTousAZero(){ trancheTous = COLIS_TRANCHE; }
 
   // ---------- Sélection multiple de « Mes colis assignés » ----------
   // La sélection vit dans un Set d'IDENTIFIANTS, pas dans les cases du DOM : la liste se
@@ -931,17 +924,28 @@
   const FILTER_LABELS = (typeof STATUT_FILTER_LABELS !== 'undefined') ? STATUT_FILTER_LABELS
     : { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En cours de livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
 
+  // Les trois onglets, sous le nom que le code leur donne. « finance » s'appelait « tous »
+  // jusqu'au 25 août 2026 : un téléphone qui a gardé l'ancien nom en mémoire est réorienté
+  // vers le nouveau, pour ne pas renvoyer sur « Mes colis » quelqu'un qui avait laissé son
+  // application sur le troisième onglet.
+  const ONGLETS = ['mes', 'recup', 'finance'];
+  function normaliserOnglet(nom){
+    if (nom === 'tous') return 'finance';
+    return ONGLETS.includes(nom) ? nom : 'mes';
+  }
+
   function showTab(which){
+    which = normaliserOnglet(which);
     activePanel = which;
     document.getElementById('tab-mes-colis').classList.toggle('active', which === 'mes');
     document.getElementById('tab-recuperations').classList.toggle('active', which === 'recup');
-    document.getElementById('tab-tous-colis').classList.toggle('active', which === 'tous');
+    document.getElementById('tab-finance').classList.toggle('active', which === 'finance');
     document.getElementById('panel-mes').classList.toggle('hidden', which !== 'mes');
     document.getElementById('panel-recup').classList.toggle('hidden', which !== 'recup');
-    document.getElementById('panel-tous').classList.toggle('hidden', which !== 'tous');
+    document.getElementById('panel-finance').classList.toggle('hidden', which !== 'finance');
     document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === which));
     syncBottomNav(which);
-    syncArgentDetail();
+    syncArgentCard();
     try { localStorage.setItem('clt_livreur_tab', which); } catch(e){}
   }
 
@@ -1409,35 +1413,6 @@
     `;
   }
 
-  // Ligne en lecture seule pour « Tout mon historique »
-  function tousColisItemHTML(c, numeroClient){
-    const thumb = c.photo_url
-      ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
-      : `<div class="thumb-placeholder">Pas de photo</div>`;
-    const livreurProfile = c.livreur_id ? profilesById[c.livreur_id] : null;
-    const livreurLine = livreurProfile
-      ? `<div class="livreur-meta">${avatarHTML(livreurProfile, 20)} <span>Livreur : ${escapeHTML(livreurProfile.full_name || 'Livreur')}</span></div>`
-      : '';
-    return `
-      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
-        ${thumb}
-        <div class="info">
-          ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
-          <div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
-          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
-          ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
-          ${collecteLineHTML(c)}
-          <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
-          ${livreurLine}
-          ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
-          ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
-          <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
-        </div>
-        <div class="status-col">${statutBadgeHTML(c.statut)}</div>
-      </div>
-    `;
-  }
-
   function renderMesColis(){
     const list = document.getElementById('mes-colis-list');
     const __anchor = captureScrollAnchor(list);
@@ -1789,40 +1764,19 @@
     restoreScrollAnchor(list, __anchor);
   }
 
-  // Comme « Récupérations », cette liste est strictement en lecture seule (voir tousColisItemHTML :
-  // aucun input, select ni textarea). capturePendingEdits n'y aurait donc rien à sauvegarder.
-  function renderTousColis(){
-    const list = document.getElementById('tous-colis-list');
-    const __anchor = captureScrollAnchor(list);
-    let filtered = activeFilterTous === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilterTous);
-    filtered = filtered.filter(c => matchesSearch(c, searchTous) && matchesDate(c, filtreDateTous));
-    if (!filtered.length) {
-      list.innerHTML = filtreDateTous
-        ? `<div class="empty-state">Aucun colis à cette date.</div>`
-        : `<div class="empty-state">Aucun colis${activeFilterTous !== 'tous' || searchTous ? ' pour ces critères' : ''}.</div>`;
-      appendColisLoadMore(list);
-      restoreScrollAnchor(list, __anchor);
-      return;
-    }
-    const groupsTous = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
-    const trTous = limiterGroupesColis(groupsTous, trancheTous);
-    list.innerHTML = renderGroupedColisHTML(trTous.groups, tousColisItemHTML)
-      + trancheColisPiedHTML(trTous.affiches, trTous.total);
-    brancherTrancheColis(list, () => { trancheTous += COLIS_TRANCHE; renderTousColis(); });
-    // Tant qu'il reste des colis déjà chargés mais pas encore dessinés, on ne propose pas en plus
-    // d'aller chercher de l'historique sur le serveur : deux invitations à charger côte à côte,
-    // c'est incompréhensible.
-    if (!trTous.reste) appendColisLoadMore(list);
-    restoreScrollAnchor(list, __anchor);
-  }
-
-  // Ajoute, si nécessaire, le bouton « Charger plus » en bas de la liste « Tout mon historique ».
+  // Ajoute, si nécessaire, le bouton « Charger plus » au bas de l'onglet Finance.
+  //
+  // Le navigateur ne détient au départ que les COLIS_PAGE_SIZE colis les plus récents. Reculer
+  // le calendrier au-delà de cette fenêtre afficherait « Aucun colis reçu ce jour-là » alors
+  // que la journée existe bel et bien : ce serait un mensonge. Tant que le serveur a encore de
+  // l'historique à donner, on le dit et on propose d'aller le chercher — c'est ce qui permet à
+  // la carte de remonter à n'importe quelle date depuis la disparition de la recherche.
   function appendColisLoadMore(list){
-    if (!colisHasMore) return;
+    if (!colisHasMore || !list) return;
     list.insertAdjacentHTML('beforeend', `
       <div class="load-more-row" style="text-align:center; padding:12px 0;">
-        <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Historique partiel : d'autres colis plus anciens restent à charger.</div>
-        <button type="button" class="btn btn-outline btn-sm" id="btn-load-more-colis" ${colisLoadingMore ? 'disabled' : ''}>${colisLoadingMore ? 'Chargement…' : 'Charger plus de colis'}</button>
+        <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Historique partiel : des journées plus anciennes restent à charger.</div>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-load-more-colis" ${colisLoadingMore ? 'disabled' : ''}>${colisLoadingMore ? 'Chargement…' : 'Charger plus d\'historique'}</button>
       </div>`);
     const btnLoadMoreColis = document.getElementById('btn-load-more-colis');
     if (btnLoadMoreColis) btnLoadMoreColis.addEventListener('click', loadMoreColis);
@@ -1833,7 +1787,6 @@
     renderArgentDuJour();
     renderMesColis();
     renderRecuperations();
-    renderTousColis();
     if (currentUser && currentProfile) updatePositionSharingFromColis();
   }
 
@@ -1875,10 +1828,19 @@
   //   • Total en main        → ce qu'il doit avoir sur lui, et qu'il remettra à CLT.
   // Rien n'est additionné avec les colis pas encore livrés : tant que le colis n'est pas
   // remis, l'argent n'est pas dans la poche du livreur, et l'annoncer serait un mensonge.
+  //
+  // Depuis le 25 août 2026, l'affichage est coupé en deux morceaux qui ne vivent pas au même
+  // endroit de la page :
+  //   • la CARTE, au-dessus des onglets  → les trois chiffres, et rien d'autre. C'est le coup
+  //     d'œil rapide, celui qui suit le livreur sur « Mes colis ».
+  //   • l'onglet FINANCE                 → le tableau cliente par cliente, dépliable colis par
+  //     colis. C'est le point détaillé, celui qu'on fait le soir au moment de la remise.
+  // Les deux parlent toujours de la même journée, celle du calendrier de la carte.
   let argentJourDate = null;
 
   function renderArgentDuJour(){
     const box = document.getElementById('argent-jour-corps');
+    const detail = document.getElementById('finance-detail');
     const input = document.getElementById('argent-jour-date');
     if (!box || !currentUser) return;
     const jour = argentJourDate || todayLocalISODate();
@@ -1887,6 +1849,10 @@
     const duJour = allColis.filter(c => c.livreur_id === currentUser.id && dayKey(c.created_at) === jour);
     if (!duJour.length){
       box.innerHTML = `<div style="font-size:13px; color:#94a3b8;">Aucun colis reçu ce jour-là.</div>`;
+      if (detail){
+        detail.innerHTML = `<div class="empty-state">Aucun colis reçu le ${jourEnClair(jour)}.</div>`;
+        appendColisLoadMore(detail);
+      }
       return;
     }
     const t = totauxArgent(duJour);
@@ -1902,28 +1868,6 @@
         <div style="font-size:11px; color:${x.c}; margin-top:3px;">${x.l}</div>
       </div>`).join('');
 
-    // Détail par cliente : c'est la forme sous laquelle la remise se fait réellement le soir.
-    const parCliente = {};
-    duJour.forEach(c => {
-      const k = c.fournisseur_id || 'inconnu';
-      (parCliente[k] = parCliente[k] || []).push(c);
-    });
-    const lignes = Object.keys(parCliente).map(k => {
-      const tc = totauxArgent(parCliente[k]);
-      return { nom: fournisseurLabel(k), t: tc };
-    }).sort((a, b) => b.t.totalEncaisse - a.t.totalEncaisse);
-
-    // `fournisseurLabel` rend déjà un texte échappé : le repasser dans `escapeHTML` transformait
-    // l'apostrophe de « DST-B'TIK » en « &#39; » affiché tel quel à l'écran.
-    const corpsLignes = lignes.map(l => `
-      <tr>
-        <td data-label="Cliente">${l.nom}</td>
-        <td data-label="Livrés">${l.t.nbLivres} / ${l.t.nb}</td>
-        <td data-label="Articles">${l.t.articleEncaisse ? m(l.t.articleEncaisse) : '<span style="color:#94a3b8;">—</span>'}</td>
-        <td data-label="Livraison">${l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '<span style="color:#94a3b8;">—</span>'}</td>
-        <td data-label="Total"><strong>${l.t.totalEncaisse ? m(l.t.totalEncaisse) : '—'}</strong></td>
-      </tr>`).join('');
-
     // Colis remis sans que l'argent rentre : on le dit franchement plutôt que de laisser un
     // écart inexpliqué entre ce que l'écran annonce et ce que le livreur a réellement sur lui.
     const alerte = t.manquantALaLivraison > 0
@@ -1936,7 +1880,72 @@
         ${t.nbLivres} colis livré${t.nbLivres > 1 ? 's' : ''} sur ${t.nb} reçu${t.nb > 1 ? 's' : ''} ce jour-là.
         Les articles (${m(t.articleEncaisse)}) appartiennent aux clientes : vous les remettez à CLT.
       </div>
-      ${alerte}
+      ${alerte}`;
+
+    renderFinanceDetail(duJour, t, jour);
+  }
+
+  // Journée en toutes lettres, pour les messages ("le mardi 25 août 2026").
+  function jourEnClair(jour){
+    const d = new Date(jour + 'T12:00:00');
+    if (isNaN(d.getTime())) return jour;
+    return d.toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  }
+
+  // ---- Onglet Finance : le tableau cliente par cliente, dépliable ------------------------
+  //
+  // Une ligne du tableau dit « 2 / 4 livrés » et un total. Ça suffit pour faire la remise,
+  // mais pas pour répondre à « lesquels ? » — et c'est justement la question qui se pose quand
+  // le compte ne tombe pas juste. Toucher la ligne déplie donc les colis de cette cliente,
+  // juste en dessous, chacun avec son statut et ses deux montants. Un second appui referme.
+  // On reste sur la même page : rien ne s'ouvre, rien ne remplace l'écran, la ligne grandit.
+  //
+  // Les lignes dépliées sont retenues dans `financeDepliees` (par identifiant de cliente),
+  // parce que ce tableau est redessiné à chaque changement en temps réel : sans cette mémoire,
+  // le détail qu'on est en train de lire se refermerait tout seul sous les yeux du livreur.
+  const financeDepliees = new Set();
+
+  function renderFinanceDetail(duJour, t, jour){
+    const detail = document.getElementById('finance-detail');
+    if (!detail) return;
+    const m = n => formatMontant(n) || '0 FCFA';
+
+    // Détail par cliente : c'est la forme sous laquelle la remise se fait réellement le soir.
+    const parCliente = {};
+    duJour.forEach(c => {
+      const k = c.fournisseur_id || 'inconnu';
+      (parCliente[k] = parCliente[k] || []).push(c);
+    });
+    const lignes = Object.keys(parCliente).map(k => ({
+      cle: k,
+      nom: fournisseurLabel(k),
+      colis: parCliente[k],
+      t: totauxArgent(parCliente[k]),
+    })).sort((a, b) => b.t.totalEncaisse - a.t.totalEncaisse);
+
+    // Une cliente qui n'a plus de colis ce jour-là ne doit pas rester « dépliée » en mémoire.
+    const clesDuJour = new Set(lignes.map(l => l.cle));
+    Array.from(financeDepliees).forEach(k => { if (!clesDuJour.has(k)) financeDepliees.delete(k); });
+
+    // `fournisseurLabel` rend déjà un texte échappé : le repasser dans `escapeHTML` transformait
+    // l'apostrophe de « DST-B'TIK » en « &#39; » affiché tel quel à l'écran.
+    const corpsLignes = lignes.map(l => {
+      const ouverte = financeDepliees.has(l.cle);
+      const cle = echapperAttribut(l.cle);
+      return `
+      <tr class="finance-ligne${ouverte ? ' ouverte' : ''}" data-cliente="${cle}" role="button" tabindex="0" aria-expanded="${ouverte ? 'true' : 'false'}">
+        <td data-label="Cliente"><span class="finance-chevron" aria-hidden="true">${ouverte ? '▾' : '▸'}</span> ${l.nom}</td>
+        <td data-label="Livrés">${l.t.nbLivres} / ${l.t.nb}</td>
+        <td data-label="Articles">${l.t.articleEncaisse ? m(l.t.articleEncaisse) : '<span style="color:#94a3b8;">—</span>'}</td>
+        <td data-label="Livraison">${l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '<span style="color:#94a3b8;">—</span>'}</td>
+        <td data-label="Total"><strong>${l.t.totalEncaisse ? m(l.t.totalEncaisse) : '—'}</strong></td>
+      </tr>
+      <tr class="finance-detail-ligne${ouverte ? '' : ' hidden'}" data-detail="${cle}">
+        <td class="finance-detail-cell" colspan="5">${financeColisHTML(l.colis)}</td>
+      </tr>`;
+    }).join('');
+
+    detail.innerHTML = `
       <div class="recap-table-wrap" id="argent-jour-detail">
         <table class="recap-table recap-table-cards argent-jour-table">
           <thead><tr><th>Cliente</th><th>Livrés</th><th>Articles</th><th>Livraison</th><th>Total</th></tr></thead>
@@ -1950,17 +1959,86 @@
           ])}
         </table>
       </div>`;
-    syncArgentDetail();
+    appendColisLoadMore(detail);
+    brancherFinanceDepliage(detail);
   }
 
-  // Le détail par cliente ne sert qu'au moment de la remise, c'est-à-dire sur l'onglet
-  // Récupérations. Sur « Mes colis », le livreur veut le compte de sa journée en trois chiffres
-  // et rien de plus : le tableau complet y allongeait l'écran sans qu'on le lui ait demandé.
-  // La carte, elle, reste visible partout — c'est le détail seul qui se retire.
-  function syncArgentDetail(){
-    const detail = document.getElementById('argent-jour-detail');
-    if (!detail) return;
-    detail.classList.toggle('hidden', activePanel !== 'recup');
+  // Les colis d'une cliente pour la journée affichée, en lecture seule : rien à modifier ici,
+  // on vient y lire le détail de ce qui a été encaissé ou pas.
+  function financeColisHTML(colis){
+    const m = n => formatMontant(n) || '0 FCFA';
+    const ordre = { livre: 0, en_livraison: 1, recupere: 2, en_attente: 3, non_livre: 4, retour: 5 };
+    const liste = (colis || []).slice().sort((a, b) => {
+      const da = (ordre[a.statut] === undefined ? 9 : ordre[a.statut]);
+      const db = (ordre[b.statut] === undefined ? 9 : ordre[b.statut]);
+      if (da !== db) return da - db;
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+    return liste.map(c => {
+      const art = montantArticleColis(c);
+      const liv = montantLivraisonColis(c);
+      const enMain = montantEnMainDuLivreur(c);
+      const manque = montantManquantALaLivraison(c);
+      const titre = c.description ? escapeHTML(c.description) : '(sans description)';
+      return `
+        <div class="finance-colis">
+          <div class="finance-colis-tete">
+            <div class="finance-colis-titre">
+              ${c.numero ? `<span class="finance-colis-num">${escapeHTML(c.numero)}</span>` : ''}
+              <span>${titre}</span>
+            </div>
+            <div class="finance-colis-badges">${statutBadgeHTML(c.statut)}${paiementBadgeHTML(c)}</div>
+          </div>
+          <div class="finance-colis-lignes">
+            <div><span>Article</span><strong>${art ? m(art) : '—'}</strong></div>
+            <div><span>Livraison</span><strong>${liv ? m(liv) : '—'}</strong></div>
+            <div><span>En main</span><strong style="color:${enMain ? '#1a7d3c' : '#94a3b8'};">${enMain ? m(enMain) : '—'}</strong></div>
+          </div>
+          ${manque > 0 ? `<div class="finance-colis-alerte">⚠️ ${m(manque)} non encaissé sur ce colis pourtant remis.</div>` : ''}
+          ${c.destination ? `<div class="finance-colis-meta">Vers : ${escapeHTML(c.destination)}</div>` : ''}
+          ${c.observation ? `<div class="finance-colis-meta">Observation : ${escapeHTML(c.observation)}</div>` : ''}
+        </div>`;
+    }).join('') || `<div class="finance-colis-meta">Aucun colis.</div>`;
+  }
+
+  // Ouvre/ferme une ligne. On agit sur les classes plutôt que de tout redessiner : le tableau
+  // ne bouge pas, seule la ligne concernée s'ouvre, et la position à l'écran est conservée.
+  //
+  // Le bloc de détail est TOUJOURS le <tr> qui suit immédiatement sa ligne cliente : on le
+  // prend par le voisinage plutôt que par un sélecteur construit autour de l'identifiant.
+  // Un identifiant glissé dans un sélecteur CSS doit être échappé, et la seule façon propre de
+  // le faire — CSS.escape — manque encore sur les vieux navigateurs Android que ces téléphones
+  // embarquent : le dépliage n'aurait tout simplement pas fonctionné chez eux. Le voisinage,
+  // lui, marche partout.
+  function brancherFinanceDepliage(racine){
+    racine.querySelectorAll('.finance-ligne').forEach(tr => {
+      const basculer = () => {
+        const cle = tr.dataset.cliente;
+        const bloc = tr.nextElementSibling;
+        if (!bloc || !bloc.classList.contains('finance-detail-ligne')) return;
+        const ouvre = bloc.classList.contains('hidden');
+        bloc.classList.toggle('hidden', !ouvre);
+        tr.classList.toggle('ouverte', ouvre);
+        tr.setAttribute('aria-expanded', ouvre ? 'true' : 'false');
+        const chevron = tr.querySelector('.finance-chevron');
+        if (chevron) chevron.textContent = ouvre ? '▾' : '▸';
+        if (ouvre) financeDepliees.add(cle); else financeDepliees.delete(cle);
+      };
+      tr.addEventListener('click', basculer);
+      // Au clavier : Entrée ou Espace, comme un bouton.
+      tr.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); basculer(); }
+      });
+    });
+  }
+
+  // La carte « L'argent de ma journée » sert sur « Mes colis » (coup d'œil) et sur « Finance »
+  // (elle porte le calendrier qui choisit la journée du tableau). Sur « Récupérations », le
+  // livreur prépare une tournée : l'argent n'a rien à y faire, et la carte s'efface.
+  function syncArgentCard(){
+    const carte = document.getElementById('argent-jour-card');
+    if (!carte) return;
+    carte.classList.toggle('hidden', activePanel === 'recup');
   }
 
   (function initArgentJour(){
@@ -1989,11 +2067,10 @@
   // colis_select_livreur, en base, ne renvoie au livreur que les colis dont il est le livreur
   // (livreur_id) ou le récupérateur (livreur_collecte_id). La requête ci-dessous demande donc
   // « tous les colis », mais le serveur ne renvoie que les siens — c'est voulu, et c'est la
-  // base qui l'impose, pas le navigateur. L'onglet correspondant s'appelle pour cette raison
-  // « Tout mon historique » et non plus « Tous les colis ».
+  // base qui l'impose, pas le navigateur.
   //
-  // Tant que l'historique complet n'a pas été rapatrié via « Charger plus », les trois listes ne
-  // portent que sur ce sous-ensemble.
+  // Tant que l'historique complet n'a pas été rapatrié via « Charger plus » (onglet Finance),
+  // les listes et le point d'argent ne portent que sur ce sous-ensemble.
   async function loadColis(){
     colisOffset = 0;
     colisHasMore = true;
@@ -2153,23 +2230,15 @@
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 
     function selectFilterMes(val){ activeFilterMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
-    function selectFilterTous(val){ activeFilterTous = val; remettreTrancheTousAZero(); renderFilters('filters-tous', activeFilterTous, selectFilterTous); renderTousColis(); }
     renderFilters('filters-mes', activeFilterMes, selectFilterMes);
-    renderFilters('filters-tous', activeFilterTous, selectFilterTous);
 
     // Recherche avec anti-rebond (debounce) : évite de redessiner la liste à chaque frappe,
     // ce qui est surtout sensible sur mobile avec une longue liste de colis.
     let searchMesTimer = null;
-    let searchTousTimer = null;
     document.getElementById('search-mes').addEventListener('input', (e) => {
       const val = e.target.value;
       clearTimeout(searchMesTimer);
       searchMesTimer = setTimeout(() => { searchMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderMesColis(); }, 350);
-    });
-    document.getElementById('search-tous').addEventListener('input', (e) => {
-      const val = e.target.value;
-      clearTimeout(searchTousTimer);
-      searchTousTimer = setTimeout(() => { searchTous = val; remettreTrancheTousAZero(); renderTousColis(); }, 350);
     });
 
     filtreDateMes = todayLocalISODate();
@@ -2191,16 +2260,6 @@
       if (!lotMesActif) viderSelectionMes();
       majBoutonModeLotMes();
       renderMesColis();
-    });
-
-    filtreDateTous = todayLocalISODate();
-    document.getElementById('filtre-date-tous').value = filtreDateTous;
-    document.getElementById('filtre-date-tous').addEventListener('change', (e) => { filtreDateTous = e.target.value; remettreTrancheTousAZero(); renderTousColis(); });
-    document.getElementById('btn-toutes-dates-tous').addEventListener('click', () => {
-      filtreDateTous = '';
-      document.getElementById('filtre-date-tous').value = '';
-      remettreTrancheTousAZero();
-      renderTousColis();
     });
 
     await loadProfiles();
@@ -2336,9 +2395,9 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
     Récup.
   </button>
-  <button type="button" class="nav" data-nav="tous">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
-    Tous
+  <button type="button" class="nav" data-nav="finance">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>
+    Finance
   </button>
   <button type="button" class="nav" data-nav="compte">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
@@ -2367,8 +2426,8 @@
     // Restaure le dernier onglet consulté après un rechargement.
     try {
       const saved = localStorage.getItem('clt_livreur_tab');
-      if (saved && ['mes','recup','tous'].includes(saved) && typeof showTab === 'function') {
-        showTab(saved);
+      if (saved && typeof showTab === 'function') {
+        showTab(saved); // showTab() traduit lui-même l'ancien nom « tous » en « finance »
       }
     } catch(e){}
 
@@ -2376,11 +2435,10 @@
     function currentContentTab(){
       let cur = 'mes';
       try { cur = localStorage.getItem('clt_livreur_tab') || 'mes'; } catch(e){}
-      if (!['mes','recup','tous'].includes(cur)) cur = 'mes';
-      return cur;
+      return (typeof normaliserOnglet === 'function') ? normaliserOnglet(cur) : 'mes';
     }
     // À la fermeture de la fenêtre « Mon compte », on ré-active l'onglet correspondant au
-    // contenu réellement affiché en dessous (Mes colis, Récup., Tous), pour que « Compte »
+    // contenu réellement affiché en dessous (Mes colis, Récup., Finance), pour que « Compte »
     // ne reste pas sélectionné alors qu'il n'y a plus de contenu « Compte » à l'écran.
     function highlightContentTab(){
       const cur = currentContentTab();

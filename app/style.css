@@ -811,6 +811,24 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
      devient une ligne — et le trait unique se multipliait par le nombre de colonnes, cinq
      barres bleues empilées là où le bloc n'a besoin que de son contour. */
   .recap-table-cards tfoot td{background:none; border-top:none !important;}
+
+  /* Ligne cliente dépliée et son détail : deux <tr> qui doivent se lire comme UN seul bloc.
+     Repliés en cartes, ils devenaient deux cartes séparées par un blanc, et le détail avait
+     l'air d'appartenir à la cliente suivante. On soude donc les deux : la carte du haut perd
+     ses coins bas et son trait du bas, celle du bas les reprend. */
+  .recap-table-cards tr.finance-ligne.ouverte{
+    margin-bottom:0; border-bottom:none; border-bottom-left-radius:0; border-bottom-right-radius:0;
+  }
+  .recap-table-cards tr.finance-detail-ligne{
+    background:var(--white); border:1px solid var(--border); border-top:none;
+    border-radius:0 0 14px 14px; padding:0 0 10px; margin-bottom:10px;
+  }
+  /* La cellule de détail n'est pas une case de tableau : pas d'étiquette à gauche, pas de
+     valeur poussée à droite. C'est un bloc, et il se lit de gauche à droite comme du texte. */
+  .recap-table-cards td.finance-detail-cell{
+    display:block; text-align:left; padding:0 !important; background:none;
+  }
+  .recap-table-cards td.finance-detail-cell::before{content:none;}
 }
 
 /* ---- Récapitulatif par client ---- */
@@ -906,6 +924,54 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
 }
 .recap-row-etat{font-size:11.5px; font-weight:600; color:var(--muted); margin-top:3px;}
 .argent-jour-table th, .argent-jour-table td{padding:8px 10px; font-size:12.5px;}
+
+/* ---- Onglet Finance du livreur : lignes clientes dépliables ------------------------------
+   Une ligne du tableau résume une cliente ("2 / 4 livrés, 47 000 FCFA"). Toucher la ligne
+   ouvre, juste en dessous, la liste de ses colis. Rien ne change de page : le tableau garde
+   sa place et la ligne grandit, pour qu'on ne perde pas des yeux ce qu'on était en train de
+   lire. Le chevron dit dans quel sens ça va, avant même qu'on ait touché. */
+.finance-ligne{cursor:pointer;}
+.finance-ligne:hover td{background:var(--grey-bg);}
+.finance-ligne.ouverte td{background:var(--grey-bg);}
+.finance-ligne:focus-visible{outline:2px solid var(--navy); outline-offset:-2px;}
+.finance-chevron{display:inline-block; width:12px; color:var(--muted); font-size:11px;}
+.finance-detail-ligne.hidden{display:none;}
+
+/* La cellule qui porte le détail ne suit AUCUNE des règles du tableau : ni le nowrap qui
+   couperait les descriptions, ni la mise en colonne repliée du mobile (voir plus bas
+   `.recap-table-cards td`), qui la transformerait en une étiquette suivie d'un pavé collé à
+   droite. C'est un bloc de contenu, pas une case de tableau. */
+.finance-detail-cell{
+  padding:0 0 10px !important; background:var(--grey-bg); white-space:normal !important;
+}
+.finance-colis{
+  background:var(--white); border:1px solid var(--border); border-radius:12px;
+  padding:10px 12px; margin:8px 10px 0;
+}
+.finance-colis-tete{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap;
+}
+.finance-colis-titre{font-size:13px; font-weight:600; color:var(--navy); line-height:1.35;}
+.finance-colis-num{
+  display:inline-block; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size:11.5px; color:var(--muted); background:var(--grey-bg);
+  border-radius:6px; padding:1px 6px; margin-right:6px;
+}
+.finance-colis-badges{display:flex; gap:6px; flex-wrap:wrap; flex-shrink:0;}
+/* Les trois montants du colis. En ligne sur un écran large, empilés sur un téléphone : chaque
+   montant garde son étiquette collée à lui, sinon on lit un chiffre sans savoir de quelle
+   poche il vient — l'erreur exacte qu'on cherche à empêcher partout ailleurs. */
+.finance-colis-lignes{
+  display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;
+}
+.finance-colis-lignes > div{
+  flex:1; min-width:88px; background:var(--grey-bg); border-radius:8px; padding:6px 8px;
+  display:flex; flex-direction:column; gap:2px;
+}
+.finance-colis-lignes span{font-size:10.5px; color:var(--muted); font-weight:600;}
+.finance-colis-lignes strong{font-size:13px; color:var(--navy); font-weight:700;}
+.finance-colis-alerte{margin-top:8px; font-size:11.5px; color:#c0392b; font-weight:600;}
+.finance-colis-meta{margin-top:6px; font-size:11.5px; color:var(--muted); line-height:1.45;}
 
 .stat-tiles{
   display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:12px; margin-bottom:8px;
