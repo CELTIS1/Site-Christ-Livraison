@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825cartes">
-<script src="theme.js?v=20260825cartes"></script>
+<link rel="stylesheet" href="style.css?v=20260825calme">
+<script src="theme.js?v=20260825calme"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -380,8 +380,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825cartes"></script>
-<script src="config.js?v=20260825cartes"></script>
+<script src="clt-common.js?v=20260825calme"></script>
+<script src="config.js?v=20260825calme"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -969,9 +969,12 @@
 
   function renderFilters(containerId, activeFilter, onSelect){
     const box = document.getElementById(containerId);
-    box.innerHTML = Object.keys(FILTER_LABELS).map(key =>
+    // Cette rangée de filtres se parcourt latéralement au doigt. La reconstruire à l'identique
+    // toutes les 25 secondes la ramenait au premier filtre : on ne pouvait pas atteindre les
+    // derniers sur un téléphone. On ne la réécrit donc que si le filtre actif a bougé. (25/08/2026)
+    if (!cltPoserHTML(box, Object.keys(FILTER_LABELS).map(key =>
       `<div class="filter-chip ${activeFilter===key?'active':''}" data-filter="${key}">${FILTER_LABELS[key]}</div>`
-    ).join('');
+    ).join(''))) return;
     box.querySelectorAll('.filter-chip').forEach(chip => {
       chip.addEventListener('click', () => onSelect(chip.dataset.filter));
     });
@@ -1477,10 +1480,10 @@
     lotMesIds.forEach(id => { if (!filtered.some(c => c.id === id)) lotMesIds.delete(id); });
     list.classList.toggle('lot-actif', lotMesActif);
     if (!filtered.length) {
-      list.innerHTML = (filtreDateMes
+      if (!cltPoserHTML(list, (filtreDateMes
         ? `<div class="empty-state">Aucun colis assigné à cette date.</div>`
         : `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`)
-        + (lotMesActif ? barreLotHTML(0, 0, boutonsLotMes(), '') : '');
+        + (lotMesActif ? barreLotHTML(0, 0, boutonsLotMes(), '') : ''))) return;
       if (lotMesActif) brancherBarreLotMes(list, []);
       restoreScrollAnchor(list, __anchor);
       return;
@@ -1498,9 +1501,12 @@
     // La barre annonce `filtered.length` et non le nombre de lignes dessinées : « Tout
     // sélectionner (103) » doit vraiment cocher les 103 colis qui correspondent aux critères,
     // même si la liste n'en montre que 60 pour l'instant.
-    list.innerHTML = renderGroupedColisHTML(trMes.groups, mesColisRowHTML)
+    // Rien n'a changé : on ne détruit pas les cartes. L'abonnement Realtime du livreur porte sur
+    // TOUTE la table des colis — le moindre geste d'un collègue à l'autre bout de la ville
+    // redessinait donc son écran, en pleine saisie de montant. (25/08/2026)
+    if (!cltPoserHTML(list, renderGroupedColisHTML(trMes.groups, mesColisRowHTML)
       + trancheColisPiedHTML(trMes.affiches, trMes.total)
-      + (lotMesActif ? barreLotHTML(lotMesIds.size, filtered.length, boutonsLotMes(), '') : '');
+      + (lotMesActif ? barreLotHTML(lotMesIds.size, filtered.length, boutonsLotMes(), '') : ''))) return;
     brancherTrancheColis(list, () => { trancheMes += COLIS_TRANCHE; renderMesColis(); });
     if (lotMesActif) brancherBarreLotMes(list, filtered);
 
@@ -1837,7 +1843,7 @@
     }
 
     if (!mine.length) {
-      list.innerHTML = `<div class="empty-state">Aucune récupération à effectuer pour le moment.</div>`;
+      cltPoserHTML(list, `<div class="empty-state">Aucune récupération à effectuer pour le moment.</div>`);
       restoreScrollAnchor(list, __anchor);
       return;
     }
@@ -1848,8 +1854,11 @@
     // seules les premières lignes sont dessinées. Un livreur qui appuie sur « Récupéré, tout »
     // doit ramasser les 7 colis, pas seulement ceux qui tenaient à l'écran.
     const trRecup = limiterGroupesColis(groups, trancheRecup);
-    list.innerHTML = renderGroupedColisHTML(trRecup.groups, recupColisRowHTML, recupActionsHTML)
-      + trancheColisPiedHTML(trRecup.affiches, trRecup.total);
+    // Rien n'a changé : les lignes à l'écran sont déjà les bonnes, avec leurs boutons branchés.
+    // On ne les détruit pas — c'est ce qui évitait jusqu'ici de perdre le défilement en pleine
+    // tournée, chaque fois qu'un collègue touchait un colis à l'autre bout de la ville. (25/08/2026)
+    if (!cltPoserHTML(list, renderGroupedColisHTML(trRecup.groups, recupColisRowHTML, recupActionsHTML)
+      + trancheColisPiedHTML(trRecup.affiches, trRecup.total))) { restoreScrollAnchor(list, __anchor); return; }
     brancherTrancheColis(list, () => { trancheRecup += COLIS_TRANCHE; renderRecuperations(); });
 
     list.querySelectorAll('.btn-je-pars').forEach(btn => {
@@ -1961,7 +1970,7 @@
     if (!box || !currentUser) return;
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
     if (!mine.length){
-      box.innerHTML = `<div style="font-size:13px; color:#94a3b8;">Aucun colis assigné pour le moment.</div>`;
+      cltPoserHTML(box, `<div style="font-size:13px; color:#94a3b8;">Aucun colis assigné pour le moment.</div>`);
       return;
     }
     const n = s => mine.filter(c => c.statut === s).length;
@@ -1971,12 +1980,13 @@
       { label: 'Livrés',      count: n('livre'), color: STATUTS.livre.color, bg: STATUTS.livre.bg },
       { label: 'Non livrés',  count: n('non_livre'), color: STATUTS.non_livre.color, bg: STATUTS.non_livre.bg },
     ];
-    box.innerHTML = buckets.map(b => `
+    const tuilesTournee = buckets.map(b => `
       <div style="flex:1; min-width:70px; text-align:center; background:${b.bg}; border-radius:10px; padding:8px 6px;">
         <div style="font-size:20px; font-weight:700; color:${b.color}; line-height:1;">${b.count}</div>
         <div style="font-size:11px; color:${b.color}; margin-top:3px;">${b.label}</div>
       </div>
     `).join('');
+    cltPoserHTML(box, tuilesTournee);
   }
 
   // ---- L'argent de ma journée -----------------------------------------------------------
@@ -2012,10 +2022,12 @@
 
     const duJour = allColis.filter(c => c.livreur_id === currentUser.id && dayKey(c.created_at) === jour);
     if (!duJour.length){
-      box.innerHTML = `<div style="font-size:13px; color:#94a3b8;">Aucun colis reçu ce jour-là.</div>`;
+      cltPoserHTML(box, `<div style="font-size:13px; color:#94a3b8;">Aucun colis reçu ce jour-là.</div>`);
       if (detail){
-        detail.innerHTML = `<div class="empty-state">Aucun colis reçu le ${jourEnClair(jour)}.</div>`;
-        appendColisLoadMore(detail);
+        // L'empreinte porte sur l'état du bouton « Charger plus », qui est ajouté APRÈS coup et
+        // ne figure donc pas dans le HTML comparé.
+        if (cltPoserHTML(detail, `<div class="empty-state">Aucun colis reçu le ${jourEnClair(jour)}.</div>`,
+          (colisHasMore ? '1' : '0') + ':' + (colisLoadingMore ? '1' : '0'))) appendColisLoadMore(detail);
       }
       return;
     }
@@ -2051,14 +2063,14 @@
       ? `<div style="margin-top:6px; font-size:12px; color:#8a4b12; font-weight:600;">🚌 ${m(t.fraisExpedition)} payé${t.nbExpeditions > 1 ? 's' : ''} au transporteur pour ${t.nbExpeditions} expédition${t.nbExpeditions > 1 ? 's' : ''}. Cette somme est retenue sur l'argent de la cliente, pas sur l'argent des livraisons — gardez le reçu de la gare.</div>`
       : '';
 
-    box.innerHTML = `
+    cltPoserHTML(box, `
       <div style="display:flex; gap:8px; flex-wrap:wrap;">${tuiles}</div>
       <div style="margin-top:8px; font-size:12px; color:#64748b;">
         ${t.nbLivres} colis livré${t.nbLivres > 1 ? 's' : ''} sur ${t.nb} reçu${t.nb > 1 ? 's' : ''} ce jour-là.
         Les articles (${m(t.articleEncaisse)}) appartiennent aux clientes : vous les remettez à CLT.
       </div>
       ${noteGare}
-      ${alerte}`;
+      ${alerte}`);
 
     renderFinanceDetail(duJour, t, jour);
   }
@@ -2133,7 +2145,11 @@
       </tr>`;
     }).join('');
 
-    detail.innerHTML = `
+    // Ce tableau se parcourt latéralement au doigt et ses lignes se déplient. Le réécrire à
+    // l'identique toutes les 25 secondes le ramenait à gauche et rebranchait tout pour rien.
+    // L'empreinte porte sur le bouton « Charger plus », ajouté après coup, donc absent du HTML
+    // comparé. (25/08/2026)
+    if (!cltPoserHTML(detail, `
       <div class="recap-table-wrap" id="argent-jour-detail">
         <table class="recap-table recap-table-cards argent-jour-table">
           <thead><tr><th>Cliente</th><th>Livrés</th><th>Articles</th><th>Livraison</th>${colonneGare ? '<th>Gare</th>' : ''}<th>Total</th></tr></thead>
@@ -2150,7 +2166,7 @@
             { texte: m(t.totalEnMain), couleur: '#1a7d3c', label: 'Total' },
           ]))}
         </table>
-      </div>`;
+      </div>`, (colisHasMore ? '1' : '0') + ':' + (colisLoadingMore ? '1' : '0'))) return;
     appendColisLoadMore(detail);
     brancherFinanceDepliage(detail);
   }

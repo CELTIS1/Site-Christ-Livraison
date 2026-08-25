@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825cartes">
-<script src="theme.js?v=20260825cartes"></script>
+<link rel="stylesheet" href="style.css?v=20260825calme">
+<script src="theme.js?v=20260825calme"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1033,10 +1033,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825cartes"></script>
-<script src="config.js?v=20260825cartes"></script>
+<script src="clt-common.js?v=20260825calme"></script>
+<script src="config.js?v=20260825calme"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260825cartes"></script>
+<script src="clt-select-recherche.js?v=20260825calme"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2363,22 +2363,24 @@ if (error) { console.error(error); return; }
 fournisseurs = data;
 const options = '<option value="">— Sélectionner —</option>' +
 data.map(f => `<option value="${f.id}">${escapeHTML(f.company_name || f.full_name || f.id)}</option>`).join('');
+// cltPoserOptions et non `innerHTML = …` : cette fonction est rappelée toutes les 25 secondes et
+// à chaque changement Realtime sur la table profiles — donc plusieurs fois par minute. Écrite
+// telle quelle, elle reconstruisait la liste des clientes à l'identique et faisait retomber le
+// choix en cours à « — Sélectionner — » : la cliente choisie dans « Nouveau colis » disparaissait
+// toute seule, en pleine saisie. (25/08/2026)
 const select = document.getElementById('add-fournisseur');
-select.innerHTML = options;
+cltPoserOptions(select, options);
 // La saisie en lot choisit la même cliente dans la même liste : une seule source, pour que les
 // deux écrans ne puissent pas diverger.
-const selectLot = document.getElementById('lot-fournisseur');
-if (selectLot) selectLot.innerHTML = options;
+cltPoserOptions(document.getElementById('lot-fournisseur'), options);
 populateComptaFournisseurSelect();
 }
 
 function populateComptaFournisseurSelect(){
 const select = document.getElementById('compta-fournisseur');
 if (!select) return;
-const previousValue = select.value;
-select.innerHTML = '<option value="">Tous les clients</option>' +
-fournisseurs.map(f => `<option value="${f.id}">${escapeHTML(f.company_name || f.full_name || f.id)}</option>`).join('');
-select.value = previousValue;
+cltPoserOptions(select, '<option value="">Tous les clients</option>' +
+fournisseurs.map(f => `<option value="${f.id}">${escapeHTML(f.company_name || f.full_name || f.id)}</option>`).join(''));
 }
 
 // Traduit le rôle technique stocké en base en libellé lisible.
@@ -2441,10 +2443,11 @@ updateNotifBadge('pending-badge', pendingAccounts.length);
 refreshSettingsBadge();
 const box = document.getElementById('pending-list');
 if (!pendingAccounts.length) {
-box.innerHTML = `<div class="empty-state">Aucun compte en attente de validation.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Aucun compte en attente de validation.</div>`);
 return;
 }
-box.innerHTML = pendingAccounts.map(pendingRowHTML).join('');
+// Si rien n'a changé, on ne détruit pas les lignes : leurs boutons gardent leurs écouteurs.
+if (!cltPoserHTML(box, pendingAccounts.map(pendingRowHTML).join(''))) return;
 
 box.querySelectorAll('.btn-voir-piece').forEach(btn => {
 btn.addEventListener('click', async () => {
@@ -2548,10 +2551,11 @@ updateNotifBadge('reset-badge', resetRequests.length);
 refreshSettingsBadge();
 const box = document.getElementById('reset-list');
 if (!resetRequests.length) {
-box.innerHTML = `<div class="empty-state">Aucune demande de réinitialisation en attente.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Aucune demande de réinitialisation en attente.</div>`);
 return;
 }
-box.innerHTML = resetRequests.map(resetRowHTML).join('');
+// Si rien n'a changé, on ne détruit pas les lignes : leurs boutons gardent leurs écouteurs.
+if (!cltPoserHTML(box, resetRequests.map(resetRowHTML).join(''))) return;
 
 box.querySelectorAll('.btn-reinitialiser').forEach(btn => {
 btn.addEventListener('click', () => {
@@ -3315,9 +3319,11 @@ const FILTER_LABELS = (typeof STATUT_FILTER_LABELS !== 'undefined') ? STATUT_FIL
 
 function renderFilters(){
 const box = document.getElementById('filters');
-box.innerHTML = Object.keys(FILTER_LABELS).map(key =>
+// Cette rangée se parcourt latéralement au doigt. La reconstruire à l'identique la ramenait au
+// premier filtre : les derniers devenaient inatteignables sur téléphone. (25/08/2026)
+if (!cltPoserHTML(box, Object.keys(FILTER_LABELS).map(key =>
 `<div class="filter-chip ${activeFilter===key?'active':''}" data-filter="${key}">${FILTER_LABELS[key]}</div>`
-).join('');
+).join(''))) return;
 box.querySelectorAll('.filter-chip').forEach(chip => {
 chip.addEventListener('click', () => {
 activeFilter = chip.dataset.filter;
@@ -3615,7 +3621,7 @@ function renderAlertIndicator(){
   badge.classList.remove('hidden');
   banner.classList.remove('hidden');
   banner.style.cursor = 'pointer';
-  banner.innerHTML = `⚠️ ${nonVus.length} colis à examiner (non livré ou retour). <span style="text-decoration:underline; white-space:nowrap;">Toucher une fois examinés ✓</span>`;
+  cltPoserHTML(banner, `⚠️ ${nonVus.length} colis à examiner (non livré ou retour). <span style="text-decoration:underline; white-space:nowrap;">Toucher une fois examinés ✓</span>`);
   banner.onclick = () => {
     const v = getAlertesVues();
     aRisque.forEach(c => v.add(c.id));
@@ -3672,7 +3678,11 @@ const tile = (icon, value, label, tab, color) => `
     <div class="stat-tile-label">${label}</div>
   </div>`;
 const AMBRE = '#E26313', ROUGE = '#c0392b';
-const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+// `set` renvoie true si la tuile a réellement changé. On s'en sert pour ne rebrancher les
+// écouteurs que dans ce cas : jusqu'au 25/08/2026 on en ajoutait trois de plus toutes les
+// 25 secondes sur des tuiles pourtant inchangées, et ils s'empilaient sans jamais être retirés.
+let __tuilesChangees = false;
+const set = (id, html) => { if (cltPoserHTML(document.getElementById(id), html)) __tuilesChangees = true; };
 set('aujourdhui-actions',
   tile('🧾', nbPending,  'Comptes à valider', 'comptes', nbPending  ? AMBRE : '') +
   tile('🔑', nbReset,    'Réinitialisations', 'comptes', nbReset    ? AMBRE : '') +
@@ -3684,6 +3694,7 @@ set('aujourdhui-anomalies',
 set('aujourdhui-argent',
   tile('💵', money(resteARemettre), 'Reste à remettre', 'finances', resteARemettre ? ROUGE : '') +
   tile('📦', nbASolder,             'Colis à solder',   'finances', nbASolder ? ROUGE : ''));
+if (!__tuilesChangees) return;
 document.querySelectorAll('#section-aujourdhui .aujourdhui-tile').forEach(t => {
   const go = () => { if (typeof showEquipeTab === 'function') showEquipeTab(t.dataset.eqtab); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e){} };
   t.addEventListener('click', go);
@@ -4186,6 +4197,20 @@ if (p.debut != null) { try { el.setSelectionRange(p.debut, p.fin); } catch (e) {
 });
 }
 
+// Les tableaux qui accompagnent la liste : alertes, récapitulatif par cliente, rapport du jour,
+// comptabilité, journée en cours. Ils portent sur TOUS les colis chargés, pas seulement sur la
+// tranche affichée — un colis ancien qui change de statut les modifie sans rien changer à la
+// liste visible. Ils sont donc appelés dans les deux cas : quand la liste est redessinée, et
+// quand elle ne l'est pas. Chacun d'eux compare avant d'écrire, de son côté.
+function eqDessinerAnnexes(){
+renderAlertIndicator();
+renderRecapFournisseur();
+renderRapportJour();
+populateMoisSelect();
+renderCompta();
+renderAujourdhui();
+}
+
 function eqDessinerColis(){
 const list = document.getElementById('colis-list');
 const __anchor = captureScrollAnchor(list);
@@ -4200,11 +4225,18 @@ let resteAAfficher = 0;
 // dans la sélection : sinon la barre annoncerait un nombre plus grand que ce qu'elle traiterait.
 eqLotIds.forEach(id => { if (!filtered.some(c => c.id === id)) eqLotIds.delete(id); });
 list.classList.toggle('lot-actif', eqLotActif);
+// __aChange dit si la liste a RÉELLEMENT changé. Quand elle n'a pas changé — c'est le cas le plus
+// fréquent de très loin, puisque cette fonction est rappelée toutes les 25 secondes et à chaque
+// évènement Realtime — on ne détruit rien et on ne rebranche rien. C'est ce qui fait disparaître
+// le tremblement de l'écran, la perte du défilement et la perte des saisies : il n'y a plus de
+// redessin du tout à ces moments-là. (25/08/2026)
+let __aChange = true;
 if (!filtered.length) {
-list.innerHTML = (filtreDateColis
+__aChange = cltPoserHTML(list, (filtreDateColis
 ? `<div class="empty-state">Aucun colis à cette date.</div>`
 : `<div class="empty-state">Aucun colis${activeFilter !== 'tous' || searchColis ? ' pour ces critères' : ''}.</div>`)
-+ (eqLotActif ? barreLotHTML(0, 0, eqBoutonsLot(), eqExtraLotHTML()) : '');
++ (eqLotActif ? barreLotHTML(0, 0, eqBoutonsLot(), eqExtraLotHTML()) : ''), colisHasMore ? '1' : '0');
+if (!__aChange) { eqDessinerAnnexes(); return; }
 if (eqLotActif) eqBrancherBarreLot(list, []);
 } else {
 const groups = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
@@ -4223,9 +4255,14 @@ const tranche = limiterGroupesColis(groups, colisTranche);
 resteAAfficher = tranche.reste;
 // La barre annonce `filtered.length`, pas le nombre de lignes dessinées : « Tout sélectionner
 // (312) » doit vraiment porter sur les 312 colis des critères courants.
-list.innerHTML = renderGroupedColisHTML(tranche.groups, colisRowHTML, equipeCollecteActionHTML)
+__aChange = cltPoserHTML(list, renderGroupedColisHTML(tranche.groups, colisRowHTML, equipeCollecteActionHTML)
 + trancheColisPiedHTML(tranche.affiches, tranche.total)
-+ (eqLotActif ? barreLotHTML(eqLotIds.size, filtered.length, eqBoutonsLot(), eqExtraLotHTML()) : '');
++ (eqLotActif ? barreLotHTML(eqLotIds.size, filtered.length, eqBoutonsLot(), eqExtraLotHTML()) : ''),
+(colisHasMore ? '1' : '0') + ':' + resteAAfficher + ':' + (colisLoadingMore ? '1' : '0'));
+// Rien n'a bougé : les cartes déjà à l'écran sont les bonnes, avec leurs écouteurs, leur
+// défilement et ce qui a été tapé dedans. On s'arrête là — mais on met tout de même à jour les
+// tableaux annexes, qui portent sur l'ensemble des colis et pas seulement sur la tranche visible.
+if (!__aChange) { eqDessinerAnnexes(); return; }
 brancherTrancheColis(list, () => { colisTranche += COLIS_TRANCHE; renderColis(); });
 if (eqLotActif) eqBrancherBarreLot(list, filtered);
 
@@ -4511,12 +4548,7 @@ const btnLoadMoreColis = document.getElementById('btn-load-more-colis');
 if (btnLoadMoreColis) btnLoadMoreColis.addEventListener('click', loadMoreColis);
 }
 
-renderAlertIndicator();
-renderRecapFournisseur();
-renderRapportJour();
-populateMoisSelect();
-renderCompta();
-renderAujourdhui();
+eqDessinerAnnexes();
 restoreScrollAnchor(list, __anchor);
 // On repose ce qui était écrit AVANT de poser la nouvelle référence de saisie, sinon les valeurs
 // reposées seraient prises pour l'état initial et ne seraient plus protégées.
@@ -4686,9 +4718,9 @@ function statutCompteLabel(statut){
 
 function renderAccountFilters(){
 const box = document.getElementById('account-filters');
-box.innerHTML = Object.keys(ACCOUNT_FILTER_LABELS).map(key =>
+if (!cltPoserHTML(box, Object.keys(ACCOUNT_FILTER_LABELS).map(key =>
 `<div class="filter-chip ${activeAccountFilter===key?'active':''}" data-filter="${key}">${ACCOUNT_FILTER_LABELS[key]}</div>`
-).join('');
+).join(''))) return;
 box.querySelectorAll('.filter-chip').forEach(chip => {
 chip.addEventListener('click', () => {
 activeAccountFilter = chip.dataset.filter;
@@ -4785,11 +4817,12 @@ const filtered = activeAccountFilter === 'tous'
   ? allAccounts.filter(a => a.status === 'suspendu')
   : allAccounts.filter(a => a.role === activeAccountFilter));
 if (!filtered.length) {
-box.innerHTML = `<div class="empty-state">${activeAccountFilter === 'suspendus' ? 'Aucun compte suspendu.' : 'Aucun compte' + (activeAccountFilter !== 'tous' ? ' pour ce rôle' : '') + '.'}</div>`;
-appendAccountsLoadMore(box);
+if (cltPoserHTML(box, `<div class="empty-state">${activeAccountFilter === 'suspendus' ? 'Aucun compte suspendu.' : 'Aucun compte' + (activeAccountFilter !== 'tous' ? ' pour ce rôle' : '') + '.'}</div>`, (accountsHasMore ? '1' : '0'))) appendAccountsLoadMore(box);
 return;
 }
-box.innerHTML = filtered.map(accountRowHTML).join('');
+// Si rien n'a changé, on ne détruit pas les lignes : leurs menus d'actions restent branchés, et
+// un menu ouvert ne se referme plus tout seul au bout de vingt-cinq secondes.
+if (!cltPoserHTML(box, filtered.map(accountRowHTML).join(''), (accountsHasMore ? '1' : '0'))) return;
 
 box.querySelectorAll('.actions-menu-btn').forEach(btn => {
 btn.addEventListener('click', (e) => {
@@ -5361,13 +5394,13 @@ function renderActivityLog(){
 const box = document.getElementById('activity-log-list');
 if (!box) return;
 if (!derniereActivite.length) {
-box.innerHTML = `<div class="empty-state">Aucune activité enregistrée.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Aucune activité enregistrée.</div>`);
 return;
 }
 // Le journal est volontairement limité aux 200 dernières activités (c'est un fil de suivi, pas
 // une archive). On l'écrit à l'écran plutôt que de laisser croire que tout y figure.
-box.innerHTML = derniereActivite.map(activityRowHTML).join('')
-+ (derniereActivite.length >= 200 ? `<div style="margin-top:8px; font-size:.9em; color:#666;">Seules les 200 activités les plus récentes sont affichées.</div>` : '');
+cltPoserHTML(box, derniereActivite.map(activityRowHTML).join('')
++ (derniereActivite.length >= 200 ? `<div style="margin-top:8px; font-size:.9em; color:#666;">Seules les 200 activités les plus récentes sont affichées.</div>` : ''));
 }
 
 async function loadActivityLog(){
@@ -5447,7 +5480,7 @@ const body = document.getElementById('recap-body');
 if (!body) return;
 
 if (recapLoadingDay) {
-body.innerHTML = `<div class="empty-state">Chargement du jour…</div>`;
+cltPoserHTML(body, `<div class="empty-state">Chargement du jour…</div>`);
 return;
 }
 
@@ -5455,7 +5488,7 @@ const colisJour = recapDayColis();
 
 // Vue "bilan" d'une cliente choisie.
 if (recapSelectedFournisseur) {
-body.innerHTML = renderRecapBilan(recapSelectedFournisseur, colisJour);
+if (!cltPoserHTML(body, renderRecapBilan(recapSelectedFournisseur, colisJour))) return;
 const back = document.getElementById('recap-back');
 if (back) back.addEventListener('click', () => { recapSelectedFournisseur = null; renderRecapBody(); });
 return;
@@ -5480,7 +5513,7 @@ const totalColis = colisJour.length;
 const totalClients = Object.keys(parClient).length;
 
 if (!totalColis) {
-body.innerHTML = `<div class="empty-state">Aucune cliente enregistrée pour ${dateLabel}.</div>`;
+cltPoserHTML(body, `<div class="empty-state">Aucune cliente enregistrée pour ${dateLabel}.</div>`);
 return;
 }
 
@@ -5498,7 +5531,9 @@ const cards = clients.map(c => `
 
 const tJour = totauxArgent(colisJour);
 
-body.innerHTML = `
+// Ce bloc contient un champ de recherche. Le réécrire à l'identique toutes les 25 secondes
+// suffisait à faire perdre le curseur et les lettres en train d'être tapées dedans.
+if (!cltPoserHTML(body, `
 <div class="recap-day-summary">${dateLabel} · <strong>${totalClients}</strong> cliente${totalClients > 1 ? 's' : ''} · <strong>${totalColis}</strong> colis · <strong>${tJour.nbLivres}</strong> livré${tJour.nbLivres > 1 ? 's' : ''}</div>
 <div class="recap-day-money">
 Articles enregistrés : <strong>${formatMontant(tJour.articleEnregistre) || '0 FCFA'}</strong> ·
@@ -5507,7 +5542,7 @@ Frais de livraison encaissés : <strong>${formatMontant(tJour.livraisonEncaissee
 </div>
 ${recapExportBarHTML()}
 ${recapSearchBarHTML()}
-${clients.length ? `<div class="recap-client-list">${cards}</div>` : `<div class="empty-state">Aucune cliente ne correspond à « ${escapeHTML(recapSearchText)} ».</div>`}`;
+${clients.length ? `<div class="recap-client-list">${cards}</div>` : `<div class="empty-state">Aucune cliente ne correspond à « ${escapeHTML(recapSearchText)} ».</div>`}`)) return;
 
 wireRecapExport();
 wireRecapSearch();
@@ -5758,12 +5793,12 @@ function renderRapportJour(){
 const box = document.getElementById('rapport-jour-content');
 if (!box) return;
 if (!allColis.length) {
-box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Aucun colis pour le moment.</div>`);
 return;
 }
 const groups = groupColisByDayLegacyReport(allColis);
 const days = Object.keys(groups).sort((a, b) => b.localeCompare(a));
-box.innerHTML = days.map(day => `
+cltPoserHTML(box, days.map(day => `
 <div class="day-group">
 <div class="day-group-header">
 <span>${dayLabelLegacyReport(day)}</span>
@@ -5771,7 +5806,7 @@ box.innerHTML = days.map(day => `
 </div>
 <div class="colis-list">${groups[day].map(colisMiniHTML).join('')}</div>
 </div>
-`).join('');
+`).join(''));
 }
 
 function monthKey(iso){
@@ -5791,11 +5826,15 @@ const select = document.getElementById('mois-select');
 if (!select) return;
 const keys = Array.from(new Set(allColis.map(c => monthKey(c.created_at)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
 const previousValue = select.value;
-select.innerHTML = keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('');
+// Reconstruire cette liste ne servait à rien 99 fois sur 100 (les mois disponibles ne changent
+// pas toutes les 25 secondes) et suffisait à faire disparaître le panneau d'une liste déroulante
+// ouverte juste à côté.
+if (cltPoserHTML(select, keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join(''))) {
 if (keys.includes(previousValue)) {
 select.value = previousValue;
 } else if (keys.length) {
 select.value = keys[0];
+}
 }
 renderRapportMois();
 }
@@ -5806,12 +5845,12 @@ const select = document.getElementById('mois-select');
 if (!box || !select) return;
 const selected = select.value;
 if (!selected) {
-box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Aucun colis pour le moment.</div>`);
 return;
 }
 const colisDuMois = allColis.filter(c => monthKey(c.created_at) === selected);
 if (!colisDuMois.length) {
-box.innerHTML = `<div class="empty-state">Aucun colis pour ce mois.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Aucun colis pour ce mois.</div>`);
 return;
 }
 
@@ -5834,7 +5873,8 @@ const cols = statutKeys.map(k => `<td data-label="${STATUTS[k].label}">${r.statu
 return `<tr><td data-label="Client">${fournisseurLabel(r.id)}</td>${cols}<td data-label="Total"><strong>${r.total}</strong></td></tr>`;
 }).join('');
 
-box.innerHTML = `
+// Ce tableau se parcourt latéralement au doigt : le réécrire à l'identique le ramenait à gauche.
+cltPoserHTML(box, `
 <div class="page-sub" style="margin-bottom:14px;">${colisDuMois.length} colis au total pour ${monthLabel(selected)}.</div>
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
@@ -5842,7 +5882,7 @@ box.innerHTML = `
 <tbody>${bodyRows}</tbody>
 </table>
 </div>
-`;
+`);
 }
 
 /* ============================================================================================
@@ -6038,9 +6078,9 @@ if (!summary || !recapBox || !detail) return;
 
 const rows = await comptaFiltered();
 if (!rows.length) {
-summary.innerHTML = '';
-recapBox.innerHTML = `<div class="empty-state">Aucun colis sur cette période.</div>`;
-detail.innerHTML = '';
+cltPoserHTML(summary, '');
+cltPoserHTML(recapBox, `<div class="empty-state">Aucun colis sur cette période.</div>`);
+cltPoserHTML(detail, '');
 renderCaisseLivreur([]);
 return;
 }
@@ -6049,7 +6089,7 @@ const fournisseurId = document.getElementById('compta-fournisseur')?.value || ''
 const t = totauxArgent(rows);
 // Trois chiffres, trois natures. On les nomme en toutes lettres plutôt que « montant total » /
 // « montant livré », qui ne disaient ni de quelle poche il s'agissait ni dans quel état.
-summary.innerHTML = `
+cltPoserHTML(summary, `
 <div class="page-sub">
 ${t.nb} colis · ${t.nbLivres} livré(s) ·
 Articles enregistrés : <strong>${formatMontant(t.articleEnregistre) || '0 FCFA'}</strong> ·
@@ -6057,7 +6097,7 @@ Articles encaissés : <strong>${formatMontant(t.articleEncaisse) || '0 FCFA'}</s
 À reverser aux clientes : <strong style="color:${t.articleADevoir > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(t.articleADevoir) || '0 FCFA'}</strong>
 ${t.manquantALaLivraison > 0 ? ` · <strong style="color:#c0392b;">Non encaissé à la livraison : ${formatMontant(t.manquantALaLivraison)}</strong>` : ''}
 </div>
-`;
+`);
 
 // Récap par vendeuse — c'est le point du soir. On sépare ce qui a été enregistré (activité) de
 // ce qui a été encaissé (argent) : additionner les deux dans une seule colonne « Montant »
@@ -6071,7 +6111,7 @@ parFournisseur[key].push(c);
 const recapRows = Object.keys(parFournisseur)
 .map(id => ({ id, t: totauxArgent(parFournisseur[id]) }))
 .sort((a, b) => b.t.nb - a.t.nb);
-recapBox.innerHTML = `
+cltPoserHTML(recapBox, `
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
 <thead><tr><th>Client</th><th>Colis</th><th>Livrés</th><th>Articles enregistrés</th><th>Articles encaissés</th><th>À reverser</th></tr></thead>
@@ -6097,7 +6137,7 @@ ${piedTotalHTML([
 ])}
 </table>
 </div>
-`;
+`);
 
 // Détail colis par colis, éditable en direct — c'est le point du soir avec LA vendeuse. Pour ne
 // jamais mélanger plusieurs vendeuses dans une même séance d'édition, ce détail éditable
@@ -6111,10 +6151,15 @@ ${piedTotalHTML([
 // Maintenant : « Argent non encaissé », à cocher pour signaler l'EXCEPTION. Par défaut, un colis
 // livré compte comme encaissé, ce qui est le cas neuf fois sur dix.
 if (!fournisseurId) {
-detail.innerHTML = `<div class="empty-state">Choisissez une vendeuse dans le filtre "Client" ci-dessus pour afficher et modifier son récapitulatif détaillé.</div>`;
+cltPoserHTML(detail, `<div class="empty-state">Choisissez une vendeuse dans le filtre "Client" ci-dessus pour afficher et modifier son récapitulatif détaillé.</div>`);
 } else {
 const tDetail = totauxArgent(rows);
-detail.innerHTML = `
+// LE point le plus sensible de toute l'application : ce tableau contient les montants d'article,
+// les cases « argent non encaissé » et les observations, tapés à la main pendant le point du soir
+// avec la vendeuse. Le réécrire à l'identique toutes les 25 secondes effaçait ce qui était en
+// train d'être saisi. On ne le redessine désormais que si les données ont réellement changé.
+// (25/08/2026)
+if (cltPoserHTML(detail, `
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
 <thead><tr><th>Colis</th><th>Client</th><th>Statut</th><th>Article</th><th>Encaissé</th><th>Argent</th><th>Observation</th><th>Date</th><th></th></tr></thead>
@@ -6151,8 +6196,7 @@ ${piedTotalHTML([
 ])}
 </table>
 </div>
-`;
-
+`)) {
 detail.querySelectorAll('.compta-save-row').forEach(btn => {
 btn.addEventListener('click', async () => {
 const tr = btn.closest('tr');
@@ -6180,6 +6224,7 @@ renderCompta();
 });
 });
 }
+}
 
 renderCaisseLivreur(rows);
 }
@@ -6201,7 +6246,7 @@ const box = document.getElementById('caisse-livreur');
 if (!box) return;
 const livres = (rows || []).filter(c => c.statut === 'livre');
 if (!livres.length){
-box.innerHTML = `<div class="empty-state">Aucun colis livré sur cette période.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Aucun colis livré sur cette période.</div>`);
 return;
 }
 const parLivreur = {};
@@ -6220,7 +6265,7 @@ else { parLivreur[key].reste += montant; parLivreur[key].idsAremettre.push(c.id)
 const lignes = Object.keys(parLivreur).map(id => ({ id, ...parLivreur[id] })).sort((a,b) => b.reste - a.reste);
 const somme = (champ) => lignes.reduce((s, r) => s + (Number(r[champ]) || 0), 0);
 const totalManquant = somme('manquant');
-box.innerHTML = `
+if (!cltPoserHTML(box, `
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
 <thead><tr><th>Livreur</th><th>Colis livrés</th><th>Articles</th><th>Livraisons</th><th>Total en main</th><th>Déjà remis</th><th>Reste à remettre</th><th></th></tr></thead>
@@ -6250,7 +6295,7 @@ ${piedTotalHTML([
 ])}
 </table>
 </div>
-`;
+`)) { loadRemisesHistorique(); return; }
 box.querySelectorAll('.caisse-remis-btn').forEach(btn => {
 btn.addEventListener('click', () => {
 const tr = btn.closest('tr');
@@ -6283,17 +6328,17 @@ const { data, error } = await supabaseClient
 .order('created_at', { ascending: false })
 .limit(remisesHistoriqueLimite + 1);
 if (error){
-box.innerHTML = `<div class="empty-state">Historique indisponible pour le moment.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Historique indisponible pour le moment.</div>`);
 return;
 }
 const toutes = data || [];
 const resteAcharger = toutes.length > remisesHistoriqueLimite;
 const rows = resteAcharger ? toutes.slice(0, remisesHistoriqueLimite) : toutes;
 if (!rows.length){
-box.innerHTML = `<div class="empty-state">Aucune remise enregistrée pour l'instant.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Aucune remise enregistrée pour l'instant.</div>`);
 return;
 }
-box.innerHTML = `
+if (!cltPoserHTML(box, `
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
 <thead><tr><th>Date</th><th>Livreur</th><th>Colis</th><th>Attendu</th><th>Reçu</th><th>Écart</th><th>Note</th></tr></thead>
@@ -6321,7 +6366,7 @@ return `<tr>
 <span>${rows.length} remise(s) affichée(s)${resteAcharger ? '' : ' — tout l\'historique est là.'}</span>
 ${resteAcharger ? `<button type="button" class="btn btn-sm btn-outline" id="remises-plus">Afficher ${REMISES_PAR_PAGE} de plus</button>` : ''}
 </div>
-`;
+`)) return;
 const btnPlus = document.getElementById('remises-plus');
 if (btnPlus) btnPlus.addEventListener('click', () => {
 remisesHistoriqueLimite += REMISES_PAR_PAGE;
@@ -6347,17 +6392,19 @@ const { data, error } = await supabaseClient
 .order('jour', { ascending: false })
 .limit(cloturesHistoriqueLimite + 1);
 if (error){
-box.innerHTML = `<div class="empty-state">Historique des clôtures indisponible pour le moment.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Historique des clôtures indisponible pour le moment.</div>`);
 return;
 }
 const toutes = data || [];
 const resteAcharger = toutes.length > cloturesHistoriqueLimite;
 const rows = resteAcharger ? toutes.slice(0, cloturesHistoriqueLimite) : toutes;
 if (!rows.length){
-box.innerHTML = `<div class="empty-state">Aucune journée clôturée pour l'instant.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Aucune journée clôturée pour l'instant.</div>`);
 return;
 }
-box.innerHTML = rows.map(r => {
+// Ces journées sont des <details> qu'on ouvre pour lire le détail. Réécrire la liste à
+// l'identique refermait celle qu'on était en train de lire. (25/08/2026)
+if (!cltPoserHTML(box, rows.map(r => {
 const jour = r.jour ? new Date(r.jour + 'T00:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' }) : '—';
 const ec = Number(r.ecarts_total) || 0;
 const ecCol = ec === 0 ? '#1a7d3c' : (ec < 0 ? '#c0392b' : '#b8860b');
@@ -6396,7 +6443,7 @@ ${r.note ? `<div style="margin-top:8px; font-style:italic; color:var(--muted,#66
 <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:.9em; color:#666;">
 <span>${rows.length} journée(s) affichée(s)${resteAcharger ? '' : ' — tout l\'historique est là.'}</span>
 ${resteAcharger ? `<button type="button" class="btn btn-sm btn-outline" id="clotures-plus">Afficher ${CLOTURES_PAR_PAGE} de plus</button>` : ''}
-</div>`;
+</div>`)) return;
 const btnPlusClotures = document.getElementById('clotures-plus');
 if (btnPlusClotures) btnPlusClotures.addEventListener('click', () => {
 cloturesHistoriqueLimite += CLOTURES_PAR_PAGE;
@@ -6964,7 +7011,7 @@ return map;
 function renderExpressCourses() {
 const box = document.getElementById('express-courses-list');
 if (!expressCourses.length) {
-box.innerHTML = `<div class="empty-state">Aucune course pour le moment.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Aucune course pour le moment.</div>`);
 updateExpressStats();
 return;
 }
@@ -6974,7 +7021,9 @@ const clientsMap = await loadExpressCoursesWithClients();
 const couriersMap = await loadExpressCoursesWithCouriers();
 
 const filtered = expressStatusFilter === 'tous' ? expressCourses : expressCourses.filter(c => c.status === expressStatusFilter);
-box.innerHTML = filtered.map(course => expressCoursRowHTML(course, clientsMap[course.client_id], couriersMap[course.coursier_id])).join('');
+// Les courses Express arrivent en temps réel : sans cette garde, la liste se reconstruisait à
+// chaque évènement, même quand rien n'y changeait. (25/08/2026)
+if (!cltPoserHTML(box, filtered.map(course => expressCoursRowHTML(course, clientsMap[course.client_id], couriersMap[course.coursier_id])).join(''))) { updateExpressStats(); return; }
 
 box.querySelectorAll('.btn-mark-commission').forEach(btn => {
 btn.addEventListener('click', async () => {
@@ -7014,9 +7063,9 @@ commissionsElement.textContent = formatMontant(commissionsDues);
 
 function renderExpressStatusFilters() {
 const box = document.getElementById('express-status-filters');
-box.innerHTML = Object.keys(EXPRESS_STATUS_FILTER_LABELS).map(key =>
+if (!cltPoserHTML(box, Object.keys(EXPRESS_STATUS_FILTER_LABELS).map(key =>
 `<div class="filter-chip ${expressStatusFilter===key?'active':''}" data-filter="${key}">${EXPRESS_STATUS_FILTER_LABELS[key]}</div>`
-).join('');
+).join(''))) return;
 box.querySelectorAll('.filter-chip').forEach(chip => {
 chip.addEventListener('click', () => {
 expressStatusFilter = chip.dataset.filter;
@@ -7079,10 +7128,10 @@ const v = document.getElementById('stat-recharges-validees-jour'); if (v) v.text
 function renderExpressRecharges() {
 const box = document.getElementById('express-recharges-list');
 updateRechargeStats();
-if (!expressRecharges.length) { box.innerHTML = `<div class="empty-state">Aucune recharge pour le moment.</div>`; return; }
+if (!expressRecharges.length) { cltPoserHTML(box, `<div class="empty-state">Aucune recharge pour le moment.</div>`); return; }
 (async () => {
 const names = await rechargeCourierNames();
-box.innerHTML = expressRecharges.map(r => {
+if (!cltPoserHTML(box, expressRecharges.map(r => {
 const p = names[r.coursier_id];
 const who = p ? (p.full_name || 'Coursier') : 'Coursier';
 const pending = r.status === 'en_attente';
@@ -7101,7 +7150,7 @@ ${actions}
 ${expressRechargeBadgeHTML(r.status)}
 </div>
 </div>`;
-}).join('');
+}).join(''))) return;
 
 box.querySelectorAll('.btn-valider-recharge').forEach(btn => {
 btn.addEventListener('click', async () => {

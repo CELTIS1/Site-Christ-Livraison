@@ -763,9 +763,30 @@ function cltSaisieEnregistree(conteneur) {
   __cltRelancerSiPropre(conteneur);
 }
 
+// Une liste déroulante DÉPLOYÉE est une saisie en cours, exactement au même titre qu'un champ
+// dans lequel on écrit. Ce n'était pas le cas jusqu'au 25/08/2026, et c'est ce qui rendait les
+// longues listes impossibles à parcourir : le panneau vit dans le <body>, donc aucune des gardes
+// posées sur les conteneurs ne le voyait. Un rafraîchissement de fond arrivait, remplaçait les
+// <option> du select, l'observateur du composant reconstruisait la liste affichée — et le
+// défilement repartait du haut. Toutes les 25 secondes, sans faute. On croyait que « ça bloque » :
+// en réalité on était sans cesse ramené au début.
+// On ne regarde pas seulement s'il y a un panneau ouvert : on vérifie que la liste concernée
+// appartient bien à la zone qu'on s'apprête à redessiner, sans quoi une liste ouverte dans un
+// coin de la page figerait le rafraîchissement de tout le reste.
+function cltListeDerouleeOuverteDans(conteneur) {
+  const ouverte = window.CLTRecherche && typeof CLTRecherche.ouverte === "function"
+    ? CLTRecherche.ouverte()
+    : null;
+  if (!ouverte) return false;
+  if (!conteneur || conteneur === document || conteneur === document.body) return true;
+  return conteneur.contains(ouverte);
+}
+
 // Y a-t-il, dans cette zone, une saisie qu'un redessin ferait disparaître ?
 function cltSaisieEnCours(conteneur) {
   if (!conteneur) return false;
+  // 0. Une liste déroulante est ouverte dans la zone : on ne la lui retire pas des mains.
+  if (cltListeDerouleeOuverteDans(conteneur)) return true;
   // 1. La personne a le curseur dans un champ de la zone : on ne lui coupe pas les mains.
   const actif = document.activeElement;
   if (actif && actif !== document.body && conteneur.contains(actif) && actif.matches(CLT_CHAMPS_SAISIE)) {
@@ -820,6 +841,10 @@ function __cltSurveillerFinDeSaisie(conteneur) {
   conteneur.addEventListener("focusout", revoir);
   conteneur.addEventListener("input", revoir);
   conteneur.addEventListener("change", revoir);
+  // Refermer une liste déroulante sans rien choisir (Échap, clic à côté) ne produit ni « change »
+  // ni « input ». Sans cette ligne, un rafraîchissement mis en attente à cause d'une liste ouverte
+  // resterait en attente indéfiniment.
+  conteneur.addEventListener("clt-liste-fermee", revoir);
 }
 
 // ---- Pastille « Mise à jour disponible » -----------------------------------------------

@@ -379,9 +379,11 @@ titre('Les trois espaces utilisent bien l\'affichage par tranches');
 // liste de colis : il n'y a donc plus de tranche à couper de ce côté.
 for (const [fichier, attendus] of [['equipe.html', 1], ['livreur.html', 2], ['fournisseur.html', 1]]) {
   const src = fs.readFileSync(path.join(APP, fichier), 'utf8');
-  // On compte les APPELS (« innerHTML = renderGroupedColisHTML(… »), pas les mentions du nom
-  // dans les commentaires explicatifs, sinon le contrôle se déclencherait à tort.
-  const rendus = (src.match(/=\s*renderGroupedColisHTML\(/g) || []).length;
+  // On compte les APPELS, pas les mentions du nom dans les commentaires explicatifs, sinon le
+  // contrôle se déclencherait à tort. Deux écritures sont acceptées : l'ancienne
+  // « innerHTML = renderGroupedColisHTML(… » et celle du 25/08/2026,
+  // « cltPoserHTML(list, renderGroupedColisHTML(… », qui compare avant d'écrire.
+  const rendus = (src.match(/(=|,)\s*renderGroupedColisHTML\(/g) || []).length;
   const coupes = (src.match(/limiterGroupesColis\(/g) || []).length;
   const pieds = (src.match(/trancheColisPiedHTML\(/g) || []).length;
   const branches = (src.match(/brancherTrancheColis\(/g) || []).length;

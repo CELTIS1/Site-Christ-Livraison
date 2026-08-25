@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825cartes">
-<script src="theme.js?v=20260825cartes"></script>
+<link rel="stylesheet" href="style.css?v=20260825calme">
+<script src="theme.js?v=20260825calme"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -466,10 +466,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825cartes"></script>
-<script src="config.js?v=20260825cartes"></script>
+<script src="clt-common.js?v=20260825calme"></script>
+<script src="config.js?v=20260825calme"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260825cartes"></script>
+<script src="clt-select-recherche.js?v=20260825calme"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2418,12 +2418,20 @@
     const filtered = mesColis.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDate));
     // Colis déjà chargés mais pas encore dessinés (voir plus bas, bouton « Charger plus »).
     let resteAAfficher = 0;
+    // __aChange dit si la liste a RÉELLEMENT changé. Quand elle n'a pas changé — le cas le plus
+    // fréquent, puisque cette fonction est rappelée à chaque évènement temps réel — on ne détruit
+    // rien : les cartes gardent leurs écouteurs, le défilement reste où il est, et la copie en
+    // cours de vérification (« Dupliquer ») n'est pas déplacée sous les doigts. (25/08/2026)
+    let __aChange = true;
+    // L'empreinte porte sur ce qui gouverne le bouton « Charger plus », ajouté APRÈS coup et donc
+    // absent du HTML comparé.
+    const __emp = () => (colisHasMore ? '1' : '0') + ':' + resteAAfficher + ':' + (colisLoadingMore ? '1' : '0');
     if (!mesColis.length) {
-      list.innerHTML = `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`;
+      __aChange = cltPoserHTML(list, `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`, __emp());
     } else if (!filtered.length) {
-      list.innerHTML = filtreDate
+      __aChange = cltPoserHTML(list, filtreDate
         ? `<div class="empty-state">Aucun colis enregistré à cette date.</div>`
-        : `<div class="empty-state">Aucun colis ne correspond à cette recherche.</div>`;
+        : `<div class="empty-state">Aucun colis ne correspond à cette recherche.</div>`, __emp());
     } else if (filtreDate) {
       // Une date précise est choisie : la liste est déjà limitée à cette journée,
       // inutile de répéter l'en-tête "📅 ..." (déjà visible dans le sélecteur de date).
@@ -2432,19 +2440,27 @@
       // annonce le total pour que personne ne croie que des colis ont disparu.
       const vus = filtered.slice(0, trancheColis);
       resteAAfficher = filtered.length - vus.length;
-      list.innerHTML = vus.map((c, i) => colisItemHTML(c, filtered.length - i)).join('')
-        + trancheColisPiedHTML(vus.length, filtered.length);
-      attachColisHandlers(list);
-      brancherTrancheColis(list, () => { trancheColis += COLIS_TRANCHE; renderColisList(); });
+      __aChange = cltPoserHTML(list, vus.map((c, i) => colisItemHTML(c, filtered.length - i)).join('')
+        + trancheColisPiedHTML(vus.length, filtered.length), __emp());
+      if (__aChange) {
+        attachColisHandlers(list);
+        brancherTrancheColis(list, () => { trancheColis += COLIS_TRANCHE; renderColisList(); });
+      }
     } else {
       const groups = groupColisByDay(filtered);
       const tranche = limiterGroupesColis(groups, trancheColis);
       resteAAfficher = tranche.reste;
-      list.innerHTML = renderGroupedColisHTML(tranche.groups, colisItemHTML)
-        + trancheColisPiedHTML(tranche.affiches, tranche.total);
-      attachColisHandlers(list);
-      brancherTrancheColis(list, () => { trancheColis += COLIS_TRANCHE; renderColisList(); });
+      __aChange = cltPoserHTML(list, renderGroupedColisHTML(tranche.groups, colisItemHTML)
+        + trancheColisPiedHTML(tranche.affiches, tranche.total), __emp());
+      if (__aChange) {
+        attachColisHandlers(list);
+        brancherTrancheColis(list, () => { trancheColis += COLIS_TRANCHE; renderColisList(); });
+      }
     }
+    // Rien n'a bougé dans la liste : on s'arrête là, mais les tableaux qui l'accompagnent — le
+    // sélecteur de mois et le récapitulatif du jour — portent sur TOUS les colis et pas seulement
+    // sur la tranche visible. Ils doivent être mis à jour dans les deux cas.
+    if (!__aChange) { populateMoisSelect(); renderColisDuJour(); return; }
     // Tant qu'il reste des colis déjà chargés mais pas encore dessinés, on ne propose pas EN PLUS
     // d'aller chercher de l'historique sur le serveur : deux invitations à charger côte à côte,
     // c'est incompréhensible.
@@ -2478,7 +2494,7 @@
 
     const list = document.getElementById('colis-list');
     if (error) {
-      list.innerHTML = `<div class="empty-state">Erreur de chargement.</div>`;
+      cltPoserHTML(list, `<div class="empty-state">Erreur de chargement.</div>`);
       return;
     }
     mesColis = data;
@@ -2517,8 +2533,8 @@
       .select('*')
       .maybeSingle();
     if (error) {
-      tiles.innerHTML = `<div class="empty-state">Relevé indisponible pour le moment.</div>`;
-      if (detail) detail.innerHTML = '';
+      cltPoserHTML(tiles, `<div class="empty-state">Relevé indisponible pour le moment.</div>`);
+      if (detail) cltPoserHTML(detail, '');
       return;
     }
     const r = data || { colis_livres:0, total_encaisse_pour_vous:0, deja_reverse:0, reste_a_percevoir:0, colis_a_reverser:0 };
@@ -2548,18 +2564,18 @@
     ).concat([
       { icon:'⏳', value:money(net), label:'CLT vous doit', color:'#E26313', bg:'#FBE2CE' },
     ]);
-    tiles.innerHTML = cards.map(t => `
+    cltPoserHTML(tiles, cards.map(t => `
       <div class="stat-tile" style="--tile-color:${t.color}; --tile-bg:${t.bg}">
         <div class="stat-tile-icon">${t.icon}</div>
         <div class="stat-tile-value">${t.value}</div>
         <div class="stat-tile-label">${t.label}</div>
-      </div>`).join('');
+      </div>`).join(''));
     // L'historique se charge en parallèle : s'il est indisponible (vue pas encore créée), le
     // relevé s'affiche quand même normalement.
     loadHistoriqueReversements();
     if (!detail) return;
     if (!r.colis_a_reverser) {
-      detail.innerHTML = `<div style="font-size:12.5px; color:var(--muted);">Aucun colis en attente de reversement. ✔️</div>`;
+      cltPoserHTML(detail, `<div style="font-size:12.5px; color:var(--muted);">Aucun colis en attente de reversement. ✔️</div>`);
       return;
     }
     // Détail des colis livrés & encaissés, pas encore reversés (les plus anciens d'abord).
@@ -2572,7 +2588,7 @@
       .is('reverse_au_fournisseur_at', null)
       .order('created_at', { ascending: true })
       .limit(100);
-    if (err2 || !aReverser || !aReverser.length) { detail.innerHTML = ''; return; }
+    if (err2 || !aReverser || !aReverser.length) { cltPoserHTML(detail, ''); return; }
     // Colis par colis, l'avance d'expédition est nommée sous la ligne qu'elle diminue. C'est
     // à cet endroit-là qu'on répond à « pourquoi ce colis me rapporte moins que le montant
     // que j'avais annoncé ? » — la question se pose sur un colis précis, pas sur un total.
@@ -2592,9 +2608,9 @@
     // La requête est plafonnée à 100 lignes. Si le plafond est atteint, on le dit : le total en
     // FCFA affiché plus haut reste juste, mais ce détail ne montre alors que les plus anciens.
     const plafondAtteint = aReverser.length >= 100;
-    detail.innerHTML = `
+    cltPoserHTML(detail, `
       <div style="font-size:13px; font-weight:600; margin:4px 0 6px;">En attente de reversement${plafondAtteint ? ' (100 plus anciens)' : ` (${aReverser.length})`}</div>
-      ${rows}`;
+      ${rows}`);
   }
 
   // ---- Historique des reversements ------------------------------------------------------
@@ -2614,9 +2630,9 @@
       .from('historique_reversements_fournisseur')
       .select('jour, nb_colis, montant_reverse')
       .order('jour', { ascending: false, nullsFirst: false });
-    if (error) { box.innerHTML = ''; return; }
+    if (error) { cltPoserHTML(box, ''); return; }
     const lignes = data || [];
-    if (!lignes.length) { box.innerHTML = ''; return; }
+    if (!lignes.length) { cltPoserHTML(box, ''); return; }
 
     const visibles = lignes.slice(0, reversementsAffiches);
     const resteAafficher = lignes.length > visibles.length;
@@ -2627,7 +2643,9 @@
         : d.toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
     };
 
-    box.innerHTML = `
+    // Si rien n'a changé, on ne redessine pas : le bouton « Afficher plus » garde son écouteur et
+    // la liste ne saute pas sous les yeux. (25/08/2026)
+    if (!cltPoserHTML(box, `
       <div style="font-size:13px; font-weight:600; margin:0 0 6px;">Historique des reversements</div>
       ${visibles.map(l => `
         <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
@@ -2637,7 +2655,7 @@
       <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:12px; color:var(--muted);">
         <span>${visibles.length} reversement(s) affiché(s)${resteAafficher ? '' : ' — historique complet.'}</span>
         ${resteAafficher ? `<button type="button" class="btn btn-sm btn-outline" id="reversements-plus">Afficher plus</button>` : ''}
-      </div>`;
+      </div>`)) return;
 
     const btnPlus = document.getElementById('reversements-plus');
     if (btnPlus) btnPlus.addEventListener('click', () => {
@@ -2693,11 +2711,15 @@
     const select = document.getElementById('mois-select');
     const keys = Array.from(new Set(mesColis.map(c => monthKey(c.created_at)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
     const previousValue = select.value;
-    select.innerHTML = keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('');
-    if (keys.includes(previousValue)) {
-      select.value = previousValue;
-    } else if (keys.length) {
-      select.value = keys[0];
+    // Les mois disponibles ne changent pas toutes les 25 secondes. Reconstruire cette liste à
+    // l'identique suffisait pourtant à faire disparaître le panneau d'une liste déroulante
+    // ouverte juste à côté, et à ramener le choix au premier mois. (25/08/2026)
+    if (cltPoserHTML(select, keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join(''))) {
+      if (keys.includes(previousValue)) {
+        select.value = previousValue;
+      } else if (keys.length) {
+        select.value = keys[0];
+      }
     }
     renderRecapMois();
   }
@@ -2706,8 +2728,9 @@
     const jourSelect = document.getElementById('jour-select');
     const previousValue = jourSelect.value;
     const options = groups.map(g => `<option value="${g.key}">${g.label}</option>`).join('');
-    jourSelect.innerHTML = `<option value="">Tous les jours</option>${options}`;
-    jourSelect.value = groups.some(g => g.key === previousValue) ? previousValue : '';
+    if (cltPoserHTML(jourSelect, `<option value="">Tous les jours</option>${options}`)) {
+      jourSelect.value = groups.some(g => g.key === previousValue) ? previousValue : '';
+    }
   }
 
   // Récapitulatif du JOUR sélectionné, présenté comme la carte « Ma tournée » du livreur :
@@ -2728,7 +2751,7 @@
       { label:'Livrés', count:n('livre'), color:STATUTS.livre.color, bg:STATUTS.livre.bg },
       { label:'Non livrés', count:n('non_livre'), color:STATUTS.non_livre.color, bg:STATUTS.non_livre.bg },
     ];
-    box.innerHTML = buckets.map(b => `<div style="flex:1; min-width:70px; text-align:center; background:${b.bg}; border-radius:10px; padding:8px 6px;"><div style="font-size:20px; font-weight:700; color:${b.color}; line-height:1;">${b.count}</div><div style="font-size:11px; color:${b.color}; margin-top:3px;">${b.label}</div></div>`).join('');
+    cltPoserHTML(box, buckets.map(b => `<div style="flex:1; min-width:70px; text-align:center; background:${b.bg}; border-radius:10px; padding:8px 6px;"><div style="font-size:20px; font-weight:700; color:${b.color}; line-height:1;">${b.count}</div><div style="font-size:11px; color:${b.color}; margin-top:3px;">${b.label}</div></div>`).join(''));
 
     const libelle = document.getElementById('colis-jour-libelle');
     if (libelle) {
@@ -2736,7 +2759,7 @@
       libelle.textContent = `${jourTexte} · ${duJour.length} colis enregistré${duJour.length > 1 ? 's' : ''}`;
     }
     const montantEl = document.getElementById('colis-jour-montant');
-    if (montantEl) montantEl.innerHTML = duJour.length ? ligneArgentCliente(duJour) : '';
+    if (montantEl) cltPoserHTML(montantEl, duJour.length ? ligneArgentCliente(duJour) : '');
   }
 
   // Une seule façon d'écrire l'argent dans tout l'espace cliente, pour que le récap du jour,
@@ -2762,13 +2785,13 @@
     const select = document.getElementById('mois-select');
     const selected = select.value;
     if (!selected) {
-      box.innerHTML = `<div class="empty-state">Aucun colis pour le moment.</div>`;
+      cltPoserHTML(box, `<div class="empty-state">Aucun colis pour le moment.</div>`);
       populateJourSelect([]);
       return;
     }
     const colisDuMois = mesColis.filter(c => monthKey(c.created_at) === selected);
     if (!colisDuMois.length) {
-      box.innerHTML = `<div class="empty-state">Aucun colis pour ce mois.</div>`;
+      cltPoserHTML(box, `<div class="empty-state">Aucun colis pour ce mois.</div>`);
       populateJourSelect([]);
       return;
     }
@@ -2783,12 +2806,12 @@
         g.items.forEach(c => { compteJour[c.statut] = (compteJour[c.statut] || 0) + 1; });
         const livresJour = compteJour['livre'] || 0;
         const tauxJour = g.items.length ? Math.round((livresJour / g.items.length) * 100) : 0;
-        box.innerHTML = `
+        cltPoserHTML(box, `
           <div class="day-recap-back" onclick="selectRecapDay('')">← Voir tout le mois</div>
           <p class="recap-phrase">Le <strong>${g.label}</strong>, vous avez enregistré <strong>${g.items.length} colis</strong>, dont <strong>${livresJour}</strong> livré${livresJour > 1 ? 's' : ''} avec succès (${tauxJour}%).</p>
           <p class="recap-montant">${ligneArgentCliente(g.items)}</p>
           ${statTilesHTML(compteJour, g.items.length)}
-        `;
+        `);
         return;
       }
     }
@@ -2811,14 +2834,14 @@
         </div>`;
     }).join('');
 
-    box.innerHTML = `
+    cltPoserHTML(box, `
       <p class="recap-phrase">En <strong>${monthLabel(selected)}</strong>, vous avez enregistré <strong>${colisDuMois.length} colis</strong>, dont <strong>${livres}</strong> livré${livres > 1 ? 's' : ''} avec succès (${taux}%).</p>
       <p class="recap-montant">${ligneArgentCliente(colisDuMois)}</p>
       ${trendChartHTML(groups)}
       ${statTilesHTML(compte, colisDuMois.length)}
       <div class="day-recap-title">Détail par jour</div>
       <div class="day-recap-list">${joursHTML}</div>
-    `;
+    `);
   }
 
   function selectRecapDay(key){

@@ -432,6 +432,10 @@
       wrap.classList.remove('clt-rs--ouvert');
       if (instanceOuverte === api) instanceOuverte = null;
       if (rendreLeFocus) { try { champ.focus(); } catch (e) {} }
+      // Tant que la liste était déployée, les rafraîchissements de fond étaient mis en attente
+      // (voir cltSaisieEnCours dans config.js). Refermer sans rien choisir ne produit aucun
+      // évènement standard : on en émet un, sinon l'attente ne se déboucherait jamais.
+      try { select.dispatchEvent(new CustomEvent('clt-liste-fermee', { bubbles: true })); } catch (e) {}
     }
 
     /* ---------- Évènements ---------- */
@@ -501,11 +505,37 @@
     /* Les <option> sont souvent remplacées après coup (chargement des livreurs,
        des clientes…). On surveille donc le contenu du select pour rafraîchir
        le libellé affiché et, si le panneau est ouvert, la liste elle-même. */
+    /* CORRECTION DU 25/08/2026 — la liste ne se laissait pas parcourir jusqu'en bas
+       -----------------------------------------------------------------------------
+       Cet observateur reconstruisait la liste affichée à CHAQUE remplacement des <option>, même
+       lorsque les options remplacées étaient identiques aux précédentes — ce qui est le cas
+       général, puisque l'application recharge la liste des clientes toutes les 25 secondes et à
+       chaque évènement Realtime. Reconstruire, c'est vider `liste` : le défilement repartait donc
+       du haut, en pleine lecture. On croyait que « ça bloque » ; en réalité on était ramené au
+       début toutes les 25 secondes.
+       Deux garde-fous : on ne redessine que si le contenu a VRAIMENT changé, et si on redessine
+       malgré tout pendant que la liste est ouverte, on repose la position de défilement. */
+    function signatureOptions() {
+      var parts = [];
+      for (var i = 0; i < select.options.length; i++) {
+        var o = select.options[i];
+        parts.push(o.value + '\u0001' + (o.textContent || '').trim() + '\u0001' + (o.disabled ? '1' : '0'));
+      }
+      return parts.join('\u0002');
+    }
+    var derniereSignature = signatureOptions();
+
     var observateurOptions = null;
     if (window.MutationObserver) {
       observateurOptions = new MutationObserver(function () {
         majLibelle();
-        if (!panneau.hidden) rendre();
+        var sig = signatureOptions();
+        if (sig === derniereSignature) return;   // rien n'a bougé : on ne touche à rien
+        derniereSignature = sig;
+        if (panneau.hidden) return;
+        var position = liste.scrollTop;
+        rendre();
+        liste.scrollTop = position;
       });
       observateurOptions.observe(select, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
     }
@@ -569,7 +599,18 @@
     if (r.bottom < 0 || r.top > window.innerHeight) { instanceOuverte.fermer(); return; }
     instanceOuverte.positionner();
   }
-  window.addEventListener('scroll', repositionner, true);
+
+  /* L'écoute du défilement est posée en phase de CAPTURE, donc elle voit aussi le défilement de
+     la liste elle-même — un doigt ou une molette qui parcourt les noms déclenchait un
+     repositionnement du panneau à chaque cran. Sur un ordinateur cela se voyait comme un
+     tremblement ; c'est le « ça vibre » du 25/08/2026. Le panneau n'a aucune raison de bouger
+     quand c'est SON contenu qui défile : seul le défilement de la PAGE le concerne. */
+  function surDefilement(e) {
+    var cible = e.target;
+    if (cible && cible.closest && cible.closest('.clt-rs__panneau')) return;
+    repositionner();
+  }
+  window.addEventListener('scroll', surDefilement, true);
   window.addEventListener('resize', repositionner);
 
   /* Le clavier virtuel ne rétrécit pas la fenêtre au sens de `window.innerHeight` : il se pose
@@ -635,6 +676,14 @@
       var el = (typeof cible === 'string') ? document.querySelector(cible) : cible;
       if (el && el.__cltRecherche) el.__cltRecherche.rafraichir();
     },
-    balayer: balayer
+    balayer: balayer,
+    /* Le <select> de la liste actuellement déployée, ou null. Sert aux gardes qui protègent la
+       saisie en cours (config.js) : une liste ouverte doit suspendre les rafraîchissements de
+       fond, sinon on se fait reconstruire la liste sous les yeux en plein choix. On renvoie le
+       select et non le panneau, parce que c'est le select qui est à sa place dans la page et
+       permet de savoir DE QUELLE zone il s'agit ; le panneau, lui, vit dans le <body>. */
+    ouverte: function () {
+      return instanceOuverte ? instanceOuverte.select : null;
+    }
   };
 })();

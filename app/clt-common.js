@@ -83,6 +83,66 @@ function getInitials(name) {
   return (first + last).toUpperCase();
 }
 
+// ---------- Ne jamais réécrire à l'identique ----------
+// LE PROBLÈME (signalé le 25 août 2026)
+// « Ça continue de s'actualiser, s'actualiser ; quand ça s'actualise, ça vibre, et les données
+//   saisies s'effacent. »
+//
+// Le « ça vibre » n'est pas une vibration du téléphone : c'est l'écran qui saute. Toutes les
+// 25 secondes — et à chaque évènement Realtime, donc à chaque fois qu'un livreur touche un colis
+// n'importe où sur le terrain — les écrans se redessinent d'un bloc. Or dans l'immense majorité
+// des cas, ce qui est recalculé est RIGOUREUSEMENT IDENTIQUE à ce qui est déjà affiché. On
+// détruisait donc le contenu de la page pour le remplacer par lui-même, plusieurs fois par
+// minute. Le navigateur, lui, ne le sait pas : il jette les nœuds, il en refabrique, il perd au
+// passage la position de défilement, la valeur choisie dans les listes, le curseur, et le
+// panneau d'une liste déroulante ouverte. D'où les trois symptômes à la fois.
+//
+// LA RÈGLE
+// On compare avant d'écrire. Si le HTML calculé est le même que celui en place, on ne touche à
+// RIEN — pas un nœud. C'est la correction la plus efficace des trois, parce qu'elle supprime
+// l'immense majorité des redessins au lieu d'essayer de les rendre inoffensifs.
+//
+// On ne RELIT pas element.innerHTML pour comparer, pour deux raisons. D'abord parce que c'est
+// coûteux : le navigateur re-sérialise tout le sous-arbre, et sur une liste de trois cents colis
+// cela reviendrait à payer une bonne partie du prix qu'on cherche justement à éviter. Ensuite
+// parce que le texte relu n'est presque jamais identique à celui écrit — le navigateur normalise
+// les guillemets et l'ordre des attributs, et plusieurs écrans ajoutent une ligne à la fin après
+// coup. On compare donc ce qu'on GÉNÈRE à ce qu'on avait généré la fois précédente : deux textes
+// produits par le même code, donc réellement comparables.
+// `empreinte` permet d'ajouter à la comparaison un état qui ne figure pas dans le HTML posé mais
+// dont dépend ce qui sera ajouté ensuite (le bouton « Charger plus », par exemple).
+// Renvoie true si le DOM a réellement été modifié, false s'il n'y avait rien à faire.
+const __cltDernierHTML = new WeakMap();
+function cltPoserHTML(element, html, empreinte) {
+  if (!element) return false;
+  const cle = html + (empreinte === undefined ? "" : "\u0003" + empreinte);
+  // `childNodes.length` : si quelque chose a vidé l'élément entre-temps, la mémoire ne vaut plus
+  // rien et il faut redessiner, sans quoi l'écran resterait blanc.
+  if (__cltDernierHTML.get(element) === cle && element.childNodes.length) return false;
+  __cltDernierHTML.set(element, cle);
+  element.innerHTML = html;
+  return true;
+}
+
+// Même principe pour les listes déroulantes, avec une précaution de plus : remplacer les
+// <option> remet le choix à zéro. La liste des clientes était reconstruite toutes les 25 s sans
+// rien préserver — la cliente sélectionnée dans « Nouveau colis » disparaissait donc toute seule,
+// sans que personne ne comprenne pourquoi. On repose le choix après coup, et s'il n'existe plus
+// (compte supprimé), on retombe proprement sur l'entrée vide plutôt que sur la première de la
+// liste, qui serait un choix que personne n'a fait.
+function cltPoserOptions(select, html) {
+  if (!select) return false;
+  if (__cltDernierHTML.get(select) === html && select.options.length) return false;
+  __cltDernierHTML.set(select, html);
+  const choix = select.value;
+  select.innerHTML = html;
+  if (choix) {
+    select.value = choix;
+    if (select.value !== choix) select.value = "";
+  }
+  return true;
+}
+
 // ---------- Choix d'image (caméra + bibliothèque) ----------
 // Relie un ou plusieurs inputs "file" à une même fonction de traitement, en validant que c'est
 // bien une image de moins de 15 Mo. La valeur de l'input est réinitialisée à chaque fois pour

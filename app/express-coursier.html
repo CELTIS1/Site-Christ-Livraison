@@ -17,8 +17,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825cartes">
-<script src="theme.js?v=20260825cartes"></script>
+<link rel="stylesheet" href="style.css?v=20260825calme">
+<script src="theme.js?v=20260825calme"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   .topbar{ background:#0D9488; }
@@ -583,7 +583,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825cartes"></script>
+<script src="clt-common.js?v=20260825calme"></script>
 <script src="express-config.js?v=20260819saisie1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
@@ -865,10 +865,13 @@
       note = `<div class="dispatch-note dispatch-note-warn">⚠️ Impossible de charger les courses proches. Réessayez dans un instant.</div>`;
     }
     if (!disponibles.length) {
-      box.innerHTML = note + `<div class="empty-state">Aucune course proche pour le moment. Restez disponible, une nouvelle demande peut arriver à tout moment.</div>`;
+      cltPoserHTML(box, note + `<div class="empty-state">Aucune course proche pour le moment. Restez disponible, une nouvelle demande peut arriver à tout moment.</div>`);
       return;
     }
-    box.innerHTML = note + disponibles.map(disponibleRowHTML).join('');
+    // Les courses disponibles arrivent en temps réel. Sans cette garde, la liste se reconstruisait
+    // à chaque évènement et le coursier perdait sa position de défilement au moment précis où il
+    // s'apprêtait à accepter une course. (25/08/2026)
+    if (!cltPoserHTML(box, note + disponibles.map(disponibleRowHTML).join(''))) { refreshWaitTimers(); return; }
     refreshWaitTimers();
     box.querySelectorAll('.course-thumb').forEach(img => {
       img.addEventListener('click', () => openLightbox(img.dataset.photo));
@@ -910,10 +913,10 @@
   function renderMesCourses(){
     const box = document.getElementById('mescourses-list');
     if (!mesCourses.length) {
-      box.innerHTML = `<div class="empty-state">Aucune course acceptée pour le moment.</div>`;
+      cltPoserHTML(box, `<div class="empty-state">Aucune course acceptée pour le moment.</div>`);
       return;
     }
-    box.innerHTML = mesCourses.map(mesCourseRowHTML).join('');
+    if (!cltPoserHTML(box, mesCourses.map(mesCourseRowHTML).join(''))) return;
     box.querySelectorAll('.course-thumb').forEach(img => {
       img.addEventListener('click', () => openLightbox(img.dataset.photo));
     });
@@ -968,9 +971,11 @@
     const box = document.getElementById('chat-msgs-' + courseId);
     if (!box) return;
     const msgs = chatMessages[courseId] || [];
-    box.innerHTML = msgs.length
+    // On ne redescend au dernier message que lorsqu'il y en a réellement un nouveau : sinon,
+    // remonter le fil de la conversation était impossible.
+    if (!cltPoserHTML(box, msgs.length
       ? msgs.map(chatBubbleHTML).join('')
-      : '<div class="chat-empty">Aucun message. Écrivez au client si besoin (ex : « je suis en bas »).</div>';
+      : '<div class="chat-empty">Aucun message. Écrivez au client si besoin (ex : « je suis en bas »).</div>')) return;
     box.scrollTop = box.scrollHeight;
   }
 
@@ -1120,10 +1125,10 @@
       .slice()
       .sort((a, b) => new Date(b.delivered_at || b.created_at) - new Date(a.delivered_at || a.created_at));
     if (!debits.length) {
-      box.innerHTML = `<div class="empty-state">Aucun débit pour le moment. La commission d'une course livrée apparaîtra ici.</div>`;
+      cltPoserHTML(box, `<div class="empty-state">Aucun débit pour le moment. La commission d'une course livrée apparaîtra ici.</div>`);
       return;
     }
-    box.innerHTML = debits.map(c => `
+    cltPoserHTML(box, debits.map(c => `
       <div class="recharge-item">
         <div>
           <div style="font-weight:600;color:var(--navy);">− ${formatMontant(c.commission_montant)} · commission</div>
@@ -1131,7 +1136,7 @@
         </div>
         <div style="font-weight:600;color:#c0392b;">Débit</div>
       </div>
-    `).join('');
+    `).join(''));
   }
 
   // ---------- Portefeuille / solde ----------
@@ -1167,10 +1172,10 @@
   function renderRecharges(){
     const box = document.getElementById('recharges-list');
     if (!mesRecharges.length) {
-      box.innerHTML = `<div class="empty-state">Aucune recharge pour le moment.</div>`;
+      cltPoserHTML(box, `<div class="empty-state">Aucune recharge pour le moment.</div>`);
       return;
     }
-    box.innerHTML = mesRecharges.map(r => `
+    cltPoserHTML(box, mesRecharges.map(r => `
       <div class="recharge-item">
         <div>
           <div style="font-weight:600;color:var(--navy);">${formatMontant(r.montant)} · ${escapeHTML(momoOperateurLabel(r.operateur))}</div>
@@ -1178,7 +1183,7 @@
         </div>
         <div>${expressRechargeBadgeHTML(r.status)}</div>
       </div>
-    `).join('');
+    `).join(''));
   }
 
   // ---------- Modale de recharge ----------
