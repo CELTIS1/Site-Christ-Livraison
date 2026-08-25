@@ -81,12 +81,29 @@ function blocDe(src, nom){
   console.error(`Fin de ${nom} introuvable`); process.exit(1);
 }
 
+/* Certaines fonctions s'appuient sur une constante, pas sur une autre fonction. On l'extrait du
+   vrai fichier plutôt que de la recopier ici : une valeur recopiée finit toujours par mentir le
+   jour où l'original change, et celle-ci décide de ce qui est une expédition. */
+function constanteTexteDe(src, nom){
+  const m = src.match(new RegExp('const\\s+' + nom + '\\s*=\\s*("[^"]*"|\'[^\']*\')\\s*;'));
+  if (!m) { console.error(`Constante ${nom} introuvable dans config.js`); process.exit(1); }
+  // Redéclarée en `var` et non en `const` : seul `var` dépose la valeur sur l'objet global du
+  // bac à sable, donc seul `var` permet de la relire depuis ce fichier. La valeur, elle, vient
+  // bien du vrai config.js — c'est tout ce qui compte.
+  return `var ${nom} = ${m[1]};`;
+}
+
 const contexte = vm.createContext({ console });
+vm.runInContext(constanteTexteDe(sourceConfig, 'COMMUNE_EXPEDITION'), contexte);
 vm.runInContext([
+  'estExpedition',
   'colisADetailMontant',
   'montantArticleColis',
   'montantLivraisonColis',
   'montantTotalColis',
+  'fraisExpeditionColis',
+  'fraisExpeditionADevoir',
+  'montantNetADevoir',
   'articleEncaisse',
   'livraisonEncaissee',
   'montantArticleEncaisse',
@@ -104,7 +121,9 @@ vm.runInContext([
 ].map(n => blocDe(sourceConfig, n)).join('\n\n'), contexte);
 
 const {
+  estExpedition, COMMUNE_EXPEDITION,
   montantArticleColis, montantLivraisonColis, montantTotalColis,
+  fraisExpeditionColis, fraisExpeditionADevoir, montantNetADevoir,
   articleEncaisse, livraisonEncaissee,
   montantArticleEncaisse, montantLivraisonEncaissee, montantArticleADevoir,
   montantEnMainDuLivreur, montantManquantALaLivraison,
@@ -316,6 +335,136 @@ titre('Règle 5 — encaissé = déjà reversé + reste dû, toujours et partout
   verifier('des lignes incomplètes ne produisent jamais de NaN dans un total',
     Object.values(cassé).every(v => Number.isFinite(v)),
     JSON.stringify(cassé));
+}
+
+/* ==========================================================================================
+   5 bis. LES FRAIS D'EXPÉDITION SORTENT DE L'ARGENT DE LA CLIENTE — 25/08/2026
+
+   Un colis pour Bouaké ne se livre pas : le livreur le porte à la gare et paie un transporteur.
+   L'application n'ayant aucun endroit pour l'écrire, l'usage était de retrancher la somme du
+   montant de livraison. Cela fausse deux chiffres d'un coup : la recette de CLT baisse d'un
+   argent qu'elle n'a jamais perdu, et la cliente se voit reverser son article entier alors que
+   l'expédition a été payée pour son compte. L'entreprise perd donc deux fois.
+
+   Ces contrôles gardent la seule lecture juste : une AVANCE, retenue sur ce qu'on doit à la
+   cliente, et qui ne touche jamais à l'argent des livraisons.
+   ========================================================================================== */
+titre("Règle 6 — les frais d'expédition se retiennent sur la cliente, jamais sur la livraison");
+
+{
+  const abidjan   = colis({ statut: 'livre', montant_article: 20000, montant_livraison: 1500 });
+  const expedition = colis({ statut: 'livre', montant_article: 20000, montant_livraison: 3000,
+                             commune_destination: COMMUNE_EXPEDITION, frais_expedition: 2500 });
+
+  verifier('une commune ordinaire n\'est pas une expédition',
+    !estExpedition(abidjan) && !estExpedition('Cocody') && !estExpedition(null));
+  verifier('la commune « Expédition (intérieur) » en est une',
+    estExpedition(expedition) && estExpedition(COMMUNE_EXPEDITION));
+
+  verifier("l'argent des livraisons ne bouge pas d'un franc",
+    montantLivraisonEncaissee(expedition) === 3000,
+    'c\'est l\'erreur exacte qu\'on corrige : les frais ne s\'y retranchent pas');
+  verifier("l'article de la cliente reste annoncé en entier",
+    montantArticleColis(expedition) === 20000);
+  verifier('la retenue apparaît telle quelle',
+    fraisExpeditionColis(expedition) === 2500 && fraisExpeditionADevoir(expedition) === 2500);
+  verifier('ce qu\'on doit vraiment à la cliente est l\'article moins l\'avance',
+    montantNetADevoir(expedition) === 17500,
+    `attendu 17 500, obtenu ${montantNetADevoir(expedition)}`);
+  verifier('un colis sans expédition ne subit aucune retenue',
+    fraisExpeditionColis(abidjan) === 0 && montantNetADevoir(abidjan) === 20000);
+
+  verifier("le livreur ne doit pas remettre l'argent qu'il a laissé à la gare",
+    montantEnMainDuLivreur(expedition) === 20000 + 3000 - 2500,
+    `attendu 20 500, obtenu ${montantEnMainDuLivreur(expedition)}`);
+
+  const t = totauxArgent([abidjan, expedition]);
+  verifier('le total des livraisons ignore complètement les frais de gare',
+    t.livraisonEncaissee === 4500, String(t.livraisonEncaissee));
+  verifier('les avances sont totalisées à part, et comptées',
+    t.fraisExpedition === 2500 && t.nbExpeditions === 1, JSON.stringify(t));
+  verifier('le net à reverser retranche les avances du brut',
+    t.netADevoir === t.articleADevoir - t.fraisExpeditionADevoir && t.netADevoir === 37500,
+    JSON.stringify({ net: t.netADevoir, brut: t.articleADevoir, av: t.fraisExpeditionADevoir }));
+  verifier('« total en main » et « total encaissé » restent deux chiffres distincts',
+    t.totalEncaisse === 44500 && t.totalEnMain === 42000,
+    JSON.stringify({ enc: t.totalEncaisse, main: t.totalEnMain }));
+}
+{
+  // Le reversement solde tout. Reprendre l'avance après coup la compterait deux fois : la
+  // cliente se verrait retenir 2 500 F qu'on lui a déjà retenus le jour du paiement.
+  const solde = colis({ statut: 'livre', montant_article: 20000,
+    commune_destination: COMMUNE_EXPEDITION, frais_expedition: 2500,
+    reverse_au_fournisseur_at: '2026-08-24T10:00:00Z' });
+  verifier('une fois la cliente payée, l\'avance ne se reprend plus',
+    fraisExpeditionADevoir(solde) === 0 && montantNetADevoir(solde) === 0);
+}
+{
+  // Petit article expédié loin : les frais dépassent ce qu'on lui doit. Le signe négatif est
+  // la vérité — c'est elle qui doit la différence à CLT. Le ramener à zéro effacerait une
+  // créance réelle, et personne ne saurait jamais qu'elle a existé.
+  const deficit = colis({ statut: 'livre', montant_article: 1000,
+    commune_destination: COMMUNE_EXPEDITION, frais_expedition: 5000 });
+  verifier('quand les frais dépassent l\'article, le net devient négatif et le reste',
+    montantNetADevoir(deficit) === -4000, String(montantNetADevoir(deficit)));
+}
+{
+  // Un colis non livré dont l'expédition a déjà été payée : l'argent est bel et bien sorti.
+  const pasParti = colis({ statut: 'non_livre', montant_article: 8000,
+    commune_destination: COMMUNE_EXPEDITION, frais_expedition: 2500 });
+  const t = totauxArgent([pasParti]);
+  verifier("une avance payée sur un colis non livré n'est pas oubliée",
+    t.fraisExpedition === 2500 && t.fraisExpeditionADevoir === 2500);
+  verifier('… et elle n\'invente aucun encaissement au passage',
+    t.articleEncaisse === 0 && t.livraisonEncaissee === 0);
+}
+{
+  const t = totauxArgent([null, undefined, {}, { statut: 'livre', frais_expedition: 'abc' }]);
+  verifier('un montant de frais illisible ne produit jamais de NaN',
+    Object.values(t).every(v => Number.isFinite(v)), JSON.stringify(t));
+}
+{
+  // Aucun tarif d'Abidjan ne s'applique à une expédition. computePrixLivraison le refusait déjà
+  // par accident (commune absente de la matrice) ; on le lui fait dire exprès, pour que
+  // quelqu'un qui ajouterait un jour l'entrée à la matrice tombe sur ce contrôle.
+  const bloc = blocDe(sourceConfig, 'computePrixLivraison');
+  verifier('aucun tarif automatique pour une expédition',
+    /estExpedition\(communeDestination\)/.test(bloc) && /return null/.test(bloc),
+    'un prix d\'Abidjan collé à un colis pour Korhogo passerait sans que personne ne le relise');
+}
+{
+  // La séparation qui empêche de proposer « Expédition » comme lieu de RÉCUPÉRATION : on ne va
+  // pas chercher un colis à l'intérieur du pays. Deux fonctions, deux usages.
+  const dest = blocDe(sourceConfig, 'communesDestinationOptionsHTML');
+  const depart = blocDe(sourceConfig, 'communesOptionsHTML');
+  verifier('la liste de destination propose l\'expédition',
+    /COMMUNE_EXPEDITION/.test(dest));
+  verifier('la liste de départ ne la propose que si le colis la porte déjà',
+    /estExpedition\(selected\)/.test(depart) &&
+    !/html \+= `<option value="\$\{escapeHTML\(COMMUNE_EXPEDITION\)\}" \$\{estExpedition/.test(depart),
+    'sinon on proposerait d\'aller récupérer un colis à Korhogo');
+  // On lit le tableau COMMUNES tel qu'il est écrit dans config.js et on l'évalue vraiment,
+  // au lieu de se contenter d'une expression régulière que le moindre saut de ligne trahirait.
+  const litteralCommunes = sourceConfig.match(/const\s+COMMUNES\s*=\s*(\[[\s\S]*?\])\s*;/);
+  const listeCommunes = litteralCommunes ? JSON.parse(litteralCommunes[1].replace(/,(\s*\])/, '$1')) : null;
+  verifier('COMMUNES reste la seule liste des communes d\'Abidjan',
+    Array.isArray(listeCommunes) &&
+    listeCommunes.length === 12 &&
+    listeCommunes.every(c => !estExpedition(c)),
+    'l\'ajouter à COMMUNES la ferait entrer dans la matrice tarifaire et dans les listes de départ : '
+    + JSON.stringify(listeCommunes));
+  // La matrice elle-même, découpée à l'accolade : aucune entrée ne doit y porter le nom de
+  // l'expédition, ni en clé de départ, ni en clé de destination.
+  const debutMatrice = sourceConfig.indexOf('const MATRICE_TARIFS = {');
+  const finMatrice = sourceConfig.indexOf('\n};', debutMatrice);
+  const matrice = debutMatrice >= 0 && finMatrice > debutMatrice
+    ? sourceConfig.slice(debutMatrice, finMatrice)
+    : null;
+  verifier('la matrice tarifaire ignore l\'expédition',
+    matrice !== null &&
+    !/COMMUNE_EXPEDITION/.test(matrice) &&
+    !/Expédition/.test(matrice),
+    'un tarif d\'Abidjan appliqué à Korhogo passerait inaperçu');
 }
 
 /* ==========================================================================================
@@ -565,8 +714,18 @@ titre('L\'onglet Finance du livreur');
     'sans ce lien, un clic ouvrirait le détail de la voisine');
   verifier('l\'identifiant de cliente est échappé avant d\'entrer dans un attribut',
     /const cle = echapperAttribut\(l\.cle\);/.test(code));
-  verifier('le détail occupe toute la largeur de la ligne',
-    /class="finance-detail-cell" colspan="5"/.test(code));
+  /* Le tableau gagne une colonne « Gare » les jours où de l'argent est parti au transporteur.
+     Le colspan du bloc déplié doit suivre : figé à 5, il laisserait le détail plus étroit que
+     le tableau ces jours-là, et le navigateur reconstruirait une colonne fantôme à droite. On
+     vérifie donc le lien, pas un nombre — c'est le lien qui peut se rompre. */
+  verifier('le détail occupe toute la largeur de la ligne, colonne « Gare » comprise',
+    /class="finance-detail-cell" colspan="\$\{nbColonnes\}"/.test(code) &&
+    /const nbColonnes = colonneGare \? 6 : 5;/.test(code));
+  verifier('la colonne « Gare » apparaît en tête, en corps et en pied d\'un même mouvement',
+    /\$\{colonneGare \? '<th>Gare<\/th>' : ''\}/.test(code) &&
+    /\$\{colonneGare \? `<td data-label="Gare">/.test(code) &&
+    /colonneGare[\s\S]{0,120}texte: '−' \+ m\(t\.fraisExpedition\)/.test(code),
+    'une colonne présente en tête mais absente en corps décale tous les chiffres d\'un cran');
   verifier('un second appui referme',
     blocDe(livreur, 'brancherFinanceDepliage').includes("bloc.classList.toggle('hidden', !ouvre)"));
   verifier('le détail se trouve par voisinage, pas par un sélecteur CSS',

@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825finance2">
-<script src="theme.js?v=20260825finance2"></script>
+<link rel="stylesheet" href="style.css?v=20260825expedition">
+<script src="theme.js?v=20260825expedition"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -465,10 +465,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825finance2"></script>
-<script src="config.js?v=20260825finance2"></script>
+<script src="clt-common.js?v=20260825expedition"></script>
+<script src="config.js?v=20260825expedition"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260825finance2"></script>
+<script src="clt-select-recherche.js?v=20260825expedition"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -755,7 +755,7 @@
         <div class="field-row">
           <div class="field">
             <label>Commune de destination</label>
-            <select class="row-commune-dest" required data-recherche data-recherche-placeholder="Commune…">${communesOptionsHTML('', 'Choisir une commune')}</select>
+            <select class="row-commune-dest" required data-recherche data-recherche-placeholder="Commune…">${communesDestinationOptionsHTML('', 'Choisir une commune')}</select>
           </div>
           <div class="field">
             <label>Précision (quartier, repère...)</label>
@@ -825,12 +825,22 @@
     const communeSelect = row.querySelector('.row-commune-dest');
     const livInput = row.querySelector('.row-montant-livraison');
     if (!communeSelect || !livInput) return;
+    // « Expédition (intérieur) » : la précision devient l'adresse, et devient obligatoire.
+    brancherPrecisionExpedition(communeSelect, row.querySelector('.row-dest'));
     communeSelect.addEventListener('change', () => {
       const pickupSelect = document.getElementById('batch-pickup-commune');
       const depart = pickupSelect && pickupSelect.value;
       const prix = computePrixLivraison(depart, communeSelect.value);
       if (prix !== null) {
         livInput.value = prix;
+        livInput.dispatchEvent(new Event('input'));
+      }
+      // Pour une expédition, computePrixLivraison renvoie null à dessein : aucun tarif d'Abidjan
+      // ne s'applique. On efface donc le montant suggéré par la commune choisie juste avant,
+      // plutôt que de le laisser en place — un prix d'Abidjan collé à un colis pour Korhogo
+      // partirait en base sans que personne ne le relise.
+      if (prix === null && estExpedition(communeSelect.value)) {
+        livInput.value = '';
         livInput.dispatchEvent(new Event('input'));
       }
     });
@@ -1067,7 +1077,7 @@
         </div>
         <div class="field">
           <label>Commune de destination</label>
-          <select class="lotfr-commune" data-recherche data-recherche-placeholder="Commune…">${communesOptionsHTML('', 'Choisir une commune')}</select>
+          <select class="lotfr-commune" data-recherche data-recherche-placeholder="Commune…">${communesDestinationOptionsHTML('', 'Choisir une commune')}</select>
         </div>
         <div class="field">
           <label>Précision (quartier, repère...)</label>
@@ -1145,6 +1155,8 @@
     // reste modifiable ensuite. On n'écrase pas un montant déjà tapé — c'est la règle « ne
     // jamais écrire par-dessus la main de quelqu'un », valable pour un prix comme pour un nom.
     const commune = el.querySelector('.lotfr-commune');
+    // « Expédition (intérieur) » : la précision devient l'adresse, et devient obligatoire.
+    brancherPrecisionExpedition(commune, el.querySelector('.lotfr-dest'));
     if (commune) commune.addEventListener('change', () => {
       const depart = (document.getElementById('lotfr-pickup-commune') || {}).value || '';
       const prix = computePrixLivraison(depart, commune.value);
@@ -2075,7 +2087,7 @@
             <div class="field-row">
               <div class="field">
                 <label>Commune de destination</label>
-                <select class="edit-commune-dest" data-recherche data-recherche-placeholder="Commune…">${communesOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
+                <select class="edit-commune-dest" data-recherche data-recherche-placeholder="Commune…">${communesDestinationOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
               </div>
               <div class="field">
                 <label>Précision (quartier, repère...)</label>
@@ -2153,7 +2165,7 @@
             <div class="field-row">
               <div class="field">
                 <label>Commune de destination</label>
-                <select class="draft-commune-dest" data-recherche data-recherche-placeholder="Commune…">${communesOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
+                <select class="draft-commune-dest" data-recherche data-recherche-placeholder="Commune…">${communesDestinationOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
               </div>
               <div class="field">
                 <label>Précision (quartier, repère...)</label>
@@ -2498,15 +2510,31 @@
     }
     const r = data || { colis_livres:0, total_encaisse_pour_vous:0, deja_reverse:0, reste_a_percevoir:0, colis_a_reverser:0 };
     const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
-    // Les quatre chiffres du relevé ne parlent QUE de l'argent des articles — celui qui
-    // appartient à la cliente. Les frais de livraison sont le revenu de CLT et n'ont rien à
-    // faire ici ; les mélanger donnerait un « reste à percevoir » que CLT ne lui doit pas.
+    // Avances d'expédition : ce que CLT a payé au transporteur pour le compte de la cliente sur
+    // les colis partis à l'intérieur du pays, et qui se retient sur ce qu'on lui reverse.
+    // `net_a_reverser` peut manquer si la base n'a pas encore reçu la migration : dans ce cas on
+    // retombe sur le brut, ce qui est exactement l'ancien comportement, plutôt que d'afficher un
+    // « NaN FCFA » ou un zéro qui ferait croire à une dette éteinte.
+    const avances = Number(r.frais_expedition_retenus) || 0;
+    const net = (r.net_a_reverser === undefined || r.net_a_reverser === null)
+      ? (Number(r.reste_a_percevoir) || 0)
+      : Number(r.net_a_reverser);
+    // Les chiffres du relevé ne parlent QUE de l'argent des articles — celui qui appartient à la
+    // cliente. Les frais de livraison sont le revenu de CLT et n'ont rien à faire ici ; les
+    // mélanger donnerait un « reste à percevoir » que CLT ne lui doit pas.
     const cards = [
       { icon:'✅', value:(r.colis_livres || 0),            label:'Colis livrés',            color:STATUTS.livre.color, bg:STATUTS.livre.bg },
       { icon:'💵', value:money(r.total_encaisse_pour_vous), label:'Articles encaissés',      color:'#1B4374',           bg:'#e5edf5' },
       { icon:'✔️', value:money(r.deja_reverse),             label:'Déjà reversé',            color:'#1a7d3c',           bg:'#e3f6ea' },
-      { icon:'⏳', value:money(r.reste_a_percevoir),        label:'CLT vous doit',           color:'#E26313',           bg:'#FBE2CE' },
-    ];
+    ].concat(avances > 0
+      // La tuile n'apparaît que s'il y a réellement une avance à retenir. Une tuile « 0 FCFA »
+      // permanente ferait naître la question « c'est quoi, ces frais ? » chez toutes les
+      // clientes qui n'expédient jamais à l'intérieur.
+      ? [{ icon:'🚌', value:'−' + money(avances), label:"Frais d'expédition", color:'#8a4b12', bg:'#fff0dd' }]
+      : []
+    ).concat([
+      { icon:'⏳', value:money(net), label:'CLT vous doit', color:'#E26313', bg:'#FBE2CE' },
+    ]);
     tiles.innerHTML = cards.map(t => `
       <div class="stat-tile" style="--tile-color:${t.color}; --tile-bg:${t.bg}">
         <div class="stat-tile-icon">${t.icon}</div>
@@ -2524,7 +2552,7 @@
     // Détail des colis livrés & encaissés, pas encore reversés (les plus anciens d'abord).
     const { data: aReverser, error: err2 } = await supabaseClient
       .from('colis')
-      .select('numero, montant_article, created_at')
+      .select('numero, montant_article, frais_expedition, created_at')
       .eq('fournisseur_id', currentUser.id)
       .eq('statut', 'livre')
       .not('article_non_encaisse', 'is', true)
@@ -2532,11 +2560,22 @@
       .order('created_at', { ascending: true })
       .limit(100);
     if (err2 || !aReverser || !aReverser.length) { detail.innerHTML = ''; return; }
-    const rows = aReverser.map(c => `
-      <div style="display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
-        <span>${escapeHTML(c.numero || '—')}<span style="color:var(--muted); font-size:12px;"> · ${new Date(c.created_at).toLocaleDateString('fr-FR')}</span></span>
-        <strong>${formatMontant(Number(c.montant_article) || 0) || '0 FCFA'}</strong>
-      </div>`).join('');
+    // Colis par colis, l'avance d'expédition est nommée sous la ligne qu'elle diminue. C'est
+    // à cet endroit-là qu'on répond à « pourquoi ce colis me rapporte moins que le montant
+    // que j'avais annoncé ? » — la question se pose sur un colis précis, pas sur un total.
+    const rows = aReverser.map(c => {
+      const gare = Number(c.frais_expedition) || 0;
+      return `
+      <div style="padding:7px 0; border-bottom:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; gap:10px;">
+          <span>${escapeHTML(c.numero || '—')}<span style="color:var(--muted); font-size:12px;"> · ${new Date(c.created_at).toLocaleDateString('fr-FR')}</span></span>
+          <strong>${formatMontant(Number(c.montant_article) || 0) || '0 FCFA'}</strong>
+        </div>
+        ${gare ? `<div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:#8a4b12; margin-top:2px;">
+          <span>🚌 Frais d'expédition avancés</span><span>−${formatMontant(gare)}</span>
+        </div>` : ''}
+      </div>`;
+    }).join('');
     // La requête est plafonnée à 100 lignes. Si le plafond est atteint, on le dit : le total en
     // FCFA affiché plus haut reste juste, mais ce détail ne montre alors que les plus anciens.
     const plafondAtteint = aReverser.length >= 100;

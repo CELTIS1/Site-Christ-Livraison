@@ -302,6 +302,29 @@ const COMMUNES = [
   "Koumassi", "Marcory", "Plateau", "Port-Bouët", "Treichville", "Yopougon",
 ];
 
+// Destination hors Abidjan : Bouaké, Korhogo, Daloa, San-Pédro... L'entreprise ne dessert pas
+// ces villes elle-même, elle confie le colis à un transporteur (gare, compagnie de bus) et paie
+// l'expédition sur place. Plutôt que d'ouvrir la liste des communes au pays entier — impossible
+// à tenir à jour et sans tarif applicable — on ajoute UNE seule entrée « Expédition (intérieur) »
+// dans les listes de DESTINATION. Choisir cette entrée veut dire « ce n'est pas Abidjan » :
+//   - aucun tarif automatique ne s'applique (computePrixLivraison renvoie null, voir plus bas) ;
+//   - le champ « Précision » cesse d'être un simple repère et devient l'adresse : on y écrit la
+//     ville réelle. Il devient donc obligatoire à la place de la commune.
+// Cette entrée ne doit JAMAIS apparaître dans une liste de commune de DÉPART / récupération :
+// on ne va pas chercher un colis à l'intérieur du pays.
+const COMMUNE_EXPEDITION = "Expédition (intérieur)";
+
+// Vrai si le colis part à l'intérieur du pays plutôt que dans une commune d'Abidjan.
+// Accepte aussi bien un objet colis qu'un simple nom de commune, parce que les appelants
+// disposent tantôt de l'un, tantôt de l'autre.
+function estExpedition(colisOuCommune) {
+  if (!colisOuCommune) return false;
+  const commune = typeof colisOuCommune === "string"
+    ? colisOuCommune
+    : (colisOuCommune.commune_destination || "");
+  return String(commune).trim() === COMMUNE_EXPEDITION;
+}
+
 // Grille tarifaire officielle (FCFA) entre communes, telle que définie dans les grilles
 // tarifaires par commune de l'entreprise. MATRICE_TARIFS[communeDépart][communeDestination]
 // donne le tarif brut. Ce tarif brut est ensuite ramené à l'un des 4 paliers utilisés dans
@@ -332,6 +355,10 @@ const MATRICE_TARIFS = {
 // tarifs négociés...). Retourne null si l'une des deux communes n'est pas reconnue.
 function computePrixLivraison(communeDepart, communeDestination) {
   if (!communeDepart || !communeDestination) return null;
+  // Une expédition vers l'intérieur ne relève d'aucune ligne de la grille d'Abidjan : le prix
+  // dépend de la ville, du transporteur et du volume. On refuse de suggérer un chiffre plutôt
+  // que d'en inventer un ; la personne qui saisit met le montant réellement convenu.
+  if (estExpedition(communeDestination) || estExpedition(communeDepart)) return null;
   if (communeDepart === communeDestination) return 1000;
   const raw = MATRICE_TARIFS[communeDepart] && MATRICE_TARIFS[communeDepart][communeDestination];
   if (!raw) return null;
@@ -346,7 +373,74 @@ function communesOptionsHTML(selected, placeholder) {
   let html = "";
   if (placeholder) html += `<option value="" ${!selected ? "selected" : ""} disabled>${escapeHTML(placeholder)}</option>`;
   html += COMMUNES.map(c => `<option value="${escapeHTML(c)}" ${c === selected ? "selected" : ""}>${escapeHTML(c)}</option>`).join("");
+  // Filet de sécurité : un colis déjà enregistré en expédition doit rester lisible même dans une
+  // liste qui n'était pas censée proposer ce choix (formulaire de modification, ancien écran).
+  // Sans cela, le <select> afficherait la première commune venue et une simple ouverture de fiche
+  // suffirait à transformer silencieusement une expédition en livraison Abidjan.
+  if (estExpedition(selected)) {
+    html += `<option value="${escapeHTML(COMMUNE_EXPEDITION)}" selected>${escapeHTML(COMMUNE_EXPEDITION)}</option>`;
+  }
   return html;
+}
+
+// Variante réservée aux listes de DESTINATION : les mêmes communes, plus l'entrée
+// « Expédition (intérieur) ». Volontairement séparée de communesOptionsHTML : les listes de
+// départ / récupération continuent d'appeler celle-ci et ne peuvent donc pas se retrouver avec
+// un choix qui n'a aucun sens pour aller chercher un colis.
+function communesDestinationOptionsHTML(selected, placeholder) {
+  let html = "";
+  if (placeholder) html += `<option value="" ${!selected ? "selected" : ""} disabled>${escapeHTML(placeholder)}</option>`;
+  html += COMMUNES.map(c => `<option value="${escapeHTML(c)}" ${c === selected ? "selected" : ""}>${escapeHTML(c)}</option>`).join("");
+  html += `<option value="${escapeHTML(COMMUNE_EXPEDITION)}" ${estExpedition(selected) ? "selected" : ""}>${escapeHTML(COMMUNE_EXPEDITION)}</option>`;
+  return html;
+}
+
+// Textes du champ « Précision » quand la destination bascule en expédition. Le libellé et le
+// texte d'exemple d'origine ne sont PAS écrits ici : ils diffèrent légèrement d'un écran à
+// l'autre pour de bonnes raisons, et on les mémorise à la volée pour pouvoir les remettre à
+// l'identique. Une constante commune les aurait tous alignés au passage, en silence.
+const PRECISION_LIBELLE_EXPEDITION     = "Ville de destination";
+const PRECISION_PLACEHOLDER_EXPEDITION = "Ex : Bouaké — gare UTB";
+
+/* Quand la destination bascule sur « Expédition (intérieur) », le champ « Précision » change de
+   rôle : ce n'est plus un repère qui complète une commune, c'est L'ADRESSE ELLE-MÊME. Il devient
+   donc obligatoire à la place de la commune, et son libellé le dit.
+
+   Le libellé compte autant que l'obligation. Laissé à « Précision (quartier, repère...) », il
+   invite à écrire « près du marché » — ce qui, pour un colis qui part à Korhogo, ne dit ni la
+   ville ni la gare. Le formulaire serait accepté et le livreur se retrouverait le lendemain avec
+   un colis dont personne ne sait où l'envoyer.
+
+   `appliquerModeExpedition` est appelée aussi au branchement (et pas seulement au changement)
+   pour que la modification d'un colis déjà en expédition s'ouvre d'emblée dans le bon état. */
+function appliquerModeExpedition(selectCommune, champPrecision) {
+  if (!selectCommune || !champPrecision) return;
+  const bloc = champPrecision.closest ? champPrecision.closest(".field") : null;
+  const label = bloc ? bloc.querySelector("label") : null;
+  // Mémorisation des textes d'origine au tout premier passage, avant de les remplacer.
+  // Sans elle, un aller-retour Abidjan → Expédition → Abidjan laisserait le champ marqué
+  // « Ville de destination, obligatoire » pour un colis qui va simplement à Cocody.
+  if (champPrecision.dataset && champPrecision.dataset.libelleOrigine === undefined) {
+    champPrecision.dataset.libelleOrigine = label ? label.innerHTML : "";
+    champPrecision.dataset.exempleOrigine = champPrecision.placeholder || "";
+  }
+  const expedition = estExpedition(selectCommune.value);
+  champPrecision.required = expedition;
+  champPrecision.placeholder = expedition
+    ? PRECISION_PLACEHOLDER_EXPEDITION
+    : (champPrecision.dataset ? champPrecision.dataset.exempleOrigine : "");
+  if (label) {
+    label.innerHTML = expedition
+      ? `${escapeHTML(PRECISION_LIBELLE_EXPEDITION)} <span class="champ-requis">obligatoire</span>`
+      : (champPrecision.dataset ? champPrecision.dataset.libelleOrigine : label.innerHTML);
+  }
+}
+
+function brancherPrecisionExpedition(selectCommune, champPrecision) {
+  if (!selectCommune || !champPrecision) return;
+  const maj = () => appliquerModeExpedition(selectCommune, champPrecision);
+  selectCommune.addEventListener("change", maj);
+  maj();
 }
 
 // ---------- Sections repliables (accordéon) ----------
@@ -1848,6 +1942,15 @@ function verifierLotAvantEnvoi(lignes, options) {
       problemes.push({ rang: rang, motif: "il manque la commune de destination" });
       return;
     }
+    // Expédition vers l'intérieur : la commune ne dit plus rien de l'endroit où va le colis,
+    // elle dit seulement « ce n'est pas Abidjan ». C'est la précision qui devient l'adresse, et
+    // elle prend la place de l'obligation. Sans elle, personne ne sait à quelle gare porter le
+    // colis ni quelle ville annoncer au transporteur. Contrôle volontairement inconditionnel :
+    // il ne découle pas de la politique d'un écran mais du choix « Expédition » lui-même.
+    if (estExpedition(ligne.communeDestination) && !String(ligne.destination || "").trim()) {
+      problemes.push({ rang: rang, motif: "pour une expédition, la ville de destination est obligatoire (champ Précision)" });
+      return;
+    }
     if (opt.destinataireObligatoire && !String(ligne.destination || "").trim()) {
       problemes.push({ rang: rang, motif: "il manque le nom du destinataire" });
       return;
@@ -2205,6 +2308,52 @@ function montantTotalColis(c) {
 }
 
 /* --------------------------------------------------------------------------------------------
+   LA TROISIÈME POCHE : LES FRAIS D'EXPÉDITION
+
+   Pour un colis qui part à l'intérieur du pays, le livreur ne livre pas : il porte le colis à la
+   gare et paie le transporteur de sa poche — 2 500 F, 5 000 F, selon la ville et le volume. Cet
+   argent sort le jour même, avant tout encaissement.
+
+   Il faut se garder d'un raccourci qui fausse tout : ce n'est PAS une dépense de livraison, et
+   ça ne se retranche donc PAS de la recette de CLT. C'est une AVANCE faite pour le compte de la
+   cliente, que CLT récupère en la retenant sur ce qu'elle lui reverse. Le relevé de la vendeuse
+   se lit alors :
+       Article encaissé        20 000
+       Frais d'expédition      −2 500
+       À vous reverser         17 500
+   pendant que l'argent des livraisons, lui, ne bouge pas d'un franc.
+
+   Confondre les deux reviendrait à amputer la recette de l'entreprise d'une somme qu'elle a
+   simplement fait transiter — l'erreur exacte signalée le 25 août 2026.
+   -------------------------------------------------------------------------------------------- */
+
+// Ce que le livreur a payé au transporteur pour ce colis. Toujours un nombre.
+// Volontairement lu sans vérifier que la commune est bien « Expédition (intérieur) » : la
+// commune est une étiquette, le paiement est un fait. Si quelqu'un rebascule plus tard le colis
+// sur une commune d'Abidjan, l'argent sorti ne rentre pas tout seul dans la caisse ; il doit
+// rester visible et resté retranché tant qu'on ne l'a pas effacé sciemment.
+function fraisExpeditionColis(c) {
+  if (!c) return 0;
+  return Number(c.frais_expedition) || 0;
+}
+
+// Frais encore à récupérer sur la cliente. Le reversement solde tout : une fois qu'on lui a
+// remis son argent, la retenue a déjà été faite, la reprendre reviendrait à la compter deux fois.
+function fraisExpeditionADevoir(c) {
+  if (!c) return 0;
+  if (c.reverse_au_fournisseur_at) return 0;
+  return fraisExpeditionColis(c);
+}
+
+// Ce qu'on doit RÉELLEMENT à la cliente sur ce colis, une fois l'avance retenue.
+// Peut être négatif, et on ne le ramène pas à zéro : si les frais dépassent l'article encaissé
+// (colis pas encore payé, ou petit article expédié loin), c'est elle qui doit la différence à
+// CLT. Masquer ce signe reviendrait à effacer une créance réelle de l'entreprise.
+function montantNetADevoir(c) {
+  return montantArticleADevoir(c) - fraisExpeditionADevoir(c);
+}
+
+/* --------------------------------------------------------------------------------------------
    L'ARGENT EST-IL RENTRÉ ?
 
    Règle arrêtée le 25 août 2026 : UN COLIS LIVRÉ, C'EST DE L'ARGENT RENTRÉ.
@@ -2272,8 +2421,13 @@ function montantArticleADevoir(c) {
 
 // Ce que le livreur a réellement en main sur ce colis : les deux poches, mais seulement si
 // elles sont rentrées. Un colis remis sans que l'argent suive ne pèse rien dans sa caisse.
+//
+// Les frais d'expédition s'en retranchent, parce qu'ils sont sortis de cette même poche : c'est
+// le livreur qui a payé la gare, en billets, avant de rentrer. Le soir, ce qu'il remet à CLT est
+// allégé d'autant, et le justificatif de la gare fait le reste. Ne pas les déduire ici
+// reviendrait à lui réclamer une somme qu'il n'a plus.
 function montantEnMainDuLivreur(c) {
-  return montantArticleEncaisse(c) + montantLivraisonEncaissee(c);
+  return montantArticleEncaisse(c) + montantLivraisonEncaissee(c) - fraisExpeditionColis(c);
 }
 
 // Argent qu'on aurait dû encaisser à la livraison et qui manque (l'exception cochée).
@@ -2317,6 +2471,13 @@ function totauxArgent(colis) {
     // Ce qu'on doit encore à la cliente, et ce qui manque dans notre caisse.
     articleADevoir: 0,
     manquantALaLivraison: 0,
+    // Avances faites pour le compte de la cliente (gare, transporteur). Tenues à part de la
+    // recette de livraison, qui ne doit pas en bouger : voir le commentaire de
+    // fraisExpeditionColis. `netADevoir` est le seul chiffre à annoncer à une vendeuse.
+    nbExpeditions: 0,
+    fraisExpedition: 0,
+    fraisExpeditionADevoir: 0,
+    netADevoir: 0,
   };
   liste.forEach(c => {
     if (!c) return;
@@ -2332,9 +2493,20 @@ function totauxArgent(colis) {
     if (du) t.nbADevoir++;
     t.articleADevoir += du;
     t.manquantALaLivraison += montantManquantALaLivraison(c);
+    if (estExpedition(c)) t.nbExpeditions++;
+    t.fraisExpedition += fraisExpeditionColis(c);
+    t.fraisExpeditionADevoir += fraisExpeditionADevoir(c);
   });
   t.totalEnregistre = t.articleEnregistre + t.livraisonEnregistree;
   t.totalEncaisse   = t.articleEncaisse + t.livraisonEncaissee;
+  // Ce que le livreur a vraiment sur lui : l'encaissé, moins ce qu'il a laissé à la gare.
+  // Distinct de totalEncaisse, et les deux doivent rester lisibles côte à côte : l'un dit ce qui
+  // est rentré, l'autre ce qu'il reste à remettre. Confondre les deux, c'est réclamer le soir à
+  // un livreur une somme qu'il a payée le matin.
+  t.totalEnMain = t.totalEncaisse - t.fraisExpedition;
+  // Le net se déduit des deux lignes juste au-dessus, et jamais de la recette de livraison :
+  // c'est toute la question tranchée le 25 août 2026.
+  t.netADevoir = t.articleADevoir - t.fraisExpeditionADevoir;
   return t;
 }
 

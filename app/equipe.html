@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825finance2">
-<script src="theme.js?v=20260825finance2"></script>
+<link rel="stylesheet" href="style.css?v=20260825expedition">
+<script src="theme.js?v=20260825expedition"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1032,10 +1032,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825finance2"></script>
-<script src="config.js?v=20260825finance2"></script>
+<script src="clt-common.js?v=20260825expedition"></script>
+<script src="config.js?v=20260825expedition"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260825finance2"></script>
+<script src="clt-select-recherche.js?v=20260825expedition"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1619,9 +1619,11 @@ adresseInput.value = f ? (f.adresse_recuperation || '') : '';
 // en texte libre et une commune vide, invisible dans les filtres et les tournées. On aligne.
 function remplirCommuneDestinationAjout(){
   const sel = document.getElementById('add-commune-dest');
-  if (!sel || typeof communesOptionsHTML !== 'function') return;
+  if (!sel || typeof communesDestinationOptionsHTML !== 'function') return;
   if (sel.options && sel.options.length) return;
-  sel.innerHTML = communesOptionsHTML('', 'Choisir une commune');
+  sel.innerHTML = communesDestinationOptionsHTML('', 'Choisir une commune');
+  // « Expédition (intérieur) » : la précision devient l'adresse, et devient obligatoire.
+  brancherPrecisionExpedition(sel, document.getElementById('add-dest'));
 }
 
 /* ---------- CARNET D'ADRESSES DU CLIENT SÉLECTIONNÉ ---------- */
@@ -3457,7 +3459,7 @@ ${estValide ? '' : `
 <label style="font-size:11.5px; font-weight:700; display:block; margin-bottom:6px;">Adresse de livraison</label>
 <div class="field" style="margin-bottom:6px;">
 <label style="font-size:11.5px;">Commune de destination</label>
-<select class="edit-commune-dest" data-recherche data-recherche-placeholder="Commune…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">${communesOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
+<select class="edit-commune-dest" data-recherche data-recherche-placeholder="Commune…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">${communesDestinationOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
 </div>
 <div class="field" style="margin-bottom:6px;">
 <label style="font-size:11.5px;">Précision (quartier, repère…)</label>

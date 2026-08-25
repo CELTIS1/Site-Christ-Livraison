@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825finance2">
-<script src="theme.js?v=20260825finance2"></script>
+<link rel="stylesheet" href="style.css?v=20260825expedition">
+<script src="theme.js?v=20260825expedition"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -379,8 +379,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825finance2"></script>
-<script src="config.js?v=20260825finance2"></script>
+<script src="clt-common.js?v=20260825expedition"></script>
+<script src="config.js?v=20260825expedition"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -438,12 +438,17 @@
       if (!id) return;
       const sel = item.querySelector('.status-select');
       const obs = item.querySelector('.obs-textarea');
+      // Les frais d'expédition sont un montant en cours de frappe, donc de l'argent : une mise à
+      // jour temps réel qui tomberait entre le « 2 » et le « 500 » ne doit pas effacer la saisie.
+      const frais = item.querySelector('.frais-exp-input');
       snap[id] = {
         statut: sel ? sel.value : undefined,
         observation: obs ? obs.value : undefined,
+        fraisExpedition: frais ? frais.value : undefined,
         focus: (active && item.contains(active))
           ? (active.classList.contains('status-select') ? 'status'
-            : active.classList.contains('obs-textarea') ? 'obs' : null)
+            : active.classList.contains('obs-textarea') ? 'obs'
+            : active.classList.contains('frais-exp-input') ? 'frais' : null)
           : null,
         selStart: (obs && active === obs) ? obs.selectionStart : null,
         selEnd: (obs && active === obs) ? obs.selectionEnd : null,
@@ -459,12 +464,15 @@
       if (!s) return;
       const sel = item.querySelector('.status-select');
       const obs = item.querySelector('.obs-textarea');
+      const frais = item.querySelector('.frais-exp-input');
       // On ne restaure une saisie en cours que si elle diffère de la valeur affichée par défaut
       // (sinon rien à faire) — et jamais pour un colis qu'on vient d'enregistrer (recentWrites).
       const justSaved = recentWrites.has(id);
       if (sel && s.statut !== undefined && !justSaved && sel.value !== s.statut) sel.value = s.statut;
       if (obs && s.observation !== undefined && !justSaved && obs.value !== s.observation) obs.value = s.observation;
+      if (frais && s.fraisExpedition !== undefined && !justSaved && frais.value !== s.fraisExpedition) frais.value = s.fraisExpedition;
       if (s.focus === 'status' && sel) { sel.focus(); }
+      else if (s.focus === 'frais' && frais) { frais.focus(); }
       else if (s.focus === 'obs' && obs) {
         obs.focus();
         if (s.selStart != null) { try { obs.setSelectionRange(s.selStart, s.selEnd); } catch(e){} }
@@ -1352,6 +1360,36 @@
       { type: res.echecs.length ? 'warning' : 'info', title: 'Annulé' });
   }
 
+  /* Frais d'expédition : le champ n'apparaît QUE pour les colis qui partent à l'intérieur du
+     pays. Un livreur d'Abidjan ne doit jamais voir cette case — un champ d'argent proposé sans
+     raison finit toujours par être rempli « pour voir », et ce qu'on y écrira sera retenu sur
+     l'argent d'une cliente.
+
+     Il reste affiché aussi quand un montant est déjà saisi, même si la commune a changé depuis :
+     de l'argent réellement sorti doit rester visible et corrigeable, jamais disparaître parce
+     qu'on a modifié une étiquette.
+
+     C'est le livreur qui saisit, parce que c'est lui qui paie le transporteur, en billets, et
+     qu'il le sait à la seconde où il paie. Le demander le soir à quelqu'un d'autre, c'est le
+     demander à quelqu'un qui devra deviner. */
+  function fraisExpeditionChampHTML(c){
+    const dejaSaisi = fraisExpeditionColis(c) > 0;
+    if (!estExpedition(c) && !dejaSaisi) return '';
+    const valeur = (c.frais_expedition === null || c.frais_expedition === undefined)
+      ? '' : String(Number(c.frais_expedition) || 0);
+    return `
+      <div class="field frais-exp-bloc" style="margin-top:8px; padding:8px 10px; border:1.5px solid #f0c48a; border-radius:10px; background:#fff8ef;">
+        <label style="font-size:11.5px; font-weight:700; color:#8a4b12;">🚌 Frais payés au transporteur</label>
+        <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
+          <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="100" placeholder="Ex : 2500" value="${escapeHTML(valeur)}" aria-label="Frais d'expédition payés au transporteur, en FCFA" style="flex:1; min-width:0;">
+          <button type="button" class="btn btn-sm btn-frais-exp" style="white-space:nowrap;">Enregistrer</button>
+        </div>
+        <div class="meta" style="font-size:11px; margin-top:4px; color:#8a4b12;">
+          Retenu sur l'argent de la cliente. N'entame pas l'argent des livraisons.
+        </div>
+      </div>`;
+  }
+
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
   function mesColisRowHTML(c, numeroClient){
     const thumb = c.photo_url
@@ -1395,6 +1433,7 @@
                encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
                colis a été remis sans que l'argent de l'article rentre. -->
           <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#c0392b !important; border:1.5px solid #c0392b; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À utiliser seulement si vous avez remis le colis sans récupérer l'argent de l'article.">${c.article_non_encaisse ? '⚠️ Article NON encaissé' : "Article non encaissé ?"}</button>
+          ${fraisExpeditionChampHTML(c)}
           <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
           <div class="field" style="margin-top:8px;">
             <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
@@ -1609,6 +1648,87 @@
         rememberWrite(id, { article_non_encaisse: newVal });
         if (existing) existing.article_non_encaisse = newVal;
         renderAll();
+      });
+    });
+
+    /* --- Frais d'expédition : même mécanique que « Livraison payée », file d'attente comprise.
+       Enregistré au clic, et non à la sortie du champ : un enregistrement qui se déclenche tout
+       seul quand on touche ailleurs par mégarde écrit de l'argent sans qu'on l'ait décidé. La
+       touche Entrée fait la même chose que le bouton, parce qu'au téléphone c'est le geste qui
+       vient naturellement après avoir tapé un nombre.
+
+       Le champ vidé remet la colonne à NULL, ce qui est la façon de dire « finalement, aucun
+       frais ». Sans cela, une erreur de saisie serait impossible à effacer : on ne pourrait que
+       la remplacer par un zéro, et un zéro écrit se lit « on a vérifié, c'était gratuit ». */
+    list.querySelectorAll('.btn-frais-exp').forEach(btn => {
+      const enregistrer = async () => {
+        const item = btn.closest('.colis-item');
+        const id = item.dataset.id;
+        const champ = item.querySelector('.frais-exp-input');
+        const existing = allColis.find(c => c.id === id);
+        const brut = String(champ ? champ.value : '').replace(/\s/g, '').replace(',', '.').trim();
+        let newVal = null;
+        if (brut !== '') {
+          const n = Number(brut);
+          if (!isFinite(n) || n < 0) {
+            alert("Montant invalide. Écrivez seulement le nombre de francs payés à la gare, par exemple 2500.");
+            return;
+          }
+          newVal = Math.round(n);
+        }
+
+        const enFile = async () => {
+          await queueAdd({
+            colisId: id,
+            statut: existing ? existing.statut : null,
+            observation: existing ? existing.observation : null,
+            photo_livraison_url: existing ? existing.photo_livraison_url : null,
+            photoBlob: null,
+            extra: { frais_expedition: newVal },
+            userId: currentUser.id,
+            timestamp: Date.now(),
+          });
+          if (existing) existing.frais_expedition = newVal;
+          rememberWrite(id, { frais_expedition: newVal });
+        };
+
+        if (!navigator.onLine) {
+          btn.disabled = true;
+          try { await enFile(); }
+          catch (e) {
+            console.error(e);
+            alert("Impossible d'enregistrer les frais d'expédition hors connexion. Merci de réessayer une fois connecté(e).");
+          }
+          btn.disabled = false;
+          await refreshOfflineBanner();
+          renderAll();
+          return;
+        }
+
+        btn.disabled = true;
+        const prevText = btn.textContent;
+        btn.textContent = '…';
+        const { error } = await supabaseClient.from('colis').update({ frais_expedition: newVal }).eq('id', id);
+        btn.disabled = false;
+        if (error) {
+          try { await enFile(); await refreshOfflineBanner(); }
+          catch (e) {
+            console.error(e);
+            btn.textContent = prevText;
+            alert(friendlyErrorMessage(error.message));
+            return;
+          }
+          renderAll();
+          return;
+        }
+        rememberWrite(id, { frais_expedition: newVal });
+        if (existing) existing.frais_expedition = newVal;
+        renderAll();
+      };
+      btn.addEventListener('click', enregistrer);
+      const champ = btn.closest('.colis-item').querySelector('.frais-exp-input');
+      if (champ) champ.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); enregistrer(); }
       });
     });
 
@@ -1858,11 +1978,17 @@
     const t = totauxArgent(duJour);
     const m = n => formatMontant(n) || '0 FCFA';
 
+    // La tuile de gauche n'apparaît que les jours où il y a eu une expédition. Une tuile
+    // « 0 FCFA » tous les autres jours occuperait la place et l'attention sans rien apprendre.
     const tuiles = [
       { v: m(t.articleEncaisse),    l: 'Articles encaissés',  c: '#1B4374', bg: '#e5edf5' },
       { v: m(t.livraisonEncaissee), l: 'Livraisons encaissées', c: '#E26313', bg: '#FBE2CE' },
-      { v: m(t.totalEncaisse),      l: 'Total en main',       c: '#1a7d3c', bg: '#e3f6ea' },
-    ].map(x => `
+    ].concat(t.fraisExpedition > 0
+      ? [{ v: '−' + m(t.fraisExpedition), l: 'Payé à la gare', c: '#8a4b12', bg: '#fff0dd' }]
+      : []
+    ).concat([
+      { v: m(t.totalEnMain),        l: 'Total en main',       c: '#1a7d3c', bg: '#e3f6ea' },
+    ]).map(x => `
       <div style="flex:1; min-width:104px; text-align:center; background:${x.bg}; border-radius:10px; padding:8px 6px;">
         <div style="font-size:17px; font-weight:700; color:${x.c}; line-height:1.15;">${x.v}</div>
         <div style="font-size:11px; color:${x.c}; margin-top:3px;">${x.l}</div>
@@ -1874,12 +2000,20 @@
       ? `<div style="margin-top:8px; font-size:12px; color:#c0392b; font-weight:600;">⚠️ ${m(t.manquantALaLivraison)} non encaissé${t.manquantALaLivraison > 1 ? 's' : ''} sur des colis pourtant remis. Ce montant n'est pas compté dans le total ci-dessus.</div>`
       : '';
 
+    // Une avance faite pour le compte d'une cliente n'est pas une dépense du livreur : il faut
+    // qu'il sache, au moment de la remise du soir, pourquoi son total est plus bas — et qu'il
+    // garde le reçu de la gare, qui est la seule preuve que cet argent est bien sorti.
+    const noteGare = t.fraisExpedition > 0
+      ? `<div style="margin-top:6px; font-size:12px; color:#8a4b12; font-weight:600;">🚌 ${m(t.fraisExpedition)} payé${t.nbExpeditions > 1 ? 's' : ''} au transporteur pour ${t.nbExpeditions} expédition${t.nbExpeditions > 1 ? 's' : ''}. Cette somme est retenue sur l'argent de la cliente, pas sur l'argent des livraisons — gardez le reçu de la gare.</div>`
+      : '';
+
     box.innerHTML = `
       <div style="display:flex; gap:8px; flex-wrap:wrap;">${tuiles}</div>
       <div style="margin-top:8px; font-size:12px; color:#64748b;">
         ${t.nbLivres} colis livré${t.nbLivres > 1 ? 's' : ''} sur ${t.nb} reçu${t.nb > 1 ? 's' : ''} ce jour-là.
         Les articles (${m(t.articleEncaisse)}) appartiennent aux clientes : vous les remettez à CLT.
       </div>
+      ${noteGare}
       ${alerte}`;
 
     renderFinanceDetail(duJour, t, jour);
@@ -1923,6 +2057,15 @@
       t: totauxArgent(parCliente[k]),
     })).sort((a, b) => b.t.totalEncaisse - a.t.totalEncaisse);
 
+    // La colonne « Gare » n'existe que les jours où de l'argent est réellement parti à la gare.
+    // Une cinquième colonne vide toute l'année rendrait le tableau plus étroit sur téléphone
+    // pour n'y afficher que des tirets — et ce tableau se lit debout, le soir, sur un petit
+    // écran. Les jours où elle apparaît, en revanche, elle est indispensable : sans elle, le
+    // total ne correspondrait plus à la somme des deux colonnes précédentes et le livreur
+    // croirait à une erreur.
+    const colonneGare = t.fraisExpedition > 0;
+    const nbColonnes = colonneGare ? 6 : 5;
+
     // Une cliente qui n'a plus de colis ce jour-là ne doit pas rester « dépliée » en mémoire.
     const clesDuJour = new Set(lignes.map(l => l.cle));
     Array.from(financeDepliees).forEach(k => { if (!clesDuJour.has(k)) financeDepliees.delete(k); });
@@ -1938,25 +2081,30 @@
         <td data-label="Livrés">${l.t.nbLivres} / ${l.t.nb}</td>
         <td data-label="Articles">${l.t.articleEncaisse ? m(l.t.articleEncaisse) : '<span style="color:#94a3b8;">—</span>'}</td>
         <td data-label="Livraison">${l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '<span style="color:#94a3b8;">—</span>'}</td>
-        <td data-label="Total"><strong>${l.t.totalEncaisse ? m(l.t.totalEncaisse) : '—'}</strong></td>
+        ${colonneGare ? `<td data-label="Gare">${l.t.fraisExpedition ? '−' + m(l.t.fraisExpedition) : '<span style="color:#94a3b8;">—</span>'}</td>` : ''}
+        <td data-label="Total"><strong>${l.t.totalEnMain ? m(l.t.totalEnMain) : '—'}</strong></td>
       </tr>
       <tr class="finance-detail-ligne${ouverte ? '' : ' hidden'}" data-detail="${cle}">
-        <td class="finance-detail-cell" colspan="5">${financeColisHTML(l.colis)}</td>
+        <td class="finance-detail-cell" colspan="${nbColonnes}">${financeColisHTML(l.colis)}</td>
       </tr>`;
     }).join('');
 
     detail.innerHTML = `
       <div class="recap-table-wrap" id="argent-jour-detail">
         <table class="recap-table recap-table-cards argent-jour-table">
-          <thead><tr><th>Cliente</th><th>Livrés</th><th>Articles</th><th>Livraison</th><th>Total</th></tr></thead>
+          <thead><tr><th>Cliente</th><th>Livrés</th><th>Articles</th><th>Livraison</th>${colonneGare ? '<th>Gare</th>' : ''}<th>Total</th></tr></thead>
           <tbody>${corpsLignes}</tbody>
           ${piedTotalHTML([
             { texte: 'TOTAL' },
             { texte: t.nbLivres + ' / ' + t.nb, label: 'Livrés' },
             { texte: m(t.articleEncaisse), label: 'Articles' },
             { texte: m(t.livraisonEncaissee), label: 'Livraison' },
-            { texte: m(t.totalEncaisse), couleur: '#1a7d3c', label: 'Total' },
-          ])}
+          ].concat(colonneGare
+            ? [{ texte: '−' + m(t.fraisExpedition), couleur: '#8a4b12', label: 'Gare' }]
+            : []
+          ).concat([
+            { texte: m(t.totalEnMain), couleur: '#1a7d3c', label: 'Total' },
+          ]))}
         </table>
       </div>`;
     appendColisLoadMore(detail);
@@ -1977,6 +2125,7 @@
     return liste.map(c => {
       const art = montantArticleColis(c);
       const liv = montantLivraisonColis(c);
+      const gare = fraisExpeditionColis(c);
       const enMain = montantEnMainDuLivreur(c);
       const manque = montantManquantALaLivraison(c);
       const titre = c.description ? escapeHTML(c.description) : '(sans description)';
@@ -1992,6 +2141,7 @@
           <div class="finance-colis-lignes">
             <div><span>Article</span><strong>${art ? m(art) : '—'}</strong></div>
             <div><span>Livraison</span><strong>${liv ? m(liv) : '—'}</strong></div>
+            ${gare ? `<div><span>Payé à la gare</span><strong style="color:#8a4b12;">−${m(gare)}</strong></div>` : ''}
             <div><span>En main</span><strong style="color:${enMain ? '#1a7d3c' : '#94a3b8'};">${enMain ? m(enMain) : '—'}</strong></div>
           </div>
           ${manque > 0 ? `<div class="finance-colis-alerte">⚠️ ${m(manque)} non encaissé sur ce colis pourtant remis.</div>` : ''}

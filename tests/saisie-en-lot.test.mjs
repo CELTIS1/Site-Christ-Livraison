@@ -52,7 +52,16 @@ function blocDe(src, nom){
 }
 const bloc = (nom) => blocDe(source, nom);
 
+/* La constante qui nomme l'expédition vers l'intérieur. Extraite du vrai fichier, jamais
+   recopiée : c'est elle qui décide qu'un colis ne va pas dans une commune d'Abidjan, et une
+   copie qui dérive ferait taire le contrôle sans que rien n'échoue. Redéclarée en `var` parce
+   que seul `var` dépose la valeur sur l'objet global du bac à sable, donc rend relisible ici. */
+const mCommuneExp = source.match(/const\s+COMMUNE_EXPEDITION\s*=\s*("[^"]*"|'[^']*')\s*;/);
+if (!mCommuneExp) { console.error('Constante COMMUNE_EXPEDITION introuvable dans config.js'); process.exit(1); }
+vm.runInContext(`var COMMUNE_EXPEDITION = ${mCommuneExp[1]};`, contexte);
+
 vm.runInContext([
+  bloc('estExpedition'),
   bloc('isValidMontant'),
   bloc('cleTelCarnet'),
   bloc('cleTexteCarnet'),
@@ -67,7 +76,7 @@ vm.runInContext([
 ].join('\n\n'), contexte);
 
 const { construireCarnet, appliquerEntreeCarnet, entreeCarnetParTelephone,
-        ligneLotEstVide, verifierLotAvantEnvoi,
+        ligneLotEstVide, verifierLotAvantEnvoi, estExpedition, COMMUNE_EXPEDITION,
         resumeProblemesLotTexte, resumeEnvoiLotTexte } = contexte;
 
 /* ---------- Petit échafaudage de vérification ---------- */
@@ -340,6 +349,48 @@ titre('Les exigences propres à chaque espace passent par une option, pas par un
   const vide = verifierLotAvantEnvoi([ligne({})], { communeObligatoire: true });
   verifier('une ligne entièrement vide est signalée comme vide, pas comme incomplète',
     /rien n['\u2019]a été saisi/.test(vide.problemes[0].motif), vide.problemes[0].motif);
+}
+
+titre('Une expédition vers l\u2019intérieur exige une ville, puisqu\u2019elle n\u2019a pas de commune');
+{
+  // « Expédition (intérieur) » n'est pas un lieu : c'est l'aveu qu'on ne dessert pas soi-même.
+  // La seule adresse du colis est alors ce qu'on écrit dans Précision — Bouaké, la gare UTB de
+  // Korhogo. Une expédition sans cette ligne, c'est un carton confié à un transporteur sans
+  // savoir où il descend : irrattrapable une fois le bus parti. Le contrôle est donc
+  // INCONDITIONNEL, il ne dépend d'aucune option d'espace, parce que le manque est le même
+  // pour l'équipe et pour la vendeuse.
+  const sansVille = [ligne({ communeDestination: COMMUNE_EXPEDITION, montantArticle: '20000' })];
+  const refus = verifierLotAvantEnvoi(sansVille);
+  verifier('sans option d\u2019espace, une expédition sans ville est déjà refusée',
+    refus.pretes.length === 0 && refus.problemes.length === 1,
+    'ce contrôle ne doit dépendre d\u2019aucune option : ' + JSON.stringify(refus.problemes));
+  verifier('et le motif envoie vers le bon champ',
+    /ville de destination/.test(refus.problemes[0].motif) && /Précision/.test(refus.problemes[0].motif),
+    refus.problemes[0].motif);
+  verifier('avec l\u2019option commune obligatoire, le refus tient toujours',
+    verifierLotAvantEnvoi(sansVille, { communeObligatoire: true }).pretes.length === 0);
+
+  const avecVille = [ligne({ communeDestination: COMMUNE_EXPEDITION, destination: 'Bouaké — gare UTB', montantArticle: '20000' })];
+  verifier('la ville renseignée lève le refus',
+    verifierLotAvantEnvoi(avecVille, { communeObligatoire: true }).pretes.length === 1);
+  verifier('une expédition n\u2019est reconnue que par son libellé exact',
+    estExpedition(COMMUNE_EXPEDITION) && !estExpedition('Cocody') && !estExpedition(''));
+
+  // Un espace blanc n'est pas une adresse : « " " » doit être refusé comme le vide.
+  verifier('un espace saisi dans Précision ne vaut pas une ville',
+    verifierLotAvantEnvoi([ligne({ communeDestination: COMMUNE_EXPEDITION, destination: '   ', montantArticle: '20000' })])
+      .problemes.length === 1);
+
+  // Et la priorité du garde-fou « ligne vide » reste intacte : une commune posée seule sur une
+  // ligne sans rien d'autre n'est PAS vide (la commune compte), donc on doit bien réclamer la ville.
+  verifier('une commune d\u2019expédition posée seule réclame la ville, pas « rien saisi »',
+    /ville de destination/.test(
+      verifierLotAvantEnvoi([ligne({ communeDestination: COMMUNE_EXPEDITION })]).problemes[0].motif));
+
+  // Une commune d'Abidjan, elle, ne réclame rien de plus : le tarif et la tournée suffisent.
+  verifier('un colis pour Cocody sans précision passe toujours',
+    verifierLotAvantEnvoi([ligne({ communeDestination: 'Cocody', montantArticle: '20000' })],
+      { communeObligatoire: true }).pretes.length === 1);
 }
 
 /* ==========================================================================================
