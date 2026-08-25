@@ -99,6 +99,15 @@ jobs:
       - name: L'argent des colis (deux poches, jamais mélangées)
         run: node tests/argent-des-colis.test.mjs
 
+      # L'écran qui ne bouge pas. Signalé le 25 août : « ça s'actualise, ça vibre, et les données
+      # saisies s'effacent ». L'application redessinait de grands blocs avec un contenu identique
+      # à celui déjà affiché ; le navigateur, lui, ne peut pas le deviner et détruit tout. Cette
+      # série extrait la vraie garde du fichier source et la fait tourner, puis monte le guet sur
+      # les rechutes : aucun écran ne doit réécrire une liste sans comparer, et toute page qui
+      # appelle cltPoserHTML doit charger clt-common.js — les écrans Express n'ont pas config.js.
+      - name: L'écran ne se réécrit plus à l'identique (les saisies ne s'effacent plus)
+        run: node tests/ecran-qui-ne-bouge-pas.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,
