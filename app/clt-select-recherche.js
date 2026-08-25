@@ -362,13 +362,20 @@
       var r = champ.getBoundingClientRect();
       var margeBas = window.innerHeight - r.bottom;
       var margeHaut = r.top;
-      var hauteurVoulue = Math.min(320, Math.max(margeBas, margeHaut) - 16);
       var versLeHaut = margeBas < 220 && margeHaut > margeBas;
 
+      /* La hauteur demandée ne dépasse JAMAIS la place réellement disponible du côté choisi.
+         L'ancien calcul prenait `Math.max(margeBas, margeHaut)` — la plus grande des deux places
+         — puis retombait sur un plancher de 160 px, alors que le panneau s'ouvrait, lui, du côté
+         décidé par `versLeHaut`. Dans une fenêtre courte, il réclamait donc plus de hauteur qu'il
+         n'en avait et débordait de l'écran ; et comme il déborde par le bas, ce sont les
+         DERNIÈRES entrées de la liste qu'on ne pouvait plus atteindre. On mesure du bon côté.
+         (25/08/2026) */
+      var place = (versLeHaut ? margeHaut : margeBas) - 16;
       panneau.style.width = Math.max(r.width, 220) + 'px';
       var gauche = Math.min(r.left, window.innerWidth - Math.max(r.width, 220) - 10);
       panneau.style.left = Math.max(8, gauche) + 'px';
-      panneau.style.maxHeight = Math.max(160, hauteurVoulue) + 'px';
+      panneau.style.maxHeight = Math.max(140, Math.min(320, place)) + 'px';
       if (versLeHaut) {
         panneau.style.top = '';
         panneau.style.bottom = (window.innerHeight - r.top + 6) + 'px';

@@ -309,25 +309,64 @@ async function enregistrerEquipe({ tel, telOrigine, avecRecuperation }){
 titre('Une adresse absente saute aux yeux au lieu de se deviner');
 {
   const ctx = aidesCommunes();
+  /* Depuis le 25/08/2026, la destination n'est plus une petite ligne grise sous la carte : elle
+     EST la ligne en gras, en tête, à la place de la description. C'est ce que demandait la
+     première question qu'on se pose devant un colis — où va-t-il ? La fabrication de ce texte a
+     donc quitté equipe.html pour config.js, afin que les quatre écrans (équipe, livreur, client,
+     compta) disent la même phrase. On relit donc l'aide partagée, plus la petite ligne d'équipe
+     qui ne porte plus que le téléphone et l'alerte d'adresse absente. */
   vm.runInContext([
+    'var COMMUNE_EXPEDITION = ' + JSON.stringify('Expédition (intérieur)') + ';',
+    blocDe(config, 'estExpedition', 'config.js'),
+    blocDe(config, 'colisDestinationTexte', 'config.js'),
+    blocDe(config, 'colisDestinationHTML', 'config.js'),
+    blocDe(config, 'colisDescriptionTexte', 'config.js'),
     blocDe(equipe, 'eqDestinationTexte', 'equipe.html'),
     blocDe(equipe, 'eqLigneDestinationHTML', 'equipe.html'),
   ].join('\n\n'), ctx);
+
+  // Le libellé de la commune d'expédition doit rester le même des deux côtés : si config.js le
+  // renomme un jour, la copie ci-dessus mentirait en silence. On le compare donc au fichier.
+  verifier('le nom de la commune « Expédition » du test est bien celui du site',
+    config.includes('const COMMUNE_EXPEDITION = "Expédition (intérieur)"'));
 
   verifier('la commune est enfin affichée à côté du repère — elle ne l’était pas',
     ctx.eqDestinationTexte({ commune_destination: 'Cocody', destination: 'Angré' }) === 'Cocody — Angré',
     ctx.eqDestinationTexte({ commune_destination: 'Cocody', destination: 'Angré' }));
   verifier('une commune seule s’affiche seule, sans tiret orphelin',
     ctx.eqDestinationTexte({ commune_destination: 'Cocody', destination: '' }) === 'Cocody');
+  verifier('un colis de l’intérieur se lit « Expédition → la ville et la gare »',
+    ctx.eqDestinationTexte({ commune_destination: 'Expédition (intérieur)', destination: 'Bouaké — gare UTB' })
+      === 'Expédition → Bouaké — gare UTB',
+    ctx.eqDestinationTexte({ commune_destination: 'Expédition (intérieur)', destination: 'Bouaké — gare UTB' }));
+
+  // --- La ligne en gras de la carte : c'est elle qui porte désormais la destination ---
+  const enTete = ctx.colisDestinationHTML({ commune_destination: 'Cocody', destination: 'Angré' });
+  verifier('en tête de carte, on lit la destination',
+    /Cocody/.test(enTete) && /Angré/.test(enTete) && !/manquante/.test(enTete), enTete);
+  const enTeteVide = ctx.colisDestinationHTML({});
+  verifier('sans destination, la tête de carte le réclame au lieu de rester vide',
+    /Destination à préciser/.test(enTeteVide) && /colis-dest-absente/.test(enTeteVide), enTeteVide);
+  const mechant = ctx.colisDestinationHTML({ destination: '<img src=x onerror=alert(1)>' });
+  verifier('une adresse tordue reste du texte, pas du code',
+    !/<img/.test(mechant) && /&lt;img/.test(mechant), mechant);
+
+  // --- La description a pris la place que la destination occupait : sous la ligne en gras ---
+  verifier('la description reste lisible telle qu’elle a été écrite',
+    ctx.colisDescriptionTexte({ description: '  2 cartons de pagnes  ' }) === '2 cartons de pagnes');
+  verifier('un colis sans description ne fabrique pas de ligne vide',
+    ctx.colisDescriptionTexte({}) === '' && ctx.colisDescriptionTexte(null) === '');
+
+  // --- La petite ligne d'équipe : plus que le téléphone, et l'alerte quand l'adresse manque ---
   const vide = ctx.eqLigneDestinationHTML({});
   verifier('sans adresse du tout, l’écran le dit en rouge',
     /Adresse de livraison manquante/.test(vide) && /adresse-absente/.test(vide), vide);
   const avec = ctx.eqLigneDestinationHTML({ commune_destination: 'Cocody', destinataire_telephone: '0546818640' });
-  verifier('avec adresse, on lit la destination et le numéro à appeler',
-    /Cocody/.test(avec) && /0546818640/.test(avec) && !/manquante/.test(avec), avec);
-  const mechant = ctx.eqLigneDestinationHTML({ destination: '<img src=x onerror=alert(1)>' });
-  verifier('une adresse tordue reste du texte, pas du code',
-    !/<img/.test(mechant) && /&lt;img/.test(mechant), mechant);
+  verifier('quand l’adresse est là, il ne reste que le numéro à appeler — sans la répéter',
+    /0546818640/.test(avec) && !/manquante/.test(avec) && !/Cocody/.test(avec), avec);
+  const videAvecTel = ctx.eqLigneDestinationHTML({ destinataire_telephone: '0546818640' });
+  verifier('adresse absente mais destinataire connu : on alerte ET on donne le numéro pour l’appeler',
+    /manquante/.test(videAvecTel) && /0546818640/.test(videAvecTel), videAvecTel);
 
   verifier('côté client aussi, l’absence d’adresse est signalée',
     /Adresse de livraison manquante/.test(fournisseur));

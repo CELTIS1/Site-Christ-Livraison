@@ -325,6 +325,70 @@ function estExpedition(colisOuCommune) {
   return String(commune).trim() === COMMUNE_EXPEDITION;
 }
 
+/* ---------------------------------------------------------------------------
+   OÙ VA CE COLIS — la première ligne d'une carte
+   ---------------------------------------------------------------------------
+   Ajout du 25/08/2026.
+
+   Jusqu'ici, la ligne en gras d'une carte de colis portait la description
+   (« robe rouge taille M »), et à défaut la mention « (sans description) ».
+   La destination, elle, était reléguée en petits caractères gris, après le nom
+   de la cliente, derrière un « · Vers : ».
+
+   C'est l'inverse de la façon dont ces cartes sont réellement lues. Un livreur
+   qui ouvre son écran ne cherche pas ce qu'il y a dans le carton — il l'a dans
+   les mains — il cherche OÙ il doit l'apporter. Une carte sur laquelle la
+   réponse à cette question est écrite en gris, en fin de ligne, se lit deux
+   fois plus lentement, et une ligne « (sans description) » en gras occupe la
+   place la plus visible de la carte pour ne rien dire du tout.
+
+   La destination monte donc en tête, la description descend d'un cran.
+
+   CE QUE CETTE FONCTION ASSEMBLE
+   Une destination complète tient en deux morceaux qui vivent dans deux
+   colonnes : la commune (`commune_destination`) et la précision
+   (`destination`). Les afficher séparément obligerait chaque écran à décider
+   du séparateur et du cas où l'un des deux manque ; on les assemble donc ici,
+   une fois pour toutes.
+
+   LE CAS DE L'EXPÉDITION
+   « Expédition (intérieur) » n'est pas un lieu, c'est l'aveu qu'on ne dessert
+   pas soi-même. La vraie adresse est alors la ville écrite dans Précision. On
+   annonce donc « Expédition → Bouaké — gare UTB » : le mot « Expédition »
+   reste en tête parce qu'il change tout pour le livreur (il va à la gare, pas
+   chez un destinataire), et la ville suit parce que c'est elle, l'adresse.
+--------------------------------------------------------------------------- */
+function colisDestinationTexte(c) {
+  if (!c) return "";
+  const commune = String(c.commune_destination || "").trim();
+  const precision = String(c.destination || "").trim();
+  if (estExpedition(commune)) {
+    return precision ? "Expédition → " + precision : COMMUNE_EXPEDITION;
+  }
+  if (commune && precision) return commune + " — " + precision;
+  return commune || precision || "";
+}
+
+/* La même, prête à écrire dans la page, avec le cas « on ne sait pas ».
+   On ne laisse jamais la ligne vide : une carte sans destination est un
+   problème à régler, pas un blanc à ignorer, et elle doit se voir comme tel.
+   Le texte de repli est volontairement une alerte (« Destination à préciser »)
+   et non un tiret discret. */
+function colisDestinationHTML(c) {
+  const texte = colisDestinationTexte(c);
+  if (!texte) return '<span class="colis-dest-absente">⚠️ Destination à préciser</span>';
+  return escapeHTML(texte);
+}
+
+/* La description, désormais en seconde ligne. Renvoie "" — et non
+   « (sans description) » — quand il n'y a rien : en petits caractères, sous
+   une destination bien lisible, une mention d'absence n'apprend rien à
+   personne et allonge la carte. Les appelants n'affichent la ligne que si
+   cette fonction rend quelque chose. */
+function colisDescriptionTexte(c) {
+  return c ? String(c.description || "").trim() : "";
+}
+
 // Grille tarifaire officielle (FCFA) entre communes, telle que définie dans les grilles
 // tarifaires par commune de l'entreprise. MATRICE_TARIFS[communeDépart][communeDestination]
 // donne le tarif brut. Ce tarif brut est ensuite ramené à l'un des 4 paliers utilisés dans
@@ -2326,6 +2390,35 @@ function montantTotalColis(c) {
    Confondre les deux reviendrait à amputer la recette de l'entreprise d'une somme qu'elle a
    simplement fait transiter — l'erreur exacte signalée le 25 août 2026.
    -------------------------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+   COMBIEN COÛTE UNE EXPÉDITION — précisions du 25/08/2026
+   ---------------------------------------------------------------------------
+   Le prix payé à la gare n'obéit à aucune grille : il dépend de la ville, du
+   transporteur et surtout du volume du carton. Dans la pratique quotidienne il
+   tourne entre 2 000 et 3 500 F, et c'est pour ces quatre montants-là qu'on
+   pose des boutons : neuf saisies sur dix se font alors en un seul geste, sans
+   ouvrir le clavier.
+
+   Mais il n'y a AUCUN PLAFOND, et c'est délibéré. Une expédition peut monter à
+   7 000, 8 000 F ou davantage. Un plafond, ici, ne protégerait de rien : il
+   forcerait le livreur à saisir un montant faux, ou à renoncer à saisir — et
+   dans les deux cas l'argent qu'il a réellement sorti de sa poche resterait à
+   sa charge. On saisit le montant réel, quel qu'il soit.
+
+   La seule précaution est une QUESTION, pas un refus : au-delà du seuil
+   ci-dessous, on demande confirmation une fois. Elle n'existe que pour le zéro
+   de trop — 25 000 tapé pour 2 500 — qui se retiendrait en silence sur l'argent
+   d'une vendeuse. On peut toujours répondre oui.
+--------------------------------------------------------------------------- */
+const FRAIS_EXPEDITION_USUELS = [2000, 2500, 3000, 3500];
+const FRAIS_EXPEDITION_SEUIL_CONFIRMATION = 10000;
+
+// Vrai si le montant mérite qu'on repose la question avant d'écrire. Ne bloque jamais.
+function fraisExpeditionAConfirmer(montant) {
+  const n = Number(montant);
+  return isFinite(n) && n > FRAIS_EXPEDITION_SEUIL_CONFIRMATION;
+}
 
 // Ce que le livreur a payé au transporteur pour ce colis. Toujours un nombre.
 // Volontairement lu sans vérifier que la commune est bien « Expédition (intérieur) » : la

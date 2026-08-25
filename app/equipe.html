@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825expedition">
-<script src="theme.js?v=20260825expedition"></script>
+<link rel="stylesheet" href="style.css?v=20260825cartes">
+<script src="theme.js?v=20260825cartes"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -224,6 +224,7 @@
 <span id="user-avatar-topbar"></span>
 <span id="user-name"></span>
 <span class="role-pill" id="role-pill">Équipe interne</span>
+<button type="button" class="clt-actualiser" id="btn-actualiser" title="Actualiser maintenant" aria-label="Actualiser les données"><span class="clt-actualiser-icone" aria-hidden="true">🔄</span><span class="clt-actualiser-badge" hidden></span></button>
 <div class="settings-menu">
 <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️<span id="settings-notif-badge" class="alert-badge hidden">0</span></button>
 <div class="settings-dropdown" id="settings-dropdown">
@@ -1032,10 +1033,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825expedition"></script>
-<script src="config.js?v=20260825expedition"></script>
+<script src="clt-common.js?v=20260825cartes"></script>
+<script src="config.js?v=20260825cartes"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260825expedition"></script>
+<script src="clt-select-recherche.js?v=20260825cartes"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2959,8 +2960,12 @@ function eqDecrireEntree(entry){
 if (entry.type === 'creation-colis') {
 const p = entry.payload || {};
 const client = fournisseurLabel(p.fournisseur_id);
-const quoi = p.description ? escapeHTML(p.description) : '(sans description)';
-return `Nouveau colis — ${client} : ${quoi}`;
+// Ce bandeau nomme une opération encore en file : ce qui permet de la reconnaître, c'est
+// d'abord où va le colis. La description ne vient qu'à défaut de destination saisie.
+const ou = colisDestinationTexte(p);
+const quoi = colisDescriptionTexte(p);
+const repere = ou ? '→ ' + escapeHTML(ou) : (quoi ? ': ' + escapeHTML(quoi) : ': destination à préciser');
+return `Nouveau colis — ${client} ${repere}`;
 }
 if (entry.type === 'maj-colis') {
 const c = allColis.find(x => x.id === entry.colisId);
@@ -3387,23 +3392,26 @@ return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
 // Adresse de destination telle qu'on la lit à voix haute au téléphone : la commune d'abord,
 // puis le repère. Les deux champs existent depuis toujours en base, mais cet écran n'affichait
 // que le second — une commune saisie par la cliente restait invisible ici.
+// Depuis le 25/08/2026 le calcul lui-même vit dans config.js (colisDestinationTexte), partagé
+// par les trois tableaux de bord : c'est la seule façon qu'une expédition vers l'intérieur
+// s'annonce partout de la même manière au lieu d'être réécrite à trois endroits.
 function eqDestinationTexte(c){
-  const parts = [];
-  if (c.commune_destination) parts.push(c.commune_destination);
-  if (c.destination) parts.push(c.destination);
-  return parts.join(' — ');
+  return colisDestinationTexte(c);
 }
 
-// Une adresse absente doit se voir, pas se deviner : c'est le premier motif d'appel du livreur.
+/* Depuis le 25/08/2026, la destination est écrite en gras EN TÊTE de la carte, plus dans cette
+   ligne-ci. Ce qui reste ici, c'est le numéro à appeler — et, quand l'adresse manque, l'alerte
+   rouge : celle-là ne peut pas se contenter d'être en tête, car c'est elle qui déclenche l'appel
+   à la cliente, et elle doit rester à côté du numéro qu'on va composer. */
 function eqLigneDestinationHTML(c){
   const txt = eqDestinationTexte(c);
   const tel = c.destinataire_telephone
-    ? ` · 📞 ${escapeHTML(c.destinataire_telephone)}`
+    ? `📞 ${escapeHTML(c.destinataire_telephone)}`
     : '';
   if (!txt) {
-    return `<div class="meta adresse-absente" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — à renseigner${tel}</div>`;
+    return `<div class="meta adresse-absente" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — à renseigner${tel ? ' · ' + tel : ''}</div>`;
   }
-  return `<div class="meta">Vers : ${escapeHTML(txt)}${tel}</div>`;
+  return tel ? `<div class="meta">${tel}</div>` : '';
 }
 
 function colisRowHTML(c, numeroClient){
@@ -3437,7 +3445,8 @@ const infoBlock = `
 <div class="info">
 ${syncBadge}
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
-<div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+<div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
+${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
 ${eqLigneDestinationHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
@@ -3519,7 +3528,8 @@ ${stepperHTML(c.statut)}
 ${thumb}
 <div class="info">
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
-<div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+<div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
+${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
 ${eqLigneDestinationHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
@@ -4021,21 +4031,165 @@ cltToast(res.echecs.length
 // (≈16 ms, invisible à l'œil) ; onglet caché, c'est le minuteur. Dans les deux cas, une rafale
 // d'événements ne produit qu'un seul dessin — c'est tout l'intérêt.
 let colisRenduEnAttente = false;
+
+// ---------- Ne jamais redessiner sous les doigts de quelqu'un ----------
+// Ajout du 25/08/2026, après une vidéo où l'on voit une adresse à moitié tapée disparaître d'un
+// coup : la liste s'était reconstruite pendant la frappe (temps réel, ou le filet de sécurité des
+// 25 secondes). Le travail était à refaire, et — plus grave — sans qu'on comprenne pourquoi.
+//
+// La règle est simple : ON REDESSINE TOUJOURS, SAUF QUAND QUELQU'UN ÉCRIT. Ce n'est pas la fin du
+// rafraîchissement automatique — les nouveaux colis continuent d'arriver tout seuls, comme
+// demandé. C'est seulement qu'un rendu qui tomberait au mauvais moment attend son tour : la
+// demande reste armée (`colisRenduEnAttente` n'est pas remis à faux), un compteur orange apparaît
+// sur le bouton d'actualisation du haut pour dire « il y a du nouveau à voir », et le dessin part
+// dès que la saisie est finie — ou dès qu'on appuie sur le bouton.
+//
+// « Quelqu'un écrit » veut dire ici UNE seule chose, très précise : le curseur est dans un champ
+// de la liste des colis. Rien de plus, et c'est délibéré.
+//
+// On pourrait être tenté d'ajouter « ou bien une fiche de modification est ouverte »
+// (`window.__colisEditing`). Ce serait une faute : c'est le fait d'ouvrir la fiche qui DEMANDE le
+// redessin — le bouton « Modifier » ajoute l'identifiant à cet ensemble puis appelle renderColis().
+// La fiche empêcherait donc son propre affichage, et le bouton « Modifier » ne ferait plus rien.
+//
+// Ce qu'on perdrait ainsi — une fiche ouverte, déjà corrigée, mais sans curseur dedans parce
+// qu'on a posé le téléphone — est couvert deux fois par ailleurs : cltDifferSiSaisie() met en
+// attente les rechargements de fond dès qu'un champ diffère de sa valeur d'origine (voir
+// config.js), et eqPhotographierSaisies() ci-dessous repose les valeurs tapées si un redessin a
+// tout de même lieu. Cette garde-ci est la troisième épaisseur, pas la seule.
+function eqSaisieEnCours(){
+const actif = document.activeElement;
+if (!actif) return false;
+const balise = (actif.tagName || '').toLowerCase();
+if (balise !== 'input' && balise !== 'select' && balise !== 'textarea') return false;
+const liste = document.getElementById('colis-list');
+return !!(liste && liste.contains(actif));
+}
+
+let eqRenduDiffere = false;
+let eqRendusRetenus = 0;
+
 function eqDessinerColisUneFois(){
 if (!colisRenduEnAttente) return;
+// On garde la demande en attente : elle repartira au `focusout` ou au bouton du haut.
+if (eqSaisieEnCours()) {
+// Le compteur compte des MISES À JOUR, pas des tentatives de dessin. Une même demande est
+// examinée deux fois (l'image puis le minuteur de secours, voir plus haut) : l'incrémenter à
+// chaque passage afficherait « 2 » pour un seul colis reçu, et personne ne comprendrait
+// pourquoi le chiffre grimpe tout seul. On ne compte donc que la PREMIÈRE mise de côté ;
+// les mises à jour suivantes sont comptées dans renderColis(), à leur arrivée.
+if (!eqRenduDiffere) {
+eqRenduDiffere = true;
+eqRendusRetenus++;
+if (window.CLTActualiser) CLTActualiser.signalerEnAttente(eqRendusRetenus);
+}
+return;
+}
 colisRenduEnAttente = false;
+eqRenduDiffere = false;
+eqRendusRetenus = 0;
+if (window.CLTActualiser) CLTActualiser.viderAttente();
 eqDessinerColis();
 }
+
+// Appelé quand la saisie se termine : curseur qui quitte un champ, fiche de modification refermée,
+// enregistrement réussi. Si un rendu attendait son tour, il part maintenant.
+function eqRelacherRenduDiffere(){
+if (!eqRenduDiffere || eqSaisieEnCours()) return;
+eqDessinerColisUneFois();
+}
+
 function renderColis(){
-if (colisRenduEnAttente) return;
+if (colisRenduEnAttente) {
+if (eqRenduDiffere) {
+if (eqSaisieEnCours()) {
+// Une nouvelle mise à jour arrive pendant qu'on écrit : elle rejoint celles qui patientent,
+// et le chiffre du bouton monte d'une unité. C'est ici qu'on les compte, à leur arrivée.
+eqRendusRetenus++;
+if (window.CLTActualiser) CLTActualiser.signalerEnAttente(eqRendusRetenus);
+} else {
+// La saisie vient de se terminer — c'est le cas quand on referme une fiche de modification,
+// qui appelle renderColis() après avoir vidé `__colisEditing`. Sans ce rattrapage, refermer
+// la fiche ne redessinerait rien et l'écran resterait figé sur l'ancienne version.
+eqRelacherRenduDiffere();
+}
+}
+return;
+}
 colisRenduEnAttente = true;
 if (typeof requestAnimationFrame === 'function') requestAnimationFrame(eqDessinerColisUneFois);
 setTimeout(eqDessinerColisUneFois, 200);
 }
 
+// ---------- Deuxième filet : sauver ce qui est écrit quand le dessin a quand même lieu ----------
+// La garde ci-dessus empêche l'immense majorité des rendus malvenus. Mais elle ne peut pas tout :
+// un rendu peut partir légitimement (personne ne tape à cet instant précis) alors qu'une fiche de
+// modification contient déjà des valeurs corrigées mais pas encore enregistrées. Reconstruire le
+// HTML les remettrait aux valeurs de la base — c'est-à-dire aux anciennes.
+// On photographie donc les champs avant, on les repose après. Même principe que chez le livreur.
+const EQ_CHAMPS_EDITION = ['.edit-commune-dest', '.edit-dest', '.edit-tel-destinataire',
+'.edit-commune-recup', '.edit-adresse-recup', '.edit-montant-article', '.edit-montant-livraison'];
+const EQ_CASES_EDITION = ['.edit-article-non-encaisse', '.edit-livraison-payee'];
+
+function eqPhotographierSaisies(conteneur){
+const photo = {};
+if (!conteneur) return photo;
+const actif = document.activeElement;
+conteneur.querySelectorAll('.colis-item').forEach(item => {
+const id = item.dataset.id;
+if (!id) return;
+const champs = {};
+let cible = null;
+EQ_CHAMPS_EDITION.forEach(sel => {
+const el = item.querySelector(sel);
+if (!el) return;
+champs[sel] = el.value;
+if (el === actif) cible = sel;
+});
+EQ_CASES_EDITION.forEach(sel => {
+const el = item.querySelector(sel);
+if (el) champs[sel] = el.checked ? '1' : '0';
+});
+if (!Object.keys(champs).length) return;
+const zone = (cible && actif) ? actif : null;
+photo[id] = {
+champs: champs,
+focus: cible,
+debut: zone && zone.selectionStart != null ? zone.selectionStart : null,
+fin: zone && zone.selectionEnd != null ? zone.selectionEnd : null,
+};
+});
+return photo;
+}
+
+function eqReposerSaisies(conteneur, photo){
+if (!conteneur || !photo) return;
+Object.keys(photo).forEach(id => {
+const item = conteneur.querySelector('.colis-item[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+if (!item) return;
+const p = photo[id];
+EQ_CHAMPS_EDITION.forEach(sel => {
+const el = item.querySelector(sel);
+if (el && p.champs[sel] !== undefined && el.value !== p.champs[sel]) el.value = p.champs[sel];
+});
+EQ_CASES_EDITION.forEach(sel => {
+const el = item.querySelector(sel);
+if (el && p.champs[sel] !== undefined) el.checked = p.champs[sel] === '1';
+});
+if (p.focus) {
+const el = item.querySelector(p.focus);
+if (el) {
+try { el.focus(); } catch (e) {}
+if (p.debut != null) { try { el.setSelectionRange(p.debut, p.fin); } catch (e) {} }
+}
+}
+});
+}
+
 function eqDessinerColis(){
 const list = document.getElementById('colis-list');
 const __anchor = captureScrollAnchor(list);
+const __saisies = eqPhotographierSaisies(list);
 let filtered = activeFilter === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilter);
 filtered = filtered.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDateColis));
 // Nombre de colis déjà chargés mais pas encore dessinés. Sert plus bas à ne pas proposer
@@ -4076,6 +4230,15 @@ brancherTrancheColis(list, () => { colisTranche += COLIS_TRANCHE; renderColis();
 if (eqLotActif) eqBrancherBarreLot(list, filtered);
 
 eqBrancherActionsRapides(list);
+
+// Le champ « Précision » change de rôle quand la commune est « Expédition (intérieur) » : il
+// devient LA destination (ville + gare) et non plus un repère de quartier. Le formulaire de
+// création le savait déjà ; celui de MODIFICATION, non — et c'est justement là qu'on rattrape
+// les colis mal adressés. Sans ce branchement, on rouvrait un colis à expédier et on lisait
+// encore « Précision (quartier, repère…) », donc on écrivait « près du marché ».
+list.querySelectorAll('.adresse-block').forEach(bloc => {
+brancherPrecisionExpedition(bloc.querySelector('.edit-commune-dest'), bloc.querySelector('.edit-dest'));
+});
 
 list.querySelectorAll('.btn-edit-pickup').forEach(btn => {
 btn.addEventListener('click', () => {
@@ -4289,7 +4452,13 @@ const id = item.dataset.id;
 const colisASupprimer = allColis.find(c => c.id === id);
 const okDelete = await showConfirm({
   title: 'Supprimer ce colis ?',
-  detail: colisASupprimer ? (colisASupprimer.description || '(sans description)') : null,
+  // Une suppression est définitive : la boîte doit nommer le colis assez précisément
+  // pour qu'on reconnaisse le bon. On donne donc les deux — où il allait ET ce qu'il
+  // contenait — au lieu de choisir, comme partout ailleurs, l'un ou l'autre.
+  detail: colisASupprimer
+    ? [colisDestinationTexte(colisASupprimer), colisDescriptionTexte(colisASupprimer)]
+        .filter(Boolean).join(' · ') || 'Colis sans destination ni description'
+    : null,
   sub: 'Cette action est définitive et irréversible.',
   okLabel: 'Supprimer',
   danger: true
@@ -4349,6 +4518,9 @@ populateMoisSelect();
 renderCompta();
 renderAujourdhui();
 restoreScrollAnchor(list, __anchor);
+// On repose ce qui était écrit AVANT de poser la nouvelle référence de saisie, sinon les valeurs
+// reposées seraient prises pour l'état initial et ne seraient plus protégées.
+eqReposerSaisies(list, __saisies);
 // Nouvelle référence de saisie : tout ce qui sera modifié après ce point est considéré comme
 // « non enregistré » et protège la zone contre les rafraîchissements de fond (voir config.js).
 cltMarquerBaseSaisie(list);
@@ -4373,7 +4545,11 @@ if (error) { console.error(error); return; }
 // Les colis étant triés du plus récent au plus ancien, un nouveau colis est toujours en 1re page.
 if (__colisIdsSeen) {
 data.filter(c => !__colisIdsSeen.has(c.id)).forEach(c => {
-showTeamToast('📦', 'Nouveau colis ajouté', (c.description || 'Colis') + ' → ' + (c.destination || '?'), false);
+// Comme sur les cartes depuis le 25/08/2026 : d'abord OÙ ça va, ensuite ce que c'est.
+// C'est la destination qui dit s'il faut réagir tout de suite (une expédition part à
+// heure fixe de la gare), pas le contenu du carton.
+showTeamToast('📦', 'Nouveau colis ajouté',
+[colisDestinationTexte(c) || 'Destination à préciser', colisDescriptionTexte(c)].filter(Boolean).join(' · '), false);
 });
 }
 __colisIdsSeen = new Set(data.map(c => c.id));
@@ -5564,7 +5740,8 @@ return `
 <div class="colis-item">
 ${thumb}
 <div class="info">
-<div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+<div class="desc">${colisDestinationHTML(c)}</div>
+${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
 <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
 ${eqLigneDestinationHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
@@ -5944,7 +6121,7 @@ detail.innerHTML = `
 <tbody>
 ${rows.map(c => `
 <tr data-id="${c.id}">
-<td data-label="Colis">${escapeHTML(c.description || '(sans description)')}</td>
+<td data-label="Colis"><div class="recap-colis-ou">${colisDestinationHTML(c)}</div>${colisDescriptionTexte(c) ? `<div class="recap-colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}</td>
 <td data-label="Client">${fournisseurLabel(c.fournisseur_id)}</td>
 <td data-label="Statut">${STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut}</td>
 <td data-label="Article"><input type="number" class="compta-edit-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}"></td>
@@ -7308,6 +7485,36 @@ window.addEventListener('focus', () => reconnectRealtimeAndRefresh());
 window.addEventListener('online', () => reconnectRealtimeAndRefresh());
 // 3) Restauration depuis le cache (mobile qui rouvre l'app) : forcer une reconnexion immédiate.
 window.addEventListener('pageshow', (e) => { if (e.persisted) reconnectRealtimeAndRefresh(); });
+
+// ---- Le bouton « Actualiser » du bandeau du haut (demande du 25/08/2026) ----
+// Les filets ci-dessus continuent de tourner : les nouveautés arrivent toujours toutes seules.
+// Ce bouton ne les remplace pas, il donne la MAIN. Deux usages, tous deux réclamés :
+//  – reprendre le rendu retenu pendant qu'on écrivait (le compteur orange dit combien attendent) ;
+//  – aller chercher soi-même, quand on veut vérifier qu'on a bien la dernière version.
+if (window.CLTActualiser) {
+CLTActualiser.installer({
+id: 'btn-actualiser',
+saisieEnCours: eqSaisieEnCours,
+onActualiser: async () => {
+// Appuyer sur le bouton, c'est dire « montre-moi maintenant » : le rendu retenu part, même si
+// un champ a encore le curseur. C'est un choix explicite de la personne, pas un rendu subi.
+eqRenduDiffere = false;
+eqRendusRetenus = 0;
+// L'anti-rebond de 3 s existe pour les déclencheurs AUTOMATIQUES qui arrivent groupés
+// (visibilitychange + focus). Un appui volontaire, lui, doit toujours faire quelque chose :
+// un bouton qui ne répond pas, on le presse cinq fois en pensant qu'il est cassé.
+__lastReconnectAt = 0;
+await reconnectRealtimeAndRefresh();
+renderColis();
+},
+});
+}
+
+// Dès que le curseur quitte un champ de la liste, un rendu mis de côté peut repartir. Le délai
+// laisse passer le cas courant où l'on saute d'un champ au suivant : inutile de redessiner entre
+// deux touches. `focusout` remonte jusqu'au document, donc une seule écoute suffit pour toute la
+// liste, y compris les cartes dessinées plus tard.
+document.addEventListener('focusout', () => { setTimeout(eqRelacherRenduDiffere, 150); });
 
 // ---- File d'attente hors-réseau : reprise automatique ----
 // Trois déclencheurs volontairement redondants, parce qu'aucun n'est fiable seul :

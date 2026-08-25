@@ -62,6 +62,32 @@ if (!detecteurDoublon.startsWith('function estDoublonCleCreation')) {
   console.error('estDoublonCleCreation introuvable dans config.js'); process.exit(1);
 }
 
+/* Depuis le 25/08/2026, le bandeau hors-réseau nomme chaque colis en attente par sa DESTINATION
+   (« Nouveau colis — Boutique Awa → Cocody — Angré »), et non plus par sa description. C'est ce
+   qu'on cherche quand on relit une file : où devait aller ce colis-là. Ces phrases sont
+   fabriquées par des aides partagées de config.js — on les prend au vrai fichier plutôt que d'en
+   recopier une imitation qui divergerait au premier changement de libellé. */
+function fonctionDeConfig(nom){
+  const debutFn = configSrc.search(new RegExp('(async\\s+)?function\\s+' + nom + '\\s*\\('));
+  if (debutFn === -1) { console.error(`Fonction ${nom} introuvable dans config.js`); process.exit(1); }
+  let i = configSrc.indexOf('{', debutFn), prof = 0;
+  for (; i < configSrc.length; i++) {
+    if (configSrc[i] === '{') prof++;
+    else if (configSrc[i] === '}') { prof--; if (prof === 0) return configSrc.slice(debutFn, i + 1); }
+  }
+  console.error(`Fin de ${nom} introuvable dans config.js`); process.exit(1);
+}
+// `const COMMUNE_EXPEDITION` ne se pose pas sur l'objet de contexte quand on l'exécute ici : on
+// le réémet donc en `var`, en le relisant dans config.js pour ne jamais inventer sa valeur.
+const nomCommuneExpedition = (configSrc.match(/const COMMUNE_EXPEDITION = "([^"]+)"/) || [])[1];
+if (!nomCommuneExpedition) { console.error('COMMUNE_EXPEDITION introuvable dans config.js'); process.exit(1); }
+const aidesDestination = [
+  'var COMMUNE_EXPEDITION = ' + JSON.stringify(nomCommuneExpedition) + ';',
+  fonctionDeConfig('estExpedition'),
+  fonctionDeConfig('colisDestinationTexte'),
+  fonctionDeConfig('colisDescriptionTexte'),
+].join('\n\n');
+
 /* ---------- Faux IndexedDB, strictement limité à ce que le moteur utilise ---------- */
 function fabriquerIndexedDB(){
   const tables = {};
@@ -143,6 +169,7 @@ function fabriquerContexte(reponses){
   // est un doublon inoffensif ou une vraie erreur. La remplacer par une imitation reviendrait à
   // ne rien tester du cas le plus important.
   vm.runInContext(detecteurDoublon, ctx);
+  vm.runInContext(aidesDestination, ctx);
   vm.runInContext(porteEcriture, ctx);
   vm.runInContext(moteur, ctx);
   return ctx;

@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825expedition">
-<script src="theme.js?v=20260825expedition"></script>
+<link rel="stylesheet" href="style.css?v=20260825cartes">
+<script src="theme.js?v=20260825cartes"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -187,6 +187,7 @@
     <span id="user-avatar-topbar"></span>
     <span id="user-name"></span>
     <span class="role-pill">Client</span>
+    <button type="button" class="clt-actualiser" id="btn-actualiser" title="Actualiser maintenant" aria-label="Actualiser les données"><span class="clt-actualiser-icone" aria-hidden="true">🔄</span><span class="clt-actualiser-badge" hidden></span></button>
     <div class="settings-menu">
       <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
       <div class="settings-dropdown" id="settings-dropdown">
@@ -465,10 +466,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825expedition"></script>
-<script src="config.js?v=20260825expedition"></script>
+<script src="clt-common.js?v=20260825cartes"></script>
+<script src="config.js?v=20260825cartes"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260825expedition"></script>
+<script src="clt-select-recherche.js?v=20260825cartes"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2054,8 +2055,9 @@
         <div class="info">
           <div class="view-mode">
             ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
-            <div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
-            <div class="meta">${c.commune_destination ? 'Vers : ' + escapeHTML(c.commune_destination) + (c.destination ? ' (' + escapeHTML(c.destination) + ')' : '') + ' · ' : (c.destination ? 'Vers : ' + escapeHTML(c.destination) + ' · ' : '')}Ajouté le ${formatDate(c.created_at)}</div>
+            <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
+            ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
+            <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
             ${(!c.commune_destination && !c.destination && colisAdresseCorrigeable(c)) ? `<div class="meta" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — sans elle, le livreur ne peut pas partir.</div>` : ''}
             ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
             <!-- L'argent de la cliente d'abord, les frais de CLT ensuite et plus discrètement.
@@ -2204,6 +2206,9 @@
   function attachDraftHandlers(draftEl){
     const cancelBtn = draftEl.querySelector('.btn-cancel-duplicate');
     const saveBtn = draftEl.querySelector('.btn-save-duplicate');
+    // Une copie part très souvent vers la même destination que l'original — y compris quand cet
+    // original est une expédition. Le champ « Précision » doit donc changer de libellé ici aussi.
+    brancherPrecisionExpedition(draftEl.querySelector('.draft-commune-dest'), draftEl.querySelector('.draft-dest'));
     cancelBtn.addEventListener('click', () => { draftEl.remove(); });
     saveBtn.addEventListener('click', async () => {
       const description = draftEl.querySelector('.draft-desc').value.trim();
@@ -2281,6 +2286,14 @@
         item.querySelector('.view-mode').classList.remove('hidden');
       });
     });
+    // Comme sur le formulaire d'ajout : dès que la commune choisie est « Expédition (intérieur) »,
+    // le champ « Précision » n'est plus un repère de quartier, c'est la destination elle-même
+    // (ville + gare). Il devient obligatoire et son libellé le dit. Le formulaire de modification
+    // l'ignorait, alors que c'est là qu'on corrige une adresse incomplète.
+    list.querySelectorAll('.colis-item').forEach(item => {
+      brancherPrecisionExpedition(item.querySelector('.edit-commune-dest'), item.querySelector('.edit-dest'));
+    });
+
     list.querySelectorAll('.btn-save-edit').forEach(btn => {
       btn.addEventListener('click', async () => {
         const item = btn.closest('.colis-item');
@@ -3187,6 +3200,17 @@
       e.target.reset();
     }
   });
+
+  // ---- Le bouton « Actualiser » du bandeau du haut (demande du 25/08/2026) ----
+  // La cliente veut souvent vérifier « est-ce que mon colis a bougé ? » juste après un appel.
+  // Le temps réel le lui dira tout seul, mais un bouton qu'on peut presser rassure davantage
+  // qu'une attente silencieuse.
+  if (window.CLTActualiser) {
+    CLTActualiser.installer({
+      id: 'btn-actualiser',
+      onActualiser: () => loadColis(),
+    });
+  }
 
   init();
 </script>

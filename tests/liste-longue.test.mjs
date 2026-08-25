@@ -225,12 +225,27 @@ titre('Les rendus sont regroupés, y compris dans un onglet en arrière-plan');
   if (debut === -1 || fin === -1) {
     verifier('le bloc de regroupement des rendus existe', false, 'introuvable dans equipe.html');
   } else {
-    const bac = { dessins: 0, minuteurs: [], images: [] };
+    const bac = { dessins: 0, minuteurs: [], images: [], enAttenteAnnonce: 0, vidages: 0 };
+    // Un écran simulé, réduit à ce que la garde de saisie regarde : le champ qui a le curseur et
+    // la liste des colis. `champActif` est ce qu'on déplace dans les scénarios ci-dessous.
+    const ecran = { champActif: null };
+    const liste = { contains: (n) => n === ecran.champActif };
     const ctxRendu = vm.createContext({
       eqDessinerColis: () => { bac.dessins++; },
       setTimeout: (fn) => { bac.minuteurs.push(fn); return 1; },
       requestAnimationFrame: (fn) => { bac.images.push(fn); return 1; },
+      document: {
+        get activeElement(){ return ecran.champActif; },
+        getElementById: (id) => (id === 'colis-list' ? liste : null),
+      },
     });
+    // Dans un navigateur, `window` EST l'objet global. On reproduit ce lien, sinon la garde
+    // chercherait `window.__colisEditing` sur un objet qui n'existe pas ici.
+    vm.runInContext('globalThis.window = globalThis;', ctxRendu);
+    ctxRendu.CLTActualiser = {
+      signalerEnAttente: (n) => { bac.enAttenteAnnonce = n; },
+      viderAttente: () => { bac.vidages++; bac.enAttenteAnnonce = 0; },
+    };
     vm.runInContext(codeRendu.slice(debut, fin), ctxRendu);
 
     // Onglet visible : dix demandes en rafale, une seule image → un seul dessin.
@@ -256,6 +271,103 @@ titre('Les rendus sont regroupés, y compris dans un onglet en arrière-plan');
     bac.images.shift()();
     verifier('une nouvelle demande après coup redessine bien', bac.dessins === 2, `obtenu ${bac.dessins}`);
   }
+}
+
+/* ---------- 6 bis. On ne redessine jamais sous les doigts de quelqu'un ---------- */
+// Ajouté le 25/08/2026, après une vidéo où l'on voit une adresse à moitié tapée disparaître d'un
+// coup : la liste s'était reconstruite pendant la frappe. La règle est « on redessine toujours,
+// SAUF quand quelqu'un écrit » — la mise à jour n'est pas jetée, elle attend son tour et se
+// signale par un compteur sur le bouton du haut. C'est la partie la plus facile à casser sans
+// s'en apercevoir : un rendu retenu qui ne repart jamais fige l'écran, ce qui est pire que le mal.
+titre('Une mise à jour n’efface jamais une saisie en cours');
+{
+  const src = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+  const debut = src.indexOf('let colisRenduEnAttente = false;');
+  const fin = src.indexOf('function eqDessinerColis(){');
+  if (debut === -1 || fin === -1) {
+    verifier('le bloc de regroupement des rendus existe', false, 'introuvable dans equipe.html');
+  } else {
+    const bac = { dessins: 0, minuteurs: [], images: [], annonce: 0 };
+    const ecran = { champActif: null };
+    const liste = { contains: (n) => n === ecran.champActif };
+    const ctx = vm.createContext({
+      eqDessinerColis: () => { bac.dessins++; },
+      setTimeout: (fn) => { bac.minuteurs.push(fn); return 1; },
+      requestAnimationFrame: (fn) => { bac.images.push(fn); return 1; },
+      document: {
+        get activeElement(){ return ecran.champActif; },
+        getElementById: (id) => (id === 'colis-list' ? liste : null),
+      },
+    });
+    vm.runInContext('globalThis.window = globalThis;', ctx);
+    ctx.CLTActualiser = {
+      signalerEnAttente: (n) => { bac.annonce = n; },
+      viderAttente: () => { bac.annonce = 0; },
+    };
+    vm.runInContext(src.slice(debut, fin), ctx);
+    const declencher = () => { ctx.renderColis(); (bac.images.shift() || (() => {}))(); (bac.minuteurs.shift() || (() => {}))(); };
+
+    // 1) Le curseur est dans un champ de la liste : le rendu attend, il n'est pas perdu.
+    ecran.champActif = { tagName: 'INPUT' };
+    declencher();
+    verifier('pendant qu’on tape, la liste n’est pas reconstruite', bac.dessins === 0, `obtenu ${bac.dessins}`);
+    verifier('… et la mise à jour retenue est annoncée sur le bouton du haut', bac.annonce === 1,
+      `obtenu ${bac.annonce}`);
+
+    // 2) D'autres mises à jour arrivent : elles s'ajoutent au compteur, toujours sans redessiner.
+    declencher(); declencher();
+    verifier('les mises à jour suivantes s’accumulent au lieu de s’imposer',
+      bac.dessins === 0 && bac.annonce === 3, `dessins ${bac.dessins}, annonce ${bac.annonce}`);
+
+    // 3) On quitte le champ : ce qui attendait s'affiche enfin, en une seule fois.
+    ecran.champActif = null;
+    ctx.eqRelacherRenduDiffere();
+    verifier('dès qu’on a fini d’écrire, la mise à jour s’affiche', bac.dessins === 1, `obtenu ${bac.dessins}`);
+    verifier('… et le compteur du bouton retombe à zéro', bac.annonce === 0, `obtenu ${bac.annonce}`);
+
+    // 4) Le piège à ne surtout pas retomber dedans : le bouton « Modifier » inscrit le colis dans
+    //    `window.__colisEditing` PUIS demande un redessin — c'est ce redessin qui fait apparaître
+    //    la fiche. Si la garde traitait « une fiche est ouverte » comme « quelqu'un écrit », la
+    //    fiche empêcherait son propre affichage et le bouton « Modifier » ne ferait plus rien.
+    ctx.window.__colisEditing = new Set(['C1']);
+    declencher();
+    verifier('ouvrir une fiche de modification l’affiche vraiment (elle ne se bloque pas elle-même)',
+      bac.dessins === 2, `obtenu ${bac.dessins}`);
+
+    // 5) Chercher, filtrer, dérouler la suite : ces gestes-là passent aussi par renderColis() et
+    //    doivent toujours produire un effet, même avec une fiche ouverte quelque part.
+    ctx.renderColis(); (bac.images.shift() || (() => {}))();
+    verifier('chercher ou filtrer redessine bien, même avec une fiche ouverte',
+      bac.dessins === 3, `obtenu ${bac.dessins}`);
+    ctx.window.__colisEditing = new Set();
+
+    // 6) Rien en attente : relâcher ne doit pas provoquer de dessin fantôme.
+    ctx.eqRelacherRenduDiffere();
+    verifier('sans rien en attente, on ne redessine pas pour rien', bac.dessins === 3, `obtenu ${bac.dessins}`);
+
+    // 7) Le curseur revient dans un champ : la garde doit se réarmer, pas rester désactivée.
+    ecran.champActif = { tagName: 'TEXTAREA' };
+    declencher();
+    verifier('la protection se réarme à la saisie suivante', bac.dessins === 3, `obtenu ${bac.dessins}`);
+    ecran.champActif = null;
+    ctx.eqRelacherRenduDiffere();
+    verifier('… et relâche de nouveau une fois la saisie terminée', bac.dessins === 4, `obtenu ${bac.dessins}`);
+  }
+}
+
+/* ---------- 6 ter. Le bouton « Actualiser » est présent sur les trois écrans ---------- */
+// Demande du 25/08/2026 : « il faudrait mettre un bouton de rafraîchissement dans l'onglet du
+// haut […] Ça sera plus facile et plus accessible pour tout le monde. » Donc les TROIS espaces,
+// pas seulement celui de l'équipe.
+titre('Le bouton « Actualiser » du bandeau est branché partout');
+for (const fichier of ['equipe.html', 'livreur.html', 'fournisseur.html']) {
+  const src = fs.readFileSync(path.join(APP, fichier), 'utf8');
+  verifier(`${fichier} : le bouton est bien dans le bandeau du haut`,
+    /id="btn-actualiser"/.test(src));
+  verifier(`${fichier} : il annonce ce qu'il fait aux lecteurs d'écran`,
+    /id="btn-actualiser"[^>]*aria-label=/.test(src) || /aria-label="[^"]*[Aa]ctualiser[^"]*"/.test(src));
+  verifier(`${fichier} : il est réellement branché à un rafraîchissement`,
+    /CLTActualiser\.installer\(/.test(src));
 }
 
 /* ---------- 7. Les écrans branchent bien la troncature ---------- */

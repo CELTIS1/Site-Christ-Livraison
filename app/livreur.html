@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825expedition">
-<script src="theme.js?v=20260825expedition"></script>
+<link rel="stylesheet" href="style.css?v=20260825cartes">
+<script src="theme.js?v=20260825cartes"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -183,6 +183,7 @@
     <span id="user-avatar-topbar"></span>
     <span id="user-name"></span>
     <span class="role-pill">Livreur</span>
+    <button type="button" class="clt-actualiser" id="btn-actualiser" title="Actualiser maintenant" aria-label="Actualiser les données"><span class="clt-actualiser-icone" aria-hidden="true">🔄</span><span class="clt-actualiser-badge" hidden></span></button>
     <div class="settings-menu">
       <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
       <div class="settings-dropdown" id="settings-dropdown">
@@ -379,8 +380,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825expedition"></script>
-<script src="config.js?v=20260825expedition"></script>
+<script src="clt-common.js?v=20260825cartes"></script>
+<script src="config.js?v=20260825cartes"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -1377,15 +1378,24 @@
     if (!estExpedition(c) && !dejaSaisi) return '';
     const valeur = (c.frais_expedition === null || c.frais_expedition === undefined)
       ? '' : String(Number(c.frais_expedition) || 0);
+    /* Les quatre montants habituels sont posés en boutons : c'est entre 2 000 et 3 500 F que se
+       situe la quasi-totalité des expéditions, et un bouton évite d'ouvrir le clavier au bord
+       de la route. Ils REMPLISSENT le champ sans enregistrer — on garde le geste volontaire du
+       bouton « Enregistrer », parce qu'il s'agit d'argent retenu à une vendeuse.
+       Le champ reste libre : 2 200, 2 750, 7 000, 8 500... aucun plafond. */
+    const raccourcis = FRAIS_EXPEDITION_USUELS.map(v =>
+      `<button type="button" class="btn-frais-vite${Number(valeur) === v ? ' est-choisi' : ''}" data-frais="${v}">${v.toLocaleString('fr-FR')}</button>`
+    ).join('');
     return `
       <div class="field frais-exp-bloc" style="margin-top:8px; padding:8px 10px; border:1.5px solid #f0c48a; border-radius:10px; background:#fff8ef;">
         <label style="font-size:11.5px; font-weight:700; color:#8a4b12;">🚌 Frais payés au transporteur</label>
+        <div class="frais-exp-raccourcis">${raccourcis}</div>
         <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
-          <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="100" placeholder="Ex : 2500" value="${escapeHTML(valeur)}" aria-label="Frais d'expédition payés au transporteur, en FCFA" style="flex:1; min-width:0;">
+          <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="1" placeholder="Autre montant" value="${escapeHTML(valeur)}" aria-label="Frais d'expédition payés au transporteur, en FCFA" style="flex:1; min-width:0;">
           <button type="button" class="btn btn-sm btn-frais-exp" style="white-space:nowrap;">Enregistrer</button>
         </div>
         <div class="meta" style="font-size:11px; margin-top:4px; color:#8a4b12;">
-          Retenu sur l'argent de la cliente. N'entame pas l'argent des livraisons.
+          Écrivez le montant réellement payé, même s'il dépasse 3 500 F. Retenu sur l'argent de la cliente ; n'entame pas l'argent des livraisons.
         </div>
       </div>`;
   }
@@ -1409,8 +1419,9 @@
         ${thumb}
         <div class="info">
           ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
-          <div class="desc">${colisNumeroClientHTML(numeroClient)}${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
-          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${c.destination ? ' · Vers : ' + escapeHTML(c.destination) : ''}</div>
+          <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
+          ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
+          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
           ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
           ${collecteLineHTML(c)}
           ${tentatives > 0 ? `<div class="meta" style="color:#c0392b; font-weight:600;">🔁 Tentative(s) de livraison : ${tentatives}</div>` : ''}
@@ -1675,6 +1686,22 @@
             return;
           }
           newVal = Math.round(n);
+          /* Aucun plafond : une expédition à 7 000 ou 8 500 F existe et doit pouvoir s'écrire.
+             Mais un zéro de trop — 25 000 tapé pour 2 500 — se retiendrait en silence sur
+             l'argent d'une vendeuse et ne se verrait qu'au moment de lui remettre son dû.
+             On repose donc la question une fois, et une seule ; répondre oui suffit. */
+          if (fraisExpeditionAConfirmer(newVal)) {
+            const ok = await cltConfirm({
+              title: 'Confirmer ce montant ?',
+              detail: formatMontant(newVal) + ' payés au transporteur pour ce seul colis',
+              sub: "C'est possible — gros carton, ville éloignée — mais c'est bien au-dessus de "
+                 + "l'habitude (2 000 à 3 500 F). Cette somme sera retenue sur l'argent de la cliente. "
+                 + "Vérifiez le reçu de la gare avant de confirmer.",
+              okLabel: 'Oui, ' + formatMontant(newVal),
+              cancelLabel: 'Corriger',
+            });
+            if (!ok) return;
+          }
         }
 
         const enFile = async () => {
@@ -1732,6 +1759,22 @@
       });
     });
 
+    /* Les raccourcis 2 000 / 2 500 / 3 000 / 3 500 : ils REMPLISSENT le champ, ils
+       n'enregistrent pas. Un bouton qui écrirait directement en base ferait, d'un doigt
+       posé de travers, une retenue sur l'argent d'une vendeuse — et sans confirmation
+       possible puisque le geste et l'écriture seraient le même. */
+    list.querySelectorAll('.btn-frais-vite').forEach(b => {
+      b.addEventListener('click', () => {
+        const bloc = b.closest('.frais-exp-bloc');
+        const champ = bloc && bloc.querySelector('.frais-exp-input');
+        if (!champ) return;
+        champ.value = b.dataset.frais;
+        bloc.querySelectorAll('.btn-frais-vite').forEach(x => x.classList.remove('est-choisi'));
+        b.classList.add('est-choisi');
+        try { champ.focus(); } catch (e) {}
+      });
+    });
+
     restorePendingEdits(list, __pending);
     restoreScrollAnchor(list, __anchor);
   }
@@ -1753,7 +1796,8 @@
         ${thumb}
         <div class="info">
           ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
-          <div class="desc">${c.description ? escapeHTML(c.description) : '(sans description)'}</div>
+          <div class="desc">${colisDestinationHTML(c)}</div>
+          ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
           ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
@@ -2128,16 +2172,20 @@
       const gare = fraisExpeditionColis(c);
       const enMain = montantEnMainDuLivreur(c);
       const manque = montantManquantALaLivraison(c);
-      const titre = c.description ? escapeHTML(c.description) : '(sans description)';
+      // Même règle que sur les cartes : on annonce d'abord OÙ, et le contenu du
+      // carton en dessous. Un relevé d'argent se relit le soir en se rappelant
+      // des courses faites, pas des articles vus.
+      const quoi = colisDescriptionTexte(c);
       return `
         <div class="finance-colis">
           <div class="finance-colis-tete">
             <div class="finance-colis-titre">
               ${c.numero ? `<span class="finance-colis-num">${escapeHTML(c.numero)}</span>` : ''}
-              <span>${titre}</span>
+              <span>${colisDestinationHTML(c)}</span>
             </div>
             <div class="finance-colis-badges">${statutBadgeHTML(c.statut)}${paiementBadgeHTML(c)}</div>
           </div>
+          ${quoi ? `<div class="finance-colis-quoi">📦 ${escapeHTML(quoi)}</div>` : ''}
           <div class="finance-colis-lignes">
             <div><span>Article</span><strong>${art ? m(art) : '—'}</strong></div>
             <div><span>Livraison</span><strong>${liv ? m(liv) : '—'}</strong></div>
@@ -2526,6 +2574,26 @@
     updatePositionSharingFromColis();
   }
   document.getElementById('btn-accept-geoloc-consent').addEventListener('click', acceptGeolocConsent);
+
+  // ---- Le bouton « Actualiser » du bandeau du haut (demande du 25/08/2026) ----
+  // Chez le livreur, les saisies en cours sont déjà protégées par capturePendingEdits (plus haut).
+  // Ce bouton répond à l'autre besoin exprimé : pouvoir aller chercher soi-même la dernière
+  // version, sans attendre, quand on doute d'avoir la bonne liste sous les yeux.
+  if (window.CLTActualiser) {
+    CLTActualiser.installer({
+      id: 'btn-actualiser',
+      saisieEnCours: () => {
+        const a = document.activeElement;
+        if (!a) return false;
+        const t = (a.tagName || '').toLowerCase();
+        return t === 'input' || t === 'select' || t === 'textarea';
+      },
+      onActualiser: async () => {
+        await loadColis();
+        await refreshOfflineBanner();
+      },
+    });
+  }
 
   document.getElementById('btn-sync-now').addEventListener('click', () => { flushOfflineQueue(); });
   window.addEventListener('online', () => { flushOfflineQueue(); });

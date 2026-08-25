@@ -388,6 +388,134 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
 })();
 
 /* =====================================================================
+   LE BOUTON « ACTUALISER » — ajout du 25 août 2026
+   ---------------------------------------------------------------------
+   POURQUOI IL EXISTE
+   Les trois tableaux de bord se rafraîchissaient tout seuls : à chaque
+   événement temps réel, toutes les 25 secondes, et à chaque retour de
+   l'application au premier plan. Chacun de ces rafraîchissements
+   reconstruisait la liste des colis d'un bloc (`innerHTML = ...`).
+
+   Tant qu'on se contente de regarder, c'est parfait. Mais dès qu'on écrit
+   dedans — corriger une adresse, choisir un livreur, taper un montant — la
+   liste se reconstruit SOUS LES DOIGTS. Le champ à moitié rempli est remplacé
+   par un champ neuf, et la moitié déjà tapée disparaît. Sur la vidéo du
+   25/08 on lit « Daloa exgare TSRR » : deux saisies successives entrelacées
+   par un rendu tombé au milieu. Ce n'est pas une gêne, c'est une donnée
+   fausse qui part en base.
+
+   LA RÈGLE RETENUE
+   Le temps réel continue de tout mettre à jour tout seul — c'est ce qu'on
+   veut, et c'est instantané. MAIS il ne redessine JAMAIS pendant qu'on écrit.
+   Quand une saisie est en cours, le rendu est mis de côté ; un compteur
+   discret apparaît sur le bouton (« 3 »), et le rendu s'applique dès que la
+   saisie est finie — ou immédiatement si l'on appuie soi-même sur Actualiser.
+
+   Ce composant ne fait que la partie visible : le bouton, son état, son
+   compteur. C'est chaque écran qui décide de ce que « rafraîchir » veut dire
+   chez lui, et qui déclare quand une saisie est en cours.
+
+   API
+     CLTActualiser.installer({ id, onActualiser, saisieEnCours })
+     CLTActualiser.signalerEnAttente(n)   — n mises à jour retenues
+     CLTActualiser.viderAttente()
+     CLTActualiser.tourner(bool)          — état « en train de charger »
+   ===================================================================== */
+(function () {
+  "use strict";
+
+  var etat = {
+    bouton: null,
+    badge: null,
+    onActualiser: null,
+    saisieEnCours: null,
+    enAttente: 0,
+    enCours: false,
+  };
+
+  function majBadge() {
+    if (!etat.badge) return;
+    if (etat.enAttente > 0) {
+      etat.badge.textContent = etat.enAttente > 99 ? "99+" : String(etat.enAttente);
+      etat.badge.hidden = false;
+      etat.bouton.classList.add("a-du-neuf");
+      // Le titre dit ce que le chiffre veut dire. Un badge orange sans explication
+      // inquiète sans rien apprendre.
+      etat.bouton.title = etat.enAttente === 1
+        ? "1 mise à jour reçue, gardée de côté pendant votre saisie. Touchez pour l'afficher."
+        : etat.enAttente + " mises à jour reçues, gardées de côté pendant votre saisie. Touchez pour les afficher.";
+    } else {
+      etat.badge.hidden = true;
+      etat.bouton.classList.remove("a-du-neuf");
+      etat.bouton.title = "Actualiser maintenant";
+    }
+  }
+
+  function installer(opts) {
+    opts = opts || {};
+    var btn = document.getElementById(opts.id || "btn-actualiser");
+    if (!btn) return null;
+    etat.bouton = btn;
+    etat.badge = btn.querySelector(".clt-actualiser-badge");
+    etat.onActualiser = typeof opts.onActualiser === "function" ? opts.onActualiser : null;
+    etat.saisieEnCours = typeof opts.saisieEnCours === "function" ? opts.saisieEnCours : null;
+
+    btn.addEventListener("click", function () {
+      if (etat.enCours) return;
+      lancer();
+    });
+    majBadge();
+    return { lancer: lancer };
+  }
+
+  function lancer() {
+    if (!etat.onActualiser || etat.enCours) return;
+    etat.enCours = true;
+    tourner(true);
+    var fini = function () {
+      etat.enCours = false;
+      tourner(false);
+      etat.enAttente = 0;
+      majBadge();
+    };
+    var r;
+    try { r = etat.onActualiser(); }
+    catch (e) { console.error("Actualisation impossible :", e); fini(); return; }
+    if (r && typeof r.then === "function") r.then(fini, function (e) { console.error(e); fini(); });
+    // Un rafraîchissement qui rend la main tout de suite reste visible une demi-seconde :
+    // sans ce délai, on appuie et il ne se passe rien à l'œil, alors qu'en réalité tout
+    // s'est fait. On finit par appuyer trois fois de suite.
+    else setTimeout(fini, 500);
+  }
+
+  function tourner(oui) {
+    if (!etat.bouton) return;
+    etat.bouton.classList.toggle("tourne", !!oui);
+    etat.bouton.disabled = !!oui;
+  }
+
+  function signalerEnAttente(n) {
+    etat.enAttente = Math.max(0, Number(n) || 0);
+    majBadge();
+  }
+  function viderAttente() { signalerEnAttente(0); }
+  function saisieEnCours() {
+    try { return etat.saisieEnCours ? !!etat.saisieEnCours() : false; }
+    catch (e) { return false; }
+  }
+
+  window.CLTActualiser = {
+    installer: installer,
+    lancer: lancer,
+    tourner: tourner,
+    signalerEnAttente: signalerEnAttente,
+    viderAttente: viderAttente,
+    saisieEnCours: saisieEnCours,
+    get enAttente() { return etat.enAttente; },
+  };
+})();
+
+/* =====================================================================
    POLISSAGE EXPRESS — retour tactile (ripple) sur les boutons .btn
    Écoute déléguée : fonctionne pour tous les boutons présents ou créés
    dynamiquement. Désactivé si l'usager a demandé moins d'animations.
