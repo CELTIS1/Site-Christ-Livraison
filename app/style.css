@@ -803,9 +803,14 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
      affiché qu'un libellé suivi de rien, et on chercherait le chiffre manquant. */
   .recap-table-cards td:empty{display:none;}
   /* La ligne de total garde son fond gris : c'est le dernier bloc, et il doit se distinguer
-     des clientes qui le précèdent, sinon on le lit comme une cliente de plus. */
-  .recap-table-cards tfoot tr{background:var(--grey-bg); border-color:var(--navy);}
-  .recap-table-cards tfoot td{background:none;}
+     des clientes qui le précèdent, sinon on le lit comme une cliente de plus. Le trait bleu
+     qui le soulignait passe autour du bloc entier, au lieu de rester sur chaque cellule. */
+  .recap-table-cards tfoot tr{background:var(--grey-bg); border:2px solid var(--navy);}
+  /* Sur un large écran, chaque cellule du total porte un trait bleu au-dessus : mises côte à
+     côte elles n'en forment qu'un, qui souligne la ligne. Repliées en blocs, chaque cellule
+     devient une ligne — et le trait unique se multipliait par le nombre de colonnes, cinq
+     barres bleues empilées là où le bloc n'a besoin que de son contour. */
+  .recap-table-cards tfoot td{background:none; border-top:none !important;}
 }
 
 /* ---- Récapitulatif par client ---- */

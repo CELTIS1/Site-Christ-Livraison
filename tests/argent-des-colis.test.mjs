@@ -468,6 +468,13 @@ titre('Un tableau d\'argent reste lisible sur un téléphone');
   verifier('la ligne de total se distingue encore une fois repliée en bloc',
     /\.recap-table-cards tfoot tr\{/.test(style),
     'sans fond propre, le total se lit comme une cliente de plus');
+  // Vu à l'écran le 25 août, après coup : le trait bleu que chaque cellule du total porte
+  // au-dessus d'elle ne fait qu'une ligne quand les cellules sont côte à côte, mais cinq
+  // barres empilées quand elles deviennent des blocs. Le !important d'origine passait devant
+  // le « border:none » des cartes.
+  verifier('le trait du total ne se multiplie pas par le nombre de colonnes',
+    /\.recap-table-cards tfoot td\{[^}]*border-top:none ?!important/.test(style),
+    'sinon le bloc de total affiche une barre bleue par ligne');
   verifier('le conteneur absorbe le débordement au lieu d\'élargir la page',
     /\.recap-table-wrap\{[^}]*overflow-x:auto/.test(style));
 }
