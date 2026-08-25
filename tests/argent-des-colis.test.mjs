@@ -109,6 +109,7 @@ vm.runInContext([
   'montantArticleEncaisse',
   'montantLivraisonEncaissee',
   'montantArticleADevoir',
+  'fraisExpeditionARembourser',
   'montantEnMainDuLivreur',
   'montantManquantALaLivraison',
   'totauxArgent',
@@ -126,6 +127,7 @@ const {
   fraisExpeditionColis, fraisExpeditionADevoir, montantNetADevoir,
   articleEncaisse, livraisonEncaissee,
   montantArticleEncaisse, montantLivraisonEncaissee, montantArticleADevoir,
+  fraisExpeditionARembourser,
   montantEnMainDuLivreur, montantManquantALaLivraison,
   totauxArgent, piedTotalHTML, paiementInfo,
 } = contexte;

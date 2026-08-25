@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825calme">
-<script src="theme.js?v=20260825calme"></script>
+<link rel="stylesheet" href="style.css?v=20260825caisse">
+<script src="theme.js?v=20260825caisse"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -466,10 +466,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825calme"></script>
-<script src="config.js?v=20260825calme"></script>
+<script src="clt-common.js?v=20260825caisse"></script>
+<script src="config.js?v=20260825caisse"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260825calme"></script>
+<script src="clt-select-recherche.js?v=20260825caisse"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2579,9 +2579,14 @@
       return;
     }
     // Détail des colis livrés & encaissés, pas encore reversés (les plus anciens d'abord).
+    //
+    // `montant` et `montant_livraison` sont demandés en plus de `montant_article` : sans eux,
+    // montantArticleColis() ne peut pas reconnaître un colis ancien et répondrait zéro. C'est
+    // exactement l'écart de 15 500 FCFA constaté le 25/08/2026 entre le relevé de la vendeuse
+    // et le chiffre de l'équipe — sauf qu'ici il se serait vu ligne par ligne, en « 0 FCFA ».
     const { data: aReverser, error: err2 } = await supabaseClient
       .from('colis')
-      .select('numero, montant_article, frais_expedition, created_at')
+      .select('numero, montant, montant_article, montant_livraison, frais_expedition, created_at')
       .eq('fournisseur_id', currentUser.id)
       .eq('statut', 'livre')
       .not('article_non_encaisse', 'is', true)
@@ -2592,13 +2597,22 @@
     // Colis par colis, l'avance d'expédition est nommée sous la ligne qu'elle diminue. C'est
     // à cet endroit-là qu'on répond à « pourquoi ce colis me rapporte moins que le montant
     // que j'avais annoncé ? » — la question se pose sur un colis précis, pas sur un total.
+    //
+    // Les deux montants passent par les fonctions partagées de config.js, jamais par une
+    // lecture directe du champ : c'est ce qui garantit que la somme des lignes redonne la
+    // tuile du haut, laquelle vient de la base.
+    let sommeArticles = 0;
+    let sommeGare = 0;
     const rows = aReverser.map(c => {
-      const gare = Number(c.frais_expedition) || 0;
+      const article = montantArticleColis(c);
+      const gare = fraisExpeditionColis(c);
+      sommeArticles += article;
+      sommeGare += gare;
       return `
       <div style="padding:7px 0; border-bottom:1px solid var(--border);">
         <div style="display:flex; justify-content:space-between; gap:10px;">
           <span>${escapeHTML(c.numero || '—')}<span style="color:var(--muted); font-size:12px;"> · ${new Date(c.created_at).toLocaleDateString('fr-FR')}</span></span>
-          <strong>${formatMontant(Number(c.montant_article) || 0) || '0 FCFA'}</strong>
+          <strong>${formatMontant(article) || '0 FCFA'}</strong>
         </div>
         ${gare ? `<div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:#8a4b12; margin-top:2px;">
           <span>🚌 Frais d'expédition avancés</span><span>−${formatMontant(gare)}</span>
@@ -2608,9 +2622,22 @@
     // La requête est plafonnée à 100 lignes. Si le plafond est atteint, on le dit : le total en
     // FCFA affiché plus haut reste juste, mais ce détail ne montre alors que les plus anciens.
     const plafondAtteint = aReverser.length >= 100;
+    // La ligne de total. Une liste de montants qui ne s'additionne nulle part oblige la vendeuse
+    // à faire la somme à la main pour vérifier — et à se demander, si elle tombe à côté, qui des
+    // deux a tort. Le total est donc posé ici, et il se recompose des lignes juste au-dessus.
+    // Tant que le plafond n'est pas atteint, il doit être égal à la tuile « CLT vous doit ».
+    const totalLignes = sommeArticles - sommeGare;
     cltPoserHTML(detail, `
       <div style="font-size:13px; font-weight:600; margin:4px 0 6px;">En attente de reversement${plafondAtteint ? ' (100 plus anciens)' : ` (${aReverser.length})`}</div>
-      ${rows}`);
+      ${rows}
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:9px 0 2px; border-top:2px solid var(--border); font-weight:700;">
+        <span>Total${plafondAtteint ? ' des 100 lignes ci-dessus' : ''}</span>
+        <span style="color:#E26313;">${formatMontant(totalLignes) || '0 FCFA'}</span>
+      </div>
+      ${sommeGare ? `<div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--muted); padding-top:3px;">
+        <span>soit ${formatMontant(sommeArticles)} d'articles − ${formatMontant(sommeGare)} de frais d'expédition avancés</span>
+      </div>` : ''}
+      ${plafondAtteint ? `<div style="font-size:12px; color:var(--muted); padding-top:3px;">Le total de la tuile « CLT vous doit » porte sur tous vos colis, pas seulement sur ces 100.</div>` : ''}`);
   }
 
   // ---- Historique des reversements ------------------------------------------------------

@@ -2537,6 +2537,28 @@ function montantArticleADevoir(c) {
   return montantArticleColis(c);
 }
 
+/* Avance de gare que CLT doit encore rembourser au livreur sur ce colis.
+
+   Trois dates comptent, et elles ne tombent pas ensemble :
+     1. le livreur paie la gare        → frais_expedition saisi (souvent le matin)
+     2. CLT lui rembourse l'avance     → frais_expedition_rembourse_at
+     3. le colis arrive et est livré   → statut = 'livre'
+
+   Entre 1 et 2, l'argent est sorti de sa poche et personne ne le lui a rendu : il faut le
+   déduire de ce qu'on lui réclame le soir. Après 2, il ne faut PLUS le déduire, sinon on le
+   lui rembourserait une seconde fois. C'est exactement le piège du 25 août 2026 : sans cette
+   date, une avance de 3 000 FCFA se retranchait au moment de la remise du soir, puis se
+   retranchait encore le lendemain quand le colis était enfin livré. Le livreur gardait 3 000
+   FCFA de trop, et rien à l'écran ne le montrait.
+
+   Noter que l'étape 3 n'intervient pas ici. Une avance se rembourse parce qu'elle a été payée,
+   pas parce que le colis est arrivé. */
+function fraisExpeditionARembourser(c) {
+  if (!c) return 0;
+  if (c.frais_expedition_rembourse_at) return 0;
+  return fraisExpeditionColis(c);
+}
+
 // Ce que le livreur a réellement en main sur ce colis : les deux poches, mais seulement si
 // elles sont rentrées. Un colis remis sans que l'argent suive ne pèse rien dans sa caisse.
 //
@@ -2544,8 +2566,11 @@ function montantArticleADevoir(c) {
 // le livreur qui a payé la gare, en billets, avant de rentrer. Le soir, ce qu'il remet à CLT est
 // allégé d'autant, et le justificatif de la gare fait le reste. Ne pas les déduire ici
 // reviendrait à lui réclamer une somme qu'il n'a plus.
+//
+// On déduit l'avance ENCORE DUE, pas l'avance payée : une fois remboursée, elle a retrouvé sa
+// poche et n'a plus à peser sur sa caisse. Voir fraisExpeditionARembourser ci-dessus.
 function montantEnMainDuLivreur(c) {
-  return montantArticleEncaisse(c) + montantLivraisonEncaissee(c) - fraisExpeditionColis(c);
+  return montantArticleEncaisse(c) + montantLivraisonEncaissee(c) - fraisExpeditionARembourser(c);
 }
 
 // Argent qu'on aurait dû encaisser à la livraison et qui manque (l'exception cochée).
@@ -2595,6 +2620,10 @@ function totauxArgent(colis) {
     nbExpeditions: 0,
     fraisExpedition: 0,
     fraisExpeditionADevoir: 0,
+    // Part des avances que CLT n'a pas encore rendue au livreur. C'est elle, et non le total
+    // payé à la gare, qui allège ce qu'il doit remettre le soir : une avance déjà remboursée
+    // est retournée dans sa poche. Voir fraisExpeditionARembourser.
+    fraisARembourser: 0,
     netADevoir: 0,
   };
   liste.forEach(c => {
@@ -2614,14 +2643,19 @@ function totauxArgent(colis) {
     if (estExpedition(c)) t.nbExpeditions++;
     t.fraisExpedition += fraisExpeditionColis(c);
     t.fraisExpeditionADevoir += fraisExpeditionADevoir(c);
+    t.fraisARembourser += fraisExpeditionARembourser(c);
   });
   t.totalEnregistre = t.articleEnregistre + t.livraisonEnregistree;
   t.totalEncaisse   = t.articleEncaisse + t.livraisonEncaissee;
-  // Ce que le livreur a vraiment sur lui : l'encaissé, moins ce qu'il a laissé à la gare.
-  // Distinct de totalEncaisse, et les deux doivent rester lisibles côte à côte : l'un dit ce qui
-  // est rentré, l'autre ce qu'il reste à remettre. Confondre les deux, c'est réclamer le soir à
-  // un livreur une somme qu'il a payée le matin.
-  t.totalEnMain = t.totalEncaisse - t.fraisExpedition;
+  // Ce que le livreur a vraiment sur lui : l'encaissé, moins ce qu'il a laissé à la gare et
+  // qu'on ne lui a pas encore rendu. Distinct de totalEncaisse, et les deux doivent rester
+  // lisibles côte à côte : l'un dit ce qui est rentré, l'autre ce qu'il reste à remettre.
+  // Confondre les deux, c'est réclamer le soir à un livreur une somme qu'il a payée le matin.
+  //
+  // `fraisARembourser` et non `fraisExpedition` : une avance déjà remboursée est revenue dans sa
+  // poche, la déduire encore la lui offrirait une seconde fois. Les deux lignes restent
+  // disponibles côte à côte, l'une pour dire ce qui est sorti, l'autre ce qui est encore dû.
+  t.totalEnMain = t.totalEncaisse - t.fraisARembourser;
   // Le net se déduit des deux lignes juste au-dessus, et jamais de la recette de livraison :
   // c'est toute la question tranchée le 25 août 2026.
   t.netADevoir = t.articleADevoir - t.fraisExpeditionADevoir;

@@ -99,6 +99,19 @@ jobs:
       - name: L'argent des colis (deux poches, jamais mélangées)
         run: node tests/argent-des-colis.test.mjs
 
+      # Le contrôle croisé des écrans. Le 25 août, le téléphone d'un livreur affichait 11 000
+      # en main et le tableau de l'équipe lui en réclamait 14 000 : il avait payé 3 000 à la
+      # gare le matin, sur un colis qui n'arrivait que le lendemain, et le tableau de l'équipe
+      # ne regardait que les colis livrés. Personne n'avait tort — deux écrans posaient la même
+      # question et comptaient différemment. C'est la seule espèce de défaut qui se termine en
+      # dispute, parce que chacun tient un chiffre affiché par l'application elle-même.
+      # Cette série EXÉCUTE réellement le tableau de l'équipe dans un faux navigateur et relit
+      # les cellules produites une à une : son total doit valoir, au franc près, celui que le
+      # téléphone du livreur calcule. Elle garde aussi qu'une avance de gare se retranche une
+      # fois et une seule, et qu'un colis pas encore livré n'est jamais marqué « remis ».
+      - name: Contrôle croisé des écrans (l'équipe et le livreur disent le même chiffre)
+        run: node tests/controle-croise-des-ecrans.test.mjs
+
       # L'écran qui ne bouge pas. Signalé le 25 août : « ça s'actualise, ça vibre, et les données
       # saisies s'effacent ». L'application redessinait de grands blocs avec un contenu identique
       # à celui déjà affiché ; le navigateur, lui, ne peut pas le deviner et détruit tout. Cette

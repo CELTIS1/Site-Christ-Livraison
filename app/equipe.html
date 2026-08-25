@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825calme">
-<script src="theme.js?v=20260825calme"></script>
+<link rel="stylesheet" href="style.css?v=20260825caisse">
+<script src="theme.js?v=20260825caisse"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1016,7 +1016,7 @@
         <input type="text" id="remise-modal-attendu" readonly style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box; background:#f2f5f9; font-weight:700;">
       </div>
       <div style="text-align:left; margin-bottom:10px;">
-        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Montant réellement reçu (FCFA)</label>
+        <label id="remise-modal-recu-label" for="remise-modal-recu" style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Montant réellement reçu (FCFA)</label>
         <input type="number" id="remise-modal-recu" min="0" step="1" inputmode="numeric" required style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
       </div>
       <div id="remise-modal-ecart" style="text-align:left; font-weight:700; margin-bottom:12px; font-size:13.5px;"></div>
@@ -1033,10 +1033,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825calme"></script>
-<script src="config.js?v=20260825calme"></script>
+<script src="clt-common.js?v=20260825caisse"></script>
+<script src="config.js?v=20260825caisse"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260825calme"></script>
+<script src="clt-select-recherche.js?v=20260825caisse"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1272,12 +1272,33 @@ function majEcartRemise(){
     box.innerHTML = `<span style="color:#b8860b;">ℹ️ Trop-perçu ${fmtFcfa(ecart)} — à vérifier.</span>`;
   }
 }
-function showRemiseModal(livreurId, attendu, colisIds, nbColis){
-  __remiseCtx = { livreurId, attendu: Number(attendu) || 0, colisIds: colisIds || [] };
+// colisFraisIds : les colis PAS ENCORE livrés dont on rembourse seulement l'avance de gare.
+// Ils sont transmis à part et ne seront jamais marqués « remis » — sinon leur argent, encaissé
+// plus tard à la livraison, ne serait plus jamais réclamé.
+function showRemiseModal(livreurId, attendu, colisIds, nbColis, colisFraisIds){
+  __remiseCtx = {
+    livreurId,
+    attendu: Number(attendu) || 0,
+    colisIds: colisIds || [],
+    colisFraisIds: colisFraisIds || []
+  };
   const nom = collecteLivreurLabel(livreurId) || 'ce livreur';
-  document.getElementById('remise-modal-sub').textContent = `${nom} · ${nbColis} colis à solder`;
+  const nbFrais = __remiseCtx.colisFraisIds.length;
+  const partFrais = nbFrais ? ` · ${nbFrais} avance${nbFrais > 1 ? 's' : ''} de gare à rembourser` : '';
+  document.getElementById('remise-modal-sub').textContent = `${nom} · ${nbColis} colis à solder${partFrais}`;
   document.getElementById('remise-modal-attendu').value = fmtFcfa(__remiseCtx.attendu);
-  document.getElementById('remise-modal-recu').value = Math.round(__remiseCtx.attendu);
+  // Quand l'avance de gare dépasse l'argent encaissé, l'attendu est NÉGATIF : ce n'est plus le
+  // livreur qui rend des billets, c'est CLT qui lui en sort. Le champ doit alors accepter un
+  // nombre négatif — avec min="0" le formulaire refusait de partir, sans expliquer pourquoi.
+  const champRecu = document.getElementById('remise-modal-recu');
+  champRecu.min = __remiseCtx.attendu < 0 ? String(Math.round(__remiseCtx.attendu)) : '0';
+  champRecu.value = Math.round(__remiseCtx.attendu);
+  const labelRecu = document.getElementById('remise-modal-recu-label');
+  if (labelRecu){
+    labelRecu.textContent = __remiseCtx.attendu < 0
+      ? 'Montant réellement rendu au livreur (FCFA, en négatif)'
+      : 'Montant réellement reçu (FCFA)';
+  }
   document.getElementById('remise-modal-note').value = '';
   document.getElementById('remise-modal-msg').innerHTML = '';
   majEcartRemise();
@@ -1299,12 +1320,15 @@ document.addEventListener('keydown', (e) => {
 document.getElementById('remise-modal-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!__remiseCtx) return;
-  const { livreurId, colisIds } = __remiseCtx;
-  if (!colisIds.length) { hideRemiseModal(); return; }
+  const { livreurId, colisIds, colisFraisIds } = __remiseCtx;
+  if (!colisIds.length && !colisFraisIds.length) { hideRemiseModal(); return; }
   const recuRaw = document.getElementById('remise-modal-recu').value;
   const recu = Number(recuRaw);
   const msgBox = document.getElementById('remise-modal-msg');
-  if (recuRaw === '' || isNaN(recu) || recu < 0){
+  // Un montant négatif n'est accepté que lorsque l'attendu l'est aussi — c'est-à-dire quand
+  // c'est CLT qui rend l'avance de gare. Partout ailleurs, un négatif est une faute de frappe.
+  const negatifAutorise = (__remiseCtx.attendu || 0) < 0;
+  if (recuRaw === '' || isNaN(recu) || (recu < 0 && !negatifAutorise)){
     msgBox.innerHTML = `<div class="msg msg-error">Saisissez un montant reçu valide (0 ou plus).</div>`;
     return;
   }
@@ -1312,7 +1336,8 @@ document.getElementById('remise-modal-form').addEventListener('submit', async (e
   const saveBtn = document.getElementById('remise-modal-save');
   saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement...';
   const { data, error } = await supabaseClient.rpc('enregistrer_remise_caisse', {
-    p_livreur_id: livreurId, p_montant_remis: recu, p_colis_ids: colisIds, p_note: note
+    p_livreur_id: livreurId, p_montant_remis: recu, p_colis_ids: colisIds, p_note: note,
+    p_colis_frais_ids: colisFraisIds
   });
   saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer la remise';
   if (error){
@@ -1325,9 +1350,16 @@ document.getElementById('remise-modal-form').addEventListener('submit', async (e
   }
   const row = Array.isArray(data) ? data[0] : data;
   const ecart = row ? Number(row.ecart) : (recu - (__remiseCtx.attendu || 0));
+  const maintenant = new Date().toISOString();
   colisIds.forEach(id => {
     const idx = allColis.findIndex(c => c.id === id);
-    if (idx !== -1){ allColis[idx].encaissement_remis = true; allColis[idx].encaissement_remis_at = new Date().toISOString(); }
+    if (idx !== -1){ allColis[idx].encaissement_remis = true; allColis[idx].encaissement_remis_at = maintenant; }
+  });
+  // Les avances remboursées : le colis reste NON remis, seule la date d'avance est posée.
+  // C'est elle qui empêchera l'avance d'être déduite une deuxième fois le jour de la livraison.
+  (colisFraisIds || []).forEach(id => {
+    const idx = allColis.findIndex(c => c.id === id);
+    if (idx !== -1){ allColis[idx].frais_expedition_rembourse_at = maintenant; }
   });
   hideRemiseModal();
   if (typeof showTeamToast === 'function'){
@@ -6230,8 +6262,8 @@ renderCaisseLivreur(rows);
 }
 
 // ---------- Réconciliation de caisse par livreur ----------
-// Pour les colis LIVRÉS de la période, calcule par livreur ce qu'il a réellement en main et ce
-// qu'il reste à remettre à l'entreprise. Ici — et ici seulement — les deux poches s'additionnent :
+// Calcule par livreur ce qu'il a réellement en main sur la période et ce qu'il reste à remettre
+// à l'entreprise. Ici — et ici seulement — les deux poches s'additionnent :
 // le livreur porte physiquement l'argent de l'article ET les frais de livraison. C'est le seul
 // endroit de l'application où ce total a un sens.
 //
@@ -6241,34 +6273,69 @@ renderCaisseLivreur(rows);
 //
 // Dégradation gracieuse : si la colonne encaissement_remis n'existe pas encore (migration SQL
 // non lancée), tout est considéré « à remettre » et le bouton informe qu'il faut lancer la migration.
+//
+// Correction du 25 août 2026 (avances de gare) : ce tableau ne regardait que les colis LIVRÉS.
+// Or le livreur paie la gare le matin, sur un colis qui n'arrivera que le lendemain ou plus tard.
+// Entre les deux, l'argent était sorti de sa poche sans qu'aucun écran de l'équipe ne le sache :
+// son téléphone affichait 11 000, ce tableau lui en réclamait 14 000. On compte désormais l'avance
+// dès le jour où elle est payée, exactement comme son téléphone.
+//
+// Deux ensembles DISJOINTS sont donc constitués par livreur :
+//   • idsAremettre       — colis livrés dont l'argent n'est pas encore remis ;
+//   • idsFraisARembourser — colis PAS ENCORE livrés portant une avance non remboursée.
+// Le second ne doit jamais être marqué « remis » : le jour de la livraison, son argent sera
+// réclamé en entier. Seule la date de remboursement de l'avance y est posée, pour que l'avance
+// ne soit pas déduite une seconde fois.
 function renderCaisseLivreur(rows){
 const box = document.getElementById('caisse-livreur');
 if (!box) return;
+const avanceDue = (c) => Number(fraisExpeditionARembourser(c)) || 0;
 const livres = (rows || []).filter(c => c.statut === 'livre');
-if (!livres.length){
+// Les colis non livrés n'entrent ici que par leur avance de gare, et pour elle seule.
+const avances = (rows || []).filter(c => c.statut !== 'livre' && avanceDue(c) > 0);
+if (!livres.length && !avances.length){
 cltPoserHTML(box, `<div class="empty-state">Aucun colis livré sur cette période.</div>`);
 return;
 }
 const parLivreur = {};
+const ligneDe = (key) => {
+if (!parLivreur[key]) parLivreur[key] = { nb:0, article:0, livraison:0, gare:0, total:0, remis:0, reste:0, manquant:0, idsAremettre:[], idsFraisARembourser:[] };
+return parLivreur[key];
+};
 livres.forEach(c => {
-const key = c.livreur_id || 'inconnu';
-if (!parLivreur[key]) parLivreur[key] = { nb:0, article:0, livraison:0, total:0, remis:0, reste:0, manquant:0, idsAremettre:[] };
+const l = ligneDe(c.livreur_id || 'inconnu');
+// montantEnMainDuLivreur() déduit déjà l'avance encore due sur ce colis-ci.
 const montant = Number(montantEnMainDuLivreur(c)) || 0;
-parLivreur[key].nb++;
-parLivreur[key].article += Number(montantArticleEncaisse(c)) || 0;
-parLivreur[key].livraison += Number(montantLivraisonEncaissee(c)) || 0;
-parLivreur[key].total += montant;
-parLivreur[key].manquant += Number(montantManquantALaLivraison(c)) || 0;
-if (c.encaissement_remis){ parLivreur[key].remis += montant; }
-else { parLivreur[key].reste += montant; parLivreur[key].idsAremettre.push(c.id); }
+l.nb++;
+l.article += Number(montantArticleEncaisse(c)) || 0;
+l.livraison += Number(montantLivraisonEncaissee(c)) || 0;
+l.gare += avanceDue(c);
+l.total += montant;
+l.manquant += Number(montantManquantALaLivraison(c)) || 0;
+if (c.encaissement_remis){ l.remis += montant; }
+else { l.reste += montant; l.idsAremettre.push(c.id); }
+});
+avances.forEach(c => {
+const l = ligneDe(c.livreur_id || 'inconnu');
+const avance = avanceDue(c);
+// L'avance seule : ni article, ni livraison. Le colis n'est pas livré, son argent
+// n'est pas rentré, et on ne le solde pas — on rend seulement les billets de la gare.
+l.gare += avance;
+l.total -= avance;
+l.reste -= avance;
+l.idsFraisARembourser.push(c.id);
 });
 const lignes = Object.keys(parLivreur).map(id => ({ id, ...parLivreur[id] })).sort((a,b) => b.reste - a.reste);
 const somme = (champ) => lignes.reduce((s, r) => s + (Number(r[champ]) || 0), 0);
 const totalManquant = somme('manquant');
+// Colonne affichée seulement s'il y a une avance à montrer : un tableau sans avance
+// ne doit pas porter une colonne de zéros.
+const colonneGare = somme('gare') > 0;
+const cellulesGare = (contenu) => colonneGare ? contenu : '';
 if (!cltPoserHTML(box, `
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
-<thead><tr><th>Livreur</th><th>Colis livrés</th><th>Articles</th><th>Livraisons</th><th>Total en main</th><th>Déjà remis</th><th>Reste à remettre</th><th></th></tr></thead>
+<thead><tr><th>Livreur</th><th>Colis livrés</th><th>Articles</th><th>Livraisons</th>${cellulesGare('<th>Avancé à la gare</th>')}<th>Total en main</th><th>Déjà remis</th><th>Reste à remettre</th><th></th></tr></thead>
 <tbody>
 ${lignes.map(r => `
 <tr data-livreur="${r.id}">
@@ -6276,10 +6343,11 @@ ${lignes.map(r => `
 <td data-label="Colis livrés">${r.nb}${r.manquant > 0 ? ` <span title="Colis remis sans que l'argent rentre" style="color:#c0392b;">(−${formatMontant(r.manquant)})</span>` : ''}</td>
 <td data-label="Articles">${formatMontant(r.article) || '0 FCFA'}</td>
 <td data-label="Livraisons">${formatMontant(r.livraison) || '0 FCFA'}</td>
+${cellulesGare(`<td data-label="Avancé à la gare" title="Argent que le livreur a payé à la gare et que CLT doit lui rendre" style="color:${r.gare > 0 ? '#E26313' : 'inherit'};">${r.gare > 0 ? '−' + formatMontant(r.gare) : '0 FCFA'}</td>`)}
 <td data-label="Total en main">${formatMontant(r.total) || '0 FCFA'}</td>
 <td data-label="Déjà remis">${formatMontant(r.remis) || '0 FCFA'}</td>
-<td data-label="Reste à remettre" style="color:${r.reste > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.reste) || '0 FCFA'}</td>
-<td>${r.idsAremettre.length ? `<button type="button" class="btn btn-sm caisse-remis-btn">✔ Marquer comme remis</button>` : '<span style="color:#1a7d3c;">✓ Soldé</span>'}</td>
+<td data-label="Reste à remettre" style="color:${r.reste > 0 ? '#c0392b' : r.reste < 0 ? '#E26313' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.reste) || '0 FCFA'}${r.reste < 0 ? ` <span style="font-weight:400;" title="L'avance de gare dépasse l'argent encaissé : c'est CLT qui doit au livreur">(CLT lui doit)</span>` : ''}</td>
+<td>${(r.idsAremettre.length || r.idsFraisARembourser.length) ? `<button type="button" class="btn btn-sm caisse-remis-btn">✔ Marquer comme remis</button>` : '<span style="color:#1a7d3c;">✓ Soldé</span>'}</td>
 </tr>
 `).join('')}
 </tbody>
@@ -6288,9 +6356,10 @@ ${piedTotalHTML([
 { texte: livres.length + (totalManquant > 0 ? ` (−${formatMontant(totalManquant)})` : ''), label: 'Colis livrés' },
 { texte: formatMontant(somme('article')) || '0 FCFA', label: 'Articles' },
 { texte: formatMontant(somme('livraison')) || '0 FCFA', label: 'Livraisons' },
+...(colonneGare ? [{ texte: '−' + formatMontant(somme('gare')), couleur: '#E26313', label: 'Avancé à la gare' }] : []),
 { texte: formatMontant(somme('total')) || '0 FCFA', label: 'Total en main' },
 { texte: formatMontant(somme('remis')) || '0 FCFA', label: 'Déjà remis' },
-{ texte: formatMontant(somme('reste')) || '0 FCFA', couleur: somme('reste') > 0 ? '#c0392b' : '#1a7d3c', label: 'Reste à remettre' },
+{ texte: formatMontant(somme('reste')) || '0 FCFA', couleur: somme('reste') > 0 ? '#c0392b' : somme('reste') < 0 ? '#E26313' : '#1a7d3c', label: 'Reste à remettre' },
 { texte: '' },
 ])}
 </table>
@@ -6301,10 +6370,10 @@ btn.addEventListener('click', () => {
 const tr = btn.closest('tr');
 const livreurId = tr.dataset.livreur;
 const ligne = lignes.find(l => String(l.id) === String(livreurId));
-if (!ligne || !ligne.idsAremettre.length) return;
+if (!ligne || !(ligne.idsAremettre.length || ligne.idsFraisARembourser.length)) return;
 // Ouvre la fenêtre « remise de caisse » : on saisit la somme réellement reçue,
 // l'écart est calculé et les colis couverts sont soldés de façon atomique côté serveur.
-showRemiseModal(livreurId, ligne.reste, ligne.idsAremettre, ligne.idsAremettre.length);
+showRemiseModal(livreurId, ligne.reste, ligne.idsAremettre, ligne.idsAremettre.length, ligne.idsFraisARembourser);
 });
 });
 loadRemisesHistorique();
