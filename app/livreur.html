@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260825argent1">
-<script src="theme.js?v=20260825argent1"></script>
+<link rel="stylesheet" href="style.css?v=20260825tableaux2">
+<script src="theme.js?v=20260825tableaux2"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -381,8 +381,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260825argent1"></script>
-<script src="config.js?v=20260825argent1"></script>
+<script src="clt-common.js?v=20260825tableaux2"></script>
+<script src="config.js?v=20260825tableaux2"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -941,6 +941,7 @@
     document.getElementById('panel-tous').classList.toggle('hidden', which !== 'tous');
     document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === which));
     syncBottomNav(which);
+    syncArgentDetail();
     try { localStorage.setItem('clt_livreur_tab', which); } catch(e){}
   }
 
@@ -1912,9 +1913,11 @@
       return { nom: fournisseurLabel(k), t: tc };
     }).sort((a, b) => b.t.totalEncaisse - a.t.totalEncaisse);
 
+    // `fournisseurLabel` rend déjà un texte échappé : le repasser dans `escapeHTML` transformait
+    // l'apostrophe de « DST-B'TIK » en « &#39; » affiché tel quel à l'écran.
     const corpsLignes = lignes.map(l => `
       <tr>
-        <td data-label="Cliente">${escapeHTML(l.nom)}</td>
+        <td data-label="Cliente">${l.nom}</td>
         <td data-label="Livrés">${l.t.nbLivres} / ${l.t.nb}</td>
         <td data-label="Articles">${l.t.articleEncaisse ? m(l.t.articleEncaisse) : '<span style="color:#94a3b8;">—</span>'}</td>
         <td data-label="Livraison">${l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '<span style="color:#94a3b8;">—</span>'}</td>
@@ -1934,17 +1937,30 @@
         Les articles (${m(t.articleEncaisse)}) appartiennent aux clientes : vous les remettez à CLT.
       </div>
       ${alerte}
-      <table class="recap-table argent-jour-table" style="margin-top:10px;">
-        <thead><tr><th>Cliente</th><th>Livrés</th><th>Articles</th><th>Livraison</th><th>Total</th></tr></thead>
-        <tbody>${corpsLignes}</tbody>
-        ${piedTotalHTML([
-          { texte: 'TOTAL' },
-          { texte: t.nbLivres + ' / ' + t.nb },
-          { texte: m(t.articleEncaisse) },
-          { texte: m(t.livraisonEncaissee) },
-          { texte: m(t.totalEncaisse), couleur: '#1a7d3c' },
-        ])}
-      </table>`;
+      <div class="recap-table-wrap" id="argent-jour-detail">
+        <table class="recap-table recap-table-cards argent-jour-table">
+          <thead><tr><th>Cliente</th><th>Livrés</th><th>Articles</th><th>Livraison</th><th>Total</th></tr></thead>
+          <tbody>${corpsLignes}</tbody>
+          ${piedTotalHTML([
+            { texte: 'TOTAL' },
+            { texte: t.nbLivres + ' / ' + t.nb, label: 'Livrés' },
+            { texte: m(t.articleEncaisse), label: 'Articles' },
+            { texte: m(t.livraisonEncaissee), label: 'Livraison' },
+            { texte: m(t.totalEncaisse), couleur: '#1a7d3c', label: 'Total' },
+          ])}
+        </table>
+      </div>`;
+    syncArgentDetail();
+  }
+
+  // Le détail par cliente ne sert qu'au moment de la remise, c'est-à-dire sur l'onglet
+  // Récupérations. Sur « Mes colis », le livreur veut le compte de sa journée en trois chiffres
+  // et rien de plus : le tableau complet y allongeait l'écran sans qu'on le lui ait demandé.
+  // La carte, elle, reste visible partout — c'est le détail seul qui se retire.
+  function syncArgentDetail(){
+    const detail = document.getElementById('argent-jour-detail');
+    if (!detail) return;
+    detail.classList.toggle('hidden', activePanel !== 'recup');
   }
 
   (function initArgentJour(){

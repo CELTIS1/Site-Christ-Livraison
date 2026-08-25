@@ -2341,15 +2341,33 @@ function totauxArgent(colis) {
 // Pied de tableau : la ligne de total.
 // Un tableau d'argent sans ligne de total oblige celui qui le lit à additionner de tête, et
 // c'est exactement là qu'on se trompe — surtout au téléphone, le soir, en fin de journée.
-// `cellules` est une liste de { texte, couleur? } dans l'ordre des colonnes.
+// `cellules` est une liste de { texte, couleur?, label? } dans l'ordre des colonnes.
 // La classe `recap-total-row` sert aussi de repère aux contrôles automatiques.
+//
+// `label` reprend l'en-tête de la colonne. Sur un large écran il ne sert à rien : l'en-tête est
+// juste au-dessus, l'œil fait le lien tout seul. Sur téléphone, où le tableau se replie en blocs
+// et où l'en-tête disparaît, c'est lui qui évite une colonne de chiffres nus dont on ne sait plus
+// lequel est l'article et lequel la livraison. Une cellule laissée vide reste strictement vide,
+// pour que la feuille de style puisse l'effacer au lieu d'afficher un libellé sans valeur.
 function piedTotalHTML(cellules) {
   const tds = (cellules || []).map(c => {
     const style = c && c.couleur ? ` style="color:${c.couleur};"` : '';
-    const texte = (c && c.texte !== undefined && c.texte !== null) ? c.texte : '';
-    return `<td${style}>${texte}</td>`;
+    const texte = (c && c.texte !== undefined && c.texte !== null) ? String(c.texte) : '';
+    const label = (texte !== '' && c && c.label) ? ` data-label="${echapperAttribut(c.label)}"` : '';
+    return `<td${label}${style}>${texte}</td>`;
   }).join('');
   return `<tfoot><tr class="recap-total-row">${tds}</tr></tfoot>`;
+}
+
+// Un libellé de colonne part dans un attribut HTML : une apostrophe ou un guillemet mal échappé
+// y casserait la balise. Les libellés sont écrits par nous, pas par un utilisateur, mais on ne
+// laisse pas une porte ouverte au motif que personne n'a encore essayé de la pousser.
+function echapperAttribut(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // Libellé + couleurs de l'état d'argent d'un colis (badge).

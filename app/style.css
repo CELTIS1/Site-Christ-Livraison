@@ -787,7 +787,7 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
 
 @media(max-width:640px){
   .recap-table-cards thead{display:none;}
-  .recap-table-cards, .recap-table-cards tbody, .recap-table-cards tr, .recap-table-cards td{display:block; width:100%;}
+  .recap-table-cards, .recap-table-cards tbody, .recap-table-cards tfoot, .recap-table-cards tr, .recap-table-cards td{display:block; width:100%;}
   .recap-table-cards{border:none;}
   .recap-table-cards tr{
     background:var(--white); border:1px solid var(--border); border-radius:14px; padding:10px 14px; margin-bottom:10px;
@@ -799,6 +799,13 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
     content:attr(data-label); font-weight:700; color:var(--navy); text-align:left; white-space:nowrap; flex-shrink:0;
   }
   .recap-table-cards td:first-child{position:static; background:none;}
+  /* Une cellule sans valeur ne devient pas une ligne vide : repliée en blocs, elle n'aurait
+     affiché qu'un libellé suivi de rien, et on chercherait le chiffre manquant. */
+  .recap-table-cards td:empty{display:none;}
+  /* La ligne de total garde son fond gris : c'est le dernier bloc, et il doit se distinguer
+     des clientes qui le précèdent, sinon on le lit comme une cliente de plus. */
+  .recap-table-cards tfoot tr{background:var(--grey-bg); border-color:var(--navy);}
+  .recap-table-cards tfoot td{background:none;}
 }
 
 /* ---- Récapitulatif par client ---- */

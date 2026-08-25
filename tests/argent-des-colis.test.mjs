@@ -96,6 +96,10 @@ vm.runInContext([
   'montantManquantALaLivraison',
   'totauxArgent',
   'piedTotalHTML',
+  // piedTotalHTML s'appuie dessus pour poser un libellé de colonne dans un attribut HTML.
+  // Dans le navigateur, config.js est chargé d'un bloc et la fonction est là ; ici on extrait
+  // les fonctions une par une, et l'oublier fait planter le banc d'essai au premier libellé.
+  'echapperAttribut',
   'paiementInfo',
 ].map(n => blocDe(sourceConfig, n)).join('\n\n'), contexte);
 
@@ -364,6 +368,169 @@ titre('Chaque tableau d\'argent porte sa ligne de total');
     const bloc = blocDe(src, fn);
     verifier(`${nom} : la ligne de total est présente`,
       bloc.includes('piedTotalHTML'), `piedTotalHTML absent de ${fn}()`);
+  });
+}
+
+/* ==========================================================================================
+   7 bis. UN TABLEAU D'ARGENT RESTE LISIBLE SUR UN TÉLÉPHONE
+
+   Signalé par la vidéo du 25 août, prise sur un vrai téléphone : le tableau de la journée du
+   livreur débordait de l'écran et élargissait toute la page. On lisait alors les colonnes de
+   droite — celles qui portent les montants — en poussant la page de côté, ce qui est
+   exactement ce qu'on ne fait pas debout dans la rue, un colis dans une main.
+
+   Le mécanisme qui règle ça existait déjà : `recap-table-cards` replie chaque ligne en un bloc
+   par cliente, et chaque cellule affiche son libellé de colonne grâce à `data-label`. Les
+   tableaux qui débordaient n'y étaient simplement jamais entrés.
+
+   Les trois règles gardées ici sont donc :
+     — un tableau qui porte des `data-label` porte aussi la classe qui les fait servir, sinon
+       les libellés sont écrits pour rien ;
+     — un tableau repliable est enfermé dans un conteneur qui absorbe le débordement, sinon
+       c'est la page entière qui s'élargit tant que l'écran n'est pas assez étroit pour
+       déclencher le repli ;
+     — une ligne de total garde ses libellés de colonne, parce que repliée en bloc elle perd
+       l'en-tête qui disait lequel de ces chiffres est l'article et lequel la livraison.
+   ========================================================================================== */
+titre('Un tableau d\'argent reste lisible sur un téléphone');
+
+{
+  // On relit le HTML tel qu'il est écrit, pas le DOM : ces tableaux sont fabriqués par des
+  // gabarits de chaîne, et c'est bien dans le gabarit que la classe doit se trouver.
+  const pages = [['equipe.html', equipe], ['livreur.html', livreur], ['fournisseur.html', fournisseur]];
+  const ouvertures = /<table[^>]*class="[^"]*recap-table\b[^"]*"[^>]*>/g;
+
+  pages.forEach(([nom, src]) => {
+    const lignes = src.split('\n');
+    let sansCartes = [];
+    let sansConteneur = [];
+
+    lignes.forEach((ligne, i) => {
+      if (!/<table[^>]*class="[^"]*recap-table\b/.test(ligne)) return;
+      const numero = i + 1;
+      if (!/recap-table-cards/.test(ligne)) sansCartes.push(numero);
+      // Le conteneur peut être sur la ligne juste avant, ou séparé par une ou deux lignes de
+      // gabarit ; au-delà ce n'est plus le conteneur de ce tableau-là.
+      const avant = lignes.slice(Math.max(0, i - 3), i).join('\n');
+      if (!/recap-table-wrap/.test(avant)) sansConteneur.push(numero);
+    });
+
+    verifier(`${nom} : tous les tableaux récapitulatifs se replient en blocs sur téléphone`,
+      sansCartes.length === 0,
+      `sans la classe recap-table-cards, ligne(s) : ${sansCartes.join(', ')}`);
+    verifier(`${nom} : tous les tableaux récapitulatifs sont enfermés dans un conteneur`,
+      sansConteneur.length === 0,
+      `sans .recap-table-wrap autour, ligne(s) : ${sansConteneur.join(', ')}`);
+  });
+
+  // Une cellule sans libellé, repliée en bloc, n'est plus qu'un chiffre nu. On tolère la
+  // dernière colonne de chaque ligne, qui porte les boutons d'action et non une valeur.
+  pages.forEach(([nom, src]) => {
+    const code = sansCommentaires(src);
+    const cellules = code.match(/<td\b[^>]*>/g) || [];
+    const nues = cellules.filter(td => !/data-label/.test(td) && !/colspan/.test(td));
+    verifier(`${nom} : presque aucune cellule ne part sans son libellé de colonne`,
+      nues.length <= 4,
+      `${nues.length} cellules sans data-label : ${nues.slice(0, 6).join(' ')}`);
+  });
+}
+
+{
+  // La ligne de total repliée en bloc perd l'en-tête du tableau. Sans libellé, elle affiche
+  // une colonne de montants dont on ne sait plus lequel est quoi — le défaut d'origine.
+  const avecLabel = piedTotalHTML([
+    { texte: 'TOTAL' },
+    { texte: '12 000 FCFA', label: 'Articles' },
+    { texte: '' , label: 'Livraison' },
+  ]);
+  verifier('la ligne de total peut porter le libellé de chaque colonne',
+    /data-label="Articles"/.test(avecLabel), avecLabel);
+  verifier('une cellule de total laissée vide ne reçoit pas de libellé orphelin',
+    !/data-label="Livraison"/.test(avecLabel),
+    'un libellé sans valeur afficherait « Livraison » suivi de rien');
+  verifier('un libellé contenant une apostrophe ou un guillemet ne casse pas la balise',
+    piedTotalHTML([{ texte: '1', label: 'L\'"écart"' }]).includes('data-label="L\'&quot;écart&quot;"'),
+    piedTotalHTML([{ texte: '1', label: 'L\'"écart"' }]));
+}
+
+{
+  // Le repli en blocs ne sert à rien si la feuille de style ne le décrit pas. On vérifie que
+  // les quatre morceaux du mécanisme sont là, y compris ceux ajoutés le 25 août.
+  const style = fs.readFileSync(path.join(APP, 'style.css'), 'utf8');
+  const bloc = (style.match(/@media\(max-width:640px\)\{[\s\S]*?\n\}/) || [''])[0];
+  verifier('la feuille de style cache l\'en-tête et empile les lignes sur petit écran',
+    /\.recap-table-cards thead\{display:none/.test(style), 'règle absente de style.css');
+  verifier('chaque cellule affiche le libellé de sa colonne à sa gauche',
+    /\.recap-table-cards td::before\{[\s\S]{0,80}content:attr\(data-label\)/.test(style));
+  verifier('une cellule vide ne devient pas une ligne vide',
+    /\.recap-table-cards td:empty\{display:none/.test(style),
+    'sinon le bloc affiche un libellé suivi de rien, et on cherche le chiffre manquant');
+  verifier('la ligne de total se distingue encore une fois repliée en bloc',
+    /\.recap-table-cards tfoot tr\{/.test(style),
+    'sans fond propre, le total se lit comme une cliente de plus');
+  verifier('le conteneur absorbe le débordement au lieu d\'élargir la page',
+    /\.recap-table-wrap\{[^}]*overflow-x:auto/.test(style));
+}
+
+/* ==========================================================================================
+   7 ter. LE TABLEAU DÉTAILLÉ DU LIVREUR NE S'AFFICHE QUE LÀ OÙ IL SERT
+
+   Demande du 25 août, formulée devant l'écran : sur « Mes colis », le livreur veut le compte
+   de sa journée en trois chiffres et le commentaire dessous, rien de plus. Le détail par
+   cliente ne l'intéresse qu'au moment de la remise — donc sur l'onglet Récupérations.
+
+   La carte, elle, reste visible partout : c'est le détail seul qui se retire.
+   ========================================================================================== */
+titre('Le détail par cliente ne s\'affiche que sur l\'onglet Récupérations');
+
+{
+  const code = sansCommentaires(livreur);
+  verifier('le tableau détaillé est repérable par un identifiant propre',
+    /id="argent-jour-detail"/.test(code),
+    'sans identifiant, on ne peut ni le montrer ni le cacher');
+  verifier('une seule fonction décide de le montrer ou non',
+    (code.match(/function syncArgentDetail\s*\(/g) || []).length === 1);
+  verifier('elle le cache partout sauf sur Récupérations',
+    /classList\.toggle\('hidden',\s*activePanel !== 'recup'\)/.test(code),
+    'la condition doit nommer l\'onglet, pas une position dans une liste');
+  verifier('elle est rappelée à chaque changement d\'onglet',
+    blocDe(livreur, 'showTab').includes('syncArgentDetail()'),
+    'sinon le tableau reste affiché après avoir quitté Récupérations');
+  verifier('elle est rappelée après chaque redessin de la carte',
+    blocDe(livreur, 'renderArgentDuJour').includes('syncArgentDetail()'),
+    'un tableau redessiné revient sans la classe qui le cachait');
+  verifier('elle supporte le cas où la carte n\'affiche aucun tableau',
+    /const detail = document\.getElementById\('argent-jour-detail'\);\s*if \(!detail\) return;/.test(code),
+    'les jours sans colis n\'ont pas de tableau du tout');
+  verifier('la carte d\'argent, elle, n\'est pas cachée avec le tableau',
+    !/argent-jour-card[\s\S]{0,200}activePanel !== 'recup'/.test(code),
+    'les trois chiffres de la journée doivent rester visibles sur les trois onglets');
+}
+
+/* ==========================================================================================
+   7 quater. UN NOM DE CLIENTE S'AFFICHE COMME IL S'ÉCRIT
+
+   Vu dans la même vidéo : « DST-B'TIK » s'affichait « DST-B&#39;TIK ». Le nom passait deux
+   fois dans l'échappement HTML — une fois dans fournisseurLabel(), une fois de plus à
+   l'insertion — et l'apostrophe déjà transformée en &#39; voyait son & retransformé en &amp;.
+
+   Ce n'est pas un défaut d'argent, mais c'est le même dégât : le livreur lit à voix haute un
+   nom qui n'est pas celui de la cliente, et la cliente doute du reste du tableau.
+   ========================================================================================== */
+titre('Un nom de cliente s\'affiche comme il s\'écrit');
+
+{
+  const code = sansCommentaires(livreur);
+  verifier('fournisseurLabel échappe déjà ce qu\'il renvoie',
+    /function fournisseurLabel[\s\S]{0,400}return escapeHTML\(/.test(code),
+    'c\'est ce qui rend tout second échappement fautif');
+  ['livreur.html', 'equipe.html', 'fournisseur.html'].forEach((nom, i) => {
+    const src = sansCommentaires([livreur, equipe, fournisseur][i]);
+    verifier(`${nom} : aucun nom de cliente n'est échappé deux fois`,
+      !/escapeHTML\(\s*fournisseurLabel\(/.test(src),
+      'l\'apostrophe s\'afficherait « &#39; » à l\'écran');
+    verifier(`${nom} : aucun nom de livreur n'est échappé deux fois`,
+      !/escapeHTML\(\s*collecteLivreurLabel\(/.test(src));
   });
 }
 
