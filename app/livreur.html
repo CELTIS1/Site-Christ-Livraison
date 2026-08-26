@@ -220,20 +220,61 @@
      Le livreur ne voit d'emblée que ce dont il se sert à chaque colis : le statut et
      Enregistrer. Tout le reste — l'argent, l'observation, la photo, le partage — reste à un
      seul appui, sans allonger la liste. Rien n'a été supprimé. */
-  .colis-plus{ width:100%; margin:2px 0; }
+  /* Le repli est une ACTION, pas une note de bas de page. La première version — un petit
+     texte gris de 12 px avec un chevron — se lisait comme une légende : à l'usage, sur un
+     téléphone tenu à une main, personne ne voyait qu'on pouvait appuyer dessus. Il a donc
+     la taille, le contour et la surface de touche d'un bouton. (26/08/2026) */
+  .colis-plus{ width:100%; margin:4px 0 0; }
   .colis-plus > summary{
-    list-style:none; cursor:pointer; display:flex; align-items:center; gap:6px;
-    padding:5px 0; font-size:12px; font-weight:600; color:#64748b;
-    -webkit-tap-highlight-color:transparent;
+    list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    gap:8px; padding:12px 14px; font-size:14px; font-weight:700; color:#1B4374;
+    background:#EEF3FA; border:1.5px solid #D5E0EF; border-radius:12px;
+    -webkit-tap-highlight-color:transparent; transition:background .15s ease, border-color .15s ease;
   }
   .colis-plus > summary::-webkit-details-marker{ display:none; }
-  .colis-plus > summary::before{ content:'▸'; font-size:11px; line-height:1; transition:transform .15s ease; }
-  .colis-plus[open] > summary::before{ transform:rotate(90deg); }
-  .colis-plus > summary:hover{ color:#E26313; }
+  .colis-plus > summary::after{ content:'▾'; font-size:13px; line-height:1; transition:transform .15s ease; }
+  .colis-plus[open] > summary{ background:#E4ECF7; border-bottom-left-radius:0; border-bottom-right-radius:0; }
+  .colis-plus[open] > summary::after{ transform:rotate(180deg); }
+  .colis-plus > summary:hover{ background:#E4ECF7; border-color:#BFD0E6; }
   .colis-plus-corps{
-    display:flex; flex-direction:column; gap:8px; align-items:stretch;
-    padding:8px 0 2px; margin-top:2px; border-top:1px dashed #e2e8f0;
+    display:flex; flex-direction:column; gap:10px; align-items:stretch;
+    padding:12px; margin:0; border:1.5px solid #D5E0EF; border-top:none;
+    border-radius:0 0 12px 12px; background:#FAFCFF;
   }
+  html[data-theme="dark"] .colis-plus > summary{ background:#1C2739; border-color:#2E3E54; color:#C6D5E6; }
+  html[data-theme="dark"] .colis-plus[open] > summary{ background:#223045; }
+  html[data-theme="dark"] .colis-plus-corps{ background:#141C28; border-color:#2E3E54; }
+
+  /* ---------- Séparer une carte de sa voisine (26/08/2026) ----------
+     Deux colis d'affilée ont presque toujours le même statut, donc la même teinte : la
+     couleur ne peut pas porter la séparation à elle seule. C'est la structure qui la porte —
+     un bandeau d'étapes nettement détaché en haut de chaque carte, un contour franc, un
+     liseré de couleur plus large à gauche, et de l'air entre les cartes. On voit alors où
+     commence et où finit un colis sans avoir à lire. */
+  .colis-list{ gap:18px; }
+  .colis-list .colis-item{
+    border:1.5px solid #D9E1EC !important;
+    border-left:6px solid #C3D2E4 !important;
+    border-radius:16px !important;
+    box-shadow:0 3px 14px rgba(18,48,90,0.10) !important;
+    padding:12px 14px 14px !important;
+  }
+  .colis-list .colis-item[data-statut="livre"]{ border-left-color:#39A56B !important; }
+  .colis-list .colis-item[data-statut="non_livre"]{ border-left-color:#D6534A !important; }
+  .colis-list .colis-item[data-statut="retour"]{ border-left-color:#E0A64B !important; }
+  .colis-list .colis-item.est-assigne:not([data-statut="livre"]):not([data-statut="non_livre"]):not([data-statut="retour"]){
+    border-left-color:#2F6FC4 !important;
+  }
+  html[data-theme="dark"] .colis-list .colis-item{
+    border-color:#2B3A4E !important; border-left-color:#3D5573 !important;
+    box-shadow:0 3px 14px rgba(0,0,0,0.35) !important;
+  }
+  /* Le bandeau d'étapes fait le toit de la carte : c'est lui qu'on repère en faisant défiler. */
+  .colis-item .clt-stepper{
+    background:#F1F5FB; border:1px solid #E1E9F4; border-radius:11px;
+    padding:11px 6px 9px; margin:0 0 12px;
+  }
+  html[data-theme="dark"] .colis-item .clt-stepper{ background:#1A2433; border-color:#2B3A4E; }
   .colis-plus-corps .btn{ align-self:flex-start; }
   .colis-plus-corps .obs-textarea,
   .colis-plus-corps .field{ width:100%; }
@@ -246,6 +287,25 @@
   @media(min-width:641px){
     .colis-item.mes-colis-item .status-col .btn-save{ flex:1 1 100%; align-self:stretch; }
   }
+
+  /* ---------- Demande de consentement, version courte (26/08/2026) ---------- */
+  .geoloc-consent{ padding:14px !important; }
+  .geoloc-consent-tete{ display:flex; align-items:flex-start; gap:10px; }
+  .geoloc-consent-tete > span{ font-size:18px; line-height:1.2; }
+  .geoloc-consent-tete strong{ font-size:15px; line-height:1.3; display:block; }
+  .geoloc-consent-resume{ font-size:12.5px; color:#64748b; line-height:1.45; margin-top:4px; }
+  .geoloc-consent-detail{ margin:10px 0 12px; }
+  .geoloc-consent-detail > summary{
+    list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    font-size:13px; font-weight:600; color:#1B4374; text-decoration:underline;
+    text-underline-offset:3px; padding:4px 0; -webkit-tap-highlight-color:transparent;
+  }
+  .geoloc-consent-detail > summary::-webkit-details-marker{ display:none; }
+  .geoloc-consent-detail > summary::after{ content:'▾'; font-size:11px; transition:transform .15s ease; }
+  .geoloc-consent-detail[open] > summary::after{ transform:rotate(180deg); }
+  .geoloc-consent .btn{ width:100%; justify-content:center; }
+  html[data-theme="dark"] .geoloc-consent-resume{ color:#9DB0C4; }
+  html[data-theme="dark"] .geoloc-consent-detail > summary{ color:#9DB0C4; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -376,15 +436,28 @@
   <!-- Notice de consentement RGPD-like (loi ivoirienne n° 2013-450) : n'apparaît que la première
        fois qu'une livraison en cours nécessiterait de partager la position, et tant que le livreur
        n'a pas explicitement accepté. Rien n'est envoyé avant cette acceptation. -->
-  <div class="card hidden" id="geoloc-consent-card">
-    <strong>📍 Partage de votre position pendant vos récupérations et livraisons</strong>
-    <p class="page-sub" style="margin:8px 0;">
-      Pour que l'équipe puisse suivre vos récupérations et livraisons en cours sur la carte, nous avons besoin de connaître votre position pendant que vous êtes en route pour une récupération, ou que vous avez un colis récupéré ou en livraison.<br><br>
-      <strong>Quand :</strong> uniquement pendant vos trajets actifs (récupération ou livraison), jamais en dehors.<br>
-      <strong>Donnée collectée :</strong> votre position GPS approximative.<br>
-      <strong>Conservation :</strong> supprimée automatiquement dès la fin de votre récupération ou de votre tournée.<br>
-      <strong>Vos droits :</strong> vous pouvez demander l'accès, la correction ou la suppression de ces données à tout moment auprès de l'équipe.
-    </p>
+  <!-- Le consentement tient maintenant en quatre lignes. Le texte complet n'a rien perdu :
+       il est sous « Lire le détail », à un appui, et le résumé au-dessus dit déjà l'essentiel
+       (quand, quoi, combien de temps). Un pavé qui remplit l'écran n'est pas mieux lu qu'un
+       résumé honnête — il est sauté. (26/08/2026) -->
+  <div class="card geoloc-consent hidden" id="geoloc-consent-card">
+    <div class="geoloc-consent-tete">
+      <span aria-hidden="true">📍</span>
+      <div>
+        <strong>Partager votre position pendant vos trajets ?</strong>
+        <div class="geoloc-consent-resume">Seulement quand vous êtes en route pour une récupération ou une livraison. Effacée dès la fin du trajet.</div>
+      </div>
+    </div>
+    <details class="geoloc-consent-detail">
+      <summary>Lire le détail</summary>
+      <p class="page-sub" style="margin:8px 0 0;">
+        Pour que l'équipe puisse suivre vos récupérations et livraisons en cours sur la carte, nous avons besoin de connaître votre position pendant que vous êtes en route pour une récupération, ou que vous avez un colis récupéré ou en livraison.<br><br>
+        <strong>Quand :</strong> uniquement pendant vos trajets actifs (récupération ou livraison), jamais en dehors.<br>
+        <strong>Donnée collectée :</strong> votre position GPS approximative.<br>
+        <strong>Conservation :</strong> supprimée automatiquement dès la fin de votre récupération ou de votre tournée.<br>
+        <strong>Vos droits :</strong> vous pouvez demander l'accès, la correction ou la suppression de ces données à tout moment auprès de l'équipe.
+      </p>
+    </details>
     <button type="button" class="btn btn-sm" id="btn-accept-geoloc-consent">J'ai compris et j'accepte</button>
   </div>
 
