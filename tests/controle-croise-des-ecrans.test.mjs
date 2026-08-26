@@ -119,6 +119,10 @@ vm.runInContext([
   'montantEnMainDuLivreur',
   'montantManquantALaLivraison',
   'totauxArgent',
+  // Depuis le 26 août, la caisse de l'équipe n'additionne plus rien elle-même : elle appelle
+  // cette brique de config.js, que le « Récapitulatif par livreur » appelle aussi. Le contrôle
+  // croisé qui suit exécute donc bien l'addition réelle des deux écrans, et non une copie.
+  'caisseParLivreur',
   'piedTotalHTML',
   'echapperAttribut',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
@@ -263,7 +267,19 @@ verifier("un colis sans avance ne fabrique pas de déduction imaginaire",
    ============================================================================================ */
 titre("Un colis pas encore livré n'est jamais soldé");
 
-const source = blocDe(equipe, 'renderCaisseLivreur', 'equipe.html');
+/* Depuis le 26 août, l'addition ne vit plus dans l'écran de caisse : elle a été sortie dans
+   config.js sous le nom caisseParLivreur, parce qu'un second écran — le « Récapitulatif par
+   livreur » — a eu besoin des mêmes chiffres. C'est donc la brique partagée qu'on inspecte
+   maintenant, et on vérifie d'abord que l'écran de caisse l'appelle bel et bien : inspecter une
+   fonction que l'écran n'appellerait plus serait le pire des contrôles, celui qui rassure. */
+const ecranCaisse = blocDe(equipe, 'renderCaisseLivreur', 'equipe.html');
+verifier("l'écran de caisse s'en remet à l'addition partagée, et n'en refait pas une seconde",
+  /caisseParLivreur\(/.test(ecranCaisse)
+  && (sourceConfig.match(/function\s+caisseParLivreur\s*\(/g) || []).length === 1
+  && !/function\s+caisseParLivreur\s*\(/.test(equipe),
+  "deux additions écrites séparément finissent toujours par réclamer deux sommes différentes");
+
+const source = blocDe(sourceConfig, 'caisseParLivreur', 'config.js');
 
 verifier("l'écran de caisse regarde les avances encore dues, pas seulement les colis livrés",
   /fraisExpeditionARembourser/.test(source));

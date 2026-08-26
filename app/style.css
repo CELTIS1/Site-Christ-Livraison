@@ -948,6 +948,27 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
 
 /* Chiffres d'argent posés sous une carte cliente dans le récapitulatif de l'équipe. */
 .recap-client-encaisse{font-size:12px; color:#1a7d3c; font-weight:700; margin-top:2px;}
+/* ---- Récapitulatif par livreur : ce qu'il reste à récupérer -------------------------------
+   Trois états, trois couleurs, pour qu'on trie les vignettes de l'œil sans lire les chiffres :
+   rouge « il tient encore de l'argent », vert « soldé » (classe recap-client-encaisse, la même
+   que chez les clientes), bleu « c'est CLT qui lui doit » — ce dernier cas arrive quand l'avance
+   de gare qu'il a payée dépasse ce qu'il a encaissé. */
+.recapl-reste-du{color:#c0392b; font-weight:700;}
+.recapl-reste-avance{color:#1b6ca8; font-weight:700;}
+.recapl-reste-solde{color:#1a7d3c; font-weight:700;}
+.recapl-remis{
+  font-size:10.5px; font-weight:700; color:#1a7d3c; background:#e3f6ea;
+  border-radius:var(--radius-pill); padding:1px 7px; margin-left:4px; white-space:nowrap;
+}
+/* La ligne de TOTAL sous les vignettes. Chaque tableau de cette application en porte une ;
+   une liste de vignettes n'en portait pas, et c'est précisément là qu'on veut savoir combien
+   d'argent dort dehors ce soir, tous livreurs confondus. */
+.recapl-total{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  margin-top:12px; padding:11px 14px; border-radius:var(--radius-sm);
+  background:var(--grey-bg); border:1.5px solid var(--border-strong);
+  font-size:13px; font-weight:700; color:var(--navy);
+}
 .recap-day-money{
   display:flex; gap:16px; flex-wrap:wrap; margin:10px 0 4px; padding:10px 14px;
   background:var(--grey-bg); border-radius:var(--radius-sm); font-size:13px; color:var(--muted);
@@ -1069,14 +1090,22 @@ html[data-theme="dark"] .btn-frais-vite.est-choisi{background:#E9B27A; color:#1B
   box-shadow:var(--shadow-lg); overflow:hidden;
 }
 .fiche-ecran-tete{
-  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
-  padding:18px 20px 12px; border-bottom:1px solid var(--border);
+  display:block; padding:18px 20px 12px; border-bottom:1px solid var(--border);
 }
+/* Les deux sorties, côte à côte et au-dessus du titre. À gauche « ← Retour », large, à la
+   place où le pouce le cherche déjà — c'est le même geste que le « ← Clientes » du
+   récapitulatif. À droite la croix. Les mettre AVANT le titre plutôt qu'à côté de lui, c'est
+   leur garantir la première bande de la fiche : celle qu'on décale sous la barre d'état. */
+.fiche-ecran-actions{
+  display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;
+}
+.fiche-ecran-retour{min-height:44px;}
 .fiche-ecran-titre{color:var(--navy); font-size:17px; font-weight:700; margin:0;}
 .fiche-ecran-sub{color:var(--muted); font-size:12.5px; margin:4px 0 0; line-height:1.45;}
 .fiche-ecran-fermer{
-  flex-shrink:0; width:32px; height:32px; border-radius:50%; border:1.5px solid var(--border-strong);
-  background:var(--white); color:var(--navy); font-size:15px; cursor:pointer; line-height:1;
+  flex-shrink:0; width:44px; height:44px; border-radius:50%; border:1.5px solid var(--border-strong);
+  background:var(--white); color:var(--navy); font-size:17px; cursor:pointer; line-height:1;
+  display:inline-flex; align-items:center; justify-content:center;
 }
 .fiche-ecran-fermer:hover{background:var(--grey-bg);}
 .fiche-ecran-barre{
@@ -1103,10 +1132,36 @@ html[data-theme="dark"] .btn-frais-vite.est-choisi{background:#E9B27A; color:#1B
 }
 @media(max-width:640px){
   .fiche-ecran-overlay{padding:0;}
-  .fiche-ecran{max-width:none; border-radius:0; max-height:100vh; height:100vh;}
-  .fiche-ecran-tete{padding:14px 14px 10px;}
+  .fiche-ecran{
+    max-width:none; border-radius:0;
+    height:100vh; height:100dvh; max-height:100vh; max-height:100dvh;
+  }
+  /* LE DÉFAUT DU 26 AOÛT, MESURÉ AVANT D'ÊTRE CORRIGÉ. Sur un écran de 390 px de large, la
+     fiche commençait à 0 px du haut : le titre occupait la bande 14→40 px et la croix la bande
+     14→46 px. Or la barre d'état du téléphone — l'heure, le réseau, la batterie — en occupe
+     environ 59. Les deux étaient donc entièrement DESSOUS : le nom de la cliente s'imprimait
+     sous l'heure, et la croix sous l'icône de batterie, hors d'atteinte du pouce. C'est
+     précisément ce que montrait la photo d'écran : « ça déborde », et « même pour vouloir
+     sortir de là, c'est vraiment difficile ».
+
+     env(safe-area-inset-top) vaut la hauteur que le téléphone se réserve, zéro sur un écran
+     qui ne se réserve rien. On la lui rend en marge intérieure. Le fond blanc, lui, continue
+     de monter jusqu'en haut de l'écran : c'est le CONTENU qu'on décale, pas la fenêtre — sans
+     quoi on ouvrirait une bande vide au-dessus de la fiche.
+
+     Le même raisonnement vaut à gauche, à droite et en bas, pour les téléphones à écran
+     arrondi et pour la barre de gestes du bas. */
+  .fiche-ecran-tete{
+    padding:14px 14px 10px;
+    padding-top:calc(14px + env(safe-area-inset-top, 0px));
+    padding-left:calc(14px + env(safe-area-inset-left, 0px));
+    padding-right:calc(14px + env(safe-area-inset-right, 0px));
+  }
   .fiche-ecran-barre{padding:8px 14px;}
-  .fiche-ecran-corps{padding:14px 12px 24px;}
+  .fiche-ecran-corps{
+    padding:14px 12px 24px;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .stat-tiles{
@@ -1540,6 +1595,13 @@ html[data-theme="dark"] .recap-client-encaisse{ color:#5FD98A; }
 html[data-theme="dark"] .recap-day-money{ background:#141D29; color:#AEB9C7; }
 html[data-theme="dark"] .recap-day-money strong{ color:#E6ECF3; }
 html[data-theme="dark"] .recap-bilan-note{ color:#AEB9C7; border-left-color:#3A4B60; }
+/* Le rouge et le vert du jour sont trop sombres sur fond nuit : le « reste à remettre » y
+   deviendrait illisible, et c'est le chiffre qu'on appelle le livreur pour réclamer. */
+html[data-theme="dark"] .recapl-reste-du{ color:#FF8A7A; }
+html[data-theme="dark"] .recapl-reste-avance{ color:#7FB0EA; }
+html[data-theme="dark"] .recapl-reste-solde{ color:#5FD98A; }
+html[data-theme="dark"] .recapl-remis{ background:#173A25; color:#5FD98A; }
+html[data-theme="dark"] .recapl-total{ background:#141D29; border-color:#3A4B60; color:#E6ECF3; }
 html[data-theme="dark"] .recap-row-etat{ color:#AEB9C7; }
 html[data-theme="dark"] #argent-jour-corps div[style*="color:#1B4374"]{ color:#7FB0EA !important; }
 

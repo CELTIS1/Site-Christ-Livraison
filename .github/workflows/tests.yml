@@ -167,6 +167,17 @@ jobs:
       - name: Barre du haut, bandeau de mise à jour et bouton d'actualisation
         run: node tests/barre-du-haut-et-actualiser.test.mjs
 
+      # Le récapitulatif par livreur, et le haut de la fiche « Son écran ». Demandés ensemble le
+      # 26 août : on ne pouvait vérifier un livreur qu'en trouvant sa ligne dans la comptabilité,
+      # et la fiche qui s'ouvrait alors avait son titre et sa croix imprimés sous la barre d'état
+      # du téléphone — « même pour vouloir sortir de là, c'est vraiment difficile ». Cette série
+      # garde surtout l'essentiel : l'addition d'argent a été sortie de l'écran de comptabilité
+      # et posée dans config.js, et les DEUX écrans l'appellent. Elle vérifie qu'il n'en existe
+      # qu'une, que ses chiffres sont justes jusqu'au cas où CLT doit de l'argent au livreur, et
+      # que la colonne affichée se recompose exactement en le total de la caisse.
+      - name: Récapitulatif par livreur et haut de la fiche « Son écran »
+        run: node tests/recapitulatif-par-livreur.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,

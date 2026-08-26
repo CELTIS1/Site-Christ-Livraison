@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826barre">
-<script src="theme.js?v=20260826barre"></script>
+<link rel="stylesheet" href="style.css?v=20260826livreur">
+<script src="theme.js?v=20260826livreur"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -624,6 +624,26 @@
 <div class="empty-state">Chargement...</div>
 </div>
 </div>
+
+<!-- Récapitulatif par livreur : le pendant exact du récapitulatif par client, de l'autre côté
+     de la chaîne. Même jour, même dessin, même gestes — on touche un nom, on obtient son bilan.
+     La question à laquelle il répond d'un coup d'œil, sans ouvrir personne : « a-t-il livré
+     tout ce qu'on lui a donné aujourd'hui, et combien d'argent tient-il encore ? » -->
+<h3 class="panel-subtitle collapsible-header" id="recapl-toggle" onclick="toggleRecapLivreur()" style="margin-top:28px;">
+<span class="collapse-arrow" id="recapl-arrow">▶</span> Récapitulatif par livreur
+</h3>
+<div id="recap-livreur" class="collapsible-content">
+<div class="recap-day-bar">
+<div class="field">
+<label>Jour</label>
+<input type="date" id="recapl-date">
+</div>
+<button type="button" class="btn btn-outline btn-sm" id="btn-recapl-today">📅 Aujourd'hui</button>
+</div>
+<div id="recapl-body">
+<div class="empty-state">Chargement...</div>
+</div>
+</div>
 <!-- Historique des actions : réservé à l'administrateur (masqué par défaut, réaffiché si isAdmin). -->
 <div id="activity-log-section" class="hidden">
 <h3 class="panel-subtitle" style="margin-top:28px;">Historique des actions</h3>
@@ -974,11 +994,12 @@
 <div id="fiche-ecran-overlay" class="fiche-ecran-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="fiche-ecran-titre">
   <div class="fiche-ecran">
     <div class="fiche-ecran-tete">
-      <div>
-        <h3 class="fiche-ecran-titre" id="fiche-ecran-titre">Son écran</h3>
-        <p class="fiche-ecran-sub" id="fiche-ecran-sub"></p>
+      <div class="fiche-ecran-actions">
+        <button type="button" class="btn btn-outline btn-sm fiche-ecran-retour" id="fiche-ecran-retour">← Retour</button>
+        <button type="button" class="fiche-ecran-fermer" id="fiche-ecran-fermer" aria-label="Fermer cette fiche">✕</button>
       </div>
-      <button type="button" class="fiche-ecran-fermer" id="fiche-ecran-fermer" aria-label="Fermer cette fiche">✕</button>
+      <h3 class="fiche-ecran-titre" id="fiche-ecran-titre">Son écran</h3>
+      <p class="fiche-ecran-sub" id="fiche-ecran-sub"></p>
     </div>
     <div class="fiche-ecran-barre">
       <label for="fiche-ecran-date">Journée</label>
@@ -989,10 +1010,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826barre"></script>
-<script src="config.js?v=20260826barre"></script>
+<script src="clt-common.js?v=20260826livreur"></script>
+<script src="config.js?v=20260826livreur"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260826barre"></script>
+<script src="clt-select-recherche.js?v=20260826livreur"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3843,6 +3864,7 @@ if (p.debut != null) { try { el.setSelectionRange(p.debut, p.fin); } catch (e) {
 function eqDessinerAnnexes(){
 renderAlertIndicator();
 renderRecapFournisseur();
+renderRecapLivreur();
 renderRapportJour();
 populateMoisSelect();
 renderCompta();
@@ -5077,7 +5099,11 @@ let recapSelectedDate = null;         // 'YYYY-MM-DD' ; null => aujourd'hui
 let recapSelectedFournisseur = null;  // cliente sélectionnée (ou null = vue liste)
 let recapSearchText = '';
 let recapDayCache = {};               // date -> colis[] (jours passés rapatriés de la base)
-let recapLoadingDay = false;
+// Deux récapitulatifs (par client, par livreur) lisent maintenant ce cache, chacun avec SA
+// date. Un seul drapeau « je charge » les ferait clignoter ensemble : celui qui affiche
+// aujourd'hui se mettrait à dire « chargement » parce que l'autre remonte le 12 août. On
+// retient donc quels jours sont en cours de route, et chacun ne regarde que le sien.
+let recapJoursEnCours = {};
 
 function recapGetDate(){
 return recapSelectedDate || todayLocalISODate();
@@ -5088,7 +5114,11 @@ return recapSelectedDate || todayLocalISODate();
 function recapDayColis(){
 const date = recapGetDate();
 if (date === todayLocalISODate()) {
-return allColis.filter(c => (c.created_at || '').slice(0, 10) === date);
+// dayKey() et non un découpage de la chaîne ISO : le découpage lit l'heure de Greenwich,
+// dayKey lit l'heure du téléphone. Ici les deux coïncident, mais la fiche « Son écran » et
+// le récapitulatif par livreur emploient dayKey — trois définitions de « aujourd'hui » pour
+// trois écrans, c'est la fabrique à écarts. Une seule, celle de config.js.
+return allColis.filter(c => dayKey(c.created_at) === date);
 }
 return recapDayCache[date] || [];
 }
@@ -5096,18 +5126,24 @@ return recapDayCache[date] || [];
 // Rapatrie tous les colis d'un jour passé depuis la base (mis en cache), car `allColis`
 // ne couvre que les pages récentes tant que "Charger plus" n'a pas tout ramené.
 async function recapLoadPastDay(date){
-if (recapDayCache[date]) { renderRecapBody(); return; }
-recapLoadingDay = true;
-renderRecapBody();
+if (recapDayCache[date]) { recapRedessinerLesDeux(); return; }
+recapJoursEnCours[date] = true;
+recapRedessinerLesDeux();
 const { data, error } = await supabaseClient
 .from('colis')
 .select('*')
 .gte('created_at', date + 'T00:00:00')
 .lte('created_at', date + 'T23:59:59')
 .order('created_at', { ascending: false });
-recapLoadingDay = false;
+delete recapJoursEnCours[date];
 recapDayCache[date] = error ? [] : (data || []);
+recapRedessinerLesDeux();
+}
+
+// Un jour rapatrié sert aux deux récapitulatifs : on le paie une fois, on le rend aux deux.
+function recapRedessinerLesDeux(){
 renderRecapBody();
+renderRecapLivreurBody();
 }
 
 // Point d'entrée appelé par renderColis() : garde la barre (date) stable et ne
@@ -5122,7 +5158,7 @@ function renderRecapBody(){
 const body = document.getElementById('recap-body');
 if (!body) return;
 
-if (recapLoadingDay) {
+if (recapJoursEnCours[recapGetDate()]) {
 cltPoserHTML(body, `<div class="empty-state">Chargement du jour…</div>`);
 return;
 }
@@ -5284,6 +5320,244 @@ const d = new Date(dayKey + 'T00:00:00');
 const label = d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 return dayKey === todayLocalISODate() ? `Aujourd'hui — ${label}` : label;
 }
+
+/* ============================================================================================
+   RÉCAPITULATIF PAR LIVREUR — le pendant du récapitulatif par client
+   ============================================================================================
+   Demandé le 26 août 2026, dans ces termes : « pour le livreur, on veut pouvoir voir tous les
+   colis qui ont été assignés, de suite, à savoir s'il a réussi tous les colis de la journée […]
+   et on veut pouvoir vérifier pour chaque livreur ».
+
+   Deux questions, donc, et l'écran doit y répondre SANS QU'ON OUVRE PERSONNE :
+     1. a-t-il livré tout ce qu'on lui a confié aujourd'hui ?   → « 8 / 10 livrés »
+     2. combien d'argent tient-il encore ?                       → « 45 000 FCFA à remettre »
+   C'est pour cela que les deux chiffres sont sur la vignette elle-même, et pas derrière un clic.
+
+   L'ARGENT NE SE RECALCULE PAS ICI. Il sort de caisseParLivreur(), dans config.js — la même
+   fonction, au caractère près, que celle qui remplit la « Caisse par livreur » de la
+   comptabilité. Deux additions écrites séparément finissent toujours par diverger, et le soir
+   du 25 août l'application réclamait déjà 11 000 sur le téléphone du livreur et 14 000 dans le
+   tableau de l'équipe. Une seule addition rend l'écart arithmétiquement impossible.
+
+   « Assigné » veut dire : le colis porte son nom (livreur_id), et il a été reçu ce jour-là.
+   Un colis sans livreur n'apparaît chez personne — il n'a été confié à personne.
+   ============================================================================================ */
+
+let recaplExpanded = false;
+
+function toggleRecapLivreur(){
+recaplExpanded = !recaplExpanded;
+const box = document.getElementById('recap-livreur');
+if (recaplExpanded) { expandCollapsible(box); } else { collapseCollapsible(box); }
+const fleche = document.getElementById('recapl-arrow');
+if (fleche) fleche.textContent = recaplExpanded ? '▼' : '▶';
+if (recaplExpanded) refreshStickyTables(box);
+}
+
+let recaplSelectedDate = null;      // 'YYYY-MM-DD' ; null => aujourd'hui
+let recaplSelectedLivreur = null;   // livreur ouvert (ou null = vue liste)
+let recaplSearchText = '';
+
+function recaplGetDate(){
+return recaplSelectedDate || todayLocalISODate();
+}
+
+// Le jour choisi ici est indépendant de celui du récapitulatif par client : on regarde souvent
+// la tournée d'hier tout en gardant la journée d'aujourd'hui sous les yeux au-dessus. Le cache
+// des jours passés, lui, est commun — un jour rapatrié une fois sert aux deux.
+function recaplDayColis(){
+const date = recaplGetDate();
+if (date === todayLocalISODate()) return (allColis || []).filter(c => dayKey(c.created_at) === date);
+return recapDayCache[date] || [];
+}
+
+// Point d'entrée appelé par eqDessinerAnnexes() : la barre du jour reste stable, seul le corps
+// est redessiné.
+function renderRecapLivreur(){
+const champ = document.getElementById('recapl-date');
+if (champ && !champ.value) champ.value = recaplGetDate();
+renderRecapLivreurBody();
+}
+
+function renderRecapLivreurBody(){
+const body = document.getElementById('recapl-body');
+if (!body) return;
+
+if (recapJoursEnCours[recaplGetDate()]) {
+cltPoserHTML(body, `<div class="empty-state">Chargement du jour…</div>`);
+return;
+}
+
+const colisJour = recaplDayColis();
+
+// Vue « bilan » d'un livreur choisi.
+if (recaplSelectedLivreur) {
+if (!cltPoserHTML(body, renderRecapLivreurBilan(recaplSelectedLivreur, colisJour))) return;
+const back = document.getElementById('recapl-back');
+if (back) back.addEventListener('click', () => { recaplSelectedLivreur = null; renderRecapLivreurBody(); });
+// « Son écran » s'ouvre sur la journée déjà choisie ici, sinon les deux tableaux ne
+// parleraient pas des mêmes colis.
+const ecran = document.getElementById('recapl-ecran');
+if (ecran) ecran.addEventListener('click', () => ouvrirFicheEcran('livreur', recaplSelectedLivreur, recaplGetDate()));
+return;
+}
+
+const assignes = colisJour.filter(c => c && c.livreur_id);
+const dateLabel = recapDayLabel(recaplGetDate());
+
+if (!assignes.length) {
+cltPoserHTML(body, `<div class="empty-state">Aucun colis attribué à un livreur pour ${dateLabel}.</div>`);
+return;
+}
+
+// L'argent, une seule fois, par la fonction partagée — puis rangé par livreur pour la lecture.
+const caisse = {};
+caisseParLivreur(assignes).forEach(l => { caisse[l.id] = l; });
+
+const parLivreur = {};
+assignes.forEach(c => {
+const key = c.livreur_id;
+if (!parLivreur[key]) parLivreur[key] = [];
+parLivreur[key].push(c);
+});
+
+let lignes = Object.keys(parLivreur).map(id => {
+const list = parLivreur[id];
+const t = totauxArgent(list);
+const money = caisse[id] || { reste: 0, remis: 0, total: 0 };
+return { id, nb: list.length, nbLivres: t.nbLivres, reste: money.reste, remis: money.remis, total: money.total };
+});
+
+// D'abord ceux qu'il reste à solder, du plus gros au plus petit : c'est l'ordre dans lequel on
+// passe les appels le soir. À égalité, celui qui a le plus de colis en attente.
+lignes.sort((a, b) => (b.reste - a.reste) || ((b.nb - b.nbLivres) - (a.nb - a.nbLivres)));
+
+const q = recaplSearchText.trim().toLowerCase();
+if (q) lignes = lignes.filter(l => livreurNomSimple(l.id).toLowerCase().includes(q));
+
+const totalAssignes = assignes.length;
+const totalLivres = totauxArgent(assignes).nbLivres;
+const totalReste = Object.keys(caisse).reduce((s, k) => s + (Number(caisse[k].reste) || 0), 0);
+const nbLivreurs = Object.keys(parLivreur).length;
+
+const cards = lignes.map(l => `
+<button type="button" class="recap-client-card" data-lid="${escapeHTML(l.id)}">
+<span class="recap-client-name">🛵 ${collecteLivreurLabel(l.id) || 'Livreur inconnu'}</span>
+<span class="recap-client-meta">
+<span class="recap-client-count">${l.nbLivres} / ${l.nb} livré${l.nb > 1 ? 's' : ''}</span>
+${recaplResteHTML(l.reste)}
+</span>
+</button>`).join('');
+
+if (!cltPoserHTML(body, `
+<div class="recap-day-summary">${dateLabel} · <strong>${nbLivreurs}</strong> livreur${nbLivreurs > 1 ? 's' : ''} · <strong>${totalLivres}</strong> / <strong>${totalAssignes}</strong> colis livré${totalAssignes > 1 ? 's' : ''}</div>
+<div class="recap-search-wrap">
+<input type="search" id="recapl-search" class="recap-search" placeholder="Rechercher un livreur…" value="${escapeHTML(recaplSearchText)}">
+</div>
+${lignes.length ? `<div class="recap-client-list">${cards}</div>` : `<div class="empty-state">Aucun livreur ne correspond à « ${escapeHTML(recaplSearchText)} ».</div>`}
+<div class="recapl-total">
+<span>TOTAL — ${nbLivreurs} livreur${nbLivreurs > 1 ? 's' : ''}</span>
+<span><strong>${totalLivres} / ${totalAssignes}</strong> livré${totalAssignes > 1 ? 's' : ''}</span>
+<span class="${totalReste > 0 ? 'recapl-reste-du' : 'recapl-reste-solde'}">${totalReste > 0 ? formatMontant(totalReste) + ' à remettre' : (totalReste < 0 ? 'CLT doit ' + formatMontant(-totalReste) : '✓ tout est remis')}</span>
+</div>
+<div class="recap-bilan-note">
+La ligne TOTAL porte sur <strong>tous</strong> les livreurs de la journée, y compris ceux que la recherche masque en ce moment.
+Le montant « à remettre » sort du même calcul que la <strong>Caisse par livreur</strong> de la comptabilité : les deux écrans ne peuvent pas donner deux sommes différentes.
+</div>`)) return;
+
+const input = document.getElementById('recapl-search');
+if (input) input.addEventListener('input', () => {
+recaplSearchText = input.value;
+const pos = input.selectionStart;
+renderRecapLivreurBody();
+const again = document.getElementById('recapl-search');
+if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) {} }
+});
+
+body.querySelectorAll('.recap-client-card').forEach(btn => {
+btn.addEventListener('click', () => {
+recaplSelectedLivreur = btn.dataset.lid;
+renderRecapLivreurBody();
+});
+});
+}
+
+// Le reste à remettre, dit en clair sur la vignette. Un reste NÉGATIF n'est pas une anomalie :
+// il veut dire que l'avance payée à la gare dépasse ce que le livreur a encaissé — c'est alors
+// CLT qui lui doit. L'écrire « 0 » pour faire propre effacerait une dette réelle.
+function recaplResteHTML(reste){
+const r = Number(reste) || 0;
+if (r > 0) return `<span class="recap-client-amount recapl-reste-du">${formatMontant(r)} à remettre</span>`;
+if (r < 0) return `<span class="recap-client-amount recapl-reste-avance">CLT lui doit ${formatMontant(-r)}</span>`;
+return `<span class="recap-client-encaisse">✓ soldé</span>`;
+}
+
+/* Bilan d'un livreur : la liste de tout ce qu'on lui a confié ce jour-là, une ligne par colis,
+   avec le statut bien visible — c'est là qu'on voit d'un trait ce qui n'est pas passé.
+
+   La colonne « En main » est ce que CE colis met dans sa poche. Elle sort de
+   montantEnMainDuLivreur() pour les colis livrés, et vaut moins l'avance de gare pour les colis
+   pas encore livrés : le jour de la livraison l'argent sera réclamé en entier, aujourd'hui on ne
+   lui rend que les billets qu'il a laissés à la gare. Son total est, par construction, le
+   `total` de caisseParLivreur() — donc le même chiffre que la comptabilité. */
+function renderRecapLivreurBilan(lid, colisJour){
+const list = colisJour.filter(c => c && c.livreur_id === lid);
+const t = totauxArgent(list);
+const money = caisseParLivreur(list)[0] || { reste: 0, remis: 0, total: 0 };
+const enMain = (c) => (c.statut === 'livre')
+? (Number(montantEnMainDuLivreur(c)) || 0)
+: -(Number(fraisExpeditionARembourser(c)) || 0);
+
+const rows = list.map(c => {
+const m = enMain(c);
+return `
+<tr>
+<td data-label="Cliente">${fournisseurLabel(c.fournisseur_id)}</td>
+<td data-label="Destinataire">${c.destinataire_telephone ? escapeHTML(c.destinataire_telephone) : '—'}</td>
+<td data-label="Adresse">${c.destination ? escapeHTML(c.destination) : '—'}</td>
+<td data-label="Statut">${statutBadgeHTML(c.statut)}</td>
+<td data-label="Article">${formatMontant(montantArticleEncaisse(c)) || '—'}</td>
+<td data-label="Livraison">${formatMontant(montantLivraisonEncaissee(c)) || '—'}</td>
+<td data-label="En main" style="${m ? 'font-weight:700;' : 'color:#8a94a3;'}">${m ? formatMontant(m) : '—'}${c.encaissement_remis ? ' <span class="recapl-remis">remis</span>' : ''}</td>
+</tr>`;
+}).join('');
+
+const nonLivres = list.length - t.nbLivres;
+
+return `
+<div class="recap-bilan-head">
+<button type="button" class="btn btn-outline btn-sm" id="recapl-back">← Livreurs</button>
+<div class="recap-bilan-title">🛵 ${collecteLivreurLabel(lid) || 'Livreur inconnu'}</div>
+<button type="button" class="btn btn-outline btn-sm" id="recapl-ecran" title="Voir sa journée telle qu'il la voit sur son téléphone">👁 Son écran</button>
+</div>
+<div class="recap-bilan-sub">${recapDayLabel(recaplGetDate())} · <strong>${list.length}</strong> colis confié${list.length > 1 ? 's' : ''} · <strong>${t.nbLivres}</strong> livré${t.nbLivres > 1 ? 's' : ''}${nonLivres ? ` · <strong>${nonLivres}</strong> encore en cours` : ' · tout est livré'}</div>
+<div class="recap-day-money">
+En main sur la journée : <strong>${formatMontant(money.total) || '0 FCFA'}</strong> ·
+Déjà remis : <strong>${formatMontant(money.remis) || '0 FCFA'}</strong> ·
+Reste à remettre : <strong>${money.reste ? formatMontant(money.reste) : '0 FCFA'}</strong>
+</div>
+<div class="recap-table-wrap">
+<table class="recap-table recap-table-cards">
+<thead><tr><th>Cliente</th><th>Destinataire</th><th>Adresse</th><th>Statut</th><th>Article</th><th>Livraison</th><th>En main</th></tr></thead>
+<tbody>${rows}</tbody>
+${piedTotalHTML([
+{ texte: 'TOTAL' },
+{ texte: '' },
+{ texte: '' },
+{ texte: t.nbLivres + ' / ' + list.length + ' livré(s)' },
+{ texte: formatMontant(t.articleEncaisse) || '0 FCFA', label: 'Article' },
+{ texte: formatMontant(t.livraisonEncaissee) || '0 FCFA', label: 'Livraison' },
+{ texte: formatMontant(money.total) || '0 FCFA', couleur: '#1a7d3c', label: 'En main' },
+])}
+</table>
+</div>
+<div class="recap-bilan-note">
+« En main » est ce que le livreur détient réellement pour ce colis : l'article et la livraison encaissés, moins l'avance de gare qu'il a payée de sa poche et qu'on ne lui a pas encore remboursée.
+Sur un colis <strong>pas encore livré</strong>, seule cette avance apparaît, en négatif — rien n'a été encaissé, et on ne solde pas un colis qui n'est pas arrivé.
+Le total de cette colonne est celui de la <strong>Caisse par livreur</strong> en comptabilité, au franc près.
+</div>`;
+}
+
 
 // ---- Export du récapitulatif du jour (toutes les clientes, une section par cliente) ----
 // Utilisé pour télécharger la journée en PDF ou en Excel et l'envoyer aux clientes.
@@ -6238,6 +6512,11 @@ const overlay = document.getElementById('fiche-ecran-overlay');
 if (!overlay) return;
 const fermer = document.getElementById('fiche-ecran-fermer');
 if (fermer) fermer.addEventListener('click', fermerFicheEcran);
+// Deux sorties pour un seul geste : la croix, et un « ← Retour » assez large pour être visé
+// sans regarder. Elles font la même chose ; c'est voulu. Sur un téléphone, la croix est petite
+// et collée au bord — celui qui la manque ne doit pas se sentir enfermé dans la fiche.
+const retour = document.getElementById('fiche-ecran-retour');
+if (retour) retour.addEventListener('click', fermerFicheEcran);
 overlay.addEventListener('click', (e) => { if (e.target === overlay) fermerFicheEcran(); });
 document.addEventListener('keydown', (e) => {
 if (e.key === 'Escape' && !overlay.classList.contains('hidden')) fermerFicheEcran();
@@ -6262,43 +6541,17 @@ renderFicheEcran();
 function renderCaisseLivreur(rows){
 const box = document.getElementById('caisse-livreur');
 if (!box) return;
-const avanceDue = (c) => Number(fraisExpeditionARembourser(c)) || 0;
-const livres = (rows || []).filter(c => c.statut === 'livre');
-// Les colis non livrés n'entrent ici que par leur avance de gare, et pour elle seule.
-const avances = (rows || []).filter(c => c.statut !== 'livre' && avanceDue(c) > 0);
-if (!livres.length && !avances.length){
+// L'addition elle-même vit dans config.js, sous le nom caisseParLivreur, et le
+// « Récapitulatif par livreur » du journal de bord appelle EXACTEMENT la même. Deux écrans
+// qui réclament deux sommes différentes au même livreur le même soir, on l'a déjà vécu le
+// 25 août : la seule parade qui tienne, c'est qu'il n'existe qu'une addition.
+const lignes = caisseParLivreur(rows || []);
+// Une liste vide veut dire : aucun colis livré, et aucune avance de gare à rendre. Chacun de
+// ces deux cas crée forcément une ligne, donc l'absence de ligne les couvre tous les deux.
+if (!lignes.length){
 cltPoserHTML(box, `<div class="empty-state">Aucun colis livré sur cette période.</div>`);
 return;
 }
-const parLivreur = {};
-const ligneDe = (key) => {
-if (!parLivreur[key]) parLivreur[key] = { nb:0, article:0, livraison:0, gare:0, total:0, remis:0, reste:0, manquant:0, idsAremettre:[], idsFraisARembourser:[] };
-return parLivreur[key];
-};
-livres.forEach(c => {
-const l = ligneDe(c.livreur_id || 'inconnu');
-// montantEnMainDuLivreur() déduit déjà l'avance encore due sur ce colis-ci.
-const montant = Number(montantEnMainDuLivreur(c)) || 0;
-l.nb++;
-l.article += Number(montantArticleEncaisse(c)) || 0;
-l.livraison += Number(montantLivraisonEncaissee(c)) || 0;
-l.gare += avanceDue(c);
-l.total += montant;
-l.manquant += Number(montantManquantALaLivraison(c)) || 0;
-if (c.encaissement_remis){ l.remis += montant; }
-else { l.reste += montant; l.idsAremettre.push(c.id); }
-});
-avances.forEach(c => {
-const l = ligneDe(c.livreur_id || 'inconnu');
-const avance = avanceDue(c);
-// L'avance seule : ni article, ni livraison. Le colis n'est pas livré, son argent
-// n'est pas rentré, et on ne le solde pas — on rend seulement les billets de la gare.
-l.gare += avance;
-l.total -= avance;
-l.reste -= avance;
-l.idsFraisARembourser.push(c.id);
-});
-const lignes = Object.keys(parLivreur).map(id => ({ id, ...parLivreur[id] })).sort((a,b) => b.reste - a.reste);
 const somme = (champ) => lignes.reduce((s, r) => s + (Number(r[champ]) || 0), 0);
 const totalManquant = somme('manquant');
 // Colonne affichée seulement s'il y a une avance à montrer : un tableau sans avance
@@ -6329,7 +6582,7 @@ ${(r.idsAremettre.length || r.idsFraisARembourser.length) ? `<button type="butto
 </tbody>
 ${piedTotalHTML([
 { texte: 'TOTAL' },
-{ texte: livres.length + (totalManquant > 0 ? ` (−${formatMontant(totalManquant)})` : ''), label: 'Colis livrés' },
+{ texte: somme('nb') + (totalManquant > 0 ? ` (−${formatMontant(totalManquant)})` : ''), label: 'Colis livrés' },
 { texte: formatMontant(somme('article')) || '0 FCFA', label: 'Articles' },
 { texte: formatMontant(somme('livraison')) || '0 FCFA', label: 'Livraisons' },
 ...(colonneGare ? [{ texte: '−' + formatMontant(somme('gare')), couleur: '#E26313', label: 'Avancé à la gare' }] : []),
@@ -6771,6 +7024,33 @@ recapSelectedFournisseur = null;
 recapSearchText = '';
 if (dateInput) dateInput.value = todayLocalISODate();
 renderRecapBody();
+});
+}
+})();
+
+// Mêmes commandes, même comportement, pour le récapitulatif par livreur. Sa date lui est
+// propre : on compare souvent la tournée d'hier au tableau d'aujourd'hui.
+(function initRecapLivreurControls(){
+const champ = document.getElementById('recapl-date');
+const btnJour = document.getElementById('btn-recapl-today');
+if (champ) {
+if (!champ.value) champ.value = todayLocalISODate();
+champ.addEventListener('change', () => {
+recaplSelectedDate = champ.value || null;
+recaplSelectedLivreur = null;
+recaplSearchText = '';
+const date = recaplGetDate();
+if (date === todayLocalISODate()) { renderRecapLivreurBody(); }
+else { recapLoadPastDay(date); }
+});
+}
+if (btnJour) {
+btnJour.addEventListener('click', () => {
+recaplSelectedDate = null;
+recaplSelectedLivreur = null;
+recaplSearchText = '';
+if (champ) champ.value = todayLocalISODate();
+renderRecapLivreurBody();
 });
 }
 })();

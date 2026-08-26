@@ -2662,6 +2662,83 @@ function totauxArgent(colis) {
   return t;
 }
 
+/* --------------------------------------------------------------------------------------------
+   LA CAISSE, LIVREUR PAR LIVREUR — une seule fois, ici
+   --------------------------------------------------------------------------------------------
+   Ce calcul vivait à l'intérieur de l'écran de comptabilité de l'équipe, mêlé au dessin du
+   tableau. Tant qu'un seul écran s'en servait, cela ne coûtait rien. Le 26 août 2026 un second
+   écran en a eu besoin — le « Récapitulatif par livreur », pour répondre d'un coup d'œil à
+   « a-t-il tout livré, et combien tient-il encore ? ».
+
+   RECOPIER LE CALCUL AURAIT ÉTÉ LA FAUTE. Deux additions écrites séparément finissent toujours
+   par diverger : on corrige une règle d'un côté, on oublie l'autre, et l'application se met à
+   réclamer deux sommes différentes au même livreur le même soir. C'est exactement l'incident du
+   25 août — 11 000 sur son téléphone, 14 000 dans le tableau de l'équipe, et personne n'avait
+   tort. On ne refait pas deux fois la même erreur.
+
+   Une seule addition, donc, appelée par les deux écrans. Un écart entre eux devient
+   arithmétiquement impossible : ce n'est plus une promesse, c'est une propriété.
+
+   DEUX ENSEMBLES DISJOINTS, et c'est le cœur de la règle :
+     • idsAremettre        — colis LIVRÉS dont l'argent n'est pas encore remis ;
+     • idsFraisARembourser — colis PAS ENCORE LIVRÉS portant une avance de gare non remboursée.
+   Le second ne doit jamais être marqué « remis » : le jour de la livraison, son argent sera
+   réclamé en entier. On n'y pose que la date de remboursement de l'avance, pour que l'avance ne
+   soit pas déduite une seconde fois.
+
+   `reste` peut être NÉGATIF. Ce n'est pas une anomalie : cela veut dire que l'avance payée à la
+   gare dépasse ce que le livreur a encaissé — c'est alors CLT qui lui doit de l'argent. Un
+   calcul qui ramènerait ce chiffre à zéro « pour faire propre » effacerait une dette réelle.
+
+   Renvoie une liste triée par `reste` décroissant : celui qui tient le plus d'argent en premier.
+   -------------------------------------------------------------------------------------------- */
+function caisseParLivreur(colis) {
+  const liste = Array.isArray(colis) ? colis : [];
+  const avanceDue = (c) => Number(fraisExpeditionARembourser(c)) || 0;
+  const parLivreur = {};
+  const ligneDe = (key) => {
+    if (!parLivreur[key]) {
+      parLivreur[key] = {
+        nb: 0, article: 0, livraison: 0, gare: 0, total: 0,
+        remis: 0, reste: 0, manquant: 0,
+        idsAremettre: [], idsFraisARembourser: [],
+      };
+    }
+    return parLivreur[key];
+  };
+
+  liste.filter(c => c && c.statut === 'livre').forEach(c => {
+    const l = ligneDe(c.livreur_id || 'inconnu');
+    // montantEnMainDuLivreur() déduit déjà l'avance encore due sur ce colis-ci.
+    const montant = Number(montantEnMainDuLivreur(c)) || 0;
+    l.nb++;
+    l.article += Number(montantArticleEncaisse(c)) || 0;
+    l.livraison += Number(montantLivraisonEncaissee(c)) || 0;
+    l.gare += avanceDue(c);
+    l.total += montant;
+    l.manquant += Number(montantManquantALaLivraison(c)) || 0;
+    if (c.encaissement_remis) { l.remis += montant; }
+    else { l.reste += montant; l.idsAremettre.push(c.id); }
+  });
+
+  // Les colis non livrés n'entrent ici que par leur avance de gare, et pour elle seule : ni
+  // article, ni livraison. Le colis n'est pas livré, son argent n'est pas rentré, et on ne le
+  // solde pas — on rend seulement les billets laissés à la gare.
+  const avances = liste.filter(c => c && c.statut !== 'livre' && avanceDue(c) > 0);
+  avances.forEach(c => {
+    const l = ligneDe(c.livreur_id || 'inconnu');
+    const avance = avanceDue(c);
+    l.gare += avance;
+    l.total -= avance;
+    l.reste -= avance;
+    l.idsFraisARembourser.push(c.id);
+  });
+
+  return Object.keys(parLivreur)
+    .map(id => Object.assign({ id }, parLivreur[id]))
+    .sort((a, b) => b.reste - a.reste);
+}
+
 // Pied de tableau : la ligne de total.
 // Un tableau d'argent sans ligne de total oblige celui qui le lit à additionner de tête, et
 // c'est exactement là qu'on se trompe — surtout au téléphone, le soir, en fin de journée.
