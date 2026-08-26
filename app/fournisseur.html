@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826liv">
-<script src="theme.js?v=20260826liv"></script>
+<link rel="stylesheet" href="style.css?v=20260826barre">
+<script src="theme.js?v=20260826barre"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -183,17 +183,27 @@
 
 <div class="topbar">
   <div class="brand"><div class="logo-mark">CLT</div> Espace Colis — Client</div>
-  <div class="user-info">
-    <span id="user-avatar-topbar"></span>
-    <span id="user-name"></span>
-    <span class="role-pill">Client</span>
-    <button type="button" class="clt-actualiser" id="btn-actualiser" title="Actualiser maintenant" aria-label="Actualiser les données"><span class="clt-actualiser-icone" aria-hidden="true">🔄</span><span class="clt-actualiser-badge" hidden></span></button>
-    <div class="settings-menu">
-      <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
-      <div class="settings-dropdown" id="settings-dropdown">
-        <button type="button" id="btn-mon-compte">👤 Mon compte</button>
-        <button type="button" id="btn-activer-push">🔔 Activer les notifications</button>
-        <button type="button" class="danger" onclick="logout()">🚪 Se déconnecter</button>
+  <div class="user-info user-info--groupes">
+    <!-- La barre du haut se lit en deux groupes depuis le 26/08/2026, et non plus en une
+         seule file d'éléments. Sur téléphone, cette file dépassait la largeur de l'écran et se
+         repliait toute seule n'importe où : la roue dentée se retrouvait seule, tout à gauche,
+         sur une troisième ligne, et le menu qu'elle ouvre s'ancrait à sa droite — c'est-à-dire
+         hors de l'écran, texte coupé. Nommer les deux groupes laisse décider où la barre se
+         coupe : les boutons d'un côté, l'identité de l'autre. -->
+    <div class="topbar-identite">
+      <span id="user-avatar-topbar"></span>
+      <span id="user-name"></span>
+      <span class="role-pill">Client</span>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="clt-actualiser" id="btn-actualiser" title="Actualiser maintenant" aria-label="Actualiser les données"><span class="clt-actualiser-icone" aria-hidden="true">🔄</span><span class="clt-actualiser-badge" hidden></span></button>
+      <div class="settings-menu">
+        <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
+        <div class="settings-dropdown" id="settings-dropdown">
+          <button type="button" id="btn-mon-compte">👤 Mon compte</button>
+          <button type="button" id="btn-activer-push">🔔 Activer les notifications</button>
+          <button type="button" class="danger" onclick="logout()">🚪 Se déconnecter</button>
+        </div>
       </div>
     </div>
   </div>
@@ -352,37 +362,6 @@
       <div id="lotfr-lignes"></div>
       <div id="lotfr-barre-wrap"></div>
 
-      <!-- L'ANCIEN FORMULAIRE, REPLIÉ ET NON SUPPRIMÉ — 21 août 2026
-           Il ne s'ouvre plus tout seul : l'écran ci-dessus le remplace, et laisser les deux
-           dépliés côte à côte reviendrait à demander « lequel dois-je remplir ? » à chaque
-           ouverture de la page. Il reste néanmoins accessible d'un clic pendant quelques jours,
-           le temps de s'assurer que le nouvel écran ne manque de rien. Une fois cette preuve
-           faite, ce bloc part pour de bon. -->
-      <details id="ancien-formulaire" style="margin-top:22px; border-top:1px solid var(--border,#dfe5ee); padding-top:14px;">
-        <summary style="cursor:pointer; font-size:13px; color:var(--muted);">Ancienne saisie, colis par colis (sans photo côte à côte)</summary>
-      <!-- Bandeau « saisie retrouvée » (brouillon local). Conteneur distinct de #add-msg, dont le
-           contenu est remplacé à chaque message d'enregistrement. -->
-      <div id="colis-draft-banner-wrap"></div>
-      <div id="add-msg"></div>
-      <form id="form-add-colis">
-        <div class="field-row" style="margin-bottom:2px;">
-          <div class="field">
-            <label>📍 Commune de récupération</label>
-            <select id="batch-pickup-commune" required data-recherche data-recherche-placeholder="Commune…"></select>
-          </div>
-          <div class="field">
-            <label>Adresse précise (quartier, repère...)</label>
-            <input type="text" id="batch-pickup-adresse" placeholder="Ex : Angré 8e tranche, non loin de la pharmacie">
-          </div>
-        </div>
-        <div class="field-hint" style="font-size:12px; color:var(--muted); margin:-6px 0 16px;">Où le livreur doit-il récupérer les colis ajoutés ci-dessous ? Pré-rempli avec votre dernière adresse utilisée, mais modifiable à chaque nouvel envoi si vous changez de lieu.</div>
-        <div id="colis-rows"></div>
-        <button type="button" class="btn btn-outline btn-sm" id="btn-add-row" style="margin-bottom:18px;">+ Ajouter un autre colis</button>
-        <div>
-          <button type="submit" class="btn" id="btn-submit-colis">Enregistrer les colis</button>
-        </div>
-      </form>
-      </details>
     </div>
   </div>
 
@@ -466,14 +445,13 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826liv"></script>
-<script src="config.js?v=20260826liv"></script>
+<script src="clt-common.js?v=20260826barre"></script>
+<script src="config.js?v=20260826barre"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260826liv"></script>
+<script src="clt-select-recherche.js?v=20260826barre"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
-  let rowCount = 0;
   let mesColis = [];
   let searchColis = '';
   let filtreDate = '';
@@ -725,143 +703,6 @@
     return error;
   }
 
-  function newRowHTML(idx, cle){
-    return `
-      <div class="colis-row" data-row="${idx}" data-cle="${cle || nouvelleCleColis()}">
-        ${idx > 0 ? `<button type="button" class="remove-row" onclick="removeRow(${idx})">Retirer ✕</button>` : ''}
-        <!-- Coller la commande : lit le message du client et remplit ce qu'il sait lire.
-             Fermé au départ — qui préfère taper à la main ne voit rien changer. -->
-        <div class="coller-bloc">
-          <button type="button" class="btn btn-outline btn-sm coller-ouvrir row-coller-ouvrir">📋 Coller le message du client</button>
-          <div class="coller-zone row-coller-zone" style="display:none;">
-            <textarea class="row-coller-texte" placeholder="Collez ici le message WhatsApp de votre acheteur, puis appuyez sur « Remplir les champs »."></textarea>
-            <div class="coller-actions">
-              <button type="button" class="btn btn-primary btn-sm row-coller-lire">Remplir les champs</button>
-              <button type="button" class="btn btn-outline btn-sm row-coller-fermer">Fermer</button>
-            </div>
-            <div class="coller-resume row-coller-resume" style="display:none;"></div>
-          </div>
-        </div>
-        <div class="field">
-          <!-- Facultative depuis le 21 août 2026, comme dans l'espace Équipe. La description
-               n'est écrite sur aucune étiquette : l'exiger obligeait à inventer un texte pour
-               chaque colis, que personne ne relit ensuite. Un colis se reconnaît à sa
-               destination, à son destinataire et à sa photo. -->
-          <label>Description du colis (optionnel)</label>
-          <textarea class="row-desc" placeholder="Ex : Carton de vêtements, 5kg"></textarea>
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label>Commune de destination</label>
-            <select class="row-commune-dest" required data-recherche data-recherche-placeholder="Commune…">${communesDestinationOptionsHTML('', 'Choisir une commune')}</select>
-          </div>
-          <div class="field">
-            <label>Précision (quartier, repère...)</label>
-            <input type="text" class="row-dest" placeholder="Ex : Angré 8e tranche">
-          </div>
-        </div>
-        <div class="field">
-          <label>Téléphone du destinataire <span class="champ-requis">obligatoire</span></label>
-          <input type="tel" class="row-dest-tel" placeholder="Ex : 07 01 02 03 04" inputmode="tel" required>
-          <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Sans lui, le livreur ne peut ni prévenir de son passage ni se faire ouvrir. Sert aussi à envoyer le lien de suivi par WhatsApp.</div>
-        </div>
-        <!-- Carnet d'adresses : vos destinataires déjà servis, déduits de vos colis passés.
-             Voir config.js pour le raisonnement. Caché tant qu'il n'y a rien à proposer. -->
-        <div class="carnet-wrap row-carnet" style="display:none;"></div>
-        <!-- Le code de confirmation à la livraison a été retiré le 21 août 2026, ici comme sur
-             l'écran photo. Voir le commentaire là-bas pour le pourquoi. -->
-        <div class="montant-block">
-          <label>Montants</label>
-          <div class="montant-group">
-            <div class="montant-field">
-              <label>Montant article</label>
-              <input type="number" class="row-montant-article" placeholder="0" min="0" step="any">
-            </div>
-            <div class="montant-plus">+</div>
-            <div class="montant-field">
-              <label>Montant livraison</label>
-              <input type="number" class="row-montant-livraison" placeholder="0" min="0" step="any">
-            </div>
-          </div>
-          <div class="field-hint" style="font-size:12px; color:var(--muted); margin-top:2px;">Le montant de livraison est suggéré automatiquement selon la commune, mais reste modifiable.</div>
-          <div class="montant-total-preview">Total : <strong class="row-montant-total">0 FCFA</strong></div>
-        </div>
-        <div class="field">
-          <label>Photo (optionnel)</label>
-          <div class="photo-pick-group">
-            <div class="avatar-upload-btns">
-              <label class="btn btn-outline btn-sm" style="cursor:pointer;">📷 Prendre une photo<input type="file" accept="image/*" capture="user" class="hidden pick-camera"></label>
-              <label class="btn btn-outline btn-sm" style="cursor:pointer;">🖼️ Bibliothèque<input type="file" accept="image/*" class="hidden pick-library"></label>
-            </div>
-            <div class="photo-pick-filename"></div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // Recalcule en direct le total affiché sous les deux champs "montant article" / "montant livraison"
-  // d'une ligne du formulaire d'ajout, dès que l'un des deux champs change.
-  function wireMontantPreview(row){
-    const artInput = row.querySelector('.row-montant-article');
-    const livInput = row.querySelector('.row-montant-livraison');
-    const totalEl = row.querySelector('.row-montant-total');
-    if (!artInput || !livInput || !totalEl) return;
-    const update = () => {
-      const total = (Number(artInput.value) || 0) + (Number(livInput.value) || 0);
-      totalEl.textContent = formatMontant(total) || '0 FCFA';
-    };
-    artInput.addEventListener('input', update);
-    livInput.addEventListener('input', update);
-  }
-
-  // Dès que la commune de destination d'une ligne est choisie, propose automatiquement le
-  // montant de livraison correspondant (voir computePrixLivraison), en se basant sur la commune
-  // de récupération choisie pour ce lot de colis (champ "batch-pickup-commune", au-dessus de la
-  // liste des colis). Reste modifiable ensuite à la main.
-  function wireAutoPrix(row){
-    const communeSelect = row.querySelector('.row-commune-dest');
-    const livInput = row.querySelector('.row-montant-livraison');
-    if (!communeSelect || !livInput) return;
-    // « Expédition (intérieur) » : la précision devient l'adresse, et devient obligatoire.
-    brancherPrecisionExpedition(communeSelect, row.querySelector('.row-dest'));
-    communeSelect.addEventListener('change', () => {
-      const pickupSelect = document.getElementById('batch-pickup-commune');
-      const depart = pickupSelect && pickupSelect.value;
-      const prix = computePrixLivraison(depart, communeSelect.value);
-      if (prix !== null) {
-        livInput.value = prix;
-        livInput.dispatchEvent(new Event('input'));
-      }
-      // Pour une expédition, computePrixLivraison renvoie null à dessein : aucun tarif d'Abidjan
-      // ne s'applique. On efface donc le montant suggéré par la commune choisie juste avant,
-      // plutôt que de le laisser en place — un prix d'Abidjan collé à un colis pour Korhogo
-      // partirait en base sans que personne ne le relise.
-      if (prix === null && estExpedition(communeSelect.value)) {
-        livInput.value = '';
-        livInput.dispatchEvent(new Event('input'));
-      }
-    });
-  }
-
-  // Si le client change la commune de récupération du lot en cours (au-dessus de la liste),
-  // on recalcule le prix suggéré de toutes les lignes déjà présentes dans le formulaire.
-  function recomputeAllRowsPrix(){
-    const pickupSelect = document.getElementById('batch-pickup-commune');
-    const depart = pickupSelect && pickupSelect.value;
-    if (!depart) return;
-    document.querySelectorAll('.colis-row').forEach(row => {
-      const communeSelect = row.querySelector('.row-commune-dest');
-      const livInput = row.querySelector('.row-montant-livraison');
-      if (!communeSelect || !livInput || !communeSelect.value) return;
-      const prix = computePrixLivraison(depart, communeSelect.value);
-      if (prix !== null) {
-        livInput.value = prix;
-        livInput.dispatchEvent(new Event('input'));
-      }
-    });
-  }
-
   /* ---------- CARNET D'ADRESSES : MES DESTINATAIRES DÉJÀ SERVIS ----------
      Le raisonnement complet est dans config.js. Ici, seulement le branchement à l'écran.
 
@@ -894,17 +735,12 @@
     return monCarnet;
   }
 
-  /* Les deux écrans de saisie ne nomment pas leurs champs pareil : l'ancien formulaire dit
-     `.row-…`, l'écran photo dit `.lotfr-…`. Le carnet, lui, est exactement le même travail.
-     On lui passe donc la carte des champs plutôt que d'écrire une seconde version : deux
-     carnets séparés, c'est une correction sur l'un qui ne protège pas l'autre, et on l'a déjà
-     payé une fois avec les deux portes d'écriture. */
-  const CARNET_CHAMPS_FORMULAIRE = { wrap:'.row-carnet',   commune:'.row-commune-dest', destination:'.row-dest', telephone:'.row-dest-tel' };
-  const CARNET_CHAMPS_PHOTO      = { wrap:'.lotfr-carnet', commune:'.lotfr-commune',    destination:'.lotfr-dest', telephone:'.lotfr-tel' };
-  function carnetChampsDe(row){
-    return (row && row.classList && row.classList.contains('lot-ligne'))
-      ? CARNET_CHAMPS_PHOTO : CARNET_CHAMPS_FORMULAIRE;
-  }
+  /* Il n'y a plus qu'un seul écran de saisie depuis le 26/08/2026 : l'écran photo. La carte
+     des champs reste néanmoins nommée à part plutôt qu'écrite en dur dans chaque fonction —
+     c'est ce qui a permis, quand il y avait deux formulaires, qu'une correction du carnet
+     profite aux deux au lieu d'un seul. */
+  const CARNET_CHAMPS_PHOTO = { wrap:'.lotfr-carnet', commune:'.lotfr-commune', destination:'.lotfr-dest', telephone:'.lotfr-tel' };
+  function carnetChampsDe(){ return CARNET_CHAMPS_PHOTO; }
 
   // Le carnet d'une ligne se resserre au fil de ce qui est déjà tapé DANS CETTE LIGNE : commune,
   // quartier, téléphone. Chaque ligne du formulaire filtre donc indépendamment des autres.
@@ -947,13 +783,11 @@
       });
       if ('commune' in res.ecrits && communeEl) {
         communeEl.value = res.ecrits.commune;
-        // La commune choisie commande le prix de livraison suggéré (voir wireAutoPrix) : sans
-        // ce signal, le montant resterait celui de l'ancienne commune, donc faux.
+        // La commune commande le prix suggéré : sans ce signal, il resterait faux.
         communeEl.dispatchEvent(new Event('change'));
       }
       if ('destination' in res.ecrits && destEl) destEl.value = res.ecrits.destination;
       if ('telephone' in res.ecrits && telEl) telEl.value = res.ecrits.telephone;
-      if (typeof saveColisDraft === 'function') saveColisDraft();
       if (window.cltToast) cltToast(resumeCarnetTexte(res, entree), { type: res.conserves.length ? 'warning' : 'success' });
       dessinerCarnetLigne(row);
     });
@@ -963,7 +797,7 @@
   // Après le chargement du carnet (ou après l'ajout de colis), les lignes déjà à l'écran doivent
   // se mettre à jour : elles ont été dessinées quand le carnet était encore vide.
   function redessinerTousLesCarnets(){
-    document.querySelectorAll('.colis-row, .lot-ligne').forEach(dessinerCarnetLigne);
+    document.querySelectorAll('.lot-ligne').forEach(dessinerCarnetLigne);
   }
 
   /* ============================================================================================
@@ -1073,6 +907,21 @@
           <span class="lot-num">Colis</span>
           <button type="button" class="lot-retirer">Retirer ce colis</button>
         </div>
+        <!-- Coller la commande : lit le message de l'acheteuse et remplit ce qu'il sait lire.
+             Fermé au départ — qui préfère taper à la main ne voit rien changer. Ce bloc vivait
+             dans l'ancien formulaire ; il l'a suivi ici le 26/08/2026 quand celui-ci est parti,
+             pour qu'aucune vendeuse ne perde ce raccourci au passage. -->
+        <div class="coller-bloc">
+          <button type="button" class="btn btn-outline btn-sm coller-ouvrir lotfr-coller-ouvrir">📋 Coller le message du client</button>
+          <div class="coller-zone lotfr-coller-zone" style="display:none;">
+            <textarea class="lotfr-coller-texte" placeholder="Collez ici le message WhatsApp de votre acheteur, puis appuyez sur « Remplir les champs »."></textarea>
+            <div class="coller-actions">
+              <button type="button" class="btn btn-primary btn-sm lotfr-coller-lire">Remplir les champs</button>
+              <button type="button" class="btn btn-outline btn-sm lotfr-coller-fermer">Fermer</button>
+            </div>
+            <div class="coller-resume lotfr-coller-resume" style="display:none;"></div>
+          </div>
+        </div>
         <div class="field">
           <label>Commune de destination</label>
           <select class="lotfr-commune" data-recherche data-recherche-placeholder="Commune…">${communesDestinationOptionsHTML('', 'Choisir une commune')}</select>
@@ -1165,6 +1014,13 @@
     });
 
     wireCarnet(el);
+    wireColler(el);
+    // La note « vous avez peut-être déjà envoyé ce colis » se recalcule au fil de la frappe.
+    ['.lotfr-tel', '.lotfr-dest'].forEach(sel => {
+      const champ = el.querySelector(sel);
+      if (champ) champ.addEventListener('input', () => noterDoublonEventuel(el));
+    });
+    if (commune) commune.addEventListener('change', () => noterDoublonEventuel(el));
   }
 
   function lotfrAjouterLigne(file){
@@ -1525,12 +1381,12 @@
 
   function wireColler(row){
     if (!row) return;
-    const ouvrir = row.querySelector('.row-coller-ouvrir');
-    const zone   = row.querySelector('.row-coller-zone');
-    const texte  = row.querySelector('.row-coller-texte');
-    const lire   = row.querySelector('.row-coller-lire');
-    const fermer = row.querySelector('.row-coller-fermer');
-    const resume = row.querySelector('.row-coller-resume');
+    const ouvrir = row.querySelector('.lotfr-coller-ouvrir');
+    const zone   = row.querySelector('.lotfr-coller-zone');
+    const texte  = row.querySelector('.lotfr-coller-texte');
+    const lire   = row.querySelector('.lotfr-coller-lire');
+    const fermer = row.querySelector('.lotfr-coller-fermer');
+    const resume = row.querySelector('.lotfr-coller-resume');
     if (!ouvrir || !zone || !texte || !lire) return;
 
     ouvrir.addEventListener('click', () => {
@@ -1544,10 +1400,10 @@
     });
 
     lire.addEventListener('click', () => {
-      const communeEl = row.querySelector('.row-commune-dest');
-      const destEl    = row.querySelector('.row-dest');
-      const telEl     = row.querySelector('.row-dest-tel');
-      const artEl     = row.querySelector('.row-montant-article');
+      const communeEl = row.querySelector('.lotfr-commune');
+      const destEl    = row.querySelector('.lotfr-dest');
+      const telEl     = row.querySelector('.lotfr-tel');
+      const artEl     = row.querySelector('.lotfr-art');
       const res = lireCommande(texte.value, monCarnet || [], {
         commune: communeEl ? communeEl.value : '',
         destination: destEl ? destEl.value : '',
@@ -1564,8 +1420,7 @@
       if ('commune' in res.ecrits && communeEl) {
         communeEl.value = res.ecrits.commune;
         marquerRempliAuto(communeEl);
-        // La commune commande le prix de livraison suggéré (voir wireAutoPrix) : sans ce
-        // signal, le montant resterait celui de l'ancienne commune, donc faux.
+        // La commune commande le prix suggéré : sans ce signal, il resterait faux.
         communeEl.dispatchEvent(new Event('change'));
       }
       if (resume) {
@@ -1586,7 +1441,6 @@
           resume.appendChild(rappel);
         }
       }
-      if (typeof saveColisDraft === 'function') saveColisDraft();
       dessinerCarnetLigne(row);
       noterDoublonEventuel(row);
     });
@@ -1596,10 +1450,10 @@
      Elle apparaît sous le téléphone, elle n'empêche jamais d'enregistrer. Voir config.js. */
   function noterDoublonEventuel(row){
     if (!row) return;
-    let note = row.querySelector('.row-doublon');
-    const communeEl = row.querySelector('.row-commune-dest');
-    const destEl    = row.querySelector('.row-dest');
-    const telEl     = row.querySelector('.row-dest-tel');
+    let note = row.querySelector('.lotfr-doublon');
+    const communeEl = row.querySelector('.lotfr-commune');
+    const destEl    = row.querySelector('.lotfr-dest');
+    const telEl     = row.querySelector('.lotfr-tel');
     const entree = colisRecentSimilaire(monCarnet || [], {
       commune: communeEl ? communeEl.value : '',
       destination: destEl ? destEl.value : '',
@@ -1608,212 +1462,12 @@
     if (!entree) { if (note) note.remove(); return; }
     if (!note) {
       note = document.createElement('div');
-      note.className = 'row-doublon';
+      note.className = 'lotfr-doublon';
       note.style.cssText = 'margin-top:6px; font-size:12px; color:#9a6400; background:#fff8e6;'
         + ' border:1px solid #f0dca8; border-radius:8px; padding:7px 9px;';
       (telEl ? telEl.parentNode : row).appendChild(note);
     }
     note.textContent = 'ℹ️ ' + noteDoublonTexte(entree);
-  }
-
-  function addRow(cle){
-    document.getElementById('colis-rows').insertAdjacentHTML('beforeend', newRowHTML(rowCount, cle));
-    const row = document.querySelector(`.colis-row[data-row="${rowCount}"]`);
-    if (row) {
-      wireMontantPreview(row); wireAutoPrix(row); wireCarnet(row); wireColler(row);
-      ['.row-dest-tel', '.row-dest'].forEach(sel => {
-        const el = row.querySelector(sel);
-        if (el) el.addEventListener('input', () => noterDoublonEventuel(row));
-      });
-      const cd = row.querySelector('.row-commune-dest');
-      if (cd) cd.addEventListener('change', () => noterDoublonEventuel(row));
-    }
-    rowCount++;
-  }
-  function removeRow(idx){
-    const el = document.querySelector(`.colis-row[data-row="${idx}"]`);
-    if (el) el.remove();
-  }
-  document.getElementById('btn-add-row').addEventListener('click', addRow);
-
-  /* ---------- AUTOSAUVEGARDE DU FORMULAIRE « AJOUTER DES COLIS » (brouillon local) ----------
-     AJOUT DU 19 AOÛT 2026.
-     Le tableau de bord équipe disposait déjà de cette protection ; l'espace client, non.
-     Or c'est ici que la saisie est la plus longue : un client peut préparer cinq ou six colis
-     d'affilée. Un rechargement de page, un appel entrant, un basculement d'application ou une
-     coupure réseau au moment d'enregistrer, et tout était à refaire de zéro.
-
-     Ce que fait ce brouillon : à chaque frappe (regroupée par 400 ms pour ne pas écrire en
-     continu), la saisie en cours est copiée dans le stockage local de l'appareil — sur le
-     téléphone du client, jamais sur nos serveurs. À la réouverture de la page, si un brouillon
-     est retrouvé, un bandeau propose de le restaurer ou de l'ignorer. Rien n'est réinjecté
-     automatiquement : c'est le client qui décide.
-
-     Ce qui n'est pas mémorisé : les photos. Un fichier image ne peut pas être conservé de cette
-     façon, et le bandeau le dit clairement pour éviter toute mauvaise surprise.
-
-     Le brouillon est effacé dès que les colis sont réellement enregistrés, et dès que le
-     formulaire redevient vide. ------------------------------------------------------------ */
-  const COLIS_DRAFT_KEY = 'clt_fournisseur_colis_draft';
-  let colisDraftSaveTimer = null;
-  let colisDraftPret = false;   // tant que le formulaire n'est pas initialisé, on n'écrit rien
-
-  // Lit la saisie en cours. La commune et l'adresse de récupération sont pré-remplies depuis le
-  // profil : on les mémorise, mais elles ne suffisent jamais à considérer qu'il y a un brouillon.
-  function getColisDraft(){
-    const communeEl = document.getElementById('batch-pickup-commune');
-    const adresseEl = document.getElementById('batch-pickup-adresse');
-    const lignes = [];
-    document.querySelectorAll('.colis-row').forEach(row => {
-      const v = sel => { const el = row.querySelector(sel); return el ? el.value : ''; };
-      lignes.push({
-        // La clé suit le brouillon : si la page est rechargée en cours de saisie, la ligne
-        // restaurée garde la même identité et ne pourra pas créer un colis en double.
-        cle:               row.dataset.cle || '',
-        description:       v('.row-desc'),
-        commune_dest:      v('.row-commune-dest'),
-        destination:       v('.row-dest'),
-        destinataire_tel:  v('.row-dest-tel'),
-        montant_article:   v('.row-montant-article'),
-        montant_livraison: v('.row-montant-livraison')
-      });
-    });
-    return {
-      pickup_commune: communeEl ? communeEl.value : '',
-      pickup_adresse: adresseEl ? adresseEl.value : '',
-      lignes
-    };
-  }
-
-  // Un brouillon n'existe que si au moins une ligne de colis contient quelque chose.
-  function colisDraftEstVide(draft){
-    if (!draft || !Array.isArray(draft.lignes)) return true;
-    return !draft.lignes.some(l =>
-      (l.description || '').trim() || (l.commune_dest || '') || (l.destination || '').trim() ||
-      (l.destinataire_tel || '').trim() ||
-      (l.montant_article || '').trim() || (l.montant_livraison || '').trim()
-    );
-  }
-
-  function saveColisDraft(){
-    if (!colisDraftPret) return;
-    const draft = getColisDraft();
-    if (colisDraftEstVide(draft)) { try { localStorage.removeItem(COLIS_DRAFT_KEY); } catch(e){} return; }
-    try {
-      localStorage.setItem(COLIS_DRAFT_KEY, JSON.stringify(Object.assign({}, draft, { savedAt: Date.now() })));
-    } catch(e) { /* stockage indisponible (navigation privée, quota) : on ignore silencieusement */ }
-  }
-
-  function clearColisDraft(){
-    try { localStorage.removeItem(COLIS_DRAFT_KEY); } catch(e){}
-    const banner = document.getElementById('colis-draft-banner');
-    if (banner) banner.remove();
-  }
-
-  // Réinjecte le brouillon : on reconstruit exactement le bon nombre de lignes, puis on remplit.
-  function appliquerColisDraft(draft){
-    const communeEl = document.getElementById('batch-pickup-commune');
-    const adresseEl = document.getElementById('batch-pickup-adresse');
-    if (communeEl && draft.pickup_commune) communeEl.value = draft.pickup_commune;
-    if (adresseEl && draft.pickup_adresse) adresseEl.value = draft.pickup_adresse;
-
-    document.getElementById('colis-rows').innerHTML = '';
-    rowCount = 0;
-    draft.lignes.forEach(l => addRow(l && l.cle ? l.cle : null));
-    if (!rowCount) addRow();
-
-    const rows = document.querySelectorAll('.colis-row');
-    draft.lignes.forEach((l, i) => {
-      const row = rows[i];
-      if (!row) return;
-      const set = (sel, val) => { const el = row.querySelector(sel); if (el) el.value = val || ''; };
-      set('.row-desc', l.description);
-      set('.row-commune-dest', l.commune_dest);
-      set('.row-dest', l.destination);
-      set('.row-dest-tel', l.destinataire_tel);
-      set('.row-montant-article', l.montant_article);
-      set('.row-montant-livraison', l.montant_livraison);
-      // Recalcule le total affiché sous les deux champs de montant.
-      const art = row.querySelector('.row-montant-article');
-      if (art) art.dispatchEvent(new Event('input'));
-    });
-  }
-
-  // Bandeau de proposition, construit sans innerHTML pour qu'aucune saisie du client ne puisse
-  // être interprétée comme du code.
-  function restoreColisDraftIfAny(){
-    let raw;
-    try { raw = localStorage.getItem(COLIS_DRAFT_KEY); } catch(e) { return; }
-    if (!raw) return;
-    let draft;
-    try { draft = JSON.parse(raw); } catch(e) { clearColisDraft(); return; }
-    if (colisDraftEstVide(draft)) { clearColisDraft(); return; }
-
-    const wrap = document.getElementById('colis-draft-banner-wrap');
-    if (!wrap) return;
-
-    const banner = document.createElement('div');
-    banner.id = 'colis-draft-banner';
-    banner.className = 'msg msg-info';
-    banner.style.display = 'flex';
-    banner.style.flexWrap = 'wrap';
-    banner.style.justifyContent = 'space-between';
-    banner.style.alignItems = 'center';
-    banner.style.gap = '10px';
-
-    const nb = draft.lignes.length;
-    const label = document.createElement('span');
-    label.textContent = '📝 Une saisie non envoyée a été retrouvée (' + nb +
-      (nb > 1 ? ' colis commencés' : ' colis commencé') +
-      '). Voulez-vous la restaurer ? Les photos ne sont pas conservées.';
-    banner.appendChild(label);
-
-    const btnWrap = document.createElement('div');
-    btnWrap.style.display = 'flex';
-    btnWrap.style.gap = '8px';
-
-    const btnRestore = document.createElement('button');
-    btnRestore.type = 'button';
-    btnRestore.className = 'btn btn-sm';
-    btnRestore.textContent = 'Restaurer';
-    btnRestore.addEventListener('click', () => { appliquerColisDraft(draft); banner.remove(); });
-
-    const btnDiscard = document.createElement('button');
-    btnDiscard.type = 'button';
-    btnDiscard.className = 'btn btn-sm btn-outline';
-    btnDiscard.textContent = 'Ignorer';
-    btnDiscard.addEventListener('click', clearColisDraft);
-
-    btnWrap.appendChild(btnRestore);
-    btnWrap.appendChild(btnDiscard);
-    banner.appendChild(btnWrap);
-    wrap.appendChild(banner);
-  }
-
-  // Écoute posée une seule fois sur le formulaire entier : les lignes ajoutées plus tard sont
-  // couvertes automatiquement, sans avoir à rebrancher quoi que ce soit.
-  function initColisDraftAutosave(){
-    const form = document.getElementById('form-add-colis');
-    if (!form) return;
-    const debounced = () => {
-      clearTimeout(colisDraftSaveTimer);
-      colisDraftSaveTimer = setTimeout(saveColisDraft, 400);
-    };
-    form.addEventListener('input', debounced);
-    form.addEventListener('change', debounced);
-    // Retirer une ligne est aussi une modification à mémoriser.
-    form.addEventListener('click', e => {
-      if (e.target && e.target.classList && e.target.classList.contains('remove-row')) setTimeout(saveColisDraft, 0);
-    });
-    // Dernière sauvegarde au moment où la page est quittée ou mise en arrière-plan.
-    window.addEventListener('pagehide', saveColisDraft);
-    document.addEventListener('visibilitychange', () => { if (document.hidden) saveColisDraft(); });
-    colisDraftPret = true;
-    restoreColisDraftIfAny();
-  }
-
-  function addMsg(text, type){
-    document.getElementById('add-msg').innerHTML = `<div class="msg msg-${type}">${escapeHTML(text)}</div>`;
   }
 
   // Compression d'une photo avant l'envoi.
@@ -1845,151 +1499,6 @@
     const { data } = supabaseClient.storage.from('colis-photos').getPublicUrl(path);
     return data.publicUrl;
   }
-
-  document.getElementById('form-add-colis').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-submit-colis');
-
-    const pickupCommuneSelect = document.getElementById('batch-pickup-commune');
-    const pickupAdresseInput = document.getElementById('batch-pickup-adresse');
-    const commune_recuperation = pickupCommuneSelect ? pickupCommuneSelect.value : '';
-    const adresse_recuperation = pickupAdresseInput ? pickupAdresseInput.value.trim() : '';
-    if (!commune_recuperation) {
-      addMsg("Veuillez choisir la commune de récupération des colis (en haut du formulaire).", "error");
-      return;
-    }
-
-    btn.disabled = true; btn.textContent = 'Enregistrement...';
-
-    const rows = document.querySelectorAll('.colis-row');
-    const inserts = [];
-    let photoUploadFailed = false;
-
-    for (const row of rows) {
-      const description = row.querySelector('.row-desc').value.trim();
-      const commune_destination = row.querySelector('.row-commune-dest').value;
-      const destination = row.querySelector('.row-dest').value.trim();
-      if (!commune_destination) {
-        addMsg("Veuillez choisir la commune de destination pour chaque colis.", "error");
-        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
-        return;
-      }
-      const montantArticleRaw = row.querySelector('.row-montant-article').value.trim();
-      const montantLivraisonRaw = row.querySelector('.row-montant-livraison').value.trim();
-      if (!isValidMontant(montantArticleRaw) || !isValidMontant(montantLivraisonRaw)) {
-        addMsg("Les montants doivent être des nombres positifs.", "error");
-        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
-        return;
-      }
-      const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
-      const montant_livraison = montantLivraisonRaw === '' ? null : Number(montantLivraisonRaw);
-      const montant = (montant_article !== null || montant_livraison !== null)
-        ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
-        : null;
-      const pickedPhoto = pickedGroupFile(row.querySelector('.photo-pick-group'));
-      let photo_url = null;
-
-      if (pickedPhoto) {
-        photo_url = await uploadPhoto(pickedPhoto, currentUser.id);
-        if (!photo_url) photoUploadFailed = true;
-      }
-
-      // Le numéro est exigé depuis le 21 août 2026, ici comme sur l'écran photo. Ce formulaire
-      // écrit dans la même table et ses colis partent dans les mêmes tournées : le laisser
-      // accepter ce que l'autre refuse aurait fait de lui la porte de sortie de la règle.
-      const destTelRaw = (row.querySelector('.row-dest-tel')?.value || '').trim();
-      if (!destTelRaw) {
-        addMsg("Le numéro du destinataire est obligatoire : sans lui, le livreur ne peut pas se faire ouvrir.", "error");
-        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
-        return;
-      }
-      if (!isValidCiPhone(destTelRaw)) {
-        addMsg("Le numéro du destinataire semble incorrect. Indiquez un numéro ivoirien à 10 chiffres (ex : 07 01 02 03 04).", "error");
-        btn.disabled = false; btn.textContent = 'Enregistrer les colis';
-        return;
-      }
-      // Normalisé au format international (225…) attendu par la notification WhatsApp.
-      const destinataire_telephone = destTelRaw ? toPhoneE164(destTelRaw) : null;
-
-      inserts.push({
-        fournisseur_id: currentUser.id,
-        // Vide veut dire vide : on n'invente pas un texte que personne n'a écrit.
-        description: description || null,
-        destination,
-        commune_destination,
-        montant,
-        montant_article,
-        montant_livraison,
-        photo_url,
-        commune_recuperation,
-        adresse_recuperation: adresse_recuperation || null,
-        destinataire_telephone,
-        cle_creation: row.dataset.cle || null,
-      });
-    }
-
-    let error = await frInsererColis(inserts);
-    btn.disabled = false; btn.textContent = 'Enregistrer les colis';
-
-    // Doublon détecté par la base : au moins un de ces colis avait déjà été enregistré lors
-    // d'un envoi précédent qui semblait avoir échoué (connexion lente, page rechargée).
-    // L'insertion est refusée en bloc par Postgres : on identifie donc ce qui existe déjà et
-    // on n'enregistre que le reste, pour ne perdre aucun colis réellement nouveau.
-    let dejaEnregistres = 0;
-    if (estDoublonCleCreation(error)) {
-      const cles = inserts.map(i => i.cle_creation).filter(Boolean);
-      const { data: existantes, error: errLecture } = await supabaseClient
-        .from('colis').select('cle_creation').in('cle_creation', cles);
-      if (!errLecture) {
-        const connues = new Set((existantes || []).map(r => r.cle_creation));
-        const restants = inserts.filter(i => !connues.has(i.cle_creation));
-        dejaEnregistres = inserts.length - restants.length;
-        error = null;
-        if (restants.length) error = await frInsererColis(restants);
-      }
-    }
-
-    if (error) {
-      addMsg("Erreur lors de l'enregistrement : " + friendlyErrorMessage(error.message), "error");
-      return;
-    }
-
-    // Mémorise ce lieu de récupération comme valeur par défaut pour la prochaine fois (pratique si
-    // le client récupère souvent au même endroit), sans jamais modifier les colis déjà enregistrés :
-    // chaque colis garde définitivement le lieu de récupération choisi au moment de son ajout.
-    if (currentProfile && (currentProfile.commune_recuperation !== commune_recuperation || currentProfile.adresse_recuperation !== (adresse_recuperation || null))) {
-      supabaseClient.from('profiles').update({ commune_recuperation, adresse_recuperation: adresse_recuperation || null }).eq('id', currentUser.id)
-        .then(({ error: profErr }) => { if (profErr) console.error(profErr); })
-        .catch(err => console.error('Erreur mise à jour profil:', err));
-      currentProfile.commune_recuperation = commune_recuperation;
-      currentProfile.adresse_recuperation = adresse_recuperation || null;
-    }
-
-    const photoWarning = photoUploadFailed ? " (attention : l'envoi d'au moins une photo a échoué, le colis a été enregistré sans photo)" : "";
-    // Si un envoi précédent avait en réalité abouti, on l'annonce clairement plutôt que de donner
-    // un total qui ne correspondrait pas à ce qui vient réellement d'être créé.
-    const nouveaux = inserts.length - dejaEnregistres;
-    let messageSucces;
-    if (dejaEnregistres === 0) {
-      messageSucces = `${inserts.length} colis enregistré(s) avec succès${photoWarning}.`;
-    } else if (nouveaux === 0) {
-      messageSucces = `Ces ${dejaEnregistres} colis étaient déjà enregistrés (envoi précédent qui avait abouti) : ils n'ont pas été créés une seconde fois${photoWarning}.`;
-    } else {
-      messageSucces = `${nouveaux} colis enregistré(s) avec succès. ${dejaEnregistres} l'étaient déjà et n'ont pas été dupliqué(s)${photoWarning}.`;
-    }
-    addMsg(messageSucces, "success");
-    // Les colis sont en base : le brouillon local n'a plus de raison d'être, on l'efface avant de
-    // vider le formulaire pour qu'il ne soit jamais reproposé à la prochaine ouverture.
-    clearColisDraft();
-    document.getElementById('colis-rows').innerHTML = '';
-    rowCount = 0;
-    addRow();
-    loadColis();
-    // Les destinataires qu'on vient de servir entrent au carnet : on oublie la copie en mémoire
-    // et on la relit, pour qu'ils soient proposés dès le prochain colis.
-    monCarnet = null;
-    chargerMonCarnet().then(redessinerTousLesCarnets).catch(e => console.error('Carnet :', e));
-  });
 
   // Frise d'étapes (stepper) : reflète visuellement l'avancement du colis à partir de son statut réel.
   // Purement présentatif — dérivé de c.statut, ne modifie aucune donnée.
@@ -3149,29 +2658,14 @@
     // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 
-    // Lieu de récupération du lot en cours (au-dessus de "Ajouter des colis") : pré-rempli avec le
-    // dernier lieu utilisé (mémorisé sur le profil), mais librement modifiable à chaque nouvel envoi.
-    const batchPickupCommune = document.getElementById('batch-pickup-commune');
-    const batchPickupAdresse = document.getElementById('batch-pickup-adresse');
-    if (batchPickupCommune) {
-      batchPickupCommune.innerHTML = communesOptionsHTML(profile.commune_recuperation, 'Choisir une commune');
-      batchPickupCommune.addEventListener('change', recomputeAllRowsPrix);
-    }
-    if (batchPickupAdresse) batchPickupAdresse.value = profile.adresse_recuperation || '';
-
-    // Même chose pour l'écran photo, qui est désormais la saisie principale. Ses deux champs
-    // sont distincts de ceux de l'ancien formulaire replié : partager un identifiant entre un
-    // bloc visible et un bloc caché revient à ne jamais savoir lequel des deux on lit.
+    // Lieu de récupération de la fournée : pré-rempli avec le dernier lieu utilisé (mémorisé sur
+    // le profil), mais librement modifiable à chaque nouvel envoi.
     const lotfrCommune = document.getElementById('lotfr-pickup-commune');
     const lotfrAdresse = document.getElementById('lotfr-pickup-adresse');
     if (lotfrCommune) lotfrCommune.innerHTML = communesOptionsHTML(profile.commune_recuperation, 'Choisir une commune');
     if (lotfrAdresse) lotfrAdresse.value = profile.adresse_recuperation || '';
     initLotFournisseur();
 
-    addRow();
-    // Brouillon local : à brancher après la première ligne et après le pré-remplissage du lieu de
-    // récupération, pour que la restoration puisse écraser proprement ces valeurs par défaut.
-    initColisDraftAutosave();
     // Carnet d'adresses : chargé sans bloquer l'affichage du reste. Les lignes déjà dessinées se
     // mettent à jour dès qu'il arrive — c'est une aide, elle a le droit d'apparaître une seconde
     // après le formulaire plutôt que de le retarder.

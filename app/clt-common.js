@@ -540,24 +540,60 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
     return { lancer: lancer };
   }
 
+  // Le mot qu'on affiche quand tout s'est bien passé. On donne l'HEURE, pas un simple « c'est
+  // fait » : neuf fois sur dix, actualiser ne change rien à l'écran parce qu'il n'y avait rien
+  // de neuf — et c'est justement ce silence qui fait croire que le bouton est cassé. L'heure,
+  // elle, change à chaque appui : elle prouve que la demande est bien partie et bien revenue.
+  function deuxChiffres(n) { return (n < 10 ? "0" : "") + n; }
+  function direQueCEstFait(ok) {
+    if (typeof window.cltToast !== "function") return;
+    if (!ok) {
+      window.cltToast(
+        "La mise à jour n'a pas abouti. Vérifiez la connexion, puis réessayez.",
+        { type: "warning", duration: 6000 });
+      return;
+    }
+    var d = new Date();
+    window.cltToast(
+      "Liste à jour à " + deuxChiffres(d.getHours()) + ":" + deuxChiffres(d.getMinutes()) + ".",
+      { type: "success", duration: 2600 });
+  }
+
   function lancer() {
     if (!etat.onActualiser || etat.enCours) return;
     etat.enCours = true;
     tourner(true);
-    var fini = function () {
+    // Trois chemins peuvent vouloir terminer : la réussite, l'échec, et le garde-fou de temps.
+    // Sans ce verrou, deux d'entre eux se déclencheraient l'un après l'autre et on afficherait
+    // deux messages contradictoires pour un seul appui.
+    var dejaFini = false;
+    var minuteur = null;
+    var fini = function (ok) {
+      if (dejaFini) return;
+      dejaFini = true;
+      if (minuteur) { clearTimeout(minuteur); minuteur = null; }
       etat.enCours = false;
       tourner(false);
       etat.enAttente = 0;
       majBadge();
+      direQueCEstFait(ok !== false);
     };
+    // GARDE-FOU. tourner(true) DÉSACTIVE le bouton ; c'est fini() qui le réactive. Si la
+    // requête reste suspendue — réseau qui accepte la connexion mais ne répond jamais, cas
+    // très ordinaire en 3G faible — rien ne rappelle fini(), et le bouton reste grisé pour
+    // toujours : on appuie, plus rien ne se passe, jamais. C'est exactement l'impression d'un
+    // bouton mort. Au bout de quinze secondes on rend donc la main, avec une explication.
+    minuteur = setTimeout(function () { fini(false); }, 15000);
     var r;
     try { r = etat.onActualiser(); }
-    catch (e) { console.error("Actualisation impossible :", e); fini(); return; }
-    if (r && typeof r.then === "function") r.then(fini, function (e) { console.error(e); fini(); });
+    catch (e) { console.error("Actualisation impossible :", e); fini(false); return; }
+    if (r && typeof r.then === "function") {
+      r.then(function () { fini(true); }, function (e) { console.error(e); fini(false); });
+    }
     // Un rafraîchissement qui rend la main tout de suite reste visible une demi-seconde :
     // sans ce délai, on appuie et il ne se passe rien à l'œil, alors qu'en réalité tout
     // s'est fait. On finit par appuyer trois fois de suite.
-    else setTimeout(fini, 500);
+    else setTimeout(function () { fini(true); }, 500);
   }
 
   function tourner(oui) {
@@ -776,9 +812,31 @@ function cltDoitPrevenirMaj(locale, serveur) {
     let masqueJusqua = 0;
     let bandeau = null;
 
+    // Le bandeau occupe désormais le bas de l'écran, là où se tient déjà le bouton « Remonter
+    // en haut ». Plutôt que de le recouvrir — il passerait devant, avec son z-index bien plus
+    // haut — on marque le <body> pendant qu'il est visible et la feuille de style fait monter
+    // le bouton d'autant.
+    //
+    // De combien ? On MESURE, on ne devine pas. La hauteur du bandeau dépend de la largeur de
+    // l'écran et de la taille de police choisie par la personne : une ligne sur un ordinateur,
+    // trois sur un téléphone étroit. Un chiffre écrit en dur dans le CSS serait juste sur une
+    // machine et faux sur la suivante — c'est vérifié : à 390 px de large le bandeau fait
+    // 104 px de haut, quand une estimation raisonnable en donnait 64. On publie donc la
+    // hauteur réelle dans --clt-maj-h et le CSS s'en sert.
+    function marquerCorps(visible) {
+      try { document.body.classList.toggle("clt-maj-visible", !!visible); } catch (e) {}
+      if (!visible) { try { document.documentElement.style.removeProperty("--clt-maj-h"); } catch (e) {} }
+    }
+
+    function mesurerBandeau() {
+      if (!bandeau || bandeau.hidden) return;
+      var h = bandeau.offsetHeight || 0;
+      if (h) document.documentElement.style.setProperty("--clt-maj-h", h + "px");
+    }
+
     function poser() {
       if (!document.body) return;
-      if (bandeau && document.body.contains(bandeau)) { bandeau.hidden = false; return; }
+      if (bandeau && document.body.contains(bandeau)) { bandeau.hidden = false; marquerCorps(true); mesurerBandeau(); return; }
       bandeau = document.createElement("div");
       bandeau.className = "clt-maj-bandeau";
       bandeau.setAttribute("role", "status");
@@ -804,13 +862,28 @@ function cltDoitPrevenirMaj(locale, serveur) {
       plusTard.textContent = "\u00d7";
       plusTard.addEventListener("click", function () {
         bandeau.hidden = true;
+        marquerCorps(false);
         masqueJusqua = Date.now() + DELAI_REPORT;
       });
       bandeau.appendChild(texte);
       bandeau.appendChild(note);
       bandeau.appendChild(ok);
       bandeau.appendChild(plusTard);
+      // Le bandeau vit en bas de l'écran depuis le 26/08/2026 (voir style.css). Sur les espaces
+      // qui ont une barre d'onglets fixée en bas — livreur, client Express, coursier Express —
+      // il doit se poser AU-DESSUS d'elle, sinon il masque la navigation. Même repère et même
+      // méthode que le bouton « Remonter en haut », pour qu'il n'y ait qu'une chose à corriger
+      // le jour où une page gagne ou perd sa barre.
+      if (document.querySelector(".clt-bottomnav")) bandeau.classList.add("clt-maj-bandeau--barre");
       document.body.appendChild(bandeau);
+      marquerCorps(true);
+      mesurerBandeau();
+      // La hauteur change quand l'écran tourne ou que la police grossit. On resuit.
+      if (window.ResizeObserver) {
+        try { new ResizeObserver(mesurerBandeau).observe(bandeau); } catch (e) {}
+      } else {
+        window.addEventListener("resize", mesurerBandeau);
+      }
     }
 
     function verifier() {

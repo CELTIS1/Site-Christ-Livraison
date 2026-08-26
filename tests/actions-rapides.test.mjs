@@ -165,7 +165,7 @@ async function equipeAnnulation(){
   await ctx.eqAnnulerChangementStatut('C1', res);
   verifier('le colis est revenu à « en livraison »', ctx.allColis[0].statut === 'en_livraison', ctx.allColis[0].statut);
   verifier("le message d'annulation le dit en clair",
-    ctx.__toasts.some(t => t.msg.includes('En cours de livraison')),
+    ctx.__toasts.some(t => t.msg.includes('En livraison')),
     JSON.stringify(ctx.__toasts.map(t => t.msg)));
 }
 
@@ -318,10 +318,14 @@ async function livreurHorsConnexion(){
 }
 
 async function livreurMemeCheminQueEnregistrer(){
-  console.log('\n13. Livreur — le raccourci et le bouton « Enregistrer » suivent le même chemin');
+  console.log('\n13. Livreur — tout changement de statut passe par le même chemin');
   const source = fs.readFileSync(path.join(APP, 'livreur.html'), 'utf8');
+  // La définition, le traitement par lot et le bouton « Enregistrer » : trois occurrences.
+  // Les raccourcis posés sur chaque carte ont été retirés le 26/08/2026 (voir plus bas), ce
+  // qui fait tomber le compte de quatre à trois sans rien changer au principe : il n'existe
+  // toujours qu'un seul endroit où un statut s'écrit.
   const appels = (source.match(/appliquerStatutColis\(/g) || []).length;
-  verifier("appliquerStatutColis est le seul point d'écriture d'un statut", appels >= 4, String(appels));
+  verifier("appliquerStatutColis est le seul point d'écriture d'un statut", appels >= 3, String(appels));
   verifier("le bouton « Enregistrer » ne réécrit plus sa propre logique de statut",
     !/btn-save[\s\S]{0,900}code_confirmation/.test(source));
   // Contrôle de non-retour : plus aucune ligne exécutable de cet écran ne doit demander ni
@@ -331,8 +335,17 @@ async function livreurMemeCheminQueEnregistrer(){
   verifier("plus aucun code de confirmation n'est demandé au livreur",
     !/code_confirmation|sansCodeConfirmation|bloquesCode/.test(sansCommentaires),
     'une trace exécutable subsiste');
-  const boutonsDansLaLigne = source.includes('${actionsRapidesHTML(c)}');
-  verifier('les boutons rapides sont bien posés dans la ligne du colis', boutonsDansLaLigne);
+  // Retrait du 26/08/2026 : trois boutons par colis allongeaient tellement la carte que le
+  // livreur devait faire défiler pour voir le colis suivant. Le menu déroulant de statut les
+  // remplace sur la carte ; la sélection multiple reste la voie rapide pour toute une tournée.
+  // Ce contrôle veille à ce qu'ils ne reviennent pas par inadvertance, et à ce que le chemin
+  // qui les remplace soit bien là.
+  verifier("la carte du livreur ne porte plus de raccourcis d'avancement",
+    !/actionsRapidesHTML|btn-etape[^-]/.test(source));
+  verifier('le menu déroulant de statut est bien posé dans la ligne du colis',
+    source.includes('<select class="status-select">${statutOptions}</select>'));
+  verifier("le traitement par lot reste disponible pour aller vite sur une tournée",
+    source.includes('function boutonsLotMes()'));
 }
 
 /* ================= Exécution ================= */

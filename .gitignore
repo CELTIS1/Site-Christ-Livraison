@@ -46,6 +46,11 @@ AUDIT-SECURITE-*.md
 supabase-functions/admin-reset-password/
 supabase-functions/reinitialiser-mot-de-passe/
 
+# --- Pages de vérification ponctuelles ---
+# Fabriquées pour regarder un détail à l'écran pendant qu'on travaille, elles n'ont aucune
+# raison d'exister sur le site public : elles vivent le temps d'une vérification.
+_verif-*.html
+
 # --- Journaux ---
 *.log
 npm-debug.log*

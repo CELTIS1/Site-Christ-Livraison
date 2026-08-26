@@ -277,7 +277,7 @@ window.addEventListener("beforeunload", () => {
 const STATUTS = {
   en_attente:   { label: "En attente",   color: "#8a94a3", bg: "#eef0f3", icon: "⏳" },
   recupere:     { label: "Récupéré",     color: "#1B4374", bg: "#e5edf5", icon: "📦" },
-  en_livraison: { label: "En cours de livraison", color: "#E26313", bg: "#FBE2CE", icon: "🚚" },
+  en_livraison: { label: "En livraison", color: "#E26313", bg: "#FBE2CE", icon: "🚚" },
   livre:        { label: "Livré",        color: "#1a7d3c", bg: "#e3f6ea", icon: "✅" },
   non_livre:    { label: "Non livré",    color: "#c0392b", bg: "#fce4e2", icon: "⚠️" },
   retour:       { label: "Retour",       color: "#8e44ad", bg: "#f2e8fa", icon: "↩️" },

@@ -22,7 +22,10 @@ const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHEMIN = process.argv[2] || path.join(RACINE, 'app', 'equipe.html');
 const source = fs.readFileSync(CHEMIN, 'utf8').split('\n');
 const debut = source.findIndex(l => l.includes("FILE D'ATTENTE HORS-RÉSEAU (espace Équipe)"));
-const fin = source.findIndex(l => l.startsWith("document.getElementById('form-add-colis')"));
+// Fin du bloc : la ligne qui suit immédiatement le moteur de la file. C'était autrefois le
+// gestionnaire du formulaire unitaire ; celui-ci a été retiré le 26/08/2026, la borne est donc
+// désormais la déclaration des libellés de filtre, qui le suit dans la page.
+const fin = source.findIndex(l => l.startsWith('// Libellés de filtre : dérivés du référentiel central STATUTS'));
 if (debut === -1 || fin === -1) { console.error('Bloc introuvable'); process.exit(1); }
 // Les `let` du moteur restent locaux au script : on ajoute une passerelle pour pouvoir les lire
 // depuis les tests, sans rien modifier au code testé lui-même.

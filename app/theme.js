@@ -79,8 +79,15 @@
     // on s'insère juste AVANT la roue dentée : le réglage d'éclairage se lit
     // alors comme ce qu'il est, un voisin des réglages, et la roue reste le
     // dernier élément de la barre, là où la main la cherche déjà.
-    var groupeEntete = document.querySelector('.topbar .user-info');
+    // Depuis le 26/08/2026 la barre du haut range ses boutons dans un groupe à part
+    // (.topbar-actions) pour que le repli sur téléphone tombe où on veut. On vise ce groupe.
+    // La solution de repli sur .user-info n'est pas décorative : insertBefore exige que le
+    // repère soit un ENFANT DIRECT du conteneur visé. Si un écran n'a pas encore le groupe,
+    // c'est .user-info qui est le parent de la roue, et l'insertion doit s'y faire.
+    var groupeEntete = document.querySelector('.topbar .topbar-actions')
+                    || document.querySelector('.topbar .user-info');
     var reglages = groupeEntete && groupeEntete.querySelector('.settings-menu');
+    if (reglages && reglages.parentNode !== groupeEntete) reglages = null;
     if (groupeEntete) {
       b.className = 'theme-toggle theme-toggle--entete';
       if (reglages) groupeEntete.insertBefore(b, reglages);

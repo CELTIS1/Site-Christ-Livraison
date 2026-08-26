@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826liv">
-<script src="theme.js?v=20260826liv"></script>
+<link rel="stylesheet" href="style.css?v=20260826barre">
+<script src="theme.js?v=20260826barre"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -166,6 +166,86 @@
   /* L'ancienne barre d'onglets interne est remplacée par la barre segmentée du haut. */
   #section-main > .tabs{ display:none !important; }
   @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
+
+  /* ---------- Ligne « partage de position » (26/08/2026) ----------
+     Remplace l'ancienne carte : même information, une seule ligne. */
+  .position-ligne{ margin:0 0 10px; }
+  .position-ligne-corps{
+    display:flex; align-items:center; gap:8px;
+    font-size:12.5px; color:#64748b; line-height:1.35;
+  }
+  .position-pastille{
+    width:9px; height:9px; border-radius:50%; flex-shrink:0;
+    background:#cbd5e1; box-shadow:0 0 0 3px rgba(203,213,225,.28);
+  }
+  .position-pastille.est-active{ background:#3FA46A; box-shadow:0 0 0 3px rgba(63,164,106,.22); }
+  .position-pastille.est-attente{ background:#E2A13F; box-shadow:0 0 0 3px rgba(226,161,63,.22); }
+  .position-pastille.est-erreur{ background:#D6534A; box-shadow:0 0 0 3px rgba(214,83,74,.22); }
+  html[data-theme="dark"] .position-ligne-corps{ color:#9DB0C4; }
+  /* En sombre, seule la pastille « au repos » se grise : les trois états colorés gardent leur
+     couleur, sinon la ligne ne dirait plus rien. */
+  html[data-theme="dark"] .position-pastille:not(.est-active):not(.est-attente):not(.est-erreur){
+    background:#3A4A5E; box-shadow:0 0 0 3px rgba(58,74,94,.35);
+  }
+
+  /* ---------- Bouton « Enregistrer » d'une carte colis (26/08/2026) ----------
+     Vert doux plutôt que l'orange de la marque : c'est le geste qui valide, il se distingue
+     ainsi des boutons de navigation, sans le poids d'un vert foncé.
+     Le « !important » n'est pas une coquetterie : la règle de polissage .btn:not(.btn-outline)
+     plus haut repeint TOUS les boutons pleins en orange, elle aussi en !important. Sans cela,
+     le vert ne passerait jamais. */
+  .btn.btn-save{
+    background:linear-gradient(135deg,#3FA46A 0%, #2C8A57 100%) !important;
+    border-color:transparent !important; color:#fff !important;
+    box-shadow:0 8px 18px rgba(44,138,87,0.22) !important;
+  }
+  .btn.btn-save:hover{
+    background:linear-gradient(135deg,#379761 0%, #257B4C 100%) !important;
+    box-shadow:0 12px 24px rgba(44,138,87,0.28) !important;
+  }
+  html[data-theme="dark"] .btn.btn-save{
+    background:linear-gradient(135deg,#43AE72 0%, #2F9660 100%) !important; color:#fff !important;
+  }
+  /* Le petit « Enregistrer » du bloc des frais est lui aussi un enregistrement : deux boutons
+     de même nom et de couleurs différentes sur une même carte se lisent comme deux gestes
+     différents, ce qu'ils ne sont pas. */
+  .btn.btn-frais-exp{
+    background:linear-gradient(135deg,#3FA46A 0%, #2C8A57 100%) !important;
+    border-color:transparent !important; color:#fff !important;
+    box-shadow:0 6px 14px rgba(44,138,87,0.20) !important;
+  }
+  .btn.btn-frais-exp:hover{ background:linear-gradient(135deg,#379761 0%, #257B4C 100%) !important; }
+
+  /* ---------- Repli « Plus d'options » d'une carte colis (26/08/2026) ----------
+     Le livreur ne voit d'emblée que ce dont il se sert à chaque colis : le statut et
+     Enregistrer. Tout le reste — l'argent, l'observation, la photo, le partage — reste à un
+     seul appui, sans allonger la liste. Rien n'a été supprimé. */
+  .colis-plus{ width:100%; margin:2px 0; }
+  .colis-plus > summary{
+    list-style:none; cursor:pointer; display:flex; align-items:center; gap:6px;
+    padding:5px 0; font-size:12px; font-weight:600; color:#64748b;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .colis-plus > summary::-webkit-details-marker{ display:none; }
+  .colis-plus > summary::before{ content:'▸'; font-size:11px; line-height:1; transition:transform .15s ease; }
+  .colis-plus[open] > summary::before{ transform:rotate(90deg); }
+  .colis-plus > summary:hover{ color:#E26313; }
+  .colis-plus-corps{
+    display:flex; flex-direction:column; gap:8px; align-items:stretch;
+    padding:8px 0 2px; margin-top:2px; border-top:1px dashed #e2e8f0;
+  }
+  .colis-plus-corps .btn{ align-self:flex-start; }
+  .colis-plus-corps .obs-textarea,
+  .colis-plus-corps .field{ width:100%; }
+  html[data-theme="dark"] .colis-plus > summary{ color:#9DB0C4; }
+  html[data-theme="dark"] .colis-plus-corps{ border-top-color:#2A3849; }
+  /* Le repli et l'action principale prennent toute la largeur de la colonne d'actions,
+     sur téléphone comme sur écran large. */
+  .colis-item.mes-colis-item .status-col .colis-plus{ flex:1 1 100%; align-self:stretch; }
+  .colis-item.mes-colis-item .status-col .btn-save{ align-self:stretch; margin-left:0; }
+  @media(min-width:641px){
+    .colis-item.mes-colis-item .status-col .btn-save{ flex:1 1 100%; align-self:stretch; }
+  }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -179,17 +259,27 @@
 
 <div class="topbar">
   <div class="brand"><div class="logo-mark">CLT</div> Espace Colis — Livreur</div>
-  <div class="user-info">
-    <span id="user-avatar-topbar"></span>
-    <span id="user-name"></span>
-    <span class="role-pill">Livreur</span>
-    <button type="button" class="clt-actualiser" id="btn-actualiser" title="Actualiser maintenant" aria-label="Actualiser les données"><span class="clt-actualiser-icone" aria-hidden="true">🔄</span><span class="clt-actualiser-badge" hidden></span></button>
-    <div class="settings-menu">
-      <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
-      <div class="settings-dropdown" id="settings-dropdown">
-        <button type="button" id="btn-mon-compte">👤 Mon compte</button>
-        <button type="button" id="btn-activer-push">🔔 Activer les notifications</button>
-        <button type="button" class="danger" onclick="logout()">🚪 Se déconnecter</button>
+  <div class="user-info user-info--groupes">
+    <!-- La barre du haut se lit en deux groupes depuis le 26/08/2026, et non plus en une
+         seule file d'éléments. Sur téléphone, cette file dépassait la largeur de l'écran et se
+         repliait toute seule n'importe où : la roue dentée se retrouvait seule, tout à gauche,
+         sur une troisième ligne, et le menu qu'elle ouvre s'ancrait à sa droite — c'est-à-dire
+         hors de l'écran, texte coupé. Nommer les deux groupes laisse décider où la barre se
+         coupe : les boutons d'un côté, l'identité de l'autre. -->
+    <div class="topbar-identite">
+      <span id="user-avatar-topbar"></span>
+      <span id="user-name"></span>
+      <span class="role-pill">Livreur</span>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="clt-actualiser" id="btn-actualiser" title="Actualiser maintenant" aria-label="Actualiser les données"><span class="clt-actualiser-icone" aria-hidden="true">🔄</span><span class="clt-actualiser-badge" hidden></span></button>
+      <div class="settings-menu">
+        <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
+        <div class="settings-dropdown" id="settings-dropdown">
+          <button type="button" id="btn-mon-compte">👤 Mon compte</button>
+          <button type="button" id="btn-activer-push">🔔 Activer les notifications</button>
+          <button type="button" class="danger" onclick="logout()">🚪 Se déconnecter</button>
+        </div>
       </div>
     </div>
   </div>
@@ -298,10 +388,14 @@
     <button type="button" class="btn btn-sm" id="btn-accept-geoloc-consent">J'ai compris et j'accepte</button>
   </div>
 
-  <div class="card" id="position-sharing-card" style="padding:10px 14px;">
-    <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#64748b;">
-      <span>📍</span>
-      <span id="position-sharing-desc">Position non partagée — aucune récupération ou livraison en cours.</span>
+  <!-- Le partage de position tient en une ligne : il doit rester visible (le livreur a le droit
+       de savoir quand sa position part) sans manger l'écran comme le faisait la carte pleine
+       largeur. La pastille de couleur dit l'état d'un coup d'œil ; le détail n'apparaît qu'en
+       cas de problème. (26/08/2026) -->
+  <div class="position-ligne" id="position-sharing-card">
+    <div class="position-ligne-corps">
+      <span class="position-pastille" id="position-sharing-pastille" aria-hidden="true"></span>
+      <span id="position-sharing-desc">Position non partagée</span>
     </div>
     <div id="position-sharing-msg"></div>
   </div>
@@ -361,6 +455,14 @@
 
     <div id="panel-recup" class="hidden">
       <div class="page-sub" style="margin:0 0 10px;">Colis d'une même cliente à récupérer en une seule tournée. Cliquez sur « Je pars » au moment où vous partez réellement : cela démarre le partage de votre position pour ce trajet.</div>
+      <!-- La journée du jour à l'ouverture ; le calendrier permet de revenir sur une date
+           antérieure sans perdre de vue le compteur de l'onglet, qui lui reste sur le total.
+           (26/08/2026) -->
+      <div class="date-filter-wrap">
+        <label for="filtre-date-recup">📅 Date</label>
+        <input type="date" id="filtre-date-recup" class="date-filter-input">
+        <button type="button" id="btn-toutes-dates-recup" class="date-filter-clear">Toutes les dates</button>
+      </div>
       <div class="colis-list" id="recup-colis-list">
         <div class="empty-state">Chargement...</div>
       </div>
@@ -380,8 +482,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826liv"></script>
-<script src="config.js?v=20260826liv"></script>
+<script src="clt-common.js?v=20260826barre"></script>
+<script src="config.js?v=20260826barre"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -442,7 +544,11 @@
       // Les frais d'expédition sont un montant en cours de frappe, donc de l'argent : une mise à
       // jour temps réel qui tomberait entre le « 2 » et le « 500 » ne doit pas effacer la saisie.
       const frais = item.querySelector('.frais-exp-input');
+      // Le repli « Plus d'options » : une mise à jour temps réel ne doit pas le refermer au
+      // nez de quelqu'un en train d'y saisir une observation ou d'y choisir une photo.
+      const plus = item.querySelector('.colis-plus');
       snap[id] = {
+        plusOuvert: plus ? plus.open : undefined,
         statut: sel ? sel.value : undefined,
         observation: obs ? obs.value : undefined,
         fraisExpedition: frais ? frais.value : undefined,
@@ -466,6 +572,8 @@
       const sel = item.querySelector('.status-select');
       const obs = item.querySelector('.obs-textarea');
       const frais = item.querySelector('.frais-exp-input');
+      const plus = item.querySelector('.colis-plus');
+      if (plus && s.plusOuvert !== undefined) plus.open = s.plusOuvert;
       // On ne restaure une saisie en cours que si elle diffère de la valeur affichée par défaut
       // (sinon rien à faire) — et jamais pour un colis qu'on vient d'enregistrer (recentWrites).
       const justSaved = recentWrites.has(id);
@@ -492,6 +600,7 @@
   let activePanel = 'mes';
   let searchMes = '';
   let filtreDateMes = '';
+  let filtreDateRecup = '';
 
   // Combien de lignes chaque liste DESSINE réellement. Rien à voir avec COLIS_PAGE_SIZE, qui dit
   // combien de colis sont rapatriés du serveur : on peut avoir tout l'historique en mémoire (donc
@@ -503,6 +612,7 @@
   // Changer de filtre, de date ou de recherche, c'est demander une autre liste : on la reprend
   // depuis le haut, sinon on garderait une page déjà déroulée sans raison.
   function remettreTrancheMesAZero(){ trancheMes = COLIS_TRANCHE; }
+  function remettreTrancheRecupAZero(){ trancheRecup = COLIS_TRANCHE; }
 
   // ---------- Sélection multiple de « Mes colis assignés » ----------
   // La sélection vit dans un Set d'IDENTIFIANTS, pas dans les cases du DOM : la liste se
@@ -928,7 +1038,7 @@
 
   // Libellés de filtre : dérivés du référentiel central STATUTS (config.js) — source unique.
   const FILTER_LABELS = (typeof STATUT_FILTER_LABELS !== 'undefined') ? STATUT_FILTER_LABELS
-    : { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En cours de livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
+    : { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
 
   // Les trois onglets, sous le nom que le code leur donne. « finance » s'appelait « tous »
   // jusqu'au 25 août 2026 : un téléphone qui a gardé l'ancien nom en mémoire est réorienté
@@ -1004,7 +1114,7 @@
     const flow = [
       { key:'en_attente',   label:'Assigné' },
       { key:'recupere',     label:'Récupéré' },
-      { key:'en_livraison', label:'En cours de livraison' },
+      { key:'en_livraison', label:'En livraison' },
       { key:'livre',        label:'Livré' },
     ];
     const alert = (statut === 'non_livre' || statut === 'retour');
@@ -1020,11 +1130,13 @@
   }
 
   /* ---------- CHEMIN UNIQUE D'ÉCRITURE D'UN CHANGEMENT DE STATUT ----------
-     Le bouton « Enregistrer » et les boutons d'action rapide (✅ Livré, 🚚 Je pars livrer,
-     ⚠️ Non livré) passent tous les deux par ici. Il n'y a donc qu'un seul comportement à
-     comprendre, à tester et à corriger : compteur de tentatives, envoi de la photo, file
-     d'attente hors-réseau et repli sur les anciennes colonnes se comportent à l'identique quel
-     que soit le bouton utilisé.
+     Le bouton « Enregistrer » d'une carte et les boutons de traitement par lot passent tous
+     par ici. Il n'y a donc qu'un seul comportement à comprendre, à tester et à corriger :
+     compteur de tentatives, envoi de la photo, file d'attente hors-réseau et repli sur les
+     anciennes colonnes se comportent à l'identique quel que soit le bouton utilisé.
+     (Les raccourcis d'avancement posés sur chaque carte ont été retirés le 26/08/2026 :
+     ils allongeaient trop la carte. Le menu déroulant de statut est le seul chemin de la
+     carte, et il mène ici de la même façon.)
 
      Renvoie { ok, statutPrecedent, tentativesPrecedentes, extraApplique }.
      ok === false signifie qu'absolument rien n'a été écrit (mise en file d'attente impossible,
@@ -1151,42 +1263,10 @@
      « Livré », puis d'appuyer sur « Enregistrer » — trois gestes, répétés des dizaines de fois
      par jour, souvent debout et à une main. Ces boutons font la même chose en un appui.
      La liste déroulante reste là pour tout le reste (retour, observation, photo). */
-  function actionsRapidesHTML(c){
-    const boutons = [];
-    if (c.statut !== 'livre') {
-      boutons.push(`<button type="button" class="btn btn-sm btn-etape btn-etape-livre" data-statut="livre">✅ Livré</button>`);
-    }
-    if (c.statut === 'en_attente' || c.statut === 'recupere') {
-      boutons.push(`<button type="button" class="btn btn-outline btn-sm btn-etape" data-statut="en_livraison">🚚 Je pars livrer</button>`);
-    }
-    if (c.statut === 'recupere' || c.statut === 'en_livraison') {
-      boutons.push(`<button type="button" class="btn btn-outline btn-sm btn-etape btn-etape-echec" data-statut="non_livre">⚠️ Non livré</button>`);
-    }
-    if (!boutons.length) return '';
-    return `<div class="colis-etapes">${boutons.join('')}</div>`;
-  }
-
-  // Branche les boutons d'action rapide d'une liste déjà rendue.
-  function brancherActionsRapides(list){
-    list.querySelectorAll('.btn-etape').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const item = btn.closest('.colis-item');
-        if (!item) return;
-        const id = item.dataset.id;
-        const statut = btn.dataset.statut;
-        const colis = allColis.find(c => c.id === id);
-        if (!colis || colis.statut === statut) return;
-        // On reprend l'observation telle qu'elle est actuellement à l'écran : si le livreur a
-        // commencé à écrire « client absent » avant d'appuyer, sa phrase ne doit pas être perdue.
-        const zoneObs = item.querySelector('.obs-textarea');
-        const opts = { id, statut, bouton: btn };
-        if (zoneObs) opts.observation = zoneObs.value.trim() || null;
-        const res = await appliquerStatutColis(opts);
-        if (!res.ok) return;
-        annoncerChangementStatut(colis, statut, res);
-      });
-    });
-  }
+  // Les raccourcis d'avancement (✅ Livré, 🚚 Je pars livrer, ⚠️ Non livré) posés sur chaque
+  // carte ont été retirés le 26/08/2026 : trois boutons par colis allongeaient la liste au
+  // point de noyer l'essentiel. Le menu déroulant de statut les remplace sur la carte, et la
+  // sélection multiple (boutonsLotMes) reste la voie rapide pour traiter toute une tournée.
 
   // Message de confirmation, avec un « Annuler » de quelques secondes : un appui malencontreux
   // dans la poche ou en circulation ne doit pas coûter un appel à l'équipe pour corriger.
@@ -1425,39 +1505,43 @@
           ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
           ${collecteLineHTML(c)}
           ${tentatives > 0 ? `<div class="meta" style="color:#c0392b; font-weight:600;">🔁 Tentative(s) de livraison : ${tentatives}</div>` : ''}
-          <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
-          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
-            <button type="button" class="btn btn-outline btn-sm btn-copy-tracking">🔗 Copier le lien de suivi</button>
-            <button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button>
-          </div>
         </div>
         <div class="status-col">
           ${blockedSyncIds.has(c.id)
             ? `<div class="sync-pending-badge sync-blocked-badge">⚠️ Non enregistré — prévenez l'équipe</div>`
             : (pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : '')}
-          ${actionsRapidesHTML(c)}
           <select class="status-select">${statutOptions}</select>
-          <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Livraison payée ?'}</button>
-          <!-- L'exception, et seulement l'exception. Depuis le 25/08/2026, un colis livré compte
-               par défaut comme encaissé : le livreur n'a rien à cocher dans le cas normal, ce qui
-               était l'ancien piège (personne ne cochait jamais, et les clientes lisaient 0 FCFA
-               encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
-               colis a été remis sans que l'argent de l'article rentre. -->
-          <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#c0392b !important; border:1.5px solid #c0392b; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À utiliser seulement si vous avez remis le colis sans récupérer l'argent de l'article.">${c.article_non_encaisse ? '⚠️ Article NON encaissé' : "Article non encaissé ?"}</button>
-          ${fraisExpeditionChampHTML(c)}
-          <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
-          <div class="field" style="margin-top:8px;">
-            <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
-            ${c.photo_livraison_url ? `<img src="${c.photo_livraison_url}" class="thumb" style="margin-bottom:6px;" alt="Photo de preuve de livraison déjà ajoutée">` : ''}
-            <div class="photo-pick-group livraison-photo-input">
-              <div class="avatar-upload-btns">
-                <label class="btn btn-outline btn-sm" style="cursor:pointer;">📷 Prendre une photo<input type="file" accept="image/*" capture="user" class="hidden pick-camera"></label>
-                <label class="btn btn-outline btn-sm" style="cursor:pointer;">🖼️ Bibliothèque<input type="file" accept="image/*" class="hidden pick-library"></label>
+          <details class="colis-plus">
+            <summary>Plus d'options</summary>
+            <div class="colis-plus-corps">
+              <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Livraison payée ?'}</button>
+              <!-- L'exception, et seulement l'exception. Depuis le 25/08/2026, un colis livré compte
+                   par défaut comme encaissé : le livreur n'a rien à cocher dans le cas normal, ce qui
+                   était l'ancien piège (personne ne cochait jamais, et les clientes lisaient 0 FCFA
+                   encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
+                   colis a été remis sans que l'argent de l'article rentre. -->
+              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#c0392b !important; border:1.5px solid #c0392b; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À utiliser seulement si vous avez remis le colis sans récupérer l'argent de l'article.">${c.article_non_encaisse ? '⚠️ Article NON encaissé' : "Article non encaissé ?"}</button>
+              ${fraisExpeditionChampHTML(c)}
+              <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
+              <div class="field" style="margin-top:8px;">
+                <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
+                ${c.photo_livraison_url ? `<img src="${c.photo_livraison_url}" class="thumb" style="margin-bottom:6px;" alt="Photo de preuve de livraison déjà ajoutée">` : ''}
+                <div class="photo-pick-group livraison-photo-input">
+                  <div class="avatar-upload-btns">
+                    <label class="btn btn-outline btn-sm" style="cursor:pointer;">📷 Prendre une photo<input type="file" accept="image/*" capture="user" class="hidden pick-camera"></label>
+                    <label class="btn btn-outline btn-sm" style="cursor:pointer;">🖼️ Bibliothèque<input type="file" accept="image/*" class="hidden pick-library"></label>
+                  </div>
+                  <div class="photo-pick-filename"></div>
+                </div>
               </div>
-              <div class="photo-pick-filename"></div>
+              <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <button type="button" class="btn btn-outline btn-sm btn-copy-tracking">🔗 Copier le lien de suivi</button>
+                <button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button>
+              </div>
             </div>
-          </div>
-          <button class="btn btn-sm btn-save" style="margin-top:8px;">Enregistrer</button>
+          </details>
+          <button class="btn btn-sm btn-save">Enregistrer</button>
         </div>
       </div>
     `;
@@ -1526,8 +1610,6 @@
         if (res.ok && colis && res.statutPrecedent !== statut) annoncerChangementStatut(colis, statut, res);
       });
     });
-
-    brancherActionsRapides(list);
 
     // --- Bascule « Livraison payée » (Correctif 3) : enregistrement immédiat au clic ---------
     // Toujours visible (quel que soit le statut) : le destinataire doit parfois payer la
@@ -1786,6 +1868,9 @@
   // Colis en attente dont CE livreur est chargé d'aller récupérer TOUS les colis d'une même
   // cliente/vendeuse en une seule tournée (colis.livreur_collecte_id), distinct du livreur de
   // LIVRAISON (colis.livreur_id, assigné colis par colis, potentiellement à quelqu'un d'autre).
+  // Toutes les récupérations qui restent à faire, sans tenir compte du calendrier : c'est ce
+  // total que porte la pastille de l'onglet. Filtrer la pastille sur la date du jour ferait
+  // disparaître de la vue une récupération d'hier qui, elle, attend toujours.
   function mesRecuperationsList(){
     return allColis.filter(c => c.livreur_collecte_id === currentUser.id && c.statut === 'en_attente');
   }
@@ -1831,16 +1916,22 @@
     const list = document.getElementById('recup-colis-list');
     if (!list) return;
     const __anchor = captureScrollAnchor(list);
-    const mine = mesRecuperationsList();
+    const toutes = mesRecuperationsList();
+    const mine = toutes.filter(c => matchesDate(c, filtreDateRecup));
 
     const badge = document.getElementById('recup-badge');
     if (badge) {
-      if (mine.length) { badge.textContent = mine.length; badge.classList.remove('hidden'); }
+      if (toutes.length) { badge.textContent = toutes.length; badge.classList.remove('hidden'); }
       else { badge.classList.add('hidden'); }
     }
 
     if (!mine.length) {
-      cltPoserHTML(list, `<div class="empty-state">Aucune récupération à effectuer pour le moment.</div>`);
+      // Une journée vide alors qu'il reste des récupérations ailleurs ne doit pas se lire
+      // « vous n'avez rien à faire » : on dit combien attendent, et par où les voir.
+      const ailleurs = toutes.length;
+      cltPoserHTML(list, filtreDateRecup
+        ? `<div class="empty-state">Aucune récupération pour cette date.${ailleurs ? ` Vous en avez ${ailleurs} à d'autres dates — touchez « Toutes les dates ».` : ''}</div>`
+        : `<div class="empty-state">Aucune récupération à effectuer pour le moment.</div>`);
       restoreScrollAnchor(list, __anchor);
       return;
     }
@@ -2295,6 +2386,22 @@
       renderMesColis();
     });
 
+    // Même principe pour les récupérations : la journée du jour à l'ouverture, le calendrier
+    // pour revenir en arrière, « Toutes les dates » pour tout revoir d'un coup. (26/08/2026)
+    filtreDateRecup = todayLocalISODate();
+    document.getElementById('filtre-date-recup').value = filtreDateRecup;
+    document.getElementById('filtre-date-recup').addEventListener('change', (e) => {
+      filtreDateRecup = e.target.value;
+      remettreTrancheRecupAZero();
+      renderRecuperations();
+    });
+    document.getElementById('btn-toutes-dates-recup').addEventListener('click', () => {
+      filtreDateRecup = '';
+      document.getElementById('filtre-date-recup').value = '';
+      remettreTrancheRecupAZero();
+      renderRecuperations();
+    });
+
     // Entrée/sortie du mode sélection multiple. En sortant, on vide : laisser une sélection
     // invisible en mémoire ferait resurgir douze colis cochés à la prochaine entrée, sans que
     // personne ne sache d'où ils sortent.
@@ -2372,7 +2479,11 @@
   function updatePositionSharingFromColis(){
     const desc = document.getElementById('position-sharing-desc');
     const msg = document.getElementById('position-sharing-msg');
+    const pastille = document.getElementById('position-sharing-pastille');
     const consentCard = document.getElementById('geoloc-consent-card');
+    // La couleur porte l'état, le texte reste court : la ligne ne doit jamais repasser à deux
+    // lignes sur un téléphone. Le détail complet n'apparaît qu'en cas d'erreur, dans msg.
+    const etat = (classe) => { if (pastille) pastille.className = 'position-pastille' + (classe ? ' ' + classe : ''); };
     const collecteEnRoute = allColis.some(c => c.livreur_collecte_id === currentUser.id && c.statut === 'en_attente' && c.collecte_depart_at);
     const enLivraison = allColis.some(c => c.livreur_id === currentUser.id && STATUTS_EN_TOURNEE.includes(c.statut));
     const enTournee = collecteEnRoute || enLivraison;
@@ -2380,7 +2491,8 @@
     if (!enTournee) {
       stopPositionSharing();
       consentCard.classList.add('hidden');
-      desc.textContent = 'Position non partagée — aucune récupération ou livraison en cours.';
+      etat('');
+      desc.textContent = 'Position non partagée';
       msg.innerHTML = '';
       // Minimisation des données : on ne garde aucune position au-delà d'un trajet actif.
       supabaseClient.from('livreur_positions').delete().eq('livreur_id', currentUser.id)
@@ -2390,7 +2502,8 @@
 
     if (!currentProfile.geoloc_consent_at) {
       consentCard.classList.remove('hidden');
-      desc.textContent = "En attente de votre accord pour partager votre position (voir ci-dessus).";
+      etat('est-attente');
+      desc.textContent = "Votre accord est demandé ci-dessus";
       msg.innerHTML = '';
       return;
     }
@@ -2398,11 +2511,13 @@
     consentCard.classList.add('hidden');
     startPositionSharing(currentUser.id, (err) => {
       msg.innerHTML = `<div class="msg msg-error">⚠️ Position non partagée : ${err.message || 'accès à la localisation refusé.'}<br>Vérifiez que la géolocalisation est autorisée pour cette application, que le GPS est activé, et que le mode économie de batterie ne le bloque pas.</div>`;
-      desc.textContent = '🔴 Position non partagée — action requise (voir ci-dessous).';
+      etat('est-erreur');
+      desc.textContent = 'Position non partagée — action requise';
     });
+    etat('est-active');
     desc.textContent = enLivraison
-      ? '🟢 Position partagée avec l\'équipe pour cette livraison en cours.'
-      : '🟢 Position partagée avec l\'équipe pour ce trajet de récupération en cours.';
+      ? 'Position partagée avec l\'équipe (livraison en cours)'
+      : 'Position partagée avec l\'équipe (récupération en cours)';
     msg.innerHTML = '';
   }
 

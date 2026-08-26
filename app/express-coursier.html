@@ -17,8 +17,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826liv">
-<script src="theme.js?v=20260826liv"></script>
+<link rel="stylesheet" href="style.css?v=20260826barre">
+<script src="theme.js?v=20260826barre"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   .topbar{ background:#0D9488; }
@@ -301,16 +301,26 @@
 
 <div class="topbar">
   <div class="brand"><div class="logo-mark">CLT</div> CLT Express — Coursier</div>
-  <div class="user-info">
-    <span id="user-avatar-topbar"></span>
-    <span id="user-name"></span>
-    <span class="role-pill">Coursier</span>
-    <div class="settings-menu">
-      <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
-      <div class="settings-dropdown" id="settings-dropdown">
-        <button type="button" id="btn-mon-compte">👤 Mon compte</button>
-        <button type="button" id="btn-activer-push">🔔 Activer les notifications</button>
-        <button type="button" class="danger" onclick="logoutExpress()">🚪 Se déconnecter</button>
+  <div class="user-info user-info--groupes">
+    <!-- La barre du haut se lit en deux groupes depuis le 26/08/2026, et non plus en une
+         seule file d'éléments. Sur téléphone, cette file dépassait la largeur de l'écran et se
+         repliait toute seule n'importe où : la roue dentée se retrouvait seule, tout à gauche,
+         sur une troisième ligne, et le menu qu'elle ouvre s'ancrait à sa droite — c'est-à-dire
+         hors de l'écran, texte coupé. Nommer les deux groupes laisse décider où la barre se
+         coupe : les boutons d'un côté, l'identité de l'autre. -->
+    <div class="topbar-identite">
+      <span id="user-avatar-topbar"></span>
+      <span id="user-name"></span>
+      <span class="role-pill">Coursier</span>
+    </div>
+    <div class="topbar-actions">
+      <div class="settings-menu">
+        <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Réglages">⚙️</button>
+        <div class="settings-dropdown" id="settings-dropdown">
+          <button type="button" id="btn-mon-compte">👤 Mon compte</button>
+          <button type="button" id="btn-activer-push">🔔 Activer les notifications</button>
+          <button type="button" class="danger" onclick="logoutExpress()">🚪 Se déconnecter</button>
+        </div>
       </div>
     </div>
   </div>
@@ -583,7 +593,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826liv"></script>
+<script src="clt-common.js?v=20260826barre"></script>
 <script src="express-config.js?v=20260819saisie1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>

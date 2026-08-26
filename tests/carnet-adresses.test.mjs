@@ -431,28 +431,50 @@ titre("Les deux écrans qui proposent le carnet le branchent correctement");
   verifier("équipe.html passe par la règle de non-écrasement",
     equipe.includes('appliquerEntreeCarnet('));
   verifier("fournisseur.html aussi", fournisseur.includes('appliquerEntreeCarnet('));
-  verifier("équipe.html dit ce qui a été repris et ce qui ne l'a pas été",
-    equipe.includes('resumeCarnetTexte('));
-  verifier("fournisseur.html aussi", fournisseur.includes('resumeCarnetTexte('));
+  /* Les deux écrans doivent dire ce qui a été repris ET ce qui ne l'a pas été. Ils ne le disent
+     pas de la même façon, parce qu'ils ne reprennent pas de la même façon : la vendeuse clique
+     sur un destinataire dans une liste (resumeCarnetTexte rédige la phrase), tandis que l'écran
+     de l'équipe se remplit tout seul dès que les dix chiffres sont posés, et écrit son résultat
+     dans la pastille de la ligne. Ce qui compte est identique des deux côtés : un remplissage
+     partiel ne doit jamais passer pour un remplissage complet. */
+  verifier("fournisseur.html dit ce qui a été repris et ce qui ne l'a pas été",
+    fournisseur.includes('resumeCarnetTexte('));
+  verifier("équipe.html annonce la reprise sur la ligne concernée",
+    /Adresse reprise d\\u2019un colis déjà livré à ce numéro/.test(equipe));
+  verifier("équipe.html avertit quand il n'a rien osé écrire par-dessus la saisie",
+    /res\.conserves\.length[\s\S]{0,200}n\\u2019a pas été touchée/.test(equipe));
 
   // Choisir une commune commande le prix de livraison suggéré (voir wireAutoPrix). Remplir la
   // commune sans le signaler laisserait un montant calculé pour l'ancienne commune : faux.
   verifier("fournisseur.html relance le calcul du prix quand le carnet change la commune",
     /res\.ecrits[\s\S]{0,200}communeEl\.dispatchEvent\(new Event\('change'\)\)/.test(fournisseur));
 
-  // Un seul écouteur posé sur le conteneur, jamais un écouteur par bouton : les boutons sont
-  // recréés à chaque frappe et laisseraient derrière eux autant d'écouteurs morts.
-  verifier("équipe.html écoute le conteneur, pas chaque bouton",
-    /wrap\.addEventListener\('click'/.test(equipe) && !/carnet-item'\)\.forEach\([\s\S]{0,80}addEventListener/.test(equipe));
-  verifier("fournisseur.html aussi",
-    /wrap\.addEventListener\('click'/.test(fournisseur));
+  // Un seul écouteur posé sur le conteneur, jamais un écouteur par élément : côté vendeuse les
+  // boutons du carnet sont recréés à chaque frappe, côté équipe les lignes de colis apparaissent
+  // et disparaissent au fil des photos. Dans les deux cas, un écouteur par élément en laisserait
+  // autant derrière lui, morts mais toujours branchés.
+  verifier("fournisseur.html écoute le conteneur, pas chaque bouton",
+    /wrap\.addEventListener\('click'/.test(fournisseur)
+    && !/carnet-item'\)\.forEach\([\s\S]{0,80}addEventListener/.test(fournisseur));
+  verifier("équipe.html écoute le conteneur des lignes, pas chaque champ",
+    /conteneur\.addEventListener\('change'[\s\S]{0,200}lotCompleterDepuisCarnet/.test(equipe));
+  // Et il interroge le carnet une fois le numéro posé, pas à chaque caractère tapé : c'est ce
+  // que dit le choix de 'change' plutôt que 'input'.
+  verifier("équipe.html n'interroge pas le carnet à chaque frappe",
+    !/conteneur\.addEventListener\('input'[\s\S]{0,200}lotCompleterDepuisCarnet/.test(equipe));
 
-  // Le brouillon local doit suivre : sans ça, un rafraîchissement de page perdrait exactement
-  // ce qu'on vient de reprendre du carnet, alors que tout le reste du formulaire est conservé.
-  verifier("équipe.html enregistre le brouillon après une reprise",
-    /resumeCarnetTexte|saveColisDraft/.test(equipe) && equipe.includes("if (typeof saveColisDraft === 'function') saveColisDraft();"));
-  verifier("fournisseur.html aussi",
-    fournisseur.includes("if (typeof saveColisDraft === 'function') saveColisDraft();"));
+  /* Il n'y a plus de brouillon à tenir à jour après une reprise du carnet : le brouillon local
+     servait l'ancienne saisie unitaire, retirée des deux écrans le 26/08/2026. Ce qui protège
+     désormais le travail en cours, c'est le bouton « Enregistrer ce colis » ligne par ligne —
+     un colis fini est un colis parti, il n'attend pas dans un brouillon.
+
+     On garde donc un contrôle, mais retourné : plus aucune trace de brouillon ne doit subsister.
+     Un reste oublié ne planterait pas ; il écrirait dans un espace de stockage que plus personne
+     ne relit, et ferait croire au prochain lecteur que la sauvegarde existe encore. */
+  for (const [nom, source] of [['équipe.html', equipe], ['fournisseur.html', fournisseur]]) {
+    verifier(`${nom} ne garde plus de brouillon de saisie à resynchroniser`,
+      !/saveColisDraft|restoreColisDraftIfAny|COLIS_DRAFT_KEY/.test(source));
+  }
 
   // Le carnet ne doit pas retarder l'affichage du formulaire : c'est une aide, pas une étape.
   verifier("fournisseur.html charge le carnet sans bloquer le reste de la page",

@@ -156,6 +156,17 @@ jobs:
       - name: Choix du livreur dans la liste des colis (voir le travail d'un seul, sans rien perdre)
         run: node tests/filtre-par-livreur.test.mjs
 
+      # La barre du haut, le bandeau de mise à jour, et le bouton 🔄. Signalés ensemble le
+      # 26 août : l'ancienne saisie encombrait tous les écrans, la roue dentée se retrouvait
+      # seule à gauche sur une troisième ligne et son menu s'ouvrait hors de l'écran, le
+      # bandeau de mise à jour se posait sur l'heure et sur l'en-tête, et le bouton
+      # d'actualisation « avait l'air de ne rien faire ». La dernière section de cette série
+      # ne relit pas le bouton : elle l'EXÉCUTE, avec une horloge qu'on avance à la main, et
+      # rejoue le cas qui ne se voit pas à la lecture — une requête qui ne revient jamais
+      # laissait le bouton grisé pour toujours, et là il n'avait plus seulement l'air mort.
+      - name: Barre du haut, bandeau de mise à jour et bouton d'actualisation
+        run: node tests/barre-du-haut-et-actualiser.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,

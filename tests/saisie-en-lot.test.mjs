@@ -486,17 +486,21 @@ titre('L\u2019écran de saisie en lot est bien branché dans l\u2019espace Équi
       /verifierLotAvantEnvoi\(/.test(blocDe(equipe, nom)));
   }
 
-  // La description est facultative des deux côtés : formulaire unitaire ET lot.
-  verifier('la description n\u2019est plus obligatoire dans le formulaire unitaire',
-    /<textarea id="add-desc"(?![^>]*required)/.test(equipe));
+  // La description est facultative. L'ancienne saisie unitaire, qui l'exigeait autrefois, a été
+  // retirée le 26/08/2026 ; il ne reste que l'écran en lot, où le champ ne doit jamais porter
+  // « required » — sinon une vendeuse pressée resterait bloquée sur un colis évident.
+  verifier('la description n\u2019est pas obligatoire dans l\u2019écran en lot',
+    /class="lot-desc"(?![^>]*required)/.test(equipe));
   verifier('une description vide devient une colonne vide, pas un texte inventé',
-    /description: description \|\| null/.test(equipe));
+    /description:\s*s\.description\s*\|\|\s*null/.test(equipe));
 
-  // Une seule porte d'entrée vers la base, pour que saisie unitaire, lot et file hors-réseau se
-  // comportent exactement pareil.
+  // Une seule porte d'entrée vers la base, pour que le lot et la file hors-réseau se comportent
+  // exactement pareil. Ils étaient trois avant le retrait de l'ancienne saisie unitaire ; le
+  // compte est écrit en dur exprès, pour qu'un quatrième chemin ajouté un jour oblige son auteur
+  // à venir ici constater qu'il passe bien par la porte.
   const portes = (equipe.match(/await eqInsererColis\(/g) || []).length;
-  verifier('les trois chemins d\u2019écriture passent par la même porte (eqInsererColis)',
-    portes === 3, portes + ' appel(s) trouvé(s)');
+  verifier('les deux chemins d\u2019écriture passent par la même porte (eqInsererColis)',
+    portes === 2, portes + ' appel(s) trouvé(s)');
   verifier('plus aucune insertion de colis en direct hors de cette porte',
     !/from\('colis'\)\.insert\(\[(entry\.payload|colisPayload|payload)\]\)/.test(equipe));
 }

@@ -69,9 +69,14 @@ input,textarea,select{font-family:inherit;}
   box-shadow:0 2px 8px rgba(226,99,19,.35);
 }
 .topbar .user-info{display:flex; align-items:center; justify-content:flex-start; gap:8px; font-size:14px;}
+/* Les deux groupes de la barre du haut (26/08/2026).
+   .topbar-identite = qui je suis (photo, nom, rôle) — c'est de l'information, ça peut rétrécir.
+   .topbar-actions  = ce que je peux faire (actualiser, éclairage, réglages) — ce sont des cibles
+   du doigt, elles ne rétrécissent jamais : un rond de 34 px écrasé à 20 devient intouchable. */
+.topbar-identite{display:flex; align-items:center; gap:8px; min-width:0;}
+.topbar-actions{display:flex; align-items:center; gap:8px; flex-shrink:0; margin-left:auto;}
 .topbar .user-info .role-pill{
   background:rgba(255,255,255,0.14); padding:4px 12px; border-radius:var(--radius-pill); font-size:12px; font-weight:600;
-  margin-left:auto;
 }
 .btn-logout{
   background:rgba(255,255,255,0.10); color:var(--white); border:1px solid rgba(255,255,255,0.22);
@@ -81,9 +86,29 @@ input,textarea,select{font-family:inherit;}
 .btn-logout:hover{background:rgba(255,255,255,0.20);}
 
 @media(max-width:640px){
-  .topbar{flex-wrap:wrap; gap:10px; padding:12px 16px; padding-top:calc(12px + env(safe-area-inset-top));}
-  .topbar .brand{font-size:14px;}
-  .topbar .user-info{width:100%; justify-content:flex-start; flex-wrap:wrap; gap:8px 10px; font-size:13px;}
+  /* DEUX LIGNES, PAS TROIS — et c'est nous qui choisissons où la barre se coupe.
+     Avant : les six éléments faisaient une seule file qui se repliait où elle pouvait. Mesuré
+     sur un écran de 371 px, la file demandait 414 px : la roue dentée partait seule sur une
+     troisième ligne, tout à gauche, et son menu (ancré à droite de la roue) commençait à
+     -76 px — c'est-à-dire hors de l'écran, texte tronqué. C'est exactement ce qu'on voyait.
+
+     Maintenant : `display:contents` efface la boîte .user-info sans effacer ses enfants, si
+     bien que les deux groupes deviennent directement des éléments de la barre. On peut alors
+     leur dire où aller.
+       ligne 1 : le titre (élastique) + les trois boutons ronds, collés à droite ;
+       ligne 2 : la photo, le nom, la pastille de rôle.
+     La ligne 1 est aussi ce que demandait le vide à droite du titre : le bouton
+     « Actualiser » y monte au lieu de traîner en bas. */
+  .topbar{flex-wrap:wrap; gap:10px 8px; padding:12px 16px; padding-top:calc(12px + env(safe-area-inset-top));}
+  .topbar .brand{font-size:14px; flex:1 1 auto; min-width:0;}
+  /* Ce `display:contents` ne s'applique qu'aux en-têtes qui portent réellement les deux groupes
+     (classe posée dans le HTML). L'écran Gestion a un en-tête d'une autre forme — un lien de
+     retour et deux boutons larges, ni photo ni roue dentée — et garde le sien tel quel. Un
+     sélecteur qui aurait touché tous les .user-info aurait changé sa mise en page sans que
+     personne l'ait demandé ni regardé. */
+  .topbar .user-info--groupes{display:contents;}
+  .topbar-actions{order:1; margin-left:0;}
+  .topbar-identite{order:2; width:100%; flex-wrap:wrap; gap:8px 10px; font-size:13px;}
   .topbar .user-info #user-name{max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .btn-logout{padding:7px 14px; font-size:12.5px;}
 }
@@ -1206,8 +1231,14 @@ html[data-theme="dark"] .btn-frais-vite.est-choisi{background:#E9B27A; color:#1B
 }
 .settings-menu-btn:hover{background:rgba(255,255,255,0.22);}
 .settings-menu-btn .alert-badge{position:absolute; top:-5px; right:-5px; margin-left:0; border:2px solid var(--navy);}
+/* Le menu s'ouvre sous la roue, aligné sur son bord droit. Ce `right:0` n'est juste que si la
+   roue est elle-même à droite de la barre : c'est ce que garantit .topbar-actions depuis le
+   26/08/2026. Le max-width est la ceinture par-dessus les bretelles — quelle que soit la
+   largeur de l'écran, le panneau ne peut plus déborder ni faire apparaître de barre de
+   défilement horizontale. */
 .settings-dropdown{
-  position:absolute; right:0; top:calc(100% + 8px); min-width:190px; background:var(--white);
+  position:absolute; right:0; top:calc(100% + 8px); min-width:190px;
+  max-width:calc(100vw - 24px); background:var(--white);
   border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-md);
   padding:6px; z-index:300; display:none;
 }
@@ -1953,6 +1984,23 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 @media (max-width:760px){
   .clt-haut--barre{ bottom:calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
+/* Le bandeau « nouvelle version » habite le bas de l'écran depuis le 26/08/2026. Tant qu'il est
+   là, le bouton « Remonter en haut » se pousse au-dessus de lui : le bandeau passe devant
+   (z-index 9500 contre 1200), donc sans ce décalage le bouton serait purement et simplement
+   avalé. clt-common.js pose la classe sur le <body> et publie --clt-maj-h, la hauteur RÉELLE
+   du bandeau — elle va de 46 px sur un ordinateur à 104 px sur un téléphone étroit, selon le
+   nombre de lignes qu'il faut à la phrase. Le calcul reprend donc exactement le décalage du
+   bandeau lui-même (14 px, ou 74 px au-dessus d'une barre d'onglets), plus sa hauteur, plus
+   12 px pour qu'ils ne se touchent pas. La valeur de secours ne sert qu'au cas où le script
+   n'aurait pas encore mesuré. */
+.clt-maj-visible .clt-haut{
+  bottom:calc(14px + var(--clt-maj-h, 64px) + 12px + env(safe-area-inset-bottom, 0px));
+}
+@media (max-width:760px){
+  .clt-maj-visible .clt-haut--barre{
+    bottom:calc(74px + var(--clt-maj-h, 64px) + 12px + env(safe-area-inset-bottom, 0px));
+  }
+}
 @media (prefers-reduced-motion: reduce){ .clt-haut{ transition:opacity .2s ease; transform:none; } }
 
 
@@ -2072,10 +2120,23 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 
    Il FLOTTE (position fixe) et ne réserve aucune place dans le flux : ajouter une barre qui
    pousse le contenu vers le bas ferait sauter la page sous les doigts de quelqu'un en train de
-   viser un bouton. Il ne recharge rien tout seul — c'est le bouton qui décide. */
+   viser un bouton. Il ne recharge rien tout seul — c'est le bouton qui décide.
+
+   IL VIT EN BAS DE L'ÉCRAN DEPUIS LE 26/08/2026.
+   Il était en haut, à 12 px du bord, sans tenir compte de l'encoche. En application installée
+   sur iPhone, ces 12 px sont comptés depuis le tout premier pixel de la dalle : le bandeau se
+   posait donc sur l'heure et la batterie, et par-dessus l'en-tête bleu — le nom, la pastille
+   de rôle et la roue dentée disparaissaient dessous tant qu'il était affiché.
+
+   Le bas est la seule zone franchement libre sur tous les écrans de l'application. Le bandeau
+   s'y installe, au-dessus du trait tactile de l'iPhone (safe-area du bas) et, sur les espaces
+   qui en ont une, au-dessus de la barre d'onglets — c'est ce que dit la classe
+   .clt-maj-bandeau--barre, posée par clt-common.js quand il trouve une .clt-bottomnav.
+   Il ne s'efface pas tout seul : une mise à jour manquée, c'est travailler sur une ancienne
+   version sans le savoir. Il attend « Mettre à jour » ou la croix. */
 .clt-maj-bandeau {
   position: fixed;
-  top: 12px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 9500;
@@ -2134,6 +2195,21 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
     flex-wrap: wrap;
     row-gap: 6px;
   }
-  .clt-maj-texte { flex: 1 1 auto; }
+  /* L'ordre est imposé, sinon les quatre éléments se rangent dans l'ordre du HTML et la croix
+     se retrouve seule sur une ligne à elle, coincée à gauche sous le titre : mesuré sur un
+     écran de 390 px, le titre (293 px) et le bouton « Mettre à jour » ne tenaient déjà plus
+     ensemble, la croix partait donc à la ligne. Trois lignes lisibles valent mieux :
+     le titre et la croix (là où le doigt la cherche, en haut à droite), puis l'avertissement
+     en entier, puis le bouton d'action aligné à droite. */
+  .clt-maj-texte { flex: 1 1 auto; order: 1; white-space: normal; }
+  .clt-maj-plus-tard { order: 2; margin-left: auto; }
   .clt-maj-note { flex: 1 1 100%; order: 3; white-space: normal; font-size: 12.5px; }
+  .clt-maj-ok { order: 4; margin-left: auto; }
+}
+/* Espaces livreur, client Express et coursier Express : la barre d'onglets basse fait 60 px.
+   Le bandeau se pose juste au-dessus, jamais dessus — on ne masque pas la navigation pour
+   annoncer une mise à jour. Même valeur que le bouton « Remonter en haut », qui suit la même
+   règle : les deux doivent bouger ensemble le jour où la barre change de hauteur. */
+@media (max-width: 760px) {
+  .clt-maj-bandeau--barre { bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 }

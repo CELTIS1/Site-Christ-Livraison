@@ -549,16 +549,23 @@ titre('Les garde-fous des deux écrans sont toujours en place');
     /type: 'maj-colis',[\s\S]{0,120}payload: updatePayload/.test(equipe));
 }
 {
-  verifier('le formulaire de création de l’équipe demande enfin la commune de destination',
-    /id="add-commune-dest"/.test(equipe));
-  verifier('cette commune est réellement envoyée à la création',
-    /commune_destination,/.test(equipe.slice(equipe.indexOf('const colisPayload'))) ||
-    /commune_destination/.test(equipe.slice(equipe.indexOf('const colisPayload'), equipe.indexOf('const colisPayload') + 600)));
-  verifier('elle est gardée dans le brouillon comme les autres champs',
-    /commune_destination/.test(blocDe(equipe, 'getColisDraftFields', 'equipe.html')));
-  verifier('la liste des communes est remplie une seule fois, sans doublons',
-    /if \(sel\.options && sel\.options\.length\) return;/.test(
-      blocDe(equipe, 'remplirCommuneDestinationAjout', 'equipe.html')));
+  /* La commune de destination à la création, côté Équipe.
+
+     Ces contrôles visaient l'ancien formulaire unitaire, retiré le 26/08/2026. Ils ne sont pas
+     supprimés pour autant : la commune était renseignée LÀ ET NULLE PART AILLEURS dans l'espace
+     Équipe, et l'écran photo qui lui succède ne la demandait pas. Retirer le formulaire sans
+     rien faire aurait donc laissé commune_destination vide sur tout colis créé au bureau — plus
+     de tri par commune, plus de prix suggéré, plus de tournée groupée, et personne pour s'en
+     apercevoir. Le champ a été porté sur l'écran photo ; ces contrôles le suivent, pour qu'on ne
+     puisse pas le perdre une seconde fois. */
+  verifier('l’écran de saisie de l’équipe demande la commune de destination',
+    /class="lot-commune"/.test(equipe));
+  verifier('cette commune part vraiment avec le colis',
+    /commune_destination:\s*s\.communeDestination\s*\|\|\s*null/.test(equipe));
+  verifier('elle est lue dans le formulaire au moment de l’envoi, pas gardée en mémoire à part',
+    /communeDestination:\s*val\('\.lot-commune'\)/.test(equipe));
+  verifier('la liste des communes vient du référentiel central, pas d’une copie locale',
+    /class="lot-commune"[^>]*>\$\{communesDestinationOptionsHTML\(/.test(equipe));
 }
 
 /* ---------- Verdict ---------- */

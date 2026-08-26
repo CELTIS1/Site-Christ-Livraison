@@ -281,16 +281,18 @@ titre('Aucune écriture de colis ne contourne la porte');
       dedans + ' insert(s) dans la porte');
   }
 
+  // Deux depuis le 26 août 2026, et non plus trois : l'ancienne saisie unitaire a été retirée
+  // de l'écran Équipe. Restent la saisie par photos et la file d'attente hors-réseau.
   const appelsEquipe = (equipe.match(/await eqInsererColis\(/g) || []).length;
-  verifier('les trois chemins de l’équipe passent par la porte (formulaire, lot, file d’attente)',
-    appelsEquipe === 3, appelsEquipe + ' appels');
-  // Quatre depuis le 21 août 2026, et non plus trois : l'écran de saisie par photos est devenu
-  // la voie normale côté vendeuse, il s'ajoute donc aux chemins existants. Le compte est écrit
-  // en dur exprès — le jour où un cinquième apparaît, ce test doit obliger celui qui l'ajoute à
-  // venir ici constater que son chemin passe bien par la porte, plutôt que de le laisser filer.
+  verifier('les deux chemins de l’équipe passent par la porte (photos, file d’attente)',
+    appelsEquipe === 2, appelsEquipe + ' appels');
+  // Deux également côté vendeuse depuis le retrait de son ancien formulaire : la saisie par
+  // photos, et la reprise après doublon. Le compte est écrit en dur exprès — le jour où un
+  // troisième apparaît, ce test doit obliger celui qui l'ajoute à venir ici constater que son
+  // chemin passe bien par la porte, plutôt que de le laisser filer.
   const appelsFournisseur = (fournisseur.match(/await frInsererColis\(/g) || []).length;
-  verifier('les quatre chemins de la vendeuse passent par la porte (photos, collage, reprise après doublon, ancien formulaire)',
-    appelsFournisseur === 4, appelsFournisseur + ' appels');
+  verifier('les deux chemins de la vendeuse passent par la porte (photos, reprise après doublon)',
+    appelsFournisseur === 2, appelsFournisseur + ' appels');
 }
 
 /* ==========================================================================================
@@ -305,16 +307,18 @@ titre('La description n’est plus exigée nulle part');
     verifier(`${nom} : aucun message n’exige encore une description`,
       !/indiquer une description/i.test(source));
     verifier(`${nom} : le champ description ne porte plus l’attribut required`,
-      !/class="(row-desc|add-desc)"[^>]*\brequired\b/.test(source)
+      !/class="(row-desc|lot-desc|lotfr-desc)"[^>]*\brequired\b/.test(source)
       && !/id="add-desc"[^>]*\brequired\b/.test(source));
+    // Le libellé a raccourci le 26/08/2026 : les deux écrans de saisie par photos écrivent
+    // « Description (optionnel) » dans une ligne étroite. Le mot qui compte est « optionnel ».
     verifier(`${nom} : le libellé annonce que c’est optionnel`,
-      /Description du colis \(optionnel\)/.test(source));
+      /Description(?: du colis)? \(optionnel\)/.test(source));
   }
 
   // Vide doit rester vide : la colonne le supporte, et un « Colis » écrit d'office empêcherait
   // de distinguer un colis sans description d'un colis réellement nommé « Colis ».
   verifier('equipe.html envoie une description vide en colonne vide',
-    /description:\s*description\s*\|\|\s*null/.test(equipe));
+    /description:\s*s\.description\s*\|\|\s*null/.test(equipe));
   verifier('fournisseur.html envoie une description vide en colonne vide',
     (fournisseur.match(/description:\s*description\s*\|\|\s*null/g) || []).length >= 2,
     (fournisseur.match(/description:\s*description\s*\|\|\s*null/g) || []).length + ' occurrence(s)');

@@ -302,9 +302,37 @@ verifier(
   /\.clt-maj-ok\s*\{/.test(css) && /\.clt-maj-plus-tard\s*\{/.test(css) && /\.clt-maj-note\s*\{/.test(css)
 );
 
+// On lit le bloc téléphone en entier plutôt que les 600 caractères qui suivent son ouverture.
+// La version en fenêtre fixe a rendu un faux échec le 26/08/2026 : la règle cherchée était bien
+// là, mais un commentaire ajouté au-dessus l'avait repoussée au-delà de la fenêtre. Un contrôle
+// qui s'allume parce qu'on a EXPLIQUÉ quelque chose apprend surtout à ne plus expliquer.
+const blocTelephone = (() => {
+  const debut = css.indexOf('@media (max-width: 640px) {\n  .clt-maj-bandeau');
+  if (debut === -1) return '';
+  const ouv = css.indexOf('{', debut);
+  let prof = 0;
+  for (let i = ouv; i < css.length; i++) {
+    if (css[i] === '{') prof++;
+    else if (css[i] === '}') { prof--; if (prof === 0) return css.slice(debut, i + 1); }
+  }
+  return '';
+})();
+
 verifier(
   'sur téléphone la phrase d\'avertissement reste lisible',
-  /@media \(max-width: 640px\)[\s\S]{0,600}\.clt-maj-note[\s\S]{0,120}white-space:\s*normal/.test(css)
+  /\.clt-maj-note\s*\{[^}]*white-space:\s*normal/.test(blocTelephone),
+  blocTelephone ? 'bloc trouvé, règle absente' : 'bloc téléphone du bandeau introuvable'
+);
+
+// L'ordre des quatre éléments sur téléphone. Laissés dans l'ordre du HTML, ils se rangent mal :
+// mesuré sur un écran de 390 px, le titre et le bouton « Mettre à jour » ne tiennent pas sur la
+// même ligne, et la croix part seule sur une ligne à elle, coincée à gauche sous le titre.
+verifier(
+  'les quatre éléments du bandeau ont un ordre imposé sur téléphone',
+  /\.clt-maj-texte\s*\{[^}]*order:\s*1/.test(blocTelephone) &&
+  /\.clt-maj-plus-tard\s*\{[^}]*order:\s*2/.test(blocTelephone) &&
+  /\.clt-maj-note\s*\{[^}]*order:\s*3/.test(blocTelephone) &&
+  /\.clt-maj-ok\s*\{[^}]*order:\s*4/.test(blocTelephone)
 );
 
 /* ==========================================================================================
