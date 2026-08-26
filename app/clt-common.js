@@ -688,3 +688,141 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
     }
   } catch (err) { /* dégradation silencieuse : l'absence du bouton ne casse rien */ }
 })();
+
+/* ---------- Prévenir qu'une nouvelle version est publiée ----------
+   ------------------------------------------------------------------------------------------
+   POURQUOI CE BLOC EXISTE
+
+   Le 26 août 2026, la fiche « Son écran » a été publiée, vérifiée fichier par fichier sur le
+   serveur — et restée invisible. Le serveur servait bien la nouvelle version ; l'application
+   ouverte sur les téléphones, elle, continuait d'afficher l'ancienne. Une application installée
+   ne recharge pas toute seule : elle peut rester ouverte des jours. Rien, dans le code, ne lui
+   disait qu'une nouvelle version existait. Publier « avec succès » et ne rien changer pour
+   personne est le pire des deux mondes : on croit le problème réglé, l'équipe travaille encore
+   sur l'ancien écran, et l'écart ne se voit qu'au moment où il coûte cher.
+
+   LA MÉTHODE, ET CE QU'ELLE ÉVITE
+
+   Chaque page charge ses fichiers partagés avec une étiquette de version (« ?v=20260826maj »).
+   Cette étiquette est déjà la source de vérité de la maison, et un contrôle automatique impose
+   qu'il n'y en ait qu'UNE seule pour tous les fichiers partagés. On la compare simplement à
+   celle que le serveur annonce dans app/version.json — un fichier de quelques octets, pas la
+   page entière : sur un téléphone en données mobiles, aller rechercher 400 Ko toutes les quinze
+   minutes pour apprendre qu'il n'y a rien de neuf serait payé par le livreur.
+
+   CE QU'ON NE FAIT PAS, ET POURQUOI
+
+   On ne recharge JAMAIS l'application d'autorité. C'est la solution évidente, et c'est celle
+   qui a déjà fait des dégâts ici : une actualisation qui tombe pendant une saisie efface les
+   champs, et c'est exactement le défaut qui a été signalé et corrigé en août. Le bandeau
+   attend qu'on clique. Tant que personne ne clique, rien ne bouge.
+
+   Et on ne prévient que si l'on SAIT. Étiquette locale illisible, repère injoignable, JSON
+   malformé, hors-ligne : dans tous ces cas on se tait. Un bandeau qui crie au loup à chaque
+   coupure de réseau serait ignoré au bout de deux jours, et il ne servirait plus le jour où
+   il aurait raison. « Je ne sais pas » ne doit jamais s'afficher comme « il y a du neuf ». */
+
+// Relève l'étiquette portée par l'adresse d'un fichier (« …/clt-common.js?v=20260826maj »).
+// Renvoie une chaîne vide si l'adresse n'en porte pas : sans étiquette on ne sait rien, et
+// « on ne sait rien » ne doit rien déclencher.
+function cltEtiquetteDeLAdresse(adresse) {
+  const m = String(adresse === null || adresse === undefined ? "" : adresse).match(/[?&]v=([A-Za-z0-9._-]+)/);
+  return m ? m[1] : "";
+}
+
+// La décision, isolée pour être vérifiable par les contrôles automatiques (voir
+// tests/bandeau-nouvelle-version.test.mjs). On ne prévient que si les DEUX étiquettes sont
+// connues et qu'elles diffèrent. Toute autre situation — l'une des deux vide, l'une des deux
+// qui n'est pas du texte — est une ignorance, pas une nouvelle version.
+function cltDoitPrevenirMaj(locale, serveur) {
+  if (typeof locale !== "string" || typeof serveur !== "string") return false;
+  if (!locale || !serveur) return false;
+  return locale !== serveur;
+}
+
+(function () {
+  try {
+    // L'étiquette de CETTE page, lue sur le script en train de s'exécuter. Pas de valeur écrite
+    // en dur ici : une constante recopiée finirait par mentir le jour où elle serait oubliée.
+    let script = document.currentScript;
+    if (!script) {
+      const tous = document.querySelectorAll('script[src*="clt-common.js"]');
+      script = tous[tous.length - 1] || null;
+    }
+    const adresse = (script && script.src) || "";
+    const etiquetteLocale = cltEtiquetteDeLAdresse(adresse);
+    if (!etiquetteLocale) return;
+
+    // Le repère est cherché à côté du script, pas à une adresse absolue : l'application doit
+    // continuer de fonctionner si elle est un jour servie depuis un sous-dossier.
+    const urlRepere = adresse.replace(/[^/]*$/, "") + "version.json";
+
+    const DELAI_FOND = 15 * 60 * 1000;    // vérification tranquille, en arrière-plan
+    const DELAI_RETOUR = 2 * 60 * 1000;   // au retour à l'écran, au plus une fois par deux minutes
+    const DELAI_REPORT = 30 * 60 * 1000;  // « plus tard » : on se fait discret une demi-heure
+    let derniereVerif = Date.now();
+    let masqueJusqua = 0;
+    let bandeau = null;
+
+    function poser() {
+      if (!document.body) return;
+      if (bandeau && document.body.contains(bandeau)) { bandeau.hidden = false; return; }
+      bandeau = document.createElement("div");
+      bandeau.className = "clt-maj-bandeau";
+      bandeau.setAttribute("role", "status");
+      // Construction par éléments : ce bandeau n'affiche aucune donnée saisie, mais il s'ajoute
+      // à des pages qui en affichent beaucoup, et on ne prend pas l'habitude d'écrire du HTML
+      // à la main si près d'elles.
+      const texte = document.createElement("span");
+      texte.className = "clt-maj-texte";
+      texte.textContent = "\u21bb Nouvelle version disponible";
+      const note = document.createElement("span");
+      note.className = "clt-maj-note";
+      note.textContent = "Terminez votre saisie avant de mettre \u00e0 jour.";
+      const ok = document.createElement("button");
+      ok.type = "button";
+      ok.className = "clt-maj-ok";
+      ok.textContent = "Mettre \u00e0 jour";
+      ok.addEventListener("click", function () { location.reload(); });
+      const plusTard = document.createElement("button");
+      plusTard.type = "button";
+      plusTard.className = "clt-maj-plus-tard";
+      plusTard.setAttribute("aria-label", "Plus tard");
+      plusTard.title = "Plus tard";
+      plusTard.textContent = "\u00d7";
+      plusTard.addEventListener("click", function () {
+        bandeau.hidden = true;
+        masqueJusqua = Date.now() + DELAI_REPORT;
+      });
+      bandeau.appendChild(texte);
+      bandeau.appendChild(note);
+      bandeau.appendChild(ok);
+      bandeau.appendChild(plusTard);
+      document.body.appendChild(bandeau);
+    }
+
+    function verifier() {
+      if (navigator.onLine === false) return;
+      if (Date.now() < masqueJusqua) return;
+      derniereVerif = Date.now();
+      fetch(urlRepere, { cache: "no-store" })
+        .then(function (r) { return r && r.ok ? r.json() : null; })
+        .then(function (data) {
+          const etiquetteServeur = data && typeof data.version === "string" ? data.version : "";
+          if (cltDoitPrevenirMaj(etiquetteLocale, etiquetteServeur)) poser();
+        })
+        .catch(function () { /* injoignable ou illisible : on se tait */ });
+    }
+
+    setInterval(verifier, DELAI_FOND);
+
+    // Le cas le plus fréquent sur téléphone : l'application est restée ouverte en arrière-plan
+    // toute la nuit, on la reprend le matin. Les minuteries d'un onglet endormi sont ralenties
+    // par le système ; le retour à l'écran est le moment le plus sûr pour regarder.
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - derniereVerif < DELAI_RETOUR) return;
+      verifier();
+    });
+  } catch (err) { /* dégradation silencieuse : l'absence du bandeau ne casse rien */ }
+})();

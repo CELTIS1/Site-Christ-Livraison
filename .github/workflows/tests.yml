@@ -133,6 +133,20 @@ jobs:
       - name: La fiche « Son écran » (l'équipe voit exactement ce que le livreur voit)
         run: node tests/fiche-son-ecran.test.mjs
 
+      # Le bandeau « nouvelle version disponible ». Le 26 août, la fiche « Son écran » a été
+      # publiée, vérifiée fichier par fichier sur le serveur, et est restée invisible une
+      # journée entière : une application installée ne recharge pas toute seule, et rien ne
+      # lui disait qu'une nouvelle version existait. Publier « avec succès » sans que rien ne
+      # change pour personne est le pire des deux mondes. Cette série garde les deux pièges du
+      # remède : ne JAMAIS recharger d'autorité (une actualisation pendant une saisie efface
+      # les champs — le défaut déjà signalé en août), et ne jamais crier au loup quand on ne
+      # sait pas (réseau coupé, repère illisible). Elle refuse aussi la publication si
+      # app/version.json cesse d'annoncer exactement l'étiquette portée par les pages : en
+      # avance, le bandeau s'affiche en permanence et ne veut plus rien dire ; en retard,
+      # plus personne ne le voit et on retombe dans le trou du 26 août.
+      - name: Le bandeau « nouvelle version » (l'équipe apprend qu'une publication a eu lieu)
+        run: node tests/bandeau-nouvelle-version.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,

@@ -2065,3 +2065,75 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
   .lotfr-payes .check-pill{ padding:7px 10px; font-size:11.5px; gap:6px; }
   .lotfr-payes .check-pill input{ width:14px; height:14px; }
 }
+
+/* ---------- Bandeau « nouvelle version disponible » ----------
+   Posé par clt-common.js quand le repère app/version.json annonce une étiquette différente de
+   celle avec laquelle la page a été chargée.
+
+   Il FLOTTE (position fixe) et ne réserve aucune place dans le flux : ajouter une barre qui
+   pousse le contenu vers le bas ferait sauter la page sous les doigts de quelqu'un en train de
+   viser un bouton. Il ne recharge rien tout seul — c'est le bouton qui décide. */
+.clt-maj-bandeau {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 20px);
+  padding: 9px 10px 9px 14px;
+  border-radius: 999px;
+  background: #1f2733;
+  color: #fff;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .3);
+  font-size: 14px;
+  line-height: 1.2;
+}
+/* display:flex l'emporterait sur l'attribut hidden : sans cette règle, « Plus tard » ne
+   masquerait rien du tout. */
+.clt-maj-bandeau[hidden] { display: none; }
+.clt-maj-texte { font-weight: 600; white-space: nowrap; }
+.clt-maj-note { color: #b9c2cf; white-space: nowrap; }
+.clt-maj-ok {
+  flex: none;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #E26313;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.clt-maj-ok:hover { background: #c9540c; }
+.clt-maj-plus-tard {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #b9c2cf;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+.clt-maj-plus-tard:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+
+/* Sur téléphone la phrase d'avertissement passe à la ligne plutôt que de disparaître : c'est
+   précisément là que les saisies se font, donc là qu'elle sert le plus. */
+@media (max-width: 640px) {
+  .clt-maj-bandeau {
+    left: 10px;
+    right: 10px;
+    transform: none;
+    max-width: none;
+    border-radius: 14px;
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .clt-maj-texte { flex: 1 1 auto; }
+  .clt-maj-note { flex: 1 1 100%; order: 3; white-space: normal; font-size: 12.5px; }
+}

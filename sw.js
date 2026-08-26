@@ -42,9 +42,11 @@
 
    Repli hors-ligne : si une navigation échoue et n'est pas en cache, on sert /offline.html.
 
-   Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même. */
+   Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même.
 
-const CACHE_VERSION = 'clt-shell-v55';
+   26 août 2026 — v56 : ajout de l'exception app/version.json (voir plus bas). */
+
+const CACHE_VERSION = 'clt-shell-v56';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.
@@ -164,6 +166,13 @@ self.addEventListener('fetch', (event) => {
   // Ces appels doivent toujours atteindre le réseau (état temps réel des colis).
   if (req.method !== 'GET') return;
   if (url.hostname.endsWith('.supabase.co')) return;
+
+  // Le repère de version (app/version.json) n'est JAMAIS mis en cache ni servi depuis le cache.
+  // C'est le seul fichier dont le rôle est de dire si le reste est périmé : une copie gardée en
+  // mémoire répondrait éternellement « vous êtes à jour », et le bandeau de mise à jour ne
+  // s'afficherait jamais — exactement le silence qu'il est censé rompre. On laisse donc passer
+  // la requête sans l'intercepter : hors-ligne, elle échoue franchement, et clt-common.js se tait.
+  if (url.pathname.endsWith('/app/version.json')) return;
 
   // Ressources d'un autre domaine :
   //   • bibliothèques CDN à version fixe (supabase-js, Leaflet, xlsx, jsPDF, police) → "cache d'abord"
