@@ -616,6 +616,94 @@ sqlDesComptes: {
     /add column if not exists/.test(sql) && /drop trigger if exists/.test(sql));
 }
 
+/* ============================================================================
+   6) L'ANNUAIRE ET LE JOURNAL SUIVENT LA CAPACITÉ, PAS LE RÔLE — 26 août 2026
+   ============================================================================
+   Ce qui a été trouvé, et pourquoi ça méritait un contrôle permanent.
+
+   Un compte « équipe » purement administratif (RH ou Comptable, sans acces_operations)
+   n'entre pas dans le tableau de bord : la séquence de démarrage d'equipe.html le renvoie
+   vers Gestion. À l'écran, donc, il ne voit pas l'annuaire des clientes. Mais la règle qui
+   gardait la table profiles testait le RÔLE (is_equipe()) et non la CAPACITÉ. Le même compte
+   pouvait lire l'annuaire ENTIER — toutes les clientes, tous les livreurs, avec noms,
+   téléphones, sociétés et adresses de récupération — en s'adressant directement à la base,
+   sans passer par le moindre écran. Un écran qui ne montre pas n'est pas une barrière.
+
+   Le journal d'activité présentait le désaccord inverse : réservé à l'administrateur à
+   l'écran, ouvert à tout compte Opérations dans la base. Or le journal sert précisément à
+   surveiller ce que fait l'équipe.
+
+   Les deux règles ont été refaites. Ce qui suit les tient, des deux côtés : côté écrans (ces
+   contrôles-là tournent partout, y compris sur les serveurs de GitHub) et côté base (gardé
+   par la présence du script, qui n'est pas publié). */
+titre('L’annuaire et le journal ne dépendent plus du rôle, mais de la capacité');
+{
+  /* La nouvelle règle d'annuaire pour les comptes Gestion est TAILLÉE sur la seule lecture
+     que fait cet espace : les livreurs, et rien d'autre. Si demain gestion.js se met à lire
+     autre chose dans profiles, la règle ne le laissera pas passer et l'écran affichera une
+     liste vide sans expliquer pourquoi — la panne la plus difficile à diagnostiquer qui
+     soit. Ce contrôle fige la forme exacte sur laquelle la permission a été taillée. */
+  const lecturesProfiles = (gestion.match(/from\(['"]profiles['"]\)/g) || []).length;
+  verifier('l’espace Gestion ne lit toujours l’annuaire qu’à UN seul endroit',
+    lecturesProfiles === 1, `${lecturesProfiles} lecture(s) de profiles trouvée(s) dans gestion.js`);
+  verifier('et cette lecture reste limitée aux livreurs (la forme sur laquelle la règle est taillée)',
+    /from\(['"]profiles['"]\)[\s\S]{0,160}?\.eq\(\s*['"]role['"]\s*,\s*['"]livreur['"]\s*\)/.test(gestion));
+
+  /* Le journal est désormais fermé en LECTURE à tout ce qui n'est pas l'administrateur. Si
+     un écran se remettait à l'appeler sans garde, la personne verrait une erreur ou une
+     section vide au lieu du journal. Un seul appel a le droit de ne pas porter « if (isAdmin) »
+     sur sa propre ligne : celui du canal temps réel, qui est lui-même ouvert à l'intérieur
+     d'un bloc « if (isAdmin) { … } ». On le vérifie nommément plutôt que de l'excuser. */
+  const appelsJournal = equipe.split('\n')
+    .filter((l) => /(?<!function\s)loadActivityLog\(\)/.test(l) && !/^async function/.test(l.trim()));
+  const nonGardes = appelsJournal.filter((l) => !/if\s*\(isAdmin\)/.test(l));
+  verifier('tous les appels au journal sauf un portent la garde « if (isAdmin) » sur leur ligne',
+    nonGardes.length === 1,
+    `${nonGardes.length} appel(s) sans garde de ligne : ` + nonGardes.map((l) => l.trim()).join(' | '));
+  const canal = equipe.slice(equipe.indexOf("channel('activity-log-equipe')") - 400,
+                             equipe.indexOf("channel('activity-log-equipe')") + 400);
+  verifier('et le seul appel restant est celui du temps réel, ouvert sous « if (isAdmin) { … } »',
+    /if\s*\(isAdmin\)\s*\{[\s\S]*channel\('activity-log-equipe'\)[\s\S]*loadActivityLog\(\)/.test(canal));
+
+  /* L'ÉCRITURE du journal, elle, doit rester ouverte à toute l'équipe : ce sont les gestes de
+     l'équipe que le journal enregistre. Une équipe qui ne peut plus écrire dans le journal
+     est une équipe dont on ne trace plus rien — on aurait fermé la surveillance en croyant
+     la renforcer. */
+  const ecrituresJournal = (equipe.match(/from\('activity_log'\)\s*\.?\s*insert/g) || []).length;
+  verifier('l’équipe continue d’ÉCRIRE dans le journal (sinon on ne trace plus personne)',
+    ecrituresJournal >= 4, `${ecrituresJournal} écriture(s) trouvée(s) dans equipe.html`);
+}
+
+sqlAnnuaire: {
+  const CHEMIN = path.join(RACINE, '_sql-prive', '2026-08-annuaire-et-journal-sur-la-capacite.sql');
+  if (!fs.existsSync(CHEMIN)) {
+    ignorer('les règles d’annuaire et de journal posées en base (section 6)',
+      'Le script _sql-prive/2026-08-annuaire-et-journal-sur-la-capacite.sql n’est pas dans ce ' +
+      'dossier. C’est normal hors du poste : il n’est pas publié. Relancez cette série là où ' +
+      'il se trouve avant toute mise en ligne touchant à l’annuaire ou au journal.');
+    break sqlAnnuaire;
+  }
+  const sql = fs.readFileSync(CHEMIN, 'utf8');
+
+  verifier('l’ancienne règle d’annuaire, fondée sur le rôle, est retirée',
+    /drop policy if exists profiles_select_team on public\.profiles/.test(sql));
+  verifier('l’annuaire complet est désormais réservé à la CAPACITÉ Opérations',
+    /create policy profiles_select_operations[\s\S]{0,400}?a_acces_operations\(\)/.test(sql));
+  verifier('un compte Gestion ne voit plus que les livreurs, jamais les clientes',
+    /create policy profiles_select_gestion_livreurs[\s\S]{0,400}?role\s*=\s*'livreur'/.test(sql));
+  verifier('et cette permission-là est bien accordée à la paie ou à la comptabilité',
+    /profiles_select_gestion_livreurs[\s\S]{0,400}?a_acces_paie\(\)[\s\S]{0,80}?a_acces_compta\(\)/.test(sql));
+  verifier('l’ancienne règle de journal est retirée',
+    /drop policy if exists activity_log_select_team on public\.activity_log/.test(sql));
+  verifier('la LECTURE du journal est alignée sur l’écran : l’administrateur seul',
+    /create policy activity_log_select_admin[\s\S]{0,300}?est_admin\(\)/.test(sql));
+  verifier('l’ÉCRITURE du journal n’est pas touchée par ce script',
+    !/drop policy if exists activity_log_insert_team/.test(sql)
+    && !/create policy activity_log_insert/.test(sql));
+  verifier('le script porte son propre contrôle, à relire après exécution',
+    /ancienne_regle_annuaire_retiree/.test(sql) && /journal_reserve_admin/.test(sql));
+}
+
 /* ---------- Verdict ---------- */
 console.log('\n———');
 console.log(`${reussies} vérifications réussies, ${echouees} échouées`
