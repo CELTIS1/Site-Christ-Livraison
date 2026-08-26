@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826livreur">
-<script src="theme.js?v=20260826livreur"></script>
+<link rel="stylesheet" href="style.css?v=20260826position1">
+<script src="theme.js?v=20260826position1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -522,11 +522,16 @@
     <button type="button" class="btn btn-sm" id="btn-accept-geoloc-consent">J'ai compris et j'accepte</button>
   </div>
 
-  <!-- Le partage de position tient en une ligne : il doit rester visible (le livreur a le droit
-       de savoir quand sa position part) sans manger l'écran comme le faisait la carte pleine
-       largeur. La pastille de couleur dit l'état d'un coup d'œil ; le détail n'apparaît qu'en
-       cas de problème. (26/08/2026) -->
-  <div class="position-ligne" id="position-sharing-card">
+  <!-- Le partage de position tient en une ligne, et cette ligne n'existe que pendant un trajet.
+       Le livreur a le droit de savoir quand sa position part — c'est précisément pour cela
+       qu'elle ne doit pas être là le reste du temps : une ligne permanente qui répète
+       « Position non partagée » toute la journée devient un décor qu'on ne lit plus, et le jour
+       où elle passe au vert, personne ne le remarque. Sa seule présence dit maintenant quelque
+       chose. C'est aussi ce que fait déjà l'écran coursier de CLT Express. (26/08/2026)
+
+       Elle part masquée : sans cela, elle s'affiche le temps du chargement des colis, puis
+       disparaît — un sursaut à chaque ouverture de l'application. -->
+  <div class="position-ligne hidden" id="position-sharing-card">
     <div class="position-ligne-corps">
       <span class="position-pastille" id="position-sharing-pastille" aria-hidden="true"></span>
       <span id="position-sharing-desc">Position non partagée</span>
@@ -634,8 +639,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826livreur"></script>
-<script src="config.js?v=20260826livreur"></script>
+<script src="clt-common.js?v=20260826position1"></script>
+<script src="config.js?v=20260826position1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -1633,10 +1638,20 @@
   }
 
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
+  //
+  // Quand il n'y a pas de photo, il n'y a plus de vignette du tout. Un carré gris marqué
+  // « Pas de photo » tenait 40 px, plus 8 px d'écart, sur les 390 px d'un téléphone : de la
+  // largeur prise à l'adresse et au nom de la cliente pour annoncer qu'il n'y a rien à voir.
+  // L'absence de photo se constate à l'absence de photo. Et le livreur n'en peut rien faire :
+  // il ne prend pas les photos, il reçoit les colis. (26/08/2026)
+  //
+  // Les écrans de l'équipe, de la cliente et du fournisseur gardent leur carré : là-bas, sur
+  // grand écran, repérer les colis sans photo fait partie du travail de vérification, et la
+  // place ne manque pas. C'est pour cela que le changement est ici et non dans style.css.
   function mesColisRowHTML(c, numeroClient){
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
-      : `<div class="thumb-placeholder">Pas de photo</div>`;
+      : '';
     const statutOptions = Object.keys(STATUTS).map(k =>
       `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
 
@@ -2027,10 +2042,11 @@
     return allColis.filter(c => c.livreur_collecte_id === currentUser.id && c.statut === 'en_attente');
   }
 
+  // Même règle que dans mesColisRowHTML : pas de photo, pas de vignette. (26/08/2026)
   function recupColisRowHTML(c){
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
-      : `<div class="thumb-placeholder">Pas de photo</div>`;
+      : '';
     return `
       <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
         ${thumb}
@@ -2632,50 +2648,145 @@
   // trajet — aucune donnée de localisation n'est conservée en dehors d'une récupération ou d'une
   // livraison active.
   const STATUTS_EN_TOURNEE = ['recupere', 'en_livraison'];
-  function updatePositionSharingFromColis(){
+
+  // ---- Ce que l'écran SAIT du partage, par opposition à ce qu'il a demandé (26/08/2026) ----
+  //
+  // La ligne annonçait « Position partagée avec l'équipe » dès l'instant où le suivi avait été
+  // DEMANDÉ — c'est-à-dire avant que le GPS ait répondu quoi que ce soit. Trois conséquences,
+  // toutes vues sur le terrain :
+  //
+  //   • À l'ouverture, la pastille passait au vert immédiatement, alors qu'un premier point GPS
+  //     demande dix à vingt secondes. Le livreur lisait « partagée » ; l'équipe ne voyait rien.
+  //   • Quand la géolocalisation était refusée, le message rouge s'affichait bien — puis le
+  //     rafraîchissement suivant, vingt-cinq secondes plus tard, rappelait cette fonction, qui
+  //     remettait le vert et effaçait le message sans rien vérifier. L'avertissement ne
+  //     survivait pas une demi-minute.
+  //   • Et comme startPositionSharing() repartait sur « déjà actif, rien à faire » tant que le
+  //     suivi restait enregistré, la pastille restait verte pour de bon, à vie, sans qu'un seul
+  //     point ne soit jamais parti.
+  //
+  // Un voyant qui ment est pire que pas de voyant : il fait taire la question. On ne garde donc
+  // ici que des faits observés — quand un point est réellement parti, quelle erreur le GPS a
+  // rendue — et la ligne n'affiche rien d'autre.
+  const faitsPosition = {
+    enTournee: false,
+    motif: null,          // 'livraison' | 'recuperation' | null
+    accordManquant: false,
+    dernierEnvoiA: 0,     // horodatage du dernier point réellement écrit dans livreur_positions
+    erreurCode: 0,        // 1 = autorisation refusée, 2 = position indisponible, 3 = trop long
+  };
+  let positionPartageActif = null; // null = premier passage, on ne sait pas encore
+
+  // Fonction pure : à partir des faits ci-dessus et de l'heure, ce que la ligne doit dire.
+  // C'est elle que le banc d'essai fait tourner (tests/partage-de-position.test.mjs).
+  //
+  // Le seuil du vert est POSITION_STALE_AFTER_MS — exactement celui qui, dans app/equipe.html,
+  // fait disparaître un livreur de la carte. Les deux écrans ne peuvent donc pas se contredire :
+  // « est-ce que l'équipe me voit ? » reçoit la même réponse des deux bouts. Une valeur propre à
+  // cet écran-ci aurait rouvert la dispute du 25 août, sur la géolocalisation cette fois.
+  //
+  // Le rouge est réservé à l'autorisation refusée, la seule panne qui demande un geste. Un GPS
+  // qui cherche encore, un tunnel, un réseau tombé — codes 2 et 3 — se réparent tout seuls et
+  // restent en orange : crier au loup pour un tunnel apprend au livreur à ignorer la pastille,
+  // et le jour de la vraie panne, il l'ignorera aussi.
+  function positionEtatLigne(faits, maintenant){
+    if (!faits.enTournee) return { visible: false, classe: '', texte: '', detail: '', detailClasse: '' };
+    if (faits.accordManquant) {
+      return { visible: true, classe: 'est-attente', texte: 'Votre accord est demandé ci-dessus', detail: '', detailClasse: '' };
+    }
+    if (faits.erreurCode === 1) {
+      return {
+        visible: true, classe: 'est-erreur', texte: 'Position non partagée — à autoriser',
+        detailClasse: 'msg-error',
+        detail: "⚠️ Ce téléphone refuse de donner sa position. Autorisez la géolocalisation pour cette application, vérifiez que le GPS est allumé et que le mode économie de batterie ne le bloque pas : le partage reprend ensuite tout seul, sans rien rouvrir.",
+      };
+    }
+    if (faits.dernierEnvoiA && (maintenant - faits.dernierEnvoiA) < POSITION_STALE_AFTER_MS) {
+      return {
+        visible: true, classe: 'est-active', detail: '', detailClasse: '',
+        texte: faits.motif === 'livraison'
+          ? 'Position partagée avec l\'équipe (livraison en cours)'
+          : 'Position partagée avec l\'équipe (récupération en cours)',
+      };
+    }
+    return {
+      visible: true, classe: 'est-attente', texte: 'Position pas encore transmise',
+      detailClasse: 'msg-info',
+      detail: "Le signal met parfois du temps à passer — à l'intérieur d'un bâtiment, dans un tunnel, ou quand le réseau faiblit. Il n'y a rien à faire : le partage repart de lui-même dès qu'il revient.",
+    };
+  }
+
+  // Repeint la ligne à partir des faits. N'écrit que ce qui change : cette fonction est appelée
+  // à chaque rafraîchissement, à chaque point envoyé et toutes les trente secondes.
+  function peindrePositionLigne(){
+    const carte = document.getElementById('position-sharing-card');
     const desc = document.getElementById('position-sharing-desc');
-    const msg = document.getElementById('position-sharing-msg');
     const pastille = document.getElementById('position-sharing-pastille');
+    const msg = document.getElementById('position-sharing-msg');
+    if (!carte || !desc || !pastille) return;
+    const etat = positionEtatLigne(faitsPosition, Date.now());
+    carte.classList.toggle('hidden', !etat.visible);
+    if (!etat.visible) { cltPoserHTML(msg, ''); return; }
+    const classe = 'position-pastille' + (etat.classe ? ' ' + etat.classe : '');
+    if (pastille.className !== classe) pastille.className = classe;
+    if (desc.textContent !== etat.texte) desc.textContent = etat.texte;
+    cltPoserHTML(msg, etat.detail ? `<div class="msg ${etat.detailClasse}">${escapeHTML(etat.detail)}</div>` : '');
+  }
+
+  function updatePositionSharingFromColis(){
     const consentCard = document.getElementById('geoloc-consent-card');
-    // La couleur porte l'état, le texte reste court : la ligne ne doit jamais repasser à deux
-    // lignes sur un téléphone. Le détail complet n'apparaît qu'en cas d'erreur, dans msg.
-    const etat = (classe) => { if (pastille) pastille.className = 'position-pastille' + (classe ? ' ' + classe : ''); };
     const collecteEnRoute = allColis.some(c => c.livreur_collecte_id === currentUser.id && c.statut === 'en_attente' && c.collecte_depart_at);
     const enLivraison = allColis.some(c => c.livreur_id === currentUser.id && STATUTS_EN_TOURNEE.includes(c.statut));
     const enTournee = collecteEnRoute || enLivraison;
+    faitsPosition.enTournee = enTournee;
+    faitsPosition.motif = enLivraison ? 'livraison' : (collecteEnRoute ? 'recuperation' : null);
 
     if (!enTournee) {
       stopPositionSharing();
-      consentCard.classList.add('hidden');
-      etat('');
-      desc.textContent = 'Position non partagée';
-      msg.innerHTML = '';
+      if (consentCard) consentCard.classList.add('hidden');
+      // Le trajet est fini : ce qui a été observé pendant ce trajet ne vaut plus rien. Sans
+      // cette remise à zéro, le trajet suivant s'ouvrirait au vert sur le souvenir du précédent.
+      faitsPosition.dernierEnvoiA = 0;
+      faitsPosition.erreurCode = 0;
+      faitsPosition.accordManquant = false;
       // Minimisation des données : on ne garde aucune position au-delà d'un trajet actif.
-      supabaseClient.from('livreur_positions').delete().eq('livreur_id', currentUser.id)
-        .then(({ error }) => { if (error) console.error('Erreur suppression position:', error); });
+      // Une seule fois, au moment où le trajet se termine — et une fois à l'ouverture de
+      // l'application, pour ramasser ce qu'une fermeture brutale aurait laissé. La version
+      // précédente lançait cette suppression à CHAQUE rafraîchissement : une requête toutes les
+      // vingt-cinq secondes, du matin au soir, pour effacer une ligne qui n'existait déjà plus.
+      if (positionPartageActif !== false) {
+        positionPartageActif = false;
+        supabaseClient.from('livreur_positions').delete().eq('livreur_id', currentUser.id)
+          .then(({ error }) => { if (error) console.error('Erreur suppression position:', error); });
+      }
+      peindrePositionLigne();
       return;
     }
+
+    positionPartageActif = true;
 
     if (!currentProfile.geoloc_consent_at) {
-      consentCard.classList.remove('hidden');
-      etat('est-attente');
-      desc.textContent = "Votre accord est demandé ci-dessus";
-      msg.innerHTML = '';
+      faitsPosition.accordManquant = true;
+      if (consentCard) consentCard.classList.remove('hidden');
+      peindrePositionLigne();
       return;
     }
 
-    consentCard.classList.add('hidden');
-    startPositionSharing(currentUser.id, (err) => {
-      msg.innerHTML = `<div class="msg msg-error">⚠️ Position non partagée : ${err.message || 'accès à la localisation refusé.'}<br>Vérifiez que la géolocalisation est autorisée pour cette application, que le GPS est activé, et que le mode économie de batterie ne le bloque pas.</div>`;
-      etat('est-erreur');
-      desc.textContent = 'Position non partagée — action requise';
-    });
-    etat('est-active');
-    desc.textContent = enLivraison
-      ? 'Position partagée avec l\'équipe (livraison en cours)'
-      : 'Position partagée avec l\'équipe (récupération en cours)';
-    msg.innerHTML = '';
+    faitsPosition.accordManquant = false;
+    if (consentCard) consentCard.classList.add('hidden');
+    startPositionSharing(
+      currentUser.id,
+      (err) => { faitsPosition.erreurCode = (err && err.code) || 0; peindrePositionLigne(); },
+      // Un point vient d'être écrit dans la base : c'est le seul moment où la pastille a le
+      // droit de passer au vert, et le seul où une erreur passée cesse de compter.
+      () => { faitsPosition.dernierEnvoiA = Date.now(); faitsPosition.erreurCode = 0; peindrePositionLigne(); }
+    );
+    peindrePositionLigne();
   }
+
+  // Le vert doit pouvoir retomber sans qu'aucune donnée n'ait bougé : c'est précisément quand
+  // plus rien n'arrive qu'il faut le dire. Rien à repeindre hors trajet, la ligne n'existe pas.
+  setInterval(() => { if (faitsPosition.enTournee) peindrePositionLigne(); }, 30000);
 
   // Enregistre le consentement explicite du livreur (une seule fois) avant tout partage de
   // position, conformément à la loi n° 2013-450. Voir aussi supabase_geoloc_consent.sql.

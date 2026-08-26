@@ -229,14 +229,22 @@ function isPositionSharingActive() {
 }
 
 // `onError` (optionnel) est appelé si la géolocalisation échoue (permission refusée, appareil
-// non compatible, etc.) — utile pour afficher un message clair au livreur.
-function startPositionSharing(userId, onError) {
+// non compatible, GPS qui met trop de temps) — utile pour afficher un message clair au livreur.
+//
+// `onEnvoi` (optionnel) est appelé APRÈS chaque position réellement écrite dans la base, et
+// dans ce cas seulement. Même forme que dans express-config.js, où l'écran coursier s'en sert
+// déjà. C'est la seule information qui permette à un écran d'affirmer « votre position est
+// partagée » sans mentir : entre la demande de suivi et la carte de l'équipe il y a le GPS,
+// puis le réseau, et l'un comme l'autre échouent en silence. Avoir DEMANDÉ le partage ne
+// prouve rien ; avoir écrit une ligne dans livreur_positions, si. (26/08/2026)
+function startPositionSharing(userId, onError, onEnvoi) {
   if (positionWatchId !== null) return; // déjà actif, rien à faire
   if (!("geolocation" in navigator)) {
     if (typeof onError === "function") onError(new Error("La géolocalisation n'est pas disponible sur cet appareil."));
     return;
   }
   let lastSentAt = 0;
+  let autorisationRefusee = false;
   positionWatchId = navigator.geolocation.watchPosition(
     async (pos) => {
       const now = Date.now();
@@ -250,14 +258,32 @@ function startPositionSharing(userId, onError) {
         accuracy,
         updated_at: new Date().toISOString(),
       });
-      if (error) console.error("Erreur envoi position:", error);
+      // Une écriture refusée par la base n'est PAS un envoi : on se garde d'annoncer à
+      // l'écran une position que l'équipe n'a jamais reçue.
+      if (error) { console.error("Erreur envoi position:", error); return; }
+      if (typeof onEnvoi === "function") {
+        try { onEnvoi({ latitude, longitude, accuracy }); }
+        catch (e) { console.error("Erreur après envoi de position:", e); }
+      }
     },
     (err) => {
       console.error("Erreur géolocalisation:", err);
+      // Code 1 = autorisation refusée. Contrairement à un GPS lent ou à un tunnel, cela ne se
+      // répare pas tout seul : il faut que le livreur aille changer un réglage. Or le suivi
+      // restait enregistré, si bien que le prochain appel repartait sur « déjà actif, rien à
+      // faire » — plus aucune reprise n'était possible sans recharger la page, et le livreur
+      // qui venait d'autoriser la géolocalisation voyait toujours le même refus. On referme
+      // donc le suivi : l'écran rappellera startPositionSharing() au rafraîchissement
+      // suivant, et la reprise se fait alors toute seule. (26/08/2026)
+      if (err && err.code === 1) { autorisationRefusee = true; stopPositionSharing(); }
       if (typeof onError === "function") onError(err);
     },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
   );
+  // Le rappel d'erreur ci-dessus peut se déclencher avant que watchPosition() ait rendu la
+  // main : stopPositionSharing() n'avait alors rien à fermer, et l'identifiant se réinstallait
+  // juste après. On repasse derrière.
+  if (autorisationRefusee) stopPositionSharing();
 }
 
 function stopPositionSharing() {

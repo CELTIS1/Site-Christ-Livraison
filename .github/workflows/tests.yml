@@ -178,6 +178,22 @@ jobs:
       - name: Récapitulatif par livreur et haut de la fiche « Son écran »
         run: node tests/recapitulatif-par-livreur.test.mjs
 
+      # Le partage de position du livreur, repris le 26 août parce qu'il était « mal géré ».
+      # La pastille verte s'allumait à l'instant où on DEMANDAIT le partage, avant que le
+      # moindre point soit parti : elle promettait à l'équipe une position qu'elle n'avait
+      # pas encore. Et quand le téléphone refusait la géolocalisation, l'avertissement
+      # s'affichait bien, mais le rafraîchissement automatique le réécrivait toutes les
+      # vingt-cinq secondes — le livreur voyait passer un message qu'il n'avait pas le temps
+      # de lire, et le suivi restait refermé sans qu'aucun nouvel essai puisse le rouvrir.
+      # Cette série n'inspecte pas le code : elle l'EXÉCUTE, avec un faux GPS, un faux écran
+      # et une fausse base, y compris le vrai watchPosition de config.js. Elle tient aussi le
+      # seuil d'« en ligne » identique à celui de la carte de l'équipe : deux écrans qui
+      # parlent du même livreur ne doivent pas pouvoir se contredire. Dernière section : la
+      # vignette grise « Pas de photo », retirée de l'écran du livreur — où elle prenait
+      # 40 px sur 390 pour annoncer qu'il n'y a rien à voir — et gardée sur les grands écrans.
+      - name: Partage de position du livreur et vignette sans photo
+        run: node tests/partage-de-position.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,
