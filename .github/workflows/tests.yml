@@ -147,6 +147,15 @@ jobs:
       - name: Le bandeau « nouvelle version » (l'équipe apprend qu'une publication a eu lieu)
         run: node tests/bandeau-nouvelle-version.test.mjs
 
+      # Le choix du livreur dans « Tous les colis ». Un filtre a l'air anodin, mais il décide de
+      # ce que l'écran MONTRE, donc de ce que l'équipe croit exister. Deux pièges gardés ici :
+      # confondre « tous les livreurs » avec « pas encore assignés » ferait disparaître de la vue
+      # les colis qui n'ont été confiés à personne — précisément ceux qu'il ne faut jamais perdre
+      # de vue ; et changer de livreur sans vider la sélection multiple laisserait des colis
+      # cochés invisibles, qu'une assignation en lot ramasserait au passage.
+      - name: Choix du livreur dans la liste des colis (voir le travail d'un seul, sans rien perdre)
+        run: node tests/filtre-par-livreur.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,

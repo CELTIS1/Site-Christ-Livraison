@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826net">
-<script src="theme.js?v=20260826net"></script>
+<link rel="stylesheet" href="style.css?v=20260826liv">
+<script src="theme.js?v=20260826liv"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -670,6 +670,16 @@
 <label for="filtre-date-colis">📅 Date</label>
 <input type="date" id="filtre-date-colis" class="date-filter-input">
 <button type="button" id="btn-toutes-dates-colis" class="date-filter-clear">Toutes les dates</button>
+<!-- Le choix du livreur. Il répond à une question qu'on se pose tous les jours et à laquelle
+     cet écran ne savait pas répondre : « qu'est-ce qui a été confié à celui-là, aujourd'hui ? »
+     Il se pose PAR-DESSUS la date, le statut et la recherche — les quatre se combinent — et
+     « Pas encore assignés » fait ressortir, en un geste, ce qui n'a encore été confié à
+     personne. (26/08/2026) -->
+<label for="filtre-livreur-colis" style="margin-left:14px;">🛵 Livreur</label>
+<select id="filtre-livreur-colis" class="date-filter-input" data-recherche data-recherche-placeholder="Nom du livreur…">
+<option value="">Tous les livreurs</option>
+<option value="__aucun">Pas encore assignés</option>
+</select>
 <!-- Entrer en sélection multiple : assigner un livreur à toute une fournée de colis, ou
      rattraper d'un coup les statuts d'une tournée entière. -->
 <button type="button" id="btn-mode-lot-colis" class="btn btn-outline btn-sm btn-mode-lot" style="margin-left:auto;">☑️ Sélection multiple</button>
@@ -1062,10 +1072,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826net"></script>
-<script src="config.js?v=20260826net"></script>
+<script src="clt-common.js?v=20260826liv"></script>
+<script src="config.js?v=20260826liv"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260826net"></script>
+<script src="clt-select-recherche.js?v=20260826liv"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1163,6 +1173,9 @@ let allAccounts = [];
 let activeAccountFilter = 'tous';
 let searchColis = '';
 let filtreDateColis = '';
+// Vide = tous les livreurs. '__aucun' = les colis qui n'ont encore été confiés à personne.
+// Sinon, l'identifiant du livreur choisi.
+let filtreLivreurColis = '';
 window.__colisEditing = new Set();
 
 // ---------- Boîte de dialogue de confirmation contextualisée (remplace confirm() natif) ----------
@@ -1502,6 +1515,15 @@ title.classList.add('section-flash-title');
 });
 });
 })();
+
+// Le colis correspond-il au livreur choisi ? Écrit à part plutôt qu'en ligne dans le filtre :
+// les trois cas (tous / personne / celui-ci) se lisent d'un coup d'œil, et les tests peuvent
+// les épingler un par un.
+function matchesLivreur(c, id){
+if (!id) return true;
+if (id === '__aucun') return !c.livreur_id;
+return c.livreur_id === id;
+}
 
 function matchesSearch(c, term){
 if (!term) return true;
@@ -2728,7 +2750,26 @@ const { data, error } = await supabaseClient
 .order('full_name');
 if (error) { console.error(error); return; }
 livreurs = data;
+populateFiltreLivreurSelect();
 renderColis();
+}
+
+// cltPoserOptions et non `innerHTML = …` : loadLivreurs() est rappelée régulièrement, et
+// reconstruire la liste à l'identique ferait retomber le livreur choisi sur « Tous les
+// livreurs » en pleine consultation — le même piège que celui corrigé sur la liste des
+// clientes le 25/08/2026. Le choix en cours est donc relu et reposé après coup.
+function populateFiltreLivreurSelect(){
+const select = document.getElementById('filtre-livreur-colis');
+if (!select) return;
+cltPoserOptions(select,
+'<option value="">Tous les livreurs</option>' +
+'<option value="__aucun">Pas encore assignés</option>' +
+livreurs.map(l => `<option value="${l.id}">${escapeHTML(l.full_name || l.id)}</option>`).join(''));
+// cltPoserOptions repose le choix, et retombe sur l'entrée vide si le livreur a disparu de la
+// liste (compte supprimé). On aligne alors l'état sur ce que le champ montre : sans cela, la
+// liste resterait filtrée sur un livreur que plus personne ne voit affiché — une liste vide
+// sans explication, exactement ce qui fait croire à une panne.
+if (select.value !== filtreLivreurColis) filtreLivreurColis = select.value;
 }
 
 document.getElementById('form-change-password').addEventListener('submit', async (e) => {
@@ -3399,6 +3440,11 @@ function fournisseurLabel(id){
 const f = fournisseurs.find(x => x.id === id);
 if (!f) return 'Client inconnu';
 return escapeHTML(f.company_name || f.full_name || id);
+}
+
+function livreurNomSimple(id){
+const l = livreurs.find(x => x.id === id);
+return (l && (l.full_name || '').trim()) || 'ce livreur';
 }
 
 function collecteLivreurLabel(id){
@@ -4274,7 +4320,7 @@ const list = document.getElementById('colis-list');
 const __anchor = captureScrollAnchor(list);
 const __saisies = eqPhotographierSaisies(list);
 let filtered = activeFilter === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilter);
-filtered = filtered.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDateColis));
+filtered = filtered.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDateColis) && matchesLivreur(c, filtreLivreurColis));
 // Nombre de colis déjà chargés mais pas encore dessinés. Sert plus bas à ne pas proposer
 // « Charger plus de colis » (qui va chercher de l'historique sur le serveur) tant qu'il reste
 // des colis à afficher ici : deux invitations à charger en même temps, c'est déroutant.
@@ -4290,7 +4336,11 @@ list.classList.toggle('lot-actif', eqLotActif);
 // redessin du tout à ces moments-là. (25/08/2026)
 let __aChange = true;
 if (!filtered.length) {
-__aChange = cltPoserHTML(list, (filtreDateColis
+__aChange = cltPoserHTML(list, (filtreLivreurColis
+? `<div class="empty-state">${filtreLivreurColis === '__aucun'
+? `Aucun colis en attente d'assignation${filtreDateColis ? ' à cette date' : ''}.`
+: `Rien pour ${escapeHTML(livreurNomSimple(filtreLivreurColis))}${filtreDateColis ? ' à cette date' : ''}.`}</div>`
+: filtreDateColis
 ? `<div class="empty-state">Aucun colis à cette date.</div>`
 : `<div class="empty-state">Aucun colis${activeFilter !== 'tous' || searchColis ? ' pour ces critères' : ''}.</div>`)
 + (eqLotActif ? barreLotHTML(0, 0, eqBoutonsLot(), eqExtraLotHTML()) : ''), colisHasMore ? '1' : '0');
@@ -7883,6 +7933,12 @@ rechercheColisTimer = setTimeout(() => { eqRemettreTrancheAZero(); eqViderSelect
 filtreDateColis = todayLocalISODate();
 document.getElementById('filtre-date-colis').value = filtreDateColis;
 document.getElementById('filtre-date-colis').addEventListener('change', (e) => { filtreDateColis = e.target.value; eqRemettreTrancheAZero(); eqViderSelection(); renderColis(); });
+document.getElementById('filtre-livreur-colis').addEventListener('change', (e) => {
+filtreLivreurColis = e.target.value;
+eqRemettreTrancheAZero();
+eqViderSelection();
+renderColis();
+});
 document.getElementById('btn-toutes-dates-colis').addEventListener('click', () => {
 filtreDateColis = '';
 document.getElementById('filtre-date-colis').value = '';
@@ -7914,10 +7970,13 @@ await loadColis();
 // directement au colis concerné et on le surligne. En cas d'introuvable (colis d'un autre
 // jour que celui filtré par défaut), on retire le filtre de date puis on réessaie.
 cltFocusColisFromUrl({ onMiss: () => {
-  if (filtreDateColis) {
+  if (filtreDateColis || filtreLivreurColis) {
     filtreDateColis = '';
     const inp = document.getElementById('filtre-date-colis');
     if (inp) inp.value = '';
+    filtreLivreurColis = '';
+    const sel = document.getElementById('filtre-livreur-colis');
+    if (sel) { sel.value = ''; if (window.CLTRecherche) CLTRecherche.rafraichir(sel); }
     eqRemettreTrancheAZero();
     eqViderSelection();
     renderColis();
