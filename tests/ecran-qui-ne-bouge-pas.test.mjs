@@ -237,6 +237,68 @@ titre('La garde est disponible sur toutes les pages');
   }
 }
 
+/* ---------- 7. Le rapport par livreur, dernière zone à écrire sans comparer ---------- */
+// Cet écran se redessine à chaque changement de période ET à chaque retour sur l'onglet.
+// Il était resté le seul de la page équipe à réécrire sa boîte de fond en comble sans rien
+// comparer : le tableau était remplacé par un tableau identique, ce qui suffit à refermer les
+// lignes dépliées et à faire sauter la page sous le doigt de quelqu'un qui visait un bouton.
+// Les quatre écritures de la fonction sont concernées, y compris « Calcul en cours… » et les
+// deux messages d'absence : c'est justement l'aller-retour message → tableau → message qui
+// faisait clignoter l'écran quand la connexion hésitait.
+titre('Le rapport par livreur ne se réécrit plus à l\'aveugle');
+{
+  const src = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+  const debut = src.indexOf('async function renderRapportLivreur(');
+  verifier('la fonction du rapport est bien là', debut > 0);
+  // On s'arrête à la fonction suivante : on ne veut juger que ce corps-là.
+  const fin = src.indexOf('function perfSetPeriode(', debut);
+  verifier('la fin du corps est repérable', fin > debut);
+  const corps = src.slice(debut, fin);
+
+  verifier('plus aucune écriture directe dans la boîte du rapport',
+    !/\bbox\.innerHTML\s*=/.test(corps),
+    'il reste au moins un box.innerHTML = … dans renderRapportLivreur');
+  const poses = (corps.match(/cltPoserHTML\(box,/g) || []).length;
+  verifier('les quatre écritures passent par la garde', poses === 4,
+    `${poses} appel(s) à cltPoserHTML(box, …) au lieu de 4`);
+}
+
+/* ---------- 8. Une fonction partagée, une seule définition ---------- */
+// Même leçon que la garde elle-même, appliquée aux deux petits utilitaires qui traînaient en
+// double et en triple. formatMontant() existait dans clt-common.js ET dans equipe.html ;
+// todayLocalISODate() existait en trois exemplaires identiques (equipe, livreur, fournisseur).
+// Des copies identiques ne se voient pas : elles se remarquent le jour où l'on en corrige une
+// et où les autres continuent tranquillement à donner l'ancienne réponse — un montant formaté
+// autrement ici que là, ou une date décalée d'un jour sur un seul écran. Une définition, un
+// endroit : clt-common.js, que les huit pages chargent.
+titre('Les utilitaires partagés n\'existent qu\'en un exemplaire');
+{
+  const pages = fs.readdirSync(APP).filter(f => f.endsWith('.html'));
+  const fichiersJS = fs.readdirSync(APP).filter(f => f.endsWith('.js'));
+
+  for (const nom of ['formatMontant', 'todayLocalISODate']) {
+    const motif = new RegExp('function\\s+' + nom + '\\s*\\(', 'g');
+    let total = 0;
+    const ou = [];
+    for (const f of [...pages, ...fichiersJS]) {
+      const n = (fs.readFileSync(path.join(APP, f), 'utf8').match(motif) || []).length;
+      if (n) { total += n; ou.push(`${f}×${n}`); }
+    }
+    verifier(`${nom}() n'est définie qu'une fois`, total === 1, `trouvée dans ${ou.join(', ')}`);
+    verifier(`${nom}() vit dans clt-common.js`, motif.test(sourceCommun));
+  }
+
+  // Et la source unique doit être chargée partout où on s'en sert, sans quoi la suppression
+  // des copies laisserait un écran avec une fonction inconnue au moment de s'en servir.
+  for (const page of pages) {
+    const src = fs.readFileSync(path.join(APP, page), 'utf8');
+    if (!/formatMontant\(|todayLocalISODate\(/.test(src)) continue;
+    const posCommun = src.indexOf('src="clt-common.js');
+    verifier(`${page} charge clt-common.js avant de s'en servir`,
+      posCommun > 0 && posCommun < src.search(/formatMontant\(|todayLocalISODate\(/));
+  }
+}
+
 /* ---------- Verdict ---------- */
 console.log('\n———');
 console.log(`${reussies} vérifications réussies, ${echouees} échouées`);

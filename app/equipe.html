@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826maj">
-<script src="theme.js?v=20260826maj"></script>
+<link rel="stylesheet" href="style.css?v=20260826net">
+<script src="theme.js?v=20260826net"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1062,10 +1062,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826maj"></script>
-<script src="config.js?v=20260826maj"></script>
+<script src="clt-common.js?v=20260826net"></script>
+<script src="config.js?v=20260826net"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260826maj"></script>
+<script src="clt-select-recherche.js?v=20260826net"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1519,10 +1519,7 @@ if (!dateStr) return true;
 return dayKey(c.created_at) === dateStr;
 }
 
-function todayLocalISODate(){
-const d = new Date();
-return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-}
+// todayLocalISODate() vit dans clt-common.js, chargé par toutes les pages.
 
 function addMsg(text, type){
 document.getElementById('add-msg').innerHTML = `<div class="msg msg-${type}">${text}</div>`;
@@ -6007,20 +6004,24 @@ return `<td data-label="${label}"${style}>${o.fort && !vide ? '<strong>' + valeu
 async function renderRapportLivreur(){
 const box = document.getElementById('rapport-livreur-content');
 if (!box) return;
-box.innerHTML = `<div class="empty-state">Calcul en cours…</div>`;
+// Chaque écriture passe par cltPoserHTML : si le contenu est identique au précédent, rien n'est
+// réécrit. Sans cette précaution, le rafraîchissement périodique remplaçait le tableau par un
+// tableau identique, ce qui suffisait à refermer les lignes dépliées et à faire sauter la page
+// sous le doigt. On ne s'occupe pas de la valeur de retour ici : il n'y a rien à faire ensuite.
+cltPoserHTML(box, `<div class="empty-state">Calcul en cours…</div>`);
 
 const colis = await perfColisPeriode();
 if (colis === null) {
 // Un échec réseau ne doit surtout pas ressembler à « personne n'a rien livré ».
-box.innerHTML = `<div class="empty-state">Les chiffres n'ont pas pu être chargés. Vérifiez la connexion, puis rechoisissez la période.</div>`;
+cltPoserHTML(box, `<div class="empty-state">Les chiffres n'ont pas pu être chargés. Vérifiez la connexion, puis rechoisissez la période.</div>`);
 return;
 }
 
 const stats = statistiquesParLivreur(colis, livreurs);
 const avecActivite = stats.filter(s => s.total > 0);
 if (!avecActivite.length) {
-box.innerHTML = `<div class="page-sub" style="margin-bottom:10px;">${escapeHTML(perfPeriodeTexte())}</div>
-<div class="empty-state">Aucun colis confié à un livreur sur cette période.</div>`;
+cltPoserHTML(box, `<div class="page-sub" style="margin-bottom:10px;">${escapeHTML(perfPeriodeTexte())}</div>
+<div class="empty-state">Aucun colis confié à un livreur sur cette période.</div>`);
 return;
 }
 
@@ -6052,7 +6053,7 @@ const inactifs = stats.filter(s => s.total === 0)
 .map(s => collecteLivreurLabel(s.livreur_id))
 .filter(Boolean);
 
-box.innerHTML = `
+cltPoserHTML(box, `
 <div class="page-sub" style="margin-bottom:12px;">${escapeHTML(perfPeriodeTexte())} · ${totaux.total} colis confiés à ${avecActivite.length} livreur(s).</div>
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
@@ -6070,7 +6071,7 @@ box.innerHTML = `
 <div style="margin-top:4px;">${escapeHTML(couvertureMesureTexte(avecActivite))}</div>
 ${inactifs.length ? `<div style="margin-top:4px;">Sans aucun colis sur cette période : ${inactifs.join(', ')}.</div>` : ''}
 </div>
-`;
+`);
 }
 
 // Boutons de période. Ils remplissent les deux dates puis relancent le calcul, exactement comme
@@ -7409,12 +7410,7 @@ const s = EXPRESS_STATUTS[statut] || EXPRESS_STATUTS.en_attente;
 return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;
 }
 
-function formatMontant(n) {
-if (n === null || n === undefined || n === "") return "";
-const num = Number(n);
-if (isNaN(num)) return "";
-return num.toLocaleString("fr-FR") + " FCFA";
-}
+// formatMontant() vit dans clt-common.js, chargé par toutes les pages.
 
 function expressCoursRowHTML(course, clientName, courierName) {
 const isDelivered = course.status === 'livree';

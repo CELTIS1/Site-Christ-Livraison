@@ -47,6 +47,18 @@ function formatDate(iso) {
     " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
 
+// ---------- La date du jour, telle que la personne la lit sur son téléphone ----------
+// Volontairement PAS toISOString() : celui-ci bascule en heure de Greenwich, et un colis
+// enregistré à 1 h du matin à Abidjan (UTC+0 toute l'année, mais la nuance vaut pour tout
+// appareil réglé sur un autre fuseau) se retrouverait daté de la veille. On lit donc l'heure
+// locale de l'appareil, qui est celle que la personne a sous les yeux.
+// Cette fonction vivait en trois exemplaires identiques (equipe, livreur, fournisseur) ;
+// trois copies, c'est trois occasions de corriger l'une et d'oublier les deux autres.
+function todayLocalISODate() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
 // ---------- Montants (FCFA) ----------
 function formatMontant(n) {
   if (n === null || n === undefined || n === "") return "";
