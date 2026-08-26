@@ -93,7 +93,11 @@
   .search-wrap{ position:sticky; top:8px; z-index:5; }
   .search-input{
     border-radius:12px !important; border:1px solid #e6eaf0 !important;
-    background:#f8fafc !important; padding:11px 14px !important;
+    background:#f8fafc !important;
+    /* La marge de gauche fait la place à la loupe (.search-wrap::before, posée à 15 px).
+       Le raccourci « padding:11px 14px » la supprimait : la loupe se retrouvait par-dessus la
+       première lettre du texte. (26/08/2026) */
+    padding:11px 14px 11px 38px !important;
   }
   .search-input:focus{ border-color:var(--clt-orange) !important; background:#fff !important; }
   .filter-chip{ border-radius:999px !important; }
@@ -288,6 +292,58 @@
     .colis-item.mes-colis-item .status-col .btn-save{ flex:1 1 100%; align-self:stretch; }
   }
 
+  /* ---------- « Ma journée » : les deux cartes du haut n'en font plus qu'une (26/08/2026) ----------
+     Les pastilles viennent de config.js avec leurs dimensions écrites dans l'attribut style —
+     les mêmes fonctions servent l'écran de l'équipe, sur grand écran, où elles sont à leur
+     aise. Ici on les resserre : d'où les !important, seule façon de passer devant un style
+     posé sur l'élément. Les chiffres restent les mêmes, ils tiennent juste moins de place. */
+  .journee-card{ margin-bottom:12px; }
+  .journee-tuiles{ display:flex; gap:6px; flex-wrap:nowrap; }
+  .journee-tuiles > div{ padding:7px 4px !important; min-width:0 !important; border-radius:9px !important; }
+  .journee-tuiles > div > div:first-child{ font-size:17px !important; }
+  .journee-tuiles > div > div:last-child{ font-size:10px !important; margin-top:1px !important; line-height:1.2 !important; }
+  .journee-tuiles-argent{ flex-wrap:wrap; margin-top:2px; }
+  .journee-tuiles-argent > div{ flex:1 1 calc(50% - 3px) !important; }
+  .journee-tuiles-argent > div > div:first-child{ font-size:14.5px !important; }
+  .journee-argent{ margin-top:10px; padding-top:9px; border-top:1px solid #eef1f6; }
+  html[data-theme="dark"] .journee-argent{ border-top-color:#2A3849; }
+  .journee-entete{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
+  .journee-titre{ font-size:12px; color:#64748b; font-weight:600; }
+  html[data-theme="dark"] .journee-titre{ color:#9DB0C4; }
+  .journee-entete input[type="date"]{
+    font-size:12px; padding:4px 6px; border:1px solid #e2e8f0; border-radius:8px !important; background:transparent;
+  }
+  .journee-detail{ margin-top:8px; }
+  .journee-detail > summary{
+    list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px;
+    font-size:12px; font-weight:600; color:#1B4374; padding:3px 0;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .journee-detail > summary::-webkit-details-marker{ display:none; }
+  .journee-detail > summary::after{ content:'▾'; font-size:10px; transition:transform .15s ease; }
+  .journee-detail[open] > summary::after{ transform:rotate(180deg); }
+  html[data-theme="dark"] .journee-detail > summary{ color:#9DB0C4; }
+
+  /* ---------- Filtres de statut : une seule ligne, qu'on fait glisser (26/08/2026) ----------
+     Les sept pastilles se repliaient sur trois lignes, soit 126 px poussés sous l'écran. Le
+     code qui les dessine prévoyait déjà qu'on les parcoure « latéralement au doigt » ; il ne
+     manquait que de le dire au navigateur. */
+  .filters{ flex-wrap:nowrap !important; overflow-x:auto; scrollbar-width:none; margin-bottom:12px !important; padding-bottom:2px; }
+  .filters::-webkit-scrollbar{ display:none; }
+  .filter-chip{ flex:0 0 auto; }
+  .search-wrap{ margin-bottom:10px !important; display:flex; gap:8px; align-items:center; }
+  .search-wrap .search-input{ flex:1 1 auto; min-width:0; }
+  .search-wrap .btn-mode-lot{ flex:0 0 auto; margin-left:0 !important; }
+  /* Le champ de date natif prend toute la largeur qu'on lui laisse ; « 26/08/2026 » tient
+     largement dans 132 px, et le reste de la ligne peut alors exister. */
+  .date-filter-input{ max-width:142px; }
+  .journee-entete input[type="date"]{ max-width:140px; }
+  .date-filter-wrap{ flex-wrap:nowrap !important; overflow-x:auto; scrollbar-width:none; margin-bottom:12px !important; }
+  .date-filter-wrap::-webkit-scrollbar{ display:none; }
+  .date-filter-wrap > *{ flex:0 0 auto; }
+  .date-filter-icone{ font-size:14px; }
+  .onglet-intro{ margin:0 0 10px; font-size:12.5px; }
+
   /* ---------- Demande de consentement, version courte (26/08/2026) ---------- */
   .geoloc-consent{ padding:14px !important; }
   .geoloc-consent-tete{ display:flex; align-items:flex-start; gap:10px; }
@@ -425,8 +481,13 @@
 </div>
 
 <div class="wrap">
-  <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
-  <div class="page-sub">Voici les colis qui vous ont été assignés. Mettez à jour leur statut au fur et à mesure de la livraison.</div>
+  <!-- Il y avait ici « Bonjour <nom> 👋 » et une phrase d'explication : 139 px pour redire ce que
+       la barre du haut, juste au-dessus, affiche déjà (le nom, la photo, le rôle). Un livreur
+       ouvre cet écran vingt fois par jour ; il n'a pas besoin qu'on lui rappelle vingt fois à
+       quoi il sert. Ce qui compte est plus bas, et arrive maintenant plus vite. (26/08/2026)
+       Le champ #user-first-name reste posé, invisible : du code le remplit encore, et le
+       retirer d'ici demanderait de le retirer là-bas dans le même mouvement. -->
+  <span id="user-first-name" hidden></span>
 
   <div class="offline-queue-banner hidden" id="offline-queue-banner">
     <span id="offline-queue-text"></span>
@@ -473,25 +534,35 @@
     <div id="position-sharing-msg"></div>
   </div>
 
-  <div class="card" id="tournee-summary-card" style="padding:10px 14px;">
-    <div style="font-size:12px; color:#64748b; margin-bottom:8px; font-weight:600;">📊 Ma tournée</div>
-    <div id="tournee-summary" style="display:flex; gap:8px; flex-wrap:wrap;">
-      <div style="font-size:13px; color:#94a3b8;">Chargement…</div>
-    </div>
-  </div>
+  <!-- « Ma tournée » et « L'argent de ma journée » étaient deux cartes séparées, l'une
+       au-dessus de l'autre : 473 px avant même d'arriver aux onglets, sur un téléphone qui en
+       fait 844. Elles répondent pourtant à la même question — « où j'en suis aujourd'hui ? » —
+       et se lisent d'un seul coup d'œil. Une seule carte, donc, et des pastilles serrées.
+       Le titre « Ma tournée » a disparu : quatre pastilles marquées À récupérer / En cours /
+       Livrés / Non livrés n'ont pas besoin qu'on les présente.
 
-  <!-- L'argent de la journée. Jusqu'ici, le livreur repartait le soir avec de l'argent dans la
+       L'argent de la journée. Jusqu'ici, le livreur repartait le soir avec de l'argent dans la
        poche sans qu'aucun écran ne lui dise combien : il devait le recompter de tête, colis par
-       colis, et c'est lui qui portait le risque d'une erreur de comptage. Cette carte fait le
-       compte à sa place, séparé en deux poches (l'argent des articles, qui appartient aux
-       clientes, et les frais de livraison, qui reviennent à CLT), puis détaillé par cliente. -->
-  <div class="card" id="argent-jour-card" style="padding:10px 14px;">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-      <div style="font-size:12px; color:#64748b; font-weight:600;">💰 L'argent de ma journée</div>
-      <input type="date" id="argent-jour-date" style="font-size:12px; padding:4px 6px; border:1px solid #e2e8f0; border-radius:8px;">
-    </div>
-    <div id="argent-jour-corps">
+       colis, et c'est lui qui portait le risque d'une erreur de comptage. Le compte est fait à
+       sa place, séparé en deux poches (l'argent des articles, qui appartient aux clientes, et
+       les frais de livraison, qui reviennent à CLT), puis détaillé dans l'onglet Finance.
+       Les phrases qui expliquent ces chiffres sont sous « Ce que ça veut dire » : elles
+       s'apprennent une fois, elles ne se relisent pas tous les jours. (26/08/2026)
+
+       #argent-jour-card reste le nom du bloc de l'argent — c'est lui que syncArgentCard()
+       masque dans l'onglet Récupérations, où l'argent n'a rien à faire. -->
+  <div class="card journee-card" id="ma-journee-card" style="padding:10px 12px;">
+    <div id="tournee-summary" class="journee-tuiles">
       <div style="font-size:13px; color:#94a3b8;">Chargement…</div>
+    </div>
+    <div id="argent-jour-card" class="journee-argent">
+      <div class="journee-entete">
+        <span class="journee-titre">💰 Argent du jour</span>
+        <input type="date" id="argent-jour-date" aria-label="Journée dont on fait le compte">
+      </div>
+      <div id="argent-jour-corps">
+        <div style="font-size:13px; color:#94a3b8;">Chargement…</div>
+      </div>
     </div>
   </div>
 
@@ -511,14 +582,22 @@
     </div>
 
     <div id="panel-mes">
-      <div class="search-wrap"><input type="text" id="search-mes" class="search-input" placeholder="Rechercher par n° de suivi, téléphone, description, destination ou client..."></div>
-      <div class="date-filter-wrap">
-        <label for="filtre-date-mes">📅 Date</label>
-        <input type="date" id="filtre-date-mes" class="date-filter-input">
-        <button type="button" id="btn-toutes-dates-mes" class="date-filter-clear">Toutes les dates</button>
+      <!-- Libellés raccourcis pour que la ligne tienne sur UNE ligne : à quatre éléments et
+           390 px de large, « Toutes les dates » et « Sélection multiple » la faisaient se
+           replier en deux, soit 79 px au lieu de 40. Le calendrier se passe du mot « Date »,
+           il en a la forme. (26/08/2026) -->
+      <div class="search-wrap">
+        <input type="text" id="search-mes" class="search-input" placeholder="Rechercher…">
         <!-- Entrer en sélection multiple : pour marquer d'un coup tous les colis d'une tournée
-             au retour, au lieu de les reprendre un par un. -->
-        <button type="button" id="btn-mode-lot-mes" class="btn btn-outline btn-sm btn-mode-lot" style="margin-left:auto;">☑️ Sélection multiple</button>
+             au retour, au lieu de les reprendre un par un. Le bouton est ici et non sur la ligne
+             du calendrier : le champ de date natif mesure à lui seul 178 px sur les 288 d'un
+             téléphone, il ne restait pas de place pour un quatrième élément. (26/08/2026) -->
+        <button type="button" id="btn-mode-lot-mes" class="btn btn-outline btn-sm btn-mode-lot">☑️ Sélection</button>
+      </div>
+      <div class="date-filter-wrap">
+        <span class="date-filter-icone" aria-hidden="true">📅</span>
+        <input type="date" id="filtre-date-mes" class="date-filter-input" aria-label="Filtrer les colis par date">
+        <button type="button" id="btn-toutes-dates-mes" class="date-filter-clear">Toutes</button>
       </div>
       <div class="filters" id="filters-mes"></div>
       <div class="colis-list" id="mes-colis-list">
@@ -527,14 +606,14 @@
     </div>
 
     <div id="panel-recup" class="hidden">
-      <div class="page-sub" style="margin:0 0 10px;">Colis d'une même cliente à récupérer en une seule tournée. Cliquez sur « Je pars » au moment où vous partez réellement : cela démarre le partage de votre position pour ce trajet.</div>
+      <div class="page-sub onglet-intro">Appuyez sur « Je pars » quand vous partez vraiment : c'est ce qui démarre le partage de position.</div>
       <!-- La journée du jour à l'ouverture ; le calendrier permet de revenir sur une date
            antérieure sans perdre de vue le compteur de l'onglet, qui lui reste sur le total.
            (26/08/2026) -->
       <div class="date-filter-wrap">
-        <label for="filtre-date-recup">📅 Date</label>
-        <input type="date" id="filtre-date-recup" class="date-filter-input">
-        <button type="button" id="btn-toutes-dates-recup" class="date-filter-clear">Toutes les dates</button>
+        <span class="date-filter-icone" aria-hidden="true">📅</span>
+        <input type="date" id="filtre-date-recup" class="date-filter-input" aria-label="Filtrer les récupérations par date">
+        <button type="button" id="btn-toutes-dates-recup" class="date-filter-clear">Toutes</button>
       </div>
       <div class="colis-list" id="recup-colis-list">
         <div class="empty-state">Chargement...</div>
@@ -547,7 +626,7 @@
          à n'importe quelle date. Le tableau ci-dessous détaille cette même journée cliente par
          cliente, et chaque ligne se déplie sur ses colis. -->
     <div id="panel-finance" class="hidden">
-      <div class="page-sub" style="margin:0 0 10px;">Le point d'argent de la journée choisie au-dessus, cliente par cliente. Touchez une ligne pour voir ses colis un par un : statut, montants et détails.</div>
+      <div class="page-sub onglet-intro">Touchez une cliente pour voir ses colis un par un.</div>
       <div id="finance-detail">
         <div class="empty-state">Chargement...</div>
       </div>
@@ -2188,9 +2267,13 @@
     // dessinent l'aperçu de ce livreur dans l'écran de l'équipe. Le seul argument qui change
     // est la personne du texte (« vous » ici, « il » là-bas) ; les chiffres, eux, sortent du
     // même code sur les mêmes colis, et ne peuvent donc pas diverger.
+    // Les chiffres restent à l'air libre ; les phrases qui les expliquent passent sous un
+    // repli. Elles disent des choses justes et utiles — à qui appartient l'argent des articles,
+    // pourquoi les frais de gare sont retenus ailleurs — mais ce sont des règles qu'on apprend
+    // une fois, pas un texte à relire chaque matin sous ses propres chiffres. (26/08/2026)
     cltPoserHTML(box, `
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">${argentTuilesHTML(t)}</div>
-      ${argentResumeHTML(t, 'livreur')}`);
+      <div class="journee-tuiles journee-tuiles-argent">${argentTuilesHTML(t)}</div>
+      <details class="journee-detail"><summary>Ce que ça veut dire</summary>${argentResumeHTML(t, 'livreur')}</details>`);
 
     renderFinanceDetail(duJour, t, jour);
   }
