@@ -238,6 +238,36 @@ jobs:
       - name: Relevé du soir d'une cliente (l'écran, le PDF, l'Excel et le Word disent le même total)
         run: node tests/releve-du-soir-par-cliente.test.mjs
 
+      # Garde-fou, deuxième espèce : un contrôle ne doit pas dépendre d'un fichier qui n'est pas
+      # dans le dépôt. Le dossier _sql-prive/ décrit la base de production et n'est volontairement
+      # pas publié ; il existe sur le poste de travail, jamais ici. Une série qui l'ouvre sans
+      # demander d'abord s'il est là ne rend pas un verdict « échoué » — elle s'INTERROMPT, avant
+      # d'avoir rien dit, et toutes les étapes suivantes sont annulées avec elle. C'est ce qui est
+      # arrivé le 26 août : une série écrite et vérifiée sur un poste où le fichier existait, verte
+      # cent fois de suite à la main, rouge à la seconde où elle est passée ici.
+      #
+      # La règle vérifiée ci-dessous est volontairement grossière — « qui parle de _sql-prive doit
+      # aussi appeler existsSync » — et elle ne prétend pas prouver que la garde est au bon endroit.
+      # Elle attrape la faute réelle, celle d'oublier la garde entièrement, et c'est déjà tout ce
+      # qu'on lui demande. Un contrôle simple qu'on n'a pas besoin de relire vaut mieux qu'un
+      # contrôle malin dans lequel on finit par ne plus avoir confiance.
+      - name: Aucun contrôle ne dépend d'un fichier hors dépôt
+        run: |
+          sans_garde=""
+          for f in tests/*.test.mjs; do
+            if grep -q "_sql-prive" "$f" && ! grep -q "existsSync" "$f"; then
+              sans_garde="$sans_garde $f"
+            fi
+          done
+          if [ -n "$sans_garde" ]; then
+            echo "Ces séries lisent _sql-prive/ sans vérifier qu'il est là :$sans_garde"
+            echo "Le dossier n'est pas publié : ici, le fichier n'existe pas et la série s'arrête net."
+            echo "Entourez la lecture d'un « if (!fs.existsSync(CHEMIN)) { ignorer(...) } else { … } »,"
+            echo "comme le font déjà argent-des-colis, comptes-du-personnel et corriger-adresse-colis."
+            exit 1
+          fi
+          echo "Toutes les séries qui lisent _sql-prive/ demandent d'abord s'il est là."
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,

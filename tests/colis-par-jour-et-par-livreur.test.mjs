@@ -75,12 +75,21 @@ const { HORODATAGE_DU_STATUT, jourAbidjan, jourEvenementColis, joursAvecEvenemen
         totalDuJour, colisDuJourParLivreur, couvertureDuJourTexte } = contexte;
 
 /* ---------- Petit échafaudage de vérification ---------- */
-let reussies = 0, echouees = 0;
+let reussies = 0, echouees = 0, ignorees = 0;
 function verifier(titreVerif, condition, detail){
   if (condition) { reussies++; console.log('  ✅ ' + titreVerif); }
   else { echouees++; console.log('  ❌ ' + titreVerif + (detail ? '\n       → ' + detail : '')); }
 }
 function titre(t){ console.log('\n' + t); }
+
+// Une vérification qui ne peut pas être faite ici doit le DIRE, et ne pas se taire. Un contrôle
+// silencieusement absent ressemble à s'y méprendre à un contrôle réussi — c'est la façon la plus
+// courante de croire qu'on est protégé alors qu'on ne l'est pas. On la compte donc à part, et on
+// l'annonce dans le verdict.
+function ignorer(quoi, pourquoi){
+  ignorees++;
+  console.log(`  ⏭️  ${quoi} — non vérifié ici.\n       → ${pourquoi}`);
+}
 
 const LIVREURS = [{ id: 'A', full_name: 'Amara' }, { id: 'B', full_name: 'Bakary' }];
 const ligne = (r, id) => r.lignes.find(l => l.livreur_id === id);
@@ -400,23 +409,41 @@ titre('Chaque statut qui marque un événement a sa colonne d’horodatage');
     jourEvenementColis({ livre_at: '2026-08-26T12:00:00Z' }, 'inventé') === '');
 }
 
+/* Le script de migration vit dans _sql-prive/, qui est hors dépôt : `.gitignore` écarte les
+   fichiers .sql, parce qu'ils décrivent la base de production. Sur le poste où le script existe,
+   cette section le relit et le compare aux colonnes que le code va lire. Ailleurs — sur un clone
+   propre, et donc à chaque publication sur l'intégration continue — il n'y a rien à lire.
+
+   Écrit sans garde, ce readFileSync a fait tomber la publication du 26 août : pas une
+   vérification en échec, un fichier absent, donc la série entière interrompue AVANT d'avoir
+   rendu son verdict, et l'étape suivante jamais lancée. Un contrôle qui s'écroule ne dit rien
+   sur le code ; il dit seulement qu'on l'a écrit depuis un poste mieux fourni que celui où il
+   tournera. Les quatre autres séries qui lisent _sql-prive/ passaient déjà par existsSync ;
+   celle-ci était la seule à ne pas le faire. On s'aligne, et on l'annonce plutôt que de se
+   taire : une section silencieusement sautée ressemble trop à une section réussie. */
 titre('La migration SQL déclare bien les colonnes que le code lit');
 {
-  const sql = fs.readFileSync(
-    path.join(RACINE, '_sql-prive', '2026-08-colis-par-jour-et-par-livreur.sql'), 'utf8');
-  ['recupere_at', 'non_livre_at', 'retour_at'].forEach(col => {
-    verifier(`${col} est ajoutée par la migration`,
-      new RegExp('add column if not exists\\s+' + col).test(sql));
-  });
-  verifier('le déclencheur de mise à jour est posé',
-    /create trigger trg_colis_horodatages\b/.test(sql));
-  verifier('le déclencheur d’insertion est posé',
-    /create trigger trg_colis_horodatages_insert\b/.test(sql));
-  // L'ancien déclencheur doit être retiré, sinon les deux coexistent et écrivent livre_at deux fois.
-  verifier('l’ancien déclencheur est retiré',
-    /drop trigger if exists trg_colis_livre_at\s+on public\.colis/.test(sql));
-  verifier('le fichier dit franchement s’il est passé en production ou non',
-    /^-- ÉTAT :/m.test(sql));
+  const CHEMIN_SQL = path.join(RACINE, '_sql-prive', '2026-08-colis-par-jour-et-par-livreur.sql');
+  if (!fs.existsSync(CHEMIN_SQL)) {
+    ignorer('la comparaison avec le script de migration (section 9)',
+      'Le dossier _sql-prive n’est pas versionné (voir .gitignore). Cette section ne peut ' +
+      's’exécuter que sur le poste qui détient le script.');
+  } else {
+    const sql = fs.readFileSync(CHEMIN_SQL, 'utf8');
+    ['recupere_at', 'non_livre_at', 'retour_at'].forEach(col => {
+      verifier(`${col} est ajoutée par la migration`,
+        new RegExp('add column if not exists\\s+' + col).test(sql));
+    });
+    verifier('le déclencheur de mise à jour est posé',
+      /create trigger trg_colis_horodatages\b/.test(sql));
+    verifier('le déclencheur d’insertion est posé',
+      /create trigger trg_colis_horodatages_insert\b/.test(sql));
+    // L'ancien déclencheur doit être retiré, sinon les deux coexistent et écrivent livre_at deux fois.
+    verifier('l’ancien déclencheur est retiré',
+      /drop trigger if exists trg_colis_livre_at\s+on public\.colis/.test(sql));
+    verifier('le fichier dit franchement s’il est passé en production ou non',
+      /^-- ÉTAT :/m.test(sql));
+  }
 }
 
 /* ==========================================================================================
@@ -473,5 +500,6 @@ controlerEtiquettesDeVersion({ APP, verifier });
 
 /* ---------- Bilan ---------- */
 console.log('\n———');
-console.log(`${reussies} vérifications réussies, ${echouees} échouées`);
+console.log(`${reussies} vérifications réussies, ${echouees} échouées`
+  + (ignorees ? `, ${ignorees} non applicables ici` : ''));
 process.exit(echouees ? 1 : 0);
