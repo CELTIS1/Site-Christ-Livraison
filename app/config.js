@@ -3104,7 +3104,7 @@ function relevePiedCellules(r) {
   return [
     { texte: textes[0] },
     { texte: textes[1] },
-    { texte: textes[2] },
+    { texte: textes[2], label: 'Statut' },
     { texte: textes[3], label: 'Article' },
     { texte: textes[4], couleur: '#1a7d3c', label: 'Encaissé' },
     { texte: textes[5] },

@@ -122,7 +122,7 @@ vm.runInContext([
 ].map(n => blocDe(equipe, n, 'equipe.html')).join('\n\n'), contexte);
 
 const {
-  releveCliente, releveTotalTextes, relevePhraseDue, releveNomFichier, releveLignesTexte,
+  releveCliente, releveTotalTextes, relevePiedCellules, relevePhraseDue, releveNomFichier, releveLignesTexte,
   releveConstruireWordHTML, releveBarreHTML, renderRecapBilan, recapDayGroups, releveConstruirePDF,
   texteAplatiPourPDF, releveTableauPDF,
 } = contexte;
@@ -312,6 +312,34 @@ verifier("l'écran affiche bien la ligne TOTAL",
 verifier("le Word porte une ligne TOTAL dans son pied de tableau",
   /<tfoot>[\s\S]*TOTAL[\s\S]*<\/tfoot>/.test(htmlWord)
   && htmlWord.includes(totalEncaisseTexte));
+
+/* Sur téléphone le tableau se replie en blocs : chaque cellule devient une ligne « libellé à
+   gauche, valeur à droite », et le libellé vient de data-label. Une cellule qui porte une valeur
+   sans libellé se retrouve donc collée au bord droit, sans rien en face — c'est ce qui arrivait
+   au compte des livraisons de la ligne TOTAL. Seule la toute première cellule fait exception :
+   elle contient le mot TOTAL lui-même, qui est le titre du bloc et n'a pas à être étiqueté. */
+const cellulesPied = relevePiedCellules(r);
+verifier("chaque cellule chiffrée du TOTAL porte un libellé, pour ne pas flotter seule sur mobile",
+  cellulesPied.slice(1).every(c => !c.texte || c.label),
+  'sans libellé : ' + JSON.stringify(cellulesPied.slice(1).filter(c => c.texte && !c.label)));
+
+verifier("la première cellule reste le mot TOTAL, sans libellé",
+  cellulesPied[0].texte === 'TOTAL' && !cellulesPied[0].label);
+
+/* Et le pendant côté feuille de style : sans cette règle, une cellule sans libellé reste poussée
+   à droite par le justify-content:space-between des blocs, et le mot TOTAL flotte tout seul. */
+const feuille = sansCommentaires(styles);
+const regleGauche = /\.recap-table-cards tfoot td:not\(\[data-label\]\)[^{}]*\{[^}]*justify-content:\s*flex-start/
+  .exec(feuille);
+// La règle ne vaut que si elle est bien sous condition de petit écran : sur grand écran les
+// cellules sont côte à côte et ce réglage n'aurait aucun sens.
+const mediaAvant = regleGauche
+  ? feuille.slice(0, regleGauche.index).lastIndexOf('@media')
+  : -1;
+verifier("la feuille de style ramène à gauche les cellules de total sans libellé, sur petit écran",
+  !!regleGauche && mediaAvant >= 0
+  && /max-width:\s*640px/.test(feuille.slice(mediaAvant, mediaAvant + 40)),
+  regleGauche ? 'la règle existe mais pas sous @media(max-width:640px)' : 'la règle manque');
 
 /* Le PDF s'écrit dans une police WinAnsi, qui ne connaît pas l'espace fine
    insécable (U+202F) que formatMontant place entre les milliers : jsPDF

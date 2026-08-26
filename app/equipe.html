@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826clients1">
-<script src="theme.js?v=20260826clients1"></script>
+<link rel="stylesheet" href="style.css?v=20260826total1">
+<script src="theme.js?v=20260826total1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1021,10 +1021,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826clients1"></script>
-<script src="config.js?v=20260826clients1"></script>
+<script src="clt-common.js?v=20260826total1"></script>
+<script src="config.js?v=20260826total1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260826clients1"></script>
+<script src="clt-select-recherche.js?v=20260826total1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -5516,7 +5516,7 @@ ${piedTotalHTML([
 { texte: 'TOTAL' },
 { texte: '' },
 { texte: '' },
-{ texte: t.nbLivres + ' / ' + list.length + ' livré(s)' },
+{ texte: t.nbLivres + ' / ' + list.length + ' livré(s)', label: 'Statut' },
 { texte: formatMontant(t.articleEncaisse) || '0 FCFA', label: 'Article' },
 { texte: formatMontant(t.livraisonEncaissee) || '0 FCFA', label: 'Livraison' },
 { texte: formatMontant(money.total) || '0 FCFA', couleur: '#1a7d3c', label: 'En main' },
@@ -6475,7 +6475,7 @@ ${rows.map(c => `
 ${piedTotalHTML([
 { texte: 'TOTAL' },
 { texte: '' },
-{ texte: tDetail.nbLivres + ' livré(s)' },
+{ texte: tDetail.nbLivres + ' livré(s)', label: 'Statut' },
 { texte: formatMontant(tDetail.articleEnregistre) || '0 FCFA', label: 'Article' },
 { texte: formatMontant(tDetail.articleEncaisse) || '0 FCFA', label: 'Encaissé' },
 { texte: 'À reverser : ' + (formatMontant(tDetail.articleADevoir) || '0 FCFA'), couleur: tDetail.articleADevoir > 0 ? '#c0392b' : '#1a7d3c' },
