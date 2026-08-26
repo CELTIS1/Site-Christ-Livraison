@@ -194,6 +194,50 @@ jobs:
       - name: Partage de position du livreur et vignette sans photo
         run: node tests/partage-de-position.test.mjs
 
+      # Les trois écrans que nos clients ont dans la poche : la vendeuse (fournisseur.html, mal
+      # nommé — c'est l'« Espace Client »), le client CLT Express et le coursier Express. Épurés
+      # le 26 août dans la foulée de l'écran du livreur : salutation retirée du haut de page,
+      # doublons retirés des cartes, sections rangées dans leurs onglets. Retirer est un travail
+      # qui ne laisse aucune trace : rien ne dira dans six mois que la ligne « Ajouté le … » est
+      # partie parce que la date est déjà écrite en tête de groupe, et quelqu'un la remettra de
+      # bonne foi. Cette série est le seul endroit où une suppression peut se défendre.
+      # Elle n'inspecte pas du texte : elle EXÉCUTE colisItemHTML, courseRowHTML,
+      # positionEtatLigne et relocateCoursierSections, et lit ce qu'elles produisent. C'est ce
+      # qui lui a permis de trouver trois défauts au passage — un observateur JavaScript qui
+      # tournait à chaque ouverture pour souligner des liens masqués depuis des mois, deux
+      # sections du coursier jamais rangées dans un onglet et donc affichées sous tous, et le
+      # voyant de position du coursier qui promettait du vert avant qu'un point soit parti.
+      - name: Les trois écrans clients (ce qui en a été retiré, et pourquoi)
+        run: node tests/ecrans-clients.test.mjs
+
+      # La vue par jour, dans « Rapports ». C'est l'écran qu'on ouvre le soir pour savoir comment
+      # la journée s'est passée ; un chiffre faux n'y est pas un défaut d'affichage, c'est une
+      # décision prise de travers le lendemain matin. Le défaut corrigé : l'écran comptait les
+      # colis à leur date d'ENREGISTREMENT, ce qui gonflait le jour de la saisie et vidait celui
+      # du travail réellement fait. Un colis enregistré le 24 et livré le 26 est une livraison du
+      # 26. Cette série extrait le vrai code de config.js et l'exécute sur des colis choisis :
+      # elle garde le jour de l'événement, le jour d'Abidjan (deux personnes qui parlent du mardi
+      # doivent parler du même mardi), le refus d'inventer un jour pour un colis sans horodatage,
+      # la ligne Total égale à la somme exacte des lignes au-dessus, et le fait qu'un colis sans
+      # livreur n'est imputé à personne — surtout pas à un « inconnu » qui ferait nombre.
+      - name: Vue par jour et par livreur (un colis compte le jour où le travail a été fait)
+        run: node tests/colis-par-jour-et-par-livreur.test.mjs
+
+      # Le relevé du soir d'une cliente. Demandé pour être imprimé en PDF, en Excel ou en Word et
+      # envoyé chaque soir à la vendeuse : « voilà ce qu'on a récupéré, ce qu'on a pu livrer, avec
+      # les détails ». Un document qui sort de l'application et qui part chez une cliente n'est pas
+      # un écran de plus, c'est un engagement écrit — il ne se corrige pas d'un coup de touche
+      # « actualiser ». L'export qui existait avant ne sortait qu'une colonne « Montant », valant
+      # l'article enregistré, et son total additionnait le livré ET le non-livré ; l'écran, lui,
+      # affichait « Article » et « Encaissé » et annonçait le second comme la somme due. Le papier
+      # promettait donc plus que l'écran ne réclamait : la faute du 25 août, mais imprimée et avec
+      # un nom dessus. Même remède que ce jour-là — sortir l'addition. releveCliente(), dans
+      # config.js, est le seul endroit où ces lignes et ces totaux sont calculés, et les cinq
+      # sorties l'appellent. Cette série exécute le vrai code de l'écran et celui du Word et
+      # compare leurs totaux au caractère près, plutôt que de les relire à l'œil.
+      - name: Relevé du soir d'une cliente (l'écran, le PDF, l'Excel et le Word disent le même total)
+        run: node tests/releve-du-soir-par-cliente.test.mjs
+
       # Garde-fou : ce fichier est une liste tenue à la main, et une liste tenue à la main
       # finit toujours par prendre du retard. C'est arrivé : les deux séries ci-dessus ont
       # été écrites le 21 août et n'ont été branchées ici que le 23 — pendant deux jours,
@@ -201,6 +245,12 @@ jobs:
       # pensait, et personne n'y pensait. Ce contrôle compare le contenu du dossier tests/
       # à ce qui est réellement lancé ci-dessus, et refuse la publication si l'un manque.
       # Il est placé en dernier pour qu'un vrai échec de contrôle se voie avant lui.
+      #
+      # Il a resservi le 26 août, et c'est bien la preuve qu'il n'est pas décoratif : deux séries
+      # écrites ce jour-là — la vue par jour et le relevé du soir — n'étaient branchées nulle part.
+      # Les deux passaient au vert quand on les lançait à la main, ce qui est exactement le piège :
+      # une série qui marche mais que personne ne lance ne protège rien du tout. Elles ont été
+      # ajoutées ci-dessus avant publication, donc sans que la panne atteigne jamais le site.
       - name: Aucune série de contrôles laissée de côté
         run: |
           manquantes=""

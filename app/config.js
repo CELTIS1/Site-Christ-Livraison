@@ -2370,6 +2370,232 @@ function delaiMedianGlobalHeures(colis) {
   return medianeNombres(delais);
 }
 
+/* ============================================================================================
+   LE TABLEAU DU JOUR — combien de colis, quel jour, quel livreur
+   --------------------------------------------------------------------------------------------
+   Ce que l'écran « Rapports → Vue par jour » doit répondre, tous les soirs : ce jour-là, chaque
+   livreur a reçu combien de colis, en a livré combien, en a manqué combien, et combien lui
+   restent sur les bras.
+
+   TROIS DÉCISIONS SONT PRISES ICI, ET NULLE PART AILLEURS
+   -------------------------------------------------------
+
+   1. UN COLIS COMPTE AU JOUR DE L'ÉVÉNEMENT, PAS AU JOUR DE SON ENREGISTREMENT.
+      Un colis enregistré le 24 et livré le 26 est une livraison du 26. C'est la seule façon
+      qu'un tableau du jour décrive une journée de travail réelle. Compter sur created_at — ce
+      que faisait l'écran jusqu'ici — gonflait le 24 et vidait le 26.
+
+      Concrètement, chaque colonne lit sa propre colonne d'horodatage :
+        reçus      → recupere_at
+        livrés     → livre_at
+        non livrés → non_livre_at
+        retours    → retour_at
+      Ces colonnes sont posées par la base elle-même (voir _sql-prive/2026-08-chiffres-par-
+      livreur.sql pour livre_at, et _sql-prive/2026-08-colis-par-jour-et-par-livreur.sql pour
+      les trois autres). L'application ne les écrit jamais à la main.
+
+   2. UN JOUR, C'EST UN JOUR À ABIDJAN. TOUJOURS.
+      L'entreprise travaille à Abidjan ; c'est là que les colis bougent. Quand le même tableau
+      est ouvert depuis le Canada, il doit montrer les mêmes chiffres — sinon les colis du soir
+      d'Abidjan basculent sur la veille, et deux personnes qui parlent du « mardi » ne parlent
+      pas du même mardi. Voir jourAbidjan() juste en dessous.
+
+      C'est une correction, pas une préférence : l'application portait jusqu'ici DEUX notions
+      de jour à la fois — dayKey(), qui suit l'heure de l'appareil, et le découpage brut
+      iso.slice(0,10), qui suit l'heure universelle. Elles donnent le même résultat à Abidjan
+      et divergent partout ailleurs.
+
+   3. ON N'INVENTE JAMAIS UN JOUR.
+      Un colis dont l'horodatage manque n'est rangé dans AUCUNE journée. Il n'est pas glissé
+      dans celle de son enregistrement « pour ne pas perdre le chiffre » : ce serait remettre
+      exactement le défaut qu'on corrige, en plus discret. Il est compté à part, et l'écran
+      annonce combien de colis ne sont pas mesurés.
+
+      Cela concerne les colis passés par ces statuts AVANT la pose des déclencheurs. Leur heure
+      n'existe nulle part et rien ne permet de la reconstituer. Le nombre décroît de lui-même à
+      mesure que l'activité continue.
+   ============================================================================================ */
+
+// Le jour civil à Abidjan, au format « AAAA-MM-JJ ».
+//
+// Abidjan est à UTC+0 toute l'année et ne change pas d'heure en été : le jour civil abidjanais
+// est donc exactement le jour universel, et toISOString() le donne directement. Cette égalité
+// est une chance, pas un hasard qu'on peut oublier — si l'entreprise ouvrait un jour ailleurs,
+// c'est cette fonction, et elle seule, qu'il faudrait reprendre.
+//
+// On passe par un objet Date au lieu de découper la chaîne : Supabase renvoie tantôt
+// « 2026-08-26T09:12:03.482Z », tantôt « 2026-08-26T09:12:03+00:00 », et un découpage brut
+// mentirait sur la seconde forme dès qu'un décalage autre que zéro apparaîtrait.
+function jourAbidjan(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+}
+
+// La date d'aujourd'hui à Abidjan. À ne pas confondre avec todayLocalISODate() de
+// clt-common.js, qui donne le jour de l'APPAREIL : les deux coïncident à Abidjan et se séparent
+// ailleurs. Partout où il est question du tableau du jour, c'est celle-ci qu'il faut.
+function aujourdhuiAbidjan() {
+  return jourAbidjan(new Date().toISOString());
+}
+
+// La colonne d'horodatage que chaque statut doit lire. Table unique : si un statut change de
+// nom un jour, il change ici et l'écran suit.
+const HORODATAGE_DU_STATUT = {
+  recupere:  "recupere_at",
+  livre:     "livre_at",
+  non_livre: "non_livre_at",
+  retour:    "retour_at",
+};
+
+// Le jour où tel événement a eu lieu pour tel colis, ou "" si on ne le sait pas.
+function jourEvenementColis(c, statut) {
+  const champ = HORODATAGE_DU_STATUT[statut];
+  if (!c || !champ) return "";
+  return jourAbidjan(c[champ]);
+}
+
+// Les jours (à Abidjan) où il s'est passé quelque chose, du plus récent au plus ancien.
+// C'est ce qui remplit la liste déroulante : on ne propose pas une date où il n'y a rien à voir.
+function joursAvecEvenements(colis) {
+  const jours = new Set();
+  (colis || []).forEach(c => {
+    Object.keys(HORODATAGE_DU_STATUT).forEach(statut => {
+      const j = jourEvenementColis(c, statut);
+      if (j) jours.add(j);
+    });
+  });
+  return Array.from(jours).sort((a, b) => b.localeCompare(a));
+}
+
+// Le tableau lui-même.
+//
+//   colis    : la liste à examiner. Elle doit couvrir la journée demandée — l'écran interroge la
+//              base pour la journée choisie plutôt que de se fier au cache `allColis`, qui ne
+//              contient que la première page tant qu'on n'a pas cliqué sur « Charger plus ».
+//              C'est la deuxième cause des chiffres faux, après la date : un tableau bâti sur un
+//              cache partiel sous-compte en silence, sans jamais le dire.
+//   livreurs : sert à nommer, et à faire apparaître un livreur qui n'a rien fait ce jour-là.
+//              Une ligne absente laisse penser à un oubli ; une ligne à zéro ne trompe personne.
+//   jour     : « AAAA-MM-JJ », jour d'Abidjan.
+//   options  : { livreurId } pour ne garder qu'un livreur — l'écran d'un livreur ne montrerait
+//              que le sien, celui de l'équipe les montre tous.
+//
+// Ce que veut dire chaque colonne, mot pour mot :
+//
+//   reçus      : colis passés à « récupéré » ce jour-là. C'est le travail entré dans les mains
+//                du livreur ce jour-là, pas ce que le fournisseur a déposé au dépôt.
+//   livrés     : colis remis au client ce jour-là.
+//   non livrés : colis marqués « non livré » ce jour-là.
+//   retours    : colis passés en « retour » ce jour-là.
+//   en cours   : parmi les colis REÇUS ce jour-là, ceux dont le sort n'est toujours pas fixé au
+//                moment où l'on regarde. Sur la ligne d'aujourd'hui, c'est ce qui reste à faire
+//                d'ici ce soir. Sur une journée passée, c'est ce qui traîne encore.
+//
+// Les quatre premières colonnes comptent des ÉVÉNEMENTS, pas des colis, et un même colis peut
+// donc apparaître dans deux d'entre elles — reçu le matin, livré l'après-midi, il compte une
+// fois dans chaque, et c'est juste : ce sont deux gestes distincts. Leur somme n'est donc pas
+// un nombre de colis, et l'écran ne l'affiche pas comme tel.
+function colisDuJourParLivreur(colis, livreurs, jour, options) {
+  const o = options || {};
+  const nouveau = (id) => ({
+    livreur_id: id,
+    recus: 0,
+    livres: 0,
+    nonLivres: 0,
+    retours: 0,
+    enCours: 0,
+  });
+
+  const parId = new Map();
+  (livreurs || []).forEach(l => {
+    if (!l || !l.id) return;
+    if (o.livreurId && l.id !== o.livreurId) return;
+    parId.set(l.id, nouveau(l.id));
+  });
+
+  // Colis dont on ne sait pas placer l'événement, par statut. L'écran s'en sert pour dire la
+  // vérité sur sa propre couverture au lieu d'afficher un zéro qui ressemble à une journée creuse.
+  const sansHorodatage = { recupere: 0, livre: 0, non_livre: 0, retour: 0 };
+
+  (colis || []).forEach(c => {
+    // Un colis sans livreur n'est le travail de personne : on ne l'impute pas à un « inconnu »
+    // qui polluerait le tableau. Même règle que statistiquesParLivreur().
+    if (!c || !c.livreur_id) return;
+    if (o.livreurId && c.livreur_id !== o.livreurId) return;
+
+    // Un colis posé sur un statut mais sans l'heure correspondante : compté à part, jamais rangé
+    // dans une journée au hasard.
+    Object.keys(HORODATAGE_DU_STATUT).forEach(statut => {
+      if (c.statut === statut && !c[HORODATAGE_DU_STATUT[statut]]) sansHorodatage[statut]++;
+    });
+
+    const jRecupere = jourEvenementColis(c, "recupere");
+    const jLivre    = jourEvenementColis(c, "livre");
+    const jNonLivre = jourEvenementColis(c, "non_livre");
+    const jRetour   = jourEvenementColis(c, "retour");
+
+    const touche = (jRecupere === jour) || (jLivre === jour) || (jNonLivre === jour) || (jRetour === jour);
+    if (!touche) return;
+
+    if (!parId.has(c.livreur_id)) parId.set(c.livreur_id, nouveau(c.livreur_id));
+    const s = parId.get(c.livreur_id);
+
+    if (jRecupere === jour) {
+      s.recus++;
+      // « En cours » se lit sur le statut d'AUJOURD'HUI, pas sur celui de la journée examinée :
+      // on ne sait pas reconstituer l'état passé d'un colis, et prétendre le contraire serait
+      // inventer. La colonne est nommée en conséquence sur l'écran.
+      if (c.statut === "recupere" || c.statut === "en_livraison") s.enCours++;
+    }
+    if (jLivre    === jour) s.livres++;
+    if (jNonLivre === jour) s.nonLivres++;
+    if (jRetour   === jour) s.retours++;
+  });
+
+  const lignes = Array.from(parId.values()).sort((a, b) =>
+    // D'abord le plus de colis livrés — c'est ce qu'on vient regarder en premier. À égalité, le
+    // plus de colis reçus ; puis l'identifiant, pour que deux affichages successifs du même
+    // tableau donnent exactement le même ordre.
+    (b.livres - a.livres) || (b.recus - a.recus) || String(a.livreur_id).localeCompare(String(b.livreur_id))
+  );
+
+  return {
+    jour: jour,
+    lignes: lignes,
+    total: totalDuJour(lignes),
+    sansHorodatage: sansHorodatage,
+  };
+}
+
+// La ligne TOTAL. Aucun tableau récapitulatif de cette maison ne se termine sans elle : sans
+// total, chaque lecteur additionne de tête, et deux personnes n'obtiennent pas le même chiffre.
+function totalDuJour(lignes) {
+  const l = lignes || [];
+  const somme = (f) => l.reduce((s, x) => s + f(x), 0);
+  return {
+    livreur_id: null,
+    recus: somme(x => x.recus),
+    livres: somme(x => x.livres),
+    nonLivres: somme(x => x.nonLivres),
+    retours: somme(x => x.retours),
+    enCours: somme(x => x.enCours),
+  };
+}
+
+// Ce que l'écran écrit sous le tableau au sujet de sa propre couverture. Le silence serait pire
+// qu'un chiffre bas : un zéro sans explication se lit comme « personne n'a rien fait ».
+function couvertureDuJourTexte(resultat) {
+  const s = (resultat && resultat.sansHorodatage) || {};
+  const manquants = (s.recupere || 0) + (s.livre || 0) + (s.non_livre || 0) + (s.retour || 0);
+  if (!manquants) return "";
+  return manquants + " colis ne sont comptés dans aucune journée : la base n'a pas gardé "
+    + "l'heure de leur dernier changement de statut, et elle ne peut plus la retrouver. "
+    + "Ce sont des colis d'avant la mise en place de cet enregistrement ; leur nombre ne "
+    + "grandira pas.";
+}
+
 // formatMontant() → déplacé dans clt-common.js (chargé avant ce fichier).
 
 /* ============================================================================================
@@ -2795,6 +3021,165 @@ function echapperAttribut(s) {
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+/* ============================================================================================
+   LE RELEVÉ DU SOIR D'UNE CLIENTE — une seule addition, quatre sorties
+   ============================================================================================
+   Demandé le 26 août 2026 : « lorsque tu cliques sur une cliente, tu as son récapitulatif et
+   juste en bas, tu as la possibilité de pouvoir imprimer […] c'est ce qu'on va prendre pour
+   pouvoir les envoyer chaque soir ».
+
+   POURQUOI CE BLOC EST DANS config.js ET PAS DANS L'ÉCRAN.
+   Le fichier qui part chez la vendeuse et le tableau qu'on lit à l'écran doivent dire le même
+   chiffre. Avant ce bloc, ils ne le disaient pas : l'écran affichait deux colonnes, « Article »
+   (ce qui est parti) et « Encaissé » (ce qui est rentré), et annonçait le second comme la somme
+   due ; le PDF exporté, lui, ne sortait qu'une colonne « Montant » valant l'article enregistré,
+   et son total additionnait les colis livrés ET non livrés. Le papier promettait donc plus que
+   l'écran ne réclamait. C'est la même faute que le 25 août — 11 000 sur le téléphone du livreur,
+   14 000 dans le tableau de l'équipe — sauf qu'ici elle sortait de la maison.
+
+   releveCliente() est désormais l'unique endroit où ces lignes et ces totaux sont calculés.
+   L'écran, le PDF, l'Excel et le Word l'appellent tous les quatre. Un écart entre eux devient
+   arithmétiquement impossible, et non plus simplement « surveillé ».
+   ============================================================================================ */
+
+// Libellé lisible d'un statut, tiré du référentiel STATUTS. Utile hors HTML (Excel, Word, PDF),
+// là où statutBadgeHTML ne peut pas servir.
+function statutTexte(statut) {
+  return (typeof STATUTS !== 'undefined' && STATUTS[statut]) ? STATUTS[statut].label : (statut || '—');
+}
+
+// Les colonnes du relevé, dans l'ordre. Une seule déclaration : l'en-tête du tableau à l'écran,
+// celui du PDF, celui de l'Excel et celui du Word sortent tous d'ici.
+const RELEVE_COLONNES = ['Téléphone', 'Adresse', 'Statut', 'Article', 'Encaissé', 'Observation'];
+
+// La phrase qui accompagne le tableau. Elle figure à l'écran ET sur le document envoyé, au mot
+// près, pour qu'une cliente qui a le papier sous les yeux et un membre de l'équipe qui a l'écran
+// sous les siens lisent la même explication.
+const RELEVE_NOTE = "La colonne « Article » dit ce qui a été enregistré, la colonne « Encaissé » ce qui est réellement rentré (colis livrés). C'est le total « Encaissé » qui revient à la cliente. Les frais de livraison ne figurent pas dans ce tableau : ils reviennent à CLT.";
+
+// Construit le relevé d'une liste de colis : les lignes et les totaux, en données brutes.
+// Aucune mise en forme ici — chaque sortie habille ces mêmes nombres à sa façon.
+function releveCliente(colis) {
+  const liste = Array.isArray(colis) ? colis : [];
+  const t = totauxArgent(liste);
+  const lignes = liste.map(c => ({
+    telephone:   (c && c.destinataire_telephone) || '',
+    adresse:     (c && c.destination) || '',
+    statutCode:  (c && c.statut) || '',
+    statut:      statutTexte(c && c.statut),
+    article:     Number(montantArticleColis(c)) || 0,
+    encaisse:    Number(montantArticleEncaisse(c)) || 0,
+    observation: (c && c.observation) || '',
+  }));
+  return {
+    colonnes: RELEVE_COLONNES.slice(),
+    lignes,
+    nb: t.nb,
+    nbLivres: t.nbLivres,
+    totalArticle: Number(t.articleEnregistre) || 0,
+    totalEncaisse: Number(t.articleEncaisse) || 0,
+  };
+}
+
+// Le texte de la ligne TOTAL, colonne par colonne, en clair. Sert au PDF, à l'Excel et au Word ;
+// l'écran passe par relevePiedCellules() ci-dessous, qui s'appuie sur les mêmes valeurs.
+// Une ligne TOTAL, toujours : c'est la règle de la maison, sans exception.
+function releveTotalTextes(r) {
+  const rel = r || releveCliente([]);
+  return [
+    'TOTAL',
+    '',
+    rel.nbLivres + ' / ' + rel.nb + ' livré(s)',
+    formatMontant(rel.totalArticle) || '0 FCFA',
+    formatMontant(rel.totalEncaisse) || '0 FCFA',
+    '',
+  ];
+}
+
+// La même ligne TOTAL, en cellules pour piedTotalHTML (écran).
+function relevePiedCellules(r) {
+  const textes = releveTotalTextes(r);
+  return [
+    { texte: textes[0] },
+    { texte: textes[1] },
+    { texte: textes[2] },
+    { texte: textes[3], label: 'Article' },
+    { texte: textes[4], couleur: '#1a7d3c', label: 'Encaissé' },
+    { texte: textes[5] },
+  ];
+}
+
+// Les polices standard d'un PDF ne connaissent que le jeu WinAnsi. L'espace fine insécable que
+// la mise en forme française glisse entre les milliers — U+202F, dans « 15 000 FCFA » — n'y
+// figure pas, et jsPDF la remplace à l'impression par une barre oblique : le document envoyé à
+// la cliente annonçait « 15 /000 FCFA ». Le défaut existait déjà dans l'export de la journée,
+// sans que personne l'ait vu, parce qu'il ne se voit qu'en ouvrant le fichier produit.
+// On ne touche pas à formatMontant : à l'écran, l'espace fine est la bonne. On la remplace au
+// seul endroit où elle ne passe pas, juste avant d'écrire dans le PDF.
+function texteAplatiPourPDF(s) {
+  return String(s === null || s === undefined ? '' : s).replace(/[\u202f\u00a0\u2009]/g, ' ');
+}
+
+// Une cellule de tableau peut être un texte, un nombre, ou un objet { content }. On laisse les
+// nombres tranquilles : autoTable les aligne à droite tout seul, et les changer en texte
+// déplacerait des colonnes entières sans qu'on l'ait demandé.
+function celluleAplatiePourPDF(cellule) {
+  if (cellule && typeof cellule === 'object' && !Array.isArray(cellule)) {
+    const copie = Object.assign({}, cellule);
+    if ('content' in copie) copie.content = texteAplatiPourPDF(copie.content);
+    return copie;
+  }
+  return typeof cellule === 'number' ? cellule : texteAplatiPourPDF(cellule);
+}
+
+// Le défaut « 15 /000 FCFA » ne se voyait qu'en ouvrant le fichier produit, et il traînait dans
+// trois exports différents. Le corriger à chaque appel, c'est accepter qu'un quatrième export
+// écrit demain le ramène. On le corrige donc une seule fois, ici : tout PDF de l'application naît
+// de cette fonction, et tout ce qu'on lui demande d'écrire est nettoyé au passage, sans que
+// l'appelant ait à y penser. C'est la même règle que pour les montants — un seul endroit.
+function nouveauPDF(options) {
+  const { jsPDF } = window.jspdf;
+  const doc = options ? new jsPDF(options) : new jsPDF();
+  const ecrireTexte = doc.text.bind(doc);
+  const dessinerTableau = typeof doc.autoTable === 'function' ? doc.autoTable.bind(doc) : null;
+
+  doc.text = function (contenu) {
+    const args = Array.prototype.slice.call(arguments);
+    args[0] = Array.isArray(contenu) ? contenu.map(texteAplatiPourPDF) : texteAplatiPourPDF(contenu);
+    return ecrireTexte.apply(doc, args);
+  };
+
+  if (dessinerTableau) {
+    doc.autoTable = function (options) {
+      const o = Object.assign({}, options || {});
+      ['head', 'body', 'foot'].forEach((cle) => {
+        if (!Array.isArray(o[cle])) return;
+        o[cle] = o[cle].map((ligne) => (Array.isArray(ligne) ? ligne.map(celluleAplatiePourPDF) : ligne));
+      });
+      return dessinerTableau(o);
+    };
+  }
+  return doc;
+}
+
+// La seule phrase à annoncer à une vendeuse. Elle ferme le document comme elle ferme l'écran.
+function relevePhraseDue(r) {
+  const rel = r || releveCliente([]);
+  return 'Somme qui vous revient : ' + (formatMontant(rel.totalEncaisse) || '0 FCFA');
+}
+
+// Nom de fichier lisible et sans piège : accents retirés, espaces et ponctuation ramenés à des
+// tirets. « Sr Marie » un 26 août donne « releve-sr-marie-2026-08-26 ». Un nom de cliente vide
+// ou entièrement composé de signes ne doit pas produire un fichier sans nom.
+function releveNomFichier(nomCliente, dateISO) {
+  const base = String(nomCliente || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return 'releve-' + (base || 'cliente') + '-' + (dateISO || '');
 }
 
 // Libellé + couleurs de l'état d'argent d'un colis (badge).

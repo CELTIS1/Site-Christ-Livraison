@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826position1">
-<script src="theme.js?v=20260826position1"></script>
+<link rel="stylesheet" href="style.css?v=20260826clients1">
+<script src="theme.js?v=20260826clients1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -112,11 +112,7 @@
     .clt-bottomnav .nav svg{ width:23px; height:23px; }
     /* On réserve la hauteur de la barre + la safe-area pour que le contenu ne passe pas dessous. */
     body{ padding-bottom:calc(60px + env(safe-area-inset-bottom)); }
-    .subnav{ display:none !important; }
   }
-
-  /* ---- Ancienne barre de liens (subnav) désactivée : remplacée par les onglets segmentés + barre basse ---- */
-  .subnav{ display:none !important; }
 
   /* ---- Barre d'onglets segmentée (grands écrans) — cohérente avec le tableau de bord équipe ---- */
   .clt-toptabs-wrap{
@@ -288,17 +284,22 @@
   </div>
 </div>
 
-<div class="subnav">
-  <div class="subnav-inner">
-    <a href="#section-ajouter">Ajouter des colis</a>
-    <a href="#section-colis">Mes colis</a>
-    <a href="#section-recap">Récapitulatif</a>
-  </div>
-</div>
+<!-- L'ancienne barre de liens « subnav » était ici. Elle était masquée par deux règles
+     display:none écrites à quinze lignes d'intervalle — signe qu'on l'avait éteinte deux fois
+     sans jamais oser la retirer. Mais son code, lui, tournait toujours : un IntersectionObserver
+     posé sur trois sections à chaque ouverture de la page, pour mettre en surbrillance des liens
+     que personne ne pouvait voir. Le pire des deux mondes — invisible et actif.
+     Elle est partie avec sa fonction, ses deux règles CSS et son observateur. (26/08/2026) -->
 
 <div class="wrap">
-  <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
-  <div class="page-sub">Ajoutez vos colis à livrer et suivez leur statut en temps réel.</div>
+  <!-- Il y avait ici « Bonjour <nom> 👋 » et une phrase expliquant qu'on peut ajouter ses colis
+       et suivre leur statut : 113 px sur les 844 d'un téléphone, pour redire ce que la barre du
+       haut affiche déjà (le nom, la photo) et ce que les onglets juste en dessous annoncent en
+       toutes lettres. Une vendeuse ouvre cet écran plusieurs fois par jour ; la phrase d'accueil
+       ne s'apprend qu'une fois, elle se saute ensuite. Même geste que l'écran du livreur, le
+       même jour, pour la même raison. (26/08/2026)
+       Le champ #user-first-name reste posé, invisible : du code le remplit encore. -->
+  <span id="user-first-name" hidden></span>
 
   <div class="clt-toptabs-wrap">
   <div class="clt-toptabs" role="tablist">
@@ -445,10 +446,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826position1"></script>
-<script src="config.js?v=20260826position1"></script>
+<script src="clt-common.js?v=20260826clients1"></script>
+<script src="config.js?v=20260826clients1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260826position1"></script>
+<script src="clt-select-recherche.js?v=20260826clients1"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -567,56 +568,11 @@
     if (willOpen) refreshStickyTables(content);
   }
 
-  // Scroll-spy : met en surbrillance douce le lien du menu correspondant à la section visible,
-  // et ouvre automatiquement une section repliable + fait un léger flash sur son titre lors d'un clic.
-  (function initSubnavScrollSpy(){
-    const links = Array.from(document.querySelectorAll('.subnav a'));
-    if (!links.length) return;
-    const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
-    if (!sections.length) return;
-
-    let suppressUntil = 0;
-
-    const setActive = (id) => {
-      links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      if (Date.now() < suppressUntil) return;
-      const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-      if (visible.length) setActive(visible[0].target.id);
-    }, { rootMargin: '-72px 0px -60% 0px', threshold: [0, 0.1, 0.25, 0.5] });
-
-    sections.forEach(s => observer.observe(s));
-
-    links.forEach(a => {
-      a.addEventListener('click', () => {
-        const id = a.getAttribute('href').slice(1);
-        const section = document.getElementById(id);
-        if (!section) return;
-
-        // Fixe immédiatement l'onglet actif sur la section cliquée, et ignore
-        // temporairement le scroll-spy le temps que le saut d'ancre et l'animation
-        // d'ouverture se terminent (sinon l'onglet en surbrillance peut sauter sur
-        // la section voisine pendant la transition).
-        setActive(id);
-        suppressUntil = Date.now() + 900;
-
-        const header = section.querySelector('.collapsible-header');
-        if (header) {
-          const content = header.nextElementSibling;
-          if (content && !content.classList.contains('open')) header.click();
-        }
-
-        const title = section.querySelector('.panel-subtitle, h2, h3');
-        if (title) {
-          title.classList.remove('section-flash-title');
-          void title.offsetWidth;
-          title.classList.add('section-flash-title');
-        }
-      });
-    });
-  })();
+  /* L'observateur de l'ancienne barre de liens vivait ici : 47 lignes qui posaient un
+     IntersectionObserver sur trois sections, à chaque ouverture de la page, pour souligner des
+     liens masqués par display:none. Il savait aussi déplier une section repliable au clic —
+     sauf que neutralizeCollapsibles(), plus bas, les déplie déjà toutes et retire leur onclick.
+     Deux fois mort, donc, et pourtant exécuté à chaque chargement. Parti avec sa barre. */
 
   function matchesSearch(c, term){
     if (!term) return true;
@@ -1546,24 +1502,68 @@
     return COLIS_ADRESSE_CORRIGEABLE.includes((c && c.statut) || '');
   }
 
+  /* ---------- La carte d'un colis, resserrée (26/08/2026) ----------
+     Mesurée sur un écran de 390 px, cette carte faisait 496 px de haut. Avec les 234 px que
+     prenait le haut de page, la vendeuse voyait UN colis à la fois : pour comparer deux colis
+     de la même cliente, il fallait faire défiler entre les deux et se souvenir du premier.
+
+     Ce qui est parti, et pourquoi :
+
+     • La vignette grise « Pas de photo ». Un carré vide de 40 px qui disait l'absence de quelque
+       chose, sur la ligne même où la vendeuse cherche l'adresse. Il coûtait 48 px de largeur au
+       texte — soit une ligne d'adresse repliée sur deux, à chaque carte sans photo. Quand il n'y
+       a pas de photo, il n'y a rien à montrer. L'écran coursier de CLT Express faisait déjà ce
+       choix depuis le premier jour ; l'écran du livreur l'a rejoint le 26 août.
+       (Le commentaire publié la veille dans livreur.html justifiait de garder cette vignette ICI,
+       « parce que sur grand écran, repérer les colis sans photo fait partie de la vérification ».
+       C'était faux : cet écran s'appelle Espace Client et c'est celui des vendeuses, qui
+       travaillent au téléphone. La justification ne tenait que sur une erreur d'utilisateur.)
+
+     • La ligne « N° de suivi : CLT-… ». Le numéro n'a pas disparu : il a rejoint la ligne de la
+       description, où il ne coûte plus de ligne à lui seul. Il reste aussi dans data-numero, que
+       lit le bouton « Lien de suivi » — c'est de là qu'il a toujours été copié.
+
+     • La ligne « Ajouté le … ». La liste est groupée par journée et chaque groupe porte son
+       en-tête « 📅 … » ; quand une date est choisie dans le calendrier, elle est écrite dans le
+       calendrier. Cette ligne répétait donc, sous chaque colis, une date déjà affichée au-dessus.
+
+     • « Livreur : en cours d'attribution ». Une phrase qui n'apprend rien : la frise d'étapes,
+       en haut de la carte, dit déjà où en est le colis. Le nom du livreur, lui, reste dès qu'il
+       est connu — c'est la seule version de cette ligne qui répond à une question.
+
+     • La pastille de statut dans la colonne des actions. Elle affichait le libellé du statut
+       (STATUTS[…].label) — exactement le mot que la frise d'étapes écrit déjà sous l'étape en
+       cours, à 60 px au-dessus. À la place, la carte porte maintenant data-statut : style.css
+       s'en sert depuis longtemps pour teinter le fond et colorer le bord gauche (vert livré,
+       rouge non livré, ambre retour). L'attribut manquait sur cet écran, si bien que ses cartes
+       étaient les seules de l'application à rester blanches quoi qu'il arrive. La couleur ne
+       coûte pas un pixel de hauteur ; la pastille en coûtait vingt-six.
+
+     • Le bouton « 🔗 Copier le lien de suivi » a rejoint la colonne des actions, avec les autres
+       boutons, sous le libellé plus court « 🔗 Lien de suivi ». C'est une action, sa place est
+       avec les actions ; et il rendait la colonne de texte plus haute de 34 px. */
   function colisItemHTML(c, numeroClient){
+    // Pas de photo, pas de vignette. Voir l'explication ci-dessus.
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
-      : `<div class="thumb-placeholder">Pas de photo</div>`;
+      : '';
     const livreur = c.livreur_id ? livreursById[c.livreur_id] : null;
     const livreurBlock = livreur
       ? `<div class="livreur-meta">${avatarHTML(livreur, 20)} <span>Livreur : ${escapeHTML(livreur.full_name || 'Livreur')}</span></div>`
-      : (c.statut !== 'en_attente' ? `<div class="meta">Livreur : en cours d'attribution</div>` : '');
+      : '';
+    // Le quoi et le numéro sur une seule ligne. L'un des deux peut manquer sans casser l'autre.
+    const quoi = colisDescriptionTexte(c);
+    const quoiEtNumero = (quoi || c.numero)
+      ? `<div class="meta colis-quoi">${quoi ? '📦 ' + escapeHTML(quoi) : ''}${quoi && c.numero ? ' · ' : ''}${c.numero ? 'N° ' + escapeHTML(c.numero) : ''}</div>`
+      : '';
     return `
-      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
+      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-statut="${escapeHTML(c.statut || '')}">
         ${stepperHTML(c.statut)}
         ${thumb}
         <div class="info">
           <div class="view-mode">
-            ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
             <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
-            ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
-            <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+            ${quoiEtNumero}
             ${(!c.commune_destination && !c.destination && colisAdresseCorrigeable(c)) ? `<div class="meta" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — sans elle, le livreur ne peut pas partir.</div>` : ''}
             ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
             <!-- L'argent de la cliente d'abord, les frais de CLT ensuite et plus discrètement.
@@ -1581,7 +1581,6 @@
             ${livreurBlock}
             ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
             ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
-            <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
           </div>
           <div class="edit-mode hidden">
             ${colisToutModifiable(c) ? '' : `
@@ -1632,13 +1631,13 @@
           </div>
         </div>
         <div class="status-col">
-          ${statutBadgeHTML(c.statut)}
-          <button type="button" class="btn btn-sm btn-outline btn-duplicate-colis" style="margin-top:8px;">📋 Dupliquer</button>
+          <button type="button" class="btn btn-sm btn-outline btn-copy-tracking">🔗 Lien de suivi</button>
+          <button type="button" class="btn btn-sm btn-outline btn-duplicate-colis">📋 Dupliquer</button>
           ${colisToutModifiable(c) ? `
-            <button type="button" class="btn btn-sm btn-outline btn-edit-colis" style="margin-top:8px;">Modifier</button>
+            <button type="button" class="btn btn-sm btn-outline btn-edit-colis">Modifier</button>
             <button type="button" class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>
           ` : (colisAdresseCorrigeable(c) ? `
-            <button type="button" class="btn btn-sm btn-outline btn-edit-colis" style="margin-top:8px;">📍 Corriger l'adresse</button>
+            <button type="button" class="btn btn-sm btn-outline btn-edit-colis">📍 Corriger l'adresse</button>
           ` : '')}
         </div>
       </div>
@@ -2493,8 +2492,7 @@
     }
     btn.disabled = false; btn.textContent = label;
     if (!rows.length) { await cltConfirm({ title: "Aucune donnée à exporter", sub: "Il n'y a aucun colis pour la période sélectionnée.", okLabel: "J'ai compris", cancelLabel: 'Fermer' }); return; }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const doc = nouveauPDF();
     const t = totauxArgent(rows);
     doc.setFontSize(14);
     doc.text('Récapitulatif — Christ Livraison & Transport SARL', 14, 16);

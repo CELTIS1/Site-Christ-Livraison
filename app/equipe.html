@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826position1">
-<script src="theme.js?v=20260826position1"></script>
+<link rel="stylesheet" href="style.css?v=20260826clients1">
+<script src="theme.js?v=20260826clients1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -149,12 +149,13 @@
     .clt-bottomnav .nav svg{ width:22px; height:22px; }
     /* On réserve la hauteur de la barre + la safe-area pour que le contenu ne passe pas dessous. */
     body{ padding-bottom:calc(60px + env(safe-area-inset-bottom)); }
-    .subnav{ display:none !important; }
   }
 
   /* ---- Refonte navigation par onglets ---- */
-  /* L'ancien sous-menu d'ancres est remplacé par une barre d'onglets. */
-  .subnav{ display:none !important; }
+  /* Deux règles « .subnav{ display:none !important; } » se trouvaient ici, l'une dans le bloc
+     téléphone ci-dessus, l'autre juste en dessous. Elles masquaient l'ancien sous-menu d'ancres,
+     remplacé par la barre d'onglets. Sauf que plus aucune page ne servait le HTML de ce
+     sous-menu : on masquait deux fois quelque chose qui n'existait plus. (26/08/2026) */
 
   /* Barre d'onglets segmentée (grands écrans — Option B) */
   /* Conteneur figé : fond opaque = couleur de page, masque le contenu qui défile derrière. */
@@ -660,6 +661,16 @@
 <div class="tab" id="subtab-livreur" onclick="showRapportSubTab('livreur')">Par livreur</div>
 </div>
 <div id="rapport-jour">
+<div class="field" style="max-width:260px;">
+<label>Jour</label>
+<input type="date" id="jour-select">
+</div>
+<div class="compta-quick-dates">
+<button type="button" class="btn btn-outline btn-sm" id="btn-jour-aujourdhui">📅 Aujourd'hui</button>
+<button type="button" class="btn btn-outline btn-sm" id="btn-jour-hier">Hier</button>
+</div>
+<div id="rapport-jour-recap" style="margin-top:14px;"><div class="empty-state">Chargement...</div></div>
+<h3 class="panel-subtitle" style="margin-top:26px;">Le détail de la journée</h3>
 <div id="rapport-jour-content"><div class="empty-state">Chargement...</div></div>
 </div>
 <div id="rapport-mois" class="hidden">
@@ -1010,10 +1021,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826position1"></script>
-<script src="config.js?v=20260826position1"></script>
+<script src="clt-common.js?v=20260826clients1"></script>
+<script src="config.js?v=20260826clients1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260826position1"></script>
+<script src="clt-select-recherche.js?v=20260826clients1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1403,56 +1414,20 @@ if (arrow) arrow.textContent = willOpen ? '▼' : '▶';
 if (willOpen) refreshStickyTables(content);
 }
 
-// Scroll-spy : met en surbrillance douce le lien du menu correspondant à la section visible,
-// et ouvre automatiquement une section repliable + fait un léger flash sur son titre lors d'un clic.
-(function initSubnavScrollSpy(){
-const links = Array.from(document.querySelectorAll('.subnav a'));
-if (!links.length) return;
-const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
-if (!sections.length) return;
+/* L'observateur de l'ancien sous-menu d'ancres vivait ici : 49 lignes qui posaient un
+   IntersectionObserver sur les sections de la page pour souligner le lien correspondant, et
+   qui savaient déplier la section au clic, avec un léger flash sur son titre.
 
-let suppressUntil = 0;
+   Il ne faisait plus rien depuis longtemps, et personne ne pouvait le savoir en le lisant : il
+   commence par « if (!links.length) return; », et le sous-menu a été remplacé par la barre
+   d'onglets il y a des mois. Plus aucune page du site ne servait le HTML de cette barre —
+   equipe.html continuait pourtant à la masquer par deux règles CSS, et style.css à décrire ses
+   vingt lignes d'apparence. Trois fichiers occupés à habiller et cacher quelque chose qui
+   n'existait plus nulle part.
 
-const setActive = (id) => {
-links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
-};
-
-const observer = new IntersectionObserver((entries) => {
-if (Date.now() < suppressUntil) return;
-const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-if (visible.length) setActive(visible[0].target.id);
-}, { rootMargin: '-72px 0px -60% 0px', threshold: [0, 0.1, 0.25, 0.5] });
-
-sections.forEach(s => observer.observe(s));
-
-links.forEach(a => {
-a.addEventListener('click', () => {
-const id = a.getAttribute('href').slice(1);
-const section = document.getElementById(id);
-if (!section) return;
-
-// Fixe immédiatement l'onglet actif sur la section cliquée, et ignore
-// temporairement le scroll-spy le temps que le saut d'ancre et l'animation
-// d'ouverture se terminent (sinon l'onglet en surbrillance peut sauter sur
-// la section voisine pendant la transition).
-setActive(id);
-suppressUntil = Date.now() + 900;
-
-const header = section.querySelector('.collapsible-header');
-if (header) {
-const content = header.nextElementSibling;
-if (content && !content.classList.contains('open')) header.click();
-}
-
-const title = section.querySelector('.panel-subtitle, h2, h3');
-if (title) {
-title.classList.remove('section-flash-title');
-void title.offsetWidth;
-title.classList.add('section-flash-title');
-}
-});
-});
-})();
+   Découvert le 26 août 2026 en écrivant tests/ecrans-clients.test.mjs : le banc d'essai
+   affirmait qu'equipe.html, lui, s'en servait « pour de bon ». Il avait tort, et c'est
+   exactement à ça que sert un banc d'essai qu'on prend la peine de faire échouer. */
 
 // Le colis correspond-il au livreur choisi ? Écrit à part plutôt qu'en ligne dans le filtre :
 // les trois cas (tous / personne / celui-ci) se lisent d'un coup d'œil, et les tests peuvent
@@ -3865,7 +3840,11 @@ function eqDessinerAnnexes(){
 renderAlertIndicator();
 renderRecapFournisseur();
 renderRecapLivreur();
-renderRapportJour();
+// La vue par jour n'est PAS appelée ici. Depuis le 26 août 2026 elle interroge la base pour la
+// journée choisie au lieu de compter sur `allColis`, qui n'en contient qu'une partie ; la
+// rappeler à chaque redessin et toutes les vingt-cinq secondes ferait payer quatre lectures à
+// tout le monde, y compris à qui n'a jamais ouvert cet onglet. Elle se calcule à l'ouverture de
+// l'onglet et au changement de date, comme le rapport par livreur.
 populateMoisSelect();
 renderCompta();
 renderAujourdhui();
@@ -5174,6 +5153,7 @@ if (back) back.addEventListener('click', () => { recapSelectedFournisseur = null
 // le tableau qu'on est en train de lire, sinon les deux ne parleraient pas des mêmes colis.
 const ecran = document.getElementById('recap-ecran');
 if (ecran) ecran.addEventListener('click', () => ouvrirFicheEcran('cliente', recapSelectedFournisseur, recapGetDate()));
+brancherReleveBarre();
 return;
 }
 
@@ -5267,19 +5247,17 @@ if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e)
 // qui n'était pas rentré et qui ne rentrerait peut-être jamais.
 function renderRecapBilan(fid, colisJour){
 const list = colisJour.filter(c => (c.fournisseur_id || 'inconnu') === fid);
-const t = totauxArgent(list);
-const rows = list.map(c => {
-const encaisse = montantArticleEncaisse(c);
-return `
+// Une seule addition pour l'écran et pour les trois fichiers : voir releveCliente() dans config.js.
+const r = releveCliente(list);
+const rows = r.lignes.map(l => `
 <tr>
-<td data-label="Téléphone">${c.destinataire_telephone ? escapeHTML(c.destinataire_telephone) : '—'}</td>
-<td data-label="Adresse">${c.destination ? escapeHTML(c.destination) : '—'}</td>
-<td data-label="Statut">${statutBadgeHTML(c.statut)}</td>
-<td data-label="Article">${formatMontant(montantArticleColis(c)) || '0 FCFA'}</td>
-<td data-label="Encaissé" style="${encaisse ? 'font-weight:700;' : 'color:#8a94a3;'}">${encaisse ? formatMontant(encaisse) : '—'}</td>
-<td data-label="Observation">${c.observation ? escapeHTML(c.observation) : '—'}</td>
-</tr>`;
-}).join('');
+<td data-label="Téléphone">${l.telephone ? escapeHTML(l.telephone) : '—'}</td>
+<td data-label="Adresse">${l.adresse ? escapeHTML(l.adresse) : '—'}</td>
+<td data-label="Statut">${statutBadgeHTML(l.statutCode)}</td>
+<td data-label="Article">${formatMontant(l.article) || '0 FCFA'}</td>
+<td data-label="Encaissé" style="${l.encaisse ? 'font-weight:700;' : 'color:#8a94a3;'}">${l.encaisse ? formatMontant(l.encaisse) : '—'}</td>
+<td data-label="Observation">${l.observation ? escapeHTML(l.observation) : '—'}</td>
+</tr>`).join('');
 
 return `
 <div class="recap-bilan-head">
@@ -5287,25 +5265,19 @@ return `
 <div class="recap-bilan-title">${fournisseurLabel(fid)}</div>
 <button type="button" class="btn btn-outline btn-sm" id="recap-ecran" title="Voir sa journée telle qu'elle la voit dans son espace">👁 Son écran</button>
 </div>
-<div class="recap-bilan-sub">${recapDayLabel(recapGetDate())} · <strong>${list.length}</strong> colis · <strong>${t.nbLivres}</strong> livré${t.nbLivres > 1 ? 's' : ''} · Articles encaissés : <strong>${formatMontant(t.articleEncaisse) || '0 FCFA'}</strong></div>
+<div class="recap-bilan-sub">${recapDayLabel(recapGetDate())} · <strong>${r.nb}</strong> colis · <strong>${r.nbLivres}</strong> livré${r.nbLivres > 1 ? 's' : ''} · Articles encaissés : <strong>${formatMontant(r.totalEncaisse) || '0 FCFA'}</strong></div>
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
-<thead><tr><th>Téléphone</th><th>Adresse</th><th>Statut</th><th>Article</th><th>Encaissé</th><th>Observation</th></tr></thead>
+<thead><tr>${r.colonnes.map(c => `<th>${escapeHTML(c)}</th>`).join('')}</tr></thead>
 <tbody>${rows}</tbody>
-${piedTotalHTML([
-{ texte: 'TOTAL' },
-{ texte: '' },
-{ texte: t.nbLivres + ' / ' + t.nb + ' livré(s)' },
-{ texte: formatMontant(t.articleEnregistre) || '0 FCFA', label: 'Article' },
-{ texte: formatMontant(t.articleEncaisse) || '0 FCFA', couleur: '#1a7d3c', label: 'Encaissé' },
-{ texte: '' },
-])}
+${piedTotalHTML(relevePiedCellules(r))}
 </table>
 </div>
 <div class="recap-bilan-note">
 La colonne <strong>Article</strong> dit ce qui a été enregistré, la colonne <strong>Encaissé</strong> ce qui est réellement rentré (colis livrés).
 C'est le total <strong>Encaissé</strong> qui revient à la cliente. Les frais de livraison ne figurent pas dans ce tableau : ils reviennent à CLT.
-</div>`;
+</div>
+${releveBarreHTML()}`;
 }
 
 function fournisseurLabelPlain(id){
@@ -5559,23 +5531,262 @@ Le total de cette colonne est celui de la <strong>Caisse par livreur</strong> en
 }
 
 
+/* ============================================================================================
+   LE RELEVÉ DU SOIR D'UNE CLIENTE — PDF, Excel, Word, et l'envoi
+   ============================================================================================
+   Demandé le 26 août 2026 : « lorsque tu cliques sur une cliente, tu as son récapitulatif et
+   juste en bas, tu as la possibilité de pouvoir imprimer […] c'est ce qu'on va prendre pour
+   pouvoir les envoyer chaque soir pour dire voilà ce qu'on a récupéré, ce qu'on a pu livrer,
+   avec les détails ».
+
+   Les quatre boutons ci-dessous ne recalculent RIEN. Ils appellent releveCliente() dans
+   config.js, exactement comme le tableau affiché juste au-dessus d'eux. Le fichier qui part
+   chez la vendeuse et l'écran qu'on a sous les yeux ne peuvent donc pas annoncer deux sommes
+   différentes : il n'y a qu'une addition, écrite une seule fois.
+
+   Le Word n'ajoute aucune bibliothèque. C'est un document HTML servi sous le type MIME de
+   Word : Word, Google Docs et WPS l'ouvrent et le laissent modifier. Charger 500 Ko de plus
+   sur un téléphone en 3G pour gagner l'extension « x » n'aurait pas été un bon échange.
+   ============================================================================================ */
+
+// Rassemble tout ce dont les quatre sorties ont besoin : qui, quel jour, et le relevé lui-même.
+// Renvoie null si aucune cliente n'est ouverte — les boutons n'existent que dans son bilan.
+function releveEnCours(){
+const fid = recapSelectedFournisseur;
+if (!fid) return null;
+const date = recapGetDate();
+const list = recapDayColis().filter(c => (c.fournisseur_id || 'inconnu') === fid);
+return { fid, nom: fournisseurLabelPlain(fid), date, dateLabel: recapDayLabel(date), r: releveCliente(list) };
+}
+
+function releveBarreHTML(){
+return `
+<div class="releve-barre">
+<div class="releve-barre-label">Relevé du soir — à envoyer à la cliente</div>
+<div class="releve-barre-boutons">
+<button type="button" class="btn btn-outline btn-sm" id="releve-pdf">🖨️ PDF</button>
+<button type="button" class="btn btn-outline btn-sm" id="releve-excel">📊 Excel</button>
+<button type="button" class="btn btn-outline btn-sm" id="releve-word">📝 Word</button>
+<button type="button" class="btn btn-primary btn-sm" id="releve-envoyer" hidden>📤 Envoyer</button>
+</div>
+</div>`;
+}
+
+// Le bouton « Envoyer » ne s'affiche que sur un appareil qui sait réellement partager un
+// fichier. Un bouton présent qui ne fait rien serait pire que pas de bouton du tout : le soir,
+// en fin de journée, on appuierait trois fois avant de comprendre.
+function releveEnvoiPossible(){
+try {
+return !!(navigator.canShare && navigator.share &&
+navigator.canShare({ files: [new File([new Blob(['x'], { type: 'text/plain' })], 'test.txt', { type: 'text/plain' })] }));
+} catch (e) { return false; }
+}
+
+function brancherReleveBarre(){
+const pdf = document.getElementById('releve-pdf');
+const xls = document.getElementById('releve-excel');
+const doc = document.getElementById('releve-word');
+const env = document.getElementById('releve-envoyer');
+if (pdf) pdf.addEventListener('click', telechargerRelevePDF);
+if (xls) xls.addEventListener('click', telechargerReleveExcel);
+if (doc) doc.addEventListener('click', telechargerReleveWord);
+if (env && releveEnvoiPossible()) { env.hidden = false; env.addEventListener('click', envoyerRelevePDF); }
+}
+
+// Les lignes du tableau, en texte, dans l'ordre des colonnes. Écrites une fois pour les trois
+// fichiers : un tiret cadratin là où l'écran affiche un tiret cadratin.
+function releveLignesTexte(r){
+return r.lignes.map(l => [
+l.telephone || '—',
+l.adresse || '—',
+l.statut,
+formatMontant(l.article) || '0 FCFA',
+l.encaisse ? formatMontant(l.encaisse) : '—',
+l.observation || '—',
+]);
+}
+
+// ---- PDF ----
+// La forme du tableau, écrite une fois, servie au relevé d'une cliente comme à l'export de la
+// journée entière. Toute chaîne écrite dans un PDF passe par texteAplatiPourPDF : sans elle,
+// l'espace fine des milliers ressort en barre oblique et « 15 000 FCFA » devient « 15 /000 FCFA ».
+function releveTableauPDF(r){
+return {
+head: [r.colonnes],
+body: releveLignesTexte(r),
+foot: [releveTotalTextes(r)],
+styles: { fontSize: 9, cellPadding: 2.5, overflow: 'linebreak' },
+headStyles: { fillColor: [27, 67, 116] },
+footStyles: { fillColor: [238, 240, 243], textColor: [27, 67, 116], fontStyle: 'bold' },
+// Largeurs mesurées, pas devinées : jsPDF donne 21,0 mm pour un numéro de téléphone, 17,4 mm
+// pour « 3 / 5 livré(s) » et 20,4 mm pour « 100 000 FCFA » en gras, plus 5 mm de marge
+// intérieure. En dessous, la ligne TOTAL se coupait en deux — et un montant coupé en deux ne se
+// lit plus. Les deux colonnes d'argent s'alignent à droite, milliers sous milliers.
+columnStyles: {
+0: { cellWidth: 27 },
+2: { cellWidth: 24 },
+3: { cellWidth: 27, halign: 'right' },
+4: { cellWidth: 25, halign: 'right' },
+},
+margin: { left: 14, right: 14 },
+};
+}
+
+function releveConstruirePDF(d){
+const doc = nouveauPDF();
+doc.setFontSize(14);
+doc.setTextColor(27, 67, 116);
+doc.text('Relevé du soir — Christ Livraison & Transport SARL', 14, 16);
+doc.setTextColor(0, 0, 0);
+doc.setFontSize(13);
+doc.text(d.nom, 14, 25);
+doc.setFontSize(10);
+doc.text(d.dateLabel, 14, 32);
+doc.text(`${d.r.nb} colis · ${d.r.nbLivres} livré(s)`, 14, 38);
+doc.autoTable(Object.assign({ startY: 44 }, releveTableauPDF(d.r)));
+let y = doc.lastAutoTable.finalY + 11;
+if (y > 265) { doc.addPage(); y = 20; }
+doc.setFontSize(12);
+doc.setTextColor(26, 125, 60);
+doc.text(relevePhraseDue(d.r), 14, y);
+doc.setTextColor(110, 110, 110);
+doc.setFontSize(8);
+doc.text(doc.splitTextToSize(texteAplatiPourPDF(RELEVE_NOTE), 182), 14, y + 8);
+return doc;
+}
+
+function telechargerRelevePDF(){
+const d = releveEnCours();
+if (!d) return;
+releveConstruirePDF(d).save(releveNomFichier(d.nom, d.date) + '.pdf');
+}
+
+// ---- Excel ----
+// Les montants partent en NOMBRES et non en texte : une vendeuse qui veut refaire l'addition
+// dans son tableur doit pouvoir la refaire. Ce sont les mêmes nombres que ceux du PDF, pris
+// au même endroit ; seule la mise en forme diffère.
+function telechargerReleveExcel(){
+const d = releveEnCours();
+if (!d) return;
+const aoa = [];
+aoa.push(['Relevé du soir — Christ Livraison & Transport SARL']);
+aoa.push([d.nom]);
+aoa.push([d.dateLabel]);
+aoa.push([`${d.r.nb} colis · ${d.r.nbLivres} livré(s)`]);
+aoa.push([]);
+aoa.push(d.r.colonnes);
+d.r.lignes.forEach(l => {
+aoa.push([l.telephone || '', l.adresse || '', l.statut, l.article, l.encaisse, l.observation || '']);
+});
+aoa.push(['TOTAL', '', d.r.nbLivres + ' / ' + d.r.nb + ' livré(s)', d.r.totalArticle, d.r.totalEncaisse, '']);
+aoa.push([]);
+aoa.push([relevePhraseDue(d.r)]);
+aoa.push([RELEVE_NOTE]);
+const ws = XLSX.utils.aoa_to_sheet(aoa);
+ws['!cols'] = [{ wch: 16 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 32 }];
+const wb = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb, ws, 'Relevé');
+XLSX.writeFile(wb, releveNomFichier(d.nom, d.date) + '.xlsx');
+}
+
+// ---- Word ----
+// Document HTML servi sous le type MIME de Word. Aucune bibliothèque, aucune empreinte externe
+// de plus à surveiller, et le fichier reste modifiable dans Word comme dans Google Docs.
+function releveConstruireWordHTML(d){
+const th = d.r.colonnes.map(c => `<th>${escapeHTML(c)}</th>`).join('');
+const trs = releveLignesTexte(d.r).map(cells =>
+`<tr>${cells.map((v, i) => `<td${i >= 3 && i <= 4 ? ' align="right"' : ''}>${escapeHTML(String(v))}</td>`).join('')}</tr>`
+).join('');
+const tot = releveTotalTextes(d.r).map((v, i) =>
+`<td${i >= 3 && i <= 4 ? ' align="right"' : ''} class="tot">${escapeHTML(String(v))}</td>`).join('');
+return `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head><meta charset="utf-8">
+<title>${escapeHTML(d.nom)} — ${escapeHTML(d.dateLabel)}</title>
+<style>
+@page{size:A4;margin:2cm;}
+body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#111;}
+h1{font-size:14pt;color:#1B4374;margin:0 0 4pt;}
+h2{font-size:13pt;margin:0 0 2pt;}
+.sous{font-size:10pt;color:#555;margin:0 0 12pt;}
+table{border-collapse:collapse;width:100%;font-size:10pt;}
+th{background:#1B4374;color:#fff;text-align:left;padding:5pt 6pt;border:1px solid #1B4374;}
+td{padding:5pt 6pt;border:1px solid #c9d2dd;vertical-align:top;}
+td.tot{background:#eef0f3;color:#1B4374;font-weight:bold;}
+.due{margin-top:14pt;font-size:12pt;font-weight:bold;color:#1a7d3c;}
+.note{margin-top:10pt;font-size:8.5pt;color:#6e6e6e;}
+</style></head>
+<body>
+<h1>Relevé du soir — Christ Livraison &amp; Transport SARL</h1>
+<h2>${escapeHTML(d.nom)}</h2>
+<p class="sous">${escapeHTML(d.dateLabel)} · ${d.r.nb} colis · ${d.r.nbLivres} livré(s)</p>
+<table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody><tfoot><tr>${tot}</tr></tfoot></table>
+<p class="due">${escapeHTML(relevePhraseDue(d.r))}</p>
+<p class="note">${escapeHTML(RELEVE_NOTE)}</p>
+</body></html>`;
+}
+
+function telechargerReleveWord(){
+const d = releveEnCours();
+if (!d) return;
+// Le préfixe BOM évite que Word lise le fichier en Latin-1 et transforme les accents en charabia.
+const blob = new Blob(['\ufeff' + releveConstruireWordHTML(d)], { type: 'application/msword' });
+releveTelechargerBlob(blob, releveNomFichier(d.nom, d.date) + '.doc');
+}
+
+function releveTelechargerBlob(blob, nom){
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = nom;
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+// ---- Envoi direct (WhatsApp et le reste), avec le PDF déjà attaché ----
+async function envoyerRelevePDF(){
+const d = releveEnCours();
+if (!d) return;
+const nom = releveNomFichier(d.nom, d.date) + '.pdf';
+try {
+const blob = releveConstruirePDF(d).output('blob');
+const fichier = new File([blob], nom, { type: 'application/pdf' });
+if (!navigator.canShare || !navigator.canShare({ files: [fichier] })) { telechargerRelevePDF(); return; }
+await navigator.share({ files: [fichier], title: d.nom + ' — ' + d.dateLabel, text: relevePhraseDue(d.r) });
+} catch (e) {
+// L'utilisateur qui referme la feuille de partage déclenche AbortError : ce n'est pas une panne.
+if (e && e.name === 'AbortError') return;
+telechargerRelevePDF();
+}
+}
+
 // ---- Export du récapitulatif du jour (toutes les clientes, une section par cliente) ----
 // Utilisé pour télécharger la journée en PDF ou en Excel et l'envoyer aux clientes.
 // L'export porte toujours sur TOUTE la journée sélectionnée (indépendamment de la recherche).
+//
+// Corrigé le 26 août 2026. Il ne sortait qu'une colonne « Montant » valant l'article enregistré,
+// et son total additionnait les colis livrés ET non livrés : le document annonçait donc plus
+// d'argent que l'écran n'en réclamait. Il passe maintenant par releveCliente(), comme le bilan
+// affiché et comme le relevé par cliente, avec la colonne « Encaissé » et une ligne TOTAL.
 function recapStatutLabel(s){
-return (typeof STATUTS !== 'undefined' && STATUTS[s]) ? STATUTS[s].label : (s || '—');
+return statutTexte(s);
 }
 
 // Regroupe les colis du jour par cliente (fournisseur_id), triées par nombre de colis décroissant.
+// Chaque groupe porte son relevé complet, calculé par releveCliente() — la même fonction que le
+// bilan affiché à l'écran. `total` reste l'article enregistré, pour les appelants historiques.
 function recapDayGroups(colisJour){
 const map = {};
 colisJour.forEach(c => {
 const key = c.fournisseur_id || 'inconnu';
-if (!map[key]) map[key] = { id: key, name: fournisseurLabelPlain(key), colis: [], total: 0 };
+if (!map[key]) map[key] = { id: key, name: fournisseurLabelPlain(key), colis: [] };
 map[key].colis.push(c);
-map[key].total += (Number(montantArticleColis(c)) || 0);
 });
-return Object.values(map).sort((a, b) => b.colis.length - a.colis.length);
+return Object.values(map)
+.map(g => { const r = releveCliente(g.colis); return Object.assign(g, { r, total: r.totalArticle }); })
+.sort((a, b) => b.colis.length - a.colis.length);
 }
 
 function recapExportBaseName(){
@@ -5604,29 +5815,27 @@ const colisJour = recapDayColis();
 if (!colisJour.length) { alert("Aucune cliente enregistrée pour ce jour."); return; }
 const groups = recapDayGroups(colisJour);
 const dateLabel = recapDayLabel(recapGetDate());
+const tJour = totauxArgent(colisJour);
 const aoa = [];
 aoa.push(['Récapitulatif par client — Christ Livraison & Transport SARL']);
 aoa.push([dateLabel]);
-aoa.push([`${groups.length} cliente(s) · ${colisJour.length} colis`]);
+aoa.push([`${groups.length} cliente(s) · ${colisJour.length} colis · ${tJour.nbLivres} livré(s)`]);
 aoa.push([]);
-const cols = ['Téléphone', 'Adresse', 'Statut', 'Montant (FCFA)', 'Observation'];
 groups.forEach(g => {
 aoa.push([g.name]);
-aoa.push(cols);
-g.colis.forEach(c => {
-aoa.push([
-c.destinataire_telephone || '',
-c.destination || '',
-recapStatutLabel(c.statut),
-Number(montantArticleColis(c)) || 0,
-c.observation || ''
-]);
+aoa.push(g.r.colonnes);
+g.r.lignes.forEach(l => {
+aoa.push([l.telephone || '', l.adresse || '', l.statut, l.article, l.encaisse, l.observation || '']);
 });
-aoa.push(['', '', 'Total', Number(g.total) || 0, `${g.colis.length} colis`]);
+aoa.push(['TOTAL', '', g.r.nbLivres + ' / ' + g.r.nb + ' livré(s)', g.r.totalArticle, g.r.totalEncaisse, '']);
 aoa.push([]);
 });
+aoa.push(['TOTAL DE LA JOURNÉE', '', tJour.nbLivres + ' / ' + tJour.nb + ' livré(s)',
+Number(tJour.articleEnregistre) || 0, Number(tJour.articleEncaisse) || 0, '']);
+aoa.push([]);
+aoa.push([RELEVE_NOTE]);
 const ws = XLSX.utils.aoa_to_sheet(aoa);
-ws['!cols'] = [{ wch: 16 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 32 }];
+ws['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 32 }];
 const wb = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb, ws, 'Récapitulatif');
 XLSX.writeFile(wb, `${recapExportBaseName()}.xlsx`);
@@ -5638,56 +5847,50 @@ const colisJour = recapDayColis();
 if (!colisJour.length) { alert("Aucune cliente enregistrée pour ce jour."); return; }
 const groups = recapDayGroups(colisJour);
 const dateLabel = recapDayLabel(recapGetDate());
-const grandTotal = groups.reduce((s, g) => s + (Number(g.total) || 0), 0);
-const { jsPDF } = window.jspdf;
-const doc = new jsPDF();
+const tJour = totauxArgent(colisJour);
+const doc = nouveauPDF();
 doc.setFontSize(14);
+doc.setTextColor(27, 67, 116);
 doc.text('Récapitulatif par client — Christ Livraison & Transport SARL', 14, 16);
+doc.setTextColor(0, 0, 0);
 doc.setFontSize(10);
 doc.text(dateLabel, 14, 23);
-doc.text(`${groups.length} cliente(s) · ${colisJour.length} colis · Total article : ${formatMontant(grandTotal) || '0 FCFA'}`, 14, 29);
-let startY = 37;
+doc.text(`${groups.length} cliente(s) · ${colisJour.length} colis · ${tJour.nbLivres} livré(s)`, 14, 29);
+doc.text(`Articles enregistrés : ${formatMontant(tJour.articleEnregistre) || '0 FCFA'} · Articles encaissés : ${formatMontant(tJour.articleEncaisse) || '0 FCFA'}`, 14, 35);
+let startY = 43;
 groups.forEach(g => {
-if (startY > 265) { doc.addPage(); startY = 20; }
+if (startY > 258) { doc.addPage(); startY = 20; }
 doc.setFontSize(11);
 doc.setTextColor(27, 67, 116);
-doc.text(`${g.name}  —  ${g.colis.length} colis · ${formatMontant(g.total) || '0 FCFA'}`, 14, startY);
+doc.text(`${g.name}  —  ${g.r.nbLivres} / ${g.r.nb} livré(s) · encaissé ${formatMontant(g.r.totalEncaisse) || '0 FCFA'}`, 14, startY);
 doc.setTextColor(0, 0, 0);
 startY += 3;
-doc.autoTable({
-startY,
-head: [['Téléphone', 'Adresse', 'Statut', 'Montant', 'Observation']],
-body: g.colis.map(c => [
-c.destinataire_telephone || '',
-c.destination || '',
-recapStatutLabel(c.statut),
-formatMontant(montantArticleColis(c)) || '-',
-c.observation || ''
-]),
-styles: { fontSize: 9, cellPadding: 2.5 },
-headStyles: { fillColor: [27, 67, 116] },
-margin: { left: 14, right: 14 },
-});
+doc.autoTable(Object.assign({ startY }, releveTableauPDF(g.r)));
 startY = doc.lastAutoTable.finalY + 9;
 });
+if (startY > 250) { doc.addPage(); startY = 20; }
+doc.autoTable({
+startY,
+body: [['TOTAL DE LA JOURNÉE', tJour.nbLivres + ' / ' + tJour.nb + ' livré(s)',
+formatMontant(tJour.articleEnregistre) || '0 FCFA',
+formatMontant(tJour.articleEncaisse) || '0 FCFA']],
+styles: { fontSize: 10, cellPadding: 3, fontStyle: 'bold', textColor: [27, 67, 116], fillColor: [238, 240, 243] },
+margin: { left: 14, right: 14 },
+});
+let yNote = doc.lastAutoTable.finalY + 8;
+if (yNote > 275) { doc.addPage(); yNote = 20; }
+doc.setFontSize(8);
+doc.setTextColor(110, 110, 110);
+doc.text(doc.splitTextToSize(texteAplatiPourPDF(RELEVE_NOTE), 182), 14, yNote);
 doc.save(`${recapExportBaseName()}.pdf`);
 }
 
-function groupColisByDayLegacyReport(list){
-const groups = {};
-list.forEach(c => {
-const key = (c.created_at || '').slice(0, 10);
-if (!groups[key]) groups[key] = [];
-groups[key].push(c);
-});
-return groups;
-}
-
-function dayLabelLegacyReport(dayKey){
-if (!dayKey) return 'Date inconnue';
-const d = new Date(dayKey + 'T00:00:00');
-return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-}
+// groupColisByDayLegacyReport() et dayLabelLegacyReport() ont été retirées le 26 août 2026.
+// Elles groupaient les colis par date d'enregistrement, en découpant la chaîne à la main
+// (« iso.slice(0,10) ») — la troisième notion de « jour » de l'application, après dayKey() et
+// jourAbidjan(). Elles ne servaient plus qu'à la vue par jour, qui compte désormais au jour de
+// l'événement. Les laisser en place, c'était offrir à la prochaine personne pressée un
+// découpage tout prêt et faux. Le bon est jourAbidjan(), dans config.js.
 
 function colisMiniHTML(c){
 const thumb = c.photo_url
@@ -5711,24 +5914,184 @@ ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c
 `;
 }
 
-function renderRapportJour(){
-const box = document.getElementById('rapport-jour-content');
-if (!box) return;
-if (!allColis.length) {
-cltPoserHTML(box, `<div class="empty-state">Aucun colis pour le moment.</div>`);
-return;
+/* ============================================================================================
+   RAPPORT « VUE PAR JOUR »
+
+   Ce que cet onglet répond : ce jour-là, chaque livreur a reçu combien de colis, en a livré
+   combien, en a manqué combien, et combien lui restent sur les bras.
+
+   Il a été refait le 26 août 2026 parce qu'il ne répondait à aucune de ces questions. Il
+   groupait les colis par DATE D'ENREGISTREMENT et écrivait une seule chose par journée —
+   « 12 colis » — puis déroulait les fiches. Deux défauts, pas un :
+
+     • La date était fausse. Un colis enregistré le 24 et livré le 26 était compté au 24. Le
+       jour de l'enregistrement était gonflé, le jour du travail était vide, et aucun des deux
+       chiffres ne décrivait une journée réelle.
+     • Le comptage se faisait sur `allColis`, qui ne contient que la première page tant qu'on
+       n'a pas cliqué sur « Charger plus ». Une journée un peu ancienne était donc sous-comptée
+       en silence — et l'onglet « Par livreur », lui, interrogeait la base. Les deux écrans se
+       contredisaient sans que rien ne le signale.
+
+   Tout le calcul est dans config.js (colisDuJourParLivreur & co.) : c'est là que sont définis
+   le jour d'Abidjan, le sens de chaque colonne et la ligne TOTAL, et c'est là que le banc
+   d'essai tests/colis-par-jour-et-par-livreur.test.mjs va les vérifier. Ici, on ne fait que
+   choisir la journée, aller chercher les colis, appeler ces calculs et habiller le résultat.
+   Aucune addition n'est refaite dans ce fichier.
+   ============================================================================================ */
+
+// La journée regardée, au sens d'Abidjan. Par défaut : aujourd'hui.
+function jourRapportChoisi(){
+const input = document.getElementById('jour-select');
+return (input && input.value) || aujourdhuiAbidjan();
 }
-const groups = groupColisByDayLegacyReport(allColis);
-const days = Object.keys(groups).sort((a, b) => b.localeCompare(a));
-cltPoserHTML(box, days.map(day => `
-<div class="day-group">
-<div class="day-group-header">
-<span>${dayLabelLegacyReport(day)}</span>
-<span class="day-count">${groups[day].length} colis</span>
+
+// Les colis qui ont bougé ce jour-là.
+//
+// Quatre requêtes plutôt qu'une : chaque colonne d'horodatage a son propre intervalle, et une
+// condition unique mélangeant quatre plages « ou » se lit mal, se teste mal, et se casse en
+// silence à la première faute de frappe. Quatre lectures indexées coûtent moins cher qu'un
+// chiffre faux. Les résultats sont fusionnés par identifiant : un colis reçu le matin et livré
+// l'après-midi remonte deux fois et ne doit être compté qu'une.
+//
+// On interroge la base plutôt que `allColis`, pour la raison écrite plus haut.
+async function colisDuJourDepuisLaBase(jour){
+if (!jour) return [];
+const debut = jour + 'T00:00:00Z';
+const fin   = jour + 'T23:59:59.999Z';
+const colonnes = ['recupere_at', 'livre_at', 'non_livre_at', 'retour_at'];
+
+const reponses = await Promise.all(colonnes.map(col =>
+supabaseClient.from('colis').select('*').gte(col, debut).lte(col, fin)
+));
+
+const parId = new Map();
+for (const { data, error } of reponses) {
+// Une colonne qui n'existe pas encore en base — tant que la migration
+// _sql-prive/2026-08-colis-par-jour-et-par-livreur.sql n'est pas passée — fait échouer sa
+// requête à elle seule. On garde les autres : mieux vaut un tableau partiel et annoncé
+// qu'un écran vide. Le message sous le tableau dira ce qui manque.
+if (error) { console.error('Vue par jour :', error.message || error); continue; }
+(data || []).forEach(c => { if (c && c.id) parId.set(c.id, c); });
+}
+return Array.from(parId.values());
+}
+
+// Combien de colis ne sont comptés dans AUCUNE journée, faute d'horodatage.
+//
+// Cette question ne peut pas être répondue par les requêtes ci-dessus, et c'est le genre de
+// détail qui rend un écran menteur sans que personne s'en aperçoive : on n'y demande que les
+// colis dont l'heure tombe dans la journée, donc un colis SANS heure n'y remonte jamais. Le
+// compteur que colisDuJourParLivreur() tient de son côté reste donc à zéro quand on ne lui
+// donne que les colis d'une journée — il n'est juste que si on lui passe toute la table.
+//
+// Il faut donc poser la question à part, une fois, pour tous les colis : combien portent un
+// statut d'événement sans l'heure correspondante. On ne rapatrie rien, on compte seulement.
+async function colisSansHorodatageCompte(){
+const total = { recupere: 0, livre: 0, non_livre: 0, retour: 0 };
+await Promise.all(Object.keys(total).map(async statut => {
+const colonne = HORODATAGE_DU_STATUT[statut];
+const { count, error } = await supabaseClient
+.from('colis')
+.select('id', { count: 'exact', head: true })
+.eq('statut', statut)
+.is(colonne, null);
+// Colonne pas encore créée : on ne sait pas, et on préfère se taire plutôt qu'annoncer zéro.
+if (error) { console.error('Vue par jour, colis sans heure :', error.message || error); return; }
+total[statut] = count || 0;
+}));
+return total;
+}
+
+// Une cellule à zéro est affichée en gris pâle : sur une ligne de six nombres, l'œil doit
+// accrocher ce qui existe, pas ce qui est vide. Même règle que le rapport par livreur.
+function jourCell(label, valeur, options){
+const o = options || {};
+const style = (valeur === 0) ? ' style="color:var(--muted);"' : '';
+return `<td data-label="${label}"${style}>${o.fort && valeur !== 0 ? '<strong>' + valeur + '</strong>' : valeur}</td>`;
+}
+
+function jourLabelLisible(jour){
+if (!jour) return '';
+// Midi en temps universel : on est sûr de rester dans la bonne journée quelle que soit
+// l'heure de l'appareil qui affiche l'étiquette.
+return new Date(jour + 'T12:00:00Z').toLocaleDateString('fr-FR',
+{ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+async function renderRapportJour(){
+const recap = document.getElementById('rapport-jour-recap');
+const box = document.getElementById('rapport-jour-content');
+if (!recap || !box) return;
+
+const jour = jourRapportChoisi();
+// cltPoserHTML n'écrit que si le contenu a changé : sans cette précaution, le rafraîchissement
+// périodique remplacerait le tableau par un tableau identique, ce qui suffit à faire sauter la
+// page sous le doigt.
+cltPoserHTML(recap, `<div class="empty-state">Calcul en cours…</div>`);
+
+const [colis, sansHeure] = await Promise.all([
+colisDuJourDepuisLaBase(jour),
+colisSansHorodatageCompte(),
+]);
+const resultat = colisDuJourParLivreur(colis, livreurs, jour);
+// Le compteur tenu par le calcul ne vaut que pour la liste qu'on lui a donnée — ici, une seule
+// journée. On lui substitue celui de la base, qui porte sur toute la table. Voir le commentaire
+// de colisSansHorodatageCompte().
+resultat.sansHorodatage = sansHeure;
+const t = resultat.total;
+
+// Les livreurs qui n'ont rien fait ce jour-là sont nommés à part plutôt que d'occuper une
+// ligne de zéros chacun : sur une petite journée, dix lignes vides noient les deux qui comptent.
+const actifs = resultat.lignes.filter(l => l.recus || l.livres || l.nonLivres || l.retours || l.enCours);
+const inactifs = resultat.lignes
+.filter(l => !actifs.includes(l))
+.map(l => collecteLivreurLabel(l.livreur_id))
+.filter(Boolean);
+
+const ligneHTML = (l, nom, gras) => `<tr${gras ? ' style="background:var(--grey-bg);"' : ''}>
+<td data-label="Livreur">${gras ? '<strong>' + nom + '</strong>' : nom}</td>
+${jourCell('Reçus', l.recus)}
+${jourCell('Livrés', l.livres, { fort: true })}
+${jourCell('Non livrés', l.nonLivres)}
+${jourCell('Retours', l.retours)}
+${jourCell('Encore en cours', l.enCours)}
+</tr>`;
+
+const couverture = couvertureDuJourTexte(resultat);
+
+cltPoserHTML(recap, !actifs.length
+? `<div class="page-sub" style="margin-bottom:10px;">${escapeHTML(jourLabelLisible(jour))}</div>
+<div class="empty-state">Aucun colis n'a bougé ce jour-là.</div>
+${couverture ? `<div class="page-sub" style="margin-top:10px;">${escapeHTML(couverture)}</div>` : ''}`
+: `
+<div class="page-sub" style="margin-bottom:12px;">${escapeHTML(jourLabelLisible(jour))} · ${t.recus} reçus, ${t.livres} livrés par ${actifs.length} livreur(s).</div>
+<div class="recap-table-wrap">
+<table class="recap-table recap-table-cards">
+<thead><tr>
+<th>Livreur</th><th>Reçus</th><th>Livrés</th><th>Non livrés</th><th>Retours</th><th>Encore en cours</th>
+</tr></thead>
+<tbody>${actifs.map(l => ligneHTML(l, collecteLivreurLabel(l.livreur_id) || 'Livreur retiré de la liste', false)).join('')}${ligneHTML(t, 'TOTAL', true)}</tbody>
+</table>
 </div>
-<div class="colis-list">${groups[day].map(colisMiniHTML).join('')}</div>
+<div class="page-sub" style="margin-top:12px; line-height:1.6;">
+<div><strong>Chaque colonne compte ce qui s'est passé CE JOUR-LÀ</strong>, pas les colis enregistrés ce jour-là. Un colis enregistré lundi et livré mercredi est une livraison de mercredi.</div>
+<div style="margin-top:4px;"><strong>Reçus</strong> : colis passés dans les mains du livreur ce jour-là. <strong>Livrés</strong>, <strong>Non livrés</strong>, <strong>Retours</strong> : ce qu'il en a fait ce jour-là.</div>
+<div style="margin-top:4px;"><strong>Encore en cours</strong> : parmi les colis reçus ce jour-là, ceux dont le sort n'est toujours pas fixé aujourd'hui. Sur la journée d'aujourd'hui, c'est ce qui reste à faire d'ici ce soir.</div>
+<div style="margin-top:4px;">Un même colis peut compter dans deux colonnes — reçu le matin, livré l'après-midi. Ce sont deux gestes, et le tableau les compte tous les deux. Les colonnes ne s'additionnent donc pas en un nombre de colis.</div>
+<div style="margin-top:4px;">La journée est celle d'Abidjan, où que soit consulté cet écran.</div>
+${couverture ? `<div style="margin-top:4px;">${escapeHTML(couverture)}</div>` : ''}
+${inactifs.length ? `<div style="margin-top:4px;">Sans aucun colis ce jour-là : ${escapeHTML(inactifs.join(', '))}.</div>` : ''}
 </div>
-`).join(''));
+`);
+
+// Le détail, sous le tableau : les fiches des colis qui ont bougé ce jour-là. Même journée,
+// même liste — plus deux notions de « jour » sur le même écran.
+cltPoserHTML(box, !colis.length
+? `<div class="empty-state">Aucun colis n'a bougé ce jour-là.</div>`
+: `<div class="colis-list">${colis
+.slice()
+.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+.map(colisMiniHTML).join('')}</div>`);
 }
 
 function monthKey(iso){
@@ -6962,11 +7325,30 @@ document.getElementById('subtab-livreur').classList.toggle('active', which === '
 document.getElementById('rapport-jour').classList.toggle('hidden', which !== 'jour');
 document.getElementById('rapport-mois').classList.toggle('hidden', which !== 'mois');
 document.getElementById('rapport-livreur').classList.toggle('hidden', which !== 'livreur');
-// Le rapport par livreur interroge la base : on ne le calcule qu'à l'ouverture de l'onglet,
+// Ces deux rapports interrogent la base : on ne les calcule qu'à l'ouverture de leur onglet,
 // et pas au chargement de la page — sinon chaque visite paierait une requête que personne
-// ne regarde. Il se recalcule ensuite à chaque retour sur l'onglet, donc jamais périmé.
+// ne regarde. Ils se recalculent ensuite à chaque retour sur l'onglet, donc jamais périmés.
 if (which === 'livreur') renderRapportLivreur();
+if (which === 'jour') renderRapportJour();
 }
+
+// Contrôles de la vue par jour. Par défaut : aujourd'hui, au sens d'Abidjan — et non au sens de
+// l'appareil, qui donnerait une autre journée quand l'écran est ouvert depuis le Canada.
+(function initJourControls(){
+const input = document.getElementById('jour-select');
+const bAujourdhui = document.getElementById('btn-jour-aujourdhui');
+const bHier = document.getElementById('btn-jour-hier');
+if (!input) return;
+if (!input.value) input.value = aujourdhuiAbidjan();
+input.addEventListener('change', renderRapportJour);
+const poser = (jour) => { input.value = jour; renderRapportJour(); };
+if (bAujourdhui) bAujourdhui.addEventListener('click', () => poser(aujourdhuiAbidjan()));
+if (bHier) bHier.addEventListener('click', () => {
+const d = new Date(aujourdhuiAbidjan() + 'T12:00:00Z');
+d.setUTCDate(d.getUTCDate() - 1);
+poser(d.toISOString().slice(0, 10));
+});
+})();
 
 // Période par défaut : les 30 derniers jours. « Depuis le début » reste à un clic, mais ouvrir
 // l'onglet ne doit pas rapatrier tout l'historique sans qu'on l'ait demandé.
@@ -7103,8 +7485,7 @@ XLSX.writeFile(wb, `comptabilite-${new Date().toISOString().slice(0, 10)}.xlsx`)
 document.getElementById('btn-export-pdf').addEventListener('click', async () => {
 const rows = await comptaFiltered();
 if (!rows.length) { alert("Aucune donnée à exporter."); return; }
-const { jsPDF } = window.jspdf;
-const doc = new jsPDF();
+const doc = nouveauPDF();
 const t = totauxArgent(rows);
 const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
 

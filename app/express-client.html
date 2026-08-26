@@ -17,8 +17,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826position1">
-<script src="theme.js?v=20260826position1"></script>
+<link rel="stylesheet" href="style.css?v=20260826clients1">
+<script src="theme.js?v=20260826clients1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ===== Thème violet CLT Express + rafraîchissement visuel (2026) ===== */
@@ -245,7 +245,6 @@
     .clt-bottomnav .nav svg{ width:23px; height:23px; }
     /* On réserve la hauteur de la barre + la safe-area pour que le contenu ne passe pas dessous. */
     body{ padding-bottom:calc(60px + env(safe-area-inset-bottom)); }
-    .subnav{ display:none !important; }
   }
   /* Sélecteur de point précis sur carte (création de course) */
   .btn-pin-toggle{
@@ -461,8 +460,13 @@
 </div>
 
 <div class="wrap">
-  <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
-  <div class="page-sub">Commandez une livraison, où que vous soyez à Abidjan.</div>
+  <!-- Il y avait ici « Bonjour <nom> 👋 » et « Commandez une livraison, où que vous soyez à
+       Abidjan » : 84 px sur les 844 d'un téléphone, pour redire ce que la barre du haut affiche
+       déjà et ce que l'onglet « 🛵 Nouvelle », juste en dessous, annonce mieux. La phrase de
+       bienvenue se lit le premier jour ; le formulaire, lui, se remplit tous les jours et
+       commençait 84 px trop bas. Même geste que les écrans livreur et client. (26/08/2026)
+       Le champ #user-first-name reste posé, invisible : du code le remplit encore. -->
+  <span id="user-first-name" hidden></span>
 
   <div class="clt-toptabs-wrap">
   <div class="clt-toptabs" role="tablist">
@@ -594,10 +598,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826position1"></script>
+<script src="clt-common.js?v=20260826clients1"></script>
 <script src="express-config.js?v=20260819saisie1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260826position1"></script>
+<script src="clt-select-recherche.js?v=20260826clients1"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -776,16 +780,18 @@
             <div id="course-map-status-${c.id}" style="font-size:12px;color:#64748b;margin-bottom:6px;">📍 Chargement de la position du coursier…</div>
             <div id="course-map-${c.id}" style="height:220px;border-radius:12px;overflow:hidden;background:#eef1f5;"></div>
           </div>` : '';
-    // Bandeau d'état quand le colis a été récupéré : le coursier se dirige vers la livraison.
-    const recupBlock = (c.status === 'recuperee') ? `
-          <div style="margin-top:8px; font-size:12.5px; color:#8a4b00; background:#fdeede; border:1px solid #f4d9bd; border-radius:10px; padding:8px 10px;">
-            📦 Colis récupéré — votre coursier est en route vers la livraison.
-          </div>` : '';
-    // Repère après commande : tant qu'aucun coursier n'a accepté, on explique clairement l'état
-    // (recherche en cours) plutôt que de laisser le client dans le flou.
+    /* Le bandeau ambre « 📦 Colis récupéré — votre coursier est en route vers la livraison »
+       était ici. Il disait mot pour mot ce que la frise d'étapes écrit déjà juste au-dessus :
+       l'étape « Colis récupéré » est en cours, la suivante est « Livrée ». Un écran qui dit une
+       chose deux fois ne la dit pas plus fort — il apprend à sauter les deux. (26/08/2026)
+
+       Le bandeau bleu de recherche, lui, reste : « En attente » sur la frise ne répond pas à la
+       question que se pose le client, qui est de savoir si quelqu'un cherche et si on le
+       préviendra. Ce qui a été coupé, c'est la partie qui répétait l'étape ; la promesse est
+       intacte, elle tient désormais sur une ligne au lieu de trois. */
     const searchingBlock = (c.status === 'en_attente') ? `
-          <div style="margin-top:8px; font-size:12.5px; color:#1d6fb8; background:#eef6fd; border:1px solid #d3e6f7; border-radius:10px; padding:8px 10px;">
-            🔎 Recherche d'un coursier disponible… Vous serez prévenu dès qu'un coursier accepte votre course.
+          <div style="margin-top:8px; font-size:12.5px; color:#1d6fb8; background:#eef6fd; border:1px solid #d3e6f7; border-radius:10px; padding:7px 10px;">
+            🔎 Recherche d'un coursier — vous serez prévenu dès qu'il accepte.
           </div>` : '';
     return `
       <div class="colis-item course-item" data-id="${c.id}">
@@ -796,7 +802,6 @@
           ${coursierInfo}
           ${photoThumb}
           ${searchingBlock}
-          ${recupBlock}
           ${paiementBlockHTML(c)}
           ${mapBlock}
           ${chatBlock}

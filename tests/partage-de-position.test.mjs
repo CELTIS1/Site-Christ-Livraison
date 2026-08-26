@@ -469,9 +469,18 @@ titre('CLT Express et CLT gardent la même forme de fonction');
   verifier('les deux annoncent le même seuil de « hors ligne »',
     /const POSITION_STALE_AFTER_MS = 3 \* 60 \* 1000;/.test(config)
     && /const POSITION_STALE_AFTER_MS = 3 \* 60 \* 1000;/.test(expressConfig));
-  verifier('les deux masquent leur ligne hors trajet',
-    /card\.classList\.add\('hidden'\)/.test(fs.readFileSync(path.join(APP, 'express-coursier.html'), 'utf8'))
-    && /carte\.classList\.toggle\('hidden', !etat\.visible\)/.test(livreur));
+  // Les deux écrans masquaient cette ligne chacun à sa façon : le coursier Express l'éteignait
+  // à la main dans la branche « pas de course », le livreur CLT la laissait à sa fonction de
+  // peinture. Ils sont passés tous les deux par la même ligne, dans la même fonction. On vérifie
+  // désormais cette convergence — masquer au même endroit, c'est masquer dans les mêmes cas.
+  const expressCoursier = fs.readFileSync(path.join(APP, 'express-coursier.html'), 'utf8');
+  const memeMasquage = /carte\.classList\.toggle\('hidden', !etat\.visible\)/;
+  verifier('les deux masquent leur ligne hors trajet, par la même ligne de code',
+    memeMasquage.test(expressCoursier) && memeMasquage.test(livreur));
+
+  verifier('aucun des deux ne masque cette ligne dans son coin, en plus',
+    !/\bcard\.classList\.add\('hidden'\)/.test(expressCoursier),
+    'un masquage de secours ailleurs, et les deux écrans se remettent à diverger');
 }
 
 /* ---------- 10. La vignette « Pas de photo » a quitté l'écran du livreur ---------- */
@@ -484,11 +493,32 @@ titre('« Pas de photo » : plus de carré gris chez le livreur, et seulement ch
   verifier('les deux listes de colis du livreur sont traitées pareil', sansPhoto === 2, `trouvées : ${sansPhoto}`);
   verifier('mais la photo, quand elle existe, s’affiche toujours',
     /class="thumb" alt="Photo du colis/.test(livreur));
-  // Le carré reste utile là où on vérifie le travail des autres, sur grand écran.
-  for (const page of ['equipe.html', 'fournisseur.html']) {
-    verifier(`${page} garde son carré « Pas de photo »`,
-      /thumb-placeholder/.test(fs.readFileSync(path.join(APP, page), 'utf8')));
-  }
+  /* CORRIGÉ LE 26 AOÛT 2026, ET C'EST L'ERREUR LA PLUS INSTRUCTIVE DE LA JOURNÉE.
+
+     Cette boucle disait : « le carré reste utile là où on vérifie le travail des autres, sur
+     grand écran », et gardait sa présence dans equipe.html ET fournisseur.html. Or
+     fournisseur.html n'est pas un grand écran — il s'appelle « Espace Client » et c'est le
+     TÉLÉPHONE de la vendeuse. Le nom du fichier avait trompé son auteur, qui était moi.
+
+     Le pire n'est pas l'erreur, c'est qu'elle est restée VERTE après correction du code. La
+     vérification cherchait le mot « thumb-placeholder » n'importe où dans le fichier ; le carré
+     de la carte de colis avait bien disparu, mais il en reste un autre, sans rapport, sur la
+     carte de brouillon d'une duplication — celui qui affiche « Copie ». Le contrôle trouvait ce
+     mot-là et se déclarait satisfait.
+
+     Une vérification qui cherche un mot quelque part dans un fichier de 150 000 caractères ne
+     prouve à peu près rien. La bonne portée est le mot ET l'endroit. Le contrôle sérieux vit
+     désormais dans tests/ecrans-clients.test.mjs, où colisItemHTML est EXÉCUTÉE et où c'est le
+     HTML produit — et lui seul — qu'on inspecte. */
+  verifier('equipe.html garde son carré « Pas de photo » (grand écran, vérification du travail)',
+    /Pas de photo/.test(fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8')));
+  verifier('fournisseur.html ne garde qu’un seul carré, celui qui dit « Copie »',
+    (() => {
+      const f = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
+      const carres = f.match(/<div class="thumb-placeholder">([^<]*)<\/div>/g) || [];
+      return carres.length === 1 && carres[0].includes('Copie');
+    })(),
+    'un carré vide est revenu sur le téléphone de la vendeuse');
   verifier('la règle CSS partagée n’a pas été touchée (elle sert encore aux autres écrans)',
     /\.colis-item \.thumb-placeholder\{/.test(fs.readFileSync(path.join(APP, 'style.css'), 'utf8')));
 }

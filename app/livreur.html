@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826position1">
-<script src="theme.js?v=20260826position1"></script>
+<link rel="stylesheet" href="style.css?v=20260826clients1">
+<script src="theme.js?v=20260826clients1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -144,11 +144,7 @@
     .clt-bottomnav .nav svg{ width:23px; height:23px; }
     /* On réserve la hauteur de la barre + la safe-area pour que le contenu ne passe pas dessous. */
     body{ padding-bottom:calc(60px + env(safe-area-inset-bottom)); }
-    .subnav{ display:none !important; }
   }
-
-  /* ---- Ancienne barre de liens (subnav) désactivée : remplacée par les onglets segmentés + barre basse ---- */
-  .subnav{ display:none !important; }
 
   /* ---- Barre d'onglets segmentée (grands écrans) — cohérente avec le tableau de bord équipe ---- */
   .clt-toptabs-wrap{
@@ -171,26 +167,10 @@
   #section-main > .tabs{ display:none !important; }
   @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
 
-  /* ---------- Ligne « partage de position » (26/08/2026) ----------
-     Remplace l'ancienne carte : même information, une seule ligne. */
-  .position-ligne{ margin:0 0 10px; }
-  .position-ligne-corps{
-    display:flex; align-items:center; gap:8px;
-    font-size:12.5px; color:#64748b; line-height:1.35;
-  }
-  .position-pastille{
-    width:9px; height:9px; border-radius:50%; flex-shrink:0;
-    background:#cbd5e1; box-shadow:0 0 0 3px rgba(203,213,225,.28);
-  }
-  .position-pastille.est-active{ background:#3FA46A; box-shadow:0 0 0 3px rgba(63,164,106,.22); }
-  .position-pastille.est-attente{ background:#E2A13F; box-shadow:0 0 0 3px rgba(226,161,63,.22); }
-  .position-pastille.est-erreur{ background:#D6534A; box-shadow:0 0 0 3px rgba(214,83,74,.22); }
-  html[data-theme="dark"] .position-ligne-corps{ color:#9DB0C4; }
-  /* En sombre, seule la pastille « au repos » se grise : les trois états colorés gardent leur
-     couleur, sinon la ligne ne dirait plus rien. */
-  html[data-theme="dark"] .position-pastille:not(.est-active):not(.est-attente):not(.est-erreur){
-    background:#3A4A5E; box-shadow:0 0 0 3px rgba(58,74,94,.35);
-  }
+  /* La ligne « partage de position », la phrase d'introduction d'un onglet et la demande de
+     consentement courte vivaient ici. L'écran coursier de CLT Express les a réclamées le même
+     jour ; plutôt que de les y recopier — la maison sait ce que donnent les copies — elles ont
+     déménagé dans style.css, chargé par toutes les pages. (26/08/2026) */
 
   /* ---------- Bouton « Enregistrer » d'une carte colis (26/08/2026) ----------
      Vert doux plutôt que l'orange de la marque : c'est le geste qui valide, il se distingue
@@ -342,26 +322,7 @@
   .date-filter-wrap::-webkit-scrollbar{ display:none; }
   .date-filter-wrap > *{ flex:0 0 auto; }
   .date-filter-icone{ font-size:14px; }
-  .onglet-intro{ margin:0 0 10px; font-size:12.5px; }
 
-  /* ---------- Demande de consentement, version courte (26/08/2026) ---------- */
-  .geoloc-consent{ padding:14px !important; }
-  .geoloc-consent-tete{ display:flex; align-items:flex-start; gap:10px; }
-  .geoloc-consent-tete > span{ font-size:18px; line-height:1.2; }
-  .geoloc-consent-tete strong{ font-size:15px; line-height:1.3; display:block; }
-  .geoloc-consent-resume{ font-size:12.5px; color:#64748b; line-height:1.45; margin-top:4px; }
-  .geoloc-consent-detail{ margin:10px 0 12px; }
-  .geoloc-consent-detail > summary{
-    list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
-    font-size:13px; font-weight:600; color:#1B4374; text-decoration:underline;
-    text-underline-offset:3px; padding:4px 0; -webkit-tap-highlight-color:transparent;
-  }
-  .geoloc-consent-detail > summary::-webkit-details-marker{ display:none; }
-  .geoloc-consent-detail > summary::after{ content:'▾'; font-size:11px; transition:transform .15s ease; }
-  .geoloc-consent-detail[open] > summary::after{ transform:rotate(180deg); }
-  .geoloc-consent .btn{ width:100%; justify-content:center; }
-  html[data-theme="dark"] .geoloc-consent-resume{ color:#9DB0C4; }
-  html[data-theme="dark"] .geoloc-consent-detail > summary{ color:#9DB0C4; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -474,11 +435,11 @@
   </div>
 </div>
 
-<div class="subnav">
-  <div class="subnav-inner">
-    <a href="#section-main">Mes colis</a>
-  </div>
-</div>
+<!-- L'ancienne barre de liens « subnav » était ici : un seul lien, « Mes colis », vers la seule
+     section de la page. Elle était éteinte par deux règles display:none écrites à quatre lignes
+     d'intervalle — on l'avait masquée deux fois sans jamais oser la retirer. Son observateur, lui,
+     tournait encore à chaque ouverture. Retirée le 26/08/2026, en même temps que la même barre
+     morte dans l'espace client. -->
 
 <div class="wrap">
   <!-- Il y avait ici « Bonjour <nom> 👋 » et une phrase d'explication : 139 px pour redire ce que
@@ -639,8 +600,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826position1"></script>
-<script src="config.js?v=20260826position1"></script>
+<script src="clt-common.js?v=20260826clients1"></script>
+<script src="config.js?v=20260826clients1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -804,56 +765,9 @@
     if (arrow) arrow.textContent = willOpen ? '▼' : '▶';
   }
 
-  // Scroll-spy : met en surbrillance douce le lien du menu correspondant à la section visible,
-  // et ouvre automatiquement une section repliable + fait un léger flash sur son titre lors d'un clic.
-  (function initSubnavScrollSpy(){
-    const links = Array.from(document.querySelectorAll('.subnav a'));
-    if (!links.length) return;
-    const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
-    if (!sections.length) return;
-
-    let suppressUntil = 0;
-
-    const setActive = (id) => {
-      links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      if (Date.now() < suppressUntil) return;
-      const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-      if (visible.length) setActive(visible[0].target.id);
-    }, { rootMargin: '-72px 0px -60% 0px', threshold: [0, 0.1, 0.25, 0.5] });
-
-    sections.forEach(s => observer.observe(s));
-
-    links.forEach(a => {
-      a.addEventListener('click', () => {
-        const id = a.getAttribute('href').slice(1);
-        const section = document.getElementById(id);
-        if (!section) return;
-
-        // Fixe immédiatement l'onglet actif sur la section cliquée, et ignore
-        // temporairement le scroll-spy le temps que le saut d'ancre et l'animation
-        // d'ouverture se terminent (sinon l'onglet en surbrillance peut sauter sur
-        // la section voisine pendant la transition).
-        setActive(id);
-        suppressUntil = Date.now() + 900;
-
-        const header = section.querySelector('.collapsible-header');
-        if (header) {
-          const content = header.nextElementSibling;
-          if (content && !content.classList.contains('open')) header.click();
-        }
-
-        const title = section.querySelector('.panel-subtitle, h2, h3');
-        if (title) {
-          title.classList.remove('section-flash-title');
-          void title.offsetWidth;
-          title.classList.add('section-flash-title');
-        }
-      });
-    });
-  })();
+  /* L'observateur de l'ancienne barre de liens vivait ici : 47 lignes qui posaient un
+     IntersectionObserver sur une section, à chaque ouverture de la page, pour souligner un lien
+     masqué par display:none. Parti avec sa barre. (26/08/2026) */
 
   // Compression d'une photo avant l'envoi.
   //

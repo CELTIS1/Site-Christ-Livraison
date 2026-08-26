@@ -17,8 +17,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826position1">
-<script src="theme.js?v=20260826position1"></script>
+<link rel="stylesheet" href="style.css?v=20260826clients1">
+<script src="theme.js?v=20260826clients1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   .topbar{ background:#0D9488; }
@@ -200,7 +200,6 @@
     .clt-bottomnav .nav svg{ width:22px; height:22px; }
     /* On réserve la hauteur de la barre + la safe-area pour que le contenu ne passe pas dessous. */
     body{ padding-bottom:calc(60px + env(safe-area-inset-bottom)); }
-    .subnav{ display:none !important; }
   }
 
   /* ---- Barre d'onglets segmentée (grands écrans) — cohérente avec le tableau de bord équipe ---- */
@@ -440,29 +439,54 @@
 </div>
 
 <div class="wrap">
-  <div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
-  <div class="page-sub">Voyez les courses disponibles près de chez vous et acceptez celles qui vous intéressent.</div>
+  <!-- Il y avait ici « Bonjour <nom> 👋 » et une phrase expliquant qu'on peut voir les courses
+       disponibles et accepter celles qui intéressent : 113 px sur les 844 d'un téléphone, pour
+       redire ce que la barre du haut affiche déjà et ce que l'onglet « 🛵 Dispo » annonce en un
+       mot. Un coursier ouvre cet écran entre deux courses, souvent à l'arrêt, souvent pressé :
+       ce qu'il vient chercher, c'est la liste, pas un bonjour. (26/08/2026)
+       Le champ #user-first-name reste posé, invisible : du code le remplit encore. -->
+  <span id="user-first-name" hidden></span>
 
   <!-- Notice de consentement (loi ivoirienne n° 2013-450) : n'apparaît que lorsqu'une course
        acceptée est en cours et que le coursier n'a pas encore donné son accord. Rien n'est envoyé
-       avant cette acceptation explicite. -->
-  <div class="card hidden" id="geoloc-consent-card">
-    <strong>📍 Partage de votre position pendant vos courses</strong>
-    <p class="page-sub" style="margin:8px 0;">
-      Pour que le client et l'équipe CLT Express puissent suivre votre progression en direct pendant une course acceptée, nous avons besoin de connaître votre position tant que la course est en cours.<br><br>
-      <strong>Quand :</strong> uniquement pendant une course acceptée, jamais en dehors.<br>
-      <strong>Donnée collectée :</strong> votre position GPS approximative.<br>
-      <strong>Qui la voit :</strong> le client de la course en cours, l'équipe et l'administrateur — personne d'autre.<br>
-      <strong>Conservation :</strong> supprimée automatiquement dès la fin (ou l'annulation) de la course.<br>
-      <strong>Vos droits :</strong> vous pouvez demander l'accès, la correction ou la suppression de ces données à tout moment auprès de l'équipe.
-    </p>
+       avant cette acceptation explicite.
+       Le texte complet n'a rien perdu : il est sous « Lire le détail », à un appui. Le résumé
+       au-dessus dit déjà l'essentiel — quand, quoi, combien de temps. Un pavé de sept lignes
+       n'est pas mieux lu qu'un résumé honnête : il est sauté, et l'accord donné sans lecture
+       n'est pas un accord. Même forme que l'écran du livreur. (26/08/2026) -->
+  <div class="card geoloc-consent hidden" id="geoloc-consent-card">
+    <div class="geoloc-consent-tete">
+      <span aria-hidden="true">📍</span>
+      <div>
+        <strong>Partager votre position pendant vos courses ?</strong>
+        <div class="geoloc-consent-resume">Seulement pendant une course acceptée. Effacée dès la fin ou l'annulation de la course.</div>
+      </div>
+    </div>
+    <details class="geoloc-consent-detail">
+      <summary>Lire le détail</summary>
+      <p class="page-sub" style="margin:8px 0 0;">
+        Pour que le client et l'équipe CLT Express puissent suivre votre progression en direct pendant une course acceptée, nous avons besoin de connaître votre position tant que la course est en cours.<br><br>
+        <strong>Quand :</strong> uniquement pendant une course acceptée, jamais en dehors.<br>
+        <strong>Donnée collectée :</strong> votre position GPS approximative.<br>
+        <strong>Qui la voit :</strong> le client de la course en cours, l'équipe et l'administrateur — personne d'autre.<br>
+        <strong>Conservation :</strong> supprimée automatiquement dès la fin (ou l'annulation) de la course.<br>
+        <strong>Vos droits :</strong> vous pouvez demander l'accès, la correction ou la suppression de ces données à tout moment auprès de l'équipe.
+      </p>
+    </details>
     <button type="button" class="btn btn-sm" id="btn-accept-geoloc-consent">J'ai compris et j'accepte</button>
   </div>
 
-  <div class="card hidden" id="position-sharing-card" style="padding:10px 14px;">
-    <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#64748b;">
-      <span>📍</span>
-      <span id="position-sharing-desc">Position non partagée — aucune course en cours.</span>
+  <!-- Le partage de position tient en une ligne, et cette ligne n'existe que pendant une course.
+       Une ligne permanente qui répète « Position non partagée — aucune course en cours » toute la
+       journée devient un décor qu'on ne lit plus ; le jour où elle passe au vert, personne ne le
+       remarque. Sa seule présence dit désormais quelque chose. Le mot « aucune course en cours »
+       part avec la carte : il n'y a plus rien à afficher quand il n'y a pas de course.
+       Même ligne, même pastille et même feuille de style que l'écran du livreur — les deux
+       classes vivent maintenant dans style.css, une seule fois. (26/08/2026) -->
+  <div class="position-ligne hidden" id="position-sharing-card">
+    <div class="position-ligne-corps">
+      <span class="position-pastille" id="position-sharing-pastille" aria-hidden="true"></span>
+      <span id="position-sharing-desc">Position non partagée</span>
     </div>
     <div id="position-sharing-msg"></div>
   </div>
@@ -498,12 +522,17 @@
     <button type="button" class="btn" id="btn-open-recharge">➕ Recharger mon solde</button>
   </div>
 
-  <div class="card" id="card-wallet-help" style="background:#f4f9f8; border:1px solid #d8ebe7;">
-    <h2 class="panel-subtitle" style="margin-top:0;">ℹ️ Comment fonctionne mon portefeuille</h2>
-    <p style="font-size:13.5px; color:var(--muted); line-height:1.55; margin:0;">
-      À chaque course livrée, une <strong>commission</strong> est déduite de votre solde : vous encaissez le prix de la course en espèces auprès du client, et la part de la plateforme est prélevée sur votre portefeuille.
-      Pour continuer à recevoir des courses, votre solde doit rester au-dessus du <strong>minimum requis</strong> affiché ci-dessus. Rechargez à tout moment via « Recharger mon solde ».
-    </p>
+  <!-- Le fonctionnement du portefeuille s'apprend une fois, à la première recharge ; il ne se
+       relit pas tous les jours. Le texte n'a pas bougé d'un mot, il est simplement replié.
+       (26/08/2026) -->
+  <div class="card" id="card-wallet-help" style="background:#f4f9f8; border:1px solid #d8ebe7; padding:12px 14px;">
+    <details class="geoloc-consent-detail" style="margin:0;">
+      <summary>ℹ️ Comment fonctionne mon portefeuille</summary>
+      <p style="font-size:13.5px; color:var(--muted); line-height:1.55; margin:8px 0 0;">
+        À chaque course livrée, une <strong>commission</strong> est déduite de votre solde : vous encaissez le prix de la course en espèces auprès du client, et la part de la plateforme est prélevée sur votre portefeuille.
+        Pour continuer à recevoir des courses, votre solde doit rester au-dessus du <strong>minimum requis</strong> affiché ci-dessus. Rechargez à tout moment via « Recharger mon solde ».
+      </p>
+    </details>
   </div>
 
   <div class="card" id="card-gains">
@@ -593,7 +622,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826position1"></script>
+<script src="clt-common.js?v=20260826clients1"></script>
 <script src="express-config.js?v=20260819saisie1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
@@ -1343,45 +1372,132 @@
     if (error) console.error('Erreur enregistrement trace:', error);
   }
 
-  function updatePositionSharingFromCourses(){
-    const card = document.getElementById('position-sharing-card');
+  /* ---------- La ligne « partage de position » (26/08/2026) ----------
+     Reprise mot pour mot de l'écran du livreur, où le même défaut avait été corrigé la veille :
+     la ligne annonçait « Position partagée avec le client et l'équipe » à l'instant où on
+     DEMANDAIT le partage au téléphone, avant qu'un seul point soit parti. Elle promettait au
+     client une position que personne n'avait encore. Un coursier dont le GPS ne répond pas
+     lisait « partagée » toute la course.
+
+     Les faits observés sont tenus à part, et une fonction pure en déduit ce que la ligne dit.
+     C'est cette fonction que le banc d'essai fait tourner. */
+  const faitsPosition = {
+    enCourse: false,
+    accordManquant: false,
+    dernierEnvoiA: 0,   // horodatage du dernier point réellement écrit dans livreur_positions
+    erreurCode: 0,      // 1 = autorisation refusée, 2 = position indisponible, 3 = trop long
+  };
+  let positionPartageActif = null; // null = premier passage, on ne sait pas encore
+
+  /* Le seuil du vert est POSITION_STALE_AFTER_MS — exactement celui qu'emploie express-client.html
+     pour décider si le marqueur 🛵 reste sur la carte du client. Les deux écrans ne peuvent donc
+     pas se contredire : « est-ce que mon client me voit ? » reçoit la même réponse des deux bouts.
+
+     Le rouge est réservé à l'autorisation refusée, la seule panne qui demande un geste. Un GPS qui
+     cherche encore, un tunnel, un réseau tombé — codes 2 et 3 — se réparent tout seuls et restent
+     en orange : crier au loup pour un tunnel apprend au coursier à ignorer la pastille, et le jour
+     de la vraie panne, il l'ignorera aussi. */
+  function positionEtatLigne(faits, maintenant){
+    if (!faits.enCourse) return { visible: false, classe: '', texte: '', detail: '', detailClasse: '' };
+    if (faits.accordManquant) {
+      return { visible: true, classe: 'est-attente', texte: 'Votre accord est demandé ci-dessus', detail: '', detailClasse: '' };
+    }
+    if (faits.erreurCode === 1) {
+      return {
+        visible: true, classe: 'est-erreur', texte: 'Position non partagée — à autoriser',
+        detailClasse: 'msg-error',
+        detail: "⚠️ Ce téléphone refuse de donner sa position. Autorisez la géolocalisation pour cette application, vérifiez que le GPS est allumé et que le mode économie de batterie ne le bloque pas : le partage reprend ensuite tout seul, sans rien rouvrir.",
+      };
+    }
+    if (faits.dernierEnvoiA && (maintenant - faits.dernierEnvoiA) < POSITION_STALE_AFTER_MS) {
+      return {
+        visible: true, classe: 'est-active', detail: '', detailClasse: '',
+        texte: 'Position partagée avec le client et l\'équipe',
+      };
+    }
+    return {
+      visible: true, classe: 'est-attente', texte: 'Position pas encore transmise',
+      detailClasse: 'msg-info',
+      detail: "Le signal met parfois du temps à passer — à l'intérieur d'un bâtiment, dans un tunnel, ou quand le réseau faiblit. Il n'y a rien à faire : le partage repart de lui-même dès qu'il revient.",
+    };
+  }
+
+  // Repeint la ligne à partir des faits. N'écrit que ce qui change : cette fonction est appelée
+  // à chaque rafraîchissement, à chaque point envoyé et toutes les trente secondes.
+  function peindrePositionLigne(){
+    const carte = document.getElementById('position-sharing-card');
     const desc = document.getElementById('position-sharing-desc');
+    const pastille = document.getElementById('position-sharing-pastille');
     const msg = document.getElementById('position-sharing-msg');
+    if (!carte || !desc || !pastille) return;
+    const etat = positionEtatLigne(faitsPosition, Date.now());
+    carte.classList.toggle('hidden', !etat.visible);
+    if (!etat.visible) { cltPoserHTML(msg, ''); return; }
+    const classe = 'position-pastille' + (etat.classe ? ' ' + etat.classe : '');
+    if (pastille.className !== classe) pastille.className = classe;
+    if (desc.textContent !== etat.texte) desc.textContent = etat.texte;
+    cltPoserHTML(msg, etat.detail ? `<div class="msg ${etat.detailClasse}">${escapeHTML(etat.detail)}</div>` : '');
+  }
+
+  function updatePositionSharingFromCourses(){
     const consentCard = document.getElementById('geoloc-consent-card');
     // Une course "active" = acceptée OU récupérée (le colis est pris mais pas encore livré).
     const activeCourse = mesCourses.find(c => c.status === 'acceptee' || c.status === 'recuperee');
     const enCourse = !!activeCourse;
     activeTraceCourseId = activeCourse ? activeCourse.id : null;
+    faitsPosition.enCourse = enCourse;
 
     if (!enCourse) {
       stopPositionSharing();
-      consentCard.classList.add('hidden');
-      card.classList.add('hidden');
-      desc.textContent = 'Position non partagée — aucune course en cours.';
-      msg.innerHTML = '';
+      if (consentCard) consentCard.classList.add('hidden');
+      // La course est finie : ce qui a été observé pendant cette course ne vaut plus rien. Sans
+      // cette remise à zéro, la course suivante s'ouvrirait au vert sur le souvenir de la précédente.
+      faitsPosition.dernierEnvoiA = 0;
+      faitsPosition.erreurCode = 0;
+      faitsPosition.accordManquant = false;
       // Minimisation des données : on ne garde aucune position au-delà d'une course active.
-      supabaseClient.from('livreur_positions').delete().eq('livreur_id', currentUser.id)
-        .then(({ error }) => { if (error) console.error('Erreur suppression position:', error); });
+      // Une seule fois, au moment où la course se termine — et une fois à l'ouverture de
+      // l'application, pour ramasser ce qu'une fermeture brutale aurait laissé. La version
+      // précédente lançait cette suppression à CHAQUE rafraîchissement des courses.
+      if (positionPartageActif !== false) {
+        positionPartageActif = false;
+        supabaseClient.from('livreur_positions').delete().eq('livreur_id', currentUser.id)
+          .then(({ error }) => { if (error) console.error('Erreur suppression position:', error); });
+      }
+      peindrePositionLigne();
       return;
     }
+
+    positionPartageActif = true;
 
     if (!currentProfile.geoloc_consent_at) {
-      consentCard.classList.remove('hidden');
-      card.classList.remove('hidden');
-      desc.textContent = "En attente de votre accord pour partager votre position (voir ci-dessus).";
-      msg.innerHTML = '';
+      faitsPosition.accordManquant = true;
+      if (consentCard) consentCard.classList.remove('hidden');
+      peindrePositionLigne();
       return;
     }
 
-    consentCard.classList.add('hidden');
-    card.classList.remove('hidden');
-    startPositionSharing(currentUser.id, (err) => {
-      msg.innerHTML = `<div class="msg msg-error">Impossible de partager votre position : ${err.message || 'accès refusé.'} Merci d'autoriser la géolocalisation pour cet appareil.</div>`;
-      desc.textContent = 'Activation impossible — vérifiez l\'autorisation de géolocalisation.';
-    }, recordTracePoint);
-    desc.textContent = 'Position partagée avec le client et l\'équipe pour cette course en cours.';
-    msg.innerHTML = '';
+    faitsPosition.accordManquant = false;
+    if (consentCard) consentCard.classList.add('hidden');
+    startPositionSharing(
+      currentUser.id,
+      (err) => { faitsPosition.erreurCode = (err && err.code) || 0; peindrePositionLigne(); },
+      // Un point vient d'être écrit dans la base : c'est le seul moment où la pastille a le droit
+      // de passer au vert, et le seul où une erreur passée cesse de compter. La trace du trajet
+      // s'enregistre dans le même mouvement — un seul suivi GPS pour les deux besoins.
+      async (coords) => {
+        faitsPosition.dernierEnvoiA = Date.now();
+        faitsPosition.erreurCode = 0;
+        peindrePositionLigne();
+        await recordTracePoint(coords);
+      }
+    );
+    peindrePositionLigne();
   }
+
+  // Le vert doit pouvoir retomber sans qu'aucune donnée n'ait bougé : c'est précisément quand
+  // plus rien n'arrive qu'il faut le dire. Rien à repeindre hors course, la ligne n'existe pas.
+  setInterval(() => { if (faitsPosition.enCourse) peindrePositionLigne(); }, 30000);
 
   // Enregistre le consentement explicite du coursier (une seule fois) avant tout partage de
   // position, conformément à la loi n° 2013-450.
@@ -1715,7 +1831,13 @@
     };
     ['card-availability','banner-lowbalance','section-disponibles'].forEach(id => put('cpanel-dispo', id));
     put('cpanel-courses', 'section-mescourses');
-    ['card-solde','card-gains','section-recharges'].forEach(id => put('cpanel-solde', id));
+    // card-wallet-help et section-debits ont été oubliés de cette liste le jour où les onglets
+    // ont été posés. Résultat : le pavé « Comment fonctionne mon portefeuille » et la liste des
+    // commissions restaient dans le flux de la page, donc visibles sous TOUS les onglets — y
+    // compris « Dispo », où le coursier vient chercher une course, pas une leçon de comptabilité.
+    // Ils rejoignent l'onglet Solde, seul endroit où ils veulent dire quelque chose. (26/08/2026)
+    ['card-solde','card-gains','card-wallet-help','section-recharges','section-debits']
+      .forEach(id => put('cpanel-solde', id));
   }
   function showCoursierTab(key){
     const panelWanted = CPANELS[key] || 'cpanel-dispo';

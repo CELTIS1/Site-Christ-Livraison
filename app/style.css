@@ -163,29 +163,22 @@ input,textarea,select{font-family:inherit;}
 .avatar-edit-option:hover{background:var(--grey-bg);}
 .avatar-edit-choices{display:flex; flex-direction:column;}
 
-/* ---------- SOUS-NAVIGATION ---------- */
-.subnav{
-  position:sticky; top:0; z-index:99; background:rgba(255,255,255,.9); backdrop-filter:saturate(180%) blur(8px);
-  border-bottom:1px solid var(--border); box-shadow:var(--shadow-xs);
-}
-.subnav-inner{
-  max-width:1080px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:6px; overflow-x:auto;
-}
-.subnav-group{display:flex; align-items:center; gap:2px; flex-shrink:0;}
-.subnav-label{
-  font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
-  color:#9aa7b8; padding:0 8px 0 2px; white-space:nowrap;
-}
-.subnav-divider{width:1px; height:20px; background:var(--border); margin:0 6px; flex-shrink:0;}
-.subnav a{
-  display:inline-block; padding:13px 12px; font-size:12.5px; font-weight:600; color:var(--muted);
-  white-space:nowrap; border-bottom:2.5px solid transparent; transition:color .2s ease, border-color .2s ease;
-}
-.subnav a:hover{color:var(--navy);}
-.subnav a.active{color:var(--orange); border-bottom-color:var(--orange);}
+/* ---------- SOUS-NAVIGATION (retirée le 26 août 2026) ----------
+   Vingt lignes décrivaient ici l'apparence d'une barre de raccourcis vers les sections d'une
+   page : .subnav, .subnav-inner, .subnav-group, .subnav-label, .subnav-divider, .subnav a. Elles
+   étaient chargées par tous les écrans du site, à chaque ouverture.
 
-@keyframes title-flash{ 0%{ color:var(--orange); } 100%{ color:inherit; } }
-.section-flash-title{ animation:title-flash 1.3s ease; }
+   Aucun écran ne servait plus ce HTML. Les écrans téléphone la masquaient — parfois deux fois —
+   et l'écran de l'équipe l'avait remplacée par sa barre d'onglets il y a des mois. Il ne restait
+   donc que le costume, et deux observateurs JavaScript qui l'attendaient chaque matin.
+
+   Sont parties avec elle l'animation title-flash et la classe .section-flash-title : elles ne
+   servaient qu'au clic sur un lien de cette barre.
+
+   La leçon, si elle en vaut une : masquer coûte moins cher que retirer sur le moment, et
+   beaucoup plus cher ensuite. Une chose masquée reste chargée, reste lue, et finit par
+   ressembler à une décision qu'on n'ose plus toucher parce que plus personne ne sait
+   pourquoi elle est là. */
 
 .collapsible-content{
   max-height:0; opacity:0; overflow:hidden;
@@ -250,6 +243,13 @@ input, select, textarea{ font-size:16px !important; }
 .btn-sm{padding:8px 14px; font-size:13px; box-shadow:none; border-radius:var(--radius-xs);}
 .btn-sm:hover{box-shadow:none;}
 .btn:disabled{opacity:.55; cursor:not-allowed; box-shadow:none; transform:none;}
+/* Un bouton marqué hidden doit disparaître. Sans cette ligne il reste à l'écran : la règle
+   .btn ci-dessus impose display:inline-flex, et une règle écrite ici l'emporte toujours sur
+   le display:none que le navigateur applique par défaut à [hidden]. Le piège s'est refermé
+   une fois sur le bouton « Envoyer » du relevé — masqué dans le code, bien visible à l'écran.
+   On le referme ici pour tous les boutons, comme c'est déjà fait six fois plus bas pour les
+   panneaux et les bandeaux, plutôt que d'attendre le prochain bouton qui tombera dedans. */
+.btn[hidden]{display:none;}
 
 /* ---------- COLIS ROWS (formulaire multi-ajout) ---------- */
 .colis-row{
@@ -874,6 +874,26 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
 .recap-day-summary strong{color:var(--navy);}
 .recap-export-bar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:2px 0 14px;}
 .recap-export-label{font-size:13px; color:var(--muted); font-weight:600;}
+
+/* ---- Relevé du soir : les boutons sous le bilan d'une cliente ----
+   Encadré plutôt que posé nu sous le tableau : ces boutons produisent un fichier qui part
+   chez la cliente, ils ne se confondent pas avec la lecture de l'écran. Sur téléphone, chaque
+   bouton occupe toute la largeur et fait au moins 44 px de haut — c'est le geste du soir, à
+   une main, en marchant. */
+.releve-barre{
+  margin-top:16px; padding:14px 16px; border-radius:var(--radius-sm);
+  background:var(--grey-bg); border:1.5px solid var(--border-strong);
+}
+.releve-barre-label{font-size:13px; font-weight:700; color:var(--navy); margin-bottom:10px;}
+.releve-barre-boutons{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.releve-barre-boutons .btn{min-height:40px;}
+@media(max-width:640px){
+  .releve-barre{padding:12px 12px;}
+  .releve-barre-boutons{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .releve-barre-boutons .btn{width:100%; min-height:44px;}
+}
+html[data-theme="dark"] .releve-barre{background:#141D29; border-color:#3A4B60;}
+html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
 .recap-search-wrap{margin-bottom:12px;}
 .recap-search{
   width:100%; max-width:360px; padding:10px 14px; font-size:14px; font-family:inherit;
@@ -2275,3 +2295,88 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 @media (max-width: 760px) {
   .clt-maj-bandeau--barre { bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* ============================================================================================
+   LES BRIQUES COMMUNES AUX ÉCRANS DU QUOTIDIEN (26/08/2026)
+
+   Ces trois familles de classes sont nées dans app/livreur.html le 26 août, puis réclamées le
+   même jour par app/express-coursier.html. Elles auraient pu y être recopiées ; la maison sait
+   déjà ce que ça donne. La compression des photos avait existé en trois exemplaires et fait
+   oublier la page équipe pendant des mois ; le contrôle des étiquettes de version avait existé
+   en quatre exemplaires, divergé en une journée, et laissé passer exactement l'erreur qu'il
+   était censé arrêter. Une brique recopiée n'est pas une brique renforcée : c'est une brique
+   qu'on oubliera de corriger quelque part.
+
+   Elles vivent donc ici, une fois. style.css est chargé par toutes les pages et porte déjà
+   l'étiquette de version commune, ce qui règle du même coup la question du cache.
+   ============================================================================================ */
+
+/* ---- La ligne « partage de position » ----
+   Remplace la carte d'autrefois : même information, une seule ligne, et cette ligne n'existe
+   que pendant un trajet ou une course. Une ligne permanente qui répète « Position non
+   partagée » du matin au soir devient un décor qu'on ne lit plus — et le jour où elle passe au
+   vert, personne ne le remarque. Sa seule présence dit quelque chose. */
+.position-ligne { margin: 0 0 10px; }
+.position-ligne-corps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.35;
+}
+.position-pastille {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #cbd5e1;
+  box-shadow: 0 0 0 3px rgba(203, 213, 225, .28);
+}
+.position-pastille.est-active { background: #3FA46A; box-shadow: 0 0 0 3px rgba(63, 164, 106, .22); }
+.position-pastille.est-attente { background: #E2A13F; box-shadow: 0 0 0 3px rgba(226, 161, 63, .22); }
+.position-pastille.est-erreur { background: #D6534A; box-shadow: 0 0 0 3px rgba(214, 83, 74, .22); }
+html[data-theme="dark"] .position-ligne-corps { color: #9DB0C4; }
+/* En sombre, seule la pastille « au repos » se grise : les trois états colorés gardent leur
+   couleur, sinon la ligne ne dirait plus rien. */
+html[data-theme="dark"] .position-pastille:not(.est-active):not(.est-attente):not(.est-erreur) {
+  background: #3A4A5E;
+  box-shadow: 0 0 0 3px rgba(58, 74, 94, .35);
+}
+
+/* ---- La phrase d'introduction d'un onglet ----
+   Une seule phrase, à l'intérieur de l'onglet qu'elle concerne, à la place de la phrase
+   d'accueil générale qui s'affichait en haut de page pour tous les onglets à la fois. */
+.onglet-intro { margin: 0 0 10px; font-size: 12.5px; }
+
+/* ---- La demande de consentement, version courte ----
+   Le texte complet de la notice (loi ivoirienne n° 2013-450) n'a rien perdu : il est sous
+   « Lire le détail », à un appui. Le résumé au-dessus dit l'essentiel — quand, quoi, combien de
+   temps. Un pavé de sept lignes n'est pas mieux lu qu'un résumé honnête : il est sauté, et un
+   accord donné sans lecture n'est pas un accord. */
+.geoloc-consent { padding: 14px !important; }
+.geoloc-consent-tete { display: flex; align-items: flex-start; gap: 10px; }
+.geoloc-consent-tete > span { font-size: 18px; line-height: 1.2; }
+.geoloc-consent-tete strong { font-size: 15px; line-height: 1.3; display: block; }
+.geoloc-consent-resume { font-size: 12.5px; color: #64748b; line-height: 1.45; margin-top: 4px; }
+.geoloc-consent-detail { margin: 10px 0 12px; }
+.geoloc-consent-detail > summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1B4374;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 4px 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.geoloc-consent-detail > summary::-webkit-details-marker { display: none; }
+.geoloc-consent-detail > summary::after { content: '▾'; font-size: 11px; transition: transform .15s ease; }
+.geoloc-consent-detail[open] > summary::after { transform: rotate(180deg); }
+.geoloc-consent .btn { width: 100%; justify-content: center; }
+html[data-theme="dark"] .geoloc-consent-resume { color: #9DB0C4; }
+html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
