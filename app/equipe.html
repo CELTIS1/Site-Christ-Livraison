@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260827montants1">
-<script src="theme.js?v=20260827montants1"></script>
+<link rel="stylesheet" href="style.css?v=20260827tournee1">
+<script src="theme.js?v=20260827tournee1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -382,6 +382,11 @@
 <div class="clt-toptabs-wrap">
 <div class="clt-toptabs" id="clt-toptabs" role="tablist">
 <button type="button" class="clt-toptab active" data-eqtab="colis">📦 Colis <span id="alert-badge-slot"></span></button>
+<!-- La programmation des récupérations a son propre onglet, et pas un bloc en haut de « Colis ».
+     Ce qu'on y fait ne parle pas de la même journée que tout le reste de l'écran : on y décide
+     DEMAIN pendant que partout ailleurs on lit AUJOURD'HUI. Mélangés, les deux se confondent, et
+     on programme en croyant modifier un colis du jour. (27/08/2026) -->
+<button type="button" class="clt-toptab" data-eqtab="programmation">🗓️ Programmation</button>
 <button type="button" class="clt-toptab" data-eqtab="suivi">🗺️ Suivi</button>
 <button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
 <button type="button" class="clt-toptab" data-eqtab="comptes">👥 Comptes</button>
@@ -390,6 +395,7 @@
 </div>
 
 <div class="eq-tabpanel" id="eqpanel-colis"></div>
+<div class="eq-tabpanel hidden" id="eqpanel-programmation"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-suivi"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-finances"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-comptes"></div>
@@ -572,6 +578,56 @@
 <button type="button" class="btn btn-sm" id="lot-loupe-fermer">✕ Fermer</button>
 </div>
 <img id="lot-loupe-img" src="" alt="Photo de l'étiquette en grand">
+</div>
+
+<!-- 🗓️ La tournée de récupération, décidée la veille. (27/08/2026)
+     Avant, un livreur n'apprenait chez qui il devait passer qu'au moment où les colis
+     existaient — c'est-à-dire le matin même, souvent tard. On écrit désormais la liste des
+     clientes la veille au soir, et chacun sait en se levant où il va. Les colis créés
+     ensuite viennent se rattacher tout seuls à la programmation du jour : personne ne
+     ressaisit un livreur qui a déjà été désigné. -->
+<div class="card" id="section-programmation">
+<h2 class="panel-subtitle">🗓️ Programmer les récupérations</h2>
+<p class="meta" style="margin:-6px 0 16px;">
+Désignez ce soir, cliente par cliente, le livreur qui ira récupérer demain matin. Les colis
+saisis ensuite lui seront rattachés automatiquement.
+</p>
+
+<div id="prog-msg"></div>
+
+<div class="recap-day-bar">
+<div class="field">
+<label for="prog-jour">Journée de la tournée</label>
+<input type="date" id="prog-jour">
+</div>
+<button type="button" class="btn btn-outline btn-sm" id="btn-prog-demain">📅 Demain</button>
+<button type="button" class="btn btn-outline btn-sm" id="btn-prog-aujourdhui">Aujourd'hui</button>
+</div>
+
+<div class="field-row">
+<div class="field">
+<label>Cliente à visiter</label>
+<select id="prog-fournisseur" data-recherche data-recherche-placeholder="Nom de la cliente…">
+<option value="">— Sélectionner —</option>
+</select>
+</div>
+<div class="field">
+<label>Livreur qui ira</label>
+<select id="prog-livreur" data-recherche data-recherche-placeholder="Nom du livreur…">
+<option value="">— Sélectionner —</option>
+</select>
+</div>
+</div>
+<div class="field">
+<label>Note pour le livreur <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
+<input type="text" id="prog-note" placeholder="Ex. : passer après 9h, portail bleu..." maxlength="200">
+</div>
+
+<button type="button" class="btn" id="btn-prog-ajouter">➕ Ajouter à la tournée</button>
+
+<div id="prog-body" style="margin-top:20px;">
+<div class="empty-state">Chargement…</div>
+</div>
 </div>
 
 <div class="card" id="section-main">
@@ -1044,10 +1100,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260827montants1"></script>
-<script src="config.js?v=20260827montants1"></script>
+<script src="clt-common.js?v=20260827tournee1"></script>
+<script src="config.js?v=20260827tournee1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260827montants1"></script>
+<script src="clt-select-recherche.js?v=20260827tournee1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2158,7 +2214,9 @@ return error;
 async function loadFournisseurs(){
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, full_name, company_name, commune_recuperation, adresse_recuperation')
+// `phone` est lu ici depuis le 27/08/2026 : la tournée du lendemain affiche le numéro de la
+// cliente, pour que le livreur puisse l'appeler avant de se déplacer pour rien.
+.select('id, full_name, company_name, phone, commune_recuperation, adresse_recuperation')
 .eq('role', 'fournisseur')
 .order('full_name');
 if (error) { console.error(error); return; }
@@ -2172,6 +2230,17 @@ data.map(f => `<option value="${f.id}">${escapeHTML(f.company_name || f.full_nam
 // pleine saisie. (25/08/2026)
 cltPoserOptions(document.getElementById('lot-fournisseur'), options);
 populateComptaFournisseurSelect();
+populateProgFournisseurSelect();
+}
+
+// La cliente à programmer pour la tournée. Même précaution que ci-dessus : cltPoserOptions
+// repose le choix en cours, sinon le rafraîchissement de 25 secondes ferait retomber la
+// cliente sur « — Sélectionner — » entre le moment où on la choisit et celui où on valide.
+function populateProgFournisseurSelect(){
+const select = document.getElementById('prog-fournisseur');
+if (!select) return;
+cltPoserOptions(select, '<option value="">— Sélectionner —</option>' +
+fournisseurs.map(f => `<option value="${f.id}">${escapeHTML(f.company_name || f.full_name || f.id)}</option>`).join(''));
 }
 
 function populateComptaFournisseurSelect(){
@@ -2469,7 +2538,16 @@ const { data, error } = await supabaseClient
 if (error) { console.error(error); return; }
 livreurs = data;
 populateFiltreLivreurSelect();
+populateProgLivreurSelect();
 renderColis();
+}
+
+// Le livreur qu'on désigne pour la tournée du lendemain.
+function populateProgLivreurSelect(){
+const select = document.getElementById('prog-livreur');
+if (!select) return;
+cltPoserOptions(select, '<option value="">— Sélectionner —</option>' +
+livreurs.map(l => `<option value="${l.id}">${escapeHTML(l.full_name || l.id)}</option>`).join(''));
 }
 
 // cltPoserOptions et non `innerHTML = …` : loadLivreurs() est rappelée régulièrement, et
@@ -5227,6 +5305,223 @@ vous surprend se règle en appelant la personne qui l'a écrit, pas en le défai
 </div>`);
 }
 
+/* ============================================================================================
+   🗓️ LA TOURNÉE DE RÉCUPÉRATION — écrite la veille au soir. (27/08/2026)
+
+   Le calcul n'est pas ici : il est dans config.js (tourneesDeRecuperation & co.), au même
+   endroit que celui du livreur. Les deux écrans montrent la même tournée ; ils ne doivent
+   donc jamais la recalculer chacun de son côté, sinon ils finiront par se contredire un jour
+   où personne ne regardera.
+
+   Cet écran-ci ne fait que : choisir la journée, aller chercher les lignes, appeler le calcul
+   et l'habiller.
+   ============================================================================================ */
+let progJourChoisi = null;     // 'YYYY-MM-DD' ; null => demain
+let progLignes = [];           // dernier chargement brut de programmations_collecte
+let progColis = [];            // les colis utiles au comptage de la journée affichée
+let progEnCours = false;
+let progErreur = '';
+
+function progGetJour(){
+return progJourChoisi || demainAbidjan();
+}
+
+function progMsg(text, type){
+const el = document.getElementById('prog-msg');
+if (el) el.innerHTML = `<div class="msg msg-${type}">${escapeHTML(text)}</div>`;
+if (window.cltToast) {
+cltToast(text, { type: type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info') });
+}
+}
+
+// La fiche d'une cliente, telle que le tableau la demande. `fournisseurs` est la liste
+// complète des clientes (loadFournisseurs), pas une page : on peut s'y fier.
+function progFicheCliente(id){
+const f = (fournisseurs || []).find(x => x.id === id);
+if (!f) return {};
+return {
+nom: f.company_name || f.full_name || '',
+commune: f.commune_recuperation || '',
+adresse: f.adresse_recuperation || '',
+telephone: f.phone || '',
+};
+}
+
+function progNomLivreur(id){
+const l = (livreurs || []).find(x => x.id === id);
+return l ? (l.full_name || '') : '';
+}
+
+// Les colis nécessaires au comptage, demandés à la base et non lus dans `allColis` : ce cache
+// est paginé, et un colis resté au-delà de la première page ferait afficher « rien à
+// récupérer » chez une cliente qui a pourtant de la marchandise prête. Un tableau faux et
+// muet, exactement ce qu'on ne veut pas.
+//
+// Deux questions différentes, donc deux requêtes :
+//   — ce qui reste à prendre : les colis encore « en attente », sans condition de date ;
+//   — ce qui a déjà été pris : les colis dont l'heure de récupération tombe dans la journée.
+async function progColisPourLaTournee(jour, fournisseurIds){
+if (!jour || !fournisseurIds.length) return [];
+const debut = jour + 'T00:00:00Z';
+const fin   = jour + 'T23:59:59.999Z';
+
+const [attente, pris] = await Promise.all([
+supabaseClient.from('colis').select('id, fournisseur_id, statut, recupere_at')
+.in('fournisseur_id', fournisseurIds).eq('statut', 'en_attente'),
+supabaseClient.from('colis').select('id, fournisseur_id, statut, recupere_at')
+.in('fournisseur_id', fournisseurIds).gte('recupere_at', debut).lte('recupere_at', fin),
+]);
+
+const parId = new Map();
+for (const { data, error } of [attente, pris]) {
+if (error) { console.error('Tournée :', error.message || error); continue; }
+(data || []).forEach(c => { if (c && c.id) parId.set(c.id, c); });
+}
+return Array.from(parId.values());
+}
+
+async function chargerProgrammations(){
+const jour = progGetJour();
+progEnCours = true; progErreur = '';
+renderProgrammationBody();
+
+const { data, error } = await supabaseClient
+.from('programmations_collecte')
+.select('id, jour, fournisseur_id, livreur_id, note')
+.eq('jour', jour);
+
+if (error) {
+console.error(error);
+progEnCours = false;
+// On nomme la cause la plus probable plutôt que de montrer un tableau vide : un tableau vide
+// se lit « personne n'a rien programmé », ce qui serait faux et rassurant à tort.
+progErreur = "Impossible de lire les programmations. Si c'est la première fois, le script "
++ "_sql-prive/2026-08-programmation-des-recuperations.sql n'a probablement pas encore été exécuté.";
+progLignes = []; progColis = [];
+renderProgrammationBody();
+return;
+}
+
+progLignes = data || [];
+// Une journée à venir n'a pas encore de colis : inutile d'interroger la base pour elle.
+const rang = rangDeLaJournee(jour, aujourdhuiAbidjan());
+progColis = rang === 'avenir'
+? []
+: await progColisPourLaTournee(jour, Array.from(new Set(progLignes.map(p => p.fournisseur_id))));
+
+progEnCours = false;
+renderProgrammationBody();
+}
+
+function renderProgrammationBody(){
+const body = document.getElementById('prog-body');
+if (!body) return;
+const jour = progGetJour();
+
+if (progEnCours) { cltPoserHTML(body, `<div class="empty-state">Chargement…</div>`); return; }
+if (progErreur)  { cltPoserHTML(body, `<div class="empty-state">${escapeHTML(progErreur)}</div>`); return; }
+
+const tournee = tourneesDeRecuperation({
+jour: jour,
+aujourdHui: aujourdhuiAbidjan(),
+programmations: progLignes,
+colis: progColis,
+cliente: progFicheCliente,
+livreurNom: progNomLivreur,
+});
+const { lignes, total, colisConnus } = tournee;
+const dateLabel = recapDayLabel(jour);
+
+if (!lignes.length) {
+cltPoserHTML(body, `<div class="empty-state">Aucune récupération programmée ${escapeHTML(dateLabel)}. Choisissez une cliente et un livreur ci-dessus pour commencer la tournée.</div>`);
+return;
+}
+
+// « à venir » et non « 0 » : tant que la journée n'est pas arrivée, aucun colis n'existe
+// encore. Écrire zéro laisserait croire que la cliente n'a rien, alors qu'on n'en sait rien.
+const compte = (n) => colisConnus ? String(n) : '<span style="color:#8a94a3;">à venir</span>';
+
+const rows = lignes.map(l => `
+<tr>
+<td data-label="Cliente">${escapeHTML(l.clienteNom)}${l.rienARecuperer ? '<br><span class="meta" style="color:#8a94a3;">rien à récupérer pour l\'instant</span>' : ''}</td>
+<td data-label="Où">${l.commune ? escapeHTML(l.commune) : '—'}${l.adresse ? '<br><span class="meta">' + escapeHTML(l.adresse) + '</span>' : ''}</td>
+<td data-label="Téléphone">${l.telephone ? '<a href="tel:' + encodeURIComponent(l.telephone) + '">' + escapeHTML(l.telephone) + '</a>' : '—'}</td>
+<td data-label="Livreur">${escapeHTML(l.livreurNom)}</td>
+<td data-label="Note">${l.note ? escapeHTML(l.note) : '<span style="color:#8a94a3;">—</span>'}</td>
+<td data-label="À prendre">${compte(l.nbAPrendre)}</td>
+<td data-label="Déjà pris">${compte(l.nbDejaPris)}</td>
+<td data-label="Retirer"><button type="button" class="btn btn-outline btn-sm" data-prog-retirer="${l.id}">Retirer</button></td>
+</tr>`).join('');
+
+cltPoserHTML(body, `
+<div class="recap-day-summary">${escapeHTML(dateLabel)} · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's' : ''} · <strong>${total.nbLivreurs}</strong> livreur${total.nbLivreurs > 1 ? 's' : ''}</div>
+<div class="recap-table-wrap">
+<table class="recap-table recap-table-cards">
+<thead><tr><th>Cliente</th><th>Où</th><th>Téléphone</th><th>Livreur</th><th>Note</th><th>À prendre</th><th>Déjà pris</th><th>Retirer</th></tr></thead>
+<tbody>${rows}</tbody>
+${piedTotalHTML([
+{ texte: 'TOTAL' },
+{ texte: total.nbClientes + ' cliente(s)', label: 'Où' },
+{ texte: '' },
+{ texte: total.nbLivreurs + ' livreur(s)', label: 'Livreur' },
+{ texte: '' },
+{ texte: colisConnus ? String(total.nbAPrendre) : 'à venir', label: 'À prendre' },
+{ texte: colisConnus ? String(total.nbDejaPris) : 'à venir', label: 'Déjà pris' },
+{ texte: '' },
+])}
+</table>
+</div>
+<div class="recap-bilan-note">
+${colisConnus
+? `Sur ces ${total.nbClientes} cliente(s), ${total.nbClientesSansRien} n'${total.nbClientesSansRien > 1 ? 'ont' : 'a'} rien à faire récupérer pour l'instant — la ligne reste, parce qu'un colis peut encore être saisi d'ici le passage du livreur.`
+: `La journée n'est pas encore arrivée : aucun colis n'existe pour elle. Les colonnes se rempliront toutes seules à mesure que les colis seront saisis, et chacun se rattachera au livreur désigné ici.`}
+</div>`);
+}
+
+// Ajouter une cliente à la tournée. `upsert` et non `insert` : la table n'accepte qu'une seule
+// ligne par (jour, cliente), et corriger le livreur choisi doit rester un geste — on rechoisit
+// la cliente, on rechoisit le livreur, on valide. Sans cela l'écran renverrait une erreur de
+// doublon là où l'utilisateur croit simplement se corriger.
+async function progAjouter(){
+const champs = {
+jour: progGetJour(),
+fournisseurId: document.getElementById('prog-fournisseur').value || '',
+livreurId: document.getElementById('prog-livreur').value || '',
+note: document.getElementById('prog-note').value || '',
+};
+const refus = raisonDeRefuserLaProgrammation(champs);
+if (refus) { progMsg(refus, 'error'); return; }
+
+const bouton = document.getElementById('btn-prog-ajouter');
+if (bouton) { bouton.disabled = true; bouton.textContent = 'Enregistrement…'; }
+
+const ligne = programmationARecuperationAEcrire(champs);
+ligne.cree_par = currentUser ? currentUser.id : null;
+const { error } = await supabaseClient
+.from('programmations_collecte')
+.upsert(ligne, { onConflict: 'jour,fournisseur_id' });
+
+if (bouton) { bouton.disabled = false; bouton.textContent = '➕ Ajouter à la tournée'; }
+
+if (error) {
+console.error(error);
+progMsg("Enregistrement refusé : " + (error.message || 'erreur inconnue'), 'error');
+return;
+}
+document.getElementById('prog-note').value = '';
+progMsg('Tournée mise à jour.', 'success');
+chargerProgrammations();
+}
+
+async function progRetirer(id){
+if (!id) return;
+if (!confirm("Retirer cette cliente de la tournée ?")) return;
+const { error } = await supabaseClient.from('programmations_collecte').delete().eq('id', id);
+if (error) { console.error(error); progMsg("Suppression refusée : " + (error.message || 'erreur inconnue'), 'error'); return; }
+progMsg('Cliente retirée de la tournée.', 'success');
+chargerProgrammations();
+}
+
 let recapExpanded = false;
 
 function toggleRecap(){
@@ -7627,6 +7922,49 @@ loadCorrectionsMontants();
 }
 })();
 
+// Les commandes de la tournée de récupération. Sa date lui est propre, et elle démarre sur
+// DEMAIN et non sur aujourd'hui : cet écran sert le soir, à préparer la matinée suivante.
+// Programmer pour aujourd'hui reste possible d'un bouton, mais ce n'est pas le geste courant.
+(function initProgrammationControls(){
+const champ = document.getElementById('prog-jour');
+const btnDemain = document.getElementById('btn-prog-demain');
+const btnAuj = document.getElementById('btn-prog-aujourdhui');
+const btnAjout = document.getElementById('btn-prog-ajouter');
+const body = document.getElementById('prog-body');
+
+if (champ) {
+if (!champ.value) champ.value = demainAbidjan();
+champ.addEventListener('change', () => {
+progJourChoisi = champ.value || null;
+chargerProgrammations();
+});
+}
+if (btnDemain) {
+btnDemain.addEventListener('click', () => {
+progJourChoisi = null;
+if (champ) champ.value = demainAbidjan();
+chargerProgrammations();
+});
+}
+if (btnAuj) {
+btnAuj.addEventListener('click', () => {
+progJourChoisi = aujourdhuiAbidjan();
+if (champ) champ.value = progJourChoisi;
+chargerProgrammations();
+});
+}
+if (btnAjout) btnAjout.addEventListener('click', progAjouter);
+
+// Délégation : le tableau est redessiné à chaque chargement, donc un écouteur posé sur
+// chaque bouton disparaîtrait avec lui. Celui-ci est posé une fois, sur le conteneur.
+if (body) {
+body.addEventListener('click', (e) => {
+const b = e.target.closest('[data-prog-retirer]');
+if (b) progRetirer(b.getAttribute('data-prog-retirer'));
+});
+}
+})();
+
 document.getElementById('btn-export-excel').addEventListener('click', async () => {
 const rows = await comptaFiltered();
 if (!rows.length) { alert("Aucune donnée à exporter."); return; }
@@ -8575,6 +8913,10 @@ init();
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
     Colis
   </button>
+  <button type="button" class="nav" data-nav="programmation">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/></svg>
+    Tournées
+  </button>
   <button type="button" class="nav" data-nav="suivi">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-11a7 7 0 0 0-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
     Suivi
@@ -8597,7 +8939,7 @@ init();
   // Les 5 onglets regroupent les anciennes sections. On DÉPLACE les sections existantes dans les
   // panneaux d'onglets (sans réécrire leur HTML) pour préserver tous les identifiants, formulaires
   // et écouteurs d'événements déjà câblés ailleurs dans le code.
-  const EQ_TABS = ['colis','suivi','finances','comptes','express'];
+  const EQ_TABS = ['colis','programmation','suivi','finances','comptes','express'];
 
   function showEquipeTab(key){
     if (!EQ_TABS.includes(key)) key = 'colis';
@@ -8618,6 +8960,10 @@ init();
       if (window.livreurMap) setTimeout(() => { try { window.livreurMap.invalidateSize(); } catch(e){} }, 60);
       if (typeof forceStickyReflow === 'function') forceStickyReflow(document.getElementById('panel-journal'));
     }
+    // La programmation interroge la base : on ne la charge qu'à l'ouverture de son onglet, et
+    // on la recharge à chaque retour. Une tournée décidée depuis un autre poste doit apparaître
+    // ici sans qu'on ait à recharger la page.
+    if (key === 'programmation' && typeof chargerProgrammations === 'function') chargerProgrammations();
     if (key === 'finances' && typeof forceStickyReflow === 'function'){
       forceStickyReflow(document.getElementById('panel-rapports'));
       forceStickyReflow(document.getElementById('panel-compta'));
@@ -8645,6 +8991,9 @@ init();
     // encombrait le haut de l'onglet.
     put('eqpanel-colis', byId('section-lot-colis'));
     put('eqpanel-colis', wrapInCard(byId('panel-colis')));
+
+    // 🗓️ Programmation : les tournées de récupération décidées à l'avance.
+    put('eqpanel-programmation', byId('section-programmation'));
 
     // 🗺️ Suivi : présence en ligne + carte + journal de bord
     put('eqpanel-suivi', byId('section-presence'));

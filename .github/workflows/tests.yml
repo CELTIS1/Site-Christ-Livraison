@@ -104,6 +104,21 @@ jobs:
       - name: Montants corrigés par le livreur (les deux poches, et la trace)
         run: node tests/montants-corriges-par-le-livreur.test.mjs
 
+      # La tournée de récupération, écrite la veille au soir et lue le lendemain matin. Ce qui
+      # est en jeu, c'est le premier geste de la journée d'un livreur : une liste vide alors
+      # qu'on l'attend quelque part, et il reste chez lui pendant qu'une cliente appelle à dix
+      # heures. Cette série tient donc trois choses que rien d'autre ne tient : qu'une journée
+      # PAS ENCORE ARRIVÉE annonce « à venir » au lieu d'un zéro fabriqué ; qu'une cliente sans
+      # colis reste affichée au lieu de disparaître ; et qu'une lecture en échec le DISE, au
+      # lieu de se lire « je n'ai rien à faire ce matin ». Elle exécute les vrais écrans — le
+      # bouton « Ajouter », le bouton « Retirer », les commandes de date — au lieu de relire
+      # leur code, parce que le sabotage a montré que la relecture laissait passer un écran
+      # ouvert sur le mauvais jour et une écriture partie sans cliente ni livreur. Sa dernière
+      # section relit le script SQL non publié et annonce ce qu'elle ne peut pas vérifier au
+      # lieu de s'arrêter. Les 28 sabotages du 27 août l'ont tous fait passer au rouge.
+      - name: Tournée de récupération (programmée la veille, lue le matin)
+        run: node tests/tournee-de-recuperation.test.mjs
+
       # L'argent. Un bouton mal placé, on le signale ; un total faux, on le RECOPIE — dans un
       # carnet, dans un message, dans la remise du soir — et il devient quelques jours plus
       # tard la version des faits que plus personne ne peut contester. Cette série tient les

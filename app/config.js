@@ -4094,3 +4094,162 @@ function initDeleteAccountRequest({ profile, requestBtnId, cancelBtnId, msgId, s
   });
   if (cancelBtn) cancelBtn.addEventListener("click", () => setDemande(null));
 }
+
+/* ============================================================================================
+   LA TOURNÉE DE RÉCUPÉRATION — décidée la veille, lue le matin
+   ============================================================================================
+   Demandé le 27 août 2026 : « je voudrais qu'on parvienne à désigner chaque livreur pour les
+   récupérations […] bien avant que les colis soient créés, comme ça déjà la veille on peut faire
+   les programmations pour que chaque livreur sache déjà tôt le matin ce qu'il doit aller
+   récupérer ».
+
+   POURQUOI CE CALCUL EST ICI ET PAS DANS LES ÉCRANS.
+   Deux écrans regardent la même chose sous deux angles : l'équipe voit toute la journée du
+   lendemain, tous livreurs confondus ; le livreur voit sa colonne à lui, le matin même. Ce sont
+   deux vues d'une seule liste. Écrites séparément, elles finiraient par ne plus compter les
+   colis de la même façon — et le jour où l'équipe annonce quatre colis chez une cliente pendant
+   que le livreur en voit trois, plus personne ne sait qui a raison. Il n'y a donc qu'une
+   addition, faite ici, et deux mises en page.
+
+   CE QU'ON COMPTE, ET POURQUOI CE N'EST PAS ÉVIDENT.
+   « Combien de colis chez cette cliente » n'a pas la même réponse selon la journée qu'on
+   regarde :
+
+     — Une journée à venir : on ne compte RIEN. Les colis n'existent pas encore ; afficher zéro
+       laisserait croire que la cliente n'a rien, alors qu'on n'en sait strictement rien. On le
+       dit franchement avec colisConnus = false, et l'écran écrit « à venir » au lieu d'un
+       chiffre. On n'invente jamais un chiffre pour remplir une case.
+
+     — Aujourd'hui, ou une journée passée : « à prendre » compte les colis encore en attente
+       chez elle, y compris ceux d'hier qu'on n'a pas ramassés — un colis oublié ne s'efface pas
+       à minuit, il attend toujours dans le salon de la cliente. « déjà pris » compte ceux qui
+       ont été marqués récupérés ce jour-là.
+
+   L'ORDRE DES LIGNES NE BOUGE PAS DE LA JOURNÉE.
+   Par ordre alphabétique de cliente, et rien d'autre. On aurait pu mettre en tête celles qui ont
+   des colis : la liste se réordonnerait alors toute seule au fil des saisies, sous le pouce d'un
+   livreur en train de la lire dans la rue. Une liste qui bouge pendant qu'on la lit se lit mal.
+   ============================================================================================ */
+
+// Le rang d'une journée par rapport à aujourd'hui, à Abidjan : "passe", "aujourdhui" ou "avenir".
+// Passer par aujourdhuiAbidjan() et pas par l'heure de l'appareil : le même écran ouvert depuis
+// le Canada doit parler du même mardi que celui d'Abidjan (voir jourAbidjan plus haut).
+function rangDeLaJournee(jour, aujourdHui) {
+  const ref = aujourdHui || aujourdhuiAbidjan();
+  if (!jour) return "aujourdhui";
+  if (jour > ref) return "avenir";
+  if (jour < ref) return "passe";
+  return "aujourdhui";
+}
+
+/* Les tournées d'une journée, prêtes à dessiner.
+
+   Entrée (tout est facultatif sauf programmations) :
+     programmations  lignes de la table programmations_collecte, déjà filtrées sur la journée
+     colis           les colis connus de l'écran, bruts
+     jour            "AAAA-MM-JJ" ; par défaut aujourd'hui à Abidjan
+     livreurId       si fourni, on ne garde que les tournées de ce livreur-là
+     cliente(id)     renvoie { nom, commune, adresse, telephone } — l'annuaire de l'écran
+     livreurNom(id)  renvoie le nom du livreur
+     aujourdHui      pour les bancs d'essai, qui ne peuvent pas attendre demain pour vérifier
+
+   Sortie : { jour, rang, colisConnus, lignes, total }. Le total est là sans condition : un
+   tableau sans ligne de total oblige à additionner de tête, et c'est là qu'on se trompe. */
+function tourneesDeRecuperation(options) {
+  const opts = options || {};
+  const jour = opts.jour || aujourdhuiAbidjan();
+  const rang = rangDeLaJournee(jour, opts.aujourdHui);
+  const colisConnus = rang !== "avenir";
+  const programmations = opts.programmations || [];
+  const colis = opts.colis || [];
+  const annuaire = opts.cliente || function () { return {}; };
+  const nomLivreur = opts.livreurNom || function (id) { return id || ""; };
+
+  const retenues = programmations.filter(function (p) {
+    if (!p) return false;
+    if (p.jour && p.jour !== jour) return false;
+    if (opts.livreurId && p.livreur_id !== opts.livreurId) return false;
+    return true;
+  });
+
+  const lignes = retenues.map(function (p) {
+    const fiche = annuaire(p.fournisseur_id) || {};
+    // Les colis de CETTE cliente, et d'elle seule. Le rapprochement se fait sur l'identifiant,
+    // jamais sur le nom : deux clientes peuvent porter le même nom de boutique.
+    const siens = colis.filter(function (c) { return c && c.fournisseur_id === p.fournisseur_id; });
+    const aPrendre = colisConnus
+      ? siens.filter(function (c) { return c.statut === "en_attente"; })
+      : [];
+    const dejaPris = colisConnus
+      ? siens.filter(function (c) { return jourEvenementColis(c, "recupere") === jour; })
+      : [];
+    return {
+      id: p.id,
+      fournisseurId: p.fournisseur_id,
+      clienteNom: fiche.nom || "Cliente inconnue",
+      commune: fiche.commune || "",
+      adresse: fiche.adresse || "",
+      telephone: fiche.telephone || "",
+      note: p.note || "",
+      livreurId: p.livreur_id,
+      livreurNom: nomLivreur(p.livreur_id) || "Livreur",
+      nbAPrendre: aPrendre.length,
+      nbDejaPris: dejaPris.length,
+      idsAPrendre: aPrendre.map(function (c) { return c.id; }),
+      // Vrai seulement quand on SAIT qu'il n'y a rien : une journée à venir ne sait rien.
+      rienARecuperer: colisConnus && aPrendre.length === 0 && dejaPris.length === 0,
+    };
+  });
+
+  lignes.sort(function (a, b) {
+    return String(a.clienteNom).localeCompare(String(b.clienteNom), "fr", { sensitivity: "base" });
+  });
+
+  const total = lignes.reduce(function (t, l) {
+    t.nbAPrendre += l.nbAPrendre;
+    t.nbDejaPris += l.nbDejaPris;
+    if (l.rienARecuperer) t.nbClientesSansRien++;
+    return t;
+  }, { nbClientes: lignes.length, nbAPrendre: 0, nbDejaPris: 0, nbClientesSansRien: 0 });
+  // Combien de livreurs sont sur la route ce jour-là. Compté sur les lignes retenues, donc
+  // toujours 1 quand l'écran du livreur appelle avec son propre identifiant.
+  total.nbLivreurs = new Set(lignes.map(function (l) { return l.livreurId; })).size;
+
+  return { jour: jour, rang: rang, colisConnus: colisConnus, lignes: lignes, total: total };
+}
+
+// Ce qu'on envoie à la base pour poser ou corriger une programmation. Une seule porte d'écriture,
+// pour que l'écran de l'équipe et tout ce qui viendra après écrivent les mêmes colonnes.
+// La note est ramenée à null quand elle est vide : une chaîne vide et « pas de note » se
+// ressemblent à l'écran mais se trient différemment en base.
+function programmationARecuperationAEcrire(champs) {
+  const c = champs || {};
+  const note = String(c.note === undefined || c.note === null ? "" : c.note).trim();
+  return {
+    jour: c.jour || aujourdhuiAbidjan(),
+    fournisseur_id: c.fournisseurId || null,
+    livreur_id: c.livreurId || null,
+    note: note === "" ? null : note,
+  };
+}
+
+// Ce qui empêche d'écrire, dit en français plutôt qu'en code d'erreur PostgreSQL.
+// Renvoie "" quand tout va bien.
+function raisonDeRefuserLaProgrammation(champs) {
+  const p = programmationARecuperationAEcrire(champs);
+  if (!p.jour || !/^\d{4}-\d{2}-\d{2}$/.test(p.jour)) return "Choisissez d'abord la journée de la tournée.";
+  if (!p.fournisseur_id) return "Choisissez la cliente chez qui il faut passer.";
+  if (!p.livreur_id) return "Choisissez le livreur qui ira la récupérer.";
+  return "";
+}
+
+// La journée de demain à Abidjan. La programmation se fait le soir pour le lendemain : c'est
+// cette date-là que l'écran doit proposer d'entrée, pas celle d'aujourd'hui, sinon la personne
+// qui programme à 19 h corrige une tournée déjà passée sans s'en rendre compte.
+function demainAbidjan(aujourdHui) {
+  const base = aujourdHui || aujourdhuiAbidjan();
+  const d = new Date(base + "T12:00:00Z");
+  if (!Number.isFinite(d.getTime())) return base;
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}

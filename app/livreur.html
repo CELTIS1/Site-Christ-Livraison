@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260827montants1">
-<script src="theme.js?v=20260827montants1"></script>
+<link rel="stylesheet" href="style.css?v=20260827tournee1">
+<script src="theme.js?v=20260827tournee1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -605,6 +605,17 @@
 
     <div id="panel-recup" class="hidden">
       <div class="page-sub onglet-intro">Appuyez sur « Je pars » quand vous partez vraiment : c'est ce qui démarre le partage de position.</div>
+
+      <!-- 🗓️ Ma tournée du jour. (27/08/2026)
+           Écrite la veille au soir par le bureau, elle répond à la seule question qui compte
+           en se levant : chez qui je passe ce matin. Elle est placée EN HAUT de l'onglet,
+           avant la liste des colis, parce qu'elle existe même quand aucun colis n'a encore
+           été saisi — c'est justement le cas au réveil. Le nom, la commune, l'adresse et le
+           téléphone suffisent pour partir ; les colis viendront s'y accrocher dans la
+           matinée. Le livreur n'y voit que SES clientes, pas celles de ses collègues. -->
+      <div id="recup-tournee" style="margin-bottom:18px;">
+        <div class="empty-state">Chargement…</div>
+      </div>
       <!-- La journée du jour à l'ouverture ; le calendrier permet de revenir sur une date
            antérieure sans perdre de vue le compteur de l'onglet, qui lui reste sur le total.
            (26/08/2026) -->
@@ -632,8 +643,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260827montants1"></script>
-<script src="config.js?v=20260827montants1"></script>
+<script src="clt-common.js?v=20260827tournee1"></script>
+<script src="config.js?v=20260827tournee1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -2371,6 +2382,7 @@
     renderArgentDuJour();
     renderMesColis();
     renderRecuperations();
+    renderMaTournee();
     if (currentUser && currentProfile) updatePositionSharingFromColis();
   }
 
@@ -2519,6 +2531,121 @@
     if (error) { console.error(error); return; }
     profilesById = {};
     data.forEach(p => { profilesById[p.id] = p; });
+  }
+
+  /* ==========================================================================================
+     🗓️ MA TOURNÉE DU JOUR — décidée la veille par le bureau. (27/08/2026)
+
+     Le calcul est dans config.js (tourneesDeRecuperation), le même que celui de l'écran
+     équipe : les deux montrent la tournée, ils ne la recalculent pas chacun de leur côté.
+
+     Ce que le livreur voit ici, c'est ce que la base veut bien lui montrer : la règle
+     programmations_collecte_select_livreur ne lui rend que SES lignes, sur trois jours ;
+     profiles_select_cliente_programmee ne lui rend que les fiches des clientes ainsi
+     programmées pour lui. Le navigateur ne filtre rien de sensible — il ne fait qu'afficher.
+     ========================================================================================== */
+  let tourneeLignes = [];    // programmations_collecte du jour, telles que la base les rend
+  let tourneeClientes = {};  // fiches des clientes concernées, par identifiant
+  let tourneeErreur = '';
+  let tourneeChargee = false;
+
+  async function chargerMaTournee(){
+    if (!currentUser) return;
+    const jour = aujourdhuiAbidjan();
+
+    const { data, error } = await supabaseClient
+      .from('programmations_collecte')
+      .select('id, jour, fournisseur_id, livreur_id, note')
+      .eq('jour', jour)
+      .eq('livreur_id', currentUser.id);
+
+    if (error) {
+      console.error(error);
+      // On nomme la cause probable au lieu d'afficher une liste vide : une liste vide se lit
+      // « je n'ai rien à récupérer ce matin », ce qui serait faux et ferait rester le livreur
+      // chez lui. Le message doit dire que c'est l'écran qui n'a pas pu lire, pas que la
+      // tournée est vide.
+      tourneeErreur = "Impossible de lire votre tournée pour l'instant. Prévenez le bureau avant de partir.";
+      tourneeLignes = []; tourneeChargee = true; renderMaTournee(); return;
+    }
+
+    tourneeErreur = '';
+    tourneeLignes = data || [];
+
+    // Les fiches des clientes : le nom seul ne suffit pas pour se déplacer, il faut la commune,
+    // l'adresse et surtout le numéro — pour appeler avant de traverser Abidjan pour rien.
+    const ids = Array.from(new Set(tourneeLignes.map(p => p.fournisseur_id)));
+    tourneeClientes = {};
+    if (ids.length){
+      const { data: fiches, error: e2 } = await supabaseClient
+        .from('profiles')
+        .select('id, full_name, company_name, phone, commune_recuperation, adresse_recuperation')
+        .in('id', ids);
+      if (e2) { console.error(e2); }
+      (fiches || []).forEach(f => { tourneeClientes[f.id] = f; });
+    }
+
+    tourneeChargee = true;
+    renderMaTournee();
+  }
+
+  function tourneeFiche(id){
+    const f = tourneeClientes[id];
+    if (!f) return {};
+    return {
+      nom: f.company_name || f.full_name || '',
+      commune: f.commune_recuperation || '',
+      adresse: f.adresse_recuperation || '',
+      telephone: f.phone || '',
+    };
+  }
+
+  function renderMaTournee(){
+    const box = document.getElementById('recup-tournee');
+    if (!box || !currentUser) return;
+
+    if (!tourneeChargee) { cltPoserHTML(box, `<div class="empty-state">Chargement…</div>`); return; }
+    if (tourneeErreur)   { cltPoserHTML(box, `<div class="empty-state">${escapeHTML(tourneeErreur)}</div>`); return; }
+
+    const jour = aujourdhuiAbidjan();
+    const { lignes, total } = tourneesDeRecuperation({
+      jour: jour,
+      aujourdHui: jour,
+      livreurId: currentUser.id,
+      programmations: tourneeLignes,
+      colis: allColis.filter(c => c && c.livreur_collecte_id === currentUser.id),
+      cliente: tourneeFiche,
+      livreurNom: () => (currentProfile && currentProfile.full_name) || 'Moi',
+    });
+
+    if (!lignes.length){
+      cltPoserHTML(box, `<div class="empty-state">Aucune récupération programmée pour vous aujourd'hui. Le bureau vous en assignera peut-être en cours de journée.</div>`);
+      return;
+    }
+
+    // Une carte par cliente, pas un tableau : cet écran se lit debout, sur un téléphone, une
+    // main sur le guidon. Le numéro est un vrai lien d'appel — un doigt suffit.
+    const cartes = lignes.map(l => `
+      <div class="colis-card" style="border-left:4px solid ${l.rienARecuperer ? '#cbd5e1' : '#1e8f4e'};">
+        <div style="font-weight:700; font-size:15px;">${escapeHTML(l.clienteNom)}</div>
+        <div class="meta">📍 ${l.commune ? escapeHTML(l.commune) : 'Commune non renseignée'}${l.adresse ? ' · ' + escapeHTML(l.adresse) : ''}</div>
+        ${l.telephone ? `<div class="meta">📞 <a href="tel:${encodeURIComponent(l.telephone)}">${escapeHTML(l.telephone)}</a></div>` : `<div class="meta" style="color:#8a94a3;">📞 Numéro non renseigné — passez par le bureau</div>`}
+        ${l.note ? `<div class="meta" style="color:#b45309;">📝 ${escapeHTML(l.note)}</div>` : ''}
+        <div class="meta" style="margin-top:6px;">
+          ${l.rienARecuperer
+            ? `<span style="color:#8a94a3;">Rien à récupérer pour l'instant — appelez-la avant de passer.</span>`
+            : `<strong>${l.nbAPrendre}</strong> à prendre${l.nbDejaPris ? ` · <span style="color:#1e8f4e;">${l.nbDejaPris} déjà pris</span>` : ''}`}
+        </div>
+      </div>`).join('');
+
+    cltPoserHTML(box, `
+      <h3 class="panel-subtitle" style="margin:0 0 10px;">🗓️ Ma tournée d'aujourd'hui</h3>
+      ${cartes}
+      <div class="recap-day-summary" style="margin-top:10px;">
+        TOTAL · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's' : ''} à visiter ·
+        <strong>${total.nbAPrendre}</strong> colis à prendre ·
+        <strong>${total.nbDejaPris}</strong> déjà pris
+      </div>`);
   }
 
   // Charge la première page de colis (les plus récents).
@@ -2741,6 +2868,9 @@
 
     await loadProfiles();
     await loadColis();
+    // La tournée du matin se charge sans bloquer le reste : même si la table n'existe pas
+    // encore, les colis, eux, doivent s'afficher.
+    chargerMaTournee();
     await refreshOfflineBanner();
     flushOfflineQueue();
 
@@ -2972,6 +3102,9 @@
       },
       onActualiser: async () => {
         await loadColis();
+        // La tournée aussi : le bureau peut ajouter une cliente en cours de matinée, et le
+        // livreur ne doit pas avoir à recharger la page pour l'apprendre.
+        await chargerMaTournee();
         await refreshOfflineBanner();
       },
     });
