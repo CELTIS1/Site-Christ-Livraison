@@ -2649,6 +2649,125 @@ function montantTotalColis(c) {
 }
 
 /* --------------------------------------------------------------------------------------------
+   CORRIGER LES DEUX MONTANTS DEPUIS LA RUE  (27/08/2026)
+
+   Ce qui se passe en vrai. Le livreur arrive devant la porte avec un colis marqué 15 000 pour
+   l'article. La cliente a changé son prix depuis, ou a accordé une remise, ou le destinataire
+   prend deux pièces au lieu d'une : le montant juste est 12 000, et c'est 12 000 qui vont entrer
+   dans sa poche. Jusqu'ici il n'avait aucun moyen de l'écrire. Le colis restait à 15 000 dans
+   l'application, le relevé du soir réclamait 15 000 à la cliente, et l'écart se réglait de
+   mémoire, le lendemain, entre deux personnes qui n'étaient pas là.
+
+   Pourquoi c'est écrit tout de suite, sans validation préalable. On aurait pu mettre la
+   correction en attente d'un accord de l'équipe. Ce serait pire : le soir venu, le relevé de la
+   cliente porterait encore l'ancien chiffre, c'est-à-dire exactement le problème qu'on répare.
+   La correction est donc immédiate — et tracée. Le déclencheur colis_journalise_montants inscrit
+   dans le journal l'ancien montant, le nouveau, qui et quand ; l'équipe les retrouve toutes dans
+   « Les corrections du jour ». On ne demande pas la permission, on rend des comptes.
+
+   Les deux poches se réécrivent ENSEMBLE, toujours. Un vieux colis d'avant le découpage ne porte
+   qu'un champ « montant » global, lu comme de l'article. Si on n'écrivait que la case touchée, ce
+   colis basculerait à moitié dans le nouveau monde : montant_article renseigné, montant_livraison
+   resté vide, et la livraison — qui existait bel et bien — tomberait à zéro sans que personne
+   l'ait décidé. On écrit donc les deux colonnes d'un seul geste, à partir de ce que les deux
+   cases affichent, et le colis en ressort cohérent.
+   -------------------------------------------------------------------------------------------- */
+
+// Au-delà de cet écart, on repose la question une fois. Comme pour les frais d'expédition, ce
+// n'est jamais un refus : une remise de 12 000 F existe. C'est le zéro de trop qu'on attrape.
+const MONTANT_ECART_SEUIL_CONFIRMATION = 10000;
+
+// Lecture d'une case de montant telle qu'un pouce la remplit : espaces, virgule décimale, champ
+// laissé vide. Le vide vaut zéro et non « inconnu » — les deux poches sont des nombres partout
+// ailleurs dans l'application, et un null qui remonterait ici contaminerait des colonnes de
+// totaux entières.
+function lireMontantSaisi(brut) {
+  const texte = String(brut === null || brut === undefined ? '' : brut)
+    .replace(/\s/g, '').replace(',', '.').trim();
+  if (texte === '') return { ok: true, valeur: 0 };
+  const n = Number(texte);
+  if (!isFinite(n) || n < 0) {
+    return { ok: false, valeur: 0, message: "Montant invalide. Écrivez seulement le nombre de francs, par exemple 12000." };
+  }
+  return { ok: true, valeur: Math.round(n) };
+}
+
+// Ce qu'on envoie à la base. Les deux colonnes, toujours (voir l'explication ci-dessus).
+function montantsColisAEcrire(article, livraison) {
+  return {
+    montant_article: Math.max(0, Math.round(Number(article) || 0)),
+    montant_livraison: Math.max(0, Math.round(Number(livraison) || 0)),
+  };
+}
+
+// De combien ça bouge, poche par poche. Positif : le colis vaut plus qu'avant.
+function ecartMontantsColis(c, patch) {
+  const article = (Number(patch.montant_article) || 0) - montantArticleColis(c);
+  const livraison = (Number(patch.montant_livraison) || 0) - montantLivraisonColis(c);
+  return { article, livraison, total: article + livraison };
+}
+
+// Rien n'a bougé : on n'écrit pas, et surtout on n'inscrit pas au journal une correction qui
+// n'en est pas une. Une liste de corrections où figurent des non-corrections ne se lit plus.
+function montantsColisOntChange(ecart) {
+  return ecart.article !== 0 || ecart.livraison !== 0;
+}
+
+// Faut-il reposer la question ? On regarde chaque poche séparément : +12 000 sur l'article et
+// −12 000 sur la livraison donneraient un total nul, alors que ce sont deux gros mouvements.
+function correctionMontantAConfirmer(ecart) {
+  return Math.abs(ecart.article) > MONTANT_ECART_SEUIL_CONFIRMATION
+      || Math.abs(ecart.livraison) > MONTANT_ECART_SEUIL_CONFIRMATION;
+}
+
+/* Les corrections du jour, telles que l'équipe les lit.
+
+   Entrée : les lignes du journal (action « colis_montant_modifie »), déjà filtrées sur la
+   journée par la requête. Sortie : des lignes prêtes à dessiner, et un TOTAL. Le total qui
+   compte n'est pas le nombre de corrections mais l'ARGENT que ces corrections déplacent :
+   « aujourd'hui, les livreurs ont retiré 34 500 F d'article et ajouté 2 000 F de livraison ».
+   C'est cette somme-là qui explique un écart de caisse le soir, et c'est donc elle qu'on
+   additionne — jamais à la main dans l'écran, ici et une seule fois. */
+function correctionsMontantsDuJour(journal, options) {
+  const opts = options || {};
+  const nomActeur = opts.nomActeur || function (id) { return id || '—'; };
+  const lignes = (journal || []).map(function (e) {
+    const d = e.details || {};
+    const ch = d.champs || {};
+    const av = function (k) { return ch[k] ? (Number(ch[k].avant) || 0) : 0; };
+    const ap = function (k) { return ch[k] ? (Number(ch[k].apres) || 0) : 0; };
+    const articleAvant = av('montant_article'), articleApres = ap('montant_article');
+    const livrAvant = av('montant_livraison'), livrApres = ap('montant_livraison');
+    return {
+      ts: e.ts,
+      colisId: e.target_id,
+      numero: d.numero || '',
+      auteur: nomActeur(e.actor_id),
+      role: e.actor_role || '',
+      articleAvant: articleAvant, articleApres: articleApres,
+      livrAvant: livrAvant, livrApres: livrApres,
+      // « Colonne pas rouverte » et « colonne rouverte sans bouger » ne sont pas la même chose,
+      // et c'est l'écran qui a besoin de la différence : c'est lui qui écrit « inchangé ». On le
+      // dit donc explicitement plutôt que de le déduire d'un écart nul — un zéro peut vouloir
+      // dire deux choses, un booléen n'en dit qu'une. Le ternaire qui se trouvait ici avant ne
+      // pouvait rien changer au résultat, une colonne absente valant déjà zéro des deux côtés :
+      // c'était un garde-fou qu'aucun sabotage n'aurait pu faire mordre. (27/08/2026)
+      articleTouche: !!ch.montant_article,
+      livraisonTouche: !!ch.montant_livraison,
+      ecartArticle: articleApres - articleAvant,
+      ecartLivraison: livrApres - livrAvant,
+    };
+  });
+  const total = lignes.reduce(function (t, l) {
+    t.ecartArticle += l.ecartArticle;
+    t.ecartLivraison += l.ecartLivraison;
+    return t;
+  }, { ecartArticle: 0, ecartLivraison: 0 });
+  total.ecartTotal = total.ecartArticle + total.ecartLivraison;
+  return { lignes: lignes, total: total };
+}
+
+/* --------------------------------------------------------------------------------------------
    LA TROISIÈME POCHE : LES FRAIS D'EXPÉDITION
 
    Pour un colis qui part à l'intérieur du pays, le livreur ne livre pas : il porte le colis à la

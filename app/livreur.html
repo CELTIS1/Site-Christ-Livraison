@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260827retour1">
-<script src="theme.js?v=20260827retour1"></script>
+<link rel="stylesheet" href="style.css?v=20260827montants1">
+<script src="theme.js?v=20260827montants1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -199,6 +199,38 @@
     box-shadow:0 6px 14px rgba(44,138,87,0.20) !important;
   }
   .btn.btn-frais-exp:hover{ background:linear-gradient(135deg,#379761 0%, #257B4C 100%) !important; }
+
+  /* ---------- Les deux montants du colis (27/08/2026) ----------
+     Sur la carte, la ligne des montants est la seule ligne grise qui parle d'argent : elle est
+     un peu plus grande et un peu plus foncée que ses voisines, sans devenir un titre. Le livreur
+     doit pouvoir la lire d'un coup d'œil en marchant, sans rien ouvrir. */
+  .colis-montants{ font-size:13px; color:#20406E; }
+  .colis-montants strong{ font-weight:800; }
+  html[data-theme="dark"] .colis-montants{ color:#B9CCE3; }
+
+  /* Le bloc de correction, lui, est encadré comme celui des frais : un cadre autour d'un champ
+     d'argent dit « ici, ce que vous écrivez sort de la poche de quelqu'un ». */
+  .montants-bloc{
+    margin-top:8px; padding:10px; border:1.5px solid #BFD5EF; border-radius:10px; background:#F4F9FF;
+  }
+  .montants-titre{ font-size:12px; font-weight:800; color:#1B4374; display:block; }
+  .montants-avis{ font-size:11px; line-height:1.45; margin:4px 0 8px; color:#4A6486; }
+  .montants-grille{ display:flex; gap:8px; flex-wrap:wrap; }
+  .montant-case{ flex:1 1 130px; min-width:0; display:flex; flex-direction:column; gap:3px; }
+  .montant-case > span{ font-size:11.5px; font-weight:700; color:#1B4374; }
+  /* 44 px : la hauteur d'un pouce. Un champ d'argent qu'on rate au premier appui se remplit au
+     deuxième, en pleine rue, sans regarder. */
+  .montant-case input{ width:100%; min-width:0; min-height:44px; font-size:16px; font-weight:700; }
+  .btn.btn-montants{
+    margin-top:8px; min-height:44px;
+    background:linear-gradient(135deg,#3FA46A 0%, #2C8A57 100%) !important;
+    border-color:transparent !important; color:#fff !important;
+    box-shadow:0 6px 14px rgba(44,138,87,0.20) !important;
+  }
+  .btn.btn-montants:hover{ background:linear-gradient(135deg,#379761 0%, #257B4C 100%) !important; }
+  html[data-theme="dark"] .montants-bloc{ background:#141F2E; border-color:#2E4A6B; }
+  html[data-theme="dark"] .montants-titre,
+  html[data-theme="dark"] .montant-case > span{ color:#9EC0E6; }
 
   /* ---------- Repli « Plus d'options » d'une carte colis (26/08/2026) ----------
      Le livreur ne voit d'emblée que ce dont il se sert à chaque colis : le statut et
@@ -600,8 +632,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260827retour1"></script>
-<script src="config.js?v=20260827retour1"></script>
+<script src="clt-common.js?v=20260827montants1"></script>
+<script src="config.js?v=20260827montants1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -662,6 +694,10 @@
       // Les frais d'expédition sont un montant en cours de frappe, donc de l'argent : une mise à
       // jour temps réel qui tomberait entre le « 2 » et le « 500 » ne doit pas effacer la saisie.
       const frais = item.querySelector('.frais-exp-input');
+      // Les deux montants du colis : même raison que les frais, en plus sensible encore. Ce qui
+      // est en train d'être frappé là, c'est ce que la cliente lira ce soir. (27/08/2026)
+      const mArticle = item.querySelector('.montant-article-input');
+      const mLivraison = item.querySelector('.montant-livraison-input');
       // Le repli « Plus d'options » : une mise à jour temps réel ne doit pas le refermer au
       // nez de quelqu'un en train d'y saisir une observation ou d'y choisir une photo.
       const plus = item.querySelector('.colis-plus');
@@ -670,10 +706,14 @@
         statut: sel ? sel.value : undefined,
         observation: obs ? obs.value : undefined,
         fraisExpedition: frais ? frais.value : undefined,
+        montantArticle: mArticle ? mArticle.value : undefined,
+        montantLivraison: mLivraison ? mLivraison.value : undefined,
         focus: (active && item.contains(active))
           ? (active.classList.contains('status-select') ? 'status'
             : active.classList.contains('obs-textarea') ? 'obs'
-            : active.classList.contains('frais-exp-input') ? 'frais' : null)
+            : active.classList.contains('frais-exp-input') ? 'frais'
+            : active.classList.contains('montant-article-input') ? 'montant-article'
+            : active.classList.contains('montant-livraison-input') ? 'montant-livraison' : null)
           : null,
         selStart: (obs && active === obs) ? obs.selectionStart : null,
         selEnd: (obs && active === obs) ? obs.selectionEnd : null,
@@ -690,6 +730,8 @@
       const sel = item.querySelector('.status-select');
       const obs = item.querySelector('.obs-textarea');
       const frais = item.querySelector('.frais-exp-input');
+      const mArticle = item.querySelector('.montant-article-input');
+      const mLivraison = item.querySelector('.montant-livraison-input');
       const plus = item.querySelector('.colis-plus');
       if (plus && s.plusOuvert !== undefined) plus.open = s.plusOuvert;
       // On ne restaure une saisie en cours que si elle diffère de la valeur affichée par défaut
@@ -698,8 +740,12 @@
       if (sel && s.statut !== undefined && !justSaved && sel.value !== s.statut) sel.value = s.statut;
       if (obs && s.observation !== undefined && !justSaved && obs.value !== s.observation) obs.value = s.observation;
       if (frais && s.fraisExpedition !== undefined && !justSaved && frais.value !== s.fraisExpedition) frais.value = s.fraisExpedition;
+      if (mArticle && s.montantArticle !== undefined && !justSaved && mArticle.value !== s.montantArticle) mArticle.value = s.montantArticle;
+      if (mLivraison && s.montantLivraison !== undefined && !justSaved && mLivraison.value !== s.montantLivraison) mLivraison.value = s.montantLivraison;
       if (s.focus === 'status' && sel) { sel.focus(); }
       else if (s.focus === 'frais' && frais) { frais.focus(); }
+      else if (s.focus === 'montant-article' && mArticle) { mArticle.focus(); }
+      else if (s.focus === 'montant-livraison' && mLivraison) { mLivraison.focus(); }
       else if (s.focus === 'obs' && obs) {
         obs.focus();
         if (s.selStart != null) { try { obs.setSelectionRange(s.selStart, s.selEnd); } catch(e){} }
@@ -1551,6 +1597,175 @@
       </div>`;
   }
 
+  /* Les deux montants, vus et corrigés depuis la rue. (27/08/2026)
+
+     Ce qu'on répare. Le livreur arrive devant la porte avec un colis marqué 15 000 F d'article.
+     La cliente a baissé son prix depuis, ou accordé une remise, ou le destinataire ne prend
+     qu'une pièce sur deux : ce qui va réellement entrer dans sa poche, c'est 12 000. Jusqu'ici il
+     n'avait aucun moyen de l'écrire — ni même de VOIR ce que le colis annonçait. Le relevé du
+     soir réclamait donc 15 000 à la cliente, et l'écart se rattrapait le lendemain, de mémoire,
+     entre deux personnes qui n'étaient pas devant la porte.
+
+     Deux gestes distincts, et c'est voulu. VOIR : une ligne toujours affichée sur la carte, sans
+     rien ouvrir, parce qu'un montant qu'il faut aller chercher est un montant qu'on ne vérifie
+     pas. CORRIGER : dans « Plus d'options », derrière un bouton qu'on appuie exprès — de l'argent
+     ne s'écrit jamais parce qu'un doigt a effleuré un champ en scrollant.
+
+     Les deux cases sont toujours proposées ensemble, même quand une seule doit changer. C'est ce
+     qui permet d'écrire les deux colonnes d'un coup et de garder cohérent un vieux colis qui ne
+     portait qu'un montant global — voir montantsColisAEcrire(), dans config.js. */
+  function montantsLigneHTML(c){
+    return `<div class="meta colis-montants">💵 Article : <strong>${formatMontant(montantArticleColis(c))}</strong>`
+      + ` · Livraison : <strong>${formatMontant(montantLivraisonColis(c))}</strong></div>`;
+  }
+
+  function montantsChampsHTML(c){
+    return `
+      <div class="field montants-bloc">
+        <label class="montants-titre">💵 Montants de ce colis</label>
+        <div class="meta montants-avis">
+          À corriger seulement si le prix a changé : remise accordée, article différent, livraison
+          renégociée. Ce que vous écrivez ici est ce que la cliente lira ce soir sur son relevé, et
+          l'équipe voit chaque correction.
+        </div>
+        <div class="montants-grille">
+          <label class="montant-case">
+            <span>Article (à la cliente)</span>
+            <input type="number" class="montant-article-input" inputmode="numeric" min="0" step="1" value="${montantArticleColis(c)}" aria-label="Montant de l'article, en FCFA">
+          </label>
+          <label class="montant-case">
+            <span>Livraison (à CLT)</span>
+            <input type="number" class="montant-livraison-input" inputmode="numeric" min="0" step="1" value="${montantLivraisonColis(c)}" aria-label="Montant de la livraison, en FCFA">
+          </label>
+        </div>
+        <button type="button" class="btn btn-sm btn-montants">Enregistrer les montants</button>
+      </div>`;
+  }
+
+  /* Un seul branchement pour les deux listes — « Mes colis assignés » et « Récupérations ».
+     Les deux écrans posent le même bloc, ils doivent donc partager le même code : deux copies,
+     ce serait deux endroits où corriger un jour la même chose, et un des deux serait oublié.
+
+     Ce qui est écrit passe par les fonctions communes de config.js : lireMontantSaisi pour lire
+     ce que le doigt a tapé, montantsColisAEcrire pour décider des deux colonnes, ecartMontantsColis
+     pour mesurer le mouvement. Aucun calcul d'argent n'est refait ici.
+
+     Trois précautions, dans cet ordre. Rien à écrire si rien n'a bougé : appuyer sur le bouton
+     sans avoir rien changé ne doit pas laisser une trace au journal ni réveiller l'équipe pour
+     rien. Une question posée au-delà de 10 000 F d'écart, parce qu'un zéro de trop sur un article
+     se lira le soir sur le relevé d'une cliente. Et la file d'attente hors connexion, comme
+     partout ailleurs ici : le livreur est dans la rue, le réseau tombe, l'argent ne doit pas
+     se perdre avec lui. */
+  function brancherMontants(list){
+    if (!list) return;
+    list.querySelectorAll('.btn-montants').forEach(btn => {
+      const item = btn.closest('.colis-item');
+      if (!item) return;
+      const enregistrer = async () => {
+        const id = item.dataset.id;
+        const existing = allColis.find(c => c.id === id);
+        if (!existing) return;
+        const champArticle = item.querySelector('.montant-article-input');
+        const champLivraison = item.querySelector('.montant-livraison-input');
+
+        const luArticle = lireMontantSaisi(champArticle ? champArticle.value : '');
+        if (!luArticle.ok) { alert(luArticle.message); return; }
+        const luLivraison = lireMontantSaisi(champLivraison ? champLivraison.value : '');
+        if (!luLivraison.ok) { alert(luLivraison.message); return; }
+
+        const patch = montantsColisAEcrire(luArticle.valeur, luLivraison.valeur);
+        const ecart = ecartMontantsColis(existing, patch);
+        if (!montantsColisOntChange(ecart)) {
+          cltToast("Aucun changement : les montants sont déjà ceux-là.", { type: 'info' });
+          return;
+        }
+
+        if (correctionMontantAConfirmer(ecart)) {
+          const signe = (n) => (n > 0 ? '+' : '−') + formatMontant(Math.abs(n));
+          const ok = await cltConfirm({
+            title: 'Confirmer cette correction ?',
+            detail: 'Article ' + formatMontant(montantArticleColis(existing)) + ' → '
+                  + formatMontant(patch.montant_article) + ' (' + signe(ecart.article) + ')'
+                  + '\nLivraison ' + formatMontant(montantLivraisonColis(existing)) + ' → '
+                  + formatMontant(patch.montant_livraison) + ' (' + signe(ecart.livraison) + ')',
+            sub: "C'est un gros écart. Ce sont ces montants que la cliente lira ce soir sur son "
+               + "relevé, et l'équipe verra votre correction. Vérifiez avant de confirmer.",
+            okLabel: 'Oui, corriger',
+            cancelLabel: 'Revoir',
+          });
+          if (!ok) return;
+        }
+
+        const appliquerEnLocal = () => {
+          existing.montant_article = patch.montant_article;
+          existing.montant_livraison = patch.montant_livraison;
+          rememberWrite(id, patch);
+        };
+
+        const enFile = async () => {
+          await queueAdd({
+            colisId: id,
+            statut: existing.statut,
+            observation: existing.observation,
+            photo_livraison_url: existing.photo_livraison_url,
+            photoBlob: null,
+            extra: { montant_article: patch.montant_article, montant_livraison: patch.montant_livraison },
+            userId: currentUser.id,
+            timestamp: Date.now(),
+          });
+          appliquerEnLocal();
+        };
+
+        if (!navigator.onLine) {
+          btn.disabled = true;
+          try { await enFile(); }
+          catch (e) {
+            console.error(e);
+            alert("Impossible d'enregistrer les montants hors connexion. Merci de réessayer une fois connecté(e).");
+          }
+          btn.disabled = false;
+          await refreshOfflineBanner();
+          renderAll();
+          return;
+        }
+
+        btn.disabled = true;
+        const prevText = btn.textContent;
+        btn.textContent = '…';
+        const { error } = await supabaseClient.from('colis').update(patch).eq('id', id);
+        btn.disabled = false;
+        if (error) {
+          try { await enFile(); await refreshOfflineBanner(); }
+          catch (e) {
+            console.error(e);
+            btn.textContent = prevText;
+            alert(friendlyErrorMessage(error.message));
+            return;
+          }
+          renderAll();
+          return;
+        }
+        appliquerEnLocal();
+        // Le total est demandé à montantTotalColis(), pas posé ici avec un « + ». La règle de la
+        // maison ne souffre pas d'exception pour un simple message : une addition écrite à la main
+        // est une addition qui divergera le jour où le modèle changera.
+        cltToast('Montants enregistrés : ' + formatMontant(montantArticleColis(existing))
+               + ' + ' + formatMontant(montantLivraisonColis(existing))
+               + ' = ' + formatMontant(montantTotalColis(existing)),
+               { type: 'success', title: 'Corrigé' });
+        renderAll();
+      };
+      btn.addEventListener('click', enregistrer);
+      // Entrée fait la même chose que le bouton : au téléphone, c'est le geste qui vient tout
+      // seul après avoir tapé un nombre, et personne n'ira chercher le bouton en dessous.
+      item.querySelectorAll('.montant-article-input, .montant-livraison-input').forEach(champ => {
+        champ.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); enregistrer(); }
+        });
+      });
+    });
+  }
+
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
   //
   // Quand il n'y a pas de photo, il n'y a plus de vignette du tout. Un carré gris marqué
@@ -1583,6 +1798,7 @@
           <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
           ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+          ${montantsLigneHTML(c)}
           ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
           ${collecteLineHTML(c)}
           ${tentatives > 0 ? `<div class="meta" style="color:#c0392b; font-weight:600;">🔁 Tentative(s) de livraison : ${tentatives}</div>` : ''}
@@ -1602,6 +1818,7 @@
                    encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
                    colis a été remis sans que l'argent de l'article rentre. -->
               <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#c0392b !important; border:1.5px solid #c0392b; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À utiliser seulement si vous avez remis le colis sans récupérer l'argent de l'article.">${c.article_non_encaisse ? '⚠️ Article NON encaissé' : "Article non encaissé ?"}</button>
+              ${montantsChampsHTML(c)}
               ${fraisExpeditionChampHTML(c)}
               <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
               <div class="field" style="margin-top:8px;">
@@ -1941,6 +2158,8 @@
       });
     });
 
+    brancherMontants(list);
+
     restorePendingEdits(list, __pending);
     restoreScrollAnchor(list, __anchor);
   }
@@ -1957,6 +2176,12 @@
   }
 
   // Même règle que dans mesColisRowHTML : pas de photo, pas de vignette. (26/08/2026)
+  //
+  // Les montants sont ici aussi, et corrigeables ici aussi. (27/08/2026) La récupération est même
+  // le moment le plus probable : c'est chez la cliente, colis en main, qu'on apprend qu'elle a
+  // baissé son prix ou renégocié la livraison. Le livreur de collecte a le droit d'écrire — la
+  // règle colis_update_collecte le lui donne, exactement comme colis_update_livreur au livreur
+  // de livraison. Ce serait donc lui demander de retenir un chiffre jusqu'au soir pour rien.
   function recupColisRowHTML(c){
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
@@ -1969,10 +2194,17 @@
           <div class="desc">${colisDestinationHTML(c)}</div>
           ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
           <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+          ${montantsLigneHTML(c)}
           ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
         </div>
-        <div class="status-col">${statutBadgeHTML(c.statut)}</div>
+        <div class="status-col">
+          ${statutBadgeHTML(c.statut)}
+          <details class="colis-plus">
+            <summary>Corriger les montants</summary>
+            <div class="colis-plus-corps">${montantsChampsHTML(c)}</div>
+          </details>
+        </div>
       </div>
     `;
   }
@@ -1992,12 +2224,18 @@
 
   // Pas de capturePendingEdits ici, contrairement à « Mes colis assignés » : cette liste ne
   // contient aucun champ de saisie (ni menu de statut, ni zone d'observation), uniquement des
-  // boutons d'action. Il n'y a donc rien à préserver quand le temps réel reconstruit la liste ;
-  // seule la position de défilement mérite d'être conservée.
+  // boutons d'action.
+  //
+  // Ce n'est plus vrai depuis le 27/08/2026 : les deux montants du colis se corrigent aussi
+  // depuis cet onglet, et un montant à demi frappé est une saisie en cours comme une autre. On
+  // capture donc ici la même chose qu'ailleurs. Sans cela, un collègue qui touche un colis à
+  // l'autre bout de la ville effacerait, par le temps réel, le chiffre en train d'être écrit
+  // devant la porte de la cliente.
   function renderRecuperations(){
     const list = document.getElementById('recup-colis-list');
     if (!list) return;
     const __anchor = captureScrollAnchor(list);
+    const __pending = capturePendingEdits(list);
     const toutes = mesRecuperationsList();
     const mine = toutes.filter(c => matchesDate(c, filtreDateRecup));
 
@@ -2104,6 +2342,9 @@
       });
     });
 
+    brancherMontants(list);
+
+    restorePendingEdits(list, __pending);
     restoreScrollAnchor(list, __anchor);
   }
 

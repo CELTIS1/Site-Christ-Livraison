@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260827retour1">
-<script src="theme.js?v=20260827retour1"></script>
+<link rel="stylesheet" href="style.css?v=20260827montants1">
+<script src="theme.js?v=20260827montants1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -645,6 +645,29 @@
 <div class="empty-state">Chargement...</div>
 </div>
 </div>
+<!-- Les corrections de montants : le pendant, côté bureau, de ce que les livreurs corrigent
+     dans la rue. (27/08/2026) Depuis qu'un livreur peut réécrire l'article et la livraison
+     devant la porte de la cliente, quelqu'un doit pouvoir dire le soir ce qui a bougé, de
+     combien et par qui. Sans cette liste, la correction serait immédiate ET invisible — et
+     l'équipe découvrirait l'écart en lisant un relevé qui ne dit pas d'où il vient.
+
+     Ce n'est PAS une file de validation : rien ne s'y approuve, tout y est déjà écrit. C'est
+     une reddition de comptes, pas une permission. -->
+<h3 class="panel-subtitle collapsible-header" id="corr-toggle" onclick="toggleCorrections()" style="margin-top:28px;">
+<span class="collapse-arrow" id="corr-arrow">▶</span> Corrections de montants
+</h3>
+<div id="corr-montants" class="collapsible-content">
+<div class="recap-day-bar">
+<div class="field">
+<label>Jour</label>
+<input type="date" id="corr-date">
+</div>
+<button type="button" class="btn btn-outline btn-sm" id="btn-corr-today">📅 Aujourd'hui</button>
+</div>
+<div id="corr-body">
+<div class="empty-state">Touchez le titre pour ouvrir.</div>
+</div>
+</div>
 <!-- Historique des actions : réservé à l'administrateur (masqué par défaut, réaffiché si isAdmin). -->
 <div id="activity-log-section" class="hidden">
 <h3 class="panel-subtitle" style="margin-top:28px;">Historique des actions</h3>
@@ -1021,10 +1044,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260827retour1"></script>
-<script src="config.js?v=20260827retour1"></script>
+<script src="clt-common.js?v=20260827montants1"></script>
+<script src="config.js?v=20260827montants1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260827retour1"></script>
+<script src="clt-select-recherche.js?v=20260827montants1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -4934,6 +4957,8 @@ creation_colis: "Nouveau colis ajouté",
 changement_statut_colis: "Changement de statut d'un colis",
 suppression_colis: "Suppression d'un colis",
 correction_colis: "Correction d'un colis depuis la fiche « Son écran »",
+colis_adresse_modifiee: "Correction de l'adresse d'un colis",
+colis_montants_modifies: "Correction des montants d'un colis",
 };
 
 // Qui a fait l'action. actor_id est renseigné par la base depuis août 2026
@@ -5056,6 +5081,150 @@ const { data, error } = await supabaseClient
 if (error) { console.error(error); return; }
 derniereActivite = data || [];
 renderActivityLog();
+}
+
+/* ============================================================================================
+   LES CORRECTIONS DE MONTANTS  (27/08/2026)
+   --------------------------------------------------------------------------------------------
+   Un livreur peut désormais réécrire l'article et la livraison d'un colis depuis la rue, sans
+   demander la permission — parce qu'attendre un accord laisserait le relevé du soir de la
+   cliente porter l'ancien chiffre, c'est-à-dire exactement le problème qu'on répare. En
+   contrepartie, rien de ce qu'il écrit ne doit pouvoir passer inaperçu.
+
+   Cette liste est cette contrepartie. Elle ne valide rien, elle rend des comptes.
+
+   Elle lit le journal de la base, pas les colis. C'est important : le colis, lui, ne porte que
+   sa valeur d'aujourd'hui — il a oublié qu'il valait 15 000 ce matin. Seul activity_log garde
+   l'avant et l'après, et il est rempli par un déclencheur côté serveur
+   (colis_journalise_montants), donc par un chemin qu'on ne peut pas contourner en ouvrant la
+   console du navigateur.
+
+   Le découpage des lignes et l'addition ne sont pas faits ici : correctionsMontantsDuJour(),
+   dans config.js, s'en charge — comme tout ce qui compte de l'argent dans cette maison.
+   ============================================================================================ */
+let corrExpanded = false;
+let corrSelectedDate = null;     // 'YYYY-MM-DD' ; null => aujourd'hui
+let corrLignes = [];             // dernier chargement brut du journal
+let corrEnCours = false;
+let corrErreur = '';
+
+function corrGetDate(){
+return corrSelectedDate || todayLocalISODate();
+}
+
+function toggleCorrections(){
+corrExpanded = !corrExpanded;
+const box = document.getElementById('corr-montants');
+if (corrExpanded) { expandCollapsible(box); } else { collapseCollapsible(box); }
+const fleche = document.getElementById('corr-arrow');
+if (fleche) fleche.textContent = corrExpanded ? '▼' : '▶';
+// Le chargement n'a lieu qu'à l'ouverture, jamais au fil des redessins : c'est une lecture
+// de plus sur la base, et elle ne concerne que celui qui a ouvert la section.
+if (corrExpanded) { loadCorrectionsMontants(); refreshStickyTables(box); }
+}
+
+async function loadCorrectionsMontants(){
+const jour = corrGetDate();
+corrEnCours = true; corrErreur = '';
+renderCorrectionsBody();
+// Bornes de la journée LOCALE, pas UTC : à Abidjan une correction de 23 h 30 appartient au
+// soir où elle a été faite, et doit sortir dans la liste de ce soir-là.
+const debut = new Date(jour + 'T00:00:00');
+const fin = new Date(debut.getTime() + 24 * 60 * 60 * 1000);
+const { data, error } = await supabaseClient
+.from('activity_log')
+.select('*')
+.eq('action', 'colis_montants_modifies')
+.gte('created_at', debut.toISOString())
+.lt('created_at', fin.toISOString())
+.order('created_at', { ascending: false })
+.limit(300);
+corrEnCours = false;
+if (error) {
+console.error(error);
+// On nomme la cause probable la plus fréquente au lieu d'afficher une liste vide : une liste
+// vide se lit « personne n'a rien corrigé », ce qui serait faux et rassurant à tort.
+corrErreur = "Impossible de lire les corrections. Si c'est la première fois, le script "
++ "_sql-prive/2026-08-montants-corriges-par-le-livreur.sql n'a peut-être pas encore été exécuté.";
+corrLignes = [];
+} else {
+corrLignes = data || [];
+}
+renderCorrectionsBody();
+}
+
+// Le journal ne connaît que des identifiants. Le nom, lui, est dans allAccounts — chargé en
+// parallèle, donc parfois en retard. On retombe alors sur le rôle plutôt que sur un identifiant
+// technique, illisible pour la personne qui lit ce tableau à 19 h.
+function corrNomActeur(id){
+if (!id) return '—';
+const compte = (allAccounts || []).find(x => x.id === id);
+if (compte) return compte.full_name || compte.phone || '—';
+return '—';
+}
+
+function corrEcartHTML(n, label){
+if (!n) return `<td data-label="${label}" style="color:#8a94a3;">—</td>`;
+const couleur = n > 0 ? '#1e8f4e' : '#c0392b';
+const signe = n > 0 ? '+' : '−';
+return `<td data-label="${label}" style="color:${couleur}; font-weight:700;">${signe}${formatMontant(Math.abs(n))}</td>`;
+}
+
+function renderCorrectionsBody(){
+const body = document.getElementById('corr-body');
+if (!body) return;
+const dateLabel = recapDayLabel(corrGetDate());
+
+if (corrEnCours) { cltPoserHTML(body, `<div class="empty-state">Chargement…</div>`); return; }
+if (corrErreur) { cltPoserHTML(body, `<div class="empty-state">${escapeHTML(corrErreur)}</div>`); return; }
+
+const { lignes, total } = correctionsMontantsDuJour(
+corrLignes.map(a => ({ ts: a.created_at, target_id: a.target_id, actor_id: a.actor_id, actor_role: a.actor_role, details: a.details })),
+{ nomActeur: corrNomActeur }
+);
+
+if (!lignes.length) {
+cltPoserHTML(body, `<div class="empty-state">Aucun montant corrigé ${dateLabel}. C'est la situation normale : les prix annoncés le matin ont tenu jusqu'au soir.</div>`);
+return;
+}
+
+const rows = lignes.map(l => `
+<tr>
+<td data-label="Heure">${formatDate(l.ts)}</td>
+<td data-label="Colis">${l.numero ? escapeHTML(l.numero) : '—'}</td>
+<td data-label="Par">${escapeHTML(l.auteur)}${l.role ? ' <span class="meta">(' + escapeHTML(l.role) + ')</span>' : ''}</td>
+<td data-label="Article">${l.articleTouche ? formatMontant(l.articleAvant) + ' → <strong>' + formatMontant(l.articleApres) + '</strong>' : '<span style="color:#8a94a3;">inchangé</span>'}</td>
+${corrEcartHTML(l.ecartArticle, 'Écart article')}
+<td data-label="Livraison">${l.livraisonTouche ? formatMontant(l.livrAvant) + ' → <strong>' + formatMontant(l.livrApres) + '</strong>' : '<span style="color:#8a94a3;">inchangé</span>'}</td>
+${corrEcartHTML(l.ecartLivraison, 'Écart livraison')}
+</tr>`).join('');
+
+const signeTotal = (n) => n === 0 ? '0 FCFA' : ((n > 0 ? '+' : '−') + formatMontant(Math.abs(n)));
+
+cltPoserHTML(body, `
+<div class="recap-day-summary">${dateLabel} · <strong>${lignes.length}</strong> correction${lignes.length > 1 ? 's' : ''}</div>
+<div class="recap-table-wrap">
+<table class="recap-table recap-table-cards">
+<thead><tr><th>Heure</th><th>Colis</th><th>Par</th><th>Article</th><th>Écart article</th><th>Livraison</th><th>Écart livraison</th></tr></thead>
+<tbody>${rows}</tbody>
+${piedTotalHTML([
+{ texte: 'TOTAL' },
+{ texte: lignes.length + ' correction(s)', label: 'Colis' },
+{ texte: '' },
+{ texte: '' },
+{ texte: signeTotal(total.ecartArticle), label: 'Écart article', couleur: total.ecartArticle > 0 ? '#1e8f4e' : (total.ecartArticle < 0 ? '#c0392b' : '') },
+{ texte: '' },
+{ texte: signeTotal(total.ecartLivraison), label: 'Écart livraison', couleur: total.ecartLivraison > 0 ? '#1e8f4e' : (total.ecartLivraison < 0 ? '#c0392b' : '') },
+])}
+</table>
+</div>
+<div class="recap-bilan-note">
+Les deux poches sont comptées séparément, et c'est voulu : l'<strong>article</strong> appartient à la cliente,
+la <strong>livraison</strong> est la recette de CLT. Additionner les deux écarts donnerait
+${signeTotal(total.ecartTotal)}, un chiffre qui ne veut rien dire pour personne.
+Ces corrections sont <strong>déjà enregistrées</strong> — rien n'est à approuver ici. Un écart qui
+vous surprend se règle en appelant la personne qui l'a écrit, pas en le défaisant en silence.
+</div>`);
 }
 
 let recapExpanded = false;
@@ -7433,6 +7602,27 @@ recaplSelectedLivreur = null;
 recaplSearchText = '';
 if (champ) champ.value = todayLocalISODate();
 renderRecapLivreurBody();
+});
+}
+})();
+
+// Mêmes commandes encore, pour les corrections de montants. Sa date lui est propre elle aussi :
+// on relit souvent les corrections d'hier en préparant les relevés du jour.
+(function initCorrectionsControls(){
+const champ = document.getElementById('corr-date');
+const btnJour = document.getElementById('btn-corr-today');
+if (champ) {
+if (!champ.value) champ.value = todayLocalISODate();
+champ.addEventListener('change', () => {
+corrSelectedDate = champ.value || null;
+loadCorrectionsMontants();
+});
+}
+if (btnJour) {
+btnJour.addEventListener('click', () => {
+corrSelectedDate = null;
+if (champ) champ.value = todayLocalISODate();
+loadCorrectionsMontants();
 });
 }
 })();

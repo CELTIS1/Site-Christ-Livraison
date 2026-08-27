@@ -89,6 +89,21 @@ jobs:
       - name: Correction d'adresse d'un colis (l'écran et la base disent la même chose)
         run: node tests/corriger-adresse-colis.test.mjs
 
+      # Les montants corrigés depuis la rue. Ce que le livreur tape sur le pas de la porte, la
+      # cliente le lit le soir même sur son relevé et le réclame le lendemain : une erreur ici
+      # sort de la maison et ne se rattrape plus. La série tient les deux poches ensemble — un
+      # vieux colis ne doit jamais ressortir à moitié converti, sa livraison tombée à zéro toute
+      # seule — repose la question au-delà de dix mille francs d'écart POCHE PAR POCHE, exécute
+      # le vrai geste d'enregistrement pour regarder ce qui part vers la base, et vérifie qu'une
+      # correction faite hors connexion attend en file au lieu de disparaître. Elle garde aussi
+      # la trace : elle est tenue par un déclencheur de la base, jamais par le navigateur, sinon
+      # elle sauterait dès qu'on écrit le montant par un autre chemin. Comme les deux séries
+      # ci-dessus, sa dernière section relit un script SQL non publié et annonce ce qu'elle ne
+      # peut pas vérifier au lieu de s'arrêter. Les 21 sabotages passés dessus le 27 août l'ont
+      # tous fait passer au rouge — c'est la seule preuve qui vaille qu'elle tient quelque chose.
+      - name: Montants corrigés par le livreur (les deux poches, et la trace)
+        run: node tests/montants-corriges-par-le-livreur.test.mjs
+
       # L'argent. Un bouton mal placé, on le signale ; un total faux, on le RECOPIE — dans un
       # carnet, dans un message, dans la remise du soir — et il devient quelques jours plus
       # tard la version des faits que plus personne ne peut contester. Cette série tient les
