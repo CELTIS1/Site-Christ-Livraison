@@ -15,8 +15,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826total1">
-<script src="theme.js?v=20260826total1"></script>
+<link rel="stylesheet" href="style.css?v=20260827retour1">
+<script src="theme.js?v=20260827retour1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
@@ -673,7 +673,7 @@
 </div>
 
 <!-- Modale salarié -->
-<div class="modal-back" id="modal-salarie">
+<div class="modal-back" id="modal-salarie" data-clt-couche="Fiche salarié">
   <div class="modal">
     <h3 id="modal-sal-title">Nouveau salarié</h3>
     <input type="hidden" id="sal-id">
@@ -706,18 +706,18 @@
       <div class="field"><label>Actif</label><select id="sal-actif"><option value="true">Oui</option><option value="false">Non</option></select></div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-salarie')">Annuler</button>
+      <button class="btn btn-outline btn-sm" data-clt-fermer onclick="closeModal('modal-salarie')">Annuler</button>
       <button class="btn btn-sm" onclick="saveSalarie()">Enregistrer</button>
     </div>
   </div>
 </div>
 
 <!-- Modale aperçu bulletin -->
-<div class="modal-back" id="modal-bulletin">
+<div class="modal-back" id="modal-bulletin" data-clt-couche="Bulletin de paie">
   <div class="modal" style="max-width:640px;">
     <div id="bulletin-preview"></div>
     <div class="modal-actions" style="margin-top:16px;">
-      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-bulletin')">Fermer</button>
+      <button class="btn btn-outline btn-sm" data-clt-fermer onclick="closeModal('modal-bulletin')">Fermer</button>
       <button class="btn btn-sm" id="btn-bulletin-pdf">⬇️ Télécharger le PDF</button>
     </div>
   </div>
@@ -726,10 +726,10 @@
 <!-- Aperçu imprimable. Ce qui est visible ici est exactement ce qui sortira de
      l'imprimante : la règle @media print (plus haut) masque tout le reste de la
      page. Le contenu est fabriqué par les fonctions imprimer*() de gestion.js. -->
-<div class="modal-back" id="modal-impression">
+<div class="modal-back" id="modal-impression" data-clt-couche="Aperçu d'impression">
   <div class="modal modal-impression">
     <div class="modal-actions no-print" style="margin:0 0 16px;">
-      <button class="btn btn-outline btn-sm" onclick="fermerApercuImpression()">Fermer</button>
+      <button class="btn btn-outline btn-sm" data-clt-fermer onclick="fermerApercuImpression()">Fermer</button>
       <button class="btn btn-sm" onclick="lancerImpression()">🖨️ Imprimer</button>
     </div>
     <div class="no-print" style="font-size:12px;color:var(--muted);margin-bottom:10px;">
@@ -760,10 +760,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260826total1"></script>
-<script src="config.js?v=20260826total1"></script>
+<script src="clt-common.js?v=20260827retour1"></script>
+<script src="config.js?v=20260827retour1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260826total1"></script>
+<script src="clt-select-recherche.js?v=20260827retour1"></script>
 <script src="gestion.js?v=20260823periode1"></script>
 </body>
 </html>

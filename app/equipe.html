@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826total1">
-<script src="theme.js?v=20260826total1"></script>
+<link rel="stylesheet" href="style.css?v=20260827retour1">
+<script src="theme.js?v=20260827retour1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -250,9 +250,9 @@
 
 <div id="team-toast-container" class="team-toast-container"></div>
 
-<div class="account-modal-overlay hidden" id="account-modal-overlay">
+<div class="account-modal-overlay hidden" id="account-modal-overlay" data-clt-couche="Mon compte" data-clt-retour=".account-modal">
 <div class="account-modal">
-<button type="button" class="account-modal-close" id="account-modal-close" aria-label="Fermer">✕</button>
+<button type="button" class="account-modal-close" id="account-modal-close" aria-label="Fermer" data-clt-fermer>✕</button>
 <h2 class="account-modal-title">Mon compte</h2>
 <div class="avatar-upload-row">
 <div id="avatar-preview"></div>
@@ -877,7 +877,7 @@
 </div>
 </div>
 
-<div id="confirm-modal-overlay" class="confirm-modal-overlay hidden">
+<div id="confirm-modal-overlay" class="confirm-modal-overlay hidden" data-clt-couche="Confirmation">
   <div class="confirm-modal">
     <div class="confirm-modal-icon" id="confirm-modal-icon">⚠️</div>
     <h3 class="confirm-modal-title" id="confirm-modal-title"></h3>
@@ -891,7 +891,7 @@
       <input type="text" id="confirm-modal-saisie" style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
     </div>
     <div class="confirm-modal-actions">
-      <button type="button" class="btn" id="confirm-modal-cancel" style="background:#e5e9ef;color:#222;">Annuler</button>
+      <button type="button" class="btn" id="confirm-modal-cancel" data-clt-fermer style="background:#e5e9ef;color:#222;">Annuler</button>
       <button type="button" class="btn" id="confirm-modal-ok">Confirmer</button>
     </div>
   </div>
@@ -901,7 +901,7 @@
      les vendeuses non présentes sur place ou éloignées du dépôt), réutilisé pour tous ses colis
      à venir et reporté immédiatement sur ses colis "en attente" déjà enregistrés, pour que le
      livreur de collecte sache où aller récupérer dès la notification. -->
-<div id="pickup-modal-overlay" class="pwd-modal-overlay hidden">
+<div id="pickup-modal-overlay" class="pwd-modal-overlay hidden" data-clt-couche="Lieu de récupération">
   <div class="pwd-modal">
     <div class="pwd-modal-icon">📍</div>
     <h3 class="pwd-modal-title">Lieu de récupération</h3>
@@ -917,7 +917,7 @@
       </div>
       <div id="pickup-modal-msg"></div>
       <div style="display:flex; gap:10px;">
-        <button type="button" class="btn" id="pickup-modal-cancel" style="flex:1; background:#e5e9ef; color:#222;">Annuler</button>
+        <button type="button" class="btn" id="pickup-modal-cancel" data-clt-fermer style="flex:1; background:#e5e9ef; color:#222;">Annuler</button>
         <button type="submit" class="btn" id="pickup-modal-save" style="flex:1;">Enregistrer</button>
       </div>
     </form>
@@ -930,7 +930,7 @@
      Le numéro est aussi l'identifiant de connexion : sa modification passe par
      la fonction serveur admin-modifier-compte, qui met à jour l'authentification
      ET la fiche ensemble. -->
-<div id="fiche-modal-overlay" class="pwd-modal-overlay hidden">
+<div id="fiche-modal-overlay" class="pwd-modal-overlay hidden" data-clt-couche="Corriger la fiche">
   <div class="pwd-modal">
     <div class="pwd-modal-icon">✏️</div>
     <h3 class="pwd-modal-title">Corriger la fiche</h3>
@@ -953,7 +953,7 @@
       </p>
       <div id="fiche-modal-msg"></div>
       <div style="display:flex; gap:10px;">
-        <button type="button" class="btn" id="fiche-modal-cancel" style="flex:1; background:#e5e9ef; color:#222;">Annuler</button>
+        <button type="button" class="btn" id="fiche-modal-cancel" data-clt-fermer style="flex:1; background:#e5e9ef; color:#222;">Annuler</button>
         <button type="submit" class="btn" id="fiche-modal-save" style="flex:1;">Enregistrer</button>
       </div>
     </form>
@@ -963,7 +963,7 @@
 <!-- Remise de caisse : l'équipe saisit la somme réellement reçue d'un livreur ;
      l'écart avec le montant attendu (reste à remettre) est calculé et conservé
      pour contrôle, puis les colis couverts sont marqués « remis ». -->
-<div id="remise-modal-overlay" class="pwd-modal-overlay hidden">
+<div id="remise-modal-overlay" class="pwd-modal-overlay hidden" data-clt-couche="Remise de caisse">
   <div class="pwd-modal">
     <div class="pwd-modal-icon">💵</div>
     <h3 class="pwd-modal-title">Remise de caisse</h3>
@@ -984,7 +984,7 @@
       </div>
       <div id="remise-modal-msg"></div>
       <div style="display:flex; gap:10px;">
-        <button type="button" class="btn" id="remise-modal-cancel" style="flex:1; background:#e5e9ef; color:#222;">Annuler</button>
+        <button type="button" class="btn" id="remise-modal-cancel" data-clt-fermer style="flex:1; background:#e5e9ef; color:#222;">Annuler</button>
         <button type="submit" class="btn" id="remise-modal-save" style="flex:1;">Enregistrer la remise</button>
       </div>
     </form>
@@ -1002,12 +1002,12 @@
 
      Il ne s'agit pas de se connecter à sa place : rien n'est fait ici en son nom. On regarde,
      et les corrections passent par la porte habituelle, sous le compte de qui les fait. -->
-<div id="fiche-ecran-overlay" class="fiche-ecran-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="fiche-ecran-titre">
+<div id="fiche-ecran-overlay" class="fiche-ecran-overlay hidden" data-clt-couche="Son écran" role="dialog" aria-modal="true" aria-labelledby="fiche-ecran-titre">
   <div class="fiche-ecran">
     <div class="fiche-ecran-tete">
       <div class="fiche-ecran-actions">
         <button type="button" class="btn btn-outline btn-sm fiche-ecran-retour" id="fiche-ecran-retour">← Retour</button>
-        <button type="button" class="fiche-ecran-fermer" id="fiche-ecran-fermer" aria-label="Fermer cette fiche">✕</button>
+        <button type="button" class="fiche-ecran-fermer" id="fiche-ecran-fermer" aria-label="Fermer cette fiche" data-clt-fermer>✕</button>
       </div>
       <h3 class="fiche-ecran-titre" id="fiche-ecran-titre">Son écran</h3>
       <p class="fiche-ecran-sub" id="fiche-ecran-sub"></p>
@@ -1021,10 +1021,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826total1"></script>
-<script src="config.js?v=20260826total1"></script>
+<script src="clt-common.js?v=20260827retour1"></script>
+<script src="config.js?v=20260827retour1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260826total1"></script>
+<script src="clt-select-recherche.js?v=20260827retour1"></script>
 <script>
 let currentUser = null;
 let allColis = [];

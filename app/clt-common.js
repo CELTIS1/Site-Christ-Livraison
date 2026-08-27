@@ -256,6 +256,7 @@ function __cltEnsureModal() {
   ov = document.createElement("div");
   ov.id = "clt-modal-overlay";
   ov.className = "confirm-modal-overlay hidden";
+  ov.setAttribute("data-clt-couche", "Confirmation");
   ov.innerHTML =
     '<div class="confirm-modal">' +
     '<div class="confirm-modal-icon" id="clt-modal-icon">⚠️</div>' +
@@ -266,7 +267,7 @@ function __cltEnsureModal() {
     'padding:12px 14px; border:1.5px solid #d6dee8; border-radius:10px; font-size:16px; ' +
     'text-align:center; margin-bottom:18px;" />' +
     '<div class="confirm-modal-actions">' +
-    '<button type="button" class="btn" id="clt-modal-cancel" style="background:#e5e9ef;color:#222;">Annuler</button>' +
+    '<button type="button" class="btn" id="clt-modal-cancel" data-clt-fermer style="background:#e5e9ef;color:#222;">Annuler</button>' +
     '<button type="button" class="btn" id="clt-modal-ok">Confirmer</button>' +
     "</div></div>";
   document.body.appendChild(ov);
@@ -327,6 +328,207 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
   inp.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); __cltCloseModal(inp.value); } };
   return new Promise((res) => { __cltModalResolve = res; });
 }
+
+/* =====================================================================
+   SORTIR — une seule façon de refermer ce qu'on a ouvert  (27/08/2026)
+
+   Le problème qu'on répare. L'application empile des fenêtres : la fiche
+   d'un colis, « Mon compte », une confirmation, un aperçu. Chacune savait
+   se fermer, mais chacune à sa manière, réécrite dans son coin : six
+   endroits différents géraient la touche Échap, et une nouvelle fenêtre
+   pouvait très bien naître en l'oubliant. Surtout, le bouton « retour »
+   du téléphone — le geste que tout le monde fait par réflexe — n'était
+   traité NULLE PART : avec une fiche ouverte, appuyer dessus ne fermait
+   pas la fiche, ça quittait la page. On perdait son travail en croyant
+   reculer d'un pas.
+
+   La règle unique. Une fenêtre se déclare avec deux attributs dans le
+   HTML, et rien d'autre :
+
+     <div id="…" class="… hidden" data-clt-couche="Mon compte">
+       <button … data-clt-fermer>✕</button>
+
+   data-clt-couche nomme la couche ; data-clt-fermer désigne le bouton
+   qui la referme. À partir de là tout est automatique, et le sera aussi
+   pour les fenêtres qui n'existent pas encore : Échap, le clic au fond
+   (si la page le prévoit déjà), et le bouton retour du téléphone.
+
+   Comment ça marche. On ne remplace la fermeture de personne : on la
+   REGARDE. Un observateur suit l'affichage réel de chaque couche.
+
+     — Quand une couche s'ouvre, on empile une entrée dans l'historique du
+       navigateur. Le « retour » du téléphone a désormais quelque chose à
+       défaire avant de quitter la page.
+     — Quand le retour du téléphone est pressé, on referme la couche du
+       dessus en actionnant SON PROPRE bouton de fermeture. Le retour fait
+       donc exactement ce que fait « Annuler » : mêmes nettoyages, mêmes
+       promesses résolues. Rien n'est court-circuité.
+     — Quand une couche se ferme par l'interface (croix, Annuler, Échap,
+       clic au fond), on retire l'entrée qu'on avait posée, pour qu'un
+       « retour » plus tard ne bute pas sur une marche vide.
+
+   Le seul piège de ce genre de mécanisme, c'est de confondre les deux
+   sens : refermer par l'interface déclenche un history.back(), qui
+   déclenche un popstate, qui refermerait à nouveau — une boucle. On
+   compte donc les retours qu'on a demandés soi-même (retoursDemandes) et
+   on laisse passer ceux-là sans rien faire.
+
+   Et quand c'est le téléphone qui referme, on dépile AVANT de fermer.
+   Pas à cause de l'observateur : il se réveille en microtâche, donc
+   toujours après nous et jamais pendant — c'est mesuré, dans tous les
+   cas ordinaires les deux ordres donnent exactement le même résultat.
+   La vraie raison est plus bête et plus sérieuse. Fermer, c'est exécuter
+   le code de la page, et ce code peut échouer. S'il échoue, une ligne
+   placée derrière lui ne s'exécute jamais : la pile garderait pour
+   toujours une couche fantôme, et chaque « retour » suivant s'acharnerait
+   sur une fenêtre qui ne se refermera pas — on ne pourrait plus quitter
+   la page du tout. Dépiler d'abord, c'est se mettre à l'abri de ce qu'on
+   ne contrôle pas.
+   ===================================================================== */
+(function () {
+  var couches = [];          // toutes les fenêtres déclarées sur cette page
+  var pile = [];             // celles qui sont ouvertes ; la dernière est celle du dessus
+  var retoursDemandes = 0;   // history.back() que NOUS avons demandés, à ne pas réinterpréter
+
+  // Une couche est ouverte si elle est réellement peinte. On ne teste pas la classe « hidden » :
+  // gestion.html ferme les siennes en retirant « open », Express en ajoutant « hidden », et une
+  // page à venir fera peut-être autrement. Ce que toutes ont en commun, c'est de disparaître de
+  // l'écran — c'est donc cela qu'on mesure, une fois pour toutes.
+  function estPeinte(el) {
+    if (!el || !el.isConnected) return false;
+    var st = window.getComputedStyle(el);
+    return st.display !== "none" && st.visibility !== "hidden";
+  }
+
+  function estOuverte(c) {
+    return c.estOuverte ? !!c.estOuverte() : estPeinte(c.element);
+  }
+
+  // Refermer une couche, c'est actionner le bouton que la page a elle-même prévu. On ne cache pas
+  // l'élément à la main : une modale de confirmation doit résoudre sa promesse, un formulaire doit
+  // se vider. Masquer sans prévenir laisserait l'application en attente d'une réponse qui ne
+  // viendrait jamais. Le masquage direct n'est qu'un dernier recours, quand rien n'est déclaré.
+  function fermer(c) {
+    if (typeof c.fermer === "function") { c.fermer(); return; }
+    var bouton = c.element.querySelector("[data-clt-fermer]");
+    if (bouton) { bouton.click(); return; }
+    c.element.classList.add("hidden");
+    c.element.classList.remove("open");
+  }
+
+  function empiler(n) {
+    for (var i = 0; i < n; i++) {
+      try { history.pushState({ cltCouche: true }, ""); } catch (e) {}
+    }
+  }
+
+  // Fait le point entre ce qui est affiché et ce qu'on croyait affiché, puis ne touche à
+  // l'historique que du solde. Si une fenêtre se ferme pendant qu'une autre s'ouvre — cas courant
+  // quand un bouton d'une fiche ouvre une confirmation — la profondeur ne bouge pas, donc on ne
+  // pose ni ne retire rien. Toucher l'historique deux fois dans le même instant le désynchronise.
+  function synchroniser() {
+    var entrees = 0, sorties = 0;
+    couches.forEach(function (c) {
+      var ouverte = estOuverte(c);
+      var dansLaPile = pile.indexOf(c) !== -1;
+      if (ouverte && !dansLaPile) { pile.push(c); entrees++; poserBoutonRetour(c); }
+      else if (!ouverte && dansLaPile) { pile.splice(pile.indexOf(c), 1); sorties++; }
+    });
+    var solde = entrees - sorties;
+    if (solde > 0) empiler(solde);
+    else if (solde < 0) {
+      retoursDemandes++;                       // history.go(-n) ne déclenche qu'un seul popstate
+      try { history.go(solde); } catch (e) {}
+    }
+  }
+
+  // Le « ← Retour » visible. Il ne s'ajoute que si la page a désigné où le mettre, avec
+  // data-clt-retour="<sélecteur>", et jamais deux fois. Les fenêtres qui portent déjà un
+  // « Annuler » ou un « ← Retour » n'ont rien à déclarer : elles sont déjà claires.
+  function poserBoutonRetour(c) {
+    var ou = c.element.getAttribute("data-clt-retour");
+    if (!ou) return;
+    var hote = c.element.querySelector(ou);
+    if (!hote || hote.querySelector(".clt-retour")) return;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "clt-retour";
+    b.setAttribute("data-clt-retour-bouton", "");
+    b.textContent = "← Retour";
+    b.addEventListener("click", function () { fermer(c); });
+    hote.insertBefore(b, hote.firstChild);
+  }
+
+  // Déclarer une fenêtre. Les pages n'ont normalement rien à appeler : l'attribut suffit. Cette
+  // fonction reste publique pour les fenêtres construites en JavaScript, qui n'existent pas encore
+  // au chargement — la modale de confirmation partagée, par exemple.
+  function enregistrer(element, options) {
+    if (!element || couches.some(function (c) { return c.element === element; })) return;
+    options = options || {};
+    var c = {
+      element: element,
+      nom: options.nom || element.getAttribute("data-clt-couche") || element.id || "couche",
+      fermer: options.fermer,
+      estOuverte: options.estOuverte,
+    };
+    couches.push(c);
+    // Une couche déjà ouverte au moment où on la découvre doit entrer dans la pile tout de suite,
+    // sans quoi le premier « retour » du téléphone quitterait la page au lieu de la refermer.
+    if (estOuverte(c)) { pile.push(c); empiler(1); poserBoutonRetour(c); }
+    observateur.observe(element, { attributes: true, attributeFilter: ["class", "style", "hidden"] });
+  }
+
+  var observateur = new MutationObserver(function () { synchroniser(); });
+
+  // Le bouton « retour » du téléphone, et la flèche du navigateur.
+  window.addEventListener("popstate", function () {
+    if (retoursDemandes > 0) { retoursDemandes--; return; }
+    var haut = pile[pile.length - 1];
+    if (!haut) return;                          // rien d'ouvert : on laisse partir, c'est voulu
+    pile.pop();                                 // AVANT de fermer : si fermer() échoue, une ligne
+    fermer(haut);                               // placée après lui ne s'exécuterait jamais.
+    // Si la fermeture n'aboutit pas — le bouton demande une confirmation, par exemple — la couche
+    // reste peinte, l'observateur la retrouvera hors de la pile et reposera une entrée. Le retour
+    // suivant refermera donc encore. C'est le comportement voulu : on ne s'échappe pas d'un écran
+    // qui est toujours là.
+  });
+
+  // Échap, une fois pour toutes. Les fenêtres qui gèrent déjà Échap de leur côté se fermeront
+  // simplement par leur propre chemin ; fermer deux fois ne fait rien de plus que fermer.
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var haut = pile[pile.length - 1];
+    if (haut) fermer(haut);
+  });
+
+  function balayer(racine) {
+    (racine || document).querySelectorAll("[data-clt-couche]").forEach(function (el) { enregistrer(el); });
+  }
+
+  // Les fenêtres écrites dans le HTML sont trouvées au chargement ; celles que le JavaScript
+  // ajoute plus tard le sont quand elles arrivent. On ne surveille que les enfants directs de
+  // <body>, là où une fenêtre en plein écran se pose : surveiller tout l'arbre reviendrait à
+  // repasser sur chaque ligne de chaque tableau à chaque rafraîchissement, pour rien.
+  function demarrer() {
+    balayer(document);
+    new MutationObserver(function (lots) {
+      lots.forEach(function (lot) {
+        Array.prototype.forEach.call(lot.addedNodes, function (n) {
+          if (n.nodeType !== 1) return;
+          if (n.hasAttribute("data-clt-couche")) enregistrer(n);
+          else balayer(n);
+        });
+      });
+    }).observe(document.body, { childList: true });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", demarrer);
+  else demarrer();
+
+  // Publié pour les tests et pour les rares fenêtres construites à la main.
+  window.cltEnregistrerCouche = enregistrer;
+  window.cltFermerCoucheDuDessus = function () { var h = pile[pile.length - 1]; if (h) fermer(h); };
+  window.cltCouchesOuvertes = function () { return pile.map(function (c) { return c.nom; }); };
+})();
 
 /* =====================================================================
    NOTIFICATIONS PREMIUM — cltToast()

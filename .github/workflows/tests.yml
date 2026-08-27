@@ -238,6 +238,25 @@ jobs:
       - name: Relevé du soir d'une cliente (l'écran, le PDF, l'Excel et le Word disent le même total)
         run: node tests/releve-du-soir-par-cliente.test.mjs
 
+      # Sortir d'une fenêtre. Demandé le 27 août : « lorsqu'on veut modifier une carte ou quelque
+      # chose, peu importe le compte, on ait un bouton retour ou quelque chose pour retourner, même
+      # lorsqu'on rentre quelque part et qu'on veut ressortir ». Ce qui manquait n'était pas visible
+      # depuis un ordinateur : chaque fenêtre savait se fermer, mais le bouton « retour » du
+      # téléphone — le geste que tout le monde fait par réflexe — n'était traité NULLE PART. Avec
+      # une fiche ouverte, appuyer dessus ne fermait pas la fiche, ça quittait la page, et la saisie
+      # en cours partait avec. Le mécanisme vit désormais dans clt-common.js, le seul fichier chargé
+      # par les huit pages, et une fenêtre s'y branche avec deux attributs dans le HTML.
+      #
+      # D'où deux natures de contrôles ici. Les premiers rejouent les gestes pour de bon — on ouvre,
+      # on appuie sur « retour », on regarde — sur le vrai clt-common.js, avec une page simulée
+      # fidèle sur le seul point qui compte : l'observateur se réveille en microtâche et « popstate »
+      # arrive en tâche, jamais pendant. C'est dans ce décalage que ce genre de mécanisme se met à
+      # boucler. Les seconds relisent les huit pages et exigent que chaque fenêtre en plein écran se
+      # déclare : c'est la seule chose qui empêchera, dans six mois, qu'une fenêtre neuve naisse
+      # muette et redevienne un piège sur un téléphone que personne ici n'utilise pour tester.
+      - name: Sortir d'une fenêtre (bouton retour du téléphone, Échap, « ← Retour »)
+        run: node tests/sortir-dune-fenetre.test.mjs
+
       # Garde-fou, deuxième espèce : un contrôle ne doit pas dépendre d'un fichier qui n'est pas
       # dans le dépôt. Le dossier _sql-prive/ décrit la base de production et n'est volontairement
       # pas publié ; il existe sur le poste de travail, jamais ici. Une série qui l'ouvre sans

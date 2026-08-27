@@ -1338,6 +1338,19 @@ html[data-theme="dark"] .btn-frais-vite.est-choisi{background:#E9B27A; color:#1B
 .settings-dropdown button.danger{color:#c0392b;}
 .settings-dropdown button.danger:hover{background:#fceceb;}
 
+/* ---------- LE « ← RETOUR » PARTAGÉ (27/08/2026) ----------
+   Posé automatiquement par clt-common.js en haut des fenêtres qui n'offraient
+   qu'une croix. La croix fait 30 px et se colle au bord : sur un téléphone tenu
+   d'une main, on la manque, et on se croit enfermé. Ce bouton-ci fait 44 px de
+   haut, la hauteur d'un pouce, et porte un mot plutôt qu'un signe. Il ne
+   remplace pas la croix, il la double — deux sorties pour un seul geste. */
+.clt-retour{
+  display:inline-flex; align-items:center; min-height:44px; margin:0 0 14px;
+  padding:8px 14px; border-radius:var(--radius-xs); border:1.5px solid var(--border-strong);
+  background:var(--white); color:var(--navy); font-weight:600; font-size:13px; cursor:pointer;
+}
+.clt-retour:hover{background:var(--grey-bg); border-color:#cfd6df;}
+
 /* ---------- MODALE "MON COMPTE" ---------- */
 .account-modal-overlay{
   position:fixed; inset:0; background:rgba(18,50,82,0.5); backdrop-filter:blur(2px); z-index:1000;

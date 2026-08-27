@@ -17,8 +17,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260826total1">
-<script src="theme.js?v=20260826total1"></script>
+<link rel="stylesheet" href="style.css?v=20260827retour1">
+<script src="theme.js?v=20260827retour1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   .topbar{ background:#0D9488; }
@@ -325,9 +325,9 @@
   </div>
 </div>
 
-<div class="account-modal-overlay hidden" id="account-modal-overlay">
+<div class="account-modal-overlay hidden" id="account-modal-overlay" data-clt-couche="Mon compte" data-clt-retour=".account-modal">
   <div class="account-modal">
-    <button type="button" class="account-modal-close" id="account-modal-close" aria-label="Fermer">✕</button>
+    <button type="button" class="account-modal-close" id="account-modal-close" aria-label="Fermer" data-clt-fermer>✕</button>
     <h2 class="account-modal-title">Mon compte</h2>
 
     <!-- Photo de profil -->
@@ -408,9 +408,9 @@
   </div>
 </div>
 
-<div class="account-modal-overlay hidden" id="recharge-modal-overlay">
+<div class="account-modal-overlay hidden" id="recharge-modal-overlay" data-clt-couche="Recharger mon solde" data-clt-retour=".account-modal">
   <div class="account-modal">
-    <button type="button" class="account-modal-close" id="recharge-modal-close" aria-label="Fermer">✕</button>
+    <button type="button" class="account-modal-close" id="recharge-modal-close" aria-label="Fermer" data-clt-fermer>✕</button>
     <h2 class="account-modal-title">Recharger mon solde</h2>
     <div id="recharge-msg"></div>
     <p style="font-size:13px;color:var(--muted);margin:0 0 8px;">
@@ -622,7 +622,7 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260826total1"></script>
+<script src="clt-common.js?v=20260827retour1"></script>
 <script src="express-config.js?v=20260819saisie1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
