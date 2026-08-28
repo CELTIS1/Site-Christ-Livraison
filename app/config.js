@@ -3171,6 +3171,159 @@ function caisseParLivreur(colis) {
     .sort((a, b) => b.reste - a.reste);
 }
 
+/* --------------------------------------------------------------------------------------------
+   LES COLIS QUI DORMENT  (29/08/2026)
+
+   CE QU'ON CHERCHAIT À VOIR
+   -------------------------
+   Un colis au statut « récupéré » est un colis que quelqu'un porte. Il a quitté la cliente, il
+   n'est pas arrivé chez le destinataire, et il attend quelque part — dans un sac, sur une moto,
+   chez le livreur. Tant qu'il dort, il ne rapporte rien et il coûte : la cliente s'impatiente,
+   le destinataire appelle, et la marchandise reste dehors.
+
+   Le 29 août au matin, la base en portait 71, pour 568 000 F de marchandise, dont 26 récupérés
+   depuis plus de deux jours. Personne ne le savait, parce qu'aucun écran ne posait la question.
+   Les chiffres du jour disent ce qui est ENTRÉ et ce qui est SORTI aujourd'hui ; aucun ne dit ce
+   qui STAGNE depuis avant-hier. Un colis qui dort ne fait de bruit sur aucun tableau.
+
+   LA DIFFICULTÉ, ET LA DÉCISION QU'ELLE A DEMANDÉE
+   ------------------------------------------------
+   Pour dire depuis quand un colis dort, il faut savoir quand il a été récupéré. La colonne
+   recupere_at est posée par la base depuis le 27 août ; les colis passés au statut avant cette
+   date n'en ont aucune. Ce matin-là, 40 des 71 étaient dans ce cas.
+
+   La maison a déjà une règle pour ça, écrite plus haut : ON N'INVENTE JAMAIS UN JOUR. Un colis
+   sans horodatage n'est glissé dans aucune journée. Mais ici, ne rien dire aurait fait
+   disparaître de l'écran 40 colis et la plus grosse part des 568 000 F — c'est-à-dire
+   exactement l'argent qu'on cherchait à rendre visible.
+
+   La sortie n'est pas d'inventer une date, c'est de dire moins que ce qu'on sait. Un colis
+   enregistré le 18 août est dans la maison depuis le 18 août : il est donc récupéré depuis AU
+   PLUS TARD ce jour-là, et son sommeil dure AU MOINS ce temps. Ce n'est pas une estimation,
+   c'est un minorant, et il est vrai. La fonction rend donc `certain: false` sur ces colis-là, et
+   l'écran est tenu d'écrire « au moins » devant le nombre. Le mot fait partie du chiffre : sans
+   lui, on affirmerait une précision qu'on n'a pas.
+
+   ON COMPTE EN JOURS D'ABIDJAN, PAS EN TRANCHES DE 24 HEURES.
+   Un colis récupéré hier à 18 h et regardé ce matin à 9 h a quinze heures ; mais au bureau on
+   dira qu'il dort « depuis hier ». C'est le jour civil qui compte, et c'est le jour d'Abidjan,
+   comme partout ailleurs dans ce fichier (voir jourAbidjan plus haut).
+   -------------------------------------------------------------------------------------------- */
+
+// Au-delà de combien de jours un colis en main mérite qu'on pose la question. Deux jours : un
+// colis récupéré avant-hier et toujours pas livré ce matin n'est plus une tournée en cours.
+// Ce nombre vit ici et nulle part ailleurs : le jour où il change, il change une fois.
+const SEUIL_COLIS_QUI_DORT_JOURS = 2;
+
+// Le nombre de jours civils abidjanais entre deux instants. Rend null si l'un des deux manque
+// ou ne se lit pas — jamais zéro, qui voudrait dire « aujourd'hui » et serait un mensonge.
+function joursEntreAbidjan(isoDebut, isoFin) {
+  const a = jourAbidjan(isoDebut);
+  const b = jourAbidjan(isoFin);
+  if (!a || !b) return null;
+  const ms = Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z");
+  if (!Number.isFinite(ms)) return null;
+  return Math.round(ms / 86400000);
+}
+
+// Depuis combien de jours ce colis est-il en main, et le sait-on vraiment ?
+// Rend { jours, certain } — ou { jours: null, certain: false } si on ne peut rien dire du tout.
+// `certain: false` OBLIGE l'écran à écrire « au moins ». Voir le long texte ci-dessus.
+function ageColisEnMain(c, maintenantISO) {
+  if (!c) return { jours: null, certain: false };
+  const fin = maintenantISO || new Date().toISOString();
+  const sur = joursEntreAbidjan(c.recupere_at, fin);
+  if (sur !== null) return { jours: sur, certain: true };
+  const minorant = joursEntreAbidjan(c.created_at, fin);
+  if (minorant !== null) return { jours: minorant, certain: false };
+  return { jours: null, certain: false };
+}
+
+// Le relevé « qui tient quoi depuis quand ».
+//
+// Rend { livreurs: [...], total: {...} }. Chaque livreur porte ses colis triés du plus vieux au
+// plus récent, son compte, la valeur de ce qu'il porte, et l'âge de son plus vieux colis. Les
+// livreurs sont rangés par plus vieux colis d'abord : celui qui fait attendre le plus longtemps
+// est en haut, pas celui qui porte le plus d'argent.
+//
+// La valeur est celle de montantTotalColis() — la marchandise que le destinataire devra remettre.
+// Surtout pas montantEnMainDuLivreur(), qui parle de l'argent DÉJÀ ENCAISSÉ et non remis : sur un
+// colis pas encore livré, rien n'est encaissé, et cette fonction-là répondrait zéro sur les 71
+// colis. Deux questions différentes, deux fonctions différentes.
+function colisQuiDorment(colis, options) {
+  const o = options || {};
+  const maintenant = o.maintenant || new Date().toISOString();
+  const seuil = (o.seuilJours === undefined || o.seuilJours === null)
+    ? SEUIL_COLIS_QUI_DORT_JOURS : Number(o.seuilJours);
+  const liste = Array.isArray(colis) ? colis : [];
+
+  const retenus = [];
+  let sansAucuneDate = 0;
+  liste.filter(c => c && c.statut === 'recupere').forEach(c => {
+    const age = ageColisEnMain(c, maintenant);
+    if (age.jours === null) { sansAucuneDate++; return; }
+    if (!(age.jours > seuil)) return;
+    retenus.push({
+      colis: c,
+      id: c.id,
+      numero: c.numero || "",
+      jours: age.jours,
+      certain: age.certain,
+      valeur: Number(montantTotalColis(c)) || 0,
+    });
+  });
+
+  const parLivreur = {};
+  retenus.forEach(r => {
+    const key = r.colis.livreur_id || r.colis.livreur_collecte_id || 'inconnu';
+    if (!parLivreur[key]) parLivreur[key] = { id: key, nb: 0, valeur: 0, plusVieuxJours: 0, plusVieuxCertain: false, colis: [] };
+    const l = parLivreur[key];
+    l.nb++;
+    l.valeur += r.valeur;
+    if (r.jours > l.plusVieuxJours) { l.plusVieuxJours = r.jours; l.plusVieuxCertain = r.certain; }
+    else if (r.jours === l.plusVieuxJours && r.certain) { l.plusVieuxCertain = true; }
+    l.colis.push(r);
+  });
+
+  const livreurs = Object.keys(parLivreur).map(k => parLivreur[k]);
+  livreurs.forEach(l => l.colis.sort((a, b) => b.jours - a.jours));
+  livreurs.sort((a, b) => (b.plusVieuxJours - a.plusVieuxJours) || (b.valeur - a.valeur));
+
+  // « Certain » ou pas se décide ICI, jamais à l'écran. Le doyen des colis retenus donne à la fois
+  // le nombre de jours et le droit d'écrire ce nombre sans « au moins ». Un écran qui trancherait
+  // lui-même finirait par écrire « au moins » quand ce n'est pas nécessaire, ou pire, l'oublier
+  // quand il le faut. En cas d'égalité de jours, il suffit qu'UN des doyens porte une vraie date
+  // de récupération pour que le chiffre soit sûr : c'est la même journée pour tous.
+  const doyen = retenus.reduce(
+    (m, r) => (r.jours > m.jours || (r.jours === m.jours && r.certain)) ? r : m,
+    { jours: 0, certain: false });
+
+  return {
+    livreurs,
+    total: {
+      nbLivreurs: livreurs.length,
+      nbColis: retenus.length,
+      valeur: retenus.reduce((s, r) => s + r.valeur, 0),
+      plusVieuxJours: doyen.jours,
+      plusVieuxCertain: doyen.certain,
+      nbAgeIncertain: retenus.filter(r => !r.certain).length,
+      nbSansAucuneDate: sansAucuneDate,
+      seuilJours: seuil,
+    },
+  };
+}
+
+// Le nombre de jours tel qu'il doit s'écrire à l'écran, avec son « au moins » quand il le faut.
+// Cette phrase est fabriquée ICI et pas dans l'écran : si deux écrans l'écrivaient chacun de leur
+// côté, l'un des deux finirait par oublier le « au moins », et affirmerait une date qu'on n'a pas.
+function ageColisEnMainTexte(jours, certain) {
+  if (jours === null || jours === undefined) return "date inconnue";
+  const n = Number(jours) || 0;
+  const mot = n <= 0 ? "aujourd’hui" : (n === 1 ? "1 jour" : n + " jours");
+  if (n <= 0) return certain ? mot : "au moins " + mot;
+  return (certain ? "" : "au moins ") + mot;
+}
+
 // Pied de tableau : la ligne de total.
 // Un tableau d'argent sans ligne de total oblige celui qui le lit à additionner de tête, et
 // c'est exactement là qu'on se trompe — surtout au téléphone, le soir, en fin de journée.

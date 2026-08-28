@@ -1016,6 +1016,23 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
 .recap-row-etat{font-size:11.5px; font-weight:600; color:var(--muted); margin-top:3px;}
 .argent-jour-table th, .argent-jour-table td{padding:8px 10px; font-size:12.5px;}
 
+/* ---- Les colis qui dorment (29/08/2026) ---------------------------------------------------
+   Le compteur du titre reste visible section fermée. Il porte deux chiffres, le nombre de colis
+   et la valeur de la marchandise, parce qu'un nombre seul ne dit pas s'il faut s'en occuper ce
+   soir ou la semaine prochaine. Il n'est PAS rouge : ces colis ne sont pas une faute, ils sont
+   un travail en retard, et un écran qui crie tout le temps finit par ne plus être regardé. */
+.dorment-badge{
+  display:inline-flex; align-items:center; margin-left:8px; padding:2px 9px;
+  border-radius:10px; background:#8a5a00; color:#FFFFFF;
+  font-size:11.5px; font-weight:700; letter-spacing:.2px; white-space:nowrap;
+}
+/* La ligne qui annonce un livreur, au-dessus de ses colis. Elle est plus foncée que les lignes
+   de colis pour qu'on voie d'un coup d'œil où finit un livreur et où commence le suivant. */
+.dorment-ligne-livreur td{
+  background:var(--grey-bg); color:var(--navy); font-size:12.5px; font-weight:600;
+  border-top:1.5px solid var(--border-strong);
+}
+
 /* ---- Onglet Finance du livreur : lignes clientes dépliables ------------------------------
    Une ligne du tableau résume une cliente ("2 / 4 livrés, 47 000 FCFA"). Toucher la ligne
    ouvre, juste en dessous, la liste de ses colis. Rien ne change de page : le tableau garde
@@ -1640,6 +1657,8 @@ html[data-theme="dark"] .recap-client-encaisse{ color:#5FD98A; }
 html[data-theme="dark"] .recap-day-money{ background:#141D29; color:#AEB9C7; }
 html[data-theme="dark"] .recap-day-money strong{ color:#E6ECF3; }
 html[data-theme="dark"] .recap-bilan-note{ color:#AEB9C7; border-left-color:#3A4B60; }
+html[data-theme="dark"] .dorment-badge{ background:#C8891B; color:#101820; }
+html[data-theme="dark"] .dorment-ligne-livreur td{ background:#141D29; color:#E6ECF3; border-top-color:#3A4B60; }
 /* Le rouge et le vert du jour sont trop sombres sur fond nuit : le « reste à remettre » y
    deviendrait illisible, et c'est le chiffre qu'on appelle le livreur pour réclamer. */
 html[data-theme="dark"] .recapl-reste-du{ color:#FF8A7A; }

@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260829accord1">
-<script src="theme.js?v=20260829accord1"></script>
+<link rel="stylesheet" href="style.css?v=20260829dorment1">
+<script src="theme.js?v=20260829dorment1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -711,6 +711,27 @@ saisis ensuite lui seront rattachés automatiquement.
 <div class="empty-state">Chargement...</div>
 </div>
 </div>
+
+<!-- Les colis qui dorment. (29/08/2026) Les deux récapitulatifs au-dessus regardent UNE journée :
+     ce qui est entré, ce qui est sorti, ce qui reste à remettre ce soir-là. Aucun des deux ne
+     voit un colis récupéré il y a dix jours et jamais livré — il n'appartient plus à aucune
+     journée qu'on ouvre, et il disparaît de la vue le lendemain de sa récupération.
+
+     Le 29 août au matin, 71 colis étaient portés par quelqu'un, pour 568 000 F de marchandise,
+     dont 26 depuis plus de deux jours pour 263 500 F. Personne ne le savait. Ce relevé-ci ne
+     regarde donc pas un jour : il regarde ce qui n'avance plus, quelle que soit sa date.
+
+     Le nombre est écrit dans le titre, section FERMÉE. Une section repliée qui ne dit rien ne
+     s'ouvre jamais : le chiffre doit sauter aux yeux sans qu'on ait rien touché. -->
+<h3 class="panel-subtitle collapsible-header" id="dorment-toggle" onclick="toggleColisQuiDorment()" style="margin-top:28px;">
+<span class="collapse-arrow" id="dorment-arrow">▶</span> Colis qui dorment <span id="dorment-badge"></span>
+</h3>
+<div id="colis-qui-dorment" class="collapsible-content">
+<div id="dorment-body">
+<div class="empty-state">Chargement...</div>
+</div>
+</div>
+
 <!-- Les corrections de montants : le pendant, côté bureau, de ce que les livreurs corrigent
      dans la rue. (27/08/2026) Depuis qu'un livreur peut réécrire l'article et la livraison
      devant la porte de la cliente, quelqu'un doit pouvoir dire le soir ce qui a bougé, de
@@ -1110,10 +1131,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260829accord1"></script>
-<script src="config.js?v=20260829accord1"></script>
+<script src="clt-common.js?v=20260829dorment1"></script>
+<script src="config.js?v=20260829dorment1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260829accord1"></script>
+<script src="clt-select-recherche.js?v=20260829dorment1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3977,6 +3998,11 @@ function eqDessinerAnnexes(){
 renderAlertIndicator();
 renderRecapFournisseur();
 renderRecapLivreur();
+// Les colis qui dorment SONT dessinés ici, même section fermée, contrairement à la vue par jour
+// juste en dessous. La raison est qu'ils ne coûtent aucune lecture sur la base : tout sort de
+// `allColis`, déjà en mémoire. Et sans ce dessin, le compteur du titre resterait vide tant que
+// personne n'ouvre la section — or c'est précisément ce compteur qui doit la faire ouvrir.
+renderColisQuiDorment();
 // La vue par jour n'est PAS appelée ici. Depuis le 26 août 2026 elle interroge la base pour la
 // journée choisie au lieu de compter sur `allColis`, qui n'en contient qu'une partie ; la
 // rappeler à chaque redessin et toutes les vingt-cinq secondes ferait payer quatre lectures à
@@ -6237,6 +6263,102 @@ ${piedTotalHTML([
 Sur un colis <strong>pas encore livré</strong>, seule cette avance apparaît, en négatif — rien n'a été encaissé, et on ne solde pas un colis qui n'est pas arrivé.
 Le total de cette colonne est celui de la <strong>Caisse par livreur</strong> en comptabilité, au franc près.
 </div>`;
+}
+
+
+/* ============================================================================================
+   LES COLIS QUI DORMENT  (29/08/2026)
+   ============================================================================================
+   Cet écran n'additionne rien. Il appelle colisQuiDorment() dans config.js et se contente de
+   mettre en forme ce qu'elle rend. Le jour où le seuil change, ou la façon de compter les jours,
+   ou la manière de traiter un colis sans date de récupération, rien ne bouge ici.
+
+   Deux mots méritent qu'on y fasse attention en relisant ce code :
+
+   « AU MOINS ». La phrase d'âge n'est PAS fabriquée ici. Elle vient de ageColisEnMainTexte(),
+   dans config.js, qui décide seule quand écrire « au moins ». Si cet écran écrivait lui-même
+   « ${jours} jours », il affirmerait une date de récupération que la base ne connaît pas pour
+   40 colis sur 71, et il aurait l'air d'autant plus sûr de lui qu'il serait précis.
+
+   « VALEUR ». C'est la marchandise que le destinataire devra remettre — montantTotalColis() —
+   et non l'argent que le livreur a en poche. Sur un colis pas encore livré, rien n'est encaissé :
+   la colonne « En main » du récapitulatif au-dessus répondrait zéro sur les 71. Deux questions
+   différentes, deux fonctions différentes, et surtout deux mots différents à l'écran.
+   ============================================================================================ */
+
+let dormentExpanded = false;
+
+function toggleColisQuiDorment(){
+dormentExpanded = !dormentExpanded;
+const box = document.getElementById('colis-qui-dorment');
+if (dormentExpanded) { expandCollapsible(box); } else { collapseCollapsible(box); }
+const fleche = document.getElementById('dorment-arrow');
+if (fleche) fleche.textContent = dormentExpanded ? '▼' : '▶';
+// Aucune lecture sur la base ici : tout vient de allColis, déjà en mémoire. C'est pour cela que
+// ce relevé peut être redessiné à chaque rafraîchissement sans rien coûter à personne.
+if (dormentExpanded) { renderColisQuiDorment(); refreshStickyTables(box); }
+}
+
+// Le compteur du titre, visible section fermée. C'est lui qui fait ouvrir la section.
+function renderDormentBadge(releve){
+const badge = document.getElementById('dorment-badge');
+if (!badge) return;
+if (!releve.total.nbColis) { badge.innerHTML = ''; return; }
+badge.innerHTML = `<span class="dorment-badge">${releve.total.nbColis} · ${escapeHTML(formatMontant(releve.total.valeur))}</span>`;
+}
+
+function renderColisQuiDorment(){
+const releve = colisQuiDorment(allColis || []);
+renderDormentBadge(releve);
+const body = document.getElementById('dorment-body');
+if (!body) return;
+
+if (!releve.total.nbColis) {
+cltPoserHTML(body, `<div class="empty-state">Aucun colis en main depuis plus de ${releve.total.seuilJours} jours. Rien ne dort.</div>`);
+return;
+}
+
+const lignes = [];
+releve.livreurs.forEach(l => {
+lignes.push(`<tr class="dorment-ligne-livreur">
+<td colspan="4" data-label="Livreur">🛵 <strong>${collecteLivreurLabel(l.id) || 'Livreur inconnu'}</strong>
+· ${l.nb} colis · <strong>${escapeHTML(formatMontant(l.valeur))}</strong>
+· le plus vieux : ${escapeHTML(ageColisEnMainTexte(l.plusVieuxJours, l.plusVieuxCertain))}</td>
+</tr>`);
+l.colis.forEach(r => {
+lignes.push(`<tr>
+<td data-label="Colis">${escapeHTML(r.numero || '—')}</td>
+<td data-label="Cliente">${escapeHTML(fournisseurLabelPlain(r.colis.fournisseur_id) || '—')}</td>
+<td data-label="Dort depuis">${escapeHTML(ageColisEnMainTexte(r.jours, r.certain))}</td>
+<td data-label="Valeur">${escapeHTML(formatMontant(r.valeur) || '—')}</td>
+</tr>`);
+});
+});
+
+// La note du bas n'est écrite QUE s'il y a des âges incertains, et elle dit combien. Une note
+// permanente finit par ne plus être lue ; une note qui apparaît avec un chiffre se lit encore.
+const note = releve.total.nbAgeIncertain
+? `<div class="recap-bilan-note">
+« Au moins » veut dire ce qu'il dit : pour ${releve.total.nbAgeIncertain} de ces colis, la base ne garde
+aucune date de récupération — ils sont passés à ce statut avant le 27 août, quand cette date a
+commencé à être posée. On compte alors depuis leur enregistrement, ce qui donne un minimum sûr,
+jamais une date inventée. Le colis dort <strong>au moins</strong> ce temps-là, peut-être moins longtemps.
+</div>`
+: '';
+
+cltPoserHTML(body, `<div class="recap-day-summary">Colis récupérés depuis plus de ${releve.total.seuilJours} jours et toujours pas livrés · <strong>${releve.total.nbColis}</strong> colis chez <strong>${releve.total.nbLivreurs}</strong> livreur${releve.total.nbLivreurs > 1 ? 's' : ''}</div>
+<div class="recap-table-wrap">
+<table class="recap-table recap-table-cards">
+<thead><tr><th>Colis</th><th>Cliente</th><th>Dort depuis</th><th>Valeur</th></tr></thead>
+<tbody>${lignes.join('')}</tbody>
+${piedTotalHTML([
+{ texte: `TOTAL — ${releve.total.nbColis} colis`, label: 'Colis' },
+{ texte: '' },
+{ texte: escapeHTML(ageColisEnMainTexte(releve.total.plusVieuxJours, releve.total.plusVieuxCertain)) + ' au plus vieux', label: 'Dort depuis' },
+{ texte: escapeHTML(formatMontant(releve.total.valeur)), label: 'Valeur' },
+])}
+</table></div>
+${note}`);
 }
 
 
