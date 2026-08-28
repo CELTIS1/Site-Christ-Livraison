@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828tournee2">
-<script src="theme.js?v=20260828tournee2"></script>
+<link rel="stylesheet" href="style.css?v=20260828equipe1">
+<script src="theme.js?v=20260828equipe1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1104,10 +1104,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828tournee2"></script>
-<script src="config.js?v=20260828tournee2"></script>
+<script src="clt-common.js?v=20260828equipe1"></script>
+<script src="config.js?v=20260828equipe1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260828tournee2"></script>
+<script src="clt-select-recherche.js?v=20260828equipe1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -5363,23 +5363,43 @@ return l ? (l.full_name || '') : '';
 // récupérer » chez une cliente qui a pourtant de la marchandise prête. Un tableau faux et
 // muet, exactement ce qu'on ne veut pas.
 //
-// Deux questions différentes, donc deux requêtes :
-//   — ce qui reste à prendre : les colis encore « en attente », sans condition de date ;
-//   — ce qui a déjà été pris : les colis dont l'heure de récupération tombe dans la journée.
+// Trois questions différentes, donc trois requêtes :
+//   — ce qui reste à prendre chez les clientes programmées : colis « en attente », sans date ;
+//   — ce qui a déjà été pris chez elles : colis dont l'heure de récupération tombe dans la journée ;
+//   — ce qui est confié à un livreur SANS qu'aucune tournée ne le porte : la troisième, ajoutée
+//     le 28/08/2026, est celle qui manquait au bureau.
+//
+// POURQUOI LA TROISIÈME. Avant elle, l'écran du bureau ne demandait que les colis des clientes
+// déjà programmées. Il ne pouvait donc pas voir ce qui traînait ailleurs, et son silence se
+// lisait « il n'y a rien » — alors que le 28/08/2026 le seul compte de GONSON Christ portait
+// dix clientes et trente-six colis que personne n'avait programmés. Un écran qui ne peut pas
+// répondre à une question ne doit pas la poser ; celui-ci peut désormais y répondre.
+//
+// LA COLONNE DU RÉCUPÉRATEUR EST DEMANDÉE, ET ELLE NE L'ÉTAIT PAS. Sans elle, le calcul commun
+// ne saurait à quel livreur rattacher un colis confié, et n'annoncerait rien du tout.
 async function progColisPourLaTournee(jour, fournisseurIds){
-if (!jour || !fournisseurIds.length) return [];
+if (!jour) return [];
 const debut = jour + 'T00:00:00Z';
 const fin   = jour + 'T23:59:59.999Z';
+const champs = 'id, fournisseur_id, statut, recupere_at, livreur_collecte_id';
 
-const [attente, pris] = await Promise.all([
-supabaseClient.from('colis').select('id, fournisseur_id, statut, recupere_at')
+const programmees = fournisseurIds.length ? [
+supabaseClient.from('colis').select(champs)
 .in('fournisseur_id', fournisseurIds).eq('statut', 'en_attente'),
-supabaseClient.from('colis').select('id, fournisseur_id, statut, recupere_at')
+supabaseClient.from('colis').select(champs)
 .in('fournisseur_id', fournisseurIds).gte('recupere_at', debut).lte('recupere_at', fin),
-]);
+] : [];
+
+const reponses = await Promise.all(programmees.concat([
+// Tout ce qui attend et qui est confié à quelqu'un, quelle que soit la cliente. Le tri entre
+// « déjà programmé » et « hors programme » n'est pas fait ici : il est fait une seule fois,
+// dans tourneesDeRecuperation(), pour que le bureau et le livreur trient de la même façon.
+supabaseClient.from('colis').select(champs)
+.eq('statut', 'en_attente').not('livreur_collecte_id', 'is', null),
+]));
 
 const parId = new Map();
-for (const { data, error } of [attente, pris]) {
+for (const { data, error } of reponses) {
 if (error) { console.error('Tournée :', error.message || error); continue; }
 (data || []).forEach(c => { if (c && c.id) parId.set(c.id, c); });
 }
@@ -5434,6 +5454,11 @@ programmations: progLignes,
 colis: progColis,
 cliente: progFicheCliente,
 livreurNom: progNomLivreur,
+// Le bureau peut désormais poser la question, parce qu'il a de quoi y répondre : depuis le
+// 28/08/2026 progColisPourLaTournee() lui rapporte aussi les colis confiés sans tournée. Tant
+// qu'il ne les demandait pas, il ne devait pas poser la question — zéro ligne hors programme
+// se serait lu « il n'y en a pas », alors qu'il y en avait trente-six.
+horsProgramme: true,
 });
 const { lignes, total, colisConnus } = tournee;
 const dateLabel = recapDayLabel(jour);
@@ -5443,51 +5468,141 @@ cltPoserHTML(body, `<div class="empty-state">Aucune récupération programmée $
 return;
 }
 
+/* CE QUE CET ÉCRAN DOIT RÉPONDRE : « QUI VA OÙ AUJOURD'HUI ». (refondu le 28/08/2026)
+
+   Il posait jusqu'ici une liste plate de clientes avec une colonne « Livreur ». Pour savoir ce
+   que fait Koffi il fallait parcourir cette colonne des yeux et additionner de tête. Un écran
+   qui oblige à additionner de tête finit toujours par produire un chiffre faux, et c'est le
+   patron qui l'annonce à son livreur. On range donc par livreur, chacun avec son sous-total, et
+   les sous-totaux sortent de la même addition que le TOTAL du bas — totalDesLignes(), dans
+   config.js. Deux additions écrites séparément finissent toujours par diverger.
+
+   ET C'EST LE MÊME DESSIN QUE LE TÉLÉPHONE DU LIVREUR. Le bureau et le livreur regardent la
+   même journée ; ils doivent la reconnaître au premier coup d'œil. Les cartes, les couleurs de
+   bordure et les boutons de contact sont ceux de app/livreur.html, définis une seule fois dans
+   style.css. Quand le bureau appelle une cliente pour prévenir d'un retard, il compose le même
+   numéro, mis en forme par la même fonction. */
+
 // « à venir » et non « 0 » : tant que la journée n'est pas arrivée, aucun colis n'existe
 // encore. Écrire zéro laisserait croire que la cliente n'a rien, alors qu'on n'en sait rien.
 const compte = (n) => colisConnus ? String(n) : '<span style="color:#8a94a3;">à venir</span>';
 
-const rows = lignes.map(l => `
-<tr>
-<td data-label="Cliente">${escapeHTML(l.clienteNom)}${l.rienARecuperer ? '<br><span class="meta" style="color:#8a94a3;">rien à récupérer pour l\'instant</span>' : ''}</td>
-<td data-label="Où">${l.commune ? escapeHTML(l.commune) : '—'}${l.adresse ? '<br><span class="meta">' + escapeHTML(l.adresse) + '</span>' : ''}</td>
-<td data-label="Téléphone">${l.telephone ? '<a href="tel:' + encodeURIComponent(l.telephone) + '">' + escapeHTML(l.telephone) + '</a>' : '—'}</td>
-<td data-label="Livreur">${escapeHTML(l.livreurNom)}</td>
-<td data-label="Note">${l.note ? escapeHTML(l.note) : '<span style="color:#8a94a3;">—</span>'}</td>
-<td data-label="À prendre">${compte(l.nbAPrendre)}</td>
-<td data-label="Déjà pris">${compte(l.nbDejaPris)}</td>
-<td data-label="Retirer"><button type="button" class="btn btn-outline btn-sm" data-prog-retirer="${l.id}">Retirer</button></td>
-</tr>`).join('');
+const carteHTML = (l) => {
+const inter = numeroInternational(l.telephone);
+const contacts = l.telephone
+? `<div class="tournee-contacts">
+<a class="tournee-contact tournee-contact--appel" href="tel:${escapeHTML(numeroCompose(l.telephone))}">📞 Appeler</a>
+<a class="tournee-contact tournee-contact--whatsapp" href="https://wa.me/${escapeHTML(inter)}" target="_blank" rel="noopener">💬 WhatsApp</a>
+</div>`
+: `<div class="tournee-contacts">
+<span class="tournee-contact tournee-contact--absent">Numéro non renseigné — à compléter dans sa fiche</span>
+</div>`;
+const classe = l.horsProgramme ? 'tournee-carte--hors'
+: (l.rienARecuperer ? 'tournee-carte--rien' : 'tournee-carte--programme');
+// Sur une ligne hors programme il n'y a aucune programmation à retirer : on propose au
+// contraire d'en poser une, en pré-remplissant le formulaire du haut. Le bureau relit et
+// valide lui-même — un écran ne doit pas écrire en base sur un seul clic mal placé.
+const geste = l.horsProgramme
+? `<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-programmer="${escapeHTML(l.fournisseurId)}|${escapeHTML(String(l.livreurId || ''))}">Poser une tournée pour elle</button>`
+: `<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-retirer="${escapeHTML(l.id)}">Retirer de la tournée</button>`;
+return `
+<div class="tournee-carte ${classe}">
+<div class="tournee-nom">${escapeHTML(l.clienteNom)}${l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : ''}</div>
+<div class="tournee-lieu">📍 ${l.commune ? escapeHTML(l.commune) : 'Commune non renseignée'}${l.adresse ? ' · ' + escapeHTML(l.adresse) : ''}</div>
+${l.note ? `<div class="tournee-note">📝 ${escapeHTML(l.note)}</div>` : ''}
+<div class="tournee-compte">
+${l.rienARecuperer
+? `<span class="tournee-rien">Rien à récupérer pour l'instant — la ligne reste, un colis peut encore être saisi.</span>`
+: `<strong>${compte(l.nbAPrendre)}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}`}
+</div>
+${contacts}
+${geste}
+</div>`;
+};
+
+// Un bloc par livreur, son sous-total dans son titre. Le nom du livreur est écrit une fois en
+// haut du bloc et non répété sur chaque carte : répété, il devient du bruit ; en titre, il
+// devient un repère.
+const blocLivreur = (g) => `
+<div class="tournee-section-titre">${escapeHTML(g.livreurNom)} · ${g.total.nbClientes} cliente${g.total.nbClientes > 1 ? 's' : ''} · ${colisConnus ? g.total.nbAPrendre + ' colis à prendre' : 'colis à venir'}</div>
+${g.lignes.map(carteHTML).join('')}`;
+
+const programmees = lignes.filter(l => !l.horsProgramme);
+const confiees    = lignes.filter(l => l.horsProgramme);
+const colisConfies = confiees.reduce((s, l) => s + l.nbAPrendre, 0);
+
+const sectionProgramme = programmees.length
+? tourneesParLivreur(programmees).map(blocLivreur).join('')
+: `<div class="empty-state">Aucune récupération programmée ${escapeHTML(dateLabel)}. Choisissez une cliente et un livreur ci-dessus pour commencer la tournée.</div>`;
+
+/* LE REPLI DES CLIENTES CONFIÉES SANS TOURNÉE. (28/08/2026)
+   Le 28/08/2026, le seul compte de GONSON Christ portait dix clientes et trente-six colis
+   confiés que personne n'avait programmés, et rien de tout cela n'apparaissait au bureau. Ce
+   n'est pas une anomalie à masquer, c'est du travail à répartir : d'où le bouton qui pose la
+   tournée. Replié parce que ce n'est pas la décision du jour ; présent parce que c'en est le
+   reste. Et compté dans le TOTAL, parce que replier n'est pas retrancher. */
+const sectionConfiees = confiees.length
+? `<details class="tournee-repli">
+<summary>Confiées sans tournée posée · ${confiees.length} cliente${confiees.length > 1 ? 's' : ''}, ${colisConfies} colis</summary>
+<div class="tournee-repli-aide">De la marchandise attend chez ces clientes et elle est déjà confiée à un livreur, mais aucune tournée ne la porte ${escapeHTML(dateLabel)}. Le livreur les voit sur son téléphone ; posez-leur une tournée pour qu'elles entrent dans le programme.</div>
+${tourneesParLivreur(confiees).map(blocLivreur).join('')}
+</details>`
+: '';
 
 cltPoserHTML(body, `
 <div class="recap-day-summary">${escapeHTML(dateLabel)} · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's' : ''} · <strong>${total.nbLivreurs}</strong> livreur${total.nbLivreurs > 1 ? 's' : ''}</div>
-<div class="recap-table-wrap">
-<table class="recap-table recap-table-cards">
-<thead><tr><th>Cliente</th><th>Où</th><th>Téléphone</th><th>Livreur</th><th>Note</th><th>À prendre</th><th>Déjà pris</th><th>Retirer</th></tr></thead>
-<tbody>${rows}</tbody>
-${piedTotalHTML([
-{ texte: 'TOTAL' },
-// « 1 cliente(s) » et « 1 livreur(s) » portent déjà leurs propres mots : leur donner en plus un
-// libellé revenait, sur téléphone, à écrire « Où : 1 cliente(s) » — le libellé venait de la
-// colonne où la cellule tombe sur grand écran, pas de ce que la valeur signifie. Sans libellé,
-// la feuille de style les range à gauche comme TOTAL, ce qu'elles sont. (vu sur téléphone le
-// 28/08/2026 ; les cellules chiffrées, elles, gardent le leur, sans quoi on lirait des nombres
-// nus les uns sous les autres)
-{ texte: total.nbClientes + ' cliente(s)' },
-{ texte: '' },
-{ texte: total.nbLivreurs + ' livreur(s)' },
-{ texte: '' },
-{ texte: colisConnus ? String(total.nbAPrendre) : 'à venir', label: 'À prendre' },
-{ texte: colisConnus ? String(total.nbDejaPris) : 'à venir', label: 'Déjà pris' },
-{ texte: '' },
-])}
-</table>
+${sectionProgramme}
+${sectionConfiees}
+<div class="recap-day-summary" style="margin-top:14px;">
+TOTAL · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's' : ''} ·
+<strong>${total.nbLivreurs}</strong> livreur${total.nbLivreurs > 1 ? 's' : ''} ·
+<strong>${colisConnus ? total.nbAPrendre : 'à venir'}</strong> à prendre ·
+<strong>${colisConnus ? total.nbDejaPris : 'à venir'}</strong> déjà pris
 </div>
+${total.nbHorsProgramme > 0 ? `<div class="meta" style="margin-top:6px; color:#b45309;">Le total ci-dessus compte tout, y compris <strong>${total.nbHorsProgramme}</strong> cliente${total.nbHorsProgramme > 1 ? 's' : ''} du repli.</div>` : ''}
 ${(!colisConnus || total.nbClientesSansRien > 0) ? `<div class="recap-bilan-note">
 ${colisConnus
 ? `Sur ces ${total.nbClientes} cliente(s), ${total.nbClientesSansRien} n'${total.nbClientesSansRien > 1 ? 'ont' : 'a'} rien à faire récupérer pour l'instant — la ligne reste, parce qu'un colis peut encore être saisi d'ici le passage du livreur.`
-: `La journée n'est pas encore arrivée : aucun colis n'existe pour elle. Les colonnes se rempliront toutes seules à mesure que les colis seront saisis, et chacun se rattachera au livreur désigné ici.`}
+: `La journée n'est pas encore arrivée : aucun colis n'existe pour elle. Les comptes se rempliront tout seuls à mesure que les colis seront saisis, et chacun se rattachera au livreur désigné ici.`}
 </div>` : ''}`);
+}
+
+/* POSER UNE TOURNÉE POUR UNE CLIENTE DU REPLI, SANS LA RETAPER. (28/08/2026)
+
+   Le bouton pré-remplit la cliente et le livreur déjà désigné sur ses colis, puis remonte au
+   formulaire. IL N'ÉCRIT RIEN EN BASE. C'est volontaire : entre « je regarde ce qui traîne » et
+   « j'engage un livreur à traverser Abidjan » il doit rester un geste de confirmation, et c'est
+   le bouton « Ajouter » qui existe déjà. Un écran qui écrit sur un clic mal placé se paie en
+   déplacements inutiles.
+
+   ON DIT QUAND ÇA NE MARCHE PAS. Si la cliente ou le livreur n'est pas dans les listes — compte
+   désactivé, fiche supprimée — le champ resterait vide sans rien dire, et le bureau croirait
+   avoir choisi. Mieux vaut l'annoncer. */
+function progPreremplir(cle){
+const [fournisseurId, livreurId] = String(cle || '').split('|');
+const manquants = [];
+const poser = (id, valeur, quoi) => {
+const select = document.getElementById(id);
+if (!select) return;
+if (!valeur) { manquants.push(quoi); return; }
+const existe = Array.prototype.some.call(select.options, o => o.value === valeur);
+if (!existe) { manquants.push(quoi); return; }
+select.value = valeur;
+// Le champ de recherche n'affiche son libellé qu'en écoutant « change » : sans cet
+// événement la valeur serait posée mais l'écran continuerait d'afficher « Sélectionner… ».
+select.dispatchEvent(new Event('change', { bubbles: true }));
+};
+poser('prog-fournisseur', fournisseurId, 'la cliente');
+poser('prog-livreur', livreurId, 'le livreur');
+
+const note = document.getElementById('prog-note');
+if (note) note.value = '';
+
+const ancre = document.getElementById('prog-fournisseur');
+if (ancre && ancre.scrollIntoView) ancre.scrollIntoView({ block: 'center' });
+if (manquants.length) {
+alert('Impossible de pré-remplir ' + manquants.join(' et ') + " : la fiche n'est plus dans la liste. Choisissez-la à la main.");
+}
 }
 
 // Ajouter une cliente à la tournée. `upsert` et non `insert` : la table n'accepte qu'une seule
@@ -7972,7 +8087,9 @@ if (btnAjout) btnAjout.addEventListener('click', progAjouter);
 if (body) {
 body.addEventListener('click', (e) => {
 const b = e.target.closest('[data-prog-retirer]');
-if (b) progRetirer(b.getAttribute('data-prog-retirer'));
+if (b) { progRetirer(b.getAttribute('data-prog-retirer')); return; }
+const p = e.target.closest('[data-prog-programmer]');
+if (p) progPreremplir(p.getAttribute('data-prog-programmer'));
 });
 }
 })();

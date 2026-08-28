@@ -127,7 +127,7 @@ vm.runInContext(
 
 vm.runInContext([
   'jourAbidjan', 'aujourdhuiAbidjan', 'jourEvenementColis',
-  'rangDeLaJournee', 'tourneesDeRecuperation',
+  'rangDeLaJournee', 'tourneesDeRecuperation', 'totalDesLignes', 'tourneesParLivreur',
   'programmationARecuperationAEcrire', 'raisonDeRefuserLaProgrammation', 'demainAbidjan',
   'piedTotalHTML', 'echapperAttribut',
   /* Les deux mises en forme du numéro, prises dans config.js et non réécrites ici. Un test qui
@@ -206,9 +206,14 @@ const COLIS = [
    ========================================================================================== */
 titre("Un seul calcul, et il est dans config.js");
 
+/* La requête du bureau fait partie du corps examiné depuis le 28/08/2026. Ce qu'un écran
+   AFFICHE ne vaut que ce qu'il a DEMANDÉ à la base : poser la question des clientes hors
+   programme sans être allé chercher leurs colis produirait un zéro, et ce zéro se lirait
+   « il n'y en a pas ». Les deux bouts doivent donc être lus ensemble. */
 const corpsEquipe = sansCommentaires(
   blocDe(equipe, 'renderProgrammationBody', 'equipe.html') +
-  blocDe(equipe, 'chargerProgrammations', 'equipe.html'));
+  blocDe(equipe, 'chargerProgrammations', 'equipe.html') +
+  blocDe(equipe, 'progColisPourLaTournee', 'equipe.html'));
 const corpsLivreur = sansCommentaires(
   blocDe(livreur, 'renderMaTournee', 'livreur.html') +
   blocDe(livreur, 'chargerMaTournee', 'livreur.html'));
@@ -418,10 +423,9 @@ verifier("le TOTAL vaut exactement la somme des lignes affichées, sans exceptio
   && avecHP.total.nbClientes === avecHP.lignes.length,
   'un total qui ne vaut pas la somme de ce qu\'on voit est un total auquel on ne peut plus croire');
 
-/* Et maintenant l'autre moitié du contrat : hors programme est une OPTION. L'écran du bureau
-   ne demande à la base que les colis des clientes programmées ; s'il posait la question sans
-   avoir les autres colis en main, il obtiendrait zéro ligne hors programme et cette absence se
-   lirait « il n'y en a pas ». Mieux vaut qu'il ne pose pas la question. */
+/* Et maintenant l'autre moitié du contrat : hors programme est une OPTION, et elle ne se prend
+   pas seule. Qui la demande doit avoir apporté les colis qui permettent d'y répondre ; sans
+   eux la fonction rend zéro ligne, et ce zéro s'affiche comme une bonne nouvelle. */
 const sansHP = tourneesDeRecuperation({
   jour: AUJ, aujourdHui: AUJ, livreurId: 'L1', programmations: PROG, colis: COLIS_HP,
   cliente: annuaireHP, livreurNom: nomLivreur,
@@ -436,9 +440,18 @@ verifier("et son total ne bouge pas d'un colis",
 verifier("l'écran du livreur, lui, demande bien les clientes hors programme",
   /horsProgramme:\s*true/.test(corpsLivreur),
   'sans cette option, son TOTAL annoncerait moins de travail qu\'il n\'en a — le défaut du 28/08/2026');
-verifier("l'écran du bureau ne la demande pas, faute d'avoir les colis pour y répondre",
-  !/horsProgramme:\s*true/.test(corpsEquipe),
-  'il afficherait zéro cliente hors programme, et ce zéro se lirait « il n\'y en a pas »');
+/* L'écran du bureau ne la demandait pas jusqu'au 28/08/2026, et c'était la bonne décision tant
+   qu'il n'allait chercher que les colis des clientes programmées. Il va désormais chercher les
+   autres, alors il pose la question. Le contrôle change donc de forme, mais pas de nature : il
+   reste APPARIÉ. Poser la question sans la requête, ou faire la requête sans poser la question,
+   doivent l'un comme l'autre le faire rougir. C'est le couple qui est vérifié, jamais une
+   moitié : une moitié seule, c'est précisément le défaut qu'on cherche à empêcher. */
+verifier("l'écran du bureau la demande, ET va chercher en base de quoi y répondre",
+  /horsProgramme:\s*true/.test(corpsEquipe)
+  && /\.not\(\s*['"]livreur_collecte_id['"],\s*['"]is['"],\s*null\s*\)/.test(corpsEquipe)
+  && /livreur_collecte_id/.test(corpsEquipe),
+  'la question sans la requête afficherait zéro cliente hors programme, et ce zéro se lirait '
+  + '« il n\'y en a pas »');
 
 // Une journée à venir ne sait rien des colis : elle ne peut pas inventer de hors-programme.
 verifier("demain, aucune cliente hors programme n'est inventée",
@@ -567,9 +580,9 @@ verifier("la note est vidée après coup, pour ne pas la recoller à la cliente 
   champsFictifs['prog-note'].value === '');
 
 /* ==========================================================================================
-   8, 9 & 10. LE TABLEAU DE L'ÉQUIPE
+   8, 9 & 10. L'ÉCRAN DE PROGRAMMATION DU BUREAU
    ========================================================================================== */
-titre("Le tableau du soir, dessiné pour de vrai");
+titre("La programmation du bureau, dessinée pour de vrai");
 
 let poseHTML = '';
 Object.assign(contexte, {
@@ -589,10 +602,20 @@ Object.assign(contexte, {
 });
 renderProgrammationBody();
 
-verifier("le tableau porte sa ligne TOTAL, comme tous les tableaux de la maison",
-  /class="recap-total-row"/.test(poseHTML) && /TOTAL/.test(poseHTML), poseHTML.slice(0, 200));
-verifier("le TOTAL dit le nombre de clientes", /3 cliente\(s\)/.test(poseHTML));
-verifier("et le nombre de livreurs", /2 livreur\(s\)/.test(poseHTML));
+/* LE TOTAL SE LIT DANS LE TOTAL, ET NULLE PART AILLEURS. (28/08/2026)
+   L'ancien contrôle cherchait « 3 cliente(s) » n'importe où dans la page. Il restait vert grâce
+   à la phrase d'explication du bas, qui prononce le même nombre — autrement dit il aurait laissé
+   passer un TOTAL faux. On découpe donc d'abord la ligne du TOTAL, puis on la lit.
+   Et on la découpe HORS DU REPLI : un total rangé dans un tiroir fermé n'est pas un total. */
+const horsDuRepli = (html) => html.slice(html.lastIndexOf('</details>') + 1);
+const ligneDuTotal = (html) => (horsDuRepli(html).match(/TOTAL ·[\s\S]*?<\/div>/) || [''])[0];
+
+verifier("l'écran porte sa ligne TOTAL, et elle est hors du repli",
+  ligneDuTotal(poseHTML) !== '', poseHTML.slice(-400));
+verifier("le TOTAL dit le nombre de clientes",
+  /<strong>3<\/strong> cliente/.test(ligneDuTotal(poseHTML)), ligneDuTotal(poseHTML));
+verifier("et le nombre de livreurs",
+  /<strong>2<\/strong> livreur/.test(ligneDuTotal(poseHTML)), ligneDuTotal(poseHTML));
 verifier("les trois clientes y sont",
   /Awa Boutique/.test(poseHTML) && /Bintou Shop/.test(poseHTML) && /Céline Couture/.test(poseHTML));
 verifier("le nom du livreur désigné est écrit, pas son identifiant",
@@ -600,35 +623,76 @@ verifier("le nom du livreur désigné est écrit, pas son identifiant",
 verifier("la note pour le livreur est reportée", /après 9h/.test(poseHTML));
 verifier("le téléphone de la cliente est là, et il est appelable",
   /href="tel:0700000001"/.test(poseHTML));
-verifier("la cliente sans rien est marquée dans le tableau",
-  /rien à récupérer pour l'instant/.test(poseHTML));
-verifier("chaque ligne porte son bouton pour retirer la cliente",
+verifier("la cliente sans rien est marquée sur sa carte",
+  /Rien à récupérer pour l'instant/.test(poseHTML));
+verifier("chaque cliente programmée porte son bouton pour la retirer",
   (poseHTML.match(/data-prog-retirer="/g) || []).length === 3);
-// Sur téléphone le tableau se replie en blocs et l'en-tête disparaît : sans data-label, on
-// lirait une colonne de chiffres nus sans savoir lequel est « à prendre ».
-verifier("chaque case dit à quelle colonne elle appartient",
-  /data-label="À prendre"/.test(poseHTML) && /data-label="Déjà pris"/.test(poseHTML));
 
-/* La ligne TOTAL, lue sur un vrai téléphone le 28/08/2026.
-   Le libellé de repli ne sert qu'aux cellules qui n'ont que des chiffres. Une cellule qui écrit
-   déjà « 3 cliente(s) » n'en a pas besoin, et lui en donner un revenait à afficher « Où : 3
-   cliente(s) » — parce que le libellé avait été pris à la colonne où la cellule tombe sur grand
-   écran, et non à ce qu'elle signifie. La feuille de style range à gauche les cellules du total
-   qui n'ont pas de libellé, précisément parce qu'elles portent leurs propres mots. */
-const piedDuTableau = (poseHTML.match(/<tfoot>[\s\S]*?<\/tfoot>/) || [''])[0];
-const celluleDuPied = (motif) =>
-  (piedDuTableau.match(new RegExp('<td[^>]*>[^<]*' + motif + '[^<]*</td>')) || [''])[0];
-verifier("dans le TOTAL, le compte des clientes ne s'affuble pas d'un libellé de colonne",
-  celluleDuPied('cliente\\(s\\)') !== '' && !/data-label/.test(celluleDuPied('cliente\\(s\\)')),
-  celluleDuPied('cliente\\(s\\)'));
-verifier("ni celui des livreurs",
-  celluleDuPied('livreur\\(s\\)') !== '' && !/data-label/.test(celluleDuPied('livreur\\(s\\)')),
-  celluleDuPied('livreur\\(s\\)'));
-// Et l'inverse doit rester vrai : les cellules qui ne portent qu'un nombre gardent le leur,
-// sinon on retomberait dans le défaut d'origine, une colonne de chiffres sans étiquette.
-verifier("mais les cellules qui n'ont qu'un nombre gardent le leur",
-  /data-label="À prendre"/.test(piedDuTableau) && /data-label="Déjà pris"/.test(piedDuTableau),
-  piedDuTableau);
+/* LE BUREAU DESSINE LES MÊMES CARTES QUE LE TÉLÉPHONE DU LIVREUR. (refonte du 28/08/2026)
+   C'est la demande, mot pour mot : « la programmation faite par l'équipe sera celle adoptée et
+   doit être mieux disposée et facile à comprendre comme l'autre ». Deux écrans qui répondent à
+   la même question doivent se lire pareil, sinon celui qui vérifie doit apprendre deux
+   grammaires et finit par mal lire l'une des deux.
+   On compare donc les deux JEUX D'ÉLÉMENTS, et on exige qu'ils soient identiques. Redessiner le
+   bureau en tableau, ou enrichir le téléphone d'un élément que le bureau n'aurait pas, doit
+   faire rougir ceci.
+   La comparaison se fait sur l'attribut entier, pas sur un morceau de nom : chercher la simple
+   présence du texte « tournee-carte » aurait été satisfait par « tournee-carte--hors », qui est
+   une NUANCE de carte et non une carte. Le sabotage du 28/08/2026 est passé par ce trou, et
+   c'est lui qui a fait resserrer la mesure. */
+const classesDeTournee = (src) => Array.from(new Set(
+  (src.match(/class="tournee-[a-z-]+/g) || []).map((s) => s.slice('class="'.length))
+)).sort();
+verifier("le bureau et le téléphone emploient exactement le même jeu d'éléments",
+  classesDeTournee(equipe).length >= 10
+  && classesDeTournee(equipe).join(' ') === classesDeTournee(livreur).join(' '),
+  'bureau    : ' + classesDeTournee(equipe).join(' ')
+  + '\n       téléphone : ' + classesDeTournee(livreur).join(' '));
+
+// Et le dessin doit sortir POUR DE VRAI de la fonction, pas seulement dormir dans le fichier.
+[['la carte', /class="tournee-carte[ "]/], ['le nom de la cliente', /class="tournee-nom"/],
+ ['le lieu', /class="tournee-lieu"/], ['le compte des colis', /class="tournee-compte"/],
+ ['les boutons de contact', /class="tournee-contact[ "]/]].forEach(([quoi, motif]) => {
+  verifier(`et l'écran du bureau produit bien ${quoi}`, motif.test(poseHTML), poseHTML.slice(0, 300));
+});
+
+/* AUCUN CHIFFRE NU. (28/08/2026)
+   Le tableau d'avant se repliait sur téléphone en une colonne de nombres sans en-tête, et il
+   fallait un data-label sur chaque case pour savoir lequel était « à prendre ». Les cartes
+   n'ont plus de colonnes du tout : chaque nombre porte ses mots à côté de lui. Le contrôle
+   change d'objet mais garde son but — qu'on ne lise jamais un chiffre sans savoir ce qu'il
+   compte. */
+verifier("sur la carte, chaque nombre dit ce qu'il compte",
+  /<strong>2<\/strong> à prendre/.test(poseHTML) && /1 déjà pris/.test(poseHTML),
+  poseHTML.slice(0, 400));
+verifier("et le TOTAL aussi, dans ses quatre nombres",
+  /<strong>3<\/strong> cliente/.test(ligneDuTotal(poseHTML))
+  && /<strong>2<\/strong> livreur/.test(ligneDuTotal(poseHTML))
+  && /<strong>2<\/strong> à prendre/.test(ligneDuTotal(poseHTML))
+  && /<strong>2<\/strong> déjà pris/.test(ligneDuTotal(poseHTML)),
+  ligneDuTotal(poseHTML));
+
+/* CHAQUE LIVREUR A SON BLOC, ET L'ADDITION DES BLOCS FAIT LE TOTAL. (28/08/2026)
+   C'est le contrôle financier de cet écran. Le bureau annonce à Koffi « tu as deux clientes » ;
+   si la somme des blocs ne retombe pas sur le TOTAL du bas, l'un des deux chiffres est faux et
+   c'est le patron qui l'aura dit à voix haute. On ne se contente donc pas de vérifier que les
+   sous-totaux existent : on les ADDITIONNE, et on compare au TOTAL réellement affiché. */
+const sousTitres = poseHTML.match(/class="tournee-section-titre">[^<]*/g) || [];
+const sousTotaux = sousTitres.map((t) => {
+  const m = t.match(/· (\d+) clientes? · (\d+) colis à prendre/);
+  return m ? { clientes: Number(m[1]), aPrendre: Number(m[2]) } : null;
+});
+verifier("un bloc par livreur, nommé, avec son sous-total",
+  sousTitres.length === 2 && sousTotaux.every(Boolean)
+  && /Aya ·/.test(sousTitres[0]) && /Koffi ·/.test(sousTitres[1]),
+  sousTitres.join(' | '));
+verifier("l'addition des sous-totaux par livreur retombe exactement sur le TOTAL du bas",
+  sousTotaux.every(Boolean)
+  && sousTotaux.reduce((s, n) => s + n.clientes, 0) === 3
+  && sousTotaux.reduce((s, n) => s + n.aPrendre, 0) === 2
+  && /<strong>3<\/strong> cliente/.test(ligneDuTotal(poseHTML))
+  && /<strong>2<\/strong> à prendre/.test(ligneDuTotal(poseHTML)),
+  sousTitres.join(' | ') + '  ||  ' + ligneDuTotal(poseHTML));
 
 /* La phrase du bas ne parle que si elle a quelque chose à dire.
    Elle existe pour expliquer pourquoi une cliente sans colis reste dans la liste. Quand aucune
@@ -649,11 +713,85 @@ verifier("mais elle disparaît quand toutes les clientes ont quelque chose à fa
   !/rien à faire récupérer pour l'instant/.test(posePleine) &&
   !/recap-bilan-note/.test(posePleine),
   posePleine.slice(-400));
-verifier("et le tableau, lui, reste entier avec sa ligne TOTAL",
-  /class="recap-total-row"/.test(posePleine) && /2 cliente\(s\)/.test(posePleine),
-  posePleine.slice(0, 200));
+verifier("et l'écran, lui, reste entier avec son TOTAL",
+  ligneDuTotal(posePleine) !== ''
+  && /<strong>2<\/strong> cliente/.test(ligneDuTotal(posePleine)),
+  ligneDuTotal(posePleine) || posePleine.slice(0, 200));
+
+/* ==========================================================================================
+   10 bis. LE REPLI DES CLIENTES CONFIÉES SANS TOURNÉE, VU DU BUREAU
+   ========================================================================================== */
+titre("Le bureau voit aussi ce que personne n'a programmé");
+
+/* LE DÉCOR EST CHOISI POUR PIÉGER LE MAUVAIS REGROUPEMENT. (28/08/2026)
+   Awa (F1) est programmée aujourd'hui pour Koffi (L1). Un colis d'Awa est par ailleurs confié à
+   Aya (L2). Si l'on regroupait sur la seule cliente, Awa serait déclarée « déjà programmée » et
+   le déplacement d'Aya ne serait annoncé nulle part : elle irait chez une cliente que l'écran ne
+   lui montre pas, ou personne n'irait. C'est pour ce cas précis que le regroupement se fait sur
+   le COUPLE (livreur, cliente), et c'est ce que dit aussi la requête de contrôle rangée dans
+   _sql-prive/. Les deux doivent répondre la même chose.
+   Le second colis n'est confié à personne : il ne doit entrer dans la tournée de personne. */
+contexte.progJourChoisi = AUJ;
+contexte.progLignes = PROG.filter(p => p.jour === AUJ);
+contexte.progColis = COLIS.concat([
+  { id: 'C6', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L2' },
+  { id: 'C7', fournisseur_id: 'F9', statut: 'en_attente', recupere_at: null, livreur_collecte_id: null },
+]);
+poseHTML = '';
+renderProgrammationBody();
+const avecRepli = poseHTML;
+const repli = (avecRepli.match(/<details class="tournee-repli">[\s\S]*?<\/details>/) || [''])[0];
+
+verifier("le repli existe, et il dit ce qu'il contient avant qu'on l'ouvre",
+  repli !== '' && /Confiées sans tournée posée · 1 cliente, 1 colis/.test(repli),
+  repli.slice(0, 300) || avecRepli.slice(0, 300));
+verifier("la cliente confiée à l'autre livreur y est, sous le nom de CE livreur",
+  /Aya ·/.test(repli) && /Awa Boutique/.test(repli),
+  'regrouper sur la seule cliente l\'aurait fait disparaître : Awa est déjà programmée pour Koffi');
+verifier("elle est marquée « hors programme », pour qu'on ne la confonde pas avec le programme",
+  /tournee-marque">hors programme/.test(repli), repli.slice(0, 400));
+verifier("le colis confié à personne n'entre dans la tournée de personne",
+  !/Cliente inconnue/.test(avecRepli),
+  'un colis sans récupérateur enverrait quelqu\'un chez une cliente que le bureau n\'a désignée à personne');
+
+/* LE TOTAL COMPTE LE REPLI. Replier n'est pas retrancher : le tiroir est fermé parce que ce
+   n'est pas la décision du jour, pas parce que le travail n'existe pas. Trois clientes
+   programmées et une confiée font quatre, et quatre est ce que le bas de l'écran doit dire. */
+verifier("le TOTAL est hors du repli, et il compte quand même ce qu'il y a dedans",
+  !repli.includes('TOTAL ·')
+  && /<strong>4<\/strong> cliente/.test(ligneDuTotal(avecRepli))
+  && /<strong>4<\/strong> à prendre/.test(ligneDuTotal(avecRepli)),
+  ligneDuTotal(avecRepli));
+verifier("et il dit à voix haute combien viennent du repli",
+  /y compris <strong>1<\/strong> cliente du repli/.test(horsDuRepli(avecRepli)),
+  'sans cette phrase, l\'écart entre le TOTAL et les blocs visibles resterait inexpliqué');
+verifier("l'addition des blocs visibles et du repli retombe sur le TOTAL",
+  (() => {
+    const tous = (avecRepli.match(/class="tournee-section-titre">[^<]*/g) || []).map((t) => {
+      const m = t.match(/· (\d+) clientes? · (\d+) colis à prendre/);
+      return m ? { clientes: Number(m[1]), aPrendre: Number(m[2]) } : null;
+    });
+    return tous.length === 3 && tous.every(Boolean)
+      && tous.reduce((s, n) => s + n.clientes, 0) === 4
+      && tous.reduce((s, n) => s + n.aPrendre, 0) === 4;
+  })(),
+  (avecRepli.match(/class="tournee-section-titre">[^<]*/g) || []).join(' | '));
+
+/* LES DEUX GESTES NE SE MÉLANGENT PAS. Sur une cliente du repli il n'y a aucune programmation à
+   retirer — le bouton « Retirer » n'aurait rien à retirer et laisserait croire à une action. On
+   propose l'inverse : poser une tournée. Et le bouton porte la cliente ET le livreur déjà
+   désigné sur ses colis, sinon le pré-remplissage désignerait quelqu'un d'autre. */
+verifier("la cliente du repli n'a pas de bouton « Retirer »",
+  !/data-prog-retirer/.test(repli), repli.slice(-400));
+verifier("elle a le bouton qui pose une tournée, et il porte la cliente ET le livreur",
+  /data-prog-programmer="F1\|L2"/.test(repli), repli.slice(-400));
+verifier("les trois clientes programmées gardent le leur, et elles seules",
+  (avecRepli.match(/data-prog-retirer="/g) || []).length === 3
+  && (avecRepli.match(/data-prog-programmer="/g) || []).length === 1,
+  avecRepli.slice(0, 200));
 
 titre("La même journée, mais pas encore arrivée");
+contexte.progColis = COLIS;
 contexte.progJourChoisi = DEMAIN;
 contexte.progLignes = PROG.filter(p => p.jour === DEMAIN);
 contexte.progColis = [];
@@ -661,8 +799,13 @@ poseHTML = '';
 renderProgrammationBody();
 verifier("les comptes annoncent « à venir » au lieu d'un zéro fabriqué",
   (poseHTML.match(/à venir/g) || []).length >= 2, poseHTML.slice(0, 400));
-verifier("aucun zéro n'est écrit dans les colonnes de comptage",
-  !/data-label="À prendre">0</.test(poseHTML), poseHTML);
+/* Ce contrôle visait les cellules du tableau par leur data-label. Les colonnes ayant disparu, il
+   serait devenu vrai sans rien vérifier — la pire espèce de contrôle vert. On vise donc
+   maintenant le zéro lui-même, où qu'il s'écrive : ni dans une carte, ni dans un sous-total de
+   livreur, ni dans le TOTAL. Un « 0 à prendre » sur une journée dont aucun colis n'existe encore
+   n'est pas un compte, c'est une affirmation fausse. */
+verifier("aucun zéro n'est fabriqué, nulle part sur l'écran",
+  !/<strong>0<\/strong>/.test(poseHTML) && !/· 0 colis à prendre/.test(poseHTML), poseHTML);
 verifier("et on explique pourquoi c'est vide", /n'est pas encore arrivée/.test(poseHTML));
 
 titre("Quand ça ne se lit pas");
@@ -723,6 +866,75 @@ verifier("un clic sur « Retirer » atteint vraiment la fonction, via le contene
     return retires.length === 1 && retires[0] === 'P7';
   })(),
   'le bouton Retirer serait muet dès le premier rafraîchissement de la liste');
+
+// Le second bouton du même conteneur, ajouté le 28/08/2026. Deux gestes voisins sur un même
+// écouteur : celui qui retire et celui qui propose de poser. Ils ne doivent ni se confondre, ni
+// se manger l'un l'autre — un « return » mal placé dans la délégation rendrait le second muet
+// sans rien casser d'apparent.
+const preremplis = [];
+contexte.progPreremplir = (cle) => { preremplis.push(cle); };
+verifier("un clic sur « Poser une tournée » atteint lui aussi la fonction, via le même conteneur",
+  (() => {
+    retires.length = 0;
+    ecouteurs['prog-body'].click({
+      target: { closest: (s) => (s === '[data-prog-programmer]'
+        ? { getAttribute: () => 'F1|L2' } : null) },
+    });
+    return preremplis.length === 1 && preremplis[0] === 'F1|L2' && retires.length === 0;
+  })(),
+  'le bouton du repli serait décoratif, et le bureau croirait avoir agi');
+
+/* ==========================================================================================
+   10 ter. « POSER UNE TOURNÉE POUR ELLE » : ON L'EXÉCUTE, ON NE LE REGARDE PAS
+   ==========================================================================================
+   Le contrôle d'affichage plus haut prouve que le bouton est DESSINÉ avec la bonne cliente et le
+   bon livreur. Il ne prouve rien de ce qui se passe quand on appuie dessus. On monte donc les
+   deux listes déroulantes en carton et on appuie pour de vrai.
+   IL NE DOIT RIEN ÉCRIRE EN BASE. Le bureau relit et valide lui-même : pré-remplir n'est pas
+   programmer, et un bouton qui programmerait dans le dos de celui qui l'actionne serait
+   exactement le contraire de « vous me dites, je propose, vous choisissez ». */
+const alertes = [];
+const evenements = [];
+['prog-fournisseur', 'prog-livreur'].forEach((id) => {
+  champsFictifs[id].options = [];
+  champsFictifs[id].dispatchEvent = (e) => { evenements.push(id + ':' + (e && e.type)); return true; };
+});
+champsFictifs['prog-fournisseur'].options = [{ value: '' }, { value: 'F1' }, { value: 'F2' }];
+champsFictifs['prog-livreur'].options = [{ value: '' }, { value: 'L1' }, { value: 'L2' }];
+champsFictifs['prog-fournisseur'].value = '';
+champsFictifs['prog-livreur'].value = '';
+champsFictifs['prog-note'].value = 'une note qui traîne';
+envoyes.length = 0;
+
+Object.assign(contexte, {
+  alert: (m) => alertes.push(m),
+  Event: function Evenement(type, opts) { this.type = type; this.bubbles = !!(opts && opts.bubbles); },
+});
+vm.runInContext(blocDe(equipe, 'progPreremplir', 'equipe.html'), contexte);
+contexte.progPreremplir('F1|L2');
+
+verifier("le bouton pré-remplit la cliente ET le livreur déjà désigné sur ses colis",
+  champsFictifs['prog-fournisseur'].value === 'F1' && champsFictifs['prog-livreur'].value === 'L2',
+  champsFictifs['prog-fournisseur'].value + ' / ' + champsFictifs['prog-livreur'].value);
+/* Les deux listes sont des champs de recherche : elles n'affichent leur libellé qu'en écoutant
+   « change ». Poser la valeur sans prévenir laisserait le bureau lire « Choisir une cliente »
+   au-dessus d'un formulaire déjà rempli — et il choisirait quelqu'un d'autre par-dessus. */
+verifier("et il prévient les deux listes, sinon elles afficheraient encore « Choisir »",
+  evenements.includes('prog-fournisseur:change') && evenements.includes('prog-livreur:change'),
+  evenements.join(', '));
+verifier("la note de la cliente précédente est effacée, pas recollée à celle-ci",
+  champsFictifs['prog-note'].value === '');
+verifier("et RIEN n'est écrit en base : c'est une proposition, pas une décision",
+  envoyes.length === 0, JSON.stringify(envoyes));
+verifier("aucune alerte quand tout s'est bien passé", alertes.length === 0, alertes.join(' | '));
+
+// Une fiche retirée de la liste entre deux chargements : on le DIT, au lieu de laisser un
+// formulaire à moitié rempli que le bureau validerait sans regarder.
+alertes.length = 0;
+contexte.progPreremplir('F1|L9');
+verifier("si le livreur n'est plus dans la liste, on le dit au lieu de faire semblant",
+  alertes.length === 1 && /livreur/.test(alertes[0]) && !/cliente/.test(alertes[0]),
+  alertes.join(' | '));
 
 /* ==========================================================================================
    11. LA CARTE DU LIVREUR

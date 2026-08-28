@@ -4255,11 +4255,13 @@ function tourneesDeRecuperation(options) {
      tournée l'ignorait. Un TOTAL qui compte moins que le travail réel est plus dangereux
      qu'un total absent : celui-là, on s'y fie.
 
-     C'EST UNE OPTION, ET NON LE COMPORTEMENT PAR DÉFAUT. L'écran du bureau ne demande à la
-     base que les colis des clientes PROGRAMMÉES : lui poser la question sans lui avoir donné
-     les autres colis ferait naître zéro ligne hors programme, et cette absence se lirait
-     « il n'y en a pas ». Mieux vaut que le bureau ne pose pas la question tant qu'il ne peut
-     pas y répondre.
+     C'EST UNE OPTION, ET NON LE COMPORTEMENT PAR DÉFAUT. La question ne doit être posée que
+     par un écran qui a apporté de quoi y répondre. Lui poser sans lui avoir donné les colis
+     confiés hors programmation ferait naître zéro ligne, et cette absence se lirait « il n'y
+     en a pas » — un mensonge tranquille, bien pire qu'une case vide. L'écran du bureau ne la
+     posait donc pas jusqu'au 28/08/2026, faute d'aller chercher ces colis-là ; depuis que
+     progColisPourLaTournee() les rapporte, il la pose. Les deux vont ensemble, et un contrôle
+     apparié le tient dans tests/tournee-de-recuperation.test.mjs.
 
      Le filtre sur livreurId est refait ici alors que l'appelant l'a déjà posé dans sa requête.
      Ce n'est pas de la méfiance envers l'écran d'aujourd'hui, c'est une garantie pour celui de
@@ -4268,32 +4270,57 @@ function tourneesDeRecuperation(options) {
      livreur-là en récupérateur. Un colis dont la colonne est vide n'est confié à personne ;
      le faire entrer dans une tournée enverrait quelqu'un chez une cliente que le bureau n'a
      désignée à aucun livreur, ce qui est exactement le contraire de ce qu'on cherche ici. */
+  /* ON REGROUPE SUR LE COUPLE (LIVREUR, CLIENTE), PAS SUR LA SEULE CLIENTE. (28/08/2026, revu
+     le même jour pour l'écran du bureau)
+
+     Vu du téléphone d'un livreur, les deux reviennent au même : la liste des colis a déjà été
+     restreinte à ceux qu'on lui confie, si bien que « cette cliente » veut dire « cette cliente
+     pour lui ». Vu du bureau, où tous les livreurs sont présents en même temps, la différence
+     est celle qui fait disparaître du travail : si Eric est programmé chez Awa aujourd'hui et
+     qu'un colis d'Awa est par ailleurs confié à Chris, regrouper sur la seule cliente ferait
+     considérer Awa comme « déjà programmée » et le colis de Chris ne serait annoncé nulle part.
+
+     Le couple est aussi ce que dit la requête de contrôle écrite le même jour dans
+     _sql-prive/ : les deux doivent répondre la même chose, sans quoi l'une des deux ment. */
   if (opts.horsProgramme && colisConnus) {
-    const dejaProgrammees = new Set(retenues.map(function (p) { return p.fournisseur_id; }));
-    const parCliente = new Map();
+    const dejaProgrammees = new Set(retenues.map(function (p) {
+      return String(p.livreur_id) + "\u0000" + String(p.fournisseur_id);
+    }));
+    const parCouple = new Map();
     colis.forEach(function (c) {
       if (!c || !c.fournisseur_id) return;
-      if (dejaProgrammees.has(c.fournisseur_id)) return;
+      // Un colis sans récupérateur n'est confié à personne : il n'entre dans la tournée
+      // d'aucun livreur, et le bureau n'a personne à qui l'annoncer. C'est la règle stricte
+      // posée plus haut, et elle vaut aussi quand on regarde tous les livreurs à la fois.
+      if (!c.livreur_collecte_id) return;
       if (opts.livreurId && c.livreur_collecte_id !== opts.livreurId) return;
-      if (!parCliente.has(c.fournisseur_id)) parCliente.set(c.fournisseur_id, []);
-      parCliente.get(c.fournisseur_id).push(c);
+      const cle = String(c.livreur_collecte_id) + "\u0000" + String(c.fournisseur_id);
+      if (dejaProgrammees.has(cle)) return;
+      if (!parCouple.has(cle)) parCouple.set(cle, []);
+      parCouple.get(cle).push(c);
     });
-    parCliente.forEach(function (siens, fournisseurId) {
+    parCouple.forEach(function (siens, cle) {
       const aPrendre = siens.filter(function (c) { return c.statut === "en_attente"; });
       // Sans colis qui attend, il n'y a rien à aller chercher. Une cliente chez qui tout a
       // déjà été ramassé n'a pas à encombrer une tournée où personne ne l'a programmée.
       if (!aPrendre.length) return;
+      const livreurId = siens[0].livreur_collecte_id;
+      const fournisseurId = siens[0].fournisseur_id;
       const fiche = annuaire(fournisseurId) || {};
       lignes.push({
-        id: "hors-programme:" + fournisseurId,
+        // L'identifiant porte les DEUX, sans quoi deux livreurs envoyés chez la même cliente
+        // produiraient deux lignes de même identifiant, et l'écran n'en dessinerait qu'une.
+        // Il est réécrit avec un séparateur lisible plutôt qu'avec celui de la clé interne :
+        // celle-ci contient un caractère nul, qui n'a rien à faire dans un attribut HTML.
+        id: "hors-programme:" + livreurId + ":" + fournisseurId,
         fournisseurId: fournisseurId,
         clienteNom: fiche.nom || "Cliente inconnue",
         commune: fiche.commune || "",
         adresse: fiche.adresse || "",
         telephone: fiche.telephone || "",
         note: "",
-        livreurId: opts.livreurId || null,
-        livreurNom: nomLivreur(opts.livreurId) || "Livreur",
+        livreurId: livreurId,
+        livreurNom: nomLivreur(livreurId) || "Livreur",
         nbAPrendre: aPrendre.length,
         nbDejaPris: siens.filter(function (c) { return jourEvenementColis(c, "recupere") === jour; }).length,
         idsAPrendre: aPrendre.map(function (c) { return c.id; }),
@@ -4308,18 +4335,65 @@ function tourneesDeRecuperation(options) {
     return String(a.clienteNom).localeCompare(String(b.clienteNom), "fr", { sensitivity: "base" });
   });
 
-  const total = lignes.reduce(function (t, l) {
+  return {
+    jour: jour, rang: rang, colisConnus: colisConnus,
+    lignes: lignes, total: totalDesLignes(lignes),
+  };
+}
+
+/* LE TOTAL D'UN PAQUET DE LIGNES, ÉCRIT UNE SEULE FOIS. (28/08/2026)
+
+   Il servait au TOTAL général ; il sert maintenant aussi au sous-total de chaque livreur sur
+   l'écran du bureau. Le sortir ici n'est pas de l'élégance : c'est la seule façon d'être certain
+   que l'addition de « Koffi · 2 colis » et de « Aya · 3 colis » fasse exactement le « 5 » du bas
+   de l'écran. Deux additions écrites séparément finissent toujours par diverger, et le jour où
+   elles divergent c'est le patron qui compte faux devant son livreur. */
+function totalDesLignes(lignes) {
+  const liste = lignes || [];
+  const total = liste.reduce(function (t, l) {
     t.nbAPrendre += l.nbAPrendre;
     t.nbDejaPris += l.nbDejaPris;
     if (l.rienARecuperer) t.nbClientesSansRien++;
     if (l.horsProgramme) t.nbHorsProgramme++;
     return t;
-  }, { nbClientes: lignes.length, nbAPrendre: 0, nbDejaPris: 0, nbClientesSansRien: 0, nbHorsProgramme: 0 });
+  }, { nbClientes: liste.length, nbAPrendre: 0, nbDejaPris: 0, nbClientesSansRien: 0, nbHorsProgramme: 0 });
   // Combien de livreurs sont sur la route ce jour-là. Compté sur les lignes retenues, donc
   // toujours 1 quand l'écran du livreur appelle avec son propre identifiant.
-  total.nbLivreurs = new Set(lignes.map(function (l) { return l.livreurId; })).size;
+  total.nbLivreurs = new Set(liste.map(function (l) { return l.livreurId; })).size;
+  return total;
+}
 
-  return { jour: jour, rang: rang, colisConnus: colisConnus, lignes: lignes, total: total };
+/* LA MÊME TOURNÉE, RANGÉE PAR LIVREUR. (28/08/2026)
+
+   POURQUOI. L'écran du bureau posait une liste plate de clientes avec une colonne « Livreur ».
+   Pour savoir ce que fait Koffi aujourd'hui, il fallait parcourir cette colonne des yeux et
+   additionner de tête. Un écran qui oblige à additionner de tête finit toujours par produire un
+   chiffre faux, et c'est le patron qui l'annonce. Le téléphone du livreur, lui, répond à « où je
+   vais aujourd'hui » ; celui du bureau doit répondre à « qui va où aujourd'hui ».
+
+   CE QU'ELLE NE FAIT PAS. Elle ne recalcule RIEN. Elle range les lignes déjà calculées par
+   tourneesDeRecuperation() et demande son sous-total à totalDesLignes(), la fonction même qui
+   fabrique le TOTAL général. C'est ce qui garantit que les sous-totaux et le total se
+   répondent : ils sortent de la même addition, appliquée à des paquets différents.
+
+   L'ORDRE EST CELUI DES NOMS. Un ordre stable, qui ne bouge pas quand un colis est saisi : on
+   cherche « Koffi » toujours au même endroit de l'écran, et pas là où le hasard des données l'a
+   mis ce matin. */
+function tourneesParLivreur(lignes) {
+  const groupes = new Map();
+  (lignes || []).forEach(function (l) {
+    const cle = String(l.livreurId);
+    if (!groupes.has(cle)) {
+      groupes.set(cle, { livreurId: l.livreurId, livreurNom: l.livreurNom || "Livreur", lignes: [] });
+    }
+    groupes.get(cle).lignes.push(l);
+  });
+  const sortie = Array.from(groupes.values());
+  sortie.forEach(function (g) { g.total = totalDesLignes(g.lignes); });
+  sortie.sort(function (a, b) {
+    return String(a.livreurNom).localeCompare(String(b.livreurNom), "fr", { sensitivity: "base" });
+  });
+  return sortie;
 }
 
 // Ce qu'on envoie à la base pour poser ou corriger une programmation. Une seule porte d'écriture,

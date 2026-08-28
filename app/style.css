@@ -2496,3 +2496,17 @@ html[data-theme="dark"] .tournee-note{color:#fbbf24;}
 html[data-theme="dark"] .tournee-repli > summary{color:#fbbf24;}
 html[data-theme="dark"] .tournee-compte .tournee-pris{color:#5ed19a;}
 html[data-theme="dark"] .tournee-carte--programme{border-left-color:#2fae6b;}
+
+/* ---------------------------------------------------------------------------
+   LE GESTE AU BAS D'UNE CARTE DE TOURNÉE, CÔTÉ BUREAU. (28/08/2026)
+
+   Retirer une cliente du programme, ou en poser une : deux gestes rares mais
+   irréversibles à l'œil. Ils tiennent donc toute la largeur, sous les boutons
+   de contact et non à côté d'eux — on n'appuie pas sur « Retirer » en visant
+   « Appeler ». Même hauteur de 44 pixels que le reste de l'application.
+   --------------------------------------------------------------------------- */
+.tournee-geste{
+  display:flex; align-items:center; justify-content:center;
+  width:100%; min-height:44px; margin-top:8px;
+}
+.tournee-carte .tournee-contacts + .tournee-geste{margin-top:8px;}
