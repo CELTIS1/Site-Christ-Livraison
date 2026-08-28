@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828horsprogramme1">
-<script src="theme.js?v=20260828horsprogramme1"></script>
+<link rel="stylesheet" href="style.css?v=20260828tournee2">
+<script src="theme.js?v=20260828tournee2"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -643,8 +643,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828horsprogramme1"></script>
-<script src="config.js?v=20260828horsprogramme1"></script>
+<script src="clt-common.js?v=20260828tournee2"></script>
+<script src="config.js?v=20260828tournee2"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -2705,34 +2705,85 @@
       return;
     }
 
-    // Une carte par cliente, pas un tableau : cet écran se lit debout, sur un téléphone, une
-    // main sur le guidon. Le numéro est un vrai lien d'appel — un doigt suffit.
-    //
-    // La bordure ambre et la mention « hors programme » ne sont pas décoratives : elles disent
-    // au livreur que cette cliente ne l'attend pas forcément aujourd'hui, donc qu'il vaut mieux
-    // l'appeler avant de faire le détour.
-    const cartes = lignes.map(l => `
-      <div class="colis-card" style="border-left:4px solid ${l.horsProgramme ? '#d97706' : (l.rienARecuperer ? '#cbd5e1' : '#1e8f4e')};">
-        <div style="font-weight:700; font-size:15px;">${escapeHTML(l.clienteNom)}${l.horsProgramme ? ` <span style="font-weight:600; font-size:11px; color:#b45309; background:#fef3c7; border-radius:6px; padding:2px 6px; white-space:nowrap;">hors programme</span>` : ''}</div>
-        <div class="meta">📍 ${l.commune ? escapeHTML(l.commune) : 'Commune non renseignée'}${l.adresse ? ' · ' + escapeHTML(l.adresse) : ''}</div>
-        ${l.telephone ? `<div class="meta">📞 <a href="tel:${encodeURIComponent(l.telephone)}">${escapeHTML(l.telephone)}</a></div>` : `<div class="meta" style="color:#8a94a3;">📞 Numéro non renseigné — passez par le bureau</div>`}
-        ${l.note ? `<div class="meta" style="color:#b45309;">📝 ${escapeHTML(l.note)}</div>` : ''}
-        <div class="meta" style="margin-top:6px;">
+    /* UNE CARTE PAR CLIENTE, ET DEUX BOUTONS POUR LA JOINDRE. (refondu le 28/08/2026)
+
+       Cet écran se lit debout, sur un téléphone, une main sur le guidon. La version précédente
+       posait la classe « colis-card », qui n'existait dans aucune feuille de style : mesuré sur
+       le compte de GONSON Christ le 28/08/2026, cela donnait onze clientes collées les unes aux
+       autres sur 1289 pixels, sans fond ni séparation, et un numéro d'appel haut de 20 pixels
+       que rien ne désignait comme touchable. La carte a maintenant son habillage (.tournee-carte,
+       dans style.css) et le contact est devenu deux boutons de 48 pixels.
+
+       POURQUOI WHATSAPP À CÔTÉ DE L'APPEL. À Abidjan, un message passe là où un appel coûte du
+       crédit ou reste sans réponse — et il laisse une trace que le livreur peut montrer au
+       bureau. Les deux mènent au même numéro, mis en forme une seule fois par
+       numeroInternational() dans config.js : deux mises en forme séparées finiraient par
+       appeler une cliente et écrire à une autre. */
+    const carteHTML = (l) => {
+      const inter = numeroInternational(l.telephone);
+      const contacts = l.telephone
+        ? `<div class="tournee-contacts">
+             <a class="tournee-contact tournee-contact--appel" href="tel:${escapeHTML(numeroCompose(l.telephone))}">📞 Appeler</a>
+             <a class="tournee-contact tournee-contact--whatsapp" href="https://wa.me/${escapeHTML(inter)}" target="_blank" rel="noopener">💬 WhatsApp</a>
+           </div>`
+        : `<div class="tournee-contacts">
+             <span class="tournee-contact tournee-contact--absent">Numéro non renseigné — passez par le bureau</span>
+           </div>`;
+      const classe = l.horsProgramme ? 'tournee-carte--hors'
+                   : (l.rienARecuperer ? 'tournee-carte--rien' : 'tournee-carte--programme');
+      return `
+      <div class="tournee-carte ${classe}">
+        <div class="tournee-nom">${escapeHTML(l.clienteNom)}${l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : ''}</div>
+        <div class="tournee-lieu">📍 ${l.commune ? escapeHTML(l.commune) : 'Commune non renseignée'}${l.adresse ? ' · ' + escapeHTML(l.adresse) : ''}</div>
+        ${l.note ? `<div class="tournee-note">📝 ${escapeHTML(l.note)}</div>` : ''}
+        <div class="tournee-compte">
           ${l.rienARecuperer
-            ? `<span style="color:#8a94a3;">Rien à récupérer pour l'instant — appelez-la avant de passer.</span>`
-            : `<strong>${l.nbAPrendre}</strong> à prendre${l.nbDejaPris ? ` · <span style="color:#1e8f4e;">${l.nbDejaPris} déjà pris</span>` : ''}`}
+            ? `<span class="tournee-rien">Rien à récupérer pour l'instant — appelez-la avant de passer.</span>`
+            : `<strong>${l.nbAPrendre}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}`}
         </div>
-      </div>`).join('');
+        ${contacts}
+      </div>`;
+    };
+
+    /* DEUX SECTIONS, ET LA SECONDE EST REPLIÉE. (28/08/2026)
+
+       Mesuré le 28/08/2026 sur le compte de Christ : onze clientes, dont DIX hors programme.
+       Quand dix cartes sur onze portent la mention « exception », la mention ne distingue plus
+       rien, et la seule cliente que le bureau a réellement programmée se perd au milieu. Ce
+       n'était pas un défaut de calcul — les trente-six colis concernés avaient entre zéro et
+       trois jours, c'était donc du vrai travail — mais un défaut de hiérarchie.
+
+       Le programme du jour passe donc en premier, seul et lisible. Le reste va dans un repli
+       dont le titre annonce en toutes lettres ce qu'il contient, parce qu'un repli muet ne se
+       rouvre jamais. Et le TOTAL, lui, continue de tout compter : replier n'est pas retrancher.
+       Un livreur doit pouvoir replier sans jamais se demander si le total a bougé. */
+    const auProgramme = lignes.filter(l => !l.horsProgramme);
+    const confiees    = lignes.filter(l => l.horsProgramme);
+    const colisConfies = confiees.reduce((s, l) => s + l.nbAPrendre, 0);
+
+    const sectionProgramme = auProgramme.length
+      ? `<div class="tournee-section-titre">Au programme d'aujourd'hui · ${auProgramme.length} cliente${auProgramme.length > 1 ? 's' : ''}</div>
+         ${auProgramme.map(carteHTML).join('')}`
+      : `<div class="empty-state">Le bureau n'a posé aucune tournée pour vous aujourd'hui.</div>`;
+
+    const sectionConfiees = confiees.length
+      ? `<details class="tournee-repli">
+           <summary>Aussi confiées à vous · ${confiees.length} cliente${confiees.length > 1 ? 's' : ''}, ${colisConfies} colis</summary>
+           <div class="tournee-repli-aide">De la marchandise vous y attend sans que le bureau ait posé de tournée aujourd'hui. Appelez avant de passer : la cliente ne vous attend pas forcément.</div>
+           ${confiees.map(carteHTML).join('')}
+         </details>`
+      : '';
 
     cltPoserHTML(box, `
       <h3 class="panel-subtitle" style="margin:0 0 10px;">🗓️ Ma tournée d'aujourd'hui</h3>
-      ${cartes}
-      <div class="recap-day-summary" style="margin-top:10px;">
+      ${sectionProgramme}
+      ${sectionConfiees}
+      <div class="recap-day-summary" style="margin-top:14px;">
         TOTAL · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's' : ''} à visiter ·
         <strong>${total.nbAPrendre}</strong> colis à prendre ·
         <strong>${total.nbDejaPris}</strong> déjà pris
       </div>
-      ${total.nbHorsProgramme > 0 ? `<div class="meta" style="margin-top:6px; color:#b45309;">Dont <strong>${total.nbHorsProgramme}</strong> cliente${total.nbHorsProgramme > 1 ? 's' : ''} hors programme : de la marchandise vous y attend sans que le bureau ait posé de tournée aujourd'hui. Appelez avant de passer.</div>` : ''}`);
+      ${total.nbHorsProgramme > 0 ? `<div class="meta" style="margin-top:6px; color:#b45309;">Le total ci-dessus compte tout, y compris <strong>${total.nbHorsProgramme}</strong> cliente${total.nbHorsProgramme > 1 ? 's' : ''} du repli.</div>` : ''}`);
   }
 
   // Charge la première page de colis (les plus récents).

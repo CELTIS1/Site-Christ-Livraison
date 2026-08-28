@@ -4153,6 +4153,36 @@ function rangDeLaJournee(jour, aujourdHui) {
   return "aujourdhui";
 }
 
+/* LE NUMÉRO D'UNE CLIENTE, MIS EN FORME POUR ÊTRE COMPOSÉ OU MESSAGÉ. (28/08/2026)
+
+   Deux sorties, un seul nettoyage. Le lien d'appel « tel: » accepte à peu près tout ; WhatsApp,
+   lui, exige le numéro international sans espace, sans plus et sans zéro de tête. Écrire cette
+   mise en forme deux fois, une par bouton, c'est se garantir qu'un jour l'un appellera Awa et
+   l'autre écrira à quelqu'un d'autre.
+
+   LA CÔTE D'IVOIRE EST PASSÉE À DIX CHIFFRES EN 2021. Un numéro local s'écrit donc 07 05 40 46 55
+   et sa forme internationale est 225 suivi de ces dix chiffres — les dix, sans en retirer le
+   premier. C'est la source d'erreur classique : ailleurs on enlève le zéro de tête, ici on ne
+   l'enlève pas. Les fiches de la base contiennent les deux formes, selon l'époque de la saisie.
+
+   CE QU'ON NE SAIT PAS METTRE EN FORME, ON LE REND TEL QUEL plutôt que de rendre une chaîne
+   vide. Un numéro étranger, ou une saisie à neuf chiffres, doit rester composable par le
+   livreur : mieux vaut un lien imparfait qu'un bouton mort. */
+function numeroCompose(tel) {
+  return String(tel === null || tel === undefined ? "" : tel).replace(/[^0-9]/g, "");
+}
+
+function numeroInternational(tel) {
+  let n = numeroCompose(tel);
+  if (!n) return "";
+  // « 00 » est l'autre façon d'écrire le « + » : 00225… vaut +225…
+  if (n.slice(0, 2) === "00") n = n.slice(2);
+  if (n.slice(0, 3) === "225") return n;
+  // Dix chiffres : un numéro ivoirien d'aujourd'hui. On préfixe SANS retirer le zéro de tête.
+  if (n.length === 10) return "225" + n;
+  return n;
+}
+
 /* Les tournées d'une journée, prêtes à dessiner.
 
    Entrée (tout est facultatif sauf programmations) :

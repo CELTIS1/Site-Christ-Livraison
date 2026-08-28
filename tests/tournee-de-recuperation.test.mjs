@@ -45,6 +45,13 @@ const sourceConfig = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
 const livreur = fs.readFileSync(path.join(APP, 'livreur.html'), 'utf8');
 const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 const common = fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8');
+/* La feuille de style est lue elle aussi depuis le 28/08/2026. Avant, la carte hors programme
+   portait sa couleur en style écrit dans le HTML, et le contrôle cherchait cette couleur dans la
+   page produite. La couleur est maintenant dans style.css, où elle a sa place. Chercher seulement
+   la classe dans le HTML serait un contrôle plus FAIBLE qu'avant : une classe sans règle en face
+   ne colore rien, et l'écran redeviendrait gris sans qu'un seul test rougisse. On vérifie donc les
+   deux bouts — la carte porte la marque, et la feuille de style la colore vraiment. */
+const feuilleStyle = fs.readFileSync(path.join(APP, 'style.css'), 'utf8');
 
 let reussies = 0, echouees = 0;
 function verifier(t, condition, detail){
@@ -123,6 +130,10 @@ vm.runInContext([
   'rangDeLaJournee', 'tourneesDeRecuperation',
   'programmationARecuperationAEcrire', 'raisonDeRefuserLaProgrammation', 'demainAbidjan',
   'piedTotalHTML', 'echapperAttribut',
+  /* Les deux mises en forme du numéro, prises dans config.js et non réécrites ici. Un test qui
+     imiterait ces fonctions ne contrôlerait que son imitation : le jour où config.js changerait,
+     le test resterait vert et le bouton d'appel, lui, composerait un mauvais numéro. */
+  'numeroCompose', 'numeroInternational',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
 vm.runInContext('const HORODATAGE_DU_STATUT = ' + JSON.stringify({
   recupere: 'recupere_at', livre: 'livre_at', non_livre: 'non_livre_at', retour: 'retour_at',
@@ -794,16 +805,123 @@ verifier("son numéro est là : c'est par lui que le détour se décide",
 verifier("la mention « hors programme » est écrite en toutes lettres sur sa carte",
   /Everythingfromlondon2[\s\S]{0,200}hors programme/.test(poseLivreur),
   'rien ne distinguerait une récupération traînante d\'un rendez-vous posé par le bureau');
-verifier("sa carte ne porte pas la même bordure que les autres",
-  /#d97706/.test(poseLivreur),
-  'la couleur se voit d\'un coup d\'œil là où un mot se lit');
+verifier("sa carte est marquée comme hors programme dans le HTML",
+  /tournee-carte tournee-carte--hors/.test(poseLivreur),
+  'sans marque sur la carte, la feuille de style n\'a rien à colorer');
+verifier("et la feuille de style lui donne bien une bordure à elle",
+  /\.tournee-carte--hors\s*\{[^}]*border-left-color\s*:\s*#d97706/.test(feuilleStyle)
+  && /\.tournee-carte--programme\s*\{[^}]*border-left-color\s*:\s*#1e8f4e/.test(feuilleStyle),
+  'la couleur se voit d\'un coup d\'œil là où un mot se lit ; une classe sans règle ne colore rien');
 verifier("le TOTAL du téléphone la compte, elle et son colis",
   /<strong>3<\/strong> cliente/.test(poseLivreur) && /<strong>3<\/strong> colis à prendre/.test(poseLivreur),
   poseLivreur.slice(poseLivreur.indexOf('TOTAL')));
 verifier("et l'écran dit combien elles sont hors programme, et pourquoi appeler avant",
-  /Dont <strong>1<\/strong> cliente hors programme/.test(poseLivreur)
+  /y compris <strong>1<\/strong> cliente/.test(poseLivreur)
   && /Appelez avant de passer/.test(poseLivreur),
   'un chiffre dans le total sans explication au-dessous se lit comme une erreur d\'affichage');
+
+/* ---------- La refonte du 28 août 2026, et ce qui la garde ----------
+
+   CE QUI A ÉTÉ MESURÉ AVANT DE TOUCHER À QUOI QUE CE SOIT. Sur le téléphone de GONSON Christ,
+   l'écran affichait onze clientes dont DIX marquées « hors programme », collées les unes aux
+   autres sur 1289 pixels de haut, sans bordure, sans fond, sans marge ; et le numéro de chaque
+   cliente était un lien de 20 pixels, couleur du texte ordinaire, sans soulignement — un lien qui
+   ne se voyait pas et qu'un doigt ne pouvait pas viser. La classe qui devait l'habiller,
+   « colis-card », n'existait dans aucune feuille de style : elle était écrite dans le HTML et
+   nulle part ailleurs. Le calcul était juste, c'est la HIÉRARCHIE qui était fausse.
+
+   POURQUOI CES CONTRÔLES-LÀ. Une disposition ne se prouve pas par une capture d'écran : la capture
+   vieillit et personne ne la relit. Ce qui tient dans le temps, c'est un contrôle qui rougit. Les
+   quatre choses qui viennent d'être réparées sont donc gardées une par une : la classe fantôme ne
+   doit jamais revenir, chaque carte doit porter DEUX boutons de contact et non un lien maigre,
+   les clientes hors programme doivent être repliées sous les clientes programmées, et — c'est le
+   plus important pour le côté financier — LE REPLI NE DOIT RIEN RETRANCHER AU TOTAL. Replier,
+   c'est ranger ; ce n'est pas soustraire. Le jour où quelqu'un « simplifiera » en ne comptant que
+   les clientes visibles, ce contrôle-ci rougira. */
+titre("La disposition refondue : deux boutons, un repli, et un total qui n'oublie personne");
+
+// La classe fantôme, celle qui n'habillait rien. Elle ne doit revenir dans AUCUNE page.
+const pagesApp = fs.readdirSync(APP).filter(f => f.endsWith('.html'));
+const pageAvecFantome = pagesApp.filter(f =>
+  /class="[^"]*\bcolis-card\b/.test(fs.readFileSync(path.join(APP, f), 'utf8')));
+verifier("la classe « colis-card », qui n'existait dans aucune feuille de style, n'est revenue nulle part",
+  pageAvecFantome.length === 0,
+  'classe écrite mais jamais définie, donc sans effet, dans : ' + pageAvecFantome.join(', '));
+
+// Deux boutons par cliente jointe : appeler coûte du crédit, écrire n'en coûte pas.
+verifier("chaque cliente joignable a un bouton d'appel ET un bouton WhatsApp",
+  (poseLivreur.match(/tournee-contact--appel/g) || []).length === 2
+  && (poseLivreur.match(/tournee-contact--whatsapp/g) || []).length === 2,
+  poseLivreur);
+verifier("le lien WhatsApp porte le numéro international, pas le numéro local",
+  /href="https:\/\/wa\.me\/2250700000004"/.test(poseLivreur),
+  'wa.me refuse un numéro local : le bouton s\'ouvrirait sur une page d\'erreur');
+verifier("il s'ouvre à côté, sans emporter la tournée avec lui",
+  /wa\.me[^"]*"[^>]*target="_blank"[^>]*rel="noopener"/.test(poseLivreur),
+  'le livreur perdrait sa liste en écrivant un message');
+// Une cliente sans numéro n'a pas de bouton mort : elle a une phrase qui dit quoi faire.
+verifier("la cliente sans numéro n'a ni lien d'appel ni lien WhatsApp, mais une consigne",
+  /Bintou Shop[\s\S]{0,600}tournee-contact--absent/.test(poseLivreur)
+  && !/Bintou Shop[\s\S]{0,600}(tel:|wa\.me)/.test(poseLivreur),
+  'un bouton qui ne fait rien se presse quand même, et fait perdre du temps');
+
+// 48 pixels : la hauteur en dessous de laquelle un doigt rate sa cible. Mesurée à 20 avant.
+verifier("les boutons de contact font au moins 48 pixels de haut dans la feuille de style",
+  /\.tournee-contact\s*\{[^}]*min-height\s*:\s*(4[8-9]|[5-9]\d|\d{3,})px/.test(feuilleStyle),
+  'le lien mesurait 20 pixels avant le 28/08/2026, et se ratait au doigt');
+verifier("ils réagissent au doigt comme les autres boutons de l'application",
+  /\.tournee-contact:active\s*\{[^}]*transform\s*:\s*translateY/.test(feuilleStyle),
+  'un bouton qui ne bouge pas sous le doigt laisse croire qu\'il n\'a pas pris');
+verifier("les cartes sont séparées les unes des autres, elles ne se touchent plus",
+  /\.tournee-carte\s*\{[^}]*margin-bottom\s*:\s*\d+px/.test(feuilleStyle)
+  && /\.tournee-carte\s*\{[^}]*border\s*:/.test(feuilleStyle),
+  'onze clientes collées sur 1289 pixels ne se lisent pas, elles se subissent');
+
+// Le repli : les clientes programmées d'abord, les autres rangées dessous, comptées dans le titre.
+verifier("les clientes hors programme sont rangées dans un repli, pas mêlées aux autres",
+  /<details class="tournee-repli">/.test(poseLivreur),
+  'quand dix cartes sur onze portent la même exception, l\'exception ne distingue plus rien');
+verifier("le repli annonce combien de clientes et combien de colis il contient",
+  /<summary>Aussi confiées à vous · 1 cliente, 1 colis<\/summary>/.test(poseLivreur),
+  'un repli sans chiffre ne se déplie que par curiosité, jamais par nécessité');
+verifier("la cliente programmée est AU-DESSUS du repli, la hors programme DEDANS",
+  poseLivreur.indexOf('Awa Boutique') < poseLivreur.indexOf('<details')
+  && poseLivreur.indexOf('<details') < poseLivreur.indexOf('Everythingfromlondon2')
+  && poseLivreur.indexOf('Everythingfromlondon2') < poseLivreur.indexOf('</details>'),
+  'la seule cliente vraiment attendue aujourd\'hui se noyait parmi dix exceptions');
+
+/* Et le contrôle qui compte le plus. Le TOTAL doit rester DEHORS et compter DEDANS. */
+verifier("le TOTAL est écrit après le repli, donc toujours visible sans le déplier",
+  poseLivreur.indexOf('</details>') < poseLivreur.indexOf('TOTAL'),
+  'un total caché dans un repli n\'est pas un total');
+verifier("replier n'est pas retrancher : le total compte les clientes du repli",
+  /<strong>3<\/strong> clientes à visiter/.test(poseLivreur)
+  && /<strong>3<\/strong> colis à prendre/.test(poseLivreur),
+  poseLivreur.slice(poseLivreur.indexOf('TOTAL')));
+
+/* ---------- Le numéro, mis en forme une seule fois ----------
+   Le bouton d'appel et le bouton WhatsApp partent du même numéro de fiche mais n'en veulent pas
+   la même forme. Si chacun faisait sa propre mise en forme, l'un finirait par appeler Awa pendant
+   que l'autre écrirait à quelqu'un d'autre. D'où une fonction unique dans config.js — et des
+   contrôles sur elle, car la Côte d'Ivoire est passée à dix chiffres en 2021 et l'erreur classique
+   est d'enlever le zéro de tête comme on le fait ailleurs. Ici, on ne l'enlève pas. */
+titre("Le numéro de la cliente, mis en forme une seule fois pour les deux boutons");
+const { numeroCompose, numeroInternational } = contexte;
+verifier("un numéro ivoirien à dix chiffres garde son zéro de tête derrière le 225",
+  numeroInternational('0705404655') === '2250705404655',
+  'ailleurs on retire le zéro ; ici il fait partie du numéro, et le retirer donne un faux numéro : '
+  + numeroInternational('0705404655'));
+verifier("un numéro déjà international n'est pas préfixé deux fois",
+  numeroInternational('2250705404655') === '2250705404655');
+verifier("le « 00 » de tête, qui est l'autre façon d'écrire le « + », est retiré",
+  numeroInternational('00225 07 05 40 46 55') === '2250705404655');
+verifier("les espaces, points et tirets de la saisie ne passent pas dans le lien",
+  numeroCompose('07-05.40 46 55') === '0705404655');
+verifier("une fiche sans numéro ne produit pas un lien vide mais rien du tout",
+  numeroInternational('') === '' && numeroInternational(null) === '' && numeroCompose(undefined) === '');
+verifier("un numéro qu'on ne sait pas mettre en forme est rendu tel quel, pas effacé",
+  numeroInternational('33612345678') === '33612345678',
+  'un numéro étranger doit rester composable : mieux vaut un lien imparfait qu\'un bouton mort');
 
 titre("Un matin sans tournée, et un matin où la lecture échoue");
 // On vide les DEUX : le programme du jour ET les colis confiés. Vider le seul programme ne
