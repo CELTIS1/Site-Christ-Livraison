@@ -4256,6 +4256,41 @@ function departDeCollecte(colisDeLaCliente) {
   return tot;
 }
 
+/* OÙ FAUT-IL ALLER LA CHERCHER ? (29/08/2026)
+
+   La commune de récupération est la seule chose qui dise au livreur où se rendre. Mesuré en base
+   le 28/08/2026 : 24 fiches sur 39 n'en avaient aucune, et chez 6 d'entre elles des colis
+   attendaient déjà. Le champ était facultatif depuis toujours, donc il était oublié presque
+   toujours.
+
+   Ces deux fonctions sont écrites ICI, une seule fois, parce que le téléphone du livreur et
+   l'écran du bureau doivent dire exactement la même chose du même lieu. Deux formulations
+   séparées, c'est le jour où le bureau lit « Yopougon » et le téléphone « Yopougon · Micao »,
+   et où plus personne ne sait laquelle des deux fait foi.
+
+   L'espace seul ne compte pas comme une commune : une fiche où quelqu'un a tapé une espace
+   n'est pas renseignée, elle est vide d'une autre façon. Sans ce btrim, la carte afficherait
+   « 📍  » — un lieu qui n'en est pas un, et sans le geste pour le corriger. */
+function communeRecuperationManquante(commune) {
+  return String(commune == null ? "" : commune).trim() === "";
+}
+
+/* Le lieu tel qu'il s'écrit sur une carte de tournée. Renvoie du TEXTE, jamais du HTML :
+   c'est l'appelant qui l'échappe, comme partout ailleurs. Renvoyer du HTML tout fait serait
+   se priver de l'échappement au moment où il compte, sur un nom saisi à la main. */
+function libelleLieuRecuperation(commune, adresse) {
+  const a = String(adresse == null ? "" : adresse).trim();
+  /* Une fiche peut porter un repère sans commune — « en face de la pharmacie », noté à la va-vite.
+     On ne le jette pas : il vaut mieux qu'un livreur ait un repère imparfait que rien du tout.
+     Mais on continue de dire que la commune manque, sinon le bureau croirait la fiche complète
+     et ne la corrigerait jamais. Les deux informations tiennent sur la même ligne. */
+  if (communeRecuperationManquante(commune)) {
+    return a ? "Commune non renseignée · " + a : "Commune non renseignée";
+  }
+  const c = String(commune).trim();
+  return a ? c + " · " + a : c;
+}
+
 /* Les tournées d'une journée, prêtes à dessiner.
 
    Entrée (tout est facultatif sauf programmations) :

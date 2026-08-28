@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828route1">
-<script src="theme.js?v=20260828route1"></script>
+<link rel="stylesheet" href="style.css?v=20260828lieu1">
+<script src="theme.js?v=20260828lieu1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -485,15 +485,21 @@
 <div class="field-hint" style="font-size:12px; color:var(--muted); margin:-4px 0 10px;">Communiquez ce mot de passe au client : il pourra se connecter immédiatement à son espace, puis le changer lui-même depuis « Mon compte ».</div>
 <div class="field-row">
 <div class="field">
-<label>Commune de récupération <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
-<select id="cl-commune"></select>
+<label>Commune de récupération</label>
+<select id="cl-commune" required></select>
 </div>
 <div class="field">
 <label>Adresse de récupération <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
 <input type="text" id="cl-adresse" placeholder="Repère, rue, immeuble...">
 </div>
 </div>
-<div class="field-hint" style="font-size:12px; color:var(--muted); margin:-4px 0 12px;">Renseignés ici, ces deux champs se rempliront tout seuls à chaque colis ajouté pour ce client.</div>
+<!-- LA COMMUNE N'EST PLUS FACULTATIVE. (29/08/2026)
+     Mesuré en base le 28/08/2026 : 24 fiches sur 39 n'avaient aucune commune de récupération,
+     et chez 6 d'entre elles des colis attendaient déjà d'être pris. Sur le téléphone du livreur,
+     la carte de la tournée affichait donc « 📍 Commune non renseignée » : on lui demandait
+     d'aller chercher des colis sans lui dire où. Le champ était facultatif depuis toujours,
+     donc il était oublié presque toujours. Un champ qu'on peut sauter est un champ qu'on saute. -->
+<div class="field-hint" style="font-size:12px; color:var(--muted); margin:-4px 0 12px;">La commune est obligatoire : c'est elle que le livreur lit sur sa tournée pour savoir où aller. L'adresse la précise, et les deux se rempliront ensuite toutes seules à chaque colis ajouté pour ce client.</div>
 <button type="submit" class="btn" id="btn-submit-client">Créer le compte client</button>
 </form>
 </div>
@@ -1104,10 +1110,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828route1"></script>
-<script src="config.js?v=20260828route1"></script>
+<script src="clt-common.js?v=20260828lieu1"></script>
+<script src="config.js?v=20260828lieu1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260828route1"></script>
+<script src="clt-select-recherche.js?v=20260828lieu1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1327,6 +1333,13 @@ document.getElementById('pickup-modal-form').addEventListener('submit', async (e
   }
   hidePickupModal();
   renderColis();
+  /* LA TOURNÉE AUSSI SE REDESSINE. (29/08/2026)
+     Cette fenêtre s'ouvre désormais depuis la carte de la tournée, et pas seulement depuis le
+     tableau des colis. Ne redessiner que renderColis(), c'était enregistrer la commune, la voir
+     disparaître du tableau… et la laisser afficher « Commune non renseignée » sur la carte d'où
+     l'on venait de cliquer. Le bureau aurait cru que son enregistrement n'avait pas pris, et
+     l'aurait refait. `fournisseurs` est déjà à jour en mémoire, juste au-dessus. */
+  if (typeof renderProgrammationBody === 'function') renderProgrammationBody();
 });
 
 // ---------- Remise de caisse (montant reçu + écart) ----------
@@ -2642,6 +2655,15 @@ rendreLaMain(); return;
 }
 if (!password || password.length < 6) {
 addClientMsg("Le mot de passe doit contenir au moins 6 caractères.", "error");
+rendreLaMain(); return;
+}
+/* LA COMMUNE EST REFUSÉE VIDE, ICI AUSSI. (29/08/2026)
+   L'attribut « required » posé sur le <select> ne suffit pas : il ne protège que le clic sur
+   le bouton. Ce formulaire est aussi soumis par la touche Entrée, et un navigateur ancien ou
+   un champ masqué par un onglet replié le laisserait passer. La règle qui compte est celle
+   qui est écrite dans le code, pas celle qui est écrite dans le HTML. */
+if (!commune_recuperation) {
+addClientMsg("Choisissez la commune de récupération : c'est elle que le livreur lit sur sa tournée pour savoir où aller.", "error");
 rendreLaMain(); return;
 }
 
@@ -5519,6 +5541,21 @@ const contacts = l.telephone
 : `<div class="tournee-contacts">
 <span class="tournee-contact tournee-contact--absent">Numéro non renseigné — à compléter dans sa fiche</span>
 </div>`;
+/* LE LIEU MANQUANT SE CORRIGE LÀ OÙ IL MANQUE. (29/08/2026)
+   Quand la commune est absente, la ligne du lieu cesse d'être une phrase et devient le geste
+   qui la répare : un clic ouvre la fiche de récupération de la cliente, déjà écrite, qui
+   enregistre la commune et la reporte aussitôt sur ses colis en attente. Pas de bouton
+   supplémentaire — la carte resterait épurée à trois gestes, elle en aurait quatre. On répare
+   l'information à l'endroit exact où on constate qu'elle manque.
+   Ce geste s'affiche AUSSI sur les cartes terminées, contrairement à « Retirer de la tournée ».
+   Ce n'est pas une incohérence : retirer une tournée finie n'a aucun effet utile, tandis qu'une
+   fiche sans commune est fausse aujourd'hui et le sera encore demain. Chaque occasion de la
+   corriger est bonne à prendre. */
+const lieuTexte = libelleLieuRecuperation(l.commune, l.adresse);
+const lieuManquant = communeRecuperationManquante(l.commune);
+const lieuHTML = lieuManquant
+? `<button type="button" class="tournee-lieu tournee-lieu--manquant" data-prog-lieu="${escapeHTML(l.fournisseurId)}">📍 ${escapeHTML(lieuTexte)} — la renseigner</button>`
+: `<div class="tournee-lieu">📍 ${escapeHTML(lieuTexte)}</div>`;
 const fini = travailFini(l);
 const classe = fini ? 'tournee-carte--fait'
 : (l.horsProgramme ? 'tournee-carte--hors'
@@ -5549,7 +5586,7 @@ const enRoute = !!l.departAt && !fini;
 return `
 <div class="tournee-carte ${classe}${enRoute ? ' tournee-carte--route' : ''}">
 <div class="tournee-nom">${escapeHTML(l.clienteNom)}${marque}${enRoute ? `<span class="tournee-marque tournee-marque--route">en route</span>` : ''}</div>
-<div class="tournee-lieu">📍 ${l.commune ? escapeHTML(l.commune) : 'Commune non renseignée'}${l.adresse ? ' · ' + escapeHTML(l.adresse) : ''}</div>
+${lieuHTML}
 ${l.note ? `<div class="tournee-note">📝 ${escapeHTML(l.note)}</div>` : ''}
 <div class="tournee-compte">
 ${fini
@@ -8159,6 +8196,11 @@ if (body) {
 body.addEventListener('click', (e) => {
 const b = e.target.closest('[data-prog-retirer]');
 if (b) { progRetirer(b.getAttribute('data-prog-retirer')); return; }
+// La ligne du lieu, quand la commune manque, ouvre la fiche de récupération de la cliente.
+// C'est la même fenêtre que celle du tableau des colis : une seule façon d'écrire un lieu,
+// donc une seule à vérifier. (29/08/2026)
+const lieu = e.target.closest('[data-prog-lieu]');
+if (lieu) { showPickupModal(lieu.getAttribute('data-prog-lieu')); return; }
 const p = e.target.closest('[data-prog-programmer]');
 if (p) progPreremplir(p.getAttribute('data-prog-programmer'));
 });

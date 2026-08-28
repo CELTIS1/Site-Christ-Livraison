@@ -2458,6 +2458,21 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
    au-dessus. Même poids, donc c'est l'ordre qui tranche. */
 .tournee-marque--route{color:#fff; background:#1b4374;}
 .tournee-lieu{margin-top:4px; font-size:13px; color:var(--muted);}
+/* LE LIEU MANQUANT SE VOIT. (29/08/2026)
+   Écrite APRÈS .tournee-lieu, comme toutes les nuances de ce fichier : une variante et sa base
+   pèsent exactement le même poids (une classe chacune), donc c'est la dernière écrite qui gagne.
+   Placée avant, elle serait dans le fichier sans être à l'écran.
+   Au bureau la ligne est un <button> : il faut donc annuler l'apparence que le navigateur donne
+   d'office aux boutons (fond gris, bordure, police système, texte centré), sans quoi la carte
+   porterait un rectangle gris là où le téléphone porte une phrase. Sur le téléphone c'est un
+   <div> : la même règle s'y applique sans rien faire de visible de plus que la couleur. */
+.tournee-lieu--manquant{
+  color:#b45309; font-weight:600;
+  display:block; width:100%; text-align:left;
+  background:none; border:none; padding:0;
+  font-family:inherit; font-size:13px; cursor:pointer;
+}
+.tournee-lieu--manquant:hover{text-decoration:underline;}
 .tournee-note{margin-top:4px; font-size:13px; color:#b45309;}
 .tournee-compte{margin-top:8px; font-size:13.5px; color:var(--muted);}
 .tournee-compte strong{color:var(--navy); font-size:15px;}
@@ -2517,6 +2532,9 @@ html[data-theme="dark"] .tournee-marque--fait{color:#5ed19a; background:rgba(30,
 html[data-theme="dark"] .tournee-marque--route{color:#dbeafe; background:#2c5c9a;}
 html[data-theme="dark"] .tournee-compte .tournee-depart{color:#8ab4e8;}
 html[data-theme="dark"] .tournee-note{color:#fbbf24;}
+/* En thème sombre, l'ambre foncé #b45309 disparaît presque dans le fond. Le lieu manquant est
+   précisément ce qu'il ne faut pas rater : on l'éclaircit, comme la note juste au-dessus. */
+html[data-theme="dark"] .tournee-lieu--manquant{color:#fbbf24;}
 html[data-theme="dark"] .tournee-repli > summary{color:#fbbf24;}
 html[data-theme="dark"] .tournee-compte .tournee-pris{color:#5ed19a;}
 html[data-theme="dark"] .tournee-carte--programme{border-left-color:#2fae6b;}

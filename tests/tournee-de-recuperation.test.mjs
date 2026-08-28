@@ -141,6 +141,10 @@ vm.runInContext([
      rien. Le décompte de la publication compte donc aussi les fichiers qui n'arrivent pas
      au bout. */
   'departDeCollecte', 'messageDepartRecuperation', 'lienDepartRecuperation',
+  /* Le lieu de récupération, écrit une seule fois pour les deux écrans. (29/08/2026)
+     Même leçon que les trois précédentes : le dessin les appelle, donc elles entrent ici, sinon
+     le banc s'arrête au lieu de rougir. */
+  'communeRecuperationManquante', 'libelleLieuRecuperation',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
 vm.runInContext('const HORODATAGE_DU_STATUT = ' + JSON.stringify({
   recupere: 'recupere_at', livre: 'livre_at', non_livre: 'non_livre_at', retour: 'retour_at',
@@ -1371,10 +1375,24 @@ verifier("le lien WhatsApp porte le numéro international, pas le numéro local"
 verifier("il s'ouvre à côté, sans emporter la tournée avec lui",
   /wa\.me[^"]*"[^>]*target="_blank"[^>]*rel="noopener"/.test(poseLivreur),
   'le livreur perdrait sa liste en écrivant un message');
-// Une cliente sans numéro n'a pas de bouton mort : elle a une phrase qui dit quoi faire.
+/* LA CARTE D'UNE CLIENTE, DÉCOUPÉE POUR DE VRAI. (29/08/2026)
+   Ce contrôle regardait auparavant « les 600 caractères qui suivent le nom ». C'était une
+   fenêtre devinée, pas une mesure : le jour où l'on a ajouté quatre lignes de commentaire dans
+   le gabarit de la carte, la consigne est sortie de la fenêtre et le contrôle a rougi alors que
+   l'écran, lui, était juste. Un contrôle qui rougit pour une raison qui n'est pas la sienne
+   apprend à qui le lit à ignorer le rouge — c'est pire qu'un contrôle absent.
+   On découpe donc sur la vraie frontière : chaque carte commence à `<div class="tournee-carte`. */
+const carteDe = (html, nom) => {
+  const morceaux = String(html).split('<div class="tournee-carte');
+  const trouve = morceaux.filter((m) => m.includes(nom));
+  if (trouve.length !== 1) return '';
+  return trouve[0];
+};
+const carteBintou = carteDe(poseLivreur, 'Bintou Shop');
 verifier("la cliente sans numéro n'a ni lien d'appel ni lien WhatsApp, mais une consigne",
-  /Bintou Shop[\s\S]{0,600}tournee-contact--absent/.test(poseLivreur)
-  && !/Bintou Shop[\s\S]{0,600}(tel:|wa\.me)/.test(poseLivreur),
+  carteBintou !== ''
+  && carteBintou.includes('tournee-contact--absent')
+  && !/tel:|wa\.me/.test(carteBintou),
   'un bouton qui ne fait rien se presse quand même, et fait perdre du temps');
 
 // 48 pixels : la hauteur en dessous de laquelle un doigt rate sa cible. Mesurée à 20 avant.
@@ -1927,6 +1945,303 @@ const chargement = blocDe(livreur, 'chargerMaTournee', 'livreur.html');
 verifier("et l'écran dit alors de prévenir le bureau avant de partir",
   /Impossible de compter vos colis[\s\S]*?Prévenez le bureau avant de partir/.test(chargement),
   chargement.slice(-700));
+
+/* ==========================================================================================
+   12. « OÙ FAUT-IL ALLER LA CHERCHER ? » — LE LIEU MANQUANT, ET LE GESTE QUI LE RÉPARE
+
+   Mesuré en base le 28/08/2026 : 24 fiches clientes sur 39 n'avaient aucune commune de
+   récupération, et chez 6 d'entre elles des colis attendaient déjà. Sur le téléphone du livreur
+   la carte affichait « 📍 Commune non renseignée » : on lui demandait d'aller chercher des colis
+   sans lui dire où. Le champ était facultatif depuis toujours, donc oublié presque toujours.
+
+   Deux réponses, contrôlées ici. On ferme le robinet — la commune devient obligatoire à la
+   création — et on répare l'existant là où le manque se constate : au bureau, la ligne du lieu
+   cesse d'être une phrase et devient le geste qui l'écrit.
+   ========================================================================================== */
+titre("Le lieu de récupération : une seule phrase, et le geste qui la remplit");
+
+/* ---------- Le calcul partagé, appelé pour de vrai ---------- */
+const manquante = (v) => vm.runInContext('communeRecuperationManquante(' + JSON.stringify(v) + ')', contexte);
+const lieuDe = (c, a) => vm.runInContext(
+  'libelleLieuRecuperation(' + JSON.stringify(c) + ', ' + JSON.stringify(a) + ')', contexte);
+
+verifier("une fiche sans commune est déclarée sans commune", manquante(null) === true);
+verifier("une commune vide aussi", manquante('') === true);
+/* L'espace seule est le cas qui trompe : la fiche PARAÎT remplie côté base, et la carte
+   afficherait « 📍  » — un lieu qui n'en est pas un, sans le geste pour le corriger. */
+verifier("et une commune faite d'espaces aussi, qui est le cas qui trompe", manquante('   ') === true);
+verifier("une vraie commune n'est pas déclarée manquante", manquante('Yopougon') === false);
+verifier("les espaces autour d'une vraie commune ne la font pas disparaître",
+  manquante('  Yopougon  ') === false);
+
+verifier("le lieu joint la commune et le repère, séparés par un point médian",
+  lieuDe('Yopougon', 'Micao') === 'Yopougon · Micao', lieuDe('Yopougon', 'Micao'));
+verifier("une commune sans repère s'écrit seule, sans séparateur qui pende",
+  lieuDe('Yopougon', '') === 'Yopougon', lieuDe('Yopougon', ''));
+verifier("sans commune, la phrase le dit en toutes lettres",
+  lieuDe(null, null) === 'Commune non renseignée', lieuDe(null, null));
+/* On ne jette pas un repère écrit à la main sous prétexte que la commune manque : un repère
+   imparfait vaut mieux que rien. Mais il ne doit pas masquer le manque, sinon le bureau croit
+   la fiche complète et ne la corrige jamais. */
+verifier("un repère sans commune est gardé, et ne masque pas le manque",
+  lieuDe('', 'en face de la pharmacie') === 'Commune non renseignée · en face de la pharmacie',
+  lieuDe('', 'en face de la pharmacie'));
+
+/* ---------- Le bureau : la ligne du lieu devient le geste ---------- */
+const gardeFournisseurs = contexte.fournisseurs;
+const gardePoseur = contexte.cltPoserHTML;
+const gardeDocument = contexte.document;
+
+contexte.cltPoserHTML = (box, html) => { poseHTML = html; return true; };
+/* LE DÉCOR SE REMET AVANT DE MESURER. (28/08/2026)
+   Les sections précédentes ont laissé en place le faux document du TÉLÉPHONE, qui ne connaît
+   que la boîte « recup-tournee ». renderProgrammationBody() cherche « prog-body », ne le trouve
+   pas, et repart sans rien écrire : sept contrôles rougissaient alors pour une raison qui
+   n'était pas la leur. On rend donc au bureau son propre décor, et on vérifie ci-dessous qu'il
+   a bien dessiné — un écran vide ne doit jamais pouvoir se lire comme un écran conforme.
+   Les mêmes sections ont aussi vidé le jour, les lignes et les colis pour leurs propres essais.
+   On remonte donc le décor du bureau en entier, et pas seulement le morceau qui manquait le
+   plus fort : un décor à moitié remis donne un écran à moitié faux, plus difficile à lire
+   qu'un écran franchement vide. */
+contexte.document = { getElementById: (id) => champsFictifs[id] || null };
+contexte.progJourChoisi = AUJ;
+contexte.progLignes = PROG.filter(p => p.jour === AUJ);
+contexte.progColis = COLIS;
+contexte.progEnCours = false;
+contexte.progErreur = '';
+contexte.fournisseurs = gardeFournisseurs.map(f => (f.id === 'F1'
+  ? Object.assign({}, f, { commune_recuperation: '', adresse_recuperation: '' })
+  : f));
+poseHTML = '';
+renderProgrammationBody();
+
+verifier("le bureau dessine bien quelque chose avant qu'on mesure ce qu'il dessine",
+  poseHTML.includes('tournee-carte'), 'écran vide : le décor est faux, pas l\'écran');
+
+const carteAwa = carteDe(poseHTML, 'Awa Boutique');
+const carteBintouBureau = carteDe(poseHTML, 'Bintou Shop');
+
+verifier("au bureau, la carte d'une cliente sans commune porte le geste qui la renseigne",
+  carteAwa !== '' && /data-prog-lieu="F1"/.test(carteAwa), carteAwa);
+/* Le geste porte l'identifiant de la CLIENTE, pas celui de la ligne de programmation : c'est
+   la fiche de la cliente qu'on va écrire, et elle survit à la tournée du jour. Avec l'autre
+   identifiant, la fenêtre s'ouvrirait vide et n'écrirait nulle part. */
+verifier("et il porte l'identifiant de la cliente, pas celui de la ligne du jour",
+  /data-prog-lieu="F1"/.test(carteAwa) && !/data-prog-lieu="P\d/.test(carteAwa), carteAwa);
+verifier("le manque se voit : la ligne prend la nuance prévue pour lui",
+  /tournee-lieu tournee-lieu--manquant/.test(carteAwa), carteAwa);
+verifier("c'est un bouton, pas un lien : il ouvre une fenêtre, il ne quitte pas la page",
+  /<button[^>]*data-prog-lieu/.test(carteAwa), carteAwa);
+verifier("une cliente déjà renseignée ne porte aucun geste de lieu",
+  carteBintouBureau !== '' && !/data-prog-lieu/.test(carteBintouBureau), carteBintouBureau);
+verifier("et sa ligne reste une phrase, sans la nuance du manque",
+  /tournee-lieu">📍 Cocody · Angré 7e tranche/.test(carteBintouBureau), carteBintouBureau);
+verifier("une seule cliente sans commune ne donne qu'un seul geste dans tout l'écran",
+  (poseHTML.match(/data-prog-lieu=/g) || []).length === 1, poseHTML);
+/* Le geste s'affiche AUSSI sur les cartes terminées, contrairement à « Retirer de la tournée ».
+   Retirer une tournée finie n'a aucun effet utile ; une fiche sans commune, elle, est fausse
+   aujourd'hui et le sera encore demain. Chaque occasion de la corriger est bonne à prendre.
+   Une carte terminée, c'est une cliente hors programme chez qui tout a déjà été ramassé : le
+   décor de base n'en contient aucune, on emprunte donc F5 au décor hors programme. Sans elle,
+   le contrôle suivant passerait au vert sur une liste vide — c'est-à-dire sur rien. */
+contexte.fournisseurs = gardeFournisseurs.concat([
+  { id: 'F5', company_name: 'Fatou Tissus', phone: '0700000005' },
+]).map(f => Object.assign({}, f, { commune_recuperation: '', adresse_recuperation: '' }));
+contexte.progColis = COLIS_HP;
+poseHTML = '';
+renderProgrammationBody();
+const cartesFinies = poseHTML.split('<div class="tournee-carte').filter(m => m.includes('tournee-carte--fait'));
+verifier("le décor contient bien au moins une carte terminée, sinon le contrôle suivant ne mesure rien",
+  cartesFinies.length >= 1, poseHTML.slice(0, 400));
+verifier("même une carte terminée propose de réparer la fiche : l'occasion est bonne à prendre",
+  cartesFinies.every(c => /data-prog-lieu=/.test(c)), cartesFinies[0] || '');
+
+contexte.fournisseurs = gardeFournisseurs;
+contexte.progColis = COLIS;
+poseHTML = '';
+renderProgrammationBody();
+
+/* ---------- Le téléphone : la même phrase, jamais le geste ---------- */
+const gardeClientes = contexte.tourneeClientes;
+contexte.cltPoserHTML = (box, html) => { poseLivreur = html; return true; };
+contexte.document = { getElementById: (id) => (id === 'recup-tournee' ? boiteTournee : null) };
+contexte.tourneeClientes = {
+  F1: Object.assign({}, gardeClientes.F1, { commune_recuperation: '', adresse_recuperation: '' }),
+  F2: gardeClientes.F2,
+};
+poseLivreur = '';
+renderMaTournee();
+const carteAwaTelephone = carteDe(poseLivreur, 'Awa Boutique');
+
+verifier("le téléphone écrit exactement la même phrase de lieu que le bureau",
+  carteAwaTelephone !== '' && /tournee-lieu--manquant">📍 Commune non renseignée</.test(carteAwaTelephone),
+  carteAwaTelephone);
+/* Le bureau tient les fiches des clientes, le livreur roule. Un champ de commune sur le
+   téléphone ferait écrire la fiche par celui qui n'a ni la liste des communes sous les yeux
+   ni la responsabilité de la tenir — et deux écrans écriraient le même champ. */
+verifier("mais le téléphone ne propose jamais de corriger la fiche de la cliente",
+  !/data-prog-lieu/.test(poseLivreur), poseLivreur);
+
+contexte.tourneeClientes = gardeClientes;
+contexte.cltPoserHTML = gardePoseur;
+contexte.document = gardeDocument;
+
+/* ---------- Le branchement, lu dans la source ---------- */
+const sourceEquipeSansCommentaires = sansCommentaires(equipe);
+verifier("le clic sur la ligne ouvre la fiche de récupération de la cliente",
+  /closest\('\[data-prog-lieu\]'\)[\s\S]{0,200}showPickupModal\(/.test(sourceEquipeSansCommentaires),
+  'sans ce branchement, la ligne serait un bouton qui ne fait rien');
+/* Cette fenêtre ne redessinait que le tableau des colis. Ouverte depuis la carte de la tournée,
+   elle laissait donc « Commune non renseignée » à l'endroit d'où l'on venait de cliquer : le
+   bureau aurait cru que son enregistrement n'avait pas pris, et l'aurait refait. */
+/* ON APPUIE POUR DE VRAI SUR « ENREGISTRER ». (29/08/2026)
+   Le contrôle d'origine se contentait de constater que renderProgrammationBody() APPARAISSAIT
+   dans le texte de la fenêtre. Au sabotage du 29/08/2026 on a remplacé sa condition par
+   « if (false) » : l'appel est resté écrit noir sur blanc, il ne s'exécutait plus, et le banc
+   n'a rien vu. Lire le code ne dit pas ce qu'il fait. On exécute donc le gestionnaire dans un
+   décor de carton, et on regarde ce qui a réellement été appelé.
+   Ce gestionnaire est une flèche anonyme posée sur addEventListener : blocDe() ne sait attraper
+   que les fonctions nommées, on découpe donc son corps à l'accolade. */
+const ancreLieu = "document.getElementById('pickup-modal-form').addEventListener('submit', async (e) => {";
+const iLieu = equipe.indexOf(ancreLieu);
+if (iLieu === -1) {
+  console.error("Le gestionnaire de la fenêtre de récupération est introuvable dans equipe.html");
+  process.exit(1);
+}
+let profLieu = 0, finLieu = -1;
+for (let k = iLieu + ancreLieu.length - 1; k < equipe.length; k++) {
+  if (equipe[k] === '{') profLieu++;
+  else if (equipe[k] === '}') { profLieu--; if (profLieu === 0) { finLieu = k; break; } }
+}
+const corpsLieu = equipe.slice(iLieu + ancreLieu.length, finLieu);
+
+const champsLieu = {
+  'pickup-modal-commune': { value: 'Yopougon' },
+  'pickup-modal-adresse': { value: '  Rue du Canal  ' },
+  'pickup-modal-msg':     { innerHTML: '' },
+  'pickup-modal-save':    { disabled: false, textContent: '' },
+};
+const appelsLieu = [];
+const ecrituresLieu = [];
+/* C1 est le seul colis à reprendre : en attente, chez cette cliente, sans lieu. C2 est déjà pris,
+   C3 est chez une autre, C4 a déjà son lieu. Les trois sont là pour qu'un report trop large se
+   voie — sans eux, « reporter sur tout » et « reporter sur ce qu'il faut » se ressembleraient. */
+const colisLieu = [
+  { id: 'C1', fournisseur_id: 'F1', statut: 'en_attente', commune_recuperation: null },
+  { id: 'C2', fournisseur_id: 'F1', statut: 'recupere',   commune_recuperation: null },
+  { id: 'C3', fournisseur_id: 'F2', statut: 'en_attente', commune_recuperation: null },
+  { id: 'C4', fournisseur_id: 'F1', statut: 'en_attente', commune_recuperation: 'Cocody' },
+];
+const ficheLieu = { id: 'F1', company_name: 'Awa Boutique', commune_recuperation: null, adresse_recuperation: null };
+
+const gardeDocLieu = contexte.document;
+const gardeFourLieu = contexte.fournisseurs;
+const gardeRendreTournee = contexte.renderProgrammationBody;
+const gardeSupabase = contexte.supabaseClient;
+
+Object.assign(contexte, {
+  __pickupModalFournisseurId: 'F1',
+  document: { getElementById: (id) => champsLieu[id] || null },
+  fournisseurs: [ficheLieu],
+  allColis: colisLieu,
+  hidePickupModal: () => appelsLieu.push('fermer'),
+  renderColis: () => appelsLieu.push('colis'),
+  renderProgrammationBody: () => appelsLieu.push('tournée'),
+  friendlyErrorMessage: (m) => m,
+  supabaseClient: { from: (table) => ({
+    update: (valeurs) => ({
+      eq: async (col, v) => { ecrituresLieu.push({ table, valeurs, ou: [v] }); return { error: null }; },
+      in: async (col, v) => { ecrituresLieu.push({ table, valeurs, ou: v }); return { error: null }; },
+    }),
+  }) },
+});
+const gestionnaireLieu = vm.runInContext('(async (e) => {' + corpsLieu + '})', contexte);
+await gestionnaireLieu({ preventDefault: () => {} });
+
+const ecritureFiche = ecrituresLieu.find(w => w.table === 'profiles');
+const ecritureColis = ecrituresLieu.find(w => w.table === 'colis');
+
+verifier("l'enregistrement écrit la commune sur la fiche de la cliente",
+  !!ecritureFiche && ecritureFiche.valeurs.commune_recuperation === 'Yopougon'
+  && ecritureFiche.ou[0] === 'F1',
+  JSON.stringify(ecritureFiche));
+verifier("le repère est nettoyé de ses espaces avant d'être écrit",
+  !!ecritureFiche && ecritureFiche.valeurs.adresse_recuperation === 'Rue du Canal',
+  JSON.stringify(ecritureFiche && ecritureFiche.valeurs));
+verifier("la fiche déjà en mémoire est corrigée aussi, sans attendre une relecture de la base",
+  ficheLieu.commune_recuperation === 'Yopougon' && ficheLieu.adresse_recuperation === 'Rue du Canal',
+  JSON.stringify(ficheLieu));
+verifier("l'enregistrement reporte la commune sur les colis en attente de cette cliente",
+  !!ecritureColis && ecritureColis.valeurs.commune_recuperation === 'Yopougon',
+  JSON.stringify(ecritureColis));
+/* Un report trop large est aussi faux qu'un report absent : réécrire le lieu d'un colis déjà
+   ramassé, ou d'une autre cliente, c'est effacer une information juste par une autre. */
+verifier("et il ne touche ni les colis déjà pris, ni ceux d'une autre cliente, ni ceux déjà situés",
+  !!ecritureColis && ecritureColis.ou.length === 1 && ecritureColis.ou[0] === 'C1',
+  JSON.stringify(ecritureColis && ecritureColis.ou));
+verifier("le colis repris est corrigé en mémoire lui aussi",
+  colisLieu[0].commune_recuperation === 'Yopougon' && colisLieu[2].commune_recuperation === null,
+  JSON.stringify(colisLieu.map(c => c.id + ':' + c.commune_recuperation)));
+verifier("la fenêtre se referme après un enregistrement réussi",
+  appelsLieu.includes('fermer'), appelsLieu.join(' → '));
+verifier("et l'enregistrement redessine AUSSI la tournée, pas seulement le tableau des colis",
+  appelsLieu.includes('colis') && appelsLieu.includes('tournée'), appelsLieu.join(' → '));
+
+contexte.document = gardeDocLieu;
+contexte.fournisseurs = gardeFourLieu;
+contexte.renderProgrammationBody = gardeRendreTournee;
+contexte.supabaseClient = gardeSupabase;
+
+/* ---------- Le robinet fermé : la commune à la création ---------- */
+const formulaireClient = equipe.slice(equipe.indexOf('form-add-client'));
+verifier("le formulaire de création ne présente plus la commune comme facultative",
+  !/Commune de récupération <span[^>]*>\(facultatif\)/.test(equipe),
+  'un champ qu\'on peut sauter est un champ qu\'on saute');
+verifier("le champ de commune est marqué obligatoire dans la page",
+  /<select id="cl-commune" required>/.test(equipe), 'le navigateur ne le défendrait plus');
+/* L'attribut « required » ne protège que le clic sur le bouton. La règle qui compte est celle
+   qui est écrite dans le code : ce formulaire se soumet aussi à la touche Entrée. */
+verifier("et le code refuse une commune vide, sans s'en remettre au seul attribut HTML",
+  /if \(!commune_recuperation\) \{[\s\S]{0,300}rendreLaMain\(\); return;/.test(
+    sansCommentaires(formulaireClient)),
+  formulaireClient.slice(0, 200));
+verifier("la raison est dite à la personne qui saisit, pas seulement au journal",
+  /addClientMsg\("Choisissez la commune de récupération[\s\S]{0,120}"error"\)/.test(formulaireClient),
+  'un refus muet se lit comme une panne');
+
+/* ---------- La feuille de style ---------- */
+verifier("la nuance du lieu manquant existe vraiment dans la feuille",
+  /\.tournee-lieu--manquant\s*\{/.test(feuilleStyle),
+  'une classe écrite sans règle en face ne colore rien');
+/* UNE RÈGLE QUI EXISTE N'EST PAS UNE RÈGLE QUI SE VOIT. (29/08/2026)
+   Le contrôle ci-dessus se contentait de trouver l'accolade. Au sabotage on a remis la teinte
+   grise de la ligne ordinaire à l'intérieur de la règle : elle existait toujours, elle ne
+   distinguait plus rien, et le banc l'a laissée passer. On compare donc la couleur à celle de
+   sa base, et on exige l'ambre de la maison — celui de « en route » et de la note du livreur. */
+const couleurDe = (regle) => ((regle.match(/color\s*:\s*([^;]+);/) || ['', ''])[1] || '').trim();
+const regleBaseLieu = (feuilleStyle.match(/\.tournee-lieu\{[^}]*\}/) || [''])[0];
+const regleManquantLieu = (feuilleStyle.match(/\.tournee-lieu--manquant\{[^}]*\}/) || [''])[0];
+verifier("et elle colore vraiment : le manque ne se confond pas avec une ligne ordinaire",
+  couleurDe(regleManquantLieu) !== '' && couleurDe(regleManquantLieu) !== couleurDe(regleBaseLieu)
+  && couleurDe(regleManquantLieu) === '#b45309',
+  'base ' + couleurDe(regleBaseLieu) + ' | manquant ' + couleurDe(regleManquantLieu));
+/* Une variante et sa base pèsent le même poids : une classe chacune. C'est donc l'ORDRE qui
+   tranche. Écrite avant .tournee-lieu, la nuance serait dans le fichier sans être à l'écran. */
+verifier("et elle est écrite APRÈS sa base, sans quoi la base la recouvrirait",
+  feuilleStyle.indexOf('.tournee-lieu--manquant{') > feuilleStyle.indexOf('.tournee-lieu{'),
+  'même poids, donc c\'est la dernière écrite qui gagne');
+/* Au bureau la ligne est un <button> : sans cette remise à zéro, la carte porterait un
+   rectangle gris centré là où le téléphone porte une phrase alignée à gauche. */
+const regleLieuManquant = (feuilleStyle.match(/\.tournee-lieu--manquant\{[^}]*\}/) || [''])[0];
+verifier("elle annule l'apparence que le navigateur donne d'office aux boutons",
+  /background\s*:\s*none/.test(regleLieuManquant)
+  && /border\s*:\s*none/.test(regleLieuManquant)
+  && /text-align\s*:\s*left/.test(regleLieuManquant)
+  && /font-family\s*:\s*inherit/.test(regleLieuManquant),
+  regleLieuManquant);
+verifier("le thème sombre l'éclaircit, où l'ambre foncé disparaîtrait dans le fond",
+  /html\[data-theme="dark"\] \.tournee-lieu--manquant\{/.test(feuilleStyle),
+  'le manque serait illisible la nuit, c\'est-à-dire invisible');
 
 /* ---------- Verdict ---------- */
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);

@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828route1">
-<script src="theme.js?v=20260828route1"></script>
+<link rel="stylesheet" href="style.css?v=20260828lieu1">
+<script src="theme.js?v=20260828lieu1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -643,8 +643,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828route1"></script>
-<script src="config.js?v=20260828route1"></script>
+<script src="clt-common.js?v=20260828lieu1"></script>
+<script src="config.js?v=20260828lieu1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -2771,7 +2771,10 @@
       return `
       <div class="tournee-carte ${classe}${enRoute ? ' tournee-carte--route' : ''}">
         <div class="tournee-nom">${escapeHTML(l.clienteNom)}${l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : ''}${enRoute ? `<span class="tournee-marque tournee-marque--route">en route</span>` : ''}</div>
-        <div class="tournee-lieu">📍 ${l.commune ? escapeHTML(l.commune) : 'Commune non renseignée'}${l.adresse ? ' · ' + escapeHTML(l.adresse) : ''}</div>
+        <!-- Le lieu vient de libelleLieuRecuperation(), dans config.js, comme au bureau : une
+             seule phrase pour un seul lieu. Ici elle reste une phrase, pas un geste — c'est le
+             bureau qui tient les fiches des clientes, le livreur qui roule. (29/08/2026) -->
+        <div class="tournee-lieu${communeRecuperationManquante(l.commune) ? ' tournee-lieu--manquant' : ''}">📍 ${escapeHTML(libelleLieuRecuperation(l.commune, l.adresse))}</div>
         ${l.note ? `<div class="tournee-note">📝 ${escapeHTML(l.note)}</div>` : ''}
         <div class="tournee-compte">
           ${l.rienARecuperer
