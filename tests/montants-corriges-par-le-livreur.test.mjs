@@ -514,6 +514,19 @@ verifier("le total de l'article y est écrit avec son signe",
   /−2\s?500/.test(sansEspaceFine), sansEspaceFine.slice(sansEspaceFine.indexOf('recap-total-row'), sansEspaceFine.indexOf('recap-total-row') + 400));
 verifier("le total de la livraison aussi", /\+1\s?000/.test(sansEspaceFine));
 verifier("les deux noms apparaissent", /Koffi/.test(poseHTML) && /Aya/.test(poseHTML));
+
+/* LE LIBELLÉ DE LA LIGNE TOTAL, VU SUR TÉLÉPHONE LE 28 AOÛT 2026
+   Sur petit écran, chaque cellule affiche son data-label devant sa valeur. C'est indispensable
+   pour un nombre nu — « 2 » ne dit pas de quoi il est le compte — et c'est absurde pour une
+   cellule qui se nomme déjà : le libellé venait de la COLONNE où la cellule tombe sur grand
+   écran, pas du sens de la valeur. On lisait donc « Colis : 3 correction(s) », où « Colis »
+   contredit ce qui suit. La règle, la même qu'au tableau des tournées : une cellule qui porte
+   ses propres mots ne reçoit pas de libellé, une cellule qui n'a qu'un nombre en reçoit un. */
+const piedCorrections = (poseHTML.match(/<tfoot>[\s\S]*?<\/tfoot>/) || [''])[0];
+const celluleDesCorrections = (piedCorrections.match(/<td[^>]*>[^<]*correction\(s\)[^<]*<\/td>/) || [''])[0];
+verifier("le compte des corrections ne s\u2019affuble pas d\u2019un libellé de colonne",
+  celluleDesCorrections !== '' && !/data-label/.test(celluleDesCorrections),
+  celluleDesCorrections || piedCorrections);
 // « 0 FCFA → 0 FCFA » à la place d'une poche qu'on n'a pas rouverte se lirait comme un article
 // remis à zéro. C'est le contraire de ce qui s'est passé, et c'est une ligne qu'on irait
 // réclamer à un livreur le lendemain matin.

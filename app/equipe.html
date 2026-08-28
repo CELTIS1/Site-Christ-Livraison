@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260827tournee1">
-<script src="theme.js?v=20260827tournee1"></script>
+<link rel="stylesheet" href="style.css?v=20260828tournees1">
+<script src="theme.js?v=20260828tournees1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -386,7 +386,11 @@
      Ce qu'on y fait ne parle pas de la même journée que tout le reste de l'écran : on y décide
      DEMAIN pendant que partout ailleurs on lit AUJOURD'HUI. Mélangés, les deux se confondent, et
      on programme en croyant modifier un colis du jour. (27/08/2026) -->
-<button type="button" class="clt-toptab" data-eqtab="programmation">🗓️ Programmation</button>
+<!-- « Tournées » et non « Programmation » : c'est le mot du métier — un livreur part en tournée,
+     il ne part pas en programmation — et c'est déjà celui que porte la barre du bas sur
+     téléphone. Le même onglet ne peut pas s'appeler autrement selon la taille de l'écran, sans
+     quoi on ne peut plus se dire où aller d'un appareil à l'autre. (28/08/2026) -->
+<button type="button" class="clt-toptab" data-eqtab="programmation">🗓️ Tournées</button>
 <button type="button" class="clt-toptab" data-eqtab="suivi">🗺️ Suivi</button>
 <button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
 <button type="button" class="clt-toptab" data-eqtab="comptes">👥 Comptes</button>
@@ -1100,10 +1104,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260827tournee1"></script>
-<script src="config.js?v=20260827tournee1"></script>
+<script src="clt-common.js?v=20260828tournees1"></script>
+<script src="config.js?v=20260828tournees1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260827tournee1"></script>
+<script src="clt-select-recherche.js?v=20260828tournees1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -5287,7 +5291,9 @@ cltPoserHTML(body, `
 <tbody>${rows}</tbody>
 ${piedTotalHTML([
 { texte: 'TOTAL' },
-{ texte: lignes.length + ' correction(s)', label: 'Colis' },
+// Même raison qu'au tableau des tournées : cette cellule dit déjà ce qu'elle compte, et le
+// libellé « Colis » venait de la colonne, pas du sens. On lisait « Colis : 3 correction(s) ».
+{ texte: lignes.length + ' correction(s)' },
 { texte: '' },
 { texte: '' },
 { texte: signeTotal(total.ecartArticle), label: 'Écart article', couleur: total.ecartArticle > 0 ? '#1e8f4e' : (total.ecartArticle < 0 ? '#c0392b' : '') },
@@ -5461,9 +5467,15 @@ cltPoserHTML(body, `
 <tbody>${rows}</tbody>
 ${piedTotalHTML([
 { texte: 'TOTAL' },
-{ texte: total.nbClientes + ' cliente(s)', label: 'Où' },
+// « 1 cliente(s) » et « 1 livreur(s) » portent déjà leurs propres mots : leur donner en plus un
+// libellé revenait, sur téléphone, à écrire « Où : 1 cliente(s) » — le libellé venait de la
+// colonne où la cellule tombe sur grand écran, pas de ce que la valeur signifie. Sans libellé,
+// la feuille de style les range à gauche comme TOTAL, ce qu'elles sont. (vu sur téléphone le
+// 28/08/2026 ; les cellules chiffrées, elles, gardent le leur, sans quoi on lirait des nombres
+// nus les uns sous les autres)
+{ texte: total.nbClientes + ' cliente(s)' },
 { texte: '' },
-{ texte: total.nbLivreurs + ' livreur(s)', label: 'Livreur' },
+{ texte: total.nbLivreurs + ' livreur(s)' },
 { texte: '' },
 { texte: colisConnus ? String(total.nbAPrendre) : 'à venir', label: 'À prendre' },
 { texte: colisConnus ? String(total.nbDejaPris) : 'à venir', label: 'Déjà pris' },
@@ -5471,11 +5483,11 @@ ${piedTotalHTML([
 ])}
 </table>
 </div>
-<div class="recap-bilan-note">
+${(!colisConnus || total.nbClientesSansRien > 0) ? `<div class="recap-bilan-note">
 ${colisConnus
 ? `Sur ces ${total.nbClientes} cliente(s), ${total.nbClientesSansRien} n'${total.nbClientesSansRien > 1 ? 'ont' : 'a'} rien à faire récupérer pour l'instant — la ligne reste, parce qu'un colis peut encore être saisi d'ici le passage du livreur.`
 : `La journée n'est pas encore arrivée : aucun colis n'existe pour elle. Les colonnes se rempliront toutes seules à mesure que les colis seront saisis, et chacun se rattachera au livreur désigné ici.`}
-</div>`);
+</div>` : ''}`);
 }
 
 // Ajouter une cliente à la tournée. `upsert` et non `insert` : la table n'accepte qu'une seule

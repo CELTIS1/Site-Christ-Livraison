@@ -484,6 +484,50 @@ verifier("chaque ligne porte son bouton pour retirer la cliente",
 verifier("chaque case dit à quelle colonne elle appartient",
   /data-label="À prendre"/.test(poseHTML) && /data-label="Déjà pris"/.test(poseHTML));
 
+/* La ligne TOTAL, lue sur un vrai téléphone le 28/08/2026.
+   Le libellé de repli ne sert qu'aux cellules qui n'ont que des chiffres. Une cellule qui écrit
+   déjà « 3 cliente(s) » n'en a pas besoin, et lui en donner un revenait à afficher « Où : 3
+   cliente(s) » — parce que le libellé avait été pris à la colonne où la cellule tombe sur grand
+   écran, et non à ce qu'elle signifie. La feuille de style range à gauche les cellules du total
+   qui n'ont pas de libellé, précisément parce qu'elles portent leurs propres mots. */
+const piedDuTableau = (poseHTML.match(/<tfoot>[\s\S]*?<\/tfoot>/) || [''])[0];
+const celluleDuPied = (motif) =>
+  (piedDuTableau.match(new RegExp('<td[^>]*>[^<]*' + motif + '[^<]*</td>')) || [''])[0];
+verifier("dans le TOTAL, le compte des clientes ne s'affuble pas d'un libellé de colonne",
+  celluleDuPied('cliente\\(s\\)') !== '' && !/data-label/.test(celluleDuPied('cliente\\(s\\)')),
+  celluleDuPied('cliente\\(s\\)'));
+verifier("ni celui des livreurs",
+  celluleDuPied('livreur\\(s\\)') !== '' && !/data-label/.test(celluleDuPied('livreur\\(s\\)')),
+  celluleDuPied('livreur\\(s\\)'));
+// Et l'inverse doit rester vrai : les cellules qui ne portent qu'un nombre gardent le leur,
+// sinon on retomberait dans le défaut d'origine, une colonne de chiffres sans étiquette.
+verifier("mais les cellules qui n'ont qu'un nombre gardent le leur",
+  /data-label="À prendre"/.test(piedDuTableau) && /data-label="Déjà pris"/.test(piedDuTableau),
+  piedDuTableau);
+
+/* La phrase du bas ne parle que si elle a quelque chose à dire.
+   Elle existe pour expliquer pourquoi une cliente sans colis reste dans la liste. Quand aucune
+   n'est dans ce cas, elle affichait quand même « Sur ces 1 cliente(s), 0 n'a rien à faire
+   récupérer » : une ligne qui ne renseigne personne et qui prend, sur un téléphone, la hauteur
+   d'une carte de cliente. (vu sur téléphone le 28/08/2026) */
+verifier("la phrase du bas est là quand une cliente n'a effectivement rien",
+  /rien à faire récupérer pour l'instant/.test(poseHTML));
+
+const posePleine = (() => {
+  // Uniquement des clientes qui ont au moins un colis : F1 en a trois, F3 en a un.
+  contexte.progLignes = PROG.filter(p => p.id === 'P1' || p.id === 'P3');
+  poseHTML = '';
+  renderProgrammationBody();
+  return poseHTML;
+})();
+verifier("mais elle disparaît quand toutes les clientes ont quelque chose à faire prendre",
+  !/rien à faire récupérer pour l'instant/.test(posePleine) &&
+  !/recap-bilan-note/.test(posePleine),
+  posePleine.slice(-400));
+verifier("et le tableau, lui, reste entier avec sa ligne TOTAL",
+  /class="recap-total-row"/.test(posePleine) && /2 cliente\(s\)/.test(posePleine),
+  posePleine.slice(0, 200));
+
 titre("La même journée, mais pas encore arrivée");
 contexte.progJourChoisi = DEMAIN;
 contexte.progLignes = PROG.filter(p => p.jour === DEMAIN);

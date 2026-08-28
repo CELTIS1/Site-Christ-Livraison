@@ -521,5 +521,66 @@ for (const [nom, motif] of Object.entries(BRANCHEMENTS)) {
 verifier('dans l\u2019espace Équipe, un appui volontaire ignore l\u2019anti-rebond',
   /__lastReconnectAt = 0;\s*\n\s*await reconnectRealtimeAndRefresh\(\)/.test(PAGES.get('equipe.html')));
 
+/* ==========================================================================================
+   6. UN ONGLET NE CHANGE PAS DE NOM ENTRE LA BARRE DU HAUT ET CELLE DU BAS
+   ========================================================================================== */
+titre('6. Le même onglet porte le même mot en haut et en bas');
+
+/* CE QUI A ÉTÉ CONSTATÉ, SUR TÉLÉPHONE, LE 28 AOÛT 2026
+   Le troisième onglet de l'espace Équipe s'appelait « 🗓️ Programmation » dans la barre du haut
+   et « Tournées » dans la barre du bas. Sur grand écran on ne voit qu'un des deux, donc rien ne
+   choque ; sur téléphone les deux barres sont visibles en même temps, et l'on cherche un onglet
+   qui semble absent parce qu'il est écrit ailleurs avec un autre mot.
+
+   CE QUE CE CONTRÔLE INTERDIT, ET CE QU'IL LAISSE PASSER
+   Il interdit de CHANGER DE MOT. Il autorise d'ABRÉGER : la barre du bas est plus étroite, et
+   « Récupérations » y tient sous la forme « Récup. ». La règle tient donc en une phrase — le
+   mot du bas doit être le début du mot du haut — ce qui accepte l'abréviation et refuse le
+   synonyme. Une abréviation de moins de quatre lettres n'est plus une abréviation, c'est une
+   devinette : elle est refusée aussi.
+
+   Les entrées de la barre du bas qui n'ont pas d'onglet en haut (« Compte », qui ouvre une
+   fenêtre au lieu de changer de panneau) sont ignorées : il n'y a rien à comparer. */
+
+// Retire les balises — les <svg> de la barre du bas — puis les pictogrammes de tête, pour ne
+// garder que les lettres du libellé.
+function motDeLOnglet(brut){
+  return brut
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/[^\p{L}\p{N}'’ .\-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+for (const [nom, src] of PAGES) {
+  const barreDuBas = (src.match(/<nav class="clt-bottomnav"[\s\S]*?<\/nav>/) || [''])[0];
+  verifier(`${nom} a bien une barre du bas à comparer`, barreDuBas !== '');
+  if (!barreDuBas) continue;
+
+  // Le haut : data-eqtab dans l'espace Équipe, data-clttab ailleurs.
+  const enHaut = new Map();
+  for (const m of src.matchAll(
+    /<button[^>]*class="clt-toptab[^"]*"[^>]*data-(?:eq|clt)tab="([^"]+)"[^>]*>([\s\S]*?)<\/button>/g)) {
+    enHaut.set(m[1], motDeLOnglet(m[2]));
+  }
+  verifier(`${nom} a bien des onglets en haut à comparer`, enHaut.size >= 2, 'trouvés : ' + enHaut.size);
+
+  // Le bas : data-nav dans Équipe et Livreur, data-target dans les trois autres. Les deux
+  // désignent la même clé que l'onglet du haut ; c'est ce qui permet de les apparier.
+  let compares = 0;
+  for (const m of barreDuBas.matchAll(/<button[^>]*data-(?:nav|target)="([^"]+)"[^>]*>([\s\S]*?)<\/button>/g)) {
+    const cle = m[1];
+    if (!enHaut.has(cle)) continue;
+    compares++;
+    const haut = enHaut.get(cle);
+    const bas = motDeLOnglet(m[2]).replace(/\.+$/, '').trim();
+    verifier(`${nom} — l\u2019onglet « ${cle} » garde son mot dans les deux barres`,
+      bas.length >= 4 && haut.toLowerCase().startsWith(bas.toLowerCase()),
+      `en haut « ${haut} », en bas « ${bas} »`);
+  }
+  verifier(`${nom} — les deux barres se recoupent bien`, compares >= 2, 'onglets appariés : ' + compares);
+}
+
 console.log(`\n${reussies} vérifications réussies, ${echouees} échouées`);
 process.exit(echouees ? 1 : 0);
