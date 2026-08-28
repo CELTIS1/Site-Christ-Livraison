@@ -4301,9 +4301,21 @@ function tourneesDeRecuperation(options) {
     });
     parCouple.forEach(function (siens, cle) {
       const aPrendre = siens.filter(function (c) { return c.statut === "en_attente"; });
-      // Sans colis qui attend, il n'y a rien à aller chercher. Une cliente chez qui tout a
-      // déjà été ramassé n'a pas à encombrer une tournée où personne ne l'a programmée.
-      if (!aPrendre.length) return;
+      const prisAujourdHui = siens.filter(function (c) {
+        return jourEvenementColis(c, "recupere") === jour;
+      });
+      /* Sans colis qui attend, il n'y a rien à ALLER CHERCHER. Sur le téléphone d'un livreur,
+         cela suffit à écarter la cliente : son écran répond à « où me reste-t-il à aller ? », et
+         une cliente chez qui tout est déjà ramassé n'a rien à y faire.
+
+         Le bureau ne pose pas cette question-là. Il demande « que s'est-il passé aujourd'hui ? »,
+         et la réponse doit inclure le travail terminé. Le 28/08/2026 l'écran de l'équipe annonçait
+         « 0 déjà pris » alors que 44 colis avaient été récupérés chez 12 clientes dans la journée :
+         non parce qu'il comptait mal, mais parce que ces clientes-là disparaissaient ici même,
+         avant tout comptage. D'où l'option travailFait : elle est demandée par le bureau, pas par
+         le téléphone, et un contrôle apparié tient les deux écrans dans
+         tests/tournee-de-recuperation.test.mjs. */
+      if (!aPrendre.length && !(opts.travailFait && prisAujourdHui.length)) return;
       const livreurId = siens[0].livreur_collecte_id;
       const fournisseurId = siens[0].fournisseur_id;
       const fiche = annuaire(fournisseurId) || {};
@@ -4322,9 +4334,11 @@ function tourneesDeRecuperation(options) {
         livreurId: livreurId,
         livreurNom: nomLivreur(livreurId) || "Livreur",
         nbAPrendre: aPrendre.length,
-        nbDejaPris: siens.filter(function (c) { return jourEvenementColis(c, "recupere") === jour; }).length,
+        nbDejaPris: prisAujourdHui.length,
         idsAPrendre: aPrendre.map(function (c) { return c.id; }),
-        // Par construction il y a au moins un colis à prendre : jamais « rien à récupérer ».
+        /* « Rien à récupérer » veut dire qu'il n'y avait rien chez cette cliente. Ce n'est pas le
+           cas ici : ou bien un colis attend, ou bien il y en avait un et il est déjà pris. Dans
+           les deux cas il y avait quelque chose, et l'écran ne doit pas dire le contraire. */
         rienARecuperer: false,
         horsProgramme: true,
       });

@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828equipe1">
-<script src="theme.js?v=20260828equipe1"></script>
+<link rel="stylesheet" href="style.css?v=20260828travail1">
+<script src="theme.js?v=20260828travail1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1104,10 +1104,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828equipe1"></script>
-<script src="config.js?v=20260828equipe1"></script>
+<script src="clt-common.js?v=20260828travail1"></script>
+<script src="config.js?v=20260828travail1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260828equipe1"></script>
+<script src="clt-select-recherche.js?v=20260828travail1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -5396,6 +5396,13 @@ const reponses = await Promise.all(programmees.concat([
 // dans tourneesDeRecuperation(), pour que le bureau et le livreur trient de la même façon.
 supabaseClient.from('colis').select(champs)
 .eq('statut', 'en_attente').not('livreur_collecte_id', 'is', null),
+// Et tout ce qui a été RÉCUPÉRÉ dans la journée, chez n'importe quelle cliente. Sans cette
+// quatrième question, le bureau annonçait « 0 déjà pris » le 28/08/2026 alors que 44 colis
+// avaient été ramassés chez 12 clientes : la seule question sur recupere_at était restreinte
+// aux clientes programmées, et il n'y en avait que deux. Un zéro faux se lit « personne n'a
+// travaillé » ; c'est la pire chose qu'un écran de bureau puisse dire.
+supabaseClient.from('colis').select(champs)
+.gte('recupere_at', debut).lte('recupere_at', fin),
 ]));
 
 const parId = new Map();
@@ -5459,6 +5466,10 @@ livreurNom: progNomLivreur,
 // qu'il ne les demandait pas, il ne devait pas poser la question — zéro ligne hors programme
 // se serait lu « il n'y en a pas », alors qu'il y en avait trente-six.
 horsProgramme: true,
+// Et le travail déjà fait. Le bureau ne demande pas « où reste-t-il à aller » — ça, c'est la
+// question du téléphone du livreur, qui ne pose donc pas celle-ci. Le bureau demande « que
+// s'est-il passé aujourd'hui », et une journée où tout a été ramassé n'est pas une journée vide.
+travailFait: true,
 });
 const { lignes, total, colisConnus } = tournee;
 const dateLabel = recapDayLabel(jour);

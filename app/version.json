@@ -1,4 +1,4 @@
 {
-  "version": "20260828equipe1",
+  "version": "20260828travail1",
   "_lisez_moi": "Repère de version servi par le site. L'application le relit toutes les quinze minutes et le compare à l'étiquette « ?v= » avec laquelle elle a été chargée. Quand les deux diffèrent, un bandeau propose la mise à jour — sans jamais recharger d'autorité. La valeur ci-dessus DOIT être identique à l'étiquette des fichiers partagés dans app/*.html ; le contrôle tests/bandeau-nouvelle-version.test.mjs refuse la publication si les deux se séparent."
 }

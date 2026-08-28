@@ -398,7 +398,7 @@ verifier("sa fiche est complète : elle n'arrive pas en « Cliente inconnue »",
 verifier("elle n'est jamais annoncée « rien à récupérer » : c'est justement l'inverse",
   !!ligneHP && ligneHP.rienARecuperer === false);
 
-verifier("une cliente chez qui tout a déjà été ramassé n'encombre pas la tournée",
+verifier("une cliente chez qui tout a déjà été ramassé n'encombre pas la tournée DU LIVREUR",
   !avecHP.lignes.some(l => l.fournisseurId === 'F5'),
   'un détour proposé chez une cliente qui n\'a plus rien à donner');
 verifier("le colis confié à Aya reste chez Aya",
@@ -407,6 +407,88 @@ verifier("le colis confié à Aya reste chez Aya",
 verifier("un colis sans récupérateur désigné n'entre chez personne",
   !avecHP.lignes.some(l => l.fournisseurId === 'F9'),
   'le bureau ne l\'a confié à aucun livreur ; l\'attribuer d\'office, c\'est décider à sa place');
+
+/* ==========================================================================================
+   6 bis. LE TRAVAIL DÉJÀ FAIT — UNE QUESTION DE BUREAU, PAS UNE QUESTION DE LIVREUR
+   ==========================================================================================
+   Les deux écrans ne demandent pas la même chose, et c'est tout l'objet de cette option.
+
+   LE TÉLÉPHONE demande « où me reste-t-il à aller ». Une cliente chez qui tout a été ramassé
+   n'a plus rien à lui donner : la lui montrer, c'est lui proposer un détour pour rien. Elle
+   sort. C'est la décision du 28/08/2026 au matin, et le contrôle juste au-dessus la garde.
+
+   LE BUREAU demande « qu'est-ce qui s'est passé aujourd'hui ». Le 28/08/2026 au soir, mesuré
+   sur la base : 44 colis récupérés chez 12 clientes, et l'écran du bureau annonçait « 0 déjà
+   pris » — parce qu'il ne demandait le déjà-pris que des clientes PROGRAMMÉES, et qu'il n'y en
+   avait que deux ce jour-là. Le patron lisait son écran en fin de journée et en concluait que
+   personne n'avait rien fait. Un TOTAL qui compte moins que le travail réel est plus dangereux
+   qu'un total absent, parce qu'à celui-là on se fie.
+
+   D'où l'option. Elle ne fabrique aucun second calcul : c'est la même fonction, à qui l'on dit
+   quelle question on lui pose. Et comme pour horsProgramme, qui la demande doit avoir apporté
+   de quoi y répondre — le contrôle apparié plus bas s'en assure. */
+const avecTravail = tourneesDeRecuperation({
+  jour: AUJ, aujourdHui: AUJ, programmations: PROG, colis: COLIS_HP,
+  cliente: annuaireHP, livreurNom: nomLivreur, horsProgramme: true, travailFait: true,
+});
+/* La MÊME tournée, à l'option près. C'est le seul témoin honnête : avecHP plus haut ne regarde
+   qu'un livreur, le bureau les regarde tous, et comparer les deux ferait passer une différence
+   de périmètre pour un effet de l'option. */
+const sansTravail = tourneesDeRecuperation({
+  jour: AUJ, aujourdHui: AUJ, programmations: PROG, colis: COLIS_HP,
+  cliente: annuaireHP, livreurNom: nomLivreur, horsProgramme: true,
+});
+const ligneF5 = avecTravail.lignes.find(l => l.fournisseurId === 'F5');
+
+verifier("avec l'option, la cliente déjà ramassée entre dans le compte du bureau",
+  !!ligneF5, avecTravail.lignes.map(l => l.clienteNom).join(', '));
+verifier("elle est annoncée sans rien à prendre, mais avec son colis déjà pris",
+  !!ligneF5 && ligneF5.nbAPrendre === 0 && ligneF5.nbDejaPris === 1,
+  ligneF5 && (ligneF5.nbAPrendre + ' à prendre / ' + ligneF5.nbDejaPris + ' déjà pris'));
+verifier("elle est rattachée au livreur qui l'a effectivement ramassée",
+  !!ligneF5 && ligneF5.livreurId === 'L1' && ligneF5.livreurNom === 'Koffi',
+  ligneF5 && String(ligneF5.livreurNom));
+/* Elle n'est PAS « rien à récupérer ». Cette marque-là veut dire « on n'a rien trouvé chez
+   elle » ; ici on a trouvé et on a pris. Les confondre effacerait le travail à l'écran alors
+   même qu'on vient de le compter. */
+verifier("et elle n'est pas marquée « rien à récupérer » : il y avait quelque chose, et c'est pris",
+  !!ligneF5 && ligneF5.rienARecuperer === false);
+/* Écrit dans les deux sens exprès. Ce contrôle était vert AVANT que l'option n'existe, parce que
+   les deux colis déjà pris des clientes programmées remplissaient à eux seuls le nombre attendu :
+   un contrôle vert avant son code ne garde rien. La comparaison avec la tournée sans option dit
+   ce qu'on veut vraiment dire — l'option ajoute le colis déjà pris, exactement un, et rien d'autre. */
+verifier("le TOTAL du bureau compte ce colis déjà pris",
+  avecTravail.total.nbDejaPris === 3
+  && avecTravail.total.nbDejaPris === sansTravail.total.nbDejaPris + 1
+  && avecTravail.lignes.length === sansTravail.lignes.length + 1,
+  avecTravail.total.nbDejaPris + ' avec l\'option, ' + sansTravail.total.nbDejaPris + ' sans');
+verifier("et son TOTAL vaut toujours exactement la somme de ses lignes",
+  avecTravail.total.nbAPrendre === avecTravail.lignes.reduce((s, l) => s + l.nbAPrendre, 0)
+  && avecTravail.total.nbDejaPris === avecTravail.lignes.reduce((s, l) => s + l.nbDejaPris, 0)
+  && avecTravail.total.nbClientes === avecTravail.lignes.length,
+  avecTravail.total.nbDejaPris + ' contre ' + avecTravail.lignes.reduce((s, l) => s + l.nbDejaPris, 0));
+// Une cliente chez qui il n'y a NI rien à prendre NI rien de pris aujourd'hui n'a aucune raison
+// d'apparaître : l'option ouvre la porte au travail fait, pas à tout le carnet d'adresses.
+verifier("l'option ne fait pas entrer les clientes qui n'ont rien à voir avec la journée",
+  !avecTravail.lignes.some(l => l.nbAPrendre === 0 && l.nbDejaPris === 0 && l.horsProgramme),
+  avecTravail.lignes.filter(l => l.horsProgramme).map(l => l.clienteNom).join(', '));
+
+/* L'AUTRE MOITIÉ DU CONTRAT, ENCORE. Demander le travail fait sans avoir apporté les colis
+   récupérés du jour rendrait un zéro, et ce zéro se lirait « personne n'a rien fait ». Le
+   contrôle est donc apparié : la question ET la requête, ou ni l'une ni l'autre. */
+const requetesDuBureau = sansCommentaires(blocDe(equipe, 'progColisPourLaTournee', 'equipe.html'))
+  .split("supabaseClient.from('colis')").slice(1);
+verifier("le bureau pose bien quatre questions à la base",
+  requetesDuBureau.length === 4, requetesDuBureau.length + ' question(s)');
+verifier("l'une d'elles demande ce qui a été récupéré aujourd'hui, chez N'IMPORTE QUELLE cliente",
+  requetesDuBureau.some(r => /recupere_at/.test(r) && !/\.in\(\s*['"]fournisseur_id['"]/.test(r)),
+  'restreinte aux clientes programmées, elle ne verrait que deux clientes sur douze');
+verifier("et l'écran du bureau pose la question qui va avec",
+  /travailFait:\s*true/.test(corpsEquipe),
+  'la requête sans la question ne servirait à rien, et coûterait quand même une lecture');
+verifier("le téléphone du livreur, lui, ne la pose pas : il demande où il lui reste à aller",
+  !/travailFait:\s*true/.test(corpsLivreur),
+  'on lui proposerait des détours chez des clientes qui n\'ont plus rien à lui donner');
 
 // LE POINT FINANCIER, ET C'EST LE PLUS IMPORTANT : le TOTAL doit dire le travail RÉEL.
 verifier("le TOTAL compte la cliente hors programme avec les autres",
