@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828lieu1">
-<script src="theme.js?v=20260828lieu1"></script>
+<link rel="stylesheet" href="style.css?v=20260829colis1">
+<script src="theme.js?v=20260829colis1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -446,10 +446,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828lieu1"></script>
-<script src="config.js?v=20260828lieu1"></script>
+<script src="clt-common.js?v=20260829colis1"></script>
+<script src="config.js?v=20260829colis1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260828lieu1"></script>
+<script src="clt-select-recherche.js?v=20260829colis1"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1759,8 +1759,13 @@
         montant_article,
         montant_livraison,
         livraison_payee,
-        commune_recuperation: pickupCommune,
-        adresse_recuperation: pickupAdresse || null,
+        // Même fonction que le bureau : c'est elle, et elle seule, qui décide de ce que vaut un
+        // lieu vide. Deux normalisations séparées, c'est un écran qui écrit "" et l'autre null,
+        // et deux comptages de « colis sans lieu » qui ne tombent jamais d'accord.
+        ...lieuRecuperationPourNouveauColis({
+          commune_recuperation: pickupCommune,
+          adresse_recuperation: pickupAdresse,
+        }),
         cle_creation: draftEl.dataset.cle,
       }]);
 

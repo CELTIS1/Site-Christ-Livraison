@@ -32,6 +32,8 @@
     10. L'ÉCRAN DU SOIR S'OUVRE SUR DEMAIN.
     11. LA CARTE DU LIVREUR DONNE DE QUOI PARTIR : commune, adresse, téléphone appelable.
     12. LES DROITS SONT TENUS PAR LA BASE, pas par le navigateur.
+    13. LE COLIS NAÎT AVEC SON LIEU — il emporte, dès l'enregistrement, l'endroit où on est
+        vraiment allé le chercher, et il l'emporte aussi dans la file hors-réseau.
    ========================================================================================== */
 
 import fs from 'fs';
@@ -2242,6 +2244,191 @@ verifier("elle annule l'apparence que le navigateur donne d'office aux boutons",
 verifier("le thème sombre l'éclaircit, où l'ambre foncé disparaîtrait dans le fond",
   /html\[data-theme="dark"\] \.tournee-lieu--manquant\{/.test(feuilleStyle),
   'le manque serait illisible la nuit, c\'est-à-dire invisible');
+
+/* =========================================================================================
+   13. LE COLIS NAÎT AVEC SON LIEU — 29 août 2026
+   =========================================================================================
+
+   CE QU'ON A MESURÉ CE SOIR-LÀ, ET QUI A FAIT ÉCRIRE CETTE SECTION
+   ---------------------------------------------------------------
+   Sur les 56 colis créés dans la journée du 28 août, 55 sont nés SANS lieu de récupération.
+   Pas un écran ne s'en plaignait : la carte de tournée lit la FICHE de la cliente, pas le
+   colis. L'écran restait donc impeccable pendant que 295 colis sur 329 n'avaient, en base,
+   aucune idée de l'endroit où on était allé les chercher.
+
+   La cause tenait en une ligne absente. L'espace de la vendeuse envoyait bien
+   commune_recuperation avec son colis ; la fonction d'insertion du bureau ne l'envoyait pas
+   du tout. Un seul des deux chemins écrivait, et c'était le moins emprunté.
+
+   POURQUOI CETTE SECTION EXÉCUTE AU LIEU DE LIRE
+   ----------------------------------------------
+   La leçon du 28 août au soir, payée par un sabotage resté vert : LIRE LE CODE NE DIT PAS CE
+   QU'IL FAIT. Chercher « commune_recuperation » dans le texte de equipe.html serait vert le
+   jour où quelqu'un écrirait `commune_recuperation: null`. On fait donc partir un vrai colis
+   à travers la vraie fonction, et on regarde ce qui arrive dans le payload.
+
+   ET POURQUOI ON REGARDE AUSSI LA FILE HORS-RÉSEAU
+   ------------------------------------------------
+   Le lieu est recopié DANS le payload, avant l'insertion. Ce n'est pas un détail de style :
+   c'est ce même payload qui part dans la file d'attente quand le réseau tombe. Recopier le
+   lieu après l'insertion réussie, ce serait le perdre précisément les jours de coupure —
+   c'est-à-dire les jours où un livreur a le plus besoin de savoir où aller.
+   ========================================================================================= */
+titre('13. Le colis naît avec son lieu');
+
+/* Un bac à sable neuf. Le décor des douze sections précédentes a été tordu et retordu ;
+   y ajouter une treizième couche, c'est mesurer autre chose que ce qu'on croit mesurer. */
+const ctxLot = vm.createContext({ console, Number, String, Object, JSON });
+vm.runInContext(blocDe(sourceConfig, 'lieuRecuperationPourNouveauColis', 'config.js'), ctxLot);
+vm.runInContext(blocDe(equipe, 'lotEnvoyerUneLigne', 'equipe.html'), ctxLot);
+
+/* La fiche telle que loadFournisseurs() la rapporte : commune et adresse, rien de plus. */
+const FICHES_LOT = [
+  { id: 'F1', company_name: 'Awa Boutique', commune_recuperation: 'Yopougon', adresse_recuperation: 'Millionnaire' },
+  { id: 'F2', company_name: 'Sans lieu',    commune_recuperation: '',         adresse_recuperation: '   ' },
+  { id: 'F3', company_name: 'Commune seule', commune_recuperation: '  Cocody  ', adresse_recuperation: null },
+];
+
+/* Les envois observés. On ne stube pas « ce que fait la base », on note ce qu'on lui donne. */
+let envois = [], misEnFile = [], erreurAInsertion = null;
+Object.assign(ctxLot, {
+  fournisseurs: FICHES_LOT,
+  currentUser: { id: 'U-EQUIPE' },
+  lotLireLigne: () => ({
+    destination: 'Riviera 3', communeDestination: 'Cocody', description: 'sac',
+    montantArticle: '10000', montantLivraison: '1000', telephone: '0700000001',
+  }),
+  uploadPhoto: async () => null,
+  cleTelCarnet: (t) => t,
+  friendlyErrorMessage: (m) => m,
+  estDoublonCleCreation: () => false,
+  eqEstPanneReseau: (e) => !!e && e.message === 'Failed to fetch',
+  eqQueueAjouter: async (entree) => { misEnFile.push(entree); },
+  eqInsererColis: async (payload) => { envois.push(payload); return erreurAInsertion; },
+});
+const envoyerUneLigne = ctxLot.lotEnvoyerUneLigne;
+
+const envoyerPour = async (fournisseur_id) => {
+  envois = []; misEnFile = [];
+  const bilan = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
+  await envoyerUneLigne({ file: null, cle: 'K1' }, 1, { fournisseur_id }, bilan, []);
+  return envois[0] || null;
+};
+
+/* ---------- Le calcul, écrit une seule fois ---------- */
+const definitions = ['config.js', 'equipe.html', 'fournisseur.html', 'livreur.html']
+  .filter(f => /function\s+lieuRecuperationPourNouveauColis\s*\(/
+    .test(fs.readFileSync(path.join(APP, f), 'utf8')));
+verifier("le lieu du colis se décide dans config.js, et à un seul endroit",
+  definitions.length === 1 && definitions[0] === 'config.js',
+  'défini dans : ' + (definitions.join(', ') || 'nulle part'));
+
+/* ---------- L'exécution : un colis créé au bureau part avec son lieu ---------- */
+const posteAwa = await envoyerPour('F1');
+/* Le garde-fou d'abord. Sans lui, tous les contrôles qui suivent liraient un null et
+   passeraient au vert en annonçant « pas de lieu erroné » sur un envoi qui n'a pas eu lieu. */
+verifier("un colis part bien avant qu'on mesure ce qui part",
+  !!posteAwa && posteAwa.fournisseur_id === 'F1',
+  JSON.stringify(posteAwa));
+verifier("un colis créé au bureau emporte la commune de la fiche de sa cliente",
+  !!posteAwa && posteAwa.commune_recuperation === 'Yopougon',
+  'commune envoyée : ' + JSON.stringify(posteAwa && posteAwa.commune_recuperation));
+verifier("il emporte aussi le repère, qui est ce que le livreur lit vraiment sur place",
+  !!posteAwa && posteAwa.adresse_recuperation === 'Millionnaire',
+  'adresse envoyée : ' + JSON.stringify(posteAwa && posteAwa.adresse_recuperation));
+/* Le reste du colis ne doit pas avoir bougé : on ajoute un champ, on n'en déplace aucun. */
+verifier("et le reste du colis part comme avant, la destination n'a pas glissé",
+  !!posteAwa && posteAwa.destination === 'Riviera 3' && posteAwa.commune_destination === 'Cocody'
+  && posteAwa.montant === 11000 && posteAwa.cle_creation === 'K1',
+  JSON.stringify(posteAwa));
+/* Deux colonnes voisines et faciles à confondre : d'où l'on part, et où l'on va. Les
+   échanger enverrait le livreur chercher le colis chez la personne qui l'attend. */
+verifier("la commune de départ ne se confond pas avec celle d'arrivée",
+  !!posteAwa && posteAwa.commune_recuperation === 'Yopougon' && posteAwa.commune_destination === 'Cocody',
+  'récup ' + (posteAwa || {}).commune_recuperation + ' | destination ' + (posteAwa || {}).commune_destination);
+
+/* ---------- Une fiche vide reste vide, et vide veut dire null ---------- */
+const posteVide = await envoyerPour('F2');
+verifier("une fiche sans lieu n'invente rien : le colis part avec null, pas avec du vide déguisé",
+  !!posteVide && posteVide.commune_recuperation === null && posteVide.adresse_recuperation === null,
+  JSON.stringify(posteVide));
+/* Le "" et le null se ressemblent à l'œil et pas au comptage. Un écran qui écrit l'un et un
+   écran qui écrit l'autre, ce sont deux totaux de « colis sans lieu » qui ne se rejoignent
+   jamais — et le côté financier ne supporte pas deux réponses à la même question. */
+verifier("et surtout pas avec une chaîne vide, qui compterait comme un lieu renseigné",
+  !!posteVide && posteVide.commune_recuperation !== '' && posteVide.adresse_recuperation !== '',
+  JSON.stringify(posteVide));
+
+/* ---------- Les espaces d'une saisie à la main ---------- */
+const posteEspaces = await envoyerPour('F3');
+verifier("une commune tapée avec des espaces autour arrive propre",
+  !!posteEspaces && posteEspaces.commune_recuperation === 'Cocody',
+  JSON.stringify(posteEspaces && posteEspaces.commune_recuperation));
+
+/* ---------- Une cliente introuvable ne fait pas perdre le colis ---------- */
+const posteInconnue = await envoyerPour('F-INCONNUE');
+verifier("une cliente introuvable ne fait pas tomber l'enregistrement : le colis part quand même",
+  !!posteInconnue && posteInconnue.fournisseur_id === 'F-INCONNUE'
+  && posteInconnue.commune_recuperation === null,
+  JSON.stringify(posteInconnue));
+
+/* ---------- La coupure réseau ---------- */
+erreurAInsertion = new Error('Failed to fetch');
+const bilanCoupure = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
+envois = []; misEnFile = [];
+await envoyerUneLigne({ file: null, cle: 'K2' }, 1, { fournisseur_id: 'F1' }, bilanCoupure, []);
+erreurAInsertion = null;
+verifier("réseau coupé, le colis est bien mis en attente au lieu d'être perdu",
+  misEnFile.length === 1 && bilanCoupure.misEnAttente === 1,
+  JSON.stringify(bilanCoupure));
+verifier("et il emporte son lieu dans la file : une coupure ne doit pas coûter l'adresse",
+  misEnFile.length === 1
+  && misEnFile[0].payload.commune_recuperation === 'Yopougon'
+  && misEnFile[0].payload.adresse_recuperation === 'Millionnaire',
+  JSON.stringify(misEnFile[0] && misEnFile[0].payload));
+
+/* ---------- L'écran de la vendeuse passe par la même porte ---------- */
+const fournisseurSrc = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
+verifier("l'espace de la vendeuse appelle la même fonction que le bureau",
+  /lieuRecuperationPourNouveauColis\(/.test(fournisseurSrc),
+  'sinon deux écrans normalisent le vide chacun à sa façon');
+/* Le contrôle ci-dessus serait vert avec l'appel écrit À CÔTÉ de l'ancienne ligne brute : dans
+   un objet JavaScript, le dernier champ écrit recouvre le précédent, et l'ancien gagnerait en
+   silence. Il faut donc regarder le colis que la vendeuse envoie, et vérifier qu'il ne porte
+   AUCUN champ de lieu écrit à la main — seulement celui que l'appel y verse.
+
+   Attention au piège dans lequel ce contrôle est d'abord tombé, le 29 août : chercher
+   « commune_recuperation: pickupCommune » dans la page rougissait sur l'ARGUMENT donné à la
+   fonction partagée, qui porte évidemment ce nom-là. Le contrôle accusait le code corrigé.
+   On découpe donc d'abord le colis envoyé, puis on en RETIRE l'argument de l'appel, et c'est
+   ce qui reste qu'on interroge. */
+function corpsEntreParentheses(src, depuis){
+  let i = src.indexOf('(', depuis), prof = 0;
+  for (; i < src.length; i++) {
+    if (src[i] === '(') prof++;
+    else if (src[i] === ')') { prof--; if (prof === 0) return src.slice(depuis, i + 1); }
+  }
+  return '';
+}
+const debutEnvoiVendeuse = fournisseurSrc.indexOf('frInsererColis([{');
+const colisDeLaVendeuse = corpsEntreParentheses(fournisseurSrc, debutEnvoiVendeuse);
+const debutAppelPartage = colisDeLaVendeuse.indexOf('lieuRecuperationPourNouveauColis');
+const argumentDeLAppel = corpsEntreParentheses(colisDeLaVendeuse, debutAppelPartage);
+/* Garde-fou : si le découpage rate, ce qui reste est vide, et « rien de brut » serait vert
+   sans que rien n'ait été lu. Un contrôle vert sur du vide ne protège personne. */
+verifier("on a bien mis la main sur le colis que la vendeuse envoie, avant de l'interroger",
+  debutEnvoiVendeuse !== -1 && debutAppelPartage !== -1 && argumentDeLAppel.length > 20
+  && colisDeLaVendeuse.includes('cle_creation'),
+  'envoi ' + debutEnvoiVendeuse + ' | appel ' + debutAppelPartage
+  + ' | argument ' + JSON.stringify(argumentDeLAppel.slice(0, 40)));
+const resteDuColis = colisDeLaVendeuse.replace(argumentDeLAppel, '');
+verifier("et elle n'écrit plus le lieu à la main à côté de l'appel, ce qui le recouvrirait",
+  !/commune_recuperation\s*:/.test(resteDuColis) && !/adresse_recuperation\s*:/.test(resteDuColis),
+  'champ de lieu écrit en dur, il gagnerait sur l\'appel : ' + resteDuColis);
+/* Et le spread, sans quoi l'appel serait fait puis jeté : le résultat doit entrer dans le colis. */
+verifier("le résultat de l'appel est bien versé DANS le colis, pas calculé puis abandonné",
+  /\.\.\.\s*lieuRecuperationPourNouveauColis\s*\(/.test(colisDeLaVendeuse),
+  'appel sans les trois points : il ne verse rien');
 
 /* ---------- Verdict ---------- */
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);

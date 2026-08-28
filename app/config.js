@@ -4291,6 +4291,37 @@ function libelleLieuRecuperation(commune, adresse) {
   return a ? c + " · " + a : c;
 }
 
+/* Le lieu que le colis emporte avec lui, fixé à l'instant où on l'enregistre.
+
+   POURQUOI LE COLIS GARDE SA PROPRE COPIE
+   ---------------------------------------
+   On pourrait croire qu'il suffit de lire la fiche de la cliente au moment d'afficher le colis,
+   et de ne rien recopier. Ce serait vrai un seul jour. Une cliente déménage, on corrige sa fiche,
+   et d'un coup les cent colis qu'on lui a ramassés l'an dernier prétendent avoir été pris à sa
+   nouvelle adresse. L'historique se réécrit tout seul, sans que personne l'ait demandé.
+   Le colis garde donc le lieu où il a VRAIMENT été pris, et la fiche garde le lieu où on ira
+   la prochaine fois. Ce sont deux choses différentes, elles méritent deux colonnes.
+
+   Le 28 août 2026, ce lieu n'était recopié que depuis l'espace de la vendeuse. Un colis créé
+   depuis le bureau naissait sans lieu : ce jour-là, 55 des 56 colis de la journée sont nés vides.
+   Rien ne le signalait, parce que la carte de tournée lit la fiche et non le colis — l'écran
+   restait propre pendant que le fond se creusait.
+
+   Entrée : la fiche de la cliente (n'importe quel objet portant commune_recuperation
+   et adresse_recuperation) ; on accepte aussi rien du tout, une cliente peut être introuvable.
+   Sortie : les deux colonnes prêtes à insérer, VIDE devenant null et jamais "".
+   Le "" et le null se ressemblent à l'œil mais pas au comptage : deux écrans qui écrivent l'un
+   "" et l'autre null donneraient deux totaux différents de colis sans lieu. */
+function lieuRecuperationPourNouveauColis(fiche) {
+  const f = fiche || {};
+  const commune = String(f.commune_recuperation == null ? "" : f.commune_recuperation).trim();
+  const adresse = String(f.adresse_recuperation == null ? "" : f.adresse_recuperation).trim();
+  return {
+    commune_recuperation: commune === "" ? null : commune,
+    adresse_recuperation: adresse === "" ? null : adresse,
+  };
+}
+
 /* Les tournées d'une journée, prêtes à dessiner.
 
    Entrée (tout est facultatif sauf programmations) :

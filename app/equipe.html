@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828lieu1">
-<script src="theme.js?v=20260828lieu1"></script>
+<link rel="stylesheet" href="style.css?v=20260829colis1">
+<script src="theme.js?v=20260829colis1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1110,10 +1110,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828lieu1"></script>
-<script src="config.js?v=20260828lieu1"></script>
+<script src="clt-common.js?v=20260829colis1"></script>
+<script src="config.js?v=20260829colis1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260828lieu1"></script>
+<script src="clt-select-recherche.js?v=20260829colis1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1905,12 +1905,22 @@ const montant = (montant_article !== null || montant_livraison !== null)
 ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
 : null;
 
+// Le lieu de récupération est recopié depuis la fiche de la cliente ICI, dans le payload, et
+// non après l'insertion : c'est ce même payload qui part dans la file hors-réseau quand la
+// connexion tombe. Recopier le lieu plus tard, c'est le perdre exactement les jours où le
+// réseau manque — c'est-à-dire les jours où on en a le plus besoin.
+const lieuRecup = lieuRecuperationPourNouveauColis(
+(fournisseurs || []).find(f => f.id === ctx.fournisseur_id)
+);
+
 const payload = {
 fournisseur_id: ctx.fournisseur_id,
 destination: s.destination,
 commune_destination: s.communeDestination || null,
 description: s.description || null,
 montant, montant_article, montant_livraison, photo_url,
+commune_recuperation: lieuRecup.commune_recuperation,
+adresse_recuperation: lieuRecup.adresse_recuperation,
 destinataire_telephone: s.telephone ? cleTelCarnet(s.telephone) : null,
 cle_creation: l.cle
 };
