@@ -395,6 +395,43 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
    sur une fenêtre qui ne se refermera pas — on ne pourrait plus quitter
    la page du tout. Dépiler d'abord, c'est se mettre à l'abri de ce qu'on
    ne contrôle pas.
+
+   LES ONGLETS, AJOUTÉS ICI LE 28 AOÛT 2026. Le même geste posait le même
+   problème une marche plus bas. Mesure faite sur l'écran du livreur en
+   production : passer de « Mes colis » à « Finance » ne touchait pas à
+   l'historique — history.length valait 5 avant, 5 après un changement,
+   5 après deux. Le « retour » du téléphone ne ramenait donc pas à
+   l'onglet précédent, il quittait l'application. Cinq écrans étaient
+   dans ce cas : Livreur, Équipe, Fournisseur, Express client et Express
+   coursier. Aucun des huit fichiers de app/ n'appelait history.pushState.
+
+   Pourquoi la réparation vit ICI et pas dans chaque page. Les fenêtres
+   posent déjà leurs propres marches et comptent les retours qu'elles se
+   demandent à elles-mêmes. Un second empileur écrit à côté fausserait ce
+   compte : le retour refermerait une fenêtre ET changerait d'onglet du
+   même coup, ou ne ferait plus rien. Un seul mécanisme tient l'historique,
+   donc les onglets sont traités par le même, et les cinq écrans sont
+   corrigés d'un coup sans qu'aucun n'ait une ligne à écrire.
+
+   Comment. Rien à déclarer non plus : un onglet est un bouton qui porte
+   data-clttab (quatre écrans) ou data-eqtab (celui de l'équipe), et
+   l'onglet montré est celui qui porte la classe « active ». On regarde,
+   là encore, au lieu de remplacer. Quand l'onglet affiché change, on pose
+   une marche et on retient d'où l'on venait ; quand le retour est pressé
+   et qu'aucune fenêtre n'est ouverte, on dépile et on ACTIONNE le bouton
+   de l'onglet précédent — la page fait alors son travail habituel, ses
+   listes se rechargent, ses totaux se recalculent. Rien n'est deviné.
+
+   Le piège est le même qu'au-dessus, dans l'autre sens : notre propre clic
+   change l'onglet, donc réveille l'observateur, qui reposerait une marche
+   et enfermerait dans une boucle. On note l'onglet visé AVANT de cliquer :
+   quand l'observateur se réveille, ce qu'il voit est déjà ce qu'on attend
+   et il n'a rien à faire. C'est plus sûr qu'un drapeau à baisser après
+   coup, qui dépendrait du moment où l'observateur se réveille.
+
+   Une fenêtre ouverte passe TOUJOURS avant les onglets : elle a été
+   ouverte après, sa marche est donc au-dessus, et reculer de deux pas d'un
+   coup ferait perdre le travail en cours dans la fenêtre.
    ===================================================================== */
 (function () {
   var couches = [];          // toutes les fenêtres déclarées sur cette page
@@ -470,6 +507,77 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
     hote.insertBefore(b, hote.firstChild);
   }
 
+  // ----- Les onglets -------------------------------------------------------------------------
+  // Deux familles seulement, parce qu'il n'en existe que deux : data-clttab sur le livreur, le
+  // fournisseur et les deux écrans Express, data-eqtab sur celui de l'équipe. Une troisième
+  // n'aurait qu'à s'ajouter ici pour être prise en charge partout.
+  var ATTRIBUTS_ONGLET = ["data-clttab", "data-eqtab"];
+  var ongletsMontres = {};   // famille -> nom de l'onglet montré la dernière fois qu'on a regardé
+  var marchesOnglets = [];   // { famille, nomPrecedent } ; la dernière est celle du dessus
+  var boutonsSuivis = [];
+
+  function boutonsDeFamille(famille) {
+    return document.querySelectorAll("[" + famille + "]");
+  }
+
+  // L'onglet montré est celui dont le bouton porte « active ». C'est la convention des cinq
+  // écrans, et c'est aussi ce que voit l'utilisateur : on mesure l'affichage, pas une variable
+  // interne que telle page tiendrait à jour et telle autre pas.
+  function ongletMontre(famille) {
+    var trouve = null;
+    boutonsDeFamille(famille).forEach(function (b) {
+      if (trouve === null && b.classList.contains("active")) trouve = b.getAttribute(famille);
+    });
+    return trouve;
+  }
+
+  // Revenir à un onglet, c'est cliquer le bouton de la page — jamais déplacer la classe nous-mêmes.
+  // Ces boutons rechargent des listes et recalculent des totaux ; bricoler l'affichage laisserait
+  // un écran qui a l'air juste et qui montre les chiffres de l'onglet d'avant.
+  function allerAOnglet(famille, nom) {
+    var cible = null;
+    boutonsDeFamille(famille).forEach(function (b) {
+      if (cible === null && b.getAttribute(famille) === nom) cible = b;
+    });
+    if (!cible) return;
+    ongletsMontres[famille] = nom;   // noté AVANT le clic : le changement qu'on provoque soi-même
+    cible.click();                   // ne doit pas se reposer en marche.
+  }
+
+  function synchroniserOnglets() {
+    ATTRIBUTS_ONGLET.forEach(function (famille) {
+      var montre = ongletMontre(famille);
+      if (montre === null) return;                     // pas d'onglets de cette famille sur la page
+      // Première fois qu'on voit cette famille : c'est l'état de départ, on n'est allé nulle part,
+      // donc aucune marche. Sans ça, le tout premier « retour » ne quitterait plus la page.
+      if (!Object.prototype.hasOwnProperty.call(ongletsMontres, famille)) {
+        ongletsMontres[famille] = montre;
+        return;
+      }
+      if (ongletsMontres[famille] === montre) return;  // rien n'a bougé, ou c'est nous qui bougeons
+      marchesOnglets.push({ famille: famille, nomPrecedent: ongletsMontres[famille] });
+      ongletsMontres[famille] = montre;
+      empiler(1);
+    });
+  }
+
+  var observateurOnglets = new MutationObserver(function () { synchroniserOnglets(); });
+
+  function suivreOnglet(b) {
+    if (boutonsSuivis.indexOf(b) !== -1) return;
+    boutonsSuivis.push(b);
+    observateurOnglets.observe(b, { attributes: true, attributeFilter: ["class"] });
+  }
+
+  function balayerOnglets(racine) {
+    var r = racine || document;
+    ATTRIBUTS_ONGLET.forEach(function (famille) {
+      if (r.hasAttribute && r.hasAttribute(famille)) suivreOnglet(r);
+      r.querySelectorAll("[" + famille + "]").forEach(suivreOnglet);
+    });
+    synchroniserOnglets();
+  }
+
   // Déclarer une fenêtre. Les pages n'ont normalement rien à appeler : l'attribut suffit. Cette
   // fonction reste publique pour les fenêtres construites en JavaScript, qui n'existent pas encore
   // au chargement — la modale de confirmation partagée, par exemple.
@@ -495,13 +603,20 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
   window.addEventListener("popstate", function () {
     if (retoursDemandes > 0) { retoursDemandes--; return; }
     var haut = pile[pile.length - 1];
-    if (!haut) return;                          // rien d'ouvert : on laisse partir, c'est voulu
-    pile.pop();                                 // AVANT de fermer : si fermer() échoue, une ligne
-    fermer(haut);                               // placée après lui ne s'exécuterait jamais.
-    // Si la fermeture n'aboutit pas — le bouton demande une confirmation, par exemple — la couche
-    // reste peinte, l'observateur la retrouvera hors de la pile et reposera une entrée. Le retour
-    // suivant refermera donc encore. C'est le comportement voulu : on ne s'échappe pas d'un écran
-    // qui est toujours là.
+    if (haut) {
+      pile.pop();                               // AVANT de fermer : si fermer() échoue, une ligne
+      fermer(haut);                             // placée après lui ne s'exécuterait jamais.
+      // Si la fermeture n'aboutit pas — le bouton demande une confirmation, par exemple — la couche
+      // reste peinte, l'observateur la retrouvera hors de la pile et reposera une entrée. Le retour
+      // suivant refermera donc encore. C'est le comportement voulu : on ne s'échappe pas d'un écran
+      // qui est toujours là.
+      return;
+    }
+    // Aucune fenêtre ouverte : on remonte alors d'un onglet. On dépile ici aussi AVANT d'agir,
+    // pour la même raison — le clic exécute le code de la page, et ce code peut échouer.
+    var marche = marchesOnglets.pop();
+    if (marche) { allerAOnglet(marche.famille, marche.nomPrecedent); return; }
+    // Ni fenêtre ni onglet à remonter : on laisse partir, c'est voulu.
   });
 
   // Échap, une fois pour toutes. Les fenêtres qui gèrent déjà Échap de leur côté se fermeront
@@ -522,12 +637,14 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
   // repasser sur chaque ligne de chaque tableau à chaque rafraîchissement, pour rien.
   function demarrer() {
     balayer(document);
+    balayerOnglets(document);
     new MutationObserver(function (lots) {
       lots.forEach(function (lot) {
         Array.prototype.forEach.call(lot.addedNodes, function (n) {
           if (n.nodeType !== 1) return;
           if (n.hasAttribute("data-clt-couche")) enregistrer(n);
           else balayer(n);
+          balayerOnglets(n);        // les onglets d'un écran construit après coup comptent aussi
         });
       });
     }).observe(document.body, { childList: true });

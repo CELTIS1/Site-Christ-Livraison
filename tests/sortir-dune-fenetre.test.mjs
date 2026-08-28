@@ -346,6 +346,158 @@ await souffler();
 verifier("on peut donc toujours quitter la page, au lieu d'y rester enfermé",
   quitte === true);
 
+/* On range la page avant la suite, et ce rangement dit quelque chose de vrai. Tant que cette
+   fenêtre reste peinte, le mécanisme la réclame de nouveau chaque fois qu'autre chose le réveille :
+   il repose une marche pour elle. C'est voulu — on ne s'échappe pas d'un écran qui est toujours
+   là — mais si on la laissait ouverte ici, tous les blocs suivants compteraient une marche de plus
+   et on mettrait sur le dos des onglets un chiffre qui vient d'ailleurs. On la referme donc pour
+   de bon, et on vérifie que la page est réellement redevenue calme avant de continuer. */
+fermerAMain(enPanne);
+await souffler();
+profondeur = 0; quitte = false;
+ouvrirAMain(fiche); await souffler(); fermerAMain(fiche); await souffler();
+verifier("la page est repartie sur un compte juste : une ouverture, une fermeture, rien en trop",
+  profondeur === 0 && !quitte && window_.cltCouchesOuvertes().length === 0,
+  'profondeur = ' + profondeur + ', ouvertes = ' + window_.cltCouchesOuvertes().join(','));
+
+titre("Le « retour » et les onglets");
+
+/* Ce que ça reproduit, et pourquoi c'est le même geste que ci-dessus. Le 28 août 2026, mesure
+   faite sur l'écran du livreur en production : passer de « Mes colis » à « Finance » ne touchait
+   pas à l'historique — history.length valait 5 avant, 5 après un changement, 5 après deux. Le
+   « retour » du téléphone ne ramenait donc pas à l'onglet précédent : il quittait l'application.
+   Cinq écrans étaient dans ce cas — Livreur, Équipe, Fournisseur, Express client et Express
+   coursier — et aucun des huit fichiers de app/ n'appelait history.pushState.
+
+   Pourquoi ça vit ici et pas ailleurs. Les fenêtres empilent déjà leurs propres marches dans
+   l'historique et comptent les retours qu'elles se demandent à elles-mêmes. Un second empileur
+   posé à côté désynchroniserait ce compte. C'est donc le MÊME mécanisme qui doit tenir les deux,
+   et c'est ce banc-là qui doit le prouver.
+
+   Ce qu'on rejoue : de vrais boutons d'onglet, avec le comportement qu'ont les pages réelles —
+   un clic déplace la classe « active » d'un bouton à l'autre, rien de plus. */
+
+profondeur = 0; quitte = false;
+
+function fabriquerOnglets(attribut, noms){
+  const boutons = noms.map(nom => new Element('button', ['clt-toptab'], { [attribut]: nom }));
+  boutons.forEach(b => b.addEventListener('click', () => {
+    boutons.forEach(x => { if (x === b) x.classList.add('active'); else x.classList.remove('active'); });
+  }));
+  boutons[0].classes.add('active');            // état de départ, sans réveiller personne
+  boutons.forEach(b => document.body.appendChild(b));
+  return boutons;
+}
+function ongletAffiche(boutons){
+  const actif = boutons.find(b => b.classes.has('active'));
+  if (!actif) return null;
+  return actif.getAttribute('data-clttab') || actif.getAttribute('data-eqtab');
+}
+
+const onglets = fabriquerOnglets('data-clttab', ['mes', 'recup', 'finance']);
+await souffler();
+verifier("l'onglet de départ ne pose aucune marche : on n'est allé nulle part",
+  profondeur === 0, 'profondeur = ' + profondeur);
+
+onglets[2].click();                            // « Finance »
+await souffler();
+verifier("changer d'onglet pose une marche, pour que « retour » ait de quoi revenir",
+  profondeur === 1, 'profondeur = ' + profondeur);
+
+retourDuTelephone();
+await souffler();
+verifier("« retour » ramène à l'onglet précédent au lieu de quitter l'application",
+  ongletAffiche(onglets) === 'mes' && !quitte,
+  'onglet affiché : ' + ongletAffiche(onglets) + ', quitté : ' + quitte);
+verifier("il y revient en actionnant le bouton de la page, pas en bricolant son affichage",
+  onglets[0].clics === 1, 'clics sur « Mes colis » : ' + onglets[0].clics);
+verifier("et il ne laisse aucune marche en trop derrière lui",
+  profondeur === 0, 'profondeur = ' + profondeur);
+
+titre("Depuis le premier onglet, « retour » quitte bien l'application");
+
+quitte = false;
+retourDuTelephone();
+await souffler();
+verifier("revenu au point de départ, le retour suivant sort de la page : on n'est pas enfermé dedans",
+  quitte === true);
+profondeur = 0; quitte = false;
+
+titre("Trois onglets parcourus se remontent un par un, dans l'ordre");
+
+onglets[1].click(); await souffler();          // Récup.
+onglets[2].click(); await souffler();          // Finance
+verifier("deux changements, deux marches",
+  profondeur === 2, 'profondeur = ' + profondeur);
+retourDuTelephone(); await souffler();
+verifier("le premier « retour » revient sur Récup.",
+  ongletAffiche(onglets) === 'recup', 'onglet affiché : ' + ongletAffiche(onglets));
+retourDuTelephone(); await souffler();
+verifier("le second revient sur Mes colis",
+  ongletAffiche(onglets) === 'mes', 'onglet affiché : ' + ongletAffiche(onglets));
+verifier("et l'historique est revenu exactement à zéro",
+  profondeur === 0 && !quitte, 'profondeur = ' + profondeur);
+
+titre("Une fenêtre ouverte passe avant les onglets");
+
+/* L'ordre compte : la fenêtre est ouverte APRÈS le changement d'onglet, sa marche est donc
+   au-dessus. Un « retour » doit refermer la fenêtre et laisser l'onglet tranquille, sans quoi
+   on reculerait de deux pas d'un coup — et on perdrait le travail en cours dans la fenêtre. */
+profondeur = 0; quitte = false;
+onglets[2].click(); await souffler();          // Finance : une marche
+ouvrirAMain(fiche); await souffler();          // la fenêtre : une seconde marche
+verifier("un onglet changé puis une fenêtre ouverte font deux marches distinctes",
+  profondeur === 2, 'profondeur = ' + profondeur);
+retourDuTelephone(); await souffler();
+verifier("le « retour » referme la fenêtre",
+  !estPeinte(fiche));
+verifier("et ne touche pas à l'onglet, qui est resté sur Finance",
+  ongletAffiche(onglets) === 'finance', 'onglet affiché : ' + ongletAffiche(onglets));
+retourDuTelephone(); await souffler();
+verifier("le « retour » d'après, lui, revient sur l'onglet précédent",
+  ongletAffiche(onglets) === 'mes' && !quitte, 'onglet affiché : ' + ongletAffiche(onglets));
+profondeur = 0; quitte = false;
+
+titre("L'écran de l'équipe nomme ses onglets autrement, et c'est pareil");
+
+/* equipe.html écrit data-eqtab là où les autres écrivent data-clttab. Le mécanisme doit
+   connaître les deux, sinon le seul écran où l'on passe la journée resterait sans retour. */
+const ongletsEquipe = fabriquerOnglets('data-eqtab', ['colis', 'finances', 'comptes']);
+await souffler();
+ongletsEquipe[1].click(); await souffler();
+verifier("data-eqtab est reconnu au même titre que data-clttab",
+  profondeur === 1, 'profondeur = ' + profondeur);
+retourDuTelephone(); await souffler();
+verifier("et le retour y ramène aussi à l'onglet précédent",
+  ongletAffiche(ongletsEquipe) === 'colis' && !quitte, 'onglet affiché : ' + ongletAffiche(ongletsEquipe));
+profondeur = 0; quitte = false;
+
+titre("Quand le bouton d'onglet, lui, tombe en panne à mi-chemin");
+
+/* Pourquoi ce cas mérite son contrôle. Revenir à un onglet, c'est cliquer le bouton de la page,
+   donc exécuter du code qu'on n'a pas écrit ici : il change l'onglet, puis recharge une liste, et
+   ce rechargement peut échouer. L'onglet a alors bel et bien changé, mais le clic s'est arrêté en
+   route. C'est le seul moment où l'ordre des deux lignes de allerAOnglet() se voit — mesuré : dans
+   tous les cas ordinaires, noter l'onglet visé avant ou après le clic donne exactement le même
+   résultat, parce que l'observateur se réveille en microtâche, toujours après nous. Ici, non. Si
+   on notait après, la ligne ne s'exécuterait jamais ; l'observateur trouverait un onglet qu'il ne
+   s'attendait pas à voir et poserait une marche pour un pas que personne n'a fait. Le compte de
+   l'historique se décalerait d'un cran, et il faudrait deux « retour » pour un seul geste. */
+const erreursAvant = erreursAvalees.length;
+onglets[0].addEventListener('click', () => { throw new Error('le rechargement de la liste a échoué'); });
+onglets[2].click(); await souffler();          // Finance : une marche
+retourDuTelephone(); await souffler();
+verifier("le clic a bien échoué après avoir changé l'onglet, c'est le cas qu'on met à l'épreuve",
+  erreursAvalees.length === erreursAvant + 1, 'erreurs relevées : ' + (erreursAvalees.length - erreursAvant));
+verifier("l'onglet a quand même changé, puisque la page l'avait fait avant d'échouer",
+  ongletAffiche(onglets) === 'mes', 'onglet affiché : ' + ongletAffiche(onglets));
+verifier("et aucune marche fantôme n'est posée pour un pas que personne n'a fait",
+  profondeur === 0, 'profondeur = ' + profondeur);
+retourDuTelephone(); await souffler();
+verifier("on peut donc toujours quitter la page, au lieu d'y rester enfermé",
+  quitte === true);
+profondeur = 0; quitte = false;
+
 /* ==========================================================================================
    4. Le contrat, page par page
    ==========================================================================================
