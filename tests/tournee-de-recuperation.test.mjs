@@ -872,6 +872,99 @@ verifier("les trois clientes programmées gardent le leur, et elles seules",
   && (avecRepli.match(/data-prog-programmer="/g) || []).length === 1,
   avecRepli.slice(0, 200));
 
+/* ==========================================================================================
+   10 quater. LE TRAVAIL FINI NE SE RANGE PAS AVEC LE TRAVAIL QUI RESTE
+   ==========================================================================================
+   Mesuré en ligne le 28/08/2026, juste après avoir fait entrer le travail fait : le repli
+   s'intitulait « Confiées sans tournée posée · 22 clientes, 34 colis » alors que dix de ces
+   vingt-deux clientes n'avaient plus rien à faire récupérer. Le tiroir portait donc un nom
+   faux pour près de la moitié de ce qu'il contenait, ces clientes étaient marquées « hors
+   programme » — qui se lit « à faire, mais pas prévu » quand il fallait lire « c'est fait » —
+   et elles recevaient un bouton « Poser une tournée pour elle » pour un travail terminé.
+   Les chiffres étaient justes ; les mots, non. Un chiffre juste sous un mot faux se lit faux.
+
+   Trois questions, trois tiroirs : ce qui est décidé, ce qui reste à décider, ce qui est fait. */
+titre("Ce qui est fait ne se range pas avec ce qui reste à faire");
+
+const fournisseursAvant = contexte.fournisseurs;
+contexte.fournisseurs = fournisseursAvant.concat([
+  { id: 'F8', company_name: 'Tout Ramassé', phone: '0700000008',
+    commune_recuperation: 'Marcory', adresse_recuperation: 'Remblais' },
+]);
+contexte.progColis = COLIS.concat([
+  { id: 'C6', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L2' },
+  // F8 : personne ne l'a programmée, rien ne l'attend plus, et pourtant Koffi y est passé
+  // ce matin. C'est exactement la cliente qui n'avait sa place dans aucun des deux tiroirs.
+  { id: 'C8', fournisseur_id: 'F8', statut: 'recupere', recupere_at: AUJ + 'T09:30:00.000Z', livreur_collecte_id: 'L1' },
+]);
+poseHTML = '';
+renderProgrammationBody();
+const avecFait = poseHTML;
+const replisDe = (html) => (html.match(/<details class="[^"]*tournee-repli[^"]*">[\s\S]*?<\/details>/g) || []);
+const replisTrouves = replisDe(avecFait);
+const replConfiees = replisTrouves.find(r => /Confiées sans tournée posée/.test(r)) || '';
+const replFait = replisTrouves.find(r => /tournee-repli--fait/.test(r)) || '';
+
+verifier("l'écran ouvre un troisième tiroir, distinct des deux autres",
+  replisTrouves.length === 2 && replFait !== '' && replConfiees !== '',
+  replisTrouves.length + ' repli(s) trouvé(s)');
+verifier("et il dit ce qu'il contient avant qu'on l'ouvre : des clientes et des colis récupérés",
+  /Déjà récupéré aujourd'hui · 1 cliente, 1 colis/.test(replFait), replFait.slice(0, 300));
+verifier("la cliente déjà ramassée est dedans, sous le nom du livreur qui y est allé",
+  /Tout Ramassé/.test(replFait) && /Koffi ·/.test(replFait), replFait.slice(0, 400));
+
+/* LES DEUX TIROIRS NE DÉBORDENT PAS L'UN DANS L'AUTRE. C'est tout l'objet du changement : un
+   nom de tiroir qui ne recouvre que la moitié de son contenu ne vaut pas mieux qu'aucun nom. */
+verifier("elle n'est PAS restée dans le tiroir de ce qui attend d'être ramassé",
+  !/Tout Ramassé/.test(replConfiees), replConfiees.slice(0, 400));
+verifier("et ce tiroir-là ne compte toujours que ce qui reste à aller chercher",
+  /Confiées sans tournée posée · 1 cliente, 1 colis/.test(replConfiees), replConfiees.slice(0, 300));
+
+/* LES MOTS. « hors programme » veut dire « à faire, mais personne ne l'a prévu ». Sur un travail
+   terminé, c'est un contresens : le bureau lirait un reste à faire là où il n'y a plus rien. */
+verifier("sa carte est marquée « déjà récupéré », et pas « hors programme »",
+  // La classe peut porter une nuance (tournee-marque--fait) : c'est le MOT qui est contrôlé,
+  // pas l'attribut. Un contrôle qui épingle l'attribut rougirait à la première retouche de
+  // couleur, et on prendrait l'habitude de le desserrer — c'est ainsi qu'un contrôle meurt.
+  /class="tournee-marque[^"]*">déjà récupéré</.test(replFait) && !/hors programme/.test(replFait),
+  replFait.slice(0, 500));
+/* AUCUN ZÉRO FABRIQUÉ, ICI NON PLUS. « 0 à prendre » se lit comme un manque ; il n'y a pas de
+   manque, il y a un travail fait. La carte dit ce qui a été pris, et rien d'autre. */
+verifier("elle annonce ce qui a été pris, sans écrire de zéro à prendre",
+  /1 déjà pris/.test(replFait) && !/à prendre/.test(replFait), replFait.slice(0, 500));
+/* AUCUN DES DEUX GESTES. « Retirer » n'a rien à retirer, et « Poser une tournée » proposerait
+   d'envoyer quelqu'un chez une cliente où l'on est déjà passé. Un bouton sans effet utile est
+   pire qu'un bouton absent : on croit avoir agi. */
+verifier("elle ne reçoit ni « Retirer » ni « Poser une tournée » : il n'y a plus rien à poser",
+  !/data-prog-retirer/.test(replFait) && !/data-prog-programmer/.test(replFait),
+  replFait.slice(-400));
+
+/* LE TOTAL, ENCORE ET TOUJOURS. Deux tiroirs fermés au lieu d'un, et le TOTAL doit rester
+   dehors et compter les deux. Replier deux fois n'est pas retrancher deux fois. */
+verifier("le TOTAL est hors des DEUX tiroirs",
+  !replConfiees.includes('TOTAL ·') && !replFait.includes('TOTAL ·')
+  && ligneDuTotal(avecFait) !== '', ligneDuTotal(avecFait));
+verifier("et il compte tout : cinq clientes, quatre à prendre, trois déjà pris",
+  /<strong>5<\/strong> cliente/.test(ligneDuTotal(avecFait))
+  && /<strong>4<\/strong> à prendre/.test(ligneDuTotal(avecFait))
+  && /<strong>3<\/strong> déjà pris/.test(ligneDuTotal(avecFait)),
+  ligneDuTotal(avecFait));
+verifier("l'addition des blocs des trois tiroirs retombe exactement sur le TOTAL",
+  (() => {
+    const titres = avecFait.match(/class="tournee-section-titre">[^<]*/g) || [];
+    let clientes = 0, aPrendre = 0, pris = 0;
+    titres.forEach((t) => {
+      const a = t.match(/· (\d+) clientes? · (\d+) colis à prendre/);
+      const b = t.match(/· (\d+) clientes? · (\d+) colis? récupérés?/);
+      if (a) { clientes += Number(a[1]); aPrendre += Number(a[2]); }
+      else if (b) { clientes += Number(b[1]); pris += Number(b[2]); }
+    });
+    return titres.length === 4 && clientes === 5 && aPrendre === 4 && pris === 1;
+  })(),
+  (avecFait.match(/class="tournee-section-titre">[^<]*/g) || []).join(' | '));
+
+contexte.fournisseurs = fournisseursAvant;
+
 titre("La même journée, mais pas encore arrivée");
 contexte.progColis = COLIS;
 contexte.progJourChoisi = DEMAIN;

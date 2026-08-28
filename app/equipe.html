@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828travail1">
-<script src="theme.js?v=20260828travail1"></script>
+<link rel="stylesheet" href="style.css?v=20260828fait1">
+<script src="theme.js?v=20260828fait1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1104,10 +1104,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828travail1"></script>
-<script src="config.js?v=20260828travail1"></script>
+<script src="clt-common.js?v=20260828fait1"></script>
+<script src="config.js?v=20260828fait1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260828travail1"></script>
+<script src="clt-select-recherche.js?v=20260828fait1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -5498,6 +5498,13 @@ return;
 // encore. Écrire zéro laisserait croire que la cliente n'a rien, alors qu'on n'en sait rien.
 const compte = (n) => colisConnus ? String(n) : '<span style="color:#8a94a3;">à venir</span>';
 
+/* CE QUI EST FAIT. (28/08/2026) Une cliente que personne n'avait programmée, chez qui plus rien
+   n'attend, et chez qui un livreur est pourtant passé dans la journée. Ce n'est ni du programme,
+   ni du reste à faire : c'est du travail accompli, et cela mérite son propre tiroir. Défini une
+   seule fois ici pour que le tri des blocs, la couleur de la carte, la marque et le geste
+   répondent tous à la même question — trois définitions séparées finiraient par diverger. */
+const travailFini = (l) => l.horsProgramme && !l.nbAPrendre && l.nbDejaPris > 0;
+
 const carteHTML = (l) => {
 const inter = numeroInternational(l.telephone);
 const contacts = l.telephone
@@ -5508,21 +5515,36 @@ const contacts = l.telephone
 : `<div class="tournee-contacts">
 <span class="tournee-contact tournee-contact--absent">Numéro non renseigné — à compléter dans sa fiche</span>
 </div>`;
-const classe = l.horsProgramme ? 'tournee-carte--hors'
-: (l.rienARecuperer ? 'tournee-carte--rien' : 'tournee-carte--programme');
-// Sur une ligne hors programme il n'y a aucune programmation à retirer : on propose au
-// contraire d'en poser une, en pré-remplissant le formulaire du haut. Le bureau relit et
-// valide lui-même — un écran ne doit pas écrire en base sur un seul clic mal placé.
-const geste = l.horsProgramme
+const fini = travailFini(l);
+const classe = fini ? 'tournee-carte--fait'
+: (l.horsProgramme ? 'tournee-carte--hors'
+: (l.rienARecuperer ? 'tournee-carte--rien' : 'tournee-carte--programme'));
+/* TROIS SITUATIONS, TROIS GESTES — DONT UN QUI EST L'ABSENCE DE GESTE. (28/08/2026)
+   Sur une ligne hors programme il n'y a aucune programmation à retirer : on propose au
+   contraire d'en poser une, en pré-remplissant le formulaire du haut. Le bureau relit et
+   valide lui-même — un écran ne doit pas écrire en base sur un seul clic mal placé.
+   Sur un travail déjà fait, aucun des deux n'a de sens : « Retirer » n'aurait rien à retirer,
+   et « Poser une tournée » proposerait d'envoyer quelqu'un là où l'on est déjà passé. Un
+   bouton sans effet utile est pire qu'un bouton absent : on croit avoir agi. */
+const geste = fini ? ''
+: l.horsProgramme
 ? `<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-programmer="${escapeHTML(l.fournisseurId)}|${escapeHTML(String(l.livreurId || ''))}">Poser une tournée pour elle</button>`
 : `<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-retirer="${escapeHTML(l.id)}">Retirer de la tournée</button>`;
+// « hors programme » veut dire « à faire, mais personne ne l'a prévu ». Sur un travail terminé
+// c'est un contresens : le bureau y lirait un reste à faire là où il n'y a plus rien.
+const marque = fini ? `<span class="tournee-marque tournee-marque--fait">déjà récupéré</span>`
+: l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : '';
 return `
 <div class="tournee-carte ${classe}">
-<div class="tournee-nom">${escapeHTML(l.clienteNom)}${l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : ''}</div>
+<div class="tournee-nom">${escapeHTML(l.clienteNom)}${marque}</div>
 <div class="tournee-lieu">📍 ${l.commune ? escapeHTML(l.commune) : 'Commune non renseignée'}${l.adresse ? ' · ' + escapeHTML(l.adresse) : ''}</div>
 ${l.note ? `<div class="tournee-note">📝 ${escapeHTML(l.note)}</div>` : ''}
 <div class="tournee-compte">
-${l.rienARecuperer
+${fini
+// Pas de « 0 à prendre » : un zéro se lit comme un manque, et il n'y a pas de manque, il y a
+// un travail fait. La carte dit ce qui a été pris, et rien d'autre.
+? `<span class="tournee-pris">${l.nbDejaPris} déjà pris</span>`
+: l.rienARecuperer
 ? `<span class="tournee-rien">Rien à récupérer pour l'instant — la ligne reste, un colis peut encore être saisi.</span>`
 : `<strong>${compte(l.nbAPrendre)}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}`}
 </div>
@@ -5538,9 +5560,17 @@ const blocLivreur = (g) => `
 <div class="tournee-section-titre">${escapeHTML(g.livreurNom)} · ${g.total.nbClientes} cliente${g.total.nbClientes > 1 ? 's' : ''} · ${colisConnus ? g.total.nbAPrendre + ' colis à prendre' : 'colis à venir'}</div>
 ${g.lignes.map(carteHTML).join('')}`;
 
+// Ce qui est fait ne s'annonce pas en « colis à prendre » : ce serait un zéro, et un zéro se lit
+// comme un manque. Le titre du bloc annonce donc ce qui a été récupéré.
+const blocLivreurFait = (g) => `
+<div class="tournee-section-titre">${escapeHTML(g.livreurNom)} · ${g.total.nbClientes} cliente${g.total.nbClientes > 1 ? 's' : ''} · ${g.total.nbDejaPris} colis récupéré${g.total.nbDejaPris > 1 ? 's' : ''}</div>
+${g.lignes.map(carteHTML).join('')}`;
+
 const programmees = lignes.filter(l => !l.horsProgramme);
-const confiees    = lignes.filter(l => l.horsProgramme);
+const confiees    = lignes.filter(l => l.horsProgramme && !travailFini(l));
+const dejaFaites  = lignes.filter(travailFini);
 const colisConfies = confiees.reduce((s, l) => s + l.nbAPrendre, 0);
+const colisFaits   = dejaFaites.reduce((s, l) => s + l.nbDejaPris, 0);
 
 const sectionProgramme = programmees.length
 ? tourneesParLivreur(programmees).map(blocLivreur).join('')
@@ -5560,10 +5590,28 @@ ${tourneesParLivreur(confiees).map(blocLivreur).join('')}
 </details>`
 : '';
 
+/* LE TIROIR DU TRAVAIL FAIT. (28/08/2026)
+   Mesuré en ligne le jour même : le repli ci-dessus s'intitulait « Confiées sans tournée posée ·
+   22 clientes, 34 colis » alors que dix de ces vingt-deux n'avaient plus rien à faire récupérer.
+   Le tiroir portait un nom faux pour près de la moitié de son contenu, ces clientes étaient
+   marquées « hors programme », et on leur proposait de poser une tournée pour un travail
+   terminé. Les chiffres étaient justes ; les mots, non — et un chiffre juste sous un mot faux
+   se lit faux. Trois questions, trois tiroirs : ce qui est décidé, ce qui reste à décider, ce
+   qui est fait. Le troisième est replié comme les autres et compté comme les autres. */
+const motDuJour = jour === aujourdhuiAbidjan() ? ' aujourd\'hui' : '';
+const sectionFaites = dejaFaites.length
+? `<details class="tournee-repli tournee-repli--fait">
+<summary>Déjà récupéré${motDuJour} · ${dejaFaites.length} cliente${dejaFaites.length > 1 ? 's' : ''}, ${colisFaits} colis</summary>
+<div class="tournee-repli-aide">Personne n'avait posé de tournée chez ces clientes, et pourtant un livreur y est passé : leurs colis sont ramassés et plus rien ne les attend. Elles figurent ici pour que la journée soit complète, et elles comptent dans le TOTAL du bas.</div>
+${tourneesParLivreur(dejaFaites).map(blocLivreurFait).join('')}
+</details>`
+: '';
+
 cltPoserHTML(body, `
 <div class="recap-day-summary">${escapeHTML(dateLabel)} · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's' : ''} · <strong>${total.nbLivreurs}</strong> livreur${total.nbLivreurs > 1 ? 's' : ''}</div>
 ${sectionProgramme}
 ${sectionConfiees}
+${sectionFaites}
 <div class="recap-day-summary" style="margin-top:14px;">
 TOTAL · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's' : ''} ·
 <strong>${total.nbLivreurs}</strong> livreur${total.nbLivreurs > 1 ? 's' : ''} ·

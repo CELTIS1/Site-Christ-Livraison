@@ -2436,6 +2436,12 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
 .tournee-carte--hors{border-left-color:#d97706;}
 /* Rien à récupérer pour l'instant : la ligne reste, mais elle s'efface visuellement. */
 .tournee-carte--rien{border-left-color:var(--border-strong);}
+/* Déjà récupéré : le travail est fini. Vert comme le programme, parce que c'est du travail
+   accompli, et surtout pas l'ambre du hors-programme, qui appellerait une action là où il n'y
+   en a plus aucune. Légèrement estompé : présent au compte, mais rien à décider dessus. */
+.tournee-carte--fait{border-left-color:#1e8f4e; opacity:.82;}
+/* La même marque, mais verte : « déjà récupéré » n'est pas un avertissement. */
+.tournee-marque--fait{color:#166534; background:#dcfce7;}
 
 .tournee-nom{font-weight:700; font-size:15px; color:var(--navy); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
 .tournee-marque{
@@ -2492,6 +2498,7 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
 .tournee-repli-aide{font-size:12.5px; color:var(--muted); margin:2px 0 10px;}
 
 html[data-theme="dark"] .tournee-marque{color:#fbbf24; background:rgba(217,119,6,.18);}
+html[data-theme="dark"] .tournee-marque--fait{color:#5ed19a; background:rgba(30,143,78,.20);}
 html[data-theme="dark"] .tournee-note{color:#fbbf24;}
 html[data-theme="dark"] .tournee-repli > summary{color:#fbbf24;}
 html[data-theme="dark"] .tournee-compte .tournee-pris{color:#5ed19a;}
