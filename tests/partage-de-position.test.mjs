@@ -77,8 +77,13 @@ function verifier(t, condition, detail){
 function titre(t){ console.log('\n' + t); }
 
 /* ---------- Extraction du vrai code ---------- */
+/* Le « async » fait partie de la fonction. (29/08/2026) L'ancienne version cherchait
+   « function nom( » et tombait donc APRÈS le mot async : elle rendait un corps plein de await
+   sans le async qui les autorise, et le bac à sable refusait de démarrer. Une fonction qu'on
+   n'arrive pas à extraire n'est pas une fonction gardée. */
 function bloc(nom, source, ou){
-  const debut = source.indexOf('function ' + nom + '(');
+  const trouve = source.match(new RegExp('(async\\s+)?function\\s+' + nom + '\\s*\\('));
+  const debut = trouve ? trouve.index : -1;
   if (debut === -1) { console.error(`Fonction ${nom} introuvable dans ${ou}`); process.exit(1); }
   let i = source.indexOf('{', debut), prof = 0;
   for (; i < source.length; i++) {
@@ -159,7 +164,11 @@ const SEUIL = (() => {
   return Function('return (' + m[1] + ')')();
 })();
 
-function monterEcranLivreur({ colis = [], accord = '2026-08-01T00:00:00Z' } = {}){
+/* On peut monter l'écran avec une date d'accord fabriquée (c'est le cas courant), ou avec un
+   PROFIL ENTIER — celui que la vraie fonction de chargement vient de rendre. La seconde forme
+   existe depuis le 29 août : c'est elle qui relie les deux moitiés du mécanisme, chacune verte
+   de son côté pendant que l'ensemble ne marchait pas. */
+function monterEcranLivreur({ colis = [], accord = '2026-08-01T00:00:00Z', profil = null } = {}){
   const ecran = faireEcran();
   const base = faireBase();
   const suivis = [];   // chaque appel à startPositionSharing
@@ -181,7 +190,7 @@ function monterEcranLivreur({ colis = [], accord = '2026-08-01T00:00:00Z' } = {}
        affiche « en route » sur sa carte et n'est visible nulle part sur celle du bureau. */
     tourneeColis: [],
     currentUser: { id: 'liv-1' },
-    currentProfile: { geoloc_consent_at: accord },
+    currentProfile: profil || { geoloc_consent_at: accord },
     supabaseClient: base.client,
     startPositionSharing: (id, onError, onEnvoi) => { suivis.push({ id, onError, onEnvoi }); },
     stopPositionSharing: () => { arrets++; },
@@ -200,6 +209,24 @@ function monterEcranLivreur({ colis = [], accord = '2026-08-01T00:00:00Z' } = {}
     // Le même geste, mais sur la liste de la tournée : c'est celle que « Je pars » met à jour.
     poserTournee: (nouveaux) => { contexte.tourneeColis.length = 0; contexte.tourneeColis.push(...nouveaux); },
     rafraichir: () => vm.runInContext('updatePositionSharingFromColis()', contexte) };
+}
+
+// UN BANC QUI TOMBE NE ROUGIT PAS, IL DISPARAÎT. (29/08/2026)
+// -----------------------------------------------------------
+// Sept fois dans ce fichier, on écrivait « s.suivis[0].onEnvoi(...) » sans regarder si un suivi
+// avait démarré. Tant que le code était juste, il y en avait toujours un. Le jour où l'on a cassé
+// exprès la porte de l'accord pour vérifier que le banc rougissait, il n'y en a plus eu : le
+// fichier est mort sur un TypeError à la première de ces lignes, et TOUTES les vérifications
+// suivantes ont cessé d'exister — sans un seul ❌ pour le dire. Le total baissait en silence.
+// C'est la panne muette qu'on avait déjà payée une fois.
+// On passe donc par ici. S'il n'y a pas de suivi, on le dit en rouge, une fois, et on rend un
+// objet qui ne fait rien : les vérifications d'après portent alors sur un écran qui n'a pas
+// bougé, et rougissent d'elles-mêmes. Un banc doit rougir, jamais disparaître.
+function leSuivi(s, ou){
+  if (s.suivis.length === 1) return s.suivis[0];
+  verifier(`un suivi a bien démarré avant qu’on l’interroge (${ou})`, false,
+    `suivis démarrés : ${s.suivis.length} au lieu de 1`);
+  return { onEnvoi(){}, onError(){} };
 }
 
 const enLivraison = [{ id: 'c1', livreur_id: 'liv-1', statut: 'en_livraison' }];
@@ -270,7 +297,7 @@ titre('Le vert ne s’allume que quand un point est réellement parti');
 
   // Le GPS répond et la base accepte : c'est maintenant, et seulement maintenant, que le vert
   // a le droit de s'allumer.
-  s.suivis[0].onEnvoi({ latitude: 5.35, longitude: -4.01, accuracy: 12 });
+  leSuivi(s, 'livraison').onEnvoi({ latitude: 5.35, longitude: -4.01, accuracy: 12 });
   verifier('un point envoyé allume le vert',
     pastille.className === 'position-pastille est-active', pastille.className);
   verifier('le texte nomme le genre de trajet',
@@ -279,7 +306,7 @@ titre('Le vert ne s’allume que quand un point est réellement parti');
 
   const r = monterEcranLivreur({ colis: enRecuperation });
   r.rafraichir();
-  r.suivis[0].onEnvoi({});
+  leSuivi(r, 'récupération').onEnvoi({});
   verifier('une récupération le dit aussi',
     r.ecran.els['position-sharing-desc'].textContent === "Position partagée avec l'équipe (récupération en cours)");
 }
@@ -325,10 +352,10 @@ titre('Le rouge ne sert qu’aux pannes qu’on peut réparer');
     !/Autorisez la géolocalisation/.test(etat(3).detail));
 
   // Un refus, puis le livreur autorise et un point part : l'alerte doit s'éteindre.
-  s.suivis[0].onError({ code: 1, message: 'refusé' });
+  leSuivi(s, 'refus puis reprise').onError({ code: 1, message: 'refusé' });
   verifier('le refus allume bien le rouge à l’écran',
     s.ecran.els['position-sharing-pastille'].className === 'position-pastille est-erreur');
-  s.suivis[0].onEnvoi({});
+  leSuivi(s, 'refus puis reprise').onEnvoi({});
   verifier('un point qui repart éteint le rouge',
     s.ecran.els['position-sharing-pastille'].className === 'position-pastille est-active');
 }
@@ -338,7 +365,7 @@ titre('Un rafraîchissement n’efface plus l’avertissement (le défaut centra
 {
   const s = monterEcranLivreur({ colis: enLivraison });
   s.rafraichir();
-  s.suivis[0].onError({ code: 1, message: 'refusé' });
+  leSuivi(s, 'rafraîchissement').onError({ code: 1, message: 'refusé' });
   const pastille = s.ecran.els['position-sharing-pastille'];
   const msg = s.ecran.els['position-sharing-msg'];
   verifier('le rouge est là', pastille.className === 'position-pastille est-erreur');
@@ -355,7 +382,7 @@ titre('Un rafraîchissement n’efface plus l’avertissement (le défaut centra
   // Le trajet se termine, un autre commence : le souvenir du précédent ne doit rien colorer.
   const t = monterEcranLivreur({ colis: enLivraison });
   t.rafraichir();
-  t.suivis[0].onEnvoi({});
+  leSuivi(t, 'trajet suivant').onEnvoi({});
   verifier('vert pendant le trajet',
     t.ecran.els['position-sharing-pastille'].className === 'position-pastille est-active');
   t.poser(rienAFaire);
@@ -543,6 +570,138 @@ titre('« Pas de photo » : plus de carré gris chez le livreur, et seulement ch
     'un carré vide est revenu sur le téléphone de la vendeuse');
   verifier('la règle CSS partagée n’a pas été touchée (elle sert encore aux autres écrans)',
     /\.colis-item \.thumb-placeholder\{/.test(fs.readFileSync(path.join(APP, 'style.css'), 'utf8')));
+}
+
+/* =========================================================================================
+   8. L'ACCORD DONNÉ HIER DOIT ENCORE ÊTRE LÀ CE MATIN — 29 août 2026
+   =========================================================================================
+
+   CE QU'ON A MESURÉ, ET POURQUOI CE BANC ÉTAIT VERT PENDANT CE TEMPS
+   -----------------------------------------------------------------
+   Ce soir-là, sur le téléphone de Cedric, la demande d'autorisation s'affichait encore alors
+   qu'il avait accepté le 25 août à 07:57 — c'est écrit noir sur blanc dans sa fiche en base.
+   Sa dernière position remontait à 84 heures, pendant que l'application le considérait en
+   tournée. Le bureau le cherchait sur la carte et ne l'y trouvait pas.
+
+   La cause n'était pas ici, dans le mécanisme d'affichage, mais AVANT lui : getProfile() de
+   config.js énumère ses colonnes une par une, et geoloc_consent_at n'a jamais rejoint la liste.
+   Le profil arrivait donc à l'écran sans cette clé — pas vide, ABSENTE. L'écran en concluait
+   qu'aucun accord n'avait été donné, ne démarrait jamais l'envoi, et redemandait l'accord à
+   chaque ouverture. Pour toujours.
+
+   Et les sept sections au-dessus sont restées vertes tout du long. Pourquoi ? Parce qu'elles
+   FABRIQUENT le profil : currentProfile: { geoloc_consent_at: accord }. Elles vérifient
+   admirablement ce que l'écran fait d'un accord, et ne se sont jamais demandé si cet accord
+   arrivait jusqu'à lui. Deux moitiés justes, chacune de son côté, et rien entre les deux.
+
+   C'est la leçon de la journée, la même que pour le lieu des colis : un banc d'essai qui pose
+   lui-même ce qu'il vient vérifier ne vérifie rien. Cette section-ci exécute donc la VRAIE
+   fonction de chargement, contre une fausse base qui se comporte comme la vraie — elle ne rend
+   que les colonnes qu'on lui a demandées, exactement comme PostgREST — et ce qui en sort est
+   ensuite branché sur l'écran, sans retouche.
+   ========================================================================================= */
+titre('L’accord donné hier doit encore être là ce matin');
+{
+  /* Une base de profils qui ne rend QUE les colonnes demandées. C'est tout l'enjeu : demander
+     « id, role » et recevoir la fiche entière serait une base complaisante, et un banc d'essai
+     sur une base complaisante ne détecte jamais une colonne oubliée. */
+  function faireBaseProfils(ligneEnBase){
+    const demandes = [];
+    const client = {
+      from(table){
+        return {
+          select(colonnes){
+            demandes.push({ table, colonnes });
+            const voulues = String(colonnes).split(',').map(s => s.trim()).filter(Boolean);
+            const rendu = {};
+            voulues.forEach(c => {
+              if (Object.prototype.hasOwnProperty.call(ligneEnBase, c)) rendu[c] = ligneEnBase[c];
+            });
+            const chaine = {
+              eq: () => chaine,
+              single: () => Promise.resolve({ data: rendu, error: null }),
+            };
+            return chaine;
+          },
+        };
+      },
+    };
+    return { client, demandes };
+  }
+
+  /* La fiche de Cedric telle qu'elle existe vraiment, accord compris. */
+  const ACCORD = '2026-08-25T07:57:04.676+00:00';
+  const FICHE_EN_BASE = {
+    id: 'liv-1', role: 'livreur', full_name: 'Cedric', company_name: null, phone: '0700000000',
+    status: 'actif', created_at: '2026-07-01T00:00:00Z', avatar_url: null,
+    commune_recuperation: null, adresse_recuperation: null,
+    acces_paie: false, acces_compta: false, acces_operations: false,
+    geoloc_consent_at: ACCORD,
+  };
+
+  const profils = faireBaseProfils(FICHE_EN_BASE);
+  const ctxProfil = vm.createContext({
+    console: { error(){}, log(){}, warn(){} },
+    supabaseClient: profils.client,
+  });
+  vm.runInContext(bloc('getProfile', config, 'config.js'), ctxProfil);
+  const profilCharge = await ctxProfil.getProfile('liv-1');
+
+  /* Garde-fou : sans lui, un chargement en échec rendrait null, et tous les contrôles suivants
+     annonceraient tranquillement « pas d'accord erroné » sur un profil qui n'existe pas. */
+  verifier('la vraie fonction de chargement rend bien un profil avant qu’on l’interroge',
+    !!profilCharge && profilCharge.id === 'liv-1',
+    JSON.stringify(profilCharge));
+
+  /* LE contrôle. Le 29 août il partait rouge, et il avait raison. */
+  verifier('le profil chargé porte la date d’accord de géolocalisation',
+    !!profilCharge && Object.prototype.hasOwnProperty.call(profilCharge, 'geoloc_consent_at')
+    && profilCharge.geoloc_consent_at === ACCORD,
+    'clés rendues : ' + Object.keys(profilCharge || {}).join(', '));
+
+  /* Ajouter une colonne ne doit rien coûter aux autres : l'écran de l'équipe, la paie et la
+     compta lisent ce même profil, et une clé perdue ici les éteindrait toutes en même temps. */
+  verifier('et il porte toujours ce qu’il portait avant : rôle, nom, droits',
+    !!profilCharge && profilCharge.role === 'livreur' && profilCharge.full_name === 'Cedric'
+    && Object.prototype.hasOwnProperty.call(profilCharge, 'acces_paie')
+    && Object.prototype.hasOwnProperty.call(profilCharge, 'acces_compta')
+    && Object.prototype.hasOwnProperty.call(profilCharge, 'acces_operations'),
+    Object.keys(profilCharge || {}).join(', '));
+
+  /* La liste reste explicite. Passer à « * » ferait passer les contrôles ci-dessus au vert pour
+     de mauvaises raisons, et ramènerait à chaque ouverture de page toutes les colonnes que la
+     table portera un jour, sensibles comprises. */
+  verifier('les colonnes restent nommées une par une, jamais une étoile',
+    profils.demandes.length === 1 && profils.demandes[0].table === 'profiles'
+    && !profils.demandes[0].colonnes.includes('*'),
+    JSON.stringify(profils.demandes));
+
+  /* ---------- Et maintenant les deux moitiés, branchées l'une sur l'autre ---------- */
+  const ecranReel = monterEcranLivreur({ colis: enLivraison, profil: profilCharge });
+  ecranReel.rafraichir();
+  verifier('le livreur qui a accepté hier ne revoit pas la demande ce matin',
+    ecranReel.ecran.els['geoloc-consent-card'].classList.contains('hidden'),
+    'la demande est réaffichée à quelqu’un qui a déjà dit oui');
+  verifier('et son téléphone démarre vraiment l’envoi de sa position',
+    ecranReel.suivis.length === 1,
+    'aucun suivi démarré : le bureau le chercherait sur la carte sans l’y trouver');
+
+  /* La porte doit rester fermée pour qui n'a jamais accepté : c'est le droit du livreur, et
+     c'est la loi n° 2013-450 que ce code cite lui-même. */
+  const ficheSansAccord = { ...FICHE_EN_BASE, geoloc_consent_at: null };
+  const profilsSansAccord = faireBaseProfils(ficheSansAccord);
+  const ctxSansAccord = vm.createContext({
+    console: { error(){}, log(){}, warn(){} },
+    supabaseClient: profilsSansAccord.client,
+  });
+  vm.runInContext(bloc('getProfile', config, 'config.js'), ctxSansAccord);
+  const profilSansAccord = await ctxSansAccord.getProfile('liv-1');
+  const ecranNeuf = monterEcranLivreur({ colis: enLivraison, profil: profilSansAccord });
+  ecranNeuf.rafraichir();
+  verifier('celui qui n’a jamais accepté voit bien la demande, et rien ne part de son téléphone',
+    !ecranNeuf.ecran.els['geoloc-consent-card'].classList.contains('hidden')
+    && ecranNeuf.suivis.length === 0,
+    'demande cachée ou envoi démarré sans accord');
 }
 
 /* ---------- Verdict ---------- */

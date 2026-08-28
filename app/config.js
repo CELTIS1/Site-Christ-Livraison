@@ -59,7 +59,19 @@ async function getProfile(userId) {
     // Colonnes explicites (plutôt que "*") : plus rapide et plus sûr si de nouvelles colonnes
     // (volumineuses ou sensibles) sont ajoutées un jour à la table, vu la fréquence d'appel
     // de cette fonction (à chaque chargement de page, sur les 3 tableaux de bord).
-    .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations")
+    //
+    // LE REVERS DE CETTE PRUDENCE, PAYÉ LE 29 AOÛT 2026
+    // -------------------------------------------------
+    // Une liste explicite protège de ce qu'on ajoute à la table sans y penser ; elle ne protège
+    // pas de ce qu'on oublie d'y inscrire. Quand la demande d'accord de géolocalisation est née,
+    // le 26 août, la colonne geoloc_consent_at n'a pas rejoint cette liste. Le profil arrivait
+    // donc à l'écran sans cette clé — pas vide : ABSENTE. Le téléphone du livreur en concluait
+    // que l'accord n'avait jamais été donné, redemandait l'accord à chaque ouverture, et ne
+    // démarrait jamais l'envoi de position. Cedric avait accepté le 25 août à 07:57 ; le
+    // 28 août au soir sa dernière position remontait à 84 heures et le bureau le cherchait sur
+    // la carte sans l'y trouver. Toute colonne qu'un écran DÉCIDE de lire doit figurer ici,
+    // sans quoi la décision se prend sur une valeur qui n'a jamais été chargée.
+    .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations, geoloc_consent_at")
     .eq("id", userId)
     .single();
   if (error) {
