@@ -2440,14 +2440,20 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
    accompli, et surtout pas l'ambre du hors-programme, qui appellerait une action là où il n'y
    en a plus aucune. Légèrement estompé : présent au compte, mais rien à décider dessus. */
 .tournee-carte--fait{border-left-color:#1e8f4e; opacity:.82;}
-/* La même marque, mais verte : « déjà récupéré » n'est pas un avertissement. */
-.tournee-marque--fait{color:#166534; background:#dcfce7;}
 
 .tournee-nom{font-weight:700; font-size:15px; color:var(--navy); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
 .tournee-marque{
   font-weight:600; font-size:11px; color:#b45309; background:#fef3c7;
   border-radius:var(--radius-pill); padding:2px 8px; white-space:nowrap;
 }
+/* La même marque, mais verte : « déjà récupéré » n'est pas un avertissement.
+   ÉCRITE APRÈS .tournee-marque, et pas avant. Les deux règles ont exactement le même poids
+   (une classe chacune), donc c'est la DERNIÈRE écrite qui gagne. Posée plus haut dans le
+   fichier le 28/08/2026, elle perdait en silence : la carte avait bien son trait vert, le
+   texte disait bien « déjà récupéré », et la pastille sortait ambre — la couleur qui veut
+   dire « il reste à faire » sur un travail terminé. Mesuré dans le navigateur :
+   fond rgb(254,243,199) au lieu de rgb(220,252,231). Ne pas remonter cette règle. */
+.tournee-marque--fait{color:#166534; background:#dcfce7;}
 .tournee-lieu{margin-top:4px; font-size:13px; color:var(--muted);}
 .tournee-note{margin-top:4px; font-size:13px; color:#b45309;}
 .tournee-compte{margin-top:8px; font-size:13.5px; color:var(--muted);}

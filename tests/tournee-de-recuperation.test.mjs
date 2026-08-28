@@ -928,6 +928,27 @@ verifier("sa carte est marquée « déjà récupéré », et pas « hors program
   // couleur, et on prendrait l'habitude de le desserrer — c'est ainsi qu'un contrôle meurt.
   /class="tournee-marque[^"]*">déjà récupéré</.test(replFait) && !/hors programme/.test(replFait),
   replFait.slice(0, 500));
+/* LA COULEUR, ET L'ORDRE D'ÉCRITURE. Le mot juste ne suffit pas : la pastille doit sortir verte.
+   Le 28/08/2026 elle sortait ambre en ligne — mesuré dans le navigateur, fond rgb(254,243,199)
+   au lieu de rgb(220,252,231) — parce que .tournee-marque--fait était écrite AVANT .tournee-marque
+   dans la feuille. Les deux règles pèsent pareil (une classe chacune), donc la dernière écrite
+   gagne, et l'ambre du « il reste à faire » repeignait un travail terminé. Aucun test ne l'avait
+   vu : ils cherchaient tous la règle, jamais sa place. On contrôle donc les deux — la règle
+   existe, ET elle est écrite après celle qu'elle doit couvrir. Idem pour le thème sombre. */
+verifier("la feuille de style colore vraiment le travail fini, en vert et non en ambre",
+  /\.tournee-carte--fait\s*\{[^}]*border-left-color\s*:\s*#1e8f4e/.test(feuilleStyle)
+  && /\.tournee-marque--fait\s*\{[^}]*background\s*:\s*#dcfce7/.test(feuilleStyle),
+  'une classe sans règle en face ne colore rien');
+verifier("et la pastille verte est écrite APRÈS l'ambre, sinon l'ambre gagne",
+  (() => {
+    const clair = (s) => feuilleStyle.indexOf(s);
+    const sombre = (s) => feuilleStyle.indexOf('html[data-theme="dark"] ' + s);
+    return clair('.tournee-marque--fait{') > clair('.tournee-marque{')
+      && clair('.tournee-marque{') !== -1
+      && sombre('.tournee-marque--fait{') > sombre('.tournee-marque{')
+      && sombre('.tournee-marque{') !== -1;
+  })(),
+  'même poids : c\'est l\'ordre d\'écriture qui tranche, et il est inversé');
 /* AUCUN ZÉRO FABRIQUÉ, ICI NON PLUS. « 0 à prendre » se lit comme un manque ; il n'y a pas de
    manque, il y a un travail fait. La carte dit ce qui a été pris, et rien d'autre. */
 verifier("elle annonce ce qui a été pris, sans écrire de zéro à prendre",
