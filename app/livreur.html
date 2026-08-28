@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828tournees1">
-<script src="theme.js?v=20260828tournees1"></script>
+<link rel="stylesheet" href="style.css?v=20260828rattachement1">
+<script src="theme.js?v=20260828rattachement1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -643,8 +643,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828tournees1"></script>
-<script src="config.js?v=20260828tournees1"></script>
+<script src="clt-common.js?v=20260828rattachement1"></script>
+<script src="config.js?v=20260828rattachement1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -2546,8 +2546,53 @@
      ========================================================================================== */
   let tourneeLignes = [];    // programmations_collecte du jour, telles que la base les rend
   let tourneeClientes = {};  // fiches des clientes concernées, par identifiant
+  let tourneeColis = [];     // les colis utiles au comptage, demandés à la base (voir ci-dessous)
   let tourneeErreur = '';
   let tourneeChargee = false;
+
+  /* POURQUOI CES COLIS SONT REDEMANDÉS À LA BASE, ET NON LUS DANS allColis. (28/08/2026)
+
+     allColis est un cache paginé : le navigateur ne détient au départ que les COLIS_PAGE_SIZE
+     colis les plus récents. Compter la tournée dedans, c'est accepter qu'un colis resté au-delà
+     de la première page fasse écrire « Rien à récupérer pour l'instant » chez une cliente qui a
+     pourtant de la marchandise prête. Un écran faux, et muet sur sa fausseté — le livreur ne
+     passe pas, et personne n'apprend pourquoi.
+
+     Ce piège n'est pas une hypothèse : il est écrit noir sur blanc dans equipe.html, au-dessus
+     de progColisPourLaTournee(), et l'écran du bureau l'évite depuis le premier jour en posant
+     une vraie requête. Cet écran-ci, lui, était tombé dedans. On pose donc ici la même requête,
+     avec le même découpage en deux questions — ce qui reste à prendre, et ce qui a déjà été
+     pris — restreinte aux colis confiés à CE livreur.
+
+     Deux requêtes et non une : « à prendre » ne connaît pas de date (un colis en attente depuis
+     avant-hier est toujours à prendre), tandis que « déjà pris » ne parle que de la journée
+     affichée. Les mélanger dans un seul filtre donnerait l'un ou l'autre, jamais les deux. */
+  async function chargerColisDeLaTournee(jour, fournisseurIds){
+    if (!jour || !fournisseurIds.length || !currentUser) return [];
+    const debut = jour + 'T00:00:00Z';
+    const fin   = jour + 'T23:59:59.999Z';
+    const base = () => supabaseClient
+      .from('colis')
+      .select('id, fournisseur_id, statut, recupere_at')
+      .eq('livreur_collecte_id', currentUser.id)
+      .in('fournisseur_id', fournisseurIds);
+
+    const [attente, pris] = await Promise.all([
+      base().eq('statut', 'en_attente'),
+      base().gte('recupere_at', debut).lte('recupere_at', fin),
+    ]);
+
+    // Une lecture en échec ne doit pas se transformer en « rien à récupérer » : on le fait
+    // remonter comme la tournée elle-même, pour que l'écran le dise au lieu de rassurer.
+    if (attente.error || pris.error) {
+      throw (attente.error || pris.error);
+    }
+    const parId = new Map();
+    [attente.data, pris.data].forEach(liste => {
+      (liste || []).forEach(c => { if (c && c.id) parId.set(c.id, c); });
+    });
+    return Array.from(parId.values());
+  }
 
   async function chargerMaTournee(){
     if (!currentUser) return;
@@ -2585,6 +2630,16 @@
       (fiches || []).forEach(f => { tourneeClientes[f.id] = f; });
     }
 
+    // Le comptage se fait sur une vraie requête, jamais sur le cache paginé : voir le
+    // commentaire au-dessus de chargerColisDeLaTournee(). Si elle échoue, on le DIT.
+    try {
+      tourneeColis = await chargerColisDeLaTournee(jour, ids);
+    } catch (e3) {
+      console.error(e3);
+      tourneeErreur = "Impossible de compter vos colis à récupérer. Prévenez le bureau avant de partir.";
+      tourneeColis = []; tourneeChargee = true; renderMaTournee(); return;
+    }
+
     tourneeChargee = true;
     renderMaTournee();
   }
@@ -2613,7 +2668,7 @@
       aujourdHui: jour,
       livreurId: currentUser.id,
       programmations: tourneeLignes,
-      colis: allColis.filter(c => c && c.livreur_collecte_id === currentUser.id),
+      colis: tourneeColis,
       cliente: tourneeFiche,
       livreurNom: () => (currentProfile && currentProfile.full_name) || 'Moi',
     });

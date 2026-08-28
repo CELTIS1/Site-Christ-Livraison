@@ -610,7 +610,17 @@ Object.assign(contexte, {
   cltPoserHTML: (box, html) => { poseLivreur = html; return true; },
   currentUser: { id: 'L1' },
   currentProfile: { full_name: 'Koffi' },
-  allColis: COLIS.map(c => Object.assign({ livreur_collecte_id: 'L1' }, c)),
+  // Ce que chargerColisDeLaTournee() rapporte de la base : les colis confiés à CE livreur,
+  // et non plus une tranche du cache paginé allColis (28/08/2026). On y laisse volontairement
+  // des colis de clientes qui ne sont pas dans SA tournée : c'est ainsi qu'on garde que le
+  // rapprochement se fait bien sur l'identifiant de la cliente, et pas sur ce qui traîne.
+  tourneeColis: COLIS.map(c => Object.assign({ livreur_collecte_id: 'L1' }, c)),
+  // Un piège, et il est délibéré. allColis est le cache paginé de l'écran ; on le laisse ici
+  // VIDE, c'est-à-dire dans l'état exact où il se trouve quand les colis de la cliente sont
+  // restés au-delà de la première page. Si quelqu'un rebranche un jour le comptage dessus,
+  // les contrôles de cette section diront « 0 à prendre » au lieu de « 2 » — en toutes
+  // lettres, et non par un plantage qu'il faudrait déchiffrer.
+  allColis: [],
   tourneeChargee: true,
   tourneeErreur: '',
   tourneeLignes: PROG.filter(p => p.jour === AUJ && p.livreur_id === 'L1'),
@@ -728,6 +738,126 @@ if (!fs.existsSync(cheminSQL)) {
   verifier("il porte sa vérification à lire après coup",
     /table_programmation_posee/.test(sql) && /rattachement_automatique_pose/.test(sql));
 }
+
+/* ==========================================================================================
+   L'AUTRE SENS : LA PROGRAMMATION ARRIVE APRÈS LES COLIS
+   ==========================================================================================
+   CE QUI A ÉTÉ VU SUR TÉLÉPHONE LE 28/08/2026. Le bureau programme Eric Zokou chez « Lash
+   with Reine » pour aujourd'hui. L'écran de l'équipe affiche « À prendre : 1 ». L'écran
+   d'Eric Zokou affiche « 0 colis à prendre » et lui écrit « Rien à récupérer pour l'instant
+   — appelez-la avant de passer. » Il y avait bien un colis prêt.
+
+   LA CAUSE. Le déclencheur du 27/08 est un BEFORE INSERT ON colis : il ne couvre que le sens
+   « colis créé APRÈS la programmation ». Or le sens normal du travail est l'inverse — la
+   cliente saisit dans la journée, le bureau programme le soir. Un colis qui attendait déjà
+   n'était donc rattaché à personne, et ne l'aurait jamais été.
+
+   CE QUI EST GARDÉ ICI. Le déclencheur symétrique, ses quatre garde-fous, et le rattrapage
+   des tournées déjà posées — sans lequel le script s'installerait sans rien réparer du
+   présent, ce qui est la pire façon d'avoir l'air d'avoir corrigé quelque chose. */
+titre('Quand la programmation arrive après les colis');
+
+const cheminSQL2 = path.join(RACINE, '_sql-prive', '2026-08-rattacher-les-colis-deja-la.sql');
+if (!fs.existsSync(cheminSQL2)) {
+  console.log('  ⏭️  Le script SQL n\'est pas dans cette copie (dossier privé) — contrôles sautés.');
+} else {
+  const sql2 = sansCommentairesSQL(fs.readFileSync(cheminSQL2, 'utf8'));
+
+  verifier("le déclencheur symétrique existe, sur la table des programmations",
+    /create trigger trg_programmation_rattache_colis[\s\S]*?on public\.programmations_collecte/.test(sql2));
+  // APRÈS et non AVANT : la ligne doit exister en base pour que le rattachement ait un sens,
+  // et l'on ne veut pas rattacher des colis à une écriture qui serait ensuite refusée.
+  verifier("il agit APRÈS l'écriture, à la pose comme à la correction",
+    /after insert or update of jour, fournisseur_id, livreur_id/.test(sql2));
+
+  verifier("il ne déplace que ce qui reste à prendre",
+    /update public\.colis[\s\S]*?c\.statut = 'en_attente'/.test(sql2),
+    'un colis déjà récupéré ou livré changerait de mains, et l\u2019argent du soir avec');
+
+  // Le pendant exact de la règle du 27/08 : « un choix explicite l'emporte toujours ». Mais
+  // quand le bureau REMPLACE Eric par Koffi, les colis qui portaient Eric parce que la
+  // programmation le disait doivent suivre — sinon Koffi voit une cliente et aucun colis, et
+  // l'on retombe très exactement dans le défaut réparé ici.
+  verifier("il ne touche pas à un livreur choisi à la main",
+    /c\.livreur_collecte_id is null/.test(sql2));
+  verifier("mais les colis suivent quand on remplace le livreur d'une tournée",
+    /tg_op = 'UPDATE' and c\.livreur_collecte_id = old\.livreur_id/.test(sql2),
+    'le nouveau livreur verrait la cliente sans voir ses colis');
+
+  verifier("une journée passée ne commande plus rien",
+    /if new\.jour < v_aujourdhui then\s+return new;\s+end if;/.test(sql2),
+    'corriger la tournée d\u2019avant-hier enverrait les colis d\u2019aujourd\u2019hui à un livreur rentré chez lui');
+
+  verifier("c'est la tournée la plus proche qui prend les colis en attente",
+    /p\.jour >= v_aujourdhui\s+and p\.jour < new\.jour[\s\S]*?return new;/.test(sql2),
+    'écrire la tournée de demain viderait celle d\u2019aujourd\u2019hui');
+
+  verifier("il est en security definer, comme son jumeau",
+    /function public\.programmation_rattache_colis_existants\(\)[\s\S]*?security definer/.test(sql2));
+  verifier("son chemin de recherche est figé",
+    /programmation_rattache_colis_existants[\s\S]*?set search_path = public/.test(sql2));
+  verifier("la journée est calculée en UTC, jamais avec current_date nu",
+    !/\bcurrent_date\b/.test(sql2) && /now\(\) at time zone 'UTC'/.test(sql2));
+
+  // Un déclencheur ne regarde que l'avenir. Sans ce rattrapage, le script s'installerait
+  // proprement et la tournée d'aujourd'hui resterait fausse — on aurait publié une correction
+  // qui ne corrige rien de ce qui a été signalé.
+  verifier("les tournées déjà posées sont rattrapées, celle d'aujourd'hui comprise",
+    /with tournee_la_plus_proche as \([\s\S]*?distinct on \(p\.fournisseur_id\)[\s\S]*?update public\.colis/.test(sql2));
+  verifier("le rattrapage applique la même règle du plus proche jour",
+    /order by p\.fournisseur_id, p\.jour\s*\)/.test(sql2));
+  verifier("le rattrapage ne défait aucune assignation faite à la main",
+    /from tournee_la_plus_proche t[\s\S]*?c\.livreur_collecte_id is null;/.test(sql2));
+
+  verifier("le script est rejouable sans risque",
+    /drop trigger if exists trg_programmation_rattache_colis/.test(sql2)
+    && /create or replace function public\.programmation_rattache_colis_existants/.test(sql2));
+  verifier("il refuse de s'exécuter si la table des programmations manque",
+    /to_regclass\('public\.programmations_collecte'\) is null/.test(sql2));
+  // Une vérification qui ne dit que « le déclencheur est posé » ne répond pas à la question
+  // qu'on se pose en sortant : est-ce que le défaut du jour est réparé ?
+  verifier("sa vérification compte ce qui reste orphelin, pas seulement ce qui est installé",
+    /colis_orphelins_chez_une_cliente_programmee/.test(sql2)
+    && /ce_que_chaque_livreur_verra_aujourdhui/.test(sql2));
+}
+
+/* ==========================================================================================
+   L'ÉCRAN DU LIVREUR NE COMPTE PLUS DANS UN CACHE PAGINÉ
+   ==========================================================================================
+   allColis ne détient que les COLIS_PAGE_SIZE colis les plus récents. Compter la tournée
+   dedans, c'est accepter qu'un colis resté au-delà de la première page fasse écrire « Rien à
+   récupérer pour l'instant » chez une cliente qui a de la marchandise prête. Le piège est
+   décrit noir sur blanc dans equipe.html, au-dessus de progColisPourLaTournee(), et l'écran
+   du bureau l'évite depuis le premier jour. L'écran du livreur, lui, était tombé dedans. */
+titre('Le comptage du livreur repose sur une vraie lecture');
+
+const appelTournee = (livreur.match(/tourneesDeRecuperation\(\{[\s\S]*?\}\);/) || [''])[0];
+verifier("l'écran du livreur ne compte plus dans son cache paginé",
+  appelTournee !== '' && !/allColis/.test(appelTournee),
+  appelTournee);
+verifier("il compte sur des colis demandés à la base pour cela",
+  /colis:\s*tourneeColis/.test(appelTournee), appelTournee);
+
+const lecture = blocDe(livreur, 'chargerColisDeLaTournee', 'livreur.html');
+verifier("cette lecture ne demande que les colis confiés à CE livreur",
+  /\.eq\('livreur_collecte_id', currentUser\.id\)/.test(lecture),
+  'sans ce filtre, la base refuserait ou l\u2019écran montrerait le travail d\u2019un autre');
+// Deux questions différentes : « à prendre » ignore la date, « déjà pris » ne parle que du
+// jour. Un seul filtre donnerait l'une ou l'autre, jamais les deux.
+verifier("elle pose bien les deux questions, celle du reste et celle du jour",
+  /\.eq\('statut', 'en_attente'\)/.test(lecture)
+  && /\.gte\('recupere_at', debut\)[\s\S]*?\.lte\('recupere_at', fin\)/.test(lecture),
+  lecture.slice(0, 400));
+verifier("les deux réponses sont fusionnées sans doublon",
+  /new Map\(\)/.test(lecture) && /parId\.set\(c\.id, c\)/.test(lecture));
+// La règle de la maison : une lecture qui échoue ne se lit JAMAIS « je n'ai rien à faire ».
+verifier("une lecture en échec est signalée, pas transformée en journée vide",
+  /throw \(attente\.error \|\| pris\.error\)/.test(lecture),
+  'l\u2019écran afficherait « rien à récupérer » alors qu\u2019il n\u2019a rien pu lire');
+const chargement = blocDe(livreur, 'chargerMaTournee', 'livreur.html');
+verifier("et l'écran dit alors de prévenir le bureau avant de partir",
+  /Impossible de compter vos colis[\s\S]*?Prévenez le bureau avant de partir/.test(chargement),
+  chargement.slice(-700));
 
 /* ---------- Verdict ---------- */
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
