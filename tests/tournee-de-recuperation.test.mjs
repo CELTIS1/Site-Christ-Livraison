@@ -96,6 +96,28 @@ function blocPolitique(sql, nom){
 /* ---------- Le bac à sable ---------- */
 const contexte = vm.createContext({ console, encodeURIComponent, Set, Map, Number, String, Object, JSON });
 
+/* ---------- L'horloge, figée au jeudi 27 août 2026 ----------
+   Le décor ci-dessous se joue un jour précis, et deux des fonctions mesurées ne prennent PAS
+   la date en paramètre : renderProgrammationBody() et renderMaTournee() vont la chercher
+   elles-mêmes par aujourdhuiAbidjan(), c'est-à-dire par l'horloge de la machine. Sans ce
+   gel, la série disait vrai le 27 août et faux le 28 : le lendemain, la « journée pas encore
+   arrivée » du décor était devenue aujourd'hui, l'écran affichait ses comptages réels au lieu
+   d'annoncer « à venir », et trois contrôles passaient au rouge sans qu'une seule ligne du
+   site ait bougé. (constaté le 28/08/2026, au premier rejeu du lendemain)
+
+   Le gel se pose DANS le contexte vm et pas seulement ici : un contexte a ses propres
+   intrinsèques, donc son propre Date, qu'un globalThis.Date du realm principal ne touche pas.
+   Le décor, lui, n'utilise aucune date d'horloge — il écrit ses journées en toutes lettres —
+   si bien qu'il n'y a rien à figer de ce côté. */
+const INSTANT_FIGE = Date.UTC(2026, 7, 27, 10, 0, 0); // jeudi 27 août 2026, 10 h à Abidjan
+vm.runInContext(
+  'globalThis.Date = class extends Date {' +
+  '  constructor(...a){ if (a.length === 0) super(' + INSTANT_FIGE + '); else super(...a); }' +
+  '  static now(){ return ' + INSTANT_FIGE + '; }' +
+  '};',
+  contexte
+);
+
 vm.runInContext([
   'jourAbidjan', 'aujourdhuiAbidjan', 'jourEvenementColis',
   'rangDeLaJournee', 'tourneesDeRecuperation',
@@ -127,6 +149,19 @@ const {
    posée sur le lendemain pour vérifier qu'elle ne déborde pas sur aujourd'hui. */
 const AUJ = '2026-08-27';
 const DEMAIN = '2026-08-28';
+
+/* Le gel de l'horloge et le décor doivent parler du même jour. S'ils se séparent — parce
+   qu'on aura déplacé AUJ sans toucher à INSTANT_FIGE, ou l'inverse — la série se mettrait à
+   mesurer autre chose que ce qu'elle annonce, en restant plausible. On préfère qu'elle
+   s'arrête net et qu'elle dise pourquoi. */
+const jourVuParLeCode = vm.runInContext('aujourdhuiAbidjan()', contexte);
+if (jourVuParLeCode !== AUJ) {
+  console.error(
+    `Le décor se joue le ${AUJ}, mais l'horloge figée du bac à sable annonce ` +
+    `le ${jourVuParLeCode}. Réglez INSTANT_FIGE sur la même journée qu'AUJ.`
+  );
+  process.exit(1);
+}
 
 const CLIENTES = {
   F1: { nom: 'Awa Boutique',   commune: 'Yopougon', adresse: 'Rue des Jardins', telephone: '0700000001' },
