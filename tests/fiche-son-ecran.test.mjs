@@ -572,6 +572,51 @@ verifier("sur un petit écran, la fiche prend toute la place",
   /@media[^{]*640px[\s\S]{0,600}\.fiche-ecran/.test(styles),
   "elle se consulte surtout debout, sur un téléphone");
 
+/* ============================================================================================
+   8. LES QUATRE TUILES DE LA TOURNÉE : LE MOT DOIT DIRE CE QU'IL COMPTE
+   ============================================================================================
+   Le 28 août 2026, l'écran d'Eric Zokou affichait « 0 À récupérer » en haut, et deux colis
+   « En attente » quatre cents pixels plus bas. Aucun des deux chiffres n'était faux. Le mot
+   mentait : ces tuiles comptent les colis que le livreur doit LIVRER (colis.livreur_id), tandis
+   que l'onglet Récupérations, sur le même écran, compte ceux qu'il doit aller CHERCHER
+   (colis.livreur_collecte_id). Le verbe « récupérer » appartient à la tournée de collecte, et
+   à elle seule. Les contrôles ci-dessous gardent cette frontière : ils ne vérifient pas une
+   jolie formule, ils vérifient qu'un même mot ne désigne plus deux ensembles différents. */
+titre("Les tuiles de la tournée nomment ce qu'elles comptent, et rien d'autre");
+
+const tuilesTournee = contexte.tourneeTuilesHTML([
+  { statut: 'en_attente' }, { statut: 'en_attente' },
+  { statut: 'recupere' }, { statut: 'en_livraison' },
+  { statut: 'livre' }, { statut: 'livre' }, { statut: 'livre' },
+  { statut: 'non_livre' },
+]);
+
+verifier("la première tuile dit « Pas encore pris », le mot de la livraison",
+  /Pas encore pris/.test(tuilesTournee), tuilesTournee);
+
+verifier("aucune tuile de livraison n'emploie le verbe « récupérer »",
+  !/récupér/i.test(tuilesTournee),
+  "ce verbe appartient à la tournée de collecte ; partagé, il fait dire à un écran deux choses à la fois");
+
+verifier("les quatre tuiles comptent juste sur ce décor",
+  />2<\/div>[\s\S]*Pas encore pris/.test(tuilesTournee)
+  && />2<\/div>[\s\S]*En cours/.test(tuilesTournee)
+  && />3<\/div>[\s\S]*Livrés/.test(tuilesTournee)
+  && />1<\/div>[\s\S]*Non livrés/.test(tuilesTournee),
+  tuilesTournee);
+
+// Le mot n'est pas seul en cause : la tuile lit une chose, la liste du dessous en lit une autre.
+// Ce contrôle garde la raison même du malentendu, pour que la prochaine personne qui touche à
+// l'un des deux écrans sache qu'il y a bien DEUX colonnes de livreur, et pourquoi.
+verifier("les tuiles du livreur portent bien sur ses colis à LIVRER",
+  /livreur_id/.test(sansCommentaires(blocDe(livreur, 'renderTourneeSummary', 'livreur.html')))
+  && !/livreur_collecte_id/.test(sansCommentaires(blocDe(livreur, 'renderTourneeSummary', 'livreur.html'))),
+  "si elles se mettaient à lire livreur_collecte_id, elles compteraient la collecte deux fois et la livraison zéro");
+
+verifier("la liste des récupérations, elle, porte sur ses colis à CHERCHER",
+  /livreur_collecte_id/.test(sansCommentaires(blocDe(livreur, 'mesRecuperationsList', 'livreur.html'))),
+  "c'est l'autre colonne, et c'est tout le sujet de cette section");
+
 /* ============================================================================================ */
 console.log('\n———');
 console.log(`${reussies} vérifications réussies, ${echouees} échouées`);

@@ -333,6 +333,120 @@ verifier("un livreur sans nom retombe sur « Livreur », pas sur un identifiant 
   inconnue.lignes[0].livreurNom === 'Livreur', inconnue.lignes[0].livreurNom);
 
 /* ==========================================================================================
+   6 bis. LES CLIENTES HORS PROGRAMME
+   ==========================================================================================
+   Le 28 août 2026, l'écran d'Eric Zokou annonçait « TOTAL · 1 cliente à visiter » alors que
+   deux clientes l'attendaient. La seconde, Everythingfromlondon2, avait un colis prêt et
+   confié à Eric pour la collecte, mais aucune programmation ne la portait CE jour-là : la
+   récupération traînait depuis la veille. Elle n'existait donc ni dans sa tournée, ni dans son
+   total — et un total qui compte moins que le travail réel est plus dangereux qu'un total
+   absent, parce qu'on s'y fie. Les contrôles ci-dessous gardent quatre choses : qu'elle entre,
+   qu'elle est signalée, qu'elle compte dans le TOTAL, et qu'elle n'entre PAS par défaut. */
+titre("La récupération restée en plan d'hier ne disparaît pas de la tournée");
+
+const CLIENTES_HP = Object.assign({
+  F4: { nom: 'Everythingfromlondon2', commune: 'Cocody',  adresse: 'Angré',    telephone: '0700000004' },
+  F5: { nom: 'Déjà Tout Ramassé',     commune: 'Marcory', adresse: 'Remblais', telephone: '0700000005' },
+  F6: { nom: 'Cliente d\'Aya',        commune: 'Abobo',   adresse: '',         telephone: '' },
+}, CLIENTES);
+const annuaireHP = (id) => CLIENTES_HP[id] || {};
+
+const COLIS_HP = COLIS.concat([
+  // F4 : deux colis en attente, confiés à Koffi pour la collecte, et AUCUNE programmation
+  // aujourd'hui. C'est le cas exact d'Eric Zokou : celui qu'il ne faut surtout pas oublier.
+  { id: 'H1', fournisseur_id: 'F4', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1' },
+  { id: 'H2', fournisseur_id: 'F4', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1' },
+  // F5 : tout a déjà été ramassé chez elle. Plus rien ne l'attend, elle n'a donc rien à faire
+  // dans une tournée où personne ne l'a programmée — la faire entrer serait un détour pour rien.
+  { id: 'H3', fournisseur_id: 'F5', statut: 'en_cours', recupere_at: AUJ + 'T07:00:00.000Z', livreur_collecte_id: 'L1' },
+  // F6 : un colis bien en attente, mais confié à AYA. Chez Koffi, il n'existe pas.
+  { id: 'H4', fournisseur_id: 'F6', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L2' },
+]);
+
+const avecHP = tourneesDeRecuperation({
+  jour: AUJ, aujourdHui: AUJ, livreurId: 'L1', programmations: PROG, colis: COLIS_HP,
+  cliente: annuaireHP, livreurNom: nomLivreur, horsProgramme: true,
+});
+const ligneHP = avecHP.lignes.find(l => l.fournisseurId === 'F4');
+
+verifier("la cliente restée d'hier entre dans la tournée",
+  !!ligneHP, avecHP.lignes.map(l => l.clienteNom).join(', '));
+verifier("et elle est marquée « hors programme », pour qu'il l'appelle avant de passer",
+  !!ligneHP && ligneHP.horsProgramme === true,
+  'sans cette marque, elle se lirait comme un rendez-vous posé par le bureau');
+verifier("ses deux colis sont comptés", !!ligneHP && ligneHP.nbAPrendre === 2,
+  ligneHP && String(ligneHP.nbAPrendre));
+verifier("sa fiche est complète : elle n'arrive pas en « Cliente inconnue »",
+  !!ligneHP && ligneHP.clienteNom === 'Everythingfromlondon2' && ligneHP.telephone === '0700000004',
+  'un nom vide et pas de numéro, c\'est une cliente chez qui on ne peut pas aller');
+verifier("elle n'est jamais annoncée « rien à récupérer » : c'est justement l'inverse",
+  !!ligneHP && ligneHP.rienARecuperer === false);
+
+verifier("une cliente chez qui tout a déjà été ramassé n'encombre pas la tournée",
+  !avecHP.lignes.some(l => l.fournisseurId === 'F5'),
+  'un détour proposé chez une cliente qui n\'a plus rien à donner');
+verifier("le colis confié à Aya reste chez Aya",
+  !avecHP.lignes.some(l => l.fournisseurId === 'F6'),
+  'Koffi traverserait Abidjan pour une cliente qui attend quelqu\'un d\'autre');
+verifier("un colis sans récupérateur désigné n'entre chez personne",
+  !avecHP.lignes.some(l => l.fournisseurId === 'F9'),
+  'le bureau ne l\'a confié à aucun livreur ; l\'attribuer d\'office, c\'est décider à sa place');
+
+// LE POINT FINANCIER, ET C'EST LE PLUS IMPORTANT : le TOTAL doit dire le travail RÉEL.
+verifier("le TOTAL compte la cliente hors programme avec les autres",
+  avecHP.total.nbClientes === 3, String(avecHP.total.nbClientes));
+verifier("et il additionne ses colis avec les autres",
+  avecHP.total.nbAPrendre === 4, String(avecHP.total.nbAPrendre));
+verifier("le déjà-pris n'est pas gonflé au passage",
+  avecHP.total.nbDejaPris === 1, String(avecHP.total.nbDejaPris));
+verifier("le total dit combien de clientes sont hors programme",
+  avecHP.total.nbHorsProgramme === 1, String(avecHP.total.nbHorsProgramme));
+verifier("le TOTAL vaut exactement la somme des lignes affichées, sans exception",
+  avecHP.total.nbAPrendre === avecHP.lignes.reduce((s, l) => s + l.nbAPrendre, 0)
+  && avecHP.total.nbDejaPris === avecHP.lignes.reduce((s, l) => s + l.nbDejaPris, 0)
+  && avecHP.total.nbClientes === avecHP.lignes.length,
+  'un total qui ne vaut pas la somme de ce qu\'on voit est un total auquel on ne peut plus croire');
+
+/* Et maintenant l'autre moitié du contrat : hors programme est une OPTION. L'écran du bureau
+   ne demande à la base que les colis des clientes programmées ; s'il posait la question sans
+   avoir les autres colis en main, il obtiendrait zéro ligne hors programme et cette absence se
+   lirait « il n'y en a pas ». Mieux vaut qu'il ne pose pas la question. */
+const sansHP = tourneesDeRecuperation({
+  jour: AUJ, aujourdHui: AUJ, livreurId: 'L1', programmations: PROG, colis: COLIS_HP,
+  cliente: annuaireHP, livreurNom: nomLivreur,
+});
+verifier("sans l'option, la tournée reste exactement celle du programme",
+  sansHP.lignes.length === 2 && !sansHP.lignes.some(l => l.horsProgramme),
+  sansHP.lignes.map(l => l.clienteNom).join(', '));
+verifier("et son total ne bouge pas d'un colis",
+  sansHP.total.nbAPrendre === 2 && sansHP.total.nbHorsProgramme === 0,
+  sansHP.total.nbAPrendre + ' / ' + sansHP.total.nbHorsProgramme);
+
+verifier("l'écran du livreur, lui, demande bien les clientes hors programme",
+  /horsProgramme:\s*true/.test(corpsLivreur),
+  'sans cette option, son TOTAL annoncerait moins de travail qu\'il n\'en a — le défaut du 28/08/2026');
+verifier("l'écran du bureau ne la demande pas, faute d'avoir les colis pour y répondre",
+  !/horsProgramme:\s*true/.test(corpsEquipe),
+  'il afficherait zéro cliente hors programme, et ce zéro se lirait « il n\'y en a pas »');
+
+// Une journée à venir ne sait rien des colis : elle ne peut pas inventer de hors-programme.
+verifier("demain, aucune cliente hors programme n'est inventée",
+  tourneesDeRecuperation({
+    jour: DEMAIN, aujourdHui: AUJ, livreurId: 'L1', programmations: PROG, colis: COLIS_HP,
+    cliente: annuaireHP, livreurNom: nomLivreur, horsProgramme: true,
+  }).total.nbHorsProgramme === 0,
+  'les colis d\'aujourd\'hui ne préjugent en rien de ce qui traînera demain matin');
+
+// La requête du livreur ne doit plus se restreindre aux clientes programmées : c'est elle qui
+// rapporte le colis resté en plan. Un « .in(fournisseur_id, …) » ici le rendrait invisible.
+const requeteColis = sansCommentaires(blocDe(livreur, 'chargerColisDeLaTournee', 'livreur.html'));
+verifier("la requête du livreur ne se limite plus aux clientes du programme",
+  !/\.in\(\s*['"]fournisseur_id['"]/.test(requeteColis),
+  'la cliente hors programme ne serait jamais rapportée par la base, et rien ne le dirait');
+verifier("elle demande les colis dont IL est le récupérateur",
+  /\.eq\(\s*['"]livreur_collecte_id['"]/.test(requeteColis));
+
+/* ==========================================================================================
    7. RIEN NE S'ÉCRIT SANS JOUR, CLIENTE ET LIVREUR
    ========================================================================================== */
 titre("Ce qui part vers la base quand on ajoute une cliente");
@@ -611,10 +725,20 @@ Object.assign(contexte, {
   currentUser: { id: 'L1' },
   currentProfile: { full_name: 'Koffi' },
   // Ce que chargerColisDeLaTournee() rapporte de la base : les colis confiés à CE livreur,
-  // et non plus une tranche du cache paginé allColis (28/08/2026). On y laisse volontairement
-  // des colis de clientes qui ne sont pas dans SA tournée : c'est ainsi qu'on garde que le
-  // rapprochement se fait bien sur l'identifiant de la cliente, et pas sur ce qui traîne.
-  tourneeColis: COLIS.map(c => Object.assign({ livreur_collecte_id: 'L1' }, c)),
+  // et non plus une tranche du cache paginé allColis (28/08/2026).
+  //
+  // Le piège est resté, mais il a changé de forme le 28/08/2026. Il consistait à laisser des
+  // colis de clientes hors tournée avec livreur_collecte_id = 'L1' : leur absence de l'écran
+  // prouvait que le rapprochement se faisait sur la cliente. Depuis que les clientes hors
+  // programme entrent dans la tournée, ces colis-là DOIVENT au contraire s'afficher — c'est
+  // tout l'objet de la section suivante. Le piège porte donc désormais sur le livreur : les
+  // colis de Céline (F3) et de la cliente inconnue (F9) sont confiés à AYA pour la collecte.
+  // Ils sont dans le décor, ils sont en attente, et ils ne doivent apparaître nulle part chez
+  // Koffi. Un jour où le filtre par livreur sauterait, ils enverraient Koffi à l'autre bout
+  // d'Abidjan chez une cliente qui attend quelqu'un d'autre.
+  tourneeColis: COLIS.map(c => Object.assign({}, c, {
+    livreur_collecte_id: (c.fournisseur_id === 'F1' || c.fournisseur_id === 'F2') ? 'L1' : 'L2',
+  })),
   // Un piège, et il est délibéré. allColis est le cache paginé de l'écran ; on le laisse ici
   // VIDE, c'est-à-dire dans l'état exact où il se trouve quand les colis de la cliente sont
   // restés au-delà de la première page. Si quelqu'un rebranche un jour le comptage dessus,
@@ -649,12 +773,54 @@ verifier("la cliente sans rien reste affichée, et c'est dit",
   /Rien à récupérer pour l'instant/.test(poseLivreur));
 verifier("sa carte porte son total", /TOTAL/.test(poseLivreur) && /2<\/strong> clientes à visiter/.test(poseLivreur));
 
+/* Et sur le téléphone, la cliente restée d'hier. Les contrôles de la section 6 bis prouvent
+   qu'elle est CALCULÉE ; ceux-ci prouvent qu'elle est VUE — et vue comme une exception, pas
+   comme un rendez-vous que le bureau aurait posé. C'est la différence entre un livreur qui
+   appelle avant de faire le détour et un livreur qui part en confiance. */
+titre("La cliente restée d'hier, telle qu'elle apparaît sur le téléphone");
+contexte.tourneeClientes = Object.assign({}, contexte.tourneeClientes, {
+  F4: { id: 'F4', company_name: 'Everythingfromlondon2', phone: '0700000004', commune_recuperation: 'Cocody', adresse_recuperation: 'Angré' },
+});
+contexte.tourneeColis = contexte.tourneeColis.concat([
+  { id: 'H1', fournisseur_id: 'F4', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1' },
+]);
+poseLivreur = '';
+renderMaTournee();
+
+verifier("elle apparaît sur l'écran, avec son nom",
+  /Everythingfromlondon2/.test(poseLivreur), poseLivreur);
+verifier("son numéro est là : c'est par lui que le détour se décide",
+  /href="tel:0700000004"/.test(poseLivreur));
+verifier("la mention « hors programme » est écrite en toutes lettres sur sa carte",
+  /Everythingfromlondon2[\s\S]{0,200}hors programme/.test(poseLivreur),
+  'rien ne distinguerait une récupération traînante d\'un rendez-vous posé par le bureau');
+verifier("sa carte ne porte pas la même bordure que les autres",
+  /#d97706/.test(poseLivreur),
+  'la couleur se voit d\'un coup d\'œil là où un mot se lit');
+verifier("le TOTAL du téléphone la compte, elle et son colis",
+  /<strong>3<\/strong> cliente/.test(poseLivreur) && /<strong>3<\/strong> colis à prendre/.test(poseLivreur),
+  poseLivreur.slice(poseLivreur.indexOf('TOTAL')));
+verifier("et l'écran dit combien elles sont hors programme, et pourquoi appeler avant",
+  /Dont <strong>1<\/strong> cliente hors programme/.test(poseLivreur)
+  && /Appelez avant de passer/.test(poseLivreur),
+  'un chiffre dans le total sans explication au-dessous se lit comme une erreur d\'affichage');
+
 titre("Un matin sans tournée, et un matin où la lecture échoue");
+// On vide les DEUX : le programme du jour ET les colis confiés. Vider le seul programme ne
+// ferait plus un matin vide depuis le 28/08/2026 — les colis en attente de Koffi entreraient
+// hors programme, et ils auraient raison de le faire. Un matin vide, c'est un matin où le
+// bureau n'a rien posé ET où rien ne l'attend nulle part.
 contexte.tourneeLignes = [];
+contexte.tourneeColis = [];
 poseLivreur = '';
 renderMaTournee();
 verifier("aucune tournée se lit clairement, sans laisser croire à une panne",
-  /Aucune récupération programmée pour vous/.test(poseLivreur), poseLivreur);
+  /Aucune récupération à faire pour vous/.test(poseLivreur), poseLivreur);
+// Le mot « programmée » seul ne suffit plus : un livreur qui lirait « aucune récupération
+// programmée » alors qu'un colis l'attend chez une cliente hors programme croirait sa journée
+// finie. Le message doit fermer les deux portes, celle du programme et celle de la veille.
+verifier("et ce message ferme aussi la porte des récupérations restées d'hier",
+  /ni programmée, ni restée d'hier/.test(poseLivreur), poseLivreur);
 
 // Le message n'est pas réinventé ici : on prend celui que la page écrira pour de vrai. Un
 // banc d'essai qui invente son propre message vérifie sa propre invention, et laisserait

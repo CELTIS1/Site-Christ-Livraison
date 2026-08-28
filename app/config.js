@@ -3617,13 +3617,24 @@ function releveClienteTuilesHTML(colis) {
       </div>`).join('');
 }
 
-// Les tuiles de tournée : combien de colis à récupérer, en cours, livrés, non livrés.
+// Les tuiles de tournée : où en sont les colis DE LIVRAISON d'un livreur, par état.
 // Le livreur les voit en haut de « Mes colis » ; l'équipe les voit dans sa fiche d'aperçu.
+//
+// LA PREMIÈRE TUILE S'APPELAIT « À récupérer ». (28/08/2026) Ce mot a été retiré, et voici
+// pourquoi. Les quatre tuiles décrivent les colis assignés à ce livreur pour la LIVRAISON
+// (colis.livreur_id) : elles répondent à « où en est ma journée ». Or, quatre cents pixels
+// plus bas sur le même écran, l'onglet Récupérations compte tout autre chose — les colis
+// que ce livreur doit aller CHERCHER chez les clientes (colis.livreur_collecte_id). Le même
+// mot désignait donc deux ensembles différents sur un seul écran, et le résultat s'est vu
+// sur le téléphone d'Eric Zokou : « 0 À récupérer » en haut, deux colis en attente juste
+// dessous. Aucun des deux chiffres n'était faux ; c'est le mot qui mentait.
+// « Pas encore pris » dit exactement ce que compte la tuile, et laisse le verbe récupérer
+// à la tournée de collecte, qui est la seule à en avoir besoin.
 function tourneeTuilesHTML(colis) {
   const liste = colis || [];
   const n = s => liste.filter(c => c.statut === s).length;
   return [
-    { label: 'À récupérer', count: n('en_attente'), color: STATUTS.en_attente.color, bg: STATUTS.en_attente.bg },
+    { label: 'Pas encore pris', count: n('en_attente'), color: STATUTS.en_attente.color, bg: STATUTS.en_attente.bg },
     { label: 'En cours',    count: n('recupere') + n('en_livraison'), color: STATUTS.en_livraison.color, bg: STATUTS.en_livraison.bg },
     { label: 'Livrés',      count: n('livre'), color: STATUTS.livre.color, bg: STATUTS.livre.bg },
     { label: 'Non livrés',  count: n('non_livre'), color: STATUTS.non_livre.color, bg: STATUTS.non_livre.bg },
@@ -4151,6 +4162,7 @@ function rangDeLaJournee(jour, aujourdHui) {
      livreurId       si fourni, on ne garde que les tournées de ce livreur-là
      cliente(id)     renvoie { nom, commune, adresse, telephone } — l'annuaire de l'écran
      livreurNom(id)  renvoie le nom du livreur
+     horsProgramme   voir la section du même nom plus bas ; faux par défaut
      aujourdHui      pour les bancs d'essai, qui ne peuvent pas attendre demain pour vérifier
 
    Sortie : { jour, rang, colisConnus, lignes, total }. Le total est là sans condition : un
@@ -4198,8 +4210,69 @@ function tourneesDeRecuperation(options) {
       idsAPrendre: aPrendre.map(function (c) { return c.id; }),
       // Vrai seulement quand on SAIT qu'il n'y a rien : une journée à venir ne sait rien.
       rienARecuperer: colisConnus && aPrendre.length === 0 && dejaPris.length === 0,
+      horsProgramme: false,
     };
   });
+
+  /* LES CLIENTES HORS PROGRAMME. (28/08/2026)
+
+     Une récupération qui traîne d'un jour sur l'autre — la cliente n'était pas là, le livreur
+     n'a pas eu le temps de passer — reste confiée à ce livreur (colis.livreur_collecte_id)
+     sans qu'aucune programmation ne la porte AUJOURD'HUI. Elle disparaissait donc de la
+     tournée, et le TOTAL annonçait « 1 cliente à visiter » à un livreur qui en avait deux.
+     Constaté le 28/08/2026 sur le téléphone d'Eric Zokou : Everythingfromlondon2 l'attendait
+     avec un colis prêt, il avait déjà appuyé sur « Je pars » pour elle, et le total de sa
+     tournée l'ignorait. Un TOTAL qui compte moins que le travail réel est plus dangereux
+     qu'un total absent : celui-là, on s'y fie.
+
+     C'EST UNE OPTION, ET NON LE COMPORTEMENT PAR DÉFAUT. L'écran du bureau ne demande à la
+     base que les colis des clientes PROGRAMMÉES : lui poser la question sans lui avoir donné
+     les autres colis ferait naître zéro ligne hors programme, et cette absence se lirait
+     « il n'y en a pas ». Mieux vaut que le bureau ne pose pas la question tant qu'il ne peut
+     pas y répondre.
+
+     Le filtre sur livreurId est refait ici alors que l'appelant l'a déjà posé dans sa requête.
+     Ce n'est pas de la méfiance envers l'écran d'aujourd'hui, c'est une garantie pour celui de
+     demain : une ligne hors programme attribuée au mauvais livreur enverrait quelqu'un chez
+     une cliente qui ne l'attend pas. Et l'exigence est STRICTE : le colis doit porter ce
+     livreur-là en récupérateur. Un colis dont la colonne est vide n'est confié à personne ;
+     le faire entrer dans une tournée enverrait quelqu'un chez une cliente que le bureau n'a
+     désignée à aucun livreur, ce qui est exactement le contraire de ce qu'on cherche ici. */
+  if (opts.horsProgramme && colisConnus) {
+    const dejaProgrammees = new Set(retenues.map(function (p) { return p.fournisseur_id; }));
+    const parCliente = new Map();
+    colis.forEach(function (c) {
+      if (!c || !c.fournisseur_id) return;
+      if (dejaProgrammees.has(c.fournisseur_id)) return;
+      if (opts.livreurId && c.livreur_collecte_id !== opts.livreurId) return;
+      if (!parCliente.has(c.fournisseur_id)) parCliente.set(c.fournisseur_id, []);
+      parCliente.get(c.fournisseur_id).push(c);
+    });
+    parCliente.forEach(function (siens, fournisseurId) {
+      const aPrendre = siens.filter(function (c) { return c.statut === "en_attente"; });
+      // Sans colis qui attend, il n'y a rien à aller chercher. Une cliente chez qui tout a
+      // déjà été ramassé n'a pas à encombrer une tournée où personne ne l'a programmée.
+      if (!aPrendre.length) return;
+      const fiche = annuaire(fournisseurId) || {};
+      lignes.push({
+        id: "hors-programme:" + fournisseurId,
+        fournisseurId: fournisseurId,
+        clienteNom: fiche.nom || "Cliente inconnue",
+        commune: fiche.commune || "",
+        adresse: fiche.adresse || "",
+        telephone: fiche.telephone || "",
+        note: "",
+        livreurId: opts.livreurId || null,
+        livreurNom: nomLivreur(opts.livreurId) || "Livreur",
+        nbAPrendre: aPrendre.length,
+        nbDejaPris: siens.filter(function (c) { return jourEvenementColis(c, "recupere") === jour; }).length,
+        idsAPrendre: aPrendre.map(function (c) { return c.id; }),
+        // Par construction il y a au moins un colis à prendre : jamais « rien à récupérer ».
+        rienARecuperer: false,
+        horsProgramme: true,
+      });
+    });
+  }
 
   lignes.sort(function (a, b) {
     return String(a.clienteNom).localeCompare(String(b.clienteNom), "fr", { sensitivity: "base" });
@@ -4209,8 +4282,9 @@ function tourneesDeRecuperation(options) {
     t.nbAPrendre += l.nbAPrendre;
     t.nbDejaPris += l.nbDejaPris;
     if (l.rienARecuperer) t.nbClientesSansRien++;
+    if (l.horsProgramme) t.nbHorsProgramme++;
     return t;
-  }, { nbClientes: lignes.length, nbAPrendre: 0, nbDejaPris: 0, nbClientesSansRien: 0 });
+  }, { nbClientes: lignes.length, nbAPrendre: 0, nbDejaPris: 0, nbClientesSansRien: 0, nbHorsProgramme: 0 });
   // Combien de livreurs sont sur la route ce jour-là. Compté sur les lignes retenues, donc
   // toujours 1 quand l'écran du livreur appelle avec son propre identifiant.
   total.nbLivreurs = new Set(lignes.map(function (l) { return l.livreurId; })).size;

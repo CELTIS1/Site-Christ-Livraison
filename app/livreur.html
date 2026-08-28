@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828rattachement1">
-<script src="theme.js?v=20260828rattachement1"></script>
+<link rel="stylesheet" href="style.css?v=20260828horsprogramme1">
+<script src="theme.js?v=20260828horsprogramme1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -643,8 +643,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828rattachement1"></script>
-<script src="config.js?v=20260828rattachement1"></script>
+<script src="clt-common.js?v=20260828horsprogramme1"></script>
+<script src="config.js?v=20260828horsprogramme1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -2566,16 +2566,23 @@
 
      Deux requêtes et non une : « à prendre » ne connaît pas de date (un colis en attente depuis
      avant-hier est toujours à prendre), tandis que « déjà pris » ne parle que de la journée
-     affichée. Les mélanger dans un seul filtre donnerait l'un ou l'autre, jamais les deux. */
-  async function chargerColisDeLaTournee(jour, fournisseurIds){
-    if (!jour || !fournisseurIds.length || !currentUser) return [];
+     affichée. Les mélanger dans un seul filtre donnerait l'un ou l'autre, jamais les deux.
+
+     ET ON NE RESTREINT PLUS AUX CLIENTES PROGRAMMÉES. (28/08/2026) La requête portait au départ
+     un « .in(fournisseur_id, …) » construit sur les seules clientes du programme du jour. Elle
+     ne pouvait donc jamais rapporter le colis d'une cliente qu'aucune tournée ne porte
+     aujourd'hui — celui d'une récupération restée en plan depuis hier. Or c'est exactement ce
+     colis-là qu'il ne faut pas oublier. On demande maintenant tout ce qui est confié à ce
+     livreur, et c'est tourneesDeRecuperation() qui décide ensuite ce qui est au programme et
+     ce qui ne l'est pas. */
+  async function chargerColisDeLaTournee(jour){
+    if (!jour || !currentUser) return [];
     const debut = jour + 'T00:00:00Z';
     const fin   = jour + 'T23:59:59.999Z';
     const base = () => supabaseClient
       .from('colis')
-      .select('id, fournisseur_id, statut, recupere_at')
-      .eq('livreur_collecte_id', currentUser.id)
-      .in('fournisseur_id', fournisseurIds);
+      .select('id, fournisseur_id, statut, recupere_at, livreur_collecte_id')
+      .eq('livreur_collecte_id', currentUser.id);
 
     const [attente, pris] = await Promise.all([
       base().eq('statut', 'en_attente'),
@@ -2617,9 +2624,36 @@
     tourneeErreur = '';
     tourneeLignes = data || [];
 
+    // Les colis AVANT les fiches, et non l'inverse : depuis qu'une cliente hors programme peut
+    // entrer dans la tournée, ce sont les colis qui disent chez qui il faut passer. Lire les
+    // fiches d'abord reviendrait à ne connaître que les clientes du programme, et à afficher
+    // « Cliente inconnue » sans adresse ni numéro pour les autres. (28/08/2026)
+    //
+    // Le comptage se fait sur une vraie requête, jamais sur le cache paginé : voir le
+    // commentaire au-dessus de chargerColisDeLaTournee(). Si elle échoue, on le DIT.
+    try {
+      tourneeColis = await chargerColisDeLaTournee(jour);
+    } catch (e3) {
+      console.error(e3);
+      tourneeErreur = "Impossible de compter vos colis à récupérer. Prévenez le bureau avant de partir.";
+      tourneeColis = []; tourneeChargee = true; renderMaTournee(); return;
+    }
+
     // Les fiches des clientes : le nom seul ne suffit pas pour se déplacer, il faut la commune,
-    // l'adresse et surtout le numéro — pour appeler avant de traverser Abidjan pour rien.
-    const ids = Array.from(new Set(tourneeLignes.map(p => p.fournisseur_id)));
+    // l'adresse et surtout le numéro — pour appeler avant de traverser Abidjan pour rien. Les
+    // clientes hors programme en ont autant besoin que les autres, elles sont donc du lot.
+    //
+    // ON PREND LA CLIENTE DE CHAQUE COLIS, SANS TRIER SUR LE STATUT. Il serait tentant de ne
+    // demander que les fiches des clientes ayant un colis « en attente », puisque ce sont les
+    // seules qui peuvent entrer hors programme. Mais ce tri serait un DEUXIÈME comptage des
+    // colis en attente, tenu ici, à côté de celui de tourneesDeRecuperation(). Deux comptages
+    // finissent toujours par diverger, et le jour où ils divergent, c'est le TOTAL qui ment.
+    // Quelques fiches chargées pour rien ne coûtent rien ; un chiffre qui en contredit un autre
+    // coûte la confiance dans l'écran. (28/08/2026)
+    const ids = Array.from(new Set(
+      tourneeLignes.map(p => p.fournisseur_id).concat(
+        tourneeColis.map(c => c && c.fournisseur_id))
+    )).filter(Boolean);
     tourneeClientes = {};
     if (ids.length){
       const { data: fiches, error: e2 } = await supabaseClient
@@ -2628,16 +2662,6 @@
         .in('id', ids);
       if (e2) { console.error(e2); }
       (fiches || []).forEach(f => { tourneeClientes[f.id] = f; });
-    }
-
-    // Le comptage se fait sur une vraie requête, jamais sur le cache paginé : voir le
-    // commentaire au-dessus de chargerColisDeLaTournee(). Si elle échoue, on le DIT.
-    try {
-      tourneeColis = await chargerColisDeLaTournee(jour, ids);
-    } catch (e3) {
-      console.error(e3);
-      tourneeErreur = "Impossible de compter vos colis à récupérer. Prévenez le bureau avant de partir.";
-      tourneeColis = []; tourneeChargee = true; renderMaTournee(); return;
     }
 
     tourneeChargee = true;
@@ -2671,18 +2695,25 @@
       colis: tourneeColis,
       cliente: tourneeFiche,
       livreurNom: () => (currentProfile && currentProfile.full_name) || 'Moi',
+      // Les récupérations restées en plan d'hier entrent dans la tournée. Sans elles, le TOTAL
+      // annonce moins de travail qu'il n'y en a — voir tourneesDeRecuperation(). (28/08/2026)
+      horsProgramme: true,
     });
 
     if (!lignes.length){
-      cltPoserHTML(box, `<div class="empty-state">Aucune récupération programmée pour vous aujourd'hui. Le bureau vous en assignera peut-être en cours de journée.</div>`);
+      cltPoserHTML(box, `<div class="empty-state">Aucune récupération à faire pour vous aujourd'hui — ni programmée, ni restée d'hier. Le bureau vous en assignera peut-être en cours de journée.</div>`);
       return;
     }
 
     // Une carte par cliente, pas un tableau : cet écran se lit debout, sur un téléphone, une
     // main sur le guidon. Le numéro est un vrai lien d'appel — un doigt suffit.
+    //
+    // La bordure ambre et la mention « hors programme » ne sont pas décoratives : elles disent
+    // au livreur que cette cliente ne l'attend pas forcément aujourd'hui, donc qu'il vaut mieux
+    // l'appeler avant de faire le détour.
     const cartes = lignes.map(l => `
-      <div class="colis-card" style="border-left:4px solid ${l.rienARecuperer ? '#cbd5e1' : '#1e8f4e'};">
-        <div style="font-weight:700; font-size:15px;">${escapeHTML(l.clienteNom)}</div>
+      <div class="colis-card" style="border-left:4px solid ${l.horsProgramme ? '#d97706' : (l.rienARecuperer ? '#cbd5e1' : '#1e8f4e')};">
+        <div style="font-weight:700; font-size:15px;">${escapeHTML(l.clienteNom)}${l.horsProgramme ? ` <span style="font-weight:600; font-size:11px; color:#b45309; background:#fef3c7; border-radius:6px; padding:2px 6px; white-space:nowrap;">hors programme</span>` : ''}</div>
         <div class="meta">📍 ${l.commune ? escapeHTML(l.commune) : 'Commune non renseignée'}${l.adresse ? ' · ' + escapeHTML(l.adresse) : ''}</div>
         ${l.telephone ? `<div class="meta">📞 <a href="tel:${encodeURIComponent(l.telephone)}">${escapeHTML(l.telephone)}</a></div>` : `<div class="meta" style="color:#8a94a3;">📞 Numéro non renseigné — passez par le bureau</div>`}
         ${l.note ? `<div class="meta" style="color:#b45309;">📝 ${escapeHTML(l.note)}</div>` : ''}
@@ -2700,7 +2731,8 @@
         TOTAL · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's' : ''} à visiter ·
         <strong>${total.nbAPrendre}</strong> colis à prendre ·
         <strong>${total.nbDejaPris}</strong> déjà pris
-      </div>`);
+      </div>
+      ${total.nbHorsProgramme > 0 ? `<div class="meta" style="margin-top:6px; color:#b45309;">Dont <strong>${total.nbHorsProgramme}</strong> cliente${total.nbHorsProgramme > 1 ? 's' : ''} hors programme : de la marchandise vous y attend sans que le bureau ait posé de tournée aujourd'hui. Appelez avant de passer.</div>` : ''}`);
   }
 
   // Charge la première page de colis (les plus récents).
