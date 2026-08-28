@@ -47,6 +47,17 @@ function formatDate(iso) {
     " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
 
+/* L'heure seule, sans la date. (29/08/2026)
+   Sur la carte d'une tournée, « parti à 09:14 » suffit et tient sur la ligne. Y écrire la date
+   complète serait redondant — la tournée est celle d'aujourd'hui — et pousserait le compte à la
+   ligne sur un téléphone. Écrite ici plutôt que dans l'écran du livreur parce que le bureau
+   affichera bientôt la même heure, et deux mises en forme séparées finissent par afficher deux
+   heures différentes pour le même départ. */
+function formatHeure(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+
 // ---------- La date du jour, telle que la personne la lit sur son téléphone ----------
 // Volontairement PAS toISOString() : celui-ci bascule en heure de Greenwich, et un colis
 // enregistré à 1 h du matin à Abidjan (UTC+0 toute l'année, mais la nuance vaut pour tout

@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828vert1">
-<script src="theme.js?v=20260828vert1"></script>
+<link rel="stylesheet" href="style.css?v=20260828route1">
+<script src="theme.js?v=20260828route1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1104,10 +1104,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828vert1"></script>
-<script src="config.js?v=20260828vert1"></script>
+<script src="clt-common.js?v=20260828route1"></script>
+<script src="config.js?v=20260828route1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260828vert1"></script>
+<script src="clt-select-recherche.js?v=20260828route1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -5381,7 +5381,11 @@ async function progColisPourLaTournee(jour, fournisseurIds){
 if (!jour) return [];
 const debut = jour + 'T00:00:00Z';
 const fin   = jour + 'T23:59:59.999Z';
-const champs = 'id, fournisseur_id, statut, recupere_at, livreur_collecte_id';
+// collecte_depart_at depuis le 29/08/2026 : l'heure à laquelle le livreur a appuyé sur « Je pars »
+// depuis son téléphone. Demandée ici, en un seul endroit, parce que les quatre questions ci-dessous
+// partagent la même liste de champs — en oublier une aurait fait clignoter la marque « en route »
+// selon la question qui a rapporté le colis en dernier.
+const champs = 'id, fournisseur_id, statut, recupere_at, livreur_collecte_id, collecte_depart_at';
 
 const programmees = fournisseurIds.length ? [
 supabaseClient.from('colis').select(champs)
@@ -5534,9 +5538,17 @@ const geste = fini ? ''
 // c'est un contresens : le bureau y lirait un reste à faire là où il n'y a plus rien.
 const marque = fini ? `<span class="tournee-marque tournee-marque--fait">déjà récupéré</span>`
 : l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : '';
+/* EN ROUTE, VU DU BUREAU. (29/08/2026) Le livreur appuie sur « Je pars » depuis son téléphone ;
+   l'heure de départ s'écrit en base, et le bureau doit pouvoir le lire sans appeler personne.
+   Le bureau REGARDE, le téléphone AGIT : on reprend ici la marque et l'heure, jamais le geste.
+   Un bouton « Je pars » au bureau ferait partir quelqu'un qui n'est pas dans la pièce.
+   Et pas d'« en route » sur un travail fini : le départ est effacé au moment où le colis passe
+   à « récupéré », donc une carte finie qui afficherait « en route » signalerait un reste à
+   faire là où il n'y a plus rien. */
+const enRoute = !!l.departAt && !fini;
 return `
-<div class="tournee-carte ${classe}">
-<div class="tournee-nom">${escapeHTML(l.clienteNom)}${marque}</div>
+<div class="tournee-carte ${classe}${enRoute ? ' tournee-carte--route' : ''}">
+<div class="tournee-nom">${escapeHTML(l.clienteNom)}${marque}${enRoute ? `<span class="tournee-marque tournee-marque--route">en route</span>` : ''}</div>
 <div class="tournee-lieu">📍 ${l.commune ? escapeHTML(l.commune) : 'Commune non renseignée'}${l.adresse ? ' · ' + escapeHTML(l.adresse) : ''}</div>
 ${l.note ? `<div class="tournee-note">📝 ${escapeHTML(l.note)}</div>` : ''}
 <div class="tournee-compte">
@@ -5546,7 +5558,7 @@ ${fini
 ? `<span class="tournee-pris">${l.nbDejaPris} déjà pris</span>`
 : l.rienARecuperer
 ? `<span class="tournee-rien">Rien à récupérer pour l'instant — la ligne reste, un colis peut encore être saisi.</span>`
-: `<strong>${compte(l.nbAPrendre)}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}`}
+: `<strong>${compte(l.nbAPrendre)}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}${enRoute ? ` · <span class="tournee-depart">parti à ${escapeHTML(formatHeure(l.departAt))}</span>` : ''}`}
 </div>
 ${contacts}
 ${geste}

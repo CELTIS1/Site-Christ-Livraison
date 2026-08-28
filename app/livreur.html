@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260828vert1">
-<script src="theme.js?v=20260828vert1"></script>
+<link rel="stylesheet" href="style.css?v=20260828route1">
+<script src="theme.js?v=20260828route1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -643,8 +643,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260828vert1"></script>
-<script src="config.js?v=20260828vert1"></script>
+<script src="clt-common.js?v=20260828route1"></script>
+<script src="config.js?v=20260828route1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -2220,17 +2220,87 @@
     `;
   }
 
-  // En-tête de groupe client : tant que le trajet n'a pas commencé, propose "Je pars pour cette
-  // récupération" (démarre le partage de position — voir updatePositionSharingFromColis) ; une
-  // fois en route, propose "Récupéré, tout" pour clore la tournée chez cette cliente.
-  function recupActionsHTML(day, client){
-    const enAttente = client.items.filter(c => c.statut === 'en_attente');
-    if (!enAttente.length) return '';
-    const enRoute = enAttente.some(c => c.collecte_depart_at);
-    if (!enRoute) {
-      return ` <button type="button" class="btn btn-sm btn-je-pars" data-fournisseur="${client.key}" data-day="${day.key}" style="margin-left:8px;">🚚 Je pars pour cette récupération</button>`;
+  /* PLUS AUCUN BOUTON SUR CETTE LISTE. (29/08/2026)
+
+     Elle en portait deux — « Je pars pour cette récupération » et « Récupéré, tout (7) » — et
+     c'était le seul endroit d'où le livreur pouvait agir. Le résultat, mesuré dans cet onglet :
+     la même cliente y figurait DEUX fois, une première en carte de tournée pour dire où aller,
+     une seconde en tête de groupe pour permettre d'agir. Or l'écran qui dit où aller est celui
+     où l'on décide de partir : c'est là que le geste doit être, et il y est depuis ce jour.
+
+     Cette liste garde ce qu'elle seule sait montrer — la photo du colis, le numéro de suivi,
+     les montants corrigibles devant la porte — et ne décide plus de rien. On ne laisse pas le
+     même geste à deux endroits : deux boutons finissent toujours par ne plus faire la même
+     chose, et c'est le genre d'écart qu'on ne découvre que le jour où l'argent ne tombe pas
+     juste. La fonction reste, vide, parce que renderGroupedColisHTML() l'attend. */
+  function recupActionsHTML(){
+    return '';
+  }
+
+  /* LES DEUX GESTES DE LA RÉCUPÉRATION, ÉCRITS UNE SEULE FOIS.
+
+     Ils vivaient dans les écouteurs de renderRecuperations(). Les déplacer tels quels sur la
+     carte aurait recopié une trentaine de lignes, dont toute la reprise hors connexion : deux
+     copies dont l'une aurait fini par oublier d'effacer collecte_depart_at. Ils sont donc
+     sortis ici, et la carte se contente de les appeler. */
+
+  // « Je pars ». Écrit l'heure de départ sur les colis qui n'en ont pas encore, ce qui démarre
+  // le partage de position (voir updatePositionSharingFromColis). Renvoie vrai si c'est passé.
+  async function marquerDepartCollecte(ids){
+    const aEcrire = (ids || []).filter(id => {
+      const c = allColis.find(x => x.id === id) || tourneeColis.find(x => x.id === id);
+      return !c || !c.collecte_depart_at;
+    });
+    if (!aEcrire.length) return true;
+    const nowIso = new Date().toISOString();
+    const { error } = await supabaseClient.from('colis').update({ collecte_depart_at: nowIso }).in('id', aEcrire);
+    if (error) { alert(friendlyErrorMessage(error.message)); return false; }
+    // Les deux listes du navigateur portent le même colis sous deux exemplaires : celle de
+    // l'onglet (allColis) et celle de la tournée (tourneeColis). N'en mettre qu'une à jour
+    // ferait dire à la carte « en route » et à la liste du dessous « pas encore parti ».
+    aEcrire.forEach(id => {
+      [allColis, tourneeColis].forEach(liste => {
+        const idx = liste.findIndex(c => c.id === id);
+        if (idx !== -1) liste[idx].collecte_depart_at = nowIso;
+      });
+    });
+    return true;
+  }
+
+  // « Récupéré, tout ». Passe les colis au statut récupéré et efface l'heure de départ en même
+  // temps — minimisation des données, voir supabase_livreur_collecte.sql. Fonctionne hors
+  // connexion via la file d'attente, parce qu'une cour de magasin n'a pas toujours de réseau.
+  async function marquerRecupereTout(ids){
+    if (!ids || !ids.length) return false;
+    const appliquer = (id) => {
+      [allColis, tourneeColis].forEach(liste => {
+        const idx = liste.findIndex(c => c.id === id);
+        if (idx !== -1) { liste[idx].statut = 'recupere'; liste[idx].collecte_depart_at = null; liste[idx].recupere_at = new Date().toISOString(); }
+      });
+    };
+
+    if (!navigator.onLine) {
+      let queueFailed = false;
+      for (const id of ids) {
+        const existing = allColis.find(c => c.id === id);
+        try {
+          // clearCollecteDepart : demande à flushOfflineQueue d'effacer aussi collecte_depart_at
+          // dès que la synchronisation aboutira.
+          await queueAdd({ colisId: id, statut: 'recupere', observation: existing ? existing.observation : null, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: null, clearCollecteDepart: true, userId: currentUser.id, timestamp: Date.now() });
+          appliquer(id);
+        } catch (e) { console.error(e); queueFailed = true; }
+      }
+      if (queueFailed) {
+        alert("Certaines mises à jour n'ont pas pu être enregistrées hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
+      }
+      await refreshOfflineBanner();
+      return true;
     }
-    return ` <button type="button" class="btn btn-sm btn-recuperer-tout-collecte" data-fournisseur="${client.key}" data-day="${day.key}" style="margin-left:8px;">📦 Récupéré, tout (${enAttente.length})</button>`;
+
+    const { error } = await supabaseClient.from('colis').update({ statut: 'recupere', collecte_depart_at: null }).in('id', ids);
+    if (error) { alert(friendlyErrorMessage(error.message)); return false; }
+    ids.forEach(appliquer);
+    return true;
   }
 
   // Pas de capturePendingEdits ici, contrairement à « Mes colis assignés » : cette liste ne
@@ -2280,79 +2350,10 @@
       + trancheColisPiedHTML(trRecup.affiches, trRecup.total))) { restoreScrollAnchor(list, __anchor); return; }
     brancherTrancheColis(list, () => { trancheRecup += COLIS_TRANCHE; renderRecuperations(); });
 
-    list.querySelectorAll('.btn-je-pars').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const fournisseurId = btn.dataset.fournisseur;
-        const dayKeyVal = btn.dataset.day;
-        const ids = mine
-          .filter(c => (c.fournisseur_id || "?") === fournisseurId && dayKey(c.created_at) === dayKeyVal && !c.collecte_depart_at)
-          .map(c => c.id);
-        if (!ids.length) return;
-        const originalLabel = btn.textContent;
-        btn.disabled = true; btn.textContent = 'Départ...';
-        const nowIso = new Date().toISOString();
-        const { error } = await supabaseClient.from('colis').update({ collecte_depart_at: nowIso }).in('id', ids);
-        btn.disabled = false; btn.textContent = originalLabel;
-        if (error) { alert(friendlyErrorMessage(error.message)); return; }
-        ids.forEach(id => {
-          const idx = allColis.findIndex(c => c.id === id);
-          if (idx !== -1) allColis[idx].collecte_depart_at = nowIso;
-        });
-        renderAll();
-      });
-    });
-
-    list.querySelectorAll('.btn-recuperer-tout-collecte').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const fournisseurId = btn.dataset.fournisseur;
-        const dayKeyVal = btn.dataset.day;
-        const ids = mine
-          .filter(c => (c.fournisseur_id || "?") === fournisseurId && dayKey(c.created_at) === dayKeyVal)
-          .map(c => c.id);
-        if (!ids.length) return;
-        if (!(await cltConfirm({ title: 'Marquer comme récupérés ?', sub: `Les ${ids.length} colis de cette cliente passeront au statut « récupéré ».`, okLabel: 'Marquer récupérés' }))) return;
-        const originalLabel = btn.textContent;
-        btn.disabled = true; btn.textContent = 'Récupération...';
-
-        if (!navigator.onLine) {
-          let queueFailed = false;
-          for (const id of ids) {
-            const existing = allColis.find(c => c.id === id);
-            try {
-              // clearCollecteDepart : demande à flushOfflineQueue d'effacer aussi collecte_depart_at
-              // dès que la synchronisation aboutira (minimisation des données).
-              await queueAdd({ colisId: id, statut: 'recupere', observation: existing ? existing.observation : null, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: null, clearCollecteDepart: true, userId: currentUser.id, timestamp: Date.now() });
-              if (existing) { existing.statut = 'recupere'; existing.collecte_depart_at = null; }
-            } catch (e) {
-              console.error(e);
-              queueFailed = true;
-            }
-          }
-          if (queueFailed) {
-            alert("Certaines mises à jour n'ont pas pu être enregistrées hors connexion (mémoire hors-ligne pleine ou indisponible). Merci de réessayer une fois connecté(e) à internet.");
-          }
-          btn.disabled = false; btn.textContent = originalLabel;
-          await refreshOfflineBanner();
-          renderAll();
-          return;
-        }
-
-        // Minimisation des données : on efface collecte_depart_at en même temps que le passage
-        // à "récupéré" — voir supabase_livreur_collecte.sql.
-        const { error } = await supabaseClient.from('colis').update({ statut: 'recupere', collecte_depart_at: null }).in('id', ids);
-        if (error) {
-          alert(friendlyErrorMessage(error.message));
-          btn.disabled = false; btn.textContent = originalLabel;
-          return;
-        }
-        ids.forEach(id => {
-          const idx = allColis.findIndex(c => c.id === id);
-          if (idx !== -1) { allColis[idx].statut = 'recupere'; allColis[idx].collecte_depart_at = null; }
-        });
-        renderAll();
-      });
-    });
-
+    // Les deux écouteurs qui vivaient ici — « Je pars » et « Récupéré, tout » — sont partis sur
+    // la carte de la tournée le 29/08/2026, avec les boutons qu'ils servaient. Voir
+    // recupActionsHTML() ci-dessus pour la raison, et renderMaTournee() pour leur nouvelle
+    // place. Cette liste ne branche donc plus que les champs de montants.
     brancherMontants(list);
 
     restorePendingEdits(list, __pending);
@@ -2581,7 +2582,12 @@
     const fin   = jour + 'T23:59:59.999Z';
     const base = () => supabaseClient
       .from('colis')
-      .select('id, fournisseur_id, statut, recupere_at, livreur_collecte_id')
+      // collecte_depart_at depuis le 29/08/2026 : c'est ce qui permet à la carte de savoir si
+      // le livreur est déjà en route vers cette cliente, et donc de lui proposer « Récupéré,
+      // tout » plutôt que « Je pars » une seconde fois. Sans cette colonne, la carte
+      // reproposerait éternellement de partir, et un second appui renverrait un message
+      // d'annonce à une cliente qui l'attend déjà devant sa porte.
+      .select('id, fournisseur_id, statut, recupere_at, livreur_collecte_id, collecte_depart_at')
       .eq('livreur_collecte_id', currentUser.id);
 
     const [attente, pris] = await Promise.all([
@@ -2731,17 +2737,49 @@
            </div>`;
       const classe = l.horsProgramme ? 'tournee-carte--hors'
                    : (l.rienARecuperer ? 'tournee-carte--rien' : 'tournee-carte--programme');
+
+      /* LE GESTE, SUR LA CARTE. (29/08/2026)
+
+         Jusqu'ici cet écran répondait à « où aller » et la liste du dessous portait les boutons
+         « Je pars » et « Récupéré, tout ». La même cliente apparaissait donc deux fois sur le
+         même onglet : une fois pour savoir, une fois pour agir. Le geste descend ici, à côté du
+         nom et de la commune, et la liste du dessous n'est plus qu'un détail consultable —
+         photo, numéro de suivi, montants à corriger. Un geste, un seul endroit.
+
+         POURQUOI UN LIEN ET NON UN BOUTON POUR « JE PARS ». L'appui doit faire deux choses :
+         écrire le départ en base et ouvrir WhatsApp sur l'annonce à la cliente. Un bouton qui
+         appelle window.open() APRÈS un aller-retour réseau se fait bloquer par les téléphones,
+         qui ne voient plus le doigt derrière l'ouverture. Un vrai lien, lui, s'ouvre toujours :
+         c'est le navigateur qui s'en charge, et l'écriture en base part en même temps. Si le
+         réseau échoue, la carte redit « Je pars » et le livreur peut réappuyer ; s'il n'y a pas
+         de numéro, le lien n'a plus de sens et l'on repasse à un simple bouton.
+
+         CE N'EST PAS LE MÊME GESTE QUE LE BOUTON WHATSAPP AU-DESSUS. Celui-là ouvre une
+         conversation vide, pour parler ; celui-ci annonce un départ et le consigne. */
+      const enRoute = !!l.departAt;
+      const infosMsg = { livreurNom: (currentProfile && currentProfile.full_name) || '', commune: l.commune, nbColis: l.nbAPrendre };
+      const geste = l.rienARecuperer
+        ? ''
+        : enRoute
+          ? `<button type="button" class="tournee-geste tournee-geste--recuperer" data-tournee-recuperer="${escapeHTML(l.fournisseurId)}">📦 Récupéré, tout (${l.nbAPrendre})</button>`
+          : (l.telephone
+              ? `<a class="tournee-geste tournee-geste--partir" target="_blank" rel="noopener"
+                    href="${escapeHTML(lienDepartRecuperation(l.telephone, infosMsg))}"
+                    data-tournee-partir="${escapeHTML(l.fournisseurId)}">🚚 Je pars — prévenir la cliente</a>`
+              : `<button type="button" class="tournee-geste tournee-geste--partir" data-tournee-partir="${escapeHTML(l.fournisseurId)}">🚚 Je pars pour cette récupération</button>`);
+
       return `
-      <div class="tournee-carte ${classe}">
-        <div class="tournee-nom">${escapeHTML(l.clienteNom)}${l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : ''}</div>
+      <div class="tournee-carte ${classe}${enRoute ? ' tournee-carte--route' : ''}">
+        <div class="tournee-nom">${escapeHTML(l.clienteNom)}${l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : ''}${enRoute ? `<span class="tournee-marque tournee-marque--route">en route</span>` : ''}</div>
         <div class="tournee-lieu">📍 ${l.commune ? escapeHTML(l.commune) : 'Commune non renseignée'}${l.adresse ? ' · ' + escapeHTML(l.adresse) : ''}</div>
         ${l.note ? `<div class="tournee-note">📝 ${escapeHTML(l.note)}</div>` : ''}
         <div class="tournee-compte">
           ${l.rienARecuperer
             ? `<span class="tournee-rien">Rien à récupérer pour l'instant — appelez-la avant de passer.</span>`
-            : `<strong>${l.nbAPrendre}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}`}
+            : `<strong>${l.nbAPrendre}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}${enRoute ? ` · <span class="tournee-depart">parti à ${escapeHTML(formatHeure(l.departAt))}</span>` : ''}`}
         </div>
         ${contacts}
+        ${geste}
       </div>`;
     };
 
@@ -2784,6 +2822,51 @@
         <strong>${total.nbDejaPris}</strong> déjà pris
       </div>
       ${total.nbHorsProgramme > 0 ? `<div class="meta" style="margin-top:6px; color:#b45309;">Le total ci-dessus compte tout, y compris <strong>${total.nbHorsProgramme}</strong> cliente${total.nbHorsProgramme > 1 ? 's' : ''} du repli.</div>` : ''}`);
+
+    /* LES GESTES, BRANCHÉS ICI. (29/08/2026)
+
+       On retrouve la ligne par son fournisseurId dans le résultat du calcul partagé, et on
+       reprend SES idsAPrendre. Refiltrer les colis à la main donnerait un second calcul de ce
+       qu'il y a à ramasser, et deux calculs finissent toujours par ne plus dire le même nombre :
+       le bouton annoncerait « Récupéré, tout (7) » et n'en marquerait que six.
+
+       Les cartes du repli sont branchées elles aussi : un repli fermé contient de vrais boutons,
+       et un bouton qu'on découvre en dépliant doit marcher comme les autres. */
+    const parFournisseur = new Map(lignes.map(l => [String(l.fournisseurId), l]));
+
+    box.querySelectorAll('[data-tournee-partir]').forEach(el => {
+      el.addEventListener('click', async () => {
+        const l = parFournisseur.get(String(el.dataset.tourneePartir));
+        if (!l || !l.idsAPrendre.length) return;
+        /* On n'attend PAS l'écriture avant de laisser WhatsApp s'ouvrir : sur un lien, le
+           navigateur ouvre tout seul, et le téléphone bloquerait une ouverture décidée après
+           un aller-retour réseau. L'écriture part donc en parallèle et la carte se redessine
+           quand elle revient. Si elle échoue, marquerDepartCollecte() le dit et la carte
+           reproposera « Je pars » — le livreur réappuie, la cliente reçoit deux messages, ce
+           qui est très largement préférable à un bureau qui ne sait pas qu'il est parti. */
+        const ok = await marquerDepartCollecte(l.idsAPrendre);
+        if (ok) renderAll();
+      });
+    });
+
+    box.querySelectorAll('[data-tournee-recuperer]').forEach(el => {
+      el.addEventListener('click', async () => {
+        const l = parFournisseur.get(String(el.dataset.tourneeRecuperer));
+        if (!l || !l.idsAPrendre.length) return;
+        // On demande confirmation : ce geste-là est celui qui fait basculer l'argent du colis
+        // dans la journée du livreur, et il porte sur tout un lot d'un coup.
+        if (!(await cltConfirm({
+          title: 'Marquer comme récupérés ?',
+          sub: `Les ${l.idsAPrendre.length} colis de ${l.clienteNom} passeront au statut « récupéré ».`,
+          okLabel: 'Marquer récupérés',
+        }))) return;
+        const original = el.textContent;
+        el.disabled = true; el.textContent = 'Récupération…';
+        const ok = await marquerRecupereTout(l.idsAPrendre);
+        el.disabled = false; el.textContent = original;
+        if (ok) renderAll();
+      });
+    });
   }
 
   // Charge la première page de colis (les plus récents).
@@ -3158,7 +3241,16 @@
 
   function updatePositionSharingFromColis(){
     const consentCard = document.getElementById('geoloc-consent-card');
-    const collecteEnRoute = allColis.some(c => c.livreur_collecte_id === currentUser.id && c.statut === 'en_attente' && c.collecte_depart_at);
+    /* ON REGARDE LES DEUX LISTES, ET PAS SEULEMENT LE CACHE DE L'ONGLET. (29/08/2026)
+       allColis est paginé : il ne contient que la première page des colis du livreur. Depuis que
+       « Je pars » se presse sur la carte de la tournée, le colis concerné peut très bien n'être
+       QUE dans tourneeColis — c'est même la raison d'être de cette seconde liste. Ne lire que
+       allColis, c'était donc écrire l'heure de départ en base, afficher « en route » sur la carte,
+       et ne jamais démarrer le partage de position : le bureau aurait cherché sur la carte un
+       livreur bel et bien parti. Les doublons entre les deux listes ne gênent pas : on ne compte
+       rien ici, on cherche seulement s'il en existe au moins un. */
+    const colisDeCollecte = allColis.concat(tourneeColis || []);
+    const collecteEnRoute = colisDeCollecte.some(c => c.livreur_collecte_id === currentUser.id && c.statut === 'en_attente' && c.collecte_depart_at);
     const enLivraison = allColis.some(c => c.livreur_id === currentUser.id && STATUTS_EN_TOURNEE.includes(c.statut));
     const enTournee = collecteEnRoute || enLivraison;
     faitsPosition.enTournee = enTournee;

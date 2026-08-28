@@ -174,6 +174,12 @@ function monterEcranLivreur({ colis = [], accord = '2026-08-01T00:00:00Z' } = {}
     // allColis pour simuler la fin d'un trajet. Sans copie, elles abîmeraient le jeu d'essai
     // partagé et les vérifications suivantes travailleraient sur des colis fantômes.
     allColis: colis.slice(),
+    /* LA SECONDE LISTE DU LIVREUR. (29/08/2026) allColis est le cache PAGINÉ de l'onglet ; il ne
+       contient que la première page. tourneeColis, lui, porte tous les colis confiés au livreur
+       pour la collecte, et c'est là que vit le colis d'une cliente lointaine. Le partage de
+       position doit lire les deux : sinon un livreur parti chez une cliente restée en page deux
+       affiche « en route » sur sa carte et n'est visible nulle part sur celle du bureau. */
+    tourneeColis: [],
     currentUser: { id: 'liv-1' },
     currentProfile: { geoloc_consent_at: accord },
     supabaseClient: base.client,
@@ -191,6 +197,8 @@ function monterEcranLivreur({ colis = [], accord = '2026-08-01T00:00:00Z' } = {}
   return { contexte, ecran, base, suivis, arrets: () => arrets,
     // Remplace ce que le livreur a en main, comme le fait un rechargement des colis.
     poser: (nouveaux) => { contexte.allColis.length = 0; contexte.allColis.push(...nouveaux); },
+    // Le même geste, mais sur la liste de la tournée : c'est celle que « Je pars » met à jour.
+    poserTournee: (nouveaux) => { contexte.tourneeColis.length = 0; contexte.tourneeColis.push(...nouveaux); },
     rafraichir: () => vm.runInContext('updatePositionSharingFromColis()', contexte) };
 }
 
@@ -229,6 +237,20 @@ titre('La ligne n’est là que quand elle a quelque chose à dire');
   const parti = monterEcranLivreur({ colis: enRecuperation });
   parti.rafraichir();
   verifier('« Je pars » démarre bien le partage', parti.suivis.length === 1);
+
+  /* LA CLIENTE RESTÉE EN PAGE DEUX. (29/08/2026)
+     Depuis que « Je pars » se presse sur la carte de la tournée, le colis concerné peut n'exister
+     que dans tourneeColis : allColis est paginé, et c'est justement pour cela que la seconde liste
+     a été créée. Un partage de position qui ne lirait que le cache de l'onglet laisserait alors le
+     livreur afficher « en route » sur son téléphone et rester invisible sur la carte du bureau —
+     c'est-à-dire l'inverse exact de ce que ce partage sert à faire. Le cas est monté ici à
+     l'envers volontairement : allColis VIDE, tout dans tourneeColis. */
+  const loin = monterEcranLivreur({ colis: [] });
+  loin.poserTournee(enRecuperation);
+  loin.rafraichir();
+  verifier('et il démarre même si le colis n’est que dans la liste de la tournée',
+    loin.suivis.length === 1 && !loin.ecran.els['position-sharing-card'].classList.contains('hidden'),
+    'le bureau chercherait sur la carte un livreur bel et bien parti');
 }
 
 /* ---------- 2. Le vert ne s'allume que sur un envoi réel ---------- */

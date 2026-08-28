@@ -1046,6 +1046,55 @@ document.addEventListener("click", (e) => {
   window.open(wa, "_blank");
 });
 
+/* ---------- L'annonce de départ envoyée à la vendeuse ---------- (29/08/2026)
+
+   Quand le livreur appuie sur « Je pars » depuis sa tournée, la cliente reçoit un message qui
+   dit trois choses, et trois seulement : QUI vient, D'OÙ il vient la chercher, et COMBIEN de
+   colis il croit devoir emporter. Ce dernier chiffre est le plus utile des trois, et c'est le
+   moins évident : il donne à la vendeuse l'occasion de corriger AVANT que le livreur arrive.
+   Une cliente qui lit « vos 7 colis » alors qu'elle en a préparé neuf répond tout de suite, et
+   deux colis ne dorment pas une nuit de plus dans son magasin.
+
+   AUCUN ENVOI AUTOMATIQUE. Un site ne peut pas écrire à quelqu'un tout seul, et c'est très bien
+   ainsi : WhatsApp s'ouvre avec le message déjà rédigé, le livreur relit et appuie sur Envoyer.
+   C'est déjà la règle de la maison pour les notifications de colis, quelques lignes plus haut.
+
+   ÉCRIT ICI, une seule fois. Le même message part depuis le téléphone du livreur aujourd'hui ;
+   demain le bureau voudra pouvoir prévenir à sa place, et il devra dire exactement la même
+   chose. Deux rédactions séparées finiraient par annoncer deux nombres de colis différents. */
+function messageDepartRecuperation(infos) {
+  const i = infos || {};
+  const qui = (i.livreurNom || "").trim();
+  const ou = (i.commune || "").trim();
+  const n = Number(i.nbColis) || 0;
+  // Sans nom de livreur, on ne fabrique pas un nom : on parle au nom de l'entreprise. Une
+  // cliente qui reçoit « ici  , livreur chez… » se demande d'abord si le message est vrai.
+  const entete = qui
+    ? "Bonjour, ici " + qui + ", livreur chez Christ Livraison & Transport."
+    : "Bonjour, ici Christ Livraison & Transport.";
+  // Zéro colis n'est pas annoncé : « venir récupérer vos 0 colis » se lit comme une erreur, et
+  // le livreur peut très bien partir chez une cliente avant que le bureau ait saisi quoi que ce
+  // soit — c'est même le sens de cette tournée. On dit alors « vos colis », sans chiffre.
+  const quoi = n > 0
+    ? "vos " + n + " colis"
+    : "vos colis";
+  const quoiAccorde = n === 1 ? "votre colis" : quoi;
+  const lieu = ou ? " à " + ou : "";
+  return entete + "\n\n"
+    + "Je pars maintenant pour venir récupérer " + quoiAccorde + lieu + ".\n"
+    + "À tout de suite.\n\n"
+    + "— Christ Livraison & Transport";
+}
+
+/* Le lien WhatsApp de cette annonce, prêt à poser dans un href.
+   Sans numéro, WhatsApp s'ouvre quand même avec le texte et le livreur choisit le contact :
+   c'est mieux qu'un bouton mort, et c'est ce que fait déjà btn-notify-wa plus haut. */
+function lienDepartRecuperation(telephone, infos) {
+  const tel = telephone ? numeroInternational(telephone) : "";
+  const txt = encodeURIComponent(messageDepartRecuperation(infos));
+  return tel ? "https://wa.me/" + tel + "?text=" + txt : "https://wa.me/?text=" + txt;
+}
+
 // ---------- Regroupement des colis par jour (et par client) ----------
 // Utilisé sur les 4 interfaces (client, équipe, livreur, admin) pour afficher les colis
 // organisés par journée (la plus récente en premier) et, là où plusieurs clients sont visibles
@@ -4183,6 +4232,30 @@ function numeroInternational(tel) {
   return n;
 }
 
+/* EST-IL DÉJÀ PARTI CHEZ ELLE ? (29/08/2026)
+
+   Un livreur qui a appuyé sur « Je pars » a déclenché le partage de sa position et prévenu la
+   cliente. Sa carte ne doit plus lui reproposer de partir : elle doit lui proposer de récupérer.
+   La réponse se lit sur les colis eux-mêmes, dans collecte_depart_at, écrite par ce même appui.
+
+   ON PREND LE DÉPART LE PLUS ANCIEN, et non le plus récent. Le bureau peut ajouter un colis à
+   une cliente alors que le livreur roule déjà vers elle ; ce colis-là n'aura pas d'heure de
+   départ, et un colis ajouté ne doit pas faire croire que le livreur vient seulement de partir.
+   L'heure affichée est celle où il a réellement quitté sa position, pas celle du dernier ajout.
+
+   Défini ICI, une seule fois, parce que le téléphone du livreur et l'écran du bureau doivent
+   répondre la même chose à « est-il en route ? ». Deux lectures séparées de la même colonne
+   finiraient par diverger, et le bureau annoncerait un livreur en route quand son téléphone lui
+   propose encore de partir. */
+function departDeCollecte(colisDeLaCliente) {
+  let tot = null;
+  (colisDeLaCliente || []).forEach(function (c) {
+    if (!c || !c.collecte_depart_at) return;
+    if (tot === null || String(c.collecte_depart_at) < String(tot)) tot = c.collecte_depart_at;
+  });
+  return tot;
+}
+
 /* Les tournées d'une journée, prêtes à dessiner.
 
    Entrée (tout est facultatif sauf programmations) :
@@ -4238,6 +4311,8 @@ function tourneesDeRecuperation(options) {
       nbAPrendre: aPrendre.length,
       nbDejaPris: dejaPris.length,
       idsAPrendre: aPrendre.map(function (c) { return c.id; }),
+      // L'heure du départ, quand le livreur roule déjà vers elle. Voir departDeCollecte().
+      departAt: departDeCollecte(aPrendre),
       // Vrai seulement quand on SAIT qu'il n'y a rien : une journée à venir ne sait rien.
       rienARecuperer: colisConnus && aPrendre.length === 0 && dejaPris.length === 0,
       horsProgramme: false,
@@ -4336,6 +4411,10 @@ function tourneesDeRecuperation(options) {
         nbAPrendre: aPrendre.length,
         nbDejaPris: prisAujourdHui.length,
         idsAPrendre: aPrendre.map(function (c) { return c.id; }),
+        // Une cliente hors programme est celle chez qui un départ a le plus de chances d'avoir
+        // été déclenché la veille sans que la récupération aboutisse. Elle a donc plus besoin
+        // de cette heure-là que les autres, pas moins. Voir departDeCollecte().
+        departAt: departDeCollecte(aPrendre),
         /* « Rien à récupérer » veut dire qu'il n'y avait rien chez cette cliente. Ce n'est pas le
            cas ici : ou bien un colis attend, ou bien il y en avait un et il est déjà pris. Dans
            les deux cas il y avait quelque chose, et l'écran ne doit pas dire le contraire. */

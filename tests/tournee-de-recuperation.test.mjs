@@ -134,12 +134,23 @@ vm.runInContext([
      imiterait ces fonctions ne contrôlerait que son imitation : le jour où config.js changerait,
      le test resterait vert et le bouton d'appel, lui, composerait un mauvais numéro. */
   'numeroCompose', 'numeroInternational',
+  /* Le départ de collecte et le message d'annonce, pris eux aussi dans config.js. (29/08/2026)
+     tourneesDeRecuperation() appelle departDeCollecte() : sans elle dans le bac à sable, la
+     série ne rougissait pas — elle s'ARRÊTAIT, et un décompte qui ne compte que les ✅ voyait
+     simplement un total plus bas. C'est le pire des deux mondes, une série morte qui ne dit
+     rien. Le décompte de la publication compte donc aussi les fichiers qui n'arrivent pas
+     au bout. */
+  'departDeCollecte', 'messageDepartRecuperation', 'lienDepartRecuperation',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
 vm.runInContext('const HORODATAGE_DU_STATUT = ' + JSON.stringify({
   recupere: 'recupere_at', livre: 'livre_at', non_livre: 'non_livre_at', retour: 'retour_at',
 }) + ';', contexte);
 
-vm.runInContext(['formatMontant', 'escapeHTML'].map(n => blocDe(common, n, 'clt-common.js')).join('\n\n'), contexte);
+/* formatHeure depuis le 29/08/2026 : la carte écrit « parti à 09:30 ». Sans elle ici, la série
+   ne rougissait pas, elle S'ARRÊTAIT — et un décompte qui ne regarde que les ❌ voit alors un
+   total plus bas sans une seule ligne rouge. Toute fonction appelée par le dessin doit entrer
+   dans le bac à sable, sinon le banc ment par le silence. */
+vm.runInContext(['formatMontant', 'escapeHTML', 'formatHeure'].map(n => blocDe(common, n, 'clt-common.js')).join('\n\n'), contexte);
 
 vm.runInContext([
   'progGetJour', 'progFicheCliente', 'progNomLivreur', 'renderProgrammationBody',
@@ -710,6 +721,40 @@ verifier("la cliente sans rien est marquée sur sa carte",
 verifier("chaque cliente programmée porte son bouton pour la retirer",
   (poseHTML.match(/data-prog-retirer="/g) || []).length === 3);
 
+/* CE QUE LE TÉLÉPHONE ÉCRIT, LE BUREAU LE LIT. (29/08/2026)
+   Le livreur appuie sur « Je pars » ; l'heure s'écrit en base. Si le bureau ne la montre pas, il
+   décroche son téléphone pour demander « tu es parti ? » — la question à laquelle l'écran est
+   censé répondre. On lui met donc un colis parti sous les yeux, et on regarde ce qu'il dessine.
+   On MESURE le HTML produit, on ne relit pas le code : lire « la classe est écrite dans le
+   fichier » aurait été vert le jour où la carte cesserait de l'employer. */
+const colisAvecDepart = COLIS.map(c => (c.id === 'C1'
+  ? Object.assign({}, c, { collecte_depart_at: AUJ + 'T09:30:00.000Z' })
+  : c));
+contexte.progColis = colisAvecDepart;
+poseHTML = '';
+renderProgrammationBody();
+verifier("le bureau voit que le livreur est en route chez Awa Boutique",
+  /Awa Boutique[\s\S]{0,200}tournee-marque--route">en route</.test(poseHTML),
+  (poseHTML.match(/Awa Boutique[\s\S]{0,300}/) || ['?'])[0]);
+verifier("et il lit l'heure du départ, pas seulement le fait qu'il soit parti",
+  /tournee-depart">parti à \d{2}:\d{2}</.test(poseHTML),
+  (poseHTML.match(/tournee-compte[\s\S]{0,250}/) || ['?'])[0]);
+// Une seule cliente est concernée : « en route » est une réponse par cliente, jamais une humeur
+// de l'écran entier. Le bureau doit pouvoir dire chez QUI il roule.
+verifier("les autres clientes ne sont pas déclarées en route pour autant",
+  (poseHTML.match(/tournee-marque--route/g) || []).length === 1,
+  poseHTML);
+/* LE BUREAU REGARDE, LE TÉLÉPHONE AGIT. Un bouton « Je pars » depuis un fauteuil ferait partir
+   quelqu'un qui n'est pas dans la pièce, et enverrait à la cliente un message signé d'un livreur
+   qui n'a rien décidé. C'est la seule asymétrie voulue entre les deux écrans, et elle est tenue
+   ici, sur le HTML réellement produit. */
+verifier("mais le bureau ne peut PAS mettre un livreur en route à sa place",
+  !/data-tournee-partir/.test(poseHTML) && !/data-tournee-recuperer/.test(poseHTML),
+  poseHTML);
+contexte.progColis = COLIS;
+poseHTML = '';
+renderProgrammationBody();
+
 /* LE BUREAU DESSINE LES MÊMES CARTES QUE LE TÉLÉPHONE DU LIVREUR. (refonte du 28/08/2026)
    C'est la demande, mot pour mot : « la programmation faite par l'équipe sera celle adoptée et
    doit être mieux disposée et facile à comprendre comme l'autre ». Deux écrans qui répondent à
@@ -718,18 +763,46 @@ verifier("chaque cliente programmée porte son bouton pour la retirer",
    On compare donc les deux JEUX D'ÉLÉMENTS, et on exige qu'ils soient identiques. Redessiner le
    bureau en tableau, ou enrichir le téléphone d'un élément que le bureau n'aurait pas, doit
    faire rougir ceci.
-   La comparaison se fait sur l'attribut entier, pas sur un morceau de nom : chercher la simple
-   présence du texte « tournee-carte » aurait été satisfait par « tournee-carte--hors », qui est
-   une NUANCE de carte et non une carte. Le sabotage du 28/08/2026 est passé par ce trou, et
-   c'est lui qui a fait resserrer la mesure. */
-const classesDeTournee = (src) => Array.from(new Set(
-  (src.match(/class="tournee-[a-z-]+/g) || []).map((s) => s.slice('class="'.length))
-)).sort();
-verifier("le bureau et le téléphone emploient exactement le même jeu d'éléments",
-  classesDeTournee(equipe).length >= 10
-  && classesDeTournee(equipe).join(' ') === classesDeTournee(livreur).join(' '),
-  'bureau    : ' + classesDeTournee(equipe).join(' ')
-  + '\n       téléphone : ' + classesDeTournee(livreur).join(' '));
+   ON SÉPARE LE SQUELETTE DES NUANCES. Un nom sans « -- » est une PIÈCE : une carte, un nom, un
+   lieu, un compte. Un nom avec « -- » est un ÉTAT de cette pièce : une carte finie, une marque
+   verte, un geste orange. Les pièces doivent être les mêmes des deux côtés — c'est cela, se lire
+   pareil. Les états, eux, ont le droit de différer, parce que les deux écrans ne portent pas la
+   même charge : le bureau seul montre le tiroir du travail déjà fait, le téléphone seul porte les
+   deux gestes du livreur. Mais alors la liste des états qui diffèrent est ÉCRITE ICI, nom par
+   nom : un douzième écart, lui, doit rougir. Une exception qu'on ne nomme pas est une exception
+   qui s'élargit toute seule.
+   LA MESURE REGARDE TOUT L'ATTRIBUT, ET PLUS SEULEMENT SON DÉBUT. Jusqu'au 29/08/2026 elle ne
+   lisait que les attributs COMMENÇANT par « tournee- » : le bouton du bureau, écrit
+   class="btn btn-outline btn-sm tournee-geste", lui était invisible, et elle a donc annoncé un
+   écart qui n'existait pas. Un instrument aveugle sur un côté ne compare rien. */
+const classesDeTournee = (src) => {
+  const out = new Set();
+  (src.match(/class="[^"]*"/g) || []).forEach((attr) => {
+    (attr.match(/tournee-[a-z-]+/g) || []).forEach((c) => out.add(c));
+  });
+  return Array.from(out).sort();
+};
+const squelette = (src) => classesDeTournee(src).filter((c) => !c.includes('--'));
+verifier("le bureau et le téléphone emploient exactement les mêmes pièces",
+  squelette(equipe).length >= 12
+  && squelette(equipe).join(' ') === squelette(livreur).join(' '),
+  'bureau    : ' + squelette(equipe).join(' ')
+  + '\n       téléphone : ' + squelette(livreur).join(' '));
+
+/* LES SEULS ÉTATS QUI ONT LE DROIT DE N'ÊTRE QUE D'UN CÔTÉ. (29/08/2026)
+   Au bureau : le travail déjà fait, marque et repli — le livreur, lui, n'a pas ce tiroir, sa
+   tournée est ce qui reste à faire. Sur le téléphone : les deux gestes, « Je pars » et
+   « Récupéré, tout » — le bureau REGARDE, il n'envoie pas quelqu'un sur la route depuis un
+   fauteuil. Tout le reste, y compris « en route » et l'heure de départ, doit exister des deux
+   côtés : l'information que le livreur écrit, le bureau doit pouvoir la lire. */
+const NUANCES_BUREAU_SEUL = ['tournee-marque--fait', 'tournee-repli--fait'];
+const NUANCES_TELEPHONE_SEUL = ['tournee-geste--partir', 'tournee-geste--recuperer'];
+const seulementDans = (a, b) => classesDeTournee(a).filter((c) => !classesDeTournee(b).includes(c));
+verifier("et les seuls états propres à un écran sont ceux qu'on a nommés ici",
+  seulementDans(equipe, livreur).join(' ') === NUANCES_BUREAU_SEUL.join(' ')
+  && seulementDans(livreur, equipe).join(' ') === NUANCES_TELEPHONE_SEUL.join(' '),
+  'bureau seul    : ' + seulementDans(equipe, livreur).join(' ') + '  (attendu : ' + NUANCES_BUREAU_SEUL.join(' ') + ')'
+  + '\n       téléphone seul : ' + seulementDans(livreur, equipe).join(' ') + '  (attendu : ' + NUANCES_TELEPHONE_SEUL.join(' ') + ')');
 
 // Et le dessin doit sortir POUR DE VRAI de la fonction, pas seulement dormir dans le fichier.
 [['la carte', /class="tournee-carte[ "]/], ['le nom de la cliente', /class="tournee-nom"/],
@@ -1138,8 +1211,39 @@ verifier("si le livreur n'est plus dans la liste, on le dit au lieu de faire sem
 titre("Ce que le livreur lit en se levant");
 
 let poseLivreur = '';
+
+/* UNE BOÎTE DE CARTON QUI SAIT RENDRE SES BOUTONS. (29/08/2026)
+   Depuis que les deux gestes du livreur sont posés SUR la carte, renderMaTournee() ne se contente
+   plus d'écrire du HTML : elle rebranche ensuite ses boutons sur le conteneur. Une boîte réduite
+   à { id } faisait donc PLANTER le banc — et un plantage ne compte ni un ✅ ni un ❌, il fait
+   simplement baisser le total en silence. C'est exactement le piège du 29/08/2026 au matin.
+   Cette boîte-ci relit le dernier HTML posé et en ressort de vrais faux boutons, avec leur
+   dataset et leurs écouteurs. On peut alors non seulement lire l'écran, mais APPUYER dessus. */
+const gestesPoses = [];
+const boiteTournee = {
+  id: 'recup-tournee',
+  querySelectorAll: (selecteur) => {
+    const attribut = (selecteur.match(/\[([a-z-]+)\]/) || [])[1];
+    if (!attribut) return [];
+    const cle = attribut.replace(/^data-/, '').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
+    const trouves = [];
+    const motif = new RegExp(attribut + '="([^"]*)"', 'g');
+    let m;
+    while ((m = motif.exec(poseLivreur)) !== null) {
+      const el = {
+        disabled: false, textContent: '', dataset: {},
+        addEventListener: (nom, f) => { el.ecouteurs[nom] = f; },
+        ecouteurs: {},
+      };
+      el.dataset[cle] = m[1];
+      trouves.push(el);
+      gestesPoses.push(el);
+    }
+    return trouves;
+  },
+};
 Object.assign(contexte, {
-  document: { getElementById: (id) => (id === 'recup-tournee' ? { id } : null) },
+  document: { getElementById: (id) => (id === 'recup-tournee' ? boiteTournee : null) },
   cltPoserHTML: (box, html) => { poseLivreur = html; return true; },
   currentUser: { id: 'L1' },
   currentProfile: { full_name: 'Koffi' },
@@ -1363,6 +1467,279 @@ verifier("une lecture en échec ne se lit JAMAIS « je n'ai rien à faire »",
   poseLivreur);
 verifier("et elle dit quoi faire : prévenir le bureau avant de partir",
   /bureau/.test(poseLivreur), poseLivreur);
+
+/* ==========================================================================================
+   11 bis. « JE PARS », PUIS « RÉCUPÉRÉ, TOUT » — 29 août 2026
+   ==========================================================================================
+
+   La demande, mot pour mot : « le livreur doit consulter son onglet récupération pour savoir où
+   aller et selon la programmation il sait maintenant mais sur la même carte il faudrait qu'il
+   puisse indiquer qu'il se met en route pour la récupération d'une cliente en particulier, puis
+   tout récupérer une fois chez la vendeuse et naturellement le bouton qui indique qu'il se met
+   en route pour la récupération doit déclencher un message whatsapp adressé à la vendeuse pour
+   annoncer son arrivée. »
+
+   CE QUI EST EN JEU. Avant ce jour, les deux gestes existaient — mais dans la LISTE de colis du
+   dessous, celle qui sert à corriger les montants. Chaque cliente apparaissait donc deux fois
+   sur le même écran : une fois pour savoir, une fois pour agir. C'est cet encombrement-là qu'il
+   fallait défaire, et c'est pourquoi ces contrôles gardent aussi le fait que la liste du dessous
+   ne porte PLUS de bouton : deux boutons pour un même geste finissent toujours par ne plus faire
+   la même chose, et on ne s'en aperçoit que le jour où l'argent ne tombe pas juste.
+
+   ET UN MESSAGE N'EST PAS UNE PROMESSE. « Je pars » ouvre WhatsApp chez la cliente. Si le lien
+   est vide, ou s'il n'ouvre rien parce qu'un bloqueur de fenêtres est passé par là, la cliente
+   n'est pas prévenue et personne ne le sait — le livreur, lui, a vu son bouton s'allumer. D'où
+   un vrai lien <a href>, ouvert par le navigateur lui-même, et non un window.open() après une
+   écriture en base. */
+titre("Le livreur se met en route, et la cliente l'apprend");
+
+// a) Le calcul partagé : quelle heure de départ, quand il y en a plusieurs ?
+/* ET LA RÉPONSE EST null, PAS « rien du tout ». Sabotage du 29/08/2026 : en retirant le garde
+   « ce colis n'a pas d'heure », la fonction rendait undefined au lieu de null sur une cliente où
+   personne n'est parti. La carte, elle, n'y voyait que du feu — elle ne fait qu'un !!departAt.
+   Mais le bureau et le téléphone se transmettent cette valeur, et le jour où l'un des deux la
+   comparera à null, deux écrans répondront différemment à « est-il en route ? ». On épingle donc
+   la réponse exacte, et pas seulement sa valeur de vérité. */
+verifier("sans aucun départ écrit, la cliente n'est pas « en route »",
+  contexte.departDeCollecte([{ id: 'a' }, { id: 'b' }]) === null
+  && contexte.departDeCollecte([{ id: 'a' }, { id: 'b', collecte_depart_at: null }]) === null
+  && contexte.departDeCollecte([]) === null,
+  'une heure inventée ferait croire au bureau que quelqu\'un roule');
+verifier("un seul départ suffit à la mettre en route",
+  contexte.departDeCollecte([{ id: 'a' }, { id: 'b', collecte_depart_at: '2026-08-29T09:30:00Z' }])
+  === '2026-08-29T09:30:00Z');
+/* LE PLUS ANCIEN, ET NON LE PLUS RÉCENT. Un colis saisi par le bureau pendant que le livreur
+   roule reçoit son propre départ, plus tardif. Prendre le plus récent ferait reculer l'heure
+   affichée à mesure que la matinée avance : la carte dirait « parti à 10h15 » d'un homme qui
+   roule depuis 9h30, et le bureau croirait qu'il vient tout juste de s'y mettre. */
+verifier("et quand il y en a plusieurs, c'est le PREMIER départ qui compte",
+  contexte.departDeCollecte([
+    { id: 'a', collecte_depart_at: '2026-08-29T10:15:00Z' },
+    { id: 'b', collecte_depart_at: '2026-08-29T09:30:00Z' },
+  ]) === '2026-08-29T09:30:00Z',
+  'l\u2019heure reculerait à chaque colis saisi pendant qu\u2019il roule');
+
+// b) Le message lui-même, écrit une seule fois dans config.js pour les deux écrans.
+const msgComplet = contexte.messageDepartRecuperation({ livreurNom: 'Koffi', commune: 'Yopougon', nbColis: 3 });
+verifier("le message dit QUI vient", /Koffi/.test(msgComplet) && /Christ Livraison/.test(msgComplet), msgComplet);
+verifier("il dit OÙ il va", /Yopougon/.test(msgComplet), msgComplet);
+verifier("et COMBIEN de colis il vient chercher", /3 colis/.test(msgComplet), msgComplet);
+// Un « vos 1 colis » sur le téléphone d'une cliente, c'est une machine qui parle. Le pluriel
+// n'est pas un détail de style : c'est la différence entre un message écrit et un message émis.
+verifier("un seul colis se dit au singulier, comme le ferait quelqu'un",
+  /votre colis/.test(contexte.messageDepartRecuperation({ livreurNom: 'Koffi', commune: 'Cocody', nbColis: 1 }))
+  && !/1 colis/.test(contexte.messageDepartRecuperation({ livreurNom: 'Koffi', commune: 'Cocody', nbColis: 1 })),
+  contexte.messageDepartRecuperation({ livreurNom: 'Koffi', commune: 'Cocody', nbColis: 1 }));
+// Une fiche livreur sans nom ne doit pas produire « ici , livreur chez… ».
+verifier("un livreur sans nom ne laisse pas de trou dans la phrase",
+  !/ici ,/.test(contexte.messageDepartRecuperation({ livreurNom: '', commune: '', nbColis: 0 }))
+  && /Christ Livraison/.test(contexte.messageDepartRecuperation({ livreurNom: '', commune: '', nbColis: 0 })),
+  contexte.messageDepartRecuperation({ livreurNom: '', commune: '', nbColis: 0 }));
+
+// c) Le lien : le numéro passe par la même mise en forme que les boutons WhatsApp existants.
+const lienDepart = contexte.lienDepartRecuperation('0700000001', { livreurNom: 'Koffi', commune: 'Yopougon', nbColis: 2 });
+verifier("le lien part chez la bonne cliente, au format international",
+  lienDepart.indexOf('https://wa.me/2250700000001?text=') === 0, lienDepart);
+verifier("et il emporte le message, pas une conversation vide",
+  /text=.+/.test(lienDepart) && decodeURIComponent(lienDepart.split('text=')[1]).indexOf('Koffi') !== -1,
+  lienDepart);
+
+// d) La carte : avant le départ, un lien qui ouvre WhatsApp ; après, le geste de récupération.
+contexte.tourneeErreur = '';
+contexte.tourneeLignes = PROG.filter(p => p.jour === AUJ && p.livreur_id === 'L1');
+contexte.tourneeClientes = {
+  F1: { id: 'F1', company_name: 'Awa Boutique', phone: '0700000001', commune_recuperation: 'Yopougon', adresse_recuperation: 'Rue des Jardins' },
+  F2: { id: 'F2', company_name: 'Bintou Shop',  phone: '',           commune_recuperation: 'Cocody',   adresse_recuperation: '' },
+};
+contexte.tourneeColis = [
+  { id: 'C1', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
+  { id: 'C2', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
+  { id: 'C3', fournisseur_id: 'F2', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
+];
+contexte.allColis = [];
+gestesPoses.length = 0;
+poseLivreur = '';
+renderMaTournee();
+
+verifier("avant de partir, la carte porte « Je pars » et rien d'autre",
+  /data-tournee-partir="F1"/.test(poseLivreur) && !/data-tournee-recuperer="F1"/.test(poseLivreur),
+  poseLivreur);
+/* UN SEUL APPUI. C'est le choix de Celtis, mot pour mot : « Un seul appui : Je pars ouvre
+   WhatsApp ». Un <a href> est ouvert par le navigateur lui-même, au moment du doigt ; un
+   window.open() lancé APRÈS une écriture en base est bloqué comme fenêtre surgissante sur la
+   plupart des téléphones, et la cliente n'est alors jamais prévenue. */
+verifier("et c'est un vrai lien WhatsApp, ouvert par le navigateur lui-même",
+  /<a class="tournee-geste tournee-geste--partir"[\s\S]{0,200}href="https:\/\/wa\.me\/2250700000001\?text=/.test(poseLivreur),
+  (poseLivreur.match(/<a class="tournee-geste[\s\S]{0,200}/) || ['aucun lien'])[0]);
+verifier("qui s'ouvre à côté, sans emporter la tournée avec lui",
+  /tournee-geste--partir[\s\S]{0,300}target="_blank"[\s\S]{0,80}rel="noopener"/.test(poseLivreur),
+  'le livreur perdrait sa liste en revenant de WhatsApp');
+// Une cliente sans numéro n'a pas de conversation WhatsApp : un lien wa.me sans numéro ouvre un
+// carnet d'adresses vide, et le livreur croirait avoir prévenu quelqu'un. On lui donne un simple
+// bouton, qui marque le départ sans promettre un message.
+verifier("une cliente sans numéro reçoit un bouton, pas un lien qui n'ouvre rien",
+  /<button[^>]*tournee-geste--partir[^>]*data-tournee-partir="F2"/.test(poseLivreur)
+  && !/wa\.me\/\?text=/.test(poseLivreur),
+  poseLivreur);
+
+// e) Le départ marqué : l'écriture, puis ce que la carte devient.
+const ecrits = [];
+contexte.supabaseClient = { from: () => ({
+  update: (champs) => ({ in: async (col, ids) => { ecrits.push({ champs, ids }); return { error: null }; } }),
+}) };
+contexte.navigator = { onLine: true };
+contexte.alert = (m) => { throw new Error('alerte inattendue : ' + m); };
+vm.runInContext(blocDe(livreur, 'marquerDepartCollecte', 'livreur.html'), contexte);
+vm.runInContext(blocDe(livreur, 'marquerRecupereTout', 'livreur.html'), contexte);
+
+await contexte.marquerDepartCollecte(['C1', 'C2']);
+verifier("« Je pars » écrit une heure de départ, et sur ces colis-là seulement",
+  ecrits.length === 1 && ecrits[0].ids.join(',') === 'C1,C2'
+  && typeof ecrits[0].champs.collecte_depart_at === 'string',
+  JSON.stringify(ecrits));
+/* LES DEUX LISTES DU NAVIGATEUR. Le même colis existe en double dans la page : dans le cache de
+   l'onglet (allColis) et dans celui de la tournée (tourneeColis). N'en mettre qu'une à jour
+   ferait dire « en route » à la carte et « pas encore parti » à la liste du dessous, sur le même
+   écran, au même instant. */
+verifier("et les listes du navigateur suivent, sans attendre un rechargement",
+  contexte.tourneeColis.filter(c => c.collecte_depart_at).map(c => c.id).join(',') === 'C1,C2',
+  contexte.tourneeColis.map(c => c.id + ':' + c.collecte_depart_at).join(' '));
+// Deux appuis de suite ne doivent pas repousser l'heure : le livreur est parti à l'heure du
+// premier appui, et c'est cette heure-là que la cliente attend.
+ecrits.length = 0;
+await contexte.marquerDepartCollecte(['C1', 'C2']);
+verifier("un deuxième appui ne réécrit pas l'heure de départ",
+  ecrits.length === 0, JSON.stringify(ecrits));
+
+gestesPoses.length = 0;
+poseLivreur = '';
+renderMaTournee();
+verifier("une fois en route, la carte le dit en toutes lettres",
+  /tournee-marque--route">en route</.test(poseLivreur), poseLivreur);
+verifier("elle dit aussi à quelle heure il est parti",
+  /tournee-depart">parti à \d{2}:\d{2}</.test(poseLivreur),
+  (poseLivreur.match(/tournee-compte[\s\S]{0,200}/) || ['?'])[0]);
+verifier("et le geste devient « Récupéré, tout », avec le compte des colis",
+  /data-tournee-recuperer="F1"/.test(poseLivreur) && /Récupéré, tout \(2\)/.test(poseLivreur),
+  poseLivreur);
+verifier("« Je pars » a disparu de cette carte : on ne part pas deux fois",
+  !/data-tournee-partir="F1"/.test(poseLivreur), poseLivreur);
+// La cliente chez qui il n'est pas encore parti garde son bouton : « en route » est une réponse
+// par cliente, jamais un état de l'écran entier.
+verifier("l'autre cliente, elle, n'est pas partie pour autant",
+  /data-tournee-partir="F2"/.test(poseLivreur) && !/Bintou Shop[\s\S]{0,400}en route</.test(poseLivreur),
+  poseLivreur);
+
+// f) « Récupéré, tout » : le statut change ET l'heure de départ s'efface.
+ecrits.length = 0;
+await contexte.marquerRecupereTout(['C1', 'C2']);
+verifier("« Récupéré, tout » fait passer les colis au statut récupéré",
+  ecrits.length === 1 && ecrits[0].champs.statut === 'recupere' && ecrits[0].ids.join(',') === 'C1,C2',
+  JSON.stringify(ecrits));
+/* L'HEURE DE DÉPART S'EFFACE AU MÊME MOMENT. Ce n'est pas du ménage : tant qu'elle est écrite,
+   la position du livreur continue d'être partagée (voir updatePositionSharingFromColis et
+   supabase_livreur_collecte.sql). La laisser, c'est suivre quelqu'un après la fin de sa course. */
+verifier("et elle efface l'heure de départ dans la même écriture",
+  ecrits[0].champs.collecte_depart_at === null,
+  'le partage de position continuerait après la récupération');
+verifier("les deux listes du navigateur suivent là aussi",
+  contexte.tourneeColis.filter(c => c.statut === 'recupere').map(c => c.id).join(',') === 'C1,C2'
+  && contexte.tourneeColis.filter(c => c.id !== 'C3').every(c => c.collecte_depart_at === null),
+  contexte.tourneeColis.map(c => c.id + ':' + c.statut + ':' + c.collecte_depart_at).join(' '));
+// Un appel sans colis ne doit rien envoyer : une écriture .in('id', []) sur toute la table est
+// le genre de geste qu'on ne rattrape pas.
+ecrits.length = 0;
+verifier("aucun colis à récupérer, aucune écriture",
+  (await contexte.marquerRecupereTout([])) === false && ecrits.length === 0,
+  JSON.stringify(ecrits));
+
+// g) Les boutons de la carte sont réellement branchés, et branchés sur la bonne cliente.
+contexte.tourneeColis = [
+  { id: 'C1', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
+  { id: 'C2', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
+  { id: 'C3', fournisseur_id: 'F2', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
+];
+contexte.renderAll = () => {};
+gestesPoses.length = 0;
+poseLivreur = '';
+renderMaTournee();
+const boutonPartir = gestesPoses.find(el => el.dataset.tourneePartir === 'F1');
+verifier("le bouton « Je pars » de la carte est bel et bien écouté",
+  !!boutonPartir && typeof boutonPartir.ecouteurs.click === 'function',
+  'le lien ouvrirait WhatsApp sans que rien ne soit noté en base');
+ecrits.length = 0;
+await boutonPartir.ecouteurs.click();
+verifier("et l'appuyer pour de vrai marque le départ des colis de CETTE cliente",
+  ecrits.length === 1 && ecrits[0].ids.join(',') === 'C1,C2',
+  JSON.stringify(ecrits));
+
+// h) Le geste qui change un statut demande confirmation. Un doigt qui glisse dans une cour de
+//    magasin ne doit pas déclarer récupérés des colis qui sont encore dans le carton.
+contexte.tourneeColis.forEach(c => { if (c.fournisseur_id === 'F1') c.collecte_depart_at = '2026-08-29T09:00:00Z'; });
+gestesPoses.length = 0;
+poseLivreur = '';
+renderMaTournee();
+const boutonRecup = gestesPoses.find(el => el.dataset.tourneeRecuperer === 'F1');
+verifier("le bouton « Récupéré, tout » est écouté lui aussi",
+  !!boutonRecup && typeof boutonRecup.ecouteurs.click === 'function');
+let demandes = 0;
+contexte.cltConfirm = async () => { demandes++; return false; };
+ecrits.length = 0;
+await boutonRecup.ecouteurs.click();
+verifier("il demande confirmation avant de changer quoi que ce soit",
+  demandes === 1 && ecrits.length === 0, JSON.stringify(ecrits));
+contexte.cltConfirm = async () => { demandes++; return true; };
+await boutonRecup.ecouteurs.click();
+verifier("et une fois confirmé, il écrit",
+  demandes === 2 && ecrits.length === 1 && ecrits[0].champs.statut === 'recupere',
+  JSON.stringify(ecrits));
+
+/* i bis) LA FEUILLE DE STYLE. Une classe sans règle en face ne colore rien : la carte porterait
+   « en route » en gris, et les deux gestes sortiraient en boutons nus. Et l'ORDRE D'ÉCRITURE est
+   contrôlé lui aussi, parce que c'est exactement ce qui a fait sortir la pastille « déjà
+   récupéré » en ambre le 28/08/2026 — une variante et sa base ont le même poids (une classe
+   chacune), donc c'est la DERNIÈRE écrite qui gagne, en silence. */
+verifier("les deux gestes du livreur sont vraiment habillés, chacun de sa couleur",
+  /\.tournee-geste--partir\{[^}]*background:#d97706/.test(feuilleStyle.replace(/\s*\n\s*/g, ''))
+  && /\.tournee-geste--recuperer\{[^}]*background:#1e8f4e/.test(feuilleStyle.replace(/\s*\n\s*/g, '')),
+  'une classe sans règle en face ne colore rien');
+verifier("et « en route » a sa couleur, sur la carte comme sur la pastille",
+  /\.tournee-carte--route\{[^}]*border-left-color:var\(--navy\)/.test(feuilleStyle.replace(/\s*\n\s*/g, ''))
+  && /\.tournee-marque--route\{[^}]*background:#1b4374/.test(feuilleStyle.replace(/\s*\n\s*/g, '')),
+  'la marque sortirait ambre, la couleur du reste à faire');
+verifier("chaque variante est écrite APRÈS sa base, sinon la base gagne",
+  (() => {
+    const apres = (variante, base) => {
+      const a = feuilleStyle.indexOf(variante), b = feuilleStyle.indexOf(base);
+      return a !== -1 && b !== -1 && a > b;
+    };
+    return apres('.tournee-marque--route{', '.tournee-marque{')
+      && apres('.tournee-geste--partir, .tournee-geste--recuperer{', '.tournee-geste{')
+      && apres('.tournee-carte--route{', '.tournee-carte{');
+  })(),
+  'même poids : c\'est l\'ordre d\'écriture qui tranche, et il est inversé');
+
+// i) La liste du dessous ne décide plus de rien.
+verifier("la liste de colis du dessous ne porte plus aucun bouton d'action",
+  blocDe(livreur, 'recupActionsHTML', 'livreur.html').indexOf('<button') === -1,
+  'le même geste à deux endroits finit toujours par diverger');
+
+// j) Le bureau lit ce que le téléphone écrit — et ne part à la place de personne.
+/* ON RETIRE LES COMMENTAIRES AVANT DE LIRE. Sabotage du 29/08/2026 : la colonne a été effacée de
+   la requête, et ce contrôle est resté vert — parce que le commentaire qui l'explique, juste
+   au-dessus, prononce le même nom. Un contrôle qui se satisfait de sa propre explication ne
+   mesure plus rien du tout. */
+const lectureBureau = sansCommentaires(blocDe(equipe, 'progColisPourLaTournee', 'equipe.html'));
+verifier("le bureau demande bien l'heure de départ à la base",
+  /collecte_depart_at/.test(lectureBureau),
+  'la marque « en route » ne sortirait jamais côté bureau, faute de la colonne');
+// Ce que sa carte en fait est mesuré plus haut, sur le HTML produit — section 8/9/10.
+/* LE DÉPART EST EFFACÉ QUAND LE COLIS PASSE À « RÉCUPÉRÉ ». Une carte du travail fini qui dirait
+   encore « en route » signalerait un reste à faire là où il n'y a plus rien, et le bureau
+   attendrait un homme déjà rentré. La condition est écrite une fois, dans le dessin du bureau. */
+verifier("et un travail déjà fait ne se dit jamais « en route »",
+  /const enRoute = !!l\.departAt && !fini;/.test(equipe),
+  'sans le « && !fini », une carte terminée porterait encore la marque du départ');
 
 /* ==========================================================================================
    12. LES DROITS SONT TENUS PAR LA BASE

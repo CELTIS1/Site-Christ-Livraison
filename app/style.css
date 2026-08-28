@@ -2454,6 +2454,9 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
    dire « il reste à faire » sur un travail terminé. Mesuré dans le navigateur :
    fond rgb(254,243,199) au lieu de rgb(220,252,231). Ne pas remonter cette règle. */
 .tournee-marque--fait{color:#166534; background:#dcfce7;}
+/* « en route » : le bleu de la maison, et APRÈS .tournee-marque pour la raison écrite juste
+   au-dessus. Même poids, donc c'est l'ordre qui tranche. */
+.tournee-marque--route{color:#fff; background:#1b4374;}
 .tournee-lieu{margin-top:4px; font-size:13px; color:var(--muted);}
 .tournee-note{margin-top:4px; font-size:13px; color:#b45309;}
 .tournee-compte{margin-top:8px; font-size:13.5px; color:var(--muted);}
@@ -2484,6 +2487,12 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
   border-color:var(--border-strong); font-weight:600; cursor:default;
 }
 
+/* En route : la carte prend le bleu de la maison, parce qu'à ce moment-là elle ne dit plus
+   « vas-y » mais « tu y vas ». C'est l'état le plus utile à repérer d'un coup d'œil dans une
+   liste de onze clientes : c'est celle chez qui on roule. */
+.tournee-carte--route{border-left-color:var(--navy);}
+.tournee-compte .tournee-depart{color:var(--navy); font-weight:600;}
+
 /* Les deux sections : ce que le bureau a programmé, puis ce qui est confié sans tournée.
    Le second est REPLIÉ par défaut, et son titre dit tout de suite combien il en contient —
    un repli qui ne dit pas ce qu'il cache ne se rouvre jamais. */
@@ -2505,21 +2514,51 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
 
 html[data-theme="dark"] .tournee-marque{color:#fbbf24; background:rgba(217,119,6,.18);}
 html[data-theme="dark"] .tournee-marque--fait{color:#5ed19a; background:rgba(30,143,78,.20);}
+html[data-theme="dark"] .tournee-marque--route{color:#dbeafe; background:#2c5c9a;}
+html[data-theme="dark"] .tournee-compte .tournee-depart{color:#8ab4e8;}
 html[data-theme="dark"] .tournee-note{color:#fbbf24;}
 html[data-theme="dark"] .tournee-repli > summary{color:#fbbf24;}
 html[data-theme="dark"] .tournee-compte .tournee-pris{color:#5ed19a;}
 html[data-theme="dark"] .tournee-carte--programme{border-left-color:#2fae6b;}
 
 /* ---------------------------------------------------------------------------
-   LE GESTE AU BAS D'UNE CARTE DE TOURNÉE, CÔTÉ BUREAU. (28/08/2026)
+   LE GESTE AU BAS D'UNE CARTE DE TOURNÉE. (28/08/2026, étendu le 29/08/2026)
 
    Retirer une cliente du programme, ou en poser une : deux gestes rares mais
    irréversibles à l'œil. Ils tiennent donc toute la largeur, sous les boutons
    de contact et non à côté d'eux — on n'appuie pas sur « Retirer » en visant
    « Appeler ». Même hauteur de 44 pixels que le reste de l'application.
+
+   Le squelette ci-dessous est COMMUN au bureau et au téléphone : c'est la même
+   place sur la carte, la même largeur, la même règle « jamais à côté d'un autre
+   bouton ». Ce qui diffère, ce sont les deux variantes du téléphone, écrites
+   juste en dessous et non ailleurs : le bureau décide, le téléphone agit, et un
+   geste qui engage le partage de position ou qui fait basculer l'argent de tout
+   un lot doit se voir de loin et se viser sans réfléchir.
    --------------------------------------------------------------------------- */
 .tournee-geste{
   display:flex; align-items:center; justify-content:center;
   width:100%; min-height:44px; margin-top:8px;
 }
 .tournee-carte .tournee-contacts + .tournee-geste{margin-top:8px;}
+
+/* Les deux gestes du livreur : pleins, colorés, un peu plus hauts que le reste.
+   ÉCRITS APRÈS le squelette, jamais avant — même poids, donc c'est l'ordre qui
+   tranche, et c'est exactement ce qui avait fait sortir la pastille « déjà
+   récupéré » en ambre le 28/08/2026. */
+.tournee-geste--partir, .tournee-geste--recuperer{
+  gap:6px; min-height:52px; padding:0 12px; border:none; cursor:pointer;
+  border-radius:var(--radius-sm); font-weight:700; font-size:14.5px;
+  text-decoration:none; color:#fff;
+  transition:box-shadow .15s ease, transform .1s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.tournee-geste--partir:active, .tournee-geste--recuperer:active{transform:translateY(1px);}
+.tournee-geste[disabled]{opacity:.6; cursor:default;}
+/* Partir : l'ambre du mouvement, la même que « hors programme ». Ce n'est pas un
+   avertissement, c'est « il reste à faire ». */
+.tournee-geste--partir{background:#d97706;}
+.tournee-geste--partir:hover{box-shadow:0 4px 12px rgba(217,119,6,.30);}
+/* Ramasser : le vert du travail fini, celui du programme et de « déjà récupéré ». */
+.tournee-geste--recuperer{background:#1e8f4e;}
+.tournee-geste--recuperer:hover{box-shadow:0 4px 12px rgba(30,143,78,.30);}
