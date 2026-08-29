@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260829entete1">
-<script src="theme.js?v=20260829entete1"></script>
+<link rel="stylesheet" href="style.css?v=20260829annonce1">
+<script src="theme.js?v=20260829annonce1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1088,6 +1088,13 @@ saisis ensuite lui seront rattachés automatiquement.
            saisir, pas après avoir tapé un chiffre en confiance. Reste vide tant que les deux
            sont d'accord, et vide aussi quand le serveur n'a rien pu dire. -->
       <div id="remise-modal-accord" style="text-align:left;"></div>
+      <!-- Ce que le livreur a annoncé lui-même, avant qu'on ne compte. Ajouté le 29 août 2026.
+           Placé ici, entre le montant attendu et le champ de saisie : la personne du bureau doit
+           lire la parole du livreur AVANT de taper son propre chiffre, sinon l'annonce ne sert
+           qu'à commenter après coup une somme déjà décidée.
+           Reste vide quand le livreur n'a rien annoncé — et beaucoup de soirs se passeront
+           comme ça. La fenêtre se comporte alors exactement comme avant. -->
+      <div id="remise-modal-annonce" style="text-align:left;"></div>
       <div style="text-align:left; margin-bottom:10px;">
         <label id="remise-modal-recu-label" for="remise-modal-recu" style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Montant réellement reçu (FCFA)</label>
         <input type="number" id="remise-modal-recu" min="0" step="1" inputmode="numeric" required style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
@@ -1136,10 +1143,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260829entete1"></script>
-<script src="config.js?v=20260829entete1"></script>
+<script src="clt-common.js?v=20260829annonce1"></script>
+<script src="config.js?v=20260829annonce1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260829entete1"></script>
+<script src="clt-select-recherche.js?v=20260829annonce1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1427,6 +1434,29 @@ async function demanderSonChiffreAuServeur(ctx){
   if (box2) cltPoserHTML(box2, accordRemiseHTML(accordDuServeurEtDeLEcran(ctx.attendu, serveur)));
 }
 
+// Ce que le livreur a annoncé de lui-même, lu au moment où le bureau ouvre sa remise.
+//
+// Même prudence que pour le chiffre du serveur juste au-dessus : droits manquants, fonction pas
+// encore déployée, réseau coupé — on se tait et la fenêtre reste celle d'avant. Une remise doit
+// pouvoir s'enregistrer un soir où rien d'autre ne marche.
+async function demanderLAnnonceDuLivreur(ctx){
+  const box = document.getElementById('remise-modal-annonce');
+  if (box) box.innerHTML = '';
+  if (!ctx) return;
+  let annonce = null;
+  try {
+    const { data, error } = await supabaseClient.rpc('annonce_remise_en_cours', {
+      p_livreur_id: ctx.livreurId
+    });
+    if (error) return;
+    annonce = (Array.isArray(data) ? data[0] : data) || null;
+  } catch (e) { return; }
+  if (!annonce) return;                      // il n'a rien annoncé : rien à dire
+  if (__remiseCtx !== ctx) return;           // la fenêtre a changé pendant le voyage
+  const box2 = document.getElementById('remise-modal-annonce');
+  if (box2) cltPoserHTML(box2, annoncePourLEquipeHTML(annonce));
+}
+
 // colisFraisIds : les colis PAS ENCORE livrés dont on rembourse seulement l'avance de gare.
 // Ils sont transmis à part et ne seront jamais marqués « remis » — sinon leur argent, encaissé
 // plus tard à la livraison, ne serait plus jamais réclamé.
@@ -1458,6 +1488,7 @@ function showRemiseModal(livreurId, attendu, colisIds, nbColis, colisFraisIds){
   document.getElementById('remise-modal-msg').innerHTML = '';
   majEcartRemise();
   demanderSonChiffreAuServeur(__remiseCtx);
+  demanderLAnnonceDuLivreur(__remiseCtx);
   document.getElementById('remise-modal-overlay').classList.remove('hidden');
   setTimeout(() => { const i = document.getElementById('remise-modal-recu'); if (i){ i.focus(); i.select(); } }, 50);
 }
@@ -1467,6 +1498,10 @@ function hideRemiseModal(){
   // prochaine ouverture un écart qui n'a peut-être plus lieu d'être.
   const accord = document.getElementById('remise-modal-accord');
   if (accord) accord.innerHTML = '';
+  // L'annonce aussi portait sur un livreur précis : la laisser en place ferait lire, à la
+  // prochaine ouverture, la parole d'un homme au sujet d'un autre.
+  const annonce = document.getElementById('remise-modal-annonce');
+  if (annonce) annonce.innerHTML = '';
   __remiseCtx = null;
 }
 document.getElementById('remise-modal-recu').addEventListener('input', majEcartRemise);

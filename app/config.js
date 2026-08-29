@@ -4537,19 +4537,30 @@ function caisseEnMainHTML(releve, options) {
 // comme un montant nul et le bandeau annoncerait un écart du montant entier — une fausse alerte
 // du plus mauvais genre, celle qui a l'air d'un vrai trou de caisse. Le banc d'essai a trouvé le
 // cas le 29 août 2026 : la protection n'existait alors que du côté serveur.
-function accordDuServeurEtDeLEcran(attenduEcran, attenduServeur) {
+// La règle de comparaison elle-même, sans nom de camp : deux montants, un verdict. Elle est
+// écrite ici une seule fois parce que l'application confronte maintenant des montants à trois
+// endroits — l'écran contre le serveur avant la remise, l'annonce du livreur contre ce que la
+// base dit qu'il porte, et demain autre chose. Trois arrondis écrits séparément finiraient par
+// tolérer trois écarts différents, et c'est exactement le genre de divergence qu'on ne voit
+// jamais venir sur de l'argent.
+function accordDeDeuxMontants(gauche, droite) {
   const rienDit = v => v === null || v === undefined || v === '';
-  const ecran = rienDit(attenduEcran) ? NaN : Number(attenduEcran);
-  const serveur = rienDit(attenduServeur) ? NaN : Number(attenduServeur);
-  if (!Number.isFinite(ecran) || !Number.isFinite(serveur)) {
-    return { connu: false, accord: false, ecart: 0, ecran: Number.isFinite(ecran) ? ecran : 0, serveur: null };
+  const a = rienDit(gauche) ? NaN : Number(gauche);
+  const b = rienDit(droite) ? NaN : Number(droite);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+    return { connu: false, accord: false, ecart: 0, gauche: Number.isFinite(a) ? a : 0, droite: null };
   }
   // Les montants sont des francs entiers. On arrondit avant de comparer pour qu'un centième
   // de franc né d'un numeric PostgreSQL ne déclenche pas une alerte que personne ne saurait
   // expliquer — mais on ne tolère AUCUN écart d'un franc entier.
-  const e = Math.round(ecran);
-  const s = Math.round(serveur);
-  return { connu: true, accord: e === s, ecart: e - s, ecran: e, serveur: s };
+  const g = Math.round(a);
+  const d = Math.round(b);
+  return { connu: true, accord: g === d, ecart: g - d, gauche: g, droite: d };
+}
+
+function accordDuServeurEtDeLEcran(attenduEcran, attenduServeur) {
+  const v = accordDeDeuxMontants(attenduEcran, attenduServeur);
+  return { connu: v.connu, accord: v.accord, ecart: v.ecart, ecran: v.gauche, serveur: v.droite };
 }
 
 // Le bandeau de désaccord, à poser dans la fenêtre de remise. Rend une chaîne vide quand il n'y
@@ -4567,6 +4578,162 @@ function accordRemiseHTML(verdict) {
     <div style="margin-top:5px; font-size:12.5px; color:#7a2f26; line-height:1.45;">${sens}</div>
     <div style="margin-top:5px; font-size:11.5px; color:#8a5a52;">C'est le montant de la base qui sera enregistré. Notez l'écart et signalez-le avant de solder.</div>
   </div>`;
+}
+
+
+/* ==============================================================================================
+   L'ANNONCE DE REMISE DU LIVREUR
+   ==============================================================================================
+   Le soir, le livreur arrive avec des billets. Quelqu'un d'autre ouvre l'écran et saisit un
+   montant. Si les deux ne sont pas d'accord, c'est la parole du livreur contre un écran qu'il
+   n'a jamais touché : l'homme qui porte l'argent était le seul de la chaîne à ne pas pouvoir
+   parler. Depuis le 29 août 2026 il annonce lui-même, avant qu'on ne compte.
+
+   UNE ANNONCE N'EST PAS UNE REMISE. Elle ne solde aucun colis, ne touche pas à
+   encaissement_remis, n'écrit rien dans remises_caisse et ne déplace pas un franc. Le refus qui
+   protège la caisse — « enregistrement de remise réservé à l'équipe » — n'a pas bougé d'une
+   ligne. Vérifié sur la base de production le 29 août 2026 par un essai à blanc annulé : deux
+   colis étaient marqués remis avant l'annonce, deux après.
+
+   POURQUOI CES FONCTIONS SONT ICI ET PAS DANS LES DEUX PAGES. Aucune n'est appelée par les deux
+   écrans à la fois : le livreur ne voit jamais le bloc de l'équipe, et réciproquement. Elles
+   vivent tout de même dans config.js, pour deux raisons. La première est que la comparaison des
+   montants, elle, EST partagée — c'est la même règle d'arrondi que pour le serveur et l'écran,
+   et elle n'est écrite qu'une fois, dans accordDeDeuxMontants(). La seconde est qu'une fonction
+   posée ici se lit dans un banc d'essai sans navigateur ni base, alors qu'une fonction enfermée
+   dans une page ne se vérifie qu'à l'œil. Sur de l'argent, ce n'est pas un détail de rangement.
+*/
+
+// Le verdict d'une annonce : ce que le livreur dit apporter, contre ce que la base calcule qu'il
+// porte. Le second n'est jamais envoyé par le téléphone — il est écrit par le serveur au moment
+// de l'annonce, dans annoncer_ma_remise(). Un livreur ne peut donc pas annoncer un écart nul en
+// trafiquant sa propre référence.
+function accordAnnonceEtBase(montantAnnonce, montantPorte) {
+  const v = accordDeDeuxMontants(montantAnnonce, montantPorte);
+  return { connu: v.connu, accord: v.accord, ecart: v.ecart, annonce: v.gauche, porte: v.droite };
+}
+
+// L'heure d'une annonce, dite comme on la dirait à voix haute. Le jour n'apparaît que s'il n'est
+// pas celui d'aujourd'hui : « à 19 h 12 » le soir même, « le 28/08 à 19 h 12 » le lendemain
+// matin quand personne n'a soldé la veille — et c'est précisément ce matin-là qu'il faut voir
+// la date, sans avoir à la déduire.
+function heureAnnonceCLT(iso, maintenant) {
+  // new Date(null) ne vaut PAS une date invalide : il vaut le 1er janvier 1970 à zéro heure.
+  // Sans cette ligne, une annonce dont la base n'a pas renvoyé l'heure s'affichait « le 01/01
+  // à 00 h 00 » — une date fausse a l'air d'une information, alors que le silence, lui, se
+  // voit. Trouvé par le banc d'essai le 29 août 2026, pas à l'œil.
+  if (iso === null || iso === undefined || iso === '') return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2, '0');
+  const heure = `${p(d.getHours())} h ${p(d.getMinutes())}`;
+  const ref = maintenant ? new Date(maintenant) : new Date();
+  const memeJour = d.getFullYear() === ref.getFullYear()
+    && d.getMonth() === ref.getMonth() && d.getDate() === ref.getDate();
+  return memeJour ? `à ${heure}` : `le ${p(d.getDate())}/${p(d.getMonth() + 1)} à ${heure}`;
+}
+
+// Ce que la personne du bureau lit, dans la fenêtre de remise, AVANT de compter les billets.
+//
+// Rend une chaîne vide quand le livreur n'a rien annoncé. Beaucoup de soirs se passeront comme
+// ça, et la fenêtre doit alors se comporter exactement comme avant : ne rien afficher de plus,
+// et ne rien reprocher à personne.
+function annoncePourLEquipeHTML(annonce, maintenant) {
+  const a = annonce || null;
+  if (!a || a.montant_annonce === null || a.montant_annonce === undefined) return '';
+  const m = n => escapeHTML(formatMontant(Math.abs(Math.round(Number(n) || 0))) || '0 FCFA');
+  const montant = Math.round(Number(a.montant_annonce) || 0);
+  const quand = escapeHTML(heureAnnonceCLT(a.annonce_le, maintenant));
+
+  // Un montant négatif se dit dans l'autre sens : ce n'est pas le livreur qui rend des billets,
+  // c'est CLT qui lui en sort parce que son avance de gare dépasse ce qu'il a encaissé. Écrire
+  // « il annonce −12 000 » ferait lire une dette du livreur, c'est-à-dire l'inverse du vrai.
+  const phrase = montant < 0
+    ? `Le livreur annonce que CLT lui doit ${m(montant)}, ${quand}.`
+    : `Le livreur annonce ${m(montant)}, ${quand}.`;
+
+  const nb = Number(a.nb_annonces) || 1;
+  const repris = nb > 1
+    ? `<div style="margin-top:4px; font-size:11.5px; color:#5b6b80;">Il s'est repris : ${nb} annonces depuis la dernière remise, celle-ci est la dernière.</div>`
+    : '';
+
+  const note = a.note
+    ? `<div style="margin-top:5px; font-size:12px; color:#33475f; font-style:italic;">« ${escapeHTML(String(a.note))} »</div>`
+    : '';
+
+  const v = accordAnnonceEtBase(a.montant_annonce, a.montant_porte);
+  const desaccord = (v.connu && !v.accord)
+    ? `<div style="margin-top:6px; font-size:12px; color:#8a5a00; background:#fdf6e3; border:1px solid #efdca8; border-radius:8px; padding:7px 9px; line-height:1.45;">
+         Sa base dit qu'il porte ${m(v.porte)} : il annonce ${m(v.ecart)} ${v.ecart > 0 ? 'de plus' : 'de moins'}.
+         Demandez-lui pourquoi avant de compter, pas après.
+       </div>`
+    : '';
+
+  return `<div style="border:1.5px solid #cddcf0; background:#f4f8fd; border-radius:10px; padding:10px 12px; margin-bottom:12px; text-align:left;">
+    <div style="font-weight:800; color:#1B4374; font-size:13px;">🗣️ Ce que le livreur a annoncé</div>
+    <div style="margin-top:5px; font-size:13px; color:#22364d; font-weight:600;">${phrase}</div>
+    ${repris}${note}${desaccord}
+  </div>`;
+}
+
+// Ce que le livreur relit sur son propre téléphone, une fois qu'il a annoncé. Le bouton de
+// correction est nommé « Corriger mon annonce » et non « Modifier » : rien n'est modifié, une
+// annonce de plus est posée à côté de la précédente, et les deux restent. C'est cette trace qui
+// le protège — elle montre qu'il s'est repris de lui-même, à telle heure, avant qu'on ne lui
+// demande quoi que ce soit.
+function monAnnonceHTML(annonce, maintenant) {
+  const a = annonce || null;
+  if (!a || a.montant_annonce === null || a.montant_annonce === undefined) return '';
+  const m = n => escapeHTML(formatMontant(Math.abs(Math.round(Number(n) || 0))) || '0 FCFA');
+  const montant = Math.round(Number(a.montant_annonce) || 0);
+  const quand = escapeHTML(heureAnnonceCLT(a.annonce_le, maintenant));
+  const phrase = montant < 0
+    ? `Vous avez annoncé que CLT vous doit ${m(montant)}, ${quand}.`
+    : `Vous avez annoncé ${m(montant)}, ${quand}.`;
+  const note = a.note
+    ? `<div style="margin-top:4px; font-size:12px; color:#33475f; font-style:italic;">« ${escapeHTML(String(a.note))} »</div>`
+    : '';
+  return `<div style="border:1px solid #cfe3d4; background:#f2f9f4; border-radius:10px; padding:10px 12px;">
+    <div style="font-size:12px; color:#1a7d3c; font-weight:700;">✓ Annonce transmise au bureau</div>
+    <div style="margin-top:4px; font-size:13.5px; color:#14532d; font-weight:700;">${phrase}</div>
+    ${note}
+    <div style="margin-top:6px; font-size:11.5px; color:#5b6b80;">
+      Le bureau la verra en ouvrant votre remise. Tant qu'il n'a pas soldé, vous pouvez vous
+      reprendre : l'ancienne annonce reste, la nouvelle vient à côté.
+    </div>
+  </div>`;
+}
+
+// L'historique des remises d'un livreur, sur son téléphone. Jusqu'au 29 août 2026 il n'y avait
+// pas accès : l'homme qui avait porté l'argent ne pouvait pas relire ce qu'il avait rendu.
+//
+// L'écart est montré tel qu'il est archivé, sans arrondi de courtoisie et sans commentaire :
+// un écart nul se dit « juste », un manque se dit « manque », un trop-perçu se dit « en trop ».
+// Une remise juste n'est pas félicitée — c'est la normale, et un décor vert à chaque ligne
+// ferait cesser de lire la colonne.
+function mesRemisesHTML(lignes) {
+  const l = Array.isArray(lignes) ? lignes : [];
+  if (!l.length) {
+    return `<div style="font-size:12.5px; color:#64748b;">Aucune remise enregistrée pour vous jusqu'ici.</div>`;
+  }
+  const m = n => escapeHTML(formatMontant(Math.abs(Math.round(Number(n) || 0))) || '0 FCFA');
+  const p = n => String(n).padStart(2, '0');
+  const cases = l.map(r => {
+    const d = new Date(r.created_at);
+    const jour = isNaN(d.getTime()) ? '' : `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+    const ecart = Math.round(Number(r.ecart) || 0);
+    const dit = ecart === 0 ? `<span style="color:#1a7d3c; font-weight:700;">juste</span>`
+      : ecart < 0 ? `<span style="color:#c0392b; font-weight:700;">manque ${m(ecart)}</span>`
+      : `<span style="color:#8a5a00; font-weight:700;">${m(ecart)} en trop</span>`;
+    const nb = Number(r.nb_colis) || 0;
+    return `<div style="display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid #eef2f7; font-size:12.5px;">
+      <div><div style="color:#33475f; font-weight:600;">${escapeHTML(jour)}</div>
+        <div style="color:#8a97a8; font-size:11.5px;">${nb} colis soldé${nb > 1 ? 's' : ''}</div></div>
+      <div style="text-align:right;"><div style="color:#22364d; font-weight:700;">${m(r.montant_remis)}</div>
+        <div style="font-size:11.5px;">${dit}</div></div>
+    </div>`;
+  }).join('');
+  return `<div>${cases}</div>`;
 }
 
 // Les colis d'un groupe, en cartes, sous la ligne dépliée. Lecture seule : rien à modifier ici,

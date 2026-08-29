@@ -97,6 +97,10 @@ function corpsSQL(src, nom){
 const contexte = vm.createContext({ console });
 vm.runInContext(['formatMontant', 'escapeHTML'].map(n => blocDe(common, n, 'clt-common.js')).join('\n\n'), contexte);
 vm.runInContext([
+  // La règle de comparaison est descendue dans accordDeDeuxMontants le 29 août 2026, quand
+  // l'annonce du livreur est devenue un troisième couple de montants à confronter. Le verdict
+  // du serveur et de l'écran n'est plus qu'un habillage de noms par-dessus.
+  'accordDeDeuxMontants',
   'accordDuServeurEtDeLEcran',
   'accordRemiseHTML',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);

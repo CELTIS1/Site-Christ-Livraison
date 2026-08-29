@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260829entete1">
-<script src="theme.js?v=20260829entete1"></script>
+<link rel="stylesheet" href="style.css?v=20260829annonce1">
+<script src="theme.js?v=20260829annonce1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -668,6 +668,24 @@
         <button type="button" id="btn-point-pdf" class="btn-point-pdf">📄 Télécharger mon point (PDF)</button>
         <span id="point-pdf-etat" class="point-pdf-etat" role="status" aria-live="polite"></span>
       </div>
+      <!-- L'annonce de la remise du soir. Ajoutée le 29 août 2026 : jusque-là, le livreur
+           arrivait avec ses billets et quelqu'un d'autre saisissait le montant. En cas de
+           désaccord, c'était sa parole contre un écran qu'il n'avait jamais touché. Il annonce
+           maintenant lui-même, avant qu'on ne compte.
+
+           Le bloc est ici, sous le bouton du point PDF, parce que c'est le même geste et le
+           même moment : il regarde son compte, il télécharge son papier, il annonce ce qu'il
+           apporte. Trois choses au même endroit, dans l'ordre où elles se font.
+
+           Une annonce ne solde AUCUN colis. Le pouvoir d'enregistrer la remise reste au bureau,
+           exactement comme avant. -->
+      <div id="annonce-remise-bloc" class="annonce-remise-bloc"></div>
+      <details id="mes-remises-repli" class="journee-detail" style="margin:0 0 14px;">
+        <summary>Mes remises passées</summary>
+        <div id="mes-remises" style="padding:4px 2px 2px;">
+          <div style="font-size:12.5px; color:#64748b;">Chargement…</div>
+        </div>
+      </details>
       <div id="finance-detail">
         <div class="empty-state">Chargement...</div>
       </div>
@@ -675,8 +693,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260829entete1"></script>
-<script src="config.js?v=20260829entete1"></script>
+<script src="clt-common.js?v=20260829annonce1"></script>
+<script src="config.js?v=20260829annonce1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -2423,6 +2441,9 @@
     renderTourneeSummary();
     renderArgentDuJour();
     renderCaisseEnMain();
+    // Le bloc d'annonce se redessine avec le reste : le montant proposé sort de la même
+    // addition que « Ce que vous portez », et il doit suivre chaque colis marqué livré.
+    renderAnnonceRemise();
     renderMesColis();
     renderRecuperations();
     renderMaTournee();
@@ -2539,6 +2560,151 @@
     cltPoserHTML(box, caisseEnMainHTML(
       caisseEnMainDuLivreur(allColis, currentUser.id),
       { complet: !colisHasMore }));
+  }
+
+  // ---- L'ANNONCE DE MA REMISE -------------------------------------------------------------
+  //
+  // Ajouté le 29 août 2026. Le livreur annonce ce qu'il apporte AVANT que le bureau ne compte.
+  // Cela ne solde aucun colis : la remise reste enregistrée par l'équipe, exactement comme
+  // avant. Ce que ce bloc écrit est une phrase horodatée, rien de plus — et c'est tout ce qu'il
+  // manquait pour que l'homme qui porte les billets ne soit plus le seul à ne pas pouvoir
+  // parler.
+  //
+  // Ces deux appels sont les PREMIERS que livreur.html adresse à une fonction serveur : jusqu'à
+  // ce jour la page ne faisait que lire cinq tables. D'où la prudence de `annonceIndisponible` :
+  // si la base n'a pas encore reçu le script SQL, le bloc le dit en une phrase et le reste de
+  // l'écran continue de fonctionner. Une application qui casse parce qu'une nouveauté n'est pas
+  // déployée est pire que l'application d'avant.
+  let monAnnonceEnCours = null;
+  let mesRemisesPassees = [];
+  let annonceIndisponible = false;
+  let annonceEnCoursDEnvoi = false;
+
+  async function chargerAnnonceEtRemises(){
+    if (!currentUser) return;
+    try {
+      const { data, error } = await supabaseClient.rpc('annonce_remise_en_cours', {
+        p_livreur_id: currentUser.id
+      });
+      if (error) { annonceIndisponible = true; }
+      else { monAnnonceEnCours = (Array.isArray(data) ? data[0] : data) || null; }
+    } catch (e) { annonceIndisponible = true; }
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('remises_caisse')
+        .select('id, montant_attendu, montant_remis, ecart, nb_colis, created_at')
+        .eq('livreur_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      // Pas d'erreur affichée ici : la règle de lecture peut ne pas être encore posée, et
+      // l'historique n'est pas ce pour quoi le livreur a ouvert son téléphone ce soir.
+      if (!error && Array.isArray(data)) mesRemisesPassees = data;
+    } catch (e) { /* on se tait, comme ci-dessus */ }
+
+    renderAnnonceRemise();
+  }
+
+  function renderAnnonceRemise(){
+    const box = document.getElementById('annonce-remise-bloc');
+    const hist = document.getElementById('mes-remises');
+    if (hist) cltPoserHTML(hist, mesRemisesHTML(mesRemisesPassees));
+    if (!box || !currentUser) return;
+
+    if (annonceIndisponible){
+      cltPoserHTML(box, `<div style="border:1px solid #e2e8f0; background:#f8fafc; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:12.5px; color:#64748b;">
+        L'annonce de remise n'est pas encore activée sur ce compte. Vous pouvez continuer à
+        remettre votre caisse comme d'habitude.
+      </div>`);
+      return;
+    }
+
+    if (monAnnonceEnCours){
+      // Le montant déjà annoncé est écrit dans le champ de correction : un livreur qui se
+      // reprend corrige le plus souvent un chiffre, il ne repart pas de zéro.
+      const dejaDit = Math.round(Number(monAnnonceEnCours.montant_annonce) || 0);
+      if (cltPoserHTML(box, `<div style="margin-bottom:12px;">
+        ${monAnnonceHTML(monAnnonceEnCours)}
+        <details class="journee-detail" style="margin-top:8px;">
+          <summary>Corriger mon annonce</summary>
+          ${formulaireAnnonceHTML(dejaDit, monAnnonceEnCours.note || '')}
+        </details>
+      </div>`, 'annoncee:' + dejaDit + ':' + (monAnnonceEnCours.annonce_le || ''))){
+        brancherFormulaireAnnonce();
+      }
+      return;
+    }
+
+    // Rien n'a encore été annoncé. Le champ est pré-rempli avec ce que la base calcule qu'il
+    // porte : c'est le montant juste dans l'immense majorité des soirs, et le livreur qui n'a
+    // rien de particulier à signaler n'a alors qu'un seul geste à faire.
+    const porte = caisseEnMainDuLivreur(allColis, currentUser.id);
+    const propose = colisHasMore ? '' : Math.round(Number(porte.montant) || 0);
+    if (cltPoserHTML(box, `<div style="border:1.5px solid #cddcf0; background:#f4f8fd; border-radius:10px; padding:10px 12px; margin-bottom:12px;">
+      <div style="font-weight:800; color:#1B4374; font-size:13px;">🗣️ Annoncer ma remise</div>
+      <div style="margin-top:4px; font-size:12px; color:#5b6b80; line-height:1.45;">
+        Dites au bureau combien vous apportez, avant qu'il ne compte. Cela ne solde rien : c'est
+        votre parole, écrite et datée.
+      </div>
+      ${formulaireAnnonceHTML(propose, '')}
+    </div>`, 'vierge:' + propose)){
+      brancherFormulaireAnnonce();
+    }
+  }
+
+  function formulaireAnnonceHTML(montant, note){
+    return `<div style="margin-top:8px;">
+      <label for="annonce-montant" style="display:block; font-size:12px; font-weight:600; color:#1B4374; margin-bottom:4px;">Montant que j'apporte (FCFA)</label>
+      <input type="number" id="annonce-montant" step="1" inputmode="numeric" value="${escapeHTML(String(montant))}"
+             style="width:100%; border:1.5px solid #cbd5e1; border-radius:9px; padding:10px 12px; font-size:15px; box-sizing:border-box;">
+      <label for="annonce-note" style="display:block; font-size:12px; font-weight:600; color:#1B4374; margin:8px 0 4px;">Un mot, si besoin (facultatif)</label>
+      <input type="text" id="annonce-note" maxlength="200" value="${escapeHTML(String(note || ''))}"
+             placeholder="Ex : il manque 5 000, réglés demain"
+             style="width:100%; border:1.5px solid #cbd5e1; border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+      <button type="button" id="btn-annoncer" class="btn" style="width:100%; margin-top:10px;">Envoyer mon annonce</button>
+      <div id="annonce-msg" role="status" aria-live="polite" style="margin-top:6px; font-size:12.5px;"></div>
+    </div>`;
+  }
+
+  function brancherFormulaireAnnonce(){
+    const btn = document.getElementById('btn-annoncer');
+    if (btn) btn.addEventListener('click', envoyerMonAnnonce);
+  }
+
+  async function envoyerMonAnnonce(){
+    if (annonceEnCoursDEnvoi) return;
+    const champ = document.getElementById('annonce-montant');
+    const note = document.getElementById('annonce-note');
+    const msg = document.getElementById('annonce-msg');
+    const btn = document.getElementById('btn-annoncer');
+    if (!champ) return;
+
+    // Un champ vide n'est pas zéro. Envoyer 0 parce que le livreur n'a rien tapé écrirait dans
+    // sa trace qu'il n'apporte rien — la pire phrase à mettre dans sa bouche à sa place.
+    const brut = String(champ.value).trim();
+    const montant = Number(brut);
+    if (brut === '' || !Number.isFinite(montant)){
+      if (msg) msg.innerHTML = `<span style="color:#c0392b;">Écrivez le montant que vous apportez.</span>`;
+      champ.focus();
+      return;
+    }
+
+    annonceEnCoursDEnvoi = true;
+    if (btn){ btn.disabled = true; btn.textContent = 'Envoi…'; }
+    if (msg) msg.innerHTML = '';
+    const { error } = await supabaseClient.rpc('annoncer_ma_remise', {
+      p_montant: Math.round(montant),
+      p_note: note ? note.value.trim() : null
+    });
+    annonceEnCoursDEnvoi = false;
+    if (btn){ btn.disabled = false; btn.textContent = 'Envoyer mon annonce'; }
+
+    if (error){
+      if (msg) msg.innerHTML = `<span style="color:#c0392b;">${escapeHTML(friendlyErrorMessage(error.message))}</span>`;
+      return;
+    }
+    monAnnonceEnCours = null;      // on relit la base plutôt que de deviner ce qu'elle a écrit
+    await chargerAnnonceEtRemises();
   }
 
   // Journée en toutes lettres, pour les messages ("le mardi 25 août 2026").
@@ -3239,6 +3405,9 @@
     // La tournée du matin se charge sans bloquer le reste : même si la table n'existe pas
     // encore, les colis, eux, doivent s'afficher.
     chargerMaTournee();
+    // L'annonce de remise, sans bloquer non plus, et pour la même raison : un livreur dont la
+    // base n'a pas encore reçu le script SQL doit voir ses colis comme avant.
+    chargerAnnonceEtRemises();
     await refreshOfflineBanner();
     flushOfflineQueue();
 
