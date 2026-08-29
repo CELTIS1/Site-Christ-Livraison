@@ -769,9 +769,23 @@ titre('L\'onglet Finance du livreur');
   verifier('il signale un colis remis dont l\'argent n\'est pas rentré',
     detailColis.includes('montantManquantALaLivraison(c)'),
     'un écart passé sous silence se retrouve dans la caisse du livreur, à sa charge');
-  verifier('les colis livrés se lisent en premier',
-    /const ordre = \{ livre: 0/.test(detailColis),
+  // Ce tri était écrit à l'intérieur de financeColisHTML. Il en est sorti le 29 août 2026, sous
+  // le nom financeColisOrdonnes(), pour que le PDF du point du livreur range ses colis
+  // EXACTEMENT comme son écran les lui a montrés. On ne vérifie donc plus OÙ il est écrit — un
+  // banc d'essai qui épingle un emplacement empêche de ranger le code — mais qu'il n'est écrit
+  // qu'une fois et que les deux le lisent. Le livreur pointe son papier ligne à ligne contre son
+  // écran ; deux tris écrits séparément finiraient par lui donner deux ordres différents.
+  const tri = blocDe(sourceConfig, 'financeColisOrdonnes');
+  verifier('les colis livrés se lisent en premier, les retours en dernier',
+    /const ordre = \{ livre: 0/.test(tri) && /retour: 5/.test(tri),
     'on cherche d\'abord ce qui a rapporté de l\'argent');
+  verifier('à statut égal, le plus ancien colis se lit avant',
+    tri.includes('new Date(a.created_at) - new Date(b.created_at)'));
+  verifier('ce tri n\'est écrit qu\'une fois, et l\'écran comme le PDF le lisent',
+    (sansCommentaires(sourceConfig).match(/const ordre = \{ livre: 0/g) || []).length === 1
+    && detailColis.includes('financeColisOrdonnes(colis)')
+    && blocDe(sourceConfig, 'pointColisTableauCLT').includes('financeColisOrdonnes(colis)'),
+    'le livreur pointe son papier contre son écran : les deux doivent ranger pareil');
 
   // -- La contrepartie promise à la disparition de la recherche ---------------------------------
   verifier('l\'onglet Finance peut aller chercher les journées plus anciennes',

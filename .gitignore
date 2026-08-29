@@ -22,6 +22,14 @@ service_role*.txt
 # --- Dépendances ---
 node_modules/
 
+# --- Cache compilé de Python ---
+# .github/verifier-empreintes.py laissait derrière lui un .pyc, que Python régénère tout seul à
+# chaque exécution. Il était suivi par le dépôt : comme publier.sh fait « git add -A », un
+# fichier binaire de huit kilo-octets repartait à chaque publication, illisible dans un diff et
+# n'apprenant rien à personne. Retiré du suivi le 29 août 2026 ; il reste sur le poste.
+__pycache__/
+*.pyc
+
 # --- Exports / dumps de base de données (schéma privé, ne pas publier) ---
 *.sql
 *.dump

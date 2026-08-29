@@ -57,10 +57,17 @@ function montantConfirme(montant, contexte){
   return confirm(`Le montant saisi est très élevé :\n\n${fmtF(montant)}${contexte ? ' (' + contexte + ')' : ''}\n\nVérifiez qu'il n'y a pas d'erreur de frappe (un zéro de trop ?).\n\nConfirmer ce montant ?`);
 }
 function n(v){ const x = parseFloat(v); return isNaN(x) ? 0 : x; }
+// Les montants s'affichent au franc entier. Le franc CFA n'a pas de centime en circulation :
+// « Coût total employeur : 320 782.80 F » est un chiffre qu'aucune caisse ne peut compter, et le
+// point décimal à l'anglaise n'est pas de la langue de ce document. Vu le 29 août 2026 en
+// ouvrant une fiche individuelle de paie.
+//
+// L'arrondi n'est fait qu'ici, à l'affichage. Aucun calcul n'est touché : les taux continuent de
+// travailler sur les montants exacts, et les exports vers le tableur, eux, arrondissaient déjà au
+// franc entier par Math.round — l'écran et le papier étaient les deux seuls à parler autrement
+// que les feuilles de calcul qu'on rapproche d'eux.
 function fmt(v){
-  const x = Math.round(n(v) * 100) / 100;
-  const s = (Number.isInteger(x) ? x : x.toFixed(2)).toString();
-  return s.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return String(Math.round(n(v))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 function fmtF(v){ return fmt(v) + ' F'; }
 function escapeHTML(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -1307,25 +1314,21 @@ function previewBulletin(i){
   document.getElementById('btn-bulletin-pdf').onclick = () => generateBulletinPDF(b, annee, mois);
   document.getElementById('modal-bulletin').classList.add('open');
 }
-function generateBulletinPDF(b, annee, mois){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:'mm', format:'a4' });
-  const teal = [15,118,110];
-  doc.setFillColor(...teal); doc.rect(0,0,210,26,'F');
-  doc.setTextColor(255); doc.setFont('helvetica','bold'); doc.setFontSize(15);
-  doc.text('BULLETIN DE PAIE', 105, 12, { align:'center' });
-  doc.setFontSize(10); doc.setFont('helvetica','normal');
-  doc.text(`${PARAMS.societe||''} — ${MOIS_FR[mois-1]} ${annee}`, 105, 19, { align:'center' });
-  doc.setTextColor(30);
-  let y = 34;
-  doc.setFontSize(9);
-  const meta = [
+// Passé au papier à en-tête de la maison le 29 août 2026, sur décision de Celtis : le bandeau
+// vert d'eau et le titre centré ont disparu, le bulletin porte désormais le même logo, les mêmes
+// coordonnées et le même pied de page numéroté que le relevé du soir ou le point d'un livreur.
+// Il n'appelle plus new jsPDF directement : il passe par documentCLT(), donc par nouveauPDF(),
+// donc par texteAplatiPourPDF. C'était l'un des deux derniers exports où « 15 000 FCFA » pouvait
+// ressortir « 15 /000 FCFA » sans que personne s'en aperçoive.
+async function generateBulletinPDF(b, annee, mois){
+  // L'identité du salarié, en deux colonnes sans filets : c'est de l'information d'état civil,
+  // pas un tableau de chiffres. Elle était posée au millimètre ; elle est maintenant alignée.
+  const identite = [
     [`Matricule : ${b.matricule}`, `Nom : ${[b.nom,b.prenom].filter(Boolean).join(' ')||'—'}`],
     [`Emploi : ${b.emploi||'—'}`, `Catégorie : ${b.categorie||'—'}`],
     [`Ancienneté : ${b.anciennete} an(s)`, `Jours de présence : ${b.jours}`],
     [`Situation : ${b.situation_familiale||'—'} · ${b.nb_parts} part(s)`, `N° CNPS : ${b.num_cnps||'—'}`],
   ];
-  meta.forEach(row => { doc.text(row[0], 14, y); doc.text(row[1], 110, y); y += 6; });
   const g=b.gains, r=b.retenues;
   const rows = [['Salaire catégoriel ('+b.categorie+')', fmt(g.salaireCat), '']];
   if (g.sursalaire) rows.push(['Sursalaire', fmt(g.sursalaire), '']);
@@ -1340,16 +1343,35 @@ function generateBulletinPDF(b, annee, mois){
   rows.push([{content:'Total retenues salariales',styles:{fontStyle:'bold'}}, '', {content:fmt(b.totalCotisSal),styles:{fontStyle:'bold'}}]);
   rows.push(['Prime de transport', fmt(b.primeTransport), '']);
   if (b.retenueDivers) rows.push(['Retenue divers', '', fmt(b.retenueDivers)]);
-  doc.autoTable({
-    startY: y+2, head: [['Désignation','Gain','Retenue']], body: rows,
-    theme:'grid', headStyles:{ fillColor: teal, halign:'right' }, styles:{ fontSize:9, cellPadding:2 },
-    columnStyles:{ 0:{halign:'left'}, 1:{halign:'right'}, 2:{halign:'right'} },
+  const doc = await documentCLT({
+    titre: 'Bulletin de paie',
+    sousTitre: [b.nom,b.prenom].filter(Boolean).join(' ') || b.matricule,
+    mention: `${MOIS_FR[mois-1]} ${annee}`,
+    sections: [
+      { tableau: { theme: 'plain', body: identite,
+        styles: { fontSize: 9, cellPadding: 1.4 },
+        columnStyles: { 0: { cellWidth: 91 }, 1: { cellWidth: 91 } } } },
+      // « Désignation » porte son alignement sur la cellule elle-même, pas par columnStyles :
+      // mesuré le 29 août 2026, headStyles l'emporte sur columnStyles pour la ligne d'en-tête, et
+      // l'intitulé se retrouvait collé à droite d'une colonne large, à un demi-doigt des chiffres
+      // qu'il n'annonce pas. Seul un style posé sur la cellule passe devant headStyles.
+      { avant: 4, tableau: {
+        head: [[{ content: 'Désignation', styles: { halign: 'left' } }, 'Gain', 'Retenue']], body: rows,
+        headStyles: { halign: 'right' }, styles: { cellPadding: 2 },
+        columnStyles:{ 0:{halign:'left'}, 1:{halign:'right'}, 2:{halign:'right'} },
+      } },
+      // Le net à payer est la seule ligne que le salarié cherche. Il ferme le document sur sa
+      // propre ligne, alignée à droite comme les montants au-dessus, plutôt qu'en texte posé.
+      { avant: 6, tableau: {
+        body: [[{ content: 'NET À PAYER', styles: { halign: 'left' } }, fmtF(b.net)]],
+        styles: { fontSize: 12, cellPadding: 3, fontStyle: 'bold', textColor: PAPIER_CLT.bleu, fillColor: [238,240,243] },
+        columnStyles: { 1: { halign: 'right' } },
+      } },
+    ],
+    apres: [
+      { texte: `Charges patronales : ${fmtF(b.totalCotisPat)}  ·  Coût total employeur : ${fmtF(b.net + b.totalCotisSal + b.totalCotisPat)}`, taille: 8, avant: 7 },
+    ],
   });
-  let yy = doc.lastAutoTable.finalY + 8;
-  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...teal);
-  doc.text(`NET À PAYER : ${fmtF(b.net)}`, 196, yy, { align:'right' });
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(120);
-  doc.text(`Charges patronales : ${fmtF(b.totalCotisPat)}  ·  Coût total employeur : ${fmtF(b.net + b.totalCotisSal + b.totalCotisPat)}`, 14, yy+8);
   doc.save(`Bulletin_${b.matricule}_${MOIS_FR[mois-1]}_${annee}.pdf`);
 }
 /* Les lignes du récap, construites une fois pour Excel et pour l'impression. */
@@ -1772,27 +1794,24 @@ function exportFicheIndividuelle(){
   XLSX.writeFile(wb, `Fiche_${nomFic}_${clePeriode(mois)}.xlsx`);
 }
 
-function pdfFicheIndividuelle(){
+// La seule feuille à l'italienne de l'application : une A4 couchée, 297 de large sur 210 de haut.
+// Passée elle aussi au papier à en-tête de la maison le 29 août 2026 ; c'était le dernier export
+// qui appelait new jsPDF sans passer par nouveauPDF(), et donc le dernier où l'espace fine des
+// milliers pouvait ressortir en barre oblique.
+async function pdfFicheIndividuelle(){
   const f = ficheSalarieCourant();
   if (!f){ showToast('Sélectionnez un salarié.', true); return; }
   const { s, bs } = f; const mois = ETATS_PERIODE.mois;
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:'mm', format:'a4', orientation:'landscape' });
-  const teal = [15,118,110];
-  doc.setFillColor(...teal); doc.rect(0,0,297,20,'F');
-  doc.setTextColor(255); doc.setFont('helvetica','bold'); doc.setFontSize(14);
-  doc.text('FICHE INDIVIDUELLE DE PAIE', 148, 9, { align:'center' });
-  doc.setFontSize(9); doc.setFont('helvetica','normal');
-  doc.text(`${(PARAMS && PARAMS.societe) || ''} — ${libellePeriode(mois)}`, 148, 15, { align:'center' });
-  doc.setTextColor(30); doc.setFontSize(9);
-  doc.text(identiteSalarieTexte(s, bs), 12, 26);
 
   const entetes = enTetesMois(mois);
   const largeur = entetes.length + 2;
-  const head = [['Rubrique', ...entetes, 'Total']];
+  // « Rubrique » annonce une colonne de libellés alignés à gauche : il s'aligne comme eux. Son
+  // alignement est posé sur la cellule, seule façon de passer devant headStyles (voir la même
+  // remarque au bulletin de paie).
+  const head = [[{ content: 'Rubrique', styles: { halign: 'left' } }, ...entetes, 'Total']];
   const body = ficheLignes(bs).map(l => {
     if (l.type === 'sec'){
-      return [{ content:l.lbl, colSpan:largeur, styles:{ fontStyle:'bold', fillColor:[241,245,249], textColor:teal, halign:'left' } }];
+      return [{ content:l.lbl, colSpan:largeur, styles:{ fontStyle:'bold', fillColor:[241,245,249], textColor:PAPIER_CLT.bleu, halign:'left' } }];
     }
     const st = (l.type === 'total' || l.type === 'presence') ? { fontStyle:'bold', fillColor:[248,250,252] } : {};
     const cells = l.cells.map(v => v == null ? '' : (l.type === 'presence' ? String(v) : (v ? fmt(v) : '')));
@@ -1807,11 +1826,22 @@ function pdfFicheIndividuelle(){
   // police et la colonne des libellés pour que tout tienne sur la largeur d'une A4.
   const nb = entetes.length;
   const corps = nb > 18 ? 5.2 : nb > 12 ? 6 : 7;
-  doc.autoTable({
-    startY: 30, head, body, theme:'grid',
-    headStyles:{ fillColor: teal, halign:'right', fontSize: corps },
-    styles:{ fontSize: corps, cellPadding: nb > 12 ? 0.9 : 1.2, halign:'right', overflow:'linebreak' },
-    columnStyles:{ 0:{ halign:'left', cellWidth: nb > 12 ? 32 : 38 } },
+  const doc = await documentCLT({
+    // 297 mm de large : c'est ce seul nombre qui fait basculer la feuille à l'italienne, et
+    // documentCLT en déduit qu'une page pleine y fait 210 mm de haut.
+    largeur: 297,
+    titre: 'Fiche individuelle de paie',
+    sousTitre: `${s.matricule} — ${[s.nom,s.prenom].filter(Boolean).join(' ')||'—'}`,
+    mention: libellePeriode(mois),
+    tableau: {
+      head, body,
+      headStyles:{ halign:'right', fontSize: corps },
+      styles:{ fontSize: corps, cellPadding: nb > 12 ? 0.9 : 1.2, halign:'right', overflow:'linebreak' },
+      columnStyles:{ 0:{ halign:'left', cellWidth: nb > 12 ? 32 : 38 } },
+    },
+    apres: [
+      { texte: identiteSalarieTexte(s, bs), taille: 8.5, avant: 7 },
+    ],
   });
   const nomFic = (s.matricule||'salarie').replace(/[^\w-]+/g,'_');
   doc.save(`Fiche_${nomFic}_${clePeriode(mois)}.pdf`);

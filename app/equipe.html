@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260829accord1">
-<script src="theme.js?v=20260829accord1"></script>
+<link rel="stylesheet" href="style.css?v=20260829entete1">
+<script src="theme.js?v=20260829entete1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1136,10 +1136,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260829accord1"></script>
-<script src="config.js?v=20260829accord1"></script>
+<script src="clt-common.js?v=20260829entete1"></script>
+<script src="config.js?v=20260829entete1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260829accord1"></script>
+<script src="clt-select-recherche.js?v=20260829entete1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -6493,55 +6493,76 @@ l.observation || '—',
 // La forme du tableau, écrite une fois, servie au relevé d'une cliente comme à l'export de la
 // journée entière. Toute chaîne écrite dans un PDF passe par texteAplatiPourPDF : sans elle,
 // l'espace fine des milliers ressort en barre oblique et « 15 000 FCFA » devient « 15 /000 FCFA ».
+// Les couleurs, les filets et les marges ne sont plus écrits ici : styleTableauCLT() les pose
+// pour tous les documents de la maison. Ne restent que les deux choses qui appartiennent
+// vraiment à ce tableau-là — ce qu'il contient, et la largeur de ses colonnes.
+// LES SIX colonnes ont une largeur, et elles totalisent les 182 mm imprimables. Ce n'est pas
+// du zèle : le récapitulatif par client empile un tableau par cliente sur la même feuille, et
+// tant que deux colonnes restaient libres, autoTable les recalculait pour CHAQUE tableau
+// d'après son propre contenu. Vu le 29 août 2026 : quatre tableaux des six mêmes colonnes, et
+// pas une qui tombait sous la précédente. L'œil devait se recaler à chaque cliente.
+//
+// Largeurs mesurées, pas devinées, à la taille 9 en gras avec 5 mm de marge intérieure —
+// c'est la ligne TOTAL qui est en gras, et c'est elle qui déborde en premier : un numéro de
+// téléphone demande 26,0 mm, « 12 / 15 livré(s) » 25,9 et « 1 250 000 FCFA » 28,1.
+//
+// Les deux colonnes d'argent passent de 27 et 25 à 28. L'ancienne colonne « Encaissé » était
+// trop étroite de 0,45 mm : mesuré, « 196 500 FCFA » en gras en réclame 25,45, et la colonne
+// en offrait 25. Toute cliente au-dessus de 100 000 FCFA voyait donc son total coupé en deux.
+// Personne ne l'avait vu parce qu'aucune cliente du banc ne dépassait ce montant.
+//
+// Elles sont écrites UNE FOIS, ici : le tableau de chaque cliente et la bande « TOTAL DE LA
+// JOURNÉE » qui ferme le document lisent le même objet. Deux listes de largeurs recopiées
+// finiraient par diverger, et c'est précisément ce désalignement qu'on répare.
+const RELEVE_COLONNES_PDF = {
+0: { cellWidth: 27 },
+1: { cellWidth: 31 },
+2: { cellWidth: 26 },
+3: { cellWidth: 28, halign: 'right' },
+4: { cellWidth: 28, halign: 'right' },
+5: { cellWidth: 42 },
+};
+
 function releveTableauPDF(r){
 return {
 head: [r.colonnes],
 body: releveLignesTexte(r),
 foot: [releveTotalTextes(r)],
-styles: { fontSize: 9, cellPadding: 2.5, overflow: 'linebreak' },
-headStyles: { fillColor: [27, 67, 116] },
-footStyles: { fillColor: [238, 240, 243], textColor: [27, 67, 116], fontStyle: 'bold' },
-// Largeurs mesurées, pas devinées : jsPDF donne 21,0 mm pour un numéro de téléphone, 17,4 mm
-// pour « 3 / 5 livré(s) » et 20,4 mm pour « 100 000 FCFA » en gras, plus 5 mm de marge
-// intérieure. En dessous, la ligne TOTAL se coupait en deux — et un montant coupé en deux ne se
-// lit plus. Les deux colonnes d'argent s'alignent à droite, milliers sous milliers.
-columnStyles: {
-0: { cellWidth: 27 },
-2: { cellWidth: 24 },
-3: { cellWidth: 27, halign: 'right' },
-4: { cellWidth: 25, halign: 'right' },
-},
-margin: { left: 14, right: 14 },
+// La marge intérieure de 2,5 mm n'est pas un réglage d'apparence : les largeurs ci-dessus ont
+// été mesurées avec elle. La changer recouperait la ligne TOTAL en deux.
+styles: { cellPadding: 2.5 },
+// « Article » et « Encaissé » sont déclarées colonnes d'argent alors que leur largeur est déjà
+// fixée : ce n'est pas pour la largeur, c'est pour que l'alignement à droite descende jusqu'à la
+// ligne TOTAL. Les largeurs écrites ci-dessus gardent le dernier mot.
+colonnesArgent: [3, 4],
+columnStyles: RELEVE_COLONNES_PDF,
 };
 }
 
+// Le relevé du soir passe désormais par documentCLT() : il n'écrit plus lui-même son en-tête, ne
+// place plus ses titres au millimètre et ne décide plus de ses sauts de page. Il dit ce qu'il a
+// à dire, le papier à en-tête de la maison s'occupe du reste — et la feuille se raccourcit
+// d'elle-même quand la cliente n'a que deux colis. La promesse est celle du logo ; les deux
+// appelants l'attendent.
 function releveConstruirePDF(d){
-const doc = nouveauPDF();
-doc.setFontSize(14);
-doc.setTextColor(27, 67, 116);
-doc.text('Relevé du soir — Christ Livraison & Transport SARL', 14, 16);
-doc.setTextColor(0, 0, 0);
-doc.setFontSize(13);
-doc.text(d.nom, 14, 25);
-doc.setFontSize(10);
-doc.text(d.dateLabel, 14, 32);
-doc.text(`${d.r.nb} colis · ${d.r.nbLivres} livré(s)`, 14, 38);
-doc.autoTable(Object.assign({ startY: 44 }, releveTableauPDF(d.r)));
-let y = doc.lastAutoTable.finalY + 11;
-if (y > 265) { doc.addPage(); y = 20; }
-doc.setFontSize(12);
-doc.setTextColor(26, 125, 60);
-doc.text(relevePhraseDue(d.r), 14, y);
-doc.setTextColor(110, 110, 110);
-doc.setFontSize(8);
-doc.text(doc.splitTextToSize(texteAplatiPourPDF(RELEVE_NOTE), 182), 14, y + 8);
-return doc;
+return documentCLT({
+titre: 'Relevé du soir',
+sousTitre: d.nom,
+mention: `${d.dateLabel}  ·  ${d.r.nb} colis  ·  ${d.r.nbLivres} livré(s)`,
+tableau: releveTableauPDF(d.r),
+apres: [
+// La phrase due reste en vert : c'est la seule ligne que la vendeuse lit vraiment.
+{ texte: relevePhraseDue(d.r), taille: 12, gras: true, couleur: [26, 125, 60] },
+{ texte: RELEVE_NOTE, taille: 8, avant: 8 },
+],
+});
 }
 
-function telechargerRelevePDF(){
+async function telechargerRelevePDF(){
 const d = releveEnCours();
 if (!d) return;
-releveConstruirePDF(d).save(releveNomFichier(d.nom, d.date) + '.pdf');
+const doc = await releveConstruirePDF(d);
+doc.save(releveNomFichier(d.nom, d.date) + '.pdf');
 }
 
 // ---- Excel ----
@@ -6634,7 +6655,7 @@ const d = releveEnCours();
 if (!d) return;
 const nom = releveNomFichier(d.nom, d.date) + '.pdf';
 try {
-const blob = releveConstruirePDF(d).output('blob');
+const blob = (await releveConstruirePDF(d)).output('blob');
 const fichier = new File([blob], nom, { type: 'application/pdf' });
 if (!navigator.canShare || !navigator.canShare({ files: [fichier] })) { telechargerRelevePDF(); return; }
 await navigator.share({ files: [fichier], title: d.nom + ' — ' + d.dateLabel, text: relevePhraseDue(d.r) });
@@ -6724,47 +6745,55 @@ XLSX.utils.book_append_sheet(wb, ws, 'Récapitulatif');
 XLSX.writeFile(wb, `${recapExportBaseName()}.xlsx`);
 }
 
-// PDF : titre + date + totaux, puis une section par cliente (nom + total, puis tableau de ses colis).
-function exportRecapDayPDF(){
+// PDF : une section par cliente (son nom, son total, puis le tableau de ses colis), et le TOTAL
+// DE LA JOURNÉE en dernière section. Les sauts de page ne sont plus décidés ici à coups de
+// « si y > 258 » : documentCLT() sait où finit la feuille, et ne laisse plus un nom de cliente
+// tout seul en bas d'une page pendant que son tableau part sur la suivante.
+async function exportRecapDayPDF(){
 const colisJour = recapDayColis();
 if (!colisJour.length) { alert("Aucune cliente enregistrée pour ce jour."); return; }
 const groups = recapDayGroups(colisJour);
 const dateLabel = recapDayLabel(recapGetDate());
 const tJour = totauxArgent(colisJour);
-const doc = nouveauPDF();
-doc.setFontSize(14);
-doc.setTextColor(27, 67, 116);
-doc.text('Récapitulatif par client — Christ Livraison & Transport SARL', 14, 16);
-doc.setTextColor(0, 0, 0);
-doc.setFontSize(10);
-doc.text(dateLabel, 14, 23);
-doc.text(`${groups.length} cliente(s) · ${colisJour.length} colis · ${tJour.nbLivres} livré(s)`, 14, 29);
-doc.text(`Articles enregistrés : ${formatMontant(tJour.articleEnregistre) || '0 FCFA'} · Articles encaissés : ${formatMontant(tJour.articleEncaisse) || '0 FCFA'}`, 14, 35);
-let startY = 43;
-groups.forEach(g => {
-if (startY > 258) { doc.addPage(); startY = 20; }
-doc.setFontSize(11);
-doc.setTextColor(27, 67, 116);
-doc.text(`${g.name}  —  ${g.r.nbLivres} / ${g.r.nb} livré(s) · encaissé ${formatMontant(g.r.totalEncaisse) || '0 FCFA'}`, 14, startY);
-doc.setTextColor(0, 0, 0);
-startY += 3;
-doc.autoTable(Object.assign({ startY }, releveTableauPDF(g.r)));
-startY = doc.lastAutoTable.finalY + 9;
-});
-if (startY > 250) { doc.addPage(); startY = 20; }
-doc.autoTable({
-startY,
-body: [['TOTAL DE LA JOURNÉE', tJour.nbLivres + ' / ' + tJour.nb + ' livré(s)',
+
+const sections = groups.map(g => ({
+titre: `${g.name}  —  ${g.r.nbLivres} / ${g.r.nb} livré(s) · encaissé ${formatMontant(g.r.totalEncaisse) || '0 FCFA'}`,
+tableau: releveTableauPDF(g.r),
+}));
+
+// Le total de la journée ferme le document. Il n'est jamais facultatif : un récapitulatif
+// d'argent sans total oblige la personne qui le lit à refaire l'addition à la main.
+//
+// Il est écrit sur LA MÊME GRILLE que les tableaux des clientes : mêmes six colonnes, mêmes
+// largeurs, même taille, même marge intérieure. Vu et mesuré le 29 août 2026 : la bande était
+// jusque-là un cinquième tableau à quatre colonnes libres, ses montants finissaient à 404,6 et
+// 517,1 pt quand ceux des clientes finissaient à 338,9 et 418,3, et son argent était collé à
+// gauche. C'est pourtant la somme de tout ce qui précède : elle doit se vérifier à l'œil en
+// descendant la colonne, pas se relire de travers. Le libellé prend les deux premières colonnes
+// ensemble, faute de tenir dans les 27 mm du téléphone. Ce qui la distingue des lignes TOTAL des
+// clientes est son fond, plus soutenu, et son libellé.
+sections.push({ tableau: {
+body: [[
+{ content: 'TOTAL DE LA JOURNÉE', colSpan: 2 },
+tJour.nbLivres + ' / ' + tJour.nb + ' livré(s)',
 formatMontant(tJour.articleEnregistre) || '0 FCFA',
-formatMontant(tJour.articleEncaisse) || '0 FCFA']],
-styles: { fontSize: 10, cellPadding: 3, fontStyle: 'bold', textColor: [27, 67, 116], fillColor: [238, 240, 243] },
-margin: { left: 14, right: 14 },
+formatMontant(tJour.articleEncaisse) || '0 FCFA',
+'',
+]],
+styles: { fontSize: 9, cellPadding: 2.5, fontStyle: 'bold', textColor: [27, 67, 116], fillColor: [225, 230, 238] },
+columnStyles: RELEVE_COLONNES_PDF,
+} });
+
+const doc = await documentCLT({
+titre: 'Récapitulatif par client',
+sousTitre: dateLabel,
+mention: `${groups.length} cliente(s)  ·  ${colisJour.length} colis  ·  ${tJour.nbLivres} livré(s)`,
+sections,
+apres: [
+{ texte: `Articles enregistrés : ${formatMontant(tJour.articleEnregistre) || '0 FCFA'}  ·  Articles encaissés : ${formatMontant(tJour.articleEncaisse) || '0 FCFA'}`, taille: 10, gras: true, couleur: [27, 67, 116] },
+{ texte: RELEVE_NOTE, taille: 8, avant: 8 },
+],
 });
-let yNote = doc.lastAutoTable.finalY + 8;
-if (yNote > 275) { doc.addPage(); yNote = 20; }
-doc.setFontSize(8);
-doc.setTextColor(110, 110, 110);
-doc.text(doc.splitTextToSize(texteAplatiPourPDF(RELEVE_NOTE), 182), 14, yNote);
 doc.save(`${recapExportBaseName()}.pdf`);
 }
 
@@ -8436,24 +8465,19 @@ XLSX.writeFile(wb, `comptabilite-${new Date().toISOString().slice(0, 10)}.xlsx`)
 // pouvoir être partagé directement avec elle (liste de tous ses colis du jour, montants et total).
 // Quand "Tous les clients" est sélectionné, le tableau est regroupé par vendeuse avec un sous-total
 // par vendeuse avant le tableau détaillé, pour faciliter le point du soir global.
+//
+// Les noms de clientes passent par fournisseurLabelPlain() et NON par fournisseurLabel().
+// fournisseurLabel() échappe pour le HTML : c'est ce qu'il faut dans une page, c'est faux sur du
+// papier. Le 29 août 2026, le document imprimait « Chez Awa &amp; Fille » et
+// « L&#39;Atelier d&#39;Aïcha ». Personne ne l'avait vu parce que personne n'avait ouvert le
+// fichier : les deux fonctions rendent une chaîne, et le test passait.
 document.getElementById('btn-export-pdf').addEventListener('click', async () => {
 const rows = await comptaFiltered();
 if (!rows.length) { alert("Aucune donnée à exporter."); return; }
-const doc = nouveauPDF();
 const t = totauxArgent(rows);
 const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
+const sections = [];
 
-doc.setFontSize(14);
-doc.text('Comptabilité — Christ Livraison & Transport SARL', 14, 16);
-doc.setFontSize(10);
-const titre = fournisseurId ? `Client : ${fournisseurLabel(fournisseurId)}` : 'Tous les clients';
-doc.text(titre, 14, 23);
-// Deux lignes séparées : l'argent des clientes d'un côté, celui de CLT de l'autre.
-doc.text(`${t.nb} colis · ${t.nbLivres} livré(s)`, 14, 29);
-doc.text(`Articles : ${formatMontant(t.articleEnregistre) || '0 FCFA'} enregistrés · ${formatMontant(t.articleEncaisse) || '0 FCFA'} encaissés · ${formatMontant(t.articleADevoir) || '0 FCFA'} à reverser aux clientes`, 14, 35);
-doc.text(`Frais de livraison CLT : ${formatMontant(t.livraisonEncaissee) || '0 FCFA'} encaissés`, 14, 41);
-
-let startY = 47;
 if (!fournisseurId) {
 const parFournisseur = {};
 rows.forEach(c => {
@@ -8464,11 +8488,13 @@ parFournisseur[key].push(c);
 const ids = Object.keys(parFournisseur);
 const totaux = {};
 ids.forEach(id => { totaux[id] = totauxArgent(parFournisseur[id]); });
-doc.autoTable({
-startY,
+sections.push({ titre: 'Sous-totaux par client', tableau: {
+// Les trois colonnes de droite portent de l'argent : config.js mesure leur largeur sur les
+// montants réellement présents et les aligne à droite, milliers sous milliers.
+colonnesArgent: [3, 4, 5],
 head: [['Client', 'Colis', 'Livrés', 'Articles enregistrés', 'Articles encaissés', 'À reverser']],
 body: ids.map(id => [
-fournisseurLabel(id),
+fournisseurLabelPlain(id),
 totaux[id].nb,
 totaux[id].nbLivres,
 formatMontant(totaux[id].articleEnregistre) || '0 FCFA',
@@ -8483,16 +8509,20 @@ formatMontant(t.articleEnregistre) || '0 FCFA',
 formatMontant(t.articleEncaisse) || '0 FCFA',
 formatMontant(t.articleADevoir) || '0 FCFA',
 ]],
-});
-startY = doc.lastAutoTable.finalY + 8;
+} });
 }
 
-doc.autoTable({
-startY,
+sections.push({ titre: sections.length ? 'Détail colis par colis' : '', tableau: {
+// Huit colonnes sur 182 mm : la police descend à 8 pour que rien ne se coupe.
+styles: { fontSize: 8, cellPadding: 1.8 },
+// Article, Encaissé et Livraison portent de l'argent : config.js mesure leur largeur sur les
+// montants réellement présents et les aligne à droite, milliers sous milliers. Sans cette
+// déclaration, « 45 000 FCFA » se coupait en deux lignes, « 45 000 » puis « FCFA » dessous.
+colonnesArgent: [3, 4, 5],
 head: [['Colis', 'Client', 'Statut', 'Article', 'Encaissé', 'Livraison', 'État de l\u2019argent', 'Date']],
 body: rows.map(c => [
 c.description || '',
-fournisseurLabel(c.fournisseur_id),
+fournisseurLabelPlain(c.fournisseur_id),
 STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
 formatMontant(montantArticleColis(c)) || '0 FCFA',
 formatMontant(montantArticleEncaisse(c)) || '—',
@@ -8510,6 +8540,18 @@ formatMontant(t.livraisonEnregistree) || '0 FCFA',
 '',
 '',
 ]],
+} });
+
+const doc = await documentCLT({
+titre: 'Comptabilité',
+sousTitre: fournisseurId ? fournisseurLabelPlain(fournisseurId) : 'Tous les clients',
+mention: `${t.nb} colis  ·  ${t.nbLivres} livré(s)`,
+sections,
+apres: [
+// Deux lignes séparées : l'argent des clientes d'un côté, celui de CLT de l'autre.
+{ texte: `Articles : ${formatMontant(t.articleEnregistre) || '0 FCFA'} enregistrés  ·  ${formatMontant(t.articleEncaisse) || '0 FCFA'} encaissés  ·  ${formatMontant(t.articleADevoir) || '0 FCFA'} à reverser aux clientes`, taille: 9.5 },
+{ texte: `Frais de livraison CLT : ${formatMontant(t.livraisonEncaissee) || '0 FCFA'} encaissés`, taille: 10, gras: true, couleur: [27, 67, 116], avant: 6 },
+],
 });
 doc.save(`comptabilite-${new Date().toISOString().slice(0, 10)}.pdf`);
 });

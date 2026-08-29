@@ -159,7 +159,9 @@ vm.runInContext([
   'colisDescriptionTexte',
   'argentTuilesHTML',
   'argentResumeHTML',
+  'financeColisOrdonnes',
   'financeColisHTML',
+  'financeLignes',
   'financeTableauHTML',
   'argentClienteLigneHTML',
   'releveClienteTuilesHTML',
@@ -329,6 +331,12 @@ verifier("et le total de ces jours-là reste juste",
 titre("Une seule copie de chaque brique d'affichage, dans config.js");
 
 const briques = [
+  // Sorties de financeTableauHTML et de financeColisHTML le 29 août 2026, pour que le PDF du
+  // point du livreur lise EXACTEMENT les lignes et l'ordre que son écran lui montre. Elles ont
+  // d'autant plus leur place ici : une brique partagée par deux sorties est celle qu'il est le
+  // plus tentant de recopier, et celle dont la copie se remarquerait le moins.
+  'financeColisOrdonnes',
+  'financeLignes',
   'financeColisHTML',
   'financeTableauHTML',
   'brancherFinanceDepliage',

@@ -111,7 +111,32 @@ vm.runInContext([
   'statutTexte', 'releveCliente', 'releveTotalTextes', 'relevePiedCellules',
   'texteAplatiPourPDF', 'celluleAplatiePourPDF', 'nouveauPDF',
   'relevePhraseDue', 'releveNomFichier',
+  // Le relevé du soir ne dessine plus son en-tête : il passe par le papier à en-tête de la
+  // maison, comme les six autres documents de l'application. Toute cette chaîne doit donc être
+  // là, sans quoi releveConstruirePDF tombe sur un documentCLT introuvable. Ce qui se vérifie
+  // ici reste ce qui se vérifiait avant : le contenu du relevé. La mise en page, elle, a son
+  // propre banc d'essai, tests/papier-a-en-tete.test.mjs.
+  'logoCLT', 'feuilleCLT', 'hauteurLigneCLT', 'dateEditionCLT', 'nomFichierCLT',
+  'enTeteCLT', 'piedsDePageCLT', 'largeursArgentCLT', 'piedArgentCLT', 'styleTableauCLT',
+  'hauteurApresCLT', 'sectionsCLT', 'titreSectionCLT', 'hauteurNecessaireCLT',
+  'tracerCLT', 'documentCLT',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
+
+vm.runInContext([
+  // Les trois tables que texteAplatiPourPDF consulte à chaque cellule : ce que la police WinAnsi
+  // sait écrire, ce qu'elle ne sait pas, et ce qui doit simplement disparaître.
+  declarationDe(sourceConfig, 'REMPLACEMENTS_PDF_CLT', 'config.js'),
+  declarationDe(sourceConfig, 'WINANSI_HAUT_CLT', 'config.js'),
+  declarationDe(sourceConfig, 'RETIRE_PDF_CLT', 'config.js'),
+  declarationDe(sourceConfig, 'PAPIER_CLT', 'config.js'),
+  declarationDe(sourceConfig, 'HAUTEUR_TITRE_SECTION_CLT', 'config.js'),
+  // Le logo est déjà « cherché et absent » : logoCLT() a été écrite pour rendre null plutôt que
+  // d'empêcher un document de sortir, et il n'y a ni réseau ni FileReader ici.
+  'let __logoCLT = null;',
+  // La grille de colonnes du relevé, elle, vit dans equipe.html, aux côtés des deux tableaux
+  // qui la lisent.
+  declarationDe(equipe, 'RELEVE_COLONNES_PDF', 'equipe.html'),
+].join('\n\n'), contexte);
 
 vm.runInContext(['formatMontant', 'escapeHTML'].map(n => blocDe(common, n, 'clt-common.js')).join('\n\n'), contexte);
 
@@ -126,6 +151,9 @@ const {
   releveConstruireWordHTML, releveBarreHTML, renderRecapBilan, recapDayGroups, releveConstruirePDF,
   texteAplatiPourPDF, releveTableauPDF,
 } = contexte;
+// Une fonction déclarée dans le bac à sable se retrouve sur l'objet contexte ; une const, non —
+// elle reste dans la portée lexicale du script. On va donc la chercher en la faisant évaluer.
+const RELEVE_COLONNES_PDF = vm.runInContext('RELEVE_COLONNES_PDF', contexte);
 
 /* ---------- Le décor et les colis d'exemple ---------- */
 const JOUR = '2026-08-26';
@@ -290,21 +318,65 @@ const htmlEcran = renderRecapBilan('F1', COLIS);
 // Le Word, exécuté pour de vrai.
 const d = { fid: 'F1', nom: 'Sr Marie', date: JOUR, dateLabel: 'mercredi 26 août 2026', r };
 const htmlWord = releveConstruireWordHTML(d);
-// Le PDF, exécuté pour de vrai contre un faux jsPDF qui note ce qu'on lui demande d'écrire.
-const tracePDF = { textes: [], tables: [] };
-contexte.window = { jspdf: { jsPDF: function(){
+/* Le PDF, exécuté pour de vrai contre un faux jsPDF qui note ce qu'on lui demande d'écrire.
+
+   Depuis le 29 août 2026, le relevé passe par le papier à en-tête de la maison. La doublure a
+   donc dû grandir : documentCLT mesure les colonnes d'argent (getTextWidth, getFont), mesure la
+   hauteur du document sur un brouillon (internal.pageSize), et numérote les pages à la fin
+   (setPage, getNumberOfPages). Ce qui est vérifié ici n'a pas changé pour autant : c'est le
+   CONTENU du relevé. La mise en page a son propre banc d'essai, tests/papier-a-en-tete.test.mjs.
+
+   Un même relevé ouvre plusieurs documents : le brouillon de mesure, puis le tracé définitif.
+   Chaque tableau note donc le numéro du document auquel il appartient, et on ne lit à la fin
+   que le dernier — celui que la cliente reçoit. */
+const tracePDF = { textes: [], tables: [], docs: 0 };
+contexte.window = { jspdf: { jsPDF: function(options){
+  const o = options || {};
+  const f = o.format || [210, 297];
+  const paysage = o.orientation === 'landscape';
+  let largeur = paysage ? Math.max(f[0], f[1]) : Math.min(f[0], f[1]);
+  let hauteur = paysage ? Math.min(f[0], f[1]) : Math.max(f[0], f[1]);
+  let pages = 1, courante = 1, taille = 10, gras = 'normal', police = 'helvetica';
+  tracePDF.docs += 1;
+  const idDoc = tracePDF.docs;
   const doc = {
+    internal: {
+      scaleFactor: 2.834645669291339,
+      pageSize: { getHeight(){ return hauteur; }, getWidth(){ return largeur; } },
+      getNumberOfPages(){ return pages; },
+      getCurrentPageInfo(){ return { pageNumber: courante }; },
+    },
     lastAutoTable: { finalY: 60 },
-    setFontSize(){}, setTextColor(){}, addPage(){ return doc; },
+    addPage(){ pages++; courante = pages; return doc; },
+    setPage(i){ courante = i; return doc; },
+    setFont(p, s){ police = p || police; gras = s || 'normal'; return doc; },
+    getFont(){ return { fontName: police, fontStyle: gras }; },
+    setFontSize(t){ taille = t; return doc; },
+    getFontSize(){ return taille; },
+    setTextColor(){ return doc; }, setDrawColor(){ return doc; }, setLineWidth(){ return doc; },
+    line(){ return doc; }, addImage(){ return doc; },
+    getTextWidth(t){ return String(t).length * taille * 0.5 / 2.834645669291339; },
+    getLineHeight(){ return taille * 1.15; },   // en POINTS, comme la vraie
     text(t){ tracePDF.textes.push(Array.isArray(t) ? t.join(' ') : String(t)); return doc; },
     splitTextToSize(t){ return [String(t)]; },
-    autoTable(o){ tracePDF.tables.push(o); doc.lastAutoTable = { finalY: 60 + tracePDF.tables.length * 40 }; return doc; },
+    autoTable(o2){
+      tracePDF.tables.push(Object.assign({ __doc: idDoc }, o2));
+      doc.lastAutoTable = { finalY: 60 + tracePDF.tables.length * 40 };
+      return doc;
+    },
     save(){}, output(){ return {}; },
   };
   return doc;
 } } };
 vm.runInContext('const { jsPDF } = window.jspdf;', contexte); // vérifie que la forme attendue existe
-releveConstruirePDF(d);
+// documentCLT rend une promesse — celle du logo. Sans l'attendre, on lirait une trace vide.
+await releveConstruirePDF(d);
+// Le tableau du document définitif, le seul que la cliente reçoive.
+const tableauPDF = tracePDF.tables.filter(o => o.__doc === tracePDF.docs)[0];
+// Une cellule de pied porte maintenant son alignement sur elle-même — { content, styles } — pour
+// que la ligne TOTAL tombe sous les chiffres qu'elle additionne. On lit donc son contenu par ce
+// petit passage, au lieu de supposer une chaîne nue.
+const contenu = cel => (cel && typeof cel === 'object' && 'content' in cel) ? cel.content : cel;
 
 verifier("l'écran affiche bien la ligne TOTAL",
   htmlEcran.includes('recap-total-row') && htmlEcran.includes(totalEncaisseTexte));
@@ -350,16 +422,41 @@ verifier("la feuille de style ramène à gauche les cellules de total sans libel
    le PDF a le droit de faire. */
 const aplati = (s) => texteAplatiPourPDF(s);
 
+/* Le relevé définitif ne porte qu'UN tableau. Le compte se fait sur le document final et non sur
+   la trace entière : documentCLT ouvre d'abord un brouillon de 4 000 mm pour mesurer la hauteur
+   nécessaire, et, quand le relevé déborde, un essai en A4 avant le vrai. Compter tous les
+   tableaux tracés reviendrait à compter les répétitions. */
+const tableauxDuDocument = tracePDF.tables.filter(o => o.__doc === tracePDF.docs);
+verifier("le relevé définitif ne dessine qu'un seul tableau",
+  tableauxDuDocument.length === 1,
+  'obtenu : ' + tableauxDuDocument.length + ' tableau(x) sur le document final, '
+  + tracePDF.tables.length + ' tracé(s) en tout');
+
 verifier("le PDF porte une ligne TOTAL dans son pied de tableau",
-  tracePDF.tables.length === 1
-  && Array.isArray(tracePDF.tables[0].foot)
-  && tracePDF.tables[0].foot[0].join('|') === totaux.map(aplati).join('|'),
-  'obtenu : ' + JSON.stringify(tracePDF.tables[0] && tracePDF.tables[0].foot));
+  !!tableauPDF && Array.isArray(tableauPDF.foot)
+  && tableauPDF.foot[0].map(contenu).join('|') === totaux.map(aplati).join('|'),
+  'obtenu : ' + JSON.stringify(tableauPDF && tableauPDF.foot));
+
+/* La ligne TOTAL tombait à gauche pendant que les chiffres qu'elle additionne étaient à droite :
+   la vendeuse devait suivre la colonne du doigt pour vérifier l'addition. jsPDF ne laisse pas le
+   choix — footStyles l'emporte sur columnStyles pour les cellules de pied, et seul un alignement
+   posé sur la cellule elle-même gagne. C'est pourquoi le pied porte maintenant des objets
+   { content, styles } et non des chaînes nues. Sans cette vérification, la ligne repartirait à
+   gauche à la première simplification. */
+verifier("les deux cellules d'argent du TOTAL sont alignées sous leurs colonnes",
+  [3, 4].every(i => { const c = tableauPDF.foot[0][i];
+    return c && typeof c === 'object' && c.styles && c.styles.halign === 'right'; }),
+  'obtenu : ' + JSON.stringify([3, 4].map(i => tableauPDF.foot[0][i])));
+
+verifier("les colonnes d'argent du relevé sont bien celles déclarées à droite dans l'en-tête",
+  releveTableauPDF(r).colonnesArgent.join(',') === '3,4'
+  && [3, 4].every(i => RELEVE_COLONNES_PDF[i].halign === 'right'),
+  "l'alignement du pied doit désigner les mêmes colonnes que celui du corps");
 
 verifier("le PDF, le Word et l'écran portent le MÊME total encaissé",
   htmlEcran.includes(totalEncaisseTexte)
   && htmlWord.includes(totalEncaisseTexte)
-  && tracePDF.tables[0].foot[0][4] === aplati(totalEncaisseTexte),
+  && contenu(tableauPDF.foot[0][4]) === aplati(totalEncaisseTexte),
   "c'est tout l'objet de ce travail : un seul chiffre, quatre supports");
 
 verifier("le PDF et le Word portent la même phrase de somme due",
@@ -368,8 +465,8 @@ verifier("le PDF et le Word portent la même phrase de somme due",
 
 verifier("aucune espace fine insécable ne part vers le PDF",
   ![].concat(tracePDF.textes,
-    tracePDF.tables[0].head[0], tracePDF.tables[0].foot[0],
-    ...tracePDF.tables[0].body).some(v => /[\u202f\u00a0\u2009]/.test(String(v))),
+    tableauPDF.head[0].map(contenu), tableauPDF.foot[0].map(contenu),
+    ...tableauPDF.body).some(v => /[\u202f\u00a0\u2009]/.test(String(v))),
   "sinon jsPDF imprime « 15 /000 FCFA » à la place de « 15 000 FCFA »");
 
 verifier("l'aplatissement ne touche QUE l'espace, jamais le chiffre",
@@ -379,18 +476,51 @@ verifier("l'aplatissement ne touche QUE l'espace, jamais le chiffre",
   'obtenu : ' + JSON.stringify(aplati(contexte.formatMontant(58000))));
 
 verifier("le PDF reprend les colonnes du relevé, sans en inventer",
-  tracePDF.tables[0].head[0].join('|') === r.colonnes.map(aplati).join('|'));
+  tableauPDF.head[0].map(contenu).join('|') === r.colonnes.map(aplati).join('|'));
 
 verifier("le PDF reprend une ligne par colis",
-  tracePDF.tables[0].body.length === r.lignes.length);
+  tableauPDF.body.length === r.lignes.length);
 
+/* Le jour n'est plus écrit seul : depuis le passage au papier à en-tête, il ouvre la ligne de
+   mention, aux côtés du nombre de colis et du nombre de livrés. La cliente, elle, reste sur sa
+   propre ligne, sous le titre. On vérifie donc les deux là où ils sont réellement écrits, et non
+   là où ils étaient. */
 verifier("le PDF nomme la cliente et le jour",
-  tracePDF.textes.includes('Sr Marie') && tracePDF.textes.includes('mercredi 26 août 2026'));
+  tracePDF.textes.includes('Sr Marie')
+  && tracePDF.textes.some(t => t.startsWith('mercredi 26 août 2026')),
+  'obtenu : ' + JSON.stringify(tracePDF.textes.slice(0, 8)));
+
+verifier("la ligne de mention annonce le jour, le nombre de colis et le nombre de livrés",
+  tracePDF.textes.some(t => t === `mercredi 26 août 2026  ·  ${r.nb} colis  ·  ${r.nbLivres} livré(s)`),
+  "la cliente doit pouvoir compter ses colis sans additionner les lignes elle-même");
+
+/* Le relevé ne dessine plus son en-tête lui-même : il le reçoit du papier à en-tête de la
+   maison. La vérification n'est donc plus qu'il l'écrive, mais qu'il l'ait bien reçu — sans quoi
+   la cliente recevrait une feuille de chiffres qui ne dit pas de qui elle vient.
+
+   Les cinq mentions se lisent une par une, et non par un simple « contient ». Écrite d'abord en
+   cherchant « christlivraison.ci » quelque part dans la page, cette vérification restait verte
+   quand on retirait l'adresse du site : l'adresse électronique, contact@christlivraison.ci, en
+   contient les mêmes lettres. Le sabotage l'a montré ; la voici corrigée. La ligne de contact est
+   donc découpée sur son séparateur, et chaque morceau doit être là en entier. */
+const PAPIER = vm.runInContext('PAPIER_CLT', contexte);
+const ligneContact = (tracePDF.textes.find(t => t.includes(PAPIER.telephone)) || '')
+  .split('  ·  ').map(s => s.trim());
+verifier("le relevé part avec l'identité complète de la maison en haut de page",
+  tracePDF.textes.includes(PAPIER.societe)
+  && tracePDF.textes.includes(PAPIER.adresse)
+  && [PAPIER.telephone, PAPIER.email, PAPIER.site].every(m => ligneContact.includes(m)),
+  'ligne de contact obtenue : ' + JSON.stringify(ligneContact));
+
+verifier("chaque page du relevé est numérotée et datée en pied",
+  tracePDF.textes.some(t => /^Page \d+ sur \d+$/.test(t))
+  && tracePDF.textes.some(t => /Édité le \d\d\/\d\d\/\d{4}/.test(t)),
+  "une page détachée du reste doit encore dire d'où elle vient");
 
 verifier("les lignes en texte sont identiques pour le PDF et pour le Word",
   (() => { const l = releveLignesTexte(r);
     return l.every(cells => cells.every(v => htmlWord.includes(contexte.escapeHTML(String(v)))))
-      && JSON.stringify(l.map(c => c.map(aplati))) === JSON.stringify(tracePDF.tables[0].body); })());
+      && JSON.stringify(l.map(c => c.map(aplati))) === JSON.stringify(tableauPDF.body); })());
 
 verifier("un colis non encaissé s'écrit d'un tiret, jamais d'un zéro trompeur",
   releveLignesTexte(r)[3][4] === '—', 'obtenu : ' + releveLignesTexte(r)[3][4]);
@@ -677,6 +807,27 @@ verifier("refermer la feuille de partage n'est pas traité comme une panne",
 
 verifier("le PDF envoyé est construit par la même fonction que le PDF téléchargé",
   /releveConstruirePDF\(d\)/.test(envoiSrc));
+
+/* Depuis le passage au papier à en-tête, releveConstruirePDF rend une PROMESSE : celle du logo,
+   qui se charge en tâche de fond. Un appelant qui oublie le mot await ne reçoit pas un document
+   mais la promesse elle-même, et son .save() n'existe pas — le bouton ne fait plus rien du tout,
+   sans message. Le banc ne peut pas exécuter les deux appelants (il n'y a ni bouton ni fenêtre
+   ici), alors il les lit : partout où le nom apparaît, hors de sa propre déclaration, le mot
+   await doit le précéder. Cette vérification est née d'un sabotage resté vert. */
+const appelsConstruire = (() => {
+  const src = sansCommentaires(equipe);
+  const manquants = [];
+  let i = 0;
+  while ((i = src.indexOf('releveConstruirePDF(', i)) >= 0) {
+    const avant = src.slice(Math.max(0, i - 20), i);
+    if (!/function\s+$/.test(avant) && !/await\s+$/.test(avant)) manquants.push(avant.trim() + '‹ici›');
+    i += 1;
+  }
+  return manquants;
+})();
+verifier("les deux appelants attendent la promesse du relevé",
+  appelsConstruire.length === 0,
+  'appel sans await : ' + JSON.stringify(appelsConstruire));
 
 /* ============================================================================================ */
 console.log('\n———');

@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260829accord1">
-<script src="theme.js?v=20260829accord1"></script>
+<link rel="stylesheet" href="style.css?v=20260829entete1">
+<script src="theme.js?v=20260829entete1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -355,6 +355,23 @@
   .date-filter-wrap > *{ flex:0 0 auto; }
   .date-filter-icone{ font-size:14px; }
 
+  /* ---------- Le point du soir en PDF (29/08/2026) ----------
+     Un bouton pleine largeur : le livreur l'atteint au pouce, une main sur le guidon coupé.
+     Le bleu de la maison, celui de l'en-tête du document qu'il va recevoir. L'état parle
+     juste en dessous — « Préparation… », puis le nom du fichier, ou l'ennui s'il y en a un. */
+  .finance-point-barre{ margin-bottom:12px; }
+  .btn-point-pdf{
+    width:100%; padding:11px 14px; border:0; border-radius:11px;
+    background:#1B4374; color:#fff; font-size:14px; font-weight:600;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .btn-point-pdf:disabled{ opacity:.55; cursor:default; }
+  .point-pdf-etat{ display:block; margin-top:6px; font-size:12px; color:#64748b; text-align:center; }
+  .point-pdf-etat.erreur{ color:#b91c1c; }
+  html[data-theme="dark"] .btn-point-pdf{ background:#2C63A8; }
+  html[data-theme="dark"] .point-pdf-etat{ color:#9DB0C4; }
+  html[data-theme="dark"] .point-pdf-etat.erreur{ color:#F98B8B; }
+
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -643,6 +660,14 @@
          cliente, et chaque ligne se déplie sur ses colis. -->
     <div id="panel-finance" class="hidden">
       <div class="page-sub onglet-intro">Touchez une cliente pour voir ses colis un par un.</div>
+      <!-- Le point du soir, en PDF. Demandé le 29 août 2026 : le livreur qui a fini sa tournée
+           emporte son récapitulatif à la caisse. Le bouton est ici, en haut de l'onglet Finance,
+           parce que c'est là qu'il regarde son compte — pas dans un menu qu'il faudrait aller
+           chercher un soir de pluie. -->
+      <div class="finance-point-barre">
+        <button type="button" id="btn-point-pdf" class="btn-point-pdf">📄 Télécharger mon point (PDF)</button>
+        <span id="point-pdf-etat" class="point-pdf-etat" role="status" aria-live="polite"></span>
+      </div>
       <div id="finance-detail">
         <div class="empty-state">Chargement...</div>
       </div>
@@ -650,8 +675,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260829accord1"></script>
-<script src="config.js?v=20260829accord1"></script>
+<script src="clt-common.js?v=20260829entete1"></script>
+<script src="config.js?v=20260829entete1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -1222,10 +1247,19 @@
     });
   }
 
-  function fournisseurLabel(id){
+  // Le nom de la cliente, tel qu'il est écrit dans sa fiche. Sans échappement : c'est du texte,
+  // pas du HTML. Le PDF a besoin de celui-là — une cliente « Chez Awa & Fille » s'imprimerait
+  // sinon « Chez Awa &amp; Fille » sur le point que le livreur pose sur le comptoir. (29/08/2026)
+  function fournisseurNom(id){
     const p = profilesById[id];
     if (!p) return 'Client inconnu';
-    return escapeHTML(p.company_name || p.full_name || id);
+    return p.company_name || p.full_name || id;
+  }
+
+  // La même chose, prête à être posée dans une page. Un seul endroit décide du nom ; celui-ci
+  // ne fait qu'ajouter l'échappement que le HTML exige.
+  function fournisseurLabel(id){
+    return escapeHTML(fournisseurNom(id));
   }
 
   function livreurLabel(id){
@@ -2434,6 +2468,15 @@
   // Les deux parlent toujours de la même journée, celle du calendrier de la carte.
   let argentJourDate = null;
 
+  // Les colis d'une journée : les MIENS, reçus ce jour-là. Écrit ici une seule fois parce que
+  // deux lecteurs s'en servent — le tableau de l'écran et le point PDF du soir. Si ce filtre
+  // était recopié dans le bouton, le jour où l'un des deux changerait, le papier et l'écran
+  // annonceraient deux journées différentes sans que personne ne s'en aperçoive. (29/08/2026)
+  function colisDeLaJournee(jour){
+    if (!currentUser) return [];
+    return allColis.filter(c => c.livreur_id === currentUser.id && dayKey(c.created_at) === jour);
+  }
+
   function renderArgentDuJour(){
     const box = document.getElementById('argent-jour-corps');
     const detail = document.getElementById('finance-detail');
@@ -2442,7 +2485,7 @@
     const jour = argentJourDate || todayLocalISODate();
     if (input && input.value !== jour) input.value = jour;
 
-    const duJour = allColis.filter(c => c.livreur_id === currentUser.id && dayKey(c.created_at) === jour);
+    const duJour = colisDeLaJournee(jour);
     if (!duJour.length){
       cltPoserHTML(box, `<div style="font-size:13px; color:#94a3b8;">Aucun colis reçu ce jour-là.</div>`);
       if (detail){
@@ -2558,6 +2601,71 @@
     input.addEventListener('change', () => {
       argentJourDate = input.value || todayLocalISODate();
       renderArgentDuJour();
+    });
+  })();
+
+  /* ==========================================================================================
+     📄 LE POINT DU SOIR, EN PDF. (29/08/2026)
+
+     Le livreur finit sa tournée, ouvre Finance, appuie une fois : il repart avec son
+     récapitulatif de la journée sur son téléphone, et peut le montrer à la caisse même si le
+     réseau l'a lâché en route.
+
+     La journée est celle du calendrier de la carte, pas celle de l'horloge : s'il regarde le
+     point d'hier à l'écran, c'est le point d'hier qui sort. Les colis sont pris exactement
+     comme renderArgentDuJour() les prend — même filtre, écrit ici une seule fois plus bas dans
+     colisDeLaJournee() et lu par les deux. Les regroupements, les tris et les totaux viennent
+     de financeLignes() (config.js), la fonction même qui vient de dessiner le tableau : le
+     papier et l'écran ne peuvent donc pas annoncer deux sommes différentes.
+
+     jsPDF n'est pas chargé par cette page ; assurerJsPDF() va le chercher au clic. Il est déjà
+     dans le cache du service worker, donc ça marche hors réseau. Si malgré tout la bibliothèque
+     ne vient pas, on le dit, et l'écran reste utilisable — c'est un soir de remise de caisse,
+     pas le moment de tomber en panne.
+     ========================================================================================== */
+  (function initPointPDF(){
+    const bouton = document.getElementById('btn-point-pdf');
+    const etat = document.getElementById('point-pdf-etat');
+    if (!bouton) return;
+
+    const dire = (texte, erreur) => {
+      if (!etat) return;
+      etat.textContent = texte || '';
+      etat.classList.toggle('erreur', !!erreur);
+    };
+
+    bouton.addEventListener('click', async () => {
+      if (bouton.disabled) return;
+      const jour = argentJourDate || todayLocalISODate();
+      const duJour = colisDeLaJournee(jour);
+      if (!duJour.length){
+        dire('Aucun colis le ' + jourEnClair(jour) + " : il n'y a rien à éditer.", true);
+        return;
+      }
+
+      bouton.disabled = true;
+      dire('Préparation du document…');
+      try {
+        if (!await assurerJsPDF()){
+          dire("La bibliothèque PDF n'a pas pu être chargée. Réessayez une fois connecté.", true);
+          return;
+        }
+        const plan = pointDuLivreurPlan(duJour, {
+          nomLivreur: (currentProfile && currentProfile.full_name) || 'Livreur',
+          dateLabel: jourEnClair(jour),
+          dateISO: jour,
+          nomDe: fournisseurNom,
+          cleDe: c => c.fournisseur_id || 'inconnu',
+        });
+        const doc = await documentCLT(plan);
+        doc.save(plan.nomFichier);
+        dire(plan.nbColis + ' colis · en main ' + (formatMontant(plan.totalEnMain) || '0 FCFA'));
+      } catch (e) {
+        console.error(e);
+        dire("Le document n'a pas pu être produit.", true);
+      } finally {
+        bouton.disabled = false;
+      }
     });
   })();
 

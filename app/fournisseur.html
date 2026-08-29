@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260829accord1">
-<script src="theme.js?v=20260829accord1"></script>
+<link rel="stylesheet" href="style.css?v=20260829entete1">
+<script src="theme.js?v=20260829entete1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -446,10 +446,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260829accord1"></script>
-<script src="config.js?v=20260829accord1"></script>
+<script src="clt-common.js?v=20260829entete1"></script>
+<script src="config.js?v=20260829entete1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260829accord1"></script>
+<script src="clt-select-recherche.js?v=20260829entete1"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2497,37 +2497,47 @@
     }
     btn.disabled = false; btn.textContent = label;
     if (!rows.length) { await cltConfirm({ title: "Aucune donnée à exporter", sub: "Il n'y a aucun colis pour la période sélectionnée.", okLabel: "J'ai compris", cancelLabel: 'Fermer' }); return; }
-    const doc = nouveauPDF();
     const t = totauxArgent(rows);
-    doc.setFontSize(14);
-    doc.text('Récapitulatif — Christ Livraison & Transport SARL', 14, 16);
-    doc.setFontSize(10);
-    doc.text(`${t.nb} colis · ${t.nbLivres} livré(s)`, 14, 24);
-    doc.text(`Vos articles : ${formatMontant(t.articleEnregistre) || '0 FCFA'} enregistrés · ${formatMontant(t.articleEncaisse) || '0 FCFA'} livrés et encaissés`, 14, 30);
-    doc.text(`Frais de livraison CLT : ${formatMontant(t.livraisonEnregistree) || '0 FCFA'}`, 14, 36);
-    doc.autoTable({
-      startY: 42,
-      head: [['Colis', 'Destination', 'Statut', 'Votre article', 'Encaissé', 'Livraison CLT', 'Paiement', 'Date']],
-      body: rows.map(c => [
-        c.description || '',
-        [c.commune_destination, c.destination].filter(Boolean).join(' - '),
-        STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
-        formatMontant(montantArticleColis(c)) || '0 FCFA',
-        formatMontant(montantArticleEncaisse(c)) || '—',
-        formatMontant(montantLivraisonColis(c)) || '—',
-        paiementInfo(c).label,
-        formatDate(c.created_at),
-      ]),
-      foot: [[
-        'TOTAL',
-        `${t.nb} colis`,
-        `${t.nbLivres} livré(s)`,
-        formatMontant(t.articleEnregistre) || '0 FCFA',
-        formatMontant(t.articleEncaisse) || '0 FCFA',
-        formatMontant(t.livraisonEnregistree) || '0 FCFA',
-        '',
-        '',
-      ]],
+    // Le récapitulatif de la cliente sort sur le même papier à en-tête que tout le reste : elle
+    // reçoit un document qui vient visiblement de la même maison que son relevé du soir.
+    const doc = await documentCLT({
+      titre: 'Récapitulatif',
+      sousTitre: `${t.nb} colis  ·  ${t.nbLivres} livré(s)`,
+      mention: `Édité depuis votre espace client`,
+      tableau: {
+        // Huit colonnes sur 182 mm : la police descend à 8 pour que rien ne se coupe.
+        styles: { fontSize: 8, cellPadding: 1.8 },
+        // « Votre article », « Encaissé » et « Livraison CLT » portent de l'argent : config.js
+        // mesure leur largeur sur les montants réellement présents et les aligne à droite,
+        // milliers sous milliers. Sans cette déclaration, « 45 000 FCFA » se coupait en deux
+        // lignes, « 45 000 » puis « FCFA » dessous.
+        colonnesArgent: [3, 4, 5],
+        head: [['Colis', 'Destination', 'Statut', 'Votre article', 'Encaissé', 'Livraison CLT', 'Paiement', 'Date']],
+        body: rows.map(c => [
+          c.description || '',
+          [c.commune_destination, c.destination].filter(Boolean).join(' - '),
+          STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
+          formatMontant(montantArticleColis(c)) || '0 FCFA',
+          formatMontant(montantArticleEncaisse(c)) || '—',
+          formatMontant(montantLivraisonColis(c)) || '—',
+          paiementInfo(c).label,
+          formatDate(c.created_at),
+        ]),
+        foot: [[
+          'TOTAL',
+          `${t.nb} colis`,
+          `${t.nbLivres} livré(s)`,
+          formatMontant(t.articleEnregistre) || '0 FCFA',
+          formatMontant(t.articleEncaisse) || '0 FCFA',
+          formatMontant(t.livraisonEnregistree) || '0 FCFA',
+          '',
+          '',
+        ]],
+      },
+      apres: [
+        { texte: `Vos articles : ${formatMontant(t.articleEnregistre) || '0 FCFA'} enregistrés  ·  ${formatMontant(t.articleEncaisse) || '0 FCFA'} livrés et encaissés`, taille: 10, gras: true, couleur: [27, 67, 116] },
+        { texte: `Frais de livraison CLT : ${formatMontant(t.livraisonEnregistree) || '0 FCFA'}`, taille: 9, avant: 6 },
+      ],
     });
     doc.save(`recapitulatif-${new Date().toISOString().slice(0, 10)}.pdf`);
   });

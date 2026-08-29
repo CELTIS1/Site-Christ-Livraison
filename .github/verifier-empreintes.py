@@ -23,8 +23,29 @@ CE QU'IL VÉRIFIE
     le contenu changer d'un jour à l'autre sans décision de notre part.
  3. Les adresses pré-chargées par le service worker (sw.js) sont bien celles des pages.
     Sinon le mode hors-ligne garderait une version morte.
+ 3 bis. Une adresse déclarée en JavaScript existe aussi dans une balise. La déclaration en
+    JavaScript n'est qu'une copie : les deux ne peuvent pas désigner deux versions différentes.
  4. L'empreinte déclarée correspond au fichier réellement servi aujourd'hui.
     Ce contrôle-là a besoin du réseau ; s'il est indisponible, il avertit sans faire échouer.
+
+OÙ IL REGARDE
+-------------
+Longtemps il n'a lu que les fichiers .html, et c'était son angle mort. Depuis le 29 août 2026,
+une page peut charger une bibliothèque SANS balise : l'écran du livreur ne demande jsPDF qu'au
+moment où on clique sur « Télécharger mon point », et l'adresse comme l'empreinte sont alors
+écrites en JavaScript, dans le tableau SCRIPTS_PDF_CLT de app/config.js. Une empreinte écrite là
+n'était contrôlée par personne : on pouvait monter jsPDF dans les pages et l'oublier dans
+config.js, et le bouton du livreur aurait cessé de fonctionner sans que rien ne l'annonce.
+
+Il lit donc aussi les fichiers .js, et y cherche toute déclaration qui porte une adresse et une
+empreinte. Ces déclarations passent ensuite par les mêmes contrôles que les balises — y compris
+celui qui refuse qu'une même adresse porte deux empreintes différentes selon le fichier. C'est
+lui qui attrape la dérive entre config.js et les pages.
+
+Une limite, à dire plutôt qu'à masquer : dans une balise, crossorigin se lit à côté de
+l'empreinte ; en JavaScript il est posé plus loin, sur l'élément construit. On vérifie donc
+seulement que le fichier qui porte la déclaration pose bien crossOrigin quelque part. C'est plus
+grossier qu'en HTML, et cela ne dit pas que c'est sur CE script-là.
 
 USAGE
 -----
@@ -71,6 +92,18 @@ BALISE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+# Une déclaration écrite en JavaScript : un objet qui porte une adresse extérieure. On la repère
+# sur l'adresse seule, PAS sur le couple adresse + empreinte — sinon une déclaration à laquelle
+# on aurait oublié l'empreinte passerait inaperçue, ce qui est exactement le cas à attraper.
+DECLARATION_JS = re.compile(
+    r"\{(?P<corps>[^{}]*?\bsrc\s*:\s*['\"](?P<src>https://[^'\"]+)['\"][^{}]*?)\}",
+    re.DOTALL,
+)
+EMPREINTE_JS = re.compile(r"\bintegrity\s*:\s*['\"]([^'\"]+)['\"]")
+# Une adresse de script écrite en JavaScript hors de toute déclaration : c'est le cas qu'aucune
+# des deux lectures ne verrait, et il vaut mieux qu'il se signale.
+URL_JS_NUE = re.compile(r"['\"](https://[^'\"]+\.js)['\"]")
+
 
 def attribut(attrs, nom):
     m = re.search(r'\b%s\s*=\s*"([^"]*)"' % nom, attrs, re.IGNORECASE)
@@ -112,6 +145,38 @@ def relever_pages():
     return trouvees
 
 
+def relever_scripts_js():
+    """Même chose, mais pour les bibliothèques chargées depuis du JavaScript.
+
+    Renvoie [(fichier, 'script (js)', url, empreinte, crossorigin)] plus la liste des adresses
+    de scripts trouvées hors de toute déclaration, qui méritent qu'on les signale."""
+    trouvees, nues = [], []
+    for dossier, sous, fichiers in os.walk(RACINE):
+        sous[:] = [d for d in sous if d not in (".git", "node_modules")]
+        for nom in sorted(fichiers):
+            if not nom.endswith(".js"):
+                continue
+            chemin = os.path.join(dossier, nom)
+            rel = os.path.relpath(chemin, RACINE)
+            if rel == "sw.js":
+                continue  # sw.js ne charge rien : il met en cache. Contrôlé au point 3.
+            txt = open(chemin, encoding="utf-8").read()
+            # crossorigin est posé sur l'élément construit, pas dans la déclaration : on ne peut
+            # que constater sa présence dans le fichier. Dit tel quel dans l'en-tête.
+            cross = "présent" if re.search(r"\bcrossOrigin\b", txt) else None
+            declarees_ici = set()
+            for m in DECLARATION_JS.finditer(txt):
+                url = m.group("src")
+                declarees_ici.add(url)
+                emp = EMPREINTE_JS.search(m.group("corps"))
+                trouvees.append((rel, "script (js)", url,
+                                 emp.group(1) if emp else None, cross))
+            for m in URL_JS_NUE.finditer(txt):
+                if m.group(1) not in declarees_ici:
+                    nues.append((rel, m.group(1)))
+    return trouvees, nues
+
+
 def urls_du_service_worker():
     chemin = os.path.join(RACINE, "sw.js")
     if not os.path.exists(chemin):
@@ -139,6 +204,19 @@ def main():
     if not balises:
         erreurs.append("Aucune ressource externe trouvée : le contrôle ne sert plus à rien, "
                        "ou le chemin des pages a changé.")
+
+    # Les bibliothèques chargées au clic, déclarées en JavaScript, rejoignent la même file :
+    # elles subissent exactement les mêmes contrôles, et surtout celui qui refuse qu'une adresse
+    # porte deux empreintes différentes selon le fichier.
+    en_js, urls_nues = relever_scripts_js()
+    balises = balises + en_js
+    for fichier, url in urls_nues:
+        if dispensee(url):
+            continue
+        erreurs.append("%s : l'adresse « %s » est écrite en JavaScript sans déclaration "
+                       "portant une empreinte.\n"
+                       "    Ni la lecture des pages ni celle des déclarations ne la contrôle : "
+                       "un serveur compromis pourrait y placer n'importe quel code." % (fichier, url))
 
     # ---- 1 et 2 : structure, sans réseau -------------------------------------
     declarees = {}
@@ -174,6 +252,25 @@ def main():
         if len(emps) > 1:
             erreurs.append("« %s » est déclarée avec %d empreintes différentes selon les pages.\n"
                            "    Une seule peut être juste ; les autres pages sont cassées." % (url, len(emps)))
+
+    # ---- 3 bis : la déclaration JavaScript est-elle bien la COPIE d'une balise ? ----
+    # Le contrôle « deux empreintes pour une même adresse » ne voit rien si c'est l'ADRESSE qui
+    # change : monter jsPDF de 2.5.1 à 2.5.2 dans config.js seulement crée une entrée neuve, avec
+    # sa propre empreinte, parfaitement cohérente avec elle-même. Vu le 29 août 2026 en sabotant :
+    # quatre sabotages sur cinq viraient au rouge, celui-là restait vert. Or l'écran du livreur
+    # chargerait alors une version que les pages ne connaissent pas et que le service worker n'a
+    # pas mise de côté : son bouton ne marcherait plus, et surtout plus du tout hors réseau.
+    urls_balises = {u for _, typ, u, _, _ in balises if typ != "script (js)"}
+    for fichier, typ, url, _, _ in balises:
+        if typ != "script (js)" or dispensee(url):
+            continue
+        if url not in urls_balises:
+            erreurs.append("%s déclare « %s », qu'aucune page ne déclare.\n"
+                           "    Une déclaration en JavaScript est la copie de celle des pages : "
+                           "elles ne peuvent pas désigner deux versions différentes. C'est la trace "
+                           "d'une montée de version faite d'un côté et oubliée de l'autre." % (fichier, url))
+        else:
+            ok += 1
 
     # ---- 3 : cohérence avec le service worker --------------------------------
     for url in urls_du_service_worker():

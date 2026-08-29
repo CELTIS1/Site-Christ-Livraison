@@ -3564,8 +3564,67 @@ function relevePiedCellules(r) {
 // sans que personne l'ait vu, parce qu'il ne se voit qu'en ouvrant le fichier produit.
 // On ne touche pas à formatMontant : à l'écran, l'espace fine est la bonne. On la remplace au
 // seul endroit où elle ne passe pas, juste avant d'écrire dans le PDF.
+// Le 29 août 2026, le même piège a repris par une autre porte. Le point du livreur annonçait
+// « "3 000 FCFA » à la colonne Gare : le signe moins employé était le vrai signe moins des
+// mathématiques (U+2212), absent lui aussi du jeu WinAnsi, et rendu par un guillemet. Sur un
+// document de caisse, un montant retenu qui s'affiche avec un guillemet à la place du moins,
+// c'est une contestation garantie un soir de remise.
+//
+// Plutôt que de corriger ce caractère-là, on a mesuré TOUS les autres. Le banc d'essai écrit
+// dans un PDF chacun des caractères non ASCII qui traversent aujourd'hui l'application, relit
+// le fichier produit et compare : dix-huit ne survivent pas. Les voici, avec pour chacun ce
+// qu'on écrit à la place. Les lettres accentuées, « » · – — ' … • ° € passent, elles, sans
+// retouche : c'est mesuré, pas supposé.
+const REMPLACEMENTS_PDF_CLT = {
+  '\u2212': '-',      // −  signe moins        → sortait en guillemet droit
+  '\u2248': '~',      // ≈  environ égal
+  '\u2264': '<=',     // ≤  inférieur ou égal
+  '\u2265': '>=',     // ≥  supérieur ou égal
+  '\u22ee': ':',      // ⋮  points verticaux
+  '\u2190': '<-',     // ←  flèche gauche
+  // →  La flèche ne sert, sur un document, qu'à relier les deux bouts d'une période :
+  //     « Janvier 2026 → Décembre 2026 » en tête de la fiche individuelle de paie. Sur le papier
+  //     elle devient le tiret demi-cadratin, qui est la façon française d'écrire une plage de
+  //     dates. À l'écran, la flèche reste la flèche : on ne touche qu'à l'impression.
+  '\u2192': '\u2013',
+  '\u2194': '<->',    // ↔  flèche double
+  '\u21a9': '<-',     // ↩  flèche de retour
+  '\u25b6': '>',      // ▶  triangle plein
+  '\u25b8': '>',      // ▸  petit triangle
+  '\u25bc': 'v',      // ▼  triangle bas
+  '\u25be': 'v',      // ▾  petit triangle bas
+  '\u2139': 'i',      // ℹ  information
+  '\u2318': 'Cmd',    // ⌘  touche commande
+  '\u23f3': '...',    // ⏳ sablier
+  '\u23f8': '||',     // ⏸ pause
+  '\u03a3': 'Somme',  // Σ  sigma
+};
+
+// Les caractères que le jeu WinAnsi porte AU-DESSUS de U+00FF. En dehors de cette liste et des
+// lettres latines ordinaires, un caractère n'a rien à faire sur une page : il n'y arriverait
+// pas entier. On le retire plutôt que de laisser sortir « %¾ » au milieu d'une phrase.
+const WINANSI_HAUT_CLT = '\u20ac\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152'
+  + '\u017d\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\u017e\u0178';
+
+const RETIRE_PDF_CLT = '\u0001';   // marque interne, jamais écrite : voir juste en dessous
+
 function texteAplatiPourPDF(s) {
-  return String(s === null || s === undefined ? '' : s).replace(/[\u202f\u00a0\u2009]/g, ' ');
+  const aplati = String(s === null || s === undefined ? '' : s)
+    // Les espaces fines et insécables d'abord : c'est le défaut d'origine, « 15 /000 FCFA ».
+    .replace(/[\u202f\u00a0\u2009]/g, ' ')
+    // Puis, caractère par caractère : ce que la police sait dessiner, ce qu'on remplace, et ce
+    // qui ne peut que disparaître. Un caractère retiré laisse une marque plutôt qu'un vide, pour
+    // qu'on sache ensuite lequel des espaces voisins était le sien.
+    .replace(/[^\u0000-\u00ff]/g, c => (
+      Object.prototype.hasOwnProperty.call(REMPLACEMENTS_PDF_CLT, c) ? REMPLACEMENTS_PDF_CLT[c]
+        : (WINANSI_HAUT_CLT.indexOf(c) >= 0 ? c : RETIRE_PDF_CLT)
+    ));
+  if (aplati.indexOf(RETIRE_PDF_CLT) < 0) return aplati;
+  // « 📄 Mon point » ne doit pas devenir « Mon point » précédé d'un espace orphelin. On avale la
+  // marque avec un seul espace voisin, et on ne touche à AUCUN autre espace : les deux espaces
+  // qui encadrent volontairement un tiret cadratin dans un titre restent tels qu'ils ont été
+  // écrits. C'est la différence entre nettoyer et réécrire.
+  return aplati.replace(/\u0001 |\u0001/g, '').replace(/ +$/, '');
 }
 
 // Une cellule de tableau peut être un texte, un nombre, ou un objet { content }. On laisse les
@@ -3609,6 +3668,626 @@ function nouveauPDF(options) {
   }
   return doc;
 }
+
+
+/* ==========================================================================================
+   LE PAPIER À EN-TÊTE DE LA MAISON — un seul endroit pour tout ce qui sort de l'application
+   ==========================================================================================
+
+   Demandé le 29 août 2026 : « pour tout les points ou les documents qui vont être téléchargés
+   à partir de l'app quelque soit le compte, il faudrait que ce soit bien présenté et bien
+   disposé avec le logo, les informations qu'il faut en haut et en pied de page […] l'ensemble
+   doit être épuré et plus le point est petit en terme de ligne il faudrait que la page le soit
+   aussi pour ne pas laisser un grand vide en bas de page. »
+
+   Sept documents partent aujourd'hui de l'application : le relevé du soir d'une cliente, la
+   journée entière et la comptabilité côté équipe, le récapitulatif côté fournisseur, le
+   bulletin de paie et la fiche de personnel côté gestion, et maintenant le point quotidien du
+   livreur. Sept en-têtes écrits sept fois, ce sont sept adresses à corriger le jour où
+   l'entreprise déménage — et six chances d'en oublier une. Il n'y en a donc qu'un, ici.
+
+   TROIS PIÈGES MESURÉS DANS LE NAVIGATEUR LE 29 AOÛT 2026, ET NON DEVINÉS :
+
+     • jsPDF refuse qu'une feuille « portrait » soit plus large que haute. Demander
+       format:[210,140] rend une page de 140 mm de large sur 210 de haut — l'inverse de ce
+       qu'on croyait demander, sans le moindre message. C'est feuilleCLT() qui choisit
+       l'orientation d'après les deux nombres, pour que 210 × 140 donne bien 210 × 140.
+
+     • getLineHeight() rend une hauteur en POINTS, pas dans l'unité du document : 11,5 pour
+       une police de 10, là où la même ligne mesure 4,057 mm. Diviser par internal.scaleFactor
+       est obligatoire, sans quoi toute hauteur calculée est presque trois fois trop grande.
+
+     • la hauteur vraie d'un tableau ne se lit que s'il a eu la place de se dérouler d'un seul
+       tenant. Mesurée sur une feuille ordinaire, elle est coupée par le saut de page et
+       finalY renvoie une position sur la dernière page, pas une hauteur. Le brouillon de
+       mesure est donc une feuille de 4 000 mm de haut, que personne ne voit jamais.
+   ========================================================================================== */
+
+const PAPIER_CLT = {
+  societe: 'Christ Livraison & Transport SARL',
+  adresse: 'Lycée technique, Cocody — Abidjan, Côte d\'Ivoire',
+  telephone: '+225 07 11 13 86 93',
+  email: 'contact@christlivraison.ci',
+  site: 'christlivraison.ci',
+  // Le bleu et l'orange sont ceux de l'icône de l'application, relevés sur le fichier lui-même.
+  // L'en-tête du relevé du soir utilisait déjà ce bleu ; on ne change donc de couleur nulle part.
+  bleu: [27, 67, 116],
+  orange: [238, 106, 23],
+  gris: [122, 128, 136],
+  trait: [222, 227, 233],
+  logoURL: '/images/icons/icon-512.png',
+  logoMm: 16,
+  // Le même nom pour toutes les pages : jsPDF ne range alors l'image qu'une seule fois.
+  logoAlias: 'logo-clt',
+  // 'SLOW' n'est lent que de nom : 61 ms mesurées, contre 39 pour 'FAST', et le fichier est plus
+  // petit. Voir le calcul de poids dans enTeteCLT().
+  logoCompression: 'SLOW',
+  marge: 14,
+  largeurA4: 210,
+  hauteurA4: 297,
+  // Où commence le contenu, sous le trait orange. Où s'arrête la page, au-dessus du pied.
+  hautContenu: 36,
+  basPied: 10,
+  // Une journée à trois colis ne doit pas produire une bande d'affiche. En dessous de cette
+  // hauteur, on n'économise plus du vide : on abîme la lecture.
+  hauteurMini: 120,
+  hauteurBrouillon: 4000,
+};
+
+// Le logo, cherché une seule fois par page ouverte. Le service worker le garde déjà en cache
+// (16 862 octets, mesurés sur le téléphone du livreur), donc la recherche aboutit même sans
+// réseau. Si elle échoue malgré tout, on rend null : le document sort sans image plutôt que
+// de ne pas sortir du tout. Un point de caisse qu'on n'a pas vaut bien moins qu'un point sans logo.
+let __logoCLT;
+function logoCLT() {
+  if (__logoCLT !== undefined) return Promise.resolve(__logoCLT);
+  return fetch(PAPIER_CLT.logoURL)
+    .then(r => (r.ok ? r.blob() : Promise.reject(new Error('logo ' + r.status))))
+    .then(blob => new Promise((ok, ko) => {
+      const fr = new FileReader();
+      fr.onload = () => ok(fr.result);
+      fr.onerror = () => ko(fr.error);
+      fr.readAsDataURL(blob);
+    }))
+    .then(dataURL => { __logoCLT = dataURL; return dataURL; })
+    .catch(() => { __logoCLT = null; return null; });
+}
+
+// L'orientation se déduit des deux nombres, jamais de l'humeur de la bibliothèque. Voir le
+// premier piège en tête de section : c'est le seul endroit où une feuille se décide.
+function feuilleCLT(largeur, hauteur) {
+  return {
+    unit: 'mm',
+    format: [largeur, hauteur],
+    orientation: hauteur < largeur ? 'landscape' : 'portrait',
+  };
+}
+
+// Hauteur d'une ligne de texte, en millimètres. Voir le deuxième piège.
+function hauteurLigneCLT(doc, taille) {
+  if (taille) doc.setFontSize(taille);
+  return doc.getLineHeight() / doc.internal.scaleFactor;
+}
+
+// « 29/08/2026 à 07 h 42 ». Un document d'argent sans heure d'édition ne se classe pas : deux
+// points du même jour ne se distingueraient plus.
+function dateEditionCLT(quand) {
+  const d = quand ? new Date(quand) : new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} à ${p(d.getHours())} h ${p(d.getMinutes())}`;
+}
+
+// Nom de fichier sans accent, sans espace et sans ponctuation : les mêmes règles que
+// releveNomFichier(), applicables à n'importe quel document.
+function nomFichierCLT() {
+  const parties = Array.prototype.slice.call(arguments)
+    .map(p => String(p === null || p === undefined ? '' : p)
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''))
+    .filter(Boolean);
+  return parties.join('-') || 'document';
+}
+
+// L'en-tête, dessiné à l'identique sur chaque page. À gauche l'entreprise et comment la
+// joindre, à droite ce qu'est ce document et de quand il parle. Le trait orange ferme le bloc.
+function enTeteCLT(doc, plan, logo) {
+  const P = PAPIER_CLT;
+  const gauche = P.marge;
+  const droite = plan.largeur - P.marge;
+  if (logo) {
+    // Un logo illisible ne doit jamais empêcher un document d'exister.
+    // Les deux derniers arguments ne sont pas décoratifs, ils ont été pesés au banc le 29 août
+    // 2026 sur un point de trois lignes : sans eux le fichier fait 1 052 239 octets, parce que
+    // jsPDF range l'image en clair, 512 × 512 × 4 = un mégaoctet tout rond. Avec l'alias, le
+    // logo n'est rangé qu'une fois pour tout le document (trois pages ne coûtent que 718 octets
+    // de plus qu'une). Avec la compression, le même fichier tombe à 19 944 octets — cinquante
+    // fois moins, pour 61 ms de calcul. Un livreur qui envoie son point par WhatsApp le soir ne
+    // doit pas expédier un mégaoctet.
+    try {
+      doc.addImage(logo, 'PNG', gauche, 11, P.logoMm, P.logoMm, P.logoAlias, P.logoCompression);
+    } catch (e) { logo = null; }
+  }
+  const x = gauche + (logo ? P.logoMm + 5 : 0);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11.5);
+  doc.setTextColor(P.bleu[0], P.bleu[1], P.bleu[2]);
+  doc.text(P.societe, x, 16);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(P.gris[0], P.gris[1], P.gris[2]);
+  doc.text(P.adresse, x, 20.5);
+  doc.text(P.telephone + '  ·  ' + P.email + '  ·  ' + P.site, x, 24);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(P.bleu[0], P.bleu[1], P.bleu[2]);
+  doc.text(String(plan.titre || ''), droite, 16, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 60, 60);
+  if (plan.sousTitre) doc.text(String(plan.sousTitre), droite, 21, { align: 'right' });
+  doc.setFontSize(8);
+  doc.setTextColor(P.gris[0], P.gris[1], P.gris[2]);
+  if (plan.mention) doc.text(String(plan.mention), droite, 25, { align: 'right' });
+
+  doc.setDrawColor(P.orange[0], P.orange[1], P.orange[2]);
+  doc.setLineWidth(0.7);
+  doc.line(gauche, 29, droite, 29);
+  doc.setTextColor(0, 0, 0);
+  return P.hautContenu;
+}
+
+// Les pieds de page se posent EN DERNIER, sur toutes les pages d'un coup : avant que le
+// document soit fini, « page 1 sur 3 » ne peut pas être écrit sans mentir.
+function piedsDePageCLT(doc, plan) {
+  const P = PAPIER_CLT;
+  const total = doc.internal.getNumberOfPages();
+  const gauche = P.marge;
+  const droite = plan.largeur - P.marge;
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    const y = doc.internal.pageSize.getHeight() - P.basPied;
+    doc.setDrawColor(P.trait[0], P.trait[1], P.trait[2]);
+    doc.setLineWidth(0.2);
+    doc.line(gauche, y - 4, droite, y - 4);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(P.gris[0], P.gris[1], P.gris[2]);
+    doc.text(P.societe + '  ·  Édité le ' + plan.dateEdition, gauche, y);
+    doc.text('Page ' + i + ' sur ' + total, droite, y, { align: 'right' });
+  }
+  doc.setPage(total);
+}
+
+/* Les colonnes d'argent ne se laissent pas mettre en page toutes seules.
+
+   autoTable répartit la largeur disponible d'après le contenu de TOUTES les colonnes. Sur un
+   tableau à huit colonnes, les libellés longs — « État de l'argent », une description de colis,
+   une destination — mangent la place, et la colonne d'argent se retrouve trop étroite : le
+   montant se coupe en deux lignes, « 45 000 » puis « FCFA » en dessous. Vu le 29 août 2026 en
+   ouvrant la comptabilité et le récapitulatif de la cliente. Un montant coupé en deux ne se lit
+   plus, et sur un document d'argent c'est le seul endroit où on ne peut pas se le permettre.
+
+   L'appelant déclare donc « colonnesArgent: [3, 4, 5] », et rien d'autre. La largeur n'est pas
+   choisie : elle est MESURÉE ici sur les montants réellement présents dans le tableau, en gras
+   — la ligne TOTAL est en gras, et c'est elle qui déborde en premier. Les montants s'alignent à
+   droite : les milliers tombent sous les milliers, et l'œil descend une colonne au lieu de la
+   relire. Un appelant qui a déjà mesuré ses largeurs garde le dernier mot, colonne par colonne.
+
+   Une colonne qui n'est pas de l'argent peut avoir besoin du même traitement : sur le point du
+   livreur, fixer les seules colonnes de montants ne suffisait pas, parce que la largeur restante
+   se partageait ensuite entre « Colis » et « Statut » d'après leur contenu, différent d'une
+   cliente à l'autre. Mesuré : la colonne « Statut » tombait à 275,7 pt chez l'une et 297,3 chez
+   l'autre. L'appelant écrit alors « colonnesMesurees: { 1: 'left' } » — même mesure, alignement
+   choisi. « colonnesArgent » n'en est que le raccourci pour l'argent, aligné à droite. */
+function largeursArgentCLT(doc, b, styles) {
+  const indices = {};
+  (b.colonnesArgent || []).forEach(i => { indices[i] = 'right'; });
+  Object.keys(b.colonnesMesurees || {}).forEach(i => { indices[i] = b.colonnesMesurees[i]; });
+  const cles = Object.keys(indices).map(Number);
+  if (!doc || !cles.length) return null;
+  const padding = typeof styles.cellPadding === 'number' ? styles.cellPadding : 2.2;
+  // Par défaut on mesure sur le tableau lui-même. Un appelant qui empile plusieurs tableaux des
+  // mêmes colonnes sur une même feuille passe « colonnesArgentRangees » : les largeurs sont alors
+  // mesurées une fois sur l'ensemble, et tous ses tableaux reçoivent les mêmes. Sans cela, chaque
+  // tableau se dimensionne d'après ses propres montants et aucune colonne ne tombe sous la
+  // précédente — vu le 29 août 2026 sur le point du livreur, une cliente par tableau.
+  const rangees = b.colonnesArgentRangees || [].concat(b.head || [], b.body || [], b.foot || []);
+  const avant = { police: doc.getFont(), taille: doc.getFontSize() };
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(styles.fontSize || 9);
+  const mesures = {};
+  cles.forEach(i => {
+    let large = 0;
+    rangees.forEach(rangee => {
+      if (!rangee) return;
+      const cellule = rangee[i];
+      if (cellule === undefined || cellule === null) return;
+      const brut = (typeof cellule === 'object') ? (cellule.content === undefined ? '' : cellule.content) : cellule;
+      String(texteAplatiPourPDF(brut)).split('\n').forEach(ligne => {
+        large = Math.max(large, doc.getTextWidth(ligne));
+      });
+    });
+    // Au dixième de millimètre supérieur : un arrondi vers le bas rognerait la dernière lettre.
+    mesures[i] = { cellWidth: Math.ceil((large + 2 * padding) * 10) / 10, halign: indices[i] };
+  });
+  doc.setFont(avant.police.fontName, avant.police.fontStyle);
+  doc.setFontSize(avant.taille);
+  return mesures;
+}
+
+/* La ligne TOTAL ne suivait pas ses propres colonnes.
+
+   Vu le 29 août 2026 en ouvrant les quatre documents, puis mesuré au point près : sur le relevé
+   du soir, les montants du corps finissent à 351,1 pt et le TOTAL à 338,9 — 12,2 pt, 4,3 mm plus
+   à gauche. Sur le point du livreur, jusqu'à 28,1 pt, presque 10 mm. La cause est la même que
+   pour les en-têtes : dans autoTable, footStyles passe DEVANT columnStyles pour les cellules de
+   pied. L'alignement à droite posé ci-dessus ne descendait donc que dans le corps, et la seule
+   ligne qu'on lit vraiment — celle qui porte la somme — retombait à gauche. Là où la colonne
+   faisait exactement la largeur du plus gros montant, les deux coïncidaient : c'était un hasard,
+   pas un alignement.
+
+   Seul un style écrit sur la cellule elle-même passe devant footStyles. On réécrit donc les
+   cellules d'argent du pied sous la forme { content, styles }. Le tableau de l'appelant n'est
+   jamais modifié : on en rend une copie. Une cellule qui déclare déjà son alignement le garde. */
+function piedArgentCLT(foot, indices) {
+  if (!foot || !foot.length || !indices.length) return foot;
+  return foot.map(rangee => {
+    if (!Array.isArray(rangee)) return rangee;
+    const copie = rangee.slice();
+    indices.forEach(i => {
+      const cellule = copie[i];
+      if (cellule === undefined || cellule === null) return;
+      if (typeof cellule === 'object') {
+        if (cellule.styles && cellule.styles.halign) return;
+        copie[i] = Object.assign({}, cellule, {
+          styles: Object.assign({}, cellule.styles, { halign: 'right' }),
+        });
+        return;
+      }
+      copie[i] = { content: cellule, styles: { halign: 'right' } };
+    });
+    return copie;
+  });
+}
+
+// La forme d'un tableau de la maison : en-tête bleu, ligne de total grisée, filets discrets.
+// L'appelant garde le dernier mot sur chaque réglage, mais n'a plus à les écrire tous.
+// `doc` ne sert qu'à mesurer les colonnes d'argent ; sans lui, tout le reste fonctionne.
+function styleTableauCLT(base, doc) {
+  const P = PAPIER_CLT;
+  const b = base || {};
+  const theme = b.theme || 'grid';
+  // Un appelant qui demande « plain » demande un bloc de texte mis en colonnes, pas un tableau :
+  // c'est ainsi qu'est posée l'identité du salarié en tête du bulletin de paie. Vu le 29 août
+  // 2026 en ouvrant un bulletin : il en ressortait quadrillé et rayé une ligne sur deux, parce
+  // que les filets et le fond alterné étaient imposés ici à tous les tableaux sans distinction.
+  // La demande de l'appelant l'emporte maintenant ; il peut toujours redemander des filets en
+  // écrivant lui-même un lineWidth.
+  const nu = theme === 'plain';
+  // Même histoire d'un cran plus loin : autoTable applique le fond alterné APRÈS le fond demandé
+  // par l'appelant, si bien qu'un appelant qui pose un fond sur son tableau le voyait effacé une
+  // ligne sur deux. La ligne « NET À PAYER » du bulletin devait ressortir sur une bande grise et
+  // ressortait blanche — mesuré au pixel, (250,250,252) au lieu de (238,240,243). Quand
+  // l'appelant a choisi un fond, on ne lui en superpose plus un second.
+  const fondChoisi = !!(b.styles && b.styles.fillColor);
+  const styles = Object.assign(
+    { fontSize: 9, cellPadding: 2.2, overflow: 'linebreak', lineColor: P.trait,
+      lineWidth: nu ? 0 : 0.1, textColor: [40, 40, 40] },
+    b.styles);
+  // Les largeurs mesurées sont posées d'abord, les réglages écrits par l'appelant par-dessus,
+  // colonne par colonne : déclarer une colonne d'argent ne lui retire pas le droit d'en fixer
+  // lui-même la largeur ou l'alignement.
+  const argent = largeursArgentCLT(doc, b, styles);
+  let colonnes = b.columnStyles;
+  if (argent) {
+    colonnes = Object.assign({}, argent);
+    Object.keys(b.columnStyles || {}).forEach(i => {
+      colonnes[i] = Object.assign({}, argent[i], b.columnStyles[i]);
+    });
+  }
+  const sortie = Object.assign({}, b, {
+    theme,
+    // Vu le 29 août 2026 en OUVRANT un récapitulatif de douze clientes, pas en le testant : le
+    // tableau d'une cliente coupé entre deux pages imprimait sa ligne TOTAL sur les DEUX, parce
+    // que c'est le réglage d'usine d'autoTable. La page 2 annonçait « TOTAL — 4 colis —
+    // 30 000 FCFA » sous une liste qui n'en montrait que trois, et la page 3 réannonçait le même
+    // montant sous le quatrième. Le même total imprimé deux fois sous deux listes différentes,
+    // dans un document d'argent, se lit comme deux sommes. Il ne paraît donc plus qu'une fois,
+    // là où la liste s'achève vraiment. Un appelant peut en décider autrement, mais il devra
+    // l'écrire lui-même.
+    showFoot: b.showFoot || 'lastPage',
+    // Pour l'en-tête de colonnes, c'est l'inverse : une suite de tableau sans ses intitulés ne
+    // se lit plus. Lui se répète sur chaque page.
+    showHead: b.showHead || 'everyPage',
+    styles,
+    headStyles: Object.assign({ fillColor: P.bleu, textColor: 255, fontStyle: 'bold' }, b.headStyles),
+    footStyles: Object.assign({ fillColor: [238, 240, 243], textColor: P.bleu, fontStyle: 'bold' }, b.footStyles),
+    alternateRowStyles: Object.assign(
+      (nu || fondChoisi) ? {} : { fillColor: [250, 251, 252] }, b.alternateRowStyles),
+  });
+  if (colonnes) sortie.columnStyles = colonnes;
+  // L'alignement à droite descend jusqu'à la ligne TOTAL, mais seulement dans les colonnes qui
+  // l'ont encore après que l'appelant a eu le dernier mot : s'il a demandé autre chose pour une
+  // colonne, on ne le lui reprend pas dans le pied.
+  if (argent) {
+    const aDroite = Object.keys(argent)
+      .map(Number)
+      .filter(i => colonnes[i] && colonnes[i].halign === 'right');
+    sortie.foot = piedArgentCLT(b.foot, aDroite);
+  }
+  // `colonnesArgent` et `colonnesArgentRangees` sont des consignes pour la maison, pas des
+  // réglages d'autoTable : il ne les comprendrait pas et s'en plaindrait dans la console.
+  delete sortie.colonnesArgent;
+  delete sortie.colonnesMesurees;
+  delete sortie.colonnesArgentRangees;
+  return sortie;
+}
+
+// Hauteur des paragraphes qui suivent le tableau (la phrase de conclusion, la note de bas de
+// document). Comptée avec les mêmes polices que celles qui serviront à les écrire.
+function hauteurApresCLT(doc, plan) {
+  const P = PAPIER_CLT;
+  const largeurTexte = plan.largeur - 2 * P.marge;
+  let h = 0;
+  (plan.apres || []).forEach(bloc => {
+    const taille = bloc.taille || 10;
+    doc.setFontSize(taille);
+    const lignes = doc.splitTextToSize(texteAplatiPourPDF(bloc.texte || ''), largeurTexte);
+    h += (bloc.avant === undefined ? 9 : bloc.avant) + lignes.length * hauteurLigneCLT(doc, taille);
+  });
+  return h;
+}
+
+// Un document peut n'avoir qu'un tableau — le point d'un livreur — ou en aligner autant qu'il y
+// a de clientes dans la journée, chacun sous son nom. Les deux s'écrivent pareil : on ramène
+// toujours le plan à une liste de sections, quitte à ce qu'elle n'en contienne qu'une.
+function sectionsCLT(plan) {
+  if (Array.isArray(plan.sections)) return plan.sections;
+  return plan.tableau ? [{ tableau: plan.tableau }] : [];
+}
+
+// Le titre d'une section, et la place qu'il prend. Écrit une seule fois pour que la mesure du
+// brouillon et le dessin définitif ne puissent pas diverger d'un millimètre.
+const HAUTEUR_TITRE_SECTION_CLT = 8;
+function titreSectionCLT(doc, texte, y) {
+  const P = PAPIER_CLT;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10.5);
+  doc.setTextColor(P.bleu[0], P.bleu[1], P.bleu[2]);
+  doc.text(String(texte), P.marge, y);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(0, 0, 0);
+  return y + 3;
+}
+
+// Combien de millimètres ce document réclame-t-il vraiment ? On le mesure sur un brouillon
+// jetable assez haut pour que rien ne soit coupé — voir le troisième piège en tête de section.
+function hauteurNecessaireCLT(plan) {
+  const P = PAPIER_CLT;
+  const brouillon = nouveauPDF(feuilleCLT(plan.largeur, P.hauteurBrouillon));
+  let y = P.hautContenu;
+  sectionsCLT(plan).forEach((sec, i) => {
+    if (i > 0) y += (sec.avant === undefined ? 9 : sec.avant);
+    if (sec.titre) y += HAUTEUR_TITRE_SECTION_CLT;
+    brouillon.autoTable(Object.assign({}, styleTableauCLT(sec.tableau, brouillon), {
+      startY: y,
+      margin: { left: P.marge, right: P.marge },
+    }));
+    y = brouillon.lastAutoTable.finalY;
+  });
+  return y + hauteurApresCLT(brouillon, plan) + P.basPied + 6;
+}
+
+/* Dessine le document en entier et rend la feuille avec l'endroit où le contenu s'arrête.
+
+   Écrit à part pour pouvoir être joué DEUX FOIS sur un document long : une première fois tout
+   en A4, pour apprendre combien de pages il occupe et où se termine la dernière ; une seconde
+   fois avec cette dernière page créée à sa taille. Sans cette séparation, il aurait fallu deux
+   descriptions du même tracé — et deux descriptions d'un même calcul finissent toujours par se
+   contredire.
+
+   `pageCourte` dit quelle page doit naître courte et à quelle hauteur. Il faut la CRÉER courte
+   et non la raccourcir après coup : mesuré le 29 août 2026, un PDF garde les coordonnées
+   absolues de ce qu'on y a dessiné, comptées depuis le BAS de la page ; raccourcir la feuille
+   ensuite fait sortir tout son contenu par le haut, et la page ressort blanche. */
+function tracerCLT(p, logo, hauteur, pageCourte) {
+  const P = PAPIER_CLT;
+  const doc = nouveauPDF(feuilleCLT(p.largeur, hauteur));
+
+  // addPage([210, 90]) rend une page de 90 de large sur 210 de haut : comme le constructeur, il
+  // garde l'orientation du document et réordonne les deux nombres. Mesuré le 29 août 2026.
+  // L'orientation se déduit donc des nombres, exactement comme dans feuilleCLT().
+  if (pageCourte) {
+    const ajouter = doc.addPage.bind(doc);
+    doc.addPage = function (format, orientation) {
+      if (doc.internal.getNumberOfPages() + 1 === pageCourte.numero) {
+        const f = feuilleCLT(p.largeur, pageCourte.hauteur);
+        return ajouter(f.format, f.orientation);
+      }
+      return ajouter(format, orientation);
+    };
+  }
+
+  // autoTable appelle didDrawPage pour CHAQUE tableau, y compris quand le tableau suivant
+  // continue sur une page déjà entamée. Sur un récapitulatif de dix clientes, l'en-tête de la
+  // page 1 serait donc dessiné dix fois l'un sur l'autre : le texte ressortirait épaissi et le
+  // fichier gonflerait pour rien. On retient les pages déjà coiffées, et on ne recommence pas.
+  const pagesCoiffees = new Set();
+  const poserEnTete = () => {
+    const n = doc.internal.getCurrentPageInfo().pageNumber;
+    if (pagesCoiffees.has(n)) return;
+    pagesCoiffees.add(n);
+    enTeteCLT(doc, p, logo);
+  };
+
+  let y = P.hautContenu;
+  const sections = sectionsCLT(p);
+  if (!sections.length) poserEnTete();
+  sections.forEach((sec, i) => {
+    if (i > 0) y += (sec.avant === undefined ? 9 : sec.avant);
+    if (sec.titre) {
+      // Un nom de cliente seul en bas de page, son tableau sur la suivante : on ne laisse pas
+      // un titre se séparer de ce qu'il annonce.
+      if (y + HAUTEUR_TITRE_SECTION_CLT + 18 > doc.internal.pageSize.getHeight() - P.basPied - 8) {
+        doc.addPage();
+        poserEnTete();
+        y = P.hautContenu;
+      }
+      y = titreSectionCLT(doc, sec.titre, y + 5);
+    }
+    doc.autoTable(Object.assign({}, styleTableauCLT(sec.tableau, doc), {
+      startY: y,
+      margin: { left: P.marge, right: P.marge, top: P.hautContenu, bottom: P.basPied + 8 },
+      // L'en-tête est redessiné par autoTable à chaque page qu'il ouvre : c'est du papier à
+      // en-tête, il ne s'arrête pas à la première feuille.
+      didDrawPage: () => poserEnTete(),
+    }));
+    y = doc.lastAutoTable.finalY;
+  });
+
+  (p.apres || []).forEach(bloc => {
+    const taille = bloc.taille || 10;
+    const couleur = bloc.couleur || P.gris;
+    y += (bloc.avant === undefined ? 9 : bloc.avant);
+    doc.setFont('helvetica', bloc.gras ? 'bold' : 'normal');
+    doc.setFontSize(taille);
+    const lignes = doc.splitTextToSize(texteAplatiPourPDF(bloc.texte || ''), p.largeur - 2 * P.marge);
+    const hBloc = lignes.length * hauteurLigneCLT(doc, taille);
+    // Un paragraphe qui déborderait sur le pied de page passe à la feuille suivante entier.
+    if (y + hBloc > doc.internal.pageSize.getHeight() - P.basPied - 6) {
+      doc.addPage();
+      poserEnTete();
+      y = P.hautContenu;
+    }
+    doc.setFont('helvetica', bloc.gras ? 'bold' : 'normal');
+    doc.setFontSize(taille);
+    doc.setTextColor(couleur[0], couleur[1], couleur[2]);
+    doc.text(lignes, P.marge, y);
+    y += hBloc;
+  });
+
+  doc.setTextColor(0, 0, 0);
+  return { doc, y, pages: doc.internal.getNumberOfPages() };
+}
+
+/* Le point d'entrée unique. On lui décrit ce qu'on veut dire, pas comment le dessiner :
+
+     documentCLT({
+       titre:     'Point de ma journée',
+       sousTitre: 'Cedric',
+       mention:   'Vendredi 29 août 2026',
+       tableau:   { head, body, foot, columnStyles, colonnesArgent },   // facultatif
+       apres:     [{ texte, taille, couleur, gras }],                   // facultatif
+       format:    'a4',                                                 // pour forcer le A4
+     }).then(doc => doc.save('point.pdf'));
+
+   La promesse n'est là que pour le logo. Tout le reste est immédiat. */
+function documentCLT(plan) {
+  const P = PAPIER_CLT;
+  const p = Object.assign({ largeur: P.largeurA4, apres: [] }, plan || {});
+  p.dateEdition = p.dateEdition || dateEditionCLT();
+  return logoCLT().then(logo => {
+    const besoin = hauteurNecessaireCLT(p);
+    // Une A4 couchée fait 297 de large sur 210 de haut. Sans cette règle, la fiche individuelle
+    // de paie — la seule feuille à l'italienne de l'application — serait repliée sur une page de
+    // 297 mm de haut, c'est-à-dire un carré, et ne s'imprimerait plus.
+    const pleine = p.largeur >= P.hauteurA4 ? P.largeurA4 : P.hauteurA4;
+    // Court, on raccourcit la feuille. Long, on repasse en A4 numéroté : une page de trois
+    // mètres de haut ne s'imprime ni ne se lit, et personne ne saurait en citer un passage.
+    const ajuste = p.format !== 'a4' && besoin <= pleine;
+    const achever = (essai) => { piedsDePageCLT(essai.doc, p); return essai.doc; };
+
+    if (ajuste) return achever(tracerCLT(p, logo, Math.max(P.hauteurMini, Math.ceil(besoin))));
+
+    // Document long. Le 29 août 2026, un récapitulatif de quatre clientes envoyait sa ligne
+    // TOTAL DE LA JOURNÉE seule sur une deuxième page blanche sur 212 de ses 297 mm — mesuré,
+    // pas estimé. Le total ne pouvait pas remonter : il restait 16 mm en bas de la page 1 et le
+    // bloc en demandait 31. Ce qu'on peut faire, c'est ne pas imprimer 212 mm de blanc. Les
+    // pages pleines restent en A4 ; seule la dernière est taillée à son contenu.
+    const essai = tracerCLT(p, logo, pleine);
+    // + basPied + 8 : exactement la marge basse laissée à autoTable sur les pages A4. Une
+    // feuille plus courte que cela ferait couper le tableau une ligne plus tôt.
+    const courte = Math.max(P.hauteurMini, Math.ceil(essai.y + P.basPied + 8));
+    if (essai.pages < 2 || courte >= pleine) return achever(essai);
+
+    const vrai = tracerCLT(p, logo, pleine, { numero: essai.pages, hauteur: courte });
+    // Garde-fou : si la feuille raccourcie a changé la pagination, c'est que le second tracé ne
+    // dit plus la même chose que le premier. On garde alors le document tout en A4 : un
+    // document juste sur une page trop longue vaut mieux qu'un document coupé autrement.
+    if (vrai.pages !== essai.pages) return achever(essai);
+    return achever(vrai);
+  });
+}
+
+
+/* ------------------------------------------------------------------------------------------
+   CHARGER jsPDF SEULEMENT QUAND ON S'EN SERT
+   ------------------------------------------------------------------------------------------
+   L'écran du livreur ne chargeait pas jsPDF, et il n'y a aucune raison qu'il le charge à
+   chaque ouverture : il ouvre son application des dizaines de fois par jour et télécharge son
+   point une fois, le soir. Mesuré le 29 août 2026 sur son téléphone : les 364 463 octets de
+   jsPDF et les 38 976 du module de tableaux sont DÉJÀ dans le cache du service worker
+   (clt-shell-v56). Le chargement au clic ne coûte donc pas de réseau — il marche même sans —,
+   il évite seulement de faire analyser 400 Ko de JavaScript à chaque ouverture.
+
+   Les empreintes ci-dessous sont celles des balises d'equipe.html et de fournisseur.html, au
+   caractère près. Sans crossorigin, une empreinte ne sert à rien : le navigateur l'ignore.
+   Le contrôle .github/verifier-empreintes.py lit maintenant ce tableau comme il lit les pages,
+   et tests/papier-a-en-tete.test.mjs refuse que les deux versions se séparent : monter jsPDF ici
+   seulement fait rougir « SCRIPTS_PDF_CLT déclare les deux mêmes fichiers, avec les mêmes
+   empreintes ». Sans ce banc d'essai, le contrôle des empreintes restait vert — chaque version
+   reste cohérente de son côté — et le livreur chargeait au clic une bibliothèque que le
+   navigateur refusait, le soir de la remise de caisse.
+   ------------------------------------------------------------------------------------------ */
+
+const SCRIPTS_PDF_CLT = [
+  {
+    src: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    integrity: 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk',
+  },
+  {
+    src: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js',
+    integrity: 'sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3',
+  },
+];
+
+function chargerScriptScelleCLT(decl) {
+  return new Promise((ok, ko) => {
+    const deja = document.querySelector('script[data-clt-pdf="' + decl.src + '"]');
+    if (deja) {
+      if (deja.dataset.cltCharge === '1') return ok();
+      deja.addEventListener('load', () => ok());
+      deja.addEventListener('error', () => ko(new Error('script refusé : ' + decl.src)));
+      return;
+    }
+    const el = document.createElement('script');
+    el.src = decl.src;
+    el.integrity = decl.integrity;
+    el.crossOrigin = 'anonymous';
+    el.referrerPolicy = 'no-referrer';
+    el.dataset.cltPdf = decl.src;
+    el.addEventListener('load', () => { el.dataset.cltCharge = '1'; ok(); });
+    el.addEventListener('error', () => ko(new Error('script refusé : ' + decl.src)));
+    document.head.appendChild(el);
+  });
+}
+
+// Rend true si jsPDF est utilisable, false sinon — et ne jette jamais. L'appelant affiche un
+// message et rend la main ; il ne se retrouve pas avec une exception au milieu d'une soirée
+// de remise de caisse. Les deux scripts sont chargés dans l'ordre : le module de tableaux
+// s'accroche à jsPDF, l'inverse n'a pas de sens.
+let __attentePDFCLT = null;
+function assurerJsPDF() {
+  if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(true);
+  if (__attentePDFCLT) return __attentePDFCLT;
+  __attentePDFCLT = SCRIPTS_PDF_CLT
+    .reduce((chaine, decl) => chaine.then(() => chargerScriptScelleCLT(decl)), Promise.resolve())
+    .then(() => !!(window.jspdf && window.jspdf.jsPDF))
+    .catch(() => { __attentePDFCLT = null; return false; });
+  return __attentePDFCLT;
+}
+
 
 // La seule phrase à annoncer à une vendeuse. Elle ferme le document comme elle ferme l'écran.
 function relevePhraseDue(r) {
@@ -3899,15 +4578,24 @@ function accordRemiseHTML(verdict) {
 // `actionsHTML`, s'il est fourni, reçoit le colis et rend les boutons de correction que
 // l'équipe seule voit. Le livreur, lui, appelle la fonction sans rien : sa fiche reste en
 // lecture seule et pas une ligne de code ne diffère entre les deux.
-function financeColisHTML(colis, actionsHTML) {
-  const m = n => formatMontant(n) || '0 FCFA';
+// L'ordre dans lequel les colis d'une cliente se présentent : les livrés d'abord, les retours en
+// dernier, et à statut égal le plus ancien avant. Sorti de financeColisHTML() le 29 août 2026
+// pour que le PDF du livreur range ses colis EXACTEMENT comme son écran les lui a montrés. Deux
+// tris écrits séparément finissent toujours par diverger, et le livreur pointerait alors son
+// papier ligne à ligne contre un écran qui ne dit pas la même chose dans le même ordre.
+function financeColisOrdonnes(colis) {
   const ordre = { livre: 0, en_livraison: 1, recupere: 2, en_attente: 3, non_livre: 4, retour: 5 };
-  const liste = (colis || []).slice().sort((a, b) => {
+  return (colis || []).slice().sort((a, b) => {
     const da = (ordre[a.statut] === undefined ? 9 : ordre[a.statut]);
     const db = (ordre[b.statut] === undefined ? 9 : ordre[b.statut]);
     if (da !== db) return da - db;
     return new Date(a.created_at) - new Date(b.created_at);
   });
+}
+
+function financeColisHTML(colis, actionsHTML) {
+  const m = n => formatMontant(n) || '0 FCFA';
+  const liste = financeColisOrdonnes(colis);
   return liste.map(c => {
     const art = montantArticleColis(c);
     const liv = montantLivraisonColis(c);
@@ -3961,16 +4649,21 @@ function financeColisHTML(colis, actionsHTML) {
    petit écran. Les jours où elle apparaît, en revanche, elle est indispensable : sans elle le
    total ne correspondrait plus à la somme des colonnes précédentes, et on croirait à une
    erreur de l'application. */
-function financeTableauHTML(colis, options) {
+/* Le regroupement par cliente, les totaux de chacune, l'ordre des lignes et la présence ou non
+   de la colonne « Gare ». Sorti de financeTableauHTML() le 29 août 2026, quand le livreur a
+   demandé à télécharger son point : son PDF doit montrer LES MÊMES lignes, dans LE MÊME ordre,
+   avec LES MÊMES totaux que l'écran qu'il vient de regarder. Recalculer tout ça une seconde fois
+   dans le générateur de PDF, c'était accepter qu'un jour le papier et l'écran ne disent plus la
+   même somme — et c'est exactement ce que la maison s'interdit.
+
+   La colonne « Gare » n'apparaît que si de l'argent a réellement été payé à la gare : une colonne
+   de tirets sur toute la journée n'apprend rien et vole de la largeur aux montants. */
+function financeLignes(colis, options) {
   const o = options || {};
-  const m = n => formatMontant(n) || '0 FCFA';
   const cleDe = o.cleDe || (c => c.fournisseur_id || 'inconnu');
   const nomDe = o.nomDe || (k => escapeHTML(String(k)));
-  const depliees = o.depliees || new Set();
-  const titreGroupe = o.titreGroupe || 'Cliente';
 
   const t = totauxArgent(colis);
-
   const groupes = {};
   (colis || []).forEach(c => {
     const k = cleDe(c);
@@ -3983,7 +4676,16 @@ function financeTableauHTML(colis, options) {
     t: totauxArgent(groupes[k]),
   })).sort((a, b) => b.t.totalEncaisse - a.t.totalEncaisse);
 
-  const colonneGare = t.fraisExpedition > 0;
+  return { t, lignes, colonneGare: t.fraisExpedition > 0 };
+}
+
+function financeTableauHTML(colis, options) {
+  const o = options || {};
+  const m = n => formatMontant(n) || '0 FCFA';
+  const depliees = o.depliees || new Set();
+  const titreGroupe = o.titreGroupe || 'Cliente';
+
+  const { t, lignes, colonneGare } = financeLignes(colis, o);
   const nbColonnes = colonneGare ? 6 : 5;
 
   // Un groupe qui n'a plus de colis ne doit pas rester « déplié » en mémoire.
@@ -4025,6 +4727,126 @@ function financeTableauHTML(colis, options) {
           ]))}
         </table>
       </div>`;
+}
+
+
+/* ------------------------------------------------------------------------------------------
+   LE POINT DE LA JOURNÉE D'UN LIVREUR, EN PDF
+   ------------------------------------------------------------------------------------------
+   Demandé le 29 août 2026 : « au niveau de chaque livreur lorsqu'il rentre dans son onglet
+   finance à la fin de chaque journée il puisse télécharger son point ou son récapitulatif de la
+   journée en pdf uniquement. »
+
+   Celtis a choisi le détail complet, déplié : le tableau des clientes comme à l'écran, puis sous
+   chacune la liste de ses colis, et le TOTAL. Le livreur qui arrive à la caisse le soir doit
+   pouvoir suivre la contestation d'un colis jusqu'au colis lui-même, sans rallumer son
+   téléphone.
+
+   Rien n'est recalculé ici. Les lignes, leur ordre, les totaux de chaque cliente et le total
+   général viennent de financeLignes() et financeColisOrdonnes(), c'est-à-dire des fonctions
+   qui ont servi à dessiner l'écran que le livreur vient de regarder. Si l'écran se trompe, le
+   papier se trompe pareil — et c'est voulu : deux chiffres différents seraient bien pires.
+   ------------------------------------------------------------------------------------------ */
+
+// Les colis d'une cliente, en tableau. Une ligne par colis, et les mêmes montants que les
+// cartes de l'écran : article, livraison, ce qui a été payé à la gare, ce qui reste en main.
+function pointColisTableauCLT(colis, colonneGare) {
+  const m = n => formatMontant(n) || '0 FCFA';
+  const tete = ['Colis', 'Statut', 'Article', 'Livraison'].concat(colonneGare ? ['Gare'] : []).concat(['En main']);
+  const corps = financeColisOrdonnes(colis).map(c => {
+    const quoi = colisDescriptionTexte(c);
+    const enMain = montantEnMainDuLivreur(c);
+    const gare = fraisExpeditionColis(c);
+    return [
+      [c.numero, c.destination, quoi].filter(Boolean).join(' · ') || '—',
+      statutTexte(c.statut),
+      montantArticleColis(c) ? m(montantArticleColis(c)) : '—',
+      montantLivraisonColis(c) ? m(montantLivraisonColis(c)) : '—',
+    ].concat(colonneGare ? [gare ? '−' + m(gare) : '—'] : [])
+     .concat([enMain ? m(enMain) : '—']);
+  });
+  return {
+    styles: { fontSize: 7.6, cellPadding: 1.5 },
+    head: [tete],
+    body: corps.length ? corps : [[{ content: 'Aucun colis.', colSpan: tete.length }]],
+    // Tous les montants à droite, milliers sous milliers : c'est ce qui permet de vérifier une
+    // addition à l'œil sans la refaire. Les déclarer colonnes d'argent leur donne en plus une
+    // largeur mesurée sur les montants réellement présents, ce qui rend la place gagnée à la
+    // description du colis, seule colonne qui en manque.
+    colonnesArgent: [2, 3, 4, 5].filter(i => i < tete.length),
+    // « Statut » est mesurée elle aussi, sans quoi la largeur restante se partagerait entre elle
+    // et « Colis » d'après le contenu de CE tableau, différent d'une cliente à l'autre. Une fois
+    // toutes les colonnes fixées sauf la première, « Colis » reçoit toujours le même reste.
+    colonnesMesurees: { 1: 'left' },
+    columnStyles: { 0: { halign: 'left' } },
+  };
+}
+
+/* Construit le plan du document, sans le dessiner. Séparé de la production pour que le banc
+   d'essai puisse vérifier les chiffres du plan sans avoir à ouvrir un PDF. */
+function pointDuLivreurPlan(colis, options) {
+  const o = options || {};
+  const m = n => formatMontant(n) || '0 FCFA';
+  const { t, lignes, colonneGare } = financeLignes(colis, o);
+
+  const tete = ['Cliente', 'Livrés', 'Articles', 'Livraison'].concat(colonneGare ? ['Gare'] : []).concat(['Total']);
+  const resume = {
+    styles: { fontSize: 8.5, cellPadding: 2 },
+    head: [tete],
+    body: lignes.map(l => [
+      l.nom,
+      l.t.nbLivres + ' / ' + l.t.nb,
+      l.t.articleEncaisse ? m(l.t.articleEncaisse) : '—',
+      l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '—',
+    ].concat(colonneGare ? [l.t.fraisExpedition ? '−' + m(l.t.fraisExpedition) : '—'] : [])
+     .concat([l.t.totalEnMain ? m(l.t.totalEnMain) : '—'])),
+    // Le TOTAL n'est pas facultatif. Un point de caisse sans total oblige le livreur et la
+    // caissière à refaire l'addition chacun de son côté, et c'est là que les soirs s'éternisent.
+    foot: [['TOTAL', t.nbLivres + ' / ' + t.nb, m(t.articleEncaisse), m(t.livraisonEncaissee)]
+      .concat(colonneGare ? ['−' + m(t.fraisExpedition)] : [])
+      .concat([m(t.totalEnMain)])],
+    // Colonnes d'argent : largeur mesurée sur les montants présents, alignement à droite — et,
+    // depuis le 29 août 2026, alignement à droite JUSQUE dans la ligne TOTAL. Elle s'en écartait
+    // jusqu'à 28,1 pt, presque 10 mm, parce que footStyles passe devant columnStyles ; c'était la
+    // seule ligne du point que le livreur et la caissière lisent vraiment.
+    colonnesArgent: [2, 3, 4, 5].filter(i => i < tete.length),
+    columnStyles: { 0: { halign: 'left' } },
+  };
+
+  // Les tableaux de détail sont empilés sur la même feuille, un par cliente, et ce sont les mêmes
+  // colonnes. Mesurés chacun sur ses propres montants, ils recevaient des largeurs différentes :
+  // vu le 29 août 2026 en ouvrant le point, la colonne « Statut » tombait 25 pt plus à droite chez
+  // une cliente que chez la suivante, et l'œil devait se recaler à chaque titre. Les colonnes
+  // d'argent sont donc mesurées UNE FOIS sur les colis de toute la journée, et les mêmes largeurs
+  // servent à tous les tableaux.
+  const tableaux = lignes.map(l => pointColisTableauCLT(l.colis, colonneGare));
+  const rangeesJour = tableaux.reduce((acc, tb) => acc.concat(tb.body), []);
+  tableaux.forEach(tb => { tb.colonnesArgentRangees = [].concat(tb.head, rangeesJour); });
+
+  const sections = [{ tableau: resume }];
+  lignes.forEach((l, i) => {
+    sections.push({
+      titre: `${l.nom}  —  ${l.t.nbLivres} / ${l.t.nb} livré(s)  ·  en main ${m(l.t.totalEnMain)}`,
+      tableau: tableaux[i],
+    });
+  });
+
+  return {
+    titre: 'Point de ma journée',
+    sousTitre: o.nomLivreur || '',
+    mention: o.dateLabel || '',
+    sections,
+    apres: [
+      { texte: 'Somme qui doit rester en main : ' + m(t.totalEnMain), taille: 11.5, gras: true, couleur: [26, 125, 60] },
+      { texte: "Ce point reprend la journée telle qu'elle est enregistrée au moment de l'édition. "
+             + "Il ne remplace pas la remise à la caisse : c'est la caisse qui arrête le compte.", taille: 8, avant: 7 },
+    ],
+    // Le nom du fichier porte la date : deux points de deux journées différentes ne doivent pas
+    // se recouvrir dans le dossier de téléchargement du téléphone.
+    nomFichier: nomFichierCLT('point', o.nomLivreur, o.dateISO) + '.pdf',
+    totalEnMain: t.totalEnMain,
+    nbColis: t.nb,
+  };
 }
 
 // Ouvre/ferme une ligne. On agit sur les classes plutôt que de tout redessiner : le tableau ne
