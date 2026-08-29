@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260829caisse1">
-<script src="theme.js?v=20260829caisse1"></script>
+<link rel="stylesheet" href="style.css?v=20260829accord1">
+<script src="theme.js?v=20260829accord1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1083,6 +1083,11 @@ saisis ensuite lui seront rattachés automatiquement.
         <label style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Montant attendu</label>
         <input type="text" id="remise-modal-attendu" readonly style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box; background:#f2f5f9; font-weight:700;">
       </div>
+      <!-- Le désaccord entre ce que cet écran calcule et ce que la base calcule sur les mêmes
+           colis. Placé AVANT le champ du montant reçu, et pas après : on doit le voir avant de
+           saisir, pas après avoir tapé un chiffre en confiance. Reste vide tant que les deux
+           sont d'accord, et vide aussi quand le serveur n'a rien pu dire. -->
+      <div id="remise-modal-accord" style="text-align:left;"></div>
       <div style="text-align:left; margin-bottom:10px;">
         <label id="remise-modal-recu-label" for="remise-modal-recu" style="display:block; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">Montant réellement reçu (FCFA)</label>
         <input type="number" id="remise-modal-recu" min="0" step="1" inputmode="numeric" required style="width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
@@ -1131,10 +1136,10 @@ saisis ensuite lui seront rattachés automatiquement.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260829caisse1"></script>
-<script src="config.js?v=20260829caisse1"></script>
+<script src="clt-common.js?v=20260829accord1"></script>
+<script src="config.js?v=20260829accord1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260829caisse1"></script>
+<script src="clt-select-recherche.js?v=20260829accord1"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1380,6 +1385,48 @@ function majEcartRemise(){
     box.innerHTML = `<span style="color:#b8860b;">ℹ️ Trop-perçu ${fmtFcfa(ecart)} — à vérifier.</span>`;
   }
 }
+/* On demande à la base ce qu'ELLE calcule sur exactement les mêmes colis, et on compare aux
+   deux chiffres près. La règle de l'argent est écrite deux fois — en JavaScript pour que les
+   écrans affichent sans attendre le réseau, en SQL parce que c'est la base qui tranche — et
+   jusqu'ici rien ne vérifiait qu'elles disaient la même chose. Le 25 août 2026, un écran
+   annonçait 14 000 quand le livreur en portait 11 000, et c'est un contrôle fait à la main
+   qui l'a trouvé.
+
+   Trois précautions, chacune payée par une erreur possible :
+
+   • ON NE PRÉVIENT QUE SI L'ON SAIT. Réseau coupé, fonction pas encore installée, droits
+     refusés, réponse illisible : on se tait. accordDuServeurEtDeLEcran() répond « inconnu »
+     et accordRemiseHTML() rend une chaîne vide. Un avertissement qui se déclencherait à
+     chaque coupure serait ignoré au bout de deux soirs.
+
+   • ON N'ATTEND PAS LA RÉPONSE POUR OUVRIR. La fenêtre s'affiche tout de suite ; le contrôle
+     arrive après, s'il arrive. Une remise du soir ne doit pas dépendre de la 4G d'Abidjan.
+
+   • ON VÉRIFIE QUE LA RÉPONSE CONCERNE ENCORE CETTE FENÊTRE. Si le bureau ferme et rouvre sur
+     un autre livreur pendant que la requête voyage, la réponse tardive peindrait un
+     avertissement sur le mauvais dossier. On compare l'objet de contexte, pas seulement
+     l'identifiant : deux ouvertures sur le même livreur sont deux contextes différents. */
+async function demanderSonChiffreAuServeur(ctx){
+  const box = document.getElementById('remise-modal-accord');
+  if (box) box.innerHTML = '';
+  if (!ctx) return;
+  let serveur = null;
+  try {
+    const { data, error } = await supabaseClient.rpc('attendu_remise_caisse', {
+      p_livreur_id: ctx.livreurId,
+      p_colis_ids: ctx.colisIds,
+      p_colis_frais_ids: ctx.colisFraisIds
+    });
+    if (error) return;                       // droits, fonction absente, réseau : on se tait
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || row.attendu === null || row.attendu === undefined) return;
+    serveur = row.attendu;
+  } catch (e) { return; }
+  if (__remiseCtx !== ctx) return;           // la fenêtre a changé pendant le voyage
+  const box2 = document.getElementById('remise-modal-accord');
+  if (box2) cltPoserHTML(box2, accordRemiseHTML(accordDuServeurEtDeLEcran(ctx.attendu, serveur)));
+}
+
 // colisFraisIds : les colis PAS ENCORE livrés dont on rembourse seulement l'avance de gare.
 // Ils sont transmis à part et ne seront jamais marqués « remis » — sinon leur argent, encaissé
 // plus tard à la livraison, ne serait plus jamais réclamé.
@@ -1410,11 +1457,16 @@ function showRemiseModal(livreurId, attendu, colisIds, nbColis, colisFraisIds){
   document.getElementById('remise-modal-note').value = '';
   document.getElementById('remise-modal-msg').innerHTML = '';
   majEcartRemise();
+  demanderSonChiffreAuServeur(__remiseCtx);
   document.getElementById('remise-modal-overlay').classList.remove('hidden');
   setTimeout(() => { const i = document.getElementById('remise-modal-recu'); if (i){ i.focus(); i.select(); } }, 50);
 }
 function hideRemiseModal(){
   document.getElementById('remise-modal-overlay').classList.add('hidden');
+  // L'avertissement portait sur des colis précis. Le laisser en place ferait réapparaître à la
+  // prochaine ouverture un écart qui n'a peut-être plus lieu d'être.
+  const accord = document.getElementById('remise-modal-accord');
+  if (accord) accord.innerHTML = '';
   __remiseCtx = null;
 }
 document.getElementById('remise-modal-recu').addEventListener('input', majEcartRemise);

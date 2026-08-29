@@ -386,14 +386,43 @@ if (!fs.existsSync(fichierAvances)) {
   verifier("l'ancienne signature est SUPPRIMÉE, pas doublée par une surcharge",
     /drop function if exists public\.enregistrer_remise_caisse\(uuid, numeric, uuid\[\], text\)/.test(sql),
     "deux versions coexistantes et PostgREST ne saurait plus laquelle appeler");
-  verifier("le montant attendu retranche l'avance encore due, comme l'écran",
+  verifier("au 25 août, le montant attendu retranchait déjà l'avance encore due",
     /frais_expedition_rembourse_at is null[\s\S]{0,120}frais_expedition/.test(sql));
-  verifier("un colis livré sans que l'argent rentre ne compte pas plein",
+  verifier("au 25 août, un colis livré sans que l'argent rentre ne comptait déjà pas plein",
     /article_non_encaisse/.test(sql),
     "sinon la remise archive un manque inventé, et le message « Manque 12 000 » part sur un chiffre faux");
   verifier("les avances sont datées sans que leur colis soit marqué remis",
     /set frais_expedition_rembourse_at = now\(\)/.test(sql)
     && !/encaissement_remis[\s\S]{0,80}p_colis_frais_ids/.test(sql));
+}
+
+/* CE FICHIER-LÀ N'A PLUS LE DERNIER MOT, ET IL FAUT LE DIRE ICI.
+   Le 29 août 2026, la règle d'argent a été sortie de enregistrer_remise_caisse pour n'être plus
+   écrite qu'à un seul endroit du serveur. Les deux contrôles ci-dessus vérifient donc désormais
+   l'HISTOIRE, pas l'état de la base — et c'est exactement le piège qu'on est en train de
+   retirer : un contrôle vert qui décrit un fichier dépassé. On exige donc que le fichier qui
+   reprend la main existe, qu'il ait bien retiré le calcul de l'enregistrement, et qu'il ait son
+   propre banc d'essai. Le détail se vérifie là-bas, pas ici : deux bancs qui contrôlent la même
+   chose finissent par ne plus la contrôler de la même façon. */
+const fichierAccord = path.join(SQL, '2026-08-29-le-serveur-annonce-son-chiffre.sql');
+const bancAccord = path.join(RACINE, 'tests', 'le-serveur-et-l-ecran-comptent-pareil.test.mjs');
+
+verifier("la règle d'argent du serveur a son banc d'essai dédié",
+  fs.existsSync(bancAccord),
+  "sans lui, plus rien ne vérifie que le serveur et l'écran comptent pareil");
+
+if (!fs.existsSync(fichierAccord)) {
+  ignorer("le fichier qui sort la règle d'argent de l'enregistrement",
+    "les scripts SQL ne sont pas publiés dans le dépôt ; cette section ne tourne qu'en local.");
+} else {
+  const sql = fs.readFileSync(fichierAccord, 'utf8');
+  verifier("la règle d'argent du serveur n'est plus écrite que dans une fonction à elle",
+    /create or replace function public\.montant_en_main_du_livreur/.test(sql));
+  verifier("l'écran peut demander à la base son propre chiffre avant de solder",
+    /create or replace function public\.attendu_remise_caisse/.test(sql));
+  verifier("l'enregistrement ne refait plus le calcul, il appelle ce seul endroit",
+    /create or replace function public\.enregistrer_remise_caisse[\s\S]*attendu_remise_caisse\s*\(/.test(sql),
+    "deux chemins vers le même montant, c'est deux chemins pour diverger");
 }
 
 const fichierReleve = path.join(SQL, '2026-08-releve-colis-anciens.sql');

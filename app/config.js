@@ -3802,6 +3802,94 @@ function caisseEnMainHTML(releve, options) {
     corps + retard + sansHeure + avances);
 }
 
+/* --------------------------------------------------------------------------------------------
+   LE SERVEUR ANNONCE SON CHIFFRE, L'ÉCRAN LE COMPARE  (29/08/2026)
+
+   CE QUI A ÉTÉ MESURÉ CE JOUR-LÀ
+   ------------------------------
+   La règle de l'argent du livreur est écrite à DEUX endroits, et c'est voulu : en JavaScript
+   dans ce fichier (montantEnMainDuLivreur), parce que les écrans doivent afficher un montant
+   sans attendre le réseau ; en SQL dans la base, parce que c'est la base qui tranche au moment
+   d'enregistrer la remise, et qu'un chiffre venu du navigateur n'est pas une preuve.
+
+   Le 29 août 2026, les deux ont été relus côte à côte. La fonction vivante en base
+   (enregistrer_remise_caisse, 2 673 caractères, empreinte 68933f454fb108aadbeeed853a6554b7)
+   applique exactement les mêmes conditions que ce fichier : article compté seulement si le
+   colis est livré et non marqué « argent pas rentré », livraison comptée si elle est payée
+   d'avance ou si le colis est livré sans exception, avance de gare retranchée tant que
+   frais_expedition_rembourse_at est vide. Elles étaient d'accord. Ce n'était pas garanti,
+   c'était constaté.
+
+   LE TROU QUE ÇA A OUVERT
+   -----------------------
+   Une garde existait déjà : la section 5 de tests/controle-croise-des-ecrans.test.mjs relit le
+   fichier SQL du dépôt et vérifie que chaque condition y figure. Mais elle compare des MOTS et
+   elle lit un FICHIER. Or ces fonctions se déploient en collant du SQL dans l'éditeur Supabase.
+   Le jour où quelqu'un modifie la fonction directement en base et oublie le fichier, le fichier
+   reste juste, les contrôles restent verts, et le serveur calcule autre chose que l'écran.
+   Personne ne le verrait — c'est la forme exacte de l'incident du 25 août 2026, où le téléphone
+   disait 11 000 et le tableau 14 000.
+
+   CE QU'ON FAIT, ET POURQUOI LÀ
+   -----------------------------
+   On ne compare plus des textes, on compare des MONTANTS, et on le fait au moment où l'argent
+   change de main : quand le bureau ouvre la remise du soir, l'écran demande à la base ce
+   qu'ELLE calcule sur exactement les mêmes colis, et confronte les deux nombres. Un désaccord
+   d'un seul franc s'affiche en rouge, avec les deux chiffres, avant que qui que ce soit ne
+   saisisse le montant reçu.
+
+   ON NE PRÉVIENT QUE SI L'ON SAIT. Réseau coupé, fonction absente, droits refusés, réponse
+   illisible : dans tous ces cas le serveur n'a rien dit, et « je ne sais pas » ne doit jamais
+   s'afficher comme « il y a un écart ». Un avertissement qui crie au loup à chaque coupure
+   serait ignoré au bout de deux soirs, et il ne servirait plus le jour où il aurait raison.
+   C'est la même règle que pour le bandeau de mise à jour, et pour la même raison.
+
+   ON NE BLOQUE PAS NON PLUS. Le désaccord se voit, il ne ferme pas la caisse : le bureau doit
+   pouvoir enregistrer une remise un soir où le serveur ne répond pas, et c'est la base qui
+   inscrit de toute façon SON propre montant attendu dans remises_caisse. L'écart archivé
+   restera juste même si l'écran s'est trompé ; l'avertissement sert à ce qu'on s'en aperçoive
+   le soir même plutôt qu'à la fin du mois. */
+
+// Le verdict, isolé pour être vérifiable sans navigateur ni base. On répond « inconnu », jamais
+// « écart », dès que l'un des deux côtés n'a rien dit.
+//
+// « RIEN » N'EST PAS « ZÉRO », ET DES DEUX CÔTÉS. Number(null), Number(undefined sur une chaîne
+// vide) et Number('') valent 0 en JavaScript. Sans ce garde-fou, un attendu absent serait comparé
+// comme un montant nul et le bandeau annoncerait un écart du montant entier — une fausse alerte
+// du plus mauvais genre, celle qui a l'air d'un vrai trou de caisse. Le banc d'essai a trouvé le
+// cas le 29 août 2026 : la protection n'existait alors que du côté serveur.
+function accordDuServeurEtDeLEcran(attenduEcran, attenduServeur) {
+  const rienDit = v => v === null || v === undefined || v === '';
+  const ecran = rienDit(attenduEcran) ? NaN : Number(attenduEcran);
+  const serveur = rienDit(attenduServeur) ? NaN : Number(attenduServeur);
+  if (!Number.isFinite(ecran) || !Number.isFinite(serveur)) {
+    return { connu: false, accord: false, ecart: 0, ecran: Number.isFinite(ecran) ? ecran : 0, serveur: null };
+  }
+  // Les montants sont des francs entiers. On arrondit avant de comparer pour qu'un centième
+  // de franc né d'un numeric PostgreSQL ne déclenche pas une alerte que personne ne saurait
+  // expliquer — mais on ne tolère AUCUN écart d'un franc entier.
+  const e = Math.round(ecran);
+  const s = Math.round(serveur);
+  return { connu: true, accord: e === s, ecart: e - s, ecran: e, serveur: s };
+}
+
+// Le bandeau de désaccord, à poser dans la fenêtre de remise. Rend une chaîne vide quand il n'y
+// a rien à dire : ni quand le serveur se tait, ni quand les deux sont d'accord. Un encadré vert
+// « tout va bien » à chaque remise deviendrait un décor, et on cesserait de le lire.
+function accordRemiseHTML(verdict) {
+  const v = verdict || {};
+  if (!v.connu || v.accord) return '';
+  const m = n => escapeHTML(formatMontant(Math.abs(Number(n) || 0)) || '0 FCFA');
+  const sens = v.ecart > 0
+    ? `Cet écran annonce ${m(v.ecran)}, la base en calcule ${m(v.serveur)} : ${m(v.ecart)} de plus à l'écran.`
+    : `Cet écran annonce ${m(v.ecran)}, la base en calcule ${m(v.serveur)} : ${m(v.ecart)} de moins à l'écran.`;
+  return `<div style="border:1.5px solid #f0c9c4; background:#fdf3f2; border-radius:10px; padding:10px 12px; margin-bottom:12px;">
+    <div style="font-weight:800; color:#c0392b; font-size:13px;">⚠️ L'écran et la base ne comptent pas pareil</div>
+    <div style="margin-top:5px; font-size:12.5px; color:#7a2f26; line-height:1.45;">${sens}</div>
+    <div style="margin-top:5px; font-size:11.5px; color:#8a5a52;">C'est le montant de la base qui sera enregistré. Notez l'écart et signalez-le avant de solder.</div>
+  </div>`;
+}
+
 // Les colis d'un groupe, en cartes, sous la ligne dépliée. Lecture seule : rien à modifier ici,
 // on vient y lire le détail de ce qui a été encaissé ou pas.
 //
