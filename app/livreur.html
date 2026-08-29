@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260829retour1">
-<script src="theme.js?v=20260829retour1"></script>
+<link rel="stylesheet" href="style.css?v=20260829caisse1">
+<script src="theme.js?v=20260829caisse1"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -561,6 +561,13 @@
       <div id="argent-jour-corps">
         <div style="font-size:13px; color:#94a3b8;">Chargement…</div>
       </div>
+      <!-- Ce que le livreur porte POUR DE BON, toutes journées confondues et pas seulement celle
+           du calendrier ci-dessus. Mesuré le 29 août 2026 : sur 1 356 550 FCFA encaissés et non
+           remis, 238 000 seulement étaient rattachés au jour même — le reste n'apparaissait sur
+           aucun écran de livreur. Le bloc est ici, sous les tuiles du jour, parce que c'est la
+           carte que le livreur a sous les yeux au moment où il marque un colis « livré », et que
+           ce geste-là est le seul que la base voit se répéter tous les jours. -->
+      <div id="caisse-en-main"></div>
     </div>
   </div>
 
@@ -643,8 +650,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260829retour1"></script>
-<script src="config.js?v=20260829retour1"></script>
+<script src="clt-common.js?v=20260829caisse1"></script>
+<script src="config.js?v=20260829caisse1"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -2381,6 +2388,7 @@
   function renderAll(){
     renderTourneeSummary();
     renderArgentDuJour();
+    renderCaisseEnMain();
     renderMesColis();
     renderRecuperations();
     renderMaTournee();
@@ -2460,6 +2468,34 @@
       <details class="journee-detail"><summary>Ce que ça veut dire</summary>${argentResumeHTML(t, 'livreur')}</details>`);
 
     renderFinanceDetail(duJour, t, jour);
+  }
+
+  // ---- Ce que je porte pour CLT, toutes journées confondues ------------------------------
+  //
+  // Deux chiffres voisins et deux questions différentes, qu'il ne faut jamais confondre :
+  //   • « Argent du jour »       → ce qui est rentré sur les colis REÇUS le jour choisi.
+  //   • « Ce que vous portez »   → ce qui est encaissé et pas encore remis, tous jours confondus.
+  // Le second ne se déduit pas du premier : au 29 août 2026, la maison portait 1 356 550 FCFA
+  // non remis dont 238 000 seulement dataient du jour même.
+  //
+  // Aucun calcul ici. Le montant vient de caisseEnMainDuLivreur() (config.js), qui le tire de
+  // caisseParLivreur() — l'addition même que le tableau de l'équipe affiche. Le téléphone du
+  // livreur et l'écran du bureau ne peuvent donc pas annoncer deux sommes différentes ; c'était
+  // l'incident du 25 août 2026, et il ne se reproduira pas par ce chemin-là.
+  //
+  // On passe allColis SANS filtrer : la règle d'accès de la base ne renvoie au livreur que ses
+  // propres colis et ceux qu'il va récupérer pour un collègue, et c'est caisseParLivreur() qui
+  // range chacun sous son livreur. Filtrer ici serait un second tri, donc une seconde règle.
+  //
+  // `complet` dit si le navigateur détient TOUT l'historique. Sur un cache partiel, la somme
+  // serait forcément trop basse ; le bloc refuse alors d'afficher un montant et explique
+  // comment charger le reste.
+  function renderCaisseEnMain(){
+    const box = document.getElementById('caisse-en-main');
+    if (!box || !currentUser) return;
+    cltPoserHTML(box, caisseEnMainHTML(
+      caisseEnMainDuLivreur(allColis, currentUser.id),
+      { complet: !colisHasMore }));
   }
 
   // Journée en toutes lettres, pour les messages ("le mardi 25 août 2026").

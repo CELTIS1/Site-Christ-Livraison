@@ -107,6 +107,10 @@ vm.runInContext([
   'montantEnMainDuLivreur',
   'jourAbidjan',
   'joursEntreAbidjan',
+  // Le compteur de jours a été sorti de ageColisEnMain le 29 août 2026 pour être partagé avec
+  // ageArgentEnMain, qui pose la même question sur une autre date. Ce banc a signalé le
+  // changement en s'arrêtant net : c'est exactement ce qu'on lui demande.
+  'ageEnJoursAbidjan',
   'ageColisEnMain',
   'colisQuiDorment',
   'ageColisEnMainTexte',

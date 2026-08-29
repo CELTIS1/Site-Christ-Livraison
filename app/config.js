@@ -3226,17 +3226,46 @@ function joursEntreAbidjan(isoDebut, isoFin) {
   return Math.round(ms / 86400000);
 }
 
+// Depuis combien de jours, à partir de deux dates dont une seule est sûre.
+//
+// `instantSur` est l'horodatage qui répond vraiment à la question posée (la récupération pour un
+// colis qui dort, la remise pour de l'argent en main). Quand il manque — et il manque, sur tous
+// les colis antérieurs à la pose des déclencheurs — on se rabat sur `instantMinorant`, une date
+// dont on sait seulement qu'elle est ANTÉRIEURE : l'âge calculé est alors un minorant vrai, et
+// `certain: false` oblige l'écran à écrire « au moins ». Rend { jours: null } si les deux
+// manquent : on n'invente jamais un jour.
+//
+// Ce compteur est écrit UNE fois et sert aux deux questions. Deux comptes de jours écrits
+// séparément finiraient par répondre deux âges différents sur le même colis, et c'est le genre
+// d'écart que personne ne remarque avant qu'il ne coûte cher.
+function ageEnJoursAbidjan(instantSur, instantMinorant, maintenantISO) {
+  const fin = maintenantISO || new Date().toISOString();
+  const sur = joursEntreAbidjan(instantSur, fin);
+  if (sur !== null) return { jours: sur, certain: true };
+  const minorant = joursEntreAbidjan(instantMinorant, fin);
+  if (minorant !== null) return { jours: minorant, certain: false };
+  return { jours: null, certain: false };
+}
+
 // Depuis combien de jours ce colis est-il en main, et le sait-on vraiment ?
 // Rend { jours, certain } — ou { jours: null, certain: false } si on ne peut rien dire du tout.
 // `certain: false` OBLIGE l'écran à écrire « au moins ». Voir le long texte ci-dessus.
 function ageColisEnMain(c, maintenantISO) {
   if (!c) return { jours: null, certain: false };
-  const fin = maintenantISO || new Date().toISOString();
-  const sur = joursEntreAbidjan(c.recupere_at, fin);
-  if (sur !== null) return { jours: sur, certain: true };
-  const minorant = joursEntreAbidjan(c.created_at, fin);
-  if (minorant !== null) return { jours: minorant, certain: false };
-  return { jours: null, certain: false };
+  return ageEnJoursAbidjan(c.recupere_at, c.created_at, maintenantISO);
+}
+
+// Depuis combien de jours le livreur porte-t-il l'argent de ce colis ?
+//
+// L'argent entre dans sa poche à la REMISE du colis, pas à sa récupération : c'est donc
+// heureRemiseColis() qui fait foi — la même fonction qui sert à mesurer les délais de livraison,
+// et qui sait déjà que livre_at n'existe que depuis le 21 août 2026. Pour les colis livrés avant,
+// on retombe sur la date d'enregistrement, qui est forcément antérieure à la remise : « au moins
+// tant de jours ». Mesure du 29 août 2026 : 6 des 41 colis non remis d'un livreur étaient dans
+// ce cas.
+function ageArgentEnMain(c, maintenantISO) {
+  if (!c) return { jours: null, certain: false };
+  return ageEnJoursAbidjan(heureRemiseColis(c), c.created_at, maintenantISO);
 }
 
 // Le relevé « qui tient quoi depuis quand ».
@@ -3322,6 +3351,90 @@ function ageColisEnMainTexte(jours, certain) {
   const mot = n <= 0 ? "aujourd’hui" : (n === 1 ? "1 jour" : n + " jours");
   if (n <= 0) return certain ? mot : "au moins " + mot;
   return (certain ? "" : "au moins ") + mot;
+}
+
+/* --------------------------------------------------------------------------------------------
+   L'ARGENT QUE PORTE UN LIVREUR  (29/08/2026)
+
+   CE QU'ON A MESURÉ AVANT D'ÉCRIRE CETTE FONCTION
+   -----------------------------------------------
+   L'application savait déjà enregistrer une remise de caisse : fonction serveur, bouton par
+   livreur, fenêtre qui demande le montant réellement reçu. En onze jours d'exploitation, ce
+   bouton avait servi ZÉRO fois — 329 colis, 210 livrés, aucune ligne dans remises_caisse. Et
+   pourtant l'écran du bureau affichait « Argent non remis : 1 356 550 FCFA » en gros sur sa page
+   d'accueil. Un écran de plus au même endroit n'aurait rien changé : ce n'est pas l'affichage
+   qui manquait, c'est le regard.
+
+   On a donc cherché dans la base le geste qui, lui, ne manque jamais. Du 24 au 28 août, cinq
+   jours de travail d'affilée sans un seul jour à zéro, 210 passages en « livré », le dernier de
+   la journée tombant entre 20h48 et 22h40. Ce geste-là est fait par le LIVREUR, sur son
+   téléphone, avec l'argent dans la poche. C'est à celui-là qu'on accroche le chiffre.
+
+   POURQUOI CE N'EST PAS « L'ARGENT DE MA JOURNÉE », QUI EXISTE DÉJÀ
+   -----------------------------------------------------------------
+   Cette carte-là regroupe les colis REÇUS le jour choisi. Sur les 1 356 550 F non remis du 29
+   août, 238 000 seulement étaient rattachés au jour même : plus d'un million n'apparaissait sur
+   aucun écran de livreur. Elle n'était pas fausse, elle répondait à une autre question. Celle-ci
+   répond à « qu'est-ce que je porte, en tout, depuis quand ».
+
+   LE MONTANT N'EST PAS RECALCULÉ ICI. Il sort de caisseParLivreur(), la même addition que le
+   tableau de l'équipe. Si les deux affichaient un jour des chiffres différents, ce serait
+   l'incident du 25 août 2026 à l'identique — 11 000 sur le téléphone du livreur, 14 000 dans le
+   tableau du bureau, et personne n'ayant tort. Ce qui est ajouté ici, et seulement ici, c'est
+   l'ÂGE : depuis quand le plus vieux billet dort dans sa poche.
+   -------------------------------------------------------------------------------------------- */
+
+// Au-delà de combien de jours l'argent en main devient un retard. Un jour : le livreur rentre
+// tard, la remise peut attendre le lendemain matin sans que ce soit une faute. Au-delà, l'argent
+// de CLT passe une seconde nuit dehors. Ce nombre vit ici et nulle part ailleurs.
+const SEUIL_ARGENT_EN_MAIN_JOURS = 1;
+
+// Ce qu'un livreur porte pour CLT, et depuis quand.
+// Rend { montant, nb, jours, certain, nbSansHeure, nbAvances, seuilJours, depasse }.
+//   montant  — le `reste` de caisseParLivreur : encaissé non remis, moins les avances de gare
+//              qu'on lui doit encore. Peut être NÉGATIF : c'est alors CLT qui lui doit.
+//   nb       — combien de colis livrés ce montant recouvre.
+//   jours    — l'âge du PLUS VIEUX billet, et `certain` dit si l'écran doit écrire « au moins ».
+function caisseEnMainDuLivreur(colis, livreurId, options) {
+  const o = options || {};
+  const maintenant = o.maintenant || new Date().toISOString();
+  const seuil = (o.seuilJours === undefined || o.seuilJours === null)
+    ? SEUIL_ARGENT_EN_MAIN_JOURS : Number(o.seuilJours);
+  const liste = Array.isArray(colis) ? colis : [];
+  const cle = String(livreurId || 'inconnu');
+
+  const ligne = caisseParLivreur(liste).filter(l => String(l.id) === cle)[0];
+  if (!ligne) {
+    return { montant: 0, nb: 0, jours: null, certain: false,
+             nbSansHeure: 0, nbAvances: 0, seuilJours: seuil, depasse: false };
+  }
+
+  const parId = {};
+  liste.forEach(c => { if (c && c.id !== undefined && c.id !== null) parId[String(c.id)] = c; });
+
+  // Le doyen commande : c'est le plus vieux billet qui donne l'âge annoncé, pas le dernier
+  // encaissé. À jour égal, il suffit qu'UN des doyens porte une vraie heure de remise pour que
+  // le jour soit sûr — c'est la même journée pour tous.
+  let doyen = { jours: null, certain: false };
+  let nbSansHeure = 0;
+  ligne.idsAremettre.forEach(id => {
+    const age = ageArgentEnMain(parId[String(id)], maintenant);
+    if (!age.certain) nbSansHeure++;
+    if (age.jours === null) return;
+    if (doyen.jours === null || age.jours > doyen.jours
+        || (age.jours === doyen.jours && age.certain)) doyen = age;
+  });
+
+  return {
+    montant: ligne.reste,
+    nb: ligne.idsAremettre.length,
+    jours: doyen.jours,
+    certain: doyen.certain,
+    nbSansHeure,
+    nbAvances: ligne.idsFraisARembourser.length,
+    seuilJours: seuil,
+    depasse: doyen.jours !== null && doyen.jours > seuil,
+  };
 }
 
 // Pied de tableau : la ligne de total.
@@ -3607,6 +3720,86 @@ function argentResumeHTML(t, pourQui) {
     : '';
 
   return phrase + noteGare + alerte;
+}
+
+/* Le bloc « ce que vous portez pour CLT », dessiné à partir de caisseEnMainDuLivreur().
+   Il ne calcule rien : tous les chiffres arrivent déjà faits, et la phrase d'âge est fabriquée
+   par ageColisEnMainTexte() — c'est elle, et elle seule, qui décide du « au moins ».
+
+   LA GARDE DU CACHE PARTIEL. Le navigateur ne détient au départ que les 500 colis les plus
+   récents ; l'onglet Finance permet de charger la suite. Tant que tout n'est pas là, la somme
+   serait forcément trop basse. Un chiffre d'argent trop bas, affiché sans réserve, est pire que
+   pas de chiffre du tout : il rassure. On refuse donc de l'écrire, et on dit pourquoi. Ce cas ne
+   se produit pas aujourd'hui — le livreur le plus chargé porte 69 colis en tout, mesuré le 29
+   août 2026 — mais il se produira, et ce jour-là personne ne le verra venir. */
+function caisseEnMainHTML(releve, options) {
+  const o = options || {};
+  const m = n => formatMontant(n) || '0 FCFA';
+  const cadre = (bord, fond, contenu) => `
+      <div style="margin-top:10px; border:1px solid ${bord}; background:${fond}; border-radius:10px; padding:10px 12px;">
+        <div style="font-size:12px; color:#475569; font-weight:600;">💵 Ce que vous portez pour CLT</div>
+        ${contenu}
+      </div>`;
+
+  if (!o.complet) {
+    return cadre('#e2e8f0', '#f8fafc', `
+        <div style="margin-top:6px; font-size:12px; color:#64748b;">
+          Le compte n'est pas encore possible : tout votre historique n'est pas chargé sur ce
+          téléphone. Ouvrez l'onglet Finance et appuyez sur « Charger plus » jusqu'au bout.
+          Mieux vaut pas de chiffre qu'un chiffre trop bas.
+        </div>`);
+  }
+
+  const r = releve || {};
+  const nb = Number(r.nb) || 0;
+  const montant = Number(r.montant) || 0;
+
+  // Montant négatif : l'avance laissée à la gare dépasse ce qui est rentré. Écrire « −3 000 »
+  // sans phrase laisserait croire à une dette du livreur, alors que c'est l'inverse.
+  if (montant < 0) {
+    return cadre('#cfe3d4', '#f2f9f4', `
+        <div style="margin-top:4px; font-size:18px; font-weight:700; color:#1a7d3c;">CLT vous doit ${m(-montant)}</div>
+        <div style="margin-top:4px; font-size:12px; color:#64748b;">
+          Avance${r.nbAvances > 1 ? 's' : ''} laissée${r.nbAvances > 1 ? 's' : ''} à la gare et pas encore remboursée${r.nbAvances > 1 ? 's' : ''} : gardez le reçu.
+        </div>`);
+  }
+
+  if (!nb) {
+    return cadre('#cfe3d4', '#f2f9f4', `
+        <div style="margin-top:4px; font-size:15px; font-weight:700; color:#1a7d3c;">Rien à remettre ✓</div>
+        <div style="margin-top:4px; font-size:12px; color:#64748b;">
+          Tout l'argent encaissé jusqu'ici a été remis à CLT.
+        </div>`);
+  }
+
+  const enRetard = !!r.depasse;
+  const couleur = enRetard ? '#c0392b' : '#1B4374';
+  const age = escapeHTML(ageColisEnMainTexte(r.jours, r.certain));
+
+  // Le nombre de colis accompagne toujours le total : c'est ce qui permet de le vérifier au lieu
+  // de le croire. Le soir, au moment de la remise, c'est cette ligne qu'on relit à deux.
+  const corps = `
+        <div style="margin-top:4px; font-size:22px; font-weight:700; color:${couleur}; line-height:1.15;">${m(montant)}</div>
+        <div style="margin-top:2px; font-size:12px; color:#475569;">
+          sur ${nb} colis livré${nb > 1 ? 's' : ''} — le plus vieux en main : ${age}.
+        </div>`;
+
+  const retard = enRetard
+    ? `<div style="margin-top:6px; font-size:12px; color:#c0392b; font-weight:600;">⚠️ Cet argent a passé la nuit dehors. Remettez-le à CLT et faites enregistrer la remise.</div>`
+    : `<div style="margin-top:6px; font-size:12px; color:#64748b;">À remettre à CLT en fin de tournée.</div>`;
+
+  // On dit sur combien de colis l'âge est un minorant. Sans cette ligne, « au moins 10 jours »
+  // ressemble à une précaution de style ; avec elle, on sait d'où vient l'incertitude.
+  const sansHeure = r.nbSansHeure > 0
+    ? `<div style="margin-top:4px; font-size:11px; color:#94a3b8;">${r.nbSansHeure} colis sans heure de remise connue : l'âge annoncé est un minimum.</div>`
+    : '';
+
+  const avances = r.nbAvances > 0
+    ? `<div style="margin-top:4px; font-size:11px; color:#8a4b12;">${r.nbAvances} avance${r.nbAvances > 1 ? 's' : ''} de gare déjà déduite${r.nbAvances > 1 ? 's' : ''} de ce total.</div>`
+    : '';
+
+  return cadre(enRetard ? '#f0c9c4' : '#dbe6f2', enRetard ? '#fdf3f2' : '#f4f8fc',
+    corps + retard + sansHeure + avances);
 }
 
 // Les colis d'un groupe, en cartes, sous la ligne dépliée. Lecture seule : rien à modifier ici,
