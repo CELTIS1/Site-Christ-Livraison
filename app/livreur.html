@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260829annonce1">
-<script src="theme.js?v=20260829annonce1"></script>
+<link rel="stylesheet" href="style.css?v=20260830annonce2">
+<script src="theme.js?v=20260830annonce2"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -693,8 +693,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260829annonce1"></script>
-<script src="config.js?v=20260829annonce1"></script>
+<script src="clt-common.js?v=20260830annonce2"></script>
+<script src="config.js?v=20260830annonce2"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -2641,7 +2641,7 @@
     const porte = caisseEnMainDuLivreur(allColis, currentUser.id);
     const propose = colisHasMore ? '' : Math.round(Number(porte.montant) || 0);
     if (cltPoserHTML(box, `<div style="border:1.5px solid #cddcf0; background:#f4f8fd; border-radius:10px; padding:10px 12px; margin-bottom:12px;">
-      <div style="font-weight:800; color:#1B4374; font-size:13px;">🗣️ Annoncer ma remise</div>
+      <div style="font-weight:800; color:#1B4374; font-size:13px;">🙋 Annoncer ma remise</div>
       <div style="margin-top:4px; font-size:12px; color:#5b6b80; line-height:1.45;">
         Dites au bureau combien vous apportez, avant qu'il ne compte. Cela ne solde rien : c'est
         votre parole, écrite et datée.
@@ -2657,6 +2657,12 @@
       <label for="annonce-montant" style="display:block; font-size:12px; font-weight:600; color:#1B4374; margin-bottom:4px;">Montant que j'apporte (FCFA)</label>
       <input type="number" id="annonce-montant" step="1" inputmode="numeric" value="${escapeHTML(String(montant))}"
              style="width:100%; border:1.5px solid #cbd5e1; border-radius:9px; padding:10px 12px; font-size:15px; box-sizing:border-box;">
+      <!-- Un champ de type nombre ne sait pas espacer ses milliers : le livreur y lisait
+           « 58000 » d'un bloc, alors que toute l'application écrit « 58 000 FCFA ». On garde le
+           champ de nombres — c'est lui qui ouvre le clavier chiffré du téléphone — et on relit
+           la somme juste en dessous, avec formatMontant, la même fonction que partout ailleurs.
+           Vu à l'écran le 30 août 2026, pas déduit. -->
+      <div id="annonce-montant-clair" style="margin-top:5px; font-size:12.5px; color:#5b6b80;">${annonceMontantClair(montant)}</div>
       <label for="annonce-note" style="display:block; font-size:12px; font-weight:600; color:#1B4374; margin:8px 0 4px;">Un mot, si besoin (facultatif)</label>
       <input type="text" id="annonce-note" maxlength="200" value="${escapeHTML(String(note || ''))}"
              placeholder="Ex : il manque 5 000, réglés demain"
@@ -2666,9 +2672,29 @@
     </div>`;
   }
 
+  // La somme relue en toutes lettres sous le champ. Un champ vide ne dit rien plutôt que de
+  // dire « 0 FCFA » : tant que le livreur n'a pas tapé, personne ne doit lui faire dire qu'il
+  // n'apporte rien — c'est la même règle qu'à l'envoi.
+  function annonceMontantClair(valeur){
+    const brut = String(valeur === null || valeur === undefined ? '' : valeur).trim();
+    if (brut === '') return '';
+    const n = Number(brut);
+    if (!Number.isFinite(n)) return '';
+    // Négatif : ce n'est pas le livreur qui apporte, c'est CLT qui lui doit. La phrase change,
+    // exactement comme dans les deux encadrés de config.js.
+    return n < 0
+      ? 'soit ' + escapeHTML(formatMontant(Math.abs(Math.round(n))) || '0 FCFA') + ' que CLT vous doit'
+      : 'soit ' + escapeHTML(formatMontant(Math.round(n)) || '0 FCFA');
+  }
+
   function brancherFormulaireAnnonce(){
     const btn = document.getElementById('btn-annoncer');
     if (btn) btn.addEventListener('click', envoyerMonAnnonce);
+    const champ = document.getElementById('annonce-montant');
+    const clair = document.getElementById('annonce-montant-clair');
+    if (champ && clair){
+      champ.addEventListener('input', () => { clair.innerHTML = annonceMontantClair(champ.value); });
+    }
   }
 
   async function envoyerMonAnnonce(){

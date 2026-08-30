@@ -391,6 +391,34 @@ verifier("si la base n'a pas encore le script, l'écran le dit et ne casse rien"
    les positions. Un sabotage l'a montré. C'est une leçon générale : chercher un motif dans un
    fichier de cent soixante mille caractères, c'est presque toujours le trouver. */
 const chargement = sansCommentaires(blocDe(livreur, 'chargerAnnonceEtRemises', 'livreur.html'));
+/* Deux corrections nées d'un regard, pas d'un banc d'essai. Publiées le 29 août, elles ont été
+   ouvertes dans un navigateur le 30 : le pictogramme 🗣️ sortait en gris-bleu terne, comme une
+   tache d'impression, quand tous les autres de l'application sont en couleur ; et le champ de
+   saisie affichait « 58000 » d'un bloc, alors que l'application écrit partout « 58 000 FCFA ».
+   Aucune des 55 vérifications d'alors ne pouvait les voir : elles lisent du code, elles ne
+   regardent pas un écran. Ce qui suit ne remplace pas le regard — il empêche seulement ces
+   deux-là de revenir. */
+const clair = sansCommentaires(blocDe(livreur, 'annonceMontantClair', 'livreur.html'));
+
+verifier("la somme est relue en clair sous le champ, par formatMontant",
+  /formatMontant\(Math\.round\(n\)\)/.test(clair)
+  && /annonceMontantClair\(montant\)/.test(livreurNu),
+  "un champ de type nombre ne sait pas espacer ses milliers ; le livreur lisait « 58000 »");
+
+verifier("la relecture suit chaque frappe",
+  /addEventListener\('input'/.test(sansCommentaires(blocDe(livreur, 'brancherFormulaireAnnonce', 'livreur.html'))));
+
+verifier("un champ vide ne dit pas « 0 FCFA »",
+  /if \(brut === ''\) return '';/.test(clair),
+  "tant qu'il n'a pas tapé, personne ne doit lui faire dire qu'il n'apporte rien");
+
+verifier("un montant négatif se relit comme une dette de CLT, pas du livreur",
+  /que CLT vous doit/.test(clair) && /Math\.abs\(Math\.round\(n\)\)/.test(clair));
+
+verifier("le pictogramme terne a disparu des deux encadrés",
+  !livreur.includes('🗣') && !sourceConfig.includes('🗣'),
+  "vu à l'écran le 30 août 2026 : il ressortait en gris-bleu, presque illisible à 13 pixels");
+
 verifier("l'historique du livreur ne demande QUE ses propres remises",
   /\.from\('remises_caisse'\)/.test(chargement)
   && /\.eq\('livreur_id', currentUser\.id\)/.test(chargement));

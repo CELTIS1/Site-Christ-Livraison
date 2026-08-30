@@ -4670,7 +4670,7 @@ function annoncePourLEquipeHTML(annonce, maintenant) {
     : '';
 
   return `<div style="border:1.5px solid #cddcf0; background:#f4f8fd; border-radius:10px; padding:10px 12px; margin-bottom:12px; text-align:left;">
-    <div style="font-weight:800; color:#1B4374; font-size:13px;">🗣️ Ce que le livreur a annoncé</div>
+    <div style="font-weight:800; color:#1B4374; font-size:13px;">🙋 Ce que le livreur a annoncé</div>
     <div style="margin-top:5px; font-size:13px; color:#22364d; font-weight:600;">${phrase}</div>
     ${repris}${note}${desaccord}
   </div>`;
