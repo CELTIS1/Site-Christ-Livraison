@@ -147,6 +147,11 @@ vm.runInContext([
      Même leçon que les trois précédentes : le dessin les appelle, donc elles entrent ici, sinon
      le banc s'arrête au lieu de rougir. */
   'communeRecuperationManquante', 'libelleLieuRecuperation',
+  /* Le nombre annoncé par la cliente, et la phrase qui le dit. (30/08/2026) Même leçon encore :
+     programmationARecuperationAEcrire() appelle nombreAnnonceOuNull(), et tourneesDeRecuperation()
+     produit des lignes que libelleAnnonceRecuperation() met en mots pour les deux écrans. Sans
+     elles ici, le banc s'arrêterait au lieu de rougir. */
+  'nombreAnnonceOuNull', 'libelleAnnonceRecuperation', 'libelleAnnoncePosee',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
 vm.runInContext('const HORODATAGE_DU_STATUT = ' + JSON.stringify({
   recupere: 'recupere_at', livre: 'livre_at', non_livre: 'non_livre_at', retour: 'retour_at',
@@ -577,12 +582,26 @@ titre("Ce qui part vers la base quand on ajoute une cliente");
 const aEcrire = programmationARecuperationAEcrire({
   jour: DEMAIN, fournisseurId: 'F1', livreurId: 'L1', note: '  après 9h  ',
 });
+/* Cinq colonnes depuis le 30/08/2026, et pas six. Ce contrôle n'est pas une formalité : une
+   colonne écrite par mégarde vers une table qui ne l'attend pas fait échouer TOUT
+   l'enregistrement, devant la personne qui programme la tournée à 19 h. La liste se met donc
+   à jour à la main, délibérément, chaque fois qu'on ajoute quelque chose — jamais en desserrant
+   le contrôle. Les deux colonnes de règlement d'écart (annonce_reglee_at, annonce_reglee_par)
+   ne sont volontairement PAS ici : elles ne s'écrivent pas au moment où l'on programme.
+   nb_colis_annonce non plus quand rien n'a été annoncé : l'écriture étant un upsert, une colonne
+   à null effacerait l'annonce du matin. Voir le banc la-cliente-annonce-ses-colis. (30/08/2026) */
 verifier("les quatre colonnes attendues, et rien d'autre",
   Object.keys(aEcrire).sort().join(',') === 'fournisseur_id,jour,livreur_id,note',
   JSON.stringify(aEcrire));
 verifier("la note est nettoyée de ses espaces", aEcrire.note === 'après 9h');
 verifier("une note vide devient null, pas une chaîne vide",
   programmationARecuperationAEcrire({ jour: DEMAIN, fournisseurId: 'F1', livreurId: 'L1', note: '   ' }).note === null);
+verifier("sans annonce, la colonne ne part PAS du tout",
+  !('nb_colis_annonce' in aEcrire),
+  'l\'écriture est un upsert : envoyer null effacerait l\'annonce du matin quand on rechoisit le livreur');
+verifier("mais elle part dès que la cliente a annoncé quelque chose",
+  programmationARecuperationAEcrire({ jour: DEMAIN, fournisseurId: 'F1', livreurId: 'L1',
+                                      nbColisAnnonce: '3' }).nb_colis_annonce === 3);
 
 verifier("sans cliente, c'est refusé, et on dit laquelle manque",
   /cliente/i.test(raisonDeRefuserLaProgrammation({ jour: DEMAIN, livreurId: 'L1' })),
@@ -623,7 +642,11 @@ function elementFictif(id){
   return el;
 }
 ['prog-jour', 'btn-prog-demain', 'btn-prog-aujourdhui', 'btn-prog-ajouter', 'prog-body',
- 'prog-fournisseur', 'prog-livreur', 'prog-note'].forEach(elementFictif);
+ 'prog-fournisseur', 'prog-livreur', 'prog-note',
+ // Le nombre annoncé par la cliente, depuis le 30/08/2026. Un champ absent du décor ferait
+ // PLANTER le banc au premier appel au lieu de le faire rougir, et un plantage se lit comme un
+ // banc cassé plutôt que comme un écran cassé.
+ 'prog-nb-colis'].forEach(elementFictif);
 
 const envoyes = [];
 const messages = [];
@@ -802,7 +825,14 @@ verifier("le bureau et le téléphone emploient exactement les mêmes pièces",
    fauteuil. Tout le reste, y compris « en route » et l'heure de départ, doit exister des deux
    côtés : l'information que le livreur écrit, le bureau doit pouvoir la lire. */
 const NUANCES_BUREAU_SEUL = ['tournee-marque--fait', 'tournee-repli--fait'];
-const NUANCES_TELEPHONE_SEUL = ['tournee-geste--partir', 'tournee-geste--recuperer'];
+/* Deux nuances de plus côté téléphone depuis le 30/08/2026, et l'asymétrie est voulue.
+   « Prévenir que j'arrive » est ce qui reste au livreur quand la cliente a annoncé des colis
+   que le bureau n'a pas encore saisis : il peut la prévenir, mais son départ ne peut être
+   consigné nulle part, faute de colis sur quoi écrire l'heure. Le bureau, lui, n'a pas ce
+   problème puisqu'il ne part nulle part. « tournee-attente » porte la phrase qui dit pourquoi
+   le bouton habituel a changé de nom — sans elle, le livreur croit l'application en panne. */
+const NUANCES_TELEPHONE_SEUL = ['tournee-geste--partir', 'tournee-geste--prevenir',
+                                'tournee-geste--recuperer'];
 const seulementDans = (a, b) => classesDeTournee(a).filter((c) => !classesDeTournee(b).includes(c));
 verifier("et les seuls états propres à un écran sont ceux qu'on a nommés ici",
   seulementDans(equipe, livreur).join(' ') === NUANCES_BUREAU_SEUL.join(' ')

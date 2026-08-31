@@ -2947,11 +2947,30 @@
     if (!currentUser) return;
     const jour = aujourdhuiAbidjan();
 
-    const { data, error } = await supabaseClient
+    /* L'ORDRE DE PUBLICATION NE DOIT PAS POUVOIR CAUSER UNE PANNE. (30/08/2026)
+    
+       Les deux colonnes d'annonce sont nées le 30/08/2026. Si le code part avant que le script
+       _sql-prive/2026-08-30-la-cliente-annonce-ses-colis.sql ait été exécuté, PostgREST refuse la
+       requête ENTIÈRE pour une colonne inconnue. Ce n'est pas la nouvelle fonction qui tombe :
+       c'est tout l'onglet tournée, des deux espaces, sur des écrans qui décident de l'argent du
+       soir. Une fenêtre de quelques minutes suffit à laisser un livreur sans sa tournée un matin.
+    
+       On demande donc les colonnes, et si la base ne les connaît pas encore, on redemande sans
+       elles. La tournée s'affiche alors comme avant le 30 août, sans annonce — dégradée, pas
+       tombée. Le jour où le script est passé, la première lecture suffit et ce filet ne sert plus.
+       Il coûte une requête supplémentaire une seule fois, et seulement dans le cas où l'écran
+       serait autrement inutilisable. */
+    const lireTournee = (colonnes) => supabaseClient
       .from('programmations_collecte')
-      .select('id, jour, fournisseur_id, livreur_id, note')
+      .select(colonnes)
       .eq('jour', jour)
       .eq('livreur_id', currentUser.id);
+
+    let { data, error } = await lireTournee('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at');
+    if (error && colonneAbsente(error)) {
+      console.warn('Colonnes d\'annonce absentes : le script SQL du 30/08/2026 n\'a pas encore été exécuté.');
+      ({ data, error } = await lireTournee('id, jour, fournisseur_id, livreur_id, note'));
+    }
 
     if (error) {
       console.error(error);
@@ -3093,9 +3112,60 @@
          CE N'EST PAS LE MÊME GESTE QUE LE BOUTON WHATSAPP AU-DESSUS. Celui-là ouvre une
          conversation vide, pour parler ; celui-ci annonce un départ et le consigne. */
       const enRoute = !!l.departAt;
+      /* Le message dit ce qu'on vient chercher, et il dit les colis QU'ON A. Depuis que « Je
+         pars » ne s'affiche plus que lorsqu'il y a quelque chose à ramasser, c'est toujours
+         nbAPrendre — annoncer le nombre promis par la cliente ferait dire « je viens pour vos
+         trois colis » à quelqu'un qui en a déjà deux sur sa moto. (30/08/2026) */
       const infosMsg = { livreurNom: (currentProfile && currentProfile.full_name) || '', commune: l.commune, nbColis: l.nbAPrendre };
-      const geste = l.rienARecuperer
+      /* DEUX GESTES QUI SE RESSEMBLENT ET QUI NE SONT PAS LE MÊME. (30/08/2026)
+
+         « Je pars » fait deux choses : il prévient la cliente ET il consigne le départ, en
+         écrivant l'heure sur les colis. C'est cette écriture qui déclenche le partage de
+         position et qui montre au bureau que le livreur roule.
+
+         Quand la cliente a annoncé trois colis que le bureau n'a pas encore saisis, il n'y a
+         AUCUN colis sur quoi écrire. Le geste ne peut donc pas consigner quoi que ce soit —
+         mais comme il est bâti sur un lien WhatsApp, le message part quand même. Le livreur
+         voit son message partir et croit son départ enregistré. Rien ne l'est : ni le partage
+         de position, ni la trace au bureau. Un échec silencieux, avec une confirmation
+         trompeuse. Trouvé en relecture avant publication, jamais arrivé sur le terrain.
+
+         On ne rafistole pas : on sépare. Tant qu'il n'y a rien à marquer, la carte propose
+         seulement de PRÉVENIR — dit en ces mots-là, sans promettre de consigner un départ.
+         Le vrai « Je pars » revient de lui-même dès que le bureau a saisi le premier colis.
+
+         Pourquoi pas de colonne de départ sur la programmation : il faudrait donner au livreur
+         un droit d'écriture sur programmations_collecte, qu'il n'a pas et n'a pas à avoir. Le
+         cloisonnement vaut mieux qu'un bouton de plus. */
+      /* CE QUI DÉCIDE, C'EST « Y A-T-IL QUELQUE CHOSE SUR QUOI ÉCRIRE L'HEURE ». (30/08/2026,
+         corrigé le même jour en relecture)
+
+         Première version : « elle a annoncé et rien n'est saisi ». Fausse, et d'une façon qu'on
+         aurait vue tous les jours — après une récupération réussie, nbAPrendre retombe à zéro
+         pendant que nbDejaPris monte, et la carte d'une cliente dont le livreur venait de
+         charger les trois colis lui aurait annoncé que « le départ ne sera consigné que
+         lorsque le bureau aura enregistré ses colis ». Faux, et contredit par la ligne du
+         dessus.
+
+         La bonne question ne porte pas sur l'annonce mais sur ce que le geste peut écrire :
+         « Je pars » consigne l'heure SUR les colis, donc sans colis il ne consigne rien. On
+         teste donc idsAPrendre, ce que le gestionnaire teste lui-même avant d'agir. Cela ferme
+         du même coup un piège plus ancien : une cliente sans aucune annonce dont tout est déjà
+         ramassé se voyait encore proposer « Je pars », le message WhatsApp partait, et rien
+         n'était consigné. */
+      const rienASurQuoiEcrire = !(l.idsAPrendre && l.idsAPrendre.length);
+      const annonceSansColisSaisi = rienASurQuoiEcrire && l.ecartAnnonce > 0;
+      // Rien à ramasser, rien d'annoncé qui manque : le travail est fait chez elle. La ligne du
+      // compte le dit déjà (« 3 déjà pris ») ; un bouton de plus ne ferait que mentir.
+      const plusRienAFaireIci = rienASurQuoiEcrire && !annonceSansColisSaisi && !enRoute;
+      const geste = (l.rienARecuperer || plusRienAFaireIci)
         ? ''
+        : annonceSansColisSaisi
+          ? `${l.telephone
+                ? `<a class="tournee-geste tournee-geste--prevenir" target="_blank" rel="noopener"
+                      href="https://wa.me/${escapeHTML(numeroInternational(l.telephone))}">💬 Prévenir que j'arrive</a>`
+                : ''}
+             <div class="tournee-rien tournee-rien--attente">Le départ ne sera consigné que lorsque le bureau aura enregistré ses colis. Prévenez-le si elle en a bien pour vous.</div>`
         : enRoute
           ? `<button type="button" class="tournee-geste tournee-geste--recuperer" data-tournee-recuperer="${escapeHTML(l.fournisseurId)}">📦 Récupéré, tout (${l.nbAPrendre})</button>`
           : (l.telephone
@@ -3115,7 +3185,12 @@
         <div class="tournee-compte">
           ${l.rienARecuperer
             ? `<span class="tournee-rien">Rien à récupérer pour l'instant — appelez-la avant de passer.</span>`
-            : `<strong>${l.nbAPrendre}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}${enRoute ? ` · <span class="tournee-depart">parti à ${escapeHTML(formatHeure(l.departAt))}</span>` : ''}`}
+            : (libelleAnnonceRecuperation(l)
+                /* Ce que la cliente a annoncé passe DEVANT le compte réel, parce que c'est ce qui
+                   dit au livreur pour quoi il se déplace. La phrase vient de config.js, écrite une
+                   seule fois : le bureau lit exactement les mêmes mots. (30/08/2026) */
+                ? `<span class="tournee-annonce">${escapeHTML(libelleAnnonceRecuperation(l))}</span>${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}${enRoute ? ` · <span class="tournee-depart">parti à ${escapeHTML(formatHeure(l.departAt))}</span>` : ''}`
+                : `<strong>${l.nbAPrendre}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}${enRoute ? ` · <span class="tournee-depart">parti à ${escapeHTML(formatHeure(l.departAt))}</span>` : ''}`)}
         </div>
         ${contacts}
         ${geste}
@@ -3160,7 +3235,13 @@
         <strong>${total.nbAPrendre}</strong> colis à prendre ·
         <strong>${total.nbDejaPris}</strong> déjà pris
       </div>
-      ${total.nbHorsProgramme > 0 ? `<div class="meta" style="margin-top:6px; color:#b45309;">Le total ci-dessus compte tout, y compris <strong>${total.nbHorsProgramme}</strong> cliente${total.nbHorsProgramme > 1 ? 's' : ''} du repli.</div>` : ''}`);
+      ${total.nbHorsProgramme > 0 ? `<div class="meta" style="margin-top:6px; color:#b45309;">Le total ci-dessus compte tout, y compris <strong>${total.nbHorsProgramme}</strong> cliente${total.nbHorsProgramme > 1 ? 's' : ''} du repli.</div>` : ''}
+      <!-- L'ÉCART, DANS LE TOTAL ET PAS SEULEMENT SUR LES CARTES. (30/08/2026)
+           Chaque carte porte déjà sa mention ambre, mais il faut faire défiler tout l'écran pour les
+           trouver. Le total est le seul endroit qu'on lit à coup sûr. On compte les CLIENTES autant
+           que les colis : c'est le nombre de coups de téléphone à passer ce soir. Signalé en
+           relecture le jour même — le calcul existait, personne ne l'affichait. -->
+      ${total.nbColisManquants > 0 ? `<div class="meta" style="margin-top:6px; color:#9a6400;"><strong>${total.nbColisManquants}</strong> colis annoncé${total.nbColisManquants > 1 ? 's' : ''} par ${total.nbClientesAvecEcart} cliente${total.nbClientesAvecEcart > 1 ? 's' : ''} ${total.nbClientesAvecEcart > 1 ? 'ne sont' : 'n\'est'} pas encore saisi${total.nbColisManquants > 1 ? 's' : ''} — à vérifier avant la fin de la journée.</div>` : ''}`);
 
     /* LES GESTES, BRANCHÉS ICI. (29/08/2026)
 

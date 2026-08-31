@@ -633,6 +633,23 @@ saisis ensuite lui seront rattachés automatiquement.
 <input type="text" id="prog-note" placeholder="Ex. : passer après 9h, portail bleu..." maxlength="200">
 </div>
 
+<!-- CE QUE LA CLIENTE ANNONCE AU TÉLÉPHONE. (30/08/2026)
+     Le champ reste facultatif : on programme très bien un passage sans savoir combien de colis
+     attendent. Mais quand elle l'a dit, il faut pouvoir l'écrire — sans quoi le système compte
+     zéro, l'écran du livreur affiche « rien à récupérer » chez une cliente où on l'envoie
+     exprès, et son bouton « Je pars » disparaît. Constaté sur un iPhone le 30/08/2026.
+     inputmode numeric : sur un téléphone, le pavé s'ouvre sur les chiffres. -->
+<div class="field">
+<label>Colis annoncés par la cliente <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
+<input type="number" id="prog-nb-colis" min="0" max="200" step="1" inputmode="numeric"
+       placeholder="Ex. : 3 — laissez vide si elle ne l'a pas dit">
+<div class="field-hint" style="font-size:13px; color:var(--muted); margin-top:4px;">
+Ce qu'elle annonce au téléphone, pas ce qui est déjà enregistré. Le livreur verra
+« 3 annoncés · 2 saisis » s'il en manque. L'écart disparaît quand les colis sont saisis — ou
+quand vous reposez la tournée avec le vrai nombre.
+</div>
+</div>
+
 <button type="button" class="btn" id="btn-prog-ajouter">➕ Ajouter à la tournée</button>
 
 <div id="prog-body" style="margin-top:20px;">
@@ -5567,10 +5584,29 @@ const jour = progGetJour();
 progEnCours = true; progErreur = '';
 renderProgrammationBody();
 
-const { data, error } = await supabaseClient
+/* L'ORDRE DE PUBLICATION NE DOIT PAS POUVOIR CAUSER UNE PANNE. (30/08/2026)
+
+   Les deux colonnes d'annonce sont nées le 30/08/2026. Si le code part avant que le script
+   _sql-prive/2026-08-30-la-cliente-annonce-ses-colis.sql ait été exécuté, PostgREST refuse la
+   requête ENTIÈRE pour une colonne inconnue. Ce n'est pas la nouvelle fonction qui tombe :
+   c'est tout l'onglet tournée, des deux espaces, sur des écrans qui décident de l'argent du
+   soir. Une fenêtre de quelques minutes suffit à laisser un livreur sans sa tournée un matin.
+
+   On demande donc les colonnes, et si la base ne les connaît pas encore, on redemande sans
+   elles. La tournée s'affiche alors comme avant le 30 août, sans annonce — dégradée, pas
+   tombée. Le jour où le script est passé, la première lecture suffit et ce filet ne sert plus.
+   Il coûte une requête supplémentaire une seule fois, et seulement dans le cas où l'écran
+   serait autrement inutilisable. */
+const lireProgrammations = (colonnes) => supabaseClient
 .from('programmations_collecte')
-.select('id, jour, fournisseur_id, livreur_id, note')
+.select(colonnes)
 .eq('jour', jour);
+
+let { data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at');
+if (error && colonneAbsente(error)) {
+console.warn("Colonnes d'annonce absentes : le script SQL du 30/08/2026 n'a pas encore été exécuté.");
+({ data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note'));
+}
 
 if (error) {
 console.error(error);
@@ -5718,7 +5754,17 @@ ${fini
 ? `<span class="tournee-pris">${l.nbDejaPris} déjà pris</span>`
 : l.rienARecuperer
 ? `<span class="tournee-rien">Rien à récupérer pour l'instant — la ligne reste, un colis peut encore être saisi.</span>`
+/* Ce que la cliente a annoncé passe devant le compte réel, et dans les mêmes mots que sur le
+   téléphone du livreur : la phrase vient de libelleAnnonceRecuperation(), dans config.js. Deux
+   formulations écrites séparément finiraient par diverger, et le livreur dirait à la cliente
+   autre chose que ce que le bureau a sous les yeux. (30/08/2026) */
+: libelleAnnonceRecuperation(l)
+? `<span class="tournee-annonce">${escapeHTML(libelleAnnonceRecuperation(l))}</span>${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}${enRoute ? ` · <span class="tournee-depart">parti à ${escapeHTML(formatHeure(l.departAt))}</span>` : ''}`
 : `<strong>${compte(l.nbAPrendre)}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}${enRoute ? ` · <span class="tournee-depart">parti à ${escapeHTML(formatHeure(l.departAt))}</span>` : ''}`}
+<!-- Ce que la cliente a annoncé, répété tel quel quand rien ne le dit déjà. Sans cette ligne,
+     le champ de saisie est en écriture seule sur une tournée posée pour demain — et une
+     annonce ne se relit jamais. (30/08/2026, ajouté en relecture) -->
+${(!libelleAnnonceRecuperation(l) && libelleAnnoncePosee(l)) ? `<div class="tournee-rien tournee-rien--attente">${escapeHTML(libelleAnnoncePosee(l))}</div>` : ''}
 </div>
 ${contacts}
 ${geste}
@@ -5791,6 +5837,12 @@ TOTAL · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's
 <strong>${colisConnus ? total.nbDejaPris : 'à venir'}</strong> déjà pris
 </div>
 ${total.nbHorsProgramme > 0 ? `<div class="meta" style="margin-top:6px; color:#b45309;">Le total ci-dessus compte tout, y compris <strong>${total.nbHorsProgramme}</strong> cliente${total.nbHorsProgramme > 1 ? 's' : ''} du repli.</div>` : ''}
+<!-- L'ÉCART, DANS LE TOTAL ET PAS SEULEMENT SUR LES CARTES. (30/08/2026)
+     Chaque carte porte déjà sa mention ambre, mais il faut faire défiler tout l'écran pour les
+     trouver. Le total est le seul endroit qu'on lit à coup sûr. On compte les CLIENTES autant
+     que les colis : c'est le nombre de coups de téléphone à passer ce soir. Signalé en
+     relecture le jour même — le calcul existait, personne ne l'affichait. -->
+${total.nbColisManquants > 0 ? `<div class="meta" style="margin-top:6px; color:#9a6400;"><strong>${total.nbColisManquants}</strong> colis annoncé${total.nbColisManquants > 1 ? 's' : ''} par ${total.nbClientesAvecEcart} cliente${total.nbClientesAvecEcart > 1 ? 's' : ''} ${total.nbClientesAvecEcart > 1 ? 'ne sont' : 'n\'est'} pas encore saisi${total.nbColisManquants > 1 ? 's' : ''} — à vérifier avant la fin de la journée.</div>` : ''}
 ${(!colisConnus || total.nbClientesSansRien > 0) ? `<div class="recap-bilan-note">
 ${colisConnus
 ? `Sur ces ${total.nbClientes} cliente(s), ${total.nbClientesSansRien} n'${total.nbClientesSansRien > 1 ? 'ont' : 'a'} rien à faire récupérer pour l'instant — la ligne reste, parce qu'un colis peut encore être saisi d'ici le passage du livreur.`
@@ -5828,6 +5880,11 @@ poser('prog-livreur', livreurId, 'le livreur');
 
 const note = document.getElementById('prog-note');
 if (note) note.value = '';
+// Le nombre annoncé se vide comme la note, et pour la même raison : un « 3 » resté en place
+// serait annoncé pour la cliente suivante. L'oublier ici pendant qu'on vide la note serait
+// l'asymétrie la plus facile à ne jamais remarquer. (30/08/2026)
+const nbColis = document.getElementById('prog-nb-colis');
+if (nbColis) nbColis.value = '';
 
 const ancre = document.getElementById('prog-fournisseur');
 if (ancre && ancre.scrollIntoView) ancre.scrollIntoView({ block: 'center' });
@@ -5846,6 +5903,7 @@ jour: progGetJour(),
 fournisseurId: document.getElementById('prog-fournisseur').value || '',
 livreurId: document.getElementById('prog-livreur').value || '',
 note: document.getElementById('prog-note').value || '',
+nbColisAnnonce: document.getElementById('prog-nb-colis').value || '',
 };
 const refus = raisonDeRefuserLaProgrammation(champs);
 if (refus) { progMsg(refus, 'error'); return; }
@@ -5867,6 +5925,9 @@ progMsg("Enregistrement refusé : " + (error.message || 'erreur inconnue'), 'err
 return;
 }
 document.getElementById('prog-note').value = '';
+// Le nombre annoncé se vide comme la note : il appartient à la cliente qu'on vient de poser,
+// pas à la suivante. Le laisser en place ferait annoncer trois colis à tout le monde. (30/08/2026)
+document.getElementById('prog-nb-colis').value = '';
 progMsg('Tournée mise à jour.', 'success');
 chargerProgrammations();
 }

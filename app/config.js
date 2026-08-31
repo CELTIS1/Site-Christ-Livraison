@@ -5799,6 +5799,21 @@ function tourneesDeRecuperation(options) {
     const dejaPris = colisConnus
       ? siens.filter(function (c) { return jourEvenementColis(c, "recupere") === jour; })
       : [];
+    /* CE QUE LA CLIENTE A ANNONCÉ, ET CE QU'ON A RÉELLEMENT. (30/08/2026)
+
+       Jusqu'ici le nombre de colis n'était jamais une donnée : il était déduit des lignes déjà
+       enregistrées. Un rendez-vous pour trois colis annoncés au téléphone et un rendez-vous pour
+       rien étaient donc la même chose, et l'écran du livreur affichait « rien à récupérer » chez
+       une cliente où le bureau l'envoyait exprès. Constaté sur un iPhone le 30/08/2026.
+
+       L'annonce en attente, c'est une annonce dont l'écart n'a pas encore été réglé. Une fois
+       réglé — quelqu'un est allé voir, elle n'avait finalement rien — la ligne redevient une
+       ligne ordinaire, et l'écran peut de nouveau dire qu'il n'y a rien. L'annonce d'origine,
+       elle, n'est jamais réécrite. */
+    const nbAnnonce = (p.nb_colis_annonce === undefined || p.nb_colis_annonce === null)
+      ? null : Number(p.nb_colis_annonce);
+    const annonceReglee = !!p.annonce_reglee_at;
+    const annonceEnAttente = nbAnnonce !== null && nbAnnonce > 0 && !annonceReglee;
     return {
       id: p.id,
       fournisseurId: p.fournisseur_id,
@@ -5814,8 +5829,19 @@ function tourneesDeRecuperation(options) {
       idsAPrendre: aPrendre.map(function (c) { return c.id; }),
       // L'heure du départ, quand le livreur roule déjà vers elle. Voir departDeCollecte().
       departAt: departDeCollecte(aPrendre),
-      // Vrai seulement quand on SAIT qu'il n'y a rien : une journée à venir ne sait rien.
-      rienARecuperer: colisConnus && aPrendre.length === 0 && dejaPris.length === 0,
+      nbAnnonce: nbAnnonce,
+      annonceReglee: annonceReglee,
+      /* L'écart n'a de sens qu'une fois la journée connue, et seulement s'il manque quelque
+         chose : saisir PLUS que ce qui était annoncé n'est pas un problème, c'est une cliente
+         qui avait un colis de plus. Voir libelleAnnonceRecuperation() pour la phrase affichée. */
+      ecartAnnonce: (colisConnus && annonceEnAttente)
+        ? Math.max(0, nbAnnonce - (aPrendre.length + dejaPris.length))
+        : 0,
+      /* Vrai seulement quand on SAIT qu'il n'y a rien : une journée à venir ne sait rien, et
+         une cliente qui a annoncé des colis qu'on n'a pas encore saisis n'est pas une cliente
+         chez qui il n'y a rien — c'est une cliente chez qui il reste à aller. */
+      rienARecuperer: colisConnus && aPrendre.length === 0 && dejaPris.length === 0
+                      && !annonceEnAttente,
       horsProgramme: false,
     };
   });
@@ -5916,6 +5942,13 @@ function tourneesDeRecuperation(options) {
         // été déclenché la veille sans que la récupération aboutisse. Elle a donc plus besoin
         // de cette heure-là que les autres, pas moins. Voir departDeCollecte().
         departAt: departDeCollecte(aPrendre),
+        /* Une cliente hors programme n'a, par définition, aucune programmation aujourd'hui —
+           donc personne n'a pris son appel ce matin et rien n'a été annoncé pour elle. Les trois
+           champs existent quand même, et valent l'absence : une ligne dont la forme change selon
+           d'où elle vient oblige chaque écran à se demander laquelle il tient. (30/08/2026) */
+        nbAnnonce: null,
+        annonceReglee: false,
+        ecartAnnonce: 0,
         /* « Rien à récupérer » veut dire qu'il n'y avait rien chez cette cliente. Ce n'est pas le
            cas ici : ou bien un colis attend, ou bien il y en avait un et il est déjà pris. Dans
            les deux cas il y avait quelque chose, et l'écran ne doit pas dire le contraire. */
@@ -5949,12 +5982,83 @@ function totalDesLignes(lignes) {
     t.nbDejaPris += l.nbDejaPris;
     if (l.rienARecuperer) t.nbClientesSansRien++;
     if (l.horsProgramme) t.nbHorsProgramme++;
+    /* L'annoncé et l'écart se totalisent comme le reste, et pour la même raison : sans eux, un
+       bureau qui voit « 12 colis à prendre » ne sait pas s'il en manque quatre quelque part.
+       nbClientesAvecEcart compte les clientes, pas les colis — c'est le nombre de coups de
+       téléphone à passer ce soir. (30/08/2026) */
+    if (l.nbAnnonce !== null && l.nbAnnonce !== undefined) t.nbAnnonce += l.nbAnnonce;
+    if (l.ecartAnnonce > 0) { t.nbColisManquants += l.ecartAnnonce; t.nbClientesAvecEcart++; }
     return t;
-  }, { nbClientes: liste.length, nbAPrendre: 0, nbDejaPris: 0, nbClientesSansRien: 0, nbHorsProgramme: 0 });
+  }, { nbClientes: liste.length, nbAPrendre: 0, nbDejaPris: 0, nbClientesSansRien: 0, nbHorsProgramme: 0,
+       nbAnnonce: 0, nbColisManquants: 0, nbClientesAvecEcart: 0 });
   // Combien de livreurs sont sur la route ce jour-là. Compté sur les lignes retenues, donc
   // toujours 1 quand l'écran du livreur appelle avec son propre identifiant.
   total.nbLivreurs = new Set(liste.map(function (l) { return l.livreurId; })).size;
   return total;
+}
+
+/* « CETTE COLONNE N'EXISTE PAS ENCORE » SE RECONNAÎT, ET NE SE CONFOND PAS AVEC UNE PANNE.
+   (30/08/2026)
+
+   PostgREST répond 42703 quand on lui demande une colonne inconnue, et le message porte le nom
+   de la colonne. C'est le seul cas où un écran a le droit de réessayer tout seul : la base est
+   là, les droits sont bons, il manque simplement une migration. Toute autre erreur — réseau,
+   permission, session expirée — doit remonter telle quelle, parce qu'elle demande une action
+   humaine et qu'un réessai silencieux la masquerait.
+
+   Écrit ici plutôt que dans chaque écran : les deux pages posent la même question, elles
+   doivent reconnaître la même réponse. */
+function colonneAbsente(erreur) {
+  if (!erreur) return false;
+  if (String(erreur.code || "") === "42703") return true;
+  const message = String(erreur.message || "") + " " + String(erreur.details || "");
+  return /does not exist/i.test(message) && /column/i.test(message);
+}
+
+/* CE QUE LA CLIENTE A ANNONCÉ, DIT SANS PARLER DE MANQUE. (30/08/2026, ajouté en relecture)
+
+   La programmation se fait le soir pour le lendemain : c'est le geste normal, et progGetJour()
+   s'ouvre sur demain pour cette raison. Or sur une journée à venir, tout ce qui parle d'écart se
+   tait — à raison, puisqu'aucun colis n'est saisi parce que la journée n'a pas eu lieu.
+
+   Conséquence que la relecture a relevée : le champ « Colis annoncés » devenait une écriture
+   seule dans le flux normal. Personne ne pouvait relire ce qui venait d'être enregistré, ni
+   repérer un « 30 » tapé pour « 3 » — et comme le champ se vide après coup, rien ne disait
+   qu'une annonce existait déjà.
+
+   Cette phrase-ci ne compare rien et n'accuse personne : elle répète. Elle vaut pour n'importe
+   quel jour, passé ou à venir. */
+function libelleAnnoncePosee(ligne) {
+  const l = ligne || {};
+  if (l.nbAnnonce === null || l.nbAnnonce === undefined) return "";
+  if (l.nbAnnonce === 0) return "aucun colis annoncé par la cliente";
+  return l.nbAnnonce + (l.nbAnnonce > 1 ? " colis annoncés" : " colis annoncé") + " par la cliente";
+}
+
+/* LA PHRASE DE L'ANNONCE, ÉCRITE UNE SEULE FOIS POUR LES DEUX ÉCRANS. (30/08/2026)
+
+   Le bureau et le livreur doivent lire exactement les mêmes mots. Deux formulations écrites
+   séparément finissent par diverger, et le jour où elles divergent, c'est le livreur qui dit
+   à la cliente autre chose que ce que le bureau a sous les yeux.
+
+   Rend une chaîne vide quand il n'y a rien à dire : pas d'annonce, écart déjà réglé, ou compte
+   réel au moins égal à l'annonce. Un colis de plus que prévu n'est pas un problème à signaler,
+   c'est une cliente qui en avait un de plus. */
+function libelleAnnonceRecuperation(ligne) {
+  const l = ligne || {};
+  if (l.nbAnnonce === null || l.nbAnnonce === undefined) return "";
+  if (l.annonceReglee) return "";
+  /* On se branche sur l'écart plutôt que de recompter : c'est lui qui sait déjà qu'une journée
+     à venir ne conclut rien. Recompter ici ferait dire « 3 annoncés · aucun encore saisi » pour
+     demain, où aucun colis n'est saisi parce que la journée n'a pas eu lieu — et la carte
+     annoncerait un manque de trois pendant que le TOTAL du même écran en compterait zéro.
+     Trouvé en relecture le 30/08/2026, avant publication. */
+  if (!(l.ecartAnnonce > 0)) return "";
+  const reel = (l.nbAPrendre || 0) + (l.nbDejaPris || 0);
+  if (reel >= l.nbAnnonce) return "";
+  const annonces = l.nbAnnonce + (l.nbAnnonce > 1 ? " annoncés" : " annoncé");
+  if (reel === 0) return annonces + " · aucun encore saisi";
+  return annonces + " · " + reel + (reel > 1 ? " saisis" : " saisi");
 }
 
 /* LA MÊME TOURNÉE, RANGÉE PAR LIVREUR. (28/08/2026)
@@ -5997,12 +6101,49 @@ function tourneesParLivreur(lignes) {
 function programmationARecuperationAEcrire(champs) {
   const c = champs || {};
   const note = String(c.note === undefined || c.note === null ? "" : c.note).trim();
-  return {
+  const ligne = {
     jour: c.jour || aujourdhuiAbidjan(),
     fournisseur_id: c.fournisseurId || null,
     livreur_id: c.livreurId || null,
     note: note === "" ? null : note,
   };
+  /* CE QU'ON N'ÉCRIT PAS EST CE QU'ON NE DÉTRUIT PAS. (30/08/2026)
+
+     L'écriture se fait par upsert : les colonnes absentes de cet objet ne sont pas touchées sur
+     une ligne qui existe déjà. Le champ laissé vide ne doit donc PAS partir à null, il doit ne
+     pas partir du tout.
+
+     Sans cela, le geste de correction le plus courant de l'écran — rechoisir la cliente,
+     rechoisir le livreur, valider, ce que le commentaire de progAjouter() décrit comme normal —
+     effacerait l'annonce du matin. Le livreur reverrait « rien à récupérer » et son bouton
+     « Je pars » disparaîtrait de nouveau : le défaut du 30 août reproduit par le geste censé
+     corriger une tournée. Trouvé en relecture le jour même, avant publication.
+
+     Pour retirer une annonce, on saisit 0 : elle a annoncé qu'elle n'aurait rien. */
+  const annonce = nombreAnnonceOuNull(c.nbColisAnnonce);
+  if (annonce !== null) ligne.nb_colis_annonce = annonce;
+  return ligne;
+}
+
+/* CE QUE LA CLIENTE A ANNONCÉ AU TÉLÉPHONE. (30/08/2026)
+
+   Champ vide, espaces, texte : la cliente n'a rien annoncé, et cela s'écrit null. Un « 0 »
+   franchement tapé, en revanche, est une annonce : elle a dit qu'elle n'aurait rien. Les deux
+   se ressemblent à l'écran et ne veulent pas dire la même chose — c'est exactement la confusion
+   qui a produit le défaut du 30 août, où un rendez-vous pour trois colis et un rendez-vous pour
+   rien étaient indiscernables dans le système.
+
+   La borne haute est celle du contrôle posé en base le même jour. Elle n'est pas là pour brider
+   le travail : elle arrête « 300 » tapé à la place de « 30 », qui enverrait un livreur avec une
+   idée fausse de ce qu'il va charger sur sa moto. */
+function nombreAnnonceOuNull(valeur) {
+  if (valeur === undefined || valeur === null) return null;
+  const texte = String(valeur).trim();
+  if (texte === "") return null;
+  if (!/^\d{1,3}$/.test(texte)) return null;
+  const n = parseInt(texte, 10);
+  if (!Number.isFinite(n) || n < 0 || n > 200) return null;
+  return n;
 }
 
 // Ce qui empêche d'écrire, dit en français plutôt qu'en code d'erreur PostgreSQL.
@@ -6012,6 +6153,20 @@ function raisonDeRefuserLaProgrammation(champs) {
   if (!p.jour || !/^\d{4}-\d{2}-\d{2}$/.test(p.jour)) return "Choisissez d'abord la journée de la tournée.";
   if (!p.fournisseur_id) return "Choisissez la cliente chez qui il faut passer.";
   if (!p.livreur_id) return "Choisissez le livreur qui ira la récupérer.";
+  /* Le nombre annoncé est facultatif : on programme très bien un passage sans savoir combien de
+     colis attendent. Mais s'il a été saisi, il doit vouloir dire quelque chose. Écrire « trois »
+     en lettres, ou « 12 colis », donnerait null sans que personne ne s'en aperçoive, et le
+     livreur repartirait avec « rien à récupérer » — le défaut même qu'on corrige ici. Mieux vaut
+     refuser tout de suite, en disant quoi taper. (30/08/2026) */
+  const saisi = champs && champs.nbColisAnnonce;
+  const saisiNet = String(saisi === undefined || saisi === null ? "" : saisi).trim();
+  // On interroge la même fonction que l'écriture, et non la ligne produite : depuis le
+  // 30/08/2026 celle-ci ne PORTE PAS la colonne quand rien n'a été annoncé, justement pour ne
+  // pas écraser une annonce existante. Tester son absence confondrait « rien saisi » et « saisi
+  // de travers », et laisserait passer « trois » écrit en lettres sans rien dire.
+  if (saisiNet !== "" && nombreAnnonceOuNull(saisiNet) === null) {
+    return "Le nombre de colis annoncé doit être un nombre entier, de 0 à 200. Laissez vide si la cliente ne l'a pas dit.";
+  }
   return "";
 }
 

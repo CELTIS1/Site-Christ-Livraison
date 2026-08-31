@@ -2497,6 +2497,12 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
 .tournee-compte strong{color:var(--navy); font-size:15px;}
 .tournee-compte .tournee-pris{color:#1e8f4e;}
 .tournee-rien{color:var(--muted); font-style:italic;}
+/* CE QUE LA CLIENTE A ANNONCÉ, ET QU'ON N'A PAS ENCORE. (30/08/2026)
+   Ambre, comme le lieu manquant : ce n'est pas une erreur — la cliente a très bien pu garder un
+   colis pour demain — mais c'est un écart, et un écart doit se voir sans se lire. Le gras porte
+   sur le nombre entier plutôt que sur un seul chiffre : le livreur lit la phrase d'un coup
+   d'œil, pas mot à mot. */
+.tournee-compte .tournee-annonce{color:#9a6400; font-weight:600;}
 
 /* Les deux boutons côte à côte. À une main, dans la rue : c'est la zone que le pouce atteint
    sans que l'autre main lâche le guidon. Sur un écran étroit ils restent côte à côte plutôt
@@ -2556,6 +2562,11 @@ html[data-theme="dark"] .tournee-note{color:#fbbf24;}
 html[data-theme="dark"] .tournee-lieu--manquant{color:#fbbf24;}
 html[data-theme="dark"] .tournee-repli > summary{color:#fbbf24;}
 html[data-theme="dark"] .tournee-compte .tournee-pris{color:#5ed19a;}
+/* L'ambre foncé disparaîtrait dans le fond sombre : on l'éclaircit, comme pour le lieu manquant.
+   Un livreur consulte cet écran de nuit autant que de jour. (30/08/2026) */
+html[data-theme="dark"] .tournee-compte .tournee-annonce{color:#f0b64a;}
+/* Même raison que pour l'annonce : l'ambre foncé disparaîtrait dans le fond sombre. */
+html[data-theme="dark"] .tournee-geste--prevenir{border-color:#f0b64a; color:#f0b64a;}
 html[data-theme="dark"] .tournee-carte--programme{border-left-color:#2fae6b;}
 
 /* ---------------------------------------------------------------------------
@@ -2599,3 +2610,23 @@ html[data-theme="dark"] .tournee-carte--programme{border-left-color:#2fae6b;}
 /* Ramasser : le vert du travail fini, celui du programme et de « déjà récupéré ». */
 .tournee-geste--recuperer{background:#1e8f4e;}
 .tournee-geste--recuperer:hover{box-shadow:0 4px 12px rgba(30,143,78,.30);}
+
+/* PRÉVENIR N'EST PAS PARTIR. (30/08/2026)
+   Quand la cliente a annoncé des colis que le bureau n'a pas encore saisis, le livreur peut la
+   prévenir mais son départ ne peut être consigné nulle part — il n'y a aucun colis sur quoi
+   écrire l'heure. Le geste existe donc, mais il ne se déguise PAS en « Je pars » : creux plutôt
+   que plein, et l'ambre du mouvement seulement en contour. Un bouton qui ressemble à celui qui
+   consigne ferait croire que quelque chose a été consigné, et c'est exactement le piège qu'on
+   ferme ici. */
+.tournee-geste--prevenir{
+  gap:6px; min-height:48px; padding:0 12px; cursor:pointer;
+  border:1.5px solid #d97706; background:transparent; color:#9a6400;
+  border-radius:var(--radius-sm); font-weight:600; font-size:14.5px;
+  text-decoration:none; -webkit-tap-highlight-color:transparent;
+}
+.tournee-geste--prevenir:active{transform:translateY(1px);}
+/* La raison, sous le geste. Elle n'est pas décorative : sans elle, le livreur ne comprend pas
+   pourquoi son bouton habituel a changé de nom, et il se demande si l'application est en panne. */
+.tournee-rien--attente{
+  display:block; margin-top:6px; font-size:12.5px; line-height:1.45;
+}

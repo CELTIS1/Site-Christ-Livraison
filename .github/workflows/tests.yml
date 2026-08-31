@@ -119,6 +119,14 @@ jobs:
       - name: Tournée de récupération (programmée la veille, lue le matin)
         run: node tests/tournee-de-recuperation.test.mjs
 
+      # Le pendant du précédent, depuis le 30/08/2026. Ce que la cliente annonce au téléphone
+      # est la seule chose qui distingue « je passe chercher trois colis » de « je passe pour
+      # rien ». Sans cette distinction, l'écran du livreur disait « rien à récupérer » chez une
+      # cliente où le bureau l'envoyait exprès, et son bouton « Je pars » disparaissait de
+      # l'écran — donc le partage de position ne démarrait plus. Constaté sur un iPhone.
+      - name: La cliente annonce ses colis (l'annoncé, le saisi, et l'écart entre les deux)
+        run: node tests/la-cliente-annonce-ses-colis.test.mjs
+
       # L'argent. Un bouton mal placé, on le signale ; un total faux, on le RECOPIE — dans un
       # carnet, dans un message, dans la remise du soir — et il devient quelques jours plus
       # tard la version des faits que plus personne ne peut contester. Cette série tient les
