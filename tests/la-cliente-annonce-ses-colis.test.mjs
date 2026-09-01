@@ -57,13 +57,23 @@ const sourceConfig = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
 const livreur = fs.readFileSync(path.join(APP, 'livreur.html'), 'utf8');
 const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 const style = fs.readFileSync(path.join(APP, 'style.css'), 'utf8');
-const sql = fs.readFileSync(
-  path.join(RACINE, '_sql-prive', '2026-08-30-la-cliente-annonce-ses-colis.sql'), 'utf8');
+/* _sql-prive/ est hors dépôt : le .gitignore ignore tous les .sql. Sur un clone propre —
+   l'intégration continue, par exemple — ce fichier n'existe pas. Le lire d'autorité faisait
+   TOMBER la série entière au chargement, avant la moindre vérification, et c'est ce qui a fait
+   rougir la publication du 31 août. Les autres bancs d'essai du dépôt s'effacent proprement
+   dans ce cas ; celui-ci fait désormais pareil. */
+const CHEMIN_SQL = path.join(RACINE, '_sql-prive', '2026-08-30-la-cliente-annonce-ses-colis.sql');
+const sql = fs.existsSync(CHEMIN_SQL) ? fs.readFileSync(CHEMIN_SQL, 'utf8') : null;
 
-let reussies = 0, echouees = 0;
+let reussies = 0, echouees = 0, ignorees = 0;
 function verifier(t, condition, detail){
   if (condition) { reussies++; console.log('  ✅ ' + t); }
   else { echouees++; console.log('  ❌ ' + t + (detail ? '\n       → ' + detail : '')); }
+}
+// Un contrôle qu'on ne PEUT pas faire ici n'est ni réussi ni échoué : il est non applicable, et
+// il se dit. Le taire laisserait croire que la série a tout vérifié.
+function ignorer(t, pourquoi){
+  ignorees++; console.log('  ⊘ ' + t + (pourquoi ? '\n       → ' + pourquoi : ''));
 }
 function titre(t){ console.log('\n' + t); }
 
@@ -399,6 +409,11 @@ verifier("la reconnaissance est écrite une seule fois, pas une par écran",
    ========================================================================================== */
 titre("Le script SQL qui ouvre la place");
 
+if (!sql) {
+  ignorer("tous les contrôles sur le script SQL (section 10)",
+    "Le dossier _sql-prive n'est pas versionné (voir .gitignore). Ces contrôles ne peuvent "
+    + "s'exécuter que sur le poste où le script existe.");
+} else {
 verifier("les trois colonnes sont créées",
   /add column if not exists nb_colis_annonce/.test(sql)
   && /add column if not exists annonce_reglee_at/.test(sql)
@@ -417,8 +432,10 @@ verifier("aucune règle de sécurité n'est touchée",
   'ce fichier ajoute des colonnes ; qui peut lire une programmation ne change pas');
 verifier("et il porte de quoi vérifier après coup",
   /information_schema\.columns/.test(sql) && /pg_policies/.test(sql));
+}
 
 /* ---------- Verdict ---------- */
 console.log('\n———');
-console.log(`${reussies} vérifications réussies, ${echouees} échouées`);
+console.log(`${reussies} vérifications réussies, ${echouees} échouées`
+  + (ignorees ? `, ${ignorees} non applicable(s) ici` : ''));
 if (echouees) process.exit(1);
