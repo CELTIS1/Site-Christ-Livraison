@@ -308,6 +308,33 @@ jobs:
       # Elle attrape la faute réelle, celle d'oublier la garde entièrement, et c'est déjà tout ce
       # qu'on lui demande. Un contrôle simple qu'on n'a pas besoin de relire vaut mieux qu'un
       # contrôle malin dans lequel on finit par ne plus avoir confiance.
+
+      # LES SIX SÉRIES QUI EXISTAIENT SANS ÊTRE BRANCHÉES ICI. (31/08/2026)
+      #
+      # Le garde-fou « Aucune série de contrôles laissée de côté », plus bas, refuse la
+      # publication quand un fichier de tests/ n'est branché nulle part. Il faisait donc rougir
+      # CHAQUE publication depuis qu'elles ont été écrites — y compris celle du 30 août, avant
+      # toute intervention de ce jour. Un contrôle rouge en permanence ne contrôle plus rien :
+      # on cesse de le regarder, et le jour où il rougit pour une vraie raison, personne ne le
+      # voit. Elles sont donc branchées, et elles passent toutes les six.
+      - name: Le livreur annonce sa remise (une annonce n'est pas une remise)
+        run: node tests/annonce-de-la-remise.test.mjs
+
+      - name: Bilan de la semaine (ce qu'on n'a pas mesuré ne s'invente pas)
+        run: node tests/bilan-hebdomadaire.test.mjs
+
+      - name: Les colis qui dorment (le silence est l'information)
+        run: node tests/colis-qui-dorment.test.mjs
+
+      - name: L'argent que porte le livreur (ce qu'il a en main, jour après jour)
+        run: node tests/l-argent-que-porte-le-livreur.test.mjs
+
+      - name: Le serveur et l'écran comptent pareil (deux calculs, un seul résultat)
+        run: node tests/le-serveur-et-l-ecran-comptent-pareil.test.mjs
+
+      - name: Papier à en-tête (les documents sortent tous sur le même papier)
+        run: node tests/papier-a-en-tete.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""
