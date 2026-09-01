@@ -256,7 +256,20 @@
       'color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;' +
       'opacity:1;transition:opacity .35s ease;padding:24px;box-sizing:border-box;}' +
       '#clt-biologin-lock.out{opacity:0;pointer-events:none;}' +
-      '#clt-biologin-lock .card{width:100%;max-width:344px;text-align:center;animation:cltBLcard .55s cubic-bezier(.22,1.2,.32,1) both;}' +
+      /* CORRECTION DU 31 AOÛT 2026 — le même piège que celui réparé le 19 août dans
+         biometric-lock.js, et oublié ici. Cet encadré s'appelait « card ». Or style.css définit
+         une classe .card générale — fond blanc, bordure, titre en bleu marine — prévue pour les
+         encadrés clairs des tableaux de bord. Elle s'appliquait donc à cet écran, conçu en
+         sombre : en THÈME CLAIR la boîte devenait blanche, le titre bleu marine, et tout le
+         reste du texte — écrit en blanc translucide — disparaissait. Le compte affiché,
+         « Se connecter avec mot de passe » et « Utiliser un autre compte » étaient là,
+         invisibles. En thème sombre, .card étant sombre, rien ne se voyait du problème.
+         Le nom est désormais « biocard », qui n'existe nulle part ailleurs, les propriétés de
+         boîte sont remises à zéro, et la couleur du titre est fixée ici plutôt qu'héritée. Un
+         écran de déverrouillage a son apparence propre : c'est une porte, pas un contenu. */
+      '#clt-biologin-lock .biocard{width:100%;max-width:344px;text-align:center;' +
+      'background:none;border:0;padding:0;margin:0;box-shadow:none;border-radius:0;' +
+      'animation:cltBLcard .55s cubic-bezier(.22,1.2,.32,1) both;}' +
       '@keyframes cltBLcard{from{opacity:0;transform:translateY(14px) scale(.96);}to{opacity:1;transform:none;}}' +
       '#clt-biologin-lock .ic-wrap{position:relative;width:94px;height:94px;margin:0 auto 22px;}' +
       '#clt-biologin-lock .ic{width:94px;height:94px;border-radius:25px;display:block;position:relative;z-index:1;' +
@@ -264,7 +277,7 @@
       '#clt-biologin-lock .ic-glow{position:absolute;inset:-14px;border-radius:36px;z-index:0;filter:blur(9px);' +
       'background:radial-gradient(circle, ' + ACCENT + 'aa 0%, transparent 68%);animation:cltBLglow 2.6s ease-in-out infinite;}' +
       '@keyframes cltBLglow{0%,100%{opacity:.45;transform:scale(1);}50%{opacity:.85;transform:scale(1.06);}}' +
-      '#clt-biologin-lock h2{font-size:21px;font-weight:750;margin:0 0 8px;letter-spacing:-.01em;}' +
+      '#clt-biologin-lock h2{font-size:21px;font-weight:750;margin:0 0 8px;letter-spacing:-.01em;color:#fff;}' +
       '#clt-biologin-lock p{font-size:14px;line-height:1.5;color:rgba(255,255,255,.66);margin:0 0 12px;}' +
       '#clt-biologin-lock .who{font-size:13px;color:rgba(255,255,255,.8);margin:0 0 24px;}' +
       '#clt-biologin-lock .who b{color:#fff;font-weight:700;}' +
@@ -284,7 +297,7 @@
       '#clt-biologin-lock .other{display:block;margin:14px auto 0;font-size:12.5px;color:rgba(255,255,255,.5);' +
       'background:none;border:0;cursor:pointer;font-family:inherit;text-decoration:underline;}' +
       '</style>' +
-      '<div class="card">' +
+      '<div class="biocard">' +
         '<div class="ic-wrap"><span class="ic-glow"></span><img class="ic" src="' + LOCK_ICON + '" alt=""></div>' +
         '<h2>Espace verrouillé</h2>' +
         '<p>Déverrouillez avec Face&nbsp;ID ou votre empreinte pour accéder à votre espace en toute sécurité.</p>' +

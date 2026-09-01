@@ -335,6 +335,14 @@ jobs:
       - name: Papier à en-tête (les documents sortent tous sur le même papier)
         run: node tests/papier-a-en-tete.test.mjs
 
+      # Les écrans de déverrouillage, depuis le 31/08/2026. Ils posent leur propre décor par-dessus
+      # tout l'écran ; s'ils empruntent un nom de classe à style.css, le thème du moment vient les
+      # repeindre. C'est arrivé deux fois : le 19 août sur le verrou de l'application, le 31 sur la
+      # page de connexion — où, en thème clair, le compte affiché et les deux options devenaient
+      # du blanc sur blanc. L'écran ne tombait pas en panne : il mentait.
+      - name: Écrans de déverrouillage (aucun nom de classe emprunté au thème)
+        run: node tests/ecrans-de-deverrouillage.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""
