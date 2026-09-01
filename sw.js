@@ -45,15 +45,16 @@
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même.
 
    26 août 2026 — v56 : ajout de l'exception app/version.json (voir plus bas).
-   31 août 2026 — v58 : l'écran d'ouverture raccourci de 2,53 s à 1,16 s, et les deux
-   écrans de déverrouillage qui suivent enfin le thème. Ces fichiers sont pré-chargés :
-   sans nouveau numéro, un téléphone déjà installé continuerait d'attendre 2,5 secondes.
+   31 août 2026 — v59 : l'écran d'ouverture retrouve ses 2 100 ms. Le raccourci de v58
+   partait d'une mauvaise lecture : ce n'est pas le logo qui est long, c'est ce qui suit
+   l'appui sur « Déverrouiller ». L'animation est voulue, on la garde.
+   31 août 2026 — v58 : les deux écrans de déverrouillage suivent enfin le thème.
    31 août 2026 — v57 : le jour du passage choisi par la cliente, et le geste
    « Changer le livreur » au bureau. Les écrans changent, le coffre doit se vider :
    sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
    pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v58';
+const CACHE_VERSION = 'clt-shell-v59';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.

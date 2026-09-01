@@ -137,21 +137,17 @@
     try { window.dispatchEvent(new Event('clt-splash-end')); } catch(e){}
   }
 
-  /* COMBIEN DE TEMPS ON FAIT ATTENDRE. (raccourci le 31/08/2026)
+  /* COMBIEN DE TEMPS DURE L'ÉCRAN D'OUVERTURE. (2 100 ms, et on n'y touche pas)
 
-     C'était 2 100 ms, plus 430 ms de fondu : deux secondes et demie d'attente pure avant que
-     quoi que ce soit d'utilisable n'apparaisse. Et sur les écrans protégés par Face ID, le
-     verrou attend explicitement la fin de cet écran — l'utilisateur regardait donc un logo
-     pendant deux secondes et demie avant même de pouvoir demander à déverrouiller.
+     Raccourci à 900 ms le 31/08/2026, puis REMIS à 2 100 ms le soir même, à la demande de
+     Celtis : « le même temps que le logo s'affichait, qu'il soit toujours pareil à ce qui était
+     là — la présentation du logo et l'animation sont nécessaires ».
 
-     Signalé par Celtis le 31/08/2026 : « ça prend beaucoup de temps, il faut que ce soit plus
-     rapide que ça ».
-
-     900 ms suffisent à voir l'icône et à masquer le chargement. En dessous, le logo devient un
-     clignotement, ce qui est pire que pas de logo du tout. Le fondu passe de 430 à 260 ms pour
-     la même raison. Au total 1,16 s au lieu de 2,53 s — on rend 1,4 seconde à chaque ouverture
-     de l'application, à chaque livreur, plusieurs fois par jour. */
-  var life = 900;
+     La lenteur qu'il signalait n'est pas ici. Elle est APRÈS l'appui sur « Déverrouiller » :
+     entre le moment où Face ID accepte et celui où le tableau de bord s'affiche. Cet écran-ci
+     n'y est pour rien, et le raccourcir abîmait une chose qui plaisait sans corriger celle qui
+     gênait. Le vrai sujet est consigné dans « 00 - Les expéditions - ce qui reste à faire.md ». */
+  var life = 2100;
   setTimeout(function(){
     clearBg();
     wrap.classList.add('out');
@@ -159,6 +155,6 @@
     setTimeout(function(){
       if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
       signalSplashEnd();
-    }, 260);
+    }, 430);
   }, life);
 })();
