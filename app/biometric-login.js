@@ -333,10 +333,19 @@
       revealForm();
     });
 
-    // Tentative automatique DERRIÈRE l'écran verrouillé (best effort, SILENCIEUSE). iOS
-    // exige souvent un geste : si l'appel échoue faute d'interaction, aucun message n'est
-    // affiché et le bouton « Déverrouiller » reste disponible pour un appui manuel.
-    setTimeout(function () { attempt(btn, errEl, true); }, 260);
+    /* PLUS DE DÉVERROUILLAGE AUTOMATIQUE. (31/08/2026)
+
+       Demandé par Celtis : « je voudrais qu'on soit libre de choisir l'option pour le
+       déverrouillage plutôt que ça se lance automatiquement ».
+
+       Une tentative partait toute seule quelques dixièmes de seconde après l'apparition de
+       l'écran. Intention louable — épargner un appui — mais elle retire le choix : Face ID
+       s'ouvre avant qu'on ait lu ce qui est proposé, et les deux autres portes (le mot de passe,
+       le changement de compte) passent inaperçues. Sur un téléphone partagé, elle déverrouille
+       même le compte de quelqu'un d'autre si le visage passe devant.
+
+       L'écran attend désormais. Trois portes, également visibles, et c'est la personne qui
+       choisit. Un appui de plus contre un choix rendu : le change est bon. */
   }
 
   function escapeLabel(s) {

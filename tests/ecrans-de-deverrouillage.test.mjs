@@ -120,6 +120,30 @@ verifier('elle dit de quel compte il s\'agit',
 verifier('le verrou dans l\'application propose le mot de passe lui aussi',
   /Se connecter avec mot de passe/.test(ecrans['biometric-lock.js']));
 
+
+/* ==========================================================================================
+   4. RIEN NE SE DÉCLENCHE SANS QU'ON L'AIT DEMANDÉ  (31/08/2026)
+   ==========================================================================================
+   Celtis : « je voudrais qu'on soit libre de choisir l'option pour le déverrouillage plutôt que
+   ça se lance automatiquement ».
+
+   Les deux écrans lançaient une tentative silencieuse quelques dixièmes de seconde après leur
+   apparition. Face ID s'ouvrait donc avant qu'on ait lu ce qui était proposé, et les deux autres
+   portes — le mot de passe, le changement de compte — passaient inaperçues. Sur un téléphone
+   partagé, un visage qui passe devant déverrouillait le compte de quelqu'un d'autre.
+
+   Une porte s'ouvre quand on la pousse. */
+titre('Le déverrouillage attend qu\'on le demande');
+
+Object.entries(ecrans).forEach(([nom, source]) => {
+  verifier(`${nom} ne lance aucune tentative sur minuterie`,
+    !/setTimeout\([^)]*attempt/.test(source.replace(/\s+/g, ' ')),
+    'une tentative automatique retire le choix : elle s\'ouvre avant qu\'on ait lu l\'écran');
+  verifier(`${nom} n'agit que sur un appui`,
+    /addEventListener\('click', function \(\) \{ attempt/.test(source),
+    'le geste doit rester le seul déclencheur');
+});
+
 /* ---------- Verdict ---------- */
 console.log('\n———');
 console.log(`${reussies} vérifications réussies, ${echouees} échouées`);

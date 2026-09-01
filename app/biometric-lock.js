@@ -302,8 +302,13 @@
         }
         goBtn.addEventListener('click', function () { attempt(false); });
         pwBtn.addEventListener('click', fallbackToLogin);
-        // Tentative automatique SILENCIEUSE (best effort ; sur iOS un geste peut être requis).
-        setTimeout(function () { attempt(true); }, 150);
+        /* PLUS DE DÉVERROUILLAGE AUTOMATIQUE. (31/08/2026)
+           Demandé par Celtis : « je voudrais qu'on soit libre de choisir l'option pour le
+           déverrouillage plutôt que ça se lance automatiquement ». Une tentative partait seule
+           un dixième de seconde après l'apparition de l'écran : Face ID s'ouvrait avant qu'on
+           ait lu ce qui était proposé, et le repli par mot de passe passait inaperçu. Sur un
+           téléphone partagé, elle déverrouillait même le compte d'un autre si le visage passait
+           devant. L'écran attend désormais qu'on choisisse. */
       });
     });
   }
