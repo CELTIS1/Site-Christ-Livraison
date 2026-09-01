@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260830annonce2">
-<script src="theme.js?v=20260830annonce2"></script>
+<link rel="stylesheet" href="style.css?v=20260831passage">
+<script src="theme.js?v=20260831passage"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1160,10 +1160,10 @@ quand vous reposez la tournée avec le vrai nombre.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260830annonce2"></script>
-<script src="config.js?v=20260830annonce2"></script>
+<script src="clt-common.js?v=20260831passage"></script>
+<script src="config.js?v=20260831passage"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260830annonce2"></script>
+<script src="clt-select-recherche.js?v=20260831passage"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -5726,10 +5726,28 @@ const classe = fini ? 'tournee-carte--fait'
    Sur un travail déjà fait, aucun des deux n'a de sens : « Retirer » n'aurait rien à retirer,
    et « Poser une tournée » proposerait d'envoyer quelqu'un là où l'on est déjà passé. Un
    bouton sans effet utile est pire qu'un bouton absent : on croit avoir agi. */
+/* CHANGER LE LIVREUR SANS RETIRER PUIS REPOSER. (31/08/2026)
+
+   Demandé par Celtis : « on peut se tromper et changer le livreur en fonction des réalités ».
+   C'était déjà possible — rechoisir la même cliente avec un autre livreur écrase l'ancienne
+   ligne, la table n'en accepte qu'une par (jour, cliente) — mais RIEN ne le disait. La carte
+   n'offrait que « Retirer de la tournée », si bien que la seule manœuvre visible pour corriger
+   un livreur était de détruire la programmation puis d'en refaire une : deux gestes, une
+   fenêtre pendant laquelle la cliente n'est chez personne, et l'annonce de ses colis perdue au
+   passage.
+
+   Le geste réutilise le pré-remplissage déjà écrit pour les clientes du repli. Il n'écrit rien
+   de lui-même : il remonte au formulaire, tout rempli, et c'est le bureau qui relit et valide.
+   Un écran ne doit pas réaffecter un livreur sur un seul clic mal placé.
+
+   Le nombre annoncé voyage avec, en troisième position, pour être RELU et non deviné : sans
+   lui, le bureau corrigerait un livreur en voyant un champ vide, et ne saurait pas que la
+   cliente avait annoncé trois colis. */
 const geste = fini ? ''
 : l.horsProgramme
 ? `<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-programmer="${escapeHTML(l.fournisseurId)}|${escapeHTML(String(l.livreurId || ''))}">Poser une tournée pour elle</button>`
-: `<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-retirer="${escapeHTML(l.id)}">Retirer de la tournée</button>`;
+: `<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-programmer="${escapeHTML(l.fournisseurId)}|${escapeHTML(String(l.livreurId || ''))}|${escapeHTML(l.nbAnnonce === null || l.nbAnnonce === undefined ? '' : String(l.nbAnnonce))}">Changer le livreur</button>
+   <button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-retirer="${escapeHTML(l.id)}">Retirer de la tournée</button>`;
 // « hors programme » veut dire « à faire, mais personne ne l'a prévu ». Sur un travail terminé
 // c'est un contresens : le bureau y lirait un reste à faire là où il n'y a plus rien.
 const marque = fini ? `<span class="tournee-marque tournee-marque--fait">déjà récupéré</span>`
@@ -5862,7 +5880,10 @@ ${colisConnus
    désactivé, fiche supprimée — le champ resterait vide sans rien dire, et le bureau croirait
    avoir choisi. Mieux vaut l'annoncer. */
 function progPreremplir(cle){
-const [fournisseurId, livreurId] = String(cle || '').split('|');
+// Trois parties depuis le 31/08/2026 : cliente, livreur, et le nombre déjà annoncé. La
+// troisième est absente quand on POSE une tournée pour une cliente du repli — il n'y a alors
+// rien à relire — et présente quand on MODIFIE une programmation existante.
+const [fournisseurId, livreurId, nbAnnonce] = String(cle || '').split('|');
 const manquants = [];
 const poser = (id, valeur, quoi) => {
 const select = document.getElementById(id);
@@ -5883,8 +5904,10 @@ if (note) note.value = '';
 // Le nombre annoncé se vide comme la note, et pour la même raison : un « 3 » resté en place
 // serait annoncé pour la cliente suivante. L'oublier ici pendant qu'on vide la note serait
 // l'asymétrie la plus facile à ne jamais remarquer. (30/08/2026)
+// On repose ce qui avait été annoncé quand on modifie une programmation, et on vide dans tous
+// les autres cas : un « 3 » resté en place serait annoncé pour la cliente suivante.
 const nbColis = document.getElementById('prog-nb-colis');
-if (nbColis) nbColis.value = '';
+if (nbColis) nbColis.value = (nbAnnonce === undefined ? '' : nbAnnonce);
 
 const ancre = document.getElementById('prog-fournisseur');
 if (ancre && ancre.scrollIntoView) ancre.scrollIntoView({ block: 'center' });

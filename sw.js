@@ -44,9 +44,13 @@
 
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même.
 
-   26 août 2026 — v56 : ajout de l'exception app/version.json (voir plus bas). */
+   26 août 2026 — v56 : ajout de l'exception app/version.json (voir plus bas).
+   31 août 2026 — v57 : le jour du passage choisi par la cliente, et le geste
+   « Changer le livreur » au bureau. Les écrans changent, le coffre doit se vider :
+   sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
+   pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v56';
+const CACHE_VERSION = 'clt-shell-v57';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.

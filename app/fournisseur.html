@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260830annonce2">
-<script src="theme.js?v=20260830annonce2"></script>
+<link rel="stylesheet" href="style.css?v=20260831passage">
+<script src="theme.js?v=20260831passage"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -347,6 +347,25 @@
       </div>
       <div class="field-hint" style="font-size:12px; color:var(--muted); margin:-6px 0 14px;">Où le livreur doit-il récupérer les colis ci-dessous ? Pré-rempli avec votre dernière adresse, modifiable si vous changez de lieu.</div>
 
+      <!-- QUAND, ET NON SEULEMENT OÙ. (31/08/2026)
+           Demandé par le dirigeant : une commerçante prépare ses colis le dimanche soir pour le
+           passage du lundi matin. Sans cette question, ils tombaient dans la tournée du dimanche
+           soir — le livreur les voyait, elle ne l'attendait pas encore.
+           Le champ vaut pour toute la fournée, comme le lieu : on prépare un passage, pas vingt.
+           Il s'ouvre sur aujourd'hui, parce que c'est le cas le plus courant, et « Demain » est
+           à un seul appui pour le cas qui a motivé la demande. -->
+      <div class="field-row" style="margin-bottom:2px;">
+        <div class="field">
+          <label>🗓️ Jour du passage</label>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <input type="date" id="lotfr-jour-passage" style="max-width:180px;">
+            <button type="button" class="btn btn-outline btn-sm" id="lotfr-jour-aujourdhui">Aujourd'hui</button>
+            <button type="button" class="btn btn-outline btn-sm" id="lotfr-jour-demain">📅 Demain</button>
+          </div>
+        </div>
+      </div>
+      <div class="field-hint" style="font-size:12px; color:var(--muted); margin:-6px 0 14px;">Quand voulez-vous que le livreur passe ? Ces colis apparaîtront dans sa tournée à partir de ce jour-là — pas avant. S'ils ne sont pas récupérés ce jour-là, ils restent : rien ne disparaît.</div>
+
       <div class="lot-depot" id="lotfr-depot">
         <div class="lot-depot-icone">🖼️</div>
         <div class="lot-depot-titre">Choisir les photos des étiquettes</div>
@@ -446,10 +465,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260830annonce2"></script>
-<script src="config.js?v=20260830annonce2"></script>
+<script src="clt-common.js?v=20260831passage"></script>
+<script src="config.js?v=20260831passage"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260830annonce2"></script>
+<script src="clt-select-recherche.js?v=20260831passage"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -631,7 +650,7 @@
   function frColonneInconnue(error){
     const m = String((error && (error.message || '')) + ' ' + (error && (error.details || '')));
     return /does not exist|schema cache|could not find|n'existe pas/i.test(m)
-        && /destinataire_telephone|cle_creation|column|colonne/i.test(m);
+        && /destinataire_telephone|cle_creation|jour_recuperation_prevu|column|colonne/i.test(m);
   }
 
   // `lignes` est toujours un tableau : cette page enregistre un lot entier d'un coup.
@@ -644,7 +663,10 @@
     // lancée), on réessaie sans elles plutôt que de bloquer la vendeuse. Elles seront simplement
     // ignorées jusqu'à la migration.
     if (error && frColonneInconnue(error)) {
-      aEnvoyer = aEnvoyer.map(({ destinataire_telephone, cle_creation, ...reste }) => reste);
+      // jour_recuperation_prevu s'ajoute à la liste le 31/08/2026 : tant que sa migration n'est
+      // pas passée, la fournée part sans lui plutôt que d'être refusée. Le colis existe alors
+      // comme avant — attendu dès que possible — et rien n'est perdu.
+      aEnvoyer = aEnvoyer.map(({ destinataire_telephone, cle_creation, jour_recuperation_prevu, ...reste }) => reste);
       ({ error } = await supabaseClient.from('colis').insert(aEnvoyer));
     }
 
@@ -1080,7 +1102,17 @@
       if (communeEl && communeEl.scrollIntoView) communeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return null;
     }
-    return { commune_recuperation: commune, adresse_recuperation: ((adresseEl || {}).value || '').trim() };
+    /* Le jour du passage suit le même chemin que le lieu : demandé une fois, appliqué à toute la
+       fournée. Vide veut dire « dès que possible » — c'est le comportement d'avant le
+       31/08/2026, et celui de tous les colis déjà enregistrés. On n'invente pas une date que
+       personne n'a choisie. */
+    const jourEl = document.getElementById('lotfr-jour-passage');
+    const jour = ((jourEl || {}).value || '').trim();
+    return {
+      commune_recuperation: commune,
+      adresse_recuperation: ((adresseEl || {}).value || '').trim(),
+      jour_recuperation_prevu: /^\d{4}-\d{2}-\d{2}$/.test(jour) ? jour : null,
+    };
   }
 
   // Envoie une ligne. Renvoie true si elle peut quitter l'écran, false si elle doit rester sous
@@ -1109,6 +1141,7 @@
       montant, montant_article, montant_livraison, photo_url,
       commune_recuperation: ctx.commune_recuperation,
       adresse_recuperation: ctx.adresse_recuperation || null,
+      jour_recuperation_prevu: ctx.jour_recuperation_prevu || null,
       // Normalisé au format international (225…) attendu par la notification WhatsApp.
       destinataire_telephone: s.telephone ? toPhoneE164(s.telephone) : null,
       livraison_payee: !!s.livraisonPayee,
@@ -2677,6 +2710,23 @@
     const lotfrAdresse = document.getElementById('lotfr-pickup-adresse');
     if (lotfrCommune) lotfrCommune.innerHTML = communesOptionsHTML(profile.commune_recuperation, 'Choisir une commune');
     if (lotfrAdresse) lotfrAdresse.value = profile.adresse_recuperation || '';
+
+    /* LE JOUR DU PASSAGE. (31/08/2026)
+       Il s'ouvre sur AUJOURD'HUI, pas sur demain — contrairement à l'écran de programmation du
+       bureau, qui se tient le soir pour le lendemain. Ici, une cliente saisit un colis à toute
+       heure, et le cas le plus fréquent reste « le plus tôt possible ». « Demain » est à un
+       appui pour celle qui prépare sa fournée du soir : c'est le cas qui a motivé la demande.
+       On ne descend jamais avant aujourd'hui : un passage ne se demande pas pour hier. */
+    const lotfrJour = document.getElementById('lotfr-jour-passage');
+    if (lotfrJour) {
+      lotfrJour.min = todayLocalISODate();
+      lotfrJour.value = todayLocalISODate();
+      const btnAuj = document.getElementById('lotfr-jour-aujourdhui');
+      const btnDem = document.getElementById('lotfr-jour-demain');
+      if (btnAuj) btnAuj.addEventListener('click', () => { lotfrJour.value = todayLocalISODate(); });
+      if (btnDem) btnDem.addEventListener('click', () => { lotfrJour.value = demainAbidjan(); });
+    }
+
     initLotFournisseur();
 
     // Carnet d'adresses : chargé sans bloquer l'affichage du reste. Les lignes déjà dessinées se

@@ -128,7 +128,7 @@ vm.runInContext(
 );
 
 vm.runInContext([
-  'jourAbidjan', 'aujourdhuiAbidjan', 'jourEvenementColis',
+  'jourAbidjan', 'aujourdhuiAbidjan', 'jourEvenementColis', 'colisAttenduAuPlusTard',
   'rangDeLaJournee', 'tourneesDeRecuperation', 'totalDesLignes', 'tourneesParLivreur',
   'programmationARecuperationAEcrire', 'raisonDeRefuserLaProgrammation', 'demainAbidjan',
   'piedTotalHTML', 'echapperAttribut',
@@ -740,8 +740,15 @@ verifier("et le nombre de livreurs",
   /<strong>2<\/strong> livreur/.test(ligneDuTotal(poseHTML)), ligneDuTotal(poseHTML));
 verifier("les trois clientes y sont",
   /Awa Boutique/.test(poseHTML) && /Bintou Shop/.test(poseHTML) && /Céline Couture/.test(poseHTML));
+/* L'identifiant du livreur n'a rien à faire dans ce que l'utilisateur LIT. Il en va autrement
+   des attributs data-*, qui sont la plomberie des gestes : le bouton « Poser une tournée » y
+   portait déjà la cliente et le livreur, et « Changer le livreur » fait de même depuis le
+   31/08/2026. On retire donc la plomberie avant de regarder le texte — sans quoi ce contrôle
+   interdirait le geste au lieu d'interdire la fuite. */
+const texteVisible = (html) => String(html).replace(/\sdata-[a-z-]+="[^"]*"/g, '');
 verifier("le nom du livreur désigné est écrit, pas son identifiant",
-  /Koffi/.test(poseHTML) && !/L1/.test(poseHTML));
+  /Koffi/.test(poseHTML) && !/L1/.test(texteVisible(poseHTML)),
+  texteVisible(poseHTML).slice(0, 300));
 verifier("la note pour le livreur est reportée", /après 9h/.test(poseHTML));
 verifier("le téléphone de la cliente est là, et il est appelable",
   /href="tel:0700000001"/.test(poseHTML));
@@ -976,10 +983,19 @@ verifier("la cliente du repli n'a pas de bouton « Retirer »",
   !/data-prog-retirer/.test(repli), repli.slice(-400));
 verifier("elle a le bouton qui pose une tournée, et il porte la cliente ET le livreur",
   /data-prog-programmer="F1\|L2"/.test(repli), repli.slice(-400));
-verifier("les trois clientes programmées gardent le leur, et elles seules",
-  (avecRepli.match(/data-prog-retirer="/g) || []).length === 3
-  && (avecRepli.match(/data-prog-programmer="/g) || []).length === 1,
+/* Depuis le 31/08/2026, « poser une tournée » et « changer le livreur » sont le même geste —
+   le même pré-remplissage, le même attribut — offert dans deux situations opposées. Il y a donc
+   quatre boutons de ce nom : un pour la cliente du repli, trois pour les programmées. Ce qui
+   reste réservé aux programmées, c'est « Retirer » : on ne retire pas une tournée qui n'existe
+   pas. Et les trois de modification portent leur nombre annoncé en troisième position, pour
+   qu'on le relise au lieu de le deviner. */
+verifier("« Retirer » reste réservé aux trois clientes programmées",
+  (avecRepli.match(/data-prog-retirer="/g) || []).length === 3,
   avecRepli.slice(0, 200));
+verifier("et « changer le livreur » s'ajoute pour elles, sans remplacer celui du repli",
+  (avecRepli.match(/data-prog-programmer="/g) || []).length === 4
+  && (avecRepli.match(/data-prog-programmer="[^"]*\|[^"|]*\|/g) || []).length === 3,
+  (avecRepli.match(/data-prog-programmer="[^"]*"/g) || []).join(' | '));
 
 /* ==========================================================================================
    10 quater. LE TRAVAIL FINI NE SE RANGE PAS AVEC LE TRAVAIL QUI RESTE

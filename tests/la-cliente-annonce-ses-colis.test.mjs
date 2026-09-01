@@ -98,6 +98,7 @@ const DEMAIN = '2026-08-31';
 const contexte = vm.createContext({ console, Set, Map, Number, String, Object, JSON, Math });
 vm.runInContext([
   'aujourdhuiAbidjan', 'jourAbidjan', 'rangDeLaJournee', 'jourEvenementColis', 'departDeCollecte',
+  'colisAttenduAuPlusTard',
   'tourneesDeRecuperation', 'totalDesLignes', 'tourneesParLivreur',
   'programmationARecuperationAEcrire', 'raisonDeRefuserLaProgrammation',
   'nombreAnnonceOuNull', 'libelleAnnonceRecuperation', 'libelleAnnoncePosee', 'colonneAbsente',
@@ -109,7 +110,7 @@ vm.runInContext('const HORODATAGE_DU_STATUT = ' + JSON.stringify({
 const {
   tourneesDeRecuperation, totalDesLignes, programmationARecuperationAEcrire,
   raisonDeRefuserLaProgrammation, nombreAnnonceOuNull, libelleAnnonceRecuperation,
-  libelleAnnoncePosee, colonneAbsente,
+  libelleAnnoncePosee, colonneAbsente, colisAttenduAuPlusTard,
 } = contexte;
 
 // Un décor minuscule : une cliente, un livreur, une journée.
@@ -433,6 +434,78 @@ verifier("aucune règle de sécurité n'est touchée",
 verifier("et il porte de quoi vérifier après coup",
   /information_schema\.columns/.test(sql) && /pg_policies/.test(sql));
 }
+
+
+/* ==========================================================================================
+   11. LA CLIENTE CHOISIT LE JOUR DU PASSAGE  (31/08/2026)
+   ==========================================================================================
+   Demandé par Celtis : « pour l'ajout des colis côté client il faudrait qu'ils puissent choisir
+   le jour qui leur convient — sinon, à la veille, ce qui est enregistré est considéré pour le
+   même jour, or c'est pour le lendemain qu'on veut ajouter. »
+
+   La règle tient en deux moitiés, et la seconde est celle qui rend la première inoffensive :
+   un colis n'apparaît JAMAIS AVANT son jour prévu, et il ne disparaît JAMAIS APRÈS. Une date
+   fausse retarde un passage ; elle ne perd pas une marchandise chez une cliente. */
+titre("Le jour où la cliente attend le livreur");
+
+const colisPour = (id, jourPrevu) => ({ id, fournisseur_id: 'F1', statut: 'en_attente',
+                                        livreur_collecte_id: 'L1', jour_recuperation_prevu: jourPrevu });
+
+verifier("sans jour prévu, un colis entre dans la tournée comme avant",
+  colisAttenduAuPlusTard({}, AUJOURDHUI) === true
+  && colisAttenduAuPlusTard({ jour_recuperation_prevu: null }, AUJOURDHUI) === true,
+  'tous les colis antérieurs au 31/08/2026 sont dans ce cas : rien ne doit changer pour eux');
+verifier("un colis prévu pour aujourd'hui y entre",
+  colisAttenduAuPlusTard({ jour_recuperation_prevu: AUJOURDHUI }, AUJOURDHUI) === true);
+verifier("un colis prévu pour demain n'apparaît PAS aujourd'hui",
+  colisAttenduAuPlusTard({ jour_recuperation_prevu: DEMAIN }, AUJOURDHUI) === false,
+  "c'est la demande : préparer le dimanche soir le passage du lundi matin");
+verifier("et un colis prévu pour hier reste là aujourd'hui",
+  colisAttenduAuPlusTard({ jour_recuperation_prevu: '2026-08-29' }, AUJOURDHUI) === true,
+  'un colis qu\'on ne voit plus est une marchandise perdue chez une cliente, et personne ne le saurait');
+
+const tourneeDuJour = tournee({}, [colisPour('c1', AUJOURDHUI), colisPour('c2', DEMAIN),
+                                   colisPour('c3', null)]).lignes[0];
+verifier("dans une vraie tournée, seuls les colis attendus aujourd'hui sont comptés",
+  tourneeDuJour.nbAPrendre === 2,
+  'attendu 2 : celui du jour et celui sans date. Celui de demain attend demain.');
+verifier("et la cliente n'est pas marquée « rien à récupérer » pour autant",
+  tourneeDuJour.rienARecuperer === false);
+
+verifier("la règle est écrite une seule fois, et les deux chemins de la tournée s'en servent",
+  (sourceConfig.match(/function colisAttenduAuPlusTard\s*\(/g) || []).length === 1
+  && (sourceConfig.match(/colisAttenduAuPlusTard\(c, jour\)/g) || []).length === 2,
+  'les clientes programmées ET les clientes hors programme doivent obéir à la même règle');
+
+titre("Ce que l'écran de la cliente demande et envoie");
+const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
+verifier("elle a un champ pour choisir le jour du passage",
+  /id="lotfr-jour-passage"/.test(fournisseur));
+verifier("avec « Aujourd'hui » et « Demain » à un seul appui",
+  /id="lotfr-jour-aujourdhui"/.test(fournisseur) && /id="lotfr-jour-demain"/.test(fournisseur));
+verifier("on ne peut pas demander un passage pour hier",
+  /lotfrJour\.min = todayLocalISODate\(\)/.test(fournisseur));
+verifier("le jour voyage avec la fournée, comme le lieu",
+  /jour_recuperation_prevu: \/\^/.test(fournisseur)
+  && /jour_recuperation_prevu: ctx\.jour_recuperation_prevu/.test(fournisseur));
+verifier("une date incomplète ne part pas en base : vide veut dire « dès que possible »",
+  /jour_recuperation_prevu: \/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\/\.test\(jour\) \? jour : null/.test(fournisseur));
+verifier("et si la migration SQL n'est pas passée, la fournée part quand même",
+  /jour_recuperation_prevu\|column\|colonne/.test(fournisseur)
+  && /destinataire_telephone, cle_creation, jour_recuperation_prevu, \.\.\.reste/.test(fournisseur),
+  'une commerçante ne doit jamais être bloquée parce qu\'un script n\'a pas encore été lancé');
+
+titre("Changer le livreur d'une programmation, sans la détruire");
+verifier("la carte d'une cliente programmée propose de changer son livreur",
+  /Changer le livreur<\/button>/.test(equipe));
+verifier("le geste réutilise le pré-remplissage, il n'écrit rien tout seul",
+  /data-prog-programmer="\$\{escapeHTML\(l\.fournisseurId\)\}\|\$\{escapeHTML\(String\(l\.livreurId \|\| ''\)\)\}\|/.test(equipe),
+  'un écran ne doit pas réaffecter un livreur sur un seul clic mal placé');
+verifier("le nombre annoncé revient dans le formulaire, pour être relu et non deviné",
+  /const \[fournisseurId, livreurId, nbAnnonce\]/.test(equipe)
+  && /nbColis\.value = \(nbAnnonce === undefined \? '' : nbAnnonce\)/.test(equipe));
+verifier("« Retirer de la tournée » reste offert à côté",
+  /data-prog-retirer/.test(equipe));
 
 /* ---------- Verdict ---------- */
 console.log('\n———');

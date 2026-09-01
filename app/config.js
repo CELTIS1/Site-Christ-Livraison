@@ -5794,7 +5794,9 @@ function tourneesDeRecuperation(options) {
     // jamais sur le nom : deux clientes peuvent porter le même nom de boutique.
     const siens = colis.filter(function (c) { return c && c.fournisseur_id === p.fournisseur_id; });
     const aPrendre = colisConnus
-      ? siens.filter(function (c) { return c.statut === "en_attente"; })
+      ? siens.filter(function (c) {
+          return c.statut === "en_attente" && colisAttenduAuPlusTard(c, jour);
+        })
       : [];
     const dejaPris = colisConnus
       ? siens.filter(function (c) { return jourEvenementColis(c, "recupere") === jour; })
@@ -5902,7 +5904,9 @@ function tourneesDeRecuperation(options) {
       parCouple.get(cle).push(c);
     });
     parCouple.forEach(function (siens, cle) {
-      const aPrendre = siens.filter(function (c) { return c.statut === "en_attente"; });
+      const aPrendre = siens.filter(function (c) {
+        return c.statut === "en_attente" && colisAttenduAuPlusTard(c, jour);
+      });
       const prisAujourdHui = siens.filter(function (c) {
         return jourEvenementColis(c, "recupere") === jour;
       });
@@ -6013,6 +6017,34 @@ function colonneAbsente(erreur) {
   if (String(erreur.code || "") === "42703") return true;
   const message = String(erreur.message || "") + " " + String(erreur.details || "");
   return /does not exist/i.test(message) && /column/i.test(message);
+}
+
+/* À PARTIR DE QUAND UN COLIS ENTRE DANS LA TOURNÉE. (31/08/2026)
+
+   Demandé par Celtis : « pour l'ajout des colis côté client il faudrait qu'ils puissent choisir
+   le jour qui leur convient — sinon, à la veille, ce qui est enregistré est considéré pour le
+   même jour, or c'est pour le lendemain qu'on veut ajouter. »
+
+   Une commerçante prépare ses colis le dimanche soir pour le passage du lundi matin. Sans jour
+   prévu, ils tombaient dans la tournée du dimanche soir : le livreur les voyait, la cliente ne
+   les attendait pas encore.
+
+   DEUX MOTS COMPTENT ICI, ET UN SEUL EST ÉCRIT.
+
+   « Jamais AVANT » : un colis prévu pour lundi n'apparaît pas dimanche. C'est la demande.
+
+   « Jamais après » n'existe pas. Un colis dont le jour est passé RESTE dans la tournée jusqu'à
+   ce qu'on le récupère. C'était la condition pour que ce champ soit sans danger : une date mal
+   saisie retarde un passage, elle ne fait pas disparaître un colis. Un colis qu'on ne voit plus
+   est une marchandise perdue chez une cliente, et personne ne saurait qu'elle manque.
+
+   Sans jour prévu — tous les colis d'avant le 31/08/2026, et tous ceux saisis sans y penser —
+   la réponse est oui, comme avant. */
+function colisAttenduAuPlusTard(colis, jour) {
+  const c = colis || {};
+  const prevu = c.jour_recuperation_prevu;
+  if (prevu === null || prevu === undefined || prevu === "") return true;
+  return String(prevu).slice(0, 10) <= String(jour).slice(0, 10);
 }
 
 /* CE QUE LA CLIENTE A ANNONCÉ, DIT SANS PARLER DE MANQUE. (30/08/2026, ajouté en relecture)

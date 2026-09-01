@@ -362,9 +362,13 @@ verifier(
   !/PRECACHE_URLS[\s\S]*?\]/.exec(sw)[0].includes('version.json')
 );
 
+/* Ce numéro est écrit en dur EXPRÈS. Il n'a pas pour but de vérifier une règle, mais d'obliger
+   celui qui touche à sw.js à s'arrêter une seconde : le banc rougit, on comprend pourquoi, on
+   incrémente les deux. Un contrôle qui se mettrait à jour tout seul ne servirait à rien.
+   v57, le 31/08/2026 — le jour du passage choisi par la cliente. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v56'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v57'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
