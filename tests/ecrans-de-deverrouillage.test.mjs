@@ -86,20 +86,33 @@ Object.entries(ecrans).forEach(([nom, source]) => {
 });
 
 /* ==========================================================================================
-   2. LE DÉCOR NE DÉPEND PAS DU THÈME
+   2. CHAQUE ÉCRAN DÉCLARE SES DEUX DÉCORS  (revu le 31/08/2026)
    ==========================================================================================
-   Un écran de déverrouillage est une porte, pas un contenu : il garde son apparence quel que
-   soit le thème choisi. Ce qui suppose qu'il déclare lui-même ce dont il a besoin, au lieu de
-   l'hériter. */
-titre('Chaque écran déclare son propre décor au lieu de l\'hériter');
+   Il suit maintenant le thème — « en mode clair, clair et visible ; en mode sombre, sombre et
+   propre comme actuellement » — mais il le fait en DÉCLARANT ses deux palettes, jamais en
+   héritant de celle du moment. C'est toute la différence avec la faute du matin : hériter,
+   c'est laisser une règle écrite pour un tableau de bord repeindre une porte.
+
+   theme.js pose data-theme="dark" en sombre et RETIRE l'attribut en clair. C'est donc son
+   absence qu'on cible ; une valeur "light" n'existe nulle part et ne s'appliquerait jamais. */
+titre('Chaque écran déclare ses deux décors au lieu d\'en hériter un');
 
 Object.entries(ecrans).forEach(([nom, source]) => {
   verifier(`${nom} remet à zéro les propriétés de boîte de son encadré`,
     /\.biocard\{[^}]*background:none[^}]*border:0[^}]*box-shadow:none/.test(source.replace(/\s*\+\s*'/g, '').replace(/'/g, '')),
     'sans cette remise à zéro, une règle globale peut lui rendre un fond, une bordure ou une ombre');
-  verifier(`${nom} fixe la couleur de son titre`,
+  verifier(`${nom} fixe la couleur de son titre en sombre`,
     /lock h2\{[^}]*color:#fff/.test(source.replace(/\s*\+\s*'/g, '').replace(/'/g, '')),
     'un titre sans couleur propre prend celle que le thème lui donne — bleu marine sur fond sombre');
+  verifier(`${nom} porte une palette claire, ciblée sur l'ABSENCE de data-theme`,
+    /html:not\(\[data-theme="dark"\]\)/.test(source),
+    'theme.js retire l\'attribut en clair : viser [data-theme="light"] ne s\'appliquerait jamais');
+  verifier(`${nom} rend son titre lisible en clair aussi`,
+    /html:not\(\[data-theme="dark"\]\)[^']*h2\{color:#12202E/.test(source),
+    'sans quoi on retombe sur du blanc sur blanc, la faute même de ce matin');
+  verifier(`${nom} donne un fond clair, et pas seulement du texte foncé`,
+    /html:not\(\[data-theme="dark"\]\) #clt-bio[a-z-]*\{background:radial-gradient/.test(source),
+    'du texte foncé sur un fond sombre serait l\'erreur exactement inverse');
 });
 
 /* ==========================================================================================

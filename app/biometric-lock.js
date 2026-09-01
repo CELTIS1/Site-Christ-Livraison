@@ -192,6 +192,22 @@
       'cursor:pointer;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);' +
       'border-radius:999px;padding:9px 18px;transition:background .15s ease;}' +
       '#clt-biolock .pw:active{background:rgba(255,255,255,.16);}' +
+      /* LE THÈME CLAIR. (31/08/2026)
+         Demandé par Celtis : « en mode clair, il faudrait que ce soit clair et visible ; en mode
+         sombre, sombre et propre comme actuellement ». Le sombre au-dessus n'est donc pas touché
+         d'une virgule : ces règles ne s'appliquent QUE hors thème sombre, et elles l'emportent
+         parce que html:not([data-theme]) ajoute un niveau de spécificité que le seul identifiant
+         n'a pas. theme.js pose data-theme="dark" en sombre et le RETIRE en clair — c'est donc
+         l'absence d'attribut qu'on cible, et non une valeur "light" qui n'existe pas.
+         Le contraste vise un téléphone en plein soleil d'Abidjan, pas un bureau : du gris pâle
+         sur fond blanc y devient invisible. */
+      'html:not([data-theme="dark"]) #clt-biolock{background:radial-gradient(125% 90% at 50% -10%, #ffffff 0%, #eef3f9 58%, #e3ebf4 100%);color:#12202E;}' +
+      'html:not([data-theme="dark"]) #clt-biolock h2{color:#12202E;}' +
+      'html:not([data-theme="dark"]) #clt-biolock p{color:rgba(18,32,46,.70);}' +
+      'html:not([data-theme="dark"]) #clt-biolock .ic{box-shadow:0 12px 30px rgba(18,32,46,.18), inset 0 0 0 1px rgba(18,32,46,.06);}' +
+      'html:not([data-theme="dark"]) #clt-biolock .pw{color:#12202E;background:rgba(18,32,46,.06);border:1px solid rgba(18,32,46,.14);}' +
+      'html:not([data-theme="dark"]) #clt-biolock .pw:active{background:rgba(18,32,46,.12);}' +
+      'html:not([data-theme="dark"]) #clt-biolock .err{color:#b3261e;}' +
       '</style>' +
       '<div class="biocard">' +
         '<div class="ic-wrap"><span class="ic-glow"></span><img class="ic" src="' + T.icon + '" alt=""></div>' +
