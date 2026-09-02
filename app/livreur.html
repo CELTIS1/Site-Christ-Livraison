@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260831logo">
-<script src="theme.js?v=20260831logo"></script>
+<link rel="stylesheet" href="style.css?v=20260901course">
+<script src="theme.js?v=20260901course"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -693,8 +693,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260831logo"></script>
-<script src="config.js?v=20260831logo"></script>
+<script src="clt-common.js?v=20260901course"></script>
+<script src="config.js?v=20260901course"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -1655,7 +1655,7 @@
     ).join('');
     return `
       <div class="field frais-exp-bloc" style="margin-top:8px; padding:8px 10px; border:1.5px solid #f0c48a; border-radius:10px; background:#fff8ef;">
-        <label style="font-size:11.5px; font-weight:700; color:#8a4b12;">🚌 Frais payés au transporteur</label>
+        <label style="font-size:11.5px; font-weight:700; color:#8a4b12;">🚌 ${escapeHTML(LIBELLE_FRAIS_EXPEDITION)} (payés au transporteur)</label>
         <div class="frais-exp-raccourcis">${raccourcis}</div>
         <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
           <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="1" placeholder="Autre montant" value="${escapeHTML(valeur)}" aria-label="Frais d'expédition payés au transporteur, en FCFA" style="flex:1; min-width:0;">
@@ -1686,7 +1686,7 @@
      portait qu'un montant global — voir montantsColisAEcrire(), dans config.js. */
   function montantsLigneHTML(c){
     return `<div class="meta colis-montants">💵 Article : <strong>${formatMontant(montantArticleColis(c))}</strong>`
-      + ` · Livraison : <strong>${formatMontant(montantLivraisonColis(c))}</strong></div>`;
+      + ` · ${escapeHTML(estExpedition(c) ? LIBELLE_FRAIS_COURSE : 'Livraison')} : <strong>${formatMontant(montantLivraisonColis(c))}</strong></div>`;
   }
 
   function montantsChampsHTML(c){
@@ -1697,15 +1697,19 @@
           À corriger seulement si le prix a changé : remise accordée, article différent, livraison
           renégociée. Ce que vous écrivez ici est ce que la cliente lira ce soir sur son relevé, et
           l'équipe voit chaque correction.
-        </div>
+        </div>${estExpedition(c) ? `
+        <div class="meta montants-avis" style="border-left:3px solid #f0c48a; padding-left:8px; color:#8a4b12;">
+          🚌 Expédition : vous n'encaissez rien chez le destinataire, il a déjà payé chez la
+          vendeuse. Les frais de course sont retenus sur elle, avec les frais d'expédition.
+        </div>` : ''}
         <div class="montants-grille">
           <label class="montant-case">
             <span>Article (à la cliente)</span>
             <input type="number" class="montant-article-input" inputmode="numeric" min="0" step="1" value="${montantArticleColis(c)}" aria-label="Montant de l'article, en FCFA">
           </label>
           <label class="montant-case">
-            <span>Livraison (à CLT)</span>
-            <input type="number" class="montant-livraison-input" inputmode="numeric" min="0" step="1" value="${montantLivraisonColis(c)}" aria-label="Montant de la livraison, en FCFA">
+            <span>${escapeHTML(libelleMontantLivraison(c))}</span>
+            <input type="number" class="montant-livraison-input" inputmode="numeric" min="0" step="1" value="${montantLivraisonColis(c)}" aria-label="${escapeHTML(libelleMontantLivraison(c))}, en FCFA">
           </label>
         </div>
         <button type="button" class="btn btn-sm btn-montants">Enregistrer les montants</button>

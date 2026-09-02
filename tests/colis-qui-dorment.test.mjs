@@ -92,13 +92,16 @@ function sansCommentaires(src){
 const contexte = vm.createContext({ console });
 
 vm.runInContext(constanteDe(sourceConfig, 'SEUIL_COLIS_QUI_DORT_JOURS', 'config.js'), contexte);
+// estExpedition() cite COMMUNE_EXPEDITION. Cette série ne l'appelait pas jusqu'au
+// 01/09/2026 ; depuis, articleEncaisse() et livraisonEncaissee() passent par lui.
+vm.runInContext(constanteDe(sourceConfig, 'COMMUNE_EXPEDITION', 'config.js'), contexte);
 vm.runInContext([
   'estExpedition',
   'colisADetailMontant',
   'montantArticleColis',
   'montantLivraisonColis',
   'montantTotalColis',
-  'fraisExpeditionColis',
+  'fraisExpeditionColis', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse',
   'articleEncaisse',
   'livraisonEncaissee',
   'montantArticleEncaisse',

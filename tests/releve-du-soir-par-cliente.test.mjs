@@ -103,14 +103,14 @@ vm.runInContext([
 
 vm.runInContext([
   'estExpedition', 'colisADetailMontant', 'montantArticleColis', 'montantLivraisonColis',
-  'montantTotalColis', 'fraisExpeditionColis', 'articleEncaisse', 'livraisonEncaissee',
+  'montantTotalColis', 'fraisExpeditionColis', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse', 'articleEncaisse', 'livraisonEncaissee',
   'montantArticleEncaisse', 'montantLivraisonEncaissee', 'montantArticleADevoir',
   'fraisExpeditionADevoir', 'montantNetADevoir', 'fraisExpeditionARembourser',
   'montantEnMainDuLivreur', 'montantManquantALaLivraison', 'totauxArgent',
   'piedTotalHTML', 'echapperAttribut', 'statutBadgeHTML',
   'statutTexte', 'releveCliente', 'releveTotalTextes', 'relevePiedCellules',
   'texteAplatiPourPDF', 'celluleAplatiePourPDF', 'nouveauPDF',
-  'relevePhraseDue', 'releveNomFichier',
+  'relevePhraseDue', 'releveDetailRetenues', 'releveNomFichier',
   // Le relevé du soir ne dessine plus son en-tête : il passe par le papier à en-tête de la
   // maison, comme les six autres documents de l'application. Toute cette chaîne doit donc être
   // là, sans quoi releveConstruirePDF tombe sur un documentCLT introuvable. Ce qui se vérifie
@@ -148,6 +148,7 @@ vm.runInContext([
 
 const {
   releveCliente, releveTotalTextes, relevePiedCellules, relevePhraseDue, releveNomFichier, releveLignesTexte,
+  releveDetailRetenues,
   releveConstruireWordHTML, releveBarreHTML, renderRecapBilan, recapDayGroups, releveConstruirePDF,
   texteAplatiPourPDF, releveTableauPDF,
 } = contexte;
@@ -240,8 +241,14 @@ const r = releveCliente(COLIS_F1);
 verifier("une ligne par colis, dans l'ordre de la liste", r.lignes.length === 5
   && r.lignes[0].adresse === 'Abobo Doumé' && r.lignes[4].adresse === 'Treichville');
 
+/* « Encaissé » est devenu « Vous revient » le 01/09/2026. Ce n'est pas un habillage : l'ancienne
+   colonne disait ce qui était rentré dans NOTRE caisse, et le bas de page annonçait ce total
+   comme la somme due à la vendeuse. Les deux coïncidaient tant qu'il n'y avait rien à retenir ;
+   dès qu'une expédition entre dans le lot, l'argent rentré et l'argent dû cessent d'être le même
+   nombre. La colonne dit donc maintenant ce qu'elle sert à dire. */
 verifier("les six colonnes sont annoncées, dans l'ordre",
-  r.colonnes.join('|') === 'Téléphone|Adresse|Statut|Article|Encaissé|Observation');
+  r.colonnes.join('|') === 'Téléphone|Adresse|Statut|Article|Vous revient|Observation',
+  'obtenu : ' + r.colonnes.join('|'));
 
 verifier("le total « Article » compte tout ce qui a été enregistré",
   r.totalArticle === 15000 + 25000 + 18000 + 30000 + 12000,
@@ -786,8 +793,18 @@ verifier("la note est écrite une seule fois, dans config.js",
 // Un `const` déclaré dans un contexte vm vit dans la portée lexicale globale et n'apparaît
 // PAS comme propriété du bac à sable : on le relit donc en exécutant son nom.
 const noteTexte = vm.runInContext('RELEVE_NOTE', contexte);
-verifier("la note dit que c'est l'encaissé qui revient à la cliente",
-  /Encaissé[\s\S]*revient à la cliente/.test(noteTexte), 'obtenu : ' + noteTexte);
+/* Ce contrôle exigeait, jusqu'au 01/09/2026, que la note désigne « Encaissé » comme la somme
+   due. C'était vrai tant qu'il n'y avait rien à retenir, et faux dès la première expédition :
+   l'argent rentré dans notre caisse et l'argent dû à la vendeuse cessent alors d'être le même
+   nombre. La colonne s'appelle désormais « Vous revient » et la note explique les deux frais.
+   Ce qu'on garde ici, c'est ce qui n'a pas changé et ne doit pas changer : la note doit nommer
+   la colonne qui porte le total, et dire que ce total est ce qu'on lui reverse. */
+verifier("la note nomme la colonne qui porte la somme due",
+  /Vous revient[\s\S]*à vous reverser/.test(noteTexte), 'obtenu : ' + noteTexte);
+verifier("elle explique les deux frais d'une expédition, et qui a déjà payé",
+  /frais d'expédition/.test(noteTexte) && /frais de course/.test(noteTexte)
+  && /déjà payée/.test(noteTexte),
+  'une vendeuse doit pouvoir comprendre une ligne négative sans appeler');
 
 /* ============================================================================================
    8. L'ENVOI DIRECT

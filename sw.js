@@ -45,6 +45,12 @@
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même.
 
    26 août 2026 — v56 : ajout de l'exception app/version.json (voir plus bas).
+   1er septembre 2026 — v60 : l'argent des expéditions. Sur une expédition, CLT n'encaisse
+   rien — le destinataire a déjà payé chez la vendeuse — et deux frais se retiennent sur
+   elle : les frais d'expédition (le transporteur) et les frais de course (le livreur).
+   config.js, equipe.html, livreur.html, fournisseur.html et clt-common.js changent tous :
+   sans nouveau numéro, un téléphone garderait l'ancien calcul et annoncerait un autre
+   chiffre que celui du bureau, sur de l'argent.
    31 août 2026 — v59 : l'écran d'ouverture retrouve ses 2 100 ms. Le raccourci de v58
    partait d'une mauvaise lecture : ce n'est pas le logo qui est long, c'est ce qui suit
    l'appui sur « Déverrouiller ». L'animation est voulue, on la garde.
@@ -54,7 +60,7 @@
    sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
    pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v59';
+const CACHE_VERSION = 'clt-shell-v60';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.

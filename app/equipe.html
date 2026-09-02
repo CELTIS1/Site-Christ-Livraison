@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260831logo">
-<script src="theme.js?v=20260831logo"></script>
+<link rel="stylesheet" href="style.css?v=20260901course">
+<script src="theme.js?v=20260901course"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1160,10 +1160,10 @@ quand vous reposez la tournée avec le vrai nombre.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260831logo"></script>
-<script src="config.js?v=20260831logo"></script>
+<script src="clt-common.js?v=20260901course"></script>
+<script src="config.js?v=20260901course"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260831logo"></script>
+<script src="clt-select-recherche.js?v=20260901course"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -6107,7 +6107,7 @@ if (!cltPoserHTML(body, `
 <div class="recap-day-money">
 Articles enregistrés : <strong>${formatMontant(tJour.articleEnregistre) || '0 FCFA'}</strong> ·
 Articles encaissés : <strong>${formatMontant(tJour.articleEncaisse) || '0 FCFA'}</strong> ·
-Frais de livraison encaissés : <strong>${formatMontant(tJour.livraisonEncaissee) || '0 FCFA'}</strong>
+Frais de livraison CLT : <strong>${formatMontant(tJour.recetteLivraison) || '0 FCFA'}</strong>
 </div>
 ${recapExportBarHTML()}
 ${recapSearchBarHTML()}
@@ -6161,7 +6161,7 @@ const rows = r.lignes.map(l => `
 <td data-label="Adresse">${l.adresse ? escapeHTML(l.adresse) : '—'}</td>
 <td data-label="Statut">${statutBadgeHTML(l.statutCode)}</td>
 <td data-label="Article">${formatMontant(l.article) || '0 FCFA'}</td>
-<td data-label="Encaissé" style="${l.encaisse ? 'font-weight:700;' : 'color:#8a94a3;'}">${l.encaisse ? formatMontant(l.encaisse) : '—'}</td>
+<td data-label="Vous revient" style="${l.encaisse ? 'font-weight:700;' : 'color:#8a94a3;'}${l.encaisse < 0 ? ' color:#c0392b;' : ''}">${l.encaisse ? formatMontant(l.encaisse) : '—'}</td>
 <td data-label="Observation">${l.observation ? escapeHTML(l.observation) : '—'}</td>
 </tr>`).join('');
 
@@ -6171,7 +6171,7 @@ return `
 <div class="recap-bilan-title">${fournisseurLabel(fid)}</div>
 <button type="button" class="btn btn-outline btn-sm" id="recap-ecran" title="Voir sa journée telle qu'elle la voit dans son espace">👁 Son écran</button>
 </div>
-<div class="recap-bilan-sub">${recapDayLabel(recapGetDate())} · <strong>${r.nb}</strong> colis · <strong>${r.nbLivres}</strong> livré${r.nbLivres > 1 ? 's' : ''} · Articles encaissés : <strong>${formatMontant(r.totalEncaisse) || '0 FCFA'}</strong></div>
+<div class="recap-bilan-sub">${recapDayLabel(recapGetDate())} · <strong>${r.nb}</strong> colis · <strong>${r.nbLivres}</strong> livré${r.nbLivres > 1 ? 's' : ''} · Somme qui lui revient : <strong style="color:${r.totalEncaisse < 0 ? '#c0392b' : 'inherit'};">${formatMontant(r.totalEncaisse) || '0 FCFA'}</strong></div>
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
 <thead><tr>${r.colonnes.map(c => `<th>${escapeHTML(c)}</th>`).join('')}</tr></thead>
@@ -6179,9 +6179,14 @@ return `
 ${piedTotalHTML(relevePiedCellules(r))}
 </table>
 </div>
+<!-- La phrase n'est plus recopiée ici. Elle l'a été jusqu'au 1er septembre 2026, et cette copie
+     avait déjà cessé de dire la même chose que l'originale : RELEVE_NOTE, dans config.js, part
+     avec le PDF, l'Excel et le Word chez la vendeuse, celle-ci restait à l'écran de l'équipe.
+     Deux textes pour une seule règle, c'est un des deux qu'on oublie de corriger — et comme il
+     s'agit d'argent, l'écart se découvre au téléphone, face à quelqu'un qui a le papier. -->
 <div class="recap-bilan-note">
-La colonne <strong>Article</strong> dit ce qui a été enregistré, la colonne <strong>Encaissé</strong> ce qui est réellement rentré (colis livrés).
-C'est le total <strong>Encaissé</strong> qui revient à la cliente. Les frais de livraison ne figurent pas dans ce tableau : ils reviennent à CLT.
+${escapeHTML(RELEVE_NOTE)}
+${releveDetailRetenues(r) ? `<div style="margin-top:6px; font-weight:600; color:#8a4b12;">${escapeHTML(releveDetailRetenues(r))}</div>` : ''}
 </div>
 ${releveBarreHTML()}`;
 }
@@ -6671,9 +6676,16 @@ mention: `${d.dateLabel}  ·  ${d.r.nb} colis  ·  ${d.r.nbLivres} livré(s)`,
 tableau: releveTableauPDF(d.r),
 apres: [
 // La phrase due reste en vert : c'est la seule ligne que la vendeuse lit vraiment.
-{ texte: relevePhraseDue(d.r), taille: 12, gras: true, couleur: [26, 125, 60] },
+// En rouge quand c'est ELLE qui doit — le sens s'inverse, la couleur suit, sans quoi une
+// somme à payer se lirait comme une somme à recevoir.
+{ texte: relevePhraseDue(d.r), taille: 12, gras: true,
+  couleur: Number(d.r.totalEncaisse) < 0 ? [192, 57, 43] : [26, 125, 60] },
+].concat(releveDetailRetenues(d.r)
+  ? [{ texte: releveDetailRetenues(d.r), taille: 9.5, gras: true, couleur: [138, 75, 18], avant: 3 }]
+  : []
+).concat([
 { texte: RELEVE_NOTE, taille: 8, avant: 8 },
-],
+]),
 });
 }
 
@@ -6704,6 +6716,7 @@ aoa.push([l.telephone || '', l.adresse || '', l.statut, l.article, l.encaisse, l
 aoa.push(['TOTAL', '', d.r.nbLivres + ' / ' + d.r.nb + ' livré(s)', d.r.totalArticle, d.r.totalEncaisse, '']);
 aoa.push([]);
 aoa.push([relevePhraseDue(d.r)]);
+if (releveDetailRetenues(d.r)) aoa.push([releveDetailRetenues(d.r)]);
 aoa.push([RELEVE_NOTE]);
 const ws = XLSX.utils.aoa_to_sheet(aoa);
 ws['!cols'] = [{ wch: 16 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 32 }];
@@ -6737,6 +6750,7 @@ th{background:#1B4374;color:#fff;text-align:left;padding:5pt 6pt;border:1px soli
 td{padding:5pt 6pt;border:1px solid #c9d2dd;vertical-align:top;}
 td.tot{background:#eef0f3;color:#1B4374;font-weight:bold;}
 .due{margin-top:14pt;font-size:12pt;font-weight:bold;color:#1a7d3c;}
+.retenues{margin-top:4pt;font-size:9.5pt;font-weight:bold;color:#8a4b12;}
 .note{margin-top:10pt;font-size:8.5pt;color:#6e6e6e;}
 </style></head>
 <body>
@@ -6744,7 +6758,8 @@ td.tot{background:#eef0f3;color:#1B4374;font-weight:bold;}
 <h2>${escapeHTML(d.nom)}</h2>
 <p class="sous">${escapeHTML(d.dateLabel)} · ${d.r.nb} colis · ${d.r.nbLivres} livré(s)</p>
 <table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody><tfoot><tr>${tot}</tr></tfoot></table>
-<p class="due">${escapeHTML(relevePhraseDue(d.r))}</p>
+<p class="due" ${Number(d.r.totalEncaisse) < 0 ? 'style="color:#c0392b;"' : ''}>${escapeHTML(relevePhraseDue(d.r))}</p>
+${releveDetailRetenues(d.r) ? `<p class="retenues">${escapeHTML(releveDetailRetenues(d.r))}</p>` : ''}
 <p class="note">${escapeHTML(RELEVE_NOTE)}</p>
 </body></html>`;
 }
@@ -7409,12 +7424,18 @@ const fournisseurId = document.getElementById('compta-fournisseur')?.value || ''
 const t = totauxArgent(rows);
 // Trois chiffres, trois natures. On les nomme en toutes lettres plutôt que « montant total » /
 // « montant livré », qui ne disaient ni de quelle poche il s'agissait ni dans quel état.
+//
+// « À reverser aux clientes » lit netADevoir depuis le 1er septembre 2026, et non plus
+// articleADevoir. Les deux ne diffèrent que sur les expéditions — mais c'est justement là que
+// ce tableau servait à préparer des paiements : il annonçait le brut, frais non retenus, donc
+// plus d'argent que le relevé envoyé à la même cliente le même soir n'en promettait. Deux
+// chiffres pour la même dette, et c'est le plus élevé qui servait à payer.
 cltPoserHTML(summary, `
 <div class="page-sub">
 ${t.nb} colis · ${t.nbLivres} livré(s) ·
 Articles enregistrés : <strong>${formatMontant(t.articleEnregistre) || '0 FCFA'}</strong> ·
 Articles encaissés : <strong>${formatMontant(t.articleEncaisse) || '0 FCFA'}</strong> ·
-À reverser aux clientes : <strong style="color:${t.articleADevoir > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(t.articleADevoir) || '0 FCFA'}</strong>
+À reverser aux clientes : <strong style="color:${t.netADevoir > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(t.netADevoir) || '0 FCFA'}</strong>
 ${t.manquantALaLivraison > 0 ? ` · <strong style="color:#c0392b;">Non encaissé à la livraison : ${formatMontant(t.manquantALaLivraison)}</strong>` : ''}
 </div>
 `);
@@ -7443,7 +7464,7 @@ ${recapRows.map(r => `
 <td data-label="Livrés">${r.t.nbLivres}</td>
 <td data-label="Articles enregistrés">${formatMontant(r.t.articleEnregistre) || '0 FCFA'}</td>
 <td data-label="Articles encaissés">${formatMontant(r.t.articleEncaisse) || '0 FCFA'}</td>
-<td data-label="À reverser" style="color:${r.t.articleADevoir > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.t.articleADevoir) || '0 FCFA'}</td>
+<td data-label="À reverser" style="color:${r.t.netADevoir > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.t.netADevoir) || '0 FCFA'}</td>
 </tr>
 `).join('')}
 </tbody>
@@ -7453,7 +7474,7 @@ ${piedTotalHTML([
 { texte: t.nbLivres, label: 'Livrés' },
 { texte: formatMontant(t.articleEnregistre) || '0 FCFA', label: 'Articles enregistrés' },
 { texte: formatMontant(t.articleEncaisse) || '0 FCFA', label: 'Articles encaissés' },
-{ texte: formatMontant(t.articleADevoir) || '0 FCFA', couleur: t.articleADevoir > 0 ? '#c0392b' : '#1a7d3c', label: 'À reverser' },
+{ texte: formatMontant(t.netADevoir) || '0 FCFA', couleur: t.netADevoir > 0 ? '#c0392b' : '#1a7d3c', label: 'À reverser' },
 ])}
 </table>
 </div>
@@ -7509,7 +7530,7 @@ ${piedTotalHTML([
 { texte: tDetail.nbLivres + ' livré(s)', label: 'Statut' },
 { texte: formatMontant(tDetail.articleEnregistre) || '0 FCFA', label: 'Article' },
 { texte: formatMontant(tDetail.articleEncaisse) || '0 FCFA', label: 'Encaissé' },
-{ texte: 'À reverser : ' + (formatMontant(tDetail.articleADevoir) || '0 FCFA'), couleur: tDetail.articleADevoir > 0 ? '#c0392b' : '#1a7d3c' },
+{ texte: 'À reverser : ' + (formatMontant(tDetail.netADevoir) || '0 FCFA'), couleur: tDetail.netADevoir > 0 ? '#c0392b' : '#1a7d3c' },
 { texte: '' },
 { texte: '' },
 { texte: '' },
@@ -8553,7 +8574,7 @@ Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
 'Article encaissé': montantArticleEncaisse(c) || 0,
 'Livraison enregistrée': montantLivraisonColis(c) || 0,
 'Livraison encaissée': montantLivraisonEncaissee(c) || 0,
-'À reverser à la cliente': resteArticleADevoir(c) || 0,
+'À reverser à la cliente': montantNetADevoir(c) || 0,
 "État de l'argent": articlePaiementLabel(c),
 Observation: c.observation || '',
 Date: formatDate(c.created_at),
@@ -8569,7 +8590,7 @@ Statut: '',
 'Article encaissé': tExport.articleEncaisse,
 'Livraison enregistrée': tExport.livraisonEnregistree,
 'Livraison encaissée': tExport.livraisonEncaissee,
-'À reverser à la cliente': tExport.articleADevoir,
+'À reverser à la cliente': tExport.netADevoir,
 "État de l'argent": '',
 Observation: '',
 Date: '',
@@ -8618,7 +8639,7 @@ totaux[id].nb,
 totaux[id].nbLivres,
 formatMontant(totaux[id].articleEnregistre) || '0 FCFA',
 formatMontant(totaux[id].articleEncaisse) || '0 FCFA',
-formatMontant(totaux[id].articleADevoir) || '0 FCFA',
+formatMontant(totaux[id].netADevoir) || '0 FCFA',
 ]),
 foot: [[
 'TOTAL',
@@ -8626,7 +8647,7 @@ t.nb,
 t.nbLivres,
 formatMontant(t.articleEnregistre) || '0 FCFA',
 formatMontant(t.articleEncaisse) || '0 FCFA',
-formatMontant(t.articleADevoir) || '0 FCFA',
+formatMontant(t.netADevoir) || '0 FCFA',
 ]],
 } });
 }
@@ -8668,8 +8689,11 @@ mention: `${t.nb} colis  ·  ${t.nbLivres} livré(s)`,
 sections,
 apres: [
 // Deux lignes séparées : l'argent des clientes d'un côté, celui de CLT de l'autre.
-{ texte: `Articles : ${formatMontant(t.articleEnregistre) || '0 FCFA'} enregistrés  ·  ${formatMontant(t.articleEncaisse) || '0 FCFA'} encaissés  ·  ${formatMontant(t.articleADevoir) || '0 FCFA'} à reverser aux clientes`, taille: 9.5 },
-{ texte: `Frais de livraison CLT : ${formatMontant(t.livraisonEncaissee) || '0 FCFA'} encaissés`, taille: 10, gras: true, couleur: [27, 67, 116], avant: 6 },
+{ texte: `Articles : ${formatMontant(t.articleEnregistre) || '0 FCFA'} enregistrés  ·  ${formatMontant(t.articleEncaisse) || '0 FCFA'} encaissés  ·  ${formatMontant(t.netADevoir) || '0 FCFA'} à reverser aux clientes`, taille: 9.5 },
+// `recetteLivraison` et non `livraisonEncaissee` : sur une expédition, la course de CLT
+// est encaissée par retenue sur la vendeuse et non en billets. Lire la seconde ferait
+// disparaître cette recette de la comptabilité — 3 000 F évaporés sur la journée mesurée.
+{ texte: `Frais de livraison CLT : ${formatMontant(t.recetteLivraison) || '0 FCFA'} (billets et retenues)`, taille: 10, gras: true, couleur: [27, 67, 116], avant: 6 },
 ],
 });
 doc.save(`comptabilite-${new Date().toISOString().slice(0, 10)}.pdf`);

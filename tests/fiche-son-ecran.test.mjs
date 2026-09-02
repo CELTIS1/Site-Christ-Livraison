@@ -129,6 +129,10 @@ function sansCommentaires(src){
 const contexte = vm.createContext({ console });
 
 vm.runInContext(constanteTexteDe(sourceConfig, 'COMMUNE_EXPEDITION'), contexte);
+// Les deux libellés partagés, depuis le 01/09/2026 : les tuiles du relevé les citent au lieu
+// de recopier les mots « Frais d'expédition » et « Frais de course ».
+vm.runInContext(constanteTexteDe(sourceConfig, 'LIBELLE_FRAIS_EXPEDITION'), contexte);
+vm.runInContext(constanteTexteDe(sourceConfig, 'LIBELLE_FRAIS_COURSE'), contexte);
 vm.runInContext(blocConstante(sourceConfig, 'STATUTS', 'config.js').replace(/^const /, 'var '), contexte);
 
 vm.runInContext([
@@ -137,7 +141,7 @@ vm.runInContext([
   'montantArticleColis',
   'montantLivraisonColis',
   'montantTotalColis',
-  'fraisExpeditionColis',
+  'fraisExpeditionColis', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse',
   'articleEncaisse',
   'livraisonEncaissee',
   'montantArticleEncaisse',

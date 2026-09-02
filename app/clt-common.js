@@ -71,11 +71,20 @@ function todayLocalISODate() {
 }
 
 // ---------- Montants (FCFA) ----------
+// UN SEUL SIGNE MOINS DANS TOUT LE PRODUIT — 1er septembre 2026.
+// toLocaleString rend le trait d'union du clavier (U+002D) devant un nombre négatif, alors que
+// partout ailleurs l'application écrit le vrai signe moins des mathématiques (U+2212) : « −2 500
+// Payé à la gare », « −3 000 Frais de course ». Les deux se ressemblent assez pour qu'on ne les
+// distingue pas en lisant, et assez peu pour qu'ils ne s'alignent pas dans une colonne de
+// chiffres. Sur un relevé envoyé à une vendeuse, deux moins différents côte à côte donnent
+// l'impression d'un document bricolé — et c'est exactement l'endroit où il ne faut pas.
+// Le passage en PDF est déjà couvert : REMPLACEMENTS_PDF_CLT ramène U+2212 au trait d'union
+// ASCII juste avant l'impression, parce que les polices standard ne le connaissent pas.
 function formatMontant(n) {
   if (n === null || n === undefined || n === "") return "";
   const num = Number(n);
   if (isNaN(num)) return "";
-  return num.toLocaleString("fr-FR") + " FCFA";
+  return num.toLocaleString("fr-FR").replace(/^-/, "−") + " FCFA";
 }
 
 // ---------- Validation numéro de téléphone ivoirien ----------

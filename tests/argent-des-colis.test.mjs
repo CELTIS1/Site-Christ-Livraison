@@ -101,7 +101,7 @@ vm.runInContext([
   'montantArticleColis',
   'montantLivraisonColis',
   'montantTotalColis',
-  'fraisExpeditionColis',
+  'fraisExpeditionColis', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse',
   'fraisExpeditionADevoir',
   'montantNetADevoir',
   'articleEncaisse',
@@ -125,6 +125,7 @@ const {
   estExpedition, COMMUNE_EXPEDITION,
   montantArticleColis, montantLivraisonColis, montantTotalColis,
   fraisExpeditionColis, fraisExpeditionADevoir, montantNetADevoir,
+  fraisCourseColis, fraisCourseADevoir,
   articleEncaisse, livraisonEncaissee,
   montantArticleEncaisse, montantLivraisonEncaissee, montantArticleADevoir,
   fraisExpeditionARembourser,
@@ -340,18 +341,44 @@ titre('Règle 5 — encaissé = déjà reversé + reste dû, toujours et partout
 }
 
 /* ==========================================================================================
-   5 bis. LES FRAIS D'EXPÉDITION SORTENT DE L'ARGENT DE LA CLIENTE — 25/08/2026
+   5 bis. L'ARGENT D'UNE EXPÉDITION — 25/08/2026, REVU LE 01/09/2026
 
    Un colis pour Bouaké ne se livre pas : le livreur le porte à la gare et paie un transporteur.
    L'application n'ayant aucun endroit pour l'écrire, l'usage était de retrancher la somme du
-   montant de livraison. Cela fausse deux chiffres d'un coup : la recette de CLT baisse d'un
-   argent qu'elle n'a jamais perdu, et la cliente se voit reverser son article entier alors que
-   l'expédition a été payée pour son compte. L'entreprise perd donc deux fois.
+   montant de livraison. Cela faussait deux chiffres d'un coup : la recette de CLT baissait d'un
+   argent qu'elle n'a jamais perdu, et la cliente se voyait reverser son article entier alors
+   que l'expédition avait été payée pour son compte. L'entreprise perdait donc deux fois. Le
+   25 août, une AVANCE a été créée pour porter ce montant à part.
 
-   Ces contrôles gardent la seule lecture juste : une AVANCE, retenue sur ce qu'on doit à la
-   cliente, et qui ne touche jamais à l'argent des livraisons.
+   CE QUI CHANGE LE 1er SEPTEMBRE 2026, ET POURQUOI CETTE SECTION EST RÉÉCRITE
+   --------------------------------------------------------------------------
+   La section d'août supposait que, sur une expédition comme ailleurs, CLT encaissait l'article
+   chez le destinataire et gardait le montant de livraison. Interrogé le 31 août, Celtis a
+   décrit tout autre chose :
+
+     « Les livreurs n'encaissent pas l'argent au destinataire, parce que le destinataire paye
+       en avance chez la vendeuse. Il y a le montant que le transporteur réclame, et il y a le
+       montant de la course du livreur. Sur le relevé, pour chaque expédition, les montants
+       sont négatifs et réduisent le total qui doit revenir au client. »
+
+   Sur une expédition, donc, le livreur ne tend la main à personne. La vendeuse a déjà son
+   argent. Deux sommes lui restent dues, et elles se retiennent sur ce qu'on lui reverse :
+     • FRAIS D'EXPÉDITION — ce que le transporteur prend  → frais_expedition
+     • FRAIS DE COURSE    — le déplacement du livreur     → montant_livraison
+
+   Les chiffres attendus ci-dessous ont donc changé, et c'est délibéré : ce n'est pas le calcul
+   qui s'est mis à répondre autre chose, c'est la question qui n'était pas la bonne. On ne
+   relâche rien pour autant — chaque égalité reste exacte, seule la valeur attendue bouge, et
+   la série qui instruit ce sujet en entier est tests/l-argent-de-l-expedition.test.mjs.
+
+   MESURÉ AVANT D'ÉCRIRE : une seule expédition dans tout l'historique, article 0, gare 0,
+   livraison 3 000. Aucune vendeuse n'a donc jamais été payée sur l'ancienne lecture.
+
+   CE QUI NE CHANGE PAS, et c'est l'essentiel de la règle d'août : les frais ne se retranchent
+   JAMAIS de l'argent des livraisons ordinaires. La recette de CLT sur les colis d'Abidjan ne
+   bouge pas d'un franc.
    ========================================================================================== */
-titre("Règle 6 — les frais d'expédition se retiennent sur la cliente, jamais sur la livraison");
+titre("Règle 6 — sur une expédition, CLT n'encaisse rien et retient deux frais");
 
 {
   const abidjan   = colis({ statut: 'livre', montant_article: 20000, montant_livraison: 1500 });
@@ -363,52 +390,62 @@ titre("Règle 6 — les frais d'expédition se retiennent sur la cliente, jamais
   verifier('la commune « Expédition (intérieur) » en est une',
     estExpedition(expedition) && estExpedition(COMMUNE_EXPEDITION));
 
-  verifier("l'argent des livraisons ne bouge pas d'un franc",
-    montantLivraisonEncaissee(expedition) === 3000,
-    'c\'est l\'erreur exacte qu\'on corrige : les frais ne s\'y retranchent pas');
-  verifier("l'article de la cliente reste annoncé en entier",
-    montantArticleColis(expedition) === 20000);
-  verifier('la retenue apparaît telle quelle',
-    fraisExpeditionColis(expedition) === 2500 && fraisExpeditionADevoir(expedition) === 2500);
-  verifier('ce qu\'on doit vraiment à la cliente est l\'article moins l\'avance',
-    montantNetADevoir(expedition) === 17500,
-    `attendu 17 500, obtenu ${montantNetADevoir(expedition)}`);
+  verifier("le livreur n'encaisse rien chez le destinataire",
+    montantLivraisonEncaissee(expedition) === 0 && montantArticleEncaisse(expedition) === 0,
+    'le destinataire a payé en avance chez la vendeuse : il n\'y a personne à qui réclamer');
+  verifier("le montant de l'article reste enregistré, il n'est simplement pas encaissé",
+    montantArticleColis(expedition) === 20000,
+    'on n\'efface pas un chiffre saisi ; on cesse seulement de le compter comme rentré');
+  verifier('les deux retenues apparaissent telles quelles',
+    fraisExpeditionADevoir(expedition) === 2500 && fraisCourseADevoir(expedition) === 3000);
+  verifier('ce qu\'on doit à la cliente est donc négatif : c\'est elle qui doit',
+    montantNetADevoir(expedition) === -5500,
+    `attendu −5 500 (0 − 2 500 − 3 000), obtenu ${montantNetADevoir(expedition)}`);
   verifier('un colis sans expédition ne subit aucune retenue',
-    fraisExpeditionColis(abidjan) === 0 && montantNetADevoir(abidjan) === 20000);
+    fraisExpeditionColis(abidjan) === 0 && fraisCourseColis(abidjan) === 0
+    && montantNetADevoir(abidjan) === 20000);
 
-  verifier("le livreur ne doit pas remettre l'argent qu'il a laissé à la gare",
-    montantEnMainDuLivreur(expedition) === 20000 + 3000 - 2500,
-    `attendu 20 500, obtenu ${montantEnMainDuLivreur(expedition)}`);
+  verifier("le livreur ne tient que sa perte de gare",
+    montantEnMainDuLivreur(expedition) === -2500,
+    `il a sorti 2 500 F et n'a rien encaissé en face ; obtenu ${montantEnMainDuLivreur(expedition)}`);
 
   const t = totauxArgent([abidjan, expedition]);
-  verifier('le total des livraisons ignore complètement les frais de gare',
-    t.livraisonEncaissee === 4500, String(t.livraisonEncaissee));
+  verifier("l'argent des livraisons ordinaires ne bouge pas d'un franc",
+    t.livraisonEncaissee === 1500, String(t.livraisonEncaissee));
   verifier('les avances sont totalisées à part, et comptées',
     t.fraisExpedition === 2500 && t.nbExpeditions === 1, JSON.stringify(t));
-  verifier('le net à reverser retranche les avances du brut',
-    t.netADevoir === t.articleADevoir - t.fraisExpeditionADevoir && t.netADevoir === 37500,
-    JSON.stringify({ net: t.netADevoir, brut: t.articleADevoir, av: t.fraisExpeditionADevoir }));
+  verifier('les frais de course le sont aussi, sur leur propre ligne',
+    t.fraisCourse === 3000 && t.fraisCourseADevoir === 3000,
+    'les fondre avec les précédents ferait perdre la séparation qu\'on vient d\'obtenir');
+  verifier('le net à reverser retranche les DEUX frais du brut',
+    t.netADevoir === t.articleADevoir - t.fraisExpeditionADevoir - t.fraisCourseADevoir
+    && t.netADevoir === 14500,
+    JSON.stringify({ net: t.netADevoir, brut: t.articleADevoir,
+                     gare: t.fraisExpeditionADevoir, course: t.fraisCourseADevoir }));
   verifier('« total en main » et « total encaissé » restent deux chiffres distincts',
-    t.totalEncaisse === 44500 && t.totalEnMain === 42000,
+    t.totalEncaisse === 21500 && t.totalEnMain === 19000,
     JSON.stringify({ enc: t.totalEncaisse, main: t.totalEnMain }));
 }
 {
-  // Le reversement solde tout. Reprendre l'avance après coup la compterait deux fois : la
-  // cliente se verrait retenir 2 500 F qu'on lui a déjà retenus le jour du paiement.
-  const solde = colis({ statut: 'livre', montant_article: 20000,
+  // Le reversement solde tout. Reprendre les frais après coup les compterait deux fois : la
+  // cliente se verrait retenir des sommes qu'on lui a déjà retenues le jour du paiement.
+  const solde = colis({ statut: 'livre', montant_article: 20000, montant_livraison: 3000,
     commune_destination: COMMUNE_EXPEDITION, frais_expedition: 2500,
     reverse_au_fournisseur_at: '2026-08-24T10:00:00Z' });
-  verifier('une fois la cliente payée, l\'avance ne se reprend plus',
-    fraisExpeditionADevoir(solde) === 0 && montantNetADevoir(solde) === 0);
+  verifier('une fois la cliente payée, les deux frais ne se reprennent plus',
+    fraisExpeditionADevoir(solde) === 0 && fraisCourseADevoir(solde) === 0
+    && montantNetADevoir(solde) === 0);
 }
 {
-  // Petit article expédié loin : les frais dépassent ce qu'on lui doit. Le signe négatif est
-  // la vérité — c'est elle qui doit la différence à CLT. Le ramener à zéro effacerait une
-  // créance réelle, et personne ne saurait jamais qu'elle a existé.
-  const deficit = colis({ statut: 'livre', montant_article: 1000,
-    commune_destination: COMMUNE_EXPEDITION, frais_expedition: 5000 });
-  verifier('quand les frais dépassent l\'article, le net devient négatif et le reste',
-    montantNetADevoir(deficit) === -4000, String(montantNetADevoir(deficit)));
+  // Les frais de course ne se facturent pas avant que la course soit faite. C'est la seule
+  // différence de calendrier entre les deux retenues, et elle vient du métier : la gare est
+  // payée en billets avant le départ, le déplacement se facture une fois effectué.
+  const enRoute = colis({ statut: 'recupere', montant_article: 20000, montant_livraison: 3000,
+    commune_destination: COMMUNE_EXPEDITION, frais_expedition: 2500 });
+  verifier('la gare est due avant la livraison, la course non',
+    fraisExpeditionADevoir(enRoute) === 2500 && fraisCourseADevoir(enRoute) === 0
+    && montantNetADevoir(enRoute) === -2500,
+    JSON.stringify({ net: montantNetADevoir(enRoute) }));
 }
 {
   // Un colis non livré dont l'expédition a déjà été payée : l'argent est bel et bien sorti.

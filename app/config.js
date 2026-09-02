@@ -2895,12 +2895,109 @@ function fraisExpeditionADevoir(c) {
   return fraisExpeditionColis(c);
 }
 
-// Ce qu'on doit RÉELLEMENT à la cliente sur ce colis, une fois l'avance retenue.
-// Peut être négatif, et on ne le ramène pas à zéro : si les frais dépassent l'article encaissé
-// (colis pas encore payé, ou petit article expédié loin), c'est elle qui doit la différence à
-// CLT. Masquer ce signe reviendrait à effacer une créance réelle de l'entreprise.
+/* --------------------------------------------------------------------------------------------
+   LES FRAIS DE COURSE — 1er septembre 2026
+   --------------------------------------------------------------------------------------------
+   Deux sommes sont dues par la vendeuse sur une expédition, et Celtis a fixé leurs noms lui-même
+   pour qu'on cesse de les confondre :
+
+     • FRAIS D'EXPÉDITION — ce que le TRANSPORTEUR prend. Payé à la gare, en billets, par le
+       livreur. C'est une avance faite pour le compte de la vendeuse. → fraisExpeditionColis()
+     • FRAIS DE COURSE    — ce que le LIVREUR gagne pour le déplacement qu'il effectue. C'est la
+       recette de CLT sur ce colis. → cette fonction-ci.
+
+   Les deux se retranchent de ce qu'on doit à la vendeuse. Sur son relevé, ils apparaissent en
+   négatif et réduisent le total.
+
+   POURQUOI ON NE CRÉE AUCUNE COLONNE. Les frais de course sont déjà en base : c'est
+   `montant_livraison`, « ce que CLT facture pour le transport ». Une seule nature, deux chemins
+   d'encaissement — sur un colis ordinaire il rentre en billets chez le destinataire, sur une
+   expédition il se retient sur la vendeuse. Ajouter une colonne aurait créé un second endroit
+   où écrire le même nombre, donc un second endroit où se tromper.
+
+   CE QUE LA MESURE A MONTRÉ (base interrogée le 31 août 2026). Une seule expédition dans tout
+   l'historique, chez Josetta : article 0, frais de gare 0, montant de livraison 3 000. Interrogé,
+   Celtis a confirmé que ces 3 000 étaient « les deux ensemble » — la course et le transporteur
+   dans un seul nombre. Le total était juste ; ce qu'on ne pouvait pas dire, c'est à qui allait
+   chaque franc. C'est précisément ce que cette séparation rend possible. Aucun frais de gare
+   n'ayant jamais été saisi, aucune vendeuse n'a encore été mal payée : on corrige avant, pas
+   après.
+   -------------------------------------------------------------------------------------------- */
+
+// Frais de course enregistrés sur ce colis. Zéro hors expédition : ailleurs, le montant de
+// livraison s'encaisse chez le destinataire et ne pèse pas sur la vendeuse.
+function fraisCourseColis(c) {
+  if (!c || !estExpedition(c)) return 0;
+  return Number(montantLivraisonColis(c)) || 0;
+}
+
+// Frais de course encore à retenir sur la vendeuse.
+//
+// Deux conditions, et les deux comptent :
+//   • le colis doit être LIVRÉ. Une course qu'on n'a pas encore faite ne se facture pas. C'est
+//     la différence avec les frais d'expédition, qui sont dus dès que le livreur a sorti
+//     l'argent de sa poche à la gare, colis arrivé ou non.
+//   • le reversement ne doit pas être passé. Une fois qu'on lui a remis son argent, la retenue
+//     a déjà été faite ; la reprendre reviendrait à la compter deux fois — exactement le piège
+//     réglé le 25 août sur les avances de gare.
+// Frais de course GAGNÉS : la course a été faite, donc CLT l'a facturée. Que la vendeuse ait
+// déjà été payée ou non n'y change rien — c'est une recette de l'entreprise dans les deux cas.
+// C'est ce chiffre-là, et non le suivant, qui doit figurer dans un chiffre d'affaires.
+function fraisCourseAcquis(c) {
+  if (!c || c.statut !== 'livre') return 0;
+  return fraisCourseColis(c);
+}
+
+// Frais de course encore à RETENIR sur la vendeuse. Les mêmes, moins ceux déjà soldés par un
+// reversement : la retenue a alors été faite, la reprendre reviendrait à la compter deux fois —
+// exactement le piège réglé le 25 août sur les avances de gare.
+function fraisCourseADevoir(c) {
+  if (!c) return 0;
+  if (c.reverse_au_fournisseur_at) return 0;
+  return fraisCourseAcquis(c);
+}
+
+/* LES DEUX NOMS, ÉCRITS UNE SEULE FOIS.
+   Celtis les a arrêtés le 31 août : « frais d'expédition pour ce que le transporteur prend, et
+   les frais de course pour ce que le livreur gagne par rapport au travail qu'il effectue ».
+   Ils doivent se lire à l'identique sur l'écran du livreur, sur celui de l'équipe, sur le relevé
+   de la vendeuse et sur le document qu'on lui envoie. Un mot recopié à cinq endroits finit
+   toujours par diverger à l'un des cinq. */
+const LIBELLE_FRAIS_EXPEDITION = "Frais d'expédition";
+const LIBELLE_FRAIS_COURSE = 'Frais de course';
+
+// Comment appeler le montant de livraison sur CE colis. Le même champ, deux noms, parce que
+// c'est la même nature d'argent encaissée par deux chemins : chez le destinataire sur un colis
+// d'Abidjan, retenue sur la vendeuse sur une expédition.
+function libelleMontantLivraison(c) {
+  return estExpedition(c) ? LIBELLE_FRAIS_COURSE : 'Livraison (à CLT)';
+}
+
+/* Ce qu'on a DÉJÀ remis à la cliente sur ce colis. Le miroir de montantArticleADevoir().
+
+   POURQUOI CETTE FONCTION EXISTE (01/09/2026). La tuile « Déjà reversé » additionnait
+   montantArticleEncaisse() sur les colis portant une date de reversement. Le jour où
+   articleEncaisse() a cessé d'être vrai sur une expédition, cette addition est tombée à zéro
+   pour les expéditions déjà payées — pendant que la vue SQL, qui somme montant_article sans
+   condition, continuait d'afficher le vrai montant à la vendeuse. Deux historiques de paiement
+   pour la même personne, sur deux écrans.
+
+   La règle est simple et ne dépend d'aucune des deux : ce qui a été reversé a été reversé. On
+   lit le montant de l'article, et la seule condition est la date. */
+function montantArticleReverse(c) {
+  if (!c || !c.reverse_au_fournisseur_at) return 0;
+  return Number(montantArticleColis(c)) || 0;
+}
+
+/* Ce qu'on doit RÉELLEMENT à la cliente sur ce colis, une fois les deux retenues faites.
+   C'EST LE SEUL CHIFFRE À ANNONCER À UNE VENDEUSE, et le seul endroit où il se calcule.
+
+   Peut être négatif, et on ne le ramène pas à zéro : sur une expédition, l'article vaut zéro
+   pour nous (elle a déjà été payée) tandis que les deux frais restent dus — le résultat est donc
+   normalement négatif, et il veut dire « c'est elle qui doit cette somme à CLT ». Masquer ce
+   signe reviendrait à effacer une créance réelle de l'entreprise. */
 function montantNetADevoir(c) {
-  return montantArticleADevoir(c) - fraisExpeditionADevoir(c);
+  return montantArticleADevoir(c) - fraisExpeditionADevoir(c) - fraisCourseADevoir(c);
 }
 
 /* --------------------------------------------------------------------------------------------
@@ -2926,8 +3023,19 @@ function montantNetADevoir(c) {
    -------------------------------------------------------------------------------------------- */
 
 // Vrai si l'argent de l'article est réputé encaissé par CLT (donc dû à la cliente).
+//
+// SAUF SUR UNE EXPÉDITION, et c'est le point central du 1er septembre 2026. Celtis, mot pour
+// mot : « les livreurs n'encaissent pas l'argent au destinataire, parce que le destinataire
+// paye en avance chez la vendeuse ». La vendeuse a donc DÉJÀ son argent avant même que le colis
+// ne parte. Compter l'article comme encaissé par CLT reviendrait à lui promettre une seconde
+// fois une somme qu'elle a touchée en main propre — et à sortir cette somme de notre caisse.
+//
+// Vérifié en base avant d'écrire cette ligne : la seule expédition de tout l'historique porte
+// un article à 0. Cette règle n'a donc AUCUN effet rétroactif sur ce qui a déjà été payé. Elle
+// protège l'avenir, le jour où quelqu'un remplira ce champ par habitude.
 function articleEncaisse(c) {
   if (!c) return false;
+  if (estExpedition(c)) return false;
   if (c.statut !== 'livre') return false;
   return !c.article_non_encaisse;
 }
@@ -2936,8 +3044,18 @@ function articleEncaisse(c) {
 // Deux chemins, et c'est voulu : la livraison peut être réglée AVANT la remise (le destinataire
 // paie d'avance, ou la cliente a prépayé) — c'est ce que le bouton « Livraison payée » du
 // livreur enregistre depuis le début, et on ne casse pas cet usage.
+//
+// L'EXPÉDITION EST EXCLUE, ET LE TEST PASSE EN PREMIER. Sur une expédition, le livreur ne tend
+// la main à personne : il dépose le carton à la gare, il paie le transporteur, il repart. Le
+// montant de livraison existe bien — c'est ce que CLT facture pour ce déplacement — mais il ne
+// rentre pas en billets ce jour-là. Il se retient sur la vendeuse au moment du reversement.
+// C'est ce qu'on appelle désormais les FRAIS DE COURSE, et ils se lisent plus bas.
+//
+// Le test doit passer AVANT `livraison_payee`, sinon une case cochée par erreur sur une
+// expédition ferait réapparaître dans la caisse du livreur un argent qu'il n'a jamais touché.
 function livraisonEncaissee(c) {
   if (!c) return false;
+  if (estExpedition(c)) return false;
   if (c.livraison_payee) return true;
   if (c.statut !== 'livre') return false;
   return !c.livraison_non_encaissee;
@@ -3008,8 +3126,15 @@ function montantEnMainDuLivreur(c) {
 // Argent qu'on aurait dû encaisser à la livraison et qui manque (l'exception cochée).
 // À ne surtout pas confondre avec le précédent : celui-ci est un manque dans NOTRE caisse,
 // l'autre est une dette envers la cliente.
+//
+// RIEN NE MANQUE SUR UNE EXPÉDITION, et le test est passé en tête le 01/09/2026. Il n'y avait
+// rien à encaisser : le destinataire a payé chez la vendeuse. Une case cochée par habitude
+// aurait fait crier « 15 000 non encaissé sur des colis pourtant remis » en rouge sur l'écran
+// de l'équipe, pour un argent que personne n'avait à tendre. La vue SQL le sait déjà — c'est
+// donc l'écran qui criait, et c'est l'écran qui avait tort.
 function montantManquantALaLivraison(c) {
   if (!c || c.statut !== 'livre') return 0;
+  if (estExpedition(c)) return 0;
   let manque = 0;
   if (c.article_non_encaisse) manque += montantArticleColis(c);
   if (!c.livraison_payee && c.livraison_non_encaissee) manque += montantLivraisonColis(c);
@@ -3052,6 +3177,23 @@ function totauxArgent(colis) {
     nbExpeditions: 0,
     fraisExpedition: 0,
     fraisExpeditionADevoir: 0,
+    // La seconde retenue, ajoutée le 01/09/2026 : ce que le livreur gagne pour le déplacement.
+    // Elle n'est PAS dans `livraisonEncaissee` — sur une expédition rien ne rentre en billets —
+    // mais c'est bien une recette de CLT, encaissée par déduction sur le reversement.
+    fraisCourse: 0,
+    fraisCourseAcquis: 0,
+    fraisCourseADevoir: 0,
+    // LA RECETTE DE LIVRAISON DE CLT, PAR LES DEUX CHEMINS. Ajoutée le 01/09/2026, et il le
+    // fallait : le jour où livraisonEncaissee() a cessé d'être vraie sur une expédition, la
+    // course a disparu de tous les chiffres d'affaires sans que rien ne la rattrape. Sur une
+    // journée mixte mesurée à la relecture, l'écran annonçait « Frais de livraison CLT :
+    // 1 500 FCFA encaissés » quand l'entreprise avait gagné 4 500 F. Une recette qui s'évapore
+    // d'une comptabilité est plus grave qu'une recette mal rangée.
+    recetteLivraison: 0,
+    // Ce qu'on lui a DÉJÀ remis. Ce total vivait à l'écran, dans une addition écrite à la main
+    // au milieu du dessin des tuiles ; il est descendu ici le 01/09/2026 parce qu'il s'était mis
+    // à répondre autre chose que la base — voir montantArticleReverse().
+    dejaReverse: 0,
     // Part des avances que CLT n'a pas encore rendue au livreur. C'est elle, et non le total
     // payé à la gare, qui allège ce qu'il doit remettre le soir : une avance déjà remboursée
     // est retournée dans sa poche. Voir fraisExpeditionARembourser.
@@ -3076,6 +3218,10 @@ function totauxArgent(colis) {
     t.fraisExpedition += fraisExpeditionColis(c);
     t.fraisExpeditionADevoir += fraisExpeditionADevoir(c);
     t.fraisARembourser += fraisExpeditionARembourser(c);
+    t.fraisCourse += fraisCourseColis(c);
+    t.fraisCourseAcquis += fraisCourseAcquis(c);
+    t.fraisCourseADevoir += fraisCourseADevoir(c);
+    t.dejaReverse += montantArticleReverse(c);
   });
   t.totalEnregistre = t.articleEnregistre + t.livraisonEnregistree;
   t.totalEncaisse   = t.articleEncaisse + t.livraisonEncaissee;
@@ -3088,9 +3234,18 @@ function totauxArgent(colis) {
   // poche, la déduire encore la lui offrirait une seconde fois. Les deux lignes restent
   // disponibles côte à côte, l'une pour dire ce qui est sorti, l'autre ce qui est encore dû.
   t.totalEnMain = t.totalEncaisse - t.fraisARembourser;
-  // Le net se déduit des deux lignes juste au-dessus, et jamais de la recette de livraison :
-  // c'est toute la question tranchée le 25 août 2026.
-  t.netADevoir = t.articleADevoir - t.fraisExpeditionADevoir;
+  // Ce que CLT a gagné en transport, quel que soit le chemin par lequel l'argent arrive : en
+  // billets chez le destinataire sur un colis d'Abidjan, par retenue sur la vendeuse sur une
+  // expédition. Une seule nature, deux chemins — d'où une seule ligne de recette.
+  t.recetteLivraison = t.livraisonEncaissee + t.fraisCourseAcquis;
+  // LE SEUL CHIFFRE À ANNONCER À UNE VENDEUSE. Ce qu'on lui doit, moins les deux frais qu'elle
+  // doit à CLT : le transporteur (frais d'expédition) et le déplacement (frais de course).
+  //
+  // Il ne se déduit jamais de la recette de livraison prise en bloc — c'est la question tranchée
+  // le 25 août 2026 : sur un colis ordinaire, cet argent vient du destinataire et ne concerne pas
+  // la vendeuse. Seule la part « expédition » la concerne, et c'est exactement ce que
+  // fraisCourseADevoir() isole.
+  t.netADevoir = t.articleADevoir - t.fraisExpeditionADevoir - t.fraisCourseADevoir;
   return t;
 }
 
@@ -3498,12 +3653,18 @@ function statutTexte(statut) {
 
 // Les colonnes du relevé, dans l'ordre. Une seule déclaration : l'en-tête du tableau à l'écran,
 // celui du PDF, celui de l'Excel et celui du Word sortent tous d'ici.
-const RELEVE_COLONNES = ['Téléphone', 'Adresse', 'Statut', 'Article', 'Encaissé', 'Observation'];
+/* « Encaissé » est devenu « Vous revient » le 1er septembre 2026, et ce n'est pas un habillage.
+   L'ancienne colonne disait ce qui était rentré dans NOTRE caisse, et le bas de page annonçait ce
+   total comme la somme due à la vendeuse. Les deux coïncidaient tant qu'il n'y avait rien à
+   retenir. Dès qu'une expédition entre dans le lot, ils divergent : l'argent rentré et l'argent
+   dû ne sont plus le même nombre, et c'est le second seul qui intéresse la personne qui lit.
+   La colonne dit donc maintenant ce qu'elle sert à dire. */
+const RELEVE_COLONNES = ['Téléphone', 'Adresse', 'Statut', 'Article', 'Vous revient', 'Observation'];
 
 // La phrase qui accompagne le tableau. Elle figure à l'écran ET sur le document envoyé, au mot
 // près, pour qu'une cliente qui a le papier sous les yeux et un membre de l'équipe qui a l'écran
 // sous les siens lisent la même explication.
-const RELEVE_NOTE = "La colonne « Article » dit ce qui a été enregistré, la colonne « Encaissé » ce qui est réellement rentré (colis livrés). C'est le total « Encaissé » qui revient à la cliente. Les frais de livraison ne figurent pas dans ce tableau : ils reviennent à CLT.";
+const RELEVE_NOTE = "La colonne « Article » dit ce qui a été enregistré. La colonne « Vous revient » dit ce que CLT vous doit réellement, colis par colis : l'article encaissé pour vous, moins ce que vous devez à CLT. Son total est la somme à vous reverser. Les frais de livraison des colis ordinaires ne figurent pas dans ce tableau : ils sont payés par le destinataire et reviennent à CLT. Sur une expédition, en revanche, le destinataire vous a déjà payée : CLT n'encaisse rien pour vous, et deux frais se retiennent — les frais d'expédition (ce que prend le transporteur) et les frais de course (le déplacement du livreur). La ligne apparaît alors en négatif.";
 
 // Construit le relevé d'une liste de colis : les lignes et les totaux, en données brutes.
 // Aucune mise en forme ici — chaque sortie habille ces mêmes nombres à sa façon.
@@ -3516,7 +3677,12 @@ function releveCliente(colis) {
     statutCode:  (c && c.statut) || '',
     statut:      statutTexte(c && c.statut),
     article:     Number(montantArticleColis(c)) || 0,
-    encaisse:    Number(montantArticleEncaisse(c)) || 0,
+    // Ce que CLT doit sur CE colis, retenues faites. Sur une expédition c'est un nombre négatif,
+    // et il doit le rester : c'est ainsi que la vendeuse voit ce qu'elle doit, ligne par ligne.
+    encaisse:    Number(montantNetADevoir(c)) || 0,
+    expedition:  estExpedition(c),
+    fraisExpedition: Number(fraisExpeditionADevoir(c)) || 0,
+    fraisCourse:     Number(fraisCourseADevoir(c)) || 0,
     observation: (c && c.observation) || '',
   }));
   return {
@@ -3525,7 +3691,14 @@ function releveCliente(colis) {
     nb: t.nb,
     nbLivres: t.nbLivres,
     totalArticle: Number(t.articleEnregistre) || 0,
-    totalEncaisse: Number(t.articleEncaisse) || 0,
+    // Le total de la colonne « Vous revient ». Porte encore son ancien nom de propriété parce
+    // qu'une bonne dizaine d'appelants le lisent, et qu'un renommage de façade aurait plus de
+    // risques que de bénéfices ; c'est bien t.netADevoir, l'unique calcul, qui le remplit.
+    totalEncaisse: Number(t.netADevoir) || 0,
+    // Le détail des deux retenues, pour les écrans qui veulent l'expliquer sous le total.
+    nbExpeditions: Number(t.nbExpeditions) || 0,
+    totalFraisExpedition: Number(t.fraisExpeditionADevoir) || 0,
+    totalFraisCourse: Number(t.fraisCourseADevoir) || 0,
   };
 }
 
@@ -3552,9 +3725,30 @@ function relevePiedCellules(r) {
     { texte: textes[1] },
     { texte: textes[2], label: 'Statut' },
     { texte: textes[3], label: 'Article' },
-    { texte: textes[4], couleur: '#1a7d3c', label: 'Encaissé' },
+    // Vert quand CLT doit de l'argent, rouge quand c'est la vendeuse qui en doit. Le total d'un
+    // relevé d'expéditions est normalement négatif : l'afficher en vert laisserait croire à une
+    // somme à recevoir alors que c'est une somme à payer.
+    { texte: textes[4], couleur: (r && Number(r.totalEncaisse) < 0) ? '#c0392b' : '#1a7d3c', label: 'Vous revient' },
     { texte: textes[5] },
   ];
+}
+
+/* La phrase qui explique le total quand il y a eu des retenues. Vide s'il n'y en a aucune : on
+   n'encombre pas le relevé ordinaire d'une explication sans objet.
+   Écrite une seule fois, comme le reste — l'écran, le PDF, l'Excel et le Word la reprennent au
+   mot près, pour qu'une vendeuse qui a le papier et un membre de l'équipe qui a l'écran ne
+   puissent pas lire deux choses différentes. */
+function releveDetailRetenues(r) {
+  const rel = r || releveCliente([]);
+  const exp = Number(rel.totalFraisExpedition) || 0;
+  const course = Number(rel.totalFraisCourse) || 0;
+  if (!exp && !course) return '';
+  const morceaux = [];
+  if (exp) morceaux.push("frais d'expédition " + formatMontant(-exp));
+  if (course) morceaux.push('frais de course ' + formatMontant(-course));
+  const n = Number(rel.nbExpeditions) || 0;
+  return 'Dont ' + morceaux.join(' et ') + ', retenus sur '
+    + n + ' expédition' + (n > 1 ? 's' : '') + '.';
 }
 
 // Les polices standard d'un PDF ne connaissent que le jeu WinAnsi. L'espace fine insécable que
@@ -4289,10 +4483,19 @@ function assurerJsPDF() {
 }
 
 
-// La seule phrase à annoncer à une vendeuse. Elle ferme le document comme elle ferme l'écran.
+/* La seule phrase à annoncer à une vendeuse. Elle ferme le document comme elle ferme l'écran.
+
+   ELLE CHANGE DE SENS QUAND LE TOTAL EST NÉGATIF, et c'est le 1er septembre 2026 qui l'impose.
+   Sur une journée qui ne contient que des expéditions, CLT n'a rien encaissé pour la vendeuse
+   et lui retient deux frais : le total est normalement négatif, et il veut dire l'inverse de ce
+   que la phrase disait. Écrire « Somme qui vous revient : −5 500 FCFA » à quelqu'un qui DOIT
+   5 500 F, c'est compter sur le lecteur pour redresser un signe moins tout seul au téléphone,
+   un soir. On écrit la phrase juste, avec un montant positif, plutôt qu'un signe à interpréter. */
 function relevePhraseDue(r) {
   const rel = r || releveCliente([]);
-  return 'Somme qui vous revient : ' + (formatMontant(rel.totalEncaisse) || '0 FCFA');
+  const net = Number(rel.totalEncaisse) || 0;
+  if (net < 0) return 'Somme que vous devez à CLT : ' + (formatMontant(-net) || '0 FCFA');
+  return 'Somme qui vous revient : ' + (formatMontant(net) || '0 FCFA');
 }
 
 // Nom de fichier lisible et sans piège : accents retirés, espaces et ponctuation ramenés à des
@@ -4317,6 +4520,14 @@ function paiementInfo(c) {
   }
   const manque = montantManquantALaLivraison(c);
   if (manque > 0) return { label: "Argent non encaissé", color: "#c0392b", bg: "#fce4e2" };
+  /* UNE EXPÉDITION N'EST JAMAIS « ENCAISSÉE ». (01/09/2026) CLT n'a rien reçu : le destinataire
+     a payé chez la vendeuse avant le départ. Ce badge part aussi dans le PDF et l'Excel qu'elle
+     télécharge — lui écrire « Encaissé » en face d'un colis dont on lui RETIENT deux frais, ce
+     serait lui annoncer le contraire de ce que dit la ligne d'à côté. */
+  if (estExpedition(c)) {
+    if (c.reverse_au_fournisseur_at) return { label: "Expédié, compte soldé", color: "#1a7d3c", bg: "#e3f6ea" };
+    return { label: "Expédié — frais à retenir", color: "#8a4b12", bg: "#fff0dd" };
+  }
   if (c.reverse_au_fournisseur_at) return { label: "Encaissé et reversé", color: "#1a7d3c", bg: "#e3f6ea" };
   return { label: "Encaissé", color: "#1B4374", bg: "#e5edf5" };
 }
@@ -5080,19 +5291,30 @@ function releveClienteTuilesHTML(colis) {
   const liste = colis || [];
   const t = totauxArgent(liste);
   const m = n => formatMontant(Number(n) || 0) || '0 FCFA';
-  const dejaReverse = liste.reduce(
-    (s, c) => s + (c && c.reverse_au_fournisseur_at ? montantArticleEncaisse(c) : 0), 0);
 
   return [
     { icon:'✅', value:t.nbLivres,               label:'Colis livrés',       color:STATUTS.livre.color, bg:STATUTS.livre.bg },
     { icon:'📦', value:m(t.articleEnregistre),   label:'Ses articles',       color:'#5b6b7f',           bg:'#eef1f5' },
-    { icon:'💵', value:m(t.articleEncaisse),     label:'Articles encaissés', color:'#1B4374',           bg:'#e5edf5' },
-    { icon:'✔️', value:m(dejaReverse),           label:'Déjà reversé',       color:'#1a7d3c',           bg:'#e3f6ea' },
+    { icon:'💵', value:m(t.articleEncaisse),     label:'Encaissé pour elle', color:'#1B4374',           bg:'#e5edf5' },
+    // `t.dejaReverse` et non une addition écrite ici. Elle y était jusqu'au 01/09/2026 et s'est
+    // mise à répondre zéro sur les expéditions payées, pendant que l'écran de la vendeuse
+    // affichait le vrai montant. Un total d'argent ne se calcule pas dans le dessin d'une tuile.
+    { icon:'✔️', value:m(t.dejaReverse),         label:'Déjà reversé',       color:'#1a7d3c',           bg:'#e3f6ea' },
+  // Les deux retenues, chacune sa tuile, et seulement quand elles existent. Les afficher à zéro
+  // sur les journées ordinaires — l'immense majorité — encombrerait l'écran d'une explication
+  // sans objet ; les fondre en une seule ferait perdre ce que la séparation a coûté à obtenir.
   ].concat(t.fraisExpeditionADevoir > 0
-    ? [{ icon:'🚌', value:'−' + m(t.fraisExpeditionADevoir), label:"Frais d'expédition", color:'#8a4b12', bg:'#fff0dd' }]
+    ? [{ icon:'🚌', value:'−' + m(t.fraisExpeditionADevoir), label:LIBELLE_FRAIS_EXPEDITION, color:'#8a4b12', bg:'#fff0dd' }]
+    : []
+  ).concat(t.fraisCourseADevoir > 0
+    ? [{ icon:'🛵', value:'−' + m(t.fraisCourseADevoir), label:LIBELLE_FRAIS_COURSE, color:'#8a4b12', bg:'#fff0dd' }]
     : []
   ).concat([
-    { icon:'⏳', value:m(t.netADevoir), label:'CLT lui doit', color:'#E26313', bg:'#FBE2CE' },
+    // Négatif, c'est la vendeuse qui doit : le libellé s'inverse avec le signe, comme la phrase
+    // du relevé. Une tuile « CLT lui doit −5 500 » se lirait de travers un soir de fatigue.
+    t.netADevoir < 0
+      ? { icon:'⏳', value:m(-t.netADevoir), label:'Elle doit à CLT', color:'#c0392b', bg:'#fdeaea' }
+      : { icon:'⏳', value:m(t.netADevoir), label:'CLT lui doit', color:'#E26313', bg:'#FBE2CE' },
   ]).map(x => `
       <div class="stat-tile" style="--tile-color:${x.color}; --tile-bg:${x.bg}">
         <div class="stat-tile-icon">${x.icon}</div>

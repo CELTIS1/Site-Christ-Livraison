@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260831logo">
-<script src="theme.js?v=20260831logo"></script>
+<link rel="stylesheet" href="style.css?v=20260901course">
+<script src="theme.js?v=20260901course"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -465,10 +465,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260831logo"></script>
-<script src="config.js?v=20260831logo"></script>
+<script src="clt-common.js?v=20260901course"></script>
+<script src="config.js?v=20260901course"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260831logo"></script>
+<script src="clt-select-recherche.js?v=20260901course"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2088,6 +2088,11 @@
     // retombe sur le brut, ce qui est exactement l'ancien comportement, plutôt que d'afficher un
     // « NaN FCFA » ou un zéro qui ferait croire à une dette éteinte.
     const avances = Number(r.frais_expedition_retenus) || 0;
+    // Les frais de course, ajoutés le 1er septembre 2026 : ce que le livreur gagne pour le
+    // déplacement, sur une expédition. Comme ci-dessus, la colonne peut manquer tant que la
+    // base n'a pas reçu la nouvelle vue ; on retombe alors sur zéro, c'est-à-dire sur
+    // l'ancien comportement, plutôt que d'écrire « NaN » sur l'écran d'une vendeuse.
+    const course = Number(r.frais_course_retenus) || 0;
     const net = (r.net_a_reverser === undefined || r.net_a_reverser === null)
       ? (Number(r.reste_a_percevoir) || 0)
       : Number(r.net_a_reverser);
@@ -2104,8 +2109,15 @@
       // clientes qui n'expédient jamais à l'intérieur.
       ? [{ icon:'🚌', value:'−' + money(avances), label:"Frais d'expédition", color:'#8a4b12', bg:'#fff0dd' }]
       : []
+    ).concat(course > 0
+      ? [{ icon:'🛵', value:'−' + money(course), label:'Frais de course', color:'#8a4b12', bg:'#fff0dd' }]
+      : []
     ).concat([
-      { icon:'⏳', value:money(net), label:'CLT vous doit', color:'#E26313', bg:'#FBE2CE' },
+      // Le libellé s'inverse avec le signe. Une tuile « CLT vous doit −5 500 FCFA » demande à
+      // la lectrice de redresser un signe moins toute seule ; on écrit la phrase juste.
+      net < 0
+        ? { icon:'⏳', value:money(-net), label:'Vous devez à CLT', color:'#c0392b', bg:'#fdeaea' }
+        : { icon:'⏳', value:money(net), label:'CLT vous doit', color:'#E26313', bg:'#FBE2CE' },
     ]);
     cltPoserHTML(tiles, cards.map(t => `
       <div class="stat-tile" style="--tile-color:${t.color}; --tile-bg:${t.bg}">
@@ -2117,69 +2129,87 @@
     // relevé s'affiche quand même normalement.
     loadHistoriqueReversements();
     if (!detail) return;
-    if (!r.colis_a_reverser) {
+
+    /* ------------------------------------------------------------------------------------
+       LE DÉTAIL, LIGNE PAR LIGNE — entièrement réécrit le 1er septembre 2026
+       ------------------------------------------------------------------------------------
+       CE QUI ÉTAIT CASSÉ. Cette liste faisait sa propre addition — `sommeArticles − sommeGare`
+       — au lieu de passer par le calcul commun. Elle ignorait donc les frais de course, et
+       comptait l'article d'une expédition en entier alors que la vendeuse a déjà été payée par
+       le destinataire. Sur une journée mesurée à la relecture, la tuile du haut annonçait
+       « CLT vous doit 14 500 FCFA » et la liste juste en dessous totalisait 32 500 : deux
+       nombres qui se contredisent de 18 000 F, à dix centimètres l'un de l'autre, sur l'écran
+       de la personne à qui on doit l'argent.
+
+       Et une vendeuse qui n'a QUE des expéditions lisait « Aucun colis en attente de
+       reversement ✔️ » sous une tuile disant qu'elle devait 5 500 F — parce que le vide se
+       décidait sur `colis_a_reverser`, qui ne compte que les articles encaissés.
+
+       CE QU'ON GARDE. La ligne par ligne, parce que la question « pourquoi ce colis me rapporte
+       moins que ce que j'avais annoncé ? » se pose sur un colis précis, jamais sur un total.
+       Et le total sous les lignes, parce qu'une liste qui ne s'additionne nulle part oblige à
+       faire la somme à la main — et à se demander, si on tombe à côté, qui des deux a tort.
+
+       CE QU'ON CHANGE. Un seul calcul, montantNetADevoir(), le même que le relevé du soir, les
+       tuiles et la vue SQL. Le total se recompose donc des lignes, ET redonne la tuile du haut.
+       Ce n'est plus surveillé, c'est arithmétique.
+
+       LA REQUÊTE AUSSI A CHANGÉ. Elle ne demandait que les colis LIVRÉS : une avance de gare
+       payée sur un colis pas encore arrivé était retenue par la tuile sans apparaître nulle
+       part dans la liste. On demande donc aussi ceux-là, et `commune_destination`, sans quoi
+       estExpedition() ne peut rien reconnaître. Les colis dont le net est nul sont écartés
+       ensuite : les afficher à 0 FCFA n'apprendrait rien à personne.
+       ------------------------------------------------------------------------------------ */
+    const { data: aReverser, error: err2 } = await supabaseClient
+      .from('colis')
+      .select('numero, statut, commune_destination, montant, montant_article, montant_livraison, '
+              + 'frais_expedition, article_non_encaisse, reverse_au_fournisseur_at, created_at')
+      .eq('fournisseur_id', currentUser.id)
+      .is('reverse_au_fournisseur_at', null)
+      .or('statut.eq.livre,frais_expedition.gt.0')
+      .order('created_at', { ascending: true })
+      .limit(100);
+    const lignes = (aReverser || []).filter(c => montantNetADevoir(c) !== 0);
+    if (err2 || !lignes.length) {
       cltPoserHTML(detail, `<div style="font-size:12.5px; color:var(--muted);">Aucun colis en attente de reversement. ✔️</div>`);
       return;
     }
-    // Détail des colis livrés & encaissés, pas encore reversés (les plus anciens d'abord).
-    //
-    // `montant` et `montant_livraison` sont demandés en plus de `montant_article` : sans eux,
-    // montantArticleColis() ne peut pas reconnaître un colis ancien et répondrait zéro. C'est
-    // exactement l'écart de 15 500 FCFA constaté le 25/08/2026 entre le relevé de la vendeuse
-    // et le chiffre de l'équipe — sauf qu'ici il se serait vu ligne par ligne, en « 0 FCFA ».
-    const { data: aReverser, error: err2 } = await supabaseClient
-      .from('colis')
-      .select('numero, montant, montant_article, montant_livraison, frais_expedition, created_at')
-      .eq('fournisseur_id', currentUser.id)
-      .eq('statut', 'livre')
-      .not('article_non_encaisse', 'is', true)
-      .is('reverse_au_fournisseur_at', null)
-      .order('created_at', { ascending: true })
-      .limit(100);
-    if (err2 || !aReverser || !aReverser.length) { cltPoserHTML(detail, ''); return; }
-    // Colis par colis, l'avance d'expédition est nommée sous la ligne qu'elle diminue. C'est
-    // à cet endroit-là qu'on répond à « pourquoi ce colis me rapporte moins que le montant
-    // que j'avais annoncé ? » — la question se pose sur un colis précis, pas sur un total.
-    //
-    // Les deux montants passent par les fonctions partagées de config.js, jamais par une
-    // lecture directe du champ : c'est ce qui garantit que la somme des lignes redonne la
-    // tuile du haut, laquelle vient de la base.
-    let sommeArticles = 0;
-    let sommeGare = 0;
-    const rows = aReverser.map(c => {
-      const article = montantArticleColis(c);
-      const gare = fraisExpeditionColis(c);
-      sommeArticles += article;
-      sommeGare += gare;
+    let totalLignes = 0;
+    const rows = lignes.map(c => {
+      const net = montantNetADevoir(c);
+      const gare = fraisExpeditionADevoir(c);
+      const course = fraisCourseADevoir(c);
+      const article = montantArticleADevoir(c);
+      totalLignes += net;
+      // Le détail sous la ligne n'apparaît que s'il y a quelque chose à expliquer. Sur un colis
+      // ordinaire, le net EST l'article : une explication ne ferait qu'inquiéter.
+      const detailLignes = [];
+      if (gare || course) {
+        detailLignes.push(['Article encaissé pour vous', formatMontant(article)]);
+        if (gare) detailLignes.push(["🚌 Frais d'expédition (transporteur)", '−' + formatMontant(gare)]);
+        if (course) detailLignes.push(['🛵 Frais de course (livreur)', '−' + formatMontant(course)]);
+      }
       return `
       <div style="padding:7px 0; border-bottom:1px solid var(--border);">
         <div style="display:flex; justify-content:space-between; gap:10px;">
           <span>${escapeHTML(c.numero || '—')}<span style="color:var(--muted); font-size:12px;"> · ${new Date(c.created_at).toLocaleDateString('fr-FR')}</span></span>
-          <strong>${formatMontant(article) || '0 FCFA'}</strong>
+          <strong style="${net < 0 ? 'color:#c0392b;' : ''}">${formatMontant(net) || '0 FCFA'}</strong>
         </div>
-        ${gare ? `<div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:#8a4b12; margin-top:2px;">
-          <span>🚌 Frais d'expédition avancés</span><span>−${formatMontant(gare)}</span>
-        </div>` : ''}
+        ${detailLignes.map(([g, d]) => `<div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:#8a4b12; margin-top:2px;">
+          <span>${g}</span><span>${d}</span>
+        </div>`).join('')}
       </div>`;
     }).join('');
     // La requête est plafonnée à 100 lignes. Si le plafond est atteint, on le dit : le total en
     // FCFA affiché plus haut reste juste, mais ce détail ne montre alors que les plus anciens.
-    const plafondAtteint = aReverser.length >= 100;
-    // La ligne de total. Une liste de montants qui ne s'additionne nulle part oblige la vendeuse
-    // à faire la somme à la main pour vérifier — et à se demander, si elle tombe à côté, qui des
-    // deux a tort. Le total est donc posé ici, et il se recompose des lignes juste au-dessus.
-    // Tant que le plafond n'est pas atteint, il doit être égal à la tuile « CLT vous doit ».
-    const totalLignes = sommeArticles - sommeGare;
+    const plafondAtteint = (aReverser || []).length >= 100;
     cltPoserHTML(detail, `
-      <div style="font-size:13px; font-weight:600; margin:4px 0 6px;">En attente de reversement${plafondAtteint ? ' (100 plus anciens)' : ` (${aReverser.length})`}</div>
+      <div style="font-size:13px; font-weight:600; margin:4px 0 6px;">En attente de reversement${plafondAtteint ? ' (100 plus anciens)' : ` (${lignes.length})`}</div>
       ${rows}
       <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:9px 0 2px; border-top:2px solid var(--border); font-weight:700;">
-        <span>Total${plafondAtteint ? ' des 100 lignes ci-dessus' : ''}</span>
-        <span style="color:#E26313;">${formatMontant(totalLignes) || '0 FCFA'}</span>
+        <span>${totalLignes < 0 ? 'Total que vous devez' : 'Total'}${plafondAtteint ? ' des 100 lignes ci-dessus' : ''}</span>
+        <span style="color:${totalLignes < 0 ? '#c0392b' : '#E26313'};">${formatMontant(totalLignes < 0 ? -totalLignes : totalLignes) || '0 FCFA'}</span>
       </div>
-      ${sommeGare ? `<div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--muted); padding-top:3px;">
-        <span>soit ${formatMontant(sommeArticles)} d'articles − ${formatMontant(sommeGare)} de frais d'expédition avancés</span>
-      </div>` : ''}
       ${plafondAtteint ? `<div style="font-size:12px; color:var(--muted); padding-top:3px;">Le total de la tuile « CLT vous doit » porte sur tous vos colis, pas seulement sur ces 100.</div>` : ''}`);
   }
 

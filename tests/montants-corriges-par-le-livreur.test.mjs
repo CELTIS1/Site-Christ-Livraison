@@ -98,7 +98,13 @@ const contexte = vm.createContext({
 });
 
 vm.runInContext(declarationDe(sourceConfig, 'MONTANT_ECART_SEUIL_CONFIRMATION', 'config.js'), contexte);
+// montantsLigneHTML() nomme le second montant « Frais de course » sur une expédition depuis le
+// 01/09/2026 : il lui faut donc la commune de référence et les deux libellés partagés.
+vm.runInContext(declarationDe(sourceConfig, 'COMMUNE_EXPEDITION', 'config.js'), contexte);
+vm.runInContext(declarationDe(sourceConfig, 'LIBELLE_FRAIS_EXPEDITION', 'config.js'), contexte);
+vm.runInContext(declarationDe(sourceConfig, 'LIBELLE_FRAIS_COURSE', 'config.js'), contexte);
 vm.runInContext([
+  'estExpedition', 'libelleMontantLivraison',
   'colisADetailMontant', 'montantArticleColis', 'montantLivraisonColis', 'montantTotalColis',
   'lireMontantSaisi', 'montantsColisAEcrire', 'ecartMontantsColis', 'montantsColisOntChange',
   'correctionMontantAConfirmer', 'correctionsMontantsDuJour',

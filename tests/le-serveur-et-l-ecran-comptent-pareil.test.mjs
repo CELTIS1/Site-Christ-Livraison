@@ -53,7 +53,29 @@ const sourceConfig = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
 const common = fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8');
 const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 
-const CHEMIN_SQL = path.join(RACINE, '_sql-prive', '2026-08-29-le-serveur-annonce-son-chiffre.sql');
+/* LA RÈGLE DU SERVEUR SE LIT DANS SA DERNIÈRE VERSION, PAS DANS SA PREMIÈRE. (01/09/2026)
+
+   Ce banc d'essai ouvrait le seul script du 29 août. Or une règle de calcul se réécrit : le
+   1er septembre, montant_en_main_du_livreur() a été redéfinie dans un script plus récent pour
+   exclure les expéditions. Le banc d'essai a continué de lire l'ancienne définition, s'est
+   déclaré satisfait, et n'a rien vu du désaccord qu'il existe précisément pour détecter.
+
+   On cherche donc, parmi tous les scripts, celui qui définit cette fonction EN DERNIER — les
+   noms de fichier commencent par une date, l'ordre alphabétique est donc l'ordre chronologique.
+   C'est bien la dernière définition exécutée qui fait foi dans la base. */
+const DOSSIER_SQL = path.join(RACINE, '_sql-prive');
+// Le script fondateur : c'est lui qui porte les trois fonctions et leurs droits. Il ne bouge pas.
+const CHEMIN_SQL = path.join(DOSSIER_SQL, '2026-08-29-le-serveur-annonce-son-chiffre.sql');
+// Et la DERNIÈRE réécriture de la règle d'argent, où qu'elle soit. Voir ci-dessus.
+const CHEMIN_REGLE = (() => {
+  if (!fs.existsSync(DOSSIER_SQL)) return path.join(DOSSIER_SQL, 'absent.sql');
+  const candidats = fs.readdirSync(DOSSIER_SQL)
+    .filter(f => f.endsWith('.sql'))
+    .filter(f => /create or replace function public\.montant_en_main_du_livreur/
+      .test(fs.readFileSync(path.join(DOSSIER_SQL, f), 'utf8')))
+    .sort();
+  return path.join(DOSSIER_SQL, candidats[candidats.length - 1] || 'absent.sql');
+})();
 
 let reussies = 0, echouees = 0, ignorees = 0;
 function verifier(t, condition, detail){
@@ -291,7 +313,8 @@ if (!fs.existsSync(CHEMIN_SQL)) {
     "_sql-prive n'est pas dans le dépôt public : ces contrôles ne valent qu'en local");
 } else {
   const sql = fs.readFileSync(CHEMIN_SQL, 'utf8');
-  const regle = corpsSQL(sql, 'montant_en_main_du_livreur');
+  // La règle vient de sa dernière version, pas forcément de ce fichier-ci.
+  const regle = corpsSQL(fs.readFileSync(CHEMIN_REGLE, 'utf8'), 'montant_en_main_du_livreur');
   const lecture = corpsSQL(sql, 'attendu_remise_caisse');
   const ecriture = corpsSQL(sql, 'enregistrer_remise_caisse');
 
@@ -351,17 +374,58 @@ if (!fs.existsSync(CHEMIN_SQL)) {
      d'un côté, c'est un terme d'argent qui disparaît d'un seul des deux calculs — et
      personne ne le verrait, puisque les deux continueraient de fonctionner.
      ------------------------------------------------------------------------------------ */
-  const chaineJS = [
+  /* CÔTÉ JAVASCRIPT : ON EXÉCUTE, ON NE LIT PAS.
+
+     Ce relevé se faisait par expression régulière, en cherchant « c.quelque_chose » dans le
+     texte des fonctions. Le 1er septembre 2026, ce contrôle est passé au VERT alors qu'une
+     colonne venait d'apparaître d'un seul côté : montantEnMainDuLivreur() s'était mis à
+     dépendre de commune_destination, mais il y accède à travers estExpedition(colisOuCommune),
+     dont le paramètre ne s'appelle pas « c ». L'expression régulière ne pouvait pas le voir.
+
+     Un banc d'essai qui cherche un NOM DE VARIABLE dans du texte surveille la façon d'écrire,
+     pas ce que le code fait. On exécute donc la vraie règle sur un colis espion — un Proxy qui
+     note chaque propriété qu'on lui demande — et on relève ce qui a été lu pour de bon. Un
+     renommage de paramètre n'y change plus rien.
+
+     Le colis est joué dans plusieurs états, sans quoi les branches non empruntées cacheraient
+     leurs colonnes : un colis d'Abidjan livré, une expédition livrée, un colis pas encore
+     livré, un colis ancien sans détail de montants, une avance déjà remboursée. */
+  const contexteRegle = vm.createContext({ console });
+  // estExpedition() cite cette constante ; on l'extrait du vrai fichier plutôt que de la
+  // recopier, une valeur recopiée finissant toujours par mentir.
+  vm.runInContext(
+    (sourceConfig.match(/^const\s+COMMUNE_EXPEDITION\s*=.*?;\s*$/m) || [''])[0],
+    contexteRegle);
+  vm.runInContext([
+    'estExpedition',
     'colisADetailMontant', 'montantArticleColis', 'montantLivraisonColis',
     'fraisExpeditionColis', 'articleEncaisse', 'livraisonEncaissee',
     'montantArticleEncaisse', 'montantLivraisonEncaissee', 'fraisExpeditionARembourser',
     'montantEnMainDuLivreur',
-  ].map(n => sansCommentaires(blocDe(sourceConfig, n, 'config.js'))).join('\n');
+  ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexteRegle);
+  const COMMUNE_EXP = vm.runInContext('COMMUNE_EXPEDITION', contexteRegle);
+
+  const cotesJS = new Set();
+  const espion = (valeurs) => new Proxy(Object.assign({}, valeurs), {
+    get(cible, cle) {
+      if (typeof cle === 'string') cotesJS.add(cle);
+      return cible[cle];
+    },
+  });
+  [
+    { statut: 'livre', montant_article: 20000, montant_livraison: 1500, commune_destination: 'Cocody' },
+    { statut: 'livre', montant_article: 20000, montant_livraison: 3000, frais_expedition: 2500,
+      commune_destination: COMMUNE_EXP },
+    { statut: 'recupere', montant_article: 8000, frais_expedition: 2500, commune_destination: COMMUNE_EXP },
+    { statut: 'livre', montant: 12000, commune_destination: 'Yopougon' },
+    { statut: 'livre', montant_article: 5000, montant_livraison: 1000, commune_destination: 'Abobo',
+      article_non_encaisse: true, livraison_payee: true, livraison_non_encaissee: true,
+      frais_expedition: 1000, frais_expedition_rembourse_at: '2026-09-01T10:00:00Z' },
+  ].forEach(etat => { contexteRegle.montantEnMainDuLivreur(espion(etat)); });
 
   const colonnes = src => new Set(
     (src.match(/\bc\.([a-z_]+)/g) || []).map(s => s.slice(2))
   );
-  const cotesJS = colonnes(chaineJS);
   const coteSQL = colonnes(regle);
   const manquantSQL = [...cotesJS].filter(x => !coteSQL.has(x));
   const manquantJS = [...coteSQL].filter(x => !cotesJS.has(x));
@@ -370,10 +434,13 @@ if (!fs.existsSync(CHEMIN_SQL)) {
     manquantSQL.length === 0 && manquantJS.length === 0,
     `absentes du SQL : ${manquantSQL.join(', ') || 'aucune'} · absentes du JS : ${manquantJS.join(', ') || 'aucune'}`);
 
-  verifier("et ces colonnes sont bien les neuf attendues, pas un sous-ensemble appauvri",
+  // La dixième, commune_destination, est arrivée le 01/09/2026 : sur une expédition le livreur
+  // n'encaisse rien, ni l'article ni la course. Elle est nommée ici pour que sa disparition d'un
+  // des deux côtés soit une panne bruyante et non un silence.
+  verifier("et ces colonnes sont bien les dix attendues, pas un sous-ensemble appauvri",
     ['statut', 'article_non_encaisse', 'livraison_payee', 'livraison_non_encaissee',
      'montant_article', 'montant_livraison', 'montant', 'frais_expedition',
-     'frais_expedition_rembourse_at'].every(x => cotesJS.has(x) && coteSQL.has(x)),
+     'frais_expedition_rembourse_at', 'commune_destination'].every(x => cotesJS.has(x) && coteSQL.has(x)),
     [...cotesJS].sort().join(', '));
 
   verifier("le fichier dit ce qui a été mesuré, et sur quelle base",

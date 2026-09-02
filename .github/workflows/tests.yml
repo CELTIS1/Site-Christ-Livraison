@@ -137,6 +137,17 @@ jobs:
       - name: L'argent des colis (deux poches, jamais mélangées)
         run: node tests/argent-des-colis.test.mjs
 
+      # L'expédition, depuis le 01/09/2026. C'est le seul cas où CLT n'encaisse rien : le
+      # destinataire a déjà payé chez la vendeuse avant le départ. Deux frais se retiennent
+      # alors sur elle — le transporteur, et la course du livreur — et son relevé peut être
+      # négatif. Une première tentative avait été entièrement annulée le 31 août : elle avait
+      # corrigé UNE des quatre formules qui répondaient à « combien doit-on à cette cliente »,
+      # et le document envoyé annonçait 30 000 quand l'écran de la même cliente disait 15 000.
+      # Cette série ne vérifie donc pas seulement que le calcul est juste : elle vérifie qu'il
+      # n'y en a QU'UN, en exigeant que tous les chemins d'affichage bougent ensemble.
+      - name: L'argent de l'expédition (un seul calcul, deux frais, un signe qui compte)
+        run: node tests/l-argent-de-l-expedition.test.mjs
+
       # Le contrôle croisé des écrans. Le 25 août, le téléphone d'un livreur affichait 11 000
       # en main et le tableau de l'équipe lui en réclamait 14 000 : il avait payé 3 000 à la
       # gare le matin, sur un colis qui n'arrivait que le lendemain, et le tableau de l'équipe
