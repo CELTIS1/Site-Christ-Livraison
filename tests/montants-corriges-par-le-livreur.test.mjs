@@ -398,50 +398,55 @@ function estDansLeRepli(carte){
   return ouverture !== -1 && fermeture !== -1 && bloc > ouverture && bloc < fermeture;
 }
 
-/* CE CONTRÔLE A ÉTÉ REVU LE 02/09/2026, DÉLIBÉRÉMENT, ET VOICI LE RAISONNEMENT.
+/* CE CONTRÔLE A ÉTÉ DESSERRÉ LE 02/09/2026 AU MATIN, PUIS REMIS TEL QUEL L'APRÈS-MIDI.
 
-   Il exigeait que les champs de montant soient TOUJOURS derrière le repli, sans exception. La
-   raison était bonne et elle tient toujours : « un champ de montant posé à l'air libre se remplit
-   d'un doigt qui défile ». Sur un colis d'Abidjan, corriger un montant est rare — une remise, un
-   article changé — et rare veut dire replié.
+   Il exige que les champs de montant soient TOUJOURS derrière le repli. La raison tient
+   toujours : « un champ de montant posé à l'air libre se remplit d'un doigt qui défile ».
 
-   Sur une EXPÉDITION, ce n'est plus vrai. Celtis, le 2 septembre : « ce qu'il doit faire, c'est
-   qu'il doit entrer le coût de l'expédition et le coût de la course. Voici les deux champs que le
-   livreur doit renseigner pour chaque expédition. » Ces deux champs ne sont pas une correction
-   exceptionnelle : ils sont le travail. Les enfermer derrière « Plus d'options » obligeait à
-   déplier 1 200 pixels de panneau pour atteindre les deux seules cases à remplir.
+   Le matin, j'ai sorti les deux montants d'une expédition sur la carte, en me disant qu'ils
+   étaient le travail et non une option, et j'ai élargi ce contrôle en conséquence. Celtis a
+   regardé le résultat sur son téléphone : « la carte peut être repliée comme les autres, sous
+   le bouton plus d'options, comme les autres. »
 
-   CE QUI PROTÈGE ENCORE, et c'est pour ça qu'on peut les sortir sans rien perdre :
-     • rien ne s'écrit sans un appui sur un bouton nommé — un champ modifié par mégarde ne part
-       nulle part tant que personne n'appuie ;
-     • montantsColisOntChange() refuse d'écrire si rien n'a bougé ;
-     • correctionMontantAConfirmer() repose la question au-delà de 10 000 F d'écart ;
-     • sur un téléphone, un champ « number » ne change pas parce qu'un doigt le survole : il
-       faut le toucher puis taper.
+   Il a raison, et pour une raison que je n'avais pas vue : un livreur ouvre la même carte vingt
+   fois par jour. Si elle se comporte différemment selon le colis, il doit deviner à chaque fois
+   où sont les choses. La régularité vaut mieux que l'optimisation d'un cas sur cent — et le
+   repli reste à un seul appui.
 
-   Le contrôle garde donc sa règle d'origine pour le cas ordinaire, et vérifie EN PLUS que la
-   sortie du repli est bien réservée à l'expédition. Il n'est pas desserré : il est plus précis. */
-verifier("hors expédition, le bloc de correction reste derrière un repli",
+   Ce qui a été gardé du matin, en revanche : deux champs au lieu de trois. Le champ « Article »
+   ne s'affiche plus du tout sur une expédition, et le contrôle ci-dessous le vérifie. */
+verifier("le bloc de correction est derrière un repli, sur les DEUX listes",
   estDansLeRepli(carteMesColis) && estDansLeRepli(carteRecup),
   'un champ de montant posé à l\'air libre se remplit d\'un doigt qui défile');
-verifier("et il n'en sort QUE sur une expédition",
-  /estExpedition\(c\) \? '' : montantsChampsHTML\(c\)/.test(carteMesColis),
-  'la sortie du repli doit être conditionnée, jamais générale');
-verifier("sur une expédition, les deux montants sont sur la carte, avant le repli",
-  (() => {
-    const i = carteMesColis.indexOf('expedition-argent');
-    const d = carteMesColis.indexOf('<details class="colis-plus">');
-    return i !== -1 && d !== -1 && i < d;
-  })(),
-  'ce sont les deux seules cases à remplir : les enterrer, c\'est cacher le travail');
-// La lecture seule est posée dans montantsChampsHTML(), pas dans la carte : c'est là que les
-// deux cases sont dessinées, et c'est le seul endroit où la règle doit vivre.
-verifier("l'article reste en lecture seule sur une expédition",
-  /estExpedition\(c\) \? 'readonly/.test(blocDe(livreur, 'montantsChampsHTML', 'livreur.html')),
-  'le destinataire a payé chez la vendeuse : le livreur n\'a rien à y corriger');
-verifier("le retirer serait pire que le figer",
-  /montant-article-input/.test(blocDe(livreur, 'montantsChampsHTML', 'livreur.html')),
-  'un champ absent est lu comme vide, donc écrit ZÉRO : la case doit rester, en lecture seule');
+verifier("il n'en sort pour personne, expédition comprise",
+  !/expedition-argent/.test(carteMesColis) && !/expedition-argent/.test(carteRecup),
+  'la carte doit se comporter pareil quel que soit le colis : un livreur l\'ouvre vingt fois par jour');
+
+// Deux champs sur une expédition, trois ailleurs. Demandé par Celtis en regardant l'écran :
+// « au niveau des montants je pense que deux champs c'est bon : frais d'expédition et frais
+// de course. » Le destinataire a payé chez la vendeuse ; l'article ne le regarde pas.
+const blocMontants = blocDe(livreur, 'montantsChampsHTML', 'livreur.html');
+verifier("sur une expédition, le champ « Article » n'est pas dessiné",
+  /estExpedition\(c\) \? '' : `<label class="montant-case">\s*<span>Article/.test(blocMontants),
+  'le destinataire a payé chez la vendeuse : ce montant ne passe par personne ici');
+verifier("il reste dessiné partout ailleurs",
+  /montant-article-input/.test(blocMontants));
+
+/* ET LE PIÈGE QUE CE RETRAIT OUVRAIT, REFERMÉ POUR DE BON.
+   lireMontantSaisi('') répond zéro. C'est juste pour une case qu'on a effacée exprès, et faux
+   pour une case qui n'existe pas : enregistrer les frais aurait écrasé à ZÉRO le montant
+   déclaré par la vendeuse, en silence, à chaque appui. Absent doit vouloir dire « ne touche
+   pas ». */
+const brancher = blocDe(livreur, 'brancherMontants', 'livreur.html');
+verifier("un champ absent reprend la valeur enregistrée, il n'est pas lu comme vide",
+  /champArticle\s*\n?\s*\? lireMontantSaisi\(champArticle\.value\)\s*\n?\s*: \{ ok: true, valeur: Number\(montantArticleColis\(existing\)\)/.test(brancher),
+  'sinon le premier enregistrement de frais efface l\'article de la vendeuse');
+verifier('la même précaution vaut pour le second champ',
+  /champLivraison\s*\n?\s*\? lireMontantSaisi\(champLivraison\.value\)\s*\n?\s*: \{ ok: true, valeur: Number\(montantLivraisonColis\(existing\)\)/.test(brancher));
+verifier("plus aucun champ n'est lu comme une chaîne vide par défaut",
+  !/lireMontantSaisi\(champArticle \? champArticle\.value : ''\)/.test(brancher)
+  && !/lireMontantSaisi\(champLivraison \? champLivraison\.value : ''\)/.test(brancher),
+  'c\'est exactement l\'écriture qui écrasait à zéro');
 
 titre("Le même code pour les deux listes");
 verifier("brancherMontants n'est écrit qu'une fois",

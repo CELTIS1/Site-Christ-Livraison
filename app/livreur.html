@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260902expedition">
-<script src="theme.js?v=20260902expedition"></script>
+<link rel="stylesheet" href="style.css?v=20260902deuxchamps">
+<script src="theme.js?v=20260902deuxchamps"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -693,8 +693,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260902expedition"></script>
-<script src="config.js?v=20260902expedition"></script>
+<script src="clt-common.js?v=20260902deuxchamps"></script>
+<script src="config.js?v=20260902deuxchamps"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -1648,7 +1648,7 @@
         <div class="frais-exp-raccourcis">${raccourcis}</div>
         <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
           <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="1" placeholder="Autre montant" value="${escapeHTML(valeur)}" aria-label="Frais d'expédition payés au transporteur, en FCFA" style="flex:1; min-width:0;">
-          <button type="button" class="btn btn-sm btn-frais-exp" style="white-space:nowrap;">Enregistrer les frais</button>
+          <button type="button" class="btn btn-sm btn-frais-exp" style="white-space:nowrap;">Enregistrer l'expédition</button>
         </div>
         <div class="meta" style="font-size:11px; margin-top:4px; color:#8a4b12;">
           Écrivez le montant réellement payé, même s'il dépasse 3 500 F. Retenu sur l'argent de la cliente ; n'entame pas l'argent des livraisons.
@@ -1681,30 +1681,46 @@
   function montantsChampsHTML(c){
     return `
       <div class="field montants-bloc">
-        <label class="montants-titre">💵 Montants de ce colis</label>
+        <!-- Le titre et la consigne changent avec la nature du colis, et c'est nécessaire.
+             « À corriger seulement si le prix a changé » est juste sur un colis d'Abidjan, où
+             les montants viennent de la vendeuse et où le livreur ne fait que rectifier une
+             remise. Sur une expédition, c'est le contraire : personne n'a encore rien écrit,
+             et c'est LUI qui apporte le chiffre — il revient de la gare avec le reçu. Lui dire
+             « à corriger seulement si » devant une case vide, c'est lui suggérer de ne rien
+             faire. (02/09/2026) -->
+        <label class="montants-titre">💵 ${estExpedition(c) ? 'Ce que vous avez payé et gagné' : 'Montants de ce colis'}</label>
+        ${estExpedition(c) ? `
+        <div class="meta montants-avis">
+          🚌 Vous n'encaissez rien chez le destinataire : il a déjà payé chez la vendeuse.
+          Écrivez ce que le transporteur a pris, et ce que vous gagnez pour le déplacement.
+          Les deux sont retenus sur elle, et elle les lira ce soir sur son relevé.
+        </div>` : `
         <div class="meta montants-avis">
           À corriger seulement si le prix a changé : remise accordée, article différent, livraison
           renégociée. Ce que vous écrivez ici est ce que la cliente lira ce soir sur son relevé, et
           l'équipe voit chaque correction.
-        </div>${estExpedition(c) ? `
-        <div class="meta montants-avis" style="border-left:3px solid #f0c48a; padding-left:8px; color:#8a4b12;">
-          🚌 Expédition : vous n'encaissez rien chez le destinataire, il a déjà payé chez la
-          vendeuse. Les frais de course sont retenus sur elle, avec les frais d'expédition.
-        </div>` : ''}
+        </div>`}
         <div class="montants-grille">
-          <label class="montant-case">
+          <!-- SUR UNE EXPÉDITION, IL N'Y A PLUS DE CHAMP « ARTICLE ». (02/09/2026)
+               Celtis, en voyant l'écran : « au niveau des montants je pense que deux champs
+               c'est bon : frais d'expédition et frais de course. »
+
+               Il a raison, et c'est le métier qui le dit : le destinataire a payé chez la
+               vendeuse avant le départ. Ce montant ne passe par personne ici, et le livreur
+               n'a aucune raison de le voir — encore moins d'y toucher.
+
+               LE PIÈGE QUI M'AVAIT FAIT LE GARDER, ET COMMENT IL EST FERMÉ. Le bouton
+               d'enregistrement lisait les deux champs ensemble, et un champ absent est lu
+               comme une chaîne vide, donc écrit ZÉRO : retirer la case aurait effacé en
+               silence le montant déclaré par la vendeuse, à chaque enregistrement de frais.
+               Je l'avais donc laissée en lecture seule — une rustine, pas une réponse.
+               La vraie réponse est dans brancherMontants() : quand la case n'existe pas, on
+               reprend la valeur DÉJÀ ENREGISTRÉE au lieu de lire du vide. Voir là-bas. -->
+          ${estExpedition(c) ? '' : `<label class="montant-case">
             <span>Article (à la cliente)</span>
-            <!-- SUR UNE EXPÉDITION, CE CHAMP EST EN LECTURE SEULE. (02/09/2026)
-                 Le destinataire a payé chez la vendeuse avant le départ : ce montant ne passe
-                 par personne ici, et le livreur n'a aucune raison d'y toucher.
-                 Pourquoi le laisser AFFICHÉ plutôt que le retirer : le bouton d'enregistrement
-                 lit les deux champs ensemble, et un champ absent est lu comme une chaîne vide,
-                 donc écrit ZÉRO. Retirer la case aurait effacé en silence le montant déclaré
-                 par la vendeuse, à chaque fois que le livreur enregistre ses frais. -->
             <input type="number" class="montant-article-input" inputmode="numeric" min="0" step="1"
-                   value="${montantArticleColis(c)}" ${estExpedition(c) ? 'readonly tabindex="-1" style="background:#f1f5f9; color:#64748b;"' : ''}
-                   aria-label="Montant de l'article, en FCFA">
-          </label>
+                   value="${montantArticleColis(c)}" aria-label="Montant de l'article, en FCFA">
+          </label>`}
           <label class="montant-case">
             <span>${escapeHTML(libelleMontantLivraison(c))}</span>
             <input type="number" class="montant-livraison-input" inputmode="numeric" min="0" step="1" value="${montantLivraisonColis(c)}" aria-label="${escapeHTML(libelleMontantLivraison(c))}, en FCFA">
@@ -1746,9 +1762,24 @@
         const champArticle = item.querySelector('.montant-article-input');
         const champLivraison = item.querySelector('.montant-livraison-input');
 
-        const luArticle = lireMontantSaisi(champArticle ? champArticle.value : '');
+        /* UN CHAMP ABSENT N'EST PAS UN CHAMP VIDE. (02/09/2026)
+
+           Sur une expédition, la case « Article » n'est plus dessinée : le destinataire a payé
+           chez la vendeuse, le livreur n'a rien à y voir. Mais `lireMontantSaisi('')` répond
+           zéro — c'est juste pour une case qu'on a effacée exprès, et faux pour une case qui
+           n'a jamais existé. Enregistrer les frais aurait alors écrasé à ZÉRO le montant que
+           la vendeuse avait déclaré, en silence, à chaque appui.
+
+           Absent veut donc dire « ne touche pas » : on reprend la valeur déjà enregistrée.
+           C'est aussi ce qui rend le contrôle « aucun changement » honnête — sans cela, le
+           premier enregistrement de frais aurait toujours l'air de corriger l'article. */
+        const luArticle = champArticle
+          ? lireMontantSaisi(champArticle.value)
+          : { ok: true, valeur: Number(montantArticleColis(existing)) || 0 };
         if (!luArticle.ok) { alert(luArticle.message); return; }
-        const luLivraison = lireMontantSaisi(champLivraison ? champLivraison.value : '');
+        const luLivraison = champLivraison
+          ? lireMontantSaisi(champLivraison.value)
+          : { ok: true, valeur: Number(montantLivraisonColis(existing)) || 0 };
         if (!luLivraison.ok) { alert(luLivraison.message); return; }
 
         const patch = montantsColisAEcrire(luArticle.valeur, luLivraison.valeur);
@@ -1890,25 +1921,6 @@
             ? `<div class="sync-pending-badge sync-blocked-badge">⚠️ Non enregistré — prévenez l'équipe</div>`
             : (pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : '')}
           <select class="status-select">${statutOptions}</select>
-          <!-- SUR UNE EXPÉDITION, LES DEUX MONTANTS SORTENT DU PANNEAU. (02/09/2026)
-
-               Celtis, en regardant un livreur devant un colis d'expédition : « ce qu'il doit
-               faire, c'est qu'il doit entrer le coût de l'expédition et le coût de la course.
-               Voici les deux champs que le livreur doit renseigner pour chaque expédition. Et
-               puis il indique le statut. »
-
-               Ce ne sont donc pas des « options » : c'est TOUT le travail. Les laisser derrière
-               « Plus d'options » obligeait à déplier 1 200 pixels de panneau pour atteindre les
-               deux seules cases à remplir — et c'est cette manœuvre-là, pas la carte au repos,
-               qui rendait l'écran interminable. La carte repliée fait 410 px ; c'est en cherchant
-               ces deux champs qu'elle en faisait 1 620.
-
-               Ailleurs, rien ne bouge : sur un colis d'Abidjan, corriger un montant reste rare,
-               et rare veut dire replié. -->
-          ${estExpedition(c) ? `<div class="expedition-argent">
-            ${montantsChampsHTML(c)}
-            ${fraisExpeditionChampHTML(c)}
-          </div>` : ''}
           <details class="colis-plus">
             <summary>Plus d'options</summary>
             <div class="colis-plus-corps">
@@ -1922,9 +1934,8 @@
                    encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
                    colis a été remis sans que l'argent de l'article rentre. -->
               <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#c0392b !important; border:1.5px solid #c0392b; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À utiliser seulement si vous avez remis le colis sans récupérer l'argent de l'article.">${c.article_non_encaisse ? '⚠️ Article NON encaissé' : "Article non encaissé ?"}</button>`}
-              <!-- Hors expédition seulement : ici, corriger un montant est rare, donc replié.
-                   Sur une expédition ces deux champs sont remontés sur la carte, au-dessus. -->
-              ${estExpedition(c) ? '' : montantsChampsHTML(c) + fraisExpeditionChampHTML(c)}
+              ${montantsChampsHTML(c)}
+              ${fraisExpeditionChampHTML(c)}
               <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
               <div class="field" style="margin-top:8px;">
                 <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>

@@ -383,9 +383,18 @@ verifier('ailleurs il garde son nom',
 verifier("l'écran du livreur emploie la constante, sans recopier le mot",
   /libelleMontantLivraison\(c\)/.test(livreur),
   'un mot recopié à cinq endroits finit toujours par diverger à l\'un des cinq');
+// La phrase a été réécrite le 02/09 quand le champ « Article » a disparu : elle ne se contente
+// plus de prévenir, elle dit quoi faire. On vérifie les deux moitiés — ce qu'il n'encaisse pas,
+// et ce qu'il doit écrire — parce que la première seule laisserait le livreur sans consigne.
 verifier("l'écran du livreur prévient qu'il n'encaisse rien sur une expédition",
-  /vous n'encaissez rien chez le destinataire/.test(livreur),
+  /Vous n'encaissez rien chez le destinataire/.test(livreur),
   'sans quoi il réclamera l\'article à quelqu\'un qui a déjà payé');
+verifier('… et lui dit ce qu\'il doit écrire à la place',
+  /Écrivez ce que le transporteur a pris, et ce que vous gagnez pour le déplacement/.test(livreur),
+  'sur une expédition c\'est LUI qui apporte les chiffres, au retour de la gare');
+verifier('le titre du bloc change avec la nature du colis',
+  /Ce que vous avez payé et gagné' : 'Montants de ce colis'/.test(livreur),
+  '« à corriger seulement si le prix a changé » devant deux cases vides invite à ne rien faire');
 verifier("l'écran de la vendeuse affiche la retenue de course",
   /frais_course_retenus/.test(fournisseur) && /Frais de course/.test(fournisseur));
 
