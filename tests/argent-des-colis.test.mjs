@@ -101,7 +101,7 @@ vm.runInContext([
   'montantArticleColis',
   'montantLivraisonColis',
   'montantTotalColis',
-  'fraisExpeditionColis', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse',
+  'fraisExpeditionColis', 'fraisSoldes', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse',
   'fraisExpeditionADevoir',
   'montantNetADevoir',
   'articleEncaisse',
@@ -794,7 +794,7 @@ titre('L\'onglet Finance du livreur');
   // -- Ce que le détail montre de chaque colis -------------------------------------------------
   const detailColis = blocDe(sourceConfig, 'financeColisHTML');
   verifier('le détail montre le statut de chaque colis',
-    detailColis.includes('statutBadgeHTML(c.statut)'),
+    detailColis.includes('statutBadgeHTML(c.statut, c)'),
     'c\'est la demande exacte : « les quatre colis avec les différents statuts en face »');
   verifier('il montre aussi où en est l\'argent du colis',
     detailColis.includes('paiementBadgeHTML(c)'));

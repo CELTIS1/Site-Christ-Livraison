@@ -365,10 +365,10 @@ verifier(
 /* Ce numéro est écrit en dur EXPRÈS. Il n'a pas pour but de vérifier une règle, mais d'obliger
    celui qui touche à sw.js à s'arrêter une seconde : le banc rougit, on comprend pourquoi, on
    incrémente les deux. Un contrôle qui se mettrait à jour tout seul ne servirait à rien.
-   v60, le 01/09/2026 — l'argent des expéditions : deux frais retenus sur la vendeuse. */
+   v61, le 02/09/2026 — le cycle de vie d'une expédition, et la case « Soldé ». */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v60'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v61'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

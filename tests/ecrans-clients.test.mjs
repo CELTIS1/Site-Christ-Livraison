@@ -240,7 +240,13 @@ titre('3. La carte d’un colis chez la vendeuse (fonction réellement exécuté
       poser(bloc(f, config, 'config.js'));
     }
     poser(fournisseur.match(/const COLIS_ADRESSE_CORRIGEABLE = \[[^\]]*\];/)[0]);
-    for (const f of ['stepperHTML', 'colisAdresseCorrigeable', 'colisToutModifiable',
+    // stepperHTML a quitté fournisseur.html le 02/09/2026 : elle y vivait en copie, comme dans
+    // equipe.html et livreur.html, et une expédition n'ayant que trois étapes il aurait fallu
+    // corriger le même code à trois endroits. Elle se charge donc depuis config.js, avec le
+    // vocabulaire d'expédition qu'elle consulte.
+    poser(config.match(/const STATUTS_EXPEDITION = \{[\s\S]*?\n\};/)[0]);
+    for (const f of ['libelleStatut', 'stepperHTML']) poser(bloc(f, config, 'config.js'));
+    for (const f of ['colisAdresseCorrigeable', 'colisToutModifiable',
                      'colisItemHTML']) {
       poser(bloc(f, fournisseur, 'fournisseur.html'));
     }

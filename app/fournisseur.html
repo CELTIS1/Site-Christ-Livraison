@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260901course">
-<script src="theme.js?v=20260901course"></script>
+<link rel="stylesheet" href="style.css?v=20260902expedition">
+<script src="theme.js?v=20260902expedition"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -465,10 +465,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260901course"></script>
-<script src="config.js?v=20260901course"></script>
+<script src="clt-common.js?v=20260902expedition"></script>
+<script src="config.js?v=20260902expedition"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260901course"></script>
+<script src="clt-select-recherche.js?v=20260902expedition"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -840,7 +840,8 @@
       montantArticle: val('.lotfr-art'),
       montantLivraison: val('.lotfr-liv'),
       description: val('.lotfr-desc'),
-      livraisonPayee: coche('.lotfr-liv-payee')
+      livraisonPayee: coche('.lotfr-liv-payee'),
+      fraisSoldes: coche('.lotfr-soldee')
     };
   }
 
@@ -940,6 +941,12 @@
                enregistre son colis, personne n'a encore payé quoi que ce soit. La régle est
                désormais « livré = encaissé », et l'exception se coche à la livraison. -->
           <label class="check-pill"><input type="checkbox" class="lotfr-liv-payee"> Livraison déjà payée</label>
+          <!-- « Soldé » ne concerne QUE les expéditions, et remplace la case ci-dessus quand la
+               destination bascule vers l'intérieur du pays (voir appliquerModeExpedition, dans
+               config.js). Elle veut dire : j'ai déjà réglé à CLT les frais d'expédition et de
+               course sur ce colis. Cochée, plus rien ne se retient sur le relevé du soir.
+               Masquée par défaut : sur un colis d'Abidjan, elle n'aurait aucun sens. -->
+          <label class="check-pill" style="display:none;"><input type="checkbox" class="lotfr-soldee"> 🚌 Frais déjà réglés à CLT (soldé)</label>
         </div>
         <!-- Le code de confirmation à quatre chiffres a été retiré le 21 août 2026. Il n'entrait
              pas dans la façon de travailler : il fallait le générer, le transmettre soi-même au
@@ -1145,6 +1152,12 @@
       // Normalisé au format international (225…) attendu par la notification WhatsApp.
       destinataire_telephone: s.telephone ? toPhoneE164(s.telephone) : null,
       livraison_payee: !!s.livraisonPayee,
+      // « Soldé » : la vendeuse déclare avoir déjà réglé à CLT les frais d'expédition et de
+      // course sur ce colis. On enregistre la DATE et non un oui/non, comme partout ailleurs
+      // dans la maison dès qu'il s'agit d'argent — un jour de contestation, savoir QUAND vaut
+      // beaucoup mieux que savoir seulement QUE.
+      // Non cochée, on écrit null : une chaîne vide serait refusée par la colonne.
+      frais_soldes_at: s.fraisSoldes ? new Date().toISOString() : null,
       cle_creation: l.cle
     };
 
@@ -1491,25 +1504,9 @@
 
   // Frise d'étapes (stepper) : reflète visuellement l'avancement du colis à partir de son statut réel.
   // Purement présentatif — dérivé de c.statut, ne modifie aucune donnée.
-  function stepperHTML(statut){
-    const L = (typeof STATUTS !== 'undefined') ? (k => STATUTS[k].label) : (k => k);
-    const flow = [
-      { key:'en_attente',   label:L('en_attente') },
-      { key:'recupere',     label:L('recupere') },
-      { key:'en_livraison', label:L('en_livraison') },
-      { key:'livre',        label:L('livre') },
-    ];
-    const alert = (statut === 'non_livre' || statut === 'retour');
-    let idx = flow.findIndex(s => s.key === statut);
-    if (idx === -1) idx = alert ? flow.length - 1 : 0;
-    const steps = flow.map((s, i) => {
-      const cls = i < idx ? 'done' : (i === idx ? 'now' : '');
-      const label = (alert && i === flow.length - 1 && typeof STATUTS !== 'undefined' && STATUTS[statut]) ? STATUTS[statut].label : s.label;
-      const inner = i < idx ? '✓' : (i + 1);
-      return `<div class="st ${cls}"><div class="c">${inner}</div><div class="l">${label}</div></div>`;
-    }).join('');
-    return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
-  }
+  // stepperHTML() → descendue dans config.js le 02/09/2026. Elle vivait ici en copie, et une
+  // expédition n'ayant que trois étapes, la garder aurait voulu dire corriger le même code à
+  // trois endroits — donc en oublier un.
 
   // ---------- Jusqu'où une cliente peut corriger son propre colis ----------
   // Une adresse fausse ou absente ne se découvre presque jamais avant le départ : elle se
@@ -1591,7 +1588,7 @@
       : '';
     return `
       <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-statut="${escapeHTML(c.statut || '')}">
-        ${stepperHTML(c.statut)}
+        ${stepperHTML(c.statut, c)}
         ${thumb}
         <div class="info">
           <div class="view-mode">

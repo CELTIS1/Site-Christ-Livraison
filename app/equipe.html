@@ -22,8 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260901course">
-<script src="theme.js?v=20260901course"></script>
+<link rel="stylesheet" href="style.css?v=20260902expedition">
+<script src="theme.js?v=20260902expedition"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -1160,10 +1160,10 @@ quand vous reposez la tournée avec le vrai nombre.
   </div>
 </div>
 
-<script src="clt-common.js?v=20260901course"></script>
-<script src="config.js?v=20260901course"></script>
+<script src="clt-common.js?v=20260902expedition"></script>
+<script src="config.js?v=20260902expedition"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
-<script src="clt-select-recherche.js?v=20260901course"></script>
+<script src="clt-select-recherche.js?v=20260902expedition"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3271,25 +3271,9 @@ return match ? match.livreur_collecte_id : null;
 
 // Frise d'étapes (stepper) : reflète visuellement l'avancement du colis à partir de son statut réel.
 // Purement présentatif — dérivé de c.statut, ne modifie aucune donnée.
-function stepperHTML(statut){
-const L = (typeof STATUTS !== 'undefined') ? (k => STATUTS[k].label) : (k => k);
-const flow = [
-{ key:'en_attente',   label:L('en_attente') },
-{ key:'recupere',     label:L('recupere') },
-{ key:'en_livraison', label:L('en_livraison') },
-{ key:'livre',        label:L('livre') },
-];
-const alert = (statut === 'non_livre' || statut === 'retour');
-let idx = flow.findIndex(s => s.key === statut);
-if (idx === -1) idx = alert ? flow.length - 1 : 0;
-const steps = flow.map((s, i) => {
-const cls = i < idx ? 'done' : (i === idx ? 'now' : '');
-const label = (alert && i === flow.length - 1 && typeof STATUTS !== 'undefined' && STATUTS[statut]) ? STATUTS[statut].label : s.label;
-const inner = i < idx ? '✓' : (i + 1);
-return `<div class="st ${cls}"><div class="c">${inner}</div><div class="l">${label}</div></div>`;
-}).join('');
-return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
-}
+// stepperHTML() → descendue dans config.js le 02/09/2026. Elle vivait ici en copie, et une
+// expédition n'ayant que trois étapes, la garder aurait voulu dire corriger le même code à
+// trois endroits — donc en oublier un.
 
 // Adresse de destination telle qu'on la lit à voix haute au téléphone : la commune d'abord,
 // puis le repère. Les deux champs existent depuis toujours en base, mais cet écran n'affichait
@@ -3426,7 +3410,7 @@ const classeAssigne = c.livreur_id ? ' est-assigne' : '';
 return `
 <div class="colis-item${classeAssigne}${eqLotIds.has(c.id) ? ' lot-coche' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
 ${caseLotHTML(c.id, eqLotIds.has(c.id))}
-${stepperHTML(c.statut)}
+${stepperHTML(c.statut, c)}
 ${thumb}
 <div class="info">
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
@@ -3449,7 +3433,7 @@ ${eqActionsRapidesHTML(c)}
 </div>
 </div>
 <div class="status-col" style="width:auto; flex-direction:row; align-items:center; gap:10px;">
-${statutBadgeHTML(c.statut)}
+${statutBadgeHTML(c.statut, c)}
 <div class="actions-menu">
 <button type="button" class="actions-menu-btn" aria-label="Actions du colis">⋮</button>
 <div class="actions-dropdown">
@@ -6159,7 +6143,7 @@ const rows = r.lignes.map(l => `
 <tr>
 <td data-label="Téléphone">${l.telephone ? escapeHTML(l.telephone) : '—'}</td>
 <td data-label="Adresse">${l.adresse ? escapeHTML(l.adresse) : '—'}</td>
-<td data-label="Statut">${statutBadgeHTML(l.statutCode)}</td>
+<td data-label="Statut">${statutBadgeHTML(l.statutCode, l.expedition ? { commune_destination: COMMUNE_EXPEDITION } : null)}</td>
 <td data-label="Article">${formatMontant(l.article) || '0 FCFA'}</td>
 <td data-label="Vous revient" style="${l.encaisse ? 'font-weight:700;' : 'color:#8a94a3;'}${l.encaisse < 0 ? ' color:#c0392b;' : ''}">${l.encaisse ? formatMontant(l.encaisse) : '—'}</td>
 <td data-label="Observation">${l.observation ? escapeHTML(l.observation) : '—'}</td>
@@ -6398,7 +6382,7 @@ return `
 <td data-label="Cliente">${fournisseurLabel(c.fournisseur_id)}</td>
 <td data-label="Destinataire">${c.destinataire_telephone ? escapeHTML(c.destinataire_telephone) : '—'}</td>
 <td data-label="Adresse">${c.destination ? escapeHTML(c.destination) : '—'}</td>
-<td data-label="Statut">${statutBadgeHTML(c.statut)}</td>
+<td data-label="Statut">${statutBadgeHTML(c.statut, c)}</td>
 <td data-label="Article">${formatMontant(montantArticleEncaisse(c)) || '—'}</td>
 <td data-label="Livraison">${formatMontant(montantLivraisonEncaissee(c)) || '—'}</td>
 <td data-label="En main" style="${m ? 'font-weight:700;' : 'color:#8a94a3;'}">${m ? formatMontant(m) : '—'}${c.encaissement_remis ? ' <span class="recapl-remis">remis</span>' : ''}</td>
@@ -6955,7 +6939,7 @@ ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 </div>
-<div class="status-col">${statutBadgeHTML(c.statut)}</div>
+<div class="status-col">${statutBadgeHTML(c.statut, c)}</div>
 </div>
 `;
 }
@@ -7770,7 +7754,8 @@ const options = ['<option value="">— Aucun livreur —</option>'].concat(
 return `
 <select class="btn-corriger fiche-livreur-select" data-fiche-action="reaffecter" data-colis="${id}" aria-label="Livreur de ce colis">${options}</select>
 <button type="button" class="btn-corriger est-argent" data-fiche-action="encaisse" data-colis="${id}">${encaisse ? '↩️ Marquer non encaissé' : '💵 Marquer encaissé'}</button>
-<button type="button" class="btn-corriger" data-fiche-action="montants" data-colis="${id}">✏️ Corriger les montants</button>`;
+<button type="button" class="btn-corriger" data-fiche-action="montants" data-colis="${id}">✏️ Corriger les montants</button>
+${estExpedition(c) ? `<button type="button" class="btn-corriger est-argent" data-fiche-action="solde" data-colis="${id}">${fraisSoldes(c) ? '↩️ Frais non réglés' : '✅ Frais réglés (soldé)'}</button>` : ''}`;
 }
 
 function brancherFicheCorrections(racine){
@@ -7789,6 +7774,7 @@ return;
 el.addEventListener('click', () => {
 const id = el.dataset.colis;
 if (action === 'encaisse') ficheBasculerEncaisse(id, el);
+else if (action === 'solde') ficheBasculerSolde(id, el);
 else if (action === 'montants') ficheAllerCorrigerMontants(id);
 });
 });
@@ -7897,6 +7883,42 @@ if (btn) btn.disabled = true;
 await eqCorrigerColis(id, { article_non_encaisse: etaitEncaisse }, {
 message: etaitEncaisse ? 'Article marqué non encaissé.' : 'Article marqué encaissé.',
 details: { avant_article_non_encaisse: !!c.article_non_encaisse }
+});
+if (btn) btn.disabled = false;
+}
+
+/* « SOLDÉ » — la vendeuse a réglé les frais à CLT. (02/09/2026)
+
+   Écrit une DATE et non un oui/non, comme les trois autres événements d'argent de la maison
+   (reversement, remise de caisse, remboursement d'avance) : un jour de contestation, savoir
+   QUAND vaut beaucoup mieux que savoir seulement QUE.
+
+   Passe par eqCorrigerColis(), la porte unique : même écriture, même repli hors-réseau, même
+   trace au journal. Une quatrième correction qui écrirait directement dans la table rouvrirait
+   le chemin divergent qu'on a fermé.
+
+   La question posée annonce l'effet sur le RELEVÉ DE LA CLIENTE, parce que c'est là que ça se
+   voit — et que c'est elle qui appellera si le chiffre bouge sans explication. */
+async function ficheBasculerSolde(id, btn){
+const c = (allColis || []).find(x => x.id === id);
+if (!c) return;
+const etaitSolde = fraisSoldes(c);
+const aRetenir = Number(fraisExpeditionADevoir(c)) + Number(fraisCourseADevoir(c));
+const dejaRetenu = Number(fraisExpeditionColis(c)) + Number(fraisCourseColis(c));
+const ok = await showConfirm({
+title: etaitSolde ? 'Annuler « frais réglés » ?' : 'Marquer les frais réglés par la cliente ?',
+detail: (c.numero ? c.numero + ' · ' : '') + (formatMontant(etaitSolde ? dejaRetenu : aRetenir) || '0 FCFA'),
+sub: etaitSolde
+? "Ces frais redeviendront une retenue sur son relevé : la somme qu'on lui doit baissera d'autant."
+: "Ces frais cesseront d'être retenus sur son relevé : la somme qu'on lui doit remontera d'autant. À faire seulement si elle a réellement payé.",
+okLabel: 'Oui, corriger',
+danger: etaitSolde,
+});
+if (!ok) return;
+if (btn) btn.disabled = true;
+await eqCorrigerColis(id, { frais_soldes_at: etaitSolde ? null : new Date().toISOString() }, {
+message: etaitSolde ? 'Frais remis en retenue.' : 'Frais marqués réglés par la cliente.',
+details: { avant_frais_soldes_at: c.frais_soldes_at || null }
 });
 if (btn) btn.disabled = false;
 }

@@ -97,18 +97,19 @@ const contexte = vm.createContext({ console });
 vm.runInContext([
   declarationDe(sourceConfig, 'STATUTS', 'config.js'),
   declarationDe(sourceConfig, 'COMMUNE_EXPEDITION', 'config.js'),
+  declarationDe(sourceConfig, 'STATUTS_EXPEDITION', 'config.js'),
   declarationDe(sourceConfig, 'RELEVE_COLONNES', 'config.js'),
   declarationDe(sourceConfig, 'RELEVE_NOTE', 'config.js'),
 ].join('\n\n'), contexte);
 
 vm.runInContext([
   'estExpedition', 'colisADetailMontant', 'montantArticleColis', 'montantLivraisonColis',
-  'montantTotalColis', 'fraisExpeditionColis', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse', 'articleEncaisse', 'livraisonEncaissee',
+  'montantTotalColis', 'fraisExpeditionColis', 'fraisSoldes', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse', 'articleEncaisse', 'livraisonEncaissee',
   'montantArticleEncaisse', 'montantLivraisonEncaissee', 'montantArticleADevoir',
   'fraisExpeditionADevoir', 'montantNetADevoir', 'fraisExpeditionARembourser',
   'montantEnMainDuLivreur', 'montantManquantALaLivraison', 'totauxArgent',
   'piedTotalHTML', 'echapperAttribut', 'statutBadgeHTML',
-  'statutTexte', 'releveCliente', 'releveTotalTextes', 'relevePiedCellules',
+  'libelleStatut', 'iconeStatut', 'statutTexte', 'releveCliente', 'releveTotalTextes', 'relevePiedCellules',
   'texteAplatiPourPDF', 'celluleAplatiePourPDF', 'nouveauPDF',
   'relevePhraseDue', 'releveDetailRetenues', 'releveNomFichier',
   // Le relevé du soir ne dessine plus son en-tête : il passe par le papier à en-tête de la

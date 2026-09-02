@@ -66,6 +66,10 @@ const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
 const CHEMIN_SQL = path.join(RACINE, '_sql-prive',
   '2026-09-01-frais-d-expedition-et-frais-de-course.sql');
 const sql = fs.existsSync(CHEMIN_SQL) ? fs.readFileSync(CHEMIN_SQL, 'utf8') : null;
+// Le script du lendemain, qui ajoute « Soldé ». Même précaution : absent d'un clone propre.
+const CHEMIN_SQL2 = path.join(RACINE, '_sql-prive',
+  '2026-09-02-le-cycle-de-l-expedition-et-le-solde.sql');
+const sql2 = fs.existsSync(CHEMIN_SQL2) ? fs.readFileSync(CHEMIN_SQL2, 'utf8') : null;
 
 let reussies = 0, echouees = 0, ignorees = 0;
 function verifier(t, condition, detail){
@@ -93,6 +97,19 @@ function blocDe(src, nom, ouQuoi){
   }
   console.error(`Fin de ${nom} introuvable dans ${ouQuoi}`); process.exit(1);
 }
+// STATUTS_EXPEDITION tient sur plusieurs lignes : constanteDe() ne sait lire qu'une ligne.
+function declarationDe(src, nom, ouQuoi){
+  const debut = src.indexOf('const ' + nom + ' =');
+  if (debut === -1) { console.error(`Déclaration ${nom} introuvable dans ${ouQuoi}`); process.exit(1); }
+  let prof = 0;
+  for (let i = debut; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === '(' || ch === '{' || ch === '[') prof++;
+    else if (ch === ')' || ch === '}' || ch === ']') prof--;
+    else if (ch === ';' && prof === 0) return src.slice(debut, i + 1);
+  }
+  console.error(`Fin de ${nom} introuvable dans ${ouQuoi}`); process.exit(1);
+}
 function constanteDe(src, nom, ouQuoi){
   const m = src.match(new RegExp('^const\\s+' + nom + '\\s*=.*?;\\s*$', 'm'));
   if (!m) { console.error(`Constante ${nom} introuvable dans ${ouQuoi}`); process.exit(1); }
@@ -104,6 +121,9 @@ vm.runInContext([
   constanteDe(sourceConfig, 'COMMUNE_EXPEDITION', 'config.js'),
   constanteDe(sourceConfig, 'LIBELLE_FRAIS_EXPEDITION', 'config.js'),
   constanteDe(sourceConfig, 'LIBELLE_FRAIS_COURSE', 'config.js'),
+  declarationDe(sourceConfig, 'STATUTS_EXPEDITION', 'config.js'),
+  declarationDe(sourceConfig, 'ETATS_EXPEDITION', 'config.js'),
+  declarationDe(sourceConfig, 'STATUTS', 'config.js'),
   blocDe(sourceCommun, 'formatMontant', 'clt-common.js'),
   ...[
     'estExpedition',
@@ -114,14 +134,14 @@ vm.runInContext([
     'montantArticleEncaisse', 'montantLivraisonEncaissee',
     'montantArticleADevoir', 'montantNetADevoir', 'montantEnMainDuLivreur',
     'montantManquantALaLivraison', 'montantArticleReverse', 'fraisCourseAcquis',
+    'fraisSoldes', 'etatsPossibles', 'stepperHTML',
     'paiementInfo',
-    'totauxArgent', 'statutTexte', 'releveCliente',
+    'totauxArgent', 'libelleStatut', 'iconeStatut', 'statutTexte', 'releveCliente',
     'releveTotalTextes', 'relevePhraseDue', 'releveDetailRetenues',
   ].map(n => blocDe(sourceConfig, n, 'config.js')),
   // releveCliente cite RELEVE_COLONNES ; statutTexte cite STATUTS, absent hors navigateur.
   constanteDe(sourceConfig, 'RELEVE_COLONNES', 'config.js'),
   constanteDe(sourceConfig, 'RELEVE_NOTE', 'config.js'),
-  'var STATUTS = undefined;',
 ].join('\n\n'), contexte);
 
 const {
@@ -540,6 +560,177 @@ if (!sql) {
   verifier('le retour en arrière est écrit dans le fichier',
     /POUR REVENIR EN ARRIÈRE/.test(sql),
     'un soir où quelque chose ne va pas, on ne cherche pas dans l\'historique');
+}
+
+/* ==========================================================================================
+   11. LE CYCLE DE VIE D'UNE EXPÉDITION — 2 septembre 2026
+   ==========================================================================================
+   Celtis, en regardant l'écran d'un livreur sur un colis d'expédition :
+
+     « Le statut du colis est récupéré. Normalement le prochain doit être soit expédié ou après
+       non expédié. Donc ça doit être ces quatre statuts-là : en attente, récupéré, expédié,
+       non expédié. Maintenant, il peut avoir le statut retour. »
+
+   MÊME CASE EN BASE, D'AUTRES MOTS À L'ÉCRAN, et c'est ce que cette section protège avant tout.
+   Toutes les règles d'argent se déclenchent sur « livre ». Le jour où quelqu'un voudra « faire
+   propre » en créant un vrai statut « expedie », les frais de course tomberont à zéro sans que
+   rien ne casse : le colis ne sera jamais « livré », donc jamais facturé. Aucune erreur nulle
+   part, et un chiffre faux sur le relevé d'une vendeuse.
+   ========================================================================================== */
+titre("Une expédition n'est pas livrée, elle est expédiée — mais en base, c'est la même case");
+
+verifier('la base ne connaît toujours que les six statuts d\'origine',
+  Object.keys(contexte.STATUTS || vm.runInContext('STATUTS', contexte)).join(',')
+    === 'en_attente,recupere,en_livraison,livre,non_livre,retour',
+  'créer un statut « expedie » ferait tomber les frais de course à zéro en silence');
+verifier('« livre » se lit « Expédié » sur une expédition',
+  contexte.libelleStatut('livre', expedition()) === 'Expédié');
+verifier('« non_livre » se lit « Non expédié »',
+  contexte.libelleStatut('non_livre', expedition()) === 'Non expédié');
+verifier('et rien ne change sur un colis d\'Abidjan',
+  contexte.libelleStatut('livre', ordinaire()) === 'Livré'
+  && contexte.libelleStatut('non_livre', ordinaire()) === 'Non livré');
+
+verifier('les états proposés sur une expédition sont exactement les cinq demandés',
+  contexte.etatsPossibles(expedition()).join(',') === 'en_attente,recupere,livre,non_livre,retour',
+  'obtenu : ' + contexte.etatsPossibles(expedition()).join(','));
+verifier('« En livraison » n\'y figure pas',
+  contexte.etatsPossibles(expedition()).indexOf('en_livraison') === -1,
+  'un colis confié à un transporteur n\'est pas en tournée');
+verifier('un colis d\'Abidjan garde ses six états',
+  contexte.etatsPossibles(ordinaire()).length === 6);
+
+/* Le cas tordu, et il arrive : un colis d'Abidjan « en livraison » qu'on rebascule en expédition.
+   Son état actuel ne fait pas partie de la liste. Le retirer du menu l'enfermerait dedans. */
+verifier('un état hors liste reste proposé s\'il est celui du colis',
+  contexte.etatsPossibles(expedition({ statut: 'en_livraison' })).indexOf('en_livraison') !== -1,
+  'retirer du menu l\'état actuel, c\'est enfermer le colis dedans');
+
+const frise = (c) => (contexte.stepperHTML(c.statut, c).match(/<div class="l">([^<]*)<\/div>/g) || [])
+  .map(x => x.replace(/<[^>]*>/g, ''));
+verifier('la frise d\'une expédition n\'a que trois étapes',
+  frise(expedition()).join(' → ') === 'Assigné → Récupéré → Expédié',
+  'obtenu : ' + frise(expedition()).join(' → '));
+verifier('celle d\'un colis ordinaire en garde quatre',
+  frise(ordinaire()).join(' → ') === 'Assigné → Récupéré → En livraison → Livré');
+verifier('un échec affiche son propre mot à la dernière étape',
+  frise(expedition({ statut: 'non_livre' })).slice(-1)[0] === 'Non expédié');
+
+verifier('la frise n\'est plus écrite qu\'une seule fois',
+  (sourceConfig.match(/function stepperHTML/g) || []).length === 1
+  && !/function stepperHTML/.test(equipe)
+  && !/function stepperHTML/.test(livreur)
+  && !/function stepperHTML/.test(fournisseur),
+  'elle vivait en trois copies : en corriger deux sur trois, c\'est montrer à la vendeuse une '
+  + 'étape que son colis n\'atteindra jamais');
+
+/* ==========================================================================================
+   12. « SOLDÉ » — LA VENDEUSE A DÉJÀ PAYÉ LES FRAIS
+   ==========================================================================================
+   Celtis : « pas de montant à saisir à ce niveau, mais un bouton soldé qu'on peut cocher ».
+   Interrogé sur le sens du mot : la vendeuse a déjà réglé les frais à CLT.
+
+   LE PIÈGE À NE PAS REFAIRE : trois dates portent sur le même argent, et une seule des trois
+   ne doit RIEN éteindre. La confondre avec les deux autres, c'est soit réclamer deux fois la
+   même somme, soit ne jamais la réclamer.
+   ========================================================================================== */
+titre('« Soldé » éteint la retenue, et ne se confond avec aucune autre date');
+
+const soldee = expedition({ frais_soldes_at: '2026-09-02T09:00:00Z' });
+verifier('les frais soldés ne se retiennent plus',
+  contexte.fraisSoldes(soldee) === true
+  && fraisExpeditionADevoir(soldee) === 0 && fraisCourseADevoir(soldee) === 0);
+verifier('le net remonte donc à zéro au lieu d\'être négatif',
+  montantNetADevoir(soldee) === 0,
+  `elle a payé : on ne lui doit rien, mais elle ne doit rien non plus. Obtenu ${montantNetADevoir(soldee)}`);
+verifier('sans la case, la retenue reste entière',
+  montantNetADevoir(expedition()) === -5500);
+
+/* La date qui ne doit RIEN éteindre. Le remboursement de l'avance de gare est un mouvement entre
+   CLT et le LIVREUR ; il ne dit rien de ce que doit la vendeuse. Les confondre reviendrait à
+   effacer une créance de l'entreprise le jour où on rembourse son propre livreur. */
+verifier('rembourser le livreur ne solde RIEN chez la vendeuse',
+  montantNetADevoir(expedition({ frais_expedition_rembourse_at: '2026-09-02T09:00:00Z' })) === -5500,
+  'c\'est un mouvement entre CLT et le livreur : la vendeuse doit toujours ses frais');
+verifier('… mais cela retire bien l\'avance de la caisse du livreur',
+  montantEnMainDuLivreur(expedition({ frais_expedition_rembourse_at: '2026-09-02T09:00:00Z' })) === 0,
+  'il a récupéré son argent : il ne porte plus de perte');
+verifier('un colis soldé pèse toujours sur la caisse du livreur tant qu\'on ne l\'a pas remboursé',
+  montantEnMainDuLivreur(soldee) === -2500,
+  'la vendeuse a payé CLT ; le livreur, lui, attend toujours son avance');
+
+verifier('« Soldé » ne s\'applique qu\'aux expéditions',
+  montantNetADevoir(ordinaire({ frais_soldes_at: '2026-09-02T09:00:00Z' })) === 20000,
+  'un colis d\'Abidjan ne porte aucun frais à retenir : la case n\'a rien à éteindre');
+
+titre('« Soldé » est proposé aux deux, et seulement là où il a un sens');
+
+verifier('la cliente peut le cocher en créant son expédition',
+  /lotfr-soldee/.test(fournisseur) && /fraisSoldes: coche\('\.lotfr-soldee'\)/.test(fournisseur));
+verifier('elle enregistre une DATE, pas un oui/non',
+  /frais_soldes_at: s\.fraisSoldes \? new Date\(\)\.toISOString\(\) : null/.test(fournisseur),
+  'un jour de contestation, savoir QUAND vaut mieux que savoir seulement QUE');
+verifier('l\'équipe peut corriger ensuite',
+  /data-fiche-action="solde"/.test(equipe) && /function ficheBasculerSolde/.test(equipe));
+verifier('et elle passe par la porte d\'écriture unique',
+  /ficheBasculerSolde[\s\S]{0,1400}eqCorrigerColis\(id, \{ frais_soldes_at/.test(equipe),
+  'une quatrième correction qui écrirait dans la table rouvrirait le chemin divergent');
+verifier('la case n\'apparaît que sur une expédition',
+  /estExpedition\(c\) \? `<button[^`]*data-fiche-action="solde"/.test(equipe));
+
+titre('À la création, une expédition ne demande pas de montants');
+
+verifier('choisir « Expédition » masque les deux champs de montant',
+  /blocMontants, apercuTotal\]\.forEach\(el => \{ if \(el\) el\.style\.display = expedition \? 'none' : ''/.test(sourceConfig),
+  'personne ne peut connaître ces deux chiffres au moment de la saisie');
+verifier('et vide ce qui aurait été tapé avant la bascule',
+  /blocMontants\.querySelectorAll\('input'\)\.forEach/.test(sourceConfig),
+  'un montant tapé puis masqué partirait en base sans que personne l\'ait vu');
+verifier('« Livraison déjà payée » cède la place à « Soldé »',
+  /casePayee[\s\S]{0,220}caseSoldee/.test(sourceConfig),
+  'les deux parlent d\'argent, mais l\'une d\'un encaissement qui n\'a pas lieu ici');
+verifier('la ville reste le champ obligatoire, comme avant',
+  /PRECISION_LIBELLE_EXPEDITION\s*=\s*"Ville de destination"/.test(sourceConfig));
+
+/* ==========================================================================================
+   13. LE SECOND SCRIPT SQL
+   ========================================================================================== */
+titre('Le script du 2 septembre dit la même chose que l\'application');
+
+if (!sql2) {
+  ignorer('la colonne et la vue « Soldé » sont alignées sur le calcul de l\'application',
+    '_sql-prive/ est hors dépôt : le fichier n\'existe pas sur un clone propre');
+} else {
+  const vue2 = (sql2.match(/create or replace view public\.releve_fournisseur[\s\S]*?group by fournisseur_id;/) || [''])[0];
+  verifier('la définition de la vue a bien été retrouvée',
+    vue2.length > 500);
+  /* On ne cherche pas une chaîne « quelque part dans le fichier » : on retire d'abord les
+     commentaires. « drop column » figure dans celui qui explique justement pourquoi on ne le
+     fait PAS, et le contrôle tombait dessus. Même leçon que le btrim() de la veille : un banc
+     d'essai qui lit du commentaire finit toujours par trouver ce qu'il ne cherchait pas. */
+  const sql2Nu = sql2.replace(/^\s*--.*$/gm, '');
+  verifier("une seule colonne est ajoutée, et rien n'est réécrit",
+    (sql2Nu.match(/add column if not exists/g) || []).length === 1
+    && !/\bdrop column\b/i.test(sql2Nu)
+    && !/^\s*update\s+public\.colis/mi.test(sql2Nu.replace(/begin;[\s\S]*?rollback;/gi, '')),
+    'la seule mise à jour du fichier est un essai à blanc, dans une transaction annulée');
+  verifier('l\'essai à blanc est bien annulé',
+    /begin;[\s\S]*update public\.colis[\s\S]*rollback;/i.test(sql2),
+    'on ne vérifie pas l\'effet d\'une case en écrivant pour de bon sur l\'argent de quelqu\'un');
+  verifier('les deux retenues s\'éteignent sur frais_soldes_at',
+    (vue2.match(/l\.frais_soldes_at is null/g) || []).length === 2,
+    'une seule des deux, et l\'autre continuerait d\'être réclamée');
+  verifier('la nouvelle colonne de la vue est EN DERNIER',
+    /as\s+colis_expedies,[\s\S]{0,400}as\s+colis_frais_soldes\s*\n\s*from qualifiees/.test(vue2),
+    'create or replace view ne sait qu\'ajouter à la fin — c\'est l\'erreur 42P16 de la veille');
+  verifier('l\'ordre des colonnes d\'avant est conservé',
+    vue2.indexOf('as net_a_reverser') > vue2.indexOf('as frais_expedition_retenus')
+    && vue2.indexOf('as frais_course_retenus') > vue2.indexOf('as net_a_reverser'));
+  verifier('le remboursement du livreur n\'entre pas dans la vue',
+    !/frais_expedition_rembourse_at/.test(vue2),
+    'il ne dit rien de ce que doit la vendeuse : l\'y mêler effacerait une créance');
+  verifier('la colonne porte une note qui dit à quoi elle sert',
+    /comment on column public\.colis\.frais_soldes_at/.test(sql2));
 }
 
 /* ---------- Verdict ---------- */

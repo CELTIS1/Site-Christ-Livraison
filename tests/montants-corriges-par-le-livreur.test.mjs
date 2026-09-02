@@ -394,12 +394,54 @@ verifier("elle est dans le corps de la carte, sous les yeux, pas dans un repli",
 function estDansLeRepli(carte){
   const ouverture = carte.indexOf('<details class="colis-plus">');
   const fermeture = carte.indexOf('</details>', ouverture);
-  const bloc = carte.indexOf('${montantsChampsHTML(c)}');
+  const bloc = carte.indexOf('montantsChampsHTML(c)', ouverture);
   return ouverture !== -1 && fermeture !== -1 && bloc > ouverture && bloc < fermeture;
 }
-verifier("le bloc de correction, lui, est toujours derrière un repli",
+
+/* CE CONTRÔLE A ÉTÉ REVU LE 02/09/2026, DÉLIBÉRÉMENT, ET VOICI LE RAISONNEMENT.
+
+   Il exigeait que les champs de montant soient TOUJOURS derrière le repli, sans exception. La
+   raison était bonne et elle tient toujours : « un champ de montant posé à l'air libre se remplit
+   d'un doigt qui défile ». Sur un colis d'Abidjan, corriger un montant est rare — une remise, un
+   article changé — et rare veut dire replié.
+
+   Sur une EXPÉDITION, ce n'est plus vrai. Celtis, le 2 septembre : « ce qu'il doit faire, c'est
+   qu'il doit entrer le coût de l'expédition et le coût de la course. Voici les deux champs que le
+   livreur doit renseigner pour chaque expédition. » Ces deux champs ne sont pas une correction
+   exceptionnelle : ils sont le travail. Les enfermer derrière « Plus d'options » obligeait à
+   déplier 1 200 pixels de panneau pour atteindre les deux seules cases à remplir.
+
+   CE QUI PROTÈGE ENCORE, et c'est pour ça qu'on peut les sortir sans rien perdre :
+     • rien ne s'écrit sans un appui sur un bouton nommé — un champ modifié par mégarde ne part
+       nulle part tant que personne n'appuie ;
+     • montantsColisOntChange() refuse d'écrire si rien n'a bougé ;
+     • correctionMontantAConfirmer() repose la question au-delà de 10 000 F d'écart ;
+     • sur un téléphone, un champ « number » ne change pas parce qu'un doigt le survole : il
+       faut le toucher puis taper.
+
+   Le contrôle garde donc sa règle d'origine pour le cas ordinaire, et vérifie EN PLUS que la
+   sortie du repli est bien réservée à l'expédition. Il n'est pas desserré : il est plus précis. */
+verifier("hors expédition, le bloc de correction reste derrière un repli",
   estDansLeRepli(carteMesColis) && estDansLeRepli(carteRecup),
   'un champ de montant posé à l\'air libre se remplit d\'un doigt qui défile');
+verifier("et il n'en sort QUE sur une expédition",
+  /estExpedition\(c\) \? '' : montantsChampsHTML\(c\)/.test(carteMesColis),
+  'la sortie du repli doit être conditionnée, jamais générale');
+verifier("sur une expédition, les deux montants sont sur la carte, avant le repli",
+  (() => {
+    const i = carteMesColis.indexOf('expedition-argent');
+    const d = carteMesColis.indexOf('<details class="colis-plus">');
+    return i !== -1 && d !== -1 && i < d;
+  })(),
+  'ce sont les deux seules cases à remplir : les enterrer, c\'est cacher le travail');
+// La lecture seule est posée dans montantsChampsHTML(), pas dans la carte : c'est là que les
+// deux cases sont dessinées, et c'est le seul endroit où la règle doit vivre.
+verifier("l'article reste en lecture seule sur une expédition",
+  /estExpedition\(c\) \? 'readonly/.test(blocDe(livreur, 'montantsChampsHTML', 'livreur.html')),
+  'le destinataire a payé chez la vendeuse : le livreur n\'a rien à y corriger');
+verifier("le retirer serait pire que le figer",
+  /montant-article-input/.test(blocDe(livreur, 'montantsChampsHTML', 'livreur.html')),
+  'un champ absent est lu comme vide, donc écrit ZÉRO : la case doit rester, en lecture seule');
 
 titre("Le même code pour les deux listes");
 verifier("brancherMontants n'est écrit qu'une fois",

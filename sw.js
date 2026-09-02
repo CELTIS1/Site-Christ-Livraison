@@ -45,6 +45,12 @@
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même.
 
    26 août 2026 — v56 : ajout de l'exception app/version.json (voir plus bas).
+   2 septembre 2026 — v61 : le cycle de vie d'une expédition. « Expédié » et « Non expédié »
+   remplacent « Livré » et « Non livré » à l'écran, « En livraison » disparaît de la liste, la
+   frise passe à trois étapes, et les deux montants du livreur sortent du panneau replié — ils
+   sont le travail, pas une option. Case « Soldé » : la vendeuse a déjà réglé les frais.
+   config.js, livreur.html, equipe.html, fournisseur.html changent tous : sans nouveau numéro,
+   un téléphone garderait l'ancien vocabulaire et proposerait un état qui n'existe plus.
    1er septembre 2026 — v60 : l'argent des expéditions. Sur une expédition, CLT n'encaisse
    rien — le destinataire a déjà payé chez la vendeuse — et deux frais se retiennent sur
    elle : les frais d'expédition (le transporteur) et les frais de course (le livreur).
@@ -60,7 +66,7 @@
    sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
    pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v60';
+const CACHE_VERSION = 'clt-shell-v61';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.

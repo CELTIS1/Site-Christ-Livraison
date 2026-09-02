@@ -133,6 +133,8 @@ vm.runInContext(constanteTexteDe(sourceConfig, 'COMMUNE_EXPEDITION'), contexte);
 // de recopier les mots « Frais d'expédition » et « Frais de course ».
 vm.runInContext(constanteTexteDe(sourceConfig, 'LIBELLE_FRAIS_EXPEDITION'), contexte);
 vm.runInContext(constanteTexteDe(sourceConfig, 'LIBELLE_FRAIS_COURSE'), contexte);
+// libelleStatut() consulte cette table pour dire « Expédié » au lieu de « Livré ».
+vm.runInContext(blocConstante(sourceConfig, 'STATUTS_EXPEDITION', 'config.js').replace(/^const /, 'var '), contexte);
 vm.runInContext(blocConstante(sourceConfig, 'STATUTS', 'config.js').replace(/^const /, 'var '), contexte);
 
 vm.runInContext([
@@ -141,7 +143,7 @@ vm.runInContext([
   'montantArticleColis',
   'montantLivraisonColis',
   'montantTotalColis',
-  'fraisExpeditionColis', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse',
+  'fraisExpeditionColis', 'fraisSoldes', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse',
   'articleEncaisse',
   'livraisonEncaissee',
   'montantArticleEncaisse',
@@ -155,7 +157,7 @@ vm.runInContext([
   'totauxArgent',
   'piedTotalHTML',
   'echapperAttribut',
-  'statutBadgeHTML',
+  'libelleStatut', 'iconeStatut', 'statutBadgeHTML',
   'paiementInfo',
   'paiementBadgeHTML',
   'colisDestinationTexte',

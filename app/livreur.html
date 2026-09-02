@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260901course">
-<script src="theme.js?v=20260901course"></script>
+<link rel="stylesheet" href="style.css?v=20260902expedition">
+<script src="theme.js?v=20260902expedition"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -693,8 +693,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260901course"></script>
-<script src="config.js?v=20260901course"></script>
+<script src="clt-common.js?v=20260902expedition"></script>
+<script src="config.js?v=20260902expedition"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -1297,24 +1297,13 @@
 
   // Frise d'étapes (stepper) : reflète visuellement l'avancement du colis à partir de son statut réel.
   // Purement présentatif — dérivé de c.statut, ne modifie aucune donnée.
-  function stepperHTML(statut){
-    const flow = [
-      { key:'en_attente',   label:'Assigné' },
-      { key:'recupere',     label:'Récupéré' },
-      { key:'en_livraison', label:'En livraison' },
-      { key:'livre',        label:'Livré' },
-    ];
-    const alert = (statut === 'non_livre' || statut === 'retour');
-    let idx = flow.findIndex(s => s.key === statut);
-    if (idx === -1) idx = alert ? flow.length - 1 : 0;
-    const steps = flow.map((s, i) => {
-      const cls = i < idx ? 'done' : (i === idx ? 'now' : '');
-      const label = (alert && i === flow.length - 1 && STATUTS[statut]) ? STATUTS[statut].label : s.label;
-      const inner = i < idx ? '✓' : (i + 1);
-      return `<div class="st ${cls}"><div class="c">${inner}</div><div class="l">${label}</div></div>`;
-    }).join('');
-    return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
-  }
+  // Une EXPÉDITION n'a que trois étapes : elle ne passe jamais « en livraison ». Le livreur ne
+  // part pas en tournée avec, il la dépose à la gare et repart. Afficher une quatrième étape
+  // qu'aucun colis d'intérieur n'atteindra jamais, c'est montrer un chemin qui n'existe pas —
+  // et laisser croire qu'il manque un geste. (02/09/2026)
+  // stepperHTML() → descendue dans config.js le 02/09/2026. Elle vivait ici en copie, et une
+  // expédition n'ayant que trois étapes, la garder aurait voulu dire corriger le même code à
+  // trois endroits — donc en oublier un.
 
   /* ---------- CHEMIN UNIQUE D'ÉCRITURE D'UN CHANGEMENT DE STATUT ----------
      Le bouton « Enregistrer » d'une carte et les boutons de traitement par lot passent tous
@@ -1659,7 +1648,7 @@
         <div class="frais-exp-raccourcis">${raccourcis}</div>
         <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
           <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="1" placeholder="Autre montant" value="${escapeHTML(valeur)}" aria-label="Frais d'expédition payés au transporteur, en FCFA" style="flex:1; min-width:0;">
-          <button type="button" class="btn btn-sm btn-frais-exp" style="white-space:nowrap;">Enregistrer</button>
+          <button type="button" class="btn btn-sm btn-frais-exp" style="white-space:nowrap;">Enregistrer les frais</button>
         </div>
         <div class="meta" style="font-size:11px; margin-top:4px; color:#8a4b12;">
           Écrivez le montant réellement payé, même s'il dépasse 3 500 F. Retenu sur l'argent de la cliente ; n'entame pas l'argent des livraisons.
@@ -1705,14 +1694,29 @@
         <div class="montants-grille">
           <label class="montant-case">
             <span>Article (à la cliente)</span>
-            <input type="number" class="montant-article-input" inputmode="numeric" min="0" step="1" value="${montantArticleColis(c)}" aria-label="Montant de l'article, en FCFA">
+            <!-- SUR UNE EXPÉDITION, CE CHAMP EST EN LECTURE SEULE. (02/09/2026)
+                 Le destinataire a payé chez la vendeuse avant le départ : ce montant ne passe
+                 par personne ici, et le livreur n'a aucune raison d'y toucher.
+                 Pourquoi le laisser AFFICHÉ plutôt que le retirer : le bouton d'enregistrement
+                 lit les deux champs ensemble, et un champ absent est lu comme une chaîne vide,
+                 donc écrit ZÉRO. Retirer la case aurait effacé en silence le montant déclaré
+                 par la vendeuse, à chaque fois que le livreur enregistre ses frais. -->
+            <input type="number" class="montant-article-input" inputmode="numeric" min="0" step="1"
+                   value="${montantArticleColis(c)}" ${estExpedition(c) ? 'readonly tabindex="-1" style="background:#f1f5f9; color:#64748b;"' : ''}
+                   aria-label="Montant de l'article, en FCFA">
           </label>
           <label class="montant-case">
             <span>${escapeHTML(libelleMontantLivraison(c))}</span>
             <input type="number" class="montant-livraison-input" inputmode="numeric" min="0" step="1" value="${montantLivraisonColis(c)}" aria-label="${escapeHTML(libelleMontantLivraison(c))}, en FCFA">
           </label>
         </div>
-        <button type="button" class="btn btn-sm btn-montants">Enregistrer les montants</button>
+        <!-- Trois boutons de cette carte disaient « Enregistrer », et deux d'entre eux étaient
+             identiques au mot près, à plus de 800 pixels l'un de l'autre — plus d'un écran de
+             téléphone. Le livreur corrigeait un montant, descendait, voyait « Enregistrer » et
+             appuyait : il enregistrait le statut, pas son montant, et rien ne le lui disait.
+             Signalé par Celtis le 30 août, mesuré le 2 septembre. Chaque bouton dit maintenant
+             ce qu'il enregistre. -->
+        <button type="button" class="btn btn-sm btn-montants">Enregistrer ${estExpedition(c) ? 'les frais de course' : 'les montants'}</button>
       </div>`;
   }
 
@@ -1855,8 +1859,12 @@
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
       : '';
-    const statutOptions = Object.keys(STATUTS).map(k =>
-      `<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
+    // Les états proposés dépendent du colis, depuis le 02/09/2026 : sur une expédition,
+    // « En livraison » disparaît et « Livré / Non livré » deviennent « Expédié / Non expédié ».
+    // Un état qu'on ne peut pas atteindre n'a rien à faire dans un menu — il ne se contente pas
+    // d'être inutile, il fait douter de ce qu'on vient de choisir.
+    const statutOptions = etatsPossibles(c).map(k =>
+      `<option value="${k}" ${c.statut===k?'selected':''}>${escapeHTML(libelleStatut(k, c))}</option>`).join('');
 
     const tentatives = Number(c.tentatives_livraison) || 0;
     // La case n'est visible qu'en mode sélection (CSS .colis-list.lot-actif), mais on la pose
@@ -1865,7 +1873,7 @@
     return `
       <div class="colis-item mes-colis-item${coche ? ' lot-coche' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
         ${caseLotHTML(c.id, coche)}
-        ${stepperHTML(c.statut)}
+        ${stepperHTML(c.statut, c)}
         ${thumb}
         <div class="info">
           ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
@@ -1882,18 +1890,41 @@
             ? `<div class="sync-pending-badge sync-blocked-badge">⚠️ Non enregistré — prévenez l'équipe</div>`
             : (pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : '')}
           <select class="status-select">${statutOptions}</select>
+          <!-- SUR UNE EXPÉDITION, LES DEUX MONTANTS SORTENT DU PANNEAU. (02/09/2026)
+
+               Celtis, en regardant un livreur devant un colis d'expédition : « ce qu'il doit
+               faire, c'est qu'il doit entrer le coût de l'expédition et le coût de la course.
+               Voici les deux champs que le livreur doit renseigner pour chaque expédition. Et
+               puis il indique le statut. »
+
+               Ce ne sont donc pas des « options » : c'est TOUT le travail. Les laisser derrière
+               « Plus d'options » obligeait à déplier 1 200 pixels de panneau pour atteindre les
+               deux seules cases à remplir — et c'est cette manœuvre-là, pas la carte au repos,
+               qui rendait l'écran interminable. La carte repliée fait 410 px ; c'est en cherchant
+               ces deux champs qu'elle en faisait 1 620.
+
+               Ailleurs, rien ne bouge : sur un colis d'Abidjan, corriger un montant reste rare,
+               et rare veut dire replié. -->
+          ${estExpedition(c) ? `<div class="expedition-argent">
+            ${montantsChampsHTML(c)}
+            ${fraisExpeditionChampHTML(c)}
+          </div>` : ''}
           <details class="colis-plus">
             <summary>Plus d'options</summary>
             <div class="colis-plus-corps">
-              <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Livraison payée ?'}</button>
+              <!-- Ces deux boutons parlent d'argent encaissé chez le destinataire. Sur une
+                   expédition il n'y en a pas : il a déjà payé chez la vendeuse. Les proposer,
+                   c'est inviter à cocher quelque chose qui n'a pas eu lieu. -->
+              ${estExpedition(c) ? '' : `              <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Livraison payée ?'}</button>
               <!-- L'exception, et seulement l'exception. Depuis le 25/08/2026, un colis livré compte
                    par défaut comme encaissé : le livreur n'a rien à cocher dans le cas normal, ce qui
                    était l'ancien piège (personne ne cochait jamais, et les clientes lisaient 0 FCFA
                    encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
                    colis a été remis sans que l'argent de l'article rentre. -->
-              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#c0392b !important; border:1.5px solid #c0392b; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À utiliser seulement si vous avez remis le colis sans récupérer l'argent de l'article.">${c.article_non_encaisse ? '⚠️ Article NON encaissé' : "Article non encaissé ?"}</button>
-              ${montantsChampsHTML(c)}
-              ${fraisExpeditionChampHTML(c)}
+              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#c0392b !important; border:1.5px solid #c0392b; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À utiliser seulement si vous avez remis le colis sans récupérer l'argent de l'article.">${c.article_non_encaisse ? '⚠️ Article NON encaissé' : "Article non encaissé ?"}</button>`}
+              <!-- Hors expédition seulement : ici, corriger un montant est rare, donc replié.
+                   Sur une expédition ces deux champs sont remontés sur la carte, au-dessus. -->
+              ${estExpedition(c) ? '' : montantsChampsHTML(c) + fraisExpeditionChampHTML(c)}
               <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
               <div class="field" style="margin-top:8px;">
                 <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
@@ -1913,7 +1944,7 @@
               </div>
             </div>
           </details>
-          <button class="btn btn-sm btn-save">Enregistrer</button>
+          <button class="btn btn-sm btn-save">Enregistrer le statut</button>
         </div>
       </div>
     `;
@@ -2273,7 +2304,7 @@
           <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
         </div>
         <div class="status-col">
-          ${statutBadgeHTML(c.statut)}
+          ${statutBadgeHTML(c.statut, c)}
           <details class="colis-plus">
             <summary>Corriger les montants</summary>
             <div class="colis-plus-corps">${montantsChampsHTML(c)}</div>

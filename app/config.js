@@ -321,6 +321,106 @@ const STATUTS = {
   retour:       { label: "Retour",       color: "#8e44ad", bg: "#f2e8fa", icon: "↩️" },
 };
 
+/* ============================================================================================
+   LE VOCABULAIRE D'UNE EXPÉDITION — 2 septembre 2026
+   ============================================================================================
+   Celtis, en regardant l'écran d'un livreur sur un colis d'expédition :
+
+     « Le statut du colis est récupéré. Normalement le prochain doit être soit expédié ou
+       après non expédié. Donc ça doit être ces quatre statuts-là : en attente, récupéré,
+       expédié, non expédié. Maintenant, il peut avoir le statut retour. »
+
+   Une expédition ne se livre pas : elle se confie à un transporteur. « En livraison » ne veut
+   rien dire pour elle — le livreur n'est pas en tournée avec, il l'a déposée à la gare.
+
+   MÊME CASE EN BASE, D'AUTRES MOTS À L'ÉCRAN. C'est le choix arrêté, et il n'est pas cosmétique.
+   Toutes les règles d'argent de la maison se déclenchent sur le statut « livre » : c'est lui qui
+   dit « la course est faite, les frais sont dus ». Créer un statut « expedie » à part entière
+   aurait obligé à réécrire chacune de ces règles — dans l'application, dans la vue SQL et dans
+   les fonctions serveur — et un oubli quelque part aurait fait tomber les frais de course à zéro
+   SANS RIEN CASSER. Un colis jamais « livré », donc jamais facturé, et aucune erreur nulle part.
+
+   On garde donc la colonne telle quelle, et on change les mots. C'est exactement ce qui a été
+   fait la veille pour « Livraison (à CLT) » qui devient « Frais de course ».
+   ============================================================================================ */
+
+// Les mots qui remplacent ceux du référentiel, sur une expédition seulement.
+const STATUTS_EXPEDITION = {
+  livre:     { label: 'Expédié',     icon: '🚌' },
+  non_livre: { label: 'Non expédié', icon: '⚠️' },
+};
+
+// Les états qu'on PROPOSE sur une expédition, dans l'ordre. « en_livraison » n'y est pas.
+const ETATS_EXPEDITION = ['en_attente', 'recupere', 'livre', 'non_livre', 'retour'];
+
+// Comment appeler CE statut sur CE colis. Le seul endroit où la substitution se décide.
+function libelleStatut(statut, colis) {
+  if (colis && estExpedition(colis) && STATUTS_EXPEDITION[statut]) {
+    return STATUTS_EXPEDITION[statut].label;
+  }
+  return (typeof STATUTS !== 'undefined' && STATUTS[statut]) ? STATUTS[statut].label : (statut || '—');
+}
+
+// L'icône, selon la même règle.
+function iconeStatut(statut, colis) {
+  if (colis && estExpedition(colis) && STATUTS_EXPEDITION[statut]) {
+    return STATUTS_EXPEDITION[statut].icon;
+  }
+  return (typeof STATUTS !== 'undefined' && STATUTS[statut]) ? STATUTS[statut].icon : '';
+}
+
+/* Les états qu'on peut proposer sur ce colis. Sur une expédition, « En livraison » disparaît.
+   On garde TOUJOURS l'état courant dans la liste, même s'il ne devrait pas y être : un colis
+   d'Abidjan rebasculé en expédition alors qu'il était « en livraison » doit rester modifiable.
+   Retirer son état actuel du menu, c'est l'enfermer dedans. */
+function etatsPossibles(colis) {
+  const tous = Object.keys(STATUTS);
+  if (!colis || !estExpedition(colis)) return tous;
+  const liste = ETATS_EXPEDITION.slice();
+  const actuel = colis.statut;
+  if (actuel && liste.indexOf(actuel) === -1) liste.push(actuel);
+  return liste;
+}
+
+/* LA FRISE D'ÉTAPES — descendue ici le 02/09/2026, et voici pourquoi.
+
+   Elle existait en TROIS exemplaires : livreur.html, equipe.html, fournisseur.html. Trois copies
+   du même code, à la mise en forme près. Tant que le chemin d'un colis était le même pour tout
+   le monde, cela ne coûtait rien — juste trois fois la même ligne à lire.
+
+   Le jour où une expédition a cessé de passer « en livraison », il aurait fallu corriger les
+   trois. En oublier une, c'est montrer à la vendeuse une quatrième étape que son colis
+   n'atteindra jamais, pendant que le livreur, lui, n'en voit que trois. Personne ne s'en
+   plaindrait tout de suite ; on le découvrirait au téléphone, un jour, sur un malentendu.
+
+   Une seule frise, donc, appelée par les trois écrans.
+
+   Purement présentative : elle se déduit de c.statut et ne modifie aucune donnée. */
+function stepperHTML(statut, colis) {
+  const expedition = colis && estExpedition(colis);
+  const L = (k) => libelleStatut(k, colis);
+  // Une expédition n'a que trois étapes : le livreur ne part pas en tournée avec, il la dépose
+  // à la gare et repart. Afficher une étape qu'elle n'atteindra jamais laisse croire qu'il
+  // manque un geste.
+  const flow = expedition
+    ? [{ key:'en_attente', label:'Assigné' }, { key:'recupere', label:L('recupere') },
+       { key:'livre', label:L('livre') }]
+    : [{ key:'en_attente', label:'Assigné' }, { key:'recupere', label:L('recupere') },
+       { key:'en_livraison', label:L('en_livraison') }, { key:'livre', label:L('livre') }];
+  const alert = (statut === 'non_livre' || statut === 'retour');
+  let idx = flow.findIndex(s => s.key === statut);
+  if (idx === -1) idx = alert ? flow.length - 1 : 0;
+  const steps = flow.map((s, i) => {
+    const cls = i < idx ? 'done' : (i === idx ? 'now' : '');
+    // Sur la dernière étape, un colis en échec affiche SON état — « Non expédié » plutôt
+    // qu'« Expédié », « Retour » plutôt que « Livré ».
+    const label = (alert && i === flow.length - 1) ? L(statut) : s.label;
+    const inner = i < idx ? '✓' : (i + 1);
+    return `<div class="st ${cls}"><div class="c">${inner}</div><div class="l">${label}</div></div>`;
+  }).join('');
+  return `<div class="clt-stepper ${alert ? 'is-alert' : ''}">${steps}</div>`;
+}
+
 // Libellés de filtre dérivés du référentiel (« Tous » + chaque statut). À réutiliser
 // tel quel dans les espaces plutôt que de recopier les libellés à la main.
 const STATUT_FILTER_LABELS = Object.assign(
@@ -536,6 +636,53 @@ function appliquerModeExpedition(selectCommune, champPrecision) {
       ? `${escapeHTML(PRECISION_LIBELLE_EXPEDITION)} <span class="champ-requis">obligatoire</span>`
       : (champPrecision.dataset ? champPrecision.dataset.libelleOrigine : label.innerHTML);
   }
+
+  /* ------------------------------------------------------------------------------------------
+     ET LE RESTE DU FORMULAIRE SUIT. (02/09/2026)
+
+     Celtis : « lorsqu'on crée le colis et lorsqu'on choisit expédition, le prochain champ devrait
+     être la ville ou la destination. Pas de montant à saisir à ce niveau, mais un bouton soldé
+     qu'on peut cocher. »
+
+     La ville, c'était déjà fait — c'est le champ ci-dessus qui change de rôle. Ce qui manquait,
+     c'est que les montants continuaient de s'afficher. Or sur une expédition, aucun des deux
+     n'a de sens AU MOMENT DE LA SAISIE :
+       • l'article, parce que le destinataire l'a déjà payé chez la vendeuse : CLT n'y touche
+         jamais, et un nombre écrit là ne sert qu'à faire croire qu'on lui doit quelque chose ;
+       • la livraison, parce qu'elle devient les FRAIS DE COURSE, et que c'est le livreur qui les
+         connaît — il ne les saura qu'après avoir roulé jusqu'à la gare.
+     Les proposer quand même, c'est demander deux chiffres que personne ne peut connaître, et
+     s'exposer à ce qu'ils soient remplis « pour voir » sur de l'argent réel.
+
+     À la place, la seule chose qu'elle SAIT à ce moment-là : a-t-elle déjà réglé les frais ?
+
+     On masque au lieu de retirer : le champ reste dans le document, donc la lecture du
+     formulaire ne change pas d'un cas à l'autre, et un aller-retour Expédition → Cocody remet
+     tout en place. Les valeurs sont vidées au passage, pour qu'un montant tapé avant de basculer
+     ne parte pas en base sans que personne l'ait vu.
+     ------------------------------------------------------------------------------------------ */
+  const formulaire = champPrecision.closest ? champPrecision.closest('form, .lot-fr-item, .card, body') : null;
+  if (!formulaire) return;
+
+  const blocMontants = formulaire.querySelector('.montant-group');
+  const apercuTotal  = formulaire.querySelector('.montant-total-preview');
+  [blocMontants, apercuTotal].forEach(el => { if (el) el.style.display = expedition ? 'none' : ''; });
+  if (expedition && blocMontants) {
+    blocMontants.querySelectorAll('input').forEach(i => { i.value = ''; });
+  }
+
+  // « Livraison déjà payée » parle d'un encaissement chez le destinataire : sur une expédition
+  // il n'y en a pas. « Soldé » prend sa place — et une seule des deux est visible à la fois.
+  const casePayee = formulaire.querySelector('.lotfr-liv-payee');
+  if (casePayee && casePayee.closest('label')) {
+    casePayee.closest('label').style.display = expedition ? 'none' : '';
+    if (expedition) casePayee.checked = false;
+  }
+  const caseSoldee = formulaire.querySelector('.lotfr-soldee');
+  if (caseSoldee && caseSoldee.closest('label')) {
+    caseSoldee.closest('label').style.display = expedition ? '' : 'none';
+    if (!expedition) caseSoldee.checked = false;
+  }
 }
 
 function brancherPrecisionExpedition(selectCommune, champPrecision) {
@@ -575,9 +722,13 @@ function collapseCollapsible(content) {
   content.style.maxHeight = "0px";
 }
 
-function statutBadgeHTML(statut) {
+// Le second argument est facultatif, et c'est voulu : les sept appelants existants continuent de
+// marcher sans retouche. Ceux qui ont le colis sous la main le passent, et gagnent le bon mot sur
+// une expédition. Les couleurs, elles, ne changent pas — « Expédié » reste le vert de « Livré »,
+// parce que c'est la même bonne nouvelle.
+function statutBadgeHTML(statut, colis) {
   const s = STATUTS[statut] || STATUTS.en_attente;
-  return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.label}</span>`;
+  return `<span class="badge" style="color:${s.color}; background:${s.bg};">${libelleStatut(statut, colis)}</span>`;
 }
 
 // escapeHTML() → déplacé dans clt-common.js (chargé avant ce fichier).
@@ -2889,9 +3040,12 @@ function fraisExpeditionColis(c) {
 
 // Frais encore à récupérer sur la cliente. Le reversement solde tout : une fois qu'on lui a
 // remis son argent, la retenue a déjà été faite, la reprendre reviendrait à la compter deux fois.
+// Ajout du 02/09/2026 : `frais_soldes_at` l'éteint aussi. Voir le bloc « SOLDÉ » plus bas — et
+// noter que la date de REMBOURSEMENT AU LIVREUR, elle, n'a rien à voir ici : qu'on ait rendu ou
+// non son avance au livreur ne change rien à ce que la vendeuse doit.
 function fraisExpeditionADevoir(c) {
   if (!c) return 0;
-  if (c.reverse_au_fournisseur_at) return 0;
+  if (c.reverse_au_fournisseur_at || fraisSoldes(c)) return 0;
   return fraisExpeditionColis(c);
 }
 
@@ -2948,12 +3102,43 @@ function fraisCourseAcquis(c) {
   return fraisCourseColis(c);
 }
 
-// Frais de course encore à RETENIR sur la vendeuse. Les mêmes, moins ceux déjà soldés par un
-// reversement : la retenue a alors été faite, la reprendre reviendrait à la compter deux fois —
-// exactement le piège réglé le 25 août sur les avances de gare.
+/* --------------------------------------------------------------------------------------------
+   « SOLDÉ » — 2 septembre 2026
+   --------------------------------------------------------------------------------------------
+   Celtis : « pas de montant à saisir à ce niveau, mais un bouton soldé qu'on peut cocher », et,
+   interrogé sur ce que le mot veut dire : LA VENDEUSE A DÉJÀ PAYÉ LES FRAIS À CLT.
+
+   C'est un fait que rien n'exprimait jusqu'ici, et il fallait une colonne pour lui — la première
+   depuis le début de ce chantier, et elle se justifie : « elle a réglé les frais en espèces
+   avant le départ » n'est déductible d'aucune autre donnée.
+
+   NE PAS CONFONDRE AVEC SES DEUX VOISINES, qui portent sur le même argent mais dans l'autre sens :
+
+     frais_soldes_at              la VENDEUSE a payé les frais à CLT
+                                  → on ne les retient plus sur elle
+     reverse_au_fournisseur_at    CLT a reversé son argent à la VENDEUSE
+                                  → la retenue a déjà été faite au passage, même effet
+     frais_expedition_rembourse_at  CLT a remboursé l'AVANCE DE GARE au LIVREUR
+                                  → sans rapport : cela ne change rien à ce que doit la vendeuse
+
+   Les deux premières éteignent la retenue, la troisième non. Les mélanger, c'est soit réclamer
+   deux fois la même somme, soit ne jamais la réclamer.
+
+   Cochable par les deux, comme demandé : la vendeuse le déclare à la création, l'équipe peut
+   corriger ensuite. -------------------------------------------------------------------------- */
+
+// Vrai si la vendeuse a déjà réglé les frais à CLT sur ce colis.
+function fraisSoldes(c) {
+  return !!(c && c.frais_soldes_at);
+}
+
+// Frais de course encore à RETENIR sur la vendeuse. Les mêmes que ci-dessus, moins ceux qui sont
+// déjà éteints — par un reversement (la retenue a été faite au passage) ou parce qu'elle a réglé
+// les frais elle-même. Reprendre une retenue déjà faite, c'est la compter deux fois : exactement
+// le piège réglé le 25 août sur les avances de gare.
 function fraisCourseADevoir(c) {
   if (!c) return 0;
-  if (c.reverse_au_fournisseur_at) return 0;
+  if (c.reverse_au_fournisseur_at || fraisSoldes(c)) return 0;
   return fraisCourseAcquis(c);
 }
 
@@ -3647,8 +3832,10 @@ function echapperAttribut(s) {
 
 // Libellé lisible d'un statut, tiré du référentiel STATUTS. Utile hors HTML (Excel, Word, PDF),
 // là où statutBadgeHTML ne peut pas servir.
-function statutTexte(statut) {
-  return (typeof STATUTS !== 'undefined' && STATUTS[statut]) ? STATUTS[statut].label : (statut || '—');
+// Passe par libelleStatut() : sur le relevé d'une vendeuse qui a expédié, la ligne dira
+// « Expédié » et non « Livré ». Elle sait bien que son colis est parti à Bouaké, pas livré.
+function statutTexte(statut, colis) {
+  return libelleStatut(statut, colis);
 }
 
 // Les colonnes du relevé, dans l'ordre. Une seule déclaration : l'en-tête du tableau à l'écran,
@@ -3675,7 +3862,7 @@ function releveCliente(colis) {
     telephone:   (c && c.destinataire_telephone) || '',
     adresse:     (c && c.destination) || '',
     statutCode:  (c && c.statut) || '',
-    statut:      statutTexte(c && c.statut),
+    statut:      statutTexte(c && c.statut, c),
     article:     Number(montantArticleColis(c)) || 0,
     // Ce que CLT doit sur CE colis, retenues faites. Sur une expédition c'est un nombre négatif,
     // et il doit le rester : c'est ainsi que la vendeuse voit ce qu'elle doit, ligne par ligne.
@@ -4989,16 +5176,22 @@ function financeColisHTML(colis, actionsHTML) {
               ${c.numero ? `<span class="finance-colis-num">${escapeHTML(c.numero)}</span>` : ''}
               <span>${colisDestinationHTML(c)}</span>
             </div>
-            <div class="finance-colis-badges">${statutBadgeHTML(c.statut)}${paiementBadgeHTML(c)}</div>
+            <div class="finance-colis-badges">${statutBadgeHTML(c.statut, c)}${paiementBadgeHTML(c)}</div>
           </div>
           ${quoi ? `<div class="finance-colis-quoi">📦 ${escapeHTML(quoi)}</div>` : ''}
           <div class="finance-colis-lignes">
             <div><span>Article</span><strong>${art ? m(art) : '—'}</strong></div>
-            <div><span>Livraison</span><strong>${liv ? m(liv) : '—'}</strong></div>
-            ${gare ? `<div><span>Payé à la gare</span><strong style="color:#8a4b12;">−${m(gare)}</strong></div>` : ''}
+            <div><span>${escapeHTML(estExpedition(c) ? LIBELLE_FRAIS_COURSE : 'Livraison')}</span><strong>${liv ? m(liv) : '—'}</strong></div>
+            ${gare ? `<div><span>${escapeHTML(LIBELLE_FRAIS_EXPEDITION)}</span><strong style="color:#8a4b12;">−${m(gare)}</strong></div>` : ''}
             <div><span>En main</span><strong style="color:${enMain ? '#1a7d3c' : '#94a3b8'};">${enMain ? m(enMain) : '—'}</strong></div>
           </div>
           ${manque > 0 ? `<div class="finance-colis-alerte">⚠️ ${m(manque)} non encaissé sur ce colis pourtant remis.</div>` : ''}
+          <!-- « Soldé » ne s'affiche que sur une expédition, et seulement quand il y a quelque
+               chose à solder. Sur un colis d'Abidjan la ligne n'aurait aucun sens ; sur une
+               expédition sans frais saisis, elle ferait parler d'un argent qui n'existe pas. -->
+          ${estExpedition(c) && (gare || liv) ? (fraisSoldes(c)
+            ? `<div class="finance-colis-meta" style="color:#1a7d3c; font-weight:600;">✅ Frais déjà réglés à CLT par la cliente — rien ne se retient sur son relevé.</div>`
+            : `<div class="finance-colis-meta" style="color:#8a4b12;">🚌 Frais à retenir sur son relevé : ${m(fraisExpeditionADevoir(c) + fraisCourseADevoir(c))}.</div>`) : ''}
           ${c.destination ? `<div class="finance-colis-meta">Vers : ${escapeHTML(c.destination)}</div>` : ''}
           ${c.observation ? `<div class="finance-colis-meta">Observation : ${escapeHTML(c.observation)}</div>` : ''}
           ${actions ? `<div class="finance-colis-actions">${actions}</div>` : ''}
@@ -5137,7 +5330,7 @@ function pointColisTableauCLT(colis, colonneGare) {
     const gare = fraisExpeditionColis(c);
     return [
       [c.numero, c.destination, quoi].filter(Boolean).join(' · ') || '—',
-      statutTexte(c.statut),
+      statutTexte(c.statut, c),
       montantArticleColis(c) ? m(montantArticleColis(c)) : '—',
       montantLivraisonColis(c) ? m(montantLivraisonColis(c)) : '—',
     ].concat(colonneGare ? [gare ? '−' + m(gare) : '—'] : [])
