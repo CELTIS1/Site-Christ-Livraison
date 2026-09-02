@@ -331,6 +331,14 @@ titre('Contrôle structurel du SQL — le trigger d\'équilibre, l\'index anti-d
       /create policy gestion_caisse_pas_modif_facture/.test(sql));
     verifier('une policy interdit de la supprimer directement (seul gestion_annuler_paiement_facture peut le faire, par cascade)',
       /create policy gestion_caisse_pas_suppr_facture/.test(sql));
+    verifier('la contrainte gestion_caisse_origine_coherente est supprimée avant d\'être recréée (idempotence)',
+      /drop constraint if exists gestion_caisse_origine_coherente[\s\S]{0,400}add constraint gestion_caisse_origine_coherente/.test(sql),
+      'sans ce drop, rejouer le fichier une seconde fois échouerait sur "la contrainte existe déjà"');
+    verifier('un trigger bloque la modification/suppression d\'une dépense d\'un mois clôturé, symétrique à gestion_annuler_facture()',
+      /before update or delete on public\.gestion_depenses/.test(sql),
+      'sans ce trigger, un appel direct à l\'API en contournant l\'écran modifierait/supprimerait une dépense d\'un mois clos');
+    verifier('la fonction de ce trigger consulte bien gestion_clotures / cloture avant de bloquer',
+      /create or replace function public\.gestion_verifier_cloture_depense[\s\S]{0,400}gestion_clotures[\s\S]{0,200}cloture/.test(sql));
   }
 }
 
