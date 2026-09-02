@@ -262,7 +262,9 @@
       <div class="subtab" data-sub="chauffeurs" onclick="switchSub('compta','chauffeurs')">Chauffeurs</div>
       <div class="subtab" data-sub="caisse" onclick="switchSub('compta','caisse')">Caisse livreurs</div>
       <div class="subtab" data-sub="clients" onclick="switchSub('compta','clients')">Point clients</div>
+      <div class="subtab" data-sub="facturation" onclick="switchSub('compta','facturation')">💳 Facturation clients</div>
       <div class="subtab" data-sub="etats" onclick="switchSub('compta','etats')">📊 États financiers</div>
+      <div class="subtab" data-sub="compta-generale" onclick="switchSub('compta','compta-generale')">📗 Compta. générale</div>
       <div class="subtab" data-sub="echeances" onclick="switchSub('compta','echeances')">🗓️ Échéancier fiscal</div>
       <div class="subtab" data-sub="clotures" onclick="switchSub('compta','clotures')">🔒 Clôture mensuelle</div>
       <div class="subtab" data-sub="documents" onclick="switchSub('compta','documents')">📁 Documents entreprise</div>
@@ -413,6 +415,59 @@
       <div class="card"><div class="g-table-wrap" id="clients-table"></div></div>
     </div>
 
+    <!-- Facturation clients : clients professionnels facturés au forfait/à la période (B2B) —
+         population distincte du « Point clients » (clientes Express, dérivé des colis). -->
+    <div class="section" id="compta-facturation">
+
+      <div class="hint">Facturation formelle des <strong>clients professionnels</strong> facturés au forfait ou à la période — distincte du « Point clients », qui suit les colis Express. Créer une facture ici ne modifie rien côté Express.</div>
+
+      <div class="kpi-grid" id="fact-kpis"></div>
+
+      <div class="card">
+        <h2>Clients (facturation)</h2>
+        <div class="g-table-wrap" id="fact-clients-table"></div>
+        <div class="inline-form" id="fact-client-form">
+          <input type="hidden" id="fc-id">
+          <div class="field"><label>Nom</label><input type="text" id="fc-nom"></div>
+          <div class="field"><label>Téléphone</label><input type="text" id="fc-tel"></div>
+          <div class="field" style="flex:1;min-width:180px;"><label>Adresse</label><input type="text" id="fc-adresse"></div>
+          <div class="field"><label>NCC</label><input type="text" id="fc-ncc" placeholder="Facultatif"></div>
+          <button class="btn btn-sm" id="fc-add-btn" onclick="enregistrerClientFacturation()">+ Ajouter / enregistrer</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Nouvelle facture</h2>
+        <div class="inline-form">
+          <div class="field"><label>Client</label><select id="nf-client" data-recherche data-recherche-placeholder="Client…"></select></div>
+          <div class="field"><label>Date d'émission</label><input type="date" id="nf-date"></div>
+          <div class="field"><label>Délai (jours)</label><input type="number" id="nf-delai" min="1" value="30"></div>
+        </div>
+        <div class="g-table-wrap"><table class="g-table" id="nf-lignes-table"></table></div>
+        <button class="btn btn-outline btn-sm" onclick="ajouterLigneFacture()">+ Ajouter une ligne</button>
+        <div class="g-table-wrap" id="nf-totaux"></div>
+        <button class="btn btn-sm" id="nf-creer-btn" onclick="creerFacture()">Créer la facture</button>
+      </div>
+
+      <div class="card">
+        <h2>Factures</h2>
+        <div class="period-bar">
+          <select id="fact-filtre-statut" onchange="renderFacturation()">
+            <option value="">Tous les statuts</option>
+            <option value="impayee">Impayée</option>
+            <option value="partielle">Partiellement payée</option>
+            <option value="payee">Payée</option>
+            <option value="retard">En retard</option>
+            <option value="annulee">Annulée</option>
+          </select>
+          <input type="text" id="fact-filtre-client" placeholder="Filtrer par client…" oninput="renderFacturation()">
+          <div class="spacer"></div>
+          <button class="btn btn-outline btn-sm" onclick="exportFactures()">⬇️ Exporter (Excel)</button>
+        </div>
+        <div class="g-table-wrap" id="fact-table"></div>
+      </div>
+    </div>
+
     <!-- États financiers : compte de résultat + bilan (mensuel / annuel) -->
     <div class="section" id="compta-etats">
       <div class="period-bar">
@@ -445,6 +500,76 @@
         <h2>Bilan simplifié au terme de la période</h2>
         <div class="hint">Vue synthétique de la trésorerie générée (résultats cumulés) et des sommes en circulation chez les livreurs. Un bilan comptable complet nécessite en plus l'inventaire des immobilisations et des dettes/créances, à renseigner séparément.</div>
         <div class="g-table-wrap" id="fin-bilan"></div>
+      </div>
+    </div>
+
+    <!-- Comptabilité générale (partie double, SYSCOHADA) : vue séparée des États financiers
+         (trésorerie). Les deux méthodes peuvent donner des chiffres différents pour la même
+         période — ce n'est pas une erreur, voir l'encart d'explication ci-dessous. -->
+    <div class="section" id="compta-compta-generale">
+
+      <div class="clt-alert clt-alert-warn">
+        ⚠️ <strong>Deux méthodes, deux chiffres possibles.</strong> « États financiers » calcule en trésorerie, à partir des recettes et dépenses réellement encaissées. Cette vue tient une comptabilité en <strong>partie double</strong> (SYSCOHADA) à partir d'écritures débit/crédit, générées automatiquement (factures) ou sur demande (dépenses), ou saisies à la main. Les deux peuvent donner un résultat différent pour la même période — ce n'est pas une erreur, c'est la même réalité vue par deux méthodes qui ne comptent pas au même moment. Un bilan comptable complet nécessite en plus l'inventaire des immobilisations et des dettes/créances, à renseigner séparément.
+      </div>
+
+      <div class="subtabs">
+        <div class="subtab active" data-sub="plan" onclick="switchCG('plan')">📋 Plan comptable</div>
+        <div class="subtab" data-sub="journal" onclick="switchCG('journal')">✍️ Journal</div>
+        <div class="subtab" data-sub="grandlivre" onclick="switchCG('grandlivre')">📚 Grand livre</div>
+        <div class="subtab" data-sub="balance" onclick="switchCG('balance')">⚖️ Balance générale</div>
+        <div class="subtab" data-sub="tva" onclick="switchCG('tva')">🧾 Déclaration TVA</div>
+      </div>
+
+      <div class="section active" id="cg-plan">
+        <div class="card">
+          <h2>Plan comptable</h2>
+          <div class="g-table-wrap" id="cg-plan-table"></div>
+          <div class="inline-form">
+            <div class="field"><label>Code</label><input type="text" id="cg-pc-code"></div>
+            <div class="field" style="flex:1;"><label>Intitulé</label><input type="text" id="cg-pc-nom"></div>
+            <div class="field"><label>Classe</label><input type="number" id="cg-pc-classe" min="1" max="9"></div>
+            <button class="btn btn-sm" onclick="ajouterCompte()">+ Ajouter</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="cg-journal">
+        <div class="card">
+          <h2>Génération automatique</h2>
+          <div class="hint">Génère des écritures depuis les dépenses du mois déjà saisies dans l'onglet Dépenses. Les factures, elles, génèrent leur écriture automatiquement à l'émission et à l'encaissement — rien à faire ici pour elles.</div>
+          <button class="btn btn-outline btn-sm" onclick="genererEcrituresDepuisDepenses()">Générer depuis les dépenses du mois</button>
+        </div>
+        <div class="card">
+          <h2>Nouvelle écriture manuelle</h2>
+          <div class="inline-form">
+            <div class="field"><label>Date</label><input type="date" id="ec-date"></div>
+            <div class="field" style="flex:1;"><label>Pièce</label><input type="text" id="ec-piece"></div>
+            <div class="field" style="flex:2;"><label>Libellé</label><input type="text" id="ec-libelle"></div>
+          </div>
+          <div class="g-table-wrap"><table class="g-table" id="ec-lignes-table"></table></div>
+          <button class="btn btn-outline btn-sm" onclick="ajouterLigneEcriture()">+ Ajouter une ligne</button>
+          <div class="hint" id="ec-equilibre"></div>
+          <button class="btn btn-sm" id="ec-save-btn" onclick="enregistrerEcriture()" disabled>Enregistrer</button>
+        </div>
+        <div class="card">
+          <h2>Journal</h2>
+          <div class="g-table-wrap" id="cg-journal-table"></div>
+        </div>
+      </div>
+
+      <div class="section" id="cg-grandlivre">
+        <div class="period-bar"><select id="gl-compte" onchange="renderGrandLivre()"></select></div>
+        <div class="card"><div class="g-table-wrap" id="cg-grandlivre-table"></div></div>
+      </div>
+
+      <div class="section" id="cg-balance">
+        <div class="card"><div class="g-table-wrap" id="cg-balance-table"></div></div>
+      </div>
+
+      <div class="section" id="cg-tva">
+        <div class="period-bar"><input type="month" id="tva-periode" onchange="renderTVA()"></div>
+        <div class="kpi-grid" id="tva-kpis"></div>
+        <div class="hint">TVA due = TVA facturée (compte 4431) − TVA récupérable (compte 4452). Un résultat négatif est un crédit de TVA reportable.</div>
       </div>
     </div>
 
@@ -720,6 +845,39 @@
       <button class="btn btn-outline btn-sm" data-clt-fermer onclick="closeModal('modal-bulletin')">Fermer</button>
       <button class="btn btn-sm" id="btn-bulletin-pdf">⬇️ Télécharger le PDF</button>
     </div>
+  </div>
+</div>
+
+<!-- Encaissement et relance d'une facture (Facturation clients) -->
+<div class="modal-back" id="modal-encaisser" data-clt-couche="Encaisser une facture">
+  <div class="modal">
+    <h3>Encaisser</h3>
+    <p class="hint" id="enc-facture-info"></p>
+    <div class="field"><label>Montant reçu (FCFA)</label><input type="number" id="enc-montant"></div>
+    <div class="field"><label>Date</label><input type="date" id="enc-date"></div>
+    <div class="field"><label>Mode</label>
+      <select id="enc-mode"><option>espèces</option><option>banque</option><option>mobile money</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" data-clt-fermer onclick="closeModal('modal-encaisser')">Annuler</button>
+      <button class="btn btn-sm" onclick="confirmerEncaissement()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="modal-relance" data-clt-couche="Relancer un client">
+  <div class="modal">
+    <h3>Relancer</h3>
+    <p class="hint" id="rel-facture-info"></p>
+    <div class="field"><label>Message (copiable)</label><textarea id="rel-texte" style="width:100%;min-height:100px;"></textarea></div>
+    <div class="field"><label>Canal</label>
+      <select id="rel-canal"><option value="whatsapp">WhatsApp</option><option value="sms">SMS</option><option value="email">Email</option><option value="appel">Appel</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" data-clt-fermer onclick="copierRelance()">📋 Copier</button>
+      <button class="btn btn-sm" onclick="confirmerRelance()">Marquer envoyée</button>
+    </div>
+    <div class="hint" id="rel-historique"></div>
   </div>
 </div>
 

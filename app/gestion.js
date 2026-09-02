@@ -46,6 +46,30 @@ const COMPTA_BUCKET_JUSTIF = 'justificatifs'; // préfixe des justificatifs de d
 let CLOTURES = new Set();       // mois clôturés : clés 'annee-mois' (verrouillage recettes/dépenses)
 const LC_BUCKET = 'compta-entreprise';
 
+/* -------------------- Facturation clients & Comptabilité générale -------------------- */
+let CLIENTS_FACTURATION = [];   // gestion_clients — clients B2B facturés au forfait/à la période
+let FACTURES = [];              // gestion_factures (sans les lignes/paiements, gardés à part)
+let FACTURE_LIGNES = {};        // { facture_id: [ligne, ...] }
+let FACTURE_PAIEMENTS = {};     // { facture_id: [paiement, ...] }
+let FACTURE_RELANCES = {};      // { facture_id: [relance, ...] }
+let PLAN_COMPTABLE = [];        // gestion_plan_comptable
+let ECRITURES = [];             // gestion_ecritures (sans les lignes, gardées à part)
+let ECRITURE_LIGNES = {};       // { ecriture_id: [ligne, ...] }
+let ecritureLignesEnCours = []; // lignes de la nouvelle écriture manuelle, avant enregistrement
+let nfLignesEnCours = [];       // lignes de la nouvelle facture, avant enregistrement
+let CG_CHARGE = false;          // Comptabilité générale : chargée une seule fois, à la première ouverture
+
+// Copie EXACTE de la table posée dans la migration SQL (gestion_generer_ecriture_depense) —
+// utilisée seulement pour PRÉVISUALISER le compte à l'écran avant de générer ; le calcul
+// qui compte est refait côté serveur.
+const DEP_CAT_COMPTE = {
+  'Carburant':'6051', 'Entretien / Réparation':'6224', 'Loyer / Charges':'622',
+  'Équipement':'605', 'Fournitures':'605', 'Assurance':'625', 'Frais bancaires':'628',
+  'Communication / Internet':'626', 'Transport / Déplacement':'624', 'Administratif':'628',
+  'Patente':'631', 'Impôt BIC':'447', 'TVA / TSE':'447', 'Autres impôts & taxes':'447',
+  'Amendes / Pénalités':'628', 'Autre':'628'
+};
+
 /* -------------------- Utilitaires -------------------- */
 /* Garde-fou anti-faute de frappe sur les montants (ex. un zéro de trop).
  * Au-delà de ce seuil, on demande une confirmation explicite plutôt que de bloquer,
@@ -71,6 +95,83 @@ function fmt(v){
 }
 function fmtF(v){ return fmt(v) + ' F'; }
 function escapeHTML(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* -------------------- Facturation clients & Comptabilité générale : fonctions pures --------------------
+ * Extraites et mises à l'épreuve par tests/comptabilite-generale.test.mjs et
+ * tests/facturation-clients.test.mjs. Aucune ne touche au DOM ni à supabaseClient : elles ne
+ * font que calculer, ce qui permet de les exécuter telles quelles dans un banc d'essai. */
+function totauxEcriture(lignes){
+  const debit = (lignes||[]).reduce((s,l)=>s+n(l.debit),0);
+  const credit = (lignes||[]).reduce((s,l)=>s+n(l.credit),0);
+  return { debit, credit };
+}
+
+function ecritureEquilibree(lignes){
+  const { debit, credit } = totauxEcriture(lignes);
+  return (lignes||[]).length >= 2 && debit === credit && debit > 0;
+}
+
+// Ne filtre JAMAIS un compte absent du plan comptable — l'inclut avec un intitulé
+// "(compte hors plan comptable)" et le compte dans les totaux.
+function balanceGenerale(ecritureLignes, planComptable){
+  const totaux = {};
+  (ecritureLignes||[]).forEach(l=>{
+    if (!l || !l.compte) return;
+    if (!totaux[l.compte]) totaux[l.compte] = { debit:0, credit:0 };
+    totaux[l.compte].debit += n(l.debit);
+    totaux[l.compte].credit += n(l.credit);
+  });
+  const parCode = Object.fromEntries((planComptable||[]).map(c=>[c.code, c]));
+  const lignes = Object.keys(totaux).sort().map(code => {
+    const t = totaux[code];
+    const solde = t.debit - t.credit;
+    const compte = parCode[code];
+    return {
+      code, intitule: compte ? compte.intitule : '(compte hors plan comptable)',
+      horsPlan: !compte,
+      debit: t.debit, credit: t.credit,
+      soldeDebiteur: solde > 0 ? solde : 0,
+      soldeCrediteur: solde < 0 ? -solde : 0
+    };
+  });
+  const grandDebit = lignes.reduce((s,l)=>s+l.debit,0);
+  const grandCredit = lignes.reduce((s,l)=>s+l.credit,0);
+  return { lignes, grandDebit, grandCredit, equilibree: grandDebit === grandCredit };
+}
+
+function declarationTVA(ecritures, ecritureLignesParId, periode){
+  let collectee = 0, deductible = 0;
+  (ecritures||[]).forEach(e=>{
+    if (periode && !String(e.date_ecriture||'').startsWith(periode)) return;
+    (ecritureLignesParId[e.id] || []).forEach(l=>{
+      if (l.compte === '4431') collectee += n(l.credit);
+      if (l.compte === '4452') deductible += n(l.debit);
+    });
+  });
+  return { collectee, deductible, net: collectee - deductible };
+}
+
+function lignesEcritureDepense(dep){
+  if (!dep || CATS_PAIE.has(dep.categorie)) return null;
+  const compteCharge = DEP_CAT_COMPTE[dep.categorie] || '605';
+  return [
+    { compte: compteCharge, libelle: dep.libelle, debit: n(dep.montant), credit: 0 },
+    { compte: '531', libelle: dep.libelle, debit: 0, credit: n(dep.montant) }
+  ];
+}
+
+// Statut de paiement calculé, jamais stocké. L'état structurel (annulee) prime toujours.
+function factureStatutCalcule(facture, paiements){
+  if (!facture) return null;
+  if (facture.statut === 'annulee') return 'annulee';
+  const paye = (paiements||[]).reduce((s,p)=>s+n(p.montant),0);
+  const solde = n(facture.montant_ttc) - paye;
+  const enRetard = solde > 0 && facture.date_echeance < isoJour(new Date());
+  if (solde <= 0) return 'payee';
+  if (paye > 0) return enRetard ? 'retard' : 'partielle';
+  return enRetard ? 'retard' : 'impayee';
+}
+
 function pad2(x){ return String(x).padStart(2,'0'); }
 function joursDuMois(annee, mois){ return new Date(annee, mois, 0).getDate(); } // mois 1..12
 function periodeStr(annee, mois){ return `${annee}-${pad2(mois)}-01`; }
@@ -141,6 +242,10 @@ function switchSub(group, sub){
   if (group === 'compta' && sub === 'livrecaisse') loadLivreCaisse();
   if (group === 'compta' && sub === 'echeances')   loadEcheances();
   if (group === 'compta' && sub === 'clotures')    loadClotures();
+  // Facturation clients / Comptabilité générale : chargées à la première ouverture
+  // (comme les États financiers) — rarement consultées au quotidien.
+  if (group === 'compta' && sub === 'facturation') loadFacturation();
+  if (group === 'compta' && sub === 'compta-generale' && !CG_CHARGE) chargerComptaGenerale();
   // États de paie par période / états financiers : chargés à la première ouverture.
   if (group === 'paie'   && sub === 'etats' && !ETATS_PERIODE) chargerEtatsPeriode();
   if (group === 'compta' && sub === 'etats' && !ETATS_FIN)     chargerEtatsFinanciers();
@@ -148,6 +253,19 @@ function switchSub(group, sub){
   if (group === 'paie'   && sub === 'dossiers')  { fillDocSalarieSelect(); loadDocuments('personnel').then(renderDocsPersonnel); }
   if (group === 'compta' && sub === 'documents') { loadDocuments('entreprise').then(renderDocsEntreprise); }
   scheduleStickyRefresh();
+}
+
+/* Sous-niveau interne de la Comptabilité générale (Plan comptable / Journal / Grand livre /
+ * Balance / TVA) : imite le mécanisme subtabs/section existant, imbriqué dans le sous-onglet
+ * « Compta. générale » lui-même — pas un second système de navigation. */
+function switchCG(sub){
+  document.querySelectorAll('#compta-compta-generale .subtabs .subtab').forEach(el =>
+    el.classList.toggle('active', el.dataset.sub === sub));
+  document.querySelectorAll('#compta-compta-generale > .section').forEach(el => el.classList.remove('active'));
+  document.getElementById('cg-'+sub).classList.add('active');
+  if (sub === 'grandlivre') renderGrandLivre();
+  if (sub === 'balance')    renderBalance();
+  if (sub === 'tva')        renderTVA();
 }
 
 /* -------------------- En-tête figé (sticky) --------------------
@@ -970,6 +1088,9 @@ async function delDepense(id){
   if (!confirm(`Supprimer définitivement cette dépense ?\n\n${detail}\n\nCette action est irréversible.`)) return;
   try {
     await supabaseClient.from('gestion_depenses').delete().eq('id',id);
+    // Sinon une dépense supprimée laisse une écriture orpheline en Compta générale,
+    // invisible depuis l'onglet Dépenses (aucune trace du "pourquoi" cette écriture existe).
+    await supabaseClient.from('gestion_ecritures').delete().eq('source','depense').eq('source_id', id);
     if (rows.justif_chemin){ try { await supabaseClient.storage.from(COMPTA_BUCKET).remove([rows.justif_chemin]); } catch(e){ /* justificatif : nettoyage best-effort */ } }
     loadDepenses(); showToast('Dépense supprimée');
   }
@@ -2335,6 +2456,673 @@ async function loadPointClients(){
     + `<div class="kpi"><div class="lbl">Colis livrés</div><div class="val">${gNb}</div></div>`
     + `</div>`;
   wrap.innerHTML = resume + blocks;
+}
+
+/* ============================================================================
+ * FACTURATION CLIENTS — clients B2B facturés au forfait/à la période (gestion_clients)
+ * ----------------------------------------------------------------------------
+ * Population DISTINCTE du « Point clients » ci-dessus (clientes Express, dérivé des colis).
+ * Aucun lien entre les deux : créer une facture ici ne modifie rien côté Express.
+ *
+ * Numérotation, calcul HT/TVA/TTC et statut « annulee » sont posés côté serveur (fonctions
+ * gestion_creer_facture / gestion_annuler_facture / gestion_encaisser_facture /
+ * gestion_annuler_paiement_facture, security definer) : jamais un insert direct multi-tables
+ * depuis ici. Le statut de paiement affiché (payee/partielle/retard/impayee/annulee), lui, se
+ * recalcule à chaque affichage via factureStatutCalcule() — jamais stocké.
+ * ==========================================================================*/
+async function loadFacturation(){
+  const wrapClients = document.getElementById('fact-clients-table');
+  const wrapFact = document.getElementById('fact-table');
+  if (wrapClients) wrapClients.innerHTML = '<div class="hint">Chargement…</div>';
+  if (wrapFact) wrapFact.innerHTML = '<div class="hint">Chargement…</div>';
+  try {
+    const [{ data: clients, error: e1 }, { data: factures, error: e2 }] = await Promise.all([
+      supabaseClient.from('gestion_clients').select('*').order('nom'),
+      supabaseClient.from('gestion_factures')
+        .select('*, gestion_facture_lignes(*), gestion_facture_paiements(*), gestion_facture_relances(*)')
+        .order('date_emission', { ascending:false }),
+    ]);
+    if (e1) throw e1; if (e2) throw e2;
+    CLIENTS_FACTURATION = clients || [];
+    FACTURE_LIGNES = {}; FACTURE_PAIEMENTS = {}; FACTURE_RELANCES = {};
+    FACTURES = (factures || []).map(f => {
+      const { gestion_facture_lignes, gestion_facture_paiements, gestion_facture_relances, ...rest } = f;
+      FACTURE_LIGNES[f.id] = (gestion_facture_lignes || []).slice().sort((a,b)=>(a.ordre||0)-(b.ordre||0));
+      FACTURE_PAIEMENTS[f.id] = gestion_facture_paiements || [];
+      FACTURE_RELANCES[f.id] = gestion_facture_relances || [];
+      return rest;
+    });
+  } catch(e){
+    console.error('loadFacturation', e);
+    if (wrapClients) wrapClients.innerHTML = `<div class="hint" style="color:#b00;" title="${escapeHTML(e.message||'')}">⚠️ Impossible de charger les clients pour le moment. Réessayez dans un instant.</div>`;
+    if (wrapFact) wrapFact.innerHTML = `<div class="hint" style="color:#b00;">⚠️ Impossible de charger les factures pour le moment.</div>`;
+    return;
+  }
+  renderFacturation();
+}
+
+function renderFacturation(){
+  // Cartes KPI — calculées depuis FACTURES/FACTURE_PAIEMENTS, jamais stockées.
+  let totalFacture=0, totalEncaisse=0, totalEnAttente=0, totalRetard=0;
+  FACTURES.forEach(f => {
+    if (f.statut === 'annulee') return;
+    const paiements = FACTURE_PAIEMENTS[f.id] || [];
+    const paye = paiements.reduce((s,p)=>s+n(p.montant),0);
+    const solde = n(f.montant_ttc) - paye;
+    totalFacture += n(f.montant_ttc);
+    totalEncaisse += paye;
+    const statut = factureStatutCalcule(f, paiements);
+    if (statut === 'retard') totalRetard += solde;
+    else if (solde > 0) totalEnAttente += solde;
+  });
+  document.getElementById('fact-kpis').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Total facturé</div><div class="kpi-value">${fmtF(totalFacture)}</div></div>
+    <div class="kpi"><div class="kpi-label">Encaissé</div><div class="kpi-value">${fmtF(totalEncaisse)}</div></div>
+    <div class="kpi"><div class="kpi-label">En attente</div><div class="kpi-value">${fmtF(totalEnAttente)}</div></div>
+    <div class="kpi"><div class="kpi-label">En retard</div><div class="kpi-value" style="color:${totalRetard>0?'#dc2626':'inherit'};">${fmtF(totalRetard)}</div></div>`;
+
+  // Tableau des clients (facturation)
+  const bodyClients = CLIENTS_FACTURATION.map(c => `<tr>
+      <td>${escapeHTML(c.nom)}</td><td>${escapeHTML(c.telephone||'—')}</td>
+      <td>${escapeHTML(c.adresse||'—')}</td><td>${escapeHTML(c.ncc||'—')}</td>
+      <td>${c.actif===false?'Inactif':'Actif'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="chargerClientFacturationDansFormulaire('${c.id}')">Modifier</button></td>
+    </tr>`).join('');
+  document.getElementById('fact-clients-table').innerHTML = `<table class="g-table"><thead><tr>
+      <th style="text-align:left;">Nom</th><th>Téléphone</th><th style="text-align:left;">Adresse</th><th>NCC</th><th>Statut</th><th></th>
+    </tr></thead><tbody>${bodyClients || '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aucun client</td></tr>'}</tbody></table>`;
+
+  // Sélecteur client de la nouvelle facture
+  const sel = document.getElementById('nf-client');
+  if (sel){
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Choisir —</option>' +
+      CLIENTS_FACTURATION.filter(c=>c.actif!==false).map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.nom)}</option>`).join('');
+    if (cur) sel.value = cur;
+  }
+
+  // Tableau des factures, filtré
+  const filtreStatut = document.getElementById('fact-filtre-statut')?.value || '';
+  const filtreClient = (document.getElementById('fact-filtre-client')?.value || '').trim().toLowerCase();
+  const nomClientDe = Object.fromEntries(CLIENTS_FACTURATION.map(c=>[c.id, c.nom]));
+  const libelleStatut = { payee:'Payée', partielle:'Partiellement payée', retard:'En retard', impayee:'Impayée', annulee:'Annulée' };
+  const couleurStatut = { payee:'#16a34a', partielle:'#d97706', retard:'#dc2626', impayee:'#6b7c79', annulee:'#6b7c79' };
+  const rows = FACTURES.filter(f => {
+    const nomClient = nomClientDe[f.client_id] || '';
+    if (filtreClient && !nomClient.toLowerCase().includes(filtreClient)) return false;
+    if (filtreStatut && factureStatutCalcule(f, FACTURE_PAIEMENTS[f.id] || []) !== filtreStatut) return false;
+    return true;
+  });
+  const bodyFact = rows.map(f => {
+    const paiements = FACTURE_PAIEMENTS[f.id] || [];
+    const paye = paiements.reduce((s,p)=>s+n(p.montant),0);
+    const solde = n(f.montant_ttc) - paye;
+    const statut = factureStatutCalcule(f, paiements);
+    const peutAnnuler = statut !== 'annulee' && paiements.length === 0;
+    return `<tr>
+      <td>${escapeHTML(f.numero)}</td>
+      <td>${escapeHTML(nomClientDe[f.client_id]||'—')}</td>
+      <td>${escapeHTML(f.date_emission||'')}</td>
+      <td>${escapeHTML(f.date_echeance||'')}</td>
+      ${copyCell(f.montant_ttc)}
+      ${copyCell(solde>0?solde:0)}
+      <td style="color:${couleurStatut[statut]||'inherit'};font-weight:600;">${libelleStatut[statut]||escapeHTML(statut||'')}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-outline btn-sm" title="Aperçu / imprimer" onclick="apercuFacture('${f.id}')">👁️</button>
+        ${statut!=='annulee' && solde>0 ? `<button class="btn btn-outline btn-sm" title="Encaisser" onclick="openEncaisserModal('${f.id}')">💰</button>` : ''}
+        ${statut!=='annulee' ? `<button class="btn btn-outline btn-sm" title="Relancer" onclick="openRelanceModal('${f.id}')">📣</button>` : ''}
+        ${peutAnnuler ? `<button class="btn btn-outline btn-sm" title="Annuler la facture" onclick="annulerFacture('${f.id}')">🗑️</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('fact-table').innerHTML = `<table class="g-table"><thead><tr>
+      <th>N°</th><th style="text-align:left;">Client</th><th>Émission</th><th>Échéance</th>
+      <th>TTC</th><th>Solde dû</th><th>Statut</th><th></th>
+    </tr></thead><tbody>${bodyFact || '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Aucune facture</td></tr>'}</tbody></table>`;
+}
+
+async function enregistrerClientFacturation(){
+  const idEl = document.getElementById('fc-id');
+  const id = idEl ? idEl.value : '';
+  const nom = document.getElementById('fc-nom').value.trim();
+  const telephone = document.getElementById('fc-tel').value.trim() || null;
+  const adresse = document.getElementById('fc-adresse').value.trim() || null;
+  const ncc = document.getElementById('fc-ncc').value.trim() || null;
+  if (!nom){ showToast('Le nom du client est obligatoire.', true); return; }
+  const rec = { nom, telephone, adresse, ncc };
+  const btn = document.getElementById('fc-add-btn');
+  if (btn) btn.disabled = true;
+  try {
+    if (id) { const { error } = await supabaseClient.from('gestion_clients').update(rec).eq('id', id); if (error) throw error; }
+    else    { const { error } = await supabaseClient.from('gestion_clients').insert(rec); if (error) throw error; }
+    if (idEl) idEl.value = '';
+    document.getElementById('fc-nom').value = '';
+    document.getElementById('fc-tel').value = '';
+    document.getElementById('fc-adresse').value = '';
+    document.getElementById('fc-ncc').value = '';
+    if (btn) btn.textContent = '+ Ajouter / enregistrer';
+    showToast('Client enregistré');
+    loadFacturation();
+  } catch(e){ showToast('Erreur enregistrement du client', true); console.error(e); }
+  finally { if (btn) btn.disabled = false; }
+}
+// Remplit le formulaire « Clients (facturation) » avec un client existant, pour le corriger
+// (nom, téléphone, adresse, NCC). Le bouton « Ajouter » sert alors à enregistrer la modification.
+function chargerClientFacturationDansFormulaire(id){
+  const c = CLIENTS_FACTURATION.find(x=>x.id===id); if (!c) return;
+  document.getElementById('fc-id').value = c.id;
+  document.getElementById('fc-nom').value = c.nom || '';
+  document.getElementById('fc-tel').value = c.telephone || '';
+  document.getElementById('fc-adresse').value = c.adresse || '';
+  document.getElementById('fc-ncc').value = c.ncc || '';
+  const btn = document.getElementById('fc-add-btn'); if (btn) btn.textContent = 'Enregistrer les modifications';
+  document.getElementById('fc-nom').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function ajouterLigneFacture(){
+  nfLignesEnCours.push({ designation:'', quantite:1, prix_unitaire:0 });
+  renderLignesFacture();
+}
+function retirerLigneFacture(idx){
+  nfLignesEnCours.splice(idx,1);
+  renderLignesFacture();
+}
+// Met à jour l'état SANS redessiner tout le tableau (sinon chaque frappe au clavier ferait
+// perdre le focus de l'input en cours de saisie) : seule la cellule « Montant » de la ligne
+// et les totaux se rafraîchissent, ciblés par leur id.
+function majLigneFacture(idx, champ, valeur){
+  if (!nfLignesEnCours[idx]) return;
+  nfLignesEnCours[idx][champ] = champ==='designation' ? valeur : n(valeur);
+  const cellMontant = document.getElementById('nf-ligne-montant-'+idx);
+  if (cellMontant) cellMontant.textContent = fmtF(n(nfLignesEnCours[idx].quantite) * n(nfLignesEnCours[idx].prix_unitaire));
+  rafraichirTotauxFacture();
+}
+// Le total HT/TVA/TTC affiché ici est INDICATIF SEULEMENT : gestion_creer_facture() le
+// recalcule côté serveur à partir des lignes envoyées, jamais à partir de ce qui est affiché.
+function renderLignesFacture(){
+  const body = nfLignesEnCours.map((l,i) => `<tr>
+      <td><input type="text" class="cell" style="width:100%;text-align:left;" value="${escapeHTML(l.designation)}" oninput="majLigneFacture(${i},'designation',this.value)" placeholder="Désignation"></td>
+      <td><input type="number" class="cell" min="0" step="0.01" value="${l.quantite}" oninput="majLigneFacture(${i},'quantite',this.value)"></td>
+      <td><input type="number" class="cell" min="0" step="1" value="${l.prix_unitaire}" oninput="majLigneFacture(${i},'prix_unitaire',this.value)"></td>
+      <td id="nf-ligne-montant-${i}" style="text-align:right;">${fmtF(n(l.quantite)*n(l.prix_unitaire))}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="retirerLigneFacture(${i})">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('nf-lignes-table').innerHTML = `<thead><tr>
+      <th style="text-align:left;">Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Montant</th><th></th>
+    </tr></thead><tbody>${body || '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Aucune ligne — cliquez « + Ajouter une ligne »</td></tr>'}</tbody>`;
+  rafraichirTotauxFacture();
+}
+function rafraichirTotauxFacture(){
+  const ht = nfLignesEnCours.reduce((s,l)=>s+n(l.quantite)*n(l.prix_unitaire),0);
+  const assujetti = !PARAMS || PARAMS.tva_assujetti !== false;
+  const tva = assujetti ? Math.round(ht*0.18) : 0;
+  document.getElementById('nf-totaux').innerHTML = `<table class="g-table"><tbody>
+      <tr><td style="text-align:left;">Total HT (indicatif)</td>${copyCell(ht)}</tr>
+      <tr><td style="text-align:left;">TVA 18 % (indicatif)</td>${copyCell(tva)}</tr>
+      <tr style="font-weight:700;"><td style="text-align:left;">Total TTC (indicatif)</td>${copyCell(ht+tva)}</tr>
+    </tbody></table>
+    <div class="hint">Montant indicatif — le total exact est recalculé par le serveur à la création de la facture.</div>`;
+}
+
+async function creerFacture(){
+  const clientId = document.getElementById('nf-client').value;
+  const dateEmission = document.getElementById('nf-date').value;
+  const delai = parseInt(document.getElementById('nf-delai').value) || 30;
+  if (!clientId){ showToast('Choisissez un client.', true); return; }
+  if (!dateEmission){ showToast("Renseignez la date d'émission.", true); return; }
+  const lignes = nfLignesEnCours.filter(l => (l.designation||'').trim() && n(l.quantite) > 0 && n(l.prix_unitaire) > 0);
+  if (!lignes.length){ showToast('Ajoutez au moins une ligne valide (désignation, quantité et prix unitaire).', true); return; }
+  // Le montant utilisé pour le garde-fou anti-faute de frappe est le total INDICATIF affiché ;
+  // le total qui compte réellement est recalculé par gestion_creer_facture() côté serveur.
+  const ht = lignes.reduce((s,l)=>s+n(l.quantite)*n(l.prix_unitaire),0);
+  const assujetti = !PARAMS || PARAMS.tva_assujetti !== false;
+  const ttcIndicatif = ht + (assujetti ? Math.round(ht*0.18) : 0);
+  if (!montantConfirme(ttcIndicatif, 'nouvelle facture')) return;
+  const btn = document.getElementById('nf-creer-btn');
+  if (btn) btn.disabled = true;
+  try {
+    const { error } = await supabaseClient.rpc('gestion_creer_facture', {
+      p_client_id: clientId,
+      p_date_emission: dateEmission,
+      p_delai_jours: delai,
+      p_lignes: lignes.map(l => ({ designation: l.designation, quantite: n(l.quantite), prix_unitaire: n(l.prix_unitaire) })),
+    });
+    if (error) throw error;
+    nfLignesEnCours = [];
+    document.getElementById('nf-client').value = '';
+    renderLignesFacture();
+    showToast('Facture créée');
+    loadFacturation();
+  } catch(e){
+    console.error('creerFacture', e);
+    showToast((e.message||'').includes('clôturé') ? 'Le mois de cette date est clôturé : facturation impossible.' : 'Erreur création de la facture', true);
+  } finally { if (btn) btn.disabled = false; }
+}
+
+async function annulerFacture(id){
+  const f = FACTURES.find(x=>x.id===id);
+  if (!f){ showToast('Facture introuvable.', true); return; }
+  const motif = prompt(`Annuler définitivement la facture ${f.numero} (${fmtF(f.montant_ttc)}) ?\n\nCette action est irréversible et impossible si un paiement a déjà été reçu.\n\nMotif de l'annulation (obligatoire) :`);
+  if (motif === null) return; // annulé par l'utilisateur
+  if (!motif.trim()){ showToast("Un motif est obligatoire pour annuler une facture.", true); return; }
+  try {
+    const { error } = await supabaseClient.rpc('gestion_annuler_facture', { p_facture_id: id, p_motif: motif.trim() });
+    if (error) throw error;
+    showToast('Facture annulée');
+    loadFacturation();
+  } catch(e){
+    console.error('annulerFacture', e);
+    showToast((e.message||'').includes('clôturé') ? "Le mois d'émission de cette facture est clôturé : annulation impossible." : 'Erreur annulation (un paiement a peut-être déjà été reçu)', true);
+  }
+}
+
+function openEncaisserModal(factureId){
+  const f = FACTURES.find(x=>x.id===factureId); if (!f) return;
+  const paiements = FACTURE_PAIEMENTS[f.id] || [];
+  const paye = paiements.reduce((s,p)=>s+n(p.montant),0);
+  const solde = n(f.montant_ttc) - paye;
+  const infoEl = document.getElementById('enc-facture-info');
+  infoEl.textContent = `Facture ${f.numero} — TTC ${fmtF(f.montant_ttc)} — déjà reçu ${fmtF(paye)} — solde dû ${fmtF(solde>0?solde:0)}`;
+  infoEl.setAttribute('data-facture-id', f.id);
+  document.getElementById('enc-montant').value = solde > 0 ? Math.round(solde) : '';
+  document.getElementById('enc-date').value = isoJour(new Date());
+  document.getElementById('enc-mode').value = 'espèces';
+  document.getElementById('modal-encaisser').classList.add('open');
+}
+async function confirmerEncaissement(){
+  const factureId = document.getElementById('enc-facture-info').getAttribute('data-facture-id');
+  const montant = n(document.getElementById('enc-montant').value);
+  const date = document.getElementById('enc-date').value;
+  const mode = document.getElementById('enc-mode').value;
+  if (!factureId){ showToast('Facture introuvable.', true); return; }
+  if (montant <= 0){ showToast('Renseignez un montant valide.', true); return; }
+  if (!date){ showToast('Renseignez une date.', true); return; }
+  if (!montantConfirme(montant, 'encaissement de facture')) return;
+  try {
+    const { error } = await supabaseClient.rpc('gestion_encaisser_facture', {
+      p_facture_id: factureId, p_montant: montant, p_date_paiement: date, p_mode: mode, p_note: null,
+    });
+    if (error) throw error;
+    closeModal('modal-encaisser');
+    showToast('Encaissement enregistré');
+    loadFacturation();
+  } catch(e){
+    console.error('confirmerEncaissement', e);
+    showToast((e.message||'').includes('clôturé') ? 'Le mois de ce paiement est clôturé : encaissement impossible.' : "Erreur enregistrement de l'encaissement", true);
+  }
+}
+
+async function annulerPaiement(paiementId){
+  if (!confirm("Annuler ce paiement de facture ?\n\nLa ligne correspondante du Livre de caisse et l'écriture d'encaissement liée seront supprimées automatiquement.\n\nCette action est irréversible.")) return;
+  try {
+    const { error } = await supabaseClient.rpc('gestion_annuler_paiement_facture', { p_paiement_id: paiementId });
+    if (error) throw error;
+    showToast('Paiement annulé');
+    loadFacturation();
+  } catch(e){
+    console.error('annulerPaiement', e);
+    showToast((e.message||'').includes('clôturé') ? 'Le mois de ce paiement est clôturé : annulation impossible.' : 'Erreur annulation du paiement', true);
+  }
+}
+
+function openRelanceModal(factureId){
+  const f = FACTURES.find(x=>x.id===factureId); if (!f) return;
+  const nomClientDe = Object.fromEntries(CLIENTS_FACTURATION.map(c=>[c.id, c.nom]));
+  const paiements = FACTURE_PAIEMENTS[f.id] || [];
+  const paye = paiements.reduce((s,p)=>s+n(p.montant),0);
+  const solde = n(f.montant_ttc) - paye;
+  const infoEl = document.getElementById('rel-facture-info');
+  infoEl.textContent = `Facture ${f.numero} — ${nomClientDe[f.client_id]||''} — solde dû ${fmtF(solde>0?solde:0)} — échéance ${f.date_echeance||''}`;
+  infoEl.setAttribute('data-facture-id', f.id);
+  document.getElementById('rel-texte').value =
+    `Bonjour, la facture ${f.numero} d'un montant de ${fmtF(f.montant_ttc)}, arrivée à échéance le ${f.date_echeance}, présente un solde dû de ${fmtF(solde>0?solde:0)}. Merci de bien vouloir régulariser dans les meilleurs délais. Cordialement, ${(PARAMS&&PARAMS.societe)||''}.`;
+  document.getElementById('rel-canal').value = 'whatsapp';
+  const historique = FACTURE_RELANCES[f.id] || [];
+  document.getElementById('rel-historique').innerHTML = historique.length
+    ? 'Relances déjà envoyées : ' + historique.map(r=>`${escapeHTML(r.canal)} le ${escapeHTML(r.date_relance)}`).join(', ')
+    : "Aucune relance envoyée pour l'instant.";
+  document.getElementById('modal-relance').classList.add('open');
+}
+function copierRelance(){
+  const texte = document.getElementById('rel-texte').value;
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texte).then(()=>showToast('Message copié')).catch(()=>showToast('Copie impossible', true));
+  } else { showToast('Copie non prise en charge par ce navigateur.', true); }
+}
+async function confirmerRelance(){
+  const factureId = document.getElementById('rel-facture-info').getAttribute('data-facture-id');
+  const canal = document.getElementById('rel-canal').value;
+  const note = document.getElementById('rel-texte').value || null;
+  if (!factureId){ showToast('Facture introuvable.', true); return; }
+  try {
+    const { error } = await supabaseClient.from('gestion_facture_relances').insert({ facture_id: factureId, canal, note });
+    if (error) throw error;
+    closeModal('modal-relance');
+    showToast('Relance enregistrée');
+    loadFacturation();
+  } catch(e){ showToast("Erreur enregistrement de la relance", true); console.error(e); }
+}
+
+// Aperçu imprimable d'une facture : réutilise le mécanisme d'impression déjà présent
+// (ouvrirApercuImpression / #modal-impression) et les mentions légales de gestion_parametres.
+function apercuFactureHTML(facture){
+  const parClient = Object.fromEntries(CLIENTS_FACTURATION.map(c=>[c.id, c]));
+  const client = parClient[facture.client_id] || {};
+  const lignes = FACTURE_LIGNES[facture.id] || [];
+  const paiements = FACTURE_PAIEMENTS[facture.id] || [];
+  const paye = paiements.reduce((s,p)=>s+n(p.montant),0);
+  const solde = n(facture.montant_ttc) - paye;
+  const p = PARAMS || {};
+  const corps = lignes.map(l => `<tr>
+      <td style="text-align:left;">${escapeHTML(l.designation)}</td>
+      <td>${fmt(l.quantite)}</td><td>${fmt(l.prix_unitaire)}</td>
+      <td>${fmt(n(l.quantite)*n(l.prix_unitaire))}</td>
+    </tr>`).join('');
+  const mentionsLegales = [
+    p.rccm ? 'RCCM : ' + escapeHTML(p.rccm) : null,
+    p.ncc ? 'NCC : ' + escapeHTML(p.ncc) : null,
+    p.centre_impots ? 'Centre des impôts : ' + escapeHTML(p.centre_impots) : null,
+  ].filter(Boolean).join(' — ');
+  const moyensPaiement = [
+    p.wave ? 'Wave : ' + escapeHTML(p.wave) : null,
+    p.orange_money ? 'Orange Money : ' + escapeHTML(p.orange_money) : null,
+  ].filter(Boolean).join(' — ');
+  return enteteDocumentImprimable('Facture ' + facture.numero, `Émise le ${frJour(facture.date_emission)} — échéance le ${frJour(facture.date_echeance)}`)
+    + `<div class="doc-coord" style="margin:14px 0;">
+        <strong>Client :</strong> ${escapeHTML(client.nom||'—')}<br>
+        ${client.adresse ? escapeHTML(client.adresse)+'<br>' : ''}
+        ${client.telephone ? escapeHTML(client.telephone)+'<br>' : ''}
+        ${client.ncc ? 'NCC : '+escapeHTML(client.ncc) : ''}
+       </div>`
+    + `<table><thead><tr><th style="text-align:left;">Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Montant</th></tr></thead>
+        <tbody>${corps}</tbody>
+        <tfoot>
+          <tr><td colspan="3" style="text-align:right;">Total HT</td><td>${fmt(facture.montant_ht)}</td></tr>
+          <tr><td colspan="3" style="text-align:right;">TVA</td><td>${fmt(facture.montant_tva)}</td></tr>
+          <tr><td colspan="3" style="text-align:right;"><strong>Total TTC</strong></td><td><strong>${fmt(facture.montant_ttc)}</strong></td></tr>
+          ${paye ? `<tr><td colspan="3" style="text-align:right;">Déjà réglé</td><td>${fmt(paye)}</td></tr>
+          <tr><td colspan="3" style="text-align:right;"><strong>Solde dû</strong></td><td><strong>${fmt(solde>0?solde:0)}</strong></td></tr>` : ''}
+        </tfoot></table>`
+    + (moyensPaiement ? `<div class="hint" style="margin-top:10px;">Moyens de paiement acceptés — ${moyensPaiement}</div>` : '')
+    + piedDocumentImprimable(mentionsLegales || 'Montants en francs CFA.');
+}
+function apercuFacture(id){
+  const f = FACTURES.find(x=>x.id===id); if (!f){ showToast('Facture introuvable.', true); return; }
+  ouvrirApercuImpression(apercuFactureHTML(f));
+}
+
+function exportFactures(){
+  if (!FACTURES.length){ showToast('Aucune facture à exporter.', true); return; }
+  const nomClientDe = Object.fromEntries(CLIENTS_FACTURATION.map(c=>[c.id, c.nom]));
+  const aoa = [['N° facture','Client','Émission','Échéance','HT','TVA','TTC','Encaissé','Solde dû','Statut']];
+  FACTURES.forEach(f => {
+    const paiements = FACTURE_PAIEMENTS[f.id] || [];
+    const paye = paiements.reduce((s,p)=>s+n(p.montant),0);
+    const solde = n(f.montant_ttc) - paye;
+    const statut = factureStatutCalcule(f, paiements);
+    aoa.push([f.numero, nomClientDe[f.client_id]||'', f.date_emission, f.date_echeance,
+      Math.round(n(f.montant_ht)), Math.round(n(f.montant_tva)), Math.round(n(f.montant_ttc)),
+      Math.round(paye), Math.round(solde>0?solde:0), statut]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Factures');
+  XLSX.writeFile(wb, `Factures_${isoJour(new Date())}.xlsx`);
+}
+// Pas de fonction genererEcrituresDepuisFactures() : l'écriture d'émission et celle
+// d'encaissement se posent automatiquement, dans gestion_creer_facture() et
+// gestion_encaisser_facture() côté serveur — voir la Comptabilité générale ci-dessous.
+
+/* ============================================================================
+ * COMPTABILITÉ GÉNÉRALE (partie double, SYSCOHADA) — vue séparée des États financiers
+ * ----------------------------------------------------------------------------
+ * Toute écriture passe par une fonction Postgres security definer (gestion_creer_ecriture,
+ * gestion_generer_ecriture_depense) qui vérifie l'accès, l'équilibre débit=crédit et la
+ * clôture du mois — jamais un insert direct multi-tables depuis ici. Le trigger
+ * trg_equilibre_ecriture (base) est le garde-fou de dernier recours ; ecritureEquilibree()
+ * (écran) n'est qu'un confort pour ne pas laisser saisir une écriture qu'on sait déjà fausse.
+ * ==========================================================================*/
+async function chargerComptaGenerale(){
+  const wrapPlan = document.getElementById('cg-plan-table');
+  if (wrapPlan) wrapPlan.innerHTML = '<div class="hint">Chargement…</div>';
+  try {
+    const [{ data: plan, error: e1 }, { data: ecritures, error: e2 }] = await Promise.all([
+      supabaseClient.from('gestion_plan_comptable').select('*').order('code'),
+      supabaseClient.from('gestion_ecritures').select('*, gestion_ecriture_lignes(*)').order('date_ecriture', { ascending:false }),
+    ]);
+    if (e1) throw e1; if (e2) throw e2;
+    PLAN_COMPTABLE = plan || [];
+    ECRITURE_LIGNES = {};
+    ECRITURES = (ecritures || []).map(e => {
+      const { gestion_ecriture_lignes, ...rest } = e;
+      ECRITURE_LIGNES[e.id] = gestion_ecriture_lignes || [];
+      return rest;
+    });
+  } catch(e){
+    console.error('chargerComptaGenerale', e);
+    if (wrapPlan) wrapPlan.innerHTML = `<div class="hint" style="color:#b00;" title="${escapeHTML(e.message||'')}">⚠️ Impossible de charger la comptabilité générale pour le moment.</div>`;
+    return;
+  }
+  CG_CHARGE = true;
+  renderPlanComptable();
+  renderJournal();
+}
+
+function renderPlanComptable(){
+  const body = PLAN_COMPTABLE.map(c => `<tr>
+      <td>${escapeHTML(c.code)}</td><td style="text-align:left;">${escapeHTML(c.intitule)}</td><td>${c.classe}</td>
+    </tr>`).join('');
+  document.getElementById('cg-plan-table').innerHTML = `<table class="g-table"><thead><tr>
+      <th>Code</th><th style="text-align:left;">Intitulé</th><th>Classe</th>
+    </tr></thead><tbody>${body || '<tr><td colspan="3" style="text-align:center;color:var(--muted);">Aucun compte</td></tr>'}</tbody></table>`;
+  const sel = document.getElementById('gl-compte');
+  if (sel){
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Choisir un compte —</option>' +
+      PLAN_COMPTABLE.map(c=>`<option value="${escapeHTML(c.code)}">${escapeHTML(c.code)} — ${escapeHTML(c.intitule)}</option>`).join('');
+    if (cur) sel.value = cur;
+  }
+}
+async function ajouterCompte(){
+  const code = document.getElementById('cg-pc-code').value.trim();
+  const intitule = document.getElementById('cg-pc-nom').value.trim();
+  const classe = parseInt(document.getElementById('cg-pc-classe').value);
+  if (!code || !intitule || !classe){ showToast("Renseignez le code, l'intitulé et la classe.", true); return; }
+  try {
+    const { error } = await supabaseClient.from('gestion_plan_comptable').insert({ code, intitule, classe });
+    if (error) throw error;
+    document.getElementById('cg-pc-code').value = '';
+    document.getElementById('cg-pc-nom').value = '';
+    document.getElementById('cg-pc-classe').value = '';
+    showToast('Compte ajouté');
+    chargerComptaGenerale();
+  } catch(e){ showToast('Erreur ajout du compte (code déjà utilisé ?)', true); console.error(e); }
+}
+
+function optionsComptesPlan(selectionne){
+  return ['<option value="">—</option>'].concat(
+    PLAN_COMPTABLE.map(c=>`<option value="${escapeHTML(c.code)}"${c.code===selectionne?' selected':''}>${escapeHTML(c.code)} — ${escapeHTML(c.intitule)}</option>`)
+  ).join('');
+}
+function ajouterLigneEcriture(){
+  ecritureLignesEnCours.push({ compte:'', libelle:'', debit:0, credit:0 });
+  renderLignesEcriture();
+}
+function retirerLigneEcriture(idx){
+  ecritureLignesEnCours.splice(idx,1);
+  renderLignesEcriture();
+}
+// Met à jour l'état SANS redessiner le tableau (sinon chaque frappe au clavier ferait perdre
+// le focus de l'input en cours de saisie) : seuls le débit/crédit total et le bouton
+// « Enregistrer » se rafraîchissent, via rafraichirEquilibreEcran().
+function majLigneEcriture(idx, champ, valeur){
+  if (!ecritureLignesEnCours[idx]) return;
+  ecritureLignesEnCours[idx][champ] = (champ==='debit'||champ==='credit') ? n(valeur) : valeur;
+  rafraichirEquilibreEcran();
+}
+function renderLignesEcriture(){
+  const body = ecritureLignesEnCours.map((l,i) => `<tr>
+      <td><select class="cell" onchange="majLigneEcriture(${i},'compte',this.value)">${optionsComptesPlan(l.compte)}</select></td>
+      <td><input type="text" class="cell" style="width:100%;text-align:left;" value="${escapeHTML(l.libelle)}" oninput="majLigneEcriture(${i},'libelle',this.value)"></td>
+      <td><input type="number" class="cell" min="0" step="1" value="${l.debit||''}" oninput="majLigneEcriture(${i},'debit',this.value)"></td>
+      <td><input type="number" class="cell" min="0" step="1" value="${l.credit||''}" oninput="majLigneEcriture(${i},'credit',this.value)"></td>
+      <td><button class="btn btn-outline btn-sm" onclick="retirerLigneEcriture(${i})">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('ec-lignes-table').innerHTML = `<thead><tr>
+      <th>Compte</th><th style="text-align:left;">Libellé</th><th>Débit</th><th>Crédit</th><th></th>
+    </tr></thead><tbody>${body || '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Aucune ligne</td></tr>'}</tbody>`;
+  rafraichirEquilibreEcran();
+}
+function rafraichirEquilibreEcran(){
+  const { debit, credit } = totauxEcriture(ecritureLignesEnCours);
+  const ok = ecritureEquilibree(ecritureLignesEnCours);
+  document.getElementById('ec-equilibre').innerHTML =
+    `Débit : ${fmtF(debit)} — Crédit : ${fmtF(credit)}` +
+    (ok ? ' — équilibrée ✓' : ' — doit s\'équilibrer (débit = crédit, ≥ 2 lignes).');
+  document.getElementById('ec-save-btn').disabled = !ok;
+}
+async function enregistrerEcriture(){
+  if (!ecritureEquilibree(ecritureLignesEnCours)){ showToast("L'écriture doit être équilibrée (débit = crédit, au moins 2 lignes).", true); return; }
+  const date = document.getElementById('ec-date').value;
+  const piece = document.getElementById('ec-piece').value.trim() || null;
+  const libelle = document.getElementById('ec-libelle').value.trim();
+  if (!date){ showToast('Renseignez une date.', true); return; }
+  if (!libelle){ showToast('Renseignez un libellé.', true); return; }
+  const { debit } = totauxEcriture(ecritureLignesEnCours);
+  if (!montantConfirme(debit, 'écriture manuelle')) return;
+  const btn = document.getElementById('ec-save-btn');
+  if (btn) btn.disabled = true;
+  try {
+    const { error } = await supabaseClient.rpc('gestion_creer_ecriture', {
+      p_date: date, p_piece: piece, p_libelle: libelle, p_source: 'manuelle', p_source_id: null,
+      p_lignes: ecritureLignesEnCours.map(l => ({ compte: l.compte, libelle: l.libelle || null, debit: n(l.debit), credit: n(l.credit) })),
+    });
+    if (error) throw error;
+    ecritureLignesEnCours = [];
+    document.getElementById('ec-date').value = '';
+    document.getElementById('ec-piece').value = '';
+    document.getElementById('ec-libelle').value = '';
+    renderLignesEcriture();
+    showToast('Écriture enregistrée');
+    chargerComptaGenerale();
+  } catch(e){
+    console.error('enregistrerEcriture', e);
+    showToast((e.message||'').includes('clôturé') ? 'Le mois de cette écriture est clôturé : saisie impossible.' : "Erreur enregistrement de l'écriture", true);
+  } finally { if (btn) btn.disabled = false; }
+}
+async function supprimerEcriture(id){
+  const e = ECRITURES.find(x=>x.id===id);
+  if (!e){ showToast('Écriture introuvable.', true); return; }
+  if (e.source !== 'manuelle') {
+    showToast("Cette écriture a été générée automatiquement (facture ou dépense) : elle ne peut pas être supprimée ici. Utilisez l'annulation de la facture, l'annulation du paiement, ou la suppression de la dépense d'origine.", true);
+    return;
+  }
+  const lignes = ECRITURE_LIGNES[id] || [];
+  const montant = lignes.reduce((s,l)=>s+n(l.debit),0);
+  const detail = `${e.date_ecriture||''} — ${e.libelle||'(sans libellé)'} — ${fmtF(montant)}`;
+  if (!confirm(`Supprimer définitivement cette écriture ?\n\n${detail}\n\nCette action est irréversible.`)) return;
+  try {
+    const { error } = await supabaseClient.from('gestion_ecritures').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Écriture supprimée');
+    chargerComptaGenerale();
+  } catch(e2){ showToast('Erreur suppression', true); console.error(e2); }
+}
+async function genererEcrituresDepuisDepenses(){
+  const annee = parseInt(document.getElementById('dep-year')?.value);
+  const mois = parseInt(document.getElementById('dep-month')?.value);
+  if (!annee || !mois){ showToast("Choisissez d'abord un mois dans l'onglet Dépenses.", true); return; }
+  await refreshCloturesSet(); // vérification live du verrou de clôture
+  if (moisCloture(annee, mois)){ showToast(`${MOIS_FR[mois-1]} ${annee} est clôturé : génération impossible.`, true); return; }
+  let deps = [];
+  try {
+    const { data, error } = await supabaseClient.from('gestion_depenses').select('id,categorie').eq('annee',annee).eq('mois',mois);
+    if (error) throw error;
+    deps = (data||[]).filter(d => !CATS_PAIE.has(d.categorie));
+  } catch(e){ showToast('Erreur chargement des dépenses', true); console.error(e); return; }
+  if (!deps.length){ showToast('Aucune dépense (hors paie) à générer ce mois-ci.'); return; }
+  let generees = 0, dejaExistantes = 0, echecs = 0;
+  for (const d of deps){
+    try {
+      const { error } = await supabaseClient.rpc('gestion_generer_ecriture_depense', { p_depense_id: d.id });
+      if (error){
+        if ((error.message||'').includes('DEJA_GENEREE')) dejaExistantes++;
+        else { echecs++; console.error('generer ecriture depense', d.id, error); }
+      } else generees++;
+    } catch(e){ echecs++; console.error('generer ecriture depense', d.id, e); }
+  }
+  showToast(`${generees} écriture(s) générée(s), ${dejaExistantes} déjà existante(s)` + (echecs ? `, ${echecs} échec(s)` : ''), echecs > 0);
+  chargerComptaGenerale();
+}
+function renderJournal(){
+  const intituleDe = Object.fromEntries(PLAN_COMPTABLE.map(c=>[c.code, c.intitule]));
+  const libelleSource = { manuelle:'Manuelle', depense:'Dépense', facture_emission:'Facture (émission)', facture_encaissement:'Facture (encaissement)' };
+  const body = ECRITURES.map(e => {
+    const lignes = ECRITURE_LIGNES[e.id] || [];
+    const detail = lignes.map(l =>
+      `${escapeHTML(l.compte)}${intituleDe[l.compte] ? ' — '+escapeHTML(intituleDe[l.compte]) : ''} : ${n(l.debit)>0 ? 'Débit '+fmt(l.debit) : 'Crédit '+fmt(l.credit)}`
+    ).join('<br>');
+    const montant = lignes.reduce((s,l)=>s+n(l.debit),0);
+    return `<tr>
+        <td>${escapeHTML(e.date_ecriture||'')}</td>
+        <td>${escapeHTML(e.piece||'—')}</td>
+        <td style="text-align:left;">${escapeHTML(e.libelle||'')}</td>
+        <td>${libelleSource[e.source]||escapeHTML(e.source||'')}</td>
+        <td style="text-align:left;font-size:12px;">${detail}</td>
+        ${copyCell(montant)}
+        <td>${e.source==='manuelle' ? `<button class="btn btn-outline btn-sm" onclick="supprimerEcriture('${e.id}')">🗑️</button>` : ''}</td>
+      </tr>`;
+  }).join('');
+  document.getElementById('cg-journal-table').innerHTML = `<table class="g-table"><thead><tr>
+      <th>Date</th><th>Pièce</th><th style="text-align:left;">Libellé</th><th>Source</th>
+      <th style="text-align:left;">Détail (débit/crédit)</th><th>Montant</th><th></th>
+    </tr></thead><tbody>${body || '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Aucune écriture</td></tr>'}</tbody></table>`;
+}
+function renderGrandLivre(){
+  const compte = document.getElementById('gl-compte')?.value;
+  const wrap = document.getElementById('cg-grandlivre-table');
+  if (!wrap) return;
+  if (!compte){ wrap.innerHTML = '<div class="hint">Choisissez un compte ci-dessus.</div>'; return; }
+  const lignes = [];
+  ECRITURES.forEach(e => {
+    (ECRITURE_LIGNES[e.id]||[]).forEach(l => {
+      if (l.compte === compte) lignes.push({ date: e.date_ecriture, piece: e.piece, libelle: l.libelle || e.libelle, debit: n(l.debit), credit: n(l.credit) });
+    });
+  });
+  lignes.sort((a,b) => String(a.date||'').localeCompare(String(b.date||'')));
+  let solde = 0;
+  const body = lignes.map(l => {
+    solde += n(l.debit) - n(l.credit);
+    return `<tr>
+        <td>${escapeHTML(l.date||'')}</td><td>${escapeHTML(l.piece||'—')}</td>
+        <td style="text-align:left;">${escapeHTML(l.libelle||'')}</td>
+        ${copyCell(l.debit)}${copyCell(l.credit)}${copyCell(solde)}
+      </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table class="g-table"><thead><tr>
+      <th>Date</th><th>Pièce</th><th style="text-align:left;">Libellé</th><th>Débit</th><th>Crédit</th><th>Solde progressif</th>
+    </tr></thead><tbody>${body || '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aucun mouvement sur ce compte</td></tr>'}</tbody></table>`;
+}
+function renderBalance(){
+  const toutesLignes = [];
+  ECRITURES.forEach(e => { (ECRITURE_LIGNES[e.id]||[]).forEach(l => toutesLignes.push(l)); });
+  const { lignes, grandDebit, grandCredit, equilibree } = balanceGenerale(toutesLignes, PLAN_COMPTABLE);
+  const body = lignes.map(l => `<tr${l.horsPlan ? ' style="color:#dc2626;"' : ''}>
+      <td>${escapeHTML(l.code)}</td><td style="text-align:left;">${escapeHTML(l.intitule)}</td>
+      ${copyCell(l.debit)}${copyCell(l.credit)}${copyCell(l.soldeDebiteur)}${copyCell(l.soldeCrediteur)}
+    </tr>`).join('');
+  const bandeau = equilibree ? '' : `<div class="clt-alert clt-alert-warn">⚠️ <strong>Balance déséquilibrée.</strong> Total débit (${fmtF(grandDebit)}) ≠ total crédit (${fmtF(grandCredit)}). Vérifiez les écritures ci-dessus dans le Journal.</div>`;
+  document.getElementById('cg-balance-table').innerHTML = bandeau + `<table class="g-table"><thead><tr>
+      <th>Code</th><th style="text-align:left;">Intitulé</th><th>Débit</th><th>Crédit</th><th>Solde débiteur</th><th>Solde créditeur</th>
+    </tr></thead><tbody>${body || '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aucune écriture</td></tr>'}</tbody>
+    <tfoot><tr><th style="text-align:left;" colspan="2">TOTAL</th>${copyCell(grandDebit,{th:true})}${copyCell(grandCredit,{th:true})}<th></th><th></th></tr></tfoot></table>`;
+}
+function renderTVA(){
+  const periode = document.getElementById('tva-periode')?.value || '';
+  const { collectee, deductible, net } = declarationTVA(ECRITURES, ECRITURE_LIGNES, periode);
+  document.getElementById('tva-kpis').innerHTML = `
+    <div class="kpi"><div class="kpi-label">TVA facturée (collectée)</div><div class="kpi-value">${fmtF(collectee)}</div></div>
+    <div class="kpi"><div class="kpi-label">TVA récupérable (déductible)</div><div class="kpi-value">${fmtF(deductible)}</div></div>
+    <div class="kpi ${net<0?'pos':''}"><div class="kpi-label">${net>=0?'TVA due':'Crédit de TVA reportable'}</div><div class="kpi-value" style="color:${net>=0?'#dc2626':'#16a34a'};">${fmtF(Math.abs(net))}</div></div>`;
 }
 
 /* ============================================================================

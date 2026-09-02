@@ -343,6 +343,28 @@ jobs:
       - name: Écrans de déverrouillage (aucun nom de classe emprunté au thème)
         run: node tests/ecrans-de-deverrouillage.test.mjs
 
+      # La Comptabilité générale (partie double, SYSCOHADA), ajoutée le 31 août 2026 dans l'écran
+      # Gestion, à côté des États financiers en trésorerie. La balance qu'elle produit part chez
+      # l'expert-comptable, la déclaration TVA remplit un document fiscal : une écriture qui ne
+      # s'équilibre pas ou un compte qu'on efface en silence n'est plus une erreur d'écran. Cette
+      # série exécute les fonctions pures qui tiennent ce livre — équilibre d'une écriture, balance
+      # qui n'efface jamais un compte hors plan comptable, génération automatique depuis une
+      # dépense (jamais pour une dépense de paie, déjà comptée par le module Paie) — et relit,
+      # quand il est présent sur le poste, le SQL qui pose le trigger d'équilibre et les policies
+      # protégeant la ligne de caisse liée à une facture.
+      - name: Comptabilité générale (une écriture ne s'enregistre que si elle s'équilibre)
+        run: node tests/comptabilite-generale.test.mjs
+
+      # La Facturation clients, ajoutée le même jour : les clients professionnels facturés au
+      # forfait/à la période (gestion_clients), population distincte du « Point clients » qui suit
+      # les colis Express. Le mot affiché à côté de chaque facture — impayée, en retard, payée,
+      # annulée — décide si on relance un client ou si on le laisse tranquille ; il ne doit jamais
+      # être stocké, seulement recalculé, sous peine de raconter une histoire qui se désynchronise
+      # de la réalité. Cette série exécute ce calcul sur des factures et des paiements choisis, et
+      # garde qu'une facture annulée le reste quoi que racontent ses montants.
+      - name: Facturation clients (le mot affiché ne se stocke jamais, il se recalcule)
+        run: node tests/facturation-clients.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""
