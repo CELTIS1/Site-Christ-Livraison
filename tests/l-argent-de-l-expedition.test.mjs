@@ -714,9 +714,30 @@ if (!sql2) {
     && !/\bdrop column\b/i.test(sql2Nu)
     && !/^\s*update\s+public\.colis/mi.test(sql2Nu.replace(/begin;[\s\S]*?rollback;/gi, '')),
     'la seule mise à jour du fichier est un essai à blanc, dans une transaction annulée');
-  verifier('l\'essai à blanc est bien annulé',
-    /begin;[\s\S]*update public\.colis[\s\S]*rollback;/i.test(sql2),
-    'on ne vérifie pas l\'effet d\'une case en écrivant pour de bon sur l\'argent de quelqu\'un');
+  /* CE CONTRÔLE EXIGEAIT UN ESSAI À BLANC ; IL EXIGE MAINTENANT QU'IL N'Y EN AIT PLUS.
+
+     Le script contenait d'abord un `update` de toutes les expéditions, encadré par begin /
+     rollback, pour montrer l'effet de la case sans le garder. Correct dans l'éditeur SQL, où
+     toute la requête part sur une seule connexion.
+
+     Le 2 septembre, le script a été exécuté par l'interface de programmation de l'éditeur, et
+     là rien ne garantissait que l'annulation porte sur la même connexion que l'écriture. Un
+     rollback qui n'arrive pas, sur un update sans clause restrictive, c'est une colonne
+     d'argent modifiée en production pour le confort d'un contrôle.
+
+     Le même renseignement s'obtient en lecture seule : une fois les frais soldés, les deux
+     retenues valent zéro par construction, donc le net redevient reste_a_percevoir. Le script
+     le lit au lieu de l'écrire. Un contrôle qui écrit pour vérifier qu'il ne fallait pas
+     écrire est un mauvais contrôle. */
+  verifier("le script n'écrit RIEN sur les colis, pas même pour un essai",
+    !/\bupdate\s+(public\.)?colis\b/i.test(sql2Nu)
+    && !/\bdelete\s+from\b/i.test(sql2Nu)
+    && !/\bbegin;/i.test(sql2Nu),
+    'la seule écriture du fichier doit être la création de la colonne et le remplacement de la vue');
+  verifier("il montre quand même l'effet de la case, en lecture seule",
+    /reste_a_percevoir - r\.net_a_reverser/.test(sql2)
+    && /net_si_on_cochait_solde/.test(sql2),
+    'renoncer à l\'essai ne doit pas vouloir dire renoncer à la vérification');
   verifier('les deux retenues s\'éteignent sur frais_soldes_at',
     (vue2.match(/l\.frais_soldes_at is null/g) || []).length === 2,
     'une seule des deux, et l\'autre continuerait d\'être réclamée');
