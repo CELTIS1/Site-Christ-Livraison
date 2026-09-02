@@ -1087,7 +1087,8 @@ async function delDepense(id){
   const detail = `${rows.libelle || '(sans libellé)'} — ${fmtF(rows.montant)}${rows.date_depense ? ' du ' + rows.date_depense : ''}`;
   if (!confirm(`Supprimer définitivement cette dépense ?\n\n${detail}\n\nCette action est irréversible.`)) return;
   try {
-    await supabaseClient.from('gestion_depenses').delete().eq('id',id);
+    const { error } = await supabaseClient.from('gestion_depenses').delete().eq('id',id);
+    if (error) throw error;
     // Sinon une dépense supprimée laisse une écriture orpheline en Compta générale,
     // invisible depuis l'onglet Dépenses (aucune trace du "pourquoi" cette écriture existe).
     await supabaseClient.from('gestion_ecritures').delete().eq('source','depense').eq('source_id', id);
