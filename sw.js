@@ -45,6 +45,10 @@
    Penser à incrémenter CACHE_VERSION à chaque changement notable de ce fichier lui-même.
 
    26 août 2026 — v56 : ajout de l'exception app/version.json (voir plus bas).
+   2 septembre 2026 — v63 : un seul bouton d'enregistrement par carte, au lieu de trois. Et les
+   montants habituels des frais d'expédition passent de 2 000–3 500 à 500–2 000, sur le constat
+   de Celtis ; le seuil de confirmation descend avec eux, sinon il ne rattraperait plus le zéro
+   de trop.
    2 septembre 2026 — v62 : deux champs au lieu de trois sur une expédition, et la carte se
    replie comme toutes les autres. Vu sur le téléphone de Celtis : « la carte peut être repliée
    comme les autres ». Un livreur ouvre la même carte vingt fois par jour ; la régularité vaut
@@ -70,7 +74,7 @@
    sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
    pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v62';
+const CACHE_VERSION = 'clt-shell-v63';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.

@@ -3004,9 +3004,10 @@ function correctionsMontantsDuJour(journal, options) {
    ---------------------------------------------------------------------------
    Le prix payé à la gare n'obéit à aucune grille : il dépend de la ville, du
    transporteur et surtout du volume du carton. Dans la pratique quotidienne il
-   tourne entre 2 000 et 3 500 F, et c'est pour ces quatre montants-là qu'on
+   tourne entre 500 et 2 000 F, et c'est pour ces quatre montants-là qu'on
    pose des boutons : neuf saisies sur dix se font alors en un seul geste, sans
-   ouvrir le clavier.
+   ouvrir le clavier. (Fourchette corrigée le 02/09/2026 sur le constat de
+   Celtis ; les quatre valeurs d'origine venaient d'une estimation.)
 
    Mais il n'y a AUCUN PLAFOND, et c'est délibéré. Une expédition peut monter à
    7 000, 8 000 F ou davantage. Un plafond, ici, ne protégerait de rien : il
@@ -3019,8 +3020,20 @@ function correctionsMontantsDuJour(journal, options) {
    de trop — 25 000 tapé pour 2 500 — qui se retiendrait en silence sur l'argent
    d'une vendeuse. On peut toujours répondre oui.
 --------------------------------------------------------------------------- */
-const FRAIS_EXPEDITION_USUELS = [2000, 2500, 3000, 3500];
-const FRAIS_EXPEDITION_SEUIL_CONFIRMATION = 10000;
+/* CORRIGÉ LE 2 SEPTEMBRE 2026, sur ce que Celtis constate en pratique : « pour les frais
+   d'expédition c'est 1 000 F, 1 500 F, 2 000 F, 500 F ou autre ». Les quatre montants d'origine
+   — 2 000 à 3 500 — venaient d'une estimation, pas d'un relevé.
+
+   ET LE SEUIL DESCEND AVEC EUX, sans quoi la protection ne protège plus rien. Ce seuil n'existe
+   que pour le ZÉRO DE TROP : 25 000 tapé pour 2 500. Avec des montants usuels de 500 à 2 000,
+   un zéro de trop donne 5 000 à 20 000 — et un seuil resté à 10 000 aurait laissé passer sans
+   rien dire les deux cas les plus probables, 500 → 5 000 et 1 000 → 10 000. Il faut donc
+   qu'il suive, sinon on garde une question qui ne se pose plus jamais au bon moment.
+
+   3 000 F reste parfaitement possible, et se tape à la main : ce sont des raccourcis, pas une
+   grille. Il n'y a toujours AUCUN PLAFOND — voir le bandeau ci-dessus. */
+const FRAIS_EXPEDITION_USUELS = [500, 1000, 1500, 2000];
+const FRAIS_EXPEDITION_SEUIL_CONFIRMATION = 4000;
 
 // Vrai si le montant mérite qu'on repose la question avant d'écrire. Ne bloque jamais.
 function fraisExpeditionAConfirmer(montant) {

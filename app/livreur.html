@@ -19,8 +19,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260902deuxchamps">
-<script src="theme.js?v=20260902deuxchamps"></script>
+<link rel="stylesheet" href="style.css?v=20260902unbouton">
+<script src="theme.js?v=20260902unbouton"></script>
 <script src="splash.js?v=20260816seq1"></script>
 <style>
   /* ============================================================
@@ -178,7 +178,13 @@
      Le « !important » n'est pas une coquetterie : la règle de polissage .btn:not(.btn-outline)
      plus haut repeint TOUS les boutons pleins en orange, elle aussi en !important. Sans cela,
      le vert ne passerait jamais. */
+  /* 44 px de haut au minimum, ajouté le 02/09/2026 en fusionnant les trois boutons.
+     Ce bouton n'enregistrait que le statut ; il enregistre maintenant AUSSI les montants et les
+     frais. C'est la taille de touche que portait le bouton d'argent supprimé, et elle vient
+     avec le travail : on appuie dessus au bord de la route, à une main, parfois sous la pluie.
+     Un banc d'essai la mesure — il a d'ailleurs signalé l'oubli avant que ça ne parte. */
   .btn.btn-save{
+    min-height:44px;
     background:linear-gradient(135deg,#3FA46A 0%, #2C8A57 100%) !important;
     border-color:transparent !important; color:#fff !important;
     box-shadow:0 8px 18px rgba(44,138,87,0.22) !important;
@@ -193,12 +199,6 @@
   /* Le petit « Enregistrer » du bloc des frais est lui aussi un enregistrement : deux boutons
      de même nom et de couleurs différentes sur une même carte se lisent comme deux gestes
      différents, ce qu'ils ne sont pas. */
-  .btn.btn-frais-exp{
-    background:linear-gradient(135deg,#3FA46A 0%, #2C8A57 100%) !important;
-    border-color:transparent !important; color:#fff !important;
-    box-shadow:0 6px 14px rgba(44,138,87,0.20) !important;
-  }
-  .btn.btn-frais-exp:hover{ background:linear-gradient(135deg,#379761 0%, #257B4C 100%) !important; }
 
   /* ---------- Les deux montants du colis (27/08/2026) ----------
      Sur la carte, la ligne des montants est la seule ligne grise qui parle d'argent : elle est
@@ -221,13 +221,6 @@
   /* 44 px : la hauteur d'un pouce. Un champ d'argent qu'on rate au premier appui se remplit au
      deuxième, en pleine rue, sans regarder. */
   .montant-case input{ width:100%; min-width:0; min-height:44px; font-size:16px; font-weight:700; }
-  .btn.btn-montants{
-    margin-top:8px; min-height:44px;
-    background:linear-gradient(135deg,#3FA46A 0%, #2C8A57 100%) !important;
-    border-color:transparent !important; color:#fff !important;
-    box-shadow:0 6px 14px rgba(44,138,87,0.20) !important;
-  }
-  .btn.btn-montants:hover{ background:linear-gradient(135deg,#379761 0%, #257B4C 100%) !important; }
   html[data-theme="dark"] .montants-bloc{ background:#141F2E; border-color:#2E4A6B; }
   html[data-theme="dark"] .montants-titre,
   html[data-theme="dark"] .montant-case > span{ color:#9EC0E6; }
@@ -693,8 +686,8 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260902deuxchamps"></script>
-<script src="config.js?v=20260902deuxchamps"></script>
+<script src="clt-common.js?v=20260902unbouton"></script>
+<script src="config.js?v=20260902unbouton"></script>
 <script src="biometric-lock.js?v=20260819bio1"></script>
 <script>
   let currentUser = null;
@@ -1634,7 +1627,7 @@
     if (!estExpedition(c) && !dejaSaisi) return '';
     const valeur = (c.frais_expedition === null || c.frais_expedition === undefined)
       ? '' : String(Number(c.frais_expedition) || 0);
-    /* Les quatre montants habituels sont posés en boutons : c'est entre 2 000 et 3 500 F que se
+    /* Les quatre montants habituels sont posés en boutons : c'est entre 500 et 2 000 F que se
        situe la quasi-totalité des expéditions, et un bouton évite d'ouvrir le clavier au bord
        de la route. Ils REMPLISSENT le champ sans enregistrer — on garde le geste volontaire du
        bouton « Enregistrer », parce qu'il s'agit d'argent retenu à une vendeuse.
@@ -1648,10 +1641,9 @@
         <div class="frais-exp-raccourcis">${raccourcis}</div>
         <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
           <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="1" placeholder="Autre montant" value="${escapeHTML(valeur)}" aria-label="Frais d'expédition payés au transporteur, en FCFA" style="flex:1; min-width:0;">
-          <button type="button" class="btn btn-sm btn-frais-exp" style="white-space:nowrap;">Enregistrer l'expédition</button>
         </div>
         <div class="meta" style="font-size:11px; margin-top:4px; color:#8a4b12;">
-          Écrivez le montant réellement payé, même s'il dépasse 3 500 F. Retenu sur l'argent de la cliente ; n'entame pas l'argent des livraisons.
+          Écrivez le montant réellement payé, même s'il dépasse 2 000 F. Retenu sur l'argent de la cliente ; n'entame pas l'argent des livraisons.
         </div>
       </div>`;
   }
@@ -1732,8 +1724,109 @@
              appuyait : il enregistrait le statut, pas son montant, et rien ne le lui disait.
              Signalé par Celtis le 30 août, mesuré le 2 septembre. Chaque bouton dit maintenant
              ce qu'il enregistre. -->
-        <button type="button" class="btn btn-sm btn-montants">Enregistrer ${estExpedition(c) ? 'les frais de course' : 'les montants'}</button>
       </div>`;
+  }
+
+  /* ============================================================================================
+     LIRE L'ARGENT D'UNE CARTE — 2 septembre 2026
+     ============================================================================================
+     Celtis, après avoir vu l'écran : « il y a trop de boutons d'enregistrement, il faut un seul
+     qui enregistre le tout. »
+
+     Il y en avait trois : les montants, les frais d'expédition, le statut. Trois appuis pour un
+     seul colis, trois écritures, et surtout trois occasions d'en oublier un — le livreur tape
+     ses frais, appuie sur le bouton du bas, et repart en croyant avoir tout enregistré.
+
+     CE QUI CHANGE, ET CE QUI NE CHANGE PAS. Les deux fonctions ci-dessous reprennent MOT POUR
+     MOT la lecture, la validation et les questions de confirmation qui vivaient dans les deux
+     boutons supprimés. Rien n'a été allégé : ni le refus d'un montant négatif, ni la question
+     posée au-delà d'un gros écart, ni celle posée sur un frais anormalement élevé.
+
+     Ce qui change, c'est l'écriture : elles ne l'exécutent plus. Elles RENDENT ce qu'il faudrait
+     écrire, et l'unique bouton le remet à appliquerStatutColis(), qui sait déjà tout faire —
+     l'écriture en ligne, la file d'attente hors réseau, la photo, le journal, le repli quand une
+     colonne manque. On ne crée donc pas un quatrième chemin d'écriture : on en supprime deux.
+
+     Chacune renvoie :
+       { ok: false }                → saisie invalide ou question refusée : ne rien écrire du tout
+       { ok: true, patch: {...} }   → à fusionner dans l'écriture unique
+       { ok: true, patch: null }    → rien n'a bougé, il n'y a rien à écrire
+     ============================================================================================ */
+
+  async function lireMontantsDeLaCarte(item, existing) {
+    const champArticle = item.querySelector('.montant-article-input');
+    const champLivraison = item.querySelector('.montant-livraison-input');
+    if (!champArticle && !champLivraison) return { ok: true, patch: null };
+
+    /* Un champ ABSENT n'est pas un champ VIDE. Sur une expédition, la case « Article » n'est
+       plus dessinée : lireMontantSaisi('') répondrait zéro et écraserait en silence le montant
+       déclaré par la vendeuse. Absent veut dire « ne touche pas ». */
+    const luArticle = champArticle
+      ? lireMontantSaisi(champArticle.value)
+      : { ok: true, valeur: Number(montantArticleColis(existing)) || 0 };
+    if (!luArticle.ok) { alert(luArticle.message); return { ok: false }; }
+    const luLivraison = champLivraison
+      ? lireMontantSaisi(champLivraison.value)
+      : { ok: true, valeur: Number(montantLivraisonColis(existing)) || 0 };
+    if (!luLivraison.ok) { alert(luLivraison.message); return { ok: false }; }
+
+    const patch = montantsColisAEcrire(luArticle.valeur, luLivraison.valeur);
+    const ecart = ecartMontantsColis(existing, patch);
+    if (!montantsColisOntChange(ecart)) return { ok: true, patch: null };
+
+    if (correctionMontantAConfirmer(ecart)) {
+      const signe = (n) => (n > 0 ? '+' : '−') + formatMontant(Math.abs(n));
+      const nomLivraison = libelleMontantLivraison(existing);
+      const ok = await cltConfirm({
+        title: 'Confirmer cette correction ?',
+        detail: 'Article ' + formatMontant(montantArticleColis(existing)) + ' → '
+              + formatMontant(patch.montant_article) + ' (' + signe(ecart.article) + ')'
+              + '\n' + nomLivraison + ' ' + formatMontant(montantLivraisonColis(existing)) + ' → '
+              + formatMontant(patch.montant_livraison) + ' (' + signe(ecart.livraison) + ')',
+        sub: "C'est un gros écart. Ce sont ces montants que la cliente lira ce soir sur son "
+           + "relevé, et l'équipe verra votre correction. Vérifiez avant de confirmer.",
+        okLabel: 'Oui, corriger',
+        cancelLabel: 'Revoir',
+      });
+      if (!ok) return { ok: false };
+    }
+    return { ok: true, patch };
+  }
+
+  async function lireFraisExpeditionDeLaCarte(item, existing) {
+    const champ = item.querySelector('.frais-exp-input');
+    if (!champ) return { ok: true, patch: null };
+    const brut = String(champ.value || '').replace(/\s/g, '').replace(',', '.').trim();
+    let newVal = null;
+    if (brut !== '') {
+      const n = Number(brut);
+      if (!isFinite(n) || n < 0) {
+        alert("Montant invalide. Écrivez seulement le nombre de francs payés à la gare, par exemple 1500.");
+        return { ok: false };
+      }
+      newVal = Math.round(n);
+    }
+    // Rien n'a bougé : on ne renvoie rien, pour ne pas écrire une colonne pour rien.
+    const avant = (existing && existing.frais_expedition !== null && existing.frais_expedition !== undefined)
+      ? Number(existing.frais_expedition) : null;
+    if (newVal === avant) return { ok: true, patch: null };
+
+    /* Aucun plafond : une expédition à 5 000 F existe et doit pouvoir s'écrire. Mais un zéro de
+       trop — 15 000 tapé pour 1 500 — se retiendrait en silence sur l'argent d'une vendeuse et
+       ne se verrait qu'au moment de lui remettre son dû. On repose donc la question une fois. */
+    if (newVal !== null && fraisExpeditionAConfirmer(newVal)) {
+      const ok = await cltConfirm({
+        title: 'Confirmer ce montant ?',
+        detail: formatMontant(newVal) + ' payés au transporteur pour ce seul colis',
+        sub: "C'est possible — gros carton, ville éloignée — mais c'est bien au-dessus de "
+           + "l'habitude (500 à 2 000 F). Cette somme sera retenue sur l'argent de la cliente. "
+           + "Vérifiez le reçu de la gare avant de confirmer.",
+        okLabel: 'Oui, ' + formatMontant(newVal),
+        cancelLabel: 'Corriger',
+      });
+      if (!ok) return { ok: false };
+    }
+    return { ok: true, patch: { frais_expedition: newVal } };
   }
 
   /* Un seul branchement pour les deux listes — « Mes colis assignés » et « Récupérations ».
@@ -1752,127 +1845,11 @@
      se perdre avec lui. */
   function brancherMontants(list){
     if (!list) return;
-    list.querySelectorAll('.btn-montants').forEach(btn => {
-      const item = btn.closest('.colis-item');
-      if (!item) return;
-      const enregistrer = async () => {
-        const id = item.dataset.id;
-        const existing = allColis.find(c => c.id === id);
-        if (!existing) return;
-        const champArticle = item.querySelector('.montant-article-input');
-        const champLivraison = item.querySelector('.montant-livraison-input');
-
-        /* UN CHAMP ABSENT N'EST PAS UN CHAMP VIDE. (02/09/2026)
-
-           Sur une expédition, la case « Article » n'est plus dessinée : le destinataire a payé
-           chez la vendeuse, le livreur n'a rien à y voir. Mais `lireMontantSaisi('')` répond
-           zéro — c'est juste pour une case qu'on a effacée exprès, et faux pour une case qui
-           n'a jamais existé. Enregistrer les frais aurait alors écrasé à ZÉRO le montant que
-           la vendeuse avait déclaré, en silence, à chaque appui.
-
-           Absent veut donc dire « ne touche pas » : on reprend la valeur déjà enregistrée.
-           C'est aussi ce qui rend le contrôle « aucun changement » honnête — sans cela, le
-           premier enregistrement de frais aurait toujours l'air de corriger l'article. */
-        const luArticle = champArticle
-          ? lireMontantSaisi(champArticle.value)
-          : { ok: true, valeur: Number(montantArticleColis(existing)) || 0 };
-        if (!luArticle.ok) { alert(luArticle.message); return; }
-        const luLivraison = champLivraison
-          ? lireMontantSaisi(champLivraison.value)
-          : { ok: true, valeur: Number(montantLivraisonColis(existing)) || 0 };
-        if (!luLivraison.ok) { alert(luLivraison.message); return; }
-
-        const patch = montantsColisAEcrire(luArticle.valeur, luLivraison.valeur);
-        const ecart = ecartMontantsColis(existing, patch);
-        if (!montantsColisOntChange(ecart)) {
-          cltToast("Aucun changement : les montants sont déjà ceux-là.", { type: 'info' });
-          return;
-        }
-
-        if (correctionMontantAConfirmer(ecart)) {
-          const signe = (n) => (n > 0 ? '+' : '−') + formatMontant(Math.abs(n));
-          const ok = await cltConfirm({
-            title: 'Confirmer cette correction ?',
-            detail: 'Article ' + formatMontant(montantArticleColis(existing)) + ' → '
-                  + formatMontant(patch.montant_article) + ' (' + signe(ecart.article) + ')'
-                  + '\nLivraison ' + formatMontant(montantLivraisonColis(existing)) + ' → '
-                  + formatMontant(patch.montant_livraison) + ' (' + signe(ecart.livraison) + ')',
-            sub: "C'est un gros écart. Ce sont ces montants que la cliente lira ce soir sur son "
-               + "relevé, et l'équipe verra votre correction. Vérifiez avant de confirmer.",
-            okLabel: 'Oui, corriger',
-            cancelLabel: 'Revoir',
-          });
-          if (!ok) return;
-        }
-
-        const appliquerEnLocal = () => {
-          existing.montant_article = patch.montant_article;
-          existing.montant_livraison = patch.montant_livraison;
-          rememberWrite(id, patch);
-        };
-
-        const enFile = async () => {
-          await queueAdd({
-            colisId: id,
-            statut: existing.statut,
-            observation: existing.observation,
-            photo_livraison_url: existing.photo_livraison_url,
-            photoBlob: null,
-            extra: { montant_article: patch.montant_article, montant_livraison: patch.montant_livraison },
-            userId: currentUser.id,
-            timestamp: Date.now(),
-          });
-          appliquerEnLocal();
-        };
-
-        if (!navigator.onLine) {
-          btn.disabled = true;
-          try { await enFile(); }
-          catch (e) {
-            console.error(e);
-            alert("Impossible d'enregistrer les montants hors connexion. Merci de réessayer une fois connecté(e).");
-          }
-          btn.disabled = false;
-          await refreshOfflineBanner();
-          renderAll();
-          return;
-        }
-
-        btn.disabled = true;
-        const prevText = btn.textContent;
-        btn.textContent = '…';
-        const { error } = await supabaseClient.from('colis').update(patch).eq('id', id);
-        btn.disabled = false;
-        if (error) {
-          try { await enFile(); await refreshOfflineBanner(); }
-          catch (e) {
-            console.error(e);
-            btn.textContent = prevText;
-            alert(friendlyErrorMessage(error.message));
-            return;
-          }
-          renderAll();
-          return;
-        }
-        appliquerEnLocal();
-        // Le total est demandé à montantTotalColis(), pas posé ici avec un « + ». La règle de la
-        // maison ne souffre pas d'exception pour un simple message : une addition écrite à la main
-        // est une addition qui divergera le jour où le modèle changera.
-        cltToast('Montants enregistrés : ' + formatMontant(montantArticleColis(existing))
-               + ' + ' + formatMontant(montantLivraisonColis(existing))
-               + ' = ' + formatMontant(montantTotalColis(existing)),
-               { type: 'success', title: 'Corrigé' });
-        renderAll();
-      };
-      btn.addEventListener('click', enregistrer);
-      // Entrée fait la même chose que le bouton : au téléphone, c'est le geste qui vient tout
-      // seul après avoir tapé un nombre, et personne n'ira chercher le bouton en dessous.
-      item.querySelectorAll('.montant-article-input, .montant-livraison-input').forEach(champ => {
-        champ.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') { e.preventDefault(); enregistrer(); }
-        });
-      });
-    });
+    /* Le bouton « Enregistrer les montants » a été retiré le 02/09/2026. Son travail est
+       repris par le bouton unique de la carte, via lireMontantsDeLaCarte() : même lecture, même
+       validation, mêmes questions de confirmation — seule l'écriture a changé de main.
+       On ne garde pas un second chemin d'écriture « au cas où » : c'est ainsi qu'on se retrouve
+       avec deux règles qui divergent sur de l'argent. */
   }
 
   // Ligne éditable pour "Mes colis assignés" (le livreur peut changer le statut)
@@ -1955,7 +1932,7 @@
               </div>
             </div>
           </details>
-          <button class="btn btn-sm btn-save">Enregistrer le statut</button>
+          <button class="btn btn-sm btn-save">Enregistrer</button>
         </div>
       </div>
     `;
@@ -2011,12 +1988,34 @@
         const id = item.dataset.id;
         const colis = allColis.find(c => c.id === id);
         const statut = item.querySelector('.status-select').value;
+
+        /* UN SEUL APPUI ENREGISTRE TOUT. (02/09/2026)
+           Demandé par Celtis : « il y a trop de boutons d'enregistrement, il faut un seul qui
+           enregistre le tout. » Il y en avait trois — montants, frais d'expédition, statut.
+
+           L'ordre compte. On LIT et on QUESTIONNE d'abord, on n'écrit qu'ensuite : si le livreur
+           répond « Revoir » à une question sur un montant, rien ne doit avoir été enregistré, pas
+           même le statut. Un enregistrement à moitié fait est pire que pas d'enregistrement — il
+           laisse croire que c'est passé.
+
+           Les deux lectures rendent un fragment à écrire, ou null si rien n'a bougé. Tout part
+           ensuite dans UNE seule écriture, par le chemin qui sait déjà gérer le hors-réseau, la
+           photo et le journal. */
+        const argent = await lireMontantsDeLaCarte(item, colis);
+        if (!argent.ok) return;
+        const gare = await lireFraisExpeditionDeLaCarte(item, colis);
+        if (!gare.ok) return;
+        const aEcrire = Object.assign({}, argent.patch || {}, gare.patch || {});
+
         const res = await appliquerStatutColis({
           id,
           statut,
           bouton: btn,
           observation: item.querySelector('.obs-textarea').value.trim() || null,
           photo: pickedGroupFile(item.querySelector('.livraison-photo-input')),
+          // `extraForce` impose ces valeurs telles quelles : ce sont des montants, ils ne se
+          // devinent pas et ne doivent pas être recalculés en chemin.
+          extraForce: Object.keys(aEcrire).length ? aEcrire : undefined,
         });
         // On n'annonce (et ne propose d'annuler) que si le statut a réellement bougé :
         // appuyer sur « Enregistrer » pour ne corriger qu'une observation ou ajouter une
@@ -2170,93 +2169,9 @@
        Le champ vidé remet la colonne à NULL, ce qui est la façon de dire « finalement, aucun
        frais ». Sans cela, une erreur de saisie serait impossible à effacer : on ne pourrait que
        la remplacer par un zéro, et un zéro écrit se lit « on a vérifié, c'était gratuit ». */
-    list.querySelectorAll('.btn-frais-exp').forEach(btn => {
-      const enregistrer = async () => {
-        const item = btn.closest('.colis-item');
-        const id = item.dataset.id;
-        const champ = item.querySelector('.frais-exp-input');
-        const existing = allColis.find(c => c.id === id);
-        const brut = String(champ ? champ.value : '').replace(/\s/g, '').replace(',', '.').trim();
-        let newVal = null;
-        if (brut !== '') {
-          const n = Number(brut);
-          if (!isFinite(n) || n < 0) {
-            alert("Montant invalide. Écrivez seulement le nombre de francs payés à la gare, par exemple 2500.");
-            return;
-          }
-          newVal = Math.round(n);
-          /* Aucun plafond : une expédition à 7 000 ou 8 500 F existe et doit pouvoir s'écrire.
-             Mais un zéro de trop — 25 000 tapé pour 2 500 — se retiendrait en silence sur
-             l'argent d'une vendeuse et ne se verrait qu'au moment de lui remettre son dû.
-             On repose donc la question une fois, et une seule ; répondre oui suffit. */
-          if (fraisExpeditionAConfirmer(newVal)) {
-            const ok = await cltConfirm({
-              title: 'Confirmer ce montant ?',
-              detail: formatMontant(newVal) + ' payés au transporteur pour ce seul colis',
-              sub: "C'est possible — gros carton, ville éloignée — mais c'est bien au-dessus de "
-                 + "l'habitude (2 000 à 3 500 F). Cette somme sera retenue sur l'argent de la cliente. "
-                 + "Vérifiez le reçu de la gare avant de confirmer.",
-              okLabel: 'Oui, ' + formatMontant(newVal),
-              cancelLabel: 'Corriger',
-            });
-            if (!ok) return;
-          }
-        }
-
-        const enFile = async () => {
-          await queueAdd({
-            colisId: id,
-            statut: existing ? existing.statut : null,
-            observation: existing ? existing.observation : null,
-            photo_livraison_url: existing ? existing.photo_livraison_url : null,
-            photoBlob: null,
-            extra: { frais_expedition: newVal },
-            userId: currentUser.id,
-            timestamp: Date.now(),
-          });
-          if (existing) existing.frais_expedition = newVal;
-          rememberWrite(id, { frais_expedition: newVal });
-        };
-
-        if (!navigator.onLine) {
-          btn.disabled = true;
-          try { await enFile(); }
-          catch (e) {
-            console.error(e);
-            alert("Impossible d'enregistrer les frais d'expédition hors connexion. Merci de réessayer une fois connecté(e).");
-          }
-          btn.disabled = false;
-          await refreshOfflineBanner();
-          renderAll();
-          return;
-        }
-
-        btn.disabled = true;
-        const prevText = btn.textContent;
-        btn.textContent = '…';
-        const { error } = await supabaseClient.from('colis').update({ frais_expedition: newVal }).eq('id', id);
-        btn.disabled = false;
-        if (error) {
-          try { await enFile(); await refreshOfflineBanner(); }
-          catch (e) {
-            console.error(e);
-            btn.textContent = prevText;
-            alert(friendlyErrorMessage(error.message));
-            return;
-          }
-          renderAll();
-          return;
-        }
-        rememberWrite(id, { frais_expedition: newVal });
-        if (existing) existing.frais_expedition = newVal;
-        renderAll();
-      };
-      btn.addEventListener('click', enregistrer);
-      const champ = btn.closest('.colis-item').querySelector('.frais-exp-input');
-      if (champ) champ.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); enregistrer(); }
-      });
-    });
+    /* Le bouton « Enregistrer les frais » a été retiré le 02/09/2026, pour la même raison :
+       lireFraisExpeditionDeLaCarte() en reprend la lecture et la question du montant anormal, et
+       l'écriture passe par le bouton unique. */
 
     /* Les raccourcis 2 000 / 2 500 / 3 000 / 3 500 : ils REMPLISSENT le champ, ils
        n'enregistrent pas. Un bouton qui écrirait directement en base ferait, d'un doigt

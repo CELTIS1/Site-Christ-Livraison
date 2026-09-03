@@ -115,7 +115,13 @@ vm.runInContext(['formatMontant', 'escapeHTML'].map(n => blocDe(common, n, 'clt-
 
 vm.runInContext([
   'montantsLigneHTML', 'montantsChampsHTML', 'brancherMontants',
+  // Les deux lecteurs du bouton unique, depuis le 02/09/2026.
+  'lireMontantsDeLaCarte', 'lireFraisExpeditionDeLaCarte',
 ].map(n => blocDe(livreur, n, 'livreur.html')).join('\n\n'), contexte);
+vm.runInContext(declarationDe(sourceConfig, 'FRAIS_EXPEDITION_SEUIL_CONFIRMATION', 'config.js'), contexte);
+vm.runInContext(blocDe(sourceConfig, 'fraisExpeditionAConfirmer', 'config.js'), contexte);
+// Les questions posées au livreur : on les note au lieu de les afficher, et on décide de la réponse.
+vm.runInContext('var __questions = [];', contexte);
 
 vm.runInContext([
   'corrGetDate', 'corrNomActeur', 'corrEcartHTML', 'renderCorrectionsBody',
@@ -133,11 +139,25 @@ const {
    ========================================================================================== */
 titre("Une seule addition, et elle est dans config.js");
 
+/* Le 02/09/2026, la lecture des montants a quitté brancherMontants() pour deux fonctions
+   dédiées, lireMontantsDeLaCarte() et lireFraisExpeditionDeLaCarte() : le bouton d'argent a été
+   fusionné avec celui du statut, et il ne reste qu'un seul enregistrement par carte.
+
+   LA RÈGLE VÉRIFIÉE ICI N'A PAS CHANGÉ — l'écran du livreur ne refait aucun calcul d'argent, il
+   appelle les fonctions communes — mais elle vit ailleurs. On élargit donc le champ d'examen au
+   lieu de la relâcher : oublier d'y ajouter les nouvelles fonctions aurait laissé ce contrôle
+   vert en n'examinant plus rien du tout, ce qui est la pire façon de passer. */
 const corpsLivreurMontants = sansCommentaires(
+  blocDe(livreur, 'lireMontantsDeLaCarte', 'livreur.html') +
+  blocDe(livreur, 'lireFraisExpeditionDeLaCarte', 'livreur.html') +
   blocDe(livreur, 'brancherMontants', 'livreur.html') +
   blocDe(livreur, 'montantsLigneHTML', 'livreur.html') +
   blocDe(livreur, 'montantsChampsHTML', 'livreur.html')
 );
+// Et on s'assure que ce champ n'est pas vide : un contrôle qui lit du vide passe toujours.
+verifier("le code examiné n'est pas vide",
+  corpsLivreurMontants.length > 1500,
+  'un contrôle qui n\'examine rien réussit toujours — c\'est la pire façon de passer');
 
 [
   'lireMontantSaisi', 'montantsColisAEcrire', 'ecartMontantsColis',
@@ -231,31 +251,24 @@ verifier("le seuil est bien à 10 000, pas plus haut",
   && correctionMontantAConfirmer({ article: 10000, livraison: 0 }) === false);
 
 /* ==========================================================================================
-   6 & 7. LE VRAI GESTE D'ENREGISTREMENT
+   6 & 7. LE VRAI GESTE D'ENREGISTREMENT — réécrit le 02/09/2026
    ==========================================================================================
-   On exécute brancherMontants() pour de bon, sur un décor de carton, et on regarde ce qui
-   part vers la base. Relire le code à l'œil ne dirait pas si le bon patch est envoyé. */
+   On exécutait ici le bouton « Enregistrer les montants » pour de bon, sur un décor de carton,
+   et on regardait ce qui partait vers la base. Ce bouton n'existe plus : les trois
+   enregistrements de la carte ont été fusionnés en un seul, à la demande de Celtis.
+
+   LES PROPRIÉTÉS VÉRIFIÉES NE CHANGENT PAS, et c'est pour cela que cette section est réécrite
+   plutôt que supprimée. Un appui doit toujours : n'envoyer QU'UN appel, porter les bonnes
+   colonnes, viser le bon colis, mettre à jour l'écran sans attendre le réseau, basculer en file
+   d'attente hors connexion, et ne rien perdre quand la base refuse.
+
+   Ce qui change, c'est le chemin : ces propriétés appartiennent maintenant à
+   appliquerStatutColis(), qui les tenait déjà pour le statut et qui porte désormais aussi les
+   montants. On l'exécute donc pour de vrai, exactement comme le fait le bouton unique.
+   ========================================================================================== */
 titre("Le geste d'enregistrement, exécuté pour de vrai");
 
-function faireDecor(valArticle, valLivraison, colisDeBase){
-  const champs = {
-    '.montant-article-input': { value: String(valArticle), addEventListener(){}, classList: { contains: () => false } },
-    '.montant-livraison-input': { value: String(valLivraison), addEventListener(){}, classList: { contains: () => false } },
-  };
-  const item = {
-    dataset: { id: colisDeBase.id },
-    querySelector: (s) => champs[s] || null,
-    querySelectorAll: () => [],
-  };
-  const btn = {
-    disabled: false, textContent: 'Enregistrer les montants',
-    _clic: null,
-    closest: () => item,
-    addEventListener: (nom, f) => { if (nom === 'click') btn._clic = f; },
-  };
-  const list = { querySelectorAll: (s) => (s === '.btn-montants' ? [btn] : []) };
-  return { list, btn, item };
-}
+vm.runInContext(blocDe(livreur, 'appliquerStatutColis', 'livreur.html'), contexte);
 
 const envoyes = [];
 const misEnFile = [];
@@ -266,9 +279,13 @@ Object.assign(contexte, {
   rememberWrite: () => {},
   renderAll: () => { redessine++; },
   cltToast: (m, o) => toasts.push({ m, o }),
-  cltConfirm: async () => contexte.__reponseConfirm,
+  // Une seule fausse question pour tout le fichier : elle note ce qui a été demandé et répond
+  // ce qu'on lui dit. Deux stubs concurrents s'écrasaient l'un l'autre, et la section qui
+  // vérifiait « la question est posée » ne voyait plus rien — un contrôle muet, donc vert.
+  cltConfirm: async (o) => { vm.runInContext('__questions', contexte).push(o.title); return contexte.__reponseConfirm; },
   refreshOfflineBanner: async () => {},
   friendlyErrorMessage: (m) => m,
+  uploadPhoto: async () => null,
   queueAdd: async (e) => { misEnFile.push(e); },
   supabaseClient: {
     from: () => ({
@@ -281,13 +298,49 @@ Object.assign(contexte, {
   __erreurBase: null,
 });
 
+/* Le décor : une carte de carton qui ne rend que les champs que le vrai code va chercher.
+   `gare` est facultatif — sur un colis d'Abidjan la case n'est pas dessinée. */
+function faireDecor(valArticle, valLivraison, colisDeBase, valGare){
+  const champs = {
+    '.montant-article-input': { value: String(valArticle) },
+    '.montant-livraison-input': { value: String(valLivraison) },
+    '.status-select': { value: colisDeBase.statut },
+    '.obs-textarea': { value: colisDeBase.observation || '' },
+    '.livraison-photo-input': null,
+  };
+  if (valGare !== undefined) champs['.frais-exp-input'] = { value: String(valGare) };
+  const btn = { disabled: false, textContent: 'Enregistrer', innerHTML: 'Enregistrer' };
+  return {
+    btn,
+    item: { dataset: { id: colisDeBase.id }, querySelector: (s) => (s in champs ? champs[s] : null) },
+  };
+}
+
+/* LE VRAI ENCHAÎNEMENT DU BOUTON UNIQUE, recopié fidèlement depuis brancherStatut() :
+   on lit, on questionne, et on n'écrit qu'ensuite. Si cette recopie devait diverger un jour,
+   c'est le contrôle « il lit et questionne AVANT d'écrire » de la section suivante qui le
+   dirait — il compare l'ordre dans le vrai code, pas ici. */
+async function appuyerSurEnregistrer(decor, colis){
+  const argent = await contexte.lireMontantsDeLaCarte(decor.item, colis);
+  if (!argent.ok) return { annule: true };
+  const gare = await contexte.lireFraisExpeditionDeLaCarte(decor.item, colis);
+  if (!gare.ok) return { annule: true };
+  const aEcrire = Object.assign({}, argent.patch || {}, gare.patch || {});
+  return contexte.appliquerStatutColis({
+    id: decor.item.dataset.id,
+    statut: decor.item.querySelector('.status-select').value,
+    bouton: decor.btn,
+    observation: decor.item.querySelector('.obs-textarea').value.trim() || null,
+    photo: null,
+    extraForce: Object.keys(aEcrire).length ? aEcrire : undefined,
+  });
+}
+
 // a) correction ordinaire, en ligne
 const colisEnBase = { id: 'C1', statut: 'en_cours', observation: 'rien', photo_livraison_url: null,
                       montant_article: 15000, montant_livraison: 1500 };
 contexte.allColis = [colisEnBase];
-let decor = faireDecor(12000, 2000, colisEnBase);
-brancherMontants(decor.list);
-await decor.btn._clic();
+await appuyerSurEnregistrer(faireDecor(12000, 2000, colisEnBase), colisEnBase);
 
 verifier("un seul appel part vers la base", envoyes.length === 1, JSON.stringify(envoyes));
 verifier("il porte les deux colonnes, aux bonnes valeurs",
@@ -297,41 +350,36 @@ verifier("il vise bien ce colis-là", envoyes[0] && envoyes[0].col === 'id' && e
 verifier("le colis en mémoire est mis à jour tout de suite",
   colisEnBase.montant_article === 12000 && colisEnBase.montant_livraison === 2000);
 verifier("l'écran est redessiné après coup", redessine === 1);
-verifier("le livreur voit ce qui a été enregistré",
-  toasts.length === 1 && /12\s?000/.test(toasts[0].m.replace(/\u202f|\u00a0/g, ' ')),
-  JSON.stringify(toasts));
 
 // b) rien n'a changé : rien ne part
 envoyes.length = 0; toasts.length = 0; redessine = 0;
-decor = faireDecor(12000, 2000, colisEnBase);
-brancherMontants(decor.list);
-await decor.btn._clic();
-verifier("réappuyer sans rien changer n'écrit rien du tout", envoyes.length === 0, JSON.stringify(envoyes));
-verifier("et on le dit, au lieu de laisser croire que c'est enregistré", toasts.length === 1);
+await appuyerSurEnregistrer(faireDecor(12000, 2000, colisEnBase), colisEnBase);
+verifier("réappuyer sans rien changer n'écrit aucun montant",
+  envoyes.length === 1
+  && !('montant_article' in envoyes[0].patch) && !('montant_livraison' in envoyes[0].patch),
+  'le statut peut repartir — c\'est le geste demandé — mais pas les colonnes d\'argent : '
+  + JSON.stringify(envoyes[0] && envoyes[0].patch));
 
-// c) montant illisible : refus net, aucune écriture
-envoyes.length = 0; journalAlertes.length = 0;
-decor = faireDecor('douze mille', 2000, colisEnBase);
-brancherMontants(decor.list);
-await decor.btn._clic();
-verifier("un montant illisible ne part jamais vers la base", envoyes.length === 0);
-verifier("et il est dit à voix haute", journalAlertes.length === 1, JSON.stringify(journalAlertes));
-
-// d) gros écart refusé à la confirmation : rien ne part
+// c) l'écart est gros : on repose la question, et « non » n'écrit rien
 envoyes.length = 0; contexte.__reponseConfirm = false;
-decor = faireDecor(150000, 2000, colisEnBase);
-brancherMontants(decor.list);
-await decor.btn._clic();
-verifier("un gros écart refusé à la question n'écrit rien", envoyes.length === 0, JSON.stringify(envoyes));
+const r = await appuyerSurEnregistrer(faireDecor(90000, 2000, colisEnBase), colisEnBase);
+verifier("un gros écart refusé n'envoie rien du tout, pas même le statut",
+  envoyes.length === 0 && r.annule === true, JSON.stringify(envoyes));
+verifier("et le colis en mémoire n'a pas bougé", colisEnBase.montant_article === 12000);
 contexte.__reponseConfirm = true;
 
-// e) hors connexion : la correction ne se perd pas
+// d) les frais de gare partent dans le MÊME appel que les montants
+envoyes.length = 0;
+await appuyerSurEnregistrer(faireDecor(12000, 3000, colisEnBase, 1500), colisEnBase);
+verifier("les frais de gare voyagent avec les montants, en un seul appel",
+  envoyes.length === 1 && envoyes[0].patch.frais_expedition === 1500
+  && envoyes[0].patch.montant_livraison === 3000,
+  JSON.stringify(envoyes[0] && envoyes[0].patch));
+
 titre("Hors connexion, dans la rue");
 envoyes.length = 0; misEnFile.length = 0;
 contexte.navigator.onLine = false;
-decor = faireDecor(9000, 1000, colisEnBase);
-brancherMontants(decor.list);
-await decor.btn._clic();
+await appuyerSurEnregistrer(faireDecor(9000, 1000, colisEnBase), colisEnBase);
 verifier("rien ne part vers la base, évidemment", envoyes.length === 0);
 verifier("mais la correction est mise en file d'attente", misEnFile.length === 1, JSON.stringify(misEnFile));
 verifier("la file porte les deux montants",
@@ -346,9 +394,7 @@ contexte.navigator.onLine = true;
 
 // f) la base refuse : on ne perd pas la correction pour autant
 envoyes.length = 0; misEnFile.length = 0; contexte.__erreurBase = { message: 'réseau coupé' };
-decor = faireDecor(7000, 500, colisEnBase);
-brancherMontants(decor.list);
-await decor.btn._clic();
+await appuyerSurEnregistrer(faireDecor(7000, 500, colisEnBase), colisEnBase);
 verifier("si la base refuse, la correction bascule en file d'attente au lieu de disparaître",
   misEnFile.length === 1, JSON.stringify(misEnFile));
 contexte.__erreurBase = null;
@@ -368,8 +414,15 @@ const champsHTML = montantsChampsHTML({ montant_article: 15000, montant_livraiso
 verifier("les deux cases sont posées avec leur valeur d'aujourd'hui",
   /class="montant-article-input"[^>]*value="15000"/.test(champsHTML)
   && /class="montant-livraison-input"[^>]*value="1500"/.test(champsHTML), champsHTML);
-verifier("un bouton d'enregistrement, pas un enregistrement automatique",
-  /class="btn btn-sm btn-montants"/.test(champsHTML));
+// Le bloc n'a plus de bouton à lui depuis le 02/09/2026 : c'est tout le sens de la fusion.
+// Ce qui doit rester vrai, c'est qu'on n'enregistre RIEN sans un appui — et l'appui unique est
+// posé sur la carte, vérifié dans la section « Un seul bouton ».
+verifier("le bloc de montants n'a plus de bouton à lui",
+  !/btn-montants/.test(champsHTML),
+  'trois boutons sur une carte, c\'est trois occasions d\'en oublier un');
+verifier("et il n'enregistre rien tout seul au passage",
+  !/addEventListener|onchange|oninput/.test(champsHTML),
+  'un champ d\'argent ne s\'écrit jamais sans un geste voulu');
 verifier("chaque case dit à qui va l'argent",
   /Article \(à la cliente\)/.test(champsHTML) && /Livraison \(à CLT\)/.test(champsHTML));
 verifier("chaque case est nommée pour la lecture d'écran",
@@ -437,7 +490,7 @@ verifier("il reste dessiné partout ailleurs",
    pour une case qui n'existe pas : enregistrer les frais aurait écrasé à ZÉRO le montant
    déclaré par la vendeuse, en silence, à chaque appui. Absent doit vouloir dire « ne touche
    pas ». */
-const brancher = blocDe(livreur, 'brancherMontants', 'livreur.html');
+const brancher = blocDe(livreur, 'lireMontantsDeLaCarte', 'livreur.html');
 verifier("un champ absent reprend la valeur enregistrée, il n'est pas lu comme vide",
   /champArticle\s*\n?\s*\? lireMontantSaisi\(champArticle\.value\)\s*\n?\s*: \{ ok: true, valeur: Number\(montantArticleColis\(existing\)\)/.test(brancher),
   'sinon le premier enregistrement de frais efface l\'article de la vendeuse');
@@ -447,6 +500,118 @@ verifier("plus aucun champ n'est lu comme une chaîne vide par défaut",
   !/lireMontantSaisi\(champArticle \? champArticle\.value : ''\)/.test(brancher)
   && !/lireMontantSaisi\(champLivraison \? champLivraison\.value : ''\)/.test(brancher),
   'c\'est exactement l\'écriture qui écrasait à zéro');
+
+/* ==========================================================================================
+   UN SEUL BOUTON ENREGISTRE TOUT — 2 septembre 2026
+   ==========================================================================================
+   Celtis, après avoir vu l'écran : « il y a trop de boutons d'enregistrement, il faut un seul
+   qui enregistre le tout. »
+
+   Il y en avait trois sur une même carte — les montants, les frais d'expédition, le statut.
+   Trois appuis pour un colis, trois écritures, et surtout trois occasions d'en oublier un : le
+   livreur tape ses frais, appuie sur le bouton du bas, et repart en croyant avoir tout
+   enregistré. Deux d'entre eux disaient d'ailleurs le même mot, à 800 pixels l'un de l'autre.
+
+   CE QUI EST VÉRIFIÉ ICI, ET QUI COMPTE PLUS QUE LE NOMBRE DE BOUTONS : la lecture se fait
+   AVANT toute écriture, et un refus annule TOUT. Un enregistrement à moitié fait est pire que
+   pas d'enregistrement — il laisse croire que c'est passé.
+
+   On exécute les vraies fonctions sur une fausse carte, plutôt que de relire le code à l'œil.
+   ========================================================================================== */
+titre("Un seul bouton, et un refus annule tout");
+
+// Le branchement du bouton unique vit dans renderMesColis() : c'est là qu'on lit l'ordre
+// réel des opérations — lire, questionner, puis écrire.
+const carteBranchements = blocDe(livreur, 'renderMesColis', 'livreur.html');
+
+verifier('il ne reste qu\'un seul bouton d\'enregistrement sur la carte',
+  (carteMesColis.match(/btn-save|btn-montants|btn-frais-exp/g) || []).join(',') === 'btn-save',
+  'obtenu : ' + (carteMesColis.match(/btn-save|btn-montants|btn-frais-exp/g) || []).join(','));
+verifier('et les deux anciens chemins d\'écriture sont supprimés, pas seulement cachés',
+  !/querySelectorAll\('\.btn-montants'\)/.test(livreur)
+  && !/querySelectorAll\('\.btn-frais-exp'\)/.test(livreur),
+  'un second chemin d\'écriture gardé « au cas où », c\'est deux règles qui divergent sur de l\'argent');
+verifier('le bouton unique passe les montants au chemin d\'écriture déjà éprouvé',
+  /extraForce: Object\.keys\(aEcrire\)\.length \? aEcrire : undefined/.test(carteBranchements)
+  && /const argent = await lireMontantsDeLaCarte/.test(carteBranchements)
+  && /const gare = await lireFraisExpeditionDeLaCarte/.test(carteBranchements),
+  'on ne crée pas un quatrième chemin : on en supprime deux');
+verifier('il lit et questionne AVANT d\'écrire',
+  carteBranchements.indexOf('lireMontantsDeLaCarte') < carteBranchements.indexOf('appliquerStatutColis'),
+  'sinon un refus laisserait le statut déjà enregistré');
+
+/* CE CONTRÔLE-CI EXISTE PARCE QU'UN SABOTAGE EST PASSÉ. (02/09/2026)
+
+   L'aide `appuyerSurEnregistrer()`, plus bas, RECOPIE l'enchaînement du vrai bouton — lire,
+   questionner, fusionner, écrire. C'est ce qui permet de l'exécuter pour de bon. Mais une
+   recopie ne surveille rien : en retirant `gare.patch` de la fusion dans le VRAI code, tout
+   restait vert, parce que la recopie du banc d'essai, elle, fusionnait toujours les deux.
+
+   Un banc d'essai qui rejoue sa propre version du code ne teste que sa propre version. On lit
+   donc ici la ligne réelle, en toutes lettres. Si l'écriture change de forme, ce contrôle
+   tombera — et c'est ce qu'on veut : quelqu'un ira alors vérifier que la recopie suit. */
+verifier('les deux lectures sont bien fusionnées dans la MÊME écriture',
+  /const aEcrire = Object\.assign\(\{\}, argent\.patch \|\| \{\}, gare\.patch \|\| \{\}\);/
+    .test(carteBranchements),
+  'en oublier une, c\'est revenir à deux enregistrements sans que personne le voie');
+
+/* ---------- On exécute, sur une fausse carte ---------- */
+const COMMUNE_EXP = vm.runInContext('COMMUNE_EXPEDITION', contexte);
+const fausseCarte = (champs) => ({ querySelector: (sel) => {
+  const k = { '.montant-article-input': 'article', '.montant-livraison-input': 'livraison',
+              '.frais-exp-input': 'gare' }[sel];
+  return (k in champs) ? { value: champs[k] } : null;
+} });
+async function appui(colis, champs, reponse) {
+  vm.runInContext('__questions.length = 0;', contexte);
+  contexte.__reponseConfirm = reponse !== false;
+  journalAlertes.length = 0;
+  const a = await contexte.lireMontantsDeLaCarte(fausseCarte(champs), colis);
+  const g = a.ok ? await contexte.lireFraisExpeditionDeLaCarte(fausseCarte(champs), colis) : { ok: false };
+  return {
+    annule: !(a.ok && g.ok),
+    ecrit: (a.ok && g.ok) ? Object.assign({}, a.patch || {}, g.patch || {}) : null,
+    questions: vm.runInContext('__questions', contexte).slice(),
+    alertes: journalAlertes.slice(),
+  };
+}
+
+const expedition = { id: 'E1', statut: 'recupere', commune_destination: COMMUNE_EXP,
+                     montant_article: 20000, montant_livraison: 0, frais_expedition: null };
+const abidjan = { id: 'C1', statut: 'recupere', commune_destination: 'Cocody',
+                  montant_article: 20000, montant_livraison: 1500 };
+
+const r1 = await appui(expedition, { livraison: '3000', gare: '1500' });
+verifier('un seul appui enregistre les deux frais d\'une expédition',
+  r1.ecrit && r1.ecrit.montant_livraison === 3000 && r1.ecrit.frais_expedition === 1500,
+  JSON.stringify(r1.ecrit));
+verifier('… sans toucher à l\'article, dont la case n\'existe pas',
+  r1.ecrit && r1.ecrit.montant_article === 20000,
+  'un champ absent est lu comme vide par lireMontantSaisi : il écrirait ZÉRO');
+
+const r2 = await appui(expedition, { livraison: '3000', gare: '15000' });
+verifier('un frais anormalement élevé fait poser la question',
+  r2.questions.length === 1, JSON.stringify(r2.questions));
+
+const r3 = await appui(expedition, { livraison: '3000', gare: '15000' }, false);
+verifier('répondre « Corriger » n\'écrit RIEN, pas même la course déjà saisie',
+  r3.annule === true && r3.ecrit === null,
+  'c\'est la propriété qui compte : pas d\'enregistrement à moitié fait');
+
+const r4 = await appui(abidjan, { article: '20000', livraison: '1500' });
+verifier('quand rien n\'a bougé, rien n\'est écrit',
+  r4.ecrit && Object.keys(r4.ecrit).length === 0,
+  'écrire une colonne pour rien réveille l\'équipe et salit le journal');
+
+const r5 = await appui(abidjan, { article: '-5', livraison: '1500' });
+verifier('un montant invalide est refusé, et rien ne part',
+  r5.annule === true && r5.alertes.length === 1,
+  JSON.stringify({ annule: r5.annule, alertes: r5.alertes }));
+
+const r6 = await appui(abidjan, { article: '20000', livraison: '1500', gare: '1500' });
+verifier('les frais de gare s\'enregistrent aussi hors expédition, s\'ils ont été saisis',
+  r6.ecrit && r6.ecrit.frais_expedition === 1500,
+  'l\'argent sorti de la poche du livreur doit rester saisissable, quelle que soit l\'étiquette');
 
 titre("Le même code pour les deux listes");
 verifier("brancherMontants n'est écrit qu'une fois",
@@ -493,7 +658,8 @@ const taille = regleCase ? /font-size:\s*(\d+)px/.exec(regleCase[1]) : null;
 // Sous 16 px, un iPhone zoome tout seul sur le champ et déplace la page sous le doigt.
 verifier("le texte y fait au moins 16 px, sinon le téléphone zoome tout seul",
   !!taille && Number(taille[1]) >= 16, regleCase ? regleCase[1] : '—');
-const regleBouton = /\.btn\.btn-montants\{([^}]*)\}/.exec(styleLivreur);
+// btn-montants a disparu le 02/09/2026 : le bouton à mesurer est le seul qui reste.
+const regleBouton = /\.btn\.btn-save\{([^}]*)\}/.exec(styleLivreur);
 const hauteurBouton = regleBouton ? /min-height:\s*(\d+)px/.exec(regleBouton[1]) : null;
 verifier("le bouton d'enregistrement aussi",
   !!hauteurBouton && Number(hauteurBouton[1]) >= 44, regleBouton ? regleBouton[1] : '—');
