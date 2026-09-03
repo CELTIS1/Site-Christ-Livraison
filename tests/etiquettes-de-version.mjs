@@ -53,6 +53,17 @@ export const FICHIERS_PARTAGES = [
   // modifié, mais il n'était surveillé par aucune des quatre copies du contrôle, et il a été
   // publié le 22 avec l'étiquette du 15.
   'theme.js',
+  // Entrés dans le groupe le 3 septembre 2026, à la suite de l'audit. Quatre fichiers
+  // portaient encore leur propre étiquette, toutes périmées : gestion.js servait la
+  // comptabilité avec l'étiquette du 23 août alors qu'il avait changé le 2 septembre
+  // (deux sous-onglets neufs), et biometric-lock.js, biometric-login.js, splash.js avaient
+  // bougé le 1er septembre sous une étiquette du 16 ou du 19 août. GitHub Pages garde un
+  // fichier dix minutes en cache : un téléphone pouvait ouvrir la nouvelle page de gestion
+  // avec l'ancien module, et personne ne l'aurait vu passer. Même mécanisme que theme.js.
+  'gestion.js',
+  'biometric-lock.js',
+  'biometric-login.js',
+  'splash.js',
 ];
 
 /* Relève, page par page, l'étiquette portée par chaque fichier partagé.
