@@ -369,10 +369,11 @@ verifier(
    v64, le 05/09/2026 — cartes resserrées, raccourcis de frais retirés, repli après enregistrement.
    v65, le 05/09/2026 — tableau de bord des clientes : lecture par tranches.
    v66, le 05/09/2026 — le geste « reverser à la cliente ».
-   v67, le 06/09/2026 — la nuit du 5 : essentiel, notifications, tournées modifiables, relevé en couleur, épuration. */
+   v67, le 06/09/2026 — la nuit du 5 : essentiel, notifications, tournées modifiables, relevé en couleur, épuration.
+   v68, le 06/09/2026 — Gestion sur téléphone, Gestion et Express épurés. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v67'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v68'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

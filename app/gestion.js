@@ -814,7 +814,7 @@ async function renderDashboard(){
   const anrUrgent = anrRows.some(r => (Number(r.jours_max)||0) >= 3);
   const objMap = {}; (objY.data||[]).forEach(o=>objMap[o.mois]=n(o.objectif));
   const objMois = objMap[mois] || 0;
-  const resteMois = recetteMois - depenseMois;
+  // KPI « Reste (recette − dépenses) » retiré (Celtis) : il contredisait la Trésorerie, qui déduit aussi le personnel.
   const pct = objMois > 0 ? Math.round(recetteMois/objMois*100) : 0;
 
   // Masse salariale nette du mois (bulletins calculés à la volée) + trésorerie exacte.
@@ -856,7 +856,6 @@ async function renderDashboard(){
     <div class="kpi ${argentNonRemis>0?'neg':'pos'}"><div class="kpi-label">Argent non remis</div><div class="kpi-value">${fmtF(argentNonRemis)}</div>
       <div class="kpi-sub">${argentNonRemis>0 ? (anrRows.length + ' livreur(s)' + (anrUrgent ? ' · ⚠️ ≥ 3 j' : '')) : 'Tout est remis ✅'}</div></div>
     <div class="kpi"><div class="kpi-label">Dépenses du mois</div><div class="kpi-value">${fmtF(depenseMois)}</div></div>
-    <div class="kpi ${resteMois>=0?'pos':'neg'}"><div class="kpi-label">Reste (recette − dépenses)</div><div class="kpi-value">${fmtF(resteMois)}</div></div>
     <div class="kpi ${tresorerie>=0?'pos':'neg'}"><div class="kpi-label">Trésorerie (activité)</div><div class="kpi-value">${fmtF(tresorerie)}</div>
       <div class="kpi-sub">Cumul janv. → ${MOIS_FR[mois-1]} · recettes − dépenses − personnel</div></div>
     <div class="kpi"><div class="kpi-label">Masse salariale nette</div><div class="kpi-value">${fmtF(masse)}</div>
@@ -865,7 +864,9 @@ async function renderDashboard(){
   // Récap annuel
   const recByMonth = {}, depByMonth = {};
   (recY.data||[]).forEach(r => { const m = parseInt(r.date_recette.slice(5,7)); recByMonth[m]=(recByMonth[m]||0)+n(r.montant); });
-  (depY.data||[]).forEach(r => { depByMonth[r.mois]=(depByMonth[r.mois]||0)+n(r.montant); });
+  // Dépenses HORS catégories de paie, comme dans « États financiers » (Celtis) : la paie est déjà
+  // comptée par le module Paie, la recompter ici gonflait la colonne Dépenses.
+  (depY.data||[]).forEach(r => { if (CATS_PAIE.has(r.categorie || 'Autres')) return; depByMonth[r.mois]=(depByMonth[r.mois]||0)+n(r.montant); });
   let totR=0,totD=0,totO=0;
   let rows = '';
   for (let m=1;m<=12;m++){
@@ -940,11 +941,15 @@ async function saveRecette(input){
     montant = 0;
   }
   try {
+    // Robustesse : Supabase ne lève pas d'exception, il renvoie `error`. Sans ce contrôle, un refus
+    // (RLS, réseau) passait inaperçu et les totaux étaient recalculés comme si tout était enregistré.
+    let res;
     if (montant === 0){
-      await supabaseClient.from('gestion_recettes').delete().eq('chauffeur_id',chauffeur_id).eq('date_recette',date_recette);
+      res = await supabaseClient.from('gestion_recettes').delete().eq('chauffeur_id',chauffeur_id).eq('date_recette',date_recette);
     } else {
-      await supabaseClient.from('gestion_recettes').upsert({ chauffeur_id, date_recette, montant }, { onConflict:'date_recette,chauffeur_id' });
+      res = await supabaseClient.from('gestion_recettes').upsert({ chauffeur_id, date_recette, montant }, { onConflict:'date_recette,chauffeur_id' });
     }
+    if (res && res.error){ showToast('Erreur enregistrement recette : ' + res.error.message, true); console.error(res.error); return; }
     recomputeRecetteTotals();
   } catch(e){ showToast('Erreur enregistrement recette', true); console.error(e); }
 }
@@ -2151,17 +2156,8 @@ function renderEtatsFinanciers(){
     <tbody>${mrows}</tbody>
     <tfoot><tr><td style="text-align:left;">ANNÉE ${annee}</td><td>${fmt(somme(recettes))}</td><td>${fmt(somme(depenses))}</td><td>${fmt(somme(personnel))}</td><td><strong>${fmt(somme(recettes)-somme(depenses)-somme(personnel))}</strong></td><td></td></tr></tfoot></table>`;
 
-  // Bilan simplifié : trésorerie générée = résultat cumulé jusqu'à la fin de la période
-  const finMois = moisSel === 0 ? 12 : moisSel;
-  let tresorerie = 0;
-  for (let m=0;m<finMois;m++) tresorerie += recettes[m]-depenses[m]-personnel[m];
-  document.getElementById('fin-bilan').innerHTML = `<table class="g-table"><thead><tr>
-    <th style="text-align:left;">ACTIF (emplois)</th><th>Montant</th><th style="text-align:left;">PASSIF (ressources)</th><th>Montant</th></tr></thead><tbody>
-    <tr><td style="text-align:left;">Trésorerie générée par l'activité</td><td>${fmt(tresorerie)}</td><td style="text-align:left;">Résultat accumulé (capitaux propres)</td><td>${fmt(tresorerie)}</td></tr>
-    <tr><td style="text-align:left;color:var(--muted);">+ Immobilisations (à saisir)</td><td>—</td><td style="text-align:left;color:var(--muted);">+ Dettes / emprunts (à saisir)</td><td>—</td></tr>
-    <tr style="font-weight:700;"><td style="text-align:left;">TOTAL ACTIF (partiel)</td><td>${fmt(tresorerie)}</td><td style="text-align:left;">TOTAL PASSIF (partiel)</td><td>${fmt(tresorerie)}</td></tr>
-    </tbody></table>
-    <div class="hint" style="margin-top:8px;">Trésorerie générée = résultats cumulés du 1<sup>er</sup> janvier à la fin de la période affichée (${moisSel===0?`toute l'année ${annee}`:`fin ${MOIS_FR[moisSel-1]} ${annee}`}).</div>`;
+  // Carte « Bilan simplifié » retirée (Celtis) : un bilan partiel (sans immobilisations ni dettes)
+  // prêtait à confusion ; le « Résultat cumulé » ci-dessus donne déjà la trésorerie générée.
 }
 
 function exportEtatsFinanciers(){
@@ -2462,8 +2458,8 @@ async function loadPointClients(){
 /* ============================================================================
  * FACTURATION CLIENTS — clients B2B facturés au forfait/à la période (gestion_clients)
  * ----------------------------------------------------------------------------
- * Population DISTINCTE du « Point clients » ci-dessus (clientes Express, dérivé des colis).
- * Aucun lien entre les deux : créer une facture ici ne modifie rien côté Express.
+ * Population DISTINCTE du « Point clients » ci-dessus (clientes (vendeuses), dérivé des colis).
+ * Aucun lien entre les deux : créer une facture ici ne modifie rien côté clientes (vendeuses).
  *
  * Numérotation, calcul HT/TVA/TTC et statut « annulee » sont posés côté serveur (fonctions
  * gestion_creer_facture / gestion_annuler_facture / gestion_encaisser_facture /
@@ -2523,8 +2519,16 @@ function renderFacturation(){
     <div class="kpi"><div class="kpi-label">En retard</div><div class="kpi-value" style="color:${totalRetard>0?'#dc2626':'inherit'};">${fmtF(totalRetard)}</div></div>`;
 
   // Tableau des clients (facturation)
+  // Téléphone cliquable (Celtis, « ajouter l'indispensable ») : on relance un client qui doit de
+  // l'argent depuis son téléphone, pas en recopiant le numéro. numeroInternational() (config.js)
+  // rend la forme 225… ; un numéro qu'elle ne sait pas mettre en forme reste composable tel quel.
+  const telHTML = t => {
+    if (!t) return '—';
+    const inter = numeroInternational(t);
+    return `<a href="tel:${escapeHTML(inter ? '+' + inter : t)}">${escapeHTML(t)}</a>`;
+  };
   const bodyClients = CLIENTS_FACTURATION.map(c => `<tr>
-      <td>${escapeHTML(c.nom)}</td><td>${escapeHTML(c.telephone||'—')}</td>
+      <td>${escapeHTML(c.nom)}</td><td>${telHTML(c.telephone)}</td>
       <td>${escapeHTML(c.adresse||'—')}</td><td>${escapeHTML(c.ncc||'—')}</td>
       <td>${c.actif===false?'Inactif':'Actif'}</td>
       <td><button class="btn btn-outline btn-sm" onclick="chargerClientFacturationDansFormulaire('${c.id}')">Modifier</button></td>
@@ -3302,6 +3306,9 @@ async function addMouvementCaisse(){
   if (!date){ showToast('Renseignez la date du mouvement.', true); return; }
   if (!libelle || montant<=0){ showToast('Renseignez un libellé et un montant.', true); return; }
   if (!montantConfirme(montant, sens === 'sortie' ? 'sortie de caisse' : 'entrée de caisse')) return;
+  // Clôture mensuelle : même garde que les dépenses (Celtis) — un mois arrêté ne bouge plus, caisse comprise.
+  { const p = String(date).split('-'); const a = parseInt(p[0]), m = parseInt(p[1]);
+    if (moisCloture(a, m)){ showToast(`${MOIS_FR[m-1] || ''} ${a} est clôturé : ajout impossible.`, true); return; } }
   const btn = document.getElementById('lc-add-btn'); if (btn) btn.disabled = true;
   try {
     const { error } = await supabaseClient.from('gestion_caisse').insert({ date_mouvement:date, sens, libelle, mode, montant });
@@ -3325,6 +3332,9 @@ async function delMouvementCaisse(id){
   try { const r = await supabaseClient.from('gestion_caisse').select('date_mouvement,sens,libelle,montant').eq('id',id).maybeSingle(); mv = r.data; }
   catch(e){ console.error('del caisse lookup', e); }
   if (!mv){ showToast('Mouvement introuvable (déjà supprimé ?).', true); loadLivreCaisse(); return; }
+  // Clôture mensuelle : même garde que les dépenses (Celtis).
+  { const p = String(mv.date_mouvement || '').split('-'); const a = parseInt(p[0]), m = parseInt(p[1]);
+    if (moisCloture(a, m)){ showToast('Mois clôturé : suppression impossible.', true); return; } }
   const sensTxt = mv.sens === 'sortie' ? 'Sortie' : 'Entrée';
   const detail = `${sensTxt} — ${mv.libelle || '(sans libellé)'} — ${fmtF(mv.montant)}${mv.date_mouvement ? ' du ' + mv.date_mouvement : ''}`;
   if (!confirm(`Supprimer définitivement ce mouvement de caisse ?\n\n${detail}\n\nCette action est irréversible.`)) return;
@@ -3366,7 +3376,8 @@ const OBLIG_MENS = [
 ];
 const OBLIG_ANN = [
   { code:'PATENTE', libelle:'Patente (contribution des patentes)',           mois:1, jour:31 },
-  { code:'DFE',     libelle:'Déclaration annuelle des salaires (États)',      mois:4, jour:30 },
+  // Celtis : la DFE (déclaration fiscale d'existence) n'a rien à voir ; la déclaration annuelle des salaires est la DAS.
+  { code:'DAS',     libelle:'Déclaration annuelle des salaires (DAS)',        mois:4, jour:30 },
   { code:'BIC',     libelle:'Impôt sur les bénéfices (BIC) — dépôt des états', mois:5, jour:30 }
 ];
 function obligLibelle(code){ const o = OBLIG_MENS.concat(OBLIG_ANN).find(x=>x.code===code); return o ? o.libelle : code; }
@@ -3379,7 +3390,8 @@ async function loadEcheances(){
   const faits = {};
   try {
     const { data } = await supabaseClient.from('gestion_echeances').select('*').in('periode',[periodeM, periodeA]);
-    (data||[]).forEach(r => { faits[r.code+'|'+r.periode] = r; });
+    // Compatibilité : les lignes déjà cochées sous l'ancien code « DFE » comptent pour « DAS ».
+    (data||[]).forEach(r => { faits[(r.code === 'DFE' ? 'DAS' : r.code)+'|'+r.periode] = r; });
   } catch(e){ console.error('echeances', e); }
   const auj = isoJour(new Date());
   const ligne = (o, periode, echeance, isAnnuel) => {
@@ -3428,7 +3440,8 @@ async function marquerEcheance(code, periode, echeance){
 async function annulerEcheance(code, periode){
   if (!confirm('Repasser cette obligation à « à faire » ?')) return;
   try {
-    const { error } = await supabaseClient.from('gestion_echeances').delete().eq('code',code).eq('periode',periode);
+    // « DAS » remplace l'ancien code « DFE » : on efface les deux pour ne pas laisser une ligne orpheline.
+    const { error } = await supabaseClient.from('gestion_echeances').delete().in('code', code === 'DAS' ? ['DAS','DFE'] : [code]).eq('periode',periode);
     if (error) throw error;
     showToast('Remis « à faire »'); loadEcheances();
   } catch(e){ showToast('Erreur', true); console.error(e); }
@@ -3440,7 +3453,10 @@ async function annulerEcheance(code, periode){
 function moisCloture(annee, mois){ return CLOTURES.has(annee+'-'+mois); }
 async function refreshCloturesSet(){
   try {
-    const { data } = await supabaseClient.from('gestion_clotures').select('annee,mois,cloture');
+    const { data, error } = await supabaseClient.from('gestion_clotures').select('annee,mois,cloture');
+    // Robustesse : sur erreur réseau on GARDE l'ancien jeu — vider CLOTURES aurait déverrouillé
+    // silencieusement tous les mois clôturés.
+    if (error){ console.error('clotures set', error); return; }
     CLOTURES = new Set((data||[]).filter(c => c.cloture !== false).map(c => c.annee+'-'+c.mois));
   } catch(e){ console.error('clotures set', e); }
 }
@@ -3571,6 +3587,10 @@ async function init(){
   const nowM = new Date().getMonth()+1;
   ['dash-year','rec-year','dep-year','obj-year','sai-year','fin-year','lc-year','ech-year','clo-year'].forEach(id => fillYearSelect(id));
   ['dash-month','rec-month','dep-month','sai-month','lc-month','ech-month'].forEach(id => fillMonthSelect(id, nowM));
+  // Déclaration TVA : le mois courant par défaut (Celtis, « l'indispensable »). Sans valeur, la
+  // vue additionnait la TVA de toutes les écritures depuis l'origine, ce qu'aucune déclaration
+  // ne demande ; il fallait toucher le sélecteur pour lire un chiffre utile.
+  { const tvaEl = document.getElementById('tva-periode'); if (tvaEl && !tvaEl.value) tvaEl.value = ANNEE_COURANTE + '-' + pad2(nowM); }
 
   // Barres de période (début → fin). Valeurs de départ choisies pour que rien ne
   // change pour qui ouvrait ces écrans avant : le récap s'ouvre sur le mois en

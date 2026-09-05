@@ -132,10 +132,14 @@ titre('1. Le haut des écrans : plus de salutation, mais le champ caché reste')
   for (const page of ECRANS_TELEPHONE) {
     verifier(`${page} ne dessine plus « Bonjour <nom> 👋 »`,
       !/Bonjour <span id="user-first-name"/.test(CODE[page]));
-    verifier(`${page} garde le champ caché que le code remplit encore`,
-      /<span id="user-first-name" hidden><\/span>/.test(CODE[page]));
-    verifier(`${page} remplit toujours ce champ (donc il devait rester)`,
-      /getElementById\('user-first-name'\)/.test(CODE[page]));
+    // Depuis le 06/09/2026, les écrans Express ont retiré le champ ET le code qui le remplissait
+    // (Celtis : épuration). Ce qui compte : jamais l'un sans l'autre — un champ rempli par du
+    // code qui n'existe plus, ou du code qui remplit un champ absent, planterait.
+    const champ = /<span id="user-first-name" hidden><\/span>/.test(CODE[page]);
+    const code = /getElementById\('user-first-name'\)/.test(CODE[page]);
+    verifier(`${page} : le champ caché et le code qui le remplit vont ensemble (les deux, ou aucun)`,
+      champ === code, `champ : ${champ}, code : ${code}`);
+    verifier(`${page} : rien ne remplit un champ absent`, !(code && !champ));
   }
   // L'écran de l'équipe n'est pas concerné : c'est un poste de travail sur grand écran, où
   // 139 px ne coûtent rien et où l'accueil sert de repère entre deux comptes ouverts.
@@ -346,7 +350,7 @@ titre('5. La carte d’une course chez le client Express (fonction réellement e
       // chacun traîne sa propre grappe de dépendances.
       paiementBlockHTML: () => '', ratingBlockHTML: () => '',
       expressStatutBadgeHTML: () => '', colisPhotoUrl: (p) => 'https://x/' + p,
-      formatPhoneLocal: (t) => t, formatDate: () => '26/08/2026',
+      formatPhoneLocal: (t) => t, whatsappHref: (t) => 'https://wa.me/' + t, /* ajouté le 06/09/2026 avec le bouton WhatsApp */ formatDate: () => '26/08/2026',
     });
     const poser = (src) => vm.runInContext(src, contexte);
     poser(bloc('escapeHTML', commun, 'clt-common.js'));

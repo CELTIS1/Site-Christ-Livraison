@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260906nuit">
-<script src="theme.js?v=20260906nuit"></script>
-<script src="splash.js?v=20260906nuit"></script>
+<link rel="stylesheet" href="style.css?v=20260906matin">
+<script src="theme.js?v=20260906matin"></script>
+<script src="splash.js?v=20260906matin"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -139,6 +139,12 @@
   .bulletin .b-net{ text-align:right; font-size:18px; font-weight:700; color:var(--clt-teal-dark); margin-top:12px; }
 
   .hint{ font-size:12.5px; color:var(--muted); background:var(--clt-teal-light); border-radius:10px; padding:10px 13px; margin:6px 0 14px; }
+  /* Aide repliée (Celtis, 06/09/2026 : « épuré, garder l'essentiel ») : les explications de plus
+     de deux lignes ne sont plus étalées au-dessus des tableaux ; un clic sur « Comment lire » les
+     déplie. Même fond que .hint pour qu'on reconnaisse une aide d'un coup d'œil. */
+  .g-aide{ font-size:12.5px; color:var(--muted); background:var(--clt-teal-light); border-radius:10px; padding:8px 13px; margin:6px 0 14px; }
+  .g-aide summary{ cursor:pointer; font-weight:600; color:var(--clt-teal-dark); }
+  .g-aide[open] summary{ margin-bottom:6px; }
   .g-toast-wrap{ position:fixed; right:18px; bottom:18px; display:flex; flex-direction:column; gap:10px; z-index:2000; }
   .g-toast{ background:#fff; border-left:4px solid var(--clt-teal); border-radius:10px; padding:12px 16px; box-shadow:0 8px 26px rgba(0,0,0,.16); font-size:13.5px; max-width:340px; animation:gslide .25s ease; }
   .g-toast.err{ border-left-color:var(--clt-red); }
@@ -294,17 +300,20 @@
     <div class="subtabs">
       <div class="subtab active" data-sub="recettes" onclick="switchSub('compta','recettes')">Recettes</div>
       <div class="subtab" data-sub="depenses" onclick="switchSub('compta','depenses')">Dépenses</div>
-      <div class="subtab" data-sub="livrecaisse" onclick="switchSub('compta','livrecaisse')">💵 Livre de caisse</div>
+      <!-- Intitulés raccourcis et sans émojis (Celtis) : douze pastilles doivent tenir sur une
+           ligne ; les émojis n'étaient posés que sur la moitié d'entre elles. Les data-sub, eux,
+           ne bougent pas (gestion.js s'y réfère). -->
+      <div class="subtab" data-sub="livrecaisse" onclick="switchSub('compta','livrecaisse')">Livre de caisse</div>
       <div class="subtab" data-sub="objectifs" onclick="switchSub('compta','objectifs')">Objectifs</div>
       <div class="subtab" data-sub="chauffeurs" onclick="switchSub('compta','chauffeurs')">Chauffeurs</div>
       <div class="subtab" data-sub="caisse" onclick="switchSub('compta','caisse')">Caisse livreurs</div>
       <div class="subtab" data-sub="clients" onclick="switchSub('compta','clients')">Point clients</div>
-      <div class="subtab" data-sub="facturation" onclick="switchSub('compta','facturation')">💳 Facturation clients</div>
-      <div class="subtab" data-sub="etats" onclick="switchSub('compta','etats')">📊 États financiers</div>
-      <div class="subtab" data-sub="compta-generale" onclick="switchSub('compta','compta-generale')">📗 Compta. générale</div>
-      <div class="subtab" data-sub="echeances" onclick="switchSub('compta','echeances')">🗓️ Échéancier fiscal</div>
-      <div class="subtab" data-sub="clotures" onclick="switchSub('compta','clotures')">🔒 Clôture mensuelle</div>
-      <div class="subtab" data-sub="documents" onclick="switchSub('compta','documents')">📁 Documents entreprise</div>
+      <div class="subtab" data-sub="facturation" onclick="switchSub('compta','facturation')">Facturation</div>
+      <div class="subtab" data-sub="etats" onclick="switchSub('compta','etats')">États financiers</div>
+      <div class="subtab" data-sub="compta-generale" onclick="switchSub('compta','compta-generale')">Compta. générale</div>
+      <div class="subtab" data-sub="echeances" onclick="switchSub('compta','echeances')">Échéancier</div>
+      <div class="subtab" data-sub="clotures" onclick="switchSub('compta','clotures')">Clôtures</div>
+      <div class="subtab" data-sub="documents" onclick="switchSub('compta','documents')">Documents</div>
     </div>
 
     <div class="section active" id="compta-recettes">
@@ -365,7 +374,8 @@
           <div class="field"><label>Justificatif (facultatif)</label><input type="file" id="dep-justif" accept="image/*,application/pdf"></div>
           <button class="btn btn-sm" id="dep-add-btn" onclick="addDepense()">+ Ajouter</button>
         </div>
-        <div class="hint">Les catégories « Liées à la paie » (salaires, ITS, CNPS, CMU) sont enregistrées mais <strong>ne sont pas recomptées</strong> dans les états financiers : elles figurent déjà dans les charges de personnel calculées par la Paie. Joignez une photo ou un PDF du reçu comme justificatif.</div>
+        <!-- Replié (Celtis) : trois lignes sous le formulaire, lues une fois puis encombrantes. -->
+        <details class="g-aide"><summary>Comment lire</summary>Les catégories « Liées à la paie » (salaires, ITS, CNPS, CMU) sont enregistrées mais <strong>ne sont pas recomptées</strong> dans les états financiers : elles figurent déjà dans les charges de personnel calculées par la Paie. Joignez une photo ou un PDF du reçu comme justificatif.</details>
       </div>
     </div>
 
@@ -377,7 +387,8 @@
         <div class="spacer"></div>
         <button class="btn btn-outline btn-sm" onclick="exportLivreCaisse()">⬇️ Exporter (Excel)</button>
       </div>
-      <div class="hint">Livre de caisse : <strong>solde d'ouverture + entrées − sorties = solde courant</strong>. Enregistrez chaque mouvement d'argent (espèces, banque, mobile money). Le solde se recalcule automatiquement, mois après mois.</div>
+      <!-- Ramené à la formule (Celtis) : c'est la seule chose qu'on relit ; le reste est évident à l'usage. -->
+      <div class="hint"><strong>Solde d'ouverture + entrées − sorties = solde courant</strong>, recalculé mois après mois.</div>
       <!-- Replié par défaut (Celtis) : le solde d'ouverture se saisit une seule fois. -->
       <details class="card">
         <summary style="cursor:pointer;font-weight:700;">Solde d'ouverture</summary>
@@ -415,7 +426,8 @@
     <div class="section" id="compta-chauffeurs">
       <div class="card">
         <h2>Chauffeurs</h2>
-        <div class="hint">Les chauffeurs apparaissent dans la grille des recettes. Vous pouvez en ajouter, les renommer, ou les désactiver (ils disparaissent alors des nouvelles saisies sans effacer l'historique).</div>
+        <!-- Raccourci (Celtis) : « ajouter / renommer » se voit dans le tableau ; seul l'effet de « désactiver » mérite d'être dit. -->
+        <div class="hint">Un chauffeur désactivé disparaît des nouvelles saisies de recettes, sans effacer son historique.</div>
         <div class="g-table-wrap" id="chauf-table"></div>
         <div class="inline-form">
           <div class="field"><label>Nom du chauffeur</label><input type="text" id="chauf-nom" placeholder="Ex. Rodrigue"></div>
@@ -434,7 +446,8 @@
         <input type="date" id="caisse-fin" onchange="loadCaisseLivreurs()">
         <div class="spacer"></div>
       </div>
-      <div class="hint">Récapitulatif <strong>jour par jour</strong>, par livreur : argent de l'article et argent de la livraison séparés. L'argent est compté <strong>dès qu'il est marqué payé</strong> (l'article et la livraison sont comptés séparément, même si le colis n'est pas encore livré). Date = jour où l'argent a été récupéré. Cliquez sur un montant pour le copier. Lecture seule.</div>
+      <!-- Replié (Celtis) : quatre lignes d'explication au-dessus du tableau qu'on vient consulter chaque jour. -->
+      <details class="g-aide"><summary>Comment lire</summary>Récapitulatif <strong>jour par jour</strong>, par livreur : argent de l'article et argent de la livraison séparés. L'argent est compté <strong>dès qu'il est marqué payé</strong>, même si le colis n'est pas encore livré. Date = jour où l'argent a été récupéré. Cliquez sur un montant pour le copier. Lecture seule.</details>
       <div class="card"><div class="g-table-wrap" id="caisse-table"></div></div>
     </div>
 
@@ -447,7 +460,8 @@
         <input type="date" id="clients-fin" onchange="loadPointClients()">
         <div class="spacer"></div>
       </div>
-      <div class="hint">Point <strong>jour par jour</strong>, par cliente (vendeuse) : argent de l'article et argent de la livraison séparés. L'argent est compté <strong>dès qu'il est marqué payé</strong> (même si le colis n'est pas encore livré). Cliquez sur un montant pour le copier. Lecture seule.</div>
+      <!-- Replié (Celtis) : même aide que « Caisse livreurs », même raison. -->
+      <details class="g-aide"><summary>Comment lire</summary>Point <strong>jour par jour</strong>, par cliente (vendeuse) : argent de l'article et argent de la livraison séparés. L'argent est compté <strong>dès qu'il est marqué payé</strong>, même si le colis n'est pas encore livré. Cliquez sur un montant pour le copier. Lecture seule.</details>
       <div class="card"><div class="g-table-wrap" id="clients-table"></div></div>
     </div>
 
@@ -455,7 +469,8 @@
          population distincte du « Point clients » (clientes (vendeuses), dérivé des colis). -->
     <div class="section" id="compta-facturation">
 
-      <div class="hint">Facturation formelle des <strong>clients professionnels</strong> facturés au forfait ou à la période — distincte du « Point clients », qui suit les colis des clientes (vendeuses). Créer une facture ici ne modifie rien côté clientes (vendeuses).</div>
+      <!-- Replié (Celtis) : la distinction avec « Point clients » est utile une fois, pas à chaque visite. -->
+      <details class="g-aide"><summary>Comment lire</summary>Facturation formelle des <strong>clients professionnels</strong> facturés au forfait ou à la période — distincte du « Point clients », qui suit les colis des clientes (vendeuses). Créer une facture ici ne modifie rien côté clientes.</details>
 
       <div class="kpi-grid" id="fact-kpis"></div>
 
@@ -521,15 +536,16 @@
         <div class="spacer"></div>
         <button class="btn btn-outline btn-sm" onclick="exportEtatsFinanciers()">⬇️ États (Excel)</button>
       </div>
-      <div class="hint">Compte de résultat construit automatiquement à partir des recettes, des dépenses et de la paie. Les charges de personnel intègrent la masse nette et les charges patronales.</div>
+      <!-- Une ligne (Celtis) : la provenance des chiffres suffit ; le détail du personnel est déjà écrit dans le tableau. -->
+      <div class="hint">Construit automatiquement à partir des recettes, des dépenses et de la paie (coût total employeur).</div>
       <div class="kpi-grid" id="fin-kpis"></div>
       <div class="card">
         <h2>Compte de résultat — <span id="fin-periode-lbl"></span></h2>
         <div class="g-table-wrap" id="fin-resultat"></div>
       </div>
       <div class="card">
-        <h2>Évolution mensuelle de l'année</h2>
-        <div class="hint">Recettes, charges et résultat mois par mois (année entière), quel que soit le mois affiché ci-dessus.</div>
+        <!-- Titre raccourci, aide retirée (Celtis) : le tableau porte déjà ses douze mois et ses colonnes. -->
+        <h2>Évolution mensuelle</h2>
         <div class="g-table-wrap" id="fin-mensuel"></div>
       </div>
       <!-- Carte « Bilan simplifié » retirée (Celtis) : bilan partiel trompeur ; le résultat cumulé suffit. -->
@@ -546,11 +562,12 @@
       </div>
 
       <div class="subtabs">
-        <div class="subtab active" data-sub="plan" onclick="switchCG('plan')">📋 Plan comptable</div>
-        <div class="subtab" data-sub="journal" onclick="switchCG('journal')">✍️ Journal</div>
-        <div class="subtab" data-sub="grandlivre" onclick="switchCG('grandlivre')">📚 Grand livre</div>
-        <div class="subtab" data-sub="balance" onclick="switchCG('balance')">⚖️ Balance générale</div>
-        <div class="subtab" data-sub="tva" onclick="switchCG('tva')">🧾 Déclaration TVA</div>
+        <!-- Sans émojis (Celtis) : cohérence avec les sous-onglets du dessus. -->
+        <div class="subtab active" data-sub="plan" onclick="switchCG('plan')">Plan comptable</div>
+        <div class="subtab" data-sub="journal" onclick="switchCG('journal')">Journal</div>
+        <div class="subtab" data-sub="grandlivre" onclick="switchCG('grandlivre')">Grand livre</div>
+        <div class="subtab" data-sub="balance" onclick="switchCG('balance')">Balance</div>
+        <div class="subtab" data-sub="tva" onclick="switchCG('tva')">TVA</div>
       </div>
 
       <div class="section active" id="cg-plan">
@@ -573,7 +590,8 @@
       <div class="section" id="cg-journal">
         <div class="card">
           <h2>Génération automatique</h2>
-          <div class="hint">Génère des écritures depuis les dépenses du mois déjà saisies dans l'onglet Dépenses. Les factures, elles, génèrent leur écriture automatiquement à l'émission et à l'encaissement — rien à faire ici pour elles.</div>
+          <!-- Une ligne (Celtis) : le bouton dit déjà ce qu'il fait ; on ne garde que ce qui évite une erreur (les factures sont déjà passées). -->
+          <div class="hint">Les factures passent leurs écritures toutes seules (émission et encaissement) ; seules les dépenses se génèrent ici.</div>
           <button class="btn btn-outline btn-sm" onclick="genererEcrituresDepuisDepenses()">Générer depuis les dépenses du mois</button>
         </div>
         <div class="card">
@@ -617,8 +635,10 @@
         <select id="ech-month" onchange="loadEcheances()"></select>
         <div class="spacer"></div>
       </div>
-      <div class="clt-alert clt-alert-warn">⚠️ <strong>Dates indicatives.</strong> Les échéances affichées sont des repères habituels en Côte d'Ivoire. Confirmez toujours les dates et montants exacts auprès de la <strong>DGI</strong> (impôts), de la <strong>CNPS</strong> et de la <strong>CMU</strong> : ils peuvent varier selon votre régime d'imposition.</div>
-      <div class="hint">Cochez chaque obligation « faite » une fois la déclaration/paiement effectué. Ce qui n'est pas coché apparaît « à faire », et « en retard » si la date limite est dépassée.</div>
+      <!-- Avertissement gardé mais en une phrase, mode d'emploi replié (Celtis) : la mise en garde
+           doit rester visible (dates non officielles), le reste se comprend en cochant une ligne. -->
+      <div class="clt-alert clt-alert-warn">⚠️ <strong>Dates indicatives</strong> — à confirmer auprès de la DGI, de la CNPS et de la CMU selon votre régime.</div>
+      <details class="g-aide"><summary>Comment lire</summary>Cochez chaque obligation « faite » une fois la déclaration ou le paiement effectué. Ce qui n'est pas coché apparaît « à faire », et « en retard » si la date limite est dépassée.</details>
       <div class="card"><div class="g-table-wrap" id="ech-table"></div></div>
     </div>
 
@@ -628,7 +648,8 @@
         <select id="clo-year" onchange="loadClotures()"></select>
         <div class="spacer"></div>
       </div>
-      <div class="hint">Clôturer un mois le <strong>verrouille</strong> : les recettes et dépenses de ce mois ne peuvent plus être saisies, modifiées ni supprimées. Cela protège les mois déjà arrêtés contre toute modification accidentelle. <strong>Seul l'administrateur peut rouvrir</strong> un mois clôturé.</div>
+      <!-- Une ligne (Celtis) : l'effet et qui peut revenir en arrière, rien d'autre. -->
+      <div class="hint">Un mois clôturé est <strong>verrouillé</strong> (recettes et dépenses figées) ; <strong>seul l'administrateur peut le rouvrir</strong>.</div>
       <div class="card"><div class="g-table-wrap" id="clo-table"></div></div>
     </div>
 
@@ -636,7 +657,8 @@
     <div class="section" id="compta-documents">
       <div class="card">
         <h2>Documents de l'entreprise</h2>
-        <div class="hint">Coffre-fort sécurisé pour les documents officiels de la société : registre de commerce (RCCM), déclaration fiscale d'existence, statuts, patente, assurances, contrats… Fichiers PDF ou images. Conservation privée (accès Comptabilité uniquement).</div>
+        <!-- Une ligne (Celtis) : la liste des types est déjà dans le menu déroulant juste en dessous. -->
+        <div class="hint">Coffre-fort des pièces officielles (PDF ou images), visible de la Comptabilité uniquement.</div>
         <div class="inline-form">
           <div class="field" style="min-width:210px;"><label>Type de document</label>
             <select id="doc-e-type" data-recherche data-recherche-placeholder="Type de document…">
@@ -666,10 +688,11 @@
   <div class="section" id="sec-paie">
     <div class="subtabs">
       <div class="subtab active" data-sub="salaries" onclick="switchSub('paie','salaries')">Salariés</div>
-      <div class="subtab" data-sub="dossiers" onclick="switchSub('paie','dossiers')">📁 Dossiers</div>
-      <div class="subtab" data-sub="saisie" onclick="switchSub('paie','saisie')">Saisie mensuelle</div>
+      <!-- Sans émojis et raccourcis (Celtis) : cohérence avec la Comptabilité. -->
+      <div class="subtab" data-sub="dossiers" onclick="switchSub('paie','dossiers')">Dossiers</div>
+      <div class="subtab" data-sub="saisie" onclick="switchSub('paie','saisie')">Saisie du mois</div>
       <div class="subtab" data-sub="bulletins" onclick="switchSub('paie','bulletins')">Bulletins</div>
-      <div class="subtab" data-sub="etats" onclick="switchSub('paie','etats')">📊 États par période</div>
+      <div class="subtab" data-sub="etats" onclick="switchSub('paie','etats')">États par période</div>
       <div class="subtab" id="sub-paie-parametres" data-sub="parametres" onclick="switchSub('paie','parametres')">Paramètres</div>
     </div>
 
@@ -685,7 +708,8 @@
     <div class="section" id="paie-dossiers">
       <div class="card">
         <h2>Dossiers du personnel</h2>
-        <div class="hint">Coffre-fort sécurisé pour les pièces des salariés et livreurs : CNI, contrats, diplômes, attestations… Fichiers PDF ou images. Conservation privée (accès RH uniquement), consultables à tout moment.</div>
+        <!-- Une ligne (Celtis) : même raison que « Documents de l'entreprise ». -->
+        <div class="hint">Coffre-fort des pièces des salariés et livreurs (PDF ou images), visible de la RH uniquement.</div>
         <div class="inline-form">
           <div class="field" style="min-width:200px;"><label>Salarié concerné</label>
             <select id="doc-p-salarie" data-recherche data-recherche-placeholder="Nom du salarié…"><option value="">— Non lié / général —</option></select>
@@ -719,7 +743,8 @@
         <select id="sai-year" onchange="loadSaisie()"></select>
         <select id="sai-month" onchange="loadSaisie()"></select>
       </div>
-      <div class="hint">Renseignez les éléments variables du mois pour chaque salarié. Les bulletins se recalculent à partir de ces valeurs. Enregistrement automatique.</div>
+      <!-- Une ligne (Celtis) : même formule que la grille des recettes. -->
+      <div class="hint">Éléments variables du mois par salarié ; enregistrement automatique, bulletins recalculés.</div>
       <div class="card"><div class="g-table-wrap" id="sai-table"></div></div>
     </div>
 
@@ -761,7 +786,8 @@
         <button type="button" onclick="periodeRaccourci('sem2')">2e semestre</button>
         <button type="button" onclick="periodeRaccourci('precedente')">Année précédente</button>
       </div>
-      <div class="hint">Cumul de paie sur la période choisie, reconstitué à partir des saisies mensuelles. La période peut être à cheval sur deux années (novembre 2025 → février 2026). Seuls les mois effectivement saisis sont comptabilisés (colonne « Mois payés »).</div>
+      <!-- Replié (Celtis) : trois lignes entre les raccourcis et les chiffres. -->
+      <details class="g-aide"><summary>Comment lire</summary>Cumul de paie sur la période choisie, reconstitué à partir des saisies mensuelles. La période peut être à cheval sur deux années (novembre 2025 → février 2026). Seuls les mois effectivement saisis sont comptabilisés (colonne « Mois payés »).</details>
       <div class="kpi-grid" id="etat-kpis"></div>
       <div class="card">
         <h2>Synthèse du personnel — <span id="etat-periode-lbl"></span></h2>
@@ -776,7 +802,8 @@
           <button class="btn btn-outline btn-sm" onclick="pdfFicheIndividuelle()">📄 Fiche (PDF)</button>
           <button class="btn btn-sm" onclick="imprimerFicheIndividuelle()">🖨️ Imprimer</button>
         </div>
-        <div class="hint">Détail mois par mois des rubriques de paie du salarié, avec cumul sur la période — modèle « fiche individuelle ». Une colonne vide signale un mois non saisi, à distinguer d'un mois à zéro.</div>
+        <!-- Une ligne (Celtis) : seule la lecture « colonne vide » n'est pas évidente. -->
+        <div class="hint">Une colonne vide = mois non saisi (à distinguer d'un mois à zéro).</div>
         <div class="g-table-wrap" id="etat-fiche"></div>
       </div>
     </div>
@@ -793,8 +820,9 @@
             <div class="field"><label>Taux accident de travail (%)</label><input type="number" id="p-accident" step="0.01"></div>
             <div class="field"><label>Prime de transport par défaut (FCFA)</label><input type="number" id="p-transport" step="1"></div>
           </div>
-          <h3 style="margin:16px 0 4px;font-size:15px;">Taux de cotisation (CNPS / ITS / CMU)</h3>
-          <div class="hint">Valeurs légales par défaut du régime ivoirien. Ne les modifiez que si un taux change officiellement — cela impacte tous les bulletins recalculés. Le barème progressif de l'ITS reste géré automatiquement.</div>
+          <h3 style="margin:16px 0 4px;font-size:15px;">Taux de cotisation</h3>
+          <!-- Une ligne (Celtis) : on garde la mise en garde, on retire le rappel légal. -->
+          <div class="hint">Taux légaux ivoiriens par défaut : ne les modifiez que si un taux change officiellement (tous les bulletins sont recalculés).</div>
           <div class="grid2" style="margin-top:8px;">
             <div class="field"><label>CNPS part salariale (%)</label><input type="number" id="p-cnps-sal" step="0.01"></div>
             <div class="field"><label>CNPS part patronale (%)</label><input type="number" id="p-cnps-pat" step="0.01"></div>
@@ -810,8 +838,9 @@
         </div>
       </div>
       <div class="card">
-        <h2>Grille catégorielle (salaires minima)</h2>
-        <div class="hint">Le salaire catégoriel de chaque salarié est déterminé par sa catégorie ci-dessous. Modifiez un montant et il est enregistré automatiquement.</div>
+        <!-- Titre et aide raccourcis (Celtis). -->
+        <h2>Grille des salaires</h2>
+        <div class="hint">Salaire minimum par catégorie ; enregistrement automatique à la modification.</div>
         <div class="g-table-wrap" id="grille-table"></div>
       </div>
     </div>
@@ -821,7 +850,8 @@
   <div class="section" id="sec-journal">
     <div class="card">
       <h2>Historique d'activité</h2>
-      <div class="hint">Historique des ajouts, modifications et suppressions effectués dans le module Gestion, par chaque personne autorisée. Réservé à l'administrateur.</div>
+      <!-- Une ligne (Celtis) : « réservé à l'administrateur » est déjà garanti par l'onglet, invisible aux autres. -->
+      <div class="hint">Ajouts, modifications et suppressions faits dans Gestion, par personne.</div>
       <!-- Bouton « Actualiser » retiré (Celtis) : switchTab('journal') recharge déjà l'historique. -->
       <div class="g-table-wrap" id="journal-table"></div>
     </div>
@@ -921,8 +951,9 @@
       <button class="btn btn-outline btn-sm" data-clt-fermer onclick="fermerApercuImpression()">Fermer</button>
       <button class="btn btn-sm" onclick="lancerImpression()">🖨️ Imprimer</button>
     </div>
+    <!-- Une ligne (Celtis) : le bouton Imprimer est juste au-dessus ; on ne garde que l'astuce PDF. -->
     <div class="no-print" style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-      Aperçu avant impression — vous pouvez aussi faire ⌘P (ou Ctrl+P). Pour obtenir un PDF, choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.
+      Pour un PDF : « Enregistrer au format PDF » dans la fenêtre d'impression.
     </div>
     <div id="impression-zone" class="doc-imprimable"></div>
   </div>
@@ -949,10 +980,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260906nuit"></script>
-<script src="config.js?v=20260906nuit"></script>
-<script src="biometric-lock.js?v=20260906nuit"></script>
-<script src="clt-select-recherche.js?v=20260906nuit"></script>
-<script src="gestion.js?v=20260906nuit"></script>
+<script src="clt-common.js?v=20260906matin"></script>
+<script src="config.js?v=20260906matin"></script>
+<script src="biometric-lock.js?v=20260906matin"></script>
+<script src="clt-select-recherche.js?v=20260906matin"></script>
+<script src="gestion.js?v=20260906matin"></script>
 </body>
 </html>

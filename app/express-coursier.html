@@ -17,9 +17,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260906nuit">
-<script src="theme.js?v=20260906nuit"></script>
-<script src="splash.js?v=20260906nuit"></script>
+<link rel="stylesheet" href="style.css?v=20260906matin">
+<script src="theme.js?v=20260906matin"></script>
+<script src="splash.js?v=20260906matin"></script>
 <style>
   .topbar{ background:#0D9488; }
   .topbar .brand .logo-mark{ background:#0b6e64; }
@@ -444,8 +444,7 @@
        redire ce que la barre du haut affiche déjà et ce que l'onglet « 🛵 Dispo » annonce en un
        mot. Un coursier ouvre cet écran entre deux courses, souvent à l'arrêt, souvent pressé :
        ce qu'il vient chercher, c'est la liste, pas un bonjour. (26/08/2026)
-       Le champ #user-first-name reste posé, invisible : du code le remplit encore. -->
-  <span id="user-first-name" hidden></span>
+       Le champ #user-first-name, jamais affiché, a été retiré avec le code qui le remplissait (Celtis, 05/09/2026). -->
 
   <!-- Notice de consentement (loi ivoirienne n° 2013-450) : n'apparaît que lorsqu'une course
        acceptée est en cours et que le coursier n'a pas encore donné son accord. Rien n'est envoyé
@@ -544,7 +543,8 @@
       </div>
       <div class="stat-box">
         <div class="stat-value" id="stat-gains">—</div>
-        <div class="stat-label">Total encaissé (espèces)</div>
+        <!-- Libellé corrigé (Celtis) : la somme est montant_coursier, donc la part nette du coursier, pas l'encaissé. -->
+        <div class="stat-label">Ma part nette</div>
       </div>
       <div class="stat-box">
         <div class="stat-value" id="stat-commission-payee">—</div>
@@ -622,9 +622,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260906nuit"></script>
-<script src="express-config.js?v=20260906nuit"></script>
-<script src="biometric-lock.js?v=20260906nuit"></script>
+<script src="clt-common.js?v=20260906matin"></script>
+<script src="express-config.js?v=20260906matin"></script>
+<script src="biometric-lock.js?v=20260906matin"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -667,6 +667,14 @@
     let digits = e164.replace(/[^\d]/g, '');
     if (digits.startsWith('225')) digits = digits.slice(3);
     return digits;
+  }
+  // Lien WhatsApp vers l'autre partie (Celtis). Les numéros sont stockés au format international
+  // (+225…) : wa.me veut les chiffres seuls, sans « + ». Un numéro à dix chiffres (saisie locale)
+  // est préfixé 225 sans retirer le zéro, comme numeroInternational() de config.js.
+  function whatsappHref(phone){
+    let d = String(phone || '').replace(/[^\d]/g, '');
+    if (d.length === 10) d = '225' + d;
+    return 'https://wa.me/' + d;
   }
 
   async function loadClientsFor(courses){
@@ -834,10 +842,12 @@
   function mesCourseRowHTML(c){
     const client = c.client_id ? clientsById[c.client_id] : null;
     const clientInfo = client
-      ? `<div class="client-info">👤 Client : ${escapeHTML(client.full_name || '')}${client.phone ? ' · ' + formatPhoneLocal(client.phone) : ''}</div>`
+      // Numéros cliquables (Celtis) : le coursier appelle d'un tap, sans recopier le numéro.
+      // + WhatsApp (Celtis, « l'indispensable ») : « je suis en bas » s'écrit plus vite qu'il ne s'appelle.
+      ? `<div class="client-info">👤 Client : ${escapeHTML(client.full_name || '')}${client.phone ? ' · <a href="tel:' + escapeHTML(client.phone) + '">📞 ' + formatPhoneLocal(client.phone) + '</a> · <a href="' + whatsappHref(client.phone) + '" target="_blank" rel="noopener">🟢 WhatsApp</a>' : ''}</div>`
       : '';
     const destInfo = c.destinataire_nom || c.destinataire_telephone
-      ? `<div class="dest-info">📦 Destinataire : ${escapeHTML(c.destinataire_nom || '')}${c.destinataire_telephone ? ' · ' + formatPhoneLocal(c.destinataire_telephone) : ''}</div>`
+      ? `<div class="dest-info">📦 Destinataire : ${escapeHTML(c.destinataire_nom || '')}${c.destinataire_telephone ? ' · <a href="tel:' + escapeHTML(c.destinataire_telephone) + '">📞 ' + formatPhoneLocal(c.destinataire_telephone) + '</a> · <a href="' + whatsappHref(c.destinataire_telephone) + '" target="_blank" rel="noopener">🟢 WhatsApp</a>' : ''}</div>`
       : '';
     const canRecup = c.status === 'acceptee';   // pas encore récupéré → bouton "J'ai récupéré"
     // Course Wave : on ne peut la marquer livrée qu'une fois le paiement en ligne confirmé.
@@ -949,13 +959,29 @@
     });
   }
 
+  let mesCoursesTermineesLimite = 20; // nombre de courses terminées affichées (« Voir plus » ajoute 20)
   function renderMesCourses(){
     const box = document.getElementById('mescourses-list');
     if (!mesCourses.length) {
       cltPoserHTML(box, `<div class="empty-state">Aucune course acceptée pour le moment.</div>`);
       return;
     }
-    if (!cltPoserHTML(box, mesCourses.map(mesCourseRowHTML).join(''))) return;
+    // « En cours » d'abord, « Terminées » repliées et limitées (Celtis) : le coursier a besoin de
+    // ses courses actives sous les yeux, pas de tout son historique. État ouvert/fermé conservé.
+    const TERMINE = ['livree', 'annulee'];
+    const enCours = mesCourses.filter(c => !TERMINE.includes(c.status));
+    const terminees = mesCourses.filter(c => TERMINE.includes(c.status));
+    const wasOpen = !!box.querySelector('details.courses-terminees[open]');
+    const visibles = terminees.slice(0, mesCoursesTermineesLimite);
+    const html = (enCours.length ? enCours.map(mesCourseRowHTML).join('') : `<div class="empty-state">Aucune course en cours.</div>`)
+      + (terminees.length ? `<details class="courses-terminees"${wasOpen ? ' open' : ''}>
+          <summary style="cursor:pointer;font-weight:700;padding:10px 0;">✅ Terminées (${terminees.length})</summary>
+          ${visibles.map(mesCourseRowHTML).join('')}
+          ${terminees.length > visibles.length ? `<button type="button" class="btn btn-sm btn-outline" id="btn-mescourses-voir-plus">Voir plus (${terminees.length - visibles.length} restantes)</button>` : ''}
+        </details>` : '');
+    if (!cltPoserHTML(box, html)) return;
+    const voirPlus = document.getElementById('btn-mescourses-voir-plus');
+    if (voirPlus) voirPlus.addEventListener('click', () => { mesCoursesTermineesLimite += 20; renderMesCourses(); });
     box.querySelectorAll('.course-thumb').forEach(img => {
       img.addEventListener('click', () => openLightbox(img.dataset.photo));
     });
@@ -1609,7 +1635,7 @@
     });
     initExpressNameForm({
       profile, formId: 'form-account-name', fullNameId: 'account-full-name',
-      msgId: 'account-name-msg', nameDisplayId: 'user-name', firstNameDisplayId: 'user-first-name',
+      msgId: 'account-name-msg', nameDisplayId: 'user-name', // firstNameDisplayId retiré : #user-first-name n'existe plus (Celtis)
     });
     initExpressPhoneForm({ profile, formId: 'form-account-phone', phoneId: 'account-phone', msgId: 'account-phone-msg' });
     initExpressDeleteAccount({
@@ -1735,7 +1761,6 @@
 
     currentProfile = profile;
     document.getElementById('user-name').textContent = profile.full_name || '';
-    document.getElementById('user-first-name').textContent = (profile.full_name || '').split(' ')[0] || '';
     document.getElementById('user-avatar-topbar').innerHTML = avatarHTML(profile, 34);
     initSettingsMenu();
     initAccountModal(profile);
