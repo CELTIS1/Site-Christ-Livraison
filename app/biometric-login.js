@@ -13,20 +13,31 @@
 
    Fonctionnement technique :
    - WebAuthn (authentificateur de plateforme) sert de VERROU local : la vérification
-     biométrique (navigator.credentials.get) doit réussir avant de restituer les
-     identifiants mémorisés sur cet appareil, qui sont alors saisis dans le formulaire
-     puis soumis normalement (même chemin que la connexion manuelle).
+     biométrique (navigator.credentials.get) doit réussir avant d'ouvrir le « coffre »
+     de cet appareil.
    - Repli TOUJOURS disponible : le formulaire téléphone + mot de passe reste présent,
      et un lien « Utiliser un autre compte » efface la configuration biométrique locale.
 
-   Portée : LOCALE, par appareil, opt-in. Ne remplace pas l'authentification serveur :
-   la connexion réelle reste un signInWithPassword Supabase.
+   CE QUE CONTIENT LE COFFRE — CHANGÉ LE 06/09/2026 (feuille de route, point 1.2).
+   Jusque-là, le coffre gardait le NUMÉRO ET LE MOT DE PASSE en clair dans le stockage
+   du navigateur, et le geste biométrique ne faisait que les recopier dans le formulaire.
+   Toute extension, tout script injecté un jour, tout téléphone prêté pouvait les lire :
+   Face ID ne protégeait qu'une apparence. Celtis a demandé de fermer ça.
+   Le coffre ne garde plus que le JETON DE SESSION Supabase (refresh_token) — celui-là
+   même que le client Supabase range déjà dans localStorage pour les livreurs et les
+   clientes. Il ne permet pas de retrouver le mot de passe, il se révoque à la
+   déconnexion, et il tourne à chaque renouvellement (biometric-lock.js tient le coffre
+   à jour). Le déverrouillage rejoue auth.refreshSession, JAMAIS signInWithPassword.
+   Un ancien coffre (avec « pass ») est effacé à la première ouverture, sans rien demander.
 
    API publique : window.CLTBioLogin
      - isSupported() -> Promise<bool>
-     - hasSaved()    -> bool           (identifiants biométriques mémorisés sur l'appareil ?)
-     - maybeSetup(rawPhone, password, label) -> Promise<void>   (invitation post-1re connexion)
+     - hasSaved()    -> bool           (un accès biométrique est-il mémorisé sur l'appareil ?)
+     - maybeSetup(rawPhone, label) -> Promise<void>   (invitation post-1re connexion ; lit la
+                                                       session en cours, ne reçoit AUCUN mot de passe)
      - clear()       -> void
+   La page de connexion fournit window.cltApresConnexionBiometrique(session) -> Promise<bool> :
+   c'est elle qui lit le profil, contrôle le statut du compte et redirige.
    ============================================================================= */
 (function () {
   'use strict';
@@ -42,7 +53,7 @@
   // Clés de stockage (au niveau appareil, un seul compte mémorisé par app de connexion).
   var NS = IS_EXPRESS ? 'clt-biologin-x-' : 'clt-biologin-';
   var CRED_KEY = NS + 'cred';           // rawId WebAuthn (base64url)
-  var DATA_KEY = NS + 'acct';           // JSON { phone, pass, label }
+  var DATA_KEY = NS + 'acct';           // JSON { v: 2, uid, phone, label, refresh } — jamais de mot de passe
   var DISMISS_KEY = NS + 'setup-dismissed';
   // Drapeau PARTAGÉ avec biometric-lock.js (clé volontairement NON namespacée) : posé
   // juste après une connexion biométrique réussie, il indique à la page de destination
@@ -52,7 +63,6 @@
 
   // Identifiants des champs selon la page.
   var PHONE_ID = 'login-phone';
-  var PASS_ID = 'login-password';
   var FORM_ID = 'form-connexion-login'; // identique sur login.html et express-login.html
 
   // --- Utilitaires base64url <-> ArrayBuffer ------------------------------------
@@ -87,8 +97,22 @@
   }
   function getCred() { try { return localStorage.getItem(CRED_KEY); } catch (e) { return null; } }
   function getData() {
-    try { var raw = localStorage.getItem(DATA_KEY); return raw ? JSON.parse(raw) : null; }
+    var d = null;
+    try { var raw = localStorage.getItem(DATA_KEY); d = raw ? JSON.parse(raw) : null; }
     catch (e) { return null; }
+    return migrerCoffre(d);
+  }
+  // Un coffre d'avant le 06/09/2026 contient « pass » et pas « refresh » : on l'efface
+  // entièrement (le mot de passe n'a plus rien à faire là), et la personne se reconnecte
+  // une fois avec son mot de passe — l'activation lui sera reproposée juste après.
+  function migrerCoffre(d) {
+    if (!d) return null;
+    if (Object.prototype.hasOwnProperty.call(d, 'pass') || !d.refresh) {
+      clear();
+      try { console.info('Connexion biométrique : ancien format (mot de passe mémorisé) effacé de cet appareil ; à réactiver après la prochaine connexion.'); } catch (e) {}
+      return null;
+    }
+    return d;
   }
   function hasSaved() { return !!(getCred() && getData()); }
 
@@ -151,22 +175,33 @@
     });
   }
 
-  // --- Remplissage + soumission du formulaire de connexion -----------------------
-  function fillAndSubmit(data) {
-    var phoneEl = document.getElementById(PHONE_ID);
-    var passEl = document.getElementById(PASS_ID);
-    var form = document.getElementById(FORM_ID);
-    if (!phoneEl || !passEl || !form) return false;
-    phoneEl.value = data.phone || '';
-    passEl.value = data.pass || '';
-    // Notifie d'éventuels écouteurs (validation, etc.).
-    try {
-      phoneEl.dispatchEvent(new Event('input', { bubbles: true }));
-      passEl.dispatchEvent(new Event('input', { bubbles: true }));
-    } catch (e) {}
-    if (typeof form.requestSubmit === 'function') form.requestSubmit();
-    else form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-    return true;
+  // --- Connexion par le jeton du coffre (jamais par le mot de passe) --------------
+  // Rend une promesse de booléen : vrai si la session a été rétablie ET que la page a pris
+  // le relais (profil, statut du compte, redirection). Faux dans tous les autres cas ; le
+  // coffre est alors vidé quand le jeton est mort (révoqué à une déconnexion, expiré), pour
+  // ne pas reproposer un Face ID qui échouerait.
+  function connexionParJeton(data) {
+    var client = (typeof supabaseClient !== 'undefined') ? supabaseClient : window.supabaseClient;
+    if (!client || !client.auth || !data || !data.refresh) return Promise.resolve(false);
+    return client.auth.refreshSession({ refresh_token: data.refresh }).then(function (res) {
+      var session = res && res.data && res.data.session;
+      if (!session || res.error) { clear(); return false; }
+      // Le jeton a tourné : le coffre garde toujours le plus récent.
+      data.refresh = session.refresh_token;
+      if (session.user && session.user.id) data.uid = session.user.id;
+      try { localStorage.setItem(DATA_KEY, JSON.stringify(data)); } catch (e) {}
+      // Face ID validé à l'instant : la page de destination ne doit PAS reverrouiller
+      // (anti double authentification).
+      try { localStorage.setItem(JUST_UNLOCKED_KEY, String(Date.now())); } catch (e2) {}
+      if (typeof window.cltApresConnexionBiometrique !== 'function') {
+        try { localStorage.removeItem(JUST_UNLOCKED_KEY); } catch (e3) {}
+        return false;
+      }
+      return Promise.resolve(window.cltApresConnexionBiometrique(session)).then(function (ok) {
+        if (!ok) { try { localStorage.removeItem(JUST_UNLOCKED_KEY); } catch (e4) {} }
+        return !!ok;
+      });
+    }).catch(function () { clear(); return false; });
   }
 
   // --- Bouton de connexion biométrique (à l'arrivée) -----------------------------
@@ -185,13 +220,15 @@
     verify().then(function () {
       var data = getData();
       if (!data) { attemptBusy = false; if (btn) btn.classList.remove('busy'); return; }
-      // Face ID validé à l'instant : on signale à la page de destination de NE PAS
-      // reverrouiller (anti double authentification), puis on remplit et on soumet.
-      try { localStorage.setItem(JUST_UNLOCKED_KEY, String(Date.now())); } catch (e2) {}
-      var ok = fillAndSubmit(data);
-      if (!ok) { try { localStorage.removeItem(JUST_UNLOCKED_KEY); } catch (e3) {} attemptBusy = false; if (btn) btn.classList.remove('busy'); if (errEl && !silent) errEl.textContent = 'Formulaire indisponible. Saisissez vos identifiants.'; }
-      // Si ok : le formulaire se soumet et la page redirige — on laisse l'écran « verrouillé »
-      // visible (état « busy ») jusqu'à la navigation, sans clignotement du formulaire.
+      // Face ID validé à l'instant : on rejoue la session depuis le jeton du coffre.
+      // Si ça réussit, la page redirige — on laisse l'écran « verrouillé » visible (état
+      // « busy ») jusqu'à la navigation, sans clignotement du formulaire.
+      return connexionParJeton(data).then(function (ok) {
+        if (ok) return;
+        attemptBusy = false; if (btn) btn.classList.remove('busy');
+        removeLockOverlay(); revealForm();
+        if (errEl && !silent) errEl.textContent = 'Votre accès mémorisé a expiré. Connectez-vous avec votre mot de passe : Face ID vous sera reproposé.';
+      });
     }).catch(function (e) {
       attemptBusy = false;
       if (btn) btn.classList.remove('busy');
@@ -375,19 +412,27 @@
   }
 
   // --- Invitation d'activation (une fois, après la 1re connexion réussie) ---------
-  function maybeSetup(rawPhone, password, label) {
+  function maybeSetup(rawPhone, label) {
     return new Promise(function (resolve) {
-      if (!rawPhone || !password) return resolve();
+      if (!rawPhone) return resolve();
       if (hasSaved()) return resolve();            // déjà configuré sur cet appareil
       try { if (localStorage.getItem(DISMISS_KEY)) return resolve(); } catch (e) {}
+      var client = (typeof supabaseClient !== 'undefined') ? supabaseClient : window.supabaseClient;
+      if (!client || !client.auth) return resolve();
       isSupported().then(function (ok) {
         if (!ok) return resolve();                 // appareil sans biométrie
-        showSetupSheet(rawPhone, password, label, resolve);
+        // Le coffre se remplit avec la session EN COURS (celle que la connexion vient
+        // d'ouvrir), jamais avec ce qui a été tapé dans le formulaire.
+        return client.auth.getSession().then(function (res) {
+          var session = res && res.data && res.data.session;
+          if (!session || !session.refresh_token) return resolve();
+          showSetupSheet(rawPhone, label, session, resolve);
+        });
       }).catch(function () { resolve(); });
     });
   }
 
-  function showSetupSheet(rawPhone, password, label, done) {
+  function showSetupSheet(rawPhone, label, session, done) {
     var wrap = document.createElement('div');
     wrap.id = 'clt-biologin-setup';
     wrap.innerHTML =
@@ -433,7 +478,15 @@
     wrap.querySelector('#clt-bl-on').addEventListener('click', function () {
       enroll(label || rawPhone).then(function (ok2) {
         if (ok2) {
-          try { localStorage.setItem(DATA_KEY, JSON.stringify({ phone: rawPhone, pass: password, label: label || rawPhone })); } catch (e) {}
+          try {
+            localStorage.setItem(DATA_KEY, JSON.stringify({
+              v: 2,
+              uid: session.user ? session.user.id : null,
+              phone: rawPhone,
+              label: label || rawPhone,
+              refresh: session.refresh_token
+            }));
+          } catch (e) {}
           try { localStorage.removeItem(DISMISS_KEY); } catch (e) {}
           toast('Connexion biométrique activée sur cet appareil.', 'success');
         } else {
@@ -493,6 +546,8 @@
     isSupported: isSupported,
     hasSaved: hasSaved,
     maybeSetup: maybeSetup,
-    clear: clear
+    clear: clear,
+    // Réservé aux bancs d'essai (tests/connexion-biometrique-sans-mot-de-passe.test.mjs).
+    _banc: { connexionParJeton: connexionParJeton, getData: getData, DATA_KEY: DATA_KEY, CRED_KEY: CRED_KEY }
   };
 })();

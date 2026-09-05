@@ -395,6 +395,15 @@ jobs:
       - name: La porte d'envoyer-push (sans le secret, rien ne part)
         run: node tests/envoyer-push-protege.test.mjs
 
+      # La connexion biométrique sans mot de passe (phase 1, point 1.2 — 06/09/2026). « Se
+      # connecter avec Face ID » gardait le numéro ET le mot de passe en clair dans le stockage
+      # du navigateur. Le coffre ne garde plus que le jeton de session, qui tourne et se révoque.
+      # Cette série exécute le vrai biometric-login.js dans un faux navigateur : ancien coffre
+      # effacé, déverrouillage par refreshSession (jamais signInWithPassword), jeton mort → coffre
+      # vidé, et la mise à jour du coffre par biometric-lock.js quand le jeton tourne.
+      - name: La connexion biométrique sans mot de passe (le coffre ne garde qu'un jeton)
+        run: node tests/connexion-biometrique-sans-mot-de-passe.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""

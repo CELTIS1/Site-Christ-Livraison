@@ -511,6 +511,63 @@
     });
   }
 
+  // --- Le coffre de la connexion biométrique, tenu à jour (06/09/2026, point 1.2) -------
+  // biometric-login.js ne garde plus le mot de passe : il garde le jeton de session
+  // (refresh_token). Or ce jeton TOURNE — chaque renouvellement d'accès (toutes les heures)
+  // en rend un nouveau et périme l'ancien ; et Supabase, s'il voit resservir un jeton périmé,
+  // ferme toute la session par prudence. Le coffre doit donc suivre : à chaque renouvellement
+  // sur cette page, on y range le jeton le plus récent. Et si un autre onglet l'a fait avant
+  // nous (événement « storage »), on adopte le sien pour ne pas resservir le nôtre, périmé.
+  // À la déconnexion, le coffre est vidé : Supabase a révoqué le jeton, un Face ID échouerait.
+  var COFFRE_KEY = (IS_EXPRESS ? 'clt-biologin-x-' : 'clt-biologin-') + 'acct';
+  var COFFRE_CRED_KEY = (IS_EXPRESS ? 'clt-biologin-x-' : 'clt-biologin-') + 'cred';
+  function lireCoffre() {
+    try { var raw = localStorage.getItem(COFFRE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+  }
+  // Rend le coffre mis à jour, ou null s'il n'y avait rien à faire. Pure : n'écrit pas.
+  function coffreMisAJour(coffre, session) {
+    if (!coffre || !coffre.refresh || !session || !session.refresh_token) return null;
+    if (coffre.uid && session.user && session.user.id && coffre.uid !== session.user.id) return null; // un autre compte
+    if (coffre.refresh === session.refresh_token) return null;
+    var maj = {}; for (var k in coffre) if (Object.prototype.hasOwnProperty.call(coffre, k)) maj[k] = coffre[k];
+    maj.refresh = session.refresh_token;
+    return maj;
+  }
+  function synchroniserCoffre(session) {
+    var maj = coffreMisAJour(lireCoffre(), session);
+    if (!maj) return;
+    try { localStorage.setItem(COFFRE_KEY, JSON.stringify(maj)); } catch (e) {}
+  }
+  function viderCoffre() {
+    try { localStorage.removeItem(COFFRE_KEY); } catch (e) {}
+    try { localStorage.removeItem(COFFRE_CRED_KEY); } catch (e) {}
+  }
+  // Vrai si le jeton du coffre (écrit par un autre onglet) doit remplacer celui de cette session.
+  function doitAdopter(coffre, session) {
+    if (!coffre || !coffre.refresh || !session || !session.refresh_token) return false;
+    if (coffre.uid && session.user && session.user.id && coffre.uid !== session.user.id) return false;
+    return coffre.refresh !== session.refresh_token;
+  }
+  function brancherLeCoffre(client) {
+    if (!client || !client.auth || typeof client.auth.onAuthStateChange !== 'function') return;
+    client.auth.onAuthStateChange(function (evt, session) {
+      if (evt === 'SIGNED_OUT') { viderCoffre(); return; }
+      if ((evt === 'TOKEN_REFRESHED' || evt === 'SIGNED_IN') && session) synchroniserCoffre(session);
+    });
+    try {
+      window.addEventListener('storage', function (ev) {
+        if (ev.key !== COFFRE_KEY || !ev.newValue) return;
+        var coffre = null; try { coffre = JSON.parse(ev.newValue); } catch (e) { return; }
+        client.auth.getSession().then(function (res) {
+          var s = res && res.data && res.data.session;
+          if (!doitAdopter(coffre, s)) return;
+          return client.auth.setSession({ access_token: s.access_token, refresh_token: coffre.refresh });
+        }).catch(function () {});
+      });
+    } catch (e) {}
+  }
+  brancherLeCoffre((typeof supabaseClient !== 'undefined') ? supabaseClient : window.supabaseClient);
+
   // Peinture précoce du verrou (avant même de connaître l'utilisateur).
   showOverlaySoon();
 
@@ -521,6 +578,8 @@
     enroll: enroll,
     disable: disable,
     maybeOfferEnrollment: maybeOfferEnrollment,
-    injectSettingsControl: injectSettingsControl
+    injectSettingsControl: injectSettingsControl,
+    // Réservé aux bancs d'essai (tests/connexion-biometrique-sans-mot-de-passe.test.mjs).
+    _banc: { coffreMisAJour: coffreMisAJour, doitAdopter: doitAdopter, COFFRE_KEY: COFFRE_KEY }
   };
 })();

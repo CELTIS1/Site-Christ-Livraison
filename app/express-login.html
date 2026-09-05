@@ -17,9 +17,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260906phase1">
-  <script src="theme.js?v=20260906phase1"></script>
-  <script src="splash.js?v=20260906phase1"></script>
+  <link rel="stylesheet" href="style.css?v=20260906bio">
+  <script src="theme.js?v=20260906bio"></script>
+  <script src="splash.js?v=20260906bio"></script>
   <style>
     /* CLT Express utilise le violet comme couleur de marque, à la place du bleu marine du
        portail interne, pour bien montrer qu'il s'agit d'un produit distinct. */
@@ -190,9 +190,9 @@
     </div>
   </div>
 
-<script src="clt-common.js?v=20260906phase1"></script>
-<script src="express-config.js?v=20260906phase1"></script>
-<script src="biometric-login.js?v=20260906phase1"></script>
+<script src="clt-common.js?v=20260906bio"></script>
+<script src="express-config.js?v=20260906bio"></script>
+<script src="biometric-login.js?v=20260906bio"></script>
 <script>
   let regRole = 'client_express';
   let kycFile = null;
@@ -482,10 +482,24 @@
     const rawPhone = document.getElementById('login-phone').value.trim();
     const bioLabel = (profile && profile.full_name) ? profile.full_name : rawPhone;
     if (window.CLTBioLogin) {
-      try { await window.CLTBioLogin.maybeSetup(rawPhone, password, bioLabel); } catch (e) {}
+      // Depuis le 06/09/2026, le coffre ne reçoit plus le mot de passe : il lit la session.
+      try { await window.CLTBioLogin.maybeSetup(rawPhone, bioLabel); } catch (e) {}
     }
     redirectByRole(profile);
   });
+
+  // Connexion par Face ID / empreinte (biometric-login.js) : la session a été rétablie
+  // depuis le jeton du coffre, sans mot de passe. Le reste est le même chemin que la
+  // connexion manuelle — profil, statut du compte, redirection. Rend vrai si la page a
+  // pris le relais. (06/09/2026, feuille de route 1.2)
+  window.cltApresConnexionBiometrique = async function (session) {
+    if (!session || !session.user) return false;
+    const profile = await getExpressProfile(session.user.id);
+    const ok = await checkAccountStatus(profile);
+    if (!ok) { try { window.CLTBioLogin.clear(); } catch (e) {} return false; }
+    redirectByRole(profile);
+    return true;
+  };
 
   // ---------- MOT DE PASSE OUBLIÉ (réinitialisation à distance) ----------
   // Exactement le même parcours que sur le site principal (login.html), et

@@ -18,9 +18,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260906phase1">
-  <script src="theme.js?v=20260906phase1"></script>
-  <script src="splash.js?v=20260906phase1"></script>
+  <link rel="stylesheet" href="style.css?v=20260906bio">
+  <script src="theme.js?v=20260906bio"></script>
+  <script src="splash.js?v=20260906bio"></script>
   <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
        Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
        ne correspond pas. Si le CDN était compromis, le code étranger serait bloqué.
@@ -151,9 +151,9 @@
     </div>
   </div>
 
-<script src="clt-common.js?v=20260906phase1"></script>
-<script src="config.js?v=20260906phase1"></script>
-<script src="biometric-login.js?v=20260906phase1"></script>
+<script src="clt-common.js?v=20260906bio"></script>
+<script src="config.js?v=20260906bio"></script>
+<script src="biometric-login.js?v=20260906bio"></script>
 <script>
   function showTab(which){
     stopWaiting();
@@ -504,16 +504,29 @@
     if (!ok) return;
 
     // Connexion réussie : proposer (une seule fois, sur cet appareil) d'activer la
-    // connexion biométrique pour les prochaines fois. On mémorise le numéro TEL QU'IL A
-    // ÉTÉ SAISI (pour reproduire exactement une connexion valide) et le mot de passe,
-    // restitués uniquement après une vérification Face ID / empreinte réussie.
+    // connexion biométrique pour les prochaines fois. Le coffre garde le numéro (pour
+    // l'affichage) et le jeton de la session qui vient de s'ouvrir — jamais le mot de passe.
     const rawPhone = document.getElementById('login-phone').value.trim();
     const bioLabel = (profile && profile.full_name) ? profile.full_name : rawPhone;
     if (window.CLTBioLogin) {
-      try { await window.CLTBioLogin.maybeSetup(rawPhone, password, bioLabel); } catch (e) {}
+      // Depuis le 06/09/2026, le coffre ne reçoit plus le mot de passe : il lit la session.
+      try { await window.CLTBioLogin.maybeSetup(rawPhone, bioLabel); } catch (e) {}
     }
     redirectByRole(profile);
   });
+
+  // Connexion par Face ID / empreinte (biometric-login.js) : la session a été rétablie
+  // depuis le jeton du coffre, sans mot de passe. Le reste est le même chemin que la
+  // connexion manuelle — profil, statut du compte, redirection. Rend vrai si la page a
+  // pris le relais. (06/09/2026, feuille de route 1.2)
+  window.cltApresConnexionBiometrique = async function (session) {
+    if (!session || !session.user) return false;
+    const profile = await getProfile(session.user.id);
+    const ok = await checkAccountStatus(profile);
+    if (!ok) { try { window.CLTBioLogin.clear(); } catch (e) {} return false; }
+    redirectByRole(profile);
+    return true;
+  };
 
   // ---------- MOT DE PASSE OUBLIE / PREMIERE CONNEXION (réinitialisation à distance) ----------
   // Modèle : la personne demande une réinitialisation -> l'équipe APPROUVE
