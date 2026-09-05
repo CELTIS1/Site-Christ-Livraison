@@ -364,6 +364,13 @@
 .perf-autre-periode > summary::-webkit-details-marker{ display:none; }
 .perf-autre-periode > summary::after{ content:'▾'; font-size:11px; transition:transform .15s ease; }
 .perf-autre-periode[open] > summary::after{ transform:rotate(180deg); }
+/* 05/09/2026 — Cartes repliées par défaut (saisie photos, nouveaux comptes, historique) et aides « Comment lire ». */
+.eq-repli > summary{ display:flex; align-items:center; width:100%; min-height:44px; padding:0 14px; box-sizing:border-box; background:var(--grey-bg); border-radius:12px; font-weight:700; cursor:pointer; list-style:none; }
+.eq-repli > summary::-webkit-details-marker{ display:none; }
+.eq-repli[open] > summary{ margin-bottom:12px; }
+.eq-aide{ margin-top:8px; }
+.eq-aide > summary{ cursor:pointer; font-size:12px; color:var(--muted); font-weight:600; list-style:none; }
+.eq-aide > summary::-webkit-details-marker{ display:none; }
 #section-aujourdhui{ padding:12px 14px !important; }
 #section-aujourdhui .ess-entete{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:0 0 8px; }
 #section-aujourdhui .ess-entete h2{ margin:0; font-size:15px; }
@@ -385,10 +392,14 @@
 #section-aujourdhui .ess-tuile.est-vide{ color:var(--muted); border-style:dashed; background:transparent; }
 #section-aujourdhui .ess-tuile.est-ambre{ border-color:#E26313; color:#8a4b12; background:#fff8ef; }
 #section-aujourdhui .ess-tuile.est-rouge{ border-color:#D6534A; color:#8f2a23; background:#fff5f4; }
+/* 05/09/2026 — teinte verte pour « livrés aujourd'hui » ; les pastilles du groupe Aujourd'hui ne mènent nulle part (span sans data-aller). */
+#section-aujourdhui .ess-tuile.est-vert{ border-color:#39A56B; color:#1a7d3c; background:#e3f6ea; }
+#section-aujourdhui span.ess-tuile:not([data-aller]){ cursor:default; }
 html[data-theme="dark"] #section-aujourdhui .ess-tuile{ background:#1C2739; border-color:#2E3E54; color:#C6D5E6; }
 html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vide{ background:transparent; color:#7F91A8; }
 html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-ambre{ background:#2A2118; border-color:#B9652A; color:#F0B47E; }
 html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B1A19; border-color:#B5443B; color:#F0A29B; }
+html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#16261C; border-color:#2E7D4F; color:#8FD3A8; }
 @media(max-width:640px){
   #section-aujourdhui{ padding:10px 12px !important; }
   #section-aujourdhui .ess-groupes{ gap:8px; }
@@ -400,6 +411,11 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B
 <span class="ess-jour" id="ess-jour"></span>
 </div>
 <div class="ess-groupes">
+  <!-- 05/09/2026 — Celtis veut voir d'un coup d'œil le bilan du jour : reçus, livrés, échecs, en cours. Lecture seule. -->
+  <div class="ess-groupe">
+    <div class="ess-groupe-titre">Aujourd'hui</div>
+    <div class="ess-tuiles" id="aujourdhui-jour"><span class="ess-tuile est-vide">Chargement…</span></div>
+  </div>
   <div class="ess-groupe">
     <div class="ess-groupe-titre">À faire</div>
     <div class="ess-tuiles" id="aujourdhui-actions"><span class="ess-tuile est-vide">Chargement…</span></div>
@@ -462,7 +478,8 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B
 <span class="collapse-arrow">▶</span> 🗺️ Carte des livreurs et coursiers en direct
 </h2>
 <div id="carte-content" class="collapsible-content">
-<div class="page-sub" style="margin:0 0 12px;">Position des livreurs (application interne) et des coursiers CLT Express ayant une course en cours, en direct depuis leur téléphone. Un point disparaît automatiquement de la carte si aucune nouvelle position n'a été envoyée depuis plus de 3 minutes (déconnexion, tournée/course terminée...).</div>
+<!-- 05/09/2026 — Les longs textes explicatifs sont repliés (Celtis) : ils ne se lisent qu'une fois. -->
+<details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="page-sub" style="margin:6px 0 12px;">Position des livreurs (application interne) et des coursiers CLT Express ayant une course en cours, en direct depuis leur téléphone. Un point disparaît automatiquement de la carte si aucune nouvelle position n'a été envoyée depuis plus de 3 minutes (déconnexion, tournée/course terminée...).</div></details>
 <div id="carte-empty-state" class="empty-state">Aucun livreur ni coursier ne partage sa position pour le moment.</div>
 <div id="carte-livreurs" style="height:480px; border-radius:12px; overflow:hidden; display:none;"></div>
 </div>
@@ -497,9 +514,9 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B
      En base, ce compte porte le rôle "fournisseur" — c'est le même objet que le
      « client » affiché partout dans l'interface (voir roleDisplayLabel()). -->
 <div class="card" id="section-client">
-<h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'client-content')">
-<span class="collapse-arrow">▶</span> Créer un compte client
-</h2>
+<!-- 05/09/2026 — Replié par défaut (Celtis) : ce formulaire ne sert pas tous les jours et poussait l'essentiel hors de l'écran. -->
+<details class="eq-repli">
+<summary>➕ Nouveau compte client</summary>
 <div id="client-content" class="collapsible-content">
 <div id="add-client-msg"></div>
 <form id="form-add-client">
@@ -545,12 +562,13 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B
 <button type="submit" class="btn" id="btn-submit-client">Créer le compte client</button>
 </form>
 </div>
+</details>
 </div>
 
 <div class="card" id="section-livreur">
-<h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'livreur-content')">
-<span class="collapse-arrow">▶</span> Créer un compte livreur
-</h2>
+<!-- 05/09/2026 — Replié par défaut (Celtis) : ce formulaire ne sert pas tous les jours et poussait l'essentiel hors de l'écran. -->
+<details class="eq-repli">
+<summary>➕ Nouveau compte livreur</summary>
 <div id="livreur-content" class="collapsible-content">
 <div id="add-livreur-msg"></div>
 <form id="form-add-livreur">
@@ -574,6 +592,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B
 <button type="submit" class="btn" id="btn-submit-livreur">Créer le compte livreur</button>
 </form>
 </div>
+</details>
 </div>
 
 <!-- ============================================================================================
@@ -589,9 +608,9 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B
      formulaire. On ne quitte plus l'application.
      ============================================================================================ -->
 <div class="card" id="section-lot-colis">
-<h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'lot-colis-content')">
-<span class="collapse-arrow">▶</span> 📸 Saisir plusieurs colis à partir des photos
-</h2>
+<!-- 05/09/2026 — Replié par défaut (Celtis) : la carte, très haute, poussait la liste des colis hors de l'écran. -->
+<details class="eq-repli">
+<summary>📸 Saisir des colis à partir des photos</summary>
 <div id="lot-colis-content" class="collapsible-content">
 <div id="lot-msg"></div>
 
@@ -619,6 +638,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B
 <div id="lot-lignes"></div>
 <div id="lot-barre-wrap"></div>
 </div>
+</details>
 </div>
 
 <!-- Loupe plein écran : sur une étiquette manuscrite photographiée de travers, la miniature ne
@@ -708,13 +728,11 @@ quand vous reposez la tournée avec le vrai nombre.
 </div>
 </div>
 
-<div class="card" id="section-main">
-<div class="tabs">
-<div class="tab active" id="tab-colis" onclick="showMainTab('colis')">Tous les colis <span id="alert-badge" class="alert-badge hidden">0</span></div>
-<div class="tab" id="tab-journal" onclick="showMainTab('journal')">Journal de bord</div>
-<div class="tab" id="tab-rapports" onclick="showMainTab('rapports')">Rapports</div>
-<div class="tab" id="tab-compta" onclick="showMainTab('compta')">Comptabilité</div>
-</div>
+<!-- 05/09/2026 — L'ancienne carte #section-main et sa barre d'onglets interne (Tous les colis /
+     Journal / Rapports / Compta) sont supprimées : les panneaux sont déplacés dans les onglets du
+     haut par relocateEquipeSections. La pastille d'alerte reste ici, hors écran, le temps d'être
+     déplacée dans #alert-badge-slot (bouton d'onglet « Colis »). -->
+<span id="alert-badge" class="alert-badge hidden">0</span>
 
 <div id="panel-colis">
 <div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par n° de suivi, téléphone, description, destination ou client..."></div>
@@ -737,7 +755,7 @@ quand vous reposez la tournée avec le vrai nombre.
 <button type="button" id="btn-mode-lot-colis" class="btn btn-outline btn-sm btn-mode-lot" style="margin-left:auto;">☑️ Sélection multiple</button>
 </div>
 <div class="filters" id="filters"></div>
-<div id="alert-banner" class="alert-banner hidden"></div>
+<!-- 05/09/2026 — Le bandeau d'alerte (#alert-banner) est retiré : la pastille sur l'onglet Colis suffit. -->
 <div class="colis-list" id="colis-list">
 <div class="empty-state">Chargement...</div>
 </div>
@@ -824,18 +842,20 @@ quand vous reposez la tournée avec le vrai nombre.
 </div>
 </div>
 <!-- Historique des actions : réservé à l'administrateur (masqué par défaut, réaffiché si isAdmin). -->
+<!-- 05/09/2026 — Replié par défaut : long, rarement consulté, il alourdissait l'onglet Suivi. -->
 <div id="activity-log-section" class="hidden">
-<h3 class="panel-subtitle" style="margin-top:28px;">Historique des actions</h3>
+<details class="eq-repli" style="margin-top:28px;">
+<summary>Historique des actions (administrateur)</summary>
 <div class="colis-list" id="activity-log-list">
 <div class="empty-state">Chargement...</div>
 </div>
+</details>
 </div>
 </div>
 
 <div id="panel-rapports" class="hidden">
 <div class="tabs" style="margin-bottom:20px;">
 <div class="tab active" id="subtab-jour" onclick="showRapportSubTab('jour')">Vue par jour</div>
-<div class="tab" id="subtab-mois" onclick="showRapportSubTab('mois')">Vue par mois</div>
 <div class="tab" id="subtab-livreur" onclick="showRapportSubTab('livreur')">Par livreur</div>
 </div>
 <div id="rapport-jour">
@@ -851,13 +871,7 @@ quand vous reposez la tournée avec le vrai nombre.
 <h3 class="panel-subtitle" style="margin-top:26px;">Le détail de la journée</h3>
 <div id="rapport-jour-content"><div class="empty-state">Chargement...</div></div>
 </div>
-<div id="rapport-mois" class="hidden">
-<div class="field" style="max-width:260px;">
-<label>Mois</label>
-<select id="mois-select"></select>
-</div>
-<div id="rapport-mois-content"><div class="empty-state">Chargement...</div></div>
-</div>
+<!-- 05/09/2026 — « Vue par mois » retirée (fausse au-delà de 500 colis ; l'onglet Clients la remplace). -->
 <div id="rapport-livreur" class="hidden">
 <!-- UN JOUR À LA FOIS. (05/09/2026) Celtis : « je ne sais pas si ça comptabilise par mois ou
      depuis que le livreur travaille ; je voudrais que ça affiche uniquement pour la journée,
@@ -940,7 +954,7 @@ quand vous reposez la tournée avec le vrai nombre.
 </div>
 
 <h3 class="panel-subtitle" style="margin-top:28px;">🔒 Clôture de journée</h3>
-<div class="page-sub" style="margin-bottom:8px;">Fige un résumé complet du jour (recette, colis par statut, remises, écarts, argent non encore remis). Les totaux sont recalculés côté serveur au moment de la clôture. Une journée déjà clôturée ne peut être recalculée que par un administrateur.</div>
+<details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="page-sub" style="margin:6px 0 8px;">Fige un résumé complet du jour (recette, colis par statut, remises, écarts, argent non encore remis). Les totaux sont recalculés côté serveur au moment de la clôture. Une journée déjà clôturée ne peut être recalculée que par un administrateur.</div></details>
 <div class="field-row" style="align-items:flex-end;">
 <div class="field">
 <label>Jour à clôturer</label>
@@ -961,7 +975,7 @@ quand vous reposez la tournée avec le vrai nombre.
 </div>
 
 <h3 class="panel-subtitle" style="margin-top:28px;">📊 Export mensuel de la comptabilité</h3>
-<div class="page-sub" style="margin-bottom:8px;">Génère le rapport complet d'un mois : résumé (recette, colis par statut, argent non remis, remises, écarts, dépenses, solde), détail par jour, par livreur, par vendeuse, dépenses et détail colis par colis. Les montants sont calculés côté serveur (comptés sur le paiement).</div>
+<details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="page-sub" style="margin:6px 0 8px;">Génère le rapport complet d'un mois : résumé (recette, colis par statut, argent non remis, remises, écarts, dépenses, solde), détail par jour, par livreur, par vendeuse, dépenses et détail colis par colis. Les montants sont calculés côté serveur (comptés sur le paiement).</div></details>
 <div class="field-row" style="align-items:flex-end;">
 <div class="field">
 <label>Mois</label>
@@ -977,8 +991,6 @@ quand vous reposez la tournée avec le vrai nombre.
 </div>
 </div>
 <div id="export-mois-msg" style="margin:8px 0;"></div>
-</div>
-
 </div>
 
 <div id="admin-section" class="hidden">
@@ -1021,18 +1033,8 @@ quand vous reposez la tournée avec le vrai nombre.
 </div>
 </div>
 
-<div class="card" id="section-stats">
-<h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'stats-content')">
-<span class="collapse-arrow">▶</span> Statistiques du site
-</h2>
-<div id="stats-content" class="collapsible-content">
-<div class="stat-tiles" id="site-stats-tiles">
-<div class="stat-tile stat-tile-total"><div class="stat-tile-icon">📈</div><div class="stat-tile-value" id="stat-visits-total">—</div><div class="stat-tile-label">Visites au total</div></div>
-<div class="stat-tile"><div class="stat-tile-icon">📅</div><div class="stat-tile-value" id="stat-visits-today">—</div><div class="stat-tile-label">Aujourd'hui</div></div>
-<div class="stat-tile"><div class="stat-tile-icon">🗓️</div><div class="stat-tile-value" id="stat-visits-month">—</div><div class="stat-tile-label">Ce mois-ci</div></div>
-</div>
-</div>
-</div>
+<!-- 05/09/2026 — « Statistiques du site » (visites) retirées de cet écran : sans rapport avec le
+     travail de l'équipe, elles encombraient l'onglet Finances. -->
 
 <div class="card" id="section-express-courses">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'express-courses-content')">
@@ -1050,7 +1052,6 @@ quand vous reposez la tournée avec le vrai nombre.
 <div class="colis-list" id="express-courses-list">
 <div class="empty-state">Chargement...</div>
 </div>
-<button type="button" class="btn btn-outline btn-sm" id="btn-refresh-express" style="margin-top:16px;">🔄 Rafraîchir</button>
 </div>
 </div>
 
@@ -1066,7 +1067,6 @@ quand vous reposez la tournée avec le vrai nombre.
 <div class="colis-list" id="express-recharges-list" style="margin-top:16px;">
 <div class="empty-state">Chargement...</div>
 </div>
-<button type="button" class="btn btn-outline btn-sm" id="btn-refresh-recharges" style="margin-top:16px;">🔄 Rafraîchir</button>
 </div>
 </div>
 
@@ -3709,9 +3709,11 @@ function getAlertesVues(){
 function setAlertesVues(set){
   try { localStorage.setItem(ALERTES_VUES_KEY, JSON.stringify([...set])); } catch(e){}
 }
+// 05/09/2026 — Le bandeau #alert-banner est retiré du HTML : seule la pastille reste, et la
+// fonction doit tolérer l'absence des deux éléments.
 function renderAlertIndicator(){
   const badge = document.getElementById('alert-badge');
-  const banner = document.getElementById('alert-banner');
+  if (!badge) return;
   const aRisque = allColis.filter(c => c.statut === 'non_livre' || c.statut === 'retour');
   const idsRisque = new Set(aRisque.map(c => c.id));
   // On ne conserve « vus » que les colis encore à risque : la liste ne gonfle pas indéfiniment,
@@ -3720,23 +3722,9 @@ function renderAlertIndicator(){
   const vuesFiltrees = new Set([...vues].filter(id => idsRisque.has(id)));
   if (vuesFiltrees.size !== vues.size) setAlertesVues(vuesFiltrees);
   const nonVus = aRisque.filter(c => !vuesFiltrees.has(c.id));
-  if (!nonVus.length) {
-    badge.classList.add('hidden');
-    banner.classList.add('hidden');
-    banner.onclick = null;
-    return;
-  }
+  if (!nonVus.length) { badge.classList.add('hidden'); return; }
   badge.textContent = nonVus.length;
   badge.classList.remove('hidden');
-  banner.classList.remove('hidden');
-  banner.style.cursor = 'pointer';
-  cltPoserHTML(banner, `⚠️ ${nonVus.length} colis à examiner (non livré ou retour). <span style="text-decoration:underline; white-space:nowrap;">Toucher une fois examinés ✓</span>`);
-  banner.onclick = () => {
-    const v = getAlertesVues();
-    aRisque.forEach(c => v.add(c.id));
-    setAlertesVues(v);
-    renderAlertIndicator();
-  };
 }
 
 // Bouton d'action groupée « Assigner collecte » : affiché dans l'en-tête de chaque groupe
@@ -3801,6 +3789,15 @@ const pastille = (valeur, label, aller, teinte) => {
 };
 window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id) };
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
+// 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient de
+// config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
+const jourEvt = (c, st) => (typeof jourEvenementColis === 'function') ? jourEvenementColis(c, st) : dayKey(c[st + '_at']);
+const tuile = (n, label, teinte) => `<span class="ess-tuile ${n ? 'est-' + teinte : 'est-vide'}"><span class="n">${n}</span><span>${label}</span></span>`;
+set('aujourdhui-jour',
+  tuile(colis.filter(c => dayKey(c.created_at) === aujourdhui).length, 'reçus aujourd\'hui', 'ambre') +
+  tuile(colis.filter(c => jourEvt(c, 'livre') === aujourdhui).length, 'livrés aujourd\'hui', 'vert') +
+  tuile(colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && jourEvt(c, c.statut) === aujourdhui).length, 'échecs aujourd\'hui', 'rouge') +
+  tuile(colis.filter(c => c.statut === 'recupere' || c.statut === 'en_livraison').length, 'encore en cours', 'ambre'));
 set('aujourdhui-actions',
   pastille(cat.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
   pastille(cat.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
@@ -4403,7 +4400,6 @@ renderColisQuiDorment();
 // rappeler à chaque redessin et toutes les vingt-cinq secondes ferait payer quatre lectures à
 // tout le monde, y compris à qui n'a jamais ouvert cet onglet. Elle se calcule à l'ouverture de
 // l'onglet et au changement de date, comme le rapport par livreur.
-populateMoisSelect();
 renderCompta();
 renderAujourdhui();
 }
@@ -5694,7 +5690,11 @@ renderCorrectionsBody();
 // technique, illisible pour la personne qui lit ce tableau à 19 h.
 function corrNomActeur(id){
 if (!id) return '—';
-const compte = (allAccounts || []).find(x => x.id === id);
+// 05/09/2026 — allAccounts n'est chargé que pour l'admin : pour l'équipe, on cherche aussi
+// dans les livreurs puis les clientes, sinon la colonne restait vide.
+const compte = (allAccounts || []).find(x => x.id === id)
+  || (typeof livreurs !== 'undefined' ? (livreurs || []).find(x => x.id === id) : null)
+  || (typeof fournisseurs !== 'undefined' ? (fournisseurs || []).find(x => x.id === id) : null);
 if (compte) return compte.full_name || compte.phone || '—';
 return '—';
 }
@@ -5756,13 +5756,13 @@ ${piedTotalHTML([
 ])}
 </table>
 </div>
-<div class="recap-bilan-note">
+<details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="recap-bilan-note">
 Les deux poches sont comptées séparément, et c'est voulu : l'<strong>article</strong> appartient à la cliente,
 la <strong>livraison</strong> est la recette de CLT. Additionner les deux écarts donnerait
 ${signeTotal(total.ecartTotal)}, un chiffre qui ne veut rien dire pour personne.
 Ces corrections sont <strong>déjà enregistrées</strong> — rien n'est à approuver ici. Un écart qui
 vous surprend se règle en appelant la personne qui l'a écrit, pas en le défaisant en silence.
-</div>`);
+</div></details>`);
 }
 
 /* ============================================================================================
@@ -6508,10 +6508,8 @@ ${piedTotalHTML(relevePiedCellules(r))}
      avec le PDF, l'Excel et le Word chez la vendeuse, celle-ci restait à l'écran de l'équipe.
      Deux textes pour une seule règle, c'est un des deux qu'on oublie de corriger — et comme il
      s'agit d'argent, l'écart se découvre au téléphone, face à quelqu'un qui a le papier. -->
-<div class="recap-bilan-note">
-${escapeHTML(RELEVE_NOTE)}
-${releveDetailRetenues(r) ? `<div style="margin-top:6px; font-weight:600; color:#8a4b12;">${escapeHTML(releveDetailRetenues(r))}</div>` : ''}
-</div>
+${releveDetailRetenues(r) ? `<div class="recap-bilan-note" style="font-weight:600; color:#8a4b12;">${escapeHTML(releveDetailRetenues(r))}</div>` : ''}
+<details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="recap-bilan-note">${escapeHTML(RELEVE_NOTE)}</div></details>
 ${releveBarreHTML()}`;
 }
 
@@ -6606,6 +6604,13 @@ if (back) back.addEventListener('click', () => { recaplSelectedLivreur = null; r
 // parleraient pas des mêmes colis.
 const ecran = document.getElementById('recapl-ecran');
 if (ecran) ecran.addEventListener('click', () => ouvrirFicheEcran('livreur', recaplSelectedLivreur, recaplGetDate()));
+// 05/09/2026 — Même fenêtre de remise que la caisse par livreur, mêmes colis (ceux du jour).
+const remise = document.getElementById('recapl-remise');
+if (remise) remise.addEventListener('click', () => {
+const ligne = caisseParLivreur(colisJour.filter(c => c && c.livreur_id === recaplSelectedLivreur))[0];
+if (!ligne || !(ligne.idsAremettre.length || ligne.idsFraisARembourser.length)) return;
+showRemiseModal(recaplSelectedLivreur, ligne.reste, ligne.idsAremettre, ligne.idsAremettre.length, ligne.idsFraisARembourser);
+});
 return;
 }
 
@@ -6667,10 +6672,10 @@ ${lignes.length ? `<div class="recap-client-list">${cards}</div>` : `<div class=
 <span><strong>${totalLivres} / ${totalAssignes}</strong> livré${totalAssignes > 1 ? 's' : ''}</span>
 <span class="${totalReste > 0 ? 'recapl-reste-du' : 'recapl-reste-solde'}">${totalReste > 0 ? formatMontant(totalReste) + ' à remettre' : (totalReste < 0 ? 'CLT doit ' + formatMontant(-totalReste) : '✓ tout est remis')}</span>
 </div>
-<div class="recap-bilan-note">
+<details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="recap-bilan-note">
 La ligne TOTAL porte sur <strong>tous</strong> les livreurs de la journée, y compris ceux que la recherche masque en ce moment.
 Le montant « à remettre » sort du même calcul que la <strong>Caisse par livreur</strong> de la comptabilité : les deux écrans ne peuvent pas donner deux sommes différentes.
-</div>`)) return;
+</div></details>`)) return;
 
 const input = document.getElementById('recapl-search');
 if (input) input.addEventListener('input', () => {
@@ -6714,6 +6719,9 @@ const money = caisseParLivreur(list)[0] || { reste: 0, remis: 0, total: 0 };
 const enMain = (c) => (c.statut === 'livre')
 ? (Number(montantEnMainDuLivreur(c)) || 0)
 : -(Number(fraisExpeditionARembourser(c)) || 0);
+// 05/09/2026 — Depuis le bilan, on doit pouvoir appeler le livreur et enregistrer sa remise sans
+// repasser par Finances › Caisse par livreur (Celtis).
+const tel = ((typeof livreurs !== 'undefined' ? livreurs : []).find(l => l.id === lid) || {}).phone || '';
 
 const rows = list.map(c => {
 const m = enMain(c);
@@ -6736,6 +6744,8 @@ return `
 <button type="button" class="btn btn-outline btn-sm" id="recapl-back">← Livreurs</button>
 <div class="recap-bilan-title">🛵 ${collecteLivreurLabel(lid) || 'Livreur inconnu'}</div>
 <button type="button" class="btn btn-outline btn-sm" id="recapl-ecran" title="Voir sa journée telle qu'il la voit sur son téléphone">👁 Son écran</button>
+${tel ? `<a class="btn btn-outline btn-sm" href="tel:${escapeHTML(tel)}">📞 Appeler</a>` : ''}
+${money.reste > 0 ? `<button type="button" class="btn btn-primary btn-sm" id="recapl-remise">💵 Enregistrer la remise</button>` : ''}
 </div>
 <div class="recap-bilan-sub">${recapDayLabel(recaplGetDate())} · <strong>${list.length}</strong> colis confié${list.length > 1 ? 's' : ''} · <strong>${t.nbLivres}</strong> livré${t.nbLivres > 1 ? 's' : ''}${nonLivres ? ` · <strong>${nonLivres}</strong> encore en cours` : ' · tout est livré'}</div>
 <div class="recap-day-money">
@@ -6758,11 +6768,11 @@ ${piedTotalHTML([
 ])}
 </table>
 </div>
-<div class="recap-bilan-note">
+<details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="recap-bilan-note">
 « En main » est ce que le livreur détient réellement pour ce colis : l'article et la livraison encaissés, moins l'avance de gare qu'il a payée de sa poche et qu'on ne lui a pas encore remboursée.
 Sur un colis <strong>pas encore livré</strong>, seule cette avance apparaît, en négatif — rien n'a été encaissé, et on ne solde pas un colis qui n'est pas arrivé.
 Le total de cette colonne est celui de la <strong>Caisse par livreur</strong> en comptabilité, au franc près.
-</div>`;
+</div></details>`;
 }
 
 
@@ -7445,7 +7455,7 @@ ${couverture ? `<div class="page-sub" style="margin-top:10px;">${escapeHTML(couv
 <tbody>${actifs.map(l => ligneHTML(l, collecteLivreurLabel(l.livreur_id) || 'Livreur retiré de la liste', false)).join('')}${ligneHTML(t, 'TOTAL', true)}</tbody>
 </table>
 </div>
-<div class="page-sub" style="margin-top:12px; line-height:1.6;">
+<details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="page-sub" style="margin-top:8px; line-height:1.6;">
 <div><strong>Chaque colonne compte ce qui s'est passé CE JOUR-LÀ</strong>, pas les colis enregistrés ce jour-là. Un colis enregistré lundi et livré mercredi est une livraison de mercredi.</div>
 <div style="margin-top:4px;"><strong>Reçus</strong> : colis passés dans les mains du livreur ce jour-là. <strong>Livrés</strong>, <strong>Non livrés</strong>, <strong>Retours</strong> : ce qu'il en a fait ce jour-là.</div>
 <div style="margin-top:4px;"><strong>Encore en cours</strong> : parmi les colis reçus ce jour-là, ceux dont le sort n'est toujours pas fixé aujourd'hui. Sur la journée d'aujourd'hui, c'est ce qui reste à faire d'ici ce soir.</div>
@@ -7453,7 +7463,7 @@ ${couverture ? `<div class="page-sub" style="margin-top:10px;">${escapeHTML(couv
 <div style="margin-top:4px;">La journée est celle d'Abidjan, où que soit consulté cet écran.</div>
 ${couverture ? `<div style="margin-top:4px;">${escapeHTML(couverture)}</div>` : ''}
 ${inactifs.length ? `<div style="margin-top:4px;">Sans aucun colis ce jour-là : ${escapeHTML(inactifs.join(', '))}.</div>` : ''}
-</div>
+</div></details>
 `);
 
 // Le détail, sous le tableau : les fiches des colis qui ont bougé ce jour-là. Même journée,
@@ -7466,133 +7476,9 @@ cltPoserHTML(box, !colis.length
 .map(colisMiniHTML).join('')}</div>`);
 }
 
-function monthKey(iso){
-if (!iso) return '';
-return iso.slice(0, 7);
-}
-
-function monthLabel(key){
-if (!key) return '';
-const [y, m] = key.split('-');
-const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
-return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-}
-
-function populateMoisSelect(){
-const select = document.getElementById('mois-select');
-if (!select) return;
-const keys = Array.from(new Set(allColis.map(c => monthKey(c.created_at)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
-const previousValue = select.value;
-// Reconstruire cette liste ne servait à rien 99 fois sur 100 (les mois disponibles ne changent
-// pas toutes les 25 secondes) et suffisait à faire disparaître le panneau d'une liste déroulante
-// ouverte juste à côté.
-if (cltPoserHTML(select, keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join(''))) {
-if (keys.includes(previousValue)) {
-select.value = previousValue;
-} else if (keys.length) {
-select.value = keys[0];
-}
-}
-renderRapportMois();
-}
-
-function renderRapportMois(){
-const box = document.getElementById('rapport-mois-content');
-const select = document.getElementById('mois-select');
-if (!box || !select) return;
-const selected = select.value;
-if (!selected) {
-cltPoserHTML(box, `<div class="empty-state">Aucun colis pour le moment.</div>`);
-return;
-}
-const colisDuMois = allColis.filter(c => monthKey(c.created_at) === selected);
-if (!colisDuMois.length) {
-cltPoserHTML(box, `<div class="empty-state">Aucun colis pour ce mois.</div>`);
-return;
-}
-
-const parFournisseur = {};
-colisDuMois.forEach(c => {
-const key = c.fournisseur_id || 'inconnu';
-if (!parFournisseur[key]) parFournisseur[key] = { total: 0, statuts: {} };
-parFournisseur[key].total++;
-parFournisseur[key].statuts[c.statut] = (parFournisseur[key].statuts[c.statut] || 0) + 1;
-});
-
-const rows = Object.keys(parFournisseur)
-.map(id => ({ id, ...parFournisseur[id] }))
-.sort((a, b) => b.total - a.total);
-
-const statutKeys = Object.keys(STATUTS);
-const headerCols = statutKeys.map(k => `<th>${STATUTS[k].label}</th>`).join('');
-const bodyRows = rows.map(r => {
-const cols = statutKeys.map(k => `<td data-label="${STATUTS[k].label}">${r.statuts[k] || 0}</td>`).join('');
-return `<tr><td data-label="Client">${fournisseurLabel(r.id)}</td>${cols}<td data-label="Total"><strong>${r.total}</strong></td></tr>`;
-}).join('');
-
-// Ce tableau se parcourt latéralement au doigt : le réécrire à l'identique le ramenait à gauche.
-cltPoserHTML(box, `
-<div class="page-sub" style="margin-bottom:14px;">${colisDuMois.length} colis au total pour ${monthLabel(selected)}.</div>
-<div class="recap-table-wrap">
-<table class="recap-table recap-table-cards">
-<thead><tr><th>Client</th>${headerCols}<th>Total</th></tr></thead>
-<tbody>${bodyRows}</tbody>
-</table>
-</div>
-`);
-}
-
-/* ============================================================================================
-   RAPPORT « PAR LIVREUR »
-
-   Ce tableau répond à : qui a livré combien, en combien de temps, avec quel taux d'échec.
-   Tous les calculs sont dans config.js (statistiquesParLivreur & co.) et n'ont besoin d'aucun
-   accès au navigateur — c'est ce qui permet de les vérifier automatiquement à chaque publication.
-   Ici, on ne fait que choisir la période, appeler ces calculs, et habiller le résultat.
-
-   Le tableau ne classe pas les gens : il montre des chiffres, avec la ligne « Ensemble » juste
-   en dessous pour donner l'échelle. Un taux de 82 % ne veut rien dire tant qu'on ne sait pas si
-   la maison tourne à 95 % ou à 80 %.
-   ============================================================================================ */
-
-// Comme pour la comptabilité : dès qu'une période est choisie, on interroge la base plutôt que de
-// se contenter de `allColis` (qui ne contient que la première page tant qu'on n'a pas cliqué sur
-// « Charger plus »). Sinon un rapport « depuis le début » afficherait un mois d'activité.
-async function perfColisPeriode(){
-const debut = document.getElementById('perf-date-debut')?.value || '';
-const fin = document.getElementById('perf-date-fin')?.value || '';
-if (!debut && !fin) {
-// « Depuis le début » : on va vraiment chercher tout l'historique.
-const { data, error } = await supabaseClient.from('colis').select('*').order('created_at', { ascending: false });
-if (error) { console.error('Rapport par livreur :', error); return null; }
-return data || [];
-}
-let query = supabaseClient.from('colis').select('*').order('created_at', { ascending: false });
-if (debut) query = query.gte('created_at', debut + 'T00:00:00');
-if (fin) query = query.lte('created_at', fin + 'T23:59:59');
-const { data, error } = await query;
-if (error) { console.error('Rapport par livreur :', error); return null; }
-return data || [];
-}
-
-function perfPeriodeTexte(){
-const debut = document.getElementById('perf-date-debut')?.value || '';
-const fin = document.getElementById('perf-date-fin')?.value || '';
-const jour = (v) => new Date(v + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-if (debut && fin) return debut === fin ? ('Le ' + jour(debut) + ' — colis enregistrés ce jour-là') : ('Du ' + jour(debut) + ' au ' + jour(fin));
-if (debut) return 'À partir du ' + jour(debut);
-if (fin) return "Jusqu'au " + jour(fin);
-return 'Depuis le début';
-}
-
-// Une cellule de chiffre qui vaut zéro est affichée en gris pâle : sur une ligne de dix nombres,
-// l'œil doit accrocher ce qui existe, pas ce qui est vide.
-function perfCell(label, valeur, options){
-const o = options || {};
-const vide = (valeur === 0 || valeur === '—');
-const style = vide ? ' style="color:var(--muted);"' : (o.style ? ' style="' + o.style + '"' : '');
-return `<td data-label="${label}"${style}>${o.fort && !vide ? '<strong>' + valeur + '</strong>' : valeur}</td>`;
-}
+// 05/09/2026 — « Vue par mois » (monthKey, monthLabel, populateMoisSelect, renderRapportMois)
+// supprimée : elle comptait sur allColis, tronqué à 500 colis, donc faux au-delà ; l'onglet
+// Clients la remplace.
 
 async function renderRapportLivreur(){
 const box = document.getElementById('rapport-livreur-content');
@@ -7657,13 +7543,13 @@ cltPoserHTML(box, `
 <tbody>${corps}${ligne(totaux, 'Ensemble', true)}</tbody>
 </table>
 </div>
-<div class="page-sub" style="margin-top:12px; line-height:1.6;">
+<details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="page-sub" style="margin-top:8px; line-height:1.6;">
 <div><strong>Taux de réussite</strong> : colis livrés rapportés aux colis dont le sort est fixé (livrés, non livrés, retours). Un colis encore en route n'est compté nulle part — il n'est ni une réussite ni un échec.</div>
 <div style="margin-top:4px;"><strong>Du premier coup</strong> : part des colis livrés sans aucun passage infructueux enregistré.</div>
 <div style="margin-top:4px;"><strong>Délai habituel</strong> : temps écoulé entre l'enregistrement du colis et sa remise, pour le colis du milieu (la moitié plus vite, la moitié moins vite). Ce délai inclut l'attente au dépôt avant qu'un livreur ne prenne le colis — ce n'est donc pas à lui seul un jugement sur le livreur.</div>
 <div style="margin-top:4px;">${escapeHTML(couvertureMesureTexte(avecActivite))}</div>
 ${inactifs.length ? `<div style="margin-top:4px;">Sans aucun colis sur cette période : ${inactifs.join(', ')}.</div>` : ''}
-</div>
+</div></details>
 `);
 }
 
@@ -8744,21 +8630,17 @@ setMsg((e && e.message) ? e.message : 'Erreur lors de la génération du fichier
 });
 })();
 
+// 05/09/2026 — L'ancienne barre interne (#section-main, tab-colis…) est retirée du DOM par
+// relocateEquipeSections : les 4 panneaux vivent dans les onglets Colis/Suivi/Finances et sont
+// toujours visibles. Cette fonction ne doit donc plus toucher aux onglets internes ni jamais
+// planter (elle est encore appelée depuis d'anciens chemins) : elle s'assure seulement que les
+// panneaux sont affichés et réajuste les tableaux « sticky ».
 function showMainTab(which){
-document.getElementById('tab-colis').classList.toggle('active', which === 'colis');
-document.getElementById('tab-journal').classList.toggle('active', which === 'journal');
-document.getElementById('tab-rapports').classList.toggle('active', which === 'rapports');
-document.getElementById('tab-compta').classList.toggle('active', which === 'compta');
-document.getElementById('panel-colis').classList.toggle('hidden', which !== 'colis');
-document.getElementById('panel-journal').classList.toggle('hidden', which !== 'journal');
-document.getElementById('panel-rapports').classList.toggle('hidden', which !== 'rapports');
-document.getElementById('panel-compta').classList.toggle('hidden', which !== 'compta');
-if (which === 'journal' || which === 'compta'){
-const panel = document.getElementById(which === 'journal' ? 'panel-journal' : 'panel-compta');
-requestAnimationFrame(() => forceStickyReflow(panel));
-}
-syncBottomNav(which);
-try { localStorage.setItem('clt_equipe_tab', which); } catch(e){}
+['panel-colis','panel-journal','panel-rapports','panel-compta'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+const panel = document.getElementById(which === 'journal' ? 'panel-journal' : which === 'compta' ? 'panel-compta' : which === 'rapports' ? 'panel-rapports' : 'panel-colis');
+if (panel && typeof forceStickyReflow === 'function') requestAnimationFrame(() => { try { forceStickyReflow(panel); } catch(e){} });
+// La barre du bas ne connaît que les onglets du haut : on traduit l'ancien nom de panneau.
+if (typeof syncBottomNav === 'function') syncBottomNav(which === 'journal' ? 'suivi' : (which === 'rapports' || which === 'compta') ? 'finances' : 'colis');
 }
 
 // Garde la barre du bas (mobile) synchronisée avec l'onglet actif, quelle que soit
@@ -8771,10 +8653,8 @@ bar.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset
 
 function showRapportSubTab(which){
 document.getElementById('subtab-jour').classList.toggle('active', which === 'jour');
-document.getElementById('subtab-mois').classList.toggle('active', which === 'mois');
 document.getElementById('subtab-livreur').classList.toggle('active', which === 'livreur');
 document.getElementById('rapport-jour').classList.toggle('hidden', which !== 'jour');
-document.getElementById('rapport-mois').classList.toggle('hidden', which !== 'mois');
 document.getElementById('rapport-livreur').classList.toggle('hidden', which !== 'livreur');
 // Ces deux rapports interrogent la base : on ne les calcule qu'à l'ouverture de leur onglet,
 // et pas au chargement de la page — sinon chaque visite paierait une requête que personne
@@ -9155,38 +9035,8 @@ const e = document.getElementById('stat-online-equipe');
 if (e) e.textContent = String(counts.equipe);
 }
 
-// ---------- Statistiques du site public (nombre de visites) ----------
-// Lit la table "site_visits" (alimentée par index.html à chaque visite du site public) pour
-// afficher le nombre total de visites, celles d'aujourd'hui et celles du mois en cours.
-// Réservé à l'administrateur (section-stats est à l'intérieur de #admin-section).
-async function loadSiteStats(){
-const totalEl = document.getElementById('stat-visits-total');
-const todayEl = document.getElementById('stat-visits-today');
-const monthEl = document.getElementById('stat-visits-month');
-if (!totalEl) return;
-
-const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
-const startMonth = new Date(startToday.getFullYear(), startToday.getMonth(), 1);
-
-try {
-const [totalRes, todayRes, monthRes] = await Promise.all([
-supabaseClient.from('site_visits').select('id', { count: 'exact', head: true }),
-supabaseClient.from('site_visits').select('id', { count: 'exact', head: true }).gte('visited_at', startToday.toISOString()),
-supabaseClient.from('site_visits').select('id', { count: 'exact', head: true }).gte('visited_at', startMonth.toISOString()),
-]);
-if (totalRes.error) throw totalRes.error;
-totalEl.textContent = String(totalRes.count ?? 0);
-todayEl.textContent = String(todayRes.count ?? 0);
-monthEl.textContent = String(monthRes.count ?? 0);
-} catch (err) {
-// La table "site_visits" n'existe peut-être pas encore (script SQL pas encore exécuté) :
-// on l'indique clairement plutôt que de laisser un tiret silencieux.
-console.error('Erreur chargement statistiques de visites:', err);
-totalEl.textContent = '—';
-todayEl.textContent = '—';
-monthEl.textContent = '—';
-}
-}
+// 05/09/2026 — loadSiteStats (visites du site public) retirée : la section « Statistiques du site »
+// n'est plus sur cet écran.
 
 // Cette page (equipe.html) est partagée par deux rôles (administrateur et équipe interne).
 // On y affiche par défaut l'identité « équipe » (icône bleue), et on la remplace ici par
@@ -9360,7 +9210,6 @@ renderExpressCourses();
 async function initExpressCourses() {
 await loadExpressCourses();
 renderExpressStatusFilters();
-document.getElementById('btn-refresh-express')?.addEventListener('click', loadExpressCourses);
 }
 
 // ---------- CLT Express — Recharges coursiers (validation) ----------
@@ -9459,7 +9308,6 @@ await loadExpressRecharges();
 
 async function initExpressRecharges() {
 await loadExpressRecharges();
-document.getElementById('btn-refresh-recharges')?.addEventListener('click', loadExpressRecharges);
 trackChannel(supabaseClient
 .channel('express-recharges-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'express_recharges' }, () => { loadExpressRecharges(); })
@@ -9665,20 +9513,12 @@ document.getElementById('lien-gestion')?.classList.remove('hidden');
 document.getElementById('admin-section').classList.remove('hidden');
 document.getElementById('activity-log-section')?.classList.remove('hidden');
 // Refonte par onglets : réaffiche les sections et l'onglet Express réservés à l'administrateur.
-['section-stats','section-gerer-equipe','section-tous-comptes',
+['section-gerer-equipe','section-tous-comptes',
  'section-express-courses','section-express-recharges',
  'eqtab-btn-express','bottomnav-express'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
 renderAccountFilters();
 await loadAllAccounts();
-await loadSiteStats();
-
-// Mises à jour en temps réel du nombre de visites du site public
-trackChannel(supabaseClient
-.channel('site-visits-equipe')
-.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'site_visits' }, () => {
-loadSiteStats();
-})
-.subscribe());
+// 05/09/2026 — Statistiques de visites et leur canal temps réel retirés de cet écran.
 }
 
 // Accès délégués au module Gestion : afficher le lien pour les membres autorisés (RH / Comptable),
@@ -9687,7 +9527,6 @@ if (!isAdmin && (profile.acces_paie === true || profile.acces_compta === true)) 
 document.getElementById('lien-gestion')?.classList.remove('hidden');
 }
 
-document.getElementById('mois-select').addEventListener('change', renderRapportMois);
 // Recherche : on attend que la frappe se calme avant de redessiner. Taper « KOUAME » c'est six
 // frappes, donc six listes redessinées pour rien alors que seule la dernière compte — et sur un
 // téléphone modeste ça se sent, le champ devient poisseux. 220 ms, c'est plus court qu'une pause
@@ -9727,6 +9566,9 @@ renderColis();
 document.getElementById('compta-fournisseur').addEventListener('change', renderCompta);
 document.getElementById('compta-date-debut').addEventListener('change', renderCompta);
 document.getElementById('compta-date-fin').addEventListener('change', renderCompta);
+// 05/09/2026 — La comptabilité s'ouvre sur aujourd'hui (Celtis) plutôt que sur « toutes les
+// dates », qui additionnait tout l'historique et noyait la journée.
+{ const ajd = todayLocalISODate(); ['compta-date-debut','compta-date-fin'].forEach(id => { const el = document.getElementById(id); if (el && !el.value) el.value = ajd; }); }
 
 renderFilters();
 await loadPending();
@@ -9756,8 +9598,8 @@ cltFocusColisFromUrl({ onMiss: () => {
 
 // L'historique des actions est réservé à l'administrateur.
 if (isAdmin) await loadActivityLog();
-await initExpressCourses();
-await initExpressRecharges();
+// 05/09/2026 — Express est réservé à l'admin : inutile d'interroger la base pour l'équipe.
+if (isAdmin) { await initExpressCourses(); await initExpressRecharges(); }
 initLotColis();
 
 // Mises à jour en temps réel sur tous les colis. La notification « Nouveau colis » est gérée
@@ -9799,8 +9641,9 @@ loadActivityLog();
 .subscribe());
 }
 
-// Mises à jour en temps réel sur les courses CLT Express
-trackChannel(supabaseClient
+// Mises à jour en temps réel sur les courses CLT Express (admin seulement, 05/09/2026 : la
+// section n'existe que pour lui).
+if (isAdmin) trackChannel(supabaseClient
 .channel('express-courses-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'express_courses' }, () => {
 loadExpressCourses();
@@ -10011,6 +9854,8 @@ init();
     if (key === 'suivi'){
       if (window.livreurMap) setTimeout(() => { try { window.livreurMap.invalidateSize(); } catch(e){} }, 60);
       if (typeof forceStickyReflow === 'function') forceStickyReflow(document.getElementById('panel-journal'));
+      // 05/09/2026 — « Corrections de montants » n'était jamais chargée sans clic sur son titre.
+      if (typeof loadCorrectionsMontants === 'function') loadCorrectionsMontants();
     }
     // La programmation interroge la base : on ne la charge qu'à l'ouverture de son onglet, et
     // on la recharge à chaque retour. Une tournée décidée depuis un autre poste doit apparaître
@@ -10019,9 +9864,13 @@ init();
     // Le tableau de bord des clientes lit la base à l'ouverture (et à chaque retour) : la liste
     // de l'onglet Colis n'en garde qu'une page, lui regarde deux périodes entières.
     if (key === 'clients' && window.CLTClients) CLTClients.rafraichir();
-    if (key === 'finances' && typeof forceStickyReflow === 'function'){
-      forceStickyReflow(document.getElementById('panel-rapports'));
-      forceStickyReflow(document.getElementById('panel-compta'));
+    if (key === 'finances'){
+      // 05/09/2026 — « Vue par jour » restait sur « Chargement… » : on la calcule à l'ouverture.
+      if (typeof showRapportSubTab === 'function') showRapportSubTab('jour');
+      if (typeof forceStickyReflow === 'function'){
+        forceStickyReflow(document.getElementById('panel-rapports'));
+        forceStickyReflow(document.getElementById('panel-compta'));
+      }
     }
     try { localStorage.setItem('clt_equipe_tab_v2', key); } catch(e){}
   }
@@ -10059,17 +9908,18 @@ init();
     put('eqpanel-clients', byId('section-clients'));
     if (window.CLTClients) CLTClients.init();
 
-    // 💰 Finances : rapports + comptabilité + statistiques (stats = admin)
+    // 💰 Finances : rapports + comptabilité (les statistiques de visites ont été retirées le 05/09/2026)
     put('eqpanel-finances', wrapInCard(byId('panel-rapports')));
     put('eqpanel-finances', wrapInCard(byId('panel-compta')));
-    put('eqpanel-finances', byId('section-stats'));
 
     // 👥 Comptes : créer client + créer livreur + comptes en attente + réinitialisations
     //             + (admin) équipe & tous les comptes
-    put('eqpanel-comptes', byId('section-client'));
-    put('eqpanel-comptes', byId('section-livreur'));
+    // 05/09/2026 — Ce qui attend une décision (validations, réinitialisations) passe en tête ;
+    // les formulaires de création, repliés, viennent ensuite.
     put('eqpanel-comptes', byId('section-pending'));
     put('eqpanel-comptes', byId('section-reset'));
+    put('eqpanel-comptes', byId('section-client'));
+    put('eqpanel-comptes', byId('section-livreur'));
     put('eqpanel-comptes', byId('section-gerer-equipe'));
     put('eqpanel-comptes', byId('section-tous-comptes'));
 
@@ -10083,7 +9933,7 @@ init();
     ['panel-journal','panel-rapports','panel-compta'].forEach(id => byId(id)?.classList.remove('hidden'));
 
     // Masque par défaut les éléments réservés à l'admin ; init() les réaffiche si l'utilisateur est admin.
-    ['section-stats','section-gerer-equipe','section-tous-comptes',
+    ['section-gerer-equipe','section-tous-comptes',
      'section-express-courses','section-express-recharges',
      'eqtab-btn-express','bottomnav-express'].forEach(id => byId(id)?.classList.add('hidden'));
 

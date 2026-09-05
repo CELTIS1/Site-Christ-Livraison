@@ -704,8 +704,10 @@ titre('L\'onglet Finance du livreur');
   // -- Le nom, aux trois endroits où il s'affiche ------------------------------------------
   verifier('le troisième onglet du bandeau s\'appelle Finance',
     /data-clttab="finance"/.test(code) && !/data-clttab="tous"/.test(code));
+  // L'ancienne barre d'onglets interne (tab-finance / showTab) a été retirée le 05/09/2026 :
+  // seuls le bandeau du haut et la barre du bas restent, et ils portent le même nom.
   verifier('l\'onglet correspondant porte le même nom',
-    /id="tab-finance"[^>]*onclick="showTab\('finance'\)"/.test(code));
+    /data-clttab="finance"/.test(code) && !/id="tab-finance"/.test(code));
   verifier('la barre du bas aussi',
     /data-nav="finance"/.test(code) && !/data-nav="tous"/.test(code),
     'un raccourci du bas qui pointe sur un panneau disparu ne fait plus rien');
@@ -741,8 +743,10 @@ titre('L\'onglet Finance du livreur');
   // -- La carte s'efface sur Récupérations ---------------------------------------------------
   verifier('une seule fonction décide de montrer la carte ou non',
     (code.match(/function syncArgentCard\s*\(/g) || []).length === 1);
-  verifier('elle cache la carte sur Récupérations, et là seulement',
-    /carte\.classList\.toggle\('hidden',\s*activePanel === 'recup'\)/.test(code),
+  // Depuis le 05/09/2026 (Celtis : « trop d'espace sur Mes colis »), le bloc de l'argent ne
+  // s'affiche QUE sur Finance ; Mes colis garde une seule ligne « En main ».
+  verifier('elle ne montre la carte que sur Finance',
+    /carte\.classList\.toggle\('hidden',\s*activePanel !== 'finance'\)/.test(code),
     'la condition doit nommer l\'onglet, pas une position dans une liste');
   verifier('elle est rappelée à chaque changement d\'onglet',
     blocDe(livreur, 'showTab').includes('syncArgentCard()'),

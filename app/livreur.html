@@ -405,6 +405,47 @@
   html[data-theme="dark"] .point-pdf-etat{ color:#9DB0C4; }
   html[data-theme="dark"] .point-pdf-etat.erreur{ color:#F98B8B; }
 
+  /* ---------- Le téléphone du destinataire, sur la carte (05/09/2026) ----------
+     Celtis : le livreur appelle le destinataire avant chaque livraison ; le numéro et le bouton
+     WhatsApp étaient cachés dans « Plus d'options ». Ils vivent maintenant sous la destination,
+     à un appui. Le numéro de suivi, lui, s'est glissé en gris après la description. */
+  .colis-tel-ligne{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:3px; }
+  .colis-tel{ font-size:13.5px; font-weight:700; color:#1B4374; text-decoration:none; }
+  .colis-tel-ligne .btn-notify-wa{ padding:4px 10px; font-size:12px; margin:0; }
+  .colis-suivi-num{ font-size:11px; color:#94a3b8; font-weight:500; margin-left:6px; }
+  html[data-theme="dark"] .colis-tel{ color:#9EC0E6; }
+
+  /* ---------- Pastille du nombre de récupérations (05/09/2026) ----------
+     Elle vivait dans l'ancienne barre .tabs, masquée depuis longtemps : personne ne la voyait.
+     Elle est maintenant sur le bouton « Récup. » de la barre du bas et sur l'onglet du haut. */
+  .clt-bottomnav .nav, .clt-toptab{ position:relative; }
+  .nav-badge, .clttab-badge{
+    position:absolute; top:4px; right:10px; min-width:18px; height:18px; padding:0 5px;
+    border-radius:999px; background:#E26313; color:#fff; font-size:11px; font-weight:700;
+    line-height:18px; text-align:center; box-sizing:border-box;
+  }
+  .clttab-badge{ top:2px; right:6px; }
+  .nav-badge.hidden, .clttab-badge.hidden{ display:none; }
+
+  /* Le détail des colis à récupérer se replie sous la tournée : la carte de tournée dit déjà
+     chez qui aller et combien prendre ; la liste ne sert qu'à vérifier. (Celtis, 05/09/2026) */
+  .recup-detail{ margin-top:6px; }
+  .recup-detail > summary{
+    list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:9px 12px; font-size:13.5px; font-weight:700; color:#1B4374;
+    background:#EEF3FA; border:1.5px solid #D5E0EF; border-radius:12px; margin-bottom:10px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .recup-detail > summary::-webkit-details-marker{ display:none; }
+  .recup-detail > summary::after{ content:'▾'; font-size:13px; transition:transform .15s ease; }
+  .recup-detail[open] > summary::after{ transform:rotate(180deg); }
+  html[data-theme="dark"] .recup-detail > summary{ background:#1C2739; border-color:#2E3E54; color:#C6D5E6; }
+
+  /* « En main » : la seule ligne d'argent visible sur Mes colis. Le détail reste sur Finance. */
+  .journee-en-main{ margin-top:8px; padding-top:8px; border-top:1px solid #eef1f6; font-size:13px; color:#20406E; }
+  .journee-en-main:empty{ display:none; }
+  html[data-theme="dark"] .journee-en-main{ color:#B9CCE3; border-top-color:#2A3849; }
+
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -453,7 +494,8 @@
       <div class="avatar-upload-actions">
         <input type="file" id="avatar-input-camera" accept="image/*" capture="user" class="hidden">
         <input type="file" id="avatar-input-library" accept="image/*" class="hidden">
-        <div class="avatar-upload-hint">Cliquez sur la photo pour la modifier.</div>
+        <!-- L'aide « Cliquez sur la photo pour la modifier » est partie le 05/09/2026 (Celtis :
+             moins de texte). La photo reste touchable, elle n'a pas besoin de légende. -->
       </div>
     </div>
     <div id="avatar-msg"></div>
@@ -615,6 +657,9 @@
       <div style="font-size:13px; color:#94a3b8;">Chargement…</div>
     </div>
     <div id="tournee-autres-jours" class="journee-reste"></div>
+    <!-- Sur « Mes colis », l'argent tient en une ligne : ce que le livreur porte. Les tuiles
+         « Argent du jour » et « Ce que vous portez » restent sur Finance. (Celtis, 05/09/2026) -->
+    <div id="journee-en-main" class="journee-en-main"></div>
     <div id="argent-jour-card" class="journee-argent">
       <div class="journee-entete">
         <span class="journee-titre">💰 Argent du jour</span>
@@ -635,17 +680,15 @@
   <div class="clt-toptabs-wrap">
   <div class="clt-toptabs" role="tablist">
   <button type="button" class="clt-toptab active" data-clttab="mes">📦 Mes colis</button>
-  <button type="button" class="clt-toptab" data-clttab="recup">🔄 Récupérations</button>
+  <button type="button" class="clt-toptab" data-clttab="recup">🔄 Récupérations <span class="clttab-badge hidden" id="recup-badge-top"></span></button>
   <button type="button" class="clt-toptab" data-clttab="finance">💰 Finance</button>
   </div>
   </div>
 
   <div class="card" id="section-main">
-    <div class="tabs">
-      <div class="tab active" id="tab-mes-colis" onclick="showTab('mes')">Mes colis assignés</div>
-      <div class="tab" id="tab-recuperations" onclick="showTab('recup')">Récupérations <span class="alert-badge hidden" id="recup-badge">0</span></div>
-      <div class="tab" id="tab-finance" onclick="showTab('finance')">Finance</div>
-    </div>
+    <!-- L'ancienne barre .tabs (trois onglets internes) vivait ici, masquée par CSS depuis la
+         barre segmentée du haut. Retirée le 05/09/2026 : code mort. Sa pastille #recup-badge
+         est partie sur le bouton « Récup. » de la barre du bas. -->
 
     <div id="panel-mes">
       <!-- Libellés raccourcis pour que la ligne tienne sur UNE ligne : à quatre éléments et
@@ -672,7 +715,8 @@
     </div>
 
     <div id="panel-recup" class="hidden">
-      <div class="page-sub onglet-intro">Appuyez sur « Je pars » quand vous partez vraiment : c'est ce qui démarre le partage de position.</div>
+      <!-- La phrase d'introduction de l'onglet est partie le 05/09/2026 (Celtis : moins de
+           texte sur téléphone) ; le bouton « Je pars » explique lui-même ce qu'il fait. -->
 
       <!-- 🗓️ Ma tournée du jour. (27/08/2026)
            Écrite la veille au soir par le bureau, elle répond à la seule question qui compte
@@ -684,17 +728,20 @@
       <div id="recup-tournee" style="margin-bottom:18px;">
         <div class="empty-state">Chargement…</div>
       </div>
-      <!-- La journée du jour à l'ouverture ; le calendrier permet de revenir sur une date
-           antérieure sans perdre de vue le compteur de l'onglet, qui lui reste sur le total.
-           (26/08/2026) -->
-      <div class="date-filter-wrap">
-        <span class="date-filter-icone" aria-hidden="true">📅</span>
-        <input type="date" id="filtre-date-recup" class="date-filter-input" aria-label="Filtrer les récupérations par date">
-        <button type="button" id="btn-toutes-dates-recup" class="date-filter-clear">Toutes</button>
-      </div>
-      <div class="colis-list" id="recup-colis-list">
-        <div class="empty-state">Chargement...</div>
-      </div>
+      <!-- Toutes les dates à l'ouverture depuis le 05/09/2026 (Celtis) ; le calendrier permet
+           de se limiter à un jour. Le compteur de l'onglet reste sur le total.
+           La liste est repliée sous la tournée : elle ne sert qu'à vérifier le détail. -->
+      <details class="recup-detail" id="recup-detail">
+        <summary id="recup-detail-summary">Détail des colis</summary>
+        <div class="date-filter-wrap">
+          <span class="date-filter-icone" aria-hidden="true">📅</span>
+          <input type="date" id="filtre-date-recup" class="date-filter-input" aria-label="Filtrer les récupérations par date">
+          <button type="button" id="btn-toutes-dates-recup" class="date-filter-clear">Toutes</button>
+        </div>
+        <div class="colis-list" id="recup-colis-list">
+          <div class="empty-state">Chargement...</div>
+        </div>
+      </details>
     </div>
 
     <!-- Onglet « Finance » — anciennement « Tout mon historique ».
@@ -703,7 +750,8 @@
          à n'importe quelle date. Le tableau ci-dessous détaille cette même journée cliente par
          cliente, et chaque ligne se déplie sur ses colis. -->
     <div id="panel-finance" class="hidden">
-      <div class="page-sub onglet-intro">Touchez une cliente pour voir ses colis un par un.</div>
+      <!-- Phrase d'introduction retirée le 05/09/2026 (Celtis : moins de texte). -->
+
       <!-- Le point du soir, en PDF. Demandé le 29 août 2026 : le livreur qui a fini sa tournée
            emporte son récapitulatif à la caisse. Le bouton est ici, en haut de l'onglet Finance,
            parce que c'est là qu'il regarde son compte — pas dans un menu qu'il faudrait aller
@@ -865,7 +913,8 @@
   window.addEventListener('beforeunload', () => {
     __realtimeChannels.forEach(ch => supabaseClient.removeChannel(ch));
   });
-  let activeFilterMes = 'tous';
+  // « À faire » par défaut depuis le 05/09/2026 (Celtis) — voir FILTRE_A_FAIRE plus bas.
+  let activeFilterMes = 'a_faire';
   let activePanel = 'mes';
   let searchMes = '';
   let filtreDateMes = '';
@@ -895,26 +944,8 @@
   // colis que la personne ne voit plus. Un bouton qui agit sur ce qu'on ne voit pas est un piège.
   function viderSelectionMes(){ lotMesIds.clear(); }
 
-  function closeOtherSections(exceptContentId){
-    document.querySelectorAll('.card > .collapsible-content').forEach(c => {
-      if (c.id === exceptContentId) return;
-      if (c.classList.contains('open')){
-        collapseCollapsible(c);
-        const h = c.previousElementSibling;
-        const arr = h && h.querySelector('.collapse-arrow');
-        if (arr) arr.textContent = '▶';
-      }
-    });
-  }
-
-  function toggleSection(header, contentId){
-    const content = document.getElementById(contentId);
-    const willOpen = !content.classList.contains('open');
-    if (willOpen) closeOtherSections(contentId);
-    if (willOpen) { expandCollapsible(content); } else { collapseCollapsible(content); }
-    const arrow = header.querySelector('.collapse-arrow');
-    if (arrow) arrow.textContent = willOpen ? '▼' : '▶';
-  }
+  /* toggleSection() et closeOtherSections() vivaient ici : elles pilotaient des sections
+     .collapsible-content qui n'existent plus dans cette page. Retirées le 05/09/2026. */
 
   /* L'observateur de l'ancienne barre de liens vivait ici : 47 lignes qui posaient un
      IntersectionObserver sur une section, à chaque ouverture de la page, pour souligner un lien
@@ -1261,6 +1292,12 @@
   // Libellés de filtre : dérivés du référentiel central STATUTS (config.js) — source unique.
   const FILTER_LABELS = (typeof STATUT_FILTER_LABELS !== 'undefined') ? STATUT_FILTER_LABELS
     : { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
+  // « À faire » : filtre virtuel, en tête de rangée et choisi par défaut. Celtis (05/09/2026) :
+  // le livreur ouvre l'application pour voir ce qui lui reste, pas ce qu'il a déjà livré.
+  // Il regroupe les trois statuts encore en route ; « Tous » garde son sens d'avant.
+  const FILTRE_A_FAIRE = 'a_faire';
+  const STATUTS_A_FAIRE = ['en_attente', 'recupere', 'en_livraison'];
+  const FILTER_LABELS_MES = Object.assign({ [FILTRE_A_FAIRE]: 'À faire' }, FILTER_LABELS);
 
   // Les trois onglets, sous le nom que le code leur donne. « finance » s'appelait « tous »
   // jusqu'au 25 août 2026 : un téléphone qui a gardé l'ancien nom en mémoire est réorienté
@@ -1275,9 +1312,8 @@
   function showTab(which){
     which = normaliserOnglet(which);
     activePanel = which;
-    document.getElementById('tab-mes-colis').classList.toggle('active', which === 'mes');
-    document.getElementById('tab-recuperations').classList.toggle('active', which === 'recup');
-    document.getElementById('tab-finance').classList.toggle('active', which === 'finance');
+    // L'ancienne barre .tabs interne n'existe plus (05/09/2026) : seuls les panneaux, la barre
+    // segmentée du haut et la barre du bas suivent l'onglet.
     document.getElementById('panel-mes').classList.toggle('hidden', which !== 'mes');
     document.getElementById('panel-recup').classList.toggle('hidden', which !== 'recup');
     document.getElementById('panel-finance').classList.toggle('hidden', which !== 'finance');
@@ -1301,8 +1337,10 @@
     // Cette rangée de filtres se parcourt latéralement au doigt. La reconstruire à l'identique
     // toutes les 25 secondes la ramenait au premier filtre : on ne pouvait pas atteindre les
     // derniers sur un téléphone. On ne la réécrit donc que si le filtre actif a bougé. (25/08/2026)
-    if (!cltPoserHTML(box, Object.keys(FILTER_LABELS).map(key =>
-      `<div class="filter-chip ${activeFilter===key?'active':''}" data-filter="${key}">${FILTER_LABELS[key]}</div>`
+    // FILTER_LABELS_MES : « À faire » en première pastille (05/09/2026). Cette rangée ne sert
+    // qu'à Mes colis.
+    if (!cltPoserHTML(box, Object.keys(FILTER_LABELS_MES).map(key =>
+      `<div class="filter-chip ${activeFilter===key?'active':''}" data-filter="${key}">${FILTER_LABELS_MES[key]}</div>`
     ).join(''))) return;
     box.querySelectorAll('.filter-chip').forEach(chip => {
       chip.addEventListener('click', () => onSelect(chip.dataset.filter));
@@ -1708,6 +1746,37 @@
      Les deux cases sont toujours proposées ensemble, même quand une seule doit changer. C'est ce
      qui permet d'écrire les deux colonnes d'un coup et de garder cohérent un vieux colis qui ne
      portait qu'un montant global — voir montantsColisAEcrire(), dans config.js. */
+  /* Le téléphone du destinataire, écrit comme on le lit à Abidjan (07 05 40 46 55), en lien
+     d'appel, avec le bouton WhatsApp à côté. Celtis (05/09/2026) : le livreur appelle avant
+     chaque livraison, le numéro ne doit pas être caché dans un repli. Le bouton garde la classe
+     btn-notify-wa : c'est la délégation de config.js qui l'ouvre, à partir des data-* de la
+     carte. Sans numéro connu, le lien d'appel s'efface mais le bouton reste : config.js ouvre
+     alors WhatsApp sans destinataire, comme avant. */
+  function telephoneAffiche(tel){
+    const brut = String(tel || '').trim();
+    if (!brut) return '';
+    const chiffres = (typeof formatPhoneDisplay === 'function') ? formatPhoneDisplay(brut) : brut;
+    // Dix chiffres : on groupe par deux. Autre forme : on rend tel quel, sans inventer.
+    return /^\d{10}$/.test(chiffres) ? chiffres.replace(/(\d{2})(?=\d)/g, '$1 ') : chiffres;
+  }
+  function telephoneLigneHTML(c){
+    const tel = c.destinataire_telephone || '';
+    const compose = (typeof numeroCompose === 'function') ? numeroCompose(tel) : String(tel).replace(/[^0-9]/g, '');
+    const lien = tel
+      ? `<a class="colis-tel" href="tel:${escapeHTML(compose)}">📞 ${escapeHTML(telephoneAffiche(tel))}</a>`
+      : '';
+    return `<div class="colis-tel-ligne">${lien}<button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button></div>`;
+  }
+
+  /* La description et, en petit gris à sa suite, le numéro de suivi : une ligne au lieu de
+     deux. Le numéro reste dans .tracking-numero pour qui le cherche. (05/09/2026) */
+  function descriptionEtSuiviHTML(c){
+    const quoi = colisDescriptionTexte(c);
+    const num = c.numero ? `<span class="colis-suivi-num tracking-numero">${escapeHTML(c.numero)}</span>` : '';
+    if (!quoi && !num) return '';
+    return `<div class="meta colis-quoi">${quoi ? '📦 ' + escapeHTML(quoi) : ''}${num}</div>`;
+  }
+
   function montantsLigneHTML(c){
     return `<div class="meta colis-montants">💵 Article : <strong>${formatMontant(montantArticleColis(c))}</strong>`
       + ` · ${escapeHTML(estExpedition(c) ? LIBELLE_FRAIS_COURSE : 'Livraison')} : <strong>${formatMontant(montantLivraisonColis(c))}</strong></div>`;
@@ -1914,12 +1983,15 @@
         ${stepperHTML(c.statut, c)}
         ${thumb}
         <div class="info">
-          ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
+          <!-- CARTE ALLÉGÉE LE 05/09/2026 (Celtis : « trop de texte sur chaque colis »).
+               Partis : « Client : … » (déjà dans l'en-tête de groupe), « Ajouté le … »,
+               « 📍 Récupération » (c'est l'onglet Récupérations qui en parle), « Copier le lien ».
+               Arrivés : le téléphone du destinataire et le bouton WhatsApp, sous la destination.
+               Le n° de suivi s'est glissé en petit après la description. -->
           <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
-          ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
-          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+          ${telephoneLigneHTML(c)}
+          ${descriptionEtSuiviHTML(c)}
           ${montantsLigneHTML(c)}
-          ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
           ${collecteLineHTML(c)}
           ${tentatives > 0 ? `<div class="meta" style="color:#c0392b; font-weight:600;">🔁 Tentative(s) de livraison : ${tentatives}</div>` : ''}
         </div>
@@ -1954,11 +2026,6 @@
                   <div class="photo-pick-filename"></div>
                 </div>
               </div>
-              <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
-              <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                <button type="button" class="btn btn-outline btn-sm btn-copy-tracking">🔗 Copier le lien de suivi</button>
-                <button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button>
-              </div>
             </div>
           </details>
           <button class="btn btn-sm btn-save">Enregistrer</button>
@@ -1972,7 +2039,10 @@
     const __anchor = captureScrollAnchor(list);
     const __pending = capturePendingEdits(list);
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
-    let filtered = activeFilterMes === 'tous' ? mine : mine.filter(c => c.statut === activeFilterMes);
+    // « À faire » = les trois statuts encore en route ; « Tous » = tout ; sinon un statut.
+    let filtered = activeFilterMes === 'tous' ? mine
+      : activeFilterMes === FILTRE_A_FAIRE ? mine.filter(c => STATUTS_A_FAIRE.includes(c.statut))
+      : mine.filter(c => c.statut === activeFilterMes);
     filtered = filtered.filter(c => matchesSearch(c, searchMes) && matchesDate(c, filtreDateMes));
     // Un colis coché puis supprimé, réassigné à quelqu'un d'autre ou passé hors des critères ne
     // doit plus compter dans la sélection : sinon le bouton annoncerait un nombre plus grand que
@@ -1983,7 +2053,9 @@
     if (!filtered.length) {
       if (!cltPoserHTML(list, (filtreDateMes
         ? `<div class="empty-state">Aucun colis assigné à cette date.</div>`
-        : `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`)
+        : activeFilterMes === FILTRE_A_FAIRE && !searchMes
+          ? `<div class="empty-state">Rien à faire pour le moment 👍 — touchez « Tous » pour revoir vos colis livrés.</div>`
+          : `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`)
         + (lotMesActif ? barreLotHTML(0, 0, boutonsLotMes(), '') : ''))) return;
       if (lotMesActif) brancherBarreLotMes(list, []);
       restoreScrollAnchor(list, __anchor);
@@ -2251,13 +2323,11 @@
       <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
         ${thumb}
         <div class="info">
-          ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
+          <!-- Allégée le 05/09/2026 (Celtis) : « Client : », « 📍 Récupération » et « Ajouté le »
+               sont partis — l'en-tête de groupe et la carte de tournée les disent déjà. -->
           <div class="desc">${colisDestinationHTML(c)}</div>
-          ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
-          <div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+          ${descriptionEtSuiviHTML(c)}
           ${montantsLigneHTML(c)}
-          ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
-          <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
         </div>
         <div class="status-col">
           ${statutBadgeHTML(c.statut, c)}
@@ -2370,11 +2440,18 @@
     const toutes = mesRecuperationsList();
     const mine = toutes.filter(c => matchesDate(c, filtreDateRecup));
 
-    const badge = document.getElementById('recup-badge');
-    if (badge) {
+    // La pastille du nombre de récupérations vit sur le bouton « Récup. » de la barre du bas
+    // (#recup-badge, ex-pastille de l'ancienne barre .tabs) et sur l'onglet du haut
+    // (#recup-badge-top). Même nombre partout, masquées à zéro. (05/09/2026)
+    ['recup-badge', 'recup-badge-top'].forEach(id => {
+      const badge = document.getElementById(id);
+      if (!badge) return;
       if (toutes.length) { badge.textContent = toutes.length; badge.classList.remove('hidden'); }
       else { badge.classList.add('hidden'); }
-    }
+    });
+    // Le titre du repli annonce combien de colis il cache, sur la date choisie.
+    const resume = document.getElementById('recup-detail-summary');
+    if (resume) resume.textContent = `Détail des colis (${mine.length})`;
 
     if (!mine.length) {
       // Une journée vide alors qu'il reste des récupérations ailleurs ne doit pas se lire
@@ -2432,6 +2509,7 @@
     renderTourneeSummary();
     renderArgentDuJour();
     renderCaisseEnMain();
+    renderEnMainLigne(); // la ligne « En main » de Mes colis suit chaque colis marqué livré
     // Le bloc d'annonce se redessine avec le reste : le montant proposé sort de la même
     // addition que « Ce que vous portez », et il doit suivre chaque colis marqué livré.
     renderAnnonceRemise();
@@ -2781,10 +2859,25 @@
   // La carte « L'argent de ma journée » sert sur « Mes colis » (coup d'œil) et sur « Finance »
   // (elle porte le calendrier qui choisit la journée du tableau). Sur « Récupérations », le
   // livreur prépare une tournée : l'argent n'a rien à y faire, et la carte s'efface.
+  // Depuis le 05/09/2026 (Celtis : « trop d'espace gaspillé sur Mes colis »), les tuiles
+  // d'argent ne s'affichent plus que sur Finance. Sur Mes colis, une seule ligne les remplace :
+  // ce que le livreur a en main, tiré du MÊME calcul (caisseEnMainDuLivreur, config.js).
   function syncArgentCard(){
     const carte = document.getElementById('argent-jour-card');
     if (!carte) return;
-    carte.classList.toggle('hidden', activePanel === 'recup');
+    carte.classList.toggle('hidden', activePanel !== 'finance');
+    renderEnMainLigne();
+  }
+
+  function renderEnMainLigne(){
+    const ligne = document.getElementById('journee-en-main');
+    if (!ligne) return;
+    if (activePanel !== 'mes' || !currentUser) { cltPoserHTML(ligne, ''); return; }
+    // Historique partiel : la somme serait trop basse, on ne l'annonce pas (même règle que le
+    // bloc complet de Finance).
+    if (colisHasMore) { cltPoserHTML(ligne, '💵 En main : <span style="color:#94a3b8;">voir Finance</span>'); return; }
+    const releve = caisseEnMainDuLivreur(allColis, currentUser.id);
+    cltPoserHTML(ligne, `💵 En main : <strong>${formatMontant(Number(releve.montant) || 0) || '0 FCFA'}</strong>`);
   }
 
   (function initArgentJour(){
@@ -3472,7 +3565,9 @@
       searchMesTimer = setTimeout(() => { searchMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderMesColis(); }, 350);
     });
 
-    filtreDateMes = todayLocalISODate();
+    // Toutes les dates à l'ouverture (Celtis, 05/09/2026) : c'est le filtre « À faire » qui
+    // fait le tri, et un colis de lundi encore en route doit se voir jeudi sans rien toucher.
+    filtreDateMes = '';
     document.getElementById('filtre-date-mes').value = filtreDateMes;
     document.getElementById('filtre-date-mes').addEventListener('change', (e) => { filtreDateMes = e.target.value; remettreTrancheMesAZero(); viderSelectionMes(); renderMesColis(); });
     document.getElementById('btn-toutes-dates-mes').addEventListener('click', () => {
@@ -3483,9 +3578,9 @@
       renderMesColis();
     });
 
-    // Même principe pour les récupérations : la journée du jour à l'ouverture, le calendrier
-    // pour revenir en arrière, « Toutes les dates » pour tout revoir d'un coup. (26/08/2026)
-    filtreDateRecup = todayLocalISODate();
+    // Même principe pour les récupérations : toutes les dates à l'ouverture (Celtis,
+    // 05/09/2026), le calendrier pour se limiter à un jour.
+    filtreDateRecup = '';
     document.getElementById('filtre-date-recup').value = filtreDateRecup;
     document.getElementById('filtre-date-recup').addEventListener('change', (e) => {
       filtreDateRecup = e.target.value;
@@ -3782,6 +3877,9 @@
   <button type="button" class="nav" data-nav="recup">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
     Récup.
+    <!-- Pastille orange du nombre de récupérations à faire ; remplie par renderRecuperations().
+         L'id recup-badge vient de l'ancienne barre .tabs, retirée le 05/09/2026. -->
+    <span class="nav-badge hidden" id="recup-badge"></span>
   </button>
   <button type="button" class="nav" data-nav="finance">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>
