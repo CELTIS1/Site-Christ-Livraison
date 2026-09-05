@@ -400,22 +400,10 @@
   <img id="lotfr-loupe-img" src="" alt="Photo de l'étiquette en grand">
 </div>
 
-  <!-- Récapitulatif du JOUR (visible uniquement dans l'onglet Récap), présenté comme la carte
-       « Ma tournée » du livreur : compteurs par statut (Récupérés, En cours, Livrés, Non livrés).
-       Par défaut la journée du jour ; on peut choisir une autre date. Graphiques mensuels en dessous. -->
-  <div class="card" id="section-colis-jour">
-    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-bottom:4px;">
-      <h2 class="panel-subtitle" style="margin:0;">📊 Statut des colis du jour</h2>
-      <input type="date" id="colis-jour-date" style="max-width:180px;">
-    </div>
-    <div id="colis-jour-libelle" style="font-size:12.5px; color:var(--muted); margin:2px 0 10px;"></div>
-    <div id="colis-du-jour" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-    <div id="colis-jour-montant" style="font-size:12.5px; color:var(--muted); margin-top:10px;"></div>
-  </div>
-
   <!-- Mon relevé : ce que CLT doit au fournisseur (montant des articles encaissés à la
        livraison pour son compte, moins ce qui a déjà été reversé). Données agrégées côté
-       serveur par la vue releve_fournisseur (chaque fournisseur ne voit que son relevé). -->
+       serveur par la vue releve_fournisseur (chaque fournisseur ne voit que son relevé).    En TÊTE de l'onglet Récap depuis le 06/09/2026 (feuille de route 3.5) : c'est le chiffre
+       que la cliente vient voir. -->
   <div class="card" id="section-releve">
     <h2 class="panel-subtitle" style="margin:0 0 4px;">💰 Mon relevé — ce que CLT vous doit</h2>
     <div id="releve-libelle" style="font-size:12.5px; color:var(--muted); margin:2px 0 12px;">
@@ -428,6 +416,19 @@
     <!-- Historique des reversements : quand, combien, sur combien de colis. Reste vide tant que
          la vue historique_reversements_fournisseur n'existe pas en base (dégradation gracieuse). -->
     <div id="releve-historique" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- Récapitulatif du JOUR (visible uniquement dans l'onglet Récap), présenté comme la carte
+       « Ma tournée » du livreur : compteurs par statut (Récupérés, En cours, Livrés, Non livrés).
+       Par défaut la journée du jour ; on peut choisir une autre date. Graphiques mensuels en dessous. -->
+  <div class="card" id="section-colis-jour">
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-bottom:4px;">
+      <h2 class="panel-subtitle" style="margin:0;">📊 Statut des colis du jour</h2>
+      <input type="date" id="colis-jour-date" style="max-width:180px;">
+    </div>
+    <div id="colis-jour-libelle" style="font-size:12.5px; color:var(--muted); margin:2px 0 10px;"></div>
+    <div id="colis-du-jour" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+    <div id="colis-jour-montant" style="font-size:12.5px; color:var(--muted); margin-top:10px;"></div>
   </div>
 
   <div class="card" id="section-recap">
@@ -1717,6 +1718,13 @@
                 <label>Précision (quartier, repère...)</label>
                 <input type="text" class="draft-dest" value="${escapeHTML(c.destination || '')}">
               </div>
+              <!-- Le téléphone du destinataire est obligatoire à la création, et « Dupliquer » ne le
+                   copiait pas : le colis créé ne pouvait pas être livré (feuille de route 3.5,
+                   corrigé le 06/09/2026). -->
+              <div class="field">
+                <label>Téléphone du destinataire <span class="champ-requis">obligatoire</span></label>
+                <input type="tel" class="draft-tel-destinataire" inputmode="tel" value="${escapeHTML(typeof formatPhoneDisplay === 'function' ? formatPhoneDisplay(c.destinataire_telephone || '') : (c.destinataire_telephone || ''))}" placeholder="Ex : 07 01 02 03 04">
+              </div>
             </div>
             <div class="montant-block">
               <label>Montants (optionnel)</label>
@@ -1760,6 +1768,12 @@
       const destination = draftEl.querySelector('.draft-dest').value.trim();
       const pickupCommune = draftEl.querySelector('.draft-pickup-commune').value;
       const pickupAdresse = draftEl.querySelector('.draft-pickup-adresse').value.trim();
+      const telBrut = (draftEl.querySelector('.draft-tel-destinataire') || { value: '' }).value.trim();
+      const destinataire_telephone = telBrut ? toPhoneE164(telBrut) : null;
+      if (!destinataire_telephone) {
+        alert("Le téléphone du destinataire est obligatoire : sans lui, le livreur ne peut pas livrer.");
+        return;
+      }
       if (!pickupCommune) {
         alert("Veuillez choisir la commune de récupération.");
         return;
@@ -1798,6 +1812,7 @@
         montant_article,
         montant_livraison,
         livraison_payee,
+        destinataire_telephone,
         // Même fonction que le bureau : c'est elle, et elle seule, qui décide de ce que vaut un
         // lieu vide. Deux normalisations séparées, c'est un écran qui écrit "" et l'autre null,
         // et deux comptages de « colis sans lieu » qui ne tombent jamais d'accord.
@@ -2770,8 +2785,12 @@
     // après le formulaire plutôt que de le retarder.
     chargerMonCarnet().then(redessinerTousLesCarnets).catch(e => console.error('Carnet :', e));
     await loadLivreurs();
-    filtreDate = todayLocalISODate();
-    document.getElementById('filtre-date-colis').value = filtreDate;
+    // « Mes colis » s'ouvrait vide sur aujourd'hui : une cliente qui n'a rien déposé ce matin
+    // voyait une liste vide et cherchait ses colis d'hier encore en route. On ouvre sur toutes
+    // les dates, du plus récent au plus ancien ; le calendrier reste là pour cibler un jour.
+    // (feuille de route 3.5, 06/09/2026)
+    filtreDate = '';
+    document.getElementById('filtre-date-colis').value = '';
     loadColis();
     loadReleve();
     // Recherche : on attend que la frappe se calme avant de redessiner. Taper « ABIDJAN », c'est
