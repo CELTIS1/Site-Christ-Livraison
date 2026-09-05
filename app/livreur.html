@@ -346,6 +346,11 @@
   .journee-tuiles-argent > div{ flex:1 1 calc(50% - 3px) !important; }
   .journee-tuiles-argent > div > div:first-child{ font-size:14.5px !important; }
   .journee-argent{ margin-top:10px; padding-top:9px; border-top:1px solid #eef1f6; }
+  /* Les colis d'autres jours encore en route : une ligne, pas une tuile. Elle n'apparaît que
+     s'il y en a, pour que la journée ne cache pas ce qui traîne. (05/09/2026) */
+  .journee-reste{ font-size:11.5px; color:#8a4b12; margin-top:6px; }
+  .journee-reste:empty{ display:none; }
+  html[data-theme="dark"] .journee-reste{ color:#E9B27A; }
   html[data-theme="dark"] .journee-argent{ border-top-color:#2A3849; }
   .journee-entete{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
   .journee-titre{ font-size:12px; color:#64748b; font-weight:600; }
@@ -594,14 +599,25 @@
 
        #argent-jour-card reste le nom du bloc de l'argent — c'est lui que syncArgentCard()
        masque dans l'onglet Récupérations, où l'argent n'a rien à faire. -->
+  <!-- LE CALENDRIER EST EN TÊTE DE CARTE, ET IL COMMANDE TOUT. (05/09/2026)
+       Celtis, capture à l'appui : les quatre tuiles (pas encore pris, en cours, livrés, non
+       livrés) affichaient « 87 livrés, 18 non livrés » — le décompte de tous les colis reçus
+       depuis toujours, alors que l'argent juste en dessous ne parlait que du jour. Deux
+       horizons dans une même carte, sans rien pour le dire. Les tuiles comptent maintenant la
+       journée du calendrier, comme l'argent, et le calendrier est monté au-dessus des deux
+       pour qu'on voie qu'il commande les deux. -->
   <div class="card journee-card" id="ma-journee-card" style="padding:10px 12px;">
+    <div class="journee-entete" style="margin-bottom:8px;">
+      <span class="journee-titre">📅 Ma journée</span>
+      <input type="date" id="argent-jour-date" aria-label="Journée dont on fait le compte">
+    </div>
     <div id="tournee-summary" class="journee-tuiles">
       <div style="font-size:13px; color:#94a3b8;">Chargement…</div>
     </div>
+    <div id="tournee-autres-jours" class="journee-reste"></div>
     <div id="argent-jour-card" class="journee-argent">
       <div class="journee-entete">
         <span class="journee-titre">💰 Argent du jour</span>
-        <input type="date" id="argent-jour-date" aria-label="Journée dont on fait le compte">
       </div>
       <div id="argent-jour-corps">
         <div style="font-size:13px; color:#94a3b8;">Chargement…</div>
@@ -2428,16 +2444,26 @@
   // affichés en haut de page pour un coup d'œil sur la charge de travail du jour.
   function renderTourneeSummary(){
     const box = document.getElementById('tournee-summary');
+    const reste = document.getElementById('tournee-autres-jours');
     if (!box || !currentUser) return;
+    // LA JOURNÉE DU CALENDRIER, PAS TOUT L'HISTORIQUE. (05/09/2026) Jusqu'ici on comptait tous
+    // les colis du livreur, depuis toujours : « 87 livrés » ne disait rien de la journée. On
+    // compte maintenant les colis reçus le jour choisi — le même découpage que l'argent juste
+    // en dessous, et que la fiche « Sa tournée du jour » que l'équipe voit de lui.
+    const jour = argentJourDate || todayLocalISODate();
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
-    if (!mine.length){
-      cltPoserHTML(box, `<div style="font-size:13px; color:#94a3b8;">Aucun colis assigné pour le moment.</div>`);
-      return;
-    }
+    const duJour = mine.filter(c => dayKey(c.created_at) === jour);
     // Les tuiles sont dessinées par tourneeTuilesHTML() (config.js) : c'est la MÊME fonction
     // qui dessine l'aperçu de ce livreur côté équipe. Les deux écrans ne peuvent donc pas
     // annoncer deux comptes différents pour la même tournée.
-    cltPoserHTML(box, tourneeTuilesHTML(mine));
+    cltPoserHTML(box, tourneeTuilesHTML(duJour));
+    // Ce qui traîne d'autres jours : un colis pris lundi et toujours en route jeudi ne doit pas
+    // disparaître parce qu'on regarde jeudi. Une ligne le dit ; la liste en bas le montre.
+    if (reste) {
+      const enRoute = mine.filter(c => dayKey(c.created_at) !== jour
+        && (c.statut === 'en_attente' || c.statut === 'recupere' || c.statut === 'en_livraison')).length;
+      cltPoserHTML(reste, enRoute ? `⏳ ${enRoute} colis d'autres jours encore en cours — voir « Toutes » les dates.` : '');
+    }
   }
 
   // ---- L'argent de ma journée -----------------------------------------------------------
@@ -2766,6 +2792,7 @@
     input.value = todayLocalISODate();
     input.addEventListener('change', () => {
       argentJourDate = input.value || todayLocalISODate();
+      renderTourneeSummary();
       renderArgentDuJour();
     });
   })();
