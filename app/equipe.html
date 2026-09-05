@@ -2287,7 +2287,10 @@ const equipeRempli = fieldsHaveContent(['eq-fullname','eq-phone','eq-password'])
 // Une liste de photos en cours de saisie n'est enregistrée nulle part : fermer l'onglet la
 // perdrait entièrement, avec le travail de relecture de dix ou cent étiquettes.
 const lotRempli = typeof lotLignes !== 'undefined' && lotLignes.length > 0;
-if (colisRempli || livreurRempli || equipeRempli || lotRempli) {
+// « colisRempli » a disparu avec la saisie unitaire, mais son nom était resté ici : chaque
+// fermeture d'onglet levait « colisRempli is not defined » et la garde ne protégeait plus
+// rien — une liste de cent photos se fermait sans un mot. Vu dans la console le 05/09/2026.
+if (livreurRempli || equipeRempli || lotRempli) {
 e.preventDefault();
 e.returnValue = '';
 }
