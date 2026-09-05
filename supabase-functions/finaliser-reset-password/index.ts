@@ -14,13 +14,28 @@
 //     pour ce numéro : { state: 'none' | 'en_attente' | 'approuve' | 'expire' | 'traite' }.
 //     Sert à l'écran d'attente : dès que l'état passe à 'approuve', le formulaire
 //     « nouveau mot de passe » s'affiche.
-//   - Mode "set"    : { phone, new_password } -> applique le nouveau mot de passe
-//     SI et seulement SI la demande la plus récente est 'approuve' ET dans la
-//     fenêtre de validité. La demande passe alors à 'traite' (usage unique).
+//   - Mode "set"    : { phone, new_password } + en-tête Authorization portant la
+//     session obtenue par le CODE SMS -> applique le nouveau mot de passe SI et
+//     seulement SI la demande la plus récente est 'approuve', dans la fenêtre de
+//     validité, ET si la session appartient au compte visé. La demande passe
+//     alors à 'traite' (usage unique).
 //
-// SÉCURITÉ (pourquoi c'est sûr même sans session) :
+// LE CODE SMS — DEPUIS LE 06/09/2026 (feuille de route, point 1.3).
+//   Jusque-là, après l'approbation, quiconque connaissait le numéro pouvait
+//   poser un nouveau mot de passe pendant trente minutes — et le numéro d'une
+//   cliente est public, il est écrit sur ses colis. Désormais l'écran demande à
+//   Supabase d'envoyer un code à usage unique au numéro du compte
+//   (auth.signInWithOtp, fourni par Vonage, déjà branché sur le projet), la
+//   personne le saisit (auth.verifyOtp), et c'est la session ainsi obtenue —
+//   preuve qu'elle tient le téléphone — qui autorise le mode "set". Sans elle,
+//   ou si elle appartient à un autre compte : 403. Le serveur, lui, ne génère,
+//   ne stocke ni ne compare aucun code : Supabase le fait, haché, avec son
+//   expiration et sa limite d'essais.
+//
+// SÉCURITÉ (pourquoi c'est sûr même sans session au départ) :
 //   - Le SEUL moyen d'atteindre le mode "set" est qu'une demande pour CE numéro
-//     ait été APPROUVÉE par l'équipe (garde-fou : l'équipe vérifie l'identité).
+//     ait été APPROUVÉE par l'équipe (garde-fou : l'équipe vérifie l'identité)
+//     ET que la personne prouve qu'elle tient le téléphone (code SMS).
 //   - Fenêtre de validité courte après l'approbation (WINDOW_MINUTES) : au-delà,
 //     il faut refaire une demande. Réduit le risque pendant la période ouverte.
 //   - Usage unique : une fois le mot de passe défini, la demande passe à
@@ -81,6 +96,8 @@ Deno.serve(async (req) => {
 
   try {
     const { phone, new_password } = await req.json();
+    const authHeader = req.headers.get("Authorization") || "";
+    const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
 
     const variants = phoneVariants(phone);
     if (!variants.length) {
@@ -176,6 +193,19 @@ Deno.serve(async (req) => {
     }
     if (!targetId) {
       return json({ error: "Compte associé introuvable." }, 404);
+    }
+
+    // --- Le code SMS : la session obtenue par verifyOtp doit être CELLE du compte visé
+    // La clé publique du site (anon) n'est pas une session : getUser la refuse.
+    // Une session d'un autre compte est refusée aussi — on ne change jamais le
+    // mot de passe d'un compte sur la preuve d'un autre téléphone.
+    const { data: preuve, error: preuveErr } = await supabaseAdmin.auth.getUser(bearer);
+    const preuveId = (!preuveErr && preuve?.user?.id) ? preuve.user.id : null;
+    if (!preuveId || preuveId !== targetId) {
+      return json(
+        { error: "Vérification par SMS requise : saisissez le code reçu sur le téléphone du compte.", state: "code_requis" },
+        403,
+      );
     }
 
     // --- Dernier contrôle : le compte est-il toujours ouvert ? ---------------

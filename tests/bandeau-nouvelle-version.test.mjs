@@ -372,10 +372,11 @@ verifier(
    v67, le 06/09/2026 — la nuit du 5 : essentiel, notifications, tournées modifiables, relevé en couleur, épuration.
    v68, le 06/09/2026 — Gestion sur téléphone, Gestion et Express épurés.
    v69, le 06/09/2026 — pré-cache tolérant (feuille de route 1.10), Gestion pré-chargée.
-   v70, le 06/09/2026 — la connexion biométrique ne garde plus le mot de passe (feuille de route 1.2). */
+   v70, le 06/09/2026 — la connexion biométrique ne garde plus le mot de passe (feuille de route 1.2).
+   v71, le 06/09/2026 — le code SMS avant le nouveau mot de passe (feuille de route 1.3) : les deux pages de connexion changent. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v70'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v71'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
