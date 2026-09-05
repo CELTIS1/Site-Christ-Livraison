@@ -1,0 +1,136 @@
+# La publication n'a lieu que si les contrôles sont verts. (06/09/2026 — mission 1.9)
+#
+# À quoi ça sert, en clair : jusqu'ici, GitHub Pages mettait le site en ligne à la seconde
+# où un commit arrivait sur main, et les 41 séries de contrôle tournaient À CÔTÉ. Un contrôle
+# rouge ne retenait rien — il se voyait après, si quelqu'un pensait à regarder. Celtis l'a
+# demandé en phase 1 : une version qui fait rougir un banc ne doit pas atteindre les
+# téléphones de l'équipe.
+#
+# Comment ça marche : ce fichier ne se déclenche pas sur le push. Il attend que les deux
+# contrôles (« Contrôles automatiques » et « Vérifier les empreintes ») aient rendu leur
+# verdict sur le même commit, et ne publie que si les DEUX sont verts. Le geste de Celtis ne
+# change pas : « Mettre en ligne ce qui est validé.command » pousse, GitHub attend, puis publie.
+#
+# Le seul réglage à faire, une fois, par Celtis : Settings › Pages › « Build and deployment »
+# › Source = « GitHub Actions » (au lieu de « Deploy from a branch »). TANT QUE CE RÉGLAGE
+# N'EST PAS FAIT, ce fichier ne casse rien : il constate que Pages publie encore depuis la
+# branche, le dit, et s'arrête proprement (en vert, pas en rouge — un rouge permanent ne
+# contrôle plus rien, voir le garde-fou de tests.yml).
+#
+# Aucun secret, aucun coût : c'est gratuit sur un dépôt public.
+
+name: Publier (seulement si les contrôles sont verts)
+
+on:
+  workflow_run:
+    workflows:
+      - "Contrôles automatiques"
+      - "Vérifier les empreintes des bibliothèques externes"
+    types: [completed]
+    branches: [main]
+
+# Le jeton du workflow ne reçoit que ce dont il a besoin : lire le dépôt, écrire sur Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Deux contrôles se terminent → deux réveils de ce fichier pour le même commit. Un seul
+# publie à la fois ; le second attend, constate que tout est déjà en ligne, et ne fait rien
+# de plus. (« cancel-in-progress: false » : on n'interrompt jamais une publication en cours.)
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    # On ne se réveille utilement que si le contrôle qui vient de finir est vert. S'il est
+    # rouge, il n'y a rien à faire : rien ne part, et c'est exactement le but. Et on ne
+    # republie pas le jeudi matin quand le contrôle hebdomadaire des empreintes tourne tout
+    # seul : seul un push (une vraie mise en ligne de Celtis) déclenche une publication.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - name: Vérifier que Pages publie bien depuis les workflows
+        id: reglage
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # build_type vaut « legacy » tant que Celtis n'a pas basculé la source sur
+          # « GitHub Actions », et « workflow » ensuite. Sans le réglage, on s'arrête ici,
+          # en vert, avec le message qui dit quoi faire.
+          type="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type 2>/dev/null || echo inconnu)"
+          echo "build_type=$type"
+          if [ "$type" != "workflow" ]; then
+            echo "::notice title=Publication non bloquante::Pages publie encore depuis la branche (build_type=$type). Pour que les contrôles retiennent la publication : Settings › Pages › Source = « GitHub Actions ». Rien n'a été fait ici."
+            echo "pret=non" >> "$GITHUB_OUTPUT"
+          else
+            echo "pret=oui" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Attendre que l'AUTRE contrôle soit vert sur le même commit
+        if: steps.reglage.outputs.pret == 'oui'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          # Deux fichiers de contrôle, un seul commit. Celui qui nous a réveillés est vert
+          # (voir le « if » du job). Il reste à s'assurer que l'autre l'est aussi, sur le
+          # MÊME commit — sinon un push pourrait passer parce qu'un seul des deux a fini.
+          # On interroge les exécutions par commit ; on attend jusqu'à 20 minutes.
+          attendus='"Contrôles automatiques" "Vérifier les empreintes des bibliothèques externes"'
+          for essai in $(seq 1 40); do
+            manque=""
+            for nom in "Contrôles automatiques" "Vérifier les empreintes des bibliothèques externes"; do
+              etat="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${SHA}&per_page=50" \
+                --jq ".workflow_runs[] | select(.name == \"$nom\") | .conclusion" | head -n 1)"
+              case "$etat" in
+                success) ;;
+                failure|cancelled|timed_out|action_required|startup_failure)
+                  echo "« $nom » est en échec ($etat) sur $SHA : rien n'est publié."
+                  exit 1 ;;
+                *) manque="$manque « $nom »" ;;
+              esac
+            done
+            if [ -z "$manque" ]; then
+              echo "Les deux contrôles sont verts sur $SHA."
+              exit 0
+            fi
+            echo "En attente de :$manque (essai $essai/40)…"
+            sleep 30
+          done
+          echo "Un contrôle n'a pas rendu son verdict en 20 minutes : par prudence, rien n'est publié."
+          exit 1
+
+      - name: Récupérer le site (exactement le commit contrôlé)
+        if: steps.reglage.outputs.pret == 'oui'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Préparer ce qui part en ligne
+        if: steps.reglage.outputs.pret == 'oui'
+        run: |
+          # Le site est servi tel quel depuis la racine (index.html, app/, sw.js, CNAME…).
+          # On retire seulement ce qui n'a rien à faire sur un serveur public : les
+          # contrôles, les workflows, les fonctions serveur (elles vivent chez Supabase).
+          # CNAME reste : c'est lui qui fait répondre christlivraison.ci.
+          mkdir -p /tmp/site
+          rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' \
+                --exclude 'supabase-functions' --exclude '_sql-prive' ./ /tmp/site/
+          test -f /tmp/site/CNAME && echo "CNAME présent : $(cat /tmp/site/CNAME)"
+          test -f /tmp/site/app/version.json && echo "Étiquette publiée : $(cat /tmp/site/app/version.json)"
+
+      - name: Emballer le site pour Pages
+        if: steps.reglage.outputs.pret == 'oui'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: /tmp/site
+
+      - name: Mettre en ligne
+        if: steps.reglage.outputs.pret == 'oui'
+        id: deploiement
+        uses: actions/deploy-pages@v4
