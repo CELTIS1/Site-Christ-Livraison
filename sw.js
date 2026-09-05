@@ -74,7 +74,7 @@
    sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
    pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v68';
+const CACHE_VERSION = 'clt-shell-v69';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.
@@ -106,6 +106,10 @@ const PRECACHE_URLS = [
   '/app/login.html',
   '/app/equipe.html',
   '/app/livreur.html',
+  // Gestion (comptabilité & paie) : oubliée du pré-cache jusqu'au 06/09/2026 (feuille de route 1.10).
+  '/app/gestion.html',
+  '/app/gestion.js',
+  '/app/manifest-gestion.json',
   '/app/fournisseur.html',
   '/app/manifest-equipe.json',
   '/app/manifest-admin.json',
@@ -156,15 +160,33 @@ const PRECACHE_URLS = [
   '/images/icons/apple-touch-icon-coursier-express.png'
 ];
 
+// Ce sans quoi rien ne s'ouvre : la page hors-ligne et la page de connexion. (Les fichiers
+// partagés — config.js, style.css… — se mettent en cache à la première visite, avec leur
+// étiquette de version ; on ne les pré-charge pas ici sans étiquette.) Tout le reste peut
+// manquer sans empêcher l'installation.
+const PRECACHE_VITAL = ['/offline.html', '/app/login.html'].filter((u) => PRECACHE_URLS.includes(u));
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
       .then((cache) =>
-        // 1) Coquille locale : addAll (tout ou rien ; ces fichiers existent forcément).
-        cache.addAll(PRECACHE_URLS)
-          // 2) Bibliothèques CDN : pré-cache TOLÉRANT (un échec réseau isolé ne doit pas
-          //    faire échouer toute l'installation du service worker).
-          .then(() => Promise.all(
+        /* 1) Le cœur : les six fichiers sans lesquels aucun écran ne s'ouvre. Tout ou rien,
+              et c'est voulu : s'ils manquent, mieux vaut pas de service worker qu'un service
+              worker qui sert une coquille cassée. */
+        cache.addAll(PRECACHE_VITAL)
+          /* 2) Tout le reste — pages, manifests, icônes — un par un, en TOLÉRANT l'échec.
+             (06/09/2026, feuille de route 1.10.) Avant, les 51 adresses passaient par un seul
+             addAll : une icône renommée, une page déplacée, et l'installation entière échouait
+             en silence — plus de hors-ligne, plus de notifications push, sans un message. Une
+             adresse qui manque est maintenant notée dans la console et ne fait tomber rien
+             d'autre. */
+          .then(() => Promise.allSettled(
+            PRECACHE_URLS.filter((u) => !PRECACHE_VITAL.includes(u)).map((u) =>
+              cache.add(u).catch((err) => console.warn('[sw] Pré-cache ignoré :', u, err))
+            )
+          ))
+          // 3) Bibliothèques CDN : même tolérance.
+          .then(() => Promise.allSettled(
             PRECACHE_CDN.map((u) =>
               cache.add(u).catch((err) => console.warn('[sw] Pré-cache CDN ignoré :', u, err))
             )

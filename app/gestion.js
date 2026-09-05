@@ -924,6 +924,17 @@ async function loadRecettes(){
     : '';
   document.getElementById('rec-grid').innerHTML = banniere + `<table class="g-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>`;
 }
+
+/* ÉCRIRE, ET LIRE LA RÉPONSE. (06/09/2026, feuille de route 1.5)
+   Supabase ne lève pas d'exception sur un refus : il renvoie { error }. Une écriture qu'on
+   « await » sans lire error a l'air d'avoir réussi — l'écran se recalcule, rien n'est en base.
+   Vingt-quatre écritures de ce module étaient dans ce cas. Chacune passe maintenant par ici :
+   un refus devient une exception, que les try/catch existants attrapent et annoncent. */
+async function ecrire(promesse){
+  const res = await promesse;
+  if (res && res.error) throw res.error;
+  return res;
+}
 async function saveRecette(input){
   const chauffeur_id = input.dataset.ch, date_recette = input.dataset.date;
   // Verrou de clôture : refuse toute écriture sur un mois clôturé.
@@ -1096,7 +1107,7 @@ async function delDepense(id){
     if (error) throw error;
     // Sinon une dépense supprimée laisse une écriture orpheline en Compta générale,
     // invisible depuis l'onglet Dépenses (aucune trace du "pourquoi" cette écriture existe).
-    await supabaseClient.from('gestion_ecritures').delete().eq('source','depense').eq('source_id', id);
+    await ecrire(supabaseClient.from('gestion_ecritures').delete().eq('source','depense').eq('source_id', id));
     if (rows.justif_chemin){ try { await supabaseClient.storage.from(COMPTA_BUCKET).remove([rows.justif_chemin]); } catch(e){ /* justificatif : nettoyage best-effort */ } }
     loadDepenses(); showToast('Dépense supprimée');
   }
@@ -1119,7 +1130,7 @@ async function loadObjectifs(){
 async function saveObjectif(input){
   const annee = parseInt(document.getElementById('obj-year').value);
   const mois = parseInt(input.dataset.mois), objectif = n(input.value);
-  try { await supabaseClient.from('gestion_objectifs').upsert({ annee, mois, objectif }, { onConflict:'annee,mois' }); loadObjectifs(); }
+  try { await ecrire(supabaseClient.from('gestion_objectifs').upsert({ annee, mois, objectif }, { onConflict:'annee,mois' })); loadObjectifs(); }
   catch(e){ showToast('Erreur enregistrement objectif', true); console.error(e); }
 }
 
@@ -1141,18 +1152,18 @@ async function addChauffeur(){
   if (!nom){ showToast('Indiquez un nom.', true); return; }
   try {
     const ordre = (CHAUFFEURS.reduce((m,c)=>Math.max(m,c.ordre||0),0))+1;
-    await supabaseClient.from('gestion_chauffeurs').insert({ nom, ordre });
+    await ecrire(supabaseClient.from('gestion_chauffeurs').insert({ nom, ordre }));
     document.getElementById('chauf-nom').value='';
     await loadChauffeurs(); renderChauffeurs(); showToast('Chauffeur ajouté');
   } catch(e){ showToast('Erreur (nom déjà existant ?)', true); console.error(e); }
 }
 async function renameChauffeur(id, nom){
   nom = nom.trim(); if (!nom) return;
-  try { await supabaseClient.from('gestion_chauffeurs').update({ nom }).eq('id',id); await loadChauffeurs(); }
+  try { await ecrire(supabaseClient.from('gestion_chauffeurs').update({ nom }).eq('id',id)); await loadChauffeurs(); }
   catch(e){ showToast('Erreur renommage', true); console.error(e); }
 }
 async function toggleChauffeur(id, actif){
-  try { await supabaseClient.from('gestion_chauffeurs').update({ actif: !actif }).eq('id',id); await loadChauffeurs(); renderChauffeurs(); }
+  try { await ecrire(supabaseClient.from('gestion_chauffeurs').update({ actif: !actif }).eq('id',id)); await loadChauffeurs(); renderChauffeurs(); }
   catch(e){ showToast('Erreur', true); console.error(e); }
 }
 
@@ -1270,8 +1281,8 @@ async function saveSalarie(){
       if (upErr) throw upErr;
       rec.photo_path = path;
     }
-    if (id) await supabaseClient.from('gestion_salaries').update(rec).eq('id',id);
-    else await supabaseClient.from('gestion_salaries').insert(rec);
+    if (id) await ecrire(supabaseClient.from('gestion_salaries').update(rec).eq('id',id));
+    else await ecrire(supabaseClient.from('gestion_salaries').insert(rec));
     closeModal('modal-salarie');
     await loadSalaries(); renderSalaries(); showToast('Salarié enregistré');
   } catch(e){ showToast('Erreur (matricule déjà utilisé ?)', true); console.error(e); }
@@ -1310,8 +1321,8 @@ async function saveSaisie(input){
   try {
     const { data } = await supabaseClient.from('gestion_saisie_mensuelle').select('id').eq('salarie_id',salarie_id).eq('periode',periode).maybeSingle();
     const patch = {}; patch[field] = value;
-    if (data && data.id) await supabaseClient.from('gestion_saisie_mensuelle').update(patch).eq('id',data.id);
-    else await supabaseClient.from('gestion_saisie_mensuelle').insert(Object.assign({ salarie_id, periode }, patch));
+    if (data && data.id) await ecrire(supabaseClient.from('gestion_saisie_mensuelle').update(patch).eq('id',data.id));
+    else await ecrire(supabaseClient.from('gestion_saisie_mensuelle').insert(Object.assign({ salarie_id, periode }, patch)));
   } catch(e){ showToast('Erreur enregistrement saisie', true); console.error(e); }
 }
 
@@ -2242,12 +2253,12 @@ async function saveParametres(){
     };
     for (const [col, id] of Object.entries(champs)){ const v = getTx(id); if (v !== undefined) rec[col] = v; }
   }
-  try { await supabaseClient.from('gestion_parametres').upsert(rec, { onConflict:'id' }); await loadParametres(); showToast('Paramètres enregistrés'); }
+  try { await ecrire(supabaseClient.from('gestion_parametres').upsert(rec, { onConflict:'id' })); await loadParametres(); showToast('Paramètres enregistrés'); }
   catch(e){ showToast('Erreur enregistrement paramètres', true); console.error(e); }
 }
 async function saveGrille(input){
   const cat = input.dataset.cat, salaire_min = n(input.value);
-  try { await supabaseClient.from('gestion_categories').update({ salaire_min }).eq('categorie',cat); await loadCategories(); }
+  try { await ecrire(supabaseClient.from('gestion_categories').update({ salaire_min }).eq('categorie',cat)); await loadCategories(); }
   catch(e){ showToast('Erreur enregistrement grille', true); console.error(e); }
 }
 
@@ -3025,6 +3036,11 @@ async function supprimerEcriture(id){
   const montant = lignes.reduce((s,l)=>s+n(l.debit),0);
   const detail = `${e.date_ecriture||''} — ${e.libelle||'(sans libellé)'} — ${fmtF(montant)}`;
   if (!confirm(`Supprimer définitivement cette écriture ?\n\n${detail}\n\nCette action est irréversible.`)) return;
+  // Le verrou de clôture, ici aussi (06/09/2026, feuille de route 1.5) : on supprimait en direct
+  // sans regarder si le mois était clôturé.
+  await refreshCloturesSet();
+  const dp = String(e.date_ecriture || '').split('-');
+  if (dp.length >= 2 && moisCloture(parseInt(dp[0]), parseInt(dp[1]))){ showToast('Mois clôturé : écriture en lecture seule.', true); return; }
   try {
     const { error } = await supabaseClient.from('gestion_ecritures').delete().eq('id', id);
     if (error) throw error;
