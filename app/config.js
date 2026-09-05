@@ -5612,6 +5612,29 @@ function releveClienteTuilesHTML(colis) {
 // dessous. Aucun des deux chiffres n'était faux ; c'est le mot qui mentait.
 // « Pas encore pris » dit exactement ce que compte la tuile, et laisse le verbe récupérer
 // à la tournée de collecte, qui est la seule à en avoir besoin.
+/* LA JOURNÉE DE TRAVAIL D'UN LIVREUR. (06/09/2026)
+
+   Le 5 septembre, les tuiles et la liste du livreur ont été rattachées au JOUR DE RÉCEPTION du
+   colis (created_at), comme l'argent. Sur le terrain, ça donnait des zéros : un livreur qui
+   livre le mardi des colis reçus le lundi voyait « 0 livrés » pendant toute sa journée, et sa
+   liste « À faire » faisait disparaître chaque colis à la seconde où il l'enregistrait « livré ».
+   Les livreurs l'ont signalé à Celtis le jour même : « les données disparaissent, le décompte
+   n'est pas correct ».
+
+   Une journée de travail, ce n'est pas « les colis reçus ce jour-là » : c'est tout ce qui est
+   encore en route (quel que soit son jour de réception) PLUS tout ce qui a bougé ce jour-là
+   (pris, livré, non livré, retourné). C'est ce que le livreur a sous les yeux et dans les mains.
+   L'ARGENT, lui, reste découpé par jour de réception : c'est la règle de la remise du soir, et
+   elle n'est pas touchée ici. */
+const STATUTS_EN_ROUTE = ["en_attente", "recupere", "en_livraison"];
+function colisDeLaJourneeDeTravail(colis, jour) {
+  return (colis || []).filter(function (c) {
+    if (!c) return false;
+    if (STATUTS_EN_ROUTE.indexOf(c.statut) !== -1) return true;
+    return Object.keys(HORODATAGE_DU_STATUT).some(function (st) { return jourEvenementColis(c, st) === jour; });
+  });
+}
+
 function tourneeTuilesHTML(colis) {
   const liste = colis || [];
   const n = s => liste.filter(c => c.statut === s).length;

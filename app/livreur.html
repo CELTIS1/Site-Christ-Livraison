@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260906bio">
-<script src="theme.js?v=20260906bio"></script>
-<script src="splash.js?v=20260906bio"></script>
+<link rel="stylesheet" href="style.css?v=20260906journee">
+<script src="theme.js?v=20260906journee"></script>
+<script src="splash.js?v=20260906journee"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -785,9 +785,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260906bio"></script>
-<script src="config.js?v=20260906bio"></script>
-<script src="biometric-lock.js?v=20260906bio"></script>
+<script src="clt-common.js?v=20260906journee"></script>
+<script src="config.js?v=20260906journee"></script>
+<script src="biometric-lock.js?v=20260906journee"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1292,12 +1292,14 @@
   // Libellés de filtre : dérivés du référentiel central STATUTS (config.js) — source unique.
   const FILTER_LABELS = (typeof STATUT_FILTER_LABELS !== 'undefined') ? STATUT_FILTER_LABELS
     : { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
-  // « À faire » : filtre virtuel, en tête de rangée et choisi par défaut. Celtis (05/09/2026) :
-  // le livreur ouvre l'application pour voir ce qui lui reste, pas ce qu'il a déjà livré.
-  // Il regroupe les trois statuts encore en route ; « Tous » garde son sens d'avant.
+  // « Ma journée » : filtre virtuel, en tête de rangée et choisi par défaut. Celtis (05/09/2026) :
+  // le livreur ouvre l'application pour voir ce qui lui reste. Mais « ce qui reste » seul faisait
+  // DISPARAÎTRE un colis à la seconde où il l'enregistrait livré — les livreurs l'ont signalé le
+  // 6 septembre. La journée garde donc les colis encore en route ET ceux qu'il a traités
+  // aujourd'hui : voir colisDeLaJourneeDeTravail() dans config.js. « Tous » garde son sens.
   const FILTRE_A_FAIRE = 'a_faire';
   const STATUTS_A_FAIRE = ['en_attente', 'recupere', 'en_livraison'];
-  const FILTER_LABELS_MES = Object.assign({ [FILTRE_A_FAIRE]: 'À faire' }, FILTER_LABELS);
+  const FILTER_LABELS_MES = Object.assign({ [FILTRE_A_FAIRE]: 'Ma journée' }, FILTER_LABELS);
 
   // Les trois onglets, sous le nom que le code leur donne. « finance » s'appelait « tous »
   // jusqu'au 25 août 2026 : un téléphone qui a gardé l'ancien nom en mémoire est réorienté
@@ -2041,7 +2043,7 @@
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
     // « À faire » = les trois statuts encore en route ; « Tous » = tout ; sinon un statut.
     let filtered = activeFilterMes === 'tous' ? mine
-      : activeFilterMes === FILTRE_A_FAIRE ? mine.filter(c => STATUTS_A_FAIRE.includes(c.statut))
+      : activeFilterMes === FILTRE_A_FAIRE ? colisDeLaJourneeDeTravail(mine, todayLocalISODate())
       : mine.filter(c => c.statut === activeFilterMes);
     filtered = filtered.filter(c => matchesSearch(c, searchMes) && matchesDate(c, filtreDateMes));
     // Un colis coché puis supprimé, réassigné à quelqu'un d'autre ou passé hors des critères ne
@@ -2054,7 +2056,7 @@
       if (!cltPoserHTML(list, (filtreDateMes
         ? `<div class="empty-state">Aucun colis assigné à cette date.</div>`
         : activeFilterMes === FILTRE_A_FAIRE && !searchMes
-          ? `<div class="empty-state">Rien à faire pour le moment 👍 — touchez « Tous » pour revoir vos colis livrés.</div>`
+          ? `<div class="empty-state">Rien pour le moment 👍 — touchez « Tous » pour revoir vos colis des jours passés.</div>`
           : `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`)
         + (lotMesActif ? barreLotHTML(0, 0, boutonsLotMes(), '') : ''))) return;
       if (lotMesActif) brancherBarreLotMes(list, []);
@@ -2525,13 +2527,14 @@
     const box = document.getElementById('tournee-summary');
     const reste = document.getElementById('tournee-autres-jours');
     if (!box || !currentUser) return;
-    // LA JOURNÉE DU CALENDRIER, PAS TOUT L'HISTORIQUE. (05/09/2026) Jusqu'ici on comptait tous
-    // les colis du livreur, depuis toujours : « 87 livrés » ne disait rien de la journée. On
-    // compte maintenant les colis reçus le jour choisi — le même découpage que l'argent juste
-    // en dessous, et que la fiche « Sa tournée du jour » que l'équipe voit de lui.
+    // LA JOURNÉE DE TRAVAIL, PAS TOUT L'HISTORIQUE — ET PAS LE JOUR DE RÉCEPTION NON PLUS.
+    // (05/09/2026, corrigé le 06/09/2026.) Compter « depuis toujours » ne disait rien de la
+    // journée ; compter les colis REÇUS ce jour donnait des zéros à un livreur qui livre le
+    // mardi ce qu'il a reçu le lundi. On compte ce qu'il a en route et ce qu'il a traité ce
+    // jour-là : colisDeLaJourneeDeTravail(), dans config.js.
     const jour = argentJourDate || todayLocalISODate();
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
-    const duJour = mine.filter(c => dayKey(c.created_at) === jour);
+    const duJour = colisDeLaJourneeDeTravail(mine, jour);
     // Les tuiles sont dessinées par tourneeTuilesHTML() (config.js) : c'est la MÊME fonction
     // qui dessine l'aperçu de ce livreur côté équipe. Les deux écrans ne peuvent donc pas
     // annoncer deux comptes différents pour la même tournée.
@@ -2539,9 +2542,11 @@
     // Ce qui traîne d'autres jours : un colis pris lundi et toujours en route jeudi ne doit pas
     // disparaître parce qu'on regarde jeudi. Une ligne le dit ; la liste en bas le montre.
     if (reste) {
-      const enRoute = mine.filter(c => dayKey(c.created_at) !== jour
-        && (c.statut === 'en_attente' || c.statut === 'recupere' || c.statut === 'en_livraison')).length;
-      cltPoserHTML(reste, enRoute ? `⏳ ${enRoute} colis d'autres jours encore en cours — voir « Toutes » les dates.` : '');
+      // Les colis en route comptent déjà dans les tuiles, quel que soit leur jour de réception ;
+      // la ligne dit simplement combien viennent d'un autre jour, pour qu'on ne les cherche pas
+      // dans l'argent de la journée (qui, lui, suit le jour de réception).
+      const dAutresJours = duJour.filter(c => dayKey(c.created_at) !== jour).length;
+      cltPoserHTML(reste, dAutresJours ? `⏳ ${dAutresJours} de ces colis viennent d'autres jours (reçus avant).` : '');
     }
   }
 

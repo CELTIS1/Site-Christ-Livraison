@@ -404,6 +404,13 @@ jobs:
       - name: La connexion biométrique sans mot de passe (le coffre ne garde qu'un jeton)
         run: node tests/connexion-biometrique-sans-mot-de-passe.test.mjs
 
+      # La journée de travail du livreur (06/09/2026). Les livreurs ont signalé que « les données
+      # disparaissent, le décompte n'est pas correct » : la liste par défaut faisait disparaître
+      # un colis à la seconde où il était livré, et les tuiles comptaient les colis REÇUS ce
+      # jour-là. Une seule définition dans config.js, exécutée ici sur des colis choisis.
+      - name: La journée de travail du livreur (rien ne disparaît quand on enregistre)
+        run: node tests/la-journee-du-livreur.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""

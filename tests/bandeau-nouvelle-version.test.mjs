@@ -374,10 +374,11 @@ verifier(
    v69, le 06/09/2026 — pré-cache tolérant (feuille de route 1.10), Gestion pré-chargée.
    v70, le 06/09/2026 — la connexion biométrique ne garde plus le mot de passe (feuille de route 1.2).
    v71, le 06/09/2026 — le code avant le nouveau mot de passe (feuille de route 1.3) : les deux pages de connexion changent.
-   v72, le 06/09/2026 — L'essentiel garde les raccourcis comptes / mots de passe, pastille « code à dicter » (equipe.html). */
+   v72, le 06/09/2026 — L'essentiel garde les raccourcis comptes / mots de passe, pastille « code à dicter » (equipe.html).
+   v73, le 06/09/2026 — la journée de travail du livreur (config.js, livreur.html) : étiquette 20260906journee. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v72'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v73'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
