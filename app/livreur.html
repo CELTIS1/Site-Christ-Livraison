@@ -216,11 +216,15 @@
   .montants-titre{ font-size:12px; font-weight:800; color:#1B4374; display:block; }
   .montants-avis{ font-size:11px; line-height:1.4; margin:6px 0 0; color:#4A6486; }
   .montants-grille{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
-  .montant-case{ flex:1 1 120px; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  /* « .montants-bloc .montant-case » et non « .montant-case » seul : la case est un <label> dans
+     un .field, et style.css pose « .field label{display:block} », plus précis qu'une classe seule.
+     Sans ce renfort la case n'est jamais une colonne, et deux champs voisins dont l'étiquette
+     tient sur une ou deux lignes ne s'alignent pas. (05/09/2026) */
+  .montants-bloc .montant-case{ flex:1 1 120px; min-width:0; display:flex; flex-direction:column; gap:2px; justify-content:flex-end; margin:0; }
   .montant-case > span{ font-size:11.5px; font-weight:700; color:#1B4374; }
   /* 44 px : la hauteur d'un pouce. Un champ d'argent qu'on rate au premier appui se remplit au
      deuxième, en pleine rue, sans regarder. */
-  .montant-case input{ width:100%; min-width:0; min-height:44px; padding:6px 10px; font-size:16px; font-weight:700; border-radius:9px; }
+  .montant-case input{ width:100%; min-width:0; min-height:44px; margin-top:auto; padding:6px 10px; font-size:16px; font-weight:700; border-radius:9px; }
   html[data-theme="dark"] .montants-bloc{ background:#141F2E; border-color:#2E4A6B; }
   html[data-theme="dark"] .montants-titre,
   html[data-theme="dark"] .montant-case > span{ color:#9EC0E6; }
@@ -303,6 +307,30 @@
   @media(min-width:641px){
     .colis-item.mes-colis-item .status-col .btn-save{ flex:1 1 100%; align-self:stretch; }
   }
+
+  /* ---------- Sur ordinateur, le repli déplié ne prend plus tout l'écran (05/09/2026) ----------
+     Celtis : « sur ordinateur les cartes dépliées occupent beaucoup trop d'espace. » Mesuré sur
+     sa capture : 240 px de vide sous les montants, 250 px sous les boutons photo, une zone
+     d'observation de 360 px. La cause est dans style.css, à partir de 641 px : les champs de la
+     colonne d'actions reçoivent `flex:1 1 240px` et la zone d'observation `flex:1 1 260px`,
+     réglages pensés pour une colonne en LIGNE (où cette base est une largeur). Depuis que ces
+     champs vivent dans le repli — une colonne empilée — la même base devient une HAUTEUR.
+     Ici on la rend à zéro, et sur écran large le repli passe en deux colonnes : les deux bascules
+     côte à côte, les montants sur toute la largeur, l'observation à côté de la photo. */
+  .colis-item.mes-colis-item .status-col .colis-plus-corps .field,
+  .colis-item.mes-colis-item .status-col .colis-plus-corps .obs-textarea{
+    flex:0 0 auto; min-width:0; width:100%; min-height:44px;
+  }
+  @media(min-width:641px){
+    .colis-item.mes-colis-item .status-col .colis-plus-corps{
+      display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px 12px; align-items:start;
+    }
+    .colis-item.mes-colis-item .status-col .colis-plus-corps .montants-bloc,
+    .colis-item.mes-colis-item .status-col .colis-plus-corps .sync-pending-badge{ grid-column:1 / -1; }
+    .colis-item.mes-colis-item .status-col .colis-plus-corps .obs-textarea{ min-height:96px; height:100%; }
+    .colis-item.mes-colis-item .status-col .colis-plus-corps .btn{ justify-self:start; }
+  }
+  .colis-plus-corps > .meta{ font-size:11.5px; }
 
   /* ---------- « Ma journée » : les deux cartes du haut n'en font plus qu'une (26/08/2026) ----------
      Les pastilles viennent de config.js avec leurs dimensions écrites dans l'attribut style —
