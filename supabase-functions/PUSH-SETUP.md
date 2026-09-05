@@ -177,3 +177,25 @@ exemple `https://esm.sh/web-push`, gère la signature VAPID et l'envoi.
 
 Tant que les étapes 1 à 4 ne sont pas faites, **rien ne casse** : le service
 worker attend simplement des push qui n'arrivent pas encore.
+
+---
+
+## Depuis le 6 septembre 2026 — la fonction exige un secret (feuille de route 1.1)
+
+`envoyer-push` refuse désormais tout appel qui ne porte pas l'en-tête HTTP
+`x-clt-webhook-secret` avec la bonne valeur (réponse 401), et refuse AUSSI tout
+appel si le secret n'est pas posé côté serveur (réponse 500 explicite).
+
+À faire une fois, dans le Dashboard Supabase :
+
+1. **Edge Functions › Secrets** : ajouter `CLT_WEBHOOK_SECRET` = une longue
+   valeur aléatoire (32 caractères ou plus). Ne jamais l'écrire dans un fichier
+   du dépôt.
+2. **Database › Webhooks** : sur chaque webhook qui appelle `envoyer-push`
+   (colis, express_courses), ouvrir « HTTP Headers » et ajouter l'en-tête
+   `x-clt-webhook-secret` avec exactement la même valeur.
+3. Redéployer la fonction (coller `envoyer-push/index.ts` dans l'éditeur › Deploy).
+
+Contrôle : `tests/envoyer-push-protege.test.mjs` rejoue la fonction avec et sans
+le secret. En production, un changement de statut sur un colis doit toujours
+faire vibrer le téléphone du livreur ; un appel direct sans l'en-tête doit rendre 401.

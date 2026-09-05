@@ -387,6 +387,14 @@ jobs:
       - name: Le relevé en couleur (le papier porte les couleurs de l'écran)
         run: node tests/releve-en-couleur.test.mjs
 
+      # La porte d'envoyer-push (phase 1, point 1.1 — 06/09/2026). La fonction serveur qui fait
+      # vibrer les téléphones n'exigeait rien : n'importe qui, avec la clé publique du site,
+      # pouvait pousser un texte à toute l'équipe. Cette série charge le VRAI fichier déployé et
+      # rejoue des appels : sans secret → 401 et la base n'est pas lue ; secret absent côté
+      # serveur → 500 ; avec le secret → destinataires par listes, jamais par chaîne assemblée.
+      - name: La porte d'envoyer-push (sans le secret, rien ne part)
+        run: node tests/envoyer-push-protege.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""
