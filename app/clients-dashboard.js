@@ -434,7 +434,7 @@
         </div>
         <div class="cd-fiche-bloc cd-fiche-bloc-large">
           <div class="cd-fiche-bloc-titre">Derniers colis</div>
-          ${recents.length ? `<table class="cd-mini"><tbody>${recents.map((c) => `<tr><td>${enClair(jour(c.created_at))}</td><td>${esc(c.numero || '')}</td><td>${esc(c.destination || c.commune_destination || '')}</td><td><span class="cd-statut cd-statut-${esc(c.statut)}">${esc(statutLib(c))}</span></td><td class="cd-cell-num">${money(typeof montantArticleColis === 'function' ? montantArticleColis(c) : c.montant_article)}</td></tr>`).join('')}</tbody></table>` : '<div class="cd-muet">Aucun colis sur la période.</div>'}
+          ${recents.length ? `<table class="cd-mini"><tbody>${recents.map((c) => `<tr><td>${enClair(jour(c.created_at))}</td><td>${esc(c.numero || '')}</td><td>${esc(c.destination || c.commune_destination || '')}</td><td><span class="cd-statut cd-statut-${esc(c.statut)}">${esc(statutLib(c))}</span></td><td class="cd-cell-num">${money(typeof montantArticleColis === 'function' ? montantArticleColis(c) : c.montant_article)}</td><td>${typeof window.eqOuvrirModificationColis === 'function' ? `<button type="button" class="cd-lien" data-cd-modifier="${esc(c.id)}" title="Ouvrir la fiche complète du colis : statut, livreur, adresse, montants">✏️</button>` : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="cd-muet">Aucun colis sur la période.</div>'}
         </div>
       </div>`;
   }
@@ -613,6 +613,8 @@
       if (ecran) { cdFermerFiche(); if (typeof ouvrirFicheEcran === 'function') ouvrirFicheEcran('cliente', ecran.dataset.cdEcran); return; }
       const tournee = e.target.closest('[data-cd-tournee]');
       if (tournee) { cdFermerFiche(); if (typeof showEquipeTab === 'function') showEquipeTab('programmation'); return; }
+      const modifier = e.target.closest('[data-cd-modifier]');
+      if (modifier) { cdFermerFiche(); if (typeof window.eqOuvrirModificationColis === 'function') window.eqOuvrirModificationColis(modifier.dataset.cdModifier); return; }
       const reverser = e.target.closest('[data-cd-reverser]');
       if (reverser) { cdReverser(reverser.dataset.cdReverser); return; }
       const annuler = e.target.closest('[data-cd-annuler]');

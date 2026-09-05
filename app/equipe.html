@@ -3868,6 +3868,10 @@ switch (cle) {
 }
 // Toucher la carte d'un non livré / retour surligné, c'est l'avoir examiné : il sort de la
 // pastille et du bandeau d'alerte — c'est le geste que Celtis demande (« on les touche d'abord »).
+document.addEventListener('click', (e) => {
+const b = e.target.closest('[data-ouvrir-colis]');
+if (b) { e.stopPropagation(); eqOuvrirModificationColis(b.dataset.ouvrirColis); }
+});
 document.addEventListener('clt:colis-vu', (e) => {
   const d = e.detail || {};
   if (d.statut === 'non_livre' || d.statut === 'retour') {
@@ -7842,7 +7846,7 @@ ${rows.map(c => `
 </td>
 <td data-label="Observation"><textarea class="compta-edit-observation" placeholder="Observation...">${c.observation ? escapeHTML(c.observation) : ''}</textarea></td>
 <td data-label="Date">${formatDate(c.created_at)}</td>
-<td><button type="button" class="btn btn-sm compta-save-row">Enregistrer</button></td>
+<td><button type="button" class="btn btn-sm compta-save-row">Enregistrer</button> <button type="button" class="btn btn-outline btn-sm" data-ouvrir-colis="${c.id}" title="Ouvrir la fiche complète : statut, livreur, adresse, montants, tout">✏️ Tout modifier</button></td>
 </tr>
 `).join('')}
 </tbody>
@@ -8267,19 +8271,52 @@ if (btn) btn.disabled = false;
 // vaudrait pas les quelques secondes qu'elle ferait gagner.
 function ficheAllerCorrigerMontants(id){
 fermerFicheEcran();
+eqOuvrirModificationColis(id);
+}
+
+/* OUVRIR LA FICHE DE MODIFICATION D'UN COLIS, D'OÙ QU'ON VIENNE. (05/09/2026)
+   Celtis : « lorsqu'on vérifie le point des clients, il faut pouvoir modifier les montants, les
+   statuts et tout, et que ça s'actualise partout. »
+   Il n'y a qu'UNE fiche de modification : celle de la carte, dans l'onglet Colis (menu ⋮ →
+   Modifier). Toutes les vues qui montrent un colis — point des clients en comptabilité, fiche
+   « Son écran », fiche cliente du tableau de bord — y renvoient par cette fonction, au lieu
+   d'ouvrir chacune une porte différente. Comme l'écriture passe par la même fiche, la liste,
+   les récapitulatifs, la caisse et le relevé de la cliente suivent tous.
+   L'ancienne version ne changeait pas d'onglet et laissait les filtres : le colis d'un autre
+   jour restait masqué par « aujourd'hui » et rien ne s'ouvrait. Ici on lève tous les filtres,
+   on ne montre que ce colis (recherche sur son numéro), on ouvre sa fiche et on le surligne. */
+async function eqOuvrirModificationColis(id){
+if (!id) return;
+let colis = allColis.find(c => c.id === id);
+if (!colis) {
+// Un colis ancien, hors de la page chargée : on va le chercher, et on l'ajoute à la liste.
+const { data } = await supabaseClient.from('colis').select('*').eq('id', id).maybeSingle();
+if (data) { allColis.unshift(data); colis = data; }
+}
+if (typeof showEquipeTab === 'function') showEquipeTab('colis');
+if (typeof showMainTab === 'function') showMainTab('colis');
+activeFilter = 'tous';
+filtreDateColis = '';
+filtreLivreurColis = '';
+const inp = document.getElementById('filtre-date-colis'); if (inp) inp.value = '';
+const sel = document.getElementById('filtre-livreur-colis');
+if (sel) { sel.value = ''; if (window.CLTRecherche) CLTRecherche.rafraichir(sel); }
+searchColis = (colis && colis.numero) ? colis.numero : '';
+const rech = document.getElementById('search-colis'); if (rech) rech.value = searchColis;
 if (!window.__colisEditing) window.__colisEditing = new Set();
 window.__colisEditing.add(id);
-if (typeof showMainTab === 'function') showMainTab('colis');
+if (typeof cltMarquerColisAVoir === 'function') cltMarquerColisAVoir(id);
+eqRemettreTrancheAZero();
+eqViderSelection();
+renderFilters();
 renderColis();
-// Le rendu vient d'avoir lieu : la ligne existe, on peut aller la chercher et la montrer.
 setTimeout(() => {
-// On compare les identifiants un à un plutôt que d'en fabriquer un sélecteur CSS : l'échapper
-// proprement demanderait CSS.escape, qui manque encore sur les vieux Android de l'équipe.
 let item = null;
-document.querySelectorAll('.colis-item').forEach(el => { if (el.dataset.id === id) item = el; });
+document.querySelectorAll('#colis-list .colis-item').forEach(el => { if (el.dataset.id === id) item = el; });
 if (item && item.scrollIntoView) item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}, 60);
+}, 120);
 }
+window.eqOuvrirModificationColis = eqOuvrirModificationColis;
 
 // La fenêtre elle-même : fermeture, changement de journée.
 (function initFicheEcran(){

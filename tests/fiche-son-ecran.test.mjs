@@ -487,10 +487,12 @@ verifier("marquer encaissé ne touche QUE l'argent de la cliente",
   && !/montant_livraison/.test(bascule),
   "encaissé, remis et reversé sont trois évènements distincts ; les confondre est l'erreur que tout le reste du code empêche");
 
-const versEdition = blocDe(equipe, 'ficheAllerCorrigerMontants', 'equipe.html');
+// Depuis le 05/09/2026, la porte est commune à toutes les vues : eqOuvrirModificationColis().
+// Elle peut LIRE un colis absent de la page chargée (select), mais n'écrit jamais.
+const versEdition = blocDe(equipe, 'ficheAllerCorrigerMontants', 'equipe.html') + blocDe(equipe, 'eqOuvrirModificationColis', 'equipe.html');
 verifier("« Corriger les montants » n'écrit rien et renvoie vers l'écran d'édition en place",
-  !/from\('colis'\)/.test(versEdition) && !/\.update\(/.test(versEdition)
-  && /__colisEditing/.test(versEdition),
+  !/\.update\(/.test(versEdition) && !/\.insert\(/.test(versEdition)
+  && /__colisEditing/.test(versEdition) && /eqOuvrirModificationColis\(id\)/.test(versEdition),
   "recopier ici la validation des montants, ce serait une seconde copie qui finirait par diverger");
 
 verifier("les deux corrections qui écrivent demandent confirmation avant d'écrire",
