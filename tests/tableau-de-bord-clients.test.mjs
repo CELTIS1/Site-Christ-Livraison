@@ -153,6 +153,9 @@ verifier("il figure dans la liste des onglets", /EQ_TABS = \[[^\]]*'clients'/.te
 verifier("la section est déplacée dans son panneau et initialisée", /put\('eqpanel-clients', byId\('section-clients'\)\)/.test(equipe) && /CLTClients\.init\(\)/.test(equipe));
 verifier("ouvrir l'onglet relit la base", /key === 'clients' && window\.CLTClients\) CLTClients\.rafraichir\(\)/.test(equipe));
 verifier('la fiche cliente est une couche fermable', /id="cd-fiche-overlay"[^>]*data-clt-couche=/.test(equipe) && /id="cd-fiche-fermer"[^>]*data-clt-fermer/.test(equipe));
+verifier("les lectures se font par tranches : la base coupe à 1 000 lignes sans prévenir",
+  /\.range\(depart, depart \+ CD_TRANCHE - 1\)/.test(source) && /data\.length < CD_TRANCHE\) return tout/.test(source),
+  "vu le 05/09 : 684 colis chargés, la période d'avant annoncée à zéro");
 verifier("l'écran ne fait aucune écriture en base", !/\.(insert|update|delete|upsert)\(/.test(source), 'un tableau de bord lit, il ne modifie rien');
 
 titre('Les fichiers partagés portent tous la même étiquette de version');

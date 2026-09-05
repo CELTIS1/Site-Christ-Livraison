@@ -57,18 +57,36 @@
   const ilYA = (iso) => { if (!iso) return 'jamais'; const n = joursEntre(jour(iso), aujourdhui()); return n <= 0 ? "aujourd'hui" : n === 1 ? 'hier' : `il y a ${n} j`; };
 
   // ---------- Lecture ----------
+  // La base ne rend jamais plus de 1 000 lignes par lecture. Vu le 5 septembre sur les vraies
+  // données : 684 colis en 30 jours, la période d'avant annoncée à ZÉRO — coupée net par ce
+  // plafond, en silence. On lit donc par tranches, jusqu'à la dernière.
+  const CD_TRANCHE = 1000;
+  async function cdLireTout(construire) {
+    let tout = [], depart = 0;
+    for (;;) {
+      const { data, error } = await construire().range(depart, depart + CD_TRANCHE - 1);
+      if (error) throw error;
+      tout = tout.concat(data || []);
+      if (!data || data.length < CD_TRANCHE) return tout;
+      depart += CD_TRANCHE;
+    }
+  }
+
+  let cdDettes = [];   // colis livrés dont l'article n'est pas encore reversé, TOUTES dates
+
   async function cdCharger(force) {
     if (cdChargement && !force) return cdChargement;
     cdChargement = (async () => {
       const depuis = isoMoins(cdPeriode * 2 - 1) + 'T00:00:00';
-      const [colisRes, profilsRes] = await Promise.all([
-        supabaseClient.from('colis').select('*').gte('created_at', depuis).order('created_at', { ascending: false }),
-        supabaseClient.from('profiles').select('*').eq('role', 'fournisseur').order('full_name'),
-      ]);
-      if (colisRes.error) { console.error('Tableau de bord clients (colis) :', colisRes.error); throw colisRes.error; }
-      if (profilsRes.error) { console.error('Tableau de bord clients (profils) :', profilsRes.error); throw profilsRes.error; }
-      cdColis = colisRes.data || [];
-      cdProfils = profilsRes.data || [];
+      try {
+        const [colis, profils, dettes] = await Promise.all([
+          cdLireTout(() => supabaseClient.from('colis').select('*').gte('created_at', depuis).order('created_at', { ascending: false })),
+          cdLireTout(() => supabaseClient.from('profiles').select('*').eq('role', 'fournisseur').order('full_name')),
+          // « À reverser » ne dépend d'aucune période : une somme due en juin est toujours due.
+          cdLireTout(() => supabaseClient.from('colis').select('*').eq('statut', 'livre').is('reverse_au_fournisseur_at', null).order('created_at', { ascending: false })),
+        ]);
+        cdColis = colis; cdProfils = profils; cdDettes = dettes;
+      } catch (e) { console.error('Tableau de bord clients :', e); throw e; }
     })();
     try { await cdChargement; } finally { cdChargement = null; }
   }
@@ -136,12 +154,16 @@
     decoupe.courante.forEach((c) => ajouter(c, 'courante'));
     decoupe.precedente.forEach((c) => ajouter(c, 'precedente'));
     const seuilSommeil = isoMoins(13); // 14 jours sans colis
+    const dettesParClient = {};
+    cdDettes.forEach((c) => { if (c.fournisseur_id) (dettesParClient[c.fournisseur_id] = dettesParClient[c.fournisseur_id] || []).push(c); });
     return cdProfils.map((p) => {
       const e = parClient[p.id] || { courante: [], precedente: [] };
       const sc = cdStatsListe(e.courante), sp = cdStatsListe(e.precedente);
       const tous = e.courante.concat(e.precedente);
       const dernier = tous.reduce((m, c) => (!m || c.created_at > m ? c.created_at : m), null);
-      const argent = cdAReverser(tous);
+      // Sans lecture des dettes (banc d'essai, ou base muette), on retombe sur les deux périodes.
+      const dettes = dettesParClient[p.id] || (cdDettes.length ? [] : tous);
+      const argent = cdAReverser(dettes);
       const fixes = sc.livres + sc.echecs;
       const tendance = sp.total > 0 ? Math.round(((sc.total - sp.total) / sp.total) * 100) : (sc.total > 0 ? null : 0);
       const signaux = [];
@@ -155,7 +177,7 @@
         colis: sc.total, precedent: sp.total, tendance, livres: sc.livres, echecs: sc.echecs, enCours: sc.enCours,
         tauxLivre: pct(sc.livres, fixes), tauxEchec: pct(sc.echecs, fixes), article: sc.article, livraison: sc.livraison,
         aReverser: argent.total, aReverserAnciens: argent.anciens, dernier, signaux,
-        courante: e.courante, precedente: e.precedente,
+        courante: e.courante, precedente: e.precedente, dettes,
       };
     });
   }
@@ -364,7 +386,7 @@
     const communes = {};
     tous.forEach((c) => { const k = (c.commune_destination || '').trim(); if (k) communes[k] = (communes[k] || 0) + 1; });
     const topCommunes = Object.entries(communes).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    const argent = cdAReverser(tous);
+    const argent = cdAReverser(l.dettes || tous);
     const semaines = Math.ceil((cdPeriode * 2) / 7);
     const recents = tous.slice(0, 8);
     const statutLib = (c) => (typeof libelleStatut === 'function' ? libelleStatut(c.statut, c) : (STATUTS[c.statut] || {}).label || c.statut);
@@ -482,6 +504,6 @@
     rafraichir: cdRafraichir,
     // Purs, pour les essais :
     decouper: cdDecouper, statsListe: cdStatsListe, parJour: cdParJour, lignes: cdLignes, aReverser: cdAReverser, barresHTML: cdBarresHTML, sparklineHTML: cdSparklineHTML,
-    _etat: (o) => { if (o) { if (o.colis) cdColis = o.colis; if (o.profils) cdProfils = o.profils; if (o.periode) cdPeriode = o.periode; } return { colis: cdColis, profils: cdProfils, periode: cdPeriode }; },
+    _etat: (o) => { if (o) { if (o.colis) cdColis = o.colis; if (o.profils) cdProfils = o.profils; if (o.dettes) cdDettes = o.dettes; if (o.periode) cdPeriode = o.periode; } return { colis: cdColis, profils: cdProfils, dettes: cdDettes, periode: cdPeriode }; },
   };
 })();
