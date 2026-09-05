@@ -338,41 +338,79 @@
 <button type="button" class="btn btn-sm btn-outline" id="btn-eq-sync-now">Envoyer maintenant</button>
 </div>
 
-<!-- Bandeau « Aujourd'hui » : triage synthétique en tête d'écran (toujours visible, au-dessus
-     des onglets). Trois blocs — actions à faire, anomalies, argent non remis — calculés à partir
-     des données déjà chargées. Lecture seule : chaque tuile renvoie vers l'onglet concerné.
-     Rempli par renderAujourdhui(). -->
+<!-- « L'essentiel » — refait le 05/09/2026.
+     Celtis, sur l'écran équipe : « la carte qui montre l'essentiel — raccourcis, actions à faire,
+     anomalies, argent non remis — il faut que ce soit bien fait, fonctionnel et présent là où il
+     faut. La disposition n'est pas trop ça, et les liens ne marchent pas correctement. Propre,
+     épuré et très utile. »
+
+     CE QUI N'ALLAIT PAS. Trois grands blocs bordés, chacun avec trois tuiles carrées de 16 px de
+     rembourrage : sur téléphone, la carte prenait un écran entier avant la liste des colis. Les
+     chiffres d'anomalies additionnaient TOUT l'historique chargé (56 non livrés) alors que le
+     reste de l'onglet regarde la journée choisie. Et une tuile ne faisait que changer d'onglet :
+     « Non livrés » menait à la liste de tous les colis, sans le filtre — le geste avait l'air
+     cassé.
+
+     CE QUI CHANGE. Une seule ligne par groupe, des pastilles au lieu de tuiles, trois groupes
+     côte à côte sur grand écran, empilés sur téléphone. Les anomalies et les colis à affecter
+     comptent sur LA JOURNÉE choisie dans le filtre de date de la liste (aujourd'hui par
+     défaut) — l'argent non remis, lui, ne dépend d'aucun jour : une somme due hier reste due.
+     Chaque pastille ouvre l'endroit exact et y pose le bon filtre : voir essentielAller().
+     Rempli par renderAujourdhui(). Lecture seule. -->
 <style>
-#section-aujourdhui{ padding:16px !important; }
-#section-aujourdhui .aujourdhui-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; }
-#section-aujourdhui .aujourdhui-bloc{ border:1px solid var(--border); border-radius:14px; padding:10px 12px; }
-#section-aujourdhui .aujourdhui-bloc-titre{ font-size:13px; font-weight:700; margin:0 0 8px; }
-#section-aujourdhui .aujourdhui-tile{ cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; }
-#section-aujourdhui .aujourdhui-tile:hover{ transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,0,0,0.10); }
-/* Sur mobile : carte plus compacte — on retire le paragraphe explicatif et on
-   resserre les espacements pour qu'elle occupe moins de place. */
+/* Le repli « Autre période » du rapport par livreur (05/09/2026). */
+.perf-autre-periode{ margin:6px 0 12px; }
+.perf-autre-periode > summary{ list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--muted); padding:4px 0; -webkit-tap-highlight-color:transparent; }
+.perf-autre-periode > summary::-webkit-details-marker{ display:none; }
+.perf-autre-periode > summary::after{ content:'▾'; font-size:11px; transition:transform .15s ease; }
+.perf-autre-periode[open] > summary::after{ transform:rotate(180deg); }
+#section-aujourdhui{ padding:12px 14px !important; }
+#section-aujourdhui .ess-entete{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:0 0 8px; }
+#section-aujourdhui .ess-entete h2{ margin:0; font-size:15px; }
+#section-aujourdhui .ess-jour{ font-size:12px; color:var(--muted); font-weight:600; }
+#section-aujourdhui .ess-groupes{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:10px 18px; }
+#section-aujourdhui .ess-groupe{ min-width:0; }
+#section-aujourdhui .ess-groupe-titre{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 5px; }
+#section-aujourdhui .ess-tuiles{ display:flex; flex-wrap:wrap; gap:6px; }
+/* Une pastille, pas une tuile : un chiffre, un mot, 36 px de haut — la hauteur d'un pouce. */
+#section-aujourdhui .ess-tuile{
+  display:inline-flex; align-items:center; gap:7px; min-height:36px; padding:6px 12px 6px 10px;
+  border:1.5px solid var(--border); border-radius:999px; background:var(--white);
+  font-size:12.5px; font-weight:600; color:var(--navy); line-height:1.1; cursor:pointer;
+  -webkit-tap-highlight-color:transparent; transition:border-color .12s ease, box-shadow .12s ease;
+}
+#section-aujourdhui .ess-tuile:hover{ border-color:var(--border-strong); box-shadow:var(--shadow-xs); }
+#section-aujourdhui .ess-tuile .n{ font-size:15px; font-weight:800; letter-spacing:-0.02em; }
+/* Zéro se lit en gris et en pointillé : l'œil doit accrocher ce qui existe. */
+#section-aujourdhui .ess-tuile.est-vide{ color:var(--muted); border-style:dashed; background:transparent; }
+#section-aujourdhui .ess-tuile.est-ambre{ border-color:#E26313; color:#8a4b12; background:#fff8ef; }
+#section-aujourdhui .ess-tuile.est-rouge{ border-color:#D6534A; color:#8f2a23; background:#fff5f4; }
+html[data-theme="dark"] #section-aujourdhui .ess-tuile{ background:#1C2739; border-color:#2E3E54; color:#C6D5E6; }
+html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vide{ background:transparent; color:#7F91A8; }
+html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-ambre{ background:#2A2118; border-color:#B9652A; color:#F0B47E; }
+html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B1A19; border-color:#B5443B; color:#F0A29B; }
 @media(max-width:640px){
-  #section-aujourdhui{ padding:13px !important; }
-  #section-aujourdhui .aujourdhui-sub{ display:none; }
-  #section-aujourdhui .aujourdhui-grid{ gap:8px; }
-  #section-aujourdhui .aujourdhui-bloc{ padding:9px 10px; }
+  #section-aujourdhui{ padding:10px 12px !important; }
+  #section-aujourdhui .ess-groupes{ gap:8px; }
 }
 </style>
 <div class="card" id="section-aujourdhui">
-<h2 class="panel-subtitle" style="margin:0 0 4px;">📌 Aujourd'hui — l'essentiel</h2>
-<div class="page-sub aujourdhui-sub" style="margin:0 0 12px;">Ce qui demande une action, les anomalies et l'argent à récupérer, en un coup d'œil. Cliquez une tuile pour aller au bon onglet.</div>
-<div class="aujourdhui-grid">
-  <div class="aujourdhui-bloc">
-    <div class="aujourdhui-bloc-titre">✅ Actions à faire</div>
-    <div class="stat-tiles" id="aujourdhui-actions"><div class="empty-state">Chargement…</div></div>
+<div class="ess-entete">
+<h2 class="panel-subtitle">📌 L'essentiel</h2>
+<span class="ess-jour" id="ess-jour"></span>
+</div>
+<div class="ess-groupes">
+  <div class="ess-groupe">
+    <div class="ess-groupe-titre">À faire</div>
+    <div class="ess-tuiles" id="aujourdhui-actions"><span class="ess-tuile est-vide">Chargement…</span></div>
   </div>
-  <div class="aujourdhui-bloc">
-    <div class="aujourdhui-bloc-titre">⚠️ Anomalies</div>
-    <div class="stat-tiles" id="aujourdhui-anomalies"><div class="empty-state">Chargement…</div></div>
+  <div class="ess-groupe">
+    <div class="ess-groupe-titre">Anomalies du jour</div>
+    <div class="ess-tuiles" id="aujourdhui-anomalies"><span class="ess-tuile est-vide">Chargement…</span></div>
   </div>
-  <div class="aujourdhui-bloc">
-    <div class="aujourdhui-bloc-titre">💰 Argent non remis</div>
-    <div class="stat-tiles" id="aujourdhui-argent"><div class="empty-state">Chargement…</div></div>
+  <div class="ess-groupe">
+    <div class="ess-groupe-titre">Argent non remis</div>
+    <div class="ess-tuiles" id="aujourdhui-argent"><span class="ess-tuile est-vide">Chargement…</span></div>
   </div>
 </div>
 </div>
@@ -808,7 +846,24 @@ quand vous reposez la tournée avec le vrai nombre.
 <div id="rapport-mois-content"><div class="empty-state">Chargement...</div></div>
 </div>
 <div id="rapport-livreur" class="hidden">
-<div class="field-row">
+<!-- UN JOUR À LA FOIS. (05/09/2026) Celtis : « je ne sais pas si ça comptabilise par mois ou
+     depuis que le livreur travaille ; je voudrais que ça affiche uniquement pour la journée,
+     et que ça s'actualise en fonction des dates — pour chaque jour, le décompte : pas encore
+     pris, en cours, livré, non livré. Clair pour chacun et pour tout le monde. »
+     Le tableau s'ouvrait sur trente jours. Il s'ouvre maintenant sur aujourd'hui, avec un seul
+     champ de date et deux boutons. La période libre (du… au…, 7 j, 30 j, depuis le début) n'a
+     pas disparu : elle est derrière « Autre période », pour le bilan de la semaine ou du mois. -->
+<div class="recap-day-bar">
+<div class="field">
+<label>Jour</label>
+<input type="date" id="perf-jour">
+</div>
+<button type="button" class="btn btn-outline btn-sm" id="btn-perf-aujourdhui">📅 Aujourd'hui</button>
+<button type="button" class="btn btn-outline btn-sm" id="btn-perf-hier">Hier</button>
+</div>
+<details class="perf-autre-periode" id="perf-autre-periode">
+<summary>Autre période</summary>
+<div class="field-row" style="margin-top:8px;">
 <div class="field">
 <label>Du</label>
 <input type="date" id="perf-date-debut">
@@ -823,6 +878,7 @@ quand vous reposez la tournée avec le vrai nombre.
 <button type="button" class="btn btn-outline btn-sm" id="btn-perf-30j">30 derniers jours</button>
 <button type="button" class="btn btn-outline btn-sm" id="btn-perf-tout">Depuis le début</button>
 </div>
+</details>
 <div id="rapport-livreur-content"><div class="empty-state">Chargement...</div></div>
 </div>
 </div>
@@ -3533,18 +3589,23 @@ html += ` <span class="group-collecte-assign">
 return html;
 }
 
-// Bandeau « Aujourd'hui » : synthèse de triage en tête d'écran (lecture seule). Recalculé à
-// partir des données déjà en mémoire (allColis, comptes & réinitialisations en attente). Chaque
-// tuile renvoie vers l'onglet concerné via showEquipeTab(). N'écrit aucune donnée.
+// « L'essentiel » : synthèse en tête de l'onglet Colis (lecture seule). Recalculée à partir
+// des données déjà en mémoire (allColis, comptes & réinitialisations en attente). Refaite le
+// 05/09/2026 — voir le commentaire au-dessus de #section-aujourdhui pour ce qui a changé.
+//
+// Le jour regardé est celui du filtre de date de la liste des colis (filtreDateColis) :
+// aujourd'hui à l'ouverture, ou la date choisie, ou « toutes les dates » si on a appuyé sur ce
+// bouton. Anomalies et colis à affecter suivent ce jour ; l'argent non remis ne suit aucun jour.
 function renderAujourdhui(){
 if (!document.getElementById('aujourdhui-actions')) return;
 const colis = Array.isArray(allColis) ? allColis : [];
+const jour = (typeof filtreDateColis === 'string') ? filtreDateColis : '';
+const duJour = jour ? colis.filter(c => matchesDate(c, jour)) : colis;
 const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? pendingAccounts.length : 0;
 const nbReset = (typeof resetRequests !== 'undefined' && resetRequests) ? resetRequests.length : 0;
-const nbAffecter = colis.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id).length;
-const nbNonLivre = colis.filter(c => c.statut === 'non_livre').length;
-const nbRetour = colis.filter(c => c.statut === 'retour').length;
-const nbTentative = colis.filter(c => (Number(c.tentatives_livraison) || 0) > 0).length;
+const nbAffecter = duJour.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id).length;
+const nbNonLivre = duJour.filter(c => c.statut === 'non_livre').length;
+const nbRetour = duJour.filter(c => c.statut === 'retour').length;
 // Argent non remis : mêmes règles que la caisse livreur — colis livrés pas encore soldés.
 let resteARemettre = 0, nbASolder = 0;
 colis.forEach(c => {
@@ -3554,36 +3615,77 @@ colis.forEach(c => {
   }
 });
 const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
-const tile = (icon, value, label, tab, color) => `
-  <div class="stat-tile aujourdhui-tile" data-eqtab="${tab}" role="button" tabindex="0" title="Aller à l'onglet concerné">
-    <div class="stat-tile-icon">${icon}</div>
-    <div class="stat-tile-value"${color ? ` style="color:${color};"` : ''}>${value}</div>
-    <div class="stat-tile-label">${label}</div>
-  </div>`;
-const AMBRE = '#E26313', ROUGE = '#c0392b';
-// `set` renvoie true si la tuile a réellement changé. On s'en sert pour ne rebrancher les
-// écouteurs que dans ce cas : jusqu'au 25/08/2026 on en ajoutait trois de plus toutes les
-// 25 secondes sur des tuiles pourtant inchangées, et ils s'empilaient sans jamais être retirés.
-let __tuilesChangees = false;
-const set = (id, html) => { if (cltPoserHTML(document.getElementById(id), html)) __tuilesChangees = true; };
+// Une pastille : un chiffre, un mot, une destination (data-aller, lue par essentielAller()).
+const pastille = (valeur, label, aller, teinte) => {
+  const vide = (valeur === 0 || valeur === '0 FCFA');
+  const cls = vide ? 'est-vide' : (teinte === 'rouge' ? 'est-rouge' : 'est-ambre');
+  return `<button type="button" class="ess-tuile ${cls}" data-aller="${aller}" title="Ouvrir"><span class="n">${valeur}</span><span>${label}</span></button>`;
+};
+const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 set('aujourdhui-actions',
-  tile('🧾', nbPending,  'Comptes à valider', 'comptes', nbPending  ? AMBRE : '') +
-  tile('🔑', nbReset,    'Réinitialisations', 'comptes', nbReset    ? AMBRE : '') +
-  tile('📦', nbAffecter, 'Colis à affecter',  'colis',   nbAffecter ? AMBRE : ''));
+  pastille(nbPending,  'comptes à valider', 'comptes-a-valider', 'ambre') +
+  pastille(nbReset,    'mots de passe à refaire', 'reinitialisations', 'ambre') +
+  pastille(nbAffecter, 'colis à affecter', 'colis-a-affecter', 'ambre'));
 set('aujourdhui-anomalies',
-  tile('⚠️', nbNonLivre, 'Non livrés',     'colis', nbNonLivre  ? ROUGE : '') +
-  tile('↩️', nbRetour,   'Retours',        'colis', nbRetour    ? ROUGE : '') +
-  tile('🔁', nbTentative,'Avec tentative', 'colis', nbTentative ? ROUGE : ''));
+  pastille(nbNonLivre, 'non livrés', 'non-livres', 'rouge') +
+  pastille(nbRetour,   'retours', 'retours', 'rouge'));
 set('aujourdhui-argent',
-  tile('💵', money(resteARemettre), 'Reste à remettre', 'finances', resteARemettre ? ROUGE : '') +
-  tile('📦', nbASolder,             'Colis à solder',   'finances', nbASolder ? ROUGE : ''));
-if (!__tuilesChangees) return;
-document.querySelectorAll('#section-aujourdhui .aujourdhui-tile').forEach(t => {
-  const go = () => { if (typeof showEquipeTab === 'function') showEquipeTab(t.dataset.eqtab); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e){} };
-  t.addEventListener('click', go);
-  t.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
-});
+  pastille(money(resteARemettre), 'à remettre', 'argent', 'rouge') +
+  pastille(nbASolder, 'colis à solder', 'argent', 'rouge'));
+const libelleJour = document.getElementById('ess-jour');
+if (libelleJour) {
+  let txt = 'Toutes les dates chargées';
+  if (jour) {
+    const d = new Date(jour + 'T12:00:00');
+    txt = (jour === todayLocalISODate() ? "Aujourd'hui · " : '') + d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  cltPoserHTML(libelleJour, escapeHTML(txt));
 }
+}
+
+// Où mène chaque pastille. UN SEUL écouteur, posé une fois sur la carte : les pastilles sont
+// redessinées toutes les 25 secondes, et un écouteur posé sur chacune s'empilait sans jamais
+// être retiré (c'était le cas jusqu'au 25/08/2026, puis contourné, puis réglé ici pour de bon).
+// Chaque destination pose le filtre qui correspond à ce que le chiffre compte : la liste qui
+// s'ouvre montre exactement ces colis-là, ni plus ni moins.
+function essentielAller(cle){
+const onglet = (k) => { if (typeof showEquipeTab === 'function') showEquipeTab(k); };
+const defiler = (id) => { const el = document.getElementById(id); if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){} }, 60); };
+const ouvrir = (contentId) => {
+  const content = document.getElementById(contentId);
+  if (!content) return;
+  const header = content.parentElement ? content.parentElement.querySelector('.collapsible-header') : null;
+  if (!content.classList.contains('open') && header) toggleSection(header, contentId);
+};
+const listeColis = (statut, livreur) => {
+  onglet('colis');
+  activeFilter = statut;
+  filtreLivreurColis = livreur;
+  const sel = document.getElementById('filtre-livreur-colis');
+  if (sel) sel.value = livreur;
+  eqRemettreTrancheAZero();
+  eqViderSelection();
+  renderFilters();
+  renderColis();
+  defiler('panel-colis');
+};
+switch (cle) {
+  case 'comptes-a-valider': onglet('comptes'); ouvrir('pending-content'); defiler('section-pending'); break;
+  case 'reinitialisations': onglet('comptes'); ouvrir('reset-content'); defiler('section-reset'); break;
+  case 'colis-a-affecter': listeColis('en_attente', '__aucun'); break;
+  case 'non-livres': listeColis('non_livre', ''); break;
+  case 'retours': listeColis('retour', ''); break;
+  case 'argent': onglet('finances'); if (typeof showMainTab === 'function') showMainTab('compta'); defiler('caisse-livreur'); break;
+}
+}
+(function brancherEssentiel(){
+const carte = document.getElementById('section-aujourdhui');
+if (!carte) return;
+carte.addEventListener('click', (e) => {
+  const t = e.target.closest('.ess-tuile[data-aller]');
+  if (t) essentielAller(t.dataset.aller);
+});
+})();
 
 /* ---------- ACTIONS RAPIDES : faire avancer un colis en un seul appui ----------
    Depuis la liste, changer un statut demandait quatre gestes : ouvrir le menu ⋮, cliquer
@@ -7240,7 +7342,7 @@ function perfPeriodeTexte(){
 const debut = document.getElementById('perf-date-debut')?.value || '';
 const fin = document.getElementById('perf-date-fin')?.value || '';
 const jour = (v) => new Date(v + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-if (debut && fin) return debut === fin ? ('Le ' + jour(debut)) : ('Du ' + jour(debut) + ' au ' + jour(fin));
+if (debut && fin) return debut === fin ? ('Le ' + jour(debut) + ' — colis enregistrés ce jour-là') : ('Du ' + jour(debut) + ' au ' + jour(fin));
 if (debut) return 'À partir du ' + jour(debut);
 if (fin) return "Jusqu'au " + jour(fin);
 return 'Depuis le début';
@@ -7343,6 +7445,8 @@ fin.value = todayLocalISODate();
 d.setDate(d.getDate() - (joursEnArriere - 1));
 debut.value = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
 }
+const jour = document.getElementById('perf-jour');
+if (jour) jour.value = '';
 renderRapportLivreur();
 }
 
@@ -8427,19 +8531,43 @@ poser(d.toISOString().slice(0, 10));
 });
 })();
 
-// Période par défaut : les 30 derniers jours. « Depuis le début » reste à un clic, mais ouvrir
-// l'onglet ne doit pas rapatrier tout l'historique sans qu'on l'ait demandé.
-(function initPerfControls(){
+// Période par défaut : AUJOURD'HUI (05/09/2026 ; c'était trente jours). Le champ « Jour » pose
+// la même date dans « Du » et « Au » : le rapport n'a qu'un seul chemin de calcul, celui de la
+// période, et le jour n'en est qu'un cas particulier. « Depuis le début » reste à un clic, mais
+// ouvrir l'onglet ne doit pas rapatrier tout l'historique sans qu'on l'ait demandé.
+function perfSetJour(iso){
+const jour = document.getElementById('perf-jour');
 const debut = document.getElementById('perf-date-debut');
 const fin = document.getElementById('perf-date-fin');
-if (debut && fin && !debut.value && !fin.value) {
-const d = new Date();
-fin.value = todayLocalISODate();
-d.setDate(d.getDate() - 29);
-debut.value = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+if (!jour || !debut || !fin) return;
+jour.value = iso;
+debut.value = iso;
+fin.value = iso;
+renderRapportLivreur();
 }
-if (debut) debut.addEventListener('change', renderRapportLivreur);
-if (fin) fin.addEventListener('change', renderRapportLivreur);
+(function initPerfControls(){
+const jour = document.getElementById('perf-jour');
+const debut = document.getElementById('perf-date-debut');
+const fin = document.getElementById('perf-date-fin');
+if (jour && debut && fin && !debut.value && !fin.value) {
+jour.value = todayLocalISODate();
+debut.value = jour.value;
+fin.value = jour.value;
+}
+if (jour) jour.addEventListener('change', () => { if (jour.value) perfSetJour(jour.value); });
+const bJ = document.getElementById('btn-perf-aujourdhui');
+if (bJ) bJ.addEventListener('click', () => perfSetJour(todayLocalISODate()));
+const bH = document.getElementById('btn-perf-hier');
+if (bH) bH.addEventListener('click', () => {
+const d = new Date(todayLocalISODate() + 'T12:00:00');
+d.setDate(d.getDate() - 1);
+perfSetJour([d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-'));
+});
+// Une période choisie à la main efface le champ « Jour » : il ne doit pas afficher une date
+// qui n'est plus celle du tableau.
+const periodeChoisie = () => { if (jour) jour.value = (debut.value && debut.value === fin.value) ? debut.value : ''; renderRapportLivreur(); };
+if (debut) debut.addEventListener('change', periodeChoisie);
+if (fin) fin.addEventListener('change', periodeChoisie);
 const brancher = (id, jours) => {
 const b = document.getElementById(id);
 if (b) b.addEventListener('click', () => perfSetPeriode(jours));
