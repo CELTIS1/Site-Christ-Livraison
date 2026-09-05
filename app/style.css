@@ -2600,6 +2600,19 @@ html[data-theme="dark"] .tournee-carte--programme{border-left-color:#2fae6b;}
 .tournee-geste--partir:hover{box-shadow:0 4px 12px rgba(217,119,6,.30);}
 /* Ramasser : le vert du travail fini, celui du programme et de « déjà récupéré ». */
 .tournee-geste--recuperer{background:#1e8f4e;}
+/* La confirmation du nombre pris (06/09/2026) : la même pièce sur le téléphone et au bureau
+   (.tournee-pris-confirme) ; sur le téléphone, l'état « --saisie » porte le chiffre à corriger. */
+.tournee-pris-confirme{margin-top:10px; font-size:13.5px; font-weight:700; color:#1e8f4e; display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px;}
+.tournee-pris-confirme--ecart{color:#c0392b;}
+.tournee-pris-note{flex-basis:100%; font-weight:500; color:#5b6b80; font-size:12.5px;}
+.tournee-pris-confirme--saisie{display:block; padding:10px 12px; border-radius:12px; background:rgba(30,143,78,.06); border:1px dashed rgba(30,143,78,.45);}
+.tournee-pris-confirme--saisie label{display:block; font-size:13px; font-weight:700; color:#1e8f4e; margin-bottom:6px;}
+.pris-ligne{display:flex; gap:8px; align-items:stretch;}
+.pris-input{width:88px; min-height:44px; font-size:18px; font-weight:800; text-align:center; border:1.5px solid var(--border, #d6dde6); border-radius:10px; background:#fff; color:var(--text, #1f2937);}
+.tournee-geste--confirmer{flex:1; margin-top:0; background:#1e8f4e; color:#fff;}
+.tournee-geste--corriger{min-height:36px; margin-top:0; padding:0 12px; border-radius:999px; border:1px solid rgba(30,143,78,.5); background:transparent; color:#1e8f4e; font-weight:700; font-size:12.5px; width:auto;}
+html[data-theme="dark"] .pris-input{background:#0f1722; color:#e5edf5;}
+html[data-theme="dark"] .tournee-pris-confirme--saisie{background:rgba(30,143,78,.12);}
 .tournee-geste--recuperer:hover{box-shadow:0 4px 12px rgba(30,143,78,.30);}
 
 /* PRÉVENIR N'EST PAS PARTIR. (30/08/2026)

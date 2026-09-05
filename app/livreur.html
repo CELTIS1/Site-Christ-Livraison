@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260906journee">
-<script src="theme.js?v=20260906journee"></script>
-<script src="splash.js?v=20260906journee"></script>
+<link rel="stylesheet" href="style.css?v=20260906recup">
+<script src="theme.js?v=20260906recup"></script>
+<script src="splash.js?v=20260906recup"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -785,9 +785,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260906journee"></script>
-<script src="config.js?v=20260906journee"></script>
-<script src="biometric-lock.js?v=20260906journee"></script>
+<script src="clt-common.js?v=20260906recup"></script>
+<script src="config.js?v=20260906recup"></script>
+<script src="biometric-lock.js?v=20260906recup"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3066,7 +3066,11 @@
       .eq('jour', jour)
       .eq('livreur_id', currentUser.id);
 
-    let { data, error } = await lireTournee('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at');
+    let { data, error } = await lireTournee('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_note');
+    if (error && colonneAbsente(error)) {
+      console.warn('Colonnes de confirmation absentes : le script SQL du 06/09/2026 n\'a pas encore été exécuté.');
+      ({ data, error } = await lireTournee('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at'));
+    }
     if (error && colonneAbsente(error)) {
       console.warn('Colonnes d\'annonce absentes : le script SQL du 30/08/2026 n\'a pas encore été exécuté.');
       ({ data, error } = await lireTournee('id, jour, fournisseur_id, livreur_id, note'));
@@ -3274,6 +3278,27 @@
                     data-tournee-partir="${escapeHTML(l.fournisseurId)}">🚚 Je pars — prévenir la cliente</a>`
               : `<button type="button" class="tournee-geste tournee-geste--partir" data-tournee-partir="${escapeHTML(l.fournisseurId)}">🚚 Je pars pour cette récupération</button>`);
 
+      /* CE QU'IL A RÉELLEMENT PRIS. (06/09/2026, Celtis : « il peut arriver que les colis
+         soient moins ou plus ; il faut qu'ils ajustent en fonction de ce qu'ils récupèrent. »)
+         Sur une ligne du programme (elle a un identifiant), une fois parti ou une fois le lot
+         marqué récupéré, le livreur dit combien il a pris. Le nombre proposé est ce qu'on sait
+         déjà (le pris + ce qui reste à prendre, sinon l'annonce) : il le corrige s'il faut.
+         Une ligne hors programme n'a pas d'identifiant : rien à confirmer, les colis saisis font
+         foi. */
+      const peutConfirmer = !l.horsProgramme && l.id && !l.rienARecuperer && (enRoute || l.nbDejaPris > 0 || l.ecartAnnonce > 0);
+      const propose = (l.nbDejaPris + l.nbAPrendre) || (l.nbAnnonce !== null && l.nbAnnonce !== undefined ? l.nbAnnonce : 0);
+      const confirmation = !peutConfirmer ? '' : (l.nbPris !== null && l.nbPris !== undefined)
+        ? `<div class="tournee-pris-confirme${(l.nbAnnonce !== null && l.nbAnnonce !== undefined && l.nbPris !== l.nbAnnonce) ? ' tournee-pris-confirme--ecart' : ''}">✔ ${escapeHTML(libelleColisPris(l))}${l.prisConfirmeAt ? ` · confirmé à ${escapeHTML(formatHeure(l.prisConfirmeAt))}` : ''}${l.prisNote ? `<div class="tournee-pris-note">${escapeHTML(l.prisNote)}</div>` : ''}
+             <button type="button" class="tournee-geste tournee-geste--corriger" data-tournee-confirmer="${escapeHTML(l.id)}" data-propose="${l.nbPris}">Corriger</button></div>`
+        : `<div class="tournee-pris-confirme tournee-pris-confirme--saisie">
+             <label>Combien de colis avez-vous pris chez elle ?</label>
+             <div class="pris-ligne">
+               <input type="number" class="pris-input" inputmode="numeric" min="0" max="500" step="1" value="${propose}" aria-label="Nombre de colis pris">
+               <button type="button" class="tournee-geste tournee-geste--confirmer" data-tournee-confirmer="${escapeHTML(l.id)}">✔ Confirmer</button>
+             </div>
+             ${(l.nbAnnonce !== null && l.nbAnnonce !== undefined) ? `<div class="tournee-pris-note">Elle avait annoncé ${l.nbAnnonce}. Si c'est moins ou plus, corrigez le chiffre avant de confirmer.</div>` : ''}
+           </div>`;
+
       return `
       <div class="tournee-carte ${classe}${enRoute ? ' tournee-carte--route' : ''}">
         <div class="tournee-nom">${escapeHTML(l.clienteNom)}${l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : ''}${enRoute ? `<span class="tournee-marque tournee-marque--route">en route</span>` : ''}</div>
@@ -3294,6 +3319,7 @@
         </div>
         ${contacts}
         ${geste}
+        ${confirmation}
       </div>`;
     };
 
@@ -3366,6 +3392,37 @@
            qui est très largement préférable à un bureau qui ne sait pas qu'il est parti. */
         const ok = await marquerDepartCollecte(l.idsAPrendre);
         if (ok) renderAll();
+      });
+    });
+
+    /* LA CONFIRMATION DU NOMBRE PRIS. (06/09/2026) Une seule écriture, par la base
+       (confirmer_recuperation), qui ne touche que la ligne du livreur et que ce jour-là.
+       « Corriger » repose la question avec le dernier chiffre confirmé. */
+    box.querySelectorAll('[data-tournee-confirmer]').forEach(el => {
+      el.addEventListener('click', async () => {
+        const progId = String(el.dataset.tourneeConfirmer);
+        const carte = el.closest('.tournee-carte');
+        let nb;
+        const input = carte ? carte.querySelector('.pris-input') : null;
+        if (input) {
+          nb = parseInt(input.value, 10);
+        } else {
+          const rep = await cltPrompt({ title: 'Combien de colis avez-vous pris ?', placeholder: 'Nombre de colis', defaultValue: String(el.dataset.propose || ''), inputMode: 'numeric', okLabel: 'Confirmer' });
+          if (rep === null || rep === undefined) return;
+          nb = parseInt(String(rep).replace(/\D/g, ''), 10);
+        }
+        if (!Number.isFinite(nb) || nb < 0) { cltToast('Indiquez un nombre de colis.', { type: 'warning' }); return; }
+        const original = el.textContent;
+        el.disabled = true; el.textContent = '…';
+        const { error } = await supabaseClient.rpc('confirmer_recuperation', { p_programmation_id: progId, p_nb_pris: nb, p_note: null });
+        el.disabled = false; el.textContent = original;
+        if (error) {
+          console.error(error);
+          cltToast("Impossible d'enregistrer pour l'instant (" + (error.message || 'réseau') + "). Réessayez.", { type: 'error' });
+          return;
+        }
+        cltToast(nb + (nb > 1 ? ' colis pris' : ' colis pris') + ' — confirmé, le bureau le voit.', { type: 'success' });
+        await chargerMaTournee();
       });
     });
 

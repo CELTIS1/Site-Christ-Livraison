@@ -151,7 +151,7 @@ vm.runInContext([
      programmationARecuperationAEcrire() appelle nombreAnnonceOuNull(), et tourneesDeRecuperation()
      produit des lignes que libelleAnnonceRecuperation() met en mots pour les deux écrans. Sans
      elles ici, le banc s'arrêterait au lieu de rougir. */
-  'nombreAnnonceOuNull', 'libelleAnnonceRecuperation', 'libelleAnnoncePosee',
+  'nombreAnnonceOuNull', 'libelleAnnonceRecuperation', 'libelleAnnoncePosee', 'libelleColisPris',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
 vm.runInContext('const HORODATAGE_DU_STATUT = ' + JSON.stringify({
   recupere: 'recupere_at', livre: 'livre_at', non_livre: 'non_livre_at', retour: 'retour_at',
@@ -838,8 +838,12 @@ const NUANCES_BUREAU_SEUL = ['tournee-marque--fait', 'tournee-repli--fait'];
    consigné nulle part, faute de colis sur quoi écrire l'heure. Le bureau, lui, n'a pas ce
    problème puisqu'il ne part nulle part. « tournee-attente » porte la phrase qui dit pourquoi
    le bouton habituel a changé de nom — sans elle, le livreur croit l'application en panne. */
-const NUANCES_TELEPHONE_SEUL = ['tournee-geste--partir', 'tournee-geste--prevenir',
-                                'tournee-geste--recuperer'];
+/* Deux gestes de plus depuis le 06/09/2026 (Celtis : « il faut qu'ils ajustent en fonction de ce
+   qu'ils récupèrent ») : « Confirmer » le nombre de colis réellement pris, et « Corriger » ce
+   chiffre. Le bureau les LIT (même pièce .tournee-pris-confirme des deux côtés), il ne confirme
+   pas à la place du livreur. */
+const NUANCES_TELEPHONE_SEUL = ['tournee-geste--confirmer', 'tournee-geste--corriger', 'tournee-geste--partir',
+                                'tournee-geste--prevenir', 'tournee-geste--recuperer', 'tournee-pris-confirme--saisie'];
 const seulementDans = (a, b) => classesDeTournee(a).filter((c) => !classesDeTournee(b).includes(c));
 verifier("et les seuls états propres à un écran sont ceux qu'on a nommés ici",
   seulementDans(equipe, livreur).join(' ') === NUANCES_BUREAU_SEUL.join(' ')

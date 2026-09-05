@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260906journee">
-<script src="theme.js?v=20260906journee"></script>
-<script src="splash.js?v=20260906journee"></script>
+<link rel="stylesheet" href="style.css?v=20260906recup">
+<script src="theme.js?v=20260906recup"></script>
+<script src="splash.js?v=20260906recup"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1400,11 +1400,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260906journee"></script>
-<script src="config.js?v=20260906journee"></script>
-<script src="clients-dashboard.js?v=20260906journee"></script>
-<script src="biometric-lock.js?v=20260906journee"></script>
-<script src="clt-select-recherche.js?v=20260906journee"></script>
+<script src="clt-common.js?v=20260906recup"></script>
+<script src="config.js?v=20260906recup"></script>
+<script src="clients-dashboard.js?v=20260906recup"></script>
+<script src="biometric-lock.js?v=20260906recup"></script>
+<script src="clt-select-recherche.js?v=20260906recup"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -5949,7 +5949,11 @@ const lireProgrammations = (colonnes) => supabaseClient
 .select(colonnes)
 .eq('jour', jour);
 
-let { data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at');
+let { data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_note');
+if (error && colonneAbsente(error)) {
+console.warn("Colonnes de confirmation absentes : le script SQL du 06/09/2026 n'a pas encore été exécuté.");
+({ data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at'));
+}
 if (error && colonneAbsente(error)) {
 console.warn("Colonnes d'annonce absentes : le script SQL du 30/08/2026 n'a pas encore été exécuté.");
 ({ data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note'));
@@ -6130,6 +6134,9 @@ ${fini
      le champ de saisie est en écriture seule sur une tournée posée pour demain — et une
      annonce ne se relit jamais. (30/08/2026, ajouté en relecture) -->
 ${(!libelleAnnonceRecuperation(l) && libelleAnnoncePosee(l)) ? `<div class="tournee-rien tournee-rien--attente">${escapeHTML(libelleAnnoncePosee(l))}</div>` : ''}
+<!-- Ce que le livreur a confirmé sur place (06/09/2026) : la même phrase que sur son téléphone,
+     libelleColisPris() dans config.js. En rouge dès que ça ne colle pas avec l'annonce. -->
+${libelleColisPris(l) ? `<div class="tournee-pris-confirme${(l.nbAnnonce !== null && l.nbAnnonce !== undefined && l.nbPris !== l.nbAnnonce) ? ' tournee-pris-confirme--ecart' : ''}">✔ ${escapeHTML(libelleColisPris(l))}${l.prisConfirmeAt ? ` · confirmé par le livreur à ${escapeHTML(formatHeure(l.prisConfirmeAt))}` : ''}${l.prisNote ? `<div class="tournee-pris-note">${escapeHTML(l.prisNote)}</div>` : ''}</div>` : ''}
 </div>
 ${contacts}
 ${geste}

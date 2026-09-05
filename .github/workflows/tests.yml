@@ -411,6 +411,13 @@ jobs:
       - name: La journée de travail du livreur (rien ne disparaît quand on enregistre)
         run: node tests/la-journee-du-livreur.test.mjs
 
+      # Le livreur confirme ce qu'il a réellement pris (06/09/2026, Celtis) : la cliente annonce,
+      # le livreur dit combien il a pris, le bureau voit l'écart. Une phrase dans config.js, une
+      # écriture par la base seulement. La dernière section relit un script SQL non publié et
+      # annonce ce qu'elle ne peut pas vérifier au lieu de s'arrêter.
+      - name: Le livreur confirme ce qu'il a pris (annoncé, pris, écart)
+        run: node tests/confirmer-la-recuperation.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""

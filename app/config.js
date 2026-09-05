@@ -6354,6 +6354,12 @@ function tourneesDeRecuperation(options) {
       departAt: departDeCollecte(aPrendre),
       nbAnnonce: nbAnnonce,
       annonceReglee: annonceReglee,
+      /* CE QUE LE LIVREUR A RÉELLEMENT PRIS. (06/09/2026, Celtis) Sur place, la cliente peut
+         avoir moins ou plus que ce qu'elle avait annoncé. Le livreur le confirme depuis sa
+         carte (fonction confirmer_recuperation) ; le bureau lit les deux chiffres côte à côte. */
+      nbPris: (p.nb_colis_pris === undefined || p.nb_colis_pris === null) ? null : Number(p.nb_colis_pris),
+      prisConfirmeAt: p.pris_confirme_at || null,
+      prisNote: p.pris_note || "",
       /* L'écart n'a de sens qu'une fois la journée connue, et seulement s'il manque quelque
          chose : saisir PLUS que ce qui était annoncé n'est pas un problème, c'est une cliente
          qui avait un colis de plus. Voir libelleAnnonceRecuperation() pour la phrase affichée. */
@@ -6581,6 +6587,20 @@ function colisAttenduAuPlusTard(colis, jour) {
 
    Cette phrase-ci ne compare rien et n'accuse personne : elle répète. Elle vaut pour n'importe
    quel jour, passé ou à venir. */
+/* LA PHRASE DE CE QUE LE LIVREUR A PRIS, ÉCRITE UNE FOIS POUR LES DEUX ÉCRANS. (06/09/2026)
+   « 5 pris, 6 annoncés (il en manque 1) », « 7 pris, 6 annoncés (1 de plus) », « 6 pris, comme
+   annoncé », ou « 3 pris (rien n'était annoncé) ». Vide tant que le livreur n'a rien confirmé. */
+function libelleColisPris(ligne) {
+  const l = ligne || {};
+  if (l.nbPris === null || l.nbPris === undefined) return "";
+  const pris = l.nbPris + " pris";
+  if (l.nbAnnonce === null || l.nbAnnonce === undefined) return pris + " (rien n'était annoncé)";
+  const ecart = l.nbPris - l.nbAnnonce;
+  if (ecart === 0) return pris + ", comme annoncé";
+  if (ecart < 0) return pris + ", " + l.nbAnnonce + " annoncés (il en manque " + (-ecart) + ")";
+  return pris + ", " + l.nbAnnonce + " annoncés (" + ecart + " de plus)";
+}
+
 function libelleAnnoncePosee(ligne) {
   const l = ligne || {};
   if (l.nbAnnonce === null || l.nbAnnonce === undefined) return "";
