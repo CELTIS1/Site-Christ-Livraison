@@ -1638,18 +1638,15 @@
     const pin = document.getElementById('cursorPin');
     document.body.classList.add('custom-cursor-active');
     dot.style.opacity = 1; pin.style.opacity = 1;
-    let mx = 0, my = 0, rx = 0, ry = 0;
+    // 06/09/2026 — Celtis : « annule l'effet retardé du curseur ». L'épingle suivait la
+    // souris avec un retard calculé à chaque image (rx += (mx - rx) * 0.18), ce qui la
+    // faisait traîner derrière le pointeur. Elle est désormais posée directement à la
+    // position de la souris, à chaque mouvement : plus de boucle, plus de retard.
     window.addEventListener('mousemove', e => {
-      mx = e.clientX; my = e.clientY;
+      const mx = e.clientX, my = e.clientY;
       dot.style.left = mx + "px"; dot.style.top = my + "px";
+      pin.style.left = mx + "px"; pin.style.top = (my - 16) + "px";
     });
-    function loop(){
-      rx += (mx - rx) * 0.18;
-      ry += (my - ry) * 0.18;
-      pin.style.left = rx + "px"; pin.style.top = (ry - 16) + "px";
-      requestAnimationFrame(loop);
-    }
-    loop();
     document.querySelectorAll('a, button, input, select, textarea, .service-card, .chip').forEach(el => {
       el.addEventListener('mouseenter', () => pin.classList.add('hovering'));
       el.addEventListener('mouseleave', () => pin.classList.remove('hovering'));
