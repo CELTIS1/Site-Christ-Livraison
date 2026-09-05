@@ -6984,6 +6984,8 @@ styles: { cellPadding: 2.5 },
 // ligne TOTAL. Les largeurs écrites ci-dessus gardent le dernier mot.
 colonnesArgent: [3, 4],
 columnStyles: RELEVE_COLONNES_PDF,
+// Les couleurs de l'écran : le statut dans sa pastille, l'encaissé en vert. (05/09/2026)
+colorier: { statut: { colonne: 2, codes: r.lignes.map(l => l.statutCode || '') }, argent: [4] },
 };
 }
 

@@ -4448,6 +4448,38 @@ function styleTableauCLT(base, doc) {
       .filter(i => colonnes[i] && colonnes[i].halign === 'right');
     sortie.foot = piedArgentCLT(b.foot, aDroite);
   }
+  /* LES COULEURS DE L'ÉCRAN SUR LE PAPIER. (05/09/2026)
+     Celtis : « le fichier qu'on envoie aux clientes doit être en couleur, comme lorsqu'on
+     consulte dans l'application. » Le relevé sortait en gris sur blanc : « Livré » et
+     « Non livré » se lisaient de la même encre. Un appelant peut maintenant demander :
+       colorier: { statut: { colonne: 2, codes: ['livre', 'non_livre', …] }, argent: [4] }
+     et chaque cellule de statut prend la couleur et le fond de sa pastille à l'écran (STATUTS,
+     la même table que les écrans), les colonnes d'argent « encaissé » passent en vert. Les
+     fonds sont posés par cellule, donc ils ne se font pas effacer par le fond alterné. */
+  if (b.colorier) {
+    const c = b.colorier;
+    const rgb = (hex) => { const h = String(hex || '').replace('#', ''); return h.length === 6 ? [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)] : null; };
+    const dejaLa = sortie.didParseCell;
+    sortie.didParseCell = function (data) {
+      if (typeof dejaLa === 'function') dejaLa(data);
+      if (data.section !== 'body') return;
+      if (c.statut && data.column.index === c.statut.colonne) {
+        const code = (c.statut.codes || [])[data.row.index];
+        const st = (typeof STATUTS !== 'undefined') && STATUTS[code];
+        if (st) {
+          const t = rgb(st.color), f = rgb(st.bg);
+          if (t) data.cell.styles.textColor = t;
+          if (f) data.cell.styles.fillColor = f;
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+      if (Array.isArray(c.argent) && c.argent.indexOf(data.column.index) !== -1) {
+        const texte = String(data.cell.raw == null ? '' : data.cell.raw).trim();
+        if (texte && texte !== '—' && texte !== '-') { data.cell.styles.textColor = [26, 125, 60]; data.cell.styles.fontStyle = 'bold'; }
+      }
+    };
+  }
+  delete sortie.colorier;
   // `colonnesArgent` et `colonnesArgentRangees` sont des consignes pour la maison, pas des
   // réglages d'autoTable : il ne les comprendrait pas et s'en plaindrait dans la console.
   delete sortie.colonnesArgent;
