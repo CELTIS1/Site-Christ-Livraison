@@ -692,6 +692,15 @@ quand vous reposez la tournée avec le vrai nombre.
 </div>
 </div>
 
+<!-- MODIFIER UNE PROGRAMMATION EXISTANTE. (05/09/2026) Celtis : « il faut pouvoir modifier,
+     changer la vendeuse, changer la date, changer tout. » Jusqu'ici on ne pouvait que changer
+     le livreur (en reposant la même cliente le même jour) ou retirer la ligne. Le formulaire
+     reste le même ; quand il modifie, il le dit, et l'écriture porte sur LA ligne choisie
+     (update par identifiant) au lieu de créer une ligne de plus. -->
+<div id="prog-mode-modif" class="hidden" style="margin:6px 0 10px; padding:8px 12px; border:1.5px solid #E26313; border-radius:10px; background:#fff8ef; font-size:13px; color:#8a4b12; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+<span>✏️ Vous modifiez une programmation existante : changez la journée, la cliente, le livreur, la note ou le nombre annoncé, puis enregistrez.</span>
+<button type="button" class="btn btn-outline btn-sm" id="btn-prog-abandonner">Abandonner</button>
+</div>
 <button type="button" class="btn" id="btn-prog-ajouter">➕ Ajouter à la tournée</button>
 
 <div id="prog-body" style="margin-top:20px;">
@@ -6025,7 +6034,7 @@ const classe = fini ? 'tournee-carte--fait'
 const geste = fini ? ''
 : l.horsProgramme
 ? `<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-programmer="${escapeHTML(l.fournisseurId)}|${escapeHTML(String(l.livreurId || ''))}">Poser une tournée pour elle</button>`
-: `<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-programmer="${escapeHTML(l.fournisseurId)}|${escapeHTML(String(l.livreurId || ''))}|${escapeHTML(l.nbAnnonce === null || l.nbAnnonce === undefined ? '' : String(l.nbAnnonce))}">Changer le livreur</button>
+: `<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-modifier="${escapeHTML(l.id)}" data-prog-programmer="${escapeHTML(l.fournisseurId)}|${escapeHTML(String(l.livreurId || ''))}|${escapeHTML(l.nbAnnonce === null || l.nbAnnonce === undefined ? '' : String(l.nbAnnonce))}|${escapeHTML(l.note || '')}">✏️ Modifier</button>
    <button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-retirer="${escapeHTML(l.id)}">Retirer de la tournée</button>`;
 // « hors programme » veut dire « à faire, mais personne ne l'a prévu ». Sur un travail terminé
 // c'est un contresens : le bureau y lirait un reste à faire là où il n'y a plus rien.
@@ -6162,7 +6171,7 @@ function progPreremplir(cle){
 // Trois parties depuis le 31/08/2026 : cliente, livreur, et le nombre déjà annoncé. La
 // troisième est absente quand on POSE une tournée pour une cliente du repli — il n'y a alors
 // rien à relire — et présente quand on MODIFIE une programmation existante.
-const [fournisseurId, livreurId, nbAnnonce] = String(cle || '').split('|');
+const [fournisseurId, livreurId, nbAnnonce, noteExistante] = String(cle || '').split('|');
 const manquants = [];
 const poser = (id, valeur, quoi) => {
 const select = document.getElementById(id);
@@ -6179,7 +6188,7 @@ poser('prog-fournisseur', fournisseurId, 'la cliente');
 poser('prog-livreur', livreurId, 'le livreur');
 
 const note = document.getElementById('prog-note');
-if (note) note.value = '';
+if (note) note.value = noteExistante || '';
 // Le nombre annoncé se vide comme la note, et pour la même raison : un « 3 » resté en place
 // serait annoncé pour la cliente suivante. L'oublier ici pendant qu'on vide la note serait
 // l'asymétrie la plus facile à ne jamais remarquer. (30/08/2026)
@@ -6199,6 +6208,15 @@ alert('Impossible de pré-remplir ' + manquants.join(' et ') + " : la fiche n'es
 // ligne par (jour, cliente), et corriger le livreur choisi doit rester un geste — on rechoisit
 // la cliente, on rechoisit le livreur, on valide. Sans cela l'écran renverrait une erreur de
 // doublon là où l'utilisateur croit simplement se corriger.
+// Identifiant de la programmation en cours de modification ; null quand on ajoute.
+let progEnCoursId = null;
+function progEntrerEnModification(id){
+progEnCoursId = id || null;
+const bandeau = document.getElementById('prog-mode-modif');
+const bouton = document.getElementById('btn-prog-ajouter');
+if (bandeau) bandeau.classList.toggle('hidden', !progEnCoursId);
+if (bouton) bouton.textContent = progEnCoursId ? '💾 Enregistrer la modification' : '➕ Ajouter à la tournée';
+}
 async function progAjouter(){
 const champs = {
 jour: progGetJour(),
@@ -6214,18 +6232,38 @@ const bouton = document.getElementById('btn-prog-ajouter');
 if (bouton) { bouton.disabled = true; bouton.textContent = 'Enregistrement…'; }
 
 const ligne = programmationARecuperationAEcrire(champs);
+let error = null;
+// (typeof … : le banc d'essai exécute cette fonction seule, sans le reste de l'écran.)
+const enModification = (typeof progEnCoursId !== 'undefined') ? progEnCoursId : null;
+if (enModification) {
+// Modification : on réécrit LA ligne choisie — journée, cliente, livreur, note, annonce — au lieu
+// d'en poser une nouvelle. La contrainte « une par jour et par cliente » reste : déplacer une
+// tournée sur un jour où la cliente est déjà programmée est refusé, et on le dit clairement.
+ligne.modifie_par = currentUser ? currentUser.id : null;
+ligne.updated_at = new Date().toISOString();
+({ error } = await supabaseClient.from('programmations_collecte').update(ligne).eq('id', enModification));
+if (error && /programmations_collecte_une_par_jour|duplicate|unique/i.test(error.message || '')) {
+error = { message: "cette cliente est déjà programmée ce jour-là. Retirez d'abord l'autre ligne, ou modifiez-la." };
+}
+} else {
 ligne.cree_par = currentUser ? currentUser.id : null;
-const { error } = await supabaseClient
+({ error } = await supabaseClient
 .from('programmations_collecte')
-.upsert(ligne, { onConflict: 'jour,fournisseur_id' });
+.upsert(ligne, { onConflict: 'jour,fournisseur_id' }));
+}
 
-if (bouton) { bouton.disabled = false; bouton.textContent = '➕ Ajouter à la tournée'; }
+if (bouton) { bouton.disabled = false; bouton.textContent = enModification ? '💾 Enregistrer la modification' : '➕ Ajouter à la tournée'; }
 
 if (error) {
 console.error(error);
 progMsg("Enregistrement refusé : " + (error.message || 'erreur inconnue'), 'error');
 return;
 }
+// Si la journée a changé, on suit la programmation sur sa nouvelle journée : l'écran ne doit
+// pas rester sur un jour où elle n'est plus.
+const champJour = document.getElementById('prog-jour');
+if (enModification && champJour && champJour.value && typeof progJourChoisi !== 'undefined') { progJourChoisi = champJour.value; }
+if (typeof progEntrerEnModification === 'function') progEntrerEnModification(null);
 document.getElementById('prog-note').value = '';
 // Le nombre annoncé se vide comme la note : il appartient à la cliente qu'on vient de poser,
 // pas à la suivante. Le laisser en place ferait annoncer trois colis à tout le monde. (30/08/2026)
@@ -6236,7 +6274,10 @@ chargerProgrammations();
 
 async function progRetirer(id){
 if (!id) return;
-if (!confirm("Retirer cette cliente de la tournée ?")) return;
+const okRetrait = (typeof cltConfirm === 'function')
+? await cltConfirm({ title: 'Retirer cette cliente de la tournée ?', sub: 'Ses colis déjà saisis ne bougent pas ; seule la programmation est retirée.', okLabel: 'Oui, retirer', cancelLabel: 'Garder', danger: true })
+: confirm("Retirer cette cliente de la tournée ?");
+if (!okRetrait) return;
 const { error } = await supabaseClient.from('programmations_collecte').delete().eq('id', id);
 if (error) { console.error(error); progMsg("Suppression refusée : " + (error.message || 'erreur inconnue'), 'error'); return; }
 progMsg('Cliente retirée de la tournée.', 'success');
@@ -8885,6 +8926,12 @@ chargerProgrammations();
 });
 }
 if (btnAjout) btnAjout.addEventListener('click', progAjouter);
+const btnAbandon = document.getElementById('btn-prog-abandonner');
+if (btnAbandon) btnAbandon.addEventListener('click', () => {
+if (typeof progEntrerEnModification === 'function') progEntrerEnModification(null);
+const n = document.getElementById('prog-note'); if (n) n.value = '';
+const nb = document.getElementById('prog-nb-colis'); if (nb) nb.value = '';
+});
 
 // Délégation : le tableau est redessiné à chaque chargement, donc un écouteur posé sur
 // chaque bouton disparaîtrait avec lui. Celui-ci est posé une fois, sur le conteneur.
@@ -8898,7 +8945,10 @@ if (b) { progRetirer(b.getAttribute('data-prog-retirer')); return; }
 const lieu = e.target.closest('[data-prog-lieu]');
 if (lieu) { showPickupModal(lieu.getAttribute('data-prog-lieu')); return; }
 const p = e.target.closest('[data-prog-programmer]');
-if (p) progPreremplir(p.getAttribute('data-prog-programmer'));
+if (p) {
+progPreremplir(p.getAttribute('data-prog-programmer'));
+if (typeof progEntrerEnModification === 'function') progEntrerEnModification(p.getAttribute('data-prog-modifier') || null);
+}
 });
 }
 })();

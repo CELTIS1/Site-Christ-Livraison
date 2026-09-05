@@ -496,13 +496,15 @@ verifier("et si la migration SQL n'est pas passée, la fournée part quand même
   'une commerçante ne doit jamais être bloquée parce qu\'un script n\'a pas encore été lancé');
 
 titre("Changer le livreur d'une programmation, sans la détruire");
-verifier("la carte d'une cliente programmée propose de changer son livreur",
-  /Changer le livreur<\/button>/.test(equipe));
+// Depuis le 05/09/2026 le geste s'appelle « Modifier » et couvre tout (journée, cliente,
+// livreur, note, annonce) ; il pré-remplit toujours, il n'écrit rien tout seul.
+verifier("la carte d'une cliente programmée propose de la modifier",
+  /data-prog-modifier="\$\{escapeHTML\(l\.id\)\}"[^>]*>✏️ Modifier<\/button>/.test(equipe));
 verifier("le geste réutilise le pré-remplissage, il n'écrit rien tout seul",
   /data-prog-programmer="\$\{escapeHTML\(l\.fournisseurId\)\}\|\$\{escapeHTML\(String\(l\.livreurId \|\| ''\)\)\}\|/.test(equipe),
   'un écran ne doit pas réaffecter un livreur sur un seul clic mal placé');
 verifier("le nombre annoncé revient dans le formulaire, pour être relu et non deviné",
-  /const \[fournisseurId, livreurId, nbAnnonce\]/.test(equipe)
+  /const \[fournisseurId, livreurId, nbAnnonce(, noteExistante)?\]/.test(equipe)
   && /nbColis\.value = \(nbAnnonce === undefined \? '' : nbAnnonce\)/.test(equipe));
 verifier("« Retirer de la tournée » reste offert à côté",
   /data-prog-retirer/.test(equipe));
