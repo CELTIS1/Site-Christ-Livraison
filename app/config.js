@@ -46,7 +46,11 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, 
 async function requireAuth() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) {
-    window.location.href = "login.html";
+    // Le lien d'une notification (?colis=<id>) survit au passage par la connexion : sans cela,
+    // la personne dont la session avait expiré arrivait sur une liste sans le colis annoncé.
+    // (05/09/2026)
+    const colisVise = new URLSearchParams(location.search).get("colis");
+    window.location.href = "login.html" + (colisVise ? "?colis=" + encodeURIComponent(colisVise) : "");
     return null;
   }
   return session;
@@ -1096,11 +1100,40 @@ function __cltEnsureHighlightStyle() {
   st.textContent =
     "@keyframes cltDeeplinkPulse{0%{box-shadow:0 0 0 0 rgba(226,99,19,.55);}" +
     "70%{box-shadow:0 0 0 10px rgba(226,99,19,0);}100%{box-shadow:0 0 0 0 rgba(226,99,19,0);}}" +
-    ".colis-deeplink-highlight{animation:cltDeeplinkPulse 1.2s ease-out 3;" +
-    "outline:3px solid #E26313;outline-offset:2px;border-radius:10px;" +
-    "transition:outline .3s ease;}";
+    ".colis-deeplink-highlight{animation:cltDeeplinkPulse 1.2s ease-out 3;}" +
+    ".colis-item.colis-a-voir{outline:3px solid #E26313 !important;outline-offset:2px;" +
+    "box-shadow:0 0 0 6px rgba(226,99,19,.14) !important;transition:outline .3s ease, box-shadow .3s ease;}";
   document.head.appendChild(st);
 }
+
+/* ---------- LES COLIS À VOIR : surlignés jusqu'à ce qu'on les touche (05/09/2026) ----------
+   Celtis : « il faut que ça nous conduise effectivement sur les cartes, que ces cartes soient
+   visibles de suite, et qu'on les touche d'abord avant que ça puisse changer de couleur. »
+   Jusqu'ici le surlignage d'une notification durait quatre secondes : le temps de poser le
+   téléphone, il avait disparu. Désormais un colis « à voir » — arrivé par une notification ou
+   par une pastille de « L'essentiel » — garde son contour orange tant qu'on n'a pas touché sa
+   carte. La liste se redessine toutes les 25 secondes : le contour est reposé après chaque
+   dessin (cltAppliquerColisAVoir), il ne dépend pas d'un élément qui peut être remplacé. */
+const cltColisAVoir = new Set();
+function cltMarquerColisAVoir(ids) {
+  __cltEnsureHighlightStyle();
+  (Array.isArray(ids) ? ids : [ids]).forEach((id) => { if (id) cltColisAVoir.add(String(id)); });
+}
+function cltAppliquerColisAVoir(conteneur) {
+  if (!cltColisAVoir.size) return;
+  const racine = conteneur || document;
+  racine.querySelectorAll(".colis-item[data-id]").forEach((el) => {
+    el.classList.toggle("colis-a-voir", cltColisAVoir.has(el.dataset.id));
+  });
+}
+// Toucher la carte lève le surlignage — et seulement ça : aucune autre action n'est faite.
+document.addEventListener("pointerdown", (e) => {
+  const el = e.target.closest && e.target.closest(".colis-item.colis-a-voir");
+  if (!el) return;
+  cltColisAVoir.delete(el.dataset.id);
+  el.classList.remove("colis-a-voir");
+  try { document.dispatchEvent(new CustomEvent("clt:colis-vu", { detail: { id: el.dataset.id, statut: el.dataset.statut } })); } catch (err) {}
+}, true);
 
 function cltFocusColisFromUrl(opts) {
   opts = opts || {};
@@ -1108,6 +1141,7 @@ function cltFocusColisFromUrl(opts) {
   const id = new URLSearchParams(location.search).get(param);
   if (!id) return;
   __cltEnsureHighlightStyle();
+  cltMarquerColisAVoir(id);
   let tries = 0;
   let missFired = false;
   const maxTries = opts.maxTries || 25; // ~7,5 s max (25 × 300 ms)
@@ -1115,7 +1149,7 @@ function cltFocusColisFromUrl(opts) {
     const el = document.querySelector('.colis-item[data-id="' + CSS.escape(id) + '"]');
     if (el) {
       try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { el.scrollIntoView(); }
-      el.classList.add("colis-deeplink-highlight");
+      el.classList.add("colis-deeplink-highlight", "colis-a-voir");
       setTimeout(() => el.classList.remove("colis-deeplink-highlight"), 4200);
       // On retire le paramètre de l'URL pour ne pas re-surligner à chaque nouveau rendu.
       try { history.replaceState(null, "", location.pathname); } catch (e) {}

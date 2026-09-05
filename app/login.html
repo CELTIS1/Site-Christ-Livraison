@@ -264,7 +264,9 @@
       console.error('Échec de la recopie de session :', err);
     }
 
-    window.location.href = target;
+    // Le lien d'une notification (?colis=<id>) est transmis à l'espace de destination. (05/09/2026)
+    const colisVise = new URLSearchParams(location.search).get('colis');
+    window.location.href = target + (colisVise ? '?colis=' + encodeURIComponent(colisVise) : '');
   }
 
   // Tente une connexion en essayant les deux formats de numéro possibles ("225..." et "+225...").

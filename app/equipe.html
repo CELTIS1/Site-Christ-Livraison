@@ -405,7 +405,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B
     <div class="ess-tuiles" id="aujourdhui-actions"><span class="ess-tuile est-vide">Chargement…</span></div>
   </div>
   <div class="ess-groupe">
-    <div class="ess-groupe-titre">Anomalies du jour</div>
+    <div class="ess-groupe-titre">À examiner</div>
     <div class="ess-tuiles" id="aujourdhui-anomalies"><span class="ess-tuile est-vide">Chargement…</span></div>
   </div>
   <div class="ess-groupe">
@@ -3760,13 +3760,22 @@ return html;
 function renderAujourdhui(){
 if (!document.getElementById('aujourdhui-actions')) return;
 const colis = Array.isArray(allColis) ? allColis : [];
-const jour = (typeof filtreDateColis === 'string') ? filtreDateColis : '';
-const duJour = jour ? colis.filter(c => matchesDate(c, jour)) : colis;
+/* TOUT CE QUI ATTEND, TOUTES DATES. (05/09/2026, deuxième passage)
+   Celtis : « lorsqu'il y a des colis qui ne sont pas assignés, que ce soit visible ; les colis
+   qui ne sont pas traités, pour tout autre cas, il faut que tout soit vraiment listé. »
+   La première version comptait sur la journée du filtre : un colis récupéré avant-hier et
+   jamais confié à un livreur n'y apparaissait pas. Ici on regarde tous les colis chargés, et
+   chaque pastille porte SA liste d'identifiants : c'est elle qui surligne les cartes. */
+const aujourdhui = todayLocalISODate();
+const vues = getAlertesVues();
+const cat = {
+  collecte:  colis.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id),
+  livraison: colis.filter(c => c.statut === 'recupere' && !c.livreur_id),
+  retard:    colis.filter(c => c.statut === 'en_livraison' && dayKey(c.created_at) < aujourdhui),
+  examiner:  colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && !vues.has(c.id)),
+};
 const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? pendingAccounts.length : 0;
 const nbReset = (typeof resetRequests !== 'undefined' && resetRequests) ? resetRequests.length : 0;
-const nbAffecter = duJour.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id).length;
-const nbNonLivre = duJour.filter(c => c.statut === 'non_livre').length;
-const nbRetour = duJour.filter(c => c.statut === 'retour').length;
 // Argent non remis : mêmes règles que la caisse livreur — colis livrés pas encore soldés.
 let resteARemettre = 0, nbASolder = 0;
 colis.forEach(c => {
@@ -3776,39 +3785,32 @@ colis.forEach(c => {
   }
 });
 const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
-// Une pastille : un chiffre, un mot, une destination (data-aller, lue par essentielAller()).
 const pastille = (valeur, label, aller, teinte) => {
   const vide = (valeur === 0 || valeur === '0 FCFA');
   const cls = vide ? 'est-vide' : (teinte === 'rouge' ? 'est-rouge' : 'est-ambre');
   return `<button type="button" class="ess-tuile ${cls}" data-aller="${aller}" title="Ouvrir"><span class="n">${valeur}</span><span>${label}</span></button>`;
 };
+window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id) };
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 set('aujourdhui-actions',
+  pastille(cat.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
+  pastille(cat.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
   pastille(nbPending,  'comptes à valider', 'comptes-a-valider', 'ambre') +
-  pastille(nbReset,    'mots de passe à refaire', 'reinitialisations', 'ambre') +
-  pastille(nbAffecter, 'colis à affecter', 'colis-a-affecter', 'ambre'));
+  pastille(nbReset,    'mots de passe à refaire', 'reinitialisations', 'ambre'));
 set('aujourdhui-anomalies',
-  pastille(nbNonLivre, 'non livrés', 'non-livres', 'rouge') +
-  pastille(nbRetour,   'retours', 'retours', 'rouge'));
+  pastille(cat.retard.length,   'en livraison depuis hier ou avant', 'retard', 'rouge') +
+  pastille(cat.examiner.length, 'non livrés / retours à examiner', 'examiner', 'rouge'));
 set('aujourdhui-argent',
   pastille(money(resteARemettre), 'à remettre', 'argent', 'rouge') +
   pastille(nbASolder, 'colis à solder', 'argent', 'rouge'));
 const libelleJour = document.getElementById('ess-jour');
-if (libelleJour) {
-  let txt = 'Toutes les dates chargées';
-  if (jour) {
-    const d = new Date(jour + 'T12:00:00');
-    txt = (jour === todayLocalISODate() ? "Aujourd'hui · " : '') + d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  }
-  cltPoserHTML(libelleJour, escapeHTML(txt));
-}
+if (libelleJour) cltPoserHTML(libelleJour, 'Tout ce qui attend, toutes dates confondues' + (colisHasMore ? ' · historique partiel' : ''));
 }
 
-// Où mène chaque pastille. UN SEUL écouteur, posé une fois sur la carte : les pastilles sont
-// redessinées toutes les 25 secondes, et un écouteur posé sur chacune s'empilait sans jamais
-// être retiré (c'était le cas jusqu'au 25/08/2026, puis contourné, puis réglé ici pour de bon).
-// Chaque destination pose le filtre qui correspond à ce que le chiffre compte : la liste qui
-// s'ouvre montre exactement ces colis-là, ni plus ni moins.
+// Où mène chaque pastille. UN SEUL écouteur, posé une fois sur la carte.
+// Chaque destination pose les filtres qui montrent exactement ces colis-là, surligne leurs
+// cartes (cltMarquerColisAVoir : le contour reste jusqu'à ce qu'on touche la carte) et fait
+// défiler jusqu'à la première.
 function essentielAller(cle){
 const onglet = (k) => { if (typeof showEquipeTab === 'function') showEquipeTab(k); };
 const defiler = (id) => { const el = document.getElementById(id); if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){} }, 60); };
@@ -3818,27 +3820,53 @@ const ouvrir = (contentId) => {
   const header = content.parentElement ? content.parentElement.querySelector('.collapsible-header') : null;
   if (!content.classList.contains('open') && header) toggleSection(header, contentId);
 };
-const listeColis = (statut, livreur) => {
+const listeColis = (statut, livreur, ids) => {
   onglet('colis');
   activeFilter = statut;
   filtreLivreurColis = livreur;
+  filtreDateColis = '';
+  const inp = document.getElementById('filtre-date-colis'); if (inp) inp.value = '';
   const sel = document.getElementById('filtre-livreur-colis');
-  if (sel) sel.value = livreur;
+  if (sel) { sel.value = livreur; if (window.CLTRecherche) CLTRecherche.rafraichir(sel); }
+  searchColis = '';
+  const rech = document.getElementById('search-colis'); if (rech) rech.value = '';
+  if (ids && ids.length && typeof cltMarquerColisAVoir === 'function') cltMarquerColisAVoir(ids);
   eqRemettreTrancheAZero();
   eqViderSelection();
   renderFilters();
   renderColis();
-  defiler('panel-colis');
+  // La première carte surlignée doit être sous les yeux tout de suite.
+  setTimeout(() => {
+    const premiere = document.querySelector('#colis-list .colis-item.colis-a-voir');
+    if (premiere) { try { premiere.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){} }
+    else defiler('panel-colis');
+  }, 120);
 };
+const L = window.__essentielListes || {};
 switch (cle) {
   case 'comptes-a-valider': onglet('comptes'); ouvrir('pending-content'); defiler('section-pending'); break;
   case 'reinitialisations': onglet('comptes'); ouvrir('reset-content'); defiler('section-reset'); break;
-  case 'colis-a-affecter': listeColis('en_attente', '__aucun'); break;
-  case 'non-livres': listeColis('non_livre', ''); break;
-  case 'retours': listeColis('retour', ''); break;
+  case 'collecte':  listeColis('en_attente', '', L.collecte); break;
+  case 'livraison': listeColis('recupere', '__aucun', L.livraison); break;
+  case 'retard':    listeColis('en_livraison', '', L.retard); break;
+  case 'examiner': {
+    const st = (L.examiner || []).map(id => (allColis.find(c => c.id === id) || {}).statut);
+    const seul = st.every(x => x === 'non_livre') ? 'non_livre' : st.every(x => x === 'retour') ? 'retour' : 'tous';
+    listeColis(seul, '', L.examiner); break;
+  }
   case 'argent': onglet('finances'); if (typeof showMainTab === 'function') showMainTab('compta'); defiler('caisse-livreur'); break;
 }
 }
+// Toucher la carte d'un non livré / retour surligné, c'est l'avoir examiné : il sort de la
+// pastille et du bandeau d'alerte — c'est le geste que Celtis demande (« on les touche d'abord »).
+document.addEventListener('clt:colis-vu', (e) => {
+  const d = e.detail || {};
+  if (d.statut === 'non_livre' || d.statut === 'retour') {
+    const v = getAlertesVues(); v.add(d.id); setAlertesVues(v);
+    renderAlertIndicator();
+  }
+  renderAujourdhui();
+});
 (function brancherEssentiel(){
 const carte = document.getElementById('section-aujourdhui');
 if (!carte) return;
@@ -4422,7 +4450,8 @@ __aChange = cltPoserHTML(list, renderGroupedColisHTML(tranche.groups, colisRowHT
 // Rien n'a bougé : les cartes déjà à l'écran sont les bonnes, avec leurs écouteurs, leur
 // défilement et ce qui a été tapé dedans. On s'arrête là — mais on met tout de même à jour les
 // tableaux annexes, qui portent sur l'ensemble des colis et pas seulement sur la tranche visible.
-if (!__aChange) { eqDessinerAnnexes(); return; }
+if (!__aChange) { eqDessinerAnnexes(); if (typeof cltAppliquerColisAVoir === 'function') cltAppliquerColisAVoir(list); return; }
+if (typeof cltAppliquerColisAVoir === 'function') cltAppliquerColisAVoir(list);
 brancherTrancheColis(list, () => { colisTranche += COLIS_TRANCHE; renderColis(); });
 if (eqLotActif) eqBrancherBarreLot(list, filtered);
 
@@ -9621,7 +9650,9 @@ await loadColis();
 // directement au colis concerné et on le surligne. En cas d'introuvable (colis d'un autre
 // jour que celui filtré par défaut), on retire le filtre de date puis on réessaie.
 cltFocusColisFromUrl({ onMiss: () => {
-  if (filtreDateColis || filtreLivreurColis) {
+  if (filtreDateColis || filtreLivreurColis || activeFilter !== 'tous') {
+    activeFilter = 'tous';
+    renderFilters();
     filtreDateColis = '';
     const inp = document.getElementById('filtre-date-colis');
     if (inp) inp.value = '';
@@ -10003,7 +10034,10 @@ init();
 
     let saved = 'colis';
     try { saved = localStorage.getItem('clt_equipe_tab_v2') || 'colis'; } catch(e){}
-    showEquipeTab(saved);
+    // Une notification (?colis=<id>) mène au colis : donc à l'onglet Colis, même si on avait
+    // laissé l'écran sur Clients ou Finances. (05/09/2026)
+    const lienColis = new URLSearchParams(location.search).get('colis');
+    showEquipeTab(lienColis ? 'colis' : saved);
   })();
 </script>
 </body>

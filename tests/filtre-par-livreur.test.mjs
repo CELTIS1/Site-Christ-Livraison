@@ -180,7 +180,8 @@ titre('Arriver par une notification ne doit pas tomber sur une liste vide');
   const i = equipe.indexOf('cltFocusColisFromUrl({ onMiss:');
   const onMiss = i === -1 ? '' : equipe.slice(i, i + 600);
   verifier('le rattrapage se déclenche aussi quand c’est le livreur qui masque le colis',
-    /if \(filtreDateColis \|\| filtreLivreurColis\)/.test(onMiss), onMiss.slice(0, 200));
+    // Depuis le 05/09/2026 le statut aussi peut masquer le colis : la condition s'est élargie.
+    /if \(filtreDateColis \|\| filtreLivreurColis( \|\| activeFilter !== 'tous')?\)/.test(onMiss), onMiss.slice(0, 200));
   verifier('il remet le filtre livreur à zéro', /filtreLivreurColis = ''/.test(onMiss));
   verifier('et il remet le champ à jour à l’écran (sinon il afficherait encore un nom)',
     /CLTRecherche\.rafraichir\(sel\)/.test(onMiss));

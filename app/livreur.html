@@ -2009,6 +2009,7 @@
       + trancheColisPiedHTML(trMes.affiches, trMes.total)
       + (lotMesActif ? barreLotHTML(lotMesIds.size, filtered.length, boutonsLotMes(), '') : ''))) return;
     brancherTrancheColis(list, () => { trancheMes += COLIS_TRANCHE; renderMesColis(); });
+    if (typeof cltAppliquerColisAVoir === 'function') cltAppliquerColisAVoir(list);
     if (lotMesActif) brancherBarreLotMes(list, filtered);
 
     list.querySelectorAll('.btn-save').forEach(btn => {
