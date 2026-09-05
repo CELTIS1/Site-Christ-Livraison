@@ -154,6 +154,10 @@
      marque ne disparaît qu'au moment où la personne touche elle-même le champ. C'est ce qui
      rend la relecture possible sur cent colis. */
   .rempli-auto{ background:#fffbe6 !important; border-color:#e6c34a !important; }
+  /* Téléphone du destinataire + WhatsApp sur la carte (05/09/2026). */
+  .colis-contact{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:3px; }
+  .colis-tel{ font-size:13.5px; font-weight:700; color:#1B4374; text-decoration:none; }
+  .colis-contact .btn-notify-wa{ padding:4px 10px; font-size:12px; margin:0; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -1587,15 +1591,20 @@
       ? `<div class="meta colis-quoi">${quoi ? '📦 ' + escapeHTML(quoi) : ''}${quoi && c.numero ? ' · ' : ''}${c.numero ? 'N° ' + escapeHTML(c.numero) : ''}</div>`
       : '';
     return `
-      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-statut="${escapeHTML(c.statut || '')}">
+      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-statut="${escapeHTML(c.statut || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}">
         ${stepperHTML(c.statut, c)}
         ${thumb}
         <div class="info">
           <div class="view-mode">
             <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
             ${quoiEtNumero}
+            <!-- Le téléphone du destinataire et « Prévenir sur WhatsApp » sur la carte (05/09/2026,
+                 Celtis : l'indispensable qui manquait). La vendeuse prévient elle-même son client
+                 en un appui ; le bouton passe par la délégation .btn-notify-wa de config.js, qui
+                 lit data-tel / data-statut / data-numero sur la carte. La ligne « 📍 Récupération »
+                 est partie : c'est SA propre adresse, elle la connaît. -->
+            ${c.destinataire_telephone ? `<div class="meta colis-contact"><a class="colis-tel" href="tel:${escapeHTML(numeroInternational(c.destinataire_telephone) ? '+' + numeroInternational(c.destinataire_telephone) : c.destinataire_telephone)}">📞 ${escapeHTML(formatPhoneDisplay(c.destinataire_telephone) || c.destinataire_telephone)}</a> <button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button></div>` : ''}
             ${(!c.commune_destination && !c.destination && colisAdresseCorrigeable(c)) ? `<div class="meta" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — sans elle, le livreur ne peut pas partir.</div>` : ''}
-            ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
             <!-- L'argent de la cliente d'abord, les frais de CLT ensuite et plus discrètement.
                  On n'affiche plus de « Total » article + livraison : cette somme ne correspond
                  à la poche de personne. L'article revient à la cliente, la livraison à CLT. -->
