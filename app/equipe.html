@@ -403,6 +403,7 @@
 #section-aujourdhui .ess-stat.est-ambre .n{ color:#8a4b12; }
 /* Zéro se lit en gris et en pointillé : l'œil doit accrocher ce qui existe. */
 #section-aujourdhui .ess-tuile.est-vide{ color:var(--muted); border-style:dashed; background:transparent; }
+#section-aujourdhui .ess-tuile.est-vide .n{ background:var(--muted); opacity:.55; }
 #section-aujourdhui .ess-tuile.est-ambre{ border-color:#E26313; color:#8a4b12; background:#fff8ef; }
 #section-aujourdhui .ess-tuile.est-rouge{ border-color:#D6534A; color:#8f2a23; background:#fff5f4; }
 /* 05/09/2026 — teinte verte pour « livrés aujourd'hui » ; les pastilles du groupe Aujourd'hui ne mènent nulle part (span sans data-aller). */
@@ -3814,6 +3815,8 @@ const cat = {
 };
 const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? pendingAccounts.length : 0;
 const nbReset = resetEnAttente();
+// Les demandes approuvées qui attendent que l'équipe dicte le code (06/09/2026, point 1.3).
+const nbCodes = (typeof resetRequests !== 'undefined' && resetRequests) ? resetRequests.filter(r => r.status === 'approuve').length : 0;
 // Argent non remis : mêmes règles que la caisse livreur — colis livrés pas encore soldés.
 let resteARemettre = 0, nbASolder = 0;
 colis.forEach(c => {
@@ -3832,6 +3835,12 @@ const pastille = (valeur, label, aller, teinte) => {
   return `<button type="button" class="ess-tuile ${teinte === 'rouge' ? 'est-rouge' : 'est-ambre'}" data-aller="${aller}" title="Ouvrir"><span class="n">${valeur}</span><span>${label}</span></button>`;
 };
 const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`;
+// Celtis, 6 septembre : les raccourcis vers les comptes et les mots de passe doivent rester
+// visibles même à zéro — c'est par là qu'on va quand une notification arrive. À zéro ils
+// sont gris et en pointillé ; dès qu'il y a quelque chose, ils prennent leur couleur.
+const raccourci = (valeur, label, aller, teinte) => valeur
+  ? pastille(valeur, label, aller, teinte)
+  : `<button type="button" class="ess-tuile est-vide" data-aller="${aller}" title="Ouvrir"><span class="n">0</span><span>${label}</span></button>`;
 window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id) };
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 // 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient de
@@ -3846,8 +3855,9 @@ set('aujourdhui-jour',
 set('aujourdhui-actions', ouRien(
   pastille(cat.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
   pastille(cat.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
-  pastille(nbPending,  'comptes à valider', 'comptes-a-valider', 'ambre') +
-  pastille(nbReset,    'mots de passe à refaire', 'reinitialisations', 'ambre'), 'Rien à faire'));
+  raccourci(nbPending, 'comptes à valider', 'comptes-a-valider', 'ambre') +
+  raccourci(nbReset,   'mots de passe à refaire', 'reinitialisations', 'ambre') +
+  pastille(nbCodes,    nbCodes > 1 ? 'codes à dicter' : 'code à dicter', 'reinitialisations', 'rouge'), 'Rien à faire'));
 set('aujourdhui-anomalies', ouRien(
   pastille(cat.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +
   pastille(cat.examiner.length, 'non livrés ou retours', 'examiner', 'rouge'), 'Rien à examiner'));
