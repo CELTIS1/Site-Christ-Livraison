@@ -430,6 +430,9 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B
      quoi on ne peut plus se dire où aller d'un appareil à l'autre. (28/08/2026) -->
 <button type="button" class="clt-toptab" data-eqtab="programmation">🗓️ Tournées</button>
 <button type="button" class="clt-toptab" data-eqtab="suivi">🗺️ Suivi</button>
+<!-- Le tableau de bord des clientes (05/09/2026) : qui nous confie quoi, comment ça évolue,
+     qui appeler. Lecture seule ; les gestes renvoient vers Colis, Tournées ou la fiche. -->
+<button type="button" class="clt-toptab" data-eqtab="clients">📈 Clients</button>
 <button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
 <button type="button" class="clt-toptab" data-eqtab="comptes">👥 Comptes</button>
 <button type="button" class="clt-toptab hidden" id="eqtab-btn-express" data-eqtab="express">🏍️ Express</button>
@@ -439,6 +442,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-rouge{ background:#2B
 <div class="eq-tabpanel" id="eqpanel-colis"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-programmation"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-suivi"></div>
+<div class="eq-tabpanel hidden" id="eqpanel-clients"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-finances"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-comptes"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-express"></div>
@@ -1197,6 +1201,148 @@ quand vous reposez la tournée avec le vrai nombre.
 
      Il ne s'agit pas de se connecter à sa place : rien n'est fait ici en son nom. On regarde,
      et les corrections passent par la porte habituelle, sous le compte de qui les fait. -->
+<!-- ============================================================================================
+     📈 TABLEAU DE BORD DES CLIENTES — 5 septembre 2026. Le code est dans clients-dashboard.js ;
+     ici, seulement la coquille : la barre de période, le corps que le script remplit, et la fiche.
+     ============================================================================================ -->
+<style>
+#section-clients .cd-barre{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+#section-clients .cd-barre .page-sub{ margin:0; flex:1 1 260px; }
+#section-clients .cd-periodes{ display:inline-flex; gap:4px; background:var(--grey-bg); border-radius:999px; padding:3px; }
+#section-clients .cd-periodes button{ border:0; background:transparent; border-radius:999px; padding:6px 12px; font:inherit; font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer; min-height:32px; }
+#section-clients .cd-periodes button.active{ background:var(--white); color:var(--navy); box-shadow:var(--shadow-xs); }
+.cd-kpis{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin-bottom:14px; }
+.cd-kpi{ background:var(--white); border:1px solid var(--border); border-radius:12px; padding:10px 12px; min-width:0; }
+.cd-kpi-val{ font-size:20px; font-weight:800; color:var(--navy); letter-spacing:-0.02em; line-height:1.15; display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; }
+.cd-kpi-lib{ font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:2px; }
+.cd-kpi-sous{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+.cd-kpi-rouge .cd-kpi-val{ color:#b3362d; }
+.cd-kpi-ambre .cd-kpi-val{ color:#8a4b12; }
+.cd-bloc{ margin-top:16px; }
+.cd-bloc-entete{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+.cd-bloc-entete .panel-subtitle{ margin:0; }
+.cd-outils{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.cd-outils .search-input{ min-width:200px; flex:1 1 200px; padding:8px 10px; }
+.cd-outils select{ border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); padding:7px 10px; font:inherit; font-size:13px; color:var(--navy); background:var(--white); }
+.cd-legende{ display:flex; gap:12px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); font-weight:600; }
+.cd-legende span{ display:inline-flex; align-items:center; gap:5px; }
+.cd-l{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+.cd-l-livre, .cd-seg-livre{ background:#39A56B; fill:#39A56B; }
+.cd-l-cours, .cd-seg-cours{ background:#2F6FC4; fill:#2F6FC4; }
+.cd-l-echec, .cd-seg-echec{ background:#D6534A; fill:#D6534A; }
+.cd-graph-wrap{ position:relative; }
+.cd-graph{ width:100%; height:auto; display:block; }
+.cd-grid{ stroke:var(--border); stroke-width:1; }
+.cd-axe{ fill:var(--muted); font-size:10px; font-family:inherit; }
+.cd-cible{ fill:transparent; }
+.cd-jour:hover .cd-cible{ fill:rgba(27,67,116,0.06); }
+.cd-tooltip{ position:absolute; pointer-events:none; background:var(--navy); color:#fff; font-size:12px; padding:6px 9px; border-radius:8px; max-width:230px; line-height:1.35; box-shadow:var(--shadow-md); z-index:5; }
+.cd-signaux{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:10px; }
+.cd-signal{ border:1px solid var(--border); border-radius:12px; padding:10px 12px; background:var(--white); }
+.cd-signal-titre{ font-size:13.5px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:6px; }
+.cd-signal-n{ background:var(--grey-bg); border-radius:999px; padding:1px 8px; font-size:12px; color:var(--muted); }
+.cd-signal-sous{ font-size:11.5px; color:var(--muted); margin:3px 0 8px; line-height:1.4; }
+.cd-signal-puces{ display:flex; flex-wrap:wrap; gap:6px; }
+.cd-puce{ border:1.5px solid var(--border-strong); background:var(--white); border-radius:999px; padding:5px 10px; font:inherit; font-size:12px; font-weight:600; color:var(--navy); cursor:pointer; min-height:32px; }
+.cd-puce:hover{ border-color:var(--navy); }
+.cd-puce-plus{ border-style:dashed; color:var(--muted); cursor:default; }
+.cd-vide{ color:var(--muted); font-size:13px; padding:8px 0; }
+.cd-table td{ vertical-align:middle; }
+.cd-ligne{ cursor:pointer; }
+.cd-ligne-inactive{ opacity:.55; }
+.cd-nom{ font-weight:700; color:var(--navy); display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.cd-badge{ font-size:12px; }
+.cd-sous{ font-size:11px; color:var(--muted); margin-top:2px; white-space:normal; }
+.cd-cell-num{ text-align:right; }
+.cd-cell-tend{ white-space:nowrap; }
+.cd-spark{ width:96px; height:26px; vertical-align:middle; margin-right:4px; }
+.cd-spark path{ fill:none; stroke:var(--navy); stroke-width:1.8; stroke-linejoin:round; stroke-linecap:round; }
+.cd-spark circle{ fill:var(--orange); }
+.cd-tend{ display:inline-block; font-size:11.5px; font-weight:800; border-radius:999px; padding:2px 7px; white-space:nowrap; }
+.cd-tend-haut{ color:#1a7d3c; background:#e3f6ea; }
+.cd-tend-bas{ color:#b3362d; background:#fce4e2; }
+.cd-tend-plat{ color:var(--muted); background:var(--grey-bg); }
+.cd-tend-neuf{ color:#1B4374; background:#e5edf5; }
+.cd-lien{ text-decoration:none; font-size:14px; padding:4px 6px; border-radius:8px; border:1px solid var(--border); background:var(--white); color:var(--navy); white-space:nowrap; }
+.cd-lien:hover{ border-color:var(--navy); }
+.cd-rouge{ color:#b3362d; }
+.cd-muet{ color:var(--muted); }
+.cd-note{ font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.45; }
+/* La fiche */
+.cd-fiche-entete{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start; margin-bottom:14px; }
+.cd-fiche-nom{ font-size:18px; font-weight:800; color:var(--navy); }
+.cd-fiche-gestes{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.cd-fiche-grille{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; }
+.cd-fiche-bloc{ border:1px solid var(--border); border-radius:12px; padding:10px 12px; min-width:0; }
+.cd-fiche-bloc-large{ grid-column:1 / -1; }
+.cd-fiche-bloc-titre{ font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.cd-fiche-ligne{ font-size:13px; color:var(--navy); margin:4px 0; line-height:1.45; }
+.cd-fiche-spark{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.cd-fiche-spark .cd-spark{ width:160px; height:36px; }
+.cd-fiche-tuiles{ display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; }
+.cd-fiche-tuiles > div{ background:var(--grey-bg); border-radius:9px; padding:7px 4px; text-align:center; min-width:0; }
+.cd-fiche-tuiles b{ display:block; font-size:17px; color:var(--navy); }
+.cd-fiche-tuiles span{ display:block; font-size:10.5px; color:var(--muted); line-height:1.2; }
+.cd-fiche-tuiles .cd-t-livre b{ color:#1a7d3c; } .cd-fiche-tuiles .cd-t-cours b{ color:#2F6FC4; } .cd-fiche-tuiles .cd-t-echec b{ color:#b3362d; }
+.cd-mini{ width:100%; border-collapse:collapse; font-size:12.5px; }
+.cd-mini td{ padding:5px 6px; border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
+.cd-statut{ font-size:11px; font-weight:700; border-radius:999px; padding:2px 7px; background:var(--grey-bg); color:var(--muted); }
+.cd-statut-livre{ background:#e3f6ea; color:#1a7d3c; } .cd-statut-non_livre{ background:#fce4e2; color:#c0392b; } .cd-statut-retour{ background:#f2e8fa; color:#8e44ad; } .cd-statut-en_livraison{ background:#FBE2CE; color:#E26313; } .cd-statut-recupere{ background:#e5edf5; color:#1B4374; }
+html[data-theme="dark"] .cd-kpi, html[data-theme="dark"] .cd-signal, html[data-theme="dark"] .cd-fiche-bloc, html[data-theme="dark"] .cd-puce, html[data-theme="dark"] .cd-lien{ background:#1A2433; border-color:#2B3A4E; color:#C6D5E6; }
+html[data-theme="dark"] .cd-kpi-val, html[data-theme="dark"] .cd-signal-titre, html[data-theme="dark"] .cd-nom, html[data-theme="dark"] .cd-fiche-nom, html[data-theme="dark"] .cd-fiche-ligne, html[data-theme="dark"] .cd-fiche-tuiles b{ color:#E4ECF5; }
+html[data-theme="dark"] .cd-seg-livre, html[data-theme="dark"] .cd-l-livre{ fill:#3FA86F; background:#3FA86F; }
+html[data-theme="dark"] .cd-seg-cours, html[data-theme="dark"] .cd-l-cours{ fill:#4F87D6; background:#4F87D6; }
+html[data-theme="dark"] .cd-seg-echec, html[data-theme="dark"] .cd-l-echec{ fill:#E06A60; background:#E06A60; }
+html[data-theme="dark"] .cd-grid{ stroke:#2B3A4E; }
+html[data-theme="dark"] .cd-spark path{ stroke:#9EC0E6; }
+html[data-theme="dark"] .cd-fiche-tuiles > div, html[data-theme="dark"] .cd-signal-n, html[data-theme="dark"] .cd-tend-plat{ background:#223045; }
+html[data-theme="dark"] #section-clients .cd-periodes{ background:#223045; }
+html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:#1B4374; color:#fff; }
+@media(max-width:640px){
+  .cd-kpis{ grid-template-columns:repeat(2, 1fr); gap:6px; }
+  .cd-kpi-val{ font-size:17px; }
+  .cd-fiche-tuiles{ grid-template-columns:repeat(2, 1fr); }
+  /* Sur téléphone, une cliente tient sur une carte de quatre lignes — pas sur sept lignes
+     « libellé : valeur » comme les autres tableaux repliés (mesuré : 12 clientes, 4 900 px). */
+  .cd-table tr{ display:grid !important; grid-template-columns:1fr auto; grid-template-areas:"nom contact" "chiffres chiffres" "tend tend"; gap:4px 8px; padding:9px 12px !important; }
+  .cd-table td{ display:block !important; padding:0 !important; text-align:left !important; }
+  .cd-table td::before{ content:none !important; }
+  .cd-table td[data-label="Cliente"]{ grid-area:nom; }
+  .cd-table td[data-label="Contact"]{ grid-area:contact; justify-self:end; white-space:nowrap; }
+  .cd-table td[data-label="Colis"], .cd-table td[data-label="Livrés"], .cd-table td[data-label="À reverser"], .cd-table td[data-label="Dernier colis"]{ grid-area:auto; }
+  .cd-table td[data-label="Colis"]{ grid-area:chiffres; display:flex !important; gap:10px; flex-wrap:wrap; align-items:baseline; }
+  .cd-table td[data-label="Colis"] .cd-sous{ margin:0; }
+  .cd-table td[data-label="Tendance"]{ grid-area:tend; display:flex !important; align-items:center; gap:8px; }
+  .cd-table td[data-label="Livrés"], .cd-table td[data-label="À reverser"], .cd-table td[data-label="Dernier colis"]{ grid-column:1 / -1; font-size:12px; }
+  .cd-table td[data-label="Livrés"]::before, .cd-table td[data-label="À reverser"]::before, .cd-table td[data-label="Dernier colis"]::before{ content:attr(data-label) " : " !important; color:var(--muted); font-weight:600; }
+  .cd-table td[data-label="Livrés"] .cd-sous{ display:inline; margin-left:4px; }
+}
+</style>
+<div class="card" id="section-clients">
+<div class="cd-barre">
+<div class="page-sub">Qui nous confie quoi, comment ça évolue, qui appeler. Comparé à la période d’avant.</div>
+<div class="cd-periodes" role="group" aria-label="Période">
+<button type="button" data-cd-periode="7">7 j</button>
+<button type="button" data-cd-periode="30" class="active">30 j</button>
+<button type="button" data-cd-periode="90">90 j</button>
+</div>
+<button type="button" class="btn btn-outline btn-sm" id="cd-actualiser">🔄 Actualiser</button>
+</div>
+<div id="cd-corps"><div class="empty-state">Ouvrez l’onglet pour lire les chiffres.</div></div>
+</div>
+
+<div id="cd-fiche-overlay" class="fiche-ecran-overlay hidden" data-clt-couche="Fiche cliente" role="dialog" aria-modal="true" aria-label="Fiche cliente">
+  <div class="fiche-ecran">
+    <div class="fiche-ecran-tete">
+      <div class="fiche-ecran-actions">
+        <span class="fiche-ecran-titre">Fiche cliente</span>
+        <button type="button" class="fiche-ecran-fermer" id="cd-fiche-fermer" aria-label="Fermer cette fiche" data-clt-fermer>✕</button>
+      </div>
+    </div>
+    <div class="fiche-ecran-corps" id="cd-fiche-corps"></div>
+  </div>
+</div>
+
 <div id="fiche-ecran-overlay" class="fiche-ecran-overlay hidden" data-clt-couche="Son écran" role="dialog" aria-modal="true" aria-labelledby="fiche-ecran-titre">
   <div class="fiche-ecran">
     <div class="fiche-ecran-tete">
@@ -1218,6 +1364,7 @@ quand vous reposez la tournée avec le vrai nombre.
 
 <script src="clt-common.js?v=20260905cartes"></script>
 <script src="config.js?v=20260905cartes"></script>
+<script src="clients-dashboard.js?v=20260905cartes"></script>
 <script src="biometric-lock.js?v=20260905cartes"></script>
 <script src="clt-select-recherche.js?v=20260905cartes"></script>
 <script>
@@ -9685,6 +9832,10 @@ init();
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-11a7 7 0 0 0-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
     Suivi
   </button>
+  <button type="button" class="nav" data-nav="clients">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><rect x="5" y="11" width="3.5" height="7" rx="1"/><rect x="10.25" y="6" width="3.5" height="12" rx="1"/><rect x="15.5" y="9" width="3.5" height="9" rx="1"/></svg>
+    Clients
+  </button>
   <button type="button" class="nav" data-nav="finances">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.2c0-1.1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.9c0 2.6-5 1.4-5 3.9 0 1.2 1.1 1.9 2.5 1.9s2.5-.6 2.5-1.7"/></svg>
     Finances
@@ -9703,7 +9854,7 @@ init();
   // Les 5 onglets regroupent les anciennes sections. On DÉPLACE les sections existantes dans les
   // panneaux d'onglets (sans réécrire leur HTML) pour préserver tous les identifiants, formulaires
   // et écouteurs d'événements déjà câblés ailleurs dans le code.
-  const EQ_TABS = ['colis','programmation','suivi','finances','comptes','express'];
+  const EQ_TABS = ['colis','programmation','suivi','clients','finances','comptes','express'];
 
   function showEquipeTab(key){
     if (!EQ_TABS.includes(key)) key = 'colis';
@@ -9728,6 +9879,9 @@ init();
     // on la recharge à chaque retour. Une tournée décidée depuis un autre poste doit apparaître
     // ici sans qu'on ait à recharger la page.
     if (key === 'programmation' && typeof chargerProgrammations === 'function') chargerProgrammations();
+    // Le tableau de bord des clientes lit la base à l'ouverture (et à chaque retour) : la liste
+    // de l'onglet Colis n'en garde qu'une page, lui regarde deux périodes entières.
+    if (key === 'clients' && window.CLTClients) CLTClients.rafraichir();
     if (key === 'finances' && typeof forceStickyReflow === 'function'){
       forceStickyReflow(document.getElementById('panel-rapports'));
       forceStickyReflow(document.getElementById('panel-compta'));
@@ -9763,6 +9917,10 @@ init();
     put('eqpanel-suivi', byId('section-presence'));
     put('eqpanel-suivi', byId('section-carte'));
     put('eqpanel-suivi', wrapInCard(byId('panel-journal')));
+
+    // 📈 Clients : le tableau de bord des clientes (clients-dashboard.js)
+    put('eqpanel-clients', byId('section-clients'));
+    if (window.CLTClients) CLTClients.init();
 
     // 💰 Finances : rapports + comptabilité + statistiques (stats = admin)
     put('eqpanel-finances', wrapInCard(byId('panel-rapports')));
