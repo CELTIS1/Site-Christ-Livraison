@@ -122,12 +122,11 @@
       <!-- MOT DE PASSE OUBLIÉ — ÉTAPE 3 : LA PERSONNE CHOISIT SON MOT DE PASSE -->
       <form id="form-reset-set" class="hidden">
         <div style="text-align:center;font-weight:700;color:#6D28D9;font-size:15px;margin-bottom:10px;">Nouveau mot de passe</div>
-        <div id="reset-set-sub" style="text-align:center;font-size:12.5px;color:#16794c;margin-bottom:12px;">Votre demande a été approuvée. Un code vient d'être envoyé par SMS au numéro du compte : saisissez-le, puis choisissez votre nouveau mot de passe.</div>
+        <div id="reset-set-sub" style="text-align:center;font-size:12.5px;color:#16794c;margin-bottom:12px;">Votre demande a été approuvée. Saisissez le code à 6 chiffres que notre équipe vous a communiqué, puis choisissez votre nouveau mot de passe.</div>
         <div class="field">
-          <label>Code reçu par SMS</label>
+          <label>Code communiqué par l'équipe</label>
           <input type="text" id="reset-set-code" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4,8}" maxlength="8" placeholder="6 chiffres">
         </div>
-        <button type="button" id="btn-reset-resend" style="width:100%;text-align:center;margin:-4px 0 10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;font-size:12.5px;">Renvoyer le code</button>
         <div class="field">
           <label>Nouveau mot de passe</label>
           <input type="password" id="reset-set-password" required minlength="6" autocomplete="new-password" placeholder="6 caractères minimum">
@@ -588,41 +587,15 @@
     document.getElementById('reset-set-confirm').value = '';
     document.getElementById('form-reset-set').classList.remove('hidden');
     document.getElementById('reset-set-code').value = '';
-    envoyerCodeReset();
   }
 
-  // ---------- LE CODE SMS (06/09/2026, feuille de route 1.3) ----------
-  // Après l'approbation de l'équipe, la personne doit encore prouver qu'elle tient le
-  // téléphone du compte : Supabase lui envoie un code à usage unique (Vonage), elle le
-  // saisit, et c'est la session obtenue par ce code qui autorise le nouveau mot de passe.
-  // Sans ça, quiconque connaissait le numéro — il est écrit sur les colis — avait trente
-  // minutes pour s'approprier le compte après chaque approbation.
-  let resetCodeEnvoyeA = 0;          // horodatage du dernier envoi (anti-rafale)
-  let resetCodeEchecs = 0;           // mauvais codes saisis d'affilée
-  const RESET_CODE_RENVOI_MS = 60000;
-  const RESET_CODE_MAX_ECHECS = 5;
-  async function envoyerCodeReset(){
-    const sub = document.getElementById('reset-set-sub');
-    if (Date.now() - resetCodeEnvoyeA < RESET_CODE_RENVOI_MS) {
-      if (sub) sub.textContent = "Un code vient déjà d'être envoyé. Attendez une minute avant d'en redemander un.";
-      return;
-    }
-    resetCodeEnvoyeA = Date.now();
-    try {
-      // shouldCreateUser: false — un numéro sans compte ne doit jamais en créer un ici.
-      const { error } = await supabaseClient.auth.signInWithOtp({ phone: resetPhone, options: { shouldCreateUser: false } });
-      if (error) {
-        resetCodeEnvoyeA = 0;
-        if (sub) sub.textContent = "L'envoi du code a échoué (" + (error.message || 'réseau') + "). Touchez « Renvoyer le code ».";
-        return;
-      }
-      if (sub) sub.textContent = "Votre demande a été approuvée. Un code vient d'être envoyé par SMS au numéro du compte : saisissez-le, puis choisissez votre nouveau mot de passe.";
-    } catch (e) {
-      resetCodeEnvoyeA = 0;
-      if (sub) sub.textContent = "L'envoi du code a échoué (réseau). Touchez « Renvoyer le code ».";
-    }
-  }
-  document.getElementById('btn-reset-resend').addEventListener('click', envoyerCodeReset);
+  // ---------- LE CODE DICTÉ PAR L'ÉQUIPE (06/09/2026, feuille de route 1.3) ----------
+  // Après l'approbation, la personne doit encore prouver qu'elle est bien celle que l'équipe
+  // a eue au téléphone : l'approbation tire un code à 6 chiffres, montré au membre de
+  // l'équipe seulement, qui le dicte pendant l'appel. Sans ce code, quiconque connaissait
+  // le numéro — il est écrit sur les colis — avait trente minutes pour s'approprier le
+  // compte après chaque approbation. Celtis a préféré ce chemin au SMS : gratuit, et fondé
+  // sur la voix que l'équipe a reconnue. Le serveur compte les essais (cinq) et annule.
 
   function backToLogin(){
     stopResetPoll();
@@ -714,47 +687,25 @@
     btn.disabled = true; btn.textContent = 'Enregistrement...';
 
     try {
-      // 1) Le code : c'est Supabase qui le vérifie (haché, expiré après un délai, essais limités).
-      //    La session rendue est la preuve que la personne tient le téléphone du compte.
-      const { data: otp, error: otpErr } = await supabaseClient.auth.verifyOtp({ phone: resetPhone, token: code, type: 'sms' });
-      const preuve = otp && otp.session ? otp.session.access_token : null;
-      if (otpErr || !preuve) {
-        resetCodeEchecs++;
-        if (resetCodeEchecs >= RESET_CODE_MAX_ECHECS) {
-          resetCodeEchecs = 0;
-          stopResetPoll();
-          document.getElementById('form-reset-set').classList.add('hidden');
-          document.getElementById('form-forgot-phone').classList.remove('hidden');
-          showMsg("Trop de codes incorrects. Refaites une demande de réinitialisation.", "error");
-        } else {
-          showMsg("Code incorrect ou expiré. Vérifiez le SMS, ou touchez « Renvoyer le code ».", "error");
-        }
-        btn.disabled = false; btn.textContent = 'Enregistrer mon mot de passe';
-        return;
-      }
-      resetCodeEchecs = 0;
-
-      // 2) Le nouveau mot de passe, avec la preuve en en-tête : la fonction refuse (403) sans elle.
+      // Le code part avec le mot de passe : c'est le serveur qui le compare à l'empreinte
+      // posée à l'approbation, compte les essais et annule la demande au cinquième.
       const res = await fetch(`${SUPABASE_URL}/functions/v1/finaliser-reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${preuve}`,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
           'apikey': SUPABASE_KEY,
         },
-        body: JSON.stringify({ phone: resetPhone, new_password: p }),
+        body: JSON.stringify({ phone: resetPhone, code, new_password: p }),
       });
       const result = await res.json();
 
-      // 3) La session du code SMS ne doit pas survivre : on repart d'une connexion propre,
-      //    avec le nouveau mot de passe. (Une déconnexion globale révoque aussi les autres
-      //    appareils — c'est voulu après un changement de mot de passe.)
-      try { await supabaseClient.auth.signOut(); } catch (e2) {}
-      if (typeof clearAllAuthStorage === 'function') clearAllAuthStorage();
-
       if (!res.ok || !result.success) {
         showMsg("Erreur : " + (result.error || 'impossible de définir le mot de passe'), "error");
-        if (result.state === 'expire' || result.state === 'none') {
+        if (result.state === 'code_faux') {
+          document.getElementById('reset-set-code').value = '';
+          document.getElementById('reset-set-code').focus();
+        } else if (result.state === 'expire' || result.state === 'none' || result.state === 'invalide') {
           // L'approbation n'est plus valable (30 min dépassées) : plutôt que de
           // laisser la personne buter sur un formulaire mort, on la ramène à
           // l'étape « demander », d'où elle peut repartir immédiatement.

@@ -32,6 +32,10 @@ import vm from 'node:vm';
 import path from 'node:path';
 import { stripTypeScriptTypes } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+
+// Même empreinte que les deux fonctions serveur : SHA-256 de « <id>:<code> ».
+const empreinteCode = (id, code) => createHash('sha256').update(`${id}:${code}`).digest('hex');
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
@@ -57,6 +61,9 @@ function chargerFonction(nom, faireClient){
   let gestionnaire = null;
   const contexte = vm.createContext({
     console, JSON, Object, String, Number, Boolean, Date, Math, Promise, RegExp, Set, Error, Array,
+    // Le code de réinitialisation est tiré et haché avec la cryptographie du navigateur
+    // (Web Crypto), la même que Deno : on lui passe celle de Node, qui est identique.
+    crypto: globalThis.crypto, TextEncoder, Uint8Array, Uint32Array,
     Response: class { constructor(corps, init){ this.corps = corps; this.init = init || {}; this.status = this.init.status || 200; } },
     Deno: {
       env: { get: (cle) => ({ SUPABASE_URL: 'https://exemple.test', SUPABASE_SERVICE_ROLE_KEY: 'service' })[cle] },
@@ -271,11 +278,11 @@ titre('finaliser-reset-password — jamais le mauvais compte, jamais hors délai
 
   // -- Le chemin normal ------------------------------------------------------
   {
-    const demande = { id: 'd1', user_id: 'u-1', phone: '2250789818140', status: 'approuve', traite_at: ilYA(2) };
+    const demande = { id: 'd1', user_id: 'u-1', phone: '2250789818140', status: 'approuve', traite_at: ilYA(2), code_hash: empreinteCode('d1', '483921'), code_expire_at: new Date(Date.now() + 20 * 60000).toISOString(), code_tentatives: 0 };
     const { client, journal } = faireFauxSupabase(mondeDemande(demande));
     const fn = chargerFonction('finaliser-reset-password', () => client);
-    const r = await appeler(fn, { phone: '2250789818140', new_password: 'nouveau123' }, { Authorization: 'Bearer preuve-u-1' });
-    verifier('une approbation valide ET le code SMS laissent la personne définir son mot de passe',
+    const r = await appeler(fn, { phone: '2250789818140', code: '483 921', new_password: 'nouveau123' });
+    verifier('une approbation valide ET le code dicté laissent la personne définir son mot de passe',
       r.status === 200 && r.corps.success === true, JSON.stringify(r.corps));
     verifier('le mot de passe est appliqué au compte désigné par la demande',
       motsDePasseAppliques(journal).length === 1 && motsDePasseAppliques(journal)[0].id === 'u-1');
@@ -289,33 +296,55 @@ titre('finaliser-reset-password — jamais le mauvais compte, jamais hors délai
       marquage.length === 1 && marquage[0].filtres.some(f => f[0] === 'eq' && f[1] === 'status' && f[2] === 'approuve'));
   }
 
-  // -- LE CODE SMS (06/09/2026, point 1.3) : l'approbation seule ne suffit plus --
+  // -- LE CODE DICTÉ PAR L'ÉQUIPE (06/09/2026, point 1.3) : l'approbation seule ne suffit plus --
   // Le numéro d'une cliente est écrit sur ses colis. Avant, quiconque le connaissait
   // avait trente minutes après chaque approbation pour s'approprier le compte. Il faut
-  // désormais la session obtenue par le code SMS — et celle du BON compte.
+  // désormais le code à 6 chiffres que l'équipe a dicté au téléphone — haché en base,
+  // cinq essais, puis la demande est annulée.
+  const avecCode = (code, extra = {}) => ({ id: 'd1', user_id: 'u-1', phone: '2250789818140', status: 'approuve', traite_at: ilYA(2),
+    code_hash: empreinteCode('d1', code), code_expire_at: new Date(Date.now() + 20 * 60000).toISOString(), code_tentatives: 0, ...extra });
   {
-    const demande = { id: 'd1', user_id: 'u-1', phone: '2250789818140', status: 'approuve', traite_at: ilYA(2) };
-    const { client, journal } = faireFauxSupabase(mondeDemande(demande));
+    const { client, journal } = faireFauxSupabase(mondeDemande(avecCode('483921')));
     const fn = chargerFonction('finaliser-reset-password', () => client);
     const r = await appeler(fn, { phone: '2250789818140', new_password: 'nouveau123' });
-    verifier('approuvée mais SANS code SMS (clé publique seule) : refusé 403',
-      r.status === 403 && r.corps.state === 'code_requis', `status=${r.status} ${JSON.stringify(r.corps)}`);
+    verifier('approuvée mais SANS code : refusé 403', r.status === 403 && r.corps.state === 'code_requis', `status=${r.status} ${JSON.stringify(r.corps)}`);
     verifier('et rien n’est écrit dans l’authentification', motsDePasseAppliques(journal).length === 0);
-    verifier('la demande n’est pas consommée (le vrai titulaire pourra encore finir)',
-      journal.filter(x => x.op === 'update' && x.table === 'demandes_reset_password').length === 0);
   }
   {
-    const demande = { id: 'd1', user_id: 'u-1', phone: '2250789818140', status: 'approuve', traite_at: ilYA(2) };
-    const { client, journal } = faireFauxSupabase(mondeDemande(demande));
+    const { client, journal } = faireFauxSupabase(mondeDemande(avecCode('483921')));
     const fn = chargerFonction('finaliser-reset-password', () => client);
-    const r = await appeler(fn, { phone: '2250789818140', new_password: 'nouveau123' }, { Authorization: 'Bearer preuve-u-AUTRE' });
-    verifier('la preuve d’un AUTRE téléphone ne vaut rien : refusé 403', r.status === 403 && motsDePasseAppliques(journal).length === 0);
+    const r = await appeler(fn, { phone: '2250789818140', code: '483922', new_password: 'nouveau123' });
+    verifier('un code faux est refusé (403) et compte un essai', r.status === 403 && r.corps.state === 'code_faux' && r.corps.restants === 4, JSON.stringify(r.corps));
+    const maj = journal.filter(x => x.op === 'update' && x.table === 'demandes_reset_password');
+    verifier('l’essai est compté en base, la demande reste approuvée', maj.length === 1 && maj[0].valeurs.code_tentatives === 1 && !('status' in maj[0].valeurs));
+    verifier('aucun mot de passe appliqué', motsDePasseAppliques(journal).length === 0);
+  }
+  {
+    const { client, journal } = faireFauxSupabase(mondeDemande(avecCode('483921', { code_tentatives: 4 })));
+    const fn = chargerFonction('finaliser-reset-password', () => client);
+    const r = await appeler(fn, { phone: '2250789818140', code: '000000', new_password: 'nouveau123' });
+    verifier('le cinquième code faux annule la demande (409, « invalide »)', r.status === 409 && r.corps.state === 'invalide', JSON.stringify(r.corps));
+    const maj = journal.filter(x => x.op === 'update' && x.table === 'demandes_reset_password');
+    verifier('la demande passe à « annule » en base', maj.length === 1 && maj[0].valeurs.status === 'annule');
+  }
+  {
+    const { client, journal } = faireFauxSupabase(mondeDemande(avecCode('483921', { code_tentatives: 5 })));
+    const fn = chargerFonction('finaliser-reset-password', () => client);
+    const r = await appeler(fn, { phone: '2250789818140', code: '483921', new_password: 'nouveau123' });
+    verifier('même le BON code ne passe plus après cinq échecs', r.status === 409 && motsDePasseAppliques(journal).length === 0);
+  }
+  {
+    const { client, journal } = faireFauxSupabase(mondeDemande(avecCode('483921', { code_expire_at: ilYA(1) })));
+    const fn = chargerFonction('finaliser-reset-password', () => client);
+    const r = await appeler(fn, { phone: '2250789818140', code: '483921', new_password: 'nouveau123' });
+    verifier('un code expiré est refusé', r.status === 409 && r.corps.state === 'expire' && motsDePasseAppliques(journal).length === 0);
   }
   {
     const src = fs.readFileSync(path.join(FONCTIONS, 'finaliser-reset-password', 'index.ts'), 'utf8');
-    verifier('le serveur ne génère, ne stocke ni ne compare aucun code lui-même (Supabase s’en charge, haché)',
-      !/code_hash|Math\.random|crypto\.getRandomValues/.test(src) && /auth\.getUser\(bearer\)/.test(src));
-    verifier('le mode « statut » reste ouvert sans preuve (l’écran d’attente en a besoin)',
+    const srcA = fs.readFileSync(path.join(FONCTIONS, 'approuver-reset-password', 'index.ts'), 'utf8');
+    verifier('le code n’est jamais comparé en clair : SHA-256 de « id:code » des deux côtés',
+      /crypto\.subtle\.digest\("SHA-256"/.test(src) && /crypto\.subtle\.digest\("SHA-256"/.test(srcA) && /`\$\{demandeId\}:\$\{code\}`/.test(src) && /`\$\{demandeId\}:\$\{code\}`/.test(srcA));
+    verifier('le mode « statut » reste ouvert sans code (l’écran d’attente en a besoin)',
       /if \(!wantsToSet\) \{\n\s*return json\(\{ state \}\);/.test(src));
   }
 
@@ -338,10 +367,10 @@ titre('finaliser-reset-password — jamais le mauvais compte, jamais hors délai
 
   // -- Le même cas, mais avec une seule fiche : ça doit marcher ---------------
   {
-    const demande = { id: 'd1', user_id: null, phone: '2250789818140', status: 'approuve', traite_at: ilYA(2) };
+    const demande = { id: 'd1', user_id: null, phone: '2250789818140', status: 'approuve', traite_at: ilYA(2), code_hash: empreinteCode('d1', '000042'), code_expire_at: new Date(Date.now() + 20 * 60000).toISOString(), code_tentatives: 0 };
     const { client, journal } = faireFauxSupabase(mondeDemande(demande, [{ id: 'u-9' }]));
     const fn = chargerFonction('finaliser-reset-password', () => client);
-    const r = await appeler(fn, { phone: '2250789818140', new_password: 'nouveau123' }, { Authorization: 'Bearer preuve-u-9' });
+    const r = await appeler(fn, { phone: '2250789818140', code: '000042', new_password: 'nouveau123' });
     verifier('une vieille demande avec UNE seule fiche aboutit normalement',
       r.status === 200 && motsDePasseAppliques(journal)[0]?.id === 'u-9');
   }
@@ -369,7 +398,7 @@ titre('finaliser-reset-password — jamais le mauvais compte, jamais hors délai
   // été approuvé, et c'est même l'ordre le plus probable (on découvre un
   // problème, on ferme le compte, pendant qu'une approbation dort encore).
   {
-    const demande = { id: 'd1', user_id: 'u-1', phone: '2250789818140', status: 'approuve', traite_at: ilYA(2) };
+    const demande = { id: 'd1', user_id: 'u-1', phone: '2250789818140', status: 'approuve', traite_at: ilYA(2), code_hash: empreinteCode('d1', '111111'), code_expire_at: new Date(Date.now() + 20 * 60000).toISOString(), code_tentatives: 0 };
     const { client, journal } = faireFauxSupabase({
       repondre: (etat) => {
         if (etat.table === 'demandes_reset_password' && etat.op === 'select') return { data: [demande], error: null };
@@ -378,7 +407,7 @@ titre('finaliser-reset-password — jamais le mauvais compte, jamais hors délai
       },
     });
     const fn = chargerFonction('finaliser-reset-password', () => client);
-    const r = await appeler(fn, { phone: '2250789818140', new_password: 'nouveau123' }, { Authorization: 'Bearer preuve-u-1' });
+    const r = await appeler(fn, { phone: '2250789818140', code: '111111', new_password: 'nouveau123' });
     verifier('un compte suspendu ne peut pas se donner un mot de passe neuf',
       r.status === 409, `status=${r.status} ${JSON.stringify(r.corps)}`);
     verifier('et rien n’est écrit dans l’authentification',
@@ -443,6 +472,18 @@ titre('approuver-reset-password — ni élévation de privilège, ni réouvertur
     const r = await approuver({ appelantRole: 'admin', cibleRole: 'admin' });
     verifier('un administrateur, lui, le peut', r.status === 200 && r.corps.success === true,
       JSON.stringify(r.corps));
+    // Le code dicté (06/09/2026, point 1.3) : six chiffres rendus UNE fois à l'équipe, et
+    // en base seulement leur empreinte, avec l'expiration et le compteur remis à zéro.
+    verifier('l’approbation rend un code à 6 chiffres à l’équipe', /^[0-9]{6}$/.test(r.corps.code || ''), JSON.stringify(r.corps));
+    const maj = r.journal.filter(x => x.op === 'update' && x.table === 'demandes_reset_password');
+    verifier('en base : l’empreinte du code, jamais le code', maj.length === 1 && maj[0].valeurs.code_hash === empreinteCode('d1', r.corps.code) && !JSON.stringify(maj[0].valeurs).includes(r.corps.code));
+    verifier('avec une expiration et zéro essai', maj.length === 1 && maj[0].valeurs.code_tentatives === 0 && typeof maj[0].valeurs.code_expire_at === 'string');
+  }
+  {
+    // Deux approbations ne donnent pas deux fois le même code (tirage au hasard).
+    const a = await approuver({ appelantRole: 'admin', cibleRole: 'livreur' });
+    const b = await approuver({ appelantRole: 'admin', cibleRole: 'livreur' });
+    verifier('le code change à chaque tirage', a.corps.code && b.corps.code && a.corps.code !== b.corps.code);
   }
 
   // -- Et le compte suspendu ------------------------------------------------
@@ -691,23 +732,19 @@ titre('Les pages Express offrent le même filet de sécurité que le site princi
   verifier('une approbation expirée renvoie vers une nouvelle demande',
     /state === 'expire'/.test(expressLogin));
 
-  // Le code SMS (06/09/2026, point 1.3), sur les DEUX pages de connexion : le code est
-  // demandé à Supabase sans jamais créer de compte, vérifié par Supabase, et c'est la
-  // session ainsi obtenue — pas la clé publique — qui part en en-tête vers la fonction.
+  // Le code dicté par l'équipe (06/09/2026, point 1.3), sur les DEUX pages de connexion :
+  // le code part avec le mot de passe, c'est le serveur qui compte les essais ; l'écran
+  // n'appelle aucun envoi de SMS (Celtis a préféré la voix de l'équipe, gratuite).
   const loginPrincipal = fs.readFileSync(path.join(APP, 'login.html'), 'utf8');
   for (const [nom, page] of [['login.html', loginPrincipal], ['express-login.html', expressLogin]]) {
-    verifier(`${nom} : le code est envoyé par Supabase, sans jamais créer de compte`,
-      /signInWithOtp\(\{ phone: resetPhone, options: \{ shouldCreateUser: false \} \}\)/.test(page));
-    verifier(`${nom} : le code est vérifié par Supabase (verifyOtp), pas par l’écran`,
-      /verifyOtp\(\{ phone: resetPhone, token: code, type: 'sms' \}\)/.test(page));
-    verifier(`${nom} : la session du code part en en-tête, la clé publique ne suffit plus`,
-      /'Authorization': `Bearer \$\{preuve\}`/.test(page));
-    verifier(`${nom} : après cinq mauvais codes, retour à la demande`,
-      /RESET_CODE_MAX_ECHECS = 5/.test(page) && /resetCodeEchecs >= RESET_CODE_MAX_ECHECS/.test(page));
-    verifier(`${nom} : la session du code ne survit pas au changement de mot de passe`,
-      /const result = await res\.json\(\);[\s\S]{0,600}?auth\.signOut\(\)/.test(page));
-    verifier(`${nom} : le champ du code est là, prêt pour le remplissage automatique du SMS`,
-      /id="reset-set-code"[^>]*autocomplete="one-time-code"/.test(page));
+    verifier(`${nom} : le code part avec le nouveau mot de passe`,
+      /JSON\.stringify\(\{ phone: resetPhone, code, new_password: p \}\)/.test(page));
+    verifier(`${nom} : aucun envoi ni vérification de SMS depuis l’écran`,
+      !/signInWithOtp|verifyOtp/.test(page));
+    verifier(`${nom} : un code faux vide le champ et redemande, cinq codes faux ramènent à la demande`,
+      /result\.state === 'code_faux'/.test(page) && /result\.state === 'invalide'/.test(page));
+    verifier(`${nom} : le champ du code est là`,
+      /id="reset-set-code"[^>]*inputmode="numeric"/.test(page));
   }
 
   // Le piège d'un parcours greffé sur une page à onglets : changer d'onglet en

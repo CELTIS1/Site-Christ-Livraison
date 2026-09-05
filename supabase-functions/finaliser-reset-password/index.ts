@@ -14,28 +14,27 @@
 //     pour ce numéro : { state: 'none' | 'en_attente' | 'approuve' | 'expire' | 'traite' }.
 //     Sert à l'écran d'attente : dès que l'état passe à 'approuve', le formulaire
 //     « nouveau mot de passe » s'affiche.
-//   - Mode "set"    : { phone, new_password } + en-tête Authorization portant la
-//     session obtenue par le CODE SMS -> applique le nouveau mot de passe SI et
-//     seulement SI la demande la plus récente est 'approuve', dans la fenêtre de
-//     validité, ET si la session appartient au compte visé. La demande passe
-//     alors à 'traite' (usage unique).
+//   - Mode "set"    : { phone, code, new_password } -> applique le nouveau mot de
+//     passe SI et seulement SI la demande la plus récente est 'approuve', dans
+//     la fenêtre de validité, ET si le code est celui que l'équipe a dicté. La
+//     demande passe alors à 'traite' (usage unique).
 //
-// LE CODE SMS — DEPUIS LE 06/09/2026 (feuille de route, point 1.3).
+// LE CODE DICTÉ PAR L'ÉQUIPE — DEPUIS LE 06/09/2026 (feuille de route, point 1.3).
 //   Jusque-là, après l'approbation, quiconque connaissait le numéro pouvait
 //   poser un nouveau mot de passe pendant trente minutes — et le numéro d'une
-//   cliente est public, il est écrit sur ses colis. Désormais l'écran demande à
-//   Supabase d'envoyer un code à usage unique au numéro du compte
-//   (auth.signInWithOtp, fourni par Vonage, déjà branché sur le projet), la
-//   personne le saisit (auth.verifyOtp), et c'est la session ainsi obtenue —
-//   preuve qu'elle tient le téléphone — qui autorise le mode "set". Sans elle,
-//   ou si elle appartient à un autre compte : 403. Le serveur, lui, ne génère,
-//   ne stocke ni ne compare aucun code : Supabase le fait, haché, avec son
-//   expiration et sa limite d'essais.
+//   cliente est public, il est écrit sur ses colis. Désormais, à l'approbation,
+//   approuver-reset-password tire un code à 6 chiffres, le range HACHÉ ici
+//   (code_hash), et ne le montre qu'au membre de l'équipe — qui le dicte au
+//   téléphone pendant l'appel où il vérifie déjà l'identité de la personne.
+//   Celtis a choisi ce chemin plutôt que le SMS : il ne coûte rien et repose
+//   sur la voix que l'équipe a reconnue. Le code expire avec l'approbation, cinq
+//   essais faux d'affilée annulent la demande (il faut en refaire une), et le
+//   code n'est jamais renvoyé ni stocké en clair.
 //
-// SÉCURITÉ (pourquoi c'est sûr même sans session au départ) :
+// SÉCURITÉ (pourquoi c'est sûr même sans session) :
 //   - Le SEUL moyen d'atteindre le mode "set" est qu'une demande pour CE numéro
 //     ait été APPROUVÉE par l'équipe (garde-fou : l'équipe vérifie l'identité)
-//     ET que la personne prouve qu'elle tient le téléphone (code SMS).
+//     ET que la personne connaisse le code que l'équipe lui a dicté.
 //   - Fenêtre de validité courte après l'approbation (WINDOW_MINUTES) : au-delà,
 //     il faut refaire une demande. Réduit le risque pendant la période ouverte.
 //   - Usage unique : une fois le mot de passe défini, la demande passe à
@@ -65,6 +64,16 @@ const corsHeaders = {
 // son mot de passe après que l'équipe a approuvé. Au-delà -> refaire une demande.
 const WINDOW_MINUTES = 30;
 const MIN_PASSWORD_LENGTH = 6;
+const MAX_CODE_TRIES = 5;
+
+// Empreinte du code : SHA-256 de « <id de la demande>:<code> ». L'identifiant sert
+// de sel — deux demandes avec le même code n'ont pas la même empreinte. MÊME
+// formule dans approuver-reset-password : ne changer l'une sans l'autre.
+async function hashCode(demandeId: string, code: string): Promise<string> {
+  const data = new TextEncoder().encode(`${demandeId}:${code}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -95,9 +104,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { phone, new_password } = await req.json();
-    const authHeader = req.headers.get("Authorization") || "";
-    const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const { phone, code, new_password } = await req.json();
 
     const variants = phoneVariants(phone);
     if (!variants.length) {
@@ -122,7 +129,7 @@ Deno.serve(async (req) => {
     // a refait une demande, c'est celle-là qui compte.
     const { data: rows, error: selErr } = await supabaseAdmin
       .from("demandes_reset_password")
-      .select("id, user_id, phone, status, traite_at")
+      .select("id, user_id, phone, status, traite_at, code_hash, code_expire_at, code_tentatives")
       .in("phone", variants)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -195,15 +202,41 @@ Deno.serve(async (req) => {
       return json({ error: "Compte associé introuvable." }, 404);
     }
 
-    // --- Le code SMS : la session obtenue par verifyOtp doit être CELLE du compte visé
-    // La clé publique du site (anon) n'est pas une session : getUser la refuse.
-    // Une session d'un autre compte est refusée aussi — on ne change jamais le
-    // mot de passe d'un compte sur la preuve d'un autre téléphone.
-    const { data: preuve, error: preuveErr } = await supabaseAdmin.auth.getUser(bearer);
-    const preuveId = (!preuveErr && preuve?.user?.id) ? preuve.user.id : null;
-    if (!preuveId || preuveId !== targetId) {
+    // --- Le code dicté par l'équipe ------------------------------------------
+    // Sans empreinte sur la demande (approbation faite avant le 6 septembre, ou
+    // équipe qui n'a pas encore donné de code) : on dit à la personne de demander
+    // un code — l'équipe a un bouton « Nouveau code » pour ça.
+    if (!demande.code_hash) {
       return json(
-        { error: "Vérification par SMS requise : saisissez le code reçu sur le téléphone du compte.", state: "code_requis" },
+        { error: "Un code est nécessaire : demandez-le à notre équipe, elle vous le communiquera de vive voix.", state: "code_requis" },
+        403,
+      );
+    }
+    const tentatives = Number(demande.code_tentatives ?? 0);
+    if (tentatives >= MAX_CODE_TRIES) {
+      return json({ error: "Trop de codes incorrects : cette demande est annulée. Refaites une demande de réinitialisation.", state: "invalide" }, 409);
+    }
+    if (demande.code_expire_at && new Date(demande.code_expire_at).getTime() < Date.now()) {
+      return json({ error: "Le code a expiré. Refaites une demande de réinitialisation.", state: "expire" }, 409);
+    }
+    const codeSaisi = String(code ?? "").replace(/\D/g, "");
+    if (!/^[0-9]{6}$/.test(codeSaisi)) {
+      return json({ error: "Saisissez le code à 6 chiffres communiqué par notre équipe.", state: "code_requis" }, 403);
+    }
+    const attendu = await hashCode(String(demande.id), codeSaisi);
+    if (attendu !== demande.code_hash) {
+      // Un essai de moins. Au cinquième échec, la demande est annulée : l'état
+      // redevient « aucune demande » et la personne doit en refaire une —
+      // l'équipe la rappellera, et c'est bien ce qu'on veut.
+      const restants = MAX_CODE_TRIES - (tentatives + 1);
+      const maj: Record<string, unknown> = { code_tentatives: tentatives + 1 };
+      if (restants <= 0) maj.status = "annule";
+      await supabaseAdmin.from("demandes_reset_password").update(maj).eq("id", demande.id);
+      if (restants <= 0) {
+        return json({ error: "Trop de codes incorrects : cette demande est annulée. Refaites une demande de réinitialisation.", state: "invalide" }, 409);
+      }
+      return json(
+        { error: `Code incorrect. Il vous reste ${restants} essai${restants > 1 ? "s" : ""}.`, state: "code_faux", restants },
         403,
       );
     }

@@ -2696,7 +2696,7 @@ el.classList.add('hidden');
 }
 
 function refreshSettingsBadge(){
-const total = (pendingAccounts ? pendingAccounts.length : 0) + (resetRequests ? resetRequests.length : 0);
+const total = (pendingAccounts ? pendingAccounts.length : 0) + resetEnAttente();
 updateNotifBadge('settings-notif-badge', total);
 }
 
@@ -2799,17 +2799,23 @@ return `
 <div class="colis-item" data-id="${r.id}">
 <div class="info">
 <div class="desc">${r.full_name ? escapeHTML(r.full_name) : '(sans nom)'} ${badge}</div>
-<div class="meta">Tél : ${escapeHTML(r.phone || '')} · Demandé le ${formatDate(r.created_at)}</div>
+<div class="meta">Tél : ${escapeHTML(r.phone || '')} · Demandé le ${formatDate(r.created_at)}${r.status === 'approuve' ? ' · <b>approuvée</b>, en attente du code' : ''}</div>
 </div>
 <div class="status-col">
-<button class="btn btn-sm btn-reinitialiser">Approuver</button>
+<button class="btn btn-sm btn-reinitialiser">${r.status === 'approuve' ? 'Nouveau code' : 'Approuver'}</button>
 </div>
 </div>
 `;
 }
 
+// Ce qui attend vraiment l'équipe : les demandes pas encore approuvées. Les approuvées
+// restent listées (pour redonner un code) mais ne comptent plus comme « à traiter ».
+function resetEnAttente(){
+  return (typeof resetRequests !== 'undefined' && resetRequests) ? resetRequests.filter(r => r.status !== 'approuve').length : 0;
+}
+
 function renderResetRequests(){
-updateNotifBadge('reset-badge', resetRequests.length);
+updateNotifBadge('reset-badge', resetEnAttente());
 refreshSettingsBadge();
 const box = document.getElementById('reset-list');
 if (!resetRequests.length) {
@@ -2832,6 +2838,18 @@ approuverResetRequest(id, account, btn);
 renderAujourdhui();
 }
 
+// Le code de réinitialisation, en grand, le temps de le dicter.
+async function montrerCodeReset(result, label){
+  const code = String(result.code || '').replace(/\D/g, '');
+  const joli = code ? code.slice(0, 3) + ' ' + code.slice(3) : '(aucun code renvoyé)';
+  await showConfirm({
+    title: result.nouveau_code ? 'Nouveau code à dicter' : 'Code à dicter au téléphone',
+    detail: joli,
+    sub: (label ? label + ' — ' : '') + "Dictez ces 6 chiffres à la personne, de vive voix. Elle les saisira avec son nouveau mot de passe, dans les 30 minutes. Ce code ne sera plus affiché : s'il est perdu, « Nouveau code ».",
+    okLabel: "J'ai dicté le code",
+  });
+}
+
 // ---------- Approbation d'une demande de réinitialisation (équipe/admin) ----------
 // L'équipe ne fait qu'AUTORISER. Après confirmation d'identité, on appelle la
 // fonction Edge privilégiée approuver-reset-password. La demande passe à
@@ -2840,11 +2858,14 @@ renderAujourdhui();
 // voit jamais le mot de passe et ne le saisit pas.
 async function approuverResetRequest(id, account, btn){
   const label = account ? (account.full_name || account.phone || '(sans nom)') : '';
+  const dejaApprouvee = !!(account && account.status === 'approuve');
   const ok = await showConfirm({
-    title: 'Approuver cette réinitialisation ?',
+    title: dejaApprouvee ? 'Donner un nouveau code ?' : 'Approuver cette réinitialisation ?',
     detail: label,
-    sub: "Vérifiez d'abord l'identité du demandeur. Après approbation, la personne définira elle-même son nouveau mot de passe, à distance, depuis son propre appareil.",
-    okLabel: 'Approuver',
+    sub: dejaApprouvee
+      ? "L'ancien code cessera de valoir. Ayez la personne au téléphone : le nouveau code s'affichera juste après."
+      : "Vérifiez d'abord l'identité du demandeur, au téléphone. Après approbation, un code à dicter s'affiche : la personne le saisira avec son nouveau mot de passe, depuis son propre appareil.",
+    okLabel: dejaApprouvee ? 'Nouveau code' : 'Approuver',
   });
   if (!ok) return;
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
@@ -2861,15 +2882,18 @@ async function approuverResetRequest(id, account, btn){
     });
     const result = await res.json();
     if (!res.ok) {
-      if (btn) { btn.disabled = false; btn.textContent = 'Approuver'; }
+      if (btn) { btn.disabled = false; btn.textContent = dejaApprouvee ? 'Nouveau code' : 'Approuver'; }
       showTeamToast('⚠️', 'Approbation impossible', result.error || 'Réessayez.', true);
       await loadResetRequests();
       return;
     }
-    showTeamToast('✅', 'Demande approuvée', (result.full_name || result.phone || 'La personne') + ' peut maintenant définir son nouveau mot de passe depuis son propre appareil.');
     await loadResetRequests();
+    // Le code à dicter (06/09/2026, feuille de route 1.3) : il n'est montré qu'ici, une
+    // fois, à la personne de l'équipe qui a l'appelant au téléphone. Il n'est stocké
+    // nulle part en clair ; perdu, on en tire un autre avec « Nouveau code ».
+    await montrerCodeReset(result, label);
   } catch (err) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Approuver'; }
+    if (btn) { btn.disabled = false; btn.textContent = dejaApprouvee ? 'Nouveau code' : 'Approuver'; }
     showTeamToast('⚠️', 'Erreur', err.message, true);
   }
 }
@@ -2878,12 +2902,15 @@ let __resetIdsSeen = null; // null = premier chargement : on ne veut pas d'alert
 async function loadResetRequests(){
 const { data, error } = await supabaseClient
 .from('demandes_reset_password')
-.select('id, phone, full_name, created_at')
-.eq('status', 'en_attente')
+.select('id, phone, full_name, created_at, status, traite_at')
+.in('status', ['en_attente', 'approuve'])
 .order('created_at');
 if (error) { console.error(error); return; }
 
-let rows = data || [];
+// Une demande approuvée reste visible tant que sa fenêtre de 30 minutes court : c'est
+// le temps pendant lequel l'équipe peut redonner un code (06/09/2026, point 1.3).
+const FENETRE_MS = 30 * 60 * 1000;
+let rows = (data || []).filter(r => r.status === 'en_attente' || (r.traite_at && (Date.now() - new Date(r.traite_at).getTime()) <= FENETRE_MS));
 
 if (__resetIdsSeen) {
 const nouvelles = rows.filter(r => !__resetIdsSeen.has(r.id));
@@ -3786,7 +3813,7 @@ const cat = {
   examiner:  colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && !vues.has(c.id)),
 };
 const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? pendingAccounts.length : 0;
-const nbReset = (typeof resetRequests !== 'undefined' && resetRequests) ? resetRequests.length : 0;
+const nbReset = resetEnAttente();
 // Argent non remis : mêmes règles que la caisse livreur — colis livrés pas encore soldés.
 let resteARemettre = 0, nbASolder = 0;
 colis.forEach(c => {

@@ -15,6 +15,16 @@
 //      une FENÊTRE de temps limitée après l'approbation. Le mot de passe n'est
 //      jamais connu ni de l'équipe ni du serveur au repos.
 //
+// LE CODE DICTÉ PAR L'ÉQUIPE — DEPUIS LE 06/09/2026 (feuille de route, point 1.3).
+//   L'approbation seule ne suffit plus : cette fonction tire un code à 6
+//   chiffres, le range HACHÉ sur la demande (code_hash, code_expire_at,
+//   code_tentatives) et le RENVOIE UNE SEULE FOIS au membre de l'équipe, qui le
+//   dicte à la personne pendant l'appel où il vérifie son identité. Sans ce
+//   code, le numéro — public, il est sur les colis — ne permet plus de poser un
+//   mot de passe. Une demande déjà approuvée et encore valide peut recevoir un
+//   nouveau code (bouton « Nouveau code » de l'écran équipe) : le précédent
+//   cesse de valoir, le compteur d'essais repart.
+//
 // SÉCURITÉ (règles d'accès) :
 //   - L'appelant doit être connecté avec le rôle "equipe" ou "admin".
 //   - Anti-élévation de privilèges : un membre "equipe" ne peut PAS approuver la
@@ -45,6 +55,27 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Même fenêtre que finaliser-reset-password : le code vaut le temps de l'approbation.
+const WINDOW_MINUTES = 30;
+
+// Six chiffres tirés au hasard cryptographique, sans biais : on rejette les
+// tirages au-delà du plus grand multiple de 1 000 000 représentable.
+function tirerCode(): string {
+  const MAX = 4294967296 - (4294967296 % 1000000);
+  const buf = new Uint32Array(1);
+  let n = MAX;
+  while (n >= MAX) { crypto.getRandomValues(buf); n = buf[0]; }
+  return String(n % 1000000).padStart(6, "0");
+}
+
+// Empreinte du code : SHA-256 de « <id de la demande>:<code> ». MÊME formule
+// dans finaliser-reset-password : ne changer l'une sans l'autre.
+async function hashCode(demandeId: string, code: string): Promise<string> {
+  const data = new TextEncoder().encode(`${demandeId}:${code}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -100,14 +131,20 @@ Deno.serve(async (req) => {
     // --- Chargement de la demande -------------------------------------------
     const { data: d, error: demandeErr } = await supabaseAdmin
       .from("demandes_reset_password")
-      .select("id, user_id, phone, full_name, status")
+      .select("id, user_id, phone, full_name, status, traite_at")
       .eq("id", demande_id)
       .single();
 
     if (demandeErr || !d) {
       return json({ error: "Demande introuvable." }, 404);
     }
-    if (d.status && d.status !== "en_attente") {
+    // Une demande « approuve » encore dans sa fenêtre peut recevoir un nouveau
+    // code (la personne a mal noté, l'appel a coupé). Tout autre état est clos.
+    const traiteAt = d.traite_at ?? null;
+    const encoreValide = d.status === "approuve" && traiteAt &&
+      (Date.now() - new Date(traiteAt).getTime()) <= WINDOW_MINUTES * 60 * 1000;
+    const nouveauCodeSeulement = !!encoreValide;
+    if (d.status && d.status !== "en_attente" && !nouveauCodeSeulement) {
       return json({ error: "Cette demande a déjà été traitée." }, 409);
     }
 
@@ -188,24 +225,38 @@ Deno.serve(async (req) => {
       );
     }
 
+    // --- Le code, tiré au hasard, rangé haché, montré une fois ---------------
+    const code = tirerCode();
+    const codeHash = await hashCode(String(d.id), code);
+    const maintenant = new Date();
+    const expire = new Date(maintenant.getTime() + WINDOW_MINUTES * 60 * 1000).toISOString();
+
     // --- Approbation : passage en 'approuve', horodaté ----------------------
     // traite_at sert d'"heure du dernier changement d'état" : il borne la
-    // fenêtre pendant laquelle la personne peut définir son mot de passe.
+    // fenêtre pendant laquelle la personne peut définir son mot de passe. Pour
+    // un simple nouveau code, on ne touche pas à traite_at : la fenêtre ne se
+    // prolonge pas, seul le code change.
+    const champs: Record<string, unknown> = {
+      status: "approuve",
+      traite_par: caller.user.id,
+      code_hash: codeHash,
+      code_expire_at: expire,
+      code_tentatives: 0,
+    };
+    if (!nouveauCodeSeulement) champs.traite_at = maintenant.toISOString();
     const { error: updErr } = await supabaseAdmin
       .from("demandes_reset_password")
-      .update({
-        status: "approuve",
-        traite_at: new Date().toISOString(),
-        traite_par: caller.user.id,
-      })
+      .update(champs)
       .eq("id", d.id)
-      .eq("status", "en_attente"); // garde-fou contre une double approbation concurrente
+      .eq("status", nouveauCodeSeulement ? "approuve" : "en_attente"); // garde-fou contre une double approbation concurrente
 
     if (updErr) {
       return json({ error: "Échec de l'approbation : " + updErr.message }, 400);
     }
 
-    return json({ success: true, full_name: d.full_name ?? null, phone: d.phone ?? null });
+    // Le code part UNE fois, vers l'écran de l'équipe. Il n'est ni journalisé
+    // ni stocké en clair : s'il est perdu, on en tire un autre.
+    return json({ success: true, full_name: d.full_name ?? null, phone: d.phone ?? null, code, nouveau_code: nouveauCodeSeulement });
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "Erreur inconnue" }, 500);
   }
