@@ -48,7 +48,9 @@
   const joursEntre = (isoA, isoB) => Math.round((new Date(isoB + 'T12:00:00') - new Date(isoA + 'T12:00:00')) / 86400000);
   const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : null);
   const nomProfil = (p) => (p && (p.company_name || p.full_name)) || 'Cliente sans nom';
-  const telNettoye = (t) => String(t || '').replace(/[^\d+]/g, '');
+  // Les numéros sont enregistrés « 2250705…» (indicatif sans +) : un lien tel: sans le + ne
+  // compose pas depuis l'étranger, et compose un faux numéro local sur certains téléphones.
+  const telNettoye = (t) => { const n = String(t || '').replace(/[^\d+]/g, ''); return (/^225\d{10}$/.test(n)) ? '+' + n : n; };
   const telWhatsApp = (t) => { let n = telNettoye(t); if (!n) return ''; if (n.startsWith('+')) n = n.slice(1); else if (n.startsWith('0') && n.length === 10) n = '225' + n; return n; };
   const estEchec = (c) => c.statut === 'non_livre' || c.statut === 'retour';
   const estEnCours = (c) => c.statut === 'en_attente' || c.statut === 'recupere' || c.statut === 'en_livraison';
