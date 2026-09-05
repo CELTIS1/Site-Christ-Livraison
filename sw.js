@@ -74,7 +74,7 @@
    sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
    pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v63';
+const CACHE_VERSION = 'clt-shell-v64';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.

@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260902unbouton">
-<script src="theme.js?v=20260902unbouton"></script>
-<script src="splash.js?v=20260902unbouton"></script>
+<link rel="stylesheet" href="style.css?v=20260905cartes">
+<script src="theme.js?v=20260905cartes"></script>
+<script src="splash.js?v=20260905cartes"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -211,16 +211,16 @@
   /* Le bloc de correction, lui, est encadré comme celui des frais : un cadre autour d'un champ
      d'argent dit « ici, ce que vous écrivez sort de la poche de quelqu'un ». */
   .montants-bloc{
-    margin-top:8px; padding:10px; border:1.5px solid #BFD5EF; border-radius:10px; background:#F4F9FF;
+    margin-top:0; padding:8px; border:1.5px solid #BFD5EF; border-radius:10px; background:#F4F9FF;
   }
   .montants-titre{ font-size:12px; font-weight:800; color:#1B4374; display:block; }
-  .montants-avis{ font-size:11px; line-height:1.45; margin:4px 0 8px; color:#4A6486; }
-  .montants-grille{ display:flex; gap:8px; flex-wrap:wrap; }
-  .montant-case{ flex:1 1 130px; min-width:0; display:flex; flex-direction:column; gap:3px; }
+  .montants-avis{ font-size:11px; line-height:1.4; margin:6px 0 0; color:#4A6486; }
+  .montants-grille{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+  .montant-case{ flex:1 1 120px; min-width:0; display:flex; flex-direction:column; gap:2px; }
   .montant-case > span{ font-size:11.5px; font-weight:700; color:#1B4374; }
   /* 44 px : la hauteur d'un pouce. Un champ d'argent qu'on rate au premier appui se remplit au
      deuxième, en pleine rue, sans regarder. */
-  .montant-case input{ width:100%; min-width:0; min-height:44px; font-size:16px; font-weight:700; }
+  .montant-case input{ width:100%; min-width:0; min-height:44px; padding:6px 10px; font-size:16px; font-weight:700; border-radius:9px; }
   html[data-theme="dark"] .montants-bloc{ background:#141F2E; border-color:#2E4A6B; }
   html[data-theme="dark"] .montants-titre,
   html[data-theme="dark"] .montant-case > span{ color:#9EC0E6; }
@@ -236,7 +236,7 @@
   .colis-plus{ width:100%; margin:4px 0 0; }
   .colis-plus > summary{
     list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    gap:8px; padding:12px 14px; font-size:14px; font-weight:700; color:#1B4374;
+    gap:8px; padding:9px 12px; font-size:13.5px; font-weight:700; color:#1B4374;
     background:#EEF3FA; border:1.5px solid #D5E0EF; border-radius:12px;
     -webkit-tap-highlight-color:transparent; transition:background .15s ease, border-color .15s ease;
   }
@@ -246,13 +246,20 @@
   .colis-plus[open] > summary::after{ transform:rotate(180deg); }
   .colis-plus > summary:hover{ background:#E4ECF7; border-color:#BFD0E6; }
   .colis-plus-corps{
-    display:flex; flex-direction:column; gap:10px; align-items:stretch;
-    padding:12px; margin:0; border:1.5px solid #D5E0EF; border-top:none;
+    display:flex; flex-direction:column; gap:8px; align-items:stretch;
+    padding:10px; margin:0; border:1.5px solid #D5E0EF; border-top:none;
     border-radius:0 0 12px 12px; background:#FAFCFF;
   }
   html[data-theme="dark"] .colis-plus > summary{ background:#1C2739; border-color:#2E3E54; color:#C6D5E6; }
   html[data-theme="dark"] .colis-plus[open] > summary{ background:#223045; }
   html[data-theme="dark"] .colis-plus-corps{ background:#141C28; border-color:#2E3E54; }
+
+  /* RESSERRÉ LE 05/09/2026. Celtis, sur l'iPhone : « la carte de chaque colis est trop grande,
+     il y a trop d'espace gaspillé. » Les valeurs ci-dessus et ci-dessous ont toutes perdu deux à
+     quatre pixels — l'écart entre cartes (18 → 12), le rembourrage de la carte, du bandeau
+     d'étapes, du repli et des blocs d'argent. Aucun élément n'a été retiré ni réduit sous la
+     taille d'un pouce (les champs d'argent restent à 44 px de haut) : c'est l'air autour qui
+     part, pas ce qu'on touche. */
 
   /* ---------- Séparer une carte de sa voisine (26/08/2026) ----------
      Deux colis d'affilée ont presque toujours le même statut, donc la même teinte : la
@@ -260,13 +267,13 @@
      un bandeau d'étapes nettement détaché en haut de chaque carte, un contour franc, un
      liseré de couleur plus large à gauche, et de l'air entre les cartes. On voit alors où
      commence et où finit un colis sans avoir à lire. */
-  .colis-list{ gap:18px; }
+  .colis-list{ gap:12px; }
   .colis-list .colis-item{
     border:1.5px solid #D9E1EC !important;
     border-left:6px solid #C3D2E4 !important;
     border-radius:16px !important;
     box-shadow:0 3px 14px rgba(18,48,90,0.10) !important;
-    padding:12px 14px 14px !important;
+    padding:10px 12px 12px !important;
   }
   .colis-list .colis-item[data-statut="livre"]{ border-left-color:#39A56B !important; }
   .colis-list .colis-item[data-statut="non_livre"]{ border-left-color:#D6534A !important; }
@@ -281,7 +288,7 @@
   /* Le bandeau d'étapes fait le toit de la carte : c'est lui qu'on repère en faisant défiler. */
   .colis-item .clt-stepper{
     background:#F1F5FB; border:1px solid #E1E9F4; border-radius:11px;
-    padding:11px 6px 9px; margin:0 0 12px;
+    padding:8px 6px 7px; margin:0 0 8px;
   }
   html[data-theme="dark"] .colis-item .clt-stepper{ background:#1A2433; border-color:#2B3A4E; }
   .colis-plus-corps .btn{ align-self:flex-start; }
@@ -686,9 +693,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260902unbouton"></script>
-<script src="config.js?v=20260902unbouton"></script>
-<script src="biometric-lock.js?v=20260902unbouton"></script>
+<script src="clt-common.js?v=20260905cartes"></script>
+<script src="config.js?v=20260905cartes"></script>
+<script src="biometric-lock.js?v=20260905cartes"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1622,30 +1629,22 @@
      C'est le livreur qui saisit, parce que c'est lui qui paie le transporteur, en billets, et
      qu'il le sait à la seconde où il paie. Le demander le soir à quelqu'un d'autre, c'est le
      demander à quelqu'un qui devra deviner. */
-  function fraisExpeditionChampHTML(c){
+  /* DEPUIS LE 05/09/2026, CE CHAMP N'EST PLUS UN BLOC À PART : c'est une case du bloc des
+     montants, à côté des frais de course — voir montantsChampsHTML(). Celtis, sur l'écran :
+     les cartes sont trop grandes, il y a trop d'espace gaspillé, et les quatre boutons de
+     montants (500 / 1 000 / 1 500 / 2 000) « occupent trop d'espace inutilement » — d'autant
+     qu'en pratique les frais commencent à 1 000 F. Le livreur tape le montant, c'est tout.
+     Le champ garde sa classe .frais-exp-input : c'est par elle que lireFraisExpeditionDeLaCarte()
+     le lit et que capturePendingEdits() protège une saisie en cours. */
+  function fraisExpeditionCaseHTML(c){
     const dejaSaisi = fraisExpeditionColis(c) > 0;
     if (!estExpedition(c) && !dejaSaisi) return '';
     const valeur = (c.frais_expedition === null || c.frais_expedition === undefined)
       ? '' : String(Number(c.frais_expedition) || 0);
-    /* Les quatre montants habituels sont posés en boutons : c'est entre 500 et 2 000 F que se
-       situe la quasi-totalité des expéditions, et un bouton évite d'ouvrir le clavier au bord
-       de la route. Ils REMPLISSENT le champ sans enregistrer — on garde le geste volontaire du
-       bouton « Enregistrer », parce qu'il s'agit d'argent retenu à une vendeuse.
-       Le champ reste libre : 2 200, 2 750, 7 000, 8 500... aucun plafond. */
-    const raccourcis = FRAIS_EXPEDITION_USUELS.map(v =>
-      `<button type="button" class="btn-frais-vite${Number(valeur) === v ? ' est-choisi' : ''}" data-frais="${v}">${v.toLocaleString('fr-FR')}</button>`
-    ).join('');
-    return `
-      <div class="field frais-exp-bloc" style="margin-top:8px; padding:8px 10px; border:1.5px solid #f0c48a; border-radius:10px; background:#fff8ef;">
-        <label style="font-size:11.5px; font-weight:700; color:#8a4b12;">🚌 ${escapeHTML(LIBELLE_FRAIS_EXPEDITION)} (payés au transporteur)</label>
-        <div class="frais-exp-raccourcis">${raccourcis}</div>
-        <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
-          <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="1" placeholder="Autre montant" value="${escapeHTML(valeur)}" aria-label="Frais d'expédition payés au transporteur, en FCFA" style="flex:1; min-width:0;">
-        </div>
-        <div class="meta" style="font-size:11px; margin-top:4px; color:#8a4b12;">
-          Écrivez le montant réellement payé, même s'il dépasse 2 000 F. Retenu sur l'argent de la cliente ; n'entame pas l'argent des livraisons.
-        </div>
-      </div>`;
+    return `<label class="montant-case">
+            <span>🚌 ${escapeHTML(LIBELLE_FRAIS_EXPEDITION)} (transporteur)</span>
+            <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="1" placeholder="Montant payé" value="${escapeHTML(valeur)}" aria-label="Frais d'expédition payés au transporteur, en FCFA">
+          </label>`;
   }
 
   /* Les deux montants, vus et corrigés depuis la rue. (27/08/2026)
@@ -1671,28 +1670,18 @@
   }
 
   function montantsChampsHTML(c){
+    /* Le titre change avec la nature du colis : sur un colis d'Abidjan les montants viennent de
+       la vendeuse et le livreur ne fait que rectifier ; sur une expédition c'est LUI qui apporte
+       les chiffres, au retour de la gare. (02/09/2026)
+
+       Les deux paragraphes d'explication qui suivaient le titre ont été retirés le 05/09/2026 :
+       Celtis les voyait prendre la moitié de la carte sur son téléphone, pour dire ce que les
+       étiquettes des cases disent déjà. Une seule ligne courte reste, sous les cases. */
     return `
       <div class="field montants-bloc">
-        <!-- Le titre et la consigne changent avec la nature du colis, et c'est nécessaire.
-             « À corriger seulement si le prix a changé » est juste sur un colis d'Abidjan, où
-             les montants viennent de la vendeuse et où le livreur ne fait que rectifier une
-             remise. Sur une expédition, c'est le contraire : personne n'a encore rien écrit,
-             et c'est LUI qui apporte le chiffre — il revient de la gare avec le reçu. Lui dire
-             « à corriger seulement si » devant une case vide, c'est lui suggérer de ne rien
-             faire. (02/09/2026) -->
         <label class="montants-titre">💵 ${estExpedition(c) ? 'Ce que vous avez payé et gagné' : 'Montants de ce colis'}</label>
-        ${estExpedition(c) ? `
-        <div class="meta montants-avis">
-          🚌 Vous n'encaissez rien chez le destinataire : il a déjà payé chez la vendeuse.
-          Écrivez ce que le transporteur a pris, et ce que vous gagnez pour le déplacement.
-          Les deux sont retenus sur elle, et elle les lira ce soir sur son relevé.
-        </div>` : `
-        <div class="meta montants-avis">
-          À corriger seulement si le prix a changé : remise accordée, article différent, livraison
-          renégociée. Ce que vous écrivez ici est ce que la cliente lira ce soir sur son relevé, et
-          l'équipe voit chaque correction.
-        </div>`}
         <div class="montants-grille">
+          ${fraisExpeditionCaseHTML(c)}
           <!-- SUR UNE EXPÉDITION, IL N'Y A PLUS DE CHAMP « ARTICLE ». (02/09/2026)
                Celtis, en voyant l'écran : « au niveau des montants je pense que deux champs
                c'est bon : frais d'expédition et frais de course. »
@@ -1718,12 +1707,9 @@
             <input type="number" class="montant-livraison-input" inputmode="numeric" min="0" step="1" value="${montantLivraisonColis(c)}" aria-label="${escapeHTML(libelleMontantLivraison(c))}, en FCFA">
           </label>
         </div>
-        <!-- Trois boutons de cette carte disaient « Enregistrer », et deux d'entre eux étaient
-             identiques au mot près, à plus de 800 pixels l'un de l'autre — plus d'un écran de
-             téléphone. Le livreur corrigeait un montant, descendait, voyait « Enregistrer » et
-             appuyait : il enregistrait le statut, pas son montant, et rien ne le lui disait.
-             Signalé par Celtis le 30 août, mesuré le 2 septembre. Chaque bouton dit maintenant
-             ce qu'il enregistre. -->
+        <div class="meta montants-avis">${estExpedition(c)
+          ? "Vous n'encaissez rien chez le destinataire. Écrivez ce que le transporteur a pris, et ce que vous gagnez pour le déplacement."
+          : "À corriger seulement si le prix a changé ; la cliente le lira sur son relevé du soir."}</div>
       </div>`;
   }
 
@@ -1819,7 +1805,7 @@
         title: 'Confirmer ce montant ?',
         detail: formatMontant(newVal) + ' payés au transporteur pour ce seul colis',
         sub: "C'est possible — gros carton, ville éloignée — mais c'est bien au-dessus de "
-           + "l'habitude (500 à 2 000 F). Cette somme sera retenue sur l'argent de la cliente. "
+           + "l'habitude (1 000 à 2 000 F). Cette somme sera retenue sur l'argent de la cliente. "
            + "Vérifiez le reçu de la gare avant de confirmer.",
         okLabel: 'Oui, ' + formatMontant(newVal),
         cancelLabel: 'Corriger',
@@ -1912,7 +1898,6 @@
                    colis a été remis sans que l'argent de l'article rentre. -->
               <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#c0392b !important; border:1.5px solid #c0392b; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À utiliser seulement si vous avez remis le colis sans récupérer l'argent de l'article.">${c.article_non_encaisse ? '⚠️ Article NON encaissé' : "Article non encaissé ?"}</button>`}
               ${montantsChampsHTML(c)}
-              ${fraisExpeditionChampHTML(c)}
               <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
               <div class="field" style="margin-top:8px;">
                 <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
@@ -2021,6 +2006,22 @@
         // appuyer sur « Enregistrer » pour ne corriger qu'une observation ou ajouter une
         // photo ne doit pas faire apparaître un « Annuler » qui n'aurait rien à annuler.
         if (res.ok && colis && res.statutPrecedent !== statut) annoncerChangementStatut(colis, statut, res);
+        /* LA CARTE SE REPLIE UNE FOIS ENREGISTRÉE. (05/09/2026)
+           Celtis : « lorsqu'on enregistre, normalement la carte devrait se replier. » Le repli
+           « Plus d'options » restait ouvert après l'appui, parce que le redessin conserve
+           volontairement son état (une mise à jour temps réel ne doit pas le fermer au nez de
+           quelqu'un qui saisit — voir capturePendingEdits). Ici le geste est fini : ce qui était
+           à écrire est écrit, la carte reprend sa taille de repos et le colis suivant remonte à
+           l'écran. On ne replie QUE si l'écriture est passée : après un refus ou une question
+           annulée, le livreur doit retrouver sa saisie là où il l'a laissée.
+           On recherche la carte par son identifiant : le redessin a pu la remplacer. */
+        if (res.ok) {
+          try {
+            const carte = Array.from(list.querySelectorAll('.colis-item')).find(el => el.dataset && el.dataset.id === id) || item;
+            const plus = carte.querySelector('.colis-plus');
+            if (plus) plus.open = false;
+          } catch (e) { /* un repli qui ne se ferme pas ne vaut pas une erreur après une écriture réussie */ }
+        }
       });
     });
 
@@ -2172,22 +2173,6 @@
     /* Le bouton « Enregistrer les frais » a été retiré le 02/09/2026, pour la même raison :
        lireFraisExpeditionDeLaCarte() en reprend la lecture et la question du montant anormal, et
        l'écriture passe par le bouton unique. */
-
-    /* Les raccourcis 2 000 / 2 500 / 3 000 / 3 500 : ils REMPLISSENT le champ, ils
-       n'enregistrent pas. Un bouton qui écrirait directement en base ferait, d'un doigt
-       posé de travers, une retenue sur l'argent d'une vendeuse — et sans confirmation
-       possible puisque le geste et l'écriture seraient le même. */
-    list.querySelectorAll('.btn-frais-vite').forEach(b => {
-      b.addEventListener('click', () => {
-        const bloc = b.closest('.frais-exp-bloc');
-        const champ = bloc && bloc.querySelector('.frais-exp-input');
-        if (!champ) return;
-        champ.value = b.dataset.frais;
-        bloc.querySelectorAll('.btn-frais-vite').forEach(x => x.classList.remove('est-choisi'));
-        b.classList.add('est-choisi');
-        try { champ.focus(); } catch (e) {}
-      });
-    });
 
     brancherMontants(list);
 

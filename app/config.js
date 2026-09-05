@@ -3030,9 +3030,13 @@ function correctionsMontantsDuJour(journal, options) {
    rien dire les deux cas les plus probables, 500 → 5 000 et 1 000 → 10 000. Il faut donc
    qu'il suive, sinon on garde une question qui ne se pose plus jamais au bon moment.
 
-   3 000 F reste parfaitement possible, et se tape à la main : ce sont des raccourcis, pas une
-   grille. Il n'y a toujours AUCUN PLAFOND — voir le bandeau ci-dessus. */
-const FRAIS_EXPEDITION_USUELS = [500, 1000, 1500, 2000];
+   3 000 F reste parfaitement possible, et se tape à la main. Il n'y a toujours AUCUN PLAFOND —
+   voir le bandeau ci-dessus.
+
+   LES RACCOURCIS ONT DISPARU LE 05/09/2026. La liste FRAIS_EXPEDITION_USUELS (500, 1 000, 1 500,
+   2 000) dessinait quatre boutons sur la carte du livreur ; Celtis les a vus prendre une ligne
+   entière « inutilement », et précise qu'en pratique les frais commencent à 1 000 F. Le seuil,
+   lui, reste : il protège du zéro de trop, et 1 000 → 10 000 est toujours le cas le plus probable. */
 const FRAIS_EXPEDITION_SEUIL_CONFIRMATION = 4000;
 
 // Vrai si le montant mérite qu'on repose la question avant d'écrire. Ne bloque jamais.

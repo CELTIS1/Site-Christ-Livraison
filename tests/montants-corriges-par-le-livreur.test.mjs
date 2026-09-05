@@ -109,12 +109,14 @@ vm.runInContext([
   'lireMontantSaisi', 'montantsColisAEcrire', 'ecartMontantsColis', 'montantsColisOntChange',
   'correctionMontantAConfirmer', 'correctionsMontantsDuJour',
   'piedTotalHTML', 'echapperAttribut',
+  // Depuis le 05/09/2026, le bloc des montants dessine lui-même la case des frais d'expédition.
+  'fraisExpeditionColis',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
 
 vm.runInContext(['formatMontant', 'escapeHTML'].map(n => blocDe(common, n, 'clt-common.js')).join('\n\n'), contexte);
 
 vm.runInContext([
-  'montantsLigneHTML', 'montantsChampsHTML', 'brancherMontants',
+  'montantsLigneHTML', 'montantsChampsHTML', 'fraisExpeditionCaseHTML', 'brancherMontants',
   // Les deux lecteurs du bouton unique, depuis le 02/09/2026.
   'lireMontantsDeLaCarte', 'lireFraisExpeditionDeLaCarte',
 ].map(n => blocDe(livreur, n, 'livreur.html')).join('\n\n'), contexte);
