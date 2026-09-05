@@ -153,6 +153,22 @@ verifier("il figure dans la liste des onglets", /EQ_TABS = \[[^\]]*'clients'/.te
 verifier("la section est déplacée dans son panneau et initialisée", /put\('eqpanel-clients', byId\('section-clients'\)\)/.test(equipe) && /CLTClients\.init\(\)/.test(equipe));
 verifier("ouvrir l'onglet relit la base", /key === 'clients' && window\.CLTClients\) CLTClients\.rafraichir\(\)/.test(equipe));
 verifier('la fiche cliente est une couche fermable', /id="cd-fiche-overlay"[^>]*data-clt-couche=/.test(equipe) && /id="cd-fiche-fermer"[^>]*data-clt-fermer/.test(equipe));
+titre('Reverser à la cliente : un seul chemin, par la base');
+const sql = fs.readFileSync(path.join(RACINE, '_sql-prive', '2026-09-05-reverser-a-la-cliente.sql'), 'utf8');
+verifier('la migration crée le reçu et les deux fonctions',
+  /create table if not exists public\.reversements_clientes/.test(sql)
+  && /function public\.reverser_a_la_cliente\(p_colis_ids uuid\[\]/.test(sql)
+  && /function public\.annuler_reversement\(p_id uuid/.test(sql));
+verifier("elle exige l'accès comptabilité dans les deux fonctions", (sql.match(/if not public\.a_acces_compta\(\) then/g) || []).length === 2);
+verifier("elle refuse une expédition, un article non encaissé, un colis déjà reversé ou non livré",
+  /c\.statut <> 'livre'/.test(sql) && /reverse_au_fournisseur_at is not null/.test(sql) && /article_non_encaisse/.test(sql) && /Expédition \(intérieur\)/.test(sql));
+verifier('elle refuse de mélanger deux clientes sur un reçu', /count\(distinct fournisseur_id\)/.test(sql));
+verifier("elle s'inscrit au registre des migrations", /migration_appliquee\('2026-09-05-reverser-a-la-cliente\.sql'/.test(sql));
+verifier("l'écran passe par la fonction de la base, jamais par un update des colis",
+  /rpc\('reverser_a_la_cliente'/.test(source) && /rpc\('annuler_reversement'/.test(source) && !/from\('colis'\)\.update/.test(source));
+verifier('le geste est réservé à qui a l\'accès comptabilité', /acces_compta === true/.test(source) && /window\.CLTProfil = profile/.test(equipe));
+verifier("une question est posée avant d'écrire", /cltConfirm\(\{[\s\S]*?title: 'Confirmer le reversement \?'/.test(source));
+
 verifier("les lectures se font par tranches : la base coupe à 1 000 lignes sans prévenir",
   /\.range\(depart, depart \+ CD_TRANCHE - 1\)/.test(source) && /data\.length < CD_TRANCHE\) return tout/.test(source),
   "vu le 05/09 : 684 colis chargés, la période d'avant annoncée à zéro");

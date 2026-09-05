@@ -48,9 +48,7 @@
   const joursEntre = (isoA, isoB) => Math.round((new Date(isoB + 'T12:00:00') - new Date(isoA + 'T12:00:00')) / 86400000);
   const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : null);
   const nomProfil = (p) => (p && (p.company_name || p.full_name)) || 'Cliente sans nom';
-  // Les numéros sont enregistrés « 2250705…» (indicatif sans +) : un lien tel: sans le + ne
-  // compose pas depuis l'étranger, et compose un faux numéro local sur certains téléphones.
-  const telNettoye = (t) => { const n = String(t || '').replace(/[^\d+]/g, ''); return (/^225\d{10}$/.test(n)) ? '+' + n : n; };
+  const telNettoye = (t) => String(t || '').replace(/[^\d+]/g, '');
   const telWhatsApp = (t) => { let n = telNettoye(t); if (!n) return ''; if (n.startsWith('+')) n = n.slice(1); else if (n.startsWith('0') && n.length === 10) n = '225' + n; return n; };
   const estEchec = (c) => c.statut === 'non_livre' || c.statut === 'retour';
   const estEnCours = (c) => c.statut === 'en_attente' || c.statut === 'recupere' || c.statut === 'en_livraison';
@@ -431,10 +429,128 @@
           <div class="cd-sous">Mêmes calculs que la comptabilité (config.js) : cet écran n’additionne rien de son côté.</div>
         </div>
         <div class="cd-fiche-bloc cd-fiche-bloc-large">
+          <div class="cd-fiche-bloc-titre">Reverser à la cliente</div>
+          ${cdReversementHTML(l)}
+        </div>
+        <div class="cd-fiche-bloc cd-fiche-bloc-large">
           <div class="cd-fiche-bloc-titre">Derniers colis</div>
           ${recents.length ? `<table class="cd-mini"><tbody>${recents.map((c) => `<tr><td>${enClair(jour(c.created_at))}</td><td>${esc(c.numero || '')}</td><td>${esc(c.destination || c.commune_destination || '')}</td><td><span class="cd-statut cd-statut-${esc(c.statut)}">${esc(statutLib(c))}</span></td><td class="cd-cell-num">${money(typeof montantArticleColis === 'function' ? montantArticleColis(c) : c.montant_article)}</td></tr>`).join('')}</tbody></table>` : '<div class="cd-muet">Aucun colis sur la période.</div>'}
         </div>
       </div>`;
+  }
+
+  /* ---------- REVERSER À LA CLIENTE — le geste qui manquait (05/09/2026) ----------
+     La colonne colis.reverse_au_fournisseur_at existait depuis août, lue par le relevé de la
+     cliente et par la comptabilité, mais aucun écran ne l'écrivait : pour l'application, tout
+     l'argent des articles restait dû depuis toujours (2 970 900 F le 5 septembre).
+     Ici : la liste des colis à reverser, cochés par défaut, le total qui suit les cases, le mode
+     et une note, puis UN appui, une question, et l'écriture passe par la fonction de la base
+     reverser_a_la_cliente() — tout ou rien, reçu écrit, journal tenu. L'écran ne touche pas
+     aux colis lui-même. Réservé à qui a l'accès comptabilité : c'est de l'argent qui sort. */
+  const CD_MODES = [['especes', 'Espèces'], ['wave', 'Wave'], ['orange_money', 'Orange Money'], ['mtn_money', 'MTN Money'], ['moov_money', 'Moov Money'], ['virement', 'Virement'], ['autre', 'Autre']];
+  const CD_MODE_LIB = Object.fromEntries(CD_MODES);
+  function cdPeutReverser() {
+    const p = window.CLTProfil;
+    return !!(p && (p.role === 'admin' || p.acces_compta === true));
+  }
+  function cdColisAReverser(l) {
+    return (l.dettes || []).filter((c) => (typeof montantArticleADevoir === 'function' ? Number(montantArticleADevoir(c)) || 0 : 0) > 0)
+      .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+  }
+  function cdReversementHTML(l) {
+    const aReverser = cdColisAReverser(l);
+    const peut = cdPeutReverser();
+    let html = '';
+    if (aReverser.length) {
+      const total = aReverser.reduce((s, c) => s + (Number(montantArticleADevoir(c)) || 0), 0);
+      html += `<div class="cd-rev">
+        <div class="cd-rev-titre">${aReverser.length} colis à reverser · ${money(total)}${peut ? '' : ' <span class="cd-muet">(le geste est réservé à la comptabilité)</span>'}</div>
+        <div class="cd-rev-liste">${aReverser.map((c) => `<label class="cd-rev-colis"><input type="checkbox" class="cd-rev-case" value="${esc(c.id)}" data-montant="${Number(montantArticleADevoir(c)) || 0}" checked${peut ? '' : ' disabled'}><span>${enClair(jour(c.created_at))}</span><span class="cd-rev-num">${esc(c.numero || '')}</span><span class="cd-rev-dest">${esc(c.destination || c.commune_destination || '')}</span><strong>${money(montantArticleADevoir(c))}</strong></label>`).join('')}</div>
+        ${peut ? `<div class="cd-rev-barre">
+          <select id="cd-rev-mode" aria-label="Mode de reversement">${CD_MODES.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>
+          <input type="text" id="cd-rev-note" class="search-input" placeholder="Note (facultatif : n° de transaction, remise en main propre…)" maxlength="200">
+          <button type="button" class="btn btn-sm" id="cd-rev-btn" data-cd-reverser="${esc(l.id)}">✅ Reverser <span id="cd-rev-total">${money(total)}</span> · <span id="cd-rev-nb">${aReverser.length}</span> colis</button>
+        </div>` : ''}
+      </div>`;
+    } else {
+      html += `<div class="cd-rev"><div class="cd-rev-titre">Rien à reverser : tout est soldé. 👍</div></div>`;
+    }
+    html += `<div class="cd-rev-historique" id="cd-rev-historique" data-cd-client="${esc(l.id)}"><div class="cd-muet">Lecture des reçus…</div></div>`;
+    return html;
+  }
+  function cdRevMettreAJourTotal() {
+    const cases = Array.from(document.querySelectorAll('.cd-rev-case'));
+    if (!cases.length) return;
+    const choisies = cases.filter((c) => c.checked);
+    const total = choisies.reduce((s, c) => s + (Number(c.dataset.montant) || 0), 0);
+    const t = $('cd-rev-total'), n = $('cd-rev-nb'), b = $('cd-rev-btn');
+    if (t) t.textContent = money(total);
+    if (n) n.textContent = String(choisies.length);
+    if (b) b.disabled = !choisies.length;
+  }
+  async function cdRevHistorique(clientId) {
+    const box = $('cd-rev-historique');
+    if (!box || box.dataset.cdClient !== clientId) return;
+    const { data, error } = await supabaseClient.from('reversements_clientes').select('*').eq('fournisseur_id', clientId).order('fait_le', { ascending: false }).limit(8);
+    if (!$('cd-rev-historique') || $('cd-rev-historique').dataset.cdClient !== clientId) return;
+    if (error) {
+      // La table n'existe pas encore tant que la migration du 05/09 n'est pas passée : on le dit,
+      // sans casser la fiche.
+      poser(box, `<div class="cd-muet">Les reçus de reversement ne sont pas encore disponibles (migration 2026-09-05-reverser-a-la-cliente.sql à jouer).</div>`);
+      return;
+    }
+    if (!data || !data.length) { poser(box, `<div class="cd-muet">Aucun reversement enregistré pour cette cliente.</div>`); return; }
+    const peut = cdPeutReverser();
+    poser(box, `<div class="cd-rev-titre">Derniers reversements</div><table class="cd-mini"><tbody>${data.map((r) => `<tr class="${r.annule_le ? 'cd-rev-annule' : ''}"><td>${enClair(jour(r.fait_le), true)}</td><td>${r.nb_colis} colis</td><td>${esc(CD_MODE_LIB[r.mode] || r.mode)}${r.note ? ` · ${esc(r.note)}` : ''}</td><td class="cd-cell-num"><strong>${money(r.montant)}</strong></td><td>${r.annule_le ? '<span class="cd-muet">annulé</span>' : (peut ? `<button type="button" class="cd-lien" data-cd-annuler="${esc(r.id)}" data-cd-montant="${esc(money(r.montant))}" title="Annuler ce reversement (erreur de manipulation)">↩︎</button>` : '')}</td></tr>`).join('')}</tbody></table>`);
+  }
+  async function cdReverser(clientId) {
+    const btn = $('cd-rev-btn');
+    const ids = Array.from(document.querySelectorAll('.cd-rev-case:checked')).map((c) => c.value);
+    const total = Array.from(document.querySelectorAll('.cd-rev-case:checked')).reduce((s, c) => s + (Number(c.dataset.montant) || 0), 0);
+    const mode = ($('cd-rev-mode') || {}).value || 'especes';
+    const note = (($('cd-rev-note') || {}).value || '').trim();
+    if (!ids.length) return;
+    const box = $('cd-corps');
+    const l = box && box.__cdLignes ? box.__cdLignes.find((x) => x.id === clientId) : null;
+    const ok = typeof cltConfirm === 'function' ? await cltConfirm({
+      title: 'Confirmer le reversement ?',
+      detail: `${money(total)} à ${l ? l.nom : 'la cliente'} — ${ids.length} colis, ${CD_MODE_LIB[mode] || mode}`,
+      sub: "Les colis passeront « reversés » sur son relevé et en comptabilité. Un reçu est écrit, et l'annulation reste possible en cas d'erreur.",
+      okLabel: 'Oui, reverser', cancelLabel: 'Revoir',
+    }) : window.confirm(`Reverser ${money(total)} (${ids.length} colis) ?`);
+    if (!ok) return;
+    if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+    const { error } = await supabaseClient.rpc('reverser_a_la_cliente', { p_colis_ids: ids, p_mode: mode, p_note: note || null });
+    if (error) {
+      console.error('Reversement :', error);
+      if (typeof cltToast === 'function') cltToast(error.message || 'Le reversement n’a pas pu être enregistré.', { type: 'error', title: 'Non enregistré' });
+      else alert(error.message);
+      if (btn) { btn.disabled = false; btn.textContent = 'Réessayer'; }
+      return;
+    }
+    if (typeof cltToast === 'function') cltToast(`${money(total)} reversés — ${ids.length} colis soldés.`, { type: 'success', title: 'Reversement enregistré' });
+    // On relit tout, puis on rouvre la fiche sur les chiffres à jour.
+    cdColis = [];
+    await cdRafraichir(true);
+    cdOuvrirFiche(clientId);
+  }
+  async function cdAnnulerReversement(id, montant, clientId) {
+    const ok = typeof cltConfirm === 'function' ? await cltConfirm({
+      title: 'Annuler ce reversement ?',
+      detail: `${montant} — les colis repasseront « à reverser »`,
+      sub: 'Le reçu est conservé et marqué annulé ; une ligne est écrite au journal.',
+      okLabel: 'Oui, annuler', cancelLabel: 'Garder', danger: true,
+    }) : window.confirm('Annuler ce reversement ?');
+    if (!ok) return;
+    const { error } = await supabaseClient.rpc('annuler_reversement', { p_id: id, p_motif: null });
+    if (error) {
+      if (typeof cltToast === 'function') cltToast(error.message || 'Annulation impossible.', { type: 'error' }); else alert(error.message);
+      return;
+    }
+    if (typeof cltToast === 'function') cltToast('Reversement annulé.', { type: 'info' });
+    cdColis = [];
+    await cdRafraichir(true);
+    cdOuvrirFiche(clientId);
   }
 
   function cdOuvrirFiche(id) {
@@ -446,6 +562,7 @@
     poser($('cd-fiche-corps'), cdFicheHTML(l));
     overlay.classList.remove('hidden');
     document.body.classList.add('cd-fiche-ouverte');
+    cdRevHistorique(id);
   }
   function cdFermerFiche() {
     const overlay = $('cd-fiche-overlay');
@@ -496,7 +613,12 @@
       if (ecran) { cdFermerFiche(); if (typeof ouvrirFicheEcran === 'function') ouvrirFicheEcran('cliente', ecran.dataset.cdEcran); return; }
       const tournee = e.target.closest('[data-cd-tournee]');
       if (tournee) { cdFermerFiche(); if (typeof showEquipeTab === 'function') showEquipeTab('programmation'); return; }
+      const reverser = e.target.closest('[data-cd-reverser]');
+      if (reverser) { cdReverser(reverser.dataset.cdReverser); return; }
+      const annuler = e.target.closest('[data-cd-annuler]');
+      if (annuler) { const h = $('cd-rev-historique'); cdAnnulerReversement(annuler.dataset.cdAnnuler, annuler.dataset.cdMontant, h ? h.dataset.cdClient : null); return; }
     });
+    document.addEventListener('change', (e) => { if (e.target.classList && e.target.classList.contains('cd-rev-case')) cdRevMettreAJourTotal(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cdFermerFiche(); });
   }
 

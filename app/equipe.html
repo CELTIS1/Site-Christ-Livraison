@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260905clients">
-<script src="theme.js?v=20260905clients"></script>
-<script src="splash.js?v=20260905clients"></script>
+<link rel="stylesheet" href="style.css?v=20260905reverser">
+<script src="theme.js?v=20260905reverser"></script>
+<script src="splash.js?v=20260905reverser"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1287,6 +1287,20 @@ quand vous reposez la tournée avec le vrai nombre.
 .cd-mini{ width:100%; border-collapse:collapse; font-size:12.5px; }
 .cd-mini td{ padding:5px 6px; border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
 .cd-statut{ font-size:11px; font-weight:700; border-radius:999px; padding:2px 7px; background:var(--grey-bg); color:var(--muted); }
+.cd-rev{ margin:0; }
+.cd-rev-titre{ font-size:12px; font-weight:800; color:var(--navy); margin-bottom:6px; }
+.cd-rev-liste{ display:flex; flex-direction:column; gap:2px; max-height:260px; overflow:auto; border:1px solid var(--border); border-radius:8px; padding:4px 6px; }
+.cd-rev-colis{ display:grid; grid-template-columns:18px 64px 150px 1fr auto; gap:6px; align-items:center; font-size:12px; color:var(--navy); padding:4px 2px; cursor:pointer; }
+.cd-rev-colis input{ width:16px; height:16px; margin:0; }
+.cd-rev-num{ font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; color:var(--muted); }
+.cd-rev-dest{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--muted); }
+.cd-rev-barre{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+.cd-rev-barre select{ border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); padding:7px 10px; font:inherit; font-size:13px; color:var(--navy); background:var(--white); }
+.cd-rev-barre .search-input{ flex:1 1 200px; min-width:160px; padding:7px 10px; font-size:13px; }
+.cd-rev-barre .btn{ background:#1e8f4e; border-color:#1e8f4e; color:#fff; min-height:40px; }
+.cd-rev-barre .btn:disabled{ opacity:.5; }
+.cd-rev-historique{ margin-top:10px; }
+.cd-rev-annule td{ text-decoration:line-through; color:var(--muted); }
 .cd-statut-livre{ background:#e3f6ea; color:#1a7d3c; } .cd-statut-non_livre{ background:#fce4e2; color:#c0392b; } .cd-statut-retour{ background:#f2e8fa; color:#8e44ad; } .cd-statut-en_livraison{ background:#FBE2CE; color:#E26313; } .cd-statut-recupere{ background:#e5edf5; color:#1B4374; }
 html[data-theme="dark"] .cd-kpi, html[data-theme="dark"] .cd-signal, html[data-theme="dark"] .cd-fiche-bloc, html[data-theme="dark"] .cd-puce, html[data-theme="dark"] .cd-lien{ background:#1A2433; border-color:#2B3A4E; color:#C6D5E6; }
 html[data-theme="dark"] .cd-kpi-val, html[data-theme="dark"] .cd-signal-titre, html[data-theme="dark"] .cd-nom, html[data-theme="dark"] .cd-fiche-nom, html[data-theme="dark"] .cd-fiche-ligne, html[data-theme="dark"] .cd-fiche-tuiles b{ color:#E4ECF5; }
@@ -1362,11 +1376,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260905clients"></script>
-<script src="config.js?v=20260905clients"></script>
-<script src="clients-dashboard.js?v=20260905clients"></script>
-<script src="biometric-lock.js?v=20260905clients"></script>
-<script src="clt-select-recherche.js?v=20260905clients"></script>
+<script src="clt-common.js?v=20260905reverser"></script>
+<script src="config.js?v=20260905reverser"></script>
+<script src="clients-dashboard.js?v=20260905reverser"></script>
+<script src="biometric-lock.js?v=20260905reverser"></script>
+<script src="clt-select-recherche.js?v=20260905reverser"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -9502,6 +9516,9 @@ if (window.CLTBioLock) { try { await CLTBioLock.guard(currentUser); } catch (e) 
 setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);
 
 isAdmin = profile.role === 'admin';
+// Le tableau de bord des clientes lit ici qui regarde : le geste « reverser » n'est proposé
+// qu'à l'accès comptabilité (la base le refuse de toute façon aux autres).
+window.CLTProfil = profile;
 applyPwaIdentityForRole(isAdmin);
 document.getElementById('user-name').textContent = profile.full_name || '';
 document.getElementById('user-first-name').textContent = profile.full_name || '';

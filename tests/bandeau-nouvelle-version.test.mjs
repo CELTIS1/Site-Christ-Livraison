@@ -367,10 +367,11 @@ verifier(
    incrémente les deux. Un contrôle qui se mettrait à jour tout seul ne servirait à rien.
    v63, le 02/09/2026 — un seul bouton d'enregistrement, et les frais usuels revus.
    v64, le 05/09/2026 — cartes resserrées, raccourcis de frais retirés, repli après enregistrement.
-   v65, le 05/09/2026 — tableau de bord des clientes : lecture par tranches. */
+   v65, le 05/09/2026 — tableau de bord des clientes : lecture par tranches.
+   v66, le 05/09/2026 — le geste « reverser à la cliente ». */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v65'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v66'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
