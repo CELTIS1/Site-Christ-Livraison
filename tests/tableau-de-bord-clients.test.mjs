@@ -154,7 +154,15 @@ verifier("la section est déplacée dans son panneau et initialisée", /put\('eq
 verifier("ouvrir l'onglet relit la base", /key === 'clients' && window\.CLTClients\) CLTClients\.rafraichir\(\)/.test(equipe));
 verifier('la fiche cliente est une couche fermable', /id="cd-fiche-overlay"[^>]*data-clt-couche=/.test(equipe) && /id="cd-fiche-fermer"[^>]*data-clt-fermer/.test(equipe));
 titre('Reverser à la cliente : un seul chemin, par la base');
-const sql = fs.readFileSync(path.join(RACINE, '_sql-prive', '2026-09-05-reverser-a-la-cliente.sql'), 'utf8');
+// Le dossier _sql-prive n'est pas versionné (voir .gitignore) : sur GitHub, le script n'existe
+// pas. On annonce ce qu'on ne peut pas vérifier au lieu de s'arrêter net — c'est la règle
+// gardée par « Aucun contrôle ne dépend d'un fichier hors dépôt » dans tests.yml, et c'est
+// exactement ce qui a fait rougir les trois publications du 6 septembre au matin.
+const CHEMIN_SQL = path.join(RACINE, '_sql-prive', '2026-09-05-reverser-a-la-cliente.sql');
+if (!fs.existsSync(CHEMIN_SQL)) {
+  console.log('  ⏭️  la relecture du script SQL est ignorée ici : _sql-prive/ n\'est pas publié (vérifiable sur le poste de travail seulement)');
+} else {
+const sql = fs.readFileSync(CHEMIN_SQL, 'utf8');
 verifier('la migration crée le reçu et les deux fonctions',
   /create table if not exists public\.reversements_clientes/.test(sql)
   && /function public\.reverser_a_la_cliente\(p_colis_ids uuid\[\]/.test(sql)
@@ -164,6 +172,7 @@ verifier("elle refuse une expédition, un article non encaissé, un colis déjà
   /c\.statut <> 'livre'/.test(sql) && /reverse_au_fournisseur_at is not null/.test(sql) && /article_non_encaisse/.test(sql) && /Expédition \(intérieur\)/.test(sql));
 verifier('elle refuse de mélanger deux clientes sur un reçu', /count\(distinct fournisseur_id\)/.test(sql));
 verifier("elle s'inscrit au registre des migrations", /migration_appliquee\('2026-09-05-reverser-a-la-cliente\.sql'/.test(sql));
+}
 verifier("l'écran passe par la fonction de la base, jamais par un update des colis",
   /rpc\('reverser_a_la_cliente'/.test(source) && /rpc\('annuler_reversement'/.test(source) && !/from\('colis'\)\.update/.test(source));
 verifier('le geste est réservé à qui a l\'accès comptabilité', /acces_compta === true/.test(source) && /window\.CLTProfil = profile/.test(equipe));

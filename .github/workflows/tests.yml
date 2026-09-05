@@ -376,6 +376,17 @@ jobs:
       - name: Facturation clients (le mot affiché ne se stocke jamais, il se recalcule)
         run: node tests/facturation-clients.test.mjs
 
+      # Le tableau de bord des clientes et le relevé en couleur, écrits la nuit du 5 septembre.
+      # Le premier tient le geste « reverser à la cliente » (un seul chemin, par la base, jamais
+      # un update des colis depuis l'écran) et la lecture par tranches de 1 000 lignes ; le
+      # second, que le document envoyé aux clientes porte les couleurs de l'écran. Ils ont été
+      # branchés ici le 6 au matin, après que le garde-fou ci-dessous les a signalés.
+      - name: Tableau de bord des clientes (lire par tranches, reverser par la base)
+        run: node tests/tableau-de-bord-clients.test.mjs
+
+      - name: Le relevé en couleur (le papier porte les couleurs de l'écran)
+        run: node tests/releve-en-couleur.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""
