@@ -63,7 +63,13 @@
      imbriqué et bloque le défilement vertical de la page au toucher (il fallait insister
      plusieurs fois). En le fixant à hidden, le tableau défile horizontalement au besoin
      mais les gestes verticaux repartent bien vers la page. */
-  .g-table-wrap{ overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action:pan-x; border-radius:14px; border:1px solid rgba(15,118,110,0.12); }
+  /* touch-action:pan-x pan-y (et non pan-x seul) : Celtis, le 06/09/2026 sur son téléphone —
+     « les tableaux, on n'arrive pas à scroller, ça va dans tous les sens ». Avec pan-x seul, un
+     doigt posé sur un tableau ne pouvait plus faire défiler la page vers le bas : il fallait
+     viser à côté. Les deux axes sont rendus au doigt ; le tableau glisse de côté, la page
+     glisse vers le bas, le navigateur choisit selon le geste. max-width:100% pour qu'un
+     tableau large ne pousse jamais la page hors de l'écran. */
+  .g-table-wrap{ overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action:pan-x pan-y; border-radius:14px; border:1px solid rgba(15,118,110,0.12); max-width:100%; }
   table.g-table{ border-collapse:collapse; width:100%; font-size:13.5px; background:#fff; }
   table.g-table th, table.g-table td{ padding:9px 11px; text-align:right; border-bottom:1px solid #eef2f1; white-space:nowrap; }
   table.g-table th{ background:var(--clt-teal-light); color:var(--clt-teal-dark); font-weight:700; position:sticky; top:0; }
@@ -186,6 +192,38 @@
 
   @media(max-width:640px){ .modal .grid2{ grid-template-columns:1fr; } }
 
+  /* ===== TÉLÉPHONE (06/09/2026). Celtis : « quand je passe sur Gestion avec le téléphone, c'est
+     difficile de scroller, l'écran déborde de côté ; j'avais figé certains en-têtes mais ça me
+     laisse une petite marge pour scroller. »
+     Trois causes, trois réponses :
+       1. La page débordait de côté : rien ne l'en empêchait. html/body ne débordent plus, chaque
+          carte accepte de rétrécir (min-width:0), seul l'intérieur d'un tableau glisse de côté.
+       2. Les sous-onglets (douze pastilles) s'empilaient sur cinq lignes ET restaient figés en
+          haut, avec la période : quatre bandeaux figés mangeaient l'écran. Sur téléphone, les
+          sous-onglets tiennent sur UNE ligne qui glisse de côté, et seuls la barre du haut et
+          les onglets principaux restent figés ; sous-onglets et période défilent avec la page.
+       3. Les colonnes figées à gauche gardaient une page entière derrière elles : on les garde
+          (elles disent de quelle ligne on parle) mais plus étroites. */
+  @media(max-width:640px){
+    html, body{ overflow-x:hidden; max-width:100%; }
+    .card, .kpi, .section, .container, main{ min-width:0; max-width:100%; }
+    .tabs{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .tabs::-webkit-scrollbar{ display:none; }
+    .tabs .tab{ white-space:nowrap; flex:0 0 auto; }
+    .subtabs{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; gap:6px; margin-bottom:12px; padding-bottom:2px; }
+    .subtabs::-webkit-scrollbar{ display:none; }
+    .subtab{ white-space:nowrap; flex:0 0 auto; padding:7px 13px; font-size:12.5px; }
+    #sec-compta > .subtabs, #sec-paie > .subtabs, .period-bar{ position:static; padding-top:0; }
+    .period-bar{ gap:8px; margin-bottom:12px; }
+    .period-bar select, .period-bar input{ padding:8px 10px; font-size:13.5px; max-width:100%; }
+    table.g-table{ font-size:12.5px; }
+    table.g-table th, table.g-table td{ padding:8px 9px; }
+    table.g-table th:first-child, table.g-table td:first-child{ max-width:42vw; white-space:normal; }
+    .clt-sum .kpi{ min-width:calc(50% - 5px); }
+    .field-row, .grid2{ flex-wrap:wrap; }
+    .field-row .field{ min-width:0; flex:1 1 100%; }
+  }
+
   /* ===== IMPRESSION =====
      Quand l'aperçu est ouvert, ⌘P ne doit sortir QUE le document : ni barre du
      haut, ni onglets, ni boutons. On masque tous les enfants directs du corps de
@@ -225,15 +263,14 @@
 </div>
 
 <div class="wrap">
-  <div class="page-title">Espace de gestion</div>
-  <div class="page-sub">Comptabilité (recettes &amp; dépenses) et paie (salariés, bulletins). Accès réservé à l'administrateur.</div>
+  <!-- Titre + sous-titre retirés (Celtis) : doublon avec le bandeau, et « réservé à l'administrateur » était faux (le module est partagé). -->
 
   <div class="navsticky">
   <div class="tabs">
     <div class="tab active" id="tab-dashboard" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Tableau de bord</div>
     <div class="tab" id="tab-compta" data-tab="compta" onclick="switchTab('compta')">💰 Comptabilité</div>
     <div class="tab" id="tab-paie" data-tab="paie" onclick="switchTab('paie')">👥 Paie</div>
-    <div class="tab" id="tab-journal" data-tab="journal" onclick="switchTab('journal')" style="display:none;">📜 Journal</div>
+    <div class="tab" id="tab-journal" data-tab="journal" onclick="switchTab('journal')" style="display:none;">📜 Historique</div>
   </div>
   </div>
 
@@ -341,15 +378,16 @@
         <button class="btn btn-outline btn-sm" onclick="exportLivreCaisse()">⬇️ Exporter (Excel)</button>
       </div>
       <div class="hint">Livre de caisse : <strong>solde d'ouverture + entrées − sorties = solde courant</strong>. Enregistrez chaque mouvement d'argent (espèces, banque, mobile money). Le solde se recalcule automatiquement, mois après mois.</div>
-      <div class="card">
-        <h2>Solde d'ouverture</h2>
+      <!-- Replié par défaut (Celtis) : le solde d'ouverture se saisit une seule fois. -->
+      <details class="card">
+        <summary style="cursor:pointer;font-weight:700;">Solde d'ouverture</summary>
         <div class="hint" id="lc-open-hint">Montant réellement disponible en caisse au démarrage du suivi. À saisir une seule fois.</div>
         <div class="inline-form" id="lc-open-form">
           <div class="field"><label>Date d'ouverture</label><input type="date" id="lc-open-date"></div>
           <div class="field"><label>Solde d'ouverture (FCFA)</label><input type="number" id="lc-open-montant" min="0" step="1"></div>
           <button class="btn btn-sm" id="lc-open-btn" onclick="saveSoldeOuverture()">Enregistrer</button>
         </div>
-      </div>
+      </details>
       <div class="card">
         <h2>Mouvements du mois</h2>
         <div class="g-table-wrap" id="lc-table"></div>
@@ -395,7 +433,6 @@
         <label style="font-weight:600;color:var(--clt-teal-dark);">au</label>
         <input type="date" id="caisse-fin" onchange="loadCaisseLivreurs()">
         <div class="spacer"></div>
-        <button class="btn btn-outline btn-sm" onclick="loadCaisseLivreurs()">🔄 Actualiser</button>
       </div>
       <div class="hint">Récapitulatif <strong>jour par jour</strong>, par livreur : argent de l'article et argent de la livraison séparés. L'argent est compté <strong>dès qu'il est marqué payé</strong> (l'article et la livraison sont comptés séparément, même si le colis n'est pas encore livré). Date = jour où l'argent a été récupéré. Cliquez sur un montant pour le copier. Lecture seule.</div>
       <div class="card"><div class="g-table-wrap" id="caisse-table"></div></div>
@@ -409,17 +446,16 @@
         <label style="font-weight:600;color:var(--clt-teal-dark);">au</label>
         <input type="date" id="clients-fin" onchange="loadPointClients()">
         <div class="spacer"></div>
-        <button class="btn btn-outline btn-sm" onclick="loadPointClients()">🔄 Actualiser</button>
       </div>
       <div class="hint">Point <strong>jour par jour</strong>, par cliente (vendeuse) : argent de l'article et argent de la livraison séparés. L'argent est compté <strong>dès qu'il est marqué payé</strong> (même si le colis n'est pas encore livré). Cliquez sur un montant pour le copier. Lecture seule.</div>
       <div class="card"><div class="g-table-wrap" id="clients-table"></div></div>
     </div>
 
     <!-- Facturation clients : clients professionnels facturés au forfait/à la période (B2B) —
-         population distincte du « Point clients » (clientes Express, dérivé des colis). -->
+         population distincte du « Point clients » (clientes (vendeuses), dérivé des colis). -->
     <div class="section" id="compta-facturation">
 
-      <div class="hint">Facturation formelle des <strong>clients professionnels</strong> facturés au forfait ou à la période — distincte du « Point clients », qui suit les colis Express. Créer une facture ici ne modifie rien côté Express.</div>
+      <div class="hint">Facturation formelle des <strong>clients professionnels</strong> facturés au forfait ou à la période — distincte du « Point clients », qui suit les colis des clientes (vendeuses). Créer une facture ici ne modifie rien côté clientes (vendeuses).</div>
 
       <div class="kpi-grid" id="fact-kpis"></div>
 
@@ -436,8 +472,9 @@
         </div>
       </div>
 
-      <div class="card">
-        <h2>Nouvelle facture</h2>
+      <!-- Formulaire replié par défaut (Celtis) : la liste des factures est l'usage courant, la création est occasionnelle. -->
+      <details class="card">
+        <summary style="cursor:pointer;font-weight:700;">➕ Nouvelle facture</summary>
         <div class="inline-form">
           <div class="field"><label>Client</label><select id="nf-client" data-recherche data-recherche-placeholder="Client…"></select></div>
           <div class="field"><label>Date d'émission</label><input type="date" id="nf-date"></div>
@@ -447,7 +484,7 @@
         <button class="btn btn-outline btn-sm" onclick="ajouterLigneFacture()">+ Ajouter une ligne</button>
         <div class="g-table-wrap" id="nf-totaux"></div>
         <button class="btn btn-sm" id="nf-creer-btn" onclick="creerFacture()">Créer la facture</button>
-      </div>
+      </details>
 
       <div class="card">
         <h2>Factures</h2>
@@ -481,11 +518,10 @@
           <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
           <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
         </select>
-        <button class="btn btn-outline btn-sm" onclick="chargerEtatsFinanciers()">🔄 Actualiser</button>
         <div class="spacer"></div>
         <button class="btn btn-outline btn-sm" onclick="exportEtatsFinanciers()">⬇️ États (Excel)</button>
       </div>
-      <div class="hint">Compte de résultat et bilan simplifié construits automatiquement à partir des recettes, des dépenses et de la paie. Les charges de personnel intègrent la masse nette et les charges patronales.</div>
+      <div class="hint">Compte de résultat construit automatiquement à partir des recettes, des dépenses et de la paie. Les charges de personnel intègrent la masse nette et les charges patronales.</div>
       <div class="kpi-grid" id="fin-kpis"></div>
       <div class="card">
         <h2>Compte de résultat — <span id="fin-periode-lbl"></span></h2>
@@ -496,11 +532,7 @@
         <div class="hint">Recettes, charges et résultat mois par mois (année entière), quel que soit le mois affiché ci-dessus.</div>
         <div class="g-table-wrap" id="fin-mensuel"></div>
       </div>
-      <div class="card">
-        <h2>Bilan simplifié au terme de la période</h2>
-        <div class="hint">Vue synthétique de la trésorerie générée (résultats cumulés) et des sommes en circulation chez les livreurs. Un bilan comptable complet nécessite en plus l'inventaire des immobilisations et des dettes/créances, à renseigner séparément.</div>
-        <div class="g-table-wrap" id="fin-bilan"></div>
-      </div>
+      <!-- Carte « Bilan simplifié » retirée (Celtis) : bilan partiel trompeur ; le résultat cumulé suffit. -->
     </div>
 
     <!-- Comptabilité générale (partie double, SYSCOHADA) : vue séparée des États financiers
@@ -509,7 +541,8 @@
     <div class="section" id="compta-compta-generale">
 
       <div class="clt-alert clt-alert-warn">
-        ⚠️ <strong>Deux méthodes, deux chiffres possibles.</strong> « États financiers » calcule en trésorerie, à partir des recettes et dépenses réellement encaissées. Cette vue tient une comptabilité en <strong>partie double</strong> (SYSCOHADA) à partir d'écritures débit/crédit, générées automatiquement (factures) ou sur demande (dépenses), ou saisies à la main. Les deux peuvent donner un résultat différent pour la même période — ce n'est pas une erreur, c'est la même réalité vue par deux méthodes qui ne comptent pas au même moment. Un bilan comptable complet nécessite en plus l'inventaire des immobilisations et des dettes/créances, à renseigner séparément.
+        <!-- Bandeau ramené à deux phrases (Celtis) : l'ancien pavé n'était pas lu. -->
+        ⚠️ <strong>Deux méthodes, deux chiffres possibles.</strong> « États financiers » compte en trésorerie (encaissé/décaissé), cette vue en partie double (SYSCOHADA) : un écart entre les deux pour une même période est normal.
       </div>
 
       <div class="subtabs">
@@ -524,12 +557,16 @@
         <div class="card">
           <h2>Plan comptable</h2>
           <div class="g-table-wrap" id="cg-plan-table"></div>
-          <div class="inline-form">
-            <div class="field"><label>Code</label><input type="text" id="cg-pc-code"></div>
-            <div class="field" style="flex:1;"><label>Intitulé</label><input type="text" id="cg-pc-nom"></div>
-            <div class="field"><label>Classe</label><input type="number" id="cg-pc-classe" min="1" max="9"></div>
-            <button class="btn btn-sm" onclick="ajouterCompte()">+ Ajouter</button>
-          </div>
+          <!-- Replié par défaut (Celtis) : on ajoute rarement un compte, le plan est surtout consulté. -->
+          <details>
+            <summary style="cursor:pointer;font-weight:700;">➕ Ajouter un compte</summary>
+            <div class="inline-form">
+              <div class="field"><label>Code</label><input type="text" id="cg-pc-code"></div>
+              <div class="field" style="flex:1;"><label>Intitulé</label><input type="text" id="cg-pc-nom"></div>
+              <div class="field"><label>Classe</label><input type="number" id="cg-pc-classe" min="1" max="9"></div>
+              <button class="btn btn-sm" onclick="ajouterCompte()">+ Ajouter</button>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -579,7 +616,6 @@
         <select id="ech-year" onchange="loadEcheances()"></select>
         <select id="ech-month" onchange="loadEcheances()"></select>
         <div class="spacer"></div>
-        <button class="btn btn-outline btn-sm" onclick="loadEcheances()">🔄 Actualiser</button>
       </div>
       <div class="clt-alert clt-alert-warn">⚠️ <strong>Dates indicatives.</strong> Les échéances affichées sont des repères habituels en Côte d'Ivoire. Confirmez toujours les dates et montants exacts auprès de la <strong>DGI</strong> (impôts), de la <strong>CNPS</strong> et de la <strong>CMU</strong> : ils peuvent varier selon votre régime d'imposition.</div>
       <div class="hint">Cochez chaque obligation « faite » une fois la déclaration/paiement effectué. Ce qui n'est pas coché apparaît « à faire », et « en retard » si la date limite est dépassée.</div>
@@ -591,7 +627,6 @@
       <div class="period-bar">
         <select id="clo-year" onchange="loadClotures()"></select>
         <div class="spacer"></div>
-        <button class="btn btn-outline btn-sm" onclick="loadClotures()">🔄 Actualiser</button>
       </div>
       <div class="hint">Clôturer un mois le <strong>verrouille</strong> : les recettes et dépenses de ce mois ne peuvent plus être saisies, modifiées ni supprimées. Cela protège les mois déjà arrêtés contre toute modification accidentelle. <strong>Seul l'administrateur peut rouvrir</strong> un mois clôturé.</div>
       <div class="card"><div class="g-table-wrap" id="clo-table"></div></div>
@@ -714,7 +749,6 @@
         <span class="per-fleche">→</span>
         <select id="etat-fin-month" onchange="chargerEtatsPeriode()"></select>
         <select id="etat-fin-year" onchange="chargerEtatsPeriode()"></select>
-        <button class="btn btn-outline btn-sm" onclick="chargerEtatsPeriode()">🔄 Actualiser</button>
         <div class="spacer"></div>
         <button class="btn btn-outline btn-sm" onclick="exportSynthesePaiePeriode()">⬇️ Synthèse (Excel)</button>
         <button class="btn btn-outline btn-sm" onclick="imprimerSynthesePeriode()">🖨️ Imprimer</button>
@@ -786,12 +820,9 @@
   <!-- ============ JOURNAL D'ACTIVITÉ (admin uniquement) ============ -->
   <div class="section" id="sec-journal">
     <div class="card">
-      <h2>Journal d'activité</h2>
+      <h2>Historique d'activité</h2>
       <div class="hint">Historique des ajouts, modifications et suppressions effectués dans le module Gestion, par chaque personne autorisée. Réservé à l'administrateur.</div>
-      <div class="period-bar">
-        <div class="spacer"></div>
-        <button class="btn btn-outline btn-sm" onclick="loadJournal()">🔄 Actualiser</button>
-      </div>
+      <!-- Bouton « Actualiser » retiré (Celtis) : switchTab('journal') recharge déjà l'historique. -->
       <div class="g-table-wrap" id="journal-table"></div>
     </div>
   </div>

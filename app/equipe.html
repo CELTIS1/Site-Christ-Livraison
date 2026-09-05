@@ -376,6 +376,9 @@
 #section-aujourdhui .ess-entete h2{ margin:0; font-size:15px; }
 #section-aujourdhui .ess-jour{ font-size:12px; color:var(--muted); font-weight:600; }
 #section-aujourdhui .ess-groupes{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:10px 18px; }
+/* Le groupe « Aujourd'hui » prend toute la première ligne, léger, séparé des gestes par un filet. */
+#section-aujourdhui .ess-groupe-jour{ grid-column:1 / -1; padding-bottom:8px; border-bottom:1px solid var(--border); }
+#section-aujourdhui .ess-groupe-jour .ess-tuiles{ gap:0; }
 #section-aujourdhui .ess-groupe{ min-width:0; }
 #section-aujourdhui .ess-groupe-titre{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 5px; }
 #section-aujourdhui .ess-tuiles{ display:flex; flex-wrap:wrap; gap:6px; }
@@ -383,11 +386,21 @@
 #section-aujourdhui .ess-tuile{
   display:inline-flex; align-items:center; gap:7px; min-height:36px; padding:6px 12px 6px 10px;
   border:1.5px solid var(--border); border-radius:999px; background:var(--white);
-  font-size:12.5px; font-weight:600; color:var(--navy); line-height:1.1; cursor:pointer;
+  font-size:12.5px; font-weight:600; color:var(--navy); line-height:1.1; cursor:pointer; white-space:nowrap;
   -webkit-tap-highlight-color:transparent; transition:border-color .12s ease, box-shadow .12s ease;
 }
 #section-aujourdhui .ess-tuile:hover{ border-color:var(--border-strong); box-shadow:var(--shadow-xs); }
-#section-aujourdhui .ess-tuile .n{ font-size:15px; font-weight:800; letter-spacing:-0.02em; }
+#section-aujourdhui .ess-tuile .n{ display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 7px; border-radius:999px; font-size:13px; font-weight:800; letter-spacing:-0.02em; color:#fff; background:currentColor; }
+#section-aujourdhui .ess-tuile .n{ color:#fff; }
+#section-aujourdhui .ess-tuile.est-ambre .n{ background:#E26313; }
+#section-aujourdhui .ess-tuile.est-rouge .n{ background:#D6534A; }
+#section-aujourdhui .ess-rien{ display:inline-flex; align-items:center; min-height:36px; font-size:12.5px; font-weight:600; color:var(--muted); }
+/* Le bilan du jour : quatre chiffres en ligne, sans bordure — on les lit, on ne les touche pas. */
+#section-aujourdhui .ess-stat{ display:inline-flex; align-items:baseline; gap:5px; font-size:12.5px; color:var(--muted); font-weight:600; padding:6px 0; margin-right:14px; }
+#section-aujourdhui .ess-stat .n{ font-size:20px; font-weight:800; letter-spacing:-0.03em; color:var(--navy); }
+#section-aujourdhui .ess-stat.est-vert .n{ color:#1a7d3c; }
+#section-aujourdhui .ess-stat.est-rouge .n{ color:#b3362d; }
+#section-aujourdhui .ess-stat.est-ambre .n{ color:#8a4b12; }
 /* Zéro se lit en gris et en pointillé : l'œil doit accrocher ce qui existe. */
 #section-aujourdhui .ess-tuile.est-vide{ color:var(--muted); border-style:dashed; background:transparent; }
 #section-aujourdhui .ess-tuile.est-ambre{ border-color:#E26313; color:#8a4b12; background:#fff8ef; }
@@ -412,7 +425,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
 </div>
 <div class="ess-groupes">
   <!-- 05/09/2026 — Celtis veut voir d'un coup d'œil le bilan du jour : reçus, livrés, échecs, en cours. Lecture seule. -->
-  <div class="ess-groupe">
+  <div class="ess-groupe ess-groupe-jour">
     <div class="ess-groupe-titre">Aujourd'hui</div>
     <div class="ess-tuiles" id="aujourdhui-jour"><span class="ess-tuile est-vide">Chargement…</span></div>
   </div>
@@ -809,14 +822,15 @@ quand vous reposez la tournée avec le vrai nombre.
 
      Le nombre est écrit dans le titre, section FERMÉE. Une section repliée qui ne dit rien ne
      s'ouvre jamais : le chiffre doit sauter aux yeux sans qu'on ait rien touché. -->
-<h3 class="panel-subtitle collapsible-header" id="dorment-toggle" onclick="toggleColisQuiDorment()" style="margin-top:28px;">
-<span class="collapse-arrow" id="dorment-arrow">▶</span> Colis qui dorment <span id="dorment-badge"></span>
-</h3>
-<div id="colis-qui-dorment" class="collapsible-content">
+<!-- Repliable pour de bon (06/09/2026, Celtis : « si ça peut être repliable aussi »). L'ancien
+     repli était neutralisé au chargement avec tous les autres ; celui-ci est un <details>, que
+     rien ne force à s'ouvrir. Le compte reste dans le titre, section fermée. -->
+<details class="eq-repli" id="colis-qui-dorment" style="margin-top:28px;">
+<summary id="dorment-toggle">😴 Colis qui dorment&nbsp;<span id="dorment-badge"></span></summary>
 <div id="dorment-body">
 <div class="empty-state">Chargement...</div>
 </div>
-</div>
+</details>
 
 <!-- Les corrections de montants : le pendant, côté bureau, de ce que les livreurs corrigent
      dans la rue. (27/08/2026) Depuis qu'un livreur peut réécrire l'article et la livraison
@@ -3782,33 +3796,37 @@ colis.forEach(c => {
   }
 });
 const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
+/* ÉPURÉ (06/09/2026, Celtis : « encore mieux organisé, plus esthétique, plus épuré »). Une
+   pastille à zéro n'apprend rien : elle n'est plus dessinée. Un groupe sans rien à faire le dit
+   en trois mots, en gris. Ce qui reste est donc, par construction, ce qui demande un geste. */
 const pastille = (valeur, label, aller, teinte) => {
   const vide = (valeur === 0 || valeur === '0 FCFA');
-  const cls = vide ? 'est-vide' : (teinte === 'rouge' ? 'est-rouge' : 'est-ambre');
-  return `<button type="button" class="ess-tuile ${cls}" data-aller="${aller}" title="Ouvrir"><span class="n">${valeur}</span><span>${label}</span></button>`;
+  if (vide) return '';
+  return `<button type="button" class="ess-tuile ${teinte === 'rouge' ? 'est-rouge' : 'est-ambre'}" data-aller="${aller}" title="Ouvrir"><span class="n">${valeur}</span><span>${label}</span></button>`;
 };
+const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`;
 window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id) };
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 // 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient de
 // config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
 const jourEvt = (c, st) => (typeof jourEvenementColis === 'function') ? jourEvenementColis(c, st) : dayKey(c[st + '_at']);
-const tuile = (n, label, teinte) => `<span class="ess-tuile ${n ? 'est-' + teinte : 'est-vide'}"><span class="n">${n}</span><span>${label}</span></span>`;
+const tuile = (n, label, teinte) => `<span class="ess-stat ${n ? 'est-' + teinte : ''}"><span class="n">${n}</span><span>${label}</span></span>`;
 set('aujourdhui-jour',
   tuile(colis.filter(c => dayKey(c.created_at) === aujourdhui).length, 'reçus aujourd\'hui', 'ambre') +
   tuile(colis.filter(c => jourEvt(c, 'livre') === aujourdhui).length, 'livrés aujourd\'hui', 'vert') +
   tuile(colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && jourEvt(c, c.statut) === aujourdhui).length, 'échecs aujourd\'hui', 'rouge') +
   tuile(colis.filter(c => c.statut === 'recupere' || c.statut === 'en_livraison').length, 'encore en cours', 'ambre'));
-set('aujourdhui-actions',
+set('aujourdhui-actions', ouRien(
   pastille(cat.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
   pastille(cat.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
   pastille(nbPending,  'comptes à valider', 'comptes-a-valider', 'ambre') +
-  pastille(nbReset,    'mots de passe à refaire', 'reinitialisations', 'ambre'));
-set('aujourdhui-anomalies',
-  pastille(cat.retard.length,   'en livraison depuis hier ou avant', 'retard', 'rouge') +
-  pastille(cat.examiner.length, 'non livrés / retours à examiner', 'examiner', 'rouge'));
-set('aujourdhui-argent',
+  pastille(nbReset,    'mots de passe à refaire', 'reinitialisations', 'ambre'), 'Rien à faire'));
+set('aujourdhui-anomalies', ouRien(
+  pastille(cat.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +
+  pastille(cat.examiner.length, 'non livrés ou retours', 'examiner', 'rouge'), 'Rien à examiner'));
+set('aujourdhui-argent', ouRien(
   pastille(money(resteARemettre), 'à remettre', 'argent', 'rouge') +
-  pastille(nbASolder, 'colis à solder', 'argent', 'rouge'));
+  (nbASolder ? `<button type="button" class="ess-tuile est-rouge" data-aller="argent" title="Ouvrir"><span class="n">${nbASolder}</span><span>colis à solder</span></button>` : ''), 'Tout est remis'));
 const libelleJour = document.getElementById('ess-jour');
 if (libelleJour) cltPoserHTML(libelleJour, 'Tout ce qui attend, toutes dates confondues' + (colisHasMore ? ' · historique partiel' : ''));
 }
@@ -6801,7 +6819,8 @@ let dormentExpanded = false;
 function toggleColisQuiDorment(){
 dormentExpanded = !dormentExpanded;
 const box = document.getElementById('colis-qui-dorment');
-if (dormentExpanded) { expandCollapsible(box); } else { collapseCollapsible(box); }
+// Depuis le 06/09/2026 la section est un <details> : ouvrir/fermer, c'est son attribut.
+if (box && 'open' in box) box.open = dormentExpanded;
 const fleche = document.getElementById('dorment-arrow');
 if (fleche) fleche.textContent = dormentExpanded ? '▼' : '▶';
 // Aucune lecture sur la base ici : tout vient de allColis, déjà en mémoire. C'est pour cela que

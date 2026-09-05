@@ -3578,9 +3578,12 @@
       renderMesColis();
     });
 
-    // Même principe pour les récupérations : toutes les dates à l'ouverture (Celtis,
-    // 05/09/2026), le calendrier pour se limiter à un jour.
-    filtreDateRecup = '';
+    // Les récupérations s'ouvrent sur AUJOURD'HUI. Celtis, le 06/09/2026 au matin, devant le
+    // détail ouvert sur toutes les dates : « il y a d'autres colis affichés alors que ce ne sont
+    // pas des récupérations du jour… normalement c'est en fonction de chaque jour. » Le bouton
+    // « Toutes » reste là pour remonter dans le temps ; la tournée du haut, elle, continue de
+    // compter ce qui est confié et pas encore pris, quel que soit le jour.
+    filtreDateRecup = todayLocalISODate();
     document.getElementById('filtre-date-recup').value = filtreDateRecup;
     document.getElementById('filtre-date-recup').addEventListener('change', (e) => {
       filtreDateRecup = e.target.value;
