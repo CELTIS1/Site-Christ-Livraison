@@ -462,6 +462,7 @@
     <div class="date-filter-wrap">
       <label for="filtre-date-colis">📅 Date</label>
       <input type="date" id="filtre-date-colis" class="date-filter-input">
+      <button type="button" id="btn-date-aujourdhui" class="date-filter-clear">Aujourd'hui</button>
       <button type="button" id="btn-toutes-dates" class="date-filter-clear">Toutes les dates</button>
     </div>
     <div class="colis-list" id="colis-list">
@@ -1979,7 +1980,10 @@
     // Conserve toute carte de duplication en attente (non encore enregistrée) lors d'un re-rendu
     // (ex : mise à jour temps réel pendant que le fournisseur vérifie sa copie).
     const __drafts = Array.from(list.querySelectorAll('.colis-draft'));
-    const filtered = mesColis.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDate));
+    // Une recherche cherche partout : taper un numéro de suivi ne doit pas rester bloqué sur la
+    // journée affichée. Sans recherche, la liste est celle du jour choisi. (07/09/2026)
+    const dateEffective = searchColis.trim() ? '' : filtreDate;
+    const filtered = mesColis.filter(c => matchesSearch(c, searchColis) && matchesDate(c, dateEffective));
     // Colis déjà chargés mais pas encore dessinés (voir plus bas, bouton « Charger plus »).
     let resteAAfficher = 0;
     // __aChange dit si la liste a RÉELLEMENT changé. Quand elle n'a pas changé — le cas le plus
@@ -1993,10 +1997,15 @@
     if (!mesColis.length) {
       __aChange = cltPoserHTML(list, `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`, __emp());
     } else if (!filtered.length) {
-      __aChange = cltPoserHTML(list, filtreDate
-        ? `<div class="empty-state">Aucun colis enregistré à cette date.</div>`
+      // Une journée vide le dit simplement, et propose le reste d'un appui : une cliente qui n'a
+      // rien déposé ce matin retrouve ainsi ses colis d'hier encore en route. (07/09/2026)
+      const jourVide = filtreDate === todayLocalISODate()
+        ? `Aucun colis déposé aujourd'hui.`
+        : `Aucun colis enregistré à cette date.`;
+      __aChange = cltPoserHTML(list, dateEffective
+        ? `<div class="empty-state">${jourVide}<br><button type="button" class="btn btn-outline btn-sm" data-voir-toutes-dates style="margin-top:10px;">Voir tous mes colis</button></div>`
         : `<div class="empty-state">Aucun colis ne correspond à cette recherche.</div>`, __emp());
-    } else if (filtreDate) {
+    } else if (dateEffective) {
       // Une date précise est choisie : la liste est déjà limitée à cette journée,
       // inutile de répéter l'en-tête "📅 ..." (déjà visible dans le sélecteur de date).
       // On ne dessine qu'une tranche ; la numérotation reste celle du lot entier (le 40e colis
@@ -2785,12 +2794,12 @@
     // après le formulaire plutôt que de le retarder.
     chargerMonCarnet().then(redessinerTousLesCarnets).catch(e => console.error('Carnet :', e));
     await loadLivreurs();
-    // « Mes colis » s'ouvrait vide sur aujourd'hui : une cliente qui n'a rien déposé ce matin
-    // voyait une liste vide et cherchait ses colis d'hier encore en route. On ouvre sur toutes
-    // les dates, du plus récent au plus ancien ; le calendrier reste là pour cibler un jour.
-    // (feuille de route 3.5, 06/09/2026)
-    filtreDate = '';
-    document.getElementById('filtre-date-colis').value = '';
+    // « Mes colis » s'ouvre sur AUJOURD'HUI : chaque jour, son affichage (Celtis, 07/09/2026 :
+    // « il faut que ce soit par jour et que ce soit le plus simple à comprendre »). Le 06/09 on
+    // avait ouvert sur toutes les dates parce qu'une liste vide inquiétait ; on répond autrement :
+    // quand la journée est vide, la liste le dit et propose « Toutes les dates » d'un appui.
+    filtreDate = todayLocalISODate();
+    document.getElementById('filtre-date-colis').value = filtreDate;
     loadColis();
     loadReleve();
     // Recherche : on attend que la frappe se calme avant de redessiner. Taper « ABIDJAN », c'est
@@ -2809,6 +2818,18 @@
       document.getElementById('filtre-date-colis').value = '';
       remettreTrancheColisAZero();
       renderColisList();
+    });
+    document.getElementById('btn-date-aujourdhui').addEventListener('click', () => {
+      filtreDate = todayLocalISODate();
+      document.getElementById('filtre-date-colis').value = filtreDate;
+      remettreTrancheColisAZero();
+      renderColisList();
+    });
+    // Le bouton « Toutes les dates » dessiné dans la liste vide d'une journée (voir
+    // renderColisList) : même geste que celui du haut.
+    document.getElementById('colis-list').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-voir-toutes-dates]');
+      if (b) document.getElementById('btn-toutes-dates').click();
     });
 
     // Mises à jour en temps réel : tout changement sur mes colis rafraîchit la liste
