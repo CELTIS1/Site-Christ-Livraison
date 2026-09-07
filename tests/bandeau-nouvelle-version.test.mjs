@@ -381,10 +381,11 @@ verifier(
    v76, le 07/09/2026 — un colis enregistré « livré » reste dans « Ma journée » (livreur.html).
    v77, le 07/09/2026 — chaque jour son affichage, trois boutons, messages WhatsApp précis (config.js, style.css, livreur.html, equipe.html) : étiquette 20260907jour.
    v78, le 07/09/2026 — bureau : programmation sur la date du jour, bilan du jour compté par la base, champ épuré (equipe.html).
-   v79, le 07/09/2026 — espace cliente : « Mes colis » s'ouvre sur aujourd'hui, journée vide qui propose tout (fournisseur.html). */
+   v79, le 07/09/2026 — espace cliente : « Mes colis » s'ouvre sur aujourd'hui, journée vide qui propose tout (fournisseur.html).
+   v80, le 07/09/2026 — espace cliente : le Récap s'ouvre sur aujourd'hui (fournisseur.html). */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v79'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v80'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

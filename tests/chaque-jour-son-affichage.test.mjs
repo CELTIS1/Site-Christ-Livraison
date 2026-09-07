@@ -166,6 +166,13 @@ titre("L'espace cliente aussi : le jour d'office, simple à comprendre (07/09/20
   verifier('deux boutons, en clair : « Aujourd\'hui » et « Toutes les dates »', /id="btn-date-aujourdhui"[^>]*>Aujourd'hui</.test(fournisseur) && /id="btn-toutes-dates"[^>]*>Toutes les dates</.test(fournisseur));
   verifier("une journée vide le dit et propose « Voir tous mes colis »", /Aucun colis déposé aujourd'hui\./.test(fournisseur) && /data-voir-toutes-dates/.test(fournisseur));
   verifier('une recherche cherche partout, pas seulement dans la journée', /const dateEffective = searchColis\.trim\(\) \? '' : filtreDate;/.test(fournisseur));
+  // Le Récap aussi (Celtis, 07/09/2026 : « côté client je ne remarque pas de changement » — il
+  // regardait l'onglet Récap, resté sur « Tous les jours »).
+  const jours = blocDe(fournisseur, 'populateJourSelect');
+  verifier("le Récap s'ouvre sur aujourd'hui tant que la cliente n'a rien choisi", /const voulu = recapJourChoisi === null \? \(moisCourant \? aujourdhui : ''\) : recapJourChoisi;/.test(jours));
+  verifier("« Aujourd'hui » est dans la liste même sans colis", /liste\.unshift\(\{ key: aujourdhui, label: "Aujourd'hui", items: \[\] \}\)/.test(jours));
+  verifier("une journée sans colis le dit en une phrase, avec « Voir tout le mois »", /<strong>Aujourd'hui<\/strong>, aucun colis enregistré pour l'instant\./.test(fournisseur) && /selectRecapDay\(''\)"[^>]*>← Voir tout le mois/.test(fournisseur));
+  verifier('le choix de la cliente est respecté ensuite', /recapJourChoisi = document\.getElementById\('jour-select'\)\.value;/.test(fournisseur) && /recapJourChoisi = key;/.test(fournisseur));
 }
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);

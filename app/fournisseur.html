@@ -2354,13 +2354,26 @@
     renderRecapMois();
   }
 
+  /* LE RÉCAP S'OUVRE SUR AUJOURD'HUI. (07/09/2026, Celtis : « il faut que ce soit par jour et
+     que ce soit le plus simple à comprendre. ») Tant que la cliente n'a rien choisi, le jour est
+     aujourd'hui — présent dans la liste même sans colis, pour qu'elle voie « aujourd'hui : rien
+     encore » plutôt qu'un mois entier qu'elle n'a pas demandé. « Tous les jours » reste à un
+     appui, et « ← Voir tout le mois » aussi. Dès qu'elle choisit, on respecte son choix. */
+  let recapJourChoisi = null;
   function populateJourSelect(groups){
     const jourSelect = document.getElementById('jour-select');
-    const previousValue = jourSelect.value;
-    const options = groups.map(g => `<option value="${g.key}">${g.label}</option>`).join('');
-    if (cltPoserHTML(jourSelect, `<option value="">Tous les jours</option>${options}`)) {
-      jourSelect.value = groups.some(g => g.key === previousValue) ? previousValue : '';
+    const aujourdhui = todayLocalISODate();
+    const moisChoisi = document.getElementById('mois-select').value;
+    const moisCourant = moisChoisi === aujourdhui.slice(0, 7);
+    const liste = groups.slice();
+    if (moisCourant && !liste.some(g => g.key === aujourdhui)) {
+      liste.unshift({ key: aujourdhui, label: "Aujourd'hui", items: [] });
     }
+    const libelle = (g) => g.key !== aujourdhui ? g.label : (g.items && g.items.length ? "Aujourd'hui — " + g.label : "Aujourd'hui");
+    const options = liste.map(g => `<option value="${g.key}">${libelle(g)}</option>`).join('');
+    const voulu = recapJourChoisi === null ? (moisCourant ? aujourdhui : '') : recapJourChoisi;
+    cltPoserHTML(jourSelect, `<option value="">Tous les jours</option>${options}`);
+    jourSelect.value = liste.some(g => g.key === voulu) ? voulu : '';
   }
 
   // Récapitulatif du JOUR sélectionné, présenté comme la carte « Ma tournée » du livreur :
@@ -2420,6 +2433,13 @@
 
     if (jourSelected) {
       const g = groups.find(x => x.key === jourSelected);
+      if (!g && jourSelected === todayLocalISODate()) {
+        cltPoserHTML(box, `
+          <div class="day-recap-back" onclick="selectRecapDay('')">← Voir tout le mois</div>
+          <p class="recap-phrase"><strong>Aujourd'hui</strong>, aucun colis enregistré pour l'instant.</p>
+        `);
+        return;
+      }
       if (g) {
         const compteJour = {};
         g.items.forEach(c => { compteJour[c.statut] = (compteJour[c.statut] || 0) + 1; });
@@ -2464,6 +2484,7 @@
   }
 
   function selectRecapDay(key){
+    recapJourChoisi = key;
     document.getElementById('jour-select').value = key;
     renderRecapMois();
   }
@@ -2636,7 +2657,7 @@
   });
 
   document.getElementById('mois-select').addEventListener('change', renderRecapMois);
-  document.getElementById('jour-select').addEventListener('change', renderRecapMois);
+  document.getElementById('jour-select').addEventListener('change', () => { recapJourChoisi = document.getElementById('jour-select').value; renderRecapMois(); });
   document.getElementById('colis-jour-date').addEventListener('change', renderColisDuJour);
 
   // ---------- Notifications push (Web Push) ----------
