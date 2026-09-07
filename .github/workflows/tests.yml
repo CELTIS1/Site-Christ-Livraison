@@ -418,6 +418,13 @@ jobs:
       - name: Le livreur confirme ce qu'il a pris (annoncé, pris, écart)
         run: node tests/confirmer-la-recuperation.test.mjs
 
+      # Chaque jour, son affichage (07/09/2026, Celtis) : une cliente hors programme n'entre dans
+      # la tournée que le jour de ses colis, les restes sont comptés pour le bureau ; le troisième
+      # bouton reste tant que la récupération n'est pas faite ; chaque message WhatsApp dit sa
+      # situation ; après un statut enregistré, le téléphone propose le message au destinataire.
+      - name: Chaque jour son affichage, trois boutons, messages WhatsApp précis
+        run: node tests/chaque-jour-son-affichage.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""

@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260906recup">
-<script src="theme.js?v=20260906recup"></script>
-<script src="splash.js?v=20260906recup"></script>
+<link rel="stylesheet" href="style.css?v=20260907jour">
+<script src="theme.js?v=20260907jour"></script>
+<script src="splash.js?v=20260907jour"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -785,9 +785,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260906recup"></script>
-<script src="config.js?v=20260906recup"></script>
-<script src="biometric-lock.js?v=20260906recup"></script>
+<script src="clt-common.js?v=20260907jour"></script>
+<script src="config.js?v=20260907jour"></script>
+<script src="biometric-lock.js?v=20260907jour"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1555,6 +1555,55 @@
         onClick: () => { annulerChangementStatut(colis.id, res); }
       } : null
     });
+    proposerMessageDestinataire(colis, statut);
+  }
+
+  /* LE MESSAGE AU DESTINATAIRE, PROPOSÉ AUSSITÔT LE STATUT ENREGISTRÉ. (07/09/2026, Celtis :
+     « lorsqu'il a mis "je pars livrer" ou "en livraison", il faudrait que ça déclenche un
+     message pour la personne à qui ça doit être livré. »)
+
+     Un site ne peut pas envoyer un WhatsApp tout seul, et un window.open() lancé APRÈS
+     l'aller-retour réseau est bloqué par les téléphones. On pose donc, sous le pouce du
+     livreur, un vrai lien déjà rempli — le message de messageDestinataire() dans config.js,
+     le même que celui du bouton « Prévenir sur WhatsApp » de la carte. Un appui, WhatsApp
+     s'ouvre, le livreur relit et envoie. « Plus tard » referme sans rien faire. */
+  const STATUTS_A_PREVENIR = ['en_livraison', 'non_livre', 'livre'];
+  function proposerMessageDestinataire(colis, statut){
+    if (!colis || STATUTS_A_PREVENIR.indexOf(statut) === -1) return;
+    if (typeof lienMessageDestinataire !== 'function') return;
+    const ancien = document.getElementById('wa-invite');
+    if (ancien) ancien.remove();
+    const numero = colis.numero || '';
+    const lien = lienMessageDestinataire(colis.destinataire_telephone || '', {
+      statut,
+      numero,
+      lienSuivi: buildTrackingLink(numero, colis.id),
+      livreurNom: (currentProfile && currentProfile.full_name) || '',
+    });
+    const titre = ({
+      en_livraison: 'Prévenir le destinataire que vous êtes en route ?',
+      non_livre:    'Dire au destinataire que vous êtes passé sans le trouver ?',
+      livre:        'Confirmer la livraison au destinataire ?',
+    })[statut];
+    // Un colis ne porte pas le nom de son destinataire, seulement son téléphone : on nomme le
+    // colis par sa description, c'est ce que le livreur a sous les yeux.
+    const qui = colisDescriptionTexte(colis) ? escapeHTML(colisDescriptionTexte(colis)) : 'Le destinataire';
+    const tel = colis.destinataire_telephone ? escapeHTML(telephoneAffiche(colis.destinataire_telephone)) : 'numéro inconnu — vous choisirez le contact dans WhatsApp';
+    const boite = document.createElement('div');
+    boite.id = 'wa-invite';
+    boite.className = 'wa-invite';
+    boite.setAttribute('role', 'dialog');
+    boite.innerHTML = `
+      <div class="wa-invite__titre">${escapeHTML(titre)}</div>
+      <div class="wa-invite__sous">${qui} · 📞 ${tel}${numero ? ' · ' + escapeHTML(numero) : ''}</div>
+      <div class="wa-invite__gestes">
+        <a class="wa-invite__envoyer" href="${escapeHTML(lien)}" target="_blank" rel="noopener">💬 Envoyer le message WhatsApp</a>
+        <button type="button" class="wa-invite__plus-tard">Plus tard</button>
+      </div>`;
+    document.body.appendChild(boite);
+    const fermer = () => { boite.remove(); };
+    boite.querySelector('.wa-invite__plus-tard').addEventListener('click', fermer);
+    boite.querySelector('.wa-invite__envoyer').addEventListener('click', () => setTimeout(fermer, 400));
   }
 
   async function annulerChangementStatut(id, res){
@@ -3029,20 +3078,28 @@
     if (!jour || !currentUser) return [];
     const debut = jour + 'T00:00:00Z';
     const fin   = jour + 'T23:59:59.999Z';
-    const base = () => supabaseClient
+    // collecte_depart_at depuis le 29/08/2026 : c'est ce qui permet à la carte de savoir si
+    // le livreur est déjà en route vers cette cliente, et donc de lui proposer « Récupéré,
+    // tout » plutôt que « Je pars » une seconde fois. Sans cette colonne, la carte
+    // reproposerait éternellement de partir, et un second appui renverrait un message
+    // d'annonce à une cliente qui l'attend déjà devant sa porte.
+    // created_at et jour_recuperation_prevu depuis le 07/09/2026 : c'est ce qui dit à quel
+    // jour appartient un colis hors programme (colisHorsProgrammeDuJour, config.js). Si la
+    // colonne du jour prévu n'existe pas encore, on relit sans elle plutôt que de tomber.
+    const base = (champs) => supabaseClient
       .from('colis')
-      // collecte_depart_at depuis le 29/08/2026 : c'est ce qui permet à la carte de savoir si
-      // le livreur est déjà en route vers cette cliente, et donc de lui proposer « Récupéré,
-      // tout » plutôt que « Je pars » une seconde fois. Sans cette colonne, la carte
-      // reproposerait éternellement de partir, et un second appui renverrait un message
-      // d'annonce à une cliente qui l'attend déjà devant sa porte.
-      .select('id, fournisseur_id, statut, recupere_at, livreur_collecte_id, collecte_depart_at')
+      .select(champs)
       .eq('livreur_collecte_id', currentUser.id);
-
-    const [attente, pris] = await Promise.all([
-      base().eq('statut', 'en_attente'),
-      base().gte('recupere_at', debut).lte('recupere_at', fin),
+    const lire = async (champs) => Promise.all([
+      base(champs).eq('statut', 'en_attente'),
+      base(champs).gte('recupere_at', debut).lte('recupere_at', fin),
     ]);
+
+    let [attente, pris] = await lire('id, fournisseur_id, statut, recupere_at, livreur_collecte_id, collecte_depart_at, created_at, jour_recuperation_prevu');
+    if ((attente.error && colonneAbsente(attente.error)) || (pris.error && colonneAbsente(pris.error))) {
+      console.warn("Colonne jour_recuperation_prevu absente : le script SQL du 31/08/2026 n'a pas encore été exécuté.");
+      [attente, pris] = await lire('id, fournisseur_id, statut, recupere_at, livreur_collecte_id, collecte_depart_at, created_at');
+    }
 
     // Une lecture en échec ne doit pas se transformer en « rien à récupérer » : on le fait
     // remonter comme la tournée elle-même, pour que l'écran le dise au lieu de rassurer.
@@ -3198,11 +3255,10 @@
        numeroInternational() dans config.js : deux mises en forme séparées finiraient par
        appeler une cliente et écrire à une autre. */
     const carteHTML = (l) => {
-      const inter = numeroInternational(l.telephone);
       const contacts = l.telephone
         ? `<div class="tournee-contacts">
              <a class="tournee-contact tournee-contact--appel" href="tel:${escapeHTML(numeroCompose(l.telephone))}">📞 Appeler</a>
-             <a class="tournee-contact tournee-contact--whatsapp" href="https://wa.me/${escapeHTML(inter)}" target="_blank" rel="noopener">💬 WhatsApp</a>
+             <a class="tournee-contact tournee-contact--whatsapp" href="${escapeHTML(lienContactRecuperation(l.telephone, { livreurNom: (currentProfile && currentProfile.full_name) || '', commune: l.commune }))}" target="_blank" rel="noopener">💬 WhatsApp</a>
            </div>`
         : `<div class="tournee-contacts">
              <span class="tournee-contact tournee-contact--absent">Numéro non renseigné — passez par le bureau</span>
@@ -3275,13 +3331,23 @@
       // Rien à ramasser, rien d'annoncé qui manque : le travail est fait chez elle. La ligne du
       // compte le dit déjà (« 3 déjà pris ») ; un bouton de plus ne ferait que mentir.
       const plusRienAFaireIci = rienASurQuoiEcrire && !annonceSansColisSaisi && !enRoute;
-      const geste = (l.rienARecuperer || plusRienAFaireIci)
+      /* LE TROISIÈME BOUTON EST TOUJOURS LÀ. (07/09/2026, Celtis : « il y a le bouton appeler,
+         le bouton WhatsApp et en bas un troisième bouton qui informe la vendeuse lorsque le
+         livreur veut se rendre chez elle. Je ne vois que deux boutons, ce n'est pas normal. »)
+         Jusqu'ici une cliente sans colis saisi n'avait pas de troisième bouton. Elle en a un :
+         « Prévenir que j'arrive », qui envoie le même message que « Je pars » — la cliente est
+         prévenue, et le départ sera consigné dès que le bureau aura saisi ses colis. Le bouton
+         ne s'efface que lorsque la récupération chez elle est déjà faite. */
+      const recuperationFaite = plusRienAFaireIci && l.nbDejaPris > 0;
+      const prevenirSeulement = !recuperationFaite && (l.rienARecuperer || annonceSansColisSaisi || plusRienAFaireIci);
+      const infosPrevenir = Object.assign({}, infosMsg, { nbColis: l.ecartAnnonce || 0 });
+      const geste = recuperationFaite
         ? ''
-        : annonceSansColisSaisi
+        : prevenirSeulement
           ? `${l.telephone
                 ? `<a class="tournee-geste tournee-geste--prevenir" target="_blank" rel="noopener"
-                      href="https://wa.me/${escapeHTML(numeroInternational(l.telephone))}">💬 Prévenir que j'arrive</a>`
-                : ''}
+                      href="${escapeHTML(lienDepartRecuperation(l.telephone, infosPrevenir))}">💬 Prévenir que j'arrive</a>`
+                : `<div class="tournee-rien tournee-rien--attente">Pas de numéro pour la prévenir — passez par le bureau.</div>`}
              <div class="tournee-rien tournee-rien--attente">Le départ ne sera consigné que lorsque le bureau aura enregistré ses colis. Prévenez-le si elle en a bien pour vous.</div>`
         : enRoute
           ? `<button type="button" class="tournee-geste tournee-geste--recuperer" data-tournee-recuperer="${escapeHTML(l.fournisseurId)}">📦 Récupéré, tout (${l.nbAPrendre})</button>`
@@ -3616,6 +3682,8 @@
     setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);
 
     currentProfile = profile;
+    // Le nom que signent les messages WhatsApp rédigés par config.js (messageDestinataire).
+    window.cltNomAffiche = profile.full_name || '';
 
     document.getElementById('user-name').textContent = profile.full_name || '';
     document.getElementById('user-first-name').textContent = profile.full_name || '';

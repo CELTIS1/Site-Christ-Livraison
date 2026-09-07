@@ -1234,9 +1234,10 @@ document.addEventListener("click", (e) => {
   const id = item.dataset.id;
   const statut = item.dataset.statut || "";
   const link = buildTrackingLink(numero, id);
-  const refTxt = numero ? " " + numero : "";
-  const msg = `Bonjour, votre colis${refTxt} ${statutMessageClient(statut)}.\n` +
-    `Suivez-le en direct ici : ${link}\n\n— Christ Livraison & Transport`;
+  // Depuis le 07/09/2026 la phrase vient de messageDestinataire(), la même que celle proposée
+  // juste après l'enregistrement d'un statut sur le téléphone du livreur. window.cltNomAffiche
+  // est posé par la page quand elle connaît le nom de la personne connectée.
+  const msg = messageDestinataire({ statut: statut, numero: numero, lienSuivi: link, livreurNom: (window.cltNomAffiche || "") });
   const wa = tel
     ? `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`
     : `https://wa.me/?text=${encodeURIComponent(msg)}`;
@@ -1281,6 +1282,60 @@ function messageDepartRecuperation(infos) {
     + "Je pars maintenant pour venir récupérer " + quoiAccorde + lieu + ".\n"
     + "À tout de suite.\n\n"
     + "— Christ Livraison & Transport";
+}
+
+/* LE MESSAGE DU BOUTON WHATSAPP DE LA TOURNÉE. (07/09/2026, Celtis : « tous les boutons
+   WhatsApp ont des messages bien spécifiques. ») Il ne dit pas « je pars » — c'est le geste
+   d'à côté qui le dit et le consigne — il demande si les colis sont prêts et combien. */
+function messageContactRecuperation(infos) {
+  const i = infos || {};
+  const qui = (i.livreurNom || "").trim();
+  const ou = (i.commune || "").trim();
+  const entete = qui
+    ? "Bonjour, ici " + qui + ", livreur chez Christ Livraison & Transport."
+    : "Bonjour, ici Christ Livraison & Transport.";
+  // Depuis le téléphone du livreur, c'est lui qui parle ; depuis le bureau, c'est l'entreprise
+  // qui annonce son livreur. Même question au bout : prêts, et combien.
+  const corps = qui
+    ? "Je suis chargé de la récupération de vos colis aujourd'hui" + (ou ? " à " + ou : "") + ".\n"
+      + "Sont-ils prêts, et combien y en a-t-il ? Dites-moi à quelle heure je peux passer."
+    : "Notre livreur passe récupérer vos colis aujourd'hui" + (ou ? " à " + ou : "") + ".\n"
+      + "Sont-ils prêts, et combien y en a-t-il ? Dites-nous à quelle heure il peut passer.";
+  return entete + "\n\n" + corps + "\n\n— Christ Livraison & Transport";
+}
+function lienContactRecuperation(telephone, infos) {
+  const tel = telephone ? numeroInternational(telephone) : "";
+  const txt = encodeURIComponent(messageContactRecuperation(infos));
+  return tel ? "https://wa.me/" + tel + "?text=" + txt : "https://wa.me/?text=" + txt;
+}
+
+/* LE MESSAGE AU DESTINATAIRE, SELON CE QUI VIENT D'ÊTRE ENREGISTRÉ. (07/09/2026, Celtis :
+   « lorsqu'il a mis "je pars livrer" ou "en livraison", il faudrait que ça déclenche un message
+   pour la personne à qui ça doit être livré. ») Une phrase par situation, du point de vue de
+   celui qui attend le colis, signée du livreur quand on connaît son nom. Le lien de suivi
+   reste au bout, comme dans le bouton « Prévenir sur WhatsApp ». */
+function messageDestinataire(infos) {
+  const i = infos || {};
+  const qui = (i.livreurNom || "").trim();
+  const ref = i.numero ? " " + String(i.numero).trim() : "";
+  const lien = i.lienSuivi ? "\nSuivez-le ici : " + i.lienSuivi : "";
+  const entete = qui
+    ? "Bonjour, ici " + qui + ", livreur chez Christ Livraison & Transport."
+    : "Bonjour, ici Christ Livraison & Transport.";
+  const corps = ({
+    en_livraison: "Je suis en route pour vous livrer votre colis" + ref + ". Merci de rester joignable, je vous appelle en arrivant.",
+    livre:        "Votre colis" + ref + " vient de vous être livré. Merci de votre confiance.",
+    non_livre:    "Je suis passé pour vous livrer votre colis" + ref + " sans pouvoir vous joindre. Dites-moi quand et où je peux repasser.",
+    recupere:     "Votre colis" + ref + " est entre nos mains. Nous vous prévenons dès le départ du livreur.",
+    retour:       "Votre colis" + ref + " repart chez l'expéditeur, faute d'avoir pu vous le remettre.",
+    en_attente:   "Votre colis" + ref + " est bien enregistré chez nous.",
+  })[i.statut] || ("Votre colis" + ref + " vient d'être mis à jour.");
+  return entete + "\n\n" + corps + lien + "\n\n— Christ Livraison & Transport";
+}
+function lienMessageDestinataire(telephone, infos) {
+  const tel = telephone ? numeroInternational(telephone) : "";
+  const txt = encodeURIComponent(messageDestinataire(infos));
+  return tel ? "https://wa.me/" + tel + "?text=" + txt : "https://wa.me/?text=" + txt;
 }
 
 /* Le lien WhatsApp de cette annonce, prêt à poser dans un href.
@@ -6413,6 +6468,7 @@ function tourneesDeRecuperation(options) {
 
      Le couple est aussi ce que dit la requête de contrôle écrite le même jour dans
      _sql-prive/ : les deux doivent répondre la même chose, sans quoi l'une des deux ment. */
+  const restes = [];
   if (opts.horsProgramme && colisConnus) {
     const dejaProgrammees = new Set(retenues.map(function (p) {
       return String(p.livreur_id) + "\u0000" + String(p.fournisseur_id);
@@ -6431,11 +6487,20 @@ function tourneesDeRecuperation(options) {
       parCouple.get(cle).push(c);
     });
     parCouple.forEach(function (siens, cle) {
-      const aPrendre = siens.filter(function (c) {
-        return c.statut === "en_attente" && colisAttenduAuPlusTard(c, jour);
-      });
+      /* CHAQUE JOUR, SON AFFICHAGE. (07/09/2026, Celtis : « il ne faudrait pas que l'affichage
+         d'hier ou d'un jour passé puisse être toujours visible dans le jour d'aujourd'hui. »)
+         Jusqu'ici tout colis en attente confié au livreur faisait remonter sa cliente CHAQUE
+         jour, tant qu'il n'était pas pris : une semaine plus tard, la tournée montrait encore
+         les restes de la semaine passée. Une cliente hors programme n'entre désormais que le
+         jour de ses colis — voir colisHorsProgrammeDuJour(). Les restes des jours passés sont
+         comptés à part (restesDesJoursPasses) pour que le bureau les reprogramme, sans qu'ils
+         encombrent la journée. */
+      const aPrendre = siens.filter(function (c) { return colisHorsProgrammeDuJour(c, jour); });
       const prisAujourdHui = siens.filter(function (c) {
         return jourEvenementColis(c, "recupere") === jour;
+      });
+      siens.forEach(function (c) {
+        if (c.statut === "en_attente" && !colisHorsProgrammeDuJour(c, jour) && colisAttenduAuPlusTard(c, jour)) restes.push(c);
       });
       /* Sans colis qui attend, il n'y a rien à ALLER CHERCHER. Sur le téléphone d'un livreur,
          cela suffit à écarter la cliente : son écran répond à « où me reste-t-il à aller ? », et
@@ -6496,7 +6561,29 @@ function tourneesDeRecuperation(options) {
   return {
     jour: jour, rang: rang, colisConnus: colisConnus,
     lignes: lignes, total: totalDesLignes(lignes),
+    // Les colis en attente confiés à un livreur, d'un jour ANTÉRIEUR, que personne n'a
+    // programmés ce jour-là. Ils ne font plus de ligne ; le bureau les voit comptés, pour les
+    // reprogrammer. Une marchandise qui attend chez une cliente ne doit pas être oubliée, mais
+    // elle n'appartient pas à la journée qu'on regarde.
+    restesDesJoursPasses: restes.length,
   };
+}
+
+/* UN COLIS HORS PROGRAMME APPARTIENT À UN SEUL JOUR. (07/09/2026)
+
+   Le jour prévu par la cliente, s'il est renseigné ; sinon le jour où le bureau l'a saisi ; et,
+   dans tous les cas, le jour où le livreur a déclenché « Je pars » pour lui. Ce jour-là, la
+   cliente est dans la tournée sans être programmée. Le lendemain, elle n'y est plus : c'est au
+   bureau de la programmer s'il veut qu'on y retourne. */
+function colisHorsProgrammeDuJour(colis, jour) {
+  const c = colis || {};
+  if (c.statut !== "en_attente") return false;
+  const j = String(jour || "").slice(0, 10);
+  if (!j) return false;
+  if (jourAbidjan(c.collecte_depart_at) === j) return true;
+  const prevu = c.jour_recuperation_prevu;
+  if (prevu !== null && prevu !== undefined && prevu !== "") return String(prevu).slice(0, 10) === j;
+  return jourAbidjan(c.created_at) === j;
 }
 
 /* LE TOTAL D'UN PAQUET DE LIGNES, ÉCRIT UNE SEULE FOIS. (28/08/2026)

@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260906recup">
-<script src="theme.js?v=20260906recup"></script>
-<script src="splash.js?v=20260906recup"></script>
+<link rel="stylesheet" href="style.css?v=20260907jour">
+<script src="theme.js?v=20260907jour"></script>
+<script src="splash.js?v=20260907jour"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1400,11 +1400,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260906recup"></script>
-<script src="config.js?v=20260906recup"></script>
-<script src="clients-dashboard.js?v=20260906recup"></script>
-<script src="biometric-lock.js?v=20260906recup"></script>
-<script src="clt-select-recherche.js?v=20260906recup"></script>
+<script src="clt-common.js?v=20260907jour"></script>
+<script src="config.js?v=20260907jour"></script>
+<script src="clients-dashboard.js?v=20260907jour"></script>
+<script src="biometric-lock.js?v=20260907jour"></script>
+<script src="clt-select-recherche.js?v=20260907jour"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -5894,16 +5894,20 @@ const fin   = jour + 'T23:59:59.999Z';
 // depuis son téléphone. Demandée ici, en un seul endroit, parce que les quatre questions ci-dessous
 // partagent la même liste de champs — en oublier une aurait fait clignoter la marque « en route »
 // selon la question qui a rapporté le colis en dernier.
-const champs = 'id, fournisseur_id, statut, recupere_at, livreur_collecte_id, collecte_depart_at';
+// created_at et jour_recuperation_prevu depuis le 07/09/2026 : c'est ce qui dit à quel jour
+// appartient un colis hors programme (colisHorsProgrammeDuJour, config.js). Si la colonne du
+// jour prévu manque encore, on relit sans elle plutôt que de laisser l'onglet vide.
+const CHAMPS_COMPLETS = 'id, fournisseur_id, statut, recupere_at, livreur_collecte_id, collecte_depart_at, created_at, jour_recuperation_prevu';
+const CHAMPS_SANS_JOUR_PREVU = 'id, fournisseur_id, statut, recupere_at, livreur_collecte_id, collecte_depart_at, created_at';
 
+const questions = (champs) => {
 const programmees = fournisseurIds.length ? [
 supabaseClient.from('colis').select(champs)
 .in('fournisseur_id', fournisseurIds).eq('statut', 'en_attente'),
 supabaseClient.from('colis').select(champs)
 .in('fournisseur_id', fournisseurIds).gte('recupere_at', debut).lte('recupere_at', fin),
 ] : [];
-
-const reponses = await Promise.all(programmees.concat([
+return Promise.all(programmees.concat([
 // Tout ce qui attend et qui est confié à quelqu'un, quelle que soit la cliente. Le tri entre
 // « déjà programmé » et « hors programme » n'est pas fait ici : il est fait une seule fois,
 // dans tourneesDeRecuperation(), pour que le bureau et le livreur trient de la même façon.
@@ -5917,6 +5921,13 @@ supabaseClient.from('colis').select(champs)
 supabaseClient.from('colis').select(champs)
 .gte('recupere_at', debut).lte('recupere_at', fin),
 ]));
+};
+
+let reponses = await questions(CHAMPS_COMPLETS);
+if (reponses.some(r => r.error && colonneAbsente(r.error))) {
+console.warn("Colonne jour_recuperation_prevu absente : le script SQL du 31/08/2026 n'a pas encore été exécuté.");
+reponses = await questions(CHAMPS_SANS_JOUR_PREVU);
+}
 
 const parId = new Map();
 for (const { data, error } of reponses) {
@@ -6010,8 +6021,17 @@ travailFait: true,
 const { lignes, total, colisConnus } = tournee;
 const dateLabel = recapDayLabel(jour);
 
+/* LES RESTES DES JOURS PASSÉS. (07/09/2026, Celtis : « chaque jour, son affichage »)
+   Un colis en attente confié à un livreur un autre jour ne fait plus de carte dans la journée
+   qu'on regarde. Mais une marchandise qui attend chez une cliente ne doit pas être oubliée :
+   on la compte, en une ligne, pour que le bureau la reprogramme. */
+const restes = tournee.restesDesJoursPasses || 0;
+const ligneRestes = restes > 0
+? `<div class="meta prog-restes" style="margin-top:8px; color:#b45309;">⏳ <strong>${restes}</strong> colis en attente d'un autre jour, confié${restes > 1 ? 's' : ''} à un livreur sans tournée ${escapeHTML(dateLabel)} — à reprogrammer si la récupération est encore à faire.</div>`
+: '';
+
 if (!lignes.length) {
-cltPoserHTML(body, `<div class="empty-state">Aucune récupération programmée ${escapeHTML(dateLabel)}. Choisissez une cliente et un livreur ci-dessus pour commencer la tournée.</div>`);
+cltPoserHTML(body, `<div class="empty-state">Aucune récupération programmée ${escapeHTML(dateLabel)}. Choisissez une cliente et un livreur ci-dessus pour commencer la tournée.</div>${ligneRestes}`);
 return;
 }
 
@@ -6042,11 +6062,10 @@ const compte = (n) => colisConnus ? String(n) : '<span style="color:#8a94a3;">à
 const travailFini = (l) => l.horsProgramme && !l.nbAPrendre && l.nbDejaPris > 0;
 
 const carteHTML = (l) => {
-const inter = numeroInternational(l.telephone);
 const contacts = l.telephone
 ? `<div class="tournee-contacts">
 <a class="tournee-contact tournee-contact--appel" href="tel:${escapeHTML(numeroCompose(l.telephone))}">📞 Appeler</a>
-<a class="tournee-contact tournee-contact--whatsapp" href="https://wa.me/${escapeHTML(inter)}" target="_blank" rel="noopener">💬 WhatsApp</a>
+<a class="tournee-contact tournee-contact--whatsapp" href="${escapeHTML(lienContactRecuperation(l.telephone, { livreurNom: '', commune: l.commune }))}" target="_blank" rel="noopener">💬 WhatsApp</a>
 </div>`
 : `<div class="tournee-contacts">
 <span class="tournee-contact tournee-contact--absent">Numéro non renseigné — à compléter dans sa fiche</span>
@@ -6209,6 +6228,7 @@ TOTAL · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's
 <strong>${colisConnus ? total.nbDejaPris : 'à venir'}</strong> déjà pris
 </div>
 ${total.nbHorsProgramme > 0 ? `<div class="meta" style="margin-top:6px; color:#b45309;">Le total ci-dessus compte tout, y compris <strong>${total.nbHorsProgramme}</strong> cliente${total.nbHorsProgramme > 1 ? 's' : ''} du repli.</div>` : ''}
+${ligneRestes}
 <!-- L'ÉCART, DANS LE TOTAL ET PAS SEULEMENT SUR LES CARTES. (30/08/2026)
      Chaque carte porte déjà sa mention ambre, mais il faut faire défiler tout l'écran pour les
      trouver. Le total est le seul endroit qu'on lit à coup sûr. On compte les CLIENTES autant

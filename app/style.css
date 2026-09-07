@@ -2634,3 +2634,32 @@ html[data-theme="dark"] .tournee-pris-confirme--saisie{background:rgba(30,143,78
 .tournee-rien--attente{
   display:block; margin-top:6px; font-size:12.5px; line-height:1.45;
 }
+
+
+/* ---------- L'invitation à prévenir le destinataire (07/09/2026) ----------
+   Posée en bas de l'écran du livreur juste après l'enregistrement d'un statut : un vrai lien
+   WhatsApp déjà rédigé (voir proposerMessageDestinataire dans app/livreur.html), et « Plus
+   tard ». Au-dessus de la barre d'onglets, sous le pouce. */
+.wa-invite{
+  position:fixed; left:12px; right:12px; bottom:calc(84px + env(safe-area-inset-bottom, 0px));
+  z-index:1200; background:var(--white); color:var(--navy-dark);
+  border:1.5px solid #25d366; border-radius:14px; padding:12px 14px;
+  box-shadow:0 12px 32px rgba(0,0,0,.18);
+  animation:wa-invite-entree .25s ease-out;
+}
+@keyframes wa-invite-entree{ from{ transform:translateY(16px); opacity:0; } to{ transform:none; opacity:1; } }
+.wa-invite__titre{ font-weight:700; font-size:15px; margin-bottom:2px; }
+.wa-invite__sous{ font-size:13px; color:var(--muted); margin-bottom:10px; }
+.wa-invite__gestes{ display:flex; gap:8px; align-items:center; }
+.wa-invite__envoyer{
+  flex:1; display:inline-flex; align-items:center; justify-content:center; min-height:46px;
+  background:#25d366; color:#fff; font-weight:700; border-radius:10px; text-decoration:none;
+  padding:0 12px; -webkit-tap-highlight-color:transparent;
+}
+.wa-invite__envoyer:active{ transform:translateY(1px); }
+.wa-invite__plus-tard{
+  min-height:46px; padding:0 14px; border:1.5px solid var(--border); background:transparent;
+  color:var(--muted); border-radius:10px; font-weight:600; cursor:pointer;
+}
+html[data-theme="dark"] .wa-invite{ color:#f1f5f9; }
+@media (prefers-reduced-motion: reduce){ .wa-invite{ animation:none; } }

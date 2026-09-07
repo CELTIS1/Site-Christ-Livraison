@@ -143,6 +143,9 @@ vm.runInContext([
      rien. Le décompte de la publication compte donc aussi les fichiers qui n'arrivent pas
      au bout. */
   'departDeCollecte', 'messageDepartRecuperation', 'lienDepartRecuperation',
+  /* Chaque jour, son affichage (07/09/2026) : le tri des colis hors programme par jour, et le
+     message du bouton WhatsApp de la tournée. Même leçon : le dessin les appelle. */
+  'colisHorsProgrammeDuJour', 'messageContactRecuperation', 'lienContactRecuperation',
   /* Le lieu de récupération, écrit une seule fois pour les deux écrans. (29/08/2026)
      Même leçon que les trois précédentes : le dessin les appelle, donc elles entrent ici, sinon
      le banc s'arrête au lieu de rougir. */
@@ -392,13 +395,13 @@ const annuaireHP = (id) => CLIENTES_HP[id] || {};
 const COLIS_HP = COLIS.concat([
   // F4 : deux colis en attente, confiés à Koffi pour la collecte, et AUCUNE programmation
   // aujourd'hui. C'est le cas exact d'Eric Zokou : celui qu'il ne faut surtout pas oublier.
-  { id: 'H1', fournisseur_id: 'F4', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1' },
-  { id: 'H2', fournisseur_id: 'F4', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1' },
+  { id: 'H1', fournisseur_id: 'F4', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', created_at: AUJ + 'T06:00:00.000Z' },
+  { id: 'H2', fournisseur_id: 'F4', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', created_at: AUJ + 'T06:00:00.000Z' },
   // F5 : tout a déjà été ramassé chez elle. Plus rien ne l'attend, elle n'a donc rien à faire
   // dans une tournée où personne ne l'a programmée — la faire entrer serait un détour pour rien.
   { id: 'H3', fournisseur_id: 'F5', statut: 'en_cours', recupere_at: AUJ + 'T07:00:00.000Z', livreur_collecte_id: 'L1' },
   // F6 : un colis bien en attente, mais confié à AYA. Chez Koffi, il n'existe pas.
-  { id: 'H4', fournisseur_id: 'F6', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L2' },
+  { id: 'H4', fournisseur_id: 'F6', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L2', created_at: AUJ + 'T06:00:00.000Z' },
 ]);
 
 const avecHP = tourneesDeRecuperation({
@@ -936,7 +939,7 @@ titre("Le bureau voit aussi ce que personne n'a programmé");
 contexte.progJourChoisi = AUJ;
 contexte.progLignes = PROG.filter(p => p.jour === AUJ);
 contexte.progColis = COLIS.concat([
-  { id: 'C6', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L2' },
+  { id: 'C6', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L2', created_at: AUJ + 'T06:00:00.000Z' },
   { id: 'C7', fournisseur_id: 'F9', statut: 'en_attente', recupere_at: null, livreur_collecte_id: null },
 ]);
 poseHTML = '';
@@ -1021,7 +1024,7 @@ contexte.fournisseurs = fournisseursAvant.concat([
     commune_recuperation: 'Marcory', adresse_recuperation: 'Remblais' },
 ]);
 contexte.progColis = COLIS.concat([
-  { id: 'C6', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L2' },
+  { id: 'C6', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L2', created_at: AUJ + 'T06:00:00.000Z' },
   // F8 : personne ne l'a programmée, rien ne l'attend plus, et pourtant Koffi y est passé
   // ce matin. C'est exactement la cliente qui n'avait sa place dans aucun des deux tiroirs.
   { id: 'C8', fournisseur_id: 'F8', statut: 'recupere', recupere_at: AUJ + 'T09:30:00.000Z', livreur_collecte_id: 'L1' },
@@ -1361,7 +1364,7 @@ contexte.tourneeClientes = Object.assign({}, contexte.tourneeClientes, {
   F4: { id: 'F4', company_name: 'Everythingfromlondon2', phone: '0700000004', commune_recuperation: 'Cocody', adresse_recuperation: 'Angré' },
 });
 contexte.tourneeColis = contexte.tourneeColis.concat([
-  { id: 'H1', fournisseur_id: 'F4', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1' },
+  { id: 'H1', fournisseur_id: 'F4', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', created_at: AUJ + 'T06:00:00.000Z' },
 ]);
 poseLivreur = '';
 renderMaTournee();
@@ -1422,8 +1425,14 @@ verifier("chaque cliente joignable a un bouton d'appel ET un bouton WhatsApp",
   && (poseLivreur.match(/tournee-contact--whatsapp/g) || []).length === 2,
   poseLivreur);
 verifier("le lien WhatsApp porte le numéro international, pas le numéro local",
-  /href="https:\/\/wa\.me\/2250700000004"/.test(poseLivreur),
+  /href="https:\/\/wa\.me\/2250700000004(\?text=[^"]*)?"/.test(poseLivreur),
   'wa.me refuse un numéro local : le bouton s\'ouvrirait sur une page d\'erreur');
+// Depuis le 07/09/2026 (Celtis : « tous les boutons WhatsApp ont des messages bien
+// spécifiques »), le bouton n'ouvre plus une conversation vide : il demande si les colis sont
+// prêts et combien — messageContactRecuperation(), dans config.js.
+verifier("et il porte un message, qui demande si les colis sont prêts",
+  /href="https:\/\/wa\.me\/2250700000004\?text=[^"]*Sont-ils%20pr%C3%AAts/.test(poseLivreur),
+  'un bouton WhatsApp muet laisse le livreur rédiger, et chaque livreur écrit autre chose');
 verifier("il s'ouvre à côté, sans emporter la tournée avec lui",
   /wa\.me[^"]*"[^>]*target="_blank"[^>]*rel="noopener"/.test(poseLivreur),
   'le livreur perdrait sa liste en écrivant un message');
@@ -1622,9 +1631,9 @@ contexte.tourneeClientes = {
   F2: { id: 'F2', company_name: 'Bintou Shop',  phone: '',           commune_recuperation: 'Cocody',   adresse_recuperation: '' },
 };
 contexte.tourneeColis = [
-  { id: 'C1', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
-  { id: 'C2', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
-  { id: 'C3', fournisseur_id: 'F2', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
+  { id: 'C1', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null, created_at: AUJ + 'T06:00:00.000Z' },
+  { id: 'C2', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null, created_at: AUJ + 'T06:00:00.000Z' },
+  { id: 'C3', fournisseur_id: 'F2', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null, created_at: AUJ + 'T06:00:00.000Z' },
 ];
 contexte.allColis = [];
 gestesPoses.length = 0;
@@ -1725,9 +1734,9 @@ verifier("aucun colis à récupérer, aucune écriture",
 
 // g) Les boutons de la carte sont réellement branchés, et branchés sur la bonne cliente.
 contexte.tourneeColis = [
-  { id: 'C1', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
-  { id: 'C2', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
-  { id: 'C3', fournisseur_id: 'F2', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null },
+  { id: 'C1', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null, created_at: AUJ + 'T06:00:00.000Z' },
+  { id: 'C2', fournisseur_id: 'F1', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null, created_at: AUJ + 'T06:00:00.000Z' },
+  { id: 'C3', fournisseur_id: 'F2', statut: 'en_attente', recupere_at: null, livreur_collecte_id: 'L1', collecte_depart_at: null, created_at: AUJ + 'T06:00:00.000Z' },
 ];
 contexte.renderAll = () => {};
 gestesPoses.length = 0;

@@ -300,9 +300,10 @@ verifier("et le bureau l'affiche vraiment",
    ========================================================================================== */
 titre("Le geste rendu au livreur");
 
-verifier("le geste n'est effacé que lorsqu'il n'y a vraiment plus rien à faire chez elle",
-  /const geste = \(l\.rienARecuperer \|\| plusRienAFaireIci\)/.test(livreur),
-  'rienARecuperer a changé de sens, et le travail déjà fait est venu s\'y ajouter');
+verifier("le geste n'est effacé que lorsque la récupération chez elle est déjà faite (07/09/2026 : sinon, on peut toujours la prévenir)",
+  /const recuperationFaite = plusRienAFaireIci && l\.nbDejaPris > 0/.test(livreur)
+  && /const geste = recuperationFaite\s*\?\s*''/.test(livreur),
+  'Celtis : le troisième bouton doit être là — Je pars, Prévenir que j\'arrive, ou Récupéré tout');
 verifier("le message annonce les colis qu'on a, jamais ceux qu'on espère",
   /nbColis: l\.nbAPrendre/.test(livreur),
   'annoncer le nombre promis dirait « je viens pour vos trois colis » à une cliente qui en a déjà deux sur la moto');

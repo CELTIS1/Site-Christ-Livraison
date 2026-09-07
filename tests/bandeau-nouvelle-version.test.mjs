@@ -377,10 +377,12 @@ verifier(
    v72, le 06/09/2026 — L'essentiel garde les raccourcis comptes / mots de passe, pastille « code à dicter » (equipe.html).
    v73, le 06/09/2026 — la journée de travail du livreur (config.js, livreur.html) : étiquette 20260906journee.
    v74, le 06/09/2026 — le livreur confirme ce qu'il a pris (config.js, style.css, livreur.html, equipe.html) : étiquette 20260906recup.
-   v75, le 06/09/2026 — espace cliente : relevé en tête, toutes dates, Dupliquer copie le téléphone (fournisseur.html). */
+   v75, le 06/09/2026 — espace cliente : relevé en tête, toutes dates, Dupliquer copie le téléphone (fournisseur.html).
+   v76, le 07/09/2026 — un colis enregistré « livré » reste dans « Ma journée » (livreur.html).
+   v77, le 07/09/2026 — chaque jour son affichage, trois boutons, messages WhatsApp précis (config.js, style.css, livreur.html, equipe.html) : étiquette 20260907jour. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v76'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v77'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
