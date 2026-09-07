@@ -1150,12 +1150,12 @@ renderProgrammationBody();
 verifier("une journée sans programmation dit quoi faire, au lieu de rester muette",
   /Aucune récupération programmée/.test(poseHTML) && /cliente/.test(poseHTML), poseHTML);
 
-titre("L'écran du soir s'ouvre sur demain");
+titre("L'écran s'ouvre sur AUJOURD'HUI (07/09/2026, Celtis : d'office la date du jour), « Demain » pour le soir");
 
-verifier("progGetJour() retombe sur demain quand rien n'est choisi",
-  (() => { contexte.progJourChoisi = null; return contexte.progGetJour() === demainAbidjan(); })());
-verifier("un bouton permet quand même de programmer pour aujourd'hui",
-  /id="btn-prog-aujourdhui"/.test(equipe));
+verifier("progGetJour() retombe sur aujourd'hui quand rien n'est choisi",
+  (() => { contexte.progJourChoisi = null; return contexte.progGetJour() === contexte.aujourdhuiAbidjan(); })());
+verifier("un bouton permet quand même de programmer pour demain",
+  /id="btn-prog-demain"/.test(equipe));
 
 /* On n'inspecte pas ce code à l'œil : on l'EXÉCUTE sur le décor de carton monté plus haut.
    Lire « champ.value = demainAbidjan() » quelque part dans le bloc ne prouve rien — il y a
@@ -1171,15 +1171,15 @@ Object.assign(contexte, {
 });
 vm.runInContext(blocDe(equipe, 'initProgrammationControls', 'equipe.html') + '\ninitProgrammationControls();', contexte);
 
-verifier("à l'ouverture, le champ de date porte DEMAIN",
-  champsFictifs['prog-jour'].value === demainAbidjan(),
-  'ouvert sur ' + champsFictifs['prog-jour'].value + ' au lieu de ' + demainAbidjan());
-ecouteurs['btn-prog-aujourdhui'].click();
-verifier("le bouton « Aujourd'hui » ramène bien sur aujourd'hui",
+verifier("à l'ouverture, le champ de date porte AUJOURD'HUI",
   champsFictifs['prog-jour'].value === contexte.aujourdhuiAbidjan(),
-  champsFictifs['prog-jour'].value);
+  'ouvert sur ' + champsFictifs['prog-jour'].value + ' au lieu de ' + contexte.aujourdhuiAbidjan());
 ecouteurs['btn-prog-demain'].click();
-verifier("et le bouton « Demain » y retourne", champsFictifs['prog-jour'].value === demainAbidjan());
+verifier("le bouton « Demain » passe bien sur demain",
+  champsFictifs['prog-jour'].value === demainAbidjan() && contexte.progGetJour() === demainAbidjan(),
+  champsFictifs['prog-jour'].value);
+ecouteurs['btn-prog-aujourdhui'].click();
+verifier("et le bouton « Aujourd'hui » y ramène", champsFictifs['prog-jour'].value === contexte.aujourdhuiAbidjan() && contexte.progGetJour() === contexte.aujourdhuiAbidjan());
 
 // Le bouton « Retirer » est redessiné à chaque chargement : un écouteur posé sur chaque bouton
 // disparaîtrait avec lui, et le bouton deviendrait muet au premier rafraîchissement. On simule

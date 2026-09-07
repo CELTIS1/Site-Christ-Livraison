@@ -371,6 +371,11 @@
 .eq-aide{ margin-top:8px; }
 .eq-aide > summary{ cursor:pointer; font-size:12px; color:var(--muted); font-weight:600; list-style:none; }
 .eq-aide > summary::-webkit-details-marker{ display:none; }
+/* La note et le nombre annoncé sur une ligne : la note large, le nombre étroit. (07/09/2026) */
+.prog-note-et-nombre{ grid-template-columns:1fr 200px; align-items:start; }
+.prog-note-et-nombre .prog-nombre input{ text-align:center; font-weight:700; font-size:16px; }
+.prog-note-et-nombre .field-hint{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+@media(max-width:640px){ .prog-note-et-nombre{ grid-template-columns:1fr; } }
 #section-aujourdhui{ padding:12px 14px !important; }
 #section-aujourdhui .ess-entete{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:0 0 8px; }
 #section-aujourdhui .ess-entete h2{ margin:0; font-size:15px; }
@@ -704,25 +709,23 @@ saisis ensuite lui seront rattachés automatiquement.
 </select>
 </div>
 </div>
-<div class="field">
-<label>Note pour le livreur <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
-<input type="text" id="prog-note" placeholder="Ex. : passer après 9h, portail bleu..." maxlength="200">
-</div>
-
-<!-- CE QUE LA CLIENTE ANNONCE AU TÉLÉPHONE. (30/08/2026)
+<!-- CE QUE LA CLIENTE ANNONCE AU TÉLÉPHONE. (30/08/2026, épuré le 07/09/2026)
      Le champ reste facultatif : on programme très bien un passage sans savoir combien de colis
      attendent. Mais quand elle l'a dit, il faut pouvoir l'écrire — sans quoi le système compte
      zéro, l'écran du livreur affiche « rien à récupérer » chez une cliente où on l'envoie
      exprès, et son bouton « Je pars » disparaît. Constaté sur un iPhone le 30/08/2026.
-     inputmode numeric : sur un téléphone, le pavé s'ouvre sur les chiffres. -->
+     Épuré le 07/09/2026 (Celtis : « mieux traité et épuré ») : une petite case à côté de la
+     note, une phrase d'aide, pas un paragraphe. inputmode numeric : le pavé s'ouvre sur les
+     chiffres. -->
+<div class="field-row prog-note-et-nombre">
 <div class="field">
-<label>Colis annoncés par la cliente <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
-<input type="number" id="prog-nb-colis" min="0" max="200" step="1" inputmode="numeric"
-       placeholder="Ex. : 3 — laissez vide si elle ne l'a pas dit">
-<div class="field-hint" style="font-size:13px; color:var(--muted); margin-top:4px;">
-Ce qu'elle annonce au téléphone, pas ce qui est déjà enregistré. Le livreur verra
-« 3 annoncés · 2 saisis » s'il en manque. L'écart disparaît quand les colis sont saisis — ou
-quand vous reposez la tournée avec le vrai nombre.
+<label>Note pour le livreur <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
+<input type="text" id="prog-note" placeholder="Ex. : passer après 9h, portail bleu..." maxlength="200">
+</div>
+<div class="field prog-nombre">
+<label for="prog-nb-colis">Colis annoncés <span style="font-weight:400; color:var(--muted);">(si elle l'a dit)</span></label>
+<input type="number" id="prog-nb-colis" min="0" max="200" step="1" inputmode="numeric" placeholder="—">
+<div class="field-hint">Le livreur verra l'écart entre ce nombre et ce qu'il prend.</div>
 </div>
 </div>
 
@@ -3796,6 +3799,30 @@ return html;
 // Le jour regardé est celui du filtre de date de la liste des colis (filtreDateColis) :
 // aujourd'hui à l'ouverture, ou la date choisie, ou « toutes les dates » si on a appuyé sur ce
 // bouton. Anomalies et colis à affecter suivent ce jour ; l'argent non remis ne suit aucun jour.
+/* Les quatre chiffres du jour, demandés à la base et non à la liste chargée. Cinq comptages
+   sans rapatrier une ligne (head: true). Le jour est celui d'Abidjan (= UTC), les bornes sont
+   donc T00:00:00Z et T23:59:59.999Z. Une réponse en erreur laisse l'affichage approximatif. */
+let bilanDuJour = null;
+async function chargerBilanDuJour(){
+if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+const jour = (typeof aujourdhuiAbidjan === 'function') ? aujourdhuiAbidjan() : todayLocalISODate();
+const debut = jour + 'T00:00:00Z', fin = jour + 'T23:59:59.999Z';
+const compter = (q) => q.then(r => (r.error ? null : (r.count || 0)));
+const tete = () => supabaseClient.from('colis').select('id', { count: 'exact', head: true });
+try {
+  const [recus, livres, nonLivres, retours, enCours] = await Promise.all([
+    compter(tete().gte('created_at', debut).lte('created_at', fin)),
+    compter(tete().gte('livre_at', debut).lte('livre_at', fin)),
+    compter(tete().eq('statut', 'non_livre').gte('non_livre_at', debut).lte('non_livre_at', fin)),
+    compter(tete().eq('statut', 'retour').gte('retour_at', debut).lte('retour_at', fin)),
+    compter(tete().in('statut', ['recupere', 'en_livraison'])),
+  ]);
+  if ([recus, livres, nonLivres, retours, enCours].some(v => v === null)) { bilanDuJour = null; return; }
+  bilanDuJour = { jour, recus, livres, echecs: nonLivres + retours, enCours };
+} catch (e) { console.warn('Bilan du jour :', e && e.message ? e.message : e); bilanDuJour = null; }
+renderAujourdhui();
+}
+
 function renderAujourdhui(){
 if (!document.getElementById('aujourdhui-actions')) return;
 const colis = Array.isArray(allColis) ? allColis : [];
@@ -3847,11 +3874,29 @@ const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 // config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
 const jourEvt = (c, st) => (typeof jourEvenementColis === 'function') ? jourEvenementColis(c, st) : dayKey(c[st + '_at']);
 const tuile = (n, label, teinte) => `<span class="ess-stat ${n ? 'est-' + teinte : ''}"><span class="n">${n}</span><span>${label}</span></span>`;
+/* EXACTEMENT LES COLIS DU JOUR. (07/09/2026, Celtis : « la première partie qui traite des colis
+   du jour doit être correcte, exactement pour les colis du jour, pour que ce soit fiable. »)
+   Compter dans allColis ne l'était pas : la liste ne tient que les 500 colis les plus récents
+   par date de réception, et un colis reçu il y a dix jours et livré aujourd'hui peut être
+   au-delà. Les quatre chiffres viennent donc de la base (chargerBilanDuJour), comptés sur le
+   jour d'Abidjan ; en attendant sa réponse, ou si elle échoue, on compte ce qu'on a et on le
+   dit d'un « ~ ». */
+const jourAbj = (typeof aujourdhuiAbidjan === 'function') ? aujourdhuiAbidjan() : aujourdhui;
+const jourEvtAbj = (c, st) => (typeof jourEvenementColis === 'function') ? jourEvenementColis(c, st) : dayKey(c[st + '_at']);
+const local = {
+  recus:   colis.filter(c => (typeof jourAbidjan === 'function' ? jourAbidjan(c.created_at) : dayKey(c.created_at)) === jourAbj).length,
+  livres:  colis.filter(c => jourEvtAbj(c, 'livre') === jourAbj).length,
+  echecs:  colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && jourEvtAbj(c, c.statut) === jourAbj).length,
+  enCours: colis.filter(c => c.statut === 'recupere' || c.statut === 'en_livraison').length,
+};
+const exact = (bilanDuJour && bilanDuJour.jour === jourAbj) ? bilanDuJour : null;
+const b = exact || local;
+const approx = exact ? '' : '~';
 set('aujourdhui-jour',
-  tuile(colis.filter(c => dayKey(c.created_at) === aujourdhui).length, 'reçus aujourd\'hui', 'ambre') +
-  tuile(colis.filter(c => jourEvt(c, 'livre') === aujourdhui).length, 'livrés aujourd\'hui', 'vert') +
-  tuile(colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && jourEvt(c, c.statut) === aujourdhui).length, 'échecs aujourd\'hui', 'rouge') +
-  tuile(colis.filter(c => c.statut === 'recupere' || c.statut === 'en_livraison').length, 'encore en cours', 'ambre'));
+  tuile(approx + b.recus, 'reçus aujourd\'hui', 'ambre') +
+  tuile(approx + b.livres, 'livrés aujourd\'hui', 'vert') +
+  tuile(approx + b.echecs, 'échecs aujourd\'hui', 'rouge') +
+  tuile(approx + b.enCours, 'encore en cours', 'ambre'));
 set('aujourdhui-actions', ouRien(
   pastille(cat.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
   pastille(cat.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
@@ -4842,6 +4887,8 @@ allColis = data;
 colisOffset = data.length;
 colisHasMore = data.length === COLIS_PAGE_SIZE;
 renderColis();
+// Les chiffres du jour, exacts, à chaque chargement (le premier comme ceux de fond).
+chargerBilanDuJour();
 }
 
 // Version « de fond » de loadColis() : c'est celle qu'utilisent Realtime, le rafraîchissement
@@ -5838,7 +5885,10 @@ let progEnCours = false;
 let progErreur = '';
 
 function progGetJour(){
-return progJourChoisi || demainAbidjan();
+// D'office AUJOURD'HUI (07/09/2026, Celtis : « d'office les dates d'affichage doivent être
+// celles du jour ; la tournée d'office programmée sur la date du jour »). Le bouton « Demain »
+// reste, pour le soir.
+return progJourChoisi || aujourdhuiAbidjan();
 }
 
 function progMsg(text, type){
@@ -8896,9 +8946,9 @@ loadCorrectionsMontants();
 }
 })();
 
-// Les commandes de la tournée de récupération. Sa date lui est propre, et elle démarre sur
-// DEMAIN et non sur aujourd'hui : cet écran sert le soir, à préparer la matinée suivante.
-// Programmer pour aujourd'hui reste possible d'un bouton, mais ce n'est pas le geste courant.
+// Les commandes de la tournée de récupération. Sa date lui est propre. Jusqu'au 07/09/2026
+// elle démarrait sur DEMAIN (l'écran du soir) ; Celtis veut la date du jour d'office, et le
+// bouton « Demain » pour préparer la matinée suivante.
 (function initProgrammationControls(){
 const champ = document.getElementById('prog-jour');
 const btnDemain = document.getElementById('btn-prog-demain');
@@ -8907,7 +8957,7 @@ const btnAjout = document.getElementById('btn-prog-ajouter');
 const body = document.getElementById('prog-body');
 
 if (champ) {
-if (!champ.value) champ.value = demainAbidjan();
+if (!champ.value) champ.value = aujourdhuiAbidjan();
 champ.addEventListener('change', () => {
 progJourChoisi = champ.value || null;
 chargerProgrammations();
@@ -8915,15 +8965,15 @@ chargerProgrammations();
 }
 if (btnDemain) {
 btnDemain.addEventListener('click', () => {
-progJourChoisi = null;
+progJourChoisi = demainAbidjan();
 if (champ) champ.value = demainAbidjan();
 chargerProgrammations();
 });
 }
 if (btnAuj) {
 btnAuj.addEventListener('click', () => {
-progJourChoisi = aujourdhuiAbidjan();
-if (champ) champ.value = progJourChoisi;
+progJourChoisi = null;
+if (champ) champ.value = aujourdhuiAbidjan();
 chargerProgrammations();
 });
 }
