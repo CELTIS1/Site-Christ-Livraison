@@ -1401,6 +1401,19 @@
      Renvoie { ok, statutPrecedent, tentativesPrecedentes, extraApplique }.
      ok === false signifie qu'absolument rien n'a été écrit (mise en file d'attente impossible,
      envoi refusé) : l'appelant ne doit alors rien annoncer. */
+  /* L'HEURE DE L'ÉVÉNEMENT, POSÉE LOCALEMENT EN ATTENDANT LA BASE. (06/09/2026)
+     C'est la base qui pose livre_at, non_livre_at, retour_at, recupere_at (déclencheurs). Mais
+     l'écran ne relit pas la ligne après l'écriture : la copie locale passait « livré » SANS
+     livre_at, et « Ma journée » — qui reconnaît un colis traité aujourd'hui à son horodatage —
+     ne le voyait plus jusqu'au prochain rechargement. Trouvé par le parcours en faux navigateur
+     le 6 septembre. On pose donc l'heure d'ici, localement seulement (elle ne part jamais en
+     base : la base a la sienne, qui fait foi et remplace celle-ci au prochain chargement). */
+  function horodatageLocalDuStatut(existing, statut){
+    const champ = (typeof HORODATAGE_DU_STATUT !== 'undefined') ? HORODATAGE_DU_STATUT[statut] : null;
+    if (!champ || !existing || existing.statut === statut || existing[champ]) return {};
+    return { [champ]: new Date().toISOString() };
+  }
+
   async function appliquerStatutColis(o){
     const id = o.id;
     const statut = o.statut;
@@ -1444,7 +1457,7 @@
       let miseEnFile = false;
       try {
         await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: pickedPhoto || null, extra, userId: currentUser.id, timestamp: Date.now() });
-        if (existing) Object.assign(existing, { statut, observation }, extra);
+        if (existing) Object.assign(existing, horodatageLocalDuStatut(existing, statut), { statut, observation }, extra);
         miseEnFile = true;
       } catch (e) {
         console.error(e);
@@ -1470,7 +1483,7 @@
         let miseEnFile = false;
         try {
           await queueAdd({ colisId: id, statut, observation, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: pickedPhoto, extra, userId: currentUser.id, timestamp: Date.now() });
-          if (existing) Object.assign(existing, { statut, observation }, extra);
+          if (existing) Object.assign(existing, horodatageLocalDuStatut(existing, statut), { statut, observation }, extra);
           miseEnFile = true;
         } catch (e) {
           console.error(e);
@@ -1499,7 +1512,7 @@
       let miseEnFile = false;
       try {
         await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: null, extra, userId: currentUser.id, timestamp: Date.now() });
-        if (existing) Object.assign(existing, { statut, observation, photo_livraison_url }, extra);
+        if (existing) Object.assign(existing, horodatageLocalDuStatut(existing, statut), { statut, observation, photo_livraison_url }, extra);
         miseEnFile = true;
       } catch (e) {
         console.error(e);
@@ -1513,7 +1526,7 @@
     // Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel.
     rememberWrite(id, { statut, observation, photo_livraison_url, ...extra });
     const idx = allColis.findIndex(c => c.id === id);
-    if (idx !== -1) Object.assign(allColis[idx], { statut, observation, photo_livraison_url }, extra);
+    if (idx !== -1) Object.assign(allColis[idx], horodatageLocalDuStatut(allColis[idx], statut), { statut, observation, photo_livraison_url }, extra);
     renderAll();
     return { ok: true, horsReseau: false, statutPrecedent, tentativesPrecedentes, extraApplique: extra };
   }
@@ -1669,7 +1682,7 @@
     tri.eligibles.forEach(c => {
       if (!reussis.has(c.id)) return;
       const idx = allColis.findIndex(x => x.id === c.id);
-      if (idx !== -1) Object.assign(allColis[idx], payloadLotColis(c, statut));
+      if (idx !== -1) Object.assign(allColis[idx], horodatageLocalDuStatut(allColis[idx], statut), payloadLotColis(c, statut));
       lotMesIds.delete(c.id);
     });
     renderAll();

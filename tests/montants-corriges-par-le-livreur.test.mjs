@@ -270,6 +270,10 @@ verifier("le seuil est bien à 10 000, pas plus haut",
    ========================================================================================== */
 titre("Le geste d'enregistrement, exécuté pour de vrai");
 
+// Depuis le 06/09/2026, le geste pose aussi l'horodatage du statut sur la carte locale
+// (livre_at, etc.), comme le fait la base, pour que le colis reste dans « Ma journée ».
+vm.runInContext(declarationDe(sourceConfig, 'HORODATAGE_DU_STATUT', 'config.js'), contexte);
+vm.runInContext(blocDe(livreur, 'horodatageLocalDuStatut', 'livreur.html'), contexte);
 vm.runInContext(blocDe(livreur, 'appliquerStatutColis', 'livreur.html'), contexte);
 
 const envoyes = [];

@@ -380,7 +380,7 @@ verifier(
    v75, le 06/09/2026 — espace cliente : relevé en tête, toutes dates, Dupliquer copie le téléphone (fournisseur.html). */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v75'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v76'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
