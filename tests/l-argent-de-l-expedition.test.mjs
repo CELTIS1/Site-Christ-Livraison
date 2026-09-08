@@ -486,8 +486,12 @@ verifier('aucun manque n\'est signalé sur une expédition, même case cochée',
   montantManquantALaLivraison(expedition({ article_non_encaisse: true, montant_article: 15000 })) === 0
   && montantManquantALaLivraison(expedition({ livraison_non_encaissee: true })) === 0,
   'celui qui criait était celui qui avait tort');
-verifier('un colis ordinaire signale toujours son manque',
-  montantManquantALaLivraison(ordinaire({ article_non_encaisse: true })) === 20000,
+// 08/09/2026 : « article non encaissé » veut désormais dire « article soldé » (tout payé chez la
+// vendeuse) — ce n'est plus un manque. Le manque d'un colis ordinaire, c'est la livraison non
+// encaissée.
+verifier('un colis ordinaire signale toujours son manque (livraison non encaissée)',
+  montantManquantALaLivraison(ordinaire({ livraison_non_encaissee: true })) > 0
+  && montantManquantALaLivraison(ordinaire({ article_non_encaisse: true })) === 0,
   'la protection d\'origine ne doit pas tomber avec la fausse alerte');
 
 /* « Déjà reversé » se calculait dans le dessin d'une tuile, et s'est mis à répondre zéro sur

@@ -215,9 +215,17 @@ titre('Règle 2 — un colis livré compte comme encaissé, sans que personne ai
   const exception = colis({ statut: 'livre', montant_article: 25000, article_non_encaisse: true });
   verifier("l'exception, elle, retire bien l'argent du compte",
     articleEncaisse(exception) === false && montantArticleEncaisse(exception) === 0);
-  verifier("et ce manque est nommé, pas simplement effacé",
-    montantManquantALaLivraison(exception) === 25000,
+  // 08/09/2026, « article soldé » (Celtis) : l'exception veut dire que le destinataire a tout
+  // payé chez la vendeuse. Rien ne manque dans la caisse ; la livraison se retient sur elle.
+  verifier("et ce n'est pas un manque : l'argent est chez la vendeuse",
+    montantManquantALaLivraison(exception) === 0,
     String(montantManquantALaLivraison(exception)));
+  const solde = colis({ statut: 'livre', montant_article: 25000, montant_livraison: 1500, article_non_encaisse: true });
+  verifier("la livraison d'un article soldé est retenue sur la vendeuse (frais de course)",
+    fraisCourseColis(solde) === 1500 && livraisonEncaissee(solde) === false && montantNetADevoir(solde) === -1500,
+    JSON.stringify({ fc: fraisCourseColis(solde), le: livraisonEncaissee(solde), net: montantNetADevoir(solde) }));
+  verifier("sauf si la livraison a été payée au livreur",
+    fraisCourseColis(Object.assign({}, solde, { livraison_payee: true })) === 0);
 }
 {
   const pasLivre = colis({ statut: 'en_livraison', montant_article: 25000 });
@@ -322,8 +330,8 @@ titre('Règle 5 — encaissé = déjà reversé + reste dû, toujours et partout
   verifier("l'invariant tient sur un échantillon tordu",
     t.articleEncaisse === reverse + t.articleADevoir,
     `${t.articleEncaisse} ≠ ${reverse} + ${t.articleADevoir}`);
-  verifier("le manquant est compté à part, et n'entre pas dans l'encaissé",
-    t.manquantALaLivraison === 4000 && t.articleEncaisse === 25000,
+  verifier("l'article soldé n'entre pas dans l'encaissé, et n'est pas un manque (08/09/2026)",
+    t.manquantALaLivraison === 0 && t.articleEncaisse === 25000,
     JSON.stringify({ m: t.manquantALaLivraison, e: t.articleEncaisse }));
   verifier("un total encaissé ne dépasse jamais un total enregistré",
     t.articleEncaisse <= t.articleEnregistre && t.livraisonEncaissee <= t.livraisonEnregistree,
@@ -516,7 +524,8 @@ titre("Les mots posés sur un colis décrivent son état réel, pas un état moy
     [colis({ statut: 'en_attente', montant_article: 5000 }),                                   'Pas encore encaissé'],
     [colis({ statut: 'en_livraison', montant_livraison: 1500, livraison_payee: true }),        "Livraison payée d'avance"],
     [colis({ statut: 'livre', montant_article: 5000 }),                                        'Encaissé'],
-    [colis({ statut: 'livre', montant_article: 5000, article_non_encaisse: true }),            'Argent non encaissé'],
+    [colis({ statut: 'livre', montant_article: 5000, article_non_encaisse: true }),            'Article soldé — livraison retenue'],
+    [colis({ statut: 'livre', montant_article: 5000, montant_livraison: 1000, livraison_non_encaissee: true }), 'Argent non encaissé'],
     [colis({ statut: 'livre', montant_article: 5000, reverse_au_fournisseur_at: '2026-08-25T10:00:00Z' }), 'Encaissé et reversé'],
   ];
   cas.forEach(([c, attendu]) => {

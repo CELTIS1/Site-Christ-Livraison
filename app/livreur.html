@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260907reseau">
-<script src="theme.js?v=20260907reseau"></script>
-<script src="splash.js?v=20260907reseau"></script>
+<link rel="stylesheet" href="style.css?v=20260908solde">
+<script src="theme.js?v=20260908solde"></script>
+<script src="splash.js?v=20260908solde"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -792,9 +792,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260907reseau"></script>
-<script src="config.js?v=20260907reseau"></script>
-<script src="biometric-lock.js?v=20260907reseau"></script>
+<script src="clt-common.js?v=20260908solde"></script>
+<script src="config.js?v=20260908solde"></script>
+<script src="biometric-lock.js?v=20260908solde"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2083,7 +2083,7 @@
                    était l'ancien piège (personne ne cochait jamais, et les clientes lisaient 0 FCFA
                    encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
                    colis a été remis sans que l'argent de l'article rentre. -->
-              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#c0392b !important; border:1.5px solid #c0392b; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À utiliser seulement si vous avez remis le colis sans récupérer l'argent de l'article.">${c.article_non_encaisse ? '⚠️ Article NON encaissé' : "Article non encaissé ?"}</button>`}
+              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#1B4374 !important; border:1.5px solid #1B4374; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À cocher si le destinataire a déjà tout payé chez la vendeuse (article et livraison) : vous n'encaissez rien, la livraison est retenue sur la vendeuse.">${c.article_non_encaisse ? '✅ Article soldé' : "Article soldé ?"}</button>`}
               ${montantsChampsHTML(c)}
               <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
               <div class="field" style="margin-top:8px;">
@@ -2297,7 +2297,30 @@
         const existing = allColis.find(c => c.id === id);
         const newVal = !(existing && existing.article_non_encaisse);
 
-        if (newVal && !confirm("Confirmez-vous avoir remis ce colis SANS récupérer l'argent de l'article ?\n\nCe montant sera retiré de ce que CLT doit à la cliente, et l'équipe le verra.")) return;
+        /* ARTICLE SOLDÉ. (08/09/2026, Celtis) Le destinataire a tout payé chez la vendeuse :
+           le livreur n'encaisse rien, et la livraison est RETENUE sur la vendeuse. Pour que la
+           retenue soit juste, il faut son montant : si l'équipe ne l'a pas saisi, le livreur le
+           donne ici, et il part avec le drapeau dans la même écriture. */
+        const aEcrire = { article_non_encaisse: newVal };
+        if (newVal) {
+          const dejaLivraison = existing ? (Number(montantLivraisonColis(existing)) || 0) : 0;
+          if (!dejaLivraison) {
+            const saisi = await cltPrompt({
+              title: 'Article soldé — montant de la livraison',
+              sub: "Le destinataire a tout payé chez la vendeuse. Indiquez le prix de la livraison : il sera retranché de ce que CLT doit à la vendeuse.",
+              placeholder: 'Ex : 1500', inputMode: 'numeric', okLabel: 'Enregistrer',
+            });
+            if (saisi === null || saisi === undefined) return;
+            const nb = Number(String(saisi).replace(/[^0-9]/g, ''));
+            if (!Number.isFinite(nb) || nb <= 0) { cltToast('Indiquez le prix de la livraison, en FCFA.', { type: 'warning' }); return; }
+            // Les deux montants partent ensemble, comme le bouton « Enregistrer » le fait déjà
+            // (montantsColisAEcrire) : un colis ancien n'a qu'un total global, et la livraison
+            // ne se lit que si l'article est posé à côté (voir montantLivraisonColis).
+            Object.assign(aEcrire, montantsColisAEcrire(existing ? montantArticleColis(existing) : 0, nb));
+          } else if (!(await cltConfirm({ title: 'Article soldé ?', detail: `Le destinataire a tout payé chez la vendeuse. Vous n'encaissez rien ; la livraison (${formatMontant(dejaLivraison)}) sera retranchée de ce que CLT doit à la vendeuse.`, okLabel: 'Oui, soldé' }))) {
+            return;
+          }
+        }
 
         const enFile = async () => {
           await queueAdd({
@@ -2306,12 +2329,12 @@
             observation: existing ? existing.observation : null,
             photo_livraison_url: existing ? existing.photo_livraison_url : null,
             photoBlob: null,
-            extra: { article_non_encaisse: newVal },
+            extra: aEcrire,
             userId: currentUser.id,
             timestamp: Date.now(),
           });
-          if (existing) existing.article_non_encaisse = newVal;
-          rememberWrite(id, { article_non_encaisse: newVal });
+          if (existing) Object.assign(existing, aEcrire);
+          rememberWrite(id, aEcrire);
         };
 
         if (!navigator.onLine) {
@@ -2319,7 +2342,7 @@
           try { await enFile(); }
           catch (e) {
             console.error(e);
-            alert("Impossible d'enregistrer « Article non encaissé » hors connexion. Merci de réessayer une fois connecté(e).");
+            alert("Impossible d'enregistrer « Article soldé » hors connexion. Merci de réessayer une fois connecté(e).");
           }
           btn.disabled = false;
           await refreshOfflineBanner();
@@ -2330,7 +2353,7 @@
         btn.disabled = true;
         const prevText = btn.textContent;
         btn.textContent = '…';
-        const { error } = await supabaseClient.from('colis').update({ article_non_encaisse: newVal }).eq('id', id);
+        const { error } = await supabaseClient.from('colis').update(aEcrire).eq('id', id);
         btn.disabled = false;
         if (error) {
           try { await enFile(); await refreshOfflineBanner(); }
@@ -2343,8 +2366,8 @@
           renderAll();
           return;
         }
-        rememberWrite(id, { article_non_encaisse: newVal });
-        if (existing) existing.article_non_encaisse = newVal;
+        rememberWrite(id, aEcrire);
+        if (existing) Object.assign(existing, aEcrire);
         renderAll();
       });
     });

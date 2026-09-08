@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260907reseau">
-<script src="theme.js?v=20260907reseau"></script>
-<script src="splash.js?v=20260907reseau"></script>
+<link rel="stylesheet" href="style.css?v=20260908solde">
+<script src="theme.js?v=20260908solde"></script>
+<script src="splash.js?v=20260908solde"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1403,11 +1403,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260907reseau"></script>
-<script src="config.js?v=20260907reseau"></script>
-<script src="clients-dashboard.js?v=20260907reseau"></script>
-<script src="biometric-lock.js?v=20260907reseau"></script>
-<script src="clt-select-recherche.js?v=20260907reseau"></script>
+<script src="clt-common.js?v=20260908solde"></script>
+<script src="config.js?v=20260908solde"></script>
+<script src="clients-dashboard.js?v=20260908solde"></script>
+<script src="biometric-lock.js?v=20260908solde"></script>
+<script src="clt-select-recherche.js?v=20260908solde"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3665,7 +3665,7 @@ ${c.statut === 'en_attente' ? `
 </div>
 </div>
 <div class="payment-checks">
-<label class="check-pill" title="À cocher seulement si le colis a été remis sans que l'argent de l'article rentre."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article non encaissé</label>
+<label class="check-pill" title="Le destinataire a tout payé chez la vendeuse (article et livraison) : rien n'est encaissé, la livraison est retenue sur la vendeuse."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
 <label class="check-pill"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
 </div>`}
 </div>
@@ -7748,7 +7748,7 @@ return montantArticleADevoir(c);
 function articlePaiementLabel(c) {
 if (!c) return '—';
 if (c.statut !== 'livre') return 'Pas encore encaissé';
-if (c.article_non_encaisse) return 'Article non encaissé';
+if (c.article_non_encaisse) return 'Article soldé';
 return c.reverse_au_fournisseur_at ? 'Encaissé et reversé' : 'Encaissé, à reverser';
 }
 
@@ -7861,7 +7861,7 @@ ${rows.map(c => `
 <td data-label="Encaissé" class="compta-row-encaisse">${formatMontant(montantArticleEncaisse(c)) || '0 FCFA'}</td>
 <td data-label="Argent">
 <div class="recap-row-checks">
-<label title="À cocher seulement si le colis a été remis sans que l'argent de l'article rentre."><input type="checkbox" class="compta-edit-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Argent non encaissé</label>
+<label title="Le destinataire a tout payé chez la vendeuse : rien n'est encaissé, la livraison est retenue sur elle."><input type="checkbox" class="compta-edit-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
 <div class="recap-row-etat">${articlePaiementLabel(c)}</div>
 </div>
 </td>
@@ -8116,7 +8116,7 @@ const options = ['<option value="">— Aucun livreur —</option>'].concat(
 ).join('');
 return `
 <select class="btn-corriger fiche-livreur-select" data-fiche-action="reaffecter" data-colis="${id}" aria-label="Livreur de ce colis">${options}</select>
-<button type="button" class="btn-corriger est-argent" data-fiche-action="encaisse" data-colis="${id}">${encaisse ? '↩️ Marquer non encaissé' : '💵 Marquer encaissé'}</button>
+<button type="button" class="btn-corriger est-argent" data-fiche-action="encaisse" data-colis="${id}">${encaisse ? '✅ Marquer article soldé' : '↩️ Article non soldé (encaissé par CLT)'}</button>
 <button type="button" class="btn-corriger" data-fiche-action="montants" data-colis="${id}">✏️ Corriger les montants</button>
 ${estExpedition(c) ? `<button type="button" class="btn-corriger est-argent" data-fiche-action="solde" data-colis="${id}">${fraisSoldes(c) ? '↩️ Frais non réglés' : '✅ Frais réglés (soldé)'}</button>` : ''}`;
 }
@@ -8233,7 +8233,7 @@ if (!c) return;
 const etaitEncaisse = !c.article_non_encaisse;
 const montant = formatMontant(montantArticleColis(c)) || '0 FCFA';
 const ok = await showConfirm({
-title: etaitEncaisse ? 'Marquer cet article NON encaissé ?' : 'Marquer cet article encaissé ?',
+title: etaitEncaisse ? 'Marquer cet article soldé (tout payé chez la vendeuse) ?' : 'Marquer cet article encaissé par CLT ?',
 detail: (c.numero ? c.numero + ' · ' : '') + montant,
 sub: etaitEncaisse
 ? "Ce montant sortira de ce que le livreur doit remettre, et de ce que CLT doit à la cliente. À faire quand le destinataire n'a pas payé."
@@ -8244,7 +8244,7 @@ danger: etaitEncaisse,
 if (!ok) return;
 if (btn) btn.disabled = true;
 await eqCorrigerColis(id, { article_non_encaisse: etaitEncaisse }, {
-message: etaitEncaisse ? 'Article marqué non encaissé.' : 'Article marqué encaissé.',
+message: etaitEncaisse ? 'Article marqué soldé : la livraison sera retenue sur la vendeuse.' : 'Article marqué encaissé par CLT.',
 details: { avant_article_non_encaisse: !!c.article_non_encaisse }
 });
 if (btn) btn.disabled = false;

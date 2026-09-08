@@ -391,10 +391,11 @@ verifier(
    v78, le 07/09/2026 — bureau : programmation sur la date du jour, bilan du jour compté par la base, champ épuré (equipe.html).
    v79, le 07/09/2026 — espace cliente : « Mes colis » s'ouvre sur aujourd'hui, journée vide qui propose tout (fournisseur.html).
    v80, le 07/09/2026 — espace cliente : le Récap s'ouvre sur aujourd'hui (fournisseur.html).
-   v81, le 07/09/2026 — le livreur sans réseau n'est plus déconnecté, feuille de route 1.6 (config.js, clt-common.js, style.css, les trois espaces) : étiquette 20260907reseau. */
+   v81, le 07/09/2026 — le livreur sans réseau n'est plus déconnecté, feuille de route 1.6 (config.js, clt-common.js, style.css, les trois espaces) : étiquette 20260907reseau.
+   v82, le 08/09/2026 — « Article soldé » : la livraison d'un colis soldé est retenue sur la vendeuse (config.js, livreur.html, equipe.html) : étiquette 20260908solde. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v81'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v82'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
