@@ -120,10 +120,26 @@
 
   // Ce que CLT doit encore reverser à une cliente, toutes dates confondues : l'argent des
   // articles livrés et encaissés, pas encore remis. Passe par config.js (montantArticleADevoir).
+  /* CE QUE CLT DOIT RÉELLEMENT SUR UN COLIS : LE NET. (08/09/2026, Celtis : « les frais
+     d'expédition ET les frais de course doivent être retranchés ; les totaux sont faux ».)
+     Jusqu'ici cet écran — et le geste de reversement — comptaient l'article brut
+     (montantArticleADevoir) et ignoraient les deux retenues. On passe par montantNetADevoir(),
+     la même fonction que le relevé de la cliente : article encaissé pour elle, moins l'avance de
+     gare, moins les frais de course (expédition, ou article soldé). Un net peut être négatif :
+     c'est alors elle qui doit à CLT, et cela doit se voir. */
+  function cdNet(c) {
+    if (typeof montantNetADevoir === 'function') return Number(montantNetADevoir(c)) || 0;
+    return typeof montantArticleADevoir === 'function' ? Number(montantArticleADevoir(c)) || 0 : 0;
+  }
+  function cdRetenues(c) {
+    const gare = typeof fraisExpeditionADevoir === 'function' ? Number(fraisExpeditionADevoir(c)) || 0 : 0;
+    const course = typeof fraisCourseADevoir === 'function' ? Number(fraisCourseADevoir(c)) || 0 : 0;
+    return { gare, course, total: gare + course };
+  }
   function cdAReverser(colis) {
     let total = 0, anciens = 0, plusVieux = null;
     colis.forEach((c) => {
-      const m = typeof montantArticleADevoir === 'function' ? Number(montantArticleADevoir(c)) || 0 : 0;
+      const m = cdNet(c);
       if (!m) return;
       total += m;
       const ref = jour(c.livre_at || c.updated_at || c.created_at);
@@ -454,7 +470,7 @@
     return !!(p && (p.role === 'admin' || p.acces_compta === true));
   }
   function cdColisAReverser(l) {
-    return (l.dettes || []).filter((c) => (typeof montantArticleADevoir === 'function' ? Number(montantArticleADevoir(c)) || 0 : 0) > 0)
+    return (l.dettes || []).filter((c) => cdNet(c) !== 0)
       .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
   }
   function cdReversementHTML(l) {
@@ -462,10 +478,12 @@
     const peut = cdPeutReverser();
     let html = '';
     if (aReverser.length) {
-      const total = aReverser.reduce((s, c) => s + (Number(montantArticleADevoir(c)) || 0), 0);
+      const total = aReverser.reduce((s, c) => s + cdNet(c), 0);
+      const retenues = aReverser.reduce((s, c) => s + cdRetenues(c).total, 0);
+      const detail = (c) => { const r = cdRetenues(c); if (!r.total) return ''; const m = []; if (r.gare) m.push('gare −' + money(r.gare)); if (r.course) m.push('course −' + money(r.course)); return `<span class="cd-rev-retenue">${(typeof montantArticleADevoir === 'function' && Number(montantArticleADevoir(c))) ? 'article ' + money(montantArticleADevoir(c)) + ' · ' : ''}${m.join(' · ')}</span>`; };
       html += `<div class="cd-rev">
-        <div class="cd-rev-titre">${aReverser.length} colis à reverser · ${money(total)}${peut ? '' : ' <span class="cd-muet">(le geste est réservé à la comptabilité)</span>'}</div>
-        <div class="cd-rev-liste">${aReverser.map((c) => `<label class="cd-rev-colis"><input type="checkbox" class="cd-rev-case" value="${esc(c.id)}" data-montant="${Number(montantArticleADevoir(c)) || 0}" checked${peut ? '' : ' disabled'}><span>${enClair(jour(c.created_at))}</span><span class="cd-rev-num">${esc(c.numero || '')}</span><span class="cd-rev-dest">${esc(c.destination || c.commune_destination || '')}</span><strong>${money(montantArticleADevoir(c))}</strong></label>`).join('')}</div>
+        <div class="cd-rev-titre">${aReverser.length} colis à reverser · ${money(total)}${retenues ? ` <span class="cd-muet">(dont ${money(retenues)} de retenues : avances de gare et frais de course)</span>` : ''}${peut ? '' : ' <span class="cd-muet">(le geste est réservé à la comptabilité)</span>'}</div>
+        <div class="cd-rev-liste">${aReverser.map((c) => `<label class="cd-rev-colis"><input type="checkbox" class="cd-rev-case" value="${esc(c.id)}" data-montant="${cdNet(c)}" checked${peut ? '' : ' disabled'}><span>${enClair(jour(c.created_at))}</span><span class="cd-rev-num">${esc(c.numero || '')}</span><span class="cd-rev-dest">${esc(c.destination || c.commune_destination || '')}${detail(c)}</span><strong class="${cdNet(c) < 0 ? 'cd-rouge' : ''}">${money(cdNet(c))}</strong></label>`).join('')}</div>
         ${peut ? `<div class="cd-rev-barre">
           <select id="cd-rev-mode" aria-label="Mode de reversement">${CD_MODES.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>
           <input type="text" id="cd-rev-note" class="search-input" placeholder="Note (facultatif : n° de transaction, remise en main propre…)" maxlength="200">

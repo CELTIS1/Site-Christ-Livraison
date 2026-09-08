@@ -91,6 +91,14 @@ verifier("l'argent passe par les fonctions communes, pas par une addition locale
   && !/c\.montant_article\s*\+|\+\s*c\.montant_article/.test(source),
   'un écran qui additionne lui-même finit par contredire la comptabilité');
 
+titre('Le net, pas l\'article brut (08/09/2026)');
+verifier("« à reverser » passe par montantNetADevoir (article − gare − course), et un net négatif compte",
+  /function cdNet\(c\)/.test(source) && /montantNetADevoir\(c\)/.test(source) && /cdNet\(c\) !== 0/.test(source));
+verifier('le geste de reversement envoie le net par colis et affiche les retenues',
+  /data-montant="\$\{cdNet\(c\)\}"/.test(source) && /cd-rev-retenue/.test(source) && /avances de gare et frais de course/.test(source));
+const equipeSrc = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+verifier("l'onglet Clients montre une colonne Retenues (gare + course)", /<th title="[^"]*">Retenues<\/th>/.test(equipeSrc) && /r\.t\.fraisExpeditionADevoir \+ r\.t\.fraisCourseADevoir/.test(equipeSrc));
+
 titre('Le graphique : un jour par barre, rien ne tombe entre deux');
 const parJour = CD.parJour([
   colis({ created_at: jourMoins(0) + 'T08:00:00', statut: 'livre' }),

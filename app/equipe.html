@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260908solde">
-<script src="theme.js?v=20260908solde"></script>
-<script src="splash.js?v=20260908solde"></script>
+<link rel="stylesheet" href="style.css?v=20260908net">
+<script src="theme.js?v=20260908net"></script>
+<script src="splash.js?v=20260908net"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1321,6 +1321,7 @@ saisis ensuite lui seront rattachés automatiquement.
 .cd-rev-colis input{ width:16px; height:16px; margin:0; }
 .cd-rev-num{ font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; color:var(--muted); }
 .cd-rev-dest{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--muted); }
+.cd-rev-retenue{ display:block; font-size:11px; color:#8a4b12; }
 .cd-rev-barre{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px; }
 .cd-rev-barre select{ border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); padding:7px 10px; font:inherit; font-size:13px; color:var(--navy); background:var(--white); }
 .cd-rev-barre .search-input{ flex:1 1 200px; min-width:160px; padding:7px 10px; font-size:13px; }
@@ -1403,11 +1404,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260908solde"></script>
-<script src="config.js?v=20260908solde"></script>
-<script src="clients-dashboard.js?v=20260908solde"></script>
-<script src="biometric-lock.js?v=20260908solde"></script>
-<script src="clt-select-recherche.js?v=20260908solde"></script>
+<script src="clt-common.js?v=20260908net"></script>
+<script src="config.js?v=20260908net"></script>
+<script src="clients-dashboard.js?v=20260908net"></script>
+<script src="biometric-lock.js?v=20260908net"></script>
+<script src="clt-select-recherche.js?v=20260908net"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -7782,7 +7783,7 @@ cltPoserHTML(summary, `
 ${t.nb} colis · ${t.nbLivres} livré(s) ·
 Articles enregistrés : <strong>${formatMontant(t.articleEnregistre) || '0 FCFA'}</strong> ·
 Articles encaissés : <strong>${formatMontant(t.articleEncaisse) || '0 FCFA'}</strong> ·
-À reverser aux clientes : <strong style="color:${t.netADevoir > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(t.netADevoir) || '0 FCFA'}</strong>
+${(t.fraisExpeditionADevoir + t.fraisCourseADevoir) ? `Retenues (gare + course) : <strong style="color:#8a4b12;">−${formatMontant(t.fraisExpeditionADevoir + t.fraisCourseADevoir)}</strong> · ` : ''}À reverser aux clientes : <strong style="color:${t.netADevoir > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(t.netADevoir) || '0 FCFA'}</strong>
 ${t.manquantALaLivraison > 0 ? ` · <strong style="color:#c0392b;">Non encaissé à la livraison : ${formatMontant(t.manquantALaLivraison)}</strong>` : ''}
 </div>
 `);
@@ -7802,7 +7803,7 @@ const recapRows = Object.keys(parFournisseur)
 cltPoserHTML(recapBox, `
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
-<thead><tr><th>Client</th><th>Colis</th><th>Livrés</th><th>Articles enregistrés</th><th>Articles encaissés</th><th>À reverser</th></tr></thead>
+<thead><tr><th>Client</th><th>Colis</th><th>Livrés</th><th>Articles enregistrés</th><th>Articles encaissés</th><th title="Avances de gare + frais de course (expéditions et articles soldés), encore à retenir">Retenues</th><th>À reverser</th></tr></thead>
 <tbody>
 ${recapRows.map(r => `
 <tr>
@@ -7811,6 +7812,7 @@ ${recapRows.map(r => `
 <td data-label="Livrés">${r.t.nbLivres}</td>
 <td data-label="Articles enregistrés">${formatMontant(r.t.articleEnregistre) || '0 FCFA'}</td>
 <td data-label="Articles encaissés">${formatMontant(r.t.articleEncaisse) || '0 FCFA'}</td>
+<td data-label="Retenues" style="color:#8a4b12;">${(r.t.fraisExpeditionADevoir + r.t.fraisCourseADevoir) ? '−' + formatMontant(r.t.fraisExpeditionADevoir + r.t.fraisCourseADevoir) + `<div class="meta" style="font-size:11px;">${r.t.fraisExpeditionADevoir ? 'gare ' + formatMontant(r.t.fraisExpeditionADevoir) : ''}${r.t.fraisExpeditionADevoir && r.t.fraisCourseADevoir ? ' · ' : ''}${r.t.fraisCourseADevoir ? 'course ' + formatMontant(r.t.fraisCourseADevoir) : ''}</div>` : '—'}</td>
 <td data-label="À reverser" style="color:${r.t.netADevoir > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.t.netADevoir) || '0 FCFA'}</td>
 </tr>
 `).join('')}
@@ -7821,6 +7823,7 @@ ${piedTotalHTML([
 { texte: t.nbLivres, label: 'Livrés' },
 { texte: formatMontant(t.articleEnregistre) || '0 FCFA', label: 'Articles enregistrés' },
 { texte: formatMontant(t.articleEncaisse) || '0 FCFA', label: 'Articles encaissés' },
+{ texte: (t.fraisExpeditionADevoir + t.fraisCourseADevoir) ? '−' + formatMontant(t.fraisExpeditionADevoir + t.fraisCourseADevoir) : '—', couleur: '#8a4b12', label: 'Retenues' },
 { texte: formatMontant(t.netADevoir) || '0 FCFA', couleur: t.netADevoir > 0 ? '#c0392b' : '#1a7d3c', label: 'À reverser' },
 ])}
 </table>
