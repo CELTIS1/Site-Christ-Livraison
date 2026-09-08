@@ -1250,3 +1250,20 @@ function cltDoitPrevenirMaj(locale, serveur) {
     });
   } catch (err) { /* dégradation silencieuse : l'absence du bandeau ne casse rien */ }
 })();
+
+
+/* L'ÉCRAN « PAS DE RÉSEAU ». (07/09/2026, feuille de route 1.6)
+   Posé sous la barre du haut quand le profil ne peut être lu faute de réseau et qu'aucune copie
+   n'existe sur l'appareil. La session reste ; « Réessayer » recharge. Le livreur a sa propre
+   copie (afficherSansReseau dans livreur.html) ; celle-ci sert aux autres espaces. */
+function afficherSansReseauCLT() {
+  const bloc = document.createElement('div');
+  bloc.className = 'sans-reseau';
+  bloc.innerHTML = '<div class="sans-reseau__icone">📵</div>'
+    + '<div class="sans-reseau__titre">Pas de réseau</div>'
+    + "<div class=\"sans-reseau__texte\">Impossible de vérifier votre compte pour l'instant. Vous n'êtes pas déconnecté : dès que la connexion revient, appuyez sur Réessayer.</div>"
+    + '<button type="button" class="btn sans-reseau__bouton">Réessayer</button>';
+  bloc.querySelector('button').addEventListener('click', function () { window.location.reload(); });
+  const barre = document.querySelector('.topbar');
+  if (barre) barre.insertAdjacentElement('afterend', bloc); else document.body.prepend(bloc);
+}

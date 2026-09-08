@@ -425,6 +425,12 @@ jobs:
       - name: Chaque jour son affichage, trois boutons, messages WhatsApp précis
         run: node tests/chaque-jour-son-affichage.test.mjs
 
+      # Feuille de route 1.6 (07/09/2026) : sans réseau, le livreur retrouve son écran (copie du
+      # profil et de la dernière liste sur l'appareil) au lieu d'être renvoyé vers la connexion.
+      # chargerProfil() est exécutée sur une fausse base ; les trois écrans lisent son drapeau.
+      - name: Le livreur sans réseau n'est plus déconnecté (feuille de route 1.6)
+        run: node tests/livreur-sans-reseau.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""

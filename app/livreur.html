@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260907jour">
-<script src="theme.js?v=20260907jour"></script>
-<script src="splash.js?v=20260907jour"></script>
+<link rel="stylesheet" href="style.css?v=20260907reseau">
+<script src="theme.js?v=20260907reseau"></script>
+<script src="splash.js?v=20260907reseau"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -578,6 +578,13 @@
     <span id="offline-queue-text"></span>
     <button type="button" class="btn btn-sm btn-outline" id="btn-sync-now">Synchroniser maintenant</button>
   </div>
+  <!-- Vue hors ligne (07/09/2026, feuille de route 1.6) : la dernière liste gardée sur l'appareil,
+       quand la lecture échoue faute de réseau. « Réessayer » relit ; le retour de la connexion
+       relit aussi tout seul. -->
+  <div class="offline-queue-banner hidden" id="vue-hors-ligne">
+    <span id="vue-hors-ligne-texte"></span>
+    <button type="button" class="btn btn-sm btn-outline" id="btn-reessayer-lecture">Réessayer</button>
+  </div>
 
   <!-- Notice de consentement RGPD-like (loi ivoirienne n° 2013-450) : n'apparaît que la première
        fois qu'une livraison en cours nécessiterait de partager la position, et tant que le livreur
@@ -785,9 +792,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260907jour"></script>
-<script src="config.js?v=20260907jour"></script>
-<script src="biometric-lock.js?v=20260907jour"></script>
+<script src="clt-common.js?v=20260907reseau"></script>
+<script src="config.js?v=20260907reseau"></script>
+<script src="biometric-lock.js?v=20260907reseau"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3536,18 +3543,80 @@
   //
   // Tant que l'historique complet n'a pas été rapatrié via « Charger plus » (onglet Finance),
   // les listes et le point d'argent ne portent que sur ce sous-ensemble.
+  /* LA DERNIÈRE LISTE, GARDÉE SUR L'APPAREIL. (07/09/2026, feuille de route 1.6)
+     À chaque lecture réussie, la liste est copiée dans localStorage, par utilisateur, datée.
+     Sans réseau, c'est elle qu'on affiche, avec un bandeau « Vue hors ligne du … » et un bouton
+     « Réessayer ». Une copie qui ne tient pas (quota) n'est pas une erreur : on continue sans. */
+  const vueHorsLigne = { active: false, listeDu: null, profilDu: null };
+  function cleColisEnCache(){ return 'clt:colis:' + (currentUser ? currentUser.id : ''); }
+  function memoriserColis(liste){
+    try { localStorage.setItem(cleColisEnCache(), JSON.stringify({ at: new Date().toISOString(), colis: liste })); } catch (e) { /* quota : tant pis */ }
+  }
+  function colisEnCache(){
+    try {
+      const v = JSON.parse(localStorage.getItem(cleColisEnCache()) || 'null');
+      return (v && Array.isArray(v.colis)) ? v : null;
+    } catch (e) { return null; }
+  }
+  function afficherBandeauHorsLigne(){
+    const b = document.getElementById('vue-hors-ligne');
+    const t = document.getElementById('vue-hors-ligne-texte');
+    if (!b || !t) return;
+    if (!vueHorsLigne.active) { b.classList.add('hidden'); return; }
+    const quand = vueHorsLigne.listeDu ? formatHeure(vueHorsLigne.listeDu) : null;
+    t.textContent = quand
+      ? `📵 Pas de réseau — vue hors ligne du ${quand}. Vos enregistrements seront envoyés au retour de la connexion.`
+      : `📵 Pas de réseau — aucune liste gardée sur cet appareil. Réessayez dès que la connexion revient.`;
+    b.classList.remove('hidden');
+  }
+  function afficherSansReseau(){
+    const bloc = document.createElement('div');
+    bloc.className = 'sans-reseau';
+    bloc.innerHTML = `
+      <div class="sans-reseau__icone">📵</div>
+      <div class="sans-reseau__titre">Pas de réseau</div>
+      <div class="sans-reseau__texte">Impossible de vérifier votre compte pour l'instant. Vous n'êtes pas déconnecté : dès que la connexion revient, appuyez sur Réessayer.</div>
+      <button type="button" class="btn sans-reseau__bouton">Réessayer</button>`;
+    bloc.querySelector('button').addEventListener('click', () => window.location.reload());
+    const barre = document.querySelector('.topbar');
+    if (barre) barre.insertAdjacentElement('afterend', bloc); else document.body.prepend(bloc);
+  }
+
   async function loadColis(){
     colisOffset = 0;
     colisHasMore = true;
-    const { data, error } = await supabaseClient
-      .from('colis')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(0, COLIS_PAGE_SIZE - 1);
-    if (error) { console.error(error); return; }
+    let reponse;
+    try {
+      reponse = await supabaseClient
+        .from('colis')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(0, COLIS_PAGE_SIZE - 1);
+    } catch (e) { reponse = { data: null, error: e }; }
+    const { data, error } = reponse;
+    if (error) {
+      if (estPanneReseau(error)) {
+        const memo = colisEnCache();
+        vueHorsLigne.active = true;
+        vueHorsLigne.listeDu = memo ? memo.at : null;
+        if (memo && !allColis.length) {
+          allColis = memo.colis;
+          colisOffset = allColis.length;
+          colisHasMore = false;
+          applyRecentWrites();
+          renderAll();
+        }
+        afficherBandeauHorsLigne();
+        return;
+      }
+      console.error(error); return;
+    }
+    vueHorsLigne.active = false; vueHorsLigne.listeDu = null;
+    afficherBandeauHorsLigne();
     allColis = data;
     colisOffset = data.length;
     colisHasMore = data.length === COLIS_PAGE_SIZE;
+    memoriserColis(data);
     applyRecentWrites(); // ne jamais écraser un changement que le livreur vient d'enregistrer
     renderAll();
   }
@@ -3657,7 +3726,13 @@
     if (!session) return;
     currentUser = session.user;
 
-    const profile = await getProfile(currentUser.id);
+    /* SANS RÉSEAU, ON NE RENVOIE PERSONNE. (07/09/2026, feuille de route 1.6) chargerProfil()
+       distingue « pas autorisé » de « pas de réponse » : sans réseau, c'est la copie du profil
+       gardée sur l'appareil qui sert ; sans copie, on propose de réessayer. Jamais de
+       redirection ni de déconnexion sur une panne de réseau. */
+    const lecture = await chargerProfil(currentUser.id);
+    const profile = lecture.profil;
+    if (!profile && lecture.horsLigne) { afficherSansReseau(); return; }
     if (!profile || profile.role !== 'livreur') {
       if (profile && profile.role === 'equipe') {
         window.location.href = 'equipe.html';
@@ -3666,6 +3741,7 @@
       }
       return;
     }
+    if (lecture.horsLigne) vueHorsLigne.profilDu = lecture.memoriseLe;
 
     // Sécurité : un compte pas encore validé (ou refusé) ne doit jamais accéder au tableau de bord.
     if (profile.status !== 'valide') {
@@ -4007,7 +4083,8 @@
   }
 
   document.getElementById('btn-sync-now').addEventListener('click', () => { flushOfflineQueue(); });
-  window.addEventListener('online', () => { flushOfflineQueue(); });
+  window.addEventListener('online', () => { flushOfflineQueue(); if (vueHorsLigne.active) loadColis(); });
+  { const b = document.getElementById('btn-reessayer-lecture'); if (b) b.addEventListener('click', () => loadColis()); }
   window.addEventListener('offline', () => { refreshOfflineBanner(); });
   setInterval(() => { if (navigator.onLine) flushOfflineQueue(); }, 20000);
 

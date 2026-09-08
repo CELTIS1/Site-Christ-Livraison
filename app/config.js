@@ -85,6 +85,67 @@ async function getProfile(userId) {
   return data;
 }
 
+/* LE PROFIL, MÊME SANS RÉSEAU. (07/09/2026, feuille de route 1.6)
+
+   getProfile() renvoie null sur une erreur réseau. Chaque écran lisait ce null comme « cette
+   personne n'a pas ce rôle », la renvoyait vers un autre espace, qui la déconnectait. Un livreur
+   qui ouvrait l'app sans réseau perdait donc sa session — au moment précis où la file d'attente
+   hors-ligne aurait dû le servir.
+
+   On sépare deux choses que null confondait : « pas autorisé » (le serveur a répondu : pas de
+   profil, ou refus) et « pas de réponse » (pas de réseau). Le profil lu avec succès est mis en
+   mémoire sur l'appareil, par utilisateur ; sans réseau, c'est lui qu'on rend, marqué horsLigne.
+   Sans réseau ET sans mémoire, on rend null avec horsLigne à vrai : l'écran doit alors proposer
+   de réessayer, jamais rediriger ni déconnecter. */
+function estErreurDeReseau(err) {
+  try { if (typeof navigator !== "undefined" && navigator.onLine === false) return true; } catch (e) {}
+  if (!err) return false;
+  if (err.status === 0 || err.status === 408 || err.status === 502 || err.status === 503 || err.status === 504) return true;
+  // PostgREST répond toujours avec un code (PGRST116, 42501…). Un message de fetch sans code,
+  // c'est le navigateur qui parle, pas le serveur.
+  const m = String(err.message || err.error_description || err).toLowerCase();
+  const sansCode = !err.code || err.code === "";
+  return sansCode && (m.includes("failed to fetch") || m.includes("load failed") || m.includes("networkerror")
+    || m.includes("network request failed") || m.includes("fetch") || m.includes("timeout") || m.includes("délai"));
+}
+function cleProfilEnCache(userId) { return "clt:profil:" + userId; }
+function profilEnCache(userId) {
+  try {
+    const brut = window.localStorage.getItem(cleProfilEnCache(userId));
+    if (!brut) return null;
+    const v = JSON.parse(brut);
+    return (v && v.profil && v.profil.id === userId) ? v : null;
+  } catch (e) { return null; }
+}
+function memoriserProfil(profil) {
+  if (!profil || !profil.id) return;
+  try { window.localStorage.setItem(cleProfilEnCache(profil.id), JSON.stringify({ at: new Date().toISOString(), profil: profil })); } catch (e) {}
+}
+async function chargerProfil(userId) {
+  let reponse;
+  try {
+    reponse = await supabaseClient
+      .from("profiles")
+      .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations, geoloc_consent_at")
+      .eq("id", userId)
+      .single();
+  } catch (e) {
+    reponse = { data: null, error: e };
+  }
+  const { data, error } = reponse || {};
+  if (error) {
+    if (estErreurDeReseau(error)) {
+      const memo = profilEnCache(userId);
+      console.warn("Profil : pas de réseau" + (memo ? ", lecture de la copie du " + memo.at : ", aucune copie sur l'appareil"));
+      return { profil: memo ? memo.profil : null, horsLigne: true, memoriseLe: memo ? memo.at : null };
+    }
+    console.error("Erreur chargement profil:", error);
+    return { profil: null, horsLigne: false, memoriseLe: null };
+  }
+  memoriserProfil(data);
+  return { profil: data, horsLigne: false, memoriseLe: null };
+}
+
 // Efface TOUTE trace de session Supabase dans LES DEUX stockages (localStorage ET
 // sessionStorage), et pas seulement celui de la page courante.
 // Pourquoi c'est indispensable : la session est écrite dans sessionStorage par la page de
@@ -101,7 +162,9 @@ function clearAllAuthStorage() {
       const keys = [];
       for (let i = 0; i < store.length; i++) {
         const k = store.key(i);
-        if (k && /^sb-.*-auth-token/.test(k)) keys.push(k);
+        // Les copies hors-ligne (profil, dernière liste) partent avec la session : elles sont
+        // à cette personne, pas à l'appareil. (07/09/2026)
+        if (k && (/^sb-.*-auth-token/.test(k) || /^clt:(profil|colis):/.test(k))) keys.push(k);
       }
       keys.forEach((k) => store.removeItem(k));
     });

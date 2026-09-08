@@ -152,11 +152,19 @@ verifier(
    ========================================================================================== */
 titre('3. Rien ne bouge tant que personne ne clique');
 
-const reloads = (commun.match(/location\s*\.\s*reload\s*\(/g) || []).length;
+// Depuis le 07/09/2026 (feuille de route 1.6), l'écran « Pas de réseau » a lui aussi un bouton
+// « Réessayer » qui recharge — sur un clic, jamais tout seul. On l'écarte avant de compter,
+// pour que la règle reste : hors ces deux boutons, rien ne recharge.
+const sansEcranReseau = commun.replace(/function afficherSansReseauCLT\(\) \{[\s\S]*?\n\}/, '');
+const reloads = (sansEcranReseau.match(/location\s*\.\s*reload\s*\(/g) || []).length;
 verifier(
-  'un seul rechargement dans tout le fichier',
+  'un seul rechargement dans tout le fichier (hors le bouton « Réessayer » de l\'écran sans réseau)',
   reloads === 1,
   reloads + ' occurrence(s) de location.reload() — il ne doit y en avoir qu\'une, celle du bouton'
+);
+verifier(
+  'et celui de l\'écran sans réseau est dans un clic, pas dans le flux',
+  /addEventListener\('click', function \(\) \{ window\.location\.reload\(\); \}\)/.test(commun)
 );
 
 // Et cette unique occurrence doit être DANS le gestionnaire de clic du bouton « Mettre à jour ».
@@ -382,10 +390,11 @@ verifier(
    v77, le 07/09/2026 — chaque jour son affichage, trois boutons, messages WhatsApp précis (config.js, style.css, livreur.html, equipe.html) : étiquette 20260907jour.
    v78, le 07/09/2026 — bureau : programmation sur la date du jour, bilan du jour compté par la base, champ épuré (equipe.html).
    v79, le 07/09/2026 — espace cliente : « Mes colis » s'ouvre sur aujourd'hui, journée vide qui propose tout (fournisseur.html).
-   v80, le 07/09/2026 — espace cliente : le Récap s'ouvre sur aujourd'hui (fournisseur.html). */
+   v80, le 07/09/2026 — espace cliente : le Récap s'ouvre sur aujourd'hui (fournisseur.html).
+   v81, le 07/09/2026 — le livreur sans réseau n'est plus déconnecté, feuille de route 1.6 (config.js, clt-common.js, style.css, les trois espaces) : étiquette 20260907reseau. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v80'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v81'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

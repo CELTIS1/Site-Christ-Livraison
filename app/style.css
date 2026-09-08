@@ -2663,3 +2663,11 @@ html[data-theme="dark"] .tournee-pris-confirme--saisie{background:rgba(30,143,78
 }
 html[data-theme="dark"] .wa-invite{ color:#f1f5f9; }
 @media (prefers-reduced-motion: reduce){ .wa-invite{ animation:none; } }
+
+/* ---------- L'écran « Pas de réseau » (07/09/2026, feuille de route 1.6) ---------- */
+.sans-reseau{ max-width:520px; margin:40px auto; padding:28px 22px; text-align:center; background:var(--white); border:1.5px solid var(--border); border-radius:16px; }
+.sans-reseau__icone{ font-size:40px; line-height:1; margin-bottom:10px; }
+.sans-reseau__titre{ font-size:20px; font-weight:800; color:var(--navy-dark); margin-bottom:8px; }
+.sans-reseau__texte{ color:var(--muted); font-size:15px; line-height:1.5; margin-bottom:16px; }
+.sans-reseau__bouton{ min-height:46px; padding:0 22px; }
+html[data-theme="dark"] .sans-reseau__titre{ color:#f1f5f9; }

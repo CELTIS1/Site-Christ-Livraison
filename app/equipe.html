@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260907jour">
-<script src="theme.js?v=20260907jour"></script>
-<script src="splash.js?v=20260907jour"></script>
+<link rel="stylesheet" href="style.css?v=20260907reseau">
+<script src="theme.js?v=20260907reseau"></script>
+<script src="splash.js?v=20260907reseau"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1403,11 +1403,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260907jour"></script>
-<script src="config.js?v=20260907jour"></script>
-<script src="clients-dashboard.js?v=20260907jour"></script>
-<script src="biometric-lock.js?v=20260907jour"></script>
-<script src="clt-select-recherche.js?v=20260907jour"></script>
+<script src="clt-common.js?v=20260907reseau"></script>
+<script src="config.js?v=20260907reseau"></script>
+<script src="clients-dashboard.js?v=20260907reseau"></script>
+<script src="biometric-lock.js?v=20260907reseau"></script>
+<script src="clt-select-recherche.js?v=20260907reseau"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -9577,7 +9577,10 @@ const session = await requireAuth();
 if (!session) return;
 currentUser = session.user;
 
-const profile = await getProfile(currentUser.id);
+// Sans réseau, on ne renvoie ni ne déconnecte personne (07/09/2026, feuille de route 1.6).
+const lecture = await chargerProfil(currentUser.id);
+const profile = lecture.profil;
+if (!profile && lecture.horsLigne) { afficherSansReseauCLT(); return; }
 if (!profile || (profile.role !== 'equipe' && profile.role !== 'admin')) {
 window.location.href = profile && profile.role === 'livreur' ? 'livreur.html' : 'fournisseur.html';
 return;
