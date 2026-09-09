@@ -6,8 +6,15 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Suivre un colis — Christ Livraison & Transport SARL</title>
+<style>.msg-chiffres{margin:12px 0 4px;padding:10px 12px;border-radius:10px;background:#FBE7D8;color:#8a4b12;font-size:14px;line-height:1.45;}#chiffres-input{letter-spacing:.2em;}</style>
 <link rel="canonical" href="https://christlivraison.ci/suivi.html">
 <meta name="description" content="Suivez l'état de votre colis en temps réel, sans compte, grâce à son numéro de suivi.">
+<!-- Aperçu WhatsApp du lien de suivi (09/09/2026, feuille de route 1.7) : logo et titre, aucune donnée personnelle. -->
+<meta property="og:title" content="Suivi de colis — Christ Livraison & Transport">
+<meta property="og:description" content="Suivez l'état de votre colis en temps réel avec votre numéro de suivi.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://christlivraison.ci/images/icons/icon-512.png">
+<meta property="og:site_name" content="Christ Livraison & Transport SARL">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%231B4374'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23E26313'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -162,9 +169,12 @@
 
       <form class="suivi-form" id="suivi-form">
         <input type="text" id="tracking-input" placeholder="Numéro de suivi (ex : CLT-260801-00007)" autocomplete="off" required>
+        <!-- Les 4 derniers chiffres du téléphone du destinataire (09/09/2026, feuille de route 1.7) :
+             sans eux, la page ne dit que le statut. C'est la base qui vérifie, pas cette page. -->
+        <input type="text" id="chiffres-input" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4 derniers chiffres de votre téléphone" autocomplete="off" aria-label="4 derniers chiffres du téléphone du destinataire">
         <button type="submit" id="suivi-btn">Rechercher</button>
       </form>
-      <p class="form-hint">Le numéro de suivi vous a été communiqué lors du dépôt du colis.</p>
+      <p class="form-hint">Le numéro de suivi vous a été communiqué lors du dépôt du colis. Les 4 derniers chiffres du téléphone du destinataire servent à protéger vos informations : sans eux, seul l'état du colis s'affiche.</p>
 
       <div id="suivi-result" class="result-box"></div>
     </div>
@@ -270,23 +280,8 @@
   // identifiant technique (UUID), au cas où l'un d'eux aurait déjà été partagé.
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  // La vue publique colis_suivi_public a connu plusieurs versions. Pour ne JAMAIS casser le suivi
-  // quel que soit l'état de la base, on tente les jeux de colonnes du plus récent au plus ancien
-  // et on retient le premier qui répond sans erreur « colonne inconnue » :
-  //   1. Vue enrichie : montant_total (calculé côté serveur, sans exposer le détail article/
-  //      livraison), + preuve de livraison, + nom/ETA du livreur pour un suivi plus riche.
-  //   2. Vue avec montant_total + preuve de livraison seulement.
-  //   3. Ancienne vue : montant + détail (rétro-compatibilité avant migration).
-  const COLS_COMMON = "id, numero, statut, description, destination, commune_destination, photo_url, created_at";
-  const SUIVI_COL_VARIANTS = [
-    COLS_COMMON + ", montant_total, photo_livraison_url, livreur_nom, livreur_photo_url, creneau_estime",
-    COLS_COMMON + ", montant_total, photo_livraison_url",
-    COLS_COMMON + ", montant_total",
-    COLS_COMMON + ", montant, montant_article, montant_livraison, photo_livraison_url",
-    COLS_COMMON + ", montant, montant_article, montant_livraison",
-  ];
-  // Une fois qu'un variant fonctionne, on le mémorise pour éviter de re-tâtonner à chaque requête.
-  let suiviColsIndex = 0;
+  // (Les variantes de colonnes de la vue ont disparu le 09/09/2026 : la page ne lit plus la vue,
+  // seulement la fonction serveur.)
 
   // Depuis le 17 août 2026, la recherche passe par la fonction serveur suivi_colis().
   // Motif : le droit de lecture accordé au visiteur anonyme portait sur la vue ENTIÈRE. Un
@@ -300,49 +295,55 @@
   // retour en arrière), on retombe automatiquement sur l'ancienne lecture de la vue. Le suivi
   // public ne peut donc jamais tomber en panne à cause de cette bascule, dans un sens comme
   // dans l'autre.
-  let rpcSuiviIndisponible = false;
-
-  async function fetchColis(query) {
+  /* Depuis le 09/09/2026 (feuille de route 1.7), la fonction serveur prend le numéro ET les 4
+     derniers chiffres du téléphone du destinataire. Sans chiffres, ou avec de faux chiffres,
+     elle ne rend que le numéro, le statut et la date de dépôt. Le repli par la vue a disparu :
+     le visiteur anonyme ne la lit plus. Si la base n'a pas encore la nouvelle signature (script
+     SQL pas encore joué), on réessaie avec le seul numéro, comme avant. */
+  let ancienneSignature = false;
+  async function fetchColis(query, chiffres) {
     const value = query.trim();
-    if (!rpcSuiviIndisponible) {
-      const res = await supabaseClient
-        .rpc("suivi_colis", { p_recherche: value })
-        .maybeSingle();
+    const quatre = String(chiffres || '').replace(/\D/g, '').slice(-4);
+    if (!ancienneSignature) {
+      const res = await supabaseClient.rpc("suivi_colis", { p_recherche: value, p_chiffres: quatre || null }).maybeSingle();
       if (!res.error) return res;
-      // Fonction absente du schéma : on bascule sur l'ancienne méthode.
-      if (/function|does not exist|n'existe pas|schema cache|404/i.test(res.error.message || "")) {
-        rpcSuiviIndisponible = true;
-      } else {
-        return res; // vraie erreur (réseau, etc.) : on la remonte telle quelle
-      }
+      if (/p_chiffres|function|does not exist|schema cache|404/i.test(res.error.message || "")) ancienneSignature = true;
+      else return res;
     }
-    return fetchColisParLaVue(value);
+    return supabaseClient.rpc("suivi_colis", { p_recherche: value }).maybeSingle();
   }
-
-  // Ancienne méthode, conservée uniquement en secours.
-  async function fetchColisParLaVue(value) {
-    const column = UUID_RE.test(value) ? "id" : "numero";
-    const key = column === "numero" ? value.toUpperCase() : value;
-    let res;
-    for (let i = suiviColsIndex; i < SUIVI_COL_VARIANTS.length; i++) {
-      res = await supabaseClient
-        .from("colis_suivi_public")
-        .select(SUIVI_COL_VARIANTS[i])
-        .eq(column, key)
-        .maybeSingle();
-      // Erreur de colonne inconnue : on essaie le variant suivant (moins riche).
-      if (res.error && /column|colonne|does not exist|n'existe pas/i.test(res.error.message || "")) {
-        continue;
-      }
-      suiviColsIndex = i; // ce variant marche : on s'y tient pour les prochaines requêtes.
-      return res;
-    }
-    return res;
+  // La réponse « brute » : le statut sans le détail (chiffres absents ou faux).
+  function reponseBrute(data) {
+    return !!data && data.description == null && data.destination == null && data.montant_total == null && !data.photo_url;
   }
 
   function renderColis(data) {
     const now = new Date();
     const heure = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    if (reponseBrute(data)) {
+      const faux = !!currentChiffres;
+      resultBox.innerHTML = `
+        <div class="result-row">
+          <span class="label">Numéro de suivi</span>
+          <span class="value">${escapeHTML(data.numero || "—")}</span>
+        </div>
+        <div class="result-row">
+          <span class="label">Statut</span>
+          <span class="value">${statutBadgeHTML(data.statut)}</span>
+        </div>
+        <div class="result-row">
+          <span class="label">Déposé le</span>
+          <span class="value">${formatDate(data.created_at)}</span>
+        </div>
+        <div class="msg-chiffres">
+          ${faux ? `<strong>Ces chiffres ne correspondent pas.</strong> ` : ''}Pour voir le détail (adresse, photo, montant), entrez les <strong>4 derniers chiffres du numéro de téléphone du destinataire</strong> dans le champ ci-dessus, puis Rechercher.
+        </div>
+        <div class="live-indicator">
+          <span class="live-dot"></span>
+          Actualisation automatique active — dernière vérification à ${heure}
+        </div>`;
+      return;
+    }
     const destinationLabel = [data.commune_destination, data.destination].filter(Boolean).join(" — ") || "—";
     const montantTotal = formatMontant(montantTotalColis(data));
     resultBox.innerHTML = `
@@ -405,15 +406,21 @@
     `;
   }
 
+  let currentChiffres = '';
+  // Vrai quand la dernière réponse était « brute » alors que des chiffres avaient été donnés :
+  // ils sont faux. Le rafraîchissement ne les renvoie pas — chaque renvoi compterait comme un
+  // essai, et cinq rafraîchissements auraient bloqué le numéro pour l'heure. (relecture 09/09/2026)
+  let chiffresRefuses = false;
   async function refreshSilently() {
     if (!currentNumero) return;
-    const { data, error } = await fetchColis(currentNumero);
+    const { data, error } = await fetchColis(currentNumero, chiffresRefuses ? '' : currentChiffres);
     if (error || !data) return; // on ne perturbe pas l'affichage en cas d'erreur réseau ponctuelle
     renderColis(data);
   }
 
-  async function runSearch(numero) {
+  async function runSearch(numero, chiffres) {
     if (!numero) return;
+    currentChiffres = String(chiffres || '').replace(/\D/g, '').slice(-4);
 
     stopAutoRefresh();
     btn.disabled = true;
@@ -426,7 +433,7 @@
     // "colis" ici : une politique RLS sur la table ne restreint que les lignes, pas les colonnes,
     // donc seule une vue dédiée garantit que l'identité du client et les observations internes
     // restent privées.
-    const { data, error } = await fetchColis(numero);
+    const { data, error } = await fetchColis(numero, currentChiffres);
 
     btn.disabled = false;
     btn.textContent = "Rechercher";
@@ -436,14 +443,16 @@
       return;
     }
 
+    chiffresRefuses = !!currentChiffres && reponseBrute(data);
     renderColis(data);
     currentNumero = numero;
     refreshTimer = setInterval(refreshSilently, 15000);
   }
 
+  const chiffresInput = document.getElementById("chiffres-input");
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    await runSearch(input.value.trim());
+    await runSearch(input.value.trim(), chiffresInput ? chiffresInput.value : '');
   });
 
   // ---------- Ouverture directe via un lien de suivi (?numero=... ou ?id=...) ----------
@@ -456,7 +465,9 @@
   const valueFromUrl = urlParams.get("numero") || urlParams.get("id");
   if (valueFromUrl) {
     input.value = valueFromUrl;
-    runSearch(valueFromUrl.trim());
+    // Le lien ouvre sur le statut ; le détail vient avec les 4 chiffres, que le destinataire tape.
+    runSearch(valueFromUrl.trim(), '');
+    if (chiffresInput) setTimeout(() => { try { chiffresInput.focus(); } catch (e) {} }, 300);
   }
 
   // On arrête le rafraîchissement automatique quand l'onglet n'est plus visible, et on le

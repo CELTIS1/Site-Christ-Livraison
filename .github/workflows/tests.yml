@@ -431,6 +431,11 @@ jobs:
       - name: Le livreur sans réseau n'est plus déconnecté (feuille de route 1.6)
         run: node tests/livreur-sans-reseau.test.mjs
 
+      # Feuille de route 1.7 (09/09/2026) : le suivi public ne montre le détail qu'avec les 4
+      # derniers chiffres du téléphone du destinataire ; la page ne lit plus la vue en direct.
+      - name: Suivi public — les 4 derniers chiffres (feuille de route 1.7)
+        run: node tests/suivi-public-quatre-chiffres.test.mjs
+
       - name: Aucun contrôle ne dépend d'un fichier hors dépôt
         run: |
           sans_garde=""
