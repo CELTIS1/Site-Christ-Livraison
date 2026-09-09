@@ -402,10 +402,11 @@ verifier(
    v89, le 09/09/2026 — statut des colis du jour : tuile « En attente » (fournisseur.html).
    v90, le 09/09/2026 — relecture : les restes en route seulement pour aujourd'hui, bouton « Aujourd'hui » (livreur.html).
    v91, le 09/09/2026 — reporter un colis à demain : jourDuColis partout (config.js, livreur.html, equipe.html, fournisseur.html, style.css) : étiquette 20260909report.
-   v92, le 09/09/2026 — reporter à la date de son choix, retenter un non livré, prévenir la cliente (config.js, livreur.html, style.css) : étiquette 20260909retente. */
+   v92, le 09/09/2026 — reporter à la date de son choix, retenter un non livré, prévenir la cliente (config.js, livreur.html, style.css) : étiquette 20260909retente.
+   v93, le 09/09/2026 — l'observation du livreur sur son point PDF et le bilan ; les montants négatifs en rouge partout (config.js, equipe.html, fournisseur.html) : étiquette 20260909rouge. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v92'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v93'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -101,6 +101,8 @@ function constanteTexteDe(src, nom){
    prouver. Ce qui est vérifié, c'est le chiffre, pas sa toilette. */
 const contexte = vm.createContext({ console });
 vm.runInContext(constanteTexteDe(sourceConfig, 'COMMUNE_EXPEDITION'), contexte);
+// Depuis le 09/09/2026 : la couleur des montants négatifs, citée par les écrans d'argent.
+vm.runInContext(constanteTexteDe(sourceConfig, 'COULEUR_NEGATIF_CLT') + '\n' + constanteTexteDe(sourceConfig, 'FOND_NEGATIF_CLT'), contexte);
 vm.runInContext([
   'estExpedition',
   'colisADetailMontant',

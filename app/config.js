@@ -563,6 +563,30 @@ function estExpedition(colisOuCommune) {
    reste en tête parce qu'il change tout pour le livreur (il va à la gare, pas
    chez un destinataire), et la ville suit parce que c'est elle, l'adresse.
 --------------------------------------------------------------------------- */
+/* LES MONTANTS NÉGATIFS EN ROUGE. (09/09/2026, Celtis)
+   « Les valeurs négatives — les frais d'expédition, les livraisons qu'on déduit — il faudrait
+   que ces montants-là soient en rouge », pour que le plus et le moins se distinguent d'un coup
+   d'œil. Une seule couleur, écrite une fois, servie à l'écran, au PDF et au Word. Le brun qui
+   habillait jusque-là les retenues se confondait avec l'orange des livraisons. */
+const COULEUR_NEGATIF_CLT = '#c0392b';
+const FOND_NEGATIF_CLT = '#fce4e2';
+const COULEUR_NEGATIF_PDF = [192, 57, 43];
+
+// Vrai si un texte de cellule est un montant négatif : « −12 000 FCFA », « - 3 000 », etc.
+// Sert au PDF et au Word, qui ne connaissent que des textes déjà mis en forme.
+function estMontantNegatifTexte(texte) {
+  const brut = (texte && typeof texte === 'object' && !Array.isArray(texte)) ? texte.content : texte;
+  return /^\s*[\u2212-]\s*\d/.test(String(brut === null || brut === undefined ? '' : brut));
+}
+
+// L'observation du livreur, prête à être ajoutée sous la description d'un colis dans un
+// document. Vide s'il n'a rien écrit. (09/09/2026, Celtis : « tout ce qui est marqué dans
+// l'application doit être visible dans le relevé du soir et dans le PDF ».)
+function observationLigneTexte(c) {
+  const obs = c && c.observation ? String(c.observation).trim() : '';
+  return obs ? '\nObs. : ' + obs : '';
+}
+
 function colisDestinationTexte(c) {
   if (!c) return "";
   const commune = String(c.commune_destination || "").trim();
@@ -4664,6 +4688,20 @@ function styleTableauCLT(base, doc) {
     };
   }
   delete sortie.colorier;
+  /* LES NÉGATIFS EN ROUGE, SUR TOUS LES DOCUMENTS. (09/09/2026)
+     Une retenue de gare, des frais de course, un « Vous revient » négatif : partout où une
+     cellule porte un montant qui commence par le signe moins, elle s'écrit en rouge et en gras,
+     dans le corps comme dans la ligne TOTAL. La règle passe APRÈS `colorier` : un montant
+     négatif dans une colonne « encaissé » ressort rouge, pas vert. */
+  const avantNegatifs = sortie.didParseCell;
+  sortie.didParseCell = function (data) {
+    if (typeof avantNegatifs === 'function') avantNegatifs(data);
+    if (data.section !== 'body' && data.section !== 'foot') return;
+    if (estMontantNegatifTexte(data.cell.raw)) {
+      data.cell.styles.textColor = COULEUR_NEGATIF_PDF;
+      data.cell.styles.fontStyle = 'bold';
+    }
+  };
   // `colonnesArgent` et `colonnesArgentRangees` sont des consignes pour la maison, pas des
   // réglages d'autoTable : il ne les comprendrait pas et s'en plaindrait dans la console.
   delete sortie.colonnesArgent;
@@ -5027,7 +5065,7 @@ function argentTuilesHTML(t) {
     { v: m(t.articleEncaisse),    l: 'Articles encaissés',   c: '#1B4374', bg: '#e5edf5' },
     { v: m(t.livraisonEncaissee), l: 'Livraisons encaissées', c: '#E26313', bg: '#FBE2CE' },
   ].concat(t.fraisExpedition > 0
-    ? [{ v: '−' + m(t.fraisExpedition), l: 'Payé à la gare', c: '#8a4b12', bg: '#fff0dd' }]
+    ? [{ v: '−' + m(t.fraisExpedition), l: 'Payé à la gare', c: COULEUR_NEGATIF_CLT, bg: FOND_NEGATIF_CLT }]
     : []
   ).concat([
     { v: m(t.totalEnMain),        l: 'Total en main',        c: '#1a7d3c', bg: '#e3f6ea' },
@@ -5451,7 +5489,7 @@ function financeColisHTML(colis, actionsHTML) {
           <div class="finance-colis-lignes">
             <div><span>Article</span><strong>${art ? m(art) : '—'}</strong></div>
             <div><span>${escapeHTML(estExpedition(c) ? LIBELLE_FRAIS_COURSE : 'Livraison')}</span><strong>${liv ? m(liv) : '—'}</strong></div>
-            ${gare ? `<div><span>${escapeHTML(LIBELLE_FRAIS_EXPEDITION)}</span><strong style="color:#8a4b12;">−${m(gare)}</strong></div>` : ''}
+            ${gare ? `<div><span>${escapeHTML(LIBELLE_FRAIS_EXPEDITION)}</span><strong style="color:${COULEUR_NEGATIF_CLT};">−${m(gare)}</strong></div>` : ''}
             <div><span>En main</span><strong style="color:${enMain ? '#1a7d3c' : '#94a3b8'};">${enMain ? m(enMain) : '—'}</strong></div>
           </div>
           ${manque > 0 ? `<div class="finance-colis-alerte">⚠️ ${m(manque)} non encaissé sur ce colis pourtant remis.</div>` : ''}
@@ -5541,7 +5579,7 @@ function financeTableauHTML(colis, options) {
         <td data-label="Livrés">${l.t.nbLivres} / ${l.t.nb}</td>
         <td data-label="Articles">${l.t.articleEncaisse ? m(l.t.articleEncaisse) : '<span style="color:#94a3b8;">—</span>'}</td>
         <td data-label="Livraison">${l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '<span style="color:#94a3b8;">—</span>'}</td>
-        ${colonneGare ? `<td data-label="Gare">${l.t.fraisExpedition ? '−' + m(l.t.fraisExpedition) : '<span style="color:#94a3b8;">—</span>'}</td>` : ''}
+        ${colonneGare ? `<td data-label="Gare">${l.t.fraisExpedition ? `<span style="color:${COULEUR_NEGATIF_CLT}; font-weight:700;">−${m(l.t.fraisExpedition)}</span>` : '<span style="color:#94a3b8;">—</span>'}</td>` : ''}
         <td data-label="Total"><strong>${l.t.totalEnMain ? m(l.t.totalEnMain) : '—'}</strong></td>
       </tr>
       <tr class="finance-detail-ligne${ouverte ? '' : ' hidden'}" data-detail="${cle}">
@@ -5560,7 +5598,7 @@ function financeTableauHTML(colis, options) {
             { texte: m(t.articleEncaisse), label: 'Articles' },
             { texte: m(t.livraisonEncaissee), label: 'Livraison' },
           ].concat(colonneGare
-            ? [{ texte: '−' + m(t.fraisExpedition), couleur: '#8a4b12', label: 'Gare' }]
+            ? [{ texte: '−' + m(t.fraisExpedition), couleur: COULEUR_NEGATIF_CLT, label: 'Gare' }]
             : []
           ).concat([
             { texte: m(t.totalEnMain), couleur: '#1a7d3c', label: 'Total' },
@@ -5598,7 +5636,9 @@ function pointColisTableauCLT(colis, colonneGare) {
     const enMain = montantEnMainDuLivreur(c);
     const gare = fraisExpeditionColis(c);
     return [
-      [c.numero, colisDestinationTexte(c), quoi].filter(Boolean).join(' · ') || '—',
+      // L'observation du livreur sous la description : ce qu'il a écrit dans l'application
+      // doit se retrouver sur son point du soir. (09/09/2026)
+      ([c.numero, colisDestinationTexte(c), quoi].filter(Boolean).join(' · ') || '—') + observationLigneTexte(c),
       statutTexte(c.statut, c),
       montantArticleColis(c) ? m(montantArticleColis(c)) : '—',
       montantLivraisonColis(c) ? m(montantLivraisonColis(c)) : '—',
@@ -5766,10 +5806,10 @@ function releveClienteTuilesHTML(colis) {
   // sur les journées ordinaires — l'immense majorité — encombrerait l'écran d'une explication
   // sans objet ; les fondre en une seule ferait perdre ce que la séparation a coûté à obtenir.
   ].concat(t.fraisExpeditionADevoir > 0
-    ? [{ icon:'🚌', value:'−' + m(t.fraisExpeditionADevoir), label:LIBELLE_FRAIS_EXPEDITION, color:'#8a4b12', bg:'#fff0dd' }]
+    ? [{ icon:'🚌', value:'−' + m(t.fraisExpeditionADevoir), label:LIBELLE_FRAIS_EXPEDITION, color:COULEUR_NEGATIF_CLT, bg:FOND_NEGATIF_CLT }]
     : []
   ).concat(t.fraisCourseADevoir > 0
-    ? [{ icon:'🛵', value:'−' + m(t.fraisCourseADevoir), label:LIBELLE_FRAIS_COURSE, color:'#8a4b12', bg:'#fff0dd' }]
+    ? [{ icon:'🛵', value:'−' + m(t.fraisCourseADevoir), label:LIBELLE_FRAIS_COURSE, color:COULEUR_NEGATIF_CLT, bg:FOND_NEGATIF_CLT }]
     : []
   ).concat([
     // Négatif, c'est la vendeuse qui doit : le libellé s'inverse avec le signe, comme la phrase

@@ -48,6 +48,9 @@ vm.runInContext(blocConstante(config, 'STATUTS'), contexte);
 vm.runInContext(blocConstante(config, 'PAPIER_CLT'), contexte);
 // Les deux aides de largeur ne servent pas ici : on les remplace par des doubles neutres.
 vm.runInContext('function largeursArgentCLT(){ return null; } function piedArgentCLT(f){ return f; }', contexte);
+// Depuis le 09/09/2026 le crochet colorie aussi les montants négatifs en rouge.
+vm.runInContext("const COULEUR_NEGATIF_PDF = [192, 57, 43];", contexte);
+vm.runInContext(blocDe(config, 'estMontantNegatifTexte', 'config.js'), contexte);
 vm.runInContext(blocDe(config, 'styleTableauCLT', 'config.js'), contexte);
 
 titre('Le crochet colorie comme les pastilles de l\'écran');
@@ -79,6 +82,56 @@ verifier('releveTableauPDF passe la colonne de statut et ses codes',
 verifier('les lignes du relevé portent le code du statut (releveCliente)', /statutCode:\s+\(c && c\.statut\) \|\| ''/.test(config));
 verifier("la colonne 2 est bien « Statut » et la 4 « Encaissé » dans l'ordre des colonnes",
   /l\.statut,\n\s*formatMontant\(l\.article\)[^\n]*\n\s*l\.encaisse \? formatMontant/.test(equipe));
+
+/* LES MONTANTS NÉGATIFS EN ROUGE — 9 septembre 2026
+   Celtis : « les valeurs négatives, comme les coûts d'expédition et les livraisons qu'on déduit,
+   il faudrait que ces montants-là soient en rouge », pour distinguer le plus du moins d'un coup
+   d'œil. La règle est dans styleTableauCLT(), pour TOUS les documents, même sans « colorier ». */
+titre('Les montants négatifs sortent en rouge, sur tous les documents');
+{
+  const ctx2 = vm.runInContext('estMontantNegatifTexte', contexte);
+  verifier('« −12 000 FCFA » (signe moins typographique) est reconnu négatif', ctx2('−12 000 FCFA') === true);
+  verifier('« -3 000 » (tiret ordinaire) aussi', ctx2('-3 000') === true);
+  verifier('une cellule { content } est lue comme un texte', ctx2({ content: '−500 FCFA' }) === true);
+  verifier('« 5 000 FCFA », « — », un texte, rien : pas négatifs', ctx2('5 000 FCFA') === false && ctx2('—') === false && ctx2('Non livré') === false && ctx2(null) === false && ctx2('') === false);
+  // Le relevé du soir : un « Vous revient » négatif doit ressortir rouge, pas vert.
+  verifier('dans une colonne « encaissé » verte, un montant négatif passe quand même en rouge et en gras',
+    JSON.stringify(cellule('body', 1, 4, '−7 000 FCFA').textColor) === JSON.stringify([192, 57, 43]) && cellule('body', 1, 4, '−7 000 FCFA').fontStyle === 'bold');
+  verifier('la ligne TOTAL négative aussi', JSON.stringify(cellule('foot', 0, 4, '−7 000 FCFA').textColor) === JSON.stringify([192, 57, 43]));
+  verifier("l'en-tête, jamais", cellule('head', 0, 4, '−7 000 FCFA').textColor === undefined);
+  // Un tableau SANS consigne « colorier » (le point du livreur, la comptabilité) a la règle aussi.
+  const nu = vm.runInContext(`styleTableauCLT({ head: [['Colis', 'Gare']], body: [['a', '−2 000 FCFA']], foot: [['TOTAL', '−2 000 FCFA']] }, null)`, contexte);
+  const cel = (section, col, raw) => { const d = { section, row: { index: 0 }, column: { index: col }, cell: { raw, styles: {} } }; nu.didParseCell(d); return d.cell.styles; };
+  verifier('sans « colorier », une retenue de gare « −2 000 FCFA » est rouge dans le corps et le pied',
+    JSON.stringify(cel('body', 1, '−2 000 FCFA').textColor) === JSON.stringify([192, 57, 43]) && JSON.stringify(cel('foot', 1, '−2 000 FCFA').textColor) === JSON.stringify([192, 57, 43]));
+  verifier('et un montant positif reste tel quel', cel('body', 1, '2 000 FCFA').textColor === undefined);
+  verifier("le brun des retenues a disparu des montants négatifs à l'écran (config.js, equipe.html, fournisseur.html)",
+    !/'−' \+ m\([^)]*\)[^\n]*#8a4b12/.test(config) && !/'−' \+ formatMontant\([^)]*\)[^\n]*#8a4b12/.test(equipe)
+    && /COULEUR_NEGATIF_CLT = '#c0392b'/.test(config));
+  const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
+  verifier('les tuiles « Frais d\'expédition » et « Frais de course » de la cliente sont en rouge',
+    /value:'−' \+ money\(avances\)[^\n]*color:COULEUR_NEGATIF_CLT/.test(fournisseur) && /value:'−' \+ money\(course\)[^\n]*color:COULEUR_NEGATIF_CLT/.test(fournisseur));
+  verifier('le Word du relevé marque les cellules négatives (classe neg, rouge)', /estMontantNegatifTexte\(v\) \? ' class="neg"'/.test(equipe) && /td\.neg\{color:#c0392b/.test(equipe));
+}
+
+/* L'OBSERVATION DU LIVREUR SUR SON POINT — 9 septembre 2026
+   Celtis : « quand les livreurs font des observations sur les colis, le soir dans leur relevé
+   ce n'est pas marqué, et en PDF il n'y a pas d'observation ». */
+titre("L'observation du livreur se retrouve sur le papier");
+{
+  vm.runInContext(blocDe(config, 'observationLigneTexte', 'config.js'), contexte);
+  const obs = vm.runInContext('observationLigneTexte', contexte);
+  verifier('une observation devient une ligne « Obs. : … » sous la description', obs({ observation: 'Client absent, rappeler demain' }) === '\nObs. : Client absent, rappeler demain');
+  verifier('sans observation, rien (pas même une ligne vide)', obs({}) === '' && obs(null) === '' && obs({ observation: '   ' }) === '');
+  const point = blocDe(config, 'pointColisTableauCLT', 'config.js');
+  verifier('le point du livreur (PDF) ajoute l\'observation à la cellule du colis', /\+ observationLigneTexte\(c\)/.test(point));
+  const bilan = blocDe(equipe, 'renderRecapLivreurBilan', 'equipe.html');
+  verifier("le bilan du livreur (équipe) montre l'observation sous l'adresse", /c\.observation \? `<div class="meta"[^`]*escapeHTML\(c\.observation\)/.test(bilan));
+  verifier("et un « En main » négatif y est rouge", /m < 0 \? ` color:\$\{COULEUR_NEGATIF_CLT\};`/.test(bilan));
+  const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
+  verifier('le récapitulatif PDF de la cliente et la comptabilité (équipe) portent aussi l\'observation',
+    /\(c\.description \|\| ''\) \+ observationLigneTexte\(c\)/.test(fournisseur) && /\(c\.description \|\| ''\) \+ observationLigneTexte\(c\)/.test(equipe));
+}
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);

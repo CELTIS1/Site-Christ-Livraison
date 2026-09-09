@@ -140,6 +140,8 @@ vm.runInContext([
 ].join('\n\n'), contexte);
 
 vm.runInContext(['formatMontant', 'escapeHTML'].map(n => blocDe(common, n, 'clt-common.js')).join('\n\n'), contexte);
+// Depuis le 09/09/2026 : les montants négatifs en rouge (Word, PDF) — la règle vit dans config.js.
+vm.runInContext(declarationDe(sourceConfig, 'COULEUR_NEGATIF_CLT', 'config.js') + '\n' + declarationDe(sourceConfig, 'COULEUR_NEGATIF_PDF', 'config.js') + '\n' + blocDe(sourceConfig, 'estMontantNegatifTexte', 'config.js'), contexte);
 
 vm.runInContext([
   'releveLignesTexte', 'releveConstruireWordHTML', 'releveBarreHTML', 'releveEnCours',

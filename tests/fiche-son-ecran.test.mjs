@@ -129,6 +129,8 @@ function sansCommentaires(src){
 const contexte = vm.createContext({ console });
 
 vm.runInContext(constanteTexteDe(sourceConfig, 'COMMUNE_EXPEDITION'), contexte);
+// Depuis le 09/09/2026 : la couleur des montants négatifs, citée par les écrans d'argent.
+vm.runInContext(constanteTexteDe(sourceConfig, 'COULEUR_NEGATIF_CLT') + '\n' + constanteTexteDe(sourceConfig, 'FOND_NEGATIF_CLT'), contexte);
 // Les deux libellés partagés, depuis le 01/09/2026 : les tuiles du relevé les citent au lieu
 // de recopier les mots « Frais d'expédition » et « Frais de course ».
 vm.runInContext(constanteTexteDe(sourceConfig, 'LIBELLE_FRAIS_EXPEDITION'), contexte);

@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909retente">
-<script src="theme.js?v=20260909retente"></script>
-<script src="splash.js?v=20260909retente"></script>
+<link rel="stylesheet" href="style.css?v=20260909rouge">
+<script src="theme.js?v=20260909rouge"></script>
+<script src="splash.js?v=20260909rouge"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -471,10 +471,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909retente"></script>
-<script src="config.js?v=20260909retente"></script>
-<script src="biometric-lock.js?v=20260909retente"></script>
-<script src="clt-select-recherche.js?v=20260909retente"></script>
+<script src="clt-common.js?v=20260909rouge"></script>
+<script src="config.js?v=20260909rouge"></script>
+<script src="biometric-lock.js?v=20260909rouge"></script>
+<script src="clt-select-recherche.js?v=20260909rouge"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2151,10 +2151,10 @@
       // La tuile n'apparaît que s'il y a réellement une avance à retenir. Une tuile « 0 FCFA »
       // permanente ferait naître la question « c'est quoi, ces frais ? » chez toutes les
       // clientes qui n'expédient jamais à l'intérieur.
-      ? [{ icon:'🚌', value:'−' + money(avances), label:"Frais d'expédition", color:'#8a4b12', bg:'#fff0dd' }]
+      ? [{ icon:'🚌', value:'−' + money(avances), label:"Frais d'expédition", color:COULEUR_NEGATIF_CLT, bg:FOND_NEGATIF_CLT }]
       : []
     ).concat(course > 0
-      ? [{ icon:'🛵', value:'−' + money(course), label:'Frais de course', color:'#8a4b12', bg:'#fff0dd' }]
+      ? [{ icon:'🛵', value:'−' + money(course), label:'Frais de course', color:COULEUR_NEGATIF_CLT, bg:FOND_NEGATIF_CLT }]
       : []
     ).concat([
       // Le libellé s'inverse avec le signe. Une tuile « CLT vous doit −5 500 FCFA » demande à
@@ -2239,8 +2239,8 @@
           <span>${escapeHTML(c.numero || '—')}<span style="color:var(--muted); font-size:12px;"> · ${new Date(c.created_at).toLocaleDateString('fr-FR')}</span></span>
           <strong style="${net < 0 ? 'color:#c0392b;' : ''}">${formatMontant(net) || '0 FCFA'}</strong>
         </div>
-        ${detailLignes.map(([g, d]) => `<div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:#8a4b12; margin-top:2px;">
-          <span>${g}</span><span>${d}</span>
+        ${detailLignes.map(([g, d]) => `<div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:#5b6473; margin-top:2px;">
+          <span>${g}</span><span style="${estMontantNegatifTexte(d) ? `color:${COULEUR_NEGATIF_CLT}; font-weight:700;` : ''}">${d}</span>
         </div>`).join('')}
       </div>`;
     }).join('');
@@ -2647,7 +2647,7 @@
         colonnesArgent: [3, 4, 5],
         head: [['Colis', 'Destination', 'Statut', 'Votre article', 'Encaissé', 'Livraison CLT', 'Paiement', 'Date']],
         body: rows.map(c => [
-          c.description || '',
+          (c.description || '') + observationLigneTexte(c),
           [c.commune_destination, c.destination].filter(Boolean).join(' - '),
           STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
           formatMontant(montantArticleColis(c)) || '0 FCFA',

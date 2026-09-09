@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909retente">
-<script src="theme.js?v=20260909retente"></script>
-<script src="splash.js?v=20260909retente"></script>
+<link rel="stylesheet" href="style.css?v=20260909rouge">
+<script src="theme.js?v=20260909rouge"></script>
+<script src="splash.js?v=20260909rouge"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1335,7 +1335,7 @@ saisis ensuite lui seront rattachés automatiquement.
 .cd-rev-colis input{ width:16px; height:16px; margin:0; }
 .cd-rev-num{ font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; color:var(--muted); }
 .cd-rev-dest{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--muted); }
-.cd-rev-retenue{ display:block; font-size:11px; color:#8a4b12; }
+.cd-rev-retenue{ display:block; font-size:11px; color:#c0392b; }
 .cd-rev-barre{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px; }
 .cd-rev-barre select{ border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); padding:7px 10px; font:inherit; font-size:13px; color:var(--navy); background:var(--white); }
 .cd-rev-barre .search-input{ flex:1 1 200px; min-width:160px; padding:7px 10px; font-size:13px; }
@@ -1418,11 +1418,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909retente"></script>
-<script src="config.js?v=20260909retente"></script>
-<script src="clients-dashboard.js?v=20260909retente"></script>
-<script src="biometric-lock.js?v=20260909retente"></script>
-<script src="clt-select-recherche.js?v=20260909retente"></script>
+<script src="clt-common.js?v=20260909rouge"></script>
+<script src="config.js?v=20260909rouge"></script>
+<script src="clients-dashboard.js?v=20260909rouge"></script>
+<script src="biometric-lock.js?v=20260909rouge"></script>
+<script src="clt-select-recherche.js?v=20260909rouge"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -6744,7 +6744,7 @@ ${piedTotalHTML(relevePiedCellules(r))}
      avec le PDF, l'Excel et le Word chez la vendeuse, celle-ci restait à l'écran de l'équipe.
      Deux textes pour une seule règle, c'est un des deux qu'on oublie de corriger — et comme il
      s'agit d'argent, l'écart se découvre au téléphone, face à quelqu'un qui a le papier. -->
-${releveDetailRetenues(r) ? `<div class="recap-bilan-note" style="font-weight:600; color:#8a4b12;">${escapeHTML(releveDetailRetenues(r))}</div>` : ''}
+${releveDetailRetenues(r) ? `<div class="recap-bilan-note" style="font-weight:600; color:${COULEUR_NEGATIF_CLT};">${escapeHTML(releveDetailRetenues(r))}</div>` : ''}
 <details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="recap-bilan-note">${escapeHTML(RELEVE_NOTE)}</div></details>
 ${releveBarreHTML()}`;
 }
@@ -6965,11 +6965,11 @@ return `
 <tr>
 <td data-label="Cliente">${fournisseurLabel(c.fournisseur_id)}</td>
 <td data-label="Destinataire">${c.destinataire_telephone ? escapeHTML(c.destinataire_telephone) : '—'}</td>
-<td data-label="Adresse">${colisDestinationTexte(c) ? escapeHTML(colisDestinationTexte(c)) : '—'}</td>
+<td data-label="Adresse">${colisDestinationTexte(c) ? escapeHTML(colisDestinationTexte(c)) : '—'}${c.observation ? `<div class="meta" style="font-size:11.5px; color:#5b6473; margin-top:2px;">📝 ${escapeHTML(c.observation)}</div>` : ''}</td>
 <td data-label="Statut">${statutBadgeHTML(c.statut, c)}</td>
 <td data-label="Article">${formatMontant(montantArticleEncaisse(c)) || '—'}</td>
 <td data-label="Livraison">${formatMontant(montantLivraisonEncaissee(c)) || '—'}</td>
-<td data-label="En main" style="${m ? 'font-weight:700;' : 'color:#8a94a3;'}">${m ? formatMontant(m) : '—'}${c.encaissement_remis ? ' <span class="recapl-remis">remis</span>' : ''}</td>
+<td data-label="En main" style="${m ? 'font-weight:700;' : 'color:#8a94a3;'}${m < 0 ? ` color:${COULEUR_NEGATIF_CLT};` : ''}">${m ? formatMontant(m) : '—'}${c.encaissement_remis ? ' <span class="recapl-remis">remis</span>' : ''}</td>
 </tr>`;
 }).join('');
 
@@ -7254,7 +7254,7 @@ apres: [
 { texte: relevePhraseDue(d.r), taille: 12, gras: true,
   couleur: Number(d.r.totalEncaisse) < 0 ? [192, 57, 43] : [26, 125, 60] },
 ].concat(releveDetailRetenues(d.r)
-  ? [{ texte: releveDetailRetenues(d.r), taille: 9.5, gras: true, couleur: [138, 75, 18], avant: 3 }]
+  ? [{ texte: releveDetailRetenues(d.r), taille: 9.5, gras: true, couleur: COULEUR_NEGATIF_PDF, avant: 3 }]
   : []
 ).concat([
 { texte: RELEVE_NOTE, taille: 8, avant: 8 },
@@ -7304,10 +7304,10 @@ XLSX.writeFile(wb, releveNomFichier(d.nom, d.date) + '.xlsx');
 function releveConstruireWordHTML(d){
 const th = d.r.colonnes.map(c => `<th>${escapeHTML(c)}</th>`).join('');
 const trs = releveLignesTexte(d.r).map(cells =>
-`<tr>${cells.map((v, i) => `<td${i >= 3 && i <= 4 ? ' align="right"' : ''}>${escapeHTML(String(v))}</td>`).join('')}</tr>`
+`<tr>${cells.map((v, i) => `<td${i >= 3 && i <= 4 ? ' align="right"' : ''}${estMontantNegatifTexte(v) ? ' class="neg"' : ''}>${escapeHTML(String(v))}</td>`).join('')}</tr>`
 ).join('');
 const tot = releveTotalTextes(d.r).map((v, i) =>
-`<td${i >= 3 && i <= 4 ? ' align="right"' : ''} class="tot">${escapeHTML(String(v))}</td>`).join('');
+`<td${i >= 3 && i <= 4 ? ' align="right"' : ''} class="tot${estMontantNegatifTexte(v) ? ' neg' : ''}">${escapeHTML(String(v))}</td>`).join('');
 return `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
 <head><meta charset="utf-8">
@@ -7322,8 +7322,9 @@ table{border-collapse:collapse;width:100%;font-size:10pt;}
 th{background:#1B4374;color:#fff;text-align:left;padding:5pt 6pt;border:1px solid #1B4374;}
 td{padding:5pt 6pt;border:1px solid #c9d2dd;vertical-align:top;}
 td.tot{background:#eef0f3;color:#1B4374;font-weight:bold;}
+td.neg{color:#c0392b;font-weight:bold;}
 .due{margin-top:14pt;font-size:12pt;font-weight:bold;color:#1a7d3c;}
-.retenues{margin-top:4pt;font-size:9.5pt;font-weight:bold;color:#8a4b12;}
+.retenues{margin-top:4pt;font-size:9.5pt;font-weight:bold;color:#c0392b;}
 .note{margin-top:10pt;font-size:8.5pt;color:#6e6e6e;}
 </style></head>
 <body>
@@ -7886,7 +7887,7 @@ cltPoserHTML(summary, `
 ${t.nb} colis · ${t.nbLivres} livré(s) ·
 Articles enregistrés : <strong>${formatMontant(t.articleEnregistre) || '0 FCFA'}</strong> ·
 Articles encaissés : <strong>${formatMontant(t.articleEncaisse) || '0 FCFA'}</strong> ·
-${(t.fraisExpeditionADevoir + t.fraisCourseADevoir) ? `Retenues (gare + course) : <strong style="color:#8a4b12;">−${formatMontant(t.fraisExpeditionADevoir + t.fraisCourseADevoir)}</strong> · ` : ''}À reverser aux clientes : <strong style="color:${t.netADevoir > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(t.netADevoir) || '0 FCFA'}</strong>
+${(t.fraisExpeditionADevoir + t.fraisCourseADevoir) ? `Retenues (gare + course) : <strong style="color:${COULEUR_NEGATIF_CLT};">−${formatMontant(t.fraisExpeditionADevoir + t.fraisCourseADevoir)}</strong> · ` : ''}À reverser aux clientes : <strong style="color:${t.netADevoir > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(t.netADevoir) || '0 FCFA'}</strong>
 ${t.manquantALaLivraison > 0 ? ` · <strong style="color:#c0392b;">Non encaissé à la livraison : ${formatMontant(t.manquantALaLivraison)}</strong>` : ''}
 </div>
 `);
@@ -7915,7 +7916,7 @@ ${recapRows.map(r => `
 <td data-label="Livrés">${r.t.nbLivres}</td>
 <td data-label="Articles enregistrés">${formatMontant(r.t.articleEnregistre) || '0 FCFA'}</td>
 <td data-label="Articles encaissés">${formatMontant(r.t.articleEncaisse) || '0 FCFA'}</td>
-<td data-label="Retenues" style="color:#8a4b12;">${(r.t.fraisExpeditionADevoir + r.t.fraisCourseADevoir) ? '−' + formatMontant(r.t.fraisExpeditionADevoir + r.t.fraisCourseADevoir) + `<div class="meta" style="font-size:11px;">${r.t.fraisExpeditionADevoir ? 'gare ' + formatMontant(r.t.fraisExpeditionADevoir) : ''}${r.t.fraisExpeditionADevoir && r.t.fraisCourseADevoir ? ' · ' : ''}${r.t.fraisCourseADevoir ? 'course ' + formatMontant(r.t.fraisCourseADevoir) : ''}</div>` : '—'}</td>
+<td data-label="Retenues" style="color:${COULEUR_NEGATIF_CLT}; font-weight:700;">${(r.t.fraisExpeditionADevoir + r.t.fraisCourseADevoir) ? '−' + formatMontant(r.t.fraisExpeditionADevoir + r.t.fraisCourseADevoir) + `<div class="meta" style="font-size:11px;">${r.t.fraisExpeditionADevoir ? 'gare ' + formatMontant(r.t.fraisExpeditionADevoir) : ''}${r.t.fraisExpeditionADevoir && r.t.fraisCourseADevoir ? ' · ' : ''}${r.t.fraisCourseADevoir ? 'course ' + formatMontant(r.t.fraisCourseADevoir) : ''}</div>` : '—'}</td>
 <td data-label="À reverser" style="color:${r.t.netADevoir > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.t.netADevoir) || '0 FCFA'}</td>
 </tr>
 `).join('')}
@@ -7926,7 +7927,7 @@ ${piedTotalHTML([
 { texte: t.nbLivres, label: 'Livrés' },
 { texte: formatMontant(t.articleEnregistre) || '0 FCFA', label: 'Articles enregistrés' },
 { texte: formatMontant(t.articleEncaisse) || '0 FCFA', label: 'Articles encaissés' },
-{ texte: (t.fraisExpeditionADevoir + t.fraisCourseADevoir) ? '−' + formatMontant(t.fraisExpeditionADevoir + t.fraisCourseADevoir) : '—', couleur: '#8a4b12', label: 'Retenues' },
+{ texte: (t.fraisExpeditionADevoir + t.fraisCourseADevoir) ? '−' + formatMontant(t.fraisExpeditionADevoir + t.fraisCourseADevoir) : '—', couleur: COULEUR_NEGATIF_CLT, label: 'Retenues' },
 { texte: formatMontant(t.netADevoir) || '0 FCFA', couleur: t.netADevoir > 0 ? '#c0392b' : '#1a7d3c', label: 'À reverser' },
 ])}
 </table>
@@ -8508,7 +8509,7 @@ ${lignes.map(r => `
 <td data-label="Colis livrés">${r.nb}${r.manquant > 0 ? ` <span title="Colis remis sans que l'argent rentre" style="color:#c0392b;">(−${formatMontant(r.manquant)})</span>` : ''}</td>
 <td data-label="Articles">${formatMontant(r.article) || '0 FCFA'}</td>
 <td data-label="Livraisons">${formatMontant(r.livraison) || '0 FCFA'}</td>
-${cellulesGare(`<td data-label="Avancé à la gare" title="Argent que le livreur a payé à la gare et que CLT doit lui rendre" style="color:${r.gare > 0 ? '#E26313' : 'inherit'};">${r.gare > 0 ? '−' + formatMontant(r.gare) : '0 FCFA'}</td>`)}
+${cellulesGare(`<td data-label="Avancé à la gare" title="Argent que le livreur a payé à la gare et que CLT doit lui rendre" style="color:${r.gare > 0 ? COULEUR_NEGATIF_CLT : 'inherit'};${r.gare > 0 ? ' font-weight:700;' : ''}">${r.gare > 0 ? '−' + formatMontant(r.gare) : '0 FCFA'}</td>`)}
 <td data-label="Total en main">${formatMontant(r.total) || '0 FCFA'}</td>
 <td data-label="Déjà remis">${formatMontant(r.remis) || '0 FCFA'}</td>
 <td data-label="Reste à remettre" style="color:${r.reste > 0 ? '#c0392b' : r.reste < 0 ? '#E26313' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.reste) || '0 FCFA'}${r.reste < 0 ? ` <span style="font-weight:400;" title="L'avance de gare dépasse l'argent encaissé : c'est CLT qui doit au livreur">(CLT lui doit)</span>` : ''}</td>
@@ -8524,7 +8525,7 @@ ${piedTotalHTML([
 { texte: somme('nb') + (totalManquant > 0 ? ` (−${formatMontant(totalManquant)})` : ''), label: 'Colis livrés' },
 { texte: formatMontant(somme('article')) || '0 FCFA', label: 'Articles' },
 { texte: formatMontant(somme('livraison')) || '0 FCFA', label: 'Livraisons' },
-...(colonneGare ? [{ texte: '−' + formatMontant(somme('gare')), couleur: '#E26313', label: 'Avancé à la gare' }] : []),
+...(colonneGare ? [{ texte: '−' + formatMontant(somme('gare')), couleur: COULEUR_NEGATIF_CLT, label: 'Avancé à la gare' }] : []),
 { texte: formatMontant(somme('total')) || '0 FCFA', label: 'Total en main' },
 { texte: formatMontant(somme('remis')) || '0 FCFA', label: 'Déjà remis' },
 { texte: formatMontant(somme('reste')) || '0 FCFA', couleur: somme('reste') > 0 ? '#c0392b' : somme('reste') < 0 ? '#E26313' : '#1a7d3c', label: 'Reste à remettre' },
@@ -9212,7 +9213,7 @@ styles: { fontSize: 8, cellPadding: 1.8 },
 colonnesArgent: [3, 4, 5],
 head: [['Colis', 'Client', 'Statut', 'Article', 'Encaissé', 'Livraison', 'État de l\u2019argent', 'Date']],
 body: rows.map(c => [
-c.description || '',
+(c.description || '') + observationLigneTexte(c),
 fournisseurLabelPlain(c.fournisseur_id),
 STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
 formatMontant(montantArticleColis(c)) || '0 FCFA',
