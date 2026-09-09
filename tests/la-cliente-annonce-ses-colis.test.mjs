@@ -492,8 +492,8 @@ verifier("le jour voyage avec la fournée, comme le lieu",
 verifier("une date incomplète ne part pas en base : vide veut dire « dès que possible »",
   /jour_recuperation_prevu: \/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\/\.test\(jour\) \? jour : null/.test(fournisseur));
 verifier("et si la migration SQL n'est pas passée, la fournée part quand même",
-  /jour_recuperation_prevu\|column\|colonne/.test(fournisseur)
-  && /destinataire_telephone, cle_creation, jour_recuperation_prevu, \.\.\.reste/.test(fournisseur),
+  /jour_recuperation_prevu\|a_livrer_avant\|column\|colonne/.test(fournisseur)
+  && /destinataire_telephone, cle_creation, jour_recuperation_prevu, a_livrer_avant, \.\.\.reste/.test(fournisseur),
   'une commerçante ne doit jamais être bloquée parce qu\'un script n\'a pas encore été lancé');
 
 titre("Changer le livreur d'une programmation, sans la détruire");

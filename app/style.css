@@ -2671,3 +2671,7 @@ html[data-theme="dark"] .wa-invite{ color:#f1f5f9; }
 .sans-reseau__texte{ color:var(--muted); font-size:15px; line-height:1.5; margin-bottom:16px; }
 .sans-reseau__bouton{ min-height:46px; padding:0 22px; }
 html[data-theme="dark"] .sans-reseau__titre{ color:#f1f5f9; }
+
+/* « À livrer avant le » sur la carte du livreur (09/09/2026) */
+.colis-avant{ font-weight:600; color:#8a4b12; }
+.colis-avant--urgent{ color:#c0392b; }

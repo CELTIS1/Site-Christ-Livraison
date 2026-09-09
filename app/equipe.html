@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909creation">
-<script src="theme.js?v=20260909creation"></script>
-<script src="splash.js?v=20260909creation"></script>
+<link rel="stylesheet" href="style.css?v=20260909fluide">
+<script src="theme.js?v=20260909fluide"></script>
+<script src="splash.js?v=20260909fluide"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1414,11 +1414,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909creation"></script>
-<script src="config.js?v=20260909creation"></script>
-<script src="clients-dashboard.js?v=20260909creation"></script>
-<script src="biometric-lock.js?v=20260909creation"></script>
-<script src="clt-select-recherche.js?v=20260909creation"></script>
+<script src="clt-common.js?v=20260909fluide"></script>
+<script src="config.js?v=20260909fluide"></script>
+<script src="clients-dashboard.js?v=20260909fluide"></script>
+<script src="biometric-lock.js?v=20260909fluide"></script>
+<script src="clt-select-recherche.js?v=20260909fluide"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2040,6 +2040,7 @@ telephone: val('.lot-tel'),
 montantArticle: val('.lot-art'),
 montantLivraison: val('.lot-liv'),
 description: val('.lot-desc'),
+aLivrerAvant: val('.lot-avant'),
 articleSolde: !!(l.el && l.el.querySelector('.lot-solde') && l.el.querySelector('.lot-solde').checked)
 };
 }
@@ -2123,6 +2124,10 @@ ${l.url
 </div>
 <!-- Article soldé dès la création (08/09/2026, Celtis) : le destinataire a déjà tout payé chez la
      vendeuse. Le livreur n'encaissera rien, et la livraison sera retenue sur elle (config.js). -->
+<div class="field">
+<label>À livrer avant le <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
+<input type="date" class="lot-avant">
+</div>
 <label class="check-pill lot-solde-pill" title="Le destinataire a déjà tout payé chez la vendeuse (article et livraison) : le livreur n'encaisse rien, la livraison est retenue sur la vendeuse."><input type="checkbox" class="lot-solde"> Article soldé (déjà payé chez la vendeuse)</label>
 <div class="lot-etat"></div>
 <!-- Enregistrer ce colis-là, tout de suite. Ce bouton existe pour une raison précise : sur
@@ -2135,6 +2140,17 @@ ${l.url
 // « Expédition » → le champ précision devient « Ville de destination », obligatoire, comme sur
 // le formulaire de la cliente (appliquerModeExpedition, config.js). (08/09/2026, Celtis)
 brancherPrecisionExpedition(div.querySelector('.lot-commune'), div.querySelector('.lot-dest'));
+// LE PRIX DE LIVRAISON, PROPOSÉ D'OFFICE. (09/09/2026, Celtis : « le montant de la livraison
+// doit toujours être renseigné ».) Même règle que chez la cliente : computePrixLivraison() à
+// partir de la commune de récupération de la cliente et de la commune de destination ; on
+// n'écrase jamais un montant déjà tapé.
+{ const commune = div.querySelector('.lot-commune'), liv = div.querySelector('.lot-liv');
+  if (commune && liv) commune.addEventListener('change', () => {
+    const fid = (document.getElementById('lot-fournisseur') || {}).value || '';
+    const fiche = (fournisseurs || []).find(f => f.id === fid);
+    const prix = computePrixLivraison(fiche ? (fiche.commune_recuperation || '') : '', commune.value);
+    if (prix !== null && !String(liv.value || '').trim()) { liv.value = prix; liv.dispatchEvent(new Event('input')); }
+  }); }
 return div;
 }
 
@@ -2313,6 +2329,7 @@ cle_creation: l.cle
 };
 if (ctx.livreurCollectePropose) payload.livreur_collecte_id = ctx.livreurCollectePropose;
 if (s.articleSolde) payload.article_non_encaisse = true;
+if (/^\d{4}-\d{2}-\d{2}$/.test(s.aLivrerAvant || '')) payload.a_livrer_avant = s.aLivrerAvant;
 
 let error = await eqInsererColis(payload);
 
@@ -2608,7 +2625,7 @@ function eqRefusDescriptionObligatoire(error){
 function eqColonneInconnue(error){
   const m = String((error && (error.message || '')) + ' ' + (error && (error.details || '')));
   return /does not exist|schema cache|could not find|n'existe pas/i.test(m)
-      && /destinataire_telephone|cle_creation|column|colonne/i.test(m);
+      && /destinataire_telephone|cle_creation|a_livrer_avant|column|colonne/i.test(m);
 }
 
 async function eqInsererColis(payload){
@@ -2618,7 +2635,7 @@ let { error } = await supabaseClient.from('colis').insert([aEnvoyer]);
 // exécutée), on réessaie sans ces champs pour ne jamais bloquer l'enregistrement du colis.
 // Ils seront simplement ignorés tant que la migration n'est pas lancée.
 if (error && eqColonneInconnue(error)) {
-const { destinataire_telephone: _omitTel, cle_creation: _omitCle, ...sansExtras } = aEnvoyer;
+const { destinataire_telephone: _omitTel, cle_creation: _omitCle, a_livrer_avant: _omitAvant, ...sansExtras } = aEnvoyer;
 aEnvoyer = sansExtras;
 ({ error } = await supabaseClient.from('colis').insert([aEnvoyer]));
 }

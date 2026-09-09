@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909creation">
-<script src="theme.js?v=20260909creation"></script>
-<script src="splash.js?v=20260909creation"></script>
+<link rel="stylesheet" href="style.css?v=20260909fluide">
+<script src="theme.js?v=20260909fluide"></script>
+<script src="splash.js?v=20260909fluide"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -471,10 +471,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909creation"></script>
-<script src="config.js?v=20260909creation"></script>
-<script src="biometric-lock.js?v=20260909creation"></script>
-<script src="clt-select-recherche.js?v=20260909creation"></script>
+<script src="clt-common.js?v=20260909fluide"></script>
+<script src="config.js?v=20260909fluide"></script>
+<script src="biometric-lock.js?v=20260909fluide"></script>
+<script src="clt-select-recherche.js?v=20260909fluide"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -656,7 +656,7 @@
   function frColonneInconnue(error){
     const m = String((error && (error.message || '')) + ' ' + (error && (error.details || '')));
     return /does not exist|schema cache|could not find|n'existe pas/i.test(m)
-        && /destinataire_telephone|cle_creation|jour_recuperation_prevu|column|colonne/i.test(m);
+        && /destinataire_telephone|cle_creation|jour_recuperation_prevu|a_livrer_avant|column|colonne/i.test(m);
   }
 
   // `lignes` est toujours un tableau : cette page enregistre un lot entier d'un coup.
@@ -672,7 +672,7 @@
       // jour_recuperation_prevu s'ajoute à la liste le 31/08/2026 : tant que sa migration n'est
       // pas passée, la fournée part sans lui plutôt que d'être refusée. Le colis existe alors
       // comme avant — attendu dès que possible — et rien n'est perdu.
-      aEnvoyer = aEnvoyer.map(({ destinataire_telephone, cle_creation, jour_recuperation_prevu, ...reste }) => reste);
+      aEnvoyer = aEnvoyer.map(({ destinataire_telephone, cle_creation, jour_recuperation_prevu, a_livrer_avant, ...reste }) => reste);
       ({ error } = await supabaseClient.from('colis').insert(aEnvoyer));
     }
 
@@ -847,6 +847,7 @@
       montantLivraison: val('.lotfr-liv'),
       description: val('.lotfr-desc'),
       livraisonPayee: coche('.lotfr-liv-payee'),
+      aLivrerAvant: val('.lotfr-avant'),
       articleSolde: coche('.lotfr-article-solde'),
       fraisSoldes: coche('.lotfr-soldee')
     };
@@ -924,6 +925,11 @@
         <div class="field">
           <label>Téléphone du destinataire <span class="champ-requis">obligatoire</span></label>
           <input type="tel" class="lotfr-tel" inputmode="tel" placeholder="Ex : 07 01 02 03 04">
+        </div>
+        <!-- « À livrer avant le » (09/09/2026) : facultatif, pour trier les urgences chez le livreur. -->
+        <div class="field">
+          <label>À livrer avant le <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
+          <input type="date" class="lotfr-avant">
         </div>
         <!-- Carnet d'adresses : vos destinataires déjà servis, déduits de vos colis passés.
              Caché tant qu'il n'y a rien à proposer. -->
@@ -1165,6 +1171,7 @@
       destinataire_telephone: s.telephone ? toPhoneE164(s.telephone) : null,
       livraison_payee: !!s.livraisonPayee,
       article_non_encaisse: !!s.articleSolde,
+      a_livrer_avant: /^\d{4}-\d{2}-\d{2}$/.test(s.aLivrerAvant || '') ? s.aLivrerAvant : null,
       // « Soldé » : la vendeuse déclare avoir déjà réglé à CLT les frais d'expédition et de
       // course sur ce colis. On enregistre la DATE et non un oui/non, comme partout ailleurs
       // dans la maison dès qu'il s'agit d'argent — un jour de contestation, savoir QUAND vaut

@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909creation">
-<script src="theme.js?v=20260909creation"></script>
-<script src="splash.js?v=20260909creation"></script>
+<link rel="stylesheet" href="style.css?v=20260909fluide">
+<script src="theme.js?v=20260909fluide"></script>
+<script src="splash.js?v=20260909fluide"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -792,9 +792,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909creation"></script>
-<script src="config.js?v=20260909creation"></script>
-<script src="biometric-lock.js?v=20260909creation"></script>
+<script src="clt-common.js?v=20260909fluide"></script>
+<script src="config.js?v=20260909fluide"></script>
+<script src="biometric-lock.js?v=20260909fluide"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1844,8 +1844,17 @@
   function descriptionEtSuiviHTML(c){
     const quoi = colisDescriptionTexte(c);
     const num = c.numero ? `<span class="colis-suivi-num tracking-numero">${escapeHTML(c.numero)}</span>` : '';
-    if (!quoi && !num) return '';
-    return `<div class="meta colis-quoi">${quoi ? '📦 ' + escapeHTML(quoi) : ''}${num}</div>`;
+    const avant = aLivrerAvantHTML(c);
+    if (!quoi && !num && !avant) return '';
+    return `<div class="meta colis-quoi">${quoi ? '📦 ' + escapeHTML(quoi) : ''}${num}</div>${avant}`;
+  }
+  /* « À LIVRER AVANT LE ». (09/09/2026) Facultatif, posé à la création ; sur la carte, il se lit
+     en rouge quand c'est aujourd'hui ou dépassé, tant que le colis est encore en route. */
+  function aLivrerAvantHTML(c){
+    const j = String(c && c.a_livrer_avant || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(j) || STATUTS_A_FAIRE.indexOf(c.statut) === -1) return '';
+    const urgent = j <= todayLocalISODate();
+    return `<div class="meta colis-avant${urgent ? ' colis-avant--urgent' : ''}">⏰ À livrer avant le ${escapeHTML(new Date(j + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' }))}${urgent ? (j < todayLocalISODate() ? ' — dépassé' : " — aujourd'hui") : ''}</div>`;
   }
 
   function montantsLigneHTML(c){
@@ -2132,6 +2141,9 @@
       restoreScrollAnchor(list, __anchor);
       return;
     }
+    // Les colis « à livrer avant le » passent devant, les plus pressés en tête. (09/09/2026)
+    const cleAvant = (c) => (STATUTS_A_FAIRE.indexOf(c.statut) !== -1 && /^\d{4}-\d{2}-\d{2}/.test(String(c.a_livrer_avant || ''))) ? String(c.a_livrer_avant).slice(0, 10) : '9999-99-99';
+    filtered = filtered.slice().sort((a, b) => cleAvant(a).localeCompare(cleAvant(b)));
     const groupsMes = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
     // On ne dessine qu'une tranche ; le pied annonce le total et la suite arrive au défilement.
     // Exception : arrivé par un clic sur une notification (?colis=<id>), le colis visé doit être
@@ -2489,7 +2501,7 @@
     const appliquer = (id) => {
       [allColis, tourneeColis].forEach(liste => {
         const idx = liste.findIndex(c => c.id === id);
-        if (idx !== -1) { liste[idx].statut = 'recupere'; liste[idx].collecte_depart_at = null; liste[idx].recupere_at = new Date().toISOString(); }
+        if (idx !== -1) { liste[idx].statut = 'recupere'; liste[idx].collecte_depart_at = null; liste[idx].recupere_at = new Date().toISOString(); if (!liste[idx].livreur_id) liste[idx].livreur_id = currentUser.id; }
       });
     };
 
