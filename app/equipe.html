@@ -779,7 +779,11 @@ saisis ensuite lui seront rattachés automatiquement.
 </select>
 <!-- Entrer en sélection multiple : assigner un livreur à toute une fournée de colis, ou
      rattraper d'un coup les statuts d'une tournée entière. -->
-<button type="button" id="btn-mode-lot-colis" class="btn btn-outline btn-sm btn-mode-lot" style="margin-left:auto;">☑️ Sélection multiple</button>
+<!-- « Sélection multiple » retirée le 09/09/2026 (Celtis : « je ne comprends rien, si ce n'est pas
+     utile il faut que ça dégage »). L'assignation groupée se fait par cliente (bouton « Assigner »
+     de chaque groupe) ; les gestes colis par colis restent sur chaque carte. Le mécanisme est
+     conservé dans le code, le bouton n'est plus affiché. -->
+<button type="button" id="btn-mode-lot-colis" class="btn btn-outline btn-sm btn-mode-lot" style="margin-left:auto;" hidden>☑️ Sélection multiple</button>
 </div>
 <div class="filters" id="filters"></div>
 <!-- 05/09/2026 — Le bandeau d'alerte (#alert-banner) est retiré : la pastille sur l'onglet Colis suffit. -->
@@ -4650,9 +4654,15 @@ list.querySelectorAll('.btn-assign-collecte').forEach(btn => {
 btn.addEventListener('click', async () => {
 const fournisseurId = btn.dataset.fournisseur;
 const dayKeyVal = btn.dataset.day;
-const select = btn.previousElementSibling;
+// LE BOUTON NE MARCHAIT PLUS. (09/09/2026, Celtis : « quand tu as mis le livreur et que tu
+// assignes, ça ne marche pas, tu es obligé de venir sur chaque colis ».) Depuis que la liste a
+// une recherche (clt-select-recherche.js), le <select> est enveloppé dans un bloc : le voisin
+// du bouton n'était plus la liste, sa valeur était vide, et l'écran demandait « choisissez
+// d'abord un livreur » à quelqu'un qui venait de le faire. On cherche la liste par sa classe.
+const groupe = btn.closest('.group-collecte-assign');
+const select = groupe ? groupe.querySelector('.select-assign-collecte') : null;
 const livreur_collecte_id = select ? select.value : '';
-if (!livreur_collecte_id) { alert("Choisissez d'abord un livreur pour la collecte."); return; }
+if (!livreur_collecte_id) { if (window.cltToast) cltToast("Choisissez d'abord un livreur pour la collecte.", { type: 'warning' }); else alert("Choisissez d'abord un livreur pour la collecte."); return; }
 const ids = filtered
 .filter(c => (c.fournisseur_id || "?") === fournisseurId && c.statut === 'en_attente' && !c.livreur_collecte_id && dayKey(c.created_at) === dayKeyVal)
 .map(c => c.id);

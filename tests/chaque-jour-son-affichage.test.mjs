@@ -199,5 +199,11 @@ titre("La création plus simple (09/09/2026) : prix proposé, « à livrer avant
   else { const t = fs.readFileSync(sql, 'utf8'); verifier('la base fait pareil (déclencheur des horodatages) et crée la colonne a_livrer_avant', /new\.livreur_id := new\.livreur_collecte_id;/.test(t) && /add column if not exists a_livrer_avant date/.test(t)); }
 }
 
+titre("L'assignation groupée (09/09/2026) : le bouton « Assigner (n) » lit la bonne liste, la sélection multiple est retirée");
+{
+  verifier('« Assigner (n) » cherche la liste par sa classe, pas par voisinage (la recherche enveloppe le select)', /const select = groupe \? groupe\.querySelector\('\.select-assign-collecte'\) : null;/.test(equipe) && !/const select = btn\.previousElementSibling;/.test(equipe));
+  verifier('le bouton « Sélection multiple » n\'est plus affiché', /id="btn-mode-lot-colis"[^>]*\shidden>/.test(equipe));
+}
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);
