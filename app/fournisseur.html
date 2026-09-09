@@ -2645,9 +2645,13 @@
         // milliers sous milliers. Sans cette déclaration, « 45 000 FCFA » se coupait en deux
         // lignes, « 45 000 » puis « FCFA » dessous.
         colonnesArgent: [3, 4, 5],
-        head: [['Colis', 'Destination', 'Statut', 'Votre article', 'Encaissé', 'Livraison CLT', 'Paiement', 'Date']],
+        // « Statut » et « Date » mesurées ; le reste partagé entre le colis, la destination, le
+        // paiement et l'observation du livreur — dernière colonne. (09/09/2026)
+        colonnesMesurees: { 2: 'left', 7: 'left' },
+        colonnesRestantes: aDesObservations(rows) ? { 0: 0.28, 1: 0.24, 6: 0.18, 8: 0.3 } : { 0: 0.34, 1: 0.28, 6: 0.24, 8: 0.14 },
+        head: [['Colis', 'Destination', 'Statut', 'Votre article', 'Encaissé', 'Livraison CLT', 'Paiement', 'Date', 'Observation']],
         body: rows.map(c => [
-          (c.description || '') + observationLigneTexte(c),
+          c.description || '',
           [c.commune_destination, c.destination].filter(Boolean).join(' - '),
           STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
           formatMontant(montantArticleColis(c)) || '0 FCFA',
@@ -2655,6 +2659,7 @@
           formatMontant(montantLivraisonColis(c)) || '—',
           paiementInfo(c).label,
           formatDate(c.created_at),
+          observationTexte(c) || '—',
         ]),
         foot: [[
           'TOTAL',
@@ -2663,6 +2668,7 @@
           formatMontant(t.articleEnregistre) || '0 FCFA',
           formatMontant(t.articleEncaisse) || '0 FCFA',
           formatMontant(t.livraisonEnregistree) || '0 FCFA',
+          '',
           '',
           '',
         ]],

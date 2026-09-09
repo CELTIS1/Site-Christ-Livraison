@@ -579,12 +579,17 @@ function estMontantNegatifTexte(texte) {
   return /^\s*[\u2212-]\s*\d/.test(String(brut === null || brut === undefined ? '' : brut));
 }
 
-// L'observation du livreur, prête à être ajoutée sous la description d'un colis dans un
+// L'observation du livreur, telle qu'elle s'écrit dans la colonne « Observation » d'un
 // document. Vide s'il n'a rien écrit. (09/09/2026, Celtis : « tout ce qui est marqué dans
-// l'application doit être visible dans le relevé du soir et dans le PDF ».)
-function observationLigneTexte(c) {
-  const obs = c && c.observation ? String(c.observation).trim() : '';
-  return obs ? '\nObs. : ' + obs : '';
+// l'application doit être visible dans le relevé du soir et dans le PDF », et « comme dernière
+// colonne, Observation », la même que sur l'écran du livreur.)
+function observationTexte(c) {
+  return c && c.observation ? String(c.observation).trim() : '';
+}
+// Vrai si au moins un colis de la liste porte une observation : les documents s'en servent pour
+// donner à la colonne « Observation » la largeur qu'il faut, ni plus ni moins.
+function aDesObservations(colis) {
+  return (Array.isArray(colis) ? colis : []).some(c => !!observationTexte(c));
 }
 
 function colisDestinationTexte(c) {
@@ -4626,6 +4631,33 @@ function styleTableauCLT(base, doc) {
       colonnes[i] = Object.assign({}, argent[i], b.columnStyles[i]);
     });
   }
+  /* LES COLONNES QUI SE PARTAGENT LE RESTE. (09/09/2026)
+     Une fois les colonnes d'argent et de statut mesurées, la largeur qui reste allait à autoTable,
+     qui la partageait d'après le contenu : une colonne « Observation » vide un jour, débordante le
+     lendemain, et une colonne « Colis » qui changeait de largeur d'un tableau à l'autre. Celtis :
+     « que chaque colonne ait la taille qu'il faut, et que les observations aient aussi une bonne
+     taille ». L'appelant écrit « colonnesRestantes: { 0: 0.6, 6: 0.4 } » : ce qui reste après les
+     colonnes fixes est partagé dans ces proportions, sur la largeur imprimable de la feuille. */
+  if (doc && b.colonnesRestantes) {
+    const largeurPage = (doc.internal && doc.internal.pageSize && typeof doc.internal.pageSize.getWidth === 'function')
+      ? doc.internal.pageSize.getWidth() : 210;
+    const utile = largeurPage - 2 * P.marge;
+    let fixe = 0;
+    Object.keys(colonnes || {}).forEach(i => {
+      if (!(i in b.colonnesRestantes) && colonnes[i] && typeof colonnes[i].cellWidth === 'number') fixe += colonnes[i].cellWidth;
+    });
+    const reste = utile - fixe;
+    const parts = Object.keys(b.colonnesRestantes);
+    const somme = parts.reduce((acc, i) => acc + (Number(b.colonnesRestantes[i]) || 0), 0) || 1;
+    if (reste > 0) {
+      colonnes = Object.assign({}, colonnes);
+      parts.forEach(i => {
+        // Au dixième de millimètre inférieur : un arrondi vers le haut ferait déborder la dernière.
+        const largeur = Math.floor(reste * (Number(b.colonnesRestantes[i]) || 0) / somme * 10) / 10;
+        colonnes[i] = Object.assign({}, colonnes[i], { cellWidth: largeur });
+      });
+    }
+  }
   const sortie = Object.assign({}, b, {
     theme,
     // Vu le 29 août 2026 en OUVRANT un récapitulatif de douze clientes, pas en le testant : le
@@ -4707,6 +4739,7 @@ function styleTableauCLT(base, doc) {
   delete sortie.colonnesArgent;
   delete sortie.colonnesMesurees;
   delete sortie.colonnesArgentRangees;
+  delete sortie.colonnesRestantes;
   return sortie;
 }
 
@@ -5628,24 +5661,30 @@ function financeTableauHTML(colis, options) {
 
 // Les colis d'une cliente, en tableau. Une ligne par colis, et les mêmes montants que les
 // cartes de l'écran : article, livraison, ce qui a été payé à la gare, ce qui reste en main.
-function pointColisTableauCLT(colis, colonneGare) {
+// `avecObservations` dit si, sur la journée entière, au moins un colis porte une observation :
+// la colonne « Observation » — toujours la dernière, comme sur l'écran du livreur — reçoit alors
+// une bonne part de la largeur ; sinon elle reste discrète et la description du colis respire.
+function pointColisTableauCLT(colis, colonneGare, avecObservations) {
   const m = n => formatMontant(n) || '0 FCFA';
-  const tete = ['Colis', 'Statut', 'Article', 'Livraison'].concat(colonneGare ? ['Gare'] : []).concat(['En main']);
+  const tete = ['Colis', 'Statut', 'Article', 'Livraison'].concat(colonneGare ? ['Gare'] : []).concat(['En main', 'Observation']);
+  const derniere = tete.length - 1;
   const corps = financeColisOrdonnes(colis).map(c => {
     const quoi = colisDescriptionTexte(c);
     const enMain = montantEnMainDuLivreur(c);
     const gare = fraisExpeditionColis(c);
     return [
-      // L'observation du livreur sous la description : ce qu'il a écrit dans l'application
-      // doit se retrouver sur son point du soir. (09/09/2026)
-      ([c.numero, colisDestinationTexte(c), quoi].filter(Boolean).join(' · ') || '—') + observationLigneTexte(c),
+      [c.numero, colisDestinationTexte(c), quoi].filter(Boolean).join(' · ') || '—',
       statutTexte(c.statut, c),
       montantArticleColis(c) ? m(montantArticleColis(c)) : '—',
       montantLivraisonColis(c) ? m(montantLivraisonColis(c)) : '—',
     ].concat(colonneGare ? [gare ? '−' + m(gare) : '—'] : [])
-     .concat([enMain ? m(enMain) : '—']);
+     .concat([enMain ? m(enMain) : '—', observationTexte(c) || '—']);
   });
+  const restantes = {};
+  restantes[0] = avecObservations ? 0.6 : 0.82;
+  restantes[derniere] = avecObservations ? 0.4 : 0.18;
   return {
+    colonnesRestantes: restantes,
     styles: { fontSize: 7.6, cellPadding: 1.5 },
     head: [tete],
     body: corps.length ? corps : [[{ content: 'Aucun colis.', colSpan: tete.length }]],
@@ -5653,7 +5692,7 @@ function pointColisTableauCLT(colis, colonneGare) {
     // addition à l'œil sans la refaire. Les déclarer colonnes d'argent leur donne en plus une
     // largeur mesurée sur les montants réellement présents, ce qui rend la place gagnée à la
     // description du colis, seule colonne qui en manque.
-    colonnesArgent: [2, 3, 4, 5].filter(i => i < tete.length),
+    colonnesArgent: [2, 3, 4, 5].filter(i => i < derniere),
     // « Statut » est mesurée elle aussi, sans quoi la largeur restante se partagerait entre elle
     // et « Colis » d'après le contenu de CE tableau, différent d'une cliente à l'autre. Une fois
     // toutes les colonnes fixées sauf la première, « Colis » reçoit toujours le même reste.
@@ -5699,7 +5738,8 @@ function pointDuLivreurPlan(colis, options) {
   // une cliente que chez la suivante, et l'œil devait se recaler à chaque titre. Les colonnes
   // d'argent sont donc mesurées UNE FOIS sur les colis de toute la journée, et les mêmes largeurs
   // servent à tous les tableaux.
-  const tableaux = lignes.map(l => pointColisTableauCLT(l.colis, colonneGare));
+  const avecObservations = aDesObservations(colis);
+  const tableaux = lignes.map(l => pointColisTableauCLT(l.colis, colonneGare, avecObservations));
   const rangeesJour = tableaux.reduce((acc, tb) => acc.concat(tb.body), []);
   tableaux.forEach(tb => { tb.colonnesArgentRangees = [].concat(tb.head, rangeesJour); });
 

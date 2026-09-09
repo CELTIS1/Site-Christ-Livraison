@@ -6965,11 +6965,12 @@ return `
 <tr>
 <td data-label="Cliente">${fournisseurLabel(c.fournisseur_id)}</td>
 <td data-label="Destinataire">${c.destinataire_telephone ? escapeHTML(c.destinataire_telephone) : '—'}</td>
-<td data-label="Adresse">${colisDestinationTexte(c) ? escapeHTML(colisDestinationTexte(c)) : '—'}${c.observation ? `<div class="meta" style="font-size:11.5px; color:#5b6473; margin-top:2px;">📝 ${escapeHTML(c.observation)}</div>` : ''}</td>
+<td data-label="Adresse">${colisDestinationTexte(c) ? escapeHTML(colisDestinationTexte(c)) : '—'}</td>
 <td data-label="Statut">${statutBadgeHTML(c.statut, c)}</td>
 <td data-label="Article">${formatMontant(montantArticleEncaisse(c)) || '—'}</td>
 <td data-label="Livraison">${formatMontant(montantLivraisonEncaissee(c)) || '—'}</td>
 <td data-label="En main" style="${m ? 'font-weight:700;' : 'color:#8a94a3;'}${m < 0 ? ` color:${COULEUR_NEGATIF_CLT};` : ''}">${m ? formatMontant(m) : '—'}${c.encaissement_remis ? ' <span class="recapl-remis">remis</span>' : ''}</td>
+<td data-label="Observation" class="recapl-obs">${observationTexte(c) ? escapeHTML(observationTexte(c)) : '<span style="color:#8a94a3;">—</span>'}</td>
 </tr>`;
 }).join('');
 
@@ -6991,7 +6992,7 @@ Reste à remettre : <strong>${money.reste ? formatMontant(money.reste) : '0 FCFA
 </div>
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
-<thead><tr><th>Cliente</th><th>Destinataire</th><th>Adresse</th><th>Statut</th><th>Article</th><th>Livraison</th><th>En main</th></tr></thead>
+<thead><tr><th>Cliente</th><th>Destinataire</th><th>Adresse</th><th>Statut</th><th>Article</th><th>Livraison</th><th>En main</th><th>Observation</th></tr></thead>
 <tbody>${rows}</tbody>
 ${piedTotalHTML([
 { texte: 'TOTAL' },
@@ -7001,6 +7002,7 @@ ${piedTotalHTML([
 { texte: formatMontant(t.articleEncaisse) || '0 FCFA', label: 'Article' },
 { texte: formatMontant(t.livraisonEncaissee) || '0 FCFA', label: 'Livraison' },
 { texte: formatMontant(money.total) || '0 FCFA', couleur: '#1a7d3c', label: 'En main' },
+{ texte: '' },
 ])}
 </table>
 </div>
@@ -9211,9 +9213,13 @@ styles: { fontSize: 8, cellPadding: 1.8 },
 // montants réellement présents et les aligne à droite, milliers sous milliers. Sans cette
 // déclaration, « 45 000 FCFA » se coupait en deux lignes, « 45 000 » puis « FCFA » dessous.
 colonnesArgent: [3, 4, 5],
-head: [['Colis', 'Client', 'Statut', 'Article', 'Encaissé', 'Livraison', 'État de l\u2019argent', 'Date']],
+// « Statut » et « Date » mesurées ; le reste partagé entre le colis, le client, l'état de
+// l'argent et l'observation — dernière colonne, comme sur l'écran du livreur. (09/09/2026)
+colonnesMesurees: { 2: 'left', 7: 'left' },
+colonnesRestantes: aDesObservations(rows) ? { 0: 0.3, 1: 0.2, 6: 0.2, 8: 0.3 } : { 0: 0.36, 1: 0.24, 6: 0.26, 8: 0.14 },
+head: [['Colis', 'Client', 'Statut', 'Article', 'Encaissé', 'Livraison', 'État de l\u2019argent', 'Date', 'Observation']],
 body: rows.map(c => [
-(c.description || '') + observationLigneTexte(c),
+c.description || '',
 fournisseurLabelPlain(c.fournisseur_id),
 STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
 formatMontant(montantArticleColis(c)) || '0 FCFA',
@@ -9221,6 +9227,7 @@ formatMontant(montantArticleEncaisse(c)) || '—',
 formatMontant(montantLivraisonColis(c)) || '—',
 articlePaiementLabel(c),
 formatDate(c.created_at),
+observationTexte(c) || '—',
 ]),
 foot: [[
 'TOTAL',
@@ -9229,6 +9236,7 @@ foot: [[
 formatMontant(t.articleEnregistre) || '0 FCFA',
 formatMontant(t.articleEncaisse) || '0 FCFA',
 formatMontant(t.livraisonEnregistree) || '0 FCFA',
+'',
 '',
 '',
 ]],

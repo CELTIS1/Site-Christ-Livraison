@@ -117,20 +117,39 @@ titre('Les montants négatifs sortent en rouge, sur tous les documents');
 /* L'OBSERVATION DU LIVREUR SUR SON POINT — 9 septembre 2026
    Celtis : « quand les livreurs font des observations sur les colis, le soir dans leur relevé
    ce n'est pas marqué, et en PDF il n'y a pas d'observation ». */
-titre("L'observation du livreur se retrouve sur le papier");
+titre("L'observation du livreur a sa colonne, la dernière, sur le papier");
 {
-  vm.runInContext(blocDe(config, 'observationLigneTexte', 'config.js'), contexte);
-  const obs = vm.runInContext('observationLigneTexte', contexte);
-  verifier('une observation devient une ligne « Obs. : … » sous la description', obs({ observation: 'Client absent, rappeler demain' }) === '\nObs. : Client absent, rappeler demain');
-  verifier('sans observation, rien (pas même une ligne vide)', obs({}) === '' && obs(null) === '' && obs({ observation: '   ' }) === '');
+  vm.runInContext(blocDe(config, 'observationTexte', 'config.js') + '\n' + blocDe(config, 'aDesObservations', 'config.js'), contexte);
+  const obs = vm.runInContext('observationTexte', contexte);
+  const aDes = vm.runInContext('aDesObservations', contexte);
+  verifier("observationTexte rend l'observation, sans blanc autour", obs({ observation: '  Client absent, rappeler demain ' }) === 'Client absent, rappeler demain');
+  verifier('sans observation, une chaîne vide', obs({}) === '' && obs(null) === '' && obs({ observation: '   ' }) === '');
+  verifier('aDesObservations : vrai dès qu\'un colis en porte une, faux sinon', aDes([{}, { observation: 'x' }]) === true && aDes([{}, {}]) === false && aDes(null) === false);
   const point = blocDe(config, 'pointColisTableauCLT', 'config.js');
-  verifier('le point du livreur (PDF) ajoute l\'observation à la cellule du colis', /\+ observationLigneTexte\(c\)/.test(point));
+  verifier('le point du livreur (PDF) a « Observation » en DERNIÈRE colonne, après « En main »', /concat\(\['En main', 'Observation'\]\)/.test(point) && /observationTexte\(c\) \|\| '—'/.test(point));
+  verifier("les colonnes d'argent s'arrêtent avant l'observation", /colonnesArgent: \[2, 3, 4, 5\]\.filter\(i => i < derniere\)/.test(point));
+  verifier("la largeur restante se partage entre « Colis » et « Observation », plus large quand il y a des observations",
+    /restantes\[0\] = avecObservations \? 0\.6 : 0\.82/.test(point) && /restantes\[derniere\] = avecObservations \? 0\.4 : 0\.18/.test(point));
+  verifier('pointDuLivreurPlan regarde toute la journée pour décider', /const avecObservations = aDesObservations\(colis\)/.test(blocDe(config, 'pointDuLivreurPlan', 'config.js')));
+  // La règle de partage, exécutée : sur 182 mm, colonnes fixes 30 + 20 + 20 = 70, reste 112.
+  const partage = vm.runInContext(`styleTableauCLT({
+    head: [['Colis', 'Statut', 'Article', 'En main', 'Observation']],
+    body: [['a', 'Livré', '1 000 FCFA', '1 000 FCFA', 'Client absent']],
+    columnStyles: { 1: { cellWidth: 30 }, 2: { cellWidth: 20 }, 3: { cellWidth: 20 } },
+    colonnesRestantes: { 0: 0.6, 4: 0.4 },
+  }, { internal: { pageSize: { getWidth: () => 210 } }, getFont: () => ({ fontName: 'helvetica', fontStyle: 'normal' }), getFontSize: () => 9, setFont(){}, setFontSize(){}, getTextWidth: () => 10 })`, contexte);
+  verifier('colonnesRestantes : 112 mm restants → 67,2 mm au colis et 44,8 mm à l\'observation',
+    partage.columnStyles && partage.columnStyles[0].cellWidth === 67.2 && partage.columnStyles[4].cellWidth === 44.8, JSON.stringify(partage.columnStyles));
+  verifier('la consigne ne part pas à autoTable', !('colonnesRestantes' in partage));
   const bilan = blocDe(equipe, 'renderRecapLivreurBilan', 'equipe.html');
-  verifier("le bilan du livreur (équipe) montre l'observation sous l'adresse", /c\.observation \? `<div class="meta"[^`]*escapeHTML\(c\.observation\)/.test(bilan));
+  verifier("le bilan du livreur (équipe) a une colonne « Observation » en dernier, et sa ligne TOTAL a une cellule de plus",
+    /<th>En main<\/th><th>Observation<\/th><\/tr>/.test(bilan) && /<td data-label="Observation" class="recapl-obs">/.test(bilan) && /label: 'En main' \},\n\{ texte: '' \},\n\]\)/.test(bilan));
   verifier("et un « En main » négatif y est rouge", /m < 0 \? ` color:\$\{COULEUR_NEGATIF_CLT\};`/.test(bilan));
   const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
-  verifier('le récapitulatif PDF de la cliente et la comptabilité (équipe) portent aussi l\'observation',
-    /\(c\.description \|\| ''\) \+ observationLigneTexte\(c\)/.test(fournisseur) && /\(c\.description \|\| ''\) \+ observationLigneTexte\(c\)/.test(equipe));
+  verifier("le récapitulatif PDF de la cliente et la comptabilité (équipe) ont aussi « Observation » en dernière colonne",
+    /'Date', 'Observation'\]\]/.test(fournisseur) && /observationTexte\(c\) \|\| '—',\n\s*\]\),/.test(fournisseur)
+    && /'Date', 'Observation'\]\]/.test(equipe) && /observationTexte\(c\) \|\| '—',\n\]\),/.test(equipe)
+    && /colonnesRestantes: aDesObservations\(rows\)/.test(fournisseur) && /colonnesRestantes: aDesObservations\(rows\)/.test(equipe));
 }
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
