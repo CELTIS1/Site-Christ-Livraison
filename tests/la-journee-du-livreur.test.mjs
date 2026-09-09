@@ -112,5 +112,21 @@ titre('Les deux écrans du livreur passent par cette définition');
   verifier("l'argent, lui, reste découpé par jour du colis (réception, ou jour reporté depuis le 09/09/2026)", /jourDuColis\(c\) === jour/.test(argent));
 }
 
+titre('Reporter à la date de son choix, retenter un non livré, prévenir la cliente (09/09/2026)');
+{
+  verifier('le calendrier de report est sur la carte, pré-rempli sur demain, jamais avant aujourd\'hui', /class="report-date" value="\$\{demainISO\(\)\}" min="\$\{todayLocalISODate\(\)\}"/.test(livreur));
+  verifier('« Retenter la livraison » n\'apparaît que sur un colis non livré, et repasse « en livraison » sur le jour choisi', /c\.statut === 'non_livre' \? `<div class="colis-report">/.test(livreur) && /const aEcrire = retente \? \{ reporte_au: cible, statut: 'en_livraison' \} : \{ reporte_au: cible \};/.test(livreur));
+  verifier('une date passée est refusée', /if \(cible < aujourdhui\)/.test(livreur));
+  verifier('après un report ou une nouvelle tentative, le message à la cliente est proposé (vrai lien, jamais d\'envoi automatique)', /proposerMessageReportCliente\(existing, cible, retente\)/.test(livreur) && /lienMessageReportCliente\(fiche\.phone \|\| ''/.test(livreur) && !/window\.open/.test(blocDe(livreur, 'proposerMessageReportCliente')));
+  verifier('le téléphone de la cliente est chargé avec les profils', /select\('id, full_name, company_name, role, avatar_url, phone'\)/.test(livreur));
+  const ctx2 = vm.createContext({ String, encodeURIComponent });
+  vm.runInContext(blocDe(config, 'messageReportCliente'), ctx2);
+  const msg = vm.runInContext('messageReportCliente', ctx2);
+  const m1 = msg({ livreurNom: 'Koffi', numero: 'CLT-9', destination: 'Cocody — Riviera', jourEnClair: 'jeudi 10 septembre' });
+  verifier('le message de report dit le colis, la destination et le jour', /ici Koffi/.test(m1) && /CLT-9 pour Cocody — Riviera sera livré le jeudi 10 septembre/.test(m1), m1);
+  const m2 = msg({ livreurNom: 'Koffi', numero: 'CLT-9', destination: 'Cocody', jourEnClair: 'jeudi 10 septembre', retente: true });
+  verifier("celui d'une nouvelle tentative dit d'abord que la remise n'a pas pu se faire", /n'avons pas pu remettre votre colis CLT-9 pour Cocody aujourd'hui/.test(m2) && /sera livré le jeudi 10 septembre/.test(m2), m2);
+}
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);

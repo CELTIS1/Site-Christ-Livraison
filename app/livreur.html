@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909report">
-<script src="theme.js?v=20260909report"></script>
-<script src="splash.js?v=20260909report"></script>
+<link rel="stylesheet" href="style.css?v=20260909retente">
+<script src="theme.js?v=20260909retente"></script>
+<script src="splash.js?v=20260909retente"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -794,9 +794,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909report"></script>
-<script src="config.js?v=20260909report"></script>
-<script src="biometric-lock.js?v=20260909report"></script>
+<script src="clt-common.js?v=20260909retente"></script>
+<script src="config.js?v=20260909retente"></script>
+<script src="biometric-lock.js?v=20260909retente"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1576,6 +1576,34 @@
      livreur, un vrai lien déjà rempli — le message de messageDestinataire() dans config.js,
      le même que celui du bouton « Prévenir sur WhatsApp » de la carte. Un appui, WhatsApp
      s'ouvre, le livreur relit et envoie. « Plus tard » referme sans rien faire. */
+  function demainISO(){ const d = new Date(todayLocalISODate() + 'T12:00:00'); d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function jourEnClairCourt(j){ return new Date(String(j).slice(0, 10) + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' }); }
+  /* LA VENDEUSE PRÉVENUE D'UN REPORT. (09/09/2026, Celtis) Même boîte que pour le destinataire :
+     un vrai lien WhatsApp déjà rédigé (messageReportCliente, config.js), vers le numéro de la
+     cliente (fiche profil), « Plus tard » pour refermer. */
+  function proposerMessageReportCliente(colis, jour, retente){
+    if (!colis || typeof lienMessageReportCliente !== 'function') return;
+    const ancien = document.getElementById('wa-invite');
+    if (ancien) ancien.remove();
+    const fiche = profilesById[colis.fournisseur_id] || {};
+    const lien = lienMessageReportCliente(fiche.phone || '', {
+      numero: colis.numero || '', destination: colisDestinationTexte(colis), jourEnClair: jourEnClairCourt(jour), retente: !!retente,
+      livreurNom: (currentProfile && currentProfile.full_name) || '',
+    });
+    const boite = document.createElement('div');
+    boite.id = 'wa-invite'; boite.className = 'wa-invite'; boite.setAttribute('role', 'dialog');
+    boite.innerHTML = `
+      <div class="wa-invite__titre">${retente ? 'Prévenir la cliente que vous retentez ?' : 'Prévenir la cliente du report ?'}</div>
+      <div class="wa-invite__sous">${escapeHTML(fournisseurNom(colis.fournisseur_id) || 'La cliente')} · 📞 ${fiche.phone ? escapeHTML(telephoneAffiche(fiche.phone)) : 'numéro inconnu — vous choisirez le contact dans WhatsApp'}${colis.numero ? ' · ' + escapeHTML(colis.numero) : ''}</div>
+      <div class="wa-invite__gestes">
+        <a class="wa-invite__envoyer" href="${escapeHTML(lien)}" target="_blank" rel="noopener">💬 Envoyer le message WhatsApp</a>
+        <button type="button" class="wa-invite__plus-tard">Plus tard</button>
+      </div>`;
+    document.body.appendChild(boite);
+    const fermer = () => { boite.remove(); };
+    boite.querySelector('.wa-invite__plus-tard').addEventListener('click', fermer);
+    boite.querySelector('.wa-invite__envoyer').addEventListener('click', () => setTimeout(fermer, 400));
+  }
   const STATUTS_A_PREVENIR = ['en_livraison', 'non_livre', 'livre'];
   function proposerMessageDestinataire(colis, statut){
     if (!colis || STATUTS_A_PREVENIR.indexOf(statut) === -1) return;
@@ -2090,9 +2118,16 @@
                    de demain — chez le livreur, au bureau et chez la cliente (jourDuColis, config.js).
                    Proposé tant que le colis est en route. -->
               ${STATUTS_A_FAIRE.indexOf(c.statut) !== -1 ? `<div class="colis-report">
-                ${colisReporte(c) ? `<span class="colis-report__etat">⏭️ Reporté au ${escapeHTML(new Date(jourDuColis(c) + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' }))}</span>` : ''}
-                <button type="button" class="btn btn-sm btn-reporter" data-reporter="${c.id}" title="Ce colis sera dans la journée de demain, et plus dans le point de ce soir.">⏭️ Reporter à demain</button>
+                ${colisReporte(c) ? `<span class="colis-report__etat">⏭️ Reporté au ${escapeHTML(jourEnClairCourt(jourDuColis(c)))}</span>` : ''}
+                <input type="date" class="report-date" value="${demainISO()}" min="${todayLocalISODate()}" aria-label="Reporter à quelle date">
+                <button type="button" class="btn btn-sm btn-reporter" data-reporter="${c.id}" title="Ce colis sera dans la journée choisie, et plus dans le point de ce soir.">⏭️ Reporter</button>
                 ${colisReporte(c) && jourDuColis(c) > todayLocalISODate() ? `<button type="button" class="btn btn-sm btn-outline btn-reporter" data-reporter="${c.id}" data-jour="${todayLocalISODate()}">↩️ Remettre à aujourd'hui</button>` : ''}
+              </div>` : ''}
+              ${c.statut === 'non_livre' ? `<div class="colis-report">
+                <!-- RETENTER. (09/09/2026, Celtis) Un colis non livré qu'on retente : un seul appui le
+                     repasse « en livraison » et le pose sur le jour choisi. -->
+                <input type="date" class="report-date" value="${demainISO()}" min="${todayLocalISODate()}" aria-label="Retenter à quelle date">
+                <button type="button" class="btn btn-sm btn-retenter" data-retenter="${c.id}" title="Repasse le colis « en livraison » et le pose sur le jour choisi.">🔁 Retenter la livraison</button>
               </div>` : ''}
               <!-- Ces deux boutons parlent d'argent encaissé chez le destinataire. Sur une
                    expédition il n'y en a pas : il a déjà payé chez la vendeuse. Les proposer,
@@ -2270,21 +2305,27 @@
     // livraison même s'il ne prend pas le colis. Indépendant du bouton « Enregistrer ».
     /* --- Reporter à demain (09/09/2026) : une écriture, colonne reporte_au. Hors réseau, en file
        d'attente comme les autres gestes. --- */
-    list.querySelectorAll('.btn-reporter').forEach(btn => {
+    list.querySelectorAll('.btn-reporter, .btn-retenter').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id = btn.dataset.reporter;
+        const retente = btn.classList.contains('btn-retenter');
+        const id = btn.dataset.reporter || btn.dataset.retenter;
         const existing = allColis.find(c => c.id === id);
         const aujourdhui = todayLocalISODate();
+        // La date : celle du bouton (« Remettre à aujourd'hui »), sinon celle du petit calendrier
+        // à côté, pré-rempli sur demain. (09/09/2026, Celtis : « reporter à plusieurs jours »)
         let cible = btn.dataset.jour;
-        if (!cible) { const d = new Date(aujourdhui + 'T12:00:00'); d.setDate(d.getDate() + 1); cible = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-        const enClair = new Date(cible + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
+        if (!cible) { const champ = btn.closest('.colis-report') && btn.closest('.colis-report').querySelector('.report-date'); cible = (champ && /^\d{4}-\d{2}-\d{2}$/.test(champ.value)) ? champ.value : demainISO(); }
+        if (cible < aujourdhui) { cltToast('Choisissez aujourd\'hui ou un jour à venir.', { type: 'warning' }); return; }
+        const enClair = jourEnClairCourt(cible);
         const ok = await cltConfirm({
-          title: cible > aujourdhui ? 'Reporter ce colis à demain ?' : 'Remettre ce colis à aujourd\'hui ?',
-          detail: `Il comptera dans la journée du ${enClair} : plus dans le point de ce soir, mais dans celui de ce jour-là.`,
-          okLabel: cible > aujourdhui ? 'Oui, reporter' : 'Oui, remettre',
+          title: retente ? 'Retenter la livraison ?' : (cible > aujourdhui ? `Reporter ce colis au ${enClair} ?` : 'Remettre ce colis à aujourd\'hui ?'),
+          detail: retente
+            ? `Le colis repasse « en livraison » et comptera dans la journée du ${enClair}.`
+            : `Il comptera dans la journée du ${enClair} : plus dans le point de ce soir, mais dans celui de ce jour-là.`,
+          okLabel: retente ? 'Oui, retenter' : (cible > aujourdhui ? 'Oui, reporter' : 'Oui, remettre'),
         });
         if (!ok) return;
-        const aEcrire = { reporte_au: cible };
+        const aEcrire = retente ? { reporte_au: cible, statut: 'en_livraison' } : { reporte_au: cible };
         const enFile = async () => {
           await queueAdd({ colisId: id, statut: existing ? existing.statut : null, observation: existing ? existing.observation : null, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: null, extra: aEcrire, userId: currentUser.id, timestamp: Date.now() });
           if (existing) Object.assign(existing, aEcrire);
@@ -2303,8 +2344,10 @@
         }
         rememberWrite(id, aEcrire);
         if (existing) Object.assign(existing, aEcrire);
-        cltToast(cible > aujourdhui ? `Colis reporté au ${enClair}.` : 'Colis remis à aujourd\'hui.', { type: 'success' });
+        cltToast(retente ? `Livraison à retenter le ${enClair}.` : (cible > aujourdhui ? `Colis reporté au ${enClair}.` : 'Colis remis à aujourd\'hui.'), { type: 'success' });
         renderAll();
+        // La cliente prévenue (09/09/2026) : le message WhatsApp lui est proposé, un appui pour envoyer.
+        if (existing && cible >= aujourdhui) proposerMessageReportCliente(existing, cible, retente);
       });
     });
 
@@ -3150,7 +3193,7 @@
   async function loadProfiles(){
     const { data, error } = await supabaseClient
       .from('profiles')
-      .select('id, full_name, company_name, role, avatar_url');
+      .select('id, full_name, company_name, role, avatar_url, phone');
     if (error) { console.error(error); return; }
     profilesById = {};
     data.forEach(p => { profilesById[p.id] = p; });

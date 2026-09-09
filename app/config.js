@@ -1407,6 +1407,28 @@ function lienMessageDestinataire(telephone, infos) {
   return tel ? "https://wa.me/" + tel + "?text=" + txt : "https://wa.me/?text=" + txt;
 }
 
+/* LE MESSAGE À LA VENDEUSE QUAND UN COLIS EST REPORTÉ. (09/09/2026, Celtis : « la cliente
+   prévenue du report ».) Une phrase : quel colis, pour où, sera livré quel jour. Le livreur
+   relit et envoie. */
+function messageReportCliente(infos) {
+  const i = infos || {};
+  const qui = (i.livreurNom || "").trim();
+  const ref = i.numero ? " " + String(i.numero).trim() : "";
+  const ou = (i.destination || "").trim();
+  const quand = (i.jourEnClair || "").trim();
+  const entete = qui
+    ? "Bonjour, ici " + qui + ", livreur chez Christ Livraison & Transport."
+    : "Bonjour, ici Christ Livraison & Transport.";
+  const corps = (i.retente ? "Nous n'avons pas pu remettre votre colis" + ref + (ou ? " pour " + ou : "") + " aujourd'hui. " : "")
+    + "Votre colis" + ref + (i.retente ? "" : (ou ? " pour " + ou : "")) + " sera livré " + (quand ? "le " + quand : "demain") + ".";
+  return entete + "\n\n" + corps + "\n\n— Christ Livraison & Transport";
+}
+function lienMessageReportCliente(telephone, infos) {
+  const tel = telephone ? numeroInternational(telephone) : "";
+  const txt = encodeURIComponent(messageReportCliente(infos));
+  return tel ? "https://wa.me/" + tel + "?text=" + txt : "https://wa.me/?text=" + txt;
+}
+
 /* Le lien WhatsApp de cette annonce, prêt à poser dans un href.
    Sans numéro, WhatsApp s'ouvre quand même avec le texte et le livreur choisit le contact :
    c'est mieux qu'un bouton mort, et c'est ce que fait déjà btn-notify-wa plus haut. */
