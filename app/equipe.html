@@ -3892,6 +3892,10 @@ try {
 renderAujourdhui();
 }
 
+function isoMoinsJours(jourISO, n){
+const d = new Date(jourISO + 'T12:00:00'); d.setDate(d.getDate() - n);
+return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function renderAujourdhui(){
 if (!document.getElementById('aujourdhui-actions')) return;
 const colis = Array.isArray(allColis) ? allColis : [];
@@ -3907,6 +3911,10 @@ const cat = {
   collecte:  colis.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id),
   livraison: colis.filter(c => c.statut === 'recupere' && !c.livreur_id),
   retard:    colis.filter(c => c.statut === 'en_livraison' && dayKey(c.created_at) < aujourdhui),
+  // Récupérés depuis plus de deux jours et jamais passés en livraison : des statuts jamais
+  // fermés qui encombrent les restes des livreurs (vu chez Gbei Franck : des « récupéré »
+  // d'août encore en route le 7 septembre). (09/09/2026)
+  dormants:  colis.filter(c => (c.statut === 'recupere' || c.statut === 'en_attente') && dayKey(c.created_at) < isoMoinsJours(aujourdhui, 2)),
   examiner:  colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && !vues.has(c.id)),
 };
 const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? pendingAccounts.length : 0;
@@ -3937,7 +3945,7 @@ const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`
 const raccourci = (valeur, label, aller, teinte) => valeur
   ? pastille(valeur, label, aller, teinte)
   : `<button type="button" class="ess-tuile est-vide" data-aller="${aller}" title="Ouvrir"><span class="n">0</span><span>${label}</span></button>`;
-window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id) };
+window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id) };
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 // 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient de
 // config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
@@ -3974,6 +3982,7 @@ set('aujourdhui-actions', ouRien(
   pastille(nbCodes,    nbCodes > 1 ? 'codes à dicter' : 'code à dicter', 'reinitialisations', 'rouge'), 'Rien à faire'));
 set('aujourdhui-anomalies', ouRien(
   pastille(cat.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +
+  pastille(cat.dormants.length, 'en route depuis plus de 2 jours', 'dormants', 'rouge') +
   pastille(cat.examiner.length, 'non livrés ou retours', 'examiner', 'rouge'), 'Rien à examiner'));
 set('aujourdhui-argent', ouRien(
   pastille(money(resteARemettre), 'à remettre', 'argent', 'rouge') +
@@ -4024,6 +4033,7 @@ switch (cle) {
   case 'collecte':  listeColis('en_attente', '', L.collecte); break;
   case 'livraison': listeColis('recupere', '__aucun', L.livraison); break;
   case 'retard':    listeColis('en_livraison', '', L.retard); break;
+  case 'dormants':  listeColis('tous', '', L.dormants); break;
   case 'examiner': {
     const st = (L.examiner || []).map(id => (allColis.find(c => c.id === id) || {}).statut);
     const seul = st.every(x => x === 'non_livre') ? 'non_livre' : st.every(x => x === 'retour') ? 'retour' : 'tous';
