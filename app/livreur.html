@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909parjour">
-<script src="theme.js?v=20260909parjour"></script>
-<script src="splash.js?v=20260909parjour"></script>
+<link rel="stylesheet" href="style.css?v=20260909report">
+<script src="theme.js?v=20260909report"></script>
+<script src="splash.js?v=20260909report"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -794,9 +794,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909parjour"></script>
-<script src="config.js?v=20260909parjour"></script>
-<script src="biometric-lock.js?v=20260909parjour"></script>
+<script src="clt-common.js?v=20260909report"></script>
+<script src="config.js?v=20260909report"></script>
+<script src="biometric-lock.js?v=20260909report"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1293,7 +1293,7 @@
 
   function matchesDate(c, dateStr){
     if (!dateStr) return true;
-    return dayKey(c.created_at) === dateStr;
+    return jourDuColis(c) === dateStr;
   }
 
   // todayLocalISODate() vit dans clt-common.js, chargé plus haut dans la page.
@@ -2085,6 +2085,15 @@
           <details class="colis-plus">
             <summary>Plus d'options</summary>
             <div class="colis-plus-corps">
+              <!-- REPORTER À DEMAIN. (09/09/2026, Celtis) Un colis reçu aujourd'hui qu'on ne livrera
+                   que demain change de jour : il sort du point de ce soir et entre dans la journée
+                   de demain — chez le livreur, au bureau et chez la cliente (jourDuColis, config.js).
+                   Proposé tant que le colis est en route. -->
+              ${STATUTS_A_FAIRE.indexOf(c.statut) !== -1 ? `<div class="colis-report">
+                ${colisReporte(c) ? `<span class="colis-report__etat">⏭️ Reporté au ${escapeHTML(new Date(jourDuColis(c) + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' }))}</span>` : ''}
+                <button type="button" class="btn btn-sm btn-reporter" data-reporter="${c.id}" title="Ce colis sera dans la journée de demain, et plus dans le point de ce soir.">⏭️ Reporter à demain</button>
+                ${colisReporte(c) && jourDuColis(c) > todayLocalISODate() ? `<button type="button" class="btn btn-sm btn-outline btn-reporter" data-reporter="${c.id}" data-jour="${todayLocalISODate()}">↩️ Remettre à aujourd'hui</button>` : ''}
+              </div>` : ''}
               <!-- Ces deux boutons parlent d'argent encaissé chez le destinataire. Sur une
                    expédition il n'y en a pas : il a déjà payé chez la vendeuse. Les proposer,
                    c'est inviter à cocher quelque chose qui n'a pas eu lieu. -->
@@ -2259,6 +2268,46 @@
     // --- Bascule « Livraison payée » (Correctif 3) : enregistrement immédiat au clic ---------
     // Toujours visible (quel que soit le statut) : le destinataire doit parfois payer la
     // livraison même s'il ne prend pas le colis. Indépendant du bouton « Enregistrer ».
+    /* --- Reporter à demain (09/09/2026) : une écriture, colonne reporte_au. Hors réseau, en file
+       d'attente comme les autres gestes. --- */
+    list.querySelectorAll('.btn-reporter').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.reporter;
+        const existing = allColis.find(c => c.id === id);
+        const aujourdhui = todayLocalISODate();
+        let cible = btn.dataset.jour;
+        if (!cible) { const d = new Date(aujourdhui + 'T12:00:00'); d.setDate(d.getDate() + 1); cible = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+        const enClair = new Date(cible + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
+        const ok = await cltConfirm({
+          title: cible > aujourdhui ? 'Reporter ce colis à demain ?' : 'Remettre ce colis à aujourd\'hui ?',
+          detail: `Il comptera dans la journée du ${enClair} : plus dans le point de ce soir, mais dans celui de ce jour-là.`,
+          okLabel: cible > aujourdhui ? 'Oui, reporter' : 'Oui, remettre',
+        });
+        if (!ok) return;
+        const aEcrire = { reporte_au: cible };
+        const enFile = async () => {
+          await queueAdd({ colisId: id, statut: existing ? existing.statut : null, observation: existing ? existing.observation : null, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: null, extra: aEcrire, userId: currentUser.id, timestamp: Date.now() });
+          if (existing) Object.assign(existing, aEcrire);
+          rememberWrite(id, aEcrire);
+        };
+        btn.disabled = true;
+        if (!navigator.onLine) {
+          try { await enFile(); } catch (e) { console.error(e); alert("Impossible d'enregistrer le report hors connexion. Merci de réessayer une fois connecté(e)."); }
+          btn.disabled = false; await refreshOfflineBanner(); renderAll(); return;
+        }
+        const { error } = await supabaseClient.from('colis').update(aEcrire).eq('id', id);
+        btn.disabled = false;
+        if (error) {
+          if (estPanneReseau(error)) { try { await enFile(); await refreshOfflineBanner(); } catch (e) { console.error(e); } renderAll(); return; }
+          alert(friendlyErrorMessage(error.message)); return;
+        }
+        rememberWrite(id, aEcrire);
+        if (existing) Object.assign(existing, aEcrire);
+        cltToast(cible > aujourdhui ? `Colis reporté au ${enClair}.` : 'Colis remis à aujourd\'hui.', { type: 'success' });
+        renderAll();
+      });
+    });
+
     list.querySelectorAll('.btn-livraison-payee').forEach(btn => {
       btn.addEventListener('click', async () => {
         const item = btn.closest('.colis-item');
@@ -2716,7 +2765,7 @@
   // annonceraient deux journées différentes sans que personne ne s'en aperçoive. (29/08/2026)
   function colisDeLaJournee(jour){
     if (!currentUser) return [];
-    return allColis.filter(c => c.livreur_id === currentUser.id && dayKey(c.created_at) === jour);
+    return allColis.filter(c => c.livreur_id === currentUser.id && jourDuColis(c) === jour);
   }
 
   function renderArgentDuJour(){

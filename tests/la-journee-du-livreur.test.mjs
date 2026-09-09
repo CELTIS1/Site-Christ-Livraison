@@ -50,7 +50,7 @@ const ctx = vm.createContext({ Object, Date });
 vm.runInContext(blocConstante(config, 'HORODATAGE_DU_STATUT'), ctx);
 vm.runInContext(blocDe(config, 'jourAbidjan') + '\n' + blocDe(config, 'jourEvenementColis') + '\n'
   + config.slice(config.indexOf('const STATUTS_EN_ROUTE'), config.indexOf(';', config.indexOf('const STATUTS_EN_ROUTE')) + 1) + '\n'
-  + blocDe(config, 'colisDeLaJourneeDeTravail') + '\n' + blocDe(config, 'colisDuJour') + '\n' + blocDe(config, 'colisRestesEnRoute'), ctx);
+  + blocDe(config, 'dayKey') + '\n' + blocDe(config, 'jourDuColis') + '\n' + blocDe(config, 'colisReporte') + '\n' + blocDe(config, 'colisDeLaJourneeDeTravail') + '\n' + blocDe(config, 'colisDuJour') + '\n' + blocDe(config, 'colisRestesEnRoute'), ctx);
 const journee = vm.runInContext('colisDeLaJourneeDeTravail', ctx);
 const duJour = vm.runInContext('colisDuJour', ctx);
 const restes = vm.runInContext('colisRestesEnRoute', ctx);
@@ -90,6 +90,14 @@ titre("Chaque jour, son affichage (09/09/2026) : le jour d'un côté, les restes
   verifier('les deux ne se recouvrent pas et, réunis, font la journée de travail', ids(duJour(colis, MARDI).concat(restes(colis, MARDI))) === ids(journee(colis, MARDI)));
   verifier("un colis reçu ce jour et encore en route est dans le jour, pas dans les restes", ids(duJour(colis, '2026-09-03')).includes('e') && !ids(restes(colis, '2026-09-03')).includes('e'));
   verifier('une liste vide rend une liste vide', duJour([], MARDI).length === 0 && restes(null, MARDI).length === 0);
+  // Reporter à demain (09/09/2026) : un colis reçu lundi et reporté à mardi est dans la journée de
+  // mardi, pas dans celle de lundi, et n'est un reste nulle part.
+  const reporte = { id: 'r', statut: 'en_attente', created_at: '2026-09-07T10:00:00Z', reporte_au: '2026-09-08' };
+  verifier('un colis reporté à mardi est dans la journée de mardi', ids(duJour([reporte], MARDI)) === 'r');
+  verifier("et plus dans celle de lundi", ids(duJour([reporte], '2026-09-07')) === '');
+  verifier("et il n'est pas un reste, ni lundi ni mardi", restes([reporte], MARDI).length === 0 && restes([reporte], '2026-09-07').length === 0);
+  const prisPuisReporte = { id: 'p', statut: 'recupere', created_at: '2026-09-07T10:00:00Z', recupere_at: '2026-09-07T11:00:00Z', reporte_au: '2026-09-08' };
+  verifier("un colis pris lundi puis reporté à mardi n'est plus dans lundi, même s'il y a bougé", ids(duJour([prisPuisReporte], '2026-09-07')) === '' && ids(duJour([prisPuisReporte], MARDI)) === 'p');
 }
 
 titre('Les deux écrans du livreur passent par cette définition');
@@ -101,7 +109,7 @@ titre('Les deux écrans du livreur passent par cette définition');
   const tuiles = blocDe(livreur, 'renderTourneeSummary');
   verifier('les tuiles comptent le jour, et les restes sur une ligne à part', /colisDuJour\(mine, jour\)/.test(tuiles) && /colisRestesEnRoute\(mine, jour\)/.test(tuiles));
   const argent = blocDe(livreur, 'colisDeLaJournee');
-  verifier("l'argent, lui, reste découpé par jour de réception", /dayKey\(c\.created_at\) === jour/.test(argent));
+  verifier("l'argent, lui, reste découpé par jour du colis (réception, ou jour reporté depuis le 09/09/2026)", /jourDuColis\(c\) === jour/.test(argent));
 }
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);

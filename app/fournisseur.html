@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909parjour">
-<script src="theme.js?v=20260909parjour"></script>
-<script src="splash.js?v=20260909parjour"></script>
+<link rel="stylesheet" href="style.css?v=20260909report">
+<script src="theme.js?v=20260909report"></script>
+<script src="splash.js?v=20260909report"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -471,10 +471,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909parjour"></script>
-<script src="config.js?v=20260909parjour"></script>
-<script src="biometric-lock.js?v=20260909parjour"></script>
-<script src="clt-select-recherche.js?v=20260909parjour"></script>
+<script src="clt-common.js?v=20260909report"></script>
+<script src="config.js?v=20260909report"></script>
+<script src="biometric-lock.js?v=20260909report"></script>
+<script src="clt-select-recherche.js?v=20260909report"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -612,7 +612,7 @@
 
   function matchesDate(c, dateStr){
     if (!dateStr) return true;
-    return dayKey(c.created_at) === dateStr;
+    return jourDuColis(c) === dateStr;
   }
 
   // todayLocalISODate() vit dans clt-common.js, chargé plus haut dans la page.
@@ -2353,7 +2353,7 @@
 
   function populateMoisSelect(){
     const select = document.getElementById('mois-select');
-    const keys = Array.from(new Set(mesColis.map(c => monthKey(c.created_at)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
+    const keys = Array.from(new Set(mesColis.map(c => jourDuColis(c).slice(0, 7)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
     const previousValue = select.value;
     // Les mois disponibles ne changent pas toutes les 25 secondes. Reconstruire cette liste à
     // l'identique suffisait pourtant à faire disparaître le panneau d'une liste déroulante
@@ -2400,7 +2400,7 @@
     if (!box || !dateInput) return;
     if (!dateInput.value) dateInput.value = todayLocalISODate();
     const jour = dateInput.value;
-    const duJour = mesColis.filter(c => dayKey(c.created_at) === jour);
+    const duJour = mesColis.filter(c => jourDuColis(c) === jour);
     const n = (st) => duJour.filter(c => c.statut === st).length;
     const buckets = [
       // « En attente » ajouté le 09/09/2026 : un colis déposé et pas encore pris affichait quatre
@@ -2415,7 +2415,9 @@
 
     const libelle = document.getElementById('colis-jour-libelle');
     if (libelle) {
-      const jourTexte = duJour.length ? dayLabel(duJour[0].created_at) : (jour === todayLocalISODate() ? "Aujourd'hui" : new Date(jour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }));
+      // Le libellé vient du jour regardé, pas du premier colis : un colis reporté porterait sinon
+      // la date de sa réception. (relecture 09/09/2026)
+      const jourTexte = jour === todayLocalISODate() ? "Aujourd'hui" : new Date(jour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
       libelle.textContent = `${jourTexte} · ${duJour.length} colis enregistré${duJour.length > 1 ? 's' : ''}`;
     }
     const montantEl = document.getElementById('colis-jour-montant');
@@ -2438,7 +2440,7 @@
       populateJourSelect([]);
       return;
     }
-    const colisDuMois = mesColis.filter(c => monthKey(c.created_at) === selected);
+    const colisDuMois = mesColis.filter(c => jourDuColis(c).slice(0, 7) === selected);
     if (!colisDuMois.length) {
       cltPoserHTML(box, `<div class="empty-state">Aucun colis pour ce mois.</div>`);
       populateJourSelect([]);
@@ -2538,7 +2540,7 @@
     const src = source || mesColis;
     const selected = document.getElementById('mois-select').value;
     if (!selected) return [];
-    const colisDuMois = src.filter(c => monthKey(c.created_at) === selected);
+    const colisDuMois = src.filter(c => jourDuColis(c).slice(0, 7) === selected);
     const jourSelected = document.getElementById('jour-select').value;
     if (jourSelected) {
       const groups = groupColisByDay(colisDuMois, 'created_at');

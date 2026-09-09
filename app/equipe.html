@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909parjour">
-<script src="theme.js?v=20260909parjour"></script>
-<script src="splash.js?v=20260909parjour"></script>
+<link rel="stylesheet" href="style.css?v=20260909report">
+<script src="theme.js?v=20260909report"></script>
+<script src="splash.js?v=20260909report"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1418,11 +1418,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909parjour"></script>
-<script src="config.js?v=20260909parjour"></script>
-<script src="clients-dashboard.js?v=20260909parjour"></script>
-<script src="biometric-lock.js?v=20260909parjour"></script>
-<script src="clt-select-recherche.js?v=20260909parjour"></script>
+<script src="clt-common.js?v=20260909report"></script>
+<script src="config.js?v=20260909report"></script>
+<script src="clients-dashboard.js?v=20260909report"></script>
+<script src="biometric-lock.js?v=20260909report"></script>
+<script src="clt-select-recherche.js?v=20260909report"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -1931,7 +1931,7 @@ return desc.includes(t) || dest.includes(t) || fourn.includes(t) || numero.inclu
 
 function matchesDate(c, dateStr){
 if (!dateStr) return true;
-return dayKey(c.created_at) === dateStr;
+return jourDuColis(c) === dateStr;
 }
 
 // todayLocalISODate() vit dans clt-common.js, chargé par toutes les pages.
@@ -3607,7 +3607,7 @@ const jour = todayLocalISODate();
 const match = allColis.find(c =>
 c.fournisseur_id === fournisseurId &&
 c.livreur_collecte_id &&
-dayKey(c.created_at) === jour
+jourDuColis(c) === jour
 );
 return match ? match.livreur_collecte_id : null;
 }
@@ -3702,6 +3702,18 @@ ${estValide ? '' : `
 <div class="field" style="margin-bottom:6px;">
 <label style="font-size:11.5px;">Précision (quartier, repère…)</label>
 <input type="text" class="edit-dest" value="${escapeHTML(c.destination || '')}" placeholder="Ex : Sicogi, en face de la pharmacie" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>
+<!-- Le jour du colis (09/09/2026) : reçu le … d'office ; reporté à une autre date si besoin. Et
+     « à livrer avant le », posé à la création, modifiable ici. -->
+<div class="field-row" style="margin-bottom:6px;">
+<div class="field" style="margin-bottom:0;">
+<label style="font-size:11.5px;">Jour du colis <span style="font-weight:400; color:var(--muted);">(reçu le ${escapeHTML(c.created_at ? dayKey(c.created_at) : '')}${colisReporte(c) ? ' · reporté' : ''})</span></label>
+<input type="date" class="edit-reporte-au" value="${escapeHTML(jourDuColis(c))}" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>
+<div class="field" style="margin-bottom:0;">
+<label style="font-size:11.5px;">À livrer avant le</label>
+<input type="date" class="edit-a-livrer-avant" value="${escapeHTML(String(c.a_livrer_avant || '').slice(0, 10))}" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>
 </div>
 <div class="field">
 <label style="font-size:11.5px;">Téléphone du destinataire</label>
@@ -3910,11 +3922,11 @@ const vues = getAlertesVues();
 const cat = {
   collecte:  colis.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id),
   livraison: colis.filter(c => c.statut === 'recupere' && !c.livreur_id),
-  retard:    colis.filter(c => c.statut === 'en_livraison' && dayKey(c.created_at) < aujourdhui),
+  retard:    colis.filter(c => c.statut === 'en_livraison' && jourDuColis(c) < aujourdhui),
   // Récupérés depuis plus de deux jours et jamais passés en livraison : des statuts jamais
   // fermés qui encombrent les restes des livreurs (vu chez Gbei Franck : des « récupéré »
   // d'août encore en route le 7 septembre). (09/09/2026)
-  dormants:  colis.filter(c => (c.statut === 'recupere' || c.statut === 'en_attente') && dayKey(c.created_at) < isoMoinsJours(aujourdhui, 2)),
+  dormants:  colis.filter(c => (c.statut === 'recupere' || c.statut === 'en_attente') && jourDuColis(c) < isoMoinsJours(aujourdhui, 2)),
   examiner:  colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && !vues.has(c.id)),
 };
 const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? pendingAccounts.length : 0;
@@ -4674,7 +4686,7 @@ const select = groupe ? groupe.querySelector('.select-assign-collecte') : null;
 const livreur_collecte_id = select ? select.value : '';
 if (!livreur_collecte_id) { if (window.cltToast) cltToast("Choisissez d'abord un livreur pour la collecte.", { type: 'warning' }); else alert("Choisissez d'abord un livreur pour la collecte."); return; }
 const ids = filtered
-.filter(c => (c.fournisseur_id || "?") === fournisseurId && c.statut === 'en_attente' && !c.livreur_collecte_id && dayKey(c.created_at) === dayKeyVal)
+.filter(c => (c.fournisseur_id || "?") === fournisseurId && c.statut === 'en_attente' && !c.livreur_collecte_id && jourDuColis(c) === dayKeyVal)
 .map(c => c.id);
 if (!ids.length) return;
 const label = collecteLivreurLabel(livreur_collecte_id) || 'ce livreur';
@@ -4828,6 +4840,13 @@ if (montant !== undefined) updatePayload.montant = montant;
 if (montant_article !== undefined) updatePayload.montant_article = montant_article;
 if (montant_livraison !== undefined) updatePayload.montant_livraison = montant_livraison;
 if (article_non_encaisse !== undefined) updatePayload.article_non_encaisse = article_non_encaisse;
+// Le jour du colis et « à livrer avant le » (09/09/2026). Un jour égal au jour de réception
+// efface le report ; une date vide efface la limite.
+{ const jourInput = item.querySelector('.edit-reporte-au');
+  if (jourInput) { const v = String(jourInput.value || '').slice(0, 10); const colisEdite = allColis.find(x => x.id === id); const recu = colisEdite && colisEdite.created_at ? dayKey(colisEdite.created_at) : '';
+    updatePayload.reporte_au = (/^\d{4}-\d{2}-\d{2}$/.test(v) && v !== recu) ? v : null; }
+  const avantInput = item.querySelector('.edit-a-livrer-avant');
+  if (avantInput) { const v = String(avantInput.value || '').slice(0, 10); updatePayload.a_livrer_avant = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null; } }
 if (livraison_payee !== undefined) updatePayload.livraison_payee = livraison_payee;
 btn.disabled = true; btn.textContent = '...';
 let { error } = await supabaseClient.from('colis').update(updatePayload).eq('id', id);
@@ -6544,7 +6563,7 @@ if (date === todayLocalISODate()) {
 // dayKey lit l'heure du téléphone. Ici les deux coïncident, mais la fiche « Son écran » et
 // le récapitulatif par livreur emploient dayKey — trois définitions de « aujourd'hui » pour
 // trois écrans, c'est la fabrique à écarts. Une seule, celle de config.js.
-return allColis.filter(c => dayKey(c.created_at) === date);
+return allColis.filter(c => jourDuColis(c) === date);
 }
 return recapDayCache[date] || [];
 }
@@ -6789,7 +6808,7 @@ return recaplSelectedDate || todayLocalISODate();
 // des jours passés, lui, est commun — un jour rapatrié une fois sert aux deux.
 function recaplDayColis(){
 const date = recaplGetDate();
-if (date === todayLocalISODate()) return (allColis || []).filter(c => dayKey(c.created_at) === date);
+if (date === todayLocalISODate()) return (allColis || []).filter(c => jourDuColis(c) === date);
 return recapDayCache[date] || [];
 }
 
@@ -8088,7 +8107,7 @@ if (overlay) overlay.classList.add('hidden');
 function ficheEcranColis(){
 if (!__ficheCtx) return [];
 const champ = __ficheCtx.qui === 'livreur' ? 'livreur_id' : 'fournisseur_id';
-return (allColis || []).filter(c => c && c[champ] === __ficheCtx.id && dayKey(c.created_at) === __ficheCtx.jour);
+return (allColis || []).filter(c => c && c[champ] === __ficheCtx.id && jourDuColis(c) === __ficheCtx.jour);
 }
 
 function renderFicheEcran(){

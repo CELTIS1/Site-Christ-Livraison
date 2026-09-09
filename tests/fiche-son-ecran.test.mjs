@@ -533,8 +533,8 @@ verifier("la fiche ne dépend pas de CSS.escape, absent des vieux Android de l'�
 titre("La fiche découpe la journée comme le téléphone");
 
 const filtre = blocDe(equipe, 'ficheEcranColis', 'equipe.html');
-verifier("la fiche découpe sur la date de RÉCEPTION, comme partout ailleurs",
-  /dayKey\(c\.created_at\)/.test(filtre)
+verifier("la fiche découpe sur le jour du colis (réception, ou jour reporté depuis le 09/09/2026), comme partout ailleurs",
+  /jourDuColis\(c\)/.test(filtre)
   && !/delivered_at|livre_at|date_livraison/.test(filtre),
   "un autre découpage donnerait un autre paquet de colis, et donc deux chiffres sans qu'aucun calcul ne soit faux");
 

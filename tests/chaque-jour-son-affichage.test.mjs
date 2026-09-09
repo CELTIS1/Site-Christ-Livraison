@@ -48,7 +48,7 @@ function blocDe(src, nom){
 const ctx = vm.createContext({ Object, Date, String, Number, Math, Map, Set, Array, encodeURIComponent });
 [
   'jourAbidjan', 'aujourdhuiAbidjan', 'jourEvenementColis', 'rangDeLaJournee', 'colisAttenduAuPlusTard',
-  'colisHorsProgrammeDuJour', 'departDeCollecte', 'totalDesLignes', 'tourneesDeRecuperation',
+  'dayKey', 'jourDuColis', 'colisHorsProgrammeDuJour', 'departDeCollecte', 'totalDesLignes', 'tourneesDeRecuperation',
   'toPhoneE164', 'numeroCompose', 'numeroInternational', 'messageContactRecuperation', 'lienContactRecuperation',
   'messageDepartRecuperation', 'lienDepartRecuperation', 'messageDestinataire', 'lienMessageDestinataire',
 ].forEach(n => vm.runInContext(blocDe(config, n), ctx));

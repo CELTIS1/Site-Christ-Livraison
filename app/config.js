@@ -1440,14 +1440,32 @@ function dayLabel(iso) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+/* LE JOUR D'UN COLIS PEUT ÊTRE REPORTÉ. (09/09/2026, Celtis : « un colis reporté au lendemain
+   reste dans le point du soir et, le lendemain, n'apparaît nulle part : il reste dans l'oubli. »)
+   Le jour d'un colis, c'est son jour de réception (created_at) — sauf si quelqu'un l'a reporté :
+   colis.reporte_au. Alors c'est CE jour-là qui compte, partout : la journée du livreur, son
+   argent du soir, la liste du bureau, les jours de la cliente. Une seule fonction pour le dire. */
+function jourDuColis(c) {
+  if (!c) return "";
+  const r = c.reporte_au ? String(c.reporte_au).slice(0, 10) : "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(r)) return r;
+  return c.created_at ? dayKey(c.created_at) : "";
+}
+function colisReporte(c) {
+  return !!(c && c.reporte_au && jourDuColis(c) !== (c.created_at ? dayKey(c.created_at) : ""));
+}
+
 // Regroupe une liste de colis par jour (le plus récent en premier).
 // Retourne [{ key, label, items: [...] }, ...].
+// Sur le jour de réception (champ par défaut), c'est jourDuColis() qui décide : un colis reporté
+// se range sous son nouveau jour. Sur un autre champ (livre_at…), le champ tel quel.
 function groupColisByDay(list, dateField) {
+  const parDefaut = !dateField || dateField === "created_at";
   dateField = dateField || "created_at";
   const map = new Map();
   list.forEach(c => {
-    const key = dayKey(c[dateField]);
-    if (!map.has(key)) map.set(key, { key, label: dayLabel(c[dateField]), items: [] });
+    const key = parDefaut ? jourDuColis(c) : dayKey(c[dateField]);
+    if (!map.has(key)) map.set(key, { key, label: dayLabel(parDefaut ? key + "T12:00:00" : c[dateField]), items: [] });
     map.get(key).items.push(c);
   });
   return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
@@ -5792,14 +5810,17 @@ function colisDeLaJourneeDeTravail(colis, jour) {
 function colisDuJour(colis, jour) {
   return (colis || []).filter(function (c) {
     if (!c) return false;
-    if (jourAbidjan(c.created_at) === jour) return true;
+    // Un colis reporté appartient à son jour de report, et à lui seul : même pris aujourd'hui,
+    // il ne compte plus dans aujourd'hui. (09/09/2026)
+    if (colisReporte(c)) return jourDuColis(c) === jour;
+    if (jourDuColis(c) === jour) return true;
     return Object.keys(HORODATAGE_DU_STATUT).some(function (st) { return jourEvenementColis(c, st) === jour; });
   });
 }
 function colisRestesEnRoute(colis, jour) {
   return (colis || []).filter(function (c) {
     if (!c || STATUTS_EN_ROUTE.indexOf(c.statut) === -1) return false;
-    const recu = jourAbidjan(c.created_at);
+    const recu = jourDuColis(c);
     if (!recu || recu >= jour) return false;
     return !Object.keys(HORODATAGE_DU_STATUT).some(function (st) { return jourEvenementColis(c, st) === jour; });
   });
@@ -6698,7 +6719,7 @@ function colisHorsProgrammeDuJour(colis, jour) {
   if (jourAbidjan(c.collecte_depart_at) === j) return true;
   const prevu = c.jour_recuperation_prevu;
   if (prevu !== null && prevu !== undefined && prevu !== "") return String(prevu).slice(0, 10) === j;
-  return jourAbidjan(c.created_at) === j;
+  return jourDuColis(c) === j;
 }
 
 /* LE TOTAL D'UN PAQUET DE LIGNES, ÉCRIT UNE SEULE FOIS. (28/08/2026)

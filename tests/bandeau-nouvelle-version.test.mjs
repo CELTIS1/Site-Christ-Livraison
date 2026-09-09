@@ -400,10 +400,11 @@ verifier(
    v87, le 09/09/2026 — le livreur : le jour d'un côté, les restes en route repliés à part (config.js, livreur.html, style.css) : étiquette 20260909parjour.
    v88, le 09/09/2026 — L'essentiel signale les colis en route depuis plus de 2 jours (equipe.html).
    v89, le 09/09/2026 — statut des colis du jour : tuile « En attente » (fournisseur.html).
-   v90, le 09/09/2026 — relecture : les restes en route seulement pour aujourd'hui, bouton « Aujourd'hui » (livreur.html). */
+   v90, le 09/09/2026 — relecture : les restes en route seulement pour aujourd'hui, bouton « Aujourd'hui » (livreur.html).
+   v91, le 09/09/2026 — reporter un colis à demain : jourDuColis partout (config.js, livreur.html, equipe.html, fournisseur.html, style.css) : étiquette 20260909report. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v90'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v91'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

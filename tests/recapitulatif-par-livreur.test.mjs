@@ -385,10 +385,10 @@ titre("Une seule définition de « la journée »");
 const jourClient = blocDe(equipe, 'recapDayColis', 'equipe.html');
 const jourLivreur = blocDe(equipe, 'recaplDayColis', 'equipe.html');
 
-verifier("les deux récapitulatifs découpent la journée avec dayKey, comme la fiche",
-  /dayKey\(c\.created_at\) === date/.test(jourClient)
-  && /dayKey\(c\.created_at\) === date/.test(jourLivreur)
-  && /dayKey\(c\.created_at\) === __ficheCtx\.jour/.test(blocDe(equipe, 'ficheEcranColis', 'equipe.html')),
+verifier("les deux récapitulatifs découpent la journée avec jourDuColis (réception, ou jour reporté), comme la fiche",
+  /jourDuColis\(c\) === date/.test(jourClient)
+  && /jourDuColis\(c\) === date/.test(jourLivreur)
+  && /jourDuColis\(c\) === __ficheCtx\.jour/.test(blocDe(equipe, 'ficheEcranColis', 'equipe.html')),
   "trois découpages de « aujourd'hui » pour trois écrans, c'est la fabrique à écarts");
 
 verifier("les deux récapitulatifs se partagent le cache des jours passés",

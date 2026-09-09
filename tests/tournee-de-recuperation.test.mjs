@@ -145,7 +145,7 @@ vm.runInContext([
   'departDeCollecte', 'messageDepartRecuperation', 'lienDepartRecuperation',
   /* Chaque jour, son affichage (07/09/2026) : le tri des colis hors programme par jour, et le
      message du bouton WhatsApp de la tournée. Même leçon : le dessin les appelle. */
-  'colisHorsProgrammeDuJour', 'messageContactRecuperation', 'lienContactRecuperation',
+  'dayKey', 'jourDuColis', 'colisHorsProgrammeDuJour', 'messageContactRecuperation', 'lienContactRecuperation',
   /* Le lieu de récupération, écrit une seule fois pour les deux écrans. (29/08/2026)
      Même leçon que les trois précédentes : le dessin les appelle, donc elles entrent ici, sinon
      le banc s'arrête au lieu de rougir. */
