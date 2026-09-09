@@ -713,7 +713,9 @@
       <div class="date-filter-wrap">
         <span class="date-filter-icone" aria-hidden="true">📅</span>
         <input type="date" id="filtre-date-mes" class="date-filter-input" aria-label="Filtrer les colis par date">
-        <button type="button" id="btn-toutes-dates-mes" class="date-filter-clear">Toutes</button>
+        <!-- « Aujourd'hui » depuis le 09/09/2026 : dans « Ma journée », vider la date ramène au jour ;
+             « Tous » (le filtre) montre tout l'historique. -->
+        <button type="button" id="btn-toutes-dates-mes" class="date-filter-clear">Aujourd'hui</button>
       </div>
       <div class="filters" id="filters-mes"></div>
       <div class="colis-list" id="mes-colis-list">
@@ -2142,7 +2144,9 @@
     // ce jour-là — colisDuJour(). Les colis encore en route d'AVANT ne s'y mélangent plus : ils
     // sont repliés sous la liste (restesEnRoute). (09/09/2026, Celtis)
     const jourMes = filtreDateMes || todayLocalISODate();
-    const restesEnRoute = (activeFilterMes === FILTRE_A_FAIRE && !searchMes) ? colisRestesEnRoute(mine, jourMes) : [];
+    // Les restes n'ont de sens qu'AUJOURD'HUI : en revenant sur un jour passé, on regarde ce
+    // jour-là et rien d'autre.
+    const restesEnRoute = (activeFilterMes === FILTRE_A_FAIRE && !searchMes && jourMes === todayLocalISODate()) ? colisRestesEnRoute(mine, jourMes) : [];
     let filtered = activeFilterMes === 'tous' ? mine
       : activeFilterMes === FILTRE_A_FAIRE ? colisDuJour(mine, jourMes)
       : mine.filter(c => c.statut === activeFilterMes);

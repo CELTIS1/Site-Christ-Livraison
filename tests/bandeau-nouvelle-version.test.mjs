@@ -399,10 +399,11 @@ verifier(
    v86, le 09/09/2026 — « Assigner (n) » par cliente réparé, « Sélection multiple » retirée (equipe.html).
    v87, le 09/09/2026 — le livreur : le jour d'un côté, les restes en route repliés à part (config.js, livreur.html, style.css) : étiquette 20260909parjour.
    v88, le 09/09/2026 — L'essentiel signale les colis en route depuis plus de 2 jours (equipe.html).
-   v89, le 09/09/2026 — statut des colis du jour : tuile « En attente » (fournisseur.html). */
+   v89, le 09/09/2026 — statut des colis du jour : tuile « En attente » (fournisseur.html).
+   v90, le 09/09/2026 — relecture : les restes en route seulement pour aujourd'hui, bouton « Aujourd'hui » (livreur.html). */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v89'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v90'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
