@@ -175,5 +175,17 @@ titre("L'espace cliente aussi : le jour d'office, simple à comprendre (07/09/20
   verifier('le choix de la cliente est respecté ensuite', /recapJourChoisi = document\.getElementById\('jour-select'\)\.value;/.test(fournisseur) && /recapJourChoisi = key;/.test(fournisseur));
 }
 
+titre("La création des colis (09/09/2026) : livreur de collecte, article soldé, ville sur expédition, adresse complète");
+{
+  const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
+  const clients = fs.readFileSync(path.join(APP, 'clients-dashboard.js'), 'utf8');
+  verifier('le lot du bureau demande le livreur de collecte une fois, pré-rempli depuis la tournée', /id="lot-livreur-collecte"/.test(equipe) && /function lotProposerLivreurCollecte/.test(equipe) && /livreurCollectePropose: lotLivreurCollecteChoisi\(fournisseur_id\)/.test(equipe));
+  verifier('chaque ligne du lot a « Article soldé », et il part dans le colis', /class="lot-solde"/.test(equipe) && /if \(s\.articleSolde\) payload\.article_non_encaisse = true;/.test(equipe));
+  verifier('sur une expédition, le champ précision du lot devient « Ville »', /brancherPrecisionExpedition\(div\.querySelector\('\.lot-commune'\), div\.querySelector\('\.lot-dest'\)\)/.test(equipe));
+  verifier("la cliente aussi peut cocher « Article soldé » à la création", /class="lotfr-article-solde"/.test(fournisseur) && /article_non_encaisse: !!s\.articleSolde,/.test(fournisseur));
+  verifier("et la case se cache sur une expédition, comme « Livraison déjà payée »", /\['\.lotfr-liv-payee', '\.lotfr-article-solde'\]\.forEach/.test(config));
+  verifier('les relevés écrivent commune ET adresse (colisDestinationTexte) : relevé cliente, point du livreur, bilan équipe, Excel, tableau de bord', /adresse:\s+colisDestinationTexte\(c\),/.test(config) && /\[c\.numero, colisDestinationTexte\(c\), quoi\]/.test(config) && /Destination: colisDestinationTexte\(c\)/.test(equipe) && /colisDestinationTexte\(c\) \? escapeHTML\(colisDestinationTexte\(c\)\) : '—'/.test(equipe) && /colisDestinationTexte\(c\)/.test(clients));
+}
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);

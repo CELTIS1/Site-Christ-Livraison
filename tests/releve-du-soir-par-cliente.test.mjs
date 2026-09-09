@@ -109,7 +109,7 @@ vm.runInContext([
   'fraisExpeditionADevoir', 'montantNetADevoir', 'fraisExpeditionARembourser',
   'montantEnMainDuLivreur', 'montantManquantALaLivraison', 'totauxArgent',
   'piedTotalHTML', 'echapperAttribut', 'statutBadgeHTML',
-  'libelleStatut', 'iconeStatut', 'statutTexte', 'releveCliente', 'releveTotalTextes', 'relevePiedCellules',
+  'libelleStatut', 'iconeStatut', 'statutTexte', 'colisDestinationTexte', 'releveCliente', 'releveTotalTextes', 'relevePiedCellules',
   'texteAplatiPourPDF', 'celluleAplatiePourPDF', 'nouveauPDF',
   'relevePhraseDue', 'releveDetailRetenues', 'releveNomFichier',
   // Le relevé du soir ne dessine plus son en-tête : il passe par le papier à en-tête de la
@@ -239,8 +239,11 @@ titre("Les chiffres du relevé");
 
 const r = releveCliente(COLIS_F1);
 
-verifier("une ligne par colis, dans l'ordre de la liste", r.lignes.length === 5
-  && r.lignes[0].adresse === 'Abobo Doumé' && r.lignes[4].adresse === 'Treichville');
+// Depuis le 08/09/2026 (Celtis : « commune ET adresse dans tous les relevés »), la colonne
+// Adresse est colisDestinationTexte() : « commune — précision », ou l'une des deux seule.
+verifier("une ligne par colis, dans l'ordre de la liste, avec commune et adresse", r.lignes.length === 5
+  && r.lignes[0].adresse === 'Abobo Doumé' && r.lignes[4].adresse === 'Treichville'
+  && releveCliente([c({ id: 'z', f: 'F1', s: 'livre', d: 'Rue 12, près de la pharmacie', com: 'Cocody' })]).lignes[0].adresse === 'Cocody — Rue 12, près de la pharmacie');
 
 /* « Encaissé » est devenu « Vous revient » le 01/09/2026. Ce n'est pas un habillage : l'ancienne
    colonne disait ce qui était rentré dans NOTRE caisse, et le bas de page annonçait ce total

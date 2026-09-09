@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260908net">
-<script src="theme.js?v=20260908net"></script>
-<script src="splash.js?v=20260908net"></script>
+<link rel="stylesheet" href="style.css?v=20260909creation">
+<script src="theme.js?v=20260909creation"></script>
+<script src="splash.js?v=20260909creation"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -639,6 +639,16 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
      et toutes les photos d'une même fournée lui appartiennent. -->
 <select id="lot-fournisseur" data-recherche data-recherche-placeholder="Nom de la cliente…">
 <option value="">— Sélectionner —</option>
+</select>
+</div>
+<!-- LE LIVREUR DE LA COLLECTE, CHOISI ICI. (08/09/2026, Celtis : « lors de la création des colis,
+     il faudrait qu'on ait la possibilité de choisir le livreur de la collecte ».) Jusqu'ici il
+     était deviné (celui des colis du jour de la cliente) et on venait l'assigner après coup.
+     Pré-rempli avec la tournée du jour quand elle existe ; « à confier plus tard » reste possible. -->
+<div class="field">
+<label>Livreur qui récupère chez elle <span style="font-weight:400; color:var(--muted);">(pré-rempli depuis la tournée du jour)</span></label>
+<select id="lot-livreur-collecte" data-recherche data-recherche-placeholder="Nom du livreur…">
+<option value="">— À confier plus tard —</option>
 </select>
 </div>
 
@@ -1404,11 +1414,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260908net"></script>
-<script src="config.js?v=20260908net"></script>
-<script src="clients-dashboard.js?v=20260908net"></script>
-<script src="biometric-lock.js?v=20260908net"></script>
-<script src="clt-select-recherche.js?v=20260908net"></script>
+<script src="clt-common.js?v=20260909creation"></script>
+<script src="config.js?v=20260909creation"></script>
+<script src="clients-dashboard.js?v=20260909creation"></script>
+<script src="biometric-lock.js?v=20260909creation"></script>
+<script src="clt-select-recherche.js?v=20260909creation"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2029,7 +2039,8 @@ destination: val('.lot-dest'),
 telephone: val('.lot-tel'),
 montantArticle: val('.lot-art'),
 montantLivraison: val('.lot-liv'),
-description: val('.lot-desc')
+description: val('.lot-desc'),
+articleSolde: !!(l.el && l.el.querySelector('.lot-solde') && l.el.querySelector('.lot-solde').checked)
 };
 }
 
@@ -2110,6 +2121,9 @@ ${l.url
 <label>Description (optionnel)</label>
 <input type="text" class="lot-desc" placeholder="Rien à écrire si l'étiquette n'en dit pas">
 </div>
+<!-- Article soldé dès la création (08/09/2026, Celtis) : le destinataire a déjà tout payé chez la
+     vendeuse. Le livreur n'encaissera rien, et la livraison sera retenue sur elle (config.js). -->
+<label class="check-pill lot-solde-pill" title="Le destinataire a déjà tout payé chez la vendeuse (article et livraison) : le livreur n'encaisse rien, la livraison est retenue sur la vendeuse."><input type="checkbox" class="lot-solde"> Article soldé (déjà payé chez la vendeuse)</label>
 <div class="lot-etat"></div>
 <!-- Enregistrer ce colis-là, tout de suite. Ce bouton existe pour une raison précise : sur
      téléphone, l'onglet est libéré par le système dès que l'écran se verrouille, et toute
@@ -2118,6 +2132,9 @@ ${l.url
      est un colis parti : au pire on perd celui qu'on avait sous les doigts. -->
 <button type="button" class="btn btn-sm lot-enregistrer-un">✔ Enregistrer ce colis</button>
 </div>`;
+// « Expédition » → le champ précision devient « Ville de destination », obligatoire, comme sur
+// le formulaire de la cliente (appliquerModeExpedition, config.js). (08/09/2026, Celtis)
+brancherPrecisionExpedition(div.querySelector('.lot-commune'), div.querySelector('.lot-dest'));
 return div;
 }
 
@@ -2295,6 +2312,7 @@ destinataire_telephone: s.telephone ? cleTelCarnet(s.telephone) : null,
 cle_creation: l.cle
 };
 if (ctx.livreurCollectePropose) payload.livreur_collecte_id = ctx.livreurCollectePropose;
+if (s.articleSolde) payload.article_non_encaisse = true;
 
 let error = await eqInsererColis(payload);
 
@@ -2364,7 +2382,7 @@ if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
 
 const bilan = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
 const echecs = [];
-const ctx = { fournisseur_id, livreurCollectePropose: clienteCollecteDriverToday(fournisseur_id) };
+const ctx = { fournisseur_id, livreurCollectePropose: lotLivreurCollecteChoisi(fournisseur_id) };
 const partie = await lotEnvoyerUneLigne(l, rang, ctx, bilan, echecs);
 
 lotEnvoiEnCours = false;
@@ -2411,7 +2429,7 @@ if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
 const bilan = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
 const echecs = [];
 const reussies = [];
-const ctx = { fournisseur_id, livreurCollectePropose: clienteCollecteDriverToday(fournisseur_id) };
+const ctx = { fournisseur_id, livreurCollectePropose: lotLivreurCollecteChoisi(fournisseur_id) };
 
 for (let i = 0; i < lotLignes.length; i++) {
 const l = lotLignes[i];
@@ -2437,6 +2455,10 @@ lotApresEnvoi(fournisseur_id);
 }
 
 function initLotColis(){
+// Le livreur de collecte suit la cliente choisie ; un choix à la main est respecté. (08/09/2026)
+{ const cl = document.getElementById('lot-fournisseur'); const lv = document.getElementById('lot-livreur-collecte');
+  if (cl) cl.addEventListener('change', () => { if (lv) delete lv.dataset.choisiALaMain; lotProposerLivreurCollecte(); });
+  if (lv) lv.addEventListener('change', () => { if (lv.value) lv.dataset.choisiALaMain = '1'; else delete lv.dataset.choisiALaMain; }); }
 const depot = document.getElementById('lot-depot');
 const conteneur = document.getElementById('lot-lignes');
 if (!depot || !conteneur) return;
@@ -2966,10 +2988,17 @@ if (error) { console.error(error); return; }
 livreurs = data;
 populateFiltreLivreurSelect();
 populateProgLivreurSelect();
+populateLotLivreurSelect();
 renderColis();
 }
 
 // Le livreur qu'on désigne pour la tournée du lendemain.
+function populateLotLivreurSelect(){
+const select = document.getElementById('lot-livreur-collecte');
+if (!select) return;
+cltPoserOptions(select, '<option value="">— À confier plus tard —</option>' +
+livreurs.map(l => `<option value="${l.id}">${escapeHTML(l.full_name || l.id)}</option>`).join(''));
+}
 function populateProgLivreurSelect(){
 const select = document.getElementById('prog-livreur');
 if (!select) return;
@@ -3533,6 +3562,24 @@ return c.statut !== 'en_attente' || !!c.observation || !!c.livreur_collecte_id;
 // cliente, s'il existe. Sert à proposer/attribuer automatiquement le même livreur aux colis suivants
 // de la même cliente le même jour : un seul livreur récupère tous les colis d'une cliente sur la
 // journée. Le premier est assigné à la main, les suivants automatiquement (et restent modifiables).
+// Le livreur de collecte du lot : celui choisi dans l'en-tête, sinon celui deviné (tournée ou
+// colis du jour). (08/09/2026)
+function lotLivreurCollecteChoisi(fournisseurId){
+const champ = document.getElementById('lot-livreur-collecte');
+const choisi = (champ && champ.value) || '';
+return choisi || clienteCollecteDriverToday(fournisseurId);
+}
+// Quand la cliente change, on propose le livreur de sa tournée du jour (programmation), sinon
+// celui de ses colis du jour — sans écraser un choix déjà fait à la main.
+function lotProposerLivreurCollecte(){
+const champ = document.getElementById('lot-livreur-collecte');
+const fid = (document.getElementById('lot-fournisseur') || {}).value || '';
+if (!champ || !fid) return;
+const jour = todayLocalISODate();
+const prog = (typeof progLignes !== 'undefined' ? progLignes : []).find(p => p.fournisseur_id === fid && p.jour === jour);
+const propose = (prog && prog.livreur_id) || clienteCollecteDriverToday(fid) || '';
+if (propose && !champ.dataset.choisiALaMain) { champ.value = propose; if (window.CLTRecherche) CLTRecherche.rafraichir(champ); }
+}
 function clienteCollecteDriverToday(fournisseurId){
 if (!fournisseurId) return null;
 const jour = todayLocalISODate();
@@ -6862,7 +6909,7 @@ return `
 <tr>
 <td data-label="Cliente">${fournisseurLabel(c.fournisseur_id)}</td>
 <td data-label="Destinataire">${c.destinataire_telephone ? escapeHTML(c.destinataire_telephone) : '—'}</td>
-<td data-label="Adresse">${c.destination ? escapeHTML(c.destination) : '—'}</td>
+<td data-label="Adresse">${colisDestinationTexte(c) ? escapeHTML(colisDestinationTexte(c)) : '—'}</td>
 <td data-label="Statut">${statutBadgeHTML(c.statut, c)}</td>
 <td data-label="Article">${formatMontant(montantArticleEncaisse(c)) || '—'}</td>
 <td data-label="Livraison">${formatMontant(montantLivraisonEncaissee(c)) || '—'}</td>
@@ -9016,7 +9063,7 @@ if (!rows.length) { alert("Aucune donnée à exporter."); return; }
 const data = rows.map(c => ({
 Colis: c.description || '',
 Client: fournisseurLabel(c.fournisseur_id),
-Destination: c.destination || '',
+Destination: colisDestinationTexte(c) || '',
 Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
 'Article enregistré': montantArticleColis(c) || 0,
 'Article encaissé': montantArticleEncaisse(c) || 0,

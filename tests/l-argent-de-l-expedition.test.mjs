@@ -136,7 +136,7 @@ vm.runInContext([
     'montantManquantALaLivraison', 'montantArticleReverse', 'fraisCourseAcquis',
     'fraisSoldes', 'etatsPossibles', 'stepperHTML',
     'paiementInfo',
-    'totauxArgent', 'libelleStatut', 'iconeStatut', 'statutTexte', 'releveCliente',
+    'totauxArgent', 'libelleStatut', 'iconeStatut', 'statutTexte', 'colisDestinationTexte', 'releveCliente',
     'releveTotalTextes', 'relevePhraseDue', 'releveDetailRetenues',
   ].map(n => blocDe(sourceConfig, n, 'config.js')),
   // releveCliente cite RELEVE_COLONNES ; statutTexte cite STATUTS, absent hors navigateur.

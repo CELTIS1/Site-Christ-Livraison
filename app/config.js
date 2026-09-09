@@ -570,6 +570,8 @@ function colisDestinationTexte(c) {
   if (estExpedition(commune)) {
     return precision ? "Expédition → " + precision : COMMUNE_EXPEDITION;
   }
+  // La même chose écrite deux fois n'apporte rien (« Abobo — Abobo »). (08/09/2026)
+  if (commune && precision && commune.toLowerCase() === precision.toLowerCase()) return commune;
   if (commune && precision) return commune + " — " + precision;
   return commune || precision || "";
 }
@@ -740,11 +742,15 @@ function appliquerModeExpedition(selectCommune, champPrecision) {
 
   // « Livraison déjà payée » parle d'un encaissement chez le destinataire : sur une expédition
   // il n'y en a pas. « Soldé » prend sa place — et une seule des deux est visible à la fois.
-  const casePayee = formulaire.querySelector('.lotfr-liv-payee');
-  if (casePayee && casePayee.closest('label')) {
-    casePayee.closest('label').style.display = expedition ? 'none' : '';
-    if (expedition) casePayee.checked = false;
-  }
+  // « Livraison déjà payée » et « Article soldé » (08/09/2026) : deux cases d'un colis ordinaire,
+  // sans objet sur une expédition.
+  ['.lotfr-liv-payee', '.lotfr-article-solde'].forEach(sel => {
+    const casePayee = formulaire.querySelector(sel);
+    if (casePayee && casePayee.closest('label')) {
+      casePayee.closest('label').style.display = expedition ? 'none' : '';
+      if (expedition) casePayee.checked = false;
+    }
+  });
   const caseSoldee = formulaire.querySelector('.lotfr-soldee');
   if (caseSoldee && caseSoldee.closest('label')) {
     caseSoldee.closest('label').style.display = expedition ? '' : 'none';
@@ -4047,7 +4053,9 @@ function releveCliente(colis) {
   const t = totauxArgent(liste);
   const lignes = liste.map(c => ({
     telephone:   (c && c.destinataire_telephone) || '',
-    adresse:     (c && c.destination) || '',
+    // Commune ET adresse (08/09/2026, Celtis : « dans les relevés, ce n'était que la précision ;
+    // on voyait des tirets sans savoir pour quelle commune »). Une seule règle : colisDestinationTexte().
+    adresse:     colisDestinationTexte(c),
     statutCode:  (c && c.statut) || '',
     statut:      statutTexte(c && c.statut, c),
     article:     Number(montantArticleColis(c)) || 0,
@@ -5413,7 +5421,7 @@ function financeColisHTML(colis, actionsHTML) {
           ${estExpedition(c) && (gare || liv) ? (fraisSoldes(c)
             ? `<div class="finance-colis-meta" style="color:#1a7d3c; font-weight:600;">✅ Frais déjà réglés à CLT par la cliente — rien ne se retient sur son relevé.</div>`
             : `<div class="finance-colis-meta" style="color:#8a4b12;">🚌 Frais à retenir sur son relevé : ${m(fraisExpeditionADevoir(c) + fraisCourseADevoir(c))}.</div>`) : ''}
-          ${c.destination ? `<div class="finance-colis-meta">Vers : ${escapeHTML(c.destination)}</div>` : ''}
+          ${colisDestinationTexte(c) ? `<div class="finance-colis-meta">Vers : ${escapeHTML(colisDestinationTexte(c))}</div>` : ''}
           ${c.observation ? `<div class="finance-colis-meta">Observation : ${escapeHTML(c.observation)}</div>` : ''}
           ${actions ? `<div class="finance-colis-actions">${actions}</div>` : ''}
         </div>`;
@@ -5550,7 +5558,7 @@ function pointColisTableauCLT(colis, colonneGare) {
     const enMain = montantEnMainDuLivreur(c);
     const gare = fraisExpeditionColis(c);
     return [
-      [c.numero, c.destination, quoi].filter(Boolean).join(' · ') || '—',
+      [c.numero, colisDestinationTexte(c), quoi].filter(Boolean).join(' · ') || '—',
       statutTexte(c.statut, c),
       montantArticleColis(c) ? m(montantArticleColis(c)) : '—',
       montantLivraisonColis(c) ? m(montantLivraisonColis(c)) : '—',

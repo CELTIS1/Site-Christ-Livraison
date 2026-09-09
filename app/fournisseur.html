@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260908net">
-<script src="theme.js?v=20260908net"></script>
-<script src="splash.js?v=20260908net"></script>
+<link rel="stylesheet" href="style.css?v=20260909creation">
+<script src="theme.js?v=20260909creation"></script>
+<script src="splash.js?v=20260909creation"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -471,10 +471,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260908net"></script>
-<script src="config.js?v=20260908net"></script>
-<script src="biometric-lock.js?v=20260908net"></script>
-<script src="clt-select-recherche.js?v=20260908net"></script>
+<script src="clt-common.js?v=20260909creation"></script>
+<script src="config.js?v=20260909creation"></script>
+<script src="biometric-lock.js?v=20260909creation"></script>
+<script src="clt-select-recherche.js?v=20260909creation"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -847,6 +847,7 @@
       montantLivraison: val('.lotfr-liv'),
       description: val('.lotfr-desc'),
       livraisonPayee: coche('.lotfr-liv-payee'),
+      articleSolde: coche('.lotfr-article-solde'),
       fraisSoldes: coche('.lotfr-soldee')
     };
   }
@@ -947,6 +948,11 @@
                enregistre son colis, personne n'a encore payé quoi que ce soit. La régle est
                désormais « livré = encaissé », et l'exception se coche à la livraison. -->
           <label class="check-pill"><input type="checkbox" class="lotfr-liv-payee"> Livraison déjà payée</label>
+          <!-- Article soldé dès la création (08/09/2026, Celtis) : le destinataire a déjà tout payé
+               chez la vendeuse. Le livreur n'encaissera rien ; la livraison sera retenue sur elle
+               (sauf si elle est cochée « déjà payée » ci-contre). Sans objet sur une expédition,
+               où c'est toujours le cas : la case suit celle de la livraison. -->
+          <label class="check-pill" title="Le destinataire vous a déjà tout payé (article et livraison) : le livreur n'encaisse rien, la livraison est retenue sur votre relevé."><input type="checkbox" class="lotfr-article-solde"> Article soldé (déjà payé chez vous)</label>
           <!-- « Soldé » ne concerne QUE les expéditions, et remplace la case ci-dessus quand la
                destination bascule vers l'intérieur du pays (voir appliquerModeExpedition, dans
                config.js). Elle veut dire : j'ai déjà réglé à CLT les frais d'expédition et de
@@ -1158,6 +1164,7 @@
       // Normalisé au format international (225…) attendu par la notification WhatsApp.
       destinataire_telephone: s.telephone ? toPhoneE164(s.telephone) : null,
       livraison_payee: !!s.livraisonPayee,
+      article_non_encaisse: !!s.articleSolde,
       // « Soldé » : la vendeuse déclare avoir déjà réglé à CLT les frais d'expédition et de
       // course sur ce colis. On enregistre la DATE et non un oui/non, comme partout ailleurs
       // dans la maison dès qu'il s'agit d'argent — un jour de contestation, savoir QUAND vaut
