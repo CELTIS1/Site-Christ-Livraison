@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909fluide">
-<script src="theme.js?v=20260909fluide"></script>
-<script src="splash.js?v=20260909fluide"></script>
+<link rel="stylesheet" href="style.css?v=20260909parjour">
+<script src="theme.js?v=20260909parjour"></script>
+<script src="splash.js?v=20260909parjour"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -792,9 +792,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909fluide"></script>
-<script src="config.js?v=20260909fluide"></script>
-<script src="biometric-lock.js?v=20260909fluide"></script>
+<script src="clt-common.js?v=20260909parjour"></script>
+<script src="config.js?v=20260909parjour"></script>
+<script src="biometric-lock.js?v=20260909parjour"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2114,16 +2114,39 @@
     `;
   }
 
+  /* LES RESTES EN ROUTE, À PART. (09/09/2026) Repliés sous la liste du jour, avec leur nombre
+     dans le titre ; ouverts, ce sont les mêmes cartes, avec les mêmes gestes. Le repli se
+     souvient de son état le temps de la page, pour ne pas se refermer à chaque redessin. */
+  let restesOuverts = false;
+  function restesEnRouteHTML(restes){
+    if (!restes || !restes.length) return '';
+    const groupes = groupColisByDayAndClient(restes, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
+    return `<details class="restes-en-route"${restesOuverts ? ' open' : ''}>
+      <summary>⏳ ${restes.length} colis encore en route, reçu${restes.length > 1 ? 's' : ''} avant — à finir</summary>
+      <div class="restes-en-route__aide">Ils ne comptent pas dans la journée d'aujourd'hui. Livrez-les, ou signalez-les au bureau s'ils n'ont plus lieu d'être.</div>
+      ${renderGroupedColisHTML(groupes, mesColisRowHTML)}
+    </details>`;
+  }
+  function brancherRestesEnRoute(list){
+    const d = list.querySelector('.restes-en-route');
+    if (d) d.addEventListener('toggle', () => { restesOuverts = d.open; });
+  }
+
   function renderMesColis(){
     const list = document.getElementById('mes-colis-list');
     const __anchor = captureScrollAnchor(list);
     const __pending = capturePendingEdits(list);
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
     // « À faire » = les trois statuts encore en route ; « Tous » = tout ; sinon un statut.
+    // « Ma journée » = le jour choisi (aujourd'hui d'office) : reçus ce jour-là ou qui ont bougé
+    // ce jour-là — colisDuJour(). Les colis encore en route d'AVANT ne s'y mélangent plus : ils
+    // sont repliés sous la liste (restesEnRoute). (09/09/2026, Celtis)
+    const jourMes = filtreDateMes || todayLocalISODate();
+    const restesEnRoute = (activeFilterMes === FILTRE_A_FAIRE && !searchMes) ? colisRestesEnRoute(mine, jourMes) : [];
     let filtered = activeFilterMes === 'tous' ? mine
-      : activeFilterMes === FILTRE_A_FAIRE ? colisDeLaJourneeDeTravail(mine, todayLocalISODate())
+      : activeFilterMes === FILTRE_A_FAIRE ? colisDuJour(mine, jourMes)
       : mine.filter(c => c.statut === activeFilterMes);
-    filtered = filtered.filter(c => matchesSearch(c, searchMes) && matchesDate(c, filtreDateMes));
+    filtered = filtered.filter(c => matchesSearch(c, searchMes) && (activeFilterMes === FILTRE_A_FAIRE || matchesDate(c, filtreDateMes)));
     // Un colis coché puis supprimé, réassigné à quelqu'un d'autre ou passé hors des critères ne
     // doit plus compter dans la sélection : sinon le bouton annoncerait un nombre plus grand que
     // ce qu'il traiterait vraiment. On recale donc la sélection sur la liste réelle à chaque
@@ -2132,11 +2155,13 @@
     list.classList.toggle('lot-actif', lotMesActif);
     if (!filtered.length) {
       if (!cltPoserHTML(list, (filtreDateMes
-        ? `<div class="empty-state">Aucun colis assigné à cette date.</div>`
+        ? `<div class="empty-state">Aucun colis pour vous ce jour-là.</div>`
         : activeFilterMes === FILTRE_A_FAIRE && !searchMes
-          ? `<div class="empty-state">Rien pour le moment 👍 — touchez « Tous » pour revoir vos colis des jours passés.</div>`
+          ? `<div class="empty-state">Rien pour aujourd'hui 👍 — choisissez une date pour revoir un autre jour.</div>`
           : `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`)
+        + restesEnRouteHTML(restesEnRoute)
         + (lotMesActif ? barreLotHTML(0, 0, boutonsLotMes(), '') : ''))) return;
+      brancherRestesEnRoute(list);
       if (lotMesActif) brancherBarreLotMes(list, []);
       restoreScrollAnchor(list, __anchor);
       return;
@@ -2162,8 +2187,10 @@
     // redessinait donc son écran, en pleine saisie de montant. (25/08/2026)
     if (!cltPoserHTML(list, renderGroupedColisHTML(trMes.groups, mesColisRowHTML)
       + trancheColisPiedHTML(trMes.affiches, trMes.total)
+      + restesEnRouteHTML(restesEnRoute)
       + (lotMesActif ? barreLotHTML(lotMesIds.size, filtered.length, boutonsLotMes(), '') : ''))) return;
     brancherTrancheColis(list, () => { trancheMes += COLIS_TRANCHE; renderMesColis(); });
+    brancherRestesEnRoute(list);
     if (typeof cltAppliquerColisAVoir === 'function') cltAppliquerColisAVoir(list);
     if (lotMesActif) brancherBarreLotMes(list, filtered);
 
@@ -2638,7 +2665,10 @@
     // jour-là : colisDeLaJourneeDeTravail(), dans config.js.
     const jour = argentJourDate || todayLocalISODate();
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
-    const duJour = colisDeLaJourneeDeTravail(mine, jour);
+    // Depuis le 09/09/2026 : le jour, rien que le jour (colisDuJour) ; les restes en route
+    // d'avant sont comptés sur la ligne du dessous, pas dans les tuiles.
+    const duJour = colisDuJour(mine, jour);
+    const restes = colisRestesEnRoute(mine, jour);
     // Les tuiles sont dessinées par tourneeTuilesHTML() (config.js) : c'est la MÊME fonction
     // qui dessine l'aperçu de ce livreur côté équipe. Les deux écrans ne peuvent donc pas
     // annoncer deux comptes différents pour la même tournée.
@@ -2649,8 +2679,7 @@
       // Les colis en route comptent déjà dans les tuiles, quel que soit leur jour de réception ;
       // la ligne dit simplement combien viennent d'un autre jour, pour qu'on ne les cherche pas
       // dans l'argent de la journée (qui, lui, suit le jour de réception).
-      const dAutresJours = duJour.filter(c => dayKey(c.created_at) !== jour).length;
-      cltPoserHTML(reste, dAutresJours ? `⏳ ${dAutresJours} de ces colis viennent d'autres jours (reçus avant).` : '');
+      cltPoserHTML(reste, restes.length ? `⏳ ${restes.length} colis encore en route d'avant — repliés en bas de la liste.` : '');
     }
   }
 

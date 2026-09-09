@@ -396,10 +396,11 @@ verifier(
    v83, le 08/09/2026 — le reversement et l'onglet Clients comptent le net (retenues visibles) (clients-dashboard.js, equipe.html) : étiquette 20260908net.
    v84, le 09/09/2026 — création : livreur de collecte et article soldé dès la saisie, ville sur expédition, commune + adresse dans tous les relevés (config.js, equipe.html, fournisseur.html, clients-dashboard.js) : étiquette 20260909creation.
    v85, le 09/09/2026 — création plus simple : prix de livraison proposé au bureau, « à livrer avant le », celui qui récupère livre (config.js, equipe.html, fournisseur.html, livreur.html, style.css) : étiquette 20260909fluide.
-   v86, le 09/09/2026 — « Assigner (n) » par cliente réparé, « Sélection multiple » retirée (equipe.html). */
+   v86, le 09/09/2026 — « Assigner (n) » par cliente réparé, « Sélection multiple » retirée (equipe.html).
+   v87, le 09/09/2026 — le livreur : le jour d'un côté, les restes en route repliés à part (config.js, livreur.html, style.css) : étiquette 20260909parjour. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v86'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v87'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

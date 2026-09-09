@@ -2675,3 +2675,10 @@ html[data-theme="dark"] .sans-reseau__titre{ color:#f1f5f9; }
 /* « À livrer avant le » sur la carte du livreur (09/09/2026) */
 .colis-avant{ font-weight:600; color:#8a4b12; }
 .colis-avant--urgent{ color:#c0392b; }
+
+/* Les restes en route, repliés sous la liste du livreur (09/09/2026) */
+.restes-en-route{ margin:14px 0 6px; border:1.5px dashed #d97706; border-radius:12px; padding:8px 12px; background:#fff8ef; }
+.restes-en-route > summary{ cursor:pointer; font-weight:700; color:#8a4b12; list-style:none; }
+.restes-en-route > summary::-webkit-details-marker{ display:none; }
+.restes-en-route__aide{ font-size:12.5px; color:var(--muted); margin:6px 0 10px; }
+html[data-theme="dark"] .restes-en-route{ background:#2a2114; }

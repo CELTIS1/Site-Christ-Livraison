@@ -5780,6 +5780,30 @@ function colisDeLaJourneeDeTravail(colis, jour) {
     return Object.keys(HORODATAGE_DU_STATUT).some(function (st) { return jourEvenementColis(c, st) === jour; });
   });
 }
+/* CHAQUE JOUR, SON AFFICHAGE — AUSSI SUR LE TÉLÉPHONE DU LIVREUR. (09/09/2026, Celtis : « je ne
+   veux pas que des anciens colis viennent se mélanger à des nouveaux ; par jour, vraiment par
+   jour, et on peut revenir en arrière ».)
+   La journée se coupe en deux, et les deux ne se mélangent plus :
+     • colisDuJour        : reçus ce jour-là, ou qui ont bougé ce jour-là (pris, livré, raté,
+                            retourné). C'est la liste et les tuiles.
+     • colisRestesEnRoute : encore en route, reçus AVANT ce jour, et sans geste ce jour-là. Ils
+                            ne disparaissent pas — une marchandise en route ne s'efface pas —
+                            mais ils vivent à part, repliés sous la liste, comptés à part. */
+function colisDuJour(colis, jour) {
+  return (colis || []).filter(function (c) {
+    if (!c) return false;
+    if (jourAbidjan(c.created_at) === jour) return true;
+    return Object.keys(HORODATAGE_DU_STATUT).some(function (st) { return jourEvenementColis(c, st) === jour; });
+  });
+}
+function colisRestesEnRoute(colis, jour) {
+  return (colis || []).filter(function (c) {
+    if (!c || STATUTS_EN_ROUTE.indexOf(c.statut) === -1) return false;
+    const recu = jourAbidjan(c.created_at);
+    if (!recu || recu >= jour) return false;
+    return !Object.keys(HORODATAGE_DU_STATUT).some(function (st) { return jourEvenementColis(c, st) === jour; });
+  });
+}
 
 function tourneeTuilesHTML(colis) {
   const liste = colis || [];
