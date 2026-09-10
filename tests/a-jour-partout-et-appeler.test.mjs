@@ -122,6 +122,41 @@ titre('2. Appeler la vendeuse, le livreur, le destinataire depuis chaque colis')
   verifier('cliente : « 📞 Appeler » son livreur dès qu\'il est assigné et que son numéro est connu', /telLivreur/.test(carte) && /href="tel:\$\{escapeHTML\(telLivreur\)\}"/.test(carte));
   verifier('cliente : les livreurs sont lus avec leur téléphone', /select\('id, full_name, avatar_url, phone'\)/.test(fournisseur));
   verifier('le style du lien d\'appel est partagé (style.css)', /\.colis-tel\{/.test(style));
+  // Depuis le nom de la cliente, là où les cartes n'ont pas de téléphone.
+  const entete = blocDe(livreur, 'appelVendeuseHTML', 'livreur.html');
+  verifier('livreur : « 📞 Appeler » à côté du nom de la cliente sur Récupérations (recupActionsHTML → appelVendeuseHTML)',
+    /btn-appel-vendeuse/.test(entete) && /return appelVendeuseHTML\(client && client\.key\);/.test(blocDe(livreur, 'recupActionsHTML', 'livreur.html')));
+  verifier('livreur : sur « Ma journée », pas de doublon dans l\'en-tête (la carte a déjà « 📞 Vendeuse »)', !/renderGroupedColisHTML\(trMes\.groups, mesColisRowHTML, /.test(livreur));
+  verifier('équipe : « 📞 Appeler » à côté du nom de la cliente dans l\'en-tête de groupe', /btn-appel-vendeuse/.test(blocDe(equipe, 'equipeCollecteActionHTML', 'equipe.html')));
+}
+
+/* ---------- 2 bis. Un champ de recherche sur les listes ---------- */
+titre('2 bis. Un champ de recherche sur les listes (comptes, en attente, historique, Express)');
+{
+  const commun = fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8');
+  // Un petit DOM à la main : une liste de trois lignes et un champ.
+  const ligne = (t) => ({ tagName: 'DIV', textContent: t, hidden: false, classList: { contains: () => false } });
+  const lignes = [ligne('Awa Boutique 07 05 40 46 55'), ligne('Mariam Mode 01 02 03 04 05'), ligne('Côte d\'Ivoire Express')];
+  const ajoutes = [];
+  const liste = { dataset: {}, querySelectorAll: () => lignes, querySelector: () => ajoutes[0] || null, appendChild: (el) => { ajoutes.push(el); } };
+  const ecouteurs = {};
+  const champ = { value: '', addEventListener: (t, fn) => { ecouteurs[t] = fn; } };
+  const ctx = vm.createContext({ document: { createElement: () => ({ className: '', textContent: '', remove(){ ajoutes.length = 0; } }) }, String });
+  vm.runInContext(blocDe(commun, 'cltNormaliserTexte', 'clt-common.js') + '\n' + blocDe(commun, 'cltBrancherFiltreListe', 'clt-common.js'), ctx);
+  vm.runInContext('cltBrancherFiltreListe', ctx)(champ, liste);
+  champ.value = 'mariam'; ecouteurs.input();
+  verifier('« mariam » ne garde que Mariam (majuscules ignorées)', lignes.map(l => l.hidden).join() === 'true,false,true');
+  champ.value = 'cote'; ecouteurs.input();
+  verifier('« cote » trouve « Côte » (accents ignorés)', lignes.map(l => l.hidden).join() === 'true,true,false');
+  champ.value = 'awa 07'; ecouteurs.input();
+  verifier('plusieurs mots : tous doivent être présents', lignes.map(l => l.hidden).join() === 'false,true,true');
+  champ.value = 'zzz'; ecouteurs.input();
+  verifier('aucun résultat : une ligne le dit, avec les mots tapés', ajoutes.length === 1 && /Aucun résultat pour « zzz »/.test(ajoutes[0].textContent));
+  champ.value = ''; ecouteurs.input();
+  verifier('champ vidé : tout revient, la ligne « aucun résultat » disparaît', lignes.every(l => !l.hidden) && ajoutes.length === 0);
+  verifier('équipe : les listes ont leur champ (data-filtre-liste) — comptes, en attente, historique, courses et recharges Express',
+    ['all-accounts-list', 'pending-list', 'activity-log-list', 'express-courses-list', 'express-recharges-list'].every(id => new RegExp('data-filtre-liste="' + id + '"').test(equipe)));
+  verifier('équipe : les champs sont branchés au démarrage', /brancherFiltresDeListes\(\);/.test(blocDe(equipe, 'init', 'equipe.html')) && /cltBrancherFiltreListe\(champ, liste\)/.test(equipe));
 }
 
 /* ---------- 3. Les montants d'une expédition depuis le bureau ---------- */

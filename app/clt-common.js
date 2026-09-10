@@ -1267,3 +1267,58 @@ function afficherSansReseauCLT() {
   const barre = document.querySelector('.topbar');
   if (barre) barre.insertAdjacentElement('afterend', bloc); else document.body.prepend(bloc);
 }
+
+
+/* UN CHAMP DE RECHERCHE SUR N'IMPORTE QUELLE LISTE. (10/09/2026)
+   Celtis : « partout où il y a des listes, il faudrait un champ de recherche — au volet Comptes,
+   tous les comptes sont là mais il faut faire défiler jusqu'à trouver la personne. »
+
+   cltBrancherFiltreListe(champ, liste) filtre les lignes de `liste` (ses enfants directs) sur le
+   texte tapé dans `champ` : une ligne dont le texte ne contient pas chaque mot tapé est cachée.
+   Accents et majuscules ne comptent pas (« awa » trouve « Awa », « cote » trouve « Côte »). La
+   liste peut être redessinée par la page à tout moment (temps réel) : un observateur réapplique
+   le filtre à chaque changement, sans que la page ait à y penser. Quand rien ne correspond, une
+   ligne le dit, avec les mots tapés. */
+function cltNormaliserTexte(texte) {
+  return String(texte === null || texte === undefined ? '' : texte)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+function cltBrancherFiltreListe(champ, liste, options) {
+  if (!champ || !liste || liste.dataset.cltFiltreBranche === '1') return;
+  liste.dataset.cltFiltreBranche = '1';
+  const o = options || {};
+  const selecteur = o.lignes || ':scope > *';
+  let enCours = false;
+  const appliquer = () => {
+    if (enCours) return;
+    enCours = true;
+    try {
+      const mots = cltNormaliserTexte(champ.value).split(' ').filter(Boolean);
+      let visibles = 0, lignes = 0;
+      liste.querySelectorAll(selecteur).forEach(ligne => {
+        // Ni la ligne « aucun résultat », ni un état vide, ni un bouton (« Charger plus ») : ce ne
+        // sont pas des lignes de la liste.
+        if (ligne.classList.contains('clt-filtre-vide') || ligne.classList.contains('empty-state') || ligne.tagName === 'BUTTON' || ligne.classList.contains('load-more-row')) return;
+        lignes++;
+        const texte = cltNormaliserTexte(ligne.textContent);
+        const ok = mots.every(m => texte.indexOf(m) !== -1);
+        ligne.hidden = !ok;
+        if (ok) visibles++;
+      });
+      let vide = liste.querySelector(':scope > .clt-filtre-vide');
+      if (mots.length && lignes && !visibles) {
+        if (!vide) { vide = document.createElement('div'); vide.className = 'empty-state clt-filtre-vide'; liste.appendChild(vide); }
+        vide.textContent = 'Aucun résultat pour « ' + champ.value.trim() + ' ».';
+      } else if (vide) {
+        vide.remove();
+      }
+    } finally { enCours = false; }
+  };
+  champ.addEventListener('input', appliquer);
+  champ.addEventListener('search', appliquer);
+  if (typeof MutationObserver === 'function') {
+    new MutationObserver(() => { if (champ.value.trim()) appliquer(); }).observe(liste, { childList: true });
+  }
+  appliquer();
+}

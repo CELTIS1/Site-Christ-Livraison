@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910appel">
-<script src="theme.js?v=20260910appel"></script>
-<script src="splash.js?v=20260910appel"></script>
+<link rel="stylesheet" href="style.css?v=20260910recherche">
+<script src="theme.js?v=20260910recherche"></script>
+<script src="splash.js?v=20260910recherche"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -509,6 +509,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
 <span class="collapse-arrow">▶</span> Comptes en attente de validation <span id="pending-badge" class="alert-badge hidden">0</span>
 </h2>
 <div id="pending-content" class="collapsible-content">
+<div class="search-wrap"><input type="search" id="search-pending" class="search-input" data-filtre-liste="pending-list" placeholder="Rechercher un compte en attente (nom, téléphone…)"></div>
 <div id="pending-list">
 <div class="empty-state">Chargement...</div>
 </div>
@@ -878,6 +879,7 @@ saisis ensuite lui seront rattachés automatiquement.
 <div id="activity-log-section" class="hidden">
 <details class="eq-repli" style="margin-top:28px;">
 <summary>Historique des actions (administrateur)</summary>
+<div class="search-wrap" style="margin-top:10px;"><input type="search" id="search-activite" class="search-input" data-filtre-liste="activity-log-list" placeholder="Rechercher dans l'historique…"></div>
 <div class="colis-list" id="activity-log-list">
 <div class="empty-state">Chargement...</div>
 </div>
@@ -1058,6 +1060,10 @@ saisis ensuite lui seront rattachés automatiquement.
 <span class="collapse-arrow">▶</span> Tous les comptes
 </h2>
 <div id="tous-comptes-content" class="collapsible-content">
+<!-- 10/09/2026 — Celtis : « tous les comptes sont là, mais il faut faire défiler jusqu'à
+     trouver la personne ». Le champ filtre la liste affichée, sur tout ce qu'elle montre
+     (nom, boutique, téléphone, rôle) ; les pastilles de rôle restent en dessous. -->
+<div class="search-wrap"><input type="search" id="search-comptes" class="search-input" data-filtre-liste="all-accounts-list" placeholder="Rechercher un compte : nom, boutique, téléphone…"></div>
 <div class="filters" id="account-filters"></div>
 <div class="colis-list" id="all-accounts-list">
 <div class="empty-state">Chargement...</div>
@@ -1080,6 +1086,7 @@ saisis ensuite lui seront rattachés automatiquement.
 </div>
 
 <div class="filters" id="express-status-filters" style="margin-top:16px;"></div>
+<div class="search-wrap"><input type="search" id="search-express-courses" class="search-input" data-filtre-liste="express-courses-list" placeholder="Rechercher une course : client, coursier, adresse…"></div>
 
 <div class="colis-list" id="express-courses-list">
 <div class="empty-state">Chargement...</div>
@@ -1096,7 +1103,8 @@ saisis ensuite lui seront rattachés automatiquement.
 <div class="stat-tile"><div class="stat-tile-icon">⏳</div><div class="stat-tile-value" id="stat-recharges-attente">0</div><div class="stat-tile-label">En attente de validation</div></div>
 <div class="stat-tile"><div class="stat-tile-icon">💵</div><div class="stat-tile-value" id="stat-recharges-validees-jour">0 FCFA</div><div class="stat-tile-label">Validées aujourd'hui</div></div>
 </div>
-<div class="colis-list" id="express-recharges-list" style="margin-top:16px;">
+<div class="search-wrap" style="margin-top:16px;"><input type="search" id="search-express-recharges" class="search-input" data-filtre-liste="express-recharges-list" placeholder="Rechercher une recharge : client, montant…"></div>
+<div class="colis-list" id="express-recharges-list">
 <div class="empty-state">Chargement...</div>
 </div>
 </div>
@@ -1418,11 +1426,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910appel"></script>
-<script src="config.js?v=20260910appel"></script>
-<script src="clients-dashboard.js?v=20260910appel"></script>
-<script src="biometric-lock.js?v=20260910appel"></script>
-<script src="clt-select-recherche.js?v=20260910appel"></script>
+<script src="clt-common.js?v=20260910recherche"></script>
+<script src="config.js?v=20260910recherche"></script>
+<script src="clients-dashboard.js?v=20260910recherche"></script>
+<script src="biometric-lock.js?v=20260910recherche"></script>
+<script src="clt-select-recherche.js?v=20260910recherche"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3884,7 +3892,10 @@ function equipeCollecteActionHTML(day, client){
 const pending = client.items.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id);
 const f = fournisseurs.find(x => x.id === client.key);
 const pickupLabel = f && f.commune_recuperation ? `📍 ${escapeHTML(f.commune_recuperation)}` : '📍 Lieu de récupération';
-let html = ` <button type="button" class="btn btn-sm btn-edit-pickup" data-fournisseur="${client.key}" title="Définir le lieu de récupération de cette cliente">${pickupLabel}</button>`;
+// Appeler la cliente depuis son nom, comme chez le livreur (10/09/2026).
+const tel = f && f.phone ? numeroCompose(f.phone) : '';
+let html = tel ? ` <a class="btn btn-outline btn-sm btn-appel-vendeuse" href="tel:${escapeHTML(tel)}" title="Appeler ${escapeHTML(f.company_name || f.full_name || 'la cliente')}">📞 Appeler</a>` : '';
+html += ` <button type="button" class="btn btn-sm btn-edit-pickup" data-fournisseur="${client.key}" title="Définir le lieu de récupération de cette cliente">${pickupLabel}</button>`;
 if (pending.length) {
 const options = '<option value="">Assigner collecte à…</option>' +
 livreurs.map(l => `<option value="${l.id}">${escapeHTML(l.full_name || l.id)}</option>`).join('');
@@ -9775,7 +9786,17 @@ await Promise.allSettled(tasks);
 } catch (e) { console.error('reconnectRealtimeAndRefresh', e); }
 }
 
+// Les champs de recherche posés sur les listes (10/09/2026) : un attribut data-filtre-liste sur le
+// champ nomme la liste qu'il filtre, et clt-common.js fait le reste. Voir cltBrancherFiltreListe.
+function brancherFiltresDeListes(){
+document.querySelectorAll('input[data-filtre-liste]').forEach(champ => {
+const liste = document.getElementById(champ.dataset.filtreListe);
+if (liste && typeof cltBrancherFiltreListe === 'function') cltBrancherFiltreListe(champ, liste);
+});
+}
+
 async function init(){
+brancherFiltresDeListes();
 const session = await requireAuth();
 if (!session) return;
 currentUser = session.user;
