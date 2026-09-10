@@ -55,7 +55,7 @@ async function requireAuth() {
 async function getExpressProfile(userId) {
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("id, role, full_name, phone, status, created_at, avatar_url, disponible_express, suppression_demandee_at, geoloc_consent_at")
+    .select("id, role, full_name, phone, status, created_at, avatar_url, disponible_express, suppression_demandee_at, geoloc_consent_at, telephone_verifie_at")
     .eq("id", userId)
     .single();
   if (error) {

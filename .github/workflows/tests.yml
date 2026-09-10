@@ -393,6 +393,11 @@ jobs:
       - name: À jour partout, appeler depuis le colis, les montants d'une expédition
         run: node tests/a-jour-partout-et-appeler.test.mjs
 
+      # 10/09/2026 — feuille de route 1.8 : les vraies fonctions serveur d'inscription Express sont
+      # rejouées (numéro, débit, pièce jugée sur ses octets, code de l'équipe, creer-livreur).
+      - name: Inscription Express vérifiée (fonctions serveur rejouées)
+        run: node tests/inscription-express-verifiee.test.mjs
+
       # La porte d'envoyer-push (phase 1, point 1.1 — 06/09/2026). La fonction serveur qui fait
       # vibrer les téléphones n'exigeait rien : n'importe qui, avec la clé publique du site,
       # pouvait pousser un texte à toute l'équipe. Cette série charge le VRAI fichier déployé et

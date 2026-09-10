@@ -34,8 +34,13 @@ const corsHeaders = {
 // exactement comme toPhoneE164() côté site (app/config.js).
 function toPhoneE164(raw: string): string {
   let digits = (raw || "").replace(/[^\d]/g, "");
-  if (digits.startsWith("225")) digits = digits.slice(3);
+  if (digits.startsWith("00225")) digits = digits.slice(5);
+  else if (digits.startsWith("225")) digits = digits.slice(3);
   return "225" + digits;
+}
+// Un vrai numéro ivoirien : 10 chiffres, 0X XX XX XX XX (10/09/2026).
+function numeroValide(e164: string): boolean {
+  return /^2250[1-9][0-9]{8}$/.test(e164);
 }
 
 Deno.serve(async (req) => {
@@ -80,13 +85,18 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    // Depuis le 10/09/2026 (feuille de route 1.8) : l'appelant doit être ACTIF (un compte
+    // suspendu garde son jeton quelques minutes) et, s'il est « equipe », avoir l'accès
+    // Opérations — c'est l'onglet d'où l'on crée les livreurs. Un admin passe toujours.
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
-      .select("role")
+      .select("role, status, acces_operations")
       .eq("id", caller.user.id)
       .single();
-    if (!callerProfile || (callerProfile.role !== "equipe" && callerProfile.role !== "admin")) {
-      return new Response(JSON.stringify({ error: "Seule l'équipe peut créer un compte livreur." }), {
+    const estAdmin = !!callerProfile && callerProfile.role === "admin";
+    const estEquipeOperations = !!callerProfile && callerProfile.role === "equipe" && callerProfile.acces_operations === true;
+    if (!callerProfile || callerProfile.status !== "valide" || !(estAdmin || estEquipeOperations)) {
+      return new Response(JSON.stringify({ error: "Seule l'équipe (accès Opérations) ou l'administrateur peut créer un compte livreur." }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -94,6 +104,12 @@ Deno.serve(async (req) => {
 
     // --- Création du compte livreur -----------------------------------------
     const normalizedPhone = toPhoneE164(phone);
+    if (!numeroValide(normalizedPhone)) {
+      return new Response(JSON.stringify({ error: "Le numéro de téléphone est invalide : 10 chiffres attendus, ex. 07 00 00 00 00." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
       phone: normalizedPhone,

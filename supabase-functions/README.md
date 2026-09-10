@@ -140,7 +140,9 @@ empêchent qu'un dossier du même nom réapparaisse par mégarde dans le dépôt
 ### Livreurs et clients
 
 - **creer-livreur** : crée un compte `livreur` avec mot de passe, depuis le
-  tableau de bord. Ouvert à `equipe` comme à `admin`.
+  tableau de bord. Depuis le 10 septembre 2026 : l'appelant doit être actif
+  (`status = 'valide'`) et être `admin`, ou `equipe` avec l'accès Opérations ;
+  le numéro doit être un vrai numéro ivoirien à 10 chiffres.
 - **creer-client** *(août 2026)* : crée un compte **client** depuis le tableau de
   bord Équipe, avec un mot de passe choisi par l'équipe, actif immédiatement
   (`status = 'valide'`). En base, le rôle écrit est `fournisseur` — c'est le même
@@ -173,11 +175,30 @@ Trois fonctions se partagent ce parcours, et leurs noms se ressemblent :
 
 ### Express
 
-- **inscrire-client-express** : crée un compte grand public `client_express`,
-  validé automatiquement (peut commander une livraison dès l'inscription).
-- **inscrire-coursier-express** : crée un compte `coursier_express`, avec la
-  pièce d'identité envoyée en photo, et le statut `en_attente` — il apparaît
-  ensuite dans le panneau « Comptes en attente » du tableau de bord équipe.
+Depuis le 10 septembre 2026 (feuille de route, point 1.8), l'inscription Express
+est vérifiée. Aucun SMS payant : la preuve du numéro est un code à 6 chiffres
+que l'équipe envoie sur WhatsApp. Le script SQL
+`_sql-prive/2026-09-10-inscription-express-verifiee.sql` doit être joué avant
+de déployer ces quatre fonctions.
+
+- **inscrire-client-express** : crée un compte grand public `client_express`
+  **en attente**. Numéro normalisé et contrôlé (10 chiffres), 3 inscriptions
+  par numéro et par jour, 20 par adresse IP et par heure. Le compte s'ouvre
+  quand la personne saisit le code (voir `verifier-code-express`).
+- **inscrire-coursier-express** : crée un compte `coursier_express` en attente,
+  avec la pièce d'identité. La pièce est jugée sur ses premiers octets (JPEG,
+  PNG ou PDF, 8 Mo au plus) — pas sur son nom ni le type annoncé. Mêmes
+  limites de débit. Le compte reste en attente jusqu'à la validation de la
+  pièce par l'équipe ; le code marque seulement le numéro comme vérifié.
+- **envoyer-code-express** *(10 septembre 2026)* : l'équipe (active, `equipe`
+  ou `admin`) tire un code à 6 chiffres pour un compte Express dont le numéro
+  n'est pas vérifié. Le code est rangé haché dans `express_codes_telephone`
+  (30 minutes, 5 essais) et renvoyé une seule fois ; l'écran ouvre WhatsApp
+  avec le message prêt. « Verify JWT » activé.
+- **verifier-code-express** *(10 septembre 2026)* : publique. La personne envoie
+  son numéro et le code ; bon code → `telephone_verifie_at` posé, et un client
+  passe à `valide` ; cinq codes faux → annulé ; 30 minutes → expiré. Un numéro
+  inconnu reçoit la même réponse qu'un code absent.
 - **wave-initier-recharge** *(présente ici, PAS déployée)* : recharge du compte
   Express via Wave.
 - **wave-payer-course** : paiement d'une course via Wave.

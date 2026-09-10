@@ -17,9 +17,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260910recherche">
-  <script src="theme.js?v=20260910recherche"></script>
-  <script src="splash.js?v=20260910recherche"></script>
+  <link rel="stylesheet" href="style.css?v=20260910express">
+  <script src="theme.js?v=20260910express"></script>
+  <script src="splash.js?v=20260910express"></script>
   <style>
     /* CLT Express utilise le violet comme couleur de marque, à la place du bleu marine du
        portail interne, pour bien montrer qu'il s'agit d'un produit distinct. */
@@ -181,11 +181,21 @@
         <button type="button" id="btn-inscription-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
       </form>
 
-      <!-- ATTENTE DE VALIDATION (coursier uniquement) -->
+      <!-- ATTENTE : LE CODE DE L'ÉQUIPE, PUIS (coursier) LA VALIDATION DE LA PIÈCE.
+           Depuis le 10/09/2026 (feuille de route 1.8), tout compte Express naît en attente : la
+           personne prouve son numéro avec le code à 6 chiffres que l'équipe lui envoie sur WhatsApp.
+           Un client s'ouvre dès le bon code ; un coursier attend ensuite la validation de sa pièce. -->
       <div id="waiting-box" class="hidden waiting-box">
         <div class="waiting-spinner"></div>
-        <div class="waiting-title">Compte en attente de validation</div>
-        <div class="waiting-text" id="waiting-text">Votre demande a été transmise à notre équipe, avec votre pièce d'identité. Cette page se met à jour automatiquement — dès que votre compte sera validé, vous serez connecté(e) directement.</div>
+        <div class="waiting-title" id="waiting-title">Confirmez votre numéro</div>
+        <div class="waiting-text" id="waiting-text">Notre équipe vous envoie un code à 6 chiffres sur WhatsApp, au numéro que vous avez donné. Saisissez-le ici. Cette page se met à jour automatiquement.</div>
+        <form id="form-code-express" style="margin-top:14px; text-align:left;">
+          <div class="field">
+            <label>Code reçu de l'équipe</label>
+            <input type="text" id="code-express" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="6 chiffres">
+          </div>
+          <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-code-express">Confirmer mon numéro</button>
+        </form>
         <div class="waiting-lastcheck" id="waiting-lastcheck"></div>
         <button type="button" class="btn" style="width:100%; justify-content:center; margin-top:16px;" id="btn-waiting-check">Vérifier maintenant</button>
         <button type="button" id="btn-waiting-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
@@ -194,9 +204,9 @@
     </div>
   </div>
 
-<script src="clt-common.js?v=20260910recherche"></script>
-<script src="express-config.js?v=20260910recherche"></script>
-<script src="biometric-login.js?v=20260910recherche"></script>
+<script src="clt-common.js?v=20260910express"></script>
+<script src="express-config.js?v=20260910express"></script>
+<script src="biometric-login.js?v=20260910express"></script>
 <script>
   let regRole = 'client_express';
   let kycFile = null;
@@ -230,8 +240,8 @@
     document.getElementById('role-coursier').classList.toggle('active', role === 'coursier_express');
     document.getElementById('kyc-field').classList.toggle('hidden', role !== 'coursier_express');
     document.getElementById('register-hint').textContent = role === 'coursier_express'
-      ? "Votre compte sera activé après validation par notre équipe (vérification de votre pièce d'identité)."
-      : "Vous pourrez commander dès la création de votre compte.";
+      ? "Après la création, notre équipe vous envoie un code sur WhatsApp pour confirmer votre numéro, puis vérifie votre pièce d'identité."
+      : "Après la création, notre équipe vous envoie un code sur WhatsApp pour confirmer votre numéro. Vous pourrez commander aussitôt.";
   }
   document.getElementById('role-client').addEventListener('click', () => setRegRole('client_express'));
   document.getElementById('role-coursier').addEventListener('click', () => setRegRole('coursier_express'));
@@ -371,8 +381,26 @@
     if (el) el.textContent = 'Dernière vérification à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
+  // Le texte de l'attente suit l'état du compte : code à saisir, ou pièce en cours de vérification.
+  function refleterAttente(profile){
+    const titre = document.getElementById('waiting-title');
+    const texte = document.getElementById('waiting-text');
+    const form = document.getElementById('form-code-express');
+    if (!profile || !titre || !texte || !form) return;
+    if (profile.telephone_verifie_at) {
+      titre.textContent = 'Numéro confirmé — pièce en cours de vérification';
+      texte.textContent = "Merci ! Notre équipe vérifie maintenant votre pièce d'identité. Dès que votre compte sera validé, vous serez connecté(e) directement.";
+      form.classList.add('hidden');
+    } else {
+      titre.textContent = 'Confirmez votre numéro';
+      texte.textContent = 'Notre équipe vous envoie un code à 6 chiffres sur WhatsApp, au numéro ' + (typeof formatPhoneDisplay === 'function' && waitingPhone ? formatPhoneDisplay(waitingPhone) : 'que vous avez donné') + '. Saisissez-le ici. Cette page se met à jour automatiquement.';
+      form.classList.remove('hidden');
+    }
+  }
+
   function handleWaitingProfile(profile){
     if (!profile) return false;
+    refleterAttente(profile);
     if (profile.status === 'valide'){
       clearTimeout(waitingFallbackTimer);
       unsubscribeWaitingChannel();
@@ -388,7 +416,7 @@
       stopWaiting();
       document.getElementById('waiting-box').classList.add('hidden');
       document.getElementById('form-connexion-login').classList.remove('hidden');
-      showMsg("Votre demande de compte coursier a été refusée. Contactez notre équipe pour plus d'informations.", "error");
+      showMsg("Votre demande de compte a été refusée. Contactez notre équipe pour plus d'informations.", "error");
       return true;
     }
     return false;
@@ -437,7 +465,7 @@
       if (phoneNoPlus && password) {
         showWaiting(phoneNoPlus, password);
       } else {
-        showMsg("Votre compte coursier est en attente de validation par notre équipe.", "error");
+        showMsg("Votre compte est en attente : saisissez le code envoyé par notre équipe, ou contactez-la.", "error");
       }
       return false;
     }
@@ -729,6 +757,45 @@
     btn.disabled = false; btn.textContent = 'Enregistrer mon mot de passe';
   });
 
+  // ---------- LE CODE DE L'ÉQUIPE (10/09/2026, feuille de route 1.8) ----------
+  document.getElementById('form-code-express').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const champ = document.getElementById('code-express');
+    const btn = document.getElementById('btn-code-express');
+    const code = (champ.value || '').replace(/\D/g, '');
+    if (code.length !== 6) { showMsg("Le code compte 6 chiffres.", "error"); champ.focus(); return; }
+    if (!waitingPhone) { showMsg("Reconnectez-vous avec votre numéro et votre mot de passe, puis saisissez le code.", "error"); return; }
+    btn.disabled = true; btn.textContent = 'Vérification...';
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/verifier-code-express`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}`, 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ phone: waitingPhone, code }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        showMsg("Erreur : " + (result.error || 'code refusé'), "error");
+        if (result.state === 'code_faux') { champ.value = ''; champ.focus(); }
+        return;
+      }
+      champ.value = '';
+      showMsg("Numéro confirmé.", "success");
+      // Client : sa fiche est passée à « valide » ; on la relit tout de suite plutôt que
+      // d'attendre le temps réel. Coursier : le texte de l'attente change.
+      document.getElementById('waiting-text').textContent = "Numéro confirmé. Connexion en cours...";
+      if (waitingUserId) {
+        const profile = await getExpressProfile(waitingUserId);
+        if (!handleWaitingProfile(profile)) refleterAttente(profile);
+      } else {
+        startWaitingRealtime();
+      }
+    } catch (err) {
+      showMsg("Erreur réseau. Réessayez.", "error");
+    } finally {
+      btn.disabled = false; btn.textContent = 'Confirmer mon numéro';
+    }
+  });
+
   // ---------- INSCRIPTION ----------
   document.getElementById('form-inscription').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -769,20 +836,10 @@
       }
 
       e.target.reset();
-      if (regRole === 'coursier_express') {
-        showWaiting(phone, password);
-      } else {
-        // Client : compte validé automatiquement, on connecte directement.
-        const { data, error } = await attemptSignIn(phone, password);
-        btn.disabled = false; btn.textContent = 'Créer mon compte';
-        if (error || !data || !data.user) {
-          showTab('connexion');
-          showMsg("Compte créé ! Connectez-vous avec votre numéro et votre mot de passe.", "success");
-          return;
-        }
-        const profile = await getExpressProfile(data.user.id);
-        redirectByRole(profile);
-      }
+      btn.disabled = false; btn.textContent = 'Créer mon compte';
+      // Client comme coursier : le compte attend le code de l'équipe (10/09/2026). Le client
+      // s'ouvre dès le bon code, et la page le connecte toute seule (temps réel sur sa fiche).
+      showWaiting(phone, password);
     } catch (err) {
       showMsg("Erreur : " + err.message, "error");
       btn.disabled = false; btn.textContent = 'Créer mon compte';

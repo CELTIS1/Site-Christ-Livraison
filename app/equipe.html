@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910recherche">
-<script src="theme.js?v=20260910recherche"></script>
-<script src="splash.js?v=20260910recherche"></script>
+<link rel="stylesheet" href="style.css?v=20260910express">
+<script src="theme.js?v=20260910express"></script>
+<script src="splash.js?v=20260910express"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1426,11 +1426,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910recherche"></script>
-<script src="config.js?v=20260910recherche"></script>
-<script src="clients-dashboard.js?v=20260910recherche"></script>
-<script src="biometric-lock.js?v=20260910recherche"></script>
-<script src="clt-select-recherche.js?v=20260910recherche"></script>
+<script src="clt-common.js?v=20260910express"></script>
+<script src="config.js?v=20260910express"></script>
+<script src="clients-dashboard.js?v=20260910express"></script>
+<script src="biometric-lock.js?v=20260910express"></script>
+<script src="clt-select-recherche.js?v=20260910express"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2723,19 +2723,43 @@ let pieceHtml = '';
 if (p.role === 'coursier_express' && p.piece_identite_path) {
 pieceHtml = `<button class="btn btn-sm btn-voir-piece" style="margin-bottom:4px; margin-right:4px;">📷 Voir la pièce</button>`;
 }
+// LE CODE DE L'ÉQUIPE (10/09/2026, feuille de route 1.8). Un compte Express naît en attente,
+// son numéro non prouvé : « Envoyer le code » tire un code à 6 chiffres (fonction serveur),
+// l'affiche ici une seule fois et ouvre WhatsApp au numéro du compte avec le message prêt.
+// Un client s'ouvre tout seul dès qu'il saisit le bon code ; un coursier attend « Valider ».
+const estExpress = p.role === 'client_express' || p.role === 'coursier_express';
+const verifie = !!p.telephone_verifie_at;
+const codeHtml = estExpress
+? (verifie
+  ? `<div class="meta" style="color:#1a7d3c; font-weight:700;">✅ Numéro vérifié</div>`
+  : `<div class="meta" style="color:#b7791f; font-weight:700;">📲 Numéro pas encore vérifié</div><div class="code-express-zone"></div>`)
+: '';
+const boutonCode = estExpress && !verifie
+? `<button class="btn btn-sm btn-envoyer-code" style="margin-bottom:4px; margin-right:4px;" title="Tirer un code à 6 chiffres et l'envoyer sur WhatsApp">📲 Envoyer le code</button>`
+: '';
 return `
 <div class="colis-item" data-id="${p.id}">
 <div class="info">
 <div class="desc">${p.full_name ? escapeHTML(p.full_name) : '(sans nom)'}${p.company_name ? ' — ' + escapeHTML(p.company_name) : ''}</div>
 <div class="meta">Rôle demandé : ${escapeHTML(roleDisplayLabel(p.role))}${p.phone ? ' · Tél : ' + escapeHTML(p.phone) : ''}</div>
+${codeHtml}
 </div>
 <div class="status-col">
 ${pieceHtml}
+${boutonCode}
 <button class="btn btn-sm btn-valider" style="margin-bottom:4px;">Valider</button>
 <button class="btn btn-sm btn-rejeter" style="background:#c0392b;">Rejeter</button>
 </div>
 </div>
 `;
+}
+
+// Le message WhatsApp qui porte le code, prêt à partir. Le numéro est celui du compte (sans
+// « + »), tel que wa.me l'attend.
+function lienWhatsAppCodeExpress(phone, code, prenom){
+const num = String(phone || '').replace(/[^0-9]/g, '');
+const texte = `Bonjour${prenom ? ' ' + prenom : ''}, voici votre code Christ Livraison Express : ${code}. Saisissez-le sur la page de connexion pour confirmer votre numéro. Il est valable 30 minutes.`;
+return `https://wa.me/${num}?text=${encodeURIComponent(texte)}`;
 }
 
 // Met à jour une bulle de notification (nombre) sur une section repliée ou sur l'icône réglages,
@@ -2796,6 +2820,30 @@ btn.textContent = '📷 Voir la pièce';
 });
 });
 
+box.querySelectorAll('.btn-envoyer-code').forEach(btn => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+const compte = pendingAccounts.find(a => a.id === id);
+const zone = item.querySelector('.code-express-zone');
+btn.disabled = true; const texteAvant = btn.textContent; btn.textContent = '...';
+try {
+const r = await callAdminFunction('envoyer-code-express', { user_id: id });
+const prenom = (compte && compte.full_name ? compte.full_name.split(' ')[0] : '');
+if (zone) zone.innerHTML = `<div class="meta" style="margin-top:4px; padding:8px 10px; background:#fff8ef; border:1.5px solid #E26313; border-radius:8px; color:#1B4374;">
+Code : <strong style="font-size:16px; letter-spacing:2px;">${escapeHTML(r.code)}</strong> · valable 30 min ·
+<a href="${escapeHTML(lienWhatsAppCodeExpress(r.phone, r.code, prenom))}" target="_blank" rel="noopener" style="font-weight:700;">💬 Envoyer sur WhatsApp</a>
+</div>`;
+if (window.cltToast) cltToast('Code tiré. Envoyez-le sur WhatsApp : la personne le saisit sur sa page de connexion.', { type: 'success' });
+} catch (err) {
+alert(friendlyErrorMessage(err.message));
+} finally {
+btn.disabled = false; btn.textContent = texteAvant;
+}
+});
+});
+
 box.querySelectorAll('.btn-valider').forEach(btn => {
 btn.addEventListener('click', async () => {
 const id = btn.closest('.colis-item').dataset.id;
@@ -2830,7 +2878,7 @@ let __pendingIdsSeen = null; // null = premier chargement : on ne veut pas d'ale
 async function loadPending(){
 const { data, error } = await supabaseClient
 .from('profiles')
-.select('id, role, full_name, company_name, phone, status, piece_identite_path')
+.select('id, role, full_name, company_name, phone, status, piece_identite_path, telephone_verifie_at')
 .eq('status', 'en_attente')
 .order('full_name');
 if (error) { console.error(error); return; }
