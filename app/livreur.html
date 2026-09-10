@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910leger">
-<script src="theme.js?v=20260910leger"></script>
-<script src="splash.js?v=20260910leger"></script>
+<link rel="stylesheet" href="style.css?v=20260910phase2">
+<script src="theme.js?v=20260910phase2"></script>
+<script src="splash.js?v=20260910phase2"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -68,20 +68,8 @@
   }
   input[type="search"], input[type="text"], input[type="date"]{ border-radius:12px !important; }
 
-  /* ---- Onglets en "segmented control" ---- */
-  .tabs{
-    background:#f1f3f7; border-radius:14px; padding:5px; gap:4px !important;
-    border:none !important; display:flex;
-  }
-  .tabs .tab{
-    flex:1; text-align:center; border:none !important; border-radius:10px !important;
-    color:#6b7280 !important; font-weight:600 !important; padding:10px 8px !important;
-    transition:.15s; margin:0 !important;
-  }
-  .tabs .tab.active{
-    background:#fff !important; color:var(--clt-orange-dark) !important;
-    box-shadow:0 2px 8px rgba(193,79,10,.14) !important; font-weight:700 !important;
-  }
+  /* L'ancienne barre .tabs (onglets internes) n'existe plus dans la page depuis le 05/09/2026 ;
+     ses règles ont été retirées le 10/09/2026 (feuille de route 2.9). */
 
   /* ---- Pastilles de statut arrondies ---- */
   .badge{
@@ -164,7 +152,6 @@
   .clt-toptab:hover{ color:#E26313; }
   .clt-toptab.active{ background:#fff; color:#E26313; box-shadow:0 4px 12px rgba(18,48,90,0.13); }
   /* L'ancienne barre d'onglets interne est remplacée par la barre segmentée du haut. */
-  #section-main > .tabs{ display:none !important; }
   @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
 
   /* La ligne « partage de position », la phrase d'introduction d'un onglet et la demande de
@@ -852,9 +839,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910leger"></script>
-<script src="config.js?v=20260910leger"></script>
-<script src="biometric-lock.js?v=20260910leger"></script>
+<script src="clt-common.js?v=20260910phase2"></script>
+<script src="config.js?v=20260910phase2"></script>
+<script src="biometric-lock.js?v=20260910phase2"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1061,6 +1048,7 @@
     return cltCompressImage(file, options);
   }
 
+  const PHOTO_DELAI_MAX_MS = 45000; // 45 s : large pour la 3G, borné pour ne jamais rester suspendu (2.9)
   async function uploadPhoto(file, userId, onProgress){
     const nomOrigine = file && file.name;
     file = await compressImage(file);
@@ -1072,9 +1060,14 @@
     const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
 
     // Sans callback de progression (ex : synchronisation hors-ligne en tâche de fond), on
-    // garde l'envoi simple via le SDK Supabase.
+    // garde l'envoi simple via le SDK Supabase — avec un délai maximum (2.9, 10/09/2026) : un
+    // réseau qui accepte la connexion mais ne répond jamais laissait l'envoi suspendu pour
+    // toujours, et le statut avec lui. Au-delà, on rend la main : le colis part sans photo, le
+    // livreur pourra la rajouter.
     if (typeof onProgress !== 'function') {
-      const { error } = await supabaseClient.storage.from('colis-photos').upload(path, file);
+      const envoi = supabaseClient.storage.from('colis-photos').upload(path, file);
+      const tropLong = new Promise(resolve => setTimeout(() => resolve({ error: { message: 'delai depasse' } }), PHOTO_DELAI_MAX_MS));
+      const { error } = await Promise.race([envoi, tropLong]);
       if (error) { console.error(error); return null; }
       const { data } = supabaseClient.storage.from('colis-photos').getPublicUrl(path);
       return data.publicUrl;
@@ -1103,6 +1096,8 @@
         }
       };
       xhr.onerror = () => resolve(null);
+      xhr.timeout = PHOTO_DELAI_MAX_MS;
+      xhr.ontimeout = () => { console.error("Envoi de la photo : délai dépassé"); resolve(null); };
       xhr.send(file);
     });
   }
@@ -1829,8 +1824,12 @@
     // ligne, juste à côté, acceptait sans rien demander. La règle reste la même qu'avant — le
     // traitement en lot fait exactement ce que fait le geste unitaire, jamais plus, jamais moins.
     const tri = repartirColisPourLot(choisis, statut);
+    // Les expéditions ne passent pas « en livraison » (2.9) : on le dit, et on continue avec le reste.
+    if (tri.horsChemin && tri.horsChemin.length) {
+      cltToast(`${tri.horsChemin.length} expédition${tri.horsChemin.length > 1 ? 's' : ''} laissée${tri.horsChemin.length > 1 ? 's' : ''} de côté : une expédition ne passe pas « ${libelle} ».`, { type: 'warning', duration: 7000 });
+    }
     if (!tri.eligibles.length) {
-      cltToast(tri.dejaAuStatut.length ? `Ces colis sont déjà « ${libelle} ».` : "Rien à modifier dans cette sélection.", { type: 'info' });
+      if (!(tri.horsChemin && tri.horsChemin.length)) cltToast(tri.dejaAuStatut.length ? `Ces colis sont déjà « ${libelle} ».` : "Rien à modifier dans cette sélection.", { type: 'info' });
       return;
     }
 
@@ -2088,12 +2087,15 @@
     if (correctionMontantAConfirmer(ecart)) {
       const signe = (n) => (n > 0 ? '+' : '−') + formatMontant(Math.abs(n));
       const nomLivraison = libelleMontantLivraison(existing);
+      // « −0 FCFA » ne veut rien dire (séance du 30 août, point 5) : une ligne dont le montant
+      // n'a pas bougé dit « inchangé », et rien d'autre.
+      const ligne = (nom, avant, apres, delta) => delta
+        ? nom + ' ' + formatMontant(avant) + ' → ' + formatMontant(apres) + ' (' + signe(delta) + ')'
+        : nom + ' ' + formatMontant(avant) + ' (inchangé)';
       const ok = await cltConfirm({
         title: 'Confirmer cette correction ?',
-        detail: 'Article ' + formatMontant(montantArticleColis(existing)) + ' → '
-              + formatMontant(patch.montant_article) + ' (' + signe(ecart.article) + ')'
-              + '\n' + nomLivraison + ' ' + formatMontant(montantLivraisonColis(existing)) + ' → '
-              + formatMontant(patch.montant_livraison) + ' (' + signe(ecart.livraison) + ')',
+        detail: ligne('Article', montantArticleColis(existing), patch.montant_article, ecart.article)
+              + '\n' + ligne(nomLivraison, montantLivraisonColis(existing), patch.montant_livraison, ecart.livraison),
         sub: "C'est un gros écart. Ce sont ces montants que la cliente lira ce soir sur son "
            + "relevé, et l'équipe verra votre correction. Vérifiez avant de confirmer.",
         okLabel: 'Oui, corriger',
@@ -4075,13 +4077,21 @@
       return;
     }
 
+    currentProfile = profile;
+    /* LA LENTEUR APRÈS DÉVERROUILLAGE. (10/09/2026, feuille de route 2.7)
+       Tout — les fiches, les 500 colis, la tournée — ne partait qu'APRÈS Face ID : le livreur
+       déverrouillait, puis regardait l'écran se remplir. Les lectures partent maintenant PENDANT
+       que le verrou est à l'écran (elles n'affichent rien de visible : le verrou couvre la
+       page), et le tableau de bord est prêt quand Face ID accepte. Sans verrou activé, rien ne
+       change : les mêmes lectures, dans le même ordre. */
+    const prechargement = (async () => { await loadProfiles(); await loadColis(); })();
+    const prechargementTournee = chargerMaTournee();
     // --- Déverrouillage biométrique (Face ID / Touch ID / empreinte) — opt-in, par appareil ---
     // Verrou à l'ouverture si l'utilisateur l'a activé sur ce téléphone (sinon, sans effet).
     if (window.CLTBioLock) { try { await CLTBioLock.guard(currentUser); } catch (e) {} }
     // Proposer l'activation une seule fois (après le splash), si l'appareil est compatible et non déjà activé.
     setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);
 
-    currentProfile = profile;
     // Le nom que signent les messages WhatsApp rédigés par config.js (messageDestinataire).
     window.cltNomAffiche = profile.full_name || '';
 
@@ -4151,11 +4161,11 @@
       renderMesColis();
     });
 
-    await loadProfiles();
-    await loadColis();
+    // Les fiches et les colis sont partis pendant le verrou (2.7) : on attend seulement leur retour.
+    await prechargement;
     // La tournée du matin se charge sans bloquer le reste : même si la table n'existe pas
     // encore, les colis, eux, doivent s'afficher.
-    chargerMaTournee();
+    prechargementTournee.catch(() => {});
     // L'annonce de remise, sans bloquer non plus, et pour la même raison : un livreur dont la
     // base n'a pas encore reçu le script SQL doit voir ses colis comme avant.
     chargerAnnonceEtRemises();

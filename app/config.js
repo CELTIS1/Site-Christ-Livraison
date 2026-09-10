@@ -75,7 +75,7 @@ async function getProfile(userId) {
     // 28 août au soir sa dernière position remontait à 84 heures et le bureau le cherchait sur
     // la carte sans l'y trouver. Toute colonne qu'un écran DÉCIDE de lire doit figurer ici,
     // sans quoi la décision se prend sur une valeur qui n'a jamais été chargée.
-    .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations, geoloc_consent_at")
+    .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations, geoloc_consent_at, suppression_demandee_at")
     .eq("id", userId)
     .single();
   if (error) {
@@ -126,7 +126,7 @@ async function chargerProfil(userId) {
   try {
     reponse = await supabaseClient
       .from("profiles")
-      .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations, geoloc_consent_at")
+      .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations, geoloc_consent_at, suppression_demandee_at")
       .eq("id", userId)
       .single();
   } catch (e) {
@@ -316,60 +316,118 @@ function isPositionSharingActive() {
 // partagée » sans mentir : entre la demande de suivi et la carte de l'équipe il y a le GPS,
 // puis le réseau, et l'un comme l'autre échouent en silence. Avoir DEMANDÉ le partage ne
 // prouve rien ; avoir écrit une ligne dans livreur_positions, si. (26/08/2026)
+/* LE PARTAGE DE POSITION, REPRIS. (10/09/2026, feuille de route 2.6)
+   Deux défauts mesurés :
+     • un refus du GPS arrêtait le suivi, puis le rafraîchissement suivant (25 s) relançait
+       watchPosition — et donc une NOUVELLE demande d'autorisation, trois fois par minute ;
+     • watchPosition s'arrête quand le téléphone est dans la poche (PWA en arrière-plan) : au
+       retour à l'écran, l'équipe voyait « hors ligne » jusqu'au prochain point.
+   Désormais : on interroge l'état de l'autorisation AVANT tout appel (permissions.query) ; un
+   refus met le suivi en pause dix minutes, pendant lesquelles aucune demande n'est refaite —
+   sauf si l'autorisation a été accordée entre-temps dans les réglages, ce que permissions.query
+   voit ; et au retour à l'écran, un point est envoyé tout de suite (getCurrentPosition). La
+   limite d'une PWA en arrière-plan reste : entre deux, pas de point. */
+const POSITION_PAUSE_APRES_REFUS_MS = 10 * 60 * 1000;
+let positionRefuseeA = 0;           // heure du dernier refus (code 1)
+let positionSuivi = null;           // { userId, onError, onEnvoi, lastSentAt } tant qu'un trajet est actif
+
+async function etatAutorisationPosition() {
+  try {
+    if (navigator.permissions && typeof navigator.permissions.query === "function") {
+      const r = await navigator.permissions.query({ name: "geolocation" });
+      return r && r.state ? r.state : "prompt";   // 'granted' | 'denied' | 'prompt'
+    }
+  } catch (e) { /* Safari iOS < 16 : pas d'API, on demandera au GPS lui-même */ }
+  return "inconnu";
+}
+
+// Écrit un point dans la base. Rend true si l'équipe l'a bien reçu (écriture acceptée).
+async function envoyerPositionCLT(userId, coords, onEnvoi) {
+  const { latitude, longitude, accuracy } = coords;
+  const { error } = await supabaseClient.from("livreur_positions").upsert({
+    livreur_id: userId, latitude, longitude, accuracy, updated_at: new Date().toISOString(),
+  });
+  // Une écriture refusée par la base n'est PAS un envoi : on se garde d'annoncer à
+  // l'écran une position que l'équipe n'a jamais reçue.
+  if (error) { console.error("Erreur envoi position:", error); return false; }
+  if (typeof onEnvoi === "function") {
+    try { onEnvoi({ latitude, longitude, accuracy }); }
+    catch (e) { console.error("Erreur après envoi de position:", e); }
+  }
+  return true;
+}
+
 function startPositionSharing(userId, onError, onEnvoi) {
+  positionSuivi = { userId, onError, onEnvoi, lastSentAt: (positionSuivi && positionSuivi.lastSentAt) || 0 };
   if (positionWatchId !== null) return; // déjà actif, rien à faire
   if (!("geolocation" in navigator)) {
     if (typeof onError === "function") onError(new Error("La géolocalisation n'est pas disponible sur cet appareil."));
     return;
   }
-  let lastSentAt = 0;
-  let autorisationRefusee = false;
+  // Refus récent : on n'insiste pas. On regarde seulement si l'autorisation a changé.
+  const enPause = positionRefuseeA && (Date.now() - positionRefuseeA) < POSITION_PAUSE_APRES_REFUS_MS;
+  etatAutorisationPosition().then((etat) => {
+    if (positionWatchId !== null || !positionSuivi) return;
+    if (etat === "denied") {
+      positionRefuseeA = Date.now();
+      if (typeof onError === "function") onError({ code: 1, message: "Autorisation refusée" });
+      return;
+    }
+    if (enPause && etat !== "granted") return; // on attend, sans redemander
+    positionRefuseeA = 0;
+    lancerWatchPosition();
+  });
+}
+
+function lancerWatchPosition() {
+  const suivi = positionSuivi;
+  if (!suivi || positionWatchId !== null) return;
   positionWatchId = navigator.geolocation.watchPosition(
     async (pos) => {
       const now = Date.now();
-      if (now - lastSentAt < POSITION_MIN_INTERVAL_MS) return;
-      lastSentAt = now;
-      const { latitude, longitude, accuracy } = pos.coords;
-      const { error } = await supabaseClient.from("livreur_positions").upsert({
-        livreur_id: userId,
-        latitude,
-        longitude,
-        accuracy,
-        updated_at: new Date().toISOString(),
-      });
-      // Une écriture refusée par la base n'est PAS un envoi : on se garde d'annoncer à
-      // l'écran une position que l'équipe n'a jamais reçue.
-      if (error) { console.error("Erreur envoi position:", error); return; }
-      if (typeof onEnvoi === "function") {
-        try { onEnvoi({ latitude, longitude, accuracy }); }
-        catch (e) { console.error("Erreur après envoi de position:", e); }
-      }
+      if (now - suivi.lastSentAt < POSITION_MIN_INTERVAL_MS) return;
+      suivi.lastSentAt = now;
+      await envoyerPositionCLT(suivi.userId, pos.coords, suivi.onEnvoi);
     },
     (err) => {
       console.error("Erreur géolocalisation:", err);
-      // Code 1 = autorisation refusée. Contrairement à un GPS lent ou à un tunnel, cela ne se
-      // répare pas tout seul : il faut que le livreur aille changer un réglage. Or le suivi
-      // restait enregistré, si bien que le prochain appel repartait sur « déjà actif, rien à
-      // faire » — plus aucune reprise n'était possible sans recharger la page, et le livreur
-      // qui venait d'autoriser la géolocalisation voyait toujours le même refus. On referme
-      // donc le suivi : l'écran rappellera startPositionSharing() au rafraîchissement
-      // suivant, et la reprise se fait alors toute seule. (26/08/2026)
-      if (err && err.code === 1) { autorisationRefusee = true; stopPositionSharing(); }
-      if (typeof onError === "function") onError(err);
+      // Code 1 = autorisation refusée : on referme le suivi et on se met en pause dix minutes.
+      // Le rafraîchissement suivant repassera par startPositionSharing(), qui n'insistera pas.
+      if (err && err.code === 1) { positionRefuseeA = Date.now(); stopPositionSharing({ garderTrajet: true }); }
+      if (typeof suivi.onError === "function") suivi.onError(err);
     },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
   );
-  // Le rappel d'erreur ci-dessus peut se déclencher avant que watchPosition() ait rendu la
-  // main : stopPositionSharing() n'avait alors rien à fermer, et l'identifiant se réinstallait
-  // juste après. On repasse derrière.
-  if (autorisationRefusee) stopPositionSharing();
 }
 
-function stopPositionSharing() {
+// Un point tout de suite, sans attendre le GPS en continu : au retour à l'écran.
+function envoyerPositionMaintenant() {
+  const suivi = positionSuivi;
+  if (!suivi || !("geolocation" in navigator)) return;
+  if (positionRefuseeA && (Date.now() - positionRefuseeA) < POSITION_PAUSE_APRES_REFUS_MS) return;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => { suivi.lastSentAt = Date.now(); envoyerPositionCLT(suivi.userId, pos.coords, suivi.onEnvoi); },
+    (err) => { if (err && err.code === 1) positionRefuseeA = Date.now(); },
+    { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 }
+  );
+}
+
+function stopPositionSharing(options) {
   if (positionWatchId !== null) {
     navigator.geolocation.clearWatch(positionWatchId);
     positionWatchId = null;
   }
+  if (!(options && options.garderTrajet)) positionSuivi = null;
+}
+
+// Retour à l'écran : le GPS en continu a pu être coupé par le système pendant que le téléphone
+// était dans la poche. On relance le suivi s'il est tombé, et on envoie un point sans attendre.
+if (typeof document !== "undefined" && document.addEventListener) {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !positionSuivi) return;
+    if (positionWatchId === null) startPositionSharing(positionSuivi.userId, positionSuivi.onError, positionSuivi.onEnvoi);
+    envoyerPositionMaintenant();
+  });
 }
 
 window.addEventListener("beforeunload", () => {
@@ -1851,13 +1909,17 @@ function payloadLotColis(c, statut) {
 // exceptionnel n'est pas un garde-fou, c'est un piège. Les valeurs déjà en base sont conservées
 // telles quelles ; on a simplement cessé de les lire.
 function repartirColisPourLot(colis, statut) {
-  const eligibles = [], dejaAuStatut = [];
+  const eligibles = [], dejaAuStatut = [], horsChemin = [];
   (colis || []).forEach(c => {
     if (!c) return;
     if (c.statut === statut) { dejaAuStatut.push(c); return; }
+    // Un état que ce colis ne connaît pas (10/09/2026, feuille de route 2.9) : « en livraison »
+    // sur une expédition, par exemple. Le lot ne fait pas plus que le geste unitaire, qui ne le
+    // propose pas ; on écarte le colis et on le dit.
+    if (typeof etatsPossibles === 'function' && etatsPossibles(c).indexOf(statut) === -1) { horsChemin.push(c); return; }
     eligibles.push(c);
   });
-  return { eligibles: eligibles, dejaAuStatut: dejaAuStatut };
+  return { eligibles: eligibles, dejaAuStatut: dejaAuStatut, horsChemin: horsChemin };
 }
 
 // Regroupe les colis qui doivent recevoir EXACTEMENT les mêmes colonnes, pour n'envoyer qu'une

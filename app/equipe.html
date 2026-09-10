@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910leger">
-<script src="theme.js?v=20260910leger"></script>
-<script src="splash.js?v=20260910leger"></script>
+<link rel="stylesheet" href="style.css?v=20260910phase2">
+<script src="theme.js?v=20260910phase2"></script>
+<script src="splash.js?v=20260910phase2"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1426,11 +1426,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910leger"></script>
-<script src="config.js?v=20260910leger"></script>
-<script src="clients-dashboard.js?v=20260910leger"></script>
-<script src="biometric-lock.js?v=20260910leger"></script>
-<script src="clt-select-recherche.js?v=20260910leger"></script>
+<script src="clt-common.js?v=20260910phase2"></script>
+<script src="config.js?v=20260910phase2"></script>
+<script src="clients-dashboard.js?v=20260910phase2"></script>
+<script src="biometric-lock.js?v=20260910phase2"></script>
+<script src="clt-select-recherche.js?v=20260910phase2"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -9891,11 +9891,17 @@ window.location.href = 'login.html?motif=sans-droits';
 return;
 }
 
+isAdmin = profile.role === 'admin';
+// Les lectures partent PENDANT le verrou Face ID, pas après (10/09/2026, feuille de route 2.7).
+// Les fiches d'abord (les cartes de colis nomment les clientes et les livreurs), les colis ensuite.
+const prechargement = (async () => {
+  await Promise.all([loadPending(), loadResetRequests(), loadFournisseurs(), loadLivreurs()]);
+  await loadColis();
+})();
 // --- Déverrouillage biométrique (Face ID / Touch ID / empreinte) — opt-in, par appareil ---
 if (window.CLTBioLock) { try { await CLTBioLock.guard(currentUser); } catch (e) {} }
 setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);
 
-isAdmin = profile.role === 'admin';
 // Le tableau de bord des clientes lit ici qui regarde : le geste « reverser » n'est proposé
 // qu'à l'accès comptabilité (la base le refuse de toute façon aux autres).
 window.CLTProfil = profile;
@@ -9985,11 +9991,8 @@ document.getElementById('compta-date-fin').addEventListener('change', renderComp
 { const ajd = todayLocalISODate(); ['compta-date-debut','compta-date-fin'].forEach(id => { const el = document.getElementById(id); if (el && !el.value) el.value = ajd; }); }
 
 renderFilters();
-await loadPending();
-await loadResetRequests();
-await loadFournisseurs();
-await loadLivreurs();
-await loadColis();
+// Parties pendant le verrou (2.7) : on attend seulement leur retour.
+await prechargement;
 
 // Lien profond : si on arrive via un clic sur une notification (?colis=<id>), on va
 // directement au colis concerné et on le surligne. En cas d'introuvable (colis d'un autre

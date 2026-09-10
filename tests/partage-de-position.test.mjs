@@ -435,51 +435,79 @@ titre('La suppression ne part plus à chaque rafraîchissement');
 }
 
 /* ---------- 8. Le vrai suivi GPS de config.js, exécuté ---------- */
-titre('Le suivi lui-même : ce qui se referme, et ce qui compte comme un envoi');
+titre('Le suivi lui-même : ce qui se referme, ce qui compte comme un envoi, et ce qui ne redemande pas');
 {
-  function monterSuivi(){
+  // Depuis le 10/09/2026 (feuille de route 2.6) le suivi interroge l'état de l'autorisation avant
+  // tout appel, se met en pause dix minutes après un refus, et envoie un point au retour à l'écran.
+  const dodo = () => new Promise(r => setTimeout(r, 5));
+  function monterSuivi(etatAutorisation){
     const base = faireBase();
-    const montres = { posees: 0, fermees: [] };
-    let rappels = null;
+    const montres = { posees: 0, fermees: [], ponctuelles: 0 };
+    let rappels = null, rappelPonctuel = null;
     const navigateur = {
       geolocation: {
         watchPosition: (ok, ko) => { rappels = { ok, ko }; montres.posees++; return montres.posees; },
+        getCurrentPosition: (ok, ko) => { rappelPonctuel = { ok, ko }; montres.ponctuelles++; },
         clearWatch: (id) => montres.fermees.push(id),
       },
     };
+    if (etatAutorisation) navigateur.permissions = { query: async () => ({ state: etatAutorisation.valeur }) };
+    const ecouteurs = {};
     const contexte = vm.createContext({
       console: { error(){}, log(){} }, Date, navigator: navigateur,
       supabaseClient: base.client, POSITION_MIN_INTERVAL_MS: 0,
       window: { addEventListener(){} },
+      document: { visibilityState: 'visible', addEventListener: (t, fn) => { ecouteurs[t] = fn; } },
     });
     vm.runInContext('let positionWatchId = null;', contexte);
-    vm.runInContext(bloc('isPositionSharingActive', config, 'config.js'), contexte);
-    vm.runInContext(bloc('stopPositionSharing', config, 'config.js'), contexte);
-    vm.runInContext(bloc('startPositionSharing', config, 'config.js'), contexte);
-    return { contexte, base, montres, rappels: () => rappels,
-      actif: () => vm.runInContext('isPositionSharingActive()', contexte) };
+    vm.runInContext(config.match(/const POSITION_PAUSE_APRES_REFUS_MS = [^;]+;/)[0], contexte);
+    vm.runInContext('let positionRefuseeA = 0; let positionSuivi = null;', contexte);
+    ['isPositionSharingActive', 'etatAutorisationPosition', 'envoyerPositionCLT', 'startPositionSharing', 'lancerWatchPosition', 'envoyerPositionMaintenant', 'stopPositionSharing']
+      .forEach(n => vm.runInContext(bloc(n, config, 'config.js'), contexte));
+    // L'écouteur du retour à l'écran, tel qu'il est branché dans config.js.
+    vm.runInContext(config.slice(config.indexOf('document.addEventListener("visibilitychange", () => {\n    if (document.visibilityState !== "visible" || !positionSuivi) return;'), config.indexOf('envoyerPositionMaintenant();\n  });') + 'envoyerPositionMaintenant();\n  });'.length), contexte);
+    return { contexte, base, montres, rappels: () => rappels, rappelPonctuel: () => rappelPonctuel, ecouteurs,
+      actif: () => vm.runInContext('isPositionSharingActive()', contexte),
+      demarrer: async (cb) => { vm.runInContext(cb || 'startPositionSharing("liv-1", () => {}, () => {})', contexte); await dodo(); } };
   }
 
-  // Autorisation refusée : le suivi se referme, et une reprise redevient possible.
+  // Autorisation refusée : le suivi se referme, et on ne redemande PAS dans les dix minutes.
   {
     const s = monterSuivi();
     const erreurs = [];
-    vm.runInContext('startPositionSharing("liv-1", (e) => __erreurs.push(e), () => {})',
-      Object.assign(s.contexte, { __erreurs: erreurs }));
-    verifier('le suivi est bien posé au départ', s.actif() === true && s.montres.posees === 1);
+    Object.assign(s.contexte, { __erreurs: erreurs });
+    await s.demarrer('startPositionSharing("liv-1", (e) => __erreurs.push(e), () => {})');
+    verifier('le suivi est bien posé au départ (sans API de permissions, on demande au GPS)', s.actif() === true && s.montres.posees === 1);
     s.rappels().ko({ code: 1, message: 'User denied Geolocation' });
     verifier('autorisation refusée : le suivi est refermé', s.actif() === false, `fermées : ${s.montres.fermees.length}`);
     verifier('l’écran est prévenu', erreurs.length === 1 && erreurs[0].code === 1);
-    // C'est tout l'intérêt : le rafraîchissement suivant peut réessayer.
-    vm.runInContext('startPositionSharing("liv-1", () => {}, () => {})', s.contexte);
-    verifier('un nouvel essai repart pour de bon (la reprise était impossible avant)',
-      s.montres.posees === 2 && s.actif() === true, `posées : ${s.montres.posees}`);
+    await s.demarrer();
+    await s.demarrer();
+    verifier('les rafraîchissements suivants ne redemandent PAS l’autorisation (plus de trois demandes par minute)',
+      s.montres.posees === 1 && s.actif() === false, `posées : ${s.montres.posees}`);
+    // Dix minutes plus tard, on réessaie.
+    vm.runInContext('positionRefuseeA = Date.now() - POSITION_PAUSE_APRES_REFUS_MS - 1;', s.contexte);
+    await s.demarrer();
+    verifier('après la pause, un nouvel essai repart', s.montres.posees === 2 && s.actif() === true);
+  }
+
+  // L'API de permissions, quand elle existe, décide avant tout appel.
+  {
+    const refuse = monterSuivi({ valeur: 'denied' });
+    const erreurs = [];
+    Object.assign(refuse.contexte, { __erreurs: erreurs });
+    await refuse.demarrer('startPositionSharing("liv-1", (e) => __erreurs.push(e), () => {})');
+    verifier('autorisation « denied » connue : aucun appel au GPS, l’écran est prévenu (code 1)', refuse.montres.posees === 0 && erreurs.length === 1 && erreurs[0].code === 1);
+    const accorde = monterSuivi({ valeur: 'granted' });
+    vm.runInContext('positionRefuseeA = Date.now();', accorde.contexte); // un refus tout récent…
+    await accorde.demarrer();
+    verifier('… mais l’autorisation a été accordée entre-temps dans les réglages : le suivi repart sans attendre', accorde.montres.posees === 1 && accorde.actif() === true);
   }
 
   // Un GPS lent n'est pas un refus : le suivi doit continuer de lui-même.
   {
     const s = monterSuivi();
-    vm.runInContext('startPositionSharing("liv-1", () => {}, () => {})', s.contexte);
+    await s.demarrer();
     s.rappels().ko({ code: 3, message: 'Timeout expired' });
     verifier('délai dépassé : le suivi reste en place et continue d’essayer',
       s.actif() === true && s.montres.fermees.length === 0);
@@ -491,8 +519,8 @@ titre('Le suivi lui-même : ce qui se referme, et ce qui compte comme un envoi')
   {
     const s = monterSuivi();
     const envois = [];
-    vm.runInContext('startPositionSharing("liv-1", () => {}, (p) => __envois.push(p))',
-      Object.assign(s.contexte, { __envois: envois }));
+    Object.assign(s.contexte, { __envois: envois });
+    await s.demarrer('startPositionSharing("liv-1", () => {}, (p) => __envois.push(p))');
     await s.rappels().ok({ coords: { latitude: 5.35, longitude: -4.01, accuracy: 12 } });
     verifier('base qui accepte : l’écran est prévenu qu’un point est parti', envois.length === 1);
     verifier('et la ligne est bien écrite dans livreur_positions',
@@ -504,6 +532,27 @@ titre('Le suivi lui-même : ce qui se referme, et ce qui compte comme un envoi')
     await s.rappels().ok({ coords: { latitude: 5.36, longitude: -4.02, accuracy: 12 } });
     verifier('base qui refuse : ce n’est PAS un envoi, l’écran ne passera pas au vert',
       envois.length === 1, `envois : ${envois.length}`);
+  }
+
+  // Le retour à l'écran : le GPS continu a pu être coupé dans la poche ; un point part tout de suite.
+  {
+    const s = monterSuivi();
+    const envois = [];
+    Object.assign(s.contexte, { __envois: envois });
+    await s.demarrer('startPositionSharing("liv-1", () => {}, (p) => __envois.push(p))');
+    // Le système a coupé le suivi (comme en arrière-plan) sans que la page le sache.
+    vm.runInContext('positionWatchId = null;', s.contexte);
+    s.ecouteurs.visibilitychange();
+    await dodo();
+    verifier('au retour à l’écran, le suivi est relancé et un point est demandé sans attendre', s.montres.posees === 2 && s.montres.ponctuelles === 1, `posées ${s.montres.posees}, ponctuelles ${s.montres.ponctuelles}`);
+    await s.rappelPonctuel().ok({ coords: { latitude: 5.37, longitude: -4.03, accuracy: 9 } });
+    await dodo();
+    verifier('ce point est envoyé à l’équipe', envois.length === 1);
+    // Le trajet est fini : le retour à l'écran ne fait plus rien.
+    vm.runInContext('stopPositionSharing();', s.contexte);
+    s.ecouteurs.visibilitychange();
+    await dodo();
+    verifier('trajet terminé : rien ne repart au retour à l’écran', s.montres.posees === 2 && s.montres.ponctuelles === 1);
   }
 }
 

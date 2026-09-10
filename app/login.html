@@ -18,9 +18,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260910leger">
-  <script src="theme.js?v=20260910leger"></script>
-  <script src="splash.js?v=20260910leger"></script>
+  <link rel="stylesheet" href="style.css?v=20260910phase2">
+  <script src="theme.js?v=20260910phase2"></script>
+  <script src="splash.js?v=20260910phase2"></script>
   <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
        Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
        ne correspond pas. Si le CDN était compromis, le code étranger serait bloqué.
@@ -155,9 +155,9 @@
     </div>
   </div>
 
-<script src="clt-common.js?v=20260910leger"></script>
-<script src="config.js?v=20260910leger"></script>
-<script src="biometric-login.js?v=20260910leger"></script>
+<script src="clt-common.js?v=20260910phase2"></script>
+<script src="config.js?v=20260910phase2"></script>
+<script src="biometric-login.js?v=20260910phase2"></script>
 <script>
   function showTab(which){
     stopWaiting();
@@ -200,7 +200,10 @@
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) return;
 
-    const { data: { user }, error } = await supabaseClient.auth.getUser();
+    // Deux lectures en parallèle au lieu de deux allers-retours à la suite (10/09/2026, 2.7) :
+    // la validité de la session ET le profil. Si la session est fantôme, le profil lu ne sert pas.
+    const [lectureUser, profile] = await Promise.all([supabaseClient.auth.getUser(), getProfile(session.user.id)]);
+    const { data: { user }, error } = lectureUser;
     if (error || !user) {
       // Session fantôme : on efface tout et on reste sur la page de connexion.
       try { await supabaseClient.auth.signOut(); } catch (e) {}
@@ -208,7 +211,6 @@
       return;
     }
 
-    const profile = await getProfile(session.user.id);
     const ok = await checkAccountStatus(profile);
     if (!ok) return;
     redirectByRole(profile);
