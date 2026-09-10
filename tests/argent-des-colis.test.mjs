@@ -950,7 +950,7 @@ titre("Personne ne recalcule l'argent dans son coin");
   verifier("le livreur a un écran pour l'argent de sa journée",
     /renderArgentDuJour/.test(livreurNu) && /argent-jour-card/.test(livreurNu));
   verifier("cet écran est bien branché sur le rendu général, sinon il resterait vide",
-    /renderAll\(\)\{[\s\S]{0,200}renderArgentDuJour\(\)/.test(livreurNu),
+    /renderAll\(options\)\{[\s\S]{0,200}renderArgentDuJour\(\)/.test(livreurNu),
     'renderArgentDuJour() doit être appelé depuis renderAll()');
   verifier("le livreur peut signaler un article non encaissé, sur place",
     /btn-article-non-encaisse/.test(livreurNu) && /article_non_encaisse/.test(livreurNu));

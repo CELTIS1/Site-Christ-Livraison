@@ -83,5 +83,18 @@ titre('La carte du livreur');
 titre('Le lien d\'une notification aboutit toujours');
 verifier('si le colis n\'est pas dans la journée affichée, la liste passe à « Tous » une fois (onMiss)', /cltFocusColisFromUrl\(\{ onMiss: \(\) => \{[\s\S]{0,600}activeFilterMes = 'tous'; filtreDateMes = '';[\s\S]{0,400}renderMesColis\(\);/.test(livreur));
 
+/* 2.3 — NE JAMAIS REDESSINER PENDANT QUE LE LIVREUR TAPE (10/09/2026) */
+titre('2.3 : le temps réel s\'applique sans recharger, et attend pendant une saisie');
+{
+  const rt = blocDe(livreur, 'appliquerEvenementRealtime', 'livreur.html');
+  verifier('la ligne reçue (payload.new) est posée dans la mémoire, INSERT ou UPDATE, puis rendu « en fond »', /const ligne = payload\.new;/.test(rt) && /Object\.assign\(allColis\[idx\], ligne\)/.test(rt) && /allColis\.unshift/.test(rt) && /renderAll\(\{ enFond: true \}\)/.test(rt));
+  verifier('un DELETE retire le colis', /type === 'DELETE'/.test(rt) && /allColis\.filter\(c => c\.id !== id\)/.test(rt));
+  verifier('sans ligne dans l\'événement, on recharge comme avant (scheduleRealtimeReload)', /if \(!applique\) scheduleRealtimeReload\(\);/.test(livreur) && /loadColis\(\{ enFond: true \}\)/.test(blocDe(livreur, 'scheduleRealtimeReload', 'livreur.html')));
+  const rendu = blocDe(livreur, 'renderMesColis', 'livreur.html');
+  verifier('un rendu de fond attend pendant une saisie réelle (cltDifferSiSaisie), et le compteur du bouton Actualiser monte', /if \(enFond && list && typeof cltDifferSiSaisie === 'function' && cltDifferSiSaisie\(list, \(\) => renderMesColis\(\)\)\)/.test(rendu) && /CLTActualiser\.signalerEnAttente\(mesRendusRetenus\)/.test(rendu));
+  verifier('les rendus qui suivent un geste du livreur restent immédiats (renderMesColis() sans option)', /renderMesColis\(\);/.test(livreur));
+  verifier('après chaque rendu, la valeur de départ des champs est notée ; après un enregistrement, la zone redevient propre', /cltMarquerBaseSaisie\(list\)/.test(rendu) && /cltSaisieEnregistree\(list\)/.test(livreur));
+}
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);

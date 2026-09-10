@@ -846,8 +846,36 @@
     if (__realtimeReloadTimer) return;
     __realtimeReloadTimer = setTimeout(() => {
       __realtimeReloadTimer = null;
-      loadColis();
+      loadColis({ enFond: true });
     }, 450);
+  }
+
+  /* L'ÉVÉNEMENT TEMPS RÉEL EST APPLIQUÉ TEL QUEL. (10/09/2026, feuille de route 2.3)
+     Chaque événement rechargeait les 500 derniers colis — le geste d'un collègue à l'autre bout
+     de la ville faisait redescendre toute la liste sur le téléphone du livreur, en 3G. La ligne
+     reçue (payload.new) est la même que celle de la lecture : on la pose dans la mémoire, on
+     redessine « en fond ». Sans ligne (ancienne base, ligne trop lourde), on recharge comme avant.
+     Un événement DELETE retire le colis. Rend true s'il a été appliqué. */
+  function appliquerEvenementRealtime(payload){
+    if (!payload) return false;
+    const type = payload.eventType || payload.type;
+    if (type === 'DELETE') {
+      const id = payload.old && payload.old.id;
+      if (!id) return false;
+      const avant = allColis.length;
+      allColis = allColis.filter(c => c.id !== id);
+      if (allColis.length !== avant) { memoriserColis(allColis); renderAll({ enFond: true }); }
+      return true;
+    }
+    const ligne = payload.new;
+    if (!ligne || !ligne.id) return false;
+    const idx = allColis.findIndex(c => c.id === ligne.id);
+    if (idx !== -1) Object.assign(allColis[idx], ligne);
+    else allColis.unshift(Object.assign({}, ligne));
+    applyRecentWrites();
+    memoriserColis(allColis);
+    renderAll({ enFond: true });
+    return true;
   }
 
   // Préserve les saisies en cours (statut choisi mais pas encore enregistré, observation en cours
@@ -2202,8 +2230,25 @@
     if (d) d.addEventListener('toggle', () => { restesOuverts = d.open; });
   }
 
-  function renderMesColis(){
+  /* NE JAMAIS REDESSINER PENDANT QUE LE LIVREUR TAPE. (10/09/2026, feuille de route 2.3)
+     Un rendu venu du FOND (temps réel, retour au premier plan) attend tant qu'une saisie est
+     réellement en cours dans la liste — champ touché depuis moins de 30 s ou valeur modifiée
+     non enregistrée (cltSaisieEnCours, config.js, la même règle qu'au bureau). Sur iPhone,
+     reconstruire la carte fermait le clavier au milieu d'un montant. Le compteur orange du bouton
+     Actualiser dit combien de mises à jour attendent ; le rendu repart de lui-même dès que la
+     saisie est finie, ou tout de suite si le livreur appuie sur Actualiser. Les rendus qui
+     suivent un geste du livreur (enregistrer, filtrer, dérouler) restent immédiats. */
+  let mesRendusRetenus = 0;
+  function renderMesColis(options){
     const list = document.getElementById('mes-colis-list');
+    const enFond = !!(options && options.enFond);
+    if (enFond && list && typeof cltDifferSiSaisie === 'function' && cltDifferSiSaisie(list, () => renderMesColis())) {
+      mesRendusRetenus++;
+      if (window.CLTActualiser) CLTActualiser.signalerEnAttente(mesRendusRetenus);
+      return;
+    }
+    mesRendusRetenus = 0;
+    if (window.CLTActualiser) CLTActualiser.viderAttente();
     const __anchor = captureScrollAnchor(list);
     const __pending = capturePendingEdits(list);
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
@@ -2329,6 +2374,8 @@
             const plus = carte.querySelector('.colis-plus');
             if (plus) plus.open = false;
           } catch (e) { /* un repli qui ne se ferme pas ne vaut pas une erreur après une écriture réussie */ }
+          // Ce qui est à l'écran est enregistré : un rendu de fond qui attendait peut repartir.
+          if (typeof cltSaisieEnregistree === 'function') cltSaisieEnregistree(list);
         }
       }
     }
@@ -2557,6 +2604,8 @@
 
     restorePendingEdits(list, __pending);
     restoreScrollAnchor(list, __anchor);
+    // La valeur de départ de chaque champ, pour reconnaître ensuite une saisie non enregistrée.
+    if (typeof cltMarquerBaseSaisie === 'function') cltMarquerBaseSaisie(list);
   }
 
   // ---------- Onglet "Récupérations" ----------
@@ -2770,7 +2819,7 @@
     if (btnLoadMoreColis) btnLoadMoreColis.addEventListener('click', loadMoreColis);
   }
 
-  function renderAll(){
+  function renderAll(options){
     renderTourneeSummary();
     renderArgentDuJour();
     renderCaisseEnMain();
@@ -2778,7 +2827,7 @@
     // Le bloc d'annonce se redessine avec le reste : le montant proposé sort de la même
     // addition que « Ce que vous portez », et il doit suivre chaque colis marqué livré.
     renderAnnonceRemise();
-    renderMesColis();
+    renderMesColis(options);
     renderRecuperations();
     renderMaTournee();
     if (currentUser && currentProfile) updatePositionSharingFromColis();
@@ -3778,7 +3827,8 @@
     if (barre) barre.insertAdjacentElement('afterend', bloc); else document.body.prepend(bloc);
   }
 
-  async function loadColis(){
+  async function loadColis(options){
+    const enFond = !!(options && options.enFond);
     colisOffset = 0;
     colisHasMore = true;
     let reponse;
@@ -3814,7 +3864,7 @@
     colisHasMore = data.length === COLIS_PAGE_SIZE;
     memoriserColis(data);
     applyRecentWrites(); // ne jamais écraser un changement que le livreur vient d'enregistrer
-    renderAll();
+    renderAll({ enFond });
   }
 
   async function loadMoreColis(){
@@ -4049,8 +4099,10 @@
     // Mises à jour en temps réel sur tous les colis
     trackChannel(supabaseClient
       .channel('colis-livreur-' + currentUser.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, () => {
-        scheduleRealtimeReload();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, (payload) => {
+        let applique = false;
+        try { applique = appliquerEvenementRealtime(payload); } catch (e) { console.error('Temps réel :', e); }
+        if (!applique) scheduleRealtimeReload();
       })
       .subscribe());
   }

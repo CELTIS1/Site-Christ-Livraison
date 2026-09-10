@@ -175,7 +175,7 @@ verifier("l'écran du livreur appelle les deux fonctions partagées et rien d'au
   "il refiltrerait sur place, et fabriquerait un second chiffre");
 
 verifier("renderCaisseEnMain est appelée par renderAll",
-  /function\s+renderAll\s*\(\)\s*\{[^}]*renderCaisseEnMain\(\)/.test(livreurNu),
+  /function\s+renderAll\s*\(options\)\s*\{[^}]*renderCaisseEnMain\(\)/.test(livreurNu),
   "sans cet appel, le chiffre ne bouge pas quand le livreur marque un colis livré — "
   + "or c'est précisément le geste auquel on l'accroche");
 
