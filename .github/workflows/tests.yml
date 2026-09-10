@@ -403,6 +403,11 @@ jobs:
       - name: Une carte = un geste (livreur)
         run: node tests/une-carte-un-geste.test.mjs
 
+      # 10/09/2026 — feuille de route 2.4 et 2.5 : 44 px, 13 px minimum, gris lisible ; le haut de
+      # page du livreur dégonflé (Ma journée sur une ligne, quatre pastilles, Filtrer).
+      - name: Le livreur, lisible et léger (2.4, 2.5)
+        run: node tests/livreur-lisible-et-leger.test.mjs
+
       # La porte d'envoyer-push (phase 1, point 1.1 — 06/09/2026). La fonction serveur qui fait
       # vibrer les téléphones n'exigeait rien : n'importe qui, avec la clé publique du site,
       # pouvait pousser un texte à toute l'équipe. Cette série charge le VRAI fichier déployé et

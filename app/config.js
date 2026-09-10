@@ -5301,7 +5301,7 @@ function caisseEnMainHTML(releve, options) {
   // On dit sur combien de colis l'âge est un minorant. Sans cette ligne, « au moins 10 jours »
   // ressemble à une précaution de style ; avec elle, on sait d'où vient l'incertitude.
   const sansHeure = r.nbSansHeure > 0
-    ? `<div style="margin-top:4px; font-size:11px; color:#94a3b8;">${r.nbSansHeure} colis sans heure de remise connue : l'âge annoncé est un minimum.</div>`
+    ? `<div style="margin-top:4px; font-size:11px; color:#6b7686;">${r.nbSansHeure} colis sans heure de remise connue : l'âge annoncé est un minimum.</div>`
     : '';
 
   const avances = r.nbAvances > 0
@@ -5616,7 +5616,7 @@ function financeColisHTML(colis, actionsHTML) {
             <div><span>Article</span><strong>${art ? m(art) : '—'}</strong></div>
             <div><span>${escapeHTML(estExpedition(c) ? LIBELLE_FRAIS_COURSE : 'Livraison')}</span><strong>${liv ? m(liv) : '—'}</strong></div>
             ${gare ? `<div><span>${escapeHTML(LIBELLE_FRAIS_EXPEDITION)}</span><strong style="color:${COULEUR_NEGATIF_CLT};">−${m(gare)}</strong></div>` : ''}
-            <div><span>En main</span><strong style="color:${enMain ? '#1a7d3c' : '#94a3b8'};">${enMain ? m(enMain) : '—'}</strong></div>
+            <div><span>En main</span><strong style="color:${enMain ? '#1a7d3c' : '#6b7686'};">${enMain ? m(enMain) : '—'}</strong></div>
           </div>
           ${manque > 0 ? `<div class="finance-colis-alerte">⚠️ ${m(manque)} non encaissé sur ce colis pourtant remis.</div>` : ''}
           <!-- « Soldé » ne s'affiche que sur une expédition, et seulement quand il y a quelque
@@ -5703,9 +5703,9 @@ function financeTableauHTML(colis, options) {
       <tr class="finance-ligne${ouverte ? ' ouverte' : ''}" data-cliente="${cle}" role="button" tabindex="0" aria-expanded="${ouverte ? 'true' : 'false'}">
         <td data-label="${echapperAttribut(titreGroupe)}"><span class="finance-cliente"><span class="finance-chevron" aria-hidden="true">${ouverte ? '▾' : '▸'}</span>${l.nom}</span></td>
         <td data-label="Livrés">${l.t.nbLivres} / ${l.t.nb}</td>
-        <td data-label="Articles">${l.t.articleEncaisse ? m(l.t.articleEncaisse) : '<span style="color:#94a3b8;">—</span>'}</td>
-        <td data-label="Livraison">${l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '<span style="color:#94a3b8;">—</span>'}</td>
-        ${colonneGare ? `<td data-label="Gare">${l.t.fraisExpedition ? `<span style="color:${COULEUR_NEGATIF_CLT}; font-weight:700;">−${m(l.t.fraisExpedition)}</span>` : '<span style="color:#94a3b8;">—</span>'}</td>` : ''}
+        <td data-label="Articles">${l.t.articleEncaisse ? m(l.t.articleEncaisse) : '<span style="color:#6b7686;">—</span>'}</td>
+        <td data-label="Livraison">${l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '<span style="color:#6b7686;">—</span>'}</td>
+        ${colonneGare ? `<td data-label="Gare">${l.t.fraisExpedition ? `<span style="color:${COULEUR_NEGATIF_CLT}; font-weight:700;">−${m(l.t.fraisExpedition)}</span>` : '<span style="color:#6b7686;">—</span>'}</td>` : ''}
         <td data-label="Total"><strong>${l.t.totalEnMain ? m(l.t.totalEnMain) : '—'}</strong></td>
       </tr>
       <tr class="finance-detail-ligne${ouverte ? '' : ' hidden'}" data-detail="${cle}">

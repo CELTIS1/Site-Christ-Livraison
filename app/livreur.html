@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910geste">
-<script src="theme.js?v=20260910geste"></script>
-<script src="splash.js?v=20260910geste"></script>
+<link rel="stylesheet" href="style.css?v=20260910leger">
+<script src="theme.js?v=20260910leger"></script>
+<script src="splash.js?v=20260910leger"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -86,7 +86,7 @@
   /* ---- Pastilles de statut arrondies ---- */
   .badge{
     border-radius:999px !important; padding:5px 12px !important; font-weight:600 !important;
-    font-size:12px !important; letter-spacing:.1px;
+    font-size:13px !important; letter-spacing:.1px;
   }
 
   /* ---- Barre de recherche collante ---- */
@@ -108,12 +108,12 @@
   .clt-stepper .st{ flex:1; text-align:center; position:relative; }
   .clt-stepper .st .c{
     width:26px; height:26px; border-radius:50%; margin:0 auto; position:relative; z-index:2;
-    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;
     background:#e9edf3; color:#9aa3af;
   }
   .clt-stepper .st.done .c{ background:#1a7d3c; color:#fff; }
   .clt-stepper .st.now  .c{ background:var(--clt-orange); color:#fff; box-shadow:0 0 0 4px rgba(226,99,19,.18); }
-  .clt-stepper .st .l{ font-size:10px; color:#6b7280; margin-top:5px; font-weight:500; line-height:1.2; }
+  .clt-stepper .st .l{ font-size:13px; color:#6b7280; margin-top:5px; font-weight:500; line-height:1.2; }
   .clt-stepper .st.now .l{ color:var(--clt-orange-dark); font-weight:700; }
   .clt-stepper .st::before{ content:''; position:absolute; top:12px; left:-50%; width:100%; height:3px; background:#e9edf3; z-index:1; }
   .clt-stepper .st:first-child::before{ display:none; }
@@ -136,7 +136,7 @@
     .clt-bottomnav .nav{
       flex:1; background:none; border:none; cursor:pointer; font-family:inherit;
       display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-      height:50px; font-size:11px; font-weight:600; color:#5b6472;
+      height:50px; font-size:13px; font-weight:600; color:#5b6472;
       border-radius:14px; transition:color .15s, background .15s;
       -webkit-tap-highlight-color:transparent;
     }
@@ -213,15 +213,15 @@
   .montants-bloc{
     margin-top:0; padding:8px; border:1.5px solid #BFD5EF; border-radius:10px; background:#F4F9FF;
   }
-  .montants-titre{ font-size:12px; font-weight:800; color:#1B4374; display:block; }
-  .montants-avis{ font-size:11px; line-height:1.4; margin:6px 0 0; color:#4A6486; }
+  .montants-titre{ font-size:13px; font-weight:800; color:#1B4374; display:block; }
+  .montants-avis{ font-size:13px; line-height:1.4; margin:6px 0 0; color:#4A6486; }
   .montants-grille{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
   /* « .montants-bloc .montant-case » et non « .montant-case » seul : la case est un <label> dans
      un .field, et style.css pose « .field label{display:block} », plus précis qu'une classe seule.
      Sans ce renfort la case n'est jamais une colonne, et deux champs voisins dont l'étiquette
      tient sur une ou deux lignes ne s'alignent pas. (05/09/2026) */
   .montants-bloc .montant-case{ flex:1 1 120px; min-width:0; display:flex; flex-direction:column; gap:2px; justify-content:flex-end; margin:0; }
-  .montant-case > span{ font-size:11.5px; font-weight:700; color:#1B4374; }
+  .montant-case > span{ font-size:13px; font-weight:700; color:#1B4374; }
   /* 44 px : la hauteur d'un pouce. Un champ d'argent qu'on rate au premier appui se remplit au
      deuxième, en pleine rue, sans regarder. */
   .montant-case input{ width:100%; min-width:0; min-height:44px; margin-top:auto; padding:6px 10px; font-size:16px; font-weight:700; border-radius:9px; }
@@ -310,7 +310,7 @@
   .colis-item.mes-colis-item .status-col .colis-etapes{ flex:1 1 100%; align-self:stretch; }
   .colis-etapes .btn.btn-etape-principale{ flex:1 1 100%; }
   .colis-etapes .btn.btn-etape-echec{ flex:1 1 100%; }
-  .colis-etat-choix{ display:flex; flex-direction:column; gap:4px; width:100%; font-size:11.5px; font-weight:700; color:var(--muted); }
+  .colis-etat-choix{ display:flex; flex-direction:column; gap:4px; width:100%; font-size:13px; font-weight:700; color:var(--muted); }
   .colis-etat-choix .status-select{ width:100%; min-height:44px; font-weight:600; }
   .colis-plus-corps .btn.btn-save{ align-self:stretch; width:100%; margin-top:6px; }
   @media(min-width:641px){
@@ -339,7 +339,7 @@
     .colis-item.mes-colis-item .status-col .colis-plus-corps .obs-textarea{ min-height:96px; height:100%; }
     .colis-item.mes-colis-item .status-col .colis-plus-corps .btn{ justify-self:start; }
   }
-  .colis-plus-corps > .meta{ font-size:11.5px; }
+  .colis-plus-corps > .meta{ font-size:13px; }
 
   /* ---------- « Ma journée » : les deux cartes du haut n'en font plus qu'une (26/08/2026) ----------
      Les pastilles viennent de config.js avec leurs dimensions écrites dans l'attribut style —
@@ -347,34 +347,51 @@
      aise. Ici on les resserre : d'où les !important, seule façon de passer devant un style
      posé sur l'élément. Les chiffres restent les mêmes, ils tiennent juste moins de place. */
   .journee-card{ margin-bottom:12px; }
+  /* 2.5 : la ligne dépliable « Ma journée » et le bloc de filtres replié. */
+  .journee-repli > summary.journee-resume{
+    list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    min-height:44px; padding:8px 12px; font-size:13.5px; -webkit-tap-highlight-color:transparent;
+  }
+  .journee-repli > summary::-webkit-details-marker{ display:none; }
+  .journee-repli > summary::after{ content:'▾'; margin-left:auto; color:#64748b; transition:transform .15s ease; }
+  .journee-repli[open] > summary::after{ transform:rotate(180deg); }
+  .journee-resume__chiffres{ font-weight:700; color:#1B4374; }
+  .journee-resume__main{ color:#1a7d3c; font-weight:600; }
+  .journee-resume__main:empty{ display:none; }
+  .journee-repli__corps{ padding:0 12px 10px; }
+  html[data-theme="dark"] .journee-resume__chiffres{ color:#CFE0F5; }
+  .filters-ligne{ margin-bottom:10px; }
+  .filter-chip--outil{ margin-left:auto; border-style:dashed; }
+  .filter-chip--outil.a-un-filtre{ border-style:solid; border-color:#E26313; color:#E26313; }
+  .mes-filtres-avances{ margin-bottom:6px; }
   .journee-tuiles{ display:flex; gap:6px; flex-wrap:nowrap; }
   .journee-tuiles > div{ padding:7px 4px !important; min-width:0 !important; border-radius:9px !important; }
   .journee-tuiles > div > div:first-child{ font-size:17px !important; }
-  .journee-tuiles > div > div:last-child{ font-size:10px !important; margin-top:1px !important; line-height:1.2 !important; }
+  .journee-tuiles > div > div:last-child{ font-size:13px !important; margin-top:1px !important; line-height:1.2 !important; }
   .journee-tuiles-argent{ flex-wrap:wrap; margin-top:2px; }
   .journee-tuiles-argent > div{ flex:1 1 calc(50% - 3px) !important; }
   .journee-tuiles-argent > div > div:first-child{ font-size:14.5px !important; }
   .journee-argent{ margin-top:10px; padding-top:9px; border-top:1px solid #eef1f6; }
   /* Les colis d'autres jours encore en route : une ligne, pas une tuile. Elle n'apparaît que
      s'il y en a, pour que la journée ne cache pas ce qui traîne. (05/09/2026) */
-  .journee-reste{ font-size:11.5px; color:#8a4b12; margin-top:6px; }
+  .journee-reste{ font-size:13px; color:#8a4b12; margin-top:6px; }
   .journee-reste:empty{ display:none; }
   html[data-theme="dark"] .journee-reste{ color:#E9B27A; }
   html[data-theme="dark"] .journee-argent{ border-top-color:#2A3849; }
   .journee-entete{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
-  .journee-titre{ font-size:12px; color:#64748b; font-weight:600; }
+  .journee-titre{ font-size:13px; color:#64748b; font-weight:600; }
   html[data-theme="dark"] .journee-titre{ color:#9DB0C4; }
   .journee-entete input[type="date"]{
-    font-size:12px; padding:4px 6px; border:1px solid #e2e8f0; border-radius:8px !important; background:transparent;
+    font-size:13px; padding:4px 6px; border:1px solid #e2e8f0; border-radius:8px !important; background:transparent;
   }
   .journee-detail{ margin-top:8px; }
   .journee-detail > summary{
     list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px;
-    font-size:12px; font-weight:600; color:#1B4374; padding:3px 0;
+    font-size:13px; font-weight:600; color:#1B4374; padding:3px 0;
     -webkit-tap-highlight-color:transparent;
   }
   .journee-detail > summary::-webkit-details-marker{ display:none; }
-  .journee-detail > summary::after{ content:'▾'; font-size:10px; transition:transform .15s ease; }
+  .journee-detail > summary::after{ content:'▾'; font-size:13px; transition:transform .15s ease; }
   .journee-detail[open] > summary::after{ transform:rotate(180deg); }
   html[data-theme="dark"] .journee-detail > summary{ color:#9DB0C4; }
 
@@ -408,7 +425,7 @@
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .btn-point-pdf:disabled{ opacity:.55; cursor:default; }
-  .point-pdf-etat{ display:block; margin-top:6px; font-size:12px; color:#64748b; text-align:center; }
+  .point-pdf-etat{ display:block; margin-top:6px; font-size:13px; color:#64748b; text-align:center; }
   .point-pdf-etat.erreur{ color:#b91c1c; }
   html[data-theme="dark"] .btn-point-pdf{ background:#2C63A8; }
   html[data-theme="dark"] .point-pdf-etat{ color:#9DB0C4; }
@@ -421,7 +438,7 @@
   .colis-tel-ligne{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:3px; }
   .colis-tel{ font-size:13.5px; font-weight:700; color:#1B4374; text-decoration:none; }
   /* Les boutons de la ligne d'appel viennent de style.css (.colis-tel-ligne .btn-appel), les mêmes qu'au bureau. */
-  .colis-suivi-num{ font-size:11px; color:#94a3b8; font-weight:500; margin-left:6px; }
+  .colis-suivi-num{ font-size:13px; color:#6b7686; font-weight:500; margin-left:6px; }
   html[data-theme="dark"] .colis-tel{ color:#9EC0E6; }
 
   /* ---------- Pastille du nombre de récupérations (05/09/2026) ----------
@@ -430,7 +447,7 @@
   .clt-bottomnav .nav, .clt-toptab{ position:relative; }
   .nav-badge, .clttab-badge{
     position:absolute; top:4px; right:10px; min-width:18px; height:18px; padding:0 5px;
-    border-radius:999px; background:#E26313; color:#fff; font-size:11px; font-weight:700;
+    border-radius:999px; background:#E26313; color:#fff; font-size:13px; font-weight:700;
     line-height:18px; text-align:center; box-sizing:border-box;
   }
   .clttab-badge{ top:2px; right:6px; }
@@ -455,6 +472,24 @@
   .journee-en-main:empty{ display:none; }
   html[data-theme="dark"] .journee-en-main{ color:#B9CCE3; border-top-color:#2A3849; }
 
+
+  /* ---------- 2.4 · CIBLES DE 44 px ET TEXTES LISIBLES (10/09/2026, feuille de route) ----------
+     Mesuré sur un iPhone : menu d'état 31 px, « Enregistrer » 34 px, « Toutes » 22 px, pastilles
+     32 px, bascules 28 px, ⚙️ 34 px ; textes de 10 à 12 px ; gris #94a3b8 à 2,6:1 de contraste.
+     Ici : tout ce qu'on touche fait 44 px au moins, aucun texte sous 13 px (règle appliquée dans
+     ce fichier), et le gris clair est devenu #6b7686 (4,6:1). La mise en page ne change pas. */
+  .status-select, .filter-chip, .date-filter-input, .date-filter-clear, .btn-sm, .btn-outline,
+  .colis-plus > summary, .journee-detail > summary, .btn-appel, .btn-notify-wa, .search-input,
+  .clt-toptab, .clt-actualiser, .btn-mode-lot, .btn-reporter, .btn-retenter, .btn-livraison-payee,
+  .btn-article-non-encaisse, .restes-en-route > summary, .date-filter-icone{ min-height:44px; }
+  .filter-chip{ display:inline-flex; align-items:center; padding:10px 16px; font-size:13.5px; }
+  .date-filter-clear{ padding:10px 14px; font-size:13.5px; }
+  .colis-tel-ligne .btn-appel, .colis-tel-ligne .btn-notify-wa{ min-height:44px; padding:8px 12px; font-size:13px; }
+  .colis-item input[type="checkbox"], .lot-check{ width:24px; height:24px; }
+  .montant-case input, .frais-exp-input, .obs-textarea, .report-date{ min-height:44px; font-size:15px; }
+  .obs-textarea{ min-height:64px; }
+  .colis-item .meta, .colis-item .desc, .group-count, .day-group-header, .client-group-header{ font-size:13px; }
+  .colis-item .desc{ font-size:14.5px; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -558,7 +593,7 @@
 
     <!-- Suppression du compte -->
     <h3 class="account-modal-title" style="font-size:15px; margin-bottom:6px;">Supprimer mon compte</h3>
-    <p style="font-size:12.5px; color:var(--muted); line-height:1.4; margin:0 0 12px;">
+    <p style="font-size:13px; color:var(--muted); line-height:1.4; margin:0 0 12px;">
       Cette action envoie une demande à l'équipe CLT. Votre compte ne sera pas supprimé immédiatement : l'équipe traitera votre demande. Vous pouvez l'annuler tant qu'elle n'a pas été traitée.
     </p>
     <div id="account-delete-state"></div>
@@ -664,24 +699,32 @@
        horizons dans une même carte, sans rien pour le dire. Les tuiles comptent maintenant la
        journée du calendrier, comme l'argent, et le calendrier est monté au-dessus des deux
        pour qu'on voie qu'il commande les deux. -->
-  <div class="card journee-card" id="ma-journee-card" style="padding:10px 12px;">
-    <div class="journee-entete" style="margin-bottom:8px;">
+  <!-- 2.5 · DÉGONFLER LE HAUT DE PAGE. (10/09/2026, feuille de route) Sur un écran de 844 px, le
+       premier colis était sous le pli : sept tuiles, un repli, un encadré, la recherche, la
+       sélection, la date, huit pastilles. « Ma journée » tient maintenant sur UNE ligne — « 3 en
+       cours · 5 livrés · 💵 12 500 F en main » — qui se déplie sur les tuiles et le calendrier.
+       L'état ouvert/fermé est retenu sur l'appareil. -->
+  <details class="card journee-card journee-repli" id="ma-journee-card" style="padding:0;">
+    <summary class="journee-resume" id="ma-journee-resume">
       <span class="journee-titre">📅 Ma journée</span>
+      <span class="journee-resume__chiffres" id="journee-resume-chiffres">Chargement…</span>
+      <span class="journee-resume__main" id="journee-en-main"></span>
+    </summary>
+    <div class="journee-repli__corps">
+    <div class="journee-entete" style="margin-bottom:8px;">
+      <span class="journee-titre">Journée du</span>
       <input type="date" id="argent-jour-date" aria-label="Journée dont on fait le compte">
     </div>
     <div id="tournee-summary" class="journee-tuiles">
-      <div style="font-size:13px; color:#94a3b8;">Chargement…</div>
+      <div style="font-size:13px; color:#6b7686;">Chargement…</div>
     </div>
     <div id="tournee-autres-jours" class="journee-reste"></div>
-    <!-- Sur « Mes colis », l'argent tient en une ligne : ce que le livreur porte. Les tuiles
-         « Argent du jour » et « Ce que vous portez » restent sur Finance. (Celtis, 05/09/2026) -->
-    <div id="journee-en-main" class="journee-en-main"></div>
     <div id="argent-jour-card" class="journee-argent">
       <div class="journee-entete">
         <span class="journee-titre">💰 Argent du jour</span>
       </div>
       <div id="argent-jour-corps">
-        <div style="font-size:13px; color:#94a3b8;">Chargement…</div>
+        <div style="font-size:13px; color:#6b7686;">Chargement…</div>
       </div>
       <!-- Ce que le livreur porte POUR DE BON, toutes journées confondues et pas seulement celle
            du calendrier ci-dessus. Mesuré le 29 août 2026 : sur 1 356 550 FCFA encaissés et non
@@ -691,7 +734,8 @@
            ce geste-là est le seul que la base voit se répéter tous les jours. -->
       <div id="caisse-en-main"></div>
     </div>
-  </div>
+    </div>
+  </details>
 
   <div class="clt-toptabs-wrap">
   <div class="clt-toptabs" role="tablist">
@@ -711,6 +755,11 @@
            390 px de large, « Toutes les dates » et « Sélection multiple » la faisaient se
            replier en deux, soit 79 px au lieu de 40. Le calendrier se passe du mot « Date »,
            il en a la forme. (26/08/2026) -->
+      <!-- 2.5 (10/09/2026) : quatre pastilles et un bouton « Filtrer » ; la recherche, le
+           calendrier et la sélection multiple sont dessous, repliés. Un filtre actif garde le
+           bloc ouvert et marque le bouton. -->
+      <div class="filters filters-ligne" id="filters-mes"></div>
+      <div id="mes-filtres-avances" class="mes-filtres-avances hidden">
       <div class="search-wrap">
         <input type="text" id="search-mes" class="search-input" placeholder="Rechercher…">
         <!-- Entrer en sélection multiple : pour marquer d'un coup tous les colis d'une tournée
@@ -726,7 +775,7 @@
              « Tous » (le filtre) montre tout l'historique. -->
         <button type="button" id="btn-toutes-dates-mes" class="date-filter-clear">Aujourd'hui</button>
       </div>
-      <div class="filters" id="filters-mes"></div>
+      </div>
       <div class="colis-list" id="mes-colis-list">
         <div class="empty-state">Chargement...</div>
       </div>
@@ -793,7 +842,7 @@
       <details id="mes-remises-repli" class="journee-detail" style="margin:0 0 14px;">
         <summary>Mes remises passées</summary>
         <div id="mes-remises" style="padding:4px 2px 2px;">
-          <div style="font-size:12.5px; color:#64748b;">Chargement…</div>
+          <div style="font-size:13px; color:#64748b;">Chargement…</div>
         </div>
       </details>
       <div id="finance-detail">
@@ -803,9 +852,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910geste"></script>
-<script src="config.js?v=20260910geste"></script>
-<script src="biometric-lock.js?v=20260910geste"></script>
+<script src="clt-common.js?v=20260910leger"></script>
+<script src="config.js?v=20260910leger"></script>
+<script src="biometric-lock.js?v=20260910leger"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1345,7 +1394,9 @@
   // aujourd'hui : voir colisDeLaJourneeDeTravail() dans config.js. « Tous » garde son sens.
   const FILTRE_A_FAIRE = 'a_faire';
   const STATUTS_A_FAIRE = ['en_attente', 'recupere', 'en_livraison'];
-  const FILTER_LABELS_MES = Object.assign({ [FILTRE_A_FAIRE]: 'Ma journée' }, FILTER_LABELS);
+  // 2.5 (10/09/2026) : quatre pastilles au lieu de huit — Ma journée, Livrés, Non livrés, Tous.
+  // Les autres états se trouvent par « Tous » et la recherche.
+  const FILTER_LABELS_MES = { [FILTRE_A_FAIRE]: 'Ma journée', livre: FILTER_LABELS.livre, non_livre: FILTER_LABELS.non_livre, tous: FILTER_LABELS.tous };
 
   // Les trois onglets, sous le nom que le code leur donne. « finance » s'appelait « tous »
   // jusqu'au 25 août 2026 : un téléphone qui a gardé l'ancien nom en mémoire est réorienté
@@ -1387,12 +1438,22 @@
     // derniers sur un téléphone. On ne la réécrit donc que si le filtre actif a bougé. (25/08/2026)
     // FILTER_LABELS_MES : « À faire » en première pastille (05/09/2026). Cette rangée ne sert
     // qu'à Mes colis.
+    const filtreActif = !!(searchMes || filtreDateMes);
     if (!cltPoserHTML(box, Object.keys(FILTER_LABELS_MES).map(key =>
       `<div class="filter-chip ${activeFilter===key?'active':''}" data-filter="${key}">${FILTER_LABELS_MES[key]}</div>`
-    ).join(''))) return;
-    box.querySelectorAll('.filter-chip').forEach(chip => {
+    ).join('') + `<button type="button" class="filter-chip filter-chip--outil${filtreActif ? ' a-un-filtre' : ''}" id="btn-filtrer-mes" aria-expanded="${mesFiltresOuverts ? 'true' : 'false'}" title="Recherche, calendrier, sélection multiple">🔍 Filtrer${filtreActif ? ' •' : ''}</button>`, (filtreActif ? '1' : '0') + (mesFiltresOuverts ? 'o' : 'f'))) return;
+    box.querySelectorAll('.filter-chip[data-filter]').forEach(chip => {
       chip.addEventListener('click', () => onSelect(chip.dataset.filter));
     });
+    const btnFiltrer = box.querySelector('#btn-filtrer-mes');
+    if (btnFiltrer) btnFiltrer.addEventListener('click', () => { mesFiltresOuverts = !mesFiltresOuverts; appliquerFiltresAvances(); btnFiltrer.setAttribute('aria-expanded', mesFiltresOuverts ? 'true' : 'false'); if (mesFiltresOuverts) { const ch = document.getElementById('search-mes'); if (ch) ch.focus(); } });
+    appliquerFiltresAvances();
+  }
+  // Le bloc replié (recherche, calendrier, sélection) : ouvert sur demande, ou tant qu'un filtre est actif.
+  let mesFiltresOuverts = false;
+  function appliquerFiltresAvances(){
+    const bloc = document.getElementById('mes-filtres-avances');
+    if (bloc) bloc.classList.toggle('hidden', !(mesFiltresOuverts || searchMes || filtreDateMes));
   }
 
   // Le nom de la cliente, tel qu'il est écrit dans sa fiche. Sans échappement : c'est du texte,
@@ -2184,17 +2245,17 @@
               <!-- Ces deux boutons parlent d'argent encaissé chez le destinataire. Sur une
                    expédition il n'y en a pas : il a déjà payé chez la vendeuse. Les proposer,
                    c'est inviter à cocher quelque chose qui n'a pas eu lieu. -->
-              ${estExpedition(c) ? '' : `              <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Livraison payée ?'}</button>
+              ${estExpedition(c) ? '' : `              <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Livraison payée ?'}</button>
               <!-- L'exception, et seulement l'exception. Depuis le 25/08/2026, un colis livré compte
                    par défaut comme encaissé : le livreur n'a rien à cocher dans le cas normal, ce qui
                    était l'ancien piège (personne ne cochait jamais, et les clientes lisaient 0 FCFA
                    encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
                    colis a été remis sans que l'argent de l'article rentre. -->
-              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:12.5px; border-radius:8px; ${c.article_non_encaisse ? 'background:#1B4374 !important; border:1.5px solid #1B4374; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À cocher si le destinataire a déjà tout payé chez la vendeuse (article et livraison) : vous n'encaissez rien, la livraison est retenue sur la vendeuse.">${c.article_non_encaisse ? '✅ Article soldé' : "Article soldé ?"}</button>`}
+              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.article_non_encaisse ? 'background:#1B4374 !important; border:1.5px solid #1B4374; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À cocher si le destinataire a déjà tout payé chez la vendeuse (article et livraison) : vous n'encaissez rien, la livraison est retenue sur la vendeuse.">${c.article_non_encaisse ? '✅ Article soldé' : "Article soldé ?"}</button>`}
               ${montantsChampsHTML(c)}
               <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
               <div class="field" style="margin-top:8px;">
-                <label style="font-size:11.5px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
+                <label style="font-size:13px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
                 ${c.photo_livraison_url ? `<img src="${c.photo_livraison_url}" class="thumb" style="margin-bottom:6px;" alt="Photo de preuve de livraison déjà ajoutée">` : ''}
                 <div class="photo-pick-group livraison-photo-input">
                   <div class="avatar-upload-btns">
@@ -2854,6 +2915,16 @@
     // qui dessine l'aperçu de ce livreur côté équipe. Les deux écrans ne peuvent donc pas
     // annoncer deux comptes différents pour la même tournée.
     cltPoserHTML(box, tourneeTuilesHTML(duJour));
+    // La ligne de résumé (2.5) : ce qui reste à faire, ce qui est fait, et le jour s'il n'est
+    // pas aujourd'hui.
+    const resume = document.getElementById('journee-resume-chiffres');
+    if (resume) {
+      const n = st => duJour.filter(c => c.statut === st).length;
+      const enCours = n('en_attente') + n('recupere') + n('en_livraison');
+      const morceaux = [`${enCours} en cours`, `${n('livre')} livré${n('livre') > 1 ? 's' : ''}`];
+      if (n('non_livre')) morceaux.push(`${n('non_livre')} non livré${n('non_livre') > 1 ? 's' : ''}`);
+      cltPoserHTML(resume, escapeHTML((jour !== todayLocalISODate() ? jourEnClairCourt(jour) + ' · ' : '') + morceaux.join(' · ')));
+    }
     // Ce qui traîne d'autres jours : un colis pris lundi et toujours en route jeudi ne doit pas
     // disparaître parce qu'on regarde jeudi. Une ligne le dit ; la liste en bas le montre.
     if (reste) {
@@ -2906,7 +2977,7 @@
 
     const duJour = colisDeLaJournee(jour);
     if (!duJour.length){
-      cltPoserHTML(box, `<div style="font-size:13px; color:#94a3b8;">Aucun colis reçu ce jour-là.</div>`);
+      cltPoserHTML(box, `<div style="font-size:13px; color:#6b7686;">Aucun colis reçu ce jour-là.</div>`);
       if (detail){
         // L'empreinte porte sur l'état du bouton « Charger plus », qui est ajouté APRÈS coup et
         // ne figure donc pas dans le HTML comparé.
@@ -3010,7 +3081,7 @@
     if (!box || !currentUser) return;
 
     if (annonceIndisponible){
-      cltPoserHTML(box, `<div style="border:1px solid #e2e8f0; background:#f8fafc; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:12.5px; color:#64748b;">
+      cltPoserHTML(box, `<div style="border:1px solid #e2e8f0; background:#f8fafc; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; color:#64748b;">
         L'annonce de remise n'est pas encore activée sur ce compte. Vous pouvez continuer à
         remettre votre caisse comme d'habitude.
       </div>`);
@@ -3040,7 +3111,7 @@
     const propose = colisHasMore ? '' : Math.round(Number(porte.montant) || 0);
     if (cltPoserHTML(box, `<div style="border:1.5px solid #cddcf0; background:#f4f8fd; border-radius:10px; padding:10px 12px; margin-bottom:12px;">
       <div style="font-weight:800; color:#1B4374; font-size:13px;">🙋 Annoncer ma remise</div>
-      <div style="margin-top:4px; font-size:12px; color:#5b6b80; line-height:1.45;">
+      <div style="margin-top:4px; font-size:13px; color:#5b6b80; line-height:1.45;">
         Dites au bureau combien vous apportez, avant qu'il ne compte. Cela ne solde rien : c'est
         votre parole, écrite et datée.
       </div>
@@ -3052,7 +3123,7 @@
 
   function formulaireAnnonceHTML(montant, note){
     return `<div style="margin-top:8px;">
-      <label for="annonce-montant" style="display:block; font-size:12px; font-weight:600; color:#1B4374; margin-bottom:4px;">Montant que j'apporte (FCFA)</label>
+      <label for="annonce-montant" style="display:block; font-size:13px; font-weight:600; color:#1B4374; margin-bottom:4px;">Montant que j'apporte (FCFA)</label>
       <input type="number" id="annonce-montant" step="1" inputmode="numeric" value="${escapeHTML(String(montant))}"
              style="width:100%; border:1.5px solid #cbd5e1; border-radius:9px; padding:10px 12px; font-size:15px; box-sizing:border-box;">
       <!-- Un champ de type nombre ne sait pas espacer ses milliers : le livreur y lisait
@@ -3060,13 +3131,13 @@
            champ de nombres — c'est lui qui ouvre le clavier chiffré du téléphone — et on relit
            la somme juste en dessous, avec formatMontant, la même fonction que partout ailleurs.
            Vu à l'écran le 30 août 2026, pas déduit. -->
-      <div id="annonce-montant-clair" style="margin-top:5px; font-size:12.5px; color:#5b6b80;">${annonceMontantClair(montant)}</div>
-      <label for="annonce-note" style="display:block; font-size:12px; font-weight:600; color:#1B4374; margin:8px 0 4px;">Un mot, si besoin (facultatif)</label>
+      <div id="annonce-montant-clair" style="margin-top:5px; font-size:13px; color:#5b6b80;">${annonceMontantClair(montant)}</div>
+      <label for="annonce-note" style="display:block; font-size:13px; font-weight:600; color:#1B4374; margin:8px 0 4px;">Un mot, si besoin (facultatif)</label>
       <input type="text" id="annonce-note" maxlength="200" value="${escapeHTML(String(note || ''))}"
              placeholder="Ex : il manque 5 000, réglés demain"
              style="width:100%; border:1.5px solid #cbd5e1; border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
       <button type="button" id="btn-annoncer" class="btn" style="width:100%; margin-top:10px;">Envoyer mon annonce</button>
-      <div id="annonce-msg" role="status" aria-live="polite" style="margin-top:6px; font-size:12.5px;"></div>
+      <div id="annonce-msg" role="status" aria-live="polite" style="margin-top:6px; font-size:13px;"></div>
     </div>`;
   }
 
@@ -3194,11 +3265,18 @@
     if (activePanel !== 'mes' || !currentUser) { cltPoserHTML(ligne, ''); return; }
     // Historique partiel : la somme serait trop basse, on ne l'annonce pas (même règle que le
     // bloc complet de Finance).
-    if (colisHasMore) { cltPoserHTML(ligne, '💵 En main : <span style="color:#94a3b8;">voir Finance</span>'); return; }
+    if (colisHasMore) { cltPoserHTML(ligne, '💵 <span style="color:#6b7686;">voir Finance</span>'); return; }
     const releve = caisseEnMainDuLivreur(allColis, currentUser.id);
-    cltPoserHTML(ligne, `💵 En main : <strong>${formatMontant(Number(releve.montant) || 0) || '0 FCFA'}</strong>`);
+    cltPoserHTML(ligne, `💵 <strong>${formatMontant(Number(releve.montant) || 0) || '0 FCFA'}</strong> en main`);
   }
 
+  // Le repli « Ma journée » se souvient de son état sur l'appareil (2.5, 10/09/2026).
+  (function initJourneeRepli(){
+    const d = document.getElementById('ma-journee-card');
+    if (!d || !('open' in d)) return;
+    try { d.open = localStorage.getItem('clt:livreur:journee-ouverte') === '1'; } catch (e) {}
+    d.addEventListener('toggle', () => { try { localStorage.setItem('clt:livreur:journee-ouverte', d.open ? '1' : '0'); } catch (e) {} });
+  })();
   (function initArgentJour(){
     const input = document.getElementById('argent-jour-date');
     if (!input) return;
@@ -4027,18 +4105,19 @@
     document.getElementById('search-mes').addEventListener('input', (e) => {
       const val = e.target.value;
       clearTimeout(searchMesTimer);
-      searchMesTimer = setTimeout(() => { searchMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderMesColis(); }, 350);
+      searchMesTimer = setTimeout(() => { searchMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }, 350);
     });
 
     // Toutes les dates à l'ouverture (Celtis, 05/09/2026) : c'est le filtre « À faire » qui
     // fait le tri, et un colis de lundi encore en route doit se voir jeudi sans rien toucher.
     filtreDateMes = '';
     document.getElementById('filtre-date-mes').value = filtreDateMes;
-    document.getElementById('filtre-date-mes').addEventListener('change', (e) => { filtreDateMes = e.target.value; remettreTrancheMesAZero(); viderSelectionMes(); renderMesColis(); });
+    document.getElementById('filtre-date-mes').addEventListener('change', (e) => { filtreDateMes = e.target.value; remettreTrancheMesAZero(); viderSelectionMes(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); });
     document.getElementById('btn-toutes-dates-mes').addEventListener('click', () => {
       filtreDateMes = '';
       document.getElementById('filtre-date-mes').value = '';
       remettreTrancheMesAZero();
+      renderFilters('filters-mes', activeFilterMes, selectFilterMes);
       viderSelectionMes();
       renderMesColis();
     });
