@@ -105,29 +105,33 @@ titre('1. Les jours passés des récapitulatifs se rechargent, avec les colis re
 }
 
 /* ---------- 2. Appeler depuis le colis ---------- */
-titre('2. Appeler la vendeuse, le livreur, le destinataire depuis chaque colis');
+titre('2. Appeler le fournisseur et le destinataire depuis chaque colis — les mêmes boutons partout');
 {
+  // Les deux boutons, écrits une fois dans config.js.
+  const ctx = vm.createContext({});
+  vm.runInContext(blocDe(fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8'), 'escapeHTML', 'clt-common.js'), ctx);
+  vm.runInContext(blocDe(config, 'numeroCompose', 'config.js') + '\n' + blocDe(config, 'formatPhoneDisplay', 'config.js') + '\n' + blocDe(config, 'boutonAppelHTML', 'config.js') + '\n' + blocDe(config, 'boutonAppelDestinataireHTML', 'config.js') + '\n' + blocDe(config, 'boutonAppelFournisseurHTML', 'config.js'), ctx);
+  const dest = vm.runInContext('boutonAppelDestinataireHTML', ctx), fourn = vm.runInContext('boutonAppelFournisseurHTML', ctx);
+  const bd = dest({ destinataire_telephone: '2250705404655' });
+  verifier('« 📞 Destinataire » : un lien tel: vers le numéro, le numéro lisible dans l\'infobulle', /href="tel:2250705404655"/.test(bd) && /📞 Destinataire/.test(bd) && /title="Appeler le destinataire au /.test(bd) && /btn-appel-destinataire/.test(bd));
+  const bf = fourn({ phone: '2250102030405', company_name: 'Awa Boutique' });
+  verifier('« 📞 Fournisseur » : le nom du fournisseur dans l\'infobulle, jamais « Vendeuse »', /href="tel:2250102030405"/.test(bf) && /📞 Fournisseur/.test(bf) && /Appeler Awa Boutique au/.test(bf) && !/Vendeuse/i.test(bf));
+  verifier('sans numéro : pas de bouton', dest({}) === '' && fourn(null) === '' && fourn({ company_name: 'X' }) === '');
+  verifier('les mots « Vendeuse » et les boutons d\'en-tête ont disparu des écrans', !/📞 Vendeuse|btn-appel-vendeuse|appelVendeuseHTML/.test(livreur) && !/btn-appel-vendeuse/.test(equipe));
+  // Livreur : sur chaque carte de « Ma journée » et de « Récupérations ».
   const tel = blocDe(livreur, 'telephoneLigneHTML', 'livreur.html');
-  verifier('livreur : un bouton « 📞 Vendeuse » à côté du destinataire, sur le numéro du profil de la cliente',
-    /profilesById\[c\.fournisseur_id\]/.test(tel) && /href="tel:\$\{escapeHTML\(telVendeuse\)\}"/.test(tel) && /📞 Vendeuse/.test(tel));
-  verifier('livreur : sans numéro connu, pas de bouton', /const lienVendeuse = telVendeuse\s*\?/.test(tel));
-  verifier('livreur : le profil de la vendeuse porte bien son téléphone (loadProfiles lit phone)', /select\('id, full_name, company_name, role, avatar_url, phone'\)/.test(livreur));
-  const client = blocDe(equipe, 'eqLigneClientHTML', 'equipe.html');
-  verifier('équipe : « Client : … » porte le numéro de la cliente en lien d\'appel', /href="tel:\$\{escapeHTML\(tel\)\}"/.test(client) && /fournisseurLabel\(c\.fournisseur_id\)/.test(client));
-  verifier('équipe : les trois cartes de colis passent par cette ligne', (equipe.match(/\$\{eqLigneClientHTML\(c\)\}/g) || []).length === 3 && !/<div class="meta">Client : \$\{fournisseurLabel\(c\.fournisseur_id\)\}<\/div>/.test(equipe));
-  const dest = blocDe(equipe, 'eqLigneDestinationHTML', 'equipe.html');
-  verifier('équipe : le numéro du destinataire est un lien d\'appel lui aussi', /href="tel:\$\{escapeHTML\(numeroCompose\(c\.destinataire_telephone\)\)\}"/.test(dest));
+  verifier('livreur, Ma journée : le numéro du destinataire, WhatsApp, puis « 📞 Fournisseur » (boutonAppelFournisseurHTML)', /boutonAppelFournisseurHTML\(c\.fournisseur_id \? profilesById\[c\.fournisseur_id\] : null\)/.test(tel) && /btn-notify-wa/.test(tel));
+  verifier('livreur, Récupérations : « 📞 Fournisseur » sur chaque carte, plus rien dans l\'en-tête', /boutonAppelFournisseurHTML/.test(blocDe(livreur, 'recupColisRowHTML', 'livreur.html')) && /return '';/.test(blocDe(livreur, 'recupActionsHTML', 'livreur.html')));
+  verifier('livreur : le profil du fournisseur porte bien son téléphone (loadProfiles lit phone)', /select\('id, full_name, company_name, role, avatar_url, phone'\)/.test(livreur));
+  // Équipe : les deux boutons sur chaque carte, le nom du client sans numéro mêlé.
+  verifier('équipe : « Client : … » ne porte plus de numéro', !/href="tel:/.test(blocDe(equipe, 'eqLigneClientHTML', 'equipe.html')));
+  verifier('équipe : les deux boutons (destinataire + fournisseur) sur les trois cartes de colis', /boutonAppelDestinataireHTML\(c\) \+ boutonAppelFournisseurHTML\(/.test(blocDe(equipe, 'eqBoutonsAppelHTML', 'equipe.html')) && (equipe.match(/\$\{eqBoutonsAppelHTML\(c\)\}/g) || []).length === 3);
+  verifier('équipe : plus de bouton d\'appel dans l\'en-tête de groupe', !/btn-appel/.test(blocDe(equipe, 'equipeCollecteActionHTML', 'equipe.html')));
   verifier('équipe : les clientes sont lues avec leur téléphone', /select\('id, full_name, company_name, phone, commune_recuperation, adresse_recuperation'\)/.test(equipe));
   const carte = blocDe(fournisseur, 'colisItemHTML', 'fournisseur.html');
   verifier('cliente : « 📞 Appeler » son livreur dès qu\'il est assigné et que son numéro est connu', /telLivreur/.test(carte) && /href="tel:\$\{escapeHTML\(telLivreur\)\}"/.test(carte));
   verifier('cliente : les livreurs sont lus avec leur téléphone', /select\('id, full_name, avatar_url, phone'\)/.test(fournisseur));
-  verifier('le style du lien d\'appel est partagé (style.css)', /\.colis-tel\{/.test(style));
-  // Depuis le nom de la cliente, là où les cartes n'ont pas de téléphone.
-  const entete = blocDe(livreur, 'appelVendeuseHTML', 'livreur.html');
-  verifier('livreur : « 📞 Appeler » à côté du nom de la cliente sur Récupérations (recupActionsHTML → appelVendeuseHTML)',
-    /btn-appel-vendeuse/.test(entete) && /return appelVendeuseHTML\(client && client\.key\);/.test(blocDe(livreur, 'recupActionsHTML', 'livreur.html')));
-  verifier('livreur : sur « Ma journée », pas de doublon dans l\'en-tête (la carte a déjà « 📞 Vendeuse »)', !/renderGroupedColisHTML\(trMes\.groups, mesColisRowHTML, /.test(livreur));
-  verifier('équipe : « 📞 Appeler » à côté du nom de la cliente dans l\'en-tête de groupe', /btn-appel-vendeuse/.test(blocDe(equipe, 'equipeCollecteActionHTML', 'equipe.html')));
+  verifier('le style des boutons d\'appel est partagé (style.css)', /\.colis-tel-ligne \.btn-appel/.test(style));
 }
 
 /* ---------- 2 bis. Un champ de recherche sur les listes ---------- */

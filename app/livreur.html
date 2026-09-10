@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910express">
-<script src="theme.js?v=20260910express"></script>
-<script src="splash.js?v=20260910express"></script>
+<link rel="stylesheet" href="style.css?v=20260910fournisseur">
+<script src="theme.js?v=20260910fournisseur"></script>
+<script src="splash.js?v=20260910fournisseur"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -411,9 +411,7 @@
      à un appui. Le numéro de suivi, lui, s'est glissé en gris après la description. */
   .colis-tel-ligne{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:3px; }
   .colis-tel{ font-size:13.5px; font-weight:700; color:#1B4374; text-decoration:none; }
-  .colis-tel-ligne .btn-notify-wa, .colis-tel-ligne .colis-tel-vendeuse{ padding:4px 10px; font-size:12px; margin:0; text-decoration:none; }
-  /* Le bouton d'appel de la vendeuse, dans l'en-tête de son groupe (Récupérations, 10/09/2026). */
-  .client-group-header .btn-appel-vendeuse{ margin-left:auto; padding:4px 10px; font-size:12px; text-decoration:none; }
+  /* Les boutons de la ligne d'appel viennent de style.css (.colis-tel-ligne .btn-appel), les mêmes qu'au bureau. */
   .colis-suivi-num{ font-size:11px; color:#94a3b8; font-weight:500; margin-left:6px; }
   html[data-theme="dark"] .colis-tel{ color:#9EC0E6; }
 
@@ -796,9 +794,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910express"></script>
-<script src="config.js?v=20260910express"></script>
-<script src="biometric-lock.js?v=20260910express"></script>
+<script src="clt-common.js?v=20260910fournisseur"></script>
+<script src="config.js?v=20260910fournisseur"></script>
+<script src="biometric-lock.js?v=20260910fournisseur"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1868,26 +1866,11 @@
     const lien = tel
       ? `<a class="colis-tel" href="tel:${escapeHTML(compose)}">📞 ${escapeHTML(telephoneAffiche(tel))}</a>`
       : '';
-    // La vendeuse aussi, d'un geste, sur chaque carte (10/09/2026, Celtis : « quand le livreur
-    // arrive sur les lieux et qu'il y a un problème, il faut pouvoir appeler la propriétaire du
-    // colis » — validé sur son téléphone). Sans numéro connu, pas de bouton.
-    const vendeuse = c.fournisseur_id ? (profilesById[c.fournisseur_id] || {}) : {};
-    const telVendeuse = (typeof numeroCompose === 'function') ? numeroCompose(vendeuse.phone) : String(vendeuse.phone || '').replace(/[^0-9]/g, '');
-    const lienVendeuse = telVendeuse
-      ? `<a class="btn btn-outline btn-sm colis-tel-vendeuse" href="tel:${escapeHTML(telVendeuse)}" title="Appeler ${escapeHTML(vendeuse.company_name || vendeuse.full_name || 'la vendeuse')} (${escapeHTML(telephoneAffiche(vendeuse.phone))})">📞 Vendeuse</a>`
-      : '';
-    return `<div class="colis-tel-ligne">${lien}<button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button>${lienVendeuse}</div>`;
-  }
-
-  /* APPELER LA VENDEUSE, DEPUIS SON NOM. (10/09/2026)
-     Sur « Récupérations », les cartes n'ont pas de téléphone : le bouton « 📞 Appeler » est
-     posé dans l'en-tête de groupe, à côté du nom de la cliente. Sur « Ma journée », chaque
-     carte a déjà son bouton « 📞 Vendeuse » (telephoneLigneHTML) ; on ne le double pas. */
-  function appelVendeuseHTML(fournisseurId){
-    const f = fournisseurId ? (profilesById[fournisseurId] || {}) : {};
-    const tel = (typeof numeroCompose === 'function') ? numeroCompose(f.phone) : String(f.phone || '').replace(/[^0-9]/g, '');
-    if (!tel) return '';
-    return `<a class="btn btn-outline btn-sm btn-appel-vendeuse" href="tel:${escapeHTML(tel)}" title="Appeler ${escapeHTML(f.company_name || f.full_name || 'la vendeuse')} au ${escapeHTML(telephoneAffiche(f.phone))}">📞 Appeler</a>`;
+    // Et le fournisseur du colis, d'un geste, sur chaque carte — « 📞 Fournisseur », le même
+    // bouton qu'au bureau (boutonAppelFournisseurHTML, config.js). Plus rien dans les en-têtes de
+    // groupe : Celtis, 10/09/2026, « que ce soit identique partout ».
+    const lienFournisseur = boutonAppelFournisseurHTML(c.fournisseur_id ? profilesById[c.fournisseur_id] : null);
+    return `<div class="colis-tel-ligne">${lien}<button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button>${lienFournisseur}</div>`;
   }
 
   /* La description et, en petit gris à sa suite, le numéro de suivi : une ligne au lieu de
@@ -2578,6 +2561,8 @@
           <div class="desc">${colisDestinationHTML(c)}</div>
           ${descriptionEtSuiviHTML(c)}
           ${montantsLigneHTML(c)}
+          <!-- Le même bouton que sur « Ma journée » et au bureau (10/09/2026). -->
+          ${(() => { const b = boutonAppelFournisseurHTML(c.fournisseur_id ? profilesById[c.fournisseur_id] : null); return b ? `<div class="colis-tel-ligne">${b}</div>` : ''; })()}
         </div>
         <div class="status-col">
           ${statutBadgeHTML(c.statut, c)}
@@ -2603,9 +2588,9 @@
      même geste à deux endroits : deux boutons finissent toujours par ne plus faire la même
      chose, et c'est le genre d'écart qu'on ne découvre que le jour où l'argent ne tombe pas
      juste. La fonction reste, vide, parce que renderGroupedColisHTML() l'attend. */
-  function recupActionsHTML(jour, client){
-    // Le bouton d'appel de la cliente, à côté de son nom (10/09/2026).
-    return appelVendeuseHTML(client && client.key);
+  function recupActionsHTML(){
+    // Rien dans l'en-tête : le bouton « 📞 Fournisseur » est sur chaque carte (10/09/2026).
+    return '';
   }
 
   /* LES DEUX GESTES DE LA RÉCUPÉRATION, ÉCRITS UNE SEULE FOIS.

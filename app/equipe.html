@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910express">
-<script src="theme.js?v=20260910express"></script>
-<script src="splash.js?v=20260910express"></script>
+<link rel="stylesheet" href="style.css?v=20260910fournisseur">
+<script src="theme.js?v=20260910fournisseur"></script>
+<script src="splash.js?v=20260910fournisseur"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1426,11 +1426,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910express"></script>
-<script src="config.js?v=20260910express"></script>
-<script src="clients-dashboard.js?v=20260910express"></script>
-<script src="biometric-lock.js?v=20260910express"></script>
-<script src="clt-select-recherche.js?v=20260910express"></script>
+<script src="clt-common.js?v=20260910fournisseur"></script>
+<script src="config.js?v=20260910fournisseur"></script>
+<script src="clients-dashboard.js?v=20260910fournisseur"></script>
+<script src="biometric-lock.js?v=20260910fournisseur"></script>
+<script src="clt-select-recherche.js?v=20260910fournisseur"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3688,22 +3688,23 @@ function eqDestinationTexte(c){
    ligne-ci. Ce qui reste ici, c'est le numéro à appeler — et, quand l'adresse manque, l'alerte
    rouge : celle-là ne peut pas se contenter d'être en tête, car c'est elle qui déclenche l'appel
    à la cliente, et elle doit rester à côté du numéro qu'on va composer. */
-// La cliente, avec son numéro en lien d'appel (10/09/2026, Celtis : « à partir de chaque colis,
-// pouvoir appeler directement la vendeuse, sur tous les comptes »). Sans numéro, le nom seul.
+// Le nom du client (fournisseur du colis). Son numéro n'est plus mêlé à cette ligne : les deux
+// boutons d'appel de la carte disent qui on appelle (eqBoutonsAppelHTML). (10/09/2026, Celtis :
+// « les numéros sont mélangés, on ne distingue plus lequel est pour qui »)
 function eqLigneClientHTML(c){
-  const f = fournisseurs.find(x => x.id === c.fournisseur_id);
-  const tel = f && f.phone ? numeroCompose(f.phone) : '';
-  const appel = tel
-    ? ` · <a class="colis-tel" href="tel:${escapeHTML(tel)}" title="Appeler la cliente">📞 ${escapeHTML((typeof formatPhoneDisplay === 'function' && formatPhoneDisplay(f.phone)) || f.phone)}</a>`
-    : '';
-  return `<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${appel}</div>`;
+  return `<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>`;
+}
+
+// Les mêmes deux boutons que chez le livreur : « 📞 Destinataire », « 📞 Fournisseur ».
+function eqBoutonsAppelHTML(c){
+  const boutons = boutonAppelDestinataireHTML(c) + boutonAppelFournisseurHTML(fournisseurs.find(x => x.id === c.fournisseur_id));
+  return boutons ? `<div class="colis-tel-ligne">${boutons}</div>` : '';
 }
 
 function eqLigneDestinationHTML(c){
   const txt = eqDestinationTexte(c);
-  // Le numéro du destinataire en lien d'appel, lui aussi (10/09/2026).
   const tel = c.destinataire_telephone
-    ? `<a class="colis-tel" href="tel:${escapeHTML(numeroCompose(c.destinataire_telephone))}" title="Appeler le destinataire">📞 ${escapeHTML(c.destinataire_telephone)}</a>`
+    ? `📞 ${escapeHTML(c.destinataire_telephone)}`
     : '';
   if (!txt) {
     return `<div class="meta adresse-absente" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — à renseigner${tel ? ' · ' + tel : ''}</div>`;
@@ -3746,6 +3747,7 @@ ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> 
 ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
 ${eqLigneClientHTML(c)}
 ${eqLigneDestinationHTML(c)}
+${eqBoutonsAppelHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
@@ -3852,6 +3854,7 @@ ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> 
 ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
 ${eqLigneClientHTML(c)}
 ${eqLigneDestinationHTML(c)}
+${eqBoutonsAppelHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
@@ -3940,10 +3943,8 @@ function equipeCollecteActionHTML(day, client){
 const pending = client.items.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id);
 const f = fournisseurs.find(x => x.id === client.key);
 const pickupLabel = f && f.commune_recuperation ? `📍 ${escapeHTML(f.commune_recuperation)}` : '📍 Lieu de récupération';
-// Appeler la cliente depuis son nom, comme chez le livreur (10/09/2026).
-const tel = f && f.phone ? numeroCompose(f.phone) : '';
-let html = tel ? ` <a class="btn btn-outline btn-sm btn-appel-vendeuse" href="tel:${escapeHTML(tel)}" title="Appeler ${escapeHTML(f.company_name || f.full_name || 'la cliente')}">📞 Appeler</a>` : '';
-html += ` <button type="button" class="btn btn-sm btn-edit-pickup" data-fournisseur="${client.key}" title="Définir le lieu de récupération de cette cliente">${pickupLabel}</button>`;
+// Pas de bouton d'appel ici : il est sur chaque carte (10/09/2026, Celtis : « identique partout »).
+let html = ` <button type="button" class="btn btn-sm btn-edit-pickup" data-fournisseur="${client.key}" title="Définir le lieu de récupération de cette cliente">${pickupLabel}</button>`;
 if (pending.length) {
 const options = '<option value="">Assigner collecte à…</option>' +
 livreurs.map(l => `<option value="${l.id}">${escapeHTML(l.full_name || l.id)}</option>`).join('');
@@ -7673,6 +7674,7 @@ ${thumb}
 ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
 ${eqLigneClientHTML(c)}
 ${eqLigneDestinationHTML(c)}
+${eqBoutonsAppelHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 <div class="meta">${formatDate(c.created_at)}</div>
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}

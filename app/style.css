@@ -1005,6 +1005,9 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
 /* Un numéro de téléphone sur une carte de colis est un lien d'appel, sur tous les écrans
    (10/09/2026). Le style vivait dans livreur.html et fournisseur.html ; l'équipe l'a maintenant. */
 .colis-tel{ font-size:13.5px; font-weight:700; color:#1B4374; text-decoration:none; }
+/* Les deux boutons d'appel d'une carte de colis, identiques partout (10/09/2026). */
+.colis-tel-ligne{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:4px; }
+.colis-tel-ligne .btn-appel, .colis-tel-ligne .btn-notify-wa{ padding:4px 10px; font-size:12px; margin:0; text-decoration:none; }
 /* La ligne de TOTAL sous les vignettes. Chaque tableau de cette application en porte une ;
    une liste de vignettes n'en portait pas, et c'est précisément là qu'on veut savoir combien
    d'argent dort dehors ce soir, tous livreurs confondus. */

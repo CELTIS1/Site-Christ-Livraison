@@ -592,6 +592,29 @@ function aDesObservations(colis) {
   return (Array.isArray(colis) ? colis : []).some(c => !!observationTexte(c));
 }
 
+/* APPELER DEPUIS LA CARTE D'UN COLIS — LES MÊMES DEUX BOUTONS PARTOUT. (10/09/2026, Celtis)
+   « Plusieurs choses se sont faites à la fois, sur les cartes et au-dessus ; les numéros sont
+   mélangés, on ne distingue plus lequel est pour le fournisseur et lequel pour le client. Que ce
+   soit identique partout, et "Fournisseur" plutôt que "Vendeuse". » Donc : plus rien dans les
+   en-têtes de groupe ; sur chaque carte, deux boutons qui disent QUI on appelle —
+   « 📞 Destinataire » et « 📞 Fournisseur » — chez le livreur comme au bureau. Sans numéro connu,
+   pas de bouton : on n'affiche pas un appel qui n'aboutirait pas. Le numéro lui-même est dans
+   l'infobulle. */
+function boutonAppelHTML(libelle, telephone, qui) {
+  const num = (typeof numeroCompose === 'function') ? numeroCompose(telephone) : String(telephone || '').replace(/[^0-9]/g, '');
+  if (!num) return '';
+  const affiche = (typeof formatPhoneDisplay === 'function' && formatPhoneDisplay(telephone)) || String(telephone);
+  return `<a class="btn btn-outline btn-sm btn-appel btn-appel-${escapeHTML(libelle.toLowerCase())}" href="tel:${escapeHTML(num)}" title="Appeler ${escapeHTML(qui || libelle.toLowerCase())} au ${escapeHTML(affiche)}">📞 ${escapeHTML(libelle)}</a>`;
+}
+function boutonAppelDestinataireHTML(c) {
+  return boutonAppelHTML('Destinataire', c && c.destinataire_telephone, 'le destinataire');
+}
+// `fournisseur` est la fiche (profil) du fournisseur du colis, telle que l'écran la connaît.
+function boutonAppelFournisseurHTML(fournisseur) {
+  const f = fournisseur || {};
+  return boutonAppelHTML('Fournisseur', f.phone, f.company_name || f.full_name || 'le fournisseur');
+}
+
 function colisDestinationTexte(c) {
   if (!c) return "";
   const commune = String(c.commune_destination || "").trim();
