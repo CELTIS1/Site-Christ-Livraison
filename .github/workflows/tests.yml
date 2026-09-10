@@ -387,6 +387,12 @@ jobs:
       - name: Le relevé en couleur (le papier porte les couleurs de l'écran)
         run: node tests/releve-en-couleur.test.mjs
 
+      # 10/09/2026 — l'équipe se met à jour partout sur téléphone (un curseur oublié ne retient
+      # plus rien, la liste seule attend une saisie réelle, les annexes se redessinent), appeler
+      # la vendeuse / le livreur depuis chaque colis, les montants d'une expédition depuis le bureau.
+      - name: À jour partout, appeler depuis le colis, les montants d'une expédition
+        run: node tests/a-jour-partout-et-appeler.test.mjs
+
       # La porte d'envoyer-push (phase 1, point 1.1 — 06/09/2026). La fonction serveur qui fait
       # vibrer les téléphones n'exigeait rien : n'importe qui, avec la clé publique du site,
       # pouvait pousser un texte à toute l'équipe. Cette série charge le VRAI fichier déployé et

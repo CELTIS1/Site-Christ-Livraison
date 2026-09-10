@@ -759,14 +759,35 @@ function appliquerModeExpedition(selectCommune, champPrecision) {
      tout en place. Les valeurs sont vidées au passage, pour qu'un montant tapé avant de basculer
      ne parte pas en base sans que personne l'ait vu.
      ------------------------------------------------------------------------------------------ */
-  const formulaire = champPrecision.closest ? champPrecision.closest('form, .lot-fr-item, .card, body') : null;
+  // `.colis-item` d'abord (10/09/2026) : la fiche de MODIFICATION d'un colis vit dans une carte
+  // de liste, et « .card » désignait la liste entière — le bloc de montants trouvé était alors
+  // celui du PREMIER colis de la liste, pas celui qu'on modifiait.
+  const formulaire = champPrecision.closest ? champPrecision.closest('form, .lot-fr-item, .colis-item, .card, body') : null;
   if (!formulaire) return;
 
   const blocMontants = formulaire.querySelector('.montant-group');
   const apercuTotal  = formulaire.querySelector('.montant-total-preview');
-  [blocMontants, apercuTotal].forEach(el => { if (el) el.style.display = expedition ? 'none' : ''; });
-  if (expedition && blocMontants) {
-    blocMontants.querySelectorAll('input').forEach(i => { i.value = ''; });
+  /* LE BUREAU VOIT LES MONTANTS D'UNE EXPÉDITION. (10/09/2026, Celtis)
+     À la création, on cache les montants d'une expédition : personne ne les connaît encore.
+     Sur la fiche de modification de l'équipe, c'est l'inverse — c'est là qu'on les corrige
+     après coup, sans passer par le compte du livreur. Un bloc marqué data-montants-toujours
+     reste donc visible : « Livraison » devient « Frais de course », et la case des frais
+     d'expédition (transporteur) apparaît. */
+  const toujours = !!(blocMontants && blocMontants.closest && blocMontants.closest('[data-montants-toujours]'));
+  if (toujours) {
+    const libelle = blocMontants.querySelector('.libelle-livraison');
+    if (libelle) libelle.textContent = expedition ? (libelle.dataset.libelleExpedition || LIBELLE_FRAIS_COURSE) : (libelle.dataset.libelleAbidjan || 'Livraison');
+    const caseFraisExp = blocMontants.querySelector('.montant-field-frais-exp');
+    if (caseFraisExp) {
+      const saisi = caseFraisExp.querySelector('input');
+      const dejaSaisi = !!(saisi && String(saisi.value || '').trim());
+      caseFraisExp.style.display = (expedition || dejaSaisi) ? '' : 'none';
+    }
+  } else {
+    [blocMontants, apercuTotal].forEach(el => { if (el) el.style.display = expedition ? 'none' : ''; });
+    if (expedition && blocMontants) {
+      blocMontants.querySelectorAll('input').forEach(i => { i.value = ''; });
+    }
   }
 
   // « Livraison déjà payée » parle d'un encaissement chez le destinataire : sur une expédition
@@ -777,13 +798,15 @@ function appliquerModeExpedition(selectCommune, champPrecision) {
     const casePayee = formulaire.querySelector(sel);
     if (casePayee && casePayee.closest('label')) {
       casePayee.closest('label').style.display = expedition ? 'none' : '';
-      if (expedition) casePayee.checked = false;
+      // Sur la fiche de modification, on cache sans décocher : ce qui est en base y reste tant
+      // que personne ne l'a changé.
+      if (expedition && !toujours) casePayee.checked = false;
     }
   });
   const caseSoldee = formulaire.querySelector('.lotfr-soldee');
   if (caseSoldee && caseSoldee.closest('label')) {
     caseSoldee.closest('label').style.display = expedition ? '' : 'none';
-    if (!expedition) caseSoldee.checked = false;
+    if (!expedition && !toujours) caseSoldee.checked = false;
   }
 }
 
@@ -1073,16 +1096,39 @@ function cltListeDerouleeOuverteDans(conteneur) {
   return conteneur.contains(ouverte);
 }
 
+/* LE CURSEUR QUI NE PART JAMAIS. (10/09/2026, Celtis : « sur mon téléphone, quand je modifie
+   un colis puis que je vais dans les récapitulatifs ou les comptes des livreurs, rien n'est à
+   jour ; il faut que je ferme l'application. »)
+   Sur ordinateur, cliquer « Enregistrer » sort du champ. Sur iPhone, non : un bouton touché ne
+   prend pas le curseur, qui reste dans le dernier champ écrit — parfois pendant des heures. La
+   règle « le curseur est dans un champ » tenait alors TOUT rafraîchissement en attente, sans
+   qu'aucune saisie ne soit en cours. Le curseur ne compte donc plus que si le champ a été touché
+   récemment ; une valeur modifiée et pas enregistrée, elle, protège toujours (règle 2). */
+const CLT_CURSEUR_RECENT_MS = 30000;
+const __cltDerniereTouche = new WeakMap();
+(function __cltSuivreLesTouches() {
+  if (typeof document === 'undefined' || !document.addEventListener) return;
+  const noter = (e) => { if (e && e.target && e.target.nodeType === 1) __cltDerniereTouche.set(e.target, Date.now()); };
+  // Pas « focusin » : le code pose lui-même le curseur (focus() après un scrollIntoView), et ce
+  // n'est pas une touche de la personne. Un doigt, une touche, une frappe, un choix — rien d'autre.
+  ['input', 'keydown', 'change', 'pointerdown'].forEach(type => document.addEventListener(type, noter, true));
+})();
+function cltChampActifRecent(conteneur) {
+  const actif = document.activeElement;
+  if (!actif || actif === document.body || !conteneur || !conteneur.contains(actif) || !actif.matches(CLT_CHAMPS_SAISIE)) return false;
+  const touche = __cltDerniereTouche.get(actif);
+  // Un champ jamais touché (curseur posé par le code) ne retient rien : rien n'y a été écrit.
+  return !!touche && (Date.now() - touche) < CLT_CURSEUR_RECENT_MS;
+}
+
 // Y a-t-il, dans cette zone, une saisie qu'un redessin ferait disparaître ?
 function cltSaisieEnCours(conteneur) {
   if (!conteneur) return false;
   // 0. Une liste déroulante est ouverte dans la zone : on ne la lui retire pas des mains.
   if (cltListeDerouleeOuverteDans(conteneur)) return true;
-  // 1. La personne a le curseur dans un champ de la zone : on ne lui coupe pas les mains.
-  const actif = document.activeElement;
-  if (actif && actif !== document.body && conteneur.contains(actif) && actif.matches(CLT_CHAMPS_SAISIE)) {
-    return true;
-  }
+  // 1. La personne a le curseur dans un champ de la zone ET vient d'y toucher : on ne lui coupe
+  //    pas les mains. Un curseur oublié là depuis une demi-heure ne compte plus (voir ci-dessus).
+  if (cltChampActifRecent(conteneur)) return true;
   // 2. Un champ a été modifié sans être enregistré (cas du livreur choisi puis laissé en
   //    attente pendant qu'on cherche l'adresse : le curseur n'est plus dedans, mais la
   //    sélection serait bel et bien perdue).

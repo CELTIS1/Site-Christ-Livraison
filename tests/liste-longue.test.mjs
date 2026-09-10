@@ -232,6 +232,8 @@ titre('Les rendus sont regroupés, y compris dans un onglet en arrière-plan');
     const liste = { contains: (n) => n === ecran.champActif };
     const ctxRendu = vm.createContext({
       eqDessinerColis: () => { bac.dessins++; },
+      // Les tableaux annexes (10/09/2026) : dessinés même quand la liste attend ; doublures ici.
+      renderAlertIndicator(){}, renderRecapFournisseur(){}, renderRecapLivreur(){}, renderColisQuiDorment(){}, renderCompta(){}, renderAujourdhui(){},
       setTimeout: (fn) => { bac.minuteurs.push(fn); return 1; },
       requestAnimationFrame: (fn) => { bac.images.push(fn); return 1; },
       document: {
@@ -292,6 +294,8 @@ titre('Une mise à jour n’efface jamais une saisie en cours');
     const liste = { contains: (n) => n === ecran.champActif };
     const ctx = vm.createContext({
       eqDessinerColis: () => { bac.dessins++; },
+      // Les tableaux annexes (10/09/2026) : dessinés même quand la liste attend ; doublures ici.
+      renderAlertIndicator(){}, renderRecapFournisseur(){}, renderRecapLivreur(){}, renderColisQuiDorment(){}, renderCompta(){}, renderAujourdhui(){},
       setTimeout: (fn) => { bac.minuteurs.push(fn); return 1; },
       requestAnimationFrame: (fn) => { bac.images.push(fn); return 1; },
       document: {

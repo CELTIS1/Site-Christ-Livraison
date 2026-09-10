@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909rouge">
-<script src="theme.js?v=20260909rouge"></script>
-<script src="splash.js?v=20260909rouge"></script>
+<link rel="stylesheet" href="style.css?v=20260910appel">
+<script src="theme.js?v=20260910appel"></script>
+<script src="splash.js?v=20260910appel"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -471,10 +471,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909rouge"></script>
-<script src="config.js?v=20260909rouge"></script>
-<script src="biometric-lock.js?v=20260909rouge"></script>
-<script src="clt-select-recherche.js?v=20260909rouge"></script>
+<script src="clt-common.js?v=20260910appel"></script>
+<script src="config.js?v=20260910appel"></script>
+<script src="biometric-lock.js?v=20260910appel"></script>
+<script src="clt-select-recherche.js?v=20260910appel"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -518,7 +518,8 @@
   async function loadLivreurs(){
     const { data, error } = await supabaseClient
       .from('profiles')
-      .select('id, full_name, avatar_url')
+      // `phone` depuis le 10/09/2026 : la cliente appelle son livreur depuis la carte du colis.
+      .select('id, full_name, avatar_url, phone')
       .eq('role', 'livreur');
     if (error) { console.error(error); return; }
     livreursById = {};
@@ -1598,8 +1599,11 @@
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
       : '';
     const livreur = c.livreur_id ? livreursById[c.livreur_id] : null;
+    // Le livreur, et son numéro en lien d'appel quand il est connu (10/09/2026, Celtis : « il faut
+    // pouvoir appeler directement, sur tous les comptes »).
+    const telLivreur = livreur && livreur.phone ? numeroCompose(livreur.phone) : '';
     const livreurBlock = livreur
-      ? `<div class="livreur-meta">${avatarHTML(livreur, 20)} <span>Livreur : ${escapeHTML(livreur.full_name || 'Livreur')}</span></div>`
+      ? `<div class="livreur-meta">${avatarHTML(livreur, 20)} <span>Livreur : ${escapeHTML(livreur.full_name || 'Livreur')}</span>${telLivreur ? ` <a class="colis-tel" href="tel:${escapeHTML(telLivreur)}" title="Appeler ${escapeHTML(livreur.full_name || 'le livreur')}">📞 Appeler</a>` : ''}</div>`
       : '';
     // Le quoi et le numéro sur une seule ligne. L'un des deux peut manquer sans casser l'autre.
     const quoi = colisDescriptionTexte(c);

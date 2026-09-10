@@ -106,6 +106,8 @@ function aidesCommunes(){
     blocDe(config, 'toPhoneE164', 'config.js'),
     blocDe(config, 'formatPhoneDisplay', 'config.js'),
     blocDe(config, 'isValidMontant', 'config.js'),
+    // Le numéro du destinataire est un lien d'appel depuis le 10/09/2026.
+    blocDe(config, 'numeroCompose', 'config.js'),
     blocDe(commun, 'isValidPhoneCI', 'clt-common.js'),
     blocDe(commun, 'escapeHTML', 'clt-common.js'),
   ].join('\n\n'), ctx);
@@ -263,7 +265,8 @@ async function enregistrerEquipe({ tel, telOrigine, avecRecuperation }){
   ctx.alert = ecran.alert;
   const prelude = `var statut = 'en_livraison', observation = null, livreur_id = undefined,
     livreur_collecte_id = undefined, montant = undefined, montant_article = undefined,
-    montant_livraison = undefined, article_non_encaisse = undefined, livraison_payee = undefined;`;
+    montant_livraison = undefined, article_non_encaisse = undefined, livraison_payee = undefined,
+    frais_expedition = undefined, frais_soldes_at = undefined;`;
   vm.runInContext(
     `globalThis.__lancer = async function(){\n${prelude}\n${CODE_EQUIPE}\nreturn updatePayload;\n};`, ctx);
   const payload = await ctx.__lancer();

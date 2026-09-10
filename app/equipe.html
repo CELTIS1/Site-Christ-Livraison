@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909rouge">
-<script src="theme.js?v=20260909rouge"></script>
-<script src="splash.js?v=20260909rouge"></script>
+<link rel="stylesheet" href="style.css?v=20260910appel">
+<script src="theme.js?v=20260910appel"></script>
+<script src="splash.js?v=20260910appel"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1418,11 +1418,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909rouge"></script>
-<script src="config.js?v=20260909rouge"></script>
-<script src="clients-dashboard.js?v=20260909rouge"></script>
-<script src="biometric-lock.js?v=20260909rouge"></script>
-<script src="clt-select-recherche.js?v=20260909rouge"></script>
+<script src="clt-common.js?v=20260910appel"></script>
+<script src="config.js?v=20260910appel"></script>
+<script src="clients-dashboard.js?v=20260910appel"></script>
+<script src="biometric-lock.js?v=20260910appel"></script>
+<script src="clt-select-recherche.js?v=20260910appel"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3632,10 +3632,22 @@ function eqDestinationTexte(c){
    ligne-ci. Ce qui reste ici, c'est le numéro à appeler — et, quand l'adresse manque, l'alerte
    rouge : celle-là ne peut pas se contenter d'être en tête, car c'est elle qui déclenche l'appel
    à la cliente, et elle doit rester à côté du numéro qu'on va composer. */
+// La cliente, avec son numéro en lien d'appel (10/09/2026, Celtis : « à partir de chaque colis,
+// pouvoir appeler directement la vendeuse, sur tous les comptes »). Sans numéro, le nom seul.
+function eqLigneClientHTML(c){
+  const f = fournisseurs.find(x => x.id === c.fournisseur_id);
+  const tel = f && f.phone ? numeroCompose(f.phone) : '';
+  const appel = tel
+    ? ` · <a class="colis-tel" href="tel:${escapeHTML(tel)}" title="Appeler la cliente">📞 ${escapeHTML((typeof formatPhoneDisplay === 'function' && formatPhoneDisplay(f.phone)) || f.phone)}</a>`
+    : '';
+  return `<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}${appel}</div>`;
+}
+
 function eqLigneDestinationHTML(c){
   const txt = eqDestinationTexte(c);
+  // Le numéro du destinataire en lien d'appel, lui aussi (10/09/2026).
   const tel = c.destinataire_telephone
-    ? `📞 ${escapeHTML(c.destinataire_telephone)}`
+    ? `<a class="colis-tel" href="tel:${escapeHTML(numeroCompose(c.destinataire_telephone))}" title="Appeler le destinataire">📞 ${escapeHTML(c.destinataire_telephone)}</a>`
     : '';
   if (!txt) {
     return `<div class="meta adresse-absente" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — à renseigner${tel ? ' · ' + tel : ''}</div>`;
@@ -3676,7 +3688,7 @@ ${syncBadge}
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
 ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
-<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+${eqLigneClientHTML(c)}
 ${eqLigneDestinationHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
@@ -3731,7 +3743,13 @@ ${c.statut === 'en_attente' ? `
 </div>` : `
 <div class="meta" style="margin-top:8px; font-size:11.5px; opacity:.75;">📍 Récupération : ${c.commune_recuperation ? escapeHTML(c.commune_recuperation) + (c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : '') : 'non renseignée'} — le colis est déjà collecté, ce point ne se change plus.</div>`}
 </div>
-<div class="montant-block" style="margin-top:8px; max-width:340px;">
+<!-- LES MONTANTS D'UNE EXPÉDITION, DEPUIS LE BUREAU. (10/09/2026, Celtis : « pour les
+     expéditions, il faudrait que l'équipe puisse modifier les montants — le transporteur et le
+     coût de la course — sans se connecter au compte du livreur. ») Le bloc porte
+     data-montants-toujours : appliquerModeExpedition() ne le masque plus, il change ses
+     libellés et fait apparaître les frais d'expédition et la case « soldé », comme sur l'écran
+     du livreur. Les montants s'enregistrent dans les mêmes colonnes que chez lui. -->
+<div class="montant-block" style="margin-top:8px; max-width:420px;" data-montants-toujours>
 <label style="font-size:11.5px;">Montants</label>
 <div class="montant-group">
 <div class="montant-field">
@@ -3740,14 +3758,19 @@ ${c.statut === 'en_attente' ? `
 </div>
 <div class="montant-plus">+</div>
 <div class="montant-field">
-<label>Livraison</label>
+<label class="libelle-livraison" data-libelle-abidjan="Livraison" data-libelle-expedition="${escapeHTML(LIBELLE_FRAIS_COURSE)}">${estExpedition(c) ? escapeHTML(LIBELLE_FRAIS_COURSE) : 'Livraison'}</label>
 <input type="number" class="edit-montant-livraison" min="0" step="any" value="${c.montant_livraison !== null && c.montant_livraison !== undefined ? c.montant_livraison : ''}">
+</div>
+<div class="montant-field montant-field-frais-exp" style="${estExpedition(c) || fraisExpeditionColis(c) > 0 ? '' : 'display:none;'}">
+<label>🚌 ${escapeHTML(LIBELLE_FRAIS_EXPEDITION)} (transporteur)</label>
+<input type="number" class="edit-frais-expedition" min="0" step="any" value="${c.frais_expedition !== null && c.frais_expedition !== undefined ? c.frais_expedition : ''}">
 </div>
 </div>
 </div>
 <div class="payment-checks">
-<label class="check-pill" title="Le destinataire a tout payé chez la vendeuse (article et livraison) : rien n'est encaissé, la livraison est retenue sur la vendeuse."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
-<label class="check-pill"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
+<label class="check-pill lotfr-article-solde" title="Le destinataire a tout payé chez la vendeuse (article et livraison) : rien n'est encaissé, la livraison est retenue sur la vendeuse."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
+<label class="check-pill lotfr-liv-payee"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
+<label class="check-pill lotfr-soldee" style="${estExpedition(c) ? '' : 'display:none;'}" title="La cliente a déjà réglé à CLT les frais d'expédition et de course : rien ne se retient sur son relevé."><input type="checkbox" class="edit-frais-soldes" ${fraisSoldes(c) ? 'checked' : ''}> 🚌 Frais déjà réglés à CLT (soldé)</label>
 </div>`}
 </div>
 `;
@@ -3771,7 +3794,7 @@ ${thumb}
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
 ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
-<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+${eqLigneClientHTML(c)}
 ${eqLigneDestinationHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
@@ -4444,11 +4467,15 @@ let colisRenduEnAttente = false;
 // config.js), et eqPhotographierSaisies() ci-dessous repose les valeurs tapées si un redessin a
 // tout de même lieu. Cette garde-ci est la troisième épaisseur, pas la seule.
 function eqSaisieEnCours(){
+const liste = document.getElementById('colis-list');
+// Depuis le 10/09/2026, la même règle que config.js : le curseur ne compte que si le champ a été
+// touché récemment. Sur iPhone il reste dans le dernier champ écrit après « Enregistrer », et la
+// liste ne se redessinait plus jamais toute seule.
+if (typeof cltChampActifRecent === 'function') return !!(liste && cltChampActifRecent(liste));
 const actif = document.activeElement;
 if (!actif) return false;
 const balise = (actif.tagName || '').toLowerCase();
 if (balise !== 'input' && balise !== 'select' && balise !== 'textarea') return false;
-const liste = document.getElementById('colis-list');
 return !!(liste && liste.contains(actif));
 }
 
@@ -4469,6 +4496,11 @@ eqRenduDiffere = true;
 eqRendusRetenus++;
 if (window.CLTActualiser) CLTActualiser.signalerEnAttente(eqRendusRetenus);
 }
+// La LISTE attend, pas le reste. Les récapitulatifs, la comptabilité, l'essentiel et les colis
+// qui dorment ne contiennent aucune saisie : ils se redessinent tout de suite, avec les données
+// fraîches. (10/09/2026 — jusque-là ils attendaient avec la liste, et sur téléphone ils
+// attendaient jusqu'à la fermeture de l'application.)
+eqDessinerAnnexes();
 return;
 }
 colisRenduEnAttente = false;
@@ -4514,8 +4546,8 @@ setTimeout(eqDessinerColisUneFois, 200);
 // HTML les remettrait aux valeurs de la base — c'est-à-dire aux anciennes.
 // On photographie donc les champs avant, on les repose après. Même principe que chez le livreur.
 const EQ_CHAMPS_EDITION = ['.edit-commune-dest', '.edit-dest', '.edit-tel-destinataire',
-'.edit-commune-recup', '.edit-adresse-recup', '.edit-montant-article', '.edit-montant-livraison'];
-const EQ_CASES_EDITION = ['.edit-article-non-encaisse', '.edit-livraison-payee'];
+'.edit-commune-recup', '.edit-adresse-recup', '.edit-montant-article', '.edit-montant-livraison', '.edit-frais-expedition'];
+const EQ_CASES_EDITION = ['.edit-article-non-encaisse', '.edit-livraison-payee', '.edit-frais-soldes'];
 
 function eqPhotographierSaisies(conteneur){
 const photo = {};
@@ -4788,6 +4820,24 @@ const articleNonEncaisseInput = item.querySelector('.edit-article-non-encaisse')
 const livraisonPayeeInput = item.querySelector('.edit-livraison-payee');
 const article_non_encaisse = articleNonEncaisseInput ? articleNonEncaisseInput.checked : undefined;
 const livraison_payee = livraisonPayeeInput ? livraisonPayeeInput.checked : undefined;
+// Les frais d'une expédition (10/09/2026) : le transporteur, et « frais déjà réglés » qui pose
+// ou efface frais_soldes_at — la même colonne que le bouton « Soldé » du bilan et que la case de
+// la cliente à la création. On ne touche à la date que si la case a changé, pour ne pas
+// réécrire une date de solde ancienne.
+const fraisExpInput = item.querySelector('.edit-frais-expedition');
+const fraisExpRaw = fraisExpInput ? fraisExpInput.value.trim() : '';
+if (fraisExpInput && !isValidMontant(fraisExpRaw === '' ? null : fraisExpRaw)) {
+alert("Les frais d'expédition doivent être un nombre positif.");
+return;
+}
+const frais_expedition = fraisExpInput ? (fraisExpRaw === '' ? null : Number(fraisExpRaw)) : undefined;
+const fraisSoldesInput = item.querySelector('.edit-frais-soldes');
+let frais_soldes_at;
+if (fraisSoldesInput) {
+const colisAvant = allColis.find(x => x.id === id);
+const etaitSolde = !!(colisAvant && colisAvant.frais_soldes_at);
+if (fraisSoldesInput.checked !== etaitSolde) frais_soldes_at = fraisSoldesInput.checked ? new Date().toISOString() : null;
+}
 // Adresse de livraison. C'est le motif d'appel numéro un du livreur, et jusqu'ici cet écran
 // ne permettait pas d'y toucher : la personne qui décroche était précisément celle qui ne
 // pouvait rien corriger. Les champs ne sont envoyés que s'ils existent à l'écran, pour que
@@ -4840,6 +4890,8 @@ if (montant !== undefined) updatePayload.montant = montant;
 if (montant_article !== undefined) updatePayload.montant_article = montant_article;
 if (montant_livraison !== undefined) updatePayload.montant_livraison = montant_livraison;
 if (article_non_encaisse !== undefined) updatePayload.article_non_encaisse = article_non_encaisse;
+if (frais_expedition !== undefined) updatePayload.frais_expedition = frais_expedition;
+if (frais_soldes_at !== undefined) updatePayload.frais_soldes_at = frais_soldes_at;
 // Le jour du colis et « à livrer avant le » (09/09/2026). Un jour égal au jour de réception
 // efface le report ; une date vide efface la limite.
 { const jourInput = item.querySelector('.edit-reporte-au');
@@ -4965,7 +5017,8 @@ cltMarquerBaseSaisie(list);
 // pas été rapatrié via "Charger plus", elles peuvent ne refléter qu'un sous-ensemble récent —
 // un bandeau dans l'interface l'indique tant qu'il reste des pages à charger.
 let __colisIdsSeen = null;
-async function loadColis(){
+async function loadColis(options){
+const enFond = !!(options && options.enFond);
 colisOffset = 0;
 colisHasMore = true;
 const { data, error } = await supabaseClient
@@ -4990,7 +5043,20 @@ __colisIdsSeen = new Set(data.map(c => c.id));
 allColis = data;
 colisOffset = data.length;
 colisHasMore = data.length === COLIS_PAGE_SIZE;
+const list = document.getElementById('colis-list');
+if (enFond && list && cltDifferSiSaisie(list, renderColis)) {
+// Une saisie est réellement en cours dans la liste : elle garde ses cartes (la pastille
+// « Mise à jour disponible » le dit), mais tout ce qui l'entoure se met à jour maintenant.
+eqDessinerAnnexes();
+} else {
 renderColis();
+}
+// Les récapitulatifs d'un jour passé lisent un cache : un colis modifié doit s'y voir aussi.
+recapRechargerJoursPasses();
+// Le tableau de bord des clientes lit la base pour son compte ; s'il est sous les yeux, il
+// se relit maintenant (10/09/2026). Fermé, il se relira à sa prochaine ouverture, comme avant.
+{ const panneauClients = document.getElementById('eqpanel-clients');
+  if (enFond && panneauClients && !panneauClients.classList.contains('hidden') && window.CLTClients) CLTClients.rafraichir(); }
 // Les chiffres du jour, exacts, à chaque chargement (le premier comme ceux de fond).
 chargerBilanDuJour();
 }
@@ -5002,9 +5068,13 @@ chargerBilanDuJour();
 // Les appels directs à loadColis() / renderColis() faits APRÈS une action de la personne
 // (enregistrement, filtre, recherche) restent volontairement immédiats.
 async function loadColisEnFond(){
-const list = document.getElementById('colis-list');
-if (cltDifferSiSaisie(list, loadColisEnFond)) return;
-await loadColis();
+// On va TOUJOURS chercher les données (10/09/2026). Avant, tout le rechargement était mis en
+// attente dès qu'une saisie semblait en cours dans la liste — et sur téléphone, où le curseur ne
+// quitte jamais le dernier champ, plus rien n'arrivait nulle part : ni dans la liste, ni dans
+// les récapitulatifs, ni dans les comptes des livreurs et des vendeuses, tous dessinés d'après
+// la même liste en mémoire. Désormais la mémoire est à jour, les tableaux annexes se
+// redessinent, et seule la liste des colis attend la fin d'une saisie réelle.
+await loadColis({ enFond: true });
 }
 
 async function loadMoreColis(){
@@ -6570,19 +6640,37 @@ return recapDayCache[date] || [];
 
 // Rapatrie tous les colis d'un jour passé depuis la base (mis en cache), car `allColis`
 // ne couvre que les pages récentes tant que "Charger plus" n'a pas tout ramené.
-async function recapLoadPastDay(date){
-if (recapDayCache[date]) { recapRedessinerLesDeux(); return; }
+async function recapLoadPastDay(date, options){
+const forcer = !!(options && options.forcer);
+if (recapDayCache[date] && !forcer) { recapRedessinerLesDeux(); return; }
+if (recapJoursEnCours[date]) return;
 recapJoursEnCours[date] = true;
-recapRedessinerLesDeux();
+// Pas d'écran « Chargement… » quand on rafraîchit un jour déjà affiché : le tableau reste, et
+// se remplace d'un coup quand la base a répondu.
+if (!recapDayCache[date]) recapRedessinerLesDeux();
+// Le jour d'un colis, c'est jourDuColis() : le jour de réception, ou le jour où il a été
+// reporté. On ramène donc les colis reçus ce jour-là ET ceux qui y ont été reportés, puis on
+// garde ceux dont c'est vraiment le jour — un colis reçu la veille et reporté à ce jour compte
+// ici, un colis reçu ce jour-là mais reporté au lendemain n'y compte plus. (10/09/2026)
 const { data, error } = await supabaseClient
 .from('colis')
 .select('*')
-.gte('created_at', date + 'T00:00:00')
-.lte('created_at', date + 'T23:59:59')
+.or(`reporte_au.eq.${date},and(created_at.gte.${date}T00:00:00,created_at.lte.${date}T23:59:59)`)
 .order('created_at', { ascending: false });
 delete recapJoursEnCours[date];
-recapDayCache[date] = error ? [] : (data || []);
+if (error) { console.error(error); if (!recapDayCache[date]) recapDayCache[date] = []; }
+else recapDayCache[date] = (data || []).filter(c => jourDuColis(c) === date);
 recapRedessinerLesDeux();
+}
+
+// Un colis vient de changer (temps réel, retour au premier plan, filet périodique) : les jours
+// passés gardés en mémoire ne sont plus sûrs. On oublie ceux que personne ne regarde, et on
+// recharge ceux qui sont à l'écran — dans le récapitulatif par client ou par livreur.
+function recapRechargerJoursPasses(){
+const aujourdhui = todayLocalISODate();
+const regardes = new Set([recapGetDate(), recaplGetDate()].filter(d => d && d !== aujourdhui));
+Object.keys(recapDayCache).forEach(d => { if (!regardes.has(d)) delete recapDayCache[d]; });
+regardes.forEach(d => recapLoadPastDay(d, { forcer: true }));
 }
 
 // Un jour rapatrié sert aux deux récapitulatifs : on le paie une fois, on le rend aux deux.
@@ -7524,7 +7612,7 @@ ${thumb}
 <div class="info">
 <div class="desc">${colisDestinationHTML(c)}</div>
 ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
-<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>
+${eqLigneClientHTML(c)}
 ${eqLigneDestinationHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 <div class="meta">${formatDate(c.created_at)}</div>

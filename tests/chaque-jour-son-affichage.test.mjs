@@ -153,7 +153,7 @@ titre("Le bureau : d'office la date du jour, un bilan du jour exact, un champ é
   verifier('sur le jour d\'Abidjan, bornes T00:00:00Z et T23:59:59.999Z', /aujourdhuiAbidjan\(\)/.test(bilan) && /T00:00:00Z/.test(bilan) && /T23:59:59\.999Z/.test(bilan));
   verifier('reçus sur created_at, livrés sur livre_at, échecs sur non_livre_at + retour_at, en cours sur le statut',
     /gte\('created_at', debut\)/.test(bilan) && /gte\('livre_at', debut\)/.test(bilan) && /gte\('non_livre_at', debut\)/.test(bilan) && /gte\('retour_at', debut\)/.test(bilan) && /in\('statut', \['recupere', 'en_livraison'\]\)/.test(bilan));
-  verifier('il est relancé à chaque chargement de la liste', /renderColis\(\);\n\/\/ Les chiffres du jour[^\n]*\nchargerBilanDuJour\(\);/.test(equipe));
+  verifier('il est relancé à chaque chargement de la liste', /\/\/ Les chiffres du jour[^\n]*\nchargerBilanDuJour\(\);\n\}/.test(equipe));
   const rendu = blocDe(equipe, 'renderAujourdhui');
   verifier("tant que la base n'a pas répondu, l'écran le dit d'un « ~ »", /const approx = exact \? '' : '~'/.test(rendu) && /bilanDuJour\.jour === jourAbj/.test(rendu));
   verifier('le champ « colis annoncés » tient sur la ligne de la note, sans paragraphe', /class="field-row prog-note-et-nombre"/.test(equipe) && /id="prog-nb-colis"[^>]*placeholder="—"/.test(equipe) && !/quand vous reposez la tournée avec le vrai nombre/.test(equipe));

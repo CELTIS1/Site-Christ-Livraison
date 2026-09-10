@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260909rouge">
-<script src="theme.js?v=20260909rouge"></script>
-<script src="splash.js?v=20260909rouge"></script>
+<link rel="stylesheet" href="style.css?v=20260910appel">
+<script src="theme.js?v=20260910appel"></script>
+<script src="splash.js?v=20260910appel"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -411,7 +411,7 @@
      à un appui. Le numéro de suivi, lui, s'est glissé en gris après la description. */
   .colis-tel-ligne{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:3px; }
   .colis-tel{ font-size:13.5px; font-weight:700; color:#1B4374; text-decoration:none; }
-  .colis-tel-ligne .btn-notify-wa{ padding:4px 10px; font-size:12px; margin:0; }
+  .colis-tel-ligne .btn-notify-wa, .colis-tel-ligne .colis-tel-vendeuse{ padding:4px 10px; font-size:12px; margin:0; text-decoration:none; }
   .colis-suivi-num{ font-size:11px; color:#94a3b8; font-weight:500; margin-left:6px; }
   html[data-theme="dark"] .colis-tel{ color:#9EC0E6; }
 
@@ -794,9 +794,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260909rouge"></script>
-<script src="config.js?v=20260909rouge"></script>
-<script src="biometric-lock.js?v=20260909rouge"></script>
+<script src="clt-common.js?v=20260910appel"></script>
+<script src="config.js?v=20260910appel"></script>
+<script src="biometric-lock.js?v=20260910appel"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1866,7 +1866,16 @@
     const lien = tel
       ? `<a class="colis-tel" href="tel:${escapeHTML(compose)}">📞 ${escapeHTML(telephoneAffiche(tel))}</a>`
       : '';
-    return `<div class="colis-tel-ligne">${lien}<button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button></div>`;
+    // La vendeuse aussi, d'un geste (10/09/2026, Celtis : « quand le livreur arrive sur les lieux
+    // et qu'il y a un problème, il faut pouvoir appeler la propriétaire du colis »). Le numéro
+    // vient de son profil ; sans numéro connu, pas de bouton — on n'affiche pas un appel qui
+    // n'aboutirait pas.
+    const vendeuse = c.fournisseur_id ? (profilesById[c.fournisseur_id] || {}) : {};
+    const telVendeuse = (typeof numeroCompose === 'function') ? numeroCompose(vendeuse.phone) : String(vendeuse.phone || '').replace(/[^0-9]/g, '');
+    const lienVendeuse = telVendeuse
+      ? `<a class="btn btn-outline btn-sm colis-tel-vendeuse" href="tel:${escapeHTML(telVendeuse)}" title="Appeler ${escapeHTML(vendeuse.company_name || vendeuse.full_name || 'la vendeuse')} (${escapeHTML(telephoneAffiche(vendeuse.phone))})">📞 Vendeuse</a>`
+      : '';
+    return `<div class="colis-tel-ligne">${lien}<button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button>${lienVendeuse}</div>`;
   }
 
   /* La description et, en petit gris à sa suite, le numéro de suivi : une ligne au lieu de

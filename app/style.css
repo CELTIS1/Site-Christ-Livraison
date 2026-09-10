@@ -284,6 +284,12 @@ input, select, textarea{ font-size:16px !important; }
   .montant-group{flex-wrap:wrap;}
   .montant-plus{display:none;}
 }
+/* La case « Frais d'expédition (transporteur) » de la fiche de modification de l'équipe
+   (10/09/2026) : troisième champ du bloc, sur sa propre ligne, pour que les deux premiers
+   gardent leur largeur. Le libellé est long : pas de majuscules forcées ici. */
+.montant-group .montant-field-frais-exp{ flex:1 1 100%; }
+.montant-group .montant-field-frais-exp label{ text-transform:none; letter-spacing:0; }
+.montant-group{ flex-wrap:wrap; }
 .montant-total-preview{margin-top:10px; font-size:12.5px; color:var(--muted); text-align:right;}
 .montant-total-preview strong{color:var(--orange); font-size:14px;}
 
@@ -996,6 +1002,9 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
    écran. Elle prend la place qui reste, sans jamais forcer le tableau à s'élargir ; un texte
    long se replie sur plusieurs lignes au lieu de pousser les montants hors de vue. */
 .recapl-obs{ font-size:12.5px; color:#3d4756; min-width:140px; max-width:320px; white-space:normal; word-break:break-word; }
+/* Un numéro de téléphone sur une carte de colis est un lien d'appel, sur tous les écrans
+   (10/09/2026). Le style vivait dans livreur.html et fournisseur.html ; l'équipe l'a maintenant. */
+.colis-tel{ font-size:13.5px; font-weight:700; color:#1B4374; text-decoration:none; }
 /* La ligne de TOTAL sous les vignettes. Chaque tableau de cette application en porte une ;
    une liste de vignettes n'en portait pas, et c'est précisément là qu'on veut savoir combien
    d'argent dort dehors ce soir, tous livreurs confondus. */
