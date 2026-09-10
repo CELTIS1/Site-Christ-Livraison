@@ -104,6 +104,17 @@ titre('1. Les jours passés des récapitulatifs se rechargent, avec les colis re
     /recapGetDate\(\), recaplGetDate\(\)/.test(recharge) && /delete recapDayCache\[d\]/.test(recharge) && /recapLoadPastDay\(d, \{ forcer: true \}\)/.test(recharge));
 }
 
+titre('1 ter. Le bouton « Actualiser » fait vraiment quelque chose');
+{
+  const debut = equipe.indexOf("CLTActualiser.installer({\nid: 'btn-actualiser'");
+  const bloc = equipe.slice(debut, equipe.indexOf('});\n}', debut));
+  verifier('équipe : il force le prochain dessin de la liste (eqForcerProchainRendu), même curseur dans un champ', /eqForcerProchainRendu = true;/.test(bloc) && /if \(!eqForcerProchainRendu && eqSaisieEnCours\(\)\)/.test(blocDe(equipe, 'eqDessinerColisUneFois', 'equipe.html')));
+  verifier('équipe : il recharge la liste en direct (loadColis, pas « en fond »)', /await loadColis\(\);/.test(bloc));
+  verifier("équipe : il relit l'onglet ouvert — Clients, Tournées, Finances, Suivi, Express", /CLTClients\.rafraichir\(true\)/.test(bloc) && /chargerProgrammations\(\)/.test(bloc) && /renderRapportJour\(\)/.test(bloc) && /loadActivityLog\(\)/.test(bloc) && /loadExpressCourses\(\)/.test(bloc));
+  verifier('cliente : il relit la liste ET le relevé du soir', /onActualiser: \(\) => Promise\.all\(\[loadColis\(\), loadReleve\(\)\]\)/.test(fournisseur));
+  verifier('livreur : il relit ses colis et sa tournée', /await loadColis\(\);\s*[^]*?await chargerMaTournee\(\);/.test(livreur.slice(livreur.indexOf("CLTActualiser.installer({"))));
+}
+
 /* ---------- 2. Appeler depuis le colis ---------- */
 titre('2. Appeler le fournisseur et le destinataire depuis chaque colis — les mêmes boutons partout');
 {

@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910fournisseur">
-<script src="theme.js?v=20260910fournisseur"></script>
-<script src="splash.js?v=20260910fournisseur"></script>
+<link rel="stylesheet" href="style.css?v=20260910actualiser">
+<script src="theme.js?v=20260910actualiser"></script>
+<script src="splash.js?v=20260910actualiser"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1426,11 +1426,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910fournisseur"></script>
-<script src="config.js?v=20260910fournisseur"></script>
-<script src="clients-dashboard.js?v=20260910fournisseur"></script>
-<script src="biometric-lock.js?v=20260910fournisseur"></script>
-<script src="clt-select-recherche.js?v=20260910fournisseur"></script>
+<script src="clt-common.js?v=20260910actualiser"></script>
+<script src="config.js?v=20260910actualiser"></script>
+<script src="clients-dashboard.js?v=20260910actualiser"></script>
+<script src="biometric-lock.js?v=20260910actualiser"></script>
+<script src="clt-select-recherche.js?v=20260910actualiser"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -4541,11 +4541,14 @@ return !!(liste && liste.contains(actif));
 
 let eqRenduDiffere = false;
 let eqRendusRetenus = 0;
+// Posé par le bouton « Actualiser » (10/09/2026) : le prochain dessin part quoi qu'il arrive,
+// même si un champ a encore le curseur — c'est la personne qui l'a demandé.
+let eqForcerProchainRendu = false;
 
 function eqDessinerColisUneFois(){
 if (!colisRenduEnAttente) return;
 // On garde la demande en attente : elle repartira au `focusout` ou au bouton du haut.
-if (eqSaisieEnCours()) {
+if (!eqForcerProchainRendu && eqSaisieEnCours()) {
 // Le compteur compte des MISES À JOUR, pas des tentatives de dessin. Une même demande est
 // examinée deux fois (l'image puis le minuteur de secours, voir plus haut) : l'incrémenter à
 // chaque passage afficherait « 2 » pour un seul colis reçu, et personne ne comprendrait
@@ -4566,6 +4569,7 @@ return;
 colisRenduEnAttente = false;
 eqRenduDiffere = false;
 eqRendusRetenus = 0;
+eqForcerProchainRendu = false;
 if (window.CLTActualiser) CLTActualiser.viderAttente();
 eqDessinerColis();
 }
@@ -10095,14 +10099,38 @@ saisieEnCours: eqSaisieEnCours,
 onActualiser: async () => {
 // Appuyer sur le bouton, c'est dire « montre-moi maintenant » : le rendu retenu part, même si
 // un champ a encore le curseur. C'est un choix explicite de la personne, pas un rendu subi.
+// (10/09/2026, Celtis : « quand on rafraîchit, il n'actualise pas ». Deux causes : la liste
+// se rechargeait « en fond », donc pouvait être mise de côté par la garde de saisie ; et
+// l'onglet ouvert — Clients, Tournées, Finances — n'était pas relu du tout.)
 eqRenduDiffere = false;
 eqRendusRetenus = 0;
+eqForcerProchainRendu = true;
 // L'anti-rebond de 3 s existe pour les déclencheurs AUTOMATIQUES qui arrivent groupés
 // (visibilitychange + focus). Un appui volontaire, lui, doit toujours faire quelque chose :
 // un bouton qui ne répond pas, on le presse cinq fois en pensant qu'il est cassé.
 __lastReconnectAt = 0;
 await reconnectRealtimeAndRefresh();
+// La liste des colis, en direct (pas « en fond ») : elle se redessine, saisie ou pas.
+await loadColis();
+eqForcerProchainRendu = true;
 renderColis();
+// L'onglet sous les yeux relit la base comme s'il venait d'être ouvert.
+const onglet = document.querySelector('#clt-toptabs .clt-toptab.active');
+const cle = onglet ? onglet.dataset.eqtab : 'colis';
+if (cle === 'clients' && window.CLTClients) await CLTClients.rafraichir(true);
+if (cle === 'programmation' && typeof chargerProgrammations === 'function') await chargerProgrammations();
+if (cle === 'finances') {
+  if (typeof renderRapportJour === 'function' && !document.getElementById('rapport-jour')?.classList.contains('hidden')) await renderRapportJour();
+  if (typeof renderRapportLivreur === 'function' && !document.getElementById('rapport-livreur')?.classList.contains('hidden')) await renderRapportLivreur();
+}
+if (cle === 'suivi') {
+  if (isAdmin) await loadActivityLog();
+  if (typeof loadCorrectionsMontants === 'function') await loadCorrectionsMontants();
+}
+if (cle === 'express') {
+  if (typeof loadExpressCourses === 'function') await loadExpressCourses();
+  if (typeof loadExpressRecharges === 'function') await loadExpressRecharges();
+}
 },
 });
 }

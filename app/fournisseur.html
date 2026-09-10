@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910fournisseur">
-<script src="theme.js?v=20260910fournisseur"></script>
-<script src="splash.js?v=20260910fournisseur"></script>
+<link rel="stylesheet" href="style.css?v=20260910actualiser">
+<script src="theme.js?v=20260910actualiser"></script>
+<script src="splash.js?v=20260910actualiser"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -471,10 +471,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910fournisseur"></script>
-<script src="config.js?v=20260910fournisseur"></script>
-<script src="biometric-lock.js?v=20260910fournisseur"></script>
-<script src="clt-select-recherche.js?v=20260910fournisseur"></script>
+<script src="clt-common.js?v=20260910actualiser"></script>
+<script src="config.js?v=20260910actualiser"></script>
+<script src="biometric-lock.js?v=20260910actualiser"></script>
+<script src="clt-select-recherche.js?v=20260910actualiser"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2931,7 +2931,9 @@
   if (window.CLTActualiser) {
     CLTActualiser.installer({
       id: 'btn-actualiser',
-      onActualiser: () => loadColis(),
+      // La liste ET le relevé du soir (10/09/2026) : l'un sans l'autre, la cliente voyait un
+      // colis livré et un relevé qui ne le comptait pas encore.
+      onActualiser: () => Promise.all([loadColis(), loadReleve()]),
     });
   }
 

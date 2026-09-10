@@ -499,8 +499,10 @@ titre('5. Le bouton est relié à quelque chose qui va vraiment chercher les don
 // écran qui l'installerait sans onActualiser aurait un bouton parfaitement animé, et
 // parfaitement inutile — exactement l'impression signalée.
 const BRANCHEMENTS = {
-  'equipe.html': /onActualiser:\s*async \(\) => \{[\s\S]{0,700}await reconnectRealtimeAndRefresh\(\);[\s\S]{0,80}renderColis\(\);/,
-  'fournisseur.html': /onActualiser:\s*\(\) => loadColis\(\)/,
+  // 10/09/2026 : l'équipe recharge la liste en direct puis force le dessin ; la cliente relit
+  // aussi son relevé.
+  'equipe.html': /onActualiser:\s*async \(\) => \{[\s\S]{0,1200}await reconnectRealtimeAndRefresh\(\);[\s\S]{0,200}await loadColis\(\);[\s\S]{0,80}renderColis\(\);/,
+  'fournisseur.html': /onActualiser:\s*\(\) => Promise\.all\(\[loadColis\(\), loadReleve\(\)\]\)/,
   'livreur.html': /onActualiser:\s*async \(\) => \{[\s\S]{0,200}await loadColis\(\);/,
 };
 for (const [nom, motif] of Object.entries(BRANCHEMENTS)) {
