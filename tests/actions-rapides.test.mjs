@@ -335,15 +335,17 @@ async function livreurMemeCheminQueEnregistrer(){
   verifier("plus aucun code de confirmation n'est demandé au livreur",
     !/code_confirmation|sansCodeConfirmation|bloquesCode/.test(sansCommentaires),
     'une trace exécutable subsiste');
-  // Retrait du 26/08/2026 : trois boutons par colis allongeaient tellement la carte que le
-  // livreur devait faire défiler pour voir le colis suivant. Le menu déroulant de statut les
-  // remplace sur la carte ; la sélection multiple reste la voie rapide pour toute une tournée.
-  // Ce contrôle veille à ce qu'ils ne reviennent pas par inadvertance, et à ce que le chemin
-  // qui les remplace soit bien là.
-  verifier("la carte du livreur ne porte plus de raccourcis d'avancement",
-    !/actionsRapidesHTML|btn-etape[^-]/.test(source));
-  verifier('le menu déroulant de statut est bien posé dans la ligne du colis',
-    source.includes('<select class="status-select">${statutOptions}</select>'));
+  // 26/08/2026 : les trois raccourcis par colis avaient été retirés, la carte était trop longue.
+  // 10/09/2026 (feuille de route 2.1) : ils reviennent sous une autre forme — UN bouton principal
+  // qui dit l'étape suivante (prochaineEtape, config.js), un second pour l'échec, et jamais
+  // plus. Le menu déroulant complet reste sous « Plus d'options », avec « Enregistrer ».
+  verifier("la carte du livreur porte au plus deux boutons d'étape : l'étape suivante et l'échec",
+    /prochaineEtape\(c\), e = etapeEchec\(c\)/.test(source) && /btn-etape btn-etape-principale/.test(source) && /btn-etape btn-etape-echec/.test(source) && !/actionsRapidesHTML/.test(source));
+  verifier("un bouton d'étape passe par le MÊME chemin qu'« Enregistrer » (enregistrerDepuisLaCarte)",
+    /\.btn-etape'\)\.forEach\(btn => \{\s*btn\.addEventListener\('click', \(\) => enregistrerDepuisLaCarte\(btn\.closest\('\.colis-item'\), btn\.dataset\.etape, btn\)\)/.test(source)
+    && /enregistrerDepuisLaCarte\(item, item\.querySelector\('\.status-select'\)\.value, btn\)/.test(source));
+  verifier('le menu déroulant de statut est toujours là, sous « Plus d\'options », avec « Enregistrer »',
+    source.includes('<select class="status-select">${statutOptions}</select>') && /colis-etat-choix/.test(source) && /<button class="btn btn-sm btn-save">Enregistrer<\/button>\s*<\/div>\s*<\/details>/.test(source));
   verifier("le traitement par lot reste disponible pour aller vite sur une tournée",
     source.includes('function boutonsLotMes()'));
 }

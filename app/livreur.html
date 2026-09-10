@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910actualiser">
-<script src="theme.js?v=20260910actualiser"></script>
-<script src="splash.js?v=20260910actualiser"></script>
+<link rel="stylesheet" href="style.css?v=20260910geste">
+<script src="theme.js?v=20260910geste"></script>
+<script src="splash.js?v=20260910geste"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -304,6 +304,15 @@
      sur téléphone comme sur écran large. */
   .colis-item.mes-colis-item .status-col .colis-plus{ flex:1 1 100%; align-self:stretch; }
   .colis-item.mes-colis-item .status-col .btn-save{ align-self:stretch; margin-left:0; }
+  /* Les deux boutons d'étape prennent la largeur de la colonne ; le principal en premier, pleine
+     largeur sur téléphone (style.css .colis-etapes). « Enregistrer » vit maintenant sous « Plus
+     d'options », après le choix de l'état. (10/09/2026) */
+  .colis-item.mes-colis-item .status-col .colis-etapes{ flex:1 1 100%; align-self:stretch; }
+  .colis-etapes .btn.btn-etape-principale{ flex:1 1 100%; }
+  .colis-etapes .btn.btn-etape-echec{ flex:1 1 100%; }
+  .colis-etat-choix{ display:flex; flex-direction:column; gap:4px; width:100%; font-size:11.5px; font-weight:700; color:var(--muted); }
+  .colis-etat-choix .status-select{ width:100%; min-height:44px; font-weight:600; }
+  .colis-plus-corps .btn.btn-save{ align-self:stretch; width:100%; margin-top:6px; }
   @media(min-width:641px){
     .colis-item.mes-colis-item .status-col .btn-save{ flex:1 1 100%; align-self:stretch; }
   }
@@ -794,9 +803,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910actualiser"></script>
-<script src="config.js?v=20260910actualiser"></script>
-<script src="biometric-lock.js?v=20260910actualiser"></script>
+<script src="clt-common.js?v=20260910geste"></script>
+<script src="config.js?v=20260910geste"></script>
+<script src="biometric-lock.js?v=20260910geste"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2113,10 +2122,21 @@
           ${blockedSyncIds.has(c.id)
             ? `<div class="sync-pending-badge sync-blocked-badge">⚠️ Non enregistré — prévenez l'équipe</div>`
             : (pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : '')}
-          <select class="status-select">${statutOptions}</select>
+          <!-- UNE CARTE = UN GESTE. (10/09/2026, feuille de route 2.1) Le bouton principal dit
+               l'étape suivante (prochaineEtape, config.js), le second l'échec ; un appui enregistre,
+               par le même chemin que « Enregistrer ». La liste complète des états est sous
+               « Plus d'options », pour les cas rares (retour, revenir en arrière). -->
+          ${(() => { const p = prochaineEtape(c), e = etapeEchec(c); if (!p && !e) return ''; return `<div class="colis-etapes">
+            ${p ? `<button type="button" class="btn btn-etape btn-etape-principale${p.statut === 'livre' ? ' btn-etape-livre' : ''}" data-etape="${escapeHTML(p.statut)}">${escapeHTML(p.libelle)}</button>` : ''}
+            ${e ? `<button type="button" class="btn btn-outline btn-etape btn-etape-echec" data-etape="${escapeHTML(e.statut)}">${escapeHTML(e.libelle)}</button>` : ''}
+          </div>`; })()}
           <details class="colis-plus">
             <summary>Plus d'options</summary>
             <div class="colis-plus-corps">
+              <label class="colis-etat-choix">
+                <span>Changer l'état</span>
+                <select class="status-select">${statutOptions}</select>
+              </label>
               <!-- REPORTER À DEMAIN. (09/09/2026, Celtis) Un colis reçu aujourd'hui qu'on ne livrera
                    que demain change de jour : il sort du point de ce soir et entre dans la journée
                    de demain — chez le livreur, au bureau et chez la cliente (jourDuColis, config.js).
@@ -2156,9 +2176,9 @@
                   <div class="photo-pick-filename"></div>
                 </div>
               </div>
+              <button class="btn btn-sm btn-save">Enregistrer</button>
             </div>
           </details>
-          <button class="btn btn-sm btn-save">Enregistrer</button>
         </div>
       </div>
     `;
@@ -2246,12 +2266,21 @@
     if (typeof cltAppliquerColisAVoir === 'function') cltAppliquerColisAVoir(list);
     if (lotMesActif) brancherBarreLotMes(list, filtered);
 
+    // Les boutons d'étape (10/09/2026) : l'état visé est sur le bouton, le reste de la carte
+    // (observation, photo, montants) part avec, exactement comme avec « Enregistrer ».
+    list.querySelectorAll('.btn-etape').forEach(btn => {
+      btn.addEventListener('click', () => enregistrerDepuisLaCarte(btn.closest('.colis-item'), btn.dataset.etape, btn));
+    });
     list.querySelectorAll('.btn-save').forEach(btn => {
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', () => {
         const item = btn.closest('.colis-item');
+        enregistrerDepuisLaCarte(item, item.querySelector('.status-select').value, btn);
+      });
+    });
+    async function enregistrerDepuisLaCarte(item, statut, btn){
+      {
         const id = item.dataset.id;
         const colis = allColis.find(c => c.id === id);
-        const statut = item.querySelector('.status-select').value;
 
         /* UN SEUL APPUI ENREGISTRE TOUT. (02/09/2026)
            Demandé par Celtis : « il y a trop de boutons d'enregistrement, il faut un seul qui
@@ -2301,8 +2330,8 @@
             if (plus) plus.open = false;
           } catch (e) { /* un repli qui ne se ferme pas ne vaut pas une erreur après une écriture réussie */ }
         }
-      });
-    });
+      }
+    }
 
     // --- Bascule « Livraison payée » (Correctif 3) : enregistrement immédiat au clic ---------
     // Toujours visible (quel que soit le statut) : le destinataire doit parfois payer la
@@ -4006,7 +4035,16 @@
 
     // Lien profond : si on arrive via un clic sur une notification (?colis=<id>), on va
     // directement au colis concerné et on le surligne.
-    cltFocusColisFromUrl();
+    // Si le colis n'est pas dans la journée affichée (un colis d'hier, ou reporté), on élargit à
+    // « Tous » une seule fois pour qu'il apparaisse. (10/09/2026, reste utile du point 2.2)
+    cltFocusColisFromUrl({ onMiss: () => {
+      if (activeFilterMes === 'tous' && !filtreDateMes) return;
+      activeFilterMes = 'tous'; filtreDateMes = ''; searchMes = '';
+      const champ = document.getElementById('search-mes'); if (champ) champ.value = '';
+      const date = document.getElementById('filtre-date-mes'); if (date) date.value = '';
+      remettreTrancheMesAZero(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis();
+      cltToast('Ce colis n\'est pas dans la journée du jour : la liste montre tous vos colis.', { type: 'info' });
+    } });
 
     // Mises à jour en temps réel sur tous les colis
     trackChannel(supabaseClient

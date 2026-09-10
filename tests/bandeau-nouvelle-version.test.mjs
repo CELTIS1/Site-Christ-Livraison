@@ -408,10 +408,11 @@ verifier(
    v95, le 10/09/2026 — un champ de recherche sur les listes (comptes, en attente, historique, Express), appeler la cliente depuis son nom (Récupérations, équipe) (clt-common.js, livreur.html, equipe.html) : étiquette 20260910recherche.
    v96, le 10/09/2026 — inscription Express vérifiée : le code de l'équipe, la pièce contrôlée, le débit limité (express-login.html, express-config.js, equipe.html) : étiquette 20260910express.
    v97, le 10/09/2026 — « 📞 Destinataire » et « 📞 Fournisseur » sur chaque carte, identiques partout, plus rien dans les en-têtes (config.js, style.css, livreur.html, equipe.html) : étiquette 20260910fournisseur.
-   v98, le 10/09/2026 — le bouton Actualiser redessine quoi qu'il arrive et relit l'onglet ouvert ; chez la cliente il relit aussi le relevé (equipe.html, fournisseur.html) : étiquette 20260910actualiser. */
+   v98, le 10/09/2026 — le bouton Actualiser redessine quoi qu'il arrive et relit l'onglet ouvert ; chez la cliente il relit aussi le relevé (equipe.html, fournisseur.html) : étiquette 20260910actualiser.
+   v99, le 10/09/2026 — une carte = un geste : bouton principal « étape suivante », « Non livré » en second, le reste sous Plus d'options (config.js, livreur.html) : étiquette 20260910geste. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v98'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v99'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

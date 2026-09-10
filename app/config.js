@@ -449,6 +449,30 @@ function etatsPossibles(colis) {
   return liste;
 }
 
+/* UNE CARTE = UN GESTE. (10/09/2026, feuille de route 2.1)
+   Marquer un colis livré demandait trois gestes : ouvrir la liste, choisir, Enregistrer. La carte
+   porte maintenant UN bouton principal qui dit l'étape suivante — et un second, en contour, pour
+   l'échec. Tout le reste (la liste complète des états, l'observation, la photo, les montants)
+   reste sous « Plus d'options ». La règle de l'étape suivante est écrite ici, une fois, à partir
+   du même vocabulaire que la frise (libelleStatut) : une expédition ne passe pas par « en
+   livraison », elle va de « récupéré » à « expédié ».
+   Rend null quand il n'y a plus d'étape à proposer (livré, non livré, retour) : un colis fini
+   n'a pas de bouton principal, et « Non livré » ne se propose qu'à un colis encore en route. */
+function prochaineEtape(colis) {
+  if (!colis) return null;
+  const st = colis.statut;
+  const expedition = estExpedition(colis);
+  if (st === 'en_attente')   return { statut: 'recupere',     libelle: '📦 Récupéré' };
+  if (st === 'recupere')     return expedition ? { statut: 'livre', libelle: '🚌 Expédié' } : { statut: 'en_livraison', libelle: '🚚 Je pars livrer' };
+  if (st === 'en_livraison') return { statut: 'livre', libelle: '✅ ' + libelleStatut('livre', colis) };
+  return null;
+}
+function etapeEchec(colis) {
+  if (!colis) return null;
+  if (colis.statut !== 'recupere' && colis.statut !== 'en_livraison') return null;
+  return { statut: 'non_livre', libelle: '⚠️ ' + libelleStatut('non_livre', colis) };
+}
+
 /* LA FRISE D'ÉTAPES — descendue ici le 02/09/2026, et voici pourquoi.
 
    Elle existait en TROIS exemplaires : livreur.html, equipe.html, fournisseur.html. Trois copies
