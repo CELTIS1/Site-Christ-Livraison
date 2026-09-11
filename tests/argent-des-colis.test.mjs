@@ -215,17 +215,31 @@ titre('Règle 2 — un colis livré compte comme encaissé, sans que personne ai
   const exception = colis({ statut: 'livre', montant_article: 25000, article_non_encaisse: true });
   verifier("l'exception, elle, retire bien l'argent du compte",
     articleEncaisse(exception) === false && montantArticleEncaisse(exception) === 0);
-  // 08/09/2026, « article soldé » (Celtis) : l'exception veut dire que le destinataire a tout
-  // payé chez la vendeuse. Rien ne manque dans la caisse ; la livraison se retient sur elle.
+  // « Article soldé » (Celtis, 08/09 puis 11/09/2026) : l'article a été payé chez la vendeuse.
+  // Rien ne manque dans la caisse, et rien ne lui est dû pour cet article.
   verifier("et ce n'est pas un manque : l'argent est chez la vendeuse",
     montantManquantALaLivraison(exception) === 0,
     String(montantManquantALaLivraison(exception)));
+  /* DEUX CASES INDÉPENDANTES (11/09/2026, Celtis : « le premier devrait seulement agir sur le
+     coût de l'article et l'autre sur le coût de la livraison »). Jusqu'au 11/09, « Article
+     soldé » retenait aussi la livraison sur la vendeuse — les vendeuses le cochaient sur un
+     article à 0 et le destinataire payait la livraison à la porte : retenue à tort. */
   const solde = colis({ statut: 'livre', montant_article: 25000, montant_livraison: 1500, article_non_encaisse: true });
-  verifier("la livraison d'un article soldé est retenue sur la vendeuse (frais de course)",
-    fraisCourseColis(solde) === 1500 && livraisonEncaissee(solde) === false && montantNetADevoir(solde) === -1500,
+  verifier("« Article soldé » ne touche pas à la livraison : elle s'encaisse à la porte, comme d'habitude",
+    fraisCourseColis(solde) === 0 && livraisonEncaissee(solde) === true && montantLivraisonEncaissee(solde) === 1500 && montantNetADevoir(solde) === 0,
     JSON.stringify({ fc: fraisCourseColis(solde), le: livraisonEncaissee(solde), net: montantNetADevoir(solde) }));
-  verifier("sauf si la livraison a été payée au livreur",
-    fraisCourseColis(Object.assign({}, solde, { livraison_payee: true })) === 0);
+  const livPayee = colis({ statut: 'livre', montant_article: 25000, montant_livraison: 1500, livraison_payee: true });
+  verifier("« Livraison payée d'avance » ne touche pas à l'article : il reste encaissé et dû à la vendeuse",
+    articleEncaisse(livPayee) === true && montantArticleADevoir(livPayee) === 25000,
+    JSON.stringify({ ae: articleEncaisse(livPayee), du: montantArticleADevoir(livPayee) }));
+  verifier("mais sa livraison, payée chez la vendeuse, est retenue sur elle et n'est pas dans la caisse du livreur",
+    fraisCourseColis(livPayee) === 1500 && livraisonEncaissee(livPayee) === false && montantNetADevoir(livPayee) === 25000 - 1500
+    && montantEnMainDuLivreur(livPayee) === 25000,
+    JSON.stringify({ fc: fraisCourseColis(livPayee), le: livraisonEncaissee(livPayee), net: montantNetADevoir(livPayee), main: montantEnMainDuLivreur(livPayee) }));
+  const toutPaye = Object.assign({}, solde, { livraison_payee: true });
+  verifier("les deux cases = tout payé chez la vendeuse : le livreur n'encaisse rien, CLT retient la livraison",
+    montantEnMainDuLivreur(toutPaye) === 0 && montantNetADevoir(toutPaye) === -1500 && montantManquantALaLivraison(toutPaye) === 0,
+    JSON.stringify({ main: montantEnMainDuLivreur(toutPaye), net: montantNetADevoir(toutPaye), manque: montantManquantALaLivraison(toutPaye) }));
 }
 {
   const pasLivre = colis({ statut: 'en_livraison', montant_article: 25000 });
@@ -235,10 +249,13 @@ titre('Règle 2 — un colis livré compte comme encaissé, sans que personne ai
     montantManquantALaLivraison(pasLivre) === 0);
 }
 {
-  // Payé d'avance : les frais de livraison sont encaissés même sans remise.
+  // Payée d'avance chez la vendeuse (11/09/2026) : rien ne rentre en billets, et la retenue
+  // n'existe qu'une fois la course faite — un colis en route ne se facture pas.
   const avance = colis({ statut: 'en_livraison', montant_livraison: 1500, livraison_payee: true });
-  verifier("une livraison payée d'avance est encaissée avant même la remise",
-    livraisonEncaissee(avance) === true && montantLivraisonEncaissee(avance) === 1500);
+  verifier("une livraison payée d'avance n'est jamais dans la caisse du livreur",
+    livraisonEncaissee(avance) === false && montantLivraisonEncaissee(avance) === 0 && montantEnMainDuLivreur(avance) === 0);
+  verifier("et elle ne se retient sur la vendeuse qu'une fois le colis livré",
+    fraisCourseADevoir(avance) === 0 && fraisCourseADevoir(Object.assign({}, avance, { statut: 'livre' })) === 1500);
 }
 
 /* ==========================================================================================
@@ -524,7 +541,9 @@ titre("Les mots posés sur un colis décrivent son état réel, pas un état moy
     [colis({ statut: 'en_attente', montant_article: 5000 }),                                   'Pas encore encaissé'],
     [colis({ statut: 'en_livraison', montant_livraison: 1500, livraison_payee: true }),        "Livraison payée d'avance"],
     [colis({ statut: 'livre', montant_article: 5000 }),                                        'Encaissé'],
-    [colis({ statut: 'livre', montant_article: 5000, article_non_encaisse: true }),            'Article soldé — livraison retenue'],
+    [colis({ statut: 'livre', montant_article: 5000, article_non_encaisse: true }),            'Article soldé'],
+    [colis({ statut: 'livre', montant_article: 5000, montant_livraison: 1000, livraison_payee: true }), "Livraison payée d'avance — retenue"],
+    [colis({ statut: 'livre', montant_article: 5000, montant_livraison: 1000, article_non_encaisse: true, livraison_payee: true }), 'Soldé chez la vendeuse — livraison retenue'],
     [colis({ statut: 'livre', montant_article: 5000, montant_livraison: 1000, livraison_non_encaissee: true }), 'Argent non encaissé'],
     [colis({ statut: 'livre', montant_article: 5000, reverse_au_fournisseur_at: '2026-08-25T10:00:00Z' }), 'Encaissé et reversé'],
   ];

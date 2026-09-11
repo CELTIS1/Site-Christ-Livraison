@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910phase2">
-<script src="theme.js?v=20260910phase2"></script>
-<script src="splash.js?v=20260910phase2"></script>
+<link rel="stylesheet" href="style.css?v=20260911cases">
+<script src="theme.js?v=20260911cases"></script>
+<script src="splash.js?v=20260911cases"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1426,11 +1426,11 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910phase2"></script>
-<script src="config.js?v=20260910phase2"></script>
-<script src="clients-dashboard.js?v=20260910phase2"></script>
-<script src="biometric-lock.js?v=20260910phase2"></script>
-<script src="clt-select-recherche.js?v=20260910phase2"></script>
+<script src="clt-common.js?v=20260911cases"></script>
+<script src="config.js?v=20260911cases"></script>
+<script src="clients-dashboard.js?v=20260911cases"></script>
+<script src="biometric-lock.js?v=20260911cases"></script>
+<script src="clt-select-recherche.js?v=20260911cases"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2053,7 +2053,8 @@ montantArticle: val('.lot-art'),
 montantLivraison: val('.lot-liv'),
 description: val('.lot-desc'),
 aLivrerAvant: val('.lot-avant'),
-articleSolde: !!(l.el && l.el.querySelector('.lot-solde') && l.el.querySelector('.lot-solde').checked)
+articleSolde: !!(l.el && l.el.querySelector('.lot-solde') && l.el.querySelector('.lot-solde').checked),
+livraisonPayee: !!(l.el && l.el.querySelector('.lot-liv-payee') && l.el.querySelector('.lot-liv-payee').checked)
 };
 }
 
@@ -2134,13 +2135,15 @@ ${l.url
 <label>Description (optionnel)</label>
 <input type="text" class="lot-desc" placeholder="Rien à écrire si l'étiquette n'en dit pas">
 </div>
-<!-- Article soldé dès la création (08/09/2026, Celtis) : le destinataire a déjà tout payé chez la
-     vendeuse. Le livreur n'encaissera rien, et la livraison sera retenue sur elle (config.js). -->
+<!-- Deux cases indépendantes dès la création (11/09/2026, Celtis) : « Article soldé » ne parle que
+     de l'article, « Livraison payée d'avance » que de la livraison. Tout payé chez la vendeuse =
+     les deux cochées. La règle est dans config.js. -->
 <div class="field">
 <label>À livrer avant le <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
 <input type="date" class="lot-avant">
 </div>
-<label class="check-pill lot-solde-pill" title="Le destinataire a déjà tout payé chez la vendeuse (article et livraison) : le livreur n'encaisse rien, la livraison est retenue sur la vendeuse."><input type="checkbox" class="lot-solde"> Article soldé (déjà payé chez la vendeuse)</label>
+<label class="check-pill lot-solde-pill" title="L'article a été payé chez la vendeuse : le livreur ne l'encaisse pas et rien n'est dû à la vendeuse pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="lot-solde"> Article soldé (payé chez la vendeuse)</label>
+<label class="check-pill lot-liv-payee-pill" title="La livraison a été payée chez la vendeuse : le livreur ne l'encaisse pas, CLT la retient sur la vendeuse. Ne dit rien de l'article."><input type="checkbox" class="lot-liv-payee"> Livraison payée d'avance (chez la vendeuse)</label>
 <div class="lot-etat"></div>
 <!-- Enregistrer ce colis-là, tout de suite. Ce bouton existe pour une raison précise : sur
      téléphone, l'onglet est libéré par le système dès que l'écran se verrouille, et toute
@@ -2341,6 +2344,7 @@ cle_creation: l.cle
 };
 if (ctx.livreurCollectePropose) payload.livreur_collecte_id = ctx.livreurCollectePropose;
 if (s.articleSolde) payload.article_non_encaisse = true;
+if (s.livraisonPayee) payload.livraison_payee = true;
 if (/^\d{4}-\d{2}-\d{2}$/.test(s.aLivrerAvant || '')) payload.a_livrer_avant = s.aLivrerAvant;
 
 let error = await eqInsererColis(payload);
@@ -3826,8 +3830,8 @@ ${c.statut === 'en_attente' ? `
 </div>
 </div>
 <div class="payment-checks">
-<label class="check-pill lotfr-article-solde" title="Le destinataire a tout payé chez la vendeuse (article et livraison) : rien n'est encaissé, la livraison est retenue sur la vendeuse."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
-<label class="check-pill lotfr-liv-payee"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
+<label class="check-pill lotfr-article-solde" title="L'article a été payé chez la vendeuse : le livreur ne l'encaisse pas et rien n'est dû à la vendeuse pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
+<label class="check-pill lotfr-liv-payee" title="La livraison a été payée chez la vendeuse : le livreur ne l'encaisse pas, CLT la retient sur la vendeuse. Ne dit rien de l'article."><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
 <label class="check-pill lotfr-soldee" style="${estExpedition(c) ? '' : 'display:none;'}" title="La cliente a déjà réglé à CLT les frais d'expédition et de course : rien ne se retient sur son relevé."><input type="checkbox" class="edit-frais-soldes" ${fraisSoldes(c) ? 'checked' : ''}> 🚌 Frais déjà réglés à CLT (soldé)</label>
 </div>`}
 </div>
@@ -5979,6 +5983,7 @@ let corrSelectedDate = null;     // 'YYYY-MM-DD' ; null => aujourd'hui
 let corrLignes = [];             // dernier chargement brut du journal
 let corrEnCours = false;
 let corrErreur = '';
+let corrJourAffiche = null;      // jour dont les lignes sont à l'écran ; sert à ne pas le vider pendant un rechargement
 
 function corrGetDate(){
 return corrSelectedDate || todayLocalISODate();
@@ -6051,8 +6056,13 @@ const body = document.getElementById('corr-body');
 if (!body) return;
 const dateLabel = recapDayLabel(corrGetDate());
 
-if (corrEnCours) { cltPoserHTML(body, `<div class="empty-state">Chargement…</div>`); return; }
+// « Chargement… » seulement si le jour demandé n'est pas déjà à l'écran : un rechargement du même
+// jour (retour au premier plan, ouverture de l'onglet) garde le tableau et le remplace d'un coup,
+// sans faire sauter la page. (11/09/2026)
+if (corrEnCours && corrJourAffiche !== corrGetDate()) { cltPoserHTML(body, `<div class="empty-state">Chargement…</div>`); return; }
 if (corrErreur) { cltPoserHTML(body, `<div class="empty-state">${escapeHTML(corrErreur)}</div>`); return; }
+if (corrEnCours) return;
+corrJourAffiche = corrGetDate();
 
 const { lignes, total } = correctionsMontantsDuJour(
 corrLignes.map(a => ({ ts: a.created_at, target_id: a.target_id, actor_id: a.actor_id, actor_role: a.actor_role, details: a.details })),
@@ -6121,6 +6131,7 @@ let progLignes = [];           // dernier chargement brut de programmations_coll
 let progColis = [];            // les colis utiles au comptage de la journée affichée
 let progEnCours = false;
 let progErreur = '';
+let progJourAffiche = null;    // jour dont la tournée est à l'écran ; on ne la vide pas pendant un rechargement
 
 function progGetJour(){
 // D'office AUJOURD'HUI (07/09/2026, Celtis : « d'office les dates d'affichage doivent être
@@ -6286,8 +6297,13 @@ const body = document.getElementById('prog-body');
 if (!body) return;
 const jour = progGetJour();
 
-if (progEnCours) { cltPoserHTML(body, `<div class="empty-state">Chargement…</div>`); return; }
+// « Chargement… » seulement quand la journée demandée n'est pas déjà à l'écran. Après « Ajouter »
+// ou « Retirer », la tournée se recharge : elle reste affichée et se remplace d'un coup, au lieu
+// de disparaître 200 ms et de faire sauter la page. (11/09/2026)
+if (progEnCours && progJourAffiche !== jour) { cltPoserHTML(body, `<div class="empty-state">Chargement…</div>`); return; }
 if (progErreur)  { cltPoserHTML(body, `<div class="empty-state">${escapeHTML(progErreur)}</div>`); return; }
+if (progEnCours) return;
+progJourAffiche = jour;
 
 const tournee = tourneesDeRecuperation({
 jour: jour,
@@ -6755,7 +6771,12 @@ function renderRecapBody(){
 const body = document.getElementById('recap-body');
 if (!body) return;
 
-if (recapJoursEnCours[recapGetDate()]) {
+// « Chargement du jour… » SEULEMENT si on n'a encore rien à montrer pour ce jour. (11/09/2026,
+// Celtis : « l'écran danse ».) Mesuré en direct : un jour passé était rechargé toutes les 25 s et
+// à chaque événement temps réel, et pendant les ~200 ms de la lecture ce corps se vidait — la
+// page perdait 1 900 px de hauteur, puis les retrouvait. Le défilement sautait à chaque fois.
+// Désormais le tableau déjà affiché reste en place et se remplace d'un coup, données reçues.
+if (recapJoursEnCours[recapGetDate()] && !recapDayCache[recapGetDate()]) {
 cltPoserHTML(body, `<div class="empty-state">Chargement du jour…</div>`);
 return;
 }
@@ -6976,7 +6997,8 @@ function renderRecapLivreurBody(){
 const body = document.getElementById('recapl-body');
 if (!body) return;
 
-if (recapJoursEnCours[recaplGetDate()]) {
+// Même règle que renderRecapBody() : pas d'écran « Chargement » tant qu'on a un jour à montrer.
+if (recapJoursEnCours[recaplGetDate()] && !recapDayCache[recaplGetDate()]) {
 cltPoserHTML(body, `<div class="empty-state">Chargement du jour…</div>`);
 return;
 }
@@ -8123,7 +8145,7 @@ ${rows.map(c => `
 <td data-label="Encaissé" class="compta-row-encaisse">${formatMontant(montantArticleEncaisse(c)) || '0 FCFA'}</td>
 <td data-label="Argent">
 <div class="recap-row-checks">
-<label title="Le destinataire a tout payé chez la vendeuse : rien n'est encaissé, la livraison est retenue sur elle."><input type="checkbox" class="compta-edit-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
+<label title="L'article a été payé chez la vendeuse : le livreur ne l'encaisse pas et rien n'est dû à la vendeuse pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="compta-edit-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
 <div class="recap-row-etat">${articlePaiementLabel(c)}</div>
 </div>
 </td>
@@ -8495,7 +8517,7 @@ if (!c) return;
 const etaitEncaisse = !c.article_non_encaisse;
 const montant = formatMontant(montantArticleColis(c)) || '0 FCFA';
 const ok = await showConfirm({
-title: etaitEncaisse ? 'Marquer cet article soldé (tout payé chez la vendeuse) ?' : 'Marquer cet article encaissé par CLT ?',
+title: etaitEncaisse ? 'Marquer cet article soldé (payé chez la vendeuse) ?' : 'Marquer cet article encaissé par CLT ?',
 detail: (c.numero ? c.numero + ' · ' : '') + montant,
 sub: etaitEncaisse
 ? "Ce montant sortira de ce que le livreur doit remettre, et de ce que CLT doit à la cliente. À faire quand le destinataire n'a pas payé."
@@ -8506,7 +8528,7 @@ danger: etaitEncaisse,
 if (!ok) return;
 if (btn) btn.disabled = true;
 await eqCorrigerColis(id, { article_non_encaisse: etaitEncaisse }, {
-message: etaitEncaisse ? 'Article marqué soldé : la livraison sera retenue sur la vendeuse.' : 'Article marqué encaissé par CLT.',
+message: etaitEncaisse ? 'Article marqué soldé : rien n\'est dû à la vendeuse pour cet article.' : 'Article marqué encaissé par CLT.',
 details: { avant_article_non_encaisse: !!c.article_non_encaisse }
 });
 if (btn) btn.disabled = false;

@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910phase2">
-<script src="theme.js?v=20260910phase2"></script>
-<script src="splash.js?v=20260910phase2"></script>
+<link rel="stylesheet" href="style.css?v=20260911cases">
+<script src="theme.js?v=20260911cases"></script>
+<script src="splash.js?v=20260911cases"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -839,9 +839,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910phase2"></script>
-<script src="config.js?v=20260910phase2"></script>
-<script src="biometric-lock.js?v=20260910phase2"></script>
+<script src="clt-common.js?v=20260911cases"></script>
+<script src="config.js?v=20260911cases"></script>
+<script src="biometric-lock.js?v=20260911cases"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2247,13 +2247,13 @@
               <!-- Ces deux boutons parlent d'argent encaissé chez le destinataire. Sur une
                    expédition il n'y en a pas : il a déjà payé chez la vendeuse. Les proposer,
                    c'est inviter à cocher quelque chose qui n'a pas eu lieu. -->
-              ${estExpedition(c) ? '' : `              <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a payé la livraison, même si le colis n'est pas remis.">${c.livraison_payee ? '✅ Livraison payée' : '💰 Livraison payée ?'}</button>
+              ${estExpedition(c) ? '' : `              <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si la livraison a été payée d'avance chez la vendeuse : vous ne l'encaissez pas, CLT la retient sur la vendeuse.">${c.livraison_payee ? '✅ Livraison payée d\'avance' : "Livraison payée d'avance ?"}</button>
               <!-- L'exception, et seulement l'exception. Depuis le 25/08/2026, un colis livré compte
                    par défaut comme encaissé : le livreur n'a rien à cocher dans le cas normal, ce qui
                    était l'ancien piège (personne ne cochait jamais, et les clientes lisaient 0 FCFA
                    encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
                    colis a été remis sans que l'argent de l'article rentre. -->
-              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.article_non_encaisse ? 'background:#1B4374 !important; border:1.5px solid #1B4374; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À cocher si le destinataire a déjà tout payé chez la vendeuse (article et livraison) : vous n'encaissez rien, la livraison est retenue sur la vendeuse.">${c.article_non_encaisse ? '✅ Article soldé' : "Article soldé ?"}</button>`}
+              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.article_non_encaisse ? 'background:#1B4374 !important; border:1.5px solid #1B4374; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À cocher si l'article a été payé chez la vendeuse : vous n'encaissez pas l'article. La livraison, elle, s'encaisse normalement.">${c.article_non_encaisse ? '✅ Article soldé' : "Article soldé ?"}</button>`}
               ${montantsChampsHTML(c)}
               <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
               <div class="field" style="margin-top:8px;">

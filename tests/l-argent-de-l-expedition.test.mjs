@@ -278,9 +278,10 @@ verifier("l'article reste dû à la cliente en entier",
   'les frais de livraison viennent du destinataire et ne la concernent pas — question tranchée le 25 août');
 verifier('le livreur tient bien les deux poches',
   montantEnMainDuLivreur(ordinaire()) === 21500);
-verifier('une livraison prépayée reste reconnue',
-  livraisonEncaissee(ordinaire({ statut: 'recupere', livraison_payee: true })) === true,
-  'le destinataire peut payer d\'avance : c\'est un usage en place depuis le début');
+verifier('une livraison payée d\'avance chez la vendeuse ne rentre pas dans la caisse du livreur (11/09/2026)',
+  livraisonEncaissee(ordinaire({ statut: 'recupere', livraison_payee: true })) === false
+  && fraisCourseColis(ordinaire({ livraison_payee: true })) === 1500,
+  'elle se retient sur la vendeuse, comme la course d\'une expédition');
 
 /* ==========================================================================================
    6. UN SEUL CALCUL — LE CŒUR DE CE BANC D'ESSAI

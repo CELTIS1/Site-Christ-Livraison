@@ -412,10 +412,11 @@ verifier(
    v99, le 10/09/2026 — une carte = un geste : bouton principal « étape suivante », « Non livré » en second, le reste sous Plus d'options (config.js, livreur.html) : étiquette 20260910geste.
    v100, le 10/09/2026 — 2.3 : le livreur applique l'événement temps réel reçu au lieu de recharger 500 colis, et ne redessine jamais pendant qu'il tape (livreur.html).
    v101, le 10/09/2026 — 2.4 et 2.5 : 44 px, 13 px minimum, gris lisible ; « Ma journée » sur une ligne, quatre pastilles, « Filtrer » (config.js, style.css, livreur.html, equipe.html, fournisseur.html) : étiquette 20260910leger.
-   v102, le 10/09/2026 — 2.6 à 2.9 : position partagée sans redemander après un refus, pause quand l'app passe en arrière-plan ; profil et colis chargés avant le verrou ; « (inchangé) » dans les confirmations ; photo abandonnée après 45 s, colis hors chemin signalé dans un lot (config.js, livreur.html, equipe.html, fournisseur.html, login.html) : étiquette 20260910phase2. */
+   v102, le 10/09/2026 — 2.6 à 2.9 : position partagée sans redemander après un refus, pause quand l'app passe en arrière-plan ; profil et colis chargés avant le verrou ; « (inchangé) » dans les confirmations ; photo abandonnée après 45 s, colis hors chemin signalé dans un lot (config.js, livreur.html, equipe.html, fournisseur.html, login.html) : étiquette 20260910phase2.
+   v103, le 11/09/2026 — l'écran ne danse plus (un rechargement garde le tableau affiché) et deux cases indépendantes : « Article soldé » n'agit que sur l'article, « Livraison payée d'avance » que sur la livraison (config.js, equipe.html, livreur.html, fournisseur.html) : étiquette 20260911cases. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v102'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v103'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

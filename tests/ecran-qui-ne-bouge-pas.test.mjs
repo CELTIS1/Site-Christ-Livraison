@@ -299,6 +299,29 @@ titre('Les utilitaires partagés n\'existent qu\'en un exemplaire');
   }
 }
 
+
+/* ---------- 9. Un rechargement ne vide jamais ce qui est déjà à l'écran (11/09/2026) ---------- */
+// Mesuré en direct sur l'écran équipe : un récapitulatif sur un jour passé était rechargé toutes
+// les 25 secondes et à chaque évènement temps réel, et pendant les ~200 ms de la lecture son
+// corps était remplacé par « Chargement du jour… ». La page perdait 1 900 px de hauteur puis les
+// retrouvait : le défilement sautait, l'écran « dansait » (Celtis). Même mécanique dans les
+// corrections de montants et la programmation après « Ajouter » / « Retirer ». Règle : un écran
+// d'attente ne se montre que s'il n'y a encore RIEN à montrer pour ce jour-là.
+titre('Un rechargement garde le tableau déjà affiché : l\'écran ne saute pas');
+{
+  const src = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+  verifier('le récapitulatif par cliente ne dit « Chargement » que sans jour en cache',
+    /if \(recapJoursEnCours\[recapGetDate\(\)\] && !recapDayCache\[recapGetDate\(\)\]\)/.test(src));
+  verifier('le récapitulatif par livreur aussi',
+    /if \(recapJoursEnCours\[recaplGetDate\(\)\] && !recapDayCache\[recaplGetDate\(\)\]\)/.test(src));
+  verifier('les corrections de montants gardent leur tableau pendant le rechargement du même jour',
+    /if \(corrEnCours && corrJourAffiche !== corrGetDate\(\)\)/.test(src) && /corrJourAffiche = corrGetDate\(\);/.test(src));
+  verifier('la programmation garde sa tournée pendant le rechargement du même jour',
+    /if \(progEnCours && progJourAffiche !== jour\)/.test(src) && /progJourAffiche = jour;/.test(src));
+  verifier('et aucun autre « Chargement » nu ne subsiste dans un corps redessiné en fond',
+    !/if \(recapJoursEnCours\[recapGetDate\(\)\]\) \{/.test(src) && !/if \(corrEnCours\) \{ cltPoserHTML/.test(src) && !/if \(progEnCours\) \{ cltPoserHTML/.test(src));
+}
+
 /* ---------- Verdict ---------- */
 console.log('\n———');
 console.log(`${reussies} vérifications réussies, ${echouees} échouées`);

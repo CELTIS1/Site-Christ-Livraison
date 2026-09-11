@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260910phase2">
-<script src="theme.js?v=20260910phase2"></script>
-<script src="splash.js?v=20260910phase2"></script>
+<link rel="stylesheet" href="style.css?v=20260911cases">
+<script src="theme.js?v=20260911cases"></script>
+<script src="splash.js?v=20260911cases"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -471,10 +471,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260910phase2"></script>
-<script src="config.js?v=20260910phase2"></script>
-<script src="biometric-lock.js?v=20260910phase2"></script>
-<script src="clt-select-recherche.js?v=20260910phase2"></script>
+<script src="clt-common.js?v=20260911cases"></script>
+<script src="config.js?v=20260911cases"></script>
+<script src="biometric-lock.js?v=20260911cases"></script>
+<script src="clt-select-recherche.js?v=20260911cases"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -954,12 +954,13 @@
           <!-- La case « Article payé » a été retirée le 25/08/2026 : au moment où la cliente
                enregistre son colis, personne n'a encore payé quoi que ce soit. La régle est
                désormais « livré = encaissé », et l'exception se coche à la livraison. -->
-          <label class="check-pill"><input type="checkbox" class="lotfr-liv-payee"> Livraison déjà payée</label>
-          <!-- Article soldé dès la création (08/09/2026, Celtis) : le destinataire a déjà tout payé
-               chez la vendeuse. Le livreur n'encaissera rien ; la livraison sera retenue sur elle
-               (sauf si elle est cochée « déjà payée » ci-contre). Sans objet sur une expédition,
-               où c'est toujours le cas : la case suit celle de la livraison. -->
-          <label class="check-pill" title="Le destinataire vous a déjà tout payé (article et livraison) : le livreur n'encaisse rien, la livraison est retenue sur votre relevé."><input type="checkbox" class="lotfr-article-solde"> Article soldé (déjà payé chez vous)</label>
+          <label class="check-pill" title="Le destinataire vous a déjà payé la livraison : le livreur ne l'encaisse pas, elle est retenue sur votre relevé."><input type="checkbox" class="lotfr-liv-payee"> Livraison payée d'avance (chez vous)</label>
+          <!-- Deux cases indépendantes (11/09/2026, Celtis) : « Article soldé » ne parle que de
+               l'article, « Livraison payée d'avance » que de la livraison — chacune veut dire
+               « payé chez vous, le livreur ne l'encaisse pas ». Tout payé chez vous = les deux.
+               Sans objet sur une expédition, où c'est toujours le cas : la case suit celle de la
+               livraison. -->
+          <label class="check-pill" title="Le destinataire vous a déjà payé l'article : le livreur ne l'encaisse pas et rien ne vous est dû pour cet article. La livraison, elle, se règle à part."><input type="checkbox" class="lotfr-article-solde"> Article soldé (payé chez vous)</label>
           <!-- « Soldé » ne concerne QUE les expéditions, et remplace la case ci-dessus quand la
                destination bascule vers l'intérieur du pays (voir appliquerModeExpedition, dans
                config.js). Elle veut dire : j'ai déjà réglé à CLT les frais d'expédition et de
@@ -1681,7 +1682,7 @@
               </div>
             </div>
             <div class="payment-checks">
-              <label class="check-pill"><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison déjà payée</label>
+              <label class="check-pill" title="Payée chez vous : le livreur ne l'encaisse pas, elle est retenue sur votre relevé."><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
             </div>` : ''}
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn btn-sm btn-save-edit">Enregistrer</button>
@@ -1760,7 +1761,7 @@
               </div>
             </div>
             <div class="payment-checks">
-              <label class="check-pill"><input type="checkbox" class="draft-livraison-payee"> Livraison déjà payée</label>
+              <label class="check-pill" title="Payée chez vous : le livreur ne l'encaisse pas, elle est retenue sur votre relevé."><input type="checkbox" class="draft-livraison-payee"> Livraison payée d'avance</label>
             </div>
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn btn-sm btn-save-duplicate">Enregistrer la copie</button>

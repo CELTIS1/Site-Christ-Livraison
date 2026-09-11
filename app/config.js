@@ -3479,20 +3479,29 @@ function fraisExpeditionADevoir(c) {
 
 // Frais de course enregistrés sur ce colis. Zéro hors expédition : ailleurs, le montant de
 // livraison s'encaisse chez le destinataire et ne pèse pas sur la vendeuse.
-/* « ARTICLE SOLDÉ » — 8 septembre 2026. Celtis : « un colis soldé, dont le client a tout payé
-   chez la vendeuse : quand on fait la livraison, le système doit retrancher le coût de la
-   livraison [sur la vendeuse]. Sinon c'est comme si on travaillait pour rien. »
-   Le drapeau article_non_encaisse prend ce sens : le destinataire a réglé l'article ET la
-   livraison à la vendeuse d'avance. Le livreur n'encaisse donc rien — ni l'article (qui n'est
-   pas dû à la vendeuse, elle l'a déjà), ni la livraison, qui devient des FRAIS DE COURSE
-   retenus sur elle, exactement comme sur une expédition. Rien ne manque dans la caisse.
-   Sauf si la livraison a été payée au livreur (livraison_payee) : alors elle est rentrée en
-   billets et n'est pas retenue. */
+/* DEUX CASES, DEUX POCHES, INDÉPENDANTES — 11 septembre 2026.
+   Le 08/09, « Article soldé » avait été lu comme « le destinataire a tout payé chez la vendeuse,
+   article ET livraison », et retenait donc la livraison sur elle. À l'usage, c'était le bazar
+   (Celtis, 11/09) : les vendeuses cochent « Article soldé » sur un colis dont l'article est à 0
+   parce que déjà payé, et le destinataire paie la livraison au livreur à la porte — le système
+   la retenait quand même sur la vendeuse. La règle est donc redécoupée, une case par poche :
+
+     ARTICLE SOLDÉ (article_non_encaisse)      → n'agit QUE sur l'article. Il a été payé chez la
+                                                 vendeuse : le livreur ne l'encaisse pas, rien
+                                                 n'est dû à la vendeuse pour lui, rien ne manque.
+     LIVRAISON PAYÉE D'AVANCE (livraison_payee) → n'agit QUE sur la livraison. Elle a été payée
+                                                 chez la vendeuse : le livreur ne l'encaisse pas,
+                                                 et CLT la retient sur la vendeuse (frais de
+                                                 course), comme sur une expédition.
+
+   Tout payé chez la vendeuse = les deux cases cochées. Une seule = une seule poche.
+   Avant le 11/09, « livraison payée » voulait dire « payée AU LIVREUR » ; ce sens-là n'a plus
+   de case, parce qu'il n'en a pas besoin : livré = encaissé. */
 // (Pas de fonction à part pour « soldé » : les bancs chargent ces fonctions une à une, et le
 // drapeau se lit en un mot — c.article_non_encaisse.)
 function fraisCourseColis(c) {
   if (!c) return 0;
-  if (!estExpedition(c) && !(c.article_non_encaisse && !c.livraison_payee)) return 0;
+  if (!estExpedition(c) && !c.livraison_payee) return 0;
   return Number(montantLivraisonColis(c)) || 0;
 }
 
@@ -3636,10 +3645,11 @@ function articleEncaisse(c) {
   return !c.article_non_encaisse;
 }
 
-// Vrai si les frais de livraison sont réputés encaissés par CLT.
-// Deux chemins, et c'est voulu : la livraison peut être réglée AVANT la remise (le destinataire
-// paie d'avance, ou la cliente a prépayé) — c'est ce que le bouton « Livraison payée » du
-// livreur enregistre depuis le début, et on ne casse pas cet usage.
+// Vrai si les frais de livraison sont rentrés EN BILLETS chez le livreur.
+// Depuis le 11/09/2026, « livraison payée d'avance » veut dire payée chez la vendeuse : le livreur
+// ne l'encaisse pas, elle se retient sur la vendeuse (voir fraisCourseColis). Elle sort donc de la
+// caisse du livreur exactement comme sur une expédition. (Jusqu'au 11/09 la case voulait dire
+// « payée au livreur » et le comptait encaissé ; ce sens n'a plus de case — livré = encaissé.)
 //
 // L'EXPÉDITION EST EXCLUE, ET LE TEST PASSE EN PREMIER. Sur une expédition, le livreur ne tend
 // la main à personne : il dépose le carton à la gare, il paie le transporteur, il repart. Le
@@ -3647,15 +3657,11 @@ function articleEncaisse(c) {
 // rentre pas en billets ce jour-là. Il se retient sur la vendeuse au moment du reversement.
 // C'est ce qu'on appelle désormais les FRAIS DE COURSE, et ils se lisent plus bas.
 //
-// Le test doit passer AVANT `livraison_payee`, sinon une case cochée par erreur sur une
-// expédition ferait réapparaître dans la caisse du livreur un argent qu'il n'a jamais touché.
+// « Article soldé » ne se lit PAS ici : il ne parle que de l'article. (11/09/2026)
 function livraisonEncaissee(c) {
   if (!c) return false;
   if (estExpedition(c)) return false;
-  if (c.livraison_payee) return true;
-  // Article soldé (08/09/2026) : le destinataire a tout payé chez la vendeuse, le livreur ne
-  // tend la main à personne ; la livraison se retient sur la vendeuse (frais de course).
-  if (c.article_non_encaisse) return false;
+  if (c.livraison_payee) return false;
   if (c.statut !== 'livre') return false;
   return !c.livraison_non_encaissee;
 }
@@ -3734,10 +3740,9 @@ function montantEnMainDuLivreur(c) {
 function montantManquantALaLivraison(c) {
   if (!c || c.statut !== 'livre') return 0;
   if (estExpedition(c)) return 0;
-  // Article soldé (08/09/2026) : rien ne manque, tout a été payé chez la vendeuse ; la
-  // livraison se retient sur elle. Le manque ne concerne plus que la livraison non encaissée
-  // d'un colis ordinaire.
-  if (c.article_non_encaisse) return 0;
+  // « Article soldé » n'est pas un manque : l'article a été payé chez la vendeuse. Et il ne dit
+  // rien de la livraison (11/09/2026) : le manque ne concerne que la livraison qu'on devait
+  // encaisser à la porte et qui n'est pas rentrée.
   let manque = 0;
   if (!c.livraison_payee && c.livraison_non_encaissee) manque += montantLivraisonColis(c);
   return manque;
@@ -5200,8 +5205,13 @@ function paiementInfo(c) {
   }
   const manque = montantManquantALaLivraison(c);
   if (manque > 0) return { label: "Argent non encaissé", color: "#c0392b", bg: "#fce4e2" };
-  // Article soldé (08/09/2026) : tout payé chez la vendeuse, la livraison est retenue sur elle.
-  if (c.article_non_encaisse && !estExpedition(c)) return { label: "Article soldé — livraison retenue", color: "#1B4374", bg: "#E3ECF7" };
+  // Deux cases indépendantes (11/09/2026) : chacune nomme sa poche, et les deux ensemble disent
+  // que tout a été payé chez la vendeuse.
+  if (!estExpedition(c)) {
+    if (c.article_non_encaisse && c.livraison_payee) return { label: "Soldé chez la vendeuse — livraison retenue", color: "#1B4374", bg: "#E3ECF7" };
+    if (c.article_non_encaisse) return { label: "Article soldé", color: "#1B4374", bg: "#E3ECF7" };
+    if (c.livraison_payee) return { label: "Livraison payée d'avance — retenue", color: "#8a4b12", bg: "#fff0dd" };
+  }
   /* UNE EXPÉDITION N'EST JAMAIS « ENCAISSÉE ». (01/09/2026) CLT n'a rien reçu : le destinataire
      a payé chez la vendeuse avant le départ. Ce badge part aussi dans le PDF et l'Excel qu'elle
      télécharge — lui écrire « Encaissé » en face d'un colis dont on lui RETIENT deux frais, ce
