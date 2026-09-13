@@ -38,6 +38,12 @@ jobs:
       - name: File d'attente hors-réseau (espace Équipe)
         run: node tests/file-attente-equipe.test.mjs
 
+      - name: Les primes des livreurs (le règlement, en SQL et en JavaScript, au franc près)
+        run: node tests/primes-des-livreurs.test.mjs
+
+      - name: Tableau de bord livreurs (jour de l'événement, taux du règlement, signaux, échecs à qualifier)
+        run: node tests/tableau-de-bord-livreurs.test.mjs
+
       - name: Actions rapides (un appui pour faire avancer un colis)
         run: node tests/actions-rapides.test.mjs
 

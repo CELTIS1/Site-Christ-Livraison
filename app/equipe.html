@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260911cases">
-<script src="theme.js?v=20260911cases"></script>
-<script src="splash.js?v=20260911cases"></script>
+<link rel="stylesheet" href="style.css?v=20260913primes">
+<script src="theme.js?v=20260913primes"></script>
+<script src="splash.js?v=20260913primes"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -468,6 +468,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
 <!-- Le tableau de bord des clientes (05/09/2026) : qui nous confie quoi, comment ça évolue,
      qui appeler. Lecture seule ; les gestes renvoient vers Colis, Tournées ou la fiche. -->
 <button type="button" class="clt-toptab" data-eqtab="clients">📈 Clients</button>
+<button type="button" class="clt-toptab" data-eqtab="livreurs">🏍️ Livreurs</button>
 <button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
 <button type="button" class="clt-toptab" data-eqtab="comptes">👥 Comptes</button>
 <button type="button" class="clt-toptab hidden" id="eqtab-btn-express" data-eqtab="express">🏍️ Express</button>
@@ -478,6 +479,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
 <div class="eq-tabpanel hidden" id="eqpanel-programmation"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-suivi"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-clients"></div>
+<div class="eq-tabpanel hidden" id="eqpanel-livreurs"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-finances"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-comptes"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-express"></div>
@@ -1255,11 +1257,31 @@ saisis ensuite lui seront rattachés automatiquement.
      ici, seulement la coquille : la barre de période, le corps que le script remplit, et la fiche.
      ============================================================================================ -->
 <style>
-#section-clients .cd-barre{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-#section-clients .cd-barre .page-sub{ margin:0; flex:1 1 260px; }
-#section-clients .cd-periodes{ display:inline-flex; gap:4px; background:var(--grey-bg); border-radius:999px; padding:3px; }
-#section-clients .cd-periodes button{ border:0; background:transparent; border-radius:999px; padding:6px 12px; font:inherit; font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer; min-height:32px; }
-#section-clients .cd-periodes button.active{ background:var(--white); color:var(--navy); box-shadow:var(--shadow-xs); }
+#section-clients, #section-livreurs .cd-barre{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+#section-clients, #section-livreurs .cd-barre .page-sub{ margin:0; flex:1 1 260px; }
+#section-clients, #section-livreurs .cd-periodes{ display:inline-flex; gap:4px; background:var(--grey-bg); border-radius:999px; padding:3px; }
+#section-clients, #section-livreurs .cd-periodes button{ border:0; background:transparent; border-radius:999px; padding:6px 12px; font:inherit; font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer; min-height:32px; }
+#section-clients, #section-livreurs .cd-periodes button.active{ background:var(--white); color:var(--navy); box-shadow:var(--shadow-xs); }
+/* Livreurs (13/09/2026) : les échecs à qualifier, la fiche, les réclamations. */
+.ld-qual-liste{ display:grid; gap:8px; }
+.ld-qual{ background:var(--white); border:1px solid var(--border); border-left:4px solid #E26313; border-radius:12px; padding:10px 12px; }
+.ld-qual-tete{ display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-size:13.5px; color:var(--muted); }
+.ld-qual-desc{ font-size:14px; color:var(--navy); margin:2px 0; }
+.ld-qual-motif{ font-size:13px; color:var(--muted); }
+.ld-qual-gestes{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.ld-qual-propose{ font-size:13px; color:var(--muted); margin-right:auto; }
+.ld-fiche-tete{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+.ld-fiche-nom{ font-size:18px; font-weight:800; color:var(--navy); }
+.ld-echec{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:8px 0; border-top:1px solid var(--border); font-size:13.5px; }
+.ld-echec-motif{ color:var(--muted); display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.ld-recl{ padding:10px 12px; border-radius:12px; background:var(--grey-bg); margin-bottom:8px; font-size:13.5px; }
+.ld-recl.est-fondee{ border-left:4px solid #b3362d; } .ld-recl.est-rejetee{ opacity:.7; }
+.ld-recl-texte{ margin:4px 0; color:var(--navy); }
+.ld-recl-gestes{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; } .ld-recl-gestes .search-input{ flex:1 1 200px; }
+.ld-recl-ajout summary{ cursor:pointer; font-weight:700; color:var(--navy); min-height:40px; display:flex; align-items:center; }
+.ld-recl-form{ display:grid; gap:8px; padding:8px 0; }
+.ld-recl-form select, .ld-recl-form input, .ld-recl-form textarea{ border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); padding:8px 10px; font:inherit; font-size:13.5px; color:var(--navy); background:var(--white); }
+.ld-rouge{ color:#b3362d; } .ld-vert{ color:#1a7d3c; } .ld-ambre{ color:#8a4b12; }
 .cd-kpis{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin-bottom:14px; }
 .cd-kpi{ background:var(--white); border:1px solid var(--border); border-radius:12px; padding:10px 12px; min-width:0; }
 .cd-kpi-val{ font-size:20px; font-weight:800; color:var(--navy); letter-spacing:-0.02em; line-height:1.15; display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; }
@@ -1360,8 +1382,8 @@ html[data-theme="dark"] .cd-seg-echec, html[data-theme="dark"] .cd-l-echec{ fill
 html[data-theme="dark"] .cd-grid{ stroke:#2B3A4E; }
 html[data-theme="dark"] .cd-spark path{ stroke:#9EC0E6; }
 html[data-theme="dark"] .cd-fiche-tuiles > div, html[data-theme="dark"] .cd-signal-n, html[data-theme="dark"] .cd-tend-plat{ background:#223045; }
-html[data-theme="dark"] #section-clients .cd-periodes{ background:#223045; }
-html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:#1B4374; color:#fff; }
+html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livreurs .cd-periodes{ background:#223045; }
+html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livreurs .cd-periodes button.active{ background:#1B4374; color:#fff; }
 @media(max-width:640px){
   .cd-kpis{ grid-template-columns:repeat(2, 1fr); gap:6px; }
   .cd-kpi-val{ font-size:17px; }
@@ -1407,6 +1429,35 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
+<!-- ============================================================================================
+     🏍️ TABLEAU DE BORD DES LIVREURS — 13 septembre 2026. Le code est dans livreurs-dashboard.js ;
+     ici la coquille : la barre de période, le corps que le script remplit, et la fiche livreur.
+     ============================================================================================ -->
+<div class="card" id="section-livreurs">
+<div class="cd-barre">
+<div class="page-sub">Qui livre quoi, les échecs à qualifier, qui regarder. Comparé à la période d’avant.</div>
+<div class="cd-periodes" role="group" aria-label="Période">
+<button type="button" data-ld-periode="7">7 j</button>
+<button type="button" data-ld-periode="30" class="active">30 j</button>
+<button type="button" data-ld-periode="90">90 j</button>
+</div>
+<button type="button" class="btn btn-outline btn-sm" id="ld-actualiser">🔄 Actualiser</button>
+</div>
+<div id="ld-corps"><div class="empty-state">Ouvrez l’onglet pour lire les chiffres.</div></div>
+</div>
+
+<div id="ld-fiche-overlay" class="fiche-ecran-overlay hidden" data-clt-couche="Fiche livreur" role="dialog" aria-modal="true" aria-label="Fiche livreur">
+  <div class="fiche-ecran">
+    <div class="fiche-ecran-tete">
+      <div class="fiche-ecran-actions">
+        <span class="fiche-ecran-titre">Fiche livreur</span>
+        <button type="button" class="fiche-ecran-fermer" id="ld-fiche-fermer" aria-label="Fermer cette fiche" data-clt-fermer>✕</button>
+      </div>
+    </div>
+    <div class="fiche-ecran-corps" id="ld-fiche-corps"></div>
+  </div>
+</div>
+
 <div id="fiche-ecran-overlay" class="fiche-ecran-overlay hidden" data-clt-couche="Son écran" role="dialog" aria-modal="true" aria-labelledby="fiche-ecran-titre">
   <div class="fiche-ecran">
     <div class="fiche-ecran-tete">
@@ -1426,11 +1477,12 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active{ background:
   </div>
 </div>
 
-<script src="clt-common.js?v=20260911cases"></script>
-<script src="config.js?v=20260911cases"></script>
-<script src="clients-dashboard.js?v=20260911cases"></script>
-<script src="biometric-lock.js?v=20260911cases"></script>
-<script src="clt-select-recherche.js?v=20260911cases"></script>
+<script src="clt-common.js?v=20260913primes"></script>
+<script src="config.js?v=20260913primes"></script>
+<script src="clients-dashboard.js?v=20260913primes"></script>
+<script src="livreurs-dashboard.js?v=20260913primes"></script>
+<script src="biometric-lock.js?v=20260913primes"></script>
+<script src="clt-select-recherche.js?v=20260913primes"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -4015,6 +4067,8 @@ const cat = {
   // d'août encore en route le 7 septembre). (09/09/2026)
   dormants:  colis.filter(c => (c.statut === 'recupere' || c.statut === 'en_attente') && jourDuColis(c) < isoMoinsJours(aujourdhui, 2)),
   examiner:  colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && !vues.has(c.id)),
+  // Les échecs que l'équipe n'a pas encore qualifiés (règlement des primes, 13/09/2026).
+  qualifier: colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && c.non_livre_at && c.non_livre_at >= (typeof PRIMES_DEBUT !== 'undefined' ? PRIMES_DEBUT : '2026-10-01') && (c.echec_imputable === null || c.echec_imputable === undefined)),
 };
 const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? pendingAccounts.length : 0;
 const nbReset = resetEnAttente();
@@ -4082,7 +4136,8 @@ set('aujourdhui-actions', ouRien(
 set('aujourdhui-anomalies', ouRien(
   pastille(cat.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +
   pastille(cat.dormants.length, 'en route depuis plus de 2 jours', 'dormants', 'rouge') +
-  pastille(cat.examiner.length, 'non livrés ou retours', 'examiner', 'rouge'), 'Rien à examiner'));
+  pastille(cat.examiner.length, 'non livrés ou retours', 'examiner', 'rouge') +
+  pastille(cat.qualifier.length, cat.qualifier.length > 1 ? 'échecs à qualifier' : 'échec à qualifier', 'qualifier', 'ambre'), 'Rien à examiner'));
 set('aujourdhui-argent', ouRien(
   pastille(money(resteARemettre), 'à remettre', 'argent', 'rouge') +
   (nbASolder ? `<button type="button" class="ess-tuile est-rouge" data-aller="argent" title="Ouvrir"><span class="n">${nbASolder}</span><span>colis à solder</span></button>` : ''), 'Tout est remis'));
@@ -4139,6 +4194,7 @@ switch (cle) {
     listeColis(seul, '', L.examiner); break;
   }
   case 'argent': onglet('finances'); if (typeof showMainTab === 'function') showMainTab('compta'); defiler('caisse-livreur'); break;
+  case 'qualifier': onglet('livreurs'); setTimeout(() => defiler('ld-qualifier'), 400); break;
 }
 }
 // Toucher la carte d'un non livré / retour surligné, c'est l'avoir examiné : il sort de la
@@ -10279,6 +10335,10 @@ init();
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><rect x="5" y="11" width="3.5" height="7" rx="1"/><rect x="10.25" y="6" width="3.5" height="12" rx="1"/><rect x="15.5" y="9" width="3.5" height="9" rx="1"/></svg>
     Clients
   </button>
+  <button type="button" class="nav" data-nav="livreurs">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h6l3-7h3l2 4M9 10h4l2 7"/></svg>
+    Livreurs
+  </button>
   <button type="button" class="nav" data-nav="finances">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.2c0-1.1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.9c0 2.6-5 1.4-5 3.9 0 1.2 1.1 1.9 2.5 1.9s2.5-.6 2.5-1.7"/></svg>
     Finances
@@ -10297,7 +10357,7 @@ init();
   // Les 5 onglets regroupent les anciennes sections. On DÉPLACE les sections existantes dans les
   // panneaux d'onglets (sans réécrire leur HTML) pour préserver tous les identifiants, formulaires
   // et écouteurs d'événements déjà câblés ailleurs dans le code.
-  const EQ_TABS = ['colis','programmation','suivi','clients','finances','comptes','express'];
+  const EQ_TABS = ['colis','programmation','suivi','clients','livreurs','finances','comptes','express'];
 
   function showEquipeTab(key){
     if (!EQ_TABS.includes(key)) key = 'colis';
@@ -10327,6 +10387,8 @@ init();
     // Le tableau de bord des clientes lit la base à l'ouverture (et à chaque retour) : la liste
     // de l'onglet Colis n'en garde qu'une page, lui regarde deux périodes entières.
     if (key === 'clients' && window.CLTClients) CLTClients.rafraichir();
+    // Le tableau de bord des livreurs (13/09/2026) : même principe, mêmes périodes.
+    if (key === 'livreurs' && window.CLTLivreurs) CLTLivreurs.rafraichir();
     if (key === 'finances'){
       // 05/09/2026 — « Vue par jour » restait sur « Chargement… » : on la calcule à l'ouverture.
       if (typeof showRapportSubTab === 'function') showRapportSubTab('jour');
@@ -10370,6 +10432,10 @@ init();
     // 📈 Clients : le tableau de bord des clientes (clients-dashboard.js)
     put('eqpanel-clients', byId('section-clients'));
     if (window.CLTClients) CLTClients.init();
+
+    // 🏍️ Livreurs : le tableau de bord des livreurs et les échecs à qualifier (livreurs-dashboard.js)
+    put('eqpanel-livreurs', byId('section-livreurs'));
+    if (window.CLTLivreurs) CLTLivreurs.init();
 
     // 💰 Finances : rapports + comptabilité (les statistiques de visites ont été retirées le 05/09/2026)
     put('eqpanel-finances', wrapInCard(byId('panel-rapports')));

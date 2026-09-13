@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260911cases">
-<script src="theme.js?v=20260911cases"></script>
-<script src="splash.js?v=20260911cases"></script>
+<link rel="stylesheet" href="style.css?v=20260913primes">
+<script src="theme.js?v=20260913primes"></script>
+<script src="splash.js?v=20260913primes"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -289,6 +289,8 @@
       <select id="dash-month" onchange="renderDashboard()"></select>
     </div>
     <div class="kpi-grid" id="dash-kpis"></div>
+    <!-- Livraisons et primes du mois (13/09/2026) : chaque tuile ouvre Paie › Primes livreurs. -->
+    <div class="kpi-grid" id="dash-kpis-primes"></div>
     <div class="card">
       <h2>Récapitulatif annuel</h2>
       <div class="g-table-wrap" id="dash-recap"></div>
@@ -691,6 +693,8 @@
       <!-- Sans émojis et raccourcis (Celtis) : cohérence avec la Comptabilité. -->
       <div class="subtab" data-sub="dossiers" onclick="switchSub('paie','dossiers')">Dossiers</div>
       <div class="subtab" data-sub="saisie" onclick="switchSub('paie','saisie')">Saisie du mois</div>
+      <!-- Primes des livreurs (13/09/2026) : le règlement appliqué tout seul, le décompte validé passe dans la saisie. -->
+      <div class="subtab" data-sub="primes" onclick="switchSub('paie','primes')">Primes livreurs</div>
       <div class="subtab" data-sub="bulletins" onclick="switchSub('paie','bulletins')">Bulletins</div>
       <div class="subtab" data-sub="etats" onclick="switchSub('paie','etats')">États par période</div>
       <div class="subtab" id="sub-paie-parametres" data-sub="parametres" onclick="switchSub('paie','parametres')">Paramètres</div>
@@ -746,6 +750,25 @@
       <!-- Une ligne (Celtis) : même formule que la grille des recettes. -->
       <div class="hint">Éléments variables du mois par salarié ; enregistrement automatique, bulletins recalculés.</div>
       <div class="card"><div class="g-table-wrap" id="sai-table"></div></div>
+    </div>
+
+    <!-- ============ PRIMES DES LIVREURS (13/09/2026) ============
+         Le Règlement des primes et avantages (1er octobre 2026), calculé par la base
+         (calculer_primes_mois) à partir des colis, qualifié par l'équipe, validé ici.
+         Trois gestes, dans l'ordre : Calculer → Envoyer les décomptes → Valider le mois. -->
+    <div class="section" id="paie-primes">
+      <div class="period-bar">
+        <label style="font-weight:600;color:var(--clt-teal-dark);">Mois</label>
+        <select id="pr-year" onchange="loadPrimes()"></select>
+        <select id="pr-month" onchange="loadPrimes()"></select>
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="calculerPrimes()" id="pr-btn-calculer">🧮 Calculer</button>
+        <button class="btn btn-outline btn-sm" onclick="ouvrirDecomptes()" id="pr-btn-envoyer">💬 Envoyer les décomptes</button>
+        <button class="btn btn-sm" onclick="validerPrimes()" id="pr-btn-valider">✅ Valider le mois</button>
+      </div>
+      <div class="hint">Le livreur a dit pourquoi, l’équipe a qualifié (onglet Livreurs de l’espace équipe), la base applique le règlement. Cochez « travail correct », saisissez avances et retenues, puis validez : les primes passent en gratification et les retenues en retenue divers dans la saisie du mois.</div>
+      <div class="kpi-grid" id="pr-kpis"></div>
+      <div class="card"><div class="g-table-wrap" id="pr-table"><div class="hint">Choisissez un mois puis « Calculer ».</div></div></div>
     </div>
 
     <div class="section" id="paie-bulletins">
@@ -809,6 +832,32 @@
     </div>
 
     <div class="section" id="paie-parametres">
+      <div class="card">
+        <h2>Primes des livreurs — le règlement en chiffres</h2>
+        <div class="hint">Une version par date d’effet : un mois se calcule avec la version en vigueur au 1er. Pour changer un montant, enregistrez une nouvelle version ; les mois déjà validés ne bougent pas.</div>
+        <div id="pp-version" class="hint" style="margin-top:6px;"></div>
+        <div class="modal" style="box-shadow:none;padding:0;max-width:none;">
+          <div class="grid2" style="margin-top:8px;">
+            <div class="field"><label>Date d’effet de la nouvelle version</label><input type="date" id="pp-date"></div>
+            <div class="field"><label>Salaire de base (F)</label><input type="number" id="pp-salaire" step="1"></div>
+            <div class="field"><label>Indemnité moto, formule 2 (F/mois)</label><input type="number" id="pp-moto" step="1"></div>
+            <div class="field"><label>Prime de réussite 100 % (F)</label><input type="number" id="pp-r100" step="1"></div>
+            <div class="field"><label>Prime de réussite 90–99 % (F)</label><input type="number" id="pp-r90" step="1"></div>
+            <div class="field"><label>Jours travaillés minimum pour la réussite</label><input type="number" id="pp-jmin" step="1"></div>
+            <div class="field"><label>Prime de travail correct (F)</label><input type="number" id="pp-tc" step="1"></div>
+            <div class="field"><label>Seuil de volume (colis/jour)</label><input type="number" id="pp-seuil" step="1"></div>
+            <div class="field"><label>Prime de volume par colis au-delà (F)</label><input type="number" id="pp-vol" step="1"></div>
+            <div class="field"><label>Livreur du mois (F)</label><input type="number" id="pp-ldm" step="1"></div>
+            <div class="field"><label>Fidélité après 6 mois (F/mois)</label><input type="number" id="pp-f6" step="1"></div>
+            <div class="field"><label>Fidélité après 12 mois (F/mois)</label><input type="number" id="pp-f12" step="1"></div>
+            <div class="field"><label>Fidélité après 24 mois (F/mois)</label><input type="number" id="pp-f24" step="1"></div>
+            <div class="field"><label>Parrainage, par filleul (F)</label><input type="number" id="pp-parr" step="1"></div>
+          </div>
+          <div class="modal-actions" style="justify-content:flex-start;">
+            <button class="btn btn-sm" onclick="savePrimesParametres()">Enregistrer une nouvelle version</button>
+          </div>
+        </div>
+      </div>
       <div class="card">
         <h2>Paramètres de l'entreprise</h2>
         <div class="modal" style="box-shadow:none;padding:0;max-width:none;">
@@ -889,11 +938,30 @@
       <div class="field"><label>Prime transport (FCFA, vide = défaut)</label><input type="number" id="sal-prime" step="1" placeholder="30000"></div>
       <div class="field"><label>RIB</label><input type="text" id="sal-rib"></div>
       <div class="field"><label>Lié au compte livreur</label><select id="sal-livreur" data-recherche data-recherche-placeholder="Nom du livreur…"><option value="">— Aucun —</option></select></div>
+      <!-- Grille « Travailler chez CLT » (13/09/2026) : la formule décide des primes et de l'indemnité moto. -->
+      <div class="field"><label>Formule livreur</label><select id="sal-formule"><option value="">— Pas un livreur —</option><option value="1">1 · Salarié, moto CLT</option><option value="2">2 · Salarié, moto personnelle</option><option value="3">3 · Indépendant (contrat de prestation)</option></select></div>
+      <div class="field"><label>Moto (immatriculation)</label><input type="text" id="sal-moto" placeholder="AB 1234 CI"></div>
+      <div class="field"><label>Propriétaire de la moto</label><select id="sal-moto-prop"><option value="">—</option><option value="clt">CLT</option><option value="livreur">Le livreur</option></select></div>
+      <div class="field"><label>Parrain (prime de parrainage)</label><select id="sal-parrain" data-recherche data-recherche-placeholder="Nom du parrain…"><option value="">— Aucun —</option></select></div>
+      <div class="field"><label>Numéro Wave</label><input type="text" id="sal-wave" placeholder="05 00 00 00 00"></div>
       <div class="field"><label>Actif</label><select id="sal-actif"><option value="true">Oui</option><option value="false">Non</option></select></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" data-clt-fermer onclick="closeModal('modal-salarie')">Annuler</button>
       <button class="btn btn-sm" onclick="saveSalarie()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale des décomptes de primes (13/09/2026) : un texte par livreur, prêt à copier dans WhatsApp. -->
+<div class="modal-back" id="modal-decomptes" data-clt-couche="Décomptes de primes">
+  <div class="modal" style="max-width:680px;">
+    <h2 style="margin-top:0;">Décomptes du mois</h2>
+    <div class="hint">Copiez chaque texte et envoyez-le au livreur (règlement, art. 8 : trois jours pour contester). « Marquer envoyés » date l’envoi.</div>
+    <div id="decomptes-liste" style="display:grid;gap:10px;margin-top:10px;max-height:60vh;overflow:auto;"></div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-outline btn-sm" data-clt-fermer onclick="closeModal('modal-decomptes')">Fermer</button>
+      <button class="btn btn-sm" onclick="marquerDecomptesEnvoyes()">Marquer envoyés</button>
     </div>
   </div>
 </div>
@@ -980,10 +1048,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260911cases"></script>
-<script src="config.js?v=20260911cases"></script>
-<script src="biometric-lock.js?v=20260911cases"></script>
-<script src="clt-select-recherche.js?v=20260911cases"></script>
-<script src="gestion.js?v=20260911cases"></script>
+<script src="clt-common.js?v=20260913primes"></script>
+<script src="config.js?v=20260913primes"></script>
+<script src="biometric-lock.js?v=20260913primes"></script>
+<script src="clt-select-recherche.js?v=20260913primes"></script>
+<script src="gestion.js?v=20260913primes"></script>
 </body>
 </html>

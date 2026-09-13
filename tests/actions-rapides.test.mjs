@@ -122,6 +122,8 @@ function contexteLivreur(o){
     __refusAffiches: 0,
     cltPrompt: async () => { ctx.__promptsAffiches++; return o.codeSaisi === undefined ? null : o.codeSaisi; },
     cltConfirm: async () => { ctx.__refusAffiches++; return true; },
+    // « Pourquoi ? » (13/09/2026) : un échec porte son motif ; ici le livreur répond « client absent, vendeuse prévenue ».
+    demanderMotifEchec: async () => { ctx.__motifsDemandes = (ctx.__motifsDemandes || 0) + 1; return { motif: 'client_absent', prevenue: true }; },
     __journal: journal, __toasts: toasts, __file: file
   };
   vm.createContext(ctx);
@@ -304,6 +306,12 @@ async function livreurObservationPreservee(){
   const ctx2 = contexteLivreur();
   await ctx2.appliquerStatutColis({ id: 'C1', statut: 'non_livre', observation: 'Client absent' });
   verifier("ce que le livreur vient d'écrire est bien pris", ctx2.__journal[0].observation === 'Client absent');
+  verifier("un échec part avec son motif et « vendeuse prévenue » (13/09/2026)",
+    ctx2.__journal[0].motif_non_livraison === 'client_absent' && ctx2.__journal[0].vendeuse_prevenue === true && ctx2.__motifsDemandes === 1, JSON.stringify(ctx2.__journal[0]));
+  // Un colis déjà « non livré » qu'on ré-enregistre (photo, observation) ne redemande pas le motif.
+  const ctx3 = contexteLivreur({ colis: [{ id: 'C1', statut: 'non_livre', observation: '', tentatives_livraison: 1, photo_livraison_url: null, motif_non_livraison: 'annule', vendeuse_prevenue: true }] });
+  await ctx3.appliquerStatutColis({ id: 'C1', statut: 'non_livre', observation: 'Je repasse demain' });
+  verifier("déjà « non livré » : le motif n'est pas redemandé", (ctx3.__motifsDemandes || 0) === 0);
 }
 
 async function livreurHorsConnexion(){

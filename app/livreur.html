@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260911cases">
-<script src="theme.js?v=20260911cases"></script>
-<script src="splash.js?v=20260911cases"></script>
+<link rel="stylesheet" href="style.css?v=20260913primes">
+<script src="theme.js?v=20260913primes"></script>
+<script src="splash.js?v=20260913primes"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -477,6 +477,38 @@
   .obs-textarea{ min-height:64px; }
   .colis-item .meta, .colis-item .desc, .group-count, .day-group-header, .client-group-header{ font-size:13px; }
   .colis-item .desc{ font-size:14.5px; }
+
+  /* ---------- POURQUOI ? — le motif d'un échec (13/09/2026, règlement des primes) ---------- */
+  .motif-echec{ position:fixed; inset:0; z-index:1200; background:rgba(15,23,42,.45); display:flex; align-items:flex-end; justify-content:center; }
+  .motif-echec__boite{ background:#fff; width:100%; max-width:520px; border-radius:18px 18px 0 0; padding:18px 16px calc(16px + env(safe-area-inset-bottom)); box-shadow:0 -8px 30px rgba(0,0,0,.18); }
+  .motif-echec__titre{ font-weight:800; font-size:17px; color:#12305a; }
+  .motif-echec__sous{ font-size:13.5px; color:#6b7686; margin-top:2px; }
+  .motif-echec__prevenue{ display:flex; align-items:center; gap:10px; margin:14px 0 10px; padding:12px 14px; border-radius:12px; background:#eef4fb; font-size:15px; font-weight:600; color:#12305a; min-height:48px; }
+  .motif-echec__prevenue input{ width:24px; height:24px; accent-color:#1a7d3c; }
+  .motif-echec__motifs{ display:flex; flex-direction:column; gap:8px; }
+  .motif-echec__motif{ min-height:48px; text-align:left; padding:10px 14px; border-radius:12px; border:1.5px solid #cbd5e1; background:#fff; font-size:15.5px; font-weight:600; color:#0f172a; }
+  .motif-echec__motif.actuel{ border-color:#E26313; background:#FBE2CE; }
+  .motif-echec__motif:active{ background:#f1f5f9; }
+  .motif-echec__annuler{ margin-top:12px; width:100%; min-height:44px; border:none; background:transparent; color:#6b7686; font-size:15px; font-weight:600; }
+  .motif-echec-ligne{ display:block; width:100%; text-align:left; margin-top:6px; padding:8px 10px; min-height:44px; border-radius:10px; border:1px dashed #cbd5e1; background:#fff; font-size:13.5px; color:#334155; }
+
+  /* ---------- MON MOIS (13/09/2026) ---------- */
+  .mon-mois{ background:#fff; border-radius:16px; padding:14px 14px 10px; margin:0 0 14px; box-shadow:0 4px 14px rgba(18,48,90,.08); border:1px solid #e6ebf2; }
+  .mon-mois__tete{ display:flex; justify-content:space-between; align-items:baseline; font-weight:800; font-size:16px; color:#12305a; }
+  .mon-mois__periode{ font-weight:600; font-size:13px; color:#6b7686; text-transform:capitalize; }
+  .mon-mois__chiffres{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:12px 0; }
+  .mon-mois__chiffres > div{ text-align:center; background:#f6f8fb; border-radius:12px; padding:10px 4px; }
+  .mon-mois__chiffres b{ display:block; font-size:20px; color:#0f172a; }
+  .mon-mois__chiffres span{ font-size:13px; color:#6b7686; }
+  .mon-mois__prime{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-top:1px solid #eef1f5; font-size:14px; color:#6b7686; }
+  .mon-mois__prime.gagnee{ color:#0f172a; }
+  .mon-mois__prime.gagnee b{ color:#1a7d3c; }
+  .mon-mois__prime small{ display:block; font-size:13px; color:#6b7686; }
+  .mon-mois__total{ display:flex; justify-content:space-between; padding:10px 0 4px; border-top:2px solid #12305a; font-weight:800; font-size:15.5px; color:#12305a; }
+  .mon-mois__rythme{ margin-top:8px; padding:10px 12px; border-radius:12px; background:#e3f6ea; color:#14532d; font-size:14px; }
+  .mon-mois__aide{ margin-top:8px; font-size:13.5px; color:#334155; }
+  .mon-mois__aide summary{ min-height:44px; display:flex; align-items:center; color:#6b7686; font-weight:600; cursor:pointer; }
+  .mon-mois__aide p{ margin:4px 0 6px; line-height:1.45; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -806,6 +838,11 @@
     <div id="panel-finance" class="hidden">
       <!-- Phrase d'introduction retirée le 05/09/2026 (Celtis : moins de texte). -->
 
+      <!-- MON MOIS (13/09/2026). Le règlement des primes, vu du livreur : mes chiffres du mois et
+           ce qu'ils me rapportent, calculés par la base. Caché tant que la base ne répond pas ou
+           si le livreur n'est pas concerné. -->
+      <div id="mon-mois" class="mon-mois hidden"></div>
+
       <!-- Le point du soir, en PDF. Demandé le 29 août 2026 : le livreur qui a fini sa tournée
            emporte son récapitulatif à la caisse. Le bouton est ici, en haut de l'onglet Finance,
            parce que c'est là qu'il regarde son compte — pas dans un menu qu'il faudrait aller
@@ -839,9 +876,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260911cases"></script>
-<script src="config.js?v=20260911cases"></script>
-<script src="biometric-lock.js?v=20260911cases"></script>
+<script src="clt-common.js?v=20260913primes"></script>
+<script src="config.js?v=20260913primes"></script>
+<script src="biometric-lock.js?v=20260913primes"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1414,6 +1451,7 @@
     document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === which));
     syncBottomNav(which);
     syncArgentCard();
+    if (which === 'finance') chargerMonMois();
     try { localStorage.setItem('clt_livreur_tab', which); } catch(e){}
   }
 
@@ -1551,6 +1589,18 @@
     // --- Compteur de tentatives (workflow d'échec de livraison) ---
     if (!('tentatives_livraison' in extra) && statut === 'non_livre' && existing && existing.statut !== 'non_livre') {
       extra.tentatives_livraison = tentativesPrecedentes + 1;
+    }
+
+    /* POURQUOI ? (13/09/2026) Un colis qui passe « non livré » porte son motif, choisi par le
+       livreur en deux touches (règlement des primes, art. 2). On demande AVANT d'écrire, comme
+       pour les montants : si le livreur renonce, rien n'est enregistré. On ne redemande pas
+       quand l'appelant impose déjà le motif (annulation, lot) ni quand le colis était déjà
+       « non livré » (on ne fait que corriger l'observation ou la photo). */
+    if (statut === 'non_livre' && !('motif_non_livraison' in extra) && !(existing && existing.statut === 'non_livre')) {
+      const reponse = await demanderMotifEchec(existing);
+      if (!reponse) return echec;
+      extra.motif_non_livraison = reponse.motif;
+      extra.vendeuse_prevenue = !!reponse.prevenue;
     }
 
     // Hors connexion : on met la mise à jour en file d'attente au lieu de la perdre.
@@ -1739,10 +1789,13 @@
   async function annulerChangementStatut(id, res){
     // On réimpose explicitement l'ancien compteur de tentatives : sans cela, revenir à
     // « Non livré » le ferait grimper une deuxième fois pour une seule vraie tentative.
+    // Revenir à « non livré » ne redemande pas le motif : on remet celui qu'il avait (13/09/2026).
+    const avant = allColis.find(c => c.id === id) || {};
     const retour = await appliquerStatutColis({
       id,
       statut: res.statutPrecedent,
-      extraForce: { tentatives_livraison: res.tentativesPrecedentes }
+      extraForce: Object.assign({ tentatives_livraison: res.tentativesPrecedentes },
+        res.statutPrecedent === 'non_livre' ? { motif_non_livraison: avant.motif_non_livraison || null, vendeuse_prevenue: !!avant.vendeuse_prevenue } : {})
     });
     if (!retour.ok) return;
     const libelle = (STATUTS[res.statutPrecedent] && STATUTS[res.statutPrecedent].label) || res.statutPrecedent;
@@ -1854,9 +1907,18 @@
       tentatives_livraison: (c.tentatives_livraison === undefined || c.tentatives_livraison === null) ? null : Number(c.tentatives_livraison),
     }));
 
+    // Un lot « non livré » a un seul motif, demandé une fois pour tous (13/09/2026).
+    let motifLot = null;
+    if (statut === 'non_livre') {
+      motifLot = await demanderMotifEchec(null, tri.eligibles.length);
+      if (!motifLot) return;
+    }
+    const groupes = grouperLotParPayload(tri.eligibles, statut);
+    if (motifLot) groupes.forEach(g => Object.assign(g.payload, { motif_non_livraison: motifLot.motif, vendeuse_prevenue: !!motifLot.prevenue }));
+
     const libelleBtn = bouton ? bouton.innerHTML : '';
     if (bouton) { bouton.disabled = true; bouton.textContent = 'Enregistrement…'; }
-    const res = await envoyerGroupesColis(supabaseClient, grouperLotParPayload(tri.eligibles, statut));
+    const res = await envoyerGroupesColis(supabaseClient, groupes);
     if (bouton) { bouton.disabled = false; bouton.innerHTML = libelleBtn; }
 
     // Seuls les colis réellement enregistrés sont mis à jour à l'écran : afficher « Livré » sur
@@ -1865,7 +1927,8 @@
     tri.eligibles.forEach(c => {
       if (!reussis.has(c.id)) return;
       const idx = allColis.findIndex(x => x.id === c.id);
-      if (idx !== -1) Object.assign(allColis[idx], horodatageLocalDuStatut(allColis[idx], statut), payloadLotColis(c, statut));
+      if (idx !== -1) Object.assign(allColis[idx], horodatageLocalDuStatut(allColis[idx], statut), payloadLotColis(c, statut),
+        motifLot ? { motif_non_livraison: motifLot.motif, vendeuse_prevenue: !!motifLot.prevenue } : {});
       lotMesIds.delete(c.id);
     });
     renderAll();
@@ -2243,7 +2306,15 @@
                      repasse « en livraison » et le pose sur le jour choisi. -->
                 <input type="date" class="report-date" value="${demainISO()}" min="${todayLocalISODate()}" aria-label="Retenter à quelle date">
                 <button type="button" class="btn btn-sm btn-retenter" data-retenter="${c.id}" title="Repasse le colis « en livraison » et le pose sur le jour choisi.">🔁 Retenter la livraison</button>
-              </div>` : ''}
+              </div>
+              <!-- LE MOTIF DE L'ÉCHEC. (13/09/2026) Ce que le livreur a répondu à « Pourquoi ? » ;
+                   c'est ce que l'équipe lit pour qualifier l'échec (règlement des primes, art. 2).
+                   Un appui rouvre la question s'il s'est trompé. -->
+              <button type="button" class="motif-echec-ligne" data-motif-de="${c.id}" title="Modifier le motif">
+                ${c.motif_non_livraison && typeof MOTIFS_NON_LIVRAISON !== 'undefined' && MOTIFS_NON_LIVRAISON[c.motif_non_livraison]
+                  ? `${MOTIFS_NON_LIVRAISON[c.motif_non_livraison].icon} ${escapeHTML(MOTIFS_NON_LIVRAISON[c.motif_non_livraison].label)} · ${c.vendeuse_prevenue ? '✅ vendeuse prévenue' : '⚠️ vendeuse pas prévenue'}`
+                  : '❓ Motif de l’échec à préciser'}
+              </button>` : ''}
               <!-- Ces deux boutons parlent d'argent encaissé chez le destinataire. Sur une
                    expédition il n'y en a pas : il a déjà payé chez la vendeuse. Les proposer,
                    c'est inviter à cocher quelque chose qui n'a pas eu lieu. -->
@@ -2448,6 +2519,36 @@
     // livraison même s'il ne prend pas le colis. Indépendant du bouton « Enregistrer ».
     /* --- Reporter à demain (09/09/2026) : une écriture, colonne reporte_au. Hors réseau, en file
        d'attente comme les autres gestes. --- */
+    // Corriger le motif d'un échec (13/09/2026) : la même question, une écriture de deux colonnes.
+    list.querySelectorAll('[data-motif-de]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.motifDe;
+        const existing = allColis.find(c => c.id === id);
+        const reponse = await demanderMotifEchec(existing);
+        if (!reponse) return;
+        const aEcrire = { motif_non_livraison: reponse.motif, vendeuse_prevenue: !!reponse.prevenue };
+        btn.disabled = true;
+        const enFile = async () => {
+          await queueAdd({ colisId: id, statut: existing ? existing.statut : null, observation: existing ? existing.observation : null, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: null, extra: aEcrire, userId: currentUser.id, timestamp: Date.now() });
+          if (existing) Object.assign(existing, aEcrire);
+          rememberWrite(id, aEcrire);
+        };
+        if (!navigator.onLine) {
+          try { await enFile(); } catch (e) { console.error(e); }
+          btn.disabled = false; await refreshOfflineBanner(); renderAll(); return;
+        }
+        const { error } = await supabaseClient.from('colis').update(aEcrire).eq('id', id);
+        btn.disabled = false;
+        if (error) {
+          if (estPanneReseau(error)) { try { await enFile(); await refreshOfflineBanner(); } catch (e) { console.error(e); } renderAll(); return; }
+          alert(friendlyErrorMessage(error.message)); return;
+        }
+        rememberWrite(id, aEcrire);
+        if (existing) Object.assign(existing, aEcrire);
+        renderAll();
+      });
+    });
+
     list.querySelectorAll('.btn-reporter, .btn-retenter').forEach(btn => {
       btn.addEventListener('click', async () => {
         const retente = btn.classList.contains('btn-retenter');
@@ -2880,6 +2981,97 @@
       </div>`);
     const btnLoadMoreColis = document.getElementById('btn-load-more-colis');
     if (btnLoadMoreColis) btnLoadMoreColis.addEventListener('click', loadMoreColis);
+  }
+
+  /* POURQUOI CE COLIS N'EST PAS LIVRÉ ? (13/09/2026)
+     La fenêtre du règlement des primes (art. 2) : cinq motifs, une case « j'ai prévenu la
+     vendeuse », rien d'autre. Un appui sur un motif répond ; la case se coche avant si c'est le
+     cas. Enregistrer le motif vaut information de l'administration : l'équipe le voit dans
+     « Échecs à qualifier ». Renvoie { motif, prevenue } ou null si le livreur renonce. */
+  function demanderMotifEchec(colis, nombre){
+    return new Promise(resolve => {
+      const ancien = document.getElementById('motif-echec');
+      if (ancien) ancien.remove();
+      const motifs = (typeof MOTIFS_NON_LIVRAISON !== 'undefined') ? MOTIFS_NON_LIVRAISON : { autre: { label: 'Autre', icon: '❓' } };
+      const titre = nombre > 1 ? `Pourquoi ces ${nombre} colis ne sont pas livrés ?` : 'Pourquoi ce colis n’est pas livré ?';
+      const sous = colis && colisDescriptionTexte(colis) ? escapeHTML(colisDescriptionTexte(colis)) : '';
+      const dejaPrevenue = !!(colis && colis.vendeuse_prevenue);
+      const boite = document.createElement('div');
+      boite.id = 'motif-echec';
+      boite.className = 'motif-echec';
+      boite.setAttribute('role', 'dialog');
+      boite.innerHTML = `
+        <div class="motif-echec__boite">
+          <div class="motif-echec__titre">${escapeHTML(titre)}</div>
+          ${sous ? `<div class="motif-echec__sous">${sous}</div>` : ''}
+          <label class="motif-echec__prevenue">
+            <input type="checkbox" id="motif-echec-prevenue" ${dejaPrevenue ? 'checked' : ''}>
+            <span>J’ai prévenu la vendeuse</span>
+          </label>
+          <div class="motif-echec__motifs">
+            ${Object.keys(motifs).map(k => `<button type="button" class="motif-echec__motif${colis && colis.motif_non_livraison === k ? ' actuel' : ''}" data-motif="${k}">${motifs[k].icon} ${escapeHTML(motifs[k].label)}</button>`).join('')}
+          </div>
+          <button type="button" class="motif-echec__annuler">Annuler</button>
+        </div>`;
+      document.body.appendChild(boite);
+      const fermer = (valeur) => { boite.remove(); resolve(valeur); };
+      boite.querySelector('.motif-echec__annuler').addEventListener('click', () => fermer(null));
+      boite.addEventListener('click', (e) => { if (e.target === boite) fermer(null); });
+      boite.querySelectorAll('.motif-echec__motif').forEach(b => b.addEventListener('click', () => {
+        fermer({ motif: b.dataset.motif, prevenue: boite.querySelector('#motif-echec-prevenue').checked });
+      }));
+    });
+  }
+
+  /* MON MOIS. (13/09/2026) Ce que le livreur a fait ce mois-ci et ce que ça lui rapporte, calculé
+     par la base (primes_en_cours : la même règle que le décompte du 1er). Affiché comme une
+     estimation ; seul le décompte validé fait foi. La carte disparaît pour un livreur qui n'est
+     pas concerné (indépendant, ou pas encore dans la paie). */
+  let monMoisDerniereCle = '';
+  async function chargerMonMois(){
+    const bloc = document.getElementById('mon-mois');
+    if (!bloc || !supabaseClient || !currentUser) return;
+    let data = null;
+    try {
+      const r = await supabaseClient.rpc('primes_en_cours');
+      if (r.error) throw r.error;
+      data = r.data;
+    } catch (e) {
+      // Migration pas encore jouée ou réseau absent : la carte ne s'affiche pas, rien d'autre ne change.
+      bloc.classList.add('hidden'); return;
+    }
+    if (!data || !data.eligible) { bloc.classList.add('hidden'); return; }
+    bloc.classList.remove('hidden');
+    const F = (v) => formatMontant(Math.round(Number(v) || 0)) + ' F';
+    const taux = data.taux === null || data.taux === undefined ? '—' : Math.round(Number(data.taux) * 100) + ' %';
+    const moyenne = data.moyenne === null || data.moyenne === undefined ? '—' : (Math.round(Number(data.moyenne) * 10) / 10).toString().replace('.', ',');
+    const projection = (typeof projectionPrimesFinDeMois === 'function') ? projectionPrimesFinDeMois(data, null) : null;
+    const fidelite = Number(data.prime_fidelite) || 0;
+    const aCeRythme = projection ? projection.totalPrimes + fidelite + (Number(data.prime_parrainage) || 0) : null;
+    const mois = new Date((data.periode || todayLocalISODate()) + 'T12:00:00Z').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const lignes = [
+      ['Prime de réussite', data.prime_reussite, data.taux !== null && Number(data.taux) >= 1 ? '100 % livrés' : (Number(data.taux) >= 0.9 ? '90 % et plus' : 'moins de 90 %')],
+      ['Prime de travail correct', data.prime_travail_correct, data.travail_correct_propose ? 'rien à signaler' : (data.echecs_sans_motif ? `${data.echecs_sans_motif} échec sans motif` : (data.livres_sans_preuve ? `${data.livres_sans_preuve} livré sans photo ni code` : 'une réclamation'))],
+      ['Prime de volume', data.prime_volume, `au-delà de ${data.seuil_volume} colis/jour, ${formatMontant(data.prime_volume_par_colis)} F le colis`],
+      ['Prime de fidélité', data.prime_fidelite, 'selon mon ancienneté'],
+    ].concat(Number(data.prime_parrainage) > 0 ? [['Prime de parrainage', data.prime_parrainage, 'un filleul a fini ses 3 mois']] : []);
+    const html = `
+      <div class="mon-mois__tete"><span>🏆 Mon mois</span><span class="mon-mois__periode">${escapeHTML(mois)}</span></div>
+      <div class="mon-mois__chiffres">
+        <div><b>${data.colis_livres}</b><span>livrés</span></div>
+        <div><b>${taux}</b><span>réussite</span></div>
+        <div><b>${moyenne}</b><span>par jour</span></div>
+        <div><b>${data.jours_travailles}</b><span>jours</span></div>
+      </div>
+      <div class="mon-mois__primes">
+        ${lignes.map(([nom, montant, note]) => `<div class="mon-mois__prime${Number(montant) > 0 ? ' gagnee' : ''}"><span>${nom}<small>${escapeHTML(note)}</small></span><b>${F(montant)}</b></div>`).join('')}
+        <div class="mon-mois__total"><span>Primes en cours</span><b>${F(data.total_estime)}</b></div>
+      </div>
+      ${aCeRythme !== null ? `<div class="mon-mois__rythme">À ce rythme, ce mois-ci : <b>${F(aCeRythme)}</b> de primes en plus de mon salaire.</div>` : ''}
+      <details class="mon-mois__aide"><summary>Comment ça marche</summary>
+        <p>Livrer tous mes colis : ${F(data.prime_reussite_100)}. Un travail correct tout le mois (application à jour, vendeuses prévenues, aucune réclamation) : ${F(data.prime_travail_correct_montant)}. Au-delà de ${data.seuil_volume} colis par jour en moyenne, chaque colis en plus : ${formatMontant(data.prime_volume_par_colis)} F. Le décompte officiel arrive le 1er du mois ; j'ai trois jours pour le contester.</p>
+      </details>`;
+    cltPoserHTML(bloc, html, JSON.stringify([data.colis_livres, data.jours_travailles, data.total_estime, data.taux]));
   }
 
   function renderAll(options){

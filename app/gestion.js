@@ -248,6 +248,9 @@ function switchSub(group, sub){
   if (group === 'compta' && sub === 'compta-generale' && !CG_CHARGE) chargerComptaGenerale();
   // États de paie par période / états financiers : chargés à la première ouverture.
   if (group === 'paie'   && sub === 'etats' && !ETATS_PERIODE) chargerEtatsPeriode();
+  // Primes des livreurs (13/09/2026) : relues à chaque ouverture ; paramètres du règlement avec les paramètres.
+  if (group === 'paie'   && sub === 'primes')     loadPrimes();
+  if (group === 'paie'   && sub === 'parametres') renderPrimesParametres();
   if (group === 'compta' && sub === 'etats' && !ETATS_FIN)     chargerEtatsFinanciers();
   // Coffres à documents : (re)chargés à l'ouverture de l'onglet.
   if (group === 'paie'   && sub === 'dossiers')  { fillDocSalarieSelect(); loadDocuments('personnel').then(renderDocsPersonnel); }
@@ -849,6 +852,7 @@ async function renderDashboard(){
     for (let m=1; m<=mois; m++) tresorerie += recByM[m] - depHorsPaieByM[m] - persByM[m];
   } catch(e){ console.error(e); }
 
+  renderDashboardPrimes(annee, mois);
   document.getElementById('dash-kpis').innerHTML = `
     <div class="kpi"><div class="kpi-label">Recette du mois</div><div class="kpi-value">${fmtF(recetteMois)}</div>
       <div class="kpi-sub">Objectif : ${fmtF(objMois)} · ${pct}%</div>
@@ -1218,6 +1222,15 @@ function openSalarie(id){
   fillCategorieSelect(document.getElementById('sal-categorie'), s ? s.categorie : (CATEGORIES[0]&&CATEGORIES[0].categorie));
   fillLivreurSelect(document.getElementById('sal-livreur'), s ? s.livreur_id : '');
   document.getElementById('sal-actif').value = (s && s.actif===false) ? 'false' : 'true';
+  // Formule, moto, parrain, Wave (13/09/2026, grille « Travailler chez CLT »).
+  document.getElementById('sal-formule').value = s && s.formule ? String(s.formule) : '';
+  document.getElementById('sal-moto').value = s ? (s.moto_immatriculation||'') : '';
+  document.getElementById('sal-moto-prop').value = s ? (s.moto_proprietaire||'') : '';
+  document.getElementById('sal-wave').value = s ? (s.numero_wave||'') : '';
+  { const sel = document.getElementById('sal-parrain');
+    sel.innerHTML = '<option value="">— Aucun —</option>' + SALARIES.filter(x => !s || x.id !== s.id).map(x => `<option value="${x.id}">${escapeHTML([x.prenom, x.nom].filter(Boolean).join(' ') || x.matricule)}</option>`).join('');
+    sel.value = s && s.parrain_id ? s.parrain_id : '';
+    if (window.CLTRecherche) CLTRecherche.rafraichir(sel); }
   // Photo : réinitialise le champ fichier, mémorise le chemin actuel, affiche l'aperçu.
   const fileInput = document.getElementById('sal-photo');
   if (fileInput) fileInput.value = '';
@@ -1256,8 +1269,16 @@ async function saveSalarie(){
     rib: document.getElementById('sal-rib').value.trim() || null,
     livreur_id: document.getElementById('sal-livreur').value || null,
     actif: document.getElementById('sal-actif').value === 'true',
+    // 13/09/2026 — colonnes créées par 2026-09-13-primes-des-livreurs.sql.
+    formule: document.getElementById('sal-formule').value ? parseInt(document.getElementById('sal-formule').value) : null,
+    moto_immatriculation: document.getElementById('sal-moto').value.trim() || null,
+    moto_proprietaire: document.getElementById('sal-moto-prop').value || null,
+    parrain_id: document.getElementById('sal-parrain').value || null,
+    numero_wave: document.getElementById('sal-wave').value.trim() || null,
   };
   if (!rec.matricule){ showToast('Le matricule est obligatoire.', true); return; }
+  if (rec.formule && !rec.livreur_id){ showToast('Une formule livreur demande un compte livreur lié.', true); return; }
+  if (rec.formule === 2 && rec.moto_proprietaire === 'clt'){ showToast('Formule 2 = moto personnelle : le propriétaire ne peut pas être CLT.', true); return; }
   // Photo : conserve le chemin actuel par défaut ; téléverse le nouveau fichier s'il y en a un.
   rec.photo_path = document.getElementById('sal-photo-path').value || null;
   const fileInput = document.getElementById('sal-photo');
@@ -1281,8 +1302,18 @@ async function saveSalarie(){
       if (upErr) throw upErr;
       rec.photo_path = path;
     }
-    if (id) await ecrire(supabaseClient.from('gestion_salaries').update(rec).eq('id',id));
-    else await ecrire(supabaseClient.from('gestion_salaries').insert(rec));
+    // Tant que la migration du 13/09/2026 n'est pas jouée, la base ignore les cinq colonnes
+    // livreur : on réessaie sans elles plutôt que de bloquer une fiche salarié.
+    const sansPrimes = () => { const r = Object.assign({}, rec); ['formule','moto_immatriculation','moto_proprietaire','parrain_id','numero_wave'].forEach(k => delete r[k]); return r; };
+    try {
+      if (id) await ecrire(supabaseClient.from('gestion_salaries').update(rec).eq('id',id));
+      else await ecrire(supabaseClient.from('gestion_salaries').insert(rec));
+    } catch(e1){
+      if (!/column|colonne|schema cache/i.test(String(e1 && e1.message || e1))) throw e1;
+      if (id) await ecrire(supabaseClient.from('gestion_salaries').update(sansPrimes()).eq('id',id));
+      else await ecrire(supabaseClient.from('gestion_salaries').insert(sansPrimes()));
+      showToast('Formule et moto non enregistrées : migration primes à jouer.', true);
+    }
     closeModal('modal-salarie');
     await loadSalaries(); renderSalaries(); showToast('Salarié enregistré');
   } catch(e){ showToast('Erreur (matricule déjà utilisé ?)', true); console.error(e); }
@@ -3601,8 +3632,11 @@ async function init(){
 
   // Sélecteurs de période
   const nowM = new Date().getMonth()+1;
-  ['dash-year','rec-year','dep-year','obj-year','sai-year','fin-year','lc-year','ech-year','clo-year'].forEach(id => fillYearSelect(id));
+  ['dash-year','rec-year','dep-year','obj-year','sai-year','fin-year','lc-year','ech-year','clo-year','pr-year'].forEach(id => fillYearSelect(id));
   ['dash-month','rec-month','dep-month','sai-month','lc-month','ech-month'].forEach(id => fillMonthSelect(id, nowM));
+  // Primes des livreurs : le mois écoulé par défaut — c'est lui qu'on décompte le 1er (13/09/2026).
+  { const prevM = nowM === 1 ? 12 : nowM - 1; fillMonthSelect('pr-month', prevM);
+    const py = document.getElementById('pr-year'); if (py && nowM === 1) py.value = String(ANNEE_COURANTE - 1); }
   // Déclaration TVA : le mois courant par défaut (Celtis, « l'indispensable »). Sans valeur, la
   // vue additionnait la TVA de toutes les écritures depuis l'origine, ce qu'aucune déclaration
   // ne demande ; il fallait toucher le sélecteur pour lire un chiffre utile.
@@ -3644,3 +3678,271 @@ async function init(){
   initStickyHeader();
 }
 init();
+
+
+/* ============================================================================
+ * PRIMES DES LIVREURS — 13 septembre 2026
+ * ============================================================================
+ * Le Règlement des primes et avantages (1er octobre 2026), appliqué par la base :
+ *   calculer_primes_mois(periode)  → un décompte brouillon par livreur salarié (formules 1 et 2)
+ *   valider_primes_mois(periode)   → figé, reporté dans gestion_saisie_mensuelle
+ * Cet écran ne calcule rien lui-même : il affiche ce que la base rend, permet la part humaine
+ * (travail correct, avances/retenues), fabrique les décomptes WhatsApp, et valide.
+ * Les montants du règlement vivent dans primes_parametres, une ligne par date d'effet.
+ * ==========================================================================*/
+let PRIMES_ROWS = [];        // décomptes du mois affiché
+let PRIMES_PARAMS = null;    // version en vigueur au mois affiché
+let PRIMES_PERIODE = null;
+
+function primesPeriode(){
+  const y = parseInt(document.getElementById('pr-year').value), m = parseInt(document.getElementById('pr-month').value);
+  return periodeStr(y, m);
+}
+function primesLibelleMois(per){
+  const [y, m] = per.split('-').map(Number);
+  return MOIS_FR[m - 1] + ' ' + y;
+}
+function primesNomSalarie(id){
+  const s = SALARIES.find(x => x.id === id);
+  return s ? ([s.prenom, s.nom].filter(Boolean).join(' ') || s.matricule) : '—';
+}
+function primesSalarie(id){ return SALARIES.find(x => x.id === id) || {}; }
+
+async function loadPrimesParams(per){
+  const { data, error } = await supabaseClient.from('primes_parametres').select('*').lte('date_effet', per).order('date_effet', { ascending: false }).limit(1);
+  if (error) throw error;
+  PRIMES_PARAMS = (data && data[0]) || null;
+  return PRIMES_PARAMS;
+}
+
+async function loadPrimes(){
+  const per = primesPeriode(); PRIMES_PERIODE = per;
+  const box = document.getElementById('pr-table');
+  try {
+    await loadPrimesParams(per);
+    const { data, error } = await supabaseClient.from('primes_decomptes').select('*').eq('periode', per).order('total_a_payer', { ascending: false });
+    if (error) throw error;
+    PRIMES_ROWS = data || [];
+  } catch(e){
+    console.error(e);
+    box.innerHTML = `<div class="hint">La base ne répond pas pour les primes : la migration « 2026-09-13-primes-des-livreurs.sql » est-elle jouée ? (${escapeHTML(e.message || '')})</div>`;
+    document.getElementById('pr-kpis').innerHTML = '';
+    return;
+  }
+  renderPrimes();
+}
+
+function renderPrimes(){
+  const per = PRIMES_PERIODE, rows = PRIMES_ROWS;
+  const valides = rows.filter(r => r.statut === 'valide').length;
+  const total = rows.reduce((a, r) => a + n(r.total_primes), 0);
+  const aPayer = rows.reduce((a, r) => a + n(r.total_a_payer), 0);
+  const ldm = rows.find(r => n(r.prime_livreur_du_mois) > 0);
+  const tauxMoyen = rows.length ? Math.round(rows.reduce((a, r) => a + (r.taux_livraison == null ? 0 : n(r.taux_livraison) * 100), 0) / rows.length) : null;
+  document.getElementById('pr-kpis').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Primes du mois</div><div class="kpi-value">${fmtF(total)}</div><div class="kpi-sub">${rows.length} livreur(s) · ${valides ? valides + ' validé(s)' : 'brouillon'}</div></div>
+    <div class="kpi"><div class="kpi-label">Total à payer (salaires + primes + moto)</div><div class="kpi-value">${fmtF(aPayer)}</div></div>
+    <div class="kpi"><div class="kpi-label">Réussite moyenne</div><div class="kpi-value">${tauxMoyen == null ? '—' : tauxMoyen + ' %'}</div></div>
+    <div class="kpi ${ldm ? 'pos' : ''}"><div class="kpi-label">Livreur du mois</div><div class="kpi-value" style="font-size:18px;">${ldm ? escapeHTML(primesNomSalarie(ldm.salarie_id)) : '—'}</div><div class="kpi-sub">${PRIMES_PARAMS ? 'règlement du ' + PRIMES_PARAMS.date_effet : 'aucun paramètre en vigueur'}</div></div>`;
+  const F = v => fmt(Math.round(n(v)));
+  const tousValides = rows.length && valides === rows.length;
+  document.getElementById('pr-btn-valider').disabled = !rows.length || tousValides;
+  document.getElementById('pr-btn-envoyer').disabled = !rows.length;
+  if (!rows.length){
+    document.getElementById('pr-table').innerHTML = `<div class="hint">Aucun décompte pour ${primesLibelleMois(per)}. Appuyez sur « Calculer » : la base applique le règlement aux livreurs salariés (formules 1 et 2) actifs.</div>`;
+    return;
+  }
+  const head = ['Livreur', 'Formule', 'Jours', 'Confiés', 'Non imput.', 'Livrés', 'Taux', 'Moy./j', 'Travail correct', 'Réussite', 'Travail', 'Volume', 'Livreur du mois', 'Fidélité', 'Parrainage', 'Total primes', 'Salaire', 'Moto', 'Avance/retenue', 'À payer', ''];
+  const body = rows.map(r => {
+    const s = primesSalarie(r.salarie_id);
+    const fige = r.statut === 'valide';
+    const tc = r.travail_correct === null || r.travail_correct === undefined ? r.travail_correct_propose : r.travail_correct;
+    const raisons = [r.reclamations_fondees ? r.reclamations_fondees + ' réclam.' : '', r.echecs_sans_motif ? r.echecs_sans_motif + ' sans motif' : '', r.livres_sans_preuve ? r.livres_sans_preuve + ' sans preuve' : ''].filter(Boolean).join(', ');
+    return `<tr class="${fige ? 'pr-valide' : ''}">
+      <td style="text-align:left;"><b>${escapeHTML(primesNomSalarie(r.salarie_id))}</b>${fige ? ' <span title="Validé">🔒</span>' : ''}</td>
+      <td>${s.formule || '—'}</td>
+      <td>${r.jours_travailles}</td><td>${r.colis_confies}</td><td>${r.echecs_non_imputables}</td><td>${r.colis_livres}</td>
+      <td>${r.taux_livraison == null ? '—' : Math.round(n(r.taux_livraison) * 100) + ' %'}</td>
+      <td>${r.moyenne_par_jour == null ? '—' : (Math.round(n(r.moyenne_par_jour) * 10) / 10).toString().replace('.', ',')}</td>
+      <td><label style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><input type="checkbox" ${tc ? 'checked' : ''} ${fige ? 'disabled' : ''} onchange="primesTravailCorrect('${r.id}', this.checked)"> ${tc ? 'oui' : 'non'}</label>${raisons ? `<div class="hint" style="margin:2px 0 0;">${escapeHTML(raisons)}</div>` : ''}${!r.travail_correct_propose && tc ? '<div class="hint" style="margin:2px 0 0;">forcé « oui »</div>' : ''}</td>
+      <td>${F(r.prime_reussite)}</td><td>${F(r.prime_travail_correct)}</td><td>${F(r.prime_volume)}</td><td>${F(r.prime_livreur_du_mois)}</td><td>${F(r.prime_fidelite)}</td><td>${F(r.prime_parrainage)}</td>
+      <td><b>${F(r.total_primes)}</b></td><td>${F(r.salaire_base)}</td><td>${F(r.indemnite_moto)}</td>
+      <td><input class="cell" type="number" step="1" style="width:110px" value="${n(r.avance_retenue) || ''}" placeholder="−20000" ${fige ? 'disabled' : ''} onblur="primesAvance('${r.id}', this.value)"></td>
+      <td><b>${F(r.total_a_payer)}</b></td>
+      <td>${r.envoye_at ? '<span title="Décompte envoyé le ' + escapeHTML(String(r.envoye_at).slice(0, 10)) + '">💬</span>' : ''}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('pr-table').innerHTML = `<table class="g-table"><thead><tr>${head.map((h, i) => `<th${i === 0 ? ' style="text-align:left;"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>
+    <div class="hint" style="margin-top:8px;">Avance/retenue : en négatif (remboursement d’avance d’urgence, rachat de moto). Tout changement recalcule la ligne ; une ligne validée 🔒 ne bouge plus.</div>`;
+}
+
+async function calculerPrimes(){
+  const per = primesPeriode();
+  const btn = document.getElementById('pr-btn-calculer'); btn.disabled = true;
+  try {
+    const { data, error } = await supabaseClient.rpc('calculer_primes_mois', { p_periode: per });
+    if (error) throw error;
+    showToast(`${data} décompte(s) calculé(s) pour ${primesLibelleMois(per)}.`);
+    await loadPrimes();
+  } catch(e){ console.error(e); showToast('Calcul impossible : ' + (e.message || e), true); }
+  finally { btn.disabled = false; }
+}
+
+async function primesTravailCorrect(id, valeur){
+  try {
+    await ecrire(supabaseClient.from('primes_decomptes').update({ travail_correct: valeur, updated_at: new Date().toISOString() }).eq('id', id));
+    // La ligne se recalcule avec la part humaine (le livreur du mois peut changer de main).
+    const { error } = await supabaseClient.rpc('calculer_primes_mois', { p_periode: PRIMES_PERIODE });
+    if (error) throw error;
+    await loadPrimes();
+  } catch(e){ console.error(e); showToast('Enregistrement impossible : ' + (e.message || e), true); }
+}
+async function primesAvance(id, valeur){
+  const v = valeur === '' ? 0 : n(valeur);
+  try {
+    await ecrire(supabaseClient.from('primes_decomptes').update({ avance_retenue: v, updated_at: new Date().toISOString() }).eq('id', id));
+    const { error } = await supabaseClient.rpc('calculer_primes_mois', { p_periode: PRIMES_PERIODE });
+    if (error) throw error;
+    await loadPrimes();
+  } catch(e){ console.error(e); showToast('Enregistrement impossible : ' + (e.message || e), true); }
+}
+
+// Le texte WhatsApp d'un décompte (règlement, art. 8) : tout ce qu'il faut pour vérifier soi-même.
+function texteDecompte(r){
+  const s = primesSalarie(r.salarie_id);
+  const tc = r.travail_correct === null || r.travail_correct === undefined ? r.travail_correct_propose : r.travail_correct;
+  const F = v => fmt(Math.round(n(v))) + ' F';
+  const lignes = [
+    `CLT — Décompte des primes de ${primesLibelleMois(r.periode)}`,
+    `${primesNomSalarie(r.salarie_id)}${s.formule ? ' (formule ' + s.formule + ')' : ''}`,
+    ``,
+    `Jours travaillés : ${r.jours_travailles}`,
+    `Colis confiés : ${r.colis_confies} · échecs non imputables : ${r.echecs_non_imputables}`,
+    `Colis livrés : ${r.colis_livres} → taux ${r.taux_livraison == null ? '—' : Math.round(n(r.taux_livraison) * 100) + ' %'}, ${r.moyenne_par_jour == null ? '—' : (Math.round(n(r.moyenne_par_jour) * 10) / 10)} colis/jour`,
+    ``,
+    `Prime de réussite : ${F(r.prime_reussite)}`,
+    `Prime de travail correct : ${F(r.prime_travail_correct)}${tc ? '' : ' (non obtenue)'}`,
+    `Prime de volume : ${F(r.prime_volume)}`,
+    n(r.prime_livreur_du_mois) ? `🏆 Livreur du mois : ${F(r.prime_livreur_du_mois)}` : null,
+    n(r.prime_fidelite) ? `Prime de fidélité : ${F(r.prime_fidelite)}` : null,
+    n(r.prime_parrainage) ? `Prime de parrainage : ${F(r.prime_parrainage)}` : null,
+    `TOTAL PRIMES : ${F(r.total_primes)}`,
+    ``,
+    `Salaire de base : ${F(r.salaire_base)}${n(r.indemnite_moto) ? ' · Indemnité moto : ' + F(r.indemnite_moto) : ''}${n(r.avance_retenue) ? ' · Retenue : ' + F(r.avance_retenue) : ''}`,
+    `À PAYER : ${F(r.total_a_payer)}`,
+    ``,
+    `Tu as 3 jours pour contester par écrit (règlement des primes, art. 8).`,
+  ].filter(l => l !== null);
+  return lignes.join('\n');
+}
+
+function ouvrirDecomptes(){
+  if (!PRIMES_ROWS.length) return;
+  const liste = document.getElementById('decomptes-liste');
+  liste.innerHTML = PRIMES_ROWS.map(r => {
+    const s = primesSalarie(r.salarie_id);
+    const texte = texteDecompte(r);
+    const wa = s.numero_wave || '';
+    const num = String(wa).replace(/[^\d]/g, '');
+    const lienWa = num ? `https://wa.me/${num.startsWith('225') ? num : '225' + num}?text=${encodeURIComponent(texte)}` : '';
+    return `<div class="card" style="padding:10px 12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <b>${escapeHTML(primesNomSalarie(r.salarie_id))}</b>
+        <span style="display:flex;gap:6px;">
+          ${lienWa ? `<a class="btn btn-outline btn-sm" href="${lienWa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+          <button class="btn btn-outline btn-sm" onclick="copierDecompte(this)">Copier</button>
+        </span>
+      </div>
+      <pre style="white-space:pre-wrap;font:inherit;font-size:13px;margin:8px 0 0;color:var(--muted);" data-decompte>${escapeHTML(texte)}</pre>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-decomptes').classList.add('open');
+}
+async function copierDecompte(btn){
+  const pre = btn.closest('.card').querySelector('[data-decompte]');
+  try { await navigator.clipboard.writeText(pre.textContent); btn.textContent = 'Copié ✓'; setTimeout(() => btn.textContent = 'Copier', 1500); }
+  catch(e){ showToast('Copie impossible : sélectionnez le texte à la main.', true); }
+}
+async function marquerDecomptesEnvoyes(){
+  try {
+    const ids = PRIMES_ROWS.filter(r => !r.envoye_at).map(r => r.id);
+    if (ids.length) await ecrire(supabaseClient.from('primes_decomptes').update({ envoye_at: new Date().toISOString() }).in('id', ids));
+    closeModal('modal-decomptes');
+    showToast('Décomptes marqués envoyés.');
+    await loadPrimes();
+  } catch(e){ console.error(e); showToast('Impossible de marquer : ' + (e.message || e), true); }
+}
+
+async function validerPrimes(){
+  const per = primesPeriode();
+  const brouillons = PRIMES_ROWS.filter(r => r.statut === 'brouillon');
+  if (!brouillons.length) return;
+  const nonEnvoyes = brouillons.filter(r => !r.envoye_at).length;
+  const ok = confirm(`Valider ${brouillons.length} décompte(s) de ${primesLibelleMois(per)} ?\n\nLes montants seront figés et reportés dans la saisie du mois (gratification, retenue divers).${nonEnvoyes ? `\n\nAttention : ${nonEnvoyes} décompte(s) n'ont pas été marqués envoyés — le livreur doit avoir eu ses 3 jours pour contester.` : ''}`);
+  if (!ok) return;
+  try {
+    const { data, error } = await supabaseClient.rpc('valider_primes_mois', { p_periode: per });
+    if (error) throw error;
+    showToast(`${data} décompte(s) validé(s) et reportés dans la saisie du mois.`);
+    await loadPrimes();
+  } catch(e){ console.error(e); showToast('Validation impossible : ' + (e.message || e), true); }
+}
+
+/* ---------- Paramètres du règlement (une ligne par date d'effet) ---------- */
+const PP_CHAMPS = [['pp-salaire', 'salaire_base'], ['pp-moto', 'indemnite_moto'], ['pp-r100', 'prime_reussite_100'], ['pp-r90', 'prime_reussite_90'],
+  ['pp-jmin', 'jours_minimum_reussite'], ['pp-tc', 'prime_travail_correct'], ['pp-seuil', 'seuil_volume_par_jour'], ['pp-vol', 'prime_volume_par_colis'],
+  ['pp-ldm', 'prime_livreur_du_mois'], ['pp-f6', 'fidelite_6_mois'], ['pp-f12', 'fidelite_12_mois'], ['pp-f24', 'fidelite_24_mois'], ['pp-parr', 'prime_parrainage']];
+async function renderPrimesParametres(){
+  const info = document.getElementById('pp-version'); if (!info) return;
+  try {
+    const { data, error } = await supabaseClient.from('primes_parametres').select('*').order('date_effet', { ascending: false }).limit(1);
+    if (error) throw error;
+    const p = data && data[0];
+    if (!p){ info.textContent = 'Aucune version en base : la migration du 13/09/2026 crée celle du 1er octobre 2026.'; return; }
+    info.textContent = `Version en vigueur : à partir du ${p.date_effet}.`;
+    PP_CHAMPS.forEach(([id, col]) => { const el = document.getElementById(id); if (el) el.value = p[col] != null ? p[col] : ''; });
+    const d = document.getElementById('pp-date'); if (d && !d.value){ const t = new Date(); d.value = periodeStr(t.getMonth() === 11 ? t.getFullYear() + 1 : t.getFullYear(), t.getMonth() === 11 ? 1 : t.getMonth() + 2); }
+  } catch(e){ info.textContent = 'Paramètres des primes indisponibles (migration non jouée ?).'; }
+}
+async function savePrimesParametres(){
+  const rec = { date_effet: document.getElementById('pp-date').value };
+  if (!rec.date_effet){ showToast('Indiquez la date d’effet (le 1er d’un mois).', true); return; }
+  if (!/-01$/.test(rec.date_effet)){ showToast('La date d’effet doit être le 1er du mois.', true); return; }
+  PP_CHAMPS.forEach(([id, col]) => { rec[col] = n(document.getElementById(id).value); });
+  if (!confirm(`Enregistrer une nouvelle version du règlement à partir du ${rec.date_effet} ?\nLes mois déjà validés ne changent pas.`)) return;
+  try {
+    await ecrire(supabaseClient.from('primes_parametres').insert(rec));
+    showToast('Nouvelle version enregistrée.');
+    renderPrimesParametres();
+  } catch(e){ console.error(e); showToast('Enregistrement impossible : ' + (e.message || e), true); }
+}
+
+/* ---------- Tableau de bord : quatre tuiles de plus, chacune ouvre le détail ---------- */
+async function renderDashboardPrimes(annee, mois){
+  const box = document.getElementById('dash-kpis-primes'); if (!box) return;
+  const per = periodeStr(annee, mois);
+  const debut = per + 'T00:00:00Z', fin = periodeStr(mois === 12 ? annee + 1 : annee, mois === 12 ? 1 : mois + 1) + 'T00:00:00Z';
+  const compter = q => q.then(r => (r.error ? null : (r.count || 0)));
+  const tete = () => supabaseClient.from('colis').select('id', { count: 'exact', head: true });
+  try {
+    const [livres, echecs, nonImp, aQualifier, decomptes] = await Promise.all([
+      compter(tete().eq('statut', 'livre').gte('livre_at', debut).lt('livre_at', fin)),
+      compter(tete().in('statut', ['non_livre', 'retour']).gte('non_livre_at', debut).lt('non_livre_at', fin)),
+      compter(tete().in('statut', ['non_livre', 'retour']).gte('non_livre_at', debut).lt('non_livre_at', fin).eq('echec_imputable', false)),
+      compter(tete().in('statut', ['non_livre', 'retour']).not('non_livre_at', 'is', null).is('echec_imputable', null)),
+      supabaseClient.from('primes_decomptes').select('salarie_id, total_primes, prime_livreur_du_mois, statut').eq('periode', per).then(r => r.data || []),
+    ]);
+    const denom = (livres || 0) + (echecs || 0) - (nonImp || 0);
+    const taux = denom > 0 ? Math.floor(((livres || 0) / denom) * 100) : null;
+    const jours = new Date(annee, mois, 0).getDate();
+    const totalPrimes = decomptes.reduce((a, r) => a + n(r.total_primes), 0);
+    const ldm = decomptes.find(r => n(r.prime_livreur_du_mois) > 0);
+    const valides = decomptes.filter(r => r.statut === 'valide').length;
+    const aller = "onclick=\"switchTab('paie'); switchSub('paie','primes'); document.getElementById('pr-year').value=" + annee + "; document.getElementById('pr-month').value=" + mois + "; loadPrimes();\" style=\"cursor:pointer;\"";
+    box.innerHTML = `
+      <div class="kpi ${taux !== null && taux < 90 ? 'neg' : 'pos'}" ${aller}><div class="kpi-label">Réussite des livraisons</div><div class="kpi-value">${taux === null ? '—' : taux + ' %'}</div><div class="kpi-sub">${livres || 0} livrés · ${echecs || 0} échecs dont ${nonImp || 0} non imputables</div></div>
+      <div class="kpi" ${aller}><div class="kpi-label">Livraisons par jour</div><div class="kpi-value">${Math.round(((livres || 0) / Math.max(1, Math.min(jours, 26))) * 10) / 10}</div><div class="kpi-sub">moyenne sur ${Math.min(jours, 26)} jours ouvrés</div></div>
+      <div class="kpi ${aQualifier ? 'neg' : ''}" ${aller}><div class="kpi-label">Échecs à qualifier</div><div class="kpi-value">${aQualifier || 0}</div><div class="kpi-sub">non qualifié à la fin du mois = imputable</div></div>
+      <div class="kpi" ${aller}><div class="kpi-label">Primes du mois</div><div class="kpi-value">${fmtF(totalPrimes)}</div><div class="kpi-sub">${decomptes.length ? (valides === decomptes.length ? 'validées' : 'brouillon') + (ldm ? ' · 🏆 ' + escapeHTML(primesNomSalarie(ldm.salarie_id)) : '') : 'pas encore calculées'}</div></div>`;
+  } catch(e){ console.warn('Tuiles primes :', e); box.innerHTML = ''; }
+}
