@@ -28,8 +28,11 @@ import { fileURLToPath } from 'url';
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
 const config = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
+// La migration vit dans _sql-prive/, que le dépôt public exclut (*.sql dans .gitignore). Sur le
+// Mac, le fichier est là et le SQL est confronté au JavaScript ; sur GitHub, il n'y est pas :
+// les contrôles SQL sont alors sautés en le disant, sans faire échouer le banc.
 const CHEMIN_SQL = path.join(RACINE, '_sql-prive', '2026-09-13-primes-des-livreurs.sql');
-const sql = fs.readFileSync(CHEMIN_SQL, 'utf8');
+const sql = fs.existsSync(CHEMIN_SQL) ? fs.readFileSync(CHEMIN_SQL, 'utf8') : null;
 
 let echouees = 0, passees = 0;
 function ok(cond, message) {
@@ -37,6 +40,8 @@ function ok(cond, message) {
   else { echouees++; console.error('  ✗ ' + message); }
 }
 function egal(a, b, message) { ok(a === b, `${message} — attendu ${b}, obtenu ${a}`); }
+let sautees = 0;
+function okSql(cond, message) { if (sql === null) { sautees++; } else { ok(cond, message); } }
 
 function blocDe(src, nom) {
   const debut = src.search(new RegExp('(async\\s+)?function\\s+' + nom + '\\s*\\('));
@@ -121,30 +126,32 @@ console.log('3. On n\'invente pas un taux');
 
 console.log('4. Le SQL dit la même chose que le JavaScript');
 {
-  ok(/select public\.migration_appliquee\('2026-09-13-primes-des-livreurs\.sql'/.test(sql), 'le script s\'inscrit au registre des migrations');
+  if (sql === null) console.log('   (SQL privé absent de ce dépôt : contrôles SQL sautés, ils tournent sur le Mac)');
+  const S = sql || '';
+  okSql(/select public\.migration_appliquee\('2026-09-13-primes-des-livreurs\.sql'/.test(S), 'le script s\'inscrit au registre des migrations');
   const P = vm.runInContext('PRIMES_PARAMETRES_DEFAUT', ctx);
   for (const [col, val] of Object.entries(P)) {
-    ok(new RegExp(col + '\\s+(numeric|integer) not null default ' + val + '\\b').test(sql), `paramètre ${col} = ${val} en base`);
+    okSql(new RegExp(col + '\\s+(numeric|integer) not null default ' + val + '\\b').test(S), `paramètre ${col} = ${val} en base`);
   }
-  const corps = (sql.split('create or replace function public.primes_calcul(')[1] || '').split('$$;')[0];
-  ok(corps.length > 200, 'primes_calcul existe');
-  ok(/floor\(100\.0 \* least\(1\.0,/.test(corps), 'SQL : taux arrondi au pourcentage inférieur et plafonné à 100 %');
-  ok(/p_jours < p\.jours_minimum_reussite/.test(corps), 'SQL : moins de 10 jours → pas de réussite');
-  ok(/t\.taux >= 1\s+then p\.prime_reussite_100/.test(corps), 'SQL : 100 % → prime 100');
-  ok(/t\.taux >= 0\.90 then p\.prime_reussite_90/.test(corps), 'SQL : 90 % → prime 90');
-  ok(/greatest\(0, p_livres - p\.seuil_volume_par_jour \* p_jours\) \* p\.prime_volume_par_colis/.test(corps), 'SQL : volume = (livrés − seuil × jours) × prime');
-  ok(/p_anciennete_mois >= 24 then p\.fidelite_24_mois/.test(corps) && /p_anciennete_mois >= 12 then p\.fidelite_12_mois/.test(corps) && /p_anciennete_mois >= 6\s+then p\.fidelite_6_mois/.test(corps), 'SQL : fidélité 6/12/24 non cumulée');
-  ok(/p_filleuls, 0\) \* p\.prime_parrainage/.test(corps), 'SQL : parrainage × filleuls');
-  ok(/p_formule = 2 then p\.indemnite_moto/.test(corps), 'SQL : indemnité moto formule 2 seulement');
-  const mesures = (sql.split('create or replace function public.primes_mesures_livreur(')[1] || '').split('$$;')[0];
-  ok(/echec_imputable = false/.test(mesures), 'SQL : seul un échec qualifié non imputable est retiré du dénominateur (non qualifié = imputable)');
-  ok(/photo_livraison_url is null and code_confirme_at is null/.test(mesures), 'SQL : un colis livré sans photo ni code compte contre le travail correct');
-  const mois = (sql.split('create or replace function public.calculer_primes_mois(')[1] || '').split('$$;')[0];
-  ok(/d\.prime_travail_correct > 0/.test(mois), 'SQL : livreur du mois réservé à ceux qui ont la prime de travail correct (art. 7)');
-  ok(/colis_livres = \(select max\(colis_livres\) from c\)/.test(mois), 'SQL : égalité départagée au nombre de colis livrés (art. 7)');
-  ok(/statut = 'valide'\) then\s+continue/.test(mois.replace(/\n/g, ' ')), 'SQL : un décompte validé ne se recalcule plus');
-  const valider = (sql.split('create or replace function public.valider_primes_mois(')[1] || '').split('$$;')[0];
-  ok(/gratification = excluded\.gratification/.test(valider) && /retenue_divers/.test(valider), 'SQL : validation reportée dans la saisie mensuelle de la paie');
+  const corps = (S.split('create or replace function public.primes_calcul(')[1] || '').split('$$;')[0];
+  okSql(corps.length > 200, 'primes_calcul existe');
+  okSql(/floor\(100\.0 \* least\(1\.0,/.test(corps), 'SQL : taux arrondi au pourcentage inférieur et plafonné à 100 %');
+  okSql(/p_jours < p\.jours_minimum_reussite/.test(corps), 'SQL : moins de 10 jours → pas de réussite');
+  okSql(/t\.taux >= 1\s+then p\.prime_reussite_100/.test(corps), 'SQL : 100 % → prime 100');
+  okSql(/t\.taux >= 0\.90 then p\.prime_reussite_90/.test(corps), 'SQL : 90 % → prime 90');
+  okSql(/greatest\(0, p_livres - p\.seuil_volume_par_jour \* p_jours\) \* p\.prime_volume_par_colis/.test(corps), 'SQL : volume = (livrés − seuil × jours) × prime');
+  okSql(/p_anciennete_mois >= 24 then p\.fidelite_24_mois/.test(corps) && /p_anciennete_mois >= 12 then p\.fidelite_12_mois/.test(corps) && /p_anciennete_mois >= 6\s+then p\.fidelite_6_mois/.test(corps), 'SQL : fidélité 6/12/24 non cumulée');
+  okSql(/p_filleuls, 0\) \* p\.prime_parrainage/.test(corps), 'SQL : parrainage × filleuls');
+  okSql(/p_formule = 2 then p\.indemnite_moto/.test(corps), 'SQL : indemnité moto formule 2 seulement');
+  const mesures = (S.split('create or replace function public.primes_mesures_livreur(')[1] || '').split('$$;')[0];
+  okSql(/echec_imputable = false/.test(mesures), 'SQL : seul un échec qualifié non imputable est retiré du dénominateur (non qualifié = imputable)');
+  okSql(/photo_livraison_url is null and code_confirme_at is null/.test(mesures), 'SQL : un colis livré sans photo ni code compte contre le travail correct');
+  const mois = (S.split('create or replace function public.calculer_primes_mois(')[1] || '').split('$$;')[0];
+  okSql(/d\.prime_travail_correct > 0/.test(mois), 'SQL : livreur du mois réservé à ceux qui ont la prime de travail correct (art. 7)');
+  okSql(/colis_livres = \(select max\(colis_livres\) from c\)/.test(mois), 'SQL : égalité départagée au nombre de colis livrés (art. 7)');
+  okSql(/statut = 'valide'\) then\s+continue/.test(mois.replace(/\n/g, ' ')), 'SQL : un décompte validé ne se recalcule plus');
+  const valider = (S.split('create or replace function public.valider_primes_mois(')[1] || '').split('$$;')[0];
+  okSql(/gratification = excluded\.gratification/.test(valider) && /retenue_divers/.test(valider), 'SQL : validation reportée dans la saisie mensuelle de la paie');
 }
 
 console.log('5. La proposition sur un échec');
@@ -157,11 +164,11 @@ console.log('5. La proposition sur un échec');
   ok(prop({ motif_non_livraison: 'refus_client', vendeuse_prevenue: true }) === false, 'refus du client → imputable');
   ok(prop({ motif_non_livraison: 'autre', vendeuse_prevenue: true }) === false, 'autre → imputable');
   ok(prop({ motif_non_livraison: null, vendeuse_prevenue: true }) === false, 'sans motif → imputable');
-  const sqlProp = (sql.split('create or replace function public.echec_propose_non_imputable(')[1] || '').split('$$;')[0];
-  ok(/in \('client_absent', 'annule', 'mauvais_numero'\)/.test(sqlProp) && /tentatives_livraison, 0\) >= 2/.test(sqlProp), 'SQL : même proposition');
+  const sqlProp = ((sql || '').split('create or replace function public.echec_propose_non_imputable(')[1] || '').split('$$;')[0];
+  okSql(/in \('client_absent', 'annule', 'mauvais_numero'\)/.test(sqlProp) && /tentatives_livraison, 0\) >= 2/.test(sqlProp), 'SQL : même proposition');
   const motifs = vm.runInContext('MOTIFS_NON_LIVRAISON', ctx);
   egal(Object.keys(motifs).length, 5, 'cinq motifs, pas un de plus');
-  ok(/'client_absent', 'annule', 'mauvais_numero', 'refus_client', 'autre'/.test(sql), 'SQL : les cinq mêmes motifs, dans la contrainte');
+  okSql(/'client_absent', 'annule', 'mauvais_numero', 'refus_client', 'autre'/.test(sql || ''), 'SQL : les cinq mêmes motifs, dans la contrainte');
   const proj = vm.runInContext('projectionPrimesFinDeMois', ctx)({ eligible: true, jours_travailles: 10, colis_livres: 200, colis_confies: 200, echecs_non_imputables: 0, travail_correct_propose: true, formule: 1 }, null, '2026-10-15');
   ok(proj && proj.volume > 0 && proj.reussite === 20000, 'projection : 20/jour sur le reste du mois → volume et réussite projetés');
 }
@@ -189,5 +196,5 @@ console.log('6. Les écrans sont branchés sur la même règle');
   ok(/id="dash-kpis-primes"/.test(gestionHtml) && /function renderDashboardPrimes/.test(gestionJs) && /renderDashboardPrimes\(annee, mois\)/.test(gestionJs), 'gestion : le tableau de bord a ses tuiles livraisons/primes');
 }
 
-console.log(`\n${passees} contrôles passés, ${echouees} échoués.`);
+console.log(`\n${passees} contrôles passés, ${echouees} échoués${sautees ? `, ${sautees} contrôles SQL sautés (fichier privé absent)` : ''}.`);
 process.exit(echouees ? 1 : 0);
