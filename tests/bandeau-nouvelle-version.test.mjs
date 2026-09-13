@@ -418,7 +418,7 @@ verifier(
    v105, le 13/09/2026 — la carte « Mes primes » en attente chez le livreur avant le 1er octobre (livreur.html) : étiquette 20260913primes2. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v105'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v106'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

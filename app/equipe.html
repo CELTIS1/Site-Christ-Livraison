@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260913primes2">
-<script src="theme.js?v=20260913primes2"></script>
-<script src="splash.js?v=20260913primes2"></script>
+<link rel="stylesheet" href="style.css?v=20260913cliente">
+<script src="theme.js?v=20260913cliente"></script>
+<script src="splash.js?v=20260913cliente"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1477,12 +1477,12 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260913primes2"></script>
-<script src="config.js?v=20260913primes2"></script>
-<script src="clients-dashboard.js?v=20260913primes2"></script>
-<script src="livreurs-dashboard.js?v=20260913primes2"></script>
-<script src="biometric-lock.js?v=20260913primes2"></script>
-<script src="clt-select-recherche.js?v=20260913primes2"></script>
+<script src="clt-common.js?v=20260913cliente"></script>
+<script src="config.js?v=20260913cliente"></script>
+<script src="clients-dashboard.js?v=20260913cliente"></script>
+<script src="livreurs-dashboard.js?v=20260913cliente"></script>
+<script src="biometric-lock.js?v=20260913cliente"></script>
+<script src="clt-select-recherche.js?v=20260913cliente"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3781,6 +3781,12 @@ livreurs.map(l => `<option value="${l.id}" ${c.livreur_id===l.id?'selected':''}>
 const collectePropose = c.livreur_collecte_id || clienteCollecteDriverToday(c.fournisseur_id);
 const livreurCollecteOptions = '<option value="">— Aucun —</option>' +
 livreurs.map(l => `<option value="${l.id}" ${collectePropose===l.id?'selected':''}>${escapeHTML(l.full_name || l.id)}</option>`).join('');
+// La cliente du colis, pour la fiche de modification. Si sa fiche n'est plus dans la liste
+// (compte fermé), on garde tout de même sa ligne : la retirer ferait basculer le choix sur la
+// première cliente venue, et « Enregistrer » transférerait le colis sans qu'on l'ait voulu.
+const fournisseurEditOptions = '<option value="">— Choisir la cliente —</option>' +
+(fournisseurs.some(f => f.id === c.fournisseur_id) || !c.fournisseur_id ? '' : `<option value="${c.fournisseur_id}" selected>${fournisseurLabel(c.fournisseur_id)}</option>`) +
+fournisseurs.map(f => `<option value="${f.id}" ${c.fournisseur_id===f.id?'selected':''}>${escapeHTML(f.company_name || f.full_name || f.id)}</option>`).join('');
 
 const estValide = colisEstValide(c) && !window.__colisEditing?.has(c.id);
 const collecteLabel = collecteLivreurLabel(c.livreur_collecte_id);
@@ -3811,6 +3817,15 @@ ${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montan
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
 ${estValide ? '' : `
+<!-- LA CLIENTE DU COLIS, MODIFIABLE. (13/09/2026, Celtis : « si je me suis trompé de vendeuse,
+     il faut que je supprime le colis ». Plus maintenant.) Changer la cliente ici transfère le
+     colis sur son compte : elle le voit dans son espace, l'ancienne ne le voit plus, le relevé et
+     les récapitulatifs suivent — sans supprimer ni recréer. Une confirmation est demandée à
+     l'enregistrement, et le transfert est tracé au journal. -->
+<div class="field" style="margin-top:8px;">
+<label style="font-size:11.5px;">Cliente / vendeuse (propriétaire du colis)</label>
+<select class="edit-fournisseur" data-fournisseur-origine="${escapeHTML(c.fournisseur_id || '')}" data-recherche data-recherche-placeholder="Nom de la cliente…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${fournisseurEditOptions}</select>
+</div>
 <div class="field" style="margin-top:8px;">
 <label style="font-size:11.5px;">Livreur de collecte (récupération)</label>
 <select class="row-livreur-collecte-select" data-recherche data-recherche-placeholder="Nom du livreur…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurCollecteOptions}</select>
@@ -5002,7 +5017,26 @@ const communeRecupSelect = item.querySelector('.edit-commune-recup');
 const adresseRecupInput = item.querySelector('.edit-adresse-recup');
 const commune_recuperation = communeRecupSelect ? (communeRecupSelect.value || null) : undefined;
 const adresse_recuperation = adresseRecupInput ? (adresseRecupInput.value.trim() || null) : undefined;
+// Transfert du colis à une autre cliente (13/09/2026). Le champ n'est envoyé que s'il a
+// réellement changé, et jamais vidé : un colis sans propriétaire n'apparaîtrait chez personne.
+let fournisseur_id;
+{ const fournSelect = item.querySelector('.edit-fournisseur');
+  if (fournSelect) {
+    const choisi = fournSelect.value || '';
+    const origine = fournSelect.dataset.fournisseurOrigine || '';
+    if (choisi && choisi !== origine) {
+      const ok = await showConfirm({
+        title: 'Transférer ce colis à ' + (fournisseurLabelPlain(choisi) || 'cette cliente') + ' ?',
+        detail: 'Actuellement chez ' + (fournisseurLabelPlain(origine) || 'aucune cliente'),
+        sub: 'Le colis passera sur le compte de cette cliente : elle le verra dans son espace, et l\'ancienne ne le verra plus. Son relevé et les récapitulatifs suivront.',
+        okLabel: 'Oui, transférer',
+      });
+      if (!ok) { fournSelect.value = origine; if (window.CLTRecherche) CLTRecherche.rafraichir(fournSelect); return; }
+      fournisseur_id = choisi;
+    }
+  } }
 const updatePayload = { statut, observation };
+if (fournisseur_id !== undefined) updatePayload.fournisseur_id = fournisseur_id;
 if (livreur_id !== undefined) updatePayload.livreur_id = livreur_id;
 if (livreur_collecte_id !== undefined) updatePayload.livreur_collecte_id = livreur_collecte_id;
 if (commune_destination !== undefined) updatePayload.commune_destination = commune_destination;
@@ -5045,6 +5079,18 @@ if (window.cltToast) cltToast("Pas de connexion : cette modification est enregis
 } catch (errFile) { console.error('Mise en file hors-réseau impossible :', errFile); }
 }
 if (error) { alert(friendlyErrorMessage(error.message)); return; }
+// Un transfert de cliente déplace de l'argent d'un relevé à un autre : il laisse une trace.
+if (fournisseur_id !== undefined) {
+  const avantColis = allColis.find(c => c.id === id);
+  try {
+    await supabaseClient.from('activity_log').insert([{
+      action: 'correction_colis', target_id: id, target_type: 'colis',
+      details: { depuis: 'fiche-modifier', numero: avantColis ? (avantColis.numero || null) : null,
+        avant_fournisseur_id: avantColis ? (avantColis.fournisseur_id || null) : null, champs: { fournisseur_id } }
+    }]);
+  } catch (errJournal) { console.warn('Trace au journal impossible :', errJournal); }
+  if (window.cltToast) cltToast('Colis transféré à ' + (fournisseurLabelPlain(fournisseur_id) || 'la cliente choisie') + '.', { type: 'success', title: "C'est fait", duration: 6000 });
+}
 if (window.__colisEditing) window.__colisEditing.delete(id);
 // Mise à jour immédiate de l'état local + réaffichage, sans attendre l'aller-retour du temps réel :
 // le colis quitte instantanément le mode édition (boutons Enregistrer/Supprimer) et repasse
