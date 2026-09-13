@@ -185,6 +185,9 @@ console.log('6. Les écrans sont branchés sur la même règle');
   ok(/data-motif-de="\$\{c\.id\}"/.test(livreur), 'livreur : le motif se corrige depuis la carte');
   ok(/supabaseClient\.rpc\('primes_en_cours'\)/.test(livreur) && /id="mon-mois"/.test(livreur), 'livreur : « Mon mois » lit primes_en_cours (la base), pas un calcul local');
   ok(/projectionPrimesFinDeMois\(data, null\)/.test(livreur), 'livreur : « à ce rythme » passe par la projection commune');
+  ok(/if \(data\.attente\) \{ renderMonMoisEnAttente\(bloc, data, F\); return; \}/.test(livreur) && /function renderMonMoisEnAttente\(bloc, data, F\)/.test(livreur), 'livreur : avant le 1er octobre, la carte « en attente » annonce la date et les primes possibles');
+  ok(!/data\.attente[\s\S]*total_estime/.test(livreur.split('function renderMonMoisEnAttente')[1].split('function renderAll')[0]), 'livreur : la carte en attente ne montre aucun total ni estimation');
+  okSql(/'attente', true, 'debut', v_p\.date_effet/.test(sql || '') && /s\.formule = 3 then\s+return jsonb_build_object\('eligible', false\)/.test(sql || ''), 'SQL : primes_en_cours renvoie l\'état « en attente » avant le barème, et rien pour un prestataire');
   // Gestion : les trois gestes appellent la base ; rien n'est recalculé à l'écran.
   ok(/data-sub="primes"/.test(gestionHtml) && /id="paie-primes"/.test(gestionHtml) && /id="modal-decomptes"/.test(gestionHtml), 'gestion : sous-onglet Primes livreurs, section et modale des décomptes');
   ok(/rpc\('calculer_primes_mois', \{ p_periode: per \}\)/.test(gestionJs) && /rpc\('valider_primes_mois', \{ p_periode: per \}\)/.test(gestionJs), 'gestion : Calculer et Valider appellent les fonctions de la base');

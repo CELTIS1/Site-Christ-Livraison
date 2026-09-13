@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260913primes">
-<script src="theme.js?v=20260913primes"></script>
-<script src="splash.js?v=20260913primes"></script>
+<link rel="stylesheet" href="style.css?v=20260913primes2">
+<script src="theme.js?v=20260913primes2"></script>
+<script src="splash.js?v=20260913primes2"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -505,6 +505,7 @@
   .mon-mois__prime.gagnee b{ color:#1a7d3c; }
   .mon-mois__prime small{ display:block; font-size:13px; color:#6b7686; }
   .mon-mois__total{ display:flex; justify-content:space-between; padding:10px 0 4px; border-top:2px solid #12305a; font-weight:800; font-size:15.5px; color:#12305a; }
+  .mon-mois__attente{ margin:8px 0 4px; font-size:14px; line-height:1.45; color:#334155; }
   .mon-mois__rythme{ margin-top:8px; padding:10px 12px; border-radius:12px; background:#e3f6ea; color:#14532d; font-size:14px; }
   .mon-mois__aide{ margin-top:8px; font-size:13.5px; color:#334155; }
   .mon-mois__aide summary{ min-height:44px; display:flex; align-items:center; color:#6b7686; font-weight:600; cursor:pointer; }
@@ -876,9 +877,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260913primes"></script>
-<script src="config.js?v=20260913primes"></script>
-<script src="biometric-lock.js?v=20260913primes"></script>
+<script src="clt-common.js?v=20260913primes2"></script>
+<script src="config.js?v=20260913primes2"></script>
+<script src="biometric-lock.js?v=20260913primes2"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3040,9 +3041,10 @@
       // Migration pas encore jouée ou réseau absent : la carte ne s'affiche pas, rien d'autre ne change.
       bloc.classList.add('hidden'); return;
     }
-    if (!data || !data.eligible) { bloc.classList.add('hidden'); return; }
+    if (!data || (!data.eligible && !data.attente)) { bloc.classList.add('hidden'); return; }
     bloc.classList.remove('hidden');
     const F = (v) => formatMontant(Math.round(Number(v) || 0)) + ' F';
+    if (data.attente) { renderMonMoisEnAttente(bloc, data, F); return; }
     const taux = data.taux === null || data.taux === undefined ? '—' : Math.round(Number(data.taux) * 100) + ' %';
     const moyenne = data.moyenne === null || data.moyenne === undefined ? '—' : (Math.round(Number(data.moyenne) * 10) / 10).toString().replace('.', ',');
     const projection = (typeof projectionPrimesFinDeMois === 'function') ? projectionPrimesFinDeMois(data, null) : null;
@@ -3072,6 +3074,31 @@
         <p>Livrer tous mes colis : ${F(data.prime_reussite_100)}. Un travail correct tout le mois (application à jour, vendeuses prévenues, aucune réclamation) : ${F(data.prime_travail_correct_montant)}. Au-delà de ${data.seuil_volume} colis par jour en moyenne, chaque colis en plus : ${formatMontant(data.prime_volume_par_colis)} F. Le décompte officiel arrive le 1er du mois ; j'ai trois jours pour le contester.</p>
       </details>`;
     cltPoserHTML(bloc, html, JSON.stringify([data.colis_livres, data.jours_travailles, data.total_estime, data.taux]));
+  }
+
+  // Avant l'entrée en vigueur du barème (1er octobre 2026), la carte annonce ce qui attend le
+  // livreur : la date, et chaque prime possible avec son montant. Rien n'est calculé, rien n'est
+  // promis sur le mois en cours : c'est une invitation, pas un décompte. (Celtis, 13/09/2026)
+  function renderMonMoisEnAttente(bloc, data, F){
+    const debut = new Date(String(data.debut) + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const lignes = [
+      ['Prime de réussite', data.prime_reussite_100, `100 % de mes colis livrés (${F(data.prime_reussite_90)} à partir de 90 %)`],
+      ['Prime de travail correct', data.prime_travail_correct_montant, 'application à jour, vendeuses prévenues, aucune réclamation'],
+      ['Prime de volume', null, `au-delà de ${data.seuil_volume} colis par jour, ${formatMontant(data.prime_volume_par_colis)} F chaque colis en plus`],
+      ['Livreur du mois', data.prime_livreur_du_mois, 'le meilleur taux de réussite du mois'],
+      ['Prime de fidélité', null, `${F(data.fidelite_6_mois)} après 6 mois, ${F(data.fidelite_12_mois)} après 12 mois, ${F(data.fidelite_24_mois)} après 24 mois`],
+      ['Prime de parrainage', data.prime_parrainage, 'pour chaque livreur que je fais entrer et qui finit ses 3 mois'],
+    ];
+    const html = `
+      <div class="mon-mois__tete"><span>🏆 Mes primes</span><span class="mon-mois__periode">dès le ${escapeHTML(debut)}</span></div>
+      <div class="mon-mois__attente">À partir du ${escapeHTML(debut)}, chaque mois bien travaillé rapporte des primes en plus de mon salaire. Cette carte montrera mes chiffres et mes primes en cours, jour après jour.</div>
+      <div class="mon-mois__primes">
+        ${lignes.map(([nom, montant, note]) => `<div class="mon-mois__prime"><span>${nom}<small>${escapeHTML(note)}</small></span><b>${montant === null ? '' : F(montant)}</b></div>`).join('')}
+      </div>
+      <details class="mon-mois__aide"><summary>Comment ça marche</summary>
+        <p>Le mois compte à partir de ${data.jours_minimum_reussite} jours travaillés. Un échec n'est pas retenu contre moi si j'ai prévenu la vendeuse et donné le motif dans l'application. Le décompte officiel arrive le 1er du mois suivant ; j'ai trois jours pour le contester.</p>
+      </details>`;
+    cltPoserHTML(bloc, html, 'attente:' + String(data.debut));
   }
 
   function renderAll(options){
