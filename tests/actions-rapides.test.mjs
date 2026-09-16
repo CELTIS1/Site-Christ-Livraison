@@ -46,6 +46,13 @@ const codeLivreur = extraire('livreur.html',
 const configSrc = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
 const blocStatuts = configSrc.slice(configSrc.indexOf('const STATUTS'), configSrc.indexOf('};', configSrc.indexOf('const STATUTS')) + 2);
 if (!blocStatuts.startsWith('const STATUTS')) { console.error('STATUTS introuvable dans config.js'); process.exit(1); }
+// 3.2 (16/09/2026) : l'équipe parle comme le livreur — les boutons passent par libelleStatut,
+// etatsPossibles et estExpedition. On charge ces trois-là depuis config.js, tels quels.
+const blocVocabulaire = configSrc.slice(configSrc.indexOf('const STATUTS_EXPEDITION'), configSrc.indexOf('/* UNE CARTE = UN GESTE'));
+const debutExp = configSrc.indexOf('function estExpedition');
+const blocExpedition = configSrc.slice(configSrc.indexOf('const COMMUNE_EXPEDITION'), configSrc.indexOf('\n', configSrc.indexOf('const COMMUNE_EXPEDITION')) + 1)
+  + configSrc.slice(debutExp, configSrc.indexOf('\n}\n', debutExp) + 3);
+if (!blocVocabulaire.includes('function etatsPossibles') || !blocExpedition.includes('function estExpedition')) { console.error('vocabulaire des expéditions introuvable dans config.js'); process.exit(1); }
 
 /* ---------- Dépendances simulées ---------- */
 // Le vrai client Supabase renvoie un constructeur de requête chaînable ET « attendable ».
@@ -90,6 +97,7 @@ function contexteEquipe(o){
   vm.createContext(ctx);
   vm.runInContext('globalThis.window = globalThis;', ctx);
   vm.runInContext(blocStatuts, ctx);
+  vm.runInContext(blocExpedition + '\n' + blocVocabulaire, ctx);
   vm.runInContext(codeEquipe, ctx);
   // cltToast est posé après coup, comme le fait clt-common.js dans la vraie page.
   ctx.cltToast = (msg, opts) => { toasts.push({ msg, opts: opts || {} }); return { dismiss(){} }; };
@@ -129,6 +137,7 @@ function contexteLivreur(o){
   vm.createContext(ctx);
   vm.runInContext('globalThis.window = globalThis;', ctx);
   vm.runInContext(blocStatuts, ctx);
+  vm.runInContext(blocExpedition + '\n' + blocVocabulaire, ctx);
   vm.runInContext(codeLivreur, ctx);
   ctx.cltToast = (msg, opts) => { toasts.push({ msg, opts: opts || {} }); return { dismiss(){} }; };
   return ctx;
@@ -237,6 +246,10 @@ async function equipeBoutonsProposes(){
   const enAttente = ctx.eqActionsRapidesHTML({ statut: 'en_attente' });
   verifier("un colis en attente ne propose pas « Non livré » (aucune tentative possible)",
     !enAttente.includes('data-statut="non_livre"'), enAttente);
+  // 3.2 : une expédition parle comme chez le livreur
+  const expedition = ctx.eqActionsRapidesHTML({ statut: 'recupere', commune_destination: vm.runInContext('COMMUNE_EXPEDITION', ctx) });
+  verifier('une expédition récupérée ne propose pas « En livraison »', !expedition.includes('data-statut="en_livraison"'), expedition);
+  verifier('une expédition dit « Expédié » et « Non expédié », pas « Livré »', expedition.includes('Expédié') && expedition.includes('Non expédié') && !/>✅ Livré</.test(expedition), expedition);
 }
 
 /* Les scénarios 8, 9 et 10 vérifiaient le code de confirmation à quatre chiffres : un code faux

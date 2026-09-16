@@ -50,6 +50,9 @@ jobs:
       - name: Rapports sans plafond (lecture par tranches, rapport par livreur rétabli)
         run: node tests/rapports-sans-plafond.test.mjs
 
+      - name: Vocabulaire des expéditions dans l'espace équipe (« Expédié », jamais « En livraison »)
+        run: node tests/vocabulaire-des-expeditions-equipe.test.mjs
+
       - name: Actions rapides (un appui pour faire avancer un colis)
         run: node tests/actions-rapides.test.mjs
 

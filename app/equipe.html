@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916rapports">
-<script src="theme.js?v=20260916rapports"></script>
-<script src="splash.js?v=20260916rapports"></script>
+<link rel="stylesheet" href="style.css?v=20260916expeditions">
+<script src="theme.js?v=20260916expeditions"></script>
+<script src="splash.js?v=20260916expeditions"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1478,12 +1478,12 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916rapports"></script>
-<script src="config.js?v=20260916rapports"></script>
-<script src="clients-dashboard.js?v=20260916rapports"></script>
-<script src="livreurs-dashboard.js?v=20260916rapports"></script>
-<script src="biometric-lock.js?v=20260916rapports"></script>
-<script src="clt-select-recherche.js?v=20260916rapports"></script>
+<script src="clt-common.js?v=20260916expeditions"></script>
+<script src="config.js?v=20260916expeditions"></script>
+<script src="clients-dashboard.js?v=20260916expeditions"></script>
+<script src="livreurs-dashboard.js?v=20260916expeditions"></script>
+<script src="biometric-lock.js?v=20260916expeditions"></script>
+<script src="clt-select-recherche.js?v=20260916expeditions"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -3773,8 +3773,10 @@ function colisRowHTML(c, numeroClient){
 const thumb = c.photo_url
 ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
 : `<div class="thumb-placeholder">Pas de photo</div>`;
-const statutOptions = Object.keys(STATUTS).map(k =>
-`<option value="${k}" ${c.statut===k?'selected':''}>${STATUTS[k].label}</option>`).join('');
+// 3.2 (16/09/2026) : la liste des états vient d'etatsPossibles — sur une expédition, « En
+// livraison » n'y est pas — et chaque état porte le mot du colis (« Expédié », pas « Livré »).
+const statutOptions = etatsPossibles(c).map(k =>
+`<option value="${k}" ${c.statut===k?'selected':''}>${libelleStatut(k, c)}</option>`).join('');
 const livreurOptions = '<option value="">— Aucun livreur —</option>' +
 livreurs.map(l => `<option value="${l.id}" ${c.livreur_id===l.id?'selected':''}>${escapeHTML(l.full_name || l.id)}</option>`).join('');
 // Livreur de récupération à pré-sélectionner : celui déjà posé sur ce colis, sinon (proposition
@@ -4244,9 +4246,12 @@ carte.addEventListener('click', (e) => {
    changement de livreur, retour). */
 function eqActionsRapidesHTML(c){
 const boutons = [];
-if (c.statut !== 'livre') boutons.push(`<button type="button" class="btn btn-sm btn-etape btn-etape-livre" data-statut="livre">✅ Livré</button>`);
-if (c.statut === 'en_attente' || c.statut === 'recupere') boutons.push(`<button type="button" class="btn btn-outline btn-sm btn-etape" data-statut="en_livraison">🚚 En livraison</button>`);
-if (c.statut === 'recupere' || c.statut === 'en_livraison') boutons.push(`<button type="button" class="btn btn-outline btn-sm btn-etape btn-etape-echec" data-statut="non_livre">⚠️ Non livré</button>`);
+// 3.2 (16/09/2026) : les mêmes mots que le livreur. Sur une expédition, « Livré » se dit
+// « Expédié », « Non livré » se dit « Non expédié », et « En livraison » n'est pas proposé.
+const expedition = estExpedition(c);
+if (c.statut !== 'livre') boutons.push(`<button type="button" class="btn btn-sm btn-etape btn-etape-livre" data-statut="livre">${expedition ? '🚌' : '✅'} ${libelleStatut('livre', c)}</button>`);
+if (!expedition && (c.statut === 'en_attente' || c.statut === 'recupere')) boutons.push(`<button type="button" class="btn btn-outline btn-sm btn-etape" data-statut="en_livraison">🚚 En livraison</button>`);
+if (c.statut === 'recupere' || c.statut === 'en_livraison') boutons.push(`<button type="button" class="btn btn-outline btn-sm btn-etape btn-etape-echec" data-statut="non_livre">⚠️ ${libelleStatut('non_livre', c)}</button>`);
 if (!boutons.length) return '';
 return `<div class="colis-etapes">${boutons.join('')}</div>`;
 }
@@ -4305,7 +4310,7 @@ return { ok: true, horsReseau, statutPrecedent, tentativesPrecedentes, extraAppl
 // Confirmation avec un « Annuler » de quelques secondes : un clic malencontreux ne doit pas
 // obliger à rouvrir la fiche pour réparer.
 function eqAnnoncerChangementStatut(colis, statut, res){
-const libelle = (STATUTS[statut] && STATUTS[statut].label) || statut;
+const libelle = libelleStatut(statut, colis);
 const nom = colis.numero ? ('Colis ' + colis.numero) : 'Ce colis';
 cltToast(`${nom} : ${libelle}.${res.horsReseau ? " Sera envoyé au retour du réseau." : ''}`, {
 type: res.horsReseau ? 'info' : 'success',
@@ -4324,7 +4329,7 @@ statut: res.statutPrecedent,
 extraForce: { tentatives_livraison: res.tentativesPrecedentes }
 });
 if (!retour.ok) return;
-const libelle = (STATUTS[res.statutPrecedent] && STATUTS[res.statutPrecedent].label) || res.statutPrecedent;
+const libelle = libelleStatut(res.statutPrecedent, allColis.find(c => c.id === id) || null);
 cltToast(`Retour à l'état précédent : ${libelle}.`, { type: 'info', title: 'Annulé' });
 }
 
@@ -4483,7 +4488,8 @@ cltToast(`${res.reussis.length} colis remis chez leur livreur d'avant.`, { type:
 async function eqTraiterLot(statut, bouton){
 const choisis = allColis.filter(c => eqLotIds.has(c.id));
 if (!choisis.length) return;
-const libelle = (STATUTS[statut] && STATUTS[statut].label) || statut;
+// Un lot fait uniquement d'expéditions parle comme le livreur (« Expédié ») ; un lot mêlé garde le mot commun.
+const libelle = libelleStatut(statut, choisis.every(c => estExpedition(c)) ? choisis[0] : null);
 
 // Hors réseau, on ne fait rien à moitié : la file d'attente hors-ligne est faite pour des
 // gestes unitaires. Plutôt que de laisser croire que quinze colis sont enregistrés, on le dit.
@@ -5976,8 +5982,9 @@ ${auteurHTML}
 `;
 }
 if (a.action === 'changement_statut_colis') {
-const ancien = STATUTS[d.ancien_statut] ? STATUTS[d.ancien_statut].label : (d.ancien_statut || '-');
-const nouveau = STATUTS[d.nouveau_statut] ? STATUTS[d.nouveau_statut].label : (d.nouveau_statut || '-');
+const colisDuJournal = d.commune_destination ? { commune_destination: d.commune_destination } : (allColis.find(c => c.id === (a.colis_id || d.colis_id)) || null);
+const ancien = d.ancien_statut ? libelleStatut(d.ancien_statut, colisDuJournal) : '-';
+const nouveau = d.nouveau_statut ? libelleStatut(d.nouveau_statut, colisDuJournal) : '-';
 return `
 <div class="colis-item">
 <div class="info">
@@ -5995,7 +6002,7 @@ return `
 <div class="colis-item">
 <div class="info">
 <div class="desc">${label} — ${d.fournisseur || 'Client inconnu'}</div>
-<div class="meta">${d.description || ''}${d.statut ? ' · Statut au moment de la suppression : ' + (STATUTS[d.statut] ? STATUTS[d.statut].label : d.statut) : ''}</div>
+<div class="meta">${d.description || ''}${d.statut ? ' · Statut au moment de la suppression : ' + libelleStatut(d.statut, d.commune_destination ? { commune_destination: d.commune_destination } : null) : ''}</div>
 ${auteurHTML}
 <div class="meta">${formatDate(a.created_at)}</div>
 </div>
@@ -8293,7 +8300,7 @@ ${rows.map(c => `
 <tr data-id="${c.id}">
 <td data-label="Colis"><div class="recap-colis-ou">${colisDestinationHTML(c)}</div>${colisDescriptionTexte(c) ? `<div class="recap-colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}</td>
 <td data-label="Client">${fournisseurLabel(c.fournisseur_id)}</td>
-<td data-label="Statut">${STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut}</td>
+<td data-label="Statut">${libelleStatut(c.statut, c)}</td>
 <td data-label="Article"><input type="number" class="compta-edit-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}"></td>
 <td data-label="Encaissé" class="compta-row-encaisse">${formatMontant(montantArticleEncaisse(c)) || '0 FCFA'}</td>
 <td data-label="Argent">
@@ -9085,7 +9092,8 @@ const msg = document.getElementById('export-mois-msg');
 if (moisInput && !moisInput.value) moisInput.value = (todayLocalISODate() || '').slice(0, 7);
 
 const NOMS_MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-const statutLabel = (s) => (typeof STATUTS !== 'undefined' && STATUTS[s]) ? STATUTS[s].label : (s || '');
+// Le rapport mensuel de la base renvoie la commune : une expédition dit « Expédié » ici aussi.
+const statutLabel = (s, c) => libelleStatut(s, c || null);
 const num = (v) => Number(v) || 0;
 
 function parseMois(){
@@ -9162,7 +9170,7 @@ const dep = [['Date','Libellé','Montant','Catégorie']]
 XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dep), 'Dépenses');
 
 const colis = [['Jour','Colis','Client','Statut','Article','Livraison','Recette comptée','Encaissé','Remis','Livreur']]
-.concat((d.colis||[]).map(c => [c.jour, c.description || '', c.client || '', statutLabel(c.statut),
+.concat((d.colis||[]).map(c => [c.jour, c.description || '', c.client || '', statutLabel(c.statut, c),
 num(c.montant_article), num(c.montant_livraison), num(c.recette_comptee),
 c.encaisse ? 'Oui' : 'Non', c.remis ? 'Oui' : 'Non', c.livreur || '']));
 XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(colis), 'Colis');
@@ -9459,7 +9467,7 @@ const data = rows.map(c => ({
 Colis: c.description || '',
 Client: fournisseurLabel(c.fournisseur_id),
 Destination: colisDestinationTexte(c) || '',
-Statut: STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
+Statut: libelleStatut(c.statut, c),
 'Article enregistré': montantArticleColis(c) || 0,
 'Article encaissé': montantArticleEncaisse(c) || 0,
 'Livraison enregistrée': montantLivraisonColis(c) || 0,
@@ -9557,7 +9565,7 @@ head: [['Colis', 'Client', 'Statut', 'Article', 'Encaissé', 'Livraison', 'État
 body: rows.map(c => [
 c.description || '',
 fournisseurLabelPlain(c.fournisseur_id),
-STATUTS[c.statut] ? STATUTS[c.statut].label : c.statut,
+libelleStatut(c.statut, c),
 formatMontant(montantArticleColis(c)) || '0 FCFA',
 formatMontant(montantArticleEncaisse(c)) || '—',
 formatMontant(montantLivraisonColis(c)) || '—',
