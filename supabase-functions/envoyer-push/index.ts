@@ -10,6 +10,8 @@
 // Fonctionnement :
 //   1. Vérifie que l'appel vient bien du webhook (en-tête secret, voir ci-dessous).
 //   2. Reçoit le payload du webhook : { type, table, record, old_record, ... }.
+//      Depuis le 16/09/2026 : assignation d'un livreur, récupération demandée et changements
+//      importants (adresse, échéance, report, téléphone) préviennent le livreur concerné.
 //   3. Aiguille selon la table (colis vs express_courses).
 //   4. Ne notifie QUE si le statut a réellement changé (ou à la création).
 //   5. Lit les abonnements dans public.push_subscriptions via la clé
@@ -71,7 +73,7 @@ function memeSecret(recu: string | null, attendu: string): boolean {
 
 // Libellés par statut colis. Les statuts non listés ne déclenchent pas de notification.
 const STATUT_INFO: Record<string, { title: string; verb: string }> = {
-  recupere: { title: "📦 Colis récupéré", verb: "est en tournée" },
+  recupere: { title: "📦 Colis récupéré", verb: "est entre nos mains" },
   en_livraison: { title: "🚚 Colis en livraison", verb: "est en cours de livraison" },
   livre: { title: "✅ Colis livré", verb: "a été livré" },
   non_livre: { title: "⚠️ Échec de livraison", verb: "n'a pas pu être livré" },
@@ -196,11 +198,48 @@ async function envoyer(
 // ----------------------------------------------------------------------------
 async function handleColis(record: any, oldRecord: any, eventType: string): Promise<Response> {
   const newStatut: string = record.statut;
+  const id0 = uuidOuRien(record.id);
+  const ref0 = record.numero || record.description || "Un colis";
+  const ou = record.commune_destination || record.destination || "";
 
-  // Sur UPDATE : ne notifier que si le statut a changé.
-  if (eventType === "UPDATE") {
-    const oldStatut = oldRecord ? oldRecord.statut : null;
-    if (newStatut === oldStatut) return new Response("statut inchangé", { status: 200 });
+  // Sur UPDATE : si le statut n'a pas changé, il reste les assignations et les changements
+  // importants (ci-dessous) ; s'il a changé, c'est lui qu'on annonce, et rien d'autre.
+  const statutInchange = eventType === "UPDATE" && newStatut === (oldRecord ? oldRecord.statut : null);
+  if (statutInchange) {
+    // ---- Les assignations et les changements importants (16/09/2026, demande de Celtis) ----
+    // Le livreur doit savoir sans ouvrir l'app : qu'un colis vient de lui être confié, qu'une
+    // récupération lui est demandée, qu'une adresse ou une échéance a changé. Ces envois ne
+    // dépendent pas du statut ; ils partent au livreur concerné, et à lui seul.
+    // Un vrai webhook envoie l'ancienne ligne entière ; si une colonne n'y est pas, on ne
+    // conclut rien (mieux vaut une notification de moins qu'une fausse).
+    const avait = (k: string) => !!oldRecord && Object.prototype.hasOwnProperty.call(oldRecord, k);
+    const change = (k: string) => avait(k) && (record[k] || "") !== (oldRecord[k] || "");
+    const nouveauLivreur = uuidOuRien(record.livreur_id);
+    const ancienLivreur = avait("livreur_id") ? uuidOuRien(oldRecord.livreur_id) : nouveauLivreur;
+    if (id0 && nouveauLivreur && nouveauLivreur !== ancienLivreur) {
+      return await envoyer({ roles: [], userIds: [nouveauLivreur] }, "📬 Colis confié",
+        `${ref0}${ou ? " → " + ou : ""} vous est assigné.`, `colis-${id0}-assigne`, `colis=${encodeURIComponent(id0)}`);
+    }
+    const nouveauCollecteur = uuidOuRien(record.livreur_collecte_id);
+    const ancienCollecteur = avait("livreur_collecte_id") ? uuidOuRien(oldRecord.livreur_collecte_id) : nouveauCollecteur;
+    if (id0 && nouveauCollecteur && nouveauCollecteur !== ancienCollecteur) {
+      const chez = record.commune_recuperation || record.adresse_recuperation || "";
+      return await envoyer({ roles: [], userIds: [nouveauCollecteur] }, "🛵 Récupération à faire",
+        `${ref0}${chez ? " à récupérer à " + chez : " à récupérer"}.`, `colis-${id0}-collecte`, `colis=${encodeURIComponent(id0)}`);
+    }
+    if (oldRecord && id0 && nouveauLivreur) {
+      const changements: string[] = [];
+      if (change("destination") || change("commune_destination")) changements.push("adresse : " + [record.destination, record.commune_destination].filter(Boolean).join(", "));
+      if (change("a_livrer_avant")) changements.push(record.a_livrer_avant ? "à livrer avant le " + String(record.a_livrer_avant).split("-").reverse().join("/") : "plus d'échéance");
+      if (change("reporte_au")) changements.push(record.reporte_au ? "reporté au " + String(record.reporte_au).split("-").reverse().join("/") : "report annulé");
+      if (change("destinataire_telephone")) changements.push("téléphone du destinataire modifié");
+      if (changements.length) {
+        return await envoyer({ roles: [], userIds: [nouveauLivreur] }, "✏️ Colis modifié",
+          `${ref0} — ${changements.join(" ; ")}.`, `colis-${id0}-modif`, `colis=${encodeURIComponent(id0)}`);
+      }
+    }
+
+    return new Response("statut inchangé", { status: 200 });
   }
 
   const info = STATUT_INFO[newStatut];

@@ -431,10 +431,11 @@ verifier(
    v118, le 16/09/2026 — feuille de route 4.2 : identité (og-image 1200×630, favicon.ico, bannière Play, logo en Poppins sur les pages publiques dont services.html pré-cachée) : étiquette 20260916identite.
    v119, le 16/09/2026 — feuille de route 4.1 : accueil épurée (sept effets retirés, un menu mobile, photo WebP) ; l'éditeur du site (site-editeur.js) décrit la photo unique : étiquette 20260916accueil.
    v120, le 16/09/2026 — un site vivant : chiffres calculés par la base (site_chiffres), galerie « En ce moment chez CLT » renouvelable depuis Gestion › Site avec envoi de photo (site-editeur.js, gestion.html) : étiquette 20260916vivant.
-   v121, le 16/09/2026 — le haut de page qui vit (photos en fondu) et le film « Une journée avec nos livreurs » ; l'éditeur du site décrit la liste de photos et la section film (site-editeur.js) : étiquette 20260916film. */
+   v121, le 16/09/2026 — le haut de page qui vit (photos en fondu) et le film « Une journée avec nos livreurs » ; l'éditeur du site décrit la liste de photos et la section film (site-editeur.js) : étiquette 20260916film.
+   v122, le 16/09/2026 — « Quoi de neuf ? » (nouveautes.json, panneau, bouton du bandeau, mot après mise à jour, lien sur la connexion : clt-common.js, style.css, login.html, sw.js) ; le colis enregistré par l'équipe naît récupéré (migration) ; notifications d'assignation (envoyer-push) : étiquette 20260916fluide. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v121'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v122'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

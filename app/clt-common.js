@@ -1297,6 +1297,62 @@ function cltDoitPrevenirMaj(locale, serveur) {
   return locale !== serveur;
 }
 
+/* =====================================================================
+   « QUOI DE NEUF ? » — 16 septembre 2026 (demande de Celtis)
+   ---------------------------------------------------------------------
+   Une mise à jour qui arrive sans un mot, c'est une équipe qui découvre les changements au
+   hasard. app/nouveautes.json dit, en clair, ce que chaque étiquette apporte. Ce panneau le
+   montre : depuis le bandeau « Nouvelle version », une fois juste après une mise à jour (un
+   bandeau discret « Mise à jour installée — Quoi de neuf ? »), et depuis la page de connexion.
+   Le fichier est lu à la demande, jamais depuis le cache (comme version.json).
+   ===================================================================== */
+function cltUrlACote(nomFichier) {
+  var tous = document.querySelectorAll('script[src*="clt-common.js"]');
+  var src = (tous.length ? tous[tous.length - 1].src : "") || "";
+  return src.replace(/[^/]*$/, "") + nomFichier;
+}
+function cltAfficherNouveautes(options) {
+  options = options || {};
+  var ancien = document.getElementById("clt-nouveautes");
+  if (ancien) ancien.remove();
+  var ov = document.createElement("div");
+  ov.id = "clt-nouveautes"; ov.className = "clt-nouveautes";
+  ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "Quoi de neuf ?");
+  var boite = document.createElement("div"); boite.className = "clt-nouveautes__boite";
+  var tete = document.createElement("div"); tete.className = "clt-nouveautes__tete";
+  var titre = document.createElement("h2"); titre.textContent = "Quoi de neuf ?";
+  var fermer = document.createElement("button"); fermer.type = "button"; fermer.className = "clt-nouveautes__fermer"; fermer.setAttribute("aria-label", "Fermer"); fermer.textContent = "×";
+  tete.appendChild(titre); tete.appendChild(fermer);
+  var corps = document.createElement("div"); corps.className = "clt-nouveautes__corps";
+  corps.textContent = "Chargement…";
+  boite.appendChild(tete); boite.appendChild(corps); ov.appendChild(boite);
+  function clore() { ov.remove(); document.removeEventListener("keydown", surTouche); }
+  function surTouche(e) { if (e.key === "Escape") clore(); }
+  fermer.addEventListener("click", clore);
+  ov.addEventListener("click", function (e) { if (e.target === ov) clore(); });
+  document.addEventListener("keydown", surTouche);
+  document.body.appendChild(ov);
+  fermer.focus();
+  fetch(cltUrlACote("nouveautes.json"), { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (j) {
+      corps.textContent = "";
+      var entrees = (j && Array.isArray(j.entrees)) ? j.entrees : [];
+      if (!entrees.length) { corps.textContent = "Rien à signaler pour le moment."; return; }
+      entrees.slice(0, options.max || 6).forEach(function (e, i) {
+        var bloc = document.createElement("section"); bloc.className = "clt-nouveautes__entree" + (i === 0 ? " est-recente" : "");
+        var h = document.createElement("h3"); h.textContent = e.titre || "Mise à jour";
+        var d = document.createElement("div"); d.className = "clt-nouveautes__date"; d.textContent = (e.date || "") + (e.version ? " · " + e.version : "");
+        var ul = document.createElement("ul");
+        (e.points || []).forEach(function (pt) { var li = document.createElement("li"); li.textContent = pt; ul.appendChild(li); });
+        bloc.appendChild(h); bloc.appendChild(d); bloc.appendChild(ul); corps.appendChild(bloc);
+      });
+    })
+    .catch(function () { corps.textContent = "Les nouveautés ne sont pas disponibles hors connexion."; });
+  return { fermer: clore };
+}
+window.cltAfficherNouveautes = cltAfficherNouveautes;
+
 (function () {
   try {
     // L'étiquette de CETTE page, lue sur le script en train de s'exécuter. Pas de valeur écrite
@@ -1313,6 +1369,19 @@ function cltDoitPrevenirMaj(locale, serveur) {
     // Le repère est cherché à côté du script, pas à une adresse absolue : l'application doit
     // continuer de fonctionner si elle est un jour servie depuis un sous-dossier.
     const urlRepere = adresse.replace(/[^/]*$/, "") + "version.json";
+
+    // Juste après une mise à jour (l'étiquette chargée n'est pas celle vue la dernière fois),
+    // un bandeau discret propose de lire ce qui change. Une seule fois par étiquette.
+    try {
+      var vue = localStorage.getItem("clt_version_vue");
+      if (vue && vue !== etiquetteLocale && typeof cltToast === "function") {
+        setTimeout(function () {
+          cltToast("Mise à jour installée.", { type: "success", title: "Nouvelle version", duration: 9000,
+            action: { label: "Quoi de neuf ?", onClick: function () { cltAfficherNouveautes(); } } });
+        }, 1200);
+      }
+      localStorage.setItem("clt_version_vue", etiquetteLocale);
+    } catch (e) { /* stockage indisponible : tant pis pour le mot d'accueil */ }
 
     const DELAI_FOND = 15 * 60 * 1000;    // vérification tranquille, en arrière-plan
     const DELAI_RETOUR = 2 * 60 * 1000;   // au retour à l'écran, au plus une fois par deux minutes
@@ -1374,8 +1443,14 @@ function cltDoitPrevenirMaj(locale, serveur) {
         marquerCorps(false);
         masqueJusqua = Date.now() + DELAI_REPORT;
       });
+      var quoi = document.createElement("button");
+      quoi.type = "button";
+      quoi.className = "clt-maj-quoi";
+      quoi.textContent = "Quoi de neuf ?";
+      quoi.addEventListener("click", function () { cltAfficherNouveautes(); });
       bandeau.appendChild(texte);
       bandeau.appendChild(note);
+      bandeau.appendChild(quoi);
       bandeau.appendChild(ok);
       bandeau.appendChild(plusTard);
       // Le bandeau vit en bas de l'écran depuis le 26/08/2026 (voir style.css). Sur les espaces

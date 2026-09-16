@@ -74,7 +74,7 @@
    sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
    pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v121';
+const CACHE_VERSION = 'clt-shell-v122';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.
@@ -223,6 +223,8 @@ self.addEventListener('fetch', (event) => {
   // s'afficherait jamais — exactement le silence qu'il est censé rompre. On laisse donc passer
   // la requête sans l'intercepter : hors-ligne, elle échoue franchement, et clt-common.js se tait.
   if (url.pathname.endsWith('/app/version.json')) return;
+  // Même règle pour les nouveautés (16/09/2026) : lues à la demande, toujours fraîches.
+  if (url.pathname.endsWith('/app/nouveautes.json')) return;
 
   // Ressources d'un autre domaine :
   //   • bibliothèques CDN à version fixe (supabase-js, Leaflet, xlsx, jsPDF, police) → "cache d'abord"

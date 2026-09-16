@@ -2288,6 +2288,23 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 /* display:flex l'emporterait sur l'attribut hidden : sans cette règle, « Plus tard » ne
    masquerait rien du tout. */
 .clt-maj-bandeau[hidden] { display: none; }
+.clt-maj-quoi { background: transparent; border: 1px solid rgba(255,255,255,.35); color: #fff; border-radius: 999px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; min-height: 34px; }
+.clt-maj-quoi:hover { background: rgba(255,255,255,.12); }
+/* « Quoi de neuf ? » (16/09/2026) */
+.clt-nouveautes { position: fixed; inset: 0; z-index: 9600; background: rgba(15, 23, 42, .55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.clt-nouveautes__boite { background: #fff; color: #1f2937; border-radius: 16px; width: min(560px, 100%); max-height: min(80vh, 640px); display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+.clt-nouveautes__tete { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #e5e7eb; }
+.clt-nouveautes__tete h2 { margin: 0; font-size: 18px; }
+.clt-nouveautes__fermer { background: none; border: none; font-size: 26px; line-height: 1; cursor: pointer; color: #6b7280; width: 40px; height: 40px; border-radius: 10px; }
+.clt-nouveautes__fermer:hover { background: #f3f4f6; }
+.clt-nouveautes__corps { overflow: auto; padding: 6px 18px 18px; }
+.clt-nouveautes__entree { padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+.clt-nouveautes__entree h3 { margin: 0 0 2px; font-size: 15px; }
+.clt-nouveautes__entree.est-recente h3::before { content: "Nouveau"; display: inline-block; background: #E26313; color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; margin-right: 8px; vertical-align: middle; }
+.clt-nouveautes__date { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+.clt-nouveautes__entree ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5; }
+.clt-nouveautes__entree li { margin: 3px 0; }
+@media (prefers-color-scheme: dark) { .clt-nouveautes__boite { background: #111827; color: #e5e7eb; } .clt-nouveautes__tete { border-color: #1f2937; } .clt-nouveautes__entree { border-color: #1f2937; } }
 .clt-maj-texte { font-weight: 600; white-space: nowrap; }
 .clt-maj-note { color: #b9c2cf; white-space: nowrap; }
 .clt-maj-ok {

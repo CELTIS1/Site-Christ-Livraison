@@ -18,9 +18,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260916film">
-  <script src="theme.js?v=20260916film"></script>
-  <script src="splash.js?v=20260916film"></script>
+  <link rel="stylesheet" href="style.css?v=20260916fluide">
+  <script src="theme.js?v=20260916fluide"></script>
+  <script src="splash.js?v=20260916fluide"></script>
   <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
        Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
        ne correspond pas. Si le CDN était compromis, le code étranger serait bloqué.
@@ -63,6 +63,7 @@
       <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-login-submit">Se connecter</button>
       <button type="button" id="btn-goto-forgot" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Mot de passe oublié ?</button>
       <button type="button" id="btn-goto-inscription" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Pas encore de compte client ? Créer un compte</button>
+      <button type="button" id="btn-nouveautes" style="width:100%;text-align:center;margin-top:6px;background:none;border:none;color:#64748b;font-size:13px;cursor:pointer;min-height:36px;" onclick="if (window.cltAfficherNouveautes) cltAfficherNouveautes();">Quoi de neuf dans l'application ?</button>
       </form>
 
     <!-- MOT DE PASSE OUBLIE / PREMIERE CONNEXION : demande transmise à l'équipe -->
@@ -155,9 +156,9 @@
     </div>
   </div>
 
-<script src="clt-common.js?v=20260916film"></script>
-<script src="config.js?v=20260916film"></script>
-<script src="biometric-login.js?v=20260916film"></script>
+<script src="clt-common.js?v=20260916fluide"></script>
+<script src="config.js?v=20260916fluide"></script>
+<script src="biometric-login.js?v=20260916fluide"></script>
 <script>
   function showTab(which){
     stopWaiting();

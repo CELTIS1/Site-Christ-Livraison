@@ -707,6 +707,14 @@
 <!-- réactives, focus accessible. HTML et JS d'origine intacts.            -->
 <!-- ===================================================================== -->
 <style id="clt-elevation-2026">
+  /* Barre fine de progression de lecture, tout en haut de la page (gardée à la demande de Celtis, 16/09) */
+  #cltScrollProgress{
+    position:fixed; top:0; left:0; height:3px; width:0%;
+    background:linear-gradient(90deg,#F7A85C,#E26313);
+    z-index:200; pointer-events:none; transition:width .12s linear;
+    box-shadow:0 0 8px rgba(226,99,19,0.5);
+  }
+
   /* En-tête : verre dépoli + ombre plus marquée dès qu'on défile */
   .site-header-fixed{ transition:box-shadow .25s ease; }
   .site-header-fixed.is-scrolled{ box-shadow:0 8px 26px rgba(18,50,82,0.13); }
@@ -1894,12 +1902,17 @@
      Il s'installe depuis les pages de l'application (app/), là où il sert. -->
 
 <script>
-// L'en-tête prend une ombre dès qu'on défile. Purement additif.
+// L'en-tête prend une ombre dès qu'on défile, et une barre fine en haut dit où l'on en est dans la page. Purement additif.
 (function(){
   try{
     var header = document.getElementById('siteHeaderFixed');
-    if(!header) return;
-    function onScroll(){ header.classList.toggle('is-scrolled', (window.pageYOffset || 0) > 8); }
+    var bar = document.createElement('div'); bar.id = 'cltScrollProgress'; bar.setAttribute('aria-hidden', 'true'); document.body.appendChild(bar);
+    function onScroll(){
+      var st = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var h = (document.documentElement.scrollHeight - window.innerHeight) || 0;
+      bar.style.width = (h > 0 ? Math.min(100, (st / h) * 100) : 0) + '%';
+      if(header) header.classList.toggle('is-scrolled', st > 8);
+    }
     window.addEventListener('scroll', onScroll, { passive:true });
     onScroll();
   }catch(e){ /* Ne bloque jamais l'affichage du site. */ }

@@ -190,6 +190,23 @@ titre("Une même personne ne reçoit qu'une fois, et le statut inchangé ne noti
   verifier('un statut inchangé ne fait rien', r.status === 200 && f2.envoisPush.length === 0);
 }
 
+titre('Les assignations et les changements importants préviennent le livreur, et lui seul (16/09/2026)');
+{
+  const f = chargerFonction({ secretServeur: SECRET, abonnements });
+  const enAttente = { id: COLIS, numero: 'CLT-42', statut: 'recupere', livreur_id: LIVREUR, fournisseur_id: CLIENTE, commune_destination: 'Cocody' };
+  await appeler(f.gestionnaire, { type: 'UPDATE', table: 'colis', record: enAttente, old_record: { ...enAttente, livreur_id: null } }, { 'x-clt-webhook-secret': SECRET });
+  verifier('assignation : un seul push, au livreur, « Colis confié »', f.envoisPush.length === 1 && f.envoisPush[0].endpoint.endsWith('/livreur') && /Colis confié/.test(f.envoisPush[0].corps.title) && /CLT-42 → Cocody/.test(f.envoisPush[0].corps.body), JSON.stringify(f.envoisPush.map(e => [e.endpoint, e.corps.title])));
+  const g = chargerFonction({ secretServeur: SECRET, abonnements });
+  await appeler(g.gestionnaire, { type: 'UPDATE', table: 'colis', record: { ...enAttente, destination: 'Riviera 3, rue des Jardins' }, old_record: { ...enAttente, destination: 'Riviera 2' } }, { 'x-clt-webhook-secret': SECRET });
+  verifier('adresse changée : un seul push, au livreur, « Colis modifié »', g.envoisPush.length === 1 && g.envoisPush[0].endpoint.endsWith('/livreur') && /Colis modifié/.test(g.envoisPush[0].corps.title) && /adresse : Riviera 3/.test(g.envoisPush[0].corps.body));
+  const h = chargerFonction({ secretServeur: SECRET, abonnements });
+  await appeler(h.gestionnaire, { type: 'UPDATE', table: 'colis', record: { ...enAttente, observation: 'RAS' }, old_record: { ...enAttente, observation: '' } }, { 'x-clt-webhook-secret': SECRET });
+  verifier('un changement sans importance (observation) ne fait rien', h.envoisPush.length === 0);
+  const k = chargerFonction({ secretServeur: SECRET, abonnements });
+  await appeler(k.gestionnaire, { type: 'UPDATE', table: 'colis', record: { ...enAttente, statut: 'livre' }, old_record: { ...enAttente, statut: 'en_livraison', livreur_id: null } }, { 'x-clt-webhook-secret': SECRET });
+  verifier('quand le statut change, c\'est le statut qu\'on annonce (pas une assignation en plus)', k.envoisPush.every(e => /livré/.test(e.corps.title)) && k.envoisPush.length >= 2);
+}
+
 titre('Express : mêmes règles');
 {
   const f = chargerFonction({ secretServeur: SECRET, abonnements: [

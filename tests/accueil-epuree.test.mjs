@@ -25,13 +25,13 @@ function verifier(t, condition, detail) {
 
 console.log('\n1. Les effets retirés ne reviennent pas (Celtis a gardé le trajet des colis et le bandeau défilant, 16/09 après-midi)');
 verifier('le trajet des colis (canvas) est là, limité à la partie texte sur grand écran', /id="heroCanvas"/.test(index) && /initParticles\(\)/.test(index) && /hero\.offsetWidth \* \(large \? 0\.6 : 1\)/.test(index));
+verifier('la barre de progression de lecture est là (gardée le 16/09 au soir)', /id = 'cltScrollProgress'/.test(index) && /#cltScrollProgress\{/.test(index));
 verifier('le bandeau défilant est là et reprend les noms des services', /id="marqueeTrack"/.test(index) && /setMarquee\(data\.services\.map/.test(index));
 for (const [nom, motif] of [
   ['curseur personnalisé', /cursorPin|custom-cursor|initCustomCursor/],
   ['machine à écrire', /typewriter|startTypewriter/],
   ['compteurs animés', /initStatCounters|animateCount|data-raw=/],
   ['diaporama du héros', /hero-photo-slide|initHeroSlideshow|heroSlideTimer/],
-  ['barre de progression de lecture', /cltScrollProgress/],
 ]) verifier('plus de ' + nom, !motif.test(index));
 
 console.log('\n2. Un seul menu mobile, complet');

@@ -1,0 +1,48 @@
+{
+  "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
+  "entrees": [
+    {
+      "version": "20260916fluide",
+      "date": "16 septembre 2026",
+      "titre": "Plus fluide, plus de notifications",
+      "points": [
+        "Un colis enregistré par l'équipe (sans passage programmé chez la cliente) est marqué « récupéré » tout de suite : la cliente le voit et n'attend plus l'appui du livreur.",
+        "Quand un livreur est assigné à un tel colis, le colis passe « récupéré » de lui-même.",
+        "Le livreur reçoit une notification quand un colis lui est confié, quand une récupération lui est demandée, et quand une adresse, une échéance ou un report change.",
+        "Ce panneau « Quoi de neuf ? » : depuis le bandeau de mise à jour, juste après une mise à jour, et depuis la page de connexion."
+      ]
+    },
+    {
+      "version": "20260916film",
+      "date": "16 septembre 2026",
+      "titre": "Le site public : vivant et complet",
+      "points": [
+        "Accueil épurée : cinq photos en fondu, le trajet des colis, le bandeau, le film « Une journée avec nos livreurs », les chiffres calculés par la base (60+ commerçants, 1 000+ colis).",
+        "« En ce moment chez CLT » : des photos de l'équipe, à renouveler depuis Gestion › Site (bouton Choisir une photo).",
+        "Nouvelles pages : Tarifs, Contact, Conditions générales, Mentions légales ; politique de confidentialité réécrite.",
+        "Gestion › Site : tous les textes et photos du site se modifient dans l'application, avec vingt versions gardées."
+      ]
+    },
+    {
+      "version": "20260916erreurs",
+      "date": "16 septembre 2026",
+      "titre": "Comptabilité et paie reliées aux colis",
+      "points": [
+        "Les recettes de la comptabilité se remplissent depuis les colis livrés, jour par jour.",
+        "Comptabilité générale sur l'activité réelle : écritures des recettes et de la paie, génération du mois en un bouton, exports.",
+        "Le logo en tête du bulletin de paie et des documents imprimables.",
+        "Plus aucune fenêtre d'alerte du navigateur : des bandeaux discrets à la place, dans tous les espaces.",
+        "Rapport « Par livreur » rétabli ; les longues listes restent complètes et fluides."
+      ]
+    },
+    {
+      "version": "20260913cliente",
+      "date": "13 septembre 2026",
+      "titre": "Les primes des livreurs, en attente d'octobre",
+      "points": [
+        "Chaque livreur voit dès maintenant sa carte « Mes primes » avec les montants possibles ; le premier calcul portera sur octobre.",
+        "L'équipe qualifie les échecs de livraison (imputable ou non) depuis le tableau de bord livreurs."
+      ]
+    }
+  ]
+}
