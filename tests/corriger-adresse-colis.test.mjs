@@ -38,7 +38,7 @@ const APP = path.join(RACINE, 'app');
 
 const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
-const config = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
+const config = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const commun = fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8');
 /* Le script SQL est volontairement hors du dépôt (`_sql-prive/*.sql` est ignoré par Git).
    Sur le poste qui l'a, les sections 5 et 6 comparent vraiment le SQL aux écrans. Ailleurs —

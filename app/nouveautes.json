@@ -2,7 +2,7 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
-      "version": "20260916argent",
+      "version": "20260916lib1",
       "date": "16 septembre 2026",
       "titre": "Le point du jour : l'argent, clair",
       "points": [

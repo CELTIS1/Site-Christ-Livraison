@@ -37,7 +37,7 @@ verifier('rien ne bloque l\'affichage : catch silencieux, keepalive', /\.catch\(
 verifier('la clé utilisée est la clé publique (« publishable »), jamais une autre', /SUPABASE_KEY = "sb_publishable_/.test(index) && !/service_role|sb_secret/.test(index));
 
 console.log('\n3. L\'application, elle, garde son service worker');
-verifier('config.js (chargé par toutes les pages de l\'app) enregistre sw.js', /navigator\.serviceWorker\.register\('\/sw\.js'\)/.test(lire('app/config.js')));
+verifier('config.js (chargé par toutes les pages de l\'app) enregistre sw.js', /navigator\.serviceWorker\.register\('\/sw\.js'\)/.test(['app/lib/communes-et-tarifs.js', 'app/lib/argent.js', 'app/config.js'].map(lire).join('\n')));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

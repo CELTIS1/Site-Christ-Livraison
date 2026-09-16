@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
-const config = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
+const config = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const livreur = fs.readFileSync(path.join(APP, 'livreur.html'), 'utf8');
 const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 const CHEMIN_SQL = path.join(RACINE, '_sql-prive', '2026-09-06-le-livreur-confirme-ce-qu-il-a-pris.sql');

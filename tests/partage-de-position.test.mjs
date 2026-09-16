@@ -53,7 +53,7 @@ import { fileURLToPath } from 'node:url';
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
 const livreur = fs.readFileSync(path.join(APP, 'livreur.html'), 'utf8');
-const config = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
+const config = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 const commun = fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8');
 const expressConfig = fs.readFileSync(path.join(APP, 'express-config.js'), 'utf8');

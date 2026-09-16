@@ -52,7 +52,7 @@ import { fileURLToPath } from 'url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
-const sourceConfig = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
+const sourceConfig = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 const styles = fs.readFileSync(path.join(APP, 'style.css'), 'utf8');
 

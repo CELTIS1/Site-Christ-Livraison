@@ -69,6 +69,9 @@ export const FICHIERS_PARTAGES = [
   'point-du-jour.js',
   'livreurs-dashboard.js',
   'clients-dashboard.js',
+  // Sortis de config.js le 16 septembre 2026 (4.8, séance 1).
+  'lib/communes-et-tarifs.js',
+  'lib/argent.js',
 ];
 
 /* Relève, page par page, l'étiquette portée par chaque fichier partagé.

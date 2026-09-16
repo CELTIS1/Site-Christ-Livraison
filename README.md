@@ -27,7 +27,9 @@ content/content.json      copie de secours des textes du site (la vraie source :
 images/, videos/          photos (WebP) et le film « Une journée avec nos livreurs »
 app/                      l'application : login, equipe, livreur, fournisseur (clientes), gestion,
                           express-login, express-client, express-coursier
-app/config.js             tout ce que les pages de l'app partagent (Supabase, rôles, tarifs, utilitaires)
+app/config.js             tout ce que les pages de l'app partagent (Supabase, rôles, utilitaires)
+app/lib/                  les blocs sortis de config.js, un par sujet (communes-et-tarifs, argent…),
+                          chargés par chaque page avant config.js — feuille de route 4.8
 app/clt-common.js         bandeaux (cltToast), lecture par tranches, notifications push, capteur d'erreurs
 app/site-editeur.js       Gestion › Site : l'éditeur des textes et photos du site public
 sw.js                     le service worker (cache de la coquille, CACHE_VERSION)

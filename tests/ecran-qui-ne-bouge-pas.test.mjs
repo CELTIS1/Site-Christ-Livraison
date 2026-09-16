@@ -174,7 +174,7 @@ titre('La cliente choisie ne disparaît plus toute seule');
 // 25 secondes, en pleine lecture.
 titre('Une liste déroulée compte comme une saisie en cours');
 {
-  const sourceConfig = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
+  const sourceConfig = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
   verifier('cltSaisieEnCours interroge bien la liste déroulée',
     /function cltSaisieEnCours[\s\S]{0,400}cltListeDerouleeOuverteDans\(/.test(sourceConfig));
   verifier('CLTRecherche sait dire quelle liste est ouverte',

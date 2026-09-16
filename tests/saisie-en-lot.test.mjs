@@ -37,7 +37,7 @@ const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
 
 /* ---------- Extraction du vrai code ---------- */
-const source = fs.readFileSync(path.join(APP, 'config.js'), 'utf8');
+const source = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const contexte = vm.createContext({ console });
 
 function blocDe(src, nom){
