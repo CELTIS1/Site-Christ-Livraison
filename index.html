@@ -1887,49 +1887,40 @@
      nom, ni e-mail) dans Supabase, afin que l'équipe puisse suivre la fréquentation du site depuis
      son tableau de bord. N'affecte jamais l'affichage du site en cas d'échec (ex : script bloqué,
      pas de réseau, table pas encore créée côté Supabase). -->
-<!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
-     Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
-     ne correspond pas. Si le CDN était compromis, le code étranger serait bloqué.
-     Toute mise à jour de version impose de recalculer l'empreinte. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.js"
-        integrity="sha384-qafw21c/iciq0VXsi9FzkfoQv5I/V0iqE4lSNcKXPnW9/UTJLnv5CcN4FHxVLnKg"
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
+// Compteur de visites (feuille de route 3.7, 16/09/2026). Cette page chargeait la bibliothèque
+// Supabase (170 Ko) pour une seule insertion : un appel REST direct suffit, sans bibliothèque.
+// La clé est publique (« publishable ») ; la table site_visits n'accepte que l'insertion depuis
+// l'extérieur, la lecture est réservée à l'équipe.
 (function(){
   try {
     var SUPABASE_URL = "https://xkfltqjbmolmdwdafzcx.supabase.co";
     var SUPABASE_KEY = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
-    var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     var today = new Date().toISOString().slice(0, 10);
     var lastVisitDay = localStorage.getItem('cl_last_visit_day');
     if (lastVisitDay === today) return; // déjà comptée aujourd'hui pour ce visiteur
-
     var visitorId = localStorage.getItem('cl_visitor_id');
     if (!visitorId) {
       visitorId = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
       localStorage.setItem('cl_visitor_id', visitorId);
     }
-
-    sb.from('site_visits').insert([{ visitor_id: visitorId, page: 'index' }]).then(function(res){
-      if (!res.error) localStorage.setItem('cl_last_visit_day', today);
-    });
+    fetch(SUPABASE_URL + '/rest/v1/site_visits', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify([{ visitor_id: visitorId, page: 'index' }]),
+      keepalive: true
+    }).then(function(res){
+      if (res.ok) localStorage.setItem('cl_last_visit_day', today);
+    }).catch(function(){});
   } catch (e) {
     // Ne bloque jamais l'affichage du site en cas de problème.
   }
 })();
 </script>
 
-<script>
-// PWA : permet d'installer le site comme une app sur téléphone/tablette.
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/sw.js').catch(function (err) {
-      console.error("Échec de l'enregistrement du service worker :", err);
-    });
-  });
-}
-</script>
+<!-- Le service worker de l'application n'est plus installé depuis le site public (3.7, 16/09/2026) :
+     il pré-téléchargeait toute l'application (plusieurs Mo) sur le forfait de chaque visiteur.
+     Il s'installe depuis les pages de l'application (app/), là où il sert. -->
 
 <script>
 // Élévation visuelle 2026 : barre de progression de lecture, en-tête au défilement,

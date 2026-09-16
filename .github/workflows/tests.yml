@@ -62,6 +62,9 @@ jobs:
       - name: Une seule copie (notifications partagées, escapeHTML unique, plus d'alert() natif)
         run: node tests/une-seule-copie.test.mjs
 
+      - name: Site public léger (pas de supabase-js ni de service worker sur l'accueil)
+        run: node tests/site-public-leger.test.mjs
+
       - name: Actions rapides (un appui pour faire avancer un colis)
         run: node tests/actions-rapides.test.mjs
 
