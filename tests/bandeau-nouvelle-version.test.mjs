@@ -420,10 +420,11 @@ verifier(
    v107, le 16/09/2026 — les recettes de la comptabilité se remplissent depuis les colis (gestion.html, gestion.js), fidélité en pause masquée chez le livreur (livreur.html) : étiquette 20260916recettes.
    v108, le 16/09/2026 — le logo de la maison en tête du bulletin à l'écran et des documents imprimables (gestion.html, gestion.js) : étiquette 20260916logo.
    v109, le 16/09/2026 — feuille de route 3.1 : lecture par tranches (cltLireTout dans clt-common.js), rapport « Par livreur » rétabli et comptabilité de l'équipe sur la base (equipe.html), écritures, caisse, recettes, dépenses et factures par tranches (gestion.js) : étiquette 20260916rapports.
-   v110, le 16/09/2026 — feuille de route 3.2 : l'équipe parle comme le livreur sur les expéditions (« Expédié », jamais « En livraison ») dans la fiche, les actions rapides, le journal, la comptabilité et les exports (equipe.html) : étiquette 20260916expeditions. */
+   v110, le 16/09/2026 — feuille de route 3.2 : l'équipe parle comme le livreur sur les expéditions (« Expédié », jamais « En livraison ») dans la fiche, les actions rapides, le journal, la comptabilité et les exports (equipe.html) : étiquette 20260916expeditions.
+   v111, le 16/09/2026 — feuille de route 3.4 : relevé partagé des charges de personnel, la paie publie des totaux, la comptabilité seule les lit et nomme les mois manquants (gestion.html, gestion.js) : étiquette 20260916personnel. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v110'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v111'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -1435,6 +1435,10 @@ async function renderBulletins(){
     });
   });
 
+  // 3.4 (16/09/2026) : chaque mois calculé dépose ses totaux (sans détail par salarié) dans le
+  // relevé partagé, pour que la comptabilité voie les charges de personnel sans lire les salaires.
+  publierChargesPersonnel(LAST_BULLETINS);
+
   let masseNet=0, totCotSal=0, totCotPat=0, totBrut=0, totTransp=0;
   let body = LAST_BULLETINS.map((L,i) => {
     const b = L.b;
@@ -2127,6 +2131,23 @@ function imprimerFicheIndividuelle(){
  * ==========================================================================*/
 let ETATS_FIN = null; // { annee, recettes:[12], depenses:[12], depParCat:{}, personnel:[12] }
 
+// Dépose dans gestion_charges_personnel les totaux de chaque mois présent dans `bulletins`
+// ({ b, annee, mois }). Rien par salarié. Sans accès Paie, ne fait rien ; un refus de la base ne
+// gêne jamais l'écran : le relevé est un service rendu à la comptabilité, pas une étape de la paie.
+async function publierChargesPersonnel(bulletins){
+  if (!ACCES.canPaie || !bulletins || !bulletins.length) return;
+  const parMois = {};
+  bulletins.forEach(L => {
+    const p = periodeStr(L.annee, L.mois);
+    const t = parMois[p] || (parMois[p] = { periode: p, cout_total: 0, net_total: 0, cotisations_salariales: 0, cotisations_patronales: 0, nb_salaries: 0 });
+    t.net_total += L.b.net; t.cotisations_salariales += L.b.totalCotisSal; t.cotisations_patronales += L.b.totalCotisPat;
+    t.cout_total += L.b.net + L.b.totalCotisSal + L.b.totalCotisPat; t.nb_salaries += 1;
+  });
+  const lignes = Object.values(parMois).map(t => Object.assign({}, t, { cout_total: Math.round(t.cout_total), net_total: Math.round(t.net_total), cotisations_salariales: Math.round(t.cotisations_salariales), cotisations_patronales: Math.round(t.cotisations_patronales) }));
+  try { await ecrire(supabaseClient.from('gestion_charges_personnel').upsert(lignes, { onConflict: 'periode' })); }
+  catch(e){ console.error('relevé des charges de personnel', e); }
+}
+
 async function chargerEtatsFinanciers(){
   const sel = document.getElementById('fin-year'); if (!sel) return;
   const annee = parseInt(sel.value);
@@ -2134,6 +2155,7 @@ async function chargerEtatsFinanciers(){
   const depenses = new Array(12).fill(0);      // charges d'exploitation réelles (HORS paie)
   const depensesPaie = new Array(12).fill(0);  // dépenses liées à la paie (info : déjà comptées)
   const personnel = new Array(12).fill(0);
+  let personnelManquant = null;                // sans accès Paie : les mois absents du relevé partagé
   const depParCat = {}; // { categorie: [12] } — toutes catégories, hors paie (pour le détail)
   try {
     // Produits : recettes de l'année
@@ -2159,30 +2181,42 @@ async function chargerEtatsFinanciers(){
       }
     });
 
-    // Charges de personnel : coût total employeur, mois par mois
-    const actifs = SALARIES.filter(s=>s.actif!==false);
-    if (actifs.length){
+    // Charges de personnel : coût total employeur, mois par mois.
+    // 3.4 (16/09/2026) : un compte Comptabilité seul ne peut pas lire les salaires (et c'est
+    // voulu). La paie calcule ici et dépose les totaux dans le relevé partagé ; sans accès Paie,
+    // on lit ce relevé, et les mois qui n'y sont pas sont nommés plutôt que comptés à zéro.
+    const actifs = ACCES.canPaie ? SALARIES.filter(s=>s.actif!==false) : [];
+    if (ACCES.canPaie && actifs.length){
       const periodes = Array.from({length:12},(_,i)=>periodeStr(annee,i+1));
       const maps = await Promise.all(periodes.map(p=>loadSaisieMap(p)));
+      const releves = [];
       maps.forEach((map,i) => {
-        let cout = 0;
+        const bulletins = [];
         actifs.forEach(s => {
           const sai = map[s.id]; if (!sai) return;
           const b = computeBulletin(s, Object.assign({ periode: periodes[i] }, sai), PARAMS, GRILLE);
-          cout += b.net + b.totalCotisSal + b.totalCotisPat;
+          bulletins.push({ b, annee, mois: i + 1 });
         });
-        personnel[i] = cout;
+        personnel[i] = bulletins.reduce((t, L) => t + L.b.net + L.b.totalCotisSal + L.b.totalCotisPat, 0);
+        if (bulletins.length) releves.push(...bulletins);
       });
+      publierChargesPersonnel(releves);
+    } else if (!ACCES.canPaie) {
+      const releve = await cltLireTout(() => supabaseClient.from('gestion_charges_personnel').select('periode,cout_total')
+        .gte('periode', `${annee}-01-01`).lt('periode', `${annee+1}-01-01`).order('periode'));
+      const connus = new Set();
+      (releve||[]).forEach(r => { const m = parseInt(String(r.periode).slice(5,7), 10) - 1; personnel[m] = n(r.cout_total); connus.add(m); });
+      personnelManquant = Array.from({length:12},(_,i)=>i).filter(i => !connus.has(i));
     }
   } catch(e){ showToast('Erreur chargement des états financiers', true); console.error(e); return; }
 
-  ETATS_FIN = { annee, recettes, depenses, depensesPaie, personnel, depParCat };
+  ETATS_FIN = { annee, recettes, depenses, depensesPaie, personnel, depParCat, personnelManquant };
   renderEtatsFinanciers();
 }
 
 function renderEtatsFinanciers(){
   if (!ETATS_FIN) return;
-  const { annee, recettes, depenses, depensesPaie, personnel, depParCat } = ETATS_FIN;
+  const { annee, recettes, depenses, depensesPaie, personnel, depParCat, personnelManquant } = ETATS_FIN;
   const infoPaieArr = depensesPaie || new Array(12).fill(0);
   const moisSel = parseInt((document.getElementById('fin-mois')||{}).value || '0');
   const somme = arr => arr.reduce((a,b)=>a+b,0);
@@ -2203,7 +2237,14 @@ function renderEtatsFinanciers(){
     <div class="kpi"><div class="kpi-label">Produits (recettes)</div><div class="kpi-value">${fmtF(produits)}</div><div class="kpi-sub">${lblPeriode}</div></div>
     <div class="kpi"><div class="kpi-label">Charges totales</div><div class="kpi-value">${fmtF(totCharges)}</div><div class="kpi-sub">Exploitation + personnel</div></div>
     <div class="kpi"><div class="kpi-label">Résultat net</div><div class="kpi-value" style="color:${resultat>=0?'#0F766E':'#c0392b'};">${fmtF(resultat)}</div><div class="kpi-sub">Marge ${fmt(marge)} %</div></div>
-    <div class="kpi"><div class="kpi-label">Charges de personnel</div><div class="kpi-value">${fmtF(chPers)}</div><div class="kpi-sub">Coût total employeur</div></div>`;
+    <div class="kpi"><div class="kpi-label">Charges de personnel</div><div class="kpi-value">${fmtF(chPers)}</div><div class="kpi-sub">${personnelManquant ? 'D\'après la paie enregistrée' : 'Coût total employeur'}</div></div>`;
+  // Sans accès Paie, un mois absent du relevé n'est pas « zéro » : on le nomme, pour que personne
+  // ne lise un résultat gonflé comme un bénéfice.
+  const moisSansPaie = personnelManquant ? personnelManquant.filter(i => moisSel === 0 ? (recettes[i] || depenses[i]) : i === moisSel - 1) : [];
+  const avertissement = document.getElementById('fin-avertissement');
+  if (avertissement) avertissement.innerHTML = moisSansPaie.length
+    ? `<div class="clt-alert clt-alert-warn" style="margin:10px 0;">⚠️ Charges de personnel non encore enregistrées par la paie pour : ${moisSansPaie.map(i => MOIS_FR[i]).join(', ')}. Le résultat de ${moisSansPaie.length > 1 ? 'ces mois' : 'ce mois'} est donc surévalué tant que la paie n'a pas calculé ses bulletins.</div>`
+    : '';
 
   // Compte de résultat détaillé
   const catRows = Object.keys(depParCat).sort().map(cat => {
