@@ -417,10 +417,11 @@ verifier(
    v104, le 13/09/2026 — les primes des livreurs : « Pourquoi ? » à l'échec et « Mon mois » chez le livreur, onglet Livreurs et échecs à qualifier chez l'équipe, Primes livreurs et paramètres du règlement dans Gestion (config.js, livreur.html, equipe.html, livreurs-dashboard.js précaché, gestion.html, gestion.js) : étiquette 20260913primes.
    v105, le 13/09/2026 — la carte « Mes primes » en attente chez le livreur avant le 1er octobre (livreur.html) : étiquette 20260913primes2.
    v106, le 13/09/2026 — changer la cliente d'un colis déjà créé (equipe.html) : étiquette 20260913cliente.
-   v107, le 16/09/2026 — les recettes de la comptabilité se remplissent depuis les colis (gestion.html, gestion.js), fidélité en pause masquée chez le livreur (livreur.html) : étiquette 20260916recettes. */
+   v107, le 16/09/2026 — les recettes de la comptabilité se remplissent depuis les colis (gestion.html, gestion.js), fidélité en pause masquée chez le livreur (livreur.html) : étiquette 20260916recettes.
+   v108, le 16/09/2026 — le logo de la maison en tête du bulletin à l'écran et des documents imprimables (gestion.html, gestion.js) : étiquette 20260916logo. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v107'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v108'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

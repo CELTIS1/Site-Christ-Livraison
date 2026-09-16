@@ -1492,9 +1492,17 @@ function bulletinRowsHTML(b, annee, mois){
 function previewBulletin(i){
   const L = LAST_BULLETINS[i]; if (!L) return;
   const b = L.b, annee = L.annee, mois = L.mois;
+  // Le logo de la maison en tête, comme sur le PDF : « c'est la moindre des choses » (Celtis, 16/09/2026).
+  const PC = (typeof PAPIER_CLT !== 'undefined') ? PAPIER_CLT : {};
   const html = `<div class="bulletin">
-    <h4>BULLETIN DE PAIE</h4>
-    <div style="text-align:center;font-size:12px;color:var(--muted);">${escapeHTML(PARAMS.societe||'')} — ${MOIS_FR[mois-1]} ${annee}</div>
+    <div class="b-entete">
+      <img class="doc-logo" src="${PC.logoURL || '/images/icons/icon-512.png'}" alt="">
+      <div class="b-entete-societe">
+        <div class="doc-societe">${escapeHTML(PARAMS.societe || PC.societe || 'Christ Livraison & Transport SARL')}</div>
+        <div class="doc-coord">${escapeHTML(PC.adresse || '')}<br>${escapeHTML([PC.telephone, PC.email, PC.site].filter(Boolean).join(' · '))}</div>
+      </div>
+      <div class="b-entete-titre"><h4>BULLETIN DE PAIE</h4><div class="doc-periode">${MOIS_FR[mois-1]} ${annee}</div></div>
+    </div>
     <div class="b-meta">
       <div><strong>Matricule :</strong> ${escapeHTML(b.matricule)}</div>
       <div><strong>Nom :</strong> ${escapeHTML([b.nom,b.prenom].filter(Boolean).join(' ')||'—')}</div>
@@ -1668,10 +1676,14 @@ function enteteDocumentImprimable(titre, sousTitre){
   const p = PARAMS || {};
   const coord = [p.activite, p.adresse, p.num_cnps_employeur ? 'N° CNPS employeur : ' + p.num_cnps_employeur : null]
     .filter(Boolean).map(escapeHTML).join('<br>');
+  const logo = (typeof PAPIER_CLT !== 'undefined' && PAPIER_CLT.logoURL) ? PAPIER_CLT.logoURL : '/images/icons/icon-512.png';
   return `<div class="doc-entete">
-    <div>
-      <div class="doc-societe">${escapeHTML(p.societe || 'CHRIST LIVRAISON & TRANSPORT SARL')}</div>
-      <div class="doc-coord">${coord}</div>
+    <div class="doc-entete-gauche">
+      <img class="doc-logo" src="${logo}" alt="">
+      <div>
+        <div class="doc-societe">${escapeHTML(p.societe || 'CHRIST LIVRAISON & TRANSPORT SARL')}</div>
+        <div class="doc-coord">${coord}</div>
+      </div>
     </div>
     <div>
       <div class="doc-titre">${escapeHTML(titre)}</div>
