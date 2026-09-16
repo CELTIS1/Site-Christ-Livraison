@@ -23,12 +23,12 @@ function verifier(t, condition, detail) {
   else { echouees++; console.log('  ❌ ' + t + (detail ? '\n       → ' + detail : '')); }
 }
 
-console.log('\n1. Aucun des sept effets ne revient');
+console.log('\n1. Les effets retirés ne reviennent pas (Celtis a gardé le trajet des colis et le bandeau défilant, 16/09 après-midi)');
+verifier('le trajet des colis (canvas) est là, limité à la partie texte sur grand écran', /id="heroCanvas"/.test(index) && /initParticles\(\)/.test(index) && /hero\.offsetWidth \* \(large \? 0\.6 : 1\)/.test(index));
+verifier('le bandeau défilant est là et reprend les noms des services', /id="marqueeTrack"/.test(index) && /setMarquee\(data\.services\.map/.test(index));
 for (const [nom, motif] of [
-  ['particules (canvas du héros)', /heroCanvas|initParticles/],
   ['curseur personnalisé', /cursorPin|custom-cursor|initCustomCursor/],
   ['machine à écrire', /typewriter|startTypewriter/],
-  ['bandeau défilant', /marquee|setMarquee/],
   ['compteurs animés', /initStatCounters|animateCount|data-raw=/],
   ['diaporama du héros', /hero-photo-slide|initHeroSlideshow|heroSlideTimer/],
   ['bouton WhatsApp pulsant', /wa-float-pulse|waPulse/],

@@ -515,12 +515,28 @@
     section{padding:44px 0;}
   }
 
+  /* ---------- HERO : LE TRAJET DES COLIS (animation gardée à la demande de Celtis, 16/09) ---------- */
+  .hero{position:relative;}
+  #heroCanvas{position:absolute; top:0; left:0; height:100%; z-index:0; pointer-events:none;}
+  .hero .container{position:relative; z-index:1;}
+
   /* ---------- SCROLL REVEAL ---------- */
   .reveal{opacity:0; transform:translateY(26px); transition:opacity .65s ease, transform .65s ease;}
   .reveal.visible{opacity:1; transform:translateY(0);}
   @media (prefers-reduced-motion: reduce){
     .reveal{opacity:1; transform:none; transition:none;}
   }
+
+  /* ---------- BANDEAU DÉFILANT (gardé à la demande de Celtis, 16/09) ---------- */
+  .marquee-wrap{background:var(--navy-dark); overflow:hidden; padding:16px 0;}
+  .marquee-track{display:flex; gap:36px; width:max-content; animation:marqueeScroll 26s linear infinite;}
+  .marquee-track span{
+    color:#C7D1DB; font-weight:700; font-size:13.5px; letter-spacing:1px; text-transform:uppercase;
+    display:flex; align-items:center; gap:10px; white-space:nowrap;
+  }
+  .marquee-track span i{color:var(--orange); font-size:8px;}
+  @keyframes marqueeScroll{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
+  @media (prefers-reduced-motion: reduce){ .marquee-track{animation:none;} }
 
   /* ---------- FLOATING WHATSAPP BUTTON ---------- */
   .wa-float{
@@ -826,6 +842,7 @@
 <section class="hero">
   <div class="hero-grid">
     <div class="hero-text-col">
+      <canvas id="heroCanvas" aria-hidden="true"></canvas>
       <div class="container hero-text-inner">
         <div class="hero-text">
           <span class="pill" id="heroPill">CRÉDIBLE • SIMPLE • SÉCURISÉE</span>
@@ -851,6 +868,9 @@
   </div>
 </section>
 
+<div class="marquee-wrap" aria-hidden="true">
+  <div class="marquee-track" id="marqueeTrack"></div>
+</div>
 
 <section class="trust">
   <div class="container">
@@ -1451,6 +1471,7 @@
     // Services
     if(Array.isArray(data.services)){
       document.getElementById('servicesGrid').innerHTML = data.services.map(serviceCardHTML).join("");
+      setMarquee(data.services.map(s => s.title));
     }
     // Trust
     if(Array.isArray(data.trust)){
@@ -1560,6 +1581,102 @@
     }
   }
 
+  // ---------- Hero delivery route animation ----------
+  function initParticles(){
+    const canvas = document.getElementById('heroCanvas');
+    const hero = canvas.parentElement;
+    if(reducedMotion) return;
+    const ctx = canvas.getContext('2d');
+    let w, h, raf, frame = 0;
+
+    function resize(){
+      // Sur grand écran, le trajet des colis reste sur la partie texte (à gauche) ; la photo,
+      // à droite, n'est pas recouverte (16/09/2026).
+      const large = window.matchMedia('(min-width: 861px)').matches;
+      w = canvas.width = Math.round(hero.offsetWidth * (large ? 0.6 : 1));
+      h = canvas.height = hero.offsetHeight;
+      canvas.style.width = w + 'px';
+    }
+
+    const routePaths = [
+      [[0.03,0.82],[0.22,0.5],[0.48,0.68],[0.72,0.3],[0.97,0.48]],
+      [[0.0,0.28],[0.28,0.22],[0.52,0.5],[0.78,0.18],[1.0,0.32]]
+    ];
+    const routeMarkers = [
+      { pathIdx:0, t:0, speed:0.0016 },
+      { pathIdx:0, t:0.5, speed:0.0016 },
+      { pathIdx:1, t:0.25, speed:0.0021 }
+    ];
+    function ptOnPath(path, t){
+      const segs = path.length - 1;
+      const scaled = t * segs;
+      const i = Math.min(Math.floor(scaled), segs - 1);
+      const localT = scaled - i;
+      const a = path[i], b = path[i+1];
+      return { x:(a[0] + (b[0]-a[0])*localT) * w, y:(a[1] + (b[1]-a[1])*localT) * h };
+    }
+    function drawPin(x, y, scale){
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.beginPath();
+      ctx.arc(0, -10, 6, 0, Math.PI*2);
+      ctx.moveTo(-5, -7);
+      ctx.lineTo(0, 2);
+      ctx.lineTo(5, -7);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(226,99,19,0.85)";
+      ctx.fill();
+      ctx.restore();
+    }
+    function step(){
+      frame++;
+      ctx.clearRect(0,0,w,h);
+      routePaths.forEach(path => {
+        ctx.beginPath();
+        ctx.setLineDash([6,9]);
+        ctx.strokeStyle = "rgba(199,209,219,0.28)";
+        ctx.lineWidth = 1.5;
+        path.forEach((p,i) => {
+          const x = p[0]*w, y = p[1]*h;
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+        const end = path[path.length-1];
+        drawPin(end[0]*w, end[1]*h, 1 + 0.15*Math.sin(frame*0.05));
+      });
+      routeMarkers.forEach(m => {
+        m.t += m.speed;
+        if(m.t > 1) m.t = 0;
+        const p = ptOnPath(routePaths[m.pathIdx], m.t);
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(226,99,19,0.9)";
+        ctx.shadowColor = "rgba(226,99,19,0.6)";
+        ctx.shadowBlur = 8;
+        ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+      raf = requestAnimationFrame(step);
+    }
+    resize();
+    step();
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { cancelAnimationFrame(raf); resize(); }, 250);
+    });
+  }
+
+  // ---------- Marquee ----------
+  function setMarquee(items){
+    const track = document.getElementById('marqueeTrack');
+    if(!items || !items.length) return;
+    const group = items.map(t => `<span><i class="fa-solid fa-circle"></i>${t}</span>`).join("");
+    track.innerHTML = group + group; // duplicated for seamless loop
+  }
+
   // La photo du héros vient des textes du site (Gestion › Site) ; la première de la liste est
   // affichée, en WebP quand une version existe à côté du fichier (4.1, 16/09/2026).
   function poserPhotoHeros(src){
@@ -1571,6 +1688,8 @@
   }
 
   observeReveals();
+  initParticles();
+  setMarquee(["Colis & plis", "Courriers & documents", "Expéditions", "Courses & divers"]);
   initZoneSelector();
   initFaqAccordion();
   initBackToTop();
