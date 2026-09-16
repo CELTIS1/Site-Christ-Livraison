@@ -426,10 +426,11 @@ verifier(
    v113, le 16/09/2026 — feuille de route 3.5 : plus aucun alert() natif dans l'espace cliente, des bandeaux typés à la place (fournisseur.html) : étiquette 20260916cliente.
    v114, le 16/09/2026 — feuille de route 3.6 : notifications push en une seule copie (clt-common.js), escapeHTML unique, avatarSalarieHTML ; plus aucun alert() natif dans tous les espaces (equipe, livreur, fournisseur, express-client, express-coursier, gestion.js, clients-dashboard.js, livreurs-dashboard.js) : étiquette 20260916unecopie.
    v115, le 16/09/2026 — feuille de route 3.9 : journal des erreurs en production (capteur dans clt-common.js, vue dans Gestion › Historique) : étiquette 20260916erreurs.
-   v116, le 16/09/2026 — l'éditeur du site public dans Gestion › Site (site-editeur.js, gestion.html, gestion.js ; index.html et services.html lisent site_contenu) : étiquette 20260916editeur. */
+   v116, le 16/09/2026 — l'éditeur du site public dans Gestion › Site (site-editeur.js, gestion.html, gestion.js ; index.html et services.html lisent site_contenu) : étiquette 20260916editeur.
+   v117, le 16/09/2026 — feuille de route 4.4 : le site public trouvable (sitemap complet, canonical par fiche service, police Arial retirée des URL Google Fonts, express.html relié à l'accueil ; services.html est pré-cachée) : étiquette 20260916seo. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v116'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v117'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -378,6 +378,16 @@ function renderOverview(){
     return `<a class="svc-card" href="services.html?s=${encodeURIComponent(k)}"><div class="ic"><i class="fa-solid ${esc(s.icon)}"></i></div><h3>${esc(s.name)}</h3><p>${esc(s.short)}</p><span class="learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>`;
   }).join('');
   document.title = "Nos services — Christ Livraison & Transport SARL";
+  poserAdresseCanonique('services.html', DESCRIPTION_VUE_ENSEMBLE);
+}
+// Chaque fiche a sa propre adresse (services.html?s=…) : la balise canonical et la description
+// suivent la fiche affichée, sinon les moteurs de recherche ne voient qu'une seule page (4.4, 16/09/2026).
+const DESCRIPTION_VUE_ENSEMBLE = (document.querySelector('meta[name="description"]') || {}).content || '';
+function poserAdresseCanonique(chemin, description){
+  const lien = document.querySelector('link[rel="canonical"]');
+  if (lien) lien.setAttribute('href', 'https://christlivraison.ci/' + chemin);
+  const meta = document.querySelector('meta[name="description"]');
+  if (meta && description) meta.setAttribute('content', description);
 }
 function renderDetail(key){
   const s = SERVICES[key];
@@ -396,6 +406,7 @@ function renderDetail(key){
   document.getElementById('faq').innerHTML = s.faq.map(q=>`<div class="faq-q"><h4>${esc(q.t)}</h4><p>${esc(q.x)}</p></div>`).join('');
   document.getElementById('otherRow').innerHTML = ORDER.filter(k=>k!==key).map(k=>`<a href="services.html?s=${encodeURIComponent(k)}"><i class="fa-solid ${esc(SERVICES[k].icon)}"></i> ${esc(SERVICES[k].name)}</a>`).join('');
   document.title = s.name + " — Christ Livraison & Transport SARL";
+  poserAdresseCanonique('services.html?s=' + encodeURIComponent(key), (s.short || s.intro || '').slice(0, 160));
 }
 function route(){
   const key = new URLSearchParams(location.search).get('s');
