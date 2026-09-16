@@ -56,7 +56,7 @@ const fournisseur = lire('fournisseur.html');
 const expressClient = lire('express-client.html');
 const expressCoursier = lire('express-coursier.html');
 const livreur = lire('livreur.html');
-const equipe = lire('equipe.html');
+const equipe = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(lire).join('\n');
 const config = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(lire).join('\n'); // config.js et ses blocs sortis (4.8)
 const expressConfig = lire('express-config.js');
 const commun = lire('clt-common.js');

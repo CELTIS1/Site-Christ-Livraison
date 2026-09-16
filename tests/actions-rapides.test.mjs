@@ -18,13 +18,14 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lireAvecCode } from './_lire-page.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
 
 /* ---------- Extraction du vrai code ---------- */
 function extraire(fichier, marqueurDebut, marqueurFin){
-  const lignes = fs.readFileSync(path.join(APP, fichier), 'utf8').split('\n');
+  const lignes = lireAvecCode(APP, fichier).split('\n');
   const debut = lignes.findIndex(l => l.includes(marqueurDebut));
   const fin = lignes.findIndex((l, i) => i > debut && l.includes(marqueurFin));
   if (debut === -1 || fin === -1) {
@@ -43,7 +44,7 @@ const codeLivreur = extraire('livreur.html',
 
 // Les libellés de statut viennent du vrai config.js : si quelqu'un renomme un statut, les
 // messages affichés à l'équipe doivent suivre, et ce banc d'essai doit le voir.
-const configSrc = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
+const configSrc = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => lireAvecCode(APP, f)).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const blocStatuts = configSrc.slice(configSrc.indexOf('const STATUTS'), configSrc.indexOf('};', configSrc.indexOf('const STATUTS')) + 2);
 if (!blocStatuts.startsWith('const STATUTS')) { console.error('STATUTS introuvable dans config.js'); process.exit(1); }
 // 3.2 (16/09/2026) : l'équipe parle comme le livreur — les boutons passent par libelleStatut,

@@ -27,7 +27,7 @@ import { controlerEtiquettesDeVersion } from './etiquettes-de-version.mjs';
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
 const source = fs.readFileSync(path.join(APP, 'clients-dashboard.js'), 'utf8');
-const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+const equipe = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* la page et son code sorti (4.8) */;
 
 let reussies = 0, echouees = 0;
 function verifier(t, condition, detail){
@@ -96,7 +96,7 @@ verifier("« à reverser » passe par montantNetADevoir (article − gare − co
   /function cdNet\(c\)/.test(source) && /montantNetADevoir\(c\)/.test(source) && /cdNet\(c\) !== 0/.test(source));
 verifier('le geste de reversement envoie le net par colis et affiche les retenues',
   /data-montant="\$\{cdNet\(c\)\}"/.test(source) && /cd-rev-retenue/.test(source) && /avances de gare et frais de course/.test(source));
-const equipeSrc = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+const equipeSrc = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* la page et son code sorti (4.8) */;
 verifier("l'onglet Clients montre une colonne Retenues (gare + course)", /<th title="[^"]*">Retenues<\/th>/.test(equipeSrc) && /r\.t\.fraisExpeditionADevoir \+ r\.t\.fraisCourseADevoir/.test(equipeSrc));
 
 titre('Le graphique : un jour par barre, rien ne tombe entre deux');

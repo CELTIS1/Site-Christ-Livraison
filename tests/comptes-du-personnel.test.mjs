@@ -506,7 +506,7 @@ titre('admin-lancer-reset — on ouvre une fenêtre, on ne dicte pas de mot de p
 /* ============================================================================
    4) L'ÉCRAN ET LES PORTES D'ENTRÉE
    ============================================================================ */
-const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+const equipe = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* la page et son code sorti (4.8) */;
 const login = fs.readFileSync(path.join(APP, 'login.html'), 'utf8');
 const expressLogin = fs.readFileSync(path.join(APP, 'express-login.html'), 'utf8');
 const gestion = fs.readFileSync(path.join(APP, 'gestion.js'), 'utf8');

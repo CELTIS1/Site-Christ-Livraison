@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
 const config = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
-const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+const equipe = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* la page et son code sorti (4.8) */;
 const livreur = fs.readFileSync(path.join(APP, 'livreur.html'), 'utf8');
 const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
 const style = fs.readFileSync(path.join(APP, 'style.css'), 'utf8');

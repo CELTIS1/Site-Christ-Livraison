@@ -76,7 +76,7 @@ verifier('les deux égalités tiennent : le point est cohérent', r.coherent ===
 verifier('un jour vide reste cohérent et sans erreur', (() => { const v = P.calculer([], [], [], []); return v.coherent && v.nb.livres === 0 && v.livraison.recette === 0; })());
 verifier('le jour se compte à Abidjan, bornes UTC du jour', P.bornes('2026-09-16').debut === '2026-09-16T00:00:00Z' && P.decalerJour('2026-09-30', 1) === '2026-10-01' && P.decalerJour('2026-10-01', -1) === '2026-09-30');
 console.log('\n6. Branchement dans l\'écran');
-const equipe = lire('app/equipe.html');
+const equipe = ['app/equipe.html'].concat(fs.readdirSync(path.join(RACINE, 'app', 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'app/equipe/' + f)).map(lire).join('\n');
 verifier('la boîte est en tête de Finances › Comptabilité et le script est chargé', /<div id="point-du-jour"><\/div>/.test(equipe) && /point-du-jour\.js\?v=/.test(equipe));
 verifier('renderCompta rafraîchit le point du jour', /CLTPointDuJour\.init\(\); CLTPointDuJour\.rafraichir\(\);/.test(equipe));
 verifier('le point ne recalcule rien : il appelle totauxArgent et caisseParLivreur', /totauxArgent\(livres\)/.test(pdj) && /caisseParLivreur\(colisDuJour\)/.test(pdj) && !/function totauxArgent|function caisseParLivreur/.test(pdj));

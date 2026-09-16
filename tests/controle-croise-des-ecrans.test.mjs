@@ -57,7 +57,7 @@ const APP = path.join(RACINE, 'app');
 const SQL = path.join(RACINE, '_sql-prive');
 
 const sourceConfig = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
-const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+const equipe = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* la page et son code sorti (4.8) */;
 
 let reussies = 0, echouees = 0, ignorees = 0;
 function verifier(t, condition, detail){

@@ -401,7 +401,7 @@ titre("Chaque bouton transporte les valeurs qu'il annonce");
    ========================================================================================== */
 titre("Les deux écrans qui proposent le carnet le branchent correctement");
 {
-  const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+  const equipe = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* la page et son code sorti (4.8) */;
   const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
 
   // Le carnet doit venir d'une requête ciblée sur CE client. Se contenter de fouiller allColis

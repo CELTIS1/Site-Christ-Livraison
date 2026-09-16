@@ -19,7 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CHEMIN = process.argv[2] || path.join(RACINE, 'app', 'equipe.html');
+const CHEMIN = process.argv[2] || path.join(RACINE, 'app', 'equipe', 'equipe.js'); // le code de la page, sorti le 16/09 (4.8)
 const source = fs.readFileSync(CHEMIN, 'utf8').split('\n');
 const debut = source.findIndex(l => l.includes("FILE D'ATTENTE HORS-RÉSEAU (espace Équipe)"));
 // Fin du bloc : la ligne qui suit immédiatement le moteur de la file. C'était autrefois le
@@ -56,7 +56,7 @@ const porteEcriture = [
 ].join('\n\n');
 
 // Extraction de estDoublonCleCreation() depuis le vrai config.js, situé à côté de equipe.html.
-const configSrc = ['config.js'].concat(fs.readdirSync(CHEMIN.replace(/equipe\.html$/, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(CHEMIN.replace(/equipe\.html$/, f), 'utf8')).join('\n'); // config.js et ses blocs sortis (4.8)
+const configSrc = ['config.js'].concat(fs.readdirSync(path.join(path.dirname(path.dirname(CHEMIN)), 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(path.dirname(path.dirname(CHEMIN)), f), 'utf8')).join('\n'); // config.js et ses blocs sortis (4.8)
 const detecteurDoublon = configSrc.slice(
   configSrc.indexOf('function estDoublonCleCreation'),
   configSrc.indexOf('function friendlyErrorMessage')

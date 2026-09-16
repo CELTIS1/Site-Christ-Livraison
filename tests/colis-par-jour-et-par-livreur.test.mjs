@@ -451,7 +451,7 @@ titre('La migration SQL déclare bien les colonnes que le code lit');
    ========================================================================================== */
 titre('L’écran équipe appelle le calcul partagé au lieu de refaire les additions');
 {
-  const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+  const equipe = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* la page et son code sorti (4.8) */;
 
   verifier('la vue par jour appelle colisDuJourParLivreur',
     /colisDuJourParLivreur\(colis, livreurs, jour\)/.test(equipe));

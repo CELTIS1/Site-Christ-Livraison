@@ -31,12 +31,13 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lireAvecCode } from './_lire-page.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
 
 /* ---------- Extraction du vrai code ---------- */
-const sourceConfig = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
+const sourceConfig = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => lireAvecCode(APP, f)).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const contexte = vm.createContext({ console });
 function bloc(nom){
   const debut = sourceConfig.search(new RegExp('(async\\s+)?function\\s+' + nom + '\\s*\\('));
@@ -364,7 +365,7 @@ for (const [fichier, vider] of [
   ['livreur.html', 'viderSelectionMes'],
   ['equipe.html', 'eqViderSelection'],
 ]) {
-  const src = fs.readFileSync(path.join(APP, fichier), 'utf8');
+  const src = lireAvecCode(APP, fichier);
   const appelsVider = (src.match(new RegExp(vider + '\\(\\)', 'g')) || []).length;
   // 1 déclaration + au moins 4 changements de critères (filtre, recherche, date, toutes dates)
   // + la sortie du mode.

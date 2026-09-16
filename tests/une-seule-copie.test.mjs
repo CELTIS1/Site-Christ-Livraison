@@ -12,10 +12,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lireAvecCode } from './_lire-page.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
-const lire = (f) => fs.readFileSync(path.join(APP, f), 'utf8');
+const lire = (f) => lireAvecCode(APP, f);
 const PAGES = ['equipe.html', 'livreur.html', 'fournisseur.html', 'express-client.html', 'express-coursier.html'];
 const SCRIPTS = ['gestion.js', 'config.js', 'clt-common.js', 'clients-dashboard.js', 'livreurs-dashboard.js'];
 

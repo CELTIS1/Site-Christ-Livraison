@@ -74,5 +74,11 @@ for (const b of BLOCS) {
   verifier(`${b.fichier} : aucune constante de haut niveau calculée par un appel de fonction`, appels.length === 0, appels.map(l => l.slice(0, 70)).join(' | '));
 }
 
+console.log('\n4. Le code de l\'espace équipe est sorti de la page (séance 3)');
+const equipeHtml = lire('equipe.html');
+verifier('equipe.html ne contient plus de grand script inline (moins de 60 lignes de script)', (() => { const blocs = [...equipeHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)]; return blocs.every(b => b[1].split('\n').length < 60); })());
+verifier('equipe.html charge equipe/equipe.js après config.js, puis equipe/onglets.js en dernier, même étiquette', (() => { const m = equipeHtml.match(/<script src="config\.js\?v=([^"]+)">[\s\S]*<script src="equipe\/equipe\.js\?v=([^"]+)">[\s\S]*<script src="equipe\/onglets\.js\?v=([^"]+)">/); return !!m && m[1] === m[2] && m[2] === m[3]; })());
+verifier('equipe/equipe.js porte bien le code de la page (currentUser, renderColis, renderCompta)', /^let currentUser = null;/m.test(lire('equipe/equipe.js')) && /function renderColis\(/.test(lire('equipe/equipe.js')) && /async function renderCompta\(/.test(lire('equipe/equipe.js')));
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

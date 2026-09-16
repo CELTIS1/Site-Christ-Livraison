@@ -27,6 +27,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lireAvecCode } from './_lire-page.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
@@ -174,7 +175,7 @@ titre('La cliente choisie ne disparaît plus toute seule');
 // 25 secondes, en pleine lecture.
 titre('Une liste déroulée compte comme une saisie en cours');
 {
-  const sourceConfig = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
+  const sourceConfig = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => lireAvecCode(APP, f)).join('\n') /* config.js et ses blocs sortis (4.8) */;
   verifier('cltSaisieEnCours interroge bien la liste déroulée',
     /function cltSaisieEnCours[\s\S]{0,400}cltListeDerouleeOuverteDans\(/.test(sourceConfig));
   verifier('CLTRecherche sait dire quelle liste est ouverte',
@@ -207,7 +208,7 @@ for (const [fichier, zones] of [
   ['livreur.html',   ['mes-colis-list', 'recup-colis-list', 'finance-detail']],
   ['fournisseur.html', ['colis-list', 'releve-detail']],
 ]) {
-  const src = fs.readFileSync(path.join(APP, fichier), 'utf8');
+  const src = lireAvecCode(APP, fichier);
   const poses = (src.match(/cltPoserHTML\(/g) || []).length;
   verifier(`${fichier} : la garde est bien en service`, poses >= zones.length,
     `${poses} appel(s) pour ${zones.length} zone(s) sensibles au minimum`);
@@ -217,7 +218,7 @@ for (const [fichier, zones] of [
    portent les champs de saisie et le défilement. */
 titre('Les listes de colis passent toutes par la garde');
 for (const fichier of ['equipe.html', 'livreur.html', 'fournisseur.html']) {
-  const src = fs.readFileSync(path.join(APP, fichier), 'utf8');
+  const src = lireAvecCode(APP, fichier);
   const direct = (src.match(/\blist\.innerHTML\s*=/g) || []).length;
   verifier(`${fichier} : plus aucune écriture directe dans une liste de colis`, direct === 0,
     `${direct} écriture(s) directe(s) restante(s)`);
@@ -247,7 +248,7 @@ titre('La garde est disponible sur toutes les pages');
 // faisait clignoter l'écran quand la connexion hésitait.
 titre('Le rapport par livreur ne se réécrit plus à l\'aveugle');
 {
-  const src = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+  const src = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => lireAvecCode(APP, f)).join('\n') /* la page et son code sorti (4.8) */;
   const debut = src.indexOf('async function renderRapportLivreur(');
   verifier('la fonction du rapport est bien là', debut > 0);
   // On s'arrête à la fonction suivante : on ne veut juger que ce corps-là.
@@ -281,7 +282,7 @@ titre('Les utilitaires partagés n\'existent qu\'en un exemplaire');
     let total = 0;
     const ou = [];
     for (const f of [...pages, ...fichiersJS]) {
-      const n = (fs.readFileSync(path.join(APP, f), 'utf8').match(motif) || []).length;
+      const n = (lireAvecCode(APP, f).match(motif) || []).length;
       if (n) { total += n; ou.push(`${f}×${n}`); }
     }
     verifier(`${nom}() n'est définie qu'une fois`, total === 1, `trouvée dans ${ou.join(', ')}`);
@@ -309,7 +310,7 @@ titre('Les utilitaires partagés n\'existent qu\'en un exemplaire');
 // d'attente ne se montre que s'il n'y a encore RIEN à montrer pour ce jour-là.
 titre('Un rechargement garde le tableau déjà affiché : l\'écran ne saute pas');
 {
-  const src = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+  const src = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => lireAvecCode(APP, f)).join('\n') /* la page et son code sorti (4.8) */;
   verifier('le récapitulatif par cliente ne dit « Chargement » que sans jour en cache',
     /if \(recapJoursEnCours\[recapGetDate\(\)\] && !recapDayCache\[recapGetDate\(\)\]\)/.test(src));
   verifier('le récapitulatif par livreur aussi',

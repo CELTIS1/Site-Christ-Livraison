@@ -54,7 +54,7 @@ const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
 const livreur = fs.readFileSync(path.join(APP, 'livreur.html'), 'utf8');
 const config = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
-const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+const equipe = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* la page et son code sorti (4.8) */;
 const commun = fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8');
 const expressConfig = fs.readFileSync(path.join(APP, 'express-config.js'), 'utf8');
 
@@ -609,7 +609,7 @@ titre('« Pas de photo » : plus de carré gris chez le livreur, et seulement ch
      désormais dans tests/ecrans-clients.test.mjs, où colisItemHTML est EXÉCUTÉE et où c'est le
      HTML produit — et lui seul — qu'on inspecte. */
   verifier('equipe.html garde son carré « Pas de photo » (grand écran, vérification du travail)',
-    /Pas de photo/.test(fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8')));
+    /Pas de photo/.test(['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* la page et son code sorti (4.8) */));
   verifier('fournisseur.html ne garde qu’un seul carré, celui qui dit « Copie »',
     (() => {
       const f = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');

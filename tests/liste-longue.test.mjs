@@ -27,6 +27,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lireAvecCode } from './_lire-page.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
@@ -34,7 +35,7 @@ const APP = path.join(RACINE, 'app');
 /* ---------- Extraction du vrai code ---------- */
 // On ne recopie pas les fonctions ici : on charge celles de config.js. Une copie finirait par
 // diverger en silence, et le banc d'essai validerait alors du code qui n'est plus en service.
-const sourceConfig = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
+const sourceConfig = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => lireAvecCode(APP, f)).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const contexte = vm.createContext({ console, document: undefined, window: undefined });
 // config.js s'achève par des branchements au navigateur (document.addEventListener…) absents
 // ici ; on ne garde donc que les fonctions pures dont on a besoin.
@@ -216,7 +217,7 @@ titre('Le réglage de la tranche');
 // pendant quelques secondes, ne trouverait rien. On rejoue ici les deux situations.
 titre('Les rendus sont regroupés, y compris dans un onglet en arrière-plan');
 {
-  const codeRendu = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8')
+  const codeRendu = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => lireAvecCode(APP, f)).join('\n') /* la page et son code sorti (4.8) */
     .split('\n')
     .slice(0) // on extrait le bloc du regroupement des rendus
     .join('\n');
@@ -283,7 +284,7 @@ titre('Les rendus sont regroupés, y compris dans un onglet en arrière-plan');
 // s'en apercevoir : un rendu retenu qui ne repart jamais fige l'écran, ce qui est pire que le mal.
 titre('Une mise à jour n’efface jamais une saisie en cours');
 {
-  const src = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+  const src = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => lireAvecCode(APP, f)).join('\n') /* la page et son code sorti (4.8) */;
   const debut = src.indexOf('let colisRenduEnAttente = false;');
   const fin = src.indexOf('function eqDessinerColis(){');
   if (debut === -1 || fin === -1) {
@@ -365,7 +366,7 @@ titre('Une mise à jour n’efface jamais une saisie en cours');
 // pas seulement celui de l'équipe.
 titre('Le bouton « Actualiser » du bandeau est branché partout');
 for (const fichier of ['equipe.html', 'livreur.html', 'fournisseur.html']) {
-  const src = fs.readFileSync(path.join(APP, fichier), 'utf8');
+  const src = lireAvecCode(APP, fichier);
   verifier(`${fichier} : le bouton est bien dans le bandeau du haut`,
     /id="btn-actualiser"/.test(src));
   verifier(`${fichier} : il annonce ce qu'il fait aux lecteurs d'écran`,
@@ -382,7 +383,7 @@ titre('Les trois espaces utilisent bien l\'affichage par tranches');
 // « Tout mon historique », a laissé sa place à l'onglet Finance — un point d'argent, pas une
 // liste de colis : il n'y a donc plus de tranche à couper de ce côté.
 for (const [fichier, attendus] of [['equipe.html', 1], ['livreur.html', 2], ['fournisseur.html', 1]]) {
-  const src = fs.readFileSync(path.join(APP, fichier), 'utf8');
+  const src = lireAvecCode(APP, fichier);
   // On compte les APPELS, pas les mentions du nom dans les commentaires explicatifs, sinon le
   // contrôle se déclencherait à tort. Deux écritures sont acceptées : l'ancienne
   // « innerHTML = renderGroupedColisHTML(… » et celle du 25/08/2026,

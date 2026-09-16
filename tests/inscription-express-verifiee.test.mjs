@@ -278,7 +278,7 @@ titre('creer-livreur : un appelant actif, avec l\'accès Opérations');
 titre('Les écrans : la page Express attend le code, l\'équipe l\'envoie');
 {
   const login = fs.readFileSync(path.join(RACINE, 'app', 'express-login.html'), 'utf8');
-  const equipe = fs.readFileSync(path.join(RACINE, 'app', 'equipe.html'), 'utf8');
+  const equipe = ['equipe.html'].concat(fs.readdirSync(path.join(RACINE, 'app', 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(RACINE, 'app', f), 'utf8')).join('\n');
   const cfg = fs.readFileSync(path.join(RACINE, 'app', 'express-config.js'), 'utf8');
   verifier('la boîte d\'attente porte le formulaire du code (6 chiffres, one-time-code)', /id="form-code-express"/.test(login) && /id="code-express"[^>]*maxlength="6"/.test(login));
   verifier('le code part à verifier-code-express avec le numéro en attente', /functions\/v1\/verifier-code-express/.test(login) && /body: JSON\.stringify\(\{ phone: waitingPhone, code \}\)/.test(login));

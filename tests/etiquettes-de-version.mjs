@@ -79,6 +79,9 @@ export const FICHIERS_PARTAGES = [
   'lib/annonce-de-remise.js',
   'lib/tournee-de-recuperation.js',
   'lib/primes.js',
+  // Séance 3 (16 septembre 2026) : le code de l'espace équipe, sorti de la page.
+  'equipe/equipe.js',
+  'equipe/onglets.js',
 ];
 
 /* Relève, page par page, l'étiquette portée par chaque fichier partagé.

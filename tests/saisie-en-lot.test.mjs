@@ -463,7 +463,7 @@ titre('Le compte rendu après envoi dit la vérité, y compris quand elle est pa
    ========================================================================================== */
 titre('L\u2019écran de saisie en lot est bien branché dans l\u2019espace Équipe');
 {
-  const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
+  const equipe = ['equipe.html'].concat(fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort().map(f => 'equipe/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* la page et son code sorti (4.8) */;
 
   verifier('la section existe dans la page', /id="section-lot-colis"/.test(equipe));
   verifier('elle est placée dans l\u2019onglet « Colis »',

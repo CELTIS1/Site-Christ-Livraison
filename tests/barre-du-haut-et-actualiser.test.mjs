@@ -66,10 +66,11 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lireAvecCode } from './_lire-page.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
-const lire = (f) => fs.readFileSync(path.join(APP, f), 'utf8');
+const lire = (f) => lireAvecCode(APP, f);
 
 const commun = lire('clt-common.js');
 const css = lire('style.css');
