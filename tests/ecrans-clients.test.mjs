@@ -581,7 +581,9 @@ console.log('\nEspace cliente — plus aucun alert() natif (feuille de route 3.5
   verifier('les oublis de saisie sont des avertissements, les refus de la base des erreurs, la réussite un succès',
     /cltToast\("Le téléphone du destinataire est obligatoire[^"]*", \{ type: 'warning'/.test(fournisseur)
     && /cltToast\(friendlyErrorMessage\(error\.message\), \{ type: 'error' \}\)/.test(fournisseur)
-    && /cltToast\("Notifications activées[^"]*", \{ type: 'success' \}\)/.test(fournisseur));
+    && /cltInitPushButton\(profile\.role, \(\) => currentUser \? currentUser\.id : null\)/.test(fournisseur));
+  verifier('les notifications passent par le bloc partagé de clt-common.js, avec un bandeau de succès (3.6)',
+    !/VAPID_PUBLIC_KEY/.test(fournisseur) && /cltToast\("Notifications activées[^"]*", \{ type: 'success' \}\)/.test(lire('clt-common.js')));
 }
 
 /* ---------- Verdict ---------- */

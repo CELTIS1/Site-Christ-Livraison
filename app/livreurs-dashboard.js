@@ -286,7 +286,7 @@
     if (bouton) bouton.disabled = true;
     const { error } = await supabaseClient.from('colis').update({ echec_imputable: imputable }).eq('id', colisId);
     if (bouton) bouton.disabled = false;
-    if (error) { if (typeof cltToast === 'function') cltToast(error.message, { type: 'error' }); else alert(error.message); return; }
+    if (error) { cltToast(error.message, { type: 'error' }); return; }
     ldAQualifier = ldAQualifier.filter((c) => c.id !== colisId);
     const c = ldColis.find((x) => x.id === colisId); if (c) c.echec_imputable = imputable;
     if (typeof allColis !== 'undefined' && Array.isArray(allColis)) { const a = allColis.find((x) => x.id === colisId); if (a) a.echec_imputable = imputable; }

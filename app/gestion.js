@@ -94,7 +94,7 @@ function fmt(v){
   return String(Math.round(n(v))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 function fmtF(v){ return fmt(v) + ' F'; }
-function escapeHTML(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// escapeHTML() vit dans clt-common.js (chargé avant ce fichier) : même règle, une seule copie (3.6, 16/09/2026).
 
 /* -------------------- Facturation clients & Comptabilité générale : fonctions pures --------------------
  * Extraites et mises à l'épreuve par tests/comptabilite-generale.test.mjs et
@@ -596,8 +596,9 @@ async function refreshPhotoUrls(){
     (data || []).forEach((row, i) => { if (row && row.signedUrl) PHOTO_URLS[withPhoto[i].id] = row.signedUrl; });
   } catch(e){ console.error('photos', e); }
 }
-// Petit avatar (photo ou initiales) affiché devant le nom du salarié.
-function avatarHTML(s){
+// Petit avatar (photo ou initiales) affiché devant le nom du salarié. Nommé à part de
+// avatarHTML(profile, size) de config.js, qu'il masquait avec une autre signature (3.6, 16/09/2026).
+function avatarSalarieHTML(s){
   const url = PHOTO_URLS[s.id];
   const base = 'width:34px;height:34px;border-radius:50%;object-fit:cover;flex:0 0 auto;';
   if (url) return `<img src="${url}" alt="" data-sid="${escapeHTML(String(s.id))}" onerror="healPhoto(this)" style="${base}border:1px solid var(--border,#d0d7e2);">`;
@@ -1207,7 +1208,7 @@ async function toggleChauffeur(id, actif){
 function renderSalaries(){
   let body = SALARIES.map(s => `<tr>
     <td style="text-align:left;">${escapeHTML(s.matricule)}</td>
-    <td style="text-align:left;"><div style="display:flex;align-items:center;gap:9px;">${avatarHTML(s)}<span>${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</span></div></td>
+    <td style="text-align:left;"><div style="display:flex;align-items:center;gap:9px;">${avatarSalarieHTML(s)}<span>${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</span></div></td>
     <td style="text-align:left;">${escapeHTML(s.emploi||'—')}</td>
     <td>${escapeHTML(s.categorie||'—')}</td>
     <td>${fmt(GRILLE[s.categorie]||0)}</td>
@@ -3349,90 +3350,7 @@ function renderTVA(){
 /* ============================================================================
  * INITIALISATION
  * ==========================================================================*/
-// ---------- Notifications push (Web Push) ----------
-// Permet à l'administrateur / gestionnaire de recevoir des notifications même quand l'app est
-// fermée (changements de statut des colis). L'abonnement est stocké dans push_subscriptions ;
-// l'envoi réel est assuré par l'Edge Function Supabase « envoyer-push ». La clé publique VAPID
-// n'est pas secrète.
-const VAPID_PUBLIC_KEY = 'BGoo20rDx0dlhYT83d7J4xBpaKD7ZWNWeKvk6WE9QAEYuYmgZCkrOEpJYGnyBsJlwG2IIF_gq1_FuIroGB3ICtw';
-
-function urlBase64ToUint8Array(base64String){
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
-  return outputArray;
-}
-
-async function enregistrerAbonnementPush(subscription, role){
-  const json = subscription.toJSON();
-  const endpoint = json.endpoint;
-  const p256dh = json.keys && json.keys.p256dh;
-  const auth = json.keys && json.keys.auth;
-  if (!endpoint || !p256dh || !auth) return { error: { message: 'Abonnement incomplet' } };
-  return await supabaseClient.from('push_subscriptions').upsert({
-    user_id: PUSH_USER ? PUSH_USER.id : null,
-    role: role || null,
-    endpoint: endpoint,
-    p256dh: p256dh,
-    auth: auth,
-    user_agent: navigator.userAgent
-  }, { onConflict: 'endpoint' });
-}
-
-async function activerPush(role){
-  const btn = document.getElementById('btn-activer-push');
-  try {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-      alert("Votre navigateur ne prend pas en charge les notifications push. Sur iPhone/iPad, installez d'abord l'application sur l'écran d'accueil (Partager → Sur l'écran d'accueil), ouvrez-la depuis l'icône, puis réessayez.");
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      alert("Notifications refusées. Vous pouvez les réactiver dans les réglages de votre navigateur.");
-      return;
-    }
-    const reg = await navigator.serviceWorker.ready;
-    let sub = await reg.pushManager.getSubscription();
-    if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      });
-    }
-    const { error } = await enregistrerAbonnementPush(sub, role);
-    if (error) {
-      console.error('Enregistrement abonnement push échoué', error);
-      alert("Impossible d'enregistrer l'abonnement aux notifications. Réessayez plus tard.");
-      return;
-    }
-    if (btn) { btn.textContent = '🔔 Notifications activées ✓'; btn.disabled = true; }
-    alert("Notifications activées ! Vous serez averti des événements importants même quand l'app est fermée.");
-  } catch (e) {
-    console.error('Erreur activation push', e);
-    alert("Une erreur est survenue lors de l'activation des notifications.");
-  }
-}
-
-async function initPushButton(role){
-  const btn = document.getElementById('btn-activer-push');
-  if (!btn) return;
-  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-    btn.classList.add('hidden');
-    return;
-  }
-  btn.addEventListener('click', () => activerPush(role));
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription();
-    if (sub && Notification.permission === 'granted') {
-      await enregistrerAbonnementPush(sub, role);
-      btn.textContent = '🔔 Notifications activées ✓';
-    }
-  } catch (e) { /* silencieux */ }
-}
-
+// Notifications push : le bloc vit dans clt-common.js depuis le 16/09/2026 (feuille de route 3.6) — voir cltInitPushButton.
 /* ============================================================================
  * #3 — LIVRE DE CAISSE (solde d'ouverture + entrées / sorties + solde courant)
  * ==========================================================================*/
@@ -3754,6 +3672,7 @@ async function init(){
   // Les autres tableaux de bord (equipe, livreur, fournisseur, Express) font
   // déjà ce contrôle ; celui-ci manquait.
   if (!profile || profile.status !== 'valide') {
+    // alert() natif gardé volontairement (3.5/3.6) : la page redirige juste après, un bandeau disparaîtrait avec elle.
     alert(profile && profile.status === 'suspendu'
       ? "Votre accès a été suspendu par l'administrateur. Contactez l'équipe pour le rétablir."
       : "Votre compte n'est pas actif. Contactez l'équipe.");
@@ -3772,6 +3691,7 @@ async function init(){
     // Aucun droit sur le module Gestion. On renvoie vers le tableau de bord
     // opérationnel UNIQUEMENT si la personne y a réellement accès (admin ou
     // acces_operations), pour éviter une boucle de redirection equipe↔gestion.
+    // alert() natif gardé volontairement : redirection immédiate après.
     alert('Accès réservé à l\'administrateur et aux personnes autorisées.');
     const versOps = profile && (profile.role === 'admin' || profile.acces_operations === true);
     window.location.href = versOps ? 'equipe.html' : 'login.html';
@@ -3790,7 +3710,7 @@ async function init(){
     : '💰 Comptabilité';
 
   // Bouton d'activation des notifications push (réglage : accepter ou non les notifications).
-  initPushButton(profile.role);
+  cltInitPushButton(profile.role, () => PUSH_USER ? PUSH_USER.id : null);
 
   // Onglets visibles selon les capacités
   const setDisp = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };

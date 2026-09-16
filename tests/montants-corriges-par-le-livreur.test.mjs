@@ -94,6 +94,7 @@ const journalAlertes = [];
 const contexte = vm.createContext({
   console,
   alert: (m) => journalAlertes.push(String(m)),
+  cltToast: (m) => journalAlertes.push(String(m)),
   navigator: { onLine: true },
 });
 
@@ -284,7 +285,8 @@ Object.assign(contexte, {
   currentUser: { id: 'LIV1' },
   rememberWrite: () => {},
   renderAll: () => { redessine++; },
-  cltToast: (m, o) => toasts.push({ m, o }),
+  // Depuis le 16/09/2026 (3.5/3.6), un montant refusé est un bandeau d'erreur : il compte comme une alerte.
+  cltToast: (m, o) => { toasts.push({ m, o }); if (o && (o.type === 'error' || o.type === 'warning')) journalAlertes.push(String(m)); },
   // Une seule fausse question pour tout le fichier : elle note ce qui a été demandé et répond
   // ce qu'on lui dit. Deux stubs concurrents s'écrasaient l'un l'autre, et la section qui
   // vérifiait « la question est posée » ne voyait plus rien — un contrôle muet, donc vert.

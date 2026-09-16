@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916cliente">
-<script src="theme.js?v=20260916cliente"></script>
-<script src="splash.js?v=20260916cliente"></script>
+<link rel="stylesheet" href="style.css?v=20260916unecopie">
+<script src="theme.js?v=20260916unecopie"></script>
+<script src="splash.js?v=20260916unecopie"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1478,12 +1478,12 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916cliente"></script>
-<script src="config.js?v=20260916cliente"></script>
-<script src="clients-dashboard.js?v=20260916cliente"></script>
-<script src="livreurs-dashboard.js?v=20260916cliente"></script>
-<script src="biometric-lock.js?v=20260916cliente"></script>
-<script src="clt-select-recherche.js?v=20260916cliente"></script>
+<script src="clt-common.js?v=20260916unecopie"></script>
+<script src="config.js?v=20260916unecopie"></script>
+<script src="clients-dashboard.js?v=20260916unecopie"></script>
+<script src="livreurs-dashboard.js?v=20260916unecopie"></script>
+<script src="biometric-lock.js?v=20260916unecopie"></script>
+<script src="clt-select-recherche.js?v=20260916unecopie"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -2860,7 +2860,7 @@ const { data, error } = await supabaseClient
 .storage.from('express-kyc')
 .createSignedUrl(account.piece_identite_path, 60);
 if (error || !data) {
-alert('Erreur : impossible de charger la pièce d\'identité (fichier introuvable ou erreur réseau).');
+cltToast('Erreur : impossible de charger la pièce d\'identité (fichier introuvable ou erreur réseau).', { type: 'error' });
 btn.disabled = false;
 btn.textContent = '📷 Voir la pièce';
 return;
@@ -2870,7 +2870,7 @@ btn.disabled = false;
 btn.textContent = '📷 Voir la pièce';
 } catch (err) {
 console.error('Erreur lors de l\'accès à la pièce d\'identité :', err);
-alert('Erreur réseau. Vérifiez votre connexion et réessayez.');
+cltToast('Erreur réseau. Vérifiez votre connexion et réessayez.', { type: 'error' });
 btn.disabled = false;
 btn.textContent = '📷 Voir la pièce';
 }
@@ -2894,7 +2894,7 @@ Code : <strong style="font-size:16px; letter-spacing:2px;">${escapeHTML(r.code)}
 </div>`;
 if (window.cltToast) cltToast('Code tiré. Envoyez-le sur WhatsApp : la personne le saisit sur sa page de connexion.', { type: 'success' });
 } catch (err) {
-alert(friendlyErrorMessage(err.message));
+cltToast(friendlyErrorMessage(err.message), { type: 'error' });
 } finally {
 btn.disabled = false; btn.textContent = texteAvant;
 }
@@ -2906,7 +2906,7 @@ btn.addEventListener('click', async () => {
 const id = btn.closest('.colis-item').dataset.id;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('profiles').update({ status: 'valide' }).eq('id', id);
-if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; btn.textContent = 'Valider'; return; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); btn.disabled = false; btn.textContent = 'Valider'; return; }
 await loadPending();
 });
 });
@@ -2924,7 +2924,7 @@ const ok = await showConfirm({
 if (!ok) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('profiles').update({ status: 'rejete' }).eq('id', id);
-if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; btn.textContent = 'Rejeter'; return; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); btn.disabled = false; btn.textContent = 'Rejeter'; return; }
 await loadPending();
 });
 });
@@ -4299,7 +4299,7 @@ error = null;
 horsReseau = true;
 } catch (errFile) { console.error('Mise en file hors-réseau impossible :', errFile); }
 }
-if (error) { alert(friendlyErrorMessage(error.message)); return echec; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return echec; }
 
 const idx = allColis.findIndex(c => c.id === id);
 if (idx !== -1) Object.assign(allColis[idx], { statut }, extra);
@@ -4451,7 +4451,7 @@ const libelleBtn = bouton ? bouton.innerHTML : '';
 if (bouton) { bouton.disabled = true; bouton.textContent = 'Enregistrement…'; }
 const { error } = await supabaseClient.from('colis').update({ livreur_id }).in('id', aChanger.map(c => c.id));
 if (bouton) { bouton.disabled = false; bouton.innerHTML = libelleBtn; }
-if (error) { alert(friendlyErrorMessage(error.message)); return; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
 
 aChanger.forEach(c => {
 const idx = allColis.findIndex(x => x.id === c.id);
@@ -4862,7 +4862,7 @@ const dayKeyVal = btn.dataset.day;
 const groupe = btn.closest('.group-collecte-assign');
 const select = groupe ? groupe.querySelector('.select-assign-collecte') : null;
 const livreur_collecte_id = select ? select.value : '';
-if (!livreur_collecte_id) { if (window.cltToast) cltToast("Choisissez d'abord un livreur pour la collecte.", { type: 'warning' }); else alert("Choisissez d'abord un livreur pour la collecte."); return; }
+if (!livreur_collecte_id) { cltToast("Choisissez d'abord un livreur pour la collecte.", { type: 'warning' }); return; }
 const ids = filtered
 .filter(c => (c.fournisseur_id || "?") === fournisseurId && c.statut === 'en_attente' && !c.livreur_collecte_id && jourDuColis(c) === dayKeyVal)
 .map(c => c.id);
@@ -4882,7 +4882,7 @@ error = null;
 if (window.cltToast) cltToast("Pas de connexion : l'assignation est enregistrée sur cet appareil et partira dès le retour du réseau.", { type: 'info', duration: 7000 });
 } catch (errFile) { console.error('Mise en file hors-réseau impossible :', errFile); }
 }
-if (error) { alert(friendlyErrorMessage(error.message)); return; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
 ids.forEach(id => {
 const idx = allColis.findIndex(c => c.id === id);
 if (idx !== -1) allColis[idx].livreur_collecte_id = livreur_collecte_id;
@@ -4950,11 +4950,11 @@ const montantLivraisonInput = item.querySelector('.edit-montant-livraison');
 const montantArticleRaw = montantArticleInput ? montantArticleInput.value.trim() : '';
 const montantLivraisonRaw = montantLivraisonInput ? montantLivraisonInput.value.trim() : '';
 if (montantArticleInput && !isValidMontant(montantArticleRaw === '' ? null : montantArticleRaw)) {
-alert("Le montant article doit être un nombre positif.");
+cltToast("Le montant article doit être un nombre positif.", { type: 'warning' });
 return;
 }
 if (montantLivraisonInput && !isValidMontant(montantLivraisonRaw === '' ? null : montantLivraisonRaw)) {
-alert("Le montant livraison doit être un nombre positif.");
+cltToast("Le montant livraison doit être un nombre positif.", { type: 'warning' });
 return;
 }
 const montant_article = montantArticleInput ? (montantArticleRaw === '' ? null : Number(montantArticleRaw)) : undefined;
@@ -4973,7 +4973,7 @@ const livraison_payee = livraisonPayeeInput ? livraisonPayeeInput.checked : unde
 const fraisExpInput = item.querySelector('.edit-frais-expedition');
 const fraisExpRaw = fraisExpInput ? fraisExpInput.value.trim() : '';
 if (fraisExpInput && !isValidMontant(fraisExpRaw === '' ? null : fraisExpRaw)) {
-alert("Les frais d'expédition doivent être un nombre positif.");
+cltToast("Les frais d'expédition doivent être un nombre positif.", { type: 'warning' });
 return;
 }
 const frais_expedition = fraisExpInput ? (fraisExpRaw === '' ? null : Number(fraisExpRaw)) : undefined;
@@ -5011,7 +5011,7 @@ destinataire_telephone = null;
 let telDigits = telSaisi.replace(/[^0-9]/g, '');
 if (telDigits.startsWith('225')) telDigits = telDigits.slice(3);
 if (typeof isValidPhoneCI === 'function' && !isValidPhoneCI(telDigits)) {
-alert("Le téléphone du destinataire est invalide (10 chiffres attendus, ex. 0546818640). Corrigez-le ou laissez la case vide.");
+cltToast("Le téléphone du destinataire est invalide (10 chiffres attendus, ex. 0546818640). Corrigez-le ou laissez la case vide.", { type: 'warning' });
 telDestInput.focus();
 return;
 }
@@ -5085,7 +5085,7 @@ error = null;
 if (window.cltToast) cltToast("Pas de connexion : cette modification est enregistrée sur cet appareil et partira dès le retour du réseau.", { type: 'info', duration: 7000 });
 } catch (errFile) { console.error('Mise en file hors-réseau impossible :', errFile); }
 }
-if (error) { alert(friendlyErrorMessage(error.message)); return; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
 // Un transfert de cliente déplace de l'argent d'un relevé à un autre : il laisse une trace.
 if (fournisseur_id !== undefined) {
   const avantColis = allColis.find(c => c.id === id);
@@ -5135,7 +5135,7 @@ if (!okDelete) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('colis').delete().eq('id', id);
 if (error) {
-alert(friendlyErrorMessage(error.message));
+cltToast(friendlyErrorMessage(error.message), { type: 'error' });
 btn.disabled = false; btn.textContent = originalText;
 return;
 }
@@ -5501,7 +5501,7 @@ if (!okPromote) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('profiles').update({ role: 'admin' }).eq('id', id);
 if (error) {
-alert(friendlyErrorMessage(error.message));
+cltToast(friendlyErrorMessage(error.message), { type: 'error' });
 btn.disabled = false; btn.textContent = '⭐ Promouvoir admin';
 return;
 }
@@ -5544,7 +5544,7 @@ const { error } = await supabaseClient
 if (error) {
 // Le refus du dernier administrateur actif vient d'ici : c'est la base qui
 // tranche, et son message est déjà écrit pour être lu.
-alert(friendlyErrorMessage(error.message));
+cltToast(friendlyErrorMessage(error.message), { type: 'error' });
 btn.disabled = false; btn.textContent = '↩️ Rétrograder en équipe';
 return;
 }
@@ -5552,7 +5552,7 @@ try {
 await supabaseClient.from('activity_log').insert([{ action: 'retrogradation_admin', target_id: id, target_type: 'profiles', details: { full_name: account && account.full_name, phone: account && account.phone } }]);
 } catch (e) { /* non bloquant */ }
 if (soiMeme) {
-alert("Votre rôle administrateur a été retiré. La page va se recharger.");
+cltToast("Votre rôle administrateur a été retiré. La page va se recharger.", { type: 'warning' });
 window.location.reload();
 return;
 }
@@ -5591,10 +5591,10 @@ try {
 const res = await callAdminFunction('admin-lancer-reset', { user_id: id });
 const minutes = (res && res.minutes) || 30;
 const qui = (res && (res.full_name || res.phone)) || (account && account.full_name) || 'cette personne';
-alert(`C'est ouvert pour ${qui}.\n\nDites-lui d'aller sur la page de connexion, de cliquer sur « Mot de passe oublié », d'entrer son numéro et de choisir son nouveau mot de passe.\n\nElle a ${minutes} minutes. Passé ce délai, il faudra recommencer.`);
+cltToast(`C'est ouvert pour ${qui}.\n\nDites-lui d'aller sur la page de connexion, de cliquer sur « Mot de passe oublié », d'entrer son numéro et de choisir son nouveau mot de passe.\n\nElle a ${minutes} minutes. Passé ce délai, il faudra recommencer.`, { type: 'success', duration: 9000 });
 if (isAdmin) await loadActivityLog();
 } catch (err) {
-alert(friendlyErrorMessage(err.message));
+cltToast(friendlyErrorMessage(err.message), { type: 'error' });
 }
 btn.disabled = false; btn.textContent = '🔑 Réinitialiser le mot de passe';
 });
@@ -5624,7 +5624,7 @@ await callAdminFunction('admin-suspendre-compte', { user_id: id, suspendre: true
 await loadAllAccounts();
 if (isAdmin) await loadActivityLog();
 } catch (err) {
-alert(friendlyErrorMessage(err.message));
+cltToast(friendlyErrorMessage(err.message), { type: 'error' });
 btn.disabled = false; btn.textContent = '⏸ Suspendre le compte';
 }
 });
@@ -5652,7 +5652,7 @@ await callAdminFunction('admin-suspendre-compte', { user_id: id, suspendre: fals
 await loadAllAccounts();
 if (isAdmin) await loadActivityLog();
 } catch (err) {
-alert(friendlyErrorMessage(err.message));
+cltToast(friendlyErrorMessage(err.message), { type: 'error' });
 btn.disabled = false; btn.textContent = '✅ Réactiver le compte';
 }
 });
@@ -5676,7 +5676,7 @@ const ok = await showConfirm({
 if (!ok) return;
 btn.disabled = true;
 const { error } = await supabaseClient.from('profiles').update({ [champ]: !actif }).eq('id', id);
-if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; return; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); btn.disabled = false; return; }
 try {
 await supabaseClient.from('activity_log').insert([{ action: (!actif ? 'acces_gestion_accorde' : 'acces_gestion_retire'), target_id: id, target_type: 'profiles', details: { champ, libelle, full_name: account && account.full_name, phone: account && account.phone } }]);
 } catch (e) { /* non bloquant */ }
@@ -5699,7 +5699,7 @@ e.stopPropagation();
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
 if (currentUser && id === currentUser.id) {
-alert("Vous ne pouvez pas supprimer votre propre compte administrateur.");
+cltToast("Vous ne pouvez pas supprimer votre propre compte administrateur.", { type: 'warning' });
 return;
 }
 const account = allAccounts.find(a => a.id === id);
@@ -5753,7 +5753,7 @@ const isUnhelpful = !raw || raw === '{}' || raw === '[object Object]' || raw.toL
 const msg = isUnhelpful
   ? "La suppression a échoué et le serveur n'a pas renvoyé de détail exploitable. Cela peut venir d'éléments encore liés à ce compte (colis, historique, etc.) côté serveur, ou d'une erreur technique de la fonction de suppression. Réessayez, et si le problème persiste, consultez les journaux (logs) de la fonction 'admin-supprimer-compte' dans le tableau de bord Supabase."
   : raw;
-alert(friendlyErrorMessage(msg));
+cltToast(friendlyErrorMessage(msg), { type: 'error' });
 btn.disabled = false; btn.textContent = '🗑 Supprimer';
 }
 });
@@ -6700,7 +6700,7 @@ if (nbColis) nbColis.value = (nbAnnonce === undefined ? '' : nbAnnonce);
 const ancre = document.getElementById('prog-fournisseur');
 if (ancre && ancre.scrollIntoView) ancre.scrollIntoView({ block: 'center' });
 if (manquants.length) {
-alert('Impossible de pré-remplir ' + manquants.join(' et ') + " : la fiche n'est plus dans la liste. Choisissez-la à la main.");
+cltToast('Impossible de pré-remplir ' + manquants.join(' et ') + " : la fiche n'est plus dans la liste. Choisissez-la à la main.", { type: 'error' });
 }
 }
 
@@ -7710,7 +7710,7 @@ if (xls) xls.addEventListener('click', exportRecapDayExcel);
 // Excel : une feuille, un titre + la date, puis une section par cliente (nom, colonnes, colis, sous-total).
 function exportRecapDayExcel(){
 const colisJour = recapDayColis();
-if (!colisJour.length) { alert("Aucune cliente enregistrée pour ce jour."); return; }
+if (!colisJour.length) { cltToast("Aucune cliente enregistrée pour ce jour.", { type: 'warning' }); return; }
 const groups = recapDayGroups(colisJour);
 const dateLabel = recapDayLabel(recapGetDate());
 const tJour = totauxArgent(colisJour);
@@ -7745,7 +7745,7 @@ XLSX.writeFile(wb, `${recapExportBaseName()}.xlsx`);
 // tout seul en bas d'une page pendant que son tableau part sur la suivante.
 async function exportRecapDayPDF(){
 const colisJour = recapDayColis();
-if (!colisJour.length) { alert("Aucune cliente enregistrée pour ce jour."); return; }
+if (!colisJour.length) { cltToast("Aucune cliente enregistrée pour ce jour.", { type: 'warning' }); return; }
 const groups = recapDayGroups(colisJour);
 const dateLabel = recapDayLabel(recapGetDate());
 const tJour = totauxArgent(colisJour);
@@ -8335,7 +8335,7 @@ const tr = btn.closest('tr');
 const id = tr.dataset.id;
 const artRaw = tr.querySelector('.compta-edit-article').value.trim();
 if (!isValidMontant(artRaw === '' ? null : artRaw)) {
-alert("Le montant doit être un nombre positif.");
+cltToast("Le montant doit être un nombre positif.", { type: 'warning' });
 return;
 }
 const montant_article = artRaw === '' ? null : Number(artRaw);
@@ -8349,7 +8349,7 @@ const montant = (montant_article !== null || montant_livraison !== null)
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('colis').update({ montant, montant_article, article_non_encaisse, observation }).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';
-if (error) { alert(friendlyErrorMessage(error.message)); return; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
 const idx = allColis.findIndex(c => c.id === id);
 if (idx !== -1) Object.assign(allColis[idx], { montant, montant_article, article_non_encaisse, observation });
 renderCompta();
@@ -8615,7 +8615,7 @@ error = null;
 if (window.cltToast) cltToast("Pas de connexion : cette correction est enregistrée sur cet appareil et partira dès le retour du réseau.", { type: 'info', duration: 7000 });
 } catch (errFile) { console.error('Mise en file hors-réseau impossible :', errFile); }
 }
-if (error) { alert(friendlyErrorMessage(error.message)); return false; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return false; }
 
 // Le journal : qui a corrigé quoi, et depuis où. Sans cette ligne, une correction faite d'un
 // coup de pouce dans une fiche serait la seule action de l'application dont il ne resterait
@@ -9460,7 +9460,7 @@ if (typeof progEntrerEnModification === 'function') progEntrerEnModification(p.g
 
 document.getElementById('btn-export-excel').addEventListener('click', async () => {
 const rows = await comptaFiltered();
-if (!rows.length) { alert("Aucune donnée à exporter."); return; }
+if (!rows.length) { cltToast("Aucune donnée à exporter.", { type: 'warning' }); return; }
 // Colonnes volontairement séparées : l'article appartient à la cliente, la livraison est le
 // revenu de CLT. Aucune colonne ne mélange les deux (règle d'argent commune, voir config.js).
 const data = rows.map(c => ({
@@ -9511,7 +9511,7 @@ XLSX.writeFile(wb, `comptabilite-${new Date().toISOString().slice(0, 10)}.xlsx`)
 // fichier : les deux fonctions rendent une chaîne, et le test passait.
 document.getElementById('btn-export-pdf').addEventListener('click', async () => {
 const rows = await comptaFiltered();
-if (!rows.length) { alert("Aucune donnée à exporter."); return; }
+if (!rows.length) { cltToast("Aucune donnée à exporter.", { type: 'warning' }); return; }
 const t = totauxArgent(rows);
 const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
 const sections = [];
@@ -9755,7 +9755,7 @@ const id = btn.closest('.colis-item').dataset.id;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('express_courses').update({ commission_reglee: true }).eq('id', id);
 if (error) {
-alert(friendlyErrorMessage(error.message));
+cltToast(friendlyErrorMessage(error.message), { type: 'error' });
 btn.disabled = false; btn.textContent = '✅ Commission reçue';
 return;
 }
@@ -9881,7 +9881,7 @@ const id = btn.closest('.colis-item').dataset.id;
 if (!(await showConfirm({ title: 'Valider cette recharge ?', sub: 'Le solde du coursier sera crédité immédiatement.', okLabel: 'Valider' }))) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('express_recharges').update({ status: 'validee' }).eq('id', id).eq('status', 'en_attente');
-if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; btn.textContent = '✅ Valider'; return; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); btn.disabled = false; btn.textContent = '✅ Valider'; return; }
 await loadExpressRecharges();
 });
 });
@@ -9891,7 +9891,7 @@ const id = btn.closest('.colis-item').dataset.id;
 if (!(await showConfirm({ title: 'Refuser cette recharge ?', sub: 'Le solde ne sera pas crédité.', okLabel: 'Refuser', danger: true }))) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('express_recharges').update({ status: 'refusee' }).eq('id', id).eq('status', 'en_attente');
-if (error) { alert(friendlyErrorMessage(error.message)); btn.disabled = false; btn.textContent = 'Refuser'; return; }
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); btn.disabled = false; btn.textContent = 'Refuser'; return; }
 await loadExpressRecharges();
 });
 });
@@ -9906,92 +9906,7 @@ trackChannel(supabaseClient
 .subscribe());
 }
 
-// ---------- Notifications push (Web Push) ----------
-// Permet au personnel (équipe/admin) de recevoir des notifications même quand l'app est fermée.
-// L'abonnement (endpoint + clés) est stocké dans la table push_subscriptions ; l'envoi réel est
-// assuré par l'Edge Function Supabase « envoyer-push ». La clé publique VAPID ci-dessous n'est PAS
-// secrète (elle est de toute façon exposée au navigateur) ; la clé privée reste côté serveur.
-const VAPID_PUBLIC_KEY = 'BGoo20rDx0dlhYT83d7J4xBpaKD7ZWNWeKvk6WE9QAEYuYmgZCkrOEpJYGnyBsJlwG2IIF_gq1_FuIroGB3ICtw';
-
-function urlBase64ToUint8Array(base64String){
-const padding = '='.repeat((4 - base64String.length % 4) % 4);
-const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-const rawData = atob(base64);
-const outputArray = new Uint8Array(rawData.length);
-for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
-return outputArray;
-}
-
-async function enregistrerAbonnementPush(subscription, role){
-const json = subscription.toJSON();
-const endpoint = json.endpoint;
-const p256dh = json.keys && json.keys.p256dh;
-const auth = json.keys && json.keys.auth;
-if (!endpoint || !p256dh || !auth) return { error: { message: 'Abonnement incomplet' } };
-return await supabaseClient.from('push_subscriptions').upsert({
-user_id: currentUser ? currentUser.id : null,
-role: role || null,
-endpoint: endpoint,
-p256dh: p256dh,
-auth: auth,
-user_agent: navigator.userAgent
-}, { onConflict: 'endpoint' });
-}
-
-async function activerPush(role){
-const btn = document.getElementById('btn-activer-push');
-try {
-if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-alert("Votre navigateur ne prend pas en charge les notifications push. Sur iPhone/iPad, installez d'abord l'application sur l'écran d'accueil (Partager → Sur l'écran d'accueil), ouvrez-la depuis l'icône, puis réessayez.");
-return;
-}
-const permission = await Notification.requestPermission();
-if (permission !== 'granted') {
-alert("Notifications refusées. Vous pouvez les réactiver dans les réglages de votre navigateur.");
-return;
-}
-const reg = await navigator.serviceWorker.ready;
-let sub = await reg.pushManager.getSubscription();
-if (!sub) {
-sub = await reg.pushManager.subscribe({
-userVisibleOnly: true,
-applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-});
-}
-const { error } = await enregistrerAbonnementPush(sub, role);
-if (error) {
-console.error('Enregistrement abonnement push échoué', error);
-alert("Impossible d'enregistrer l'abonnement aux notifications. Réessayez plus tard.");
-return;
-}
-if (btn) { btn.textContent = '🔔 Notifications activées ✓'; btn.disabled = true; }
-alert("Notifications activées ! Vous serez averti des événements importants même quand l'app est fermée.");
-} catch (e) {
-console.error('Erreur activation push', e);
-alert("Une erreur est survenue lors de l'activation des notifications.");
-}
-}
-
-async function initPushButton(role){
-const btn = document.getElementById('btn-activer-push');
-if (!btn) return;
-if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-btn.classList.add('hidden');
-return;
-}
-btn.addEventListener('click', () => activerPush(role));
-// Si déjà abonné sur cet appareil, refléter l'état et ré-enregistrer discrètement l'abonnement
-// (au cas où il existerait côté navigateur mais aurait disparu côté serveur).
-try {
-const reg = await navigator.serviceWorker.ready;
-const sub = await reg.pushManager.getSubscription();
-if (sub && Notification.permission === 'granted') {
-await enregistrerAbonnementPush(sub, role);
-btn.textContent = '🔔 Notifications activées ✓';
-}
-} catch (e) { /* silencieux */ }
-}
-
+// Notifications push : le bloc vit dans clt-common.js depuis le 16/09/2026 (feuille de route 3.6) — voir cltInitPushButton.
 // ---------- Filet de sécurité temps réel ----------
 // Le tableau de bord se met à jour via Supabase Realtime (WebSocket). Mais ce canal peut tomber
 // sans prévenir : mise en veille de l'appareil, coupure réseau, ou passage de l'app en arrière-plan
@@ -10103,7 +10018,7 @@ initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContaine
 initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
 initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
 initSettingsMenu();
-initPushButton(profile.role);
+cltInitPushButton(profile.role, () => currentUser ? currentUser.id : null);
 initDeleteAccountRequest({ profile, requestBtnId: 'btn-request-delete', cancelBtnId: 'btn-cancel-delete', msgId: 'account-delete-msg', stateContainerId: 'account-delete-state' });
 
 // Présence en ligne : visible par toute l'équipe (pas seulement l'administrateur).

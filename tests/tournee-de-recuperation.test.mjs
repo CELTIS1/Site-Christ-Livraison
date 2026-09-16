@@ -1236,6 +1236,7 @@ envoyes.length = 0;
 
 Object.assign(contexte, {
   alert: (m) => alertes.push(m),
+  cltToast: (m) => alertes.push(m),
   Event: function Evenement(type, opts) { this.type = type; this.bubbles = !!(opts && opts.bubbles); },
 });
 vm.runInContext(blocDe(equipe, 'progPreremplir', 'equipe.html'), contexte);

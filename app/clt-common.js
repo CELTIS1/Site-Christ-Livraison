@@ -208,14 +208,14 @@ function wireImagePicker(inputIds, onFile) {
       input.value = ""; // réinitialisé immédiatement : permet de rechoisir le même fichier ensuite
       if (!file) return;
       if (!file.type || !file.type.startsWith("image/")) {
-        alert("Veuillez choisir un fichier image.");
+        cltToast("Choisissez un fichier image.", { type: 'warning' });
         return;
       }
       // Plafond aligné sur la limite réelle du stockage (15 Mo). Les photos sont compressées
       // juste avant l'envoi : ce plafond ne sert donc qu'à écarter un fichier aberrant, il ne
       // doit pas refuser une photo de téléphone récent, qui dépasse souvent 8 Mo.
       if (file.size > 15 * 1024 * 1024) {
-        alert("L'image est trop volumineuse (15 Mo maximum).");
+        cltToast("L'image est trop volumineuse (15 Mo maximum).", { type: 'warning' });
         return;
       }
       await onFile(file);
@@ -816,6 +816,98 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
     };
   } catch (e) { /* dégradation silencieuse */ }
 })();
+
+/* =====================================================================
+   LES NOTIFICATIONS (WEB PUSH) — une seule copie, 16 septembre 2026 (feuille de route 3.6)
+   ---------------------------------------------------------------------
+   Ce bloc était recopié dans six pages (équipe, livreur, cliente, gestion,
+   Express client, Express coursier), à l'identique. Six copies, c'est six
+   endroits à corriger le jour où un message change — et cinq oubliés. Il vit
+   ici, une fois. Chaque page appelle cltInitPushButton(role, () => id de
+   l'utilisateur connecté). La clé publique VAPID n'est pas secrète ; l'envoi
+   réel est assuré par la fonction serveur « envoyer-push ».
+   ===================================================================== */
+const CLT_VAPID_PUBLIC_KEY = 'BGoo20rDx0dlhYT83d7J4xBpaKD7ZWNWeKvk6WE9QAEYuYmgZCkrOEpJYGnyBsJlwG2IIF_gq1_FuIroGB3ICtw';
+
+function cltUrlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+function cltPushDisponible(){
+  return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+}
+
+async function cltEnregistrerAbonnementPush(subscription, role, userId){
+  const json = subscription.toJSON();
+  const endpoint = json.endpoint;
+  const p256dh = json.keys && json.keys.p256dh;
+  const auth = json.keys && json.keys.auth;
+  if (!endpoint || !p256dh || !auth) return { error: { message: 'Abonnement incomplet' } };
+  return await supabaseClient.from('push_subscriptions').upsert({
+    user_id: userId || null,
+    role: role || null,
+    endpoint: endpoint,
+    p256dh: p256dh,
+    auth: auth,
+    user_agent: navigator.userAgent
+  }, { onConflict: 'endpoint' });
+}
+
+async function cltActiverPush(role, userId){
+  const btn = document.getElementById('btn-activer-push');
+  try {
+    if (!cltPushDisponible()) {
+      cltToast("Votre navigateur ne prend pas en charge les notifications. Sur iPhone/iPad, installez d'abord l'application sur l'écran d'accueil (Partager → Sur l'écran d'accueil), ouvrez-la depuis l'icône, puis réessayez.", { type: 'info', duration: 9000 });
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      cltToast("Notifications refusées. Vous pouvez les réactiver dans les réglages de votre navigateur.", { type: 'warning' });
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: cltUrlBase64ToUint8Array(CLT_VAPID_PUBLIC_KEY) });
+    }
+    const { error } = await cltEnregistrerAbonnementPush(sub, role, userId);
+    if (error) {
+      console.error('Enregistrement abonnement push échoué', error);
+      cltToast("Impossible d'enregistrer l'abonnement aux notifications. Réessayez plus tard.", { type: 'error' });
+      return;
+    }
+    if (btn) { btn.textContent = '🔔 Notifications activées ✓'; btn.disabled = true; }
+    cltToast("Notifications activées : vous serez averti(e) des événements importants même quand l'application est fermée.", { type: 'success' });
+  } catch (e) {
+    console.error('Erreur activation push', e);
+    cltToast("Une erreur est survenue lors de l'activation des notifications.", { type: 'error' });
+  }
+}
+
+// role : le rôle du compte ; lireUserId : une fonction qui renvoie l'identifiant de l'utilisateur
+// connecté au moment de l'appel (chaque page garde son propre `currentUser`).
+async function cltInitPushButton(role, lireUserId){
+  const btn = document.getElementById('btn-activer-push');
+  if (!btn) return;
+  if (!cltPushDisponible()) { btn.classList.add('hidden'); return; }
+  const userId = () => { try { return lireUserId ? lireUserId() : null; } catch (e) { return null; } };
+  btn.addEventListener('click', () => cltActiverPush(role, userId()));
+  // Si déjà abonné sur cet appareil, refléter l'état et ré-enregistrer discrètement l'abonnement
+  // (au cas où il existerait côté navigateur mais aurait disparu côté serveur).
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub && Notification.permission === 'granted') {
+      await cltEnregistrerAbonnementPush(sub, role, userId());
+      btn.textContent = '🔔 Notifications activées ✓';
+    }
+  } catch (e) { /* silencieux */ }
+}
 
 /* =====================================================================
    LE BOUTON « ACTUALISER » — ajout du 25 août 2026

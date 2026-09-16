@@ -91,6 +91,7 @@ function contexteEquipe(o){
     eqQueueAjouter: async entree => { file.push(JSON.parse(JSON.stringify(entree))); },
     friendlyErrorMessage: m => String(m),
     alert: m => { ctx.__alertes = (ctx.__alertes || []).concat(String(m)); },
+    cltToast: m => { ctx.__alertes = (ctx.__alertes || []).concat(String(m)); },
     renderColis(){ ctx.__rendus = (ctx.__rendus || 0) + 1; },
     __journal: journal, __toasts: toasts, __file: file
   };
@@ -100,7 +101,8 @@ function contexteEquipe(o){
   vm.runInContext(blocExpedition + '\n' + blocVocabulaire, ctx);
   vm.runInContext(codeEquipe, ctx);
   // cltToast est posé après coup, comme le fait clt-common.js dans la vraie page.
-  ctx.cltToast = (msg, opts) => { toasts.push({ msg, opts: opts || {} }); return { dismiss(){} }; };
+  // Depuis le 16/09/2026 (3.5/3.6), les refus de la base sont des bandeaux d'erreur : ils comptent comme des alertes.
+  ctx.cltToast = (msg, opts) => { toasts.push({ msg, opts: opts || {} }); if (opts && opts.type === 'error') ctx.__alertes = (ctx.__alertes || []).concat(String(msg)); return { dismiss(){} }; };
   return ctx;
 }
 
@@ -122,6 +124,7 @@ function contexteLivreur(o){
     renderAll(){ ctx.__rendus = (ctx.__rendus || 0) + 1; },
     friendlyErrorMessage: m => String(m),
     alert: m => { ctx.__alertes = (ctx.__alertes || []).concat(String(m)); },
+    cltToast: m => { ctx.__alertes = (ctx.__alertes || []).concat(String(m)); },
     // Les deux boîtes de dialogue restent branchées et comptées, alors que plus rien ne les
     // appelle depuis le retrait du code de confirmation. C'est justement le point : partir de
     // zéro et non de `undefined` permet d'écrire « aucune question n'a été posée » comme une
@@ -139,7 +142,8 @@ function contexteLivreur(o){
   vm.runInContext(blocStatuts, ctx);
   vm.runInContext(blocExpedition + '\n' + blocVocabulaire, ctx);
   vm.runInContext(codeLivreur, ctx);
-  ctx.cltToast = (msg, opts) => { toasts.push({ msg, opts: opts || {} }); return { dismiss(){} }; };
+  // Depuis le 16/09/2026 (3.5/3.6), les refus de la base sont des bandeaux d'erreur : ils comptent comme des alertes.
+  ctx.cltToast = (msg, opts) => { toasts.push({ msg, opts: opts || {} }); if (opts && opts.type === 'error') ctx.__alertes = (ctx.__alertes || []).concat(String(msg)); return { dismiss(){} }; };
   return ctx;
 }
 

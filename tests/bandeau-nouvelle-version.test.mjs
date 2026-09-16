@@ -423,10 +423,11 @@ verifier(
    v110, le 16/09/2026 — feuille de route 3.2 : l'équipe parle comme le livreur sur les expéditions (« Expédié », jamais « En livraison ») dans la fiche, les actions rapides, le journal, la comptabilité et les exports (equipe.html) : étiquette 20260916expeditions.
    v111, le 16/09/2026 — feuille de route 3.4 : relevé partagé des charges de personnel, la paie publie des totaux, la comptabilité seule les lit et nomme les mois manquants (gestion.html, gestion.js) : étiquette 20260916personnel.
    v112, le 16/09/2026 — feuille de route 3.3 : comptabilité générale sur l'activité réelle — écritures des recettes et de la paie, génération du mois, période, exports Excel et impression (gestion.html, gestion.js) : étiquette 20260916compta.
-   v113, le 16/09/2026 — feuille de route 3.5 : plus aucun alert() natif dans l'espace cliente, des bandeaux typés à la place (fournisseur.html) : étiquette 20260916cliente. */
+   v113, le 16/09/2026 — feuille de route 3.5 : plus aucun alert() natif dans l'espace cliente, des bandeaux typés à la place (fournisseur.html) : étiquette 20260916cliente.
+   v114, le 16/09/2026 — feuille de route 3.6 : notifications push en une seule copie (clt-common.js), escapeHTML unique, avatarSalarieHTML ; plus aucun alert() natif dans tous les espaces (equipe, livreur, fournisseur, express-client, express-coursier, gestion.js, clients-dashboard.js, livreurs-dashboard.js) : étiquette 20260916unecopie. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v113'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v114'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

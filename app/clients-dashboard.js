@@ -542,7 +542,7 @@
     if (error) {
       console.error('Reversement :', error);
       if (typeof cltToast === 'function') cltToast(error.message || 'Le reversement n’a pas pu être enregistré.', { type: 'error', title: 'Non enregistré' });
-      else alert(error.message);
+      else cltToast(error.message, { type: 'error' });
       if (btn) { btn.disabled = false; btn.textContent = 'Réessayer'; }
       return;
     }
@@ -562,7 +562,7 @@
     if (!ok) return;
     const { error } = await supabaseClient.rpc('annuler_reversement', { p_id: id, p_motif: null });
     if (error) {
-      if (typeof cltToast === 'function') cltToast(error.message || 'Annulation impossible.', { type: 'error' }); else alert(error.message);
+      cltToast(error.message || 'Annulation impossible.', { type: 'error' });
       return;
     }
     if (typeof cltToast === 'function') cltToast('Reversement annulé.', { type: 'info' });

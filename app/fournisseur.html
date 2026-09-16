@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916cliente">
-<script src="theme.js?v=20260916cliente"></script>
-<script src="splash.js?v=20260916cliente"></script>
+<link rel="stylesheet" href="style.css?v=20260916unecopie">
+<script src="theme.js?v=20260916unecopie"></script>
+<script src="splash.js?v=20260916unecopie"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -471,10 +471,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916cliente"></script>
-<script src="config.js?v=20260916cliente"></script>
-<script src="biometric-lock.js?v=20260916cliente"></script>
-<script src="clt-select-recherche.js?v=20260916cliente"></script>
+<script src="clt-common.js?v=20260916unecopie"></script>
+<script src="config.js?v=20260916unecopie"></script>
+<script src="biometric-lock.js?v=20260916unecopie"></script>
+<script src="clt-select-recherche.js?v=20260916unecopie"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2690,89 +2690,7 @@
   document.getElementById('jour-select').addEventListener('change', () => { recapJourChoisi = document.getElementById('jour-select').value; renderRecapMois(); });
   document.getElementById('colis-jour-date').addEventListener('change', renderColisDuJour);
 
-  // ---------- Notifications push (Web Push) ----------
-  // Permet au client de recevoir des notifications même quand l'app est fermée (colis récupéré,
-  // livré, échec, retour). L'abonnement est stocké dans push_subscriptions ; l'envoi réel est
-  // assuré par l'Edge Function Supabase « envoyer-push ». La clé publique VAPID n'est pas secrète.
-  const VAPID_PUBLIC_KEY = 'BGoo20rDx0dlhYT83d7J4xBpaKD7ZWNWeKvk6WE9QAEYuYmgZCkrOEpJYGnyBsJlwG2IIF_gq1_FuIroGB3ICtw';
-
-  function urlBase64ToUint8Array(base64String){
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
-    return outputArray;
-  }
-
-  async function enregistrerAbonnementPush(subscription, role){
-    const json = subscription.toJSON();
-    const endpoint = json.endpoint;
-    const p256dh = json.keys && json.keys.p256dh;
-    const auth = json.keys && json.keys.auth;
-    if (!endpoint || !p256dh || !auth) return { error: { message: 'Abonnement incomplet' } };
-    return await supabaseClient.from('push_subscriptions').upsert({
-      user_id: currentUser ? currentUser.id : null,
-      role: role || null,
-      endpoint: endpoint,
-      p256dh: p256dh,
-      auth: auth,
-      user_agent: navigator.userAgent
-    }, { onConflict: 'endpoint' });
-  }
-
-  async function activerPush(role){
-    const btn = document.getElementById('btn-activer-push');
-    try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-        cltToast("Votre navigateur ne prend pas en charge les notifications. Sur iPhone/iPad, installez d'abord l'application sur l'écran d'accueil (Partager → Sur l'écran d'accueil), ouvrez-la depuis l'icône, puis réessayez.", { type: 'info', duration: 9000 });
-        return;
-      }
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        cltToast("Notifications refusées. Vous pouvez les réactiver dans les réglages de votre navigateur.", { type: 'warning' });
-        return;
-      }
-      const reg = await navigator.serviceWorker.ready;
-      let sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-      }
-      const { error } = await enregistrerAbonnementPush(sub, role);
-      if (error) {
-        console.error('Enregistrement abonnement push échoué', error);
-        cltToast("Impossible d'enregistrer l'abonnement aux notifications. Réessayez plus tard.", { type: 'error' });
-        return;
-      }
-      if (btn) { btn.textContent = '🔔 Notifications activées ✓'; btn.disabled = true; }
-      cltToast("Notifications activées : vous serez averti(e) des événements importants même quand l'application est fermée.", { type: 'success' });
-    } catch (e) {
-      console.error('Erreur activation push', e);
-      cltToast("Une erreur est survenue lors de l'activation des notifications.", { type: 'error' });
-    }
-  }
-
-  async function initPushButton(role){
-    const btn = document.getElementById('btn-activer-push');
-    if (!btn) return;
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-      btn.classList.add('hidden');
-      return;
-    }
-    btn.addEventListener('click', () => activerPush(role));
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (sub && Notification.permission === 'granted') {
-        await enregistrerAbonnementPush(sub, role);
-        btn.textContent = '🔔 Notifications activées ✓';
-      }
-    } catch (e) { /* silencieux */ }
-  }
-
+  // Notifications push : le bloc vit dans clt-common.js depuis le 16/09/2026 (feuille de route 3.6) — voir cltInitPushButton.
   async function init(){
     const session = await requireAuth();
     if (!session) return;
@@ -2819,7 +2737,7 @@
     initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', companyNameId: 'profile-company-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
     initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
     initSettingsMenu();
-    initPushButton(profile.role);
+    cltInitPushButton(profile.role, () => currentUser ? currentUser.id : null);
     initDeleteAccountRequest({ profile, requestBtnId: 'btn-request-delete', cancelBtnId: 'btn-cancel-delete', msgId: 'account-delete-msg', stateContainerId: 'account-delete-state' });
     // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }

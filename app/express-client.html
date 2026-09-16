@@ -17,9 +17,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916cliente">
-<script src="theme.js?v=20260916cliente"></script>
-<script src="splash.js?v=20260916cliente"></script>
+<link rel="stylesheet" href="style.css?v=20260916unecopie">
+<script src="theme.js?v=20260916unecopie"></script>
+<script src="splash.js?v=20260916unecopie"></script>
 <style>
   /* ===== Thème violet CLT Express + rafraîchissement visuel (2026) ===== */
   :root{
@@ -597,10 +597,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916cliente"></script>
-<script src="express-config.js?v=20260916cliente"></script>
-<script src="biometric-lock.js?v=20260916cliente"></script>
-<script src="clt-select-recherche.js?v=20260916cliente"></script>
+<script src="clt-common.js?v=20260916unecopie"></script>
+<script src="express-config.js?v=20260916unecopie"></script>
+<script src="biometric-lock.js?v=20260916unecopie"></script>
+<script src="clt-select-recherche.js?v=20260916unecopie"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -989,7 +989,7 @@
         btn.disabled = true;
         const { error } = await supabaseClient.from('express_courses')
           .update({ status: 'annulee', cancelled_at: new Date().toISOString() }).eq('id', id);
-        if (error) { alert('Erreur : ' + error.message); btn.disabled = false; return; }
+        if (error) { cltToast('Erreur : ' + error.message, { type: 'error' }); btn.disabled = false; return; }
         await loadCourses();
       });
     });
@@ -1093,7 +1093,7 @@
     const { data, error } = await supabaseClient.from('express_messages')
       .insert({ course_id: courseId, sender_id: currentUser.id, body }).select().single();
     if (btn) btn.disabled = false;
-    if (error) { alert('Message non envoyé : ' + error.message); input.value = body; return; }
+    if (error) { cltToast('Message non envoyé : ' + error.message, { type: 'error' }); input.value = body; return; }
     // Ajout optimiste (dédoublonné si le temps réel renvoie le même message).
     if (data && !(chatMessages[courseId] || []).some(m => m.id === data.id)) {
       (chatMessages[courseId] = chatMessages[courseId] || []).push(data);
@@ -1159,7 +1159,7 @@
           p_course_id: blk.dataset.id, p_note: note, p_avis: avis || null,
         });
         if (error) {
-          alert('Impossible d’enregistrer la note : ' + error.message);
+          cltToast('Impossible d’enregistrer la note : ' + error.message, { type: 'error' });
           submit.disabled = false; submit.textContent = 'Envoyer ma note';
           return;
         }
@@ -1501,90 +1501,7 @@
     try { localStorage.setItem('clt_express_client_tab', key); } catch(e){}
   }
 
-  // ---------- Notifications push (Web Push) ----------
-  // Permet au client de recevoir des notifications même quand l'app est fermée (course acceptée,
-  // colis récupéré, livré, annulation, etc.). L'abonnement est stocké dans push_subscriptions ;
-  // l'envoi réel est assuré par l'Edge Function Supabase « envoyer-push ».
-  // La clé publique VAPID n'est pas secrète.
-  const VAPID_PUBLIC_KEY = 'BGoo20rDx0dlhYT83d7J4xBpaKD7ZWNWeKvk6WE9QAEYuYmgZCkrOEpJYGnyBsJlwG2IIF_gq1_FuIroGB3ICtw';
-
-  function urlBase64ToUint8Array(base64String){
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
-    return outputArray;
-  }
-
-  async function enregistrerAbonnementPush(subscription, role){
-    const json = subscription.toJSON();
-    const endpoint = json.endpoint;
-    const p256dh = json.keys && json.keys.p256dh;
-    const auth = json.keys && json.keys.auth;
-    if (!endpoint || !p256dh || !auth) return { error: { message: 'Abonnement incomplet' } };
-    return await supabaseClient.from('push_subscriptions').upsert({
-      user_id: currentUser ? currentUser.id : null,
-      role: role || null,
-      endpoint: endpoint,
-      p256dh: p256dh,
-      auth: auth,
-      user_agent: navigator.userAgent
-    }, { onConflict: 'endpoint' });
-  }
-
-  async function activerPush(role){
-    const btn = document.getElementById('btn-activer-push');
-    try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-        alert("Votre navigateur ne prend pas en charge les notifications push. Sur iPhone/iPad, installez d'abord l'application sur l'écran d'accueil (Partager → Sur l'écran d'accueil), ouvrez-la depuis l'icône, puis réessayez.");
-        return;
-      }
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        alert("Notifications refusées. Vous pouvez les réactiver dans les réglages de votre navigateur.");
-        return;
-      }
-      const reg = await navigator.serviceWorker.ready;
-      let sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-      }
-      const { error } = await enregistrerAbonnementPush(sub, role);
-      if (error) {
-        console.error('Enregistrement abonnement push échoué', error);
-        alert("Impossible d'enregistrer l'abonnement aux notifications. Réessayez plus tard.");
-        return;
-      }
-      if (btn) { btn.textContent = '🔔 Notifications activées ✓'; btn.disabled = true; }
-      alert("Notifications activées ! Vous serez averti des événements importants même quand l'app est fermée.");
-    } catch (e) {
-      console.error('Erreur activation push', e);
-      alert("Une erreur est survenue lors de l'activation des notifications.");
-    }
-  }
-
-  async function initPushButton(role){
-    const btn = document.getElementById('btn-activer-push');
-    if (!btn) return;
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-      btn.classList.add('hidden');
-      return;
-    }
-    btn.addEventListener('click', () => activerPush(role));
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (sub && Notification.permission === 'granted') {
-        await enregistrerAbonnementPush(sub, role);
-        btn.textContent = '🔔 Notifications activées ✓';
-      }
-    } catch (e) { /* silencieux */ }
-  }
-
+  // Notifications push : le bloc vit dans clt-common.js depuis le 16/09/2026 (feuille de route 3.6) — voir cltInitPushButton.
   // ============================================================
   //  Carnet d'adresses — adresses enregistrées (Domicile, Bureau...)
   //  Stockées localement sur l'appareil du client (localStorage), par utilisateur.
@@ -1684,7 +1601,7 @@
     document.getElementById('user-avatar-topbar').innerHTML = avatarHTML(profile, 34);
     initSettingsMenu();
     initAccountModal(profile);
-    initPushButton(profile.role);
+    cltInitPushButton(profile.role, () => currentUser ? currentUser.id : null);
 
     document.getElementById('course-pickup-commune').innerHTML = communesOptionsHTML(null, 'Choisir une commune');
     document.getElementById('course-dropoff-commune').innerHTML = communesOptionsHTML(null, 'Choisir une commune');
