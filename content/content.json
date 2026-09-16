@@ -4,7 +4,9 @@
     "title": "Votre partenaire de livraison au quotidien, partout à Abidjan.",
     "lead": "Colis, courriers, documents administratifs et courses : nous nous occupons de vos livraisons pour que vous n'ayez pas à le faire.",
     "photos": [
-      "images/hero-livreur.jpg"
+      "images/hero-livreur.jpg",
+      "images/hero-livreur-2.webp",
+      "images/vie/suivi-des-colis-au-bureau.webp"
     ]
   },
   "trust": [
@@ -535,6 +537,13 @@
         "date": "Août 2026"
       }
     ]
+  },
+  "film": {
+    "title": "Une journée avec nos livreurs",
+    "text": "Le casque, la sacoche, le départ du local, la route, la porte du destinataire, le sourire : trente secondes de ce que nous faisons chaque jour à Abidjan.",
+    "note": "Sans son · 35 secondes · 2,5 Mo",
+    "video": "videos/film-540.mp4",
+    "poster": "videos/film-affiche.jpg"
   },
   "testimonials": {
     "eyebrow": "TÉMOIGNAGES",

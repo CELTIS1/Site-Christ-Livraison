@@ -34,7 +34,7 @@
       T('pill', 'Petite étiquette', 'Ex. CRÉDIBLE • SIMPLE • SÉCURISÉ'),
       T('title', 'Titre principal'),
       L('lead', 'Texte d\'accroche'),
-      LIGNES('photos', 'Photo du haut de page', 'photo', 'Chemin de l\'image dans le dossier images/ du site, ex. images/hero-livreur.jpg — la première ligne est affichée (plus de diaporama depuis le 16/09/2026)'),
+      LIGNES('photos', 'Photos du haut de page', 'photo', 'Chemins dans images/ (ex. images/hero-livreur.jpg) ou adresses de photos envoyées : la première s\'affiche d\'abord, les suivantes se fondent toutes les cinq secondes. Photos en hauteur (portrait) de préférence.'),
     ]},
     { cle: 'trust', label: 'Les 4 promesses (bandeau de confiance)', liste: true, singulier: 'promesse', champs: [ICONE('icon'), T('title', 'Titre'), L('text', 'Texte')] },
     { cle: 'services', label: 'Services (cartes de l\'accueil et fiches détaillées)', liste: true, singulier: 'service', champs: [
@@ -69,6 +69,11 @@
       T('title', 'Titre'), L('subtitle', 'Sous-titre'),
       LISTE('items', 'Photos', 'photo', [IMAGE('photo', 'Photo', 'Choisissez une photo depuis l\'ordinateur ou le téléphone : elle est réduite puis envoyée dans la base ; le site l\'affiche dès l\'enregistrement.'), T('caption', 'Légende', 'Ex. L\'équipe au départ des tournées'), T('date', 'Quand', 'Ex. Septembre 2026')],
         'La première photo s\'affiche en grand. Renouvelez-les chaque semaine ou chaque mois : ajoutez la nouvelle en tête (↑), retirez la plus ancienne (✕). Six photos, c\'est bien.'),
+    ]},
+    { cle: 'film', label: 'Le film « Une journée avec nos livreurs »', champs: [
+      T('title', 'Titre'), L('text', 'Texte à côté du film'), T('note', 'Petite note sous le film', 'Ex. Sans son · 35 secondes · 2,5 Mo'),
+      T('video', 'Fichier vidéo (MP4, chemin dans videos/)', 'Ex. videos/film-540.mp4 — vide : la section est masquée. Un nouveau film se monte avec Claude et passe par une mise en ligne.'),
+      IMAGE('poster', 'Image d\'attente (avant lecture)', 'Une image du film, en hauteur'),
     ]},
     { cle: 'testimonials', label: 'Témoignages', champs: [
       T('eyebrow', 'Sur-titre'), T('title', 'Titre'), L('subtitle', 'Sous-titre'),

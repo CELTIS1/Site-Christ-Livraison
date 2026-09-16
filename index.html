@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; media-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Christ Livraison & Transport SARL — Livraison à Abidjan</title>
@@ -226,7 +226,9 @@
   .hero-text-inner{position:relative; z-index:1;}
   .hero-text{max-width:720px; width:100%; margin:0 auto;}
   .hero-photo-col{position:absolute; inset:0; width:100%; height:100%; z-index:0;}
-  .hero-photo-col img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center;}
+  .hero-photo-col img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; transition:opacity 1.6s ease;}
+  .hero-photo-col img.hero-fondu{opacity:0;}
+  .hero-photo-col img.hero-fondu.active{opacity:1;}
   .hero-photo-col::after{
     content:""; position:absolute; inset:0;
     background:linear-gradient(160deg, rgba(9,26,48,0.85) 0%, rgba(9,26,48,0.72) 100%);
@@ -364,6 +366,19 @@
     background:linear-gradient(180deg, rgba(9,26,48,0) 0%, rgba(9,26,48,0.78) 100%);}
   .vie-card figcaption small{display:block; font-weight:500; opacity:.85; font-size:12px; margin-top:2px;}
   @media (max-width:760px){ .vie-grid{grid-template-columns:repeat(2, 1fr); gap:10px;} .vie-card:first-child{grid-column:span 2; grid-row:auto; aspect-ratio:16/10;} }
+  /* ---------- LE FILM : « Une journée avec nos livreurs » (16/09/2026) ---------- */
+  .film{background:linear-gradient(160deg, var(--navy) 0%, var(--navy-dark) 100%); color:var(--white);}
+  .film .section-title{color:var(--white);}
+  .film-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:48px; align-items:center;}
+  .film-texte p{color:#C7D1DB; font-size:16px; line-height:1.7; margin:0 0 18px;}
+  .film-texte .btn{margin-top:8px;}
+  .film-cadre{position:relative; width:min(320px, 80vw); aspect-ratio:9/16; margin:0 auto; border-radius:28px; overflow:hidden; background:#000; box-shadow:0 24px 60px rgba(0,0,0,0.35); border:6px solid #0f2540;}
+  .film-cadre video{width:100%; height:100%; object-fit:cover; display:block;}
+  .film-lecture{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(9,26,48,0.25); border:none; cursor:pointer; color:var(--white); font-size:22px;}
+  .film-lecture span{width:74px; height:74px; border-radius:50%; background:var(--orange); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 26px rgba(0,0,0,0.35);}
+  .film-lecture.cache{display:none;}
+  .film-note{font-size:12.5px; color:#9FB3C8; text-align:center; margin-top:10px;}
+  @media (max-width:860px){ .film-grid{grid-template-columns:1fr; gap:28px;} .film-texte{text-align:center;} }
   .testimonials{background:var(--grey-bg);}
   .testimonials-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:26px;}
   .testimonial-card{
@@ -1000,6 +1015,27 @@
   </div>
 </section>
 
+<section id="film" class="film">
+  <div class="container">
+    <div class="film-grid">
+      <div class="film-texte reveal">
+        <h2 class="section-title" style="text-align:left;" id="filmTitle">Une journée avec nos livreurs</h2>
+        <p id="filmText">Le casque, la sacoche, le départ du local, la route, la porte du destinataire, le sourire : trente secondes de ce que nous faisons chaque jour à Abidjan.</p>
+        <a href="#devis" class="btn btn-primary" id="filmCta"><i class="fa-solid fa-paper-plane"></i> Confiez-nous un colis</a>
+      </div>
+      <div class="reveal">
+        <div class="film-cadre" id="filmCadre">
+          <video id="filmVideo" playsinline muted loop preload="none" poster="videos/film-affiche.jpg" aria-label="Film : une journée avec les livreurs de Christ Livraison & Transport">
+            <source src="videos/film-540.mp4" data-grand="videos/film-720.mp4" type="video/mp4">
+          </video>
+          <button type="button" class="film-lecture" id="filmLecture" aria-label="Lire le film"><span><i class="fa-solid fa-play"></i></span></button>
+        </div>
+        <p class="film-note" id="filmNote">Sans son · 35 secondes · 2,5 Mo</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="temoignages" class="testimonials">
   <div class="container">
     <h2 class="section-title reveal" id="testimonialsTitle">Ce que disent nos clients</h2>
@@ -1463,7 +1499,7 @@
       const photos = Array.isArray(data.hero.photos) && data.hero.photos.length
         ? data.hero.photos
         : (data.hero.photo ? [data.hero.photo] : null);
-      if(photos) poserPhotoHeros(photos[0]);
+      if(photos){ poserPhotoHeros(photos[0]); lancerFonduHeros(photos); }
     }
     const waFloat = document.getElementById('waFloat');
     if(waFloat) waFloat.href = waLink + "?text=" + encodeURIComponent("Bonjour, je souhaite des informations sur vos services de livraison.");
@@ -1523,6 +1559,16 @@
         const fqList = document.getElementById('faqList');
         if(fqList) fqList.innerHTML = fq.items.map(faqItemHTML).join("");
       }
+    }
+    // Le film
+    if(data.film){
+      const fT = document.getElementById('filmTitle'); if(fT) fT.textContent = data.film.title || "";
+      const fX = document.getElementById('filmText'); if(fX) fX.textContent = data.film.text || "";
+      const fN = document.getElementById('filmNote'); if(fN) fN.textContent = data.film.note || "";
+      const sec = document.getElementById('film'); if(sec) sec.style.display = data.film.video ? '' : 'none';
+      const video = document.getElementById('filmVideo'); const src = video && video.querySelector('source');
+      if(src && data.film.video && src.getAttribute('src') !== data.film.video && !(src.dataset.grand && src.src.indexOf(src.dataset.grand) >= 0)){ src.setAttribute('src', data.film.video); video.load(); }
+      if(video && data.film.poster) video.setAttribute('poster', data.film.poster);
     }
     // La vie chez CLT
     if(data.vie){
@@ -1680,14 +1726,54 @@
   // La photo du héros vient des textes du site (Gestion › Site) ; la première de la liste est
   // affichée, en WebP quand une version existe à côté du fichier (4.1, 16/09/2026).
   function poserPhotoHeros(src){
-    const img = document.querySelector('#heroPhotoWrap img');
+    const img = document.querySelector('#heroPhotoWrap img:not(.hero-fondu)');
     const source = document.querySelector('#heroPhotoWrap source');
     if(!img || !src || img.getAttribute('src') === src) return;
     img.setAttribute('src', src);
     if(source) source.remove();
   }
+  // Le haut de page qui vit (option A, 16/09/2026) : les photos suivantes de la liste se fondent
+  // l'une dans l'autre toutes les cinq secondes, par-dessus la première. Elles ne sont chargées
+  // qu'après l'affichage de la page, et jamais si la personne a demandé moins d'animations.
+  let heroFonduTimer = null;
+  function lancerFonduHeros(photos){
+    const wrap = document.getElementById('heroPhotoWrap');
+    if(!wrap || !Array.isArray(photos) || photos.length < 2 || reducedMotion) return;
+    wrap.querySelectorAll('img.hero-fondu').forEach(el => el.remove());
+    clearInterval(heroFonduTimer);
+    const couches = photos.slice(1).map(src => {
+      const im = document.createElement('img'); im.className = 'hero-fondu'; im.alt = ''; im.decoding = 'async'; im.loading = 'lazy'; im.src = src;
+      wrap.appendChild(im); return im;
+    });
+    let i = -1; // -1 = la première photo (celle du <picture>)
+    heroFonduTimer = setInterval(() => {
+      couches.forEach(c => c.classList.remove('active'));
+      i = (i + 2) % (couches.length + 1) - 1;
+      if(i >= 0) couches[i].classList.add('active');
+    }, 5000);
+  }
+  // Le film (option B) : sur ordinateur, il démarre seul, sans son, quand il entre à l'écran, en
+  // 720 p ; sur téléphone, il attend un geste (le forfait de chacun lui appartient) et reste en 540 p.
+  function initFilm(){
+    const video = document.getElementById('filmVideo'); const bouton = document.getElementById('filmLecture');
+    if(!video || !bouton) return;
+    const grand = window.matchMedia('(min-width: 861px)').matches;
+    const donneesLimitees = navigator.connection && (navigator.connection.saveData || /2g/.test(navigator.connection.effectiveType || ''));
+    if(grand && !donneesLimitees){
+      const src = video.querySelector('source'); if(src && src.dataset.grand) src.src = src.dataset.grand;
+    }
+    function lire(){ video.load(); video.play().then(() => bouton.classList.add('cache')).catch(() => {}); }
+    bouton.addEventListener('click', lire);
+    video.addEventListener('click', () => { if(video.paused) lire(); else { video.pause(); bouton.classList.remove('cache'); } });
+    if(grand && !donneesLimitees && !reducedMotion && 'IntersectionObserver' in window){
+      const io = new IntersectionObserver((entries) => { entries.forEach(e => { if(e.isIntersecting){ lire(); io.disconnect(); } }); }, { threshold: 0.5 });
+      io.observe(video);
+    }
+  }
 
   observeReveals();
+  initFilm();
+  lancerFonduHeros(["images/hero-livreur.jpg", "images/hero-livreur-2.webp", "images/vie/suivi-des-colis-au-bureau.webp"]);
   initParticles();
   setMarquee(["Colis & plis", "Courriers & documents", "Expéditions", "Courses & divers"]);
   initZoneSelector();
