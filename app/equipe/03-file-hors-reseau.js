@@ -1,0 +1,891 @@
+/* ESPACE ÉQUIPE — 03-file-hors-reseau — La file d'attente hors réseau de l'espace équipe.
+   Sorti de equipe.html le 16 septembre 2026 (feuille de route 4.8, séances 3 et 4), sans retouche :
+   les onze fichiers app/equipe/*.js sont chargés dans l'ordre de leur numéro, à la place de
+   l'ancien script inline, et partagent les mêmes globales (scripts classiques). */
+/* ---------- FILE D'ATTENTE HORS-RÉSEAU (espace Équipe) ----------
+   Le bureau n'est pas mieux loti que la route : coupure de fibre, box qui redémarre, téléphone
+   qui bascule sur un réseau mobile saturé. Jusqu'ici, une saisie faite pendant une coupure
+   affichait une erreur et était perdue — en pratique la cliente était déjà repartie et le colis
+   n'existait nulle part.
+   Désormais, quand (et seulement quand) l'échec vient du réseau, l'opération est écrite sur
+   l'appareil (IndexedDB, qui survit à la fermeture de l'app) et renvoyée automatiquement dès le
+   retour de la connexion. Un refus du serveur (droits, données invalides) reste affiché tout de
+   suite : le mettre en file ne ferait que retarder un problème qui ne se résoudra pas seul.
+
+   Ce qui n'est PAS mis en file, volontairement :
+   • les suppressions de colis — rejouer plus tard un effacement dont on ne voit plus le contexte
+     est trop dangereux ;
+   • la création de comptes — elle passe par une fonction serveur avec un jeton de session qui
+     aurait expiré au moment de la reprise.
+   Même mécanique que la file des livreurs (livreur.html), volontairement, pour qu'il n'y ait
+   qu'un seul comportement à comprendre et à dépanner. */
+const EQ_QUEUE_DB = 'equipe-offline-queue';
+const EQ_QUEUE_STORE = 'operations';
+// Au-delà de ce nombre d'essais, on arrête de réessayer en boucle et on signale l'opération à
+// l'équipe : mieux vaut une alerte visible qu'une entrée qui tourne indéfiniment en silence.
+const EQ_QUEUE_MAX_TENTATIVES = 3;
+let eqSyncEnCours = false;
+// Copie en mémoire de la file, pour que l'affichage (bandeau + pastilles sur les colis) n'ait pas
+// à rouvrir la base à chaque rendu.
+let eqQueueEnMemoire = [];
+let eqColisEnAttenteIds = new Set();
+let eqColisBloquesIds = new Set();
+
+function eqOuvrirQueueDB(){
+return new Promise((resolve, reject) => {
+const req = indexedDB.open(EQ_QUEUE_DB, 1);
+req.onupgradeneeded = () => {
+const db = req.result;
+if (!db.objectStoreNames.contains(EQ_QUEUE_STORE)) {
+db.createObjectStore(EQ_QUEUE_STORE, { keyPath: 'key', autoIncrement: true });
+}
+};
+req.onsuccess = () => resolve(req.result);
+req.onerror = () => reject(req.error);
+});
+}
+
+async function eqQueueAjouter(entry){
+entry.creeLe = Date.now();
+const db = await eqOuvrirQueueDB();
+await new Promise((resolve, reject) => {
+const tx = db.transaction(EQ_QUEUE_STORE, 'readwrite');
+tx.objectStore(EQ_QUEUE_STORE).add(entry);
+tx.oncomplete = () => resolve();
+tx.onerror = () => reject(tx.error);
+});
+await eqQueueRafraichirBandeau();
+}
+
+async function eqQueueLireTout(){
+const db = await eqOuvrirQueueDB();
+return new Promise((resolve, reject) => {
+const tx = db.transaction(EQ_QUEUE_STORE, 'readonly');
+const req = tx.objectStore(EQ_QUEUE_STORE).getAll();
+req.onsuccess = () => resolve(req.result || []);
+req.onerror = () => reject(req.error);
+});
+}
+
+async function eqQueueSupprimer(key){
+const db = await eqOuvrirQueueDB();
+return new Promise((resolve, reject) => {
+const tx = db.transaction(EQ_QUEUE_STORE, 'readwrite');
+tx.objectStore(EQ_QUEUE_STORE).delete(key);
+tx.oncomplete = () => resolve();
+tx.onerror = () => reject(tx.error);
+});
+}
+
+// Réécrit une entrée existante (nombre de tentatives, blocage, motif) en gardant sa clé :
+// l'ordre d'envoi reste celui de la saisie.
+async function eqQueueRemplacer(entry){
+const db = await eqOuvrirQueueDB();
+return new Promise((resolve, reject) => {
+const tx = db.transaction(EQ_QUEUE_STORE, 'readwrite');
+tx.objectStore(EQ_QUEUE_STORE).put(entry);
+tx.oncomplete = () => resolve();
+tx.onerror = () => reject(tx.error);
+});
+}
+
+// Distingue une coupure réseau (on réessaiera, rien n'est perdu) d'un refus du serveur (droits,
+// données invalides, colis supprimé). Toute la valeur de la file tient dans cette distinction :
+// mettre un refus en file le rendrait invisible, et afficher une coupure comme une erreur
+// ferait ressaisir une opération déjà mémorisée.
+function eqEstPanneReseau(err){
+if (!navigator.onLine) return true;
+if (!err) return false;
+if (err.status === 0 || err.status === 408 || err.status === 502
+|| err.status === 503 || err.status === 504) return true;
+const m = String(err.message || err.error_description || err).toLowerCase();
+return m.includes('fetch') || m.includes('network') || m.includes('networkerror')
+|| m.includes('load failed') || m.includes('timeout') || m.includes('délai');
+}
+
+// Phrase courte décrivant une entrée, pour que le bandeau nomme ce qui attend plutôt que
+// d'annoncer « 2 opérations » — personne ne sait quoi faire d'un compteur anonyme.
+function eqDecrireEntree(entry){
+if (entry.type === 'creation-colis') {
+const p = entry.payload || {};
+const client = fournisseurLabel(p.fournisseur_id);
+// Ce bandeau nomme une opération encore en file : ce qui permet de la reconnaître, c'est
+// d'abord où va le colis. La description ne vient qu'à défaut de destination saisie.
+const ou = colisDestinationTexte(p);
+const quoi = colisDescriptionTexte(p);
+const repere = ou ? '→ ' + escapeHTML(ou) : (quoi ? ': ' + escapeHTML(quoi) : ': destination à préciser');
+return `Nouveau colis — ${client} ${repere}`;
+}
+if (entry.type === 'maj-colis') {
+const c = allColis.find(x => x.id === entry.colisId);
+const nom = c && c.numero ? `Colis ${escapeHTML(c.numero)}` : 'Un colis';
+return `${nom} — modification enregistrée`;
+}
+if (entry.type === 'assignation-collecte') {
+const n = (entry.colisIds || []).length;
+const l = collecteLivreurLabel(entry.payload && entry.payload.livreur_collecte_id) || 'un livreur';
+return `Collecte de ${n} colis assignée à ${l}`;
+}
+return 'Opération en attente';
+}
+
+async function eqQueueRafraichirBandeau(){
+try { eqQueueEnMemoire = await eqQueueLireTout(); }
+catch(e) { console.error('Lecture de la file hors-réseau :', e); eqQueueEnMemoire = []; }
+
+const bloquees = eqQueueEnMemoire.filter(x => x.bloquee);
+const enAttente = eqQueueEnMemoire.filter(x => !x.bloquee);
+
+// Identifiants des colis concernés, pour poser une pastille sur les lignes correspondantes.
+const attenteIds = new Set(), bloquesIds = new Set();
+enAttente.forEach(x => (x.colisIds || (x.colisId ? [x.colisId] : [])).forEach(id => attenteIds.add(id)));
+bloquees.forEach(x => (x.colisIds || (x.colisId ? [x.colisId] : [])).forEach(id => bloquesIds.add(id)));
+const changement = attenteIds.size !== eqColisEnAttenteIds.size || bloquesIds.size !== eqColisBloquesIds.size;
+eqColisEnAttenteIds = attenteIds;
+eqColisBloquesIds = bloquesIds;
+
+const banner = document.getElementById('eq-offline-banner');
+const text = document.getElementById('eq-offline-text');
+const detail = document.getElementById('eq-offline-detail');
+if (banner && text && detail) {
+if (eqQueueEnMemoire.length === 0) {
+banner.classList.add('hidden');
+banner.classList.remove('offline-queue-banner--bloquee');
+detail.innerHTML = '';
+} else {
+banner.classList.remove('hidden');
+banner.classList.toggle('offline-queue-banner--bloquee', bloquees.length > 0);
+const parts = [];
+if (enAttente.length) {
+const n = enAttente.length;
+parts.push(navigator.onLine
+? `📶 ${n} enregistrement${n > 1 ? 's' : ''} en cours d'envoi…`
+: `📶 ${n} enregistrement${n > 1 ? 's' : ''} conservé${n > 1 ? 's' : ''} sur cet appareil — envoi automatique dès le retour de la connexion.`);
+}
+if (bloquees.length) {
+const n = bloquees.length;
+parts.push(`⚠️ ${n} enregistrement${n > 1 ? 's' : ''} n'${n > 1 ? 'ont' : 'a'} pas pu être envoyé${n > 1 ? 's' : ''}. Vérifiez ci-dessous et ressaisissez si besoin.`);
+}
+text.textContent = parts.join(' ');
+// Le détail nomme chaque opération : sans lui, l'équipe ne peut pas savoir quelle cliente
+// rappeler ni quel colis ressaisir.
+detail.innerHTML = eqQueueEnMemoire.map(x =>
+`<div>${x.bloquee ? '⚠️ ' : '• '}${eqDecrireEntree(x)}${x.bloquee && x.motif === 'conflit' ? ' — modifié entre-temps par quelqu\'un d\'autre' : ''}</div>`
+).join('');
+}
+}
+if (changement && typeof renderColis === 'function') renderColis();
+}
+
+// Envoie UNE entrée. Renvoie 'ok' | 'reseau' | 'conflit' | 'refus'.
+async function eqEnvoyerUneEntree(entry){
+// Une photo prise hors-réseau n'a pas pu partir au moment de la saisie : on l'envoie ici,
+// juste avant l'opération elle-même.
+if (entry.photoBlob) {
+const envoyee = await uploadPhoto(entry.photoBlob, entry.userId);
+if (envoyee) {
+entry.payload = Object.assign({}, entry.payload, { photo_url: envoyee });
+entry.photoBlob = null;
+} else if (!navigator.onLine || (entry.tentatives || 0) + 1 < EQ_QUEUE_MAX_TENTATIVES) {
+return 'reseau';
+} else {
+// La photo ne passe décidément pas. Le colis compte plus que sa photo : on enregistre
+// quand même, et on le signale.
+entry.photoAbandonnee = true;
+entry.photoBlob = null;
+}
+}
+
+try {
+if (entry.type === 'creation-colis') {
+// Exactement la même porte d'entrée que la saisie à l'écran (colonnes récentes absentes,
+// description encore obligatoire en base) : un colis mis en file hors-réseau ne doit pas
+// être refusé pour une raison que la saisie directe, elle, aurait absorbée.
+const error = await eqInsererColis(entry.payload);
+// Doublon sur la clé de création : le colis est déjà en base (un envoi précédent avait
+// abouti sans qu'on le sache). C'est exactement le résultat voulu, donc un succès.
+if (estDoublonCleCreation(error)) return 'ok';
+if (error) return eqEstPanneReseau(error) ? 'reseau' : 'refus';
+return 'ok';
+}
+
+if (entry.type === 'assignation-collecte') {
+const { error } = await supabaseClient.from('colis').update(entry.payload).in('id', entry.colisIds);
+if (error) return eqEstPanneReseau(error) ? 'reseau' : 'refus';
+return 'ok';
+}
+
+if (entry.type === 'maj-colis') {
+let requete = supabaseClient.from('colis').update(entry.payload).eq('id', entry.colisId);
+// Écriture conditionnelle : on n'écrase que si le colis n'a pas bougé depuis la saisie.
+// Tant que la colonne updated_at n'existe pas en base, baseUpdatedAt est absent et l'envoi
+// se fait sans ce contrôle — l'app fonctionne donc avec ou sans la migration.
+if (entry.baseUpdatedAt) requete = requete.eq('updated_at', entry.baseUpdatedAt);
+const { data, error } = await requete.select('id');
+if (error) return eqEstPanneReseau(error) ? 'reseau' : 'refus';
+if (Array.isArray(data) && data.length === 0) {
+// Aucune ligne touchée : soit le colis a changé entre-temps, soit l'écriture est passée
+// mais la relecture nous est refusée. On vérifie avant de crier au conflit.
+const { data: actuel } = await supabaseClient.from('colis')
+.select('statut').eq('id', entry.colisId).maybeSingle();
+if (actuel && entry.payload.statut && actuel.statut === entry.payload.statut) return 'ok';
+return 'conflit';
+}
+return 'ok';
+}
+} catch (e) {
+return eqEstPanneReseau(e) ? 'reseau' : 'refus';
+}
+return 'refus';
+}
+
+async function eqEnvoyerLaFile(){
+if (eqSyncEnCours || !navigator.onLine) return;
+eqSyncEnCours = true;
+const avertissements = [];
+let auMoinsUnEnvoi = false;
+try {
+const entries = await eqQueueLireTout();
+for (const entry of entries) {
+if (entry.bloquee) continue; // déjà signalée : on n'insiste plus, mais elle ne bloque pas les suivantes
+let issue;
+try { issue = await eqEnvoyerUneEntree(entry); }
+catch (e) { console.error('Envoi hors-réseau :', e); issue = eqEstPanneReseau(e) ? 'reseau' : 'refus'; }
+
+// La coupure réseau est le seul cas où l'on arrête tout : insister ne sert à rien et
+// rien n'est perdu. Les autres cas sont traités entrée par entrée.
+if (issue === 'reseau') {
+entry.tentatives = (entry.tentatives || 0) + 1;
+await eqQueueRemplacer(entry);
+break;
+}
+
+if (issue === 'ok') {
+await eqQueueSupprimer(entry.key);
+auMoinsUnEnvoi = true;
+if (entry.photoAbandonnee) {
+avertissements.push("Un colis est bien enregistré, mais sa photo n'a pas pu être envoyée.");
+}
+continue;
+}
+
+entry.tentatives = (entry.tentatives || 0) + 1;
+entry.motif = issue;
+if (issue === 'conflit' || entry.tentatives >= EQ_QUEUE_MAX_TENTATIVES) {
+entry.bloquee = true;
+avertissements.push(issue === 'conflit'
+? `${eqDecrireEntree(entry)} : ce colis a été modifié par quelqu'un d'autre pendant la coupure. Votre modification n'a pas été appliquée pour ne pas effacer la sienne — vérifiez ce colis.`
+: `${eqDecrireEntree(entry)} : refusé par le serveur après plusieurs essais.`);
+}
+await eqQueueRemplacer(entry);
+}
+} catch (e) {
+console.error('Envoi hors-réseau :', e);
+} finally {
+eqSyncEnCours = false;
+await eqQueueRafraichirBandeau();
+// Les colis envoyés doivent apparaître dans la liste : on relit depuis la base plutôt que
+// de bricoler l'état local, pour récupérer aussi le numéro de suivi attribué par la base.
+if (auMoinsUnEnvoi && typeof loadColis === 'function') loadColis();
+if (avertissements.length && window.cltToast) {
+cltToast([...new Set(avertissements)].join(' '), { type: 'warning', duration: 9000 });
+}
+}
+}
+
+// Libellés de filtre : dérivés du référentiel central STATUTS (config.js) — source unique.
+const FILTER_LABELS = (typeof STATUT_FILTER_LABELS !== 'undefined') ? STATUT_FILTER_LABELS
+  : { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En cours de livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
+
+function renderFilters(){
+const box = document.getElementById('filters');
+// Cette rangée se parcourt latéralement au doigt. La reconstruire à l'identique la ramenait au
+// premier filtre : les derniers devenaient inatteignables sur téléphone. (25/08/2026)
+if (!cltPoserHTML(box, Object.keys(FILTER_LABELS).map(key =>
+`<div class="filter-chip ${activeFilter===key?'active':''}" data-filter="${key}">${FILTER_LABELS[key]}</div>`
+).join(''))) return;
+box.querySelectorAll('.filter-chip').forEach(chip => {
+chip.addEventListener('click', () => {
+activeFilter = chip.dataset.filter;
+// Changer de filtre, c'est demander une autre liste : on la reprend depuis le début, sinon on
+// tomberait sur « 180 colis affichés sur 12 » et sur une page déjà déroulée sans raison.
+eqRemettreTrancheAZero();
+eqViderSelection();
+renderFilters();
+renderColis();
+});
+});
+}
+
+function fournisseurLabel(id){
+const f = fournisseurs.find(x => x.id === id);
+if (!f) return 'Client inconnu';
+return escapeHTML(f.company_name || f.full_name || id);
+}
+
+function livreurNomSimple(id){
+const l = livreurs.find(x => x.id === id);
+return (l && (l.full_name || '').trim()) || 'ce livreur';
+}
+
+function collecteLivreurLabel(id){
+if (!id) return null;
+const l = livreurs.find(x => x.id === id);
+return l ? escapeHTML(l.full_name || 'Livreur') : null;
+}
+
+// Un colis est considéré comme "validé" une fois qu'il a été enregistré au moins une fois
+// par l'équipe/l'admin : son statut n'est plus "en_attente", et/ou une observation a été saisie,
+// et/ou un livreur de récupération (collecte) lui a été assigné. Dès qu'un livreur de récupération
+// est désigné, le colis est "traité" (quelqu'un va aller le chercher) : il passe en vue compacte
+// et l'assignation est visible immédiatement partout.
+function colisEstValide(c){
+return c.statut !== 'en_attente' || !!c.observation || !!c.livreur_collecte_id;
+}
+
+// Renvoie l'id du livreur de récupération (collecte) déjà assigné aujourd'hui à un colis de cette
+// cliente, s'il existe. Sert à proposer/attribuer automatiquement le même livreur aux colis suivants
+// de la même cliente le même jour : un seul livreur récupère tous les colis d'une cliente sur la
+// journée. Le premier est assigné à la main, les suivants automatiquement (et restent modifiables).
+// Le livreur de collecte du lot : celui choisi dans l'en-tête, sinon celui deviné (tournée ou
+// colis du jour). (08/09/2026)
+function lotLivreurCollecteChoisi(fournisseurId){
+const champ = document.getElementById('lot-livreur-collecte');
+const choisi = (champ && champ.value) || '';
+return choisi || clienteCollecteDriverToday(fournisseurId);
+}
+// Quand la cliente change, on propose le livreur de sa tournée du jour (programmation), sinon
+// celui de ses colis du jour — sans écraser un choix déjà fait à la main.
+function lotProposerLivreurCollecte(){
+const champ = document.getElementById('lot-livreur-collecte');
+const fid = (document.getElementById('lot-fournisseur') || {}).value || '';
+if (!champ || !fid) return;
+const jour = todayLocalISODate();
+const prog = (typeof progLignes !== 'undefined' ? progLignes : []).find(p => p.fournisseur_id === fid && p.jour === jour);
+const propose = (prog && prog.livreur_id) || clienteCollecteDriverToday(fid) || '';
+if (propose && !champ.dataset.choisiALaMain) { champ.value = propose; if (window.CLTRecherche) CLTRecherche.rafraichir(champ); }
+}
+function clienteCollecteDriverToday(fournisseurId){
+if (!fournisseurId) return null;
+const jour = todayLocalISODate();
+const match = allColis.find(c =>
+c.fournisseur_id === fournisseurId &&
+c.livreur_collecte_id &&
+jourDuColis(c) === jour
+);
+return match ? match.livreur_collecte_id : null;
+}
+
+// Frise d'étapes (stepper) : reflète visuellement l'avancement du colis à partir de son statut réel.
+// Purement présentatif — dérivé de c.statut, ne modifie aucune donnée.
+// stepperHTML() → descendue dans config.js le 02/09/2026. Elle vivait ici en copie, et une
+// expédition n'ayant que trois étapes, la garder aurait voulu dire corriger le même code à
+// trois endroits — donc en oublier un.
+
+// Adresse de destination telle qu'on la lit à voix haute au téléphone : la commune d'abord,
+// puis le repère. Les deux champs existent depuis toujours en base, mais cet écran n'affichait
+// que le second — une commune saisie par la cliente restait invisible ici.
+// Depuis le 25/08/2026 le calcul lui-même vit dans config.js (colisDestinationTexte), partagé
+// par les trois tableaux de bord : c'est la seule façon qu'une expédition vers l'intérieur
+// s'annonce partout de la même manière au lieu d'être réécrite à trois endroits.
+function eqDestinationTexte(c){
+  return colisDestinationTexte(c);
+}
+
+/* Depuis le 25/08/2026, la destination est écrite en gras EN TÊTE de la carte, plus dans cette
+   ligne-ci. Ce qui reste ici, c'est le numéro à appeler — et, quand l'adresse manque, l'alerte
+   rouge : celle-là ne peut pas se contenter d'être en tête, car c'est elle qui déclenche l'appel
+   à la cliente, et elle doit rester à côté du numéro qu'on va composer. */
+// Le nom du client (fournisseur du colis). Son numéro n'est plus mêlé à cette ligne : les deux
+// boutons d'appel de la carte disent qui on appelle (eqBoutonsAppelHTML). (10/09/2026, Celtis :
+// « les numéros sont mélangés, on ne distingue plus lequel est pour qui »)
+function eqLigneClientHTML(c){
+  return `<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>`;
+}
+
+// Les mêmes deux boutons que chez le livreur : « 📞 Destinataire », « 📞 Fournisseur ».
+function eqBoutonsAppelHTML(c){
+  const boutons = boutonAppelDestinataireHTML(c) + boutonAppelFournisseurHTML(fournisseurs.find(x => x.id === c.fournisseur_id));
+  return boutons ? `<div class="colis-tel-ligne">${boutons}</div>` : '';
+}
+
+function eqLigneDestinationHTML(c){
+  const txt = eqDestinationTexte(c);
+  const tel = c.destinataire_telephone
+    ? `📞 ${escapeHTML(c.destinataire_telephone)}`
+    : '';
+  if (!txt) {
+    return `<div class="meta adresse-absente" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — à renseigner${tel ? ' · ' + tel : ''}</div>`;
+  }
+  return tel ? `<div class="meta">${tel}</div>` : '';
+}
+
+function colisRowHTML(c, numeroClient){
+const thumb = c.photo_url
+? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
+: `<div class="thumb-placeholder">Pas de photo</div>`;
+// 3.2 (16/09/2026) : la liste des états vient d'etatsPossibles — sur une expédition, « En
+// livraison » n'y est pas — et chaque état porte le mot du colis (« Expédié », pas « Livré »).
+const statutOptions = etatsPossibles(c).map(k =>
+`<option value="${k}" ${c.statut===k?'selected':''}>${libelleStatut(k, c)}</option>`).join('');
+const livreurOptions = '<option value="">— Aucun livreur —</option>' +
+livreurs.map(l => `<option value="${l.id}" ${c.livreur_id===l.id?'selected':''}>${escapeHTML(l.full_name || l.id)}</option>`).join('');
+// Livreur de récupération à pré-sélectionner : celui déjà posé sur ce colis, sinon (proposition
+// automatique) celui déjà assigné aujourd'hui aux autres colis de la même cliente.
+const collectePropose = c.livreur_collecte_id || clienteCollecteDriverToday(c.fournisseur_id);
+const livreurCollecteOptions = '<option value="">— Aucun —</option>' +
+livreurs.map(l => `<option value="${l.id}" ${collectePropose===l.id?'selected':''}>${escapeHTML(l.full_name || l.id)}</option>`).join('');
+// La cliente du colis, pour la fiche de modification. Si sa fiche n'est plus dans la liste
+// (compte fermé), on garde tout de même sa ligne : la retirer ferait basculer le choix sur la
+// première cliente venue, et « Enregistrer » transférerait le colis sans qu'on l'ait voulu.
+const fournisseurEditOptions = '<option value="">— Choisir la cliente —</option>' +
+(fournisseurs.some(f => f.id === c.fournisseur_id) || !c.fournisseur_id ? '' : `<option value="${c.fournisseur_id}" selected>${fournisseurLabel(c.fournisseur_id)}</option>`) +
+fournisseurs.map(f => `<option value="${f.id}" ${c.fournisseur_id===f.id?'selected':''}>${escapeHTML(f.company_name || f.full_name || f.id)}</option>`).join('');
+
+const estValide = colisEstValide(c) && !window.__colisEditing?.has(c.id);
+const collecteLabel = collecteLivreurLabel(c.livreur_collecte_id);
+const collecteLine = collecteLabel
+? `<div class="meta">🚚 Collecte assignée : ${collecteLabel}${c.collecte_depart_at ? ' · en route depuis ' + formatDate(c.collecte_depart_at) : ''}</div>`
+: '';
+
+// Pastille de synchronisation : une modification faite hors réseau est déjà visible à l'écran
+// (elle est appliquée localement), donc rien ne distinguerait un colis réellement enregistré
+// d'un colis qui attend encore. Cette pastille fait la différence.
+const syncBadge = eqColisBloquesIds.has(c.id)
+? `<div class="sync-pending-badge sync-blocked-badge">⚠️ Modification non envoyée — à vérifier</div>`
+: (eqColisEnAttenteIds.has(c.id) ? `<div class="sync-pending-badge">📶 En attente d'envoi</div>` : '');
+
+const infoBlock = `
+<div class="info">
+${syncBadge}
+${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
+<div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
+${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
+${eqLigneClientHTML(c)}
+${eqLigneDestinationHTML(c)}
+${eqBoutonsAppelHTML(c)}
+${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
+${collecteLine}
+<div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · <span title="Ce que le destinataire remet en main propre : l'article de la cliente plus nos frais. Ce n'est pas un chiffre d'affaires.">Le destinataire remet : ${formatMontant(montantTotalColis(c)) || '0 FCFA'}</span> ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
+${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
+<button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
+${estValide ? '' : `
+<!-- LA CLIENTE DU COLIS, MODIFIABLE. (13/09/2026, Celtis : « si je me suis trompé de vendeuse,
+     il faut que je supprime le colis ». Plus maintenant.) Changer la cliente ici transfère le
+     colis sur son compte : elle le voit dans son espace, l'ancienne ne le voit plus, le relevé et
+     les récapitulatifs suivent — sans supprimer ni recréer. Une confirmation est demandée à
+     l'enregistrement, et le transfert est tracé au journal. -->
+<div class="field" style="margin-top:8px;">
+<label style="font-size:11.5px;">Cliente / vendeuse (propriétaire du colis)</label>
+<select class="edit-fournisseur" data-fournisseur-origine="${escapeHTML(c.fournisseur_id || '')}" data-recherche data-recherche-placeholder="Nom de la cliente…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${fournisseurEditOptions}</select>
+</div>
+<div class="field" style="margin-top:8px;">
+<label style="font-size:11.5px;">Livreur de collecte (récupération)</label>
+<select class="row-livreur-collecte-select" data-recherche data-recherche-placeholder="Nom du livreur…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurCollecteOptions}</select>
+</div>
+<div class="field" style="margin-top:8px;">
+<label style="font-size:11.5px;">Livreur de livraison</label>
+<select class="row-livreur-select" data-recherche data-recherche-placeholder="Nom du livreur…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${livreurOptions}</select>
+</div>
+<div class="adresse-block" style="margin-top:10px; padding:10px; border:1.5px dashed var(--border); border-radius:8px; max-width:340px;">
+<label style="font-size:11.5px; font-weight:700; display:block; margin-bottom:6px;">Adresse de livraison</label>
+<div class="field" style="margin-bottom:6px;">
+<label style="font-size:11.5px;">Commune de destination</label>
+<select class="edit-commune-dest" data-recherche data-recherche-placeholder="Commune…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">${communesDestinationOptionsHTML(c.commune_destination || '', 'Choisir une commune')}</select>
+</div>
+<div class="field" style="margin-bottom:6px;">
+<label style="font-size:11.5px;">Précision (quartier, repère…)</label>
+<input type="text" class="edit-dest" value="${escapeHTML(c.destination || '')}" placeholder="Ex : Sicogi, en face de la pharmacie" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>
+<!-- Le jour du colis (09/09/2026) : reçu le … d'office ; reporté à une autre date si besoin. Et
+     « à livrer avant le », posé à la création, modifiable ici. -->
+<div class="field-row" style="margin-bottom:6px;">
+<div class="field" style="margin-bottom:0;">
+<label style="font-size:11.5px;">Jour du colis <span style="font-weight:400; color:var(--muted);">(reçu le ${escapeHTML(c.created_at ? dayKey(c.created_at) : '')}${colisReporte(c) ? ' · reporté' : ''})</span></label>
+<input type="date" class="edit-reporte-au" value="${escapeHTML(jourDuColis(c))}" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>
+<div class="field" style="margin-bottom:0;">
+<label style="font-size:11.5px;">À livrer avant le</label>
+<input type="date" class="edit-a-livrer-avant" value="${escapeHTML(String(c.a_livrer_avant || '').slice(0, 10))}" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>
+</div>
+<div class="field">
+<label style="font-size:11.5px;">Téléphone du destinataire</label>
+<input type="tel" class="edit-tel-destinataire" data-tel-origine="${escapeHTML(c.destinataire_telephone || '')}" value="${escapeHTML(typeof formatPhoneDisplay === 'function' ? formatPhoneDisplay(c.destinataire_telephone || '') : (c.destinataire_telephone || ''))}" placeholder="Ex : 07 00 00 00 00" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>
+${c.statut === 'en_attente' ? `
+<label style="font-size:11.5px; font-weight:700; display:block; margin:10px 0 6px;">Adresse de récupération</label>
+<div class="field" style="margin-bottom:6px;">
+<label style="font-size:11.5px;">Commune de récupération</label>
+<select class="edit-commune-recup" data-recherche data-recherche-placeholder="Commune…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">${communesOptionsHTML(c.commune_recuperation || '', 'Choisir une commune')}</select>
+</div>
+<div class="field">
+<label style="font-size:11.5px;">Précision du lieu de récupération</label>
+<input type="text" class="edit-adresse-recup" value="${escapeHTML(c.adresse_recuperation || '')}" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:100%;">
+</div>` : `
+<div class="meta" style="margin-top:8px; font-size:11.5px; opacity:.75;">📍 Récupération : ${c.commune_recuperation ? escapeHTML(c.commune_recuperation) + (c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : '') : 'non renseignée'} — le colis est déjà collecté, ce point ne se change plus.</div>`}
+</div>
+<!-- LES MONTANTS D'UNE EXPÉDITION, DEPUIS LE BUREAU. (10/09/2026, Celtis : « pour les
+     expéditions, il faudrait que l'équipe puisse modifier les montants — le transporteur et le
+     coût de la course — sans se connecter au compte du livreur. ») Le bloc porte
+     data-montants-toujours : appliquerModeExpedition() ne le masque plus, il change ses
+     libellés et fait apparaître les frais d'expédition et la case « soldé », comme sur l'écran
+     du livreur. Les montants s'enregistrent dans les mêmes colonnes que chez lui. -->
+<div class="montant-block" style="margin-top:8px; max-width:420px;" data-montants-toujours>
+<label style="font-size:11.5px;">Montants</label>
+<div class="montant-group">
+<div class="montant-field">
+<label>Article</label>
+<input type="number" class="edit-montant-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}">
+</div>
+<div class="montant-plus">+</div>
+<div class="montant-field">
+<label class="libelle-livraison" data-libelle-abidjan="Livraison" data-libelle-expedition="${escapeHTML(LIBELLE_FRAIS_COURSE)}">${estExpedition(c) ? escapeHTML(LIBELLE_FRAIS_COURSE) : 'Livraison'}</label>
+<input type="number" class="edit-montant-livraison" min="0" step="any" value="${c.montant_livraison !== null && c.montant_livraison !== undefined ? c.montant_livraison : ''}">
+</div>
+<div class="montant-field montant-field-frais-exp" style="${estExpedition(c) || fraisExpeditionColis(c) > 0 ? '' : 'display:none;'}">
+<label>🚌 ${escapeHTML(LIBELLE_FRAIS_EXPEDITION)} (transporteur)</label>
+<input type="number" class="edit-frais-expedition" min="0" step="any" value="${c.frais_expedition !== null && c.frais_expedition !== undefined ? c.frais_expedition : ''}">
+</div>
+</div>
+</div>
+<div class="payment-checks">
+<label class="check-pill lotfr-article-solde" title="L'article a été payé chez la vendeuse : le livreur ne l'encaisse pas et rien n'est dû à la vendeuse pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
+<label class="check-pill lotfr-liv-payee" title="La livraison a été payée chez la vendeuse : le livreur ne l'encaisse pas, CLT la retient sur la vendeuse. Ne dit rien de l'article."><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
+<label class="check-pill lotfr-soldee" style="${estExpedition(c) ? '' : 'display:none;'}" title="La cliente a déjà réglé à CLT les frais d'expédition et de course : rien ne se retient sur son relevé."><input type="checkbox" class="edit-frais-soldes" ${fraisSoldes(c) ? 'checked' : ''}> 🚌 Frais déjà réglés à CLT (soldé)</label>
+</div>`}
+</div>
+`;
+
+if (estValide) {
+const livreurAssigne = c.livreur_id ? livreurs.find(l => l.id === c.livreur_id) : null;
+const livreurLine = livreurAssigne
+? `<div class="livreur-meta">${avatarHTML(livreurAssigne, 20)} <span>Livreur : ${escapeHTML(livreurAssigne.full_name || 'Livreur')}</span></div>`
+: `<div class="meta">Aucun livreur assigné</div>`;
+// Carte bleue dès qu'un livreur de livraison est en place : en balayant la liste, on
+// distingue d'un coup d'œil les colis pris en charge de ceux qui attendent encore
+// quelqu'un. La couleur du statut reprend la main sur les colis livrés ou en anomalie
+// (voir la règle .est-assigne dans style.css).
+const classeAssigne = c.livreur_id ? ' est-assigne' : '';
+return `
+<div class="colis-item${classeAssigne}${eqLotIds.has(c.id) ? ' lot-coche' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
+${caseLotHTML(c.id, eqLotIds.has(c.id))}
+${stepperHTML(c.statut, c)}
+${thumb}
+<div class="info">
+${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
+<div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
+${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
+${eqLigneClientHTML(c)}
+${eqLigneDestinationHTML(c)}
+${eqBoutonsAppelHTML(c)}
+${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
+${collecteLine}
+<div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+${livreurLine}
+${(Number(c.tentatives_livraison) || 0) > 0 ? `<div class="meta" style="color:#c0392b; font-weight:600;">🔁 Tentative(s) de livraison : ${Number(c.tentatives_livraison)}</div>` : ''}
+${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · <span title="Ce que le destinataire remet en main propre : l'article de la cliente plus nos frais. Ce n'est pas un chiffre d'affaires.">Le destinataire remet : ${formatMontant(montantTotalColis(c)) || '0 FCFA'}</span> ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
+${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
+${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
+${eqActionsRapidesHTML(c)}
+<div class="colis-quick-actions">
+<button type="button" class="btn btn-outline btn-sm btn-copy-tracking" title="Copier le lien de suivi">🔗 Copier le lien</button>
+<button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 WhatsApp</button>
+</div>
+</div>
+<div class="status-col" style="width:auto; flex-direction:row; align-items:center; gap:10px;">
+${statutBadgeHTML(c.statut, c)}
+<div class="actions-menu">
+<button type="button" class="actions-menu-btn" aria-label="Actions du colis">⋮</button>
+<div class="actions-dropdown">
+<button type="button" class="btn-modifier-colis">✏️ Modifier</button>
+<button type="button" class="btn-delete-colis danger">🗑 Supprimer</button>
+</div>
+</div>
+</div>
+</div>
+`;
+}
+
+// Blocage de l'enregistrement tant qu'aucun livreur de récupération n'a été choisi : un colis pour
+// lequel personne n'a été désigné pour aller le récupérer ne peut pas encore être enregistré. Le
+// blocage ne concerne que les nouveaux colis en attente ; un colis rouvert via « Modifier » reste
+// librement enregistrable.
+const estEnEdition = !!window.__colisEditing?.has(c.id);
+const gateSave = !estEnEdition && c.statut === 'en_attente' && !c.observation && !collectePropose;
+return `
+<div class="colis-item${c.livreur_id ? ' est-assigne' : ''}${eqLotIds.has(c.id) ? ' lot-coche' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
+${caseLotHTML(c.id, eqLotIds.has(c.id))}
+${thumb}
+${infoBlock}
+<div class="status-col">
+<select class="status-select">${statutOptions}</select>
+<textarea class="obs-textarea" placeholder="Observation (ex : client absent, colis refusé...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
+<button class="btn btn-sm btn-save" style="margin-top:4px;" ${gateSave ? 'disabled' : ''} data-gate="${gateSave ? '1' : '0'}">Enregistrer</button>
+${gateSave ? `<div class="save-hint" style="font-size:11.5px; color:#c0392b; margin-top:4px; max-width:230px; line-height:1.35;">Choisissez d'abord un livreur de récupération pour pouvoir enregistrer.</div>` : ''}
+<button class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>
+</div>
+</div>
+`;
+}
+
+// Clé de persistance (par appareil) des colis à risque déjà examinés par l'équipe/l'admin.
+// Objectif : le bandeau « colis à examiner » doit disparaître une fois qu'on a pris connaissance
+// des colis non livrés/retour, et rester masqué après déconnexion/reconnexion. Il ne réapparaît
+// que pour de NOUVEAUX colis à risque (un identifiant qu'on n'a pas encore marqué comme examiné).
+const ALERTES_VUES_KEY = 'clt_equipe_alertes_vues';
+function getAlertesVues(){
+  try { return new Set(JSON.parse(localStorage.getItem(ALERTES_VUES_KEY) || '[]')); }
+  catch(e){ return new Set(); }
+}
+function setAlertesVues(set){
+  try { localStorage.setItem(ALERTES_VUES_KEY, JSON.stringify([...set])); } catch(e){}
+}
+// 05/09/2026 — Le bandeau #alert-banner est retiré du HTML : seule la pastille reste, et la
+// fonction doit tolérer l'absence des deux éléments.
+function renderAlertIndicator(){
+  const badge = document.getElementById('alert-badge');
+  if (!badge) return;
+  const aRisque = allColis.filter(c => c.statut === 'non_livre' || c.statut === 'retour');
+  const idsRisque = new Set(aRisque.map(c => c.id));
+  // On ne conserve « vus » que les colis encore à risque : la liste ne gonfle pas indéfiniment,
+  // et un colis résolu puis de nouveau non livré/retour redéclenche bien l'alerte.
+  const vues = getAlertesVues();
+  const vuesFiltrees = new Set([...vues].filter(id => idsRisque.has(id)));
+  if (vuesFiltrees.size !== vues.size) setAlertesVues(vuesFiltrees);
+  const nonVus = aRisque.filter(c => !vuesFiltrees.has(c.id));
+  if (!nonVus.length) { badge.classList.add('hidden'); return; }
+  badge.textContent = nonVus.length;
+  badge.classList.remove('hidden');
+}
+
+// Bouton d'action groupée « Assigner collecte » : affiché dans l'en-tête de chaque groupe
+// client s'il reste au moins un colis "en attente" sans livreur de collecte assigné.
+// Contrairement à la livraison (attribuée colis par colis), la collecte s'assigne en une fois
+// pour tous les colis en attente d'une même cliente/vendeuse.
+function equipeCollecteActionHTML(day, client){
+const pending = client.items.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id);
+const f = fournisseurs.find(x => x.id === client.key);
+const pickupLabel = f && f.commune_recuperation ? `📍 ${escapeHTML(f.commune_recuperation)}` : '📍 Lieu de récupération';
+// Pas de bouton d'appel ici : il est sur chaque carte (10/09/2026, Celtis : « identique partout »).
+let html = ` <button type="button" class="btn btn-sm btn-edit-pickup" data-fournisseur="${client.key}" title="Définir le lieu de récupération de cette cliente">${pickupLabel}</button>`;
+if (pending.length) {
+const options = '<option value="">Assigner collecte à…</option>' +
+livreurs.map(l => `<option value="${l.id}">${escapeHTML(l.full_name || l.id)}</option>`).join('');
+html += ` <span class="group-collecte-assign">
+<select class="select-assign-collecte" data-recherche data-recherche-placeholder="Nom du livreur…">${options}</select>
+<button type="button" class="btn btn-sm btn-assign-collecte" data-fournisseur="${client.key}" data-day="${day.key}">Assigner (${pending.length})</button>
+</span>`;
+}
+return html;
+}
+
+// « L'essentiel » : synthèse en tête de l'onglet Colis (lecture seule). Recalculée à partir
+// des données déjà en mémoire (allColis, comptes & réinitialisations en attente). Refaite le
+// 05/09/2026 — voir le commentaire au-dessus de #section-aujourdhui pour ce qui a changé.
+//
+// Le jour regardé est celui du filtre de date de la liste des colis (filtreDateColis) :
+// aujourd'hui à l'ouverture, ou la date choisie, ou « toutes les dates » si on a appuyé sur ce
+// bouton. Anomalies et colis à affecter suivent ce jour ; l'argent non remis ne suit aucun jour.
+/* Les quatre chiffres du jour, demandés à la base et non à la liste chargée. Cinq comptages
+   sans rapatrier une ligne (head: true). Le jour est celui d'Abidjan (= UTC), les bornes sont
+   donc T00:00:00Z et T23:59:59.999Z. Une réponse en erreur laisse l'affichage approximatif. */
+let bilanDuJour = null;
+async function chargerBilanDuJour(){
+if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+const jour = (typeof aujourdhuiAbidjan === 'function') ? aujourdhuiAbidjan() : todayLocalISODate();
+const debut = jour + 'T00:00:00Z', fin = jour + 'T23:59:59.999Z';
+const compter = (q) => q.then(r => (r.error ? null : (r.count || 0)));
+const tete = () => supabaseClient.from('colis').select('id', { count: 'exact', head: true });
+try {
+  const [recus, livres, nonLivres, retours, enCours] = await Promise.all([
+    compter(tete().gte('created_at', debut).lte('created_at', fin)),
+    compter(tete().gte('livre_at', debut).lte('livre_at', fin)),
+    compter(tete().eq('statut', 'non_livre').gte('non_livre_at', debut).lte('non_livre_at', fin)),
+    compter(tete().eq('statut', 'retour').gte('retour_at', debut).lte('retour_at', fin)),
+    compter(tete().in('statut', ['recupere', 'en_livraison'])),
+  ]);
+  if ([recus, livres, nonLivres, retours, enCours].some(v => v === null)) { bilanDuJour = null; return; }
+  bilanDuJour = { jour, recus, livres, echecs: nonLivres + retours, enCours };
+} catch (e) { console.warn('Bilan du jour :', e && e.message ? e.message : e); bilanDuJour = null; }
+renderAujourdhui();
+}
+
+function isoMoinsJours(jourISO, n){
+const d = new Date(jourISO + 'T12:00:00'); d.setDate(d.getDate() - n);
+return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function renderAujourdhui(){
+if (!document.getElementById('aujourdhui-actions')) return;
+const colis = Array.isArray(allColis) ? allColis : [];
+/* TOUT CE QUI ATTEND, TOUTES DATES. (05/09/2026, deuxième passage)
+   Celtis : « lorsqu'il y a des colis qui ne sont pas assignés, que ce soit visible ; les colis
+   qui ne sont pas traités, pour tout autre cas, il faut que tout soit vraiment listé. »
+   La première version comptait sur la journée du filtre : un colis récupéré avant-hier et
+   jamais confié à un livreur n'y apparaissait pas. Ici on regarde tous les colis chargés, et
+   chaque pastille porte SA liste d'identifiants : c'est elle qui surligne les cartes. */
+const aujourdhui = todayLocalISODate();
+const vues = getAlertesVues();
+const cat = {
+  collecte:  colis.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id),
+  livraison: colis.filter(c => c.statut === 'recupere' && !c.livreur_id),
+  retard:    colis.filter(c => c.statut === 'en_livraison' && jourDuColis(c) < aujourdhui),
+  // Récupérés depuis plus de deux jours et jamais passés en livraison : des statuts jamais
+  // fermés qui encombrent les restes des livreurs (vu chez Gbei Franck : des « récupéré »
+  // d'août encore en route le 7 septembre). (09/09/2026)
+  dormants:  colis.filter(c => (c.statut === 'recupere' || c.statut === 'en_attente') && jourDuColis(c) < isoMoinsJours(aujourdhui, 2)),
+  examiner:  colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && !vues.has(c.id)),
+  // Les échecs que l'équipe n'a pas encore qualifiés (règlement des primes, 13/09/2026).
+  qualifier: colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && c.non_livre_at && c.non_livre_at >= (typeof PRIMES_DEBUT !== 'undefined' ? PRIMES_DEBUT : '2026-10-01') && (c.echec_imputable === null || c.echec_imputable === undefined)),
+};
+const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? pendingAccounts.length : 0;
+const nbReset = resetEnAttente();
+// Les demandes approuvées qui attendent que l'équipe dicte le code (06/09/2026, point 1.3).
+const nbCodes = (typeof resetRequests !== 'undefined' && resetRequests) ? resetRequests.filter(r => r.status === 'approuve').length : 0;
+// Argent non remis : mêmes règles que la caisse livreur — colis livrés pas encore soldés.
+let resteARemettre = 0, nbASolder = 0;
+colis.forEach(c => {
+  if (c.statut === 'livre' && !c.encaissement_remis){
+    resteARemettre += (typeof montantTotalColis === 'function' ? Number(montantTotalColis(c)) : 0) || 0;
+    nbASolder++;
+  }
+});
+const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
+/* ÉPURÉ (06/09/2026, Celtis : « encore mieux organisé, plus esthétique, plus épuré »). Une
+   pastille à zéro n'apprend rien : elle n'est plus dessinée. Un groupe sans rien à faire le dit
+   en trois mots, en gris. Ce qui reste est donc, par construction, ce qui demande un geste. */
+const pastille = (valeur, label, aller, teinte) => {
+  const vide = (valeur === 0 || valeur === '0 FCFA');
+  if (vide) return '';
+  return `<button type="button" class="ess-tuile ${teinte === 'rouge' ? 'est-rouge' : 'est-ambre'}" data-aller="${aller}" title="Ouvrir"><span class="n">${valeur}</span><span>${label}</span></button>`;
+};
+const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`;
+// Celtis, 6 septembre : les raccourcis vers les comptes et les mots de passe doivent rester
+// visibles même à zéro — c'est par là qu'on va quand une notification arrive. À zéro ils
+// sont gris et en pointillé ; dès qu'il y a quelque chose, ils prennent leur couleur.
+const raccourci = (valeur, label, aller, teinte) => valeur
+  ? pastille(valeur, label, aller, teinte)
+  : `<button type="button" class="ess-tuile est-vide" data-aller="${aller}" title="Ouvrir"><span class="n">0</span><span>${label}</span></button>`;
+window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id) };
+const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
+// 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient de
+// config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
+const jourEvt = (c, st) => (typeof jourEvenementColis === 'function') ? jourEvenementColis(c, st) : dayKey(c[st + '_at']);
+const tuile = (n, label, teinte) => `<span class="ess-stat ${n ? 'est-' + teinte : ''}"><span class="n">${n}</span><span>${label}</span></span>`;
+/* EXACTEMENT LES COLIS DU JOUR. (07/09/2026, Celtis : « la première partie qui traite des colis
+   du jour doit être correcte, exactement pour les colis du jour, pour que ce soit fiable. »)
+   Compter dans allColis ne l'était pas : la liste ne tient que les 500 colis les plus récents
+   par date de réception, et un colis reçu il y a dix jours et livré aujourd'hui peut être
+   au-delà. Les quatre chiffres viennent donc de la base (chargerBilanDuJour), comptés sur le
+   jour d'Abidjan ; en attendant sa réponse, ou si elle échoue, on compte ce qu'on a et on le
+   dit d'un « ~ ». */
+const jourAbj = (typeof aujourdhuiAbidjan === 'function') ? aujourdhuiAbidjan() : aujourdhui;
+const jourEvtAbj = (c, st) => (typeof jourEvenementColis === 'function') ? jourEvenementColis(c, st) : dayKey(c[st + '_at']);
+const local = {
+  recus:   colis.filter(c => (typeof jourAbidjan === 'function' ? jourAbidjan(c.created_at) : dayKey(c.created_at)) === jourAbj).length,
+  livres:  colis.filter(c => jourEvtAbj(c, 'livre') === jourAbj).length,
+  echecs:  colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && jourEvtAbj(c, c.statut) === jourAbj).length,
+  enCours: colis.filter(c => c.statut === 'recupere' || c.statut === 'en_livraison').length,
+};
+const exact = (bilanDuJour && bilanDuJour.jour === jourAbj) ? bilanDuJour : null;
+const b = exact || local;
+const approx = exact ? '' : '~';
+set('aujourdhui-jour',
+  tuile(approx + b.recus, 'reçus aujourd\'hui', 'ambre') +
+  tuile(approx + b.livres, 'livrés aujourd\'hui', 'vert') +
+  tuile(approx + b.echecs, 'échecs aujourd\'hui', 'rouge') +
+  tuile(approx + b.enCours, 'encore en cours', 'ambre'));
+set('aujourdhui-actions', ouRien(
+  pastille(cat.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
+  pastille(cat.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
+  raccourci(nbPending, 'comptes à valider', 'comptes-a-valider', 'ambre') +
+  raccourci(nbReset,   'mots de passe à refaire', 'reinitialisations', 'ambre') +
+  pastille(nbCodes,    nbCodes > 1 ? 'codes à dicter' : 'code à dicter', 'reinitialisations', 'rouge'), 'Rien à faire'));
+set('aujourdhui-anomalies', ouRien(
+  pastille(cat.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +
+  pastille(cat.dormants.length, 'en route depuis plus de 2 jours', 'dormants', 'rouge') +
+  pastille(cat.examiner.length, 'non livrés ou retours', 'examiner', 'rouge') +
+  pastille(cat.qualifier.length, cat.qualifier.length > 1 ? 'échecs à qualifier' : 'échec à qualifier', 'qualifier', 'ambre'), 'Rien à examiner'));
+set('aujourdhui-argent', ouRien(
+  pastille(money(resteARemettre), 'à remettre', 'argent', 'rouge') +
+  (nbASolder ? `<button type="button" class="ess-tuile est-rouge" data-aller="argent" title="Ouvrir"><span class="n">${nbASolder}</span><span>colis à solder</span></button>` : ''), 'Tout est remis'));
+const libelleJour = document.getElementById('ess-jour');
+if (libelleJour) cltPoserHTML(libelleJour, 'Tout ce qui attend, toutes dates confondues' + (colisHasMore ? ' · historique partiel' : ''));
+}
+
+// Où mène chaque pastille. UN SEUL écouteur, posé une fois sur la carte.
+// Chaque destination pose les filtres qui montrent exactement ces colis-là, surligne leurs
+// cartes (cltMarquerColisAVoir : le contour reste jusqu'à ce qu'on touche la carte) et fait
+// défiler jusqu'à la première.
+function essentielAller(cle){
+const onglet = (k) => { if (typeof showEquipeTab === 'function') showEquipeTab(k); };
+const defiler = (id) => { const el = document.getElementById(id); if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){} }, 60); };
+const ouvrir = (contentId) => {
+  const content = document.getElementById(contentId);
+  if (!content) return;
+  const header = content.parentElement ? content.parentElement.querySelector('.collapsible-header') : null;
+  if (!content.classList.contains('open') && header) toggleSection(header, contentId);
+};
+const listeColis = (statut, livreur, ids) => {
+  onglet('colis');
+  activeFilter = statut;
+  filtreLivreurColis = livreur;
+  filtreDateColis = '';
+  const inp = document.getElementById('filtre-date-colis'); if (inp) inp.value = '';
+  const sel = document.getElementById('filtre-livreur-colis');
+  if (sel) { sel.value = livreur; if (window.CLTRecherche) CLTRecherche.rafraichir(sel); }
+  searchColis = '';
+  const rech = document.getElementById('search-colis'); if (rech) rech.value = '';
+  if (ids && ids.length && typeof cltMarquerColisAVoir === 'function') cltMarquerColisAVoir(ids);
+  eqRemettreTrancheAZero();
+  eqViderSelection();
+  renderFilters();
+  renderColis();
+  // La première carte surlignée doit être sous les yeux tout de suite.
+  setTimeout(() => {
+    const premiere = document.querySelector('#colis-list .colis-item.colis-a-voir');
+    if (premiere) { try { premiere.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){} }
+    else defiler('panel-colis');
+  }, 120);
+};
+const L = window.__essentielListes || {};
+switch (cle) {
+  case 'comptes-a-valider': onglet('comptes'); ouvrir('pending-content'); defiler('section-pending'); break;
+  case 'reinitialisations': onglet('comptes'); ouvrir('reset-content'); defiler('section-reset'); break;
+  case 'collecte':  listeColis('en_attente', '', L.collecte); break;
+  case 'livraison': listeColis('recupere', '__aucun', L.livraison); break;
+  case 'retard':    listeColis('en_livraison', '', L.retard); break;
+  case 'dormants':  listeColis('tous', '', L.dormants); break;
+  case 'examiner': {
+    const st = (L.examiner || []).map(id => (allColis.find(c => c.id === id) || {}).statut);
+    const seul = st.every(x => x === 'non_livre') ? 'non_livre' : st.every(x => x === 'retour') ? 'retour' : 'tous';
+    listeColis(seul, '', L.examiner); break;
+  }
+  case 'argent': onglet('finances'); if (typeof showMainTab === 'function') showMainTab('compta'); defiler('caisse-livreur'); break;
+  case 'qualifier': onglet('livreurs'); setTimeout(() => defiler('ld-qualifier'), 400); break;
+}
+}
+// Toucher la carte d'un non livré / retour surligné, c'est l'avoir examiné : il sort de la
+// pastille et du bandeau d'alerte — c'est le geste que Celtis demande (« on les touche d'abord »).
+document.addEventListener('click', (e) => {
+const b = e.target.closest('[data-ouvrir-colis]');
+if (b) { e.stopPropagation(); eqOuvrirModificationColis(b.dataset.ouvrirColis); }
+});
+document.addEventListener('clt:colis-vu', (e) => {
+  const d = e.detail || {};
+  if (d.statut === 'non_livre' || d.statut === 'retour') {
+    const v = getAlertesVues(); v.add(d.id); setAlertesVues(v);
+    renderAlertIndicator();
+  }
+  renderAujourdhui();
+});
+(function brancherEssentiel(){
+const carte = document.getElementById('section-aujourdhui');
+if (!carte) return;
+carte.addEventListener('click', (e) => {
+  const t = e.target.closest('.ess-tuile[data-aller]');
+  if (t) essentielAller(t.dataset.aller);
+});
+})();
+

@@ -30,7 +30,8 @@ app/                      l'application : login, equipe, livreur, fournisseur (c
 app/config.js             tout ce que les pages de l'app partagent (Supabase, rôles, utilitaires)
 app/lib/                  les blocs sortis de config.js, un par sujet (communes-et-tarifs, argent, relevé,
                           papier à en-tête, primes…), chargés par chaque page avant config.js — feuille de route 4.8
-app/equipe/               le code de l'espace équipe (equipe.js, onglets.js), sorti de equipe.html
+app/equipe/               le code de l'espace équipe en onze fichiers par sujet (00-etat-et-caisse … 10-onglets),
+                          chargés dans l'ordre de leur numéro ; sorti de equipe.html le 16/09/2026
 app/clt-common.js         bandeaux (cltToast), lecture par tranches, notifications push, capteur d'erreurs
 app/site-editeur.js       Gestion › Site : l'éditeur des textes et photos du site public
 sw.js                     le service worker (cache de la coquille, CACHE_VERSION)

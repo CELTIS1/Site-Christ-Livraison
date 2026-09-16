@@ -77,8 +77,15 @@ for (const b of BLOCS) {
 console.log('\n4. Le code de l\'espace équipe est sorti de la page (séance 3)');
 const equipeHtml = lire('equipe.html');
 verifier('equipe.html ne contient plus de grand script inline (moins de 60 lignes de script)', (() => { const blocs = [...equipeHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)]; return blocs.every(b => b[1].split('\n').length < 60); })());
-verifier('equipe.html charge equipe/equipe.js après config.js, puis equipe/onglets.js en dernier, même étiquette', (() => { const m = equipeHtml.match(/<script src="config\.js\?v=([^"]+)">[\s\S]*<script src="equipe\/equipe\.js\?v=([^"]+)">[\s\S]*<script src="equipe\/onglets\.js\?v=([^"]+)">/); return !!m && m[1] === m[2] && m[2] === m[3]; })());
-verifier('equipe/equipe.js porte bien le code de la page (currentUser, renderColis, renderCompta)', /^let currentUser = null;/m.test(lire('equipe/equipe.js')) && /function renderColis\(/.test(lire('equipe/equipe.js')) && /async function renderCompta\(/.test(lire('equipe/equipe.js')));
+const fichiersEquipe = fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort();
+verifier('onze fichiers numérotés dans app/equipe/, du 00 au 10', fichiersEquipe.length === 11 && fichiersEquipe.every((f, i) => f.startsWith(String(i).padStart(2, '0') + '-')), fichiersEquipe.join(', '));
+verifier('equipe.html les charge tous, dans l\'ordre, après config.js, même étiquette', (() => {
+  const balises = [...equipeHtml.matchAll(/<script src="equipe\/([^"?]+)\?v=([^"]+)"><\/script>/g)];
+  const etiquetteConfig = (equipeHtml.match(/<script src="config\.js\?v=([^"]+)">/) || [])[1];
+  return balises.map(b => b[1]).join(',') === fichiersEquipe.join(',') && balises.every(b => b[2] === etiquetteConfig) && equipeHtml.indexOf('config.js?v=') < equipeHtml.indexOf('equipe/00-');
+})());
+verifier('le code de la page est bien là (currentUser au 00, renderColis au 05, renderCompta au 07, onglets au 10)', /^let currentUser = null;/m.test(lire('equipe/00-etat-et-caisse.js')) && /function renderColis\(/.test(lire('equipe/05-liste-et-comptes.js')) && /async function renderCompta\(/.test(lire('equipe/07-rapports.js')) && /const EQ_TABS = /.test(lire('equipe/10-onglets.js')));
+verifier('chaque fichier commence par un en-tête qui dit ce qu\'il porte', fichiersEquipe.every(f => /^\/\* ESPACE ÉQUIPE — |^\/\* LES ONGLETS/.test(lire('equipe/' + f))));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

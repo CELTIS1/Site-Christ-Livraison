@@ -19,8 +19,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CHEMIN = process.argv[2] || path.join(RACINE, 'app', 'equipe', 'equipe.js'); // le code de la page, sorti le 16/09 (4.8)
-const source = fs.readFileSync(CHEMIN, 'utf8').split('\n');
+// Le code de l'espace équipe vit dans app/equipe/*.js depuis le 16/09 (4.8) : on lit le dossier
+// entier, dans l'ordre de chargement, comme si c'était encore un seul script.
+const DOSSIER_EQUIPE = path.join(RACINE, 'app', 'equipe');
+const CHEMIN = path.join(DOSSIER_EQUIPE, 'equipe.js'); // repère de nommage seulement
+const source = fs.readdirSync(DOSSIER_EQUIPE).filter(f => f.endsWith('.js')).sort().map(f => fs.readFileSync(path.join(DOSSIER_EQUIPE, f), 'utf8')).join('\n').split('\n');
 const debut = source.findIndex(l => l.includes("FILE D'ATTENTE HORS-RÉSEAU (espace Équipe)"));
 // Fin du bloc : la ligne qui suit immédiatement le moteur de la file. C'était autrefois le
 // gestionnaire du formulaire unitaire ; celui-ci a été retiré le 26/08/2026, la borne est donc

@@ -80,8 +80,18 @@ export const FICHIERS_PARTAGES = [
   'lib/tournee-de-recuperation.js',
   'lib/primes.js',
   // Séance 3 (16 septembre 2026) : le code de l'espace équipe, sorti de la page.
-  'equipe/equipe.js',
-  'equipe/onglets.js',
+  // Séance 4 : le code de l'espace équipe, en onze fichiers par sujet, chargés dans l'ordre.
+  'equipe/00-etat-et-caisse.js',
+  'equipe/01-saisie-en-lot.js',
+  'equipe/02-colis-et-comptes.js',
+  'equipe/03-file-hors-reseau.js',
+  'equipe/04-actions.js',
+  'equipe/05-liste-et-comptes.js',
+  'equipe/06-corrections-et-tournee.js',
+  'equipe/07-rapports.js',
+  'equipe/08-son-ecran.js',
+  'equipe/09-express-et-temps-reel.js',
+  'equipe/10-onglets.js',
 ];
 
 /* Relève, page par page, l'étiquette portée par chaque fichier partagé.
