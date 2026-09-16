@@ -218,7 +218,7 @@ function avatarHTML(profile, size) {
 // de la course (voir la fonction express_calculer_prix dans supabase_express.sql), donc jamais
 // falsifiable depuis le navigateur.
 const EXPRESS_COMMUNES = [
-  "Abobo", "Adjamé", "Anyama", "Bingerville", "Cocody", "Grand-Bassam",
+  "Abobo", "Adjamé", "Anyama", "Attécoubé", "Bingerville", "Cocody", "Grand-Bassam",
   "Koumassi", "Marcory", "Plateau", "Port-Bouët", "Treichville", "Yopougon",
 ];
 
@@ -226,6 +226,7 @@ const EXPRESS_COMMUNE_COORDS = {
   "Abobo":        { lat: 5.4167, lng: -4.0167 },
   "Adjamé":       { lat: 5.3600, lng: -4.0231 },
   "Anyama":       { lat: 5.4956, lng: -4.0511 },
+  "Attécoubé":    { lat: 5.3350, lng: -4.0450 },
   "Bingerville":  { lat: 5.3558, lng: -3.8917 },
   "Cocody":       { lat: 5.3600, lng: -3.9800 },
   "Grand-Bassam": { lat: 5.2000, lng: -3.7333 },

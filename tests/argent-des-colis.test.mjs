@@ -513,7 +513,7 @@ titre("Règle 6 — sur une expédition, CLT n'encaisse rien et retient deux fra
   const listeCommunes = litteralCommunes ? JSON.parse(litteralCommunes[1].replace(/,(\s*\])/, '$1')) : null;
   verifier('COMMUNES reste la seule liste des communes d\'Abidjan',
     Array.isArray(listeCommunes) &&
-    listeCommunes.length === 12 &&
+    listeCommunes.length === 13 &&
     listeCommunes.every(c => !estExpedition(c)),
     'l\'ajouter à COMMUNES la ferait entrer dans la matrice tarifaire et dans les listes de départ : '
     + JSON.stringify(listeCommunes));

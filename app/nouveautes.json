@@ -2,13 +2,14 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
-      "version": "20260916tarifs",
+      "version": "20260916attecoube",
       "date": "16 septembre 2026",
       "titre": "Les tarifs de livraison, clairs et les mêmes dans les deux sens",
       "points": [
         "Le prix proposé à la saisie d'un colis est le même à l'aller et au retour (Abobo ↔ Bingerville 2 000 F, Yopougon ↔ Cocody 1 500 F…).",
         "1 000 F : Yopougon dans Yopougon, ou un trajet très court. 1 500 F : le standard — communes voisines, et toute commune vers le Plateau.",
         "2 000 F quand on traverse la ville ; 2 500 F pour les bouts d'Abidjan (Anyama, Port-Bouët) ; 3 000 F pour Grand-Bassam.",
+        "Attécoubé est désormais une commune à part entière dans l'application : dans les listes, dans la grille (1 500 F vers Adjamé, le Plateau, Yopougon, Cocody, Treichville), dans CLT Express.",
         "Le prix proposé reste modifiable à la main avant d'enregistrer, comme avant.",
         "La page Tarifs du site dit la même chose que l'application."
       ]

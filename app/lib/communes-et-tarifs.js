@@ -11,7 +11,7 @@
 // déroulantes et calculer automatiquement le prix de livraison suggéré (voir
 // computePrixLivraison ci-dessous).
 const COMMUNES = [
-  "Abobo", "Adjamé", "Anyama", "Bingerville", "Cocody", "Grand-Bassam",
+  "Abobo", "Adjamé", "Anyama", "Attécoubé", "Bingerville", "Cocody", "Grand-Bassam",
   "Koumassi", "Marcory", "Plateau", "Port-Bouët", "Treichville", "Yopougon",
 ];
 
@@ -162,6 +162,9 @@ function colisDescriptionTexte(c) {
 // et au retour) ; le banc fonctions-reelles le vérifie sur toutes les paires. Les règles :
 //   • dans la même commune : 1 500 F, sauf Yopougon 1 000 F ; un trajet vraiment court (Palmeraie
 //     → Riviera 2, par exemple) peut être ramené à 1 000 F à la main par la personne qui saisit ;
+//   • Attécoubé (ajoutée le 16/09/2026, 13 communes) : 1 500 F vers ses voisines Adjamé, Plateau,
+//     Yopougon, Cocody, Treichville ; 2 000 F Abobo, Koumassi, Marcory ; 2 500 F Anyama,
+//     Bingerville, Port-Bouët ; 3 000 F Grand-Bassam ;
 //   • 1 500 F est le standard : communes voisines, et toute commune d'Abidjan vers le Plateau ;
 //   • 2 000 F quand on traverse la ville (Yopougon → Koumassi, Abobo → Bingerville…) ;
 //   • 2 500 F pour les bouts d'Abidjan (Anyama, Port-Bouët, Bingerville depuis l'ouest et le nord) ;
@@ -169,18 +172,19 @@ function colisDescriptionTexte(c) {
 // Avant cette date, onze paires avaient un prix différent selon le sens (Bingerville → Abobo
 // 3 000, Abobo → Bingerville 2 000…) : c'est corrigé ici, une fois pour toutes.
 const MATRICE_TARIFS = {
-  "Abobo":        { "Abobo": 1500, "Adjamé": 1500, "Anyama": 1500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 2000, "Yopougon": 2000 },
-  "Adjamé":       { "Abobo": 1500, "Adjamé": 1500, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 1500 },
-  "Anyama":       { "Abobo": 1500, "Adjamé": 2000, "Anyama": 1500, "Bingerville": 2500, "Cocody": 2500, "Grand-Bassam": 3000, "Koumassi": 2500, "Marcory": 2500, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 2500, "Yopougon": 2500 },
-  "Bingerville":  { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2500, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 2000, "Yopougon": 2000 },
-  "Cocody":       { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
-  "Grand-Bassam": { "Abobo": 3000, "Adjamé": 3000, "Anyama": 3000, "Bingerville": 3000, "Cocody": 3000, "Grand-Bassam": 1500, "Koumassi": 3000, "Marcory": 3000, "Plateau": 3000, "Port-Bouët": 3000, "Treichville": 3000, "Yopougon": 3000 },
-  "Koumassi":     { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 2000 },
-  "Marcory":      { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 1500 },
-  "Plateau":      { "Abobo": 1500, "Adjamé": 1500, "Anyama": 1500, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 1500 },
-  "Port-Bouët":   { "Abobo": 2500, "Adjamé": 2000, "Anyama": 2500, "Bingerville": 2500, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 2000, "Yopougon": 2500 },
-  "Treichville":  { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2500, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
-  "Yopougon":     { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 1500, "Yopougon": 1000 },
+  "Abobo":        { "Abobo": 1500, "Adjamé": 1500, "Anyama": 1500, "Attécoubé": 2000, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 2000, "Yopougon": 2000 },
+  "Adjamé":       { "Abobo": 1500, "Adjamé": 1500, "Anyama": 2000, "Attécoubé": 1500, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
+  "Anyama":       { "Abobo": 1500, "Adjamé": 2000, "Anyama": 1500, "Attécoubé": 2500, "Bingerville": 2500, "Cocody": 2500, "Grand-Bassam": 3000, "Koumassi": 2500, "Marcory": 2500, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 2500, "Yopougon": 2500 },
+  "Attécoubé":    { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Attécoubé": 1500, "Bingerville": 2500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 1500, "Yopougon": 1500 },
+  "Bingerville":  { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2500, "Attécoubé": 2500, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 2000, "Yopougon": 2000 },
+  "Cocody":       { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Attécoubé": 1500, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
+  "Grand-Bassam": { "Abobo": 3000, "Adjamé": 3000, "Anyama": 3000, "Attécoubé": 3000, "Bingerville": 3000, "Cocody": 3000, "Grand-Bassam": 1500, "Koumassi": 3000, "Marcory": 3000, "Plateau": 3000, "Port-Bouët": 3000, "Treichville": 3000, "Yopougon": 3000 },
+  "Koumassi":     { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2500, "Attécoubé": 2000, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 2000 },
+  "Marcory":      { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Attécoubé": 2000, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 1500 },
+  "Plateau":      { "Abobo": 1500, "Adjamé": 1500, "Anyama": 1500, "Attécoubé": 1500, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 1500 },
+  "Port-Bouët":   { "Abobo": 2500, "Adjamé": 2000, "Anyama": 2500, "Attécoubé": 2500, "Bingerville": 2500, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 2000, "Yopougon": 2500 },
+  "Treichville":  { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Attécoubé": 1500, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
+  "Yopougon":     { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Attécoubé": 1500, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 1500, "Yopougon": 1000 },
 };
 
 // Calcule le prix de livraison proposé (FCFA) entre deux communes : la valeur de la grille,

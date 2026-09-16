@@ -221,7 +221,7 @@ titre('Une commune écrite en toutes lettres est reconnue');
   verifier('« Grand Bassam » reconnu sans le tiret',
     communeDansTexte('Livraison Grand Bassam', {}).commune === 'Grand-Bassam');
   verifier('« Adjamé » reconnu', communeDansTexte('adjame marché', {}).commune === 'Adjamé');
-  verifier('les douze communes du tarif sont bien celles reconnues', COMMUNES.length === 12,
+  verifier('les treize communes du tarif sont bien celles reconnues (Attécoubé depuis le 16/09/2026)', COMMUNES.length === 13,
     'communes : ' + COMMUNES.length);
 }
 
