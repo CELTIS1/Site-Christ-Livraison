@@ -1707,6 +1707,19 @@
     }, 4500);
   }
 
+// Les textes du site (16/09/2026) : d'abord la base (une fiche, lue en appel REST direct avec la
+  // clé publique, sans bibliothèque), sinon la copie de secours content/content.json du dépôt.
+  // L'administrateur modifie la fiche depuis Gestion › Site : le site change à la seconde.
+  function chargerContenuSite(){
+    var URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co";
+    var CLE_PUBLIQUE = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
+    var secours = function(){ return fetch('content/content.json?v=' + Date.now(), {cache: 'no-store'}).then(function(r){ return r.json(); }); };
+    return fetch(URL_BASE + '/rest/v1/site_contenu?id=eq.1&select=contenu', { headers: { 'apikey': CLE_PUBLIQUE, 'Authorization': 'Bearer ' + CLE_PUBLIQUE }, cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(rows){ if (rows && rows[0] && rows[0].contenu) return rows[0].contenu; return Promise.reject('fiche vide'); })
+      .catch(function(){ return secours(); });
+  }
+
   function applyContent(data){
     SITE = data;
     const c = data.contact || {};
@@ -1845,10 +1858,9 @@
   setMarquee(["Colis & plis", "Courriers & documents", "Expéditions", "Courses & divers"]);
   initHeroSlideshow(["images/hero-livreur.jpg", "images/hero-livreur-2.jpg"]);
 
-  fetch('content/content.json?v=' + Date.now(), {cache: 'no-store'})
-    .then(r => r.json())
+  chargerContenuSite()
     .then(applyContent)
-    .catch(err => console.error("Impossible de charger content/content.json :", err));
+    .catch(err => console.error("Impossible de charger les textes du site :", err));
 
   document.getElementById('devisForm').addEventListener('submit', function(e){
     e.preventDefault();

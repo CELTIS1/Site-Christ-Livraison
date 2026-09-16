@@ -227,9 +227,10 @@ function showToast(msg, isErr){
 /* -------------------- Navigation onglets -------------------- */
 function switchTab(tab){
   document.querySelectorAll('.tabs .tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
-  ['dashboard','compta','paie','journal'].forEach(s => { const el = document.getElementById('sec-'+s); if (el) el.classList.toggle('active', s === tab); });
+  ['dashboard','compta','paie','journal','site'].forEach(s => { const el = document.getElementById('sec-'+s); if (el) el.classList.toggle('active', s === tab); });
   if (tab === 'dashboard') renderDashboard();
   if (tab === 'journal') { loadJournal(); loadErreursClient(); }
+  if (tab === 'site' && window.CLTSiteEditeur) CLTSiteEditeur.init();
   scheduleStickyRefresh();
 }
 function switchSub(group, sub){
@@ -3739,6 +3740,7 @@ async function init(){
   setDisp('tab-compta',    canCompta);
   setDisp('tab-paie',      canPaie);
   setDisp('tab-journal',   isAdmin);        // journal de surveillance : patron seul
+  setDisp('tab-site',      isAdmin);        // textes du site public : patron seul (16/09/2026)
   setDisp('sub-paie-parametres', isAdmin);  // paramètres/grille : configuration réservée au patron
 
   // Sélecteurs de période

@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nos services — Christ Livraison & Transport SARL</title>
@@ -408,10 +408,21 @@ function route(){
 loadFallback();
 route();
 // 2) Puis on met à jour avec le contenu éditable du CMS (content.json) dès qu'il est chargé.
-fetch('content/content.json?v=' + Date.now(), {cache:'no-store'})
-  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+// Les textes du site (16/09/2026) : d'abord la base (une fiche, lue en appel REST direct avec la
+// clé publique, sans bibliothèque), sinon la copie de secours content/content.json du dépôt.
+// L'administrateur modifie la fiche depuis Gestion › Site : le site change à la seconde.
+function chargerContenuSite(){
+  var URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co";
+  var CLE_PUBLIQUE = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
+  var secours = function(){ return fetch('content/content.json?v=' + Date.now(), {cache: 'no-store'}).then(function(r){ return r.json(); }); };
+  return fetch(URL_BASE + '/rest/v1/site_contenu?id=eq.1&select=contenu', { headers: { 'apikey': CLE_PUBLIQUE, 'Authorization': 'Bearer ' + CLE_PUBLIQUE }, cache: 'no-store' })
+    .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function(rows){ if (rows && rows[0] && rows[0].contenu) return rows[0].contenu; return Promise.reject('fiche vide'); })
+    .catch(function(){ return secours(); });
+}
+chargerContenuSite()
   .then(d => { if (d && Array.isArray(d.services)) { loadFromCMS(d.services); route(); } })
-  .catch(err => console.warn('services.html : contenu CMS indisponible, contenu de secours utilisé.', err));
+  .catch(err => console.warn('services.html : textes du site indisponibles, contenu de secours utilisé.', err));
 </script>
 </body>
 </html>
