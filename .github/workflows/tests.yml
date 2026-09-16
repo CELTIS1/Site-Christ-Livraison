@@ -56,6 +56,9 @@ jobs:
       - name: Charges de personnel partagées (la paie publie des totaux, la comptabilité seule les lit)
         run: node tests/charges-de-personnel-partagees.test.mjs
 
+      - name: Comptabilité générale sur l'activité réelle (recettes et paie en écritures, période, exports)
+        run: node tests/comptabilite-generale-activite-reelle.test.mjs
+
       - name: Actions rapides (un appui pour faire avancer un colis)
         run: node tests/actions-rapides.test.mjs
 

@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916personnel">
-<script src="theme.js?v=20260916personnel"></script>
-<script src="splash.js?v=20260916personnel"></script>
+<link rel="stylesheet" href="style.css?v=20260916compta">
+<script src="theme.js?v=20260916compta"></script>
+<script src="splash.js?v=20260916compta"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -575,6 +575,18 @@
         ⚠️ <strong>Deux méthodes, deux chiffres possibles.</strong> « États financiers » compte en trésorerie (encaissé/décaissé), cette vue en partie double (SYSCOHADA) : un écart entre les deux pour une même période est normal.
       </div>
 
+      <!-- 3.3 (16/09/2026) : le journal, le grand livre et la balance se lisent par période — un
+           mois, ou tout depuis l'origine — et s'exportent tels quels pour l'expert-comptable. -->
+      <div class="period-bar">
+        <label for="cg-periode" style="font-weight:600;">Période</label>
+        <input type="month" id="cg-periode" onchange="renderComptaGenerale()">
+        <button type="button" class="btn btn-outline btn-sm" onclick="cgToutePeriode()">Depuis le début</button>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="exporterComptaGeneraleExcel()">⬇️ Excel (journal, grand livre, balance)</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="imprimerJournal()">🖨️ Journal</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="imprimerBalance()">🖨️ Balance</button>
+      </div>
+      <div class="hint" id="cg-periode-texte"></div>
       <div class="subtabs">
         <!-- Sans émojis (Celtis) : cohérence avec les sous-onglets du dessus. -->
         <div class="subtab active" data-sub="plan" onclick="switchCG('plan')">Plan comptable</div>
@@ -604,9 +616,17 @@
       <div class="section" id="cg-journal">
         <div class="card">
           <h2>Génération automatique</h2>
-          <!-- Une ligne (Celtis) : le bouton dit déjà ce qu'il fait ; on ne garde que ce qui évite une erreur (les factures sont déjà passées). -->
-          <div class="hint">Les factures passent leurs écritures toutes seules (émission et encaissement) ; seules les dépenses se génèrent ici.</div>
-          <button class="btn btn-outline btn-sm" onclick="genererEcrituresDepuisDepenses()">Générer depuis les dépenses du mois</button>
+          <!-- 3.3 (16/09/2026) : un seul bouton pour le mois — dépenses, recettes (une écriture par
+               jour, d'après les colis livrés), paie (une par mois, d'après le relevé de la paie).
+               Rejouable sans doublon ; un mois clôturé est refusé. Les factures passent leurs
+               écritures toutes seules. -->
+          <div class="hint">Dépenses, recettes (une écriture par jour, d'après les colis livrés) et paie (une écriture par mois, d'après le relevé de la paie). On peut relancer sans doublon ; un mois clôturé est refusé. Les factures passent leurs écritures toutes seules.</div>
+          <div class="period-bar">
+            <select id="cg-gen-year"></select>
+            <select id="cg-gen-month"></select>
+            <button class="btn btn-sm" onclick="genererEcrituresDuMois()">Générer les écritures du mois</button>
+          </div>
+          <div class="hint" id="cg-gen-resultat"></div>
         </div>
         <div class="card">
           <h2>Nouvelle écriture manuelle</h2>
@@ -1060,10 +1080,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260916personnel"></script>
-<script src="config.js?v=20260916personnel"></script>
-<script src="biometric-lock.js?v=20260916personnel"></script>
-<script src="clt-select-recherche.js?v=20260916personnel"></script>
-<script src="gestion.js?v=20260916personnel"></script>
+<script src="clt-common.js?v=20260916compta"></script>
+<script src="config.js?v=20260916compta"></script>
+<script src="biometric-lock.js?v=20260916compta"></script>
+<script src="clt-select-recherche.js?v=20260916compta"></script>
+<script src="gestion.js?v=20260916compta"></script>
 </body>
 </html>

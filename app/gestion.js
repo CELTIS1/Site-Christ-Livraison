@@ -3034,7 +3034,7 @@ async function chargerComptaGenerale(){
   }
   CG_CHARGE = true;
   renderPlanComptable();
-  renderJournal();
+  renderComptaGenerale();
 }
 
 function renderPlanComptable(){
@@ -3162,36 +3162,122 @@ async function supprimerEcriture(id){
     chargerComptaGenerale();
   } catch(e2){ showToast('Erreur suppression', true); console.error(e2); }
 }
-async function genererEcrituresDepuisDepenses(){
-  const annee = parseInt(document.getElementById('dep-year')?.value);
-  const mois = parseInt(document.getElementById('dep-month')?.value);
-  if (!annee || !mois){ showToast("Choisissez d'abord un mois dans l'onglet Dépenses.", true); return; }
-  await refreshCloturesSet(); // vérification live du verrou de clôture
-  if (moisCloture(annee, mois)){ showToast(`${MOIS_FR[mois-1]} ${annee} est clôturé : génération impossible.`, true); return; }
-  let deps = [];
-  try {
-    const { data, error } = await supabaseClient.from('gestion_depenses').select('id,categorie').eq('annee',annee).eq('mois',mois);
-    if (error) throw error;
-    deps = (data||[]).filter(d => !CATS_PAIE.has(d.categorie));
-  } catch(e){ showToast('Erreur chargement des dépenses', true); console.error(e); return; }
-  if (!deps.length){ showToast('Aucune dépense (hors paie) à générer ce mois-ci.'); return; }
-  let generees = 0, dejaExistantes = 0, echecs = 0;
-  for (const d of deps){
-    try {
-      const { error } = await supabaseClient.rpc('gestion_generer_ecriture_depense', { p_depense_id: d.id });
-      if (error){
-        if ((error.message||'').includes('DEJA_GENEREE')) dejaExistantes++;
-        else { echecs++; console.error('generer ecriture depense', d.id, error); }
-      } else generees++;
-    } catch(e){ echecs++; console.error('generer ecriture depense', d.id, e); }
-  }
-  showToast(`${generees} écriture(s) générée(s), ${dejaExistantes} déjà existante(s)` + (echecs ? `, ${echecs} échec(s)` : ''), echecs > 0);
-  chargerComptaGenerale();
+// genererEcrituresDepuisDepenses() a disparu le 16/09/2026 (3.3) : la génération du mois (dépenses,
+// recettes, paie) se fait en un appel côté base, gestion_generer_ecritures_mois — voir genererEcrituresDuMois().
+/* 3.3 (16/09/2026) — LA PÉRIODE DE LA COMPTABILITÉ GÉNÉRALE.
+   Le journal, le grand livre et la balance se lisent sur un mois (champ « Période ») ou depuis
+   l'origine (« Depuis le début »). La période est écrite en toutes lettres au-dessus des tableaux :
+   personne ne doit prendre une balance de septembre pour une balance annuelle. */
+const LIBELLE_SOURCE_ECRITURE = { manuelle:'Manuelle', depense:'Dépense', facture_emission:'Facture (émission)', facture_encaissement:'Facture (encaissement)', recettes:'Recettes (jour)', paie:'Paie (mois)' };
+function cgPeriode(){ return (document.getElementById('cg-periode')||{}).value || ''; }
+function cgPeriodeTexte(){
+  const p = cgPeriode();
+  if (!p) return 'Depuis le début — toutes les écritures sont comptées';
+  const [a, m] = p.split('-').map(Number);
+  return `${MOIS_FR[m-1]} ${a}`;
 }
+function ecrituresPeriode(){
+  const p = cgPeriode();
+  return p ? ECRITURES.filter(e => String(e.date_ecriture||'').startsWith(p)) : ECRITURES;
+}
+function cgToutePeriode(){ const el = document.getElementById('cg-periode'); if (el) el.value = ''; renderComptaGenerale(); }
+function renderComptaGenerale(){
+  const t = document.getElementById('cg-periode-texte'); if (t) t.textContent = 'Période : ' + cgPeriodeTexte();
+  renderJournal(); renderGrandLivre(); renderBalance();
+}
+
+// Génération du mois en un appel (dépenses, recettes, paie) — la base fait le travail et dit ce qu'elle a fait.
+async function genererEcrituresDuMois(){
+  const annee = parseInt(document.getElementById('cg-gen-year')?.value);
+  const mois = parseInt(document.getElementById('cg-gen-month')?.value);
+  const sortie = document.getElementById('cg-gen-resultat');
+  if (!annee || !mois) return;
+  await refreshCloturesSet();
+  if (moisCloture(annee, mois)){ showToast(`${MOIS_FR[mois-1]} ${annee} est clôturé : génération impossible.`, true); return; }
+  if (sortie) sortie.textContent = 'Génération en cours…';
+  try {
+    const { data, error } = await supabaseClient.rpc('gestion_generer_ecritures_mois', { p_annee: annee, p_mois: mois });
+    if (error) throw error;
+    const d = data || {}; const dep = d.depenses || {}; const rec = d.recettes || {}; const paie = d.paie || {};
+    const texte = `${MOIS_FR[mois-1]} ${annee} — dépenses : ${dep.generees||0} générée(s), ${dep.deja||0} déjà là${dep.echecs ? `, ${dep.echecs} en échec` : ''} · recettes : ${rec.ecritures||0} jour(s), ${fmtF(rec.total||0)} · paie : ${paie.ecritures ? fmtF(paie.total||0) : (paie.raison || 'rien')}.`;
+    if (sortie) sortie.textContent = texte;
+    showToast('Écritures du mois générées.');
+    const per = document.getElementById('cg-periode'); if (per) per.value = `${annee}-${pad2(mois)}`;
+    await chargerComptaGenerale();
+  } catch(e){
+    if (sortie) sortie.textContent = '';
+    showToast('Génération impossible : ' + (e.message || e), true); console.error(e);
+  }
+}
+
+// Export Excel : trois feuilles (journal, grand livre de tous les comptes, balance) sur la période affichée.
+function exporterComptaGeneraleExcel(){
+  const ecritures = ecrituresPeriode();
+  if (!ecritures.length){ showToast('Aucune écriture sur cette période.', true); return; }
+  const intituleDe = Object.fromEntries(PLAN_COMPTABLE.map(c=>[c.code, c.intitule]));
+  const journal = [['Date','Pièce','Libellé','Source','Compte','Intitulé','Débit','Crédit']];
+  const grandLivre = [['Compte','Intitulé','Date','Pièce','Libellé','Débit','Crédit','Solde progressif']];
+  const toutes = [];
+  ecritures.slice().sort((a,b)=>String(a.date_ecriture||'').localeCompare(String(b.date_ecriture||''))).forEach(e => {
+    (ECRITURE_LIGNES[e.id]||[]).forEach(l => {
+      journal.push([e.date_ecriture, e.piece||'', e.libelle||'', LIBELLE_SOURCE_ECRITURE[e.source]||e.source, l.compte, intituleDe[l.compte]||'', Math.round(n(l.debit)), Math.round(n(l.credit))]);
+      toutes.push({ compte: l.compte, date: e.date_ecriture, piece: e.piece, libelle: l.libelle || e.libelle, debit: n(l.debit), credit: n(l.credit) });
+    });
+  });
+  toutes.sort((a,b) => a.compte.localeCompare(b.compte) || String(a.date||'').localeCompare(String(b.date||'')));
+  let compteCourant = null, solde = 0;
+  toutes.forEach(l => {
+    if (l.compte !== compteCourant){ compteCourant = l.compte; solde = 0; }
+    solde += l.debit - l.credit;
+    grandLivre.push([l.compte, intituleDe[l.compte]||'', l.date, l.piece||'', l.libelle||'', Math.round(l.debit), Math.round(l.credit), Math.round(solde)]);
+  });
+  const { lignes, grandDebit, grandCredit } = balanceGenerale(toutes, PLAN_COMPTABLE);
+  const balance = [['Code','Intitulé','Débit','Crédit','Solde débiteur','Solde créditeur']]
+    .concat(lignes.map(l => [l.code, l.intitule, Math.round(l.debit), Math.round(l.credit), Math.round(l.soldeDebiteur), Math.round(l.soldeCrediteur)]))
+    .concat([['TOTAL', '', Math.round(grandDebit), Math.round(grandCredit), '', '']]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(journal), 'Journal');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(grandLivre), 'Grand livre');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(balance), 'Balance');
+  XLSX.writeFile(wb, `Comptabilite-generale_${cgPeriode() || 'depuis-le-debut'}.xlsx`);
+}
+
+// Impression / PDF au papier à en-tête, comme les autres documents de la gestion.
+function imprimerBalance(){
+  const toutes = [];
+  ecrituresPeriode().forEach(e => { (ECRITURE_LIGNES[e.id]||[]).forEach(l => toutes.push(l)); });
+  if (!toutes.length){ showToast('Aucune écriture sur cette période.', true); return; }
+  const { lignes, grandDebit, grandCredit, equilibree } = balanceGenerale(toutes, PLAN_COMPTABLE);
+  const html = enteteDocumentImprimable('Balance générale', cgPeriodeTexte())
+    + (equilibree ? '' : `<div class="doc-identite" style="color:#b00;">⚠️ Balance déséquilibrée : total débit ${fmtF(grandDebit)} ≠ total crédit ${fmtF(grandCredit)}.</div>`)
+    + `<table><thead><tr><th>Code</th><th style="text-align:left;">Intitulé</th><th>Débit</th><th>Crédit</th><th>Solde débiteur</th><th>Solde créditeur</th></tr></thead><tbody>`
+    + lignes.map(l => `<tr><td>${escapeHTML(l.code)}</td><td style="text-align:left;">${escapeHTML(l.intitule)}</td><td>${fmt(l.debit)}</td><td>${fmt(l.credit)}</td><td>${fmt(l.soldeDebiteur)}</td><td>${fmt(l.soldeCrediteur)}</td></tr>`).join('')
+    + `</tbody><tfoot><tr><th colspan="2" style="text-align:left;">TOTAL</th><th>${fmt(grandDebit)}</th><th>${fmt(grandCredit)}</th><th></th><th></th></tr></tfoot></table>`
+    + piedDocumentImprimable('Partie double (SYSCOHADA) — écritures automatiques (dépenses, recettes, paie, factures) et manuelles.');
+  ouvrirApercuImpression(html);
+}
+function imprimerJournal(){
+  const ecritures = ecrituresPeriode().slice().sort((a,b)=>String(a.date_ecriture||'').localeCompare(String(b.date_ecriture||'')));
+  if (!ecritures.length){ showToast('Aucune écriture sur cette période.', true); return; }
+  const intituleDe = Object.fromEntries(PLAN_COMPTABLE.map(c=>[c.code, c.intitule]));
+  let corps = '', totalD = 0, totalC = 0;
+  ecritures.forEach(e => {
+    (ECRITURE_LIGNES[e.id]||[]).forEach((l, i) => {
+      totalD += n(l.debit); totalC += n(l.credit);
+      corps += `<tr><td>${i === 0 ? escapeHTML(e.date_ecriture||'') : ''}</td><td>${i === 0 ? escapeHTML(e.piece||'') : ''}</td><td style="text-align:left;">${i === 0 ? escapeHTML(e.libelle||'') : ''}</td><td>${escapeHTML(l.compte)}</td><td style="text-align:left;">${escapeHTML(intituleDe[l.compte]||'')}</td><td>${n(l.debit) ? fmt(l.debit) : ''}</td><td>${n(l.credit) ? fmt(l.credit) : ''}</td></tr>`;
+    });
+  });
+  const html = enteteDocumentImprimable('Journal général', cgPeriodeTexte())
+    + `<table><thead><tr><th>Date</th><th>Pièce</th><th style="text-align:left;">Libellé</th><th>Compte</th><th style="text-align:left;">Intitulé</th><th>Débit</th><th>Crédit</th></tr></thead><tbody>${corps}</tbody>`
+    + `<tfoot><tr><th colspan="5" style="text-align:left;">TOTAL (${ecritures.length} écriture(s))</th><th>${fmt(totalD)}</th><th>${fmt(totalC)}</th></tr></tfoot></table>`
+    + piedDocumentImprimable('Partie double (SYSCOHADA) — écritures automatiques (dépenses, recettes, paie, factures) et manuelles.');
+  ouvrirApercuImpression(html);
+}
+
 function renderJournal(){
   const intituleDe = Object.fromEntries(PLAN_COMPTABLE.map(c=>[c.code, c.intitule]));
-  const libelleSource = { manuelle:'Manuelle', depense:'Dépense', facture_emission:'Facture (émission)', facture_encaissement:'Facture (encaissement)' };
-  const body = ECRITURES.map(e => {
+  const libelleSource = LIBELLE_SOURCE_ECRITURE;
+  const body = ecrituresPeriode().map(e => {
     const lignes = ECRITURE_LIGNES[e.id] || [];
     const detail = lignes.map(l =>
       `${escapeHTML(l.compte)}${intituleDe[l.compte] ? ' — '+escapeHTML(intituleDe[l.compte]) : ''} : ${n(l.debit)>0 ? 'Débit '+fmt(l.debit) : 'Crédit '+fmt(l.credit)}`
@@ -3218,7 +3304,7 @@ function renderGrandLivre(){
   if (!wrap) return;
   if (!compte){ wrap.innerHTML = '<div class="hint">Choisissez un compte ci-dessus.</div>'; return; }
   const lignes = [];
-  ECRITURES.forEach(e => {
+  ecrituresPeriode().forEach(e => {
     (ECRITURE_LIGNES[e.id]||[]).forEach(l => {
       if (l.compte === compte) lignes.push({ date: e.date_ecriture, piece: e.piece, libelle: l.libelle || e.libelle, debit: n(l.debit), credit: n(l.credit) });
     });
@@ -3239,7 +3325,7 @@ function renderGrandLivre(){
 }
 function renderBalance(){
   const toutesLignes = [];
-  ECRITURES.forEach(e => { (ECRITURE_LIGNES[e.id]||[]).forEach(l => toutesLignes.push(l)); });
+  ecrituresPeriode().forEach(e => { (ECRITURE_LIGNES[e.id]||[]).forEach(l => toutesLignes.push(l)); });
   const { lignes, grandDebit, grandCredit, equilibree } = balanceGenerale(toutesLignes, PLAN_COMPTABLE);
   const body = lignes.map(l => `<tr${l.horsPlan ? ' style="color:#dc2626;"' : ''}>
       <td>${escapeHTML(l.code)}</td><td style="text-align:left;">${escapeHTML(l.intitule)}</td>
@@ -3716,8 +3802,10 @@ async function init(){
 
   // Sélecteurs de période
   const nowM = new Date().getMonth()+1;
-  ['dash-year','rec-year','dep-year','obj-year','sai-year','fin-year','lc-year','ech-year','clo-year','pr-year'].forEach(id => fillYearSelect(id));
-  ['dash-month','rec-month','dep-month','sai-month','lc-month','ech-month'].forEach(id => fillMonthSelect(id, nowM));
+  ['dash-year','rec-year','dep-year','obj-year','sai-year','fin-year','lc-year','ech-year','clo-year','pr-year','cg-gen-year'].forEach(id => fillYearSelect(id));
+  ['dash-month','rec-month','dep-month','sai-month','lc-month','ech-month','cg-gen-month'].forEach(id => fillMonthSelect(id, nowM));
+  // Comptabilité générale : la période s'ouvre sur le mois courant (3.3) ; « Depuis le début » à un clic.
+  { const cgEl = document.getElementById('cg-periode'); if (cgEl && !cgEl.value) cgEl.value = ANNEE_COURANTE + '-' + pad2(nowM); }
   // Primes des livreurs : le mois écoulé par défaut — c'est lui qu'on décompte le 1er (13/09/2026).
   { const prevM = nowM === 1 ? 12 : nowM - 1; fillMonthSelect('pr-month', prevM);
     const py = document.getElementById('pr-year'); if (py && nowM === 1) py.value = String(ANNEE_COURANTE - 1); }
