@@ -1353,6 +1353,92 @@ function cltAfficherNouveautes(options) {
 }
 window.cltAfficherNouveautes = cltAfficherNouveautes;
 
+/* =====================================================================
+   LA GRILLE TARIFAIRE, DANS L'APP — 16 septembre 2026 (demande de Celtis)
+   ---------------------------------------------------------------------
+   « Que la grille soit disponible sur tous les comptes, consultable à tout moment, sans onglet
+   de plus. » Un bouton « 📋 Tarifs » dans le menu de chaque espace ouvre cette fenêtre : on
+   choisit la commune de départ, la liste des prix vers chaque commune s'affiche — la même
+   lecture que la fiche PDF envoyée aux clients, et le même code (MATRICE_TARIFS dans
+   lib/communes-et-tarifs.js) : il n'existe qu'une grille. Rien n'est lu en réseau : ça marche
+   hors connexion, chez un livreur sur la route comme chez une cliente.
+   ===================================================================== */
+function cltTarifsLignes(depart) {
+  var M = (typeof MATRICE_TARIFS !== "undefined") ? MATRICE_TARIFS : null;
+  if (!M || !M[depart]) return [];
+  var lignes = [
+    { prix: 1000, zone: "Dans " + depart + ", quartiers voisins", detail: "trajet très court" },
+    { prix: 1500, zone: "Dans " + depart + ", ailleurs dans la commune", detail: "" },
+  ];
+  Object.keys(M[depart]).filter(function (c) { return c !== depart; })
+    .map(function (c) { return { prix: M[depart][c], zone: c, detail: "" }; })
+    .sort(function (a, b) { return a.prix - b.prix || a.zone.localeCompare(b.zone, "fr"); })
+    .forEach(function (l) { lignes.push(l); });
+  return lignes;
+}
+function cltAfficherTarifs(options) {
+  options = options || {};
+  var communes = (typeof COMMUNES !== "undefined") ? COMMUNES.slice() : [];
+  if (!communes.length) { if (typeof cltToast === "function") cltToast("La grille n'est pas chargée sur cette page."); return; }
+  var ancien = document.getElementById("clt-tarifs"); if (ancien) ancien.remove();
+  var depart = options.depart && communes.indexOf(options.depart) >= 0 ? options.depart : null;
+  try { depart = depart || localStorage.getItem("clt_tarifs_depart"); } catch (e) {}
+  if (!depart || communes.indexOf(depart) < 0) depart = communes.indexOf("Cocody") >= 0 ? "Cocody" : communes[0];
+  var COULEUR = { 1000: "#B8791C", 1500: "#1B4374", 2000: "#6A48D7", 2500: "#C8560F", 3000: "#B3261E" };
+  var F = function (n) { return (typeof formatMontant === "function") ? formatMontant(n).replace(" FCFA", " F") : n + " F"; };
+  var ov = document.createElement("div"); ov.id = "clt-tarifs"; ov.className = "clt-nouveautes clt-tarifs";
+  ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "Grille tarifaire");
+  var boite = document.createElement("div"); boite.className = "clt-nouveautes__boite";
+  var tete = document.createElement("div"); tete.className = "clt-nouveautes__tete";
+  var titre = document.createElement("h2"); titre.textContent = "Grille tarifaire";
+  var fermer = document.createElement("button"); fermer.type = "button"; fermer.className = "clt-nouveautes__fermer"; fermer.setAttribute("aria-label", "Fermer"); fermer.textContent = "×";
+  tete.appendChild(titre); tete.appendChild(fermer);
+  var corps = document.createElement("div"); corps.className = "clt-nouveautes__corps";
+  var choix = document.createElement("div"); choix.className = "clt-tarifs__depart";
+  var lab = document.createElement("label"); lab.textContent = "Commune de départ"; lab.setAttribute("for", "clt-tarifs-depart");
+  var sel = document.createElement("select"); sel.id = "clt-tarifs-depart";
+  communes.forEach(function (c) { var o = document.createElement("option"); o.value = c; o.textContent = c; if (c === depart) o.selected = true; sel.appendChild(o); });
+  choix.appendChild(lab); choix.appendChild(sel);
+  var intro = document.createElement("p"); intro.className = "clt-tarifs__intro";
+  var liste = document.createElement("div"); liste.className = "clt-tarifs__liste";
+  var pied = document.createElement("div"); pied.className = "clt-tarifs__pied";
+  function dessiner() {
+    var d = sel.value;
+    try { localStorage.setItem("clt_tarifs_depart", d); } catch (e) {}
+    intro.textContent = "Au départ de " + d + " : le prix dépend de la destination, et il est le même dans les deux sens. Il reste modifiable à la saisie.";
+    liste.innerHTML = "";
+    cltTarifsLignes(d).forEach(function (l) {
+      var row = document.createElement("div"); row.className = "clt-tarifs__ligne" + (l.prix === 3000 ? " est-loin" : "");
+      var pastille = document.createElement("span"); pastille.className = "clt-tarifs__pastille"; pastille.style.background = COULEUR[l.prix] || "#1B4374";
+      var zone = document.createElement("span"); zone.className = "clt-tarifs__zone"; zone.textContent = l.zone;
+      if (l.detail) { var small = document.createElement("small"); small.textContent = " " + l.detail; zone.appendChild(small); }
+      var prix = document.createElement("strong"); prix.className = "clt-tarifs__prix"; prix.style.color = COULEUR[l.prix] || "#1B4374"; prix.textContent = F(l.prix);
+      row.appendChild(pastille); row.appendChild(zone); row.appendChild(prix); liste.appendChild(row);
+    });
+    var gare = (d === "Adjamé" || d === "Yopougon");
+    pied.innerHTML = "";
+    var exp = document.createElement("div"); exp.className = "clt-tarifs__ligne est-expedition";
+    var p1 = document.createElement("span"); p1.className = "clt-tarifs__pastille"; p1.style.background = "#1B4374";
+    var z1 = document.createElement("span"); z1.className = "clt-tarifs__zone"; z1.textContent = "Expédition vers l’intérieur : course jusqu’à la gare";
+    var s1 = document.createElement("small"); s1.textContent = " + frais du transporteur, réglés à la gare"; z1.appendChild(s1);
+    var x1 = document.createElement("strong"); x1.className = "clt-tarifs__prix"; x1.textContent = gare ? "2 500 – 3 000 F" : "3 000 F";
+    exp.appendChild(p1); exp.appendChild(z1); exp.appendChild(x1); pied.appendChild(exp);
+    var note = document.createElement("p"); note.className = "clt-tarifs__note";
+    note.textContent = "Songon et les localités hors de cette liste : sur devis. Suppléments : livraison express + 1 500 F, créneau fixe + 500 F, colis de plus de 5 kg + 500 F par kg.";
+    pied.appendChild(note);
+  }
+  sel.addEventListener("change", dessiner); dessiner();
+  corps.appendChild(choix); corps.appendChild(intro); corps.appendChild(liste); corps.appendChild(pied);
+  boite.appendChild(tete); boite.appendChild(corps); ov.appendChild(boite); document.body.appendChild(ov);
+  function clore() { ov.remove(); document.removeEventListener("keydown", surTouche); }
+  function surTouche(e) { if (e.key === "Escape") clore(); }
+  fermer.addEventListener("click", clore);
+  ov.addEventListener("click", function (e) { if (e.target === ov) clore(); });
+  document.addEventListener("keydown", surTouche);
+  return ov;
+}
+window.cltAfficherTarifs = cltAfficherTarifs;
+
 (function () {
   try {
     // L'étiquette de CETTE page, lue sur le script en train de s'exécuter. Pas de valeur écrite

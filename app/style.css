@@ -2333,6 +2333,20 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 .clt-nouveautes__entree ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5; }
 .clt-nouveautes__entree li { margin: 3px 0; }
 @media (prefers-color-scheme: dark) { .clt-nouveautes__boite { background: #111827; color: #e5e7eb; } .clt-nouveautes__tete { border-color: #1f2937; } .clt-nouveautes__entree { border-color: #1f2937; } }
+/* La grille tarifaire dans l'app (16/09/2026) : même fenêtre que « Quoi de neuf ? », une liste lisible. */
+.clt-tarifs__depart { display: flex; align-items: center; gap: 10px; padding: 12px 0 6px; }
+.clt-tarifs__depart label { font-size: 13px; color: #6b7280; white-space: nowrap; }
+.clt-tarifs__depart select { flex: 1; min-height: 40px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 6px 10px; font-size: 15px; font-weight: 600; color: #1B4374; background: #fff; }
+.clt-tarifs__intro { font-size: 13px; color: #4b5563; margin: 4px 0 10px; line-height: 1.45; }
+.clt-tarifs__ligne { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid #f1f5f9; font-size: 14.5px; }
+.clt-tarifs__ligne.est-loin .clt-tarifs__zone { font-weight: 700; }
+.clt-tarifs__ligne.est-expedition { background: #f4fbfc; border-radius: 10px; margin-top: 10px; padding: 9px 8px; border-bottom: none; }
+.clt-tarifs__pastille { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.clt-tarifs__zone { flex: 1; min-width: 0; }
+.clt-tarifs__zone small { color: #6b7280; font-size: 12px; font-style: italic; }
+.clt-tarifs__prix { flex: none; font-size: 15px; white-space: nowrap; }
+.clt-tarifs__note { font-size: 12px; color: #6b7280; margin: 10px 0 0; line-height: 1.45; }
+@media (prefers-color-scheme: dark) { .clt-tarifs__ligne { border-color: #1f2937; } .clt-tarifs__depart select { background: #1f2937; color: #e5e7eb; border-color: #374151; } .clt-tarifs__ligne.est-expedition { background: #0f2a35; } .clt-tarifs__intro, .clt-tarifs__note, .clt-tarifs__zone small, .clt-tarifs__depart label { color: #9ca3af; } }
 .clt-maj-texte { font-weight: 600; white-space: nowrap; }
 .clt-maj-note { color: #b9c2cf; white-space: nowrap; }
 .clt-maj-ok {

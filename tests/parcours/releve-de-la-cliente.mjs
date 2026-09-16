@@ -68,5 +68,21 @@ const calcul = await page.evaluate(() => {
 verifier('releveCliente dans la page : « vous revient » 35 000, frais 3 000 + 2 000', calcul !== null && (calcul.totalEncaisse === 35000 && calcul.fraisExp === 3000 && calcul.fraisCourse === 2000), JSON.stringify(calcul));
 verifier('aucune erreur JavaScript pendant tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
+titre('6. La grille tarifaire, depuis le menu, sur sa commune');
+await page.locator('#settings-menu-btn').click();
+await dodo(300);
+await page.locator('#btn-tarifs').click();
+await dodo(500);
+verifier('la fenêtre « Grille tarifaire » s\'ouvre', (await page.locator('#clt-tarifs').count()) === 1 && /Grille tarifaire/.test(await page.locator('#clt-tarifs h2').innerText()));
+verifier('la commune de départ proposée est la sienne (Treichville)', (await page.locator('#clt-tarifs-depart').inputValue()) === 'Treichville');
+verifier('14 lignes de prix, de 1 000 F à 3 000 F', (await page.locator('#clt-tarifs .clt-tarifs__liste .clt-tarifs__ligne').count()) === 14 && /1\s?000 F/.test((await page.locator('#clt-tarifs .clt-tarifs__liste').innerText()).replace(/\u202f|\u00a0/g, ' ')) && /Grand-Bassam/.test(await page.locator('#clt-tarifs .clt-tarifs__liste').innerText()));
+await page.selectOption('#clt-tarifs-depart', 'Yopougon');
+await dodo(200);
+verifier('changer de commune redessine (Yopougon → Anyama 2 500 F)', /Anyama[\s\S]{0,40}2\s?500 F/.test((await page.locator('#clt-tarifs .clt-tarifs__liste').innerText()).replace(/\u202f|\u00a0/g, ' ')));
+await page.keyboard.press('Escape');
+await dodo(200);
+verifier('Échap ferme la fenêtre', (await page.locator('#clt-tarifs').count()) === 0);
+verifier('aucune erreur JavaScript', erreurs.length === 0, erreurs.join('\n       '));
+
 await N.fermer();
 process.exit(bilan() ? 1 : 0);

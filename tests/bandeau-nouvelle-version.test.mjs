@@ -440,10 +440,11 @@ verifier(
    v127, le 16/09/2026 — 4.8, séance 4 : le code de l'espace équipe en onze fichiers par sujet (app/equipe/00-… à 10-onglets), chargés dans l'ordre : étiquette 20260916lib4.
    v128, le 16/09/2026 — la grille des tarifs tranchée par Celtis : symétrique, cinq paliers (1 000 / 1 500 / 2 000 / 2 500 / 3 000), lib/communes-et-tarifs.js et tarifs.html : étiquette 20260916tarifs.
    v129, le 16/09/2026 — Attécoubé, 13ᵉ commune (liste, grille, Express, page Tarifs) ; Adjamé ↔ Marcory et Treichville à 1 500 : étiquette 20260916attecoube.
-   v130, le 16/09/2026 — même commune 1 500 F partout, Yopougon compris (le 1 000 F reste un geste à la main) : étiquette 20260916grille. */
+   v130, le 16/09/2026 — même commune 1 500 F partout, Yopougon compris (le 1 000 F reste un geste à la main) : étiquette 20260916grille.
+   v131, le 16/09/2026 — la grille tarifaire consultable dans l'app (bouton « 📋 Grille tarifaire » dans le menu de chaque espace ; clt-common.js, style.css, config.js) : étiquette 20260916tarifsapp. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v130'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v131'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

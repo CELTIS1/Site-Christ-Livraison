@@ -3268,6 +3268,9 @@ function initSettingsMenu() {
       openAccountModal();
     });
   }
+  // « 📋 Grille tarifaire » (16/09/2026) : le menu se referme, la fenêtre s'ouvre (onclick de la page).
+  const tarifsBtn = document.getElementById("btn-tarifs");
+  if (tarifsBtn) tarifsBtn.addEventListener("click", () => dropdown.classList.remove("open"));
   if (closeBtn) closeBtn.addEventListener("click", closeAccountModal);
   if (overlay) {
     overlay.addEventListener("click", (e) => { if (e.target === overlay) closeAccountModal(); });

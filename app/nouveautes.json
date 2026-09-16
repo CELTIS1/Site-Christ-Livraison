@@ -2,6 +2,16 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260916tarifsapp",
+      "date": "16 septembre 2026",
+      "titre": "La grille tarifaire, à portée de main sur tous les comptes",
+      "points": [
+        "Un bouton « 📋 Grille tarifaire » dans le menu ⚙️ (cliente, livreur, équipe) et dans la barre de Gestion : on choisit la commune de départ, les prix vers chaque commune s'affichent.",
+        "La même grille que la saisie et que les fiches envoyées aux clients : une seule source, jamais deux versions.",
+        "Consultable sans réseau. La cliente voit d'abord sa propre commune."
+      ]
+    },
+    {
       "version": "20260916grille",
       "date": "16 septembre 2026",
       "titre": "Les tarifs de livraison, clairs et les mêmes dans les deux sens",
