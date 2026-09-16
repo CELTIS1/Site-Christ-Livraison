@@ -25,6 +25,9 @@
   const LISTE = (cle, label, singulier, champs, aide) => ({ cle, label, type: 'liste', singulier, champs, aide });
   const LIGNES = (cle, label, singulier, aide) => ({ cle, label, type: 'liste-textes', singulier, aide });
   const ICONE = (cle) => T(cle, 'Icône', 'Nom d\'icône Font Awesome, ex. fa-bolt, fa-store, fa-truck');
+  // 'image' : un chemin ou une adresse de photo, avec un bouton « Choisir une photo » qui envoie le
+  // fichier (réduit à 1600 px dans le navigateur) dans le bucket public site-photos (16/09/2026).
+  const IMAGE = (cle, label, aide) => ({ cle, label, type: 'image', aide });
 
   const SCHEMA_SITE = [
     { cle: 'hero', label: 'Haut de page (héros)', champs: [
@@ -61,6 +64,11 @@
       T('eyebrow', 'Sur-titre'), T('title', 'Titre'), L('text', 'Texte de présentation'),
       LISTE('values', 'Valeurs', 'valeur', [ICONE('icon'), T('title', 'Titre'), L('text', 'Texte')]),
       LISTE('stats', 'Chiffres clés', 'chiffre', [T('number', 'Chiffre', 'Ex. +50'), T('label', 'Libellé')]),
+    ]},
+    { cle: 'vie', label: 'En ce moment chez CLT (photos à renouveler)', champs: [
+      T('title', 'Titre'), L('subtitle', 'Sous-titre'),
+      LISTE('items', 'Photos', 'photo', [IMAGE('photo', 'Photo', 'Choisissez une photo depuis l\'ordinateur ou le téléphone : elle est réduite puis envoyée dans la base ; le site l\'affiche dès l\'enregistrement.'), T('caption', 'Légende', 'Ex. L\'équipe au départ des tournées'), T('date', 'Quand', 'Ex. Septembre 2026')],
+        'La première photo s\'affiche en grand. Renouvelez-les chaque semaine ou chaque mois : ajoutez la nouvelle en tête (↑), retirez la plus ancienne (✕). Six photos, c\'est bien.'),
     ]},
     { cle: 'testimonials', label: 'Témoignages', champs: [
       T('eyebrow', 'Sur-titre'), T('title', 'Titre'), L('subtitle', 'Sous-titre'),
@@ -117,14 +125,48 @@
         ${items.map((v, i) => `<details class="se-fiche"><summary>${esc(titreFiche(c, v, i))}<span class="se-ligne-actions">${boutonsLigne(chemin, i, items.length)}</span></summary><div class="se-fiche-corps">${c.champs.map((sc) => champHTML(sc, chemin.concat(i, sc.cle), v ? v[sc.cle] : undefined)).join('')}</div></details>`).join('')}
         <button type="button" class="btn btn-outline btn-sm" data-se-ajouter="${esc(chemin.join('/'))}">+ Ajouter ${esc(c.singulier || 'une fiche')}</button></div>`;
     }
+    if (c.type === 'image') {
+      const v = valeur == null ? '' : String(valeur);
+      const src = v ? (/^https?:\/\//.test(v) ? v : '../' + v) : '';
+      return `<div class="se-champ se-image"><label for="${id}">${esc(c.label)}</label>
+        <div class="se-image-ligne">${src ? `<img class="se-apercu" src="${esc(src)}" alt="">` : '<span class="se-apercu se-apercu-vide">—</span>'}
+        <input id="${id}" type="text" ${attr.replace('data-se-type="image"', 'data-se-type="texte"')} value="${esc(v)}" placeholder="images/… ou https://…">
+        <button type="button" class="btn btn-outline btn-sm" data-se-photo="${esc(chemin.join('/'))}">📷 Choisir une photo</button></div>${aide}</div>`;
+    }
     return `<div class="se-champ"><label for="${id}">${esc(c.label)}</label><input id="${id}" type="text" ${attr} value="${esc(valeur == null ? '' : valeur)}">${aide}</div>`;
+  }
+
+  // ---------------------------------------------------------------- envoyer une photo
+  // Réduite dans le navigateur (1600 px, JPEG 0,82) : un téléphone envoie 300 Ko, pas 6 Mo.
+  function reduirePhoto(fichier, maxCote) {
+    return new Promise((resolve, reject) => {
+      const img = new Image(); const url = URL.createObjectURL(fichier);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const k = Math.min(1, maxCote / Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob((b) => b ? resolve(b) : reject(new Error('Image illisible')), 'image/jpeg', 0.82);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible')); };
+      img.src = url;
+    });
+  }
+  async function envoyerPhoto(fichier) {
+    if (!fichier || !/^image\//.test(fichier.type)) throw new Error('Choisissez une image (JPEG, PNG, WebP).');
+    const blob = await reduirePhoto(fichier, 1600);
+    const nom = 'vie/' + new Date().toISOString().slice(0, 10) + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+    const { error } = await supabaseClient.storage.from('site-photos').upload(nom, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+    if (error) throw error;
+    const { data } = supabaseClient.storage.from('site-photos').getPublicUrl(nom);
+    return data.publicUrl;
   }
   function boutonsLigne(chemin, i, n) {
     const p = esc(chemin.join('/'));
     return `<button type="button" class="se-btn" title="Monter" data-se-deplacer="${p}" data-se-index="${i}" data-se-sens="-1" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" class="se-btn" title="Descendre" data-se-deplacer="${p}" data-se-index="${i}" data-se-sens="1" ${i === n - 1 ? 'disabled' : ''}>↓</button><button type="button" class="se-btn se-btn-retirer" title="Retirer" data-se-retirer="${p}" data-se-index="${i}">✕</button>`;
   }
   function titreFiche(c, v, i) {
-    const t = v && (v.title || v.name || v.question || v.label || v.text);
+    const t = v && (v.title || v.name || v.question || v.label || v.caption || v.text);
     return (t ? String(t).slice(0, 70) : (c.singulier ? c.singulier.charAt(0).toUpperCase() + c.singulier.slice(1) : 'Fiche') + ' ' + (i + 1));
   }
   function formulaireHTML(donnees) {
@@ -235,6 +277,20 @@
         const ok = (typeof cltConfirm === 'function') ? await cltConfirm({ title: 'Retirer cet élément ?', okLabel: 'Retirer', danger: true }) : true;
         if (!ok) return;
         listeRetirer(contenu, b.dataset.seRetirer, Number(b.dataset.seIndex)); dessiner(); ouvrirSection(b.dataset.seRetirer); return;
+      }
+      if (b.dataset.sePhoto !== undefined) {
+        const chemin = b.dataset.sePhoto;
+        const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
+        input.onchange = async () => {
+          const f = input.files && input.files[0]; if (!f) return;
+          b.disabled = true; b.textContent = 'Envoi…';
+          try {
+            const url = await envoyerPhoto(f);
+            relireDepuisEcran(racine); ecrire(contenu, cheminDepuis(chemin), url); dessiner(); ouvrirSection(chemin);
+            poserEtat('Photo envoyée — pensez à Enregistrer pour qu\'elle paraisse sur le site.');
+          } catch (err) { console.error(err); if (typeof showToast === 'function') showToast('Photo refusée : ' + (err.message || err), true); b.disabled = false; b.textContent = '📷 Choisir une photo'; }
+        };
+        input.click(); return;
       }
       if (b.dataset.seDeplacer !== undefined) { relireDepuisEcran(racine); listeDeplacer(contenu, b.dataset.seDeplacer, Number(b.dataset.seIndex), Number(b.dataset.seSens)); dessiner(); ouvrirSection(b.dataset.seDeplacer); return; }
       if (b.id === 'se-enregistrer') {

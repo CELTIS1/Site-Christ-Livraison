@@ -429,10 +429,11 @@ verifier(
    v116, le 16/09/2026 — l'éditeur du site public dans Gestion › Site (site-editeur.js, gestion.html, gestion.js ; index.html et services.html lisent site_contenu) : étiquette 20260916editeur.
    v117, le 16/09/2026 — feuille de route 4.4 : le site public trouvable (sitemap complet, canonical par fiche service, police Arial retirée des URL Google Fonts, express.html relié à l'accueil ; services.html est pré-cachée) : étiquette 20260916seo.
    v118, le 16/09/2026 — feuille de route 4.2 : identité (og-image 1200×630, favicon.ico, bannière Play, logo en Poppins sur les pages publiques dont services.html pré-cachée) : étiquette 20260916identite.
-   v119, le 16/09/2026 — feuille de route 4.1 : accueil épurée (sept effets retirés, un menu mobile, photo WebP) ; l'éditeur du site (site-editeur.js) décrit la photo unique : étiquette 20260916accueil. */
+   v119, le 16/09/2026 — feuille de route 4.1 : accueil épurée (sept effets retirés, un menu mobile, photo WebP) ; l'éditeur du site (site-editeur.js) décrit la photo unique : étiquette 20260916accueil.
+   v120, le 16/09/2026 — un site vivant : chiffres calculés par la base (site_chiffres), galerie « En ce moment chez CLT » renouvelable depuis Gestion › Site avec envoi de photo (site-editeur.js, gestion.html) : étiquette 20260916vivant. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v119'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v120'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

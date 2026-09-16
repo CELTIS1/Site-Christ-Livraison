@@ -353,6 +353,17 @@
   .about-stat .stat-label{font-size:13px; color:#C7D1DB; margin-top:4px;}
 
   /* ---------- TESTIMONIALS ---------- */
+  /* ---------- LA VIE CHEZ CLT (photos renouvelées depuis Gestion › Site, 16/09/2026) ---------- */
+  .vie{background:var(--white);}
+  .vie-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:16px;}
+  .vie-card{position:relative; margin:0; border-radius:14px; overflow:hidden; background:var(--grey-bg); aspect-ratio:4/3;}
+  .vie-card:first-child{grid-column:span 2; grid-row:span 2; aspect-ratio:auto;}
+  .vie-card img{width:100%; height:100%; object-fit:cover; display:block; transition:transform .4s ease;}
+  .vie-card:hover img{transform:scale(1.03);}
+  .vie-card figcaption{position:absolute; left:0; right:0; bottom:0; padding:28px 16px 12px; color:var(--white); font-size:13.5px; font-weight:600;
+    background:linear-gradient(180deg, rgba(9,26,48,0) 0%, rgba(9,26,48,0.78) 100%);}
+  .vie-card figcaption small{display:block; font-weight:500; opacity:.85; font-size:12px; margin-top:2px;}
+  @media (max-width:760px){ .vie-grid{grid-template-columns:repeat(2, 1fr); gap:10px;} .vie-card:first-child{grid-column:span 2; grid-row:auto; aspect-ratio:16/10;} }
   .testimonials{background:var(--grey-bg);}
   .testimonials-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:26px;}
   .testimonial-card{
@@ -847,7 +858,7 @@
       <div class="trust-item reveal"><i class="fa-solid fa-bolt"></i><div><h4>À partir de 1000 FCFA</h4><p>Un tarif clair et accessible pour vos livraisons en ville.</p></div></div>
       <div class="trust-item reveal"><i class="fa-solid fa-location-dot"></i><div><h4>Abidjan et périphéries</h4><p>Nous livrons dans toute la ville et les zones environnantes.</p></div></div>
       <div class="trust-item reveal"><i class="fa-solid fa-clock"></i><div><h4>Toujours joignables</h4><p>Contactez-nous à tout moment, de préférence la veille ou tôt le matin.</p></div></div>
-      <div class="trust-item reveal"><i class="fa-solid fa-handshake"></i><div><h4>Nos partenariats</h4><p>49 commerçants et entreprises nous confient déjà leurs livraisons à Abidjan.</p></div></div>
+      <div class="trust-item reveal"><i class="fa-solid fa-handshake"></i><div><h4>Nos partenariats</h4><p>Plus de 60 commerçants et entreprises nous confient déjà leurs livraisons à Abidjan.</p></div></div>
     </div>
   </div>
 </section>
@@ -937,8 +948,8 @@
       <div class="about-value reveal"><i class="fa-solid fa-location-dot"></i><h4>Proximité</h4><p>Une équipe joignable et à l'écoute, toujours proche de ses clients et fournisseurs.</p></div>
     </div>
     <div class="about-stats reveal" id="aboutStats">
-      <div class="about-stat"><div class="stat-number">49</div><div class="stat-label">commerçants et entreprises partenaires</div></div>
-      <div class="about-stat"><div class="stat-number">14</div><div class="stat-label">zones desservies à Abidjan et environs</div></div>
+      <div class="about-stat"><div class="stat-number" data-chiffre="commercants">60+</div><div class="stat-label">commerçants et entreprises partenaires</div></div>
+      <div class="about-stat"><div class="stat-number" data-chiffre="colis_livres">1 000+</div><div class="stat-label">colis livrés à Abidjan</div></div>
       <div class="about-stat"><div class="stat-number">1000 FCFA</div><div class="stat-label">tarif de départ pour vos livraisons</div></div>
     </div>
     <div class="partners-band reveal" id="partnersBand">
@@ -950,6 +961,21 @@
         <span class="partner-pill"><i class="fa-solid fa-briefcase-medical"></i> Pharmacies</span>
         <span class="partner-pill"><i class="fa-solid fa-building"></i> Entreprises</span>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="vie" class="vie">
+  <div class="container">
+    <h2 class="section-title reveal" id="vieTitle">En ce moment chez CLT</h2>
+    <p class="section-sub reveal" id="vieSubtitle">Des photos de l'équipe, renouvelées régulièrement : la livraison, c'est d'abord des gens qui bougent.</p>
+    <div class="vie-grid reveal" id="vieGrid">
+      <figure class="vie-card"><img src="images/vie/equipe-devant-le-local-800.webp" srcset="images/vie/equipe-devant-le-local-800.webp 800w, images/vie/equipe-devant-le-local.webp 1600w" sizes="(max-width:760px) 100vw, 60vw" alt="L'équipe de livreurs devant le local, motos alignées" loading="lazy"><figcaption>L'équipe au départ des tournées<small>Abidjan, août 2026</small></figcaption></figure>
+      <figure class="vie-card"><img src="images/vie/colis-prets-a-partir-800.webp" alt="Colis emballés sur la table, prêts à partir" loading="lazy"><figcaption>Les colis du jour, prêts à partir<small>Août 2026</small></figcaption></figure>
+      <figure class="vie-card"><img src="images/vie/formation-des-livreurs-800.webp" alt="Formation des livreurs devant le tableau" loading="lazy"><figcaption>Formation des livreurs<small>Août 2026</small></figcaption></figure>
+      <figure class="vie-card"><img src="images/vie/suivi-des-colis-au-bureau-800.webp" alt="La responsable suit les colis au bureau" loading="lazy"><figcaption>Le suivi des colis, au bureau<small>Août 2026</small></figcaption></figure>
+      <figure class="vie-card"><img src="images/vie/livreurs-sur-l-application-800.webp" alt="Deux livreurs sur l'application, le site à l'écran" loading="lazy"><figcaption>Les livreurs sur l'application<small>Août 2026</small></figcaption></figure>
+      <figure class="vie-card"><img src="images/vie/deux-livreurs-800.webp" alt="Deux livreurs, casque sur la tête, sourire" loading="lazy"><figcaption>Prêts pour la route<small>Août 2026</small></figcaption></figure>
     </div>
   </div>
 </section>
@@ -1228,7 +1254,7 @@
 
   function trustItemHTML(t, i){
     const delay = reducedMotion ? 0 : i * 0.12;
-    return `<div class="trust-item reveal" style="transition-delay:${delay}s"><i class="fa-solid ${t.icon || 'fa-circle-check'}"></i><div><h4>${escapeHTML(t.title)}</h4><p>${escapeHTML(t.text)}</p></div></div>`;
+    return `<div class="trust-item reveal" style="transition-delay:${delay}s"><i class="fa-solid ${t.icon || 'fa-circle-check'}"></i><div><h4>${escapeHTML(avecChiffres(t.title))}</h4><p>${escapeHTML(avecChiffres(t.text))}</p></div></div>`;
   }
 
   function stepCardHTML(s, i, arr){
@@ -1243,8 +1269,25 @@
     return `<div class="about-value reveal" style="transition-delay:${delay}s"><i class="fa-solid ${v.icon || 'fa-circle-check'}"></i><h4>${v.title}</h4><p>${v.text}</p></div>`;
   }
 
+  // Les chiffres vivants (16/09/2026) : dans les textes du site, « {commercants} », « {colis_livres} »
+  // et « {communes} » sont remplacés par les ordres de grandeur calculés par la base
+  // (site_chiffres : 61 → « 60+ », 1 054 → « 1 000+ »). Tant que la base n'a pas répondu, le
+  // texte de repli entre parenthèses est affiché : « {commercants|60+} ».
+  let CHIFFRES = null;
+  function avecChiffres(texte){
+    // « {commercants} » → « 60+ » ; « {commercants_nombre} » → « 60 » (pour écrire « Plus de 60 … »).
+    return String(texte == null ? '' : texte).replace(/\{(commercants|colis_livres|communes)(_nombre)?(?:\|([^}]*))?\}/g, (m, cle, nombre, repli) => {
+      const v = CHIFFRES && (nombre ? CHIFFRES[cle] : CHIFFRES[cle + '_texte']);
+      return v != null ? v : (repli != null ? repli : '');
+    });
+  }
   function aboutStatHTML(s){
-    return `<div class="about-stat"><div class="stat-number">${s.number}</div><div class="stat-label">${s.label}</div></div>`;
+    return `<div class="about-stat"><div class="stat-number">${escapeHTML(avecChiffres(s.number))}</div><div class="stat-label">${escapeHTML(avecChiffres(s.label))}</div></div>`;
+  }
+  function vieCardHTML(v){
+    if(!v || !v.photo) return '';
+    const src = escapeHTML(v.photo);
+    return `<figure class="vie-card"><img src="${src}" alt="${escapeHTML(v.caption || '')}" loading="lazy"><figcaption>${escapeHTML(v.caption || '')}${v.date ? `<small>${escapeHTML(v.date)}</small>` : ''}</figcaption></figure>`;
   }
 
   function partnersPillHTML(p){
@@ -1460,6 +1503,17 @@
         if(fqList) fqList.innerHTML = fq.items.map(faqItemHTML).join("");
       }
     }
+    // La vie chez CLT
+    if(data.vie){
+      const vTitle = document.getElementById('vieTitle'); if(vTitle) vTitle.textContent = data.vie.title || "";
+      const vSub = document.getElementById('vieSubtitle'); if(vSub) vSub.textContent = data.vie.subtitle || "";
+      if(Array.isArray(data.vie.items)){
+        const vGrid = document.getElementById('vieGrid');
+        if(vGrid){ vGrid.innerHTML = data.vie.items.map(vieCardHTML).join(""); }
+      }
+      const vSection = document.getElementById('vie');
+      if(vSection) vSection.style.display = (Array.isArray(data.vie.items) && data.vie.items.some(v => v && v.photo)) ? '' : 'none';
+    }
     // Testimonials
     if(data.testimonials){
       const tm = data.testimonials;
@@ -1521,7 +1575,18 @@
   initFaqAccordion();
   initBackToTop();
 
-  chargerContenuSite()
+  // Les chiffres vivants : un appel REST direct (clé publique), sans bibliothèque, jamais bloquant.
+  function chargerChiffres(){
+    var URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co";
+    var CLE_PUBLIQUE = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
+    return fetch(URL_BASE + '/rest/v1/rpc/site_chiffres', { method: 'POST', headers: { 'apikey': CLE_PUBLIQUE, 'Authorization': 'Bearer ' + CLE_PUBLIQUE, 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){ if(j && typeof j === 'object'){ CHIFFRES = j; document.querySelectorAll('[data-chiffre]').forEach(function(el){ var v = j[el.dataset.chiffre + '_texte']; if(v != null) el.textContent = v; }); } })
+      .catch(function(){ /* on garde les chiffres de repli */ });
+  }
+
+  chargerChiffres()
+    .then(chargerContenuSite)
     .then(applyContent)
     .catch(err => console.error("Impossible de charger les textes du site :", err));
 

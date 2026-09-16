@@ -88,7 +88,7 @@ E.listeRetirer(c2, 'faq/items', 0);
 verifier('✕ retire la bonne ligne', c2.faq.items.length === nFaq - 1 && c2.faq.items[0].question === premier);
 
 console.log('\n4. Le site, Gestion et la base');
-verifier('index.html et services.html lisent la base puis content.json', [index, services].every((p) => /function chargerContenuSite\(\)/.test(p) && /\/rest\/v1\/site_contenu\?id=eq\.1&select=contenu/.test(p) && /content\/content\.json\?v=/.test(p)) && /chargerContenuSite\(\)\s*\.then\(applyContent\)/.test(index));
+verifier('index.html et services.html lisent la base puis content.json', [index, services].every((p) => /function chargerContenuSite\(\)/.test(p) && /\/rest\/v1\/site_contenu\?id=eq\.1&select=contenu/.test(p) && /content\/content\.json\?v=/.test(p)) && /\.then\(chargerContenuSite\)\s*\.then\(applyContent\)/.test(index)); // depuis le 16/09 (chiffres vivants), les chiffres sont chargés d'abord
 verifier('services.html autorise la base dans sa politique de sécurité', /connect-src 'self' https:\/\/xkfltqjbmolmdwdafzcx\.supabase\.co/.test(services));
 verifier('Gestion a l\'onglet Site, réservé à l\'administrateur, et le monte', /id="tab-site"/.test(gestionHtml) && /id="section-site"/.test(gestionHtml) && /<script src="site-editeur\.js\?v=/.test(gestionHtml) && /setDisp\('tab-site',\s*isAdmin\)/.test(gestionJs) && /if \(tab === 'site' && window\.CLTSiteEditeur\) CLTSiteEditeur\.init\(\);/.test(gestionJs));
 verifier('Enregistrer, Voir le site, versions et copie de secours sont là', /id="se-enregistrer"/.test(gestionHtml) && /href="\.\.\/index\.html" target="_blank"/.test(gestionHtml) && /id="se-versions"/.test(gestionHtml) && /id="se-importer"/.test(gestionHtml));
