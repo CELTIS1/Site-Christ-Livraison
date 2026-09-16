@@ -74,6 +74,9 @@ jobs:
       - name: Le site public est trouvable et reconnaissable (sitemap, canonical par fiche, polices, image de partage, favicon)
         run: node tests/seo-du-site.test.mjs
 
+      - name: La politique de confidentialité dit ce que l'application fait (traitements, chiffres, prestataires)
+        run: node tests/politique-de-confidentialite.test.mjs
+
       - name: Actions rapides (un appui pour faire avancer un colis)
         run: node tests/actions-rapides.test.mjs
 
