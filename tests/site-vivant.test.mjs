@@ -57,7 +57,7 @@ verifier('la migration crée le bucket public et la fonction site_chiffres ouver
 
 console.log('\n4. Le haut de page qui vit (A) et le film (B) — 16/09 après-midi');
 verifier('les photos du héros se fondent toutes les cinq secondes, jamais sous « moins d\'animations »', /function lancerFonduHeros\(photos\)/.test(index) && /photos\.length < 2 \|\| reducedMotion\) return;/.test(index) && /\}, 5000\);/.test(index));
-verifier('content.json liste trois photos de héros, toutes présentes dans le dépôt', contenu.hero.photos.length === 3 && contenu.hero.photos.every(p => fs.existsSync(path.join(RACINE, p))));
+verifier('content.json liste cinq photos de héros, toutes présentes dans le dépôt', contenu.hero.photos.length === 5 && contenu.hero.photos.every(p => fs.existsSync(path.join(RACINE, p))));
 verifier('la section film existe avec vidéo, affiche, bouton de lecture et note', /<section id="film" class="film">/.test(index) && /id="filmVideo" playsinline muted loop preload="none" poster="videos\/film-affiche\.jpg"/.test(index) && /id="filmLecture"/.test(index) && /id="filmNote"/.test(index));
 verifier('le film n\'est jamais téléchargé d\'office sur téléphone (preload none, lecture seule au geste ou sur grand écran)', /preload="none"/.test(index) && /if\(grand && !donneesLimitees && !reducedMotion && 'IntersectionObserver' in window\)/.test(index) && /saveData/.test(index));
 verifier('deux formats : 540 p par défaut, 720 p sur grand écran', /src="videos\/film-540\.mp4" data-grand="videos\/film-720\.mp4"/.test(index));
@@ -65,6 +65,9 @@ const films = ['videos/film-540.mp4', 'videos/film-720.mp4', 'videos/film-affich
 verifier('les fichiers du film existent et restent légers (540 p < 3 Mo, 720 p < 6 Mo)', films.every(f => fs.existsSync(path.join(RACINE, f))) && fs.statSync(path.join(RACINE, 'videos/film-540.mp4')).size < 3 * 1024 * 1024 && fs.statSync(path.join(RACINE, 'videos/film-720.mp4')).size < 6 * 1024 * 1024);
 verifier('la politique de sécurité autorise les vidéos du site', /media-src 'self'/.test(index));
 verifier('le film est éditable dans Gestion › Site (titre, texte, note, fichier, affiche)', /cle: 'film'/.test(editeur) && contenu.film && contenu.film.video === 'videos/film-540.mp4');
+
+verifier('les sur-titres clairs restent lisibles : le dégradé orange ne touche pas .pill-light', /\.pill:not\(\.pill-light\)\{ background:var\(--grad-orange\); \}/.test(index));
+verifier('le bouton WhatsApp a une onde discrète, coupée sous « moins d\'animations »', /class="wa-float-pulse"/.test(index) && /waPulse 3s ease-out infinite/.test(index) && /prefers-reduced-motion: reduce\)\{ \.wa-float-pulse\{ animation:none/.test(index));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

@@ -561,6 +561,9 @@
     transition:transform .18s ease;
   }
   .wa-float:hover{transform:scale(1.07);}
+  .wa-float-pulse{ position:absolute; inset:0; border-radius:50%; background:#25D366; animation:waPulse 3s ease-out infinite; z-index:-1; }
+  @keyframes waPulse{ 0%{ transform:scale(1); opacity:.45; } 100%{ transform:scale(1.7); opacity:0; } }
+  @media (prefers-reduced-motion: reduce){ .wa-float-pulse{ animation:none; display:none; } }
   @media (max-width:480px){ .wa-float{right:16px; bottom:16px; width:52px; height:52px; font-size:25px;} }
 
   /* ---------- BOUTON RETOUR EN HAUT ---------- */
@@ -771,7 +774,7 @@
   .btn-devis:hover{ background:var(--grad-orange-hover); }
 
   /* Pastille orange & icônes de service : même dégradé exact que l'app */
-  .pill{ background:var(--grad-orange); }
+  .pill:not(.pill-light){ background:var(--grad-orange); }  /* les sur-titres clairs (.pill-light) gardent fond pâle + texte orange, lisibles (16/09) */
   .service-icon{ background:var(--grad-orange) !important; }
   .step-icon{ background:var(--grad-navy) !important; }
 
@@ -1210,6 +1213,7 @@
 </div>
 
 <a href="https://wa.me/2250546818640?text=Bonjour%2C%20je%20souhaite%20des%20informations%20sur%20vos%20services%20de%20livraison." class="wa-float wa-link" id="waFloat" target="_blank" rel="noopener" aria-label="Écrire sur WhatsApp">
+  <span class="wa-float-pulse" aria-hidden="true"></span>
   <i class="fa-brands fa-whatsapp"></i>
 </a>
 
@@ -1773,7 +1777,7 @@
 
   observeReveals();
   initFilm();
-  lancerFonduHeros(["images/hero-livreur.jpg", "images/hero-livreur-2.webp", "images/vie/suivi-des-colis-au-bureau.webp"]);
+  lancerFonduHeros(["images/hero-livreur.jpg", "images/hero-livreur-moto.webp", "images/hero-livreur-2.webp", "images/hero-livreur-route.webp", "images/vie/suivi-des-colis-au-bureau.webp"]);
   initParticles();
   setMarquee(["Colis & plis", "Courriers & documents", "Expéditions", "Courses & divers"]);
   initZoneSelector();

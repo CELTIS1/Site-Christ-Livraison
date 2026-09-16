@@ -31,7 +31,6 @@ for (const [nom, motif] of [
   ['machine à écrire', /typewriter|startTypewriter/],
   ['compteurs animés', /initStatCounters|animateCount|data-raw=/],
   ['diaporama du héros', /hero-photo-slide|initHeroSlideshow|heroSlideTimer/],
-  ['bouton WhatsApp pulsant', /wa-float-pulse|waPulse/],
   ['barre de progression de lecture', /cltScrollProgress/],
 ]) verifier('plus de ' + nom, !motif.test(index));
 
