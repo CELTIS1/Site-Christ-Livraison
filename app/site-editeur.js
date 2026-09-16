@@ -31,7 +31,7 @@
       T('pill', 'Petite étiquette', 'Ex. CRÉDIBLE • SIMPLE • SÉCURISÉ'),
       T('title', 'Titre principal'),
       L('lead', 'Texte d\'accroche'),
-      LIGNES('photos', 'Photos du haut de page', 'photo', 'Chemins des images dans le dossier images/ du site, ex. images/hero-livreur.jpg'),
+      LIGNES('photos', 'Photo du haut de page', 'photo', 'Chemin de l\'image dans le dossier images/ du site, ex. images/hero-livreur.jpg — la première ligne est affichée (plus de diaporama depuis le 16/09/2026)'),
     ]},
     { cle: 'trust', label: 'Les 4 promesses (bandeau de confiance)', liste: true, singulier: 'promesse', champs: [ICONE('icon'), T('title', 'Titre'), L('text', 'Texte')] },
     { cle: 'services', label: 'Services (cartes de l\'accueil et fiches détaillées)', liste: true, singulier: 'service', champs: [

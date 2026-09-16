@@ -73,7 +73,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
 <!-- Versions exactes + empreintes de contrôle (SRI), posées le 19 août 2026 : le navigateur
      recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle ne correspond pas.
      Toute montée de version impose de recalculer l'empreinte — voir .github/verifier-empreintes.py -->
@@ -159,12 +159,6 @@
   .nav-login:hover{background:var(--navy); color:var(--white);}
   @media (max-width:860px){ .nav-actions{display:none;} }
 
-  .nav-menu-btn{
-    width:38px; height:38px; border-radius:10px; background:var(--grey-bg); border:1.5px solid #ECEFF3;
-    display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:var(--navy); font-size:15px;
-    transition:background .2s ease, border-color .2s ease, transform .15s ease;
-  }
-  .nav-menu-btn:hover{background:var(--orange-light); border-color:var(--orange); transform:translateY(-1px);}
   .nav-mobile-actions{display:none; align-items:center; gap:16px;}
   .nav-social-mobile{display:none; align-items:center; gap:16px;}
   .nav-social-mobile a{font-size:17px; transition:transform .15s ease, opacity .2s ease;}
@@ -210,35 +204,6 @@
     .nav-links .nav-login-mobile:hover, .nav-links .nav-login-mobile:active{background:var(--navy); color:var(--white); transform:scale(.98);}
   }
 
-  /* ---------- SIDE PANEL (témoignages / FAQ / réseaux sociaux) ---------- */
-  .side-panel-overlay{
-    position:fixed; inset:0; background:rgba(10,20,35,0.45); z-index:590;
-    opacity:0; pointer-events:none; transition:opacity .3s ease;
-  }
-  .side-panel-overlay.open{opacity:1; pointer-events:auto;}
-  .side-panel{
-    position:fixed; top:0; right:-360px; width:320px; max-width:85vw; height:100%;
-    background:var(--navy-dark); z-index:600; padding:80px 32px 32px 32px;
-    display:flex; flex-direction:column; transition:right .35s ease;
-  }
-  .side-panel.open{right:0;}
-  .side-panel-close{
-    position:absolute; top:22px; right:22px; width:38px; height:38px; border-radius:10px;
-    background:rgba(255,255,255,0.08); border:none; color:#fff; font-size:20px; cursor:pointer;
-    transition:background .2s ease;
-  }
-  .side-panel-close:hover{background:rgba(255,255,255,0.18);}
-  .side-panel-links{list-style:none; margin-bottom:auto;}
-  .side-panel-links li{border-bottom:1px solid rgba(255,255,255,0.12);}
-  .side-panel-links a{display:block; padding:16px 0; color:#fff; font-weight:600; font-size:16.5px; transition:color .2s ease;}
-  .side-panel-links a:hover{color:var(--orange);}
-  .side-panel-social{display:flex; align-items:center; justify-content:center; gap:20px; padding-top:22px;}
-  .side-panel-social a{color:#C7D1DB; font-size:20px; transition:color .2s ease, transform .15s ease;}
-  .side-panel-social a:hover{color:var(--orange); transform:translateY(-2px);}
-  .side-panel-hint{
-    margin-top:0; text-align:center; color:#C7D1DB; font-size:12.5px; line-height:1.5; padding:0 6px;
-  }
-
   /* ---------- HERO ---------- */
   .hero{
     background:linear-gradient(160deg, var(--navy) 0%, var(--navy-dark) 100%);
@@ -261,11 +226,7 @@
   .hero-text-inner{position:relative; z-index:1;}
   .hero-text{max-width:720px; width:100%; margin:0 auto;}
   .hero-photo-col{position:absolute; inset:0; width:100%; height:100%; z-index:0;}
-  .hero-photo-slide{
-    position:absolute; inset:0; background-size:cover; background-position:center; background-repeat:no-repeat;
-    opacity:0; transition:opacity 1.4s ease;
-  }
-  .hero-photo-slide.active{opacity:1;}
+  .hero-photo-col img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center;}
   .hero-photo-col::after{
     content:""; position:absolute; inset:0;
     background:linear-gradient(160deg, rgba(9,26,48,0.85) 0%, rgba(9,26,48,0.72) 100%);
@@ -273,12 +234,13 @@
   @media (min-width:861px){
     .hero .container{text-align:left;}
     .hero-text-col{padding:64px 0 52px 0;}
-    .hero-text h1, .hero-text p.lead, .hero-text .typewriter-line, .hero-text .pill{margin-left:0; margin-right:0;}
+    .hero-text h1, .hero-text p.lead, .hero-text .pill{margin-left:0; margin-right:0;}
     .hero-actions, .hero-audience{justify-content:flex-start;}
     .hero-photo-col::after{
       background:linear-gradient(90deg, rgba(9,26,48,0.9) 0%, rgba(9,26,48,0.62) 48%, rgba(9,26,48,0.28) 100%);
     }
-    .hero-photo-slide{background-size:auto 100%; background-position:right center;}
+    .hero-photo-col img{object-fit:contain; object-position:right center;}
+    .hero-text{margin:0;}  /* le texte à gauche, la photo à droite (4.1) */
     #heroPill{margin-bottom:14px;}
     .hero h1{margin-bottom:14px;}
     .hero p.lead{max-width:640px; margin-bottom:22px;}
@@ -542,55 +504,12 @@
     section{padding:44px 0;}
   }
 
-  /* ---------- HERO PARTICLES ---------- */
-  .hero{position:relative;}
-  #heroCanvas{position:absolute; inset:0; width:100%; height:100%; z-index:0;}
-  .hero .container{position:relative; z-index:1;}
-
-  /* ---------- TYPEWRITER ---------- */
-  .typewriter-line{
-    color:#C7D1DB; font-size:15.5px; margin:0 auto 26px auto; font-family:Arial, sans-serif;
-  }
-  .typewriter-word{color:var(--orange); font-weight:700;}
-  .typewriter-cursor{
-    display:inline-block; width:2px; height:16px; background:var(--orange); margin-left:3px;
-    vertical-align:middle; animation:blink 0.9s step-start infinite;
-  }
-  @keyframes blink{ 50%{ opacity:0; } }
-
   /* ---------- SCROLL REVEAL ---------- */
   .reveal{opacity:0; transform:translateY(26px); transition:opacity .65s ease, transform .65s ease;}
   .reveal.visible{opacity:1; transform:translateY(0);}
   @media (prefers-reduced-motion: reduce){
     .reveal{opacity:1; transform:none; transition:none;}
   }
-
-  /* ---------- MARQUEE ---------- */
-  .marquee-wrap{background:var(--navy-dark); overflow:hidden; padding:16px 0;}
-  .marquee-track{display:flex; gap:36px; width:max-content; animation:marqueeScroll 26s linear infinite;}
-  .marquee-track span{
-    color:#C7D1DB; font-weight:700; font-size:13.5px; letter-spacing:1px; text-transform:uppercase;
-    display:flex; align-items:center; gap:10px; white-space:nowrap;
-  }
-  .marquee-track span i{color:var(--orange); font-size:8px;}
-  @keyframes marqueeScroll{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
-  @media (prefers-reduced-motion: reduce){ .marquee-track{animation:none;} }
-
-  /* ---------- CUSTOM CURSOR (desktop / fine pointer only) ---------- */
-  .cur-el{position:fixed; top:0; left:0; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); opacity:0; transition:opacity .2s ease;}
-  body.custom-cursor-active{cursor:none;}
-  body.custom-cursor-active a, body.custom-cursor-active button{cursor:none;}
-  #cursorDot{width:5px; height:5px; background:#fff; border-radius:50%;}
-  #cursorPin{width:18px; height:18px;}
-  #cursorPin .pin-shape{
-    width:100%; height:100%; background:var(--orange); border-radius:50% 50% 50% 0;
-    transform:rotate(-45deg); box-shadow:0 2px 6px rgba(0,0,0,0.18); transition:width .18s ease, height .18s ease;
-  }
-  #cursorPin .pin-dot{
-    position:absolute; top:50%; left:50%; width:5px; height:5px; background:#fff; border-radius:50%;
-    transform:translate(-50%,-60%);
-  }
-  #cursorPin.hovering{width:24px; height:24px;}
 
   /* ---------- FLOATING WHATSAPP BUTTON ---------- */
   .wa-float{
@@ -600,15 +519,6 @@
     transition:transform .18s ease;
   }
   .wa-float:hover{transform:scale(1.07);}
-  .wa-float-pulse{
-    position:absolute; inset:0; border-radius:50%; background:#25D366;
-    animation:waPulse 2.2s ease-out infinite;
-  }
-  @keyframes waPulse{
-    0%{ transform:scale(1); opacity:0.55; }
-    100%{ transform:scale(1.8); opacity:0; }
-  }
-  @media (prefers-reduced-motion: reduce){ .wa-float-pulse{animation:none; display:none;} }
   @media (max-width:480px){ .wa-float{right:16px; bottom:16px; width:52px; height:52px; font-size:25px;} }
 
   /* ---------- BOUTON RETOUR EN HAUT ---------- */
@@ -745,14 +655,6 @@
 <!-- réactives, focus accessible. HTML et JS d'origine intacts.            -->
 <!-- ===================================================================== -->
 <style id="clt-elevation-2026">
-  /* Barre fine de progression de lecture, tout en haut de la page */
-  #cltScrollProgress{
-    position:fixed; top:0; left:0; height:3px; width:0%;
-    background:linear-gradient(90deg,#F7A85C,#E26313);
-    z-index:200; pointer-events:none; transition:width .12s linear;
-    box-shadow:0 0 8px rgba(226,99,19,0.5);
-  }
-
   /* En-tête : verre dépoli + ombre plus marquée dès qu'on défile */
   .site-header-fixed{ transition:box-shadow .25s ease; }
   .site-header-fixed.is-scrolled{ box-shadow:0 8px 26px rgba(18,50,82,0.13); }
@@ -794,7 +696,6 @@
 
   /* Respect des préférences « animations réduites » */
   @media (prefers-reduced-motion: reduce){
-    #cltScrollProgress{ display:none; }
     .btn-primary::after, .nav-cta::after{ display:none; }
     .service-card::before{ transition:none; }
   }
@@ -807,7 +708,6 @@
 <!-- « En savoir plus » au survol des services et affine les boutons.       -->
 <!-- ===================================================================== -->
 <style id="clt-harmonisation-2026">
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   body{ font-family:'Inter','Poppins',Arial,Helvetica,sans-serif; }
   h1,h2,h3,.brand-word,.section-title{ font-family:'Inter','Poppins',Arial,sans-serif; letter-spacing:-.3px; }
 
@@ -875,6 +775,8 @@
         <li><a href="tarifs.html" onclick="closeMenu()">Tarifs</a></li>
         <li><a href="#a-propos" onclick="closeMenu()">À propos</a></li>
         <li><a href="suivi.html" onclick="closeMenu()">Suivre un colis</a></li>
+        <li class="nav-only-mobile"><a href="#temoignages" onclick="closeMenu()">Témoignages</a></li>
+        <li class="nav-only-mobile"><a href="#faq" onclick="closeMenu()">FAQ</a></li>
         <li class="nav-only-mobile"><a href="#contact" onclick="closeMenu()">Contact</a></li>
         <li class="nav-li-cta">
           <div class="nav-li-cta-row">
@@ -894,7 +796,6 @@
           <a class="nav-cta" href="#devis">Demander un devis</a>
           <a class="nav-login" href="app/login.html">Se connecter</a>
         </div>
-        <button class="nav-menu-btn" onclick="openSidePanel()" aria-label="Plus d'options"><i class="fa-solid fa-grip"></i></button>
       </div>
       <div class="nav-mobile-actions">
         <div class="nav-social-mobile">
@@ -910,36 +811,15 @@
 </div>
 <div id="headerSpacer"></div>
 
-<div class="side-panel-overlay" id="sidePanelOverlay" onclick="closeSidePanel()"></div>
-<div class="side-panel" id="sidePanel">
-  <button class="side-panel-close" onclick="closeSidePanel()" aria-label="Fermer">&times;</button>
-  <ul class="side-panel-links">
-    <li><a href="suivi.html" onclick="closeSidePanel()">Suivre un colis</a></li>
-    <li><a href="#couverture" onclick="closeSidePanel()">Zone de couverture</a></li>
-    <li><a href="#contact" onclick="closeSidePanel()">Contact</a></li>
-    <li><a href="#temoignages" onclick="closeSidePanel()">Témoignages</a></li>
-    <li><a href="#faq" onclick="closeSidePanel()">FAQ</a></li>
-  </ul>
-  <div class="side-panel-hint">Espace client, livreur ou équipe : un seul bouton « Se connecter », en haut de la page.</div>
-  <div class="side-panel-social">
-    <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-    <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-    <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-    <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-  </div>
-</div>
-
 <div id="top"></div>
 <section class="hero">
   <div class="hero-grid">
     <div class="hero-text-col">
-      <canvas id="heroCanvas"></canvas>
       <div class="container hero-text-inner">
         <div class="hero-text">
           <span class="pill" id="heroPill">CRÉDIBLE • SIMPLE • SÉCURISÉE</span>
           <h1 id="heroTitle">Votre partenaire livraison au quotidien, partout à Abidjan.</h1>
           <p class="lead" id="heroLead">Colis, courriers, documents administratifs et courses : nous nous occupons de vos livraisons pour que vous n'ayez pas à le faire.</p>
-          <p class="typewriter-line">Ce que nous proposons : <span class="typewriter-word" id="typewriterWord"></span><span class="typewriter-cursor"></span></p>
           <div class="hero-actions">
             <a href="#devis" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Demander un devis</a>
           </div>
@@ -952,15 +832,14 @@
       </div>
     </div>
     <div class="hero-photo-col" id="heroPhotoWrap">
-      <div class="hero-photo-slide active" style="background-image:url('images/hero-livreur.jpg')" role="img" aria-label="Livreur Christ Livraison &amp; Transport sur sa moto, avec des colis"></div>
-      <div class="hero-photo-slide" style="background-image:url('images/hero-livreur-2.jpg')" role="img" aria-label="Livreur Christ Livraison &amp; Transport remettant un colis à une cliente"></div>
+      <picture>
+        <source type="image/webp" srcset="images/hero-livreur-800.webp 800w, images/hero-livreur.webp 1100w" sizes="(min-width: 861px) 60vw, 100vw">
+        <img src="images/hero-livreur.jpg" alt="Livreur Christ Livraison &amp; Transport sur sa moto, avec des colis" width="1100" height="1466" fetchpriority="high" decoding="async">
+      </picture>
     </div>
   </div>
 </section>
 
-<div class="marquee-wrap">
-  <div class="marquee-track" id="marqueeTrack"></div>
-</div>
 
 <section class="trust">
   <div class="container">
@@ -1058,9 +937,9 @@
       <div class="about-value reveal"><i class="fa-solid fa-location-dot"></i><h4>Proximité</h4><p>Une équipe joignable et à l'écoute, toujours proche de ses clients et fournisseurs.</p></div>
     </div>
     <div class="about-stats reveal" id="aboutStats">
-      <div class="about-stat"><div class="stat-number" data-raw="49">0</div><div class="stat-label">commerçants et entreprises partenaires</div></div>
-      <div class="about-stat"><div class="stat-number" data-raw="14">0</div><div class="stat-label">zones desservies à Abidjan et environs</div></div>
-      <div class="about-stat"><div class="stat-number" data-raw="1000 FCFA">0</div><div class="stat-label">tarif de départ pour vos livraisons</div></div>
+      <div class="about-stat"><div class="stat-number">49</div><div class="stat-label">commerçants et entreprises partenaires</div></div>
+      <div class="about-stat"><div class="stat-number">14</div><div class="stat-label">zones desservies à Abidjan et environs</div></div>
+      <div class="about-stat"><div class="stat-number">1000 FCFA</div><div class="stat-label">tarif de départ pour vos livraisons</div></div>
     </div>
     <div class="partners-band reveal" id="partnersBand">
       <p class="partners-label" id="partnersLabel">Ils nous font confiance</p>
@@ -1249,14 +1128,11 @@
 </div>
 
 <a href="https://wa.me/2250546818640?text=Bonjour%2C%20je%20souhaite%20des%20informations%20sur%20vos%20services%20de%20livraison." class="wa-float wa-link" id="waFloat" target="_blank" rel="noopener" aria-label="Écrire sur WhatsApp">
-  <span class="wa-float-pulse"></span>
   <i class="fa-brands fa-whatsapp"></i>
 </a>
 
 <button type="button" class="back-to-top" id="backToTop" aria-label="Remonter en haut de la page"><i class="fa-solid fa-arrow-up"></i></button>
 
-<div class="cur-el" id="cursorDot"></div>
-<div class="cur-el" id="cursorPin"><div class="pin-shape"><div class="pin-dot"></div></div></div>
 
 <script>
   function toggleMenu(){
@@ -1265,15 +1141,6 @@
   function closeMenu(){
     document.getElementById('navLinks').classList.remove('open');
   }
-  function openSidePanel(){
-    document.getElementById('sidePanel').classList.add('open');
-    document.getElementById('sidePanelOverlay').classList.add('open');
-  }
-  function closeSidePanel(){
-    document.getElementById('sidePanel').classList.remove('open');
-    document.getElementById('sidePanelOverlay').classList.remove('open');
-  }
-
   // Header fixe (position:fixed) : #headerSpacer réserve, dans le flux normal de la page,
   // la place occupée par le header afin que le contenu ne soit pas masqué derrière lui.
   // Sa hauteur est resynchronisée à chaque changement (chargement, redimensionnement, police).
@@ -1377,7 +1244,7 @@
   }
 
   function aboutStatHTML(s){
-    return `<div class="about-stat"><div class="stat-number" data-raw="${s.number}">0</div><div class="stat-label">${s.label}</div></div>`;
+    return `<div class="about-stat"><div class="stat-number">${s.number}</div><div class="stat-label">${s.label}</div></div>`;
   }
 
   function partnersPillHTML(p){
@@ -1484,54 +1351,6 @@
     });
   }
 
-  // ---------- Compteurs animés (stats "À propos") ----------
-  function parseStatNumber(raw){
-    const m = String(raw).match(/^(\D*)([\d][\d\s.,]*)(\D*)$/);
-    if(!m) return null;
-    const prefix = m[1] || "";
-    const numStr = m[2].replace(/[\s.,]/g, "");
-    const suffix = m[3] || "";
-    const target = parseInt(numStr, 10);
-    if(isNaN(target)) return null;
-    return { prefix, target, suffix };
-  }
-
-  function animateCount(el, target, prefix, suffix, duration){
-    const start = performance.now();
-    function tick(now){
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const value = Math.round(target * eased);
-      el.textContent = prefix + value.toLocaleString('fr-FR') + suffix;
-      if(progress < 1) requestAnimationFrame(tick);
-      else el.textContent = prefix + target.toLocaleString('fr-FR') + suffix;
-    }
-    requestAnimationFrame(tick);
-  }
-
-  let statObserver;
-  function initStatCounters(){
-    const stats = document.querySelectorAll('.stat-number[data-raw]');
-    if(!stats.length) return;
-    if(reducedMotion){
-      stats.forEach(el => { el.textContent = el.dataset.raw; });
-      return;
-    }
-    if(statObserver) statObserver.disconnect();
-    statObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if(entry.isIntersecting){
-          const el = entry.target;
-          const parsed = parseStatNumber(el.dataset.raw);
-          if(parsed){ animateCount(el, parsed.target, parsed.prefix, parsed.suffix, 1400); }
-          else { el.textContent = el.dataset.raw; }
-          statObserver.unobserve(el);
-        }
-      });
-    }, { threshold: 0.4 });
-    stats.forEach(el => statObserver.observe(el));
-  }
-
   // ---------- Scroll reveal ----------
   let revealObserver;
   function initRevealObserver(){
@@ -1553,167 +1372,6 @@
       if(reducedMotion){ el.classList.add('visible'); }
       else{ obs.observe(el); }
     });
-  }
-
-  // ---------- Hero delivery route animation ----------
-  function initParticles(){
-    const canvas = document.getElementById('heroCanvas');
-    const hero = canvas.parentElement;
-    if(reducedMotion) return;
-    const ctx = canvas.getContext('2d');
-    let w, h, raf, frame = 0;
-
-    function resize(){
-      w = canvas.width = hero.offsetWidth;
-      h = canvas.height = hero.offsetHeight;
-    }
-
-    const routePaths = [
-      [[0.03,0.82],[0.22,0.5],[0.48,0.68],[0.72,0.3],[0.97,0.48]],
-      [[0.0,0.28],[0.28,0.22],[0.52,0.5],[0.78,0.18],[1.0,0.32]]
-    ];
-    const routeMarkers = [
-      { pathIdx:0, t:0, speed:0.0016 },
-      { pathIdx:0, t:0.5, speed:0.0016 },
-      { pathIdx:1, t:0.25, speed:0.0021 }
-    ];
-    function ptOnPath(path, t){
-      const segs = path.length - 1;
-      const scaled = t * segs;
-      const i = Math.min(Math.floor(scaled), segs - 1);
-      const localT = scaled - i;
-      const a = path[i], b = path[i+1];
-      return { x:(a[0] + (b[0]-a[0])*localT) * w, y:(a[1] + (b[1]-a[1])*localT) * h };
-    }
-    function drawPin(x, y, scale){
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(scale, scale);
-      ctx.beginPath();
-      ctx.arc(0, -10, 6, 0, Math.PI*2);
-      ctx.moveTo(-5, -7);
-      ctx.lineTo(0, 2);
-      ctx.lineTo(5, -7);
-      ctx.closePath();
-      ctx.fillStyle = "rgba(226,99,19,0.85)";
-      ctx.fill();
-      ctx.restore();
-    }
-    function step(){
-      frame++;
-      ctx.clearRect(0,0,w,h);
-      routePaths.forEach(path => {
-        ctx.beginPath();
-        ctx.setLineDash([6,9]);
-        ctx.strokeStyle = "rgba(199,209,219,0.28)";
-        ctx.lineWidth = 1.5;
-        path.forEach((p,i) => {
-          const x = p[0]*w, y = p[1]*h;
-          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-        });
-        ctx.stroke();
-        ctx.setLineDash([]);
-        const end = path[path.length-1];
-        drawPin(end[0]*w, end[1]*h, 1 + 0.15*Math.sin(frame*0.05));
-      });
-      routeMarkers.forEach(m => {
-        m.t += m.speed;
-        if(m.t > 1) m.t = 0;
-        const p = ptOnPath(routePaths[m.pathIdx], m.t);
-        ctx.beginPath();
-        ctx.fillStyle = "rgba(226,99,19,0.9)";
-        ctx.shadowColor = "rgba(226,99,19,0.6)";
-        ctx.shadowBlur = 8;
-        ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      });
-      raf = requestAnimationFrame(step);
-    }
-    resize();
-    step();
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => { cancelAnimationFrame(raf); resize(); }, 250);
-    });
-  }
-
-  // ---------- Custom cursor: location pin (desktop / fine pointer only) ----------
-  function initCustomCursor(){
-    if(reducedMotion) return;
-    if(!window.matchMedia('(pointer: fine)').matches) return;
-    const dot = document.getElementById('cursorDot');
-    const pin = document.getElementById('cursorPin');
-    document.body.classList.add('custom-cursor-active');
-    dot.style.opacity = 1; pin.style.opacity = 1;
-    // 06/09/2026 — Celtis : « annule l'effet retardé du curseur ». L'épingle suivait la
-    // souris avec un retard calculé à chaque image (rx += (mx - rx) * 0.18), ce qui la
-    // faisait traîner derrière le pointeur. Elle est désormais posée directement à la
-    // position de la souris, à chaque mouvement : plus de boucle, plus de retard.
-    window.addEventListener('mousemove', e => {
-      const mx = e.clientX, my = e.clientY;
-      dot.style.left = mx + "px"; dot.style.top = my + "px";
-      pin.style.left = mx + "px"; pin.style.top = (my - 16) + "px";
-    });
-    document.querySelectorAll('a, button, input, select, textarea, .service-card, .chip').forEach(el => {
-      el.addEventListener('mouseenter', () => pin.classList.add('hovering'));
-      el.addEventListener('mouseleave', () => pin.classList.remove('hovering'));
-    });
-  }
-
-  // ---------- Typewriter ----------
-  let twTimer;
-  function startTypewriter(words){
-    if(!words || !words.length) return;
-    clearTimeout(twTimer);
-    const el = document.getElementById('typewriterWord');
-    if(reducedMotion){ el.textContent = words[0]; return; }
-    let wi = 0, ci = 0, deleting = false;
-    function tick(){
-      const word = words[wi];
-      if(!deleting){
-        ci++;
-        el.textContent = word.slice(0, ci);
-        if(ci === word.length){ deleting = true; twTimer = setTimeout(tick, 1400); return; }
-        twTimer = setTimeout(tick, 65);
-      } else {
-        ci--;
-        el.textContent = word.slice(0, ci);
-        if(ci === 0){ deleting = false; wi = (wi + 1) % words.length; twTimer = setTimeout(tick, 300); return; }
-        twTimer = setTimeout(tick, 35);
-      }
-    }
-    tick();
-  }
-
-  // ---------- Marquee ----------
-  function setMarquee(items){
-    const track = document.getElementById('marqueeTrack');
-    if(!items || !items.length) return;
-    const group = items.map(t => `<span><i class="fa-solid fa-circle"></i>${t}</span>`).join("");
-    track.innerHTML = group + group; // duplicated for seamless loop
-  }
-
-  // ---------- Hero photo slideshow (fondu entre les images du dossier) ----------
-  let heroSlideTimer;
-  function initHeroSlideshow(photos){
-    const wrap = document.getElementById('heroPhotoWrap');
-    if(!wrap || !Array.isArray(photos) || !photos.length) return;
-    wrap.innerHTML = photos.map((src, i) => {
-      const active = i === 0 ? ' active' : '';
-      return `<div class="hero-photo-slide${active}" style="background-image:url('${src}')" role="img" aria-label="Livreur de Christ Livraison &amp; Transport SARL en pleine livraison à Abidjan"></div>`;
-    }).join("");
-    clearInterval(heroSlideTimer);
-    if(photos.length < 2 || reducedMotion) return;
-    let idx = 0;
-    heroSlideTimer = setInterval(() => {
-      const slides = wrap.querySelectorAll('.hero-photo-slide');
-      if(!slides.length) return;
-      slides[idx].classList.remove('active');
-      idx = (idx + 1) % slides.length;
-      slides[idx].classList.add('active');
-    }, 4500);
   }
 
 // Les textes du site (16/09/2026) : d'abord la base (une fiche, lue en appel REST direct avec la
@@ -1742,7 +1400,7 @@
       const photos = Array.isArray(data.hero.photos) && data.hero.photos.length
         ? data.hero.photos
         : (data.hero.photo ? [data.hero.photo] : null);
-      if(photos) initHeroSlideshow(photos);
+      if(photos) poserPhotoHeros(photos[0]);
     }
     const waFloat = document.getElementById('waFloat');
     if(waFloat) waFloat.href = waLink + "?text=" + encodeURIComponent("Bonjour, je souhaite des informations sur vos services de livraison.");
@@ -1750,8 +1408,6 @@
     // Services
     if(Array.isArray(data.services)){
       document.getElementById('servicesGrid').innerHTML = data.services.map(serviceCardHTML).join("");
-      startTypewriter(data.services.map(s => s.title));
-      setMarquee(data.services.map(s => s.title));
     }
     // Trust
     if(Array.isArray(data.trust)){
@@ -1828,13 +1484,8 @@
       const ctaText = document.getElementById('zoneCtaText'); if(ctaText) ctaText.textContent = cov.cta_text || "";
     }
 
-    // Re-run reveal + cursor hover bindings on newly injected cards
+    // Les cartes injectées reçoivent l'apparition au défilement
     observeReveals();
-    initStatCounters();
-    document.querySelectorAll('.service-card, .chip').forEach(el => {
-      el.addEventListener('mouseenter', () => { const r = document.getElementById('cursorPin'); if(r) r.classList.add('hovering'); });
-      el.addEventListener('mouseleave', () => { const r = document.getElementById('cursorPin'); if(r) r.classList.remove('hovering'); });
-    });
 
     // Contact / footer
     document.querySelectorAll('.wa-link').forEach(el => el.href = waLink);
@@ -1855,17 +1506,20 @@
     }
   }
 
-  // Init animations immediately so the page isn't inert while content.json loads
+  // La photo du héros vient des textes du site (Gestion › Site) ; la première de la liste est
+  // affichée, en WebP quand une version existe à côté du fichier (4.1, 16/09/2026).
+  function poserPhotoHeros(src){
+    const img = document.querySelector('#heroPhotoWrap img');
+    const source = document.querySelector('#heroPhotoWrap source');
+    if(!img || !src || img.getAttribute('src') === src) return;
+    img.setAttribute('src', src);
+    if(source) source.remove();
+  }
+
   observeReveals();
-  initParticles();
-  initCustomCursor();
   initZoneSelector();
   initFaqAccordion();
   initBackToTop();
-  initStatCounters();
-  startTypewriter(["colis", "courriers", "expéditions", "courses"]);
-  setMarquee(["Colis & plis", "Courriers & documents", "Expéditions", "Courses & divers"]);
-  initHeroSlideshow(["images/hero-livreur.jpg", "images/hero-livreur-2.jpg"]);
 
   chargerContenuSite()
     .then(applyContent)
@@ -1944,33 +1598,14 @@
      Il s'installe depuis les pages de l'application (app/), là où il sert. -->
 
 <script>
-// Élévation visuelle 2026 : barre de progression de lecture, en-tête au défilement,
-// et révélations en cascade. Purement additif : aucune dépendance au reste du code.
+// L'en-tête prend une ombre dès qu'on défile. Purement additif.
 (function(){
   try{
-    var bar = document.createElement('div');
-    bar.id = 'cltScrollProgress';
-    document.body.appendChild(bar);
     var header = document.getElementById('siteHeaderFixed');
-    function onScroll(){
-      var st = window.pageYOffset || document.documentElement.scrollTop || 0;
-      var h = (document.documentElement.scrollHeight - window.innerHeight) || 0;
-      bar.style.width = (h > 0 ? Math.min(100, (st / h) * 100) : 0) + '%';
-      if(header){ header.classList.toggle('is-scrolled', st > 8); }
-    }
+    if(!header) return;
+    function onScroll(){ header.classList.toggle('is-scrolled', (window.pageYOffset || 0) > 8); }
     window.addEventListener('scroll', onScroll, { passive:true });
-    window.addEventListener('resize', onScroll, { passive:true });
     onScroll();
-
-    // Léger décalage entre les cartes voisines d'une même grille pour une entrée en cascade.
-    var grids = document.querySelectorAll('.services-grid, .steps-grid, .trust-grid, .testimonials-grid, .about-values');
-    grids.forEach(function(grid){
-      var i = 0;
-      grid.querySelectorAll('.reveal').forEach(function(el){
-        el.style.transitionDelay = (i * 0.07).toFixed(2) + 's';
-        i++;
-      });
-    });
   }catch(e){ /* Ne bloque jamais l'affichage du site. */ }
 })();
 </script>
