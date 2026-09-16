@@ -36,10 +36,12 @@ for (const f of fichiers) {
   });
   verifier(f + ' : aucun nom d\'étape que YAML lirait de travers', fautes.length === 0, fautes.join(' ; '));
 }
-verifier('tests.yml lance bien chaque banc du dossier tests/', (() => {
+verifier('tests.yml lance tous les bancs (npm test → node --test "tests/*.test.mjs") et ESLint', (() => {
   const y = fs.readFileSync(path.join(DOSSIER, 'tests.yml'), 'utf8');
-  return fs.readdirSync(path.join(RACINE, 'tests')).filter(t => t.endsWith('.test.mjs')).every(t => y.includes('node tests/' + t));
+  const pkg = JSON.parse(fs.readFileSync(path.join(RACINE, 'package.json'), 'utf8'));
+  return /run: npm test/.test(y) && /run: npm run lint/.test(y) && /node --test .*"tests\/\*\.test\.mjs"/.test(pkg.scripts.test) && /^eslint/.test(pkg.scripts.lint);
 })());
+verifier('package.json ne déclare aucune dépendance de production (le site reste sans bundler)', !JSON.parse(fs.readFileSync(path.join(RACINE, 'package.json'), 'utf8')).dependencies);
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

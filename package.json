@@ -1,0 +1,16 @@
+{
+  "name": "site-christ-livraison",
+  "private": true,
+  "description": "Site public et application interne de Christ Livraison & Transport SARL (Abidjan). Pages statiques, sans bundler ; données chez Supabase.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test --test-concurrency=4 \"tests/*.test.mjs\"",
+    "test:un": "node --test",
+    "lint": "eslint"
+  },
+  "devDependencies": {
+    "eslint": "^9.14.0",
+    "globals": "^15.11.0"
+  }
+}
