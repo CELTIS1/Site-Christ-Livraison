@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (f) => fs.readFileSync(path.join(RACINE, f), 'utf8');
-const PUBLIQUES = ['index.html', 'services.html', 'suivi.html', 'express.html', 'politique-confidentialite.html'];
+const PUBLIQUES = ['index.html', 'services.html', 'suivi.html', 'express.html', 'politique-confidentialite.html', 'tarifs.html', 'contact.html', 'conditions-generales.html', 'mentions-legales.html'];
 
 let reussies = 0, echouees = 0;
 function verifier(t, condition, detail) {
@@ -57,6 +57,7 @@ const index = lire('index.html');
 verifier('express.html est atteignable depuis l\'accueil', /href="express\.html"/.test(index));
 verifier('la politique de confidentialité est atteignable depuis l\'accueil', /href="politique-confidentialite\.html"/.test(index));
 verifier('suivi.html et services.html sont atteignables depuis l\'accueil', /href="suivi\.html"/.test(index) && /href="services\.html/.test(index));
+verifier('tarifs, contact, conditions générales et mentions légales sont atteignables depuis l\'accueil (4.3)', ['tarifs', 'contact', 'conditions-generales', 'mentions-legales'].every(n => new RegExp('href="' + n + '\\.html"').test(index)));
 
 console.log('\n5. L\'identité (4.2) : une image de partage, un favicon physique, le logo de la charte');
 verifier('images/og-image.png existe et fait 1200×630 (en-tête PNG)', (() => { const b = fs.readFileSync(path.join(RACINE, 'images/og-image.png')); return b.readUInt32BE(16) === 1200 && b.readUInt32BE(20) === 630; })());
