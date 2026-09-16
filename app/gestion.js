@@ -901,6 +901,15 @@ async function loadRecettes(){
   const actifs = CHAUFFEURS.filter(c => c.actif !== false);
   const verrou = moisCloture(annee, mois);
   const dis = verrou ? ' readonly disabled' : '';
+  // Depuis septembre 2026, les livreurs reliés à un compte ne se saisissent plus à la main :
+  // la base remplit leurs jours d'après les colis livrés (frais de livraison), à chaque
+  // ouverture de la grille. (Celtis, 16/09/2026 : « que les recettes se remplissent
+  // automatiquement ».) Les mois d'avant et les mois clôturés ne bougent pas.
+  const auto = !verrou && recettesDepuisColis(annee, mois);
+  if (auto){
+    try { await supabaseClient.rpc('recettes_synchroniser_colis', { p_annee: annee, p_mois: mois }); }
+    catch(e){ console.error('recettes depuis les colis', e); }
+  }
 
   let head = '<th>Chauffeur</th>';
   for (let j=1;j<=nbJours;j++) head += `<th>${pad2(j)}</th>`;
@@ -910,14 +919,16 @@ async function loadRecettes(){
   const colTot = new Array(nbJours+1).fill(0);
   actifs.forEach(c => {
     let rowTot = 0, cells = '';
+    const relie = auto && !!c.livreur_id;
+    const disC = relie ? ' readonly' : dis;
     for (let j=1;j<=nbJours;j++){
       const date = `${annee}-${pad2(mois)}-${pad2(j)}`;
       const val = map[c.id+'|'+date] || 0;
       rowTot += val; colTot[j-1]+=val;
-      cells += `<td><input class="cell" type="number" min="0" step="1" value="${val||''}" data-ch="${c.id}" data-date="${date}" onblur="saveRecette(this)"${dis}></td>`;
+      cells += `<td><input class="cell${relie ? ' cell-auto' : ''}" type="number" min="0" step="1" value="${val||''}" data-ch="${c.id}" data-date="${date}"${relie ? ' title="Calculé depuis les colis livrés"' : ' onblur="saveRecette(this)"'}${disC}></td>`;
     }
     colTot[nbJours]+=rowTot;
-    body += `<tr><td>${escapeHTML(c.nom)}</td>${cells}<td id="rt-${c.id}"><strong>${fmt(rowTot)}</strong></td></tr>`;
+    body += `<tr><td>${escapeHTML(c.nom)}${relie ? ' <span class="cell-auto-badge" title="Relié au compte livreur : rempli depuis les colis">🔗</span>' : ''}</td>${cells}<td id="rt-${c.id}"><strong>${fmt(rowTot)}</strong></td></tr>`;
   });
   let foot = '<td>Total</td>';
   for (let j=1;j<=nbJours;j++) foot += `<td>${fmt(colTot[j-1])}</td>`;
@@ -925,9 +936,15 @@ async function loadRecettes(){
 
   const banniere = verrou
     ? `<div class="clt-alert clt-alert-warn" style="margin-bottom:10px;">🔒 <strong>${MOIS_FR[mois-1]} ${annee} est clôturé.</strong> Les recettes de ce mois sont en lecture seule. Rouvrez le mois dans « Clôture mensuelle » pour les modifier.</div>`
-    : '';
+    : (auto
+      ? `<div class="hint" style="margin-bottom:10px;">🔗 Les lignes marquées 🔗 se remplissent toutes seules depuis les colis livrés (frais de livraison, jour par jour). Les autres lignes se saisissent à la main.</div>`
+      : '');
   document.getElementById('rec-grid').innerHTML = banniere + `<table class="g-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>`;
 }
+
+// À partir de quel mois la grille se remplit depuis les colis : septembre 2026. Avant, tout
+// était saisi à la main d'après l'Excel, et on n'y touche pas.
+function recettesDepuisColis(annee, mois){ return annee > 2026 || (annee === 2026 && mois >= 9); }
 
 /* ÉCRIRE, ET LIRE LA RÉPONSE. (06/09/2026, feuille de route 1.5)
    Supabase ne lève pas d'exception sur un refus : il renvoie { error }. Une écriture qu'on
@@ -1142,14 +1159,27 @@ async function saveObjectif(input){
  * COMPTABILITÉ — CHAUFFEURS
  * ==========================================================================*/
 function renderChauffeurs(){
+  // Le compte livreur relié : c'est lui qui permet de remplir les recettes depuis les colis.
+  const optionsLivreur = (val) => '<option value="">— À la main —</option>' + (LIVREURS||[]).map(l => `<option value="${l.id}"${l.id===val?' selected':''}>${escapeHTML(l.full_name||'')}</option>`).join('');
   let body = CHAUFFEURS.map(c => `<tr>
     <td style="text-align:left;"><input class="cell" style="width:160px;text-align:left;" type="text" value="${escapeHTML(c.nom)}" onblur="renameChauffeur('${c.id}',this.value)"></td>
+    <td><select class="cell" style="width:190px;text-align:left;" onchange="lierChauffeur('${c.id}',this.value)">${optionsLivreur(c.livreur_id||'')}</select></td>
     <td>${c.actif!==false ? '✅ Actif' : '⏸️ Inactif'}</td>
     <td><div class="row-actions">
       <button class="icon-btn" onclick="toggleChauffeur('${c.id}',${c.actif!==false})">${c.actif!==false?'Désactiver':'Réactiver'}</button>
     </div></td></tr>`).join('');
-  if (!CHAUFFEURS.length) body = '<tr><td colspan="3" style="text-align:center;color:var(--muted);">Aucun chauffeur.</td></tr>';
-  document.getElementById('chauf-table').innerHTML = `<table class="g-table"><thead><tr><th style="text-align:left;">Nom</th><th>Statut</th><th></th></tr></thead><tbody>${body}</tbody></table>`;
+  if (!CHAUFFEURS.length) body = '<tr><td colspan="4" style="text-align:center;color:var(--muted);">Aucun chauffeur.</td></tr>';
+  document.getElementById('chauf-table').innerHTML = `<table class="g-table"><thead><tr><th style="text-align:left;">Nom</th><th style="text-align:left;">Compte livreur (recettes automatiques)</th><th>Statut</th><th></th></tr></thead><tbody>${body}</tbody></table>`;
+}
+// Relier (ou délier) un chauffeur à un compte livreur ; la fiche salarié suit le compte.
+async function lierChauffeur(id, livreurId){
+  const livreur_id = livreurId || null;
+  const sal = livreur_id ? (SALARIES||[]).find(s => s.livreur_id === livreur_id) : null;
+  try {
+    await ecrire(supabaseClient.from('gestion_chauffeurs').update({ livreur_id, salarie_id: sal ? sal.id : null }).eq('id', id));
+    await loadChauffeurs(); renderChauffeurs();
+    showToast(livreur_id ? 'Chauffeur relié : ses recettes se remplissent depuis les colis (dès septembre 2026).' : 'Chauffeur délié : recettes à la main.');
+  } catch(e){ showToast('Erreur de liaison', true); console.error(e); }
 }
 async function addChauffeur(){
   const nom = document.getElementById('chauf-nom').value.trim();
@@ -3663,7 +3693,7 @@ async function init(){
   const tasks = [];
   if (canPaie || canCompta) tasks.push(loadParametres());              // paramètres (lecture) : utiles au calcul de paie
   if (canPaie)   tasks.push(loadCategories(), loadSalaries(), loadLivreurs());
-  if (canCompta) tasks.push(loadChauffeurs(), refreshCloturesSet());
+  if (canCompta) tasks.push(loadChauffeurs(), refreshCloturesSet(), canPaie ? Promise.resolve() : loadLivreurs());
   await Promise.all(tasks);
 
   if (isAdmin) renderParametres();

@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260913cliente">
-<script src="theme.js?v=20260913cliente"></script>
-<script src="splash.js?v=20260913cliente"></script>
+<link rel="stylesheet" href="style.css?v=20260916recettes">
+<script src="theme.js?v=20260916recettes"></script>
+<script src="splash.js?v=20260916recettes"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -877,9 +877,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260913cliente"></script>
-<script src="config.js?v=20260913cliente"></script>
-<script src="biometric-lock.js?v=20260913cliente"></script>
+<script src="clt-common.js?v=20260916recettes"></script>
+<script src="config.js?v=20260916recettes"></script>
+<script src="biometric-lock.js?v=20260916recettes"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3055,8 +3055,8 @@
       ['Prime de réussite', data.prime_reussite, data.taux !== null && Number(data.taux) >= 1 ? '100 % livrés' : (Number(data.taux) >= 0.9 ? '90 % et plus' : 'moins de 90 %')],
       ['Prime de travail correct', data.prime_travail_correct, data.travail_correct_propose ? 'rien à signaler' : (data.echecs_sans_motif ? `${data.echecs_sans_motif} échec sans motif` : (data.livres_sans_preuve ? `${data.livres_sans_preuve} livré sans photo ni code` : 'une réclamation'))],
       ['Prime de volume', data.prime_volume, `au-delà de ${data.seuil_volume} colis/jour, ${formatMontant(data.prime_volume_par_colis)} F le colis`],
-      ['Prime de fidélité', data.prime_fidelite, 'selon mon ancienneté'],
-    ].concat(Number(data.prime_parrainage) > 0 ? [['Prime de parrainage', data.prime_parrainage, 'un filleul a fini ses 3 mois']] : []);
+    ].concat(data.fidelite_active === false ? [] : [['Prime de fidélité', data.prime_fidelite, 'selon mon ancienneté']])
+     .concat(Number(data.prime_parrainage) > 0 ? [['Prime de parrainage', data.prime_parrainage, 'un filleul a fini ses 3 mois']] : []);
     const html = `
       <div class="mon-mois__tete"><span>🏆 Mon mois</span><span class="mon-mois__periode">${escapeHTML(mois)}</span></div>
       <div class="mon-mois__chiffres">
@@ -3086,9 +3086,11 @@
       ['Prime de travail correct', data.prime_travail_correct_montant, 'application à jour, vendeuses prévenues, aucune réclamation'],
       ['Prime de volume', null, `au-delà de ${data.seuil_volume} colis par jour, ${formatMontant(data.prime_volume_par_colis)} F chaque colis en plus`],
       ['Livreur du mois', data.prime_livreur_du_mois, 'le meilleur taux de réussite du mois'],
-      ['Prime de fidélité', null, `${F(data.fidelite_6_mois)} après 6 mois, ${F(data.fidelite_12_mois)} après 12 mois, ${F(data.fidelite_24_mois)} après 24 mois`],
       ['Prime de parrainage', data.prime_parrainage, 'pour chaque livreur que je fais entrer et qui finit ses 3 mois'],
     ];
+    // La fidélité peut être en pause (barème à 0, décision de Celtis le 16/09/2026) : on ne
+    // promet pas ce qui n'est pas encore accordé.
+    if (data.fidelite_active !== false) lignes.splice(4, 0, ['Prime de fidélité', null, `${F(data.fidelite_6_mois)} après 6 mois, ${F(data.fidelite_12_mois)} après 12 mois, ${F(data.fidelite_24_mois)} après 24 mois`]);
     const html = `
       <div class="mon-mois__tete"><span>🏆 Mes primes</span><span class="mon-mois__periode">dès le ${escapeHTML(debut)}</span></div>
       <div class="mon-mois__attente">À partir du ${escapeHTML(debut)}, chaque mois bien travaillé rapporte des primes en plus de mon salaire. Cette carte montrera mes chiffres et mes primes en cours, jour après jour.</div>
