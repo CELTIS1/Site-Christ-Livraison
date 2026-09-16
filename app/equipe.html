@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916fluide">
-<script src="theme.js?v=20260916fluide"></script>
-<script src="splash.js?v=20260916fluide"></script>
+<link rel="stylesheet" href="style.css?v=20260916argent">
+<script src="theme.js?v=20260916argent"></script>
+<script src="splash.js?v=20260916argent"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -947,6 +947,8 @@ saisis ensuite lui seront rattachés automatiquement.
 </div>
 
 <div id="panel-compta" class="hidden">
+<!-- Le point du jour (16/09/2026) : l'argent d'une journée, clair, en quatre lignes qui se vérifient. Dessiné par app/point-du-jour.js. -->
+<div id="point-du-jour"></div>
 <div class="field-row">
 <div class="field">
 <label>Client</label>
@@ -1478,12 +1480,13 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916fluide"></script>
-<script src="config.js?v=20260916fluide"></script>
-<script src="clients-dashboard.js?v=20260916fluide"></script>
-<script src="livreurs-dashboard.js?v=20260916fluide"></script>
-<script src="biometric-lock.js?v=20260916fluide"></script>
-<script src="clt-select-recherche.js?v=20260916fluide"></script>
+<script src="clt-common.js?v=20260916argent"></script>
+<script src="config.js?v=20260916argent"></script>
+<script src="clients-dashboard.js?v=20260916argent"></script>
+<script src="livreurs-dashboard.js?v=20260916argent"></script>
+<script src="point-du-jour.js?v=20260916argent"></script>
+<script src="biometric-lock.js?v=20260916argent"></script>
+<script src="clt-select-recherche.js?v=20260916argent"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -8191,6 +8194,7 @@ return c.reverse_au_fournisseur_at ? 'Encaissé et reversé' : 'Encaissé, à re
 }
 
 async function renderCompta(){
+if (window.CLTPointDuJour) { CLTPointDuJour.init(); CLTPointDuJour.rafraichir(); }
 const summary = document.getElementById('compta-summary');
 const recapBox = document.getElementById('compta-recap');
 const detail = document.getElementById('compta-detail');

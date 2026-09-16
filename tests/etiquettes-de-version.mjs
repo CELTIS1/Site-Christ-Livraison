@@ -64,6 +64,11 @@ export const FICHIERS_PARTAGES = [
   'biometric-lock.js',
   'biometric-login.js',
   'splash.js',
+  // Entrés le 16 septembre 2026 : les modules nés ce jour-là ou restés hors surveillance.
+  'site-editeur.js',
+  'point-du-jour.js',
+  'livreurs-dashboard.js',
+  'clients-dashboard.js',
 ];
 
 /* Relève, page par page, l'étiquette portée par chaque fichier partagé.

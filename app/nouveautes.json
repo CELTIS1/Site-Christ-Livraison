@@ -2,6 +2,18 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260916argent",
+      "date": "16 septembre 2026",
+      "titre": "Le point du jour : l'argent, clair",
+      "points": [
+        "En tête d'Équipe › Finances : pour un jour, l'argent des clientes (articles) et l'argent de CLT (frais de livraison), chacun avec « devait rentrer », « encaissé », « non encaissé ».",
+        "La recette de livraison du jour, en un chiffre, avec ce qui vient de la porte, du dépôt et des expéditions.",
+        "Les livreurs et la caisse : en main, remis, reste à remettre, écarts — par livreur, avec le lien vers la remise.",
+        "Ce qui a été reversé aux clientes ce jour ; deux égalités affichées et vérifiées pour se rassurer.",
+        "Un jour précédent se relit avec ‹ › ou le calendrier."
+      ]
+    },
+    {
       "version": "20260916fluide",
       "date": "16 septembre 2026",
       "titre": "Plus fluide, plus de notifications",
