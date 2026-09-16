@@ -50,7 +50,7 @@ règles d'accès sont dans la base (RLS), pas seulement à l'écran.
 ```bash
 git clone git@github.com:CELTIS1/Site-Christ-Livraison.git
 cd Site-Christ-Livraison
-node --version          # 18 ou plus ; rien à installer, aucune dépendance
+node --version          # 20 ou plus ; aucune dépendance de production
 ```
 
 Ouvrir `index.html` dans un navigateur suffit pour le site. Pour l'application, servir le dossier
@@ -60,13 +60,15 @@ l'app parle à la vraie base Supabase avec la clé publique, les règles d'accè
 ## Tester
 
 ```bash
-for t in tests/*.test.mjs; do node "$t" > /dev/null 2>&1 && echo "ok $t" || echo "ÉCHEC $t"; done
+npm ci          # une fois : installe ESLint, rien d'autre
+npm test        # tous les bancs, en parallèle (node --test "tests/*.test.mjs")
+npm run lint    # ESLint minimal : déclarations en double, code inatteignable…
+node tests/<nom>.test.mjs   # un seul banc, avec ses explications
 ```
 
-Chaque banc s'explique en tête de fichier. `node tests/<nom>.test.mjs` en lance un seul. Un banc
-nouveau doit être ajouté à `.github/workflows/tests.yml` (une étape le vérifie) et son nom d'étape
-ne doit contenir ni « : » ni « # » (un autre banc le vérifie, depuis le jour où ça a bloqué la
-publication).
+Chaque banc s'explique en tête de fichier. Un banc nouveau est pris en compte tout seul (le
+lanceur lit le dossier). Un nom d'étape de workflow ne doit contenir ni « : » ni « # » (un banc le
+vérifie, depuis le jour où ça a bloqué la publication).
 
 ## Publier
 
