@@ -76,6 +76,8 @@ vérifie, depuis le jour où ça a bloqué la publication).
    `app/*.html`, `app/version.json`, `CACHE_VERSION` dans `sw.js`, et la ligne d'historique dans
    `tests/bandeau-nouvelle-version.test.mjs`. Le banc refuse la publication si les quatre se
    séparent. Une page publique seule (index, tarifs…) n'a pas besoin d'étiquette.
+   Ajouter une entrée en tête de `app/nouveautes.json` (ce que la mise à jour apporte, en clair) :
+   l'app la montre dans « Quoi de neuf ? » ; un banc vérifie que la première entrée porte l'étiquette.
 2. Double-cliquer **« Mettre en ligne ce qui est validé.command »** (dossier « Outils ») : il
    pousse les commits validés, rien d'autre.
 3. GitHub lance les contrôles (`tests.yml`) et la vérification des empreintes ; **« Publier »**
