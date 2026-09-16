@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (f) => fs.readFileSync(path.join(RACINE, f), 'utf8');
-const config = ['app/lib/communes-et-tarifs.js', 'app/lib/argent.js', 'app/config.js'].map(lire).join('\n');
+const config = ['app/config.js'].concat(fs.readdirSync(path.join(RACINE, 'app', 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'app/lib/' + f)).map(lire).join('\n');
 const pdj = lire('app/point-du-jour.js');
 
 let reussies = 0, echouees = 0;

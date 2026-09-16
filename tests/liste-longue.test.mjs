@@ -34,7 +34,7 @@ const APP = path.join(RACINE, 'app');
 /* ---------- Extraction du vrai code ---------- */
 // On ne recopie pas les fonctions ici : on charge celles de config.js. Une copie finirait par
 // diverger en silence, et le banc d'essai validerait alors du code qui n'est plus en service.
-const sourceConfig = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
+const sourceConfig = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const contexte = vm.createContext({ console, document: undefined, window: undefined });
 // config.js s'achève par des branchements au navigateur (document.addEventListener…) absents
 // ici ; on ne garde donc que les fonctions pures dont on a besoin.

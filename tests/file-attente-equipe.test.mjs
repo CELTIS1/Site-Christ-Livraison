@@ -56,7 +56,7 @@ const porteEcriture = [
 ].join('\n\n');
 
 // Extraction de estDoublonCleCreation() depuis le vrai config.js, situé à côté de equipe.html.
-const configSrc = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(CHEMIN.replace(/equipe\.html$/, f), 'utf8')).join('\n'); // config.js et ses blocs sortis (4.8)
+const configSrc = ['config.js'].concat(fs.readdirSync(CHEMIN.replace(/equipe\.html$/, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(CHEMIN.replace(/equipe\.html$/, f), 'utf8')).join('\n'); // config.js et ses blocs sortis (4.8)
 const detecteurDoublon = configSrc.slice(
   configSrc.indexOf('function estDoublonCleCreation'),
   configSrc.indexOf('function friendlyErrorMessage')

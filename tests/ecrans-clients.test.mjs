@@ -57,7 +57,7 @@ const expressClient = lire('express-client.html');
 const expressCoursier = lire('express-coursier.html');
 const livreur = lire('livreur.html');
 const equipe = lire('equipe.html');
-const config = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(lire).join('\n'); // config.js et ses blocs sortis (4.8)
+const config = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(lire).join('\n'); // config.js et ses blocs sortis (4.8)
 const expressConfig = lire('express-config.js');
 const commun = lire('clt-common.js');
 const css = lire('style.css');

@@ -72,6 +72,13 @@ export const FICHIERS_PARTAGES = [
   // Sortis de config.js le 16 septembre 2026 (4.8, séance 1).
   'lib/communes-et-tarifs.js',
   'lib/argent.js',
+  // Séance 2 (16 septembre 2026).
+  'lib/releve-cliente.js',
+  'lib/papier-a-en-tete.js',
+  'lib/briques-argent.js',
+  'lib/annonce-de-remise.js',
+  'lib/tournee-de-recuperation.js',
+  'lib/primes.js',
 ];
 
 /* Relève, page par page, l'étiquette portée par chaque fichier partagé.

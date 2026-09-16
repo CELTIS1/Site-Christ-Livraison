@@ -47,7 +47,7 @@ import { fileURLToPath } from 'url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
-const sourceConfig = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
+const sourceConfig = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 const common = fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8');
 const styles = fs.readFileSync(path.join(APP, 'style.css'), 'utf8');

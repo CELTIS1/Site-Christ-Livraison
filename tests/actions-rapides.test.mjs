@@ -43,7 +43,7 @@ const codeLivreur = extraire('livreur.html',
 
 // Les libellés de statut viennent du vrai config.js : si quelqu'un renomme un statut, les
 // messages affichés à l'équipe doivent suivre, et ce banc d'essai doit le voir.
-const configSrc = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
+const configSrc = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const blocStatuts = configSrc.slice(configSrc.indexOf('const STATUTS'), configSrc.indexOf('};', configSrc.indexOf('const STATUTS')) + 2);
 if (!blocStatuts.startsWith('const STATUTS')) { console.error('STATUTS introuvable dans config.js'); process.exit(1); }
 // 3.2 (16/09/2026) : l'équipe parle comme le livreur — les boutons passent par libelleStatut,

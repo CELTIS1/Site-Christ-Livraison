@@ -27,7 +27,7 @@ import { fileURLToPath } from 'url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
-const config = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
+const config = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 // La migration vit dans _sql-prive/, que le dépôt public exclut (*.sql dans .gitignore). Sur le
 // Mac, le fichier est là et le SQL est confronté au JavaScript ; sur GitHub, il n'y est pas :
 // les contrôles SQL sont alors sautés en le disant, sans faire échouer le banc.

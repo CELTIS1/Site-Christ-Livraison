@@ -27,7 +27,15 @@ function verifier(t, condition, detail) {
 const BLOCS = [
   { fichier: 'lib/communes-et-tarifs.js', reperes: ['estExpedition', 'computePrixLivraison', 'appliquerModeExpedition', 'brancherPrecisionExpedition'], constantes: ['COMMUNES', 'COMMUNE_EXPEDITION', 'MATRICE_TARIFS', 'COULEUR_NEGATIF_CLT'] },
   { fichier: 'lib/argent.js', reperes: ['montantArticleColis', 'montantLivraisonColis', 'articleEncaisse', 'livraisonEncaissee', 'totauxArgent', 'caisseParLivreur', 'colisQuiDorment', 'piedTotalHTML'], constantes: ['MONTANT_ECART_SEUIL_CONFIRMATION', 'LIBELLE_FRAIS_COURSE'] },
+  // Séance 2
+  { fichier: 'lib/releve-cliente.js', reperes: ['releveCliente'], constantes: [] },
+  { fichier: 'lib/papier-a-en-tete.js', reperes: ['styleTableauCLT', 'feuilleCLT', 'logoCLT'], constantes: ['PAPIER_CLT'] },
+  { fichier: 'lib/briques-argent.js', reperes: ['caisseEnMainHTML', 'accordRemiseHTML'], constantes: [] },
+  { fichier: 'lib/annonce-de-remise.js', reperes: [], constantes: [] },
+  { fichier: 'lib/tournee-de-recuperation.js', reperes: ['lieuRecuperationPourNouveauColis'], constantes: [] },
+  { fichier: 'lib/primes.js', reperes: ['calculerPrimesLivreur', 'projectionPrimesFinDeMois'], constantes: ['PRIMES_DEBUT', 'PRIMES_PARAMETRES_DEFAUT'] },
 ];
+const ORDRE = BLOCS.map(b => b.fichier);
 const config = lire('config.js');
 const tousJs = fs.readdirSync(APP).filter(f => f.endsWith('.js')).map(f => [f, lire(f)])
   .concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).map(f => ['lib/' + f, lire('lib/' + f)]));
@@ -41,16 +49,17 @@ for (const b of BLOCS) {
   const cst = b.constantes.filter(n => !new RegExp('^const ' + n + '\\b', 'm').test(src) || new RegExp('^const ' + n + '\\b', 'm').test(config));
   verifier(`${b.fichier} : ses constantes y sont, et plus dans config.js`, cst.length === 0, cst.join(', '));
 }
-verifier('config.js dit où les blocs sont partis', /app\/lib\/communes-et-tarifs\.js/.test(config) && /app\/lib\/argent\.js/.test(config));
-verifier('config.js a maigri sous 6 100 lignes (7 345 avant)', config.split('\n').length < 6100, String(config.split('\n').length));
+verifier('config.js dit où chaque bloc est parti', ORDRE.every(f => config.includes('app/' + f)));
+verifier('config.js a maigri sous 3 400 lignes (7 345 avant la séance 1, 5 971 après)', config.split('\n').length < 3400, String(config.split('\n').length));
 
 console.log('\n2. Chaque page charge les blocs avant config.js, même étiquette');
 const pages = fs.readdirSync(APP).filter(f => f.endsWith('.html') && /<script src="config\.js\?v=/.test(lire(f)));
 verifier('cinq pages chargent config.js (équipe, livreur, cliente, gestion, connexion)', pages.length === 5, pages.join(', '));
 for (const p of pages) {
   const h = lire(p);
-  const m = h.match(/<script src="lib\/communes-et-tarifs\.js\?v=([^"]+)"><\/script>\s*<script src="lib\/argent\.js\?v=([^"]+)"><\/script>\s*<script src="config\.js\?v=([^"]+)"><\/script>/);
-  verifier(`${p} : communes-et-tarifs, puis argent, puis config.js, même étiquette`, !!m && m[1] === m[2] && m[2] === m[3], m ? [m[1], m[2], m[3]].join(' / ') : 'ordre ou étiquette absents');
+  const motif = new RegExp(ORDRE.map(f => '<script src="' + f.replace(/[./]/g, '\\$&') + '\\?v=([^"]+)"></script>\\s*').join('') + '<script src="config\\.js\\?v=([^"]+)"></script>');
+  const m = h.match(motif);
+  verifier(`${p} : les ${ORDRE.length} blocs dans l'ordre des dépendances, puis config.js, même étiquette`, !!m && m.slice(1).every(v => v === m[1]), m ? [...new Set(m.slice(1))].join(' / ') : 'ordre ou étiquette absents');
   verifier(`${p} : clt-common.js est chargé avant les blocs (formatMontant, escapeHTML)`, h.indexOf('clt-common.js?v=') < h.indexOf('lib/communes-et-tarifs.js?v='));
 }
 

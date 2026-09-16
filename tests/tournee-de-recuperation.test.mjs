@@ -43,7 +43,7 @@ import { fileURLToPath } from 'url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = path.join(RACINE, 'app');
-const sourceConfig = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
+const sourceConfig = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 const livreur = fs.readFileSync(path.join(APP, 'livreur.html'), 'utf8');
 const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 const common = fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8');
@@ -2376,11 +2376,11 @@ const envoyerPour = async (fournisseur_id) => {
 };
 
 /* ---------- Le calcul, écrit une seule fois ---------- */
-const definitions = ['config.js', 'equipe.html', 'fournisseur.html', 'livreur.html']
+const definitions = ['config.js', 'lib/tournee-de-recuperation.js', 'equipe.html', 'fournisseur.html', 'livreur.html']
   .filter(f => /function\s+lieuRecuperationPourNouveauColis\s*\(/
     .test(fs.readFileSync(path.join(APP, f), 'utf8')));
-verifier("le lieu du colis se décide dans config.js, et à un seul endroit",
-  definitions.length === 1 && definitions[0] === 'config.js',
+verifier("le lieu du colis se décide dans lib/tournee-de-recuperation.js (sorti de config.js le 16/09), et à un seul endroit",
+  definitions.length === 1 && definitions[0] === 'lib/tournee-de-recuperation.js',
   'défini dans : ' + (definitions.join(', ') || 'nulle part'));
 
 /* ---------- L'exécution : un colis créé au bureau part avec son lieu ---------- */

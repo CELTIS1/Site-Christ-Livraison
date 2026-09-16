@@ -30,7 +30,7 @@ verifier('le journal technique des erreurs', /journal technique/.test(page));
 verifier('le suivi public : numéro + quatre derniers chiffres, sans identité de l\'expéditeur', /quatre derniers chiffres/.test(page) && /jamais l'identité de l'expéditeur/.test(page));
 
 console.log('\n2. Les chiffres viennent du code');
-const config = ['app/lib/communes-et-tarifs.js', 'app/lib/argent.js', 'app/config.js'].map(lire).join('\n');
+const config = ['app/config.js'].concat(fs.readdirSync(path.join(RACINE, 'app', 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'app/lib/' + f)).map(lire).join('\n');
 verifier('« dix secondes » = POSITION_MIN_INTERVAL_MS', /dix secondes/.test(page) && /POSITION_MIN_INTERVAL_MS = 10 \* 1000/.test(config));
 verifier('« trois minutes » = POSITION_STALE_AFTER_MS', /trois minutes/.test(page) && /POSITION_STALE_AFTER_MS = 3 \* 60 \* 1000/.test(config));
 verifier('« une seule ligne par livreur » : la dernière position seulement', /dernière position connue/.test(page) && /une seule ligne par livreur/.test(config));

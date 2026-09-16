@@ -36,7 +36,7 @@ const APP = path.join(RACINE, 'app');
 
 const equipe = fs.readFileSync(path.join(APP, 'equipe.html'), 'utf8');
 const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
-const config = ['lib/communes-et-tarifs.js', 'lib/argent.js', 'config.js'].map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
+const config = ['config.js'].concat(fs.readdirSync(path.join(APP, 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'lib/' + f)).map(f => fs.readFileSync(path.join(APP, f), 'utf8')).join('\n') /* config.js et ses blocs sortis (4.8) */;
 
 /* ---------- Extraction du vrai code, pas d'une copie ----------
    Recopier les fonctions dans le test les ferait diverger en silence : le test continuerait à

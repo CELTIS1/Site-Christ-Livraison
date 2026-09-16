@@ -434,10 +434,11 @@ verifier(
    v121, le 16/09/2026 — le haut de page qui vit (photos en fondu) et le film « Une journée avec nos livreurs » ; l'éditeur du site décrit la liste de photos et la section film (site-editeur.js) : étiquette 20260916film.
    v122, le 16/09/2026 — « Quoi de neuf ? » (nouveautes.json, panneau, bouton du bandeau, mot après mise à jour, lien sur la connexion : clt-common.js, style.css, login.html, sw.js) ; le colis enregistré par l'équipe naît récupéré (migration) ; notifications d'assignation (envoyer-push) : étiquette 20260916fluide.
    v123, le 16/09/2026 — « Le point du jour » en tête d'Équipe › Finances (point-du-jour.js, equipe.html, style.css) : l'argent d'une journée, clientes / CLT, attendu / encaissé, livreurs et caisse, reversé : étiquette 20260916argent.
-   v124, le 16/09/2026 — feuille de route 4.8, séance 1 : communes-et-tarifs et argent sortis de config.js dans app/lib/ (cinq pages chargent deux scripts de plus, sans changement de comportement) : étiquette 20260916lib1. */
+   v124, le 16/09/2026 — feuille de route 4.8, séance 1 : communes-et-tarifs et argent sortis de config.js dans app/lib/ (cinq pages chargent deux scripts de plus, sans changement de comportement) : étiquette 20260916lib1.
+   v125, le 16/09/2026 — 4.8, séance 2 : relevé de la cliente, papier à en-tête, briques d'argent, annonce de remise, tournée de récupération et primes sortis de config.js dans app/lib/ (config.js : 3 324 lignes) : étiquette 20260916lib2. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v124'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v125'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
