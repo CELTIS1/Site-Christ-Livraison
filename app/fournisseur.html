@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916compta">
-<script src="theme.js?v=20260916compta"></script>
-<script src="splash.js?v=20260916compta"></script>
+<link rel="stylesheet" href="style.css?v=20260916cliente">
+<script src="theme.js?v=20260916cliente"></script>
+<script src="splash.js?v=20260916cliente"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -471,10 +471,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916compta"></script>
-<script src="config.js?v=20260916compta"></script>
-<script src="biometric-lock.js?v=20260916compta"></script>
-<script src="clt-select-recherche.js?v=20260916compta"></script>
+<script src="clt-common.js?v=20260916cliente"></script>
+<script src="config.js?v=20260916cliente"></script>
+<script src="biometric-lock.js?v=20260916cliente"></script>
+<script src="clt-select-recherche.js?v=20260916cliente"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1791,21 +1791,21 @@
       const telBrut = (draftEl.querySelector('.draft-tel-destinataire') || { value: '' }).value.trim();
       const destinataire_telephone = telBrut ? toPhoneE164(telBrut) : null;
       if (!destinataire_telephone) {
-        alert("Le téléphone du destinataire est obligatoire : sans lui, le livreur ne peut pas livrer.");
+        cltToast("Le téléphone du destinataire est obligatoire : sans lui, le livreur ne peut pas livrer.", { type: 'warning', title: 'Il manque une information' });
         return;
       }
       if (!pickupCommune) {
-        alert("Veuillez choisir la commune de récupération.");
+        cltToast("Choisissez la commune de récupération.", { type: 'warning', title: 'Il manque une information' });
         return;
       }
       if (!commune_destination) {
-        alert("Veuillez choisir la commune de destination.");
+        cltToast("Choisissez la commune de destination.", { type: 'warning', title: 'Il manque une information' });
         return;
       }
       const montantArticleRaw = draftEl.querySelector('.draft-montant-article').value.trim();
       const montantLivraisonRaw = draftEl.querySelector('.draft-montant-livraison').value.trim();
       if (!isValidMontant(montantArticleRaw) || !isValidMontant(montantLivraisonRaw)) {
-        alert("Les montants doivent être des nombres positifs.");
+        cltToast("Les montants doivent être des nombres positifs.", { type: 'warning', title: 'Montant incorrect' });
         return;
       }
       const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
@@ -1846,7 +1846,7 @@
       // Doublon sur la clé : ce colis existe déjà, une seule fois. C'est le résultat voulu, pas
       // une panne. Le dire « erreur » pousserait à recommencer, donc à en créer un troisième.
       if (error && !estDoublonCleCreation(error)) {
-        alert(friendlyErrorMessage(error.message));
+        cltToast(friendlyErrorMessage(error.message), { type: 'error' });
         saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer la copie';
         return;
       }
@@ -1887,7 +1887,7 @@
         const communeSelect = item.querySelector('.edit-commune-dest');
         const commune_destination = communeSelect ? communeSelect.value : null;
         if (!commune_destination) {
-          alert("Veuillez choisir la commune de destination.");
+          cltToast("Choisissez la commune de destination.", { type: 'warning', title: 'Il manque une information' });
           return;
         }
         // Téléphone du destinataire. Comme sur l'écran de l'équipe, on ne le réécrit que s'il a
@@ -1908,7 +1908,7 @@
             let telDigits = telSaisi.replace(/[^0-9]/g, '');
             if (telDigits.startsWith('225')) telDigits = telDigits.slice(3);
             if (typeof isValidPhoneCI === 'function' && !isValidPhoneCI(telDigits)) {
-              alert("Le téléphone du destinataire est invalide (10 chiffres attendus, ex. 0546818640). Corrigez-le ou laissez la case vide.");
+              cltToast("Le téléphone du destinataire est invalide (10 chiffres attendus, ex. 0546818640). Corrigez-le ou laissez la case vide.", { type: 'warning', title: 'Numéro incorrect' });
               telInput.focus();
               return;
             }
@@ -1925,7 +1925,7 @@
           const montantArticleRaw = montantArticleInput.value.trim();
           const montantLivraisonRaw = montantLivraisonInput.value.trim();
           if (!isValidMontant(montantArticleRaw) || !isValidMontant(montantLivraisonRaw)) {
-            alert("Les montants doivent être des nombres positifs.");
+            cltToast("Les montants doivent être des nombres positifs.", { type: 'warning', title: 'Montant incorrect' });
             return;
           }
           const montant_article = montantArticleRaw === '' ? null : Number(montantArticleRaw);
@@ -1947,7 +1947,7 @@
             .update(Object.assign({}, champs, { description: DESCRIPTION_PAR_DEFAUT })).eq('id', id));
         }
         if (error) {
-          alert(friendlyErrorMessage(error.message));
+          cltToast(friendlyErrorMessage(error.message), { type: 'error' });
           btn.disabled = false; btn.textContent = 'Enregistrer';
           return;
         }
@@ -1962,7 +1962,7 @@
         btn.disabled = true; btn.textContent = '...';
         const { error } = await supabaseClient.from('colis').delete().eq('id', id);
         if (error) {
-          alert(friendlyErrorMessage(error.message));
+          cltToast(friendlyErrorMessage(error.message), { type: 'error' });
           btn.disabled = false; btn.textContent = 'Supprimer';
           return;
         }
@@ -2725,12 +2725,12 @@
     const btn = document.getElementById('btn-activer-push');
     try {
       if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-        alert("Votre navigateur ne prend pas en charge les notifications push. Sur iPhone/iPad, installez d'abord l'application sur l'écran d'accueil (Partager → Sur l'écran d'accueil), ouvrez-la depuis l'icône, puis réessayez.");
+        cltToast("Votre navigateur ne prend pas en charge les notifications. Sur iPhone/iPad, installez d'abord l'application sur l'écran d'accueil (Partager → Sur l'écran d'accueil), ouvrez-la depuis l'icône, puis réessayez.", { type: 'info', duration: 9000 });
         return;
       }
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        alert("Notifications refusées. Vous pouvez les réactiver dans les réglages de votre navigateur.");
+        cltToast("Notifications refusées. Vous pouvez les réactiver dans les réglages de votre navigateur.", { type: 'warning' });
         return;
       }
       const reg = await navigator.serviceWorker.ready;
@@ -2744,14 +2744,14 @@
       const { error } = await enregistrerAbonnementPush(sub, role);
       if (error) {
         console.error('Enregistrement abonnement push échoué', error);
-        alert("Impossible d'enregistrer l'abonnement aux notifications. Réessayez plus tard.");
+        cltToast("Impossible d'enregistrer l'abonnement aux notifications. Réessayez plus tard.", { type: 'error' });
         return;
       }
       if (btn) { btn.textContent = '🔔 Notifications activées ✓'; btn.disabled = true; }
-      alert("Notifications activées ! Vous serez averti des événements importants même quand l'app est fermée.");
+      cltToast("Notifications activées : vous serez averti(e) des événements importants même quand l'application est fermée.", { type: 'success' });
     } catch (e) {
       console.error('Erreur activation push', e);
-      alert("Une erreur est survenue lors de l'activation des notifications.");
+      cltToast("Une erreur est survenue lors de l'activation des notifications.", { type: 'error' });
     }
   }
 

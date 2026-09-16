@@ -573,6 +573,17 @@ titre('8. Les briques d’écran partagées : un seul exemplaire, dans style.css
   }
 }
 
+/* ---------- 3.5 (16/09/2026) : plus aucune fenêtre système dans l'espace cliente ---------- */
+console.log('\nEspace cliente — plus aucun alert() natif (feuille de route 3.5)');
+{
+  const natifs = (fournisseur.match(/\balert\(/g) || []).length;
+  verifier('aucun alert() natif dans fournisseur.html : tout passe par cltToast', natifs === 0, natifs + ' restant(s)');
+  verifier('les oublis de saisie sont des avertissements, les refus de la base des erreurs, la réussite un succès',
+    /cltToast\("Le téléphone du destinataire est obligatoire[^"]*", \{ type: 'warning'/.test(fournisseur)
+    && /cltToast\(friendlyErrorMessage\(error\.message\), \{ type: 'error' \}\)/.test(fournisseur)
+    && /cltToast\("Notifications activées[^"]*", \{ type: 'success' \}\)/.test(fournisseur));
+}
+
 /* ---------- Verdict ---------- */
 console.log('\n———');
 console.log(`${reussies} vérifications réussies, ${echouees} échouées`);

@@ -189,6 +189,7 @@ async function enregistrerClient({ tel, telOrigine, avecMontants }){
   const ctx = aidesCommunes();
   ctx.item = ecran.item;
   ctx.alert = ecran.alert;
+  ctx.cltToast = ecran.alert; // 3.5 (16/09/2026) : l'espace cliente parle par bandeaux, plus par alert()
   const corps = `globalThis.__lancer = async function(){\n${CODE_CLIENT}\nreturn champs;\n};`;
   vm.runInContext(corps, ctx);
   const champs = await ctx.__lancer();
@@ -263,6 +264,7 @@ async function enregistrerEquipe({ tel, telOrigine, avecRecuperation }){
   const ctx = aidesCommunes();
   ctx.item = ecran.item;
   ctx.alert = ecran.alert;
+  ctx.cltToast = ecran.alert; // 3.5 (16/09/2026) : l'espace cliente parle par bandeaux, plus par alert()
   const prelude = `var statut = 'en_livraison', observation = null, livreur_id = undefined,
     livreur_collecte_id = undefined, montant = undefined, montant_article = undefined,
     montant_livraison = undefined, article_non_encaisse = undefined, livraison_payee = undefined,

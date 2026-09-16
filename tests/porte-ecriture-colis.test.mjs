@@ -334,7 +334,7 @@ titre('La description n’est plus exigée nulle part');
 titre('« Enregistrer la copie » porte une clé de création');
 {
   const bloc = fournisseur.slice(fournisseur.indexOf('function attachDraftHandlers'),
-                                 fournisseur.indexOf('function attachDraftHandlers') + 4000);
+                                 fournisseur.indexOf('function attachDraftHandlers') + 6000); // fenêtre élargie le 16/09/2026 : les bandeaux cltToast (3.5) sont plus longs que les alert()
   verifier('une clé est engendrée pour le brouillon',
     /draftEl\.dataset\.cle\s*=\s*nouvelleCleColis\(\)/.test(bloc));
   verifier('elle n’est engendrée QU’UNE FOIS, sinon le second clic aurait une clé neuve',
