@@ -160,8 +160,9 @@ function colisDescriptionTexte(c) {
 // MATRICE_TARIFS[communeDépart][communeDestination] donne le prix proposé. La grille est
 // SYMÉTRIQUE (le même prix dans les deux sens : un livreur parcourt la même distance à l'aller
 // et au retour) ; le banc fonctions-reelles le vérifie sur toutes les paires. Les règles :
-//   • dans la même commune : 1 500 F, sauf Yopougon 1 000 F ; un trajet vraiment court (Palmeraie
-//     → Riviera 2, par exemple) peut être ramené à 1 000 F à la main par la personne qui saisit ;
+//   • dans la même commune : 1 500 F ; un trajet vraiment court (quartiers voisins : Palmeraie →
+//     Riviera 2) se ramène à 1 000 F à la main par la personne qui saisit. Le « 1 000 F partout
+//     dans Yopougon » est réservé aux gros clients, sur accord (Celtis, 16/09 soir) ;
 //   • Attécoubé (ajoutée le 16/09/2026, 13 communes) : 1 500 F vers ses voisines Adjamé, Plateau,
 //     Yopougon, Cocody, Treichville ; 2 000 F Abobo, Koumassi, Marcory ; 2 500 F Anyama,
 //     Bingerville, Port-Bouët ; 3 000 F Grand-Bassam ;
@@ -184,7 +185,7 @@ const MATRICE_TARIFS = {
   "Plateau":      { "Abobo": 1500, "Adjamé": 1500, "Anyama": 1500, "Attécoubé": 1500, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 1500 },
   "Port-Bouët":   { "Abobo": 2500, "Adjamé": 2000, "Anyama": 2500, "Attécoubé": 2500, "Bingerville": 2500, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 2000, "Yopougon": 2500 },
   "Treichville":  { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Attécoubé": 1500, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
-  "Yopougon":     { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Attécoubé": 1500, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 1500, "Yopougon": 1000 },
+  "Yopougon":     { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Attécoubé": 1500, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 1500, "Yopougon": 1500 },
 };
 
 // Calcule le prix de livraison proposé (FCFA) entre deux communes : la valeur de la grille,

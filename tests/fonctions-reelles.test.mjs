@@ -42,7 +42,7 @@ verifier('les constantes attendues existent (COMMUNES, STATUTS, COMMUNE_EXPEDITI
 const EXP = app.COMMUNE_EXPEDITION;
 
 console.log('\n2. Le prix de livraison proposé (grille tranchée par Celtis le 16/09/2026)');
-verifier('même commune → 1 500 F, sauf Yopougon → 1 000 F', app.computePrixLivraison('Cocody', 'Cocody') === 1500 && app.computePrixLivraison('Yopougon', 'Yopougon') === 1000);
+verifier('même commune → 1 500 F partout (le 1 000 F d\'un trajet très court se met à la main)', app.COMMUNES.every(c => app.computePrixLivraison(c, c) === 1500));
 verifier('le standard : Yopougon → Cocody, Marcory, Treichville 1 500 F', ['Cocody', 'Marcory', 'Treichville'].every(c => app.computePrixLivraison('Yopougon', c) === 1500));
 verifier('toute commune d\'Abidjan vers le Plateau : 1 500 F', app.COMMUNES.filter(c => c !== 'Grand-Bassam').every(c => app.computePrixLivraison(c, 'Plateau') === 1500));
 verifier('traversée de la ville : Yopougon → Koumassi, Abobo → Bingerville, Yopougon → Bingerville 2 000 F', app.computePrixLivraison('Yopougon', 'Koumassi') === 2000 && app.computePrixLivraison('Abobo', 'Bingerville') === 2000 && app.computePrixLivraison('Yopougon', 'Bingerville') === 2000);
