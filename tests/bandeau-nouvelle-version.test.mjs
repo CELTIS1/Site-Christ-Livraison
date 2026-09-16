@@ -418,10 +418,11 @@ verifier(
    v105, le 13/09/2026 — la carte « Mes primes » en attente chez le livreur avant le 1er octobre (livreur.html) : étiquette 20260913primes2.
    v106, le 13/09/2026 — changer la cliente d'un colis déjà créé (equipe.html) : étiquette 20260913cliente.
    v107, le 16/09/2026 — les recettes de la comptabilité se remplissent depuis les colis (gestion.html, gestion.js), fidélité en pause masquée chez le livreur (livreur.html) : étiquette 20260916recettes.
-   v108, le 16/09/2026 — le logo de la maison en tête du bulletin à l'écran et des documents imprimables (gestion.html, gestion.js) : étiquette 20260916logo. */
+   v108, le 16/09/2026 — le logo de la maison en tête du bulletin à l'écran et des documents imprimables (gestion.html, gestion.js) : étiquette 20260916logo.
+   v109, le 16/09/2026 — feuille de route 3.1 : lecture par tranches (cltLireTout dans clt-common.js), rapport « Par livreur » rétabli et comptabilité de l'équipe sur la base (equipe.html), écritures, caisse, recettes, dépenses et factures par tranches (gestion.js) : étiquette 20260916rapports. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v108'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v109'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

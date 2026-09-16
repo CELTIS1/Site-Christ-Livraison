@@ -39,6 +39,25 @@ function escapeHTML(str) {
     .replace(/'/g, "&#39;");
 }
 
+// ---------- Lire tout, par tranches (feuille de route 3.1, 16/09/2026) ----------
+// La base ne renvoie jamais plus de 1 000 lignes par requête, sans le dire : un rapport qui
+// lit « tout » d'un coup devient faux dès la 1 001e ligne, en silence. Cette fonction reçoit
+// une FABRIQUE de requête (une fonction qui renvoie une requête neuve, sans range) et enchaîne
+// les tranches jusqu'à la dernière. Le résultat est complet ou l'erreur est levée : jamais une
+// liste tronquée qui a l'air juste. Tous les rapports (équipe et gestion) passent par ici.
+const CLT_TRANCHE = 1000;
+async function cltLireTout(construire, tranche) {
+  const taille = tranche || CLT_TRANCHE;
+  let tout = [], depart = 0;
+  for (;;) {
+    const { data, error } = await construire().range(depart, depart + taille - 1);
+    if (error) throw error;
+    tout = tout.concat(data || []);
+    if (!data || data.length < taille) return tout;
+    depart += taille;
+  }
+}
+
 // ---------- Dates ----------
 function formatDate(iso) {
   if (!iso) return "";

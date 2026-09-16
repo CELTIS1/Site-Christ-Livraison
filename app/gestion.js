@@ -803,8 +803,8 @@ async function renderDashboard(){
     supabaseClient.from('gestion_recettes').select('montant').gte('date_recette',debut).lt('date_recette',fin),
     supabaseClient.from('gestion_depenses').select('montant').eq('annee',annee).eq('mois',mois),
     supabaseClient.from('gestion_objectifs').select('mois,objectif').eq('annee',annee),
-    supabaseClient.from('gestion_recettes').select('date_recette,montant').gte('date_recette',periodeStr(annee,1)).lt('date_recette',periodeStr(annee+1,1)),
-    supabaseClient.from('gestion_depenses').select('mois,categorie,montant').eq('annee',annee),
+    cltLireTout(() => supabaseClient.from('gestion_recettes').select('date_recette,montant').gte('date_recette',periodeStr(annee,1)).lt('date_recette',periodeStr(annee+1,1)).order('id')).then(data => ({ data })),
+    cltLireTout(() => supabaseClient.from('gestion_depenses').select('mois,categorie,montant').eq('annee',annee).order('id')).then(data => ({ data })),
     supabaseClient.rpc('compta_argent_non_remis'),
   ]);
 
@@ -2138,15 +2138,15 @@ async function chargerEtatsFinanciers(){
   try {
     // Produits : recettes de l'année
     const debut = `${annee}-01-01`, fin = `${annee+1}-01-01`;
-    const { data: recs } = await supabaseClient.from('gestion_recettes')
-      .select('date_recette,montant').gte('date_recette',debut).lt('date_recette',fin);
+    const recs = await cltLireTout(() => supabaseClient.from('gestion_recettes')
+      .select('date_recette,montant').gte('date_recette',debut).lt('date_recette',fin).order('id'));
     (recs||[]).forEach(r => { const m = new Date(r.date_recette+'T00:00:00').getMonth(); recettes[m] += n(r.montant); });
 
     // Charges d'exploitation : dépenses de l'année (par mois + par catégorie).
     // Les catégories LIÉES À LA PAIE sont isolées et EXCLUES du résultat pour éviter
     // le double comptage (la masse salariale est déjà calculée ci-dessous).
-    const { data: deps } = await supabaseClient.from('gestion_depenses')
-      .select('mois,categorie,montant').eq('annee',annee);
+    const deps = await cltLireTout(() => supabaseClient.from('gestion_depenses')
+      .select('mois,categorie,montant').eq('annee',annee).order('id'));
     (deps||[]).forEach(d => {
       const m = (parseInt(d.mois)||1) - 1; const v = n(d.montant);
       const cat = d.categorie || 'Autres';
@@ -2557,13 +2557,13 @@ async function loadFacturation(){
   if (wrapClients) wrapClients.innerHTML = '<div class="hint">Chargement…</div>';
   if (wrapFact) wrapFact.innerHTML = '<div class="hint">Chargement…</div>';
   try {
-    const [{ data: clients, error: e1 }, { data: factures, error: e2 }] = await Promise.all([
-      supabaseClient.from('gestion_clients').select('*').order('nom'),
-      supabaseClient.from('gestion_factures')
+    // Par tranches (3.1) : la liste des factures ne se tronque plus à 1 000 en silence.
+    const [clients, factures] = await Promise.all([
+      cltLireTout(() => supabaseClient.from('gestion_clients').select('*').order('nom').order('id')),
+      cltLireTout(() => supabaseClient.from('gestion_factures')
         .select('*, gestion_facture_lignes(*), gestion_facture_paiements(*), gestion_facture_relances(*)')
-        .order('date_emission', { ascending:false }),
+        .order('date_emission', { ascending:false }).order('id')),
     ]);
-    if (e1) throw e1; if (e2) throw e2;
     CLIENTS_FACTURATION = clients || [];
     FACTURE_LIGNES = {}; FACTURE_PAIEMENTS = {}; FACTURE_RELANCES = {};
     FACTURES = (factures || []).map(f => {
@@ -2974,11 +2974,11 @@ async function chargerComptaGenerale(){
   const wrapPlan = document.getElementById('cg-plan-table');
   if (wrapPlan) wrapPlan.innerHTML = '<div class="hint">Chargement…</div>';
   try {
-    const [{ data: plan, error: e1 }, { data: ecritures, error: e2 }] = await Promise.all([
-      supabaseClient.from('gestion_plan_comptable').select('*').order('code'),
-      supabaseClient.from('gestion_ecritures').select('*, gestion_ecriture_lignes(*)').order('date_ecriture', { ascending:false }),
+    // Par tranches (3.1) : la balance et le grand livre se tronquaient à 1 000 écritures en silence.
+    const [plan, ecritures] = await Promise.all([
+      cltLireTout(() => supabaseClient.from('gestion_plan_comptable').select('*').order('code')),
+      cltLireTout(() => supabaseClient.from('gestion_ecritures').select('*, gestion_ecriture_lignes(*)').order('date_ecriture', { ascending:false }).order('id')),
     ]);
-    if (e1) throw e1; if (e2) throw e2;
     PLAN_COMPTABLE = plan || [];
     ECRITURE_LIGNES = {};
     ECRITURES = (ecritures || []).map(e => {
@@ -3336,12 +3336,13 @@ async function loadLivreCaisse(){
   let body = '';
   try {
     // Solde au début du mois = solde d'ouverture + net de tous les mouvements antérieurs.
-    const { data: avant } = await supabaseClient.from('gestion_caisse').select('sens,montant').lt('date_mouvement', debut);
+    // Par tranches (3.1) : le solde d'ouverture additionne TOUS les mouvements antérieurs.
+    const avant = await cltLireTout(() => supabaseClient.from('gestion_caisse').select('sens,montant').lt('date_mouvement', debut).order('id'));
     (avant||[]).forEach(mv => { soldeDebut += (mv.sens==='entree'?1:-1) * n(mv.montant); });
     solde = soldeDebut;
-    const { data: rows } = await supabaseClient.from('gestion_caisse').select('*')
+    const rows = await cltLireTout(() => supabaseClient.from('gestion_caisse').select('*')
       .gte('date_mouvement', debut).lt('date_mouvement', fin)
-      .order('date_mouvement',{ascending:true}).order('created_at',{ascending:true});
+      .order('date_mouvement',{ascending:true}).order('created_at',{ascending:true}));
     body = (rows||[]).map(mv => {
       const isE = mv.sens === 'entree'; const mt = n(mv.montant);
       if (isE) entrees += mt; else sorties += mt;
@@ -3436,11 +3437,11 @@ async function exportLivreCaisse(){
   const debut = periodeStr(annee,mois), fin = periodeStr(mois===12?annee+1:annee, mois===12?1:mois+1);
   let soldeDebut = n(PARAMS && PARAMS.solde_ouverture);
   try {
-    const { data: avant } = await supabaseClient.from('gestion_caisse').select('sens,montant').lt('date_mouvement',debut);
+    const avant = await cltLireTout(() => supabaseClient.from('gestion_caisse').select('sens,montant').lt('date_mouvement',debut).order('id'));
     (avant||[]).forEach(mv => { soldeDebut += (mv.sens==='entree'?1:-1)*n(mv.montant); });
-    const { data: rows } = await supabaseClient.from('gestion_caisse').select('*')
+    const rows = await cltLireTout(() => supabaseClient.from('gestion_caisse').select('*')
       .gte('date_mouvement',debut).lt('date_mouvement',fin)
-      .order('date_mouvement',{ascending:true}).order('created_at',{ascending:true});
+      .order('date_mouvement',{ascending:true}).order('created_at',{ascending:true}));
     const aoa = [['Date','Libellé','Mode','Entrée','Sortie','Solde']];
     aoa.push(['', 'Solde au début du mois', '', '', '', Math.round(soldeDebut)]);
     let solde = soldeDebut, entrees=0, sorties=0;
@@ -3557,9 +3558,9 @@ async function loadClotures(){
   const debut = `${annee}-01-01`, fin = `${annee+1}-01-01`;
   const rec = new Array(12).fill(0), dep = new Array(12).fill(0);
   try {
-    const { data: recs } = await supabaseClient.from('gestion_recettes').select('date_recette,montant').gte('date_recette',debut).lt('date_recette',fin);
+    const recs = await cltLireTout(() => supabaseClient.from('gestion_recettes').select('date_recette,montant').gte('date_recette',debut).lt('date_recette',fin).order('id'));
     (recs||[]).forEach(r => { rec[new Date(r.date_recette+'T00:00:00').getMonth()] += n(r.montant); });
-    const { data: deps } = await supabaseClient.from('gestion_depenses').select('mois,montant').eq('annee',annee);
+    const deps = await cltLireTout(() => supabaseClient.from('gestion_depenses').select('mois,montant').eq('annee',annee).order('id'));
     (deps||[]).forEach(d => { dep[(parseInt(d.mois)||1)-1] += n(d.montant); });
   } catch(e){ console.error('clotures data', e); }
   const isAdmin = ACCES.isAdmin;

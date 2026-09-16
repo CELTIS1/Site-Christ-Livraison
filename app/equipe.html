@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916logo">
-<script src="theme.js?v=20260916logo"></script>
-<script src="splash.js?v=20260916logo"></script>
+<link rel="stylesheet" href="style.css?v=20260916rapports">
+<script src="theme.js?v=20260916rapports"></script>
+<script src="splash.js?v=20260916rapports"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1477,12 +1477,12 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916logo"></script>
-<script src="config.js?v=20260916logo"></script>
-<script src="clients-dashboard.js?v=20260916logo"></script>
-<script src="livreurs-dashboard.js?v=20260916logo"></script>
-<script src="biometric-lock.js?v=20260916logo"></script>
-<script src="clt-select-recherche.js?v=20260916logo"></script>
+<script src="clt-common.js?v=20260916rapports"></script>
+<script src="config.js?v=20260916rapports"></script>
+<script src="clients-dashboard.js?v=20260916rapports"></script>
+<script src="livreurs-dashboard.js?v=20260916rapports"></script>
+<script src="biometric-lock.js?v=20260916rapports"></script>
+<script src="clt-select-recherche.js?v=20260916rapports"></script>
 <script>
 let currentUser = null;
 let allColis = [];
@@ -7997,6 +7997,42 @@ cltPoserHTML(box, !colis.length
 // supprimée : elle comptait sur allColis, tronqué à 500 colis, donc faux au-delà ; l'onglet
 // Clients la remplace.
 
+// Les trois fonctions ci-dessous étaient parties avec ce nettoyage alors que le rapport « Par
+// livreur » les appelle encore : depuis le 5 septembre, l'onglet restait sur « Calcul en
+// cours… ». Rétablies le 16/09/2026 (feuille de route 3.1), sur la lecture par tranches : la
+// période choisie est lue dans la base, en entier, jamais depuis les 500 colis en mémoire.
+async function perfColisPeriode(){
+const debut = document.getElementById('perf-date-debut')?.value || '';
+const fin = document.getElementById('perf-date-fin')?.value || '';
+try {
+return await cltLireTout(() => {
+let query = supabaseClient.from('colis').select('*').order('created_at', { ascending: false });
+if (debut) query = query.gte('created_at', debut + 'T00:00:00');
+if (fin) query = query.lte('created_at', fin + 'T23:59:59');
+return query;
+});
+} catch (error) { console.error('Rapport par livreur :', error); return null; }
+}
+
+function perfPeriodeTexte(){
+const debut = document.getElementById('perf-date-debut')?.value || '';
+const fin = document.getElementById('perf-date-fin')?.value || '';
+const jour = (v) => new Date(v + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+if (debut && fin) return debut === fin ? ('Le ' + jour(debut) + ' — colis enregistrés ce jour-là') : ('Du ' + jour(debut) + ' au ' + jour(fin));
+if (debut) return 'À partir du ' + jour(debut);
+if (fin) return "Jusqu'au " + jour(fin);
+return 'Depuis le début';
+}
+
+// Une cellule de chiffre qui vaut zéro est affichée en gris pâle : sur une ligne de dix nombres,
+// l'œil doit accrocher ce qui existe, pas ce qui est vide.
+function perfCell(label, valeur, options){
+const o = options || {};
+const vide = (valeur === 0 || valeur === '—');
+const style = vide ? ' style="color:var(--muted);"' : (o.style ? ' style="' + o.style + '"' : '');
+return `<td data-label="${label}"${style}>${o.fort && !vide ? '<strong>' + valeur + '</strong>' : valeur}</td>`;
+}
+
 async function renderRapportLivreur(){
 const box = document.getElementById('rapport-livreur-content');
 if (!box) return;
@@ -8095,22 +8131,22 @@ renderRapportLivreur();
 // tant que l'historique complet n'a pas été rapatrié via "Charger plus" (voir COLIS_PAGE_SIZE),
 // `allColis` ne couvre pas forcément d'anciennes périodes. Sans période choisie, on continue de
 // filtrer `allColis` en mémoire (instantané, pas d'aller-retour réseau) comme avant.
+// 16/09/2026 (feuille de route 3.1) : la comptabilité lit TOUJOURS la base, par tranches, pour
+// la période choisie — plus jamais les 500 colis en mémoire, qui ne couvrent qu'une page. Sans
+// période, c'est tout l'historique qui est lu ; c'est long, mais c'est juste.
 async function comptaFiltered(){
 const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
 const debut = document.getElementById('compta-date-debut')?.value || '';
 const fin = document.getElementById('compta-date-fin')?.value || '';
-
-if (debut || fin) {
+try {
+return await cltLireTout(() => {
 let query = supabaseClient.from('colis').select('*').order('created_at', { ascending: false });
 if (fournisseurId) query = query.eq('fournisseur_id', fournisseurId);
 if (debut) query = query.gte('created_at', debut + 'T00:00:00');
 if (fin) query = query.lte('created_at', fin + 'T23:59:59');
-const { data, error } = await query;
-if (error) { console.error(error); return []; }
-return data;
-}
-
-return fournisseurId ? allColis.filter(c => c.fournisseur_id === fournisseurId) : allColis;
+return query;
+});
+} catch (error) { console.error('Comptabilité :', error); return []; }
 }
 
 // Le point du soir avec une vendeuse ne porte que sur le montant « article » qui lui revient :
