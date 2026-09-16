@@ -553,24 +553,6 @@
     "subtitle": "Quelques retours de nos clients et partenaires.",
     "items": [
       {
-        "name": "Aïcha K.",
-        "role": "Commerçante, Adjamé",
-        "rating": 5,
-        "text": "Livraison rapide et livreurs sérieux. Un vrai gain de temps pour mon commerce."
-      },
-      {
-        "name": "Jean-Marc D.",
-        "role": "Client particulier, Cocody",
-        "rating": 5,
-        "text": "Toujours joignables et à l'heure. Je recommande pour toute livraison à Abidjan."
-      },
-      {
-        "name": "Fatou S.",
-        "role": "Boutique en ligne, Marcory",
-        "rating": 4,
-        "text": "Service fiable pour mes livraisons e-commerce, à un tarif clair."
-      },
-      {
         "name": "Djény Jeans",
         "role": "Vendeuse en ligne",
         "rating": 5,

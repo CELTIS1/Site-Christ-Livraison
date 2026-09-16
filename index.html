@@ -468,6 +468,13 @@
   .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
   .form-field{display:flex; flex-direction:column; gap:6px;}
   .form-field.full{grid-column:1 / -1;}
+  /* « Quand ? » : trois boutons plutôt qu'une roue de date (16/09/2026) */
+  .choix-date{display:flex; gap:8px; flex-wrap:wrap;}
+  .choix-date-btn{min-height:44px; padding:0 18px; border-radius:12px; border:1.5px solid #D7DEE6; background:var(--white); color:var(--navy); font:inherit; font-weight:600; font-size:14px; cursor:pointer; transition:background .15s ease, border-color .15s ease, color .15s ease;}
+  .choix-date-btn:hover{border-color:var(--orange);}
+  .choix-date-btn.active{background:var(--navy); border-color:var(--navy); color:var(--white);}
+  #date.hidden{display:none;}
+  #date{margin-top:8px;}
   label{font-size:13.5px; font-weight:700; color:var(--navy);}
   input, select, textarea{
     font-family:inherit; font-size:14.5px; padding:12px 14px; border:1.5px solid #DCE2E8; border-radius:8px;
@@ -1044,9 +1051,6 @@
     <h2 class="section-title reveal" id="testimonialsTitle">Ce que disent nos clients</h2>
     <p class="section-sub reveal" id="testimonialsSubtitle">Quelques retours de nos clients et partenaires.</p>
     <div class="testimonials-grid" id="testimonialsGrid">
-      <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Livraison rapide et livreurs sérieux. Un vrai gain de temps pour mon commerce."</p><div class="testimonial-name">Aïcha K.</div><div class="testimonial-role">Commerçante, Adjamé</div></div>
-      <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Toujours joignables et à l'heure. Je recommande pour toute livraison à Abidjan."</p><div class="testimonial-name">Jean-Marc D.</div><div class="testimonial-role">Client particulier, Cocody</div></div>
-      <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★☆</div><p class="testimonial-text">"Service fiable pour mes livraisons e-commerce, à un tarif clair."</p><div class="testimonial-name">Fatou S.</div><div class="testimonial-role">Boutique en ligne, Marcory</div></div>
       <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Si la fiabilité avait un visage, ce serait vous. Vous êtes notre livreur favori !"</p><div class="testimonial-name">Djény Jeans</div><div class="testimonial-role">Vendeuse en ligne</div></div>
       <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Livraison rapide, point détaillé en fin de journée et fluidité des transactions."</p><div class="testimonial-name">L'intello</div><div class="testimonial-role">Cliente, Abidjan</div></div>
       <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Très fiable, rapide et efficace ! Tu es le meilleur."</p><div class="testimonial-name">Nelly</div><div class="testimonial-role">Vendeuse, Abidjan</div></div>
@@ -1121,8 +1125,13 @@
             <input type="text" id="livraison" placeholder="Ex : Plateau, Rue du Commerce">
           </div>
           <div class="form-field full">
-            <label for="date">Date souhaitée</label>
-            <input type="date" id="date">
+            <label>Quand ?</label>
+            <div class="choix-date" id="choixDate" role="group" aria-label="Date souhaitée">
+              <button type="button" class="choix-date-btn active" data-quand="aujourdhui" aria-pressed="true">Aujourd'hui</button>
+              <button type="button" class="choix-date-btn" data-quand="demain" aria-pressed="false">Demain</button>
+              <button type="button" class="choix-date-btn" data-quand="autre" aria-pressed="false">Une autre date</button>
+            </div>
+            <input type="date" id="date" class="hidden" aria-label="Autre date">
           </div>
           <div class="form-field full">
             <label for="details">Détails de la demande</label>
@@ -1799,6 +1808,16 @@
     .then(applyContent)
     .catch(err => console.error("Impossible de charger les textes du site :", err));
 
+  // « Quand ? » : un appui sur Aujourd'hui / Demain suffit ; « Une autre date » montre le calendrier.
+  const choixDate = document.getElementById('choixDate');
+  if(choixDate) choixDate.addEventListener('click', function(e){
+    const b = e.target.closest('.choix-date-btn'); if(!b) return;
+    choixDate.querySelectorAll('.choix-date-btn').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    const champ = document.getElementById('date');
+    champ.classList.toggle('hidden', b.dataset.quand !== 'autre');
+    if(b.dataset.quand === 'autre') champ.focus();
+  });
+
   document.getElementById('devisForm').addEventListener('submit', function(e){
     e.preventDefault();
     const nom = document.getElementById('nom').value.trim();
@@ -1806,7 +1825,10 @@
     const service = document.getElementById('service').value;
     const ramassage = document.getElementById('ramassage').value.trim();
     const livraison = document.getElementById('livraison').value.trim();
-    const date = document.getElementById('date').value;
+    const actif = document.querySelector('.choix-date-btn.active');
+    const quand = actif ? actif.dataset.quand : 'aujourdhui';
+    const autreDate = document.getElementById('date').value;
+    const date = quand === 'aujourdhui' ? "aujourd'hui" : quand === 'demain' ? 'demain' : (autreDate ? autreDate.split('-').reverse().join('/') : '');
     const details = document.getElementById('details').value.trim();
 
     let msg = "Bonjour, je souhaite une demande de devis :\n";

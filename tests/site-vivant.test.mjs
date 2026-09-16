@@ -69,5 +69,8 @@ verifier('le film est éditable dans Gestion › Site (titre, texte, note, fichi
 verifier('les sur-titres clairs restent lisibles : le dégradé orange ne touche pas .pill-light', /\.pill:not\(\.pill-light\)\{ background:var\(--grad-orange\); \}/.test(index));
 verifier('le bouton WhatsApp a une onde discrète, coupée sous « moins d\'animations »', /class="wa-float-pulse"/.test(index) && /waPulse 3s ease-out infinite/.test(index) && /prefers-reduced-motion: reduce\)\{ \.wa-float-pulse\{ animation:none/.test(index));
 
+verifier('le devis demande « Quand ? » en trois boutons, le calendrier seulement pour « Une autre date »', /id="choixDate"/.test(index) && /data-quand="aujourdhui"/.test(index) && /data-quand="demain"/.test(index) && /data-quand="autre"/.test(index) && /<input type="date" id="date" class="hidden"/.test(index) && /Date souhaitée : /.test(index));
+verifier('quatre témoignages, avec nom et qualité, ni plus ni exemples de modèle', contenu.testimonials.items.length === 4 && contenu.testimonials.items.every(t => t.name && t.role && t.text) && !contenu.testimonials.items.some(t => /^(Aïcha K\.|Jean-Marc D\.|Fatou S\.)$/.test(t.name)));
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);
