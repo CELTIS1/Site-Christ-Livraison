@@ -83,6 +83,9 @@ jobs:
       - name: Un site vivant (chiffres calculés par la base, galerie de photos renouvelable)
         run: node tests/site-vivant.test.mjs
 
+      - name: La documentation dit vrai (README, RUNBOOK, SCHEMA-DE-BASE nomment ce qui existe)
+        run: node tests/documentation-a-jour.test.mjs
+
       - name: Actions rapides (un appui pour faire avancer un colis)
         run: node tests/actions-rapides.test.mjs
 
