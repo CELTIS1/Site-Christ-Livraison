@@ -156,46 +156,51 @@ function colisDescriptionTexte(c) {
   return c ? String(c.description || "").trim() : "";
 }
 
-// Grille tarifaire officielle (FCFA) entre communes, telle que définie dans les grilles
-// tarifaires par commune de l'entreprise. MATRICE_TARIFS[communeDépart][communeDestination]
-// donne le tarif brut. Ce tarif brut est ensuite ramené à l'un des 4 paliers utilisés dans
-// l'application (voir computePrixLivraison) : 1000 F (même commune), 1500 F (proche),
-// 2000 F (moyen) ou 2500 F (éloigné).
+// Grille tarifaire (FCFA) entre communes — tranchée par Celtis le 16 septembre 2026.
+// MATRICE_TARIFS[communeDépart][communeDestination] donne le prix proposé. La grille est
+// SYMÉTRIQUE (le même prix dans les deux sens : un livreur parcourt la même distance à l'aller
+// et au retour) ; le banc fonctions-reelles le vérifie sur toutes les paires. Les règles :
+//   • dans la même commune : 1 500 F, sauf Yopougon 1 000 F ; un trajet vraiment court (Palmeraie
+//     → Riviera 2, par exemple) peut être ramené à 1 000 F à la main par la personne qui saisit ;
+//   • 1 500 F est le standard : communes voisines, et toute commune d'Abidjan vers le Plateau ;
+//   • 2 000 F quand on traverse la ville (Yopougon → Koumassi, Abobo → Bingerville…) ;
+//   • 2 500 F pour les bouts d'Abidjan (Anyama, Port-Bouët, Bingerville depuis l'ouest et le nord) ;
+//   • 3 000 F pour Grand-Bassam, d'où que l'on parte.
+// Avant cette date, onze paires avaient un prix différent selon le sens (Bingerville → Abobo
+// 3 000, Abobo → Bingerville 2 000…) : c'est corrigé ici, une fois pour toutes.
 const MATRICE_TARIFS = {
-  "Abobo":        { "Abobo": 1500, "Adjamé": 1500, "Anyama": 1500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 2000, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 2000 },
+  "Abobo":        { "Abobo": 1500, "Adjamé": 1500, "Anyama": 1500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 2000, "Yopougon": 2000 },
   "Adjamé":       { "Abobo": 1500, "Adjamé": 1500, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 1500 },
-  "Anyama":       { "Abobo": 1500, "Adjamé": 2000, "Anyama": 1500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 2000, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 2000 },
-  "Bingerville":  { "Abobo": 3000, "Adjamé": 2000, "Anyama": 3000, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 2000, "Port-Bouët": 2000, "Treichville": 2000, "Yopougon": 3000 },
-  "Cocody":       { "Abobo": 2000, "Adjamé": 1500, "Anyama": 3000, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 2000 },
-  "Grand-Bassam": { "Abobo": 3000, "Adjamé": 3000, "Anyama": 3000, "Bingerville": 2000, "Cocody": 2500, "Grand-Bassam": 1000, "Koumassi": 3000, "Marcory": 3000, "Plateau": 3000, "Port-Bouët": 3000, "Treichville": 3000, "Yopougon": 3000 },
-  "Koumassi":     { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2000, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 2000, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 2000 },
-  "Marcory":      { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2000, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 2000 },
-  "Plateau":      { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
-  "Port-Bouët":   { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2000, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 2000, "Port-Bouët": 1500, "Treichville": 2000, "Yopougon": 2000 },
-  "Treichville":  { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 2000 },
-  "Yopougon":     { "Abobo": 1500, "Adjamé": 1500, "Anyama": 2000, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
+  "Anyama":       { "Abobo": 1500, "Adjamé": 2000, "Anyama": 1500, "Bingerville": 2500, "Cocody": 2500, "Grand-Bassam": 3000, "Koumassi": 2500, "Marcory": 2500, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 2500, "Yopougon": 2500 },
+  "Bingerville":  { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2500, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 2000, "Yopougon": 2000 },
+  "Cocody":       { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 2000, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
+  "Grand-Bassam": { "Abobo": 3000, "Adjamé": 3000, "Anyama": 3000, "Bingerville": 3000, "Cocody": 3000, "Grand-Bassam": 1500, "Koumassi": 3000, "Marcory": 3000, "Plateau": 3000, "Port-Bouët": 3000, "Treichville": 3000, "Yopougon": 3000 },
+  "Koumassi":     { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 2000 },
+  "Marcory":      { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2500, "Bingerville": 2000, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 1500 },
+  "Plateau":      { "Abobo": 1500, "Adjamé": 1500, "Anyama": 1500, "Bingerville": 1500, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 1500, "Yopougon": 1500 },
+  "Port-Bouët":   { "Abobo": 2500, "Adjamé": 2000, "Anyama": 2500, "Bingerville": 2500, "Cocody": 2000, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 1500, "Treichville": 2000, "Yopougon": 2500 },
+  "Treichville":  { "Abobo": 2000, "Adjamé": 2000, "Anyama": 2500, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 1500, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2000, "Treichville": 1500, "Yopougon": 1500 },
+  "Yopougon":     { "Abobo": 2000, "Adjamé": 1500, "Anyama": 2500, "Bingerville": 2000, "Cocody": 1500, "Grand-Bassam": 3000, "Koumassi": 2000, "Marcory": 1500, "Plateau": 1500, "Port-Bouët": 2500, "Treichville": 1500, "Yopougon": 1000 },
 };
 
-// Calcule le prix de livraison suggéré (FCFA) entre deux communes, ramené à 4 paliers simples,
-// qui montent avec l'éloignement réel indiqué par la grille tarifaire officielle :
-//   - 1000 F : même commune de départ et d'arrivée
-//   - 1500 F : commune différente mais proche (tarif officiel ≤ 1500 F)
-//   - 2000 F : commune moyennement éloignée (tarif officiel = 2000 F)
-//   - 2500 F : commune éloignée (tarif officiel ≥ 2500 F)
-// Reste toujours modifiable ensuite par la personne qui saisit le colis (cas particuliers,
-// tarifs négociés...). Retourne null si l'une des deux communes n'est pas reconnue.
+// Calcule le prix de livraison proposé (FCFA) entre deux communes : la valeur de la grille,
+// ramenée à l'un des paliers 1 000 / 1 500 / 2 000 / 2 500 / 3 000 (un chiffre hors palier
+// dans la grille tomberait sur le palier supérieur, jamais en dessous).
+// Reste toujours modifiable ensuite par la personne qui saisit le colis (trajet très court,
+// tarif négocié...). Retourne null si l'une des deux communes n'est pas reconnue.
 function computePrixLivraison(communeDepart, communeDestination) {
   if (!communeDepart || !communeDestination) return null;
   // Une expédition vers l'intérieur ne relève d'aucune ligne de la grille d'Abidjan : le prix
   // dépend de la ville, du transporteur et du volume. On refuse de suggérer un chiffre plutôt
   // que d'en inventer un ; la personne qui saisit met le montant réellement convenu.
   if (estExpedition(communeDestination) || estExpedition(communeDepart)) return null;
-  if (communeDepart === communeDestination) return 1000;
   const raw = MATRICE_TARIFS[communeDepart] && MATRICE_TARIFS[communeDepart][communeDestination];
   if (!raw) return null;
+  if (raw <= 1000) return 1000;
   if (raw <= 1500) return 1500;
   if (raw <= 2000) return 2000;
-  return 2500;
+  if (raw <= 2500) return 2500;
+  return 3000;
 }
 
 // Construit les <option> d'une liste déroulante de communes. `selected` (optionnel) présélectionne

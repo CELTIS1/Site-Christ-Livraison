@@ -41,21 +41,22 @@ verifier('les fonctions attendues existent', ['totauxArgent', 'caisseParLivreur'
 verifier('les constantes attendues existent (COMMUNES, STATUTS, COMMUNE_EXPEDITION)', Array.isArray(app.COMMUNES) && app.COMMUNES.length >= 10 && app.STATUTS && typeof app.COMMUNE_EXPEDITION === 'string');
 const EXP = app.COMMUNE_EXPEDITION;
 
-console.log('\n2. Le prix de livraison proposé');
-verifier('même commune → 1 000 F', app.computePrixLivraison('Cocody', 'Cocody') === 1000);
-verifier('communes voisines → 1 500 F (Marcory → Koumassi)', app.computePrixLivraison('Marcory', 'Koumassi') === 1500, app.computePrixLivraison('Marcory', 'Koumassi'));
-verifier('communes éloignées → 2 000 ou 2 500 F (Cocody → Yopougon)', [2000, 2500].includes(app.computePrixLivraison('Cocody', 'Yopougon')), app.computePrixLivraison('Cocody', 'Yopougon'));
-/* La grille officielle n'est pas symétrique partout : dix paires proposent un prix différent
-   selon le sens (Bingerville → Abobo 2 500, Abobo → Bingerville 2 000, etc.). Signalé à Celtis
-   le 16/09/2026 ; en attendant sa décision, le banc garde la liste et n'accepte aucune NOUVELLE
-   asymétrie. */
-const ASYMETRIES_CONNUES = ['Abobo|Bingerville', 'Abobo|Yopougon', 'Anyama|Bingerville', 'Anyama|Cocody', 'Bingerville|Grand-Bassam', 'Bingerville|Yopougon', 'Cocody|Yopougon', 'Koumassi|Yopougon', 'Marcory|Yopougon', 'Treichville|Yopougon'];
+console.log('\n2. Le prix de livraison proposé (grille tranchée par Celtis le 16/09/2026)');
+verifier('même commune → 1 500 F, sauf Yopougon → 1 000 F', app.computePrixLivraison('Cocody', 'Cocody') === 1500 && app.computePrixLivraison('Yopougon', 'Yopougon') === 1000);
+verifier('le standard : Yopougon → Cocody, Marcory, Treichville 1 500 F', ['Cocody', 'Marcory', 'Treichville'].every(c => app.computePrixLivraison('Yopougon', c) === 1500));
+verifier('toute commune d\'Abidjan vers le Plateau : 1 500 F', app.COMMUNES.filter(c => c !== 'Grand-Bassam').every(c => app.computePrixLivraison(c, 'Plateau') === 1500));
+verifier('traversée de la ville : Yopougon → Koumassi, Abobo → Bingerville, Yopougon → Bingerville 2 000 F', app.computePrixLivraison('Yopougon', 'Koumassi') === 2000 && app.computePrixLivraison('Abobo', 'Bingerville') === 2000 && app.computePrixLivraison('Yopougon', 'Bingerville') === 2000);
+verifier('les bouts d\'Abidjan : Yopougon → Anyama, Bingerville → Anyama, Yopougon → Port-Bouët 2 500 F', app.computePrixLivraison('Yopougon', 'Anyama') === 2500 && app.computePrixLivraison('Bingerville', 'Anyama') === 2500 && app.computePrixLivraison('Yopougon', 'Port-Bouët') === 2500);
+verifier('Grand-Bassam : 3 000 F d\'où que l\'on parte', app.COMMUNES.filter(c => c !== 'Grand-Bassam').every(c => app.computePrixLivraison(c, 'Grand-Bassam') === 3000));
 const asymetries = [];
-app.COMMUNES.forEach(a => app.COMMUNES.forEach(b => { if (a < b && app.computePrixLivraison(a, b) !== app.computePrixLivraison(b, a)) asymetries.push(a + '|' + b); }));
-verifier('aucune nouvelle asymétrie dans la grille (les ' + ASYMETRIES_CONNUES.length + ' connues attendent la décision de Celtis)', asymetries.every(x => ASYMETRIES_CONNUES.includes(x)), asymetries.filter(x => !ASYMETRIES_CONNUES.includes(x)).join(', '));
-verifier('toute paire de communes d\'Abidjan a un prix parmi 1 000 / 1 500 / 2 000 / 2 500', app.COMMUNES.every(a => app.COMMUNES.every(b => [1000, 1500, 2000, 2500].includes(app.computePrixLivraison(a, b)))));
+app.COMMUNES.forEach(a => app.COMMUNES.forEach(b => { if (a < b && app.computePrixLivraison(a, b) !== app.computePrixLivraison(b, a)) asymetries.push(a + ' ↔ ' + b); }));
+verifier('le même prix dans les deux sens, sur toutes les paires', asymetries.length === 0, asymetries.join(', '));
+verifier('toute paire de communes a un prix parmi 1 000 / 1 500 / 2 000 / 2 500 / 3 000', app.COMMUNES.every(a => app.COMMUNES.every(b => [1000, 1500, 2000, 2500, 3000].includes(app.computePrixLivraison(a, b)))));
 verifier('une expédition vers l\'intérieur n\'a pas de prix proposé (null)', app.computePrixLivraison('Cocody', EXP) === null && app.computePrixLivraison(EXP, 'Cocody') === null);
 verifier('une commune inconnue ou vide → null', app.computePrixLivraison('Cocody', 'Nulle-part') === null && app.computePrixLivraison('', 'Cocody') === null);
+const tarifs = fs.readFileSync(path.join(RACINE, 'tarifs.html'), 'utf8');
+verifier('la page Tarifs du site dit les mêmes paliers (1 000 / 1 500 / 2 000 / 2 500 / 3 000) et « le même dans les deux sens »', ['1 000 FCFA', '1 500 FCFA', '2 000 FCFA', '2 500 FCFA', '3 000 FCFA'].every(t => tarifs.includes(t)) && /le même dans les deux sens/.test(tarifs));
+verifier('chaque exemple de la page Tarifs correspond à la grille de l\'app', [['Yopougon', 'Cocody', 1500], ['Yopougon', 'Koumassi', 2000], ['Abobo', 'Bingerville', 2000], ['Cocody', 'Port-Bouët', 2000], ['Yopougon', 'Port-Bouët', 2500], ['Bingerville', 'Anyama', 2500], ['Abobo', 'Port-Bouët', 2500], ['Cocody', 'Plateau', 1500], ['Marcory', 'Koumassi', 1500]].every(([a, b, p]) => tarifs.includes(a + ' → ' + b) && app.computePrixLivraison(a, b) === p));
 
 console.log('\n3. Une carte = un geste : l\'étape suivante');
 const abidjan = (statut) => ({ statut, commune_destination: 'Cocody' });

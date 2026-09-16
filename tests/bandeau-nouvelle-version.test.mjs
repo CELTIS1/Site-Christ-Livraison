@@ -437,10 +437,11 @@ verifier(
    v124, le 16/09/2026 — feuille de route 4.8, séance 1 : communes-et-tarifs et argent sortis de config.js dans app/lib/ (cinq pages chargent deux scripts de plus, sans changement de comportement) : étiquette 20260916lib1.
    v125, le 16/09/2026 — 4.8, séance 2 : relevé de la cliente, papier à en-tête, briques d'argent, annonce de remise, tournée de récupération et primes sortis de config.js dans app/lib/ (config.js : 3 324 lignes) : étiquette 20260916lib2.
    v126, le 16/09/2026 — 4.8, séance 3 : le code de l'espace équipe sort de la page (app/equipe/equipe.js, 8 859 lignes, et onglets.js), equipe.html passe de 10 552 à 1 538 lignes : étiquette 20260916lib3.
-   v127, le 16/09/2026 — 4.8, séance 4 : le code de l'espace équipe en onze fichiers par sujet (app/equipe/00-… à 10-onglets), chargés dans l'ordre : étiquette 20260916lib4. */
+   v127, le 16/09/2026 — 4.8, séance 4 : le code de l'espace équipe en onze fichiers par sujet (app/equipe/00-… à 10-onglets), chargés dans l'ordre : étiquette 20260916lib4.
+   v128, le 16/09/2026 — la grille des tarifs tranchée par Celtis : symétrique, cinq paliers (1 000 / 1 500 / 2 000 / 2 500 / 3 000), lib/communes-et-tarifs.js et tarifs.html : étiquette 20260916tarifs. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v127'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v128'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
