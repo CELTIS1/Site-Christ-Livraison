@@ -280,6 +280,20 @@ pas les colonnes de suspension, il recharge la liste sans elles et laisse un
 avertissement dans la console du navigateur plutôt que d'afficher une page vide.
 Ce filet est là pour éviter une panne, pas pour rendre l'étape facultative.
 
+## Inventaire vérifié le 16 septembre 2026 (feuille de route 3.8)
+
+Le tableau de bord montre **18 fonctions déployées**. Le dépôt en contient 20 dossiers ;
+les deux qui ne tournent pas sont connus et voulus : `wave-initier-recharge` (recharge Wave,
+en attente de la décision Wave — feuille de route 5.3) et `bilan-hebdomadaire` (bilan
+hebdomadaire, en attente de la clé Google / Publer — feuille de route 5.4). Les dix-huit autres
+correspondent, nom pour nom, aux dossiers. Dernières mises à jour vues : les cinq fonctions du
+10 septembre (`creer-livreur`, `envoyer-code-express`, `inscrire-client-express`,
+`inscrire-coursier-express`, `verifier-code-express`) ont bien été redéployées ;
+`envoyer-push`, `approuver-reset-password` et `finaliser-reset-password` datent du 5 septembre.
+
+Pour refaire cet inventaire : Supabase › Edge Functions (la liste et sa colonne « Updated »),
+puis Database › Webhooks (les deux webhooks `envoyer_push_*`).
+
 ## Journal des actions
 
 La plupart de ces fonctions écrivent dans la table `activity_log` :

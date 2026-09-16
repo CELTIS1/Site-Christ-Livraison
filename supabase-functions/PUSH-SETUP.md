@@ -165,18 +165,20 @@ exemple `https://esm.sh/web-push`, gère la signature VAPID et l'envoi.
 
 ---
 
-## Résumé de ce qui est déjà fait vs. à faire
+## État réel au 16 septembre 2026 (feuille de route 3.8, vérifié dans le tableau de bord)
 
 | Élément | État |
 |---|---|
-| Gestionnaires `push` / `notificationclick` dans `sw.js` | ✅ En place (non bloquant) |
-| Clés VAPID | ⏳ À générer (étape 1) |
-| Table `push_subscriptions` | ⏳ À créer (étape 2) |
-| Code d'abonnement dans les dashboards | ⏳ À ajouter (étape 3) |
-| Edge Function `envoyer-push` + déclencheur | ⏳ À créer (étape 4) |
+| Gestionnaires `push` / `notificationclick` dans `sw.js` | ✅ En place |
+| Clés VAPID | ✅ Générées ; la clé publique est dans `app/clt-common.js` (`CLT_VAPID_PUBLIC_KEY`), la clé privée dans les secrets de la fonction |
+| Table `push_subscriptions` | ✅ Créée |
+| Code d'abonnement dans les pages | ✅ Une seule copie, `cltInitPushButton` dans `app/clt-common.js` (depuis le 16 septembre ; auparavant recopié dans six pages) |
+| Edge Function `envoyer-push` | ✅ Déployée, version protégée par secret (mise à jour le 5 septembre 2026) |
+| Webhooks | ✅ Deux : `envoyer_push_colis` (table `colis`) et `envoyer_push_express_courses` (table `express_courses`) |
+| Secret `CLT_WEBHOOK_SECRET` | ✅ Posé côté fonction et sur les deux webhooks (vérifié le 6 septembre : appel direct → 401, webhook → 200) |
 
-Tant que les étapes 1 à 4 ne sont pas faites, **rien ne casse** : le service
-worker attend simplement des push qui n'arrivent pas encore.
+Les étapes 1 à 4 décrites plus haut sont donc faites ; le texte est conservé comme mode
+d'emploi si l'on doit un jour recréer le projet.
 
 ---
 
