@@ -965,7 +965,8 @@ saisis ensuite lui seront rattachés automatiquement.
 </div>
 <div class="compta-quick-dates">
 <button type="button" class="btn btn-outline btn-sm" id="btn-compta-today">📅 Aujourd'hui</button>
-<button type="button" class="btn btn-outline btn-sm" id="btn-compta-clear-dates">Toutes les dates</button>
+<button type="button" class="btn btn-outline btn-sm" id="btn-compta-mois">Ce mois</button>
+<button type="button" class="btn btn-outline btn-sm" id="btn-compta-clear-dates">Depuis le début</button>
 </div>
 <div id="compta-summary" style="margin:12px 0;"></div>
 <div class="recap-table-wrap" id="compta-recap">
@@ -8134,6 +8135,16 @@ renderRapportLivreur();
 // 16/09/2026 (feuille de route 3.1) : la comptabilité lit TOUJOURS la base, par tranches, pour
 // la période choisie — plus jamais les 500 colis en mémoire, qui ne couvrent qu'une page. Sans
 // période, c'est tout l'historique qui est lu ; c'est long, mais c'est juste.
+function comptaPeriodeTexte(){
+const debut = document.getElementById('compta-date-debut')?.value || '';
+const fin = document.getElementById('compta-date-fin')?.value || '';
+const jour = (v) => new Date(v + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+if (debut && fin) return debut === fin ? 'Le ' + jour(debut) : 'Du ' + jour(debut) + ' au ' + jour(fin);
+if (debut) return 'À partir du ' + jour(debut);
+if (fin) return "Jusqu'au " + jour(fin);
+return 'Depuis le début — tout l\'historique est compté';
+}
+
 async function comptaFiltered(){
 const fournisseurId = document.getElementById('compta-fournisseur')?.value || '';
 const debut = document.getElementById('compta-date-debut')?.value || '';
@@ -8179,8 +8190,11 @@ const detail = document.getElementById('compta-detail');
 if (!summary || !recapBox || !detail) return;
 
 const rows = await comptaFiltered();
+// La période comptée, en toutes lettres : personne ne doit prendre un jour pour un mois, ni un
+// mois pour tout l'historique. (16/09/2026)
+const periodeTexte = comptaPeriodeTexte();
 if (!rows.length) {
-cltPoserHTML(summary, '');
+cltPoserHTML(summary, `<div class="page-sub">${escapeHTML(periodeTexte)}</div>`);
 cltPoserHTML(recapBox, `<div class="empty-state">Aucun colis sur cette période.</div>`);
 cltPoserHTML(detail, '');
 renderCaisseLivreur([]);
@@ -8198,6 +8212,7 @@ const t = totauxArgent(rows);
 // plus d'argent que le relevé envoyé à la même cliente le même soir n'en promettait. Deux
 // chiffres pour la même dette, et c'est le plus élevé qui servait à payer.
 cltPoserHTML(summary, `
+<div class="page-sub"><strong>${escapeHTML(periodeTexte)}</strong></div>
 <div class="page-sub">
 ${t.nb} colis · ${t.nbLivres} livré(s) ·
 Articles enregistrés : <strong>${formatMontant(t.articleEnregistre) || '0 FCFA'}</strong> ·
@@ -9285,6 +9300,14 @@ brancher('btn-perf-tout', null);
 document.getElementById('btn-compta-today').addEventListener('click', () => {
 const today = todayLocalISODate();
 document.getElementById('compta-date-debut').value = today;
+document.getElementById('compta-date-fin').value = today;
+renderCompta();
+});
+// « Ce mois » : du 1er à aujourd'hui (16/09/2026, feuille de route 3.1). Un mois entier tient
+// dans une lecture par tranches ; « Depuis le début » lit tout l'historique, et le dit.
+document.getElementById('btn-compta-mois').addEventListener('click', () => {
+const today = todayLocalISODate();
+document.getElementById('compta-date-debut').value = today.slice(0, 8) + '01';
 document.getElementById('compta-date-fin').value = today;
 renderCompta();
 });

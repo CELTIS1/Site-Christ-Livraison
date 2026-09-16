@@ -50,6 +50,7 @@ console.log('\n2. Le rapport « Par livreur » et la comptabilité de l\'équipe
 verifier('perfColisPeriode, perfPeriodeTexte et perfCell sont définies', /async function perfColisPeriode\(\)/.test(equipe) && /function perfPeriodeTexte\(\)/.test(equipe) && /function perfCell\(label, valeur, options\)/.test(equipe));
 verifier('le rapport lit la période par tranches', /async function perfColisPeriode\(\)[\s\S]{0,400}cltLireTout\(\(\) => \{[\s\S]{0,200}from\('colis'\)/.test(equipe));
 verifier('la comptabilité de l\'équipe lit la base par tranches, plus jamais allColis', /async function comptaFiltered\(\)[\s\S]{0,600}cltLireTout\(/.test(equipe) && !/async function comptaFiltered\(\)[\s\S]{0,900}allColis\.filter/.test(equipe));
+verifier('la comptabilité dit la période en clair, et « Ce mois » est à un clic', /function comptaPeriodeTexte\(\)/.test(equipe) && /escapeHTML\(periodeTexte\)/.test(equipe) && /id="btn-compta-mois"/.test(equipe) && /today\.slice\(0, 8\) \+ '01'/.test(equipe) && /Depuis le début — tout l\\'historique est compté/.test(equipe));
 verifier('le rapport se dessine toujours avec perfPeriodeTexte et perfCell', /escapeHTML\(perfPeriodeTexte\(\)\)/.test(equipe) && /perfCell\('Livrés'/.test(equipe));
 
 console.log('\n3. Gestion lit par tranches');
