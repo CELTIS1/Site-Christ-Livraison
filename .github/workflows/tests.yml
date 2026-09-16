@@ -65,6 +65,9 @@ jobs:
       - name: Site public léger (pas de supabase-js ni de service worker sur l'accueil)
         run: node tests/site-public-leger.test.mjs
 
+      - name: Journal des erreurs en production (capteur, garde-fous, lecture administrateur)
+        run: node tests/journal-des-erreurs.test.mjs
+
       - name: Actions rapides (un appui pour faire avancer un colis)
         run: node tests/actions-rapides.test.mjs
 

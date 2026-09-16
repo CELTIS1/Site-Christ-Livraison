@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916unecopie">
-<script src="theme.js?v=20260916unecopie"></script>
-<script src="splash.js?v=20260916unecopie"></script>
+<link rel="stylesheet" href="style.css?v=20260916erreurs">
+<script src="theme.js?v=20260916erreurs"></script>
+<script src="splash.js?v=20260916erreurs"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -936,6 +936,12 @@
       <!-- Bouton « Actualiser » retiré (Celtis) : switchTab('journal') recharge déjà l'historique. -->
       <div class="g-table-wrap" id="journal-table"></div>
     </div>
+    <!-- 3.9 (16/09/2026) : ce que les téléphones ont vu comme erreurs, groupé par message. -->
+    <div class="card">
+      <h2>Erreurs de l'application</h2>
+      <div class="hint">Chaque page envoie ses erreurs JavaScript non rattrapées (30 derniers jours, groupées par message et par page, les plus fréquentes en premier). Une ligne qui revient sur plusieurs comptes mérite un correctif ; une ligne isolée est souvent une coupure réseau.</div>
+      <div class="g-table-wrap" id="erreurs-table"></div>
+    </div>
   </div>
 </div>
 
@@ -1080,10 +1086,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260916unecopie"></script>
-<script src="config.js?v=20260916unecopie"></script>
-<script src="biometric-lock.js?v=20260916unecopie"></script>
-<script src="clt-select-recherche.js?v=20260916unecopie"></script>
-<script src="gestion.js?v=20260916unecopie"></script>
+<script src="clt-common.js?v=20260916erreurs"></script>
+<script src="config.js?v=20260916erreurs"></script>
+<script src="biometric-lock.js?v=20260916erreurs"></script>
+<script src="clt-select-recherche.js?v=20260916erreurs"></script>
+<script src="gestion.js?v=20260916erreurs"></script>
 </body>
 </html>

@@ -229,7 +229,7 @@ function switchTab(tab){
   document.querySelectorAll('.tabs .tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   ['dashboard','compta','paie','journal'].forEach(s => { const el = document.getElementById('sec-'+s); if (el) el.classList.toggle('active', s === tab); });
   if (tab === 'dashboard') renderDashboard();
-  if (tab === 'journal') loadJournal();
+  if (tab === 'journal') { loadJournal(); loadErreursClient(); }
   scheduleStickyRefresh();
 }
 function switchSub(group, sub){
@@ -2400,6 +2400,27 @@ function journalRowHTML(r){
   const act = JOURNAL_ACTIONS[r.action] || escapeHTML(r.action);
   const tbl = JOURNAL_TABLES[r.table_cible] || escapeHTML(r.table_cible);
   return `<tr><td>${dt}</td><td>${acteur}</td><td>${act}</td><td>${tbl}</td></tr>`;
+}
+// 3.9 (16/09/2026) : les erreurs JavaScript remontées par les pages, résumées par la base.
+async function loadErreursClient(){
+  const wrap = document.getElementById('erreurs-table'); if (!wrap) return;
+  wrap.innerHTML = '<div class="hint">Chargement…</div>';
+  try {
+    const { data, error } = await supabaseClient.rpc('erreurs_client_resume', { p_jours: 30 });
+    if (error) throw error;
+    const lignes = data || [];
+    if (!lignes.length){ wrap.innerHTML = '<div class="hint">Aucune erreur remontée ces 30 derniers jours.</div>'; return; }
+    wrap.innerHTML = `<table class="g-table"><thead><tr><th>Occurrences</th><th>Comptes</th><th style="text-align:left;">Page</th><th style="text-align:left;">Message</th><th>Version</th><th>Dernière</th></tr></thead><tbody>`
+      + lignes.map(l => `<tr title="${escapeHTML((l.exemple_source || '') + (l.exemple_ligne ? ':' + l.exemple_ligne : '') + (l.exemple_pile ? '\n' + l.exemple_pile : ''))}">
+          <td><strong>${n(l.occurrences)}</strong></td><td>${n(l.comptes)}</td>
+          <td style="text-align:left;">${escapeHTML(l.page || '')}</td>
+          <td style="text-align:left;white-space:normal;max-width:520px;">${escapeHTML(l.message || '')}${l.exemple_source ? `<div style="font-size:11px;color:var(--muted);">${escapeHTML(l.exemple_source)}${l.exemple_ligne ? ':' + n(l.exemple_ligne) : ''}</div>` : ''}</td>
+          <td>${escapeHTML(l.version || '')}</td><td>${escapeHTML(String(l.derniere || '').replace('T', ' ').slice(0, 16))}</td></tr>`).join('')
+      + '</tbody></table>';
+  } catch(e){
+    console.error('erreurs client', e);
+    wrap.innerHTML = '<div class="hint">Journal des erreurs indisponible (migration non jouée ou accès refusé).</div>';
+  }
 }
 async function loadJournal(){
   const wrap = document.getElementById('journal-table'); if (!wrap) return;

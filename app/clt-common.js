@@ -910,6 +910,65 @@ async function cltInitPushButton(role, lireUserId){
 }
 
 /* =====================================================================
+   LE JOURNAL DES ERREURS EN PRODUCTION — 16 septembre 2026 (feuille de route 3.9)
+   ---------------------------------------------------------------------
+   Une erreur JavaScript sur le téléphone d'un livreur ne laissait aucune
+   trace. Chaque page envoie désormais ses erreurs non rattrapées dans la
+   table erreurs_client : page, étiquette de version, message, source, ligne,
+   extrait de pile, navigateur. Cinq par minute au plus, la même erreur une
+   seule fois par page ouverte : un bug en boucle ne doit pas remplir la base.
+   Jamais bloquant : si l'envoi échoue, il échoue en silence.
+   ===================================================================== */
+(function () {
+  const vues = new Set();
+  let quota = 5, remiseQuota = 0;
+  function versionDeLaPage() {
+    try {
+      const s = document.querySelector('script[src*="clt-common.js"]');
+      return (s && cltEtiquetteDeLAdresse(s.src)) || '';
+    } catch (e) { return ''; }
+  }
+  function roleDeLaPage() {
+    try { return (document.body && document.body.dataset && document.body.dataset.role) || (location.pathname.split('/').pop() || '').replace('.html', ''); } catch (e) { return ''; }
+  }
+  async function envoyer(entree) {
+    try {
+      const maintenant = Date.now();
+      if (maintenant > remiseQuota) { quota = 5; remiseQuota = maintenant + 60000; }
+      if (quota <= 0) return;
+      const cle = entree.message + '|' + entree.source + '|' + entree.ligne;
+      if (vues.has(cle)) return;
+      vues.add(cle); quota -= 1;
+      if (typeof supabaseClient === 'undefined' || !supabaseClient || !supabaseClient.auth) return;
+      const { data } = await supabaseClient.auth.getUser();
+      const user = data && data.user;
+      if (!user) return;
+      await supabaseClient.from('erreurs_client').insert({
+        user_id: user.id,
+        role: roleDeLaPage(),
+        page: (location.pathname.split('/').pop() || 'index.html'),
+        version: versionDeLaPage(),
+        message: String(entree.message || 'Erreur sans message').slice(0, 500),
+        source: entree.source ? String(entree.source).replace(/\?v=.*$/, '').slice(-120) : null,
+        ligne: entree.ligne || null,
+        pile: entree.pile ? String(entree.pile).slice(0, 1500) : null,
+        navigateur: (navigator.userAgent || '').slice(0, 200)
+      });
+    } catch (e) { /* jamais bloquant */ }
+  }
+  window.cltSignalerErreur = function (message, detail) { envoyer({ message: message, source: detail && detail.source, ligne: detail && detail.ligne, pile: detail && detail.pile }); };
+  window.addEventListener('error', function (ev) {
+    if (!ev) return;
+    const err = ev.error;
+    envoyer({ message: ev.message || (err && err.message), source: ev.filename, ligne: ev.lineno, pile: err && err.stack });
+  });
+  window.addEventListener('unhandledrejection', function (ev) {
+    const r = ev && ev.reason;
+    envoyer({ message: (r && (r.message || String(r))) || 'Promesse rejetée sans message', source: null, ligne: null, pile: r && r.stack });
+  });
+})();
+
+/* =====================================================================
    LE BOUTON « ACTUALISER » — ajout du 25 août 2026
    ---------------------------------------------------------------------
    POURQUOI IL EXISTE
