@@ -39,6 +39,8 @@ app/version.json          le repère de version que l'app relit (bandeau « nouv
 supabase-functions/       les fonctions serveur (Edge Functions), une par dossier, et leur README
 _sql-prive/               les migrations SQL (fichiers *.sql ignorés par git : ils restent sur le Mac)
 tests/                    les bancs d'essai, un fichier par sujet, tous lancés par GitHub
+tests/_charger-app.mjs    charge le vrai code (clt-common, lib/*, config.js) dans un bac à sable pour les bancs
+tests/parcours/           trois parcours dans un vrai Chromium (Playwright), sur une fausse base
 .github/workflows/        tests.yml (contrôles), verifier-empreintes.yml (SRI), publier.yml (mise en ligne)
 ```
 
@@ -64,15 +66,34 @@ l'app parle à la vraie base Supabase avec la clé publique, les règles d'accè
 ## Tester
 
 ```bash
-npm ci          # une fois : installe ESLint, rien d'autre
-npm test        # tous les bancs, en parallèle (node --test "tests/*.test.mjs")
+npm ci          # une fois : installe ESLint et Playwright (outils de développement, rien en production)
+npm test        # tous les bancs, en parallèle (node --test "tests/*.test.mjs"), quelques secondes
 npm run lint    # ESLint minimal : déclarations en double, code inatteignable…
 node tests/<nom>.test.mjs   # un seul banc, avec ses explications
+
+npx playwright install chromium   # une fois : le navigateur des parcours
+npm run parcours                  # les trois parcours dans un vrai Chromium (une minute environ)
+node tests/parcours/<nom>.mjs     # un seul parcours
 ```
 
 Chaque banc s'explique en tête de fichier. Un banc nouveau est pris en compte tout seul (le
 lanceur lit le dossier). Un nom d'étape de workflow ne doit contenir ni « : » ni « # » (un banc le
 vérifie, depuis le jour où ça a bloqué la publication).
+
+Deux façons de vérifier, depuis le 16 septembre 2026 (feuille de route 4.10) :
+
+- **Les bancs qui appellent le vrai code.** `tests/_charger-app.mjs` exécute clt-common.js, les
+  huit blocs de `app/lib/` et config.js dans un bac à sable (node:vm) avec un faux `window` et un
+  faux client Supabase muet, puis rend les fonctions : `chargerApp().totauxArgent(colis)`.
+  `tests/fonctions-reelles.test.mjs` s'en sert pour l'argent, les tarifs, les étapes, les primes, le
+  point du jour. Préférer cette voie à l'extraction de fonctions par expression régulière quand on
+  écrit un banc nouveau : déplacer un commentaire ne casse rien.
+- **Les parcours navigateur.** `tests/parcours/` ouvre les vraies pages (login, livreur, fournisseur)
+  dans Chromium comme sur un téléphone : le site est servi depuis le dépôt, supabase-js est remplacé
+  par un client miniature branché sur une fausse base en mémoire (`_monde.mjs`), tout appel vers
+  l'extérieur est refusé. Trois parcours : la connexion du livreur, la livraison d'un colis, le relevé
+  de la cliente. GitHub les lance dans un travail à part (`parcours`) ; la vraie base n'est jamais
+  touchée.
 
 ## Publier
 

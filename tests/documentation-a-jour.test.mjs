@@ -26,7 +26,11 @@ verifier('le README renvoie aux deux autres', /RUNBOOK\.md/.test(readme) && /SCH
 
 console.log('\n2. Ce que le README nomme existe');
 const chemins = [...readme.matchAll(/`((?:app|tests|supabase-functions|content|images|videos|_sql-prive|\.github)\/[^`\s]*|sw\.js|index\.html|services\.html|suivi\.html|express\.html|tarifs\.html|contact\.html|conditions-generales\.html|mentions-legales\.html|politique-confidentialite\.html)`/g)].map(m => m[1]).filter(c => !/…|\*|<|>/.test(c));
-const absents = [...new Set(chemins)].filter(c => !existe(c.replace(/\/$/, '')));
+/* Les fichiers *.sql de _sql-prive/ restent sur le Mac (gitignore) : sur GitHub le dossier
+   n'existe pas, et ce n'est pas une documentation périmée. On ne juge ces chemins-là que quand
+   le dossier est là. */
+const prive = existe('_sql-prive');
+const absents = [...new Set(chemins)].filter(c => !(c.startsWith('_sql-prive/') && !prive)).filter(c => !existe(c.replace(/\/$/, '')));
 verifier('chaque fichier ou dossier cité dans le README existe', absents.length === 0, absents.join(', '));
 verifier('les trois flux de travail cités existent', ['tests.yml', 'verifier-empreintes.yml', 'publier.yml'].every(f => existe('.github/workflows/' + f)));
 verifier('l\'outil de mise en ligne cité existe à côté du dépôt', fs.existsSync(path.join(RACINE, '..', 'Outils (double-clic)', 'Mettre en ligne ce qui est validé.command')) || !fs.existsSync(path.join(RACINE, '..', 'Outils (double-clic)')));
@@ -44,8 +48,13 @@ verifier('la version de cache du runbook n\'est pas figée sur un numéro', !/cl
 console.log('\n4. Le schéma nomme des tables connues du code');
 const schema = lire('SCHEMA-DE-BASE.md');
 const tables = [...schema.matchAll(/`([a-z_]+)`/g)].map(m => m[1]).filter(t => /^(colis|profiles|gestion_[a-z_]+|express_[a-z_]+|primes_[a-z_]+|site_[a-z_]+|livreur_positions|push_subscriptions|erreurs_client|reversements_clientes|programmations_collecte)$/.test(t));
-const code = ['app/config.js', 'app/equipe.html', 'app/livreur.html', 'app/fournisseur.html', 'app/gestion.js', 'app/express-config.js', 'app/express-client.html', 'app/express-coursier.html', 'app/site-editeur.js', 'app/clt-common.js', 'index.html'].map(lire).join('\n') + fs.readdirSync(path.join(RACINE, '_sql-prive')).filter(f => f.endsWith('.sql')).map(f => lire('_sql-prive/' + f)).join('\n');
-const inconnues = [...new Set(tables)].filter(t => !code.includes(t));
+const tousLesJs = (dossier) => fs.readdirSync(path.join(RACINE, dossier)).filter(f => f.endsWith('.js')).map(f => dossier + '/' + f);
+const fonctionsServeur = fs.readdirSync(path.join(RACINE, 'supabase-functions'), { withFileTypes: true }).filter(d => d.isDirectory() && existe('supabase-functions/' + d.name + '/index.ts')).map(d => 'supabase-functions/' + d.name + '/index.ts');
+const code = ['app/config.js', 'app/equipe.html', 'app/livreur.html', 'app/fournisseur.html', 'app/gestion.js', 'app/express-config.js', 'app/express-client.html', 'app/express-coursier.html', 'app/site-editeur.js', 'app/clt-common.js', 'app/point-du-jour.js', 'app/clients-dashboard.js', 'index.html', ...tousLesJs('app/lib'), ...tousLesJs('app/equipe'), ...fonctionsServeur].map(lire).join('\n') + (prive ? fs.readdirSync(path.join(RACINE, '_sql-prive')) : []).filter(f => f.endsWith('.sql')).map(f => lire('_sql-prive/' + f)).join('\n');
+/* Deux tables ne sont nommées que par des migrations privées (compteur de factures, portefeuille
+   Express) : sans le dossier _sql-prive, on ne peut pas les juger, on ne les compte pas. */
+const SEULEMENT_EN_MIGRATION = ['gestion_facture_compteur', 'express_wallet_transactions'];
+const inconnues = [...new Set(tables)].filter(t => !code.includes(t)).filter(t => prive || !SEULEMENT_EN_MIGRATION.includes(t));
 verifier('chaque table citée apparaît dans le code ou une migration du dépôt', inconnues.length === 0, inconnues.join(', '));
 verifier('le schéma explique la règle de lecture (qui lit / qui écrit) et les fonctions ouvertes aux visiteurs', /qui lit \/ qui écrit/i.test(schema) && /suivi_colis/.test(schema) && /site_chiffres/.test(schema));
 

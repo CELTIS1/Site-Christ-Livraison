@@ -9,10 +9,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { chargerApp } from './_charger-app.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (f) => fs.readFileSync(path.join(RACINE, f), 'utf8');
-const config = ['app/config.js'].concat(fs.readdirSync(path.join(RACINE, 'app', 'lib')).filter(f => f.endsWith('.js')).sort().map(f => 'app/lib/' + f)).map(lire).join('\n');
 const pdj = lire('app/point-du-jour.js');
 
 let reussies = 0, echouees = 0;
@@ -20,20 +20,11 @@ function verifier(t, condition, detail) {
   if (condition) { reussies++; console.log('  ✅ ' + t); }
   else { echouees++; console.log('  ❌ ' + t + (detail ? '\n       → ' + detail : '')); }
 }
-function blocDe(src, nom) {
-  const debut = src.search(new RegExp('(async\\s+)?function\\s+' + nom + '\\s*\\('));
-  if (debut === -1) throw new Error('introuvable : ' + nom);
-  let i = src.indexOf('{', debut), prof = 0;
-  for (; i < src.length; i++) { if (src[i] === '{') prof++; else if (src[i] === '}') { prof--; if (prof === 0) return src.slice(debut, i + 1); } }
-  throw new Error('fin introuvable : ' + nom);
-}
-const m = config.match(/const\s+COMMUNE_EXPEDITION\s*=\s*("[^"]*"|'[^']*')\s*;/);
-const ctx = vm.createContext({ console, window: {}, document: { getElementById: () => null } });
-vm.runInContext('var COMMUNE_EXPEDITION = ' + m[1] + ';', ctx);
-vm.runInContext(['estExpedition', 'colisADetailMontant', 'montantArticleColis', 'montantLivraisonColis', 'fraisExpeditionColis', 'fraisSoldes', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse', 'fraisExpeditionADevoir', 'articleEncaisse', 'livraisonEncaissee', 'montantArticleEncaisse', 'montantLivraisonEncaissee', 'montantArticleADevoir', 'fraisExpeditionARembourser', 'montantEnMainDuLivreur', 'montantManquantALaLivraison', 'totauxArgent', 'caisseParLivreur'].map(n => blocDe(config, n)).join('\n\n'), ctx);
-vm.runInContext('function formatMontant(n){ return Math.round(n).toLocaleString("fr-FR") + " FCFA"; } function escapeHTML(s){ return String(s); } function todayLocalISODate(){ return "2026-09-16"; }', ctx);
-vm.runInContext(pdj, ctx);
-const P = vm.runInContext('window.CLTPointDuJour', ctx);
+/* Depuis le 16/09 (4.10), plus de découpage au texte : le vrai code est chargé entier par
+   tests/_charger-app.mjs, puis point-du-jour.js par-dessus, comme dans equipe.html. */
+const app = chargerApp();
+vm.runInContext(pdj, app.__contexte, { filename: 'app/point-du-jour.js' });
+const P = app.__fenetre.CLTPointDuJour;
 
 console.log('\n1. Une journée réaliste');
 const L1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', L2 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';

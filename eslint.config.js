@@ -32,4 +32,11 @@ export default [
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node } },
     rules: { 'no-undef': 'error', 'no-redeclare': 'error', 'no-dupe-keys': 'error', 'no-unreachable': 'error' },
   },
+  // Les parcours navigateur (4.10) contiennent du code exécuté DANS la page (page.evaluate) :
+  // il lit les globales de l'app (allColis, totauxArgent…). no-undef y dirait faux.
+  {
+    files: ['tests/parcours/**/*.mjs'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node, ...globals.browser } },
+    rules: { 'no-undef': 'off' },
+  },
 ];

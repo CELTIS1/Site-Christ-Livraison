@@ -67,6 +67,7 @@ Les fonctions serveur derrière ces boutons sont `demander-reset-password`,
 |---|---|---|
 | Contrôles « Échec » sans durée, aucun détail | `tests.yml` illisible (souvent un « : » dans un nom d'étape) | `node tests/workflows-lisibles.test.mjs` le dit ; corriger le nom |
 | Un banc rouge avec un ❌ précis | Le code contredit un banc | Lancer le banc en local, lire sa ligne d'explication, corriger le code ou le banc si la règle a changé (l'écrire dans le commit) |
+| Le travail « parcours » est rouge | Une page ne se comporte plus comme un livreur ou une cliente l'attend, ou le client Supabase miniature ne connaît pas une méthode nouvelle | `npm run parcours` en local (après `npx playwright install chromium`), lire le ❌ ; si c'est une méthode supabase-js nouvelle, l'ajouter au client miniature de `tests/parcours/_navigateur.mjs` (le banc parcours-navigateur le dit) |
 | Vérifier les empreintes rouge | Une bibliothèque externe a changé de version sans nouvelle empreinte SRI | `python3 .github/verifier-empreintes.py`, recopier l'empreinte proposée dans la balise |
 | Publier « attend » longtemps | Il attend les deux autres contrôles sur le même commit | Rien : jusqu'à 20 min ; s'il finit en échec, relancer depuis GitHub › Actions › Re-run |
 | Publier vert mais site inchangé | Cache du navigateur / service worker | Fiche 1 |

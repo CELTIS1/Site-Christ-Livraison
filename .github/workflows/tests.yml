@@ -5,7 +5,8 @@
 # saisie. Ces contrôles rejouent ces situations tout seuls à chaque publication. Si une
 # modification casse l'un d'eux, on le sait avant que l'équipe s'en aperçoive sur le terrain.
 #
-# Aucun secret, aucun coût : c'est gratuit sur un dépôt public. Le seul outil installé est ESLint (npm ci).
+# Aucun secret, aucun coût : c'est gratuit sur un dépôt public. Les outils installés : ESLint,
+# Playwright (un Chromium sans écran pour les trois parcours). Aucune dépendance en production.
 
 name: Contrôles automatiques
 
@@ -39,7 +40,7 @@ jobs:
       # un ici (73 étapes, une par fichier, et un oubli à chaque nouveau banc) : `npm test` lance
       # tous les fichiers tests/*.test.mjs avec le lanceur intégré de Node, en parallèle, et
       # échoue si l'un d'eux échoue. Le détail de chaque banc reste lisible dans le journal.
-      - name: Installer les outils (ESLint seulement ; aucune dépendance en production)
+      - name: Installer les outils (ESLint, Playwright ; aucune dépendance en production)
         run: npm ci --no-audit --no-fund
 
       - name: Tous les bancs d'essai (tests/*.test.mjs, un fichier = un sujet)
@@ -50,3 +51,27 @@ jobs:
 
       - name: Les flux de travail restent lisibles par GitHub (pas de « deux-points » dans un nom d'étape)
         run: node tests/workflows-lisibles.test.mjs
+
+  # Les trois parcours dans un vrai navigateur (feuille de route 4.10, 16 septembre 2026) :
+  # connexion du livreur, livraison d'un colis, relevé de la cliente. Chromium sans écran, site
+  # servi depuis le dépôt, fausse base en mémoire — la vraie base n'est jamais touchée. Un
+  # travail à part, pour que les bancs restent rapides même si le navigateur met du temps.
+  parcours:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le site
+        uses: actions/checkout@v7
+
+      - name: Installer Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Installer les outils
+        run: npm ci --no-audit --no-fund
+
+      - name: Installer Chromium pour Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Les trois parcours (connexion du livreur, livraison d'un colis, relevé de la cliente)
+        run: npm run parcours
