@@ -68,7 +68,7 @@ jobs:
       - name: Journal des erreurs en production (capteur, garde-fous, lecture administrateur)
         run: node tests/journal-des-erreurs.test.mjs
 
-      - name: Éditeur du site public (Gestion › Site : schéma, listes, versions, lecture par le site)
+      - name: Éditeur du site public (Gestion › Site — schéma, listes, versions, lecture par le site)
         run: node tests/editeur-du-site.test.mjs
 
       - name: Le site public est trouvable et reconnaissable (sitemap, canonical par fiche, polices, image de partage, favicon)
@@ -532,6 +532,9 @@ jobs:
       # Les deux passaient au vert quand on les lançait à la main, ce qui est exactement le piège :
       # une série qui marche mais que personne ne lance ne protège rien du tout. Elles ont été
       # ajoutées ci-dessus avant publication, donc sans que la panne atteigne jamais le site.
+      - name: Les flux de travail restent lisibles par GitHub (pas de « deux-points » dans un nom d'étape)
+        run: node tests/workflows-lisibles.test.mjs
+
       - name: Aucune série de contrôles laissée de côté
         run: |
           manquantes=""
