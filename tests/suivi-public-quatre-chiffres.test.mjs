@@ -61,8 +61,8 @@ titre('Sans les chiffres : le statut, et la demande des chiffres');
 
 titre('L\'aperçu WhatsApp du lien');
 {
-  verifier('og:title, og:description, og:image sont posés', /property="og:title"/.test(page) && /property="og:description"/.test(page) && /property="og:image" content="https:\/\/christlivraison\.ci\/images\/icons\/icon-512\.png"/.test(page));
-  verifier('l\'image existe dans le site', fs.existsSync(path.join(RACINE, 'images', 'icons', 'icon-512.png')));
+  verifier('og:title, og:description, og:image sont posés', /property="og:title"/.test(page) && /property="og:description"/.test(page) && /property="og:image" content="https:\/\/christlivraison\.ci\/images\/og-image\.png"/.test(page));
+  verifier('l\'image existe dans le site', fs.existsSync(path.join(RACINE, 'images', 'og-image.png'))); // image de partage commune depuis 4.2 (16/09/2026)
   verifier('aucune donnée personnelle dans l\'aperçu', !/og:description" content="[^"]*(0[0-9]{9}|CLT-)/.test(page));
 }
 

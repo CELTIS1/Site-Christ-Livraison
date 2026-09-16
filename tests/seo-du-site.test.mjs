@@ -58,5 +58,17 @@ verifier('express.html est atteignable depuis l\'accueil', /href="express\.html"
 verifier('la politique de confidentialité est atteignable depuis l\'accueil', /href="politique-confidentialite\.html"/.test(index));
 verifier('suivi.html et services.html sont atteignables depuis l\'accueil', /href="suivi\.html"/.test(index) && /href="services\.html/.test(index));
 
+console.log('\n5. L\'identité (4.2) : une image de partage, un favicon physique, le logo de la charte');
+verifier('images/og-image.png existe et fait 1200×630 (en-tête PNG)', (() => { const b = fs.readFileSync(path.join(RACINE, 'images/og-image.png')); return b.readUInt32BE(16) === 1200 && b.readUInt32BE(20) === 630; })());
+verifier('favicon.ico existe à la racine', fs.existsSync(path.join(RACINE, 'favicon.ico')));
+verifier('images/banniere-play-1024x500.png existe (Play Store, 5.2)', (() => { const f = path.join(RACINE, 'images/banniere-play-1024x500.png'); if (!fs.existsSync(f)) return false; const b = fs.readFileSync(f); return b.readUInt32BE(16) === 1024 && b.readUInt32BE(20) === 500; })());
+for (const f of PUBLIQUES) {
+  const h = lire(f);
+  verifier(`${f} : og:image = og-image.png avec ses dimensions, favicon.ico déclaré`,
+    /<meta property="og:image" content="https:\/\/christlivraison\.ci\/images\/og-image\.png">/.test(h) && /og:image:width" content="1200"/.test(h) && /<link rel="icon" href="\/favicon\.ico"/.test(h) && !/og:image" content="[^"]*hero-livreur/.test(h));
+}
+const arialLogo = PUBLIQUES.filter(f => /font-family="Arial"/.test(lire(f)));
+verifier('le logo en ligne demande Poppins comme la charte (Arial en repli seulement)', arialLogo.length === 0, arialLogo.join(', '));
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);
