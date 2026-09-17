@@ -428,6 +428,42 @@ const autres = (eqDoublons && c && eqDoublons[c.id]) || [];
 if (!autres.length) return '';
 return `<div class="sync-pending-badge doublon-badge" title="Même cliente, même numéro de destinataire, à moins de deux jours d'écart : vérifiez qu'il ne s'agit pas du même colis enregistré deux fois.">⚠️ Semblable à ${autres.map(a => escapeHTML(doublonTexte(a))).join(' · ')}</div>`;
 }
+
+/* « ⚠️ Frais additionnels non réglés » sur la carte (16/09/2026, Celtis : « un petit truc à côté
+   pour des frais additionnels qui n'ont pas été pris en compte ou qui n'ont pas encore été
+   réglés »). Visible sans ouvrir la fiche de modification, comme le badge doublon ci-dessus ;
+   disparaît dès que quelqu'un coche « réglé ». Le calcul (montant, réglé ou non) vit dans
+   lib/argent.js (fraisAdditionnelsAReclamer, fraisAdditionnelsRegle) : une seule vérité, lue ici
+   et à l'édition. */
+function eqFraisAdditionnelsHTML(c){
+if (!c || fraisAdditionnelsRegle(c)) return '';
+const du = fraisAdditionnelsAReclamer(c);
+if (!du) return '';
+return `<div class="sync-pending-badge frais-additionnels-badge" title="Frais additionnels non réglés : à retenir sur le relevé ou à réclamer, selon le cas.">⚠️ Frais additionnels non réglés : ${formatMontant(du)}${c.frais_additionnels_motif ? ' — ' + escapeHTML(c.frais_additionnels_motif) : ''}</div>`;
+}
+
+/* Le petit formulaire (montant + motif + « réglé ») posé dans la fiche de modification. Un champ
+   de plus sur CHAQUE carte aurait noyé la liste ; ici il n'apparaît qu'en train de modifier un
+   colis, à côté des autres montants. Universel (pas réservé aux expéditions) : un supplément
+   imprévu peut survenir sur n'importe quel colis (attente, détour, carburant…). */
+function eqFraisAdditionnelsEditHTML(c){
+const montant = (c.frais_additionnels_montant !== null && c.frais_additionnels_montant !== undefined && Number(c.frais_additionnels_montant)) ? c.frais_additionnels_montant : '';
+return `
+<div class="frais-additionnels-block" style="margin-top:8px; padding:10px; border:1.5px dashed #f0b3a8; border-radius:8px; max-width:420px; background:#fff9f8;">
+<label style="font-size:11.5px; font-weight:700; display:block; margin-bottom:6px; color:#8a1f11;">💰 Frais additionnels (non prévus au départ)</label>
+<div class="montant-group">
+<div class="montant-field">
+<label>Montant</label>
+<input type="number" class="edit-frais-additionnels-montant" min="0" step="any" value="${montant}" placeholder="0">
+</div>
+<div class="montant-field" style="flex:2;">
+<label>Motif</label>
+<input type="text" class="edit-frais-additionnels-motif" value="${escapeHTML(c.frais_additionnels_motif || '')}" placeholder="Ex : attente à la gare, détour imprévu…">
+</div>
+</div>
+<label class="check-pill" style="margin-top:6px;" title="Coché : ces frais sont réglés, le badge disparaît de la carte."><input type="checkbox" class="edit-frais-additionnels-regle" ${fraisAdditionnelsRegle(c) ? 'checked' : ''}> Réglé</label>
+</div>`;
+}
 function colisRowHTML(c, numeroClient){
 const thumb = c.photo_url
 ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
@@ -467,6 +503,7 @@ const infoBlock = `
 <div class="info">
 ${syncBadge}
 ${eqDoublonHTML(c)}
+${eqFraisAdditionnelsHTML(c)}
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
 ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
@@ -562,8 +599,9 @@ ${c.statut === 'en_attente' ? `
 <div class="payment-checks">
 <label class="check-pill lotfr-article-solde" title="L'article a été payé chez la vendeuse : le livreur ne l'encaisse pas et rien n'est dû à la vendeuse pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
 <label class="check-pill lotfr-liv-payee" title="La livraison a été payée chez la vendeuse : le livreur ne l'encaisse pas, CLT la retient sur la vendeuse. Ne dit rien de l'article."><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
-<label class="check-pill lotfr-soldee" style="${estExpedition(c) ? '' : 'display:none;'}" title="La cliente a déjà réglé à CLT les frais d'expédition et de course : rien ne se retient sur son relevé."><input type="checkbox" class="edit-frais-soldes" ${fraisSoldes(c) ? 'checked' : ''}> 🚌 Frais déjà réglés à CLT (soldé)</label>
-</div>`}
+<label class="check-pill check-pill-soldee lotfr-soldee" style="${estExpedition(c) ? '' : 'display:none;'}" title="La cliente a déjà réglé à CLT les frais d'expédition et de course : rien ne se retient sur son relevé."><input type="checkbox" class="edit-frais-soldes" ${fraisSoldes(c) ? 'checked' : ''}> 🚌 Frais déjà réglés à CLT (soldé)</label>
+</div>
+${eqFraisAdditionnelsEditHTML(c)}`}
 </div>
 `;
 
@@ -760,6 +798,10 @@ colis.forEach(c => {
     nbASolder++;
   }
 });
+// Frais additionnels non réglés, toutes dates confondues (16/09/2026, chantier 3) : on ne veut
+// pas en oublier un dans la pile des colis passés.
+let nbFraisAdditionnels = 0;
+colis.forEach(c => { if (typeof fraisAdditionnelsAReclamer === 'function' && fraisAdditionnelsAReclamer(c) > 0) nbFraisAdditionnels++; });
 const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
 /* ÉPURÉ (06/09/2026, Celtis : « encore mieux organisé, plus esthétique, plus épuré »). Une
    pastille à zéro n'apprend rien : elle n'est plus dessinée. Un groupe sans rien à faire le dit
@@ -818,7 +860,8 @@ set('aujourdhui-anomalies', ouRien(
   pastille(cat.qualifier.length, cat.qualifier.length > 1 ? 'échecs à qualifier' : 'échec à qualifier', 'qualifier', 'ambre'), 'Rien à examiner'));
 set('aujourdhui-argent', ouRien(
   pastille(money(resteARemettre), 'à remettre', 'argent', 'rouge') +
-  (nbASolder ? `<button type="button" class="ess-tuile est-rouge" data-aller="argent" title="Ouvrir"><span class="n">${nbASolder}</span><span>colis à solder</span></button>` : ''), 'Tout est remis'));
+  (nbASolder ? `<button type="button" class="ess-tuile est-rouge" data-aller="argent" title="Ouvrir"><span class="n">${nbASolder}</span><span>colis à solder</span></button>` : '') +
+  (nbFraisAdditionnels ? `<button type="button" class="ess-tuile est-rouge" data-aller="argent" title="Ouvrir"><span class="n">${nbFraisAdditionnels}</span><span>${nbFraisAdditionnels > 1 ? 'frais additionnels non réglés' : 'frais additionnel non réglé'}</span></button>` : ''), 'Tout est remis'));
 const libelleJour = document.getElementById('ess-jour');
 if (libelleJour) cltPoserHTML(libelleJour, 'Tout ce qui attend, toutes dates confondues' + (colisHasMore ? ' · historique partiel' : ''));
 }

@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916doublons">
-<script src="theme.js?v=20260916doublons"></script>
-<script src="splash.js?v=20260916doublons"></script>
+<link rel="stylesheet" href="style.css?v=20260916additionnels">
+<script src="theme.js?v=20260916additionnels"></script>
+<script src="splash.js?v=20260916additionnels"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -472,19 +472,19 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916doublons"></script>
-<script src="lib/communes-et-tarifs.js?v=20260916doublons"></script>
-<script src="lib/argent.js?v=20260916doublons"></script>
-<script src="lib/releve-cliente.js?v=20260916doublons"></script>
-<script src="lib/papier-a-en-tete.js?v=20260916doublons"></script>
-<script src="lib/briques-argent.js?v=20260916doublons"></script>
-<script src="lib/annonce-de-remise.js?v=20260916doublons"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260916doublons"></script>
-<script src="lib/primes.js?v=20260916doublons"></script>
-<script src="lib/doublons.js?v=20260916doublons"></script>
-<script src="config.js?v=20260916doublons"></script>
-<script src="biometric-lock.js?v=20260916doublons"></script>
-<script src="clt-select-recherche.js?v=20260916doublons"></script>
+<script src="clt-common.js?v=20260916additionnels"></script>
+<script src="lib/communes-et-tarifs.js?v=20260916additionnels"></script>
+<script src="lib/argent.js?v=20260916additionnels"></script>
+<script src="lib/releve-cliente.js?v=20260916additionnels"></script>
+<script src="lib/papier-a-en-tete.js?v=20260916additionnels"></script>
+<script src="lib/briques-argent.js?v=20260916additionnels"></script>
+<script src="lib/annonce-de-remise.js?v=20260916additionnels"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260916additionnels"></script>
+<script src="lib/primes.js?v=20260916additionnels"></script>
+<script src="lib/doublons.js?v=20260916additionnels"></script>
+<script src="config.js?v=20260916additionnels"></script>
+<script src="biometric-lock.js?v=20260916additionnels"></script>
+<script src="clt-select-recherche.js?v=20260916additionnels"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -976,7 +976,7 @@
                config.js). Elle veut dire : j'ai déjà réglé à CLT les frais d'expédition et de
                course sur ce colis. Cochée, plus rien ne se retient sur le relevé du soir.
                Masquée par défaut : sur un colis d'Abidjan, elle n'aurait aucun sens. -->
-          <label class="check-pill" style="display:none;"><input type="checkbox" class="lotfr-soldee"> 🚌 Frais déjà réglés à CLT (soldé)</label>
+          <label class="check-pill check-pill-soldee" style="display:none;" title="Vous avez déjà réglé à CLT les frais d'expédition et de course sur ce colis : rien ne sera retenu sur votre relevé."><input type="checkbox" class="lotfr-soldee"> 🚌 Frais déjà réglés à CLT (soldé)</label>
         </div>
         <!-- Le code de confirmation à quatre chiffres a été retiré le 21 août 2026. Il n'entrait
              pas dans la façon de travailler : il fallait le générer, le transmettre soi-même au

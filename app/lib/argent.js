@@ -377,6 +377,37 @@ function fraisCourseADevoir(c) {
   return fraisCourseAcquis(c);
 }
 
+/* --------------------------------------------------------------------------------------------
+   LES FRAIS ADDITIONNELS — 16 septembre 2026
+   --------------------------------------------------------------------------------------------
+   Celtis (chantier 3, après la grille et les doublons) : « côté expédition, peut-être s'il y a
+   des frais additionnels… un petit truc à côté pour des frais additionnels qui n'ont pas été
+   pris en compte ou qui n'ont pas encore été réglés ».
+
+   Trois colonnes, posées par la migration du même jour : frais_additionnels_montant (le
+   supplément constaté après coup — attente à la gare, détour, carburant…), le motif en clair,
+   et une date de règlement (null tant que personne n'a payé).
+
+   VOLONTAIREMENT HORS DU RELEVÉ AUTOMATIQUE DE LA CLIENTE. Les frais d'expédition et de course
+   sont des retenues connues et systématiques ; celui-ci est un imprévu, ponctuel, dont le motif
+   varie d'un colis à l'autre — parfois à la charge de la cliente, parfois de CLT elle-même
+   (une erreur d'itinéraire, par exemple). Le glisser dans le calcul automatique aurait changé un
+   chiffre que la cliente lit sans que l'équipe l'ait décidé. Il vit donc comme une ALERTE, pas
+   comme une retenue : le badge sur la carte et la tuile du tableau de bord disent qu'il reste à
+   régler, à qui de droit de trancher comment. Si l'usage montre qu'il devrait entrer dans le
+   relevé, ce sera un choix à faire avec Celtis, pas une déduction automatique. */
+function fraisAdditionnelsColis(c) {
+  return Number(c && c.frais_additionnels_montant) || 0;
+}
+function fraisAdditionnelsRegle(c) {
+  return !!(c && c.frais_additionnels_regle_at);
+}
+// Ce qui reste à régler sur ce colis : 0 si rien n'a été noté, ou si c'est déjà réglé.
+function fraisAdditionnelsAReclamer(c) {
+  if (!c || fraisAdditionnelsRegle(c)) return 0;
+  return fraisAdditionnelsColis(c);
+}
+
 /* LES DEUX NOMS, ÉCRITS UNE SEULE FOIS.
    Celtis les a arrêtés le 31 août : « frais d'expédition pour ce que le transporteur prend, et
    les frais de course pour ce que le livreur gagne par rapport au travail qu'il effectue ».

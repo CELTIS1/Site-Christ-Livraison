@@ -303,6 +303,21 @@ input, select, textarea{ font-size:16px !important; }
 .check-pill input{accent-color:var(--orange); width:15px; height:15px; margin:0;}
 .check-pill:has(input:checked){border-color:#1a7d3c; background:#e9f7ef; color:#1a7d3c;}
 
+/* « Frais déjà réglés à CLT (soldé) » — 16/09/2026 (Celtis : « il faut le rendre plus visible »).
+   Une case comme les autres se perdait au milieu des autres cases à cocher, sur un écran qu'on
+   remplit vite. Celle-ci porte sa propre couleur (bleu transport) même AVANT d'être cochée, et
+   un texte plus gros et plus gras : elle se voit sans qu'on la cherche. */
+.check-pill-soldee{
+  border:2px solid #1B4374; background:#eaf1fb; color:#1B4374; font-size:13.5px; font-weight:800;
+  padding:10px 16px; width:100%; justify-content:center; box-sizing:border-box;
+}
+.check-pill-soldee input{width:18px; height:18px; accent-color:#1B4374;}
+.check-pill-soldee:has(input:checked){border-color:#1a7d3c; background:#e9f7ef; color:#1a7d3c;}
+
+/* Badge « frais additionnels non réglés » sur la carte (16/09/2026, Celtis : chantier 3). Même
+   famille visuelle que .doublon-badge, couleur différente pour ne pas confondre les deux. */
+.frais-additionnels-badge{ background:#fdeaea !important; color:#8a1f11 !important; border:1px solid #f0b3a8 !important; }
+
 /* ---------- COLIS LIST ---------- */
 .colis-list{display:flex; flex-direction:column; gap:8px;}
 .colis-item{

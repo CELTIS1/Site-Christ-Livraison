@@ -268,7 +268,8 @@ async function enregistrerEquipe({ tel, telOrigine, avecRecuperation }){
   const prelude = `var statut = 'en_livraison', observation = null, livreur_id = undefined,
     livreur_collecte_id = undefined, montant = undefined, montant_article = undefined,
     montant_livraison = undefined, article_non_encaisse = undefined, livraison_payee = undefined,
-    frais_expedition = undefined, frais_soldes_at = undefined;`;
+    frais_expedition = undefined, frais_soldes_at = undefined, frais_additionnels_montant = undefined,
+    frais_additionnels_motif = undefined, frais_additionnels_regle_at = undefined;`;
   vm.runInContext(
     `globalThis.__lancer = async function(){\n${prelude}\n${CODE_EQUIPE}\nreturn updatePayload;\n};`, ctx);
   const payload = await ctx.__lancer();

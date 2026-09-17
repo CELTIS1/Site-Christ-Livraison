@@ -421,6 +421,25 @@ const colisAvant = allColis.find(x => x.id === id);
 const etaitSolde = !!(colisAvant && colisAvant.frais_soldes_at);
 if (fraisSoldesInput.checked !== etaitSolde) frais_soldes_at = fraisSoldesInput.checked ? new Date().toISOString() : null;
 }
+// Les frais additionnels (16/09/2026, chantier 3) : montant + motif libres, et une date de
+// règlement qui suit la même règle que « soldé » ci-dessus — on n'y touche que si la case a
+// changé, pour ne pas réécrire une date de règlement déjà posée.
+const fraisAddMontantInput = item.querySelector('.edit-frais-additionnels-montant');
+const fraisAddMotifInput = item.querySelector('.edit-frais-additionnels-motif');
+const fraisAddRegleInput = item.querySelector('.edit-frais-additionnels-regle');
+const fraisAddMontantRaw = fraisAddMontantInput ? fraisAddMontantInput.value.trim() : '';
+if (fraisAddMontantInput && !isValidMontant(fraisAddMontantRaw === '' ? null : fraisAddMontantRaw)) {
+cltToast('Le montant des frais additionnels doit être un nombre positif.', { type: 'warning' });
+return;
+}
+const frais_additionnels_montant = fraisAddMontantInput ? (fraisAddMontantRaw === '' ? null : Number(fraisAddMontantRaw)) : undefined;
+const frais_additionnels_motif = fraisAddMotifInput ? (fraisAddMotifInput.value.trim() || null) : undefined;
+let frais_additionnels_regle_at;
+if (fraisAddRegleInput) {
+const colisAvant = allColis.find(x => x.id === id);
+const etaitRegle = !!(colisAvant && colisAvant.frais_additionnels_regle_at);
+if (fraisAddRegleInput.checked !== etaitRegle) frais_additionnels_regle_at = fraisAddRegleInput.checked ? new Date().toISOString() : null;
+}
 // Adresse de livraison. C'est le motif d'appel numéro un du livreur, et jusqu'ici cet écran
 // ne permettait pas d'y toucher : la personne qui décroche était précisément celle qui ne
 // pouvait rien corriger. Les champs ne sont envoyés que s'ils existent à l'écran, pour que
@@ -494,6 +513,9 @@ if (montant_livraison !== undefined) updatePayload.montant_livraison = montant_l
 if (article_non_encaisse !== undefined) updatePayload.article_non_encaisse = article_non_encaisse;
 if (frais_expedition !== undefined) updatePayload.frais_expedition = frais_expedition;
 if (frais_soldes_at !== undefined) updatePayload.frais_soldes_at = frais_soldes_at;
+if (frais_additionnels_montant !== undefined) updatePayload.frais_additionnels_montant = frais_additionnels_montant;
+if (frais_additionnels_motif !== undefined) updatePayload.frais_additionnels_motif = frais_additionnels_motif;
+if (frais_additionnels_regle_at !== undefined) updatePayload.frais_additionnels_regle_at = frais_additionnels_regle_at;
 // Le jour du colis et « à livrer avant le » (09/09/2026). Un jour égal au jour de réception
 // efface le report ; une date vide efface la limite.
 { const jourInput = item.querySelector('.edit-reporte-au');
