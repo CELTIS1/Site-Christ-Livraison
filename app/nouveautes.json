@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917sauvegarde",
+      "date": "17 septembre 2026",
+      "titre": "Les données ont enfin une copie ailleurs",
+      "points": [
+        "Jusqu'ici, tout vivait au même endroit : si le projet disparaissait, les colis, les clientes, la comptabilité et la paie disparaissaient avec.",
+        "Un outil à double-cliquer écrit maintenant une copie datée dans le Drive, puis relit ce qu'il vient d'écrire et le compare à la base. S'il manque une ligne, il le dit.",
+        "La marche à suivre pour tout remettre debout est écrite noir sur blanc, et elle a été essayée pour de vrai : 2 350 colis restaurés et recomptés un par un.",
+        "Rien ne change dans l'application : c'est une assurance, pas une fonctionnalité."
+      ]
+    },
+    {
       "version": "20260917signaler",
       "date": "17 septembre 2026",
       "titre": "Signaler un problème, sans passer par le téléphone",

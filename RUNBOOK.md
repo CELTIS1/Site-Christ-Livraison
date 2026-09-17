@@ -3,6 +3,14 @@
 Chaque fiche : le symptôme, la cause habituelle, le geste. Rien ici ne demande un secret ; ce qui
 en demande un est marqué « geste du gérant ».
 
+## Restaurer les données après un incident
+
+La marche à suivre complète est dans **[RESTAURATION.md](RESTAURATION.md)** : où sont les
+sauvegardes (Drive › 08 - Application & Technique › Sauvegardes), ce qu'elles contiennent, ce
+qu'elles ne contiennent pas (les comptes, les photos), et les six étapes dans l'ordre. La
+sauvegarde se prend en double-cliquant « Sauvegarder les données.command ».
+
+
 ## 1. « L'application affiche une vieille version » / le service worker bloque
 
 **Symptôme.** Une correction est en ligne (GitHub montre Publier en vert) mais le téléphone montre

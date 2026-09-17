@@ -504,10 +504,14 @@ verifier(
    en deux touches, avec un mot libre facultatif. Le bureau compte ce qui attend, passe au rouge
    au-delà de deux jours, et lit le motif sur la carte du colis. Règles partagées dans
    lib/reclamations.js ; table reclamations_clientes avec ses trois règles d'accès (migration
-   2026-09-17-signaler-un-probleme.sql) : étiquette 20260917signaler. */
+   2026-09-17-signaler-un-probleme.sql) : étiquette 20260917signaler.
+   v146, le 17/09/2026 — point 6.5 : une sauvegarde vérifiée et une procédure de restauration.
+   Aucun changement dans l'application elle-même : deux outils (outils/), un essai de bout en
+   bout dans un vrai Postgres et RESTAURATION.md. L'étiquette bouge parce que les pages sont
+   republiées avec le reste : étiquette 20260917sauvegarde. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v145'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v146'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
