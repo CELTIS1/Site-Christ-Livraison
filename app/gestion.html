@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917reverser">
-<script src="theme.js?v=20260917reverser"></script>
-<script src="splash.js?v=20260917reverser"></script>
+<link rel="stylesheet" href="style.css?v=20260917protege">
+<script src="theme.js?v=20260917protege"></script>
+<script src="splash.js?v=20260917protege"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -950,6 +950,9 @@
             <div class="field"><label>N° CNPS employeur</label><input type="text" id="p-cnps"></div>
             <div class="field"><label>Taux accident de travail (%)</label><input type="number" id="p-accident" step="0.01"></div>
             <div class="field"><label>Prime de transport par défaut (FCFA)</label><input type="number" id="p-transport" step="1"></div>
+            <!-- Garde-fou sur les montants (17/09/2026, point 8.3) : au-dessus de ce chiffre,
+                 la saisie demande confirmation. Ni blocage, ni silence. -->
+            <div class="field"><label>Seuil de vigilance sur un montant (FCFA)</label><input type="number" id="p-seuil" step="1000" min="0" placeholder="2000000"><small style="color:var(--muted);font-size:11.5px;">Au-delà, l'application demande une confirmation avant d'enregistrer (recette, dépense, écriture, caisse, facture, paie). Laisser vide pour 2 000 000 F.</small></div>
           </div>
           <h3 style="margin:16px 0 4px;font-size:15px;">Taux de cotisation</h3>
           <!-- Une ligne (Celtis) : on garde la mise en garde, on retire le rappel légal. -->
@@ -1158,20 +1161,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260917reverser"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917reverser"></script>
-<script src="lib/argent.js?v=20260917reverser"></script>
-<script src="lib/releve-cliente.js?v=20260917reverser"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917reverser"></script>
-<script src="lib/briques-argent.js?v=20260917reverser"></script>
-<script src="lib/annonce-de-remise.js?v=20260917reverser"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917reverser"></script>
-<script src="lib/primes.js?v=20260917reverser"></script>
-<script src="lib/doublons.js?v=20260917reverser"></script>
-<script src="config.js?v=20260917reverser"></script>
-<script src="biometric-lock.js?v=20260917reverser"></script>
-<script src="clt-select-recherche.js?v=20260917reverser"></script>
-<script src="site-editeur.js?v=20260917reverser"></script>
-<script src="gestion.js?v=20260917reverser"></script>
+<script src="clt-common.js?v=20260917protege"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917protege"></script>
+<script src="lib/argent.js?v=20260917protege"></script>
+<script src="lib/releve-cliente.js?v=20260917protege"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917protege"></script>
+<script src="lib/briques-argent.js?v=20260917protege"></script>
+<script src="lib/annonce-de-remise.js?v=20260917protege"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917protege"></script>
+<script src="lib/primes.js?v=20260917protege"></script>
+<script src="lib/doublons.js?v=20260917protege"></script>
+<script src="config.js?v=20260917protege"></script>
+<script src="biometric-lock.js?v=20260917protege"></script>
+<script src="clt-select-recherche.js?v=20260917protege"></script>
+<script src="site-editeur.js?v=20260917protege"></script>
+<script src="gestion.js?v=20260917protege"></script>
 </body>
 </html>

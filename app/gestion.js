@@ -71,14 +71,34 @@ const DEP_CAT_COMPTE = {
 };
 
 /* -------------------- Utilitaires -------------------- */
-/* Garde-fou anti-faute de frappe sur les montants (ex. un zéro de trop).
- * Au-delà de ce seuil, on demande une confirmation explicite plutôt que de bloquer,
- * pour laisser passer une vraie grosse opération tout en évitant les erreurs. */
-const MONTANT_MAX = 100000000; // 100 000 000 FCFA
-/* Renvoie true si l'on peut poursuivre (montant normal, ou montant élevé confirmé). */
-function montantConfirme(montant, contexte){
-  if (!(montant > MONTANT_MAX)) return true;
-  return confirm(`Le montant saisi est très élevé :\n\n${fmtF(montant)}${contexte ? ' (' + contexte + ')' : ''}\n\nVérifiez qu'il n'y a pas d'erreur de frappe (un zéro de trop ?).\n\nConfirmer ce montant ?`);
+/* GARDE-FOU SUR LES MONTANTS (17/09/2026, point 8.3 de la feuille de route)
+ * Le seuil était à 100 000 000 F — cent millions. Chez CLT, où une grosse dépense du mois se
+ * compte en centaines de milliers, il ne se déclenchait jamais : un zéro de trop sur 50 000
+ * s'enregistrait sans un mot, et ne se voyait qu'au bilan. Le seuil descend à 2 000 000 F, et
+ * il se règle depuis Gestion › Paramètres : c'est un chiffre qui doit suivre l'activité, pas
+ * une constante écrite dans le code. On ne bloque toujours pas — on repose la question, une
+ * fois, avec le montant en toutes lettres. */
+const SEUIL_MONTANT_DEFAUT = 2000000; // 2 000 000 FCFA
+function seuilMontant(){
+  const v = PARAMS && Number(PARAMS.seuil_montant);
+  return (v && v > 0) ? v : SEUIL_MONTANT_DEFAUT;
+}
+/* Renvoie true si l'on peut poursuivre (montant normal, ou montant élevé confirmé).
+   À AWAITER : depuis le 17/09 c'est un vrai panneau de l'application, plus une fenêtre du
+   navigateur (l'app n'en ouvre plus aucune depuis l'étiquette 20260916erreurs). */
+async function montantConfirme(montant, contexte){
+  const seuil = seuilMontant();
+  if (!(Math.abs(Number(montant) || 0) > seuil)) return true;
+  const question = {
+    title: 'Confirmer ce montant ?',
+    detail: fmtF(montant) + (contexte ? ' — ' + contexte : ''),
+    sub: `C'est au-dessus du seuil de vigilance (${fmtF(seuil)}, réglable dans Paramètres). `
+       + `Vérifiez qu'il n'y a pas un zéro de trop avant d'enregistrer.`,
+    okLabel: 'Oui, ' + fmtF(montant),
+    cancelLabel: 'Corriger',
+  };
+  if (typeof cltConfirm === 'function') return await cltConfirm(question);
+  return confirm(`${question.title}\n\n${question.detail}\n\n${question.sub}`);
 }
 function n(v){ const x = parseFloat(v); return isNaN(x) ? 0 : x; }
 // Les montants s'affichent au franc entier. Le franc CFA n'a pas de centime en circulation :
@@ -974,6 +994,9 @@ async function saveRecette(input){
     input.value = '';
     montant = 0;
   }
+  // Garde-fou (point 8.3) : la recette d'un chauffeur pour un jour, c'est la saisie la plus
+  // répétitive de l'écran — donc celle où un zéro de trop passe le plus facilement.
+  if (!await montantConfirme(montant, 'recette du jour')) { loadRecettes(); return; }
   try {
     // Robustesse : Supabase ne lève pas d'exception, il renvoie `error`. Sans ce contrôle, un refus
     // (RLS, réseau) passait inaperçu et les totaux étaient recalculés comme si tout était enregistré.
@@ -1071,7 +1094,7 @@ async function addDepense(){
   const categorie = document.getElementById('dep-cat').value || null;
   const date = document.getElementById('dep-date').value || null;
   if (!libelle || montant<=0){ showToast('Renseignez un libellé et un montant.', true); return; }
-  if (!montantConfirme(montant, 'dépense')) return;
+  if (!await montantConfirme(montant, 'dépense')) return;
   const justifInput = document.getElementById('dep-justif');
   const justifFile = justifInput && justifInput.files && justifInput.files[0];
   if (justifFile && justifFile.size > DOC_MAX_OCTETS){ showToast('Justificatif trop volumineux (max 15 Mo).', true); return; }
@@ -1359,10 +1382,17 @@ async function loadSaisieMap(periode){
   const map = {}; (data||[]).forEach(x => map[x.salarie_id] = x);
   return map;
 }
+/* LA CLÔTURE COUVRE AUSSI LA PAIE (17/09/2026, point 8.2 de la feuille de route)
+   Recettes, dépenses, écritures et caisse étaient protégées par la clôture d'un mois ; la saisie
+   de paie ne l'était pas. Un mois clôturé restait modifiable côté paie, et une journée ajoutée
+   en octobre sur le mois de juillet déplaçait les charges de personnel dans des états financiers
+   déjà sortis, sans que rien ne le signale. Ici : les cases se grisent et le refus est écrit à
+   l'écran, comme pour les dépenses ; saveSaisie() refuse de son côté, au cas où. */
 async function loadSaisie(){
   const annee = parseInt(document.getElementById('sai-year').value);
   const mois  = parseInt(document.getElementById('sai-month').value);
   const per = periodeStr(annee, mois);
+  const verrou = moisCloture(annee, mois);
   const map = await loadSaisieMap(per);
   const actifs = SALARIES.filter(s=>s.actif!==false);
   const cols = [['jours_travailles','Jours'],['sursalaire','Sursalaire'],['astreinte','Astreinte'],['conge_paye','Congé payé'],['gratification','Gratification'],['retenue_divers','Retenue divers']];
@@ -1371,16 +1401,29 @@ async function loadSaisie(){
     const v = map[s.id] || {};
     const cells = cols.map(c => {
       const def = c[0]==='jours_travailles' ? (v[c[0]]!=null?v[c[0]]:30) : (v[c[0]]||'');
-      return `<td><input class="cell" type="number" step="1" value="${def}" data-sal="${s.id}" data-per="${per}" data-field="${c[0]}" onblur="saveSaisie(this)"></td>`;
+      return `<td><input class="cell" type="number" step="1" value="${def}" data-sal="${s.id}" data-per="${per}" data-field="${c[0]}" onblur="saveSaisie(this)"${verrou ? ' disabled' : ''}></td>`;
     }).join('');
     return `<tr><td style="text-align:left;">${escapeHTML(s.matricule)}</td><td style="text-align:left;">${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</td>${cells}</tr>`;
   }).join('');
   if (!actifs.length) body = '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Aucun salarié actif.</td></tr>';
-  document.getElementById('sai-table').innerHTML = `<table class="g-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  const avis = verrou
+    ? `<div class="clt-alert clt-alert-warn">🔒 <strong>${MOIS_FR[mois-1]} ${annee} est clôturé.</strong> La saisie de paie de ce mois est en lecture seule : les charges de personnel sont déjà passées dans les états financiers. Pour la modifier, rouvrez le mois dans l'onglet « Clôture mensuelle ».</div>`
+    : '';
+  document.getElementById('sai-table').innerHTML = avis + `<table class="g-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 async function saveSaisie(input){
   const salarie_id = input.dataset.sal, periode = input.dataset.per, field = input.dataset.field;
+  // Verrou de clôture (point 8.2) : la paie d'un mois clôturé ne bouge plus.
+  await refreshCloturesSet(); // vérification live : le mois a pu être clôturé entre-temps
+  const pParts = String(periode).split('-');
+  if (moisCloture(parseInt(pParts[0]), parseInt(pParts[1]))){
+    showToast('Mois clôturé : la saisie de paie est en lecture seule.', true);
+    loadSaisie();
+    return;
+  }
   const value = n(input.value);
+  // Garde-fou sur les montants (point 8.3) : au-delà du seuil, on fait confirmer.
+  if (!await montantConfirme(value, 'saisie de paie')) { loadSaisie(); return; }
   try {
     const { data } = await supabaseClient.from('gestion_saisie_mensuelle').select('id').eq('salarie_id',salarie_id).eq('periode',periode).maybeSingle();
     const patch = {}; patch[field] = value;
@@ -2330,6 +2373,8 @@ function renderParametres(){
   document.getElementById('p-cnps').value = PARAMS.num_cnps_employeur||'';
   document.getElementById('p-accident').value = PARAMS.taux_accident_travail!=null?PARAMS.taux_accident_travail:3;
   document.getElementById('p-transport').value = PARAMS.prime_transport_defaut!=null?PARAMS.prime_transport_defaut:30000;
+  const elSeuil = document.getElementById('p-seuil');
+  if (elSeuil) elSeuil.value = (PARAMS && PARAMS.seuil_montant != null) ? PARAMS.seuil_montant : '';
   // Taux de cotisation (repli sur le barème légal par défaut si non défini en base)
   const setTx = (id, key) => { const el = document.getElementById(id); if (el) el.value = txConfig(key); };
   setTx('p-cnps-sal', 'cnps_sal');
@@ -2358,6 +2403,12 @@ async function saveParametres(){
     prime_transport_defaut: n(document.getElementById('p-transport').value),
     updated_at: new Date().toISOString(),
   };
+  // Seuil de vigilance : même précaution que les taux ci-dessous — la colonne peut ne pas
+  // exister encore en base. Vide = on revient au défaut du code (2 000 000 F).
+  if (PARAMS && 'seuil_montant' in PARAMS){
+    const el = document.getElementById('p-seuil');
+    if (el) rec.seuil_montant = el.value.trim() === '' ? null : n(el.value);
+  }
   // Taux de cotisation : n'inclure ces colonnes QUE si elles existent déjà en base
   // (migration SQL appliquée). Ainsi l'enregistrement reste possible avant migration.
   if (PARAMS && 'taux_cnps_sal' in PARAMS){
@@ -2830,7 +2881,7 @@ async function creerFacture(){
   const ht = lignes.reduce((s,l)=>s+n(l.quantite)*n(l.prix_unitaire),0);
   const assujetti = !PARAMS || PARAMS.tva_assujetti !== false;
   const ttcIndicatif = ht + (assujetti ? Math.round(ht*0.18) : 0);
-  if (!montantConfirme(ttcIndicatif, 'nouvelle facture')) return;
+  if (!await montantConfirme(ttcIndicatif, 'nouvelle facture')) return;
   const btn = document.getElementById('nf-creer-btn');
   if (btn) btn.disabled = true;
   try {
@@ -2890,7 +2941,7 @@ async function confirmerEncaissement(){
   if (!factureId){ showToast('Facture introuvable.', true); return; }
   if (montant <= 0){ showToast('Renseignez un montant valide.', true); return; }
   if (!date){ showToast('Renseignez une date.', true); return; }
-  if (!montantConfirme(montant, 'encaissement de facture')) return;
+  if (!await montantConfirme(montant, 'encaissement de facture')) return;
   try {
     const { error } = await supabaseClient.rpc('gestion_encaisser_facture', {
       p_facture_id: factureId, p_montant: montant, p_date_paiement: date, p_mode: mode, p_note: null,
@@ -3141,7 +3192,7 @@ async function enregistrerEcriture(){
   if (!date){ showToast('Renseignez une date.', true); return; }
   if (!libelle){ showToast('Renseignez un libellé.', true); return; }
   const { debit } = totauxEcriture(ecritureLignesEnCours);
-  if (!montantConfirme(debit, 'écriture manuelle')) return;
+  if (!await montantConfirme(debit, 'écriture manuelle')) return;
   const btn = document.getElementById('ec-save-btn');
   if (btn) btn.disabled = true;
   try {
@@ -3462,7 +3513,7 @@ async function addMouvementCaisse(){
   const montant = n(document.getElementById('lc-montant').value);
   if (!date){ showToast('Renseignez la date du mouvement.', true); return; }
   if (!libelle || montant<=0){ showToast('Renseignez un libellé et un montant.', true); return; }
-  if (!montantConfirme(montant, sens === 'sortie' ? 'sortie de caisse' : 'entrée de caisse')) return;
+  if (!await montantConfirme(montant, sens === 'sortie' ? 'sortie de caisse' : 'entrée de caisse')) return;
   // Clôture mensuelle : même garde que les dépenses (Celtis) — un mois arrêté ne bouge plus, caisse comprise.
   { const p = String(date).split('-'); const a = parseInt(p[0]), m = parseInt(p[1]);
     if (moisCloture(a, m)){ showToast(`${MOIS_FR[m-1] || ''} ${a} est clôturé : ajout impossible.`, true); return; } }

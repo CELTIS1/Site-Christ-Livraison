@@ -468,10 +468,17 @@ verifier(
    devient un geste quotidien. « Le point du jour » montre ce qui reste dû toutes dates, cliente
    par cliente, les plus anciennes d'abord, et chaque nom est un bouton qui ouvre sa fiche sur le
    reversement (point-du-jour.js, clients-dashboard.js, style.css, equipe.html) : étiquette
-   20260917reverser. */
+   20260917reverser.
+   v140, le 17/09/2026 — points 8.2 et 8.3 : la clôture d'un mois couvre enfin la paie (les cases
+   se grisent, l'écriture est refusée, un bandeau dit où rouvrir le mois) ; et le garde-fou sur
+   les montants passe de 100 000 000 F écrits dans le code — un seuil qui ne se déclenchait
+   jamais — à 2 000 000 F réglables depuis Gestion › Paramètres, appliqué aussi à la recette du
+   jour et à la saisie de paie, dans un panneau de l'application et non plus une fenêtre du
+   navigateur (gestion.js, gestion.html, migration 2026-09-17-seuil-de-vigilance.sql) :
+   étiquette 20260917protege. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v139'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v140'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
