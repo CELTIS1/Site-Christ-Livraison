@@ -238,20 +238,10 @@
     .hero-text-col{padding:64px 0 52px 0;}
     .hero-text h1, .hero-text p.lead, .hero-text .pill{margin-left:0; margin-right:0;}
     .hero-actions, .hero-audience{justify-content:flex-start;}
-    /* La photo n'occupe plus toute la largeur du héros mais une bande à droite (44%).
-       Essai 1 (contain) : la photo, plus haute que large, apparaissait toute petite
-       dans un bandeau très large — beaucoup de vide autour. Essai 2 (cover pleine
-       largeur) : pour couvrir un bandeau aussi large avec une photo portrait, il
-       fallait zoomer énormément — un tout petit bout de la photo, en très gros plan.
-       Celtis a signalé les deux, à la suite. Une bande plus étroite règle les deux :
-       la photo la remplit complètement (cover) sans besoin d'un cadrage aussi serré
-       (17/09/2026). Sur mobile, la photo garde toute la largeur : le bandeau y est
-       plus haut que large, donc cover pleine largeur y donne déjà un cadrage naturel. */
-    .hero-photo-col{ left:auto; width:44%; }
     .hero-photo-col::after{
-      background:linear-gradient(90deg, rgba(9,26,48,0.95) 0%, rgba(9,26,48,0.25) 45%, rgba(9,26,48,0) 100%);
+      background:linear-gradient(90deg, rgba(9,26,48,0.9) 0%, rgba(9,26,48,0.62) 48%, rgba(9,26,48,0.28) 100%);
     }
-    .hero-photo-col img{object-fit:cover; object-position:center;}
+    .hero-photo-col img{object-fit:contain; object-position:right center;}
     .hero-text{margin:0;}  /* le texte à gauche, la photo à droite (4.1) */
     #heroPill{margin-bottom:14px;}
     .hero h1{margin-bottom:14px;}
