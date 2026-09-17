@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917pourquoi">
-<script src="theme.js?v=20260917pourquoi"></script>
-<script src="splash.js?v=20260917pourquoi"></script>
+<link rel="stylesheet" href="style.css?v=20260917epure">
+<script src="theme.js?v=20260917epure"></script>
+<script src="splash.js?v=20260917epure"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -333,8 +333,14 @@
 </div>
 
 <div class="wrap">
-<div class="page-title">Bonjour <span id="user-first-name"></span> 👋</div>
-<div class="page-sub">Voici le suivi de tous les colis enregistrés par les clients, en temps réel.</div>
+<!-- 17/09/2026 — Ce bloc faisait deux lignes, se répétait en tête des huit onglets et coûtait
+     le tiers d'un écran de téléphone avant la première information utile. Pire, sa phrase
+     (« le suivi de tous les colis… ») était fausse partout sauf sur Colis : sur Finances on
+     regarde l'argent, sur Comptes des personnes. La phrase est partie ; la salutation reste,
+     sur une seule ligne, et seulement sur l'onglet d'accueil — showEquipeTab la masque
+     ailleurs, comme il le fait déjà pour « L'essentiel ». Même traitement que le haut de page
+     du livreur (feuille de route 2.5), jamais fait pour l'équipe. -->
+<div class="page-title page-title--salut" id="eq-salutation">Bonjour <span id="user-first-name"></span> 👋</div>
 
 <!-- Bandeau de la file d'attente hors-réseau. Placé au-dessus des onglets, donc visible quel que
      soit l'onglet ouvert : une saisie non encore envoyée ne doit jamais pouvoir passer inaperçue.
@@ -403,6 +409,11 @@
   font-size:12.5px; font-weight:600; color:var(--navy); line-height:1.1; cursor:pointer; white-space:nowrap;
   -webkit-tap-highlight-color:transparent; transition:border-color .12s ease, box-shadow .12s ease;
 }
+/* 44 px sur téléphone depuis le 17/09/2026 (point 9.1) : ces pastilles se touchent du pouce, et
+   36 px, c'est ce qu'on rate une fois sur trois. Sur ordinateur elles gardent leur taille — la
+   souris vise juste. Placé APRÈS la règle ci-dessus : à spécificité égale, c'est la dernière
+   qui l'emporte (première tentative posée avant, sans effet). */
+@media(max-width:760px){ #section-aujourdhui .ess-tuile{ min-height:44px; } }
 #section-aujourdhui .ess-tuile:hover{ border-color:var(--border-strong); box-shadow:var(--shadow-xs); }
 #section-aujourdhui .ess-tuile .n{ display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 7px; border-radius:999px; font-size:13px; font-weight:800; letter-spacing:-0.02em; color:#fff; background:currentColor; }
 #section-aujourdhui .ess-tuile .n{ color:#fff; }
@@ -1489,32 +1500,32 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917pourquoi"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917pourquoi"></script>
-<script src="lib/argent.js?v=20260917pourquoi"></script>
-<script src="lib/releve-cliente.js?v=20260917pourquoi"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917pourquoi"></script>
-<script src="lib/briques-argent.js?v=20260917pourquoi"></script>
-<script src="lib/annonce-de-remise.js?v=20260917pourquoi"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917pourquoi"></script>
-<script src="lib/primes.js?v=20260917pourquoi"></script>
-<script src="lib/doublons.js?v=20260917pourquoi"></script>
-<script src="config.js?v=20260917pourquoi"></script>
-<script src="clients-dashboard.js?v=20260917pourquoi"></script>
-<script src="livreurs-dashboard.js?v=20260917pourquoi"></script>
-<script src="point-du-jour.js?v=20260917pourquoi"></script>
-<script src="biometric-lock.js?v=20260917pourquoi"></script>
-<script src="clt-select-recherche.js?v=20260917pourquoi"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260917pourquoi"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260917pourquoi"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260917pourquoi"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260917pourquoi"></script>
-<script src="equipe/04-actions.js?v=20260917pourquoi"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260917pourquoi"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260917pourquoi"></script>
-<script src="equipe/07-rapports.js?v=20260917pourquoi"></script>
-<script src="equipe/08-son-ecran.js?v=20260917pourquoi"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260917pourquoi"></script>
+<script src="clt-common.js?v=20260917epure"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917epure"></script>
+<script src="lib/argent.js?v=20260917epure"></script>
+<script src="lib/releve-cliente.js?v=20260917epure"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917epure"></script>
+<script src="lib/briques-argent.js?v=20260917epure"></script>
+<script src="lib/annonce-de-remise.js?v=20260917epure"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917epure"></script>
+<script src="lib/primes.js?v=20260917epure"></script>
+<script src="lib/doublons.js?v=20260917epure"></script>
+<script src="config.js?v=20260917epure"></script>
+<script src="clients-dashboard.js?v=20260917epure"></script>
+<script src="livreurs-dashboard.js?v=20260917epure"></script>
+<script src="point-du-jour.js?v=20260917epure"></script>
+<script src="biometric-lock.js?v=20260917epure"></script>
+<script src="clt-select-recherche.js?v=20260917epure"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260917epure"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260917epure"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260917epure"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260917epure"></script>
+<script src="equipe/04-actions.js?v=20260917epure"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260917epure"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260917epure"></script>
+<script src="equipe/07-rapports.js?v=20260917epure"></script>
+<script src="equipe/08-son-ecran.js?v=20260917epure"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260917epure"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1551,6 +1562,6 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     Express
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260917pourquoi"></script>
+<script src="equipe/10-onglets.js?v=20260917epure"></script>
 </body>
 </html>

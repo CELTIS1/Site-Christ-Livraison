@@ -459,10 +459,14 @@ verifier(
    equipe/03-file-hors-reseau.js) ; joindre CLT depuis l'espace cliente et depuis la page de suivi
    publique (clt-common.js, suivi.html) ; « 🧭 Y aller » qui ouvre l'adresse dans Maps sur la carte
    du colis et sur la tournée (lib/communes-et-tarifs.js, livreur.html) : étiquette
-   20260917pourquoi. */
+   20260917pourquoi.
+   v138, le 17/09/2026 — points 9.2 et 9.1 de l'inventaire : le haut des écrans de l'équipe
+   dégonflé (la phrase qui coiffait les huit onglets est partie, la salutation ne reste que sur
+   l'accueil : equipe.html, equipe/10-onglets.js) et la règle des 44 px étendue à tous les
+   espaces, plus seulement au livreur (style.css, equipe.html) : étiquette 20260917epure. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v137'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v138'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

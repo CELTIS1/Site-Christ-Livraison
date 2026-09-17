@@ -193,6 +193,10 @@ input,textarea,select{font-family:inherit;}
 .wrap{max-width:1080px; margin:0 auto; padding:32px 24px 60px 24px;}
 .page-title{font-size:24px; color:var(--navy); font-weight:800; margin-bottom:4px; letter-spacing:-0.02em;}
 .page-sub{color:var(--muted); font-size:14px; margin-bottom:28px;}
+/* La salutation seule, sans phrase sous elle (17/09/2026) : elle porte donc sa propre marge,
+   et reste plus discrète qu'un titre de page — c'est une politesse, pas une information. */
+.page-title--salut{font-size:20px; margin-bottom:16px;}
+@media(max-width:760px){ .page-title--salut{font-size:18px; margin-bottom:12px;} }
 
 /* ---------- CARD ---------- */
 .card{
@@ -2874,3 +2878,40 @@ html[data-theme="dark"] .clt-joindre{ color:#9DB8DA; }
    tournée de récupération. Même mesure que les autres boutons de la carte. */
 .clt-aller{ white-space:nowrap; }
 .tournee-lieu + .clt-aller{ margin-top:6px; }
+
+/* ---------- CIBLES DE 44 PX, DANS TOUS LES ESPACES (17/09/2026, point 9.1) ----------
+   La règle « tout ce qu'on touche fait 44 px au moins » a été posée le 10 septembre pour le
+   seul écran du livreur (bloc 2.4 de livreur.html). L'inventaire du 17 septembre a montré ce
+   qu'elle donnait ailleurs, sur un téléphone de 390 px : des boutons de 24 à 29 px au bureau,
+   des pastilles de 38, des champs de date de 25, des replis « Comment lire » de 19. Sur une
+   moto ou derrière un comptoir, on vise mal et on appuie deux fois.
+
+   Ce bloc l'étend aux autres espaces. Il est en fin de feuille exprès : plusieurs de ces
+   sélecteurs fixent leur hauteur plus haut, et à spécificité égale c'est la dernière règle qui
+   l'emporte. Il ne s'applique qu'en dessous de 760 px : sur un écran d'ordinateur, la souris
+   vise juste et des boutons de 44 px partout alourdiraient les tableaux denses de la
+   comptabilité pour rien.
+
+   Deux manières de faire, selon la nature de l'élément : une hauteur minimale pour ce qui a
+   une boîte (boutons, champs, listes déroulantes), une marge intérieure pour les lignes de
+   texte qu'on déplie — sur celles-là, une hauteur minimale collerait le texte en haut. */
+@media(max-width:760px){
+  .btn, .btn-sm, .btn-outline, .tab, .subtab, .filter-chip, .ess-tuile, .actions-menu-btn,
+  .date-filter-input, .date-filter-clear, .per-raccourcis button, .cd-periode button,
+  input[type="date"], input[type="month"], input[type="number"], input[type="text"],
+  input[type="tel"], input[type="search"], input[type="password"], select{
+    min-height:44px;
+  }
+  .eq-aide > summary, .colis-plus > summary, .restes-en-route > summary{
+    padding-block:12px;
+  }
+  /* Les pastilles de « L'essentiel » se corrigent dans equipe.html, où elles sont définies :
+     le style de la page est chargé après cette feuille, il l'emporterait de toute façon. */
+  /* Les liens qu'on touche comme des boutons : le numéro de téléphone sur une carte, et le
+     « Ajouter un colis sans photo » de la cliente, qui ne faisait que 19 px. Ils deviennent des
+     boîtes pour pouvoir avoir une hauteur, tout en restant dans le fil du texte. */
+  .colis-tel, .lien-nu{ display:inline-flex; align-items:center; min-height:44px; }
+  /* Les cases à cocher : 24 px, la mesure déjà retenue pour l'écran du livreur le 10 septembre
+     (une case n'est pas un bouton — on la vise avec son étiquette, qui, elle, fait 44). */
+  input[type="checkbox"], input[type="radio"]{ min-width:24px; min-height:24px; }
+}

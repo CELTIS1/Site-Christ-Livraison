@@ -108,5 +108,33 @@ verifier('elle se replie en deux groupes comme les autres espaces (user-info--gr
 verifier('gestion.js branche le menu au démarrage (initSettingsMenu)',
   /initSettingsMenu\(\);/.test(gestionJs));
 
+console.log('\n6. Le haut des écrans de l\'équipe, dégonflé (17/09/2026, point 9.2)');
+const equipe = lire('app/equipe.html');
+verifier('la phrase « le suivi de tous les colis » ne coiffe plus les huit onglets',
+  !/page-sub">Voici le suivi de tous les colis/.test(equipe),
+  'elle était fausse partout sauf sur Colis : sur Finances on regarde l\'argent');
+verifier('la salutation tient sur une ligne et porte un identifiant',
+  /id="eq-salutation"/.test(equipe) && /page-title--salut/.test(equipe));
+verifier('elle ne s\'affiche que sur l\'onglet d\'accueil, comme « L\'essentiel »',
+  /getElementById\('eq-salutation'\)\?\.classList\.toggle\('hidden', key !== 'colis'\)/.test(lire('app/equipe/10-onglets.js')));
+
+console.log('\n7. Les 44 px dans tous les espaces, pas seulement chez le livreur (point 9.1)');
+verifier('la règle existe et ne vise que le téléphone',
+  /@media\(max-width:760px\)\{[\s\S]{0,900}?\.btn, \.btn-sm, \.btn-outline, \.tab, \.subtab[\s\S]{0,400}?min-height:44px/.test(style));
+verifier('elle couvre aussi les champs de saisie et les listes déroulantes',
+  /input\[type="date"\][\s\S]{0,300}?select\{\s*min-height:44px/.test(style));
+verifier('les liens qu\'on touche comme des boutons sont traités (numéro, « sans photo »)',
+  /\.colis-tel, \.lien-nu\{ display:inline-flex; align-items:center; min-height:44px; \}/.test(style));
+verifier('les cases à cocher font 24 px, la mesure déjà retenue pour le livreur',
+  /input\[type="checkbox"\], input\[type="radio"\]\{ min-width:24px; min-height:24px; \}/.test(style));
+/* Le piège dans lequel je suis tombé en écrivant ce point : une règle posée AVANT celle qu'elle
+   corrige n'a aucun effet, à spécificité égale. Les pastilles de « L'essentiel » sont restées à
+   38 px deux essais de suite pour cette raison. Ce contrôle garde l'ordre. */
+const iBase = equipe.indexOf('#section-aujourdhui .ess-tuile{');
+const iCorrection = equipe.indexOf('@media(max-width:760px){ #section-aujourdhui .ess-tuile{ min-height:44px; } }');
+verifier('les pastilles de « L\'essentiel » passent à 44 px, et la règle est bien APRÈS la leur',
+  iBase !== -1 && iCorrection !== -1 && iCorrection > iBase,
+  'une règle de même spécificité placée avant ne sert à rien');
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

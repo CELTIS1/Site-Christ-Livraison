@@ -19,6 +19,9 @@
     // La synthèse « Aujourd'hui — l'essentiel » n'apparaît que sur l'onglet Colis
     // (le tableau de bord d'accueil), pour ne plus encombrer les autres onglets.
     document.getElementById('section-aujourdhui')?.classList.toggle('hidden', key !== 'colis');
+    // Et la salutation avec elle (17/09/2026) : on ne dit bonjour qu'une fois, sur l'écran
+    // d'accueil. Les autres onglets vont droit au travail.
+    document.getElementById('eq-salutation')?.classList.toggle('hidden', key !== 'colis');
     document.querySelectorAll('#clt-toptabs .clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.eqtab === key));
     document.querySelectorAll('#clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.nav === key));
     // Réajuste les tableaux "sticky" et la carte Leaflet une fois le panneau réaffiché.
