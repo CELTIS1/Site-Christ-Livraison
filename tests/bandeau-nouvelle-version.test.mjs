@@ -536,10 +536,15 @@ verifier(
    ligne « 2 en cours »). Les groupes affichés, leur libellé et leurs statuts sont désormais
    écrits une seule fois (lib/vocabulaire-de-la-journee.js) : « En route » chez le livreur,
    « En livraison » chez la cliente. Les deux calendriers de l'écran du livreur n'en font plus
-   qu'un, et un colis revenu apparaît enfin dans sa journée : étiquette 20260917memesmots. */
+   qu'un, et un colis revenu apparaît enfin dans sa journée : étiquette 20260917memesmots.
+   v152, le 17/09/2026 — point 10.5 : l'historique daté des étapes sur la page de suivi. La
+   colonne en_livraison_at n'existait pas (« en livraison depuis 11 h » était impossible à
+   écrire) ; elle est posée par les deux déclencheurs, et les cinq horodatages sont exposés au
+   SEUL niveau vérifié — le numéro seul les reçoit nuls, comme la description et le montant.
+   Migration 2026-09-17-l-histoire-du-colis.sql : étiquette 20260917histoire. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v151'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v152'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

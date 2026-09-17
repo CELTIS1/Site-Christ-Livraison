@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917histoire",
+      "date": "17 septembre 2026",
+      "titre": "Le destinataire voit enfin l'histoire de son colis",
+      "points": [
+        "La page de suivi montrait l'état du moment et rien d'autre : ni depuis quand, ni à quelle heure le colis avait été récupéré. Elle donne maintenant chaque étape franchie, avec sa date et son heure.",
+        "L'heure du départ en livraison n'existait nulle part dans la base : elle est enregistrée à partir d'aujourd'hui. Les colis partis plus tôt n'en auront pas, et l'écran le dit plutôt que d'inventer une heure.",
+        "L'historique n'apparaît qu'avec les 4 derniers chiffres du téléphone du destinataire, comme le reste de la fiche : les heures d'une tournée ne s'offrent pas à qui devine un numéro.",
+        "C'est autant d'appels en moins au bureau pour demander « où en est mon colis ? »."
+      ]
+    },
+    {
       "version": "20260917memesmots",
       "date": "17 septembre 2026",
       "titre": "Le même mot pour la même chose",

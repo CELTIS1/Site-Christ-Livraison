@@ -128,6 +128,16 @@
   .live-indicator{
     display:flex; align-items:center; gap:8px; margin-top:18px; font-size:12.5px; color:var(--muted);
   }
+  /* L'histoire du colis (point 10.5, 17/09/2026). Une liste, pas une frise à puces colorées :
+     sur un téléphone, l'étape et son heure doivent tenir sur une ligne et rester lisibles. */
+  .histoire{ margin-top:14px; padding-top:12px; border-top:1px solid rgba(0,0,0,.08); }
+  .histoire-titre{ font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; opacity:.6; margin-bottom:8px; }
+  .histoire-liste{ list-style:none; margin:0; padding:0; }
+  .histoire-etape{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:6px 0; }
+  .histoire-etape + .histoire-etape{ border-top:1px dashed rgba(0,0,0,.07); }
+  .histoire-quoi{ font-weight:600; }
+  .histoire-quand{ font-size:13.5px; opacity:.75; text-align:right; white-space:nowrap; }
+  .histoire-note{ margin-top:8px; font-size:12.5px; opacity:.7; }
   /* Joindre CLT (17/09/2026). Posé après le résultat, jamais au-dessus : le destinataire vient
      d'abord voir où est son colis ; le contact ne sert qu'ensuite, quand la réponse ne lui suffit
      pas. Deux liens de 44 px, comme partout ailleurs dans la maison. */
@@ -337,6 +347,64 @@
     return !!data && data.description == null && data.destination == null && data.montant_total == null && !data.photo_url;
   }
 
+  /* L'HISTOIRE DU COLIS, HEURE PAR HEURE — point 10.5, 17 septembre 2026
+     ------------------------------------------------------------------
+     Le destinataire voyait « en livraison » et rien d'autre : ni depuis quand, ni à quelle
+     heure le colis avait été récupéré. Il appelait donc, et c'est le téléphone de l'équipe qui
+     payait cette absence toute la journée.
+
+     DEUX RÈGLES, ET ELLES COMPTENT PLUS QUE LA MISE EN FORME.
+
+     1. ON N'INVENTE AUCUNE HEURE. La colonne en_livraison_at n'existait pas avant aujourd'hui :
+        les colis partis en livraison plus tôt ne l'auront jamais. Une étape sans heure connue
+        s'affiche sans heure — jamais avec celle d'à côté, jamais avec « environ ». Une date
+        approximative sur une page de suivi est pire que pas de date : elle se retient.
+
+     2. L'HISTOIRE EST RÉSERVÉE À CELUI QUI PROUVE SON NUMÉRO. Cette fonction n'est appelée que
+        sur le chemin vérifié (4 derniers chiffres du téléphone du destinataire). Sur le chemin
+        du numéro seul, le serveur renvoie ces colonnes nulles : connaître les heures d'une
+        tournée ne s'offre pas à qui devine un numéro de suivi.
+
+     L'ordre est celui du parcours réel, pas celui de la base. Les étapes non atteintes ne sont
+     pas affichées en gris « à venir » : le colis n'est pas encore passé par là, et une étape
+     grise se lit comme une promesse d'horaire. */
+  const ETAPES_DU_SUIVI = [
+    { champ: 'created_at',      label: 'Colis enregistré' },
+    { champ: 'recupere_at',     label: 'Récupéré par CLT' },
+    { champ: 'en_livraison_at', label: 'Parti en livraison' },
+    { champ: 'livre_at',        label: 'Livré' },
+    { champ: 'non_livre_at',    label: 'Livraison non aboutie' },
+    { champ: 'retour_at',       label: 'Retourné à l\'expéditrice' },
+  ];
+
+  function histoireHTML(data) {
+    if (!data) return '';
+    const franchies = ETAPES_DU_SUIVI.filter(e => !!data[e.champ]);
+    // Une seule étape connue (le dépôt), c'est l'ancien affichage : on garde la ligne simple.
+    if (franchies.length < 2) {
+      return `
+      <div class="result-row">
+        <span class="label">Déposé le</span>
+        <span class="value">${formatDate(data.created_at)}</span>
+      </div>`;
+    }
+    const lignes = franchies.map(e => `
+        <li class="histoire-etape">
+          <span class="histoire-quoi">${escapeHTML(e.label)}</span>
+          <span class="histoire-quand">${formatDate(data[e.champ])}</span>
+        </li>`).join('');
+    /* Le statut actuel a une heure, mais elle n'est pas toujours connue : un colis passé en
+       livraison avant le 17/09 n'a pas d'en_livraison_at. On le dit, au lieu de laisser croire
+       que l'étape n'a pas eu lieu. */
+    const manqueLHeureDuStatut = data.statut === 'en_livraison' && !data.en_livraison_at;
+    return `
+      <div class="histoire">
+        <div class="histoire-titre">Étapes</div>
+        <ul class="histoire-liste">${lignes}</ul>
+        ${manqueLHeureDuStatut ? '<div class="histoire-note">L\'heure du départ en livraison n\'a pas été enregistrée pour ce colis.</div>' : ''}
+      </div>`;
+  }
+
   function renderColis(data) {
     const now = new Date();
     const heure = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -415,10 +483,7 @@
           <span class="value">${montantTotal}</span>
         </div>
       ` : ''}
-      <div class="result-row">
-        <span class="label">Déposé le</span>
-        <span class="value">${formatDate(data.created_at)}</span>
-      </div>
+      ${histoireHTML(data)}
       <div class="live-indicator">
         <span class="live-dot"></span>
         Actualisation automatique active — dernière vérification à ${heure}
