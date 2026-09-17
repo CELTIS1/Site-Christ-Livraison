@@ -1051,6 +1051,25 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
   border-left:3px solid var(--border-strong); padding-left:10px;
 }
 .recap-row-etat{font-size:11.5px; font-weight:600; color:var(--muted); margin-top:3px;}
+
+/* ---- Les demandes de passage (point 10.6, 17/09/2026) --------------------------------------
+   Ce que le bureau n'a PAS décidé lui-même : une cliente qui dit « passez chez moi ce jour-là ».
+   Ambre, comme tout ce qui attend une décision dans cet écran, et posé au-dessus de la tournée
+   parce que c'est la seule chose qu'on risque de ne jamais voir autrement. */
+.demandes-de-passage{
+  border:1px solid #ffcf8a; background:#fff5e6; border-radius:12px; padding:12px 14px; margin-bottom:14px;
+}
+.demandes-de-passage .clt-alert-head{ font-weight:700; color:#8a4b00; font-size:14px; margin-bottom:8px; }
+.demandes-liste{ list-style:none; margin:0; padding:0; }
+.demande-ligne{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:6px 0;
+}
+.demande-ligne + .demande-ligne{ border-top:1px dashed rgba(138,75,0,.25); }
+.demande-nom{ font-weight:600; }
+.demande-note{ font-size:12.5px; color:var(--muted); flex:1 1 auto; }
+html[data-theme="dark"] .demandes-de-passage{ background:#3a2c14; border-color:#7a5a20; }
+html[data-theme="dark"] .demandes-de-passage .clt-alert-head{ color:#f0c27a; }
+html[data-theme="dark"] .demande-ligne + .demande-ligne{ border-top-color:rgba(240,194,122,.2); }
 .argent-jour-table th, .argent-jour-table td{padding:8px 10px; font-size:12.5px;}
 
 /* ---- Les colis qui dorment (29/08/2026) ---------------------------------------------------

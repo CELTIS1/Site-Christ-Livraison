@@ -169,8 +169,15 @@ vm.runInContext('const HORODATAGE_DU_STATUT = ' + JSON.stringify({
    dans le bac à sable, sinon le banc ment par le silence. */
 vm.runInContext(['formatMontant', 'escapeHTML', 'formatHeure'].map(n => blocDe(common, n, 'clt-common.js')).join('\n\n'), contexte);
 
+/* blocDemandesHTML et brancherBoutonsDemandes sont nés le 17/09/2026 (point 10.6) : le bloc des
+   demandes de passage, posé au-dessus de la tournée. renderProgrammationBody les appelle, donc
+   le bac à sable doit les avoir — sinon le banc tombe sur un ReferenceError au lieu de vérifier
+   quoi que ce soit. progDemandes est déclaré vide : les bancs de la tournée ne parlent pas de
+   demandes, et un bloc absent ne doit pas changer une seule de leurs lignes. */
+vm.runInContext('let progDemandes = [];', contexte);
 vm.runInContext([
-  'progGetJour', 'progFicheCliente', 'progNomLivreur', 'renderProgrammationBody',
+  'progGetJour', 'progFicheCliente', 'progNomLivreur', 'blocDemandesHTML',
+  'brancherBoutonsDemandes', 'renderProgrammationBody',
 ].map(n => blocDe(equipe, n, 'equipe.html')).join('\n\n'), contexte);
 
 vm.runInContext([

@@ -282,6 +282,77 @@ if (error) { console.error('Tournée :', error.message || error); continue; }
 return Array.from(parId.values());
 }
 
+/* CE QU'UNE CLIENTE A DEMANDÉ, ET QUE PERSONNE NE VOYAIT — point 10.6, 17 septembre 2026
+   ==========================================================================================
+   Une vendeuse ne pouvait dire « passez chez moi demain » qu'en enregistrant une fournée. Elle
+   appelait donc, ou elle attendait, et le bureau programmait sa tournée du lendemain sans
+   savoir qu'elle l'attendait. Elle peut maintenant le demander depuis son espace, et c'est ici
+   que le bureau le voit — dans l'écran où il décide, pas dans une boîte de messages à part.
+
+   UNE DEMANDE N'EST PAS UNE PROGRAMMATION. Elle n'attache aucun livreur et ne crée aucune
+   tournée : elle rend visible une attente. Le bloc est donc AU-DESSUS de la tournée, pas
+   dedans — et il disparaît quand la cliente a été programmée, parce qu'à ce moment-là la
+   réponse est dans la tournée elle-même.
+
+   La table est née le 17/09/2026 : si le script n'est pas encore passé, on n'affiche rien
+   plutôt que de faire tomber l'onglet qui commande les tournées du matin. */
+let progDemandes = [];
+
+async function lireDemandesDePassage(jour){
+  const { data, error } = await supabaseClient
+    .from('demandes_de_passage')
+    .select('id, jour, fournisseur_id, note, statut')
+    .eq('jour', jour)
+    .eq('statut', 'en_attente');
+  if (error) { console.warn('Demandes de passage indisponibles :', error.message || error); return []; }
+  return data || [];
+}
+
+async function marquerDemandeTraitee(id){
+  const { error } = await supabaseClient.from('demandes_de_passage')
+    .update({ statut: 'traitee', traitee_par: currentUser ? currentUser.id : null, traitee_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) { showToast("La demande n'a pas pu être marquée traitée.", true); return; }
+  showToast('Demande marquée traitée : la cliente le voit dans son espace.');
+  chargerProgrammations();
+}
+
+function blocDemandesHTML(){
+  // On ne montre que les clientes qui n'ont PAS encore de tournée ce jour-là : une fois
+  // programmée, la réponse est dans la tournée, et répéter la demande brouille l'écran.
+  const dejaProgrammees = new Set((progLignes || []).map(p => p.fournisseur_id));
+  const attentes = (progDemandes || []).filter(d => !dejaProgrammees.has(d.fournisseur_id));
+  if (!attentes.length) return '';
+  const lignes = attentes.map(d => {
+    const f = progFicheCliente(d.fournisseur_id) || {};
+    const nom = f.nom || f.full_name || 'Cliente';
+    return `<li class="demande-ligne">
+        <span class="demande-nom">${escapeHTML(nom)}</span>
+        ${d.note ? `<span class="demande-note">${escapeHTML(d.note)}</span>` : ''}
+        <button type="button" class="btn btn-outline btn-sm btn-demande-traitee" data-demande="${escapeHTML(d.id)}">✅ Traitée</button>
+      </li>`;
+  }).join('');
+  // Pas de classe « clt-alert » ici : elle n'existe que dans l'espace Gestion. Le bloc a la
+  // sienne, dans style.css, avec sa version sombre.
+  return `<div class="demandes-de-passage">
+      <div class="clt-alert-head">🗓️ ${attentes.length} cliente${attentes.length > 1 ? 's' : ''} ${attentes.length > 1 ? 'demandent' : 'demande'} un passage ce jour-là</div>
+      <ul class="demandes-liste">${lignes}</ul>
+      <div class="meta" style="margin-top:6px;">Elles ne sont pas encore programmées. Choisissez-leur un livreur ci-dessus, puis marquez la demande traitée.</div>
+    </div>`;
+}
+
+/* Cette fonction est appelée à la fin du rendu de la TOURNÉE DU MATIN — l'écran le plus
+   critique de l'application. Un bouton qu'on ne parvient pas à brancher ne doit en aucun cas
+   faire tomber le rendu : la tournée s'afficherait vide un matin, à cause d'une commodité.
+   D'où la garde, et non parce qu'on s'attend à ce que le cas arrive. */
+function brancherBoutonsDemandes(racine){
+  const dans = racine && typeof racine.querySelectorAll === 'function' ? racine : null;
+  if (!dans) return;
+  dans.querySelectorAll('.btn-demande-traitee').forEach(b => {
+    b.addEventListener('click', () => marquerDemandeTraitee(b.dataset.demande));
+  });
+}
+
 async function chargerProgrammations(){
 const jour = progGetJour();
 progEnCours = true; progErreur = '';
@@ -328,6 +399,7 @@ return;
 }
 
 progLignes = data || [];
+progDemandes = await lireDemandesDePassage(jour);
 // Une journée à venir n'a pas encore de colis : inutile d'interroger la base pour elle.
 const rang = rangDeLaJournee(jour, aujourdhuiAbidjan());
 progColis = rang === 'avenir'
@@ -380,8 +452,13 @@ const ligneRestes = restes > 0
 ? `<div class="meta prog-restes" style="margin-top:8px; color:#b45309;">⏳ <strong>${restes}</strong> colis en attente d'un autre jour, confié${restes > 1 ? 's' : ''} à un livreur sans tournée ${escapeHTML(dateLabel)} — à reprogrammer si la récupération est encore à faire.</div>`
 : '';
 
+// Le bloc des demandes passe AVANT tout le reste : c'est la seule chose de cet écran que le
+// bureau n'a pas décidée lui-même, et la seule qu'il risque de ne jamais voir autrement.
+const demandes = blocDemandesHTML();
+
 if (!lignes.length) {
-cltPoserHTML(body, `<div class="empty-state">Aucune récupération programmée ${escapeHTML(dateLabel)}. Choisissez une cliente et un livreur ci-dessus pour commencer la tournée.</div>${ligneRestes}`);
+cltPoserHTML(body, `${demandes}<div class="empty-state">Aucune récupération programmée ${escapeHTML(dateLabel)}. Choisissez une cliente et un livreur ci-dessus pour commencer la tournée.</div>${ligneRestes}`);
+brancherBoutonsDemandes(body);
 return;
 }
 
@@ -567,6 +644,7 @@ ${tourneesParLivreur(dejaFaites).map(blocLivreurFait).join('')}
 : '';
 
 cltPoserHTML(body, `
+${demandes}
 <div class="recap-day-summary">${escapeHTML(dateLabel)} · <strong>${total.nbClientes}</strong> cliente${total.nbClientes > 1 ? 's' : ''} · <strong>${total.nbLivreurs}</strong> livreur${total.nbLivreurs > 1 ? 's' : ''}</div>
 ${sectionProgramme}
 ${sectionConfiees}
@@ -590,6 +668,7 @@ ${colisConnus
 ? `Sur ces ${total.nbClientes} cliente(s), ${total.nbClientesSansRien} n'${total.nbClientesSansRien > 1 ? 'ont' : 'a'} rien à faire récupérer pour l'instant — la ligne reste, parce qu'un colis peut encore être saisi d'ici le passage du livreur.`
 : `La journée n'est pas encore arrivée : aucun colis n'existe pour elle. Les comptes se rempliront tout seuls à mesure que les colis seront saisis, et chacun se rattachera au livreur désigné ici.`}
 </div>` : ''}`);
+brancherBoutonsDemandes(body);
 }
 
 /* POSER UNE TOURNÉE POUR UNE CLIENTE DU REPLI, SANS LA RETAPER. (28/08/2026)

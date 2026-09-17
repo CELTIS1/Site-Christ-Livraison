@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917histoire">
-<script src="theme.js?v=20260917histoire"></script>
-<script src="splash.js?v=20260917histoire"></script>
+<link rel="stylesheet" href="style.css?v=20260917passage">
+<script src="theme.js?v=20260917passage"></script>
+<script src="splash.js?v=20260917passage"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -327,6 +327,41 @@
   </div>
   </div>
 
+  <!-- ==========================================================================================
+       DEMANDER UN PASSAGE SANS SAISIR DE COLIS — point 10.6, 17 septembre 2026
+       ==========================================================================================
+       Jusqu'ici, la seule façon de dire « venez chez moi demain » était d'enregistrer une
+       fournée. Or une vendeuse sait souvent qu'elle aura des colis AVANT de savoir lesquels :
+       le tissu n'est pas coupé, la commande pas emballée. Elle appelait, ou elle attendait, et
+       le bureau programmait sa tournée sans savoir qu'elle l'attendait.
+
+       Cette carte est en TÊTE de l'onglet, avant la saisie des photos, parce que c'est le geste
+       le plus court : celle qui a ses colis prêts descend d'un cran, celle qui n'a rien à saisir
+       n'a pas à traverser un formulaire pour dire une phrase.
+
+       Ce n'est PAS une programmation : le bureau reste seul à décider qui passe. La carte le dit,
+       pour qu'aucune vendeuse n'attende un livreur que personne n'a envoyé. -->
+  <div class="card" id="section-passage">
+    <h2 class="panel-subtitle" style="margin-top:0;">🗓️ Demander un passage</h2>
+    <p class="hint" style="margin-top:0;">Vous n'avez pas encore préparé vos colis ? Dites-nous seulement quel jour vous voulez qu'on passe. <strong>Nous vous confirmerons</strong> : une demande n'est pas encore une tournée.</p>
+    <div id="passage-en-cours"></div>
+    <div class="field-row" style="margin-bottom:2px;">
+      <div class="field">
+        <label>Quel jour&nbsp;?</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <input type="date" id="passage-jour" style="max-width:180px;">
+          <button type="button" class="btn btn-outline btn-sm" id="passage-demain">📅 Demain</button>
+          <button type="button" class="btn btn-outline btn-sm" id="passage-aujourdhui">Aujourd'hui</button>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>À préciser&nbsp;? <span class="hint" style="background:none;padding:0;margin:0;">(facultatif)</span></label>
+      <input type="text" id="passage-note" maxlength="200" placeholder="Ex : après 14 h, ou beaucoup de colis">
+    </div>
+    <button type="button" class="btn" id="passage-envoyer">Demander le passage</button>
+  </div>
+
   <div class="card" id="section-ajouter">
     <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'ajouter-content')">
       <span class="collapse-arrow">▶</span> 📸 Ajouter des colis à partir des photos
@@ -485,23 +520,23 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917histoire"></script>
-<script src="lib/bibliotheques.js?v=20260917histoire"></script>
-<script src="lib/retours.js?v=20260917histoire"></script>
-<script src="lib/reclamations.js?v=20260917histoire"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917histoire"></script>
-<script src="lib/argent.js?v=20260917histoire"></script>
-<script src="lib/releve-cliente.js?v=20260917histoire"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917histoire"></script>
-<script src="lib/briques-argent.js?v=20260917histoire"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260917histoire"></script>
-<script src="lib/annonce-de-remise.js?v=20260917histoire"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917histoire"></script>
-<script src="lib/primes.js?v=20260917histoire"></script>
-<script src="lib/doublons.js?v=20260917histoire"></script>
-<script src="config.js?v=20260917histoire"></script>
-<script src="biometric-lock.js?v=20260917histoire"></script>
-<script src="clt-select-recherche.js?v=20260917histoire"></script>
+<script src="clt-common.js?v=20260917passage"></script>
+<script src="lib/bibliotheques.js?v=20260917passage"></script>
+<script src="lib/retours.js?v=20260917passage"></script>
+<script src="lib/reclamations.js?v=20260917passage"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917passage"></script>
+<script src="lib/argent.js?v=20260917passage"></script>
+<script src="lib/releve-cliente.js?v=20260917passage"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917passage"></script>
+<script src="lib/briques-argent.js?v=20260917passage"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260917passage"></script>
+<script src="lib/annonce-de-remise.js?v=20260917passage"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917passage"></script>
+<script src="lib/primes.js?v=20260917passage"></script>
+<script src="lib/doublons.js?v=20260917passage"></script>
+<script src="config.js?v=20260917passage"></script>
+<script src="biometric-lock.js?v=20260917passage"></script>
+<script src="clt-select-recherche.js?v=20260917passage"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2266,7 +2301,123 @@
     // Les signalements déjà envoyés, pour que le bouton laisse la place à leur état (point 7.2).
     await chargerMesReclamations();
     renderColisList();
+    chargerMaDemandeDePassage();
   }
+
+  /* ==========================================================================================
+     DEMANDER UN PASSAGE — point 10.6, 17 septembre 2026
+     ==========================================================================================
+     Une demande est un SOUHAIT, pas une tournée. Tout ce qui suit est écrit pour que la
+     vendeuse ne puisse pas confondre les deux : le texte de la carte le dit, la confirmation le
+     redit, et l'état affiché parle d'« attente de confirmation » tant que le bureau n'a pas
+     répondu. Une vendeuse qui attend un livreur que personne n'a envoyé, c'est une journée
+     perdue et un client fâché — bien pire qu'une demande qu'il faut redire.
+
+     UNE SEULE DEMANDE PAR JOUR : redemander le même jour REMPLACE (on conflict). Sinon une
+     vendeuse qui appuie deux fois croit avoir doublé ses chances, et le bureau lit deux lignes
+     pour une seule attente. */
+  let maDemandeDePassage = null;
+
+  function passageJourEnClair(iso){
+    if (!iso) return '';
+    const auj = todayLocalISODate();
+    if (iso === auj) return "aujourd'hui";
+    const d = new Date(iso + 'T12:00:00');
+    const demain = new Date(auj + 'T12:00:00'); demain.setDate(demain.getDate() + 1);
+    if (iso === demain.toISOString().slice(0, 10)) return 'demain';
+    return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
+  }
+
+  function renderMaDemandeDePassage(){
+    const box = document.getElementById('passage-en-cours');
+    if (!box) return;
+    const d = maDemandeDePassage;
+    if (!d) { cltPoserHTML(box, ''); return; }
+    // « traitee » veut dire : le bureau l'a vue et a décidé. On ne promet pas un livreur pour
+    // autant — c'est la tournée du jour qui le dira — mais on cesse de dire « en attente ».
+    const traitee = d.statut === 'traitee';
+    cltPoserHTML(box, `
+      <div class="clt-alert ${traitee ? 'clt-alert-ok' : 'clt-alert-warn'}" style="margin-bottom:14px;">
+        <strong>${traitee ? '✅ Passage confirmé' : '🕓 Demande envoyée'}</strong> pour ${escapeHTML(passageJourEnClair(d.jour))}.
+        ${d.note ? '<br><span class="hint" style="background:none;padding:0;margin:0;">Votre précision : ' + escapeHTML(d.note) + '</span>' : ''}
+        ${traitee ? '' : '<br>En attente de confirmation par CLT.'}
+        <br><button type="button" class="btn btn-outline btn-sm" id="passage-annuler" style="margin-top:8px;">Annuler cette demande</button>
+      </div>`);
+    const btn = document.getElementById('passage-annuler');
+    if (btn) btn.addEventListener('click', annulerMaDemandeDePassage);
+  }
+
+  async function chargerMaDemandeDePassage(){
+    if (!currentUser) return;
+    // On ne regarde que les jours à venir (et aujourd'hui) : une demande de la semaine dernière
+    // n'apprend rien à personne et encombrerait la carte.
+    const { data, error } = await supabaseClient
+      .from('demandes_de_passage')
+      .select('id, jour, note, statut')
+      .eq('fournisseur_id', currentUser.id)
+      .neq('statut', 'annulee')
+      .gte('jour', todayLocalISODate())
+      .order('jour', { ascending: true })
+      .limit(1);
+    // La table est née le 17/09/2026. Si le script n'est pas encore passé, on n'affiche rien
+    // plutôt que de faire rougir la console d'une vendeuse : la carte reste utilisable.
+    if (error) { maDemandeDePassage = null; renderMaDemandeDePassage(); return; }
+    maDemandeDePassage = (data && data[0]) || null;
+    renderMaDemandeDePassage();
+  }
+
+  async function envoyerMaDemandeDePassage(){
+    const jourEl = document.getElementById('passage-jour');
+    const noteEl = document.getElementById('passage-note');
+    const btn = document.getElementById('passage-envoyer');
+    const jour = jourEl ? jourEl.value : '';
+    if (!jour) {
+      await cltConfirm({ title: 'Quel jour ?', sub: 'Choisissez le jour où vous voulez que le livreur passe.', okLabel: "J'ai compris", cancelLabel: 'Fermer' });
+      return;
+    }
+    if (jour < todayLocalISODate()) {
+      await cltConfirm({ title: 'Ce jour est passé', sub: 'On ne peut pas demander un passage pour hier. Choisissez aujourd\'hui ou un jour à venir.', okLabel: "J'ai compris", cancelLabel: 'Fermer' });
+      return;
+    }
+    const note = (noteEl && noteEl.value.trim()) || null;
+    btn.disabled = true; const libelle = btn.textContent; btn.textContent = 'Envoi…';
+    const { error } = await supabaseClient.from('demandes_de_passage')
+      .upsert({ fournisseur_id: currentUser.id, jour, note, statut: 'en_attente' },
+              { onConflict: 'jour,fournisseur_id' });
+    btn.disabled = false; btn.textContent = libelle;
+    if (error) {
+      await cltConfirm({ title: 'Demande non envoyée', sub: "Elle n'a pas pu partir. Vérifiez votre connexion et réessayez.", okLabel: "J'ai compris", cancelLabel: 'Fermer' });
+      return;
+    }
+    if (noteEl) noteEl.value = '';
+    cltToast('Demande envoyée pour ' + passageJourEnClair(jour) + '. CLT vous confirmera.', { type: 'success', title: 'Bien reçu' });
+    chargerMaDemandeDePassage();
+  }
+
+  async function annulerMaDemandeDePassage(){
+    if (!maDemandeDePassage) return;
+    if (!await cltConfirm({ title: 'Annuler cette demande ?', sub: 'CLT ne passera pas ce jour-là, sauf si vous enregistrez des colis.', okLabel: 'Annuler la demande', cancelLabel: 'Garder' })) return;
+    const { error } = await supabaseClient.from('demandes_de_passage')
+      .update({ statut: 'annulee' }).eq('id', maDemandeDePassage.id);
+    if (error) { cltToast("La demande n'a pas pu être annulée. Réessayez.", { type: 'error' }); return; }
+    cltToast('Demande annulée.', { type: 'info' });
+    chargerMaDemandeDePassage();
+  }
+
+  (function brancherDemandeDePassage(){
+    const jourEl = document.getElementById('passage-jour');
+    if (!jourEl) return;
+    const auj = todayLocalISODate();
+    const demain = new Date(auj + 'T12:00:00'); demain.setDate(demain.getDate() + 1);
+    const demainISO = demain.toISOString().slice(0, 10);
+    // Ouvert sur DEMAIN, et pas sur aujourd'hui : celle qui n'a encore rien préparé prépare le
+    // lendemain. C'est le cas qui a motivé ce point.
+    jourEl.value = demainISO;
+    jourEl.min = auj;   // un passage ne se demande pas pour hier
+    document.getElementById('passage-demain').addEventListener('click', () => { jourEl.value = demainISO; });
+    document.getElementById('passage-aujourdhui').addEventListener('click', () => { jourEl.value = auj; });
+    document.getElementById('passage-envoyer').addEventListener('click', envoyerMaDemandeDePassage);
+  })();
 
   async function loadMoreColis(){
     if (colisLoadingMore || !colisHasMore) return;

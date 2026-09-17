@@ -541,10 +541,15 @@ verifier(
    colonne en_livraison_at n'existait pas (« en livraison depuis 11 h » était impossible à
    écrire) ; elle est posée par les deux déclencheurs, et les cinq horodatages sont exposés au
    SEUL niveau vérifié — le numéro seul les reçoit nuls, comme la description et le montant.
-   Migration 2026-09-17-l-histoire-du-colis.sql : étiquette 20260917histoire. */
+   Migration 2026-09-17-l-histoire-du-colis.sql : étiquette 20260917histoire.
+   v153, le 17/09/2026 — point 10.6 : demander un passage sans saisir de colis. Table
+   demandes_de_passage (une par jour et par cliente, trois règles d'accès), carte en tête de
+   l'espace cliente, bloc au-dessus de la tournée du bureau. Une demande est un SOUHAIT : le
+   bureau reste seul à décider qui passe, et l'écran de la vendeuse le dit à chaque étape :
+   étiquette 20260917passage. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v152'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v153'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

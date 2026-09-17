@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917passage",
+      "date": "17 septembre 2026",
+      "titre": "Demander un passage sans avoir saisi ses colis",
+      "points": [
+        "Une vendeuse peut maintenant dire « passez chez moi demain » en un geste, depuis le haut de son espace, sans enregistrer la moindre fournée.",
+        "Une demande n'est pas une tournée : l'écran le dit, et l'état reste « en attente de confirmation » tant que le bureau n'a pas répondu. Personne n'attend un livreur que personne n'a envoyé.",
+        "Côté bureau, les demandes du jour s'affichent au-dessus de la tournée — y compris les jours où rien n'est encore programmé, c'est-à-dire justement quand une cliente attend.",
+        "Redemander le même jour remplace la demande au lieu de l'empiler, et annuler garde la trace."
+      ]
+    },
+    {
       "version": "20260917histoire",
       "date": "17 septembre 2026",
       "titre": "Le destinataire voit enfin l'histoire de son colis",
