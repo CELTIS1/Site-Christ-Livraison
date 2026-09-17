@@ -108,6 +108,15 @@ export function nouveauMonde() {
         const conditions = String(v).split(',').map(s => { const [c, op, ...reste] = s.split('.'); return { c, t: op, v: reste.join('.') }; });
         return lignes.filter(l => conditions.some(cd => appliquerFiltre([l], { c: cd.c, t: cd.t, v: isNaN(Number(cd.v)) ? cd.v : Number(cd.v) }).length === 1));
       }
+      /* ilike : « contient », sans tenir compte de la casse ni des accents de casse. Ajouté le
+         17/09/2026 (point 7.8) — il manquait, et son absence était SILENCIEUSE : la recherche
+         tombait dans le « default » ci-dessous, qui renvoie toutes les lignes. Un banc voyait
+         donc « ça marche » alors que rien n'était filtré. L'étoile de PostgREST est le joker. */
+      case 'ilike': case 'like': {
+        const motif = String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*').replace(/%/g, '.*');
+        const re = new RegExp('^' + motif + '$', f.t === 'ilike' ? 'i' : '');
+        return lignes.filter(l => l[f.c] != null && re.test(String(l[f.c])));
+      }
       case 'match': return lignes.filter(l => Object.keys(v || {}).every(k => String(l[k]) === String(v[k])));
       default: return lignes;
     }
@@ -161,6 +170,39 @@ export function nouveauMonde() {
     if (nom === 'annonce_remise_en_cours') return { data: null, error: null };
     if (nom === 'primes_en_cours') return { data: null, error: null };
     if (nom === 'suivi_colis') return { data: [], error: null };
+    /* La recherche unique du bureau (point 7.8, 17/09/2026). La vraie fonction vit en base
+       parce qu'elle normalise les numéros de téléphone des deux côtés ; on refait ici le même
+       geste, sur les tables de ce faux monde, pour que le parcours éprouve l'écran pour de
+       vrai. Volontairement SANS les huit-derniers-chiffres : ce que cette copie doit prouver,
+       c'est que l'écran affiche et conduit — la normalisation, elle, est éprouvée dans un vrai
+       Postgres (tests/recherche/essai-en-postgres.py), là où elle s'exécute. */
+    if (nom === 'chercher_partout') {
+      const terme = String((args && args.p_terme) || '').trim();
+      if (terme.length < 3) return { data: [], error: null };
+      const bas = terme.toLowerCase();
+      const chiffres = terme.replace(/\D/g, '');
+      const contient = (v) => String(v == null ? '' : v).toLowerCase().includes(bas);
+      const memeTel = (v) => chiffres.length >= 4
+        && String(v == null ? '' : v).replace(/\D/g, '').includes(chiffres.length > 8 ? chiffres.slice(-8) : chiffres);
+      const lignes = [];
+      (TABLES.colis || []).forEach(c => {
+        if (contient(c.numero) || contient(c.description) || contient(c.destination)
+            || contient(c.commune_destination) || memeTel(c.destinataire_telephone)) {
+          lignes.push({ famille: 'colis', id: c.id, quand: c.created_at,
+            titre: c.numero || '(sans numéro)',
+            detail: [[c.commune_destination, c.destination].filter(Boolean).join(' — '),
+                     c.description, c.destinataire_telephone].filter(Boolean).join(' · ') });
+        }
+      });
+      (PROFILS || []).forEach(p => {
+        if (contient(p.full_name) || contient(p.company_name) || memeTel(p.phone)) {
+          lignes.push({ famille: 'personne', id: p.id, quand: p.created_at,
+            titre: p.full_name || '(sans nom)',
+            detail: [p.role, p.company_name, p.phone].filter(Boolean).join(' · ') });
+        }
+      });
+      return { data: lignes, error: null };
+    }
     return { data: [], error: null };
   }
 

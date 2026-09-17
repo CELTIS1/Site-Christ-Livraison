@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917recherche",
+      "date": "17 septembre 2026",
+      "titre": "Une seule recherche pour tout, au bureau",
+      "points": [
+        "Il y avait six champs de recherche cloisonnés : un client appelait avec son numéro, il fallait le taper dans trois d'entre eux en changeant d'onglet.",
+        "Un seul champ, au-dessus des onglets, trouve le colis, la personne ou la course. Un clic ouvre l'écran qui sait la traiter.",
+        "Un numéro de téléphone se trouve quelle que soit son écriture : avec ou sans espaces, avec ou sans l'indicatif +225. C'est la base qui compare, chiffre à chiffre.",
+        "Les six champs restent : ils affinent une liste déjà à l'écran, la nouvelle va chercher dans la base. La recherche ne touche jamais à l'argent, et seul le bureau peut s'en servir."
+      ]
+    },
+    {
       "version": "20260917passage",
       "date": "17 septembre 2026",
       "titre": "Demander un passage sans avoir saisi ses colis",

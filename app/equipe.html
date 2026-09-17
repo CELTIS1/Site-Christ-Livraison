@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917passage">
-<script src="theme.js?v=20260917passage"></script>
-<script src="splash.js?v=20260917passage"></script>
+<link rel="stylesheet" href="style.css?v=20260917recherche">
+<script src="theme.js?v=20260917recherche"></script>
+<script src="splash.js?v=20260917recherche"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -361,6 +361,28 @@
      ailleurs, comme il le fait déjà pour « L'essentiel ». Même traitement que le haut de page
      du livreur (feuille de route 2.5), jamais fait pour l'équipe. -->
 <div class="page-title page-title--salut" id="eq-salutation">Bonjour <span id="user-first-name"></span> 👋</div>
+
+<!-- ============================================================================================
+     UNE SEULE RECHERCHE POUR TOUT — point 7.8, 17 septembre 2026
+     ============================================================================================
+     Le bureau avait SIX champs de recherche, cloisonnés dans leurs onglets : colis, comptes,
+     comptes en attente, historique, courses Express, recharges Express. Un client appelle et
+     donne son numéro de téléphone : il fallait le taper dans trois d'entre eux, en changeant
+     d'onglet entre chaque, pour savoir s'il s'agissait d'un colis, d'une cliente ou d'une course.
+
+     Celle-ci est AU-DESSUS des onglets, donc visible quel que soit l'onglet ouvert, et elle
+     interroge la BASE — pas la page chargée. Les six champs restent : ils filtrent une liste
+     déjà à l'écran, ce que celle-ci ne fait pas. Elle ne les remplace pas, elle répond à une
+     autre question : « où est cette chose ? » plutôt que « affine cette liste ».
+     ============================================================================================ -->
+<div class="recherche-partout" id="recherche-partout">
+  <div class="search-wrap">
+    <input type="search" id="eq-recherche-tout" class="search-input"
+           placeholder="🔎 Chercher partout : n° de colis, téléphone, nom, adresse…"
+           autocomplete="off" aria-label="Chercher un colis, une personne ou une course">
+  </div>
+  <div class="recherche-resultats hidden" id="eq-recherche-resultats" role="listbox"></div>
+</div>
 
 <!-- Bandeau de la file d'attente hors-réseau. Placé au-dessus des onglets, donc visible quel que
      soit l'onglet ouvert : une saisie non encore envoyée ne doit jamais pouvoir passer inaperçue.
@@ -1523,36 +1545,36 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917passage"></script>
-<script src="lib/bibliotheques.js?v=20260917passage"></script>
-<script src="lib/retours.js?v=20260917passage"></script>
-<script src="lib/reclamations.js?v=20260917passage"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917passage"></script>
-<script src="lib/argent.js?v=20260917passage"></script>
-<script src="lib/releve-cliente.js?v=20260917passage"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917passage"></script>
-<script src="lib/briques-argent.js?v=20260917passage"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260917passage"></script>
-<script src="lib/annonce-de-remise.js?v=20260917passage"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917passage"></script>
-<script src="lib/primes.js?v=20260917passage"></script>
-<script src="lib/doublons.js?v=20260917passage"></script>
-<script src="config.js?v=20260917passage"></script>
-<script src="clients-dashboard.js?v=20260917passage"></script>
-<script src="livreurs-dashboard.js?v=20260917passage"></script>
-<script src="point-du-jour.js?v=20260917passage"></script>
-<script src="biometric-lock.js?v=20260917passage"></script>
-<script src="clt-select-recherche.js?v=20260917passage"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260917passage"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260917passage"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260917passage"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260917passage"></script>
-<script src="equipe/04-actions.js?v=20260917passage"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260917passage"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260917passage"></script>
-<script src="equipe/07-rapports.js?v=20260917passage"></script>
-<script src="equipe/08-son-ecran.js?v=20260917passage"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260917passage"></script>
+<script src="clt-common.js?v=20260917recherche"></script>
+<script src="lib/bibliotheques.js?v=20260917recherche"></script>
+<script src="lib/retours.js?v=20260917recherche"></script>
+<script src="lib/reclamations.js?v=20260917recherche"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917recherche"></script>
+<script src="lib/argent.js?v=20260917recherche"></script>
+<script src="lib/releve-cliente.js?v=20260917recherche"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917recherche"></script>
+<script src="lib/briques-argent.js?v=20260917recherche"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260917recherche"></script>
+<script src="lib/annonce-de-remise.js?v=20260917recherche"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917recherche"></script>
+<script src="lib/primes.js?v=20260917recherche"></script>
+<script src="lib/doublons.js?v=20260917recherche"></script>
+<script src="config.js?v=20260917recherche"></script>
+<script src="clients-dashboard.js?v=20260917recherche"></script>
+<script src="livreurs-dashboard.js?v=20260917recherche"></script>
+<script src="point-du-jour.js?v=20260917recherche"></script>
+<script src="biometric-lock.js?v=20260917recherche"></script>
+<script src="clt-select-recherche.js?v=20260917recherche"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260917recherche"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260917recherche"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260917recherche"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260917recherche"></script>
+<script src="equipe/04-actions.js?v=20260917recherche"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260917recherche"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260917recherche"></script>
+<script src="equipe/07-rapports.js?v=20260917recherche"></script>
+<script src="equipe/08-son-ecran.js?v=20260917recherche"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260917recherche"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1597,6 +1619,7 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260917passage"></script>
+<script src="equipe/10-onglets.js?v=20260917recherche"></script>
+<script src="equipe/11-chercher-partout.js?v=20260917recherche"></script>
 </body>
 </html>

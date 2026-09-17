@@ -90,7 +90,8 @@ console.log('\n4. Le code de l\'espace équipe est sorti de la page (séance 3)'
 const equipeHtml = lire('equipe.html');
 verifier('equipe.html ne contient plus de grand script inline (moins de 60 lignes de script)', (() => { const blocs = [...equipeHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)]; return blocs.every(b => b[1].split('\n').length < 60); })());
 const fichiersEquipe = fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort();
-verifier('onze fichiers numérotés dans app/equipe/, du 00 au 10', fichiersEquipe.length === 11 && fichiersEquipe.every((f, i) => f.startsWith(String(i).padStart(2, '0') + '-')), fichiersEquipe.join(', '));
+// Douze depuis le 17/09/2026 (point 7.8) : 11-chercher-partout.js, la recherche unique.
+verifier('douze fichiers numérotés dans app/equipe/, du 00 au 11', fichiersEquipe.length === 12 && fichiersEquipe.every((f, i) => f.startsWith(String(i).padStart(2, '0') + '-')), fichiersEquipe.join(', '));
 verifier('equipe.html les charge tous, dans l\'ordre, après config.js, même étiquette', (() => {
   const balises = [...equipeHtml.matchAll(/<script src="equipe\/([^"?]+)\?v=([^"]+)"><\/script>/g)];
   const etiquetteConfig = (equipeHtml.match(/<script src="config\.js\?v=([^"]+)">/) || [])[1];

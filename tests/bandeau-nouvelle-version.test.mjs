@@ -546,10 +546,16 @@ verifier(
    demandes_de_passage (une par jour et par cliente, trois règles d'accès), carte en tête de
    l'espace cliente, bloc au-dessus de la tournée du bureau. Une demande est un SOUHAIT : le
    bureau reste seul à décider qui passe, et l'écran de la vendeuse le dit à chaque étape :
-   étiquette 20260917passage. */
+   étiquette 20260917passage.
+   v154, le 17/09/2026 — point 7.8 : une seule recherche pour tout. Six champs cloisonnés, et
+   un numéro de téléphone à taper trois fois. Un champ au-dessus des onglets appelle la fonction
+   chercher_partout() (migration 2026-09-17-chercher-partout.sql) : elle compare les téléphones
+   chiffre à chiffre sur leurs huit derniers, donc « +225 07 98 54 66 62 » trouve « 0798546662 ».
+   Elle ne lit aucune colonne d'argent et refuse quiconque n'est pas du bureau. Les six champs
+   restent : ils affinent, elle cherche : étiquette 20260917recherche. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v153'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v154'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

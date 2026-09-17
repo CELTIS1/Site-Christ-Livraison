@@ -1052,6 +1052,34 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
 }
 .recap-row-etat{font-size:11.5px; font-weight:600; color:var(--muted); margin-top:3px;}
 
+/* ---- Une seule recherche pour tout (point 7.8, 17/09/2026) ---------------------------------
+   Posée au-dessus des onglets, donc au-dessus de tout le reste : la liste des résultats flotte
+   et ne doit pas pousser l'écran vers le bas à chaque frappe. */
+.recherche-partout{ position:relative; margin:0 0 12px; }
+.recherche-resultats{
+  position:absolute; z-index:60; left:0; right:0; top:calc(100% + 6px);
+  background:var(--card, #fff); border:1px solid var(--border-strong, #d7dee6);
+  border-radius:14px; box-shadow:0 12px 32px rgba(16,32,48,.18);
+  max-height:min(60vh, 420px); overflow:auto; padding:6px;
+}
+.recherche-resultats.hidden{ display:none; }
+.recherche-groupe + .recherche-groupe{ border-top:1px solid var(--border, #e6ebf1); margin-top:6px; padding-top:6px; }
+.recherche-groupe-titre{
+  font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--muted); padding:6px 10px 4px;
+}
+.recherche-ligne{
+  display:flex; flex-direction:column; gap:2px; width:100%; text-align:left;
+  background:none; border:0; border-radius:10px; padding:9px 10px; cursor:pointer;
+  font:inherit; color:inherit;
+}
+.recherche-ligne:hover, .recherche-ligne:focus-visible{ background:var(--clt-teal-light, #eaf5f3); }
+.recherche-quoi{ font-weight:600; font-size:14px; }
+.recherche-detail{ font-size:12.5px; color:var(--muted); }
+.recherche-reste, .recherche-vide{ font-size:12.5px; color:var(--muted); padding:8px 10px; }
+html[data-theme="dark"] .recherche-resultats{ background:#16212E; border-color:#33445A; box-shadow:0 12px 32px rgba(0,0,0,.45); }
+html[data-theme="dark"] .recherche-ligne:hover, html[data-theme="dark"] .recherche-ligne:focus-visible{ background:#1F2E3F; }
+
 /* ---- Les demandes de passage (point 10.6, 17/09/2026) --------------------------------------
    Ce que le bureau n'a PAS décidé lui-même : une cliente qui dit « passez chez moi ce jour-là ».
    Ambre, comme tout ce qui attend une décision dans cet écran, et posé au-dessus de la tournée
