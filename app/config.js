@@ -532,6 +532,9 @@ function prochaineEtape(colis) {
 /* LES RETOURS (qui détient la marchandise, l'échéance de deux jours, les phrases des trois
    écrans) sont dans app/lib/retours.js — sorti d'ici le 17/09/2026. */
 
+/* SIGNALER UN PROBLÈME : les motifs qu'une cliente peut choisir, les états d'une réclamation
+   et les phrases qu'elle lit sont dans app/lib/reclamations.js (17/09/2026, point 7.2). */
+
 function etapeEchec(colis) {
   if (!colis) return null;
   if (colis.statut !== 'recupere' && colis.statut !== 'en_livraison') return null;

@@ -498,10 +498,16 @@ verifier(
    qu'on imprime ensuite. Rouvrir reste possible, avec un motif écrit et tracé. Au passage, la
    dernière fenêtre du navigateur de Gestion (le motif d'annulation d'une facture) est remplacée
    par un panneau de l'application (gestion.js, gestion.html, migration
-   2026-09-17-figer-les-bulletins.sql) : étiquette 20260917bulletins. */
+   2026-09-17-figer-les-bulletins.sql) : étiquette 20260917bulletins.
+   v145, le 17/09/2026 — point 7.2, seconde moitié : une cliente peut enfin signaler un problème
+   sur un colis (abîmé, montant faux, jamais reçu, retour jamais rendu, retard, comportement),
+   en deux touches, avec un mot libre facultatif. Le bureau compte ce qui attend, passe au rouge
+   au-delà de deux jours, et lit le motif sur la carte du colis. Règles partagées dans
+   lib/reclamations.js ; table reclamations_clientes avec ses trois règles d'accès (migration
+   2026-09-17-signaler-un-probleme.sql) : étiquette 20260917signaler. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v144'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v145'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

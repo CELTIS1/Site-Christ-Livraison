@@ -66,6 +66,8 @@ export function nouveauMonde() {
     colis: COLIS, profiles: PROFILS, programmations_collecte: [], push_subscriptions: [], livreur_positions: [], activity_log: [],
     remises_livreur: [], remises_caisse: [], reversements_clientes: [], annonces_remise: [], migrations_appliquees: [], colis_photos: [],
     erreurs_client: [], historique_reversements_fournisseur: [], demandes_reset_password: [],
+    // Ce que les clientes signalent (17/09/2026, point 7.2).
+    reclamations_clientes: [],
   };
   const journal = [];
 

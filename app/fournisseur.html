@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917bulletins">
-<script src="theme.js?v=20260917bulletins"></script>
-<script src="splash.js?v=20260917bulletins"></script>
+<link rel="stylesheet" href="style.css?v=20260917signaler">
+<script src="theme.js?v=20260917signaler"></script>
+<script src="splash.js?v=20260917signaler"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -490,20 +490,21 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917bulletins"></script>
-<script src="lib/retours.js?v=20260917bulletins"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917bulletins"></script>
-<script src="lib/argent.js?v=20260917bulletins"></script>
-<script src="lib/releve-cliente.js?v=20260917bulletins"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917bulletins"></script>
-<script src="lib/briques-argent.js?v=20260917bulletins"></script>
-<script src="lib/annonce-de-remise.js?v=20260917bulletins"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917bulletins"></script>
-<script src="lib/primes.js?v=20260917bulletins"></script>
-<script src="lib/doublons.js?v=20260917bulletins"></script>
-<script src="config.js?v=20260917bulletins"></script>
-<script src="biometric-lock.js?v=20260917bulletins"></script>
-<script src="clt-select-recherche.js?v=20260917bulletins"></script>
+<script src="clt-common.js?v=20260917signaler"></script>
+<script src="lib/retours.js?v=20260917signaler"></script>
+<script src="lib/reclamations.js?v=20260917signaler"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917signaler"></script>
+<script src="lib/argent.js?v=20260917signaler"></script>
+<script src="lib/releve-cliente.js?v=20260917signaler"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917signaler"></script>
+<script src="lib/briques-argent.js?v=20260917signaler"></script>
+<script src="lib/annonce-de-remise.js?v=20260917signaler"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917signaler"></script>
+<script src="lib/primes.js?v=20260917signaler"></script>
+<script src="lib/doublons.js?v=20260917signaler"></script>
+<script src="config.js?v=20260917signaler"></script>
+<script src="biometric-lock.js?v=20260917signaler"></script>
+<script src="clt-select-recherche.js?v=20260917signaler"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -518,6 +519,98 @@
   // Recherche, date : changer de critère, c'est demander une autre liste — on la reprend du haut.
   function remettreTrancheColisAZero(){ trancheColis = COLIS_TRANCHE; }
   let livreursById = {};
+
+  /* ---------- SIGNALER UN PROBLÈME (17/09/2026, point 7.2) ----------
+     Les réclamations de la cliente, chargées une fois avec ses colis et rangées par colis. Les
+     motifs, les états et les phrases sont dans lib/reclamations.js : la cliente, le bureau et
+     les essais lisent tous la même chose. */
+  let mesReclamations = {};   // colis_id → la plus récente
+  async function chargerMesReclamations(){
+    if (!currentUser) return;
+    const { data, error } = await supabaseClient
+      .from('reclamations_clientes').select('*')
+      .eq('fournisseur_id', currentUser.id)
+      .order('created_at', { ascending: false });
+    if (error){ console.error('Réclamations :', error); return; }   // avant migration : on continue sans
+    mesReclamations = {};
+    (data || []).forEach(r => { if (r.colis_id && !mesReclamations[r.colis_id]) mesReclamations[r.colis_id] = r; });
+  }
+
+  /* Le bouton, ou l'état du signalement déjà envoyé. On ne le propose que sur un colis dont
+     l'histoire est faite : avant, il est encore en route et il n'y a rien à signaler. */
+  function reclamationBlocHTML(c){
+    if (!c || !['livre', 'non_livre', 'retour'].includes(c.statut)) return '';
+    const r = mesReclamations[c.id];
+    if (r) {
+      const teinte = (typeof STATUTS_RECLAMATION !== 'undefined' && STATUTS_RECLAMATION[r.statut]) ? STATUTS_RECLAMATION[r.statut].teinte : 'ambre';
+      return `<div class="reclam-ligne reclam-${escapeHTML(teinte)}">
+        <strong>${escapeHTML(motifReclamationTexte(r.motif))}</strong>
+        <span>${escapeHTML(reclamationTexteCliente(r))}</span>
+      </div>`;
+    }
+    return `<button type="button" class="reclam-bouton" data-signaler="${escapeHTML(c.id)}">⚠️ Signaler un problème</button>`;
+  }
+
+  /* La fenêtre : un motif en deux touches (liste fermée, comme les motifs d'échec du livreur),
+     un mot libre facultatif, et c'est parti. Pas de champ obligatoire à remplir pour se
+     plaindre : la moitié des gens renonceraient. */
+  async function ouvrirSignalement(colisId){
+    const c = mesColis.find(x => x.id === colisId);
+    if (!c) return;
+    const choix = Object.entries(MOTIFS_RECLAMATION)
+      .map(([cle, m]) => `<button type="button" class="reclam-motif" data-motif="${escapeHTML(cle)}">${m.icon} ${escapeHTML(m.label)}</button>`).join('');
+    const fond = document.createElement('div');
+    fond.className = 'reclam-fond';
+    fond.innerHTML = `<div class="reclam-boite" role="dialog" aria-modal="true" aria-label="Signaler un problème">
+      <h3>Signaler un problème</h3>
+      <p>Colis ${escapeHTML(c.numero || '')}${c.destination ? ' — ' + escapeHTML(c.destination) : ''}</p>
+      <div class="reclam-motifs">${choix}</div>
+      <label for="reclam-texte">Vous pouvez préciser (facultatif)</label>
+      <textarea id="reclam-texte" rows="3" maxlength="500" placeholder="Ce qui s'est passé, en quelques mots"></textarea>
+      <div class="reclam-gestes">
+        <button type="button" class="btn btn-outline btn-sm" data-reclam="fermer">Annuler</button>
+        <button type="button" class="btn btn-sm" data-reclam="envoyer" disabled>Envoyer</button>
+      </div>
+    </div>`;
+    let motif = null;
+    const fermer = () => { document.removeEventListener('keydown', touche); fond.remove(); };
+    const touche = (e) => { if (e.key === 'Escape') fermer(); };
+    fond.addEventListener('click', async (e) => {
+      if (e.target === fond) return fermer();
+      const m = e.target.closest('.reclam-motif');
+      if (m) {
+        motif = m.dataset.motif;
+        fond.querySelectorAll('.reclam-motif').forEach(b => b.classList.toggle('est-choisi', b === m));
+        fond.querySelector('[data-reclam="envoyer"]').disabled = false;
+        return;
+      }
+      const g = e.target.closest('[data-reclam]');
+      if (!g) return;
+      if (g.dataset.reclam === 'fermer') return fermer();
+      if (!motif) return;
+      g.disabled = true; g.textContent = 'Envoi…';
+      const texte = (fond.querySelector('#reclam-texte').value || '').trim() || null;
+      const { data, error } = await supabaseClient.from('reclamations_clientes')
+        .insert({ fournisseur_id: currentUser.id, colis_id: colisId, motif, texte })
+        .select().single();
+      if (error) {
+        console.error('Signalement :', error);
+        cltToast("Le signalement n'a pas pu être envoyé. Réessayez, ou appelez-nous.", { type: 'error' });
+        g.disabled = false; g.textContent = 'Envoyer';
+        return;
+      }
+      mesReclamations[colisId] = data;
+      fermer();
+      cltToast('Signalement envoyé : CLT va vous répondre.', { type: 'success', title: 'Bien reçu' });
+      renderColisList();
+    });
+    document.addEventListener('keydown', touche);
+    document.body.appendChild(fond);
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-signaler]');
+    if (b) { e.preventDefault(); e.stopPropagation(); ouvrirSignalement(b.dataset.signaler); }
+  });
 
   // Pagination réelle : la première page se charge immédiatement, puis "Charger plus" permet
   // de remonter tout l'historique par blocs successifs (voir aussi équipe.html et livreur.html).
@@ -1714,6 +1807,12 @@
                  au plus tard (décision de Celtis) : on lui dit exactement cela, et on lui dit
                  quand c'est fait. Mêmes mots pour tout le monde (retourTexte, config.js). -->
             ${c.statut === 'retour' ? `<div class="retour-ligne${retourEnRetard(c) ? ' retour-ligne--retard' : ''}">${escapeHTML(retourTexte(c, 'cliente'))}${retourEnRetard(c) ? ' ' + cltJoindreLienHTML('Joindre CLT') : ''}</div>` : ''}
+            <!-- SIGNALER UN PROBLÈME (17/09/2026, point 7.2). Jusqu'ici, une cliente dont le
+                 colis arrive abîmé ou dont le montant est faux n'avait que le téléphone — et ce
+                 qu'elle disait au téléphone ne laissait aucune trace. Le bouton n'apparaît que
+                 sur un colis dont l'histoire est faite (livré, non livré, retour) : avant, il
+                 n'y a rien à signaler, le colis est encore en route. -->
+            ${reclamationBlocHTML(c)}
             ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
             ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
           </div>
@@ -2167,6 +2266,8 @@
     mesColis = data;
     colisOffset = data.length;
     colisHasMore = data.length === COLIS_PAGE_SIZE;
+    // Les signalements déjà envoyés, pour que le bouton laisse la place à leur état (point 7.2).
+    await chargerMesReclamations();
     renderColisList();
   }
 

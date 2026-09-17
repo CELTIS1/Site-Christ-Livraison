@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917signaler",
+      "date": "17 septembre 2026",
+      "titre": "Signaler un problème, sans passer par le téléphone",
+      "points": [
+        "Sur un colis livré, non livré ou revenu, un bouton « ⚠️ Signaler un problème » : colis abîmé, montant incorrect, jamais reçu, retour jamais rendu, retard, comportement du livreur, ou autre.",
+        "Deux touches suffisent ; le mot d'explication est facultatif. Le signalement remplace ensuite le bouton et dit où il en est.",
+        "Au bureau, un compteur des problèmes signalés — en rouge dès qu'un dépasse deux jours — et le motif écrit sur la carte du colis, avec ce que la cliente a dit.",
+        "Jusqu'ici, une cliente mécontente n'avait que le téléphone, et ce qu'elle disait ne laissait aucune trace : rien ne se comptait, rien ne s'améliorait."
+      ]
+    },
+    {
       "version": "20260917bulletins",
       "date": "17 septembre 2026",
       "titre": "Un bulletin de paie remis ne se réécrit plus",

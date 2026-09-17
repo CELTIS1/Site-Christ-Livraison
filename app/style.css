@@ -2939,3 +2939,35 @@ html[data-theme="dark"] .clt-joindre{ color:#9DB8DA; }
 html[data-theme="dark"] .retour-ligne{ background:#2A1B34; color:#D8BBE8; }
 html[data-theme="dark"] .retour-ligne--retard{ background:#3A1A17; color:#F0B4AE; }
 .btn-etape-rendu{ background:#8e44ad !important; border-color:#8e44ad !important; color:#fff !important; }
+
+/* SIGNALER UN PROBLÈME (17/09/2026, point 7.2) — chez la cliente.
+   Le bouton est discret tant qu'il ne sert pas : c'est une porte de secours, pas une invitation
+   à se plaindre. Une fois le signalement envoyé, il laisse la place à son état. */
+.reclam-bouton{ display:inline-flex; align-items:center; gap:6px; min-height:44px; margin-top:8px; padding:0 14px; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--muted); font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+.reclam-bouton:hover{ border-color:#c0392b; color:#c0392b; }
+.reclam-ligne{ display:flex; flex-direction:column; gap:2px; margin-top:8px; padding:8px 11px; border-left:3px solid #E26313; border-radius:8px; background:#FDF3EC; font-size:13px; }
+.reclam-ligne strong{ font-weight:700; color:#8a4212; }
+.reclam-ligne span{ color:#6b4a30; font-size:12.5px; }
+.reclam-rouge{ border-left-color:#c0392b; background:#fdeceb; } .reclam-rouge strong{ color:#8f2018; } .reclam-rouge span{ color:#8f2018; }
+.reclam-vert{ border-left-color:#1a7d3c; background:#e8f5ec; } .reclam-vert strong{ color:#155f2e; } .reclam-vert span{ color:#155f2e; }
+html[data-theme="dark"] .reclam-ligne{ background:#2A2118; color:#E8D3BF; }
+html[data-theme="dark"] .reclam-rouge{ background:#3A1A17; } html[data-theme="dark"] .reclam-vert{ background:#123322; }
+
+.reclam-fond{ position:fixed; inset:0; z-index:9650; background:rgba(15,23,42,.55); display:flex; align-items:center; justify-content:center; padding:16px; }
+.reclam-boite{ background:var(--card, #fff); color:var(--text, #1f2937); border-radius:16px; width:min(460px,100%); max-height:88vh; overflow:auto; padding:20px 22px; box-shadow:0 24px 60px rgba(0,0,0,.35); }
+.reclam-boite h3{ margin:0 0 4px; font-size:18px; }
+.reclam-boite > p{ margin:0 0 14px; font-size:13px; color:var(--muted); }
+.reclam-motifs{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; margin-bottom:14px; }
+.reclam-motif{ min-height:44px; padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:transparent; color:inherit; font:inherit; font-size:13.5px; text-align:left; cursor:pointer; }
+.reclam-motif:hover{ border-color:#E26313; }
+.reclam-motif.est-choisi{ border-color:#E26313; border-width:2px; background:#FDF3EC; font-weight:700; }
+html[data-theme="dark"] .reclam-motif.est-choisi{ background:#2A2118; }
+.reclam-boite label{ display:block; font-size:12.5px; font-weight:600; margin-bottom:5px; }
+.reclam-boite textarea{ width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; font:inherit; font-size:14px; resize:vertical; }
+.reclam-gestes{ display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
+.reclam-gestes .btn{ min-height:44px; }
+
+/* Au bureau : la ligne d'une réclamation sur la carte du colis. */
+.reclam-equipe{ margin-top:6px; padding:7px 10px; border-left:3px solid #E26313; border-radius:8px; background:#FDF3EC; font-size:13px; font-weight:600; color:#8a4212; }
+.reclam-equipe--vieille{ border-left-color:#c0392b; background:#fdeceb; color:#8f2018; }
+html[data-theme="dark"] .reclam-equipe{ background:#2A2118; color:#E8D3BF; }

@@ -256,8 +256,15 @@ titre('3. La carte d’un colis chez la vendeuse (fonction réellement exécuté
     // vocabulaire d'expédition qu'elle consulte.
     poser(config.match(/const STATUTS_EXPEDITION = \{[\s\S]*?\n\};/)[0]);
     for (const f of ['libelleStatut', 'stepperHTML']) poser(bloc(f, config, 'config.js'));
+    // « Signaler un problème » (17/09/2026, point 7.2) : la carte l'appelle, donc le bac à sable
+    // doit la connaître, avec le dictionnaire des motifs qu'elle lit.
+    poser('let mesReclamations = {};');
+    poser(lire('lib/reclamations.js').match(/const STATUTS_RECLAMATION = \{[\s\S]*?\n\};/)[0]);
+    poser(bloc('motifReclamationTexte', lire('lib/reclamations.js'), 'lib/reclamations.js'));
+    poser(bloc('reclamationTexteCliente', lire('lib/reclamations.js'), 'lib/reclamations.js'));
+    poser(bloc('reclamationJours', lire('lib/reclamations.js'), 'lib/reclamations.js'));
     for (const f of ['colisAdresseCorrigeable', 'colisToutModifiable',
-                     'colisItemHTML']) {
+                     'reclamationBlocHTML', 'colisItemHTML']) {
       poser(bloc(f, fournisseur, 'fournisseur.html'));
     }
     contexte.__colis = colis; contexte.__num = numeroClient;
