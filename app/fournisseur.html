@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917express">
-<script src="theme.js?v=20260917express"></script>
-<script src="splash.js?v=20260917express"></script>
+<link rel="stylesheet" href="style.css?v=20260917alleger">
+<script src="theme.js?v=20260917alleger"></script>
+<script src="splash.js?v=20260917alleger"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -166,18 +166,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.js"
         integrity="sha384-qafw21c/iciq0VXsi9FzkfoQv5I/V0iqE4lSNcKXPnW9/UTJLnv5CcN4FHxVLnKg"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<!-- Versions exactes + empreintes de contrôle (SRI), posées le 19 août 2026 : le navigateur
-     recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle ne correspond pas.
-     Toute montée de version impose de recalculer l'empreinte — voir .github/verifier-empreintes.py -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
-        integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw"
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-        integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk"
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
-        integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- XLSX, jsPDF ET SON MODULE DE TABLEAUX NE SONT PLUS CHARGÉS ICI (point 9.7, 17/09/2026).
+     431 Ko compressés, sans defer, donc bloquant le rendu — à chaque ouverture, pour deux
+     boutons d'export que la vendeuse touche une fois par mois. Elle ouvre cet écran plusieurs
+     fois par jour pour voir où en sont ses colis : c'est ce chemin-là qu'on allège.
+     assurerJsPDF() et assurerXLSX() (lib/bibliotheques.js) les vont chercher au clic, avec
+     leurs empreintes de contrôle ; le service worker les a déjà en cache, donc cela marche
+     aussi sans réseau. Voir .github/verifier-empreintes.py, qui lit ces déclarations-là. -->
 </head>
 <body>
 
@@ -490,21 +485,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917express"></script>
-<script src="lib/retours.js?v=20260917express"></script>
-<script src="lib/reclamations.js?v=20260917express"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917express"></script>
-<script src="lib/argent.js?v=20260917express"></script>
-<script src="lib/releve-cliente.js?v=20260917express"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917express"></script>
-<script src="lib/briques-argent.js?v=20260917express"></script>
-<script src="lib/annonce-de-remise.js?v=20260917express"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917express"></script>
-<script src="lib/primes.js?v=20260917express"></script>
-<script src="lib/doublons.js?v=20260917express"></script>
-<script src="config.js?v=20260917express"></script>
-<script src="biometric-lock.js?v=20260917express"></script>
-<script src="clt-select-recherche.js?v=20260917express"></script>
+<script src="clt-common.js?v=20260917alleger"></script>
+<script src="lib/bibliotheques.js?v=20260917alleger"></script>
+<script src="lib/retours.js?v=20260917alleger"></script>
+<script src="lib/reclamations.js?v=20260917alleger"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917alleger"></script>
+<script src="lib/argent.js?v=20260917alleger"></script>
+<script src="lib/releve-cliente.js?v=20260917alleger"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917alleger"></script>
+<script src="lib/briques-argent.js?v=20260917alleger"></script>
+<script src="lib/annonce-de-remise.js?v=20260917alleger"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917alleger"></script>
+<script src="lib/primes.js?v=20260917alleger"></script>
+<script src="lib/doublons.js?v=20260917alleger"></script>
+<script src="config.js?v=20260917alleger"></script>
+<script src="biometric-lock.js?v=20260917alleger"></script>
+<script src="clt-select-recherche.js?v=20260917alleger"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2795,6 +2791,11 @@
       Paiement: '',
       Date: '',
     });
+    // La bibliothèque n'est plus dans la page : on la demande maintenant (point 9.7).
+    if (!await assurerXLSX()){
+      await cltConfirm({ title: 'Export impossible', sub: "L'outil de classeur n'a pas pu être chargé. Réessayez une fois connectée.", okLabel: "J'ai compris", cancelLabel: 'Fermer' });
+      return;
+    }
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Récapitulatif');
@@ -2816,6 +2817,12 @@
     }
     btn.disabled = false; btn.textContent = label;
     if (!rows.length) { await cltConfirm({ title: "Aucune donnée à exporter", sub: "Il n'y a aucun colis pour la période sélectionnée.", okLabel: "J'ai compris", cancelLabel: 'Fermer' }); return; }
+    // jsPDF et son module de tableaux ne sont plus dans la page : on les demande maintenant
+    // (point 9.7). Même contrat que chez le livreur : un refus se dit, il ne jette pas.
+    if (!await assurerJsPDF()){
+      await cltConfirm({ title: 'Export impossible', sub: "L'outil PDF n'a pas pu être chargé. Réessayez une fois connectée.", okLabel: "J'ai compris", cancelLabel: 'Fermer' });
+      return;
+    }
     const t = totauxArgent(rows);
     // Le récapitulatif de la cliente sort sur le même papier à en-tête que tout le reste : elle
     // reçoit un document qui vient visiblement de la même maison que son relevé du soir.

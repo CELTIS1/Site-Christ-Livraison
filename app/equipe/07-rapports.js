@@ -275,20 +275,10 @@ Le total de cette colonne est celui de la <strong>Caisse par livreur</strong> en
    différentes, deux fonctions différentes, et surtout deux mots différents à l'écran.
    ============================================================================================ */
 
-let dormentExpanded = false;
-
-function toggleColisQuiDorment(){
-dormentExpanded = !dormentExpanded;
-const box = document.getElementById('colis-qui-dorment');
-// Depuis le 06/09/2026 la section est un <details> : ouvrir/fermer, c'est son attribut.
-if (box && 'open' in box) box.open = dormentExpanded;
-const fleche = document.getElementById('dorment-arrow');
-if (fleche) fleche.textContent = dormentExpanded ? '▼' : '▶';
-// Aucune lecture sur la base ici : tout vient de allColis, déjà en mémoire. C'est pour cela que
-// ce relevé peut être redessiné à chaque rafraîchissement sans rien coûter à personne.
-if (dormentExpanded) { renderColisQuiDorment(); refreshStickyTables(box); }
-}
-
+/* La section « Colis qui dorment » est un <details> depuis le 06/09/2026 : c'est le navigateur
+   qui l'ouvre et la ferme. Le basculement écrit à la main (toggleColisQuiDorment et son
+   drapeau) n'était plus appelé par personne, et manipulait un « dorment-arrow » retiré de la
+   page le même jour. Supprimé le 17/09/2026 (point 9.7). */
 // Le compteur du titre, visible section fermée. C'est lui qui fait ouvrir la section.
 function renderDormentBadge(releve){
 const badge = document.getElementById('dorment-badge');
@@ -630,9 +620,8 @@ telechargerRelevePDF();
 // et son total additionnait les colis livrés ET non livrés : le document annonçait donc plus
 // d'argent que l'écran n'en réclamait. Il passe maintenant par releveCliente(), comme le bilan
 // affiché et comme le relevé par cliente, avec la colonne « Encaissé » et une ligne TOTAL.
-function recapStatutLabel(s){
-return statutTexte(s);
-}
+/* recapStatutLabel() était un second nom pour statutTexte() — jamais appelé. Retiré le
+   17/09/2026 : un même chiffre ne doit pas avoir deux noms (points 9.7 et 9.4). */
 
 // Regroupe les colis du jour par cliente (fournisseur_id), triées par nombre de colis décroissant.
 // Chaque groupe porte son relevé complet, calculé par releveCliente() — la même fonction que le
@@ -1142,9 +1131,8 @@ return query;
 // Ce que CLT doit encore à la vendeuse sur ce colis (article encaissé, pas encore reversé).
 // Attention au nom d'avant, « resteArticleAPercevoir » : il disait « à percevoir » alors qu'il
 // s'agit d'une dette envers elle, pas d'une créance. Le mot comptait plus qu'il n'y paraît.
-function resteArticleADevoir(c) {
-return montantArticleADevoir(c);
-}
+/* resteArticleADevoir() était un second nom pour montantArticleADevoir() — jamais appelé.
+   Retiré le 17/09/2026, même raison. */
 function articlePaiementLabel(c) {
 if (!c) return '—';
 if (c.statut !== 'livre') return 'Pas encore encaissé';

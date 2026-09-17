@@ -859,9 +859,10 @@ const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`
    Dès qu'il y a quelque chose, la pastille revient, en couleur. */
 window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id), retours: cat.retours.map(c => c.id), retoursTard: cat.retoursTard.map(c => c.id), reclamations: cat.reclamations.map(r => r.colis_id).filter(Boolean) };
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
-// 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient de
-// config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
-const jourEvt = (c, st) => (typeof jourEvenementColis === 'function') ? jourEvenementColis(c, st) : dayKey(c[st + '_at']);
+// 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient
+// de config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
+// (Il y avait ici un « jourEvt » identique à jourEvtAbj plus bas, que personne n'appelait :
+//  retiré le 17/09/2026, point 9.7.)
 const tuile = (n, label, teinte) => `<span class="ess-stat ${n ? 'est-' + teinte : ''}"><span class="n">${n}</span><span>${label}</span></span>`;
 /* EXACTEMENT LES COLIS DU JOUR. (07/09/2026, Celtis : « la première partie qui traite des colis
    du jour doit être correcte, exactement pour les colis du jour, pour que ce soit fiable. »)

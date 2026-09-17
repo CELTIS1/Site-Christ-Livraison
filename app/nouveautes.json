@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917alleger",
+      "date": "17 septembre 2026",
+      "titre": "L'espace cliente s'ouvre bien plus vite",
+      "points": [
+        "Il téléchargeait 431 Ko d'outils de PDF et de tableur à CHAQUE ouverture, avant d'afficher quoi que ce soit — pour deux boutons d'export utilisés une fois par mois.",
+        "Ces outils ne viennent plus qu'au moment où on appuie sur le bouton. Ils sont déjà en mémoire du téléphone : l'export marche même sans réseau, comme avant.",
+        "Un défaut trouvé au passage : quand le téléchargement échouait, un second appui restait bloqué sur « Préparation… » sans fin. Il rend la main et redit non, proprement.",
+        "Du code qui ne servait plus a été retiré côté équipe, dont deux seconds noms pour un même chiffre."
+      ]
+    },
+    {
       "version": "20260917express",
       "date": "17 septembre 2026",
       "titre": "CLT Express entre dans les comptes",

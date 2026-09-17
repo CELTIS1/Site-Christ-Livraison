@@ -2868,6 +2868,10 @@ function couvertureDuJourTexte(resultat) {
 
 /* LE RELEVÉ DU SOIR D'UNE CLIENTE  : depuis le 16/09/2026 (feuille de route 4.8), ce bloc vit dans app/lib/releve-cliente.js, chargé avant ce fichier. Rien n'a changé de nom. */
 
+/* LES BIBLIOTHÈQUES QU'ON VA CHERCHER AU CLIC : jsPDF, son module de tableaux et XLSX sont
+   dans app/lib/bibliotheques.js (point 9.7, 17/09/2026), avec assurerJsPDF() et assurerXLSX().
+   431 Ko compressés qui ne se chargent plus qu'au moment où un bouton les demande. */
+
 /* LE PAPIER À EN-TÊTE DE LA MAISON  : depuis le 16/09/2026 (feuille de route 4.8), ce bloc vit dans app/lib/papier-a-en-tete.js, chargé avant ce fichier. Rien n'a changé de nom. */
 
 /* BRIQUES D'AFFICHAGE DE L'ARGENT  : depuis le 16/09/2026 (feuille de route 4.8), ce bloc vit dans app/lib/briques-argent.js, chargé avant ce fichier. Rien n'a changé de nom. */

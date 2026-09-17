@@ -629,72 +629,9 @@ function documentCLT(plan) {
 }
 
 
-/* ------------------------------------------------------------------------------------------
-   CHARGER jsPDF SEULEMENT QUAND ON S'EN SERT
-   ------------------------------------------------------------------------------------------
-   L'écran du livreur ne chargeait pas jsPDF, et il n'y a aucune raison qu'il le charge à
-   chaque ouverture : il ouvre son application des dizaines de fois par jour et télécharge son
-   point une fois, le soir. Mesuré le 29 août 2026 sur son téléphone : les 364 463 octets de
-   jsPDF et les 38 976 du module de tableaux sont DÉJÀ dans le cache du service worker
-   (clt-shell-v56). Le chargement au clic ne coûte donc pas de réseau — il marche même sans —,
-   il évite seulement de faire analyser 400 Ko de JavaScript à chaque ouverture.
-
-   Les empreintes ci-dessous sont celles des balises d'equipe.html et de fournisseur.html, au
-   caractère près. Sans crossorigin, une empreinte ne sert à rien : le navigateur l'ignore.
-   Le contrôle .github/verifier-empreintes.py lit maintenant ce tableau comme il lit les pages,
-   et tests/papier-a-en-tete.test.mjs refuse que les deux versions se séparent : monter jsPDF ici
-   seulement fait rougir « SCRIPTS_PDF_CLT déclare les deux mêmes fichiers, avec les mêmes
-   empreintes ». Sans ce banc d'essai, le contrôle des empreintes restait vert — chaque version
-   reste cohérente de son côté — et le livreur chargeait au clic une bibliothèque que le
-   navigateur refusait, le soir de la remise de caisse.
-   ------------------------------------------------------------------------------------------ */
-
-const SCRIPTS_PDF_CLT = [
-  {
-    src: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-    integrity: 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk',
-  },
-  {
-    src: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js',
-    integrity: 'sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3',
-  },
-];
-
-function chargerScriptScelleCLT(decl) {
-  return new Promise((ok, ko) => {
-    const deja = document.querySelector('script[data-clt-pdf="' + decl.src + '"]');
-    if (deja) {
-      if (deja.dataset.cltCharge === '1') return ok();
-      deja.addEventListener('load', () => ok());
-      deja.addEventListener('error', () => ko(new Error('script refusé : ' + decl.src)));
-      return;
-    }
-    const el = document.createElement('script');
-    el.src = decl.src;
-    el.integrity = decl.integrity;
-    el.crossOrigin = 'anonymous';
-    el.referrerPolicy = 'no-referrer';
-    el.dataset.cltPdf = decl.src;
-    el.addEventListener('load', () => { el.dataset.cltCharge = '1'; ok(); });
-    el.addEventListener('error', () => ko(new Error('script refusé : ' + decl.src)));
-    document.head.appendChild(el);
-  });
-}
-
-// Rend true si jsPDF est utilisable, false sinon — et ne jette jamais. L'appelant affiche un
-// message et rend la main ; il ne se retrouve pas avec une exception au milieu d'une soirée
-// de remise de caisse. Les deux scripts sont chargés dans l'ordre : le module de tableaux
-// s'accroche à jsPDF, l'inverse n'a pas de sens.
-let __attentePDFCLT = null;
-function assurerJsPDF() {
-  if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(true);
-  if (__attentePDFCLT) return __attentePDFCLT;
-  __attentePDFCLT = SCRIPTS_PDF_CLT
-    .reduce((chaine, decl) => chaine.then(() => chargerScriptScelleCLT(decl)), Promise.resolve())
-    .then(() => !!(window.jspdf && window.jspdf.jsPDF))
-    .catch(() => { __attentePDFCLT = null; return false; });
-  return __attentePDFCLT;
-}
+/* Le chargement de jsPDF au clic a déménagé dans app/lib/bibliotheques.js (point 9.7,
+   17/09/2026) : ce fichier-ci parle de mise en page, pas de téléchargement de bibliothèques.
+   assurerJsPDF() y est, avec assurerXLSX() à côté. */
 
 
 /* La seule phrase à annoncer à une vendeuse. Elle ferme le document comme elle ferme l'écran.

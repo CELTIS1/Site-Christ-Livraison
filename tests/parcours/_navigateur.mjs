@@ -145,6 +145,16 @@ export async function ouvrirNavigateur(options) {
   // Pas d'écran d'ouverture, pas de question de confirmation sans doigt pour y répondre, pas
   // de fenêtre bloquante : le parcours répond « oui » et note les alertes.
   await contexte.addInitScript(() => {
+    /* Même raison que pour les balises des pages, un cran plus loin : depuis le 17/09/2026
+       (point 9.7) l'espace cliente fabrique ses balises AU CLIC, en JavaScript, et y pose
+       l'empreinte de contrôle. Comme on sert des doubles, cette empreinte ne correspond
+       jamais et le navigateur refuserait le script — on ne testerait alors que le chemin de
+       l'échec. On neutralise donc l'attribut pour les scripts créés à l'exécution. */
+    try {
+      Object.defineProperty(HTMLScriptElement.prototype, 'integrity', {
+        configurable: true, get() { return ''; }, set() {},
+      });
+    } catch (e) {}
     try { sessionStorage.setItem('clt-splash-done', '1'); } catch (e) {}
     window.__cltAlertes = [];
     window.alert = (m) => window.__cltAlertes.push(String(m));

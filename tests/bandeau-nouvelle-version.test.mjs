@@ -524,10 +524,16 @@ verifier(
    Comptabilité › CLT Express lit deux vues (express_compta_mois, express_compta_coursiers,
    migration 2026-09-17-express-en-comptabilite.sql) et nomme séparément les trois natures
    d'argent : le prix des courses encaissé par le coursier, la recharge qui est une avance, et
-   la commission qui est la seule recette de CLT : étiquette 20260917express. */
+   la commission qui est la seule recette de CLT : étiquette 20260917express.
+   v150, le 17/09/2026 — point 9.7 : alléger ce qui se charge pour rien. L'espace cliente
+   téléchargeait XLSX et jsPDF à chaque ouverture (431 Ko compressés, sans defer) pour deux
+   boutons d'export ; ils ne viennent plus qu'au clic, par lib/bibliotheques.js. Défaut trouvé
+   en vérifiant dans un navigateur : une balise refusée restait dans la page et le deuxième
+   appel ne se dénouait jamais — le bouton restait sur « Préparation… ». Code mort retiré côté
+   équipe, dont deux alias : étiquette 20260917alleger. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v149'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v150'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

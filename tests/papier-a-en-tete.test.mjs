@@ -808,11 +808,26 @@ function balisesPDF(html){
   return trouvees;
 }
 
-const desPages = { 'equipe.html': balisesPDF(equipe), 'fournisseur.html': balisesPDF(fournisseur), 'gestion.html': balisesPDF(gestionHTML) };
+/* Depuis le 17/09/2026 (point 9.7), l'espace cliente ne porte plus ces balises : ses deux
+   boutons d'export les demandent au clic, comme le livreur — 431 Ko compressés qui ne
+   bloquent plus l'affichage de ses colis à chaque ouverture. Elle n'entre donc plus dans la
+   comparaison des balises, et c'est justement ce qu'on vérifie ci-dessous : qu'elle n'en a
+   aucune, et qu'elle appelle bien assurerJsPDF() avant de fabriquer un document. */
+const desPages = { 'equipe.html': balisesPDF(equipe), 'gestion.html': balisesPDF(gestionHTML) };
 
-verifier('les trois pages qui chargent jsPDF en déclarent bien deux fichiers chacune',
+verifier('les deux pages qui chargent jsPDF à l\'ouverture en déclarent bien deux fichiers chacune',
   Object.values(desPages).every(b => b.length === 2),
   Object.entries(desPages).map(([n, b]) => n + ' → ' + b.length).join(', '));
+
+verifier('l\'espace cliente n\'en charge AUCUNE à l\'ouverture (point 9.7)',
+  balisesPDF(fournisseur).length === 0 && !/<script src="https:[^"]*xlsx/.test(fournisseur),
+  balisesPDF(fournisseur).map(b => b.src).join(', '));
+verifier('il demande jsPDF au clic, avant de fabriquer le document',
+  /if \(!await assurerJsPDF\(\)\)\{[\s\S]{0,600}documentCLT\(/.test(fournisseur));
+verifier('et XLSX au clic, avant de fabriquer le classeur',
+  /if \(!await assurerXLSX\(\)\)\{[\s\S]{0,400}XLSX\.utils\.json_to_sheet/.test(fournisseur));
+verifier('un refus de chargement se dit à la cliente, il ne jette pas',
+  /L'outil PDF n'a pas pu être chargé/.test(fournisseur) && /L'outil de classeur n'a pas pu être chargé/.test(fournisseur));
 
 verifier('chaque balise porte une empreinte ET un crossorigin',
   Object.values(desPages).every(b => b.every(x => x.integrity && x.croise)),

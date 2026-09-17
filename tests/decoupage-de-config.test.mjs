@@ -25,6 +25,9 @@ function verifier(t, condition, detail) {
 
 // Les blocs sortis, dans l'ordre de chargement, avec quelques fonctions repères de chacun.
 const BLOCS = [
+  // Point 9.7 (17/09/2026) : les bibliothèques extérieures qu'on va chercher au clic plutôt
+  // qu'à chaque ouverture. Aucune dépendance — chargé en tête, papier-a-en-tete.js s'en sert.
+  { fichier: 'lib/bibliotheques.js', reperes: ['chargerScriptScelleCLT', 'assurerJsPDF', 'assurerXLSX'], constantes: ['SCRIPTS_PDF_CLT', 'SCRIPTS_XLSX_CLT'] },
   // Séance du 17/09/2026 (point 7.3) : les règles du retour, partagées par les trois écrans.
   // Aucune dépendance : chargé en tête, et annonce-de-remise.js s'en sert.
   { fichier: 'lib/retours.js', reperes: ['retourEnAttente', 'retourEcheance', 'retourJoursEcoules', 'retourEnRetard', 'retourTexte'], constantes: ['RETOUR_DELAI_JOURS'] },

@@ -108,5 +108,39 @@ await dodo(400);
 verifier('« Annuler » : toujours rien d\'écrit, la ligne reste à l\'écran', monde.journal.filter(j => j.table === 'colis' && j.op === 'insert').length === avantInsert && (await page.locator('#lotfr-lignes .lotfr-tel').count()) === 1);
 verifier('aucune erreur JavaScript', erreurs.length === 0, erreurs.join('\n       '));
 
+/* 8. CE QUE SON TÉLÉPHONE NE TÉLÉCHARGE PLUS (point 9.7, 17/09/2026)
+   ------------------------------------------------------------------
+   Elle ouvre cet écran plusieurs fois par jour pour voir où en sont ses colis, et exporte un
+   récapitulatif une fois par mois. Elle téléchargeait pourtant XLSX et jsPDF à chaque
+   ouverture — 431 Ko compressés, sans defer, donc avant le premier affichage. Ils ne
+   viennent plus qu'au clic. Vérifié ici dans le navigateur, pas seulement dans le texte du
+   fichier : c'est la seule façon de voir qu'ils ARRIVENT vraiment quand on les demande. */
+titre('8. Son téléphone ne télécharge plus 431 Ko pour deux boutons');
+const auDemarrage = await page.evaluate(() => ({
+  xlsx: !!window.XLSX,
+  pdf: !!(window.jspdf && window.jspdf.jsPDF),
+  externes: [...document.querySelectorAll('script[src^="https:"]')].map(s => s.src.split('/').pop()),
+}));
+verifier('à l\'ouverture, ni XLSX ni jsPDF ne sont là', !auDemarrage.xlsx && !auDemarrage.pdf, JSON.stringify(auDemarrage));
+verifier('une seule bibliothèque extérieure est chargée d\'avance : celle qui parle à la base',
+  auDemarrage.externes.length === 1 && /supabase/.test(auDemarrage.externes[0]), auDemarrage.externes.join(', '));
+
+const auClic = await page.evaluate(async () => {
+  const fini = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r('jamais de réponse'), ms))]);
+  const xlsx = await fini(window.assurerXLSX(), 10000);
+  const pdf = await fini(window.assurerJsPDF(), 10000);
+  // Deux clics rapprochés ne doivent lancer qu'un seul téléchargement.
+  const deux = await Promise.all([fini(window.assurerXLSX(), 5000), fini(window.assurerXLSX(), 5000)]);
+  return { xlsx, pdf, xlsxLa: !!window.XLSX, pdfLa: !!(window.jspdf && window.jspdf.jsPDF),
+    tableaux: typeof (window.jspdf && new window.jspdf.jsPDF().autoTable),
+    injectees: [...document.querySelectorAll('script[data-clt-pdf]')].length,
+    deux: deux.join('/'), balisesXlsx: document.querySelectorAll('script[data-clt-pdf*="xlsx"]').length };
+});
+verifier('demandées au clic, elles arrivent', auClic.xlsx === true && auClic.pdf === true, JSON.stringify(auClic));
+verifier('et elles sont réellement utilisables', auClic.xlsxLa && auClic.pdfLa && auClic.tableaux === 'function', JSON.stringify(auClic));
+verifier('les trois fichiers sont posés, module de tableaux compris', auClic.injectees === 3, auClic.injectees);
+verifier('deux clics rapprochés ne téléchargent qu\'une fois', auClic.deux === 'true/true' && auClic.balisesXlsx === 1, auClic.deux + ' — ' + auClic.balisesXlsx);
+verifier('toujours aucune erreur JavaScript', erreurs.length === 0, erreurs.join('\n       '));
+
 await N.fermer();
 process.exit(bilan() ? 1 : 0);
