@@ -106,7 +106,24 @@ def main():
     print(f"✅ Fichier de restauration écrit : {sortie}")
     print(f"   {len(tables)} table(s), {total} ligne(s).")
     print("")
-    print("   Relisez-le, puis jouez-le dans Supabase > SQL Editor sur la base à restaurer.")
+
+    # LES DONNÉES NE SUFFISENT PAS. Elles entrent dans des tables qui doivent déjà exister,
+    # avec leurs règles d'accès et leurs déclencheurs. Ce SQL-là est dans la sauvegarde aussi,
+    # dans sql/ — et il se joue AVANT. Le dire ici évite qu'on s'en aperçoive au mauvais moment.
+    dossier_sql = os.path.join(dossier, "sql")
+    migrations = sorted(n for n in os.listdir(dossier_sql) if n.endswith(".sql")) \
+        if os.path.isdir(dossier_sql) else []
+    if migrations:
+        print(f"   ⚠️  D'ABORD LA BASE, ENSUITE LES DONNÉES.")
+        print(f"   Cette sauvegarde contient {len(migrations)} migrations dans sql/. Sur une base")
+        print(f"   neuve, jouez-les d'abord, dans l'ordre des noms (ils commencent par la date) :")
+        print(f"   la première est « {migrations[0]} », la dernière « {migrations[-1]} ».")
+    else:
+        print("   ⚠️  Cette sauvegarde ne contient PAS le SQL de la base (pas de dossier sql/).")
+        print("      Sur une base neuve, il faudra retrouver les migrations ailleurs : le")
+        print("      dossier _sql-prive du Mac de la gérance, ou une sauvegarde plus récente.")
+    print("")
+    print("   Relisez le fichier, puis jouez-le dans Supabase > SQL Editor sur la base à restaurer.")
     print("   Il ne s'exécute pas tout seul : une restauration se décide.")
     return 0
 

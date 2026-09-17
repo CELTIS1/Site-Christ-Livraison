@@ -514,10 +514,15 @@ verifier(
    octobre) ; les colis qui dorment et les corrections de montants mènent enfin à la fiche du
    colis (7.7) ; la barre du bas de l'équipe garde quatre onglets et range les autres derrière
    « Plus » (9.5) ; et les tableaux de Gestion disent qu'ils défilent (9.8) : étiquette
-   20260917quotidien. */
+   20260917quotidien.
+   v148, le 17/09/2026 — point 8.4 : le journal dit ce qui a changé. Un déclencheur en base
+   (journal_avant_apres, sur les quatorze tables d'argent) écrit l'avant et l'après de chaque
+   colonne modifiée ; l'écran lit activity_log et le rend en français. Au passage, les
+   migrations partent dans chaque sauvegarde : l'étape « refaire le schéma » de RESTAURATION.md
+   ne dépend plus du seul Mac de la gérance : étiquette 20260917journal. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v147'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v148'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

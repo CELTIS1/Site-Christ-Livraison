@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917journal",
+      "date": "17 septembre 2026",
+      "titre": "Le journal dit enfin ce qui a changé",
+      "points": [
+        "Jusqu'ici le journal disait qu'une recette avait bougé, jamais de combien. Désormais chaque ligne montre l'avant et l'après : « Montant : 45 000 F → 54 000 F ».",
+        "Cela vaut pour les quatorze tables où passe l'argent : écritures, factures, caisse, clôtures, recettes, dépenses, saisie de paie, bulletins, reversements, remises.",
+        "La trace est posée dans la base, pas dans l'écran : même une correction faite à la main est enregistrée. Et si le journal tombe en panne, le travail passe quand même.",
+        "Les migrations qui construisent la base partent maintenant dans chaque sauvegarde. Un dossier de sauvegarde suffit à tout reconstruire, sans dépendre d'un seul ordinateur."
+      ]
+    },
+    {
       "version": "20260917quotidien",
       "date": "17 septembre 2026",
       "titre": "Quatre gestes du quotidien, enfin à portée",

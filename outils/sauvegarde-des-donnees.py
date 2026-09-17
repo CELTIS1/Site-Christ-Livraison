@@ -27,7 +27,7 @@ LA CLÉ
   trousseau du Mac ; ce script l'y lit, et elle n'en sort pas.
 """
 
-import csv, hashlib, json, os, ssl, subprocess, sys, urllib.error, urllib.parse, urllib.request
+import csv, hashlib, json, os, shutil, ssl, subprocess, sys, urllib.error, urllib.parse, urllib.request
 from datetime import datetime, timezone
 
 URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co"
@@ -132,6 +132,40 @@ def empreinte(chemin):
     return h.hexdigest()[:16]
 
 
+def copier_les_migrations(dossier):
+    """Range à côté des données le SQL qui a construit la base.
+
+    POURQUOI (17/09/2026). Les données seules ne suffisent pas à repartir : il faut d'abord
+    une base qui ait les bonnes tables, les bonnes règles d'accès et les bons déclencheurs.
+    Ce SQL-là — le dossier « _sql-prive » — n'existait QUE sur le Mac de la gérance. Il ne
+    peut pas aller sur GitHub : le dépôt est public, et ces fichiers décrivent en détail qui
+    a le droit de lire quoi. Sa place est donc ici, dans la sauvegarde, avec les données
+    qu'il sert à rétablir. Un dossier de sauvegarde = de quoi tout reconstruire.
+
+    Renvoie (nombre de fichiers copiés, liste des écarts).
+    """
+    source = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "_sql-prive")
+    source = os.path.normpath(source)
+    cible = os.path.join(dossier, "sql")
+    if not os.path.isdir(source):
+        return 0, [f"le dossier des migrations est introuvable ({source})"]
+
+    noms = sorted(n for n in os.listdir(source) if n.endswith(".sql"))
+    if not noms:
+        return 0, [f"aucune migration .sql dans {source}"]
+
+    os.makedirs(cible, exist_ok=True)
+    ecarts = []
+    for n in noms:
+        a, b = os.path.join(source, n), os.path.join(cible, n)
+        shutil.copy2(a, b)
+        # On relit les deux, comme pour les tables : une copie qu'on n'a pas vérifiée
+        # n'est pas une sauvegarde, c'est une espérance.
+        if empreinte(a) != empreinte(b) or os.path.getsize(a) != os.path.getsize(b):
+            ecarts.append(f"migration {n} : la copie ne correspond pas à l'originale")
+    return len(noms), ecarts
+
+
 def main():
     cle = lire_cle()
     if not cle:
@@ -203,11 +237,18 @@ def main():
         })
         dire(f"  {'✅' if ok else '❌'} {t:38s} {len(lignes):>6} ligne(s)")
 
+    # Le schéma, pas seulement les données : voir copier_les_migrations().
+    nb_sql, ecarts_sql = copier_les_migrations(dossier)
+    ecarts += ecarts_sql
+    dire("")
+    dire(f"  {'✅' if not ecarts_sql else '❌'} {'migrations SQL (sql/)':40s} {nb_sql:>6} fichier(s)")
+
     chemin_manifeste = os.path.join(dossier, "MANIFESTE.json")
     with open(chemin_manifeste, "w", encoding="utf-8") as f:
         json.dump({
             "sauvegarde_le": horo, "projet": URL_BASE,
             "tables": len(manifeste), "lignes_totales": total_lignes,
+            "migrations_sql": nb_sql,
             "tables_ignorees": sorted(IGNOREES),
             "verifiee": not ecarts, "ecarts": ecarts, "detail": manifeste,
         }, f, ensure_ascii=False, indent=1)
@@ -222,6 +263,8 @@ def main():
             + "Ce qu'il y a dedans :\n"
             "  json/   une copie fidèle, c'est elle qui sert à restaurer.\n"
             "  csv/    la même chose, ouvrable dans un tableur pour lire ou retrouver une ligne.\n"
+            f"  sql/    les {nb_sql} migrations qui construisent la base : tables, règles d'accès,\n"
+            "          déclencheurs. À rejouer AVANT les données. Elles ne sont dans aucun dépôt.\n"
             "  MANIFESTE.json  le compte et l'empreinte de chaque table.\n\n"
             "Pour restaurer : voir RESTAURATION.md dans le dossier de l'application.\n"
             "Ne modifiez pas ces fichiers : c'est la copie qui fait foi le jour où il faut s'en servir.\n")
@@ -232,7 +275,7 @@ def main():
         for e in ecarts:
             dire("   • " + e)
         return 1
-    dire(f"✅ Sauvegarde vérifiée : {len(manifeste)} tables, {total_lignes} lignes.")
+    dire(f"✅ Sauvegarde vérifiée : {len(manifeste)} tables, {total_lignes} lignes, {nb_sql} migrations SQL.")
     dire(f"   Chaque fichier a été relu et correspond à ce que la base annonce.")
     return 0
 

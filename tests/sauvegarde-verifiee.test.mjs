@@ -78,5 +78,33 @@ verifier('elle dit ce qui n\'est PAS dans la sauvegarde (comptes, photos)', /pho
 verifier('elle date le dernier essai réel, avec son résultat', /Dernier essai/i.test(runbook) && /17 septembre 2026/.test(runbook));
 verifier('le RUNBOOK y renvoie', /RESTAURATION\.md/.test(lire('RUNBOOK.md')));
 
+/* 5. LE SQL DE LA BASE VOYAGE AVEC LES DONNÉES (17/09)
+   ----------------------------------------------------
+   Les 96 migrations n'existaient que sur le Mac de la gérance. Elles ne peuvent pas aller sur
+   GitHub : le dépôt est PUBLIC, et elles décrivent en détail qui a le droit de lire quoi — le
+   .gitignore l'écrit déjà noir sur blanc pour l'audit de sécurité. Leur place est donc dans la
+   sauvegarde, à côté des données qu'elles servent à rétablir. Ce banc garde les deux bouts :
+   qu'elles partent bien, et qu'elles ne se retrouvent jamais dans le dépôt. */
+console.log('\n5. Le SQL de la base part avec les données — et jamais sur GitHub');
+const ignore = lire('.gitignore');
+verifier('le dépôt refuse tout fichier .sql : rien ne peut partir par distraction',
+  /^\*\.sql$/m.test(ignore));
+verifier('les guides internes (_sql-prive/*.md, ils contiennent des clés) aussi',
+  /^_sql-prive\/\*\.md$/m.test(ignore));
+verifier('aucune migration n\'a été committée par mégarde',
+  !/_sql-prive|\.sql$/m.test(execFileSync('git', ['-C', RACINE, 'ls-files'], { encoding: 'utf8' })));
+verifier('la sauvegarde copie les migrations à côté des données', /def copier_les_migrations/.test(sauvegarde));
+verifier('elle relit la copie au lieu de croire qu\'elle est bonne',
+  /empreinte\(a\) != empreinte\(b\)/.test(sauvegarde));
+verifier('elle ne prend que les .sql : les guides internes restent au chaud',
+  /n\.endswith\("\.sql"\)/.test(sauvegarde));
+verifier('un écart sur le SQL rend la sauvegarde INCOMPLÈTE, comme un écart sur les données',
+  /ecarts \+= ecarts_sql/.test(sauvegarde));
+verifier('le LIRE-MOI de la copie explique ce que contient sql/', /sql\/ {4}les \{nb_sql\} migrations/.test(sauvegarde));
+verifier('la restauration prévient : d\'abord la base, ensuite les données',
+  /D'ABORD LA BASE, ENSUITE LES DONNÉES/.test(restauration));
+verifier('RESTAURATION.md dit que les migrations sont dans la sauvegarde',
+  /`sql\/`/.test(runbook) && /dans la\nsauvegarde elle-même/.test(runbook));
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

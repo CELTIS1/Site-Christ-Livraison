@@ -93,9 +93,26 @@ print("\n1. La sauvegarde tourne contre une base de la même forme que la vraie"
 
 # On fait tourner le VRAI script, en détournant seulement l'adresse de la base.
 src = open(os.path.join(OUTILS, "sauvegarde-des-donnees.py"), encoding="utf-8").read()
-copie = os.path.join(travail, "sauvegarde.py")
+# On respecte la place du script dans le dépôt (<dépôt>/outils/), parce qu'il y cherche
+# le dossier des migrations, juste au-dessus de lui.
+os.makedirs(os.path.join(travail, "outils"), exist_ok=True)
+copie = os.path.join(travail, "outils", "sauvegarde.py")
 open(copie, "w", encoding="utf-8").write(
     src.replace('URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co"', f'URL_BASE = "http://127.0.0.1:{port}"'))
+
+# LE SQL DOIT PARTIR AVEC LES DONNÉES. Le script va chercher « _sql-prive » à côté de
+# lui-même ; on lui en fabrique un, avec de quoi piéger une copie approximative : un accent
+# dans le nom, un fichier qui n'est pas du SQL (il doit rester), et un gros contenu.
+faux_sql = os.path.join(travail, "_sql-prive")
+os.makedirs(faux_sql, exist_ok=True)
+MIGRATIONS = {
+    "2026-01-01-première-règle.sql": "-- créé le 1er janvier\ncreate table t (id uuid);\n",
+    "2026-02-02-clôture.sql": "alter table t add column libellé text; -- « guillemets »\n",
+    "2026-03-03-gros.sql": "-- " + ("x" * 50000) + "\n",
+    "GUIDE-WAVE.md": "SECRET : ceci ne doit pas partir dans la sauvegarde\n",
+}
+for nom, contenu in MIGRATIONS.items():
+    open(os.path.join(faux_sql, nom), "w", encoding="utf-8").write(contenu)
 
 dest = os.path.join(travail, "Sauvegardes")
 r = subprocess.run([sys.executable, copie, dest], capture_output=True, text=True,
@@ -123,6 +140,23 @@ verifier("un LIRE-MOI accompagne la copie", os.path.exists(os.path.join(sauve, "
 csvs = os.listdir(os.path.join(sauve, "csv"))
 verifier("chaque table a son JSON et son CSV", len(csvs) == len(man["detail"]), len(csvs))
 
+# --- Le schéma voyage avec les données (17/09) ---
+dsql = os.path.join(sauve, "sql")
+noms = sorted(os.listdir(dsql)) if os.path.isdir(dsql) else []
+verifier("les migrations SQL sont copiées à côté des données", len(noms) == 3, noms)
+verifier("le manifeste compte les migrations", man.get("migrations_sql") == 3, man.get("migrations_sql"))
+verifier("un nom accentué survit au voyage", "2026-02-02-clôture.sql" in noms, noms)
+verifier("le contenu est identique, octet pour octet",
+         all(open(os.path.join(dsql, n), encoding="utf-8").read() == MIGRATIONS[n]
+             for n in noms if n in MIGRATIONS))
+verifier("un gros fichier n'est pas tronqué",
+         os.path.getsize(os.path.join(dsql, "2026-03-03-gros.sql")) == len(MIGRATIONS["2026-03-03-gros.sql"]))
+# Les guides internes (.md) contiennent des clés : ils sont hors dépôt ET hors sauvegarde.
+verifier("les guides internes (.md) ne partent PAS : ils contiennent des secrets",
+         "GUIDE-WAVE.md" not in noms, noms)
+verifier("le LIRE-MOI dit que le SQL se joue avant les données",
+         "AVANT" in open(os.path.join(sauve, "LIRE-MOI.txt"), encoding="utf-8").read())
+
 print("\n2. Le CSV garde les colonnes que PostgREST avait tues")
 import csv as csvmod
 with open(os.path.join(sauve, "csv", "colis.csv"), encoding="utf-8", newline="") as f:
@@ -134,6 +168,11 @@ print("\n3. Le fichier de restauration se fabrique")
 r2 = subprocess.run([sys.executable, os.path.join(OUTILS, "restaurer-une-sauvegarde.py"), sauve],
                     capture_output=True, text=True)
 verifier("le script se termine bien", r2.returncode == 0, (r2.stdout + r2.stderr)[-500:])
+# Le piège du jour J : jouer les données sur une base sans tables. Le script doit le dire.
+verifier("il rappelle de jouer les 3 migrations AVANT les données",
+         "D'ABORD LA BASE" in r2.stdout and "3 migrations" in r2.stdout, r2.stdout[-400:])
+verifier("il nomme la première et la dernière migration, pour savoir par où commencer",
+         "2026-01-01-première-règle.sql" in r2.stdout and "2026-03-03-gros.sql" in r2.stdout, r2.stdout[-400:])
 sql_path = os.path.join(sauve, "RESTAURATION.sql")
 sql = open(sql_path, encoding="utf-8").read()
 verifier("profiles passe AVANT colis (sinon la clé étrangère refuse)",

@@ -2664,19 +2664,80 @@ document.querySelectorAll('.modal-back').forEach(m => m.addEventListener('click'
 const JOURNAL_TABLES = {
   gestion_recettes:'Recettes', gestion_depenses:'Dépenses', gestion_objectifs:'Objectifs',
   gestion_chauffeurs:'Chauffeurs', gestion_salaries:'Salariés', gestion_saisie_mensuelle:'Saisie mensuelle',
-  gestion_bulletins:'Bulletins', gestion_categories:'Grille catégorielle', gestion_parametres:'Paramètres'
+  gestion_bulletins:'Bulletins', gestion_categories:'Grille catégorielle', gestion_parametres:'Paramètres',
+  // 17/09/2026 (point 8.4) : les tables d'argent qui n'étaient journalisées nulle part.
+  gestion_ecritures:'Écritures comptables', gestion_ecriture_lignes:'Lignes d\'écriture',
+  gestion_factures:'Factures', gestion_caisse:'Livre de caisse', gestion_clotures:'Clôtures',
+  reversements_clientes:'Reversements aux clientes', remises_caisse:'Remises de caisse',
 };
 const JOURNAL_ACTIONS = { INSERT:'Ajout', UPDATE:'Modification', DELETE:'Suppression' };
+/* CE QUI A CHANGÉ, EN TOUTES LETTRES (17/09/2026, point 8.4)
+   Le journal notait qui, quand et sur quelle table — jamais la valeur. Une correction d'argent
+   était donc invérifiable : on savait qu'une recette avait bougé, pas de combien. Le déclencheur
+   journal_avant_apres écrit maintenant, pour chaque colonne qui a VRAIMENT changé, sa valeur
+   avant et après ; cette fonction les met en français.
+   Les colonnes techniques ne disent rien à personne : on les tait. */
+const JOURNAL_CHAMPS = {
+  montant:'Montant', montant_ttc:'Montant TTC', montant_ht:'Montant HT', montant_remis:'Remis',
+  montant_attendu:'Attendu', ecart:'Écart', net_a_payer:'Net à payer', salaire_brut:'Brut',
+  statut:'Statut', libelle:'Libellé', categorie:'Catégorie', date_depense:'Date', date_recette:'Date',
+  date_emission:'Émise le', cloture:'Clôturé', jours_travailles:'Jours', sursalaire:'Sursalaire',
+  gratification:'Gratification', retenue_divers:'Retenue', prime_transport:'Prime transport',
+  salaire_min:'Salaire minimum', seuil_montant:'Seuil de vigilance', nb_colis:'Colis',
+  annule_le:'Annulé le', note:'Note', mode:'Mode', reponse:'Réponse',
+};
+const JOURNAL_CHAMPS_TUS = ['id', 'created_at', 'updated_at', 'snapshot', 'colis_ids', 'fait_par', 'valide_par'];
+function journalValeur(v){
+  if (v === null || v === undefined || v === '') return '—';
+  if (typeof v === 'boolean') return v ? 'oui' : 'non';
+  if (typeof v === 'number') return fmtF(v);
+  const s = String(v);
+  return s.length > 40 ? s.slice(0, 40) + '…' : s;
+}
+function journalChangementHTML(details){
+  const ch = details && details.champs;
+  if (!ch || typeof ch !== 'object') return '<span class="hint">—</span>';
+  const lignes = Object.keys(ch)
+    .filter(k => !JOURNAL_CHAMPS_TUS.includes(k))
+    .filter(k => ch[k] && typeof ch[k] === 'object' && ('avant' in ch[k] || 'apres' in ch[k]))
+    .slice(0, 6)
+    .map(k => {
+      const nom = JOURNAL_CHAMPS[k] || k.replace(/_/g, ' ');
+      const a = journalValeur(ch[k].avant), b = journalValeur(ch[k].apres);
+      if (details.operation === 'INSERT') return `<div><strong>${escapeHTML(nom)}</strong> : ${escapeHTML(b)}</div>`;
+      if (details.operation === 'DELETE') return `<div><strong>${escapeHTML(nom)}</strong> : ${escapeHTML(a)} <span class="hint">(supprimé)</span></div>`;
+      return `<div><strong>${escapeHTML(nom)}</strong> : ${escapeHTML(a)} → <strong>${escapeHTML(b)}</strong></div>`;
+    });
+  if (!lignes.length) return '<span class="hint">—</span>';
+  const reste = Object.keys(ch).filter(k => !JOURNAL_CHAMPS_TUS.includes(k)).length - lignes.length;
+  return lignes.join('') + (reste > 0 ? `<div class="hint">+ ${reste} autre(s) champ(s)</div>` : '');
+}
 const JOURNAL_PAGE = 100;   // nombre de lignes chargées par page
 let JOURNAL_OFFSET = 0;     // décalage de la prochaine page à charger
 let JOURNAL_LOADING = false;
+/* Le journal lit activity_log depuis le 17/09/2026 (point 8.4) : c'est là que le déclencheur
+   écrit le détail des changements. gestion_journal, l'ancien journal de Gestion, notait les
+   mêmes mouvements SANS le détail — ses lignes d'avant restent en base, consultables, mais cet
+   écran montre désormais la source qui dit quelque chose. */
+const JOURNAL_TABLES_ARGENT = Object.keys(JOURNAL_TABLES);
+function journalLire(depuis){
+  return supabaseClient
+    .from('activity_log')
+    .select('created_at, actor_id, actor_role, action, target_type, target_id, details')
+    .in('target_type', JOURNAL_TABLES_ARGENT)
+    .order('created_at', { ascending:false })
+    .range(depuis, depuis + JOURNAL_PAGE - 1);
+}
 function journalRowHTML(r){
-  const d = new Date(r.ts);
-  const dt = isNaN(d) ? escapeHTML(r.ts) : d.toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-  const acteur = escapeHTML(r.acteur_nom || '—') + (r.acteur_role ? ` <span class="hint" style="display:inline">(${escapeHTML(r.acteur_role)})</span>` : '');
-  const act = JOURNAL_ACTIONS[r.action] || escapeHTML(r.action);
-  const tbl = JOURNAL_TABLES[r.table_cible] || escapeHTML(r.table_cible);
-  return `<tr><td>${dt}</td><td>${acteur}</td><td>${act}</td><td>${tbl}</td></tr>`;
+  const d = new Date(r.created_at || r.ts);
+  const dt = isNaN(d) ? escapeHTML(r.created_at || r.ts) : d.toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const nom = (r.acteur_nom) || (SALARIES.find(s => s.id === r.actor_id) || {}).nom || (r.actor_id ? 'Compte ' + String(r.actor_id).slice(0, 8) : '—');
+  const acteur = escapeHTML(nom) + (r.actor_role || r.acteur_role ? ` <span class="hint" style="display:inline">(${escapeHTML(r.actor_role || r.acteur_role)})</span>` : '');
+  const op = (r.details && r.details.operation) || r.action;
+  const act = JOURNAL_ACTIONS[op] || escapeHTML(String(op).replace(/^(insert|update|delete)_/, ''));
+  const cible = r.target_type || r.table_cible;
+  const tbl = JOURNAL_TABLES[cible] || escapeHTML(cible || '—');
+  return `<tr><td>${dt}</td><td>${acteur}</td><td>${act}</td><td>${tbl}</td><td style="text-align:left;">${journalChangementHTML(r.details)}</td></tr>`;
 }
 // 3.9 (16/09/2026) : les erreurs JavaScript remontées par les pages, résumées par la base.
 async function loadErreursClient(){
@@ -2703,18 +2764,14 @@ async function loadJournal(){
   const wrap = document.getElementById('journal-table'); if (!wrap) return;
   JOURNAL_OFFSET = 0; JOURNAL_LOADING = true;
   wrap.innerHTML = '<div class="hint">Chargement…</div>';
-  const { data, error } = await supabaseClient
-    .from('gestion_journal')
-    .select('ts, acteur_nom, acteur_role, action, table_cible, ligne_id')
-    .order('ts', { ascending:false })
-    .range(0, JOURNAL_PAGE - 1);
+  const { data, error } = await journalLire(0);
   JOURNAL_LOADING = false;
   if (error){ wrap.innerHTML = '<div class="hint">Impossible de charger le journal.</div>'; console.error(error); return; }
   const rows = (data||[]);
   if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucune activité enregistrée pour le moment.</div>'; return; }
   JOURNAL_OFFSET = rows.length;
   const body = rows.map(journalRowHTML).join('');
-  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Date &amp; heure</th><th>Auteur</th><th>Action</th><th>Rubrique</th></tr></thead><tbody id="journal-body">${body}</tbody></table>`
+  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Date &amp; heure</th><th>Auteur</th><th>Action</th><th>Rubrique</th><th style="text-align:left;">Ce qui a changé</th></tr></thead><tbody id="journal-body">${body}</tbody></table>`
     + `<div id="journal-more-wrap" style="text-align:center;margin-top:10px;"></div>`;
   renderJournalMore(rows.length === JOURNAL_PAGE);
 }
@@ -2729,11 +2786,7 @@ async function loadMoreJournal(){
   const tbody = document.getElementById('journal-body'); if (!tbody) return;
   JOURNAL_LOADING = true;
   const box = document.getElementById('journal-more-wrap'); if (box) box.innerHTML = '<span class="hint">Chargement…</span>';
-  const { data, error } = await supabaseClient
-    .from('gestion_journal')
-    .select('ts, acteur_nom, acteur_role, action, table_cible, ligne_id')
-    .order('ts', { ascending:false })
-    .range(JOURNAL_OFFSET, JOURNAL_OFFSET + JOURNAL_PAGE - 1);
+  const { data, error } = await journalLire(JOURNAL_OFFSET);
   JOURNAL_LOADING = false;
   if (error){ if (box) box.innerHTML = `<button class="btn btn-sm" onclick="loadMoreJournal()">Réessayer</button>`; console.error(error); return; }
   const rows = (data||[]);

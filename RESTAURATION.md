@@ -19,6 +19,7 @@ Chaque dossier daté contient :
 |---|---|
 | `json/` | une copie fidèle, une table par fichier. **C'est elle qui sert à restaurer.** |
 | `csv/` | la même chose, ouvrable dans un tableur pour lire ou retrouver une ligne. |
+| `sql/` | **les migrations qui construisent la base** : tables, règles d'accès, déclencheurs. À rejouer *avant* les données. |
 | `MANIFESTE.json` | le compte et l'empreinte de chaque table, et si la sauvegarde s'est déclarée vérifiée. |
 | `LIRE-MOI.txt` | le résumé en clair. |
 
@@ -42,7 +43,11 @@ réclamations, réversements, journal. C'est le cœur de la société.
 - **Les photos** (preuves de livraison, photos du site, justificatifs, photos des salariés). Elles
   sont dans le stockage de fichiers, pas dans les tables. Une restauration rend les fiches ; les
   images seront manquantes si le stockage est perdu lui aussi.
-- **Le schéma** — les tables elles-mêmes. Il se refait à partir de `_sql-prive/`, voir ci-dessous.
+- **Le schéma était dehors ; il est dedans depuis le 17/09.** Les migrations qui construisent
+  la base ne vivaient que sur le Mac de la gérance. Elles ne peuvent pas aller sur GitHub — le
+  dépôt est public, et elles décrivent en détail qui a le droit de lire quoi. Chaque sauvegarde
+  en emporte donc une copie, dans `sql/` : un dossier de sauvegarde suffit désormais à tout
+  reconstruire, même si ce Mac disparaît.
 - **Les positions des livreurs** et les abonnements aux notifications : volontairement écartés,
   ils se reconstruisent seuls en une journée.
 
@@ -58,11 +63,12 @@ continuer.
 
 ### 2. Refaire le schéma sur une base vide
 
-Créez un nouveau projet Supabase. Le schéma n'est pas dans la sauvegarde : il se rejoue depuis
-les migrations, dans `Site web (connecté à GitHub)` › `_sql-prive/`, **dans l'ordre des dates des
-noms de fichiers**. Le registre `migrations_appliquees` de l'ancienne base (il est dans la
-sauvegarde, `json/migrations_appliquees.json`) dit exactement lesquelles avaient été jouées : c'est
-la liste à suivre, ni plus ni moins.
+Créez un nouveau projet Supabase. Le schéma se rejoue depuis les migrations, **qui sont dans la
+sauvegarde elle-même**, dossier `sql/`, **dans l'ordre des dates des noms de fichiers**. (Elles
+sont aussi sur le Mac de la gérance, dans `Site web (connecté à GitHub)` › `_sql-prive/` — mais
+cette étape ne dépend plus de ce Mac.) Le registre `migrations_appliquees` de l'ancienne base (il
+est dans la sauvegarde, `json/migrations_appliquees.json`) dit exactement lesquelles avaient été
+jouées : c'est la liste à suivre, ni plus ni moins.
 
 À la fin de cette étape, la base a toutes ses tables — et elles sont vides.
 
@@ -113,7 +119,8 @@ la clé publique dans `app/config.js`, publiez, et prévenez l'équipe.
 forme que la vraie, la sauvegarde, la restauration, puis un vrai Postgres — et vérifié ligne à
 ligne : 2 350 colis et leurs clientes, la pagination au-delà de mille lignes, les apostrophes et
 les accents, le jsonb revenu en jsonb, les valeurs nulles restées nulles, les clés étrangères qui
-tiennent, et le fichier rejoué deux fois sans rien doubler. **26 contrôles, aucun échec.**
+tiennent, le SQL du schéma parti avec les données (noms accentués compris, guides internes
+exclus), et le fichier rejoué deux fois sans rien doubler. **35 contrôles, aucun échec.**
 
 L'essai se relance à tout moment :
 
