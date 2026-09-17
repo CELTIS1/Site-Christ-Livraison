@@ -463,10 +463,15 @@ verifier(
    v138, le 17/09/2026 — points 9.2 et 9.1 de l'inventaire : le haut des écrans de l'équipe
    dégonflé (la phrase qui coiffait les huit onglets est partie, la salutation ne reste que sur
    l'accueil : equipe.html, equipe/10-onglets.js) et la règle des 44 px étendue à tous les
-   espaces, plus seulement au livreur (style.css, equipe.html) : étiquette 20260917epure. */
+   espaces, plus seulement au livreur (style.css, equipe.html) : étiquette 20260917epure.
+   v139, le 17/09/2026 — point 6.6 de l'inventaire, second temps : le reversement aux clientes
+   devient un geste quotidien. « Le point du jour » montre ce qui reste dû toutes dates, cliente
+   par cliente, les plus anciennes d'abord, et chaque nom est un bouton qui ouvre sa fiche sur le
+   reversement (point-du-jour.js, clients-dashboard.js, style.css, equipe.html) : étiquette
+   20260917reverser. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v138'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v139'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917reverser",
+      "date": "17 septembre 2026",
+      "titre": "L'argent des clientes : reverser devient un geste de tous les jours",
+      "points": [
+        "Le geste « Reverser » existait depuis le 5 septembre, au fond de la fiche d'une cliente, et n'avait jamais servi : l'application croyait devoir 6 350 250 F, de l'argent pourtant remis depuis longtemps. Les comptes ont été remis à la réalité au 15 septembre.",
+        "Pour que cela ne recommence pas, « Le point du jour » (Finances) montre maintenant ce qui reste à reverser, toutes dates confondues, avec ce qui traîne depuis trois jours ou plus.",
+        "Chaque cliente concernée est un bouton : un appui ouvre sa fiche directement sur le reversement, colis cochés et montant prêt. Les plus anciennes sont en tête.",
+        "Sur la fiche d'une cliente, « Reverser » passe en tête et se voit dès qu'il y a de l'argent à lui rendre — au lieu d'attendre tout en bas."
+      ]
+    },
+    {
       "version": "20260917epure",
       "date": "17 septembre 2026",
       "titre": "Des écrans plus nets, et tout se touche du pouce",

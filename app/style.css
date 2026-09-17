@@ -2387,6 +2387,21 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 .pdj-note{ font-size:12.5px; color:var(--muted); margin-top:8px; }
 .pdj-table{ margin-top:10px; }
 .pdj-lien{ margin-top:8px; font-size:13px; } .pdj-lien a{ color:var(--navy); font-weight:600; }
+/* Les clientes à qui CLT doit encore de l'argent — un appui ouvre sa fiche sur le reversement
+   (17/09/2026, point 6.6). Les 44 px de la règle d'affichage s'appliquent : on vise au pouce. */
+.pdj-clientes{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:8px; margin-top:10px; }
+.pdj-cliente{ display:flex; flex-direction:column; gap:1px; min-height:44px; padding:8px 12px; border:1px solid var(--border); border-left:3px solid var(--border); border-radius:10px; background:var(--card, #fff); color:inherit; cursor:pointer; text-align:left; font:inherit; min-width:0; }
+.pdj-cliente:hover{ border-color:#1B4374; border-left-color:#1B4374; }
+.pdj-cliente-nom{ font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pdj-cliente-bas{ display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 8px; }
+.pdj-cliente strong{ font-size:14px; color:var(--navy); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.pdj-cliente-age{ font-size:11.5px; color:var(--muted); }
+/* Celles qui attendent depuis 3 jours ou plus : un filet rouge, pas un bloc rouge. */
+.pdj-cliente-ancienne{ border-left-color:#c0392b; }
+.pdj-cliente-ancienne strong{ color:#c0392b; }
+.pdj-cliente-ancienne .pdj-cliente-age{ color:#c0392b; }
+.pdj-cliente-plus{ display:inline-flex; align-items:center; min-height:44px; padding:8px 12px; font-size:12.5px; color:var(--muted); cursor:default; }
+html[data-theme="dark"] .pdj-cliente{ background:#1A2433; border-color:#2B3A4E; }
 /* « Quoi de neuf ? » (16/09/2026) */
 .clt-nouveautes { position: fixed; inset: 0; z-index: 9600; background: rgba(15, 23, 42, .55); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .clt-nouveautes__boite { background: #fff; color: #1f2937; border-radius: 16px; width: min(560px, 100%); max-height: min(80vh, 640px); display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,.35); }

@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917epure">
-<script src="theme.js?v=20260917epure"></script>
-<script src="splash.js?v=20260917epure"></script>
+<link rel="stylesheet" href="style.css?v=20260917reverser">
+<script src="theme.js?v=20260917reverser"></script>
+<script src="splash.js?v=20260917reverser"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1369,6 +1369,9 @@ saisis ensuite lui seront rattachés automatiquement.
 .cd-fiche-grille{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; }
 .cd-fiche-bloc{ border:1px solid var(--border); border-radius:12px; padding:10px 12px; min-width:0; }
 .cd-fiche-bloc-large{ grid-column:1 / -1; }
+/* Le bloc « Reverser » en tête de fiche quand il y a de l'argent à rendre (17/09/2026, 6.6). */
+.cd-fiche-bloc-urgent{ border-color:#E26313; border-width:2px; background:rgba(226,99,19,.05); }
+.cd-fiche-bloc-urgent .cd-fiche-bloc-titre{ color:#E26313; }
 .cd-fiche-bloc-titre{ font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
 .cd-fiche-ligne{ font-size:13px; color:var(--navy); margin:4px 0; line-height:1.45; }
 .cd-fiche-spark{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
@@ -1500,32 +1503,32 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917epure"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917epure"></script>
-<script src="lib/argent.js?v=20260917epure"></script>
-<script src="lib/releve-cliente.js?v=20260917epure"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917epure"></script>
-<script src="lib/briques-argent.js?v=20260917epure"></script>
-<script src="lib/annonce-de-remise.js?v=20260917epure"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917epure"></script>
-<script src="lib/primes.js?v=20260917epure"></script>
-<script src="lib/doublons.js?v=20260917epure"></script>
-<script src="config.js?v=20260917epure"></script>
-<script src="clients-dashboard.js?v=20260917epure"></script>
-<script src="livreurs-dashboard.js?v=20260917epure"></script>
-<script src="point-du-jour.js?v=20260917epure"></script>
-<script src="biometric-lock.js?v=20260917epure"></script>
-<script src="clt-select-recherche.js?v=20260917epure"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260917epure"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260917epure"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260917epure"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260917epure"></script>
-<script src="equipe/04-actions.js?v=20260917epure"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260917epure"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260917epure"></script>
-<script src="equipe/07-rapports.js?v=20260917epure"></script>
-<script src="equipe/08-son-ecran.js?v=20260917epure"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260917epure"></script>
+<script src="clt-common.js?v=20260917reverser"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917reverser"></script>
+<script src="lib/argent.js?v=20260917reverser"></script>
+<script src="lib/releve-cliente.js?v=20260917reverser"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917reverser"></script>
+<script src="lib/briques-argent.js?v=20260917reverser"></script>
+<script src="lib/annonce-de-remise.js?v=20260917reverser"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917reverser"></script>
+<script src="lib/primes.js?v=20260917reverser"></script>
+<script src="lib/doublons.js?v=20260917reverser"></script>
+<script src="config.js?v=20260917reverser"></script>
+<script src="clients-dashboard.js?v=20260917reverser"></script>
+<script src="livreurs-dashboard.js?v=20260917reverser"></script>
+<script src="point-du-jour.js?v=20260917reverser"></script>
+<script src="biometric-lock.js?v=20260917reverser"></script>
+<script src="clt-select-recherche.js?v=20260917reverser"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260917reverser"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260917reverser"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260917reverser"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260917reverser"></script>
+<script src="equipe/04-actions.js?v=20260917reverser"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260917reverser"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260917reverser"></script>
+<script src="equipe/07-rapports.js?v=20260917reverser"></script>
+<script src="equipe/08-son-ecran.js?v=20260917reverser"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260917reverser"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1562,6 +1565,6 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     Express
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260917epure"></script>
+<script src="equipe/10-onglets.js?v=20260917reverser"></script>
 </body>
 </html>

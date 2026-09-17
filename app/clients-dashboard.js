@@ -406,6 +406,17 @@
     const semaines = Math.ceil((cdPeriode * 2) / 7);
     const recents = tous.slice(0, 8);
     const statutLib = (c) => (typeof libelleStatut === 'function' ? libelleStatut(c.statut, c) : (STATUTS[c.statut] || {}).label || c.statut);
+    /* 17/09/2026, point 6.6 : ce bloc était le dernier de la fiche, sous les derniers colis.
+       C'est le geste le plus important de l'écran — c'est de l'argent qui appartient à la
+       cliente et qui dort chez nous — et il passe donc en tête dès qu'il y a quelque chose à
+       reverser. Quand il n'y a rien, il reprend sa place en bas : inutile de coiffer la fiche
+       d'un bloc qui dit « rien à faire ». */
+    const aReverserIci = cdColisAReverser(l);
+    const blocReverser = `
+        <div class="cd-fiche-bloc cd-fiche-bloc-large${aReverserIci.length ? ' cd-fiche-bloc-urgent' : ''}" id="cd-bloc-reverser">
+          <div class="cd-fiche-bloc-titre">Reverser à ${esc(l.nom)}</div>
+          ${cdReversementHTML(l)}
+        </div>`;
     return `
       <div class="cd-fiche-entete">
         <div>
@@ -420,6 +431,7 @@
         </div>
       </div>
       <div class="cd-fiche-grille">
+        ${aReverserIci.length ? blocReverser : ''}
         <div class="cd-fiche-bloc">
           <div class="cd-fiche-bloc-titre">Contact & récupération</div>
           <div class="cd-fiche-ligne">📞 ${l.tel ? esc(l.tel) : '<span class="cd-muet">pas de numéro</span>'}</div>
@@ -444,10 +456,7 @@
           <div class="cd-fiche-ligne">À lui reverser, toutes dates : <strong class="${argent.anciens ? 'cd-rouge' : ''}">${money(argent.total)}</strong>${argent.anciens ? ` <span class="cd-rouge">dont ${money(argent.anciens)} depuis 3 j ou plus (le plus ancien : ${enClair(argent.plusVieux, true)})</span>` : ''}</div>
           <div class="cd-sous">Mêmes calculs que la comptabilité (config.js) : cet écran n’additionne rien de son côté.</div>
         </div>
-        <div class="cd-fiche-bloc cd-fiche-bloc-large">
-          <div class="cd-fiche-bloc-titre">Reverser à la cliente</div>
-          ${cdReversementHTML(l)}
-        </div>
+        ${aReverserIci.length ? '' : blocReverser}
         <div class="cd-fiche-bloc cd-fiche-bloc-large">
           <div class="cd-fiche-bloc-titre">Derniers colis</div>
           ${recents.length ? `<table class="cd-mini"><tbody>${recents.map((c) => `<tr><td>${enClair(jour(c.created_at))}</td><td>${esc(c.numero || '')}</td><td>${esc(typeof colisDestinationTexte === 'function' ? colisDestinationTexte(c) : (c.destination || c.commune_destination || ''))}</td><td><span class="cd-statut cd-statut-${esc(c.statut)}">${esc(statutLib(c))}</span></td><td class="cd-cell-num">${money(typeof montantArticleColis === 'function' ? montantArticleColis(c) : c.montant_article)}</td><td>${typeof window.eqOuvrirModificationColis === 'function' ? `<button type="button" class="cd-lien" data-cd-modifier="${esc(c.id)}" title="Ouvrir la fiche complète du colis : statut, livreur, adresse, montants">✏️</button>` : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="cd-muet">Aucun colis sur la période.</div>'}
@@ -582,6 +591,24 @@
     document.body.classList.add('cd-fiche-ouverte');
     cdRevHistorique(id);
   }
+  /* Appelée depuis « Le point du jour » (Finances) : on bascule sur l'onglet Clients, on
+     s'assure que les chiffres sont chargés, on ouvre la fiche de la cliente et on amène le bloc
+     « Reverser » sous les yeux. Le point du jour n'a ainsi qu'un bouton à poser, et c'est cet
+     écran-ci qui reste seul maître du geste. (17/09/2026, point 6.6.) */
+  async function cdOuvrirReversement(id) {
+    if (!id) return;
+    if (typeof showEquipeTab === 'function') showEquipeTab('clients');
+    const box = $('cd-corps');
+    if (!box || !box.__cdLignes || !box.__cdLignes.some((x) => x.id === id)) await cdRafraichir(true);
+    cdOuvrirFiche(id);
+    const bloc = $('cd-bloc-reverser');
+    const corps = $('cd-fiche-corps');
+    setTimeout(() => {
+      if (bloc && bloc.previousElementSibling) bloc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else if (corps) corps.scrollTop = 0;
+    }, 60);
+  }
+
   function cdFermerFiche() {
     const overlay = $('cd-fiche-overlay');
     if (overlay) overlay.classList.add('hidden');
@@ -646,6 +673,7 @@
   window.CLTClients = {
     init: cdInit,
     rafraichir: cdRafraichir,
+    ouvrirReversement: cdOuvrirReversement,
     // Purs, pour les essais :
     decouper: cdDecouper, statsListe: cdStatsListe, parJour: cdParJour, lignes: cdLignes, aReverser: cdAReverser, barresHTML: cdBarresHTML, sparklineHTML: cdSparklineHTML,
     _etat: (o) => { if (o) { if (o.colis) cdColis = o.colis; if (o.profils) cdProfils = o.profils; if (o.dettes) cdDettes = o.dettes; if (o.periode) cdPeriode = o.periode; } return { colis: cdColis, profils: cdProfils, dettes: cdDettes, periode: cdPeriode }; },

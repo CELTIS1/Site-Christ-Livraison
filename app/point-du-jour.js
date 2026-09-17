@@ -13,9 +13,18 @@
         plus ce qui est entré par les autres chemins (payé au dépôt, frais de course d'expédition)
         → la recette du jour.
      4. Les livreurs et la caisse : en main · remis · reste à remettre · écarts, par livreur.
-     + Reversé aux clientes ce jour.
+     5. À reverser aux clientes : ce qui est encore dû, toutes dates, cliente par cliente, avec
+        le geste à portée de doigt — plus ce qui a été reversé ce jour.
    Deux égalités sont affichées et vérifiées : attendu = encaissé + non encaissé ;
    en main = remis + reste. Si l'une casse, le mot « vérifier » apparaît en rouge.
+
+   LE RESTE DÛ N'EST PAS « DU JOUR » (17/09/2026, point 6.6 de la feuille de route). Le geste
+   « Reverser » existait depuis le 5 septembre au fond de la fiche d'une cliente, et n'a jamais
+   servi : l'application a cumulé 6 350 250 F de dettes fictives en un mois. La reprise du
+   17 septembre a remis les compteurs à la réalité ; pour que cela tienne, le reste dû doit se
+   voir là où l'équipe regarde l'argent chaque jour, avec le bouton qui l'efface. D'où ce bloc :
+   le total encore dû toutes dates, les clientes concernées, les plus vieilles d'abord, et un
+   appui qui ouvre la fiche directement sur le reversement.
 
    « Le jour » : livre_at / non_livre_at / retour_at (le jour de l'événement, à Abidjan), jamais
    created_at. Les colis « encore en tournée » sont ceux qui sont récupérés ou en livraison à
@@ -33,6 +42,7 @@
   const somme = (liste, fn) => liste.reduce((s, c) => s + (Number(fn(c)) || 0), 0);
 
   function bornes(j) { return { debut: j + 'T00:00:00Z', fin: j + 'T23:59:59.999Z' }; }
+  function todayISO() { return (typeof todayLocalISODate === 'function' ? todayLocalISODate() : new Date().toISOString().slice(0, 10)); }
   function decalerJour(j, n) { const d = new Date(j + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
   function jourEnClair(j) {
     const d = new Date(j + 'T12:00:00Z');
@@ -42,7 +52,7 @@
 
   // ---------------------------------------------------------------- les chiffres d'un jour
   // Pure : reçoit les lignes, rend les nombres. C'est elle que le banc d'essai fait tourner.
-  function calculer(colisDuJour, enTournee, remises, reversements) {
+  function calculer(colisDuJour, enTournee, remises, reversements, dettes) {
     const livres = colisDuJour.filter((c) => c.statut === 'livre');
     const nonLivres = colisDuJour.filter((c) => c.statut === 'non_livre');
     const retours = colisDuJour.filter((c) => c.statut === 'retour');
@@ -95,13 +105,49 @@
       ecartsDuJour: somme(remises, (r) => r.ecart),
     };
     const reverse = { nb: reversements.length, montant: somme(reversements, (r) => r.montant), clientes: new Set(reversements.map((r) => r.fournisseur_id)).size };
+    const du = resteDu(dettes || []);
 
     const ok1 = Math.abs(articles.attendu - (articles.encaisse + articles.nonEncaisse)) < 0.5 && Math.abs(livraison.attendu - (livraison.encaisse + livraison.nonEncaisse)) < 0.5;
     const ok2 = Math.abs(caisse.enMain - (caisse.remis + caisse.reste)) < 0.5;
     return {
       nb: { livres: livres.length, nonLivres: nonLivres.length, retours: retours.length, enTournee: enTournee.length, expeditions: t.nbExpeditions },
-      articles, livraison, caisse, reverse,
+      articles, livraison, caisse, reverse, du,
       coherent: ok1 && ok2, ok1, ok2,
+    };
+  }
+
+  /* Ce que CLT doit encore à chaque cliente, toutes dates confondues : le NET d'un colis livré
+     dont le reversement n'est pas encore écrit (montantNetADevoir — article encaissé pour elle,
+     moins l'avance de gare et les frais de course ; la même fonction que son relevé et que le
+     geste de reversement, jamais un calcul maison). Un net négatif veut dire que c'est elle qui
+     doit à CLT : ces lignes-là sont comptées à part, elles ne se reversent pas.
+     « Ancien » = livré il y a 3 jours ou plus : c'est le seuil déjà retenu sur l'écran Clients. */
+  function resteDu(dettes) {
+    const net = (c) => (typeof montantNetADevoir === 'function' ? Number(montantNetADevoir(c)) || 0 : 0);
+    const seuil = decalerJour(todayISO(), -2);   // livré avant-hier ou plus tôt
+    const par = new Map();
+    dettes.forEach((c) => {
+      const m = net(c);
+      if (!m) return;
+      const id = c.fournisseur_id || 'inconnu';
+      const j = String(c.livre_at || c.updated_at || c.created_at || '').slice(0, 10);
+      const l = par.get(id) || { id, montant: 0, nb: 0, ancien: 0, plusVieux: null };
+      l.montant += m; l.nb += 1;
+      if (m > 0 && j && j < seuil) l.ancien += m;
+      if (j && (!l.plusVieux || j < l.plusVieux)) l.plusVieux = j;
+      par.set(id, l);
+    });
+    const lignes = [...par.values()].filter((l) => l.montant > 0).sort((a, b) => (b.ancien - a.ancien) || (b.montant - a.montant));
+    const negatifs = [...par.values()].filter((l) => l.montant < 0);
+    return {
+      total: lignes.reduce((s, l) => s + l.montant, 0),
+      ancien: lignes.reduce((s, l) => s + l.ancien, 0),
+      nbClientes: lignes.length,
+      nbAnciennes: lignes.filter((l) => l.ancien > 0).length,
+      nbColis: lignes.reduce((s, l) => s + l.nb, 0),
+      lignes,
+      negatifs,
+      totalNegatif: negatifs.reduce((s, l) => s + l.montant, 0),
     };
   }
 
@@ -109,18 +155,20 @@
   async function lireJour(j) {
     const b = bornes(j);
     const lire = (construire) => (typeof cltLireTout === 'function') ? cltLireTout(construire) : construire().then((r) => r.data || []);
-    const [livres, nonLivres, retours, tournee, remises, reversements] = await Promise.all([
+    const [livres, nonLivres, retours, tournee, remises, reversements, dettes] = await Promise.all([
       lire(() => supabaseClient.from('colis').select('*').gte('livre_at', b.debut).lte('livre_at', b.fin)),
       lire(() => supabaseClient.from('colis').select('*').gte('non_livre_at', b.debut).lte('non_livre_at', b.fin)),
       lire(() => supabaseClient.from('colis').select('*').gte('retour_at', b.debut).lte('retour_at', b.fin)),
       lire(() => supabaseClient.from('colis').select('id, statut, livreur_id, montant_article, montant_livraison, commune_destination').in('statut', ['recupere', 'en_livraison'])),
       lire(() => supabaseClient.from('remises_caisse').select('id, livreur_id, montant_attendu, montant_remis, ecart, nb_colis, created_at').gte('created_at', b.debut).lte('created_at', b.fin)),
       lire(() => supabaseClient.from('reversements_clientes').select('id, fournisseur_id, montant, nb_colis, fait_le, annule_le').gte('fait_le', b.debut).lte('fait_le', b.fin).is('annule_le', null)),
+      // Le reste dû ne dépend d'aucune période : une somme due en juin est toujours due.
+      lire(() => supabaseClient.from('colis').select('*').eq('statut', 'livre').is('reverse_au_fournisseur_at', null)),
     ]);
     // Un colis livré puis passé en retour le même jour n'apparaît qu'une fois, à son statut actuel.
     const vus = new Set(); const colisDuJour = [];
     [].concat(livres, nonLivres, retours).forEach((c) => { if (c && !vus.has(c.id)) { vus.add(c.id); colisDuJour.push(c); } });
-    return { colisDuJour, enTournee: tournee, remises, reversements };
+    return { colisDuJour, enTournee: tournee, remises, reversements, dettes };
   }
 
   // ---------------------------------------------------------------- le dessin
@@ -203,14 +251,38 @@
     <div class="pdj-lien"><a href="#caisse-livreur" data-pdj="caisse">Marquer une remise → Caisse par livreur</a></div>` : ''}
   </div>
 
-  <div class="pdj-bloc pdj-reverse">
-    <div class="pdj-bloc-titre">Reversé aux clientes ce jour</div>
-    <div class="pdj-tuiles">
-      ${tuile('Reversé', F(r.reverse.montant), { couleur: r.reverse.montant ? VERT : undefined, sous: r.reverse.nb ? `${r.reverse.nb} reversement(s), ${r.reverse.clientes} cliente(s)` : 'aucun reversement ce jour' })}
-    </div>
-    <div class="pdj-note">Ce que CLT doit encore à chaque cliente, tous jours confondus, est dans le récapitulatif par cliente ci-dessous (« À reverser »).</div>
-  </div>
+  ${blocReverser(r)}
 </div>`;
+  }
+
+  /* Le bloc qui fait du reversement un geste quotidien : ce qui reste dû, les clientes qui
+     attendent depuis le plus longtemps en tête, et un appui qui ouvre sa fiche directement sur
+     le reversement. Sans lui, le geste vit au fond d'un onglet et n'est jamais fait. */
+  function blocReverser(r) {
+    const d = r.du || { total: 0, lignes: [], negatifs: [] };
+    const nom = (id) => (typeof fournisseurLabelPlain === 'function' && fournisseurLabelPlain(id)) || (id === 'inconnu' ? 'Cliente inconnue' : 'Cliente');
+    const depuis = (j) => {
+      if (!j) return '';
+      const n = Math.round((Date.parse(todayISO() + 'T12:00:00Z') - Date.parse(j + 'T12:00:00Z')) / 86400000);
+      return n <= 0 ? "aujourd'hui" : n === 1 ? 'depuis hier' : `depuis ${n} jours`;
+    };
+    const puces = d.lignes.slice(0, 12).map((l) => `<button type="button" class="pdj-cliente${l.ancien > 0 ? ' pdj-cliente-ancienne' : ''}" data-pdj-reverser="${esc(l.id)}" title="Ouvrir sa fiche sur le reversement">
+        <span class="pdj-cliente-nom">${esc(nom(l.id))}</span>
+        <span class="pdj-cliente-bas"><strong>${F(l.montant)}</strong> <span class="pdj-cliente-age">${esc(l.nb)} colis · ${esc(depuis(l.plusVieux))}</span></span>
+      </button>`).join('');
+    return `
+  <div class="pdj-bloc pdj-reverse">
+    <div class="pdj-bloc-titre">L'argent des clientes chez nous <span>à leur reverser — toutes dates</span></div>
+    <div class="pdj-tuiles">
+      ${tuile('Reste à reverser', F(d.total), { couleur: d.total ? ORANGE : VERT, sous: d.total ? `${d.nbClientes} cliente(s) · ${d.nbColis} colis` : 'tout est soldé 👍' })}
+      ${tuile('Dont depuis 3 jours ou plus', F(d.ancien), { couleur: d.ancien ? ROUGE : VERT, sous: d.ancien ? `${d.nbAnciennes} cliente(s) qui attendent` : 'rien qui traîne' })}
+      ${tuile('Reversé ce jour', F(r.reverse.montant), { couleur: r.reverse.montant ? VERT : undefined, sous: r.reverse.nb ? `${r.reverse.nb} reversement(s), ${r.reverse.clientes} cliente(s)` : 'aucun reversement ce jour' })}
+    </div>
+    ${puces ? `<div class="pdj-clientes">${puces}${d.lignes.length > 12 ? `<span class="pdj-cliente pdj-cliente-plus">+ ${d.lignes.length - 12} autre(s)</span>` : ''}</div>
+    <div class="pdj-note">Appuyez sur une cliente : sa fiche s'ouvre sur le reversement, colis cochés, montant prêt. Les plus anciennes sont en tête.</div>`
+      : `<div class="pdj-note">Rien à reverser : chaque colis livré a été remis à sa cliente. 👍</div>`}
+    ${d.negatifs.length ? `<div class="pdj-note">${d.negatifs.length} cliente(s) sont en négatif (${F(d.totalNegatif)}) : ce sont elles qui doivent à CLT, il n'y a rien à leur reverser.</div>` : ''}
+  </div>`;
   }
 
   // ---------------------------------------------------------------- vie de l'écran
@@ -221,7 +293,7 @@
     enCours = true;
     try {
       const d = await lireJour(jour);
-      const r = calculer(d.colisDuJour, d.enTournee, d.remises, d.reversements);
+      const r = calculer(d.colisDuJour, d.enTournee, d.remises, d.reversements, d.dettes);
       const h = html(r, jour);
       if (force || h !== dernierRendu) {
         // Ne pas redessiner sous les doigts : si le champ date a le focus, on attend.
@@ -240,6 +312,12 @@
     if (!boite || boite.dataset.pdjInit) return;
     boite.dataset.pdjInit = '1';
     boite.addEventListener('click', (e) => {
+      const rev = e.target.closest('[data-pdj-reverser]');
+      if (rev) {
+        e.preventDefault();
+        if (typeof window.CLTClients === 'object' && typeof window.CLTClients.ouvrirReversement === 'function') window.CLTClients.ouvrirReversement(rev.dataset.pdjReverser);
+        return;
+      }
       const b = e.target.closest('[data-pdj]'); if (!b) return;
       if (b.dataset.pdj === 'caisse') return; // lien d'ancre : le navigateur défile
       e.preventDefault();
@@ -253,5 +331,5 @@
     rafraichir(true);
   }
 
-  window.CLTPointDuJour = { init, rafraichir, calculer, bornes, decalerJour };
+  window.CLTPointDuJour = { init, rafraichir, calculer, resteDu, bornes, decalerJour };
 })();

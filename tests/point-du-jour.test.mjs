@@ -73,5 +73,44 @@ verifier('renderCompta rafraîchit le point du jour', /CLTPointDuJour\.init\(\);
 verifier('le point ne recalcule rien : il appelle totauxArgent et caisseParLivreur', /totauxArgent\(livres\)/.test(pdj) && /caisseParLivreur\(colisDuJour\)/.test(pdj) && !/function totauxArgent|function caisseParLivreur/.test(pdj));
 verifier('le jour est celui de l\'événement (livre_at, non_livre_at, retour_at), jamais created_at', /gte\('livre_at'/.test(pdj) && /gte\('non_livre_at'/.test(pdj) && /gte\('retour_at'/.test(pdj) && !/created_at', b\.debut\)\.lte\('created_at'[^)]*\)\)\s*,\s*lire\(\(\) => supabaseClient\.from\('colis'\)/.test(pdj));
 
+/* 7. LE RESTE DÛ AUX CLIENTES — le geste rendu quotidien (17/09/2026, point 6.6)
+   Le reversement existait depuis le 5 septembre au fond de la fiche d'une cliente et n'a jamais
+   servi : 6 350 250 F de dettes fictives accumulées en un mois. Il doit maintenant se voir là où
+   l'équipe regarde l'argent chaque jour. Ce que ce banc protège : le total, le tri (les plus
+   vieilles d'abord), les nets négatifs mis à part, et le bouton qui ouvre la fiche. */
+console.log('\n7. Ce qui reste à reverser aux clientes');
+const aujourdhui = app.__fenetre.todayLocalISODate();
+const ilYa = (n) => P.decalerJour(aujourdhui, -n);
+const dettes = [
+  // Mariam : deux colis anciens (5 et 4 jours) → elle attend, elle doit passer en tête.
+  { id: 'd1', statut: 'livre', fournisseur_id: 'f-mariam', montant_article: 20000, montant_livraison: 1500, livre_at: ilYa(5) + 'T10:00:00Z' },
+  { id: 'd2', statut: 'livre', fournisseur_id: 'f-mariam', montant_article: 10000, montant_livraison: 1500, livre_at: ilYa(4) + 'T10:00:00Z' },
+  // Awa : un gros colis, mais d'aujourd'hui → rien d'ancien.
+  { id: 'd3', statut: 'livre', fournisseur_id: 'f-awa', montant_article: 50000, montant_livraison: 2000, livre_at: aujourdhui + 'T09:00:00Z' },
+  // Fatou : une expédition dont l'avance de gare dépasse l'article → net négatif, rien à reverser.
+  { id: 'd4', statut: 'livre', fournisseur_id: 'f-fatou', montant_article: 3000, montant_livraison: 0, type_envoi: 'expedition', frais_expedition: 5000, frais_expedition_avance: true, livre_at: ilYa(6) + 'T10:00:00Z' },
+];
+const du = P.resteDu(dettes);
+verifier('une ligne par cliente, les négatives écartées du total', du.nbClientes === 2 && du.lignes.length === 2, JSON.stringify(du.lignes));
+verifier('total = 30 000 (Mariam) + 50 000 (Awa) = 80 000', du.total === 80000, du.total);
+verifier('la plus ancienne d\'abord : Mariam avant Awa', du.lignes[0].id === 'f-mariam' && du.lignes[1].id === 'f-awa');
+verifier('« depuis 3 jours ou plus » ne compte que Mariam : 30 000, 1 cliente', du.ancien === 30000 && du.nbAnciennes === 1, JSON.stringify([du.ancien, du.nbAnciennes]));
+verifier('le colis d\'aujourd\'hui n\'est pas compté comme ancien', du.lignes[1].ancien === 0);
+verifier('le plus vieux colis de Mariam est daté d\'il y a 5 jours', du.lignes[0].plusVieux === ilYa(5), du.lignes[0].plusVieux);
+verifier('3 colis comptés dans le reste dû (le négatif reste hors du compte)', du.nbColis === 3, du.nbColis);
+verifier('la cliente en négatif est signalée à part', du.negatifs.length === 1 && du.negatifs[0].id === 'f-fatou' && du.totalNegatif < 0, JSON.stringify(du.negatifs));
+verifier('aucune dette : tout est à zéro, sans erreur', (() => { const v = P.resteDu([]); return v.total === 0 && v.nbClientes === 0 && v.lignes.length === 0 && v.negatifs.length === 0; })());
+verifier('le net passe par montantNetADevoir (config.js), pas par un calcul maison', /montantNetADevoir/.test(pdj) && !/function montantNetADevoir/.test(pdj));
+
+console.log('\n8. Le geste est à portée de doigt');
+const cdash = lire('app/clients-dashboard.js');
+verifier('le point du jour lit les colis livrés non reversés, toutes dates', /eq\('statut', 'livre'\)\.is\('reverse_au_fournisseur_at', null\)/.test(pdj));
+verifier('chaque cliente est un bouton qui mène au reversement', /data-pdj-reverser=/.test(pdj) && /CLTClients\.ouvrirReversement/.test(pdj));
+verifier('l\'écran Clients expose ce point d\'entrée', /ouvrirReversement: cdOuvrirReversement/.test(cdash) && /function cdOuvrirReversement/.test(cdash));
+verifier('il bascule sur l\'onglet Clients et amène le bloc sous les yeux', /showEquipeTab\('clients'\)/.test(cdash) && /cd-bloc-reverser/.test(cdash) && /scrollIntoView/.test(cdash));
+verifier('le bloc « Reverser » passe en tête de fiche quand il y a de l\'argent à rendre', /\$\{aReverserIci\.length \? blocReverser : ''\}/.test(cdash) && /\$\{aReverserIci\.length \? '' : blocReverser\}/.test(cdash));
+verifier('le titre du bloc nomme la cliente : on y arrive parfois directement', /Reverser \u00e0 \$\{esc\(l\.nom\)\}/.test(cdash));
+verifier('la mise en avant a son style, et les puces font 44 px', /cd-fiche-bloc-urgent/.test(lire('app/equipe.html')) && /\.pdj-cliente\{[^}]*min-height:44px/.test(lire('app/style.css')));
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);
