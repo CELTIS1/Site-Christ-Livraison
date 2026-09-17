@@ -519,10 +519,15 @@ verifier(
    (journal_avant_apres, sur les quatorze tables d'argent) écrit l'avant et l'après de chaque
    colonne modifiée ; l'écran lit activity_log et le rend en français. Au passage, les
    migrations partent dans chaque sauvegarde : l'étape « refaire le schéma » de RESTAURATION.md
-   ne dépend plus du seul Mac de la gérance : étiquette 20260917journal. */
+   ne dépend plus du seul Mac de la gérance : étiquette 20260917journal.
+   v149, le 17/09/2026 — point 8.5 : l'argent de CLT Express entre dans les comptes. Gestion ›
+   Comptabilité › CLT Express lit deux vues (express_compta_mois, express_compta_coursiers,
+   migration 2026-09-17-express-en-comptabilite.sql) et nomme séparément les trois natures
+   d'argent : le prix des courses encaissé par le coursier, la recharge qui est une avance, et
+   la commission qui est la seule recette de CLT : étiquette 20260917express. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v148'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v149'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

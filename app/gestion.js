@@ -293,6 +293,7 @@ function switchSub(group, sub){
   // Rafraîchit les vues comptables issues des colis à l'ouverture de l'onglet.
   if (group === 'compta' && sub === 'caisse')  loadCaisseLivreurs();
   if (group === 'compta' && sub === 'clients') loadPointClients();
+  if (group === 'compta' && sub === 'express') loadExpressCompta();
   if (group === 'compta' && sub === 'livrecaisse') loadLivreCaisse();
   if (group === 'compta' && sub === 'echeances')   loadEcheances();
   if (group === 'compta' && sub === 'clotures')    loadClotures();
@@ -2930,6 +2931,107 @@ async function loadPointClients(){
     + `<div class="kpi"><div class="lbl">Colis livrés</div><div class="val">${gNb}</div></div>`
     + `</div>`;
   wrap.innerHTML = resume + blocks;
+}
+
+/* ============================================================================
+ * CLT EXPRESS EN COMPTABILITÉ — point 8.5, 17 septembre 2026
+ * ----------------------------------------------------------------------------
+ * Express était entièrement hors des comptes. Cet écran l'y fait entrer par la porte la plus
+ * sûre : la lecture. Il ne crée aucune écriture — le traitement comptable (commission en
+ * produit, recharge en dette) appartient à la gérance et au comptable, point 8.6.
+ *
+ * TROIS MONTANTS, TROIS NATURES, et c'est là que tout se joue :
+ *   • le prix des courses est encaissé en espèces PAR LE COURSIER : il ne passe jamais par
+ *     CLT et n'est donc pas une recette ;
+ *   • la recharge est une AVANCE du coursier : CLT l'encaisse mais la lui doit encore ;
+ *   • la commission est LA recette de CLT, prélevée sur ce solde à chaque course livrée.
+ * L'écran les nomme séparément et ne les additionne jamais : un total « chiffre d'affaires
+ * Express » serait faux de bout en bout.
+ *
+ * Les deux vues (express_compta_mois, express_compta_coursiers) portent leur propre garde :
+ * sans accès Gestion, elles ne renvoient aucune ligne. Rien à filtrer ici.
+ * ========================================================================= */
+function moisFr(iso){
+  const d = new Date(String(iso) + 'T00:00:00');
+  if (isNaN(d)) return escapeHTML(iso);
+  const t = d.toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+async function loadExpressCompta(){
+  const wMois = document.getElementById('express-mois');
+  const wCour = document.getElementById('express-coursiers');
+  if (!wMois || !wCour) return;
+  wMois.innerHTML = '<div class="hint">Chargement…</div>';
+  wCour.innerHTML = '';
+
+  const [rMois, rCour] = await Promise.all([
+    supabaseClient.from('express_compta_mois').select('*'),
+    supabaseClient.from('express_compta_coursiers').select('*'),
+  ]);
+  if (rMois.error || rCour.error){
+    const e = rMois.error || rCour.error;
+    console.error('express compta', e);
+    wMois.innerHTML = `<div class="hint" style="color:#b00;" title="${escapeHTML(e.message)}">⚠️ Impossible de charger les chiffres d'Express pour le moment. Réessayez dans un instant.</div>`;
+    return;
+  }
+
+  const mois = rMois.data || [];
+  if (!mois.length){
+    wMois.innerHTML = '<div class="hint">Aucune course, aucune recharge : CLT Express n\'a pas encore d\'activité.</div>';
+  } else {
+    let tCom = 0, tPrel = 0, tRech = 0;
+    const lignes = mois.map(m => {
+      tCom += n(m.commission_due); tPrel += n(m.commission_prelevee); tRech += n(m.recharges_encaissees);
+      const reste = n(m.commission_a_prelever);
+      return `<tr><td>${escapeHTML(moisFr(m.mois))}</td>`
+        + `<td style="text-align:right;">${m.courses_livrees}</td>`
+        + `<td style="text-align:right;" class="hint">${m.courses_en_cours} / ${m.courses_annulees}</td>`
+        + `<td style="text-align:right;" class="hint">${fmtF(m.courses_encaissees_par_coursiers)}</td>`
+        + `<td style="text-align:right;"><strong>${fmtF(m.commission_due)}</strong></td>`
+        + `<td style="text-align:right;">${fmtF(m.commission_prelevee)}</td>`
+        + `<td style="text-align:right;${reste > 0 ? 'color:#b00;font-weight:600;' : ''}">${fmtF(reste)}</td>`
+        + `<td style="text-align:right;">${fmtF(m.recharges_encaissees)}</td>`
+        + `<td style="text-align:right;" class="hint">${fmtF(m.recharges_en_attente)}</td></tr>`;
+    }).join('');
+    wMois.innerHTML = `<table class="g-table"><thead><tr>`
+      + `<th>Mois</th><th style="text-align:right;">Courses livrées</th>`
+      + `<th style="text-align:right;">En cours / annulées</th>`
+      + `<th style="text-align:right;" title="Payé en espèces au coursier : cet argent ne passe pas par CLT.">Encaissé par les coursiers</th>`
+      + `<th style="text-align:right;" title="La recette de CLT.">Commission due</th>`
+      + `<th style="text-align:right;">Déjà prélevée</th><th style="text-align:right;">Reste à prélever</th>`
+      + `<th style="text-align:right;" title="Avances des coursiers : CLT les encaisse mais les leur doit encore.">Recharges encaissées</th>`
+      + `<th style="text-align:right;">En attente</th></tr></thead>`
+      + `<tbody>${lignes}</tbody>`
+      + `<tfoot><tr><th>Total</th><th></th><th></th><th></th>`
+      + `<th style="text-align:right;">${fmtF(tCom)}</th>`
+      + `<th style="text-align:right;">${fmtF(tPrel)}</th>`
+      + `<th style="text-align:right;">${fmtF(tCom - tPrel)}</th>`
+      + `<th style="text-align:right;">${fmtF(tRech)}</th><th></th></tr></tfoot></table>`;
+  }
+
+  const cour = rCour.data || [];
+  if (!cour.length){
+    wCour.innerHTML = '<div class="hint">Aucun portefeuille, aucune commission en attente.</div>';
+    return;
+  }
+  let tSolde = 0, tReste = 0;
+  const lc = cour.map(c => {
+    tSolde += n(c.solde_du_au_coursier); tReste += n(c.commission_a_prelever);
+    const reste = n(c.commission_a_prelever);
+    return `<tr><td>${escapeHTML(c.coursier || '(compte supprimé)')}`
+      // Un coursier qui n'a jamais rechargé n'a pas de portefeuille : il doit quand même sa
+      // commission, et c'est précisément lui qu'un tableau bâti sur les portefeuilles oublie.
+      + (c.sans_portefeuille ? '<div class="hint">jamais rechargé</div>' : '')
+      + `</td><td style="text-align:right;">${fmtF(c.solde_du_au_coursier)}</td>`
+      + `<td style="text-align:right;${reste > 0 ? 'color:#b00;font-weight:600;' : ''}">${fmtF(reste)}</td></tr>`;
+  }).join('');
+  wCour.innerHTML = `<table class="g-table"><thead><tr><th>Coursier</th>`
+    + `<th style="text-align:right;" title="Avance non consommée : CLT la lui doit.">Solde dû au coursier</th>`
+    + `<th style="text-align:right;" title="Courses livrées dont la commission n'a pas été prélevée.">Commission à prélever</th>`
+    + `</tr></thead><tbody>${lc}</tbody>`
+    + `<tfoot><tr><th>Total</th><th style="text-align:right;">${fmtF(tSolde)}</th>`
+    + `<th style="text-align:right;">${fmtF(tReste)}</th></tr></tfoot></table>`;
 }
 
 /* ============================================================================

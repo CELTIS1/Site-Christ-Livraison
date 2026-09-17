@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917express",
+      "date": "17 septembre 2026",
+      "titre": "CLT Express entre dans les comptes",
+      "points": [
+        "Gestion › Comptabilité a un onglet « CLT Express » : courses livrées, commission due à CLT, ce qui reste à prélever, et les recharges encaissées, mois par mois.",
+        "La recette de CLT, c'est la commission — rien d'autre. Le prix de la course est payé en espèces au coursier et ne passe jamais par CLT ; la recharge est une avance qu'on lui doit encore. L'écran ne les additionne jamais.",
+        "Un second tableau dit ce que CLT doit à chaque coursier, et ce que chacun lui doit — y compris un coursier qui n'a jamais rechargé, que le premier essai faisait disparaître avec sa commission.",
+        "Lecture seule pour l'instant : passer la commission en produit et la recharge en dette se décidera avec le comptable."
+      ]
+    },
+    {
       "version": "20260917journal",
       "date": "17 septembre 2026",
       "titre": "Le journal dit enfin ce qui a changé",

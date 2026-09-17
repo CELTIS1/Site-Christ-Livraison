@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917journal">
-<script src="theme.js?v=20260917journal"></script>
-<script src="splash.js?v=20260917journal"></script>
+<link rel="stylesheet" href="style.css?v=20260917express">
+<script src="theme.js?v=20260917express"></script>
+<script src="splash.js?v=20260917express"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -168,6 +168,9 @@
   .clt-motif-gestes{ display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
   .clt-motif-gestes .btn{ min-height:44px; }
   .clt-alert-ok{ background:#eaf7ee; border:1px solid #b6e2c4; color:#1c7a3f; font-weight:600; }
+  /* Un encadré qui explique, sans alerter : pour les trois montants d'Express, qu'on ne doit
+     pas confondre (point 8.5). Bleu — ni alarme orange, ni validation verte. */
+  .clt-alert-info{ background:#eef4fb; border:1px solid #bcd3ec; color:#1b3a5c; }
   .clt-alert-head{ font-weight:700; color:#8a4b00; font-size:14px; margin-bottom:8px; }
   .clt-alert-warn .g-table td, .clt-alert-warn .g-table th{ background:transparent; }
   .clt-row-urgent{ background:#ffe3e0 !important; }
@@ -224,6 +227,9 @@
   .bulletin .b-net{ text-align:right; font-size:18px; font-weight:700; color:var(--clt-teal-dark); margin-top:12px; }
 
   .hint{ font-size:12.5px; color:var(--muted); background:var(--clt-teal-light); border-radius:10px; padding:10px 13px; margin:6px 0 14px; }
+  /* Dans une cellule de tableau, .hint est une PRÉCISION sous un nom, pas un encadré : le
+     fond et les marges du bloc y font une pastille qui double la hauteur de la ligne. */
+  .g-table .hint{ background:none; padding:0; margin:2px 0 0; border-radius:0; font-size:12px; }
   /* Aide repliée (Celtis, 06/09/2026 : « épuré, garder l'essentiel ») : les explications de plus
      de deux lignes ne sont plus étalées au-dessus des tableaux ; un clic sur « Comment lire » les
      déplie. Même fond que .hint pour qu'on reconnaisse une aide d'un coup d'œil. */
@@ -420,6 +426,7 @@
       <div class="subtab" data-sub="chauffeurs" onclick="switchSub('compta','chauffeurs')">Chauffeurs</div>
       <div class="subtab" data-sub="caisse" onclick="switchSub('compta','caisse')">Caisse livreurs</div>
       <div class="subtab" data-sub="clients" onclick="switchSub('compta','clients')">Point clients</div>
+      <div class="subtab" data-sub="express" onclick="switchSub('compta','express')">CLT Express</div>
       <div class="subtab" data-sub="facturation" onclick="switchSub('compta','facturation')">Facturation</div>
       <div class="subtab" data-sub="etats" onclick="switchSub('compta','etats')">États financiers</div>
       <div class="subtab" data-sub="compta-generale" onclick="switchSub('compta','compta-generale')">Compta. générale</div>
@@ -564,6 +571,7 @@
     </div>
 
     <!-- Point des clients / vendeuses (lecture seule, comptage sur le paiement) -->
+
     <div class="section" id="compta-clients">
       <div class="period-bar">
         <label style="font-weight:600;color:var(--clt-teal-dark);">Du</label>
@@ -577,6 +585,32 @@
       <div class="card"><div class="g-table-wrap" id="clients-table"></div></div>
     </div>
 
+    <!-- CLT Express en comptabilité (point 8.5, 17/09/2026) — lecture seule.
+         Trois montants qu'il ne faut SURTOUT pas confondre, d'où l'encadré en tête :
+         le prix des courses ne passe jamais par CLT, la recharge est une avance du coursier,
+         et la seule recette de la société est la commission. -->
+    <div class="section" id="compta-express">
+      <!-- Une seule phrase visible : c'est celle qui évite la faute. Le reste est replié,
+           comme partout ailleurs dans Gestion (demande de Celtis : pas de mur de texte
+           au-dessus du tableau qu'on vient consulter). -->
+      <div class="clt-alert clt-alert-info">
+        <strong>La recette de CLT sur Express, c'est la commission — rien d'autre.</strong>
+      </div>
+      <details class="g-aide"><summary>Les trois montants, et pourquoi ce ne sont pas encore des écritures</summary>
+        <strong>Le prix de la course</strong> est payé <em>en espèces au coursier</em> : cet argent ne
+        passe jamais par CLT.<br>
+        <strong>La recharge</strong> est une avance du coursier : CLT l'encaisse, mais la lui
+        <em>doit</em> encore tant qu'elle n'est pas consommée.<br>
+        <strong>La commission</strong> est prélevée sur ce solde à chaque course livrée : c'est à ce
+        moment-là, et à ce moment-là seulement, que la société gagne quelque chose.<br><br>
+        Passer la commission en produit et la recharge en dette est une décision de traitement
+        comptable : elle revient à la gérance et au comptable (point 8.6 de la feuille de route).
+        Cet écran rend les chiffres visibles et justes ; les écritures viendront une fois le
+        traitement arrêté et le service réellement lancé.</details>
+      <div class="card"><div class="g-table-wrap" id="express-mois"></div></div>
+      <h3 style="margin:18px 0 8px;font-size:15px;color:var(--clt-teal-dark);">Ce que CLT doit aux coursiers, et ce qu'ils lui doivent</h3>
+      <div class="card"><div class="g-table-wrap" id="express-coursiers"></div></div>
+    </div>
     <!-- Facturation clients : clients professionnels facturés au forfait/à la période (B2B) —
          population distincte du « Point clients » (clientes (vendeuses), dérivé des colis). -->
     <div class="section" id="compta-facturation">
@@ -1212,22 +1246,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260917journal"></script>
-<script src="lib/retours.js?v=20260917journal"></script>
-<script src="lib/reclamations.js?v=20260917journal"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917journal"></script>
-<script src="lib/argent.js?v=20260917journal"></script>
-<script src="lib/releve-cliente.js?v=20260917journal"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917journal"></script>
-<script src="lib/briques-argent.js?v=20260917journal"></script>
-<script src="lib/annonce-de-remise.js?v=20260917journal"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917journal"></script>
-<script src="lib/primes.js?v=20260917journal"></script>
-<script src="lib/doublons.js?v=20260917journal"></script>
-<script src="config.js?v=20260917journal"></script>
-<script src="biometric-lock.js?v=20260917journal"></script>
-<script src="clt-select-recherche.js?v=20260917journal"></script>
-<script src="site-editeur.js?v=20260917journal"></script>
-<script src="gestion.js?v=20260917journal"></script>
+<script src="clt-common.js?v=20260917express"></script>
+<script src="lib/retours.js?v=20260917express"></script>
+<script src="lib/reclamations.js?v=20260917express"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917express"></script>
+<script src="lib/argent.js?v=20260917express"></script>
+<script src="lib/releve-cliente.js?v=20260917express"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917express"></script>
+<script src="lib/briques-argent.js?v=20260917express"></script>
+<script src="lib/annonce-de-remise.js?v=20260917express"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917express"></script>
+<script src="lib/primes.js?v=20260917express"></script>
+<script src="lib/doublons.js?v=20260917express"></script>
+<script src="config.js?v=20260917express"></script>
+<script src="biometric-lock.js?v=20260917express"></script>
+<script src="clt-select-recherche.js?v=20260917express"></script>
+<script src="site-editeur.js?v=20260917express"></script>
+<script src="gestion.js?v=20260917express"></script>
 </body>
 </html>
