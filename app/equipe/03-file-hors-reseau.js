@@ -420,6 +420,14 @@ function eqLigneDestinationHTML(c){
   return tel ? `<div class="meta">${tel}</div>` : '';
 }
 
+/* « ⚠️ Semblable au n° … » sur la carte (16/09/2026, Celtis : les doublons). eqDoublons est
+   recalculé par eqDessinerColis à chaque rendu, sur toute la liste chargée (lib/doublons.js). */
+let eqDoublons = {};
+function eqDoublonHTML(c){
+const autres = (eqDoublons && c && eqDoublons[c.id]) || [];
+if (!autres.length) return '';
+return `<div class="sync-pending-badge doublon-badge" title="Même cliente, même numéro de destinataire, à moins de deux jours d'écart : vérifiez qu'il ne s'agit pas du même colis enregistré deux fois.">⚠️ Semblable à ${autres.map(a => escapeHTML(doublonTexte(a))).join(' · ')}</div>`;
+}
 function colisRowHTML(c, numeroClient){
 const thumb = c.photo_url
 ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
@@ -458,6 +466,7 @@ const syncBadge = eqColisBloquesIds.has(c.id)
 const infoBlock = `
 <div class="info">
 ${syncBadge}
+${eqDoublonHTML(c)}
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
 ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}

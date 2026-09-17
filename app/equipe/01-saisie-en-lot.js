@@ -392,6 +392,38 @@ loadColis();
 }
 
 /* ---------- Un colis à la fois ---------- */
+/* ---------- Les doublons, avant d'envoyer (16/09/2026, Celtis) ----------
+   Au bureau, la liste des colis est déjà chargée (allColis) : on y cherche, pour la cliente
+   choisie, un colis au même numéro de destinataire enregistré à moins de deux jours — souvent
+   la cliente l'a déjà saisi depuis son téléphone. On relit aussi la base si la liste chargée
+   ne remonte pas assez loin. Rend true pour continuer, false pour s'arrêter. */
+async function lotAvertirDoublons(lignes, fournisseur_id){
+if (typeof colisSemblables !== 'function') return true;
+const lues = lignes.map(lotLireLigne);
+const candidats = lues.map(s => ({ fournisseur_id, destinataire_telephone: s.telephone }));
+let recents = (typeof allColis !== 'undefined' ? allColis : []).filter(c => c && c.fournisseur_id === fournisseur_id);
+try {
+const depuis = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+const { data } = await supabaseClient.from('colis')
+.select('id, numero, fournisseur_id, destinataire_telephone, created_at, commune_destination, statut, cree_par_role')
+.eq('fournisseur_id', fournisseur_id).gte('created_at', depuis).order('created_at', { ascending: false }).limit(200);
+if (Array.isArray(data)) { const ids = new Set(recents.map(c => c.id)); data.forEach(c => { if (!ids.has(c.id)) recents.push(c); }); }
+} catch (e) { /* hors réseau : on juge sur ce qu'on a */ }
+const alertes = [];
+candidats.forEach((c, i) => {
+const s = colisSemblables(c, recents);
+if (s.length) alertes.push('Colis ' + (i + 1) + ' (' + (lues[i].telephone || '') + ') ressemble à : ' + s.map(doublonTexte).join(' ; '));
+});
+doublonsDansLeLot(candidats).forEach(d => alertes.push('Colis ' + d.rang + ' a le même numéro de destinataire que le colis ' + d.commeRang + ' de cette liste.'));
+if (!alertes.length) return true;
+return await cltConfirm({
+title: 'Ce colis existe peut-être déjà',
+detail: alertes.join('\n'),
+sub: 'Même cliente, même numéro de destinataire, à moins de deux jours d\'écart — la cliente l\'a peut-être déjà enregistré. Si c\'est bien un autre colis pour la même personne, créez quand même.',
+okLabel: 'Créer quand même', cancelLabel: 'Annuler',
+});
+}
+
 async function lotEnregistrerUn(id){
 if (lotEnvoiEnCours) return;
 const i = lotLignes.findIndex(l => l.id === id);
@@ -412,6 +444,7 @@ if (champ) champ.focus();
 return;
 }
 
+if (!(await lotAvertirDoublons([l], fournisseur_id))) return;
 lotEnvoiEnCours = true;
 const btn = l.el && l.el.querySelector('.lot-enregistrer-un');
 if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
@@ -458,6 +491,7 @@ if (champ) setTimeout(() => champ.focus(), 300);
 return;
 }
 
+if (!(await lotAvertirDoublons(lotLignes, fournisseur_id))) return;
 lotEnvoiEnCours = true;
 const btn = document.getElementById('lot-enregistrer');
 if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }

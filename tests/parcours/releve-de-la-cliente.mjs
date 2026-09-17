@@ -21,6 +21,7 @@ monde.TABLES.colis.push(colis(8, {
 }));
 const N = await ouvrirNavigateur({ monde });
 const { page, erreurs } = N;
+void monde;
 const chiffres = (s) => (s || '').replace(/[  \s]/g, '');
 
 titre('1. L\'espace de la cliente s\'ouvre');
@@ -82,6 +83,29 @@ verifier('changer de commune redessine (Yopougon → Anyama 2 500 F)', /Anyama[\
 await page.keyboard.press('Escape');
 await dodo(200);
 verifier('Échap ferme la fenêtre', (await page.locator('#clt-tarifs').count()) === 0);
+verifier('aucune erreur JavaScript', erreurs.length === 0, erreurs.join('\n       '));
+
+titre('7. Un colis qui existe déjà : l\'app prévient avant de créer');
+await page.locator('#clt-bottomnav .nav[data-target="section-ajouter"]').click();
+await dodo(500);
+await page.locator('#lotfr-ligne-vide').click();
+await dodo(400);
+const ligne = page.locator('#lotfr-lignes .lotfr-tel').first();
+verifier('une ligne de saisie sans photo est ouverte', (await ligne.count()) === 1);
+// Le même numéro de destinataire que son colis n°4, enregistré ce matin.
+await page.locator('#lotfr-lignes select.lotfr-commune').first().selectOption('Cocody').catch(() => null);
+await page.locator('#lotfr-lignes .lotfr-dest').first().fill('Riviera 2, en face de la pharmacie');
+await ligne.fill('07 01 02 03 04');
+const avantInsert = monde.journal.filter(j => j.table === 'colis' && j.op === 'insert').length;
+await page.locator('#lotfr-lignes .lot-enregistrer-un').first().click();
+await dodo(1500);
+const modal = page.locator('#clt-modal-overlay:not(.hidden), .clt-modal-overlay:not(.hidden)').first();
+const texteModal = (await modal.count()) ? await modal.innerText() : '';
+verifier('la fenêtre « Ce colis existe peut-être déjà » s\'ouvre, cite le n° du colis semblable et propose « Créer quand même »', /existe peut-être déjà/.test(texteModal) && /CLT-260916-00004/.test(texteModal) && /Créer quand même/.test(texteModal), texteModal.slice(0, 300));
+verifier('rien n\'a été écrit en base tant qu\'on n\'a pas répondu', monde.journal.filter(j => j.table === 'colis' && j.op === 'insert').length === avantInsert);
+await page.locator('#clt-modal-cancel').click();
+await dodo(400);
+verifier('« Annuler » : toujours rien d\'écrit, la ligne reste à l\'écran', monde.journal.filter(j => j.table === 'colis' && j.op === 'insert').length === avantInsert && (await page.locator('#lotfr-lignes .lotfr-tel').count()) === 1);
 verifier('aucune erreur JavaScript', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();

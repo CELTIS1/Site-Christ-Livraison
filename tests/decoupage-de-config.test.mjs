@@ -34,6 +34,7 @@ const BLOCS = [
   { fichier: 'lib/annonce-de-remise.js', reperes: [], constantes: [] },
   { fichier: 'lib/tournee-de-recuperation.js', reperes: ['lieuRecuperationPourNouveauColis'], constantes: [] },
   { fichier: 'lib/primes.js', reperes: ['calculerPrimesLivreur', 'projectionPrimesFinDeMois'], constantes: ['PRIMES_DEBUT', 'PRIMES_PARAMETRES_DEFAUT'] },
+  { fichier: 'lib/doublons.js', reperes: ['telephoneChiffresDoublon', 'colisSemblables', 'doublonsDansLeLot', 'groupesDeDoublons', 'doublonTexte'], constantes: ['DOUBLON_FENETRE_MS'] },
 ];
 const ORDRE = BLOCS.map(b => b.fichier);
 const config = lire('config.js');

@@ -441,10 +441,11 @@ verifier(
    v128, le 16/09/2026 — la grille des tarifs tranchée par Celtis : symétrique, cinq paliers (1 000 / 1 500 / 2 000 / 2 500 / 3 000), lib/communes-et-tarifs.js et tarifs.html : étiquette 20260916tarifs.
    v129, le 16/09/2026 — Attécoubé, 13ᵉ commune (liste, grille, Express, page Tarifs) ; Adjamé ↔ Marcory et Treichville à 1 500 : étiquette 20260916attecoube.
    v130, le 16/09/2026 — même commune 1 500 F partout, Yopougon compris (le 1 000 F reste un geste à la main) : étiquette 20260916grille.
-   v131, le 16/09/2026 — la grille tarifaire consultable dans l'app (bouton « 📋 Grille tarifaire » dans le menu de chaque espace ; clt-common.js, style.css, config.js) : étiquette 20260916tarifsapp. */
+   v131, le 16/09/2026 — la grille tarifaire consultable dans l'app (bouton « 📋 Grille tarifaire » dans le menu de chaque espace ; clt-common.js, style.css, config.js) : étiquette 20260916tarifsapp.
+   v132, le 16/09/2026 — les doublons de colis : avertir sans bloquer (même cliente, même numéro de destinataire, moins de deux jours d'écart), à la saisie (fournisseur, équipe) et sur la carte au bureau (lib/doublons.js, clt-common.js, style.css) : étiquette 20260916doublons. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v131'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v132'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

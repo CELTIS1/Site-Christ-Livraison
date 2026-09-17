@@ -3330,3 +3330,5 @@ function initDeleteAccountRequest({ profile, requestBtnId, cancelBtnId, msgId, s
 /* LA TOURNÉE DE RÉCUPÉRATION  : depuis le 16/09/2026 (feuille de route 4.8), ce bloc vit dans app/lib/tournee-de-recuperation.js, chargé avant ce fichier. Rien n'a changé de nom. */
 
 /* LES PRIMES DES LIVREURS  : depuis le 16/09/2026 (feuille de route 4.8), ce bloc vit dans app/lib/primes.js, chargé avant ce fichier. Rien n'a changé de nom. */
+
+/* LES DOUBLONS DE COLIS : depuis le 16/09/2026 (demande de Celtis), la règle « même cliente, même numéro de destinataire, moins de deux jours » vit dans app/lib/doublons.js, chargé avant ce fichier. */

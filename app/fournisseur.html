@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916tarifsapp">
-<script src="theme.js?v=20260916tarifsapp"></script>
-<script src="splash.js?v=20260916tarifsapp"></script>
+<link rel="stylesheet" href="style.css?v=20260916doublons">
+<script src="theme.js?v=20260916doublons"></script>
+<script src="splash.js?v=20260916doublons"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -472,18 +472,19 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916tarifsapp"></script>
-<script src="lib/communes-et-tarifs.js?v=20260916tarifsapp"></script>
-<script src="lib/argent.js?v=20260916tarifsapp"></script>
-<script src="lib/releve-cliente.js?v=20260916tarifsapp"></script>
-<script src="lib/papier-a-en-tete.js?v=20260916tarifsapp"></script>
-<script src="lib/briques-argent.js?v=20260916tarifsapp"></script>
-<script src="lib/annonce-de-remise.js?v=20260916tarifsapp"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260916tarifsapp"></script>
-<script src="lib/primes.js?v=20260916tarifsapp"></script>
-<script src="config.js?v=20260916tarifsapp"></script>
-<script src="biometric-lock.js?v=20260916tarifsapp"></script>
-<script src="clt-select-recherche.js?v=20260916tarifsapp"></script>
+<script src="clt-common.js?v=20260916doublons"></script>
+<script src="lib/communes-et-tarifs.js?v=20260916doublons"></script>
+<script src="lib/argent.js?v=20260916doublons"></script>
+<script src="lib/releve-cliente.js?v=20260916doublons"></script>
+<script src="lib/papier-a-en-tete.js?v=20260916doublons"></script>
+<script src="lib/briques-argent.js?v=20260916doublons"></script>
+<script src="lib/annonce-de-remise.js?v=20260916doublons"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260916doublons"></script>
+<script src="lib/primes.js?v=20260916doublons"></script>
+<script src="lib/doublons.js?v=20260916doublons"></script>
+<script src="config.js?v=20260916doublons"></script>
+<script src="biometric-lock.js?v=20260916doublons"></script>
+<script src="clt-select-recherche.js?v=20260916doublons"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1243,6 +1244,7 @@
       return;
     }
 
+    if (!(await lotfrAvertirDoublons([l]))) return;
     lotfrEnvoiEnCours = true;
     const btn = l.el && l.el.querySelector('.lot-enregistrer-un');
     if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
@@ -1261,6 +1263,39 @@
     } else {
       lotfrMsg(resumeProblemesLotTexte(echecs), 'error');
     }
+  }
+
+
+  /* ---------- Les doublons, avant d'envoyer (16/09/2026, Celtis) ----------
+     On relit les colis des deux derniers jours de la cliente, on compare les numéros de
+     destinataire (lib/doublons.js), et s'il y a des ressemblances on demande avant de créer.
+     Rend true pour continuer, false pour s'arrêter. Hors réseau, on laisse passer : la file
+     d'attente s'en charge, et bloquer une saisie sur une lecture qui échoue serait pire. */
+  async function lotfrAvertirDoublons(lignes){
+    if (typeof colisSemblables !== 'function' || !currentUser) return true;
+    const lues = lignes.map(lotfrLireLigne);
+    const candidats = lues.map(s => ({ fournisseur_id: currentUser.id, destinataire_telephone: s.telephone }));
+    let recents = [];
+    try {
+      const depuis = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+      const { data } = await supabaseClient.from('colis')
+        .select('id, numero, fournisseur_id, destinataire_telephone, created_at, commune_destination, statut, cree_par_role')
+        .eq('fournisseur_id', currentUser.id).gte('created_at', depuis).order('created_at', { ascending: false }).limit(200);
+      recents = data || [];
+    } catch (e) { return true; }
+    const alertes = [];
+    candidats.forEach((c, i) => {
+      const s = colisSemblables(c, recents);
+      if (s.length) alertes.push('Colis ' + (i + 1) + ' (' + (lues[i].telephone || '') + ') ressemble à : ' + s.map(doublonTexte).join(' ; '));
+    });
+    doublonsDansLeLot(candidats).forEach(d => alertes.push('Colis ' + d.rang + ' a le même numéro de destinataire que le colis ' + d.commeRang + ' de cette liste.'));
+    if (!alertes.length) return true;
+    return await cltConfirm({
+      title: 'Ce colis existe peut-être déjà',
+      detail: alertes.join('\n'),
+      sub: 'Même cliente, même numéro de destinataire, à moins de deux jours d\'écart. Si c\'est bien un autre colis pour la même personne, vous pouvez créer quand même.',
+      okLabel: 'Créer quand même', cancelLabel: 'Annuler',
+    });
   }
 
   /* ---------- Tout ce qui reste, d'un coup ---------- */
@@ -1282,6 +1317,7 @@
       return;
     }
 
+    if (!(await lotfrAvertirDoublons(lotfrLignes))) return;
     lotfrEnvoiEnCours = true;
     const btn = document.getElementById('lotfr-enregistrer');
     if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }

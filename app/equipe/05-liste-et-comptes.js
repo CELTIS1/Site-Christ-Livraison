@@ -211,6 +211,7 @@ renderAujourdhui();
 
 function eqDessinerColis(){
 const list = document.getElementById('colis-list');
+if (typeof groupesDeDoublons === 'function') eqDoublons = groupesDeDoublons(allColis);
 const __anchor = captureScrollAnchor(list);
 const __saisies = eqPhotographierSaisies(list);
 let filtered = activeFilter === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilter);

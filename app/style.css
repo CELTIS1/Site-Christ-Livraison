@@ -2333,6 +2333,7 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 .clt-nouveautes__entree ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5; }
 .clt-nouveautes__entree li { margin: 3px 0; }
 @media (prefers-color-scheme: dark) { .clt-nouveautes__boite { background: #111827; color: #e5e7eb; } .clt-nouveautes__tete { border-color: #1f2937; } .clt-nouveautes__entree { border-color: #1f2937; } }
+.doublon-badge { background: #fff4e5 !important; color: #8a4b00 !important; border: 1px solid #f5c98a !important; }
 /* La grille tarifaire dans l'app (16/09/2026) : même fenêtre que « Quoi de neuf ? », une liste lisible. */
 .clt-tarifs__depart { display: flex; align-items: center; gap: 10px; padding: 12px 0 6px; }
 .clt-tarifs__depart label { font-size: 13px; color: #6b7280; white-space: nowrap; }
