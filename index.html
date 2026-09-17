@@ -241,7 +241,10 @@
     .hero-photo-col::after{
       background:linear-gradient(90deg, rgba(9,26,48,0.9) 0%, rgba(9,26,48,0.62) 48%, rgba(9,26,48,0.28) 100%);
     }
-    .hero-photo-col img{object-fit:contain; object-position:right center;}
+    /* cover, pas contain : une photo au format différent (paysage, carrée…) ne doit
+       jamais apparaître en petit dans un cadre vide — elle remplit toujours le bloc,
+       quitte à être recadrée sur les bords (17/09/2026, retour de Celtis). */
+    .hero-photo-col img{object-fit:cover; object-position:right center;}
     .hero-text{margin:0;}  /* le texte à gauche, la photo à droite (4.1) */
     #heroPill{margin-bottom:14px;}
     .hero h1{margin-bottom:14px;}
