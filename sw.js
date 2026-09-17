@@ -74,7 +74,7 @@
    sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
    pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v140';
+const CACHE_VERSION = 'clt-shell-v141';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.
@@ -103,6 +103,9 @@ const PRECACHE_CDN = [
 const PRECACHE_URLS = [
   '/offline.html',
   '/services.html',
+  // La marche à suivre pour installer l'app (17/09/2026, point 6.2) : c'est la page qu'on ouvre
+  // au téléphone de quelqu'un, souvent là où le réseau est mauvais. Elle doit s'afficher hors ligne.
+  '/installer.html',
   '/app/login.html',
   '/app/equipe.html',
   '/app/livreur.html',

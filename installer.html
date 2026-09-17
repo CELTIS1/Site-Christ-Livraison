@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installer l'application CLT — Christ Livraison &amp; Transport SARL</title>
+<meta name="description" content="Comment mettre l'application Christ Livraison &amp; Transport sur l'écran d'accueil d'un téléphone Android ou d'un iPhone, en trois gestes, sans passer par une boutique d'applications.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Installer l'application CLT">
+<meta property="og:description" content="L'application CLT sur votre écran d'accueil en trois gestes, Android ou iPhone, sans boutique d'applications.">
+<meta property="og:image" content="https://christlivraison.ci/images/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="Christ Livraison & Transport SARL">
+<link rel="canonical" href="https://christlivraison.ci/installer.html">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%231B4374'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23E26313'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Versions exactes + empreintes de contrôle (SRI), posées le 19 août 2026 : le navigateur
+     recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle ne correspond pas.
+     Toute montée de version impose de recalculer l'empreinte — voir .github/verifier-empreintes.py -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g"
+      crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>
+  :root{
+    --navy:#1B4374;
+    --navy-dark:#123252;
+    --orange:#E26313;
+    --orange-light:#FBE2CE;
+    --muted:#4E6B8A;
+    --white:#FFFFFF;
+    --grey-bg:#F7F8FA;
+    --section-tint:#EEF3F9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:Arial, Helvetica, sans-serif;
+    color:#222;
+    line-height:1.65;
+    background:var(--white);
+  }
+  h1,h2,.brand-word{font-family:'Poppins', Arial, sans-serif;}
+  a{color:var(--orange);}
+  a:hover{text-decoration:underline;}
+  .container{max-width:820px; margin:0 auto; padding:0 24px;}
+
+  header{background:var(--navy); padding:22px 0;}
+  header .container{display:flex; align-items:center; justify-content:space-between;}
+  .logo-link{display:flex; align-items:center; gap:10px; color:var(--white); font-family:'Poppins', Arial, sans-serif; font-weight:700; font-size:15px;}
+  .logo-badge{width:38px; height:38px; border-radius:10px; background:var(--orange); color:var(--white); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;}
+  .back-home{color:var(--white); font-weight:600; font-size:13.5px; opacity:.9; display:inline-flex; align-items:center; gap:6px;}
+  .back-home:hover{opacity:1; text-decoration:none;}
+
+  main{padding:56px 0 80px;}
+  .page-title{font-size:30px; color:var(--navy); font-weight:700; margin-bottom:8px;}
+  .updated-at{color:var(--muted); font-size:13.5px; margin-bottom:36px;}
+  .intro{background:var(--section-tint); border-radius:14px; padding:20px 22px; color:#33445a; font-size:14.5px; margin-bottom:40px;}
+
+  h2{color:var(--navy); font-size:19px; margin:34px 0 12px;}
+  h2:first-of-type{margin-top:0;}
+  p, li{color:#3a4658; font-size:15px;}
+  ul{margin:10px 0 10px 22px;}
+  li{margin-bottom:6px;}
+  .card{border:1px solid #E4E9F0; border-radius:12px; padding:18px 20px; margin:14px 0;}
+  .card h3{color:var(--navy); font-size:15px; margin-bottom:6px;}
+  .card p{font-size:14px; margin:0;}
+  .disclaimer{margin-top:44px; padding:18px 20px; background:#FBE2CE; border-radius:12px; font-size:13.5px; color:#7a4a1c;}
+  .contact-box{margin-top:30px; padding:20px 22px; background:var(--navy); border-radius:14px; color:var(--white);}
+  .contact-box h2{color:var(--white); margin-top:0;}
+  .contact-box p, .contact-box a{color:#E7EEF6;}
+  .contact-box a{font-weight:700;}
+
+  /* Tableaux et cartes des pages Tarifs et Contact (4.3, 16/09/2026) */
+  table.tarifs{width:100%; border-collapse:collapse; margin:12px 0 8px; font-size:14.5px;}
+  table.tarifs th{background:var(--section-tint); color:var(--navy); text-align:left; padding:10px 12px; font-size:13px; text-transform:uppercase; letter-spacing:.04em;}
+  table.tarifs td{padding:11px 12px; border-bottom:1px solid #E4E9F0; color:#3a4658; vertical-align:top;}
+  table.tarifs td.prix{white-space:nowrap; font-weight:700; color:var(--navy);}
+  .note{font-size:13px; color:var(--muted); margin-top:6px;}
+  .grille-contact{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin:14px 0 8px;}
+  .carte-contact{display:flex; flex-direction:column; gap:4px; border:1px solid #E4E9F0; border-radius:12px; padding:16px 18px; color:#3a4658; text-decoration:none; min-height:44px;}
+  .carte-contact:hover{border-color:var(--orange); text-decoration:none;}
+  .carte-contact i{font-size:22px; color:var(--orange); margin-bottom:4px;}
+  .carte-contact strong{color:var(--navy);}
+  .carte-contact span{font-size:15px; font-weight:600;}
+  .carte-contact em{font-style:normal; font-size:12.5px; color:var(--muted);}
+  @media (max-width:560px){ table.tarifs th:nth-child(2), table.tarifs td:nth-child(2){display:none;} }
+
+  /* --- Page « Installer l'application » (17/09/2026, point 6.2) --- */
+  .install-cta{display:flex; flex-wrap:wrap; align-items:center; gap:14px; background:var(--navy); color:#fff; border-radius:14px; padding:18px 22px; margin:0 0 36px;}
+  .install-cta p{color:#E7EEF6; font-size:14.5px; margin:0; flex:1 1 260px;}
+  .install-cta .bouton{display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:0 22px; border:none; border-radius:10px; background:var(--orange); color:#fff; font:inherit; font-weight:700; font-size:15px; cursor:pointer;}
+  .install-cta .bouton:hover{background:#c8550c;}
+  .install-cta .bouton[hidden]{display:none;}
+  .install-cta.est-installee{background:#1A7D3C;}
+  .onglets-tel{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px;}
+  .onglets-tel button{min-height:44px; padding:0 18px; border:1px solid #DCE5F0; border-radius:999px; background:#fff; color:var(--navy); font:inherit; font-weight:600; font-size:14px; cursor:pointer;}
+  .onglets-tel button[aria-selected="true"]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .etapes{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin:6px 0 10px;}
+  .etape{border:1px solid #E4E9F0; border-radius:14px; padding:16px 18px;}
+  .etape-num{display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--orange); color:#fff; font-weight:700; font-size:14px; margin-bottom:8px;}
+  .etape h3{color:var(--navy); font-size:15px; margin:0 0 4px;}
+  .etape p{font-size:14px; margin:0;}
+  .etape svg{display:block; width:100%; height:auto; max-width:190px; margin:12px auto 0;}
+  .apres{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-top:14px;}
+  .apres div{border:1px solid #E4E9F0; border-radius:12px; padding:14px 16px; font-size:14px; color:#3a4658;}
+  .apres strong{display:block; color:var(--navy); margin-bottom:3px;}
+  footer{background:var(--navy-dark); color:#B9C6D6; padding:26px 0; text-align:center; font-size:12.5px;}
+  footer a{color:#E7EEF6;}
+</style>
+<script>
+/* Chrome n'émet « beforeinstallprompt » qu'une fois, et parfois avant que clt-common.js ne soit
+   chargé : sans cette ligne posée tout en haut, l'offre est perdue et le bouton ne s'allume
+   jamais. On la met de côté ; clt-common.js la reprend en s'initialisant. */
+window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.__cltOffreInstallTot = e; });
+</script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <a href="index.html" class="logo-link">
+      <span class="logo-badge">CLT</span>
+      <span>CHRIST LIVRAISON &amp; TRANSPORT SARL</span>
+    </a>
+    <a href="index.html" class="back-home"><i class="fa-solid fa-arrow-left"></i> Retour à l'accueil</a>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <h1 class="page-title">Mettre CLT sur votre téléphone</h1>
+    <p class="updated-at">Trois gestes, deux minutes — et pas besoin d'attendre le Play Store</p>
+
+    <div class="intro">
+      L'application CLT s'installe <strong>directement depuis votre navigateur</strong>. Vous obtenez une icône sur
+      votre écran d'accueil, comme n'importe quelle autre application : elle s'ouvre en plein écran, retient votre
+      connexion, vous prévient quand un colis bouge, et continue de fonctionner quand le réseau faiblit.
+      <strong>Rien à télécharger, rien à payer, quelques centaines de kilo-octets.</strong>
+    </div>
+
+    <div class="install-cta" id="cta">
+      <p id="cta-texte">Si votre navigateur le permet, un seul appui suffit.</p>
+      <button type="button" class="bouton" id="btn-installer-app">📲 Installer maintenant</button>
+    </div>
+
+    <h2>La marche à suivre</h2>
+    <div class="onglets-tel" role="tablist" aria-label="Choisir son téléphone">
+      <button type="button" role="tab" data-tel="android" aria-selected="true">Android</button>
+      <button type="button" role="tab" data-tel="iphone" aria-selected="false">iPhone / iPad</button>
+      <button type="button" role="tab" data-tel="ordi" aria-selected="false">Ordinateur</button>
+    </div>
+
+    <section id="pas-android">
+      <div class="etapes">
+        <div class="etape">
+          <span class="etape-num">1</span>
+          <h3>Ouvrez CLT dans Chrome</h3>
+          <p>Allez sur <strong>christlivraison.ci</strong>, puis « Se connecter ». C'est depuis cette page que l'icône s'installe.</p>
+        </div>
+        <div class="etape">
+          <span class="etape-num">2</span>
+          <h3>Touchez les trois points ⋮</h3>
+          <p>En haut à droite de Chrome, à côté de l'adresse.</p>
+          <svg viewBox="0 0 160 200" role="img" aria-label="Les trois points en haut à droite du navigateur"><rect x="18" y="4" width="124" height="192" rx="16" fill="#fff" stroke="#1B4374" stroke-width="3"/><rect x="64" y="10" width="32" height="5" rx="2.5" fill="#1B4374"/><rect x="24" y="22" width="112" height="22" rx="6" fill="#EEF3F9"/><rect x="32" y="29" width="70" height="8" rx="4" fill="#9FB3CA"/><circle cx="124" cy="33" r="2.2" fill="#E26313"/><circle cx="124" cy="27" r="2.2" fill="#E26313"/><circle cx="124" cy="39" r="2.2" fill="#E26313"/><rect x="24" y="52" width="112" height="60" rx="8" fill="#F7F8FA"/><rect x="32" y="62" width="60" height="7" rx="3.5" fill="#C9D6E5"/><rect x="32" y="78" width="88" height="7" rx="3.5" fill="#C9D6E5"/><rect x="32" y="94" width="48" height="7" rx="3.5" fill="#C9D6E5"/></svg>
+        </div>
+        <div class="etape">
+          <span class="etape-num">3</span>
+          <h3>« Installer l'application »</h3>
+          <p>Ou « Ajouter à l'écran d'accueil », selon la version. Puis confirmez : c'est fini.</p>
+          <svg viewBox="0 0 160 200" role="img" aria-label="La ligne « Installer l'application », en évidence dans le menu"><rect x="18" y="4" width="124" height="192" rx="16" fill="#fff" stroke="#1B4374" stroke-width="3"/><rect x="64" y="10" width="32" height="5" rx="2.5" fill="#1B4374"/><rect x="24" y="22" width="112" height="22" rx="6" fill="#EEF3F9"/><rect x="32" y="29" width="70" height="8" rx="4" fill="#9FB3CA"/><rect x="30" y="52" width="100" height="96" rx="10" fill="#fff" stroke="#DCE5F0" stroke-width="2"/><rect x="38" y="62" width="60" height="7" rx="3.5" fill="#C9D6E5"/><rect x="38" y="80" width="72" height="7" rx="3.5" fill="#C9D6E5"/><rect x="34" y="96" width="92" height="22" rx="7" fill="#FBE2CE" stroke="#E26313" stroke-width="2"/><rect x="42" y="104" width="62" height="7" rx="3.5" fill="#E26313"/><rect x="38" y="128" width="50" height="7" rx="3.5" fill="#C9D6E5"/></svg>
+        </div>
+      </div>
+    </section>
+
+    <section id="pas-iphone" hidden>
+      <div class="etapes">
+        <div class="etape">
+          <span class="etape-num">1</span>
+          <h3>Ouvrez CLT dans Safari</h3>
+          <p>Il faut <strong>Safari</strong> : sur iPhone, Chrome ne sait pas poser d'icône. Allez sur christlivraison.ci, puis « Se connecter ».</p>
+        </div>
+        <div class="etape">
+          <span class="etape-num">2</span>
+          <h3>Touchez « Partager »</h3>
+          <p>Le carré avec la flèche vers le haut, en bas de l'écran.</p>
+          <svg viewBox="0 0 160 200" role="img" aria-label="Le bouton Partager, en bas de l’écran de Safari"><rect x="18" y="4" width="124" height="192" rx="16" fill="#fff" stroke="#1B4374" stroke-width="3"/><rect x="64" y="10" width="32" height="5" rx="2.5" fill="#1B4374"/><rect x="24" y="168" width="112" height="24" rx="8" fill="#EEF3F9"/><path d="M80 176 l0 -14 M74 168 l6 -6 6 6" stroke="#E26313" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="72" y="178" width="16" height="10" rx="2" fill="none" stroke="#E26313" stroke-width="3"/><rect x="24" y="22" width="112" height="22" rx="6" fill="#EEF3F9"/><rect x="32" y="29" width="70" height="8" rx="4" fill="#9FB3CA"/><rect x="24" y="52" width="112" height="104" rx="8" fill="#F7F8FA"/><rect x="32" y="64" width="60" height="7" rx="3.5" fill="#C9D6E5"/><rect x="32" y="80" width="88" height="7" rx="3.5" fill="#C9D6E5"/></svg>
+        </div>
+        <div class="etape">
+          <span class="etape-num">3</span>
+          <h3>« Sur l'écran d'accueil »</h3>
+          <p>Descendez dans la liste, choisissez cette ligne, puis « Ajouter » en haut à droite.</p>
+          <svg viewBox="0 0 160 200" role="img" aria-label="L’icône CLT posée sur l’écran d’accueil, à côté des autres applications"><rect x="18" y="4" width="124" height="192" rx="16" fill="#fff" stroke="#1B4374" stroke-width="3"/><rect x="64" y="10" width="32" height="5" rx="2.5" fill="#1B4374"/><rect x="24" y="22" width="112" height="150" rx="8" fill="#1B4374"/><rect x="36" y="40" width="30" height="30" rx="8" fill="#31527E"/><rect x="72" y="40" width="30" height="30" rx="8" fill="#31527E"/><rect x="36" y="82" width="30" height="30" rx="8" fill="#E26313"/><text x="51" y="102" font-family="Arial" font-weight="700" font-size="11" fill="#fff" text-anchor="middle">CLT</text><rect x="38" y="116" width="26" height="5" rx="2.5" fill="#B9C6D6"/><rect x="72" y="82" width="30" height="30" rx="8" fill="#31527E"/></svg>
+        </div>
+      </div>
+    </section>
+
+    <section id="pas-ordi" hidden>
+      <div class="etapes">
+        <div class="etape">
+          <span class="etape-num">1</span>
+          <h3>Chrome ou Edge</h3>
+          <p>Ouvrez christlivraison.ci, puis « Se connecter ».</p>
+        </div>
+        <div class="etape">
+          <span class="etape-num">2</span>
+          <h3>L'icône dans la barre d'adresse</h3>
+          <p>Un petit écran avec une flèche apparaît à droite de l'adresse. Cliquez dessus, puis « Installer ».</p>
+        </div>
+        <div class="etape">
+          <span class="etape-num">3</span>
+          <h3>Une fenêtre à part</h3>
+          <p>CLT s'ouvre dans sa propre fenêtre, sans onglets ni barre d'adresse, et se lance depuis le bureau.</p>
+        </div>
+      </div>
+    </section>
+
+    <h2>Une fois installée</h2>
+    <div class="apres">
+      <div><strong>Elle se met à jour seule</strong>Un bandeau propose la nouvelle version quand il y en a une. Rien à réinstaller.</div>
+      <div><strong>Elle fonctionne hors réseau</strong>Un livreur qui perd le réseau continue de travailler ; tout part dès que ça revient.</div>
+      <div><strong>Elle prévient</strong>Notifications d'un colis confié, d'une récupération demandée, d'un changement d'adresse.</div>
+      <div><strong>Chacun la sienne</strong>Équipe, livreur ou cliente : l'icône installée depuis votre espace vous ouvre le vôtre.</div>
+    </div>
+
+    <div class="card">
+      <h3>Ça ne marche pas ?</h3>
+      <p>Appelez-nous, on le fait avec vous en deux minutes : <a href="tel:+2250779604761">07 79 60 47 61</a> ou
+      <a href="tel:+2250170407312">01 70 40 73 12</a>. Le plus souvent, il suffit d'ouvrir le site dans Chrome (Android)
+      ou Safari (iPhone) plutôt que dans le navigateur d'une autre application, ou d'attendre quelques secondes après
+      l'ouverture de la page.</p>
+    </div>
+
+    <div class="contact-box">
+      <h2>Vous n'avez pas encore de compte ?</h2>
+      <p>Les clientes créent le leur en une minute depuis la page <a href="/app/login.html">Se connecter</a> ; il est actif dès que notre équipe l'a validé.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    © 2026 Christ Livraison &amp; Transport SARL. Tous droits réservés. —
+    <a href="index.html">Retour à l'accueil</a>
+  </div>
+</footer>
+
+<script>
+/* La page devine le téléphone et ouvre le bon onglet ; les trois restent atteignables à la main,
+   parce que quelqu'un peut lire cette page sur un ordinateur pour aider un livreur au téléphone. */
+(function () {
+  var sections = { android: 'pas-android', iphone: 'pas-iphone', ordi: 'pas-ordi' };
+  function montrer(cle) {
+    Object.keys(sections).forEach(function (k) {
+      document.getElementById(sections[k]).hidden = (k !== cle);
+    });
+    [].forEach.call(document.querySelectorAll('.onglets-tel button'), function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tel === cle));
+    });
+  }
+  [].forEach.call(document.querySelectorAll('.onglets-tel button'), function (b) {
+    b.addEventListener('click', function () { montrer(b.dataset.tel); });
+  });
+  var ua = navigator.userAgent || '';
+  var iOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  montrer(iOS ? 'iphone' : (/Android/.test(ua) ? 'android' : 'ordi'));
+
+  /* Le gros bouton. clt-common.js retient l'offre du navigateur et branche #btn-installer-app ;
+     ici on ne s'occupe que de ce que la page raconte autour. */
+  var cta = document.getElementById('cta'), texte = document.getElementById('cta-texte');
+  var btn = document.getElementById('btn-installer-app');
+  function rafraichir() {
+    var installee = (typeof cltDejaInstallee === 'function') && cltDejaInstallee();
+    if (installee) {
+      cta.classList.add('est-installee');
+      texte.innerHTML = '<strong>C\'est déjà fait : vous lisez cette page depuis l\'application installée.</strong>';
+      btn.hidden = true;
+      return;
+    }
+    var offre = (typeof cltPeutProposerInstall === 'function') && cltPeutProposerInstall() && !iOS;
+    btn.hidden = !offre;
+    texte.textContent = offre
+      ? 'Votre navigateur sait le faire : un seul appui suffit.'
+      : (iOS ? 'Sur iPhone, l\'installation passe par le bouton « Partager » de Safari — la marche à suivre est juste en dessous.'
+             : 'Votre navigateur ne propose pas l\'installation directe. Suivez la marche à suivre ci-dessous.');
+  }
+  window.addEventListener('beforeinstallprompt', function () { setTimeout(rafraichir, 0); });
+  window.addEventListener('appinstalled', rafraichir);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', rafraichir);
+  else setTimeout(rafraichir, 300);
+})();
+</script>
+<script src="/app/clt-common.js?v=20260917installer"></script>
+</body>
+</html>

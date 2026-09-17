@@ -1715,3 +1715,111 @@ if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cltBrancherContact);
   else cltBrancherContact();
 }
+
+/* ==========================================================================================
+   INSTALLER L'APPLICATION — sans attendre le Play Store (17/09/2026, point 6.2)
+   ==========================================================================================
+   L'application est une PWA depuis le début : chaque espace a son manifeste et son icône, et
+   tout navigateur moderne sait la poser sur l'écran d'accueil. Personne ne le savait. Le compte
+   Play d'entreprise demande un numéro D-U-N-S qui peut prendre trente jours ; l'équipe, les
+   livreurs et les clientes n'ont pas à attendre ce délai pour avoir l'icône sur leur téléphone.
+
+   Ce bloc fait trois choses :
+     • il retient l'offre d'installation du navigateur (beforeinstallprompt), que Chrome émet une
+       seule fois et qui est perdue si personne ne l'attrape ;
+     • il ajoute « 📲 Installer l'application » au menu ☰ de l'espace ouvert, et l'efface dès que
+       l'application EST installée (rien de plus agaçant qu'un bouton qui ne sert plus) ;
+     • il renvoie vers /installer.html quand le navigateur n'offre rien de lui-même — c'est le
+       cas de l'iPhone, où l'installation passe par « Partager » puis « Sur l'écran d'accueil ».
+   ========================================================================================== */
+let CLT_OFFRE_INSTALL = (typeof window !== 'undefined' && window.__cltOffreInstallTot) || null;
+
+function cltDejaInstallee() {
+  try {
+    return window.matchMedia('(display-mode: standalone)').matches
+      || window.matchMedia('(display-mode: minimal-ui)').matches
+      || window.navigator.standalone === true;
+  } catch (e) { return false; }
+}
+function cltEstIOS() {
+  const ua = navigator.userAgent || '';
+  // iPadOS 13+ se présente comme un Mac : le tactile le trahit.
+  return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+/* Vrai quand on peut proposer l'installation : soit le navigateur a fait son offre, soit on est
+   sur iPhone où il n'y a pas d'offre mais une marche à suivre. Dans les deux cas, pas si c'est
+   déjà fait. */
+function cltPeutProposerInstall() {
+  return !cltDejaInstallee() && (!!CLT_OFFRE_INSTALL || cltEstIOS());
+}
+/* Un appui sur le bouton. Rend 'acceptee', 'refusee', 'guide' (on a ouvert la marche à suivre)
+   ou 'deja'. Le navigateur ne rend son offre qu'une fois : on l'oublie après usage. */
+async function cltInstaller() {
+  if (cltDejaInstallee()) return 'deja';
+  if (CLT_OFFRE_INSTALL) {
+    const offre = CLT_OFFRE_INSTALL;
+    CLT_OFFRE_INSTALL = null;
+    offre.prompt();
+    let choix = null;
+    try { choix = await offre.userChoice; } catch (e) { /* le navigateur a fermé la fenêtre */ }
+    cltMajBoutonInstall();
+    return (choix && choix.outcome === 'accepted') ? 'acceptee' : 'refusee';
+  }
+  window.open('/installer.html', '_blank', 'noopener');
+  return 'guide';
+}
+
+function cltMajBoutonInstall() {
+  const montrer = cltPeutProposerInstall();
+  const b = document.getElementById('btn-installer-app');
+  if (b) b.classList.toggle('hidden', !montrer);
+  // Sur la page de connexion, le bouton vit dans un encadré avec son explication : c'est
+  // l'encadré entier qui doit disparaître une fois l'application installée.
+  const bloc = document.getElementById('bloc-installer');
+  if (bloc) bloc.classList.toggle('hidden', !montrer);
+}
+
+/* Pose l'entrée dans le menu ☰ de la page, si elle a un menu : dans le groupe « Outils » quand
+   il existe, sinon dans un groupe à elle, juste avant la déconnexion. Les six espaces partagent
+   la même structure de menu : on n'a donc rien à écrire dans chaque page. */
+function cltBrancherInstall() {
+  if (typeof document === 'undefined') return;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();          // sinon Chrome affiche sa propre barre, hors de notre écran
+    CLT_OFFRE_INSTALL = e;
+    cltMajBoutonInstall();
+  });
+  window.addEventListener('appinstalled', () => { CLT_OFFRE_INSTALL = null; cltMajBoutonInstall(); });
+
+  const brancher = (bouton) => bouton.addEventListener('click', async () => {
+    const r = await cltInstaller();
+    if (r === 'acceptee' && typeof cltToast === 'function') cltToast("L'application est sur votre écran d'accueil.", { type: 'success', title: 'Installée' });
+  });
+
+  // La page écrit elle-même son bouton (page de connexion) : on se contente de le brancher.
+  const dejaLa = document.getElementById('btn-installer-app');
+  if (dejaLa) { brancher(dejaLa); cltMajBoutonInstall(); return; }
+
+  const menu = document.getElementById('settings-dropdown');
+  if (!menu) return;
+  const bouton = document.createElement('button');
+  bouton.type = 'button';
+  bouton.id = 'btn-installer-app';
+  bouton.className = 'hidden';
+  bouton.textContent = "📲 Installer l'application";
+  brancher(bouton);
+  const groupes = [...menu.querySelectorAll('.settings-groupe')];
+  const outils = groupes.find((g) => /Outils/i.test((g.querySelector('.settings-groupe-titre') || {}).textContent || ''));
+  if (outils) outils.appendChild(bouton);
+  else {
+    const g = document.createElement('div');
+    g.className = 'settings-groupe';
+    g.appendChild(bouton);
+    menu.insertBefore(g, groupes.length ? groupes[groupes.length - 1] : null);
+  }
+  cltMajBoutonInstall();
+}
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cltBrancherInstall);
+  else cltBrancherInstall();
+}

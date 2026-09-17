@@ -475,10 +475,16 @@ verifier(
    jamais — à 2 000 000 F réglables depuis Gestion › Paramètres, appliqué aussi à la recette du
    jour et à la saisie de paie, dans un panneau de l'application et non plus une fenêtre du
    navigateur (gestion.js, gestion.html, migration 2026-09-17-seuil-de-vigilance.sql) :
-   étiquette 20260917protege. */
+   étiquette 20260917protege.
+   v141, le 17/09/2026 — point 6.2 : l'application s'installe sans attendre le Play Store. L'offre
+   du navigateur est attrapée (beforeinstallprompt, émise une seule fois et perdue jusqu'ici),
+   « 📲 Installer l'application » entre dans le menu ☰ des six espaces sans toucher aux pages, un
+   encadré le propose sur la page de connexion, et /installer.html donne la marche à suivre en
+   dessins pour Android, iPhone et ordinateur (clt-common.js, login.html, installer.html, index,
+   sw.js) : étiquette 20260917installer. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v140'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v141'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

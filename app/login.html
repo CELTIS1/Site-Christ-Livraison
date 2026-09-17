@@ -18,9 +18,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260917protege">
-  <script src="theme.js?v=20260917protege"></script>
-  <script src="splash.js?v=20260917protege"></script>
+  <link rel="stylesheet" href="style.css?v=20260917installer">
+  <script src="theme.js?v=20260917installer"></script>
+  <script src="splash.js?v=20260917installer"></script>
   <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
        Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
        ne correspond pas. Si le CDN était compromis, le code étranger serait bloqué.
@@ -65,6 +65,19 @@
       <button type="button" id="btn-goto-inscription" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#1B4374;text-decoration:underline;cursor:pointer;">Pas encore de compte client ? Créer un compte</button>
       <button type="button" id="btn-nouveautes" style="width:100%;text-align:center;margin-top:6px;background:none;border:none;color:#64748b;font-size:13px;cursor:pointer;min-height:36px;" onclick="if (window.cltAfficherNouveautes) cltAfficherNouveautes();">Quoi de neuf dans l'application ?</button>
       </form>
+
+      <!-- INSTALLER SANS ATTENDRE LE PLAY STORE (17/09/2026, point 6.2). C'est ici que ça compte
+           le plus : sur cette page, la personne n'est pas encore connectée et elle ne reviendra
+           peut-être jamais chercher l'adresse du site. Le bloc s'efface tout seul si
+           l'application est déjà installée (clt-common.js, cltMajBoutonInstall). -->
+      <div id="bloc-installer" class="bloc-installer hidden">
+        <div class="bloc-installer-txt">
+          <strong>📲 Mettez CLT sur votre écran d'accueil</strong>
+          <span>Une icône comme les autres applications, qui s'ouvre sans passer par le navigateur et qui marche même avec un réseau faible.</span>
+        </div>
+        <button type="button" class="btn" id="btn-installer-app" style="width:100%; justify-content:center;">Installer l'application</button>
+        <a href="/installer.html" class="bloc-installer-aide">Comment faire, étape par étape</a>
+      </div>
 
     <!-- MOT DE PASSE OUBLIE / PREMIERE CONNEXION : demande transmise à l'équipe -->
     <form id="form-forgot-phone" class="hidden">
@@ -156,18 +169,26 @@
     </div>
   </div>
 
-<script src="clt-common.js?v=20260917protege"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917protege"></script>
-<script src="lib/argent.js?v=20260917protege"></script>
-<script src="lib/releve-cliente.js?v=20260917protege"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917protege"></script>
-<script src="lib/briques-argent.js?v=20260917protege"></script>
-<script src="lib/annonce-de-remise.js?v=20260917protege"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917protege"></script>
-<script src="lib/primes.js?v=20260917protege"></script>
-<script src="lib/doublons.js?v=20260917protege"></script>
-<script src="config.js?v=20260917protege"></script>
-<script src="biometric-login.js?v=20260917protege"></script>
+<style>
+/* Bloc « Installer l'application » de la page de connexion (17/09/2026, point 6.2) */
+.bloc-installer{ margin-top:18px; padding:14px; border:1px solid #DCE5F0; border-radius:12px; background:#F7FAFF; text-align:left; }
+.bloc-installer-txt{ display:block; margin-bottom:10px; }
+.bloc-installer-txt strong{ display:block; font-size:14px; color:#1B4374; margin-bottom:3px; }
+.bloc-installer-txt span{ display:block; font-size:12.5px; color:#4E6B8A; line-height:1.45; }
+.bloc-installer-aide{ display:block; text-align:center; margin-top:8px; font-size:12.5px; color:#1B4374; min-height:44px; line-height:44px; }
+</style>
+<script src="clt-common.js?v=20260917installer"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917installer"></script>
+<script src="lib/argent.js?v=20260917installer"></script>
+<script src="lib/releve-cliente.js?v=20260917installer"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917installer"></script>
+<script src="lib/briques-argent.js?v=20260917installer"></script>
+<script src="lib/annonce-de-remise.js?v=20260917installer"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917installer"></script>
+<script src="lib/primes.js?v=20260917installer"></script>
+<script src="lib/doublons.js?v=20260917installer"></script>
+<script src="config.js?v=20260917installer"></script>
+<script src="biometric-login.js?v=20260917installer"></script>
 <script>
   function showTab(which){
     stopWaiting();
