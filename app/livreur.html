@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916additionnels">
-<script src="theme.js?v=20260916additionnels"></script>
-<script src="splash.js?v=20260916additionnels"></script>
+<link rel="stylesheet" href="style.css?v=20260916fraisauto">
+<script src="theme.js?v=20260916fraisauto"></script>
+<script src="splash.js?v=20260916fraisauto"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -215,6 +215,16 @@
   html[data-theme="dark"] .montants-bloc{ background:#141F2E; border-color:#2E4A6B; }
   html[data-theme="dark"] .montants-titre,
   html[data-theme="dark"] .montant-case > span{ color:#9EC0E6; }
+
+  /* Le frais additionnel imprévu (16/09/2026) : replié par défaut derrière un bouton, pour ne
+     pas alourdir une carte qui n'en a besoin qu'une fois sur mille. .est-ouvert (posé d'office
+     si un montant est déjà enregistré, ou au clic sur le bouton) révèle les deux champs. */
+  .frais-add-bloc{ margin-top:8px; }
+  .frais-add-toggle{ width:100%; text-align:left; font-weight:700; }
+  .frais-add-champs{ display:none; gap:8px; margin-top:8px; }
+  .frais-add-bloc.est-ouvert .frais-add-champs{ display:flex; }
+  .frais-add-motif-case{ flex:2 1 160px !important; }
+  .frais-add-motif-case input{ font-size:14px !important; font-weight:600 !important; }
 
   /* ---------- Repli « Plus d'options » d'une carte colis (26/08/2026) ----------
      Le livreur ne voit d'emblée que ce dont il se sert à chaque colis : le statut et
@@ -878,18 +888,18 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916additionnels"></script>
-<script src="lib/communes-et-tarifs.js?v=20260916additionnels"></script>
-<script src="lib/argent.js?v=20260916additionnels"></script>
-<script src="lib/releve-cliente.js?v=20260916additionnels"></script>
-<script src="lib/papier-a-en-tete.js?v=20260916additionnels"></script>
-<script src="lib/briques-argent.js?v=20260916additionnels"></script>
-<script src="lib/annonce-de-remise.js?v=20260916additionnels"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260916additionnels"></script>
-<script src="lib/primes.js?v=20260916additionnels"></script>
-<script src="lib/doublons.js?v=20260916additionnels"></script>
-<script src="config.js?v=20260916additionnels"></script>
-<script src="biometric-lock.js?v=20260916additionnels"></script>
+<script src="clt-common.js?v=20260916fraisauto"></script>
+<script src="lib/communes-et-tarifs.js?v=20260916fraisauto"></script>
+<script src="lib/argent.js?v=20260916fraisauto"></script>
+<script src="lib/releve-cliente.js?v=20260916fraisauto"></script>
+<script src="lib/papier-a-en-tete.js?v=20260916fraisauto"></script>
+<script src="lib/briques-argent.js?v=20260916fraisauto"></script>
+<script src="lib/annonce-de-remise.js?v=20260916fraisauto"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260916fraisauto"></script>
+<script src="lib/primes.js?v=20260916fraisauto"></script>
+<script src="lib/doublons.js?v=20260916fraisauto"></script>
+<script src="config.js?v=20260916fraisauto"></script>
+<script src="biometric-lock.js?v=20260916fraisauto"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -981,22 +991,32 @@
       // est en train d'être frappé là, c'est ce que la cliente lira ce soir. (27/08/2026)
       const mArticle = item.querySelector('.montant-article-input');
       const mLivraison = item.querySelector('.montant-livraison-input');
+      // Le frais additionnel (16/09/2026) : montant, motif, et si le bloc replié est ouvert —
+      // même raison que les autres montants, en garde en plus le repli qu'on vient d'ouvrir.
+      const fraisAdd = item.querySelector('.frais-add-montant-input');
+      const fraisAddMotif = item.querySelector('.frais-add-motif-input');
+      const fraisAddBloc = item.querySelector('.frais-add-bloc');
       // Le repli « Plus d'options » : une mise à jour temps réel ne doit pas le refermer au
       // nez de quelqu'un en train d'y saisir une observation ou d'y choisir une photo.
       const plus = item.querySelector('.colis-plus');
       snap[id] = {
         plusOuvert: plus ? plus.open : undefined,
+        fraisAddOuvert: fraisAddBloc ? fraisAddBloc.classList.contains('est-ouvert') : undefined,
         statut: sel ? sel.value : undefined,
         observation: obs ? obs.value : undefined,
         fraisExpedition: frais ? frais.value : undefined,
         montantArticle: mArticle ? mArticle.value : undefined,
         montantLivraison: mLivraison ? mLivraison.value : undefined,
+        fraisAdditionnelMontant: fraisAdd ? fraisAdd.value : undefined,
+        fraisAdditionnelMotif: fraisAddMotif ? fraisAddMotif.value : undefined,
         focus: (active && item.contains(active))
           ? (active.classList.contains('status-select') ? 'status'
             : active.classList.contains('obs-textarea') ? 'obs'
             : active.classList.contains('frais-exp-input') ? 'frais'
             : active.classList.contains('montant-article-input') ? 'montant-article'
-            : active.classList.contains('montant-livraison-input') ? 'montant-livraison' : null)
+            : active.classList.contains('montant-livraison-input') ? 'montant-livraison'
+            : active.classList.contains('frais-add-montant-input') ? 'frais-add-montant'
+            : active.classList.contains('frais-add-motif-input') ? 'frais-add-motif' : null)
           : null,
         selStart: (obs && active === obs) ? obs.selectionStart : null,
         selEnd: (obs && active === obs) ? obs.selectionEnd : null,
@@ -1015,8 +1035,12 @@
       const frais = item.querySelector('.frais-exp-input');
       const mArticle = item.querySelector('.montant-article-input');
       const mLivraison = item.querySelector('.montant-livraison-input');
+      const fraisAdd = item.querySelector('.frais-add-montant-input');
+      const fraisAddMotif = item.querySelector('.frais-add-motif-input');
+      const fraisAddBloc = item.querySelector('.frais-add-bloc');
       const plus = item.querySelector('.colis-plus');
       if (plus && s.plusOuvert !== undefined) plus.open = s.plusOuvert;
+      if (fraisAddBloc && s.fraisAddOuvert) fraisAddBloc.classList.add('est-ouvert');
       // On ne restaure une saisie en cours que si elle diffère de la valeur affichée par défaut
       // (sinon rien à faire) — et jamais pour un colis qu'on vient d'enregistrer (recentWrites).
       const justSaved = recentWrites.has(id);
@@ -1025,10 +1049,14 @@
       if (frais && s.fraisExpedition !== undefined && !justSaved && frais.value !== s.fraisExpedition) frais.value = s.fraisExpedition;
       if (mArticle && s.montantArticle !== undefined && !justSaved && mArticle.value !== s.montantArticle) mArticle.value = s.montantArticle;
       if (mLivraison && s.montantLivraison !== undefined && !justSaved && mLivraison.value !== s.montantLivraison) mLivraison.value = s.montantLivraison;
+      if (fraisAdd && s.fraisAdditionnelMontant !== undefined && !justSaved && fraisAdd.value !== s.fraisAdditionnelMontant) fraisAdd.value = s.fraisAdditionnelMontant;
+      if (fraisAddMotif && s.fraisAdditionnelMotif !== undefined && !justSaved && fraisAddMotif.value !== s.fraisAdditionnelMotif) fraisAddMotif.value = s.fraisAdditionnelMotif;
       if (s.focus === 'status' && sel) { sel.focus(); }
       else if (s.focus === 'frais' && frais) { frais.focus(); }
       else if (s.focus === 'montant-article' && mArticle) { mArticle.focus(); }
       else if (s.focus === 'montant-livraison' && mLivraison) { mLivraison.focus(); }
+      else if (s.focus === 'frais-add-montant' && fraisAdd) { fraisAdd.focus(); }
+      else if (s.focus === 'frais-add-motif' && fraisAddMotif) { fraisAddMotif.focus(); }
       else if (s.focus === 'obs' && obs) {
         obs.focus();
         if (s.selStart != null) { try { obs.setSelectionRange(s.selStart, s.selEnd); } catch(e){} }
@@ -2001,6 +2029,42 @@
           </label>`;
   }
 
+  /* UN FRAIS ADDITIONNEL IMPRÉVU — 16 septembre 2026 (chantier 3, rendu automatique le même jour).
+     Celtis, après avoir vu l'alerte côté équipe : « tu peux le rendre automatique aussi, mais il
+     faut que le livreur entre les différents montants qui concernent les explications, car les
+     choses varient beaucoup à ce niveau d'une compagnie de transport à une autre. »
+
+     C'EST LE LIVREUR QUI SAISIT, pour la même raison que les frais d'expédition ci-dessus : il
+     est sur le terrain au moment où le supplément survient (attente à la gare, détour, panne…),
+     et lui seul connaît le motif à cet instant précis — personne d'autre ne pourrait le deviner
+     le soir. Montant ET motif ensemble, jamais l'un sans l'autre (voir la vérification dans
+     lireFraisAdditionnelsDeLaCarte ci-dessous).
+
+     REPLIÉE PAR DÉFAUT derrière un bouton, contrairement aux frais d'expédition : ceux-ci
+     concernent une expédition sur beaucoup, celui-ci un colis sur mille. L'ouvrir sur toutes les
+     cartes aurait redonné à l'écran l'encombrement que Celtis avait fait retirer le 05/09. Elle
+     s'ouvre seule dès qu'un montant est déjà enregistré, pour qu'on le revoie sans devoir
+     chercher où il est passé. */
+  function fraisAdditionnelsCaseHTML(c){
+    const dejaSaisi = fraisAdditionnelsColis(c) > 0;
+    const montant = (c.frais_additionnels_montant === null || c.frais_additionnels_montant === undefined)
+      ? '' : String(Number(c.frais_additionnels_montant) || 0);
+    const motif = c.frais_additionnels_motif || '';
+    return `<div class="frais-add-bloc${dejaSaisi ? ' est-ouvert' : ''}">
+      <button type="button" class="btn btn-sm btn-outline frais-add-toggle" onclick="this.closest('.frais-add-bloc').classList.toggle('est-ouvert')">💰 ${dejaSaisi ? formatMontant(fraisAdditionnelsColis(c)) + ' de frais additionnel' : 'Un frais additionnel imprévu ?'}</button>
+      <div class="frais-add-champs">
+        <label class="montant-case">
+          <span>Montant</span>
+          <input type="number" class="frais-add-montant-input" inputmode="numeric" min="0" step="1" placeholder="0" value="${escapeHTML(montant)}" aria-label="Montant du frais additionnel, en FCFA">
+        </label>
+        <label class="montant-case frais-add-motif-case">
+          <span>Pourquoi</span>
+          <input type="text" class="frais-add-motif-input" placeholder="Ex : attente à la gare, détour…" value="${escapeHTML(motif)}" aria-label="Pourquoi ce frais additionnel">
+        </label>
+      </div>
+    </div>`;
+  }
+
   /* Les deux montants, vus et corrigés depuis la rue. (27/08/2026)
 
      Ce qu'on répare. Le livreur arrive devant la porte avec un colis marqué 15 000 F d'article.
@@ -2108,6 +2172,7 @@
         <div class="meta montants-avis">${estExpedition(c)
           ? "Vous n'encaissez rien chez le destinataire. Écrivez ce que le transporteur a pris, et ce que vous gagnez pour le déplacement."
           : "À corriger seulement si le prix a changé ; la cliente le lira sur son relevé du soir."}</div>
+        ${fraisAdditionnelsCaseHTML(c)}
       </div>`;
   }
 
@@ -2214,6 +2279,45 @@
       if (!ok) return { ok: false };
     }
     return { ok: true, patch: { frais_expedition: newVal } };
+  }
+
+  /* Le frais additionnel imprévu, lu comme les frais d'expédition ci-dessus : rien à écrire si
+     rien n'a bougé, montant validé avant l'écriture. Deux règles en plus, propres à lui :
+       • un motif est OBLIGATOIRE dès qu'un montant est saisi — Celtis y a insisté (« il faut que
+         le livreur entre les différents montants qui concernent les explications ») : un chiffre
+         sans motif serait indéfendable devant une vendeuse qui demande pourquoi.
+       • un montant NOUVEAU ou CHANGÉ rouvre l'alerte (frais_additionnels_regle_at repasse à
+         null) : un frais qu'on vient de signaler n'est par définition pas encore réglé. */
+  async function lireFraisAdditionnelsDeLaCarte(item, existing) {
+    const champMontant = item.querySelector('.frais-add-montant-input');
+    if (!champMontant) return { ok: true, patch: null };
+    const brut = String(champMontant.value || '').replace(/\s/g, '').replace(',', '.').trim();
+    let newVal = null;
+    if (brut !== '') {
+      const n = Number(brut);
+      if (!isFinite(n) || n < 0) {
+        cltToast('Montant invalide. Écrivez seulement le nombre de francs, par exemple 1000.', { type: 'warning' });
+        return { ok: false };
+      }
+      newVal = Math.round(n);
+    }
+    const champMotif = item.querySelector('.frais-add-motif-input');
+    const motifSaisi = champMotif ? champMotif.value.trim() : '';
+    const avantMontant = (existing && existing.frais_additionnels_montant !== null && existing.frais_additionnels_montant !== undefined)
+      ? Number(existing.frais_additionnels_montant) : null;
+    const avantMotif = (existing && existing.frais_additionnels_motif) || '';
+    if (newVal === avantMontant && motifSaisi === avantMotif) return { ok: true, patch: null };
+    if (newVal !== null && !motifSaisi) {
+      cltToast("Écrivez en quelques mots pourquoi (ex : attente à la gare), pour que l'équipe comprenne ce montant.", { type: 'warning' });
+      champMotif && champMotif.focus();
+      return { ok: false };
+    }
+    const patch = {
+      frais_additionnels_montant: newVal,
+      frais_additionnels_motif: newVal === null ? null : motifSaisi,
+    };
+    if (newVal !== avantMontant) patch.frais_additionnels_regle_at = null;
+    return { ok: true, patch };
   }
 
   /* Un seul branchement pour les deux listes — « Mes colis assignés » et « Récupérations ».
@@ -2488,7 +2592,9 @@
         if (!argent.ok) return;
         const gare = await lireFraisExpeditionDeLaCarte(item, colis);
         if (!gare.ok) return;
-        const aEcrire = Object.assign({}, argent.patch || {}, gare.patch || {});
+        const additionnel = await lireFraisAdditionnelsDeLaCarte(item, colis);
+        if (!additionnel.ok) return;
+        const aEcrire = Object.assign({}, argent.patch || {}, gare.patch || {}, additionnel.patch || {});
 
         const res = await appliquerStatutColis({
           id,

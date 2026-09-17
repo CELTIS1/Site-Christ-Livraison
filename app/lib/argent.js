@@ -378,33 +378,49 @@ function fraisCourseADevoir(c) {
 }
 
 /* --------------------------------------------------------------------------------------------
-   LES FRAIS ADDITIONNELS — 16 septembre 2026
+   LES FRAIS ADDITIONNELS — 16 septembre 2026, rendus automatiques le même jour
    --------------------------------------------------------------------------------------------
    Celtis (chantier 3, après la grille et les doublons) : « côté expédition, peut-être s'il y a
    des frais additionnels… un petit truc à côté pour des frais additionnels qui n'ont pas été
-   pris en compte ou qui n'ont pas encore été réglés ».
+   pris en compte ou qui n'ont pas encore été réglés ». Posé d'abord comme une simple alerte,
+   puis, sa réponse une fois lue : « tu peux le rendre automatique aussi, mais il faut que le
+   livreur entre les différents montants qui concernent les explications, car les choses varient
+   beaucoup à ce niveau d'une compagnie de transport à une autre. »
 
-   Trois colonnes, posées par la migration du même jour : frais_additionnels_montant (le
-   supplément constaté après coup — attente à la gare, détour, carburant…), le motif en clair,
-   et une date de règlement (null tant que personne n'a payé).
+   Trois colonnes : frais_additionnels_montant (le supplément constaté après coup — attente à la
+   gare, détour, carburant…), le motif en clair (obligatoire dès qu'un montant est saisi :
+   c'est lui qui explique pourquoi CE colis-là coûte plus cher qu'un autre, d'où l'insistance de
+   Celtis), et une date de règlement (null tant que ce n'est pas réglé).
 
-   VOLONTAIREMENT HORS DU RELEVÉ AUTOMATIQUE DE LA CLIENTE. Les frais d'expédition et de course
-   sont des retenues connues et systématiques ; celui-ci est un imprévu, ponctuel, dont le motif
-   varie d'un colis à l'autre — parfois à la charge de la cliente, parfois de CLT elle-même
-   (une erreur d'itinéraire, par exemple). Le glisser dans le calcul automatique aurait changé un
-   chiffre que la cliente lit sans que l'équipe l'ait décidé. Il vit donc comme une ALERTE, pas
-   comme une retenue : le badge sur la carte et la tuile du tableau de bord disent qu'il reste à
-   régler, à qui de droit de trancher comment. Si l'usage montre qu'il devrait entrer dans le
-   relevé, ce sera un choix à faire avec Celtis, pas une déduction automatique. */
+   C'EST LE LIVREUR QUI SAISIT, comme pour les frais d'expédition ci-dessus : c'est lui qui est
+   sur le terrain au moment où le supplément survient, et lui seul connaît le motif à cet
+   instant. La case vit dans « Plus d'options » de sa carte (livreur.html), montant et motif
+   ensemble — jamais l'un sans l'autre.
+
+   RETENUE AUTOMATIQUE SUR LE RELEVÉ, comme les frais d'expédition et de course : voir
+   fraisAdditionnelsADevoir() et son emploi dans montantNetADevoir(). Le motif reste affiché à
+   côté du montant sur le relevé (releveCliente()), pour qu'une vendeuse qui voit son « vous
+   revient » baisser sache tout de suite pourquoi, sans avoir à appeler. */
 function fraisAdditionnelsColis(c) {
   return Number(c && c.frais_additionnels_montant) || 0;
 }
 function fraisAdditionnelsRegle(c) {
   return !!(c && c.frais_additionnels_regle_at);
 }
-// Ce qui reste à régler sur ce colis : 0 si rien n'a été noté, ou si c'est déjà réglé.
+// Ce qui reste à régler sur ce colis, pour l'alerte de l'équipe (badge, tuile) : 0 si rien n'a
+// été noté, ou si c'est déjà réglé. Ne regarde PAS le reversement — contrairement à la retenue
+// ci-dessous — parce qu'un frais resté impayé après un reversement est encore une créance à
+// récupérer autrement, et l'équipe doit continuer à le voir.
 function fraisAdditionnelsAReclamer(c) {
   if (!c || fraisAdditionnelsRegle(c)) return 0;
+  return fraisAdditionnelsColis(c);
+}
+// Ce qui se retient sur le relevé de la cliente, comme fraisExpeditionADevoir et
+// fraisCourseADevoir juste au-dessus : rien à retenir une fois réglé, ni une fois qu'on lui a
+// déjà reversé son argent (la retenue a alors déjà été faite au passage).
+function fraisAdditionnelsADevoir(c) {
+  if (!c) return 0;
+  if (c.reverse_au_fournisseur_at || fraisAdditionnelsRegle(c)) return 0;
   return fraisAdditionnelsColis(c);
 }
 
@@ -448,7 +464,7 @@ function montantArticleReverse(c) {
    normalement négatif, et il veut dire « c'est elle qui doit cette somme à CLT ». Masquer ce
    signe reviendrait à effacer une créance réelle de l'entreprise. */
 function montantNetADevoir(c) {
-  return montantArticleADevoir(c) - fraisExpeditionADevoir(c) - fraisCourseADevoir(c);
+  return montantArticleADevoir(c) - fraisExpeditionADevoir(c) - fraisCourseADevoir(c) - fraisAdditionnelsADevoir(c);
 }
 
 /* --------------------------------------------------------------------------------------------
@@ -636,6 +652,10 @@ function totauxArgent(colis) {
     fraisCourse: 0,
     fraisCourseAcquis: 0,
     fraisCourseADevoir: 0,
+    // Frais additionnels imprévus (16/09/2026) : troisième retenue, comme les deux précédentes,
+    // mais ponctuelle et de montant variable — voir le bloc « LES FRAIS ADDITIONNELS » plus haut.
+    fraisAdditionnels: 0,
+    fraisAdditionnelsADevoir: 0,
     // LA RECETTE DE LIVRAISON DE CLT, PAR LES DEUX CHEMINS. Ajoutée le 01/09/2026, et il le
     // fallait : le jour où livraisonEncaissee() a cessé d'être vraie sur une expédition, la
     // course a disparu de tous les chiffres d'affaires sans que rien ne la rattrape. Sur une
@@ -674,6 +694,8 @@ function totauxArgent(colis) {
     t.fraisCourse += fraisCourseColis(c);
     t.fraisCourseAcquis += fraisCourseAcquis(c);
     t.fraisCourseADevoir += fraisCourseADevoir(c);
+    t.fraisAdditionnels += fraisAdditionnelsColis(c);
+    t.fraisAdditionnelsADevoir += fraisAdditionnelsADevoir(c);
     t.dejaReverse += montantArticleReverse(c);
   });
   t.totalEnregistre = t.articleEnregistre + t.livraisonEnregistree;
@@ -691,14 +713,15 @@ function totauxArgent(colis) {
   // billets chez le destinataire sur un colis d'Abidjan, par retenue sur la vendeuse sur une
   // expédition. Une seule nature, deux chemins — d'où une seule ligne de recette.
   t.recetteLivraison = t.livraisonEncaissee + t.fraisCourseAcquis;
-  // LE SEUL CHIFFRE À ANNONCER À UNE VENDEUSE. Ce qu'on lui doit, moins les deux frais qu'elle
-  // doit à CLT : le transporteur (frais d'expédition) et le déplacement (frais de course).
+  // LE SEUL CHIFFRE À ANNONCER À UNE VENDEUSE. Ce qu'on lui doit, moins les frais qu'elle doit à
+  // CLT : le transporteur (frais d'expédition), le déplacement (frais de course), et depuis le
+  // 16/09/2026 un troisième, ponctuel et de montant variable — les frais additionnels imprévus.
   //
   // Il ne se déduit jamais de la recette de livraison prise en bloc — c'est la question tranchée
   // le 25 août 2026 : sur un colis ordinaire, cet argent vient du destinataire et ne concerne pas
   // la vendeuse. Seule la part « expédition » la concerne, et c'est exactement ce que
   // fraisCourseADevoir() isole.
-  t.netADevoir = t.articleADevoir - t.fraisExpeditionADevoir - t.fraisCourseADevoir;
+  t.netADevoir = t.articleADevoir - t.fraisExpeditionADevoir - t.fraisCourseADevoir - t.fraisAdditionnelsADevoir;
   return t;
 }
 

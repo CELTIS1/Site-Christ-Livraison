@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260916additionnels">
-<script src="theme.js?v=20260916additionnels"></script>
-<script src="splash.js?v=20260916additionnels"></script>
+<link rel="stylesheet" href="style.css?v=20260916fraisauto">
+<script src="theme.js?v=20260916fraisauto"></script>
+<script src="splash.js?v=20260916fraisauto"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -472,19 +472,19 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260916additionnels"></script>
-<script src="lib/communes-et-tarifs.js?v=20260916additionnels"></script>
-<script src="lib/argent.js?v=20260916additionnels"></script>
-<script src="lib/releve-cliente.js?v=20260916additionnels"></script>
-<script src="lib/papier-a-en-tete.js?v=20260916additionnels"></script>
-<script src="lib/briques-argent.js?v=20260916additionnels"></script>
-<script src="lib/annonce-de-remise.js?v=20260916additionnels"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260916additionnels"></script>
-<script src="lib/primes.js?v=20260916additionnels"></script>
-<script src="lib/doublons.js?v=20260916additionnels"></script>
-<script src="config.js?v=20260916additionnels"></script>
-<script src="biometric-lock.js?v=20260916additionnels"></script>
-<script src="clt-select-recherche.js?v=20260916additionnels"></script>
+<script src="clt-common.js?v=20260916fraisauto"></script>
+<script src="lib/communes-et-tarifs.js?v=20260916fraisauto"></script>
+<script src="lib/argent.js?v=20260916fraisauto"></script>
+<script src="lib/releve-cliente.js?v=20260916fraisauto"></script>
+<script src="lib/papier-a-en-tete.js?v=20260916fraisauto"></script>
+<script src="lib/briques-argent.js?v=20260916fraisauto"></script>
+<script src="lib/annonce-de-remise.js?v=20260916fraisauto"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260916fraisauto"></script>
+<script src="lib/primes.js?v=20260916fraisauto"></script>
+<script src="lib/doublons.js?v=20260916fraisauto"></script>
+<script src="config.js?v=20260916fraisauto"></script>
+<script src="biometric-lock.js?v=20260916fraisauto"></script>
+<script src="clt-select-recherche.js?v=20260916fraisauto"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2257,10 +2257,11 @@
     const { data: aReverser, error: err2 } = await supabaseClient
       .from('colis')
       .select('numero, statut, commune_destination, montant, montant_article, montant_livraison, '
-              + 'frais_expedition, article_non_encaisse, reverse_au_fournisseur_at, created_at')
+              + 'frais_expedition, article_non_encaisse, reverse_au_fournisseur_at, created_at, '
+              + 'frais_additionnels_montant, frais_additionnels_motif, frais_additionnels_regle_at')
       .eq('fournisseur_id', currentUser.id)
       .is('reverse_au_fournisseur_at', null)
-      .or('statut.eq.livre,frais_expedition.gt.0')
+      .or('statut.eq.livre,frais_expedition.gt.0,frais_additionnels_montant.gt.0')
       .order('created_at', { ascending: true })
       .limit(100);
     const lignes = (aReverser || []).filter(c => montantNetADevoir(c) !== 0);
@@ -2273,15 +2274,19 @@
       const net = montantNetADevoir(c);
       const gare = fraisExpeditionADevoir(c);
       const course = fraisCourseADevoir(c);
+      const additionnel = fraisAdditionnelsADevoir(c);
       const article = montantArticleADevoir(c);
       totalLignes += net;
       // Le détail sous la ligne n'apparaît que s'il y a quelque chose à expliquer. Sur un colis
       // ordinaire, le net EST l'article : une explication ne ferait qu'inquiéter.
       const detailLignes = [];
-      if (gare || course) {
+      if (gare || course || additionnel) {
         detailLignes.push(['Article encaissé pour vous', formatMontant(article)]);
         if (gare) detailLignes.push(["🚌 Frais d'expédition (transporteur)", '−' + formatMontant(gare)]);
         if (course) detailLignes.push(['🛵 Frais de course (livreur)', '−' + formatMontant(course)]);
+        // Le motif figure à côté du montant (16/09/2026, Celtis : « les choses varient beaucoup
+        // d'une compagnie à l'autre ») — sans lui, un troisième chiffre négatif serait illisible.
+        if (additionnel) detailLignes.push(['💰 ' + (c.frais_additionnels_motif || 'Frais additionnel'), '−' + formatMontant(additionnel)]);
       }
       return `
       <div style="padding:7px 0; border-bottom:1px solid var(--border);">

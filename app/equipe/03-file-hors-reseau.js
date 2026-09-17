@@ -431,10 +431,11 @@ return `<div class="sync-pending-badge doublon-badge" title="Même cliente, mêm
 
 /* « ⚠️ Frais additionnels non réglés » sur la carte (16/09/2026, Celtis : « un petit truc à côté
    pour des frais additionnels qui n'ont pas été pris en compte ou qui n'ont pas encore été
-   réglés »). Visible sans ouvrir la fiche de modification, comme le badge doublon ci-dessus ;
-   disparaît dès que quelqu'un coche « réglé ». Le calcul (montant, réglé ou non) vit dans
-   lib/argent.js (fraisAdditionnelsAReclamer, fraisAdditionnelsRegle) : une seule vérité, lue ici
-   et à l'édition. */
+   réglés », rendu automatique le même jour : voir lib/argent.js). Visible sans ouvrir la fiche
+   de modification, comme le badge doublon ci-dessus ; disparaît dès que quelqu'un coche
+   « réglé ». Ce montant SE RETIENT DÉJÀ sur le relevé de la cliente (fraisAdditionnelsADevoir) :
+   ce badge n'annonce donc pas un calcul à faire, mais un geste qui reste à faire — récupérer
+   cette somme quelque part (chez le livreur, à la gare…) avant de la cocher réglée. */
 function eqFraisAdditionnelsHTML(c){
 if (!c || fraisAdditionnelsRegle(c)) return '';
 const du = fraisAdditionnelsAReclamer(c);

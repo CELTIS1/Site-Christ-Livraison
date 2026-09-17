@@ -2,13 +2,14 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
-      "version": "20260916additionnels",
+      "version": "20260916fraisauto",
       "date": "16 septembre 2026",
       "titre": "Frais additionnels et « soldé » plus visible",
       "points": [
         "Sur une expédition, la case « 🚌 Frais déjà réglés à CLT (soldé) » se voit désormais du premier coup d'œil, chez la cliente comme sur la fiche de l'équipe.",
-        "Un imprévu (attente à la gare, détour…) : l'équipe note le montant et le motif sur la fiche du colis. Tant que ce n'est pas réglé, un badge « ⚠️ Frais additionnels non réglés » reste sur la carte et une tuile le rappelle au tableau de bord.",
-        "Ce montant est une alerte pour l'équipe : il n'entre pas tout seul dans le relevé envoyé à la cliente."
+        "Un imprévu (attente à la gare, détour…) : c'est le livreur qui note le montant et le motif, depuis sa propre fiche du colis (« Plus d'options » → « 💰 Un frais additionnel imprévu ? ») — les montants variant beaucoup d'une compagnie à l'autre.",
+        "Ce montant se retient désormais tout seul sur le relevé envoyé à la cliente, avec son motif affiché à côté.",
+        "Tant que ce n'est pas récupéré (chez le livreur, à la gare…), un badge « ⚠️ Frais additionnels non réglés » reste sur la carte et une tuile le rappelle au tableau de bord de l'équipe."
       ]
     },
     {

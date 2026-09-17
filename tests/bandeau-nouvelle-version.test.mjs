@@ -443,10 +443,10 @@ verifier(
    v130, le 16/09/2026 — même commune 1 500 F partout, Yopougon compris (le 1 000 F reste un geste à la main) : étiquette 20260916grille.
    v131, le 16/09/2026 — la grille tarifaire consultable dans l'app (bouton « 📋 Grille tarifaire » dans le menu de chaque espace ; clt-common.js, style.css, config.js) : étiquette 20260916tarifsapp.
    v132, le 16/09/2026 — les doublons de colis : avertir sans bloquer (même cliente, même numéro de destinataire, moins de deux jours d'écart), à la saisie (fournisseur, équipe) et sur la carte au bureau (lib/doublons.js, clt-common.js, style.css) : étiquette 20260916doublons.
-   v133, le 16/09/2026 — chantier 3 : le bouton « soldé » rendu visible (fournisseur.html, equipe/03-file-hors-reseau.js, style.css) ; les frais additionnels non prévus, en alerte hors du calcul du relevé (colonnes SQL, lib/argent.js, fiche de modification, badge et tuile équipe) : étiquette 20260916additionnels. */
+   v134, le 16/09/2026 — chantier 3 : le bouton « soldé » rendu visible (fournisseur.html, equipe/03-file-hors-reseau.js, style.css) ; les frais additionnels imprévus saisis par le livreur lui-même, montant et motif (livreur.html), retenus automatiquement sur le relevé de la cliente (colonnes SQL, lib/argent.js, lib/releve-cliente.js, fournisseur.html), avec badge et tuile équipe tant que non récupérés : étiquette 20260916fraisauto. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v133'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v134'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

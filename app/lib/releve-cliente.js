@@ -46,7 +46,7 @@ const RELEVE_COLONNES = ['Téléphone', 'Adresse', 'Statut', 'Article', 'Vous re
 // La phrase qui accompagne le tableau. Elle figure à l'écran ET sur le document envoyé, au mot
 // près, pour qu'une cliente qui a le papier sous les yeux et un membre de l'équipe qui a l'écran
 // sous les siens lisent la même explication.
-const RELEVE_NOTE = "La colonne « Article » dit ce qui a été enregistré. La colonne « Vous revient » dit ce que CLT vous doit réellement, colis par colis : l'article encaissé pour vous, moins ce que vous devez à CLT. Son total est la somme à vous reverser. Les frais de livraison des colis ordinaires ne figurent pas dans ce tableau : ils sont payés par le destinataire et reviennent à CLT. Sur une expédition, en revanche, le destinataire vous a déjà payée : CLT n'encaisse rien pour vous, et deux frais se retiennent — les frais d'expédition (ce que prend le transporteur) et les frais de course (le déplacement du livreur). La ligne apparaît alors en négatif.";
+const RELEVE_NOTE = "La colonne « Article » dit ce qui a été enregistré. La colonne « Vous revient » dit ce que CLT vous doit réellement, colis par colis : l'article encaissé pour vous, moins ce que vous devez à CLT. Son total est la somme à vous reverser. Les frais de livraison des colis ordinaires ne figurent pas dans ce tableau : ils sont payés par le destinataire et reviennent à CLT. Sur une expédition, en revanche, le destinataire vous a déjà payée : CLT n'encaisse rien pour vous, et deux frais se retiennent — les frais d'expédition (ce que prend le transporteur) et les frais de course (le déplacement du livreur). Un troisième frais, imprévu et ponctuel (attente, détour…), peut aussi se retenir, avec son motif — il n'apparaît que si le livreur en a signalé un. La ligne apparaît alors en négatif.";
 
 // Construit le relevé d'une liste de colis : les lignes et les totaux, en données brutes.
 // Aucune mise en forme ici — chaque sortie habille ces mêmes nombres à sa façon.
@@ -67,6 +67,10 @@ function releveCliente(colis) {
     expedition:  estExpedition(c),
     fraisExpedition: Number(fraisExpeditionADevoir(c)) || 0,
     fraisCourse:     Number(fraisCourseADevoir(c)) || 0,
+    // Le frais additionnel imprévu (16/09/2026), et son motif : sans lui un troisième chiffre
+    // négatif serait illisible pour la vendeuse qui le lit sur son relevé.
+    fraisAdditionnels: Number(fraisAdditionnelsADevoir(c)) || 0,
+    fraisAdditionnelsMotif: (c && c.frais_additionnels_motif) || '',
     observation: (c && c.observation) || '',
   }));
   return {
@@ -79,10 +83,11 @@ function releveCliente(colis) {
     // qu'une bonne dizaine d'appelants le lisent, et qu'un renommage de façade aurait plus de
     // risques que de bénéfices ; c'est bien t.netADevoir, l'unique calcul, qui le remplit.
     totalEncaisse: Number(t.netADevoir) || 0,
-    // Le détail des deux retenues, pour les écrans qui veulent l'expliquer sous le total.
+    // Le détail des retenues, pour les écrans qui veulent l'expliquer sous le total.
     nbExpeditions: Number(t.nbExpeditions) || 0,
     totalFraisExpedition: Number(t.fraisExpeditionADevoir) || 0,
     totalFraisCourse: Number(t.fraisCourseADevoir) || 0,
+    totalFraisAdditionnels: Number(t.fraisAdditionnelsADevoir) || 0,
   };
 }
 
@@ -126,13 +131,24 @@ function releveDetailRetenues(r) {
   const rel = r || releveCliente([]);
   const exp = Number(rel.totalFraisExpedition) || 0;
   const course = Number(rel.totalFraisCourse) || 0;
-  if (!exp && !course) return '';
+  const additionnels = Number(rel.totalFraisAdditionnels) || 0;
+  if (!exp && !course && !additionnels) return '';
   const morceaux = [];
   if (exp) morceaux.push("frais d'expédition " + formatMontant(-exp));
   if (course) morceaux.push('frais de course ' + formatMontant(-course));
   const n = Number(rel.nbExpeditions) || 0;
-  return 'Dont ' + morceaux.join(' et ') + ', retenus sur '
-    + n + ' expédition' + (n > 1 ? 's' : '') + '.';
+  let phrase = '';
+  if (exp || course) {
+    phrase = 'Dont ' + morceaux.join(' et ') + ', retenus sur '
+      + n + ' expédition' + (n > 1 ? 's' : '') + '.';
+  }
+  // Le détail (montant + motif) de chaque frais additionnel est déjà sous sa ligne, à l'écran
+  // comme sur les documents ; ici, une phrase globale suffit — le motif de chacun varie trop
+  // pour tenir dans une seule ligne de résumé.
+  if (additionnels) {
+    phrase += (phrase ? ' ' : '') + 'Et ' + formatMontant(-additionnels) + ' de frais additionnels (voir le détail sous chaque colis concerné).';
+  }
+  return phrase;
 }
 
 // Les polices standard d'un PDF ne connaissent que le jeu WinAnsi. L'espace fine insécable que

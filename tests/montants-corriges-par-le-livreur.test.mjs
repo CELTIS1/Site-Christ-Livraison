@@ -112,14 +112,16 @@ vm.runInContext([
   'piedTotalHTML', 'echapperAttribut',
   // Depuis le 05/09/2026, le bloc des montants dessine lui-même la case des frais d'expédition.
   'fraisExpeditionColis',
+  // Depuis le 16/09/2026, il dessine aussi la case du frais additionnel imprévu.
+  'fraisAdditionnelsColis',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
 
 vm.runInContext(['formatMontant', 'escapeHTML'].map(n => blocDe(common, n, 'clt-common.js')).join('\n\n'), contexte);
 
 vm.runInContext([
-  'montantsLigneHTML', 'montantsChampsHTML', 'fraisExpeditionCaseHTML', 'brancherMontants',
-  // Les deux lecteurs du bouton unique, depuis le 02/09/2026.
-  'lireMontantsDeLaCarte', 'lireFraisExpeditionDeLaCarte',
+  'montantsLigneHTML', 'montantsChampsHTML', 'fraisExpeditionCaseHTML', 'fraisAdditionnelsCaseHTML', 'brancherMontants',
+  // Les lecteurs du bouton unique, depuis le 02/09/2026 (et le frais additionnel, 16/09/2026).
+  'lireMontantsDeLaCarte', 'lireFraisExpeditionDeLaCarte', 'lireFraisAdditionnelsDeLaCarte',
 ].map(n => blocDe(livreur, n, 'livreur.html')).join('\n\n'), contexte);
 vm.runInContext(declarationDe(sourceConfig, 'FRAIS_EXPEDITION_SEUIL_CONFIRMATION', 'config.js'), contexte);
 vm.runInContext(blocDe(sourceConfig, 'fraisExpeditionAConfirmer', 'config.js'), contexte);
@@ -433,8 +435,8 @@ verifier("et il n'enregistre rien tout seul au passage",
   'un champ d\'argent ne s\'écrit jamais sans un geste voulu');
 verifier("chaque case dit à qui va l'argent",
   /Article \(à la cliente\)/.test(champsHTML) && /Livraison \(à CLT\)/.test(champsHTML));
-verifier("chaque case est nommée pour la lecture d'écran",
-  (champsHTML.match(/aria-label=/g) || []).length === 2);
+verifier("chaque case est nommée pour la lecture d'écran (les deux montants, plus le frais additionnel replié : montant et motif)",
+  (champsHTML.match(/aria-label=/g) || []).length === 4);
 
 // Chaque contrôle de structure lit LE bloc concerné, extrait par blocDe. Chercher dans la page
 // entière laisserait un commentaire mentionnant montantsLigneHTML faire passer le contrôle.
@@ -558,8 +560,8 @@ verifier('il lit et questionne AVANT d\'écrire',
    Un banc d'essai qui rejoue sa propre version du code ne teste que sa propre version. On lit
    donc ici la ligne réelle, en toutes lettres. Si l'écriture change de forme, ce contrôle
    tombera — et c'est ce qu'on veut : quelqu'un ira alors vérifier que la recopie suit. */
-verifier('les deux lectures sont bien fusionnées dans la MÊME écriture',
-  /const aEcrire = Object\.assign\(\{\}, argent\.patch \|\| \{\}, gare\.patch \|\| \{\}\);/
+verifier('les trois lectures sont bien fusionnées dans la MÊME écriture',
+  /const aEcrire = Object\.assign\(\{\}, argent\.patch \|\| \{\}, gare\.patch \|\| \{\}, additionnel\.patch \|\| \{\}\);/
     .test(carteBranchements),
   'en oublier une, c\'est revenir à deux enregistrements sans que personne le voie');
 
