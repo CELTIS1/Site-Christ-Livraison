@@ -103,3 +103,49 @@ function projectionPrimesFinDeMois(enCours, params, aujourdHui) {
   }, Object.assign({}, p, { fidelite_6_mois: 0, fidelite_12_mois: 0, fidelite_24_mois: 0 }));
 }
 
+
+/* ==========================================================================================
+   LE MOTIF D'UN ÉCHEC, ÉCRIT LÀ OÙ ON LE CHERCHE — 17 septembre 2026
+   ==========================================================================================
+   Le livreur saisit le motif depuis sa carte depuis le 13 septembre (MOTIFS_NON_LIVRAISON
+   ci-dessus), et la donnée voyage jusque dans le navigateur de la cliente. Elle n'était
+   affichée nulle part : ni sur la fiche du colis au bureau, ni chez la cliente, qui lisait
+   « Non livré » sans savoir pourquoi. C'est le premier motif d'appel au bureau, et l'inventaire
+   du 17 septembre l'a classé indispensable. Une seule fonction, partagée par les deux écrans :
+   le jour où un motif s'ajoute ou change de nom, il change partout à la fois.
+   ========================================================================================== */
+
+// Le motif en clair, avec son icône : « 🚪 Client absent ». Chaîne vide s'il n'y en a pas, ou si
+// le colis n'est pas dans un état d'échec (un motif resté d'un essai précédent ne doit pas
+// s'afficher sous un colis finalement livré).
+function motifEchecTexte(c) {
+  if (!c) return '';
+  if (c.statut !== 'non_livre' && c.statut !== 'retour') return '';
+  const cle = c.motif_non_livraison;
+  if (!cle) return '';
+  const m = MOTIFS_NON_LIVRAISON[cle];
+  return m ? (m.icon + ' ' + m.label) : String(cle);
+}
+
+/* La ligne prête à écrire dans la page. `dateISO` (non_livre_at) est dite en toutes lettres
+   quand on l'a : « depuis mardi », pas un horodatage. `avecAide` ajoute le lien pour joindre
+   CLT — utile chez la cliente, inutile au bureau, où l'on EST CLT.
+   Dépend de escapeHTML et de cltJoindreLienHTML (clt-common.js), chargés partout. */
+function motifEchecHTML(c, options) {
+  const texte = motifEchecTexte(c);
+  if (!texte) return '';
+  const o = options || {};
+  let quand = '';
+  const brut = c.non_livre_at || null;
+  if (brut) {
+    const d = new Date(brut);
+    if (!isNaN(d)) {
+      quand = ' · ' + d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+  }
+  const aide = (o.avecAide && typeof cltJoindreLienHTML === 'function')
+    ? ' ' + cltJoindreLienHTML('Un souci ? Joindre CLT')
+    : '';
+  return '<div class="motif-echec"><strong>Pourquoi :</strong> ' + escapeHTML(texte)
+    + escapeHTML(quand) + aide + '</div>';
+}

@@ -453,10 +453,16 @@ verifier(
    v136, le 17/09/2026 — le menu affiné après retour de Celtis : les trois ronds de la barre
    agrandis des deux côtés (44×44) au lieu d'un min-height qui les étirait en ovales, et le
    panneau ramené à une largeur de menu (272 px) contre le bord droit au lieu de toute la
-   largeur de l'écran (style.css) : étiquette 20260917affine. */
+   largeur de l'écran (style.css) : étiquette 20260917affine.
+   v137, le 17/09/2026 — les trois premiers points de l'inventaire : le motif d'un échec écrit là
+   où on le cherche, chez la cliente et sur la fiche du bureau (lib/primes.js, fournisseur.html,
+   equipe/03-file-hors-reseau.js) ; joindre CLT depuis l'espace cliente et depuis la page de suivi
+   publique (clt-common.js, suivi.html) ; « 🧭 Y aller » qui ouvre l'adresse dans Maps sur la carte
+   du colis et sur la tournée (lib/communes-et-tarifs.js, livreur.html) : étiquette
+   20260917pourquoi. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v136'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v137'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

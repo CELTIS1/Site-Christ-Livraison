@@ -31,6 +31,7 @@ export function colis(i, extra) {
     recupere_at: null, livre_at: null, non_livre_at: null, retour_at: null, depart_collecte_at: null,
     article_non_encaisse: false, livraison_non_encaissee: false, encaissement_remis: false, reverse_au_fournisseur_at: null,
     photo_livraison_url: null, observation: null, commune_recuperation: 'Marcory', adresse_recuperation: 'Zone 4',
+    motif_non_livraison: null, vendeuse_prevenue: false,
     cree_par: null, cree_par_role: null, reporte_au: null, a_livrer_avant: null, frais_expedition: null, frais_soldes_at: null, livraison_payee: false,
   }, extra || {});
 }
@@ -41,7 +42,9 @@ export function nouveauMonde() {
     colis(2, { statut: 'livre', recupere_at: iso(-1, 9), livre_at: iso(0, 10) }),
     colis(3, { statut: 'recupere', recupere_at: iso(0, 8), created_at: iso(0, 7) }),
     colis(4, { statut: 'en_attente', created_at: iso(0, 7) }),
-    colis(5, { statut: 'non_livre', recupere_at: iso(-1, 9), non_livre_at: iso(0, 11), observation: 'Absent' }),
+    // Un échec porte toujours son motif depuis le 13/09/2026 : le livreur le saisit avec le
+    // statut. C'est ce motif que la cliente et le bureau lisent depuis le 17/09.
+    colis(5, { statut: 'non_livre', recupere_at: iso(-1, 9), non_livre_at: iso(0, 11), observation: 'Absent', motif_non_livraison: 'client_absent', vendeuse_prevenue: true }),
     colis(6, { statut: 'livre', created_at: iso(-6, 8), recupere_at: iso(-6, 9), livre_at: iso(-5, 10), encaissement_remis: true }),
     colis(7, { statut: 'en_attente', created_at: iso(0, 7), livreur_id: null, livreur_collecte_id: null }),
   ];

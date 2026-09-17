@@ -2,6 +2,16 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917pourquoi",
+      "date": "17 septembre 2026",
+      "titre": "Pourquoi un colis n'est pas passé, joindre CLT, et « Y aller »",
+      "points": [
+        "Quand un colis n'est pas livré, le motif saisi par le livreur s'affiche maintenant chez la cliente et sur la fiche du colis au bureau, avec le jour : « Pourquoi : 🚪 Client absent · jeudi 17 septembre ».",
+        "La cliente peut joindre CLT depuis son menu (appel ou WhatsApp), et le destinataire depuis la page de suivi — le message WhatsApp part déjà rempli avec le numéro du colis.",
+        "Le livreur a un bouton « 🧭 Y aller » sur la carte de chaque colis et sur chaque ligne de sa tournée : l'adresse s'ouvre dans Maps, il n'a plus à la recopier."
+      ]
+    },
+    {
       "version": "20260917affine",
       "date": "17 septembre 2026",
       "titre": "Le menu ☰ affiné",

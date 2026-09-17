@@ -230,6 +230,11 @@ titre('3. La carte d’un colis chez la vendeuse (fonction réellement exécuté
     poser(bloc('formatMontant', commun, 'clt-common.js'));
     poser(bloc('getInitials', commun, 'clt-common.js'));
     poser(objet('const STATUTS = {', config, 'config.js'));
+    // Le motif d'échec s'affiche sur la carte depuis le 17/09/2026 (lib/primes.js), avec le lien
+    // « Joindre CLT » (clt-common.js) : la carte ne se construit plus sans eux.
+    poser(objet('const MOTIFS_NON_LIVRAISON = {', config, 'lib/primes.js'));
+    poser(commun.match(/const CLT_CONTACT = \{[\s\S]*?\n\};/)[0]);
+    poser(bloc('cltJoindreLienHTML', commun, 'clt-common.js'));
     poser(config.match(/const COMMUNE_EXPEDITION = [^;]+;/)[0]);
     for (const f of ['avatarHTML', 'colisDescriptionTexte', 'colisNumeroClientHTML',
                      'estExpedition', 'colisDestinationTexte', 'colisDestinationHTML', 'colisADetailMontant',
@@ -240,7 +245,8 @@ titre('3. La carte d’un colis chez la vendeuse (fonction réellement exécuté
                      // que le banc dise « le libellé est écrit deux fois » et non qu'il s'arrête
                      // sur un « statutBadgeHTML is not defined » que personne ne saura relier au
                      // vrai problème. Un contrôle qui plante ne se lit pas ; il se contourne.
-                     'statutBadgeHTML']) {
+                     'statutBadgeHTML',
+                     'motifEchecTexte', 'motifEchecHTML']) {
       poser(bloc(f, config, 'config.js'));
     }
     poser(fournisseur.match(/const COLIS_ADRESSE_CORRIGEABLE = \[[^\]]*\];/)[0]);

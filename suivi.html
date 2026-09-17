@@ -128,6 +128,23 @@
   .live-indicator{
     display:flex; align-items:center; gap:8px; margin-top:18px; font-size:12.5px; color:var(--muted);
   }
+  /* Joindre CLT (17/09/2026). Posé après le résultat, jamais au-dessus : le destinataire vient
+     d'abord voir où est son colis ; le contact ne sert qu'ensuite, quand la réponse ne lui suffit
+     pas. Deux liens de 44 px, comme partout ailleurs dans la maison. */
+  .bloc-contact{
+    margin-top:18px; padding-top:16px; border-top:1px solid var(--section-tint);
+  }
+  .bloc-contact-titre{
+    font-size:13px; font-weight:600; color:var(--muted); margin-bottom:10px;
+  }
+  .bloc-contact-liens{ display:flex; flex-wrap:wrap; gap:10px; }
+  .contact-lien{
+    display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 18px;
+    border-radius:999px; border:1.5px solid var(--navy); color:var(--navy);
+    font-size:14px; font-weight:600; text-decoration:none; background:var(--white);
+    transition:background .15s ease, color .15s ease;
+  }
+  .contact-lien:hover{ background:var(--navy); color:var(--white); }
   .live-dot{
     width:8px; height:8px; border-radius:50%; background:#1a7d3c; flex-shrink:0;
     animation:live-pulse 1.6s ease-in-out infinite;
@@ -406,7 +423,29 @@
         <span class="live-dot"></span>
         Actualisation automatique active — dernière vérification à ${heure}
       </div>
+      ${blocContactHTML(data.numero || '')}
     `;
+  }
+
+  /* Joindre CLT depuis la page de suivi (17/09/2026). Le destinataire qui voit « Non livré »
+     n'avait personne à appeler : aucun numéro CLT ne figurait sur cette page, et le message
+     d'erreur disait « contactez-nous » sans dire comment. Les deux numéros sont ceux du site
+     public ; ils sont aussi dans app/clt-common.js (CLT_CONTACT) — cette page est publique et
+     ne charge aucun script de l'application, d'où cette copie, à garder d'accord avec l'autre. */
+  const CLT_TEL = '+2250711138693';
+  const CLT_WHATSAPP = '2250546818640';
+  function blocContactHTML(numero) {
+    const message = numero
+      ? "Bonjour CLT, j'ai une question sur le colis " + numero + "."
+      : "Bonjour CLT, j'ai une question sur un colis.";
+    return `
+      <div class="bloc-contact">
+        <div class="bloc-contact-titre">Une question sur ce colis ?</div>
+        <div class="bloc-contact-liens">
+          <a class="contact-lien" href="tel:${CLT_TEL}">📞 Appeler CLT</a>
+          <a class="contact-lien" href="https://wa.me/${CLT_WHATSAPP}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">🟢 WhatsApp</a>
+        </div>
+      </div>`;
   }
 
   let currentChiffres = '';
@@ -442,7 +481,7 @@
     btn.textContent = "Rechercher";
 
     if (error || !data) {
-      resultBox.innerHTML = `<div class="msg-notfound">Aucun colis ne correspond à ce numéro. Vérifiez qu'il est correctement saisi, ou contactez-nous si le problème persiste.</div>`;
+      resultBox.innerHTML = `<div class="msg-notfound">Aucun colis ne correspond à ce numéro. Vérifiez qu'il est correctement saisi, ou joignez-nous si le problème persiste.</div>${blocContactHTML('')}`;
       return;
     }
 

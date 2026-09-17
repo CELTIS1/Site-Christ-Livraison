@@ -1653,3 +1653,54 @@ function cltBrancherFiltreListe(champ, liste, options) {
   }
   appliquer();
 }
+
+/* ==========================================================================================
+   JOINDRE CLT — 17 septembre 2026
+   ==========================================================================================
+   L'inventaire du 17 septembre a trouvé qu'aucun numéro de CLT n'était joignable depuis
+   l'espace de la cliente ni depuis la page de suivi que voit le destinataire : le seul numéro
+   affiché était celui du livreur, et seulement une fois qu'un livreur était assigné. Quelqu'un
+   qui a un problème avec son colis n'avait donc personne à appeler.
+
+   Les deux numéros sont ceux déjà publiés sur le site (page Contact et accueil) : on ne fait
+   pas connaître un troisième numéro au public. Ils sont écrits ici, une seule fois pour toute
+   l'application ; la page suivi.html, qui est publique et ne charge aucun script de l'app,
+   porte sa propre copie — les deux doivent rester d'accord.
+   ========================================================================================== */
+const CLT_CONTACT = {
+  tel: '+2250711138693',      // appel : 07 11 13 86 93
+  whatsapp: '2250546818640',  // WhatsApp : 05 46 81 86 40
+};
+
+// Le lien d'appel, en toutes lettres.
+function cltJoindreLienHTML(libelle) {
+  return '<a class="clt-joindre" href="tel:' + CLT_CONTACT.tel + '">📞 '
+    + escapeHTML(libelle || 'Joindre CLT') + '</a>';
+}
+
+/* Les deux boutons côte à côte : appeler, ou écrire sur WhatsApp. `message` pré-remplit le
+   message WhatsApp (le numéro du colis, par exemple) pour que la personne n'ait rien à taper
+   et que l'équipe sache tout de suite de quel colis on parle. */
+function cltContactBoutonsHTML(message) {
+  const wa = 'https://wa.me/' + CLT_CONTACT.whatsapp
+    + (message ? '?text=' + encodeURIComponent(message) : '');
+  return '<div class="clt-contact">'
+    + '<a class="btn btn-outline btn-sm" href="tel:' + CLT_CONTACT.tel + '">📞 Appeler CLT</a>'
+    + '<a class="btn btn-outline btn-sm" href="' + wa + '" target="_blank" rel="noopener">🟢 WhatsApp CLT</a>'
+    + '</div>';
+}
+
+/* Les liens « Appeler CLT » / « Écrire sur WhatsApp » posés dans un menu : la page écrit les
+   deux entrées, celle-ci leur donne leur adresse. Ainsi les numéros ne sont écrits qu'à un seul
+   endroit (CLT_CONTACT ci-dessus), et un espace qui veut ces entrées n'a qu'à reprendre les
+   deux identifiants. Se branche seule au chargement. */
+function cltBrancherContact() {
+  const tel = document.getElementById('lien-appeler-clt');
+  if (tel) tel.setAttribute('href', 'tel:' + CLT_CONTACT.tel);
+  const wa = document.getElementById('lien-whatsapp-clt');
+  if (wa) wa.setAttribute('href', 'https://wa.me/' + CLT_CONTACT.whatsapp);
+}
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cltBrancherContact);
+  else cltBrancherContact();
+}

@@ -2841,3 +2841,36 @@ html[data-theme="dark"] .restes-en-route{ background:#2a2114; }
 @media(max-width:760px){
   .settings-menu-btn, .theme-toggle--entete, .clt-actualiser{ width:44px; height:44px; }
 }
+
+/* ---------- POURQUOI UN COLIS N'EST PAS PASSÉ, ET COMMENT JOINDRE CLT (17/09/2026) ----------
+   Le motif d'échec est saisi par le livreur depuis le 13 septembre et n'était affiché nulle
+   part : la cliente lisait « Non livré » sans explication et appelait le bureau, qui ne le
+   voyait pas non plus sur la fiche du colis. Il se lit maintenant aux deux endroits, dans le
+   même encadré — assez marqué pour être vu, assez sobre pour ne pas crier : c'est une
+   information, pas une alarme. */
+.motif-echec{
+  margin-top:8px; padding:8px 12px; border-radius:10px;
+  background:#FDF3EC; border-left:3px solid var(--orange, #E26313);
+  font-size:13.5px; line-height:1.5; color:#1E2A38;
+}
+.motif-echec strong{ color:#9A4A12; }
+html[data-theme="dark"] .motif-echec{ background:#2E2116; color:#E6ECF3; }
+html[data-theme="dark"] .motif-echec strong{ color:#F0A868; }
+
+/* Le lien « Joindre CLT », posé à la suite du motif chez la cliente : c'est le moment précis
+   où elle en a besoin. Il ne s'affiche pas au bureau — là, c'est nous. */
+.clt-joindre{
+  /* 44 px, la règle de la maison : c'est un lien qu'on touche du pouce, sur un téléphone,
+     au moment où l'on a un problème. */
+  display:inline-flex; align-items:center; min-height:44px; margin-left:8px;
+  font-weight:600; color:var(--navy, #1B4374); text-decoration:underline;
+  text-underline-offset:2px; white-space:nowrap;
+}
+html[data-theme="dark"] .clt-joindre{ color:#9DB8DA; }
+
+.clt-contact{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+
+/* « 🧭 Y aller » : le bouton qui ouvre l'adresse dans Maps, sur la carte d'un colis et sur la
+   tournée de récupération. Même mesure que les autres boutons de la carte. */
+.clt-aller{ white-space:nowrap; }
+.tournee-lieu + .clt-aller{ margin-top:6px; }

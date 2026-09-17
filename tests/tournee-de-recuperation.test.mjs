@@ -155,6 +155,9 @@ vm.runInContext([
      produit des lignes que libelleAnnonceRecuperation() met en mots pour les deux écrans. Sans
      elles ici, le banc s'arrêterait au lieu de rougir. */
   'nombreAnnonceOuNull', 'libelleAnnonceRecuperation', 'libelleAnnoncePosee', 'libelleColisPris',
+  /* « 🧭 Y aller », posé sur chaque ligne de tournée depuis le 17/09/2026 (lib/communes-et-tarifs.js) :
+     le dessin l'appelle, donc elle entre ici — sinon le banc s'arrête au lieu de rougir. */
+  'adresseARechercher', 'lienCarteHTML', 'boutonCarteHTML',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
 vm.runInContext('const HORODATAGE_DU_STATUT = ' + JSON.stringify({
   recupere: 'recupere_at', livre: 'livre_at', non_livre: 'non_livre_at', retour: 'retour_at',

@@ -358,3 +358,55 @@ function brancherPrecisionExpedition(selectCommune, champPrecision) {
   maj();
 }
 
+
+/* ==========================================================================================
+   OUVRIR L'ADRESSE DANS UNE CARTE — 17 septembre 2026
+   ==========================================================================================
+   Jusqu'ici l'application n'avait aucun lien de navigation : le livreur lisait l'adresse sur
+   sa carte, puis la recopiait à la main dans Maps, colis après colis. L'inventaire du
+   17 septembre l'a classé indispensable — c'est du temps perdu à chaque livraison.
+
+   Un seul bouton, vers Google Maps : c'est l'application que tout le monde a, et le lien
+   `maps/search` ouvre l'application installée sur Android comme sur iPhone plutôt que le
+   navigateur. Les adresses d'Abidjan sont des phrases, pas des coordonnées (« Cocody, Angré
+   7e tranche, pharmacie du carrefour ») : on ne prétend donc pas guider au mètre près, on
+   amène le livreur dans le bon quartier, ce qu'il ne pouvait pas faire sans recopier.
+   « Abidjan » est ajouté à la recherche quand il n'y est pas, sinon Maps propose des rues
+   homonymes à l'autre bout du monde.
+   ========================================================================================== */
+
+// L'adresse telle qu'on la donne à la carte, ou "" si on n'a rien d'exploitable.
+function adresseARechercher(texte) {
+  const t = String(texte || '').trim();
+  if (!t) return '';
+  return /abidjan|côte d'ivoire|cote d'ivoire/i.test(t) ? t : t + ', Abidjan, Côte d\'Ivoire';
+}
+
+// Le lien de recherche, ou "" s'il n'y a pas d'adresse.
+function lienCarteHTML(texte) {
+  const q = adresseARechercher(texte);
+  return q ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q) : '';
+}
+
+/* Le bouton, prêt à poser sur une carte de colis ou une ligne de tournée. Rend "" quand on n'a
+   pas d'adresse : un bouton qui ouvre une carte vide vaut moins que pas de bouton du tout.
+   Une expédition n'en a pas non plus — la destination y est une ville, pas une adresse, et le
+   colis part par la gare. */
+function boutonCarteHTML(texte, libelle) {
+  const commune = String(texte || '').trim();
+  if (typeof estExpedition === 'function' && estExpedition(commune)) return '';
+  const lien = lienCarteHTML(commune);
+  if (!lien) return '';
+  return '<a class="btn btn-outline btn-sm clt-aller" href="' + lien + '" target="_blank" rel="noopener"'
+    + ' title="Ouvrir l\'adresse dans Maps">🧭 ' + escapeHTML(libelle || 'Y aller') + '</a>';
+}
+
+// Pour un colis : la destination complète (commune + précision), telle qu'elle est affichée.
+function boutonCarteColisHTML(c) {
+  if (!c) return '';
+  if (typeof estExpedition === 'function' && estExpedition(c.commune_destination)) return '';
+  const parts = [String(c.destination || '').trim(), String(c.commune_destination || '').trim()]
+    .filter(Boolean);
+  if (!parts.length) return '';
+  return boutonCarteHTML(parts.join(', '), 'Y aller');
+}

@@ -633,6 +633,12 @@ ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${livreurLine}
 ${(Number(c.tentatives_livraison) || 0) > 0 ? `<div class="meta" style="color:#c0392b; font-weight:600;">🔁 Tentative(s) de livraison : ${Number(c.tentatives_livraison)}</div>` : ''}
+<!-- Pourquoi le colis n'est pas passé (17/09/2026). Le motif est saisi par le livreur depuis le
+     13 septembre, mais il ne se lisait que dans l'onglet Livreurs, sur l'écran des échecs à
+     qualifier. Au téléphone avec une cliente, on est ici, sur la fiche du colis : le motif doit
+     y être. Même fonction que chez la cliente (lib/primes.js), sans le lien « Joindre CLT » —
+     ici, c'est nous. -->
+${motifEchecHTML(c)}
 ${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · <span title="Ce que le destinataire remet en main propre : l'article de la cliente plus nos frais. Ce n'est pas un chiffre d'affaires.">Le destinataire remet : ${formatMontant(montantTotalColis(c)) || '0 FCFA'}</span> ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}

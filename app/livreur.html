@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917affine">
-<script src="theme.js?v=20260917affine"></script>
-<script src="splash.js?v=20260917affine"></script>
+<link rel="stylesheet" href="style.css?v=20260917pourquoi">
+<script src="theme.js?v=20260917pourquoi"></script>
+<script src="splash.js?v=20260917pourquoi"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -896,18 +896,18 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917affine"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917affine"></script>
-<script src="lib/argent.js?v=20260917affine"></script>
-<script src="lib/releve-cliente.js?v=20260917affine"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917affine"></script>
-<script src="lib/briques-argent.js?v=20260917affine"></script>
-<script src="lib/annonce-de-remise.js?v=20260917affine"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917affine"></script>
-<script src="lib/primes.js?v=20260917affine"></script>
-<script src="lib/doublons.js?v=20260917affine"></script>
-<script src="config.js?v=20260917affine"></script>
-<script src="biometric-lock.js?v=20260917affine"></script>
+<script src="clt-common.js?v=20260917pourquoi"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917pourquoi"></script>
+<script src="lib/argent.js?v=20260917pourquoi"></script>
+<script src="lib/releve-cliente.js?v=20260917pourquoi"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917pourquoi"></script>
+<script src="lib/briques-argent.js?v=20260917pourquoi"></script>
+<script src="lib/annonce-de-remise.js?v=20260917pourquoi"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917pourquoi"></script>
+<script src="lib/primes.js?v=20260917pourquoi"></script>
+<script src="lib/doublons.js?v=20260917pourquoi"></script>
+<script src="config.js?v=20260917pourquoi"></script>
+<script src="biometric-lock.js?v=20260917pourquoi"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2113,7 +2113,11 @@
     // bouton qu'au bureau (boutonAppelFournisseurHTML, config.js). Plus rien dans les en-têtes de
     // groupe : Celtis, 10/09/2026, « que ce soit identique partout ».
     const lienFournisseur = boutonAppelFournisseurHTML(c.fournisseur_id ? profilesById[c.fournisseur_id] : null);
-    return `<div class="colis-tel-ligne">${lien}<button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button>${lienFournisseur}</div>`;
+    // « 🧭 Y aller » ouvre l'adresse dans Maps (17/09/2026). Avant, le livreur lisait l'adresse
+    // ici puis la recopiait à la main dans une autre application, à chaque colis. Le bouton ne
+    // s'affiche pas sur une expédition ni sans adresse (boutonCarteColisHTML, lib/communes-et-tarifs.js).
+    const lienCarte = boutonCarteColisHTML(c);
+    return `<div class="colis-tel-ligne">${lien}<button type="button" class="btn btn-outline btn-sm btn-notify-wa" title="Prévenir le destinataire sur WhatsApp">🟢 Prévenir sur WhatsApp</button>${lienCarte}${lienFournisseur}</div>`;
   }
 
   /* La description et, en petit gris à sa suite, le numéro de suivi : une ligne au lieu de
@@ -4059,9 +4063,12 @@
       <div class="tournee-carte ${classe}${enRoute ? ' tournee-carte--route' : ''}">
         <div class="tournee-nom">${escapeHTML(l.clienteNom)}${l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : ''}${enRoute ? `<span class="tournee-marque tournee-marque--route">en route</span>` : ''}</div>
         <!-- Le lieu vient de libelleLieuRecuperation(), dans config.js, comme au bureau : une
-             seule phrase pour un seul lieu. Ici elle reste une phrase, pas un geste — c'est le
-             bureau qui tient les fiches des clientes, le livreur qui roule. (29/08/2026) -->
+             seule phrase pour un seul lieu. La phrase reste une phrase — le bureau tient les
+             fiches des clientes (29/08/2026) — mais depuis le 17/09/2026 elle porte « 🧭 Y aller »
+             quand on a une adresse : le livreur la recopiait à la main dans Maps avant chaque
+             tournée. -->
         <div class="tournee-lieu${communeRecuperationManquante(l.commune) ? ' tournee-lieu--manquant' : ''}">📍 ${escapeHTML(libelleLieuRecuperation(l.commune, l.adresse))}</div>
+        ${boutonCarteHTML([l.adresse, l.commune].filter(Boolean).join(', '), 'Y aller')}
         ${l.note ? `<div class="tournee-note">📝 ${escapeHTML(l.note)}</div>` : ''}
         <div class="tournee-compte">
           ${l.rienARecuperer
