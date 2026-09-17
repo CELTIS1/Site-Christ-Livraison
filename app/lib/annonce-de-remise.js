@@ -621,19 +621,8 @@ function colisRestesEnRoute(colis, jour) {
   });
 }
 
-function tourneeTuilesHTML(colis) {
-  const liste = colis || [];
-  const n = s => liste.filter(c => c.statut === s).length;
-  return [
-    { label: 'Pas encore pris', count: n('en_attente'), color: STATUTS.en_attente.color, bg: STATUTS.en_attente.bg },
-    { label: 'En cours',    count: n('recupere') + n('en_livraison'), color: STATUTS.en_livraison.color, bg: STATUTS.en_livraison.bg },
-    { label: 'Livrés',      count: n('livre'), color: STATUTS.livre.color, bg: STATUTS.livre.bg },
-    { label: 'Non livrés',  count: n('non_livre'), color: STATUTS.non_livre.color, bg: STATUTS.non_livre.bg },
-  ].map(b => `
-      <div style="flex:1; min-width:70px; text-align:center; background:${b.bg}; border-radius:10px; padding:8px 6px;">
-        <div style="font-size:20px; font-weight:700; color:${b.color}; line-height:1;">${b.count}</div>
-        <div style="font-size:11px; color:${b.color}; margin-top:3px;">${b.label}</div>
-      </div>
-    `).join('');
-}
+/* Les tuiles de la journée ont déménagé dans app/lib/vocabulaire-de-la-journee.js
+   (point 9.4, 17/09/2026) : le mot et les statuts qu'il recouvre sont désormais écrits une
+   seule fois, pour le livreur comme pour la cliente. tourneeTuilesHTML() existe toujours, là-bas,
+   et n'y fait plus que déléguer. */
 

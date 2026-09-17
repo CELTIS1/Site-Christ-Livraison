@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917alleger">
-<script src="theme.js?v=20260917alleger"></script>
-<script src="splash.js?v=20260917alleger"></script>
+<link rel="stylesheet" href="style.css?v=20260917memesmots">
+<script src="theme.js?v=20260917memesmots"></script>
+<script src="splash.js?v=20260917memesmots"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -485,22 +485,23 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917alleger"></script>
-<script src="lib/bibliotheques.js?v=20260917alleger"></script>
-<script src="lib/retours.js?v=20260917alleger"></script>
-<script src="lib/reclamations.js?v=20260917alleger"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917alleger"></script>
-<script src="lib/argent.js?v=20260917alleger"></script>
-<script src="lib/releve-cliente.js?v=20260917alleger"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917alleger"></script>
-<script src="lib/briques-argent.js?v=20260917alleger"></script>
-<script src="lib/annonce-de-remise.js?v=20260917alleger"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917alleger"></script>
-<script src="lib/primes.js?v=20260917alleger"></script>
-<script src="lib/doublons.js?v=20260917alleger"></script>
-<script src="config.js?v=20260917alleger"></script>
-<script src="biometric-lock.js?v=20260917alleger"></script>
-<script src="clt-select-recherche.js?v=20260917alleger"></script>
+<script src="clt-common.js?v=20260917memesmots"></script>
+<script src="lib/bibliotheques.js?v=20260917memesmots"></script>
+<script src="lib/retours.js?v=20260917memesmots"></script>
+<script src="lib/reclamations.js?v=20260917memesmots"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917memesmots"></script>
+<script src="lib/argent.js?v=20260917memesmots"></script>
+<script src="lib/releve-cliente.js?v=20260917memesmots"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917memesmots"></script>
+<script src="lib/briques-argent.js?v=20260917memesmots"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260917memesmots"></script>
+<script src="lib/annonce-de-remise.js?v=20260917memesmots"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917memesmots"></script>
+<script src="lib/primes.js?v=20260917memesmots"></script>
+<script src="lib/doublons.js?v=20260917memesmots"></script>
+<script src="config.js?v=20260917memesmots"></script>
+<script src="biometric-lock.js?v=20260917memesmots"></script>
+<script src="clt-select-recherche.js?v=20260917memesmots"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2583,17 +2584,14 @@
     if (!dateInput.value) dateInput.value = todayLocalISODate();
     const jour = dateInput.value;
     const duJour = mesColis.filter(c => jourDuColis(c) === jour);
-    const n = (st) => duJour.filter(c => c.statut === st).length;
-    const buckets = [
-      // « En attente » ajouté le 09/09/2026 : un colis déposé et pas encore pris affichait quatre
-      // zéros sous « 1 colis enregistré ». Il est quelque part ; la tuile le dit.
-      { label:'En attente', count:n('en_attente'), color:STATUTS.en_attente.color, bg:STATUTS.en_attente.bg },
-      { label:'Récupérés', count:n('recupere'), color:STATUTS.recupere.color, bg:STATUTS.recupere.bg },
-      { label:'En cours', count:n('en_livraison'), color:STATUTS.en_livraison.color, bg:STATUTS.en_livraison.bg },
-      { label:'Livrés', count:n('livre'), color:STATUTS.livre.color, bg:STATUTS.livre.bg },
-      { label:'Non livrés', count:n('non_livre'), color:STATUTS.non_livre.color, bg:STATUTS.non_livre.bg },
-    ];
-    cltPoserHTML(box, buckets.map(b => `<div style="flex:1; min-width:70px; text-align:center; background:${b.bg}; border-radius:10px; padding:8px 6px;"><div style="font-size:20px; font-weight:700; color:${b.color}; line-height:1;">${b.count}</div><div style="font-size:11px; color:${b.color}; margin-top:3px;">${b.label}</div></div>`).join(''));
+    // 17/09/2026, point 9.4 : ces cinq tuiles étaient recopiées ici, avec leurs statuts écrits
+    // à la main, et l'une d'elles s'appelait « En cours » alors qu'elle ne comptait que les
+    // colis en livraison — pendant que « En cours » désignait deux autres ensembles chez le
+    // livreur. Elle porte maintenant le mot du référentiel, « En livraison », et le découpage
+    // vient de lib/vocabulaire-de-la-journee.js, écrit une seule fois pour les trois écrans.
+    // (« En attente » avait été ajoutée le 09/09/2026 : un colis déposé et pas encore pris
+    //  affichait quatre zéros sous « 1 colis enregistré ». Il est quelque part ; la tuile le dit.)
+    cltPoserHTML(box, tuilesDuJourHTML(duJour, 'cliente'));
 
     const libelle = document.getElementById('colis-jour-libelle');
     if (libelle) {

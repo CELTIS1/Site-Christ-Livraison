@@ -20,7 +20,11 @@ await N.ouvrirConnecte('livreur.html', LIVREUR);
 verifier('la page est ouverte sans erreur', erreurs.length === 0 && /livreur\.html/.test(page.url()), erreurs.join('\n       '));
 verifier('« Ma journée » est le filtre actif', /Ma journée/.test(await page.locator('.filter-chip.active').first().innerText().catch(() => '')));
 const t0 = await tuiles();
-verifier('les tuiles disent l\'état du jour : 1 pas encore pris, 1 en cours, 1 livré, 1 non livré', /1 Pas encore pris/.test(t0) && /1 En cours/.test(t0) && /1 Livrés?/.test(t0) && /1 Non livrés?/.test(t0), t0);
+/* « En cours » est devenu « En route » le 17/09/2026 (point 9.4) : le même mot recouvrait
+   trois ensembles différents — récupéré + en livraison sur cette tuile, en livraison seule
+   chez la cliente, et en attente + récupéré + en livraison sur la ligne de résumé juste
+   au-dessus des tuiles, sur le même écran. */
+verifier('les tuiles disent l\'état du jour : 1 pas encore pris, 1 en route, 1 livré, 1 non livré', /1 Pas encore pris/.test(t0) && /1 En route/.test(t0) && /1 Livrés?/.test(t0) && /1 Non livrés?/.test(t0), t0);
 verifier('la carte du colis n°3 (récupéré ce matin) est là', await carte(COLIS3.id).count() === 1);
 
 titre('2. « Je pars livrer » : un seul geste');
@@ -31,7 +35,7 @@ await dodo(1800);
 let ecrit = monde.journal.find(j => j.table === 'colis' && j.op === 'update' && j.valeurs && j.valeurs.statut === 'en_livraison' && j.ids.includes(COLIS3.id));
 verifier('la base a reçu « en_livraison » pour ce colis', !!ecrit, JSON.stringify(monde.journal.slice(-3)));
 verifier('la carte est toujours là et son bouton dit maintenant « Livré »', (await carte(COLIS3.id).count()) === 1 && /Livré/.test(await carte(COLIS3.id).locator('.btn-etape-principale').innerText()), await carte(COLIS3.id).locator('.btn-etape-principale').innerText().catch(() => 'pas de bouton'));
-verifier('les tuiles n\'ont pas bougé : récupéré ou en livraison, c\'est toujours « 1 En cours »', /1 En cours/.test(await tuiles()) && /1 Livrés?/.test(await tuiles()), await tuiles());
+verifier('les tuiles n\'ont pas bougé : récupéré ou en livraison, c\'est toujours « 1 En route »', /1 En route/.test(await tuiles()) && /1 Livrés?/.test(await tuiles()), await tuiles());
 
 titre('3. « Livré » : l\'argent est compté, le destinataire peut être prévenu');
 await carte(COLIS3.id).locator('.btn-etape-principale').click();

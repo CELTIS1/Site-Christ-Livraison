@@ -138,6 +138,9 @@ vm.runInContext(constanteTexteDe(sourceConfig, 'LIBELLE_FRAIS_COURSE'), contexte
 // libelleStatut() consulte cette table pour dire « Expédié » au lieu de « Livré ».
 vm.runInContext(blocConstante(sourceConfig, 'STATUTS_EXPEDITION', 'config.js').replace(/^const /, 'var '), contexte);
 vm.runInContext(blocConstante(sourceConfig, 'STATUTS', 'config.js').replace(/^const /, 'var '), contexte);
+// Les groupes affichés (lib/vocabulaire-de-la-journee.js) : compterLeJour les lit.
+vm.runInContext(sourceConfig.slice(sourceConfig.indexOf('const GROUPES_DU_JOUR'),
+  sourceConfig.indexOf('\n};', sourceConfig.indexOf('const GROUPES_DU_JOUR')) + 3).replace(/^const /, 'var '), contexte);
 
 vm.runInContext([
   'estExpedition',
@@ -174,6 +177,10 @@ vm.runInContext([
   'financeTableauHTML',
   'argentClienteLigneHTML',
   'releveClienteTuilesHTML',
+  // 17/09/2026, point 9.4 : tourneeTuilesHTML ne fait plus que déléguer au découpage du
+  // livreur ; le mot et les statuts qu'il recouvre sont dans compterLeJour/tuilesDuJourHTML.
+  'compterLeJour',
+  'tuilesDuJourHTML',
   'tourneeTuilesHTML',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexte);
 
@@ -617,9 +624,13 @@ verifier("aucune tuile de livraison n'emploie le verbe « récupérer »",
   !/récupér/i.test(tuilesTournee),
   "ce verbe appartient à la tournée de collecte ; partagé, il fait dire à un écran deux choses à la fois");
 
+/* « En cours » est devenu « En route » le 17/09/2026 (point 9.4). Le même mot recouvrait
+   trois ensembles différents : récupéré + en livraison sur cette tuile, en livraison seule
+   chez la cliente, et en attente + récupéré + en livraison sur la ligne de résumé juste
+   au-dessus. « En route » ne désigne plus qu'ici, et « En livraison » que chez la cliente. */
 verifier("les quatre tuiles comptent juste sur ce décor",
   />2<\/div>[\s\S]*Pas encore pris/.test(tuilesTournee)
-  && />2<\/div>[\s\S]*En cours/.test(tuilesTournee)
+  && />2<\/div>[\s\S]*En route/.test(tuilesTournee)
   && />3<\/div>[\s\S]*Livrés/.test(tuilesTournee)
   && />1<\/div>[\s\S]*Non livrés/.test(tuilesTournee),
   tuilesTournee);

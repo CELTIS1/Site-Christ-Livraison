@@ -60,7 +60,13 @@ titre('2.5 · Le haut de page');
   verifier('« Ma journée » est un repli (<details>) dont la ligne de titre porte les chiffres et l\'argent en main',
     /<details class="card journee-card journee-repli" id="ma-journee-card"/.test(livreur) && /<summary class="journee-resume" id="ma-journee-resume">/.test(livreur) && /id="journee-resume-chiffres"/.test(livreur) && /<span class="journee-resume__main" id="journee-en-main">/.test(livreur));
   const resume = blocDe(livreur, 'renderTourneeSummary');
-  verifier('la ligne dit « n en cours · n livrés » (+ non livrés s\'il y en a, + le jour s\'il n\'est pas aujourd\'hui)', /`\$\{enCours\} en cours`/.test(resume) && /non livré/.test(resume) && /jour !== todayLocalISODate\(\) \? jourEnClairCourt\(jour\)/.test(resume));
+  /* 17/09/2026, point 9.4 : cette ligne recomptait de son côté et ajoutait en_attente à
+     « en cours » — les tuiles disaient « 1 pas encore pris · 1 en cours », elle disait « 2 en
+     cours ». Elle ne compte plus : elle lit le même tableau que les tuiles. C'est ce qu'on
+     vérifie ici, et le texte lui-même est éprouvé dans tests/le-meme-mot.test.mjs. */
+  verifier('la ligne ne recompte plus : elle lit le même tableau que les tuiles (resumeDuJourTexte)',
+    /resumeDuJourTexte\(duJour\)/.test(resume) && !/en cours`/.test(resume));
+  verifier('elle dit le jour quand ce n\'est pas aujourd\'hui', /jour !== todayLocalISODate\(\) \? jourEnClairCourt\(jour\)/.test(resume));
   verifier('l\'argent en main est dans la ligne (« 💵 12 500 FCFA en main »)', /en main`\)/.test(blocDe(livreur, 'renderEnMainLigne')));
   verifier('le repli se souvient de son état sur l\'appareil', /clt:livreur:journee-ouverte/.test(livreur));
   // Les pastilles

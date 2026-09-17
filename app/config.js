@@ -2876,6 +2876,11 @@ function couvertureDuJourTexte(resultat) {
 
 /* BRIQUES D'AFFICHAGE DE L'ARGENT  : depuis le 16/09/2026 (feuille de route 4.8), ce bloc vit dans app/lib/briques-argent.js, chargé avant ce fichier. Rien n'a changé de nom. */
 
+/* LE MÊME MOT POUR LA MÊME CHOSE : les groupes affichés sur la journée — leur libellé et les
+   statuts qu'ils recouvrent — sont dans app/lib/vocabulaire-de-la-journee.js (point 9.4,
+   17/09/2026). STATUTS ci-dessus reste la source unique des statuts eux-mêmes ; ce fichier-là
+   dit seulement comment on les regroupe à l'écran, et sous quel mot. */
+
 /* L'ANNONCE DE REMISE DU LIVREUR  : depuis le 16/09/2026 (feuille de route 4.8), ce bloc vit dans app/lib/annonce-de-remise.js, chargé avant ce fichier. Rien n'a changé de nom. */
 
 // ---------- Photo de profil (avatar) ----------

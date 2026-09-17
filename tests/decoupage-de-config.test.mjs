@@ -39,6 +39,9 @@ const BLOCS = [
   { fichier: 'lib/releve-cliente.js', reperes: ['releveCliente'], constantes: [] },
   { fichier: 'lib/papier-a-en-tete.js', reperes: ['styleTableauCLT', 'feuilleCLT', 'logoCLT'], constantes: ['PAPIER_CLT'] },
   { fichier: 'lib/briques-argent.js', reperes: ['caisseEnMainHTML', 'accordRemiseHTML'], constantes: [] },
+  // Point 9.4 (17/09/2026) : le mot et les statuts qu'il recouvre, écrits une seule fois pour
+  // les trois écrans. Doit être chargé avant annonce-de-remise.js, qui n'a plus les tuiles.
+  { fichier: 'lib/vocabulaire-de-la-journee.js', reperes: ['compterLeJour', 'tuilesDuJourHTML', 'tourneeTuilesHTML', 'resumeDuJourTexte'], constantes: ['GROUPES_DU_JOUR'] },
   { fichier: 'lib/annonce-de-remise.js', reperes: [], constantes: [] },
   { fichier: 'lib/tournee-de-recuperation.js', reperes: ['lieuRecuperationPourNouveauColis'], constantes: [] },
   { fichier: 'lib/primes.js', reperes: ['calculerPrimesLivreur', 'projectionPrimesFinDeMois'], constantes: ['PRIMES_DEBUT', 'PRIMES_PARAMETRES_DEFAUT'] },

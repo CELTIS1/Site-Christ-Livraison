@@ -530,10 +530,16 @@ verifier(
    boutons d'export ; ils ne viennent plus qu'au clic, par lib/bibliotheques.js. Défaut trouvé
    en vérifiant dans un navigateur : une balise refusée restait dans la page et le deuxième
    appel ne se dénouait jamais — le bouton restait sur « Préparation… ». Code mort retiré côté
-   équipe, dont deux alias : étiquette 20260917alleger. */
+   équipe, dont deux alias : étiquette 20260917alleger.
+   v151, le 17/09/2026 — point 9.4 : le même mot pour la même chose. « En cours » recouvrait
+   trois ensembles, dont deux sur la même carte (tuiles « 1 pas encore pris · 1 en cours »,
+   ligne « 2 en cours »). Les groupes affichés, leur libellé et leurs statuts sont désormais
+   écrits une seule fois (lib/vocabulaire-de-la-journee.js) : « En route » chez le livreur,
+   « En livraison » chez la cliente. Les deux calendriers de l'écran du livreur n'en font plus
+   qu'un, et un colis revenu apparaît enfin dans sa journée : étiquette 20260917memesmots. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v150'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v151'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

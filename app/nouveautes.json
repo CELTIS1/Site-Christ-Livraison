@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917memesmots",
+      "date": "17 septembre 2026",
+      "titre": "Le même mot pour la même chose",
+      "points": [
+        "« En cours » voulait dire trois choses différentes. Sur la carte du livreur, les tuiles disaient « 1 pas encore pris · 1 en cours » et la ligne juste au-dessus « 2 en cours » : le même colis, compté deux fois autrement.",
+        "Chez le livreur la tuile s'appelle maintenant « En route » (récupéré ou en livraison, c'est dans ses mains). Chez la cliente, « En livraison » — le mot exact. Plus aucun mot ne recouvre deux ensembles.",
+        "Les deux calendriers de l'écran du livreur n'en font plus qu'un : la carte et la liste montrent forcément la même journée. Avant, reculer l'un laissait l'autre sur aujourd'hui, sans rien dire.",
+        "Un colis revenu le jour même n'apparaissait nulle part sur sa carte. Sa ligne de journée annonce maintenant ce qu'il a « à rendre »."
+      ]
+    },
+    {
       "version": "20260917alleger",
       "date": "17 septembre 2026",
       "titre": "L'espace cliente s'ouvre bien plus vite",

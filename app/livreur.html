@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917alleger">
-<script src="theme.js?v=20260917alleger"></script>
-<script src="splash.js?v=20260917alleger"></script>
+<link rel="stylesheet" href="style.css?v=20260917memesmots">
+<script src="theme.js?v=20260917memesmots"></script>
+<script src="splash.js?v=20260917memesmots"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -896,21 +896,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917alleger"></script>
-<script src="lib/bibliotheques.js?v=20260917alleger"></script>
-<script src="lib/retours.js?v=20260917alleger"></script>
-<script src="lib/reclamations.js?v=20260917alleger"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917alleger"></script>
-<script src="lib/argent.js?v=20260917alleger"></script>
-<script src="lib/releve-cliente.js?v=20260917alleger"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917alleger"></script>
-<script src="lib/briques-argent.js?v=20260917alleger"></script>
-<script src="lib/annonce-de-remise.js?v=20260917alleger"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917alleger"></script>
-<script src="lib/primes.js?v=20260917alleger"></script>
-<script src="lib/doublons.js?v=20260917alleger"></script>
-<script src="config.js?v=20260917alleger"></script>
-<script src="biometric-lock.js?v=20260917alleger"></script>
+<script src="clt-common.js?v=20260917memesmots"></script>
+<script src="lib/bibliotheques.js?v=20260917memesmots"></script>
+<script src="lib/retours.js?v=20260917memesmots"></script>
+<script src="lib/reclamations.js?v=20260917memesmots"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917memesmots"></script>
+<script src="lib/argent.js?v=20260917memesmots"></script>
+<script src="lib/releve-cliente.js?v=20260917memesmots"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917memesmots"></script>
+<script src="lib/briques-argent.js?v=20260917memesmots"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260917memesmots"></script>
+<script src="lib/annonce-de-remise.js?v=20260917memesmots"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917memesmots"></script>
+<script src="lib/primes.js?v=20260917memesmots"></script>
+<script src="lib/doublons.js?v=20260917memesmots"></script>
+<script src="config.js?v=20260917memesmots"></script>
+<script src="biometric-lock.js?v=20260917memesmots"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3322,13 +3323,14 @@
     cltPoserHTML(box, tourneeTuilesHTML(duJour));
     // La ligne de résumé (2.5) : ce qui reste à faire, ce qui est fait, et le jour s'il n'est
     // pas aujourd'hui.
+    // 17/09/2026, point 9.4 : cette ligne recomptait de son côté et ajoutait en_attente à
+    // « en cours ». Résultat mesuré : les tuiles disaient « 1 pas encore pris · 1 en cours »
+    // et la ligne, un centimètre plus haut, « 2 en cours ». Elle lit désormais le MÊME
+    // tableau que les tuiles (resumeDuJourTexte, lib/vocabulaire-de-la-journee.js) : les deux
+    // ne peuvent plus s'écarter, quoi qu'on change ensuite.
     const resume = document.getElementById('journee-resume-chiffres');
     if (resume) {
-      const n = st => duJour.filter(c => c.statut === st).length;
-      const enCours = n('en_attente') + n('recupere') + n('en_livraison');
-      const morceaux = [`${enCours} en cours`, `${n('livre')} livré${n('livre') > 1 ? 's' : ''}`];
-      if (n('non_livre')) morceaux.push(`${n('non_livre')} non livré${n('non_livre') > 1 ? 's' : ''}`);
-      cltPoserHTML(resume, escapeHTML((jour !== todayLocalISODate() ? jourEnClairCourt(jour) + ' · ' : '') + morceaux.join(' · ')));
+      cltPoserHTML(resume, escapeHTML((jour !== todayLocalISODate() ? jourEnClairCourt(jour) + ' · ' : '') + resumeDuJourTexte(duJour)));
     }
     // Ce qui traîne d'autres jours : un colis pris lundi et toujours en route jeudi ne doit pas
     // disparaître parce qu'on regarde jeudi. Une ligne le dit ; la liste en bas le montre.
@@ -3682,15 +3684,40 @@
     try { d.open = localStorage.getItem('clt:livreur:journee-ouverte') === '1'; } catch (e) {}
     d.addEventListener('toggle', () => { try { localStorage.setItem('clt:livreur:journee-ouverte', d.open ? '1' : '0'); } catch (e) {} });
   })();
+  /* UN SEUL JOUR POUR L'ÉCRAN. (17/09/2026, point 9.4)
+     Il y avait deux calendriers à cinquante lignes d'écart : celui de la carte (les tuiles et
+     l'argent) et celui de la liste. Ils étaient indépendants. Mesuré : le calendrier de la
+     carte reculé au 16 septembre, la carte annonçait « mercredi 16 septembre · 2 en cours ·
+     1 livré » pendant que la liste, juste en dessous, montrait toujours AUJOURD'HUI. Le
+     livreur lisait deux journées sur un même écran, sans rien pour l'avertir.
+     Les deux calendriers commandent désormais la même journée, dans les deux sens. */
+  /* selectFilterMes est déclaré bien plus bas, dans la portée qui branche la liste : d'ici on
+     ne peut pas l'atteindre. Trouvé en vérifiant dans un navigateur — la console disait
+     « selectFilterMes is not defined » à chaque changement de date. On passe donc par ce
+     point de rendez-vous, posé par cette portée-là au moment où elle se branche. */
+  let redessinerFiltresMes = null;
+
+  function poserLeJourDeLEcran(jour){
+    const j = jour || todayLocalISODate();
+    argentJourDate = j;
+    filtreDateMes = j;
+    const carte = document.getElementById('argent-jour-date');
+    const liste = document.getElementById('filtre-date-mes');
+    if (carte && carte.value !== j) carte.value = j;
+    if (liste && liste.value !== j) liste.value = j;
+    renderTourneeSummary();
+    renderArgentDuJour();
+    remettreTrancheMesAZero();
+    viderSelectionMes();
+    if (redessinerFiltresMes) redessinerFiltresMes();
+    renderMesColis();
+  }
+
   (function initArgentJour(){
     const input = document.getElementById('argent-jour-date');
     if (!input) return;
     input.value = todayLocalISODate();
-    input.addEventListener('change', () => {
-      argentJourDate = input.value || todayLocalISODate();
-      renderTourneeSummary();
-      renderArgentDuJour();
-    });
+    input.addEventListener('change', () => poserLeJourDeLEcran(input.value));
   })();
 
   /* ==========================================================================================
@@ -4431,6 +4458,8 @@
     try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 
     function selectFilterMes(val){ activeFilterMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
+    // Le rendez-vous annoncé plus haut : poserLeJourDeLEcran() redessine la rangée par ici.
+    redessinerFiltresMes = () => renderFilters('filters-mes', activeFilterMes, selectFilterMes);
     renderFilters('filters-mes', activeFilterMes, selectFilterMes);
 
     // Recherche avec anti-rebond (debounce) : évite de redessiner la liste à chaque frappe,
@@ -4446,7 +4475,15 @@
     // fait le tri, et un colis de lundi encore en route doit se voir jeudi sans rien toucher.
     filtreDateMes = '';
     document.getElementById('filtre-date-mes').value = filtreDateMes;
-    document.getElementById('filtre-date-mes').addEventListener('change', (e) => { filtreDateMes = e.target.value; remettreTrancheMesAZero(); viderSelectionMes(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); });
+    // Le calendrier de la liste commande la même journée que celui de la carte (point 9.4).
+    // Le vider, c'est « toutes les dates » : la carte, elle, garde le jour d'aujourd'hui —
+    // elle fait le compte d'UNE journée, une liste peut en couvrir plusieurs.
+    document.getElementById('filtre-date-mes').addEventListener('change', (e) => {
+      if (e.target.value) { poserLeJourDeLEcran(e.target.value); return; }
+      filtreDateMes = '';
+      remettreTrancheMesAZero(); viderSelectionMes();
+      renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis();
+    });
     document.getElementById('btn-toutes-dates-mes').addEventListener('click', () => {
       filtreDateMes = '';
       document.getElementById('filtre-date-mes').value = '';
