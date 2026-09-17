@@ -1667,26 +1667,35 @@ function cltBrancherFiltreListe(champ, liste, options) {
    l'application ; la page suivi.html, qui est publique et ne charge aucun script de l'app,
    porte sa propre copie — les deux doivent rester d'accord.
    ========================================================================================== */
+/* Les deux lignes du service à la clientèle, données par Celtis le 17/09/2026, dans SON ordre :
+   on appelle la première ; la seconde est là pour quand la première ne répond pas. Ce ne sont
+   pas les numéros du site vitrine (accueil et page Contact) : ceux-là amènent un prospect au
+   commercial, ceux-ci amènent une cliente ou un destinataire à la personne qui suit les colis.
+   WhatsApp part sur la première ligne, la principale. */
 const CLT_CONTACT = {
-  tel: '+2250711138693',      // appel : 07 11 13 86 93
-  whatsapp: '2250546818640',  // WhatsApp : 05 46 81 86 40
+  tel: '+2250779604761',        // premier : 07 79 60 47 61
+  telSecond: '+2250170407312',  // second  : 01 70 40 73 12
+  whatsapp: '2250779604761',    // WhatsApp sur la première ligne
+  affiche: '07 79 60 47 61',
+  afficheSecond: '01 70 40 73 12',
 };
 
-// Le lien d'appel, en toutes lettres.
+// Le lien d'appel, en toutes lettres, vers la première ligne.
 function cltJoindreLienHTML(libelle) {
   return '<a class="clt-joindre" href="tel:' + CLT_CONTACT.tel + '">📞 '
     + escapeHTML(libelle || 'Joindre CLT') + '</a>';
 }
 
-/* Les deux boutons côte à côte : appeler, ou écrire sur WhatsApp. `message` pré-remplit le
+/* Les boutons de contact, côte à côte : les deux lignes puis WhatsApp. `message` pré-remplit le
    message WhatsApp (le numéro du colis, par exemple) pour que la personne n'ait rien à taper
    et que l'équipe sache tout de suite de quel colis on parle. */
 function cltContactBoutonsHTML(message) {
   const wa = 'https://wa.me/' + CLT_CONTACT.whatsapp
     + (message ? '?text=' + encodeURIComponent(message) : '');
   return '<div class="clt-contact">'
-    + '<a class="btn btn-outline btn-sm" href="tel:' + CLT_CONTACT.tel + '">📞 Appeler CLT</a>'
-    + '<a class="btn btn-outline btn-sm" href="' + wa + '" target="_blank" rel="noopener">🟢 WhatsApp CLT</a>'
+    + '<a class="btn btn-outline btn-sm" href="tel:' + CLT_CONTACT.tel + '">📞 ' + CLT_CONTACT.affiche + '</a>'
+    + '<a class="btn btn-outline btn-sm" href="tel:' + CLT_CONTACT.telSecond + '">📞 ' + CLT_CONTACT.afficheSecond + '</a>'
+    + '<a class="btn btn-outline btn-sm" href="' + wa + '" target="_blank" rel="noopener">🟢 WhatsApp</a>'
     + '</div>';
 }
 
@@ -1696,7 +1705,9 @@ function cltContactBoutonsHTML(message) {
    deux identifiants. Se branche seule au chargement. */
 function cltBrancherContact() {
   const tel = document.getElementById('lien-appeler-clt');
-  if (tel) tel.setAttribute('href', 'tel:' + CLT_CONTACT.tel);
+  if (tel) { tel.setAttribute('href', 'tel:' + CLT_CONTACT.tel); tel.textContent = '📞 Appeler CLT · ' + CLT_CONTACT.affiche; }
+  const tel2 = document.getElementById('lien-appeler-clt-2');
+  if (tel2) { tel2.setAttribute('href', 'tel:' + CLT_CONTACT.telSecond); tel2.textContent = '📞 Autre ligne · ' + CLT_CONTACT.afficheSecond; }
   const wa = document.getElementById('lien-whatsapp-clt');
   if (wa) wa.setAttribute('href', 'https://wa.me/' + CLT_CONTACT.whatsapp);
 }

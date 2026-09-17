@@ -11,7 +11,8 @@
    2. JOINDRE CLT. Aucun numéro de CLT n'était atteignable depuis l'espace de la cliente ni
       depuis la page de suivi publique : le seul numéro affiché était celui du livreur, et
       seulement une fois qu'il était assigné. Quelqu'un dont le colis pose problème n'avait
-      personne à appeler. Les deux numéros sont ceux déjà publiés sur le site.
+      personne à appeler. Les deux lignes sont celles du service à la clientèle, données par
+      Celtis, dans son ordre : on appelle la première, la seconde dépanne.
 
    3. « Y ALLER ». Aucun lien de navigation nulle part : le livreur lisait l'adresse sur sa
       carte puis la recopiait à la main dans Maps, colis après colis, tournée après tournée.
@@ -59,19 +60,29 @@ verifier('« Joindre CLT » n\'apparaît que si on le demande (chez la cliente, 
   /Joindre CLT/.test(app.motifEchecHTML(echec, { avecAide: true })) && !/Joindre CLT/.test(html));
 
 console.log('\n2. Joindre CLT : un seul endroit où les numéros sont écrits');
-verifier('les deux numéros sont ceux du site public',
-  app.CLT_CONTACT.tel === '+2250711138693' && app.CLT_CONTACT.whatsapp === '2250546818640');
+/* Ce sont les deux lignes du service à la clientèle, données par Celtis le 17/09/2026, dans
+   son ordre : on appelle la première, la seconde dépanne. Surtout pas les numéros du site
+   vitrine, qui mènent au commercial. */
+verifier('la première ligne, la seconde, et WhatsApp sur la première',
+  app.CLT_CONTACT.tel === '+2250779604761'
+  && app.CLT_CONTACT.telSecond === '+2250170407312'
+  && app.CLT_CONTACT.whatsapp === '2250779604761');
 const suivi = lire('suivi.html');
-verifier('la page de suivi porte les mêmes numéros (elle ne charge aucun script de l\'app)',
-  suivi.includes("CLT_TEL = '+2250711138693'") && suivi.includes("CLT_WHATSAPP = '2250546818640'"),
+verifier('la page de suivi porte les mêmes lignes (elle ne charge aucun script de l\'app)',
+  suivi.includes("CLT_TEL = '+2250779604761'")
+  && suivi.includes("CLT_TEL_2 = '+2250170407312'")
+  && suivi.includes("CLT_WHATSAPP = '2250779604761'"),
   'les deux copies doivent rester d\'accord');
+verifier('les numéros du site vitrine ne traînent plus nulle part dans l\'application',
+  !lire('app/clt-common.js').includes('0711138693') && !suivi.includes('0711138693'));
 verifier('le message WhatsApp est pré-rempli avec le numéro du colis',
   /blocContactHTML\(data\.numero/.test(suivi) && /question sur le colis/.test(suivi));
 verifier('le message « aucun colis ne correspond » propose aussi de joindre CLT',
   /joignez-nous si le problème persiste[\s\S]{0,60}blocContactHTML/.test(suivi));
 const fournisseur = lire('app/fournisseur.html');
-verifier('l\'espace cliente a les deux entrées dans son menu',
-  /id="lien-appeler-clt"/.test(fournisseur) && /id="lien-whatsapp-clt"/.test(fournisseur));
+verifier('l\'espace cliente a les trois entrées dans son menu (deux lignes + WhatsApp)',
+  /id="lien-appeler-clt"/.test(fournisseur) && /id="lien-appeler-clt-2"/.test(fournisseur)
+  && /id="lien-whatsapp-clt"/.test(fournisseur));
 verifier('elles sont rangées dans une section « Besoin d\'aide »',
   /settings-groupe-titre">Besoin d'aide</.test(fournisseur));
 const commun = lire('app/clt-common.js');

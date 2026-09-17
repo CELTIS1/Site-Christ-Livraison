@@ -429,11 +429,13 @@
 
   /* Joindre CLT depuis la page de suivi (17/09/2026). Le destinataire qui voit « Non livré »
      n'avait personne à appeler : aucun numéro CLT ne figurait sur cette page, et le message
-     d'erreur disait « contactez-nous » sans dire comment. Les deux numéros sont ceux du site
-     public ; ils sont aussi dans app/clt-common.js (CLT_CONTACT) — cette page est publique et
+     d'erreur disait « contactez-nous » sans dire comment. Ce sont les deux lignes du service à
+     la clientèle, dans l'ordre donné par Celtis le 17/09/2026 — et non les numéros du site
+     vitrine. Elles sont aussi dans app/clt-common.js (CLT_CONTACT) : cette page est publique et
      ne charge aucun script de l'application, d'où cette copie, à garder d'accord avec l'autre. */
-  const CLT_TEL = '+2250711138693';
-  const CLT_WHATSAPP = '2250546818640';
+  const CLT_TEL = '+2250779604761';          // premier : 07 79 60 47 61
+  const CLT_TEL_2 = '+2250170407312';        // second  : 01 70 40 73 12
+  const CLT_WHATSAPP = '2250779604761';      // WhatsApp sur la première ligne
   function blocContactHTML(numero) {
     const message = numero
       ? "Bonjour CLT, j'ai une question sur le colis " + numero + "."
@@ -442,7 +444,8 @@
       <div class="bloc-contact">
         <div class="bloc-contact-titre">Une question sur ce colis ?</div>
         <div class="bloc-contact-liens">
-          <a class="contact-lien" href="tel:${CLT_TEL}">📞 Appeler CLT</a>
+          <a class="contact-lien" href="tel:${CLT_TEL}">📞 07 79 60 47 61</a>
+          <a class="contact-lien" href="tel:${CLT_TEL_2}">📞 01 70 40 73 12</a>
           <a class="contact-lien" href="https://wa.me/${CLT_WHATSAPP}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">🟢 WhatsApp</a>
         </div>
       </div>`;
