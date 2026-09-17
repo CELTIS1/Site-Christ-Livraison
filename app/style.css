@@ -669,7 +669,9 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
              radial-gradient(500px 260px at -10% 110%, rgba(255,255,255,.06), transparent 60%);
 }
 .login-home-link{
-  position:fixed; top:16px; left:16px; z-index:10;
+  /* Depuis le 17/09/2026, la page de connexion passe elle aussi sous la barre d'état
+     (viewport-fit=cover) : ce lien se décale d'autant, sinon l'encoche le mange. */
+  position:fixed; top:calc(16px + env(safe-area-inset-top, 0px)); left:16px; z-index:10;
   display:inline-flex; align-items:center; gap:6px;
   color:#fff; text-decoration:none; font-weight:600; font-size:14px;
   padding:8px 14px; border-radius:var(--radius-sm);
@@ -1347,13 +1349,25 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
 #confirm-modal-ok.danger-btn{background:#c0392b;}
 #confirm-modal-ok.danger-btn:hover{background:#a52f22;}
 
-/* ---------- MENU RÉGLAGES ---------- */
+/* ---------- MENU (☰) ----------
+   Le 17/09/2026, la roue dentée ⚙️ est devenue les trois barres ☰, dans tous les espaces.
+   Deux raisons, toutes deux de Celtis : une roue annonce des « réglages », alors que ce
+   menu porte surtout des actions courantes (grille tarifaire, notifications, déconnexion) ;
+   et il faut pouvoir y ranger la suite sans que ça devienne un fouillis — d'où les
+   sections titrées plus bas. Sur Gestion, ce menu a en plus remplacé quatre boutons qui
+   dépassaient de l'écran du téléphone, dont « Déconnexion », qu'on ne pouvait plus toucher. */
 .settings-menu{position:relative;}
 .settings-menu-btn{
   position:relative; width:34px; height:34px; border-radius:50%;
   border:1.5px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.12);
   display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--white);
   transition:background .15s ease; flex-shrink:0;
+}
+/* Les trois barres sont dessinées en CSS (une barre + deux ombres portées) plutôt qu'avec
+   le caractère ☰, dont le dessin et la hauteur changent d'une police de téléphone à l'autre. */
+.settings-menu-btn::before{
+  content:""; width:16px; height:2px; border-radius:2px; background:currentColor;
+  box-shadow:0 -5px 0 currentColor, 0 5px 0 currentColor;
 }
 .settings-menu-btn:hover{background:rgba(255,255,255,0.22);}
 .settings-menu-btn .alert-badge{position:absolute; top:-5px; right:-5px; margin-left:0; border:2px solid var(--navy);}
@@ -1363,19 +1377,34 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
    largeur de l'écran, le panneau ne peut plus déborder ni faire apparaître de barre de
    défilement horizontale. */
 .settings-dropdown{
-  position:absolute; right:0; top:calc(100% + 8px); min-width:190px;
+  position:absolute; right:0; top:calc(100% + 8px); min-width:230px;
   max-width:calc(100vw - 24px); background:var(--white);
   border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-md);
   padding:6px; z-index:300; display:none;
+  /* Le menu est fait pour grossir : quand il dépasse la hauteur de l'écran, il défile
+     tout seul plutôt que de sortir par le bas, là où on ne peut plus l'atteindre. */
+  max-height:calc(100vh - 90px); overflow-y:auto; -webkit-overflow-scrolling:touch;
 }
 .settings-dropdown.open{display:block;}
-.settings-dropdown button{
+.settings-dropdown button,
+.settings-dropdown a{
   width:100%; text-align:left; padding:11px 13px; border-radius:var(--radius-xs); background:none; border:none;
   font-size:13.5px; font-weight:500; color:#1E2A38; display:flex; align-items:center; gap:8px;
+  text-decoration:none; font-family:inherit; cursor:pointer;
 }
-.settings-dropdown button:hover{background:var(--grey-bg);}
+.settings-dropdown button:hover,
+.settings-dropdown a:hover{background:var(--grey-bg);}
 .settings-dropdown button.danger{color:#c0392b;}
 .settings-dropdown button.danger:hover{background:#fceceb;}
+/* Les sections : un titre gris par groupe, un trait entre les groupes. C'est ce qui permet
+   d'ajouter une option plus tard à sa place, au lieu de l'empiler au bout de la liste. */
+.settings-groupe + .settings-groupe{
+  margin-top:6px; padding-top:6px; border-top:1px solid var(--border);
+}
+.settings-groupe-titre{
+  padding:7px 13px 3px; font-size:10.5px; font-weight:700; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--muted);
+}
 
 /* ---------- LE « ← RETOUR » PARTAGÉ (27/08/2026) ----------
    Posé automatiquement par clt-common.js en haut des fenêtres qui n'offraient
@@ -1409,8 +1438,28 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
 .account-modal .btn-sm{margin-right:10px; margin-top:4px;}
 
 @media(max-width:640px){
-  .settings-dropdown{min-width:170px;}
+  .settings-dropdown{min-width:210px;}
   .account-modal{padding:24px 18px;}
+}
+
+/* Sur téléphone, le bouton ☰ ne reste pas toujours à droite de la barre : quand celle-ci se
+   replie en deux lignes, les boutons passent en tête et le ☰ se retrouve à gauche. Un panneau
+   ancré « sous le bouton, aligné à droite » sortait alors de l'écran par la gauche, le texte
+   coupé (constaté sur Gestion et sur l'équipe, 17/09/2026). Sous 760 px, le panneau ne s'ancre
+   donc plus au bouton mais à l'écran : il se pose sous la barre du haut et garde 12 px de marge
+   de chaque côté, où que soit le bouton. --h-topbar est publié par theme.js (comptes standard)
+   et par gestion.js (module Gestion) ; la valeur de repli couvre le temps de la mesure. */
+@media(max-width:760px){
+  .settings-dropdown{
+    position:fixed; top:calc(var(--h-topbar, 100px) + 8px);
+    left:12px; right:12px; max-width:none;
+    max-height:calc(100vh - var(--h-topbar, 100px) - 28px);
+  }
+  /* Règle 2.4 (« tout ce qu'on touche fait 44 px au moins ») appliquée aux ronds de la barre :
+     le ☰ faisait 34 px alors qu'il porte désormais la déconnexion et les réglages — sur Gestion,
+     c'est même le seul chemin pour sortir. Ses deux voisins suivent la même hauteur, sans quoi
+     l'un dépasserait les autres et la barre se lirait de travers. */
+  .settings-menu-btn, .theme-toggle--entete, .clt-actualiser{ min-height:44px; }
 }
 
 /* =====================================================================
@@ -1467,6 +1516,7 @@ html[data-theme="dark"] .btn:not(.btn-outline){ color:#FFFFFF; }
 html[data-theme="dark"] .colis-item .info .desc,
 html[data-theme="dark"] .obs-display strong,
 html[data-theme="dark"] .settings-dropdown button,
+html[data-theme="dark"] .settings-dropdown a,
 html[data-theme="dark"] .actions-dropdown button,
 html[data-theme="dark"] .account-modal-close:hover{ color:#E6ECF3; }
 
@@ -1490,12 +1540,15 @@ html[data-theme="dark"] option{ background:#141D29; color:#E6ECF3; }
 /* Survols clairs -> survols sombres */
 html[data-theme="dark"] .btn-outline:hover,
 html[data-theme="dark"] .settings-dropdown button:hover,
+html[data-theme="dark"] .settings-dropdown a:hover,
 html[data-theme="dark"] .actions-dropdown button:hover,
 html[data-theme="dark"] .panel-subtitle.collapsible-header:hover,
 html[data-theme="dark"] .account-modal-close{ background:#243247; }
 
 /* Séparateurs à couleur fixe */
 html[data-theme="dark"] .account-modal-divider{ border-top-color:#2A3849; }
+html[data-theme="dark"] .settings-groupe + .settings-groupe{ border-top-color:#2A3849; }
+/* Le titre de section suit --muted, redéfini plus haut pour le mode sombre : rien à ajouter. */
 
 /* ---- Bouton flottant de bascule (injecté par theme.js) ---- */
 .theme-toggle{

@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917menu",
+      "date": "17 septembre 2026",
+      "titre": "Un menu ☰ pour tous, et l'écran du téléphone bien rempli",
+      "points": [
+        "La roue dentée ⚙️ devient le menu ☰ (trois barres) dans tous les espaces, avec des sections à l'intérieur : « Mon espace », « Outils », puis la déconnexion à part.",
+        "Gestion a désormais ce même menu. Ses boutons débordaient de l'écran sur téléphone : « Déconnexion » était devenu impossible à toucher, c'est réparé.",
+        "Plus de bande blanche en haut de l'écran : la couleur de l'en-tête remonte jusqu'en haut du téléphone sur toutes les pages, y compris Gestion, la connexion et CLT Express.",
+        "Le menu descend sous la barre sur toute la largeur du téléphone, et défile tout seul s'il s'allonge : les prochaines options y trouveront leur place."
+      ]
+    },
+    {
       "version": "20260916fraisauto",
       "date": "16 septembre 2026",
       "titre": "Frais additionnels et « soldé » plus visible",

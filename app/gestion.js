@@ -3734,6 +3734,11 @@ async function init(){
   // Bouton d'activation des notifications push (réglage : accepter ou non les notifications).
   cltInitPushButton(profile.role, () => PUSH_USER ? PUSH_USER.id : null);
 
+  // Le menu ☰ de la barre du haut (17/09/2026) : Gestion portait ses boutons en ligne, qui
+  // débordaient de l'écran du téléphone. Ils sont maintenant dans le menu commun, ouvert et
+  // refermé par la même fonction que dans les autres espaces (config.js).
+  initSettingsMenu();
+
   // Onglets visibles selon les capacités
   const setDisp = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
   setDisp('tab-dashboard', isAdmin);        // vue d'ensemble : patron seul
