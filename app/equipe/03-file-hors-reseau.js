@@ -819,12 +819,18 @@ const pastille = (valeur, label, aller, teinte) => {
   return `<button type="button" class="ess-tuile ${teinte === 'rouge' ? 'est-rouge' : 'est-ambre'}" data-aller="${aller}" title="Ouvrir"><span class="n">${valeur}</span><span>${label}</span></button>`;
 };
 const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`;
-// Celtis, 6 septembre : les raccourcis vers les comptes et les mots de passe doivent rester
-// visibles même à zéro — c'est par là qu'on va quand une notification arrive. À zéro ils
-// sont gris et en pointillé ; dès qu'il y a quelque chose, ils prennent leur couleur.
-const raccourci = (valeur, label, aller, teinte) => valeur
-  ? pastille(valeur, label, aller, teinte)
-  : `<button type="button" class="ess-tuile est-vide" data-aller="${aller}" title="Ouvrir"><span class="n">0</span><span>${label}</span></button>`;
+/* « Comptes à valider » et « mots de passe à refaire » restaient visibles à zéro, en gris et en
+   pointillé, à la demande de Celtis le 6 septembre : « c'est par là qu'on va quand une
+   notification arrive ». Rouvert et tranché avec lui le 17 septembre, après l'inventaire : ils
+   s'effacent maintenant comme les autres compteurs à zéro. Deux raisons, et la seconde compte
+   plus que la première.
+     • Le chemin ne se perd pas : l'onglet « Comptes » est là en permanence, en haut sur
+       ordinateur et dans la barre du bas sur téléphone. Une pastille grise ne menait nulle part
+       où l'on ne puisse aller en un appui.
+     • Ce qu'on gagne : quand tout est à zéro, la section n'affiche plus deux pastilles vides
+       mais « ✓ Rien à faire ». Un tableau de bord doit montrer ce qui demande une action ; ce
+       qui vaut zéro n'en demande pas, et occupait autant de place que le reste.
+   Dès qu'il y a quelque chose, la pastille revient, en couleur. */
 window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id) };
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 // 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient de
@@ -857,8 +863,8 @@ set('aujourdhui-jour',
 set('aujourdhui-actions', ouRien(
   pastille(cat.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
   pastille(cat.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
-  raccourci(nbPending, 'comptes à valider', 'comptes-a-valider', 'ambre') +
-  raccourci(nbReset,   'mots de passe à refaire', 'reinitialisations', 'ambre') +
+  pastille(nbPending, 'comptes à valider', 'comptes-a-valider', 'ambre') +
+  pastille(nbReset,   'mots de passe à refaire', 'reinitialisations', 'ambre') +
   pastille(nbCodes,    nbCodes > 1 ? 'codes à dicter' : 'code à dicter', 'reinitialisations', 'rouge'), 'Rien à faire'));
 set('aujourdhui-anomalies', ouRien(
   pastille(cat.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +

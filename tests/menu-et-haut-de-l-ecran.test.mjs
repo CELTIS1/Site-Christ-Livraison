@@ -136,5 +136,16 @@ verifier('les pastilles de « L\'essentiel » passent à 44 px, et la règle est
   iBase !== -1 && iCorrection !== -1 && iCorrection > iBase,
   'une règle de même spécificité placée avant ne sert à rien');
 
+console.log('\n8. Les compteurs à zéro s\'effacent (point 9.3, rouvert avec Celtis le 17/09)');
+const essentiel = lire('app/equipe/03-file-hors-reseau.js');
+verifier('« comptes à valider » et « mots de passe à refaire » passent par la même pastille que les autres',
+  /pastille\(nbPending, 'comptes à valider'/.test(essentiel) && /pastille\(nbReset,   'mots de passe à refaire'/.test(essentiel));
+verifier('le raccourci qui gardait les zéros visibles n\'existe plus',
+  !/const raccourci = /.test(essentiel) && !/ess-tuile est-vide" data-aller/.test(essentiel));
+/* Ce qui rendait la décision possible : le chemin vers les comptes ne dépend pas de la pastille.
+   L'onglet est là en permanence, en haut sur ordinateur et dans la barre du bas sur téléphone. */
+verifier('l\'onglet « Comptes » reste atteignable en permanence, des deux barres',
+  /data-eqtab="comptes"/.test(equipe) && /data-nav="comptes"/.test(equipe));
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);
