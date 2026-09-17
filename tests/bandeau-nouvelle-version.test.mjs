@@ -449,10 +449,14 @@ verifier(
    haut) ; Gestion reçoit ce menu et ses quatre boutons qui débordaient de l'écran du téléphone
    y entrent, dont « Déconnexion », devenue intouchable (gestion.html, gestion.js) ; le haut de
    l'écran couvert sur les cinq pages qui n'avaient pas viewport-fit=cover : étiquette
-   20260917menu. */
+   20260917menu.
+   v136, le 17/09/2026 — le menu affiné après retour de Celtis : les trois ronds de la barre
+   agrandis des deux côtés (44×44) au lieu d'un min-height qui les étirait en ovales, et le
+   panneau ramené à une largeur de menu (272 px) contre le bord droit au lieu de toute la
+   largeur de l'écran (style.css) : étiquette 20260917affine. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v135'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v136'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

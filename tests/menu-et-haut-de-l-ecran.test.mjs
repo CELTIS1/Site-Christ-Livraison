@@ -81,10 +81,14 @@ verifier('il défile au lieu de sortir par le bas (max-height + overflow-y)',
 /* Le panneau s'ancrait « à droite du bouton ». Sur téléphone, la barre se replie et le bouton
    passe à gauche : le panneau sortait alors de l'écran par la gauche, texte coupé. Sous 760 px
    il s'ancre donc à l'écran, plus au bouton. */
-verifier('sous 760 px, il s\'ancre à l\'écran (12 px de marge) et non au bouton',
-  /@media\(max-width:760px\)\{\s*\.settings-dropdown\{[^}]*position:fixed;[^}]*left:12px; right:12px/s.test(style));
-verifier('sur téléphone, le ☰ et ses deux voisins font 44 px de haut (règle 2.4), pas 34',
-  /\.settings-menu-btn, \.theme-toggle--entete, \.clt-actualiser\{ min-height:44px; \}/.test(style));
+/* Il reste un menu, pas une page qui s'ouvre : posé contre le bord droit, à la largeur d'un
+   menu (272 px au plus), jamais toute la largeur de l'écran. */
+verifier('sous 760 px, il s\'ancre au bord droit de l\'écran et non au bouton',
+  /@media\(max-width:760px\)\{\s*\.settings-dropdown\{[^}]*position:fixed;[^}]*left:auto; right:12px/s.test(style));
+verifier('il garde une largeur de menu (272 px au plus), pas toute la largeur',
+  /@media\(max-width:760px\)\{\s*\.settings-dropdown\{[^}]*width:min\(272px, calc\(100vw - 24px\)\)/s.test(style));
+verifier('sur téléphone, les trois ronds de la barre font 44 px (règle 2.4) et restent ronds',
+  /\.settings-menu-btn, \.theme-toggle--entete, \.clt-actualiser\{ width:44px; height:44px; \}/.test(style));
 
 console.log('\n5. La barre de Gestion ne déborde plus');
 const gestionHtml = lire('app/gestion.html');

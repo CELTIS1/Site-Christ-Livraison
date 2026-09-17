@@ -2,6 +2,15 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917affine",
+      "date": "17 septembre 2026",
+      "titre": "Le menu ☰ affiné",
+      "points": [
+        "Les trois ronds de la barre du haut redeviennent de vrais ronds, à la même taille, et assez grands pour se toucher du pouce.",
+        "Le menu ne s'étale plus sur toute la largeur de l'écran : c'est un panneau posé contre le bord droit, à la largeur d'un menu."
+      ]
+    },
+    {
       "version": "20260917menu",
       "date": "17 septembre 2026",
       "titre": "Un menu ☰ pour tous, et l'écran du téléphone bien rempli",
