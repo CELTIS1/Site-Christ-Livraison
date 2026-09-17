@@ -508,10 +508,16 @@ verifier(
    v146, le 17/09/2026 — point 6.5 : une sauvegarde vérifiée et une procédure de restauration.
    Aucun changement dans l'application elle-même : deux outils (outils/), un essai de bout en
    bout dans un vrai Postgres et RESTAURATION.md. L'étiquette bouge parce que les pages sont
-   republiées avec le reste : étiquette 20260917sauvegarde. */
+   republiées avec le reste : étiquette 20260917sauvegarde.
+   v147, le 17/09/2026 — quatre gestes du quotidien : la photo de preuve sort du repli « Plus
+   d'options » et se prend en un appui (7.4, avec le taux du jour au bureau pour décider en
+   octobre) ; les colis qui dorment et les corrections de montants mènent enfin à la fiche du
+   colis (7.7) ; la barre du bas de l'équipe garde quatre onglets et range les autres derrière
+   « Plus » (9.5) ; et les tableaux de Gestion disent qu'ils défilent (9.8) : étiquette
+   20260917quotidien. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v146'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v147'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

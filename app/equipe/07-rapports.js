@@ -315,12 +315,17 @@ lignes.push(`<tr class="dorment-ligne-livreur">
 · ${l.nb} colis · <strong>${escapeHTML(formatMontant(l.valeur))}</strong>
 · le plus vieux : ${escapeHTML(ageColisEnMainTexte(l.plusVieuxJours, l.plusVieuxCertain))}</td>
 </tr>`);
+/* POUVOIR AGIR, PAS SEULEMENT CONSTATER (17/09/2026, point 7.7)
+   Cet écran affichait « 71 colis immobilisés » et ne proposait rien : pour en ouvrir un, il
+   fallait retenir son numéro, aller dans l'onglet Colis, le chercher. Personne ne le faisait.
+   Chaque ligne mène maintenant à la fiche du colis, là où on peut relancer le livreur, changer
+   le statut ou corriger l'adresse. Le tableau reste un tableau ; c'est la ligne qui agit. */
 l.colis.forEach(r => {
-lignes.push(`<tr>
+lignes.push(`<tr class="ligne-cliquable" data-ouvrir-colis="${escapeHTML(r.colis.id)}" title="Ouvrir la fiche de ce colis">
 <td data-label="Colis">${escapeHTML(r.numero || '—')}</td>
 <td data-label="Cliente">${escapeHTML(fournisseurLabelPlain(r.colis.fournisseur_id) || '—')}</td>
 <td data-label="Dort depuis">${escapeHTML(ageColisEnMainTexte(r.jours, r.certain))}</td>
-<td data-label="Valeur">${escapeHTML(formatMontant(r.valeur) || '—')}</td>
+<td data-label="Valeur">${escapeHTML(formatMontant(r.valeur) || '—')} <span class="ligne-fleche" aria-hidden="true">›</span></td>
 </tr>`);
 });
 });

@@ -2971,3 +2971,34 @@ html[data-theme="dark"] .reclam-motif.est-choisi{ background:#2A2118; }
 .reclam-equipe{ margin-top:6px; padding:7px 10px; border-left:3px solid #E26313; border-radius:8px; background:#FDF3EC; font-size:13px; font-weight:600; color:#8a4212; }
 .reclam-equipe--vieille{ border-left-color:#c0392b; background:#fdeceb; color:#8f2018; }
 html[data-theme="dark"] .reclam-equipe{ background:#2A2118; color:#E8D3BF; }
+
+/* LA PREUVE DE LIVRAISON (17/09/2026, point 7.4) — sortie du repli « Plus d'options ».
+   Discrète tant qu'elle manque, franche une fois prise : la vignette dit tout de suite que
+   c'est fait, sans avoir à ouvrir quoi que ce soit. */
+.preuve{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin-top:8px; padding:9px 11px; border:1px dashed var(--border); border-radius:12px; }
+.preuve--prise{ border-style:solid; border-color:#1a7d3c; background:#e8f5ec; }
+.preuve-txt{ flex:1 1 150px; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.preuve-txt strong{ font-size:13px; font-weight:700; }
+.preuve--prise .preuve-txt strong{ color:#155f2e; }
+.preuve-txt span{ font-size:11.5px; color:var(--muted); line-height:1.35; }
+.preuve--prise .preuve-txt span{ color:#2c6b43; }
+.preuve-vignette{ width:44px; height:44px; object-fit:cover; border-radius:8px; border:1px solid #1a7d3c; }
+.preuve .photo-pick-group{ flex:0 0 auto; }
+.preuve .avatar-upload-btns{ display:flex; gap:6px; }
+.preuve .btn{ min-height:44px; }
+.preuve-btn{ background:#1B4374; border-color:#1B4374; color:#fff; }
+.preuve--prise .preuve-btn{ background:transparent; border:1px solid #1a7d3c; color:#155f2e; }
+.preuve .photo-pick-filename{ flex-basis:100%; font-size:11.5px; color:var(--muted); }
+@media (max-width:420px){ .preuve-lib{ display:none; } }
+html[data-theme="dark"] .preuve--prise{ background:#123322; }
+
+/* UNE LIGNE QUI MÈNE QUELQUE PART LE DIT (17/09/2026, point 7.7).
+   Les colis qui dorment et les corrections de montants affichaient un problème sans offrir le
+   moindre geste : pour ouvrir le colis, il fallait retenir son numéro et aller le chercher
+   ailleurs. La ligne entière est maintenant une porte — et elle en a l'air. */
+.ligne-cliquable{ cursor:pointer; }
+.ligne-cliquable:hover{ background:rgba(27,67,116,.06); }
+.ligne-cliquable:focus-visible{ outline:2px solid #1B4374; outline-offset:-2px; }
+.ligne-fleche{ float:right; color:#1B4374; font-weight:700; opacity:.55; }
+.ligne-cliquable:hover .ligne-fleche{ opacity:1; }
+html[data-theme="dark"] .ligne-cliquable:hover{ background:rgba(157,184,218,.10); }

@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917sauvegarde">
-<script src="theme.js?v=20260917sauvegarde"></script>
-<script src="splash.js?v=20260917sauvegarde"></script>
+<link rel="stylesheet" href="style.css?v=20260917quotidien">
+<script src="theme.js?v=20260917quotidien"></script>
+<script src="splash.js?v=20260917quotidien"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -67,7 +67,26 @@
      viser à côté. Les deux axes sont rendus au doigt ; le tableau glisse de côté, la page
      glisse vers le bas, le navigateur choisit selon le geste. max-width:100% pour qu'un
      tableau large ne pousse jamais la page hors de l'écran. */
-  .g-table-wrap{ overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action:pan-x pan-y; border-radius:14px; border:1px solid rgba(15,118,110,0.12); max-width:100%; }
+  /* LES CADRES QUI DÉFILENT LE DISENT (17/09/2026, point 9.8)
+     Les tableaux de Gestion glissaient déjà du doigt — la page, elle, n'a jamais débordé (mesuré
+     le 17/09 : 390 px pour 390 px sur les huit écrans). Le vrai défaut était ailleurs : RIEN ne
+     disait qu'on pouvait glisser. Sur « Recettes », 3 333 px de tableau dans une fenêtre de
+     286 px, et une colonne coupée net au bord, qui a tout l'air de la dernière.
+     Un dégradé au bord droit répare cela : il apparaît quand il reste quelque chose à droite, et
+     s'efface quand on est au bout. C'est la convention que tout le monde a déjà vue ailleurs. */
+  .g-table-wrap{ overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action:pan-x pan-y; border-radius:14px; border:1px solid rgba(15,118,110,0.12); max-width:100%;
+    background:
+      linear-gradient(to right, #fff 30%, rgba(255,255,255,0)) left center / 44px 100% no-repeat,
+      linear-gradient(to left,  #fff 30%, rgba(255,255,255,0)) right center / 44px 100% no-repeat,
+      linear-gradient(to right, rgba(15,118,110,.16), rgba(15,118,110,0)) left center / 18px 100% no-repeat,
+      linear-gradient(to left,  rgba(15,118,110,.16), rgba(15,118,110,0)) right center / 18px 100% no-repeat;
+    background-attachment: local, local, scroll, scroll; }
+  /* Les barres d'onglets défilent aussi (581 px et 1 533 px sur 342) : même repère. */
+  .tabs, .subtabs{
+    background:
+      linear-gradient(to left, #f5f7fa 30%, rgba(245,247,250,0)) right center / 36px 100% no-repeat,
+      linear-gradient(to left, rgba(15,118,110,.14), rgba(15,118,110,0)) right center / 14px 100% no-repeat;
+    background-attachment: local, scroll; }
   table.g-table{ border-collapse:collapse; width:100%; font-size:13.5px; background:#fff; }
   table.g-table th, table.g-table td{ padding:9px 11px; text-align:right; border-bottom:1px solid #eef2f1; white-space:nowrap; }
   table.g-table th{ background:var(--clt-teal-light); color:var(--clt-teal-dark); font-weight:700; position:sticky; top:0; }
@@ -165,6 +184,13 @@
   .inline-form .field{ display:flex; flex-direction:column; gap:4px; }
   .inline-form label{ font-size:12px; color:var(--muted); font-weight:600; }
   .inline-form input, .inline-form select{ padding:9px 11px; border-radius:10px; border:1.5px solid var(--border); font-size:14px; font-family:inherit; }
+  /* Point 9.8 (17/09/2026) : le champ « Justificatif » est un sélecteur de fichier, dont le
+     navigateur fixe lui-même la largeur d'après le texte du bouton système. Sur un téléphone de
+     390 px, il poussait son champ et son étiquette hors de l'écran — les trois seuls éléments de
+     Gestion à s'échapper vraiment. Un champ ne dépasse plus jamais la largeur qu'on lui donne. */
+  .inline-form .field{ max-width:100%; min-width:0; }
+  .inline-form input, .inline-form select, .inline-form label{ max-width:100%; min-width:0; box-sizing:border-box; }
+  .inline-form input[type="file"]{ width:100%; font-size:12.5px; }
 
   /* Modale */
   .modal-back{ position:fixed; inset:0; background:rgba(15,40,38,0.45); display:none; align-items:center; justify-content:center; z-index:1000; padding:16px; }
@@ -1186,22 +1212,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260917sauvegarde"></script>
-<script src="lib/retours.js?v=20260917sauvegarde"></script>
-<script src="lib/reclamations.js?v=20260917sauvegarde"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917sauvegarde"></script>
-<script src="lib/argent.js?v=20260917sauvegarde"></script>
-<script src="lib/releve-cliente.js?v=20260917sauvegarde"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917sauvegarde"></script>
-<script src="lib/briques-argent.js?v=20260917sauvegarde"></script>
-<script src="lib/annonce-de-remise.js?v=20260917sauvegarde"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917sauvegarde"></script>
-<script src="lib/primes.js?v=20260917sauvegarde"></script>
-<script src="lib/doublons.js?v=20260917sauvegarde"></script>
-<script src="config.js?v=20260917sauvegarde"></script>
-<script src="biometric-lock.js?v=20260917sauvegarde"></script>
-<script src="clt-select-recherche.js?v=20260917sauvegarde"></script>
-<script src="site-editeur.js?v=20260917sauvegarde"></script>
-<script src="gestion.js?v=20260917sauvegarde"></script>
+<script src="clt-common.js?v=20260917quotidien"></script>
+<script src="lib/retours.js?v=20260917quotidien"></script>
+<script src="lib/reclamations.js?v=20260917quotidien"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917quotidien"></script>
+<script src="lib/argent.js?v=20260917quotidien"></script>
+<script src="lib/releve-cliente.js?v=20260917quotidien"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917quotidien"></script>
+<script src="lib/briques-argent.js?v=20260917quotidien"></script>
+<script src="lib/annonce-de-remise.js?v=20260917quotidien"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917quotidien"></script>
+<script src="lib/primes.js?v=20260917quotidien"></script>
+<script src="lib/doublons.js?v=20260917quotidien"></script>
+<script src="config.js?v=20260917quotidien"></script>
+<script src="biometric-lock.js?v=20260917quotidien"></script>
+<script src="clt-select-recherche.js?v=20260917quotidien"></script>
+<script src="site-editeur.js?v=20260917quotidien"></script>
+<script src="gestion.js?v=20260917quotidien"></script>
 </body>
 </html>

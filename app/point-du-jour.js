@@ -104,6 +104,12 @@
       montantRemisDuJour: somme(remises, (r) => r.montant_remis),
       ecartsDuJour: somme(remises, (r) => r.ecart),
     };
+    /* LA PREUVE DE LIVRAISON, EN CHIFFRE (17/09/2026, point 7.4). Celtis a décidé le 17 septembre
+       de ne PAS rendre la photo obligatoire tout de suite — les livreurs découvrent encore
+       l'application — et de retrancher à la mi-octobre. Cette décision demande un chiffre, pas
+       une impression : voici la part des colis livrés du jour qui portent leur photo. */
+    const avecPhoto = livres.filter((c) => !!c.photo_livraison_url).length;
+    const preuves = { avec: avecPhoto, sur: livres.length, pct: livres.length ? Math.round(avecPhoto * 100 / livres.length) : null };
     const reverse = { nb: reversements.length, montant: somme(reversements, (r) => r.montant), clientes: new Set(reversements.map((r) => r.fournisseur_id)).size };
     const du = resteDu(dettes || []);
 
@@ -111,7 +117,7 @@
     const ok2 = Math.abs(caisse.enMain - (caisse.remis + caisse.reste)) < 0.5;
     return {
       nb: { livres: livres.length, nonLivres: nonLivres.length, retours: retours.length, enTournee: enTournee.length, expeditions: t.nbExpeditions },
-      articles, livraison, caisse, reverse, du,
+      articles, livraison, caisse, reverse, du, preuves,
       coherent: ok1 && ok2, ok1, ok2,
     };
   }
@@ -208,6 +214,11 @@
       ${tuile('Non livrés', r.nb.nonLivres, { couleur: r.nb.nonLivres ? ROUGE : undefined, sous: r.nb.nonLivres ? 'à retenter' : '' })}
       ${tuile('Encore en tournée', r.nb.enTournee, { sous: r.nb.enTournee ? 'récupérés ou en livraison, à rentrer' : '' })}
       ${r.nb.expeditions ? tuile('Expédiés', r.nb.expeditions, { sous: 'intérieur du pays' }) : ''}
+      ${r.preuves.sur ? tuile('Avec preuve en photo', r.preuves.pct + ' %', {
+          couleur: r.preuves.pct >= 80 ? VERT : r.preuves.pct >= 40 ? ORANGE : ROUGE,
+          sous: `${r.preuves.avec} sur ${r.preuves.sur} livrés`,
+          title: "La photo n'est pas encore obligatoire (décision de Celtis du 17/09) : ce chiffre sert à décider, à la mi-octobre, si elle doit le devenir.",
+        }) : ''}
     </div>
   </div>
 

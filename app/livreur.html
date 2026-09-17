@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917sauvegarde">
-<script src="theme.js?v=20260917sauvegarde"></script>
-<script src="splash.js?v=20260917sauvegarde"></script>
+<link rel="stylesheet" href="style.css?v=20260917quotidien">
+<script src="theme.js?v=20260917quotidien"></script>
+<script src="splash.js?v=20260917quotidien"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -896,20 +896,20 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917sauvegarde"></script>
-<script src="lib/retours.js?v=20260917sauvegarde"></script>
-<script src="lib/reclamations.js?v=20260917sauvegarde"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917sauvegarde"></script>
-<script src="lib/argent.js?v=20260917sauvegarde"></script>
-<script src="lib/releve-cliente.js?v=20260917sauvegarde"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917sauvegarde"></script>
-<script src="lib/briques-argent.js?v=20260917sauvegarde"></script>
-<script src="lib/annonce-de-remise.js?v=20260917sauvegarde"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917sauvegarde"></script>
-<script src="lib/primes.js?v=20260917sauvegarde"></script>
-<script src="lib/doublons.js?v=20260917sauvegarde"></script>
-<script src="config.js?v=20260917sauvegarde"></script>
-<script src="biometric-lock.js?v=20260917sauvegarde"></script>
+<script src="clt-common.js?v=20260917quotidien"></script>
+<script src="lib/retours.js?v=20260917quotidien"></script>
+<script src="lib/reclamations.js?v=20260917quotidien"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917quotidien"></script>
+<script src="lib/argent.js?v=20260917quotidien"></script>
+<script src="lib/releve-cliente.js?v=20260917quotidien"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917quotidien"></script>
+<script src="lib/briques-argent.js?v=20260917quotidien"></script>
+<script src="lib/annonce-de-remise.js?v=20260917quotidien"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917quotidien"></script>
+<script src="lib/primes.js?v=20260917quotidien"></script>
+<script src="lib/doublons.js?v=20260917quotidien"></script>
+<script src="config.js?v=20260917quotidien"></script>
+<script src="biometric-lock.js?v=20260917quotidien"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2368,6 +2368,37 @@
   // Les écrans de l'équipe, de la cliente et du fournisseur gardent leur carré : là-bas, sur
   // grand écran, repérer les colis sans photo fait partie du travail de vérification, et la
   // place ne manque pas. C'est pour cela que le changement est ici et non dans style.css.
+  /* Compacte quand il n'y a rien, fière quand la photo est là. Proposée seulement sur un colis
+     qu'on est en train de livrer ou qu'on vient de livrer : sur un colis pas encore récupéré,
+     il n'y a rien à photographier, et le bouton ne ferait qu'encombrer. */
+  const STATUTS_AVEC_PREUVE = ['recupere', 'en_livraison', 'livre', 'non_livre', 'retour'];
+  function photoPreuveHTML(c){
+    /* Un colis pas encore récupéré n'a rien à photographier. Tous les autres en ont besoin : le
+       livré pour la remise, et l'échec ou le retour pour montrer la porte close, le refus ou le
+       carton abîmé — c'était possible avant sous « Plus d'options », ça doit le rester. */
+    if (!c || !STATUTS_AVEC_PREUVE.includes(c.statut)) return '';
+    const echec = c.statut === 'non_livre' || c.statut === 'retour';
+    const prise = !!c.photo_livraison_url;
+    return `<div class="preuve${prise ? ' preuve--prise' : ''}">
+      ${prise ? `<img src="${escapeHTML(c.photo_livraison_url)}" class="preuve-vignette" alt="Photo de la remise">` : ''}
+      <div class="preuve-txt">
+        <strong>${prise ? (echec ? '✅ Photo enregistrée' : '✅ Preuve de livraison') : (echec ? '📷 Photo de la situation' : '📷 Photo de la remise')}</strong>
+        <span>${prise
+          ? 'Enregistrée. Une nouvelle photo remplacera celle-ci.'
+          : (echec
+            ? 'La porte close, le refus, le carton abîmé : une photo vaut mieux que la discussion du lendemain.'
+            : "Recommandée dès qu'il y a de l'argent : c'est elle qui tranche si la remise est contestée.")}</span>
+      </div>
+      <div class="photo-pick-group livraison-photo-input">
+        <div class="avatar-upload-btns">
+          <label class="btn btn-sm preuve-btn" style="cursor:pointer;">📷 ${prise ? 'Remplacer' : 'Prendre la photo'}<input type="file" accept="image/*" capture="environment" class="hidden pick-camera"></label>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;">🖼️<span class="preuve-lib"> Bibliothèque</span><input type="file" accept="image/*" class="hidden pick-library"></label>
+        </div>
+        <div class="photo-pick-filename"></div>
+      </div>
+    </div>`;
+  }
+
   function mesColisRowHTML(c, numeroClient){
     const thumb = c.photo_url
       ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
@@ -2417,6 +2448,15 @@
             ${p ? `<button type="button" class="btn btn-etape btn-etape-principale${p.statut === 'livre' ? ' btn-etape-livre' : ''}${p.extra && p.extra.retour_rendu_at ? ' btn-etape-rendu' : ''}" data-etape="${escapeHTML(p.statut)}"${p.extra && p.extra.retour_rendu_at ? ' data-rendu="1"' : ''}>${escapeHTML(p.libelle)}</button>` : ''}
             ${e ? `<button type="button" class="btn btn-outline btn-etape btn-etape-echec" data-etape="${escapeHTML(e.statut)}">${escapeHTML(e.libelle)}</button>` : ''}
           </div>`; })()}
+          <!-- LA PREUVE DE LIVRAISON À PORTÉE DE POUCE (17/09/2026, point 7.4)
+               Elle existait, mais rangée sous « Plus d'options », derrière l'observation et les
+               montants : trois gestes et un défilement pour la prendre, autant dire jamais. Sur
+               un métier où le livreur encaisse des espèces, c'est la pièce qui tranche une
+               contestation. Décision de Celtis le 17/09 : PAS obligatoire tout de suite — les
+               livreurs découvrent encore l'application — mais à portée immédiate. Un rappel est
+               programmé pour la mi-octobre afin de décider du passage à l'obligatoire.
+               Un seul bloc .livraison-photo-input par carte : c'est lui que l'enregistrement lit. -->
+          ${photoPreuveHTML(c)}
           <details class="colis-plus">
             <summary>Plus d'options</summary>
             <div class="colis-plus-corps">
@@ -2460,17 +2500,6 @@
               <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.article_non_encaisse ? 'background:#1B4374 !important; border:1.5px solid #1B4374; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À cocher si l'article a été payé chez la vendeuse : vous n'encaissez pas l'article. La livraison, elle, s'encaisse normalement.">${c.article_non_encaisse ? '✅ Article soldé' : "Article soldé ?"}</button>`}
               ${montantsChampsHTML(c)}
               <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
-              <div class="field" style="margin-top:8px;">
-                <label style="font-size:13px;">Photo de livraison ${c.photo_livraison_url ? '(déjà ajoutée — choisissez une photo pour la remplacer)' : '(optionnel)'}</label>
-                ${c.photo_livraison_url ? `<img src="${c.photo_livraison_url}" class="thumb" style="margin-bottom:6px;" alt="Photo de preuve de livraison déjà ajoutée">` : ''}
-                <div class="photo-pick-group livraison-photo-input">
-                  <div class="avatar-upload-btns">
-                    <label class="btn btn-outline btn-sm" style="cursor:pointer;">📷 Prendre une photo<input type="file" accept="image/*" capture="user" class="hidden pick-camera"></label>
-                    <label class="btn btn-outline btn-sm" style="cursor:pointer;">🖼️ Bibliothèque<input type="file" accept="image/*" class="hidden pick-library"></label>
-                  </div>
-                  <div class="photo-pick-filename"></div>
-                </div>
-              </div>
               <button class="btn btn-sm btn-save">Enregistrer</button>
             </div>
           </details>

@@ -2,6 +2,18 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917quotidien",
+      "date": "17 septembre 2026",
+      "titre": "Quatre gestes du quotidien, enfin à portée",
+      "points": [
+        "La photo de preuve sort de « Plus d'options » : elle est sur la carte, un appui suffit, et la vignette montre qu'elle est prise. Sur un échec ou un retour aussi — la porte close, le carton abîmé.",
+        "Elle n'est toujours pas obligatoire. Le bureau voit maintenant le taux du jour, pour trancher à la mi-octobre en connaissance de cause.",
+        "Les colis qui dorment et les corrections de montants sont devenus cliquables : la ligne ouvre la fiche du colis, au lieu de montrer un problème sans rien offrir.",
+        "La barre du bas de l'équipe garde quatre onglets lisibles ; Suivi, Livreurs, Comptes et Express passent derrière « Plus ». Rien n'est retiré.",
+        "Dans Gestion, les tableaux larges annoncent qu'on peut les faire glisser : une colonne coupée au bord n'a plus l'air d'être la dernière."
+      ]
+    },
+    {
       "version": "20260917sauvegarde",
       "date": "17 septembre 2026",
       "titre": "Les données ont enfin une copie ailleurs",

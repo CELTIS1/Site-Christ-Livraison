@@ -24,6 +24,7 @@
     document.getElementById('eq-salutation')?.classList.toggle('hidden', key !== 'colis');
     document.querySelectorAll('#clt-toptabs .clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.eqtab === key));
     document.querySelectorAll('#clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.nav === key));
+    majBoutonPlus(key);
     // Réajuste les tableaux "sticky" et la carte Leaflet une fois le panneau réaffiché.
     if (key === 'suivi'){
       if (window.livreurMap) setTimeout(() => { try { window.livreurMap.invalidateSize(); } catch(e){} }, 60);
@@ -135,6 +136,69 @@
     byId('section-main')?.remove();
   }
 
+  /* LA FEUILLE « PLUS » (17/09/2026, point 9.5)
+     Sept onglets sur 390 px, c'est 48 px par entrée : « Tournées » passait à la ligne, « Livreurs »
+     et « Finances » se touchaient. Les quatre écrans du quotidien restent dans la barre ; Suivi,
+     Livreurs, Comptes et Express passent derrière « Plus ». Rien n'est retiré — tout reste à un
+     appui — et le bouton « Plus » prend le nom de l'onglet ouvert quand on est dans l'un d'eux,
+     pour qu'on sache toujours où l'on est.
+     La feuille est construite À PARTIR des boutons de la barre : leurs icônes et leurs libellés
+     sont déjà écrits une fois, on ne les recopie pas. */
+  function fermerFeuillePlus(){
+    document.getElementById('bottomnav-feuille')?.setAttribute('hidden', '');
+    document.getElementById('bottomnav-voile')?.setAttribute('hidden', '');
+    document.getElementById('bottomnav-plus')?.setAttribute('aria-expanded', 'false');
+  }
+  function majBoutonPlus(key){
+    const lib = document.getElementById('bottomnav-plus-libelle');
+    const btnBarre = document.getElementById('bottomnav-plus');
+    if (!lib || !btnBarre) return;
+    const relegue = document.querySelector('#clt-bottomnav .nav--dans-plus[data-nav="' + key + '"]');
+    lib.textContent = relegue ? (relegue.textContent || '').trim() : 'Plus';
+    btnBarre.classList.toggle('active', !!relegue);
+    document.querySelectorAll('#bottomnav-feuille button').forEach(b => b.classList.toggle('active', b.dataset.nav === key));
+    fermerFeuillePlus();
+  }
+  function construireFeuillePlus(bar){
+    if (document.getElementById('bottomnav-feuille')) return;
+    const voile = document.createElement('div');
+    voile.id = 'bottomnav-voile'; voile.className = 'bottomnav-voile'; voile.hidden = true;
+    const feuille = document.createElement('div');
+    feuille.id = 'bottomnav-feuille'; feuille.className = 'bottomnav-feuille'; feuille.hidden = true;
+    feuille.setAttribute('role', 'menu');
+    bar.querySelectorAll('.nav--dans-plus').forEach(src => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.nav = src.dataset.nav; b.setAttribute('role', 'menuitem');
+      b.innerHTML = src.innerHTML;
+      // Un onglet masqué dans la barre (Express, réservé) l'est aussi dans la feuille.
+      if (src.classList.contains('hidden')) b.hidden = true;
+      b.addEventListener('click', () => {
+        showEquipeTab(b.dataset.nav);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      feuille.appendChild(b);
+    });
+    document.body.appendChild(voile);
+    document.body.appendChild(feuille);
+    voile.addEventListener('click', fermerFeuillePlus);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerFeuillePlus(); });
+    const plus = document.getElementById('bottomnav-plus');
+    if (plus) plus.addEventListener('click', () => {
+      const ouvert = !feuille.hidden;
+      feuille.hidden = ouvert; voile.hidden = ouvert;
+      plus.setAttribute('aria-expanded', String(!ouvert));
+    });
+    /* Express n'apparaît que pour l'admin, et cela se décide APRÈS le dessin de la barre : la
+       feuille suit le bouton d'origine au lieu de figer son état. */
+    const exp = document.getElementById('bottomnav-express');
+    if (exp && window.MutationObserver){
+      new MutationObserver(() => {
+        const jumeau = feuille.querySelector('button[data-nav="express"]');
+        if (jumeau) jumeau.hidden = exp.classList.contains('hidden');
+      }).observe(exp, { attributes: true, attributeFilter: ['class'] });
+    }
+  }
+
   (function(){
     relocateEquipeSections();
 
@@ -144,11 +208,13 @@
     const bar = document.getElementById('clt-bottomnav');
     if (bar){
       bar.querySelectorAll('.nav').forEach(btn => {
+        if (!btn.dataset.nav) return;              // le bouton « Plus » a son propre écouteur
         btn.addEventListener('click', () => {
           showEquipeTab(btn.dataset.nav);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       });
+      construireFeuillePlus(bar);
     }
 
     let saved = 'colis';

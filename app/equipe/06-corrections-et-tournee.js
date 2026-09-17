@@ -117,8 +117,11 @@ cltPoserHTML(body, `<div class="empty-state">Aucun montant corrigé ${dateLabel}
 return;
 }
 
+/* Point 7.7 : la ligne mène au colis corrigé. On lisait « 3 corrections » sans pouvoir ouvrir
+   celui dont il s'agit — or c'est précisément le moment où on veut vérifier le reste de la fiche.
+   Une correction sans colis identifié (cas rare) reste une ligne inerte : on n'invente pas. */
 const rows = lignes.map(l => `
-<tr>
+<tr${l.colisId ? ` class="ligne-cliquable" data-ouvrir-colis="${escapeHTML(l.colisId)}" title="Ouvrir la fiche de ce colis"` : ''}>
 <td data-label="Heure">${formatDate(l.ts)}</td>
 <td data-label="Colis">${l.numero ? escapeHTML(l.numero) : '—'}</td>
 <td data-label="Par">${escapeHTML(l.auteur)}${l.role ? ' <span class="meta">(' + escapeHTML(l.role) + ')</span>' : ''}</td>
