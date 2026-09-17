@@ -552,10 +552,16 @@ verifier(
    chercher_partout() (migration 2026-09-17-chercher-partout.sql) : elle compare les téléphones
    chiffre à chiffre sur leurs huit derniers, donc « +225 07 98 54 66 62 » trouve « 0798546662 ».
    Elle ne lit aucune colonne d'argent et refuse quiconque n'est pas du bureau. Les six champs
-   restent : ils affinent, elle cherche : étiquette 20260917recherche. */
+   restent : ils affinent, elle cherche : étiquette 20260917recherche.
+   v155, le 17/09/2026 — point 9.6, PREMIER VOLET seulement. Mesuré à 1 440 × 900 : le premier
+   colis commençait à 1 064 px du haut, donc aucun colis visible sans faire défiler. Deux
+   gestes, mesurés chacun : « L'essentiel » devient repliable et l'écran s'en souvient (−150 px),
+   la salutation et la recherche partagent une ligne au-dessus de 1 100 px (−47 px). 867 px :
+   le premier colis passe au-dessus du pli. La refonte de la console (liste et fiche côte à
+   côte) reste le chantier d'octobre : étiquette 20260917bureau. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v154'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v155'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917bureau",
+      "date": "17 septembre 2026",
+      "titre": "Au bureau, la liste est enfin visible sans faire défiler",
+      "points": [
+        "Mesuré sur un écran d'ordinateur ordinaire : le premier colis commençait à 1 064 px du haut. Il fallait faire défiler pour voir sa liste, à chaque retour sur l'onglet, toute la journée.",
+        "« L'essentiel » se replie maintenant d'un clic et l'écran s'en souvient. Il reste ouvert par défaut : c'est le bilan du matin.",
+        "Sur grand écran, la salutation et la recherche partagent une ligne. Les deux gestes réunis font passer le premier colis au-dessus du pli.",
+        "Rien ne change sur téléphone. La vraie refonte du poste de bureau — la liste et la fiche côte à côte — reste prévue pour octobre."
+      ]
+    },
+    {
       "version": "20260917recherche",
       "date": "17 septembre 2026",
       "titre": "Une seule recherche pour tout, au bureau",

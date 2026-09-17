@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917recherche">
-<script src="theme.js?v=20260917recherche"></script>
-<script src="splash.js?v=20260917recherche"></script>
+<link rel="stylesheet" href="style.css?v=20260917bureau">
+<script src="theme.js?v=20260917bureau"></script>
+<script src="splash.js?v=20260917bureau"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -360,6 +360,11 @@
      sur une seule ligne, et seulement sur l'onglet d'accueil — showEquipeTab la masque
      ailleurs, comme il le fait déjà pour « L'essentiel ». Même traitement que le haut de page
      du livreur (feuille de route 2.5), jamais fait pour l'équipe. -->
+<!-- Sur grand écran, la salutation et la recherche partagent une ligne (point 9.6, premier
+     volet, 17/09/2026) : mesuré, cela remonte tout ce qui suit de 47 px, et c'est ce qui fait
+     passer le premier colis AU-DESSUS du pli sur un 1 440 × 900 — il commençait à 1 064 px.
+     Sur téléphone, rien ne change : les deux restent l'un sous l'autre. -->
+<div class="eq-entete-large">
 <div class="page-title page-title--salut" id="eq-salutation">Bonjour <span id="user-first-name"></span> 👋</div>
 
 <!-- ============================================================================================
@@ -382,6 +387,7 @@
            autocomplete="off" aria-label="Chercher un colis, une personne ou une course">
   </div>
   <div class="recherche-resultats hidden" id="eq-recherche-resultats" role="listbox"></div>
+</div>
 </div>
 
 <!-- Bandeau de la file d'attente hors-réseau. Placé au-dessus des onglets, donc visible quel que
@@ -434,6 +440,13 @@
 .prog-note-et-nombre .field-hint{ font-size:12.5px; color:var(--muted); margin-top:4px; }
 @media(max-width:640px){ .prog-note-et-nombre{ grid-template-columns:1fr; } }
 #section-aujourdhui{ padding:12px 14px !important; }
+/* Repliable depuis le 17/09/2026 (point 9.6) : le chevron du navigateur est remplacé par le
+   nôtre, à droite, comme partout ailleurs dans la maison. */
+#section-aujourdhui > summary{ cursor:pointer; list-style:none; }
+#section-aujourdhui > summary::-webkit-details-marker{ display:none; }
+#section-aujourdhui > summary::after{ content:'▾'; margin-left:auto; opacity:.55; transition:transform .15s; }
+#section-aujourdhui:not([open]) > summary::after{ transform:rotate(-90deg); }
+#section-aujourdhui:not([open]) > summary{ margin-bottom:0; }
 #section-aujourdhui .ess-entete{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:0 0 8px; }
 #section-aujourdhui .ess-entete h2{ margin:0; font-size:15px; }
 #section-aujourdhui .ess-jour{ font-size:12px; color:var(--muted); font-weight:600; }
@@ -486,11 +499,24 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
   #section-aujourdhui .ess-groupes{ gap:8px; }
 }
 </style>
-<div class="card" id="section-aujourdhui">
-<div class="ess-entete">
+<!-- MESURÉ LE 17/09/2026 SUR L'ÉCRAN DU BUREAU (point 9.6, premier volet).
+     Sur un ordinateur de 1 440 × 900, le premier colis commençait à 1 064 px du haut : AUCUN
+     colis n'était visible sans faire défiler. « L'essentiel » en occupait 235 à lui seul, et le
+     replier en rend 150.
+     (Une première mesure annonçait 881 px : elle visait le conteneur du jour, pas la carte du
+     colis. Corrigée le jour même — un chiffre faux dans un commentaire survit des années.)
+     Il reste OUVERT par défaut : c'est le bilan du matin, et le replier d'office priverait de
+     l'information celui qui ouvre l'écran pour la première fois de la journée. Mais il se
+     replie maintenant d'un clic, et l'écran s'en souvient — même geste et même mécanique que
+     « Ma journée » sur le téléphone du livreur. Celui qui a lu son bilan travaille ensuite sur
+     sa liste, sans la chercher.
+     La refonte de fond (la liste et la fiche côte à côte, la largeur enfin utilisée) reste le
+     chantier d'octobre : ceci ne fait que rendre les 235 px récupérables tout de suite. -->
+<details class="card" id="section-aujourdhui" open>
+<summary class="ess-entete" id="ess-entete">
 <h2 class="panel-subtitle">📌 L'essentiel</h2>
 <span class="ess-jour" id="ess-jour"></span>
-</div>
+</summary>
 <div class="ess-groupes">
   <!-- 05/09/2026 — Celtis veut voir d'un coup d'œil le bilan du jour : reçus, livrés, échecs, en cours. Lecture seule. -->
   <div class="ess-groupe ess-groupe-jour">
@@ -510,7 +536,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
     <div class="ess-tuiles" id="aujourdhui-argent"><span class="ess-tuile est-vide">Chargement…</span></div>
   </div>
 </div>
-</div>
+</details>
 
 <!-- Barre d'onglets (grands écrans). Les panneaux sont remplis dynamiquement au chargement
      en déplaçant les sections existantes (voir relocateEquipeSections()). -->
@@ -1545,36 +1571,36 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917recherche"></script>
-<script src="lib/bibliotheques.js?v=20260917recherche"></script>
-<script src="lib/retours.js?v=20260917recherche"></script>
-<script src="lib/reclamations.js?v=20260917recherche"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917recherche"></script>
-<script src="lib/argent.js?v=20260917recherche"></script>
-<script src="lib/releve-cliente.js?v=20260917recherche"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917recherche"></script>
-<script src="lib/briques-argent.js?v=20260917recherche"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260917recherche"></script>
-<script src="lib/annonce-de-remise.js?v=20260917recherche"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917recherche"></script>
-<script src="lib/primes.js?v=20260917recherche"></script>
-<script src="lib/doublons.js?v=20260917recherche"></script>
-<script src="config.js?v=20260917recherche"></script>
-<script src="clients-dashboard.js?v=20260917recherche"></script>
-<script src="livreurs-dashboard.js?v=20260917recherche"></script>
-<script src="point-du-jour.js?v=20260917recherche"></script>
-<script src="biometric-lock.js?v=20260917recherche"></script>
-<script src="clt-select-recherche.js?v=20260917recherche"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260917recherche"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260917recherche"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260917recherche"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260917recherche"></script>
-<script src="equipe/04-actions.js?v=20260917recherche"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260917recherche"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260917recherche"></script>
-<script src="equipe/07-rapports.js?v=20260917recherche"></script>
-<script src="equipe/08-son-ecran.js?v=20260917recherche"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260917recherche"></script>
+<script src="clt-common.js?v=20260917bureau"></script>
+<script src="lib/bibliotheques.js?v=20260917bureau"></script>
+<script src="lib/retours.js?v=20260917bureau"></script>
+<script src="lib/reclamations.js?v=20260917bureau"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917bureau"></script>
+<script src="lib/argent.js?v=20260917bureau"></script>
+<script src="lib/releve-cliente.js?v=20260917bureau"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917bureau"></script>
+<script src="lib/briques-argent.js?v=20260917bureau"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260917bureau"></script>
+<script src="lib/annonce-de-remise.js?v=20260917bureau"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917bureau"></script>
+<script src="lib/primes.js?v=20260917bureau"></script>
+<script src="lib/doublons.js?v=20260917bureau"></script>
+<script src="config.js?v=20260917bureau"></script>
+<script src="clients-dashboard.js?v=20260917bureau"></script>
+<script src="livreurs-dashboard.js?v=20260917bureau"></script>
+<script src="point-du-jour.js?v=20260917bureau"></script>
+<script src="biometric-lock.js?v=20260917bureau"></script>
+<script src="clt-select-recherche.js?v=20260917bureau"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260917bureau"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260917bureau"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260917bureau"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260917bureau"></script>
+<script src="equipe/04-actions.js?v=20260917bureau"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260917bureau"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260917bureau"></script>
+<script src="equipe/07-rapports.js?v=20260917bureau"></script>
+<script src="equipe/08-son-ecran.js?v=20260917bureau"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260917bureau"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1619,7 +1645,7 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260917recherche"></script>
-<script src="equipe/11-chercher-partout.js?v=20260917recherche"></script>
+<script src="equipe/10-onglets.js?v=20260917bureau"></script>
+<script src="equipe/11-chercher-partout.js?v=20260917bureau"></script>
 </body>
 </html>

@@ -224,3 +224,20 @@
     const lienColis = new URLSearchParams(location.search).get('colis');
     showEquipeTab(lienColis ? 'colis' : saved);
   })();
+
+  /* « L'essentiel » se replie, et l'écran s'en souvient (point 9.6, 17/09/2026).
+     Mesuré : sur un ordinateur de 1 440 × 900, le premier colis commençait à 881 px du haut —
+     aucun colis visible sans faire défiler. Ce bloc en prenait 235. Il reste ouvert par défaut
+     (c'est le bilan du matin) ; celui qui l'a lu le replie, et il le retrouve replié demain.
+     Même mécanique que « Ma journée » chez le livreur. */
+  (function initEssentielRepli(){
+    const d = document.getElementById('section-aujourdhui');
+    if (!d || !('open' in d)) return;
+    try {
+      const garde = localStorage.getItem('clt:equipe:essentiel-ouvert');
+      if (garde !== null) d.open = garde === '1';
+    } catch (e) {}
+    d.addEventListener('toggle', () => {
+      try { localStorage.setItem('clt:equipe:essentiel-ouvert', d.open ? '1' : '0'); } catch (e) {}
+    });
+  })();
