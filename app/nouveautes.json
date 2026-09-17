@@ -2,6 +2,16 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917lignes",
+      "date": "17 septembre 2026",
+      "titre": "Les bonnes lignes : deux pour appeler, une pour WhatsApp",
+      "points": [
+        "Les deux numéros du service à la clientèle — 07 79 60 47 61 et 01 70 40 73 12 — sont des lignes d'appel.",
+        "WhatsApp reste le 05 46 81 86 40, celui du site : c'est lui qui reçoit les messages. Un message envoyé à une ligne qui ne reçoit pas WhatsApp n'arrive jamais.",
+        "Le numéro s'affiche maintenant à côté du bouton WhatsApp, dans le menu comme sur la page de suivi : on sait à qui on écrit."
+      ]
+    },
+    {
       "version": "20260917retours",
       "date": "17 septembre 2026",
       "titre": "Un colis qui revient a maintenant un chemin de retour",

@@ -487,10 +487,14 @@ verifier(
    « ↩️ Rendu à la cliente » sur sa carte, le colis reste dans sa journée tant qu'il l'a, deux
    compteurs au bureau (détenus / en retard) et la phrase qui convient chez la cliente. Règles
    partagées dans lib/retours.js, sorti de config.js ; colonnes retour_rendu_at et
-   retour_rendu_par (migration 2026-09-17-les-retours.sql) : étiquette 20260917retours. */
+   retour_rendu_par (migration 2026-09-17-les-retours.sql) : étiquette 20260917retours.
+   v143, le 17/09/2026 — correction après retour de Celtis : WhatsApp reste la ligne du site
+   (05 46 81 86 40), les deux numéros qu'il a donnés sont pour les APPELS directs. Les trois
+   étaient devenus un seul la veille (clt-common.js, suivi.html). Le numéro WhatsApp s'affiche
+   désormais à côté du bouton : on sait à qui on écrit : étiquette 20260917lignes. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v142'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v143'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

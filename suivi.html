@@ -433,9 +433,11 @@
      la clientèle, dans l'ordre donné par Celtis le 17/09/2026 — et non les numéros du site
      vitrine. Elles sont aussi dans app/clt-common.js (CLT_CONTACT) : cette page est publique et
      ne charge aucun script de l'application, d'où cette copie, à garder d'accord avec l'autre. */
-  const CLT_TEL = '+2250779604761';          // premier : 07 79 60 47 61
-  const CLT_TEL_2 = '+2250170407312';        // second  : 01 70 40 73 12
-  const CLT_WHATSAPP = '2250779604761';      // WhatsApp sur la première ligne
+  const CLT_TEL = '+2250779604761';          // premier : 07 79 60 47 61 — APPEL
+  const CLT_TEL_2 = '+2250170407312';        // second  : 01 70 40 73 12 — APPEL
+  // WhatsApp est une ligne à part, celle du site (Celtis, 17/09/2026). Écrire aux deux numéros
+  // ci-dessus, qui ne reçoivent pas WhatsApp, serait un message qui n'arrive jamais.
+  const CLT_WHATSAPP = '2250546818640';      // 05 46 81 86 40 — la ligne WhatsApp
   function blocContactHTML(numero) {
     const message = numero
       ? "Bonjour CLT, j'ai une question sur le colis " + numero + "."

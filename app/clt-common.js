@@ -1673,9 +1673,14 @@ function cltBrancherFiltreListe(champ, liste, options) {
    commercial, ceux-ci amènent une cliente ou un destinataire à la personne qui suit les colis.
    WhatsApp part sur la première ligne, la principale. */
 const CLT_CONTACT = {
-  tel: '+2250779604761',        // premier : 07 79 60 47 61
-  telSecond: '+2250170407312',  // second  : 01 70 40 73 12
-  whatsapp: '2250779604761',    // WhatsApp sur la première ligne
+  tel: '+2250779604761',        // premier : 07 79 60 47 61  — APPEL
+  telSecond: '+2250170407312',  // second  : 01 70 40 73 12  — APPEL
+  /* WhatsApp est une LIGNE À PART, et ce n'est pas l'une des deux ci-dessus (Celtis, 17/09/2026 :
+     « le numéro WhatsApp reste le même, les deux numéros que j'ai donnés sont pour les appels
+     directs »). C'est le 05 46 81 86 40, celui qu'affiche déjà le site public depuis toujours :
+     écrire à un numéro qui ne reçoit pas WhatsApp, c'est un message qui n'arrive jamais. */
+  whatsapp: '2250546818640',    // 05 46 81 86 40 — la ligne WhatsApp du site
+  afficheWhatsapp: '05 46 81 86 40',
   affiche: '07 79 60 47 61',
   afficheSecond: '01 70 40 73 12',
 };
@@ -1695,7 +1700,7 @@ function cltContactBoutonsHTML(message) {
   return '<div class="clt-contact">'
     + '<a class="btn btn-outline btn-sm" href="tel:' + CLT_CONTACT.tel + '">📞 ' + CLT_CONTACT.affiche + '</a>'
     + '<a class="btn btn-outline btn-sm" href="tel:' + CLT_CONTACT.telSecond + '">📞 ' + CLT_CONTACT.afficheSecond + '</a>'
-    + '<a class="btn btn-outline btn-sm" href="' + wa + '" target="_blank" rel="noopener">🟢 WhatsApp</a>'
+    + '<a class="btn btn-outline btn-sm" href="' + wa + '" target="_blank" rel="noopener">🟢 WhatsApp ' + CLT_CONTACT.afficheWhatsapp + '</a>'
     + '</div>';
 }
 
@@ -1709,7 +1714,7 @@ function cltBrancherContact() {
   const tel2 = document.getElementById('lien-appeler-clt-2');
   if (tel2) { tel2.setAttribute('href', 'tel:' + CLT_CONTACT.telSecond); tel2.textContent = '📞 Autre ligne · ' + CLT_CONTACT.afficheSecond; }
   const wa = document.getElementById('lien-whatsapp-clt');
-  if (wa) wa.setAttribute('href', 'https://wa.me/' + CLT_CONTACT.whatsapp);
+  if (wa) { wa.setAttribute('href', 'https://wa.me/' + CLT_CONTACT.whatsapp); wa.textContent = '🟢 Écrire sur WhatsApp · ' + CLT_CONTACT.afficheWhatsapp; }
 }
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cltBrancherContact);

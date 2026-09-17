@@ -60,19 +60,27 @@ verifier('« Joindre CLT » n\'apparaît que si on le demande (chez la cliente, 
   /Joindre CLT/.test(app.motifEchecHTML(echec, { avecAide: true })) && !/Joindre CLT/.test(html));
 
 console.log('\n2. Joindre CLT : un seul endroit où les numéros sont écrits');
-/* Ce sont les deux lignes du service à la clientèle, données par Celtis le 17/09/2026, dans
-   son ordre : on appelle la première, la seconde dépanne. Surtout pas les numéros du site
-   vitrine, qui mènent au commercial. */
-verifier('la première ligne, la seconde, et WhatsApp sur la première',
+/* Ce sont les deux lignes du service à la clientèle, données par Celtis le 17/09/2026, dans son
+   ordre : on appelle la première, la seconde dépanne.
+   WHATSAPP EST UNE TROISIÈME LIGNE, ET C'EST VOULU (Celtis, 17/09/2026 : « le numéro WhatsApp
+   reste le même, les deux numéros que j'ai donnés sont pour les appels directs »). Écrire sur
+   WhatsApp à une ligne qui ne le reçoit pas, c'est un message qui n'arrive jamais : ce contrôle
+   est là pour que personne ne « rectifie » un jour les trois numéros en un seul. */
+verifier('deux lignes pour appeler, et la ligne WhatsApp du site, qui est une autre',
   app.CLT_CONTACT.tel === '+2250779604761'
   && app.CLT_CONTACT.telSecond === '+2250170407312'
-  && app.CLT_CONTACT.whatsapp === '2250779604761');
+  && app.CLT_CONTACT.whatsapp === '2250546818640'
+  && app.CLT_CONTACT.whatsapp !== app.CLT_CONTACT.tel.replace('+', ''));
 const suivi = lire('suivi.html');
 verifier('la page de suivi porte les mêmes lignes (elle ne charge aucun script de l\'app)',
   suivi.includes("CLT_TEL = '+2250779604761'")
   && suivi.includes("CLT_TEL_2 = '+2250170407312'")
-  && suivi.includes("CLT_WHATSAPP = '2250779604761'"),
+  && suivi.includes("CLT_WHATSAPP = '2250546818640'"),
   'les deux copies doivent rester d\'accord');
+verifier('la ligne WhatsApp est celle que le site vitrine affiche déjà',
+  lire('index.html').includes('wa.me/2250546818640') && lire('tarifs.html').includes('wa.me/2250546818640'));
+verifier('le numéro WhatsApp s\'affiche à côté du bouton : on sait à qui on écrit',
+  /afficheWhatsapp/.test(lire('app/clt-common.js')) && app.CLT_CONTACT.afficheWhatsapp === '05 46 81 86 40');
 verifier('les numéros du site vitrine ne traînent plus nulle part dans l\'application',
   !lire('app/clt-common.js').includes('0711138693') && !suivi.includes('0711138693'));
 verifier('le message WhatsApp est pré-rempli avec le numéro du colis',
