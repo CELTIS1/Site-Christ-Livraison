@@ -639,6 +639,9 @@ ${(Number(c.tentatives_livraison) || 0) > 0 ? `<div class="meta" style="color:#c
      y être. Même fonction que chez la cliente (lib/primes.js), sans le lien « Joindre CLT » —
      ici, c'est nous. -->
 ${motifEchecHTML(c)}
+<!-- LE RETOUR (17/09/2026, point 7.3) : qui détient la marchandise, depuis quand, et si le
+     délai de deux jours est dépassé. Même règle et mêmes mots que chez le livreur (config.js). -->
+${c.statut === 'retour' ? `<div class="retour-ligne${retourEnRetard(c) ? ' retour-ligne--retard' : ''}">${escapeHTML(retourTexte(c, 'equipe'))}${c.livreur_id && !c.retour_rendu_at ? ' <strong>' + (collecteLivreurLabel(c.livreur_id) || 'Livreur') + '</strong>' : ''}</div>` : ''}
 ${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · <span title="Ce que le destinataire remet en main propre : l'article de la cliente plus nos frais. Ce n'est pas un chiffre d'affaires.">Le destinataire remet : ${formatMontant(montantTotalColis(c)) || '0 FCFA'}</span> ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
@@ -790,6 +793,12 @@ const cat = {
   // d'août encore en route le 7 septembre). (09/09/2026)
   dormants:  colis.filter(c => (c.statut === 'recupere' || c.statut === 'en_attente') && jourDuColis(c) < isoMoinsJours(aujourdhui, 2)),
   examiner:  colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && !vues.has(c.id)),
+  /* LES RETOURS DÉTENUS (17/09/2026, point 7.3). Un colis revenu est chez le livreur jusqu'à
+     ce qu'il le rende ; passé deux jours, c'est un retard que le bureau doit voir. Règle et
+     calcul dans config.js (retourEnAttente / retourEnRetard) : les trois écrans disent la même
+     chose. « À rendre » compte tout ce qui est détenu, « en retard » le sous-ensemble en faute. */
+  retours:      colis.filter(c => retourEnAttente(c)),
+  retoursTard:  colis.filter(c => retourEnRetard(c)),
   // Les échecs que l'équipe n'a pas encore qualifiés (règlement des primes, 13/09/2026).
   qualifier: colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && c.non_livre_at && c.non_livre_at >= (typeof PRIMES_DEBUT !== 'undefined' ? PRIMES_DEBUT : '2026-10-01') && (c.echec_imputable === null || c.echec_imputable === undefined)),
 };
@@ -831,7 +840,7 @@ const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`
        mais « ✓ Rien à faire ». Un tableau de bord doit montrer ce qui demande une action ; ce
        qui vaut zéro n'en demande pas, et occupait autant de place que le reste.
    Dès qu'il y a quelque chose, la pastille revient, en couleur. */
-window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id) };
+window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id), retours: cat.retours.map(c => c.id), retoursTard: cat.retoursTard.map(c => c.id) };
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 // 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient de
 // config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
@@ -870,6 +879,8 @@ set('aujourdhui-anomalies', ouRien(
   pastille(cat.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +
   pastille(cat.dormants.length, 'en route depuis plus de 2 jours', 'dormants', 'rouge') +
   pastille(cat.examiner.length, 'non livrés ou retours', 'examiner', 'rouge') +
+  pastille(cat.retours.length, cat.retours.length > 1 ? 'retours chez les livreurs' : 'retour chez un livreur', 'retours', 'ambre') +
+  pastille(cat.retoursTard.length, cat.retoursTard.length > 1 ? 'retours en retard (plus de 2 jours)' : 'retour en retard (plus de 2 jours)', 'retours-tard', 'rouge') +
   pastille(cat.qualifier.length, cat.qualifier.length > 1 ? 'échecs à qualifier' : 'échec à qualifier', 'qualifier', 'ambre'), 'Rien à examiner'));
 set('aujourdhui-argent', ouRien(
   pastille(money(resteARemettre), 'à remettre', 'argent', 'rouge') +
@@ -927,6 +938,8 @@ switch (cle) {
     const seul = st.every(x => x === 'non_livre') ? 'non_livre' : st.every(x => x === 'retour') ? 'retour' : 'tous';
     listeColis(seul, '', L.examiner); break;
   }
+  case 'retours':      listeColis('retour', '', L.retours); break;
+  case 'retours-tard': listeColis('retour', '', L.retoursTard); break;
   case 'argent': onglet('finances'); if (typeof showMainTab === 'function') showMainTab('compta'); defiler('caisse-livreur'); break;
   case 'qualifier': onglet('livreurs'); setTimeout(() => defiler('ld-qualifier'), 400); break;
 }

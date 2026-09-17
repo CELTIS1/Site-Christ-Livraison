@@ -578,10 +578,18 @@ function releveClienteTuilesHTML(colis) {
    L'ARGENT, lui, reste découpé par jour de réception : c'est la règle de la remise du soir, et
    elle n'est pas touchée ici. */
 const STATUTS_EN_ROUTE = ["en_attente", "recupere", "en_livraison"];
+/* Et le colis REVENU que le livreur n'a pas encore rendu (17/09/2026, point 7.3) : la
+   marchandise est dans ses mains et il lui reste un geste à faire. Sans cette ligne, un retour
+   de la semaine dernière disparaissait de « Ma journée » dès le lendemain — c'est-à-dire
+   exactement au moment où il commençait à traîner. retourEnAttente vient de lib/retours.js,
+   chargé avant ce bloc. */
+function encoreChezLeLivreur(c) {
+  return STATUTS_EN_ROUTE.indexOf(c.statut) !== -1 || retourEnAttente(c);
+}
 function colisDeLaJourneeDeTravail(colis, jour) {
   return (colis || []).filter(function (c) {
     if (!c) return false;
-    if (STATUTS_EN_ROUTE.indexOf(c.statut) !== -1) return true;
+    if (encoreChezLeLivreur(c)) return true;
     return Object.keys(HORODATAGE_DU_STATUT).some(function (st) { return jourEvenementColis(c, st) === jour; });
   });
 }
@@ -606,7 +614,7 @@ function colisDuJour(colis, jour) {
 }
 function colisRestesEnRoute(colis, jour) {
   return (colis || []).filter(function (c) {
-    if (!c || STATUTS_EN_ROUTE.indexOf(c.statut) === -1) return false;
+    if (!c || !encoreChezLeLivreur(c)) return false;
     const recu = jourDuColis(c);
     if (!recu || recu >= jour) return false;
     return !Object.keys(HORODATAGE_DU_STATUT).some(function (st) { return jourEvenementColis(c, st) === jour; });

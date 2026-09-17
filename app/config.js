@@ -523,8 +523,15 @@ function prochaineEtape(colis) {
   if (st === 'en_attente')   return { statut: 'recupere',     libelle: '📦 Récupéré' };
   if (st === 'recupere')     return expedition ? { statut: 'livre', libelle: '🚌 Expédié' } : { statut: 'en_livraison', libelle: '🚚 Je pars livrer' };
   if (st === 'en_livraison') return { statut: 'livre', libelle: '✅ ' + libelleStatut('livre', colis) };
+  /* Un colis revenu N'EST PAS un colis fini : il est chez le livreur et il doit retourner chez
+     sa cliente (point 7.3). C'est le geste qui manquait — jusqu'au 17/09/2026, « retour » était
+     un mot affiché, et rien dans l'application ne rendait la marchandise. */
+  if (st === 'retour' && !colis.retour_rendu_at) return { statut: 'retour', libelle: '↩️ Rendu à la cliente', extra: { retour_rendu_at: 'maintenant' } };
   return null;
 }
+/* LES RETOURS (qui détient la marchandise, l'échéance de deux jours, les phrases des trois
+   écrans) sont dans app/lib/retours.js — sorti d'ici le 17/09/2026. */
+
 function etapeEchec(colis) {
   if (!colis) return null;
   if (colis.statut !== 'recupere' && colis.statut !== 'en_livraison') return null;

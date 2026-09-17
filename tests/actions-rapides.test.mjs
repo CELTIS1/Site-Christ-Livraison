@@ -368,7 +368,7 @@ async function livreurMemeCheminQueEnregistrer(){
   verifier("la carte du livreur porte au plus deux boutons d'étape : l'étape suivante et l'échec",
     /prochaineEtape\(c\), e = etapeEchec\(c\)/.test(source) && /btn-etape btn-etape-principale/.test(source) && /btn-etape btn-etape-echec/.test(source) && !/actionsRapidesHTML/.test(source));
   verifier("un bouton d'étape passe par le MÊME chemin qu'« Enregistrer » (enregistrerDepuisLaCarte)",
-    /\.btn-etape'\)\.forEach\(btn => \{\s*btn\.addEventListener\('click', \(\) => enregistrerDepuisLaCarte\(btn\.closest\('\.colis-item'\), btn\.dataset\.etape, btn\)\)/.test(source)
+    /\.btn-etape'\)\.forEach\(btn => \{\s*btn\.addEventListener\('click', \(\) => enregistrerDepuisLaCarte\(btn\.closest\('\.colis-item'\), btn\.dataset\.etape, btn, \{ rendu: btn\.dataset\.rendu === '1' \}\)\)/.test(source)
     && /enregistrerDepuisLaCarte\(item, item\.querySelector\('\.status-select'\)\.value, btn\)/.test(source));
   verifier('le menu déroulant de statut est toujours là, sous « Plus d\'options », avec « Enregistrer »',
     source.includes('<select class="status-select">${statutOptions}</select>') && /colis-etat-choix/.test(source) && /<button class="btn btn-sm btn-save">Enregistrer<\/button>\s*<\/div>\s*<\/details>/.test(source));

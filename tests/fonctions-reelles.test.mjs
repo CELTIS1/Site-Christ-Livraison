@@ -67,7 +67,12 @@ verifier('en attente → récupéré', app.prochaineEtape(abidjan('en_attente'))
 verifier('récupéré → en livraison (Abidjan)', app.prochaineEtape(abidjan('recupere')).statut === 'en_livraison');
 verifier('récupéré → livré directement sur une expédition (« Expédié »)', app.prochaineEtape(expedition('recupere')).statut === 'livre' && /Expédié/.test(app.prochaineEtape(expedition('recupere')).libelle));
 verifier('en livraison → livré', app.prochaineEtape(abidjan('en_livraison')).statut === 'livre');
-verifier('un colis fini (livré, non livré, retour) n\'a plus d\'étape', ['livre', 'non_livre', 'retour'].every(s => app.prochaineEtape(abidjan(s)) === null));
+// 17/09/2026, point 7.3 : un colis REVENU n'est plus un colis fini. Il est chez le livreur et
+// il doit retourner chez sa cliente : la carte porte « ↩️ Rendu à la cliente » jusqu'à ce que ce
+// soit fait. Livré et non livré, eux, restent sans étape.
+verifier('livré et non livré n\'ont plus d\'étape', ['livre', 'non_livre'].every(s => app.prochaineEtape(abidjan(s)) === null));
+verifier('un retour non rendu porte le geste qui manquait', (() => { const p = app.prochaineEtape(abidjan('retour')); return p && p.statut === 'retour' && /Rendu à la cliente/.test(p.libelle) && p.extra && p.extra.retour_rendu_at; })());
+verifier('un retour déjà rendu n\'a plus d\'étape', app.prochaineEtape(Object.assign(abidjan('retour'), { retour_rendu_at: '2026-09-16T10:00:00Z' })) === null);
 verifier('« Non livré » ne se propose qu\'à un colis en route', app.etapeEchec(abidjan('recupere')).statut === 'non_livre' && app.etapeEchec(abidjan('en_livraison')).statut === 'non_livre' && app.etapeEchec(abidjan('en_attente')) === null && app.etapeEchec(abidjan('livre')) === null);
 verifier('une expédition ne propose jamais « en livraison »', !app.etatsPossibles(expedition('recupere')).includes('en_livraison'));
 verifier('… mais garde toujours son état courant dans la liste', app.etatsPossibles(expedition('en_livraison')).includes('en_livraison'));

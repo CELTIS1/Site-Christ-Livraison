@@ -481,10 +481,16 @@ verifier(
    « 📲 Installer l'application » entre dans le menu ☰ des six espaces sans toucher aux pages, un
    encadré le propose sur la page de connexion, et /installer.html donne la marche à suivre en
    dessins pour Android, iPhone et ordinateur (clt-common.js, login.html, installer.html, index,
-   sw.js) : étiquette 20260917installer. */
+   sw.js) : étiquette 20260917installer.
+   v142, le 17/09/2026 — point 7.3 : les retours, du début à la fin. Règle de Celtis — le livreur
+   détient un colis revenu par défaut et le rend le lendemain, deux jours au plus tard. Geste
+   « ↩️ Rendu à la cliente » sur sa carte, le colis reste dans sa journée tant qu'il l'a, deux
+   compteurs au bureau (détenus / en retard) et la phrase qui convient chez la cliente. Règles
+   partagées dans lib/retours.js, sorti de config.js ; colonnes retour_rendu_at et
+   retour_rendu_par (migration 2026-09-17-les-retours.sql) : étiquette 20260917retours. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v141'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v142'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

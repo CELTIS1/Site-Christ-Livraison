@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917retours",
+      "date": "17 septembre 2026",
+      "titre": "Un colis qui revient a maintenant un chemin de retour",
+      "points": [
+        "Jusqu'ici « retour » était un mot affiché : rien ne disait qui avait la marchandise. La règle est désormais dans l'application — le livreur détient le colis revenu, et le rend à la cliente le lendemain, deux jours au plus tard.",
+        "Le livreur a un bouton « ↩️ Rendu à la cliente » sur la carte du colis, et ce colis reste dans sa journée tant qu'il l'a — il ne disparaît plus le lendemain.",
+        "Au bureau, deux compteurs : les retours encore chez les livreurs, et ceux qui dépassent deux jours, en rouge, avec le nom du livreur sur la carte.",
+        "La cliente lit « votre colis revient : le livreur vous le rapporte, au plus tard <jour> », puis la date à laquelle il lui a été rendu."
+      ]
+    },
+    {
       "version": "20260917installer",
       "date": "17 septembre 2026",
       "titre": "L'application sur votre écran d'accueil, sans attendre le Play Store",

@@ -2930,3 +2930,12 @@ html[data-theme="dark"] .clt-joindre{ color:#9DB8DA; }
      (une case n'est pas un bouton — on la vise avec son étiquette, qui, elle, fait 44). */
   input[type="checkbox"], input[type="radio"]{ min-width:24px; min-height:24px; }
 }
+
+/* LES RETOURS (17/09/2026, point 7.3) — qui détient la marchandise, et jusqu'à quand.
+   Un retour dans les temps est une information, pas une alerte : filet violet, comme le statut.
+   Un retour en retard est une alerte : filet et texte rouges, chez le livreur comme au bureau. */
+.retour-ligne{ margin-top:6px; padding:7px 10px; border-left:3px solid #8e44ad; border-radius:8px; background:#f2e8fa; color:#5b2a72; font-size:13px; font-weight:600; line-height:1.4; }
+.retour-ligne--retard{ border-left-color:#c0392b; background:#fdeceb; color:#8f2018; }
+html[data-theme="dark"] .retour-ligne{ background:#2A1B34; color:#D8BBE8; }
+html[data-theme="dark"] .retour-ligne--retard{ background:#3A1A17; color:#F0B4AE; }
+.btn-etape-rendu{ background:#8e44ad !important; border-color:#8e44ad !important; color:#fff !important; }

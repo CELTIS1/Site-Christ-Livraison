@@ -25,6 +25,9 @@ function verifier(t, condition, detail) {
 
 // Les blocs sortis, dans l'ordre de chargement, avec quelques fonctions repères de chacun.
 const BLOCS = [
+  // Séance du 17/09/2026 (point 7.3) : les règles du retour, partagées par les trois écrans.
+  // Aucune dépendance : chargé en tête, et annonce-de-remise.js s'en sert.
+  { fichier: 'lib/retours.js', reperes: ['retourEnAttente', 'retourEcheance', 'retourJoursEcoules', 'retourEnRetard', 'retourTexte'], constantes: ['RETOUR_DELAI_JOURS'] },
   { fichier: 'lib/communes-et-tarifs.js', reperes: ['estExpedition', 'computePrixLivraison', 'appliquerModeExpedition', 'brancherPrecisionExpedition'], constantes: ['COMMUNES', 'COMMUNE_EXPEDITION', 'MATRICE_TARIFS', 'COULEUR_NEGATIF_CLT'] },
   { fichier: 'lib/argent.js', reperes: ['montantArticleColis', 'montantLivraisonColis', 'articleEncaisse', 'livraisonEncaissee', 'totauxArgent', 'caisseParLivreur', 'colisQuiDorment', 'piedTotalHTML'], constantes: ['MONTANT_ECART_SEUIL_CONFIRMATION', 'LIBELLE_FRAIS_COURSE'] },
   // Séance 2
