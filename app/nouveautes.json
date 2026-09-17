@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260917bulletins",
+      "date": "17 septembre 2026",
+      "titre": "Un bulletin de paie remis ne se réécrit plus",
+      "points": [
+        "Les bulletins étaient recalculés à chaque affichage : changer un taux ou une catégorie réécrivait les bulletins des mois passés, y compris ceux déjà imprimés et remis en main propre.",
+        "Au moment de la remise, un bouton fige le mois. Le bulletin garde alors ses chiffres pour toujours, avec la trace de ce qui les a produits.",
+        "Chaque ligne dit si elle est un brouillon ou un bulletin remis, et le papier imprimé le dit aussi.",
+        "Une erreur découverte après coup se corrige : on rouvre le bulletin en donnant un motif, qui reste écrit."
+      ]
+    },
+    {
       "version": "20260917lignes",
       "date": "17 septembre 2026",
       "titre": "Les bonnes lignes : deux pour appeler, une pour WhatsApp",

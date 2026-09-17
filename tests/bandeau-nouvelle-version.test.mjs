@@ -491,10 +491,17 @@ verifier(
    v143, le 17/09/2026 — correction après retour de Celtis : WhatsApp reste la ligne du site
    (05 46 81 86 40), les deux numéros qu'il a donnés sont pour les APPELS directs. Les trois
    étaient devenus un seul la veille (clt-common.js, suivi.html). Le numéro WhatsApp s'affiche
-   désormais à côté du bouton : on sait à qui on écrit : étiquette 20260917lignes. */
+   désormais à côté du bouton : on sait à qui on écrit : étiquette 20260917lignes.
+   v144, le 17/09/2026 — point 8.1 : un bulletin de paie remis ne se réécrit plus. Au moment de
+   la remise, on fige le mois : le bulletin calculé et les éléments qui l'ont produit (saisie,
+   taux, grille, fiche) sont gardés dans gestion_bulletins, et c'est cette copie qu'on affiche et
+   qu'on imprime ensuite. Rouvrir reste possible, avec un motif écrit et tracé. Au passage, la
+   dernière fenêtre du navigateur de Gestion (le motif d'annulation d'une facture) est remplacée
+   par un panneau de l'application (gestion.js, gestion.html, migration
+   2026-09-17-figer-les-bulletins.sql) : étiquette 20260917bulletins. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v143'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v144'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

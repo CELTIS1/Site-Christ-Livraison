@@ -14,8 +14,14 @@
            saisie la plus répétitive de l'écran — la recette d'un chauffeur pour un jour —
            n'appelait même pas le garde-fou.
 
+     8.1 · Un bulletin de paie était RECALCULÉ à chaque affichage, à partir des salariés, des
+           taux et de la grille tels qu'ils sont aujourd'hui. Changer un taux en octobre
+           réécrivait donc les bulletins de juillet déjà imprimés, signés et remis en main
+           propre : le papier que le salarié a chez lui et l'écran ne disaient plus la même
+           chose, et rien ne le signalait.
+
    Ce banc lit le vrai fichier et fait tourner la vraie fonction de seuil. Il ne remplace pas
-   un essai à l'écran ; il empêche ces deux protections de disparaître sans qu'on le voie.
+   un essai à l'écran ; il empêche ces trois protections de disparaître sans qu'on le voie.
    ========================================================================================== */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -79,6 +85,47 @@ verifier('il explique ce qu\'il fait et ce qu\'il vaut par défaut', /2 000 000 
 verifier('il est relu à l\'affichage', /getElementById\('p-seuil'\)/.test(gestion) && /PARAMS\.seuil_montant != null/.test(gestion));
 verifier('il n\'est écrit que si la colonne existe en base (comme les taux de cotisation)', /'seuil_montant' in PARAMS/.test(gestion));
 verifier('vide remet le défaut plutôt que zéro', /el\.value\.trim\(\) === '' \? null : n\(el\.value\)/.test(gestion));
+
+console.log('\n5. Un bulletin remis ne se réécrit plus (8.1)');
+verifier('les bulletins figés sont lus en base avant le rendu', /async function loadBulletinsFiges\(/.test(gestion) && /from\('gestion_bulletins'\)/.test(gestion));
+verifier('n\'est « figé » qu\'un bulletin dont le statut est valide', /function bulletinFige\([\s\S]{0,220}?statut === 'valide'/.test(gestion));
+// Le cœur du point : un bulletin figé ne repasse JAMAIS par computeBulletin.
+verifier('un bulletin figé réaffiche sa copie, il n\'est pas recalculé',
+  /const b = fige \? fige\.snapshot : computeBulletin\(/.test(gestion));
+verifier('l\'instantané garde aussi de quoi refaire le calcul (saisie, taux, grille, fiche)',
+  /_elements: \{[\s\S]{0,300}saisie:[\s\S]{0,200}parametres: PARAMS[\s\S]{0,120}grille: GRILLE[\s\S]{0,120}salarie: sal/.test(gestion));
+verifier('les montants clés sont aussi écrits en colonnes (lisibles sans ouvrir le jsonb)',
+  /salaire_brut: n\(L\.b\.baseImposable\)/.test(gestion) && /net_a_payer: n\(L\.b\.net\)/.test(gestion));
+verifier('on fige tout le mois d\'un coup, ou rien (un seul upsert)',
+  /upsert\(lignes, \{ onConflict: 'salarie_id,periode' \}\)/.test(gestion));
+verifier('figer demande confirmation, avec le mois et le net total', /Figer ces \$\{aFiger\.length\} bulletins \?/.test(gestion) && /de net à payer/.test(gestion));
+// Un écran de paie qui écrit « les 1 bulletin(s) » se lit comme un brouillon de logiciel.
+verifier('le français s\'accorde : un bulletin, deux bulletins', /'les ' \+ brouillons \+ ' bulletins' : 'le bulletin'/.test(gestion) && /'Figer ce bulletin \?'/.test(gestion) && /const pluriel = \(n, mot\)/.test(gestion));
+verifier('on ne propose de figer que sur un seul mois', /if \(mois\.length !== 1\)\{/.test(gestion) && /Choisissez un seul mois/.test(gestion));
+verifier('le geste est réservé à la paie', /function peutFigerPaie\(\)\{[\s\S]{0,200}ACCES\.canPaie/.test(gestion) && /if \(!peutFigerPaie\(\)\)\{ showToast/.test(gestion));
+
+console.log('\n6. Rouvrir reste possible, jamais en silence');
+verifier('un motif est exigé, et la réouverture est refusée sans lui', /Un motif est nécessaire pour rouvrir/.test(gestion));
+verifier('le motif se saisit dans la ligne, pas dans une fenêtre du navigateur', /bul-motif/.test(gestion));
+// Gestion n'ouvre plus AUCUNE fenêtre du navigateur : la dernière (le motif d'annulation d'une
+// facture) est partie le 17/09 en même temps que ce point. Les alert() de démarrage restent :
+// ils précèdent une redirection immédiate, il n'y a plus de page derrière pour afficher mieux.
+verifier('plus aucun prompt() dans Gestion', !/(^|[^.\w])prompt\(/m.test(gestion.replace(/^\s*(\/\/|\*|\/\*).*$/gm, '')));
+verifier('un motif se demande dans la page, avec un champ et deux boutons', /function demanderMotif\(/.test(gestion) && /clt-motif-boite/.test(gestion) && /\.clt-motif-boite input\{[^}]*min-height:44px/.test(html));
+verifier('la réouverture écrit qui, quand et pourquoi', /rouvert_at: new Date\(\)\.toISOString\(\)/.test(gestion) && /motif_reouverture: motif/.test(gestion) && /patch\.rouvert_par = PUSH_USER\.id/.test(gestion));
+verifier('le bulletin repasse en brouillon', /statut: 'brouillon'/.test(gestion));
+verifier('une réouverture passée reste visible sur la ligne', /Déjà rouvert le/.test(gestion));
+
+console.log('\n7. On voit d\'un coup d\'œil ce qui est définitif');
+verifier('chaque ligne porte son état', /function etatBulletinHTML\(/.test(gestion) && /bul-etat-brouillon/.test(gestion) && /bul-etat-fige/.test(gestion));
+verifier('le tableau a bien une colonne de plus', /<th>État<\/th>/.test(gestion) && /const nbCol = unSeulMois \? 9 : 10;/.test(gestion));
+verifier('le papier dit lui-même s\'il est définitif ou brouillon',
+  /Bulletin définitif/.test(gestion) && /Brouillon — à figer au moment de la remise/.test(gestion));
+verifier('un bulletin figé se réimprime avec l\'en-tête de son époque', /_elements\.parametres\) \|\| PARAMS/.test(gestion));
+verifier('la barre et les pastilles ont leur style, et les gestes 44 px',
+  /\.bul-barre\{/.test(html) && /\.bul-etat-fige\{/.test(html) && /\.bul-barre \.btn\{ min-height:44px/.test(html) && /id="bul-figement"/.test(html));
+verifier('l\'application marche avant la migration (colonnes de traçabilité absentes)',
+  /delete c\.valide_par/.test(gestion) && /does not exist/.test(gestion));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

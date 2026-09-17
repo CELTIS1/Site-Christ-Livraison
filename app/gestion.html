@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917lignes">
-<script src="theme.js?v=20260917lignes"></script>
-<script src="splash.js?v=20260917lignes"></script>
+<link rel="stylesheet" href="style.css?v=20260917bulletins">
+<script src="theme.js?v=20260917bulletins"></script>
+<script src="splash.js?v=20260917bulletins"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -128,6 +128,26 @@
   /* Alerte « argent non remis » */
   .clt-alert{ border-radius:12px; padding:12px 14px; margin-bottom:16px; }
   .clt-alert-warn{ background:#fff5e6; border:1px solid #ffcf8a; }
+  /* Figer un bulletin remis (17/09/2026, point 8.1) */
+  .bul-barre{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin:0 0 12px; padding:12px 14px; border:1px solid var(--border, #e5e7eb); border-radius:12px; background:#f8fafc; }
+  .bul-compte{ font-size:13.5px; color:#334155; }
+  .bul-barre .btn{ min-height:44px; }
+  .bul-aide{ flex-basis:100%; font-size:12px; color:var(--muted, #6b7280); }
+  .bul-etat{ display:inline-block; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+  .bul-etat-brouillon{ background:#eef2f6; color:#64748b; }
+  .bul-etat-fige{ background:#e8f5ec; color:#1a7d3c; }
+  .bul-motif{ display:flex; gap:6px; align-items:center; }
+  .bul-motif input{ min-height:44px; min-width:150px; }
+  .bul-motif button{ min-height:44px; }
+  /* Demander un motif, dans la page (17/09/2026) — la dernière fenêtre du navigateur retirée */
+  .clt-motif-fond{ position:fixed; inset:0; z-index:9700; background:rgba(15,23,42,.55); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .clt-motif-boite{ background:#fff; color:#1f2937; border-radius:16px; width:min(460px,100%); padding:20px 22px; box-shadow:0 24px 60px rgba(0,0,0,.35); }
+  .clt-motif-boite h3{ margin:0 0 6px; font-size:17px; color:var(--clt-teal-dark,#1B4374); }
+  .clt-motif-boite p{ margin:0 0 12px; font-size:13.5px; color:#475569; }
+  .clt-motif-boite label{ display:block; font-size:12.5px; font-weight:600; color:#334155; margin-bottom:5px; }
+  .clt-motif-boite input{ width:100%; min-height:44px; padding:0 12px; border:1px solid #cbd5e1; border-radius:10px; font:inherit; }
+  .clt-motif-gestes{ display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
+  .clt-motif-gestes .btn{ min-height:44px; }
   .clt-alert-ok{ background:#eaf7ee; border:1px solid #b6e2c4; color:#1c7a3f; font-weight:600; }
   .clt-alert-head{ font-weight:700; color:#8a4b00; font-size:14px; margin-bottom:8px; }
   .clt-alert-warn .g-table td, .clt-alert-warn .g-table th{ background:transparent; }
@@ -167,6 +187,9 @@
   .bulletin .doc-societe{ font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; color:var(--clt-teal-dark); }
   .bulletin .doc-coord{ font-size:11px; color:#64748b; line-height:1.5; margin-top:2px; }
   .bulletin .doc-periode{ font-size:12px; color:#475569; margin-top:3px; }
+  /* L'état du bulletin, sur le papier comme à l'écran (17/09/2026, point 8.1) */
+  .bulletin .doc-etat{ font-size:11px; font-weight:700; margin-top:3px; color:#1a7d3c; }
+  .bulletin .doc-etat:not(:empty){ letter-spacing:.01em; }
   .doc-logo{ width:46px; height:46px; border-radius:10px; flex:none; }
   .doc-imprimable .doc-entete-gauche{ display:flex; align-items:flex-start; gap:12px; }
   .bulletin .b-meta{ display:grid; grid-template-columns:1fr 1fr; gap:4px 18px; margin:12px 0; font-size:12.5px; }
@@ -868,6 +891,8 @@
         <button class="btn btn-outline btn-sm" onclick="imprimerRecapBulletins()">🖨️ Imprimer</button>
       </div>
       <div class="kpi-grid" id="bul-kpis"></div>
+      <!-- Figer les bulletins remis (17/09/2026, point 8.1) : dessinée par rendreBarreFigement(). -->
+      <div id="bul-figement"></div>
       <div class="card"><div class="g-table-wrap" id="bul-table"></div></div>
     </div>
 
@@ -1161,21 +1186,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260917lignes"></script>
-<script src="lib/retours.js?v=20260917lignes"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917lignes"></script>
-<script src="lib/argent.js?v=20260917lignes"></script>
-<script src="lib/releve-cliente.js?v=20260917lignes"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917lignes"></script>
-<script src="lib/briques-argent.js?v=20260917lignes"></script>
-<script src="lib/annonce-de-remise.js?v=20260917lignes"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917lignes"></script>
-<script src="lib/primes.js?v=20260917lignes"></script>
-<script src="lib/doublons.js?v=20260917lignes"></script>
-<script src="config.js?v=20260917lignes"></script>
-<script src="biometric-lock.js?v=20260917lignes"></script>
-<script src="clt-select-recherche.js?v=20260917lignes"></script>
-<script src="site-editeur.js?v=20260917lignes"></script>
-<script src="gestion.js?v=20260917lignes"></script>
+<script src="clt-common.js?v=20260917bulletins"></script>
+<script src="lib/retours.js?v=20260917bulletins"></script>
+<script src="lib/communes-et-tarifs.js?v=20260917bulletins"></script>
+<script src="lib/argent.js?v=20260917bulletins"></script>
+<script src="lib/releve-cliente.js?v=20260917bulletins"></script>
+<script src="lib/papier-a-en-tete.js?v=20260917bulletins"></script>
+<script src="lib/briques-argent.js?v=20260917bulletins"></script>
+<script src="lib/annonce-de-remise.js?v=20260917bulletins"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260917bulletins"></script>
+<script src="lib/primes.js?v=20260917bulletins"></script>
+<script src="lib/doublons.js?v=20260917bulletins"></script>
+<script src="config.js?v=20260917bulletins"></script>
+<script src="biometric-lock.js?v=20260917bulletins"></script>
+<script src="clt-select-recherche.js?v=20260917bulletins"></script>
+<script src="site-editeur.js?v=20260917bulletins"></script>
+<script src="gestion.js?v=20260917bulletins"></script>
 </body>
 </html>

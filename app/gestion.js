@@ -83,6 +83,39 @@ function seuilMontant(){
   const v = PARAMS && Number(PARAMS.seuil_montant);
   return (v && v > 0) ? v : SEUIL_MONTANT_DEFAUT;
 }
+/* DEMANDER UN MOTIF, DANS LA PAGE (17/09/2026)
+   Certaines actions exigent une explication écrite : annuler une facture, rouvrir un bulletin
+   figé. Il faut donc un champ de texte ET un bouton, ce que cltConfirm ne sait pas faire.
+   Rend la chaîne saisie, ou null si la personne renonce. Aucune fenêtre du navigateur. */
+function demanderMotif(o){
+  return new Promise((resolve) => {
+    const fond = document.createElement('div');
+    fond.className = 'clt-motif-fond';
+    fond.innerHTML = `<div class="clt-motif-boite" role="dialog" aria-modal="true" aria-label="${escapeHTML(o.titre||'Motif')}">
+      <h3>${escapeHTML(o.titre || 'Motif')}</h3>
+      ${o.detail ? `<p>${escapeHTML(o.detail)}</p>` : ''}
+      <label for="clt-motif-champ">${escapeHTML(o.libelle || 'Motif (obligatoire)')}</label>
+      <input type="text" id="clt-motif-champ" maxlength="300" autocomplete="off">
+      <div class="clt-motif-gestes">
+        <button type="button" class="btn btn-outline btn-sm" data-motif="non">${escapeHTML(o.cancelLabel || 'Revenir')}</button>
+        <button type="button" class="btn btn-sm" data-motif="oui">${escapeHTML(o.okLabel || 'Confirmer')}</button>
+      </div>
+    </div>`;
+    const fermer = (valeur) => { document.removeEventListener('keydown', touche); fond.remove(); resolve(valeur); };
+    const touche = (e) => { if (e.key === 'Escape') fermer(null); };
+    fond.addEventListener('click', (e) => {
+      if (e.target === fond) return fermer(null);
+      const b = e.target.closest('[data-motif]');
+      if (!b) return;
+      fermer(b.dataset.motif === 'oui' ? (document.getElementById('clt-motif-champ').value || '') : null);
+    });
+    document.addEventListener('keydown', touche);
+    document.body.appendChild(fond);
+    const champ = document.getElementById('clt-motif-champ');
+    if (champ){ champ.focus(); champ.addEventListener('keydown', (e) => { if (e.key === 'Enter') fermer(champ.value || ''); }); }
+  });
+}
+
 /* Renvoie true si l'on peut poursuivre (montant normal, ou montant élevé confirmé).
    À AWAITER : depuis le 17/09 c'est un vrai panneau de l'application, plus une fenêtre du
    navigateur (l'app n'en ouvre plus aucune depuis l'étiquette 20260916erreurs). */
@@ -1446,7 +1479,41 @@ async function saveSaisie(input){
  * Chaque élément de LAST_BULLETINS porte donc son mois avec lui : sans cela,
  * l'aperçu relirait la liste déroulante et daterait tous les bulletins du même
  * mois — une erreur silencieuse sur un document qui part au salarié. */
-let LAST_BULLETINS = []; // [{ b, annee, mois }]
+let LAST_BULLETINS = []; // [{ b, annee, mois, fige }]
+
+/* ==========================================================================================
+   FIGER UN BULLETIN REMIS (17/09/2026, point 8.1 de la feuille de route)
+   ==========================================================================================
+   Un bulletin était recalculé à CHAQUE affichage, à partir des salariés, des taux et de la
+   grille tels qu'ils sont AUJOURD'HUI. Conséquence : changer un taux de cotisation, corriger la
+   catégorie d'un salarié ou le salaire minimum d'une catégorie réécrivait rétroactivement tous
+   les bulletins passés — y compris ceux déjà imprimés, signés et remis en main propre. Le
+   papier que le salarié a chez lui et ce que l'application affiche ne disaient plus la même
+   chose, et rien ne le signalait. Les primes des livreurs, elles, sont versionnées avec une
+   date d'effet depuis le début : la paie devait l'être aussi.
+
+   Le remède est celui de tous les métiers de la paie : au moment où le bulletin est remis, on
+   en garde une COPIE — le résultat et les éléments qui l'ont produit — et c'est cette copie
+   qu'on affiche et qu'on imprime ensuite. La table gestion_bulletins existait déjà pour cela
+   (snapshot jsonb, statut, valide_at) ; aucun écran ne l'écrivait.
+
+   Rouvrir reste possible : une erreur de saisie découverte après coup doit pouvoir se corriger.
+   Mais cela demande un motif, c'est écrit dans la ligne, et le bulletin repasse en brouillon —
+   personne ne modifie un bulletin figé en silence. */
+let BULLETINS_FIGES = {};   // 'salarie_id|AAAA-MM-01' → ligne de gestion_bulletins
+const cleFige = (salarieId, periode) => salarieId + '|' + periode;
+
+async function loadBulletinsFiges(periodes){
+  BULLETINS_FIGES = {};
+  if (!periodes || !periodes.length) return;
+  const { data, error } = await supabaseClient.from('gestion_bulletins').select('*').in('periode', periodes);
+  if (error){ console.error('Bulletins figés :', error); return; }  // avant migration : on continue en brouillon
+  (data||[]).forEach(r => { BULLETINS_FIGES[cleFige(r.salarie_id, String(r.periode).slice(0,10))] = r; });
+}
+function bulletinFige(salarieId, periode){
+  const r = BULLETINS_FIGES[cleFige(salarieId, periode)];
+  return (r && r.statut === 'valide') ? r : null;
+}
 
 async function renderBulletins(){
   const tbl = document.getElementById('bul-table'); if (!tbl) return;
@@ -1463,6 +1530,7 @@ async function renderBulletins(){
   let maps;
   try {
     maps = await Promise.all(mois.map(m => loadSaisieMap(m.periode)));
+    await loadBulletinsFiges(mois.map(m => m.periode));
   } catch(e){ showToast('Erreur chargement des bulletins', true); console.error(e); return; }
 
   // Un mois : tous les salariés actifs, y compris ceux sans saisie (bulletin à zéro,
@@ -1474,9 +1542,13 @@ async function renderBulletins(){
   mois.forEach((m, i) => {
     actifs.forEach(s => {
       const sai = maps[i][s.id];
-      if (!sai && !unSeulMois) return;
-      const b = computeBulletin(s, Object.assign({ periode: m.periode }, sai || {}), PARAMS, GRILLE);
-      LAST_BULLETINS.push({ b, annee: m.annee, mois: m.mois });
+      const fige = bulletinFige(s.id, m.periode);
+      if (!sai && !unSeulMois && !fige) return;
+      /* Un bulletin figé N'EST PAS recalculé (point 8.1) : on réaffiche la copie remise au
+         salarié, quelles que soient les valeurs actuelles des taux, de la grille ou de sa
+         fiche. C'est tout l'intérêt de l'avoir figé. */
+      const b = fige ? fige.snapshot : computeBulletin(s, Object.assign({ periode: m.periode }, sai || {}), PARAMS, GRILLE);
+      LAST_BULLETINS.push({ b, annee: m.annee, mois: m.mois, fige, salarieId: s.id, periode: m.periode });
     });
   });
 
@@ -1498,9 +1570,10 @@ async function renderBulletins(){
       <td>${fmt(b.totalCotisSal)}</td>
       <td>${fmt(b.primeTransport)}</td>
       <td><strong>${fmt(b.net)}</strong></td>
-      <td><div class="row-actions"><button class="icon-btn" onclick="previewBulletin(${i})">Aperçu / PDF</button></div></td></tr>`;
+      <td id="bul-etat-${i}">${etatBulletinHTML(L)}</td>
+      <td><div class="row-actions"><button class="icon-btn" onclick="previewBulletin(${i})">Aperçu / PDF</button>${L.fige && peutFigerPaie() ? `<button class="icon-btn" onclick="rouvrirBulletin(${i})" title="Corriger une erreur : le bulletin repasse en brouillon, avec un motif">Rouvrir</button>` : ''}</div></td></tr>`;
   }).join('');
-  const nbCol = unSeulMois ? 8 : 9;
+  const nbCol = unSeulMois ? 9 : 10;
   if (!LAST_BULLETINS.length){
     body = `<tr><td colspan="${nbCol}" style="text-align:center;color:var(--muted);">${actifs.length ? 'Aucune paie saisie sur cette période.' : 'Aucun salarié actif.'}</td></tr>`;
   }
@@ -1513,9 +1586,151 @@ async function renderBulletins(){
 
   tbl.innerHTML = `<table class="g-table"><thead><tr>
     ${unSeulMois ? '' : '<th style="text-align:left;">Mois</th>'}
-    <th style="text-align:left;">Matricule</th><th style="text-align:left;">Nom</th><th>Cat.</th><th>Brut imposable</th><th>Cotis. sal.</th><th>Prime transp.</th><th>NET À PAYER</th><th></th></tr></thead>
+    <th style="text-align:left;">Matricule</th><th style="text-align:left;">Nom</th><th>Cat.</th><th>Brut imposable</th><th>Cotis. sal.</th><th>Prime transp.</th><th>NET À PAYER</th><th>État</th><th></th></tr></thead>
     <tbody>${body}</tbody>
-    <tfoot><tr><td colspan="${unSeulMois ? 3 : 4}">TOTAL (${LAST_BULLETINS.length} bulletin${LAST_BULLETINS.length>1?'s':''})</td><td>${fmt(totBrut)}</td><td>${fmt(totCotSal)}</td><td>${fmt(totTransp)}</td><td><strong>${fmt(masseNet)}</strong></td><td></td></tr></tfoot></table>`;
+    <tfoot><tr><td colspan="${unSeulMois ? 3 : 4}">TOTAL (${LAST_BULLETINS.length} bulletin${LAST_BULLETINS.length>1?'s':''})</td><td>${fmt(totBrut)}</td><td>${fmt(totCotSal)}</td><td>${fmt(totTransp)}</td><td><strong>${fmt(masseNet)}</strong></td><td></td><td></td></tr></tfoot></table>`;
+
+  rendreBarreFigement(mois);
+}
+
+/* Figer les bulletins d'un mois : on enregistre, pour chaque brouillon, le bulletin CALCULÉ et
+   les éléments qui l'ont produit — la saisie du mois, les taux, la grille, la fiche du salarié.
+   Sans ces éléments, on saurait quel chiffre a été remis mais plus jamais pourquoi ; c'est la
+   première question qu'un salarié pose, et la première qu'un contrôle pose aussi.
+   Tout ou rien : un seul appel, une seule liste. Si la base refuse, rien n'est figé. */
+async function figerBulletinsDuMois(annee, mois){
+  if (!peutFigerPaie()){ showToast('Réservé à la paie.', true); return; }
+  const periode = periodeStr(annee, mois);
+  const aFiger = LAST_BULLETINS.filter(L => !L.fige && L.periode === periode);
+  if (!aFiger.length){ showToast('Rien à figer sur ce mois.'); return; }
+
+  const total = aFiger.reduce((t, L) => t + n(L.b.net), 0);
+  const ok = typeof cltConfirm === 'function' ? await cltConfirm({
+    title: aFiger.length > 1 ? `Figer ces ${aFiger.length} bulletins ?` : 'Figer ce bulletin ?',
+    detail: `${MOIS_FR[mois-1]} ${annee} — ${fmtF(total)} de net à payer`,
+    sub: "À faire au moment où les bulletins sont remis. Ils garderont ces chiffres même si un taux, une grille ou une fiche changent plus tard. On peut rouvrir un bulletin ensuite, avec un motif.",
+    okLabel: 'Oui, figer', cancelLabel: 'Pas encore',
+  }) : confirm(`Figer ${aFiger.length} bulletin(s) de ${MOIS_FR[mois-1]} ${annee} ?`);
+  if (!ok) return;
+
+  const maintenant = new Date().toISOString();
+  const moi = (PUSH_USER) ? PUSH_USER.id : null;
+  const saisie = await loadSaisieMap(periode);
+  const lignes = aFiger.map(L => {
+    const sal = SALARIES.find(x => x.id === L.salarieId) || {};
+    return {
+      salarie_id: L.salarieId,
+      periode,
+      statut: 'valide',
+      // L'instantané : le résultat, et de quoi le refaire à l'identique dans dix ans.
+      snapshot: Object.assign({}, L.b, { _elements: {
+        fige_le: maintenant,
+        saisie: saisie[L.salarieId] || null,
+        parametres: PARAMS,
+        grille: GRILLE,
+        salarie: sal,
+      } }),
+      salaire_brut: n(L.b.baseImposable),
+      total_cotis_salariale: n(L.b.totalCotisSal),
+      total_cotis_patronale: n(L.b.totalCotisPat),
+      net_a_payer: n(L.b.net),
+      valide_at: maintenant,
+      valide_par: moi,
+      rouvert_at: null, rouvert_par: null, motif_reouverture: null,
+    };
+  });
+  try {
+    await ecrire(supabaseClient.from('gestion_bulletins').upsert(lignes, { onConflict: 'salarie_id,periode' }));
+  } catch(e){
+    // Avant la migration, les quatre colonnes de traçabilité n'existent pas : on refige sans elles
+    // plutôt que de bloquer la protection elle-même.
+    if (/column|colonne|does not exist|n'existe pas/i.test(e.message || '')){
+      const sobres = lignes.map(l => { const c = Object.assign({}, l); delete c.valide_par; delete c.rouvert_at; delete c.rouvert_par; delete c.motif_reouverture; return c; });
+      try { await ecrire(supabaseClient.from('gestion_bulletins').upsert(sobres, { onConflict: 'salarie_id,periode' })); }
+      catch(e2){ showToast('Les bulletins n\'ont pas pu être figés.', true); console.error(e2); return; }
+    } else { showToast('Les bulletins n\'ont pas pu être figés.', true); console.error(e); return; }
+  }
+  showToast(lignes.length > 1 ? `${lignes.length} bulletins figés.` : 'Bulletin figé.');
+  renderBulletins();
+}
+
+/* Rouvrir : une erreur découverte après la remise doit pouvoir se corriger. Mais jamais en
+   silence — un motif est exigé, il reste dans la ligne, et l'état le montre ensuite.
+   Le motif se saisit DANS la ligne, pas dans une fenêtre du navigateur : l'application n'en
+   ouvre plus aucune depuis l'étiquette 20260916erreurs, et une fenêtre système sur un téléphone
+   cache justement le bulletin dont on parle. */
+function rouvrirBulletin(i){
+  const L = LAST_BULLETINS[i];
+  if (!L || !L.fige) return;
+  if (!peutFigerPaie()){ showToast('Réservé à la paie.', true); return; }
+  const cellule = document.getElementById('bul-etat-' + i);
+  if (!cellule || cellule.querySelector('.bul-motif')) return;
+  const qui = [L.b.nom, L.b.prenom].filter(Boolean).join(' ') || 'ce salarié';
+  cellule.innerHTML = `<div class="bul-motif">
+    <input type="text" id="bul-motif-${i}" maxlength="200" placeholder="Pourquoi ? (obligatoire)" aria-label="Motif de réouverture du bulletin de ${escapeHTML(qui)}">
+    <button class="btn btn-sm" onclick="confirmerReouverture(${i})">Rouvrir</button>
+    <button class="icon-btn" onclick="renderBulletins()">Annuler</button>
+  </div>`;
+  const champ = document.getElementById('bul-motif-' + i);
+  if (champ) champ.focus();
+}
+async function confirmerReouverture(i){
+  const L = LAST_BULLETINS[i];
+  if (!L || !L.fige) return;
+  const champ = document.getElementById('bul-motif-' + i);
+  const motif = champ ? champ.value.trim() : '';
+  if (!motif){ showToast('Un motif est nécessaire pour rouvrir un bulletin.', true); if (champ) champ.focus(); return; }
+  const patch = { statut: 'brouillon', rouvert_at: new Date().toISOString(), motif_reouverture: motif };
+  if (PUSH_USER) patch.rouvert_par = PUSH_USER.id;
+  try { await ecrire(supabaseClient.from('gestion_bulletins').update(patch).eq('id', L.fige.id)); }
+  catch(e){
+    if (/column|colonne|does not exist/i.test(e.message || '')){
+      try { await ecrire(supabaseClient.from('gestion_bulletins').update({ statut: 'brouillon' }).eq('id', L.fige.id)); }
+      catch(e2){ showToast('Le bulletin n\'a pas pu être rouvert.', true); console.error(e2); return; }
+    } else { showToast('Le bulletin n\'a pas pu être rouvert.', true); console.error(e); return; }
+  }
+  showToast('Bulletin rouvert : il redevient un brouillon.');
+  renderBulletins();
+}
+
+/* L'état d'un bulletin, en un coup d'œil : un brouillon peut encore bouger tout seul, un
+   bulletin figé ne bougera plus. La date est celle où il a été remis. */
+function etatBulletinHTML(L){
+  if (!L.fige) return '<span class="bul-etat bul-etat-brouillon">Brouillon</span>';
+  /* Une pastille de tableau reste courte — « Remis le jeudi 17 septembre 2026 » élargissait la
+     colonne au point de pousser tout le tableau hors de l'écran d'un téléphone. Le jour complet
+     et l'éventuelle réouverture passent dans l'infobulle. */
+  const iso = L.fige.valide_at ? String(L.fige.valide_at).slice(0,10) : '';
+  const court = iso ? iso.slice(8,10) + '/' + iso.slice(5,7) : '';
+  const infos = [iso ? 'Remis le ' + frJour(iso) : 'Remis'];
+  if (L.fige.rouvert_at) infos.push('Déjà rouvert le ' + frJour(String(L.fige.rouvert_at).slice(0,10)) + ' : ' + (L.fige.motif_reouverture || ''));
+  return `<span class="bul-etat bul-etat-fige" title="${escapeHTML(infos.join(' — '))}">🔒 Remis${court ? ' ' + court : ''}</span>`;
+}
+function peutFigerPaie(){
+  // Même porte que le reste de la paie (ACCES, calculé à l'ouverture de la page).
+  return !ACCES || ACCES.isAdmin === true || ACCES.canPaie === true;
+}
+
+/* La barre au-dessus du tableau : elle ne propose de figer que sur UN mois — un bulletin est un
+   document mensuel, et figer « de janvier à mai » d'un seul geste n'aurait aucun sens pour la
+   personne qui clique. */
+function rendreBarreFigement(mois){
+  const zone = document.getElementById('bul-figement');
+  if (!zone) return;
+  if (mois.length !== 1){
+    zone.innerHTML = '<div class="bul-aide">Choisissez un seul mois pour pouvoir figer les bulletins remis.</div>';
+    return;
+  }
+  const m = mois[0];
+  const brouillons = LAST_BULLETINS.filter(L => !L.fige).length;
+  const figes = LAST_BULLETINS.length - brouillons;
+  const clos = moisCloture(m.annee, m.mois);
+  const pluriel = (n, mot) => n + ' ' + mot + (n > 1 ? 's' : '');
+  zone.innerHTML = `<div class="bul-barre">
+    <div class="bul-compte">${pluriel(figes, 'bulletin')} remis et ${figes > 1 ? 'figés' : 'figé'} · <strong>${pluriel(brouillons, 'brouillon')}</strong>${clos ? ' · 🔒 mois clôturé' : ''}</div>
+    ${brouillons && peutFigerPaie() ? `<button class="btn btn-sm" onclick="figerBulletinsDuMois(${m.annee},${m.mois})">🔒 Figer ${brouillons > 1 ? 'les ' + brouillons + ' bulletins' : 'le bulletin'} de ${escapeHTML(MOIS_FR[m.mois-1])} ${m.annee}</button>` : ''}
+    <div class="bul-aide">Un bulletin figé est celui qui a été remis : il garde ses chiffres, même si un taux, une catégorie ou une fiche changent plus tard.</div>
+  </div>`;
 }
 
 function bulletinRowsHTML(b, annee, mois){
@@ -1541,16 +1756,26 @@ function bulletinRowsHTML(b, annee, mois){
 function previewBulletin(i){
   const L = LAST_BULLETINS[i]; if (!L) return;
   const b = L.b, annee = L.annee, mois = L.mois;
+  /* Un bulletin figé se réimprime avec les paramètres de l'époque, pas ceux d'aujourd'hui
+     (point 8.1) : si la société change d'adresse, le double d'un bulletin de juillet doit rester
+     le bulletin de juillet. On retombe sur PARAMS pour un brouillon, ou pour un instantané
+     ancien qui ne les aurait pas gardés. */
+  const P = (L.fige && L.fige.snapshot && L.fige.snapshot._elements && L.fige.snapshot._elements.parametres) || PARAMS;
   // Le logo de la maison en tête, comme sur le PDF : « c'est la moindre des choses » (Celtis, 16/09/2026).
   const PC = (typeof PAPIER_CLT !== 'undefined') ? PAPIER_CLT : {};
   const html = `<div class="bulletin">
     <div class="b-entete">
       <img class="doc-logo" src="${PC.logoURL || '/images/icons/icon-512.png'}" alt="">
       <div class="b-entete-societe">
-        <div class="doc-societe">${escapeHTML(PARAMS.societe || PC.societe || 'Christ Livraison & Transport SARL')}</div>
+        <div class="doc-societe">${escapeHTML(P.societe || PC.societe || 'Christ Livraison & Transport SARL')}</div>
         <div class="doc-coord">${escapeHTML(PC.adresse || '')}<br>${escapeHTML([PC.telephone, PC.email, PC.site].filter(Boolean).join(' · '))}</div>
       </div>
-      <div class="b-entete-titre"><h4>BULLETIN DE PAIE</h4><div class="doc-periode">${MOIS_FR[mois-1]} ${annee}</div></div>
+      <div class="b-entete-titre"><h4>BULLETIN DE PAIE</h4><div class="doc-periode">${MOIS_FR[mois-1]} ${annee}</div>
+        <!-- Point 8.1 : le papier dit lui-même s'il est définitif. Un brouillon imprimé et remis
+             sans être figé serait exactement la panne qu'on cherche à fermer. -->
+        <div class="doc-etat">${L.fige
+          ? '🔒 Bulletin définitif' + (L.fige.valide_at ? ' — remis le ' + escapeHTML(frJour(String(L.fige.valide_at).slice(0,10))) : '')
+          : 'Brouillon — à figer au moment de la remise'}</div></div>
     </div>
     <div class="b-meta">
       <div><strong>Matricule :</strong> ${escapeHTML(b.matricule)}</div>
@@ -2903,11 +3128,21 @@ async function creerFacture(){
   } finally { if (btn) btn.disabled = false; }
 }
 
+/* Le motif d'annulation se saisissait dans un prompt() du navigateur — la dernière fenêtre
+   système de Gestion, oubliée le 16/09 quand toutes les autres sont parties (étiquette
+   20260916erreurs). Sur un téléphone elle recouvre la facture dont on parle, et sur certains
+   navigateurs elle ne s'ouvre pas du tout. Même traitement que la réouverture d'un bulletin :
+   la question se pose dans la page. (17/09/2026) */
 async function annulerFacture(id){
   const f = FACTURES.find(x=>x.id===id);
   if (!f){ showToast('Facture introuvable.', true); return; }
-  const motif = prompt(`Annuler définitivement la facture ${f.numero} (${fmtF(f.montant_ttc)}) ?\n\nCette action est irréversible et impossible si un paiement a déjà été reçu.\n\nMotif de l'annulation (obligatoire) :`);
-  if (motif === null) return; // annulé par l'utilisateur
+  const motif = await demanderMotif({
+    titre: `Annuler la facture ${f.numero} ?`,
+    detail: `${fmtF(f.montant_ttc)} TTC — irréversible, et impossible si un paiement a déjà été reçu.`,
+    libelle: "Motif de l'annulation (obligatoire)",
+    okLabel: 'Annuler la facture', cancelLabel: 'Revenir',
+  });
+  if (motif === null) return;              // la personne a renoncé
   if (!motif.trim()){ showToast("Un motif est obligatoire pour annuler une facture.", true); return; }
   try {
     const { error } = await supabaseClient.rpc('gestion_annuler_facture', { p_facture_id: id, p_motif: motif.trim() });
