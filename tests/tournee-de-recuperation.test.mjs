@@ -2394,6 +2394,15 @@ titre('13. Le colis naît avec son lieu');
    y ajouter une treizième couche, c'est mesurer autre chose que ce qu'on croit mesurer. */
 const ctxLot = vm.createContext({ console, Number, String, Object, JSON });
 vm.runInContext(blocDe(sourceConfig, 'lieuRecuperationPourNouveauColis', 'config.js'), ctxLot);
+/* LE LIEU EST DÉSORMAIS CHOISI SUR L'ÉCRAN. (18/09/2026) Le bureau a reçu son propre champ
+   « commune de récupération », comme la cliente en a un : le colis part avec ce qui y est écrit,
+   et retombe sur la fiche de la cliente quand il est vide. Le champ commande aussi le prix
+   suggéré — deux sources pour un seul trajet, ce serait une facture qui ne correspond pas au
+   déplacement fait. On fait donc passer ce bac à sable par un faux écran, dont ce banc pilote
+   les deux champs. */
+const ECRAN_LOT = { 'lot-commune-recup': { value: '' }, 'lot-adresse-recup': { value: '' }, 'lot-fournisseur': { value: '' } };
+ctxLot.document = { getElementById: (id) => ECRAN_LOT[id] || null };
+vm.runInContext(blocDe(equipe, 'lotLieuRecuperation', 'equipe/01-saisie-en-lot.js'), ctxLot);
 vm.runInContext(blocDe(equipe, 'lotEnvoyerUneLigne', 'equipe.html'), ctxLot);
 
 /* La fiche telle que loadFournisseurs() la rapporte : commune et adresse, rien de plus. */
@@ -2422,8 +2431,13 @@ Object.assign(ctxLot, {
 });
 const envoyerUneLigne = ctxLot.lotEnvoyerUneLigne;
 
-const envoyerPour = async (fournisseur_id) => {
+const envoyerPour = async (fournisseur_id, surLEcran) => {
   envois = []; misEnFile = [];
+  // L'écran est remis à blanc entre deux envois : un champ resté rempli d'un essai précédent
+  // ferait passer le suivant pour ce qu'il n'est pas.
+  ECRAN_LOT['lot-commune-recup'].value = (surLEcran && surLEcran.commune) || '';
+  ECRAN_LOT['lot-adresse-recup'].value = (surLEcran && surLEcran.adresse) || '';
+  ECRAN_LOT['lot-fournisseur'].value = fournisseur_id;
   const bilan = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
   await envoyerUneLigne({ file: null, cle: 'K1' }, 1, { fournisseur_id }, bilan, []);
   return envois[0] || null;
@@ -2486,10 +2500,57 @@ verifier("une cliente introuvable ne fait pas tomber l'enregistrement : le colis
   && posteInconnue.commune_recuperation === null,
   JSON.stringify(posteInconnue));
 
+/* ---------- LE LIEU CHOISI SUR L'ÉCRAN L'EMPORTE — 18 septembre 2026 ----------
+   Celtis, le 18 : « il faudrait que les montants se saisissent automatiquement en fonction de la
+   commune de départ et de la commune d'arrivée ». Pour cela il fallait d'abord qu'un départ
+   existe : 8 clientes actives n'en avaient aucun sur leur fiche, et 26 des 53 colis sans frais
+   de livraison étaient partis sans commune de récupération. Le bureau choisit donc son point de
+   départ, comme la cliente le fait depuis toujours — et c'est ce choix qui part avec le colis.
+
+   Le sens de la règle : la FICHE est un défaut, l'ÉCRAN est une décision. Une cliente a déposé
+   chez une amie, elle est en déplacement, elle a deux points de dépôt : ce jour-là, c'est ce que
+   la personne a sous les yeux qui est vrai, pas ce que la fiche disait le mois dernier. */
+{
+  const posteChoisi = await envoyerPour('F1', { commune: 'Marcory', adresse: 'Zone 4, en face du garage' });
+  verifier("le lieu choisi sur l'écran l'emporte sur celui de la fiche",
+    !!posteChoisi && posteChoisi.commune_recuperation === 'Marcory'
+    && posteChoisi.adresse_recuperation === 'Zone 4, en face du garage',
+    JSON.stringify(posteChoisi && { c: posteChoisi.commune_recuperation, a: posteChoisi.adresse_recuperation }));
+
+  const posteDefaut = await envoyerPour('F1');
+  verifier("l'écran laissé vide retombe sur la fiche, comme avant",
+    !!posteDefaut && posteDefaut.commune_recuperation === 'Yopougon'
+    && posteDefaut.adresse_recuperation === 'Millionnaire',
+    JSON.stringify(posteDefaut && { c: posteDefaut.commune_recuperation, a: posteDefaut.adresse_recuperation }));
+
+  /* Le cas qui a motivé le champ : une cliente dont la fiche ne porte aucun lieu. Avant le
+     18/09, son colis partait sans point de départ et aucun prix ne pouvait lui être proposé. */
+  const posteSansFiche = await envoyerPour('F2', { commune: 'Adjamé', adresse: '' });
+  verifier("une cliente sans lieu sur sa fiche part quand même avec un lieu, celui de l'écran",
+    !!posteSansFiche && posteSansFiche.commune_recuperation === 'Adjamé',
+    JSON.stringify(posteSansFiche && posteSansFiche.commune_recuperation));
+  verifier("et une adresse laissée vide reste null, pas une chaîne vide",
+    !!posteSansFiche && posteSansFiche.adresse_recuperation === null,
+    JSON.stringify(posteSansFiche && posteSansFiche.adresse_recuperation));
+
+  /* Le champ de l'écran passe par la MÊME normalisation que la fiche : sans cela, deux colis de
+     la même cliente se rangeraient dans deux tournées différentes pour un espace en trop. */
+  const posteEspacesEcran = await envoyerPour('F2', { commune: '  Cocody  ', adresse: '   ' });
+  verifier("ce que l'écran donne passe par la même normalisation que la fiche",
+    !!posteEspacesEcran && posteEspacesEcran.commune_recuperation === 'Cocody'
+    && posteEspacesEcran.adresse_recuperation === null,
+    JSON.stringify(posteEspacesEcran && { c: posteEspacesEcran.commune_recuperation, a: posteEspacesEcran.adresse_recuperation }));
+}
+
 /* ---------- La coupure réseau ---------- */
 erreurAInsertion = new Error('Failed to fetch');
 const bilanCoupure = { crees: 0, dejaEnregistres: 0, photosPerdues: 0, misEnAttente: 0 };
 envois = []; misEnFile = [];
+// L'écran est remis dans l'état où il serait vraiment : la cliente F1 choisie, son lieu recopié
+// depuis sa fiche. Le dernier envoi l'avait laissé sur une cliente inconnue.
+ECRAN_LOT['lot-fournisseur'].value = 'F1';
+ECRAN_LOT['lot-commune-recup'].value = '';
+ECRAN_LOT['lot-adresse-recup'].value = '';
 await envoyerUneLigne({ file: null, cle: 'K2' }, 1, { fournisseur_id: 'F1' }, bilanCoupure, []);
 erreurAInsertion = null;
 verifier("réseau coupé, le colis est bien mis en attente au lieu d'être perdu",

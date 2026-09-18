@@ -651,6 +651,12 @@ ${c.statut === 'en_attente' ? `
 <input type="number" class="edit-frais-expedition" min="0" step="any" value="${c.frais_expedition !== null && c.frais_expedition !== undefined ? c.frais_expedition : ''}">
 </div>
 </div>
+<!-- LE TARIF, MÊME À LA MODIFICATION. (18/09/2026) Corriger l'adresse d'un colis change son
+     trajet, donc son prix — et c'est ici qu'on rattrape les colis mal adressés. Jusqu'ici la
+     grille ne disait rien sur cet écran : on corrigeait la commune et le montant restait celui
+     de l'ancienne. La règle est la même qu'à la création : on propose dans un champ vide, on se
+     contente de DIRE le tarif quand il y en a déjà un. -->
+<div class="lot-tarif-note edit-tarif-note" style="display:none;"></div>
 </div>
 <div class="payment-checks">
 <label class="check-pill lotfr-article-solde" title="À cocher si le destinataire a DÉJÀ payé l'article chez le fournisseur. Le livreur ne l'encaisse pas à la porte, et rien n'est dû au fournisseur pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article déjà soldé chez le fournisseur</label>

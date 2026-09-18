@@ -2,6 +2,19 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260918tarif",
+      "date": "18 septembre 2026",
+      "titre": "Le prix de livraison se pose tout seul, d'après la grille",
+      "points": [
+        "Le tarif se propose maintenant à partir des deux bouts du trajet : la commune d'où part le livreur et celle où va le colis. Il reste modifiable — on propose, on n'impose pas.",
+        "Le bureau choisit enfin son point de départ, comme la cliente : pré-rempli depuis sa fiche, modifiable pour la fournée du jour. 8 clientes actives n'en avaient aucun ; leurs colis partaient sans point de récupération, et sans prix possible.",
+        "Le prix se refait quand le DÉPART change, pas seulement l'arrivée. Choisir la cliente après avoir tapé la destination laissait jusqu'ici le tarif de la précédente.",
+        "Le prix se propose aussi quand on corrige un colis — c'est là qu'on rattrape une adresse, donc un trajet, donc un prix.",
+        "Sous les montants, une ligne dit d'où vient le chiffre : « Tarif grille : Yopougon → Cocody = 1 500 FCFA », et elle signale quand on s'en écarte. Un montant tapé à la main n'est jamais remplacé.",
+        "Le montant de l'article, lui, ne peut pas se deviner : c'est le prix de vente de la cliente. Le carnet et « coller la commande » restent la façon rapide de le remplir."
+      ]
+    },
+    {
       "version": "20260918argent",
       "date": "18 septembre 2026",
       "titre": "L'argent d'un colis ne se devine plus",

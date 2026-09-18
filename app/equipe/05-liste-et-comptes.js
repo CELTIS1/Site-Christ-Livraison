@@ -306,6 +306,23 @@ list.querySelectorAll('.adresse-block').forEach(bloc => {
 brancherPrecisionExpedition(bloc.querySelector('.edit-commune-dest'), bloc.querySelector('.edit-dest'));
 });
 
+/* LE PRIX SUIT L'ADRESSE, MÊME À LA MODIFICATION. (18/09/2026, Celtis : « il faudrait que les
+   montants se saisissent automatiquement en fonction de la commune de départ et de la commune
+   d'arrivée ».) C'est ici qu'on rattrape les colis mal adressés : corriger la commune change le
+   trajet, donc le prix, et jusqu'ici la grille ne disait rien sur cet écran.
+   Le DÉPART est celui du colis lui-même — sa propre commune de récupération, modifiable juste
+   au-dessus dans la même fiche — et non celui de la fiche de la cliente : un colis déjà
+   enregistré porte le lieu d'où il est réellement parti. Il est relu à chaque fois, pour que
+   corriger le point de récupération redemande le tarif du bon trajet. */
+list.querySelectorAll('.colis-item').forEach(item => {
+const dest = item.querySelector('.edit-commune-dest');
+const liv = item.querySelector('.edit-montant-livraison');
+if (!dest || !liv) return;
+const recup = item.querySelector('.edit-commune-recup');
+const maj = brancherPrixLivraison(dest, liv, () => (recup ? recup.value : ''), item.querySelector('.edit-tarif-note'));
+if (recup) recup.addEventListener('change', maj);
+});
+
 list.querySelectorAll('.btn-edit-pickup').forEach(btn => {
 btn.addEventListener('click', () => {
 showPickupModal(btn.dataset.fournisseur);

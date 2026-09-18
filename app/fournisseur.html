@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918argent">
-<script src="theme.js?v=20260918argent"></script>
-<script src="splash.js?v=20260918argent"></script>
+<link rel="stylesheet" href="style.css?v=20260918tarif">
+<script src="theme.js?v=20260918tarif"></script>
+<script src="splash.js?v=20260918tarif"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -169,7 +169,8 @@
   /* Un champ rempli par la machine reste marqué TANT QUE L'ŒIL N'EST PAS PASSÉ DESSUS : la
      marque ne disparaît qu'au moment où la personne touche elle-même le champ. C'est ce qui
      rend la relecture possible sur cent colis. */
-  .rempli-auto{ background:#fffbe6 !important; border-color:#e6c34a !important; }
+  /* .rempli-auto est passé dans style.css le 18/09/2026 : le bureau propose désormais le prix
+     lui aussi, et ce qui a été rempli par la machine doit s'y voir de la même façon. */
   /* Téléphone du destinataire + WhatsApp sur la carte (05/09/2026). */
   .colis-contact{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:3px; }
   .colis-tel{ font-size:13.5px; font-weight:700; color:#1B4374; text-decoration:none; }
@@ -536,23 +537,23 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260918argent"></script>
-<script src="lib/bibliotheques.js?v=20260918argent"></script>
-<script src="lib/retours.js?v=20260918argent"></script>
-<script src="lib/reclamations.js?v=20260918argent"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918argent"></script>
-<script src="lib/argent.js?v=20260918argent"></script>
-<script src="lib/releve-cliente.js?v=20260918argent"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918argent"></script>
-<script src="lib/briques-argent.js?v=20260918argent"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918argent"></script>
-<script src="lib/annonce-de-remise.js?v=20260918argent"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918argent"></script>
-<script src="lib/primes.js?v=20260918argent"></script>
-<script src="lib/doublons.js?v=20260918argent"></script>
-<script src="config.js?v=20260918argent"></script>
-<script src="biometric-lock.js?v=20260918argent"></script>
-<script src="clt-select-recherche.js?v=20260918argent"></script>
+<script src="clt-common.js?v=20260918tarif"></script>
+<script src="lib/bibliotheques.js?v=20260918tarif"></script>
+<script src="lib/retours.js?v=20260918tarif"></script>
+<script src="lib/reclamations.js?v=20260918tarif"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918tarif"></script>
+<script src="lib/argent.js?v=20260918tarif"></script>
+<script src="lib/releve-cliente.js?v=20260918tarif"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918tarif"></script>
+<script src="lib/briques-argent.js?v=20260918tarif"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918tarif"></script>
+<script src="lib/annonce-de-remise.js?v=20260918tarif"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918tarif"></script>
+<script src="lib/primes.js?v=20260918tarif"></script>
+<script src="lib/doublons.js?v=20260918tarif"></script>
+<script src="config.js?v=20260918tarif"></script>
+<script src="biometric-lock.js?v=20260918tarif"></script>
+<script src="clt-select-recherche.js?v=20260918tarif"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1108,14 +1109,18 @@
         <div class="montant-group">
           <div class="montant-field">
             <label>Montant article</label>
-            <input type="number" class="lotfr-art" min="0" step="any" placeholder="0">
+            <input type="number" class="lotfr-art" min="0" step="any" placeholder="Ex : 15000">
           </div>
           <div class="montant-plus">+</div>
           <div class="montant-field">
             <label>Montant livraison</label>
-            <input type="number" class="lotfr-liv" min="0" step="any" placeholder="0">
+            <input type="number" class="lotfr-liv" min="0" step="any" placeholder="Ex : 1500">
           </div>
         </div>
+          <!-- D'OÙ VIENT LE PRIX. (18/09/2026) Un montant qui apparaît tout seul sans dire
+               pourquoi se corrige au hasard : en lisant « Tarif grille : Yopougon → Cocody =
+               1 500 F », la cliente sait que c'est la grille, et voit quand elle s'en écarte. -->
+          <div class="lotfr-tarif-note lot-tarif-note" style="display:none;"></div>
         <div class="montant-total-preview">Total : <strong class="lotfr-total">0 FCFA</strong></div>
         <!-- Ce qui est DÉJÀ payé se déclare colis par colis, jamais pour la fournée : une
              acheteuse peut avoir réglé l'article d'avance et pas une autre, et cocher pour
@@ -1178,17 +1183,18 @@
     // Le prix de livraison est SUGGÉRÉ, jamais imposé : il se pose au choix de la commune et
     // reste modifiable ensuite. On n'écrase pas un montant déjà tapé — c'est la règle « ne
     // jamais écrire par-dessus la main de quelqu'un », valable pour un prix comme pour un nom.
+    // Depuis le 18/09/2026, la règle est partagée avec le bureau (brancherPrixLivraison, dans
+    // lib/communes-et-tarifs.js) : deux copies de la même grille auraient fini par diverger, et
+    // c'est la cliente qui aurait lu un prix différent de celui qu'on lui facture.
     const commune = el.querySelector('.lotfr-commune');
     // « Expédition (intérieur) » : la précision devient l'adresse, et devient obligatoire.
     brancherPrecisionExpedition(commune, el.querySelector('.lotfr-dest'));
-    if (commune) commune.addEventListener('change', () => {
-      const depart = (document.getElementById('lotfr-pickup-commune') || {}).value || '';
-      const prix = computePrixLivraison(depart, commune.value);
-      if (prix !== null && liv && !String(liv.value || '').trim()) {
-        liv.value = prix;
-        liv.dispatchEvent(new Event('input'));
-      }
-    });
+    // Le départ est relu à chaque fois : elle peut changer son lieu de récupération APRÈS avoir
+    // tapé les destinations, et le prix doit suivre. La fonction rendue est gardée sur la ligne
+    // pour que ce changement-là puisse rappeler la grille sur toutes les lignes encore vides.
+    l.majPrix = brancherPrixLivraison(commune, liv,
+      () => (document.getElementById('lotfr-pickup-commune') || {}).value || '',
+      el.querySelector('.lotfr-tarif-note'));
 
     wireCarnet(el);
     wireColler(el);
@@ -1289,6 +1295,12 @@
      si une seule ligne cloche, parce qu'un envoi interrompu à mi-parcours laisserait la moitié
      des colis en base sans que personne sache laquelle.
      -------------------------------------------------------------------------------------- */
+
+  // Redemander son prix à chaque ligne. Celles déjà remplies à la main ne bougent pas :
+  // suggestionPrixLivraison() n'écrit que dans un champ vide. (18/09/2026)
+  function lotfrRafraichirPrix(){
+    lotfrLignes.forEach(l => { if (l && typeof l.majPrix === 'function') l.majPrix(); });
+  }
 
   // Le lieu de récupération, demandé une fois pour toute la fournée. Sans commune, aucun envoi
   // n'a de sens : le livreur ne saurait pas où aller chercher les colis.
@@ -1639,16 +1651,9 @@
        toujours « Enregistrer les colis » qui décide, et donc toujours un humain.
      - CE QUI N'A PAS PU ÊTRE LU EST ÉCRIT NOIR SUR BLANC, sous les boutons, et ça reste
        affiché. Un message qui s'efface tout seul n'est pas une information, c'est un décor. */
-  function marquerRempliAuto(el){
-    if (!el) return;
-    el.classList.add('rempli-auto');
-    // La marque disparaît au premier geste de la personne sur ce champ : à ce moment-là, elle
-    // l'a vu. On ne l'enlève jamais toute seule au bout de quelques secondes.
-    const oter = () => el.classList.remove('rempli-auto');
-    el.addEventListener('input', oter, { once: true });
-    el.addEventListener('change', oter, { once: true });
-    el.addEventListener('focus', oter, { once: true });
-  }
+  /* marquerRempliAuto() est partie dans lib/communes-et-tarifs.js le 18/09/2026 : le bureau
+     propose désormais le prix de livraison lui aussi, et ce qui a été rempli par la machine doit
+     s'y voir de la même façon. Une seconde copie au bureau aurait fini par s'en écarter. */
 
   function wireColler(row){
     if (!row) return;
@@ -1950,6 +1955,10 @@
                   <input type="number" class="edit-montant-livraison" min="0" step="any" value="${c.montant_livraison !== null && c.montant_livraison !== undefined ? c.montant_livraison : ''}">
                 </div>
               </div>
+              <!-- Le tarif de la grille, même à la correction (18/09/2026) : changer la commune
+                   change le trajet, donc le prix. Proposé dans un champ vide, seulement dit
+                   quand il y a déjà un montant. -->
+              <div class="lot-tarif-note edit-tarif-note" style="display:none;"></div>
             </div>
             <div class="payment-checks">
               <label class="check-pill" title="À cocher si le destinataire vous a DÉJÀ payé la livraison, chez vous. Le livreur ne l'encaissera pas à la porte, et CLT la retiendra sur votre relevé du soir. Ne dit rien de l'article."><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison déjà payée chez vous</label>
@@ -2029,6 +2038,7 @@
                   <input type="number" class="draft-montant-livraison" min="0" step="any" value="${c.montant_livraison !== null && c.montant_livraison !== undefined ? c.montant_livraison : ''}">
                 </div>
               </div>
+              <div class="lot-tarif-note draft-tarif-note" style="display:none;"></div>
             </div>
             <div class="payment-checks">
               <label class="check-pill" title="À cocher si le destinataire vous a DÉJÀ payé la livraison, chez vous. Le livreur ne l'encaissera pas à la porte, et CLT la retiendra sur votre relevé du soir. Ne dit rien de l'article."><input type="checkbox" class="draft-livraison-payee"> Livraison déjà payée chez vous</label>
@@ -2051,6 +2061,12 @@
     // Une copie part très souvent vers la même destination que l'original — y compris quand cet
     // original est une expédition. Le champ « Précision » doit donc changer de libellé ici aussi.
     brancherPrecisionExpedition(draftEl.querySelector('.draft-commune-dest'), draftEl.querySelector('.draft-dest'));
+    /* Le départ d'une copie, c'est le point de récupération que la copie elle-même propose —
+       modifiable juste au-dessus dans le même formulaire, et relu à chaque fois. (18/09/2026) */
+    { const recup = draftEl.querySelector('.draft-pickup-commune');
+      const maj = brancherPrixLivraison(draftEl.querySelector('.draft-commune-dest'), draftEl.querySelector('.draft-montant-livraison'),
+        () => (recup ? recup.value : ''), draftEl.querySelector('.draft-tarif-note'));
+      if (recup) recup.addEventListener('change', maj); }
     cancelBtn.addEventListener('click', () => { draftEl.remove(); });
     saveBtn.addEventListener('click', async () => {
       const description = draftEl.querySelector('.draft-desc').value.trim();
@@ -2151,6 +2167,13 @@
     // l'ignorait, alors que c'est là qu'on corrige une adresse incomplète.
     list.querySelectorAll('.colis-item').forEach(item => {
       brancherPrecisionExpedition(item.querySelector('.edit-commune-dest'), item.querySelector('.edit-dest'));
+      /* Le prix suit l'adresse, même à la correction (18/09/2026). Le départ est celui du colis
+         lui-même : il porte le lieu d'où il est réellement parti, pas celui que la fiche de la
+         cliente dit aujourd'hui. Elle ne peut pas le changer depuis cet écran — c'est pourquoi
+         il est lu une fois, dans mesColis, et non à chaque appel. */
+      { const vu = mesColis.find(x => String(x.id) === String(item.dataset.id)) || {};
+        brancherPrixLivraison(item.querySelector('.edit-commune-dest'), item.querySelector('.edit-montant-livraison'),
+          () => vu.commune_recuperation || '', item.querySelector('.edit-tarif-note')); }
     });
 
     list.querySelectorAll('.btn-save-edit').forEach(btn => {
@@ -3221,6 +3244,11 @@
     const lotfrAdresse = document.getElementById('lotfr-pickup-adresse');
     if (lotfrCommune) lotfrCommune.innerHTML = communesOptionsHTML(profile.commune_recuperation, 'Choisir une commune');
     if (lotfrAdresse) lotfrAdresse.value = profile.adresse_recuperation || '';
+    // Le lieu de récupération commande le prix de la grille : le changer doit redemander le tarif
+    // sur toutes les lignes encore vides, pas seulement sur celles qu'on touchera ensuite.
+    // (18/09/2026 — jusque-là, changer son point de départ après avoir tapé les destinations
+    // laissait des prix calculés sur l'ancienne commune.)
+    if (lotfrCommune) lotfrCommune.addEventListener('change', lotfrRafraichirPrix);
 
     /* LE JOUR DU PASSAGE. (31/08/2026)
        Il s'ouvre sur AUJOURD'HUI, pas sur demain — contrairement à l'écran de programmation du

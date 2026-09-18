@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918argent">
-<script src="theme.js?v=20260918argent"></script>
-<script src="splash.js?v=20260918argent"></script>
+<link rel="stylesheet" href="style.css?v=20260918tarif">
+<script src="theme.js?v=20260918tarif"></script>
+<script src="splash.js?v=20260918tarif"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -731,6 +731,25 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
 <select id="lot-fournisseur" data-recherche data-recherche-placeholder="Nom de la cliente…">
 <option value="">— Sélectionner —</option>
 </select>
+</div>
+<!-- LE POINT DE DÉPART, CHOISI ICI. (18/09/2026, Celtis : « il faudrait que les montants se
+     saisissent automatiquement en fonction de la commune de départ et de la commune d'arrivée ».)
+     Il n'existait pas sur cet écran : le départ était pris en silence sur la fiche de la cliente,
+     et quand sa fiche n'en portait pas — 8 clientes actives le 18/09 — aucun prix ne pouvait être
+     proposé, et le colis partait sans point de récupération. 26 des 53 colis sans frais de
+     livraison étaient dans ce cas. La cliente a ce choix depuis toujours sur son écran ; le
+     bureau l'a maintenant aussi, pré-rempli depuis sa fiche et modifiable pour la fournée du
+     jour (elle a déposé chez une amie, elle est en déplacement…). C'est ce champ qui écrit
+     commune_recuperation sur le colis ET qui commande le prix suggéré. -->
+<div class="field-row">
+<div class="field">
+<label>📍 Commune de récupération <span style="font-weight:400; color:var(--muted);">(d'où part le livreur)</span></label>
+<select id="lot-commune-recup" data-recherche data-recherche-placeholder="Commune…"></select>
+</div>
+<div class="field">
+<label>Adresse précise <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
+<input type="text" id="lot-adresse-recup" placeholder="Quartier, repère…">
+</div>
 </div>
 <!-- LE LIVREUR DE LA COLLECTE, CHOISI ICI. (08/09/2026, Celtis : « lors de la création des colis,
      il faudrait qu'on ait la possibilité de choisir le livreur de la collecte ».) Jusqu'ici il
@@ -1575,36 +1594,36 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260918argent"></script>
-<script src="lib/bibliotheques.js?v=20260918argent"></script>
-<script src="lib/retours.js?v=20260918argent"></script>
-<script src="lib/reclamations.js?v=20260918argent"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918argent"></script>
-<script src="lib/argent.js?v=20260918argent"></script>
-<script src="lib/releve-cliente.js?v=20260918argent"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918argent"></script>
-<script src="lib/briques-argent.js?v=20260918argent"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918argent"></script>
-<script src="lib/annonce-de-remise.js?v=20260918argent"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918argent"></script>
-<script src="lib/primes.js?v=20260918argent"></script>
-<script src="lib/doublons.js?v=20260918argent"></script>
-<script src="config.js?v=20260918argent"></script>
-<script src="clients-dashboard.js?v=20260918argent"></script>
-<script src="livreurs-dashboard.js?v=20260918argent"></script>
-<script src="point-du-jour.js?v=20260918argent"></script>
-<script src="biometric-lock.js?v=20260918argent"></script>
-<script src="clt-select-recherche.js?v=20260918argent"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260918argent"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260918argent"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260918argent"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260918argent"></script>
-<script src="equipe/04-actions.js?v=20260918argent"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260918argent"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260918argent"></script>
-<script src="equipe/07-rapports.js?v=20260918argent"></script>
-<script src="equipe/08-son-ecran.js?v=20260918argent"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260918argent"></script>
+<script src="clt-common.js?v=20260918tarif"></script>
+<script src="lib/bibliotheques.js?v=20260918tarif"></script>
+<script src="lib/retours.js?v=20260918tarif"></script>
+<script src="lib/reclamations.js?v=20260918tarif"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918tarif"></script>
+<script src="lib/argent.js?v=20260918tarif"></script>
+<script src="lib/releve-cliente.js?v=20260918tarif"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918tarif"></script>
+<script src="lib/briques-argent.js?v=20260918tarif"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918tarif"></script>
+<script src="lib/annonce-de-remise.js?v=20260918tarif"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918tarif"></script>
+<script src="lib/primes.js?v=20260918tarif"></script>
+<script src="lib/doublons.js?v=20260918tarif"></script>
+<script src="config.js?v=20260918tarif"></script>
+<script src="clients-dashboard.js?v=20260918tarif"></script>
+<script src="livreurs-dashboard.js?v=20260918tarif"></script>
+<script src="point-du-jour.js?v=20260918tarif"></script>
+<script src="biometric-lock.js?v=20260918tarif"></script>
+<script src="clt-select-recherche.js?v=20260918tarif"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260918tarif"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260918tarif"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260918tarif"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260918tarif"></script>
+<script src="equipe/04-actions.js?v=20260918tarif"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260918tarif"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260918tarif"></script>
+<script src="equipe/07-rapports.js?v=20260918tarif"></script>
+<script src="equipe/08-son-ecran.js?v=20260918tarif"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260918tarif"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1649,7 +1668,7 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260918argent"></script>
-<script src="equipe/11-chercher-partout.js?v=20260918argent"></script>
+<script src="equipe/10-onglets.js?v=20260918tarif"></script>
+<script src="equipe/11-chercher-partout.js?v=20260918tarif"></script>
 </body>
 </html>

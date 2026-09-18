@@ -123,17 +123,25 @@ ${l.url
 <label>Téléphone du destinataire <span class="champ-requis">obligatoire</span></label>
 <input type="tel" class="lot-tel" inputmode="tel" placeholder="Ex : 07 01 02 03 04">
 </div>
+<!-- UN REPÈRE « 0 » SE LIT COMME UN ZÉRO. (18/09/2026) Les deux champs portaient « 0 » en
+     repère de saisie : sur un écran où l'on vient justement de distinguer « livraison offerte,
+     écrite 0 » de « montant pas encore connu », c'était le dernier endroit qui continuait à
+     confondre les deux. Un exemple chiffré ne peut pas se lire comme une valeur. -->
 <div class="montant-group">
 <div class="montant-field">
 <label>Montant article</label>
-<input type="number" class="lot-art" min="0" step="any" placeholder="0">
+<input type="number" class="lot-art" min="0" step="any" placeholder="Ex : 15000">
 </div>
 <div class="montant-plus">+</div>
 <div class="montant-field">
 <label>Montant livraison</label>
-<input type="number" class="lot-liv" min="0" step="any" placeholder="0">
+<input type="number" class="lot-liv" min="0" step="any" placeholder="Ex : 1500">
 </div>
 </div>
+<!-- D'OÙ VIENT LE PRIX. (18/09/2026) Un montant qui apparaît tout seul sans dire pourquoi se
+     corrige au hasard : en lisant « Tarif grille : Yopougon → Cocody = 1 500 F », la personne
+     sait que c'est la grille, et voit qu'elle s'en écarte quand elle s'en écarte. -->
+<div class="lot-tarif-note" style="display:none;"></div>
 <div class="field">
 <label>Description (optionnel)</label>
 <input type="text" class="lot-desc" placeholder="Rien à écrire si l'étiquette n'en dit pas">
@@ -164,13 +172,12 @@ brancherPrecisionExpedition(div.querySelector('.lot-commune'), div.querySelector
 // doit toujours être renseigné ».) Même règle que chez la cliente : computePrixLivraison() à
 // partir de la commune de récupération de la cliente et de la commune de destination ; on
 // n'écrase jamais un montant déjà tapé.
-{ const commune = div.querySelector('.lot-commune'), liv = div.querySelector('.lot-liv');
-  if (commune && liv) commune.addEventListener('change', () => {
-    const fid = (document.getElementById('lot-fournisseur') || {}).value || '';
-    const fiche = (fournisseurs || []).find(f => f.id === fid);
-    const prix = computePrixLivraison(fiche ? (fiche.commune_recuperation || '') : '', commune.value);
-    if (prix !== null && !String(liv.value || '').trim()) { liv.value = prix; liv.dispatchEvent(new Event('input')); }
-  }); }
+// Le départ est passé en FONCTION, pas en valeur : il change sous les doigts (on choisit la
+// cliente après avoir tapé la destination, on corrige le point de récupération). Une valeur
+// figée proposerait le prix d'un trajet qu'on ne fait plus. La fonction rendue est gardée sur
+// la ligne pour que lotRafraichirPrix() puisse la rappeler quand le DÉPART change.
+l.majPrix = brancherPrixLivraison(div.querySelector('.lot-commune'), div.querySelector('.lot-liv'),
+  lotCommuneDepart, div.querySelector('.lot-tarif-note'));
 return div;
 }
 
@@ -332,9 +339,10 @@ const montant = (montant_article !== null || montant_livraison !== null)
 // non après l'insertion : c'est ce même payload qui part dans la file hors-réseau quand la
 // connexion tombe. Recopier le lieu plus tard, c'est le perdre exactement les jours où le
 // réseau manque — c'est-à-dire les jours où on en a le plus besoin.
-const lieuRecup = lieuRecuperationPourNouveauColis(
-(fournisseurs || []).find(f => f.id === ctx.fournisseur_id)
-);
+// Le lieu choisi sur l'écran (18/09/2026) ; à défaut, celui de la fiche. Même source que le
+// prix suggéré : deux sources pour un seul trajet, c'est une facture qui ne correspond pas au
+// déplacement réellement fait.
+const lieuRecup = lotLieuRecuperation();
 
 const payload = {
 fournisseur_id: ctx.fournisseur_id,
@@ -371,6 +379,52 @@ return false;
 }
 echecs.push({ rang, motif: friendlyErrorMessage(error.message) });
 return false;
+}
+
+/* LE POINT DE DÉPART DE LA FOURNÉE — 18/09/2026, Celtis.
+   Lu ici, et seulement ici : le prix suggéré et le `commune_recuperation` écrit sur le colis
+   doivent venir du MÊME endroit, sinon l'un dit Yopougon pendant que l'autre facture depuis
+   Cocody. Le champ est pré-rempli depuis la fiche de la cliente et reste modifiable pour la
+   fournée du jour ; s'il est vide, on retombe sur la fiche plutôt que sur rien. */
+function lotLieuRecuperation(){
+const commune = (document.getElementById('lot-commune-recup') || {}).value || '';
+const adresse = (document.getElementById('lot-adresse-recup') || {}).value || '';
+if (String(commune).trim()) return lieuRecuperationPourNouveauColis({ commune_recuperation: commune, adresse_recuperation: adresse });
+const fid = (document.getElementById('lot-fournisseur') || {}).value || '';
+return lieuRecuperationPourNouveauColis((fournisseurs || []).find(f => f.id === fid));
+}
+
+// La commune d'où part le livreur, pour la grille tarifaire. Même source que ci-dessus.
+function lotCommuneDepart(){
+return lotLieuRecuperation().commune_recuperation || '';
+}
+
+/* Recopie sur l'écran le lieu de récupération de la cliente qu'on vient de choisir, puis
+   redemande son prix à chaque ligne encore vide. Sans ce second geste, changer de cliente APRÈS
+   avoir tapé les destinations laissait des prix calculés sur la grille de la précédente — faux,
+   et silencieusement : c'est le défaut que le 18/09 est venu fermer. */
+function lotRemplirLieuDepuisLaFiche(){
+const fid = (document.getElementById('lot-fournisseur') || {}).value || '';
+const fiche = (fournisseurs || []).find(f => f.id === fid);
+const lieu = lieuRecuperationPourNouveauColis(fiche);
+const commune = document.getElementById('lot-commune-recup');
+const adresse = document.getElementById('lot-adresse-recup');
+/* Pas de surlignage sur la liste déroulante : CLTRecherche l'habille d'un champ à elle, et la
+   marque se poserait sur le <select> caché — donc invisible. Un signal qu'on ne voit pas est
+   pire que pas de signal : on croit avoir prévenu. Le repère, lui, est un champ de texte
+   ordinaire et porte la marque normalement. */
+if (commune) {
+commune.value = lieu.commune_recuperation || '';
+if (window.CLTRecherche) CLTRecherche.rafraichir(commune);
+}
+if (adresse) { adresse.value = lieu.adresse_recuperation || ''; if (lieu.adresse_recuperation) marquerRempliAuto(adresse); }
+lotRafraichirPrix();
+}
+
+// Redemander son prix à chaque ligne. Les lignes déjà remplies à la main ne bougent pas :
+// suggestionPrixLivraison() n'écrit que dans un champ vide.
+function lotRafraichirPrix(){
+lotLignes.forEach(l => { if (l && typeof l.majPrix === 'function') l.majPrix(); });
 }
 
 // La cliente est demandée une fois pour tout le lot. Sans elle, aucun envoi n'a de sens : on le
@@ -555,8 +609,19 @@ lotApresEnvoi(fournisseur_id);
 function initLotColis(){
 // Le livreur de collecte suit la cliente choisie ; un choix à la main est respecté. (08/09/2026)
 { const cl = document.getElementById('lot-fournisseur'); const lv = document.getElementById('lot-livreur-collecte');
-  if (cl) cl.addEventListener('change', () => { if (lv) delete lv.dataset.choisiALaMain; lotProposerLivreurCollecte(); });
+  if (cl) cl.addEventListener('change', () => { if (lv) delete lv.dataset.choisiALaMain; lotProposerLivreurCollecte(); lotRemplirLieuDepuisLaFiche(); });
   if (lv) lv.addEventListener('change', () => { if (lv.value) lv.dataset.choisiALaMain = '1'; else delete lv.dataset.choisiALaMain; }); }
+/* LE POINT DE DÉPART DE LA FOURNÉE. (18/09/2026) Il commande deux choses à la fois : ce qui part
+   en base comme commune de récupération, et le prix proposé par la grille. Le corriger à la main
+   doit donc redemander le tarif sur toutes les lignes encore vides, et pas seulement sur celles
+   qu'on touchera ensuite — c'est exactement le trou qui laissait des prix calculés sur la grille
+   de la cliente précédente. */
+{ const cr = document.getElementById('lot-commune-recup');
+  if (cr) {
+    cr.innerHTML = communesOptionsHTML('', 'Choisir une commune');
+    if (window.CLTRecherche) CLTRecherche.rafraichir(cr);
+    cr.addEventListener('change', lotRafraichirPrix);
+  } }
 const depot = document.getElementById('lot-depot');
 const conteneur = document.getElementById('lot-lignes');
 if (!depot || !conteneur) return;

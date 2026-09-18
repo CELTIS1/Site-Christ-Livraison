@@ -610,10 +610,22 @@ verifier(
    « Soldé » en bleu au lieu d'un tiret, à l'écran comme sur les trois documents. Au passage,
    l'espace de la cliente ne demandait pas livraison_payee ni frais_soldes_at : son écran et son
    relevé pouvaient annoncer deux sommes différentes (4 colis, 7 000 F, mesurés en base).
-   Étiquette 20260918argent. */
+   Étiquette 20260918argent.
+   v162, le 18/09/2026 — Celtis : « on a maintenant les grilles tarifaires […] il faudrait que les
+   montants se saisissent automatiquement en fonction de la commune de départ et de la commune
+   d'arrivée ». La suggestion existait depuis le 09/09 mais ne partait qu'au changement de
+   l'ARRIVÉE, et seulement sur les deux saisies en lot. Mesuré en base : 53 colis sans frais de
+   livraison, tous créés au bureau ; 26 sans commune de récupération ; 8 clientes actives sans
+   commune sur leur fiche. La décision descend dans lib/communes-et-tarifs.js
+   (suggestionPrixLivraison, brancherPrixLivraison) et les quatre écrans la posent ; le bureau
+   reçoit son propre point de départ (#lot-commune-recup), qui écrit commune_recuperation ET
+   commande le prix ; le départ est relu à chaque fois, donc changer de cliente refait les prix ;
+   une note dit d'où vient le chiffre et signale un écart. Un montant TAPÉ n'est jamais remplacé,
+   un montant que nous avons posé (marque rempli-auto) se met à jour. Aucune migration.
+   Étiquette 20260918tarif. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v161'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v162'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

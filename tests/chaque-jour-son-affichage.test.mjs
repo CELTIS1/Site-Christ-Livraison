@@ -191,7 +191,19 @@ titre("La création plus simple (09/09/2026) : prix proposé, « à livrer avant
 {
   const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');
   const sql = path.join(RACINE, '_sql-prive', '2026-09-09-creation-plus-simple.sql');
-  verifier('le lot du bureau propose le prix de livraison d\'après les communes (computePrixLivraison), sans écraser un montant tapé', /computePrixLivraison\(fiche \? \(fiche\.commune_recuperation \|\| ''\) : '', commune\.value\)/.test(equipe) && /!String\(liv\.value \|\| ''\)\.trim\(\)/.test(equipe));
+  /* Le prix proposé a été refondu le 18/09/2026 (Celtis : « il faudrait que les montants se
+     saisissent automatiquement en fonction de la commune de départ et de la commune d'arrivée »).
+     La décision est descendue dans lib/communes-et-tarifs.js — suggestionPrixLivraison(), qui
+     n'écrit que dans un champ vide — et les deux écrans de saisie la posent par le même
+     brancherPrixLivraison(). Le départ y est passé en FONCTION, parce qu'il change sous les
+     doigts : on choisit la cliente après avoir tapé la destination. Voir le banc dédié
+     tests/le-prix-suit-la-grille.test.mjs. */
+  verifier('le lot du bureau propose le prix par la règle partagée, et lit son départ à chaque fois',
+    /brancherPrixLivraison\(div\.querySelector\('\.lot-commune'\), div\.querySelector\('\.lot-liv'\),\s*\n?\s*lotCommuneDepart,/.test(equipe)
+    && /function lotCommuneDepart\(\)/.test(equipe));
+  verifier('et le bureau choisit enfin son point de départ, comme la cliente',
+    /id="lot-commune-recup"/.test(equipe) && /function lotLieuRecuperation\(\)/.test(equipe)
+    && /const lieuRecup = lotLieuRecuperation\(\);/.test(equipe));
   verifier('« à livrer avant le » se saisit chez la cliente et au bureau, et part en base au bon format', /class="lotfr-avant"/.test(fournisseur) && /class="lot-avant"/.test(equipe) && /a_livrer_avant: \/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\/\.test\(s\.aLivrerAvant \|\| ''\) \? s\.aLivrerAvant : null,/.test(fournisseur) && /payload\.a_livrer_avant = s\.aLivrerAvant;/.test(equipe));
   verifier('le livreur le voit sur la carte, en rouge si c\'est aujourd\'hui ou dépassé, et ses urgences passent devant', /function aLivrerAvantHTML\(c\)/.test(livreur) && /colis-avant--urgent/.test(livreur) && /cleAvant\(a\)\.localeCompare\(cleAvant\(b\)\)/.test(livreur));
   verifier('sur le téléphone, celui qui récupère devient le livreur de livraison si personne n\'est posé', /if \(!liste\[idx\]\.livreur_id\) liste\[idx\]\.livreur_id = currentUser\.id;/.test(livreur));

@@ -2372,7 +2372,15 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 .lot-enregistrer-un{ width:100%; margin-top:8px; }
 
 /* Champ rempli par la machine (carnet) et pas encore relu : surligné jusqu'à ce qu'on y touche. */
-.lot-champs .rempli-auto{ background:#fffbe6 !important; border-color:#e6c34a !important; }
+/* Rempli par la machine : surligné jusqu'à ce que quelqu'un le touche. La règle vaut sur les
+   deux écrans de saisie depuis le 18/09/2026, plus seulement dans une ligne de lot. */
+.rempli-auto{ background:#fffbe6 !important; border-color:#e6c34a !important; }
+/* D'OÙ VIENT LE PRIX PROPOSÉ. (18/09/2026) Une ligne discrète sous les deux montants : elle
+   nomme le trajet et le tarif de la grille, et dit quand la personne s'en écarte. Discrète
+   parce qu'elle accompagne — elle ne réclame rien, elle explique un chiffre déjà là. */
+.lot-tarif-note{
+  margin-top:4px; font-size:11.5px; color:#5b6473; line-height:1.35;
+}
 
 /* Barre de fin de lot : elle colle en bas pour rester atteignable quand la liste s'allonge. */
 .lot-barre-photos{

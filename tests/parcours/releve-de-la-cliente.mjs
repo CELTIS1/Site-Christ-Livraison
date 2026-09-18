@@ -119,7 +119,41 @@ await dodo(400);
 verifier('« Compléter » la ramène à sa ligne, intacte', (await page.locator('#lotfr-lignes .lotfr-tel').count()) === 1
   && (await page.locator('#lotfr-lignes .lotfr-tel').first().inputValue()).replace(/\s/g, '') === '0701020304');
 
-// Elle écrit ses deux montants. L'alerte de l'argent se tait ; celle des doublons, elle, reste.
+/* LE PRIX SE POSE TOUT SEUL. (18/09/2026, Celtis : « il faudrait que les montants se saisissent
+   automatiquement en fonction de la commune de départ et de la commune d'arrivée ».)
+   Elle a choisi Cocody ; elle part de Treichville. La grille dit 1 500 F, et l'écran le dit
+   aussi — un prix qui apparaît sans raison se corrige au hasard. */
+const noteTarif = () => page.locator('#lotfr-lignes .lotfr-tarif-note').first().innerText();
+verifier('le prix de livraison s\'est posé tout seul depuis la grille',
+  (await page.locator('#lotfr-lignes .lotfr-liv').first().inputValue()) === '1500',
+  await page.locator('#lotfr-lignes .lotfr-liv').first().inputValue());
+verifier('et l\'écran dit d\'où il vient',
+  /Tarif grille/.test(await noteTarif()) && /Treichville/.test(await noteTarif()) && /Cocody/.test(await noteTarif()),
+  await noteTarif());
+verifier('le champ est signalé comme rempli par la machine, pour qu\'elle le relise',
+  await page.locator('#lotfr-lignes .lotfr-liv').first().evaluate(el => el.classList.contains('rempli-auto')));
+
+/* Elle corrige son point de départ : le prix nous appartient encore, il suit. Sans cette règle,
+   l'écran lui répondrait « vous avez saisi 1 500 » — un chiffre qu'elle n'a jamais tapé. */
+await page.selectOption('#lotfr-pickup-commune', 'Plateau');
+await dodo(500);
+verifier('changer son point de départ refait le prix, il n\'était pas encore d\'elle',
+  (await page.locator('#lotfr-lignes .lotfr-liv').first().inputValue()) === '1500'
+  && /Plateau → Cocody/.test(await noteTarif()), await noteTarif());
+
+/* Mais un montant qu'elle tape est une décision, et rien ne la remplace. */
+await page.locator('#lotfr-lignes .lotfr-liv').first().fill('1000');
+await page.selectOption('#lotfr-pickup-commune', 'Yopougon');
+await dodo(500);
+verifier('un montant tapé à la main n\'est plus jamais écrasé par la grille',
+  (await page.locator('#lotfr-lignes .lotfr-liv').first().inputValue()) === '1000',
+  await page.locator('#lotfr-lignes .lotfr-liv').first().inputValue());
+verifier('et l\'écart se voit, au lieu de se taire',
+  /vous avez saisi/.test(await noteTarif()) && /1\s?000/.test(await noteTarif()), await noteTarif());
+await page.selectOption('#lotfr-pickup-commune', 'Treichville');
+await dodo(300);
+
+// Elle écrit son montant d'article. L'alerte de l'argent se tait ; celle des doublons, elle, reste.
 await page.locator('#lotfr-lignes .lotfr-art').first().fill('18000');
 await page.locator('#lotfr-lignes .lotfr-liv').first().fill('1500');
 await page.locator('#lotfr-lignes .lot-enregistrer-un').first().click();

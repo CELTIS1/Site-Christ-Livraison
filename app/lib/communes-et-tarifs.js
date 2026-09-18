@@ -238,6 +238,78 @@ function computePrixLivraison(communeDepart, communeDestination) {
   return 3000;
 }
 
+/* --------------------------------------------------------------------------------------------
+   PROPOSER LE PRIX, SANS JAMAIS ÉCRASER UNE SAISIE — 18 septembre 2026, Celtis
+   --------------------------------------------------------------------------------------------
+   « On a maintenant les grilles tarifaires. Il faudrait que les montants se saisissent
+   automatiquement en fonction de la commune de départ et de la commune d'arrivée. On a l'adresse
+   de la vendeuse, on a l'adresse du destinataire. »
+
+   La suggestion existait depuis le 09/09, mais elle ne se déclenchait qu'au changement de la
+   commune de DESTINATION, et seulement sur les deux écrans de saisie en lot. Trois trous, mesurés
+   en base le 18/09 : 53 colis sans frais de livraison, tous créés au bureau ; 26 d'entre eux sans
+   commune de récupération, donc sans départ possible ; et 8 clientes actives dont la fiche n'en
+   porte aucune. Changer la cliente APRÈS avoir choisi la destination laissait en plus un prix
+   calculé sur la grille de la précédente — faux, et silencieusement.
+
+   Cette fonction est la décision, prise une fois pour les quatre écrans qui la posent. Elle ne
+   touche à rien : elle dit ce qu'il faut faire, les écrans le font.
+
+   DEUX RÈGLES QUI NE BOUGENT PAS.
+   • ON N'ÉCRIT JAMAIS PAR-DESSUS LA MAIN DE QUELQU'UN. Un montant déjà tapé est une décision —
+     trajet très court ramené à 1 000 F, tarif négocié avec une grosse cliente. Le remplacer par
+     la grille effacerait l'accord sans que personne le voie. On propose donc dans un champ vide,
+     et on se contente de DIRE le tarif quand il y en a déjà un.
+     Cette fonction ne voit qu'une VALEUR : elle ne sait pas qui l'a mise. La différence entre un
+     chiffre tapé par la personne et un chiffre que nous avons posé nous-mêmes se fait un cran
+     plus bas, dans brancherPrixLivraison(), qui juge la marque `rempli-auto` — un prix encore
+     marqué est encore à nous, et se met à jour quand le trajet change.
+   • ON N'INVENTE PAS UN CHIFFRE QU'ON NE SAIT PAS CALCULER. Sur une expédition vers l'intérieur,
+     le prix dépend de la ville, du transporteur et du volume : la grille d'Abidjan n'a rien à en
+     dire, et un chiffre proposé là serait un chiffre faux avec l'aplomb d'un chiffre juste.
+
+   Rend { prix, ecrire, note } :
+     prix    le tarif de la grille, ou null quand elle ne répond pas ;
+     ecrire  vrai seulement si le champ est vide et qu'un prix existe ;
+     note    la phrase à afficher sous le champ, vide quand il n'y a rien à dire. Elle existe
+             parce qu'un prix qui apparaît tout seul sans dire d'où il vient se corrige au
+             hasard : en la lisant, la personne sait que c'est la grille, et sait qu'elle s'en
+             écarte quand elle s'en écarte.
+   -------------------------------------------------------------------------------------------- */
+function suggestionPrixLivraison(communeDepart, communeDestination, valeurActuelle) {
+  const depart = String(communeDepart == null ? "" : communeDepart).trim();
+  const destination = String(communeDestination == null ? "" : communeDestination).trim();
+  const saisi = String(valeurActuelle == null ? "" : valeurActuelle).trim();
+  const vide = saisi === "";
+  const rien = { prix: null, ecrire: false, note: "" };
+
+  // Rien n'est encore choisi : on ne dit rien plutôt que d'expliquer un manque que la personne
+  // est en train de combler sous nos yeux.
+  if (!destination) return rien;
+
+  if (estExpedition(destination) || estExpedition(depart)) {
+    return { prix: null, ecrire: false,
+      note: "Expédition : le prix dépend de la ville et du transporteur — à saisir à la main." };
+  }
+  if (!depart) {
+    return { prix: null, ecrire: false,
+      note: "Commune de récupération non renseignée : le tarif ne peut pas se calculer." };
+  }
+  const prix = computePrixLivraison(depart, destination);
+  if (prix === null) {
+    return { prix: null, ecrire: false,
+      note: "Ce trajet n'est pas dans la grille (" + depart + " → " + destination + ") : à saisir à la main." };
+  }
+  const tarif = "Tarif grille : " + depart + " → " + destination + " = " + (formatMontant(prix) || prix + " FCFA");
+  if (vide) return { prix: prix, ecrire: true, note: tarif };
+  // Un montant est déjà là. S'il correspond à la grille, la note le confirme ; s'il s'en écarte,
+  // elle le dit — sans rien changer. C'est une information, pas un reproche : l'écart est
+  // souvent voulu, et c'est justement pour ça qu'il doit se voir.
+  const ecart = Number(saisi) !== prix;
+  return { prix: prix, ecrire: false,
+    note: ecart ? (tarif + " — vous avez saisi " + (formatMontant(Number(saisi)) || saisi)) : tarif };
+}
+
 // Construit les <option> d'une liste déroulante de communes. `selected` (optionnel) présélectionne
 // une valeur ; `placeholder` (optionnel) ajoute une première option vide/désactivée.
 function communesOptionsHTML(selected, placeholder) {
@@ -386,6 +458,87 @@ function brancherPrecisionExpedition(selectCommune, champPrecision) {
   const maj = () => appliquerModeExpedition(selectCommune, champPrecision);
   selectCommune.addEventListener("change", maj);
   maj();
+}
+
+/* CE QUI A ÉTÉ REMPLI PAR LA MACHINE SE VOIT. (venue de fournisseur.html le 18/09/2026, quand le
+   bureau s'est mis lui aussi à proposer le prix de livraison.)
+   Un champ rempli tout seul et qui ressemble à un champ tapé à la main ne se relit pas. Il reste
+   donc surligné jusqu'à ce que la personne le touche — et jamais « quelques secondes » : une
+   marque qui s'efface toute seule n'est pas une information, c'est un décor. */
+function marquerRempliAuto(el) {
+  if (!el) return;
+  el.classList.add("rempli-auto");
+  const oter = function () { el.classList.remove("rempli-auto"); };
+  el.addEventListener("input", oter, { once: true });
+  el.addEventListener("change", oter, { once: true });
+  el.addEventListener("focus", oter, { once: true });
+}
+
+/* Poser la suggestion de prix sur un formulaire — le seul endroit qui touche au document.
+   La décision est dans suggestionPrixLivraison() ; ici on ne fait qu'obéir.
+
+   `depart` est une FONCTION et non une chaîne, exprès : la commune de départ change sous les
+   doigts (on choisit la cliente après avoir tapé la destination, on corrige le point de
+   récupération). Lui passer une valeur figée, c'est proposer le prix d'un trajet qu'on ne fait
+   plus. On la relit donc à chaque appel.
+
+   Rend une fonction `majPrixLivraison()` que l'appelant rappelle quand le DÉPART change — ce
+   qu'il ne pouvait pas faire jusqu'au 18/09/2026, où la suggestion n'était branchée que sur
+   l'arrivée. */
+function brancherPrixLivraison(selectCommune, champLivraison, depart, noteEl) {
+  if (!selectCommune || !champLivraison) return function () {};
+  /* ON N'ÉCRIT PAS EN ARRIVANT, ON ÉCRIT QUAND QUELQUE CHOSE CHANGE.
+     Au branchement, on se contente d'afficher la note. La différence compte sur les fiches de
+     MODIFICATION : elles sont dessinées pour tous les colis de la liste, pliées, sans que
+     personne les ouvre. Écrire un prix à ce moment-là le glisserait dans cent formulaires que
+     personne n'a regardés — et le premier « Enregistrer » cliqué pour une autre raison
+     l'emporterait en base sans que quiconque l'ait décidé. À la création, la commune est vide au
+     départ : cette réserve ne change rien à ce qui s'y passait déjà. */
+  /* UN PRIX QUE NOUS AVONS POSÉ NOUS APPARTIENT ENCORE. Vu à l'essai le 18/09/2026 : la cliente
+     choisit Port-Bouët depuis Treichville, on propose 2 000 F ; elle corrige ensuite son point de
+     départ pour Plateau, d'où le tarif est de 1 500 F — et l'écran lui répondait « vous avez
+     saisi 2 000 FCFA ». Elle n'avait rien saisi du tout : c'était notre chiffre, sur l'ancien
+     trajet. La marque `rempli-auto` dit précisément cela — elle est posée quand la machine écrit
+     et retirée au premier geste de la personne sur le champ. Tant qu'elle est là, le champ est à
+     nous et se met à jour ; dès qu'elle est partie, c'est une décision et on n'y touche plus. */
+  const valeurAJuger = function () {
+    return champLivraison.classList.contains("rempli-auto") ? "" : champLivraison.value;
+  };
+  const maj = function (ecrireSiVide) {
+    const ou = (typeof depart === "function") ? depart() : depart;
+    const s = suggestionPrixLivraison(ou, selectCommune.value, valeurAJuger());
+    if (s.ecrire && ecrireSiVide !== false) {
+      champLivraison.value = s.prix;
+      // Le signal AVANT la marque, et non l'inverse : marquerRempliAuto() retire sa marque au
+      // premier `input` sur le champ. Dans l'autre ordre, le signal qu'on envoie nous-mêmes pour
+      // recalculer le total l'effaçait aussitôt — le prix arrivait sans être signalé comme posé
+      // par la machine, ce qui est exactement ce qu'on veut éviter.
+      champLivraison.dispatchEvent(new Event("input"));
+      marquerRempliAuto(champLivraison);
+    }
+    if (noteEl) {
+      noteEl.textContent = s.note;
+      noteEl.style.display = s.note ? "" : "none";
+    }
+  };
+  selectCommune.addEventListener("change", function () { maj(true); });
+  // La note doit suivre la main : dès qu'on corrige le montant, elle dit si l'on est encore sur
+  // la grille ou si l'on s'en écarte. Sans cela, elle continuerait d'annoncer un tarif que le
+  // champ ne porte plus.
+  champLivraison.addEventListener("input", function () {
+    if (!noteEl) return;
+    const ou = (typeof depart === "function") ? depart() : depart;
+    // La vraie valeur ici, pas valeurAJuger() : la personne est en train de taper, c'est donc
+    // bien la sienne qu'il faut comparer à la grille.
+    const s = suggestionPrixLivraison(ou, selectCommune.value, champLivraison.value);
+    noteEl.textContent = s.note;
+    noteEl.style.display = s.note ? "" : "none";
+  });
+  maj(false);
+  // Rendue à l'appelant pour le cas qui manquait jusqu'au 18/09/2026 : quand le DÉPART change
+  // (on choisit la cliente, on corrige le point de récupération), le prix doit être redemandé
+  // sur les lignes encore vides. Celle-ci écrit, elle.
+  return function () { maj(true); };
 }
 
 
