@@ -65,10 +65,23 @@ await dodo(600);
 const motifs = page.locator('.motif-echec__motif');
 verifier('« Non livré » demande d\'abord le motif : cinq motifs du règlement, pas un de plus', (await motifs.count()) === 5, await motifs.count());
 verifier('et une case « la vendeuse est prévenue »', (await page.locator('#motif-echec-prevenue').count()) === 1);
+/* LA COURSE PAYÉE SANS LIVRAISON (18/09/2026, Celtis). La même fenêtre demande si le déplacement
+   a été payé, et ne laisse pas passer sans réponse : le livreur s'est déplacé, ces billets-là
+   doivent entrer dans son point du soir. */
+verifier('elle demande aussi si la livraison a été payée, avec le montant', (await page.locator('#motif-echec-course').count()) === 1 && /1\s?500/.test(await page.locator('.motif-echec__question').innerText()), await page.locator('#motif-echec-course').innerText().catch(() => 'pas de question'));
+await page.locator('.motif-echec__motif').first().click();
+await dodo(400);
+verifier('choisir un motif sans y répondre ne ferme rien, et le rappelle', (await page.locator('.motif-echec__rappel').count()) === 1 && (await page.locator('.motif-echec__motif').count()) === 5);
+await page.locator('.motif-echec__choix[data-payee="1"]').click();
+await dodo(200);
+verifier('répondre « Oui » efface le rappel', (await page.locator('.motif-echec__rappel').count()) === 0);
 await page.locator('.motif-echec__motif[data-motif="absent"], .motif-echec__motif').first().click();
 await dodo(1800);
 ecrit = monde.journal.find(j => j.table === 'colis' && j.op === 'update' && j.valeurs && j.valeurs.statut === 'non_livre' && j.ids.includes(COLIS1.id));
 verifier('la base a reçu « non_livre » avec le motif choisi', !!ecrit && !!ecrit.valeurs.motif_non_livraison, JSON.stringify(monde.journal.slice(-2)));
+verifier('et la réponse sur la course : livraison_payee_non_livre = true', !!ecrit && ecrit.valeurs.livraison_payee_non_livre === true, JSON.stringify(ecrit && ecrit.valeurs));
+const mention = carte(COLIS1.id).locator('.motif-echec-ligne__course').first();
+verifier('la carte le dit, avec le montant', (await mention.count()) === 1 && /Déplacement payé/.test(await mention.textContent()) && /1\s?500/.test(await mention.textContent()), await mention.textContent().catch(() => 'pas de mention'));
 verifier('non livré : livre_at reste vide, non_livre_at est posé', !COLIS1.livre_at && !!COLIS1.non_livre_at);
 if ((await page.locator('#wa-invite').count()) === 1) await page.locator('#wa-invite .wa-invite__plus-tard').click();
 verifier('la tuile « Non livrés » est passée à 2', /2 Non livrés?/.test(await tuiles()), await tuiles());
@@ -83,6 +96,15 @@ const enMain = await page.evaluate((id) => {
 }, LIVREUR).catch(() => null);
 const attendu = monde.TABLES.colis.filter(c => c.livreur_id === LIVREUR && c.statut === 'livre' && !c.encaissement_remis).reduce((s, c) => s + c.montant_article + c.montant_livraison, 0);
 verifier('l\'argent en main calculé dans la page = celui de la base (' + attendu.toLocaleString('fr-FR') + ' F)', enMain !== null && Math.abs(enMain.total - attendu) < 0.5, JSON.stringify(enMain) + ' vs ' + attendu);
+/* Et la course payée du colis n°1, qui n'est PAS livré : elle doit être dans sa caisse, sans
+   grossir le nombre de colis livrés. (18/09/2026) */
+const caisse = await page.evaluate((id) => {
+  const miens = (typeof allColis !== 'undefined' ? allColis : []).filter(c => c.livreur_id === id && !c.encaissement_remis);
+  if (typeof caisseParLivreur !== 'function') return null;
+  return caisseParLivreur(miens)[0] || null;
+}, LIVREUR).catch(() => null);
+verifier('la caisse compte la course payée du colis non livré (1 500 F de plus)', caisse && Math.abs(caisse.total - (attendu + 1500)) < 0.5, JSON.stringify(caisse));
+verifier('sans la compter comme un colis livré', caisse && caisse.nb === 2 && caisse.nbCoursesSansLivraison === 1, JSON.stringify(caisse));
 verifier('aucune erreur JavaScript pendant tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();

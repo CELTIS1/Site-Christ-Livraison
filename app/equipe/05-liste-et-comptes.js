@@ -216,6 +216,19 @@ const __anchor = captureScrollAnchor(list);
 const __saisies = eqPhotographierSaisies(list);
 let filtered = activeFilter === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilter);
 filtered = filtered.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDateColis) && matchesLivreur(c, filtreLivreurColis));
+/* CE QUI A QUITTÉ LA JOURNÉE. (18/09/2026)
+   Le 17 au soir, des colis « assignés aujourd'hui » disparaissaient de cet écran sans un mot.
+   Ils avaient été reportés à demain — un geste légitime, mais matchesDate() les range alors
+   sous leur nouveau jour et ils s'effacent de celui-ci. Ne parvenant pas à les faire revenir
+   (modifier un colis ne touche pas au report), l'équipe en a supprimé pour les recréer.
+   Une liste qui perd des lignes sans le dire fait douter de tout le reste : on compte donc
+   ce qui est parti, et on le dit au-dessus de la liste. Même esprit que la ligne « restes des
+   jours passés » de la tournée, pour la même raison. */
+const eqReportes = filtreDateColis
+  ? allColis.filter(c => colisReporte(c)
+      && dayKey(c.created_at) === filtreDateColis
+      && matchesLivreur(c, filtreLivreurColis))
+  : [];
 // Nombre de colis déjà chargés mais pas encore dessinés. Sert plus bas à ne pas proposer
 // « Charger plus de colis » (qui va chercher de l'historique sur le serveur) tant qu'il reste
 // des colis à afficher ici : deux invitations à charger en même temps, c'est déroutant.
@@ -230,8 +243,20 @@ list.classList.toggle('lot-actif', eqLotActif);
 // le tremblement de l'écran, la perte du défilement et la perte des saisies : il n'y a plus de
 // redessin du tout à ces moments-là. (25/08/2026)
 let __aChange = true;
+/* La ligne s'affiche aussi — et surtout — quand la liste est VIDE : c'est le cas où la
+   journée semble n'avoir jamais rien contenu. */
+const ligneReportes = eqReportes.length
+  ? `<div class="eq-reportes" data-jour-cible="${escapeHTML(jourDuColis(eqReportes[0]))}">
+       ⏭️ <strong>${eqReportes.length}</strong> colis de cette journée ${eqReportes.length > 1 ? 'ont été reportés' : 'a été reporté'}
+       à ${escapeHTML(dayLabel(jourDuColis(eqReportes[0]) + 'T12:00:00').toLowerCase())}${
+         new Set(eqReportes.map(c => jourDuColis(c))).size > 1 ? ' ou plus tard' : ''} :
+       ${eqReportes.length > 1 ? 'ils ne sont plus' : 'il n\'est plus'} dans cette liste.
+       <button type="button" class="btn btn-sm btn-outline" id="eq-voir-reportes">Les voir</button>
+     </div>`
+  : '';
+
 if (!filtered.length) {
-__aChange = cltPoserHTML(list, (filtreLivreurColis
+__aChange = cltPoserHTML(list, ligneReportes + (filtreLivreurColis
 ? `<div class="empty-state">${filtreLivreurColis === '__aucun'
 ? `Aucun colis en attente d'assignation${filtreDateColis ? ' à cette date' : ''}.`
 : `Rien pour ${escapeHTML(livreurNomSimple(filtreLivreurColis))}${filtreDateColis ? ' à cette date' : ''}.`}</div>`
@@ -258,7 +283,7 @@ const tranche = limiterGroupesColis(groups, colisTranche);
 resteAAfficher = tranche.reste;
 // La barre annonce `filtered.length`, pas le nombre de lignes dessinées : « Tout sélectionner
 // (312) » doit vraiment porter sur les 312 colis des critères courants.
-__aChange = cltPoserHTML(list, renderGroupedColisHTML(tranche.groups, colisRowHTML, equipeCollecteActionHTML)
+__aChange = cltPoserHTML(list, ligneReportes + renderGroupedColisHTML(tranche.groups, colisRowHTML, equipeCollecteActionHTML)
 + trancheColisPiedHTML(tranche.affiches, tranche.total)
 + (eqLotActif ? barreLotHTML(eqLotIds.size, filtered.length, eqBoutonsLot(), eqExtraLotHTML()) : ''),
 (colisHasMore ? '1' : '0') + ':' + resteAAfficher + ':' + (colisLoadingMore ? '1' : '0'));
@@ -403,6 +428,9 @@ const articleNonEncaisseInput = item.querySelector('.edit-article-non-encaisse')
 const livraisonPayeeInput = item.querySelector('.edit-livraison-payee');
 const article_non_encaisse = articleNonEncaisseInput ? articleNonEncaisseInput.checked : undefined;
 const livraison_payee = livraisonPayeeInput ? livraisonPayeeInput.checked : undefined;
+// 18/09/2026 : le déplacement payé sur un colis non livré (voir livraisonEncaissee, argent.js).
+const coursePayeeInput = item.querySelector('.edit-course-payee');
+const livraison_payee_non_livre = coursePayeeInput ? coursePayeeInput.checked : undefined;
 // Les frais d'une expédition (10/09/2026) : le transporteur, et « frais déjà réglés » qui pose
 // ou efface frais_soldes_at — la même colonne que le bouton « Soldé » du bilan et que la case de
 // la cliente à la création. On ne touche à la date que si la case a changé, pour ne pas
@@ -524,6 +552,7 @@ if (frais_additionnels_regle_at !== undefined) updatePayload.frais_additionnels_
   const avantInput = item.querySelector('.edit-a-livrer-avant');
   if (avantInput) { const v = String(avantInput.value || '').slice(0, 10); updatePayload.a_livrer_avant = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null; } }
 if (livraison_payee !== undefined) updatePayload.livraison_payee = livraison_payee;
+if (livraison_payee_non_livre !== undefined) updatePayload.livraison_payee_non_livre = livraison_payee_non_livre;
 btn.disabled = true; btn.textContent = '...';
 let { error } = await supabaseClient.from('colis').update(updatePayload).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';
@@ -577,6 +606,19 @@ const originalText = btn.textContent;
 const item = btn.closest('.colis-item');
 const id = item.dataset.id;
 const colisASupprimer = allColis.find(c => c.id === id);
+/* CE QU'ON PERD EN SUPPRIMANT. (18/09/2026)
+   Le 17 au soir, l'équipe a supprimé des colis pour les recréer, faute de comprendre pourquoi
+   ils quittaient la journée (ils étaient reportés). La boîte ne disait que « définitif ». Elle
+   dit maintenant ce qui part vraiment — l'argent déjà compté, le numéro qui ne reviendra pas —
+   et, quand le colis est reporté, elle propose le geste qui règle le problème sans supprimer. */
+const dangers = [];
+if (colisASupprimer) {
+  if (colisASupprimer.statut === 'livre') dangers.push("Ce colis est LIVRÉ : son argent est compté dans le point du livreur et dans le relevé de la cliente. Le supprimer efface ces montants.");
+  else if (colisASupprimer.statut === 'non_livre') dangers.push("Ce colis est marqué non livré : le motif de l'échec et la course du livreur partent avec lui.");
+  if (colisReporte(colisASupprimer)) dangers.push("Ce colis est reporté au " + dayLabel(jourDuColis(colisASupprimer) + 'T12:00:00').toLowerCase() + " : c'est pour cela qu'il ne s'affiche pas dans sa journée de réception. Le bouton « Le remettre à sa journée » le ramène sans le supprimer.");
+  if (colisASupprimer.numero) dangers.push("Le numéro " + colisASupprimer.numero + " ne sera pas réattribué : il manquera dans la suite des numéros.");
+}
+dangers.push("La suppression est enregistrée au journal (qui, quand, et le colis entier) — mais le colis, lui, ne revient pas.");
 const okDelete = await showConfirm({
   title: 'Supprimer ce colis ?',
   // Une suppression est définitive : la boîte doit nommer le colis assez précisément
@@ -586,7 +628,7 @@ const okDelete = await showConfirm({
     ? [colisDestinationTexte(colisASupprimer), colisDescriptionTexte(colisASupprimer)]
         .filter(Boolean).join(' · ') || 'Colis sans destination ni description'
     : null,
-  sub: 'Cette action est définitive et irréversible.',
+  sub: dangers.join(' '),
   okLabel: 'Supprimer',
   danger: true
 });
@@ -627,6 +669,47 @@ renderColis();
 });
 });
 }
+
+/* LES DEUX GESTES DU REPORT, CÔTÉ BUREAU. (18/09/2026)
+   « Les voir » : on se place sur la journée où les colis sont partis, plutôt que de demander à
+   l'équipe de deviner la date et de la taper. « Le remettre à sa journée » : on efface le report
+   (reporte_au = null), et le colis retrouve le jour où il a été reçu — c'est exactement ce que
+   l'équipe cherchait à faire en le supprimant puis en le recréant.
+   Branchés ici, hors du if/else : la ligne des reportés s'affiche dans les deux cas. */
+const btnVoirReportes = list.querySelector('#eq-voir-reportes');
+if (btnVoirReportes) btnVoirReportes.addEventListener('click', () => {
+  const cible = btnVoirReportes.closest('.eq-reportes').dataset.jourCible;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(cible || '')) return;
+  filtreDateColis = cible;
+  const champ = document.getElementById('filtre-date-colis');
+  if (champ) champ.value = cible;
+  eqRemettreTrancheAZero();
+  eqViderSelection();
+  renderColis();
+});
+
+list.querySelectorAll('.eq-annuler-report').forEach(btn => {
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const id = btn.dataset.annulerReport;
+    const c = allColis.find(x => x.id === id);
+    if (!c) return;
+    const sonJour = dayKey(c.created_at);
+    const ok = await cltConfirm({
+      title: 'Remettre ce colis à sa journée ?',
+      detail: `Il comptera de nouveau dans la journée du ${dayLabel(sonJour + 'T12:00:00').toLowerCase()}, celle où il a été reçu — et plus dans celle du ${dayLabel(jourDuColis(c) + 'T12:00:00').toLowerCase()}.`,
+      okLabel: 'Oui, le remettre',
+    });
+    if (!ok) return;
+    btn.disabled = true;
+    const { error } = await supabaseClient.from('colis').update({ reporte_au: null }).eq('id', id);
+    btn.disabled = false;
+    if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
+    c.reporte_au = null;
+    cltToast('Colis remis à sa journée.', { type: 'success' });
+    renderColis();
+  });
+});
 
 if (colisHasMore && !resteAAfficher) {
 list.insertAdjacentHTML('beforeend', `

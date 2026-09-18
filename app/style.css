@@ -2907,6 +2907,26 @@ html[data-theme="dark"] .restes-en-route{ background:#2a2114; }
 .colis-report .report-date{ padding:6px 8px; font-size:13px; border:1.5px solid var(--border); border-radius:8px; max-width:170px; }
 .colis-report__etat{ font-size:12.5px; font-weight:700; color:#8a4b12; }
 
+/* LE REPORT SE VOIT AUSSI AU BUREAU (18/09/2026)
+   Le 17 au soir, des colis « assignés aujourd'hui » quittaient l'écran de l'équipe sans un mot :
+   ils avaient été reportés. Faute de le lire quelque part, l'équipe a fini par les supprimer pour
+   les recréer. Deux marques, donc, dans le même ton ambre que « Reporté au … » chez le livreur et
+   que la ligne « restes des jours passés » de la tournée : une ligne au-dessus de la liste, et
+   une mention sur la carte du colis. */
+.eq-reportes{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  background:#FFF7ED; border:1px solid #F5C99B; border-left:4px solid #E08A2E;
+  border-radius:10px; padding:10px 12px; margin-bottom:12px;
+  font-size:13.5px; color:#8a4b12; line-height:1.45;
+}
+.eq-reportes strong{ font-weight:800; }
+.colis-reporte{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  color:#8a4b12; font-weight:600;
+}
+html[data-theme="dark"] .eq-reportes{ background:#2a2114; border-color:#5a4520; border-left-color:#E08A2E; color:#E8C391; }
+html[data-theme="dark"] .colis-reporte{ color:#E8C391; }
+
 /* ---------- LES TROIS RONDS DE LA BARRE, SUR TÉLÉPHONE (17/09/2026) ----------
    Règle 2.4 de la maison : « tout ce qu'on touche fait 44 px au moins ». Le ☰ n'en faisait
    que 34, alors qu'il porte maintenant la déconnexion et les réglages — sur Gestion, c'est

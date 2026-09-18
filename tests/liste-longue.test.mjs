@@ -385,10 +385,12 @@ titre('Les trois espaces utilisent bien l\'affichage par tranches');
 for (const [fichier, attendus] of [['equipe.html', 1], ['livreur.html', 2], ['fournisseur.html', 1]]) {
   const src = lireAvecCode(APP, fichier);
   // On compte les APPELS, pas les mentions du nom dans les commentaires explicatifs, sinon le
-  // contrôle se déclencherait à tort. Deux écritures sont acceptées : l'ancienne
-  // « innerHTML = renderGroupedColisHTML(… » et celle du 25/08/2026,
-  // « cltPoserHTML(list, renderGroupedColisHTML(… », qui compare avant d'écrire.
-  const rendus = (src.match(/(=|,)\s*renderGroupedColisHTML\(/g) || []).length;
+  // contrôle se déclencherait à tort. Trois écritures sont acceptées : l'ancienne
+  // « innerHTML = renderGroupedColisHTML(… », celle du 25/08/2026,
+  // « cltPoserHTML(list, renderGroupedColisHTML(… », qui compare avant d'écrire, et celle du
+  // 18/09/2026, « cltPoserHTML(list, ligneReportes + renderGroupedColisHTML(… », qui pose une
+  // ligne au-dessus de la liste pour dire ce qui a quitté la journée.
+  const rendus = (src.match(/(=|,|\+)\s*renderGroupedColisHTML\(/g) || []).length;
   const coupes = (src.match(/limiterGroupesColis\(/g) || []).length;
   const pieds = (src.match(/trancheColisPiedHTML\(/g) || []).length;
   const branches = (src.match(/brancherTrancheColis\(/g) || []).length;

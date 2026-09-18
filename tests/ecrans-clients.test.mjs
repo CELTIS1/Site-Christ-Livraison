@@ -235,10 +235,14 @@ titre('3. La carte d’un colis chez la vendeuse (fonction réellement exécuté
     poser(objet('const MOTIFS_NON_LIVRAISON = {', config, 'lib/primes.js'));
     poser(commun.match(/const CLT_CONTACT = \{[\s\S]*?\n\};/)[0]);
     poser(bloc('cltJoindreLienHTML', commun, 'clt-common.js'));
+    // 18/09/2026 : paiementInfo nomme le montant de la course payée sans livraison, et
+    // formatMontant vit dans clt-common.js, pas dans config.js.
+    poser(bloc('formatMontant', commun, 'clt-common.js'));
     poser(config.match(/const COMMUNE_EXPEDITION = [^;]+;/)[0]);
     for (const f of ['avatarHTML', 'colisDescriptionTexte', 'colisNumeroClientHTML',
                      'estExpedition', 'colisDestinationTexte', 'colisDestinationHTML', 'colisADetailMontant',
                      'montantArticleColis', 'montantLivraisonColis', 'montantManquantALaLivraison',
+                     'coursePayeeSansLivraison',
                      'paiementInfo', 'paiementBadgeHTML',
                      // statutBadgeHTML ne sert plus à cette carte — c'est précisément ce qu'on
                      // vérifie. On le charge quand même : le jour où quelqu'un le remet, on veut

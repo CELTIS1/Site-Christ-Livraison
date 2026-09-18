@@ -524,9 +524,26 @@ function livraisonEncaissee(c) {
   if (!c) return false;
   if (estExpedition(c)) return false;
   if (c.livraison_payee) return false;
-  if (c.statut !== 'livre') return false;
+  /* LA COURSE EST DUE MÊME SI LE COLIS REVIENT. (18/09/2026, Celtis : « le livreur s'est
+     déplacé, il est arrivé au lieu de rencontre pour livrer et le client décide finalement de
+     ne plus prendre le colis. Mais là, il paye la livraison. ») Le livreur répond oui ou non au
+     moment où il marque « non livré » ; si c'est oui, ces billets sont dans sa poche et doivent
+     être dans son point du soir, comme n'importe quelle course encaissée.
+     Pourquoi « tant que le colis n'est pas livré » et pas « si le colis est non livré » : un
+     colis retenté repasse « en livraison » sans que l'argent déjà reçu ne sorte de la poche du
+     livreur — l'oublier à ce moment-là lui ferait un écart le soir. Et le jour où il est
+     réellement livré, c'est la règle ordinaire (ligne du dessous) qui compte la course : garder
+     les deux compterait deux fois le même billet. */
+  if (c.statut !== 'livre') return !!c.livraison_payee_non_livre;
   return !c.livraison_non_encaissee;
 }
+
+// Vrai quand la course a été payée alors que le colis n'a PAS été livré. Sert à le DIRE (au
+// point du jour, sur la carte du colis) ; l'argent, lui, est déjà compté par livraisonEncaissee.
+function coursePayeeSansLivraison(c) {
+  return !!(c && c.statut !== 'livre' && c.livraison_payee_non_livre && !c.livraison_payee && !estExpedition(c));
+}
+function montantCoursePayeeSansLivraison(c) { return coursePayeeSansLivraison(c) ? montantLivraisonColis(c) : 0; }
 
 // Argent réellement rentré, poche par poche (0 si le colis n'est pas encaissé).
 function montantArticleEncaisse(c)   { return articleEncaisse(c)   ? montantArticleColis(c)   : 0; }
@@ -629,6 +646,10 @@ function totauxArgent(colis) {
     nbLivres: 0,
     nbEncaisses: 0,
     nbADevoir: 0,
+    // La course payée sur un colis NON livré (18/09/2026). Son montant est DÉJÀ dans
+    // livraisonEncaissee — ces deux lignes ne servent qu'à la nommer là où on l'explique.
+    nbCoursesSansLivraison: 0,
+    coursesSansLivraison: 0,
     // Activité : tout ce qui a été enregistré, quel que soit le statut.
     articleEnregistre: 0,
     livraisonEnregistree: 0,
@@ -687,6 +708,7 @@ function totauxArgent(colis) {
     if (du) t.nbADevoir++;
     t.articleADevoir += du;
     t.manquantALaLivraison += montantManquantALaLivraison(c);
+    if (coursePayeeSansLivraison(c)) { t.nbCoursesSansLivraison++; t.coursesSansLivraison += montantLivraisonColis(c); }
     if (estExpedition(c)) t.nbExpeditions++;
     t.fraisExpedition += fraisExpeditionColis(c);
     t.fraisExpeditionADevoir += fraisExpeditionADevoir(c);
@@ -762,7 +784,7 @@ function caisseParLivreur(colis) {
   const ligneDe = (key) => {
     if (!parLivreur[key]) {
       parLivreur[key] = {
-        nb: 0, article: 0, livraison: 0, gare: 0, total: 0,
+        nb: 0, nbCoursesSansLivraison: 0, article: 0, livraison: 0, gare: 0, total: 0,
         remis: 0, reste: 0, manquant: 0,
         idsAremettre: [], idsFraisARembourser: [],
       };
@@ -770,11 +792,15 @@ function caisseParLivreur(colis) {
     return parLivreur[key];
   };
 
-  liste.filter(c => c && c.statut === 'livre').forEach(c => {
+  /* 18/09/2026 : entrent aussi les colis NON livrés dont la course a été payée au livreur. Il
+     porte ces billets, il doit les remettre le soir — les laisser dehors, c'est lui réclamer
+     moins que ce qu'il a. `nb` ne les compte pas : cette colonne s'affiche sous le titre
+     « Livrés », et un colis non livré n'y a pas sa place. */
+  liste.filter(c => c && (c.statut === 'livre' || coursePayeeSansLivraison(c))).forEach(c => {
     const l = ligneDe(c.livreur_id || 'inconnu');
     // montantEnMainDuLivreur() déduit déjà l'avance encore due sur ce colis-ci.
     const montant = Number(montantEnMainDuLivreur(c)) || 0;
-    l.nb++;
+    if (c.statut === 'livre') l.nb++; else l.nbCoursesSansLivraison++;
     l.article += Number(montantArticleEncaisse(c)) || 0;
     l.livraison += Number(montantLivraisonEncaissee(c)) || 0;
     l.gare += avanceDue(c);
@@ -787,7 +813,9 @@ function caisseParLivreur(colis) {
   // Les colis non livrés n'entrent ici que par leur avance de gare, et pour elle seule : ni
   // article, ni livraison. Le colis n'est pas livré, son argent n'est pas rentré, et on ne le
   // solde pas — on rend seulement les billets laissés à la gare.
-  const avances = liste.filter(c => c && c.statut !== 'livre' && avanceDue(c) > 0);
+  // `!coursePayeeSansLivraison` : ces colis-là viennent d'être traités au-dessus, et
+  // montantEnMainDuLivreur() y a déjà déduit leur avance. La déduire ici la retirerait deux fois.
+  const avances = liste.filter(c => c && c.statut !== 'livre' && !coursePayeeSansLivraison(c) && avanceDue(c) > 0);
   avances.forEach(c => {
     const l = ligneDe(c.livreur_id || 'inconnu');
     const avance = avanceDue(c);

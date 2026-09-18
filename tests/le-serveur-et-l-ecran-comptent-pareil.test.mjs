@@ -399,7 +399,7 @@ if (!fs.existsSync(CHEMIN_SQL)) {
   vm.runInContext([
     'estExpedition',
     'colisADetailMontant', 'montantArticleColis', 'montantLivraisonColis',
-    'fraisExpeditionColis', 'articleEncaisse', 'livraisonEncaissee',
+    'fraisExpeditionColis', 'articleEncaisse', 'livraisonEncaissee', 'coursePayeeSansLivraison',
     'montantArticleEncaisse', 'montantLivraisonEncaissee', 'fraisExpeditionARembourser',
     'montantEnMainDuLivreur',
   ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexteRegle);
@@ -421,6 +421,11 @@ if (!fs.existsSync(CHEMIN_SQL)) {
     { statut: 'livre', montant_article: 5000, montant_livraison: 1000, commune_destination: 'Abobo',
       article_non_encaisse: true, livraison_payee: true, livraison_non_encaissee: true,
       frais_expedition: 1000, frais_expedition_rembourse_at: '2026-09-01T10:00:00Z' },
+    // 18/09/2026 : le livreur s'est déplacé, le colis n'a pas été pris, la course a été payée.
+    // Sans cet état, la branche qui lit livraison_payee_non_livre n'est jamais empruntée et la
+    // colonne resterait invisible du côté JS alors qu'elle est bien lue.
+    { statut: 'non_livre', montant_article: 9000, montant_livraison: 2000, commune_destination: 'Cocody',
+      livraison_payee_non_livre: true },
   ].forEach(etat => { contexteRegle.montantEnMainDuLivreur(espion(etat)); });
 
   const colonnes = src => new Set(
@@ -435,12 +440,14 @@ if (!fs.existsSync(CHEMIN_SQL)) {
     `absentes du SQL : ${manquantSQL.join(', ') || 'aucune'} · absentes du JS : ${manquantJS.join(', ') || 'aucune'}`);
 
   // La dixième, commune_destination, est arrivée le 01/09/2026 : sur une expédition le livreur
-  // n'encaisse rien, ni l'article ni la course. Elle est nommée ici pour que sa disparition d'un
-  // des deux côtés soit une panne bruyante et non un silence.
-  verifier("et ces colonnes sont bien les dix attendues, pas un sous-ensemble appauvri",
+  // n'encaisse rien, ni l'article ni la course. La onzième, livraison_payee_non_livre, le
+  // 18/09/2026 : la course payée alors que le colis n'a pas été livré. Elles sont nommées ici
+  // pour que leur disparition d'un des deux côtés soit une panne bruyante et non un silence.
+  verifier("et ces colonnes sont bien les onze attendues, pas un sous-ensemble appauvri",
     ['statut', 'article_non_encaisse', 'livraison_payee', 'livraison_non_encaissee',
      'montant_article', 'montant_livraison', 'montant', 'frais_expedition',
-     'frais_expedition_rembourse_at', 'commune_destination'].every(x => cotesJS.has(x) && coteSQL.has(x)),
+     'frais_expedition_rembourse_at', 'commune_destination', 'livraison_payee_non_livre']
+       .every(x => cotesJS.has(x) && coteSQL.has(x)),
     [...cotesJS].sort().join(', '));
 
   verifier("le fichier dit ce qui a été mesuré, et sur quelle base",

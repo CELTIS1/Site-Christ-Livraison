@@ -131,7 +131,7 @@ vm.runInContext([
     'fraisExpeditionColis', 'fraisExpeditionADevoir', 'fraisExpeditionARembourser',
     'fraisCourseColis', 'fraisCourseADevoir', 'libelleMontantLivraison',
     'fraisAdditionnelsColis', 'fraisAdditionnelsRegle', 'fraisAdditionnelsAReclamer', 'fraisAdditionnelsADevoir',
-    'articleEncaisse', 'livraisonEncaissee',
+    'articleEncaisse', 'livraisonEncaissee', 'coursePayeeSansLivraison',
     'montantArticleEncaisse', 'montantLivraisonEncaissee',
     'montantArticleADevoir', 'montantNetADevoir', 'montantEnMainDuLivreur',
     'montantManquantALaLivraison', 'montantArticleReverse', 'fraisCourseAcquis',

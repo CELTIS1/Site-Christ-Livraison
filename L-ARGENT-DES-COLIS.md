@@ -72,6 +72,40 @@ l'argent dû à une cliente, c'est-à-dire produire une erreur visible, réclam�
 corrigée dans la journée. Auparavant un oubli **effaçait** l'argent d'une cliente,
 en silence, et c'est ce qui s'est passé pendant des mois.
 
+## La course est due même si le colis revient
+
+Ajouté le 18 septembre 2026, à la demande de Celtis : « le livreur s'est
+déplacé, il est arrivé au lieu de rencontre pour livrer et le client décide
+finalement de ne plus prendre le colis. Mais là, il paye la livraison. »
+
+Trois situations d'argent existaient sur les frais de livraison. La vendeuse les
+a réglés d'avance au dépôt (`livraison_payee`) : CLT les retient sur elle, le
+livreur ne touche rien. Le colis est livré mais l'argent n'est pas rentré
+(`livraison_non_encaissee`) : c'est un manque. Le colis est livré sans rien de
+coché : la livraison est encaissée par le livreur.
+
+Il en manquait une quatrième, et c'est la plus fréquente au retour d'une
+tournée : le colis n'est **pas** livré, et le destinataire a tout de même payé le
+déplacement, en billets, au livreur. Cet argent n'existait nulle part — ni dans
+la recette de CLT, ni dans la caisse du livreur, qui le portait pourtant dans sa
+poche et devait le remettre le soir.
+
+La colonne `livraison_payee_non_livre` dit cela, et rien d'autre. Elle est
+remplie au moment où l'information existe : quand le livreur marque « non
+livré », la fenêtre qui demande déjà le motif demande aussi si la livraison a été
+payée, et ne le laisse pas passer sans réponse. La question ne se pose pas quand
+il n'y a rien à encaisser — sur une expédition, sur une course déjà réglée
+d'avance, sur un colis sans frais de livraison.
+
+Trois conditions, et elles sont écrites deux fois, en JavaScript
+(`livraisonEncaissee`, `app/lib/argent.js`) et en SQL
+(`montant_en_main_du_livreur`) : le colis n'est pas `livre`, ce n'est pas une
+expédition, la course n'a pas déjà été payée d'avance. Le jour où le colis est
+réellement livré, c'est la règle ordinaire qui compte la course : garder les deux
+compterait deux fois le même billet. Tant qu'il ne l'est pas — non livré,
+retenté, rendu au bureau — les billets restent dans la poche du livreur et dans
+son point du soir.
+
 ## Le vocabulaire, mot par mot
 
 Ces sept mots ont chacun une définition unique, et c'est cette définition-là qui
@@ -83,7 +117,7 @@ est codée. Aucun écran n'a le droit d'en avoir une autre.
 | **encaissé** | les colis `livre` seulement, exception non cochée |
 | **articles** | l'argent de la cliente, jamais celui de CLT |
 | **frais de livraison** | l'argent de CLT, jamais celui de la cliente |
-| **en main** (livreur) | articles encaissés + livraisons encaissées de sa journée |
+| **en main** (livreur) | articles encaissés + livraisons encaissées de sa journée, y compris la course payée sur un colis non livré (18/09/2026) |
 | **CLT vous doit** | encaissé pour elle, moins ce qui lui a déjà été reversé |
 | **reversé** | remis en mains propres à la cliente, daté |
 

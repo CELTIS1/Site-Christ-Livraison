@@ -1,12 +1,12 @@
-/* LANCER LES TROIS PARCOURS, l'un après l'autre — `npm run parcours`
+/* LANCER LES PARCOURS, l'un après l'autre — `npm run parcours`
    Chaque parcours est un programme à part (son propre navigateur, sa propre fausse base) :
-   ici on les enchaîne et on résume. Rouge si l'un des trois l'est. */
+   ici on les enchaîne et on résume. Rouge si l'un d'eux l'est. */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ICI = path.dirname(fileURLToPath(import.meta.url));
-const PARCOURS = ['connexion-livreur.mjs', 'livraison-d-un-colis.mjs', 'releve-de-la-cliente.mjs'];
+const PARCOURS = ['connexion-livreur.mjs', 'livraison-d-un-colis.mjs', 'releve-de-la-cliente.mjs', 'le-colis-reporte.mjs'];
 const resultats = [];
 for (const p of PARCOURS) {
   console.log('\n══════════ ' + p + ' ══════════');

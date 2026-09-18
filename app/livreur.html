@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260917bureau">
-<script src="theme.js?v=20260917bureau"></script>
-<script src="splash.js?v=20260917bureau"></script>
+<link rel="stylesheet" href="style.css?v=20260918course">
+<script src="theme.js?v=20260918course"></script>
+<script src="splash.js?v=20260918course"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -501,6 +501,18 @@
   .motif-echec__motif:active{ background:#f1f5f9; }
   .motif-echec__annuler{ margin-top:12px; width:100%; min-height:44px; border:none; background:transparent; color:#6b7686; font-size:15px; font-weight:600; }
   .motif-echec-ligne{ display:block; width:100%; text-align:left; margin-top:6px; padding:8px 10px; min-height:44px; border-radius:10px; border:1px dashed #cbd5e1; background:#fff; font-size:13.5px; color:#334155; }
+  /* LA COURSE PAYÉE SANS LIVRAISON (18/09/2026, Celtis). Deux boutons larges, oui à gauche,
+     parce que c'est la réponse qu'on cherche à ne pas oublier : le livreur s'est déplacé. */
+  .motif-echec__course{ margin:0 0 12px; padding:12px 14px; border-radius:12px; background:#FFF7ED; border:1px solid #F5C99B; }
+  .motif-echec__question{ font-size:14.5px; font-weight:700; color:#8a4b12; line-height:1.4; }
+  .motif-echec__oui-non{ display:flex; gap:8px; margin-top:10px; }
+  .motif-echec__choix{ flex:1; min-height:48px; border-radius:12px; border:1.5px solid #cbd5e1; background:#fff; font-size:15.5px; font-weight:700; color:#0f172a; }
+  .motif-echec__choix.actuel{ border-color:#1a7d3c; background:#DCF3E4; color:#0f5a2c; }
+  .motif-echec__rappel{ margin-top:8px; font-size:13px; font-weight:700; color:#b3261e; }
+  .motif-echec-ligne__course{ display:block; margin-top:4px; font-size:13px; font-weight:700; color:#6b7686; }
+  .motif-echec-ligne__course.payee{ color:#0f5a2c; }
+  html[data-theme="dark"] .motif-echec-ligne__course{ color:#9FB3C8; }
+  html[data-theme="dark"] .motif-echec-ligne__course.payee{ color:#5CC98A; }
 
   /* ---------- MON MOIS (13/09/2026) ---------- */
   .mon-mois{ background:#fff; border-radius:16px; padding:14px 14px 10px; margin:0 0 14px; box-shadow:0 4px 14px rgba(18,48,90,.08); border:1px solid #e6ebf2; }
@@ -896,22 +908,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260917bureau"></script>
-<script src="lib/bibliotheques.js?v=20260917bureau"></script>
-<script src="lib/retours.js?v=20260917bureau"></script>
-<script src="lib/reclamations.js?v=20260917bureau"></script>
-<script src="lib/communes-et-tarifs.js?v=20260917bureau"></script>
-<script src="lib/argent.js?v=20260917bureau"></script>
-<script src="lib/releve-cliente.js?v=20260917bureau"></script>
-<script src="lib/papier-a-en-tete.js?v=20260917bureau"></script>
-<script src="lib/briques-argent.js?v=20260917bureau"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260917bureau"></script>
-<script src="lib/annonce-de-remise.js?v=20260917bureau"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260917bureau"></script>
-<script src="lib/primes.js?v=20260917bureau"></script>
-<script src="lib/doublons.js?v=20260917bureau"></script>
-<script src="config.js?v=20260917bureau"></script>
-<script src="biometric-lock.js?v=20260917bureau"></script>
+<script src="clt-common.js?v=20260918course"></script>
+<script src="lib/bibliotheques.js?v=20260918course"></script>
+<script src="lib/retours.js?v=20260918course"></script>
+<script src="lib/reclamations.js?v=20260918course"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918course"></script>
+<script src="lib/argent.js?v=20260918course"></script>
+<script src="lib/releve-cliente.js?v=20260918course"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918course"></script>
+<script src="lib/briques-argent.js?v=20260918course"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918course"></script>
+<script src="lib/annonce-de-remise.js?v=20260918course"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918course"></script>
+<script src="lib/primes.js?v=20260918course"></script>
+<script src="lib/doublons.js?v=20260918course"></script>
+<script src="config.js?v=20260918course"></script>
+<script src="biometric-lock.js?v=20260918course"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1652,6 +1664,11 @@
       if (!reponse) return echec;
       extra.motif_non_livraison = reponse.motif;
       extra.vendeuse_prevenue = !!reponse.prevenue;
+      /* LA COURSE A-T-ELLE ÉTÉ PAYÉE ? (18/09/2026, Celtis) La même fenêtre pose la question,
+         parce qu'elle se pose au même instant et qu'une seconde fenêtre serait un geste de plus
+         au retour de tournée. `null` veut dire « la question ne se posait pas » (expédition,
+         course déjà payée d'avance, ou pas de frais) : on n'écrit alors rien. */
+      if (reponse.payee !== null) extra.livraison_payee_non_livre = !!reponse.payee;
     }
 
     // Hors connexion : on met la mise à jour en file d'attente au lieu de la perdre.
@@ -1846,7 +1863,9 @@
       id,
       statut: res.statutPrecedent,
       extraForce: Object.assign({ tentatives_livraison: res.tentativesPrecedentes },
-        res.statutPrecedent === 'non_livre' ? { motif_non_livraison: avant.motif_non_livraison || null, vendeuse_prevenue: !!avant.vendeuse_prevenue } : {})
+        // 18/09/2026 : la réponse sur la course payée revient avec le motif — c'est le même
+        // instant de la tournée, on ne la redemande pas et on ne la perd pas.
+        res.statutPrecedent === 'non_livre' ? { motif_non_livraison: avant.motif_non_livraison || null, vendeuse_prevenue: !!avant.vendeuse_prevenue, livraison_payee_non_livre: !!avant.livraison_payee_non_livre } : {})
     });
     if (!retour.ok) return;
     const libelle = (STATUTS[res.statutPrecedent] && STATUTS[res.statutPrecedent].label) || res.statutPrecedent;
@@ -1965,7 +1984,10 @@
       if (!motifLot) return;
     }
     const groupes = grouperLotParPayload(tri.eligibles, statut);
-    if (motifLot) groupes.forEach(g => Object.assign(g.payload, { motif_non_livraison: motifLot.motif, vendeuse_prevenue: !!motifLot.prevenue }));
+    // 18/09/2026 : la réponse sur la course vaut pour tout le lot, comme le motif.
+    const extraLot = motifLot ? Object.assign({ motif_non_livraison: motifLot.motif, vendeuse_prevenue: !!motifLot.prevenue },
+      motifLot.payee === null ? {} : { livraison_payee_non_livre: !!motifLot.payee }) : null;
+    if (extraLot) groupes.forEach(g => Object.assign(g.payload, extraLot));
 
     const libelleBtn = bouton ? bouton.innerHTML : '';
     if (bouton) { bouton.disabled = true; bouton.textContent = 'Enregistrement…'; }
@@ -1978,8 +2000,7 @@
     tri.eligibles.forEach(c => {
       if (!reussis.has(c.id)) return;
       const idx = allColis.findIndex(x => x.id === c.id);
-      if (idx !== -1) Object.assign(allColis[idx], horodatageLocalDuStatut(allColis[idx], statut), payloadLotColis(c, statut),
-        motifLot ? { motif_non_livraison: motifLot.motif, vendeuse_prevenue: !!motifLot.prevenue } : {});
+      if (idx !== -1) Object.assign(allColis[idx], horodatageLocalDuStatut(allColis[idx], statut), payloadLotColis(c, statut), extraLot || {});
       lotMesIds.delete(c.id);
     });
     renderAll();
@@ -2489,6 +2510,12 @@
                 ${c.motif_non_livraison && typeof MOTIFS_NON_LIVRAISON !== 'undefined' && MOTIFS_NON_LIVRAISON[c.motif_non_livraison]
                   ? `${MOTIFS_NON_LIVRAISON[c.motif_non_livraison].icon} ${escapeHTML(MOTIFS_NON_LIVRAISON[c.motif_non_livraison].label)} · ${c.vendeuse_prevenue ? '✅ vendeuse prévenue' : '⚠️ vendeuse pas prévenue'}`
                   : '❓ Motif de l’échec à préciser'}
+                <!-- LA COURSE PAYÉE SANS LIVRAISON (18/09/2026). Elle compte dans le point du
+                     soir : le livreur doit pouvoir la relire, et la corriger d'un appui — c'est
+                     le même bouton, qui rouvre la même question. -->
+                ${courseAEncaisserSiEchec(c) ? `<span class="motif-echec-ligne__course${c.livraison_payee_non_livre ? ' payee' : ''}">${c.livraison_payee_non_livre
+                  ? `💰 Déplacement payé · ${escapeHTML(formatMontant(montantLivraisonColis(c)))}`
+                  : '○ Déplacement non payé'}</span>` : ''}
               </button>` : ''}
               <!-- Ces deux boutons parlent d'argent encaissé chez le destinataire. Sur une
                    expédition il n'y en a pas : il a déjà payé chez la vendeuse. Les proposer,
@@ -2711,6 +2738,8 @@
         const reponse = await demanderMotifEchec(existing);
         if (!reponse) return;
         const aEcrire = { motif_non_livraison: reponse.motif, vendeuse_prevenue: !!reponse.prevenue };
+        // 18/09/2026 : la même fenêtre corrige aussi la réponse sur la course payée.
+        if (reponse.payee !== null) aEcrire.livraison_payee_non_livre = !!reponse.payee;
         btn.disabled = true;
         const enFile = async () => {
           await queueAdd({ colisId: id, statut: existing ? existing.statut : null, observation: existing ? existing.observation : null, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: null, extra: aEcrire, userId: currentUser.id, timestamp: Date.now() });
@@ -3172,6 +3201,19 @@
      vendeuse », rien d'autre. Un appui sur un motif répond ; la case se coche avant si c'est le
      cas. Enregistrer le motif vaut information de l'administration : l'équipe le voit dans
      « Échecs à qualifier ». Renvoie { motif, prevenue } ou null si le livreur renonce. */
+  /* LA COURSE A-T-ELLE ÉTÉ PAYÉE ? (18/09/2026, Celtis) Deuxième question de la même fenêtre, et
+     elle ne se pose pas toujours. Elle ne se pose pas sur une expédition (le destinataire a payé
+     chez la vendeuse), ni quand la course a déjà été réglée d'avance au dépôt, ni quand le colis
+     ne porte pas de frais de livraison : dans ces trois cas il n'y a rien à encaisser à la porte,
+     et poser la question inviterait à répondre « oui » pour un billet qui n'existe pas.
+     Renvoie le montant à encaisser, ou 0 si la question ne se pose pas. */
+  function courseAEncaisserSiEchec(colis){
+    if (!colis) return 0;                       // un lot : on pose la question, sans montant
+    if (typeof estExpedition === 'function' && estExpedition(colis)) return 0;
+    if (colis.livraison_payee) return 0;
+    return Number(montantLivraisonColis(colis)) || 0;
+  }
+
   function demanderMotifEchec(colis, nombre){
     return new Promise(resolve => {
       const ancien = document.getElementById('motif-echec');
@@ -3180,6 +3222,11 @@
       const titre = nombre > 1 ? `Pourquoi ces ${nombre} colis ne sont pas livrés ?` : 'Pourquoi ce colis n’est pas livré ?';
       const sous = colis && colisDescriptionTexte(colis) ? escapeHTML(colisDescriptionTexte(colis)) : '';
       const dejaPrevenue = !!(colis && colis.vendeuse_prevenue);
+      // La question de la course : sur un colis précis on ne la pose que s'il y a un billet à
+      // encaisser ; sur un lot (colis === null) on la pose toujours, la réponse valant pour tous.
+      const course = courseAEncaisserSiEchec(colis);
+      const poserLaCourse = !colis || course > 0;
+      const dejaPayee = colis && colis.livraison_payee_non_livre ? 'oui' : (colis && colis.statut === 'non_livre' ? 'non' : '');
       const boite = document.createElement('div');
       boite.id = 'motif-echec';
       boite.className = 'motif-echec';
@@ -3192,6 +3239,13 @@
             <input type="checkbox" id="motif-echec-prevenue" ${dejaPrevenue ? 'checked' : ''}>
             <span>J’ai prévenu la vendeuse</span>
           </label>
+          ${poserLaCourse ? `<div class="motif-echec__course" id="motif-echec-course">
+            <div class="motif-echec__question">Vous vous êtes déplacé${nombre > 1 ? '' : ''} : la livraison a-t-elle été payée ?${course ? ` <b>${escapeHTML(formatMontant(course))}</b>` : ''}</div>
+            <div class="motif-echec__oui-non">
+              <button type="button" class="motif-echec__choix${dejaPayee === 'oui' ? ' actuel' : ''}" data-payee="1">✅ Oui, payée</button>
+              <button type="button" class="motif-echec__choix${dejaPayee === 'non' ? ' actuel' : ''}" data-payee="0">❌ Non</button>
+            </div>
+          </div>` : ''}
           <div class="motif-echec__motifs">
             ${Object.keys(motifs).map(k => `<button type="button" class="motif-echec__motif${colis && colis.motif_non_livraison === k ? ' actuel' : ''}" data-motif="${k}">${motifs[k].icon} ${escapeHTML(motifs[k].label)}</button>`).join('')}
           </div>
@@ -3201,8 +3255,26 @@
       const fermer = (valeur) => { boite.remove(); resolve(valeur); };
       boite.querySelector('.motif-echec__annuler').addEventListener('click', () => fermer(null));
       boite.addEventListener('click', (e) => { if (e.target === boite) fermer(null); });
+      // Oui ou non : un seul des deux reste allumé. Tant qu'aucun n'est choisi, le motif ne
+      // ferme pas la fenêtre — Celtis : « il doit mettre oui ou non ». Le rappel se montre à ce
+      // moment-là seulement, pour ne pas gronder quelqu'un qui n'a encore rien fait de mal.
+      let payee = dejaPayee === 'oui' ? true : (dejaPayee === 'non' ? false : null);
+      boite.querySelectorAll('.motif-echec__choix').forEach(b => b.addEventListener('click', () => {
+        payee = b.dataset.payee === '1';
+        boite.querySelectorAll('.motif-echec__choix').forEach(x => x.classList.toggle('actuel', x === b));
+        const rappel = boite.querySelector('.motif-echec__rappel');
+        if (rappel) rappel.remove();
+      }));
       boite.querySelectorAll('.motif-echec__motif').forEach(b => b.addEventListener('click', () => {
-        fermer({ motif: b.dataset.motif, prevenue: boite.querySelector('#motif-echec-prevenue').checked });
+        if (poserLaCourse && payee === null) {
+          const bloc = boite.querySelector('#motif-echec-course');
+          if (bloc && !bloc.querySelector('.motif-echec__rappel')) {
+            bloc.insertAdjacentHTML('beforeend', '<div class="motif-echec__rappel">Répondez d’abord : la livraison a-t-elle été payée ?</div>');
+          }
+          if (bloc && bloc.scrollIntoView) bloc.scrollIntoView({ block: 'nearest' });
+          return;
+        }
+        fermer({ motif: b.dataset.motif, prevenue: boite.querySelector('#motif-echec-prevenue').checked, payee: poserLaCourse ? payee : null });
       }));
     });
   }

@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260918course",
+      "date": "18 septembre 2026",
+      "titre": "Les colis reportés ne disparaissent plus, et la course payée est comptée",
+      "points": [
+        "Des colis assignés le matin quittaient la liste du jour sans un mot : ils avaient été reportés à une autre journée. Faute de le lire quelque part, il fallait les supprimer pour les recréer.",
+        "La journée dit maintenant ce qui l'a quittée (« 3 colis de cette journée ont été reportés à demain »), avec un bouton pour les voir, et la carte porte la mention avec le geste qui ramène le colis à sa journée.",
+        "Supprimer un colis annonce ce qu'on perd — l'argent déjà compté, le numéro qui ne revient pas — et propose de défaire un report plutôt que de supprimer. Chaque suppression laisse désormais une trace complète.",
+        "Au « non livré », le livreur répond tout de suite si la livraison a été payée. Le livreur s'est déplacé, le client a refusé le colis : la course est due. Elle entre dans son point du soir et dans la recette du jour."
+      ]
+    },
+    {
       "version": "20260917bureau",
       "date": "17 septembre 2026",
       "titre": "Au bureau, la liste est enfin visible sans faire défiler",

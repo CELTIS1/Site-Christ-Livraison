@@ -558,10 +558,20 @@ verifier(
    gestes, mesurés chacun : « L'essentiel » devient repliable et l'écran s'en souvient (−150 px),
    la salutation et la recherche partagent une ligne au-dessus de 1 100 px (−47 px). 867 px :
    le premier colis passe au-dessus du pli. La refonte de la console (liste et fiche côte à
-   côte) reste le chantier d'octobre : étiquette 20260917bureau. */
+   côte) reste le chantier d'octobre : étiquette 20260917bureau.
+   v156, le 18/09/2026 — deux pannes d'un même soir, et une demande de Celtis. (1) Des colis
+   « assignés aujourd'hui » quittaient la liste du bureau sans un mot : ils étaient reportés, et
+   seul le téléphone du livreur le disait. L'équipe a supprimé pour recréer. La journée compte et
+   annonce ce qui l'a quittée, la carte porte la mention, et un geste efface le report. (2) La
+   boîte de suppression dit ce qu'on perd — et propose de défaire le report plutôt que supprimer ;
+   chaque suppression laisse sa trace (2026-09-18-un-colis-supprime-laisse-une-trace.sql).
+   (3) Celtis : « le livreur s'est déplacé, le client décide de ne plus prendre le colis, mais il
+   paye la livraison. » Au « non livré », la question est posée tout de suite, et la course entre
+   dans le point du soir — colonne livraison_payee_non_livre, migration
+   2026-09-18-la-course-est-due-meme-si-le-colis-revient.sql : étiquette 20260918course. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v155'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v156'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

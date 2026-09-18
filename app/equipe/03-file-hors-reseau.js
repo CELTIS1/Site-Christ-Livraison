@@ -601,6 +601,11 @@ ${c.statut === 'en_attente' ? `
 <label class="check-pill lotfr-article-solde" title="L'article a été payé chez la vendeuse : le livreur ne l'encaisse pas et rien n'est dû à la vendeuse pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
 <label class="check-pill lotfr-liv-payee" title="La livraison a été payée chez la vendeuse : le livreur ne l'encaisse pas, CLT la retient sur la vendeuse. Ne dit rien de l'article."><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
 <label class="check-pill check-pill-soldee lotfr-soldee" style="${estExpedition(c) ? '' : 'display:none;'}" title="La cliente a déjà réglé à CLT les frais d'expédition et de course : rien ne se retient sur son relevé."><input type="checkbox" class="edit-frais-soldes" ${fraisSoldes(c) ? 'checked' : ''}> 🚌 Frais déjà réglés à CLT (soldé)</label>
+<!-- LE DÉPLACEMENT PAYÉ SANS LIVRAISON (18/09/2026, Celtis). Le livreur répond oui ou non sur
+     son téléphone au moment où il marque « non livré » ; le bureau peut corriger ici. Ne se
+     montre que là où la question se pose : un colis pas livré, hors expédition, dont la course
+     n'a pas déjà été réglée d'avance. -->
+<label class="check-pill lotfr-course-payee" style="${c.statut !== 'livre' && !estExpedition(c) && !c.livraison_payee && montantLivraisonColis(c) > 0 ? '' : 'display:none;'}" title="Le livreur s'est déplacé, le colis n'a pas été pris, mais le déplacement a été payé : cet argent est dans la poche du livreur et entre dans son point du soir."><input type="checkbox" class="edit-course-payee" ${c.livraison_payee_non_livre ? 'checked' : ''}> 💰 Déplacement payé (non livré)</label>
 </div>
 ${eqFraisAdditionnelsEditHTML(c)}`}
 </div>
@@ -631,6 +636,15 @@ ${eqBoutonsAppelHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+<!-- LE REPORT SE VOIT ICI, ET NON PLUS NULLE PART. (18/09/2026)
+     Le 17 au soir, des colis « assignés aujourd'hui » disparaissaient de cet écran. Ils avaient
+     été reportés à demain — geste légitime, mais que cette carte ne montrait pas. Le téléphone
+     du livreur l'affiche depuis le 09/09 ; le bureau, lui, voyait le colis s'effacer de sa
+     journée sans un mot. Ne parvenant pas à les faire revenir, l'équipe a supprimé des colis
+     pour les recréer. La mention, et le geste pour le ramener, sont donc ici aussi. -->
+${colisReporte(c) ? `<div class="meta colis-reporte">⏭️ Reporté au <strong>${escapeHTML(dayLabel(jourDuColis(c) + 'T12:00:00').toLowerCase())}</strong> — il a quitté la journée du ${escapeHTML(dayLabel(dayKey(c.created_at) + 'T12:00:00').toLowerCase())}
+  <button type="button" class="btn btn-sm btn-outline eq-annuler-report" data-annuler-report="${c.id}">↩️ Le remettre à sa journée</button>
+</div>` : ''}
 ${livreurLine}
 ${(Number(c.tentatives_livraison) || 0) > 0 ? `<div class="meta" style="color:#c0392b; font-weight:600;">🔁 Tentative(s) de livraison : ${Number(c.tentatives_livraison)}</div>` : ''}
 <!-- Pourquoi le colis n'est pas passé (17/09/2026). Le motif est saisi par le livreur depuis le

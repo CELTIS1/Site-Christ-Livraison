@@ -33,6 +33,8 @@ export function colis(i, extra) {
     photo_livraison_url: null, observation: null, commune_recuperation: 'Marcory', adresse_recuperation: 'Zone 4',
     motif_non_livraison: null, vendeuse_prevenue: false,
     cree_par: null, cree_par_role: null, reporte_au: null, a_livrer_avant: null, frais_expedition: null, frais_soldes_at: null, livraison_payee: false,
+    // 18/09/2026 : la course payée au livreur alors que le colis n'a pas été livré.
+    livraison_payee_non_livre: false,
   }, extra || {});
 }
 

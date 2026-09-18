@@ -666,6 +666,11 @@ function releveNomFichier(nomCliente, dateISO) {
 function paiementInfo(c) {
   if (!c) return { label: "—", color: "#8a94a3", bg: "#eef0f3" };
   if (c.statut !== 'livre') {
+    /* LA COURSE PAYÉE SANS LIVRAISON (18/09/2026, Celtis). Le livreur s'est déplacé, le client a
+       refusé le colis et a payé le déplacement. C'est de l'argent RENTRÉ sur un colis qui n'est
+       pas livré : le seul cas où « pas encore encaissé » serait un mensonge. Il passe en tête,
+       parce que c'est le seul de ces libellés qui parle d'un billet réellement reçu. */
+    if (coursePayeeSansLivraison(c)) return { label: "Déplacement payé — " + (formatMontant(montantLivraisonColis(c)) || '0 FCFA'), color: "#1a7d3c", bg: "#e3f6ea" };
     if (c.livraison_payee) return { label: "Livraison payée d'avance", color: "#E26313", bg: "#FBE2CE" };
     return { label: "Pas encore encaissé", color: "#8a94a3", bg: "#eef0f3" };
   }

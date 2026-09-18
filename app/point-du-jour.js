@@ -57,7 +57,6 @@
     const nonLivres = colisDuJour.filter((c) => c.statut === 'non_livre');
     const retours = colisDuJour.filter((c) => c.statut === 'retour');
     const t = totauxArgent(livres);
-    const tNon = totauxArgent(nonLivres);
     const ordinaire = (c) => !estExpedition(c);
 
     // Articles : ce qui devait rentrer aujourd'hui = les colis livrés (rentré) + les colis qu'on
@@ -77,19 +76,31 @@
     // dépôt par la vendeuse (livraison_payee : ce n'est pas au livreur de les avoir), ou manqués
     // (livrés sans encaisser la livraison, et non livrés).
     const livraisonPayeeAuDepot = somme(livres.filter((c) => ordinaire(c) && c.livraison_payee), montantLivraisonColis);
-    const livraisonAttendueNonLivres = somme(nonLivres.filter((c) => ordinaire(c) && !c.livraison_payee), montantLivraisonColis);
+    /* LA COURSE PAYÉE SANS LIVRAISON (18/09/2026, Celtis). Le livreur s'est déplacé, le client a
+       refusé le colis et a payé le déplacement : cet argent est RENTRÉ, il n'est pas manquant.
+       totauxArgent le range déjà dans livraisonEncaissee (voir livraisonEncaissee, argent.js) —
+       il ne reste qu'à le sortir des « non encaissés » pour que l'égalité tienne :
+       attendu = encaissé + non encaissé. */
+    /* On les cherche dans TOUS les colis du jour, et non parmi les seuls « non livrés » : un
+       colis retenté est repassé « en livraison », mais les billets reçus au premier déplacement
+       sont toujours dans la poche du livreur. */
+    const coursesPayees = colisDuJour.filter(coursePayeeSansLivraison);
+    const coursesSansLivraison = somme(coursesPayees, montantLivraisonColis);
+    const livraisonAttendueNonLivres = somme(nonLivres.filter((c) => ordinaire(c) && !c.livraison_payee && !c.livraison_payee_non_livre), montantLivraisonColis);
     const livraison = {
-      encaisse: t.livraisonEncaissee,
+      encaisse: t.livraisonEncaissee + coursesSansLivraison,
       manquant: t.manquantALaLivraison,
       nonLivres: livraisonAttendueNonLivres,
+      sansLivraison: coursesSansLivraison,
+      nbSansLivraison: coursesPayees.length,
       nonEncaisse: t.manquantALaLivraison + livraisonAttendueNonLivres,
-      attendu: t.livraisonEncaissee + t.manquantALaLivraison + livraisonAttendueNonLivres,
+      attendu: t.livraisonEncaissee + coursesSansLivraison + t.manquantALaLivraison + livraisonAttendueNonLivres,
       // recetteLivraison (config.js) additionne déjà ce qui rentre à la porte et ce qui est
       // retenu sur la vendeuse : livraison payée au dépôt ET frais de course d'expédition. On
       // les montre à part sans les compter deux fois.
       payeeAuDepot: livraisonPayeeAuDepot,
       fraisCourse: Math.max(0, t.fraisCourseAcquis - livraisonPayeeAuDepot),
-      recette: t.recetteLivraison,
+      recette: t.recetteLivraison + coursesSansLivraison,
     };
 
     // Les livreurs : caisseParLivreur sur les colis du jour (livrés + avances de gare).
@@ -237,7 +248,7 @@
       <div class="pdj-bloc-titre">L'argent de CLT <span>frais de livraison — notre recette</span></div>
       <div class="pdj-tuiles">
         ${tuile('Devait rentrer', F(l.attendu), { title: 'Frais de livraison des colis livrés et non livrés du jour, hors ceux payés au dépôt' })}
-        ${tuile('Encaissé à la porte', F(l.encaisse), { couleur: VERT })}
+        ${tuile('Encaissé à la porte', F(l.encaisse), { couleur: VERT, sous: l.sansLivraison ? `dont ${F(l.sansLivraison)} sur ${l.nbSansLivraison} colis non livré${l.nbSansLivraison > 1 ? 's' : ''} (déplacement payé)` : '' })}
         ${tuile('Non encaissé', F(l.nonEncaisse), { couleur: l.nonEncaisse ? ROUGE : undefined, sous: [l.manquant ? `${F(l.manquant)} livrés sans encaisser` : '', l.nonLivres ? `${F(l.nonLivres)} non livrés` : ''].filter(Boolean).join(' · ') })}
       </div>
       <div class="pdj-verif ${r.ok1 ? 'ok' : 'ko'}">${F(l.attendu)} = ${F(l.encaisse)} + ${F(l.nonEncaisse)} ${r.ok1 ? '✓' : '✗ vérifier'}</div>
