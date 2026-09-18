@@ -238,6 +238,11 @@ function tourneesDeRecuperation(options) {
       adresse: fiche.adresse || "",
       telephone: fiche.telephone || "",
       note: p.note || "",
+      /* L'ORDRE DE LA TOURNÉE. (18/09/2026, point 7.6) Le rang posé par le bureau, ou null quand
+         personne ne l'a posé. Seule une ligne PROGRAMMÉE peut en porter un : une cliente hors
+         programme n'a pas de ligne en base où l'écrire, et c'est cohérent — le bureau n'a pas
+         prévu ce passage, il ne peut pas l'avoir rangé. */
+      ordreTournee: (p.ordre_tournee === undefined || p.ordre_tournee === null) ? null : Number(p.ordre_tournee),
       livreurId: p.livreur_id,
       livreurNom: nomLivreur(p.livreur_id) || "Livreur",
       nbAPrendre: aPrendre.length,
@@ -383,6 +388,7 @@ function tourneesDeRecuperation(options) {
         nbAnnonce: null,
         annonceReglee: false,
         ecartAnnonce: 0,
+        ordreTournee: null,
         /* « Rien à récupérer » veut dire qu'il n'y avait rien chez cette cliente. Ce n'est pas le
            cas ici : ou bien un colis attend, ou bien il y en avait un et il est déjà pris. Dans
            les deux cas il y avait quelque chose, et l'écran ne doit pas dire le contraire. */
@@ -392,8 +398,54 @@ function tourneesDeRecuperation(options) {
     });
   }
 
+  /* DANS QUEL ORDRE ON PASSE. (18/09/2026, point 7.6)
+
+     Jusqu'ici : l'ordre alphabétique du nom de la cliente. C'est l'ordre d'un annuaire, pas
+     celui d'une tournée — il envoie le livreur d'Abobo à Yopougon puis de nouveau à Abobo parce
+     que les clientes s'appellent Awa, Bintou et Clara. Sur une moto, dans Abidjan, cela se paie
+     en essence et en heures.
+
+     Trois clés, dans cet ordre :
+       1. LE RANG POSÉ PAR LE BUREAU, quand il y en a un. C'est lui qui connaît le terrain, les
+          heures d'ouverture des boutiques et les embouteillages du matin ; aucun calcul ne le
+          remplace tant que les adresses d'Abidjan ne sont pas géocodables.
+       2. LA COMMUNE, pour tout ce qui n'a pas été rangé à la main. On fait une commune, puis la
+          suivante : c'est le gain qui ne demande aucun geste à personne, et il vaut pour la
+          tournée de demain matin même si le bureau n'a rien touché.
+       3. LE NOM DE LA CLIENTE, pour que deux passages dans la même commune gardent un ordre
+          stable d'un rafraîchissement à l'autre.
+
+     Une ligne sans rang passe APRÈS toutes celles qui en ont un : ranger trois clientes sur huit
+     veut dire « ces trois-là d'abord », pas « ces trois-là quelque part dedans ».
+
+     Le bureau et le téléphone du livreur trient ici, au même endroit : deux tris écrits
+     séparément finiraient par diverger, et le bureau appellerait une cliente en annonçant un
+     passage que l'écran du livreur place ailleurs. */
+  const SANS_RANG = 99999;
   lignes.sort(function (a, b) {
+    const ra = (a.ordreTournee === null || a.ordreTournee === undefined) ? SANS_RANG : a.ordreTournee;
+    const rb = (b.ordreTournee === null || b.ordreTournee === undefined) ? SANS_RANG : b.ordreTournee;
+    if (ra !== rb) return ra - rb;
+    const ca = String(a.commune || "\uffff"), cb = String(b.commune || "\uffff");
+    const parCommune = ca.localeCompare(cb, "fr", { sensitivity: "base" });
+    if (parCommune !== 0) return parCommune;
     return String(a.clienteNom).localeCompare(String(b.clienteNom), "fr", { sensitivity: "base" });
+  });
+
+  /* LE RANG DE CHAQUE PASSAGE, DANS LA TOURNÉE DE CE LIVREUR-LÀ. (18/09/2026, point 7.6)
+     Le numéro affiché est la POSITION dans la liste, et non la valeur de ordre_tournee : après
+     deux échanges de voisins, la base peut porter 1, 3, 4 — le livreur, lui, doit lire 1, 2, 3.
+     Il est posé ICI, une seule fois, et non dans le groupeur : l'écran du bureau passe par
+     tourneesParLivreur(), le téléphone du livreur non, et les deux doivent afficher le même
+     chiffre pour la même cliente. Une numérotation écrite deux fois finit par diverger, et le
+     bureau annoncerait au téléphone un passage « en troisième » que l'écran du livreur place
+     en deuxième. */
+  const rangs = new Map();
+  lignes.forEach(function (l) {
+    const cle = String(l.livreurId);
+    const suivant = (rangs.get(cle) || 0) + 1;
+    rangs.set(cle, suivant);
+    l.rangTournee = suivant;
   });
 
   return {

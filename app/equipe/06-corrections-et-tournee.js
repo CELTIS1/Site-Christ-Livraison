@@ -376,7 +376,12 @@ const lireProgrammations = (colonnes) => supabaseClient
 .select(colonnes)
 .eq('jour', jour);
 
-let { data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_note');
+let { data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_note, ordre_tournee');
+    if (error && colonneAbsente(error)) {
+      // L'ordre de la tournée est né le 18/09/2026 : sans lui, on retombe sur le rangement par
+      // commune, qui ne demande aucune colonne. Dégradé, pas tombé.
+      ({ data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_note'));
+    }
 if (error && colonneAbsente(error)) {
 console.warn("Colonnes de confirmation absentes : le script SQL du 06/09/2026 n'a pas encore été exécuté.");
 ({ data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at'));
@@ -488,6 +493,26 @@ const compte = (n) => colisConnus ? String(n) : '<span style="color:#8a94a3;">à
    répondent tous à la même question — trois définitions séparées finiraient par diverger. */
 const travailFini = (l) => l.horsProgramme && !l.nbAPrendre && l.nbDejaPris > 0;
 
+/* LES DEUX BOUTS DE CHAQUE TOURNÉE. (18/09/2026, point 7.6) La première carte d'un livreur n'a
+   nulle part où monter, la dernière nulle part où descendre. On retire la flèche au lieu de la
+   laisser inerte : un bouton qui ne fait rien fait croire qu'on a agi, et on recommence.
+   « Première » et « dernière » se comptent parmi les cartes RANGEABLES — les lignes hors
+   programme et le travail fini n'en portent pas, ils ne peuvent donc pas servir de borne. */
+const rangeableCarte = (l) => !travailFini(l) && !l.horsProgramme;
+const bornesOrdre = { premiers: new Set(), derniers: new Set() };
+{
+  const parLivreur = new Map();
+  lignes.filter(rangeableCarte).forEach(l => {
+    const cle = String(l.livreurId);
+    if (!parLivreur.has(cle)) parLivreur.set(cle, []);
+    parLivreur.get(cle).push(l);
+  });
+  parLivreur.forEach(liste => {
+    bornesOrdre.premiers.add(liste[0].id);
+    bornesOrdre.derniers.add(liste[liste.length - 1].id);
+  });
+}
+
 const carteHTML = (l) => {
 const contacts = l.telephone
 ? `<div class="tournee-contacts">
@@ -557,9 +582,31 @@ const marque = fini ? `<span class="tournee-marque tournee-marque--fait">déjà 
    à « récupéré », donc une carte finie qui afficherait « en route » signalerait un reste à
    faire là où il n'y a plus rien. */
 const enRoute = !!l.departAt && !fini;
+/* L'ORDRE DE LA TOURNÉE, À LA MAIN. (18/09/2026, point 7.6)
+
+   Pas de glisser-déposer, et c'est une décision, pas un raccourci. Le bureau travaille aussi
+   sur téléphone ; le glisser-déposer natif du navigateur (HTML5 drag and drop) ne fonctionne
+   pas au doigt, il faudrait une bibliothèque de plus dans un dépôt qui n'en a aucune. Deux
+   flèches de 44 px marchent partout — souris, doigt, clavier —, se testent, et se comprennent
+   sans qu'on les explique.
+
+   Les flèches n'apparaissent que sur les lignes PROGRAMMÉES : une cliente hors programme n'a
+   pas de ligne en base où écrire son rang. Elles n'apparaissent pas non plus sur un travail
+   terminé — ranger ce qui est déjà fait ne mène nulle part. La première et la dernière carte
+   d'un bloc perdent la flèche qui ne mènerait nulle part, plutôt que de la garder inerte : un
+   bouton qui ne fait rien fait croire qu'on a agi. */
+const rangeable = rangeableCarte(l);
+const peutMonter = rangeable && !bornesOrdre.premiers.has(l.id);
+const peutDescendre = rangeable && !bornesOrdre.derniers.has(l.id);
+const fleches = (peutMonter || peutDescendre)
+? `<div class="tournee-ordre">
+     ${peutMonter ? `<button type="button" class="tournee-fleche" data-prog-monter="${escapeHTML(l.id)}" title="Passer chez elle plus tôt" aria-label="Monter ${escapeHTML(l.clienteNom)} dans la tournée">↑</button>` : ''}
+     ${peutDescendre ? `<button type="button" class="tournee-fleche" data-prog-descendre="${escapeHTML(l.id)}" title="Passer chez elle plus tard" aria-label="Descendre ${escapeHTML(l.clienteNom)} dans la tournée">↓</button>` : ''}
+   </div>`
+: '';
 return `
 <div class="tournee-carte ${classe}${enRoute ? ' tournee-carte--route' : ''}">
-<div class="tournee-nom">${escapeHTML(l.clienteNom)}${marque}${enRoute ? `<span class="tournee-marque tournee-marque--route">en route</span>` : ''}</div>
+<div class="tournee-nom"><span class="tournee-rang">${l.rangTournee || ''}</span>${escapeHTML(l.clienteNom)}${marque}${enRoute ? `<span class="tournee-marque tournee-marque--route">en route</span>` : ''}${fleches}</div>
 ${lieuHTML}
 ${l.note ? `<div class="tournee-note">📝 ${escapeHTML(l.note)}</div>` : ''}
 <div class="tournee-compte">
@@ -592,9 +639,18 @@ ${geste}
 // Un bloc par livreur, son sous-total dans son titre. Le nom du livreur est écrit une fois en
 // haut du bloc et non répété sur chaque carte : répété, il devient du bruit ; en titre, il
 // devient un repère.
-const blocLivreur = (g) => `
-<div class="tournee-section-titre">${escapeHTML(g.livreurNom)} · ${g.total.nbClientes} cliente${g.total.nbClientes > 1 ? 's' : ''} · ${colisConnus ? g.total.nbAPrendre + ' colis à prendre' : 'colis à venir'}</div>
+/* « RANGER PAR COMMUNE » : LA SORTIE DE SECOURS DU RANGEMENT À LA MAIN. (18/09/2026, point 7.6)
+   Une tournée rangée hier à la main n'a plus de sens aujourd'hui, et remonter huit cartes une
+   à une pour revenir à l'ordre naturel serait une corvée. Ce bouton efface les rangs du bloc :
+   la tournée retombe sur le rangement par commune, qui est déjà le bon ordre par défaut. Il ne
+   s'affiche que si quelque chose a été rangé — sinon il n'aurait rien à défaire. */
+const blocLivreur = (g) => {
+  const range = g.lignes.some(l => l.ordreTournee !== null && l.ordreTournee !== undefined);
+  return `
+<div class="tournee-section-titre">${escapeHTML(g.livreurNom)} · ${g.total.nbClientes} cliente${g.total.nbClientes > 1 ? 's' : ''} · ${colisConnus ? g.total.nbAPrendre + ' colis à prendre' : 'colis à venir'}${
+  range ? `<button type="button" class="tournee-ranger" data-prog-ranger="${escapeHTML(String(g.livreurId || ''))}" title="Effacer l'ordre posé à la main et revenir au rangement par commune">↺ Ranger par commune</button>` : ''}</div>
 ${g.lignes.map(carteHTML).join('')}`;
+};
 
 // Ce qui est fait ne s'annonce pas en « colis à prendre » : ce serait un zéro, et un zéro se lit
 // comme un manque. Le titre du bloc annonce donc ce qui a été récupéré.
@@ -797,6 +853,77 @@ const { error } = await supabaseClient.from('programmations_collecte').delete().
 if (error) { console.error(error); progMsg("Suppression refusée : " + (error.message || 'erreur inconnue'), 'error'); return; }
 progMsg('Cliente retirée de la tournée.', 'success');
 chargerProgrammations();
+}
+
+/* L'ORDRE DE LA TOURNÉE, DEUX GESTES ET UN RETOUR EN ARRIÈRE. (18/09/2026, point 7.6)
+   ==========================================================================================
+   RANGER À LA MAIN, ET RIEN D'AUTRE. Le point 7.6 parlait aussi d'optimisation automatique ;
+   elle n'a pas de sens ici et c'est écrit dans la feuille de route : les adresses d'Abidjan ne
+   sont pas géocodables, un calculateur d'itinéraire n'a rien à calculer. Le bureau, lui, sait
+   que la boutique d'Awa n'ouvre pas avant 9 h et que le pont du Plateau est pris à 7 h 30.
+
+   POURQUOI ON RÉÉCRIT TOUT LE BLOC ET NON DEUX LIGNES. Échanger le rang de deux voisins serait
+   deux écritures au lieu de huit, mais ne marche que si TOUTES les lignes du bloc portent déjà
+   un rang — or au premier geste aucune n'en porte : elles sont rangées par commune, et leur
+   rang est implicite. On numérote donc le bloc entier, dans l'ordre exactement affiché, avec
+   l'échange déjà appliqué. Le résultat est lisible en base (1, 2, 3…) et l'écran ne peut pas
+   diverger de ce qu'on vient d'y écrire.
+
+   Seules les lignes PROGRAMMÉES sont numérotées : une cliente hors programme n'a pas de ligne
+   où écrire un rang, et elle passe donc après. C'est honnête — le bureau n'a pas prévu ce
+   passage-là, il ne peut pas l'avoir rangé. */
+function progBlocDuLivreur(livreurId){
+  const jour = progGetJour();
+  const tournee = tourneesDeRecuperation({
+    jour: jour, aujourdHui: aujourdhuiAbidjan(),
+    programmations: progLignes, colis: progColis,
+    cliente: progFicheCliente, livreurNom: progNomLivreur,
+    horsProgramme: true, travailFait: true,
+  });
+  // Dans l'ordre affiché, et seulement les cartes qui portent les flèches.
+  return tournee.lignes.filter(l => !l.horsProgramme && String(l.livreurId) === String(livreurId));
+}
+
+async function progEcrireOrdre(lignes){
+  // Une écriture par ligne : programmations_collecte n'a pas d'écriture en lot côté client, et
+  // une tournée dépasse rarement la dizaine de clientes. On les envoie ensemble.
+  const resultats = await Promise.all(lignes.map((l, i) =>
+    supabaseClient.from('programmations_collecte').update({ ordre_tournee: i + 1 }).eq('id', l.id)));
+  const rate = resultats.find(r => r && r.error);
+  if (rate) {
+    console.error(rate.error);
+    // La colonne est née le 18/09/2026 : si le script n'est pas passé, on le dit au lieu de
+    // laisser croire à une panne. Rien n'a été écrit d'utile, l'ordre par commune tient.
+    progMsg(colonneAbsente(rate.error)
+      ? "L'ordre de la tournée demande le script _sql-prive/2026-09-18-l-ordre-de-la-tournee.sql, qui n'a pas encore été exécuté. La tournée reste rangée par commune."
+      : "Ordre non enregistré : " + (rate.error.message || 'erreur inconnue'), 'error');
+    return false;
+  }
+  return true;
+}
+
+async function progDeplacer(id, sens){
+  if (!id) return;
+  const bloc = progBlocDuLivreur((progLignes.find(p => p && p.id === id) || {}).livreur_id);
+  const i = bloc.findIndex(l => String(l.id) === String(id));
+  const j = i + sens;
+  // Déjà en tête ou déjà en queue : il n'y a rien à faire, et la flèche n'est pas dessinée.
+  if (i === -1 || j < 0 || j >= bloc.length) return;
+  const ordonne = bloc.slice();
+  ordonne[i] = bloc[j]; ordonne[j] = bloc[i];
+  if (!(await progEcrireOrdre(ordonne))) return;
+  chargerProgrammations();
+}
+
+async function progRangerParCommune(livreurId){
+  const bloc = progBlocDuLivreur(livreurId);
+  if (!bloc.length) return;
+  const resultats = await Promise.all(bloc.map(l =>
+    supabaseClient.from('programmations_collecte').update({ ordre_tournee: null }).eq('id', l.id)));
+  const rate = resultats.find(r => r && r.error);
+  if (rate) { console.error(rate.error); progMsg("Rangement non enregistré : " + (rate.error.message || 'erreur inconnue'), 'error'); return; }
+  progMsg('Tournée rangée par commune.', 'success');
+  chargerProgrammations();
 }
 
 let recapExpanded = false;

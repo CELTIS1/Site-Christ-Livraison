@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918epingle">
-<script src="theme.js?v=20260918epingle"></script>
-<script src="splash.js?v=20260918epingle"></script>
+<link rel="stylesheet" href="style.css?v=20260918tournee">
+<script src="theme.js?v=20260918tournee"></script>
+<script src="splash.js?v=20260918tournee"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -908,22 +908,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260918epingle"></script>
-<script src="lib/bibliotheques.js?v=20260918epingle"></script>
-<script src="lib/retours.js?v=20260918epingle"></script>
-<script src="lib/reclamations.js?v=20260918epingle"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918epingle"></script>
-<script src="lib/argent.js?v=20260918epingle"></script>
-<script src="lib/releve-cliente.js?v=20260918epingle"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918epingle"></script>
-<script src="lib/briques-argent.js?v=20260918epingle"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918epingle"></script>
-<script src="lib/annonce-de-remise.js?v=20260918epingle"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918epingle"></script>
-<script src="lib/primes.js?v=20260918epingle"></script>
-<script src="lib/doublons.js?v=20260918epingle"></script>
-<script src="config.js?v=20260918epingle"></script>
-<script src="biometric-lock.js?v=20260918epingle"></script>
+<script src="clt-common.js?v=20260918tournee"></script>
+<script src="lib/bibliotheques.js?v=20260918tournee"></script>
+<script src="lib/retours.js?v=20260918tournee"></script>
+<script src="lib/reclamations.js?v=20260918tournee"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918tournee"></script>
+<script src="lib/argent.js?v=20260918tournee"></script>
+<script src="lib/releve-cliente.js?v=20260918tournee"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918tournee"></script>
+<script src="lib/briques-argent.js?v=20260918tournee"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918tournee"></script>
+<script src="lib/annonce-de-remise.js?v=20260918tournee"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918tournee"></script>
+<script src="lib/primes.js?v=20260918tournee"></script>
+<script src="lib/doublons.js?v=20260918tournee"></script>
+<script src="config.js?v=20260918tournee"></script>
+<script src="biometric-lock.js?v=20260918tournee"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3970,7 +3970,12 @@
       .eq('jour', jour)
       .eq('livreur_id', currentUser.id);
 
-    let { data, error } = await lireTournee('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_note');
+    let { data, error } = await lireTournee('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_note, ordre_tournee');
+    if (error && colonneAbsente(error)) {
+      // L'ordre de la tournée est né le 18/09/2026 : sans lui, on retombe sur le rangement par
+      // commune, qui ne demande aucune colonne. Dégradé, pas tombé.
+      ({ data, error } = await lireTournee('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_note'));
+    }
     if (error && colonneAbsente(error)) {
       console.warn('Colonnes de confirmation absentes : le script SQL du 06/09/2026 n\'a pas encore été exécuté.');
       ({ data, error } = await lireTournee('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at'));
@@ -4214,7 +4219,11 @@
 
       return `
       <div class="tournee-carte ${classe}${enRoute ? ' tournee-carte--route' : ''}">
-        <div class="tournee-nom">${escapeHTML(l.clienteNom)}${l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : ''}${enRoute ? `<span class="tournee-marque tournee-marque--route">en route</span>` : ''}</div>
+        <!-- LE RANG DU PASSAGE. (18/09/2026, point 7.6) L'ordre n'est plus alphabétique : c'est
+             celui que le bureau a posé, sinon commune par commune. Le livreur doit donc pouvoir
+             lire « je suis au 2e sur 5 » sans compter les cartes. Le chiffre est la position
+             dans SA tournée, pas la valeur en base (voir tourneesParLivreur). -->
+        <div class="tournee-nom"><span class="tournee-rang">${l.rangTournee || ''}</span>${escapeHTML(l.clienteNom)}${l.horsProgramme ? `<span class="tournee-marque">hors programme</span>` : ''}${enRoute ? `<span class="tournee-marque tournee-marque--route">en route</span>` : ''}</div>
         <!-- Le lieu vient de libelleLieuRecuperation(), dans config.js, comme au bureau : une
              seule phrase pour un seul lieu. La phrase reste une phrase — le bureau tient les
              fiches des clientes (29/08/2026) — mais depuis le 17/09/2026 elle porte « 🧭 Y aller »

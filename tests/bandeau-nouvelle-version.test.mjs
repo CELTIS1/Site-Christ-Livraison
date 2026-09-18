@@ -574,10 +574,17 @@ verifier(
    pour une même course, l'un annoncé, l'autre facturé. Mesuré sur Adjamé → Cocody : 1 216 F aux
    centres, 2 090 F aux épingles. Une seule lecture du point (coordsCourseExpress) pour l'aperçu,
    la confirmation et l'envoi ; l'écran dit d'où vient le chiffre et signale le cas « même
-   commune » (0 km, tarif de base) : étiquette 20260918epingle. */
+   commune » (0 km, tarif de base) : étiquette 20260918epingle.
+   v158, le 18/09/2026 — point 7.6. La tournée de récupération était triée par ordre
+   alphabétique du nom de la cliente : l'ordre d'un annuaire, qui envoie une moto d'Abobo à
+   Yopougon puis la fait revenir. Elle est rangée par commune par défaut — le gain vaut dès
+   demain matin sans qu'on touche à rien — et le bureau pose son ordre avec deux flèches
+   (colonne ordre_tournee, migration 2026-09-18-l-ordre-de-la-tournee.sql). Pas de glisser-
+   déposer : il ne marche pas au doigt sans une bibliothèque de plus. Chaque passage porte son
+   numéro, le même des deux côtés : étiquette 20260918tournee. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v157'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v158'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

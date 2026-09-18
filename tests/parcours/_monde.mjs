@@ -54,7 +54,7 @@ export function nouveauMonde() {
   const PROFILS = [
     { id: LIVREUR, full_name: 'Koffi Livreur', role: 'livreur', phone: '2250700000001', status: 'valide', avatar_url: null, company_name: null, geoloc_consent_at: iso(-3), commune_recuperation: null, adresse_recuperation: null },
     { id: ADMIN, full_name: 'Le Gérant', role: 'admin', phone: '2250700000009', status: 'valide', avatar_url: null, company_name: null, acces_operations: true, acces_paie: true, acces_compta: true },
-    { id: CLIENTE1, full_name: 'Awa Boutique', role: 'fournisseur', phone: '2250700000011', status: 'valide', company_name: 'Awa Boutique', commune_recuperation: 'Marcory', adresse_recuperation: 'Zone 4, en face de la station', avatar_url: null },
+    { id: CLIENTE1, full_name: 'Awa Boutique', role: 'fournisseur', phone: '2250700000011', status: 'valide', company_name: 'Awa Boutique', commune_recuperation: 'Yopougon', adresse_recuperation: 'Zone 4, en face de la station', avatar_url: null },
     { id: CLIENTE2, full_name: 'Mariam Mode', role: 'fournisseur', phone: '2250700000012', status: 'valide', company_name: 'Mariam Mode', commune_recuperation: 'Treichville', adresse_recuperation: 'Avenue 16', avatar_url: null },
     // Un client CLT Express, pour le parcours du prix (18/09/2026). Rôle et statut exacts : la
     // page renvoie à la connexion si l'un des deux n'est pas celui qu'elle attend.
@@ -70,7 +70,14 @@ export function nouveauMonde() {
     { user_id: CLIENT_EXPRESS, phone: '2250700000021', password: 'yao-2026' },
   ];
   const TABLES = {
-    colis: COLIS, profiles: PROFILS, programmations_collecte: [], push_subscriptions: [], livreur_positions: [], activity_log: [],
+    colis: COLIS, profiles: PROFILS,
+    /* LA TOURNÉE DU MATIN (18/09/2026, point 7.6). Deux clientes chez Koffi, dans deux communes
+       dont l'ordre alphabétique des NOMS est l'inverse de celui des COMMUNES : c'est exactement
+       la situation que le rangement par commune répare. */
+    programmations_collecte: [
+      { id: 'p1', jour: aujourdhui, fournisseur_id: CLIENTE1, livreur_id: LIVREUR, note: null, nb_colis_annonce: null, annonce_reglee_at: null, nb_colis_pris: null, pris_confirme_at: null, pris_note: null, ordre_tournee: null },
+      { id: 'p2', jour: aujourdhui, fournisseur_id: CLIENTE2, livreur_id: LIVREUR, note: null, nb_colis_annonce: null, annonce_reglee_at: null, nb_colis_pris: null, pris_confirme_at: null, pris_note: null, ordre_tournee: null },
+    ], push_subscriptions: [], livreur_positions: [], activity_log: [],
     remises_livreur: [], remises_caisse: [], reversements_clientes: [], annonces_remise: [], migrations_appliquees: [], colis_photos: [],
     erreurs_client: [], historique_reversements_fournisseur: [], demandes_reset_password: [],
     // Ce que les clientes signalent (17/09/2026, point 7.2).

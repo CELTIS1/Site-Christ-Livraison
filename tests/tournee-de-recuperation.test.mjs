@@ -360,9 +360,38 @@ verifier("la cliente d'Aya n'apparaît pas chez lui",
 verifier("et son total ne compte que les siens", chezKoffi.total.nbClientes === 2);
 
 titre("Une liste qui ne bouge pas sous le pouce");
-verifier("les clientes sont rangées par nom, pas par ordre d'arrivée",
-  t.lignes.map(l => l.clienteNom).join('|') === 'Awa Boutique|Bintou Shop|Céline Couture',
-  t.lignes.map(l => l.clienteNom).join('|'));
+/* L'ORDRE A CHANGÉ LE 18/09/2026 (point 7.6), et c'était le but. Il était alphabétique — l'ordre
+   d'un annuaire — et envoyait la moto d'Abobo à Yopougon puis de nouveau à Abobo parce que les
+   clientes s'appellent Awa, Bintou et Céline. Il est maintenant : le rang posé par le bureau
+   d'abord, puis la commune, puis le nom. Ici, sans rang posé : Abobo, Cocody, Yopougon. */
+verifier("sans rien ranger, les clientes sont groupées par commune",
+  t.lignes.map(l => l.commune + '/' + l.clienteNom).join('|')
+    === 'Abobo/Céline Couture|Cocody/Bintou Shop|Yopougon/Awa Boutique',
+  t.lignes.map(l => l.commune + '/' + l.clienteNom).join('|'));
+verifier("et chacune porte son rang dans la tournée de son livreur",
+  t.lignes.map(l => l.rangTournee).join(',') !== '' && t.lignes.every(l => l.rangTournee >= 1),
+  t.lignes.map(l => l.livreurNom + ':' + l.rangTournee).join(' | '));
+
+/* LE RANG POSÉ PAR LE BUREAU PASSE DEVANT TOUT. Ranger trois clientes sur huit veut dire
+   « ces trois-là d'abord », pas « ces trois-là quelque part dedans » : une ligne sans rang passe
+   donc après toutes celles qui en ont un, et le rangement par commune ne joue qu'entre elles. */
+{
+  const range = tourneesDeRecuperation({
+    jour: AUJ, aujourdHui: AUJ, colis: COLIS, cliente: annuaire, livreurNom: nomLivreur,
+    // Awa (Yopougon) passerait en dernier par commune : le bureau la met en premier.
+    programmations: PROG.map(p => p.fournisseur_id === 'F1' ? Object.assign({}, p, { ordre_tournee: 1 }) : p),
+  });
+  verifier("une cliente rangée en premier passe avant toutes celles qui ne le sont pas",
+    range.lignes[0].clienteNom === 'Awa Boutique', range.lignes.map(l => l.clienteNom).join('|'));
+  verifier("les autres restent groupées par commune derrière elle",
+    range.lignes.slice(1).map(l => l.commune).join('|').indexOf('Abobo') === 0,
+    range.lignes.map(l => l.commune).join('|'));
+  verifier("un rang de 0 est un rang, pas une absence de rang",
+    tourneesDeRecuperation({
+      jour: AUJ, aujourdHui: AUJ, colis: COLIS, cliente: annuaire, livreurNom: nomLivreur,
+      programmations: PROG.map(p => p.fournisseur_id === 'F1' ? Object.assign({}, p, { ordre_tournee: 0 }) : p),
+    }).lignes[0].clienteNom === 'Awa Boutique');
+}
 // Les lignes arrivent de la base dans un ordre quelconque : le même jeu mélangé doit sortir
 // identique, sinon la liste se réordonnerait toute seule au fil des rafraîchissements.
 const melange = tourneesDeRecuperation({
@@ -832,11 +861,24 @@ const classesDeTournee = (src) => {
   return Array.from(out).sort();
 };
 const squelette = (src) => classesDeTournee(src).filter((c) => !c.includes('--'));
+/* TROIS PIÈCES QUE LE TÉLÉPHONE N'A PAS, ET C'EST VOULU. (18/09/2026, point 7.6)
+   L'ordre de la tournée se pose AU BUREAU : les deux flèches, leur boîtier, et le retour au
+   rangement par commune. Le livreur ne réordonne pas sa propre tournée — ce serait défaire la
+   décision de celui qui connaît toutes les tournées en même temps. Ce ne sont pas des états
+   d'une pièce existante (elles n'habillent rien : ce sont des boutons à elles seules), donc
+   elles ne peuvent pas entrer dans la liste des nuances. Elles sont nommées ici, une par une,
+   pour la même raison que les nuances le sont : une exception qu'on ne nomme pas s'élargit
+   toute seule. Le RANG, lui, s'affiche des deux côtés — le livreur doit lire « 2e sur 5 ». */
+const PIECES_BUREAU_SEUL = ['tournee-fleche', 'tournee-ordre', 'tournee-ranger'];
+const squeletteCommun = (src) => squelette(src).filter((c) => !PIECES_BUREAU_SEUL.includes(c));
 verifier("le bureau et le téléphone emploient exactement les mêmes pièces",
-  squelette(equipe).length >= 12
-  && squelette(equipe).join(' ') === squelette(livreur).join(' '),
-  'bureau    : ' + squelette(equipe).join(' ')
-  + '\n       téléphone : ' + squelette(livreur).join(' '));
+  squeletteCommun(equipe).length >= 12
+  && squeletteCommun(equipe).join(' ') === squeletteCommun(livreur).join(' '),
+  'bureau    : ' + squeletteCommun(equipe).join(' ')
+  + '\n       téléphone : ' + squeletteCommun(livreur).join(' '));
+verifier("et les pièces réservées au bureau sont exactement celles qu'on a nommées",
+  squelette(equipe).filter((c) => !squelette(livreur).includes(c)).join(' ') === PIECES_BUREAU_SEUL.join(' '),
+  squelette(equipe).filter((c) => !squelette(livreur).includes(c)).join(' '));
 
 /* LES SEULS ÉTATS QUI ONT LE DROIT DE N'ÊTRE QUE D'UN CÔTÉ. (29/08/2026)
    Au bureau : le travail déjà fait, marque et repli — le livreur, lui, n'a pas ce tiroir, sa
@@ -857,7 +899,9 @@ const NUANCES_BUREAU_SEUL = ['tournee-marque--fait', 'tournee-repli--fait'];
    pas à la place du livreur. */
 const NUANCES_TELEPHONE_SEUL = ['tournee-geste--confirmer', 'tournee-geste--corriger', 'tournee-geste--partir',
                                 'tournee-geste--prevenir', 'tournee-geste--recuperer', 'tournee-pris-confirme--saisie'];
-const seulementDans = (a, b) => classesDeTournee(a).filter((c) => !classesDeTournee(b).includes(c));
+const seulementDans = (a, b) => classesDeTournee(a)
+  .filter((c) => !classesDeTournee(b).includes(c))
+  .filter((c) => !PIECES_BUREAU_SEUL.includes(c));
 verifier("et les seuls états propres à un écran sont ceux qu'on a nommés ici",
   seulementDans(equipe, livreur).join(' ') === NUANCES_BUREAU_SEUL.join(' ')
   && seulementDans(livreur, equipe).join(' ') === NUANCES_TELEPHONE_SEUL.join(' '),

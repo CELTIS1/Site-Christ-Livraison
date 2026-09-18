@@ -1069,7 +1069,16 @@ const p = e.target.closest('[data-prog-programmer]');
 if (p) {
 progPreremplir(p.getAttribute('data-prog-programmer'));
 if (typeof progEntrerEnModification === 'function') progEntrerEnModification(p.getAttribute('data-prog-modifier') || null);
+return;
 }
+// L'ordre de la tournée (18/09/2026, point 7.6) : deux flèches par carte, et le retour au
+// rangement par commune pour tout un livreur.
+const monter = e.target.closest('[data-prog-monter]');
+if (monter) { progDeplacer(monter.getAttribute('data-prog-monter'), -1); return; }
+const descendre = e.target.closest('[data-prog-descendre]');
+if (descendre) { progDeplacer(descendre.getAttribute('data-prog-descendre'), 1); return; }
+const ranger = e.target.closest('[data-prog-ranger]');
+if (ranger) { progRangerParCommune(ranger.getAttribute('data-prog-ranger')); return; }
 });
 }
 })();

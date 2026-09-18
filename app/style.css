@@ -2762,6 +2762,39 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
 .tournee-repli[open] > summary::after{transform:rotate(180deg);}
 .tournee-repli-aide{font-size:12.5px; color:var(--muted); margin:2px 0 10px;}
 
+/* ---------- L'ORDRE DE LA TOURNÉE (18/09/2026, point 7.6) ----------
+   La tournée était triée par ordre alphabétique du nom de la cliente — l'ordre d'un annuaire,
+   qui envoie une moto d'Abobo à Yopougon puis de nouveau à Abobo. Elle est maintenant rangée
+   par commune, et le bureau peut poser son propre ordre avec deux flèches. Trois marques :
+   le rang de chaque passage, les deux flèches, et le retour au rangement par commune. */
+.tournee-rang{
+  flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
+  min-width:22px; height:22px; padding:0 5px; border-radius:11px;
+  background:var(--navy); color:#fff; font-size:12px; font-weight:800; line-height:1;
+}
+.tournee-rang:empty{display:none;}
+/* Les flèches se rangent à droite du nom, sur la même ligne, et ne repoussent jamais les
+   marques : c'est le nom qu'on lit en premier, pas le geste. */
+.tournee-ordre{margin-left:auto; display:flex; gap:6px; flex:0 0 auto;}
+.tournee-fleche{
+  width:44px; height:44px; border-radius:12px; border:1.5px solid var(--border);
+  background:#fff; color:var(--navy); font-size:17px; font-weight:800; line-height:1;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.tournee-fleche:hover{background:#f1f5f9; border-color:#64748b;}
+.tournee-fleche:active{background:#e2e8f0;}
+.tournee-ranger{
+  margin-left:10px; min-height:32px; padding:4px 10px; border-radius:9px;
+  border:1px dashed var(--border); background:transparent; color:var(--muted);
+  font-size:11.5px; font-weight:700; text-transform:none; letter-spacing:0; cursor:pointer;
+}
+.tournee-ranger:hover{color:var(--navy); border-color:#64748b;}
+html[data-theme="dark"] .tournee-rang{background:#2c5c9a; color:#eaf2fb;}
+html[data-theme="dark"] .tournee-fleche{background:#141F2E; border-color:#2E4A6B; color:#E6ECF3;}
+html[data-theme="dark"] .tournee-fleche:hover{background:#1c2a3c;}
+html[data-theme="dark"] .tournee-ranger{border-color:#2E4A6B;}
+html[data-theme="dark"] .tournee-ranger:hover{color:#E6ECF3;}
+
 html[data-theme="dark"] .tournee-marque{color:#fbbf24; background:rgba(217,119,6,.18);}
 html[data-theme="dark"] .tournee-marque--fait{color:#5ed19a; background:rgba(30,143,78,.20);}
 html[data-theme="dark"] .tournee-marque--route{color:#dbeafe; background:#2c5c9a;}

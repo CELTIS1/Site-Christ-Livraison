@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260918tournee",
+      "date": "18 septembre 2026",
+      "titre": "La tournée du matin suit la route, plus l'alphabet",
+      "points": [
+        "La tournée de récupération était triée par ordre alphabétique du nom de la cliente. C'est l'ordre d'un annuaire : il envoie une moto d'un bout d'Abidjan à l'autre, puis la fait revenir.",
+        "Elle est maintenant rangée par commune : on fait une commune, puis la suivante. Ça vaut dès demain matin, sans que personne ait rien à faire.",
+        "Le bureau peut poser son propre ordre avec deux flèches sur chaque carte — c'est lui qui sait que telle boutique n'ouvre qu'à 9 h. Un bouton ramène au rangement par commune.",
+        "Chaque passage porte son numéro, le même au bureau et sur le téléphone du livreur : « je suis au 2e sur 5 » se lit sans compter les cartes."
+      ]
+    },
+    {
       "version": "20260918epingle",
       "date": "18 septembre 2026",
       "titre": "CLT Express : le prix annoncé est celui qui sera facturé",
