@@ -17,9 +17,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918course">
-<script src="theme.js?v=20260918course"></script>
-<script src="splash.js?v=20260918course"></script>
+<link rel="stylesheet" href="style.css?v=20260918epingle">
+<script src="theme.js?v=20260918epingle"></script>
+<script src="splash.js?v=20260918epingle"></script>
 <style>
   /* ===== Thème violet CLT Express + rafraîchissement visuel (2026) ===== */
   :root{
@@ -105,6 +105,15 @@
   .price-preview .pp-value{ font-size:16px; font-weight:700; }
   .price-preview .pp-total{ text-align:right; }
   .price-preview .pp-total .pp-value{ font-size:26px; line-height:1.1; }
+  /* D'où vient le prix (18/09/2026, point 5.5). Sur toute la largeur, sous les trois blocs :
+     c'est une phrase, pas une valeur, et elle doit se lire sans plisser les yeux. */
+  .price-preview .pp-source{ flex:1 0 100%; font-size:12.5px; line-height:1.45; opacity:.92; }
+  .price-preview .pp-source:empty{ display:none; }
+  .price-preview .pp-source-precis{ opacity:1; font-weight:600; }
+  .price-preview .pp-source-avertit{
+    opacity:1; font-weight:600; background:rgba(255,255,255,.16);
+    border-radius:10px; padding:8px 10px; margin-top:2px;
+  }
 
   /* Bouton commander : pleine largeur, dégradé, plus haut */
   #btn-new-course{
@@ -589,6 +598,11 @@
           <span class="pp-label">Prix estimé</span>
           <span class="pp-value" id="price-total">—</span>
         </div>
+        <!-- D'OÙ VIENT CE PRIX. (18/09/2026, point 5.5) Le même calcul que celui du serveur, sur
+             les mêmes points — mais le client doit savoir si ces points sont ses épingles ou le
+             centre de deux communes. Sans cette ligne, « 500 F » sur une course à l'intérieur
+             d'une commune passe pour le prix, alors que c'est le tarif de base faute de mieux. -->
+        <div class="pp-source" id="price-source"></div>
       </div>
 
       <button type="submit" class="btn" style="width:100%; justify-content:center; margin-top:14px;" id="btn-new-course">Commander cette livraison</button>
@@ -602,10 +616,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260918course"></script>
-<script src="express-config.js?v=20260918course"></script>
-<script src="biometric-lock.js?v=20260918course"></script>
-<script src="clt-select-recherche.js?v=20260918course"></script>
+<script src="clt-common.js?v=20260918epingle"></script>
+<script src="express-config.js?v=20260918epingle"></script>
+<script src="biometric-lock.js?v=20260918epingle"></script>
+<script src="clt-select-recherche.js?v=20260918epingle"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -659,17 +673,34 @@
     setTimeout(() => el.classList.remove('clt-price-shine'), 950);
   }
 
+  // Les points tels qu'ils partiront au serveur : l'épingle si elle est posée, sinon le centre
+  // de la commune. Une seule lecture, pour l'aperçu comme pour l'enregistrement. (18/09/2026)
+  function epinglesCourse(){
+    return { depart: pinPickers.pickup.coords, arrivee: pinPickers.dropoff.coords };
+  }
+
   function updatePricePreview(){
     const depart = document.getElementById('course-pickup-commune').value;
     const arrivee = document.getElementById('course-dropoff-commune').value;
     const box = document.getElementById('price-preview');
     if (!depart || !arrivee || !expressConfig) { box.classList.add('hidden'); return; }
-    const est = estimatePrixExpress(depart, arrivee, expressConfig);
+    const est = estimatePrixExpress(depart, arrivee, expressConfig, epinglesCourse());
     if (!est) { box.classList.add('hidden'); return; }
     document.getElementById('price-distance').textContent = est.distanceKm.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' km';
     const eta = estimateEtaExpress(est.distanceKm, expressConfig);
     document.getElementById('price-eta').textContent = eta ? eta.texte : '—';
     animatePrixTotal(document.getElementById('price-total'), est.prixTotal);
+    const src = document.getElementById('price-source');
+    if (est.precis) {
+      src.className = 'pp-source pp-source-precis';
+      src.textContent = '📍 Mesuré entre vos deux points : c’est exactement ce qui sera facturé.';
+    } else if (est.memeCentre) {
+      src.className = 'pp-source pp-source-avertit';
+      src.textContent = 'Même commune : sans épingle, la distance compte 0 km. Placez les deux points pour le prix juste.';
+    } else {
+      src.className = 'pp-source';
+      src.textContent = 'Estimé entre les centres des communes. Placez les épingles pour le prix exact.';
+    }
     box.classList.remove('hidden');
   }
 
@@ -1251,6 +1282,8 @@
     const btn = document.getElementById(p.btnId);
     btn.classList.add('is-set');
     btn.textContent = '📍 Point précis défini — modifier';
+    // Le prix change avec l'épingle : l'aperçu doit suivre le doigt, pas attendre la commande.
+    updatePricePreview();
   }
 
   function openPinPicker(kind){
@@ -1298,6 +1331,7 @@
     const btn = document.getElementById(p.btnId);
     btn.classList.remove('is-set');
     btn.textContent = '📍 Placer le point précis sur la carte';
+    updatePricePreview();
   }
 
   ['pickup', 'dropoff'].forEach(kind => {
@@ -1387,7 +1421,7 @@
       return;
     }
 
-    const est = expressConfig ? estimatePrixExpress(pickupCommune, dropoffCommune, expressConfig) : null;
+    const est = expressConfig ? estimatePrixExpress(pickupCommune, dropoffCommune, expressConfig, epinglesCourse()) : null;
     const eta = est ? estimateEtaExpress(est.distanceKm, expressConfig) : null;
     const recapLignes = [`Trajet : ${pickupCommune} → ${dropoffCommune}`];
     if (est) recapLignes.push(`Distance : ${est.distanceKm.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km — Prix estimé : ${formatMontant(est.prixTotal)}`);
@@ -1395,9 +1429,11 @@
     recapLignes.push(`Destinataire : ${destNom ? destNom + ' — ' : ''}${destTel}`);
     if (!(await cltConfirm({ title: 'Confirmer cette livraison ?', detail: est ? formatMontant(est.prixTotal) : '', sub: recapLignes.join('\n'), okLabel: 'Commander' }))) return;
 
-    // Point GPS : on privilégie l'épingle précise posée par le client ; sinon centroïde de la commune.
-    const pickupCoords = pinPickers.pickup.coords || EXPRESS_COMMUNE_COORDS[pickupCommune];
-    const dropoffCoords = pinPickers.dropoff.coords || EXPRESS_COMMUNE_COORDS[dropoffCommune];
+    // Les points envoyés au serveur : LA MÊME LECTURE que celle de l'estimation ci-dessus
+    // (coordsCourseExpress, express-config.js). C'est ce qui garantit que le prix annoncé dans la
+    // fenêtre de confirmation est celui que le serveur figera. (18/09/2026, point 5.5)
+    const pickupCoords = coordsCourseExpress(pickupCommune, pinPickers.pickup.coords);
+    const dropoffCoords = coordsCourseExpress(dropoffCommune, pinPickers.dropoff.coords);
 
     btn.disabled = true; btn.textContent = 'Envoi...';
 

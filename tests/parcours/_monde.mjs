@@ -14,6 +14,7 @@ export const LIVREUR = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
 export const ADMIN = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa9';
 export const CLIENTE1 = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1';
 export const CLIENTE2 = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2';
+export const CLIENT_EXPRESS = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1';
 
 const now = new Date();
 export const iso = (d, h = 9) => { const x = new Date(now); x.setDate(x.getDate() + d); x.setHours(h, 0, 0, 0); return x.toISOString(); };
@@ -55,6 +56,9 @@ export function nouveauMonde() {
     { id: ADMIN, full_name: 'Le Gérant', role: 'admin', phone: '2250700000009', status: 'valide', avatar_url: null, company_name: null, acces_operations: true, acces_paie: true, acces_compta: true },
     { id: CLIENTE1, full_name: 'Awa Boutique', role: 'fournisseur', phone: '2250700000011', status: 'valide', company_name: 'Awa Boutique', commune_recuperation: 'Marcory', adresse_recuperation: 'Zone 4, en face de la station', avatar_url: null },
     { id: CLIENTE2, full_name: 'Mariam Mode', role: 'fournisseur', phone: '2250700000012', status: 'valide', company_name: 'Mariam Mode', commune_recuperation: 'Treichville', adresse_recuperation: 'Avenue 16', avatar_url: null },
+    // Un client CLT Express, pour le parcours du prix (18/09/2026). Rôle et statut exacts : la
+    // page renvoie à la connexion si l'un des deux n'est pas celui qu'elle attend.
+    { id: CLIENT_EXPRESS, full_name: 'Yao Express', role: 'client_express', phone: '2250700000021', status: 'valide', company_name: null, avatar_url: null, disponible_express: null, suppression_demandee_at: null, geoloc_consent_at: null, telephone_verifie_at: iso(-10) },
   ];
   // Les comptes : téléphone + mot de passe (inventés). La connexion réelle passe par Supabase
   // Auth ; ici on vérifie seulement que la page envoie le bon numéro et réagit juste.
@@ -63,6 +67,7 @@ export function nouveauMonde() {
     { user_id: ADMIN, phone: '2250700000009', password: 'gerant-2026' },
     { user_id: CLIENTE1, phone: '2250700000011', password: 'awa-2026' },
     { user_id: CLIENTE2, phone: '2250700000012', password: 'mariam-2026' },
+    { user_id: CLIENT_EXPRESS, phone: '2250700000021', password: 'yao-2026' },
   ];
   const TABLES = {
     colis: COLIS, profiles: PROFILS, programmations_collecte: [], push_subscriptions: [], livreur_positions: [], activity_log: [],
@@ -70,6 +75,10 @@ export function nouveauMonde() {
     erreurs_client: [], historique_reversements_fournisseur: [], demandes_reset_password: [],
     // Ce que les clientes signalent (17/09/2026, point 7.2).
     reclamations_clientes: [],
+    /* CLT Express (18/09/2026, point 5.5). Le tarif est celui relevé en production le 18/09 :
+       500 F de base, 150 F du kilomètre. Un tarif inventé ici ferait un banc qui ne mesure rien. */
+    express_config: [{ id: 1, tarif_base: 500, tarif_par_km: 150, commission_pct: 0.2, vitesse_moy_kmh: 18, delai_prise_en_charge_min: 10 }],
+    express_courses: [], express_messages: [], express_course_positions: [],
   };
   const journal = [];
 

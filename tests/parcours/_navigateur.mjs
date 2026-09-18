@@ -176,7 +176,7 @@ export async function ouvrirNavigateur(options) {
   async function ouvrirConnecte(nomPage, userId) {
     const profil = monde.PROFILS.find(p => p.id === userId);
     const user = { id: userId, phone: profil.phone, user_metadata: { full_name: profil.full_name } };
-    const persistant = /livreur|fournisseur/.test(nomPage);
+    const persistant = /livreur|fournisseur|express/.test(nomPage);
     await page.goto(base + '/app/login.html', { waitUntil: 'domcontentloaded' });
     await page.evaluate(({ user, persistant }) => {
       const session = { access_token: 'jeton.' + btoa(unescape(encodeURIComponent(JSON.stringify(user)))), refresh_token: 'rafraichir', expires_at: Math.floor(Date.now() / 1000) + 3600, user };

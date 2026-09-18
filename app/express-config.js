@@ -254,15 +254,45 @@ function haversineKm(a, b) {
   return R * 2 * Math.asin(Math.sqrt(s));
 }
 
+/* LE POINT QUI SERA RÉELLEMENT ENVOYÉ AU SERVEUR. (18/09/2026, point 5.5)
+   Une seule règle, appelée par l'estimation ET par l'enregistrement de la course : l'épingle
+   posée par le client si elle existe, sinon le centre de la commune.
+
+   CE QU'ELLE RÉPARE. Le prix affiché se calculait sur les centres de communes pendant que
+   l'épingle, elle, partait au serveur — et c'est le serveur qui fige le prix. Les deux chiffres
+   pouvaient donc différer, après que le client a appuyé sur « Commander » devant une fenêtre qui
+   lui annonçait le premier. Le cas le plus grave est le plus banal en ville : une course à
+   l'intérieur d'une même commune. Départ et arrivée ont alors le MÊME centre, donc 0 km à
+   l'écran — 500 F, le tarif de base — tandis que deux épingles distantes de 6 km donnent, au
+   tarif du jour (500 F + 150 F/km), 1 400 F facturés. Presque le triple, et personne n'a menti.
+
+   Aucune course n'en a encore souffert : les trois courses de la base ont toutes été créées sans
+   épingle (vérifié le 18/09 — écart nul sur les trois). C'est un piège armé, pas un incident. */
+function coordsCourseExpress(commune, epingle) {
+  if (epingle && typeof epingle.lat === 'number' && typeof epingle.lng === 'number') return epingle;
+  return EXPRESS_COMMUNE_COORDS[commune] || null;
+}
+
 // Estimation affichée au client avant l'envoi (arrondie comme côté serveur). `config` est la
-// ligne lue dans express_config (tarif_base, tarif_par_km, commission_pct).
-function estimatePrixExpress(communeDepart, communeArrivee, config) {
-  const a = EXPRESS_COMMUNE_COORDS[communeDepart];
-  const b = EXPRESS_COMMUNE_COORDS[communeArrivee];
+// ligne lue dans express_config (tarif_base, tarif_par_km, commission_pct). `epingles`, quand il
+// est donné, porte les points précis posés sur la carte : {depart, arrivee}. Le résultat dit
+// aussi d'où vient la distance (`precis`), parce qu'une estimation au centre d'une commune et un
+// prix mesuré d'épingle à épingle ne se lisent pas de la même façon.
+function estimatePrixExpress(communeDepart, communeArrivee, config, epingles) {
+  const e = epingles || {};
+  const a = coordsCourseExpress(communeDepart, e.depart);
+  const b = coordsCourseExpress(communeArrivee, e.arrivee);
   if (!a || !b || !config) return null;
   const distanceKm = Math.round(haversineKm(a, b) * 100) / 100;
   const prixTotal = Math.round(config.tarif_base + config.tarif_par_km * distanceKm);
-  return { distanceKm, prixTotal };
+  return {
+    distanceKm, prixTotal,
+    precis: !!(e.depart && e.arrivee),
+    // Même commune et aucune épingle : les deux centres sont le même point, la distance tombe à
+    // zéro et le prix au tarif de base. Ce n'est pas faux — le serveur comptera pareil — mais
+    // c'est un chiffre que l'écran doit expliquer, sans quoi il a l'air d'un cadeau ou d'un bug.
+    memeCentre: distanceKm === 0 && !(e.depart && e.arrivee),
+  };
 }
 
 // Estimation du délai de livraison affichée au client avant l'envoi.

@@ -568,10 +568,16 @@ verifier(
    (3) Celtis : « le livreur s'est déplacé, le client décide de ne plus prendre le colis, mais il
    paye la livraison. » Au « non livré », la question est posée tout de suite, et la course entre
    dans le point du soir — colonne livraison_payee_non_livre, migration
-   2026-09-18-la-course-est-due-meme-si-le-colis-revient.sql : étiquette 20260918course. */
+   2026-09-18-la-course-est-due-meme-si-le-colis-revient.sql : étiquette 20260918course.
+   v157, le 18/09/2026 — point 5.5. Le prix Express affiché se calculait sur le centre des
+   communes pendant que l'épingle du client partait au serveur, qui fige le prix : deux chiffres
+   pour une même course, l'un annoncé, l'autre facturé. Mesuré sur Adjamé → Cocody : 1 216 F aux
+   centres, 2 090 F aux épingles. Une seule lecture du point (coordsCourseExpress) pour l'aperçu,
+   la confirmation et l'envoi ; l'écran dit d'où vient le chiffre et signale le cas « même
+   commune » (0 km, tarif de base) : étiquette 20260918epingle. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v156'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v157'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

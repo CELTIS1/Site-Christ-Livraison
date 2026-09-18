@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260918epingle",
+      "date": "18 septembre 2026",
+      "titre": "CLT Express : le prix annoncé est celui qui sera facturé",
+      "points": [
+        "Le prix affiché au client se calculait sur le centre des communes, pendant que l'épingle qu'il pose sur la carte partait au serveur — et c'est le serveur qui fige le prix.",
+        "Les deux chiffres pouvaient donc différer après le « Commander ». Sur un vrai trajet Adjamé → Cocody : 1 216 F annoncés, 2 090 F facturés une fois les épingles posées.",
+        "L'écran lit maintenant les mêmes points que le serveur, et dit d'où vient le chiffre : « mesuré entre vos deux points » ou « estimé entre les centres des communes ».",
+        "Une course à l'intérieur d'une même commune était annoncée à 0 km, donc au tarif de base. L'écran le signale et invite à poser les deux épingles."
+      ]
+    },
+    {
       "version": "20260918course",
       "date": "18 septembre 2026",
       "titre": "Les colis reportés ne disparaissent plus, et la course payée est comptée",
