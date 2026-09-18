@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918console">
-<script src="theme.js?v=20260918console"></script>
-<script src="splash.js?v=20260918console"></script>
+<link rel="stylesheet" href="style.css?v=20260918moinsdonglets">
+<script src="theme.js?v=20260918moinsdonglets"></script>
+<script src="splash.js?v=20260918moinsdonglets"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -81,6 +81,34 @@
       linear-gradient(to right, rgba(15,118,110,.16), rgba(15,118,110,0)) left center / 18px 100% no-repeat,
       linear-gradient(to left,  rgba(15,118,110,.16), rgba(15,118,110,0)) right center / 18px 100% no-repeat;
     background-attachment: local, local, scroll, scroll; }
+  /* ---------- LES SOUS-ONGLETS, RANGÉS EN GROUPES (18/09/2026) ----------
+     Quatorze pastilles sur une ligne, c'était quatorze endroits à connaître. Les groupes suivent
+     les QUESTIONS et non les objets — on cherche « où part mon argent », pas « Dépenses ». Sur
+     grand écran ils se posent côte à côte ; sur téléphone ils s'empilent, chacun avec son
+     étiquette, et le groupe du comptable reste replié. */
+  .subtabs-groupes{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-start; margin-bottom:14px; }
+  .subtabs-groupe{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .subtabs-etiquette{
+    font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--clt-teal-dark); opacity:.72; padding-left:2px;
+  }
+  /* Le résumé d'un <details> : une étiquette qui s'ouvre. Le triangle du navigateur est remplacé
+     par un chevron à nous, pour qu'elle ne ressemble pas à une ligne de liste. */
+  .subtabs-etiquette--bouton{ cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:6px;
+    min-height:34px; padding:0 2px; }
+  .subtabs-etiquette--bouton::-webkit-details-marker{ display:none; }
+  .subtabs-etiquette--bouton::before{ content:'▸'; font-size:10px; transition:transform .15s; }
+  details[open] > .subtabs-etiquette--bouton::before{ transform:rotate(90deg); }
+  .subtabs-pour-qui{ font-weight:600; text-transform:none; letter-spacing:0; opacity:.8; }
+  /* Une barre dans un groupe ne porte plus le dégradé de défilement : elle tient sur sa largeur.
+     Le dégradé restait dessiné en permanence sur quatre pastilles et donnait l'illusion qu'il
+     restait quelque chose à droite. */
+  .subtabs-groupe .subtabs{ background:none; margin:0; }
+  @media (max-width:720px){
+    .subtabs-groupes{ flex-direction:column; gap:8px; }
+    .subtabs-groupe{ width:100%; }
+  }
+
   /* ---------- LA CONSOLE DU DIRIGEANT (18/09/2026) ----------
      Le principe de mise en page : la bande « Ce qui a changé » est faite pour être lue en dix
      secondes debout, donc grande et aérée ; les trois axes sont faits pour être consultés, donc
@@ -481,24 +509,64 @@
 
   <!-- ============ COMPTABILITÉ ============ -->
   <div class="section" id="sec-compta">
-    <div class="subtabs">
-      <div class="subtab active" data-sub="recettes" onclick="switchSub('compta','recettes')">Recettes</div>
-      <div class="subtab" data-sub="depenses" onclick="switchSub('compta','depenses')">Dépenses</div>
-      <!-- Intitulés raccourcis et sans émojis (Celtis) : douze pastilles doivent tenir sur une
-           ligne ; les émojis n'étaient posés que sur la moitié d'entre elles. Les data-sub, eux,
-           ne bougent pas (gestion.js s'y réfère). -->
-      <div class="subtab" data-sub="livrecaisse" onclick="switchSub('compta','livrecaisse')">Livre de caisse</div>
-      <div class="subtab" data-sub="objectifs" onclick="switchSub('compta','objectifs')">Objectifs</div>
-      <div class="subtab" data-sub="chauffeurs" onclick="switchSub('compta','chauffeurs')">Chauffeurs</div>
-      <div class="subtab" data-sub="caisse" onclick="switchSub('compta','caisse')">Caisse livreurs</div>
-      <div class="subtab" data-sub="clients" onclick="switchSub('compta','clients')">Point clients</div>
-      <div class="subtab" data-sub="express" onclick="switchSub('compta','express')">CLT Express</div>
-      <div class="subtab" data-sub="facturation" onclick="switchSub('compta','facturation')">Facturation</div>
-      <div class="subtab" data-sub="etats" onclick="switchSub('compta','etats')">États financiers</div>
-      <div class="subtab" data-sub="compta-generale" onclick="switchSub('compta','compta-generale')">Compta. générale</div>
-      <div class="subtab" data-sub="echeances" onclick="switchSub('compta','echeances')">Échéancier</div>
-      <div class="subtab" data-sub="clotures" onclick="switchSub('compta','clotures')">Clôtures</div>
-      <div class="subtab" data-sub="documents" onclick="switchSub('compta','documents')">Documents</div>
+    <!-- QUATORZE PASTILLES SUR UNE LIGNE, C'ÉTAIT QUATORZE ENDROITS À CONNAÎTRE. (18/09/2026,
+         Celtis : « il y a beaucoup d'onglets […] surtout à mon niveau l'administrateur ; s'il
+         faut fusionner certains, enlever ce qui n'est pas essentiel… moins d'endroits à
+         parcourir et mieux ils maîtriseront ».)
+
+         CE QU'ON NE FAIT PAS, ET POURQUOI. On ne supprime rien et on ne réécrit aucune section :
+         les `data-sub`, les identifiants et les appels switchSub() ne bougent pas d'un caractère.
+         Une barre rangée se relit en une minute ; une section déplacée casse des écouteurs qu'on
+         ne retrouve qu'en production. Et surtout : je ne sais pas encore lesquels sont utilisés —
+         l'application ne gardait aucune trace de navigation. Le compteur posé le même jour
+         (`onglets_ouverts`) répondra en octobre, et on retirera sur preuve, pas à l'opinion.
+
+         LES QUATRE GROUPES SUIVENT LES QUESTIONS, PAS LES OBJETS. C'est la seule façon de
+         retrouver un écran sans le connaître : on cherche « où part mon argent », pas
+         « Dépenses ». Et le quatrième — les comptes officiels — est REPLIÉ par défaut : c'est le
+         domaine du comptable, pas le quotidien du gérant. Il s'ouvre d'un appui et l'écran s'en
+         souvient.
+
+         UN PIÈGE VÉRIFIÉ AVANT DE RANGER. « Caisse livreurs » et « Point clients » ressemblent à
+         des doublons de l'espace Équipe. Ils n'en sont pas : le comptable n'a pas le droit de lire
+         la table des colis, et ces deux écrans passent par des fonctions protégées
+         (compta_caisse_livreurs_jour, compta_point_clients_jour). Pour le gérant ce sont des
+         doublons ; pour le comptable c'est la seule porte. Ils restent, et bien en vue. -->
+    <div class="subtabs-groupes">
+      <div class="subtabs-groupe">
+        <span class="subtabs-etiquette">Ce qui rentre, ce qui sort</span>
+        <div class="subtabs">
+          <div class="subtab active" data-sub="recettes" onclick="switchSub('compta','recettes')">Recettes</div>
+          <div class="subtab" data-sub="depenses" onclick="switchSub('compta','depenses')">Dépenses</div>
+          <div class="subtab" data-sub="livrecaisse" onclick="switchSub('compta','livrecaisse')">Livre de caisse</div>
+          <div class="subtab" data-sub="objectifs" onclick="switchSub('compta','objectifs')">Objectifs</div>
+        </div>
+      </div>
+      <div class="subtabs-groupe">
+        <span class="subtabs-etiquette">Qui me doit quoi</span>
+        <div class="subtabs">
+          <div class="subtab" data-sub="caisse" onclick="switchSub('compta','caisse')">Caisse livreurs</div>
+          <div class="subtab" data-sub="clients" onclick="switchSub('compta','clients')">Point clients</div>
+          <div class="subtab" data-sub="facturation" onclick="switchSub('compta','facturation')">Facturation</div>
+          <div class="subtab" data-sub="echeances" onclick="switchSub('compta','echeances')">Échéancier</div>
+        </div>
+      </div>
+      <div class="subtabs-groupe">
+        <span class="subtabs-etiquette">Où j'en suis</span>
+        <div class="subtabs">
+          <div class="subtab" data-sub="etats" onclick="switchSub('compta','etats')">États financiers</div>
+          <div class="subtab" data-sub="express" onclick="switchSub('compta','express')">CLT Express</div>
+          <div class="subtab" data-sub="chauffeurs" onclick="switchSub('compta','chauffeurs')">Chauffeurs</div>
+        </div>
+      </div>
+      <details class="subtabs-groupe subtabs-groupe--replie" id="compta-groupe-comptable">
+        <summary class="subtabs-etiquette subtabs-etiquette--bouton">Les comptes officiels <span class="subtabs-pour-qui">— le domaine du comptable</span></summary>
+        <div class="subtabs">
+          <div class="subtab" data-sub="compta-generale" onclick="switchSub('compta','compta-generale')">Compta. générale</div>
+          <div class="subtab" data-sub="clotures" onclick="switchSub('compta','clotures')">Clôtures</div>
+          <div class="subtab" data-sub="documents" onclick="switchSub('compta','documents')">Documents</div>
+        </div>
+      </details>
     </div>
 
     <div class="section active" id="compta-recettes">
@@ -919,16 +987,32 @@
 
   <!-- ============ PAIE ============ -->
   <div class="section" id="sec-paie">
-    <div class="subtabs">
-      <div class="subtab active" data-sub="salaries" onclick="switchSub('paie','salaries')">Salariés</div>
-      <!-- Sans émojis et raccourcis (Celtis) : cohérence avec la Comptabilité. -->
-      <div class="subtab" data-sub="dossiers" onclick="switchSub('paie','dossiers')">Dossiers</div>
-      <div class="subtab" data-sub="saisie" onclick="switchSub('paie','saisie')">Saisie du mois</div>
-      <!-- Primes des livreurs (13/09/2026) : le règlement appliqué tout seul, le décompte validé passe dans la saisie. -->
-      <div class="subtab" data-sub="primes" onclick="switchSub('paie','primes')">Primes livreurs</div>
-      <div class="subtab" data-sub="bulletins" onclick="switchSub('paie','bulletins')">Bulletins</div>
-      <div class="subtab" data-sub="etats" onclick="switchSub('paie','etats')">États par période</div>
-      <div class="subtab" id="sub-paie-parametres" data-sub="parametres" onclick="switchSub('paie','parametres')">Paramètres</div>
+    <!-- Même rangement qu'en Comptabilité (18/09/2026) : sept pastilles deviennent trois groupes,
+         rien n'est supprimé, aucun data-sub ne bouge. Les réglages sont repliés — on y touche
+         deux fois par an, et ils n'ont rien à faire à côté du travail du mois. -->
+    <div class="subtabs-groupes">
+      <div class="subtabs-groupe">
+        <span class="subtabs-etiquette">Le mois en cours</span>
+        <div class="subtabs">
+          <div class="subtab" data-sub="saisie" onclick="switchSub('paie','saisie')">Saisie du mois</div>
+          <div class="subtab" data-sub="primes" onclick="switchSub('paie','primes')">Primes livreurs</div>
+          <div class="subtab" data-sub="bulletins" onclick="switchSub('paie','bulletins')">Bulletins</div>
+        </div>
+      </div>
+      <div class="subtabs-groupe">
+        <span class="subtabs-etiquette">Les gens</span>
+        <div class="subtabs">
+          <div class="subtab active" data-sub="salaries" onclick="switchSub('paie','salaries')">Salariés</div>
+          <div class="subtab" data-sub="dossiers" onclick="switchSub('paie','dossiers')">Dossiers</div>
+          <div class="subtab" data-sub="etats" onclick="switchSub('paie','etats')">États par période</div>
+        </div>
+      </div>
+      <details class="subtabs-groupe subtabs-groupe--replie" id="paie-groupe-reglages">
+        <summary class="subtabs-etiquette subtabs-etiquette--bouton">Réglages <span class="subtabs-pour-qui">— deux fois par an</span></summary>
+        <div class="subtabs">
+          <div class="subtab" id="sub-paie-parametres" data-sub="parametres" onclick="switchSub('paie','parametres')">Paramètres</div>
+        </div>
+      </details>
     </div>
 
     <div class="section active" id="paie-salaries">
@@ -1312,28 +1396,28 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260918console"></script>
-<script src="lib/bibliotheques.js?v=20260918console"></script>
-<script src="lib/retours.js?v=20260918console"></script>
-<script src="lib/reclamations.js?v=20260918console"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918console"></script>
-<script src="lib/argent.js?v=20260918console"></script>
-<script src="lib/releve-cliente.js?v=20260918console"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918console"></script>
-<script src="lib/briques-argent.js?v=20260918console"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918console"></script>
-<script src="lib/annonce-de-remise.js?v=20260918console"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918console"></script>
-<script src="lib/primes.js?v=20260918console"></script>
-<script src="lib/doublons.js?v=20260918console"></script>
-<script src="config.js?v=20260918console"></script>
-<script src="biometric-lock.js?v=20260918console"></script>
-<script src="clt-select-recherche.js?v=20260918console"></script>
-<script src="site-editeur.js?v=20260918console"></script>
+<script src="clt-common.js?v=20260918moinsdonglets"></script>
+<script src="lib/bibliotheques.js?v=20260918moinsdonglets"></script>
+<script src="lib/retours.js?v=20260918moinsdonglets"></script>
+<script src="lib/reclamations.js?v=20260918moinsdonglets"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918moinsdonglets"></script>
+<script src="lib/argent.js?v=20260918moinsdonglets"></script>
+<script src="lib/releve-cliente.js?v=20260918moinsdonglets"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918moinsdonglets"></script>
+<script src="lib/briques-argent.js?v=20260918moinsdonglets"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918moinsdonglets"></script>
+<script src="lib/annonce-de-remise.js?v=20260918moinsdonglets"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918moinsdonglets"></script>
+<script src="lib/primes.js?v=20260918moinsdonglets"></script>
+<script src="lib/doublons.js?v=20260918moinsdonglets"></script>
+<script src="config.js?v=20260918moinsdonglets"></script>
+<script src="biometric-lock.js?v=20260918moinsdonglets"></script>
+<script src="clt-select-recherche.js?v=20260918moinsdonglets"></script>
+<script src="site-editeur.js?v=20260918moinsdonglets"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="ce-qui-a-change.js?v=20260918console"></script>
-<script src="console-du-dirigeant.js?v=20260918console"></script>
-<script src="gestion.js?v=20260918console"></script>
+<script src="ce-qui-a-change.js?v=20260918moinsdonglets"></script>
+<script src="console-du-dirigeant.js?v=20260918moinsdonglets"></script>
+<script src="gestion.js?v=20260918moinsdonglets"></script>
 </body>
 </html>

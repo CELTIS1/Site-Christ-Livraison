@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918console">
-<script src="theme.js?v=20260918console"></script>
-<script src="splash.js?v=20260918console"></script>
+<link rel="stylesheet" href="style.css?v=20260918moinsdonglets">
+<script src="theme.js?v=20260918moinsdonglets"></script>
+<script src="splash.js?v=20260918moinsdonglets"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -553,10 +553,16 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
      quoi on ne peut plus se dire où aller d'un appareil à l'autre. (28/08/2026) -->
 <button type="button" class="clt-toptab" data-eqtab="programmation">🗓️ Tournées</button>
 <button type="button" class="clt-toptab" data-eqtab="suivi">🗺️ Suivi</button>
-<!-- Le tableau de bord des clientes (05/09/2026) : qui nous confie quoi, comment ça évolue,
-     qui appeler. Lecture seule ; les gestes renvoient vers Colis, Tournées ou la fiche. -->
-<button type="button" class="clt-toptab" data-eqtab="clients">📈 Clients</button>
-<button type="button" class="clt-toptab" data-eqtab="livreurs">🏍️ Livreurs</button>
+<!-- CLIENTS ET LIVREURS N'EN FONT PLUS QU'UN : « PERSONNES ». (18/09/2026, Celtis : « il y a
+     beaucoup d'onglets […] moins d'endroits à parcourir pour l'équipe et mieux ils
+     maîtriseront ».)
+     Les deux tableaux de bord ont EXACTEMENT la même mécanique : la même période glissante de
+     7/30/90 jours comparée à la précédente, la même tendance en pourcentage, les mêmes signaux,
+     la même courbe par semaine, la même fiche qui s'ouvre au clic. Ce sont deux lectures du même
+     écran, pas deux écrans. Les garder séparés, c'était demander à l'équipe d'apprendre deux
+     fois la même chose — et de deviner, chaque fois, dans lequel des deux chercher.
+     Rien n'est retiré : les deux tableaux sont là, entiers, derrière un sélecteur. -->
+<button type="button" class="clt-toptab" data-eqtab="personnes">👤 Personnes</button>
 <button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
 <button type="button" class="clt-toptab" data-eqtab="comptes">👥 Comptes</button>
 <button type="button" class="clt-toptab hidden" id="eqtab-btn-express" data-eqtab="express">🏍️ Express</button>
@@ -566,8 +572,14 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
 <div class="eq-tabpanel" id="eqpanel-colis"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-programmation"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-suivi"></div>
-<div class="eq-tabpanel hidden" id="eqpanel-clients"></div>
-<div class="eq-tabpanel hidden" id="eqpanel-livreurs"></div>
+<div class="eq-tabpanel hidden" id="eqpanel-personnes">
+  <!-- Le sélecteur : deux lectures d'un même écran. Il se souvient du dernier choix, parce que
+       chacun dans l'équipe revient sur le même des deux. -->
+  <div class="eq-bascule" role="tablist" aria-label="Clientes ou livreurs">
+    <button type="button" class="eq-bascule-btn active" data-personnes="clientes" role="tab" aria-selected="true">📈 Clientes</button>
+    <button type="button" class="eq-bascule-btn" data-personnes="livreurs" role="tab" aria-selected="false">🏍️ Livreurs</button>
+  </div>
+</div>
 <div class="eq-tabpanel hidden" id="eqpanel-finances"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-comptes"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-express"></div>
@@ -1594,36 +1606,36 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260918console"></script>
-<script src="lib/bibliotheques.js?v=20260918console"></script>
-<script src="lib/retours.js?v=20260918console"></script>
-<script src="lib/reclamations.js?v=20260918console"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918console"></script>
-<script src="lib/argent.js?v=20260918console"></script>
-<script src="lib/releve-cliente.js?v=20260918console"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918console"></script>
-<script src="lib/briques-argent.js?v=20260918console"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918console"></script>
-<script src="lib/annonce-de-remise.js?v=20260918console"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918console"></script>
-<script src="lib/primes.js?v=20260918console"></script>
-<script src="lib/doublons.js?v=20260918console"></script>
-<script src="config.js?v=20260918console"></script>
-<script src="clients-dashboard.js?v=20260918console"></script>
-<script src="livreurs-dashboard.js?v=20260918console"></script>
-<script src="point-du-jour.js?v=20260918console"></script>
-<script src="biometric-lock.js?v=20260918console"></script>
-<script src="clt-select-recherche.js?v=20260918console"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260918console"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260918console"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260918console"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260918console"></script>
-<script src="equipe/04-actions.js?v=20260918console"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260918console"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260918console"></script>
-<script src="equipe/07-rapports.js?v=20260918console"></script>
-<script src="equipe/08-son-ecran.js?v=20260918console"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260918console"></script>
+<script src="clt-common.js?v=20260918moinsdonglets"></script>
+<script src="lib/bibliotheques.js?v=20260918moinsdonglets"></script>
+<script src="lib/retours.js?v=20260918moinsdonglets"></script>
+<script src="lib/reclamations.js?v=20260918moinsdonglets"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918moinsdonglets"></script>
+<script src="lib/argent.js?v=20260918moinsdonglets"></script>
+<script src="lib/releve-cliente.js?v=20260918moinsdonglets"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918moinsdonglets"></script>
+<script src="lib/briques-argent.js?v=20260918moinsdonglets"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918moinsdonglets"></script>
+<script src="lib/annonce-de-remise.js?v=20260918moinsdonglets"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918moinsdonglets"></script>
+<script src="lib/primes.js?v=20260918moinsdonglets"></script>
+<script src="lib/doublons.js?v=20260918moinsdonglets"></script>
+<script src="config.js?v=20260918moinsdonglets"></script>
+<script src="clients-dashboard.js?v=20260918moinsdonglets"></script>
+<script src="livreurs-dashboard.js?v=20260918moinsdonglets"></script>
+<script src="point-du-jour.js?v=20260918moinsdonglets"></script>
+<script src="biometric-lock.js?v=20260918moinsdonglets"></script>
+<script src="clt-select-recherche.js?v=20260918moinsdonglets"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260918moinsdonglets"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260918moinsdonglets"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260918moinsdonglets"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260918moinsdonglets"></script>
+<script src="equipe/04-actions.js?v=20260918moinsdonglets"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260918moinsdonglets"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260918moinsdonglets"></script>
+<script src="equipe/07-rapports.js?v=20260918moinsdonglets"></script>
+<script src="equipe/08-son-ecran.js?v=20260918moinsdonglets"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260918moinsdonglets"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1639,13 +1651,11 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-11a7 7 0 0 0-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
     Suivi
   </button>
-  <button type="button" class="nav" data-nav="clients">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><rect x="5" y="11" width="3.5" height="7" rx="1"/><rect x="10.25" y="6" width="3.5" height="12" rx="1"/><rect x="15.5" y="9" width="3.5" height="9" rx="1"/></svg>
-    Clients
-  </button>
-  <button type="button" class="nav nav--dans-plus" data-nav="livreurs">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h6l3-7h3l2 4M9 10h4l2 7"/></svg>
-    Livreurs
+  <!-- Clients et Livreurs n'en font plus qu'un (18/09/2026) : une entrée de moins dans la barre,
+       et « Personnes » remonte dans les quatre du quotidien puisque la place est libre. -->
+  <button type="button" class="nav" data-nav="personnes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9.5" r="2.4"/><path d="M15 19c0-2.2 1.3-3.6 3-3.6s2.5 1.2 2.5 3"/></svg>
+    Personnes
   </button>
   <button type="button" class="nav" data-nav="finances">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.2c0-1.1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.9c0 2.6-5 1.4-5 3.9 0 1.2 1.1 1.9 2.5 1.9s2.5-.6 2.5-1.7"/></svg>
@@ -1668,7 +1678,7 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260918console"></script>
-<script src="equipe/11-chercher-partout.js?v=20260918console"></script>
+<script src="equipe/10-onglets.js?v=20260918moinsdonglets"></script>
+<script src="equipe/11-chercher-partout.js?v=20260918moinsdonglets"></script>
 </body>
 </html>

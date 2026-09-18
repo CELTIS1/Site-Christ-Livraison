@@ -161,10 +161,25 @@ verifier("le dernier colis est bien daté", par.B.dernier && par.B.dernier.slice
 
 titre("L'onglet est branché dans l'écran équipe");
 verifier('le script est chargé par equipe.html', /<script src="clients-dashboard\.js\?v=/.test(equipe));
-verifier("l'onglet « Clients » existe en haut et en bas", /data-eqtab="clients"/.test(equipe) && /data-nav="clients"/.test(equipe));
-verifier("il figure dans la liste des onglets", /EQ_TABS = \[[^\]]*'clients'/.test(equipe));
-verifier("la section est déplacée dans son panneau et initialisée", /put\('eqpanel-clients', byId\('section-clients'\)\)/.test(equipe) && /CLTClients\.init\(\)/.test(equipe));
-verifier("ouvrir l'onglet relit la base", /key === 'clients' && window\.CLTClients\) CLTClients\.rafraichir\(\)/.test(equipe));
+/* CLIENTS ET LIVREURS ONT FUSIONNÉ EN « PERSONNES » LE 18/09/2026 (Celtis : « moins d'endroits à
+   parcourir pour l'équipe et mieux ils maîtriseront »). Les deux tableaux de bord avaient la
+   même mécanique — même période glissante, même tendance, mêmes signaux, même fiche au clic :
+   c'étaient deux lectures d'un seul écran. Le tableau lui-même n'a pas changé d'une ligne ; ce
+   sont ses assertions de navigation qui suivent. */
+verifier("l'onglet « Personnes » existe en haut et en bas", /data-eqtab="personnes"/.test(equipe) && /data-nav="personnes"/.test(equipe));
+verifier("il figure dans la liste des onglets", /EQ_TABS = \[[^\]]*'personnes'/.test(equipe));
+verifier("la section est déplacée dans son panneau et initialisée", /put\('eqpanel-personnes', byId\('section-clients'\)\)/.test(equipe) && /CLTClients\.init\(\)/.test(equipe));
+verifier("ouvrir l'onglet relit la base", /key === 'personnes'\) rafraichirPersonnes\(\)/.test(equipe) && /if \(window\.CLTClients\) CLTClients\.rafraichir\(\)/.test(equipe));
+/* Un ancien lien ou le dernier onglet gardé en mémoire sur un téléphone ne doit pas renvoyer sur
+   « Colis » au premier chargement après la mise en ligne. */
+verifier("l'ancien nom « clients » conduit encore à la bonne vue",
+  /EQ_TABS_ANCIENS = \{[^}]*clients: 'personnes'/.test(equipe));
+verifier("et la vue « clientes » est bien celle qu'on ouvre alors",
+  /choisirPersonnes\(vue === 'livreurs' \? 'livreurs' : 'clientes'\)/.test(equipe));
+/* On ne charge QUE la vue regardée : les lire toutes les deux à chaque visite doublerait la
+   lecture de la base pour un écran que personne n'a demandé. */
+verifier("seule la vue affichée est rafraîchie",
+  /function rafraichirPersonnes\(\)\{[\s\S]{0,240}vuePersonnes === 'livreurs'/.test(equipe.replace(/\n/g, '\n')));
 verifier('la fiche cliente est une couche fermable', /id="cd-fiche-overlay"[^>]*data-clt-couche=/.test(equipe) && /id="cd-fiche-fermer"[^>]*data-clt-fermer/.test(equipe));
 titre('Reverser à la cliente : un seul chemin, par la base');
 // Le dossier _sql-prive n'est pas versionné (voir .gitignore) : sur GitHub, le script n'existe

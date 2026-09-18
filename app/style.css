@@ -665,6 +665,18 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
 .montant-manquant-badge{
   background:#fdecea; border-color:#e9b0a8; color:#9a2b1c;
 }
+/* LE SÉLECTEUR DE « PERSONNES » (18/09/2026) : deux lectures d'un même écran. Deux boutons
+   larges, pas des onglets minuscules — on les touche au pouce, et la règle des 44 px vaut ici
+   comme partout. */
+.eq-bascule{ display:flex; gap:8px; margin:0 0 14px; flex-wrap:wrap; }
+.eq-bascule-btn{
+  flex:1 1 150px; min-height:44px; padding:10px 16px; border-radius:11px;
+  border:1.5px solid var(--border); background:#fff; color:#5b6473;
+  font-size:14px; font-weight:700; cursor:pointer;
+}
+.eq-bascule-btn:hover{ border-color:#64748b; }
+.eq-bascule-btn.active{ background:#1B4374; border-color:#1B4374; color:#fff; }
+
 /* « non renseigné » à la place d'un montant. Le mot remplace un chiffre : il doit se lire comme
    un chiffre manquant, pas comme une note en passant. (18/09/2026) */
 .montant-absent{ color:#b3261e; font-weight:700; }

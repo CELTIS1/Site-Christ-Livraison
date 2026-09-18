@@ -5,9 +5,26 @@
   // Les 5 onglets regroupent les anciennes sections. On DÉPLACE les sections existantes dans les
   // panneaux d'onglets (sans réécrire leur HTML) pour préserver tous les identifiants, formulaires
   // et écouteurs d'événements déjà câblés ailleurs dans le code.
-  const EQ_TABS = ['colis','programmation','suivi','clients','livreurs','finances','comptes','express'];
+  /* SEPT ONGLETS SONT DEVENUS SIX. (18/09/2026, Celtis : « moins d'endroits à parcourir pour
+     l'équipe et mieux ils maîtriseront ».) Clients et Livreurs ont fusionné en « Personnes » :
+     même période glissante, même tendance, mêmes signaux, même courbe, même fiche au clic —
+     c'étaient deux lectures d'un seul écran.
+
+     CE QU'ON N'A PAS FUSIONNÉ, ET POURQUOI. « Tournées » reste à part, alors que c'était le
+     candidat évident : une tournée porte sur des colis. Mais cet onglet a justement été SORTI
+     de « Colis » le 27 août, pour une raison qui n'a pas vieilli — on y décide DEMAIN pendant
+     que partout ailleurs on lit AUJOURD'HUI, et mélangés les deux se confondent : on programme
+     en croyant modifier un colis du jour. Le remettre dedans reviendrait à racheter un défaut
+     déjà payé. Le reste attend le compteur d'usage : en octobre on retirera sur preuve. */
+  const EQ_TABS = ['colis','programmation','suivi','personnes','finances','comptes','express'];
+
+  /* Les anciens noms continuent de fonctionner : la barre du bas, un lien ailleurs dans le code,
+     et surtout le dernier onglet gardé en mémoire sur le téléphone de chacun. Sans cette table,
+     tout le monde serait renvoyé sur « Colis » au premier chargement après la mise en ligne. */
+  const EQ_TABS_ANCIENS = { clients: 'personnes', livreurs: 'personnes' };
 
   function showEquipeTab(key){
+    if (EQ_TABS_ANCIENS[key]) { const vue = key; key = EQ_TABS_ANCIENS[key]; choisirPersonnes(vue === 'livreurs' ? 'livreurs' : 'clientes'); }
     if (!EQ_TABS.includes(key)) key = 'colis';
     // Ne jamais activer un onglet masqué (ex : Express réservé à l'admin).
     const btn = document.querySelector('#clt-toptabs .clt-toptab[data-eqtab="'+key+'"]');
@@ -36,11 +53,11 @@
     // on la recharge à chaque retour. Une tournée décidée depuis un autre poste doit apparaître
     // ici sans qu'on ait à recharger la page.
     if (key === 'programmation' && typeof chargerProgrammations === 'function') chargerProgrammations();
-    // Le tableau de bord des clientes lit la base à l'ouverture (et à chaque retour) : la liste
-    // de l'onglet Colis n'en garde qu'une page, lui regarde deux périodes entières.
-    if (key === 'clients' && window.CLTClients) CLTClients.rafraichir();
-    // Le tableau de bord des livreurs (13/09/2026) : même principe, mêmes périodes.
-    if (key === 'livreurs' && window.CLTLivreurs) CLTLivreurs.rafraichir();
+    // Les deux tableaux de bord lisent la base à l'ouverture (et à chaque retour) : la liste de
+    // l'onglet Colis n'en garde qu'une page, eux regardent deux périodes entières. On ne
+    // rafraîchit que celui qu'on REGARDE : les charger tous les deux à chaque visite doublerait
+    // la lecture pour un écran que personne n'a demandé.
+    if (key === 'personnes') rafraichirPersonnes();
     if (key === 'finances'){
       // 05/09/2026 — « Vue par jour » restait sur « Chargement… » : on la calcule à l'ouverture.
       if (typeof showRapportSubTab === 'function') showRapportSubTab('jour');
@@ -50,6 +67,42 @@
       }
     }
     try { localStorage.setItem('clt_equipe_tab_v2', key); } catch(e){}
+    // Le compteur d'usage (18/09/2026) : pour retirer en octobre ce que personne n'ouvre, sur
+    // preuve et non à l'opinion. Il ne note pas qui — voir cltNoterOngletOuvert.
+    if (typeof cltNoterOngletOuvert === 'function') cltNoterOngletOuvert('equipe', key);
+  }
+
+  /* ---------- LE SÉLECTEUR DE « PERSONNES » (18/09/2026) ----------
+     Deux lectures d'un même écran, et une seule chargée à la fois. Le choix est gardé sur
+     l'appareil : chacun dans l'équipe revient sur le même des deux, et le lui redemander à
+     chaque visite serait un geste de plus pour rien. */
+  let vuePersonnes = 'clientes';
+  try { const v = localStorage.getItem('clt_equipe_personnes'); if (v === 'livreurs' || v === 'clientes') vuePersonnes = v; } catch(e){}
+
+  function choisirPersonnes(vue){
+    vuePersonnes = (vue === 'livreurs') ? 'livreurs' : 'clientes';
+    try { localStorage.setItem('clt_equipe_personnes', vuePersonnes); } catch(e){}
+    document.getElementById('section-clients')?.classList.toggle('hidden', vuePersonnes !== 'clientes');
+    document.getElementById('section-livreurs')?.classList.toggle('hidden', vuePersonnes !== 'livreurs');
+    document.querySelectorAll('#eqpanel-personnes .eq-bascule-btn').forEach(b => {
+      const actif = b.dataset.personnes === vuePersonnes;
+      b.classList.toggle('active', actif);
+      b.setAttribute('aria-selected', actif ? 'true' : 'false');
+    });
+  }
+
+  // On ne rafraîchit que la vue affichée : charger les deux à chaque visite doublerait la
+  // lecture de la base pour un écran que personne n'a demandé.
+  function rafraichirPersonnes(){
+    if (vuePersonnes === 'livreurs') { if (window.CLTLivreurs) CLTLivreurs.rafraichir(); }
+    else if (window.CLTClients) CLTClients.rafraichir();
+  }
+
+  function brancherPersonnes(){
+    document.querySelectorAll('#eqpanel-personnes .eq-bascule-btn').forEach(b => {
+      b.addEventListener('click', () => { choisirPersonnes(b.dataset.personnes); rafraichirPersonnes(); });
+    });
+    choisirPersonnes(vuePersonnes);
   }
 
   function relocateEquipeSections(){
@@ -81,13 +134,13 @@
     put('eqpanel-suivi', byId('section-carte'));
     put('eqpanel-suivi', wrapInCard(byId('panel-journal')));
 
-    // 📈 Clients : le tableau de bord des clientes (clients-dashboard.js)
-    put('eqpanel-clients', byId('section-clients'));
+    // 👤 Personnes : les deux tableaux de bord, dans un seul onglet, derrière un sélecteur
+    // (clients-dashboard.js et livreurs-dashboard.js — aucun des deux n'est modifié).
+    put('eqpanel-personnes', byId('section-clients'));
+    put('eqpanel-personnes', byId('section-livreurs'));
     if (window.CLTClients) CLTClients.init();
-
-    // 🏍️ Livreurs : le tableau de bord des livreurs et les échecs à qualifier (livreurs-dashboard.js)
-    put('eqpanel-livreurs', byId('section-livreurs'));
     if (window.CLTLivreurs) CLTLivreurs.init();
+    brancherPersonnes();
 
     // 💰 Finances : rapports + comptabilité (les statistiques de visites ont été retirées le 05/09/2026)
     put('eqpanel-finances', wrapInCard(byId('panel-rapports')));

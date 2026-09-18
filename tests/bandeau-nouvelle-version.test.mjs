@@ -634,10 +634,25 @@ verifier(
    gardaient déjà le taux de chaque livreur mois par mois, jamais lus en série. Deux défauts
    trouvés en faisant tourner la console sur les VRAIS chiffres : les mois d'avant la mise en
    service comptaient comme des zéros (sept pentes détectées avec deux mois d'historique), et un
-   taux se comparait en pourcentage au lieu de points. Étiquette 20260918console. */
+   taux se comparait en pourcentage au lieu de points. Étiquette 20260918console.
+   v164, le 18/09/2026 — Celtis : « il y a beaucoup d'onglets au niveau de l'équipe et surtout à
+   mon niveau l'administrateur […] moins d'endroits à parcourir pour l'équipe et mieux ils
+   maîtriseront ». Le compte était pire que prévu : Gestion affiche 5 onglets mais 30 endroits
+   (14 sous-onglets en Comptabilité, 7 en Paie). Trois gestes, sans rien supprimer ni réécrire :
+   (1) Équipe, Clients et Livreurs fusionnent en « Personnes » derrière un sélecteur — même
+   période, même tendance, mêmes signaux, même fiche : deux lectures d'un seul écran ; les
+   anciens noms continuent de conduire à la bonne vue (EQ_TABS_ANCIENS), sinon le dernier onglet
+   gardé sur chaque téléphone renverrait tout le monde sur Colis. (2) Gestion, les sous-onglets
+   rangés en quatre groupes qui suivent les questions, celui du comptable replié ; aucun data-sub
+   ne bouge, et le groupe replié s'ouvre sur son propre onglet. (3) Un compteur d'usage
+   (onglets_ouverts) qui ne note JAMAIS qui — pour retirer en octobre sur preuve.
+   « Tournées » n'a PAS été fusionné dans Colis, bien que ce fût le candidat évident : cet onglet
+   en a été sorti le 27 août parce qu'on y décide demain pendant qu'ailleurs on lit aujourd'hui.
+   Migration 2026-09-18-quels-onglets-sont-ouverts.sql, éprouvée dans un Postgres local puis
+   jouée. Étiquette 20260918moinsdonglets. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v163'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v164'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

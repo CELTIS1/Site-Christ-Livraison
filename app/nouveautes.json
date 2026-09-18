@@ -2,6 +2,18 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260918moinsdonglets",
+      "date": "18 septembre 2026",
+      "titre": "Moins d'endroits à parcourir",
+      "points": [
+        "Équipe : « Clients » et « Livreurs » n'en font plus qu'un, « Personnes », avec un sélecteur. Les deux tableaux avaient la même mécanique — période, tendance, signaux, fiche au clic : c'étaient deux lectures d'un seul écran. Sept onglets deviennent six.",
+        "Gestion : les 14 sous-onglets de Comptabilité sont rangés en quatre groupes qui suivent les questions — ce qui rentre et ce qui sort, qui me doit quoi, où j'en suis, et les comptes officiels (repliés : c'est le domaine du comptable). Même chose en Paie.",
+        "Rien n'a été supprimé et aucun écran n'a été réécrit : les anciens liens et le dernier onglet gardé en mémoire sur chaque téléphone conduisent toujours au bon endroit.",
+        "« Tournées » reste un onglet à part, volontairement : on y décide demain pendant qu'ailleurs on lit aujourd'hui, et mélangés les deux se confondent. Ce défaut avait déjà été corrigé en août.",
+        "Un compteur discret note désormais quels onglets sont ouverts — sans jamais noter QUI les ouvre. En octobre, on retirera ce que personne n'utilise, sur preuve et non à l'opinion."
+      ]
+    },
+    {
       "version": "20260918console",
       "date": "18 septembre 2026",
       "titre": "Gestion : « Ce qui a changé », en tête du tableau de bord",

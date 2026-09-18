@@ -58,6 +58,37 @@ async function cltLireTout(construire, tranche) {
   }
 }
 
+/* QUEL ONGLET A ÉTÉ OUVERT — 18 septembre 2026
+   ==========================================================================================
+   Celtis demande de retirer les onglets qui ne servent pas. Personne ne sait lesquels : rien
+   n'était jamais noté. Ce compteur répondra en octobre, et on retirera sur preuve.
+
+   IL NE DIT PAS QUI, et c'est un choix. Pour décider s'il faut retirer un onglet, il suffit de
+   savoir si QUELQU'UN l'ouvre ; savoir lequel de l'équipe l'ouvre n'apporte rien à cette
+   décision, et transformerait un outil de rangement en outil de surveillance. La table ne porte
+   donc que (espace, onglet, jour, fois) — aucun identifiant de personne, vérifié en base.
+
+   IL NE DOIT JAMAIS FAIRE ATTENDRE, NI RIEN CASSER. Un compteur d'usage est la dernière chose
+   qui a le droit de ralentir un écran ou d'afficher une erreur : on n'attend pas la réponse, et
+   tout échec est avalé en silence. Si la migration n'est pas passée, l'application se comporte
+   exactement comme avant.
+
+   UNE FOIS PAR ONGLET ET PAR OUVERTURE DE PAGE. Sans cela, un aller-retour entre deux onglets
+   gonflerait le compteur sans rien apprendre : ce qu'on veut savoir, c'est si l'onglet est
+   VISITÉ, pas combien de fois on passe devant. */
+const CLT_ONGLETS_NOTES = new Set();
+function cltNoterOngletOuvert(espace, onglet) {
+  try {
+    const cle = String(espace) + "/" + String(onglet);
+    if (CLT_ONGLETS_NOTES.has(cle)) return;
+    CLT_ONGLETS_NOTES.add(cle);
+    if (typeof supabaseClient === "undefined" || !supabaseClient) return;
+    // Pas de `await` : l'écran continue, et personne n'attend un compteur.
+    supabaseClient.rpc("noter_onglet_ouvert", { p_espace: espace, p_onglet: onglet })
+      .then(function () {}, function () {});
+  } catch (e) { /* un compteur ne fait jamais tomber un écran */ }
+}
+
 // ---------- Dates ----------
 function formatDate(iso) {
   if (!iso) return "";

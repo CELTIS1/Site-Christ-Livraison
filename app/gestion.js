@@ -284,12 +284,27 @@ function switchTab(tab){
   if (tab === 'dashboard') renderDashboard();
   if (tab === 'journal') { loadJournal(); loadErreursClient(); }
   if (tab === 'site' && window.CLTSiteEditeur) CLTSiteEditeur.init();
+  // Les cinq onglets du haut sont notés eux aussi : c'est la seule façon de savoir, en octobre,
+  // si l'un d'eux (le Site, par exemple) ne s'ouvre jamais. (18/09/2026)
+  if (typeof cltNoterOngletOuvert === 'function') cltNoterOngletOuvert('gestion', tab);
   scheduleStickyRefresh();
 }
 function switchSub(group, sub){
   document.querySelectorAll(`#sec-${group} .subtab`).forEach(el => el.classList.toggle('active', el.dataset.sub === sub));
   document.querySelectorAll(`#sec-${group} > .section`).forEach(el => el.classList.remove('active'));
   document.getElementById(`${group}-${sub}`).classList.add('active');
+  /* LE GROUPE REPLIÉ S'OUVRE SUR SON PROPRE ONGLET. (18/09/2026) Depuis que les sous-onglets sont
+     rangés en groupes, l'un d'eux est replié — les comptes officiels, les réglages. Si l'on y
+     arrive autrement que par un clic (un raccourci du tableau de bord, la mémoire de l'écran),
+     l'onglet serait actif à l'intérieur d'un groupe fermé : on verrait la section sans voir où
+     l'on est. Le groupe qui contient l'onglet actif s'ouvre donc, et lui seul. */
+  const actif = document.querySelector(`#sec-${group} .subtab.active`);
+  const groupe = actif && actif.closest('details.subtabs-groupe');
+  if (groupe) groupe.open = true;
+  // Le compteur d'usage (18/09/2026). Le sous-onglet est noté avec son groupe — « compta/caisse »
+  // — parce que c'est à ce niveau que la question se pose : ce sont les 21 sous-onglets qui
+  // pèsent, pas les 5 onglets. Il ne note pas qui.
+  if (typeof cltNoterOngletOuvert === 'function') cltNoterOngletOuvert('gestion', group + '/' + sub);
   // Rafraîchit les vues comptables issues des colis à l'ouverture de l'onglet.
   if (group === 'compta' && sub === 'caisse')  loadCaisseLivreurs();
   if (group === 'compta' && sub === 'clients') loadPointClients();

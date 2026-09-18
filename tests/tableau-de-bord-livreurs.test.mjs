@@ -97,9 +97,21 @@ verifier('Silencieux : actif avant, rien depuis 35 jours → silence', L3 && L3.
 verifier('le tri « réussite la plus faible » met Kouassi en premier', LD.trier(lignes.filter((l) => l.taux !== null)).length && (function () { contexte.window.CLTLivreurs._etat({ tri: 'taux' }); return LD.trier(lignes)[0].profil.id === 'L1'; })());
 
 titre("L'écran est branché dans l'espace équipe");
-verifier('onglet du haut et barre du bas', /data-eqtab="livreurs"/.test(equipe) && /data-nav="livreurs"/.test(equipe));
-verifier('panneau, coquille et fiche', /id="eqpanel-livreurs"/.test(equipe) && /id="section-livreurs"/.test(equipe) && /id="ld-fiche-overlay"/.test(equipe) && /id="ld-qualifier"/.test(source));
-verifier('le script est chargé et monté', /<script src="livreurs-dashboard\.js\?v=/.test(equipe) && /put\('eqpanel-livreurs', byId\('section-livreurs'\)\)/.test(equipe) && /CLTLivreurs\.init\(\)/.test(equipe) && /key === 'livreurs' && window\.CLTLivreurs\) CLTLivreurs\.rafraichir\(\)/.test(equipe));
+/* L'ONGLET « LIVREURS » A FUSIONNÉ AVEC « CLIENTS » DANS « PERSONNES » LE 18/09/2026. Les deux
+   tableaux de bord avaient la même mécanique — période glissante comparée à la précédente,
+   tendance, signaux, courbe, fiche au clic : deux lectures d'un seul écran. Ce tableau-ci n'a pas
+   changé d'une ligne ; il vit maintenant derrière un sélecteur. */
+verifier('onglet du haut et barre du bas', /data-eqtab="personnes"/.test(equipe) && /data-nav="personnes"/.test(equipe));
+verifier('le sélecteur propose bien les deux vues', /data-personnes="clientes"/.test(equipe) && /data-personnes="livreurs"/.test(equipe));
+verifier('panneau, coquille et fiche', /id="eqpanel-personnes"/.test(equipe) && /id="section-livreurs"/.test(equipe) && /id="ld-fiche-overlay"/.test(equipe) && /id="ld-qualifier"/.test(source));
+verifier('le script est chargé et monté', /<script src="livreurs-dashboard\.js\?v=/.test(equipe) && /put\('eqpanel-personnes', byId\('section-livreurs'\)\)/.test(equipe) && /CLTLivreurs\.init\(\)/.test(equipe) && /if \(window\.CLTLivreurs\) CLTLivreurs\.rafraichir\(\)/.test(equipe));
+/* LE RACCOURCI DE « L'ESSENTIEL » DOIT ENCORE TOMBER SUR LA BONNE VUE. Il appelle
+   showEquipeTab('livreurs') ; la table des anciens noms le conduit à « Personnes » ET ouvre la
+   vue des livreurs — sans quoi on arriverait sur les clientes en cherchant des échecs. */
+verifier("le raccourci « échecs à qualifier » conduit encore aux livreurs, pas aux clientes",
+  /case 'qualifier': onglet\('livreurs'\)/.test(equipe)
+  && /EQ_TABS_ANCIENS = \{[^}]*livreurs: 'personnes'/.test(equipe)
+  && /choisirPersonnes\(vue === 'livreurs' \? 'livreurs' : 'clientes'\)/.test(equipe));
 verifier("L'essentiel compte les échecs à qualifier depuis le 1er octobre et y mène", /qualifier: colis\.filter\(c => \(c\.statut === 'non_livre' \|\| c\.statut === 'retour'\) && c\.non_livre_at && c\.non_livre_at >= \(typeof PRIMES_DEBUT !== 'undefined' \? PRIMES_DEBUT : '2026-10-01'\) && \(c\.echec_imputable === null/.test(equipe) && /case 'qualifier': onglet\('livreurs'\)/.test(equipe));
 verifier("la qualification n'écrit qu'une colonne, echec_imputable", /from\('colis'\)\.update\(\{ echec_imputable: imputable \}\)/.test(source) && !/update\(\{[^}]*statut[^}]*\}\)/.test(source));
 verifier('une réclamation se crée avec livreur, source, date, texte — et se tranche par « fondee »', /insert\(\{ livreur_id: livreurId, source, date_faits: date, texte \}\)/.test(source) && /update\(\{ fondee, reponse_livreur: reponse \}\)/.test(source));

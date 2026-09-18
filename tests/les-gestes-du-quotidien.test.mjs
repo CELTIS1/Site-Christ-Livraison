@@ -56,10 +56,18 @@ verifier('la ligne a l\'air d\'une porte (curseur, survol, flèche)', /\.ligne-c
 verifier('elle passe par le geste qui existe déjà, pas par un nouveau', /data-ouvrir-colis/.test(lire('app/equipe/03-file-hors-reseau.js')));
 
 console.log('\n3. La barre du bas de l\'équipe (9.5)');
+/* SIX ONGLETS AU LIEU DE SEPT DEPUIS LE 18/09/2026 : Clients et Livreurs ont fusionné en
+   « Personnes » (Celtis : « moins d'endroits à parcourir pour l'équipe et mieux ils
+   maîtriseront »). La place libérée dans la barre du bas revient à « Personnes », qui remonte
+   dans les quatre du quotidien ; seuls Suivi, Comptes et Express restent derrière « Plus ». */
 verifier('quatre onglets restent dans la barre, les autres passent derrière « Plus »',
-  (equipe.match(/nav--dans-plus/g) || []).length === 5, (equipe.match(/nav--dans-plus/g) || []).length);
-verifier('les relégués sont Suivi, Livreurs, Comptes et Express',
-  ['suivi', 'livreurs', 'comptes', 'express'].every(k => new RegExp('nav--dans-plus[^>]*data-nav="' + k + '"').test(equipe)));
+  (equipe.match(/nav--dans-plus/g) || []).length === 4, (equipe.match(/nav--dans-plus/g) || []).length);
+verifier('les relégués sont Suivi, Comptes et Express',
+  ['suivi', 'comptes', 'express'].every(k => new RegExp('nav--dans-plus[^>]*data-nav="' + k + '"').test(equipe)));
+verifier('et les quatre du quotidien sont Colis, Tournées, Personnes, Finances',
+  ['colis', 'programmation', 'personnes', 'finances'].every(k =>
+    new RegExp('class="nav(?! nav--dans-plus)[^"]*"[^>]*data-nav="' + k + '"').test(equipe)),
+  (equipe.match(/class="nav[^"]*"[^>]*data-nav="[a-z]+"/g) || []).join(' '));
 verifier('rien n\'est retiré : la feuille reprend les mêmes boutons, sans les recopier',
   /construireFeuillePlus/.test(onglets) && /b\.innerHTML = src\.innerHTML/.test(onglets));
 verifier('le bouton « Plus » prend le nom de l\'onglet ouvert : on sait où on est', /function majBoutonPlus\(/.test(onglets) && /lib\.textContent = relegue/.test(onglets));
