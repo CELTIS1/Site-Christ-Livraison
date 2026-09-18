@@ -761,10 +761,19 @@ verifier(
    ce service n'est pas, et ce que l'application contredisait déjà de son côté (une expédition y
    porte une « avance de gare », qui n'a de sens qu'avec une compagnie de transport). Tout le
    service est réécrit, dans content.json ET dans la copie de secours de services.html, que le
-   banc oblige désormais à dire la même chose. Aucune migration. Étiquette 20260918site. */
+   banc oblige désormais à dire la même chose. Aucune migration. Étiquette 20260918site.
+   v172, le 18/09/2026 — Les deux bouts que le texte de l'Expédition taisait, tranchés par Celtis :
+   « le destinataire récupère à la gare. CLT peut avancer les frais de gare au besoin et encaisser
+   plus tard, avant d'envoyer le reçu d'expédition. » Sans ces deux phrases, un client lisait
+   « acheminé jusqu'à destination » et pouvait comprendre qu'on le livre à sa porte — la déception
+   se serait jouée au téléphone, à l'arrivée du colis. Une cinquième étape (« Le destinataire
+   retire à la gare »), deux questions de plus, et un tarif qui dit l'avance possible et le reçu
+   transmis une fois réglé — ce qui est exactement ce que l'application compte de son côté sous le
+   nom d'« avance de gare ». Les deux copies du texte (content.json et le secours de services.html)
+   restent tenues d'accord par le banc. Aucune migration. Étiquette 20260918gare. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v171'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v172'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

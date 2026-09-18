@@ -253,13 +253,13 @@
       "photo": "",
       "slug": "expedition",
       "tag": "Votre colis part vers l'intérieur du pays — nous venons le chercher chez vous.",
-      "intro": "L'expédition, c'est pour envoyer un colis hors d'Abidjan, vers l'intérieur du pays. Un livreur vient le récupérer là où vous êtes, nous l'apportons à la gare de la compagnie de transport qui dessert votre destination, et nous le lui confions pour l'acheminement. Vous ne vous déplacez pas, vous ne faites pas la queue, et vous n'avez pas à savoir quelle compagnie part aujourd'hui pour cette ville-là : c'est notre travail. Un envoi ponctuel ou des envois réguliers, c'est le même interlocuteur.",
+      "intro": "L'expédition, c'est pour envoyer un colis hors d'Abidjan, vers l'intérieur du pays. Un livreur vient le récupérer là où vous êtes, nous l'apportons à la gare de la compagnie de transport qui dessert votre destination, et nous le lui confions. La compagnie l'achemine, et le destinataire le retire à la gare d'arrivée. Vous ne vous déplacez pas, vous ne faites pas la queue, et vous n'avez pas à savoir quelle compagnie part aujourd'hui pour cette ville-là : c'est notre travail.",
       "feats": [
         "Récupération de votre colis là où vous êtes, à Abidjan",
         "Remise à la compagnie de transport qui dessert la destination",
         "Vous ne vous déplacez pas à la gare",
-        "Acheminement vers les villes de l'intérieur",
-        "Un seul interlocuteur, du départ à la remise",
+        "Frais de gare avancés par CLT si besoin",
+        "Le reçu d'expédition vous est transmis",
         "Envois ponctuels ou réguliers"
       ],
       "steps": [
@@ -277,18 +277,30 @@
         },
         {
           "title": "Acheminement",
-          "text": "La compagnie le transporte jusqu'à sa ville de destination."
+          "text": "La compagnie transporte le colis jusqu'à la gare de la ville de destination."
+        },
+        {
+          "title": "Le destinataire retire à la gare",
+          "text": "Il se présente à la gare d'arrivée avec la référence de l'envoi et récupère le colis."
         }
       ],
       "ideal": [
         "Envoyer un colis à un proche à l'intérieur du pays",
         "Approvisionner un client ou un revendeur hors d'Abidjan",
-        "Éviter le déplacement et l'attente à la gare",
+        "Éviter le déplacement et l'attente à la gare de départ",
         "Envois réguliers vers les mêmes villes"
       ],
       "delais": "Selon la ville de destination et les départs de la compagnie de transport. Le délai vous est indiqué à la prise en charge.",
-      "tarif": "Deux choses s'additionnent : la course pour venir récupérer votre colis à Abidjan, et les frais de la compagnie de transport, qui dépendent de la destination et du colis. Le montant vous est donné avant le départ. Devis gratuit sur WhatsApp.",
+      "tarif": "Deux choses s'additionnent : la course pour venir récupérer votre colis à Abidjan, et les frais de la compagnie de transport, qui dépendent de la destination et du colis. Au besoin, nous avançons les frais de gare : vous les réglez ensuite, et le reçu d'expédition vous est transmis. Le montant vous est donné avant le départ, devis gratuit sur WhatsApp.",
       "faq": [
+        {
+          "question": "Qui récupère le colis à l'arrivée ?",
+          "answer": "Le destinataire le retire lui-même à la gare de la ville de destination, avec la référence de l'envoi. Prévenez-le du départ : nous vous donnons ce qu'il faut pour cela."
+        },
+        {
+          "question": "Faut-il payer la gare d'avance ?",
+          "answer": "Pas forcément. Nous pouvons avancer les frais de gare pour que le colis parte tout de suite ; vous les réglez ensuite, et nous vous transmettons le reçu d'expédition."
+        },
         {
           "question": "Jusqu'où expédiez-vous ?",
           "answer": "Vers l'intérieur du pays, par les compagnies de transport qui desservent la destination. Dites-nous la ville : nous vous disons le départ possible et le délai."
@@ -296,10 +308,6 @@
         {
           "question": "Qui choisit la compagnie de transport ?",
           "answer": "Nous, selon la ville et les départs du jour. Si vous en préférez une, dites-le-nous au moment de la prise en charge."
-        },
-        {
-          "question": "Emballez-vous les colis ?",
-          "answer": "Nous manipulons vos colis avec soin et veillons à un conditionnement adapté au transport. Pour un objet fragile, prévenez-nous à la prise en charge."
         }
       ]
     }

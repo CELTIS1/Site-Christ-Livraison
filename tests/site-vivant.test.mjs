@@ -84,6 +84,16 @@ console.log('\n3 bis. L\'expédition, telle qu\'elle est vraiment — 18/09/2026
     services.includes(JSON.stringify(exp.intro).slice(1, -1)), 'la copie de secours a dérivé');
   verifier('et plus aucune page ne parle d\'expédition « vers différents points de la ville »',
     !/expédition[^.]{0,80}différents points de la ville/i.test(index + services + JSON.stringify(contenu)));
+  /* LES DEUX BOUTS QUE LE TEXTE TAISAIT, tranchés par Celtis le 18/09 au soir : « le destinataire
+     récupère à la gare. CLT peut avancer les frais de gare au besoin et encaisser plus tard,
+     avant d'envoyer le reçu d'expédition. » Sans ces deux phrases, un client lisait « acheminé
+     jusqu'à destination » et pouvait comprendre qu'on le livre à sa porte — la déception se
+     serait jouée au téléphone, à l'arrivée du colis. */
+  verifier('le texte dit qui retire le colis, et où',
+    exp.steps.some((e2) => /retire à la gare/i.test(e2.title))
+    && /retire à la gare/i.test(exp.intro + JSON.stringify(exp.faq)), JSON.stringify(exp.steps.slice(-1)));
+  verifier('et qu\'on peut avancer les frais de gare, réglés ensuite avec le reçu',
+    /avançons les frais de gare/.test(exp.tarif) && /reçu d\'expédition/.test(exp.tarif), exp.tarif.slice(0, 160));
 }
 
 console.log('\n4. Le haut de page qui vit (A) et le film (B) — 16/09 après-midi');
