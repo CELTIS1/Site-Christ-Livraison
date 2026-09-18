@@ -928,7 +928,15 @@ async function renderDashboard(){
      garde sa lecture, donc on l'initialise ici sans la relier aux sélecteurs Année / Mois de
      cette barre. Elle a son propre choix de mois : ces sélecteurs-là commandent les chiffres de
      GESTION (recette saisie, objectif, trésorerie), qui sont une autre question. */
-  if (window.CLTConsole) window.CLTConsole.init();
+  /* RÉSERVÉE AU DIRIGEANT, ET PAS SEULEMENT CACHÉE. (18/09/2026)
+     L'onglet « Tableau de bord » est masqué aux non-administrateurs par un style d'affichage
+     (setDisp plus bas dans l'initialisation) — mais un style se retire, et switchTab('dashboard')
+     s'appelle depuis la console du navigateur. Le vrai verrou reste la base : chaque chiffre
+     d'ici passe par les mêmes politiques RLS que partout ailleurs, donc personne ne lit par ce
+     chemin ce qu'il ne pourrait pas lire autrement. Ce que la console ajoute, c'est la SYNTHÈSE
+     — et la synthèse de l'entreprise est au dirigeant. On la conditionne donc dans le code, et
+     pas seulement dans la feuille de style. */
+  if (window.CLTConsole && ACCES && ACCES.isAdmin) window.CLTConsole.init();
   document.getElementById('dash-kpis').innerHTML = `
     <div class="kpi"><div class="kpi-label">Recette du mois</div><div class="kpi-value">${fmtF(recetteMois)}</div>
       <div class="kpi-sub">Objectif : ${fmtF(objMois)} · ${pct}%</div>

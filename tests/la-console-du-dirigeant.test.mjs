@@ -266,6 +266,16 @@ titre('Elle prend la tête de l\'écran du dirigeant, et n\'est pas un douzième
     ['equipe.html', 'livreur.html', 'fournisseur.html', 'login.html']
       .every((f) => !/console-du-dirigeant\.js/.test(fs.readFileSync(path.join(APP, f), 'utf8'))));
   verifier('gestion.js l\'initialise avec le tableau de bord', /CLTConsole\.init\(\)/.test(gestionJS));
+  /* RÉSERVÉE AU DIRIGEANT, ET PAS SEULEMENT CACHÉE. L'onglet est masqué aux non-administrateurs
+     par un style d'affichage — mais un style se retire, et switchTab('dashboard') s'appelle
+     depuis la console du navigateur. Le vrai verrou reste la base (chaque chiffre passe par les
+     mêmes politiques RLS) ; ce que la console ajoute, c'est la synthèse, et la synthèse de
+     l'entreprise est au dirigeant. Elle est donc conditionnée dans le CODE. */
+  verifier('et seulement pour l\'administrateur — une condition dans le code, pas un style',
+    /ACCES\.isAdmin\)\s*window\.CLTConsole\.init\(\)|ACCES && ACCES\.isAdmin\) window\.CLTConsole\.init\(\)/.test(sansCommentaires(gestionJS)),
+    (sansCommentaires(gestionJS).match(/.{0,80}CLTConsole\.init\(\).{0,20}/) || [''])[0]);
+  verifier('l\'onglet lui-même reste réservé au patron',
+    /setDisp\('tab-dashboard',\s*isAdmin\)/.test(gestionJS));
   /* Son choix de mois est le SIEN : les sélecteurs Année / Mois de la barre commandent les
      chiffres de gestion (recette saisie, objectif, trésorerie), qui sont une autre question. */
   verifier('elle a son propre choix de mois, indépendant de la barre de gestion',
