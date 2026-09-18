@@ -1,55 +1,48 @@
 {
-  "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
+  "_lisez_moi": "Ce que chaque mise à jour apporte, en clair. LA RÈGLE, posée par Celtis le 18/09/2026 : « pour une question de discrétion et de professionnalisme, des détails courts et concis ; si ça ne concerne pas un espace en particulier, juste une phrase simple, sans entrer dans les détails, pour ne pas divulguer à tout le monde tout ce qui se fait — ils n'en ont pas besoin, sauf quand ça corrige un problème qui les concerne ou que c'est une amélioration pour eux. » Concrètement : un titre court ; UN À TROIS points, une phrase chacun, 160 caractères au plus ; un point qui concerne un espace le nomme (« Équipe : … », « Gestion : … ») ; et un travail qui ne change rien pour celui qui lit tient en UNE phrase neutre, sans détail. Ce panneau s'ouvre depuis le bandeau « Nouvelle version » et depuis la page de connexion, donc AVANT toute identification : ce qu'on y écrit est lu par l'équipe, les livreurs, les clientes et n'importe qui ouvre la page. Écrire pour le lecteur, pas pour l'auteur. La première entrée est la plus récente, et seules les six premières sont affichées. Une entrée par étiquette publiée ; le contrôle tests/quoi-de-neuf.test.mjs refuse la publication si la règle n'est pas tenue.",
   "entrees": [
+    {
+      "version": "20260918notes",
+      "date": "18 septembre 2026",
+      "titre": "Des notes de mise à jour plus courtes",
+      "points": [
+        "Ces notes vont à l'essentiel : ce qui change pour vous, en une ou deux phrases."
+      ]
+    },
     {
       "version": "20260918questions",
       "date": "18 septembre 2026",
-      "titre": "Gestion : posez votre question, la réponse est calculée",
+      "titre": "Gestion : le tableau de bord s'interroge",
       "points": [
-        "Sous « Ce qui a changé », une boîte de treize questions rangées par thème : mes clientes, mes livreurs, mon argent, mon activité. On clique, la réponse s'ouvre juste en dessous.",
-        "Quelle cliente a le plus baissé, qui n'a rien confié depuis trois semaines, à qui je dois de l'argent et depuis quand, quel livreur se dégrade, qui détient ma caisse, où part mon argent, quelle commune rapporte, quel jour est le plus chargé.",
-        "Chaque réponse montre le chemin de ses chiffres, ligne par ligne, et dit sa règle : on peut la vérifier au lieu de la croire.",
-        "Une question qui ne peut pas être calculée le DIT et explique pourquoi — base trop petite, mois non saisi, historique trop court. Jamais un zéro inventé à la place d'une réponse.",
-        "Une case de recherche retrouve la bonne question à partir de deux ou trois mots : « baisse », « argent », « qui est parti ».",
-        "Aucune intelligence artificielle, aucun abonnement : les chiffres sont calculés exactement, par les mêmes additions que le point du jour, le relevé des clientes et la comptabilité."
+        "Gestion : le tableau de bord du dirigeant permet maintenant de poser une question et d'obtenir la réponse calculée. Rien ne change dans les autres espaces."
       ]
     },
     {
       "version": "20260918moinsdonglets",
       "date": "18 septembre 2026",
-      "titre": "Moins d'endroits à parcourir",
+      "titre": "Moins d'onglets, mieux rangés",
       "points": [
-        "Équipe : « Clients » et « Livreurs » n'en font plus qu'un, « Personnes », avec un sélecteur. Les deux tableaux avaient la même mécanique — période, tendance, signaux, fiche au clic : c'étaient deux lectures d'un seul écran. Sept onglets deviennent six.",
-        "Gestion : les 14 sous-onglets de Comptabilité sont rangés en quatre groupes qui suivent les questions — ce qui rentre et ce qui sort, qui me doit quoi, où j'en suis, et les comptes officiels (repliés : c'est le domaine du comptable). Même chose en Paie.",
-        "Rien n'a été supprimé et aucun écran n'a été réécrit : les anciens liens et le dernier onglet gardé en mémoire sur chaque téléphone conduisent toujours au bon endroit.",
-        "« Tournées » reste un onglet à part, volontairement : on y décide demain pendant qu'ailleurs on lit aujourd'hui, et mélangés les deux se confondent. Ce défaut avait déjà été corrigé en août.",
-        "Un compteur discret note désormais quels onglets sont ouverts — sans jamais noter QUI les ouvre. En octobre, on retirera ce que personne n'utilise, sur preuve et non à l'opinion."
+        "Équipe : « Clients » et « Livreurs » sont réunis dans un seul onglet, « Personnes ». Rien n'a été supprimé, vos raccourcis habituels marchent toujours.",
+        "Gestion : les sous-onglets sont rangés en groupes.",
+        "Un compteur mesure quels onglets servent, sans jamais noter qui les ouvre."
       ]
     },
     {
       "version": "20260918console",
       "date": "18 septembre 2026",
-      "titre": "Gestion : « Ce qui a changé », en tête du tableau de bord",
+      "titre": "Gestion : les évolutions du mois",
       "points": [
-        "Une bande en tête du tableau de bord répond à une seule question : qu'est-ce qui a changé ce mois-ci, et est-ce que ça va mieux ou moins bien ? Les dégradations d'abord, nommées et chiffrées.",
-        "Trois axes comparés au mois précédent : l'activité (confiés, livrés, échecs, réussite), l'argent (recette, articles encaissés, recettes et dépenses saisies), les personnes (clientes, nouvelles clientes, livreurs, taux moyen).",
-        "Une dégradation se voit désormais à la PENTE et non au niveau : « en baisse depuis 3 mois — 94 % → 88 % → 81 % ». Un livreur qui passe de 99 % à 85 % ne déclenchait aucun signal jusqu'ici.",
-        "Un mois vide n'est pas un mois à zéro, et un mois d'avant la mise en service non plus : ces mois-là ne se comparent pas, plutôt que d'annoncer une chute qui n'a pas eu lieu.",
-        "Un taux se compare en points (« 7 points de moins »), pas en pourcentage : « −8 % » écrit à côté de « 81 % » se lit comme 81 moins 8.",
-        "Aucune nouvelle donnée n'est collectée : tout vient de ce qui était déjà en base — dont les décomptes de primes, qui gardent le taux de chaque livreur mois par mois et que personne n'avait jamais lus en série."
+        "Gestion : le tableau de bord du dirigeant compare désormais le mois en cours au mois précédent. Rien ne change dans les autres espaces."
       ]
     },
     {
       "version": "20260918tarif",
       "date": "18 septembre 2026",
-      "titre": "Le prix de livraison se pose tout seul, d'après la grille",
+      "titre": "Le prix de livraison se propose tout seul",
       "points": [
-        "Le tarif se propose maintenant à partir des deux bouts du trajet : la commune d'où part le livreur et celle où va le colis. Il reste modifiable — on propose, on n'impose pas.",
-        "Le bureau choisit enfin son point de départ, comme la cliente : pré-rempli depuis sa fiche, modifiable pour la fournée du jour. 8 clientes actives n'en avaient aucun ; leurs colis partaient sans point de récupération, et sans prix possible.",
-        "Le prix se refait quand le DÉPART change, pas seulement l'arrivée. Choisir la cliente après avoir tapé la destination laissait jusqu'ici le tarif de la précédente.",
-        "Le prix se propose aussi quand on corrige un colis — c'est là qu'on rattrape une adresse, donc un trajet, donc un prix.",
-        "Sous les montants, une ligne dit d'où vient le chiffre : « Tarif grille : Yopougon → Cocody = 1 500 FCFA », et elle signale quand on s'en écarte. Un montant tapé à la main n'est jamais remplacé.",
-        "Le montant de l'article, lui, ne peut pas se deviner : c'est le prix de vente de la cliente. Le carnet et « coller la commande » restent la façon rapide de le remplir."
+        "Le tarif se propose d'après la grille, selon la commune de départ et celle d'arrivée. Il reste modifiable : on propose, on n'impose pas.",
+        "Il se refait aussi quand on change de cliente, et quand on corrige l'adresse d'un colis.",
+        "Une ligne sous le montant dit d'où vient le chiffre. Un montant tapé à la main n'est jamais remplacé."
       ]
     },
     {
@@ -57,23 +50,19 @@
       "date": "18 septembre 2026",
       "titre": "L'argent d'un colis ne se devine plus",
       "points": [
-        "Un colis enregistré sans le prix de l'article ou sans les frais de livraison déclenche maintenant une alerte — au bureau, chez la cliente, à la création comme à la correction. Elle prévient, elle ne bloque pas : on peut enregistrer et compléter ensuite.",
-        "Un montant jamais saisi ne s'écrit plus « 0 FCFA ». Il s'écrit « non renseigné », en rouge, sur les trois écrans, et le colis garde une marque tant qu'il manque.",
-        "« Livraison payée d'avance » ne disait pas payée à qui. C'est désormais « Livraison déjà payée chez le fournisseur » — et « chez vous » sur l'écran de la cliente. Même chose pour « Article soldé ».",
-        "Sur le relevé, une retenue dit enfin de quel colis elle vient : l'adresse et le numéro du destinataire, sous le total. La phrase disait « retenus sur 0 expédition » quand la retenue venait d'un colis ordinaire ; elle compte maintenant les colis.",
-        "Un colis soldé affiche « Soldé », en bleu, à la place du tiret — à l'écran de l'équipe comme sur le PDF, l'Excel et le Word envoyés à la cliente.",
-        "Dans l'espace de la cliente, la liste « en attente de reversement » ignorait une livraison payée chez elle : son écran et son relevé pouvaient annoncer deux sommes différentes. Les deux disent maintenant la même chose, adresse à l'appui."
+        "Un colis enregistré sans le prix de l'article ou sans les frais de livraison déclenche une alerte. Elle prévient, elle ne bloque pas.",
+        "Un montant jamais saisi s'écrit « non renseigné », en rouge, au lieu de « 0 FCFA ».",
+        "Sur le relevé, chaque retenue dit de quel colis elle vient, et un colis soldé affiche « Soldé » au lieu d'un tiret."
       ]
     },
     {
       "version": "20260918point",
       "date": "18 septembre 2026",
-      "titre": "Savoir quel point a déjà été envoyé, et un numéro de moins sur la carte",
+      "titre": "Savoir quel point du soir a déjà été envoyé",
       "points": [
-        "Rien ne disait si le relevé du soir avait déjà été envoyé à une cliente : deux personnes pouvaient l'envoyer, ou la même deux fois en se trompant.",
-        "Chaque cliente porte maintenant sa pastille — « ✅ point envoyé » ou « ○ point à envoyer » — visible depuis la liste, avec le compte de ce qui reste à faire.",
-        "On coche à la main après l'envoi : télécharger un fichier n'est pas l'envoyer. La marque dit qui l'a posée et à quelle heure, et se retire si on s'est trompé.",
-        "Sur la carte d'un colis, le numéro du destinataire ne s'affiche plus deux fois. Il est écrit une seule fois, lisible (07 01 02 03 04), et c'est lui qu'on touche pour appeler."
+        "Chaque cliente porte sa pastille — point envoyé, ou à envoyer — visible depuis la liste, avec le compte de ce qui reste.",
+        "On coche à la main après l'envoi : la marque dit qui l'a posée et à quelle heure, et se retire en cas d'erreur.",
+        "Sur la carte d'un colis, le numéro du destinataire n'apparaît plus qu'une seule fois."
       ]
     },
     {

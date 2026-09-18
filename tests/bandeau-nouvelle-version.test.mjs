@@ -666,10 +666,23 @@ verifier(
    (même frontière que les séries : avant le premier colis terminé, il n'y a rien), et un livreur
    ayant livré un seul jour sortait à « 4 colis par jour travaillé ». Aucune migration. Un
    parcours de plus dans un vrai Chromium (tests/parcours/la-boite-a-questions.mjs).
-   Étiquette 20260918questions. */
+   Étiquette 20260918questions.
+   v166, le 18/09/2026 — Celtis : « pour une question de discrétion et de professionnalisme, les
+   notes de mise à jour doivent donner des détails courts et concis ; si ça ne concerne pas un
+   espace en particulier, juste une phrase simple sans entrer dans les détails, pour ne pas
+   divulguer à tout le monde tout ce qui se fait — ils n'en ont pas vraiment besoin, sauf lorsque
+   ça corrige un problème qui les concerne ou que c'est une amélioration. » Il a raison, et le
+   panneau s'ouvre AUSSI depuis la page de connexion, donc avant toute identification : ce qui y
+   était écrit se lisait comme un journal de développement sur une page publique. Les six entrées
+   affichées sont réécrites (titre court, un à trois points d'une phrase, l'espace nommé quand il
+   y en a un, et une seule phrase neutre pour ce qui ne change rien au lecteur), la règle est
+   inscrite dans le fichier lui-même, et le banc quoi-de-neuf la tient désormais : longueur du
+   titre, nombre de points, longueur d'un point. L'étiquette interne (« 20260918questions ») ne
+   s'affiche plus à côté de la date — elle ne disait rien au lecteur, et le peu qu'elle disait
+   était justement le thème du chantier. Aucune migration. Étiquette 20260918notes. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v165'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v166'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -25,7 +25,50 @@ function verifier(t, condition, detail) {
 console.log('\n1. Quoi de neuf ?');
 const nouv = JSON.parse(lire('app/nouveautes.json'));
 const version = JSON.parse(lire('app/version.json')).version;
-verifier('nouveautes.json : des entrées avec version, date, titre et 2 à 6 points courts', Array.isArray(nouv.entrees) && nouv.entrees.length >= 1 && nouv.entrees.every(e => e.version && e.date && e.titre && Array.isArray(e.points) && e.points.length >= 2 && e.points.length <= 6 && e.points.every(p => p.length < 260)));
+/* ==========================================================================================
+   LA RÈGLE DES NOTES DE MISE À JOUR — posée par Celtis le 18/09/2026
+   ==========================================================================================
+   « Pour une question de discrétion et de professionnalisme, des détails courts et concis ; si ça
+   ne concerne pas un espace en particulier, juste une phrase simple, sans entrer dans les détails,
+   pour ne pas divulguer à tout le monde tout ce qui se fait — ils n'en ont pas besoin, sauf quand
+   ça corrige un problème qui les concerne ou que c'est une amélioration pour eux. »
+
+   POURQUOI CE CONTRÔLE EXISTE PLUTÔT QU'UNE BONNE INTENTION. Ce panneau s'ouvre depuis le bandeau
+   « Nouvelle version » ET depuis la page de connexion — donc AVANT toute identification. Ce qu'on
+   y écrit est lu par l'équipe, les livreurs, les clientes, et n'importe qui ouvre la page. La
+   pente naturelle de celui qui vient de finir un chantier est d'en raconter le détail ; six mois
+   plus tard, la page de connexion de l'entreprise est un journal de développement. Un banc tient
+   la règle mieux que ma mémoire.
+
+   CE QUI EST MESURABLE ICI : la longueur et le nombre. Le reste — « une phrase neutre quand ça ne
+   concerne personne en particulier » — est un jugement, et il se relit à la main.
+   ========================================================================================== */
+const TITRE_MAX = 60, POINT_MAX = 160, POINTS_MAX = 3;
+const bienForme = (e) => e.version && e.date && e.titre && Array.isArray(e.points);
+verifier('nouveautes.json : chaque entrée porte une étiquette, une date, un titre et des points',
+  Array.isArray(nouv.entrees) && nouv.entrees.length >= 1 && nouv.entrees.every(bienForme));
+
+/* Seules les six premières sont affichées (cltAfficherNouveautes, options.max || 6) : ce sont
+   celles que quelqu'un peut lire aujourd'hui, et donc celles que la règle gouverne. Les entrées
+   plus anciennes ne remontent jamais — chaque publication les enfonce d'un cran. */
+const AFFICHEES = 6;
+const visibles = nouv.entrees.slice(0, AFFICHEES);
+const tropLongues = visibles.filter(e => e.titre.length > TITRE_MAX);
+verifier('un titre court (' + TITRE_MAX + ' caractères au plus)', tropLongues.length === 0,
+  tropLongues.map(e => e.version + ' : ' + e.titre.length).join(', '));
+const tropDePoints = visibles.filter(e => e.points.length < 1 || e.points.length > POINTS_MAX);
+verifier('un à ' + POINTS_MAX + ' points — au-delà, on raconte le chantier au lieu d\'annoncer le changement',
+  tropDePoints.length === 0, tropDePoints.map(e => e.version + ' : ' + e.points.length + ' points').join(', '));
+const pointsLongs = visibles.flatMap(e => e.points.filter(p => p.length > POINT_MAX).map(p => e.version + ' : ' + p.length + ' car.'));
+verifier('un point tient en une phrase (' + POINT_MAX + ' caractères au plus)',
+  pointsLongs.length === 0, pointsLongs.join(' | '));
+/* Un chantier qui ne change rien pour celui qui lit doit se dire en UNE phrase. On ne peut pas
+   vérifier le jugement, mais on peut vérifier que la forme existe : au moins une entrée récente
+   nomme l'espace concerné, faute de quoi personne ne sait à qui s'adresse ce qu'il lit. */
+const nommeUnEspace = (e) => e.points.some(p => /^(Équipe|Gestion|Livreurs?|Clientes?|Bureau|CLT Express)\s*:/.test(p));
+verifier('les notes qui visent un espace le nomment, pour que chacun sache si ça le concerne',
+  visibles.filter(nommeUnEspace).length >= 1,
+  visibles.map(e => e.version + (nommeUnEspace(e) ? ' ✓' : ' —')).join(', '));
 verifier('la première entrée porte l\'étiquette publiée (' + version + ')', nouv.entrees[0].version === version, nouv.entrees[0].version);
 verifier('le panneau cltAfficherNouveautes existe, lit le fichier sans cache et se ferme (Échap, ×, fond)', /function cltAfficherNouveautes\(/.test(commun) && /cltUrlACote\("nouveautes\.json"\), \{ cache: "no-store" \}/.test(commun) && /e\.key === "Escape"/.test(commun));
 verifier('le bandeau « Nouvelle version » a un bouton Quoi de neuf ?', /clt-maj-quoi/.test(commun) && /quoi\.addEventListener\("click", function \(\) \{ cltAfficherNouveautes\(\); \}\)/.test(commun));

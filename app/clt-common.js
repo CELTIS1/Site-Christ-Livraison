@@ -1373,7 +1373,13 @@ function cltAfficherNouveautes(options) {
       entrees.slice(0, options.max || 6).forEach(function (e, i) {
         var bloc = document.createElement("section"); bloc.className = "clt-nouveautes__entree" + (i === 0 ? " est-recente" : "");
         var h = document.createElement("h3"); h.textContent = e.titre || "Mise à jour";
-        var d = document.createElement("div"); d.className = "clt-nouveautes__date"; d.textContent = (e.date || "") + (e.version ? " · " + e.version : "");
+        /* LA DATE SEULE, PAS L'ÉTIQUETTE. (18/09/2026) Ce panneau s'ouvre depuis la page de
+           connexion, donc avant toute identification : il est lu par l'équipe, les livreurs, les
+           clientes, et n'importe qui ouvre la page. « 20260918questions » à côté de la date ne
+           dit rien à ce lecteur-là, et le peu qu'elle dit — le thème du chantier — est
+           justement ce qu'on ne tient pas à afficher. Elle reste dans le fichier : c'est elle
+           qui doit correspondre à app/version.json. */
+        var d = document.createElement("div"); d.className = "clt-nouveautes__date"; d.textContent = e.date || "";
         var ul = document.createElement("ul");
         (e.points || []).forEach(function (pt) { var li = document.createElement("li"); li.textContent = pt; ul.appendChild(li); });
         bloc.appendChild(h); bloc.appendChild(d); bloc.appendChild(ul); corps.appendChild(bloc);
