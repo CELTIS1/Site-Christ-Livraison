@@ -588,10 +588,18 @@ verifier(
    consommée par une transaction qui échoue, et c'est ce qui a rendu illisible la suite des
    numéros de colis du 17. Les 54 reçus existants numérotés dans l'ordre des dates. Le reçu PDF
    est écrit une fois (recuDeReversementPDF) et imprimé des deux côtés. Migration
-   2026-09-18-un-recu-numerote.sql : étiquette 20260918recu. */
+   2026-09-18-un-recu-numerote.sql : étiquette 20260918recu.
+   v160, le 18/09/2026 — deux demandes de Celtis dans le même message. (1) Le numéro du
+   destinataire s'affichait DEUX fois sur la carte du bureau : une ligne avec le numéro brut de
+   la base (« 2250701020304 ») et, juste dessous, un bouton « 📞 Destinataire » qui appelait le
+   même numéro sans le montrer. Le numéro EST maintenant le lien d'appel, lisible, comme chez le
+   livreur depuis le 05/09 — règle descendue dans lib/communes-et-tarifs.js. (2) Rien ne disait
+   si le point du soir avait été envoyé à une cliente : table points_envoyes, une marque par
+   cliente et par jour, cochée à la main (télécharger n'est pas envoyer), avec qui et quand, et
+   visible depuis la liste. Migration 2026-09-18-le-point-envoye.sql : étiquette 20260918point. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v159'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v160'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

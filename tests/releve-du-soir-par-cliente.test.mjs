@@ -147,6 +147,8 @@ vm.runInContext([
   'releveLignesTexte', 'releveConstruireWordHTML', 'releveBarreHTML', 'releveEnCours',
   'releveTableauPDF', 'releveConstruirePDF', 'renderRecapBilan', 'recapDayGroups',
   'fournisseurLabelPlain',
+  // La barre porte depuis le 18/09/2026 la marque « point envoyé » (point 11.7).
+  'releveMarqueHTML', 'recapQuandParQui',
 ].map(n => blocDe(equipe, n, 'equipe.html')).join('\n\n'), contexte);
 
 const {

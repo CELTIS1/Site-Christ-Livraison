@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260918point",
+      "date": "18 septembre 2026",
+      "titre": "Savoir quel point a déjà été envoyé, et un numéro de moins sur la carte",
+      "points": [
+        "Rien ne disait si le relevé du soir avait déjà été envoyé à une cliente : deux personnes pouvaient l'envoyer, ou la même deux fois en se trompant.",
+        "Chaque cliente porte maintenant sa pastille — « ✅ point envoyé » ou « ○ point à envoyer » — visible depuis la liste, avec le compte de ce qui reste à faire.",
+        "On coche à la main après l'envoi : télécharger un fichier n'est pas l'envoyer. La marque dit qui l'a posée et à quelle heure, et se retire si on s'est trompé.",
+        "Sur la carte d'un colis, le numéro du destinataire ne s'affiche plus deux fois. Il est écrit une seule fois, lisible (07 01 02 03 04), et c'est lui qu'on touche pour appeler."
+      ]
+    },
+    {
       "version": "20260918recu",
       "date": "18 septembre 2026",
       "titre": "Un reçu numéroté pour chaque reversement",

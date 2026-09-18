@@ -78,7 +78,7 @@ const CLIENT_MINIATURE = String.raw`
       const q = { table, op: 'select', filtres: [], ordre: [], range: null, limite: null, unique: false, valeurs: null, head: false, user: null };
       const exec = async () => { q.user = userId(); return window.__cltBase(JSON.stringify(q)); };
       const b = {
-        select(cols, o) { if (o && o.head) q.head = true; return b; },
+        select(cols, o) { q.cols = String(cols || ''); if (o && o.head) q.head = true; return b; },
         insert(v) { q.op = 'insert'; q.valeurs = v; return b; }, upsert(v) { q.op = 'upsert'; q.valeurs = v; return b; },
         update(v) { q.op = 'update'; q.valeurs = v; return b; }, delete() { q.op = 'delete'; return b; },
         eq(c, v) { q.filtres.push({ t: 'eq', c, v }); return b; }, neq(c, v) { q.filtres.push({ t: 'neq', c, v }); return b; },
@@ -196,12 +196,34 @@ export async function ouvrirNavigateur(options) {
     const profil = monde.PROFILS.find(p => p.id === userId);
     const user = { id: userId, phone: profil.phone, user_metadata: { full_name: profil.full_name } };
     const persistant = /livreur|fournisseur|express/.test(nomPage);
-    await page.goto(base + '/app/login.html', { waitUntil: 'domcontentloaded' });
+    /* ON NE POSE PLUS LA SESSION SUR login.html. (18/09/2026)
+       Cette page fait son travail : quand elle trouve une session valide, elle envoie la personne
+       vers son espace. Au SECOND ouvrirConnecte d'un parcours, la session du premier est encore
+       là — login.html redirige donc immédiatement, et notre page.evaluate tombe sur un contexte
+       déjà détruit. Une fois sur trois, mesuré le 18/09.
+       On pose donc la session sur une page de la même origine qui ne redirige nulle part, et on
+       va ensuite droit à l'espace voulu. `manifest-login.json` est servi par le même serveur, ne
+       porte aucun script, et suffit à ouvrir l'origine. */
+    await page.goto(base + '/app/manifest-login.json', { waitUntil: 'domcontentloaded' });
     await page.evaluate(({ user, persistant }) => {
       const session = { access_token: 'jeton.' + btoa(unescape(encodeURIComponent(JSON.stringify(user)))), refresh_token: 'rafraichir', expires_at: Math.floor(Date.now() / 1000) + 3600, user };
       (persistant ? localStorage : sessionStorage).setItem('clt-faux-session', JSON.stringify(session));
     }, { user, persistant });
-    await page.goto(base + '/app/' + nomPage, { waitUntil: 'load' });
+    /* COURSE AVEC LA REDIRECTION DE login.html. (18/09/2026)
+       login.html, quand il trouve une session valide, envoie la personne vers SON espace — c'est
+       le bon comportement, et on ne le change pas pour un essai. Mais nous venons justement de
+       poser une session sur cette page : sa redirection part donc pendant que nous naviguons
+       ailleurs, et Playwright lève « Navigation … is interrupted by another navigation ».
+       Constaté une fois sur trois le 18/09, et seulement au second ouvrirConnecte d'un parcours.
+       On réessaie une fois : la page d'arrivée est la même, la seconde tentative n'a plus de
+       redirection à croiser. Un parcours qui échoue une fois sur trois ne se lit plus. */
+    const aller = async () => page.goto(base + '/app/' + nomPage, { waitUntil: 'load' });
+    try { await aller(); }
+    catch (e) {
+      if (!/interrupted by another navigation/i.test(String(e && e.message))) throw e;
+      await dodo(400);
+      await aller();
+    }
     await dodo(1500);
     return page;
   }

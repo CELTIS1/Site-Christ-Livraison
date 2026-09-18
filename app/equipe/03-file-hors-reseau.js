@@ -403,21 +403,31 @@ function eqLigneClientHTML(c){
   return `<div class="meta">Client : ${fournisseurLabel(c.fournisseur_id)}</div>`;
 }
 
-// Les mêmes deux boutons que chez le livreur : « 📞 Destinataire », « 📞 Fournisseur ».
+/* LE NUMÉRO DU DESTINATAIRE, UNE SEULE FOIS. (18/09/2026, Celtis : « il y a le numéro du
+   destinataire qui se répète ; on a le numéro en bas du bouton destinataire, et juste au-dessus
+   il y a encore un autre numéro »)
+
+   La carte en portait bien deux, à une ligne d'intervalle : une ligne « 📞 » avec le numéro BRUT
+   sorti de la base — « 2250701020304 », treize chiffres d'affilée que personne ne lit — puis un
+   bouton « 📞 Destinataire » qui appelle ce même numéro sans le montrer. Le téléphone du livreur,
+   lui, faisait la bonne chose depuis le 05/09 : le numéro EST le lien d'appel, groupé par deux.
+
+   Le bureau fait pareil maintenant : « 📞 07 01 02 03 04 » se lit et se compose d'un geste, et le
+   bouton « 📞 Fournisseur » reste à côté — son numéro à lui n'est écrit nulle part ailleurs sur
+   la carte, il a donc encore besoin d'un bouton qui le nomme. La règle vit dans
+   lib/communes-et-tarifs.js : deux écrans, une seule mise en forme. */
 function eqBoutonsAppelHTML(c){
-  const boutons = boutonAppelDestinataireHTML(c) + boutonAppelFournisseurHTML(fournisseurs.find(x => x.id === c.fournisseur_id));
+  const boutons = lienAppelDestinataireHTML(c) + boutonAppelFournisseurHTML(fournisseurs.find(x => x.id === c.fournisseur_id));
   return boutons ? `<div class="colis-tel-ligne">${boutons}</div>` : '';
 }
 
+/* Ce qui reste ici : l'alerte rouge quand l'adresse manque. Elle ne peut pas se contenter d'être
+   en tête de carte — c'est elle qui déclenche l'appel à la cliente, et elle doit rester près du
+   numéro qu'on va composer, juste en dessous. Elle ne répète plus ce numéro : il est sur la
+   ligne d'appel, une ligne plus bas. */
 function eqLigneDestinationHTML(c){
-  const txt = eqDestinationTexte(c);
-  const tel = c.destinataire_telephone
-    ? `📞 ${escapeHTML(c.destinataire_telephone)}`
-    : '';
-  if (!txt) {
-    return `<div class="meta adresse-absente" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — à renseigner${tel ? ' · ' + tel : ''}</div>`;
-  }
-  return tel ? `<div class="meta">${tel}</div>` : '';
+  if (eqDestinationTexte(c)) return '';
+  return `<div class="meta adresse-absente" style="color:#c0392b; font-weight:600;">⚠️ Adresse de livraison manquante — à renseigner</div>`;
 }
 
 /* « ⚠️ Semblable au n° … » sur la carte (16/09/2026, Celtis : les doublons). eqDoublons est

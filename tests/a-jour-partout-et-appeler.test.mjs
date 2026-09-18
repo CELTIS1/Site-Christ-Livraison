@@ -121,7 +121,7 @@ titre('2. Appeler le fournisseur et le destinataire depuis chaque colis — les 
   // Les deux boutons, écrits une fois dans config.js.
   const ctx = vm.createContext({});
   vm.runInContext(blocDe(fs.readFileSync(path.join(APP, 'clt-common.js'), 'utf8'), 'escapeHTML', 'clt-common.js'), ctx);
-  vm.runInContext(blocDe(config, 'numeroCompose', 'config.js') + '\n' + blocDe(config, 'formatPhoneDisplay', 'config.js') + '\n' + blocDe(config, 'boutonAppelHTML', 'config.js') + '\n' + blocDe(config, 'boutonAppelDestinataireHTML', 'config.js') + '\n' + blocDe(config, 'boutonAppelFournisseurHTML', 'config.js'), ctx);
+  vm.runInContext(blocDe(config, 'numeroCompose', 'config.js') + '\n' + blocDe(config, 'formatPhoneDisplay', 'config.js') + '\n' + blocDe(config, 'boutonAppelHTML', 'config.js') + '\n' + blocDe(config, 'boutonAppelDestinataireHTML', 'config.js') + '\n' + blocDe(config, 'boutonAppelFournisseurHTML', 'config.js') + '\n' + blocDe(config, 'telephoneLisible', 'config.js') + '\n' + blocDe(config, 'lienAppelDestinataireHTML', 'config.js'), ctx);
   const dest = vm.runInContext('boutonAppelDestinataireHTML', ctx), fourn = vm.runInContext('boutonAppelFournisseurHTML', ctx);
   const bd = dest({ destinataire_telephone: '2250705404655' });
   verifier('« 📞 Destinataire » : un lien tel: vers le numéro, le numéro lisible dans l\'infobulle', /href="tel:2250705404655"/.test(bd) && /📞 Destinataire/.test(bd) && /title="Appeler le destinataire au /.test(bd) && /btn-appel-destinataire/.test(bd));
@@ -136,7 +136,24 @@ titre('2. Appeler le fournisseur et le destinataire depuis chaque colis — les 
   verifier('livreur : le profil du fournisseur porte bien son téléphone (loadProfiles lit phone)', /select\('id, full_name, company_name, role, avatar_url, phone'\)/.test(livreur));
   // Équipe : les deux boutons sur chaque carte, le nom du client sans numéro mêlé.
   verifier('équipe : « Client : … » ne porte plus de numéro', !/href="tel:/.test(blocDe(equipe, 'eqLigneClientHTML', 'equipe.html')));
-  verifier('équipe : les deux boutons (destinataire + fournisseur) sur les trois cartes de colis', /boutonAppelDestinataireHTML\(c\) \+ boutonAppelFournisseurHTML\(/.test(blocDe(equipe, 'eqBoutonsAppelHTML', 'equipe.html')) && (equipe.match(/\$\{eqBoutonsAppelHTML\(c\)\}/g) || []).length === 3);
+  /* LE 18/09/2026, LE BOUTON « 📞 DESTINATAIRE » A CÉDÉ LA PLACE AU NUMÉRO LUI-MÊME.
+     Celtis : « il y a le numéro du destinataire qui se répète ». La carte du bureau portait la
+     ligne « 📞 2250701020304 » — le numéro brut de la base, treize chiffres illisibles — ET, une
+     ligne plus bas, un bouton « 📞 Destinataire » qui appelait ce même numéro sans le montrer.
+     Le téléphone du livreur faisait déjà la bonne chose : le numéro EST le lien. L'intention de
+     ce contrôle ne change pas — joindre le destinataire et le fournisseur d'un geste depuis
+     chaque carte — seul le dessin du premier change. Le bouton « Fournisseur » reste un bouton :
+     son numéro à lui n'est écrit nulle part ailleurs sur la carte. */
+  verifier('équipe : le numéro du destinataire (lisible, cliquable) + « 📞 Fournisseur » sur les trois cartes de colis',
+    /lienAppelDestinataireHTML\(c\) \+ boutonAppelFournisseurHTML\(/.test(blocDe(equipe, 'eqBoutonsAppelHTML', 'equipe.html'))
+    && (equipe.match(/\$\{eqBoutonsAppelHTML\(c\)\}/g) || []).length === 3);
+  const lienDest = vm.runInContext('lienAppelDestinataireHTML', ctx);
+  verifier('ce numéro se lit groupé par deux, et se compose d\'un appui',
+    lienDest({ destinataire_telephone: '2250705404655' }) === '<a class="colis-tel" href="tel:2250705404655" title="Appeler le destinataire">📞 07 05 40 46 55</a>',
+    lienDest({ destinataire_telephone: '2250705404655' }));
+  verifier('et il n\'est plus écrit une seconde fois au-dessus',
+    !/📞 \$\{escapeHTML\(c\.destinataire_telephone\)\}/.test(equipe));
+  verifier('sans numéro, pas de ligne d\'appel vide', lienDest({}) === '' && lienDest(null) === '');
   verifier('équipe : plus de bouton d\'appel dans l\'en-tête de groupe', !/btn-appel/.test(blocDe(equipe, 'equipeCollecteActionHTML', 'equipe.html')));
   verifier('équipe : les clientes sont lues avec leur téléphone', /select\('id, full_name, company_name, phone, commune_recuperation, adresse_recuperation'\)/.test(equipe));
   const carte = blocDe(fournisseur, 'colisItemHTML', 'fournisseur.html');

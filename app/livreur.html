@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918recu">
-<script src="theme.js?v=20260918recu"></script>
-<script src="splash.js?v=20260918recu"></script>
+<link rel="stylesheet" href="style.css?v=20260918point">
+<script src="theme.js?v=20260918point"></script>
+<script src="splash.js?v=20260918point"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -908,22 +908,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260918recu"></script>
-<script src="lib/bibliotheques.js?v=20260918recu"></script>
-<script src="lib/retours.js?v=20260918recu"></script>
-<script src="lib/reclamations.js?v=20260918recu"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918recu"></script>
-<script src="lib/argent.js?v=20260918recu"></script>
-<script src="lib/releve-cliente.js?v=20260918recu"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918recu"></script>
-<script src="lib/briques-argent.js?v=20260918recu"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918recu"></script>
-<script src="lib/annonce-de-remise.js?v=20260918recu"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918recu"></script>
-<script src="lib/primes.js?v=20260918recu"></script>
-<script src="lib/doublons.js?v=20260918recu"></script>
-<script src="config.js?v=20260918recu"></script>
-<script src="biometric-lock.js?v=20260918recu"></script>
+<script src="clt-common.js?v=20260918point"></script>
+<script src="lib/bibliotheques.js?v=20260918point"></script>
+<script src="lib/retours.js?v=20260918point"></script>
+<script src="lib/reclamations.js?v=20260918point"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918point"></script>
+<script src="lib/argent.js?v=20260918point"></script>
+<script src="lib/releve-cliente.js?v=20260918point"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918point"></script>
+<script src="lib/briques-argent.js?v=20260918point"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918point"></script>
+<script src="lib/annonce-de-remise.js?v=20260918point"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918point"></script>
+<script src="lib/primes.js?v=20260918point"></script>
+<script src="lib/doublons.js?v=20260918point"></script>
+<script src="config.js?v=20260918point"></script>
+<script src="biometric-lock.js?v=20260918point"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1805,7 +1805,7 @@
     boite.id = 'wa-invite'; boite.className = 'wa-invite'; boite.setAttribute('role', 'dialog');
     boite.innerHTML = `
       <div class="wa-invite__titre">${retente ? 'Prévenir la cliente que vous retentez ?' : 'Prévenir la cliente du report ?'}</div>
-      <div class="wa-invite__sous">${escapeHTML(fournisseurNom(colis.fournisseur_id) || 'La cliente')} · 📞 ${fiche.phone ? escapeHTML(telephoneAffiche(fiche.phone)) : 'numéro inconnu — vous choisirez le contact dans WhatsApp'}${colis.numero ? ' · ' + escapeHTML(colis.numero) : ''}</div>
+      <div class="wa-invite__sous">${escapeHTML(fournisseurNom(colis.fournisseur_id) || 'La cliente')} · 📞 ${fiche.phone ? escapeHTML(telephoneLisible(fiche.phone)) : 'numéro inconnu — vous choisirez le contact dans WhatsApp'}${colis.numero ? ' · ' + escapeHTML(colis.numero) : ''}</div>
       <div class="wa-invite__gestes">
         <a class="wa-invite__envoyer" href="${escapeHTML(lien)}" target="_blank" rel="noopener">💬 Envoyer le message WhatsApp</a>
         <button type="button" class="wa-invite__plus-tard">Plus tard</button>
@@ -1836,7 +1836,7 @@
     // Un colis ne porte pas le nom de son destinataire, seulement son téléphone : on nomme le
     // colis par sa description, c'est ce que le livreur a sous les yeux.
     const qui = colisDescriptionTexte(colis) ? escapeHTML(colisDescriptionTexte(colis)) : 'Le destinataire';
-    const tel = colis.destinataire_telephone ? escapeHTML(telephoneAffiche(colis.destinataire_telephone)) : 'numéro inconnu — vous choisirez le contact dans WhatsApp';
+    const tel = colis.destinataire_telephone ? escapeHTML(telephoneLisible(colis.destinataire_telephone)) : 'numéro inconnu — vous choisirez le contact dans WhatsApp';
     const boite = document.createElement('div');
     boite.id = 'wa-invite';
     boite.className = 'wa-invite';
@@ -2121,19 +2121,12 @@
      btn-notify-wa : c'est la délégation de config.js qui l'ouvre, à partir des data-* de la
      carte. Sans numéro connu, le lien d'appel s'efface mais le bouton reste : config.js ouvre
      alors WhatsApp sans destinataire, comme avant. */
-  function telephoneAffiche(tel){
-    const brut = String(tel || '').trim();
-    if (!brut) return '';
-    const chiffres = (typeof formatPhoneDisplay === 'function') ? formatPhoneDisplay(brut) : brut;
-    // Dix chiffres : on groupe par deux. Autre forme : on rend tel quel, sans inventer.
-    return /^\d{10}$/.test(chiffres) ? chiffres.replace(/(\d{2})(?=\d)/g, '$1 ') : chiffres;
-  }
+  /* La mise en forme et le lien sont descendus dans lib/communes-et-tarifs.js le 18/09/2026, au
+     moment où le bureau s'est mis à les employer aussi : le numéro y était écrit brut, et une
+     seconde fois sous forme de bouton. Un numéro mis en forme à deux endroits finit par s'écrire
+     de deux façons — celle qu'on lit et celle qu'on ne lit pas. */
   function telephoneLigneHTML(c){
-    const tel = c.destinataire_telephone || '';
-    const compose = (typeof numeroCompose === 'function') ? numeroCompose(tel) : String(tel).replace(/[^0-9]/g, '');
-    const lien = tel
-      ? `<a class="colis-tel" href="tel:${escapeHTML(compose)}">📞 ${escapeHTML(telephoneAffiche(tel))}</a>`
-      : '';
+    const lien = lienAppelDestinataireHTML(c);
     // Et le fournisseur du colis, d'un geste, sur chaque carte — « 📞 Fournisseur », le même
     // bouton qu'au bureau (boutonAppelFournisseurHTML, config.js). Plus rien dans les en-têtes de
     // groupe : Celtis, 10/09/2026, « que ce soit identique partout ».

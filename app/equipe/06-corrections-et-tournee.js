@@ -952,8 +952,67 @@ let recapDayCache = {};               // date -> colis[] (jours passés rapatri�
 // retient donc quels jours sont en cours de route, et chacun ne regarde que le sien.
 let recapJoursEnCours = {};
 
+/* LE POINT A-T-IL DÉJÀ ÉTÉ ENVOYÉ À CETTE CLIENTE ? (18/09/2026, point 11.7)
+   ==========================================================================================
+   Celtis : « quand le point est envoyé ou pas, il n'y a aucune méthode pour vérifier que ça a
+   été fait ou pas. Sinon on peut envoyer plusieurs fois. Différentes personnes peuvent envoyer
+   le même point. Même la même personne peut envoyer plusieurs fois en se trompant. »
+
+   Les marques du jour affiché, lues en même temps que lui : { fournisseur_id → {par, le} }.
+   Un objet par jour, parce que l'écran passe d'un jour à l'autre et que la marque d'hier ne dit
+   rien de celle d'aujourd'hui. `null` veut dire « pas encore lu » — et c'est différent de
+   « aucune marque » : tant qu'on n'a pas lu, on n'affiche pas « pas envoyé », ce qui ferait
+   renvoyer un relevé déjà parti. */
+let recapPointsEnvoyes = {};   // 'AAAA-MM-JJ' -> { fid: { par, parNom, le } } ou null
+let recapPointsEnCours = {};
+
 function recapGetDate(){
 return recapSelectedDate || todayLocalISODate();
+}
+
+// Ce qu'on sait des marques du jour affiché. Rend null tant que la lecture n'a pas abouti.
+function recapMarques(date){
+const d = date || recapGetDate();
+return Object.prototype.hasOwnProperty.call(recapPointsEnvoyes, d) ? recapPointsEnvoyes[d] : null;
+}
+/* La table est née le 18/09/2026 : tant que le script n'est pas passé, la lecture échoue et on
+   retient « rien à dire » plutôt que « rien n'a été envoyé ». Un écran qui affirme le second
+   ferait renvoyer trente relevés. */
+async function recapChargerPointsEnvoyes(date, forcer){
+const d = date || recapGetDate();
+if (!forcer && Object.prototype.hasOwnProperty.call(recapPointsEnvoyes, d)) return;
+if (recapPointsEnCours[d]) return;
+recapPointsEnCours[d] = true;
+/* Le NOM de qui a coché vient avec la marque, par la clé étrangère envoye_par → profiles.
+   L'écran ne connaît que les clientes et les livreurs : demander le nom d'une collègue du
+   bureau après coup aurait rendu vide exactement le nom qui compte — celui de la personne à
+   qui on va dire « c'est toi qui l'as envoyé ? ». Si la lecture jointe est refusée, on
+   redemande sans elle : on perd le nom, pas la marque. */
+let { data, error } = await supabaseClient
+  .from('points_envoyes')
+  .select('fournisseur_id, envoye_par, envoye_le, auteur:envoye_par(full_name)')
+  .eq('jour', d);
+if (error) {
+  const sansNom = await supabaseClient
+    .from('points_envoyes')
+    .select('fournisseur_id, envoye_par, envoye_le')
+    .eq('jour', d);
+  data = sansNom.data; error = sansNom.error;
+}
+delete recapPointsEnCours[d];
+if (error) {
+  console.warn("Marques « point envoyé » indisponibles (script 2026-09-18-le-point-envoye.sql ?) :", error.message || error);
+  recapPointsEnvoyes[d] = undefined;   // lu, et sans réponse : on n'affiche rien
+  renderRecapBody();
+  return;
+}
+const par = {};
+(data || []).forEach(l => {
+  if (!l || !l.fournisseur_id) return;
+  par[l.fournisseur_id] = { par: l.envoye_par, le: l.envoye_le, parNom: (l.auteur && l.auteur.full_name) || '' };
+});
+recapPointsEnvoyes[d] = par;
+renderRecapBody();
 }
 
 // Colis du jour sélectionné : aujourd'hui => on filtre les colis déjà en mémoire
@@ -1003,6 +1062,9 @@ const aujourdhui = todayLocalISODate();
 const regardes = new Set([recapGetDate(), recaplGetDate()].filter(d => d && d !== aujourdhui));
 Object.keys(recapDayCache).forEach(d => { if (!regardes.has(d)) delete recapDayCache[d]; });
 regardes.forEach(d => recapLoadPastDay(d, { forcer: true }));
+// Et les marques : quelqu'un d'autre a pu cocher une cliente pendant qu'on regardait l'écran.
+// C'est même le cas le plus fréquent — c'est pour cela que la marque existe. (18/09/2026)
+recapChargerPointsEnvoyes(recapGetDate(), true);
 }
 
 // Un jour rapatrié sert aux deux récapitulatifs : on le paie une fois, on le rend aux deux.
@@ -1016,6 +1078,8 @@ renderRecapLivreurBody();
 function renderRecapFournisseur(){
 const dateInput = document.getElementById('recap-date');
 if (dateInput && !dateInput.value) dateInput.value = recapGetDate();
+// Les marques du jour affiché, lues une fois par jour regardé. (18/09/2026)
+recapChargerPointsEnvoyes(recapGetDate());
 renderRecapBody();
 }
 
@@ -1073,15 +1137,33 @@ return;
 
 // Sur la vignette de chaque cliente : ce qui est parti, et en dessous ce qui est rentré.
 // Le second chiffre est celui dont on se sert pour la payer, il est donc distingué.
-const cards = clients.map(c => `
-<button type="button" class="recap-client-card" data-fid="${escapeHTML(c.id)}">
-<span class="recap-client-name">${fournisseurLabel(c.id)}</span>
+/* LA MARQUE SE VOIT SANS OUVRIR LA FICHE. (18/09/2026) C'est là qu'elle sert : le soir, à
+   plusieurs, sur une trentaine de clientes, la question est « lesquelles n'ont pas encore eu le
+   leur ? ». Une pastille par vignette y répond d'un coup d'œil, et le compte au-dessus dit
+   combien il en reste. Tant que les marques ne sont pas lues, on n'affiche rien : écrire « pas
+   envoyé » sans le savoir ferait renvoyer des relevés déjà partis. */
+const marques = recapMarques();
+const cards = clients.map(c => {
+const m = marques ? marques[c.id] : null;
+const pastille = !marques ? ''
+  : m ? `<span class="recap-point recap-point--oui" title="Point envoyé ${escapeHTML(recapQuandParQui(m))}">✅ point envoyé</span>`
+      : `<span class="recap-point recap-point--non">○ point à envoyer</span>`;
+return `
+<button type="button" class="recap-client-card${m ? ' recap-client-card--fait' : ''}" data-fid="${escapeHTML(c.id)}">
+<span class="recap-client-name">${fournisseurLabel(c.id)}${pastille}</span>
 <span class="recap-client-meta">
 <span class="recap-client-count">${c.nb} colis · ${c.t.nbLivres} livré${c.t.nbLivres > 1 ? 's' : ''}</span>
 <span class="recap-client-amount">${formatMontant(c.t.articleEnregistre) || '0 FCFA'}</span>
 <span class="recap-client-encaisse">encaissé : ${formatMontant(c.t.articleEncaisse) || '0 FCFA'}</span>
 </span>
-</button>`).join('');
+</button>`;
+}).join('');
+const nbEnvoyes = marques ? clients.filter(c => marques[c.id]).length : 0;
+const ligneEnvoyes = marques
+  ? (clients.length && nbEnvoyes === clients.length
+      ? `<div class="recap-day-points recap-day-points--fini">✅ Toutes les clientes ont eu leur point.</div>`
+      : `<div class="recap-day-points"><strong>${nbEnvoyes}</strong> point${nbEnvoyes > 1 ? 's' : ''} envoyé${nbEnvoyes > 1 ? 's' : ''} sur ${clients.length} — <strong>${clients.length - nbEnvoyes}</strong> à faire.</div>`)
+  : '';
 
 const tJour = totauxArgent(colisJour);
 
@@ -1094,6 +1176,7 @@ Articles enregistrés : <strong>${formatMontant(tJour.articleEnregistre) || '0 F
 Articles encaissés : <strong>${formatMontant(tJour.articleEncaisse) || '0 FCFA'}</strong> ·
 Frais de livraison CLT : <strong>${formatMontant(tJour.recetteLivraison) || '0 FCFA'}</strong>
 </div>
+${ligneEnvoyes}
 ${recapExportBarHTML()}
 ${recapSearchBarHTML()}
 ${clients.length ? `<div class="recap-client-list">${cards}</div>` : `<div class="empty-state">Aucune cliente ne correspond à « ${escapeHTML(recapSearchText)} ».</div>`}`)) return;

@@ -97,6 +97,9 @@ export function nouveauMonde() {
       mode: 'wave', note: null, fait_par: ADMIN, fait_le: iso(-1, 17),
       annule_le: null, annule_par: null, annule_motif: null,
     }],
+    /* LES MARQUES « POINT ENVOYÉ » (18/09/2026, point 11.7). Vide au départ : c'est le parcours
+       qui coche, et qui vérifie que la marque se voit ensuite partout. */
+    points_envoyes: [],
   };
   const journal = [];
 
@@ -189,6 +192,21 @@ export function nouveauMonde() {
     const total = lignes.length;
     if (q.range) lignes = lignes.slice(q.range[0], q.range[1] + 1);
     if (q.limite) lignes = lignes.slice(0, q.limite);
+    /* LES JOINTURES INCORPORÉES. PostgREST sait rendre le profil lié dans la même réponse
+       (« auteur:envoye_par(full_name) ») et l'écran s'en sert pour dire QUI a coché le point.
+       On ne réimplémente pas PostgREST : on résout la seule jointure que l'application demande,
+       et on le dit. Sans elle, le parcours ne pourrait pas vérifier que le nom s'affiche —
+       c'est pourtant le cœur du point 11.7 : savoir qui a envoyé. (18/09/2026) */
+    const embarque = /([a-z_]+):([a-z_]+)\(([a-z_, ]+)\)/.exec(q.cols || '');
+    if (embarque) {
+      const [, alias, cle, champs] = embarque;
+      const voulus = champs.split(',').map(x => x.trim()).filter(Boolean);
+      lignes = lignes.map(l => {
+        const lie = (TABLES.profiles || []).find(p => p && p.id === l[cle]);
+        const extrait = lie ? voulus.reduce((o, ch) => (o[ch] = lie[ch], o), {}) : null;
+        return Object.assign({}, l, { [alias]: extrait });
+      });
+    }
     if (q.head) return { data: null, error: null, count: total };
     if (q.unique) return { data: lignes[0] || null, error: null, count: total };
     return { data: lignes, error: null, count: total };
@@ -231,6 +249,25 @@ export function nouveauMonde() {
         }
       });
       return { data: lignes, error: null };
+    }
+    /* LA MARQUE « POINT ENVOYÉ » (18/09/2026, point 11.7). Les deux vraies fonctions vivent en
+       base parce qu'elles tiennent le journal et refusent les rôles qui n'ont rien à y faire ;
+       ce qu'on refait ici, c'est leur EFFET sur la table — l'unicité (cliente, jour) comprise,
+       qui est justement ce que l'écran doit savoir supporter à plusieurs. Les droits et le
+       journal sont éprouvés dans un vrai Postgres (tests/point-envoye/essai-en-postgres.py). */
+    if (nom === 'marquer_point_envoye') {
+      const fid = args && args.p_fournisseur, jour = args && args.p_jour;
+      const deja = (TABLES.points_envoyes || []).find(m => m.fournisseur_id === fid && m.jour === jour);
+      if (deja) return { data: deja.envoye_le, error: null };
+      const ligne = { id: 'pe-' + (TABLES.points_envoyes.length + 1), fournisseur_id: fid, jour,
+        envoye_par: user || ADMIN, envoye_le: new Date().toISOString(), note: (args && args.p_note) || null };
+      TABLES.points_envoyes.push(ligne);
+      return { data: ligne.envoye_le, error: null };
+    }
+    if (nom === 'demarquer_point_envoye') {
+      const fid = args && args.p_fournisseur, jour = args && args.p_jour;
+      TABLES.points_envoyes = TABLES.points_envoyes.filter(m => !(m.fournisseur_id === fid && m.jour === jour));
+      return { data: null, error: null };
     }
     return { data: [], error: null };
   }

@@ -117,6 +117,36 @@ function boutonAppelHTML(libelle, telephone, qui) {
 function boutonAppelDestinataireHTML(c) {
   return boutonAppelHTML('Destinataire', c && c.destinataire_telephone, 'le destinataire');
 }
+
+/* LE NUMÉRO DU DESTINATAIRE, ÉCRIT COMME ON LE LIT À ABIDJAN — et une seule fois.
+   (18/09/2026, Celtis : « au niveau de l'équipe, il y a le numéro du destinataire qui se répète »)
+
+   Le téléphone du livreur faisait déjà la bonne chose depuis le 05/09 : le numéro EST le lien
+   d'appel, groupé par deux. L'écran du bureau, lui, en affichait deux : une ligne « 📞 » avec le
+   numéro BRUT tel qu'il dort en base — « 2250701020304 », treize chiffres d'affilée que personne
+   ne lit — et, juste en dessous, un bouton « 📞 Destinataire » qui appelle ce même numéro sans
+   le montrer. Deux fois la même information, et la version lisible manquait aux deux.
+
+   Les deux règles descendent donc ici, à côté de boutonAppelHTML, et les deux écrans les
+   appellent. Un numéro mis en forme à deux endroits finit par s'écrire de deux façons. */
+function telephoneLisible(tel) {
+  const brut = String(tel || '').trim();
+  if (!brut) return '';
+  const chiffres = (typeof formatPhoneDisplay === 'function') ? formatPhoneDisplay(brut) : brut;
+  // Dix chiffres : on groupe par deux. Autre forme : on rend tel quel, sans inventer.
+  return /^\d{10}$/.test(chiffres) ? chiffres.replace(/(\d{2})(?=\d)/g, '$1 ') : chiffres;
+}
+
+// Le numéro du destinataire EST le bouton d'appel : on le lit et on le compose d'un geste.
+// Rien quand il n'y en a pas — une ligne vide se lirait « pas de numéro », ce qui est vrai, mais
+// l'appelant a de meilleures façons de le dire (voir eqLigneDestinationHTML au bureau).
+function lienAppelDestinataireHTML(c) {
+  const tel = (c && c.destinataire_telephone) || '';
+  if (!tel) return '';
+  const compose = (typeof numeroCompose === 'function') ? numeroCompose(tel) : String(tel).replace(/[^0-9]/g, '');
+  if (!compose) return '';
+  return `<a class="colis-tel" href="tel:${escapeHTML(compose)}" title="Appeler le destinataire">📞 ${escapeHTML(telephoneLisible(tel))}</a>`;
+}
 // `fournisseur` est la fiche (profil) du fournisseur du colis, telle que l'écran la connaît.
 function boutonAppelFournisseurHTML(fournisseur) {
   const f = fournisseur || {};

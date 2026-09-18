@@ -375,6 +375,41 @@ const list = recapDayColis().filter(c => (c.fournisseur_id || 'inconnu') === fid
 return { fid, nom: fournisseurLabelPlain(fid), date, dateLabel: recapDayLabel(date), r: releveCliente(list) };
 }
 
+/* LA MARQUE « POINT ENVOYÉ ». (18/09/2026, Celtis : « il faut qu'il y ait la possibilité de
+   cocher, pour que les autres puissent s'en apercevoir »)
+
+   ELLE SE COCHE À LA MAIN, ET C'EST VOULU. Télécharger le PDF n'est pas l'envoyer : on le
+   télécharge aussi pour le relire. Une marque posée toute seule au téléchargement mentirait, et
+   une marque à laquelle on ne peut pas se fier ne sert à rien — c'est pire que pas de marque,
+   parce qu'on cesse alors de vérifier.
+
+   MAIS ON NE COMPTE PAS SUR LA MÉMOIRE DE PERSONNE : dès qu'un fichier est sorti ou partagé, le
+   bouton passe en évidence (`a-envoyer`) avec « Je viens de l'envoyer ». Un appui, et c'est
+   marqué. L'application demande, elle n'affirme pas.
+
+   Une fois cochée, la marque dit QUI et QUAND — c'est toute la question de Celtis : quelqu'un
+   qui arrive doit pouvoir vérifier sans demander à personne. Et elle se décoche, parce qu'on
+   coche parfois la mauvaise ligne. */
+function releveMarqueHTML(){
+const d = releveEnCours();
+if (!d) return '';
+const marques = (typeof recapMarques === 'function') ? recapMarques(d.date) : null;
+// Marques pas encore lues (ou table absente) : aucun bouton. Proposer « marquer » sans savoir
+// si c'est déjà fait ferait poser une seconde marque par-dessus la première.
+if (!marques) return '';
+const m = marques[d.fid];
+if (m) {
+  return `<div class="releve-marque releve-marque--oui">
+    <span class="releve-marque__dit">✅ Point envoyé ${escapeHTML(recapQuandParQui(m))}</span>
+    <button type="button" class="btn btn-outline btn-sm" id="releve-demarquer" title="Décocher : le point n'avait pas été envoyé">↩︎ Ce n'était pas envoyé</button>
+  </div>`;
+}
+return `<div class="releve-marque">
+  <button type="button" class="btn btn-outline btn-sm" id="releve-marquer">✅ Je viens de l'envoyer</button>
+  <span class="releve-marque__aide">Cochez après l'envoi : l'équipe verra que cette cliente a eu son point.</span>
+</div>`;
+}
+
 function releveBarreHTML(){
 return `
 <div class="releve-barre">
@@ -385,7 +420,59 @@ return `
 <button type="button" class="btn btn-outline btn-sm" id="releve-word">📝 Word</button>
 <button type="button" class="btn btn-primary btn-sm" id="releve-envoyer" hidden>📤 Envoyer</button>
 </div>
+${releveMarqueHTML()}
 </div>`;
+}
+
+// Un fichier vient de sortir : on met le bouton en évidence, sans rien affirmer.
+function releveRappelerDeCocher(){
+const b = document.getElementById('releve-marquer');
+if (b) b.classList.add('a-envoyer');
+}
+
+async function releveMarquer(){
+const d = releveEnCours();
+if (!d) return;
+const btn = document.getElementById('releve-marquer');
+if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+const { error } = await supabaseClient.rpc('marquer_point_envoye', { p_fournisseur: d.fid, p_jour: d.date });
+if (error) {
+  console.error('Point envoyé :', error);
+  if (btn) { btn.disabled = false; btn.textContent = '✅ Je viens de l\'envoyer'; }
+  cltToast(error.message || "La marque n'a pas pu être enregistrée.", { type: 'error' });
+  return;
+}
+cltToast(`Point de ${d.nom} marqué comme envoyé.`, { type: 'success' });
+if (typeof recapChargerPointsEnvoyes === 'function') await recapChargerPointsEnvoyes(d.date, true);
+}
+
+async function releveDemarquer(){
+const d = releveEnCours();
+if (!d) return;
+const ok = (typeof cltConfirm === 'function') ? await cltConfirm({
+  title: 'Ce point n\'a pas été envoyé ?',
+  detail: `${d.nom} — ${d.dateLabel}`,
+  sub: "La marque est retirée et l'équipe reverra cette cliente dans celles à faire. Le geste reste au journal.",
+  okLabel: 'Oui, retirer la marque', cancelLabel: 'Garder',
+}) : true;
+if (!ok) return;
+const { error } = await supabaseClient.rpc('demarquer_point_envoye', { p_fournisseur: d.fid, p_jour: d.date });
+if (error) { console.error(error); cltToast(error.message || "La marque n'a pas pu être retirée.", { type: 'error' }); return; }
+cltToast('Marque retirée.', { type: 'info' });
+if (typeof recapChargerPointsEnvoyes === 'function') await recapChargerPointsEnvoyes(d.date, true);
+}
+
+// « le 18 septembre à 19 h 42, par Awa » — écrit une fois, lu sur la vignette comme dans la barre.
+function recapQuandParQui(m){
+if (!m) return '';
+const quand = m.le ? new Date(m.le) : null;
+const heure = quand && !isNaN(quand.getTime())
+  ? quand.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan' }).replace(':', ' h ')
+  : '';
+// Le nom vient avec la marque (recapChargerPointsEnvoyes). Vide s'il n'a pas pu être lu : on
+// dit alors l'heure seule plutôt que d'inventer un nom.
+const qui = m.parNom || '';
+return [heure ? 'à ' + heure : '', qui ? 'par ' + qui : ''].filter(Boolean).join(', ');
 }
 
 // Le bouton « Envoyer » ne s'affiche que sur un appareil qui sait réellement partager un
@@ -403,10 +490,16 @@ const pdf = document.getElementById('releve-pdf');
 const xls = document.getElementById('releve-excel');
 const doc = document.getElementById('releve-word');
 const env = document.getElementById('releve-envoyer');
-if (pdf) pdf.addEventListener('click', telechargerRelevePDF);
-if (xls) xls.addEventListener('click', telechargerReleveExcel);
-if (doc) doc.addEventListener('click', telechargerReleveWord);
-if (env && releveEnvoiPossible()) { env.hidden = false; env.addEventListener('click', envoyerRelevePDF); }
+// Chaque sortie met le bouton « Je viens de l'envoyer » en évidence : c'est le moment où la
+// personne l'a en tête. (18/09/2026)
+if (pdf) pdf.addEventListener('click', () => { telechargerRelevePDF(); releveRappelerDeCocher(); });
+if (xls) xls.addEventListener('click', () => { telechargerReleveExcel(); releveRappelerDeCocher(); });
+if (doc) doc.addEventListener('click', () => { telechargerReleveWord(); releveRappelerDeCocher(); });
+if (env && releveEnvoiPossible()) { env.hidden = false; env.addEventListener('click', () => { envoyerRelevePDF(); releveRappelerDeCocher(); }); }
+const marquer = document.getElementById('releve-marquer');
+if (marquer) marquer.addEventListener('click', releveMarquer);
+const demarquer = document.getElementById('releve-demarquer');
+if (demarquer) demarquer.addEventListener('click', releveDemarquer);
 }
 
 // Les lignes du tableau, en texte, dans l'ordre des colonnes. Écrites une fois pour les trois

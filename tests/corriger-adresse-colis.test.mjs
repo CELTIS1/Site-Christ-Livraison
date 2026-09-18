@@ -368,12 +368,25 @@ titre('Une adresse absente saute aux yeux au lieu de se deviner');
   const vide = ctx.eqLigneDestinationHTML({});
   verifier('sans adresse du tout, l’écran le dit en rouge',
     /Adresse de livraison manquante/.test(vide) && /adresse-absente/.test(vide), vide);
+  /* CETTE LIGNE NE PORTE PLUS LE NUMÉRO. (18/09/2026, Celtis : « le numéro du destinataire se
+     répète ».) Il était écrit ici, BRUT, et une ligne plus bas un bouton « 📞 Destinataire »
+     appelait le même numéro sans le montrer. Le numéro a donc quitté cette ligne pour devenir
+     lui-même le lien d'appel, lisible, sur la ligne juste en dessous
+     (lienAppelDestinataireHTML). Ce qui reste ici, c'est la seule chose que le reste de la carte
+     ne dit pas : l'adresse manque. */
   const avec = ctx.eqLigneDestinationHTML({ commune_destination: 'Cocody', destinataire_telephone: '0546818640' });
-  verifier('quand l’adresse est là, il ne reste que le numéro à appeler — sans la répéter',
-    /0546818640/.test(avec) && !/manquante/.test(avec) && !/Cocody/.test(avec), avec);
+  verifier('quand l’adresse est là, cette ligne n’a plus rien à dire',
+    avec === '', avec);
   const videAvecTel = ctx.eqLigneDestinationHTML({ destinataire_telephone: '0546818640' });
-  verifier('adresse absente mais destinataire connu : on alerte ET on donne le numéro pour l’appeler',
-    /manquante/.test(videAvecTel) && /0546818640/.test(videAvecTel), videAvecTel);
+  verifier('adresse absente : on alerte, et une seule fois',
+    /manquante/.test(videAvecTel) && !/0546818640/.test(videAvecTel), videAvecTel);
+  /* L'INTENTION D'ORIGINE TIENT TOUJOURS, et c'est elle qu'on garde : l'alerte doit rester
+     COLLÉE au numéro qu'on va composer, parce que c'est elle qui déclenche l'appel à la cliente.
+     On le vérifie donc sur la carte — l'alerte, puis la ligne d'appel, dans cet ordre — et non
+     plus à l'intérieur d'une seule fonction. */
+  verifier('et le numéro à composer est la ligne juste en dessous, sur les trois cartes',
+    (equipe.match(/\$\{eqLigneDestinationHTML\(c\)\}\s*\n\$\{eqBoutonsAppelHTML\(c\)\}/g) || []).length >= 2,
+    (equipe.match(/eqLigneDestinationHTML\(c\)\}[\s\S]{0,40}/g) || []).join(' // '));
 
   verifier('côté client aussi, l’absence d’adresse est signalée',
     /Adresse de livraison manquante/.test(fournisseur));

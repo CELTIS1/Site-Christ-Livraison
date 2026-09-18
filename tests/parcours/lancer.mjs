@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ICI = path.dirname(fileURLToPath(import.meta.url));
-const PARCOURS = ['connexion-livreur.mjs', 'livraison-d-un-colis.mjs', 'releve-de-la-cliente.mjs', 'le-colis-reporte.mjs', 'le-prix-express.mjs', 'l-ordre-de-la-tournee.mjs', 'le-recu-de-reversement.mjs'];
+const PARCOURS = ['connexion-livreur.mjs', 'livraison-d-un-colis.mjs', 'releve-de-la-cliente.mjs', 'le-colis-reporte.mjs', 'le-prix-express.mjs', 'l-ordre-de-la-tournee.mjs', 'le-recu-de-reversement.mjs', 'le-point-envoye.mjs'];
 const resultats = [];
 for (const p of PARCOURS) {
   console.log('\n══════════ ' + p + ' ══════════');

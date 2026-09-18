@@ -951,6 +951,47 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
 .recap-client-meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
 .recap-client-count{background:var(--orange-light); color:var(--orange); padding:3px 10px; border-radius:var(--radius-pill); font-size:12px; font-weight:700;}
 .recap-client-amount{color:var(--muted); font-size:12.5px; font-weight:600;}
+/* ---------- LE POINT A-T-IL ÉTÉ ENVOYÉ À CETTE CLIENTE ? (18/09/2026) ----------
+   Celtis : « quand le point est envoyé ou pas, il n'y a aucune méthode pour vérifier ». Le soir,
+   à plusieurs, sur une trentaine de clientes, la question est « lesquelles restent ? ». La
+   réponse doit se lire sans ouvrir une fiche : une pastille par vignette, et un compte au-dessus
+   de la liste. Le vert dit « c'est fait », le gris « il reste à faire » — le gris et non le
+   rouge : ne pas avoir encore envoyé n'est pas une faute, c'est du travail en cours. */
+.recap-point{
+  display:inline-block; margin-left:8px; padding:2px 8px; border-radius:var(--radius-pill);
+  font-size:11.5px; font-weight:700; white-space:nowrap; vertical-align:middle;
+}
+.recap-point--oui{color:#1a7d3c; background:#e3f6ea;}
+.recap-point--non{color:#6b7686; background:#eef1f5;}
+.recap-client-card--fait{border-color:#bce6cd;}
+.recap-day-points{font-size:13px; font-weight:600; color:var(--navy); margin:2px 0 10px;}
+.recap-day-points--fini{color:#1a7d3c;}
+.recap-day-points strong{color:var(--orange);}
+.recap-day-points--fini strong{color:#1a7d3c;}
+/* La marque dans la barre du relevé : sous les quatre boutons, séparée par un filet — c'est un
+   geste d'un autre ordre, il ne produit pas de fichier, il dit que le fichier est parti. */
+.releve-marque{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin-top:12px; padding-top:12px; border-top:1px solid var(--border);
+}
+.releve-marque .btn{min-height:44px;}
+.releve-marque__dit{font-size:13.5px; font-weight:700; color:#1a7d3c;}
+.releve-marque__aide{font-size:12.5px; color:var(--muted); flex:1; min-width:160px;}
+/* Un fichier vient de sortir : le bouton passe devant, sans que rien n'ait été affirmé. */
+.releve-marque .btn.a-envoyer{
+  border-color:#1a7d3c; color:#1a7d3c; background:#e3f6ea; font-weight:700;
+  animation:releve-marque-appel 1.2s ease-in-out 2;
+}
+@keyframes releve-marque-appel{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.04);} }
+@media (prefers-reduced-motion: reduce){ .releve-marque .btn.a-envoyer{animation:none;} }
+html[data-theme="dark"] .recap-point--oui{color:#5ed19a; background:rgba(30,143,78,.20);}
+html[data-theme="dark"] .recap-point--non{color:#9FB3C8; background:rgba(148,163,184,.16);}
+html[data-theme="dark"] .recap-client-card--fait{border-color:#2E5B41;}
+html[data-theme="dark"] .recap-day-points{color:#E6ECF3;}
+html[data-theme="dark"] .recap-day-points--fini{color:#5ed19a;}
+html[data-theme="dark"] .releve-marque__dit{color:#5ed19a;}
+html[data-theme="dark"] .releve-marque .btn.a-envoyer{background:rgba(30,143,78,.22); border-color:#2E5B41; color:#5ed19a;}
+
 .recap-bilan-head{display:flex; align-items:center; gap:12px; margin:14px 0 6px; flex-wrap:wrap;}
 /* `flex:1` pousse le bouton « Son écran » à droite du bandeau, loin du « ← Clientes » de
    gauche : deux boutons collés se touchent l'un pour l'autre au pouce. */
