@@ -622,10 +622,22 @@ verifier(
    commande le prix ; le départ est relu à chaque fois, donc changer de cliente refait les prix ;
    une note dit d'où vient le chiffre et signale un écart. Un montant TAPÉ n'est jamais remplacé,
    un montant que nous avons posé (marque rempli-auto) se met à jour. Aucune migration.
-   Étiquette 20260918tarif. */
+   Étiquette 20260918tarif.
+   v163, le 18/09/2026 — Celtis demande « un système d'analyse […] pour voir les évolutions, les
+   régressions, les problèmes, manquements ». L'inventaire a trouvé ONZE surfaces de rapport et
+   près de quatre cents indicateurs : ce qui manquait n'était pas des chiffres, c'était un endroit
+   qui réponde à « qu'est-ce qui a changé, et est-ce que ça va mieux ou moins bien ? ». Premier
+   volet : la règle de comparaison (app/ce-qui-a-change.js — mois calendaires, comparaison,
+   et la PENTE sur trois périodes, que AUCUN signal ne regardait) et la console en tête de
+   Gestion › Tableau de bord (app/console-du-dirigeant.js — trois axes, douze mois, les
+   dégradations d'abord). Aucune migration, aucune donnée nouvelle : les décomptes de primes
+   gardaient déjà le taux de chaque livreur mois par mois, jamais lus en série. Deux défauts
+   trouvés en faisant tourner la console sur les VRAIS chiffres : les mois d'avant la mise en
+   service comptaient comme des zéros (sept pentes détectées avec deux mois d'historique), et un
+   taux se comparait en pourcentage au lieu de points. Étiquette 20260918console. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v162'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v163'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

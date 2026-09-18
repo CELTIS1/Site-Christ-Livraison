@@ -909,6 +909,11 @@ async function renderDashboard(){
   } catch(e){ console.error(e); }
 
   renderDashboardPrimes(annee, mois);
+  /* La console du dirigeant (18/09/2026) : elle lit les douze derniers mois une seule fois et
+     garde sa lecture, donc on l'initialise ici sans la relier aux sélecteurs Année / Mois de
+     cette barre. Elle a son propre choix de mois : ces sélecteurs-là commandent les chiffres de
+     GESTION (recette saisie, objectif, trésorerie), qui sont une autre question. */
+  if (window.CLTConsole) window.CLTConsole.init();
   document.getElementById('dash-kpis').innerHTML = `
     <div class="kpi"><div class="kpi-label">Recette du mois</div><div class="kpi-value">${fmtF(recetteMois)}</div>
       <div class="kpi-sub">Objectif : ${fmtF(objMois)} · ${pct}%</div>

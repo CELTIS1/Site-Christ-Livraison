@@ -2,6 +2,19 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260918console",
+      "date": "18 septembre 2026",
+      "titre": "Gestion : « Ce qui a changé », en tête du tableau de bord",
+      "points": [
+        "Une bande en tête du tableau de bord répond à une seule question : qu'est-ce qui a changé ce mois-ci, et est-ce que ça va mieux ou moins bien ? Les dégradations d'abord, nommées et chiffrées.",
+        "Trois axes comparés au mois précédent : l'activité (confiés, livrés, échecs, réussite), l'argent (recette, articles encaissés, recettes et dépenses saisies), les personnes (clientes, nouvelles clientes, livreurs, taux moyen).",
+        "Une dégradation se voit désormais à la PENTE et non au niveau : « en baisse depuis 3 mois — 94 % → 88 % → 81 % ». Un livreur qui passe de 99 % à 85 % ne déclenchait aucun signal jusqu'ici.",
+        "Un mois vide n'est pas un mois à zéro, et un mois d'avant la mise en service non plus : ces mois-là ne se comparent pas, plutôt que d'annoncer une chute qui n'a pas eu lieu.",
+        "Un taux se compare en points (« 7 points de moins »), pas en pourcentage : « −8 % » écrit à côté de « 81 % » se lit comme 81 moins 8.",
+        "Aucune nouvelle donnée n'est collectée : tout vient de ce qui était déjà en base — dont les décomptes de primes, qui gardent le taux de chaque livreur mois par mois et que personne n'avait jamais lus en série."
+      ]
+    },
+    {
       "version": "20260918tarif",
       "date": "18 septembre 2026",
       "titre": "Le prix de livraison se pose tout seul, d'après la grille",

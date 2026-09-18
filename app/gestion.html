@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918tarif">
-<script src="theme.js?v=20260918tarif"></script>
-<script src="splash.js?v=20260918tarif"></script>
+<link rel="stylesheet" href="style.css?v=20260918console">
+<script src="theme.js?v=20260918console"></script>
+<script src="splash.js?v=20260918console"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -81,6 +81,62 @@
       linear-gradient(to right, rgba(15,118,110,.16), rgba(15,118,110,0)) left center / 18px 100% no-repeat,
       linear-gradient(to left,  rgba(15,118,110,.16), rgba(15,118,110,0)) right center / 18px 100% no-repeat;
     background-attachment: local, local, scroll, scroll; }
+  /* ---------- LA CONSOLE DU DIRIGEANT (18/09/2026) ----------
+     Le principe de mise en page : la bande « Ce qui a changé » est faite pour être lue en dix
+     secondes debout, donc grande et aérée ; les trois axes sont faits pour être consultés, donc
+     denses. Deux densités différentes sur le même écran, parce qu'on y vient pour deux gestes
+     différents. Et tout tient sur un téléphone : les tableaux passent en cartes sous 720 px,
+     comme partout ailleurs dans l'application. */
+  #cdd-console{ padding:16px 18px; margin-bottom:16px; }
+  .cdd-entete{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .cdd-titre{ margin:0; font-size:19px; color:var(--clt-teal-dark); }
+  .cdd-sous{ font-size:13px; color:#5b6473; margin-top:2px; }
+  .cdd-choix-mois{ font-size:12.5px; font-weight:600; color:var(--clt-teal-dark); display:flex; align-items:center; gap:6px; }
+  .cdd-choix-mois select{ font-size:13px; padding:7px 10px; border:1.5px solid rgba(15,118,110,0.25); border-radius:9px; min-height:40px; }
+  .cdd-attente, .cdd-rien, .cdd-erreur{ font-size:13.5px; color:#5b6473; padding:12px 0; line-height:1.5; }
+  .cdd-erreur{ color:#9a2b1c; font-weight:600; }
+  /* Un mois en cours comparé à un mois entier paraît toujours plus faible : on le dit, sinon on
+     lit une chute tous les 1er du mois. */
+  .cdd-avis{ margin-top:12px; padding:9px 12px; border-radius:10px; background:#fff6ea; border:1px solid #f0d09a;
+    color:#8a5a00; font-size:12.5px; font-weight:600; line-height:1.45; }
+  .cdd-chgs{ list-style:none; margin:14px 0 0; padding:0; display:grid; gap:9px; }
+  .cdd-chg{ border-left:4px solid; background:#fafbfc; border-radius:0 10px 10px 0; padding:10px 12px; }
+  .cdd-chg-tete{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; font-size:14.5px; }
+  .cdd-chg-signe{ display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:26px;
+    border-radius:8px; font-size:12px; font-weight:800; }
+  .cdd-chg-chiffre{ margin-left:auto; font-weight:800; font-size:16px; color:var(--clt-teal-dark); }
+  .cdd-chg-phrase{ font-size:12.5px; color:#5b6473; margin-top:3px; }
+  .cdd-chg-pente{ font-size:12.5px; font-weight:700; margin-top:4px; }
+  .cdd-axes{ display:grid; gap:14px; margin-top:18px; }
+  .cdd-axe-titre{ margin:0 0 6px; font-size:14px; color:var(--clt-teal-dark); text-transform:uppercase; letter-spacing:.04em; }
+  .cdd-table{ border-collapse:collapse; width:100%; font-size:13px; background:#fff; }
+  .cdd-table th, .cdd-table td{ padding:8px 10px; border-bottom:1px solid #eef2f1; text-align:left; }
+  .cdd-table th{ background:var(--clt-teal-light); color:var(--clt-teal-dark); font-weight:700; font-size:12px; white-space:nowrap; }
+  .cdd-table td.cdd-nombre, .cdd-table th:nth-child(2), .cdd-table th:nth-child(3), .cdd-table th:nth-child(4){ text-align:right; }
+  .cdd-avant{ color:#8a94a3; }
+  .cdd-ecart{ display:inline-block; padding:2px 8px; border-radius:7px; font-weight:800; font-size:12.5px; white-space:nowrap; }
+  .cdd-inconnu{ color:#8a94a3; }
+  .cdd-courbe-cell{ text-align:right; width:130px; }
+  .cdd-courbe{ vertical-align:middle; overflow:visible; }
+  .cdd-courbe-vide{ font-size:11.5px; color:#8a94a3; }
+  .cdd-aide{ margin-top:14px; }
+  .cdd-aide-texte{ font-size:12.5px; color:#5b6473; line-height:1.55; }
+  .cdd-aide-texte p{ margin:0 0 7px; }
+  @media (max-width:720px){
+    /* Cinq colonnes ne tiennent pas sur un téléphone : chaque ligne devient une carte, et
+       chaque cellule porte le nom de sa colonne — la convention de toute l'application. */
+    #cdd-console{ padding:14px; }
+    .cdd-table thead{ display:none; }
+    .cdd-table, .cdd-table tbody, .cdd-table tr, .cdd-table td{ display:block; width:100%; }
+    .cdd-table tr{ border:1px solid #eef2f1; border-radius:11px; padding:8px 10px; margin-bottom:8px; background:#fff; }
+    .cdd-table td{ border:0; padding:3px 0; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .cdd-table td::before{ content:attr(data-label); font-size:11.5px; color:#8a94a3; font-weight:600; }
+    .cdd-table td:first-child{ font-weight:700; color:var(--clt-teal-dark); padding-bottom:5px; }
+    .cdd-table td:first-child::before{ content:none; }
+    .cdd-courbe-cell{ width:auto; }
+    .cdd-chg-chiffre{ margin-left:0; }
+  }
+
   /* Les barres d'onglets défilent aussi (581 px et 1 533 px sur 342) : même repère. */
   .tabs, .subtabs{
     background:
@@ -404,6 +460,16 @@
       <label style="font-weight:600;color:var(--clt-teal-dark);">Mois</label>
       <select id="dash-month" onchange="renderDashboard()"></select>
     </div>
+    <!-- LA CONSOLE DU DIRIGEANT — « qu'est-ce qui a changé ? » (18/09/2026, Celtis : « un système
+         d'analyse […] pour voir les évolutions, les régressions, les problèmes, manquements »).
+         Elle prend la TÊTE de cet écran, et n'est pas un douzième tableau posé à côté : Gestion ›
+         Tableau de bord est déjà l'écran du dirigeant, et un tableau de plus aurait fini par
+         contredire les onze autres. Dessinée par app/console-du-dirigeant.js ; la règle de
+         comparaison, elle, vit dans app/ce-qui-a-change.js et se vérifie hors navigateur.
+         Les chiffres de gestion du mois (recette, objectif, trésorerie, masse salariale)
+         restent juste en dessous, inchangés : la console dit ce qui BOUGE, eux disent où l'on
+         en est. -->
+    <div class="card" id="cdd-console"></div>
     <div class="kpi-grid" id="dash-kpis"></div>
     <!-- Livraisons et primes du mois (13/09/2026) : chaque tuile ouvre Paie › Primes livreurs. -->
     <div class="kpi-grid" id="dash-kpis-primes"></div>
@@ -1246,24 +1312,28 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260918tarif"></script>
-<script src="lib/bibliotheques.js?v=20260918tarif"></script>
-<script src="lib/retours.js?v=20260918tarif"></script>
-<script src="lib/reclamations.js?v=20260918tarif"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918tarif"></script>
-<script src="lib/argent.js?v=20260918tarif"></script>
-<script src="lib/releve-cliente.js?v=20260918tarif"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918tarif"></script>
-<script src="lib/briques-argent.js?v=20260918tarif"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918tarif"></script>
-<script src="lib/annonce-de-remise.js?v=20260918tarif"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918tarif"></script>
-<script src="lib/primes.js?v=20260918tarif"></script>
-<script src="lib/doublons.js?v=20260918tarif"></script>
-<script src="config.js?v=20260918tarif"></script>
-<script src="biometric-lock.js?v=20260918tarif"></script>
-<script src="clt-select-recherche.js?v=20260918tarif"></script>
-<script src="site-editeur.js?v=20260918tarif"></script>
-<script src="gestion.js?v=20260918tarif"></script>
+<script src="clt-common.js?v=20260918console"></script>
+<script src="lib/bibliotheques.js?v=20260918console"></script>
+<script src="lib/retours.js?v=20260918console"></script>
+<script src="lib/reclamations.js?v=20260918console"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918console"></script>
+<script src="lib/argent.js?v=20260918console"></script>
+<script src="lib/releve-cliente.js?v=20260918console"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918console"></script>
+<script src="lib/briques-argent.js?v=20260918console"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918console"></script>
+<script src="lib/annonce-de-remise.js?v=20260918console"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918console"></script>
+<script src="lib/primes.js?v=20260918console"></script>
+<script src="lib/doublons.js?v=20260918console"></script>
+<script src="config.js?v=20260918console"></script>
+<script src="biometric-lock.js?v=20260918console"></script>
+<script src="clt-select-recherche.js?v=20260918console"></script>
+<script src="site-editeur.js?v=20260918console"></script>
+<!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
+     elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
+<script src="ce-qui-a-change.js?v=20260918console"></script>
+<script src="console-du-dirigeant.js?v=20260918console"></script>
+<script src="gestion.js?v=20260918console"></script>
 </body>
 </html>
