@@ -315,6 +315,21 @@
     ldOuvrirFiche(livreurId); ldRendre();
   }
 
+  /* LA CARTE D'IDENTITÉ EN TÊTE DE FICHE — 18/09/2026, même geste que sur la fiche cliente.
+     Les signaux sont ceux que la liste pose déjà (l.signaux) ; on les écrit en toutes lettres
+     avec leur chiffre, parce qu'une icône seule demande de survoler pour être comprise. Rien
+     n'est recalculé ici. « Rien à signaler » s'écrit en vert : une carte vide se lirait comme
+     un chargement raté. */
+  function ldBadgesFicheHTML(l) {
+    const s = l.stats, b = [];
+    if (l.signaux.includes('reussite')) b.push(['rouge', '⚠️ réussite ' + l.taux + ' % sur ' + s.fixes + ' colis']);
+    if (l.signaux.includes('sansmotif')) b.push(['rouge', '📝 ' + s.sansMotif + ' échecs sans motif']);
+    if (l.signaux.includes('reclamation')) b.push(['ambre', '🗣️ une réclamation à trancher']);
+    if (l.signaux.includes('silence')) b.push(['ambre', '😴 rien depuis ' + joursEntre(l.dernier, aujourdhui()) + ' j']);
+    if (!b.length) b.push(['vert', '✓ rien à signaler']);
+    return b.map((x) => `<span class="cd-pastille cd-pastille-${x[0]}">${x[1]}</span>`).join('');
+  }
+
   // ---------- La fiche d'un livreur ----------
   function ldFicheHTML(l) {
     const p = l.profil, s = l.stats;
@@ -324,7 +339,14 @@
     const sourceLib = { cliente: 'cliente', vendeuse: 'vendeuse', equipe: 'équipe', autre: 'autre' };
     return `
       <div class="ld-fiche-tete">
-        <div><div class="ld-fiche-nom">${esc(p.full_name || 'Livreur')}</div><div class="cd-kpi-sous">${p.phone ? `📞 ${esc(p.phone)}` : ''} · ${ldPeriode} derniers jours</div></div>
+        <div class="cd-carte-identite">
+          ${typeof avatarHTML === 'function' ? avatarHTML(p, 52) : ''}
+          <div class="cd-carte-texte">
+            <div class="ld-fiche-nom">${esc(p.full_name || 'Livreur')}</div>
+            <div class="cd-kpi-sous">${p.phone ? `📞 ${esc(p.phone)} · ` : ''}${ldPeriode} derniers jours</div>
+            <div class="cd-pastilles">${ldBadgesFicheHTML(l)}</div>
+          </div>
+        </div>
         ${p.phone ? `<a class="btn btn-sm btn-outline" href="tel:${esc(String(p.phone).replace(/\s+/g, ''))}">Appeler</a>` : ''}
       </div>
       <div class="cd-kpis">

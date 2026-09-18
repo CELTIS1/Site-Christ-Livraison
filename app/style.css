@@ -191,6 +191,31 @@ input,textarea,select{font-family:inherit;}
 
 /* ---------- LAYOUT ---------- */
 .wrap{max-width:1080px; margin:0 auto; padding:32px 24px 60px 24px;}
+
+/* ---------- LA COLONNE DE LECTURE — 18 septembre 2026 ----------
+   Celtis, après avoir regardé une autre application sur grand écran : « dis-moi si c'est bien
+   pour t'en inspirer pour les grands écrans, les moyens, et ce qui est recommandé ».
+
+   MESURÉ AVANT DE TOUCHER À QUOI QUE CE SOIT, sur un écran de 1 512 px : l'espace du livreur et
+   celui de la cliente s'étalaient sur 1 080 px pour UNE colonne. Le bouton « Je pars livrer »
+   faisait 1 200 px de large, la case « Ex : après 14 h » 1 250 px, et une phrase d'explication
+   courait sur toute la largeur. Ce n'est pas une mise en page d'ordinateur : c'est une mise en
+   page de téléphone étirée, et elle se lit moins bien qu'un téléphone.
+
+   LA RÈGLE : une ligne de texte ne dépasse pas ~75 caractères. Au-delà, l'œil perd le début de
+   la ligne suivante. Quand il reste de la place, on n'élargit pas — on ajoute une colonne, ou
+   on laisse la marge.
+
+   CES DEUX ESPACES-LÀ N'AURONT JAMAIS DE SECONDE COLONNE : le livreur est sur son téléphone,
+   au bord de la route, et la cliente aussi. Un ordinateur n'y sert qu'à dépanner. On borne donc
+   la colonne et on la centre — rien d'autre. Sur téléphone, rien ne change du tout : la borne
+   n'existe qu'au-dessus de 760 px, largeur qu'aucun téléphone n'atteint en portrait.
+
+   Le bureau (Équipe) et la Gestion gardent leurs 1 080 et 1 180 px : eux ont de vraies listes,
+   de vrais tableaux, et plusieurs colonnes à montrer. Ce n'est pas la même question. */
+@media (min-width:761px){
+  .wrap--lecture{ max-width:680px; }
+}
 .page-title{font-size:24px; color:var(--navy); font-weight:800; margin-bottom:4px; letter-spacing:-0.02em;}
 .page-sub{color:var(--muted); font-size:14px; margin-bottom:28px;}
 /* La salutation seule, sans phrase sous elle (17/09/2026) : elle porte donc sa propre marge,

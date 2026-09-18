@@ -211,6 +211,34 @@ verifier("les lectures se font par tranches : la base coupe à 1 000 lignes sans
   "vu le 05/09 : 684 colis chargés, la période d'avant annoncée à zéro");
 verifier("l'écran ne fait aucune écriture en base", !/\.(insert|update|delete|upsert)\(/.test(source), 'un tableau de bord lit, il ne modifie rien');
 
+
+const fnBadges = (source.match(/function cdBadgesFicheHTML[\s\S]*?\n  \}/) || [''])[0];
+
+titre('La carte d\'identité en tête de fiche (18/09/2026)');
+{
+  /* Celtis, après avoir regardé une autre application sur grand écran : la bonne idée à prendre
+     était une carte en tête de fiche — qui l'on regarde, et où ça coince, en trois secondes.
+     Ce qu'on n'a PAS copié de cet écran-là : quatre éléments par ligne disant la même chose, et
+     une pastille sans son chiffre, qu'il faut survoler pour comprendre. */
+  verifier('la fiche s\'ouvre sur un avatar, un nom et des pastilles',
+    /cd-carte-identite/.test(source) && /avatarHTML\(p, 52\)/.test(source) && /cd-pastilles/.test(source));
+  verifier('chaque pastille porte SON CHIFFRE, pas seulement une icône',
+    /à reverser/.test(fnBadges) && /% d\\'échecs/.test(fnBadges) && /aucun colis depuis/.test(fnBadges), fnBadges.slice(0, 200));
+  /* Une carte sans pastille se lirait « les signaux n'ont pas chargé ». « Rien à signaler » est
+     une information, et souvent la meilleure de l'écran. */
+  verifier('quand il n\'y a rien à signaler, la carte le dit en vert plutôt que de rester vide',
+    /'vert', '✓ rien à signaler'/.test(fnBadges), fnBadges.slice(-220));
+  /* RIEN N'EST RECALCULÉ ICI : les signaux sont ceux que la liste pose déjà (l.signaux), une
+     seule fois, à la lecture. Un second jeu de seuils finirait par ne plus dire la même chose
+     que les pastilles de la liste, sur le même écran. */
+  verifier('les pastilles relisent les signaux déjà calculés, sans second jeu de seuils',
+    /signaux\.includes\(/.test(fnBadges) && !/>=|<\s*\d/.test(fnBadges), fnBadges.slice(0, 200));
+  verifier('et le style des pastilles vit dans equipe.html, mode sombre compris',
+    /\.cd-pastille-rouge\{/.test(equipe) && /\.cd-pastille-ambre\{/.test(equipe)
+    && /\.cd-pastille-vert\{/.test(equipe)
+    && /data-theme="dark"\] \.cd-pastille-rouge/.test(equipe));
+}
+
 titre('Les fichiers partagés portent tous la même étiquette de version');
 controlerEtiquettesDeVersion({ APP, verifier });
 

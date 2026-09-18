@@ -117,5 +117,33 @@ verifier("la qualification n'écrit qu'une colonne, echec_imputable", /from\('co
 verifier('une réclamation se crée avec livreur, source, date, texte — et se tranche par « fondee »', /insert\(\{ livreur_id: livreurId, source, date_faits: date, texte \}\)/.test(source) && /update\(\{ fondee, reponse_livreur: reponse \}\)/.test(source));
 verifier("l'écran ne calcule aucune prime (Gestion › Paie s'en charge)", !/prime_reussite|calculerPrimesLivreur|primes_en_cours/.test(source));
 
+
+const fnBadges = (source.match(/function ldBadgesFicheHTML[\s\S]*?\n  \}/) || [''])[0];
+
+titre('La carte d\'identité en tête de fiche (18/09/2026)');
+{
+  /* Celtis, après avoir regardé une autre application sur grand écran : la bonne idée à prendre
+     était une carte en tête de fiche — qui l'on regarde, et où ça coince, en trois secondes.
+     Ce qu'on n'a PAS copié de cet écran-là : quatre éléments par ligne disant la même chose, et
+     une pastille sans son chiffre, qu'il faut survoler pour comprendre. */
+  verifier('la fiche s\'ouvre sur un avatar, un nom et des pastilles',
+    /cd-carte-identite/.test(source) && /avatarHTML\(p, 52\)/.test(source) && /cd-pastilles/.test(source));
+  verifier('chaque pastille porte SON CHIFFRE, pas seulement une icône',
+    /réussite/.test(fnBadges) && /sans motif/.test(fnBadges) && /rien depuis/.test(fnBadges), fnBadges.slice(0, 200));
+  /* Une carte sans pastille se lirait « les signaux n'ont pas chargé ». « Rien à signaler » est
+     une information, et souvent la meilleure de l'écran. */
+  verifier('quand il n\'y a rien à signaler, la carte le dit en vert plutôt que de rester vide',
+    /'vert', '✓ rien à signaler'/.test(fnBadges), fnBadges.slice(-220));
+  /* RIEN N'EST RECALCULÉ ICI : les signaux sont ceux que la liste pose déjà (l.signaux), une
+     seule fois, à la lecture. Un second jeu de seuils finirait par ne plus dire la même chose
+     que les pastilles de la liste, sur le même écran. */
+  verifier('les pastilles relisent les signaux déjà calculés, sans second jeu de seuils',
+    /signaux\.includes\(/.test(fnBadges) && !/>=|<\s*\d/.test(fnBadges), fnBadges.slice(0, 200));
+  verifier('et le style des pastilles vit dans equipe.html, mode sombre compris',
+    /\.cd-pastille-rouge\{/.test(equipe) && /\.cd-pastille-ambre\{/.test(equipe)
+    && /\.cd-pastille-vert\{/.test(equipe)
+    && /data-theme="dark"\] \.cd-pastille-rouge/.test(equipe));
+}
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

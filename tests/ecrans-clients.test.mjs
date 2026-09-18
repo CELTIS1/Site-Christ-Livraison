@@ -591,6 +591,39 @@ titre('8. Les briques d’écran partagées : un seul exemplaire, dans style.css
 }
 
 /* ---------- 3.5 (16/09/2026) : plus aucune fenêtre système dans l'espace cliente ---------- */
+titre('9. La colonne de lecture : ces écrans ne s\'étalent pas sur un ordinateur');
+{
+  /* MESURÉ LE 18/09 SUR UN ÉCRAN DE 1 512 px, avant de toucher à quoi que ce soit : ces écrans
+     s'étalaient sur 1 080 px pour UNE colonne. Le bouton « Je pars livrer » faisait 1 200 px de
+     large, la case « Ex : après 14 h » 1 250 px, et les phrases d'explication couraient sur toute
+     la largeur. Ce n'est pas une mise en page d'ordinateur, c'est une mise en page de téléphone
+     étirée — et elle se lit moins bien qu'un téléphone.
+
+     LA RÈGLE : une ligne de texte ne dépasse pas ~75 caractères. Quand il reste de la place, on
+     n'élargit pas — on ajoute une colonne, ou on laisse la marge. Ces écrans-là n'auront jamais
+     de seconde colonne : le livreur est au bord de la route, la cliente aussi, et l'ordinateur
+     n'y sert qu'à dépanner. On borne donc la colonne, et c'est tout.
+
+     LE BUREAU ET LA GESTION NE SONT PAS CONCERNÉS : eux ont de vraies listes et de vrais
+     tableaux à montrer, et plusieurs colonnes. Ce banc garde justement cette frontière. */
+  const style = lire('style.css');
+  verifier('la borne existe, et seulement au-dessus de 760 px — rien ne change sur téléphone',
+    /@media \(min-width:761px\)\{\s*\.wrap--lecture\{ max-width:\d+px; \}/.test(style),
+    (style.match(/\.wrap--lecture[^}]*\}/) || [''])[0]);
+  const borne = Number((style.match(/\.wrap--lecture\{ max-width:(\d+)px/) || [])[1] || 0);
+  verifier('elle tient une ligne lisible : entre 600 et 760 px', borne >= 600 && borne <= 760, borne);
+  [['livreur.html', 'du livreur'], ['fournisseur.html', 'de la cliente'],
+   ['express-client.html', 'du client Express'], ['express-coursier.html', 'du coursier Express']]
+    .forEach(function ([f, qui]) {
+      verifier('l\'écran ' + qui + ' porte la colonne de lecture',
+        /<div class="wrap wrap--lecture">/.test(lire(f)), f);
+    });
+  [['equipe.html', 'le bureau'], ['gestion.html', 'la gestion']].forEach(function ([f, qui]) {
+    verifier('mais pas ' + qui + ' : des listes et des tableaux ont besoin de la largeur',
+      !/wrap--lecture/.test(lire(f)), f);
+  });
+}
+
 console.log('\nEspace cliente — plus aucun alert() natif (feuille de route 3.5)');
 {
   const natifs = (fournisseur.match(/\balert\(/g) || []).length;

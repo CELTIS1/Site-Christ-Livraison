@@ -679,10 +679,26 @@ verifier(
    inscrite dans le fichier lui-même, et le banc quoi-de-neuf la tient désormais : longueur du
    titre, nombre de points, longueur d'un point. L'étiquette interne (« 20260918questions ») ne
    s'affiche plus à côté de la date — elle ne disait rien au lecteur, et le peu qu'elle disait
-   était justement le thème du chantier. Aucune migration. Étiquette 20260918notes. */
+   était justement le thème du chantier. Aucune migration. Étiquette 20260918notes.
+   v167, le 18/09/2026 — Celtis montre la mise en page d'une autre application sur grand écran et
+   demande si elle est bonne à copier. Réponse mesurée plutôt que d'opinion : deux idées à
+   prendre, une à surtout pas. À PRENDRE (1) la carte d'identité en tête de fiche — sur nos
+   fiches cliente et livreur, l'avatar, le nom, une ligne de contexte et les signaux DÉJÀ
+   calculés (l.signaux) écrits en toutes lettres AVEC leur chiffre : « 140 000 F à reverser » au
+   lieu d'une icône qu'il faut survoler ; « rien à signaler » s'écrit en vert, parce qu'une carte
+   vide se lit « les signaux n'ont pas chargé ». (2) Le compte au bout du titre de section, déjà
+   en place chez nous. À NE PAS PRENDRE : quatorze cartes pour quatorze lignes, un bouton à
+   1 200 px du titre auquel il appartient, et quatre éléments par ligne disant la même chose —
+   c'est une mise en page de téléphone étirée, exactement le défaut que la feuille de route nous
+   reproche. MESURÉ CHEZ NOUS sur 1 512 px : livreur et cliente s'étalaient sur 1 080 px pour UNE
+   colonne (bouton « Je pars livrer » large de 1 200 px, case « Ex : après 14 h » de 1 250 px).
+   Les quatre écrans de téléphone (livreur, cliente, les deux Express) reçoivent une colonne de
+   lecture bornée à 680 px, et seulement au-dessus de 760 px de large : rien ne change sur
+   téléphone. Le bureau et la Gestion gardent leur largeur — eux ont de vraies listes et de vrais
+   tableaux, ce n'est pas la même question. Aucune migration. Étiquette 20260918ecrans. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v166'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v167'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

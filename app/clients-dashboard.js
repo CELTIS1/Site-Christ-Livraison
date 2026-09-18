@@ -393,6 +393,32 @@
     }
   }
 
+  /* --------------------------------------------------------------------------------------
+     LA CARTE D'IDENTITÉ EN TÊTE DE FICHE — 18 septembre 2026
+     --------------------------------------------------------------------------------------
+     Celtis, après avoir regardé une autre application : la meilleure idée de cet écran-là était
+     une carte en tête de fiche — qui l'on regarde, et où ça coince, en trois secondes.
+
+     ON NE RECALCULE RIEN. Les signaux sont ceux que la liste affiche déjà en icônes (l.signaux,
+     posés une seule fois à la lecture) ; ici ils sont simplement écrits en toutes lettres AVEC
+     LEUR CHIFFRE. Une pastille « ⚠️ » demande de survoler pour comprendre ; « ⚠️ 33 % d'échecs »
+     se comprend de loin, et c'est le même fait.
+
+     QUAND IL N'Y A RIEN, ON LE DIT EN VERT. Une carte sans pastille se lirait « les signaux
+     n'ont pas chargé ». « Rien à signaler » est une information, et souvent la meilleure.
+     -------------------------------------------------------------------------------------- */
+  function cdBadgesFicheHTML(l) {
+    const p = l.profil || {};
+    const b = [];
+    if (l.signaux.includes('argent')) b.push(['rouge', '💸 ' + money(l.aReverserAnciens) + ' à reverser']);
+    if (l.signaux.includes('echecs')) b.push(['rouge', '⚠️ ' + l.tauxEchec + ' % d\'échecs']);
+    if (l.signaux.includes('compte')) b.push(['rouge', '🔒 compte ' + esc(p.status || '')]);
+    if (l.signaux.includes('sommeil')) b.push(['ambre', '😴 aucun colis depuis ' + ilYA(l.dernier)]);
+    if (l.signaux.includes('hausse')) b.push(['vert', '📈 en forte hausse']);
+    if (!b.length) b.push(['vert', '✓ rien à signaler']);
+    return b.map((x) => `<span class="cd-pastille cd-pastille-${x[0]}">${x[1]}</span>`).join('');
+  }
+
   // ---------- La fiche d'une cliente ----------
   function cdFicheHTML(l) {
     const p = l.profil;
@@ -419,9 +445,13 @@
         </div>`;
     return `
       <div class="cd-fiche-entete">
-        <div>
-          <div class="cd-fiche-nom">${esc(l.nom)}</div>
-          <div class="cd-sous">${p.full_name && p.company_name ? esc(p.full_name) + ' · ' : ''}${p.status && p.status !== 'valide' ? `<span class="cd-rouge">compte ${esc(p.status)}</span> · ` : ''}cliente depuis ${p.created_at ? enClair(jour(p.created_at), true) : '—'}</div>
+        <div class="cd-carte-identite">
+          ${typeof avatarHTML === 'function' ? avatarHTML(p, 52) : ''}
+          <div class="cd-carte-texte">
+            <div class="cd-fiche-nom">${esc(l.nom)}</div>
+            <div class="cd-sous">${p.full_name && p.company_name ? esc(p.full_name) + ' · ' : ''}${l.commune ? esc(l.commune) + ' · ' : ''}${p.created_at ? 'cliente depuis ' + enClair(jour(p.created_at), true) : 'date d\'arrivée inconnue'}</div>
+            <div class="cd-pastilles">${cdBadgesFicheHTML(l)}</div>
+          </div>
         </div>
         <div class="cd-fiche-gestes">
           ${cdContactHTML(l, true)}
