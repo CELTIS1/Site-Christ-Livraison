@@ -233,9 +233,18 @@ titre('On ne lit en base que ce qu\'on affiche');
 {
   const nu = sansCommentaires(source);
   const tables = [...nu.matchAll(/\.from\('([a-z_]+)'\)/g)].map((m) => m[1]);
-  verifier('quatre tables lues, et les quatre servent à l\'écran',
-    tables.sort().join(' ') === 'colis gestion_depenses gestion_recettes primes_decomptes',
+  /* Cinq depuis le 18/09 au soir : `profiles` est entrée avec la boîte à questions, qui répond
+     par des noms. Une réponse qui annonce « bbbbbbbb-bbbb-4bbb… a baissé » n'est pas une
+     réponse. Toute sixième table devra, elle aussi, être affichée quelque part. */
+  verifier('cinq tables lues, et les cinq servent à l\'écran',
+    tables.sort().join(' ') === 'colis gestion_depenses gestion_recettes primes_decomptes profiles',
     tables.join(' '));
+  /* Une console qui lit des données personnelles dont elle n'a pas l'usage est une console qui
+     les expose : on demande le nom, et rien d'autre. */
+  const selProfils = (nu.match(/from\('profiles'\)\s*\.select\('([^']*)'\)/) || [])[1] || '';
+  verifier('des profils, on ne demande que le nom — ni téléphone, ni pièce, ni adresse',
+    selProfils.split(',').map((c) => c.trim()).sort().join(' ') === 'company_name full_name id role',
+    selProfils);
   /* primes_decomptes est le gisement : un décompte figé par livreur et par mois, avec son taux,
      que personne n'avait jamais lu en série — l'écran des primes n'affiche qu'un mois. */
   verifier('le taux de chaque mois vient des décomptes déjà figés, pas d\'un recalcul',

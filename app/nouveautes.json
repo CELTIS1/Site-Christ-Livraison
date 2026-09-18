@@ -2,6 +2,19 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260918questions",
+      "date": "18 septembre 2026",
+      "titre": "Gestion : posez votre question, la réponse est calculée",
+      "points": [
+        "Sous « Ce qui a changé », une boîte de treize questions rangées par thème : mes clientes, mes livreurs, mon argent, mon activité. On clique, la réponse s'ouvre juste en dessous.",
+        "Quelle cliente a le plus baissé, qui n'a rien confié depuis trois semaines, à qui je dois de l'argent et depuis quand, quel livreur se dégrade, qui détient ma caisse, où part mon argent, quelle commune rapporte, quel jour est le plus chargé.",
+        "Chaque réponse montre le chemin de ses chiffres, ligne par ligne, et dit sa règle : on peut la vérifier au lieu de la croire.",
+        "Une question qui ne peut pas être calculée le DIT et explique pourquoi — base trop petite, mois non saisi, historique trop court. Jamais un zéro inventé à la place d'une réponse.",
+        "Une case de recherche retrouve la bonne question à partir de deux ou trois mots : « baisse », « argent », « qui est parti ».",
+        "Aucune intelligence artificielle, aucun abonnement : les chiffres sont calculés exactement, par les mêmes additions que le point du jour, le relevé des clientes et la comptabilité."
+      ]
+    },
+    {
       "version": "20260918moinsdonglets",
       "date": "18 septembre 2026",
       "titre": "Moins d'endroits à parcourir",

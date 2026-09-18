@@ -78,13 +78,19 @@
     const debutFenetre = douze[0] + '-01';
     const annees = [...new Set(douze.map((c) => Number(c.slice(0, 4))))];
 
-    /* ON NE LIT QUE CE QU'ON AFFICHE. Les objectifs, la vue Express et les profils serviront aux
-       volets d'octobre (les trajectoires par cliente, le désabonnement, les cohortes) : les lire
-       aujourd'hui ferait payer trois requêtes pour des chiffres que personne ne verrait. C'est la
-       règle du banc ce-qui-se-charge-pour-rien, et elle vaut aussi pour la base. */
-    const [colis, decomptes, recettes, depenses] = await Promise.all([
+    /* ON NE LIT QUE CE QU'ON AFFICHE. Les objectifs et la vue Express serviront aux volets
+       d'octobre (les trajectoires par cliente, le désabonnement, les cohortes) : les lire
+       aujourd'hui ferait payer deux requêtes pour des chiffres que personne ne verrait. C'est la
+       règle du banc ce-qui-se-charge-pour-rien, et elle vaut aussi pour la base.
+       Les profils, eux, SONT lus : la boîte à questions répond par des noms, et une réponse qui
+       annonce « bbbbbbbb-bbbb-4bbb… a baissé » n'est pas une réponse. */
+    const [colis, profils, decomptes, recettes, depenses] = await Promise.all([
       cltLireTout(() => supabaseClient.from('colis').select(COLONNES_COLIS)
         .gte('created_at', debutFenetre + 'T00:00:00Z').order('id')).catch(() => []),
+      // Le nom des gens, et rien de plus : ni téléphone, ni pièce, ni adresse. Une console qui
+      // lit des données personnelles dont elle n'a pas l'usage est une console qui les expose.
+      cltLireTout(() => supabaseClient.from('profiles').select('id, full_name, company_name, role')
+        .order('id')).catch(() => []),
       // Le gisement : un décompte figé par livreur et par mois, avec son taux. Jamais lu en série.
       cltLireTout(() => supabaseClient.from('primes_decomptes')
         .select('salarie_id, periode, colis_livres, colis_confies, taux_livraison, moyenne_par_jour, jours_travailles, total_primes')
@@ -94,7 +100,13 @@
       cltLireTout(() => supabaseClient.from('gestion_depenses').select('annee, mois, categorie, montant')
         .in('annee', annees).order('id')).catch(() => []),
     ]);
-    return { moisFin, douze, colis, decomptes, recettes, depenses };
+    // `aujourdHui` est passé plutôt que relu : les questions qui comptent des jours d'attente
+    // doivent toutes compter depuis le MÊME jour, sinon deux réponses de la même page se
+    // contredisent d'une seconde à l'autre autour de minuit.
+    return {
+      moisFin, douze, colis, profils, decomptes, recettes, depenses,
+      aujourdHui: new Date().toISOString().slice(0, 10),
+    };
   }
 
   /* --------------------------------------------------------------------------------------
@@ -390,6 +402,138 @@
 
     const select = document.getElementById('cdd-mois');
     if (select) select.addEventListener('change', () => { moisAffiche = select.value; dessiner(); });
+
+    // Le mois choisi vaut pour les deux boîtes : les questions répondent toujours sur le mois
+    // qu'on lit juste au-dessus.
+    dessinerQuestions();
+  }
+
+  /* --------------------------------------------------------------------------------------
+     LA BOÎTE À QUESTIONS
+     --------------------------------------------------------------------------------------
+     Celtis, 18/09 : « je veux pouvoir interagir, interroger, et avoir des réponses claires et
+     précises ». Les réponses sont calculées par les-questions.js, qui ne touche pas au DOM et
+     se vérifie donc hors navigateur. Ici, il n'y a que de l'affichage.
+
+     POURQUOI C'EST DANS CE FICHIER ET PAS DANS LE SIEN. Les questions répondent sur les MÊMES
+     douze mois et le MÊME mois choisi que « Ce qui a changé » juste au-dessus. Un second module
+     voudrait ses propres données : deux lectures de la base, et un jour où le haut de l'écran
+     parle d'août pendant que le bas parle de septembre. Une lecture, un mois, deux boîtes.
+
+     DEUX CARTES SÉPARÉES, en revanche : si la console tombe, les questions restent lisibles, et
+     l'inverse aussi. Une seule carte aurait fait tomber les deux ensemble.
+     -------------------------------------------------------------------------------------- */
+  let questionChoisie = '';
+  let recherche = '';
+
+  function ligneHTML(l) {
+    return `<tr>
+      <td data-col="Quoi">${ech(l.quoi)}</td>
+      <td data-col="Chiffre" class="cdq-valeur">${ech(l.valeur)}</td>
+      <td data-col="Détail" class="cdq-detail">${l.note ? ech(l.note) : ''}</td>
+    </tr>`;
+  }
+
+  /* Une réponse s'affiche en trois temps : la phrase qu'on lit debout, le chemin des chiffres
+     qui la fonde, et l'avertissement de lecture s'il y en a un. Un « je ne sais pas » n'est pas
+     une erreur et ne se peint pas en rouge : c'est une réponse, et souvent la bonne. */
+  function reponseHTML(r) {
+    if (!r) return '';
+    if (r.jeNeSaisPas) {
+      return `<div class="cdq-rep cdq-jnsp">
+        <div class="cdq-jnsp-titre">Je ne sais pas</div>
+        <div class="cdq-jnsp-txt">${ech(r.jeNeSaisPas)}</div>
+      </div>`;
+    }
+    return `<div class="cdq-rep">
+      <div class="cdq-rep-titre">${ech(r.titre)}</div>
+      ${r.lignes && r.lignes.length ? `<table class="cdd-table cdq-table">
+        <thead><tr><th>Quoi</th><th>Chiffre</th><th>Détail</th></tr></thead>
+        <tbody>${r.lignes.map(ligneHTML).join('')}</tbody>
+      </table>` : ''}
+      ${r.note ? `<div class="cdq-rep-note">${ech(r.note)}</div>` : ''}
+    </div>`;
+  }
+
+  function listeQuestionsHTML(mois) {
+    const Q = window.CLTQuestions;
+    if (!Q) return '<div class="cdd-rien">Les questions ne sont pas chargées.</div>';
+    const retenues = Q.chercher(recherche);
+    if (!retenues.length) {
+      return `<div class="cdd-rien">Aucune question ne correspond à « ${ech(recherche)} ».
+        Essayez un mot plus simple : baisse, partie, argent, échecs, commune, livreur, jour.</div>`;
+    }
+    const gardees = {};
+    retenues.forEach((q) => { gardees[q.id] = true; });
+    // On garde l'ordre des groupes du catalogue même après une recherche : l'écran ne se
+    // réorganise pas sous les doigts, on voit seulement des lignes disparaître.
+    return Q.groupes().map(function (g) {
+      const qs = g.questions.filter((q) => gardees[q.id]);
+      if (!qs.length) return '';
+      return `<div class="cdq-groupe">
+        <div class="cdq-groupe-titre">${ech(g.groupe)}</div>
+        ${qs.map(function (q) {
+          const choisie = q.id === questionChoisie;
+          return `<button type="button" class="cdq-q${choisie ? ' cdq-q--ouverte' : ''}" data-question="${ech(q.id)}"
+            aria-expanded="${choisie ? 'true' : 'false'}">
+            <span class="cdq-q-txt">${ech(q.titre)}</span>
+            <span class="cdq-q-fleche">${choisie ? '▾' : '▸'}</span>
+          </button>
+          ${choisie ? reponseHTML(window.CLTQuestions.repondre(q.id, donnees, mois)) : ''}`;
+        }).join('')}
+      </div>`;
+    }).join('');
+  }
+
+  function dessinerQuestions() {
+    const boite = document.getElementById('cdd-questions');
+    if (!boite || !donnees) return;
+    const A = R();
+    const mois = moisAffiche || donnees.moisFin;
+    const nbQ = window.CLTQuestions ? window.CLTQuestions.QUESTIONS.length : 0;
+
+    // La carcasse une seule fois : sinon la case de recherche serait reconstruite à chaque
+    // frappe et perdrait le curseur au deuxième caractère.
+    if (boite.dataset.carcasse !== '1') {
+      boite.dataset.carcasse = '1';
+      boite.innerHTML = `
+        <div class="cdq-entete">
+          <h3 class="cdd-titre">Posez votre question</h3>
+          <div class="cdd-sous" id="cdq-sous"></div>
+        </div>
+        <input type="search" id="cdq-recherche" class="cdq-recherche" autocomplete="off"
+          placeholder="Cherchez : baisse, argent, partie, commune…"
+          aria-label="Chercher une question">
+        <div id="cdq-liste" class="cdq-liste"></div>`;
+      const champ = document.getElementById('cdq-recherche');
+      if (champ) {
+        champ.addEventListener('input', function () {
+          recherche = champ.value;
+          const liste = document.getElementById('cdq-liste');
+          if (liste) liste.innerHTML = listeQuestionsHTML(moisAffiche || donnees.moisFin);
+        });
+      }
+      const liste = document.getElementById('cdq-liste');
+      if (liste) {
+        // Un seul écouteur, posé une fois, sur le conteneur : les boutons sont redessinés à
+        // chaque frappe et chaque clic, donc leur attacher un écouteur chacun en oublierait.
+        liste.addEventListener('click', function (ev) {
+          const bouton = ev.target && ev.target.closest ? ev.target.closest('[data-question]') : null;
+          if (!bouton) return;
+          const id = bouton.getAttribute('data-question');
+          questionChoisie = (questionChoisie === id) ? '' : id;
+          liste.innerHTML = listeQuestionsHTML(moisAffiche || donnees.moisFin);
+        });
+      }
+    }
+
+    const sous = document.getElementById('cdq-sous');
+    if (sous) {
+      sous.textContent = nbQ + ' questions, calculées sur vos chiffres de '
+        + A.moisEnClair(mois) + ' — aucune n\u2019invente un nombre, et celle qui ne sait pas le dit.';
+    }
+    const liste = document.getElementById('cdq-liste');
+    if (liste) liste.innerHTML = listeQuestionsHTML(mois);
   }
 
   async function rafraichir(forcer) {
@@ -409,6 +553,14 @@
       // a rien à signaler », ce qui est l'inverse de la vérité quand la lecture a échoué.
       boite.innerHTML = `<div class="cdd-erreur">Ces chiffres n'ont pas pu être lus (${ech(e && e.message ? e.message : 'erreur inconnue')}).
         Les chiffres de gestion ci-dessous, eux, sont à jour.</div>`;
+      // Les questions lisent les mêmes données : sans elles, elles ne peuvent pas répondre non
+      // plus. On le dit, plutôt que de laisser une liste de questions qui répondraient toutes
+      // « je ne sais pas » sans expliquer pourquoi.
+      const bq = document.getElementById('cdd-questions');
+      if (bq) {
+        bq.dataset.carcasse = '';
+        bq.innerHTML = '<div class="cdd-erreur">Les questions ont besoin de ces mêmes chiffres : rechargez la page pour réessayer.</div>';
+      }
     } finally {
       enCours = false;
     }
@@ -421,5 +573,5 @@
     rafraichir(true);
   }
 
-  window.CLTConsole = { init, rafraichir, axes, courbeHTML, moisProposables, COLONNES_COLIS };
+  window.CLTConsole = { init, rafraichir, axes, courbeHTML, moisProposables, reponseHTML, COLONNES_COLIS };
 })();

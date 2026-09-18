@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918moinsdonglets">
-<script src="theme.js?v=20260918moinsdonglets"></script>
-<script src="splash.js?v=20260918moinsdonglets"></script>
+<link rel="stylesheet" href="style.css?v=20260918questions">
+<script src="theme.js?v=20260918questions"></script>
+<script src="splash.js?v=20260918questions"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -147,6 +147,46 @@
   .cdd-courbe-cell{ text-align:right; width:130px; }
   .cdd-courbe{ vertical-align:middle; overflow:visible; }
   .cdd-courbe-vide{ font-size:11.5px; color:#8a94a3; }
+  /* ---------- LA BOÎTE À QUESTIONS (18/09/2026) ----------
+     Une question est un bouton pleine largeur, et la réponse s'ouvre SOUS elle plutôt que dans
+     un panneau à côté : on lit la question et sa réponse d'un seul regard, sans avoir à se
+     rappeler laquelle on avait cliquée. Le même geste que les « détails » de toute
+     l'application, et il marche au pouce sur un téléphone. */
+  #cdd-questions{ padding:16px 18px; margin-bottom:16px; }
+  .cdq-entete{ margin-bottom:12px; }
+  .cdq-recherche{ width:100%; box-sizing:border-box; font-size:14px; padding:11px 13px; min-height:44px;
+    border:1.5px solid rgba(15,118,110,0.25); border-radius:11px; background:#fff; }
+  .cdq-recherche:focus{ outline:none; border-color:var(--clt-teal-dark); box-shadow:0 0 0 3px rgba(15,118,110,0.12); }
+  .cdq-liste{ margin-top:14px; display:grid; gap:16px; }
+  .cdq-groupe-titre{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--clt-teal-dark); margin-bottom:7px; }
+  .cdq-q{ width:100%; display:flex; align-items:center; gap:10px; text-align:left; cursor:pointer;
+    font-size:14px; font-weight:600; color:#2b3440; background:#fafbfc; border:1px solid #e6ebea;
+    border-radius:11px; padding:11px 13px; min-height:46px; margin-bottom:7px; font-family:inherit; }
+  .cdq-q:hover{ background:var(--clt-teal-light); border-color:rgba(15,118,110,0.3); }
+  .cdq-q--ouverte{ background:var(--clt-teal-light); border-color:var(--clt-teal-dark);
+    color:var(--clt-teal-dark); margin-bottom:0; border-radius:11px 11px 0 0; }
+  .cdq-q-txt{ flex:1; }
+  .cdq-q-fleche{ font-size:12px; color:var(--clt-teal-dark); }
+  .cdq-rep{ border:1px solid var(--clt-teal-dark); border-top:0; border-radius:0 0 11px 11px;
+    padding:13px; margin-bottom:9px; background:#fff; }
+  .cdq-rep-titre{ font-size:16.5px; font-weight:800; color:var(--clt-teal-dark); line-height:1.35; }
+  /* Les colonnes de la console sont des NOMBRES, donc alignées à droite ; celles d'une réponse
+     sont des phrases courtes (« 6 contre 10 », « 3 / jour »), qui se lisent à gauche. On remet
+     donc les en-têtes à gauche, sinon le titre et sa colonne ne sont pas du même côté. */
+  .cdq-table{ margin-top:11px; }
+  .cdq-table th:nth-child(2), .cdq-table th:nth-child(3){ text-align:left; }
+  .cdq-table td:first-child{ width:42%; }
+  .cdq-table td:nth-child(2){ width:26%; }
+  .cdq-valeur{ font-weight:700; white-space:nowrap; }
+  .cdq-detail{ color:#5b6473; font-size:12.5px; }
+  .cdq-rep-note{ margin-top:10px; font-size:12.5px; color:#5b6473; line-height:1.5;
+    border-top:1px dashed #e6ebea; padding-top:9px; }
+  /* « Je ne sais pas » est une réponse honnête, pas une panne : elle est neutre, jamais rouge.
+     Peindre en rouge une base trop courte, c'est apprendre à l'équipe à ignorer le rouge. */
+  .cdq-jnsp{ background:#fafbfc; }
+  .cdq-jnsp-titre{ font-size:14px; font-weight:800; color:#5b6473; }
+  .cdq-jnsp-txt{ font-size:13px; color:#5b6473; margin-top:4px; line-height:1.5; }
   .cdd-aide{ margin-top:14px; }
   .cdd-aide-texte{ font-size:12.5px; color:#5b6473; line-height:1.55; }
   .cdd-aide-texte p{ margin:0 0 7px; }
@@ -154,6 +194,8 @@
     /* Cinq colonnes ne tiennent pas sur un téléphone : chaque ligne devient une carte, et
        chaque cellule porte le nom de sa colonne — la convention de toute l'application. */
     #cdd-console{ padding:14px; }
+    #cdd-questions{ padding:14px; }
+    .cdq-rep-titre{ font-size:15px; }
     .cdd-table thead{ display:none; }
     .cdd-table, .cdd-table tbody, .cdd-table tr, .cdd-table td{ display:block; width:100%; }
     .cdd-table tr{ border:1px solid #eef2f1; border-radius:11px; padding:8px 10px; margin-bottom:8px; background:#fff; }
@@ -498,6 +540,14 @@
          restent juste en dessous, inchangés : la console dit ce qui BOUGE, eux disent où l'on
          en est. -->
     <div class="card" id="cdd-console"></div>
+    <!-- LA BOÎTE À QUESTIONS (18/09/2026) — Celtis : « je veux pouvoir interagir, interroger, et
+         avoir des réponses claires et précises ». Treize questions calculées exactement, sans
+         aucune IA : un modèle se trompe précisément là où il faudrait qu'il ne se trompe pas,
+         l'arithmétique sur l'argent. Les réponses viennent de app/les-questions.js, qui ne
+         touche pas au DOM et se vérifie donc hors navigateur ; la boîte est dessinée par
+         app/console-du-dirigeant.js, qui lui passe les mêmes douze mois et le même mois choisi
+         que la console juste au-dessus. -->
+    <div class="card" id="cdd-questions"></div>
     <div class="kpi-grid" id="dash-kpis"></div>
     <!-- Livraisons et primes du mois (13/09/2026) : chaque tuile ouvre Paie › Primes livreurs. -->
     <div class="kpi-grid" id="dash-kpis-primes"></div>
@@ -1396,28 +1446,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260918moinsdonglets"></script>
-<script src="lib/bibliotheques.js?v=20260918moinsdonglets"></script>
-<script src="lib/retours.js?v=20260918moinsdonglets"></script>
-<script src="lib/reclamations.js?v=20260918moinsdonglets"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918moinsdonglets"></script>
-<script src="lib/argent.js?v=20260918moinsdonglets"></script>
-<script src="lib/releve-cliente.js?v=20260918moinsdonglets"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918moinsdonglets"></script>
-<script src="lib/briques-argent.js?v=20260918moinsdonglets"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918moinsdonglets"></script>
-<script src="lib/annonce-de-remise.js?v=20260918moinsdonglets"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918moinsdonglets"></script>
-<script src="lib/primes.js?v=20260918moinsdonglets"></script>
-<script src="lib/doublons.js?v=20260918moinsdonglets"></script>
-<script src="config.js?v=20260918moinsdonglets"></script>
-<script src="biometric-lock.js?v=20260918moinsdonglets"></script>
-<script src="clt-select-recherche.js?v=20260918moinsdonglets"></script>
-<script src="site-editeur.js?v=20260918moinsdonglets"></script>
+<script src="clt-common.js?v=20260918questions"></script>
+<script src="lib/bibliotheques.js?v=20260918questions"></script>
+<script src="lib/retours.js?v=20260918questions"></script>
+<script src="lib/reclamations.js?v=20260918questions"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918questions"></script>
+<script src="lib/argent.js?v=20260918questions"></script>
+<script src="lib/releve-cliente.js?v=20260918questions"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918questions"></script>
+<script src="lib/briques-argent.js?v=20260918questions"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918questions"></script>
+<script src="lib/annonce-de-remise.js?v=20260918questions"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918questions"></script>
+<script src="lib/primes.js?v=20260918questions"></script>
+<script src="lib/doublons.js?v=20260918questions"></script>
+<script src="config.js?v=20260918questions"></script>
+<script src="biometric-lock.js?v=20260918questions"></script>
+<script src="clt-select-recherche.js?v=20260918questions"></script>
+<script src="site-editeur.js?v=20260918questions"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="ce-qui-a-change.js?v=20260918moinsdonglets"></script>
-<script src="console-du-dirigeant.js?v=20260918moinsdonglets"></script>
-<script src="gestion.js?v=20260918moinsdonglets"></script>
+<script src="ce-qui-a-change.js?v=20260918questions"></script>
+<script src="les-questions.js?v=20260918questions"></script>
+<script src="console-du-dirigeant.js?v=20260918questions"></script>
+<script src="gestion.js?v=20260918questions"></script>
 </body>
 </html>

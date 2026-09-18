@@ -649,10 +649,27 @@ verifier(
    « Tournées » n'a PAS été fusionné dans Colis, bien que ce fût le candidat évident : cet onglet
    en a été sorti le 27 août parce qu'on y décide demain pendant qu'ailleurs on lit aujourd'hui.
    Migration 2026-09-18-quels-onglets-sont-ouverts.sql, éprouvée dans un Postgres local puis
-   jouée. Étiquette 20260918moinsdonglets. */
+   jouée. Étiquette 20260918moinsdonglets.
+   v165, le 18/09/2026 — Celtis : « l'interface que tu m'as faite pour l'analyse des données, je
+   veux pouvoir interagir, interroger, et avoir des réponses claires et précises pour une gestion
+   optimale. S'il faut une IA intégrée alors on optera pour la plus accessible car j'ai énormément
+   de charges et d'abonnements. » On a proposé mieux, et l'inverse de ce qu'il attendait : PAS
+   d'IA. Un modèle se trompe précisément là où il ne faut pas — l'arithmétique sur l'argent — et
+   il se trompe avec aplomb ; or les vraies questions d'une entreprise de livraison sont
+   dénombrables. Treize questions (app/les-questions.js), rangées en quatre thèmes, calculées
+   exactement par les additions déjà en place (montantNetADevoir, caisseParLivreur, totauxArgent)
+   — gratuit, instantané, incapable d'inventer un nombre. La boîte est dessinée par la console,
+   avec la MÊME lecture et le MÊME mois choisi, sous « Ce qui a changé ». Une recherche par simple
+   correspondance de mots retrouve la bonne question, sans modèle. Chaque réponse porte le chemin
+   de ses chiffres, et celle qui ne peut pas être calculée le dit. Deux défauts trouvés en
+   écrivant le banc : « combien j'ai gagné » répondait « 0 FCFA — inchangé » sur une base vide
+   (même frontière que les séries : avant le premier colis terminé, il n'y a rien), et un livreur
+   ayant livré un seul jour sortait à « 4 colis par jour travaillé ». Aucune migration. Un
+   parcours de plus dans un vrai Chromium (tests/parcours/la-boite-a-questions.mjs).
+   Étiquette 20260918questions. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v164'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v165'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
