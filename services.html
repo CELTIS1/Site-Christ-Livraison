@@ -295,17 +295,24 @@ const FALLBACK = {
     tarif:"À la course, au forfait ou en abonnement mensuel selon votre volume. Devis et contrat sur mesure — parlons-en sur WhatsApp.",
     faq:[["Proposez-vous une facturation mensuelle ?","Oui. Pour les entreprises, nous mettons en place une facturation mensuelle et des forfaits adaptés."],["Le coursier peut-il faire des achats pour nous ?","Oui, achats et commissions font partie du service, avec justificatifs à l'appui."]]
   },
+  /* EXPÉDITION — corrigé le 18/09/2026. Celtis : « pour les expéditions, c'est plutôt vers
+     l'intérieur : on récupère chez le client et on expédie à travers les différentes compagnies
+     de transport pour être acheminé vers leur destination finale. »
+     Le texte d'origine décrivait une livraison dans Abidjan, ce que ce service n'est pas. C'est
+     d'ailleurs ce que l'application dit depuis toujours de son côté : une expédition y porte une
+     « avance de gare », qui n'a de sens que si le colis passe par une compagnie de transport.
+     Le site racontait donc autre chose que ce que fait l'entreprise. */
   expedition:{
-    icon:"fa-paper-plane", name:"Expédition",
-    tag:"Vos envois vers différents points, en toute sécurité.",
-    short:"Prise en charge de vos expéditions vers différents points, dans les meilleurs délais.",
-    intro:"Le service d'expédition de Christ Livraison prend en charge vos envois vers différents points de la ville et au-delà, dans les meilleurs délais et en toute sécurité. Vos colis sont manipulés avec soin, suivis tout au long de l'acheminement et remis à leur destinataire de manière sécurisée. Que ce soit un envoi ponctuel ou régulier, vous bénéficiez d'un interlocuteur fiable qui veille sur votre colis du départ jusqu'à l'arrivée.",
-    feats:["Prise en charge soignée de vos colis","Acheminement vers différents points","Emballage et manipulation avec soin","Suivi tout au long de l'acheminement","Remise sécurisée au destinataire","Envois ponctuels ou réguliers"],
-    steps:[["Vous nous confiez l'envoi","Précisez le contenu, le point de départ et la destination."],["Préparation & prise en charge","Nous récupérons et préparons le colis pour l'expédition."],["Acheminement suivi","Le colis est acheminé et suivi jusqu'à destination."],["Remise sécurisée","Livraison au destinataire avec confirmation."]],
-    ideal:["Envois vers proches et partenaires","Colis à acheminer hors quartier","Envois volumineux ou soignés","Besoins d'expédition récurrents"],
-    delais:"Délais selon la destination, communiqués à la prise en charge. Couverture large sur Abidjan et ses périphéries, jusqu'à Grand-Bassam.",
-    tarif:"Tarif selon la destination, le poids et le format, à partir de 1000 FCFA. Devis gratuit et transparent sur WhatsApp avant tout envoi.",
-    faq:[["Emballez-vous les colis ?","Nous manipulons vos colis avec soin et veillons à un conditionnement adapté pour un transport sécurisé."],["Comment suivre mon expédition ?","Un suivi vous est communiqué dès la prise en charge, jusqu'à la remise au destinataire."]]
+    icon:"fa-paper-plane", name:"Expédition vers l'intérieur",
+    tag:"Votre colis part vers l'intérieur du pays — nous venons le chercher chez vous.",
+    short:"Nous récupérons votre colis là où vous êtes et nous l'expédions vers l'intérieur du pays par les compagnies de transport.",
+    intro:"L'expédition, c'est pour envoyer un colis hors d'Abidjan, vers l'intérieur du pays. Un livreur vient le récupérer là où vous êtes, nous l'apportons à la gare de la compagnie de transport qui dessert votre destination, et nous le lui confions pour l'acheminement. Vous ne vous déplacez pas, vous ne faites pas la queue, et vous n'avez pas à savoir quelle compagnie part aujourd'hui pour cette ville-là : c'est notre travail. Un envoi ponctuel ou des envois réguliers, c'est le même interlocuteur.",
+    feats:["Récupération de votre colis là où vous êtes, à Abidjan", "Remise à la compagnie de transport qui dessert la destination", "Vous ne vous déplacez pas à la gare", "Acheminement vers les villes de l'intérieur", "Un seul interlocuteur, du départ à la remise", "Envois ponctuels ou réguliers"],
+    steps:[["Vous nous dites où, et vers où", "Le colis, l'endroit où le récupérer à Abidjan, et la ville de destination."], ["Nous venons le chercher", "Un livreur passe le récupérer là où vous êtes, au jour convenu."], ["Remise à la compagnie", "Nous l'apportons à la gare de la compagnie qui dessert cette ville, et nous le lui confions."], ["Acheminement", "La compagnie le transporte jusqu'à sa ville de destination."]],
+    ideal:["Envoyer un colis à un proche à l'intérieur du pays", "Approvisionner un client ou un revendeur hors d'Abidjan", "Éviter le déplacement et l'attente à la gare", "Envois réguliers vers les mêmes villes"],
+    delais:"Selon la ville de destination et les départs de la compagnie de transport. Le délai vous est indiqué à la prise en charge.",
+    tarif:"Deux choses s'additionnent : la course pour venir récupérer votre colis à Abidjan, et les frais de la compagnie de transport, qui dépendent de la destination et du colis. Le montant vous est donné avant le départ. Devis gratuit sur WhatsApp.",
+    faq:[["Jusqu'où expédiez-vous ?", "Vers l'intérieur du pays, par les compagnies de transport qui desservent la destination. Dites-nous la ville : nous vous disons le départ possible et le délai."], ["Qui choisit la compagnie de transport ?", "Nous, selon la ville et les départs du jour. Si vous en préférez une, dites-le-nous au moment de la prise en charge."], ["Emballez-vous les colis ?", "Nous manipulons vos colis avec soin et veillons à un conditionnement adapté au transport. Pour un objet fragile, prévenez-nous à la prise en charge."]]
   }
 };
 const FALLBACK_ORDER = ["express","programmee","ecommerce","entreprises","expedition"];

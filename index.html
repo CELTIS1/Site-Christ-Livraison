@@ -926,7 +926,7 @@
       <a class="service-card reveal" href="services.html?s=programmee"><div class="service-icon"><i class="fa-solid fa-calendar-check"></i></div><h3>Livraison programmée</h3><p>Planifiez vos livraisons à l'avance, à la date et l'heure qui vous conviennent.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
       <a class="service-card reveal" href="services.html?s=ecommerce"><div class="service-icon"><i class="fa-solid fa-cart-shopping"></i></div><h3>Livraison e-commerce</h3><p>Nous livrons les commandes de votre boutique en ligne directement à vos clients.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
       <a class="service-card reveal" href="services.html?s=entreprises"><div class="service-icon"><i class="fa-solid fa-briefcase"></i></div><h3>Courses pour entreprises</h3><p>Un coursier dédié pour vos courses professionnelles : documents, achats, commissions diverses.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
-      <a class="service-card reveal" href="services.html?s=expedition"><div class="service-icon"><i class="fa-solid fa-paper-plane"></i></div><h3>Expédition</h3><p>Prise en charge de vos expéditions vers différents points de la ville, dans les meilleurs délais.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
+      <a class="service-card reveal" href="services.html?s=expedition"><div class="service-icon"><i class="fa-solid fa-paper-plane"></i></div><h3>Expédition vers l'intérieur</h3><p>Nous récupérons votre colis là où vous êtes et nous l'expédions vers l'intérieur du pays par les compagnies de transport.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
     </div>
   </div>
 </section>
@@ -1049,7 +1049,12 @@
           </video>
           <button type="button" class="film-lecture" id="filmLecture" aria-label="Lire le film"><span><i class="fa-solid fa-play"></i></span></button>
         </div>
-        <p class="film-note" id="filmNote">Sans son · 35 secondes · 2,5 Mo</p>
+        <!-- La petite note sous le film (18/09/2026). Celtis : « les données en bas ne sont pas
+             nécessaires, comme le son, la durée et la taille ». Il a raison : un visiteur ne
+             choisit pas de regarder un film d'après son poids en Mo — ce sont nos soucis de
+             fabrication, pas les siens. Le champ existe toujours dans l'éditeur du site, vide ;
+             s'il est vide, la ligne ne s'affiche pas du tout plutôt que de laisser un blanc. -->
+        <p class="film-note" id="filmNote" hidden></p>
       </div>
     </div>
   </div>
@@ -1088,7 +1093,7 @@
       </div>
       <div class="faq-item">
         <button class="faq-question" type="button"><span>Quels types de livraisons effectuez-vous ?</span><i class="fa-solid fa-chevron-down"></i></button>
-        <div class="faq-answer"><p>Livraison express, livraison programmée, livraison e-commerce, courses pour entreprises et expédition de colis vers différents points de la ville.</p></div>
+        <div class="faq-answer"><p>Livraison express, livraison programmée, livraison e-commerce, courses pour entreprises et expédition de colis vers l'intérieur du pays.</p></div>
       </div>
       <div class="faq-item">
         <button class="faq-question" type="button"><span>Comment vous contacter en cas d'urgence ou de question ?</span><i class="fa-solid fa-chevron-down"></i></button>
@@ -1587,7 +1592,8 @@
     if(data.film){
       const fT = document.getElementById('filmTitle'); if(fT) fT.textContent = data.film.title || "";
       const fX = document.getElementById('filmText'); if(fX) fX.textContent = data.film.text || "";
-      const fN = document.getElementById('filmNote'); if(fN) fN.textContent = data.film.note || "";
+      const fN = document.getElementById('filmNote');
+      if(fN){ const note = (data.film.note || "").trim(); fN.textContent = note; fN.hidden = !note; }
       const sec = document.getElementById('film'); if(sec) sec.style.display = data.film.video ? '' : 'none';
       const video = document.getElementById('filmVideo'); const src = video && video.querySelector('source');
       if(src && data.film.video && src.getAttribute('src') !== data.film.video && !(src.dataset.grand && src.src.indexOf(src.dataset.grand) >= 0)){ src.setAttribute('src', data.film.video); video.load(); }
@@ -1775,8 +1781,23 @@
       if(i >= 0) couches[i].classList.add('active');
     }, 5000);
   }
-  // Le film (option B) : sur ordinateur, il démarre seul, sans son, quand il entre à l'écran, en
-  // 720 p ; sur téléphone, il attend un geste (le forfait de chacun lui appartient) et reste en 540 p.
+  /* LE FILM SE JOUE TOUT SEUL, TÉLÉPHONE COMPRIS — 18 septembre 2026
+     Celtis : « sur le site, il faudrait que la vidéo se joue toute seule. »
+
+     Jusqu'ici elle ne démarrait seule que sur ORDINATEUR (au-dessus de 861 px). Sur téléphone
+     elle attendait un geste, par égard pour le forfait du visiteur. L'intention était bonne, le
+     résultat non : la plupart des visiteurs de CLT sont sur téléphone, et le film — celui qui
+     montre le métier — ne se voyait donc presque jamais.
+
+     CE QUI PROTÈGE ENCORE LE FORFAIT, et qui suffit :
+       • `preload="none"` : rien n'est téléchargé à l'arrivée sur la page. La vidéo n'est
+         demandée qu'au moment où elle entre à l'écran — un visiteur qui ne descend pas
+         jusque-là ne paie rien du tout.
+       • le téléphone garde le fichier de 540 p (2,5 Mo) ; l'ordinateur passe en 720 p.
+       • « économiseur de données » activé, ou réseau 2G : on ne lance rien, le bouton reste.
+         C'est le seul cas où le visiteur décide lui-même, et c'est celui où ça compte vraiment.
+       • sans son, en boucle, et `playsinline` : c'est la seule forme de lecture automatique
+         qu'iOS et Android acceptent — un film avec son ne démarrerait pas du tout. */
   function initFilm(){
     const video = document.getElementById('filmVideo'); const bouton = document.getElementById('filmLecture');
     if(!video || !bouton) return;
@@ -1785,10 +1806,24 @@
     if(grand && !donneesLimitees){
       const src = video.querySelector('source'); if(src && src.dataset.grand) src.src = src.dataset.grand;
     }
-    function lire(){ video.load(); video.play().then(() => bouton.classList.add('cache')).catch(() => {}); }
+    function lire(){ video.load(); video.play().catch(() => {}); }
+    /* LE BOUTON SUIT L'ÉTAT DU FILM, PAS LA PROMESSE DE `play()`. (18/09/2026)
+       Il était masqué dans le `.then()` de play() — mais entre la promesse et l'image qui bouge
+       il y a `load()`, et la promesse peut se résoudre avant que la lecture soit réellement
+       visible, ou ne jamais se résoudre si le navigateur refuse puis accepte. Mesuré sur un
+       écran de 390 px : le film tournait et le bouton « lire » restait posé dessus. Les
+       événements du lecteur, eux, disent la vérité. */
+    video.addEventListener('playing', () => bouton.classList.add('cache'));
+    // Ceinture et bretelles : si « playing » manquait à l'appel sur un navigateur, l'avancée du
+    // temps, elle, ne ment pas. Un bouton « lire » posé sur un film qui tourne est le genre de
+    // détail qu'on ne voit qu'en production.
+    video.addEventListener('timeupdate', () => { if(video.currentTime > 0 && !video.paused) bouton.classList.add('cache'); });
+    video.addEventListener('pause', () => bouton.classList.remove('cache'));
     bouton.addEventListener('click', lire);
-    video.addEventListener('click', () => { if(video.paused) lire(); else { video.pause(); bouton.classList.remove('cache'); } });
-    if(grand && !donneesLimitees && !reducedMotion && 'IntersectionObserver' in window){
+    video.addEventListener('click', () => { if(video.paused) lire(); else video.pause(); });
+    // Le geste reste possible, mais on ne l'attend plus : la lecture part dès que le film est
+    // réellement à l'écran, sur téléphone comme sur ordinateur.
+    if(!donneesLimitees && !reducedMotion && 'IntersectionObserver' in window){
       const io = new IntersectionObserver((entries) => { entries.forEach(e => { if(e.isIntersecting){ lire(); io.disconnect(); } }); }, { threshold: 0.5 });
       io.observe(video);
     }

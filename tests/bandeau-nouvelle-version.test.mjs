@@ -745,10 +745,26 @@ verifier(
    à ses colis (filtrés sur le nom que la LISTE compare), et un colis trouvé est surligné et non
    seulement filtré. Le rôle est demandé aux listes déjà chargées, jamais lu dans le texte
    affiché — un routage qui dépend d'un libellé casse en silence. Un onzième parcours tient la
-   promesse de bout en bout. Aucune migration. Étiquette 20260918recherche. */
+   promesse de bout en bout. Aucune migration. Étiquette 20260918recherche.
+   v171, le 18/09/2026 — Le SITE PUBLIC, deux demandes. (1) « Il faudrait que la vidéo se joue
+   toute seule » : elle ne démarrait seule que sur ordinateur, au-dessus de 861 px, par égard
+   pour le forfait du visiteur. L'intention était bonne, le résultat non — la plupart des
+   visiteurs de CLT sont sur téléphone, et le film qui montre le métier ne se voyait donc
+   presque jamais. Elle part maintenant dès qu'elle entre à l'écran, téléphone compris ; ce qui
+   protège le forfait reste : preload="none" (rien n'est chargé à l'arrivée sur la page), 540 p
+   sur téléphone, et le bouton garde la main en économiseur de données ou en 2G. La ligne
+   « Sans son · 35 secondes · 2,5 Mo » est retirée : un visiteur ne choisit pas un film d'après
+   son poids en Mo. Défaut trouvé en mesurant : le bouton « lire » restait posé sur le film
+   parce qu'il s'effaçait sur la promesse de play() et non sur l'état du lecteur. (2)
+   « L'expédition, c'est plutôt vers l'intérieur : on récupère chez le client et on expédie à
+   travers les compagnies de transport. » Le site décrivait une livraison dans Abidjan — ce que
+   ce service n'est pas, et ce que l'application contredisait déjà de son côté (une expédition y
+   porte une « avance de gare », qui n'a de sens qu'avec une compagnie de transport). Tout le
+   service est réécrit, dans content.json ET dans la copie de secours de services.html, que le
+   banc oblige désormais à dire la même chose. Aucune migration. Étiquette 20260918site. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v170'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v171'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
