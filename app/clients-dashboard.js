@@ -677,6 +677,32 @@
     return actif ? (actif.dataset.eqtab || '') : '';
   }
 
+  /* Ouvrir la fiche d'une cliente depuis un autre écran — la recherche, le point du jour.
+     `surLeReversement` décide seulement où l'on arrive DANS la fiche : au bloc « reverser »
+     quand on vient du point du jour (on venait pour payer), en haut quand on vient de la
+     recherche (on venait pour voir). Une seule porte, deux atterrissages. */
+  async function cdOuvrirDepuisAilleurs(id, surLeReversement) {
+    if (!id) return;
+    const depuis = cdOngletActuel();
+    if (typeof showEquipeTab === 'function') showEquipeTab('clients');
+    // On ne retient que si l'on a RÉELLEMENT changé d'écran.
+    cdOngletDeRetour = (depuis && depuis !== cdOngletActuel()) ? depuis : '';
+    const box0 = $('cd-corps');
+    if (!box0 || !box0.__cdLignes || !box0.__cdLignes.some((x) => x.id === id)) await cdRafraichir(true);
+    cdOuvrirFiche(id);
+    if (!surLeReversement) {
+      const corps0 = $('cd-fiche-corps');
+      setTimeout(() => { if (corps0) corps0.scrollTop = 0; }, 60);
+      return;
+    }
+    const bloc0 = $('cd-bloc-reverser');
+    const corps1 = $('cd-fiche-corps');
+    setTimeout(() => {
+      if (bloc0 && bloc0.previousElementSibling) bloc0.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else if (corps1) corps1.scrollTop = 0;
+    }, 60);
+  }
+
   async function cdOuvrirReversement(id) {
     if (!id) return;
     const depuis = cdOngletActuel();
@@ -766,6 +792,7 @@
     init: cdInit,
     rafraichir: cdRafraichir,
     ouvrirReversement: cdOuvrirReversement,
+    ouvrirFiche: (id) => cdOuvrirDepuisAilleurs(id, false),
     // Purs, pour les essais :
     decouper: cdDecouper, statsListe: cdStatsListe, parJour: cdParJour, lignes: cdLignes, aReverser: cdAReverser, barresHTML: cdBarresHTML, sparklineHTML: cdSparklineHTML,
     _etat: (o) => { if (o) { if (o.colis) cdColis = o.colis; if (o.profils) cdProfils = o.profils; if (o.dettes) cdDettes = o.dettes; if (o.periode) cdPeriode = o.periode; } return { colis: cdColis, profils: cdProfils, dettes: cdDettes, periode: cdPeriode }; },

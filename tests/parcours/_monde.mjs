@@ -269,6 +269,31 @@ export function nouveauMonde() {
       TABLES.points_envoyes = TABLES.points_envoyes.filter(m => !(m.fournisseur_id === fid && m.jour === jour));
       return { data: null, error: null };
     }
+    /* CHERCHER PARTOUT (18/09/2026). La vraie fonction normalise les téléphones des deux côtés,
+       ce que seule la base sait faire ; ici on en garde ce que le parcours doit éprouver : la
+       FORME du résultat (famille, id, titre, detail), parce que c'est elle que l'écran lit pour
+       savoir où conduire. Le détail d'une personne commence par son rôle, comme en vrai. */
+    if (nom === 'chercher_partout') {
+      const t = String((args && args.p_terme) || '').toLowerCase().trim();
+      const chiffres = t.replace(/\D/g, '');
+      if (t.length < 3) return { data: [], error: null };
+      const contient = (v) => String(v || '').toLowerCase().includes(t);
+      const tel = (v) => chiffres && String(v || '').replace(/\D/g, '').includes(chiffres);
+      const out = [];
+      (TABLES.colis || []).forEach(c => {
+        if (contient(c.numero) || contient(c.description) || contient(c.destination) || tel(c.destinataire_telephone)) {
+          out.push({ famille: 'colis', id: c.id, titre: c.numero || '', detail: c.destination || '', quand: c.created_at });
+        }
+      });
+      (TABLES.profiles || []).forEach(p2 => {
+        if (contient(p2.full_name) || contient(p2.company_name) || contient(p2.commune_recuperation) || tel(p2.phone)) {
+          out.push({ famille: 'personne', id: p2.id, titre: p2.full_name || '(sans nom)',
+            detail: [p2.role, p2.company_name, p2.phone, p2.commune_recuperation].filter(Boolean).join(' · '),
+            quand: p2.created_at || null });
+        }
+      });
+      return { data: out, error: null };
+    }
     return { data: [], error: null };
   }
 

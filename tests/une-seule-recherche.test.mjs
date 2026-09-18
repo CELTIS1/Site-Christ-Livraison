@@ -68,10 +68,39 @@ verifier('le fichier dit pourquoi on garde les deux',
 console.log('\n4. Elle ne fait que conduire');
 verifier('un colis mène à l\'onglet Colis, avec sa recherche posée',
   /showEquipeTab\('colis'\)[\s\S]{0,200}search-colis/.test(module_));
-verifier('une personne mène à Comptes, une course à Express',
-  /showEquipeTab\('comptes'\)[\s\S]{0,200}search-comptes/.test(module_)
-  && /showEquipeTab\('express'\)[\s\S]{0,200}search-express-courses/.test(module_));
-verifier('la liste se referme quand on choisit', /function rechercheAller\(ou, terme\) \{\s*\n\s*rechercheFermer\(\);/.test(module_));
+verifier('une course mène à Express, avec sa recherche posée',
+  /showEquipeTab\('express'\)[\s\S]{0,200}search-express-courses/.test(module_));
+/* CORRIGÉ LE 18/09 AU SOIR. Celtis : « j'ai mis Aloha, la cliente Aloha Shop. Ça m'envoie dans
+   le compte, mais pas là où il faut. Ça ne me présente pas ses colis, ça ne me présente pas son
+   compte. Ça sert à quoi alors ? »
+   Une personne était conduite vers l'onglet COMPTES — l'écran d'administration — et on s'y
+   contentait de RECOPIER SON NOM dans un filtre. Deux erreurs : ce n'est pas l'écran d'une
+   cliente, et un filtre par nom échoue dès que le nom affiché diffère de celui que la liste
+   compare (nom de personne contre nom de boutique). L'identifiant, que la base renvoyait déjà,
+   était jeté. */
+verifier('une cliente mène désormais à SA fiche, par son identifiant',
+  /quoi === 'cliente'[\s\S]{0,120}CLTClients\.ouvrirFiche\(id\)/.test(module_));
+verifier('un livreur à la sienne',
+  /quoi === 'livreur'[\s\S]{0,200}CLTLivreurs\.ouvrirFiche\(id\)/.test(module_));
+/* Le rôle est demandé aux listes déjà chargées, pas lu dans le texte affiché : un routage qui
+   dépend d'une chaîne d'affichage casse le jour où l'on change le libellé, et il casse en
+   silence. Un compte d'équipe ou un client Express n'a pas de fiche — Comptes reste sa place. */
+verifier('le rôle vient des données, jamais du texte affiché',
+  /function rechercheAUneFiche\(id\)/.test(module_)
+  && /fournisseurs \|\| \[\]\)\.some/.test(module_) && /livreurs \|\| \[\]\)\.some/.test(module_));
+verifier('et sans fiche — équipe, client Express — on va toujours dans Comptes',
+  /showEquipeTab\('comptes'\)[\s\S]{0,200}search-comptes/.test(module_));
+/* On la cherche pour deux raisons : savoir où elle en est, ou voir ce qu'elle nous a confié.
+   Deviner laquelle se trompe une fois sur deux. */
+verifier('un second geste « Ses colis » est proposé pour une personne qui a une fiche',
+  /data-va="colis-de"/.test(module_) && /ou === 'colis-de'/.test(module_));
+verifier('et il filtre sur le nom que la LISTE compare, pas sur celui qu\'on affiche',
+  /function rechercheNomPourLesColis\(id, secours\)/.test(module_)
+  && /fournisseurLabelPlain\(id\)/.test(module_));
+/* Filtrer ne suffit pas : sur plusieurs lignes, « c'est lequel ? » est la question suivante. */
+verifier('un colis trouvé est surligné, pas seulement filtré',
+  /cltMarquerColisAVoir\(id\)/.test(module_));
+verifier('la liste se referme quand on choisit', /function rechercheAller\(ou, terme, id\) \{\s*\n\s*rechercheFermer\(\);/.test(module_));
 verifier('un clic ailleurs la referme aussi, et Échap également',
   /if \(zone && !zone\.contains\(e\.target\)\) rechercheFermer\(\)/.test(module_)
   && /e\.key === 'Escape'/.test(module_));

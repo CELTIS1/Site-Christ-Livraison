@@ -14,10 +14,29 @@
    liste » d'un côté, « où est cette chose ? » de l'autre. Retirer les six pour n'en garder
    qu'une obligerait à recharger la base pour affiner un tableau qu'on a déjà sous les yeux.
 
-   ELLE NE FAIT QUE CONDUIRE. Chaque résultat ouvre l'écran qui sait déjà traiter la chose, en
-   y posant la recherche : le colis dans l'onglet Colis, la personne dans Comptes, la course
-   dans Express. Aucune fiche nouvelle à maintenir, et aucun risque qu'un deuxième affichage
-   d'un colis se mette à dire autre chose que le premier.
+   ELLE NE FAIT QUE CONDUIRE. Chaque résultat ouvre l'écran qui sait déjà traiter la chose.
+   Aucune fiche nouvelle à maintenir, et aucun risque qu'un deuxième affichage d'un colis se
+   mette à dire autre chose que le premier.
+
+   CE QUI A ÉTÉ CORRIGÉ LE 18/09 AU SOIR. Celtis : « j'ai mis Aloha, la cliente Aloha Shop. Ça
+   me suggère, je clique dessus, ça m'envoie dans le compte, mais ça ne m'envoie pas là où il
+   faut. Ça ne me présente pas ses colis, ça ne me présente pas son compte. Ça sert à quoi ? »
+
+   Il avait raison, et le défaut était de conception. Une personne trouvée était conduite vers
+   l'onglet COMPTES — l'écran d'administration des comptes (valider, créer, suspendre) — et on
+   s'y contentait de RECOPIER SON NOM dans le champ de filtre. Deux erreurs dans un seul geste :
+
+     1. Comptes n'est pas l'écran d'une cliente. Ce qu'on cherche en tapant son nom, c'est sa
+        FICHE : son téléphone, ses colis, ce qu'on lui doit, le bouton pour la reverser. Cet
+        écran existe depuis le 5 septembre, et la recherche n'y conduisait pas.
+     2. On recopiait le TEXTE au lieu d'emmener l'IDENTIFIANT. La base le renvoie pourtant, et
+        on le jetait. Un filtre par nom échoue dès que le nom affiché n'est pas celui que le
+        filtre compare — « Aloha Shop » en nom de boutique, un autre nom en nom de personne : la
+        liste ressortait vide alors que la cliente était là.
+
+   Désormais l'identifiant voyage jusqu'au bout : une cliente ouvre SA fiche, un livreur la
+   sienne, et un second bouton « Ses colis » conduit à ses colis. Les comptes d'équipe et les
+   clients Express, eux, n'ont pas de fiche : pour eux l'onglet Comptes reste la bonne réponse.
 
    CE QU'ELLE NE CHERCHE PAS : l'argent. Ni montants, ni caisse, ni paie. Une recherche libre
    qui traverse la comptabilité est une porte qu'on n'ouvre pas pour gagner trois secondes.
@@ -60,10 +79,18 @@ function rechercheResultatsHTML(res) {
 
   // Toutes les familles ont la même forme (titre, detail) : une seule fonction de ligne, donc
   // aucun risque qu'un type de résultat se mette à s'afficher autrement que les autres.
-  const ligne = (l, va) => `<button type="button" class="recherche-ligne" data-va="${va}" data-terme="${escapeHTML(l.titre || '')}">
+  const ligne = (l, va) => {
+    const base = `data-va="${va}" data-id="${escapeHTML(l.id || '')}" data-terme="${escapeHTML(l.titre || '')}"`;
+    const principal = `<button type="button" class="recherche-ligne" ${base}>
         <span class="recherche-quoi">${escapeHTML(l.titre || '')}</span>
         <span class="recherche-detail">${escapeHTML(l.detail || '')}</span>
       </button>`;
+    /* DEUX GESTES POUR UNE PERSONNE, parce qu'on la cherche pour deux raisons : savoir où elle
+       en est (sa fiche) ou voir ce qu'elle nous a confié (ses colis). Deviner laquelle, c'est
+       se tromper une fois sur deux — et c'est exactement le reproche du 18/09. */
+    if (va !== 'comptes' || !rechercheAUneFiche(l.id)) return principal;
+    return `<div class="recherche-paire">${principal}<button type="button" class="recherche-ligne recherche-ligne--cote" data-va="colis-de" data-id="${escapeHTML(l.id || '')}" data-terme="${escapeHTML(l.titre || '')}" title="Voir ses colis dans l'onglet Colis">📦 Ses colis</button></div>`;
+  };
   const groupe = (titre, lignes, va) => lignes.length
     ? `<div class="recherche-groupe"><div class="recherche-groupe-titre">${escapeHTML(titre)}</div>`
       + lignes.slice(0, RECHERCHE_PAR_FAMILLE).map(l => ligne(l, va)).join('')
@@ -79,13 +106,62 @@ function rechercheResultatsHTML(res) {
 /* Conduire, et rien d'autre : on ouvre l'écran qui sait traiter la chose, en y posant la
    recherche. Le champ de cet écran-là fait ensuite son travail habituel — c'est lui qui a
    toujours su afficher un colis, et il n'y a pas deux façons de l'afficher. */
-function rechercheAller(ou, terme) {
+/* La personne a-t-elle une fiche à ouvrir ? On le demande aux listes que l'écran a déjà
+   chargées — les clientes et les livreurs — plutôt que de lire le rôle dans le texte affiché.
+   Un routage qui dépend d'une chaîne d'affichage casse le jour où l'on change le libellé, et il
+   casse en silence. Un compte d'équipe ou un client Express n'a pas de fiche : il ne rend rien,
+   et l'onglet Comptes reste sa destination. */
+function rechercheAUneFiche(id) {
+  if (!id) return false;
+  if (typeof fournisseurs !== 'undefined' && (fournisseurs || []).some(f => f && f.id === id)) return 'cliente';
+  if (typeof livreurs !== 'undefined' && (livreurs || []).some(l => l && l.id === id)) return 'livreur';
+  return false;
+}
+
+// Le nom tel que la liste des colis le compare — et non celui que la recherche affiche. Les
+// deux diffèrent dès qu'une cliente a un nom de boutique : c'est ce qui rendait la liste vide.
+function rechercheNomPourLesColis(id, secours) {
+  if (typeof fournisseurLabelPlain === 'function') {
+    const nom = fournisseurLabelPlain(id);
+    if (nom && nom !== 'Client inconnu') return nom;
+  }
+  if (typeof livreurs !== 'undefined') {
+    const l = (livreurs || []).find(x => x && x.id === id);
+    if (l) return l.full_name || secours;
+  }
+  return secours;
+}
+
+function rechercheAller(ou, terme, id) {
   rechercheFermer();
   if (ou === 'colis') {
     showEquipeTab('colis');
     const champ = document.getElementById('search-colis');
     if (champ) { champ.value = terme; champ.dispatchEvent(new Event('input', { bubbles: true })); }
+    // Le colis trouvé est SURLIGNÉ, pas seulement filtré : sur une liste de plusieurs lignes,
+    // « c'est lequel ? » est la question suivante. (18/09/2026)
+    if (id && typeof cltMarquerColisAVoir === 'function') cltMarquerColisAVoir(id);
+    setTimeout(() => {
+      let carte = null;
+      document.querySelectorAll('#colis-list .colis-item').forEach(el => { if (el.dataset.id === id) carte = el; });
+      if (carte && carte.scrollIntoView) carte.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 260);
+  } else if (ou === 'colis-de') {
+    // Ses colis : on filtre sur le nom que la liste sait comparer.
+    showEquipeTab('colis');
+    const champ = document.getElementById('search-colis');
+    const nom = rechercheNomPourLesColis(id, terme);
+    if (champ) { champ.value = nom; champ.dispatchEvent(new Event('input', { bubbles: true })); }
   } else if (ou === 'comptes') {
+    const quoi = rechercheAUneFiche(id);
+    if (quoi === 'cliente' && window.CLTClients && typeof CLTClients.ouvrirFiche === 'function') {
+      CLTClients.ouvrirFiche(id); return;
+    }
+    if (quoi === 'livreur' && window.CLTLivreurs && typeof CLTLivreurs.ouvrirFiche === 'function') {
+      showEquipeTab('livreurs');
+      setTimeout(() => CLTLivreurs.ouvrirFiche(id), 260);
+      return;
+    }
     showEquipeTab('comptes');
     const champ = document.getElementById('search-comptes');
     if (champ) { champ.value = terme; champ.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -107,7 +183,7 @@ function rechercheAfficher(html) {
   cltPoserHTML(boite, html);
   boite.classList.toggle('hidden', !html);
   boite.querySelectorAll('.recherche-ligne').forEach(b => {
-    b.addEventListener('click', () => rechercheAller(b.dataset.va, b.dataset.terme));
+    b.addEventListener('click', () => rechercheAller(b.dataset.va, b.dataset.terme, b.dataset.id));
   });
 }
 

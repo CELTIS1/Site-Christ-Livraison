@@ -1180,6 +1180,17 @@ html[data-theme="dark"] .releve-marque .btn.a-envoyer{background:rgba(30,143,78,
 .recherche-ligne:hover, .recherche-ligne:focus-visible{ background:var(--clt-teal-light, #eaf5f3); }
 .recherche-quoi{ font-weight:600; font-size:14px; }
 .recherche-detail{ font-size:12.5px; color:var(--muted); }
+/* DEUX GESTES POUR UNE PERSONNE (18/09/2026). On la cherche pour deux raisons — savoir où elle
+   en est, ou voir ce qu'elle nous a confié — et deviner laquelle se trompe une fois sur deux.
+   Le nom occupe la place, « Ses colis » se pose à côté sans la lui prendre. */
+.recherche-paire{ display:flex; align-items:stretch; gap:4px; }
+.recherche-paire > .recherche-ligne:first-child{ flex:1; min-width:0; }
+.recherche-ligne--cote{
+  flex:0 0 auto; width:auto; align-self:center; white-space:nowrap;
+  font-size:12.5px; font-weight:600; color:var(--clt-teal-dark, #0f766e);
+  border:1px solid var(--border, #e6ebf1); min-height:40px; align-items:center;
+  flex-direction:row; justify-content:center; padding:6px 10px; margin-right:6px;
+}
 .recherche-reste, .recherche-vide{ font-size:12.5px; color:var(--muted); padding:8px 10px; }
 html[data-theme="dark"] .recherche-resultats{ background:#16212E; border-color:#33445A; box-shadow:0 12px 32px rgba(0,0,0,.45); }
 html[data-theme="dark"] .recherche-ligne:hover, html[data-theme="dark"] .recherche-ligne:focus-visible{ background:#1F2E3F; }

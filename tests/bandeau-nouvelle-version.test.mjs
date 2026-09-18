@@ -728,10 +728,27 @@ verifier(
    déjà, mais les marques du jour choisi n'étaient jamais LUES, donc l'écran, ne sachant pas si
    la cliente était déjà cochée, refusait d'afficher un bouton ; et un filtre « Montant
    manquant » rassemble les colis dont le prix reste à compléter, pour rattraper l'existant.
-   Aucune migration. Étiquette 20260918deborde. */
+   Aucune migration. Étiquette 20260918deborde.
+   v170, le 18/09/2026 — Celtis : « la barre de recherche ne sert à rien. J'ai mis Aloha, la
+   cliente Aloha Shop. Ça me suggère, je clique, ça m'envoie dans le compte, mais pas là où il
+   faut. Ça ne me présente pas ses colis, ça ne me présente pas son compte. Ça sert à quoi ? »
+   Défaut de conception, et il avait raison sur les deux points. Une personne trouvée était
+   conduite vers l'onglet COMPTES — l'écran d'administration (valider, créer, suspendre) — où
+   l'on se contentait de RECOPIER SON NOM dans le champ de filtre. D'une part Comptes n'est pas
+   l'écran d'une cliente : ce qu'on cherche en tapant son nom, c'est sa fiche (contact, colis,
+   ce qu'on lui doit, le bouton pour la reverser), qui existait depuis le 5 septembre et vers
+   laquelle la recherche ne conduisait pas. D'autre part on recopiait le TEXTE alors que la base
+   renvoyait déjà l'IDENTIFIANT — et un filtre par nom échoue dès que le nom affiché diffère de
+   celui que la liste compare, ce qui est le cas de toute cliente ayant un nom de boutique : la
+   liste ressortait vide alors que la cliente était là. L'identifiant voyage désormais jusqu'au
+   bout : une cliente ouvre sa fiche, un livreur la sienne, un second bouton « Ses colis » mène
+   à ses colis (filtrés sur le nom que la LISTE compare), et un colis trouvé est surligné et non
+   seulement filtré. Le rôle est demandé aux listes déjà chargées, jamais lu dans le texte
+   affiché — un routage qui dépend d'un libellé casse en silence. Un onzième parcours tient la
+   promesse de bout en bout. Aucune migration. Étiquette 20260918recherche. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v169'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v170'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
