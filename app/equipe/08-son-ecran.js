@@ -945,24 +945,40 @@ renderCompta();
 (function initRecapControls(){
 const dateInput = document.getElementById('recap-date');
 const todayBtn = document.getElementById('btn-recap-today');
+/* COCHER LE POINT D'UN JOUR PASSÉ — 18/09/2026, au soir. Celtis : « tout à l'heure, on avait
+   permis que lorsqu'un point est envoyé, on puisse le cocher. Pour ce jour, c'était fait. Mais
+   pourquoi on ne devait pas le faire pour les jours précédents ? Je vais pouvoir cocher hier,
+   avant-hier et peut-être les jours antérieurs. »
+
+   IL POUVAIT DÉJÀ, EN THÉORIE : la fonction de base accepte n'importe quel jour, et l'écran lui
+   passe le jour affiché. Ce qui manquait est plus bête et plus complet à la fois — LES MARQUES
+   DU JOUR CHOISI N'ÉTAIENT JAMAIS LUES. Elles ne se chargeaient qu'au premier rendu du
+   récapitulatif, donc pour aujourd'hui seulement ; changer de jour laissait `recapMarques(jour)`
+   à `null`, et le bloc refuse volontairement d'afficher un bouton tant qu'il ne SAIT pas si la
+   cliente a déjà été cochée (proposer « marquer » sans le savoir poserait une marque par-dessus
+   une autre). Résultat : aucun bouton du tout sur hier, et rien pour expliquer pourquoi.
+
+   On lit donc les marques à chaque changement de jour. Une ligne, et les jours passés se
+   cochent, se décochent et disent qui et quand, exactement comme aujourd'hui. */
+function recapAllerAuJour(date){
+  recapSelectedFournisseur = null;
+  recapSearchText = '';
+  if (typeof recapChargerPointsEnvoyes === 'function') recapChargerPointsEnvoyes(date);
+  if (date === todayLocalISODate()) renderRecapBody();
+  else recapLoadPastDay(date);
+}
 if (dateInput) {
 if (!dateInput.value) dateInput.value = todayLocalISODate();
 dateInput.addEventListener('change', () => {
 recapSelectedDate = dateInput.value || null;
-recapSelectedFournisseur = null;
-recapSearchText = '';
-const date = recapGetDate();
-if (date === todayLocalISODate()) { renderRecapBody(); }
-else { recapLoadPastDay(date); }
+recapAllerAuJour(recapGetDate());
 });
 }
 if (todayBtn) {
 todayBtn.addEventListener('click', () => {
 recapSelectedDate = null;
-recapSelectedFournisseur = null;
-recapSearchText = '';
 if (dateInput) dateInput.value = todayLocalISODate();
-renderRecapBody();
+recapAllerAuJour(todayLocalISODate());
 });
 }
 })();

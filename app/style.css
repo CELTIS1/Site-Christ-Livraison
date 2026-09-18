@@ -457,7 +457,13 @@ html[data-theme="dark"] .colis-item[data-statut="retour"]:hover{border-color:#5C
   margin-left:8px; padding:4px 8px; font-size:12px;
   background:var(--grey-bg); color:var(--navy); border:1.5px solid var(--border-strong);
 }
-.group-collecte-assign{margin-left:8px; display:inline-flex; gap:4px; align-items:center;}
+/* MESURÉ À 360 px LE 18/09 AU SOIR : le bouton « Assigner (1) » sortait de 6 px hors de
+   l'écran, parce que cette rangée était en `inline-flex` sans autorisation de passer à la
+   ligne. Six pixels suffisent à rendre un bouton à moitié intouchable au pouce. Elle passe
+   donc à la ligne quand il le faut, et la liste de livreurs sait rétrécir. */
+.group-collecte-assign{margin-left:8px; display:inline-flex; gap:4px; align-items:center;
+  flex-wrap:wrap; max-width:100%; min-width:0;}
+.group-collecte-assign > *{ min-width:0; }
 .select-assign-collecte{
   font-size:12px; padding:4px 6px; border-radius:var(--radius-xs); border:1.5px solid var(--border-strong); max-width:150px;
 }
@@ -1339,7 +1345,28 @@ html[data-theme="dark"] .demande-ligne + .demande-ligne{ border-top-color:rgba(2
   border:1.5px solid var(--border-strong); border-radius:var(--radius-xs); padding:7px 10px;
   font-size:13px; font-family:inherit; color:var(--navy); background:var(--white);
 }
-.fiche-ecran-corps{padding:16px 20px 22px; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+/* LE CORPS D'UNE FICHE NE DÉFILE JAMAIS DE CÔTÉ — 18 septembre 2026, au soir
+   ------------------------------------------------------------------------------------------
+   Celtis, photos d'écran à l'appui : « il y a des écrans qui débordent, des écritures qui
+   dépassent les lignes et des tableaux qui débordent ». Sur sa fiche cliente, tout était coupé
+   à GAUCHE : « ient particulier », « ougon · cliente depuis », « erser · 1000 FCFA ».
+
+   LA CAUSE, mesurée dans un vrai navigateur à 390 px : les deux tableaux de la fiche (les
+   derniers colis, les derniers reversements) font 472 et 635 px de large. Et `overflow-y:auto`
+   sans `overflow-x` déclaré vaut, en CSS, `overflow-x:auto` : le CORPS DE LA FICHE devenait
+   donc le défileur horizontal. Pousser le tableau du doigt emportait la fiche entière —
+   l'en-tête, les pastilles, les boutons — et la gauche disparaissait sous le bord de l'écran.
+
+   LA RÈGLE : un tableau trop large défile DANS SA PROPRE BOÎTE (.cd-defile ci-dessous, comme
+   .g-table-wrap en Gestion), et le corps de la fiche ne bouge jamais latéralement. On l'écrit
+   explicitement plutôt que de compter sur la largeur du contenu : la prochaine colonne ajoutée
+   à un tableau ne doit pas pouvoir recasser la fiche. */
+.fiche-ecran-corps{padding:16px 20px 22px; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;}
+/* La boîte qui défile toute seule. overflow-y:hidden est indispensable : sans lui, CSS
+   redonnerait `auto` aux deux axes et on recréerait exactement le défaut ci-dessus. */
+.cd-defile{ overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain; max-width:100%; }
+.cd-defile > table{ min-width:max-content; }
 .fiche-ecran-bloc{margin-bottom:18px;}
 .fiche-ecran-bloc:last-child{margin-bottom:0;}
 .fiche-ecran-bloc-titre{

@@ -713,10 +713,25 @@ verifier(
    dans la période ; (3) le détail de la journée est replié ; (4) le point du jour dit ce qu'on a
    gagné ET ce qu'on aurait gagné sans échec ; (5) refermer une fiche cliente ouverte depuis les
    Finances ramène aux Finances, et modifier un colis peut s'abandonner sans enregistrer ni
-   supprimer — les deux seules issues qui existaient. Étiquette 20260918gestes. */
+   supprimer — les deux seules issues qui existaient. Étiquette 20260918gestes.
+   v169, le 18/09/2026 — « Il y a des écrans qui débordent, des écritures qui dépassent les
+   lignes et des tableaux qui débordent », photos d'écran à l'appui : la fiche cliente coupée à
+   GAUCHE (« ient particulier », « erser · 1000 FCFA »). Pas une ligne trop longue — la fiche
+   ENTIÈRE décalée. Mesuré dans un vrai navigateur : ses deux tableaux font 472 et 635 px sur un
+   écran de 390, et `overflow-y:auto` sans `overflow-x` déclaré vaut `overflow-x:auto` en CSS —
+   le corps de la fiche était donc lui-même le défileur horizontal, et pousser un tableau du
+   doigt emportait l'en-tête avec. Les tableaux défilent maintenant dans leur propre boîte
+   (.cd-defile), le corps de fiche est borné, et un dixième parcours (rien-ne-deborde.mjs)
+   mesure CHAQUE écran à 360 px — il a trouvé deux débordements de plus au passage, le bouton
+   « Assigner » et « Plus » de la barre du bas, corrigés aussi. Deux autres demandes du même
+   message : le point du soir se coche désormais pour les jours passés — la base l'acceptait
+   déjà, mais les marques du jour choisi n'étaient jamais LUES, donc l'écran, ne sachant pas si
+   la cliente était déjà cochée, refusait d'afficher un bouton ; et un filtre « Montant
+   manquant » rassemble les colis dont le prix reste à compléter, pour rattraper l'existant.
+   Aucune migration. Étiquette 20260918deborde. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v168'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v169'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

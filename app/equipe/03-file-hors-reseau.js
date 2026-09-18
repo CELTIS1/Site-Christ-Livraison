@@ -300,7 +300,12 @@ const FILTER_LABELS = Object.assign({},
   /* « Sans livreur » n'est pas un statut mais une absence, et c'est justement pour ça qu'il lui
      faut sa propre pastille : un colis créé et jamais confié n'apparaît sous aucun des autres
      filtres comme un problème. (18/09/2026, demande de Celtis) */
-  { sans_livreur: 'Sans livreur' });
+  { sans_livreur: 'Sans livreur' },
+  /* « Montant manquant » — 18/09/2026 au soir, Celtis : « que je puisse commencer à corriger les
+     montants et tout ça, que je puisse remettre les choses en ordre ».
+     L'alerte du matin SIGNALE un colis sans prix, colis par colis ; elle ne dit pas où ils sont.
+     Pour rattraper l'existant il faut la liste, et c'est une pastille, pas une chasse. */
+  { montant_manquant: 'Montant manquant' });
 
 function renderFilters(){
 const box = document.getElementById('filters');
@@ -887,6 +892,11 @@ const cat = {
      statut, elle regarde l'absence — et elle s'arrête au sort fixé : un livré sans livreur est
      un colis d'avant l'application, pas un travail à confier. */
   sansLivreur: colis.filter(c => !c.livreur_id && c.statut !== 'livre' && c.statut !== 'non_livre' && c.statut !== 'retour'),
+  /* Les colis dont un montant manque encore, et qui ne sont pas déjà reversés : après un
+     reversement, compléter le prix ne change plus rien pour personne. La règle est celle de
+     lib/argent.js — un zéro tapé exprès est un montant, seul un champ vide manque. */
+  montantManquant: colis.filter(c => typeof colisSansMontant === 'function'
+    && colisSansMontant(c) && !c.reverse_au_fournisseur_at),
   retard:    colis.filter(c => c.statut === 'en_livraison' && jourDuColis(c) < aujourdhui),
   // Récupérés depuis plus de deux jours et jamais passés en livraison : des statuts jamais
   // fermés qui encombrent les restes des livreurs (vu chez Gbei Franck : des « récupéré »
@@ -946,7 +956,7 @@ const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`
        mais « ✓ Rien à faire ». Un tableau de bord doit montrer ce qui demande une action ; ce
        qui vaut zéro n'en demande pas, et occupait autant de place que le reste.
    Dès qu'il y a quelque chose, la pastille revient, en couleur. */
-window.__essentielListes = { sansLivreur: cat.sansLivreur.map(c => c.id), collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id), retours: cat.retours.map(c => c.id), retoursTard: cat.retoursTard.map(c => c.id), reclamations: cat.reclamations.map(r => r.colis_id).filter(Boolean) };
+window.__essentielListes = { sansLivreur: cat.sansLivreur.map(c => c.id), montantManquant: cat.montantManquant.map(c => c.id), collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id), retours: cat.retours.map(c => c.id), retoursTard: cat.retoursTard.map(c => c.id), reclamations: cat.reclamations.map(r => r.colis_id).filter(Boolean) };
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 // 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient
 // de config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
@@ -977,7 +987,8 @@ set('aujourdhui-jour',
   tuile(approx + b.echecs, 'échecs aujourd\'hui', 'rouge') +
   tuile(approx + b.enCours, 'encore en cours', 'ambre'));
 set('aujourdhui-actions', ouRien(
-  pastille(cat.sansLivreur.length, cat.sansLivreur.length > 1 ? 'colis sans livreur' : 'colis sans livreur', 'sans-livreur', 'rouge') +
+  pastille(cat.sansLivreur.length, 'colis sans livreur', 'sans-livreur', 'rouge') +
+  pastille(cat.montantManquant.length, 'montants à compléter', 'montant-manquant', 'ambre') +
   pastille(cat.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
   pastille(cat.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
   pastille(nbPending, 'comptes à valider', 'comptes-a-valider', 'ambre') +
@@ -1068,6 +1079,7 @@ switch (cle) {
   case 'comptes-a-valider': onglet('comptes'); ouvrir('pending-content'); defiler('section-pending'); break;
   case 'reinitialisations': onglet('comptes'); ouvrir('reset-content'); defiler('section-reset'); break;
   case 'sans-livreur': listeColis('sans_livreur', '', L.sansLivreur); break;
+  case 'montant-manquant': listeColis('montant_manquant', '', L.montantManquant); break;
   case 'collecte':  listeColis('en_attente', '', L.collecte); break;
   case 'livraison': listeColis('recupere', '__aucun', L.livraison); break;
   case 'retard':    listeColis('en_livraison', '', L.retard); break;

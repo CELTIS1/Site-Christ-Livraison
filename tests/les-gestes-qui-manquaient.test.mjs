@@ -206,6 +206,33 @@ titre('7. Modifier un colis peut s\'abandonner');
     /ne sera pas enregistré\. Le colis, lui, reste tel qu'il est/.test(equipe));
 }
 
+titre('8. Remettre les montants en ordre, et cocher les jours passés');
+{
+  /* Celtis, le soir : « que je puisse commencer à corriger les montants et tout ça, que je
+     puisse remettre les choses en ordre ». L'alerte du matin SIGNALE un colis sans prix, colis
+     par colis — elle ne dit pas où ils sont. Pour rattraper l'existant il faut la liste. */
+  verifier('un filtre « Montant manquant » existe, à côté des statuts',
+    /montant_manquant: 'Montant manquant'/.test(equipe));
+  verifier('il suit la règle de la maison, sans second seuil',
+    /activeFilter === 'montant_manquant'[\s\S]{0,200}colisSansMontant\(c\)/.test(equipe));
+  /* Un colis déjà reversé n'a plus rien à corriger pour personne : le montrer noierait ceux sur
+     lesquels il reste quelque chose à faire. */
+  verifier('et il écarte les colis déjà reversés',
+    /colisSansMontant\(c\) && !c\.reverse_au_fournisseur_at/.test(equipe));
+  verifier('« L\'essentiel » en donne le compte, en ambre',
+    /pastille\(cat\.montantManquant\.length, 'montants à compléter', 'montant-manquant', 'ambre'\)/.test(equipe));
+
+  /* LE POINT DES JOURS PASSÉS. La base acceptait déjà n'importe quel jour ; ce qui manquait est
+     que les marques du jour CHOISI n'étaient jamais lues — elles ne se chargeaient qu'au premier
+     rendu, donc pour aujourd'hui. Sans elles, l'écran refuse (à raison) d'afficher un bouton,
+     pour ne pas poser une marque par-dessus une autre. Résultat : rien, et rien pour l'expliquer. */
+  verifier('changer de jour lit les marques de ce jour-là',
+    /function recapAllerAuJour\(date\)\{[\s\S]{0,400}recapChargerPointsEnvoyes\(date\)/.test(equipe));
+  verifier('et les deux façons de changer de jour passent par là',
+    (equipe.match(/recapAllerAuJour\(/g) || []).length >= 3,
+    String((equipe.match(/recapAllerAuJour\(/g) || []).length));
+}
+
 console.log('\n———');
 console.log(`${reussies} vérifications réussies, ${echouees} échouées`);
 if (echouees) process.exit(1);

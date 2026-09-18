@@ -96,5 +96,36 @@ verifier('dans la liste, plus aucune pastille verte',
   (await page.locator('#recap-body .recap-point--oui').count()) === 0);
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
+titre('6. Et les jours passés se cochent aussi');
+{
+  /* Celtis, le 18/09 au soir : « pourquoi on ne devait pas faire pour les jours précédents ?
+     Je vais pouvoir cocher hier, avant-hier et peut-être les jours antérieurs. »
+     Il le pouvait en théorie — la base accepte n'importe quel jour, et l'écran lui passe le jour
+     affiché. Ce qui manquait : LES MARQUES DU JOUR CHOISI N'ÉTAIENT JAMAIS LUES. Elles ne se
+     chargeaient qu'au premier rendu, donc pour aujourd'hui ; changer de jour laissait l'écran
+     sans savoir si la cliente avait déjà été cochée — et il refuse (à raison) d'afficher un
+     bouton dans ce cas, pour ne pas poser une marque par-dessus une autre. Aucun bouton, donc,
+     et rien pour dire pourquoi. */
+  const hier = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); });
+  await page.evaluate((j) => { const i = document.getElementById('recap-date'); i.value = j; i.dispatchEvent(new Event('change', { bubbles: true })); }, hier);
+  await dodo(3000);
+  verifier('on peut se placer sur hier', (await page.locator('#recap-date').inputValue()) === hier);
+  const n = await vignettes().count();
+  verifier('les clientes de ce jour-là sont là', n >= 1, String(n));
+  await vignettes().first().click();
+  await dodo(1800);
+  verifier('le bouton « Je viens de l\'envoyer » est proposé, comme aujourd\'hui',
+    (await page.locator('#releve-marquer').count()) === 1);
+  await page.locator('#releve-marquer').click();
+  await dodo(2000);
+  const pose = monde.TABLES.points_envoyes.filter((m) => m.jour === hier);
+  verifier('la marque est écrite sur LE JOUR CHOISI, pas sur aujourd\'hui',
+    pose.length === 1, JSON.stringify(monde.TABLES.points_envoyes));
+  verifier('et elle dit qui et quand, comme partout',
+    /Point envoyé/.test(await page.locator('.releve-marque').innerText()),
+    await page.locator('.releve-marque').innerText());
+  verifier('aucune erreur sur ce chemin-là non plus', erreurs.length === 0, erreurs.join('\n       '));
+}
+
 await N.fermer();
 process.exit(bilan() ? 1 : 0);

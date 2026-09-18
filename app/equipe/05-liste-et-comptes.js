@@ -222,6 +222,11 @@ const __saisies = eqPhotographierSaisies(list);
 let filtered = activeFilter === 'tous' ? allColis
   : activeFilter === 'sans_livreur'
     ? allColis.filter(c => !c.livreur_id && c.statut !== 'livre' && c.statut !== 'non_livre' && c.statut !== 'retour')
+  /* « Montant manquant » : de quoi rattraper l'existant colis par colis. On écarte les colis
+     déjà reversés — compléter leur prix ne changerait plus rien pour personne, et ils
+     noieraient ceux sur lesquels il reste quelque chose à faire. */
+  : activeFilter === 'montant_manquant'
+    ? allColis.filter(c => typeof colisSansMontant === 'function' && colisSansMontant(c) && !c.reverse_au_fournisseur_at)
     : allColis.filter(c => c.statut === activeFilter);
 filtered = filtered.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDateColis) && matchesLivreur(c, filtreLivreurColis));
 /* CE QUI A QUITTÉ LA JOURNÉE. (18/09/2026)
