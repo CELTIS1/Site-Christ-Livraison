@@ -634,6 +634,96 @@ function documentCLT(plan) {
    assurerJsPDF() y est, avec assurerXLSX() à côté. */
 
 
+/* ==========================================================================================
+   LE REÇU DE REVERSEMENT — une pièce comptable, écrite une seule fois  (18/09/2026, point 10.3)
+   ==========================================================================================
+   « La cliente reçoit un récapitulatif sans numéro ni valeur de pièce comptable. Un reçu
+   numéroté, gardé des deux côtés. »
+
+   GARDÉ DES DEUX CÔTÉS veut dire : le même papier. Le bureau l'imprime depuis la fiche de la
+   cliente, la cliente le télécharge depuis son espace, et les deux sortent d'ici. Deux mises en
+   page séparées finiraient par annoncer deux montants pour la même remise — et c'est
+   précisément le genre de désaccord qu'un reçu est censé empêcher.
+
+   CE QU'IL DIT, ET RIEN D'AUTRE. Le numéro, la date, la cliente, le mode de remise, le détail
+   des colis soldés avec leur montant, le total. Pas les frais de livraison : ils ne sont pas à
+   elle, et les mêler à ce qu'on lui remet ferait un chiffre qui n'est l'argent de personne
+   (voir L-ARGENT-DES-COLIS.md). Pas de mention manuscrite non plus : la pièce vaut par le
+   numéro, pas par une signature qu'on ne peut pas vérifier.
+
+   UN REÇU ANNULÉ S'IMPRIME QUAND MÊME, barré du mot ANNULÉ, avec sa date. On n'efface pas une
+   pièce comptable : une cliente qui a gardé son exemplaire doit pouvoir comprendre, en le
+   comparant, pourquoi il ne compte plus.
+
+   `recu` est la ligne de reversements_clientes ; `colis` les lignes correspondantes (celles que
+   l'appelant a sous la main — le reçu s'imprime même si elles manquent, avec leur nombre). */
+function recuDeReversementPDF(infos) {
+  const i = infos || {};
+  const recu = i.recu || {};
+  const colis = Array.isArray(i.colis) ? i.colis : [];
+  const cliente = i.clienteNom || 'Cliente';
+  const annule = !!recu.annule_le;
+  const m = (v) => formatMontant(Number(v) || 0) || '0 FCFA';
+  const jour = (d) => {
+    if (!d) return '';
+    const x = new Date(d);
+    return x.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Abidjan' })
+      + ' à ' + x.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan' });
+  };
+
+  // Le détail, quand on l'a. Sinon le reçu dit combien de colis, sans prétendre les nommer.
+  const lignes = colis.map(c => [
+    c.numero || '',
+    c.description || '',
+    [c.commune_destination, c.destination].filter(Boolean).join(' - '),
+    m(montantArticleColis(c)),
+  ]);
+  const tableau = lignes.length
+    ? {
+        colonnesArgent: [3],
+        colonnesMesurees: { 0: 'left' },
+        colonnesRestantes: { 1: 0.45, 2: 0.55 },
+        head: [['N° colis', 'Colis', 'Destination', 'Montant remis']],
+        body: lignes,
+        foot: [['TOTAL', (recu.nb_colis || lignes.length) + ' colis', '', m(recu.montant)]],
+      }
+    : {
+        head: [['Reversement']],
+        body: [[(recu.nb_colis || 0) + ' colis soldés — le détail n\'est pas joint à ce reçu']],
+        foot: [[m(recu.montant)]],
+      };
+
+  return documentCLT({
+    titre: 'Reçu de reversement',
+    sousTitre: recu.numero || 'Sans numéro',
+    mention: cliente + '  ·  ' + jour(recu.fait_le),
+    tableau: tableau,
+    apres: [
+      annule
+        ? { texte: 'REÇU ANNULÉ le ' + jour(recu.annule_le) + (recu.annule_motif ? '  —  ' + recu.annule_motif : ''),
+            taille: 11, gras: true, couleur: [192, 57, 43] }
+        : { texte: 'Somme remise à ' + cliente + ' : ' + m(recu.montant), taille: 11, gras: true, couleur: [26, 125, 60] },
+      { texte: 'Mode de remise : ' + (LIBELLE_MODE_REVERSEMENT[recu.mode] || recu.mode || 'espèces')
+               + (recu.note ? '  ·  ' + recu.note : ''), taille: 9, avant: 6 },
+      { texte: "Cette somme correspond aux articles de la cliente encaissés par CLT chez les destinataires. "
+               + "Les frais de livraison ne figurent pas sur ce reçu : ils sont le revenu de CLT, pas son argent à elle.",
+        taille: 8.5, avant: 5, couleur: [122, 128, 136] },
+    ],
+  });
+}
+
+// Les modes de remise, écrits une seule fois : l'écran du bureau, celui de la cliente et le reçu
+// doivent employer les mêmes mots pour la même chose.
+const LIBELLE_MODE_REVERSEMENT = {
+  especes: 'Espèces', wave: 'Wave', orange_money: 'Orange Money', mtn_money: 'MTN Money',
+  moov_money: 'Moov Money', virement: 'Virement', autre: 'Autre',
+};
+
+// Le nom du fichier téléchargé : le numéro de la pièce suffit à la retrouver, des deux côtés.
+function recuNomFichier(recu) {
+  return 'recu-' + String((recu && recu.numero) || 'reversement').toLowerCase().replace(/[^a-z0-9-]+/g, '-') + '.pdf';
+}
+
 /* La seule phrase à annoncer à une vendeuse. Elle ferme le document comme elle ferme l'écran.
 
    ELLE CHANGE DE SENS QUAND LE TOTAL EST NÉGATIF, et c'est le 1er septembre 2026 qui l'impose.

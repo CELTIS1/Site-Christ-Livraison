@@ -108,7 +108,26 @@ const CLIENT_MINIATURE = String.raw`
 
 const DOUBLES = {
   xlsx: 'window.XLSX = { utils: { book_new() { return {}; }, aoa_to_sheet() { return {}; }, book_append_sheet() {} }, writeFile() {} };',
-  jspdf: 'window.jspdf = { jsPDF: function () { return { setFontSize() {}, text() {}, save() {}, autoTable() {}, addImage() {}, setFont() {}, setTextColor() {}, setDrawColor() {}, line() {}, internal: { pageSize: { getWidth() { return 595; }, getHeight() { return 842; } } } }; } };',
+  jspdf: `window.__cltPDF = { fichiers: [], textes: [], tableaux: [] };
+    window.jspdf = { jsPDF: function () { return {
+      text(t) { [].concat(t).forEach(function (x) { window.__cltPDF.textes.push(String(x)); }); },
+      save(nom) { window.__cltPDF.fichiers.push(String(nom || '')); },
+      autoTable(o) {
+        window.__cltPDF.tableaux.push(o || {});
+        if (o && typeof o.didDrawPage === 'function') o.didDrawPage({ pageNumber: 1 });
+        this.lastAutoTable = { finalY: 100 };
+      },
+      lastAutoTable: { finalY: 100 },
+      setFontSize() {}, getFontSize() { return 10; },
+      setFont() {}, getFont() { return { fontName: 'helvetica', fontStyle: 'normal' }; },
+      getLineHeight() { return 4; }, getTextWidth(t) { return String(t).length * 2; },
+      splitTextToSize(t) { return [String(t)]; },
+      addImage() {}, setTextColor() {}, setDrawColor() {}, setFillColor() {},
+      setLineWidth() {}, rect() {}, line() {}, setPage() {}, addPage() {},
+      internal: { pageSize: { getWidth() { return 210; }, getHeight() { return 297; } },
+                  getNumberOfPages() { return 1; },
+                  getCurrentPageInfo() { return { pageNumber: 1 }; } },
+    }; } };`,
   autotable: '',
   leaflet: 'window.L = { map: () => { const m = { setView() { return m; }, on() { return m; }, remove() {}, invalidateSize() {}, fitBounds() {} }; return m; }, tileLayer: () => ({ addTo() {} }), marker: () => { const k = { addTo() { return k; }, bindPopup() { return k; }, setLatLng() { return k; }, remove() {} }; return k; }, icon: () => ({}), divIcon: () => ({}), latLngBounds: () => ({ extend() {}, isValid() { return false; } }) };',
 };

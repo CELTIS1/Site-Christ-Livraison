@@ -472,8 +472,12 @@
      et une note, puis UN appui, une question, et l'écriture passe par la fonction de la base
      reverser_a_la_cliente() — tout ou rien, reçu écrit, journal tenu. L'écran ne touche pas
      aux colis lui-même. Réservé à qui a l'accès comptabilité : c'est de l'argent qui sort. */
-  const CD_MODES = [['especes', 'Espèces'], ['wave', 'Wave'], ['orange_money', 'Orange Money'], ['mtn_money', 'MTN Money'], ['moov_money', 'Moov Money'], ['virement', 'Virement'], ['autre', 'Autre']];
-  const CD_MODE_LIB = Object.fromEntries(CD_MODES);
+  /* LES MÊMES MOTS QUE SUR LE REÇU. (18/09/2026, point 10.3) La liste vivait ici, et le reçu
+     imprimé en avait une seconde : deux listes pour la même chose finissent par se contredire —
+     l'écran annonce « Orange Money » et le papier « orange_money ». Elle est descendue dans
+     app/lib/papier-a-en-tete.js, à côté du document qui l'imprime. */
+  const CD_MODE_LIB = LIBELLE_MODE_REVERSEMENT;
+  const CD_MODES = Object.keys(CD_MODE_LIB).map((k) => [k, CD_MODE_LIB[k]]);
   function cdPeutReverser() {
     const p = window.CLTProfil;
     return !!(p && (p.role === 'admin' || p.acces_compta === true));
@@ -528,7 +532,13 @@
     }
     if (!data || !data.length) { poser(box, `<div class="cd-muet">Aucun reversement enregistré pour cette cliente.</div>`); return; }
     const peut = cdPeutReverser();
-    poser(box, `<div class="cd-rev-titre">Derniers reversements</div><table class="cd-mini"><tbody>${data.map((r) => `<tr class="${r.annule_le ? 'cd-rev-annule' : ''}"><td>${enClair(jour(r.fait_le), true)}</td><td>${r.nb_colis} colis</td><td>${esc(CD_MODE_LIB[r.mode] || r.mode)}${r.note ? ` · ${esc(r.note)}` : ''}</td><td class="cd-cell-num"><strong>${money(r.montant)}</strong></td><td>${r.annule_le ? '<span class="cd-muet">annulé</span>' : (peut ? `<button type="button" class="cd-lien" data-cd-annuler="${esc(r.id)}" data-cd-montant="${esc(money(r.montant))}" title="Annuler ce reversement (erreur de manipulation)">↩︎</button>` : '')}</td></tr>`).join('')}</tbody></table>`);
+    // Les reçus restent en mémoire : le bouton « Reçu » les reprend tels quels pour l'impression,
+    // sans rappeler la base — et sans risquer d'imprimer autre chose que ce qui est à l'écran.
+    box.__cdRecus = data;
+    /* LE NUMÉRO EN TÊTE DE LIGNE. (18/09/2026, point 10.3) C'est ce qui fait la pièce comptable :
+       une vendeuse le cite au téléphone, le comptable le rapproche de sa caisse. Le bouton
+       imprime le MÊME document que celui que la cliente télécharge de son côté. */
+    poser(box, `<div class="cd-rev-titre">Derniers reversements</div><table class="cd-mini"><tbody>${data.map((r) => `<tr class="${r.annule_le ? 'cd-rev-annule' : ''}"><td class="cd-rev-numero">${esc(r.numero || '—')}</td><td>${enClair(jour(r.fait_le), true)}</td><td>${r.nb_colis} colis</td><td>${esc(CD_MODE_LIB[r.mode] || r.mode)}${r.note ? ` · ${esc(r.note)}` : ''}</td><td class="cd-cell-num"><strong>${money(r.montant)}</strong></td><td><button type="button" class="cd-lien" data-cd-recu="${esc(r.id)}" title="Imprimer le reçu ${esc(r.numero || '')}">🧾</button>${r.annule_le ? ' <span class="cd-muet">annulé</span>' : (peut ? ` <button type="button" class="cd-lien" data-cd-annuler="${esc(r.id)}" data-cd-montant="${esc(money(r.montant))}" title="Annuler ce reversement (erreur de manipulation)">↩︎</button>` : '')}</td></tr>`).join('')}</tbody></table>`);
   }
   async function cdReverser(clientId) {
     const btn = $('cd-rev-btn');
@@ -561,6 +571,33 @@
     await cdRafraichir(true);
     cdOuvrirFiche(clientId);
   }
+  /* IMPRIMER UN REÇU. (18/09/2026, point 10.3) Le document est celui de papier-a-en-tete.js,
+     le même que celui que la cliente télécharge de son côté : un seul papier pour une seule
+     remise. Le détail des colis vient de ceux qui sont déjà chargés dans l'onglet — si un colis
+     du reçu est plus ancien que la période affichée, il manque du détail, pas du montant : le
+     reçu le dit (« le détail n'est pas joint ») au lieu d'inventer une ligne.
+     jsPDF n'est plus dans la page depuis le 17/09 : on le demande au clic, et un refus se dit. */
+  async function cdImprimerRecu(id) {
+    const box = $('cd-rev-historique');
+    const recu = (box && box.__cdRecus ? box.__cdRecus : []).find((r) => r.id === id);
+    if (!recu) return;
+    if (typeof assurerJsPDF === 'function' && !(await assurerJsPDF())) {
+      if (typeof cltToast === 'function') cltToast("L'outil PDF n'a pas pu être chargé. Réessayez une fois connecté.", { type: 'error', title: 'Reçu non produit' });
+      return;
+    }
+    const ids = new Set(recu.colis_ids || []);
+    const colis = cdColis.filter((c) => ids.has(c.id));
+    const profil = (cdProfils || []).find((p) => p && p.id === recu.fournisseur_id);
+    const nom = nomProfil(profil);
+    try {
+      const doc = await recuDeReversementPDF({ recu: recu, colis: colis, clienteNom: nom });
+      doc.save(recuNomFichier(recu));
+    } catch (err) {
+      console.error('Reçu :', err);
+      if (typeof cltToast === 'function') cltToast("Le reçu n'a pas pu être produit.", { type: 'error' });
+    }
+  }
+
   async function cdAnnulerReversement(id, montant, clientId) {
     const ok = typeof cltConfirm === 'function' ? await cltConfirm({
       title: 'Annuler ce reversement ?',
@@ -664,6 +701,8 @@
       if (reverser) { cdReverser(reverser.dataset.cdReverser); return; }
       const annuler = e.target.closest('[data-cd-annuler]');
       if (annuler) { const h = $('cd-rev-historique'); cdAnnulerReversement(annuler.dataset.cdAnnuler, annuler.dataset.cdMontant, h ? h.dataset.cdClient : null); return; }
+      const recu = e.target.closest('[data-cd-recu]');
+      if (recu) { cdImprimerRecu(recu.dataset.cdRecu); return; }
     });
     document.addEventListener('change', (e) => { if (e.target.classList && e.target.classList.contains('cd-rev-case')) cdRevMettreAJourTotal(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cdFermerFiche(); });

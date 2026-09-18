@@ -78,7 +78,7 @@ export function nouveauMonde() {
       { id: 'p1', jour: aujourdhui, fournisseur_id: CLIENTE1, livreur_id: LIVREUR, note: null, nb_colis_annonce: null, annonce_reglee_at: null, nb_colis_pris: null, pris_confirme_at: null, pris_note: null, ordre_tournee: null },
       { id: 'p2', jour: aujourdhui, fournisseur_id: CLIENTE2, livreur_id: LIVREUR, note: null, nb_colis_annonce: null, annonce_reglee_at: null, nb_colis_pris: null, pris_confirme_at: null, pris_note: null, ordre_tournee: null },
     ], push_subscriptions: [], livreur_positions: [], activity_log: [],
-    remises_livreur: [], remises_caisse: [], reversements_clientes: [], annonces_remise: [], migrations_appliquees: [], colis_photos: [],
+    remises_livreur: [], remises_caisse: [], annonces_remise: [], migrations_appliquees: [], colis_photos: [],
     erreurs_client: [], historique_reversements_fournisseur: [], demandes_reset_password: [],
     // Ce que les clientes signalent (17/09/2026, point 7.2).
     reclamations_clientes: [],
@@ -86,6 +86,17 @@ export function nouveauMonde() {
        500 F de base, 150 F du kilomètre. Un tarif inventé ici ferait un banc qui ne mesure rien. */
     express_config: [{ id: 1, tarif_base: 500, tarif_par_km: 150, commission_pct: 0.2, vitesse_moy_kmh: 18, delai_prise_en_charge_min: 10 }],
     express_courses: [], express_messages: [], express_course_positions: [],
+    /* UN REÇU DE REVERSEMENT DÉJÀ ÉCRIT (18/09/2026, point 10.3), avec son numéro : la cliente
+       Mariam a été payée pour son colis n°2, livré. C'est la pièce que les deux écrans impriment. */
+    reversements_clientes: [{
+      id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1',
+      numero: 'REV-2026-0004',
+      fournisseur_id: CLIENTE2,
+      montant: 10000, nb_colis: 1,
+      colis_ids: ['cccccccc-cccc-4ccc-8ccc-000000000002'],
+      mode: 'wave', note: null, fait_par: ADMIN, fait_le: iso(-1, 17),
+      annule_le: null, annule_par: null, annule_motif: null,
+    }],
   };
   const journal = [];
 

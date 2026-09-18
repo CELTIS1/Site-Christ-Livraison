@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918tournee">
-<script src="theme.js?v=20260918tournee"></script>
-<script src="splash.js?v=20260918tournee"></script>
+<link rel="stylesheet" href="style.css?v=20260918recu">
+<script src="theme.js?v=20260918recu"></script>
+<script src="splash.js?v=20260918recu"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -40,6 +40,22 @@
     box-shadow:0 8px 26px rgba(15,107,66,0.30) !important;
   }
   .topbar .brand .logo-mark{ background:rgba(255,255,255,0.16) !important; }
+  /* ---- Mes reçus de reversement (18/09/2026, point 10.3) ----
+     Une ligne = une pièce comptable. Le numéro d'abord, en chiffres à chasse fixe : c'est ce
+     qu'elle dicte au téléphone. Le bouton fait 44 px, comme tout ce qu'on touche. */
+  .recu-ligne{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:9px 0; border-bottom:1px solid var(--border); flex-wrap:wrap;
+  }
+  .recu-ligne__gauche{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .recu-ligne__droite{ display:flex; align-items:center; gap:10px; }
+  .recu-numero{ font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; font-weight:700; color:var(--navy); }
+  .recu-jour{ font-size:12.5px; color:var(--muted); }
+  .recu-montant{ color:#1a7d3c; font-size:15px; }
+  .recu-telecharger{ min-height:44px; white-space:nowrap; }
+  .recu-ligne--annule .recu-numero, .recu-ligne--annule .recu-montant{ text-decoration:line-through; color:var(--muted); }
+  html[data-theme="dark"] .recu-numero{ color:#9FC3EA; }
+  html[data-theme="dark"] .recu-montant{ color:#5ed19a; }
   .role-pill{ background:rgba(255,255,255,0.20) !important; }
   /* (L'espacement regroupé de l'en-tête est désormais géré globalement dans style.css,
      pour tous les comptes.) */
@@ -520,23 +536,23 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260918tournee"></script>
-<script src="lib/bibliotheques.js?v=20260918tournee"></script>
-<script src="lib/retours.js?v=20260918tournee"></script>
-<script src="lib/reclamations.js?v=20260918tournee"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918tournee"></script>
-<script src="lib/argent.js?v=20260918tournee"></script>
-<script src="lib/releve-cliente.js?v=20260918tournee"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918tournee"></script>
-<script src="lib/briques-argent.js?v=20260918tournee"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918tournee"></script>
-<script src="lib/annonce-de-remise.js?v=20260918tournee"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918tournee"></script>
-<script src="lib/primes.js?v=20260918tournee"></script>
-<script src="lib/doublons.js?v=20260918tournee"></script>
-<script src="config.js?v=20260918tournee"></script>
-<script src="biometric-lock.js?v=20260918tournee"></script>
-<script src="clt-select-recherche.js?v=20260918tournee"></script>
+<script src="clt-common.js?v=20260918recu"></script>
+<script src="lib/bibliotheques.js?v=20260918recu"></script>
+<script src="lib/retours.js?v=20260918recu"></script>
+<script src="lib/reclamations.js?v=20260918recu"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918recu"></script>
+<script src="lib/argent.js?v=20260918recu"></script>
+<script src="lib/releve-cliente.js?v=20260918recu"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918recu"></script>
+<script src="lib/briques-argent.js?v=20260918recu"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918recu"></script>
+<script src="lib/annonce-de-remise.js?v=20260918recu"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918recu"></script>
+<script src="lib/primes.js?v=20260918recu"></script>
+<script src="lib/doublons.js?v=20260918recu"></script>
+<script src="config.js?v=20260918recu"></script>
+<script src="biometric-lock.js?v=20260918recu"></script>
+<script src="clt-select-recherche.js?v=20260918recu"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2600,38 +2616,62 @@
   // reste simplement vide — l'écran se comporte exactement comme avant.
   const REVERSEMENTS_PAR_PAGE = 6;
   let reversementsAffiches = REVERSEMENTS_PAR_PAGE;
+  let mesRecus = [];
 
+  /* CHAQUE REMISE, AVEC SON NUMÉRO. (18/09/2026, point 10.3)
+
+     Jusqu'ici cette liste lisait la vue historique_reversements_fournisseur, qui additionne PAR
+     JOUR. Deux remises le même jour n'en faisaient qu'une, et aucune ne portait de numéro : la
+     vendeuse voyait un récapitulatif, pas des pièces. Elle ne pouvait donc rien citer au
+     téléphone, et son comptable rien rapprocher.
+
+     On lit maintenant les reçus eux-mêmes (reversements_clientes). La règle de lecture de la
+     base ne lui montre que les siens — c'est elle qui protège, pas cet écran. Chaque ligne porte
+     son numéro et se télécharge : le MÊME papier que celui que le bureau imprime de son côté.
+
+     Un reçu annulé reste dans la liste, barré, avec sa date : une vendeuse qui a gardé son
+     exemplaire doit pouvoir comprendre pourquoi il ne compte plus. Le faire disparaître la
+     laisserait avec un papier que l'application ne connaît pas. */
   async function loadHistoriqueReversements(){
     const box = document.getElementById('releve-historique');
     if (!box) return;
     const { data, error } = await supabaseClient
-      .from('historique_reversements_fournisseur')
-      .select('jour, nb_colis, montant_reverse')
-      .order('jour', { ascending: false, nullsFirst: false });
+      .from('reversements_clientes')
+      .select('id, numero, montant, nb_colis, colis_ids, mode, note, fait_le, annule_le, annule_motif')
+      .order('fait_le', { ascending: false });
+    // La table est née le 05/09 et le numéro le 18/09 : si la base ne suit pas encore, le bloc
+    // reste vide plutôt que de faire tomber le relevé, qui est ce que la cliente vient voir.
     if (error) { cltPoserHTML(box, ''); return; }
     const lignes = data || [];
+    mesRecus = lignes;
     if (!lignes.length) { cltPoserHTML(box, ''); return; }
 
     const visibles = lignes.slice(0, reversementsAffiches);
     const resteAafficher = lignes.length > visibles.length;
-    const jourLabel = j => {
-      if (!j) return 'Date non enregistrée';
-      const d = new Date(j + 'T00:00:00');
-      return isNaN(d.getTime()) ? 'Date non enregistrée'
-        : d.toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+    const jourLabel = d => {
+      if (!d) return 'Date non enregistrée';
+      const x = new Date(d);
+      return isNaN(x.getTime()) ? 'Date non enregistrée'
+        : x.toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric', timeZone:'Africa/Abidjan' });
     };
 
     // Si rien n'a changé, on ne redessine pas : le bouton « Afficher plus » garde son écouteur et
     // la liste ne saute pas sous les yeux. (25/08/2026)
     if (!cltPoserHTML(box, `
-      <div style="font-size:13px; font-weight:600; margin:0 0 6px;">Historique des reversements</div>
+      <div style="font-size:13px; font-weight:600; margin:0 0 6px;">Mes reçus de reversement</div>
       ${visibles.map(l => `
-        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
-          <span>${escapeHTML(jourLabel(l.jour))}<span style="color:var(--muted); font-size:12px;"> · ${Number(l.nb_colis) || 0} colis</span></span>
-          <strong style="color:#1a7d3c;">${formatMontant(Number(l.montant_reverse) || 0) || '0 FCFA'}</strong>
+        <div class="recu-ligne${l.annule_le ? ' recu-ligne--annule' : ''}">
+          <div class="recu-ligne__gauche">
+            <span class="recu-numero">${escapeHTML(l.numero || 'Sans numéro')}</span>
+            <span class="recu-jour">${escapeHTML(jourLabel(l.fait_le))} · ${Number(l.nb_colis) || 0} colis${l.annule_le ? ' · <strong>annulé</strong>' : ''}</span>
+          </div>
+          <div class="recu-ligne__droite">
+            <strong class="recu-montant">${formatMontant(Number(l.montant) || 0) || '0 FCFA'}</strong>
+            <button type="button" class="btn btn-sm btn-outline recu-telecharger" data-recu="${escapeHTML(l.id)}">🧾 Reçu</button>
+          </div>
         </div>`).join('')}
       <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:12px; color:var(--muted);">
-        <span>${visibles.length} reversement(s) affiché(s)${resteAafficher ? '' : ' — historique complet.'}</span>
+        <span>${visibles.length} reçu(s) affiché(s)${resteAafficher ? '' : ' — historique complet.'}</span>
         ${resteAafficher ? `<button type="button" class="btn btn-sm btn-outline" id="reversements-plus">Afficher plus</button>` : ''}
       </div>`)) return;
 
@@ -2640,6 +2680,32 @@
       reversementsAffiches += REVERSEMENTS_PAR_PAGE;
       loadHistoriqueReversements();
     });
+    box.querySelectorAll('.recu-telecharger').forEach(b => b.addEventListener('click', () => telechargerRecu(b.dataset.recu)));
+  }
+
+  /* Le reçu en PDF, produit par la même fonction que celle du bureau (papier-a-en-tete.js).
+     jsPDF n'est pas dans la page depuis le 17/09 (point 9.7) : on le demande au clic, et un
+     refus se dit au lieu de ne rien faire. Le détail des colis vient de ceux déjà chargés ;
+     s'ils manquent, le reçu porte le montant et le nombre, jamais des lignes inventées. */
+  async function telechargerRecu(id){
+    const recu = mesRecus.find(r => r.id === id);
+    if (!recu) return;
+    if (!await assurerJsPDF()){
+      cltToast("L'outil PDF n'a pas pu être chargé. Réessayez une fois connectée.", { type: 'error', title: 'Reçu non produit' });
+      return;
+    }
+    const ids = new Set(recu.colis_ids || []);
+    const colis = (mesColis || []).filter(c => ids.has(c.id));
+    try {
+      const doc = await recuDeReversementPDF({
+        recu: recu, colis: colis,
+        clienteNom: (currentProfile && (currentProfile.company_name || currentProfile.full_name)) || 'Cliente',
+      });
+      doc.save(recuNomFichier(recu));
+    } catch (e) {
+      console.error('Reçu :', e);
+      cltToast("Le reçu n'a pas pu être produit.", { type: 'error' });
+    }
   }
 
   function toggleRecap(){

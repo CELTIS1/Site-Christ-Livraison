@@ -581,10 +581,17 @@ verifier(
    demain matin sans qu'on touche à rien — et le bureau pose son ordre avec deux flèches
    (colonne ordre_tournee, migration 2026-09-18-l-ordre-de-la-tournee.sql). Pas de glisser-
    déposer : il ne marche pas au doigt sans une bibliothèque de plus. Chaque passage porte son
-   numéro, le même des deux côtés : étiquette 20260918tournee. */
+   numéro, le même des deux côtés : étiquette 20260918tournee.
+   v159, le 18/09/2026 — point 10.3. Une remise d'argent à une vendeuse n'avait pas de numéro :
+   rien à citer au téléphone, rien à rapprocher pour le comptable. Colonne numero sur
+   reversements_clientes (REV-2026-0001…), attribuée SANS séquence Postgres — une séquence est
+   consommée par une transaction qui échoue, et c'est ce qui a rendu illisible la suite des
+   numéros de colis du 17. Les 54 reçus existants numérotés dans l'ordre des dates. Le reçu PDF
+   est écrit une fois (recuDeReversementPDF) et imprimé des deux côtés. Migration
+   2026-09-18-un-recu-numerote.sql : étiquette 20260918recu. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v158'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v159'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

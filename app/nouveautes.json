@@ -2,6 +2,17 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260918recu",
+      "date": "18 septembre 2026",
+      "titre": "Un reçu numéroté pour chaque reversement",
+      "points": [
+        "Une remise d'argent à une vendeuse n'avait pas de numéro : elle ne pouvait rien citer au téléphone, et le comptable n'avait rien à rapprocher de sa caisse.",
+        "Chaque reçu porte désormais son numéro — REV-2026-0001, 0002… — continu et sans trou. Les 54 reçus déjà écrits ont été numérotés dans l'ordre où l'argent a été remis.",
+        "La cliente voit ses reçus un par un dans son espace, avec leur numéro, et télécharge celui qu'elle veut. Le bureau imprime exactement le même papier depuis la fiche de la cliente.",
+        "Un reçu annulé garde son numéro et reste visible, marqué : on n'efface pas une pièce comptable, et le numéro n'est jamais réutilisé."
+      ]
+    },
+    {
       "version": "20260918tournee",
       "date": "18 septembre 2026",
       "titre": "La tournée du matin suit la route, plus l'alphabet",

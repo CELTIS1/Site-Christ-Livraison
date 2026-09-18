@@ -52,6 +52,11 @@ const contexte = vm.createContext({
   montantArticleADevoir: (c) => (c.statut === 'livre' && !c.reverse_au_fournisseur_at ? Number(c.montant_article) || 0 : 0),
   STATUTS: { livre: { label: 'Livré' }, non_livre: { label: 'Non livré' }, retour: { label: 'Retour' }, en_attente: { label: 'En attente' }, recupere: { label: 'Récupéré' }, en_livraison: { label: 'En livraison' } },
 });
+/* Les libellés des modes de remise ne sont plus recopiés ici : depuis le 18/09/2026 ils vivent
+   dans app/lib/papier-a-en-tete.js, à côté du reçu qui les imprime, et cet écran les lit. On
+   pose donc les VRAIS — un double inventé ici ne dirait rien du papier que la cliente reçoit. */
+vm.runInContext(fs.readFileSync(path.join(APP, 'lib', 'papier-a-en-tete.js'), 'utf8')
+  .match(/const LIBELLE_MODE_REVERSEMENT = \{[\s\S]*?\n\};/)[0], contexte);
 vm.runInContext(source, contexte);
 const CD = contexte.window.CLTClients;
 
