@@ -214,7 +214,15 @@ const list = document.getElementById('colis-list');
 if (typeof groupesDeDoublons === 'function') eqDoublons = groupesDeDoublons(allColis);
 const __anchor = captureScrollAnchor(list);
 const __saisies = eqPhotographierSaisies(list);
-let filtered = activeFilter === 'tous' ? allColis : allColis.filter(c => c.statut === activeFilter);
+/* LE FILTRE « SANS LIVREUR » — 18/09/2026, Celtis : « il faudrait qu'on arrive à voir les
+   colis non assignés pour pouvoir les traiter et les assigner. »
+   Ce n'est pas un statut, c'est une absence : un colis peut être « en attente » ou « récupéré »
+   et n'avoir encore personne pour le porter. On ne garde que les colis dont le sort n'est pas
+   fixé — un livré sans livreur est un colis d'avant l'application, pas un travail à confier. */
+let filtered = activeFilter === 'tous' ? allColis
+  : activeFilter === 'sans_livreur'
+    ? allColis.filter(c => !c.livreur_id && c.statut !== 'livre' && c.statut !== 'non_livre' && c.statut !== 'retour')
+    : allColis.filter(c => c.statut === activeFilter);
 filtered = filtered.filter(c => matchesSearch(c, searchColis) && matchesDate(c, filtreDateColis) && matchesLivreur(c, filtreLivreurColis));
 /* CE QUI A QUITTÉ LA JOURNÉE. (18/09/2026)
    Le 17 au soir, des colis « assignés aujourd'hui » disparaissaient de cet écran sans un mot.
@@ -692,6 +700,38 @@ const dropdown = btn.nextElementSibling;
 const wasOpen = dropdown.classList.contains('open');
 document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
 if (!wasOpen) dropdown.classList.add('open');
+});
+});
+
+/* SORTIR D'UNE MODIFICATION SANS ENREGISTRER — 18/09/2026, Celtis : « dans l'onglet colis
+   lorsqu'on veut modifier on n'a pas de geste retour, il faut obligatoirement enregistrer. »
+   C'était vrai : la fiche ouverte n'offrait qu'« Enregistrer » et « Supprimer ». Quelqu'un qui
+   ouvre la mauvaise fiche n'avait donc que deux issues — écrire quelque chose, ou effacer un
+   colis. C'est la pire paire de choix possible sur cet écran-là.
+   On demande confirmation seulement si quelque chose a été touché : sinon, refermer une fiche
+   ouverte par erreur ne doit pas coûter une question de plus. */
+list.querySelectorAll('.btn-annuler-edition').forEach(btn => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
+const item = btn.closest('.colis-item');
+const id = item.dataset.id;
+const colis = allColis.find(c => c.id === id) || {};
+const sel = item.querySelector('.status-select');
+const obs = item.querySelector('.obs-textarea');
+const touche = (sel && sel.value !== colis.statut)
+  || (obs && (obs.value || '').trim() !== ((colis.observation || '').trim()));
+if (touche) {
+  const ok = await showConfirm({
+    title: 'Abandonner les modifications ?',
+    detail: colisDestinationTexte(colis) || colis.numero || 'Ce colis',
+    sub: "Ce que vous venez de changer sur cette fiche ne sera pas enregistré. Le colis, lui, reste tel qu'il est.",
+    okLabel: 'Oui, abandonner', cancelLabel: 'Continuer à modifier',
+  });
+  if (!ok) return;
+}
+if (window.__colisEditing) window.__colisEditing.delete(id);
+cltSaisieEnregistree(list);
+renderColis();
 });
 });
 

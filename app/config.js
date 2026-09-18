@@ -2784,10 +2784,27 @@ function colisDuJourParLivreur(colis, livreurs, jour, options) {
   // vérité sur sa propre couverture au lieu d'afficher un zéro qui ressemble à une journée creuse.
   const sansHorodatage = { recupere: 0, livre: 0, non_livre: 0, retour: 0 };
 
+  /* LES COLIS SANS LIVREUR — 18/09/2026, Celtis : « il faudrait qu'on arrive à voir les colis
+     non assignés pour pouvoir les traiter et les assigner. »
+     Ils étaient jusqu'ici écartés du tableau EN SILENCE, ce qui est le vrai défaut : la journée
+     affichait moins de colis qu'il n'y en avait, sans rien dire, et un colis oublié à la
+     création n'apparaissait donc nulle part. On continue de ne les imputer à personne — ce
+     n'est le travail d'aucun livreur — mais on les COMPTE, et l'écran le dit. */
+  const sansLivreur = { touches: 0, enAttente: 0 };
+
   (colis || []).forEach(c => {
-    // Un colis sans livreur n'est le travail de personne : on ne l'impute pas à un « inconnu »
-    // qui polluerait le tableau. Même règle que statistiquesParLivreur().
-    if (!c || !c.livreur_id) return;
+    if (!c) return;
+    if (!c.livreur_id) {
+      if (!o.livreurId) {
+        const jR = jourEvenementColis(c, "recupere");
+        const jL = jourEvenementColis(c, "livre");
+        const jN = jourEvenementColis(c, "non_livre");
+        const jT = jourEvenementColis(c, "retour");
+        if (jR === jour || jL === jour || jN === jour || jT === jour) sansLivreur.touches++;
+        if (c.statut === "en_attente" || c.statut === "recupere") sansLivreur.enAttente++;
+      }
+      return;
+    }
     if (o.livreurId && c.livreur_id !== o.livreurId) return;
 
     // Un colis posé sur un statut mais sans l'heure correspondante : compté à part, jamais rangé
@@ -2831,6 +2848,7 @@ function colisDuJourParLivreur(colis, livreurs, jour, options) {
     lignes: lignes,
     total: totalDuJour(lignes),
     sansHorodatage: sansHorodatage,
+    sansLivreur: sansLivreur,
   };
 }
 
@@ -2854,11 +2872,22 @@ function totalDuJour(lignes) {
 function couvertureDuJourTexte(resultat) {
   const s = (resultat && resultat.sansHorodatage) || {};
   const manquants = (s.recupere || 0) + (s.livre || 0) + (s.non_livre || 0) + (s.retour || 0);
-  if (!manquants) return "";
-  return manquants + " colis ne sont comptés dans aucune journée : la base n'a pas gardé "
-    + "l'heure de leur dernier changement de statut, et elle ne peut plus la retrouver. "
-    + "Ce sont des colis d'avant la mise en place de cet enregistrement ; leur nombre ne "
-    + "grandira pas.";
+  const phrases = [];
+  if (manquants) {
+    phrases.push(manquants + " colis ne sont comptés dans aucune journée : la base n'a pas gardé "
+      + "l'heure de leur dernier changement de statut, et elle ne peut plus la retrouver. "
+      + "Ce sont des colis d'avant la mise en place de cet enregistrement ; leur nombre ne "
+      + "grandira pas.");
+  }
+  /* Le tableau compte par livreur : un colis sans livreur n'a donc pas de ligne. Le taire,
+     c'est afficher une journée plus petite qu'elle ne l'a été. (18/09/2026) */
+  const sl = (resultat && resultat.sansLivreur) || {};
+  if (sl.touches) {
+    phrases.push(sl.touches + (sl.touches > 1 ? " colis ont bougé" : " colis a bougé")
+      + " ce jour-là sans livreur assigné : " + (sl.touches > 1 ? "ils ne sont" : "il n'est")
+      + " dans aucune ligne ci-dessus, puisque le tableau compte par livreur.");
+  }
+  return phrases.join(" ");
 }
 
 // formatMontant() → déplacé dans clt-common.js (chargé avant ce fichier).

@@ -294,8 +294,13 @@ cltToast([...new Set(avertissements)].join(' '), { type: 'warning', duration: 90
 }
 
 // Libellés de filtre : dérivés du référentiel central STATUTS (config.js) — source unique.
-const FILTER_LABELS = (typeof STATUT_FILTER_LABELS !== 'undefined') ? STATUT_FILTER_LABELS
-  : { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En cours de livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' };
+const FILTER_LABELS = Object.assign({},
+  (typeof STATUT_FILTER_LABELS !== 'undefined') ? STATUT_FILTER_LABELS
+    : { tous: 'Tous', en_attente: 'En attente', recupere: 'Récupéré', en_livraison: 'En cours de livraison', livre: 'Livré', non_livre: 'Non livré', retour: 'Retour' },
+  /* « Sans livreur » n'est pas un statut mais une absence, et c'est justement pour ça qu'il lui
+     faut sa propre pastille : un colis créé et jamais confié n'apparaît sous aucun des autres
+     filtres comme un problème. (18/09/2026, demande de Celtis) */
+  { sans_livreur: 'Sans livreur' });
 
 function renderFilters(){
 const box = document.getElementById('filters');
@@ -760,6 +765,7 @@ ${infoBlock}
 <textarea class="obs-textarea" placeholder="Observation (ex : client absent, colis refusé...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
 <button class="btn btn-sm btn-save" style="margin-top:4px;" ${gateSave ? 'disabled' : ''} data-gate="${gateSave ? '1' : '0'}">Enregistrer</button>
 ${gateSave ? `<div class="save-hint" style="font-size:11.5px; color:#c0392b; margin-top:4px; max-width:230px; line-height:1.35;">Choisissez d'abord un livreur de récupération pour pouvoir enregistrer.</div>` : ''}
+${estEnEdition ? `<button type="button" class="btn btn-outline btn-sm btn-annuler-edition" style="margin-top:4px;">↩︎ Annuler</button>` : ''}
 <button class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>
 </div>
 </div>
@@ -874,6 +880,13 @@ const reclamationsClientes = Array.isArray(window.__reclamationsClientes) ? wind
 const cat = {
   collecte:  colis.filter(c => c.statut === 'en_attente' && !c.livreur_collecte_id),
   livraison: colis.filter(c => c.statut === 'recupere' && !c.livreur_id),
+  /* TOUT COLIS EN COURS SANS PERSONNE POUR LE PORTER. (18/09/2026, Celtis : « ne pas laisser un
+     colis créé sans assignation ».) Les deux lignes ci-dessus ne voient chacune qu'un statut :
+     un colis « en attente » avec un livreur de collecte mais sans livreur de livraison, ou
+     passé « en livraison » sans livreur, ne figurait dans aucune. Celle-ci ne regarde pas le
+     statut, elle regarde l'absence — et elle s'arrête au sort fixé : un livré sans livreur est
+     un colis d'avant l'application, pas un travail à confier. */
+  sansLivreur: colis.filter(c => !c.livreur_id && c.statut !== 'livre' && c.statut !== 'non_livre' && c.statut !== 'retour'),
   retard:    colis.filter(c => c.statut === 'en_livraison' && jourDuColis(c) < aujourdhui),
   // Récupérés depuis plus de deux jours et jamais passés en livraison : des statuts jamais
   // fermés qui encombrent les restes des livreurs (vu chez Gbei Franck : des « récupéré »
@@ -933,7 +946,7 @@ const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`
        mais « ✓ Rien à faire ». Un tableau de bord doit montrer ce qui demande une action ; ce
        qui vaut zéro n'en demande pas, et occupait autant de place que le reste.
    Dès qu'il y a quelque chose, la pastille revient, en couleur. */
-window.__essentielListes = { collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id), retours: cat.retours.map(c => c.id), retoursTard: cat.retoursTard.map(c => c.id), reclamations: cat.reclamations.map(r => r.colis_id).filter(Boolean) };
+window.__essentielListes = { sansLivreur: cat.sansLivreur.map(c => c.id), collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id), retours: cat.retours.map(c => c.id), retoursTard: cat.retoursTard.map(c => c.id), reclamations: cat.reclamations.map(r => r.colis_id).filter(Boolean) };
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 // 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient
 // de config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
@@ -964,6 +977,7 @@ set('aujourdhui-jour',
   tuile(approx + b.echecs, 'échecs aujourd\'hui', 'rouge') +
   tuile(approx + b.enCours, 'encore en cours', 'ambre'));
 set('aujourdhui-actions', ouRien(
+  pastille(cat.sansLivreur.length, cat.sansLivreur.length > 1 ? 'colis sans livreur' : 'colis sans livreur', 'sans-livreur', 'rouge') +
   pastille(cat.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
   pastille(cat.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
   pastille(nbPending, 'comptes à valider', 'comptes-a-valider', 'ambre') +
@@ -1053,6 +1067,7 @@ const L = window.__essentielListes || {};
 switch (cle) {
   case 'comptes-a-valider': onglet('comptes'); ouvrir('pending-content'); defiler('section-pending'); break;
   case 'reinitialisations': onglet('comptes'); ouvrir('reset-content'); defiler('section-reset'); break;
+  case 'sans-livreur': listeColis('sans_livreur', '', L.sansLivreur); break;
   case 'collecte':  listeColis('en_attente', '', L.collecte); break;
   case 'livraison': listeColis('recupere', '__aucun', L.livraison); break;
   case 'retard':    listeColis('en_livraison', '', L.retard); break;

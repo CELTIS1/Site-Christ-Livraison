@@ -102,6 +102,17 @@
       fraisCourse: Math.max(0, t.fraisCourseAcquis - livraisonPayeeAuDepot),
       recette: t.recetteLivraison + coursesSansLivraison,
     };
+    /* CE QU'ON A GAGNÉ, ET CE QU'ON AURAIT DÛ GAGNER — 18/09/2026, Celtis : « la recette est
+       celle qu'on gagne effectivement et ce qu'on devrait gagner, car c'est elle qui entre dans
+       la caisse. »
+       La recette acquise ne suffit pas à juger une journée : 40 000 F sur une journée où rien
+       n'a échoué n'est pas la même chose que 40 000 F sur une journée où 15 000 F sont partis
+       en déplacements pour rien. Le manque, c'est exactement la livraison des colis qui n'ont
+       pas abouti — non livrés sans déplacement payé, et livrés dont la course n'a pas été
+       encaissée. C'est déjà `livraison.nonEncaisse` : on ne le recalcule pas, on le nomme.
+       « Aurait pu » n'est donc PAS un objectif commercial, c'est la même journée sans échec. */
+    livraison.manque = livraison.nonEncaisse;
+    livraison.attenduTotal = livraison.recette + livraison.manque;
 
     // Les livreurs : caisseParLivreur sur les colis du jour (livrés + avances de gare).
     const lignes = caisseParLivreur(colisDuJour);
@@ -252,8 +263,12 @@
         ${tuile('Non encaissé', F(l.nonEncaisse), { couleur: l.nonEncaisse ? ROUGE : undefined, sous: [l.manquant ? `${F(l.manquant)} livrés sans encaisser` : '', l.nonLivres ? `${F(l.nonLivres)} non livrés` : ''].filter(Boolean).join(' · ') })}
       </div>
       <div class="pdj-verif ${r.ok1 ? 'ok' : 'ko'}">${F(l.attendu)} = ${F(l.encaisse)} + ${F(l.nonEncaisse)} ${r.ok1 ? '✓' : '✗ vérifier'}</div>
-      <div class="pdj-recette"><span>Recette de livraison du jour</span><strong>${F(l.recette)}</strong>
+      <div class="pdj-recette"><span>Recette de livraison du jour <em>ce qui entre en caisse</em></span><strong>${F(l.recette)}</strong>
         <small>${[`${F(l.encaisse)} à la porte`, l.payeeAuDepot ? `${F(l.payeeAuDepot)} payés au dépôt` : '', l.fraisCourse ? `${F(l.fraisCourse)} de frais de course (expéditions)` : ''].filter(Boolean).join(' + ')}</small></div>
+      ${l.manque
+        ? `<div class="pdj-recette pdj-recette-manque"><span>Ce qu'on aurait dû gagner <em>la même journée sans échec</em></span><strong>${F(l.attenduTotal)}</strong>
+             <small>${F(l.recette)} gagnés + ${F(l.manque)} manqués${l.nonLivres ? ` (dont ${F(l.nonLivres)} sur les colis non livrés)` : ''}</small></div>`
+        : `<div class="pdj-recette pdj-recette-plein"><span>Rien n'a été manqué <em>chaque course due a été gagnée</em></span><strong>✓</strong></div>`}
     </div>
   </div>
 

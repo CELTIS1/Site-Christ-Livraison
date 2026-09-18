@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918ecrans">
-<script src="theme.js?v=20260918ecrans"></script>
-<script src="splash.js?v=20260918ecrans"></script>
+<link rel="stylesheet" href="style.css?v=20260918gestes">
+<script src="theme.js?v=20260918gestes"></script>
+<script src="splash.js?v=20260918gestes"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -1023,8 +1023,16 @@ saisis ensuite lui seront rattachés automatiquement.
 <button type="button" class="btn btn-outline btn-sm" id="btn-jour-hier">Hier</button>
 </div>
 <div id="rapport-jour-recap" style="margin-top:14px;"><div class="empty-state">Chargement...</div></div>
-<h3 class="panel-subtitle" style="margin-top:26px;">Le détail de la journée</h3>
-<div id="rapport-jour-content"><div class="empty-state">Chargement...</div></div>
+<!-- LE DÉTAIL, REPLIÉ ET EN DERNIER. (18/09/2026) Celtis : « le détail de la journée doit se
+     replier et passer en bas, je ne le trouve pas assez utile pour le moment. » Il reste dans
+     « Vue par jour » et non à la fin de l'onglet, pour une raison : c'est le détail de la
+     journée choisie juste au-dessus, et déplacé ailleurs il resterait affiché quand on passe
+     sur « Par livreur » — un détail d'une journée qu'on ne regarde plus. Replié, il ne coûte
+     plus rien à qui ne le lit pas, et reste à un clic pour qui le cherche. -->
+<details class="eq-aide" id="rapport-jour-detail" style="margin-top:26px;">
+<summary>📋 Le détail de la journée — les fiches des colis qui ont bougé</summary>
+<div id="rapport-jour-content" style="margin-top:10px;"><div class="empty-state">Chargement...</div></div>
+</details>
 </div>
 <!-- 05/09/2026 — « Vue par mois » retirée (fausse au-delà de 500 colis ; l'onglet Clients la remplace). -->
 <div id="rapport-livreur" class="hidden">
@@ -1625,36 +1633,36 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260918ecrans"></script>
-<script src="lib/bibliotheques.js?v=20260918ecrans"></script>
-<script src="lib/retours.js?v=20260918ecrans"></script>
-<script src="lib/reclamations.js?v=20260918ecrans"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918ecrans"></script>
-<script src="lib/argent.js?v=20260918ecrans"></script>
-<script src="lib/releve-cliente.js?v=20260918ecrans"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918ecrans"></script>
-<script src="lib/briques-argent.js?v=20260918ecrans"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918ecrans"></script>
-<script src="lib/annonce-de-remise.js?v=20260918ecrans"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918ecrans"></script>
-<script src="lib/primes.js?v=20260918ecrans"></script>
-<script src="lib/doublons.js?v=20260918ecrans"></script>
-<script src="config.js?v=20260918ecrans"></script>
-<script src="clients-dashboard.js?v=20260918ecrans"></script>
-<script src="livreurs-dashboard.js?v=20260918ecrans"></script>
-<script src="point-du-jour.js?v=20260918ecrans"></script>
-<script src="biometric-lock.js?v=20260918ecrans"></script>
-<script src="clt-select-recherche.js?v=20260918ecrans"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260918ecrans"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260918ecrans"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260918ecrans"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260918ecrans"></script>
-<script src="equipe/04-actions.js?v=20260918ecrans"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260918ecrans"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260918ecrans"></script>
-<script src="equipe/07-rapports.js?v=20260918ecrans"></script>
-<script src="equipe/08-son-ecran.js?v=20260918ecrans"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260918ecrans"></script>
+<script src="clt-common.js?v=20260918gestes"></script>
+<script src="lib/bibliotheques.js?v=20260918gestes"></script>
+<script src="lib/retours.js?v=20260918gestes"></script>
+<script src="lib/reclamations.js?v=20260918gestes"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918gestes"></script>
+<script src="lib/argent.js?v=20260918gestes"></script>
+<script src="lib/releve-cliente.js?v=20260918gestes"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918gestes"></script>
+<script src="lib/briques-argent.js?v=20260918gestes"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918gestes"></script>
+<script src="lib/annonce-de-remise.js?v=20260918gestes"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918gestes"></script>
+<script src="lib/primes.js?v=20260918gestes"></script>
+<script src="lib/doublons.js?v=20260918gestes"></script>
+<script src="config.js?v=20260918gestes"></script>
+<script src="clients-dashboard.js?v=20260918gestes"></script>
+<script src="livreurs-dashboard.js?v=20260918gestes"></script>
+<script src="point-du-jour.js?v=20260918gestes"></script>
+<script src="biometric-lock.js?v=20260918gestes"></script>
+<script src="clt-select-recherche.js?v=20260918gestes"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260918gestes"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260918gestes"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260918gestes"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260918gestes"></script>
+<script src="equipe/04-actions.js?v=20260918gestes"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260918gestes"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260918gestes"></script>
+<script src="equipe/07-rapports.js?v=20260918gestes"></script>
+<script src="equipe/08-son-ecran.js?v=20260918gestes"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260918gestes"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1697,7 +1705,7 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260918ecrans"></script>
-<script src="equipe/11-chercher-partout.js?v=20260918ecrans"></script>
+<script src="equipe/10-onglets.js?v=20260918gestes"></script>
+<script src="equipe/11-chercher-partout.js?v=20260918gestes"></script>
 </body>
 </html>

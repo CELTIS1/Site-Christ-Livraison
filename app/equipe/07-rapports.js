@@ -1246,6 +1246,36 @@ if (c.article_non_encaisse) return 'Article soldé';
 return c.reverse_au_fournisseur_at ? 'Encaissé et reversé' : 'Encaissé, à reverser';
 }
 
+/* LA DETTE NE SE RANGE PAS DANS UNE PÉRIODE — 18 septembre 2026, au soir
+   ==========================================================================================
+   Celtis : « pour le premier tableau il me semble qu'il n'affiche pas les données correctes. »
+   Il avait raison, et voici pourquoi.
+
+   Le filtre de dates de cet onglet s'ouvre sur AUJOURD'HUI et porte sur `created_at`. Le
+   récapitulatif par vendeuse ne montrait donc que les colis CRÉÉS aujourd'hui — et sa colonne
+   « À reverser » n'annonçait que la dette née aujourd'hui. Or ce que CLT doit à une cliente ne
+   se range pas dans une journée : c'est l'argent de tous ses colis livrés et pas encore remis,
+   depuis toujours. Un colis créé lundi, livré mardi, se payait mercredi : il n'apparaissait
+   dans aucune des trois journées.
+
+   Payer d'après ce tableau, c'était donc payer moins que ce qu'on doit — et le relevé envoyé à
+   la même cliente le même soir, lui, annonçait la vraie somme. Deux chiffres pour la même dette.
+
+   CE QUI CHANGE. La colonne « À reverser » est lue À PART, sur TOUTES les dates, exactement
+   comme le fait le relevé de la cliente et le bloc du point du jour juste au-dessus : mêmes
+   colis, même addition de la maison (montantNetADevoir). Les autres colonnes — colis, livrés,
+   articles — restent celles de la PÉRIODE choisie : ce sont des mesures d'activité, et là la
+   période a un sens. Et une cliente à qui l'on doit de l'argent apparaît dans le tableau même
+   si elle n'a rien confié pendant la période : sinon la dette resterait invisible le jour où
+   l'on veut justement la solder.
+   ========================================================================================== */
+async function comptaDettes(){
+  try {
+    return await cltLireTout(() => supabaseClient.from('colis').select('*')
+      .eq('statut', 'livre').is('reverse_au_fournisseur_at', null).order('id'));
+  } catch (error) { console.error('Comptabilité — dettes :', error); return []; }
+}
+
 async function renderCompta(){
 if (window.CLTPointDuJour) { CLTPointDuJour.init(); CLTPointDuJour.rafraichir(); }
 const summary = document.getElementById('compta-summary');
@@ -1253,13 +1283,22 @@ const recapBox = document.getElementById('compta-recap');
 const detail = document.getElementById('compta-detail');
 if (!summary || !recapBox || !detail) return;
 
-const rows = await comptaFiltered();
+const [rows, colisDus] = await Promise.all([comptaFiltered(), comptaDettes()]);
+// La dette par cliente, toutes dates : le même calcul que son relevé du soir.
+const detteParCliente = {};
+colisDus.forEach((c) => {
+  const k = c.fournisseur_id || 'inconnu';
+  (detteParCliente[k] = detteParCliente[k] || []).push(c);
+});
+const detteDe = (id) => (detteParCliente[id] || []).reduce((s2, c) => s2 + (montantNetADevoir(c) || 0), 0);
+const detteTotale = Object.keys(detteParCliente).reduce((s2, k) => s2 + detteDe(k), 0);
+const nbColisDus = (id) => (detteParCliente[id] || []).length;
 // La période comptée, en toutes lettres : personne ne doit prendre un jour pour un mois, ni un
 // mois pour tout l'historique. (16/09/2026)
 const periodeTexte = comptaPeriodeTexte();
-if (!rows.length) {
+if (!rows.length && !colisDus.length) {
 cltPoserHTML(summary, `<div class="page-sub">${escapeHTML(periodeTexte)}</div>`);
-cltPoserHTML(recapBox, `<div class="empty-state">Aucun colis sur cette période.</div>`);
+cltPoserHTML(recapBox, `<div class="empty-state">Aucun colis sur cette période, et rien à reverser.</div>`);
 cltPoserHTML(detail, '');
 renderCaisseLivreur([]);
 return;
@@ -1281,7 +1320,7 @@ cltPoserHTML(summary, `
 ${t.nb} colis · ${t.nbLivres} livré(s) ·
 Articles enregistrés : <strong>${formatMontant(t.articleEnregistre) || '0 FCFA'}</strong> ·
 Articles encaissés : <strong>${formatMontant(t.articleEncaisse) || '0 FCFA'}</strong> ·
-${(t.fraisExpeditionADevoir + t.fraisCourseADevoir) ? `Retenues (gare + course) : <strong style="color:${COULEUR_NEGATIF_CLT};">−${formatMontant(t.fraisExpeditionADevoir + t.fraisCourseADevoir)}</strong> · ` : ''}À reverser aux clientes : <strong style="color:${t.netADevoir > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(t.netADevoir) || '0 FCFA'}</strong>
+${(t.fraisExpeditionADevoir + t.fraisCourseADevoir) ? `Retenues (gare + course) : <strong style="color:${COULEUR_NEGATIF_CLT};">−${formatMontant(t.fraisExpeditionADevoir + t.fraisCourseADevoir)}</strong> · ` : ''}À reverser aux clientes, <strong>toutes dates</strong> : <strong style="color:${detteTotale > 0 ? '#c0392b' : '#1a7d3c'};">${formatMontant(detteTotale) || '0 FCFA'}</strong>
 ${t.manquantALaLivraison > 0 ? ` · <strong style="color:#c0392b;">Non encaissé à la livraison : ${formatMontant(t.manquantALaLivraison)}</strong>` : ''}
 </div>
 `);
@@ -1295,13 +1334,19 @@ const key = c.fournisseur_id || 'inconnu';
 if (!parFournisseur[key]) parFournisseur[key] = [];
 parFournisseur[key].push(c);
 });
-const recapRows = Object.keys(parFournisseur)
-.map(id => ({ id, t: totauxArgent(parFournisseur[id]) }))
-.sort((a, b) => b.t.nb - a.t.nb);
+/* Une cliente à qui l'on doit de l'argent est dans le tableau MÊME si elle n'a rien confié
+   pendant la période : c'est justement le jour où l'on veut la payer qu'elle ne doit pas
+   disparaître. Ses colonnes d'activité sont alors à zéro, ce qui est vrai. */
+const idsAvecDette = Object.keys(detteParCliente).filter((id) => detteDe(id) !== 0);
+const tousIds = [...new Set(Object.keys(parFournisseur).concat(idsAvecDette))];
+const recapRows = tousIds
+.map(id => ({ id, t: totauxArgent(parFournisseur[id] || []), du: detteDe(id), nbDus: nbColisDus(id) }))
+.sort((a, b) => Math.abs(b.du) - Math.abs(a.du) || b.t.nb - a.t.nb);
 cltPoserHTML(recapBox, `
+<div class="page-sub" style="margin-bottom:6px;">Colis, livrés et articles portent sur la période choisie. <strong>« À reverser » porte sur toutes les dates</strong> : une dette ne se range pas dans une journée, et c'est le chiffre avec lequel on paie.</div>
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
-<thead><tr><th>Client</th><th>Colis</th><th>Livrés</th><th>Articles enregistrés</th><th>Articles encaissés</th><th title="Avances de gare + frais de course (expéditions et articles soldés), encore à retenir">Retenues</th><th>À reverser</th></tr></thead>
+<thead><tr><th>Client</th><th>Colis</th><th>Livrés</th><th>Articles enregistrés</th><th>Articles encaissés</th><th title="Avances de gare + frais de course (expéditions et articles soldés), encore à retenir">Retenues</th><th title="Ce que CLT doit encore à cette cliente sur TOUS ses colis livrés et pas encore remis, quelle que soit la période affichée. Une dette ne se range pas dans une journée.">À reverser — toutes dates</th></tr></thead>
 <tbody>
 ${recapRows.map(r => `
 <tr>
@@ -1311,7 +1356,7 @@ ${recapRows.map(r => `
 <td data-label="Articles enregistrés">${formatMontant(r.t.articleEnregistre) || '0 FCFA'}</td>
 <td data-label="Articles encaissés">${formatMontant(r.t.articleEncaisse) || '0 FCFA'}</td>
 <td data-label="Retenues" style="color:${COULEUR_NEGATIF_CLT}; font-weight:700;">${(r.t.fraisExpeditionADevoir + r.t.fraisCourseADevoir) ? '−' + formatMontant(r.t.fraisExpeditionADevoir + r.t.fraisCourseADevoir) + `<div class="meta" style="font-size:11px;">${r.t.fraisExpeditionADevoir ? 'gare ' + formatMontant(r.t.fraisExpeditionADevoir) : ''}${r.t.fraisExpeditionADevoir && r.t.fraisCourseADevoir ? ' · ' : ''}${r.t.fraisCourseADevoir ? 'course ' + formatMontant(r.t.fraisCourseADevoir) : ''}</div>` : '—'}</td>
-<td data-label="À reverser" style="color:${r.t.netADevoir > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.t.netADevoir) || '0 FCFA'}</td>
+<td data-label="À reverser — toutes dates" style="color:${r.du > 0 ? '#c0392b' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.du) || '0 FCFA'}${r.nbDus ? `<div class="meta" style="font-size:11px;">${r.nbDus} colis</div>` : ''}</td>
 </tr>
 `).join('')}
 </tbody>
@@ -1322,7 +1367,7 @@ ${piedTotalHTML([
 { texte: formatMontant(t.articleEnregistre) || '0 FCFA', label: 'Articles enregistrés' },
 { texte: formatMontant(t.articleEncaisse) || '0 FCFA', label: 'Articles encaissés' },
 { texte: (t.fraisExpeditionADevoir + t.fraisCourseADevoir) ? '−' + formatMontant(t.fraisExpeditionADevoir + t.fraisCourseADevoir) : '—', couleur: COULEUR_NEGATIF_CLT, label: 'Retenues' },
-{ texte: formatMontant(t.netADevoir) || '0 FCFA', couleur: t.netADevoir > 0 ? '#c0392b' : '#1a7d3c', label: 'À reverser' },
+{ texte: formatMontant(detteTotale) || '0 FCFA', couleur: detteTotale > 0 ? '#c0392b' : '#1a7d3c', label: 'À reverser — toutes dates' },
 ])}
 </table>
 </div>

@@ -695,10 +695,28 @@ verifier(
    Les quatre écrans de téléphone (livreur, cliente, les deux Express) reçoivent une colonne de
    lecture bornée à 680 px, et seulement au-dessus de 760 px de large : rien ne change sur
    téléphone. Le bureau et la Gestion gardent leur largeur — eux ont de vraies listes et de vrais
-   tableaux, ce n'est pas la même question. Aucune migration. Étiquette 20260918ecrans. */
+   tableaux, ce n'est pas la même question. Aucune migration. Étiquette 20260918ecrans.
+   v168, le 18/09/2026 — Celtis, après une journée d'usage, signale six manques d'un coup. Le plus
+   coûteux est une RÉGRESSION DU MATIN MÊME : la migration du reçu numéroté avait réécrit
+   `reverser_a_la_cliente` en entier pour y ajouter le numéro, et repris l'ancien corps — le reçu
+   redevenait le BRUT au lieu du net, et les expéditions comme les articles soldés étaient de
+   nouveau refusés alors que l'écran les propose. Mesuré en base : 23 colis chez 7 clientes que
+   le geste affiché aurait refusés. Migration 2026-09-18-reverser-le-net-et-le-numero.sql, jouée,
+   avec son contrôle ; un seul reversement avait été fait entre-temps (REV-2026-0054) et son
+   montant était juste — aucune retenue sur ce colis-là. Les cinq autres manques ont tous la même
+   forme, un écran qui se tait : (1) un colis sans livreur disparaissait du tableau du jour SANS
+   UN MOT et n'apparaissait nulle part ailleurs — il a maintenant son compte, sa phrase sous le
+   tableau, une pastille rouge dans « L'essentiel » et son propre filtre ; (2) la colonne
+   « À reverser » du récapitulatif ne comptait que la dette née dans la période affichée (par
+   défaut : aujourd'hui, sur created_at), donc on payait moins que ce qu'on doit — elle est
+   désormais lue à part, toutes dates, et une cliente à qui l'on doit apparaît même sans colis
+   dans la période ; (3) le détail de la journée est replié ; (4) le point du jour dit ce qu'on a
+   gagné ET ce qu'on aurait gagné sans échec ; (5) refermer une fiche cliente ouverte depuis les
+   Finances ramène aux Finances, et modifier un colis peut s'abandonner sans enregistrer ni
+   supprimer — les deux seules issues qui existaient. Étiquette 20260918gestes. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v167'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v168'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

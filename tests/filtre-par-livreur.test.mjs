@@ -121,7 +121,16 @@ titre('Les quatre critères se combinent au lieu de se remplacer');
     (ligne.match(/&&/g) || []).length >= 2, ligne.trim());
   // Le statut est appliqué juste au-dessus, sur allColis : c'est la même chaîne.
   verifier('le statut reste appliqué en amont de cette chaîne',
-    /activeFilter === 'tous' \? allColis : allColis\.filter\(c => c\.statut === activeFilter\)/.test(equipe));
+    /activeFilter === 'tous' \? allColis/.test(equipe)
+    && /allColis\.filter\(c => c\.statut === activeFilter\)/.test(equipe));
+  /* « Sans livreur » s'est glissé dans cette chaîne le 18/09 (Celtis : « voir les colis non
+     assignés pour pouvoir les traiter et les assigner »). Ce n'est PAS un statut mais une
+     absence, d'où sa branche à part — et elle s'arrête au sort fixé : un livré sans livreur est
+     un colis d'avant l'application, pas un travail à confier. */
+  verifier('et « sans livreur » est une branche à part, qui ne touche pas aux statuts',
+    /activeFilter === 'sans_livreur'/.test(equipe)
+    && /!c\.livreur_id && c\.statut !== 'livre'/.test(equipe),
+    (equipe.match(/.{0,60}sans_livreur.{0,80}/) || [''])[0]);
 }
 
 /* ---------- 4. Changer de livreur remet les compteurs à zéro ---------- */

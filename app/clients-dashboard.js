@@ -662,9 +662,27 @@
      s'assure que les chiffres sont chargés, on ouvre la fiche de la cliente et on amène le bloc
      « Reverser » sous les yeux. Le point du jour n'a ainsi qu'un bouton à poser, et c'est cet
      écran-ci qui reste seul maître du geste. (17/09/2026, point 6.6.) */
+  /* REVENIR D'OÙ L'ON VIENT — 18/09/2026, Celtis : « au niveau des clientes, lorsqu'on
+     sélectionne une, une carte s'ouvre, mais lorsqu'on la referme ça nous envoie sur l'onglet
+     Personnes ; il faut revoir ça et prévoir les bons gestes de retour là où il faut. »
+     Il a raison, et la cause est ici : pour ouvrir la fiche d'une cliente depuis le point du
+     jour (onglet Finances), on CHANGE d'onglet. Refermer la fiche laissait donc la personne sur
+     Personnes, loin de l'écran qu'elle consultait — et il fallait retrouver son chemin.
+     On retient donc l'onglet d'où l'on part, et la fermeture y ramène. Quand la fiche est
+     ouverte depuis Personnes (le cas ordinaire), il n'y a rien à retenir et rien ne change. */
+  let cdOngletDeRetour = '';
+
+  function cdOngletActuel() {
+    const actif = document.querySelector('#clt-toptabs .clt-toptab.active');
+    return actif ? (actif.dataset.eqtab || '') : '';
+  }
+
   async function cdOuvrirReversement(id) {
     if (!id) return;
+    const depuis = cdOngletActuel();
     if (typeof showEquipeTab === 'function') showEquipeTab('clients');
+    // On ne retient que si l'on a RÉELLEMENT changé d'écran.
+    cdOngletDeRetour = (depuis && depuis !== cdOngletActuel()) ? depuis : '';
     const box = $('cd-corps');
     if (!box || !box.__cdLignes || !box.__cdLignes.some((x) => x.id === id)) await cdRafraichir(true);
     cdOuvrirFiche(id);
@@ -680,6 +698,11 @@
     const overlay = $('cd-fiche-overlay');
     if (overlay) overlay.classList.add('hidden');
     document.body.classList.remove('cd-fiche-ouverte');
+    if (cdOngletDeRetour && typeof showEquipeTab === 'function') {
+      const ou = cdOngletDeRetour;
+      cdOngletDeRetour = '';
+      showEquipeTab(ou);
+    }
   }
 
   // ---------- Entrée ----------

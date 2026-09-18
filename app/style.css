@@ -2537,6 +2537,15 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 .pdj-verif.ok{ color:#1a7d3c; } .pdj-verif.ko{ color:#c0392b; font-weight:700; }
 .pdj-recette{ margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--grad-navy-deep, #1B4374); color:#fff; display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 12px; }
 .pdj-recette span{ font-size:12.5px; opacity:.85; } .pdj-recette strong{ font-size:20px; } .pdj-recette small{ flex-basis:100%; font-size:11.5px; opacity:.8; }
+.pdj-recette span em{ display:block; font-style:normal; font-size:11px; opacity:.75; }
+/* CE QU'ON AURAIT DÛ GAGNER (18/09/2026, Celtis). La même journée sans échec : ce n'est pas un
+   objectif commercial, c'est la recette acquise plus les courses parties pour rien. Elle est
+   posée SOUS la recette et en retrait — plus claire qu'un chiffre, moins forte qu'elle, parce
+   que c'est la recette qui entre en caisse et elle seule. */
+.pdj-recette-manque{ background:#fff6ea; color:#8a5a00; border:1px solid #f0d09a; margin-top:6px; }
+.pdj-recette-plein{ background:#eaf6ef; color:#14663a; border:1px solid #b6dfc6; margin-top:6px; }
+html[data-theme="dark"] .pdj-recette-manque{ background:rgba(138,90,0,.22); border-color:rgba(240,208,154,.35); color:#ffd894; }
+html[data-theme="dark"] .pdj-recette-plein{ background:rgba(20,102,58,.22); border-color:rgba(182,223,198,.35); color:#9fe3bb; }
 .pdj-note{ font-size:12.5px; color:var(--muted); margin-top:8px; }
 .pdj-table{ margin-top:10px; }
 .pdj-lien{ margin-top:8px; font-size:13px; } .pdj-lien a{ color:var(--navy); font-weight:600; }
