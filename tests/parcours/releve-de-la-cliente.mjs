@@ -100,7 +100,32 @@ const avantInsert = monde.journal.filter(j => j.table === 'colis' && j.op === 'i
 await page.locator('#lotfr-lignes .lot-enregistrer-un').first().click();
 await dodo(1500);
 const modal = page.locator('#clt-modal-overlay:not(.hidden), .clt-modal-overlay:not(.hidden)').first();
+
+/* D'ABORD L'ARGENT (18/09/2026, Celtis : « qu'il y ait vraiment des alertes là où il faut,
+   surtout concernant au niveau de l'argent »). Elle a saisi la commune, l'adresse et le
+   téléphone, mais aucun montant : c'est exactement le colis qui ressortait le soir à 0 FCFA sur
+   son relevé. L'alerte passe AVANT celle des doublons, parce qu'elle porte sur ce qui est saisi
+   plutôt que sur ce qui existe déjà — et parce qu'un montant manquant se corrige sans quitter
+   la ligne. Elle avertit, elle ne refuse pas : la vérification suivante le montre. */
+const texteArgent = (await modal.count()) ? await modal.innerText() : '';
+verifier('avant tout, l\'app prévient qu\'aucun montant n\'a été saisi, et nomme les deux',
+  /montant manque|montants manquent/i.test(texteArgent)
+  && /montant de l’article|montant de l'article/.test(texteArgent)
+  && /frais de livraison/.test(texteArgent), texteArgent.slice(0, 300));
+verifier('elle propose de compléter, pas seulement d\'annuler', /Compléter/.test(texteArgent), texteArgent.slice(0, 300));
+verifier('rien n\'est écrit tant qu\'elle n\'a pas répondu', monde.journal.filter(j => j.table === 'colis' && j.op === 'insert').length === avantInsert);
+await page.locator('#clt-modal-cancel').click();
+await dodo(400);
+verifier('« Compléter » la ramène à sa ligne, intacte', (await page.locator('#lotfr-lignes .lotfr-tel').count()) === 1
+  && (await page.locator('#lotfr-lignes .lotfr-tel').first().inputValue()).replace(/\s/g, '') === '0701020304');
+
+// Elle écrit ses deux montants. L'alerte de l'argent se tait ; celle des doublons, elle, reste.
+await page.locator('#lotfr-lignes .lotfr-art').first().fill('18000');
+await page.locator('#lotfr-lignes .lotfr-liv').first().fill('1500');
+await page.locator('#lotfr-lignes .lot-enregistrer-un').first().click();
+await dodo(1500);
 const texteModal = (await modal.count()) ? await modal.innerText() : '';
+verifier('les montants écrits, l\'alerte de l\'argent ne revient pas', !/montant manque|montants manquent/i.test(texteModal), texteModal.slice(0, 200));
 verifier('la fenêtre « Ce colis existe peut-être déjà » s\'ouvre, cite le n° du colis semblable et propose « Créer quand même »', /existe peut-être déjà/.test(texteModal) && /CLT-260916-00004/.test(texteModal) && /Créer quand même/.test(texteModal), texteModal.slice(0, 300));
 verifier('rien n\'a été écrit en base tant qu\'on n\'a pas répondu', monde.journal.filter(j => j.table === 'colis' && j.op === 'insert').length === avantInsert);
 await page.locator('#clt-modal-cancel').click();

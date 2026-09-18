@@ -596,10 +596,24 @@ verifier(
    livreur depuis le 05/09 — règle descendue dans lib/communes-et-tarifs.js. (2) Rien ne disait
    si le point du soir avait été envoyé à une cliente : table points_envoyes, une marque par
    cliente et par jour, cochée à la main (télécharger n'est pas envoyer), avec qui et quand, et
-   visible depuis la liste. Migration 2026-09-18-le-point-envoye.sql : étiquette 20260918point. */
+   visible depuis la liste. Migration 2026-09-18-le-point-envoye.sql : étiquette 20260918point.
+   v161, le 18/09/2026 — Celtis : « il y a encore des confusions […] surtout concernant au niveau
+   de l'argent ». Quatre corrections d'un même mal, aucune migration. (1) Un colis enregistré sans
+   prix d'article ou sans frais de livraison déclenche une alerte — elle avertit, elle ne bloque
+   pas — et garde une marque tant que le montant manque ; un champ vide ne s'écrit plus « 0 FCFA »
+   mais « non renseigné », en rouge, sur les trois écrans (lib/argent.js, les quatre chemins
+   d'écriture, la carte du bureau, celle de la cliente, le téléphone du livreur). (2) « Payée
+   d'avance » ne disait pas payée à qui : partout « chez le fournisseur », et « chez vous » sur
+   l'écran de la cliente (chezLeFournisseur, paiementInfo). (3) Sur le relevé, chaque retenue
+   nomme son colis par son adresse, et la phrase ne dit plus « retenus sur 0 expédition » — elle
+   compte les colis (lib/releve-cliente.js, les quatre sorties). (4) Un colis soldé affiche
+   « Soldé » en bleu au lieu d'un tiret, à l'écran comme sur les trois documents. Au passage,
+   l'espace de la cliente ne demandait pas livraison_payee ni frais_soldes_at : son écran et son
+   relevé pouvaient annoncer deux sommes différentes (4 colis, 7 000 F, mesurés en base).
+   Étiquette 20260918argent. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v160'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v161'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

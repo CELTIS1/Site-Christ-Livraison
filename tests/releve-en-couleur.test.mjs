@@ -78,10 +78,33 @@ verifier("une autre colonne n'est pas touchée", cellule('body', 0, 1, 'a').text
 
 titre('Le relevé du soir demande ce coloriage');
 verifier('releveTableauPDF passe la colonne de statut et ses codes',
-  /colorier: \{ statut: \{ colonne: 2, codes: r\.lignes\.map\(l => l\.statutCode \|\| ''\) \}, argent: \[4\] \}/.test(equipe));
+  /colorier: \{ statut: \{ colonne: 2, codes: r\.lignes\.map\(l => l\.statutCode \|\| ''\) \}, argent: \[4\]/.test(equipe));
 verifier('les lignes du relevé portent le code du statut (releveCliente)', /statutCode:\s+\(c && c\.statut\) \|\| ''/.test(config));
-verifier("la colonne 2 est bien « Statut » et la 4 « Encaissé » dans l'ordre des colonnes",
-  /l\.statut,\n\s*formatMontant\(l\.article\)[^\n]*\n\s*l\.encaisse \? formatMontant/.test(equipe));
+verifier("la colonne 2 est bien « Statut » et la 4 « Vous revient » dans l'ordre des colonnes",
+  /l\.statut,\n\s*formatMontant\(l\.article\)[^\n]*\n\s*releveVousRevientTexte\(l\),/.test(equipe));
+
+/* UN MOT À LA PLACE D'UN MONTANT — 18 septembre 2026, Celtis
+   « Quand un colis est soldé, on ne sait pas, ça met juste un tiret. Il y a trop de confusion à
+   ce niveau-là. » La colonne « Vous revient » écrit donc « Soldé ». Le mot occupe une colonne
+   d'argent sans être un montant : la règle du dessus le peindrait en vert, la couleur de ce qui
+   revient à la cliente, alors qu'il dit justement qu'il n'y a rien à lui reverser. */
+titre('« Soldé » prend le bleu de sa pastille, pas le vert de l\'argent');
+verifier('le relevé demande ce mot en bleu',
+  /mots: \{ 'Soldé': '#1B4374' \}/.test(equipe));
+{
+  const plan = { colorier: { argent: [4], mots: { 'Soldé': '#1B4374' } } };
+  const sortie = contexte.styleTableauCLT(plan);
+  const cel = { section: 'body', column: { index: 4 }, row: { index: 0 }, cell: { raw: 'Soldé', styles: {} } };
+  sortie.didParseCell(cel);
+  verifier('la cellule « Soldé » sort en bleu et en gras, pas en vert',
+    JSON.stringify(cel.cell.styles.textColor) === JSON.stringify([27, 67, 116]) && cel.cell.styles.fontStyle === 'bold',
+    JSON.stringify(cel.cell.styles));
+  const montant = { section: 'body', column: { index: 4 }, row: { index: 1 }, cell: { raw: '5 000 FCFA', styles: {} } };
+  sortie.didParseCell(montant);
+  verifier('un vrai montant garde le vert de l\'argent',
+    JSON.stringify(montant.cell.styles.textColor) === JSON.stringify([26, 125, 60]),
+    JSON.stringify(montant.cell.styles));
+}
 
 /* LES MONTANTS NÉGATIFS EN ROUGE — 9 septembre 2026
    Celtis : « les valeurs négatives, comme les coûts d'expédition et les livraisons qu'on déduit,

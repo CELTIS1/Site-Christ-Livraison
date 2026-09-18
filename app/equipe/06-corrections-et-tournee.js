@@ -1229,7 +1229,7 @@ const rows = r.lignes.map(l => `
 <td data-label="Adresse">${l.adresse ? escapeHTML(l.adresse) : '—'}</td>
 <td data-label="Statut">${statutBadgeHTML(l.statutCode, l.expedition ? { commune_destination: COMMUNE_EXPEDITION } : null)}</td>
 <td data-label="Article">${formatMontant(l.article) || '0 FCFA'}</td>
-<td data-label="Vous revient" style="${l.encaisse ? 'font-weight:700;' : 'color:#8a94a3;'}${l.encaisse < 0 ? ' color:#c0392b;' : ''}">${l.encaisse ? formatMontant(l.encaisse) : '—'}</td>
+<td data-label="Vous revient" style="font-weight:${l.encaisse || l.solde ? '700' : '400'};${releveVousRevientCouleur(l) ? ' color:' + releveVousRevientCouleur(l) + ';' : ''}">${escapeHTML(releveVousRevientTexte(l))}</td>
 <td data-label="Observation">${l.observation ? escapeHTML(l.observation) : '—'}</td>
 </tr>`).join('');
 
@@ -1253,6 +1253,11 @@ ${piedTotalHTML(relevePiedCellules(r))}
      Deux textes pour une seule règle, c'est un des deux qu'on oublie de corriger — et comme il
      s'agit d'argent, l'écart se découvre au téléphone, face à quelqu'un qui a le papier. -->
 ${releveDetailRetenues(r) ? `<div class="recap-bilan-note" style="font-weight:600; color:${COULEUR_NEGATIF_CLT};">${escapeHTML(releveDetailRetenues(r))}</div>` : ''}
+<!-- D'OÙ VIENT CHAQUE RETENUE (18/09/2026, Celtis : « ça ne dit pas c'est sur quelle ligne ni sur
+     quelle adresse […] les mille francs, c'est parti d'où ? »). La phrase du dessus dit combien
+     et pourquoi ; celle-ci dit sur quel colis. Même liste que sur le PDF, l'Excel et le Word :
+     releveRetenuesLignesTexte(), dans lib/releve-cliente.js. -->
+${releveRetenuesLignesTexte(r).length ? `<ul class="recap-bilan-note recap-retenues" style="margin:4px 0 0; padding-left:18px; color:${COULEUR_NEGATIF_CLT};">${releveRetenuesLignesTexte(r).map(t => `<li>${escapeHTML(t)}</li>`).join('')}</ul>` : ''}
 <details class="eq-aide"><summary>ℹ️ Comment lire</summary><div class="recap-bilan-note">${escapeHTML(RELEVE_NOTE)}</div></details>
 ${releveBarreHTML()}`;
 }

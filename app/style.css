@@ -660,6 +660,14 @@ html[data-theme="dark"] .lot-barre .btn.btn-etape-echec{color:#f0938a; border-co
 .sync-blocked-badge{
   background:#fdecea; border-color:#e9b0a8; color:#9a2b1c;
 }
+/* Un montant qui manque est une erreur d'argent, pas une attente : elle se lit en rouge, comme
+   la modification bloquée ci-dessus, et non dans l'orange des choses en cours. (18/09/2026) */
+.montant-manquant-badge{
+  background:#fdecea; border-color:#e9b0a8; color:#9a2b1c;
+}
+/* « non renseigné » à la place d'un montant. Le mot remplace un chiffre : il doit se lire comme
+   un chiffre manquant, pas comme une note en passant. (18/09/2026) */
+.montant-absent{ color:#b3261e; font-weight:700; }
 
 /* ---------- LOGIN ---------- */
 .login-page{

@@ -110,9 +110,26 @@ function aidesCommunes(){
     blocDe(config, 'numeroCompose', 'config.js'),
     blocDe(commun, 'isValidPhoneCI', 'clt-common.js'),
     blocDe(commun, 'escapeHTML', 'clt-common.js'),
+    /* L'ALERTE DES MONTANTS MANQUANTS (18/09/2026). Les deux enregistrements passent désormais
+       par elle avant d'écrire : le banc prend la VRAIE règle (lib/argent.js), pas une copie. */
+    blocDe(config, 'montantNonRenseigne', 'lib/argent.js'),
+    blocDe(config, 'colisADetailMontant', 'lib/argent.js'),
+    blocDe(config, 'colisAncienSansDetail', 'lib/argent.js'),
+    blocDe(config, 'montantArticleManquant', 'lib/argent.js'),
+    blocDe(config, 'montantLivraisonManquant', 'lib/argent.js'),
+    blocDe(config, 'montantsManquantsColis', 'lib/argent.js'),
+    'var COMMUNE_EXPEDITION = ' + JSON.stringify(COMMUNE_EXPEDITION) + ';',
+    blocDe(config, 'estExpedition', 'lib/communes-et-tarifs.js'),
+    'var ALERTE_MONTANTS_POURQUOI_CLIENTE = "";',
+    'var ALERTE_MONTANTS_POURQUOI_EQUIPE = "";',
   ].join('\n\n'), ctx);
   return ctx;
 }
+
+/* La commune « Expédition (intérieur) », lue dans la source et non recopiée : estExpedition()
+   la compare au mot près, et une copie qui dérive ferait passer le banc pour rien. */
+const COMMUNE_EXPEDITION = (config.match(/const COMMUNE_EXPEDITION = "([^"]+)"/) || [])[1];
+if (!COMMUNE_EXPEDITION) { console.error('COMMUNE_EXPEDITION introuvable dans lib/communes-et-tarifs.js'); process.exit(1); }
 
 /* ---------- Petit échafaudage de vérification ---------- */
 let reussies = 0, echouees = 0, ignorees = 0;
@@ -171,7 +188,7 @@ const CODE_CLIENT = trancheDe(fournisseur, ".btn-save-edit",
   "const description = item.querySelector('.edit-desc')",
   "btn.disabled = true;", 'fournisseur.html');
 
-async function enregistrerClient({ tel, telOrigine, avecMontants }){
+async function enregistrerClient({ tel, telOrigine, avecMontants, montants, reponseAlerte }){
   const champsEcran = {
     '.edit-desc': { value: 'Robe' },
     '.edit-dest': { value: 'Sicogi, en face de la pharmacie' },
@@ -180,8 +197,8 @@ async function enregistrerClient({ tel, telOrigine, avecMontants }){
   };
   if (avecMontants) {
     Object.assign(champsEcran, {
-      '.edit-montant-article': { value: '10000' },
-      '.edit-montant-livraison': { value: '1500' },
+      '.edit-montant-article': { value: (montants && 'article' in montants) ? montants.article : '10000' },
+      '.edit-montant-livraison': { value: (montants && 'livraison' in montants) ? montants.livraison : '1500' },
       '.edit-livraison-payee': { checked: false },
     });
   }
@@ -190,10 +207,17 @@ async function enregistrerClient({ tel, telOrigine, avecMontants }){
   ctx.item = ecran.item;
   ctx.alert = ecran.alert;
   ctx.cltToast = ecran.alert; // 3.5 (16/09/2026) : l'espace cliente parle par bandeaux, plus par alert()
-  const corps = `globalThis.__lancer = async function(){\n${CODE_CLIENT}\nreturn champs;\n};`;
+  // L'alerte des montants manquants (18/09/2026) : on note qu'elle a été posée, et on répond ce
+  // que le test veut. Sans réponse demandée, on dit oui — les cas d'origine ne la déclenchent pas.
+  const alertesMontants = [];
+  ctx.cltConfirm = async (o) => { alertesMontants.push(o); return reponseAlerte !== false; };
+  ctx.mesColis = [{ id: 'C1', article_non_encaisse: false }];
+  // Le garde-fou lui-même est pris dans la page, pas réécrit ici.
+  const corps = blocDe(fournisseur, 'frAvertirMontantsManquants', 'fournisseur.html')
+    + `\nglobalThis.__lancer = async function(){\n${CODE_CLIENT}\nreturn champs;\n};`;
   vm.runInContext(corps, ctx);
   const champs = await ctx.__lancer();
-  return { champs, alertes: ecran.alertes };
+  return { champs, alertes: ecran.alertes, alertesMontants };
 }
 
 {
@@ -240,6 +264,57 @@ async function enregistrerClient({ tel, telOrigine, avecMontants }){
 }
 
 /* ==========================================================================================
+   2 bis. L'alerte des montants manquants (18/09/2026, Celtis)
+   ==========================================================================================
+   « Lorsqu'un colis est créé sans qu'on marque le coût de l'article ou bien sans qu'on ne
+   marque le coût de la livraison, il faudrait qu'une alerte se déclenche. »
+   Elle AVERTIT, elle ne refuse pas : la cliente n'a pas toujours fixé son prix. Ce qu'on
+   supprime, c'est le silence. Les deux moitiés se vérifient ici — qu'elle se déclenche, et
+   qu'un « Compléter » arrête réellement l'écriture. */
+titre('Un montant vidé par mégarde ne part pas sans un mot');
+{
+  const { alertesMontants } = await enregistrerClient({
+    tel: '0546818640', telOrigine: '2250546818640', avecMontants: true, montants: { article: '' } });
+  verifier('un article vidé déclenche l’alerte, et elle nomme ce qui manque',
+    alertesMontants.length === 1 && /montant de l’article|montant de l'article/.test(alertesMontants[0].detail),
+    JSON.stringify(alertesMontants));
+}
+{
+  const { alertesMontants } = await enregistrerClient({
+    tel: '0546818640', telOrigine: '2250546818640', avecMontants: true, montants: { livraison: '' } });
+  verifier('des frais de livraison vidés la déclenchent aussi',
+    alertesMontants.length === 1 && /frais de livraison/.test(alertesMontants[0].detail),
+    JSON.stringify(alertesMontants));
+}
+{
+  // « Une livraison offerte s'écrit 0 » : un zéro est une décision, pas un oubli. C'est la même
+  // règle que le banc de la saisie en lot protège depuis le 21 août.
+  const { alertesMontants } = await enregistrerClient({
+    tel: '0546818640', telOrigine: '2250546818640', avecMontants: true, montants: { livraison: '0' } });
+  verifier('un zéro écrit exprès ne déclenche rien', alertesMontants.length === 0,
+    JSON.stringify(alertesMontants));
+}
+{
+  const { champs, alertesMontants } = await enregistrerClient({
+    tel: '0546818640', telOrigine: '2250546818640', avecMontants: true,
+    montants: { article: '' }, reponseAlerte: false });
+  verifier('répondre « Compléter » arrête l’enregistrement — rien n’est écrit',
+    alertesMontants.length === 1 && champs === undefined, JSON.stringify(champs));
+}
+{
+  const { champs, alertesMontants } = await enregistrerClient({
+    tel: '0546818640', telOrigine: '2250546818640', avecMontants: true, montants: { article: '' } });
+  verifier('répondre « Enregistrer quand même » laisse passer, montant vide compris',
+    alertesMontants.length === 1 && champs && champs.montant_article === null, JSON.stringify(champs));
+}
+{
+  const { alertesMontants } = await enregistrerClient({
+    tel: '0546818640', telOrigine: '2250546818640', avecMontants: false });
+  verifier('sur un colis déjà parti, l’écran ne propose pas les montants : aucune alerte',
+    alertesMontants.length === 0, JSON.stringify(alertesMontants));
+}
+
+/* ==========================================================================================
    3. Ce que l'écran de l'équipe envoie vraiment
    ========================================================================================== */
 titre('Côté équipe, l’adresse est modifiable et la récupération se fige après la collecte');
@@ -248,7 +323,7 @@ const CODE_EQUIPE = trancheDe(equipe, ".btn-save",
   "const communeDestSelect = item.querySelector('.edit-commune-dest');",
   'btn.disabled = true;', 'equipe.html');
 
-async function enregistrerEquipe({ tel, telOrigine, avecRecuperation }){
+async function enregistrerEquipe({ tel, telOrigine, avecRecuperation, colisEnBase, reponseAlerte }){
   const champsEcran = {
     '.edit-commune-dest': { value: 'Cocody' },
     '.edit-dest': { value: 'Angré 7e tranche' },
@@ -265,6 +340,12 @@ async function enregistrerEquipe({ tel, telOrigine, avecRecuperation }){
   ctx.item = ecran.item;
   ctx.alert = ecran.alert;
   ctx.cltToast = ecran.alert; // 3.5 (16/09/2026) : l'espace cliente parle par bandeaux, plus par alert()
+  // L'alerte des montants manquants (18/09/2026) regarde le colis TEL QU'IL SERA une fois
+  // enregistré : les champs modifiés posés par-dessus ceux d'avant, lus dans allColis.
+  const alertesMontants = [];
+  ctx.cltConfirm = async (o) => { alertesMontants.push(o); return reponseAlerte !== false; };
+  ctx.allColis = [Object.assign({ id: 'C1', montant_article: 10000, montant_livraison: 1500 }, colisEnBase || {})];
+  ctx.id = 'C1';
   const prelude = `var statut = 'en_livraison', observation = null, livreur_id = undefined,
     livreur_collecte_id = undefined, montant = undefined, montant_article = undefined,
     montant_livraison = undefined, article_non_encaisse = undefined, livraison_payee = undefined,
@@ -274,7 +355,7 @@ async function enregistrerEquipe({ tel, telOrigine, avecRecuperation }){
   vm.runInContext(
     `globalThis.__lancer = async function(){\n${prelude}\n${CODE_EQUIPE}\nreturn updatePayload;\n};`, ctx);
   const payload = await ctx.__lancer();
-  return { payload, alertes: ecran.alertes };
+  return { payload, alertes: ecran.alertes, alertesMontants };
 }
 
 {
@@ -308,6 +389,49 @@ async function enregistrerEquipe({ tel, telOrigine, avecRecuperation }){
   verifier('un téléphone invalide est arrêté ici aussi',
     payload === undefined && alertes.length === 1 && /invalide/i.test(alertes[0]),
     JSON.stringify(alertes));
+}
+
+/* L'alerte des montants manquants, côté équipe (18/09/2026). Le piège propre à cet écran : il
+   n'affiche pas toujours les champs d'argent — sur un colis déjà parti, ils sont figés. L'alerte
+   doit alors se taire, puisque cet enregistrement ne touche pas aux montants. Elle regarde donc
+   le colis TEL QU'IL SERA, et non les seuls champs de l'écran. */
+titre('Côté équipe, l’alerte des montants regarde le colis complet, pas l’écran seul');
+{
+  const { payload, alertesMontants } = await enregistrerEquipe({
+    tel: '0546818640', telOrigine: '0546818640', avecRecuperation: false });
+  verifier('un colis dont les deux montants sont déjà en base ne déclenche rien',
+    alertesMontants.length === 0 && payload, JSON.stringify(alertesMontants));
+}
+{
+  const { alertesMontants } = await enregistrerEquipe({
+    tel: '0546818640', telOrigine: '0546818640', avecRecuperation: false,
+    colisEnBase: { montant_article: null } });
+  verifier('un colis à qui il manque l’article en base déclenche l’alerte, même si l’écran ne le montre pas',
+    alertesMontants.length === 1 && /montant de l’article|montant de l'article/.test(alertesMontants[0].detail),
+    JSON.stringify(alertesMontants));
+}
+{
+  const { alertesMontants } = await enregistrerEquipe({
+    tel: '0546818640', telOrigine: '0546818640', avecRecuperation: false,
+    colisEnBase: { montant_article: null, article_non_encaisse: true } });
+  verifier('« Article soldé » répond pour l’article : plus rien à réclamer',
+    alertesMontants.length === 0, JSON.stringify(alertesMontants));
+}
+{
+  // Un colis d'avant le découpage article / livraison ne porte qu'un « montant » global. Une
+  // alerte sur toute la liste ancienne serait une alerte qu'on apprend à ignorer.
+  const { alertesMontants } = await enregistrerEquipe({
+    tel: '0546818640', telOrigine: '0546818640', avecRecuperation: false,
+    colisEnBase: { montant_article: null, montant_livraison: null, montant: 15000 } });
+  verifier('un ancien colis à montant global ne déclenche rien',
+    alertesMontants.length === 0, JSON.stringify(alertesMontants));
+}
+{
+  const { payload, alertesMontants } = await enregistrerEquipe({
+    tel: '0546818640', telOrigine: '0546818640', avecRecuperation: false,
+    colisEnBase: { montant_livraison: null }, reponseAlerte: false });
+  verifier('répondre « Compléter » arrête l’enregistrement côté équipe aussi',
+    alertesMontants.length === 1 && payload === undefined, JSON.stringify(payload));
 }
 
 /* ==========================================================================================

@@ -109,9 +109,9 @@ vm.runInContext([
   'fraisExpeditionADevoir', 'fraisAdditionnelsColis', 'fraisAdditionnelsRegle', 'fraisAdditionnelsAReclamer', 'fraisAdditionnelsADevoir', 'montantNetADevoir', 'fraisExpeditionARembourser',
   'montantEnMainDuLivreur', 'montantManquantALaLivraison', 'totauxArgent',
   'piedTotalHTML', 'echapperAttribut', 'statutBadgeHTML',
-  'libelleStatut', 'iconeStatut', 'statutTexte', 'colisDestinationTexte', 'releveCliente', 'releveTotalTextes', 'relevePiedCellules',
+  'libelleStatut', 'iconeStatut', 'statutTexte', 'colisDestinationTexte', 'releveCliente', 'releveVousRevientTexte', 'releveVousRevientCouleur', 'releveTotalTextes', 'relevePiedCellules',
   'texteAplatiPourPDF', 'celluleAplatiePourPDF', 'nouveauPDF',
-  'relevePhraseDue', 'releveDetailRetenues', 'releveNomFichier',
+  'relevePhraseDue', 'releveDetailRetenues', 'releveRetenuesParColis', 'releveRetenuesLignesTexte', 'releveNomFichier',
   // Le relevé du soir ne dessine plus son en-tête : il passe par le papier à en-tête de la
   // maison, comme les six autres documents de l'application. Toute cette chaîne doit donc être
   // là, sans quoi releveConstruirePDF tombe sur un documentCLT introuvable. Ce qui se vérifie
@@ -152,8 +152,8 @@ vm.runInContext([
 ].map(n => blocDe(equipe, n, 'equipe.html')).join('\n\n'), contexte);
 
 const {
-  releveCliente, releveTotalTextes, relevePiedCellules, relevePhraseDue, releveNomFichier, releveLignesTexte,
-  releveDetailRetenues,
+  releveCliente, releveVousRevientTexte, releveTotalTextes, relevePiedCellules, relevePhraseDue, releveNomFichier, releveLignesTexte,
+  releveDetailRetenues, releveRetenuesLignesTexte,
   releveConstruireWordHTML, releveBarreHTML, renderRecapBilan, recapDayGroups, releveConstruirePDF,
   texteAplatiPourPDF, releveTableauPDF,
 } = contexte;
@@ -853,6 +853,76 @@ const appelsConstruire = (() => {
 verifier("les deux appelants attendent la promesse du relevé",
   appelsConstruire.length === 0,
   'appel sans await : ' + JSON.stringify(appelsConstruire));
+
+/* ============================================================================================
+   D'OÙ VIENT CHAQUE RETENUE, ET « SOLDÉ » À LA PLACE DU TIRET — 18 septembre 2026, Celtis
+   ============================================================================================
+   Deux demandes du même jour, sur le même relevé, et pour la même raison : une cellule qui ne
+   dit rien oblige la cliente à rappeler. « −1 000 francs, mais ça ne dit pas c'est sur quelle
+   ligne ni sur quelle adresse » ; « quand un colis est soldé, on ne sait pas, ça met juste un
+   tiret ». Les deux se vérifient sur le MÊME relevé, parce que c'est là qu'elles se lisent. */
+titre("Une retenue dit de quel colis elle vient, et un colis soldé le dit");
+{
+  const avecRetenues = [
+    c({ id: 'R1', f: 'F1', s: 'livre', d: 'Cocody Angré', tel: '0701020304', art: 18000, liv: 1000 }),
+    c({ id: 'R2', f: 'F1', s: 'livre', d: 'Yopougon Ananeraie', tel: '0544556677', art: 25000, liv: 2000 }),
+  ];
+  // Une livraison payée chez le fournisseur : CLT la retient sur elle. C'est le « −1 000 F » du
+  // bas de page dont Celtis demandait l'origine.
+  avecRetenues[0].livraison_payee = true;
+  const r = releveCliente(avecRetenues);
+
+  verifier('le bas du relevé dit toujours COMBIEN a été retenu',
+    /frais de course/.test(releveDetailRetenues(r)), releveDetailRetenues(r));
+
+  const lignes = releveRetenuesLignesTexte(r);
+  verifier('et une ligne par colis dit désormais SUR QUOI', lignes.length === 1, JSON.stringify(lignes));
+  verifier("cette ligne porte l'adresse du colis, celle que la cliente reconnaît",
+    /Cocody/.test(lignes[0]) && /Angré/.test(lignes[0]), lignes[0]);
+  verifier('elle porte aussi le numéro du destinataire — deux colis peuvent aller à la même adresse',
+    /0701020304/.test(lignes[0]), lignes[0]);
+  verifier('elle porte le montant retenu, en négatif',
+    /1\u202f000|1 000/.test(lignes[0]) && /−|-/.test(lignes[0]), lignes[0]);
+  verifier("le colis sans retenue n'y figure pas — la liste ne nomme que ce qui a été retenu",
+    !/Yopougon/.test(lignes.join(' ')), JSON.stringify(lignes));
+  verifier('un relevé sans aucune retenue ne produit aucune ligne',
+    releveRetenuesLignesTexte(releveCliente(COLIS_F1)).length === 0);
+
+  // Les quatre sorties impriment la MÊME liste : c'est la règle de ce fichier depuis le
+  // 1er septembre, et elle vaut pour cette liste comme pour les totaux.
+  const src = sansCommentaires(equipe);
+  verifier("l'écran, le PDF, l'Excel et le Word impriment tous cette liste",
+    (src.match(/releveRetenuesLignesTexte\(/g) || []).length >= 4,
+    'trouvé : ' + (src.match(/releveRetenuesLignesTexte\(/g) || []).length);
+}
+{
+  const soldes = [
+    c({ id: 'S1', f: 'F1', s: 'livre', d: 'Abobo Doumé', tel: '0701020304', art: 15000, liv: 1500 }),
+    c({ id: 'S2', f: 'F1', s: 'en_cours', d: 'Plateau', tel: '0555667788', art: 9000, liv: 1500 }),
+  ];
+  soldes[0].article_non_encaisse = true;   // payé chez le fournisseur : rien à reverser
+  const r = releveCliente(soldes);
+
+  verifier("un colis soldé porte la marque jusque dans la ligne du relevé",
+    r.lignes[0].solde === true && r.lignes[1].solde === false);
+  verifier('« Soldé » remplace le tiret dans la colonne « Vous revient »',
+    releveVousRevientTexte(r.lignes[0]) === 'Soldé', releveVousRevientTexte(r.lignes[0]));
+  verifier("un colis pas encore livré garde son tiret : lui, on ne sait pas encore",
+    releveVousRevientTexte(r.lignes[1]) === '—', releveVousRevientTexte(r.lignes[1]));
+  verifier('un montant réel reste un montant',
+    /15\u202f000|15 000/.test(releveVousRevientTexte({ encaisse: 15000 })));
+  verifier('le mot sort en couleur, et pas dans le gris des tirets',
+    contexte.releveVousRevientCouleur(r.lignes[0]) === '#1B4374'
+    && contexte.releveVousRevientCouleur(r.lignes[1]) === '#8a94a3',
+    contexte.releveVousRevientCouleur(r.lignes[0]));
+
+  // Le tableau de l'écran et les lignes du PDF sortent du même mot.
+  const html = renderRecapBilan('F1', soldes);
+  verifier("l'écran de l'équipe écrit « Soldé » lui aussi, et en bleu",
+    /Soldé/.test(html) && /#1B4374/.test(html));
+  verifier('le PDF et le Word reçoivent le même mot à la même place',
+    releveLignesTexte(r)[0][4] === 'Soldé', JSON.stringify(releveLignesTexte(r)[0]));
+}
 
 /* ============================================================================================ */
 console.log('\n———');

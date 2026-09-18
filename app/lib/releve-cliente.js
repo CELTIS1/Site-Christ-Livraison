@@ -65,6 +65,9 @@ function releveCliente(colis) {
     // et il doit le rester : c'est ainsi que la vendeuse voit ce qu'elle doit, ligne par ligne.
     encaisse:    Number(montantNetADevoir(c)) || 0,
     expedition:  estExpedition(c),
+    // « Soldé » : l'article a été payé chez le fournisseur, il n'y a rien à reverser sur ce
+    // colis-là. Porté sur la ligne pour que les quatre sorties écrivent le même mot.
+    solde:       !!(c && c.article_non_encaisse),
     fraisExpedition: Number(fraisExpeditionADevoir(c)) || 0,
     fraisCourse:     Number(fraisCourseADevoir(c)) || 0,
     // Le frais additionnel imprévu (16/09/2026), et son motif : sans lui un troisième chiffre
@@ -89,6 +92,38 @@ function releveCliente(colis) {
     totalFraisCourse: Number(t.fraisCourseADevoir) || 0,
     totalFraisAdditionnels: Number(t.fraisAdditionnelsADevoir) || 0,
   };
+}
+
+/* CE QUI S'ÉCRIT DANS LA COLONNE « VOUS REVIENT » — 18 septembre 2026, Celtis
+   « Quand un colis a été soldé, il faudrait que là où le montant s'affiche, vu qu'il n'y aura pas
+   de montant, ça marque soldé, et que ce soit en couleur […] Là, quand un colis est soldé, on ne
+   sait pas, ça met juste un tiret. Il y a trop de confusion à ce niveau-là. »
+
+   Un tiret ne dit rien. Il se lit « rien ne vous revient » aussi bien que « on ne sait pas
+   encore » — et c'est sur cette ambiguïté que le téléphone sonne le soir. Trois cas différents
+   tombaient tous sur le même tiret : le colis pas encore livré, le colis soldé chez le
+   fournisseur, et le colis à zéro. Le deuxième a une réponse, et elle tient en un mot.
+
+   ÉCRIT ICI, PAS DANS CHAQUE SORTIE. L'écran de l'équipe, le PDF, l'Excel et le Word lisent tous
+   cette fonction : une cliente qui a le papier et un membre de l'équipe qui a l'écran ne peuvent
+   pas lire deux choses différentes. C'est la règle de ce fichier depuis le 1er septembre.
+
+   LA COULEUR SUIT LE MOT, mais elle appartient à chaque sortie : le bleu de la pastille « Article
+   soldé » à l'écran (releveVousRevientCouleur), le même bleu dans le PDF (colorier.mots). */
+function releveVousRevientTexte(l) {
+  if (l && Number(l.encaisse)) return formatMontant(l.encaisse);
+  if (l && l.solde) return 'Soldé';
+  return '—';
+}
+
+// Le bleu de la pastille « Article soldé » pour le mot, le rouge pour une retenue, le gris pour
+// un tiret qui n'annonce encore rien. Une seule table, lue par l'écran de l'équipe et par celui
+// de la cliente.
+function releveVousRevientCouleur(l) {
+  if (l && Number(l.encaisse) < 0) return '#c0392b';
+  if (l && Number(l.encaisse)) return '';
+  if (l && l.solde) return '#1B4374';
+  return '#8a94a3';
 }
 
 // Le texte de la ligne TOTAL, colonne par colonne, en clair. Sert au PDF, à l'Excel et au Word ;
@@ -122,6 +157,55 @@ function relevePiedCellules(r) {
   ];
 }
 
+/* D'OÙ VIENT CETTE RETENUE — 18 septembre 2026, Celtis
+   « Quand un coût de livraison est enlevé, dans son relevé c'est marqué en bas. Mais il faudrait
+   que ça précise l'adresse, pour qu'on sache. Au moins −1 000 francs, mais ça ne dit pas c'est
+   sur quelle ligne ni sur quelle adresse. Elle peut se poser la question : mais les mille francs,
+   c'est parti d'où ? »
+
+   La phrase de bas de page disait COMBIEN et POURQUOI, jamais SUR QUOI. Sur un relevé d'un seul
+   colis la réponse se devine ; sur douze, elle ne se devine plus, et la cliente rappelle. Une
+   somme retenue sans ligne d'origine, c'est une somme contestée — et c'est la seule ligne du
+   relevé que personne ne peut vérifier seul.
+
+   Chaque colis retenu est donc nommé par son ADRESSE, celle-là même qui figure dans son tableau
+   deux lignes plus haut : c'est par elle qu'une vendeuse reconnaît son colis, pas par un numéro
+   de suivi qu'elle n'a jamais lu. Le téléphone du destinataire suit, parce que deux colis
+   peuvent partir à la même adresse le même jour.
+
+   Écrit ici, comme le reste : l'écran, le PDF, l'Excel et le Word impriment la MÊME liste. */
+function releveRetenuesParColis(r) {
+  const rel = r || releveCliente([]);
+  return (rel.lignes || []).map(function (l) {
+    const exp = Number(l.fraisExpedition) || 0;
+    const course = Number(l.fraisCourse) || 0;
+    const additionnels = Number(l.fraisAdditionnels) || 0;
+    if (!exp && !course && !additionnels) return null;
+    const morceaux = [];
+    if (exp) morceaux.push("frais d'expédition " + formatMontant(-exp));
+    if (course) morceaux.push('frais de course ' + formatMontant(-course));
+    // Le motif du frais additionnel tient lieu de nom : « attente à la gare −500 FCFA » se
+    // comprend seul, « frais additionnels −500 FCFA » relance la question.
+    if (additionnels) morceaux.push((l.fraisAdditionnelsMotif || 'frais additionnels') + ' ' + formatMontant(-additionnels));
+    return {
+      adresse: l.adresse || '',
+      telephone: l.telephone || '',
+      total: exp + course + additionnels,
+      detail: morceaux.join(', '),
+    };
+  }).filter(function (x) { return !!x; });
+}
+
+// Une ligne de texte par colis retenu, prête à imprimer :
+// « Cocody — Angré 7e tranche (0701020304) : frais de course −1 000 FCFA ».
+function releveRetenuesLignesTexte(r) {
+  return releveRetenuesParColis(r).map(function (x) {
+    return (x.adresse || 'Adresse non renseignée')
+      + (x.telephone ? ' (' + x.telephone + ')' : '')
+      + ' : ' + x.detail;
+  });
+}
+
 /* La phrase qui explique le total quand il y a eu des retenues. Vide s'il n'y en a aucune : on
    n'encombre pas le relevé ordinaire d'une explication sans objet.
    Écrite une seule fois, comme le reste — l'écran, le PDF, l'Excel et le Word la reprennent au
@@ -136,11 +220,18 @@ function releveDetailRetenues(r) {
   const morceaux = [];
   if (exp) morceaux.push("frais d'expédition " + formatMontant(-exp));
   if (course) morceaux.push('frais de course ' + formatMontant(-course));
-  const n = Number(rel.nbExpeditions) || 0;
+  /* « RETENUS SUR N EXPÉDITIONS » ÉTAIT FAUX, ET SE VOYAIT. (18/09/2026)
+     La phrase comptait les expéditions, alors que des frais de course se retiennent aussi sur un
+     colis ORDINAIRE dont la livraison a été payée chez le fournisseur. Relevé en base le même
+     jour : 18 colis dans ce cas. Sur leur relevé, la cliente lisait « frais de course −1 000
+     FCFA, retenus sur 0 expédition » — une somme retenue sur rien. On compte donc les colis qui
+     portent réellement une retenue, ceux-là mêmes que la liste nomme juste en dessous : le
+     nombre et la liste ne peuvent plus se contredire. */
+  const n = releveRetenuesParColis(rel).length;
   let phrase = '';
   if (exp || course) {
     phrase = 'Dont ' + morceaux.join(' et ') + ', retenus sur '
-      + n + ' expédition' + (n > 1 ? 's' : '') + '.';
+      + n + ' colis' + '.';
   }
   // Le détail (montant + motif) de chaque frais additionnel est déjà sous sa ligne, à l'écran
   // comme sur les documents ; ici, une phrase globale suffit — le motif de chacun varie trop
@@ -148,6 +239,8 @@ function releveDetailRetenues(r) {
   if (additionnels) {
     phrase += (phrase ? ' ' : '') + 'Et ' + formatMontant(-additionnels) + ' de frais additionnels (voir le détail sous chaque colis concerné).';
   }
+  // Depuis le 18/09/2026, la liste des colis d'où partent ces retenues suit cette phrase, à
+  // l'écran comme sur les trois documents : voir releveRetenuesLignesTexte().
   return phrase;
 }
 

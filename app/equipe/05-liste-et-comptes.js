@@ -553,6 +553,26 @@ if (frais_additionnels_regle_at !== undefined) updatePayload.frais_additionnels_
   if (avantInput) { const v = String(avantInput.value || '').slice(0, 10); updatePayload.a_livrer_avant = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null; } }
 if (livraison_payee !== undefined) updatePayload.livraison_payee = livraison_payee;
 if (livraison_payee_non_livre !== undefined) updatePayload.livraison_payee_non_livre = livraison_payee_non_livre;
+/* L'ALERTE DES MONTANTS MANQUANTS (18/09/2026, Celtis). Corriger un colis est l'occasion de
+   compléter ce qui manquait — c'est aussi celle de le vider par mégarde. On regarde donc le
+   colis TEL QU'IL SERA une fois enregistré : les champs modifiés par-dessus ceux d'avant. Sans
+   cette superposition, un écran qui n'affiche pas les champs d'argent (colis déjà parti)
+   déclencherait l'alerte sur des montants qu'il ne touche même pas.
+   On avertit, on ne refuse pas : la règle des doublons, pour la même raison. */
+{ const avant = allColis.find(x => x.id === id) || {};
+  const apres = Object.assign({}, avant, updatePayload);
+  if (typeof montantsManquantsColis === 'function') {
+    const manque = montantsManquantsColis(apres);
+    if (manque.length) {
+      const ok = await cltConfirm({
+        title: manque.length > 1 ? 'Des montants manquent' : 'Un montant manque',
+        detail: 'Il manque ' + manque.join(' et ') + '.',
+        sub: ALERTE_MONTANTS_POURQUOI_EQUIPE,
+        okLabel: 'Enregistrer quand même', cancelLabel: 'Compléter',
+      });
+      if (!ok) return;
+    }
+  } }
 btn.disabled = true; btn.textContent = '...';
 let { error } = await supabaseClient.from('colis').update(updatePayload).eq('id', id);
 btn.disabled = false; btn.textContent = 'Enregistrer';

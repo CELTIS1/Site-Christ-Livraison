@@ -243,7 +243,7 @@ titre('3. La carte d’un colis chez la vendeuse (fonction réellement exécuté
                      'estExpedition', 'colisDestinationTexte', 'colisDestinationHTML', 'colisADetailMontant',
                      'montantArticleColis', 'montantLivraisonColis', 'montantManquantALaLivraison',
                      'coursePayeeSansLivraison',
-                     'paiementInfo', 'paiementBadgeHTML',
+                     'chezLeFournisseur', 'paiementInfo', 'paiementBadgeHTML',
                      // statutBadgeHTML ne sert plus à cette carte — c'est précisément ce qu'on
                      // vérifie. On le charge quand même : le jour où quelqu'un le remet, on veut
                      // que le banc dise « le libellé est écrit deux fois » et non qu'il s'arrête

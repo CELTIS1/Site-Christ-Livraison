@@ -58,6 +58,110 @@ function montantTotalColis(c) {
 }
 
 /* --------------------------------------------------------------------------------------------
+   LES MONTANTS QU'ON A OUBLIÉ D'ÉCRIRE — 18 septembre 2026, Celtis
+   --------------------------------------------------------------------------------------------
+   « Lorsqu'un colis est créé sans qu'on marque le coût de l'article ou bien sans qu'on ne marque
+   le coût de la livraison, il faudrait qu'une alerte se déclenche. […] Qu'il y ait vraiment des
+   alertes là où il faut, surtout concernant au niveau de l'argent. »
+
+   CE QUI SE PASSAIT. Un colis pouvait partir avec ses deux montants vides. Personne ne le voyait
+   avant le soir : le relevé de la cliente annonçait 0 FCFA pour un colis qu'elle avait bien
+   vendu, et le livreur arrivait devant la porte sans savoir combien réclamer. La correction se
+   faisait de mémoire, le lendemain, entre deux personnes qui n'étaient pas là.
+
+   POURQUOI UNE ALERTE ET NON UN REFUS. Refuser bloquerait des cas réels : la cliente qui n'a pas
+   encore fixé son prix, le colis qu'on enregistre à la volée pendant qu'elle est au téléphone.
+   La règle de la maison pour ce genre de cas est déjà écrite ailleurs — c'est celle des doublons
+   (16/09) : on avertit, on nomme ce qui manque, et on laisse la personne décider. Ce qu'on
+   supprime, c'est le silence, pas la liberté.
+
+   UN ZÉRO N'EST PAS UN OUBLI. « Une livraison offerte s'écrit 0 » : c'est une décision, écrite
+   exprès, et le banc de la saisie en lot la protège depuis le 21 août. Seul le champ VIDE est un
+   manque. C'est toute la différence entre « c'est gratuit » et « je ne sais pas encore ».
+
+   « ARTICLE SOLDÉ » EST UNE RÉPONSE. L'article a été payé chez le fournisseur : il n'y a rien à
+   encaisser, et un montant d'article vide sur un colis soldé ne manque à personne. La case coche
+   la réponse ; on n'a pas à la redemander.
+   -------------------------------------------------------------------------------------------- */
+
+// Vrai quand ce champ n'a jamais reçu de valeur. Un zéro, lui, en est une.
+function montantNonRenseigne(v) {
+  return v === null || v === undefined || v === '';
+}
+
+// Les poches d'argent laissées vides sur un colis, nommées telles qu'on les nomme à l'écran.
+// Tableau vide quand tout est dit — c'est le cas ordinaire, et il ne doit rien déclencher.
+//
+// Le colis attendu ici porte ses champs de base : montant_article, montant_livraison,
+// article_non_encaisse, commune_destination. Les écrans de saisie fabriquent cette forme avant
+// d'envoyer ; c'est volontaire, pour que la règle soit la même sur un colis en base et sur une
+// ligne qu'on est en train de taper.
+// Un colis d'avant le découpage article / livraison ne porte qu'un « montant » global. Il ne lui
+// manque rien : il a été enregistré sous la forme qui existait alors. Sans cette réserve,
+// l'alerte sonnerait sur toute la liste ancienne, et l'on apprendrait très vite à l'ignorer —
+// une alerte qui se déclenche pour rien ne protège plus de rien.
+function colisAncienSansDetail(c) {
+  return !!c && !colisADetailMontant(c) && !montantNonRenseigne(c.montant);
+}
+
+// « Article soldé » est une réponse : l'article a été payé chez le fournisseur, il n'y a rien à
+// encaisser. La case coche la réponse ; on n'a pas à la redemander.
+function montantArticleManquant(c) {
+  if (!c || colisAncienSansDetail(c)) return false;
+  return montantNonRenseigne(c.montant_article) && !c.article_non_encaisse;
+}
+
+function montantLivraisonManquant(c) {
+  if (!c || colisAncienSansDetail(c)) return false;
+  return montantNonRenseigne(c.montant_livraison);
+}
+
+// Les deux précédents, nommés comme l'écran les nomme, pour la phrase de l'alerte.
+function montantsManquantsColis(c) {
+  const manque = [];
+  if (montantArticleManquant(c)) manque.push("le montant de l'article");
+  // Sur une expédition, ce même champ porte les frais de course. Lui donner son nom d'écran
+  // évite qu'on cherche une « livraison » qui n'existe pas sur ce colis-là.
+  if (montantLivraisonManquant(c)) manque.push(estExpedition(c) ? 'les frais de course' : 'les frais de livraison');
+  return manque;
+}
+
+// Vrai dès qu'un montant manque. Sert aux écrans qui veulent seulement poser un signe.
+function colisSansMontant(c) {
+  return montantsManquantsColis(c).length > 0;
+}
+
+// Une ligne de saisie, vue comme un colis. Les deux écrans de saisie en lot — celui du bureau et
+// celui de la cliente — lisent leurs champs sous les mêmes noms. La règle des montants manquants
+// se pose donc sur la ligne qu'on est en train de taper exactement comme sur le colis enregistré,
+// au lieu d'être réécrite une fois par écran — et de diverger.
+function colisDepuisSaisie(s) {
+  const lu = s || {};
+  return {
+    montant_article: lu.montantArticle === '' ? null : lu.montantArticle,
+    montant_livraison: lu.montantLivraison === '' ? null : lu.montantLivraison,
+    article_non_encaisse: !!lu.articleSolde,
+    commune_destination: lu.communeDestination || null,
+  };
+}
+
+// La phrase de l'alerte, écrite une fois pour les cinq endroits qui la posent : la saisie en lot
+// du bureau, celle de la cliente, la création à l'unité, la correction d'un colis, la carte.
+// « Il manque » et non « vous avez oublié » : on ne sait pas si c'est un oubli.
+function alerteMontantsManquantsTexte(c) {
+  const manque = montantsManquantsColis(c);
+  if (!manque.length) return '';
+  return 'Il manque ' + manque.join(' et ') + '.';
+}
+
+/* Le POURQUOI de l'alerte. Deux versions, parce que les deux publics ne perdent pas la même
+   chose : la cliente perd de l'argent sur son relevé, l'équipe envoie un livreur qui ne saura
+   pas quoi réclamer. Écrites ici plutôt que sur chaque écran — il y en a cinq, et une phrase
+   recopiée cinq fois est une phrase qu'on corrige quatre fois. */
+const ALERTE_MONTANTS_POURQUOI_CLIENTE = "Sans le montant de l'article, votre relevé du soir affichera 0 FCFA pour ce colis. Sans les frais de livraison, le livreur ne saura pas quoi réclamer à la porte. Si le prix n'est pas encore fixé, enregistrez et complétez ensuite : le colis restera signalé dans votre liste.";
+const ALERTE_MONTANTS_POURQUOI_EQUIPE = "Sans le montant de l'article, le relevé du soir annoncera 0 FCFA à la cliente. Sans les frais de livraison, le livreur ne saura pas quoi réclamer à la porte. Si le prix n'est pas encore fixé, enregistrez et complétez plus tard : le colis restera signalé dans la liste.";
+
+/* --------------------------------------------------------------------------------------------
    CORRIGER LES DEUX MONTANTS DEPUIS LA RUE  (27/08/2026)
 
    Ce qui se passe en vrai. Le livreur arrive devant la porte avec un colis marqué 15 000 pour
@@ -508,10 +612,12 @@ function articleEncaisse(c) {
 }
 
 // Vrai si les frais de livraison sont rentrés EN BILLETS chez le livreur.
-// Depuis le 11/09/2026, « livraison payée d'avance » veut dire payée chez la vendeuse : le livreur
-// ne l'encaisse pas, elle se retient sur la vendeuse (voir fraisCourseColis). Elle sort donc de la
-// caisse du livreur exactement comme sur une expédition. (Jusqu'au 11/09 la case voulait dire
-// « payée au livreur » et le comptait encaissé ; ce sens n'a plus de case — livré = encaissé.)
+// Depuis le 11/09/2026, la case « livraison payée » veut dire payée CHEZ LE FOURNISSEUR : le
+// livreur ne l'encaisse pas, elle se retient sur le fournisseur (voir fraisCourseColis). Elle sort
+// donc de la caisse du livreur exactement comme sur une expédition. (Jusqu'au 11/09 la case
+// voulait dire « payée au livreur » et le comptait encaissé ; ce sens n'a plus de case — livré =
+// encaissé.) Depuis le 18/09/2026 les écrans le disent en toutes lettres : « Livraison déjà payée
+// chez le fournisseur », et « chez vous » sur l'écran de la cliente. Voir chezLeFournisseur().
 //
 // L'EXPÉDITION EST EXCLUE, ET LE TEST PASSE EN PREMIER. Sur une expédition, le livreur ne tend
 // la main à personne : il dépose le carton à la gare, il paie le transporteur, il repart. Le

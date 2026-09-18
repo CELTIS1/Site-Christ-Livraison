@@ -510,7 +510,7 @@ l.telephone || '—',
 l.adresse || '—',
 l.statut,
 formatMontant(l.article) || '0 FCFA',
-l.encaisse ? formatMontant(l.encaisse) : '—',
+releveVousRevientTexte(l),
 l.observation || '—',
 ]);
 }
@@ -563,7 +563,9 @@ styles: { cellPadding: 2.5 },
 colonnesArgent: [3, 4],
 columnStyles: RELEVE_COLONNES_PDF,
 // Les couleurs de l'écran : le statut dans sa pastille, l'encaissé en vert. (05/09/2026)
-colorier: { statut: { colonne: 2, codes: r.lignes.map(l => l.statutCode || '') }, argent: [4] },
+// « Soldé » occupe la colonne d'argent sans être un montant : il prend le bleu de sa pastille et
+// non le vert de ce qui revient à la cliente. (18/09/2026)
+colorier: { statut: { colonne: 2, codes: r.lignes.map(l => l.statutCode || '') }, argent: [4], mots: { 'Soldé': '#1B4374' } },
 };
 }
 
@@ -587,7 +589,11 @@ apres: [
 ].concat(releveDetailRetenues(d.r)
   ? [{ texte: releveDetailRetenues(d.r), taille: 9.5, gras: true, couleur: COULEUR_NEGATIF_PDF, avant: 3 }]
   : []
-).concat([
+// D'où vient chaque retenue (18/09/2026) : une ligne par colis, sous la phrase qui en donne le
+// total. Sans elle, la cliente lit « −1 000 FCFA » sans savoir sur quel colis regarder.
+).concat(releveRetenuesLignesTexte(d.r).map(t => (
+  { texte: '• ' + t, taille: 9, couleur: COULEUR_NEGATIF_PDF, avant: 1 }
+))).concat([
 { texte: RELEVE_NOTE, taille: 8, avant: 8 },
 ]),
 });
@@ -615,12 +621,15 @@ aoa.push([`${d.r.nb} colis · ${d.r.nbLivres} livré(s)`]);
 aoa.push([]);
 aoa.push(d.r.colonnes);
 d.r.lignes.forEach(l => {
-aoa.push([l.telephone || '', l.adresse || '', l.statut, l.article, l.encaisse, l.observation || '']);
+// Le montant part en NOMBRE, pour rester calculable dans le tableur. Quand il n'y en a pas,
+// c'est le mot qui part — « Soldé » ou le tiret — exactement comme sur le PDF et à l'écran.
+aoa.push([l.telephone || '', l.adresse || '', l.statut, l.article, l.encaisse || releveVousRevientTexte(l), l.observation || '']);
 });
 aoa.push(['TOTAL', '', d.r.nbLivres + ' / ' + d.r.nb + ' livré(s)', d.r.totalArticle, d.r.totalEncaisse, '']);
 aoa.push([]);
 aoa.push([relevePhraseDue(d.r)]);
 if (releveDetailRetenues(d.r)) aoa.push([releveDetailRetenues(d.r)]);
+releveRetenuesLignesTexte(d.r).forEach(t => aoa.push([t]));
 aoa.push([RELEVE_NOTE]);
 const ws = XLSX.utils.aoa_to_sheet(aoa);
 ws['!cols'] = [{ wch: 16 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 32 }];
@@ -635,7 +644,7 @@ XLSX.writeFile(wb, releveNomFichier(d.nom, d.date) + '.xlsx');
 function releveConstruireWordHTML(d){
 const th = d.r.colonnes.map(c => `<th>${escapeHTML(c)}</th>`).join('');
 const trs = releveLignesTexte(d.r).map(cells =>
-`<tr>${cells.map((v, i) => `<td${i >= 3 && i <= 4 ? ' align="right"' : ''}${estMontantNegatifTexte(v) ? ' class="neg"' : ''}>${escapeHTML(String(v))}</td>`).join('')}</tr>`
+`<tr>${cells.map((v, i) => `<td${i >= 3 && i <= 4 ? ' align="right"' : ''}${estMontantNegatifTexte(v) ? ' class="neg"' : (String(v) === 'Soldé' ? ' class="solde"' : '')}>${escapeHTML(String(v))}</td>`).join('')}</tr>`
 ).join('');
 const tot = releveTotalTextes(d.r).map((v, i) =>
 `<td${i >= 3 && i <= 4 ? ' align="right"' : ''} class="tot${estMontantNegatifTexte(v) ? ' neg' : ''}">${escapeHTML(String(v))}</td>`).join('');
@@ -654,6 +663,7 @@ th{background:#1B4374;color:#fff;text-align:left;padding:5pt 6pt;border:1px soli
 td{padding:5pt 6pt;border:1px solid #c9d2dd;vertical-align:top;}
 td.tot{background:#eef0f3;color:#1B4374;font-weight:bold;}
 td.neg{color:#c0392b;font-weight:bold;}
+td.solde{color:#1B4374;font-weight:bold;}
 .due{margin-top:14pt;font-size:12pt;font-weight:bold;color:#1a7d3c;}
 .retenues{margin-top:4pt;font-size:9.5pt;font-weight:bold;color:#c0392b;}
 .note{margin-top:10pt;font-size:8.5pt;color:#6e6e6e;}
@@ -665,6 +675,7 @@ td.neg{color:#c0392b;font-weight:bold;}
 <table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody><tfoot><tr>${tot}</tr></tfoot></table>
 <p class="due" ${Number(d.r.totalEncaisse) < 0 ? 'style="color:#c0392b;"' : ''}>${escapeHTML(relevePhraseDue(d.r))}</p>
 ${releveDetailRetenues(d.r) ? `<p class="retenues">${escapeHTML(releveDetailRetenues(d.r))}</p>` : ''}
+${releveRetenuesLignesTexte(d.r).length ? `<ul class="retenues">${releveRetenuesLignesTexte(d.r).map(t => `<li>${escapeHTML(t)}</li>`).join('')}</ul>` : ''}
 <p class="note">${escapeHTML(RELEVE_NOTE)}</p>
 </body></html>`;
 }
@@ -767,7 +778,9 @@ groups.forEach(g => {
 aoa.push([g.name]);
 aoa.push(g.r.colonnes);
 g.r.lignes.forEach(l => {
-aoa.push([l.telephone || '', l.adresse || '', l.statut, l.article, l.encaisse, l.observation || '']);
+// Le montant part en NOMBRE, pour rester calculable dans le tableur. Quand il n'y en a pas,
+// c'est le mot qui part — « Soldé » ou le tiret — exactement comme sur le PDF et à l'écran.
+aoa.push([l.telephone || '', l.adresse || '', l.statut, l.article, l.encaisse || releveVousRevientTexte(l), l.observation || '']);
 });
 aoa.push(['TOTAL', '', g.r.nbLivres + ' / ' + g.r.nb + ' livré(s)', g.r.totalArticle, g.r.totalEncaisse, '']);
 aoa.push([]);
@@ -1349,7 +1362,7 @@ ${rows.map(c => `
 <td data-label="Encaissé" class="compta-row-encaisse">${formatMontant(montantArticleEncaisse(c)) || '0 FCFA'}</td>
 <td data-label="Argent">
 <div class="recap-row-checks">
-<label title="L'article a été payé chez la vendeuse : le livreur ne l'encaisse pas et rien n'est dû à la vendeuse pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="compta-edit-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
+<label title="À cocher si le destinataire a DÉJÀ payé l'article chez le fournisseur. Le livreur ne l'encaisse pas à la porte, et rien n'est dû au fournisseur pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="compta-edit-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
 <div class="recap-row-etat">${articlePaiementLabel(c)}</div>
 </div>
 </td>

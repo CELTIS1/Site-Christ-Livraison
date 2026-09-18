@@ -453,6 +453,50 @@ if (!du) return '';
 return `<div class="sync-pending-badge frais-additionnels-badge" title="Frais additionnels non réglés : à retenir sur le relevé ou à réclamer, selon le cas.">⚠️ Frais additionnels non réglés : ${formatMontant(du)}${c.frais_additionnels_motif ? ' — ' + escapeHTML(c.frais_additionnels_motif) : ''}</div>`;
 }
 
+/* « ⚠️ Montant manquant » sur la carte (18/09/2026, Celtis : « qu'il y ait vraiment des alertes
+   là où il faut, surtout concernant au niveau de l'argent »). L'alerte de la création prévient
+   une fois, au moment de l'enregistrement ; celle-ci reste. Sans elle, un colis enregistré
+   « je compléterai plus tard » n'était plus jamais retrouvé : rien à l'écran ne le distinguait
+   des autres, et il ressortait le soir, à 0 FCFA, sur le relevé de la cliente.
+   Même règle que l'alerte (montantsManquantsColis, lib/argent.js) : un zéro est un montant, un
+   champ vide est un manque, « Article soldé » répond pour l'article, et un ancien colis à
+   montant global n'a rien à compléter. */
+function eqMontantManquantHTML(c){
+if (typeof montantsManquantsColis !== 'function') return '';
+/* PAS SUR UN COMPTE DÉJÀ SOLDÉ. Mesuré en base le 18/09/2026 avant d'écrire cette ligne : sur
+   1 523 colis, 274 n'ont pas leurs deux montants — mais 166 d'entre eux ont déjà été reversés.
+   Leurs montants sont figés, la cliente a été payée, et il n'y a plus rien à compléter. Poser
+   166 marques rouges sur lesquelles personne ne peut agir, c'est apprendre à l'équipe à ne plus
+   les voir — et la marque ne servirait plus le jour où elle a raison. Restent 108 colis, dont
+   61 de la semaine : ceux-là se corrigent encore. */
+if (c && c.reverse_au_fournisseur_at) return '';
+const manque = montantsManquantsColis(c);
+if (!manque.length) return '';
+return `<div class="sync-pending-badge montant-manquant-badge" title="Ce colis a été enregistré sans ce montant. Tant qu'il manque, le relevé de la cliente sera faux et le livreur ne saura pas quoi réclamer à la porte.">⚠️ Montant manquant : ${escapeHTML(manque.join(' et '))} — à compléter</div>`;
+}
+
+/* LES DEUX MONTANTS SUR LA CARTE, ET CE QUE LE DESTINATAIRE REMET.
+   Écrit une fois pour les deux cartes du bureau — elles affichaient deux copies de la même
+   ligne, et la première correction en aurait laissé une derrière.
+
+   UN CHAMP VIDE NE S'ÉCRIT PLUS « 0 FCFA ». (18/09/2026, Celtis) montantArticleColis() répond
+   zéro pour un montant jamais saisi : au téléphone avec une cliente, « Article : 0 FCFA » et
+   « elle n'a pas encore donné son prix » se lisaient exactement pareil. Et le total « Le
+   destinataire remet » additionnait ce zéro comme un vrai montant : il annonçait une somme
+   fausse, avec l'aplomb d'une somme juste. Quand un montant manque, ce total n'existe pas — on
+   le dit, on ne l'invente pas. */
+function eqLigneMontantsHTML(c){
+if (!colisADetailMontant(c)) return formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '';
+const absent = '<span class="montant-absent">non renseigné</span>';
+const article = (typeof montantArticleManquant === 'function' && montantArticleManquant(c)) ? absent : (formatMontant(c.montant_article) || '0 FCFA');
+const livraison = (typeof montantLivraisonManquant === 'function' && montantLivraisonManquant(c)) ? absent : (formatMontant(c.montant_livraison) || '0 FCFA');
+const incomplet = (typeof colisSansMontant === 'function') && colisSansMontant(c);
+const remet = incomplet
+? `<span class="montant-absent">à compléter</span>`
+: (formatMontant(montantTotalColis(c)) || '0 FCFA');
+return `<div class="meta">Article : ${article} · Livraison : ${livraison} · <span title="Ce que le destinataire remet en main propre : l'article de la cliente plus nos frais. Ce n'est pas un chiffre d'affaires.">Le destinataire remet : ${remet}</span> ${paiementBadgeHTML(c)}</div>`;
+}
+
 /* Le petit formulaire (montant + motif + « réglé ») posé dans la fiche de modification. Un champ
    de plus sur CHAQUE carte aurait noyé la liste ; ici il n'apparaît qu'en train de modifier un
    colis, à côté des autres montants. Universel (pas réservé aux expéditions) : un supplément
@@ -515,6 +559,7 @@ const infoBlock = `
 ${syncBadge}
 ${eqDoublonHTML(c)}
 ${eqFraisAdditionnelsHTML(c)}
+${eqMontantManquantHTML(c)}
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
 ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
@@ -524,7 +569,7 @@ ${eqBoutonsAppelHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
-${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · <span title="Ce que le destinataire remet en main propre : l'article de la cliente plus nos frais. Ce n'est pas un chiffre d'affaires.">Le destinataire remet : ${formatMontant(montantTotalColis(c)) || '0 FCFA'}</span> ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
+${eqLigneMontantsHTML(c)}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
 ${estValide ? '' : `
@@ -608,8 +653,8 @@ ${c.statut === 'en_attente' ? `
 </div>
 </div>
 <div class="payment-checks">
-<label class="check-pill lotfr-article-solde" title="L'article a été payé chez la vendeuse : le livreur ne l'encaisse pas et rien n'est dû à la vendeuse pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article soldé</label>
-<label class="check-pill lotfr-liv-payee" title="La livraison a été payée chez la vendeuse : le livreur ne l'encaisse pas, CLT la retient sur la vendeuse. Ne dit rien de l'article."><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
+<label class="check-pill lotfr-article-solde" title="À cocher si le destinataire a DÉJÀ payé l'article chez le fournisseur. Le livreur ne l'encaisse pas à la porte, et rien n'est dû au fournisseur pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="edit-article-non-encaisse" ${c.article_non_encaisse ? 'checked' : ''}> Article déjà soldé chez le fournisseur</label>
+<label class="check-pill lotfr-liv-payee" title="À cocher si le destinataire a DÉJÀ payé la livraison chez le fournisseur. Le livreur ne l'encaisse pas à la porte, et CLT la retient sur le relevé du fournisseur. Ne dit rien de l'article."><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison déjà payée chez le fournisseur</label>
 <label class="check-pill check-pill-soldee lotfr-soldee" style="${estExpedition(c) ? '' : 'display:none;'}" title="La cliente a déjà réglé à CLT les frais d'expédition et de course : rien ne se retient sur son relevé."><input type="checkbox" class="edit-frais-soldes" ${fraisSoldes(c) ? 'checked' : ''}> 🚌 Frais déjà réglés à CLT (soldé)</label>
 <!-- LE DÉPLACEMENT PAYÉ SANS LIVRAISON (18/09/2026, Celtis). Le livreur répond oui ou non sur
      son téléphone au moment où il marque « non livré » ; le bureau peut corriger ici. Ne se
@@ -637,6 +682,7 @@ ${caseLotHTML(c.id, eqLotIds.has(c.id))}
 ${stepperHTML(c.statut, c)}
 ${thumb}
 <div class="info">
+${eqMontantManquantHTML(c)}
 ${c.numero ? `<div class="meta tracking-numero"><strong>N° de suivi :</strong> ${escapeHTML(c.numero)}</div>` : ''}
 <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
 ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}
@@ -669,7 +715,7 @@ ${c.statut === 'retour' ? `<div class="retour-ligne${retourEnRetard(c) ? ' retou
 <!-- Ce que la cliente a signalé sur ce colis (17/09/2026, point 7.2) : le motif, depuis quand,
      et le mot qu'elle a écrit. C'est la carte du colis qu'on ouvre pour lui répondre. -->
 ${reclamationLigneEquipeHTML(c)}
-${colisADetailMontant(c) ? `<div class="meta">Article : ${formatMontant(c.montant_article) || '0 FCFA'} · Livraison : ${formatMontant(c.montant_livraison) || '0 FCFA'} · <span title="Ce que le destinataire remet en main propre : l'article de la cliente plus nos frais. Ce n'est pas un chiffre d'affaires.">Le destinataire remet : ${formatMontant(montantTotalColis(c)) || '0 FCFA'}</span> ${paiementBadgeHTML(c)}</div>` : (formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '')}
+${eqLigneMontantsHTML(c)}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
 ${eqActionsRapidesHTML(c)}

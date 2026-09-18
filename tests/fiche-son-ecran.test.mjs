@@ -164,7 +164,7 @@ vm.runInContext([
   'piedTotalHTML',
   'echapperAttribut',
   'libelleStatut', 'iconeStatut', 'statutBadgeHTML',
-  'paiementInfo',
+  'chezLeFournisseur', 'paiementInfo',
   'paiementBadgeHTML',
   'colisDestinationTexte',
   'colisDestinationHTML',

@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918point">
-<script src="theme.js?v=20260918point"></script>
-<script src="splash.js?v=20260918point"></script>
+<link rel="stylesheet" href="style.css?v=20260918argent">
+<script src="theme.js?v=20260918argent"></script>
+<script src="splash.js?v=20260918argent"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -536,23 +536,23 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260918point"></script>
-<script src="lib/bibliotheques.js?v=20260918point"></script>
-<script src="lib/retours.js?v=20260918point"></script>
-<script src="lib/reclamations.js?v=20260918point"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918point"></script>
-<script src="lib/argent.js?v=20260918point"></script>
-<script src="lib/releve-cliente.js?v=20260918point"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918point"></script>
-<script src="lib/briques-argent.js?v=20260918point"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918point"></script>
-<script src="lib/annonce-de-remise.js?v=20260918point"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918point"></script>
-<script src="lib/primes.js?v=20260918point"></script>
-<script src="lib/doublons.js?v=20260918point"></script>
-<script src="config.js?v=20260918point"></script>
-<script src="biometric-lock.js?v=20260918point"></script>
-<script src="clt-select-recherche.js?v=20260918point"></script>
+<script src="clt-common.js?v=20260918argent"></script>
+<script src="lib/bibliotheques.js?v=20260918argent"></script>
+<script src="lib/retours.js?v=20260918argent"></script>
+<script src="lib/reclamations.js?v=20260918argent"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918argent"></script>
+<script src="lib/argent.js?v=20260918argent"></script>
+<script src="lib/releve-cliente.js?v=20260918argent"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918argent"></script>
+<script src="lib/briques-argent.js?v=20260918argent"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918argent"></script>
+<script src="lib/annonce-de-remise.js?v=20260918argent"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918argent"></script>
+<script src="lib/primes.js?v=20260918argent"></script>
+<script src="lib/doublons.js?v=20260918argent"></script>
+<script src="config.js?v=20260918argent"></script>
+<script src="biometric-lock.js?v=20260918argent"></script>
+<script src="clt-select-recherche.js?v=20260918argent"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1124,13 +1124,15 @@
           <!-- La case « Article payé » a été retirée le 25/08/2026 : au moment où la cliente
                enregistre son colis, personne n'a encore payé quoi que ce soit. La régle est
                désormais « livré = encaissé », et l'exception se coche à la livraison. -->
-          <label class="check-pill" title="Le destinataire vous a déjà payé la livraison : le livreur ne l'encaisse pas, elle est retenue sur votre relevé."><input type="checkbox" class="lotfr-liv-payee"> Livraison payée d'avance (chez vous)</label>
+          <label class="check-pill" title="À cocher si le destinataire vous a DÉJÀ payé la livraison, chez vous. Le livreur ne l'encaissera pas à la porte, et CLT la retiendra sur votre relevé du soir. Ne dit rien de l'article."><input type="checkbox" class="lotfr-liv-payee"> Livraison déjà payée chez vous</label>
           <!-- Deux cases indépendantes (11/09/2026, Celtis) : « Article soldé » ne parle que de
-               l'article, « Livraison payée d'avance » que de la livraison — chacune veut dire
+               l'article, « Livraison déjà payée » que de la livraison — chacune veut dire
                « payé chez vous, le livreur ne l'encaisse pas ». Tout payé chez vous = les deux.
+               Les deux libellés disent OÙ depuis le 18/09/2026 : sur son écran c'est « chez
+               vous », sur celui du bureau « chez le fournisseur ». Voir chezLeFournisseur().
                Sans objet sur une expédition, où c'est toujours le cas : la case suit celle de la
                livraison. -->
-          <label class="check-pill" title="Le destinataire vous a déjà payé l'article : le livreur ne l'encaisse pas et rien ne vous est dû pour cet article. La livraison, elle, se règle à part."><input type="checkbox" class="lotfr-article-solde"> Article soldé (payé chez vous)</label>
+          <label class="check-pill" title="À cocher si le destinataire vous a DÉJÀ payé l'article, chez vous. Le livreur ne l'encaisse pas à la porte, et rien ne vous est dû pour cet article. La livraison, elle, se règle à part."><input type="checkbox" class="lotfr-article-solde"> Article déjà soldé chez vous</label>
           <!-- « Soldé » ne concerne QUE les expéditions, et remplace la case ci-dessus quand la
                destination bascule vers l'intérieur du pays (voir appliquerModeExpedition, dans
                config.js). Elle veut dire : j'ai déjà réglé à CLT les frais d'expédition et de
@@ -1404,6 +1406,7 @@
       return;
     }
 
+    if (!(await lotfrAvertirMontantsManquants([{ l, rang }]))) return;
     if (!(await lotfrAvertirDoublons([l]))) return;
     lotfrEnvoiEnCours = true;
     const btn = l.el && l.el.querySelector('.lot-enregistrer-un');
@@ -1458,6 +1461,44 @@
     });
   }
 
+  /* Un colis à l'unité (la copie, la correction) : même alerte, même règle, même phrase que la
+     saisie en lot juste en dessous. Rend true pour continuer, false pour s'arrêter. */
+  async function frAvertirMontantsManquants(c){
+    if (typeof montantsManquantsColis !== 'function') return true;
+    const manque = montantsManquantsColis(c);
+    if (!manque.length) return true;
+    return await cltConfirm({
+      title: manque.length > 1 ? 'Des montants manquent' : 'Un montant manque',
+      detail: 'Il manque ' + manque.join(' et ') + '.',
+      sub: ALERTE_MONTANTS_POURQUOI_CLIENTE,
+      okLabel: 'Enregistrer quand même', cancelLabel: 'Compléter',
+    });
+  }
+
+  /* ---------- Les montants qui manquent, avant d'envoyer (18/09/2026, Celtis) ----------
+     « Lorsqu'un colis est créé sans qu'on marque le coût de l'article ou bien sans qu'on ne
+     marque le coût de la livraison, il faudrait qu'une alerte se déclenche. »
+     Même forme que les doublons juste au-dessus : on avertit, on nomme le colis et ce qui lui
+     manque, on laisse décider. La règle est dans lib/argent.js — un zéro est un montant, un champ
+     vide est un manque, « Article soldé » répond pour l'article. Le texte, lui, parle à la
+     cliente : c'est SON relevé et SON argent qui seraient faux.
+     Rend true pour continuer, false pour s'arrêter. */
+  async function lotfrAvertirMontantsManquants(entrees){
+    if (typeof montantsManquantsColis !== 'function') return true;
+    const alertes = [];
+    (entrees || []).forEach(e => {
+      const manque = montantsManquantsColis(colisDepuisSaisie(lotfrLireLigne(e.l)));
+      if (manque.length) alertes.push('Colis ' + e.rang + ' : il manque ' + manque.join(' et ') + '.');
+    });
+    if (!alertes.length) return true;
+    return await cltConfirm({
+      title: alertes.length > 1 ? 'Des montants manquent' : 'Un montant manque',
+      detail: alertes.join('\n'),
+      sub: ALERTE_MONTANTS_POURQUOI_CLIENTE,
+      okLabel: 'Enregistrer quand même', cancelLabel: 'Compléter',
+    });
+  }
+
   /* ---------- Tout ce qui reste, d'un coup ---------- */
   async function lotfrEnregistrer(){
     if (lotfrEnvoiEnCours) return;
@@ -1477,6 +1518,7 @@
       return;
     }
 
+    if (!(await lotfrAvertirMontantsManquants(lotfrLignes.map((l, i) => ({ l, rang: i + 1 }))))) return;
     if (!(await lotfrAvertirDoublons(lotfrLignes))) return;
     lotfrEnvoiEnCours = true;
     const btn = document.getElementById('lotfr-enregistrer');
@@ -1834,10 +1876,16 @@
             <!-- L'argent de la cliente d'abord, les frais de CLT ensuite et plus discrètement.
                  On n'affiche plus de « Total » article + livraison : cette somme ne correspond
                  à la poche de personne. L'article revient à la cliente, la livraison à CLT. -->
+            <!-- UN MONTANT VIDE NE DOIT PAS SE LIRE « 0 FCFA ». (18/09/2026, Celtis) Les deux
+                 lignes ci-dessous affichaient montantArticleColis(), qui répond zéro pour un
+                 champ jamais rempli : « Votre article : 0 FCFA » et « je n'ai pas encore donné
+                 mon prix » s'écrivaient pareil, et l'écart ne se découvrait que le soir, sur le
+                 relevé. La règle est partagée avec le bureau et le livreur (lib/argent.js). -->
             ${colisADetailMontant(c) ? `
-              <div class="meta"><strong>Votre article : ${formatMontant(montantArticleColis(c)) || '0 FCFA'}</strong> ${paiementBadgeHTML(c)}</div>
-              <div class="meta" style="font-size:12px; color:var(--muted);">Frais de livraison CLT : ${formatMontant(montantLivraisonColis(c)) || '0 FCFA'}</div>
-            ` : (formatMontant(c.montant) ? `<div class="meta"><strong>Votre article : ${formatMontant(c.montant)}</strong> ${paiementBadgeHTML(c)}</div>` : '')}
+              <div class="meta"><strong>Votre article : ${montantArticleManquant(c) ? '<span class="montant-absent">non renseigné</span>' : (formatMontant(montantArticleColis(c)) || '0 FCFA')}</strong> ${paiementBadgeHTML(c, 'cliente')}</div>
+              <div class="meta" style="font-size:12px; color:var(--muted);">Frais de livraison CLT : ${montantLivraisonManquant(c) ? '<span class="montant-absent">non renseignés</span>' : (formatMontant(montantLivraisonColis(c)) || '0 FCFA')}</div>
+              ${colisSansMontant(c) && colisToutModifiable(c) ? `<div class="meta" style="color:#b3261e; font-weight:600;">⚠️ Complétez ce montant : sans lui, votre relevé du soir sera faux et le livreur ne saura pas quoi réclamer.</div>` : ''}
+            ` : (formatMontant(c.montant) ? `<div class="meta"><strong>Votre article : ${formatMontant(c.montant)}</strong> ${paiementBadgeHTML(c, 'cliente')}</div>` : '')}
             <!-- Le code de confirmation ne s'affiche plus ici depuis le 21 août 2026. Le livreur
                  ne le demande plus à la remise : continuer à écrire « à communiquer au
                  destinataire » sous un colis serait donc une consigne fausse, et c'est pire que
@@ -1904,7 +1952,7 @@
               </div>
             </div>
             <div class="payment-checks">
-              <label class="check-pill" title="Payée chez vous : le livreur ne l'encaisse pas, elle est retenue sur votre relevé."><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison payée d'avance</label>
+              <label class="check-pill" title="À cocher si le destinataire vous a DÉJÀ payé la livraison, chez vous. Le livreur ne l'encaissera pas à la porte, et CLT la retiendra sur votre relevé du soir. Ne dit rien de l'article."><input type="checkbox" class="edit-livraison-payee" ${c.livraison_payee ? 'checked' : ''}> Livraison déjà payée chez vous</label>
             </div>` : ''}
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn btn-sm btn-save-edit">Enregistrer</button>
@@ -1983,7 +2031,7 @@
               </div>
             </div>
             <div class="payment-checks">
-              <label class="check-pill" title="Payée chez vous : le livreur ne l'encaisse pas, elle est retenue sur votre relevé."><input type="checkbox" class="draft-livraison-payee"> Livraison payée d'avance</label>
+              <label class="check-pill" title="À cocher si le destinataire vous a DÉJÀ payé la livraison, chez vous. Le livreur ne l'encaissera pas à la porte, et CLT la retiendra sur votre relevé du soir. Ne dit rien de l'article."><input type="checkbox" class="draft-livraison-payee"> Livraison déjà payée chez vous</label>
             </div>
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn btn-sm btn-save-duplicate">Enregistrer la copie</button>
@@ -2036,6 +2084,11 @@
         ? (Number(montant_article) || 0) + (Number(montant_livraison) || 0)
         : null;
       const livraison_payee = draftEl.querySelector('.draft-livraison-payee').checked;
+
+      // L'alerte des montants manquants (18/09/2026) : la copie d'un colis est le chemin par
+      // lequel un montant vide se propage le plus discrètement — on duplique un colis dont le
+      // prix n'était pas encore fixé, et le nouveau naît vide lui aussi.
+      if (!(await frAvertirMontantsManquants({ montant_article, montant_livraison, commune_destination }))) return;
 
       saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement...';
 
@@ -2159,6 +2212,15 @@
             : null;
           const livraisonPayeeInput = item.querySelector('.edit-livraison-payee');
           if (livraisonPayeeInput) champs.livraison_payee = livraisonPayeeInput.checked;
+          // Corriger un colis est l'occasion de COMPLÉTER ce qui manquait. C'est aussi
+          // l'occasion de le vider par mégarde : l'alerte se pose donc ici comme à la création.
+          const dejaSolde = (mesColis.find(x => String(x.id) === String(item.dataset.id)) || {}).article_non_encaisse;
+          if (!(await frAvertirMontantsManquants({
+            montant_article: champs.montant_article,
+            montant_livraison: champs.montant_livraison,
+            article_non_encaisse: dejaSolde,
+            commune_destination,
+          }))) return;
         }
         btn.disabled = true; btn.textContent = '...';
         let { error } = await supabaseClient.from('colis').update(champs).eq('id', id);
@@ -2551,8 +2613,16 @@
        ------------------------------------------------------------------------------------ */
     const { data: aReverser, error: err2 } = await supabaseClient
       .from('colis')
-      .select('numero, statut, commune_destination, montant, montant_article, montant_livraison, '
-              + 'frais_expedition, article_non_encaisse, reverse_au_fournisseur_at, created_at, '
+      /* TROIS COLONNES QUI MANQUAIENT, AJOUTÉES LE 18/09/2026.
+         Le calcul commun lit `livraison_payee` (montantNetADevoir → fraisCourseADevoir →
+         fraisCourseColis) et `frais_soldes_at` (fraisCourseADevoir). Aucune des deux n'était
+         demandée ici : une colonne absente vaut `undefined`, donc « non », et la liste de la
+         cliente ignorait en silence une livraison payée chez elle — retenue, elle, sur le relevé
+         qu'on lui envoie le soir. Deux écrans, deux nombres, sur le même colis. `destination`
+         complète l'adresse : sans elle, une ligne de retenue ne dit que la commune. */
+      .select('numero, statut, commune_destination, destination, montant, montant_article, montant_livraison, '
+              + 'livraison_payee, frais_expedition, frais_soldes_at, article_non_encaisse, '
+              + 'reverse_au_fournisseur_at, created_at, '
               + 'frais_additionnels_montant, frais_additionnels_motif, frais_additionnels_regle_at')
       .eq('fournisseur_id', currentUser.id)
       .is('reverse_au_fournisseur_at', null)
@@ -2586,7 +2656,7 @@
       return `
       <div style="padding:7px 0; border-bottom:1px solid var(--border);">
         <div style="display:flex; justify-content:space-between; gap:10px;">
-          <span>${escapeHTML(c.numero || '—')}<span style="color:var(--muted); font-size:12px;"> · ${new Date(c.created_at).toLocaleDateString('fr-FR')}</span></span>
+          <span>${escapeHTML(c.numero || '—')}<span style="color:var(--muted); font-size:12px;"> · ${new Date(c.created_at).toLocaleDateString('fr-FR')}</span>${colisDestinationTexte(c) ? `<div style="font-size:12px; color:#5b6473;">📍 ${escapeHTML(colisDestinationTexte(c))}</div>` : ''}</span>
           <strong style="${net < 0 ? 'color:#c0392b;' : ''}">${formatMontant(net) || '0 FCFA'}</strong>
         </div>
         ${detailLignes.map(([g, d]) => `<div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:#5b6473; margin-top:2px;">
@@ -2991,7 +3061,7 @@
       'Votre article': montantArticleColis(c) || 0,
       'Article encaissé': montantArticleEncaisse(c) || 0,
       'Frais de livraison CLT': montantLivraisonColis(c) || 0,
-      Paiement: paiementInfo(c).label,
+      Paiement: paiementInfo(c, 'cliente').label,
       Date: formatDate(c.created_at),
     }));
     // Dernière ligne : le total, pour ne jamais avoir à le refaire à la main.
@@ -3065,7 +3135,7 @@
           formatMontant(montantArticleColis(c)) || '0 FCFA',
           formatMontant(montantArticleEncaisse(c)) || '—',
           formatMontant(montantLivraisonColis(c)) || '—',
-          paiementInfo(c).label,
+          paiementInfo(c, 'cliente').label,
           formatDate(c.created_at),
           observationTexte(c) || '—',
         ]),

@@ -119,7 +119,7 @@ vm.runInContext([
   // Dans le navigateur, config.js est chargé d'un bloc et la fonction est là ; ici on extrait
   // les fonctions une par une, et l'oublier fait planter le banc d'essai au premier libellé.
   'echapperAttribut',
-  'paiementInfo',
+  'chezLeFournisseur', 'paiementInfo',
 ].map(n => blocDe(sourceConfig, n)).join('\n\n'), contexte);
 
 const {
@@ -540,11 +540,15 @@ titre("Les mots posés sur un colis décrivent son état réel, pas un état moy
 {
   const cas = [
     [colis({ statut: 'en_attente', montant_article: 5000 }),                                   'Pas encore encaissé'],
-    [colis({ statut: 'en_livraison', montant_livraison: 1500, livraison_payee: true }),        "Livraison payée d'avance"],
+    /* PAYÉE OÙ ? (18/09/2026, Celtis : « le bouton n'est pas clair pour la livraison payée en
+       avance […] sur le fournisseur, c'est mieux »). « Payée d'avance » ne disait pas payée à
+       qui, et les trois lectures possibles — au livreur, à CLT, chez le fournisseur — ne mènent
+       pas au même compte. Les libellés disent désormais l'endroit. */
+    [colis({ statut: 'en_livraison', montant_livraison: 1500, livraison_payee: true }),        'Livraison déjà payée chez le fournisseur'],
     [colis({ statut: 'livre', montant_article: 5000 }),                                        'Encaissé'],
     [colis({ statut: 'livre', montant_article: 5000, article_non_encaisse: true }),            'Article soldé'],
-    [colis({ statut: 'livre', montant_article: 5000, montant_livraison: 1000, livraison_payee: true }), "Livraison payée d'avance — retenue"],
-    [colis({ statut: 'livre', montant_article: 5000, montant_livraison: 1000, article_non_encaisse: true, livraison_payee: true }), 'Soldé chez la vendeuse — livraison retenue'],
+    [colis({ statut: 'livre', montant_article: 5000, montant_livraison: 1000, livraison_payee: true }), 'Livraison payée chez le fournisseur — retenue'],
+    [colis({ statut: 'livre', montant_article: 5000, montant_livraison: 1000, article_non_encaisse: true, livraison_payee: true }), 'Tout payé chez le fournisseur — livraison retenue'],
     [colis({ statut: 'livre', montant_article: 5000, montant_livraison: 1000, livraison_non_encaissee: true }), 'Argent non encaissé'],
     [colis({ statut: 'livre', montant_article: 5000, reverse_au_fournisseur_at: '2026-08-25T10:00:00Z' }), 'Encaissé et reversé'],
   ];
@@ -554,6 +558,19 @@ titre("Les mots posés sur un colis décrivent son état réel, pas un état moy
   });
   verifier('un colis absent ne fait pas planter la ligne, il affiche un tiret',
     paiementInfo(null).label === '—');
+
+  /* SUR L'ÉCRAN DE LA CLIENTE, « chez le fournisseur » serait de nouveau une devinette : le
+     fournisseur, c'est elle. Même fait, même retenue, dit à la personne qui lit. */
+  const payeeChezElle = colis({ statut: 'en_livraison', montant_livraison: 1500, livraison_payee: true });
+  verifier('sur son propre écran, la cliente lit « chez vous » et non « chez le fournisseur »',
+    paiementInfo(payeeChezElle, 'cliente').label === 'Livraison déjà payée chez vous',
+    `obtenu : ${paiementInfo(payeeChezElle, 'cliente').label}`);
+  const toutPaye = colis({ statut: 'livre', montant_article: 5000, montant_livraison: 1000, article_non_encaisse: true, livraison_payee: true });
+  verifier('« Tout payé chez vous — livraison retenue » sur son écran',
+    paiementInfo(toutPaye, 'cliente').label === 'Tout payé chez vous — livraison retenue',
+    `obtenu : ${paiementInfo(toutPaye, 'cliente').label}`);
+  verifier('aucun libellé ne dit plus « payée d\'avance » : il ne disait pas payée à qui',
+    !cas.some(([c]) => /payée d'avance/i.test(paiementInfo(c).label)));
 }
 
 /* ==========================================================================================

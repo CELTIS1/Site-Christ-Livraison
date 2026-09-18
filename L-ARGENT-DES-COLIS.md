@@ -106,9 +106,79 @@ compterait deux fois le même billet. Tant qu'il ne l'est pas — non livré,
 retenté, rendu au bureau — les billets restent dans la poche du livreur et dans
 son point du soir.
 
+## Un montant vide n'est pas un zéro
+
+*Ajouté le 18 septembre 2026, après Celtis : « lorsqu'un colis est créé sans
+qu'on marque le coût de l'article ou bien sans qu'on ne marque le coût de la
+livraison, il faudrait qu'une alerte se déclenche […] qu'il y ait vraiment des
+alertes là où il faut, surtout concernant au niveau de l'argent ».*
+
+`montantArticleColis()` répond **zéro** pour un champ jamais rempli — il le doit,
+puisqu'un `null` contaminerait toute une colonne de totaux. Mais à l'écran, ce
+zéro s'écrivait « 0 FCFA », exactement comme une livraison offerte. Le livreur
+devant la porte, la cliente sur son relevé et l'équipe au téléphone lisaient la
+même chose pour deux situations opposées : *c'est gratuit* et *je ne sais pas
+encore*. L'écart se découvrait le soir.
+
+Deux règles, dans `app/lib/argent.js`, et une seule définition pour les cinq
+écrans :
+
+- **Un zéro écrit exprès est un montant.** « Une livraison offerte s'écrit 0 »
+  est une décision, protégée par `tests/saisie-en-lot.test.mjs` depuis le
+  21 août. Seul le champ **vide** manque (`montantNonRenseigne`).
+- **« Article soldé » répond pour l'article**, et un ancien colis à `montant`
+  global n'a rien à compléter — sonner sur toute la liste ancienne, c'est
+  apprendre à l'équipe à ne plus voir l'alerte.
+
+`montantsManquantsColis(c)` nomme ce qui manque ; les écrans en font deux choses.
+Une **alerte** au moment d'enregistrer, sur les quatre chemins d'écriture (saisie
+en lot du bureau, saisie en lot de la cliente, copie d'un colis, correction) :
+elle avertit et laisse décider, comme celle des doublons — la cliente n'a pas
+toujours fixé son prix. Et une **marque** qui reste tant que le montant manque,
+parce qu'un avertissement qui ne survit pas à sa fenêtre ne protège qu'une
+seconde. Mesuré en base avant d'écrire la règle : 274 colis sur 1 523 n'ont pas
+leurs deux montants, dont 166 déjà reversés — ceux-là ne portent pas la marque,
+leurs montants sont figés et la cliente a été payée.
+
+## Payée d'avance, oui, mais payée à qui
+
+*Même message de Celtis : « le bouton n'est pas clair pour la livraison payée en
+avance. Peut-être c'est de préciser, livraison payée sur la vendeuse ou bien sur
+le fournisseur, c'est mieux, sur le fournisseur. »*
+
+« Livraison payée d'avance » avait trois lectures possibles — payée au livreur,
+payée à CLT, payée chez le fournisseur — et une seule est la bonne. Les deux
+autres conduisent à réclamer la même somme deux fois, ou à ne jamais la
+réclamer. Les libellés disent donc l'endroit : **« Livraison déjà payée chez le
+fournisseur »**, et **« chez vous »** sur l'écran de la cliente, parce que le
+fournisseur, c'est elle. Une seule fonction décide, `chezLeFournisseur(pourQui)`,
+et `paiementInfo(c, pourQui)` la suit. « Article soldé » a reçu le même
+traitement.
+
+## Une retenue dit de quel colis elle vient
+
+*« Ça ne dit pas c'est sur quelle ligne ni sur quelle adresse. Elle peut se poser
+la question : mais les mille francs, c'est parti d'où ? »*
+
+Le bas du relevé disait combien et pourquoi, jamais sur quoi.
+`releveRetenuesLignesTexte()` ajoute une ligne par colis retenu — son adresse,
+puis le numéro du destinataire, puis le détail — et les quatre sorties (écran,
+PDF, Excel, Word) impriment la même. La phrase de résumé disait aussi « retenus
+sur N **expéditions** », alors qu'un colis ordinaire dont la livraison a été
+payée chez le fournisseur porte lui aussi des frais de course : 18 colis dans ce
+cas en base, dont les clientes lisaient « retenus sur 0 expédition ». Elle compte
+maintenant les colis qui portent réellement une retenue — le nombre et la liste
+ne peuvent plus se contredire.
+
+Enfin, un colis soldé affichait un tiret dans la colonne « Vous revient ». Trois
+cas différents tombaient sur le même tiret : pas encore livré, soldé chez le
+fournisseur, et zéro. Le deuxième a une réponse, et elle tient en un mot :
+**« Soldé »**, en bleu, à l'écran comme sur les trois documents
+(`releveVousRevientTexte`).
+
 ## Le vocabulaire, mot par mot
 
-Ces sept mots ont chacun une définition unique, et c'est cette définition-là qui
+Ces neuf mots ont chacun une définition unique, et c'est cette définition-là qui
 est codée. Aucun écran n'a le droit d'en avoir une autre.
 
 | Le mot | Ce qu'il compte exactement |
@@ -117,6 +187,8 @@ est codée. Aucun écran n'a le droit d'en avoir une autre.
 | **encaissé** | les colis `livre` seulement, exception non cochée |
 | **articles** | l'argent de la cliente, jamais celui de CLT |
 | **frais de livraison** | l'argent de CLT, jamais celui de la cliente |
+| **non renseigné** | un montant jamais saisi — à ne pas confondre avec un zéro écrit exprès (18/09/2026) |
+| **soldé** | payé chez le fournisseur avant le départ : rien à encaisser à la porte, rien à reverser |
 | **en main** (livreur) | articles encaissés + livraisons encaissées de sa journée, y compris la course payée sur un colis non livré (18/09/2026) |
 | **CLT vous doit** | encaissé pour elle, moins ce qui lui a déjà été reversé |
 | **reversé** | remis en mains propres à la cliente, daté |

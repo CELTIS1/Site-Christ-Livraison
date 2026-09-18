@@ -136,9 +136,9 @@ vm.runInContext([
     'montantArticleADevoir', 'montantNetADevoir', 'montantEnMainDuLivreur',
     'montantManquantALaLivraison', 'montantArticleReverse', 'fraisCourseAcquis',
     'fraisSoldes', 'etatsPossibles', 'stepperHTML',
-    'paiementInfo',
+    'chezLeFournisseur', 'paiementInfo',
     'totauxArgent', 'libelleStatut', 'iconeStatut', 'statutTexte', 'colisDestinationTexte', 'releveCliente',
-    'releveTotalTextes', 'relevePhraseDue', 'releveDetailRetenues',
+    'releveTotalTextes', 'relevePhraseDue', 'releveRetenuesParColis', 'releveDetailRetenues',
   ].map(n => blocDe(sourceConfig, n, 'config.js')),
   // releveCliente cite RELEVE_COLONNES ; statutTexte cite STATUTS, absent hors navigateur.
   constanteDe(sourceConfig, 'RELEVE_COLONNES', 'config.js'),
@@ -325,6 +325,19 @@ verifier('les deux retenues sont détaillées à part, jamais fondues en une',
   'les fondre ferait perdre ce que la séparation a coûté à obtenir : savoir à qui va chaque franc');
 verifier('le détail des retenues nomme les deux frais',
   /frais d'expédition/.test(releveDetailRetenues(r)) && /frais de course/.test(releveDetailRetenues(r)));
+/* La phrase comptait les EXPÉDITIONS, alors qu'un colis ordinaire dont la livraison a été payée
+   chez le fournisseur porte lui aussi des frais de course. Sur leur relevé, la cliente lisait
+   « retenus sur 0 expédition » — une somme retenue sur rien. (18/09/2026) Elle compte désormais
+   les colis qui portent réellement une retenue, ceux que la liste nomme juste en dessous. */
+verifier('elle dit sur combien de COLIS ils sont retenus, pas sur combien d\'expéditions',
+  /retenus sur 2 colis\./.test(releveDetailRetenues(r)) && !/expédition[s]? ?\./.test(releveDetailRetenues(r)),
+  releveDetailRetenues(r));
+{
+  const payeeChezElle = Object.assign({}, ordinaire(), { livraison_payee: true });
+  const rOrdinaire = releveCliente([payeeChezElle]);
+  verifier('une livraison payée chez le fournisseur, sur un colis d\'Abidjan, se compte comme un colis retenu',
+    /retenus sur 1 colis\./.test(releveDetailRetenues(rOrdinaire)), releveDetailRetenues(rOrdinaire));
+}
 verifier("il ne s'écrit pas quand il n'y a rien à retenir",
   releveDetailRetenues(releveCliente([ordinaire()])) === '',
   'une explication sans objet sur une journée ordinaire fait naître la question « c\'est quoi, ces frais ? »');

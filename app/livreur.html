@@ -19,9 +19,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260918point">
-<script src="theme.js?v=20260918point"></script>
-<script src="splash.js?v=20260918point"></script>
+<link rel="stylesheet" href="style.css?v=20260918argent">
+<script src="theme.js?v=20260918argent"></script>
+<script src="splash.js?v=20260918argent"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -194,6 +194,11 @@
   .colis-montants{ font-size:13px; color:#20406E; }
   .colis-montants strong{ font-weight:800; }
   html[data-theme="dark"] .colis-montants{ color:#B9CCE3; }
+  /* Un montant jamais rempli : rouge, pour qu'il ne se confonde pas avec un vrai zéro.
+     #b3261e sur fond clair et #ff9d93 sur fond sombre passent tous deux le contraste 4,5:1
+     exigé par le banc livreur-lisible-et-leger. (18/09/2026) */
+  .colis-montants .montant-absent{ color:#b3261e; font-weight:800; }
+  html[data-theme="dark"] .colis-montants .montant-absent{ color:#ff9d93; }
 
   /* Le bloc de correction, lui, est encadré comme celui des frais : un cadre autour d'un champ
      d'argent dit « ici, ce que vous écrivez sort de la poche de quelqu'un ». */
@@ -908,22 +913,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260918point"></script>
-<script src="lib/bibliotheques.js?v=20260918point"></script>
-<script src="lib/retours.js?v=20260918point"></script>
-<script src="lib/reclamations.js?v=20260918point"></script>
-<script src="lib/communes-et-tarifs.js?v=20260918point"></script>
-<script src="lib/argent.js?v=20260918point"></script>
-<script src="lib/releve-cliente.js?v=20260918point"></script>
-<script src="lib/papier-a-en-tete.js?v=20260918point"></script>
-<script src="lib/briques-argent.js?v=20260918point"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260918point"></script>
-<script src="lib/annonce-de-remise.js?v=20260918point"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260918point"></script>
-<script src="lib/primes.js?v=20260918point"></script>
-<script src="lib/doublons.js?v=20260918point"></script>
-<script src="config.js?v=20260918point"></script>
-<script src="biometric-lock.js?v=20260918point"></script>
+<script src="clt-common.js?v=20260918argent"></script>
+<script src="lib/bibliotheques.js?v=20260918argent"></script>
+<script src="lib/retours.js?v=20260918argent"></script>
+<script src="lib/reclamations.js?v=20260918argent"></script>
+<script src="lib/communes-et-tarifs.js?v=20260918argent"></script>
+<script src="lib/argent.js?v=20260918argent"></script>
+<script src="lib/releve-cliente.js?v=20260918argent"></script>
+<script src="lib/papier-a-en-tete.js?v=20260918argent"></script>
+<script src="lib/briques-argent.js?v=20260918argent"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260918argent"></script>
+<script src="lib/annonce-de-remise.js?v=20260918argent"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260918argent"></script>
+<script src="lib/primes.js?v=20260918argent"></script>
+<script src="lib/doublons.js?v=20260918argent"></script>
+<script src="config.js?v=20260918argent"></script>
+<script src="biometric-lock.js?v=20260918argent"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2156,9 +2161,21 @@
     return `<div class="meta colis-avant${urgent ? ' colis-avant--urgent' : ''}">⏰ À livrer avant le ${escapeHTML(new Date(j + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' }))}${urgent ? (j < todayLocalISODate() ? ' — dépassé' : " — aujourd'hui") : ''}</div>`;
   }
 
+  /* UN MONTANT VIDE NE DOIT PAS SE LIRE « 0 FCFA ». (18/09/2026, Celtis)
+     Cette ligne affichait montantArticleColis(), qui répond zéro pour un champ jamais rempli.
+     Sur le téléphone du livreur, devant la porte, « Article : 0 FCFA » et « la cliente n'a pas
+     encore donné son prix » s'écrivaient donc de la même façon — et dans le premier cas il ne
+     réclame rien, ce qui est la bonne décision pour le mauvais colis. Un montant absent se dit
+     absent, en rouge, et les cases juste en dessous permettent de l'écrire tout de suite.
+     La règle est partagée avec le bureau et la cliente : lib/argent.js. */
   function montantsLigneHTML(c){
-    return `<div class="meta colis-montants">💵 Article : <strong>${formatMontant(montantArticleColis(c))}</strong>`
-      + ` · ${escapeHTML(estExpedition(c) ? LIBELLE_FRAIS_COURSE : 'Livraison')} : <strong>${formatMontant(montantLivraisonColis(c))}</strong></div>`;
+    const absent = '<strong class="montant-absent">non renseigné</strong>';
+    const article = (typeof montantArticleManquant === 'function' && montantArticleManquant(c))
+      ? absent : `<strong>${formatMontant(montantArticleColis(c))}</strong>`;
+    const livraison = (typeof montantLivraisonManquant === 'function' && montantLivraisonManquant(c))
+      ? absent : `<strong>${formatMontant(montantLivraisonColis(c))}</strong>`;
+    return `<div class="meta colis-montants">💵 Article : ${article}`
+      + ` · ${escapeHTML(estExpedition(c) ? LIBELLE_FRAIS_COURSE : 'Livraison')} : ${livraison}</div>`;
   }
 
   function montantsChampsHTML(c){
@@ -2513,13 +2530,13 @@
               <!-- Ces deux boutons parlent d'argent encaissé chez le destinataire. Sur une
                    expédition il n'y en a pas : il a déjà payé chez la vendeuse. Les proposer,
                    c'est inviter à cocher quelque chose qui n'a pas eu lieu. -->
-              ${estExpedition(c) ? '' : `              <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si la livraison a été payée d'avance chez la vendeuse : vous ne l'encaissez pas, CLT la retient sur la vendeuse.">${c.livraison_payee ? '✅ Livraison payée d\'avance' : "Livraison payée d'avance ?"}</button>
+              ${estExpedition(c) ? '' : `              <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a DÉJÀ payé la livraison chez le fournisseur : vous ne l'encaissez pas à la porte, CLT la retient sur le relevé du fournisseur. Ne dit rien de l'article.">${c.livraison_payee ? '✅ Payée chez le fournisseur' : "Livraison déjà payée chez le fournisseur ?"}</button>
               <!-- L'exception, et seulement l'exception. Depuis le 25/08/2026, un colis livré compte
                    par défaut comme encaissé : le livreur n'a rien à cocher dans le cas normal, ce qui
                    était l'ancien piège (personne ne cochait jamais, et les clientes lisaient 0 FCFA
                    encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
                    colis a été remis sans que l'argent de l'article rentre. -->
-              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.article_non_encaisse ? 'background:#1B4374 !important; border:1.5px solid #1B4374; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À cocher si l'article a été payé chez la vendeuse : vous n'encaissez pas l'article. La livraison, elle, s'encaisse normalement.">${c.article_non_encaisse ? '✅ Article soldé' : "Article soldé ?"}</button>`}
+              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.article_non_encaisse ? 'background:#1B4374 !important; border:1.5px solid #1B4374; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À cocher si le destinataire a DÉJÀ payé l'article chez le fournisseur : vous n'encaissez pas l'article à la porte. La livraison, elle, s'encaisse normalement.">${c.article_non_encaisse ? '✅ Article soldé chez le fournisseur' : "Article déjà soldé chez le fournisseur ?"}</button>`}
               ${montantsChampsHTML(c)}
               <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
               <button class="btn btn-sm btn-save">Enregistrer</button>
@@ -2902,7 +2919,7 @@
             // (montantsColisAEcrire) : un colis ancien n'a qu'un total global, et la livraison
             // ne se lit que si l'article est posé à côté (voir montantLivraisonColis).
             Object.assign(aEcrire, montantsColisAEcrire(existing ? montantArticleColis(existing) : 0, nb));
-          } else if (!(await cltConfirm({ title: 'Article soldé ?', detail: `Le destinataire a tout payé chez la vendeuse. Vous n'encaissez rien ; la livraison (${formatMontant(dejaLivraison)}) sera retranchée de ce que CLT doit à la vendeuse.`, okLabel: 'Oui, soldé' }))) {
+          } else if (!(await cltConfirm({ title: 'Article soldé ?', detail: `Le destinataire a tout payé chez le fournisseur. Vous n'encaissez rien à la porte ; la livraison (${formatMontant(dejaLivraison)}) sera retenue sur ce que CLT doit au fournisseur.`, okLabel: 'Oui, soldé' }))) {
             return;
           }
         }

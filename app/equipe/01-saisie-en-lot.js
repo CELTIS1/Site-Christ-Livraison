@@ -138,15 +138,17 @@ ${l.url
 <label>Description (optionnel)</label>
 <input type="text" class="lot-desc" placeholder="Rien à écrire si l'étiquette n'en dit pas">
 </div>
-<!-- Deux cases indépendantes dès la création (11/09/2026, Celtis) : « Article soldé » ne parle que
-     de l'article, « Livraison payée d'avance » que de la livraison. Tout payé chez la vendeuse =
-     les deux cochées. La règle est dans config.js. -->
+<!-- Deux cases indépendantes dès la création (11/09/2026, Celtis) : « Article soldé » ne parle
+     que de l'article, « Livraison déjà payée chez le fournisseur » que de la livraison. Tout payé
+     chez le fournisseur = les deux cochées. La règle est dans lib/argent.js.
+     Les deux libellés disent OÙ l'argent a été payé depuis le 18/09/2026 : « payée d'avance » ne
+     disait pas payée à qui, et les trois lectures possibles ne mènent pas au même compte. -->
 <div class="field">
 <label>À livrer avant le <span style="font-weight:400; color:var(--muted);">(facultatif)</span></label>
 <input type="date" class="lot-avant">
 </div>
-<label class="check-pill lot-solde-pill" title="L'article a été payé chez la vendeuse : le livreur ne l'encaisse pas et rien n'est dû à la vendeuse pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="lot-solde"> Article soldé (payé chez la vendeuse)</label>
-<label class="check-pill lot-liv-payee-pill" title="La livraison a été payée chez la vendeuse : le livreur ne l'encaisse pas, CLT la retient sur la vendeuse. Ne dit rien de l'article."><input type="checkbox" class="lot-liv-payee"> Livraison payée d'avance (chez la vendeuse)</label>
+<label class="check-pill lot-solde-pill" title="À cocher si le destinataire a DÉJÀ payé l'article chez le fournisseur. Le livreur ne l'encaisse pas à la porte, et rien n'est dû au fournisseur pour cet article. Ne dit rien de la livraison."><input type="checkbox" class="lot-solde"> Article déjà soldé chez le fournisseur</label>
+<label class="check-pill lot-liv-payee-pill" title="À cocher si le destinataire a DÉJÀ payé la livraison chez le fournisseur. Le livreur ne l'encaissera pas à la porte, et CLT la retiendra sur le relevé du fournisseur. Ne dit rien de l'article."><input type="checkbox" class="lot-liv-payee"> Livraison déjà payée chez le fournisseur</label>
 <div class="lot-etat"></div>
 <!-- Enregistrer ce colis-là, tout de suite. Ce bouton existe pour une raison précise : sur
      téléphone, l'onglet est libéré par le système dès que l'écran se verrouille, et toute
@@ -424,6 +426,30 @@ okLabel: 'Créer quand même', cancelLabel: 'Annuler',
 });
 }
 
+/* ---------- Les montants qui manquent, avant d'envoyer (18/09/2026, Celtis) ----------
+   « Lorsqu'un colis est créé sans qu'on marque le coût de l'article ou bien sans qu'on ne marque
+   le coût de la livraison, il faudrait qu'une alerte se déclenche. »
+   On avertit, on nomme ce qui manque et sur quel colis, et on laisse décider : la même règle que
+   les doublons juste au-dessus, et pour la même raison — la cliente n'a pas toujours fixé son
+   prix au moment où on enregistre. Ce qu'on supprime, c'est le silence, pas la liberté.
+   La règle, elle, est dans lib/argent.js : un zéro est un montant, un champ vide est un manque,
+   et « Article soldé » répond pour l'article. Rend true pour continuer, false pour s'arrêter. */
+async function lotAvertirMontantsManquants(entrees){
+if (typeof montantsManquantsColis !== 'function') return true;
+const alertes = [];
+(entrees || []).forEach(e => {
+const manque = montantsManquantsColis(colisDepuisSaisie(lotLireLigne(e.l)));
+if (manque.length) alertes.push('Colis ' + e.rang + ' : il manque ' + manque.join(' et ') + '.');
+});
+if (!alertes.length) return true;
+return await cltConfirm({
+title: alertes.length > 1 ? 'Des montants manquent' : 'Un montant manque',
+detail: alertes.join('\n'),
+sub: ALERTE_MONTANTS_POURQUOI_EQUIPE,
+okLabel: 'Enregistrer quand même', cancelLabel: 'Compléter',
+});
+}
+
 async function lotEnregistrerUn(id){
 if (lotEnvoiEnCours) return;
 const i = lotLignes.findIndex(l => l.id === id);
@@ -444,6 +470,7 @@ if (champ) champ.focus();
 return;
 }
 
+if (!(await lotAvertirMontantsManquants([{ l, rang }]))) return;
 if (!(await lotAvertirDoublons([l], fournisseur_id))) return;
 lotEnvoiEnCours = true;
 const btn = l.el && l.el.querySelector('.lot-enregistrer-un');
@@ -491,6 +518,7 @@ if (champ) setTimeout(() => champ.focus(), 300);
 return;
 }
 
+if (!(await lotAvertirMontantsManquants(lotLignes.map((l, i) => ({ l, rang: i + 1 }))))) return;
 if (!(await lotAvertirDoublons(lotLignes, fournisseur_id))) return;
 lotEnvoiEnCours = true;
 const btn = document.getElementById('lot-enregistrer');

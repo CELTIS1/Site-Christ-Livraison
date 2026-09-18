@@ -381,7 +381,8 @@ function styleTableauCLT(base, doc) {
      Celtis : « le fichier qu'on envoie aux clientes doit être en couleur, comme lorsqu'on
      consulte dans l'application. » Le relevé sortait en gris sur blanc : « Livré » et
      « Non livré » se lisaient de la même encre. Un appelant peut maintenant demander :
-       colorier: { statut: { colonne: 2, codes: ['livre', 'non_livre', …] }, argent: [4] }
+       colorier: { statut: { colonne: 2, codes: ['livre', 'non_livre', …] }, argent: [4],
+                   mots: { 'Soldé': '#1B4374' } }
      et chaque cellule de statut prend la couleur et le fond de sa pastille à l'écran (STATUTS,
      la même table que les écrans), les colonnes d'argent « encaissé » passent en vert. Les
      fonds sont posés par cellule, donc ils ne se font pas effacer par le fond alterné. */
@@ -405,6 +406,16 @@ function styleTableauCLT(base, doc) {
       if (Array.isArray(c.argent) && c.argent.indexOf(data.column.index) !== -1) {
         const texte = String(data.cell.raw == null ? '' : data.cell.raw).trim();
         if (texte && texte !== '—' && texte !== '-') { data.cell.styles.textColor = [26, 125, 60]; data.cell.styles.fontStyle = 'bold'; }
+      }
+      /* UN MOT À LA PLACE D'UN MONTANT. (18/09/2026) « Soldé » occupe une colonne d'argent sans
+         être un montant : la règle du dessus le peindrait en vert, la couleur de l'argent qui
+         revient à la cliente, alors qu'il dit justement qu'il n'y a rien à lui reverser. Il
+         prend donc le bleu de sa propre pastille — le même qu'à l'écran. Passe APRÈS l'argent
+         pour avoir le dernier mot, et AVANT les négatifs, qui doivent garder le leur. */
+      if (c.mots) {
+        const texte = String(data.cell.raw == null ? '' : data.cell.raw).trim();
+        const couleur = Object.prototype.hasOwnProperty.call(c.mots, texte) ? rgb(c.mots[texte]) : null;
+        if (couleur) { data.cell.styles.textColor = couleur; data.cell.styles.fontStyle = 'bold'; }
       }
     };
   }
@@ -751,17 +762,33 @@ function releveNomFichier(nomCliente, dateISO) {
   return 'releve-' + (base || 'cliente') + '-' + (dateISO || '');
 }
 
+/* OÙ L'ARGENT A ÉTÉ PAYÉ, DIT À LA PERSONNE QUI LIT — 18 septembre 2026, Celtis
+   « Le bouton n'est pas clair pour la livraison payée en avance. Peut-être c'est de préciser,
+   livraison payée sur la vendeuse ou bien sur le fournisseur, c'est mieux, sur le fournisseur. »
+   « Payée d'avance » ne disait pas payée À QUI. Trois lectures possibles — payée au livreur,
+   payée à CLT, payée chez la vendeuse — et une seule est la bonne : chez le fournisseur, donc
+   CLT la lui retient. Les deux autres lectures conduisent à réclamer la même somme deux fois,
+   ou à ne jamais la réclamer.
+   Sur l'écran de la cliente, « chez le fournisseur » serait de nouveau une devinette : le
+   fournisseur, c'est elle. Elle lit donc « chez vous ». Même fait, même colonne, même retenue —
+   dit à la personne qui a l'écran sous les yeux. C'est la règle déjà suivie par retourTexte(). */
+function chezLeFournisseur(pourQui) {
+  return pourQui === 'cliente' ? 'chez vous' : 'chez le fournisseur';
+}
+
 // Libellé + couleurs de l'état d'argent d'un colis (badge).
 // L'ordre des cas compte : on annonce d'abord ce qui appelle une action.
-function paiementInfo(c) {
+// `pourQui` vaut 'cliente' sur son propre espace, rien ailleurs : voir chezLeFournisseur().
+function paiementInfo(c, pourQui) {
   if (!c) return { label: "—", color: "#8a94a3", bg: "#eef0f3" };
+  const ou = chezLeFournisseur(pourQui);
   if (c.statut !== 'livre') {
     /* LA COURSE PAYÉE SANS LIVRAISON (18/09/2026, Celtis). Le livreur s'est déplacé, le client a
        refusé le colis et a payé le déplacement. C'est de l'argent RENTRÉ sur un colis qui n'est
        pas livré : le seul cas où « pas encore encaissé » serait un mensonge. Il passe en tête,
        parce que c'est le seul de ces libellés qui parle d'un billet réellement reçu. */
     if (coursePayeeSansLivraison(c)) return { label: "Déplacement payé — " + (formatMontant(montantLivraisonColis(c)) || '0 FCFA'), color: "#1a7d3c", bg: "#e3f6ea" };
-    if (c.livraison_payee) return { label: "Livraison payée d'avance", color: "#E26313", bg: "#FBE2CE" };
+    if (c.livraison_payee) return { label: "Livraison déjà payée " + ou, color: "#E26313", bg: "#FBE2CE" };
     return { label: "Pas encore encaissé", color: "#8a94a3", bg: "#eef0f3" };
   }
   const manque = montantManquantALaLivraison(c);
@@ -769,9 +796,9 @@ function paiementInfo(c) {
   // Deux cases indépendantes (11/09/2026) : chacune nomme sa poche, et les deux ensemble disent
   // que tout a été payé chez la vendeuse.
   if (!estExpedition(c)) {
-    if (c.article_non_encaisse && c.livraison_payee) return { label: "Soldé chez la vendeuse — livraison retenue", color: "#1B4374", bg: "#E3ECF7" };
+    if (c.article_non_encaisse && c.livraison_payee) return { label: "Tout payé " + ou + " — livraison retenue", color: "#1B4374", bg: "#E3ECF7" };
     if (c.article_non_encaisse) return { label: "Article soldé", color: "#1B4374", bg: "#E3ECF7" };
-    if (c.livraison_payee) return { label: "Livraison payée d'avance — retenue", color: "#8a4b12", bg: "#fff0dd" };
+    if (c.livraison_payee) return { label: "Livraison payée " + ou + " — retenue", color: "#8a4b12", bg: "#fff0dd" };
   }
   /* UNE EXPÉDITION N'EST JAMAIS « ENCAISSÉE ». (01/09/2026) CLT n'a rien reçu : le destinataire
      a payé chez la vendeuse avant le départ. Ce badge part aussi dans le PDF et l'Excel qu'elle
@@ -785,8 +812,8 @@ function paiementInfo(c) {
   return { label: "Encaissé", color: "#1B4374", bg: "#e5edf5" };
 }
 
-function paiementBadgeHTML(c) {
-  const p = paiementInfo(c);
+function paiementBadgeHTML(c, pourQui) {
+  const p = paiementInfo(c, pourQui);
   return `<span class="badge" style="color:${p.color}; background:${p.bg};">${p.label}</span>`;
 }
 

@@ -2,6 +2,19 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair, pour l'équipe, les livreurs et les clientes. La première entrée est la plus récente. L'application l'affiche depuis le bandeau « Nouvelle version » (Quoi de neuf ?), après une mise à jour, et depuis la page de connexion. Une entrée par étiquette publiée ; trois à six points, des phrases courtes, sans jargon.",
   "entrees": [
     {
+      "version": "20260918argent",
+      "date": "18 septembre 2026",
+      "titre": "L'argent d'un colis ne se devine plus",
+      "points": [
+        "Un colis enregistré sans le prix de l'article ou sans les frais de livraison déclenche maintenant une alerte — au bureau, chez la cliente, à la création comme à la correction. Elle prévient, elle ne bloque pas : on peut enregistrer et compléter ensuite.",
+        "Un montant jamais saisi ne s'écrit plus « 0 FCFA ». Il s'écrit « non renseigné », en rouge, sur les trois écrans, et le colis garde une marque tant qu'il manque.",
+        "« Livraison payée d'avance » ne disait pas payée à qui. C'est désormais « Livraison déjà payée chez le fournisseur » — et « chez vous » sur l'écran de la cliente. Même chose pour « Article soldé ».",
+        "Sur le relevé, une retenue dit enfin de quel colis elle vient : l'adresse et le numéro du destinataire, sous le total. La phrase disait « retenus sur 0 expédition » quand la retenue venait d'un colis ordinaire ; elle compte maintenant les colis.",
+        "Un colis soldé affiche « Soldé », en bleu, à la place du tiret — à l'écran de l'équipe comme sur le PDF, l'Excel et le Word envoyés à la cliente.",
+        "Dans l'espace de la cliente, la liste « en attente de reversement » ignorait une livraison payée chez elle : son écran et son relevé pouvaient annoncer deux sommes différentes. Les deux disent maintenant la même chose, adresse à l'appui."
+      ]
+    },
+    {
       "version": "20260918point",
       "date": "18 septembre 2026",
       "titre": "Savoir quel point a déjà été envoyé, et un numéro de moins sur la carte",
