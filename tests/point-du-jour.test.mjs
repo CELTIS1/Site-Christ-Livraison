@@ -105,8 +105,12 @@ verifier('le net passe par montantNetADevoir (config.js), pas par un calcul mais
 console.log('\n8. Le geste est à portée de doigt');
 const cdash = lire('app/clients-dashboard.js');
 verifier('le point du jour lit les colis livrés non reversés, toutes dates', /eq\('statut', 'livre'\)\.is\('reverse_au_fournisseur_at', null\)/.test(pdj));
-verifier('chaque cliente est un bouton qui mène au reversement', /data-pdj-reverser=/.test(pdj) && /CLTClients\.ouvrirReversement/.test(pdj));
-verifier('l\'écran Clients expose ce point d\'entrée', /ouvrirReversement: cdOuvrirReversement/.test(cdash) && /function cdOuvrirReversement/.test(cdash));
+/* 19/09/2026 — l'appui passe désormais par ouvrirChezLaCliente, qui montre le bouton au
+   travail et dit quand ça n'aboutit pas. Ce qui compte reste le même : une puce par cliente,
+   et un chemin nommé vers le reversement. */
+verifier('chaque cliente est un bouton qui mène au reversement', /data-pdj-reverser=/.test(pdj) && /'ouvrirReversement'/.test(pdj));
+verifier('et l\'appui répond tout de suite au lieu de se taire', /pdj-cliente-ouvre/.test(pdj) && /Sa fiche n'a pas pu s'ouvrir/.test(pdj));
+verifier('l\'écran Clients expose ce point d\'entrée', /ouvrirReversement: cdOuvrirReversement/.test(cdash) && /const cdOuvrirReversement = \(id\) => cdOuvrirDepuisAilleurs\(id, 'reverser'\)/.test(cdash));
 verifier('il bascule sur l\'onglet Clients et amène le bloc sous les yeux', /showEquipeTab\('clients'\)/.test(cdash) && /cd-bloc-reverser/.test(cdash) && /scrollIntoView/.test(cdash));
 verifier('le bloc « Reverser » passe en tête de fiche quand il y a de l\'argent à rendre', /\$\{aReverserIci\.length \? blocReverser : ''\}/.test(cdash) && /\$\{aReverserIci\.length \? '' : blocReverser\}/.test(cdash));
 verifier('le titre du bloc nomme la cliente : on y arrive parfois directement', /Reverser \u00e0 \$\{esc\(l\.nom\)\}/.test(cdash));

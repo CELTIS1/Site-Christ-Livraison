@@ -36,6 +36,13 @@
   let jour = null;          // 'AAAA-MM-JJ'
   let enCours = false;
   let dernierRendu = '';
+  /* « + 8 autre(s) » N'ÉTAIT QU'UNE ÉTIQUETTE. (19/09/2026, Celtis : « lorsqu'on clique ça ne
+     se déroule pas ».) On montrait douze clientes sur vingt et on annonçait le reste dans un
+     <span> mort : rien ne se dépliait, parce que rien n'était cliquable. C'est maintenant un
+     vrai bouton, et l'état tient entre deux redessins — sinon la liste se replierait toute
+     seule à la première actualisation. */
+  let toutesLesClientes = false;
+  const PAS_DE_CLIENTES = 12;
 
   const F = (n) => (typeof formatMontant === 'function' ? formatMontant(n) : String(n)) || '0 FCFA';
   const esc = (s) => (typeof escapeHTML === 'function') ? escapeHTML(s) : String(s == null ? '' : s);
@@ -132,7 +139,7 @@
        une impression : voici la part des colis livrés du jour qui portent leur photo. */
     const avecPhoto = livres.filter((c) => !!c.photo_livraison_url).length;
     const preuves = { avec: avecPhoto, sur: livres.length, pct: livres.length ? Math.round(avecPhoto * 100 / livres.length) : null };
-    const reverse = { nb: reversements.length, montant: somme(reversements, (r) => r.montant), clientes: new Set(reversements.map((r) => r.fournisseur_id)).size };
+    const reverse = { nb: reversements.length, montant: somme(reversements, (r) => r.montant), clientes: new Set(reversements.map((r) => r.fournisseur_id)).size, lignes: reversements.slice() };
     const du = resteDu(dettes || []);
 
     const ok1 = Math.abs(articles.attendu - (articles.encaisse + articles.nonEncaisse)) < 0.5 && Math.abs(livraison.attendu - (livraison.encaisse + livraison.nonEncaisse)) < 0.5;
@@ -189,7 +196,7 @@
       lire(() => supabaseClient.from('colis').select('*').gte('retour_at', b.debut).lte('retour_at', b.fin)),
       lire(() => supabaseClient.from('colis').select('id, statut, livreur_id, montant_article, montant_livraison, commune_destination').in('statut', ['recupere', 'en_livraison'])),
       lire(() => supabaseClient.from('remises_caisse').select('id, livreur_id, montant_attendu, montant_remis, ecart, nb_colis, created_at').gte('created_at', b.debut).lte('created_at', b.fin)),
-      lire(() => supabaseClient.from('reversements_clientes').select('id, fournisseur_id, montant, nb_colis, fait_le, annule_le').gte('fait_le', b.debut).lte('fait_le', b.fin).is('annule_le', null)),
+      lire(() => supabaseClient.from('reversements_clientes').select('id, numero, fournisseur_id, montant, nb_colis, fait_le, annule_le').gte('fait_le', b.debut).lte('fait_le', b.fin).is('annule_le', null)),
       // Le reste dû ne dépend d'aucune période : une somme due en juin est toujours due.
       lire(() => supabaseClient.from('colis').select('*').eq('statut', 'livre').is('reverse_au_fournisseur_at', null)),
     ]);
@@ -303,10 +310,15 @@
       const n = Math.round((Date.parse(todayISO() + 'T12:00:00Z') - Date.parse(j + 'T12:00:00Z')) / 86400000);
       return n <= 0 ? "aujourd'hui" : n === 1 ? 'depuis hier' : `depuis ${n} jours`;
     };
-    const puces = d.lignes.slice(0, 12).map((l) => `<button type="button" class="pdj-cliente${l.ancien > 0 ? ' pdj-cliente-ancienne' : ''}" data-pdj-reverser="${esc(l.id)}" title="Ouvrir sa fiche sur le reversement">
+    const montrees = toutesLesClientes ? d.lignes : d.lignes.slice(0, PAS_DE_CLIENTES);
+    const cachees = d.lignes.length - montrees.length;
+    const puces = montrees.map((l) => `<button type="button" class="pdj-cliente${l.ancien > 0 ? ' pdj-cliente-ancienne' : ''}" data-pdj-reverser="${esc(l.id)}" title="Ouvrir sa fiche sur le reversement">
         <span class="pdj-cliente-nom">${esc(nom(l.id))}</span>
         <span class="pdj-cliente-bas"><strong>${F(l.montant)}</strong> <span class="pdj-cliente-age">${esc(l.nb)} colis · ${esc(depuis(l.plusVieux))}</span></span>
       </button>`).join('');
+    const bouton = cachees > 0
+      ? `<button type="button" class="pdj-cliente pdj-cliente-plus" data-pdj-plus="1">+ ${cachees} autre(s) — tout voir</button>`
+      : (toutesLesClientes && d.lignes.length > PAS_DE_CLIENTES ? `<button type="button" class="pdj-cliente pdj-cliente-plus" data-pdj-plus="0">Revenir aux ${PAS_DE_CLIENTES} premières</button>` : '');
     return `
   <div class="pdj-bloc pdj-reverse">
     <div class="pdj-bloc-titre">L'argent des clientes chez nous <span>à leur reverser — toutes dates</span></div>
@@ -315,11 +327,35 @@
       ${tuile('Dont depuis 3 jours ou plus', F(d.ancien), { couleur: d.ancien ? ROUGE : VERT, sous: d.ancien ? `${d.nbAnciennes} cliente(s) qui attendent` : 'rien qui traîne' })}
       ${tuile('Reversé ce jour', F(r.reverse.montant), { couleur: r.reverse.montant ? VERT : undefined, sous: r.reverse.nb ? `${r.reverse.nb} reversement(s), ${r.reverse.clientes} cliente(s)` : 'aucun reversement ce jour' })}
     </div>
-    ${puces ? `<div class="pdj-clientes">${puces}${d.lignes.length > 12 ? `<span class="pdj-cliente pdj-cliente-plus">+ ${d.lignes.length - 12} autre(s)</span>` : ''}</div>
+    ${puces ? `<div class="pdj-clientes">${puces}${bouton}</div>
     <div class="pdj-note">Appuyez sur une cliente : sa fiche s'ouvre sur le reversement, colis cochés, montant prêt. Les plus anciennes sont en tête.</div>`
       : `<div class="pdj-note">Rien à reverser : chaque colis livré a été remis à sa cliente. 👍</div>`}
+    ${blocReversesDuJour(r)}
     ${d.negatifs.length ? `<div class="pdj-note">${d.negatifs.length} cliente(s) sont en négatif (${F(d.totalNegatif)}) : ce sont elles qui doivent à CLT, il n'y a rien à leur reverser.</div>` : ''}
   </div>`;
+  }
+
+  /* CE QU'ON A REVERSÉ AUJOURD'HUI — ET COMMENT REVENIR DESSUS. (19/09/2026, Celtis :
+     « lorsqu'on a marqué que le montant d'un fournisseur a été reversé, comment faire pour
+     rectifier car on peut se tromper et vouloir revenir ou corriger ».)
+     Une erreur de reversement se remarque presque toujours le jour même, et c'est ici qu'on
+     regarde l'argent du jour. Chaque remise du jour est donc nommée, avec son numéro de reçu et
+     son montant, et l'appui mène droit aux reçus de la cliente, là où « Corriger » l'attend.
+     Le geste lui-même reste dans sa fiche : un seul endroit sait annuler, et il est déjà écrit. */
+  function blocReversesDuJour(r) {
+    const lignes = (r.reverse && r.reverse.lignes) || [];
+    if (!lignes.length) return '';
+    const nom = (id) => (typeof fournisseurLabelPlain === 'function' && fournisseurLabelPlain(id)) || 'Cliente';
+    const puces = lignes.map((x) => `<button type="button" class="pdj-cliente pdj-cliente-reverse" data-pdj-corriger="${esc(x.fournisseur_id)}" title="Voir le reçu, et le corriger si c'est une erreur">
+        <span class="pdj-cliente-nom">${esc(nom(x.fournisseur_id))}</span>
+        <span class="pdj-cliente-bas"><strong>${F(x.montant)}</strong> <span class="pdj-cliente-age">${esc(x.numero || 'reçu')} · ${esc(x.nb_colis)} colis</span></span>
+      </button>`).join('');
+    return `
+    <div class="pdj-sous-bloc">
+      <div class="pdj-bloc-titre">Reversé ce jour <span>une erreur se corrige ici</span></div>
+      <div class="pdj-clientes">${puces}</div>
+      <div class="pdj-note">Si l'une de ces sommes n'a pas été remise, appuyez dessus : ses reçus s'ouvrent, et « Corriger » remet les colis dans la liste « à reverser ».</div>
+    </div>`;
   }
 
   // ---------------------------------------------------------------- vie de l'écran
@@ -344,17 +380,45 @@
     } finally { enCours = false; }
   }
 
+  /* UN APPUI DOIT RÉPONDRE TOUT DE SUITE. (19/09/2026, Celtis : « lorsqu'on clique ça ne se
+     déroule pas ».) Ouvrir la fiche d'une cliente demande de lire les colis de deux mois : sur
+     un téléphone, cela prend plusieurs secondes pendant lesquelles l'écran ne disait rien, et
+     l'on appuyait à nouveau. Le bouton se met donc au travail sous les yeux — et s'il n'aboutit
+     pas, on le dit au lieu de laisser croire que l'appui n'a pas été vu. */
+  async function ouvrirChezLaCliente(bouton, id, geste) {
+    const C = window.CLTClients;
+    if (!C || typeof C[geste] !== 'function') {
+      if (typeof cltToast === 'function') cltToast("L'écran des clientes n'est pas chargé : rechargez la page.", { type: 'error' });
+      return;
+    }
+    if (bouton.dataset.pdjOuvre) return;
+    bouton.dataset.pdjOuvre = '1';
+    bouton.setAttribute('aria-busy', 'true');
+    bouton.classList.add('pdj-cliente-ouvre');
+    try { await C[geste](id); }
+    catch (err) {
+      console.error('Point du jour — ouverture de la fiche :', err);
+      if (typeof cltToast === 'function') cltToast("Sa fiche n'a pas pu s'ouvrir. Réessayez dans un instant.", { type: 'error' });
+    } finally {
+      delete bouton.dataset.pdjOuvre;
+      bouton.removeAttribute('aria-busy');
+      bouton.classList.remove('pdj-cliente-ouvre');
+    }
+  }
+
   function init() {
     const boite = document.getElementById('point-du-jour');
     if (!boite || boite.dataset.pdjInit) return;
     boite.dataset.pdjInit = '1';
     boite.addEventListener('click', (e) => {
+      /* DÉPLIER LA LISTE. Le bouton « + N autre(s) » ne redessine que ce bloc-ci : on garde
+         le choix en mémoire pour qu'une actualisation ne le referme pas sous les doigts. */
+      const plus = e.target.closest('[data-pdj-plus]');
+      if (plus) { e.preventDefault(); toutesLesClientes = plus.dataset.pdjPlus === '1'; dernierRendu = ''; rafraichir(true); return; }
+      const corr = e.target.closest('[data-pdj-corriger]');
+      if (corr) { e.preventDefault(); ouvrirChezLaCliente(corr, corr.dataset.pdjCorriger, 'ouvrirHistorique'); return; }
       const rev = e.target.closest('[data-pdj-reverser]');
-      if (rev) {
-        e.preventDefault();
-        if (typeof window.CLTClients === 'object' && typeof window.CLTClients.ouvrirReversement === 'function') window.CLTClients.ouvrirReversement(rev.dataset.pdjReverser);
-        return;
-      }
+      if (rev) { e.preventDefault(); ouvrirChezLaCliente(rev, rev.dataset.pdjReverser, 'ouvrirReversement'); return; }
       const b = e.target.closest('[data-pdj]'); if (!b) return;
       if (b.dataset.pdj === 'caisse') return; // lien d'ancre : le navigateur défile
       e.preventDefault();

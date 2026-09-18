@@ -294,6 +294,41 @@ export function nouveauMonde() {
       });
       return { data: out, error: null };
     }
+    /* REVERSER, ET CORRIGER QUAND ON S'EST TROMPÉ (19/09/2026, Celtis : « comment faire pour
+       rectifier car on peut se tromper »). Les deux vraies fonctions vivent en base : elles
+       tiennent les droits, la numérotation des reçus et le journal. Ce qu'on refait ici, c'est
+       leur EFFET sur les tables — c'est lui que l'écran doit savoir montrer : les colis passent
+       « reversés » puis reviennent « à reverser », et le reçu est marqué annulé sans disparaître.
+       Les droits et le journal sont éprouvés dans un vrai Postgres, pas ici. */
+    if (nom === 'reverser_a_la_cliente') {
+      const ids = (args && args.p_colis_ids) || [];
+      const pris = (TABLES.colis || []).filter(c => ids.includes(c.id) && !c.reverse_au_fournisseur_at);
+      if (!pris.length) return { data: null, error: { message: 'Aucun colis à reverser.' } };
+      const quand = new Date().toISOString();
+      pris.forEach(c => { c.reverse_au_fournisseur_at = quand; });
+      const n = (TABLES.reversements_clientes || []).length + 4;
+      const ligne = {
+        id: 'eeeeeeee-eeee-4eee-8eee-' + String(n).padStart(12, '0'),
+        numero: 'REV-2026-' + String(n).padStart(4, '0'),
+        fournisseur_id: pris[0].fournisseur_id,
+        montant: pris.reduce((s2, c) => s2 + (Number(c.montant_article) || 0), 0),
+        nb_colis: pris.length, colis_ids: pris.map(c => c.id),
+        mode: (args && args.p_mode) || 'especes', note: (args && args.p_note) || null,
+        fait_par: user || ADMIN, fait_le: quand, annule_le: null, annule_par: null, annule_motif: null,
+      };
+      TABLES.reversements_clientes.push(ligne);
+      return { data: ligne.id, error: null };
+    }
+    if (nom === 'annuler_reversement') {
+      const r = (TABLES.reversements_clientes || []).find(x => x.id === (args && args.p_id));
+      if (!r) return { data: null, error: { message: 'Reversement introuvable.' } };
+      if (r.annule_le) return { data: null, error: { message: 'Ce reversement est déjà annulé.' } };
+      (TABLES.colis || []).forEach(c => { if ((r.colis_ids || []).includes(c.id)) c.reverse_au_fournisseur_at = null; });
+      r.annule_le = new Date().toISOString();
+      r.annule_par = user || ADMIN;
+      r.annule_motif = (args && args.p_motif) || null;
+      return { data: null, error: null };
+    }
     return { data: [], error: null };
   }
 

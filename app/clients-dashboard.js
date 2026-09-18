@@ -568,7 +568,30 @@
     /* LE NUMÉRO EN TÊTE DE LIGNE. (18/09/2026, point 10.3) C'est ce qui fait la pièce comptable :
        une vendeuse le cite au téléphone, le comptable le rapproche de sa caisse. Le bouton
        imprime le MÊME document que celui que la cliente télécharge de son côté. */
-    poser(box, `<div class="cd-rev-titre">Derniers reversements</div><div class="cd-defile"><table class="cd-mini"><tbody>${data.map((r) => `<tr class="${r.annule_le ? 'cd-rev-annule' : ''}"><td class="cd-rev-numero">${esc(r.numero || '—')}</td><td>${enClair(jour(r.fait_le), true)}</td><td>${r.nb_colis} colis</td><td>${esc(CD_MODE_LIB[r.mode] || r.mode)}${r.note ? ` · ${esc(r.note)}` : ''}</td><td class="cd-cell-num"><strong>${money(r.montant)}</strong></td><td><button type="button" class="cd-lien" data-cd-recu="${esc(r.id)}" title="Imprimer le reçu ${esc(r.numero || '')}">🧾</button>${r.annule_le ? ' <span class="cd-muet">annulé</span>' : (peut ? ` <button type="button" class="cd-lien" data-cd-annuler="${esc(r.id)}" data-cd-montant="${esc(money(r.montant))}" title="Annuler ce reversement (erreur de manipulation)">↩︎</button>` : '')}</td></tr>`).join('')}</tbody></table></div>`);
+    /* CORRIGER UNE ERREUR DOIT SE LIRE. (19/09/2026, Celtis : « lorsqu'on a marqué que le
+       montant d'un fournisseur a été reversé, comment faire pour rectifier car on peut se
+       tromper et vouloir revenir ou corriger ».) Le geste existait déjà — mais sous la forme
+       d'une flèche « ↩︎ » seule, dans la sixième colonne d'un tableau qui, sur un téléphone de
+       390 px, se lisait en le faisant glisser. Autant dire qu'il n'existait pas. On quitte donc
+       le tableau : une carte par reversement, le montant et le numéro en évidence, et deux
+       boutons écrits en toutes lettres dessous. Rien de neuf côté base : c'est la même
+       fonction annuler_reversement, qui repasse les colis « à reverser », garde le reçu marqué
+       annulé et écrit une ligne au journal. */
+    poser(box, `<div class="cd-rev-titre">Derniers reversements</div>
+      <div class="cd-revs">${data.map((r) => `
+        <div class="cd-rev${r.annule_le ? ' cd-rev-annule' : ''}">
+          <div class="cd-rev-haut">
+            <span class="cd-rev-numero">${esc(r.numero || '—')}</span>
+            <strong class="cd-rev-montant">${money(r.montant)}</strong>
+          </div>
+          <div class="cd-rev-sous">${enClair(jour(r.fait_le), true)} · ${r.nb_colis} colis · ${esc(CD_MODE_LIB[r.mode] || r.mode)}${r.note ? ` · ${esc(r.note)}` : ''}</div>
+          <div class="cd-rev-gestes">
+            <button type="button" class="cd-lien" data-cd-recu="${esc(r.id)}">🧾 Reçu</button>
+            ${r.annule_le ? '<span class="cd-muet">↩︎ annulé, les colis sont repassés « à reverser »</span>'
+              : (peut ? `<button type="button" class="cd-lien cd-lien-danger" data-cd-annuler="${esc(r.id)}" data-cd-montant="${esc(money(r.montant))}">↩︎ Corriger — ce n'était pas reversé</button>` : '')}
+          </div>
+        </div>`).join('')}</div>
+      ${peut ? `<div class="cd-muet cd-rev-aide">Une erreur de manipulation se corrige ici : « Corriger » remet les colis du reçu dans la liste « à reverser », et vous pouvez refaire le reversement avec les bons colis.</div>` : ''}`);
   }
   async function cdReverser(clientId) {
     const btn = $('cd-rev-btn');
@@ -600,6 +623,8 @@
     cdColis = [];
     await cdRafraichir(true);
     cdOuvrirFiche(clientId);
+    // Le point du jour compte le même argent : il doit suivre sans qu'on recharge la page.
+    if (window.CLTPointDuJour && typeof window.CLTPointDuJour.rafraichir === 'function') window.CLTPointDuJour.rafraichir(true);
   }
   /* IMPRIMER UN REÇU. (18/09/2026, point 10.3) Le document est celui de papier-a-en-tete.js,
      le même que celui que la cliente télécharge de son côté : un seul papier pour une seule
@@ -630,10 +655,10 @@
 
   async function cdAnnulerReversement(id, montant, clientId) {
     const ok = typeof cltConfirm === 'function' ? await cltConfirm({
-      title: 'Annuler ce reversement ?',
+      title: 'Corriger ce reversement ?',
       detail: `${montant} — les colis repasseront « à reverser »`,
-      sub: 'Le reçu est conservé et marqué annulé ; une ligne est écrite au journal.',
-      okLabel: 'Oui, annuler', cancelLabel: 'Garder', danger: true,
+      sub: "À faire si la somme n'a pas été remise, ou si les colis n'étaient pas les bons. Le reçu est conservé et marqué annulé, une ligne est écrite au journal, et vous pourrez refaire le reversement correctement.",
+      okLabel: 'Oui, corriger', cancelLabel: 'Garder', danger: true,
     }) : window.confirm('Annuler ce reversement ?');
     if (!ok) return;
     const { error } = await supabaseClient.rpc('annuler_reversement', { p_id: id, p_motif: null });
@@ -641,22 +666,28 @@
       cltToast(error.message || 'Annulation impossible.', { type: 'error' });
       return;
     }
-    if (typeof cltToast === 'function') cltToast('Reversement annulé.', { type: 'info' });
+    if (typeof cltToast === 'function') cltToast(`${montant} remis dans « à reverser ». Le reçu est marqué annulé.`, { type: 'info', title: 'Reversement corrigé' });
     cdColis = [];
     await cdRafraichir(true);
-    cdOuvrirFiche(clientId);
+    if (cdOuvrirFiche(clientId)) cdAmener('historique');
+    // Le point du jour affiche le même argent : il doit le voir tout de suite.
+    if (window.CLTPointDuJour && typeof window.CLTPointDuJour.rafraichir === 'function') window.CLTPointDuJour.rafraichir(true);
   }
 
+  /* ELLE REND MAINTENANT VRAI OU FAUX. (19/09/2026, Celtis : « lorsqu'on clique ça ne se
+     déroule pas ».) Elle sortait sans rien dire quand la cliente n'était pas dans la liste
+     chargée — un appui sans effet et sans explication. Celui qui appelle doit pouvoir le dire. */
   function cdOuvrirFiche(id) {
     const box = $('cd-corps');
     const l = box && box.__cdLignes ? box.__cdLignes.find((x) => x.id === id) : null;
-    if (!l) return;
+    if (!l) return false;
     const overlay = $('cd-fiche-overlay');
-    if (!overlay) return;
+    if (!overlay) return false;
     poser($('cd-fiche-corps'), cdFicheHTML(l));
     overlay.classList.remove('hidden');
     document.body.classList.add('cd-fiche-ouverte');
     cdRevHistorique(id);
+    return true;
   }
   /* Appelée depuis « Le point du jour » (Finances) : on bascule sur l'onglet Clients, on
      s'assure que les chiffres sont chargés, on ouvre la fiche de la cliente et on amène le bloc
@@ -681,44 +712,56 @@
      `surLeReversement` décide seulement où l'on arrive DANS la fiche : au bloc « reverser »
      quand on vient du point du jour (on venait pour payer), en haut quand on vient de la
      recherche (on venait pour voir). Une seule porte, deux atterrissages. */
-  async function cdOuvrirDepuisAilleurs(id, surLeReversement) {
-    if (!id) return;
-    const depuis = cdOngletActuel();
-    if (typeof showEquipeTab === 'function') showEquipeTab('clients');
-    // On ne retient que si l'on a RÉELLEMENT changé d'écran.
-    cdOngletDeRetour = (depuis && depuis !== cdOngletActuel()) ? depuis : '';
-    const box0 = $('cd-corps');
-    if (!box0 || !box0.__cdLignes || !box0.__cdLignes.some((x) => x.id === id)) await cdRafraichir(true);
-    cdOuvrirFiche(id);
-    if (!surLeReversement) {
-      const corps0 = $('cd-fiche-corps');
-      setTimeout(() => { if (corps0) corps0.scrollTop = 0; }, 60);
-      return;
-    }
-    const bloc0 = $('cd-bloc-reverser');
-    const corps1 = $('cd-fiche-corps');
-    setTimeout(() => {
-      if (bloc0 && bloc0.previousElementSibling) bloc0.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      else if (corps1) corps1.scrollTop = 0;
-    }, 60);
+  /* UNE SEULE PORTE, ET ELLE RÉPOND TOUT DE SUITE. (19/09/2026, Celtis : « lorsqu'on clique
+     ça ne se déroule pas ».) Mesuré sur les vraies données le 18 septembre : 1 538 colis sur
+     soixante jours, 213 colis à reverser, 63 clientes. Appuyer sur une cliente du point du jour
+     déclenchait DEUX lectures complètes de tout cela — une par le changement d'onglet, une
+     autre forcée ici — pendant que l'écran passait sur « Personnes » sans un mot. Sur un
+     téléphone en 3G, cela fait plusieurs secondes de rien : on appuie, il ne se passe rien, on
+     appuie encore, et chaque appui relance tout.
+     Trois corrections, et une seule fonction au lieu de deux copies :
+       1. on ne force plus la relecture : cdCharger partage la lecture déjà en cours ;
+       2. la fiche s'ouvre AVANT la lecture si la cliente est déjà connue — le cas ordinaire ;
+       3. quand elle ne s'ouvre pas, on le DIT. Plus jamais un appui muet. */
+  let cdOuvertureEnCours = '';
+
+  async function cdOuvrirDepuisAilleurs(id, ou) {
+    if (!id) return false;
+    if (cdOuvertureEnCours === id) return false;   // deux appuis, une seule ouverture
+    cdOuvertureEnCours = id;
+    try {
+      const depuis = cdOngletActuel();
+      if (typeof showEquipeTab === 'function') showEquipeTab('clients');
+      // On ne retient que si l'on a RÉELLEMENT changé d'écran.
+      cdOngletDeRetour = (depuis && depuis !== cdOngletActuel()) ? depuis : '';
+      let ouverte = cdOuvrirFiche(id);
+      if (!ouverte) {
+        // Pas encore chargée : on lit, en partageant la lecture que l'onglet vient de lancer.
+        await cdRafraichir(false);
+        ouverte = cdOuvrirFiche(id);
+      }
+      if (!ouverte) {
+        if (typeof cltToast === 'function') cltToast("Sa fiche n'a pas pu s'ouvrir : les chiffres des clientes ne sont pas chargés. Appuyez sur « Actualiser » dans l'onglet Personnes.", { type: 'error', title: 'Fiche indisponible' });
+        return false;
+      }
+      cdAmener(ou);
+      return true;
+    } finally { cdOuvertureEnCours = ''; }
   }
 
-  async function cdOuvrirReversement(id) {
-    if (!id) return;
-    const depuis = cdOngletActuel();
-    if (typeof showEquipeTab === 'function') showEquipeTab('clients');
-    // On ne retient que si l'on a RÉELLEMENT changé d'écran.
-    cdOngletDeRetour = (depuis && depuis !== cdOngletActuel()) ? depuis : '';
-    const box = $('cd-corps');
-    if (!box || !box.__cdLignes || !box.__cdLignes.some((x) => x.id === id)) await cdRafraichir(true);
-    cdOuvrirFiche(id);
-    const bloc = $('cd-bloc-reverser');
+  /* Où l'on atterrit DANS la fiche : au bloc « Reverser » quand on venait payer, au bloc des
+     reçus quand on vient corriger une erreur, en haut quand on vient simplement voir. */
+  function cdAmener(ou) {
+    const cible = ou === 'reverser' ? 'cd-bloc-reverser' : ou === 'historique' ? 'cd-rev-historique' : '';
     const corps = $('cd-fiche-corps');
     setTimeout(() => {
+      const bloc = cible ? $(cible) : null;
       if (bloc && bloc.previousElementSibling) bloc.scrollIntoView({ behavior: 'smooth', block: 'start' });
       else if (corps) corps.scrollTop = 0;
     }, 60);
   }
+
+  const cdOuvrirReversement = (id) => cdOuvrirDepuisAilleurs(id, 'reverser');
 
   function cdFermerFiche() {
     const overlay = $('cd-fiche-overlay');
@@ -792,7 +835,8 @@
     init: cdInit,
     rafraichir: cdRafraichir,
     ouvrirReversement: cdOuvrirReversement,
-    ouvrirFiche: (id) => cdOuvrirDepuisAilleurs(id, false),
+    ouvrirFiche: (id) => cdOuvrirDepuisAilleurs(id, ''),
+    ouvrirHistorique: (id) => cdOuvrirDepuisAilleurs(id, 'historique'),
     // Purs, pour les essais :
     decouper: cdDecouper, statsListe: cdStatsListe, parJour: cdParJour, lignes: cdLignes, aReverser: cdAReverser, barresHTML: cdBarresHTML, sparklineHTML: cdSparklineHTML,
     _etat: (o) => { if (o) { if (o.colis) cdColis = o.colis; if (o.profils) cdProfils = o.profils; if (o.dettes) cdDettes = o.dettes; if (o.periode) cdPeriode = o.periode; } return { colis: cdColis, profils: cdProfils, dettes: cdDettes, periode: cdPeriode }; },

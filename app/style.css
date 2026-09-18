@@ -2600,7 +2600,17 @@ html[data-theme="dark"] .pdj-recette-plein{ background:rgba(20,102,58,.22); bord
 .pdj-cliente-ancienne{ border-left-color:#c0392b; }
 .pdj-cliente-ancienne strong{ color:#c0392b; }
 .pdj-cliente-ancienne .pdj-cliente-age{ color:#c0392b; }
-.pdj-cliente-plus{ display:inline-flex; align-items:center; min-height:44px; padding:8px 12px; font-size:12.5px; color:var(--muted); cursor:default; }
+/* « + N autre(s) » est un vrai bouton depuis le 19/09/2026 : il déplie la liste. */
+.pdj-cliente-plus{ display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 12px; font-size:12.5px; font-weight:700; color:var(--navy); cursor:pointer; border-style:dashed; border-left-style:dashed; text-align:center; }
+.pdj-cliente-plus:hover{ border-color:#1B4374; border-left-color:#1B4374; }
+/* Le bouton travaille : on le voit, au lieu de croire que l'appui n'a pas été vu. */
+.pdj-cliente-ouvre{ opacity:.6; border-left-color:#1B4374; }
+.pdj-cliente-ouvre .pdj-cliente-nom::after{ content:' — ouverture…'; font-weight:400; color:var(--muted); }
+/* Ce qui a été reversé aujourd'hui, et qui se corrige d'un appui. */
+.pdj-sous-bloc{ margin-top:14px; padding-top:12px; border-top:1px dashed var(--border); }
+.pdj-cliente-reverse{ border-left-color:#1a7d3c; }
+.pdj-cliente-reverse strong{ color:#1a7d3c; }
+html[data-theme="dark"] .pdj-cliente-plus{ color:#C6D5E6; }
 html[data-theme="dark"] .pdj-cliente{ background:#1A2433; border-color:#2B3A4E; }
 /* « Quoi de neuf ? » (16/09/2026) */
 .clt-nouveautes { position: fixed; inset: 0; z-index: 9600; background: rgba(15, 23, 42, .55); display: flex; align-items: center; justify-content: center; padding: 16px; }

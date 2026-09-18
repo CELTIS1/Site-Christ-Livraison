@@ -770,10 +770,23 @@ verifier(
    retire à la gare »), deux questions de plus, et un tarif qui dit l'avance possible et le reçu
    transmis une fois réglé — ce qui est exactement ce que l'application compte de son côté sous le
    nom d'« avance de gare ». Les deux copies du texte (content.json et le secours de services.html)
-   restent tenues d'accord par le banc. Aucune migration. Étiquette 20260918gare. */
+   restent tenues d'accord par le banc. Aucune migration. Étiquette 20260918gare.
+   v173, le 19/09/2026 — Deux phrases de Celtis, depuis son téléphone, sur l'onglet Finances :
+   « lorsqu'on clique ça ne se déroule pas » et « lorsqu'on a marqué que le montant d'un
+   fournisseur a été reversé, comment faire pour rectifier car on peut se tromper ». Le même
+   écran, deux fois muet. « + 8 autre(s) » n'était pas un bouton mais une étiquette morte ;
+   ouvrir la fiche d'une cliente lisait DEUX fois la base (1 538 colis, mesuré le 18/09) sans
+   rien afficher entre-temps, et sortait sans un mot quand elle n'y arrivait pas ; et corriger
+   un reversement, qui existait pourtant, se cachait derrière une flèche « ↩︎ » seule, dans la
+   sixième colonne d'un tableau qui sortait de l'écran à 390 px. Une seule porte d'ouverture, la
+   lecture partagée au lieu d'être doublée, le bouton qui se montre au travail, un message quand
+   ça échoue, la liste qui se déplie pour de bon, les reçus en cartes lisibles avec « Corriger »
+   écrit en toutes lettres, et les remises du jour rappelées dans le point du jour, d'où l'on
+   revient sur l'erreur. Aucune migration : annuler_reversement existait déjà en base et fait
+   exactement ce qu'il faut. Étiquette 20260919appui. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v172'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v173'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
