@@ -793,10 +793,19 @@ verifier(
    bouton reste visible tant que ce n'est pas installé. Côté livreur, les avances de gare étaient
    bien déduites mais muettes — comptées sans montant, et seulement sur les colis non livrés. Le
    point du soir écrit désormais l'addition : encaissé, moins avancé sur N expéditions, égale à
-   remettre. Aucune migration. Étiquette 20260919poche. */
+   remettre. Aucune migration. Étiquette 20260919poche.
+   v175, le 20/09/2026 — Celtis : « sur les colis retour, j'ai beaucoup de retours négatifs. Il
+   faut un véritable suivi pour qu'on sache exactement où c'est rentré. » Un colis revenu n'avait
+   que deux états, chez le livreur ou rendu — sur la seule parole du livreur, sans dépôt au bureau,
+   sans passage à un autre livreur, sans historique, et le bureau ne pouvait pas clore. Le colis a
+   maintenant un détenteur (livreur → bureau → cliente, ou litige), chaque passage de main est daté
+   et signé en base par trigger (retours_mouvements), la cliente confirme ou conteste depuis son
+   espace, le bureau a un écran « Retours » avec le détenteur nommé, le niveau, les jours et les
+   gestes, et un colis non livré porte « Je le rapporte à la cliente » / « Nouvel essai » au lieu
+   de traîner. Migration 2026-09-20-les-retours-de-main-en-main.sql. Étiquette 20260920retours. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v174'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v175'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

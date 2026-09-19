@@ -39,6 +39,10 @@
     // Et la salutation avec elle (17/09/2026) : on ne dit bonjour qu'une fois, sur l'écran
     // d'accueil. Les autres onglets vont droit au travail.
     document.getElementById('eq-salutation')?.classList.toggle('hidden', key !== 'colis');
+    // Les retours (20/09/2026) : sur l'accueil aussi, relus à chaque retour sur l'onglet — un
+    // geste fait depuis un autre poste ou par un livreur doit apparaître sans recharger.
+    document.getElementById('section-retours')?.classList.toggle('hidden', key !== 'colis');
+    if (key === 'colis' && typeof chargerRetours === 'function') chargerRetours();
     document.querySelectorAll('#clt-toptabs .clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.eqtab === key));
     document.querySelectorAll('#clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.nav === key));
     majBoutonPlus(key);

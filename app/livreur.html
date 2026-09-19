@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260919poche">
+<link rel="stylesheet" href="style.css?v=20260920retours">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260919poche"></script>
-<script src="splash.js?v=20260919poche"></script>
+<script src="theme.js?v=20260920retours"></script>
+<script src="splash.js?v=20260920retours"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -312,7 +312,7 @@
      d'options », après le choix de l'état. (10/09/2026) */
   .colis-item.mes-colis-item .status-col .colis-etapes{ flex:1 1 100%; align-self:stretch; }
   .colis-etapes .btn.btn-etape-principale{ flex:1 1 100%; }
-  .colis-etapes .btn.btn-etape-echec{ flex:1 1 100%; }
+  .colis-etapes .btn.btn-etape-echec, .colis-etapes .btn.btn-etape-secondaire{ flex:1 1 100%; }
   .colis-etat-choix{ display:flex; flex-direction:column; gap:4px; width:100%; font-size:13px; font-weight:700; color:var(--muted); }
   .colis-etat-choix .status-select{ width:100%; min-height:44px; font-weight:600; }
   .colis-plus-corps .btn.btn-save{ align-self:stretch; width:100%; margin-top:6px; }
@@ -914,22 +914,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260919poche"></script>
-<script src="lib/bibliotheques.js?v=20260919poche"></script>
-<script src="lib/retours.js?v=20260919poche"></script>
-<script src="lib/reclamations.js?v=20260919poche"></script>
-<script src="lib/communes-et-tarifs.js?v=20260919poche"></script>
-<script src="lib/argent.js?v=20260919poche"></script>
-<script src="lib/releve-cliente.js?v=20260919poche"></script>
-<script src="lib/papier-a-en-tete.js?v=20260919poche"></script>
-<script src="lib/briques-argent.js?v=20260919poche"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260919poche"></script>
-<script src="lib/annonce-de-remise.js?v=20260919poche"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260919poche"></script>
-<script src="lib/primes.js?v=20260919poche"></script>
-<script src="lib/doublons.js?v=20260919poche"></script>
-<script src="config.js?v=20260919poche"></script>
-<script src="biometric-lock.js?v=20260919poche"></script>
+<script src="clt-common.js?v=20260920retours"></script>
+<script src="lib/bibliotheques.js?v=20260920retours"></script>
+<script src="lib/retours.js?v=20260920retours"></script>
+<script src="lib/reclamations.js?v=20260920retours"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920retours"></script>
+<script src="lib/argent.js?v=20260920retours"></script>
+<script src="lib/releve-cliente.js?v=20260920retours"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920retours"></script>
+<script src="lib/briques-argent.js?v=20260920retours"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920retours"></script>
+<script src="lib/annonce-de-remise.js?v=20260920retours"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920retours"></script>
+<script src="lib/primes.js?v=20260920retours"></script>
+<script src="lib/doublons.js?v=20260920retours"></script>
+<script src="config.js?v=20260920retours"></script>
+<script src="biometric-lock.js?v=20260920retours"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1345,7 +1345,9 @@
     if (entry.photoBlob) {
       const uploaded = await uploadPhoto(entry.photoBlob, entry.userId);
       if (uploaded) {
-        photo_livraison_url = uploaded;
+        // Preuve de remise d'un retour (photoVers) ou photo de livraison : voir appliquerStatutColis.
+        if (entry.photoVers) { entry.extra = Object.assign({}, entry.extra, { [entry.photoVers]: uploaded }); }
+        else photo_livraison_url = uploaded;
       } else if (!navigator.onLine) {
         return 'reseau';
       } else if ((entry.tentatives || 0) + 1 < QUEUE_MAX_TENTATIVES) {
@@ -1635,6 +1637,10 @@
     // jamais effacer l'observation déjà écrite pour ce colis.
     const observation = ('observation' in o) ? o.observation : (existing ? (existing.observation || null) : null);
     const pickedPhoto = o.photo || null;
+    /* photoVers (20/09/2026) : la photo de la carte peut servir de preuve de REMISE d'un retour
+       (retour_rendu_photo_url) au lieu de photo de livraison. Sans photoVers, rien ne change.
+       Déclaré ici, avant la file hors réseau qui l'emporte avec elle. */
+    const photoVers = o.photoVers || null;
     let photo_livraison_url = existing ? existing.photo_livraison_url : null;
     const echec = { ok: false, statutPrecedent, tentativesPrecedentes, extraApplique: {} };
 
@@ -1665,7 +1671,13 @@
        pour les montants : si le livreur renonce, rien n'est enregistré. On ne redemande pas
        quand l'appelant impose déjà le motif (annulation, lot) ni quand le colis était déjà
        « non livré » (on ne fait que corriger l'observation ou la photo). */
-    if (statut === 'non_livre' && !('motif_non_livraison' in extra) && !(existing && existing.statut === 'non_livre')) {
+    /* Et la même question quand il passe DIRECTEMENT en « retour » sans être passé par « non livré »
+       (20/09/2026) : un retour sans motif, c'est un colis dont personne ne saura pourquoi il est
+       revenu. On ne redemande pas si le motif est déjà là (venu de l'échec) ni sur un colis déjà
+       en retour (on ne fait que le déplacer). */
+    const demanderMotif = (statut === 'non_livre' && !(existing && existing.statut === 'non_livre'))
+      || (statut === 'retour' && !(existing && existing.statut === 'retour') && !(existing && existing.motif_non_livraison));
+    if (demanderMotif && !('motif_non_livraison' in extra)) {
       const reponse = await demanderMotifEchec(existing);
       if (!reponse) return echec;
       extra.motif_non_livraison = reponse.motif;
@@ -1682,7 +1694,7 @@
       occuper('Enregistrement...');
       let miseEnFile = false;
       try {
-        await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: pickedPhoto || null, extra, userId: currentUser.id, timestamp: Date.now() });
+        await queueAdd({ colisId: id, statut, observation, photo_livraison_url, photoBlob: pickedPhoto || null, photoVers, extra, userId: currentUser.id, timestamp: Date.now() });
         if (existing) Object.assign(existing, horodatageLocalDuStatut(existing, statut), { statut, observation }, extra);
         miseEnFile = true;
       } catch (e) {
@@ -1702,13 +1714,13 @@
         if (btn) btn.textContent = `Envoi photo... ${pct}%`;
       });
       if (uploaded) {
-        photo_livraison_url = uploaded;
+        if (photoVers) extra[photoVers] = uploaded; else photo_livraison_url = uploaded;
       } else {
         // Échec probable de connexion pendant l'envoi de la photo : on met tout en file d'attente.
         occuper('Enregistrement...');
         let miseEnFile = false;
         try {
-          await queueAdd({ colisId: id, statut, observation, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: pickedPhoto, extra, userId: currentUser.id, timestamp: Date.now() });
+          await queueAdd({ colisId: id, statut, observation, photo_livraison_url: existing ? existing.photo_livraison_url : null, photoBlob: pickedPhoto, photoVers, extra, userId: currentUser.id, timestamp: Date.now() });
           if (existing) Object.assign(existing, horodatageLocalDuStatut(existing, statut), { statut, observation }, extra);
           miseEnFile = true;
         } catch (e) {
@@ -2411,7 +2423,10 @@
        livré pour la remise, et l'échec ou le retour pour montrer la porte close, le refus ou le
        carton abîmé — c'était possible avant sous « Plus d'options », ça doit le rester. */
     if (!c || !STATUTS_AVEC_PREUVE.includes(c.statut)) return '';
-    const echec = c.statut === 'non_livre' || c.statut === 'retour';
+    /* 20/09/2026 : sur un colis revenu encore entre ses mains, la photo qui compte est celle de
+       la REMISE à la cliente — c'est elle que « Rendu à la cliente » enregistre comme preuve. */
+    const aRendre = c.statut === 'retour' && typeof retourDetenuPar === 'function' && retourDetenuPar(c, currentUser && currentUser.id);
+    const echec = !aRendre && (c.statut === 'non_livre' || c.statut === 'retour');
     const prise = !!c.photo_livraison_url;
     return `<div class="preuve${prise ? ' preuve--prise' : ''}">
       ${prise ? `<img src="${escapeHTML(c.photo_livraison_url)}" class="preuve-vignette" alt="Photo de la remise">` : ''}
@@ -2419,7 +2434,9 @@
         <strong>${prise ? (echec ? '✅ Photo enregistrée' : '✅ Preuve de livraison') : (echec ? '📷 Photo de la situation' : '📷 Photo de la remise')}</strong>
         <span>${prise
           ? 'Enregistrée. Une nouvelle photo remplacera celle-ci.'
-          : (echec
+          : (aRendre
+            ? 'Prenez-la au moment où vous rendez le colis à la cliente : elle est enregistrée avec « Rendu à la cliente » et vous protège si elle conteste.'
+            : echec
             ? 'La porte close, le refus, le carton abîmé : une photo vaut mieux que la discussion du lendemain.'
             : "Recommandée dès qu'il y a de l'argent : c'est elle qui tranche si la remise est contestée.")}</span>
       </div>
@@ -2478,8 +2495,15 @@
                l'étape suivante (prochaineEtape, config.js), le second l'échec ; un appui enregistre,
                par le même chemin que « Enregistrer ». La liste complète des états est sous
                « Plus d'options », pour les cas rares (retour, revenir en arrière). -->
-          ${(() => { const p = prochaineEtape(c), e = etapeEchec(c); if (!p && !e) return ''; return `<div class="colis-etapes">
-            ${p ? `<button type="button" class="btn btn-etape btn-etape-principale${p.statut === 'livre' ? ' btn-etape-livre' : ''}${p.extra && p.extra.retour_rendu_at ? ' btn-etape-rendu' : ''}" data-etape="${escapeHTML(p.statut)}"${p.extra && p.extra.retour_rendu_at ? ' data-rendu="1"' : ''}>${escapeHTML(p.libelle)}</button>` : ''}
+          ${(() => {
+            /* LES GESTES DU RETOUR (20/09/2026, point 19.1) : sur un colis revenu, les deux boutons
+               viennent de retourGestes — « Rendu à la cliente » (avec photo) et « Déposé au bureau »
+               — et n'apparaissent que si c'est CE livreur qui le détient. Sur un non livré :
+               « Je le rapporte à la cliente » et « Nouvel essai ». */
+            const g = retourGestes(c, 'livreur', currentUser && currentUser.id);
+            if (g.length) return `<div class="colis-etapes">${g.map((x, i) => `<button type="button" class="btn btn-etape ${i === 0 ? 'btn-etape-principale btn-etape-rendu' : 'btn-outline btn-etape-secondaire'}" data-etape="retour" data-geste="${escapeHTML(x.cle)}">${escapeHTML(x.libelle)}</button>`).join('')}</div>`;
+            const p = prochaineEtape(c), e = etapeSecondaire(c); if (!p && !e) return ''; return `<div class="colis-etapes">
+            ${p ? `<button type="button" class="btn btn-etape btn-etape-principale${p.statut === 'livre' ? ' btn-etape-livre' : ''}${p.statut === 'retour' ? ' btn-etape-rendu' : ''}" data-etape="${escapeHTML(p.statut)}">${escapeHTML(p.libelle)}</button>` : ''}
             ${e ? `<button type="button" class="btn btn-outline btn-etape btn-etape-echec" data-etape="${escapeHTML(e.statut)}">${escapeHTML(e.libelle)}</button>` : ''}
           </div>`; })()}
           <!-- LA PREUVE DE LIVRAISON À PORTÉE DE POUCE (17/09/2026, point 7.4)
@@ -2650,7 +2674,7 @@
     // Les boutons d'étape (10/09/2026) : l'état visé est sur le bouton, le reste de la carte
     // (observation, photo, montants) part avec, exactement comme avec « Enregistrer ».
     list.querySelectorAll('.btn-etape').forEach(btn => {
-      btn.addEventListener('click', () => enregistrerDepuisLaCarte(btn.closest('.colis-item'), btn.dataset.etape, btn, { rendu: btn.dataset.rendu === '1' }));
+      btn.addEventListener('click', () => enregistrerDepuisLaCarte(btn.closest('.colis-item'), btn.dataset.etape, btn, { geste: btn.dataset.geste || null }));
     });
     list.querySelectorAll('.btn-save').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2682,20 +2706,26 @@
         const additionnel = await lireFraisAdditionnelsDeLaCarte(item, colis);
         if (!additionnel.ok) return;
         const aEcrire = Object.assign({}, argent.patch || {}, gare.patch || {}, additionnel.patch || {});
-        /* « Rendu à la cliente » (point 7.3) : le colis reste au statut « retour » — c'est bien
-           ce qui lui est arrivé — mais il cesse d'être détenu par le livreur. On écrit la date et
-           qui l'a rendu. horodatageLocalDuStatut ne touche pas retour_at puisque le statut ne
-           change pas : l'échéance ne se décale donc jamais toute seule. */
-        if (opts && opts.rendu && colis && colis.statut === 'retour' && !colis.retour_rendu_at) {
-          const ok = typeof cltConfirm === 'function' ? await cltConfirm({
-            title: 'Colis rendu à la cliente ?',
+        /* LES GESTES DU RETOUR (point 19.1, 20/09/2026). Le colis reste au statut « retour » —
+           c'est bien ce qui lui est arrivé — mais il change de mains : retour_detenteur passe à
+           « cliente » ou « bureau ». Les dates, l'auteur et la ligne de journal sont posés par la
+           base (triggers) : l'écran n'écrit que le fait. horodatageLocalDuStatut ne touche pas
+           retour_at puisque le statut ne change pas : l'échéance ne se décale jamais toute seule.
+           La photo prise sur la carte devient la PREUVE DE LA REMISE (retour_rendu_photo_url),
+           pas une nouvelle photo de livraison. */
+        let geste = null;
+        let photoVers = null;
+        if (opts && opts.geste && colis && colis.statut === 'retour') {
+          geste = retourGestes(colis, 'livreur', currentUser.id).find(x => x.cle === opts.geste) || null;
+          if (!geste) { cltToast('Ce colis n\'est plus entre vos mains : rien à enregistrer.', { type: 'info' }); return; }
+          const ok = typeof cltConfirm === 'function' && geste.confirm ? await cltConfirm({
+            title: geste.confirm.title,
             detail: (colis.numero || 'Ce colis') + ' — ' + (typeof fournisseurLabel === 'function' ? fournisseurLabel(colis.fournisseur_id) : 'sa cliente'),
-            sub: "Confirmez seulement si la marchandise est effectivement entre ses mains. La date est enregistrée et le bureau la voit.",
-            okLabel: 'Oui, rendu', cancelLabel: 'Pas encore',
+            sub: geste.confirm.sub, okLabel: geste.confirm.okLabel, cancelLabel: geste.confirm.cancelLabel,
           }) : true;
           if (!ok) return;
-          aEcrire.retour_rendu_at = new Date().toISOString();
-          aEcrire.retour_rendu_par = currentUser.id;
+          Object.assign(aEcrire, geste.patch);
+          if (geste.photo) photoVers = 'retour_rendu_photo_url';
         }
 
         const res = await appliquerStatutColis({
@@ -2707,12 +2737,15 @@
           // `extraForce` impose ces valeurs telles quelles : ce sont des montants, ils ne se
           // devinent pas et ne doivent pas être recalculés en chemin.
           extraForce: Object.keys(aEcrire).length ? aEcrire : undefined,
+          photoVers,
         });
         // On n'annonce (et ne propose d'annuler) que si le statut a réellement bougé :
         // appuyer sur « Enregistrer » pour ne corriger qu'une observation ou ajouter une
         // photo ne doit pas faire apparaître un « Annuler » qui n'aurait rien à annuler.
-        if (res.ok && opts && opts.rendu && res.extraApplique && res.extraApplique.retour_rendu_at && typeof cltToast === 'function') {
-          cltToast('Colis rendu : il ne compte plus parmi ce que vous détenez.', { type: 'success', title: 'Retour clos' });
+        if (res.ok && geste && res.extraApplique && res.extraApplique.retour_detenteur && typeof cltToast === 'function') {
+          cltToast(geste.cle === 'rendu_cliente'
+            ? 'Colis rendu : il ne compte plus parmi ce que vous détenez. La cliente confirmera de son côté.'
+            : 'Colis déposé au bureau : il ne compte plus parmi ce que vous détenez.', { type: 'success', title: geste.cle === 'rendu_cliente' ? 'Rendu' : 'Déposé' });
         }
         if (res.ok && colis && res.statutPrecedent !== statut) annoncerChangementStatut(colis, statut, res);
         /* LA CARTE SE REPLIE UNE FOIS ENREGISTRÉE. (05/09/2026)

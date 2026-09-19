@@ -180,7 +180,8 @@ console.log('6. Les écrans sont branchés sur la même règle');
   const gestionJs = fs.readFileSync(path.join(APP, 'gestion.js'), 'utf8');
   // Livreur : « Pourquoi ? » avant d'écrire, une fois par lot, motif modifiable, et « Mon mois » par la base.
   ok(/function demanderMotifEchec\(colis, nombre\)/.test(livreur), 'livreur : la fenêtre « Pourquoi ? » existe');
-  ok(/statut === 'non_livre' && !\('motif_non_livraison' in extra\) && !\(existing && existing\.statut === 'non_livre'\)/.test(livreur), 'livreur : demandé avant d\'écrire, jamais redemandé sur un colis déjà non livré');
+  // 20/09/2026 : la même question se pose au passage DIRECT en « retour » (sans motif déjà là).
+  ok(/const demanderMotif = \(statut === 'non_livre' && !\(existing && existing\.statut === 'non_livre'\)\)\s*\|\| \(statut === 'retour' && !\(existing && existing\.statut === 'retour'\) && !\(existing && existing\.motif_non_livraison\)\);\s*if \(demanderMotif && !\('motif_non_livraison' in extra\)\)/.test(livreur), 'livreur : demandé avant d\'écrire (non livré, ou retour direct), jamais redemandé sur un colis déjà non livré ou déjà motivé');
   ok(/motifLot = await demanderMotifEchec\(null, tri\.eligibles\.length\)/.test(livreur), 'livreur : un seul motif pour tout un lot');
   ok(/data-motif-de="\$\{c\.id\}"/.test(livreur), 'livreur : le motif se corrige depuis la carte');
   ok(/supabaseClient\.rpc\('primes_en_cours'\)/.test(livreur) && /id="mon-mois"/.test(livreur), 'livreur : « Mon mois » lit primes_en_cours (la base), pas un calcul local');

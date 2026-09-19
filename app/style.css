@@ -3265,3 +3265,76 @@ html[data-theme="dark"] .preuve--prise{ background:#123322; }
 .ligne-fleche{ float:right; color:#1B4374; font-weight:700; opacity:.55; }
 .ligne-cliquable:hover .ligne-fleche{ opacity:1; }
 html[data-theme="dark"] .ligne-cliquable:hover{ background:rgba(157,184,218,.10); }
+
+/* LES RETOURS — OÙ EST CHAQUE COLIS (20/09/2026, point 19.1). L'écran du bureau (equipe/12-les-
+   retours.js), l'histoire d'un colis (retourHistoriqueHTML, lib/retours.js) partagée avec la
+   cliente, et les puces de niveau. Couleurs de la charte : navy pour le bureau, orange pour ce
+   qui attend un geste, rouge pour le retard et le litige. */
+.rt-carte .ess-entete{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.rt-resume{ display:flex; gap:6px; flex-wrap:wrap; }
+.rt-puce{ display:inline-block; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:700; background:#EEF1F5; color:#3D4B5C; }
+.rt-puce--litige{ background:#fdeceb; color:#8f2018; }
+.rt-puce--retard{ background:#fdeceb; color:#8f2018; }
+.rt-puce--livreur{ background:#FBE7D8; color:#8a3a08; }
+.rt-puce--bureau{ background:#E3ECF7; color:#1B4374; }
+.rt-puce--cliente{ background:#F2E8FA; color:#5b2a72; }
+.rt-puce--non_livre{ background:#FFF3CD; color:#7a5a00; }
+.rt-puce--ok{ background:#E6F4EA; color:#1e6b3a; }
+.rt-aide{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:6px 0 10px; font-size:13px; color:var(--muted); line-height:1.45; }
+.rt-aide .btn{ flex:0 0 auto; }
+.rt-liste{ display:flex; flex-direction:column; gap:8px; }
+.rt-vide{ color:var(--muted); font-size:13px; padding:8px 0; }
+.rt-carte--vide .rt-liste{ display:none; }
+.rt-ligne{ border:1px solid var(--border); border-left:4px solid #E26313; border-radius:12px; padding:10px 12px; background:var(--white); }
+.rt-ligne--bureau{ border-left-color:#1B4374; }
+.rt-ligne--cliente{ border-left-color:#8e44ad; }
+.rt-ligne--non_livre{ border-left-color:#d4a106; }
+.rt-ligne--litige, .rt-ligne--retard{ border-left-color:#c0392b; background:#FFF8F7; }
+.rt-tete{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start; }
+.rt-qui{ display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; min-width:0; }
+.rt-numero{ font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; }
+.rt-cliente{ font-weight:600; }
+.rt-desc{ color:var(--muted); font-size:12.5px; }
+.rt-niveau{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.rt-badge{ display:inline-block; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:700; background:#FBE7D8; color:#8a3a08; }
+.rt-badge--bureau{ background:#E3ECF7; color:#1B4374; }
+.rt-badge--cliente{ background:#F2E8FA; color:#5b2a72; }
+.rt-badge--confirme{ background:#E6F4EA; color:#1e6b3a; }
+.rt-badge--non_livre{ background:#FFF3CD; color:#7a5a00; }
+.rt-badge--litige{ background:#fdeceb; color:#8f2018; }
+.rt-depuis{ font-size:12.5px; color:var(--muted); white-space:nowrap; }
+.rt-depuis--retard{ color:#c0392b; font-weight:700; }
+.rt-ou{ margin-top:6px; font-size:13.5px; font-weight:600; }
+.rt-motif{ color:var(--muted); font-weight:500; }
+.rt-conteste{ margin-top:4px; font-weight:500; font-style:italic; color:#8f2018; }
+.rt-gestes{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+.rt-select{ padding:7px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-xs); font:inherit; font-size:13px; background:var(--white); color:inherit; max-width:100%; }
+.rt-photo{ font-size:13px; font-weight:600; color:var(--navy); }
+.rt-histoire{ margin-top:8px; border-top:1px dashed var(--border-strong); padding-top:8px; }
+/* L'histoire d'un retour : une ligne par passage de main, partout la même (bureau, cliente). */
+.retour-histoire{ list-style:none; margin:0; padding:0 0 0 14px; border-left:2px solid var(--border-strong); display:flex; flex-direction:column; gap:6px; }
+.retour-histoire__ligne{ position:relative; font-size:13px; line-height:1.4; }
+.retour-histoire__ligne::before{ content:''; position:absolute; left:-19px; top:6px; width:8px; height:8px; border-radius:50%; background:#E26313; }
+.retour-histoire__ligne--rendu_cliente::before, .retour-histoire__ligne--confirme_cliente::before{ background:#1e6b3a; }
+.retour-histoire__ligne--conteste_cliente::before{ background:#c0392b; }
+.retour-histoire__ligne--depose_bureau::before, .retour-histoire__ligne--confie_livreur::before{ background:#1B4374; }
+.retour-histoire__quand{ color:var(--muted); font-variant-numeric:tabular-nums; margin-right:6px; }
+.retour-histoire__quoi{ font-weight:600; }
+.retour-histoire__note{ color:var(--muted); font-style:italic; }
+.retour-histoire__photo{ margin-left:6px; font-weight:600; color:var(--navy); }
+.retour-histoire--vide{ color:var(--muted); font-size:13px; }
+/* Les deux réponses de la cliente (fournisseur.html) : une seule ligne, deux boutons pleins pouce. */
+.retour-reponse{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.retour-reponse .btn{ flex:1 1 140px; }
+html[data-theme="dark"] .rt-ligne{ background:#1a2230; }
+html[data-theme="dark"] .rt-ligne--litige, html[data-theme="dark"] .rt-ligne--retard{ background:#2a1b1a; }
+html[data-theme="dark"] .rt-puce, html[data-theme="dark"] .rt-badge{ filter:brightness(.9); }
+@media (max-width:640px){
+  .rt-tete{ flex-direction:column; gap:6px; }
+  .rt-depuis{ white-space:normal; }
+}
+.retour-parcours-btn{ display:inline-block; margin-top:8px; background:none; border:0; padding:0; font:inherit; font-size:12.5px; font-weight:700; color:var(--navy); cursor:pointer; }
+.retour-ligne .rt-histoire{ font-weight:500; }
+.retour-ligne--bouton{ display:block; width:100%; text-align:left; cursor:pointer; margin:0 0 10px; font:inherit; font-size:13px; font-weight:600; }
+/* Le second geste d'un retour (« Déposé au bureau ») n'est pas un échec : contour navy, pas rouge. */
+.colis-etapes .btn.btn-etape-secondaire{color:var(--navy); border-color:var(--border-strong);}

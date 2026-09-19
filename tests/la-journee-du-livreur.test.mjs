@@ -53,7 +53,7 @@ vm.runInContext(blocDe(config, 'jourAbidjan') + '\n' + blocDe(config, 'jourEvene
   + blocDe(config, 'dayKey') + '\n' + blocDe(config, 'jourDuColis') + '\n' + blocDe(config, 'colisReporte') + '\n'
   // 17/09/2026 (point 7.3) : un colis revenu et pas encore rendu reste chez le livreur. La
   // règle vient de lib/retours.js, chargé avant ce bloc dans les vraies pages.
-  + blocDe(config, 'retourEnAttente') + '\n' + blocDe(config, 'encoreChezLeLivreur') + '\n'
+  + blocDe(config, 'retourDetenteur') + '\n' + blocDe(config, 'retourEnAttente') + '\n' + blocDe(config, 'encoreChezLeLivreur') + '\n'
   + blocDe(config, 'colisDeLaJourneeDeTravail') + '\n' + blocDe(config, 'colisDuJour') + '\n' + blocDe(config, 'colisRestesEnRoute'), ctx);
 const journee = vm.runInContext('colisDeLaJourneeDeTravail', ctx);
 const duJour = vm.runInContext('colisDuJour', ctx);
@@ -88,7 +88,10 @@ titre('La journée de travail : ce qui est en route, plus ce qui a bougé ce jou
   verifier('un retour de samedi PAS ENCORE RENDU est toujours dans la journée', ids.includes('f'));
   verifier('le même retour, une fois rendu, n\'y est plus', !ids.includes('h'));
   verifier('au total : abdefg', ids === 'abdefg', ids);
-  verifier('le mercredi, restent ceux qui sont chez lui (a, e, f, g)', journee(colis, '2026-09-09').map(c => c.id).sort().join('') === 'aefg', journee(colis, '2026-09-09').map(c => c.id).sort().join(''));
+  /* 20/09/2026, point 19.1 : un colis NON LIVRÉ reste lui aussi dans la journée tant que le
+     livreur n'a pas décidé (nouvel essai, ou retour) — la marchandise est dans sa sacoche.
+     Avant, il disparaissait le lendemain, et personne ne savait plus où il était. */
+  verifier('le mercredi, restent ceux qui sont chez lui (a, d, e, f, g) — le non livré aussi', journee(colis, '2026-09-09').map(c => c.id).sort().join('') === 'adefg', journee(colis, '2026-09-09').map(c => c.id).sort().join(''));
   verifier('une liste vide rend une liste vide', journee([], MARDI).length === 0 && journee(null, MARDI).length === 0);
 }
 

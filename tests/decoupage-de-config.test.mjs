@@ -91,14 +91,14 @@ const equipeHtml = lire('equipe.html');
 verifier('equipe.html ne contient plus de grand script inline (moins de 60 lignes de script)', (() => { const blocs = [...equipeHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)]; return blocs.every(b => b[1].split('\n').length < 60); })());
 const fichiersEquipe = fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort();
 // Douze depuis le 17/09/2026 (point 7.8) : 11-chercher-partout.js, la recherche unique.
-verifier('douze fichiers numérotés dans app/equipe/, du 00 au 11', fichiersEquipe.length === 12 && fichiersEquipe.every((f, i) => f.startsWith(String(i).padStart(2, '0') + '-')), fichiersEquipe.join(', '));
+verifier('treize fichiers numérotés dans app/equipe/, du 00 au 12', fichiersEquipe.length === 13 && fichiersEquipe.every((f, i) => f.startsWith(String(i).padStart(2, '0') + '-')), fichiersEquipe.join(', '));
 verifier('equipe.html les charge tous, dans l\'ordre, après config.js, même étiquette', (() => {
   const balises = [...equipeHtml.matchAll(/<script src="equipe\/([^"?]+)\?v=([^"]+)"><\/script>/g)];
   const etiquetteConfig = (equipeHtml.match(/<script src="config\.js\?v=([^"]+)">/) || [])[1];
   return balises.map(b => b[1]).join(',') === fichiersEquipe.join(',') && balises.every(b => b[2] === etiquetteConfig) && equipeHtml.indexOf('config.js?v=') < equipeHtml.indexOf('equipe/00-');
 })());
 verifier('le code de la page est bien là (currentUser au 00, renderColis au 05, renderCompta au 07, onglets au 10)', /^let currentUser = null;/m.test(lire('equipe/00-etat-et-caisse.js')) && /function renderColis\(/.test(lire('equipe/05-liste-et-comptes.js')) && /async function renderCompta\(/.test(lire('equipe/07-rapports.js')) && /const EQ_TABS = /.test(lire('equipe/10-onglets.js')));
-verifier('chaque fichier commence par un en-tête qui dit ce qu\'il porte', fichiersEquipe.every(f => /^\/\* ESPACE ÉQUIPE — |^\/\* LES ONGLETS/.test(lire('equipe/' + f))));
+verifier('chaque fichier commence par un en-tête qui dit ce qu\'il porte', fichiersEquipe.every(f => /^\/\* ESPACE ÉQUIPE — |^\/\* LES ONGLETS|^\/\* LES RETOURS/.test(lire('equipe/' + f))));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

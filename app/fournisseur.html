@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260919poche">
+<link rel="stylesheet" href="style.css?v=20260920retours">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260919poche"></script>
-<script src="splash.js?v=20260919poche"></script>
+<script src="theme.js?v=20260920retours"></script>
+<script src="splash.js?v=20260920retours"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -525,6 +525,9 @@
 
   <div class="card" id="section-colis">
     <h2>Mes colis</h2>
+    <!-- LES COLIS QUI REVIENNENT (20/09/2026, point 19.1) : quel que soit leur jour — un retour
+         de la semaine dernière est justement celui qu'il faut voir. Rempli par renderColisList. -->
+    <div id="colis-retours-cliente"></div>
     <div class="search-wrap"><input type="text" id="search-colis" class="search-input" placeholder="Rechercher par n° de suivi, téléphone, description ou destination..."></div>
     <div class="date-filter-wrap">
       <label for="filtre-date-colis">📅 Date</label>
@@ -538,23 +541,23 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260919poche"></script>
-<script src="lib/bibliotheques.js?v=20260919poche"></script>
-<script src="lib/retours.js?v=20260919poche"></script>
-<script src="lib/reclamations.js?v=20260919poche"></script>
-<script src="lib/communes-et-tarifs.js?v=20260919poche"></script>
-<script src="lib/argent.js?v=20260919poche"></script>
-<script src="lib/releve-cliente.js?v=20260919poche"></script>
-<script src="lib/papier-a-en-tete.js?v=20260919poche"></script>
-<script src="lib/briques-argent.js?v=20260919poche"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260919poche"></script>
-<script src="lib/annonce-de-remise.js?v=20260919poche"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260919poche"></script>
-<script src="lib/primes.js?v=20260919poche"></script>
-<script src="lib/doublons.js?v=20260919poche"></script>
-<script src="config.js?v=20260919poche"></script>
-<script src="biometric-lock.js?v=20260919poche"></script>
-<script src="clt-select-recherche.js?v=20260919poche"></script>
+<script src="clt-common.js?v=20260920retours"></script>
+<script src="lib/bibliotheques.js?v=20260920retours"></script>
+<script src="lib/retours.js?v=20260920retours"></script>
+<script src="lib/reclamations.js?v=20260920retours"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920retours"></script>
+<script src="lib/argent.js?v=20260920retours"></script>
+<script src="lib/releve-cliente.js?v=20260920retours"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920retours"></script>
+<script src="lib/briques-argent.js?v=20260920retours"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920retours"></script>
+<script src="lib/annonce-de-remise.js?v=20260920retours"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920retours"></script>
+<script src="lib/primes.js?v=20260920retours"></script>
+<script src="lib/doublons.js?v=20260920retours"></script>
+<script src="config.js?v=20260920retours"></script>
+<script src="biometric-lock.js?v=20260920retours"></script>
+<script src="clt-select-recherche.js?v=20260920retours"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -569,6 +572,7 @@
   // Recherche, date : changer de critère, c'est demander une autre liste — on la reprend du haut.
   function remettreTrancheColisAZero(){ trancheColis = COLIS_TRANCHE; }
   let livreursById = {};
+  let filtreRetours = false;   // « Voir mes retours » (20/09/2026)
 
   /* ---------- SIGNALER UN PROBLÈME (17/09/2026, point 7.2) ----------
      Les réclamations de la cliente, chargées une fois avec ses colis et rangées par colis. Les
@@ -660,6 +664,73 @@
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-signaler]');
     if (b) { e.preventDefault(); e.stopPropagation(); ouvrirSignalement(b.dataset.signaler); }
+  });
+
+  /* UN COLIS QUI REVIENT — ET LA CLIENTE QUI A LE DERNIER MOT (20/09/2026, point 19.1).
+     Celtis : « il faut un véritable suivi pour qu'on sache exactement où c'est rentré ». La
+     cliente lit où est son colis (chez le livreur, au bureau, rendu), et quand le livreur dit
+     l'avoir rendu, C'EST ELLE QUI CONFIRME : « Oui, bien récupéré » clôt le retour ; « Non, je
+     ne l'ai pas » le met en litige et ouvre une réclamation que le bureau traite. Le parcours
+     complet (chaque passage de main, daté) se déplie sous la carte. Les phrases, les niveaux
+     et les gestes viennent de lib/retours.js : les mêmes que chez le livreur et au bureau. */
+  const retourParcoursOuverts = new Set();
+  const retourParcours = {};
+  function retourBlocClienteHTML(c){
+    const gestes = retourGestes(c, 'cliente');
+    const niveau = retourNiveau(c);
+    const ouvert = retourParcoursOuverts.has(c.id);
+    return `<div class="retour-ligne${retourEnRetard(c) ? ' retour-ligne--retard' : ''}${niveau && niveau.cle === 'litige' ? ' retour-ligne--retard' : ''}">
+        ${niveau ? `<span class="rt-badge rt-badge--${escapeHTML(niveau.cle)}" style="margin-right:6px">${escapeHTML(niveau.court)}</span>` : ''}${escapeHTML(retourTexte(c, 'cliente'))}${retourEnRetard(c) ? ' ' + cltJoindreLienHTML('Joindre CLT') : ''}
+        ${gestes.length ? `<div class="retour-reponse">${gestes.map(g => `<button type="button" class="btn btn-sm${g.rpc && g.rpc.recu ? '' : ' btn-outline'}" data-retour-reponse="${g.rpc && g.rpc.recu ? '1' : '0'}" data-colis="${escapeHTML(c.id)}">${escapeHTML(g.libelle)}</button>`).join('')}</div>` : ''}
+        ${c.retour_rendu_photo_url ? `<div class="meta" style="margin-top:6px">Photo de la remise : <img src="${escapeHTML(c.retour_rendu_photo_url)}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de la remise du colis revenu"></div>` : ''}
+        <button type="button" class="retour-parcours-btn" data-retour-parcours="${escapeHTML(c.id)}" aria-expanded="${ouvert ? 'true' : 'false'}">${ouvert ? '▾' : '▸'} Le parcours de ce colis</button>
+        ${ouvert ? `<div class="rt-histoire">${retourParcours[c.id] ? retourHistoriqueHTML(retourParcours[c.id], nomsDesLivreurs()) : 'Chargement…'}</div>` : ''}
+      </div>`;
+  }
+  function nomsDesLivreurs(){
+    const noms = {};
+    Object.keys(livreursById || {}).forEach(id => { noms[id] = livreursById[id].full_name || 'Livreur'; });
+    return noms;
+  }
+  async function repondreAuRetour(colisId, recu){
+    const c = mesColis.find(x => x.id === colisId);
+    if (!c) return;
+    let texte = null;
+    if (recu) {
+      const ok = await cltConfirm({ title: 'Vous avez bien récupéré ce colis ?', detail: 'Colis ' + (c.numero || ''), sub: 'Votre confirmation clôt le retour : la marchandise est entre vos mains.', okLabel: 'Oui, je l\'ai', cancelLabel: 'Annuler' });
+      if (!ok) return;
+    } else {
+      texte = await cltPrompt({ title: 'Vous ne l\'avez pas récupéré ?', sub: 'Dites-nous en un mot ce qui s\'est passé (facultatif). CLT vous rappelle et retrouve le colis.', placeholder: 'Ex. : personne n\'est venu', okLabel: 'Envoyer', maxLength: 300 });
+      if (texte === null) return;
+    }
+    const { data, error } = await supabaseClient.rpc('cliente_repond_au_retour', { p_colis_id: colisId, p_recu: !!recu, p_texte: texte || null });
+    if (error) {
+      console.error('Retour :', error);
+      cltToast("Votre réponse n'a pas pu être enregistrée. Réessayez, ou appelez-nous.", { type: 'error' });
+      return;
+    }
+    if (recu) { c.retour_confirme_at = new Date().toISOString(); cltToast('Merci : le retour est clos.', { type: 'success', title: 'Confirmé' }); }
+    else { c.retour_detenteur = 'litige'; c.retour_conteste_at = new Date().toISOString(); c.retour_conteste_texte = texte || null; cltToast('Signalement envoyé : CLT vous rappelle pour retrouver ce colis.', { type: 'info', title: 'Bien reçu' }); }
+    delete retourParcours[colisId];
+    renderColisList();
+    if (!recu) { await chargerMesReclamations(); renderColisList(); }
+  }
+  async function chargerParcoursRetour(colisId){
+    const { data, error } = await supabaseClient.from('retours_mouvements').select('at, par, par_role, geste, detenteur, livreur_id, motif, note, photo_url').eq('colis_id', colisId).order('at', { ascending: true });
+    retourParcours[colisId] = error ? [] : (data || []);
+    renderColisList();
+  }
+  document.addEventListener('click', (e) => {
+    const r = e.target.closest('[data-retour-reponse]');
+    if (r) { e.preventDefault(); e.stopPropagation(); repondreAuRetour(r.dataset.colis, r.dataset.retourReponse === '1'); return; }
+    const p = e.target.closest('[data-retour-parcours]');
+    if (p) {
+      e.preventDefault(); e.stopPropagation();
+      const id = p.dataset.retourParcours;
+      if (retourParcoursOuverts.has(id)) retourParcoursOuverts.delete(id); else retourParcoursOuverts.add(id);
+      renderColisList();
+      if (retourParcoursOuverts.has(id) && !retourParcours[id]) chargerParcoursRetour(id);
+    }
   });
 
   // Pagination réelle : la première page se charge immédiatement, puis "Charger plus" permet
@@ -1908,7 +1979,7 @@
                  reverrait. Le livreur la détient par défaut et la rend le lendemain, deux jours
                  au plus tard (décision de Celtis) : on lui dit exactement cela, et on lui dit
                  quand c'est fait. Mêmes mots pour tout le monde (retourTexte, config.js). -->
-            ${c.statut === 'retour' ? `<div class="retour-ligne${retourEnRetard(c) ? ' retour-ligne--retard' : ''}">${escapeHTML(retourTexte(c, 'cliente'))}${retourEnRetard(c) ? ' ' + cltJoindreLienHTML('Joindre CLT') : ''}</div>` : ''}
+            ${c.statut === 'retour' ? retourBlocClienteHTML(c) : ''}
             <!-- SIGNALER UN PROBLÈME (17/09/2026, point 7.2). Jusqu'ici, une cliente dont le
                  colis arrive abîmé ou dont le montant est faux n'avait que le téléphone — et ce
                  qu'elle disait au téléphone ne laissait aucune trace. Le bouton n'apparaît que
@@ -2309,8 +2380,12 @@
     const __drafts = Array.from(list.querySelectorAll('.colis-draft'));
     // Une recherche cherche partout : taper un numéro de suivi ne doit pas rester bloqué sur la
     // journée affichée. Sans recherche, la liste est celle du jour choisi. (07/09/2026)
-    const dateEffective = searchColis.trim() ? '' : filtreDate;
-    const filtered = mesColis.filter(c => matchesSearch(c, searchColis) && matchesDate(c, dateEffective));
+    const retoursEl = document.getElementById('colis-retours-cliente');
+    if (retoursEl) cltPoserHTML(retoursEl, filtreRetours ? '' : retoursClienteLigneHTML(mesColis));
+    const dateEffective = (searchColis.trim() || filtreRetours) ? '' : filtreDate;
+    // « Voir mes retours » (20/09/2026) : la liste ne montre que les colis qui reviennent, tous
+    // jours confondus. Toute autre recherche ou date le désactive (voir data-voir-retours).
+    const filtered = mesColis.filter(c => (!filtreRetours || c.statut === 'retour') && matchesSearch(c, searchColis) && matchesDate(c, dateEffective));
     // Colis déjà chargés mais pas encore dessinés (voir plus bas, bouton « Charger plus »).
     let resteAAfficher = 0;
     // __aChange dit si la liste a RÉELLEMENT changé. Quand elle n'a pas changé — le cas le plus
@@ -2914,6 +2989,29 @@
     const montantEl = document.getElementById('colis-jour-montant');
     if (montantEl) cltPoserHTML(montantEl, duJour.length ? ligneArgentCliente(duJour) : '');
   }
+  /* Une ligne, tous jours confondus : combien de colis reviennent vers elle, et combien attendent
+     sa confirmation. Un appui filtre la liste sur les retours. */
+  function retoursClienteLigneHTML(colis){
+    const enRoute = (colis || []).filter(c => retourEnAttente(c));
+    const aConfirmer = (colis || []).filter(c => retourAConfirmer(c));
+    if (!enRoute.length && !aConfirmer.length) return '';
+    const morceaux = [];
+    if (enRoute.length) morceaux.push(enRoute.length + (enRoute.length > 1 ? ' colis reviennent vers vous' : ' colis revient vers vous'));
+    if (aConfirmer.length) morceaux.push('<b>' + aConfirmer.length + ' à confirmer</b> (le livreur dit vous ' + (aConfirmer.length > 1 ? 'les' : 'l\'') + ' avoir rendu' + (aConfirmer.length > 1 ? 's' : '') + ')');
+    return `<button type="button" class="retour-ligne retour-ligne--bouton" data-voir-retours="1">↩️ ${morceaux.join(' · ')} — voir</button>`;
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-voir-retours]');
+    if (!b) return;
+    filtreRetours = true;
+    remettreTrancheColisAZero();
+    renderColisList();
+    const liste = document.getElementById('colis-list');
+    if (liste) liste.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    cltToast('Seuls vos colis qui reviennent sont affichés. Changez la date ou la recherche pour revoir tout.', { type: 'info' });
+  });
+  document.addEventListener('input', (e) => { if (e.target && (e.target.id === 'search-colis' || e.target.id === 'filtre-date-colis')) filtreRetours = false; });
+  document.addEventListener('change', (e) => { if (e.target && e.target.id === 'filtre-date-colis') filtreRetours = false; });
 
   // La ligne d'argent de la cliente est écrite par argentClienteLigneHTML() (config.js) : la
   // MÊME fonction sert au récap du jour, au récap du mois, et à la fiche que l'équipe consulte

@@ -165,7 +165,7 @@ titre("L'espace cliente aussi : le jour d'office, simple à comprendre (07/09/20
   verifier("« Mes colis » s'ouvre sur aujourd'hui", /filtreDate = todayLocalISODate\(\);\n\s*document\.getElementById\('filtre-date-colis'\)\.value = filtreDate;/.test(fournisseur));
   verifier('deux boutons, en clair : « Aujourd\'hui » et « Toutes les dates »', /id="btn-date-aujourdhui"[^>]*>Aujourd'hui</.test(fournisseur) && /id="btn-toutes-dates"[^>]*>Toutes les dates</.test(fournisseur));
   verifier("une journée vide le dit et propose « Voir tous mes colis »", /Aucun colis déposé aujourd'hui\./.test(fournisseur) && /data-voir-toutes-dates/.test(fournisseur));
-  verifier('une recherche cherche partout, pas seulement dans la journée', /const dateEffective = searchColis\.trim\(\) \? '' : filtreDate;/.test(fournisseur));
+  verifier('une recherche cherche partout, pas seulement dans la journée', /const dateEffective = \(searchColis\.trim\(\) \|\| filtreRetours\) \? '' : filtreDate;/.test(fournisseur));
   // Le Récap aussi (Celtis, 07/09/2026 : « côté client je ne remarque pas de changement » — il
   // regardait l'onglet Récap, resté sur « Tous les jours »).
   const jours = blocDe(fournisseur, 'populateJourSelect');

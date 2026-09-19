@@ -523,14 +523,25 @@ function prochaineEtape(colis) {
   if (st === 'en_attente')   return { statut: 'recupere',     libelle: '📦 Récupéré' };
   if (st === 'recupere')     return expedition ? { statut: 'livre', libelle: '🚌 Expédié' } : { statut: 'en_livraison', libelle: '🚚 Je pars livrer' };
   if (st === 'en_livraison') return { statut: 'livre', libelle: '✅ ' + libelleStatut('livre', colis) };
-  /* Un colis revenu N'EST PAS un colis fini : il est chez le livreur et il doit retourner chez
-     sa cliente (point 7.3). C'est le geste qui manquait — jusqu'au 17/09/2026, « retour » était
-     un mot affiché, et rien dans l'application ne rendait la marchandise. */
-  if (st === 'retour' && !colis.retour_rendu_at) return { statut: 'retour', libelle: '↩️ Rendu à la cliente', extra: { retour_rendu_at: 'maintenant' } };
+  /* Un colis NON LIVRÉ n'est pas fini non plus : la marchandise est dans la sacoche du livreur,
+     et il lui reste à décider — la rapporter à sa cliente (retour), ou réessayer (etapeSecondaire).
+     Jusqu'au 20/09/2026, « retour » n'était accessible que dans la liste déroulante : la plupart
+     des colis restaient « non livré » pendant des jours, et personne ne savait où ils étaient. */
+  if (st === 'non_livre')    return { statut: 'retour', libelle: '↩️ Je le rapporte à la cliente' };
+  /* Un colis revenu N'EST PAS un colis fini : ses gestes (rendu à la cliente, déposé au bureau)
+     sont dans retourGestes (app/lib/retours.js), parce qu'ils dépendent de QUI le détient. */
   return null;
 }
+/* Le second bouton d'un colis non livré : réessayer. Il repart « en livraison », son compteur
+   de tentatives est déjà à jour (il a compté l'échec), et retour_at n'est pas touché. */
+function etapeSecondaire(colis) {
+  if (!colis) return null;
+  if (colis.statut === 'non_livre') return { statut: 'en_livraison', libelle: '🚚 Nouvel essai' };
+  return etapeEchec(colis);
+}
 /* LES RETOURS (qui détient la marchandise, l'échéance de deux jours, les phrases des trois
-   écrans) sont dans app/lib/retours.js — sorti d'ici le 17/09/2026. */
+   écrans, les gestes de chacun, l'histoire) sont dans app/lib/retours.js — sorti d'ici le
+   17/09/2026, refondu le 20/09/2026 (point 19.1). */
 
 /* SIGNALER UN PROBLÈME : les motifs qu'une cliente peut choisir, les états d'une réclamation
    et les phrases qu'elle lit sont dans app/lib/reclamations.js (17/09/2026, point 7.2). */

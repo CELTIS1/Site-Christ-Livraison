@@ -583,8 +583,11 @@ const STATUTS_EN_ROUTE = ["en_attente", "recupere", "en_livraison"];
    de la semaine dernière disparaissait de « Ma journée » dès le lendemain — c'est-à-dire
    exactement au moment où il commençait à traîner. retourEnAttente vient de lib/retours.js,
    chargé avant ce bloc. */
+/* 20/09/2026 (point 19.1) : un retour n'est « dans ses mains » que si c'est bien le LIVREUR qui
+   le détient — pas le bureau, pas la cliente. Et un colis NON LIVRÉ est dans sa sacoche tant
+   qu'il n'a pas décidé (nouvel essai, ou retour) : il reste sous ses yeux lui aussi. */
 function encoreChezLeLivreur(c) {
-  return STATUTS_EN_ROUTE.indexOf(c.statut) !== -1 || retourEnAttente(c);
+  return STATUTS_EN_ROUTE.indexOf(c.statut) !== -1 || c.statut === 'non_livre' || retourDetenteur(c) === 'livreur';
 }
 function colisDeLaJourneeDeTravail(colis, jour) {
   return (colis || []).filter(function (c) {

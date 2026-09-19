@@ -100,8 +100,40 @@ export function nouveauMonde() {
     /* LES MARQUES « POINT ENVOYÉ » (18/09/2026, point 11.7). Vide au départ : c'est le parcours
        qui coche, et qui vérifie que la marque se voit ensuite partout. */
     points_envoyes: [],
+    /* LE JOURNAL DES RETOURS (20/09/2026, point 19.1). Vide au départ : en base, ce sont des
+       triggers qui l'écrivent ; ici, c'est effetsRetour() qui refait leur travail à chaque
+       mise à jour d'un colis. */
+    retours_mouvements: [],
   };
   const journal = [];
+
+  /* Ce que font les deux triggers de la migration du 20/09 (retour_defauts, retour_journal),
+     refait sur ce faux monde pour que les écrans voient la base « répondre » comme la vraie. Les
+     droits et les cas tordus sont éprouvés dans un vrai Postgres (tests/retours/essai-en-postgres.py). */
+  function effetsRetour(avant, l, user, maintenant) {
+    if (l.statut === 'retour') {
+      if (l.retour_rendu_at && (!l.retour_detenteur || l.retour_detenteur === 'livreur' || l.retour_detenteur === 'bureau') && !avant.retour_rendu_at) l.retour_detenteur = 'cliente';
+      if (!l.retour_detenteur) l.retour_detenteur = l.retour_rendu_at ? 'cliente' : 'livreur';
+      if (l.retour_detenteur === 'livreur' && !l.retour_detenteur_livreur_id) l.retour_detenteur_livreur_id = l.livreur_id;
+      if (l.retour_detenteur !== 'livreur') l.retour_detenteur_livreur_id = null;
+      if (l.retour_detenteur === 'cliente' && !l.retour_rendu_at) { l.retour_rendu_at = maintenant; if (!l.retour_rendu_par) l.retour_rendu_par = user || null; }
+      if (['cliente', 'litige'].includes(avant.retour_detenteur) && ['livreur', 'bureau'].includes(l.retour_detenteur)) {
+        l.retour_rendu_at = null; l.retour_rendu_par = null; l.retour_rendu_photo_url = null; l.retour_confirme_at = null; l.retour_conteste_at = null; l.retour_conteste_texte = null;
+      }
+      let geste = null;
+      if (avant.statut !== 'retour') geste = 'declare';
+      else if (l.retour_detenteur !== avant.retour_detenteur) geste = { bureau: 'depose_bureau', livreur: 'confie_livreur', cliente: 'rendu_cliente', litige: 'conteste_cliente' }[l.retour_detenteur];
+      else if (l.retour_detenteur === 'livreur' && l.retour_detenteur_livreur_id !== avant.retour_detenteur_livreur_id) geste = 'confie_livreur';
+      else if (l.retour_confirme_at && !avant.retour_confirme_at) geste = 'confirme_cliente';
+      if (!geste) return;
+      const role = (PROFILS.find(p => p.id === user) || {}).role || null;
+      TABLES.retours_mouvements.push({ id: 'mv-' + TABLES.retours_mouvements.length, colis_id: l.id, at: maintenant, par: user || null, par_role: role, geste, detenteur: l.retour_detenteur, livreur_id: l.retour_detenteur_livreur_id || null,
+        motif: geste === 'declare' ? (l.motif_non_livraison || null) : null, note: geste === 'conteste_cliente' ? (l.retour_conteste_texte || null) : null, photo_url: geste === 'rendu_cliente' ? (l.retour_rendu_photo_url || null) : null });
+    } else if (avant.statut === 'retour') {
+      ['retour_detenteur', 'retour_detenteur_livreur_id', 'retour_rendu_at', 'retour_rendu_par', 'retour_rendu_photo_url', 'retour_confirme_at', 'retour_conteste_at', 'retour_conteste_texte'].forEach(k => { l[k] = null; });
+      TABLES.retours_mouvements.push({ id: 'mv-' + TABLES.retours_mouvements.length, colis_id: l.id, at: maintenant, par: user || null, par_role: null, geste: 'relance', detenteur: null, livreur_id: l.livreur_id || null, note: 'Reparti : ' + l.statut });
+    }
+  }
 
   /* Les vues du serveur, recalculées à la demande depuis les colis : la cliente lit
      releve_fournisseur, une seule ligne, la sienne. Même règle que la vraie vue : articles des
@@ -170,7 +202,9 @@ export function nouveauMonde() {
           if (champ && !l[champ]) v[champ] = maintenant;
           if (v.statut === 'recupere' && !l.livreur_id && (v.livreur_collecte_id || l.livreur_collecte_id)) v.livreur_id = v.livreur_collecte_id || l.livreur_collecte_id;
         }
+        const avant = Object.assign({}, l);
         Object.assign(l, v, { updated_at: maintenant });
+        if (table === 'colis') effetsRetour(avant, l, q.user, maintenant);
       });
       journal.push({ table, op: 'update', valeurs: q.valeurs, n: lignes.length, ids: lignes.map(l => l.id) });
       return { data: lignes, error: null, count: lignes.length };
@@ -300,6 +334,22 @@ export function nouveauMonde() {
        leur EFFET sur les tables — c'est lui que l'écran doit savoir montrer : les colis passent
        « reversés » puis reviennent « à reverser », et le reçu est marqué annulé sans disparaître.
        Les droits et le journal sont éprouvés dans un vrai Postgres, pas ici. */
+    /* LA CLIENTE RÉPOND À UN RETOUR (20/09/2026, point 19.1) : même effet que la vraie fonction,
+       droits en moins (éprouvés dans tests/retours/essai-en-postgres.py). */
+    if (nom === 'cliente_repond_au_retour') {
+      const c = (TABLES.colis || []).find(x => x.id === (args && args.p_colis_id));
+      if (!c || c.fournisseur_id !== user) return { data: null, error: { message: "Ce colis n'est pas à vous." } };
+      if (c.statut !== 'retour' || c.retour_detenteur !== 'cliente') return { data: null, error: { message: "Ce colis n'est pas marqué comme rendu : rien à confirmer." } };
+      if (c.retour_confirme_at) return { data: { ok: true, deja: true }, error: null };
+      const avant = Object.assign({}, c), quand = new Date().toISOString();
+      if (args.p_recu) c.retour_confirme_at = quand;
+      else {
+        c.retour_detenteur = 'litige'; c.retour_conteste_at = quand; c.retour_conteste_texte = (args.p_texte || '').trim() || null;
+        (TABLES.reclamations_clientes ||= []).push({ id: 'rc-' + Date.now(), fournisseur_id: user, colis_id: c.id, motif: 'retour_pas_rendu', texte: c.retour_conteste_texte || 'La cliente indique ne pas avoir récupéré ce colis revenu.', statut: 'ouverte', created_at: quand });
+      }
+      effetsRetour(avant, c, user, quand);
+      return { data: { ok: true, recu: !!args.p_recu }, error: null };
+    }
     if (nom === 'reverser_a_la_cliente') {
       const ids = (args && args.p_colis_ids) || [];
       const pris = (TABLES.colis || []).filter(c => ids.includes(c.id) && !c.reverse_au_fournisseur_at);

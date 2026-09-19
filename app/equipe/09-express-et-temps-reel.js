@@ -400,7 +400,13 @@ isAdmin = profile.role === 'admin';
 // Les lectures partent PENDANT le verrou Face ID, pas après (10/09/2026, feuille de route 2.7).
 // Les fiches d'abord (les cartes de colis nomment les clientes et les livreurs), les colis ensuite.
 const prechargement = (async () => {
+  // Les retours (20/09/2026) lisent la base à part : ils nomment les livreurs, donc dès que les
+  // fiches sont là, et sans attendre la liste du jour ni le reste.
   await Promise.all([loadPending(), loadResetRequests(), loadFournisseurs(), loadLivreurs()]);
+  // Le fichier 12 (les retours) peut ne pas être chargé encore : la connexion se résout avant que
+  // le navigateur ait fini de lire les scripts suivants. On pose un drapeau qu'il surveille.
+  window.__cltFichesPretes = true;
+  if (typeof chargerRetours === 'function') chargerRetours();
   await loadColis();
 })();
 // --- Déverrouillage biométrique (Face ID / Touch ID / empreinte) — opt-in, par appareil ---

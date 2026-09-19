@@ -61,14 +61,12 @@ titre("L'étape suivante d'un colis d'Abidjan");
 verifier('en attente → « 📦 Récupéré »', JSON.stringify(prochaine(abidjan('en_attente'))) === JSON.stringify({ statut: 'recupere', libelle: '📦 Récupéré' }));
 verifier('récupéré → « 🚚 Je pars livrer »', JSON.stringify(prochaine(abidjan('recupere'))) === JSON.stringify({ statut: 'en_livraison', libelle: '🚚 Je pars livrer' }));
 verifier('en livraison → « ✅ Livré »', JSON.stringify(prochaine(abidjan('en_livraison'))) === JSON.stringify({ statut: 'livre', libelle: '✅ Livré' }));
-verifier('livré et non livré : plus de bouton principal', prochaine(abidjan('livre')) === null && prochaine(abidjan('non_livre')) === null && prochaine(null) === null);
-// 17/09/2026, point 7.3 : le retour a enfin son geste — « Rendu à la cliente » — et le perd
-// une fois la marchandise rendue.
-verifier('un retour porte « ↩️ Rendu à la cliente », et le perd une fois rendu', (() => {
-  const p = prochaine(abidjan('retour'));
-  return p && p.statut === 'retour' && /Rendu à la cliente/.test(p.libelle)
-    && prochaine(Object.assign(abidjan('retour'), { retour_rendu_at: '2026-09-16T10:00:00Z' })) === null;
-})());
+verifier('livré : plus de bouton principal', prochaine(abidjan('livre')) === null && prochaine(null) === null);
+// 20/09/2026, point 19.1 : un non livré n'est pas fini — la marchandise est dans la sacoche.
+// Il porte « ↩️ Je le rapporte à la cliente » (→ retour). Le retour, lui, tire ses gestes de
+// retourGestes (lib/retours.js) selon qui le détient : rendu à la cliente, déposé au bureau.
+verifier('non livré → « ↩️ Je le rapporte à la cliente » (retour)', (() => { const p = prochaine(abidjan('non_livre')); return p && p.statut === 'retour' && /rapporte à la cliente/.test(p.libelle); })());
+verifier('un retour n\'a plus d\'étape générique (retourGestes décide)', prochaine(abidjan('retour')) === null);
 verifier('« ⚠️ Non livré » seulement quand le colis est en route (récupéré, en livraison)',
   echec(abidjan('recupere')).statut === 'non_livre' && echec(abidjan('en_livraison')).libelle === '⚠️ Non livré' && echec(abidjan('en_attente')) === null && echec(abidjan('livre')) === null && echec(abidjan('non_livre')) === null);
 
@@ -81,7 +79,7 @@ titre('La carte du livreur');
 {
   const carte = blocDe(livreur, 'mesColisRowHTML', 'livreur.html');
   verifier('le bouton principal porte la classe verte quand l\'étape est « livre », et data-etape', /btn-etape btn-etape-principale\$\{p\.statut === 'livre' \? ' btn-etape-livre' : ''\}/.test(carte) && /data-etape="\$\{escapeHTML\(p\.statut\)\}"/.test(carte));
-  verifier('le geste du retour porte sa marque : c\'est lui qui écrit la date de remise', /btn-etape-rendu/.test(carte) && /data-rendu="1"/.test(carte));
+  verifier('les gestes du retour viennent de retourGestes et portent leur clé (data-geste)', /retourGestes\(c, 'livreur', currentUser && currentUser\.id\)/.test(carte) && /data-geste="\$\{escapeHTML\(x\.cle\)\}"/.test(carte) && /btn-etape-rendu/.test(carte));
   verifier('le bouton d\'échec est en contour', /btn btn-outline btn-etape btn-etape-echec/.test(carte));
   verifier('sans étape ni échec (colis fini), aucun bloc de boutons', /if \(!p && !e\) return '';/.test(carte));
   verifier('la liste des états et « Enregistrer » sont sous « Plus d\'options »', carte.indexOf('<summary>Plus d\'options</summary>') < carte.indexOf('<select class="status-select">') && carte.indexOf('<select class="status-select">') < carte.indexOf('btn-save'));

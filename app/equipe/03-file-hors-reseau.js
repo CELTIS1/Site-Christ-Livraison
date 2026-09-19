@@ -1090,8 +1090,14 @@ switch (cle) {
     listeColis(seul, '', L.examiner); break;
   }
   case 'reclamations': listeColis('tous', '', L.reclamations); break;
-  case 'retours':      listeColis('retour', '', L.retours); break;
-  case 'retours-tard': listeColis('retour', '', L.retoursTard); break;
+  // 20/09/2026 : les retours ont leur écran (section-retours), avec le détenteur nommé et les
+  // gestes du bureau. Les pastilles y mènent au lieu d'ouvrir une simple liste de colis.
+  case 'retours': case 'retours-tard': {
+    const carte = document.getElementById('section-retours');
+    if (carte) { carte.open = true; carte.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (typeof chargerRetours === 'function') chargerRetours(); }
+    else listeColis('retour', '', cle === 'retours' ? L.retours : L.retoursTard);
+    break;
+  }
   case 'argent': onglet('finances'); if (typeof showMainTab === 'function') showMainTab('compta'); defiler('caisse-livreur'); break;
   case 'qualifier': onglet('livreurs'); setTimeout(() => defiler('ld-qualifier'), 400); break;
 }
