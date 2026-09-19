@@ -1027,6 +1027,12 @@ const accesBtns = a.role === 'equipe'
 <button type="button" class="btn-toggle-compta">${a.acces_compta ? '✅' : '⬜'} Accès Comptabilité</button>`
 : '';
 const editBtn = `<button type="button" class="btn-edit-account">✏️ Corriger la fiche</button>`;
+/* LES BOUTIQUES SUPERVISÉES (20/09/2026, point 19.2) : un compte client peut voir les colis
+   d'autres comptes clients (un propriétaire et ses gérants). Le geste et la fenêtre sont dans
+   equipe/13-les-boutiques.js ; ici, l'entrée du menu et le rappel sur la ligne. */
+const boutiquesBtn = a.role === 'fournisseur'
+? `<button type="button" class="btn-boutiques-supervisees">🏬 Boutiques supervisées${typeof nbBoutiquesSupervisees === 'function' && nbBoutiquesSupervisees(a.id) ? ' (' + nbBoutiquesSupervisees(a.id) + ')' : ''}</button>`
+: '';
 // Réinitialisation : inutile sur un compte suspendu (il ne peut pas se connecter)
 // et inutile sur le sien (on change son mot de passe depuis « Mon compte »).
 const resetBtn = (isSelf || estSuspendu)
@@ -1052,6 +1058,7 @@ return `
 <div class="info">
 <div class="desc">${onlineDot}${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}${suspenduBadge}${a.suppression_demandee_at ? ' <span class="badge" style="color:#c0392b; background:#fce4e2;">🗑 Suppression demandée</span>' : ''}</div>
 <div class="meta">Rôle : ${escapeHTML(roleDisplayLabel(a.role))}${a.phone ? ' · Tél : ' + escapeHTML(a.phone) : ''} · Statut : ${escapeHTML(statutCompteLabel(a.status))}${a.suppression_demandee_at ? ' · <span style="color:#c0392b;">Suppression demandée le ' + escapeHTML(formatDate(a.suppression_demandee_at)) + '</span>' : ''}</div>
+${typeof boutiquesLigneHTML === 'function' ? boutiquesLigneHTML(a.id) : ''}
 ${suspenduDetail}
 </div>
 <div class="status-col" style="width:auto; flex-direction:row; align-items:center;">
@@ -1059,6 +1066,7 @@ ${suspenduDetail}
 <button type="button" class="actions-menu-btn" aria-label="Actions du compte">⋮</button>
 <div class="actions-dropdown">
 ${editBtn}
+${boutiquesBtn}
 ${resetBtn}
 ${promoteBtn}
 ${demoteBtn}

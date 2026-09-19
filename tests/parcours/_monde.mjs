@@ -104,6 +104,9 @@ export function nouveauMonde() {
        triggers qui l'écrivent ; ici, c'est effetsRetour() qui refait leur travail à chaque
        mise à jour d'un colis. */
     retours_mouvements: [],
+    /* LES BOUTIQUES SUPERVISÉES (20/09/2026, point 19.2). Vide au départ : c'est le bureau, dans
+       le parcours, qui rattache. */
+    boutiques_supervisees: [],
   };
   const journal = [];
 
@@ -336,6 +339,11 @@ export function nouveauMonde() {
        Les droits et le journal sont éprouvés dans un vrai Postgres, pas ici. */
     /* LA CLIENTE RÉPOND À UN RETOUR (20/09/2026, point 19.1) : même effet que la vraie fonction,
        droits en moins (éprouvés dans tests/retours/essai-en-postgres.py). */
+    /* MES BOUTIQUES (point 19.2) : les boutiques rattachées à ce compte, avec leur nom. */
+    if (nom === 'mes_boutiques') {
+      const ids = (TABLES.boutiques_supervisees || []).filter(b => b.superviseur_id === user).map(b => b.fournisseur_id);
+      return { data: PROFILS.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, nom: p.company_name || p.full_name, full_name: p.full_name, commune_recuperation: p.commune_recuperation || null, avatar_url: p.avatar_url || null })), error: null };
+    }
     if (nom === 'cliente_repond_au_retour') {
       const c = (TABLES.colis || []).find(x => x.id === (args && args.p_colis_id));
       if (!c || c.fournisseur_id !== user) return { data: null, error: { message: "Ce colis n'est pas à vous." } };

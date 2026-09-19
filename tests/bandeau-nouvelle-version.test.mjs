@@ -802,10 +802,18 @@ verifier(
    et signé en base par trigger (retours_mouvements), la cliente confirme ou conteste depuis son
    espace, le bureau a un écran « Retours » avec le détenteur nommé, le niveau, les jours et les
    gestes, et un colis non livré porte « Je le rapporte à la cliente » / « Nouvel essai » au lieu
-   de traîner. Migration 2026-09-20-les-retours-de-main-en-main.sql. Étiquette 20260920retours. */
+   de traîner. Migration 2026-09-20-les-retours-de-main-en-main.sql. Étiquette 20260920retours.
+   v176, le 20/09/2026 — Celtis : « un fournisseur a plusieurs magasins, un gérant par magasin,
+   chaque gérant enregistré comme un fournisseur ; le responsable doit se connecter sur chacun
+   des comptes pour voir ce qu'ils font ». Un compte client peut maintenant superviser d'autres
+   comptes clients : le bureau fait le lien (onglet Comptes, « Boutiques supervisées »), la base
+   ouvre au propriétaire la lecture — et rien que la lecture — des colis et du relevé de ses
+   boutiques, et son espace gagne « Mes boutiques » en tête de Récap : total du jour, une tuile par
+   boutique, le point du jour de chacune en lecture seule. Migration 2026-09-20-les-boutiques-
+   supervisees.sql. Étiquette 20260920boutiques. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v175'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v176'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

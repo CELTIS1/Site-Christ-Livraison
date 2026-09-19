@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920retours">
+<link rel="stylesheet" href="style.css?v=20260920boutiques">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920retours"></script>
-<script src="splash.js?v=20260920retours"></script>
+<script src="theme.js?v=20260920boutiques"></script>
+<script src="splash.js?v=20260920boutiques"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -471,6 +471,24 @@
        livraison pour son compte, moins ce qui a déjà été reversé). Données agrégées côté
        serveur par la vue releve_fournisseur (chaque fournisseur ne voit que son relevé).    En TÊTE de l'onglet Récap depuis le 06/09/2026 (feuille de route 3.5) : c'est le chiffre
        que la cliente vient voir. -->
+  <!-- MES BOUTIQUES (20/09/2026, point 19.2). Celtis : « un fournisseur a plusieurs magasins, un
+       gérant par magasin ; le responsable doit se connecter sur chacun des comptes pour voir ce
+       qu'ils font ». Cette carte n'existe que pour un compte auquel le bureau a rattaché des
+       boutiques (mes_boutiques()). Elle montre, pour le jour choisi, le total de toutes les
+       boutiques puis une tuile par boutique ; un appui ouvre son point du jour et ses colis, en
+       lecture seule (la base ne lui ouvre que la lecture). En tête de l'onglet Récap, au-dessus
+       du relevé : c'est ce qu'un propriétaire vient voir. -->
+  <div class="card hidden" id="section-mes-boutiques">
+    <div class="mb-tete">
+      <h2 class="panel-subtitle" style="margin:0;">🏬 Mes boutiques</h2>
+      <input type="date" id="mb-date" style="max-width:170px;">
+    </div>
+    <div id="mb-libelle" style="font-size:12.5px; color:var(--muted); margin:0 0 10px;"></div>
+    <div class="mb-total" id="mb-total"></div>
+    <div class="mb-liste" id="mb-liste"></div>
+    <div id="mb-detail" style="margin-top:14px;"></div>
+  </div>
+
   <div class="card" id="section-releve">
     <h2 class="panel-subtitle" style="margin:0 0 4px;">💰 Mon relevé — ce que CLT vous doit</h2>
     <div id="releve-libelle" style="font-size:12.5px; color:var(--muted); margin:2px 0 12px;">
@@ -541,23 +559,23 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920retours"></script>
-<script src="lib/bibliotheques.js?v=20260920retours"></script>
-<script src="lib/retours.js?v=20260920retours"></script>
-<script src="lib/reclamations.js?v=20260920retours"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920retours"></script>
-<script src="lib/argent.js?v=20260920retours"></script>
-<script src="lib/releve-cliente.js?v=20260920retours"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920retours"></script>
-<script src="lib/briques-argent.js?v=20260920retours"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920retours"></script>
-<script src="lib/annonce-de-remise.js?v=20260920retours"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920retours"></script>
-<script src="lib/primes.js?v=20260920retours"></script>
-<script src="lib/doublons.js?v=20260920retours"></script>
-<script src="config.js?v=20260920retours"></script>
-<script src="biometric-lock.js?v=20260920retours"></script>
-<script src="clt-select-recherche.js?v=20260920retours"></script>
+<script src="clt-common.js?v=20260920boutiques"></script>
+<script src="lib/bibliotheques.js?v=20260920boutiques"></script>
+<script src="lib/retours.js?v=20260920boutiques"></script>
+<script src="lib/reclamations.js?v=20260920boutiques"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920boutiques"></script>
+<script src="lib/argent.js?v=20260920boutiques"></script>
+<script src="lib/releve-cliente.js?v=20260920boutiques"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920boutiques"></script>
+<script src="lib/briques-argent.js?v=20260920boutiques"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920boutiques"></script>
+<script src="lib/annonce-de-remise.js?v=20260920boutiques"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920boutiques"></script>
+<script src="lib/primes.js?v=20260920boutiques"></script>
+<script src="lib/doublons.js?v=20260920boutiques"></script>
+<script src="config.js?v=20260920boutiques"></script>
+<script src="biometric-lock.js?v=20260920boutiques"></script>
+<script src="clt-select-recherche.js?v=20260920boutiques"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -815,6 +833,9 @@
     // que dans l'onglet Récap — plus dans Ajouter ni Mes colis.
     const releve = document.getElementById('section-releve');
     if (releve) releve.classList.toggle('hidden', key !== 'section-recap');
+    // « Mes boutiques » (19.2) : dans Récap aussi, et seulement si le compte en a.
+    const mb = document.getElementById('section-mes-boutiques');
+    if (mb) mb.classList.toggle('hidden', key !== 'section-recap' || !(mesBoutiques && mesBoutiques.length));
     document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === key));
     document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === key));
     try { localStorage.setItem('clt_fournisseur_tab', key); } catch(e){}
@@ -2479,7 +2500,120 @@
     await chargerMesReclamations();
     renderColisList();
     chargerMaDemandeDePassage();
+    chargerMesBoutiques();
   }
+
+  /* ==========================================================================================
+     MES BOUTIQUES — point 19.2, 20 septembre 2026
+     ==========================================================================================
+     Un propriétaire, plusieurs boutiques, un gérant par boutique (un compte chacun). Le bureau
+     rattache les boutiques au compte du propriétaire (table boutiques_supervisees) ; la base lui
+     ouvre alors la LECTURE des colis et du relevé de chaque boutique — et rien d'autre : aucune
+     écriture, pas les réclamations, pas l'annuaire (décisions de Celtis : lecture seule, lien
+     fait par le bureau).
+
+     Ce qu'il voit : pour le jour choisi, le total de toutes ses boutiques (mêmes découpages que
+     les tuiles d'une cliente : lib/vocabulaire-de-la-journee.js), une tuile par boutique, et en
+     appuyant sur l'une d'elles, son point du jour et ses colis — une liste compacte, sans aucun
+     bouton d'action, parce qu'il n'en a aucun. Même règle de jour que partout : jourDuColis. */
+  let mesBoutiques = [];          // { id, nom, full_name, commune_recuperation }
+  let mbColis = [];               // les colis des boutiques, lus pour la période regardée
+  let mbJour = null;
+  let mbBoutiqueRegardee = null;
+  async function chargerMesBoutiques(){
+    if (!supabaseClient || !currentUser) return;
+    const { data, error } = await supabaseClient.rpc('mes_boutiques');
+    if (error) { if (!/does not exist|n'existe pas|function/i.test(error.message || '')) console.error('Mes boutiques :', error); mesBoutiques = []; }
+    else mesBoutiques = data || [];
+    const carte = document.getElementById('section-mes-boutiques');
+    if (!carte) return;
+    if (!mesBoutiques.length) { carte.classList.add('hidden'); return; }
+    const recap = document.getElementById('section-recap');
+    if (recap && !recap.classList.contains('hidden')) carte.classList.remove('hidden');
+    const dateInput = document.getElementById('mb-date');
+    if (dateInput && !dateInput.value) dateInput.value = todayLocalISODate();
+    await chargerColisDesBoutiques();
+  }
+  /* Les colis des boutiques autour du jour regardé : quatorze jours avant, pour que le jour
+     choisi ait tous les siens (un colis reporté porte le jour de son report, pas de sa
+     réception). Une lecture par changement de jour, pas une par boutique. */
+  async function chargerColisDesBoutiques(){
+    const dateInput = document.getElementById('mb-date');
+    mbJour = (dateInput && dateInput.value) || todayLocalISODate();
+    const ids = mesBoutiques.map(b => b.id);
+    const debut = new Date(mbJour + 'T00:00:00'); debut.setDate(debut.getDate() - 14);
+    const fin = new Date(mbJour + 'T00:00:00'); fin.setDate(fin.getDate() + 2);
+    const { data, error } = await supabaseClient.from('colis').select('*')
+      .in('fournisseur_id', ids).gte('created_at', debut.toISOString()).lt('created_at', fin.toISOString())
+      .order('created_at', { ascending: false }).limit(2000);
+    if (error) { console.error('Colis des boutiques :', error); mbColis = []; }
+    else mbColis = data || [];
+    renderMesBoutiques();
+  }
+  function mbColisDuJour(boutiqueId){
+    return mbColis.filter(c => (!boutiqueId || c.fournisseur_id === boutiqueId) && jourDuColis(c) === mbJour);
+  }
+  function renderMesBoutiques(){
+    const total = document.getElementById('mb-total');
+    const liste = document.getElementById('mb-liste');
+    const libelle = document.getElementById('mb-libelle');
+    if (!total || !liste) return;
+    const jourTexte = mbJour === todayLocalISODate() ? "Aujourd'hui" : new Date(mbJour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
+    const tous = mbColisDuJour(null);
+    if (libelle) libelle.textContent = `${jourTexte} · ${mesBoutiques.length} boutique${mesBoutiques.length > 1 ? 's' : ''} · ${tous.length} colis`;
+    const compte = (colis) => { const par = {}; compterLeJour(colis, 'cliente').forEach(g => { par[g.cle] = g.count; }); par.retours = colis.filter(c => c.statut === 'retour').length; par.argent = totauxArgent(colis).articleEncaisse; return par; }; 
+    const t = compte(tous);
+    total.innerHTML = [
+      ['en_attente', 'En attente'], ['recuperes', 'Récupérés'], ['en_livraison', 'En livraison'], ['livres', 'Livrés'], ['non_livres', 'Non livrés'],
+    ].map(([k, l]) => `<div class="mb-tuile"><b>${t[k] || 0}</b><span>${l}</span></div>`).join('')
+      + `<div class="mb-tuile mb-tuile--argent"><b>${escapeHTML(formatMontant(t.argent) || '0 FCFA')}</b><span>Articles encaissés</span></div>`;
+    liste.innerHTML = mesBoutiques.map(b => {
+      const c = compte(mbColisDuJour(b.id));
+      const n = mbColisDuJour(b.id).length;
+      return `<button type="button" class="mb-boutique${mbBoutiqueRegardee === b.id ? ' mb-boutique--active' : ''}" data-mb-boutique="${escapeHTML(b.id)}" aria-pressed="${mbBoutiqueRegardee === b.id ? 'true' : 'false'}">
+        <div class="mb-nom">${escapeHTML(b.nom || 'Boutique')}</div>
+        <div class="mb-sous">${escapeHTML([b.full_name && b.full_name !== b.nom ? b.full_name : '', b.commune_recuperation].filter(Boolean).join(' · '))}</div>
+        <div class="mb-chiffres">
+          <span class="mb-chiffre">${n} colis</span>
+          <span class="mb-chiffre mb-chiffre--livre">${c.livres || 0} livré${(c.livres || 0) > 1 ? 's' : ''}</span>
+          ${c.non_livres ? `<span class="mb-chiffre mb-chiffre--non_livre">${c.non_livres} non livré${c.non_livres > 1 ? 's' : ''}</span>` : ''}
+          ${c.retours ? `<span class="mb-chiffre mb-chiffre--retour">${c.retours} retour${c.retours > 1 ? 's' : ''}</span>` : ''}
+          ${c.argent ? `<span class="mb-chiffre mb-chiffre--argent">${escapeHTML(formatMontant(c.argent))}</span>` : ''}
+        </div>
+      </button>`;
+    }).join('');
+    renderBoutiqueRegardee();
+  }
+  /* Le point du jour d'UNE boutique : ses tuiles, puis ses colis, compacts, sans geste. */
+  function renderBoutiqueRegardee(){
+    const detail = document.getElementById('mb-detail');
+    if (!detail) return;
+    const b = mesBoutiques.find(x => x.id === mbBoutiqueRegardee);
+    if (!b) { detail.innerHTML = ''; return; }
+    const colis = mbColisDuJour(b.id);
+    const ordre = { en_livraison: 0, recupere: 1, en_attente: 2, livre: 3, non_livre: 4, retour: 5 };
+    const lignes = colis.slice().sort((a, z) => (ordre[a.statut] ?? 9) - (ordre[z.statut] ?? 9) || String(z.created_at).localeCompare(String(a.created_at)));
+    detail.innerHTML = `<div class="mb-detail-tete" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+        <h3 style="margin:0; font-size:16px; color:var(--navy);">${escapeHTML(b.nom || 'Boutique')} — point du jour</h3>
+        <button type="button" class="btn btn-sm btn-outline" data-mb-fermer="1">← Toutes les boutiques</button>
+      </div>
+      <div class="mb-lecture">👁️ Lecture seule : ce que le gérant voit, sans pouvoir le modifier. Pour agir sur un colis, c'est le gérant ou CLT.</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">${tuilesDuJourHTML(colis, 'cliente')}</div>
+      ${colis.length ? `<div style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">${ligneArgentCliente(colis)}</div>` : ''}
+      ${lignes.length ? `<div class="mb-colis">${lignes.map(c => {
+        const st = (typeof STATUTS !== 'undefined' && STATUTS[c.statut]) || { label: c.statut, color: '#5B6B7C', bg: '#EEF1F5' };
+        return `<div class="mb-colis-ligne">
+          <div class="mb-colis-haut"><span class="mb-colis-statut" style="background:${st.bg}; color:${st.color};">${escapeHTML(st.label)}</span><span class="mb-colis-montant">${escapeHTML(formatMontant(Number(c.montant_article) || 0) || '')}</span></div>
+          <div class="mb-colis-bas"><b>${escapeHTML(c.numero || '')}</b>${c.destination || c.commune_destination ? ' · ' + escapeHTML([c.commune_destination, c.destination].filter(Boolean).join(' — ')) : ''}${c.description ? '<div class="mb-colis-desc">' + escapeHTML(String(c.description).slice(0, 80)) + '</div>' : ''}${c.statut === 'retour' ? '<div class="mb-colis-retour">' + escapeHTML(retourTexte(c, 'cliente')) + '</div>' : ''}</div>
+        </div>`; }).join('')}</div>` : '<div class="empty-state">Aucun colis ce jour-là pour cette boutique.</div>'}`;
+    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mb-boutique]');
+    if (b) { mbBoutiqueRegardee = (mbBoutiqueRegardee === b.dataset.mbBoutique) ? null : b.dataset.mbBoutique; renderMesBoutiques(); return; }
+    if (e.target.closest('[data-mb-fermer]')) { mbBoutiqueRegardee = null; renderMesBoutiques(); const s = document.getElementById('section-mes-boutiques'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+  document.addEventListener('change', (e) => { if (e.target && e.target.id === 'mb-date') chargerColisDesBoutiques(); });
 
   /* ==========================================================================================
      DEMANDER UN PASSAGE — point 10.6, 17 septembre 2026

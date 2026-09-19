@@ -171,7 +171,9 @@
     ['panel-journal','panel-rapports','panel-compta'].forEach(id => byId(id)?.classList.remove('hidden'));
 
     // Masque par défaut les éléments réservés à l'admin ; init() les réaffiche si l'utilisateur est admin.
-    ['section-gerer-equipe','section-tous-comptes',
+    // 20/09/2026 : sauf si init() est DÉJÀ passé par là (connexion résolue avant que ce fichier ne
+    // s'exécute — profil en cache, réseau rapide) : on ne re-masque pas ce qu'il vient d'ouvrir.
+    if (typeof isAdmin === 'undefined' || !isAdmin) ['section-gerer-equipe','section-tous-comptes',
      'section-express-courses','section-express-recharges',
      'eqtab-btn-express','bottomnav-express'].forEach(id => byId(id)?.classList.add('hidden'));
 
