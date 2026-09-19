@@ -1788,11 +1788,18 @@ function cltEstIOS() {
   // iPadOS 13+ se présente comme un Mac : le tactile le trahit.
   return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
 }
-/* Vrai quand on peut proposer l'installation : soit le navigateur a fait son offre, soit on est
-   sur iPhone où il n'y a pas d'offre mais une marche à suivre. Dans les deux cas, pas si c'est
-   déjà fait. */
+/* TOUJOURS VISIBLE TANT QUE CE N'EST PAS INSTALLÉ. (19/09/2026, Celtis : « quand ils cliquent,
+   ils puissent voir le bouton ou l'option d'installation, chez les livreurs, les clientes et
+   partout ».)
+   La règle d'avant — « seulement si le navigateur a fait son offre, ou sur iPhone » — laissait
+   trois trous : Firefox et Safari d'ordinateur n'offrent jamais rien ; et Chrome ne fait son
+   offre qu'UNE fois, très tôt, souvent avant que ce fichier soit chargé (ligne 540 sur 3 434
+   dans l'espace cliente). Le filet prévu pour ça, window.__cltOffreInstallTot, n'était posé que
+   sur /installer.html — jamais sur les espaces où les gens se connectent.
+   Désormais : le bouton est là dès que l'application n'est pas installée. S'il y a une offre du
+   navigateur, on la déclenche ; sinon on ouvre la marche à suivre. Dans les deux cas, on répond. */
 function cltPeutProposerInstall() {
-  return !cltDejaInstallee() && (!!CLT_OFFRE_INSTALL || cltEstIOS());
+  return !cltDejaInstallee();
 }
 /* Un appui sur le bouton. Rend 'acceptee', 'refusee', 'guide' (on a ouvert la marche à suivre)
    ou 'deja'. Le navigateur ne rend son offre qu'une fois : on l'oublie après usage. */

@@ -783,10 +783,20 @@ verifier(
    ça échoue, la liste qui se déplie pour de bon, les reçus en cartes lisibles avec « Corriger »
    écrit en toutes lettres, et les remises du jour rappelées dans le point du jour, d'où l'on
    revient sur l'erreur. Aucune migration : annuler_reversement existait déjà en base et fait
-   exactement ce qu'il faut. Étiquette 20260919appui. */
+   exactement ce qu'il faut. Étiquette 20260919appui.
+   v174, le 19/09/2026 — Celtis, sans plus de temps : « quand ils cliquent, ils puissent voir le
+   bouton d'installation, chez les livreurs, les clientes et partout » et « le soir, quand ça
+   totalise, l'argent sorti de la poche du livreur pour les expéditions doit être visible ». Le
+   bouton d'installation dépendait d'une offre du navigateur émise une seule fois, souvent avant
+   que clt-common.js soit chargé, et jamais sur Firefox ni Safari ; le filet prévu pour la garder
+   n'était posé que sur /installer.html. Il est maintenant dans l'en-tête des huit espaces, et le
+   bouton reste visible tant que ce n'est pas installé. Côté livreur, les avances de gare étaient
+   bien déduites mais muettes — comptées sans montant, et seulement sur les colis non livrés. Le
+   point du soir écrit désormais l'addition : encaissé, moins avancé sur N expéditions, égale à
+   remettre. Aucune migration. Étiquette 20260919poche. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v173'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v174'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -19,9 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260919appui">
-<script src="theme.js?v=20260919appui"></script>
-<script src="splash.js?v=20260919appui"></script>
+<link rel="stylesheet" href="style.css?v=20260919poche">
+<script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
+<script src="theme.js?v=20260919poche"></script>
+<script src="splash.js?v=20260919poche"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -913,22 +914,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260919appui"></script>
-<script src="lib/bibliotheques.js?v=20260919appui"></script>
-<script src="lib/retours.js?v=20260919appui"></script>
-<script src="lib/reclamations.js?v=20260919appui"></script>
-<script src="lib/communes-et-tarifs.js?v=20260919appui"></script>
-<script src="lib/argent.js?v=20260919appui"></script>
-<script src="lib/releve-cliente.js?v=20260919appui"></script>
-<script src="lib/papier-a-en-tete.js?v=20260919appui"></script>
-<script src="lib/briques-argent.js?v=20260919appui"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260919appui"></script>
-<script src="lib/annonce-de-remise.js?v=20260919appui"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260919appui"></script>
-<script src="lib/primes.js?v=20260919appui"></script>
-<script src="lib/doublons.js?v=20260919appui"></script>
-<script src="config.js?v=20260919appui"></script>
-<script src="biometric-lock.js?v=20260919appui"></script>
+<script src="clt-common.js?v=20260919poche"></script>
+<script src="lib/bibliotheques.js?v=20260919poche"></script>
+<script src="lib/retours.js?v=20260919poche"></script>
+<script src="lib/reclamations.js?v=20260919poche"></script>
+<script src="lib/communes-et-tarifs.js?v=20260919poche"></script>
+<script src="lib/argent.js?v=20260919poche"></script>
+<script src="lib/releve-cliente.js?v=20260919poche"></script>
+<script src="lib/papier-a-en-tete.js?v=20260919poche"></script>
+<script src="lib/briques-argent.js?v=20260919poche"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260919poche"></script>
+<script src="lib/annonce-de-remise.js?v=20260919poche"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260919poche"></script>
+<script src="lib/primes.js?v=20260919poche"></script>
+<script src="lib/doublons.js?v=20260919poche"></script>
+<script src="config.js?v=20260919poche"></script>
+<script src="biometric-lock.js?v=20260919poche"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2062,8 +2063,8 @@
     const valeur = (c.frais_expedition === null || c.frais_expedition === undefined)
       ? '' : String(Number(c.frais_expedition) || 0);
     return `<label class="montant-case">
-            <span>🚌 ${escapeHTML(LIBELLE_FRAIS_EXPEDITION)} (transporteur)</span>
-            <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="1" placeholder="Montant payé" value="${escapeHTML(valeur)}" aria-label="Frais d'expédition payés au transporteur, en FCFA">
+            <span>🚌 ${escapeHTML(LIBELLE_FRAIS_EXPEDITION)} — tout ce que vous avez payé (gare, transport)</span>
+            <input type="number" class="frais-exp-input" inputmode="numeric" min="0" step="1" placeholder="Montant total sorti de votre poche" value="${escapeHTML(valeur)}" aria-label="Tout ce que vous avez payé de votre poche pour cette expédition, gare et transport compris, en FCFA">
           </label>`;
   }
 

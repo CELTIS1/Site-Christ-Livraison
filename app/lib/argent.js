@@ -892,6 +892,10 @@ function caisseParLivreur(colis) {
       parLivreur[key] = {
         nb: 0, nbCoursesSansLivraison: 0, article: 0, livraison: 0, gare: 0, total: 0,
         remis: 0, reste: 0, manquant: 0,
+        // 19/09/2026 — ce que les avances de gare retirent de ce qu'il RESTE à remettre, et
+        // sur combien d'expéditions. Livrées ou non : dès que l'argent est sorti de sa poche et
+        // n'est pas remboursé, ça compte. (Celtis : « il faut que ce soit visible sur lui ».)
+        gareEnAttente: 0, nbAvances: 0,
         idsAremettre: [], idsFraisARembourser: [],
       };
     }
@@ -913,7 +917,10 @@ function caisseParLivreur(colis) {
     l.total += montant;
     l.manquant += Number(montantManquantALaLivraison(c)) || 0;
     if (c.encaissement_remis) { l.remis += montant; }
-    else { l.reste += montant; l.idsAremettre.push(c.id); }
+    else {
+      l.reste += montant; l.idsAremettre.push(c.id);
+      if (avanceDue(c) > 0) { l.gareEnAttente += avanceDue(c); l.nbAvances++; }
+    }
   });
 
   // Les colis non livrés n'entrent ici que par leur avance de gare, et pour elle seule : ni
@@ -928,6 +935,7 @@ function caisseParLivreur(colis) {
     l.gare += avance;
     l.total -= avance;
     l.reste -= avance;
+    l.gareEnAttente += avance; l.nbAvances++;
     l.idsFraisARembourser.push(c.id);
   });
 
@@ -1171,7 +1179,7 @@ function caisseEnMainDuLivreur(colis, livreurId, options) {
   const ligne = caisseParLivreur(liste).filter(l => String(l.id) === cle)[0];
   if (!ligne) {
     return { montant: 0, nb: 0, jours: null, certain: false,
-             nbSansHeure: 0, nbAvances: 0, seuilJours: seuil, depasse: false };
+             nbSansHeure: 0, nbAvances: 0, gare: 0, encaisse: 0, seuilJours: seuil, depasse: false };
   }
 
   const parId = {};
@@ -1196,7 +1204,12 @@ function caisseEnMainDuLivreur(colis, livreurId, options) {
     jours: doyen.jours,
     certain: doyen.certain,
     nbSansHeure,
-    nbAvances: ligne.idsFraisARembourser.length,
+    /* 19/09/2026 — jusqu'ici on ne comptait que les avances sur colis NON livrés, et sans
+       montant. Une expédition livrée le matin voyait son avance déduite en silence : le total
+       du soir était juste, mais le livreur ne pouvait ni le vérifier ni le comprendre. */
+    nbAvances: ligne.nbAvances,
+    gare: ligne.gareEnAttente,
+    encaisse: ligne.reste + ligne.gareEnAttente,
     seuilJours: seuil,
     depasse: doyen.jours !== null && doyen.jours > seuil,
   };

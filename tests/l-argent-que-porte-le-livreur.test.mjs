@@ -256,6 +256,46 @@ verifier("une avance de gare non remboursée se déduit de ce qu'il porte",
 verifier("l'avance de gare est comptée à part, et pas comme un colis à remettre",
   avecAvance.nb === 1 && avecAvance.nbAvances === 1);
 
+/* 19/09/2026 — Celtis : « s'il a fait trois expéditions à 3 500, le soir ça fait 3 500 × 3 en
+   négatif dans son point ; il faut que ce soit visible sur lui, pour savoir exactement ce qui
+   est censé être dans sa main ». Le total était juste, mais muet : on comptait les avances sans
+   dire combien, et seulement sur les colis NON livrés. Trois expéditions livrées le matin
+   disparaissaient de l'addition du soir. */
+console.log('\n— Les avances, en chiffres et sur TOUTES les expéditions —');
+const troisExpeditions = caisseEnMainDuLivreur([
+  colis({ id: 'a', montant_article: 20000, montant_livraison: 1500, livre_at: '2026-08-28T18:00:00.000Z' }),
+  // Deux expéditions LIVRÉES (remises à la gare), avance sortie de sa poche : 3 500 chacune.
+  colis({ id: 'e1', commune_destination: 'Expédition (intérieur)', montant_article: 0, montant_livraison: 0, frais_expedition: 3500, livre_at: '2026-08-28T10:00:00.000Z' }),
+  colis({ id: 'e2', commune_destination: 'Expédition (intérieur)', montant_article: 0, montant_livraison: 0, frais_expedition: 3500, livre_at: '2026-08-28T11:00:00.000Z' }),
+  // Une troisième pas encore déposée, avance déjà payée.
+  colis({ id: 'e3', statut: 'en_attente', frais_expedition: 3500 }),
+], 'L1', { maintenant: MAINTENANT });
+
+verifier("les trois avances sont comptées, livrées ou non : 3 × 3 500 = 10 500 sortis de sa poche",
+  troisExpeditions.gare === 10500 && troisExpeditions.nbAvances === 3,
+  `lu : gare=${troisExpeditions.gare}, nbAvances=${troisExpeditions.nbAvances}`);
+verifier("l'addition est écrite : encaissé 21 500 − avancé 10 500 = à remettre 11 000",
+  troisExpeditions.encaisse === 21500 && troisExpeditions.montant === 11000,
+  `lu : encaisse=${troisExpeditions.encaisse}, montant=${troisExpeditions.montant}`);
+verifier("et elle se recoupe : encaissé − avancé = à remettre, toujours",
+  troisExpeditions.encaisse - troisExpeditions.gare === troisExpeditions.montant);
+
+// Une avance déjà remboursée par CLT ne pèse plus : l'argent a retrouvé sa poche.
+const rembourseeDeja = caisseEnMainDuLivreur([
+  colis({ id: 'a', montant_article: 10000, livre_at: '2026-08-28T18:00:00.000Z' }),
+  colis({ id: 'e1', commune_destination: 'Expédition (intérieur)', montant_article: 0, montant_livraison: 0, frais_expedition: 3500, frais_expedition_rembourse_at: '2026-08-28T12:00:00.000Z', livre_at: '2026-08-28T10:00:00.000Z' }),
+], 'L1', { maintenant: MAINTENANT });
+verifier("une avance déjà remboursée n'apparaît plus dans l'addition",
+  rembourseeDeja.gare === 0 && rembourseeDeja.nbAvances === 0 && rembourseeDeja.montant === 10000,
+  `lu : gare=${rembourseeDeja.gare}, montant=${rembourseeDeja.montant}`);
+
+// L'écran écrit ces chiffres, pas seulement un décompte.
+const briques = fs.readFileSync(path.join(APP, 'lib', 'briques-argent.js'), 'utf8');
+verifier("l'écran du livreur écrit les trois lignes : encaissé, avancé, à remettre",
+  /Encaissé sur vos colis/.test(briques) && /Avancé de votre poche/.test(briques) && /À remettre à CLT/.test(briques));
+verifier("et il ne se contente plus d'un décompte sans montant",
+  !/avance\$\{r\.nbAvances > 1 \? 's' : ''\} de gare déjà déduite/.test(briques));
+
 // Un montant négatif n'est pas une anomalie : c'est CLT qui doit de l'argent au livreur.
 const enNegatif = caisseEnMainDuLivreur([
   colis({ id: 'b', statut: 'en_attente', frais_expedition: 3000 }),

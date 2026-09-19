@@ -151,8 +151,20 @@ function caisseEnMainHTML(releve, options) {
     ? `<div style="margin-top:4px; font-size:11px; color:#6b7686;">${r.nbSansHeure} colis sans heure de remise connue : l'âge annoncé est un minimum.</div>`
     : '';
 
-  const avances = r.nbAvances > 0
-    ? `<div style="margin-top:4px; font-size:11px; color:#8a4b12;">${r.nbAvances} avance${r.nbAvances > 1 ? 's' : ''} de gare déjà déduite${r.nbAvances > 1 ? 's' : ''} de ce total.</div>`
+  /* L'ARGENT SORTI DE SA POCHE, EN CHIFFRES. (19/09/2026, Celtis : « s'il a fait trois
+     expéditions à 3 500, le soir ça fait 3 500 × 3 en négatif dans son point ; il faut que ce
+     soit visible sur lui, pour qu'on sache exactement ce qui est censé être dans sa main ».)
+     On disait « 2 avances déjà déduites » sans dire combien : un total juste que personne ne
+     pouvait vérifier. Maintenant l'addition est écrite — encaissé, moins avancé, égale à
+     remettre — et c'est cette ligne qu'on relit à deux le soir. */
+  const gare = Number(r.gare) || 0;
+  const avances = gare > 0
+    ? `<div style="margin-top:8px; padding:8px 10px; border-radius:8px; background:#fff7ed; border:1px solid #f5d9b8; font-size:12px; color:#3a2a14;">
+          <div style="display:flex; justify-content:space-between; gap:8px;"><span>Encaissé sur vos colis</span><strong>${m(r.encaisse)}</strong></div>
+          <div style="display:flex; justify-content:space-between; gap:8px; color:#8a4b12;"><span>🚌 Avancé de votre poche sur ${r.nbAvances} expédition${r.nbAvances > 1 ? 's' : ''}</span><strong>− ${m(gare)}</strong></div>
+          <div style="display:flex; justify-content:space-between; gap:8px; border-top:1px solid #f5d9b8; margin-top:4px; padding-top:4px;"><span>À remettre à CLT</span><strong>${m(montant)}</strong></div>
+          <div style="margin-top:4px; font-size:11px; color:#6b7686;">Gardez les reçus de la gare : c'est cette somme que CLT retient sur la cliente.</div>
+        </div>`
     : '';
 
   return cadre(enRetard ? '#f0c9c4' : '#dbe6f2', enRetard ? '#fdf3f2' : '#f4f8fc',

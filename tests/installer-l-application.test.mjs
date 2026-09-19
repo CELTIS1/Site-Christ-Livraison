@@ -40,7 +40,19 @@ verifier('l\'offre est oubliée après usage : le navigateur ne la rend qu\'une 
 console.log('\n2. Le bouton n\'apparaît que quand il sert');
 verifier('on sait reconnaître une application déjà installée (display-mode, navigator.standalone)', /display-mode: standalone/.test(commun) && /navigator\.standalone/.test(commun));
 verifier('on reconnaît l\'iPhone, iPadOS compris (qui se présente comme un Mac)', /iPad\|iPhone\|iPod/.test(commun) && /maxTouchPoints/.test(commun));
-verifier('proposer = pas déjà installée, et (offre du navigateur OU iPhone)', /function cltPeutProposerInstall\(\) \{\s*return !cltDejaInstallee\(\) && \(!!CLT_OFFRE_INSTALL \|\| cltEstIOS\(\)\);/.test(commun));
+/* 19/09/2026 — Celtis : « quand ils cliquent, ils puissent voir le bouton, chez les livreurs, les
+   clientes et partout ». L'ancienne règle (offre du navigateur OU iPhone) laissait Firefox et
+   Safari d'ordinateur sans bouton, et perdait l'offre de Chrome quand elle arrivait avant
+   clt-common.js. Désormais : visible dès que ce n'est pas installé. */
+verifier('proposer = pas déjà installée, point — sur tous les navigateurs', /function cltPeutProposerInstall\(\) \{\s*return !cltDejaInstallee\(\);/.test(commun));
+verifier('sans offre du navigateur, l\'appui ouvre la marche à suivre au lieu de ne rien faire', /window\.open\('\/installer\.html'/.test(commun));
+const ESPACES = ['livreur','fournisseur','equipe','gestion','express-client','express-coursier','login','express-login'];
+ESPACES.forEach(f => {
+  const h = lire('app/' + f + '.html');
+  const tete = h.slice(0, h.indexOf('</head>'));
+  verifier(`${f}.html garde l'offre dès le <head>, avant theme.js et tout le reste`,
+    /__cltOffreInstallTot\s*=\s*e/.test(tete) && tete.indexOf('__cltOffreInstallTot') < tete.indexOf('theme.js'));
+});
 verifier('l\'installation faite, le bouton s\'efface (appinstalled)', /addEventListener\('appinstalled'/.test(commun) && /cltMajBoutonInstall\(\)/.test(commun));
 
 console.log('\n3. Une entrée dans le menu de chaque espace, sans toucher aux pages');
