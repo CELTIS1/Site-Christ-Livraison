@@ -488,7 +488,8 @@
         <span class="live-dot"></span>
         Actualisation automatique active — dernière vérification à ${heure}
       </div>
-      ${blocContactHTML(data.numero || '')}
+      ${blocBoutiqueHTML(data)}
+      ${blocContactHTML(data.numero || '', !!data.boutique_tel)}
     `;
   }
 
@@ -503,13 +504,45 @@
   // WhatsApp est une ligne à part, celle du site (Celtis, 17/09/2026). Écrire aux deux numéros
   // ci-dessus, qui ne reçoivent pas WhatsApp, serait un message qui n'arrive jamais.
   const CLT_WHATSAPP = '2250546818640';      // 05 46 81 86 40 — la ligne WhatsApp
-  function blocContactHTML(numero) {
+  /* LA BOUTIQUE D'ABORD (20/09/2026, point 19.6). Celtis : « pour un colis qui ne nous appartient
+     pas, on nous appelle. Il faut d'abord pouvoir appeler la boutique — son numéro direct et son
+     WhatsApp — et ensuite seulement, pour une remarque sur la livraison, nos contacts. » C'est
+     l'ordre des meilleurs (Jumia, Glovo : « contacter le vendeur », puis « un problème avec la
+     livraison ? »). La boutique n'est donnée qu'à qui a prouvé les quatre chiffres ; sans elle,
+     ce bloc n'existe pas et le bloc CLT reprend la question générale. */
+  function numeroCompose(brut) {
+    const chiffres = String(brut || '').replace(/\D/g, '');
+    if (!chiffres) return '';
+    if (chiffres.startsWith('225')) return '+' + chiffres;
+    if (chiffres.length === 10) return '+225' + chiffres;
+    return '+' + chiffres;
+  }
+  // +2250700000011 → « 07 00 00 00 11 » : le numéro se lit, on sait qui on appelle.
+  function numeroAffiche(tel) {
+    const local = tel.replace(/^\+225/, '');
+    return local.length === 10 ? local.replace(/(\d{2})(?=\d)/g, '$1 ') : tel;
+  }
+  function blocBoutiqueHTML(data) {
+    const tel = numeroCompose(data && data.boutique_tel);
+    if (!tel) return '';
+    const nom = data.boutique_nom || 'la boutique';
+    const message = "Bonjour, je vous contacte au sujet de ma commande" + (data.numero ? " (colis " + data.numero + ")" : "") + ".";
+    return `
+      <div class="bloc-contact">
+        <div class="bloc-contact-titre">Une question sur votre commande ? Contactez ${escapeHTML(nom)}</div>
+        <div class="bloc-contact-liens">
+          <a class="contact-lien" href="tel:${tel}">📞 ${escapeHTML(numeroAffiche(tel))}</a>
+          <a class="contact-lien" href="https://wa.me/${tel.replace('+', '')}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">🟢 WhatsApp</a>
+        </div>
+      </div>`;
+  }
+  function blocContactHTML(numero, apresBoutique) {
     const message = numero
       ? "Bonjour CLT, j'ai une question sur le colis " + numero + "."
       : "Bonjour CLT, j'ai une question sur un colis.";
     return `
       <div class="bloc-contact">
-        <div class="bloc-contact-titre">Une question sur ce colis ?</div>
+        <div class="bloc-contact-titre">${apresBoutique ? 'Une remarque sur la livraison ? Joindre CLT' : 'Une question sur ce colis ?'}</div>
         <div class="bloc-contact-liens">
           <a class="contact-lien" href="tel:${CLT_TEL}">📞 07 79 60 47 61</a>
           <a class="contact-lien" href="tel:${CLT_TEL_2}">📞 01 70 40 73 12</a>

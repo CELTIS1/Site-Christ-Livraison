@@ -253,7 +253,29 @@ export function nouveauMonde() {
     journal.push({ op: 'rpc', nom, args });
     if (nom === 'annonce_remise_en_cours') return { data: null, error: null };
     if (nom === 'primes_en_cours') return { data: null, error: null };
-    if (nom === 'suivi_colis') return { data: [], error: null };
+    /* LE SUIVI PUBLIC (points 1.7, 10.5, 19.6) : la même règle que la fonction en base — sans
+       les quatre derniers chiffres du destinataire, le statut brut ; avec, la fiche, l'histoire
+       et la boutique (nom, numéro). La vraie fonction est éprouvée dans un vrai Postgres
+       (tests/suivi/*.py) ; ici on rejoue son contrat pour que l'écran soit éprouvé. */
+    if (nom === 'suivi_colis') {
+      const cle = String((args && args.p_recherche) || '').trim().toUpperCase();
+      const c = TABLES.colis.find(x => String(x.numero || '').toUpperCase() === cle || x.id === cle.toLowerCase());
+      if (!c) return { data: null, error: null };
+      const attendu = String(c.destinataire_telephone || '').replace(/\D/g, '').slice(-4);
+      const donnes = String((args && args.p_chiffres) || '').replace(/\D/g, '').slice(-4);
+      const brut = { id: c.id, numero: c.numero, statut: c.statut, created_at: c.created_at };
+      if (!donnes || donnes !== attendu) return { data: brut, error: null };
+      const f = (TABLES.profiles || []).find(p => p.id === c.fournisseur_id);
+      const l = (TABLES.profiles || []).find(p => p.id === c.livreur_id);
+      return { data: Object.assign(brut, {
+        description: c.description, destination: c.destination, commune_destination: c.commune_destination,
+        photo_url: c.photo_url || null, photo_livraison_url: c.photo_livraison_url || null,
+        montant_total: (c.montant_article || 0) + (c.montant_livraison || 0),
+        livreur_nom: c.statut === 'en_livraison' && l ? l.full_name : null, livreur_photo_url: null, creneau_estime: null,
+        recupere_at: c.recupere_at || null, en_livraison_at: c.en_livraison_at || null, livre_at: c.livre_at || null, non_livre_at: c.non_livre_at || null, retour_at: c.retour_at || null,
+        boutique_nom: f ? (f.company_name || f.full_name) : null, boutique_tel: f ? f.phone : null,
+      }), error: null };
+    }
     /* La recherche unique du bureau (point 7.8, 17/09/2026). La vraie fonction vit en base
        parce qu'elle normalise les numéros de téléphone des deux côtés ; on refait ici le même
        geste, sur les tables de ce faux monde, pour que le parcours éprouve l'écran pour de

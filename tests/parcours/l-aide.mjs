@@ -36,7 +36,7 @@ verifier('la liste se réduit aux deux articles qui en parlent', restants === 2,
 verifier('ils s\'ouvrent d\'eux-mêmes quand ils sont peu nombreux', (await boite.locator('details[open]').count()) === restants);
 await boite.locator('input[type="search"]').fill('xyzxyz');
 await dodo(300);
-verifier('rien ne correspond : on le dit, avec le numéro à appeler', /Rien ne correspond/.test(await texte(boite)) && /07 11 13 86 93/.test(await texte(boite)));
+verifier('rien ne correspond : on le dit, avec le numéro à appeler', /Rien ne correspond/.test(await texte(boite)) && /07 79 60 47 61/.test(await texte(boite)));
 await boite.locator('input[type="search"]').fill('');
 await dodo(300);
 

@@ -134,7 +134,8 @@ verifier('sa carte porte le niveau, la phrase, et les deux réponses', /retourBl
 verifier('« oui » et « non » passent par la RPC, jamais par une écriture directe sur colis', /rpc\('cliente_repond_au_retour', \{ p_colis_id: colisId, p_recu: !!recu, p_texte: texte \|\| null \}\)/.test(f));
 verifier('« non » lui laisse dire ce qui s\'est passé', /cltPrompt\(\{ title: 'Vous ne l\\'avez pas récupéré \?'/.test(f));
 verifier('le parcours du colis se déplie', /data-retour-parcours/.test(f) && /from\('retours_mouvements'\)/.test(f));
-verifier('une ligne compte ses colis qui reviennent, tous jours confondus, et mène à eux', /retoursClienteLigneHTML\(mesColis\)/.test(f) && /data-voir-retours/.test(f) && /filtreRetours/.test(f));
+verifier('une ligne compte ses colis qui reviennent, tous jours confondus, et mène à leur onglet', /retoursClienteLigneHTML\(mesColis\)/.test(f) && /data-voir-retours/.test(f) && /showFournisseurTab\('section-retours'\)/.test(f));
+verifier('l\'onglet Retours de la cliente (19.6) : à la place de « Compte », doublon du menu ☰ ; les confirmations attendues en chiffre sur l\'onglet', /data-clttab="section-retours"/.test(f) && /data-target="section-retours"/.test(f) && !/data-target="__compte"/.test(f) && /function renderRetoursCliente\(\)/.test(f) && /data-retours-badge/.test(f));
 verifier('en retard, elle peut joindre CLT depuis là', /retourEnRetard\(c\) \? ' ' \+ cltJoindreLienHTML/.test(f));
 
 console.log('\n9. Une seule source, chargée partout');

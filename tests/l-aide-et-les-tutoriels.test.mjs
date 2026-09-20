@@ -37,7 +37,7 @@ verifier('le tutoriel du bureau est là, et son PDF est dans app/aide/', !!pdf &
 verifier('les livreurs ont : journée, récupérer, livrer, non livré, retour, reporter, argent, hors réseau', ['livreur-journee', 'livreur-recuperer', 'livreur-livrer', 'livreur-non-livre', 'livreur-retour', 'livreur-reporter', 'livreur-argent', 'livreur-hors-reseau'].every(id => E.livreur.articles.some(a => a.id === id)));
 verifier('les clientes ont : annoncer, suivre, relevé, retour (confirmer), signaler, boutiques', ['cliente-annoncer', 'cliente-suivre', 'cliente-releve', 'cliente-retour', 'cliente-signaler', 'cliente-boutiques'].every(id => E.fournisseur.articles.some(a => a.id === id)));
 verifier('« installer » est dans « tous », avec le lien vers la marche à suivre', E.tous.articles.some(a => a.id === 'installer' && (a.medias || []).some(m => m.url === '/installer.html')));
-verifier('les contacts publiés sont les bons (07 11 13 86 93, 05 46 81 86 40, contact@)', /07 11 13 86 93/.test(JSON.stringify(aide)) && /05 46 81 86 40/.test(JSON.stringify(aide)) && /contact@christlivraison\.ci/.test(JSON.stringify(aide)) && !/07 89 81 81 40|celtis@/.test(JSON.stringify(aide)));
+verifier('les contacts publiés sont ceux de l\'application — service clientèle 07 79 60 47 61 / 01 70 40 73 12, WhatsApp 05 46 81 86 40 — pas ceux du site vitrine', /07 79 60 47 61/.test(JSON.stringify(aide)) && /01 70 40 73 12/.test(JSON.stringify(aide)) && !/07 11 13 86 93/.test(JSON.stringify(aide)) && /05 46 81 86 40/.test(JSON.stringify(aide)) && /contact@christlivraison\.ci/.test(JSON.stringify(aide)) && !/07 89 81 81 40|celtis@/.test(JSON.stringify(aide)));
 
 console.log('\n2. La mécanique : clt-common.js');
 const cc = lire('app/clt-common.js');

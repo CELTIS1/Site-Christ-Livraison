@@ -1464,7 +1464,7 @@ function cltAfficherAide(options) {
       });
       html += '</section>';
     });
-    corps.innerHTML = html || '<div class="clt-aide__vide">Rien ne correspond à « ' + esc(filtre) + ' ». Essayez un autre mot, ou appelez-nous : 07 11 13 86 93.</div>';
+    corps.innerHTML = html || '<div class="clt-aide__vide">Rien ne correspond à « ' + esc(filtre) + ' ». Essayez un autre mot, ou appelez-nous : ' + CLT_CONTACT.affiche + '.</div>';
     if (options.article && !q) {
       var cible = corps.querySelector("#aide-" + options.article);
       if (cible) { cible.scrollIntoView({ block: "start" }); options.article = null; }

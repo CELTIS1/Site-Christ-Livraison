@@ -829,10 +829,17 @@ verifier(
    procédures ». Comme les meilleures applications : pas un onglet de plus, une entrée « ❓ Aide
    et tutoriels » dans le menu ☰ de chaque espace, un centre d'aide propre à l'espace
    (app/aide.json, 26 articles), une recherche, un lien direct par article (#aide=<id>), le PDF
-   du tutoriel du bureau, le tout gardé hors réseau. Aucune migration. Étiquette 20260920aide. */
+   du tutoriel du bureau, le tout gardé hors réseau. Aucune migration. Étiquette 20260920aide.
+   v180, le 20/09/2026 — Celtis : « dans l'espace cliente, Compte est deux fois (onglet et menu
+   ☰) : on retire l'onglet » ; « sur le suivi, les numéros affichés sont ceux de l'entreprise :
+   il faut d'abord pouvoir appeler la boutique — son numéro direct et son WhatsApp — et ensuite
+   nos contacts ». L'onglet « Retours » remplace « Compte » chez la cliente (ses colis qui
+   reviennent, tous jours confondus, les confirmations attendues en chiffre) ; la page de suivi
+   donne la boutique d'abord (à qui prouve les quatre chiffres), CLT ensuite. Migration
+   2026-09-20-la-boutique-sur-le-suivi.sql (vue publique + suivi_colis). Étiquette 20260920suivi. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v179'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v180'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
