@@ -3402,3 +3402,31 @@ html[data-theme="dark"] .mes-reportes{ background:#3a3010; color:#f3d98a; }
   .wrap{ padding-left:12px; padding-right:12px; }
   .card{ padding:16px 14px; }
 }
+
+/* LE CENTRE D'AIDE (20/09/2026, point 19.5) : même boîte que « Quoi de neuf ? », plus large,
+   avec une recherche en tête et des articles dépliables. */
+.clt-aide__boite{ width:min(680px, 100%); max-height:min(88vh, 760px); }
+.clt-aide__recherche{ padding:10px 18px 4px; }
+.clt-aide__recherche input{ width:100%; padding:11px 14px; border:1px solid var(--border-strong); border-radius:12px; font:inherit; font-size:15px; background:var(--grey-bg); color:inherit; }
+.clt-aide__recherche input:focus{ outline:none; border-color:var(--navy); background:var(--white); }
+.clt-aide__corps{ padding:4px 18px 18px; }
+.clt-aide__section h3{ margin:14px 0 6px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.clt-aide__article{ border:1px solid var(--border); border-radius:12px; margin-bottom:8px; background:var(--white); }
+.clt-aide__article summary{ list-style:none; cursor:pointer; padding:11px 14px; display:flex; flex-direction:column; gap:2px; }
+.clt-aide__article summary::-webkit-details-marker{ display:none; }
+.clt-aide__article summary::after{ content:'▸'; position:absolute; right:14px; color:var(--muted); }
+.clt-aide__article{ position:relative; }
+.clt-aide__article[open] summary::after{ content:'▾'; }
+.clt-aide__titre{ font-weight:700; color:var(--navy); font-size:15px; padding-right:20px; }
+.clt-aide__resume{ font-size:13px; color:var(--muted); line-height:1.4; padding-right:20px; }
+.clt-aide__contenu{ padding:0 14px 12px; font-size:14px; line-height:1.5; }
+.clt-aide__contenu ol{ margin:0 0 8px; padding-left:22px; }
+.clt-aide__contenu li{ margin-bottom:5px; }
+.clt-aide__astuce{ background:#FBE7D8; border-left:3px solid var(--orange); border-radius:8px; padding:8px 10px; margin:6px 0 8px; font-size:13.5px; }
+.clt-aide__medias{ display:flex; flex-direction:column; gap:6px; margin:6px 0 8px; }
+.clt-aide__media{ display:inline-block; padding:8px 12px; border:1px solid var(--border-strong); border-radius:10px; font-weight:600; color:var(--navy); text-decoration:none; background:var(--grey-bg); }
+.clt-aide__lien{ background:none; border:0; padding:0; font:inherit; font-size:12.5px; color:var(--muted); cursor:pointer; text-decoration:underline; }
+.clt-aide__vide{ padding:16px 4px; color:var(--muted); font-size:14px; }
+html[data-theme="dark"] .clt-aide__article{ background:#1a2230; border-color:#2A3849; }
+html[data-theme="dark"] .clt-aide__astuce{ background:#3a2a1a; }
+html[data-theme="dark"] .clt-aide__media{ background:#243247; border-color:#2A3849; }

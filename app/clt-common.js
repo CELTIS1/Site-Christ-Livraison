@@ -1391,6 +1391,135 @@ function cltAfficherNouveautes(options) {
 window.cltAfficherNouveautes = cltAfficherNouveautes;
 
 /* =====================================================================
+   LE CENTRE D'AIDE — 20 septembre 2026 (point 19.5, demande de Celtis)
+   ---------------------------------------------------------------------
+   « Un onglet tutoriel, pour chacun des comptes, où mettre les explications, les PDF, plus tard
+   des vidéos — pour ne pas encombrer le reste. » Ce que font les meilleures applications
+   (Shopify, Intercom, WhatsApp Business) : pas un onglet de plus dans la barre du quotidien,
+   mais une entrée « ❓ Aide » toujours au même endroit — le menu ☰ — qui ouvre un centre d'aide
+   PROPRE À L'ESPACE : la cliente ne lit pas les articles du livreur. Un champ de recherche en
+   tête, des articles courts (un geste par étape), les documents à télécharger, et un lien
+   direct vers un article (#aide=<id>) que le bureau peut envoyer sur WhatsApp.
+   Le contenu vit dans app/aide.json : on ajoute un article sans toucher au code. Lu à la
+   demande et gardé par le service worker : il s'ouvre aussi hors réseau.
+   ===================================================================== */
+function cltEspaceDeLaPage() {
+  var p = (location.pathname || "").toLowerCase();
+  if (/livreur\.html/.test(p)) return "livreur";
+  if (/fournisseur\.html/.test(p)) return "fournisseur";
+  if (/equipe\.html|gestion\.html/.test(p)) return "equipe";
+  if (/express/.test(p)) return "express";
+  return null;
+}
+function cltAfficherAide(options) {
+  options = options || {};
+  var espace = options.espace || cltEspaceDeLaPage();
+  var ancien = document.getElementById("clt-aide"); if (ancien) ancien.remove();
+  var ov = document.createElement("div");
+  ov.id = "clt-aide"; ov.className = "clt-nouveautes clt-aide";
+  ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "Aide et tutoriels");
+  ov.innerHTML = '<div class="clt-nouveautes__boite clt-aide__boite">'
+    + '<div class="clt-nouveautes__tete"><h2>❓ Aide et tutoriels</h2><button type="button" class="clt-nouveautes__fermer" aria-label="Fermer">×</button></div>'
+    + '<div class="clt-aide__recherche"><input type="search" placeholder="Chercher un geste, un mot…" aria-label="Chercher dans l\'aide" autocomplete="off"></div>'
+    + '<div class="clt-nouveautes__corps clt-aide__corps">Chargement…</div></div>';
+  var corps = ov.querySelector(".clt-aide__corps");
+  var champ = ov.querySelector("input");
+  function clore() { ov.remove(); document.removeEventListener("keydown", surTouche); if (/#aide=/.test(location.hash)) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} } }
+  function surTouche(e) { if (e.key === "Escape") clore(); }
+  ov.querySelector(".clt-nouveautes__fermer").addEventListener("click", clore);
+  ov.addEventListener("click", function (e) { if (e.target === ov) clore(); });
+  document.addEventListener("keydown", surTouche);
+  document.body.appendChild(ov);
+
+  var esc = function (v) { return (typeof escapeHTML === "function") ? escapeHTML(String(v == null ? "" : v)) : String(v == null ? "" : v); };
+  var base = cltUrlACote("");
+  var sections = [];
+  function normaliser(t) { return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+  function mediaHTML(m) {
+    var url = /^https?:|^\//.test(m.url || "") ? m.url : base + (m.url || "");
+    var icone = m.type === "pdf" ? "📄" : m.type === "video" ? "🎬" : m.type === "image" ? "🖼️" : "🔗";
+    return '<a class="clt-aide__media" href="' + esc(url) + '" target="_blank" rel="noopener">' + icone + ' ' + esc(m.label || m.url) + '</a>';
+  }
+  function dessiner(filtre) {
+    var q = normaliser(filtre);
+    var html = "", total = 0;
+    sections.forEach(function (sec) {
+      var articles = sec.articles.filter(function (a) {
+        if (!q) return true;
+        return normaliser([a.titre, a.resume, (a.etapes || []).join(" "), a.astuce].join(" ")).indexOf(q) !== -1;
+      });
+      if (!articles.length) return;
+      total += articles.length;
+      html += '<section class="clt-aide__section"><h3>' + esc(sec.titre) + '</h3>';
+      articles.forEach(function (a) {
+        var ouvert = options.article === a.id || (!!q && articles.length <= 3);
+        html += '<details class="clt-aide__article" id="aide-' + esc(a.id) + '"' + (ouvert ? ' open' : '') + '>'
+          + '<summary><span class="clt-aide__titre">' + esc(a.titre) + '</span>' + (a.resume ? '<span class="clt-aide__resume">' + esc(a.resume) + '</span>' : '') + '</summary>'
+          + '<div class="clt-aide__contenu">'
+          + ((a.etapes || []).length ? '<ol>' + a.etapes.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join("") + '</ol>' : '')
+          + (a.astuce ? '<div class="clt-aide__astuce">💡 ' + esc(a.astuce) + '</div>' : '')
+          + ((a.medias || []).length ? '<div class="clt-aide__medias">' + a.medias.map(mediaHTML).join("") + '</div>' : '')
+          + '<button type="button" class="clt-aide__lien" data-aide-lien="' + esc(a.id) + '" title="Copier le lien de cet article">🔗 Copier le lien</button>'
+          + '</div></details>';
+      });
+      html += '</section>';
+    });
+    corps.innerHTML = html || '<div class="clt-aide__vide">Rien ne correspond à « ' + esc(filtre) + ' ». Essayez un autre mot, ou appelez-nous : 07 11 13 86 93.</div>';
+    if (options.article && !q) {
+      var cible = corps.querySelector("#aide-" + options.article);
+      if (cible) { cible.scrollIntoView({ block: "start" }); options.article = null; }
+    }
+  }
+  corps.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-aide-lien]");
+    if (!b) return;
+    var lien = location.origin + location.pathname + "#aide=" + b.dataset.aideLien;
+    var fini = function () { if (typeof cltToast === "function") cltToast("Lien copié : envoyez-le sur WhatsApp, il ouvre cet article.", { type: "success" }); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(lien).then(fini, function () { window.prompt("Copiez ce lien :", lien); });
+    else window.prompt("Copiez ce lien :", lien);
+  });
+  champ.addEventListener("input", function () { dessiner(champ.value.trim()); });
+  fetch(cltUrlACote("aide.json"), { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (j) {
+      var E = (j && j.espaces) || {};
+      var ordre = espace ? [espace, "tous"] : ["equipe", "livreur", "fournisseur", "express", "tous"];
+      sections = ordre.filter(function (k) { return E[k] && Array.isArray(E[k].articles) && E[k].articles.length; })
+        .map(function (k) { return { cle: k, titre: E[k].titre || k, articles: E[k].articles }; });
+      if (!sections.length) { corps.textContent = "Aucun article pour le moment."; return; }
+      dessiner("");
+      if (!options.article) setTimeout(function () { try { champ.focus(); } catch (e) {} }, 60);
+    })
+    .catch(function () { corps.textContent = "L'aide n'est pas disponible hors connexion pour l'instant. Réessayez avec le réseau."; });
+  return { fermer: clore };
+}
+window.cltAfficherAide = cltAfficherAide;
+/* L'entrée dans le menu ☰ de chaque espace (groupe « Outils », juste après la grille tarifaire),
+   et l'ouverture directe par #aide=<id> — le lien que le bureau envoie sur WhatsApp. */
+function cltBrancherAide() {
+  if (typeof document === "undefined") return;
+  var menu = document.getElementById("settings-dropdown");
+  if (menu && !document.getElementById("btn-aide")) {
+    var b = document.createElement("button");
+    b.type = "button"; b.id = "btn-aide"; b.textContent = "❓ Aide et tutoriels";
+    b.addEventListener("click", function () { cltAfficherAide(); });
+    var tarifs = document.getElementById("btn-tarifs");
+    if (tarifs && tarifs.parentNode) tarifs.parentNode.insertBefore(b, tarifs.nextSibling);
+    else {
+      var groupes = menu.querySelectorAll(".settings-groupe");
+      var outils = Array.prototype.find.call(groupes, function (g) { return /Outils/i.test((g.querySelector(".settings-groupe-titre") || {}).textContent || ""); });
+      if (outils) outils.appendChild(b); else menu.insertBefore(b, menu.firstChild);
+    }
+  }
+  var m = /#aide=([a-z0-9-]+)/i.exec(location.hash || "");
+  if (m) cltAfficherAide({ article: m[1] });
+}
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", cltBrancherAide);
+  else cltBrancherAide();
+}
+
+/* =====================================================================
    LA GRILLE TARIFAIRE, DANS L'APP — 16 septembre 2026 (demande de Celtis)
    ---------------------------------------------------------------------
    « Que la grille soit disponible sur tous les comptes, consultable à tout moment, sans onglet

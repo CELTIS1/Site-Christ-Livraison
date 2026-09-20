@@ -823,10 +823,16 @@ verifier(
    Plus ». La barre du bas est réordonnée. Et, trouvé en préparant le tutoriel : sur un téléphone
    de 390 px, la carte d'un colis du bureau laissait 56 px à son texte (colonne de droite en
    style « width:auto », quatre marges emboîtées) — la ligne badge + ⋮ passe au-dessus, les
-   marges se resserrent. Aucune migration. Étiquette 20260920barre. */
+   marges se resserrent. Aucune migration. Étiquette 20260920barre.
+   v179, le 20/09/2026 — Celtis : « au lieu de surcharger la barre, un onglet tuto pour chacun des
+   comptes : explications, PDF, plus tard des vidéos, comment installer, les nouvelles
+   procédures ». Comme les meilleures applications : pas un onglet de plus, une entrée « ❓ Aide
+   et tutoriels » dans le menu ☰ de chaque espace, un centre d'aide propre à l'espace
+   (app/aide.json, 26 articles), une recherche, un lien direct par article (#aide=<id>), le PDF
+   du tutoriel du bureau, le tout gardé hors réseau. Aucune migration. Étiquette 20260920aide. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v178'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v179'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
