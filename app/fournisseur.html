@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920prime">
+<link rel="stylesheet" href="style.css?v=20260920etiquettes">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920prime"></script>
-<script src="splash.js?v=20260920prime"></script>
+<script src="theme.js?v=20260920etiquettes"></script>
+<script src="splash.js?v=20260920etiquettes"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -567,6 +567,9 @@
       <button type="button" id="btn-date-aujourdhui" class="date-filter-clear">Aujourd'hui</button>
       <button type="button" id="btn-toutes-dates" class="date-filter-clear">Toutes les dates</button>
     </div>
+    <!-- LES ÉTIQUETTES (20/09/2026) : une par colis de la liste affichée — le jour choisi, ou
+         le résultat de la recherche. Un QR, le numéro, la destination, la somme à remettre. -->
+    <div class="etq-actions"><button type="button" class="btn btn-outline btn-sm" id="btn-etiquettes-cliente">🏷️ Imprimer les étiquettes</button></div>
     <div class="colis-list" id="colis-list">
       <div class="empty-state">Chargement...</div>
     </div>
@@ -584,23 +587,24 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920prime"></script>
-<script src="lib/bibliotheques.js?v=20260920prime"></script>
-<script src="lib/retours.js?v=20260920prime"></script>
-<script src="lib/reclamations.js?v=20260920prime"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920prime"></script>
-<script src="lib/argent.js?v=20260920prime"></script>
-<script src="lib/releve-cliente.js?v=20260920prime"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920prime"></script>
-<script src="lib/briques-argent.js?v=20260920prime"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920prime"></script>
-<script src="lib/annonce-de-remise.js?v=20260920prime"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920prime"></script>
-<script src="lib/primes.js?v=20260920prime"></script>
-<script src="lib/doublons.js?v=20260920prime"></script>
-<script src="config.js?v=20260920prime"></script>
-<script src="biometric-lock.js?v=20260920prime"></script>
-<script src="clt-select-recherche.js?v=20260920prime"></script>
+<script src="clt-common.js?v=20260920etiquettes"></script>
+<script src="lib/bibliotheques.js?v=20260920etiquettes"></script>
+<script src="lib/retours.js?v=20260920etiquettes"></script>
+<script src="lib/reclamations.js?v=20260920etiquettes"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920etiquettes"></script>
+<script src="lib/argent.js?v=20260920etiquettes"></script>
+<script src="lib/releve-cliente.js?v=20260920etiquettes"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920etiquettes"></script>
+<script src="lib/briques-argent.js?v=20260920etiquettes"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920etiquettes"></script>
+<script src="lib/annonce-de-remise.js?v=20260920etiquettes"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920etiquettes"></script>
+<script src="lib/primes.js?v=20260920etiquettes"></script>
+<script src="lib/doublons.js?v=20260920etiquettes"></script>
+<script src="config.js?v=20260920etiquettes"></script>
+<script src="etiquettes-et-scan.js?v=20260920etiquettes"></script>
+<script src="biometric-lock.js?v=20260920etiquettes"></script>
+<script src="clt-select-recherche.js?v=20260920etiquettes"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3407,6 +3411,13 @@
     return all;
   }
 
+  // Les étiquettes portent sur la liste QU'ON VOIT : mêmes filtres que renderColisList, et
+  // seulement les colis encore à livrer — étiqueter un colis déjà livré n'a pas de sens.
+  document.getElementById('btn-etiquettes-cliente').addEventListener('click', () => {
+    const dateEffective = searchColis.trim() ? '' : filtreDate;
+    const aEtiqueter = mesColis.filter(c => matchesSearch(c, searchColis) && matchesDate(c, dateEffective) && ['en_attente', 'recupere', 'en_livraison'].indexOf(c.statut) !== -1);
+    CLTEtiquettes.imprimer(aEtiqueter, { boutique: (currentProfile && (currentProfile.company_name || currentProfile.full_name)) || '' });
+  });
   document.getElementById('btn-export-excel-client').addEventListener('click', async (ev) => {
     const btn = ev.currentTarget;
     const label = btn.textContent;

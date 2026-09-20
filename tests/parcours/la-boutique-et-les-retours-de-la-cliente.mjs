@@ -72,6 +72,23 @@ await page.locator('#clt-modal-ok').click();
 await dodo(1200);
 verifier('« Oui, je l\'ai » part au serveur', monde.journal.some(j => j.op === 'rpc' && j.nom === 'cliente_repond_au_retour' && j.args.p_recu === true));
 verifier('le chiffre sur l\'onglet disparaît', (await badge.count()) === 0 || !(await badge.isVisible()), await texte(badge));
+titre('Les étiquettes : une par colis encore à livrer, prêtes à imprimer (20/09/2026)');
+await page.locator('#clt-bottomnav .nav[data-target="section-colis"]').click();
+await dodo(600);
+await page.locator('#btn-toutes-dates').click();
+await dodo(600);
+const aLivrer = await page.evaluate(() => mesColis.filter((c) => ['en_attente', 'recupere', 'en_livraison'].indexOf(c.statut) !== -1).length);
+await page.locator('#btn-etiquettes-cliente').click();
+await dodo(1500);
+verifier('la planche s\'ouvre : autant d\'étiquettes que de colis à livrer (' + aLivrer + ')', aLivrer > 0 && (await page.locator('#clt-etiquettes .etq').count()) === aLivrer, String(await page.locator('#clt-etiquettes .etq').count()));
+verifier('chaque étiquette a son QR, son numéro et la boutique', (await page.locator('#clt-etiquettes .etq-qr').count()) === aLivrer && /CLT-\d{6}-\d+/.test(await page.locator('#clt-etiquettes .etq').first().innerText()) && (await page.locator('#clt-etiquettes .etq-boutique').first().innerText()).trim().length > 0);
+verifier('le QR a été dessiné par la bibliothèque embarquée, chargée au clic', await page.evaluate(() => typeof window.qrcode === 'function' && [...document.scripts].some((s) => /vendor\/qrcode-generator-1\.4\.4\.js/.test(s.src))));
+await page.emulateMedia({ media: 'print' });
+verifier('à l\'impression, la planche seule sort', await page.evaluate(() => [...document.body.children].filter((e) => e.id !== 'clt-etiquettes' && getComputedStyle(e).display !== 'none').length === 0 && getComputedStyle(document.querySelector('.etq-barre')).display === 'none'));
+await page.emulateMedia({ media: 'screen' });
+await page.locator('#clt-etiquettes [data-etq="fermer"]').click();
+verifier('« Fermer » rend l\'écran d\'avant', (await page.locator('#clt-etiquettes').count()) === 0 && await page.evaluate(() => !document.documentElement.classList.contains('etq-ouvert')));
+
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();

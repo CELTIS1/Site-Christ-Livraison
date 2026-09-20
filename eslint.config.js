@@ -9,7 +9,9 @@
 import globals from 'globals';
 
 export default [
-  { ignores: ['node_modules/**', 'videos/**', 'images/**', '_sql-prive/**', 'supabase-functions/**'] },
+  // app/vendor : deux bibliothèques embarquées telles quelles (voir app/vendor/LISEZ-MOI.md). On ne
+  // relit pas le code des autres avec nos règles, et on ne le modifie pas pour les satisfaire.
+  { ignores: ['node_modules/**', 'videos/**', 'images/**', '_sql-prive/**', 'supabase-functions/**', 'app/vendor/**'] },
   {
     files: ['app/**/*.js', 'sw.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: { ...globals.browser, ...globals.serviceworker } },

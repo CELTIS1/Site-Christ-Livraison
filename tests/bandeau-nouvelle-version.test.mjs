@@ -943,10 +943,17 @@ verifier(
    l'effet EXACT de la journée sur la prime de volume (effetDeLaJourneeSurLaPrimeDeVolume,
    lib/primes.js — d'accord au franc près avec calculerPrimesLivreur ; jamais de montant négatif).
    Corrigé : « 10 000 FCFA F » sur les deux cartes de primes, dont celle déjà en service.
-   Aucune migration. Étiquette 20260920prime. */
+   Aucune migration. Étiquette 20260920prime.
+   v199, le 20/09/2026 — « ensuite » n° 4, les étiquettes QR et le scan : app/etiquettes-et-scan.js.
+   Cliente (« Imprimer les étiquettes ») et bureau (« Étiquettes ») : une étiquette par colis encore
+   à livrer de la liste affichée — QR = lien de suivi public, numéro, destination, téléphone,
+   somme à remettre (aucune somme si un montant manque) ; 8 par A4, la planche seule s'imprime.
+   Bureau et livreur : 📷 scanne l'étiquette et remplit la recherche. Lecteur du navigateur
+   d'abord, jsQR sinon ; deux bibliothèques embarquées dans app/vendor (MIT, Apache-2.0), aucun
+   CDN. Aucune migration. Étiquette 20260920etiquettes. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v198'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v199'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

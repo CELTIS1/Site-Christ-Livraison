@@ -3659,3 +3659,45 @@ html[data-theme="dark"] .cha-alerte{ background:#2E2116; border-color:#7A4A1A; c
 html[data-theme="dark"] .cha-vieux td{ color:#F0C98A; }
 html[data-theme="dark"] .cha-gens li, html[data-theme="dark"] .cha-table th, html[data-theme="dark"] .cha-table td, html[data-theme="dark"] .cha-detail{ border-color:#2A3849; }
 
+/* ---- Les étiquettes QR et le scan (20/09/2026) -------------------------------------------------
+   La planche s'affiche par-dessus la page ; À L'IMPRESSION, ELLE SEULE SORT (html.etq-ouvert) :
+   huit étiquettes par feuille A4, 99 × 66 mm, bord en pointillés pour le ciseau. Une étiquette
+   est en noir sur blanc, toujours — c'est du papier, le mode nuit ne la concerne pas. */
+.etq-actions{ margin:0 0 12px; }
+.etq-planche{ position:fixed; inset:0; z-index:1200; background:#eef1f5; overflow:auto; padding:0 0 32px; color:#000; }
+.etq-barre{ position:sticky; top:0; z-index:1; display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:12px 16px; background:#fff; border-bottom:1px solid #d7dee6; }
+.etq-barre strong{ font-size:15px; color:#1E2A38; }
+.etq-conseil{ flex:1 1 200px; font-size:13px; color:#5b6473; }
+.etq-barre .btn{ min-height:44px; }
+.etq-grille{ display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 99mm)); gap:10px; justify-content:center; padding:16px; }
+.etq{ background:#fff; border:1px dashed #8a94a3; border-radius:6px; padding:3mm 4mm; min-height:62mm; display:flex; flex-direction:column; gap:2mm; break-inside:avoid; font-family:Arial, Helvetica, sans-serif; }
+.etq-tete{ display:flex; align-items:center; gap:8px; border-bottom:1.5px solid #000; padding-bottom:1.5mm; }
+.etq-marque{ font-weight:900; font-size:13pt; letter-spacing:.04em; background:#000; color:#fff; padding:0 5px; border-radius:3px; }
+.etq-boutique{ font-size:10pt; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.etq-corps{ display:grid; grid-template-columns:34mm 1fr; gap:4mm; align-items:center; flex:1; }
+.etq-qr{ width:34mm; height:34mm; display:block; }
+.etq-texte{ min-width:0; display:flex; flex-direction:column; gap:1.2mm; }
+.etq-numero{ font-size:10.5pt; font-weight:700; font-variant-numeric:tabular-nums; }
+.etq-ou{ font-size:12pt; font-weight:800; line-height:1.2; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.etq-tel{ font-size:11pt; font-weight:700; }
+.etq-somme{ font-size:11.5pt; font-weight:800; margin-top:auto; }
+html.etq-ouvert{ overflow:hidden; }
+@media print{
+  html.etq-ouvert body > *:not(#clt-etiquettes){ display:none !important; }
+  html.etq-ouvert, html.etq-ouvert body{ overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; min-height:0 !important; }
+  html.etq-ouvert .etq-planche{ position:static; background:#fff; padding:0; overflow:visible; }
+  html.etq-ouvert .etq-barre{ display:none; }
+  html.etq-ouvert .etq-grille{ grid-template-columns:repeat(2, 99mm); gap:0; padding:0; justify-content:center; }
+  html.etq-ouvert .etq{ height:66mm; min-height:0; border-radius:0; box-sizing:border-box; }
+  @page{ size:A4; margin:10mm 5mm; }
+}
+.btn-scan{ flex:0 0 auto; min-height:44px; min-width:44px; white-space:nowrap; }
+.recherche-partout .search-wrap{ display:flex; gap:8px; align-items:center; }
+.recherche-partout .search-wrap .search-input{ flex:1 1 auto; min-width:0; }
+.scan-voile{ position:fixed; inset:0; z-index:1300; background:#0b1016; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:20px; }
+.scan-cadre{ position:relative; width:min(88vw, 420px); aspect-ratio:1; border-radius:18px; overflow:hidden; background:#000; }
+.scan-video{ width:100%; height:100%; object-fit:cover; display:block; }
+.scan-viseur{ position:absolute; inset:14%; border:3px solid rgba(255,255,255,.9); border-radius:14px; box-shadow:0 0 0 100vmax rgba(0,0,0,.35); }
+.scan-message{ color:#fff; font-size:15px; line-height:1.45; text-align:center; max-width:420px; min-height:44px; }
+.scan-fermer{ min-height:48px; min-width:160px; }
+

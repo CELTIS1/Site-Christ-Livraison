@@ -103,6 +103,30 @@ verifier('et le colis trouvé est surligné, pas seulement filtré',
   (await page.locator('#colis-list .colis-item.colis-a-voir').count()) >= 1,
   String(await page.locator('#colis-list .colis-item').count()) + ' colis affichés');
 
+titre('4 bis. Le scan d\'une étiquette suit le même chemin qu\'un numéro tapé (20/09/2026)');
+/* Pas de vraie caméra dans un banc : on donne au navigateur un flux vidéo fabriqué et un lecteur
+   de codes qui « voit » l'étiquette d'un colis du décor. Tout le reste est le vrai code :
+   l'ouverture, la lecture, la fermeture, la caméra rendue, la recherche remplie. */
+const numeroScanne = await page.evaluate(() => (allColis.find((c) => c.numero) || {}).numero);
+await page.evaluate((numero) => {
+  window.__pistesArretees = 0;
+  navigator.mediaDevices.getUserMedia = async () => { const c = document.createElement('canvas'); c.width = 64; c.height = 64; c.getContext('2d').fillRect(0, 0, 64, 64); const f = c.captureStream(5); f.getTracks().forEach((t) => { const stop = t.stop.bind(t); t.stop = () => { window.__pistesArretees++; stop(); }; }); return f; };
+  let appels = 0;
+  window.BarcodeDetector = class { static async getSupportedFormats() { return ['qr_code']; } async detect() { appels++; return appels <= 5 ? [{ rawValue: 'https://exemple.com/pas-a-nous' }] : [{ rawValue: 'https://christlivraison.ci/suivi.html?numero=' + numero }]; } };
+}, numeroScanne);
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.locator('#eq-recherche-tout').fill('');
+await page.locator('#btn-scan-equipe').click();
+await dodo(450);
+verifier('le scan s\'ouvre en plein écran, avec son viseur et son bouton Fermer', await page.locator('#clt-scan .scan-viseur').isVisible() && await page.locator('#clt-scan .scan-fermer').isVisible());
+verifier('un code qui n\'est pas à nous est DIT, et le scan continue', /pas une étiquette CLT/.test(await page.locator('#clt-scan .scan-message').innerText()));
+await dodo(1500);
+verifier('une fois l\'étiquette lue, le scan se ferme tout seul et rend la caméra', (await page.locator('#clt-scan').count()) === 0 && (await page.evaluate(() => window.__pistesArretees)) >= 1);
+verifier('le numéro du colis est dans la recherche', (await page.locator('#eq-recherche-tout').inputValue()) === numeroScanne, await page.locator('#eq-recherche-tout').inputValue());
+await dodo(900);
+verifier('et la recherche propose ce colis', new RegExp(numeroScanne.replace(/^CLT-/, '')).test(await page.locator('#eq-recherche-resultats').innerText()), (await page.locator('#eq-recherche-resultats').innerText()).slice(0, 200));
+await page.locator('#eq-recherche-tout').fill('');
+
 titre('5. Rien n\'a cassé');
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
