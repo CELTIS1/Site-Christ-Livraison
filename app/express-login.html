@@ -17,15 +17,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260920cliente">
+  <link rel="stylesheet" href="style.css?v=20260920site">
   <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-  <script src="theme.js?v=20260920cliente"></script>
-  <script src="splash.js?v=20260920cliente"></script>
+  <script src="theme.js?v=20260920site"></script>
+  <script src="splash.js?v=20260920site"></script>
   <style>
     /* CLT Express utilise le violet comme couleur de marque, à la place du bleu marine du
        portail interne, pour bien montrer qu'il s'agit d'un produit distinct. */
     :root{ --clt-accent:#6D28D9; }
     .login-page{ background: linear-gradient(160deg, #8b5cf6 0%, #6D28D9 45%, #4c1d95 100%); }
+    .login-aide{ margin-top:16px; text-align:center; font-size:13px; color:#5b6472; }
+    .login-aide a{ color:#6D28D9; font-weight:600; text-decoration:none; display:inline-block; min-height:44px; line-height:44px; }
     .login-box .logo-mark{ background:linear-gradient(160deg,#8b5cf6 0%, #4c1d95 100%); }
     .login-box .login-title, .login-box .btn:not(.btn-outline){ color:inherit; }
     .btn:not(.btn-outline){
@@ -60,6 +62,8 @@
   </head>
 <body>
   <div class="login-page">
+    <!-- Retour vers la page Express du site, comme login.html a son « ← Accueil » (20/09, lot E). -->
+    <a href="/express.html" class="login-home-link" aria-label="Retour à la page Express du site">← Site</a>
     <div class="login-box">
       <div class="login-logo">
         <div class="logo-mark">CLT</div>
@@ -78,11 +82,11 @@
       <!-- CONNEXION -->
       <form id="form-connexion-login">
         <div class="field">
-          <label>Numéro de téléphone</label>
+          <label for="login-phone">Numéro de téléphone</label>
           <input type="tel" id="login-phone" required placeholder="00 00 00 00 00">
         </div>
         <div class="field">
-          <label>Mot de passe</label>
+          <label for="login-password">Mot de passe</label>
           <input type="password" id="login-password" required placeholder="Votre mot de passe">
         </div>
         <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-login-submit">Se connecter</button>
@@ -102,7 +106,7 @@
       <form id="form-forgot-phone" class="hidden">
         <div style="text-align:center;font-weight:700;color:#6D28D9;font-size:15px;margin-bottom:10px;">Mot de passe oublié</div>
         <div class="field">
-          <label>Numéro de téléphone</label>
+          <label for="forgot-phone">Numéro de téléphone</label>
           <input type="tel" id="forgot-phone" required placeholder="00 00 00 00 00">
         </div>
         <div style="margin-bottom:14px;font-size:12.5px;color:#6b7280;">Notre équipe vérifie la demande, puis vous définissez vous-même votre nouveau mot de passe, ici. Votre compte, votre historique et votre solde sont conservés.</div>
@@ -125,15 +129,15 @@
         <div style="text-align:center;font-weight:700;color:#6D28D9;font-size:15px;margin-bottom:10px;">Nouveau mot de passe</div>
         <div id="reset-set-sub" style="text-align:center;font-size:12.5px;color:#16794c;margin-bottom:12px;">Votre demande a été approuvée. Saisissez le code à 6 chiffres que notre équipe vous a communiqué, puis choisissez votre nouveau mot de passe.</div>
         <div class="field">
-          <label>Code communiqué par l'équipe</label>
-          <input type="text" id="reset-set-code" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4,8}" maxlength="8" placeholder="6 chiffres">
+          <label for="reset-set-code">Code communiqué par l'équipe</label>
+          <input type="text" id="reset-set-code" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="6 chiffres">
         </div>
         <div class="field">
-          <label>Nouveau mot de passe</label>
+          <label for="reset-set-password">Nouveau mot de passe</label>
           <input type="password" id="reset-set-password" required minlength="6" autocomplete="new-password" placeholder="6 caractères minimum">
         </div>
         <div class="field">
-          <label>Confirmer le mot de passe</label>
+          <label for="reset-set-confirm">Confirmer le mot de passe</label>
           <input type="password" id="reset-set-confirm" required minlength="6" autocomplete="new-password" placeholder="Retapez le mot de passe">
         </div>
         <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#6b7280;margin-bottom:12px;cursor:pointer;"><input type="checkbox" id="reset-set-show"> Afficher le mot de passe</label>
@@ -149,19 +153,19 @@
         </div>
 
         <div class="field">
-          <label>Nom complet</label>
+          <label for="reg-fullname">Nom complet</label>
           <input type="text" id="reg-fullname" required placeholder="Votre nom">
         </div>
         <div class="field">
-          <label>Numéro de téléphone</label>
+          <label for="reg-phone">Numéro de téléphone</label>
           <input type="tel" id="reg-phone" required placeholder="00 00 00 00 00">
         </div>
         <div class="field">
-          <label>Créer un mot de passe</label>
+          <label for="reg-password">Créer un mot de passe</label>
           <input type="password" id="reg-password" required minlength="6" placeholder="6 caractères minimum">
         </div>
         <div class="field">
-          <label>Confirmer le mot de passe</label>
+          <label for="reg-password-confirm">Confirmer le mot de passe</label>
           <input type="password" id="reg-password-confirm" required minlength="6" placeholder="Retapez le mot de passe">
         </div>
 
@@ -192,7 +196,7 @@
         <div class="waiting-text" id="waiting-text">Notre équipe vous envoie un code à 6 chiffres sur WhatsApp, au numéro que vous avez donné. Saisissez-le ici. Cette page se met à jour automatiquement.</div>
         <form id="form-code-express" style="margin-top:14px; text-align:left;">
           <div class="field">
-            <label>Code reçu de l'équipe</label>
+            <label for="code-express">Code reçu de l'équipe</label>
             <input type="text" id="code-express" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="6 chiffres">
           </div>
           <button type="submit" class="btn" style="width:100%; justify-content:center;" id="btn-code-express">Confirmer mon numéro</button>
@@ -202,12 +206,14 @@
         <button type="button" id="btn-waiting-cancel" style="width:100%;text-align:center;margin-top:10px;background:none;border:none;color:#6D28D9;text-decoration:underline;cursor:pointer;">Retour à la connexion</button>
       </div>
 
+      <!-- Un numéro pour qui bloque à la porte (20/09, lot E) : le même que partout, CLT_CONTACT. -->
+      <div class="login-aide" id="express-login-aide">Une question ? <a id="lien-appeler-clt" href="#">📞 Appeler CLT</a> · <a id="lien-whatsapp-clt" href="#" target="_blank" rel="noopener">🟢 WhatsApp</a></div>
     </div>
   </div>
 
-<script src="clt-common.js?v=20260920cliente"></script>
-<script src="express-config.js?v=20260920cliente"></script>
-<script src="biometric-login.js?v=20260920cliente"></script>
+<script src="clt-common.js?v=20260920site"></script>
+<script src="express-config.js?v=20260920site"></script>
+<script src="biometric-login.js?v=20260920site"></script>
 <script>
   let regRole = 'client_express';
   let kycFile = null;
@@ -709,7 +715,7 @@
 
     const code = (document.getElementById('reset-set-code').value || '').replace(/\D/g, '');
 
-    if (!code) { showMsg("Saisissez le code reçu par SMS.", "error"); return; }
+    if (code.length !== 6) { showMsg("Le code communiqué par l'équipe fait 6 chiffres.", "error"); return; }
     if (p !== c) { showMsg("Les deux mots de passe ne correspondent pas.", "error"); return; }
     if (p.length < 6) { showMsg("Le mot de passe doit contenir au moins 6 caractères.", "error"); return; }
 

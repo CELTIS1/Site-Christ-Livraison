@@ -868,10 +868,16 @@ verifier(
    photo comprise, clé de création), les retours au-delà de la page de 500, le mode nuit sur
    la ligne de saisie, la zone de dépôt, les tuiles (qui lisent enfin --tile-color), 44 px
    partout, le confirm() natif remplacé, le repli des sections retiré (code mort). Aucune
-   migration de schéma. Étiquette 20260920cliente. */
+   migration de schéma. Étiquette 20260920cliente.
+   v186, le 20/09/2026 — lot 20.E, le site et la porte : le numéro officiel partout sur le site,
+   les pieds de page avec les mentions légales, les étiquettes reliées (for=), le retour et le
+   numéro sur express-login, le code à 6 chiffres, Express « en espèces » dans les CGV et la
+   politique, les tarifs en cartes sur téléphone, la FAQ au clavier, offline.html (noindex,
+   numéro), installer.html dans le sitemap et avec son manifeste, les pages publiques
+   pré-cachées. Aucune migration. Étiquette 20260920site. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v185'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v186'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

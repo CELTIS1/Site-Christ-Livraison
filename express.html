@@ -140,7 +140,8 @@
   /* ---------- FAQ ---------- */
   .faq-list{max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:10px;}
   .faq-item{border:1.5px solid var(--border); border-radius:14px; overflow:hidden;}
-  .faq-q{padding:16px 20px; font-weight:700; font-size:14px; color:var(--navy); cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .faq-q{width:100%; text-align:left; background:none; border:0; font-family:inherit; padding:16px 20px; font-weight:700; font-size:14px; color:var(--navy); cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .faq-q:focus-visible{outline:2px solid var(--violet); outline-offset:-2px;}
   .faq-q i{transition:transform .2s ease; color:var(--violet); flex-shrink:0;}
   .faq-item.open .faq-q i{transform:rotate(180deg);}
   .faq-a{max-height:0; overflow:hidden; transition:max-height .25s ease;}
@@ -191,7 +192,7 @@
       "logo": "https://christlivraison.ci/images/icons/icon-512.png",
       "image": "https://christlivraison.ci/images/og-image.png",
       "description": "CLT Express : la livraison à la demande, partout à Abidjan. Commandez une livraison en quelques instants, ou devenez coursier indépendant. Paiement en espèces, tarif calculé selon la distance.",
-      "telephone": "+2250711138693",
+      "telephone": "+2250779604761",
       "email": "contact@christlivraison.ci",
       "priceRange": "$",
       "areaServed": {
@@ -364,24 +365,24 @@
     <p class="section-sub">Tout ce qu'il faut savoir avant de commencer.</p>
     <div class="faq-list" id="faqList">
       <div class="faq-item">
-        <div class="faq-q">Comment se fait le paiement ?<i class="fa-solid fa-chevron-down"></i></div>
-        <div class="faq-a"><p>Le client paie directement le coursier en espèces, au moment de la livraison. Il n'y a pas de paiement en ligne pour le moment.</p></div>
+        <button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-1">Comment se fait le paiement ?<i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+        <div class="faq-a" id="faq-a-1"><p>Le client paie directement le coursier en espèces, au moment de la livraison. Il n'y a pas de paiement en ligne pour le moment.</p></div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">Comment le prix est-il calculé ?<i class="fa-solid fa-chevron-down"></i></div>
-        <div class="faq-a"><p>Le prix dépend de la distance entre la commune de récupération et la commune de livraison. Il est affiché avant l'envoi de la course, et ne change plus une fois la course créée.</p></div>
+        <button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-2">Comment le prix est-il calculé ?<i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+        <div class="faq-a" id="faq-a-2"><p>Le prix dépend de la distance entre la commune de récupération et la commune de livraison. Il est affiché avant l'envoi de la course, et ne change plus une fois la course créée.</p></div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">Qui peut devenir coursier ?<i class="fa-solid fa-chevron-down"></i></div>
-        <div class="faq-a"><p>Toute personne disposant d'une moto et d'une pièce d'identité valide peut s'inscrire. Le compte est vérifié par notre équipe avant de pouvoir accepter des courses.</p></div>
+        <button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-3">Qui peut devenir coursier ?<i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+        <div class="faq-a" id="faq-a-3"><p>Toute personne disposant d'une moto et d'une pièce d'identité valide peut s'inscrire. Le compte est vérifié par notre équipe avant de pouvoir accepter des courses.</p></div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">Puis-je annuler une course ?<i class="fa-solid fa-chevron-down"></i></div>
-        <div class="faq-a"><p>Oui, tant qu'aucun coursier ne l'a encore acceptée. Une fois une course acceptée, contactez directement le coursier ou notre équipe.</p></div>
+        <button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-4">Puis-je annuler une course ?<i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+        <div class="faq-a" id="faq-a-4"><p>Oui, tant qu'aucun coursier ne l'a encore acceptée. Une fois une course acceptée, contactez directement le coursier ou notre équipe.</p></div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">Quelle différence avec Christ Livraison &amp; Transport ?<i class="fa-solid fa-chevron-down"></i></div>
-        <div class="faq-a"><p>Christ Livraison &amp; Transport SARL reste votre partenaire livraison pour les entreprises et commerçants (colis, tournées, contrats). CLT Express est un service complémentaire, ouvert à tous, pour les livraisons ponctuelles à la demande.</p></div>
+        <button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-5">Quelle différence avec Christ Livraison &amp; Transport ?<i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+        <div class="faq-a" id="faq-a-5"><p>Christ Livraison &amp; Transport SARL reste votre partenaire livraison pour les entreprises et commerçants (colis, tournées, contrats). CLT Express est un service complémentaire, ouvert à tous, pour les livraisons ponctuelles à la demande.</p></div>
       </div>
     </div>
   </div>
@@ -418,14 +419,14 @@
         <h4>CONTACT</h4>
         <ul>
           <li><a href="https://wa.me/2250546818640" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> (+225) 05 46 81 86 40</a></li>
-          <li><a href="tel:+2250711138693"><i class="fa-solid fa-phone"></i> 07 11 13 86 93</a></li>
+          <li><a href="tel:+2250779604761"><i class="fa-solid fa-phone"></i> 07 79 60 47 61</a></li>
           <li><a href="mailto:contact@christlivraison.ci"><i class="fa-solid fa-envelope"></i> contact@christlivraison.ci</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
       CHRIST LIVRAISON &amp; TRANSPORT SARL — Siège social : Abidjan, Cocody Lycée technique — N°RCCM : CI-ABJ-03-2026-B12-00184<br>
-      <a href="politique-confidentialite.html">Politique de confidentialité</a>
+      <a href="conditions-generales.html">Conditions générales</a> · <a href="mentions-legales.html">Mentions légales</a> · <a href="politique-confidentialite.html">Politique de confidentialité</a>
     </div>
   </div>
 </footer>
@@ -443,7 +444,9 @@
       document.querySelectorAll('.faq-item.open').forEach(other => {
         if (other !== item) { other.classList.remove('open'); other.querySelector('.faq-a').style.maxHeight = null; }
       });
+      document.querySelectorAll('.faq-q').forEach(b => b.setAttribute('aria-expanded', 'false'));
       item.classList.toggle('open', !isOpen);
+      q.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
       a.style.maxHeight = !isOpen ? a.scrollHeight + 'px' : null;
     });
   });

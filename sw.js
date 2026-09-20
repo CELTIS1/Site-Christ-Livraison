@@ -74,7 +74,7 @@
    sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
    pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v185';
+const CACHE_VERSION = 'clt-shell-v186';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.
@@ -103,6 +103,12 @@ const PRECACHE_CDN = [
 const PRECACHE_URLS = [
   '/offline.html',
   '/services.html',
+  // Les pages publiques qu'on montre sur un téléphone en tournée (20/09/2026, lot E) : l'accueil,
+  // les tarifs, le contact, Express. Petites, à URL stable ; le suivi, lui, a besoin du réseau.
+  '/index.html',
+  '/tarifs.html',
+  '/contact.html',
+  '/express.html',
   // La marche à suivre pour installer l'app (17/09/2026, point 6.2) : c'est la page qu'on ouvre
   // au téléphone de quelqu'un, souvent là où le réseau est mauvais. Elle doit s'afficher hors ligne.
   '/installer.html',

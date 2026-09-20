@@ -85,7 +85,7 @@
     ]},
     { cle: 'contact', label: 'Contact', champs: [
       T('whatsapp_number', 'WhatsApp (numéro international sans +)', 'Ex. 2250546818640'), T('whatsapp_display', 'WhatsApp (affiché)'),
-      T('phone_number', 'Téléphone (avec +)', 'Ex. +2250711138693'), T('phone_display', 'Téléphone (affiché)'),
+      T('phone_number', 'Téléphone (avec +)', 'Ex. +2250779604761'), T('phone_display', 'Téléphone (affiché)'),
       T('email', 'E-mail'), T('facebook', 'Facebook'), T('instagram', 'Instagram'),
     ]},
     { cle: 'legal', label: 'Mentions légales', champs: [T('capital', 'Capital'), T('siege', 'Siège'), T('rccm', 'RCCM')] },

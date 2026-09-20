@@ -40,7 +40,7 @@
 const PAPIER_CLT = {
   societe: 'Christ Livraison & Transport SARL',
   adresse: 'Lycée technique, Cocody — Abidjan, Côte d\'Ivoire',
-  telephone: '+225 07 11 13 86 93',
+  telephone: '+225 07 79 60 47 61',
   email: 'contact@christlivraison.ci',
   site: 'christlivraison.ci',
   // Le bleu et l'orange sont ceux de l'icône de l'application, relevés sur le fichier lui-même.

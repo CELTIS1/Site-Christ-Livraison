@@ -5,6 +5,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Sans manifeste sur CETTE page, Chrome n'émet jamais « beforeinstallprompt » ici : le bouton
+     « Installer » ne pouvait proposer que la marche à suivre. (20/09/2026, lot E) -->
+<link rel="manifest" href="manifest.json">
 <title>Installer l'application CLT — Christ Livraison &amp; Transport SARL</title>
 <meta name="description" content="Comment mettre l'application Christ Livraison &amp; Transport sur l'écran d'accueil d'un téléphone Android ou d'un iPhone, en trois gestes, sans passer par une boutique d'applications.">
 <meta property="og:type" content="website">
@@ -245,8 +248,8 @@ window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault()
 
 <footer>
   <div class="container">
-    © 2026 Christ Livraison &amp; Transport SARL. Tous droits réservés. —
-    <a href="index.html">Retour à l'accueil</a>
+    © 2026 Christ Livraison &amp; Transport SARL. Tous droits réservés.<br>
+    <a href="tarifs.html">Tarifs</a> · <a href="contact.html">Contact</a> · <a href="installer.html">Installer l'application</a> · <a href="conditions-generales.html">Conditions générales</a> · <a href="mentions-legales.html">Mentions légales</a> · <a href="politique-confidentialite.html">Confidentialité</a> · <a href="index.html">Accueil</a>
   </div>
 </footer>
 
@@ -295,6 +298,6 @@ window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault()
   else setTimeout(rafraichir, 300);
 })();
 </script>
-<script src="/app/clt-common.js?v=20260920cliente"></script>
+<script src="/app/clt-common.js?v=20260920site"></script>
 </body>
 </html>
