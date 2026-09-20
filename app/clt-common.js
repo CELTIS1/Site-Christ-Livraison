@@ -1585,12 +1585,12 @@ function cltAfficherTarifs(options) {
     pied.innerHTML = "";
     var exp = document.createElement("div"); exp.className = "clt-tarifs__ligne est-expedition";
     var p1 = document.createElement("span"); p1.className = "clt-tarifs__pastille"; p1.style.background = "#1B4374";
-    var z1 = document.createElement("span"); z1.className = "clt-tarifs__zone"; z1.textContent = "Expédition vers l’intérieur : course jusqu’à la gare";
-    var s1 = document.createElement("small"); s1.textContent = " + frais du transporteur, réglés à la gare"; z1.appendChild(s1);
-    var x1 = document.createElement("strong"); x1.className = "clt-tarifs__prix"; x1.textContent = gare ? "2 500 – 3 000 F" : "3 000 F";
+    // Celtis, 20/09/2026 : « l'expédition, un truc simple : course + frais du transporteur. Évite le blabla. »
+    var z1 = document.createElement("span"); z1.className = "clt-tarifs__zone"; z1.textContent = "Expédition (hors Abidjan) : course + frais du transporteur";
+    var x1 = document.createElement("strong"); x1.className = "clt-tarifs__prix"; x1.textContent = (gare ? "2 500 – 3 000 F" : "3 000 F") + " + transporteur";
     exp.appendChild(p1); exp.appendChild(z1); exp.appendChild(x1); pied.appendChild(exp);
     var note = document.createElement("p"); note.className = "clt-tarifs__note";
-    note.textContent = "Songon et les localités hors de cette liste : sur devis. Suppléments : livraison express + 1 500 F, créneau fixe + 500 F, colis de plus de 5 kg + 500 F par kg.";
+    note.textContent = "Localités hors de cette liste : sur devis. Suppléments : livraison express + 1 500 F, créneau fixe + 500 F, colis de plus de 5 kg + 500 F par kg.";
     pied.appendChild(note);
   }
   sel.addEventListener("change", dessiner); dessiner();

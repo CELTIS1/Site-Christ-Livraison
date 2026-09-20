@@ -21,8 +21,9 @@ const app = chargerApp();
 
 console.log('1. La liste affichée est la grille, lue par le vrai code');
 const l = app.cltTarifsLignes('Cocody');
-verifier('deux lignes « dans la commune » (1 000 quartiers voisins, 1 500 ailleurs) puis les 12 autres communes', l.length === 14 && l[0].prix === 1000 && /quartiers voisins/.test(l[0].zone) && l[1].prix === 1500 && /ailleurs dans la commune/.test(l[1].zone), JSON.stringify(l.slice(0, 2)));
-verifier('triée du moins cher au plus cher, Grand-Bassam en dernier à 3 000', l.every((x, i) => i === 0 || x.prix >= l[i - 1].prix) && l[l.length - 1].zone === 'Grand-Bassam' && l[l.length - 1].prix === 3000);
+verifier('deux lignes « dans la commune » (1 000 quartiers voisins, 1 500 ailleurs) puis les 13 autres communes', l.length === 15 && l[0].prix === 1000 && /quartiers voisins/.test(l[0].zone) && l[1].prix === 1500 && /ailleurs dans la commune/.test(l[1].zone), JSON.stringify(l.slice(0, 2)));
+verifier('triée du moins cher au plus cher, Grand-Bassam en dernier à 3 000', l.every((x, i) => i === 0 || x.prix >= l[i - 1].prix) && l.slice(-2).every(x => x.prix === 3000) && l.slice(-2).map(x => x.zone).sort().join(',') === 'Grand-Bassam,Songon');
+verifier('l\'expédition tient en une ligne simple : « course + frais du transporteur » (Celtis, 20/09)', /Expédition \(hors Abidjan\) : course \+ frais du transporteur/.test(lire('app/clt-common.js')) && !/Songon et les localités hors de cette liste : sur devis/.test(lire('app/clt-common.js')));
 verifier('chaque prix est celui de computePrixLivraison (une seule grille)', l.slice(2).every(x => app.computePrixLivraison('Cocody', x.zone) === x.prix));
 verifier('une commune inconnue → liste vide, pas d\'erreur', app.cltTarifsLignes('Nulle-part').length === 0);
 

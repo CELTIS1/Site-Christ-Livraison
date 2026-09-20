@@ -851,10 +851,16 @@ verifier(
    (litiges, passages, suppressions, file bloquée), toasts sonores sur les alertes graves, le
    message WhatsApp de la cliente à sa voix, la cliente notifiée du départ en livraison. Et la
    liste « À faire par le gérant » dans Gestion. Migrations 2026-09-20-le-centre-a-traiter.sql,
-   2026-09-20-a-faire-par-le-gerant.sql, 2026-09-20-a-faire-2.sql. Étiquette 20260920traiter. */
+   2026-09-20-a-faire-par-le-gerant.sql, 2026-09-20-a-faire-2.sql. Étiquette 20260920traiter.
+   v183, le 20/09/2026 — Celtis : « Songon, tu devais l'actualiser partout, même dans les grilles
+   tarifaires » et « l'expédition, un truc simple : course + frais du transporteur ». Songon est
+   la 14ᵉ commune de la grille (2 000 F depuis Yopougon, 2 500 F depuis Attécoubé, Adjamé,
+   Plateau, 3 000 F ailleurs), sur le site aussi ; la ligne d'expédition tient en six mots. Les
+   décisions recommandées sont appliquées et notées dans « À faire par le gérant ». Aucune
+   migration de schéma. Étiquette 20260920songon. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v182'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v183'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

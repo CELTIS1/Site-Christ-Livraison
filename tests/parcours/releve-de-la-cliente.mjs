@@ -76,7 +76,7 @@ await page.locator('#btn-tarifs').click();
 await dodo(500);
 verifier('la fenêtre « Grille tarifaire » s\'ouvre', (await page.locator('#clt-tarifs').count()) === 1 && /Grille tarifaire/.test(await page.locator('#clt-tarifs h2').innerText()));
 verifier('la commune de départ proposée est la sienne (Treichville)', (await page.locator('#clt-tarifs-depart').inputValue()) === 'Treichville');
-verifier('14 lignes de prix, de 1 000 F à 3 000 F', (await page.locator('#clt-tarifs .clt-tarifs__liste .clt-tarifs__ligne').count()) === 14 && /1\s?000 F/.test((await page.locator('#clt-tarifs .clt-tarifs__liste').innerText()).replace(/\u202f|\u00a0/g, ' ')) && /Grand-Bassam/.test(await page.locator('#clt-tarifs .clt-tarifs__liste').innerText()));
+verifier('15 lignes de prix, de 1 000 F à 3 000 F (Songon depuis le 20/09)', (await page.locator('#clt-tarifs .clt-tarifs__liste .clt-tarifs__ligne').count()) === 15 && /1\s?000 F/.test((await page.locator('#clt-tarifs .clt-tarifs__liste').innerText()).replace(/\u202f|\u00a0/g, ' ')) && /Grand-Bassam/.test(await page.locator('#clt-tarifs .clt-tarifs__liste').innerText()));
 await page.selectOption('#clt-tarifs-depart', 'Yopougon');
 await dodo(200);
 verifier('changer de commune redessine (Yopougon → Anyama 2 500 F)', /Anyama[\s\S]{0,40}2\s?500 F/.test((await page.locator('#clt-tarifs .clt-tarifs__liste').innerText()).replace(/\u202f|\u00a0/g, ' ')));

@@ -74,7 +74,7 @@
         "Envois de dernière minute",
         "Pièces et fournitures urgentes"
       ],
-      "delais": "Le jour même, généralement en quelques heures selon la distance et le trafic. Couverture : les 13 communes du District d'Abidjan ainsi que Grand-Bassam.",
+      "delais": "Le jour même, généralement en quelques heures selon la distance et le trafic. Couverture : les 14 communes du District d'Abidjan que nous desservons, de Songon à Grand-Bassam.",
       "tarif": "Nos livraisons démarrent à 1000 FCFA ; le tarif final dépend de la distance et du format du colis. Devis gratuit et immédiat sur WhatsApp, sans engagement.",
       "faq": [
         {
@@ -127,7 +127,7 @@
         "Commerces avec tournées fixes",
         "Rendez-vous logistiques planifiés"
       ],
-      "delais": "À la date et l'heure que vous choisissez. Couverture : les 13 communes du District d'Abidjan et Grand-Bassam. Des tournées récurrentes peuvent être mises en place sur mesure.",
+      "delais": "À la date et l'heure que vous choisissez. Couverture : les 14 communes du District d'Abidjan que nous desservons, de Songon à Grand-Bassam. Des tournées récurrentes peuvent être mises en place sur mesure.",
       "tarif": "Tarif selon la fréquence, la distance et le volume, à partir de 1000 FCFA. Formules récurrentes avantageuses sur demande — devis gratuit sur WhatsApp.",
       "faq": [
         {
@@ -180,7 +180,7 @@
         "Vendeurs en ligne indépendants",
         "Marques en croissance à Abidjan"
       ],
-      "delais": "Livraison le jour même ou programmée selon vos besoins, dans les 13 communes d'Abidjan et à Grand-Bassam. Volumes réguliers pris en charge.",
+      "delais": "Livraison le jour même ou programmée selon vos besoins, dans les 14 communes du District d'Abidjan que nous desservons, de Songon à Grand-Bassam. Volumes réguliers pris en charge.",
       "tarif": "Tarifs dégressifs selon le nombre de livraisons (à partir de 1000 FCFA l'unité). Formule partenaire sur mesure pour les boutiques — devis gratuit sur WhatsApp.",
       "faq": [
         {
@@ -337,7 +337,7 @@
   "coverage": {
     "eyebrow": "COUVERTURE GÉOGRAPHIQUE",
     "title": "Toutes les zones couvertes",
-    "subtitle": "Nous livrons dans les 13 communes du District d'Abidjan, ainsi qu'à Grand-Bassam. Chaque zone a ses spécificités.",
+    "subtitle": "Nous livrons dans les 14 communes du District d'Abidjan que nous desservons, de Songon à Grand-Bassam. Chaque zone a ses spécificités.",
     "zones": [
       {
         "name": "Plateau",
@@ -601,7 +601,7 @@
       },
       {
         "question": "Quelles zones couvrez-vous ?",
-        "answer": "Nous livrons dans les 13 communes du District d'Abidjan ainsi qu'à Bingerville, Anyama, Songon et Grand-Bassam. Votre zone n'est pas listée ? Contactez-nous, nous étudions toute demande."
+        "answer": "Nous livrons dans les 14 communes du District d'Abidjan que nous desservons, de Songon à Grand-Bassam. Votre zone n'est pas listée ? Contactez-nous, nous étudions toute demande."
       },
       {
         "question": "Comment passer une commande ?",
