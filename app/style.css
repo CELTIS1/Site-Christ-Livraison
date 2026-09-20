@@ -3709,3 +3709,66 @@ html.etq-ouvert{ overflow:hidden; }
 html[data-theme="dark"] .delai-ligne--risque{ background:#2E2116; color:#F0C98A; border-color:#7A4A1A; }
 html[data-theme="dark"] .delai-ligne--depasse{ background:#3A1A17; color:#FF9D93; border-color:#7A2B22; }
 
+
+/* ==========================================================================================
+   LES COLIS SUR LA CARTE (9.6, troisième volet — 20/09/2026). Onglet Suivi de l'espace équipe :
+   la liste des communes et la carte, liées. Téléphone : la carte puis la liste. Ordinateur
+   (≥ 1024 px) : la liste à gauche (340 px), la carte à droite, même hauteur.
+   ========================================================================================== */
+.csc-grille{ display:flex; flex-direction:column-reverse; gap:14px; }
+.csc-carte{ min-width:0; }
+.csc-liste{ min-width:0; }
+.csc-entete{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:0 2px 8px; font-size:14px; color:#1f2937; }
+.csc-entete span{ font-size:13px; color:#5b6473; }
+.csc-entete em{ font-style:normal; font-weight:700; color:#b45309; }
+.csc-lignes{ display:flex; flex-direction:column; border:1px solid #e3e9f1; border-radius:12px; overflow:hidden; background:#fff; }
+.csc-ligne + .csc-ligne{ border-top:1px solid #eef2f7; }
+.csc-ligne-bouton{ display:flex; align-items:center; gap:12px; width:100%; min-height:56px; padding:8px 12px; background:none; border:0; font:inherit; text-align:left; cursor:pointer; color:inherit; }
+.csc-ligne-bouton:hover{ background:#f6f9fc; }
+.csc-ligne-bouton:focus-visible{ outline:2px solid var(--clt-navy2,#1B4374); outline-offset:-2px; }
+.csc-ligne--choisie{ background:#f1f6fd; box-shadow:inset 3px 0 0 var(--clt-navy2,#1B4374); }
+.csc-nb{ flex:none; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; color:#fff; background:#1B4374; font-variant-numeric:tabular-nums; }
+.csc-nb--a-affecter{ background:#c2410c; }
+.csc-nb--a-risque{ background:#b7791f; }
+.csc-ou{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.csc-ou strong{ font-size:14.5px; color:#12305a; }
+.csc-ou small{ font-size:13px; color:#5b6473; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.csc-marque{ flex:none; font-size:12px; font-weight:700; border-radius:999px; padding:3px 9px; }
+.csc-marque--risque{ background:#fff4db; color:#8a5a00; }
+.csc-detail{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:2px 12px 12px 60px; font-size:13px; color:#44505f; }
+.csc-detail .btn{ min-height:40px; }
+.csc-hors{ margin-top:12px; }
+.csc-hors-titre{ font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:#6b7280; padding:0 2px 6px; }
+.csc-hors-ligne{ display:flex; justify-content:space-between; align-items:center; width:100%; min-height:44px; padding:6px 12px; margin-bottom:6px; background:#fff; border:1px dashed #cbd5e1; border-radius:10px; font:inherit; font-size:13.5px; color:#1f2937; cursor:pointer; }
+.csc-note{ margin-top:10px; font-size:12.5px; color:#6b7280; line-height:1.45; }
+.csc-vide{ padding:16px; border:1px dashed #cbd5e1; border-radius:12px; color:#5b6473; font-size:14px; text-align:center; }
+/* La pastille sur la carte : ronde, toujours (largeur = hauteur, posées par la règle). */
+.csc-pastille-hote{ background:none !important; border:0 !important; }
+.csc-pastille{ display:flex; align-items:center; justify-content:center; border-radius:50%; box-sizing:border-box; font-weight:800; font-size:14px; color:#fff; background:rgba(27,67,116,.92); border:3px solid #fff; box-shadow:0 2px 8px rgba(15,30,60,.35); font-variant-numeric:tabular-nums; cursor:pointer; }
+.csc-pastille--a-affecter{ background:rgba(194,65,12,.94); }
+.csc-pastille--a-risque{ background:rgba(183,121,31,.95); }
+.csc-pastille--choisie{ border-color:#ffd166; box-shadow:0 0 0 4px rgba(255,209,102,.55), 0 2px 8px rgba(15,30,60,.35); }
+.csc-bulle{ font-size:13.5px; line-height:1.45; min-width:180px; }
+.csc-bulle strong{ display:block; font-size:14.5px; color:#12305a; margin-bottom:2px; }
+.csc-bulle-risque{ color:#8a5a00; font-weight:700; }
+.csc-bulle .btn{ margin-top:8px; min-height:40px; width:100%; }
+@media (min-width:1024px){
+  .csc-grille{ flex-direction:row; align-items:stretch; }
+  .csc-liste{ flex:0 0 340px; max-height:520px; overflow-y:auto; padding-right:2px; }
+  .csc-carte{ flex:1; }
+  #carte-livreurs{ height:520px !important; }
+}
+html[data-theme="dark"] .csc-entete{ color:#E6ECF3; }
+html[data-theme="dark"] .csc-entete span, html[data-theme="dark"] .csc-ou small, html[data-theme="dark"] .csc-note, html[data-theme="dark"] .csc-detail{ color:#AEBBCB; }
+html[data-theme="dark"] .csc-entete em{ color:#F5B66B; }
+html[data-theme="dark"] .csc-lignes{ background:#16202E; border-color:#2A3A50; }
+html[data-theme="dark"] .csc-ligne + .csc-ligne{ border-top-color:#243247; }
+html[data-theme="dark"] .csc-ligne-bouton:hover{ background:#1B2839; }
+html[data-theme="dark"] .csc-ligne--choisie{ background:#1B2A40; box-shadow:inset 3px 0 0 #6FA8FF; }
+html[data-theme="dark"] .csc-ou strong{ color:#E6ECF3; }
+html[data-theme="dark"] .csc-marque--risque{ background:#3A2C10; color:#F5CF7A; }
+html[data-theme="dark"] .csc-hors-ligne, html[data-theme="dark"] .csc-vide{ background:#16202E; border-color:#3A4A60; color:#C9D3DF; }
+html[data-theme="dark"] .csc-hors-titre{ color:#93A1B3; }
+.csc-compteur{ display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:22px; padding:0 7px; margin-left:6px; border-radius:999px; background:#e3ecf8; color:#12305a; font-size:12.5px; font-weight:800; vertical-align:middle; }
+.csc-compteur.hidden{ display:none; }
+html[data-theme="dark"] .csc-compteur{ background:#243a5a; color:#CFE0FF; }

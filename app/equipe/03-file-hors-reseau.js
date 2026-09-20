@@ -1208,6 +1208,8 @@ switch (cle) {
   case 'dormants':  listeColis('tous', '', L.dormants); break;
   case 'a-risque':  listeColis('tous', '', L.aRisque); break;
   case 'promesse-depassee': listeColis('tous', '', L.promesseDepassee); break;
+  // 9.6 : « Voir ces colis » depuis la carte du Suivi — même porte, mêmes filtres remis à zéro.
+  case 'carte-commune': listeColis('tous', '', L.carteCommune); break;
   case 'examiner': {
     const st = (L.examiner || []).map(id => (allColis.find(c => c.id === id) || {}).statut);
     const seul = st.every(x => x === 'non_livre') ? 'non_livre' : st.every(x => x === 'retour') ? 'retour' : 'tous';

@@ -51,6 +51,8 @@
       if (typeof forceStickyReflow === 'function') forceStickyReflow(document.getElementById('panel-journal'));
       // 05/09/2026 — « Corrections de montants » n'était jamais chargée sans clic sur son titre.
       if (typeof loadCorrectionsMontants === 'function') loadCorrectionsMontants();
+      // 9.6 : les colis en route sur la carte, recomptés à chaque ouverture de l'onglet.
+      if (window.CLTCarteColis) CLTCarteColis.ouvrirSuivi();
     }
     // La programmation interroge la base : on ne la charge qu'à l'ouverture de son onglet, et
     // on la recharge à chaque retour. Une tournée décidée depuis un autre poste doit apparaître

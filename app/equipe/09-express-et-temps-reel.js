@@ -754,9 +754,12 @@ livreurMarkers[p.livreur_id] = L.marker([p.latitude, p.longitude]).addTo(window.
 }
 });
 
-document.getElementById('carte-empty-state').classList.toggle('hidden', fresh.length > 0);
-document.getElementById('carte-livreurs').style.display = fresh.length > 0 ? '' : 'none';
-if (fresh.length > 0) setTimeout(() => window.livreurMap.invalidateSize(), 50);
+// 20/09/2026 (9.6) : la carte porte aussi les colis en route, par commune. Elle se montre dès
+// qu'il y a un livreur en direct OU un colis à y voir (16-les-colis-sur-la-carte.js).
+const aMontrer = fresh.length > 0 || !!(window.CLTCarteColis && CLTCarteColis.aMontrer());
+document.getElementById('carte-empty-state').classList.toggle('hidden', aMontrer);
+document.getElementById('carte-livreurs').style.display = aMontrer ? '' : 'none';
+if (aMontrer) setTimeout(() => window.livreurMap.invalidateSize(), 50);
 }
 
 init();

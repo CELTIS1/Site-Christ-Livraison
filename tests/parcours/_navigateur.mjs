@@ -129,7 +129,7 @@ const DOUBLES = {
                   getCurrentPageInfo() { return { pageNumber: 1 }; } },
     }; } };`,
   autotable: '',
-  leaflet: 'window.L = { map: () => { const m = { setView() { return m; }, on() { return m; }, remove() {}, invalidateSize() {}, fitBounds() {} }; return m; }, tileLayer: () => ({ addTo() {} }), marker: () => { const k = { addTo() { return k; }, bindPopup() { return k; }, setLatLng() { return k; }, remove() {} }; return k; }, icon: () => ({}), divIcon: () => ({}), latLngBounds: () => ({ extend() {}, isValid() { return false; } }) };',
+  leaflet: 'window.__pastillesDeLaCarte = []; window.L = { map: () => { const m = { setView() { return m; }, on() { return m; }, remove() {}, removeLayer(k) { const i = window.__pastillesDeLaCarte.indexOf(k); if (i >= 0) window.__pastillesDeLaCarte.splice(i, 1); }, invalidateSize() {}, fitBounds() {}, getZoom() { return 12; } }; return m; }, tileLayer: () => ({ addTo() {} }), marker: (ou, o) => { const k = { ou, options: o || {}, addTo() { if (k.options.icon && k.options.icon.html) window.__pastillesDeLaCarte.push(k); return k; }, bindPopup(h) { k.bulle = h; return k; }, setPopupContent(h) { k.bulle = h; return k; }, setIcon(i) { k.options.icon = i; return k; }, on(e, f) { k["sur_" + e] = f; return k; }, openPopup() { k.ouverte = true; return k; }, setLatLng() { return k; }, remove() {} }; return k; }, icon: () => ({}), divIcon: (o) => o, latLngBounds: () => ({ extend() {}, isValid() { return false; } }) };',
 };
 
 export async function ouvrirNavigateur(options) {

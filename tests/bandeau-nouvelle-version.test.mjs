@@ -968,10 +968,15 @@ verifier(
    v202, le 20/09/2026 — « ensuite » n° 7, les statistiques de causes : app/causes-des-echecs.js
    (pur). Boîte « Pourquoi ça échoue » dans la console du dirigeant, sur le mois choisi : par
    motif, commune, livreur, cliente ; taux sur les colis TENTÉS, jamais sous 5 colis ; « motif non
-   saisi » dit en toutes lettres. Une colonne de plus lue (motif_non_livraison), aucune lecture. Étiquette 20260920causes. */
+   saisi » dit en toutes lettres. Une colonne de plus lue (motif_non_livraison), aucune lecture. Étiquette 20260920causes.
+   v203, le 20/09/2026 — 9.6, troisième volet : les colis en route sur la carte du Suivi. Une
+   pastille par commune de destination sur la carte Leaflet qui existait (livreurs en direct),
+   la liste des communes à côté, liées ; « Voir ces colis » passe par la porte de L'essentiel.
+   Règle pure app/colis-sur-la-carte.js ; écran app/equipe/16-les-colis-sur-la-carte.js.
+   La carte se montre dès qu'il y a un colis, même sans livreur en direct. Aucune lecture en plus. Étiquette 20260920cartecolis. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v202'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v203'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
