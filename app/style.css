@@ -3701,3 +3701,11 @@ html.etq-ouvert{ overflow:hidden; }
 .scan-message{ color:#fff; font-size:15px; line-height:1.45; text-align:center; max-width:420px; min-height:44px; }
 .scan-fermer{ min-height:48px; min-width:160px; }
 
+/* ---- Les délais par colis (20/09/2026) : une ligne sur la carte, seulement quand ça presse ---- */
+.delai-ligne{ font-size:12.5px; font-weight:700; line-height:1.45; margin:3px 0; padding:4px 9px; border-radius:8px; display:inline-block; }
+.delai-ligne--risque{ background:#fff6ea; color:#8a4b00; border:1px solid #f0d09a; }
+.delai-ligne--depasse{ background:#fdecea; color:#9a2b1c; border:1px solid #f3c5bf; }
+.delai-ligne-promesse{ font-weight:500; }
+html[data-theme="dark"] .delai-ligne--risque{ background:#2E2116; color:#F0C98A; border-color:#7A4A1A; }
+html[data-theme="dark"] .delai-ligne--depasse{ background:#3A1A17; color:#FF9D93; border-color:#7A2B22; }
+

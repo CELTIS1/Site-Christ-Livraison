@@ -958,10 +958,16 @@ verifier(
    app/import-de-colis.js (séparateurs, guillemets, « 15 000 F », « +225… », zéro de tête mangé
    par Excel, communes et surnoms, dates) ; une ligne douteuse est posée AVEC ses avertissements,
    une ligne sans commune ni adresse est ignorée et dite ; 60 à la fois ; modèle à télécharger.
-   Aucune migration. Étiquette 20260920import. */
+   Aucune migration. Étiquette 20260920import.
+   v201, le 20/09/2026 — « ensuite » n° 6, les délais par colis et « à risque » avant l'échec :
+   app/delais-et-promesses.js (pur, l'instant en paramètre). Promesse = « à livrer avant le »,
+   sinon « reporté au », sinon le lendemain de la récupération (SEUILS.promesseJours). À risque :
+   promis aujourd'hui et pas récupéré à 11 h, pas parti à 14 h, ou sans personne pour le porter.
+   L'essentiel gagne deux pastilles (à risque ; promesse dépassée) et la carte du bureau une
+   ligne — seulement quand ça presse. Aucune migration. Étiquette 20260920delais. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v200'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v201'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

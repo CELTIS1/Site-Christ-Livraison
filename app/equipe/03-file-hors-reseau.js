@@ -495,6 +495,15 @@ return `<div class="sync-pending-badge montant-manquant-badge" title="Ce colis a
    destinataire remet » additionnait ce zéro comme un vrai montant : il annonçait une somme
    fausse, avec l'aplomb d'une somme juste. Quand un montant manque, ce total n'existe pas — on
    le dit, on ne l'invente pas. */
+/* LA PROMESSE SUR LA CARTE (20/09/2026). Rien quand tout va bien — une carte n'a pas à dire
+   « dans les temps » quarante fois par écran. Une ligne quand le colis est à risque ou en retard
+   sur sa promesse : la raison, et la date promise. */
+function eqDelaiHTML(c){
+if (!window.CLTDelais) return '';
+const e = CLTDelais.etatDuDelai(c, new Date().toISOString());
+if (!e || e.etat === 'dans_les_temps') return '';
+return `<div class="delai-ligne delai-ligne--${e.etat === 'depasse' ? 'depasse' : 'risque'}">${e.etat === 'depasse' ? '⏰' : '⏳'} ${escapeHTML(e.etat === 'depasse' ? 'Promesse dépassée' : 'À risque')} : ${escapeHTML(e.raison)} <span class="delai-ligne-promesse">(${escapeHTML(CLTDelais.phraseDeLaPromesse(e))})</span></div>`;
+}
 function eqLigneMontantsHTML(c){
 if (!colisADetailMontant(c)) return formatMontant(c.montant) ? `<div class="meta">Montant : ${formatMontant(c.montant)}</div>` : '';
 const absent = '<span class="montant-absent">non renseigné</span>';
@@ -708,6 +717,7 @@ ${eqBoutonsAppelHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
+${eqDelaiHTML(c)}
 <!-- LE REPORT SE VOIT ICI, ET NON PLUS NULLE PART. (18/09/2026)
      Le 17 au soir, des colis « assignés aujourd'hui » disparaissaient de cet écran. Ils avaient
      été reportés à demain — geste légitime, mais que cette carte ne montrait pas. Le téléphone
@@ -952,6 +962,13 @@ const L = {
   fraisAdditionnels: ids('frais_additionnels') || null,
   reclamations: cat.reclamations.map(r => r.colis_id).filter(Boolean),
 };
+/* LES PROMESSES (20/09/2026). Deux listes qui regardent EN AVANT : ce qui va manquer sa date
+   aujourd'hui, et ce qui l'a manquée. La règle est dans delais-et-promesses.js ; elle porte sur
+   les colis chargés dans la page — donc les journées récentes, exactement celles où une promesse
+   se joue. */
+const sousPromesse = (window.CLTDelais) ? CLTDelais.colisSousPromesse(colis, new Date().toISOString()) : { aRisque: [], depasses: [] };
+L.aRisque = sousPromesse.aRisque.map(x => x.id);
+L.promesseDepassee = sousPromesse.depasses.map(x => x.id);
 const nbReclamations = base ? Number(base.reclamations || 0) : cat.reclamations.length;
 const nbReclamationsTard = base ? Number(base.reclamations_tard || 0) : cat.reclamationsTard.length;
 const nbReclamationsLivreurs = base ? Number(base.reclamations_livreurs || 0) : reclamationsClientes.filter(r => reclamationEnAttente(r) && r.auteur === 'livreur').length;
@@ -1040,6 +1057,8 @@ set('aujourdhui-actions', ouRien(
   pastille(nbSuppressions, nbSuppressions > 1 ? 'suppressions de compte demandées' : 'suppression de compte demandée', 'suppressions', 'ambre') +
   pastille(nbFileBloquee, nbFileBloquee > 1 ? 'enregistrements bloqués hors réseau' : 'enregistrement bloqué hors réseau', 'file-bloquee', 'rouge'), 'Rien à faire'));
 set('aujourdhui-anomalies', ouRien(
+  pastille(L.aRisque.length, 'à risque : promis aujourd\'hui', 'a-risque', 'ambre') +
+  pastille(L.promesseDepassee.length, L.promesseDepassee.length > 1 ? 'promesses dépassées' : 'promesse dépassée', 'promesse-depassee', 'rouge') +
   pastille(L.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +
   pastille(L.dormants.length, 'en route depuis plus de ' + SEUILS.colisDormantJours + ' jours', 'dormants', 'rouge') +
   pastille(L.examiner.length, 'non livrés ou retours', 'examiner', 'rouge') +
@@ -1187,6 +1206,8 @@ switch (cle) {
   case 'livraison': listeColis('recupere', '__aucun', L.livraison); break;
   case 'retard':    listeColis('en_livraison', '', L.retard); break;
   case 'dormants':  listeColis('tous', '', L.dormants); break;
+  case 'a-risque':  listeColis('tous', '', L.aRisque); break;
+  case 'promesse-depassee': listeColis('tous', '', L.promesseDepassee); break;
   case 'examiner': {
     const st = (L.examiner || []).map(id => (allColis.find(c => c.id === id) || {}).statut);
     const seul = st.every(x => x === 'non_livre') ? 'non_livre' : st.every(x => x === 'retour') ? 'retour' : 'tous';

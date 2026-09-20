@@ -1853,6 +1853,12 @@ const SEUILS = {
   reclamationTardJours: 2,    // un signalement qui attend plus longtemps passe au rouge
   colisDormantJours: 2,       // récupéré / en attente depuis plus de N jours : « dormant »
   fileEssaisMax: 3,           // une mise à jour hors réseau refusée est retentée N fois, puis signalée
+  // Les délais par colis (20/09/2026, delais-et-promesses.js). Sans « à livrer avant le » ni report,
+  // un colis est promis N jour(s) après sa récupération ; le jour promis, il est « à risque » s'il
+  // n'est pas récupéré à telle heure, ou pas parti en livraison à telle autre (heure d'Abidjan).
+  promesseJours: 1,
+  risqueHeureRecuperation: 11,
+  risqueHeureDepart: 14,
 };
 
 const CLT_CONTACT = {

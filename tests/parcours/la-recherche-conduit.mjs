@@ -127,6 +127,22 @@ await dodo(900);
 verifier('et la recherche propose ce colis', new RegExp(numeroScanne.replace(/^CLT-/, '')).test(await page.locator('#eq-recherche-resultats').innerText()), (await page.locator('#eq-recherche-resultats').innerText()).slice(0, 200));
 await page.locator('#eq-recherche-tout').fill('');
 
+titre('4 ter. Une promesse dépassée se voit AVANT qu\'on la cherche (20/09/2026)');
+{
+  const { colis: fabriquer, CLIENTE1: AWA, LIVREUR: KOFFI } = await import('./_monde.mjs');
+  const hier = new Date(Date.now() - 86400000).toISOString().slice(0, 10), avantHier = new Date(Date.now() - 2 * 86400000).toISOString();
+  N.monde.TABLES.colis.push(fabriquer(950, { fournisseur_id: AWA, livreur_id: KOFFI, livreur_collecte_id: KOFFI, statut: 'recupere', created_at: avantHier, recupere_at: avantHier, a_livrer_avant: hier, commune_destination: 'Cocody', montant_article: 5000, montant_livraison: 1500, montant: 6500 }));
+  await page.reload();
+  await dodo(3500);
+  const pastille = page.locator('#aujourdhui-anomalies [data-aller="promesse-depassee"]');
+  verifier('L\'essentiel porte « promesse dépassée », en rouge', (await pastille.count()) === 1 && /promesses? dépassées?/.test(await pastille.innerText()) && /est-rouge/.test(await pastille.getAttribute('class')), await page.locator('#aujourdhui-anomalies').innerText());
+  await pastille.click();
+  await dodo(1200);
+  const ligne = page.locator('#colis-list .delai-ligne--depasse').first();
+  verifier('un appui ouvre ces colis, et la carte dit la raison et la date promise', (await ligne.count()) === 1 && /Promesse dépassée : promis hier, toujours en route/.test(await ligne.innerText()) && /à livrer avant le/.test(await ligne.innerText()), await ligne.innerText().catch(() => ''));
+  verifier('les colis dans les temps ne portent aucune ligne de délai', (await page.locator('#colis-list .delai-ligne').count()) === (await page.locator('#colis-list .delai-ligne--depasse, #colis-list .delai-ligne--risque').count()));
+}
+
 titre('5. Rien n\'a cassé');
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
