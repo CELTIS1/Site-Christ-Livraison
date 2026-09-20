@@ -185,7 +185,7 @@ direct sur la carte, soyez prévenu à chaque étape — même avec un réseau f
 
 Trois captures de départ (720 × 1280, format téléphone accepté par Play) ont été fabriquées le
 20/09 depuis l'application de démonstration : *Nouvelle course*, *Le prix avant de commander*,
-*Suivre sa course*. Elles sont sur le Bureau, dans le dossier « CLT - Play Store » (hors dépôt). Play en demande
+*Suivre sa course*. Elles sont dans le dossier CLT du Bureau, sous « CLT - Play Store » (hors dépôt). Play en demande
 **au moins deux** ; **la capture qui convainc est celle de la carte avec le coursier en route**,
 et elle ne peut se faire que sur un vrai téléphone, avec une vraie course : à prendre par Celtis
 (bouton marche + volume bas) le jour du test interne.
