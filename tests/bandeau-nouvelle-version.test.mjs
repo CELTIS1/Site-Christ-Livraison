@@ -908,10 +908,15 @@ verifier(
    v192, le 20/09/2026 — feuille de route 14.2, la densité du bureau sur ordinateur : un seul bloc
    CSS au-dessus de 1 024 px (style.css). Recherche, date et livreur sur une ligne ; la carte d'un
    colis enregistré en deux colonnes, sans la frise (sauf alerte) ; la fiche en saisie en deux
-   colonnes. Téléphone inchangé. Le numéro du destinataire se lit enfin la nuit. Aucune migration. Étiquette 20260920dense. */
+   colonnes. Téléphone inchangé. Le numéro du destinataire se lit enfin la nuit. Aucune migration. Étiquette 20260920dense.
+   v193, le 20/09/2026 — feuille de route 14.3, la barre latérale de Gestion : au-dessus de
+   1 200 px, app/gestion-barre-laterale.js LIT les onglets et sous-onglets de la page (il n'en
+   déclare aucun), passe par switchTab / switchSub, et suit la largeur en direct ; en dessous,
+   rien ne change. La nuit, les lignes paires des tableaux de Gestion se lisent enfin. Aucune
+   migration. Étiquette 20260920barre. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v192'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v193'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

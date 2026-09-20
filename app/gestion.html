@@ -15,10 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920dense">
+<link rel="stylesheet" href="style.css?v=20260920barre">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920dense"></script>
-<script src="splash.js?v=20260920dense"></script>
+<script src="theme.js?v=20260920barre"></script>
+<script src="splash.js?v=20260920barre"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -209,6 +209,26 @@
   .cdq-jnsp{ background:#fafbfc; }
   .cdq-jnsp-titre{ font-size:14px; font-weight:800; color:#5b6473; }
   .cdq-jnsp-txt{ font-size:13px; color:#5b6473; margin-top:4px; line-height:1.5; }
+  /* ---------- LA BARRE LATÉRALE (20/09/2026, 14.3) ----------
+     Au-dessus de 1 200 px, gestion-barre-laterale.js pose body.gbl-active : la carte de Gestion
+     passe à gauche, en permanence, et les onglets du haut s'effacent (ils restent dans la page :
+     la barre les LIT). En dessous, rien de tout cela n'existe. */
+  .gbl-barre{ display:none; }
+  body.gbl-active .gbl-barre{ display:block; position:fixed; z-index:55; left:0; top:var(--h-topbar,62px); bottom:0; width:248px;
+    overflow-y:auto; overscroll-behavior:contain; padding:16px 12px 28px; background:#fff; border-right:1px solid #e6ebea; }
+  body.gbl-active .wrap{ margin-left:calc(264px + max(0px, (100vw - 264px - 1180px) / 2)); margin-right:16px; }
+  body.gbl-active .navsticky, body.gbl-active .subtabs-groupes{ display:none; }
+  .gbl-bloc + .gbl-bloc{ margin-top:10px; padding-top:10px; border-top:1px solid #eef2f1; }
+  .gbl-onglet, .gbl-item{ font:inherit; display:flex; align-items:center; width:100%; text-align:left; background:none; border:0; cursor:pointer; border-radius:9px; }
+  .gbl-onglet{ font-size:14px; font-weight:800; color:#1f2937; min-height:42px; padding:0 10px; }
+  .gbl-onglet--actif{ color:var(--clt-teal-dark); }
+  .gbl-etiquette{ font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8a94a3; padding:10px 10px 3px; }
+  .gbl-item{ font-size:13.5px; font-weight:600; color:#4a5768; min-height:36px; padding:0 10px 0 14px; border-left:3px solid transparent; border-radius:0 9px 9px 0; }
+  .gbl-onglet:hover, .gbl-item:hover{ background:#f1f6f5; }
+  .gbl-item--actif, .gbl-onglet--actif[aria-current="page"]{ background:var(--clt-teal-light); color:var(--clt-teal-dark); }
+  .gbl-item--actif{ border-left-color:var(--clt-teal-dark); font-weight:800; }
+  .gbl-onglet:focus-visible, .gbl-item:focus-visible{ outline:2px solid var(--clt-teal-dark); outline-offset:-2px; }
+  @media print{ body.gbl-active .gbl-barre{ display:none; } body.gbl-active .wrap{ margin-left:auto; margin-right:auto; } }
   /* ---------- LE BILAN DE LA SEMAINE (20/09/2026, 12.3) ---------- */
   #cdd-semaine{ padding:16px 18px; margin-bottom:16px; }
   .cds-nav{ display:inline-flex; align-items:center; gap:6px; }
@@ -600,6 +620,9 @@
   html[data-theme="dark"] table.g-table th{ background:#1C2739; color:#CFE0F5; border-color:#2A3849; }
   html[data-theme="dark"] table.g-table td{ border-color:#2A3849; }
   html[data-theme="dark"] table.g-table th:first-child, html[data-theme="dark"] table.g-table td:first-child{ background:#141F2E; }
+  /* Vu le 20/09 en vérifiant la barre latérale la nuit : une ligne sur deux restait claire, et
+     son texte (clair lui aussi) disparaissait — la moitié de l'échéancier illisible. */
+  html[data-theme="dark"] table.g-table tbody tr:nth-child(even) td, html[data-theme="dark"] table.g-table tbody tr:nth-child(even) td:first-child{ background:#18243A; }
   html[data-theme="dark"] table.g-table tfoot td{ background:#1C2739; border-top-color:#2E4A47; }
   html[data-theme="dark"] table.g-table input.cell{ background:#18243A; color:#E6ECF3; border-color:#33465F; }
   html[data-theme="dark"] table.g-table input.cell:focus{ background:#1C2739; }
@@ -609,6 +632,12 @@
   html[data-theme="dark"] .icon-btn.danger{ background:#3A1A17; color:#FF9D93; }
   html[data-theme="dark"] .bul-barre{ background:#141F2E; border-color:#2A3849; }
   html[data-theme="dark"] .cdd-table td{ border-bottom-color:#2A3849; }
+  html[data-theme="dark"] .gbl-barre{ background:#111A27; border-right-color:#2A3849; }
+  html[data-theme="dark"] .gbl-bloc + .gbl-bloc{ border-top-color:#2A3849; }
+  html[data-theme="dark"] .gbl-onglet{ color:#E6ECF3; }
+  html[data-theme="dark"] .gbl-item{ color:#C9D3DF; }
+  html[data-theme="dark"] .gbl-onglet:hover, html[data-theme="dark"] .gbl-item:hover{ background:#1C2739; }
+  html[data-theme="dark"] .gbl-onglet--actif{ color:#8FE3D8; }
   html[data-theme="dark"] .cds-fleche, html[data-theme="dark"] .cds-auj{ background:#141F2E; border-color:#2E4A47; }
   html[data-theme="dark"] .cds-tuile{ background:#1C2739; border-color:#2A3849; }
   html[data-theme="dark"] .cds-tuile--alerte{ background:#2E2116; border-color:#7A4A1A; }
@@ -1629,31 +1658,33 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260920dense"></script>
-<script src="lib/bibliotheques.js?v=20260920dense"></script>
-<script src="lib/retours.js?v=20260920dense"></script>
-<script src="lib/reclamations.js?v=20260920dense"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920dense"></script>
-<script src="lib/argent.js?v=20260920dense"></script>
-<script src="lib/releve-cliente.js?v=20260920dense"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920dense"></script>
-<script src="lib/briques-argent.js?v=20260920dense"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920dense"></script>
-<script src="lib/annonce-de-remise.js?v=20260920dense"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920dense"></script>
-<script src="lib/primes.js?v=20260920dense"></script>
-<script src="lib/doublons.js?v=20260920dense"></script>
-<script src="config.js?v=20260920dense"></script>
-<script src="biometric-lock.js?v=20260920dense"></script>
-<script src="clt-select-recherche.js?v=20260920dense"></script>
-<script src="site-editeur.js?v=20260920dense"></script>
+<script src="clt-common.js?v=20260920barre"></script>
+<script src="lib/bibliotheques.js?v=20260920barre"></script>
+<script src="lib/retours.js?v=20260920barre"></script>
+<script src="lib/reclamations.js?v=20260920barre"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920barre"></script>
+<script src="lib/argent.js?v=20260920barre"></script>
+<script src="lib/releve-cliente.js?v=20260920barre"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920barre"></script>
+<script src="lib/briques-argent.js?v=20260920barre"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920barre"></script>
+<script src="lib/annonce-de-remise.js?v=20260920barre"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920barre"></script>
+<script src="lib/primes.js?v=20260920barre"></script>
+<script src="lib/doublons.js?v=20260920barre"></script>
+<script src="config.js?v=20260920barre"></script>
+<script src="biometric-lock.js?v=20260920barre"></script>
+<script src="clt-select-recherche.js?v=20260920barre"></script>
+<script src="site-editeur.js?v=20260920barre"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260920dense"></script>
-<script src="analyse-profonde.js?v=20260920dense"></script>
-<script src="ce-qui-a-change.js?v=20260920dense"></script>
-<script src="les-questions.js?v=20260920dense"></script>
-<script src="console-du-dirigeant.js?v=20260920dense"></script>
-<script src="gestion.js?v=20260920dense"></script>
+<script src="bilan-de-la-semaine.js?v=20260920barre"></script>
+<script src="analyse-profonde.js?v=20260920barre"></script>
+<script src="ce-qui-a-change.js?v=20260920barre"></script>
+<script src="les-questions.js?v=20260920barre"></script>
+<script src="console-du-dirigeant.js?v=20260920barre"></script>
+<script src="gestion.js?v=20260920barre"></script>
+<!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
+<script src="gestion-barre-laterale.js?v=20260920barre"></script>
 </body>
 </html>

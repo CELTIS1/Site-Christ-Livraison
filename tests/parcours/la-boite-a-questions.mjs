@@ -237,6 +237,24 @@ await dodo(300);
 verifier('« Cette semaine » y ramène', !/semaine passée/.test(await page.locator('#cdd-semaine').innerText()));
 verifier('les flèches sont carrées, 44 × 44 : pas d\'ovale', await page.evaluate(() => { const r = document.querySelector('#cdd-semaine .cds-fleche').getBoundingClientRect(); return Math.round(r.width) === 44 && Math.round(r.height) === 44; }));
 
+titre('8 quater. La barre latérale (14.3) : sur ordinateur seulement');
+verifier('sur téléphone : pas de barre, les onglets du haut sont là', await page.evaluate(() => !document.body.classList.contains('gbl-active') && getComputedStyle(document.getElementById('gbl-barre')).display === 'none' && getComputedStyle(document.querySelector('.navsticky')).display !== 'none'));
+await page.setViewportSize({ width: 1440, height: 900 });
+await dodo(500);
+verifier('à 1 440 px : la barre prend la gauche, les onglets du haut s\'effacent', await page.evaluate(() => document.body.classList.contains('gbl-active') && getComputedStyle(document.querySelector('.navsticky')).display === 'none' && document.getElementById('gbl-barre').getBoundingClientRect().width === 248));
+const carte = await page.evaluate(() => ({ barre: [...document.querySelectorAll('#gbl-barre [data-gbl-sub]')].map((b) => b.dataset.gblTab + '/' + b.dataset.gblSub), page: [...document.querySelectorAll('.tabs .tab')].filter((t) => t.style.display !== 'none').flatMap((t) => [...document.querySelectorAll('#sec-' + t.dataset.tab + ' > .subtabs-groupes .subtab')].filter((x) => x.style.display !== 'none').map((x) => t.dataset.tab + '/' + x.dataset.sub)) }));
+verifier('elle montre exactement les sous-onglets de la page — elle les lit, elle n\'en déclare aucun', carte.barre.length >= 20 && carte.barre.join() === carte.page.join(), JSON.stringify(carte).slice(0, 300));
+await page.locator('#gbl-barre [data-gbl-sub="echeances"]').click();
+await dodo(700);
+verifier('un clic : le bon onglet, le bon sous-onglet, la bonne section — et la barre dit où l\'on est', await page.evaluate(() => document.querySelector('.tabs .tab.active').dataset.tab === 'compta' && document.querySelector('#sec-compta .subtab.active').dataset.sub === 'echeances' && document.getElementById('compta-echeances').classList.contains('active') && document.querySelector('#gbl-barre [aria-current="page"]').dataset.gblSub === 'echeances'));
+await page.evaluate(() => window.switchTab('dashboard'));
+await dodo(500);
+verifier('un changement venu d\'ailleurs (raccourci, mémoire de l\'écran) : la barre suit', await page.evaluate(() => document.querySelector('#gbl-barre [aria-current="page"]').dataset.gblTab === 'dashboard'));
+verifier('rien ne déborde en largeur', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+await page.setViewportSize({ width: 390, height: 844 });
+await dodo(500);
+verifier('retour au téléphone : la barre s\'efface, les onglets reviennent', await page.evaluate(() => !document.body.classList.contains('gbl-active') && getComputedStyle(document.querySelector('.navsticky')).display !== 'none'));
+
 titre('9. Rien n\'a cassé, et rien n\'a été écrit');
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 /* UNE BOÎTE À QUESTIONS NE DOIT RIEN ÉCRIRE. Elle lit, elle répond. Le seul écrit toléré est le
