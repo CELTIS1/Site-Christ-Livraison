@@ -99,7 +99,7 @@ titre('2. On peut les voir, et donc les assigner');
     /sans_livreur'\s*\?\s*allColis\.filter\(c => !c\.livreur_id && c\.statut !== 'livre' && c\.statut !== 'non_livre' && c\.statut !== 'retour'\)/.test(equipe));
   verifier('« L\'essentiel » compte les colis sans livreur, en rouge',
     /sansLivreur: colis\.filter\(c => !c\.livreur_id/.test(equipe)
-    && /pastille\(cat\.sansLivreur\.length,[^)]*'sans-livreur', 'rouge'\)/.test(equipe));
+    && /pastille\(L\.sansLivreur\.length,[^)]*'sans-livreur', 'rouge'\)/.test(equipe));
   verifier('et la pastille conduit à la liste filtrée, prête à assigner',
     /case 'sans-livreur': listeColis\('sans_livreur', '', L\.sansLivreur\)/.test(equipe));
 }
@@ -220,7 +220,7 @@ titre('8. Remettre les montants en ordre, et cocher les jours passés');
   verifier('et il écarte les colis déjà reversés',
     /colisSansMontant\(c\) && !c\.reverse_au_fournisseur_at/.test(equipe));
   verifier('« L\'essentiel » en donne le compte, en ambre',
-    /pastille\(cat\.montantManquant\.length, 'montants à compléter', 'montant-manquant', 'ambre'\)/.test(equipe));
+    /pastille\(L\.montantManquant\.length, 'montants à compléter', 'montant-manquant', 'ambre'\)/.test(equipe));
 
   /* LE POINT DES JOURS PASSÉS. La base acceptait déjà n'importe quel jour ; ce qui manquait est
      que les marques du jour CHOISI n'étaient jamais lues — elles ne se chargeaient qu'au premier

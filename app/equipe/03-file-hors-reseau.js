@@ -693,7 +693,7 @@ const livreurLine = livreurAssigne
 // (voir la règle .est-assigne dans style.css).
 const classeAssigne = c.livreur_id ? ' est-assigne' : '';
 return `
-<div class="colis-item${classeAssigne}${eqLotIds.has(c.id) ? ' lot-coche' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}">
+<div class="colis-item${classeAssigne}${eqLotIds.has(c.id) ? ' lot-coche' : ''}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-statut="${escapeHTML(c.statut || '')}" data-expedition="${estExpedition(c) ? '1' : '0'}">
 ${caseLotHTML(c.id, eqLotIds.has(c.id))}
 ${stepperHTML(c.statut, c)}
 ${thumb}
@@ -861,7 +861,7 @@ try {
    faut redessiner, sinon la ligne « la cliente signale » n'apparaîtrait qu'au rafraîchissement
    suivant — et personne ne saurait qu'il a manqué quelque chose. */
 const avantReclam = Object.keys(window.__reclamationsParColis || {}).join(',');
-await chargerReclamationsClientes();
+await Promise.all([chargerReclamationsClientes(), chargerEssentielBase()]);
 if (Object.keys(window.__reclamationsParColis || {}).join(',') !== avantReclam && typeof renderColis === 'function') renderColis();
 renderAujourdhui();
 }
@@ -870,9 +870,24 @@ function isoMoinsJours(jourISO, n){
 const d = new Date(jourISO + 'T12:00:00'); d.setDate(d.getDate() - n);
 return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
+/* LES COMPTEURS PAR LA BASE (20/09/2026, point 20.B). L'inventaire a montré que L'essentiel
+   comptait sur les 500 colis chargés dans la page : au-delà, « sans livreur », « montants à
+   compléter », « dormants », « retours en retard », « argent non remis » étaient tronqués en
+   silence. essentiel_compteurs() rend, pour chaque catégorie, les identifiants concernés sur
+   TOUTE la base, avec les règles des écrans (éprouvées dans tests/a-traiter). Si la fonction
+   manque (script pas encore joué) ou échoue, on retombe sur le calcul local, marqué « ~ ». */
+window.__essentielBase = null;
+async function chargerEssentielBase(){
+  if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+  try {
+    const { data, error } = await supabaseClient.rpc('essentiel_compteurs');
+    window.__essentielBase = (error || !data) ? null : data;
+  } catch (e) { window.__essentielBase = null; }
+}
 function renderAujourdhui(){
 if (!document.getElementById('aujourdhui-actions')) return;
 const colis = Array.isArray(allColis) ? allColis : [];
+const base = window.__essentielBase;
 /* TOUT CE QUI ATTEND, TOUTES DATES. (05/09/2026, deuxième passage)
    Celtis : « lorsqu'il y a des colis qui ne sont pas assignés, que ce soit visible ; les colis
    qui ne sont pas traités, pour tout autre cas, il faut que tout soit vraiment listé. »
@@ -918,13 +933,38 @@ const cat = {
   // Les échecs que l'équipe n'a pas encore qualifiés (règlement des primes, 13/09/2026).
   qualifier: colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && c.non_livre_at && c.non_livre_at >= (typeof PRIMES_DEBUT !== 'undefined' ? PRIMES_DEBUT : '2026-10-01') && (c.echec_imputable === null || c.echec_imputable === undefined)),
 };
+/* Quand la base a répondu, ses listes remplacent celles de la page : mêmes clés, mêmes
+   destinations, mais comptées sur tout l'historique. Les identifiants absents de la page ne
+   pourront pas être surlignés — ils sont comptés quand même, c'est le but. */
+const ids = (cle) => (base && Array.isArray(base[cle])) ? base[cle] : null;
+const L = {
+  sansLivreur: ids('sans_livreur') || cat.sansLivreur.map(c => c.id),
+  montantManquant: ids('montant_manquant') || cat.montantManquant.map(c => c.id),
+  collecte: ids('collecte') || cat.collecte.map(c => c.id),
+  livraison: ids('livraison') || cat.livraison.map(c => c.id),
+  retard: ids('retard') || cat.retard.map(c => c.id),
+  dormants: ids('dormants') || cat.dormants.map(c => c.id),
+  examiner: ids('examiner') || cat.examiner.map(c => c.id),
+  retours: ids('retours') || cat.retours.map(c => c.id),
+  retoursTard: ids('retours_tard') || cat.retoursTard.map(c => c.id),
+  litiges: ids('litiges') || colis.filter(c => retourDetenteur(c) === 'litige').map(c => c.id),
+  qualifier: ids('qualifier') || cat.qualifier.map(c => c.id),
+  fraisAdditionnels: ids('frais_additionnels') || null,
+  reclamations: cat.reclamations.map(r => r.colis_id).filter(Boolean),
+};
+const nbReclamations = base ? Number(base.reclamations || 0) : cat.reclamations.length;
+const nbReclamationsTard = base ? Number(base.reclamations_tard || 0) : cat.reclamationsTard.length;
+const nbDemandesPassage = base ? Number(base.demandes_passage || 0) : 0;
+const nbSuppressions = base ? Number(base.suppressions || 0) : 0;
+const nbFileBloquee = Array.isArray(eqQueueEnMemoire) ? eqQueueEnMemoire.filter(x => x.bloquee).length : 0;
 const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? pendingAccounts.length : 0;
 const nbReset = resetEnAttente();
 // Les demandes approuvées qui attendent que l'équipe dicte le code (06/09/2026, point 1.3).
 const nbCodes = (typeof resetRequests !== 'undefined' && resetRequests) ? resetRequests.filter(r => r.status === 'approuve').length : 0;
 // Argent non remis : mêmes règles que la caisse livreur — colis livrés pas encore soldés.
 let resteARemettre = 0, nbASolder = 0;
-colis.forEach(c => {
+if (base) { resteARemettre = Number(base.reste_a_remettre || 0); nbASolder = Number(base.a_solder || 0); }
+else colis.forEach(c => {
   if (c.statut === 'livre' && !c.encaissement_remis){
     resteARemettre += (typeof montantTotalColis === 'function' ? Number(montantTotalColis(c)) : 0) || 0;
     nbASolder++;
@@ -933,7 +973,8 @@ colis.forEach(c => {
 // Frais additionnels non réglés, toutes dates confondues (16/09/2026, chantier 3) : on ne veut
 // pas en oublier un dans la pile des colis passés.
 let nbFraisAdditionnels = 0;
-colis.forEach(c => { if (typeof fraisAdditionnelsAReclamer === 'function' && fraisAdditionnelsAReclamer(c) > 0) nbFraisAdditionnels++; });
+if (L.fraisAdditionnels) nbFraisAdditionnels = L.fraisAdditionnels.length;
+else colis.forEach(c => { if (typeof fraisAdditionnelsAReclamer === 'function' && fraisAdditionnelsAReclamer(c) > 0) nbFraisAdditionnels++; });
 const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
 /* ÉPURÉ (06/09/2026, Celtis : « encore mieux organisé, plus esthétique, plus épuré »). Une
    pastille à zéro n'apprend rien : elle n'est plus dessinée. Un groupe sans rien à faire le dit
@@ -956,7 +997,7 @@ const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`
        mais « ✓ Rien à faire ». Un tableau de bord doit montrer ce qui demande une action ; ce
        qui vaut zéro n'en demande pas, et occupait autant de place que le reste.
    Dès qu'il y a quelque chose, la pastille revient, en couleur. */
-window.__essentielListes = { sansLivreur: cat.sansLivreur.map(c => c.id), montantManquant: cat.montantManquant.map(c => c.id), collecte: cat.collecte.map(c => c.id), livraison: cat.livraison.map(c => c.id), retard: cat.retard.map(c => c.id), examiner: cat.examiner.map(c => c.id), dormants: cat.dormants.map(c => c.id), retours: cat.retours.map(c => c.id), retoursTard: cat.retoursTard.map(c => c.id), reclamations: cat.reclamations.map(r => r.colis_id).filter(Boolean) };
+window.__essentielListes = L;
 const set = (id, html) => cltPoserHTML(document.getElementById(id), html);
 // 05/09/2026 — Bilan du jour (Celtis) : pastilles non cliquables. Le jour d'un événement vient
 // de config.js (jourEvenementColis, heure d'Abidjan) ; on replie sur dayKey si elle manquait.
@@ -987,28 +1028,83 @@ set('aujourdhui-jour',
   tuile(approx + b.echecs, 'échecs aujourd\'hui', 'rouge') +
   tuile(approx + b.enCours, 'encore en cours', 'ambre'));
 set('aujourdhui-actions', ouRien(
-  pastille(cat.sansLivreur.length, 'colis sans livreur', 'sans-livreur', 'rouge') +
-  pastille(cat.montantManquant.length, 'montants à compléter', 'montant-manquant', 'ambre') +
-  pastille(cat.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
-  pastille(cat.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
+  pastille(L.sansLivreur.length, 'colis sans livreur', 'sans-livreur', 'rouge') +
+  pastille(L.montantManquant.length, 'montants à compléter', 'montant-manquant', 'ambre') +
+  pastille(L.collecte.length,  'à confier en collecte', 'collecte', 'ambre') +
+  pastille(L.livraison.length, 'à confier en livraison', 'livraison', 'ambre') +
+  pastille(nbDemandesPassage, nbDemandesPassage > 1 ? 'demandes de passage à programmer' : 'demande de passage à programmer', 'demandes-passage', 'ambre') +
   pastille(nbPending, 'comptes à valider', 'comptes-a-valider', 'ambre') +
   pastille(nbReset,   'mots de passe à refaire', 'reinitialisations', 'ambre') +
-  pastille(nbCodes,    nbCodes > 1 ? 'codes à dicter' : 'code à dicter', 'reinitialisations', 'rouge'), 'Rien à faire'));
+  pastille(nbCodes,    nbCodes > 1 ? 'codes à dicter' : 'code à dicter', 'reinitialisations', 'rouge') +
+  pastille(nbSuppressions, nbSuppressions > 1 ? 'suppressions de compte demandées' : 'suppression de compte demandée', 'suppressions', 'ambre') +
+  pastille(nbFileBloquee, nbFileBloquee > 1 ? 'enregistrements bloqués hors réseau' : 'enregistrement bloqué hors réseau', 'file-bloquee', 'rouge'), 'Rien à faire'));
 set('aujourdhui-anomalies', ouRien(
-  pastille(cat.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +
-  pastille(cat.dormants.length, 'en route depuis plus de 2 jours', 'dormants', 'rouge') +
-  pastille(cat.examiner.length, 'non livrés ou retours', 'examiner', 'rouge') +
-  pastille(cat.retours.length, cat.retours.length > 1 ? 'retours chez les livreurs' : 'retour chez un livreur', 'retours', 'ambre') +
-  pastille(cat.retoursTard.length, cat.retoursTard.length > 1 ? 'retours en retard (plus de 2 jours)' : 'retour en retard (plus de 2 jours)', 'retours-tard', 'rouge') +
-  pastille(cat.reclamations.length, cat.reclamations.length > 1 ? 'problèmes signalés par des clientes' : 'problème signalé par une cliente', 'reclamations', cat.reclamationsTard.length ? 'rouge' : 'ambre') +
-  pastille(cat.qualifier.length, cat.qualifier.length > 1 ? 'échecs à qualifier' : 'échec à qualifier', 'qualifier', 'ambre'), 'Rien à examiner'));
+  pastille(L.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +
+  pastille(L.dormants.length, 'en route depuis plus de 2 jours', 'dormants', 'rouge') +
+  pastille(L.examiner.length, 'non livrés ou retours', 'examiner', 'rouge') +
+  pastille(L.retours.length, L.retours.length > 1 ? 'retours chez les livreurs' : 'retour chez un livreur', 'retours', 'ambre') +
+  pastille(L.retoursTard.length, L.retoursTard.length > 1 ? 'retours en retard (plus de 2 jours)' : 'retour en retard (plus de 2 jours)', 'retours-tard', 'rouge') +
+  pastille(L.litiges.length, L.litiges.length > 1 ? 'litiges : la cliente dit ne pas avoir reçu' : 'litige : la cliente dit ne pas avoir reçu', 'litiges', 'rouge') +
+  pastille(nbReclamations, nbReclamations > 1 ? 'problèmes signalés par des clientes' : 'problème signalé par une cliente', 'reclamations', nbReclamationsTard ? 'rouge' : 'ambre') +
+  pastille(L.qualifier.length, L.qualifier.length > 1 ? 'échecs à qualifier' : 'échec à qualifier', 'qualifier', 'ambre'), 'Rien à examiner'));
+renderReclamationsEquipe();
 set('aujourdhui-argent', ouRien(
   pastille(money(resteARemettre), 'à remettre', 'argent', 'rouge') +
   (nbASolder ? `<button type="button" class="ess-tuile est-rouge" data-aller="argent" title="Ouvrir"><span class="n">${nbASolder}</span><span>colis à solder</span></button>` : '') +
   (nbFraisAdditionnels ? `<button type="button" class="ess-tuile est-rouge" data-aller="argent" title="Ouvrir"><span class="n">${nbFraisAdditionnels}</span><span>${nbFraisAdditionnels > 1 ? 'frais additionnels non réglés' : 'frais additionnel non réglé'}</span></button>` : ''), 'Tout est remis'));
 const libelleJour = document.getElementById('ess-jour');
-if (libelleJour) cltPoserHTML(libelleJour, 'Tout ce qui attend, toutes dates confondues' + (colisHasMore ? ' · historique partiel' : ''));
+if (libelleJour) cltPoserHTML(libelleJour, base ? 'Tout ce qui attend, compté sur toute la base' : 'Tout ce qui attend, toutes dates confondues' + (colisHasMore ? ' · ~ historique partiel' : ''));
 }
+
+/* LES SIGNALEMENTS DES CLIENTES, AVEC LEURS GESTES (20/09/2026, point 20.B). L'inventaire :
+   « la pastille ne redescend jamais » — le bureau lisait les réclamations, ne pouvait ni les
+   prendre en charge ni y répondre, alors que la base l'y autorisait depuis le 17/09. Ici, chaque
+   signalement ouvert : qui, quoi, depuis quand, le colis ; deux gestes — « Je m'en occupe »
+   (en_cours) et « Répondre et clore » (resolue, avec la réponse que la cliente lira sous son
+   signalement). C'est le geste qui fait qu'une cliente reste. */
+function renderReclamationsEquipe(){
+  const box = document.getElementById('aujourdhui-reclamations');
+  if (!box) return;
+  const liste = Array.isArray(window.__reclamationsClientes) ? window.__reclamationsClientes : [];
+  const nomCliente = (id) => { const f = (Array.isArray(fournisseurs) ? fournisseurs : []).find(x => x.id === id); return f ? (f.company_name || f.full_name || 'Cliente') : 'Cliente'; };
+  if (!liste.length) { cltPoserHTML(box, ''); box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  const html = `<div class="ess-groupe-titre">Signalements des clientes</div>` + liste.map(r => {
+    const j = reclamationJours(r);
+    const depuis = j === 0 ? "aujourd'hui" : j === 1 ? 'hier' : 'il y a ' + j + ' jours';
+    const c = r.colis_id && Array.isArray(allColis) ? allColis.find(x => x.id === r.colis_id) : null;
+    return `<div class="reclam-eq${(j || 0) > 2 ? ' reclam-eq--vieille' : ''}" data-reclam="${escapeHTML(r.id)}">
+      <div class="reclam-eq__texte"><b>${escapeHTML(nomCliente(r.fournisseur_id))}</b> · ${escapeHTML(motifReclamationTexte(r.motif))} · ${escapeHTML(depuis)}${r.statut === 'en_cours' ? ' · <span class="reclam-eq__etat">prise en charge</span>' : ''}${r.texte ? `<div class="reclam-eq__cite">« ${escapeHTML(r.texte)} »</div>` : ''}${c ? `<div class="reclam-eq__colis"><button type="button" class="lien-nu" data-ouvrir-colis="${escapeHTML(c.id)}">Colis ${escapeHTML(c.numero || '')}</button></div>` : ''}</div>
+      <div class="reclam-eq__gestes">${r.statut !== 'en_cours' ? `<button type="button" class="btn btn-outline btn-sm" data-reclam-geste="en_cours">Je m'en occupe</button>` : ''}<button type="button" class="btn btn-sm" data-reclam-geste="resolue">Répondre et clore</button></div>
+    </div>`;
+  }).join('');
+  cltPoserHTML(box, html);
+}
+async function traiterReclamation(id, geste){
+  const r = (window.__reclamationsClientes || []).find(x => x.id === id);
+  if (!r) return;
+  let reponse = null;
+  if (geste === 'resolue') {
+    reponse = await cltPrompt({ title: 'Votre réponse à la cliente', sub: 'Elle la lira sous son signalement. Une phrase claire : ce qui a été fait, ou ce qui va se passer.', placeholder: 'Ex. : le colis a été retrouvé, il vous sera rendu demain matin.', okLabel: 'Envoyer et clore', maxLength: 500 });
+    if (reponse === null) return;
+  }
+  const patch = geste === 'resolue'
+    ? { statut: 'resolue', reponse: reponse || null, traitee_at: new Date().toISOString(), traitee_par: currentUser ? currentUser.id : null }
+    : { statut: 'en_cours', traitee_par: currentUser ? currentUser.id : null };
+  const { error } = await supabaseClient.from('reclamations_clientes').update(patch).eq('id', id);
+  if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
+  cltToast(geste === 'resolue' ? 'Signalement clos : la cliente voit votre réponse.' : 'Signalement pris en charge.', { type: 'success' });
+  supabaseClient.from('activity_log').insert([{ action: 'reclamation_' + geste, target_id: r.colis_id || null, target_type: 'colis', details: { reclamation_id: id, motif: r.motif, reponse: reponse || null } }]).then(() => {}, () => {});
+  await Promise.all([chargerReclamationsClientes(), chargerEssentielBase()]);
+  renderAujourdhui();
+  if (typeof renderColis === 'function') renderColis();
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-reclam-geste]');
+  if (!b) return;
+  const ligne = b.closest('[data-reclam]');
+  if (ligne) traiterReclamation(ligne.dataset.reclam, b.dataset.reclamGeste);
+});
 
 /* ---------- CE QUE LES CLIENTES SIGNALENT (17/09/2026, point 7.2) ----------
    Une lecture, au chargement de l'écran et à chaque rafraîchissement : les réclamations non
@@ -1097,6 +1193,10 @@ switch (cle) {
     else listeColis('retour', '', cle === 'retours' ? L.retours : L.retoursTard);
     break;
   }
+  case 'litiges': { if (typeof showEquipeTab === 'function') { showEquipeTab('retours'); window.scrollTo({ top: 0, behavior: 'smooth' }); } break; }
+  case 'demandes-passage': onglet('programmation'); defiler('section-programmation'); break;
+  case 'suppressions': onglet('comptes'); defiler('section-tous-comptes'); break;
+  case 'file-bloquee': { onglet('colis'); const b = document.getElementById('eq-offline-banner'); if (b) { b.classList.remove('hidden'); defiler('eq-offline-banner'); } break; }
   case 'argent': onglet('finances'); if (typeof showMainTab === 'function') showMainTab('compta'); defiler('caisse-livreur'); break;
   case 'qualifier': onglet('livreurs'); setTimeout(() => defiler('ld-qualifier'), 400); break;
 }
@@ -1112,6 +1212,13 @@ document.addEventListener('clt:colis-vu', (e) => {
   if (d.statut === 'non_livre' || d.statut === 'retour') {
     const v = getAlertesVues(); v.add(d.id); setAlertesVues(v);
     renderAlertIndicator();
+    // 20/09/2026 (20.B) : « examiné » est un fait partagé entre les postes, pas une case locale.
+    const c = Array.isArray(allColis) ? allColis.find(x => x.id === d.id) : null;
+    if (c && !c.vu_par_bureau_at && typeof supabaseClient !== 'undefined') {
+      c.vu_par_bureau_at = new Date().toISOString();
+      if (window.__essentielBase && Array.isArray(window.__essentielBase.examiner)) window.__essentielBase.examiner = window.__essentielBase.examiner.filter(id => id !== d.id);
+      supabaseClient.from('colis').update({ vu_par_bureau_at: c.vu_par_bureau_at }).eq('id', d.id).then(() => {}, () => {});
+    }
   }
   renderAujourdhui();
 });

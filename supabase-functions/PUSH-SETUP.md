@@ -165,6 +165,23 @@ exemple `https://esm.sh/web-push`, gère la signature VAPID et l'envoi.
 
 ---
 
+## Trois webhooks de plus (20 septembre 2026, inventaire, point 20.B)
+
+`envoyer-push` sait maintenant parler à la cliente de ce qui se passe AUTOUR du colis :
+réponse à son signalement, demande de passage vue ou refusée, reversement effectué — et
+prévenir le bureau d'un nouveau signalement ou d'une nouvelle demande. Il faut, une fois :
+
+1. **Redéployer** `envoyer-push` (Supabase › Edge Functions › coller `index.ts` › Deploy).
+2. **Créer trois Database Webhooks** (Supabase › Database › Webhooks), chacun vers l'URL de
+   `envoyer-push`, méthode POST, avec l'en-tête `x-clt-webhook-secret` = la même valeur que
+   sur les deux webhooks existants :
+   - `envoyer_push_reclamations` — table `reclamations_clientes`, événements INSERT et UPDATE ;
+   - `envoyer_push_passages` — table `demandes_de_passage`, événements INSERT et UPDATE ;
+   - `envoyer_push_reversements` — table `reversements_clientes`, événement INSERT.
+
+Tant que ce n'est pas fait, rien ne casse : les écrans montrent tout, seules les
+notifications sur le téléphone manquent.
+
 ## État réel au 16 septembre 2026 (feuille de route 3.8, vérifié dans le tableau de bord)
 
 | Élément | État |

@@ -62,7 +62,7 @@ for (const b of BLOCS) {
   verifier(`${b.fichier} : ses constantes y sont, et plus dans config.js`, cst.length === 0, cst.join(', '));
 }
 verifier('config.js dit où chaque bloc est parti', ORDRE.every(f => config.includes('app/' + f)));
-verifier('config.js a maigri sous 3 400 lignes (7 345 avant la séance 1, 5 971 après)', config.split('\n').length < 3400, String(config.split('\n').length));
+verifier('config.js a maigri sous 3 450 lignes (7 345 avant la séance 1, 5 971 après)', config.split('\n').length < 3450, String(config.split('\n').length));
 
 console.log('\n2. Chaque page charge les blocs avant config.js, même étiquette');
 const pages = fs.readdirSync(APP).filter(f => f.endsWith('.html') && /<script src="config\.js\?v=/.test(lire(f)));

@@ -843,10 +843,18 @@ verifier(
    enfin l'autre partie, les fonctions des primes sont fermées, et le bureau règle Express dans
    l'application (grille, commission, solde minimum, numéros Mobile Money). Actualiser relit
    Personnes, Retours, Comptes. Migration 2026-09-20-express-l-argent-fige.sql. Étiquette
-   20260920express. */
+   20260920express.
+   v182, le 20/09/2026 — lot 20.B : le bureau peut fermer ce qui ne va pas. L'essentiel est
+   compté par la base (essentiel_compteurs), « examiné » est partagé entre les postes, les
+   signalements des clientes ont leurs gestes (prendre en charge, répondre et clore), une
+   demande de passage se refuse avec un motif que la cliente lit, quatre pastilles de plus
+   (litiges, passages, suppressions, file bloquée), toasts sonores sur les alertes graves, le
+   message WhatsApp de la cliente à sa voix, la cliente notifiée du départ en livraison. Et la
+   liste « À faire par le gérant » dans Gestion. Migrations 2026-09-20-le-centre-a-traiter.sql,
+   2026-09-20-a-faire-par-le-gerant.sql, 2026-09-20-a-faire-2.sql. Étiquette 20260920traiter. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v181'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v182'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -75,7 +75,8 @@ console.log('\n5. Au bureau');
 verifier('les réclamations non résolues sont lues, les plus anciennes d\'abord',
   /neq\('statut', 'resolue'\)/.test(equipe) && /order\('created_at', \{ ascending: true \}\)/.test(equipe));
 verifier('une pastille compte ce qui est signalé', /'problèmes signalés par des clientes'/.test(equipe));
-verifier('elle passe au rouge quand quelque chose traîne', /cat\.reclamationsTard\.length \? 'rouge' : 'ambre'/.test(equipe));
+verifier('elle passe au rouge quand quelque chose traîne', /nbReclamationsTard \? 'rouge' : 'ambre'/.test(equipe));
+verifier('le bureau peut prendre en charge et répondre (20/09, 20.B) : la pastille redescend', /async function traiterReclamation\(id, geste\)/.test(equipe) && /statut: 'resolue', reponse: reponse \|\| null/.test(equipe) && /data-reclam-geste="en_cours"/.test(equipe) && /data-reclam-geste="resolue"/.test(equipe));
 verifier('« traîne » veut dire plus de deux jours, comme ailleurs sur cet écran', /reclamationJours\(r, aujourdhui\) \|\| 0\) > 2/.test(equipe));
 verifier('la pastille mène aux colis concernés', /case 'reclamations': listeColis\('tous', '', L\.reclamations\)/.test(equipe));
 verifier('la carte du colis dit le motif, depuis quand, et le mot de la cliente',

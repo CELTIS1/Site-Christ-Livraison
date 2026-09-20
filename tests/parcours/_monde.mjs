@@ -82,6 +82,8 @@ export function nouveauMonde() {
     erreurs_client: [], historique_reversements_fournisseur: [], demandes_reset_password: [],
     // Ce que les clientes signalent (17/09/2026, point 7.2).
     reclamations_clientes: [],
+    // Les demandes de passage (17/09, point 10.6) — refusables depuis le 20/09 (20.B).
+    demandes_de_passage: [],
     /* CLT Express (18/09/2026, point 5.5). Le tarif est celui relevé en production le 18/09 :
        500 F de base, 150 F du kilomètre. Un tarif inventé ici ferait un banc qui ne mesure rien. */
     express_config: [{ id: 1, tarif_base: 500, tarif_par_km: 150, commission_pct: 0.2, vitesse_moy_kmh: 18, delai_prise_en_charge_min: 10 }],
@@ -215,6 +217,8 @@ export function nouveauMonde() {
     if (q.op === 'insert' || q.op === 'upsert') {
       const rows = [].concat(q.valeurs).map((v, i) => Object.assign({ id: `nouveau-${Date.now()}-${i}`, created_at: maintenant }, v));
       rows.forEach(r => { if (table === 'colis') { if (r.statut === undefined) r.statut = 'en_attente'; if (!r.numero) r.numero = 'CLT-TEST-' + String(TABLES.colis.length + 1).padStart(5, '0'); } });
+      // Les valeurs par défaut de la base, pour les tables où l'écran ne les envoie pas.
+      rows.forEach(r => { if (table === 'reclamations_clientes' && r.statut === undefined) r.statut = 'ouverte'; if (table === 'demandes_de_passage' && r.statut === undefined) r.statut = 'en_attente'; });
       (TABLES[table] ||= []).push(...rows);
       journal.push({ table, op: q.op, n: rows.length, valeurs: rows });
       return { data: q.unique ? rows[0] : rows, error: null, count: rows.length };
@@ -408,6 +412,39 @@ export function nouveauMonde() {
       r.annule_par = user || ADMIN;
       r.annule_motif = (args && args.p_motif) || null;
       return { data: null, error: null };
+    }
+    /* LES COMPTEURS DE L'ESSENTIEL (20/09/2026, 20.B) : la vraie fonction compte sur toute la
+       base ; ici on rejoue la même règle sur les tables de ce faux monde, pour que l'écran soit
+       éprouvé avec la base qui « répond ». La règle elle-même est éprouvée dans un vrai Postgres
+       (tests/a-traiter/essai-en-postgres.py). */
+    if (nom === 'essentiel_compteurs') {
+      const auj = aujourdhui;
+      const moins = (n) => { const d = new Date(auj + 'T12:00:00'); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+      const jour = (c) => (c.reporte_au ? String(c.reporte_au).slice(0, 10) : String(c.created_at || '').slice(0, 10));
+      const det = (c) => c.statut !== 'retour' ? null : (c.retour_detenteur || (c.retour_rendu_at ? 'cliente' : 'livreur'));
+      const ids = (f) => TABLES.colis.filter(f).map(c => c.id);
+      const total = (c) => (c.montant_article != null || c.montant_livraison != null) ? (Number(c.montant_article) || 0) + (Number(c.montant_livraison) || 0) : (Number(c.montant) || 0);
+      const aSolder = TABLES.colis.filter(c => c.statut === 'livre' && !c.encaissement_remis);
+      return { data: {
+        sans_livreur: ids(c => !c.livreur_id && !['livre', 'non_livre', 'retour'].includes(c.statut)),
+        montant_manquant: ids(c => !c.reverse_au_fournisseur_at && !(c.montant_article == null && c.montant_livraison == null && c.montant != null) && ((c.montant_article == null && !c.article_non_encaisse) || c.montant_livraison == null)),
+        collecte: ids(c => c.statut === 'en_attente' && !c.livreur_collecte_id),
+        livraison: ids(c => c.statut === 'recupere' && !c.livreur_id),
+        retard: ids(c => c.statut === 'en_livraison' && jour(c) < auj),
+        dormants: ids(c => (c.statut === 'recupere' || c.statut === 'en_attente') && jour(c) < moins(2)),
+        examiner: ids(c => (c.statut === 'non_livre' || c.statut === 'retour') && !c.vu_par_bureau_at),
+        retours: ids(c => ['livreur', 'bureau', 'litige'].includes(det(c))),
+        retours_tard: ids(c => ['livreur', 'bureau', 'litige'].includes(det(c)) && String(c.retour_at || c.non_livre_at || '').slice(0, 10) < moins(2)),
+        litiges: ids(c => det(c) === 'litige'),
+        qualifier: ids(c => (c.statut === 'non_livre' || c.statut === 'retour') && c.non_livre_at && c.non_livre_at >= '2026-10-01' && c.echec_imputable == null),
+        frais_additionnels: ids(c => (Number(c.frais_additionnels_montant) || 0) > 0 && !c.frais_additionnels_regle_at),
+        a_solder: aSolder.length, reste_a_remettre: aSolder.reduce((t, c) => t + total(c), 0),
+        reclamations: (TABLES.reclamations_clientes || []).filter(r => r.statut !== 'resolue').length,
+        reclamations_tard: (TABLES.reclamations_clientes || []).filter(r => r.statut !== 'resolue' && String(r.created_at || '').slice(0, 10) < moins(2)).length,
+        demandes_passage: (TABLES.demandes_de_passage || []).filter(d => d.statut === 'en_attente' && d.jour >= auj).length,
+        suppressions: (TABLES.profiles || []).filter(p => p.suppression_demandee_at).length,
+        calcule_le: new Date().toISOString(),
+      }, error: null };
     }
     return { data: [], error: null };
   }

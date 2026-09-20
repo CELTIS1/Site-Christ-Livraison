@@ -252,9 +252,10 @@ async function handleColis(record: any, oldRecord: any, eventType: string): Prom
   const body = `${ref} ${info.verb}`;
   const tag = `colis-${id}`;
 
-  // Statuts qui intéressent le CLIENT (fournisseur) : prise en charge + issues finales.
-  // On ne notifie PAS le client de "en_livraison" (trop fréquent / peu utile pour lui).
-  const CLIENT_STATUTS = new Set(["recupere", "livre", "non_livre", "retour"]);
+  // Statuts qui intéressent le CLIENT (fournisseur) : prise en charge, départ en livraison,
+  // issues finales. « en_livraison » y est depuis le 20/09/2026 (inventaire, 20.B) : c'est
+  // l'étape que la vendeuse et son acheteuse attendent le plus — Shopify et Jumia la notifient.
+  const CLIENT_STATUTS = new Set(["recupere", "en_livraison", "livre", "non_livre", "retour"]);
 
   // Destinataires : équipe + admin, plus le livreur assigné (s'il existe), plus le client
   // propriétaire du colis uniquement pour les statuts ci-dessus.
@@ -265,6 +266,45 @@ async function handleColis(record: any, oldRecord: any, eventType: string): Prom
   if (fournisseur && CLIENT_STATUTS.has(newStatut)) dest.userIds.push(fournisseur);
 
   return await envoyer(dest, info.title, body, tag, `colis=${encodeURIComponent(id)}`);
+}
+
+// ----------------------------------------------------------------------------
+// Ce qui se passe AUTOUR du colis (20/09/2026, inventaire, 20.B) : la cliente doit savoir sans
+// ouvrir l'application qu'on lui a répondu, qu'on a traité ou refusé sa demande de passage, et
+// qu'on l'a payée. Trois tables, trois webhooks (à créer dans Supabase, voir PUSH-SETUP.md).
+// ----------------------------------------------------------------------------
+async function handleReclamation(record: any, oldRecord: any, eventType: string): Promise<Response> {
+  const cliente = uuidOuRien(record.fournisseur_id);
+  const id = uuidOuRien(record.id);
+  if (!cliente || !id) return new Response("réclamation sans cliente", { status: 200 });
+  if (eventType === "INSERT") {
+    // Le bureau : une cliente signale — toast sonore à l'écran déjà, la notification pour qui n'a pas l'écran ouvert.
+    return await envoyer({ roles: ["equipe", "admin"], userIds: [] }, "📣 Une cliente signale un problème", "Voir L'essentiel.", `reclam-${id}`, "");
+  }
+  const avant = oldRecord ? oldRecord.statut : null;
+  if (record.statut === avant) return new Response("statut inchangé", { status: 200 });
+  if (record.statut === "en_cours") return await envoyer({ roles: [], userIds: [cliente] }, "👀 Votre signalement est pris en charge", "CLT s'en occupe et revient vers vous.", `reclam-${id}`, "");
+  if (record.statut === "resolue") return await envoyer({ roles: [], userIds: [cliente] }, "✅ CLT a répondu à votre signalement", record.reponse ? String(record.reponse).slice(0, 140) : "Signalement traité.", `reclam-${id}`, "");
+  return new Response("rien à dire", { status: 200 });
+}
+async function handleDemandeDePassage(record: any, oldRecord: any, eventType: string): Promise<Response> {
+  const cliente = uuidOuRien(record.fournisseur_id);
+  const id = uuidOuRien(record.id);
+  if (!cliente || !id) return new Response("demande sans cliente", { status: 200 });
+  const jour = record.jour ? String(record.jour).split("-").reverse().join("/") : "";
+  if (eventType === "INSERT") return await envoyer({ roles: ["equipe", "admin"], userIds: [] }, "🗓️ Demande de passage", `Une cliente demande un passage${jour ? " le " + jour : ""}. Voir Tournées.`, `passage-${id}`, "");
+  const avant = oldRecord ? oldRecord.statut : null;
+  if (record.statut === avant) return new Response("statut inchangé", { status: 200 });
+  if (record.statut === "traitee") return await envoyer({ roles: [], userIds: [cliente] }, "👀 Votre demande de passage est vue", `CLT programme la tournée${jour ? " du " + jour : ""} ; le livreur vous confirmera.`, `passage-${id}`, "");
+  if (record.statut === "refusee") return await envoyer({ roles: [], userIds: [cliente] }, "❌ Pas de passage possible", `${jour ? "Le " + jour + " : " : ""}${record.motif_refus ? String(record.motif_refus).slice(0, 120) : "CLT ne pourra pas passer."} Vous pouvez demander un autre jour.`, `passage-${id}`, "");
+  return new Response("rien à dire", { status: 200 });
+}
+async function handleReversement(record: any, eventType: string): Promise<Response> {
+  const cliente = uuidOuRien(record.fournisseur_id);
+  const id = uuidOuRien(record.id);
+  if (!cliente || !id || eventType !== "INSERT") return new Response("rien à dire", { status: 200 });
+  const montant = Number(record.montant) || 0;
+  return await envoyer({ roles: [], userIds: [cliente] }, "💵 Reversement effectué", `${montant.toLocaleString("fr-FR")} FCFA vous ont été reversés${record.numero ? " (reçu " + record.numero + ")" : ""}. Le reçu est dans votre espace.`, `reversement-${id}`, "");
 }
 
 // ----------------------------------------------------------------------------
@@ -338,6 +378,9 @@ Deno.serve(async (req) => {
     if (table === "express_courses") {
       return await handleExpress(record, oldRecord, eventType);
     }
+    if (table === "reclamations_clientes") return await handleReclamation(record, oldRecord, eventType);
+    if (table === "demandes_de_passage") return await handleDemandeDePassage(record, oldRecord, eventType);
+    if (table === "reversements_clientes") return await handleReversement(record, eventType);
     return await handleColis(record, oldRecord, eventType);
   } catch (e) {
     console.error("envoyer-push — erreur inattendue :", e);

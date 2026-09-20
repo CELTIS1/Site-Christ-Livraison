@@ -312,9 +312,24 @@ async function marquerDemandeTraitee(id){
   const { error } = await supabaseClient.from('demandes_de_passage')
     .update({ statut: 'traitee', traitee_par: currentUser ? currentUser.id : null, traitee_at: new Date().toISOString() })
     .eq('id', id);
-  if (error) { showToast("La demande n'a pas pu être marquée traitée.", true); return; }
-  showToast('Demande marquée traitée : la cliente le voit dans son espace.');
+  if (error) { cltToast("La demande n'a pas pu être marquée traitée.", { type: 'error' }); return; }
+  cltToast('Demande marquée traitée : la cliente le voit dans son espace.', { type: 'success' });
   chargerProgrammations();
+}
+
+/* REFUSER, AVEC LE MOTIF (20/09/2026, 20.B). L'inventaire : une demande ignorée disparaissait
+   le lendemain sans un mot — la cliente attendait un livreur qui ne venait pas. Refuser est un
+   geste : elle lit le motif dans son espace et demande un autre jour. */
+async function refuserDemandeDePassage(id){
+  const motif = await cltPrompt({ title: 'Pas de passage ce jour-là ?', sub: 'La cliente lira ce motif sous sa demande.', placeholder: 'Ex. : aucun livreur disponible dans votre commune ce jour-là', okLabel: 'Refuser et prévenir', maxLength: 200 });
+  if (motif === null) return;
+  const { error } = await supabaseClient.from('demandes_de_passage')
+    .update({ statut: 'refusee', motif_refus: motif || null, traitee_par: currentUser ? currentUser.id : null, traitee_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) { cltToast("La demande n'a pas pu être refusée.", { type: 'error' }); return; }
+  cltToast('Demande refusée : la cliente lit le motif dans son espace.', { type: 'success' });
+  chargerProgrammations();
+  if (typeof chargerEssentielBase === 'function') chargerEssentielBase().then(() => { if (typeof renderAujourdhui === 'function') renderAujourdhui(); });
 }
 
 function blocDemandesHTML(){
@@ -330,6 +345,7 @@ function blocDemandesHTML(){
         <span class="demande-nom">${escapeHTML(nom)}</span>
         ${d.note ? `<span class="demande-note">${escapeHTML(d.note)}</span>` : ''}
         <button type="button" class="btn btn-outline btn-sm btn-demande-traitee" data-demande="${escapeHTML(d.id)}">✅ Traitée</button>
+        <button type="button" class="btn btn-outline btn-sm btn-demande-refusee" data-demande="${escapeHTML(d.id)}">❌ Refuser</button>
       </li>`;
   }).join('');
   // Pas de classe « clt-alert » ici : elle n'existe que dans l'espace Gestion. Le bloc a la
@@ -350,6 +366,9 @@ function brancherBoutonsDemandes(racine){
   if (!dans) return;
   dans.querySelectorAll('.btn-demande-traitee').forEach(b => {
     b.addEventListener('click', () => marquerDemandeTraitee(b.dataset.demande));
+  });
+  dans.querySelectorAll('.btn-demande-refusee').forEach(b => {
+    b.addEventListener('click', () => refuserDemandeDePassage(b.dataset.demande));
   });
 }
 

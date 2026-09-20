@@ -518,8 +518,29 @@ initLotColis();
 // lors du rafraîchissement périodique de secours quand Realtime est indisponible.
 trackChannel(supabaseClient
 .channel('colis-equipe')
-.on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, () => {
+.on('postgres_changes', { event: '*', schema: 'public', table: 'colis' }, (payload) => {
 loadColisEnFond();
+// 20/09/2026 (20.B) : un litige de retour est une alerte grave — la cliente dit ne pas avoir
+// reçu ce que le livreur dit avoir rendu. On le dit tout de suite, avec le son.
+try {
+  const n = payload && payload.new, o = payload && payload.old;
+  if (n && n.retour_detenteur === 'litige' && (!o || o.retour_detenteur !== 'litige')) showTeamToast('⚠️', 'Litige sur un retour', 'La cliente dit ne pas avoir reçu le colis ' + (n.numero || '') + '. Voir l\'onglet Retours.', true);
+} catch (e) {}
+})
+.subscribe());
+
+// Les signalements des clientes et les demandes de passage arrivent en temps réel (20/09/2026,
+// 20.B) : toast avec son pour un signalement, rechargement des compteurs pour les deux.
+trackChannel(supabaseClient
+.channel('a-traiter-equipe')
+.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reclamations_clientes' }, (payload) => {
+  const r = payload && payload.new;
+  showTeamToast('📣', 'Une cliente signale un problème', r && typeof motifReclamationTexte === 'function' ? motifReclamationTexte(r.motif) : 'Voir L\'essentiel', true);
+  if (typeof chargerBilanDuJour === 'function') chargerBilanDuJour();
+})
+.on('postgres_changes', { event: '*', schema: 'public', table: 'demandes_de_passage' }, (payload) => {
+  if (payload && payload.eventType === 'INSERT') showTeamToast('🗓️', 'Demande de passage', 'Une cliente demande un passage. Voir Tournées.', false);
+  if (typeof chargerEssentielBase === 'function') chargerEssentielBase().then(() => { if (typeof renderAujourdhui === 'function') renderAujourdhui(); });
 })
 .subscribe());
 

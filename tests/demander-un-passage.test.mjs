@@ -52,16 +52,19 @@ verifier('elle dit en toutes lettres qu\'une demande n\'est pas encore une tourn
   /une demande n'est pas encore une tournée/.test(cliente));
 verifier('tant que le bureau n\'a pas répondu, l\'état dit « en attente de confirmation »',
   /En attente de confirmation par CLT/.test(cliente));
-verifier('une fois traitée, l\'état change de mot ET de couleur',
-  /traitee \? '✅ Passage confirmé' : '🕓 Demande envoyée'/.test(cliente)
-  && /traitee \? 'clt-alert-ok' : 'clt-alert-warn'/.test(cliente));
+verifier('une fois traitée, l\'état change de mot ET de couleur — sans promettre un livreur (« vue par CLT », pas « confirmé », 20/09)',
+  /refusee \? '❌ Pas de passage possible' : traitee \? '👀 Demande vue par CLT' : '🕓 Demande envoyée'/.test(cliente)
+  && /traitee \? 'clt-alert-ok' : 'clt-alert-warn'/.test(cliente) && !/Passage confirmé/.test(cliente));
+verifier('une demande refusée se lit, avec le motif du bureau, et ne disparaît pas le lendemain (20/09, 20.B)',
+  /motif_refus/.test(cliente) && /Vous pouvez demander un autre jour/.test(cliente));
 verifier('elle peut annuler, et on lui dit ce que ça implique',
   /CLT ne passera pas ce jour-là/.test(cliente));
 
 console.log('\n3. Redemander ne doit pas empiler');
 verifier('le même jour REMPLACE la demande précédente', /onConflict: 'jour,fournisseur_id'/.test(cliente));
 verifier('annuler n\'efface pas : la trace reste', /statut: 'annulee'/.test(cliente) && !/\.delete\(\)[\s\S]{0,80}demandes_de_passage/.test(cliente));
-verifier('la carte ne montre que les jours à venir', /\.gte\('jour', todayLocalISODate\(\)\)/.test(cliente));
+verifier('la carte montre les jours à venir, et les trois derniers (un refus d\'hier doit encore se lire)', /\.gte\('jour', isoMoinsJoursCliente\(todayLocalISODate\(\), 3\)\)/.test(cliente));
+verifier('le bureau peut refuser, avec un motif que la cliente lira', /async function refuserDemandeDePassage\(id\)/.test(tournee) && /statut: 'refusee', motif_refus/.test(tournee) && /btn-demande-refusee/.test(tournee));
 verifier('une demande annulée ne réapparaît pas', /\.neq\('statut', 'annulee'\)/.test(cliente));
 
 console.log('\n4. Le bureau le voit là où il décide');

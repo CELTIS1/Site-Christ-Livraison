@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920express">
+<link rel="stylesheet" href="style.css?v=20260920traiter">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920express"></script>
-<script src="splash.js?v=20260920express"></script>
+<script src="theme.js?v=20260920traiter"></script>
+<script src="splash.js?v=20260920traiter"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -571,23 +571,23 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920express"></script>
-<script src="lib/bibliotheques.js?v=20260920express"></script>
-<script src="lib/retours.js?v=20260920express"></script>
-<script src="lib/reclamations.js?v=20260920express"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920express"></script>
-<script src="lib/argent.js?v=20260920express"></script>
-<script src="lib/releve-cliente.js?v=20260920express"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920express"></script>
-<script src="lib/briques-argent.js?v=20260920express"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920express"></script>
-<script src="lib/annonce-de-remise.js?v=20260920express"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920express"></script>
-<script src="lib/primes.js?v=20260920express"></script>
-<script src="lib/doublons.js?v=20260920express"></script>
-<script src="config.js?v=20260920express"></script>
-<script src="biometric-lock.js?v=20260920express"></script>
-<script src="clt-select-recherche.js?v=20260920express"></script>
+<script src="clt-common.js?v=20260920traiter"></script>
+<script src="lib/bibliotheques.js?v=20260920traiter"></script>
+<script src="lib/retours.js?v=20260920traiter"></script>
+<script src="lib/reclamations.js?v=20260920traiter"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920traiter"></script>
+<script src="lib/argent.js?v=20260920traiter"></script>
+<script src="lib/releve-cliente.js?v=20260920traiter"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920traiter"></script>
+<script src="lib/briques-argent.js?v=20260920traiter"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920traiter"></script>
+<script src="lib/annonce-de-remise.js?v=20260920traiter"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920traiter"></script>
+<script src="lib/primes.js?v=20260920traiter"></script>
+<script src="lib/doublons.js?v=20260920traiter"></script>
+<script src="config.js?v=20260920traiter"></script>
+<script src="biometric-lock.js?v=20260920traiter"></script>
+<script src="clt-select-recherche.js?v=20260920traiter"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1972,7 +1972,7 @@
       ? `<div class="meta colis-quoi">${quoi ? '📦 ' + escapeHTML(quoi) : ''}${quoi && c.numero ? ' · ' : ''}${c.numero ? 'N° ' + escapeHTML(c.numero) : ''}</div>`
       : '';
     return `
-      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-statut="${escapeHTML(c.statut || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}">
+      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-statut="${escapeHTML(c.statut || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-expedition="${estExpedition(c) ? '1' : '0'}">
         ${stepperHTML(c.statut, c)}
         ${thumb}
         <div class="info">
@@ -2660,29 +2660,36 @@
     if (!d) { cltPoserHTML(box, ''); return; }
     // « traitee » veut dire : le bureau l'a vue et a décidé. On ne promet pas un livreur pour
     // autant — c'est la tournée du jour qui le dira — mais on cesse de dire « en attente ».
-    const traitee = d.statut === 'traitee';
+    // 20/09/2026 (inventaire, 20.B) : « traitée » ne veut pas dire « confirmée » — c'est la tournée
+    // du jour qui confirme. Et une demande peut être refusée, avec le motif du bureau : elle ne
+    // disparaît plus en silence. Après le jour passé, on la laisse lisible quelques jours.
+    const traitee = d.statut === 'traitee', refusee = d.statut === 'refusee';
+    const passe = d.jour < todayLocalISODate();
+    const titre = refusee ? '❌ Pas de passage possible' : traitee ? '👀 Demande vue par CLT' : '🕓 Demande envoyée';
     cltPoserHTML(box, `
-      <div class="clt-alert ${traitee ? 'clt-alert-ok' : 'clt-alert-warn'}" style="margin-bottom:14px;">
-        <strong>${traitee ? '✅ Passage confirmé' : '🕓 Demande envoyée'}</strong> pour ${escapeHTML(passageJourEnClair(d.jour))}.
+      <div class="clt-alert ${refusee ? 'clt-alert-warn' : traitee ? 'clt-alert-ok' : 'clt-alert-warn'}" style="margin-bottom:14px;">
+        <strong>${titre}</strong> pour ${escapeHTML(passageJourEnClair(d.jour))}.
         ${d.note ? '<br><span class="hint" style="background:none;padding:0;margin:0;">Votre précision : ' + escapeHTML(d.note) + '</span>' : ''}
-        ${traitee ? '' : '<br>En attente de confirmation par CLT.'}
-        <br><button type="button" class="btn btn-outline btn-sm" id="passage-annuler" style="margin-top:8px;">Annuler cette demande</button>
+        ${refusee ? '<br>' + (d.motif_refus ? 'CLT : « ' + escapeHTML(d.motif_refus) + ' »' : 'CLT ne pourra pas passer ce jour-là.') + ' Vous pouvez demander un autre jour.' : traitee ? '<br>Le bureau programme la tournée ; le livreur prévenu vous confirmera son passage.' : '<br>En attente de confirmation par CLT.'}
+        ${(!refusee && !passe) ? '<br><button type="button" class="btn btn-outline btn-sm" id="passage-annuler" style="margin-top:8px;">Annuler cette demande</button>' : ''}
       </div>`);
     const btn = document.getElementById('passage-annuler');
     if (btn) btn.addEventListener('click', annulerMaDemandeDePassage);
   }
 
+  function isoMoinsJoursCliente(jourISO, n){ const d = new Date(jourISO + 'T12:00:00'); d.setDate(d.getDate() - n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   async function chargerMaDemandeDePassage(){
     if (!currentUser) return;
     // On ne regarde que les jours à venir (et aujourd'hui) : une demande de la semaine dernière
     // n'apprend rien à personne et encombrerait la carte.
     const { data, error } = await supabaseClient
       .from('demandes_de_passage')
-      .select('id, jour, note, statut')
+      .select('id, jour, note, statut, motif_refus')
       .eq('fournisseur_id', currentUser.id)
       .neq('statut', 'annulee')
-      .gte('jour', todayLocalISODate())
-      .order('jour', { ascending: true })
+      // Les jours à venir, et les trois derniers jours : un refus d'hier doit encore se lire.
+      .gte('jour', isoMoinsJoursCliente(todayLocalISODate(), 3))
+      .order('jour', { ascending: false })
       .limit(1);
     // La table est née le 17/09/2026. Si le script n'est pas encore passé, on n'affiche rien
     // plutôt que de faire rougir la console d'une vendeuse : la carte reste utilisable.

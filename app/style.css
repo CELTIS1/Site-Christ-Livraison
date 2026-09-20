@@ -3439,3 +3439,15 @@ html[data-theme="dark"] .clt-aide__media{ background:#243247; border-color:#2A38
 .rx-note{ font-size:13px; color:#b3261e; }
 html[data-theme="dark"] .rx-champ input{ background:#1a2230; border-color:#2A3849; }
 html[data-theme="dark"] .rx-note{ color:#ff8a80; }
+
+/* LES SIGNALEMENTS DES CLIENTES, AVEC LEURS GESTES (20/09/2026, 20.B) */
+.reclam-eq{ display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; justify-content:space-between; padding:9px 12px; margin-bottom:6px; border-radius:10px; background:#FFF6E8; border-left:3px solid #E26313; }
+.reclam-eq--vieille{ background:#FBE7E4; border-left-color:#c0392b; }
+.reclam-eq__texte{ flex:1 1 260px; font-size:13.5px; line-height:1.45; }
+.reclam-eq__cite{ color:var(--muted); margin-top:2px; }
+.reclam-eq__etat{ color:#C9550F; font-weight:600; }
+.reclam-eq__colis{ margin-top:2px; }
+.reclam-eq__gestes{ display:flex; gap:8px; flex-wrap:wrap; }
+.reclam-eq__gestes .btn{ min-height:44px; }
+html[data-theme="dark"] .reclam-eq{ background:#3a2a1a; }
+html[data-theme="dark"] .reclam-eq--vieille{ background:#3A1A17; }

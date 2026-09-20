@@ -1168,7 +1168,12 @@ document.addEventListener("click", (e) => {
   // Depuis le 07/09/2026 la phrase vient de messageDestinataire(), la même que celle proposée
   // juste après l'enregistrement d'un statut sur le téléphone du livreur. window.cltNomAffiche
   // est posé par la page quand elle connaît le nom de la personne connectée.
-  const msg = messageDestinataire({ statut: statut, numero: numero, lienSuivi: link, livreurNom: (window.cltNomAffiche || "") });
+  // 20/09/2026 (inventaire, 20.B) : la cliente envoie le message sous son propre numéro — il
+  // parle donc à sa voix (« votre colis est en route »), pas à celle du livreur (« je suis en
+  // route »). L'expédition aussi a ses mots : « expédié », pas « livré » (règle de libelleStatut).
+  const voix = /fournisseur\.html/.test(location.pathname) ? "expediteur" : "livreur";
+  const expedition = item.dataset.expedition === "1";
+  const msg = messageDestinataire({ statut: statut, numero: numero, lienSuivi: link, livreurNom: (window.cltNomAffiche || ""), voix: voix, expedition: expedition });
   const wa = tel
     ? `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`
     : `https://wa.me/?text=${encodeURIComponent(msg)}`;
@@ -1250,17 +1255,31 @@ function messageDestinataire(infos) {
   const qui = (i.livreurNom || "").trim();
   const ref = i.numero ? " " + String(i.numero).trim() : "";
   const lien = i.lienSuivi ? "\nSuivez-le ici : " + i.lienSuivi : "";
-  const entete = qui
-    ? "Bonjour, ici " + qui + ", livreur chez Christ Livraison & Transport."
-    : "Bonjour, ici Christ Livraison & Transport.";
-  const corps = ({
-    en_livraison: "Je suis en route pour vous livrer votre colis" + ref + ". Merci de rester joignable, je vous appelle en arrivant.",
-    livre:        "Votre colis" + ref + " vient de vous être livré. Merci de votre confiance.",
-    non_livre:    "Je suis passé pour vous livrer votre colis" + ref + " sans pouvoir vous joindre. Dites-moi quand et où je peux repasser.",
+  /* Trois voix (20/09/2026, 20.B) : le livreur parle à la première personne ; l'expéditeur (la
+     cliente qui prévient son acheteuse depuis son propre WhatsApp) parle de CLT à la troisième ;
+     et une expédition ne se « livre » pas, elle part en gare (libelleStatut, config.js). */
+  const expediteur = i.voix === "expediteur";
+  const expedition = !!i.expedition;
+  const entete = expediteur
+    ? "Bonjour, votre commande" + ref + " est confiée à Christ Livraison & Transport."
+    : qui ? "Bonjour, ici " + qui + ", livreur chez Christ Livraison & Transport."
+          : "Bonjour, ici Christ Livraison & Transport.";
+  const phrases = expediteur ? {
+    en_livraison: expedition ? "Votre colis" + ref + " est en route vers la gare d'expédition." : "Le livreur est en route pour vous livrer votre colis" + ref + ". Merci de rester joignable, il vous appelle en arrivant.",
+    livre:        expedition ? "Votre colis" + ref + " a été expédié." : "Votre colis" + ref + " vient de vous être livré. Merci de votre confiance.",
+    non_livre:    expedition ? "Votre colis" + ref + " n'a pas pu être expédié aujourd'hui." : "Le livreur est passé pour vous livrer votre colis" + ref + " sans pouvoir vous joindre. Dites-nous quand et où il peut repasser.",
+    recupere:     "Votre colis" + ref + " est entre les mains du livreur. Vous serez prévenu(e) dès son départ.",
+    retour:       "Votre colis" + ref + " nous revient, faute d'avoir pu vous le remettre.",
+    en_attente:   "Votre colis" + ref + " est bien enregistré pour la livraison.",
+  } : {
+    en_livraison: expedition ? "Je pars déposer votre colis" + ref + " à la gare d'expédition." : "Je suis en route pour vous livrer votre colis" + ref + ". Merci de rester joignable, je vous appelle en arrivant.",
+    livre:        expedition ? "Votre colis" + ref + " a été expédié : il est en route vers vous." : "Votre colis" + ref + " vient de vous être livré. Merci de votre confiance.",
+    non_livre:    expedition ? "Votre colis" + ref + " n'a pas pu être expédié aujourd'hui. Je vous tiens au courant." : "Je suis passé pour vous livrer votre colis" + ref + " sans pouvoir vous joindre. Dites-moi quand et où je peux repasser.",
     recupere:     "Votre colis" + ref + " est entre nos mains. Nous vous prévenons dès le départ du livreur.",
     retour:       "Votre colis" + ref + " repart chez l'expéditeur, faute d'avoir pu vous le remettre.",
     en_attente:   "Votre colis" + ref + " est bien enregistré chez nous.",
-  })[i.statut] || ("Votre colis" + ref + " vient d'être mis à jour.");
+  };
+  const corps = phrases[i.statut] || ("Votre colis" + ref + " vient d'être mis à jour.");
   return entete + "\n\n" + corps + lien + "\n\n— Christ Livraison & Transport";
 }
 function lienMessageDestinataire(telephone, infos) {
