@@ -15,10 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920sauvegarde">
+<link rel="stylesheet" href="style.css?v=20260920analyse">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920sauvegarde"></script>
-<script src="splash.js?v=20260920sauvegarde"></script>
+<script src="theme.js?v=20260920analyse"></script>
+<script src="splash.js?v=20260920analyse"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -209,6 +209,45 @@
   .cdq-jnsp{ background:#fafbfc; }
   .cdq-jnsp-titre{ font-size:14px; font-weight:800; color:#5b6473; }
   .cdq-jnsp-txt{ font-size:13px; color:#5b6473; margin-top:4px; line-height:1.5; }
+  /* ---------- L'ANALYSE PROFONDE (20/09/2026, 12.2) ----------
+     Trois vues dans la même boîte, une à la fois. Les pastilles d'état sont à la fois le résumé
+     (cinq nombres lus d'un regard) et le filtre (un clic) : un seul objet pour deux gestes. */
+  #cdd-analyse{ padding:16px 18px; margin-bottom:16px; }
+  .cda-onglets{ display:inline-flex; background:var(--clt-teal-light); border-radius:11px; padding:3px; gap:2px; }
+  .cda-onglet{ font:inherit; font-size:13px; font-weight:700; color:var(--clt-teal-dark); background:none; border:0;
+    border-radius:9px; padding:0 14px; min-height:40px; cursor:pointer; }
+  .cda-onglet--actif{ background:#fff; box-shadow:0 1px 3px rgba(15,40,50,.14); }
+  .cda-corps{ margin-top:14px; }
+  .cda-pastilles{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px; margin-bottom:12px; }
+  .cda-pastille{ font:inherit; display:flex; flex-direction:column; align-items:flex-start; gap:1px; text-align:left; cursor:pointer;
+    border:1.5px solid transparent; border-radius:11px; padding:9px 12px; min-height:56px; background:#f4f6f7; color:#2b3440; }
+  .cda-pastille-nb{ font-size:20px; font-weight:800; line-height:1.1; }
+  .cda-pastille-nom{ font-size:12px; font-weight:600; }
+  .cda-pastille--choisie{ border-color:currentColor; }
+  .cda-etat, .cda-sens{ display:inline-block; padding:2px 9px; border-radius:7px; font-size:12px; font-weight:800; white-space:nowrap; }
+  .cda-e--perdue{ background:#fdecea; color:#9a2b1c; }
+  .cda-e--endormie{ background:#fff1e0; color:#8a4b00; }
+  .cda-e--retard{ background:#fff8dc; color:#735c00; }
+  .cda-e--active{ background:#e6f6f1; color:#0b6b57; }
+  .cda-e--nouvelle{ background:#e8f0fe; color:#1d4f9c; }
+  .cda-s--hausse{ background:#e6f6f1; color:#0b6b57; }
+  .cda-s--baisse{ background:#fdecea; color:#9a2b1c; }
+  .cda-s--plateau, .cda-s--tot{ background:#f1f3f5; color:#5b6473; }
+  .cda-table td{ vertical-align:middle; }
+  .cdd-table.cda-table th{ text-align:left; }
+  .cdd-table.cda-table th.cdd-nombre, .cdd-table.cda-table th:last-child{ text-align:right; }
+  .cda-phrase{ font-size:12px; color:#5b6473; margin-top:2px; line-height:1.4; }
+  .cda-plus{ font:inherit; font-size:13px; font-weight:700; color:var(--clt-teal-dark); background:none; cursor:pointer;
+    border:1.5px solid rgba(15,118,110,0.25); border-radius:10px; min-height:44px; padding:0 16px; margin-top:10px; }
+  .cda-defile{ overflow-x:auto; }
+  .cda-cohortes th, .cda-cohortes td{ text-align:center !important; white-space:nowrap; }
+  .cda-cohortes th:first-child, .cda-cohortes td:first-child{ text-align:left !important; }
+  /* La case se remplit à proportion de la part encore active : le tableau se lit comme une carte
+     de chaleur sans quitter la couleur de la maison. */
+  .cda-case{ font-weight:700; color:#0b4f47;
+    background:color-mix(in srgb, #0f766e calc(var(--cda-part) * 0.55), transparent); }
+  .cda-case--partiel{ font-style:italic; font-weight:600; opacity:.75; }
+  .cda-note{ font-size:12.5px; color:#5b6473; margin-top:9px; line-height:1.5; }
   .cdd-aide{ margin-top:14px; }
   .cdd-aide-texte{ font-size:12.5px; color:#5b6473; line-height:1.55; }
   .cdd-aide-texte p{ margin:0 0 7px; }
@@ -217,6 +256,16 @@
        chaque cellule porte le nom de sa colonne — la convention de toute l'application. */
     #cdd-console{ padding:14px; }
     #cdd-questions{ padding:14px; }
+    #cdd-analyse{ padding:14px; }
+    .cda-onglets{ width:100%; }
+    .cda-onglet{ flex:1; padding:0 6px; }
+    .cda-pastilles{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+    .cda-table td:first-child{ display:block; }
+    .cda-phrase{ font-weight:400; }
+    /* En cartes, la case de fidélité garde son fond : son étiquette prend la couleur du texte. */
+    .cda-case{ padding:6px 8px !important; border-radius:6px; margin-bottom:2px; }
+    .cda-case::before{ color:inherit !important; }
+    .cda-case-vide{ display:none !important; }
     .cdq-rep-titre{ font-size:15px; }
     .cdd-table thead{ display:none; }
     .cdd-table, .cdd-table tbody, .cdd-table tr, .cdd-table td{ display:block; width:100%; }
@@ -528,6 +577,18 @@
   html[data-theme="dark"] .clt-row-urgent, html[data-theme="dark"] .clt-row-urgent td{ background:#3A1A17 !important; color:#FF9D93; }
   html[data-theme="dark"] .icon-btn.danger{ background:#3A1A17; color:#FF9D93; }
   html[data-theme="dark"] .bul-barre{ background:#141F2E; border-color:#2A3849; }
+  html[data-theme="dark"] .cdd-table td{ border-bottom-color:#2A3849; }
+  html[data-theme="dark"] .cdd-sous{ color:#AEBBCB; }
+  html[data-theme="dark"] .cda-onglet--actif{ background:#0F766E; color:#fff; box-shadow:none; }
+  html[data-theme="dark"] .cda-pastille{ background:#1C2739; color:#E6ECF3; }
+  html[data-theme="dark"] .cda-e--perdue, html[data-theme="dark"] .cda-s--baisse{ background:#3A1A17; color:#FF9D93; }
+  html[data-theme="dark"] .cda-e--endormie{ background:#2E2116; color:#F0C98A; }
+  html[data-theme="dark"] .cda-e--retard{ background:#2C2A14; color:#E9D77A; }
+  html[data-theme="dark"] .cda-e--active, html[data-theme="dark"] .cda-s--hausse{ background:#12332E; color:#8FE3D8; }
+  html[data-theme="dark"] .cda-e--nouvelle{ background:#1B2A3F; color:#9CC2F5; }
+  html[data-theme="dark"] .cda-s--plateau, html[data-theme="dark"] .cda-s--tot{ background:#243247; color:#C9D3DF; }
+  html[data-theme="dark"] .cda-phrase, html[data-theme="dark"] .cda-note{ color:#C9D3DF; }
+  html[data-theme="dark"] .cda-case{ color:#E6ECF3; background:color-mix(in srgb, #2DD4BF calc(var(--cda-part) * 0.45), transparent); }
   html[data-theme="dark"] .cdd-avis{ background:#2E2116; border-color:#7A4A1A; color:#F0C98A; }
   html[data-theme="dark"] .cdd-chg, html[data-theme="dark"] .cdq-jnsp{ background:#1C2739; }
   html[data-theme="dark"] .cdd-table, html[data-theme="dark"] .cdd-table tr{ background:#141F2E; color:#E6ECF3; border-color:#2A3849; }
@@ -623,6 +684,11 @@
          app/console-du-dirigeant.js, qui lui passe les mêmes douze mois et le même mois choisi
          que la console juste au-dessus. -->
     <div class="card" id="cdd-questions"></div>
+    <!-- L'ANALYSE PROFONDE (20/09/2026, feuille de route 12.2) — la console dit ce qui a changé
+         pour la maison ; cette boîte dit POUR QUI : chaque cliente jugée à son propre rythme,
+         chaque trajectoire sur des mois entiers, la fidélité par mois d'arrivée. Règles dans
+         app/analyse-profonde.js (pures), dessin dans app/console-du-dirigeant.js. -->
+    <div class="card" id="cdd-analyse"></div>
     <div class="kpi-grid" id="dash-kpis"></div>
     <!-- Livraisons et primes du mois (13/09/2026) : chaque tuile ouvre Paie › Primes livreurs. -->
     <div class="kpi-grid" id="dash-kpis-primes"></div>
@@ -1521,29 +1587,30 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260920sauvegarde"></script>
-<script src="lib/bibliotheques.js?v=20260920sauvegarde"></script>
-<script src="lib/retours.js?v=20260920sauvegarde"></script>
-<script src="lib/reclamations.js?v=20260920sauvegarde"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920sauvegarde"></script>
-<script src="lib/argent.js?v=20260920sauvegarde"></script>
-<script src="lib/releve-cliente.js?v=20260920sauvegarde"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920sauvegarde"></script>
-<script src="lib/briques-argent.js?v=20260920sauvegarde"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920sauvegarde"></script>
-<script src="lib/annonce-de-remise.js?v=20260920sauvegarde"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920sauvegarde"></script>
-<script src="lib/primes.js?v=20260920sauvegarde"></script>
-<script src="lib/doublons.js?v=20260920sauvegarde"></script>
-<script src="config.js?v=20260920sauvegarde"></script>
-<script src="biometric-lock.js?v=20260920sauvegarde"></script>
-<script src="clt-select-recherche.js?v=20260920sauvegarde"></script>
-<script src="site-editeur.js?v=20260920sauvegarde"></script>
+<script src="clt-common.js?v=20260920analyse"></script>
+<script src="lib/bibliotheques.js?v=20260920analyse"></script>
+<script src="lib/retours.js?v=20260920analyse"></script>
+<script src="lib/reclamations.js?v=20260920analyse"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920analyse"></script>
+<script src="lib/argent.js?v=20260920analyse"></script>
+<script src="lib/releve-cliente.js?v=20260920analyse"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920analyse"></script>
+<script src="lib/briques-argent.js?v=20260920analyse"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920analyse"></script>
+<script src="lib/annonce-de-remise.js?v=20260920analyse"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920analyse"></script>
+<script src="lib/primes.js?v=20260920analyse"></script>
+<script src="lib/doublons.js?v=20260920analyse"></script>
+<script src="config.js?v=20260920analyse"></script>
+<script src="biometric-lock.js?v=20260920analyse"></script>
+<script src="clt-select-recherche.js?v=20260920analyse"></script>
+<script src="site-editeur.js?v=20260920analyse"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="ce-qui-a-change.js?v=20260920sauvegarde"></script>
-<script src="les-questions.js?v=20260920sauvegarde"></script>
-<script src="console-du-dirigeant.js?v=20260920sauvegarde"></script>
-<script src="gestion.js?v=20260920sauvegarde"></script>
+<script src="analyse-profonde.js?v=20260920analyse"></script>
+<script src="ce-qui-a-change.js?v=20260920analyse"></script>
+<script src="les-questions.js?v=20260920analyse"></script>
+<script src="console-du-dirigeant.js?v=20260920analyse"></script>
+<script src="gestion.js?v=20260920analyse"></script>
 </body>
 </html>

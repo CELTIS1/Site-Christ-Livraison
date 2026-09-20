@@ -891,10 +891,16 @@ verifier(
    activity_log 8). Relecture : « pg_restore --exit-on-error=false » n'existe pas et aurait fait
    échouer l'exercice chaque nuit — retiré ; la phrase secrète passe par l'entrée standard ; une
    phrase de moins de 24 caractères est refusée (dépôt public). Un banc de plus : la sauvegarde
-   de chaque nuit. Aucune migration. Étiquette 20260920sauvegarde. */
+   de chaque nuit. Aucune migration. Étiquette 20260920sauvegarde.
+   v190, le 20/09/2026 — feuille de route 12.2, l'analyse profonde : app/analyse-profonde.js
+   (pur : rythme de chaque cliente = médiane des écarts entre jours d'envoi ; en retard / endormie /
+   perdue à 2, 3 et 6 fois ce rythme, planchers 7 / 14 / 45 jours ; trajectoire = droite sur 3 à 6
+   mois ENTIERS ; fidélité par mois d'arrivée) et la boîte « Qui avance, qui s'éloigne » de la
+   console (Clientes, Livreurs, Fidélité), sur les douze mois déjà lus. Pas de table
+   d'instantanés : colis porte déjà toutes les dates. Aucune migration. Étiquette 20260920analyse. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v189'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v190'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

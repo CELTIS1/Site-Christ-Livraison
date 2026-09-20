@@ -406,6 +406,154 @@
     // Le mois choisi vaut pour les deux boîtes : les questions répondent toujours sur le mois
     // qu'on lit juste au-dessus.
     dessinerQuestions();
+    dessinerAnalyse();
+  }
+
+  /* --------------------------------------------------------------------------------------
+     L'ANALYSE PROFONDE (20/09/2026, feuille de route 12.2) — QUI avance, QUI s'éloigne
+     --------------------------------------------------------------------------------------
+     La console dit ce qui a changé pour la maison ; cette boîte dit pour qui. Les règles vivent
+     dans analyse-profonde.js (pures, vérifiées hors navigateur) ; ici on ne fait que les
+     montrer. Trois vues, une à la fois : un écran qui montre tout ne montre rien. Elle ne suit
+     pas le mois choisi plus haut, et c'est voulu : « cette cliente est-elle en train de
+     partir ? » est une question d'AUJOURD'HUI. Les mêmes douze mois déjà lus : aucune requête
+     de plus.
+     -------------------------------------------------------------------------------------- */
+  let vueAnalyse = 'clientes';   // 'clientes' | 'livreurs' | 'cohortes'
+  let filtreEtat = '';           // '' = toutes
+  let toutMontrer = false;
+  const LIGNES_D_ABORD = 12;
+
+  const ETATS = {
+    perdue:   { nom: 'Perdues',   un: 'Perdue',    classe: 'cda-e--perdue' },
+    endormie: { nom: 'Endormies', un: 'Endormie',  classe: 'cda-e--endormie' },
+    retard:   { nom: 'En retard', un: 'En retard', classe: 'cda-e--retard' },
+    active:   { nom: 'Actives',   un: 'Active',    classe: 'cda-e--active' },
+    nouvelle: { nom: 'Nouvelles', un: 'Nouvelle',  classe: 'cda-e--nouvelle' },
+  };
+  const SENS = {
+    croissance: { nom: 'En croissance', signe: '▲', classe: 'cda-s--hausse' },
+    plateau:    { nom: 'Stable',        signe: '▬', classe: 'cda-s--plateau' },
+    declin:     { nom: 'En déclin',     signe: '▼', classe: 'cda-s--baisse' },
+    'trop-tot': { nom: 'Trop tôt pour le dire', signe: '·', classe: 'cda-s--tot' },
+  };
+
+  function nomDuCompte(id) {
+    const p = (donnees.profils || []).find((x) => x.id === id);
+    return p ? (String(p.company_name || p.full_name || '').trim() || 'Sans nom') : 'Compte supprimé';
+  }
+
+  function sensHTML(t, unite) {
+    const s = SENS[t.sens] || SENS['trop-tot'];
+    const detail = t.sens === 'trop-tot'
+      ? `${t.mois} mois entier${t.mois > 1 ? 's' : ''} sur 3 nécessaires`
+      : `${t.pctParMois > 0 ? '+' : ''}${t.pctParMois} % par mois, sur ${t.mois} mois entiers${unite ? ' · ' + unite : ''}`;
+    return `<span class="cda-sens ${s.classe}" title="${ech(detail)}">${s.signe} ${ech(s.nom)}</span>`;
+  }
+
+  function clientesHTML(AP) {
+    const vue = AP.parCliente(donnees.colis, donnees.aujourdHui);
+    const pastilles = Object.keys(ETATS).map((k) => `
+      <button type="button" class="cda-pastille ${ETATS[k].classe}${filtreEtat === k ? ' cda-pastille--choisie' : ''}" data-etat="${k}" aria-pressed="${filtreEtat === k}">
+        <span class="cda-pastille-nb">${vue.comptes[k]}</span><span class="cda-pastille-nom">${ech(ETATS[k].nom)}</span>
+      </button>`).join('');
+    const lignes = vue.lignes.filter((l) => !filtreEtat || l.etat.etat === filtreEtat);
+    const montrees = toutMontrer ? lignes : lignes.slice(0, LIGNES_D_ABORD);
+    const corps = montrees.map((l) => {
+      const e = ETATS[l.etat.etat] || ETATS.active;
+      return `<tr>
+        <td data-label="Cliente"><strong>${ech(nomDuCompte(l.id))}</strong><div class="cda-phrase">${ech(l.etat.phrase)}</div></td>
+        <td data-label="État"><span class="cda-etat ${e.classe}">${ech(e.un)}</span></td>
+        <td data-label="Trajectoire">${sensHTML(l.trajectoire)}</td>
+        <td data-label="Colis, 12 mois" class="cdd-nombre">${l.total}</td>
+        <td data-label="Mois par mois" class="cdd-courbe-cell">${courbeHTML(l.serie, String)}</td>
+      </tr>`;
+    }).join('');
+    return `
+      <div class="cda-pastilles" role="group" aria-label="Filtrer par état">${pastilles}</div>
+      ${lignes.length ? `<table class="cdd-table cda-table">
+        <thead><tr><th>Cliente</th><th>État</th><th>Trajectoire</th><th class="cdd-nombre">Colis, 12 mois</th><th>Mois par mois</th></tr></thead>
+        <tbody>${corps}</tbody></table>` : '<div class="cdd-rien">Aucune cliente dans cet état.</div>'}
+      ${lignes.length > LIGNES_D_ABORD ? `<button type="button" class="cda-plus" data-tout="1">${toutMontrer ? 'Réduire la liste' : 'Afficher les ' + lignes.length + ' clientes'}</button>` : ''}`;
+  }
+
+  function livreursHTML(AP) {
+    const vue = AP.parLivreur(donnees.colis, donnees.aujourdHui);
+    if (!vue.lignes.length) return '<div class="cdd-rien">Aucun colis terminé par un livreur sur ces douze mois.</div>';
+    const corps = vue.lignes.map((l) => {
+      const dernierTaux = l.taux.filter((p) => p.valeur !== null).slice(-1)[0];
+      const pts = l.pointsParMois;
+      const penteTaux = pts === null ? '<span class="cdd-inconnu">trop tôt</span>'
+        : (Math.abs(pts) < 1 ? '<span class="cdd-inconnu">stable</span>'
+          : `<span class="cda-sens ${pts > 0 ? 'cda-s--hausse' : 'cda-s--baisse'}">${pts > 0 ? '▲ +' : '▼ '}${String(pts).replace('.', ',')} pt / mois</span>`);
+      return `<tr>
+        <td data-label="Livreur"><strong>${ech(nomDuCompte(l.id))}</strong></td>
+        <td data-label="Livrés, 12 mois" class="cdd-nombre">${l.total}</td>
+        <td data-label="Volume">${sensHTML(l.trajectoire)}</td>
+        <td data-label="Réussite" class="cdd-nombre">${dernierTaux ? dernierTaux.valeur + ' %' : '—'}</td>
+        <td data-label="Pente de la réussite">${penteTaux}</td>
+        <td data-label="Livrés par mois" class="cdd-courbe-cell">${courbeHTML(l.livres, String)}</td>
+      </tr>`;
+    }).join('');
+    return `<table class="cdd-table cda-table">
+      <thead><tr><th>Livreur</th><th class="cdd-nombre">Livrés, 12 mois</th><th>Volume</th><th class="cdd-nombre">Réussite</th><th>Pente de la réussite</th><th>Livrés par mois</th></tr></thead>
+      <tbody>${corps}</tbody></table>`;
+  }
+
+  function cohortesHTML(AP) {
+    const A = R();
+    // La lecture remonte à douze mois : si le plus vieux colis lu est dans le premier mois de la
+    // fenêtre, ses « arrivées » peuvent être des anciennes. On le signale sur cette ligne.
+    const plusVieux = donnees.colis.reduce((m, c) => (c.created_at && (!m || c.created_at < m) ? c.created_at : m), '');
+    const vue = AP.cohortes(donnees.colis, donnees.aujourdHui, { fenetreTronquee: plusVieux.slice(0, 7) === donnees.douze[0] });
+    if (!vue.lignes.length) return '<div class="cdd-rien">Aucune cliente n\u2019a encore confié de colis.</div>';
+    const rangs = Math.max.apply(null, vue.lignes.map((l) => l.suite.length));
+    const tetes = Array.from({ length: rangs }, (_, i) => `<th>${i === 0 ? 'Arrivée' : '+' + i + ' mois'}</th>`).join('');
+    const corps = vue.lignes.map((l) => `<tr>
+      <td data-label="Arrivées en"><strong>${ech(A.moisEnClair(l.mois))}</strong>${l.fenetreTronquee ? ' <span class="cdd-inconnu" title="La lecture commence ce mois-là : certaines étaient peut-être déjà clientes avant.">ou avant</span>' : ''}</td>
+      <td data-label="Clientes" class="cdd-nombre">${l.taille}</td>
+      ${l.suite.map((c) => `<td data-label="${c.rang === 0 ? 'Arrivée' : '+' + c.rang + ' mois'}" class="cda-case${c.partiel ? ' cda-case--partiel' : ''}" style="--cda-part:${c.pct}%;" title="${c.actives} sur ${l.taille} actives en ${ech(A.moisEnClair(c.mois))}${c.partiel ? ' (mois en cours)' : ''}">${c.pct} %</td>`).join('')}
+      ${'<td class="cda-case-vide"></td>'.repeat(rangs - l.suite.length)}
+    </tr>`).join('');
+    return `<div class="cda-defile"><table class="cdd-table cda-table cda-cohortes">
+      <thead><tr><th>Arrivées en</th><th>Clientes</th>${tetes}</tr></thead><tbody>${corps}</tbody></table></div>
+      <div class="cda-note">Se lit en ligne : sur les clientes arrivées un mois donné, la part qui a encore confié au moins un colis un, deux, trois mois plus tard. Le mois en cours, en italique, n'est pas fini.</div>`;
+  }
+
+  function dessinerAnalyse() {
+    const boite = document.getElementById('cdd-analyse');
+    const AP = window.CLTAnalyseProfonde;
+    if (!boite || !donnees) return;
+    if (!AP) { boite.innerHTML = '<div class="cdd-rien">L\u2019analyse n\u2019est pas chargée.</div>'; return; }
+    const onglet = (id, nom) => `<button type="button" role="tab" class="cda-onglet${vueAnalyse === id ? ' cda-onglet--actif' : ''}" aria-selected="${vueAnalyse === id}" data-vue="${id}">${nom}</button>`;
+    boite.innerHTML = `
+      <div class="cdd-entete">
+        <div>
+          <h3 class="cdd-titre">Qui avance, qui s'éloigne</h3>
+          <div class="cdd-sous">Chaque cliente jugée à son propre rythme, chaque trajectoire sur des mois entiers.</div>
+        </div>
+        <div class="cda-onglets" role="tablist">${onglet('clientes', 'Clientes')}${onglet('livreurs', 'Livreurs')}${onglet('cohortes', 'Fidélité')}</div>
+      </div>
+      <div class="cda-corps">${vueAnalyse === 'livreurs' ? livreursHTML(AP) : (vueAnalyse === 'cohortes' ? cohortesHTML(AP) : clientesHTML(AP))}</div>
+      <details class="eq-aide cdd-aide"><summary>ℹ️ Comment lire cette analyse</summary>
+        <div class="cdd-aide-texte">
+          <p><strong>Le silence se mesure au rythme de chacune.</strong> Une cliente qui envoie tous les 15 jours n'est pas « endormie » au bout de 14. Elle est <em>en retard</em> au-delà de 2 fois son intervalle habituel (7 jours au moins), <em>endormie</em> au-delà de 3 fois (14 jours au moins), <em>perdue</em> au-delà de 6 fois (45 jours au moins). Avec moins de trois jours d'envoi, son rythme est inconnu : les seuils généraux s'appliquent (14, 30 et 60 jours), et la ligne le dit.</p>
+          <p><strong>La trajectoire</strong> est une droite tracée sur les trois à six derniers mois <em>entiers</em> — le mois en cours, incomplet, n'y entre pas. « En croissance » ou « en déclin » : au moins 10 % du niveau moyen gagné ou perdu par mois. Moins de trois mois entiers : « trop tôt pour le dire ».</p>
+          <p><strong>La fidélité</strong> range les clientes par mois d'arrivée : c'est le tableau qui sépare « on recrute » de « on garde ».</p>
+          <p>L'ordre de la liste est celui des appels à passer : les plus éloignées d'abord et, à inquiétude égale, celle qui confiait le plus de colis.</p>
+        </div>
+      </details>`;
+    if (boite.dataset.branche !== '1') {
+      boite.dataset.branche = '1';
+      boite.addEventListener('click', function (ev) {
+        const cible = ev.target && ev.target.closest ? ev.target.closest('[data-vue], [data-etat], [data-tout]') : null;
+        if (!cible) return;
+        if (cible.hasAttribute('data-vue')) { vueAnalyse = cible.getAttribute('data-vue'); toutMontrer = false; }
+        else if (cible.hasAttribute('data-etat')) { const e = cible.getAttribute('data-etat'); filtreEtat = filtreEtat === e ? '' : e; toutMontrer = false; }
+        else toutMontrer = !toutMontrer;
+        dessinerAnalyse();
+      });
+    }
   }
 
   /* --------------------------------------------------------------------------------------
@@ -573,5 +721,5 @@
     rafraichir(true);
   }
 
-  window.CLTConsole = { init, rafraichir, axes, courbeHTML, moisProposables, reponseHTML, COLONNES_COLIS };
+  window.CLTConsole = { init, rafraichir, axes, courbeHTML, moisProposables, reponseHTML, dessinerAnalyse, COLONNES_COLIS };
 })();

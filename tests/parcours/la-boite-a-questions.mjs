@@ -201,6 +201,27 @@ verifier('et elle a été recalculée sur ce mois-là', apresMois !== avantMois,
 verifier('en août, personne n\'a baissé, et c\'est dit plutôt que laissé vide',
   /Je ne sais pas/.test(apresMois) && /bonne nouvelle/.test(apresMois), apresMois.slice(0, 200));
 
+titre('8 bis. L\'analyse profonde (12.2) : qui avance, qui s\'éloigne');
+const lectures = () => monde.journal.length;
+const avantAnalyse = lectures();
+verifier('la boîte est remplie, sur la vue Clientes', (await page.locator('#cdd-analyse .cda-pastille').count()) === 5
+  && (await page.locator('#cdd-analyse .cda-table tbody tr').count()) === 2);
+const texteAnalyse = await page.locator('#cdd-analyse').innerText();
+verifier('les deux clientes y sont par leur nom, avec une phrase sur leur rythme', /dernier envoi/i.test(texteAnalyse) && !/Compte supprimé/.test(texteAnalyse), texteAnalyse.slice(0, 300));
+verifier('deux mois entiers d\'histoire : « trop tôt pour le dire », pas un verdict inventé', /Trop tôt pour le dire/.test(texteAnalyse));
+await page.locator('#cdd-analyse [data-vue="livreurs"]').click();
+await dodo(300);
+verifier('Livreurs : Koffi, ses colis livrés et sa réussite', (await page.locator('#cdd-analyse .cda-table tbody tr').count()) === 1 && /%/.test(await page.locator('#cdd-analyse .cda-table tbody').innerText()));
+await page.locator('#cdd-analyse [data-vue="cohortes"]').click();
+await dodo(300);
+verifier('Fidélité : une ligne par mois d\'arrivée, qui commence à 100 %', (await page.locator('#cdd-analyse .cda-cohortes tbody tr').count()) === 2 && (await page.locator('#cdd-analyse .cda-cohortes tbody tr').first().locator('.cda-case').first().innerText()).trim() === '100 %');
+await page.locator('#cdd-analyse [data-vue="clientes"]').click();
+await page.locator('#cdd-analyse [data-etat="perdue"]').click();
+await dodo(300);
+verifier('une pastille filtre la liste, et le dit quand elle est vide', /Aucune cliente dans cet état/.test(await page.locator('#cdd-analyse').innerText()));
+verifier('aucune lecture de plus : l\'analyse vit sur les douze mois déjà lus', lectures() === avantAnalyse, lectures() - avantAnalyse);
+verifier('rien ne déborde de la boîte', await page.evaluate(() => { const b = document.getElementById('cdd-analyse'); return b.scrollWidth <= b.clientWidth + 1; }));
+
 titre('9. Rien n\'a cassé, et rien n\'a été écrit');
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 /* UNE BOÎTE À QUESTIONS NE DOIT RIEN ÉCRIRE. Elle lit, elle répond. Le seul écrit toléré est le

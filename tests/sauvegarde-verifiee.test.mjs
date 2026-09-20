@@ -91,8 +91,12 @@ verifier('le dépôt refuse tout fichier .sql : rien ne peut partir par distract
   /^\*\.sql$/m.test(ignore));
 verifier('les guides internes (_sql-prive/*.md, ils contiennent des clés) aussi',
   /^_sql-prive\/\*\.md$/m.test(ignore));
-verifier('aucune migration n\'a été committée par mégarde',
-  !/_sql-prive|\.sql$/m.test(execFileSync('git', ['-C', RACINE, 'ls-files'], { encoding: 'utf8' })));
+/* UNE SEULE EXCEPTION, nommée (20/09/2026, lot 20.H) : sql/creation-des-tables.sql — la forme des
+   trois tables, sans règle d'accès, sans fonction, sans donnée ; rien que SCHEMA-DE-BASE.md ne
+   publie déjà. Tout autre .sql suivi par Git reste une faute. */
+verifier('aucune migration n\'a été committée par mégarde (seul sql/creation-des-tables.sql est admis)',
+  !/_sql-prive|\.sql$/m.test(execFileSync('git', ['-C', RACINE, 'ls-files'], { encoding: 'utf8' })
+    .split('\n').filter((f) => f !== 'sql/creation-des-tables.sql').join('\n')));
 verifier('la sauvegarde copie les migrations à côté des données', /def copier_les_migrations/.test(sauvegarde));
 verifier('elle relit la copie au lieu de croire qu\'elle est bonne',
   /empreinte\(a\) != empreinte\(b\)/.test(sauvegarde));
