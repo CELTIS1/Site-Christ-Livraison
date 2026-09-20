@@ -26,7 +26,7 @@
    Tout est ici, en un seul endroit, parce que les trois écrans racontent la même chose avec
    des mots différents : le livreur (« à rendre »), le bureau (« chez qui, depuis quand »), la
    cliente (« on vous le rapporte » / « l'avez-vous bien récupéré ? »). */
-const RETOUR_DELAI_JOURS = 2;
+const RETOUR_DELAI_JOURS = (typeof SEUILS !== 'undefined' && SEUILS.retourDelaiJours) || 2;   // voir SEUILS (clt-common.js)
 
 /* Entre quelles mains. Un colis passé en retour avant la migration du 20/09 n'a pas de
    retour_detenteur : on le déduit comme avant (rendu daté = cliente, sinon livreur). */

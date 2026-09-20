@@ -19,7 +19,7 @@ verifier('IndexedDB garde le colis saisi, photo comprise', /const FR_FILE_DB = '
 verifier('« mis en attente » est enfin compté (le texte le promettait depuis le 21/08)', /bilan\.misEnAttente\+\+/.test(fo));
 verifier('sans réseau, on n\'essaie pas d\'envoyer : direct dans la file', /navigator\.onLine \? await frInsererColis\(\[payload\]\) : \{ message: 'Failed to fetch', status: 0 \}/.test(fo));
 verifier('au retour du réseau, ça part par la porte unique, la clé de création évite le doublon', /async function frFileEnvoyer\(\)/.test(fo) && /if \(!error \|\| estDoublonCleCreation\(error\)\) \{ await frFileSupprimer\(e\.key\); partis\+\+; continue; \}/.test(fo) && /window\.addEventListener\('online', \(\) => \{ frFileEnvoyer\(\); \}\)/.test(fo));
-verifier('un refus du serveur est retenté trois fois puis signalé avec ce qu\'il faut ressaisir — jamais perdu en silence', /const FR_FILE_MAX = 3/.test(fo) && /e\.bloquee = true/.test(fo) && /à ressaisir, puis « Retirer »/.test(fo));
+verifier('un refus du serveur est retenté trois fois puis signalé avec ce qu\'il faut ressaisir — jamais perdu en silence', /const FR_FILE_MAX = \(typeof SEUILS !== 'undefined' && SEUILS\.fileEssaisMax\) \|\| 3/.test(fo) && /e\.bloquee = true/.test(fo) && /à ressaisir, puis « Retirer »/.test(fo));
 verifier('le bandeau existe dans l\'onglet Ajouter, et se lit au chargement', /id="fr-file-banner"/.test(fo) && /frFileBandeau\(\)\.then\(\(\) => \{ if \(navigator\.onLine\) frFileEnvoyer\(\); \}\)/.test(fo));
 
 console.log('\n2. Les retours, l\'écran vide, le confirm()');

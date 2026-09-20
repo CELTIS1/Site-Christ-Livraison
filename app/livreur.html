@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920express2">
+<link rel="stylesheet" href="style.css?v=20260920gestion">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920express2"></script>
-<script src="splash.js?v=20260920express2"></script>
+<script src="theme.js?v=20260920gestion"></script>
+<script src="splash.js?v=20260920gestion"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -988,22 +988,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920express2"></script>
-<script src="lib/bibliotheques.js?v=20260920express2"></script>
-<script src="lib/retours.js?v=20260920express2"></script>
-<script src="lib/reclamations.js?v=20260920express2"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920express2"></script>
-<script src="lib/argent.js?v=20260920express2"></script>
-<script src="lib/releve-cliente.js?v=20260920express2"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920express2"></script>
-<script src="lib/briques-argent.js?v=20260920express2"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920express2"></script>
-<script src="lib/annonce-de-remise.js?v=20260920express2"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920express2"></script>
-<script src="lib/primes.js?v=20260920express2"></script>
-<script src="lib/doublons.js?v=20260920express2"></script>
-<script src="config.js?v=20260920express2"></script>
-<script src="biometric-lock.js?v=20260920express2"></script>
+<script src="clt-common.js?v=20260920gestion"></script>
+<script src="lib/bibliotheques.js?v=20260920gestion"></script>
+<script src="lib/retours.js?v=20260920gestion"></script>
+<script src="lib/reclamations.js?v=20260920gestion"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920gestion"></script>
+<script src="lib/argent.js?v=20260920gestion"></script>
+<script src="lib/releve-cliente.js?v=20260920gestion"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920gestion"></script>
+<script src="lib/briques-argent.js?v=20260920gestion"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920gestion"></script>
+<script src="lib/annonce-de-remise.js?v=20260920gestion"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920gestion"></script>
+<script src="lib/primes.js?v=20260920gestion"></script>
+<script src="lib/doublons.js?v=20260920gestion"></script>
+<script src="config.js?v=20260920gestion"></script>
+<script src="biometric-lock.js?v=20260920gestion"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1314,7 +1314,7 @@
   const OFFLINE_STORE = 'updates';
   // Au-delà de ce nombre de tentatives, on cesse de réessayer en boucle : la mise à jour est
   // signalée au livreur plutôt que de rester invisible dans la file. Voir flushOfflineQueue().
-  const QUEUE_MAX_TENTATIVES = 3;
+  const QUEUE_MAX_TENTATIVES = (typeof SEUILS !== 'undefined' && SEUILS.fileEssaisMax) || 3;   // voir SEUILS (clt-common.js)
   let pendingSyncIds = new Set();
   let blockedSyncIds = new Set();
   let blockedSyncMotifs = new Map();   // colisId → 'conflit' | 'refus'

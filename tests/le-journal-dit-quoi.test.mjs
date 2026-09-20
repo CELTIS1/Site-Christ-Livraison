@@ -65,7 +65,7 @@ verifier('il se limite aux rubriques d\'argent : un colis n\'a rien à faire ici
 verifier('les tables ajoutées le 17/09 ont leur nom en français',
   ['gestion_ecritures', 'gestion_factures', 'gestion_caisse', 'gestion_clotures', 'reversements_clientes', 'remises_caisse']
   .every(t => new RegExp(t + ":'").test(gestion)));
-verifier('une colonne « Ce qui a changé » existe', /<th style="text-align:left;">Ce qui a changé<\/th>/.test(gestion));
+verifier('une colonne « Ce qui a changé » existe', /<th class="ta-g">Ce qui a changé<\/th>/.test(gestion));
 
 console.log('\n3. Ce que l\'écran écrit, en français');
 // Les fonctions pures, exécutées pour de vrai.

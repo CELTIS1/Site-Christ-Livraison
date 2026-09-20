@@ -743,17 +743,17 @@ function renderDocsPersonnel(){
   const wrap = document.getElementById('doc-p-table'); if (!wrap) return;
   const salById = {}; SALARIES.forEach(s => salById[s.id] = s);
   if (!DOCS_PERSONNEL.length){
-    wrap.innerHTML = '<p style="padding:14px;color:var(--muted);">Aucun document enregistré pour le moment.</p>';
+    wrap.innerHTML = '<p class="hint td-large">Aucun document enregistré pour le moment.</p>';
     return;
   }
   let h = '<table class="g-table"><thead><tr><th>Salarié</th><th>Type</th><th>Document</th><th>Taille</th><th>Ajouté le</th><th></th></tr></thead><tbody>';
   DOCS_PERSONNEL.forEach(d => {
     const s = d.salarie_id ? salById[d.salarie_id] : null;
-    const qui = s ? `${escapeHTML(s.matricule||'')} — ${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' '))}` : '<span style="color:var(--muted);">Général</span>';
+    const qui = s ? `${escapeHTML(s.matricule||'')} — ${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' '))}` : '<span class="hint">Général</span>';
     h += `<tr>
-      <td style="text-align:left;">${qui}</td>
-      <td style="text-align:left;">${escapeHTML(d.categorie||'—')}</td>
-      <td style="text-align:left;"><a href="#" onclick="openDocument('${d.id}','personnel');return false;" style="color:var(--clt-teal-dark);font-weight:600;">📎 ${escapeHTML(d.titre||'Document')}</a></td>
+      <td class="ta-g">${qui}</td>
+      <td class="ta-g">${escapeHTML(d.categorie||'—')}</td>
+      <td class="ta-g"><a href="#" onclick="openDocument('${d.id}','personnel');return false;" class="tx-teal">📎 ${escapeHTML(d.titre||'Document')}</a></td>
       <td>${fmtTaille(d.taille)}</td>
       <td>${escapeHTML(new Date(d.created_at).toLocaleDateString('fr-FR'))}</td>
       <td><div class="row-actions">
@@ -768,14 +768,14 @@ function renderDocsPersonnel(){
 function renderDocsEntreprise(){
   const wrap = document.getElementById('doc-e-table'); if (!wrap) return;
   if (!DOCS_ENTREPRISE.length){
-    wrap.innerHTML = '<p style="padding:14px;color:var(--muted);">Aucun document enregistré pour le moment.</p>';
+    wrap.innerHTML = '<p class="hint td-large">Aucun document enregistré pour le moment.</p>';
     return;
   }
   let h = '<table class="g-table"><thead><tr><th>Type</th><th>Document</th><th>Taille</th><th>Ajouté le</th><th></th></tr></thead><tbody>';
   DOCS_ENTREPRISE.forEach(d => {
     h += `<tr>
-      <td style="text-align:left;">${escapeHTML(d.categorie||'—')}</td>
-      <td style="text-align:left;"><a href="#" onclick="openDocument('${d.id}','entreprise');return false;" style="color:var(--clt-teal-dark);font-weight:600;">📎 ${escapeHTML(d.titre||'Document')}</a></td>
+      <td class="ta-g">${escapeHTML(d.categorie||'—')}</td>
+      <td class="ta-g"><a href="#" onclick="openDocument('${d.id}','entreprise');return false;" class="tx-teal">📎 ${escapeHTML(d.titre||'Document')}</a></td>
       <td>${fmtTaille(d.taille)}</td>
       <td>${escapeHTML(new Date(d.created_at).toLocaleDateString('fr-FR'))}</td>
       <td><div class="row-actions">
@@ -1122,18 +1122,18 @@ async function loadDepenses(){
     const paie = CATS_PAIE.has(d.categorie);
     const catCell = escapeHTML(d.categorie||'') + (paie ? ' <span title="Déjà comptée dans les charges de personnel — non recomptée dans les états financiers" style="color:#b45309;font-size:11px;">(paie)</span>' : '');
     const justif = d.justif_chemin
-      ? `<a href="#" onclick="openJustifDepense('${d.id}');return false;" style="color:var(--clt-teal-dark);font-weight:600;">📎 Voir</a>`
-      : '<span style="color:var(--muted);">—</span>';
+      ? `<a href="#" onclick="openJustifDepense('${d.id}');return false;" class="tx-teal">📎 Voir</a>`
+      : '<span class="hint">—</span>';
     const suppr = verrou ? '' : `<div class="row-actions"><button class="icon-btn danger" onclick="delDepense('${d.id}')">Suppr.</button></div>`;
     return `<tr>
     <td>${d.date_depense ? escapeHTML(d.date_depense) : '—'}</td>
-    <td style="text-align:left;">${escapeHTML(d.libelle)}</td>
-    <td style="text-align:left;">${catCell}</td>
+    <td class="ta-g">${escapeHTML(d.libelle)}</td>
+    <td class="ta-g">${catCell}</td>
     <td>${fmt(d.montant)}</td>
     <td>${justif}</td>
     <td>${suppr}</td></tr>`; }).join('');
-  if (!rows.length) body = '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aucune dépense pour ce mois.</td></tr>';
-  document.getElementById('dep-table').innerHTML = `<table class="g-table"><thead><tr><th>Date</th><th style="text-align:left;">Libellé</th><th style="text-align:left;">Catégorie</th><th>Montant</th><th>Justif.</th><th></th></tr></thead>
+  if (!rows.length) body = '<tr><td colspan="6" class="ta-c hint">Aucune dépense pour ce mois.</td></tr>';
+  document.getElementById('dep-table').innerHTML = `<table class="g-table"><thead><tr><th>Date</th><th class="ta-g">Libellé</th><th class="ta-g">Catégorie</th><th>Montant</th><th>Justif.</th><th></th></tr></thead>
     <tbody>${body}</tbody><tfoot><tr><td colspan="3">TOTAL</td><td>${fmt(tot)}</td><td colspan="2"></td></tr></tfoot></table>`;
 }
 /* Active/désactive le formulaire de dépense selon la clôture du mois affiché. */
@@ -1250,14 +1250,14 @@ function renderChauffeurs(){
   // Le compte livreur relié : c'est lui qui permet de remplir les recettes depuis les colis.
   const optionsLivreur = (val) => '<option value="">— À la main —</option>' + (LIVREURS||[]).map(l => `<option value="${l.id}"${l.id===val?' selected':''}>${escapeHTML(l.full_name||'')}</option>`).join('');
   let body = CHAUFFEURS.map(c => `<tr>
-    <td style="text-align:left;"><input class="cell" style="width:160px;text-align:left;" type="text" value="${escapeHTML(c.nom)}" onblur="renameChauffeur('${c.id}',this.value)"></td>
+    <td class="ta-g"><input class="cell" style="width:160px;text-align:left;" type="text" value="${escapeHTML(c.nom)}" onblur="renameChauffeur('${c.id}',this.value)"></td>
     <td><select class="cell" style="width:190px;text-align:left;" onchange="lierChauffeur('${c.id}',this.value)">${optionsLivreur(c.livreur_id||'')}</select></td>
     <td>${c.actif!==false ? '✅ Actif' : '⏸️ Inactif'}</td>
     <td><div class="row-actions">
       <button class="icon-btn" onclick="toggleChauffeur('${c.id}',${c.actif!==false})">${c.actif!==false?'Désactiver':'Réactiver'}</button>
     </div></td></tr>`).join('');
-  if (!CHAUFFEURS.length) body = '<tr><td colspan="4" style="text-align:center;color:var(--muted);">Aucun chauffeur.</td></tr>';
-  document.getElementById('chauf-table').innerHTML = `<table class="g-table"><thead><tr><th style="text-align:left;">Nom</th><th style="text-align:left;">Compte livreur (recettes automatiques)</th><th>Statut</th><th></th></tr></thead><tbody>${body}</tbody></table>`;
+  if (!CHAUFFEURS.length) body = '<tr><td colspan="4" class="ta-c hint">Aucun chauffeur.</td></tr>';
+  document.getElementById('chauf-table').innerHTML = `<table class="g-table"><thead><tr><th class="ta-g">Nom</th><th class="ta-g">Compte livreur (recettes automatiques)</th><th>Statut</th><th></th></tr></thead><tbody>${body}</tbody></table>`;
 }
 // Relier (ou délier) un chauffeur à un compte livreur ; la fiche salarié suit le compte.
 async function lierChauffeur(id, livreurId){
@@ -1294,15 +1294,15 @@ async function toggleChauffeur(id, actif){
  * ==========================================================================*/
 function renderSalaries(){
   let body = SALARIES.map(s => `<tr>
-    <td style="text-align:left;">${escapeHTML(s.matricule)}</td>
-    <td style="text-align:left;"><div style="display:flex;align-items:center;gap:9px;">${avatarSalarieHTML(s)}<span>${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</span></div></td>
-    <td style="text-align:left;">${escapeHTML(s.emploi||'—')}</td>
+    <td class="ta-g">${escapeHTML(s.matricule)}</td>
+    <td class="ta-g"><div style="display:flex;align-items:center;gap:9px;">${avatarSalarieHTML(s)}<span>${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</span></div></td>
+    <td class="ta-g">${escapeHTML(s.emploi||'—')}</td>
     <td>${escapeHTML(s.categorie||'—')}</td>
     <td>${fmt(GRILLE[s.categorie]||0)}</td>
     <td>${s.actif!==false?'✅':'⏸️'}</td>
     <td><div class="row-actions"><button class="icon-btn" onclick="openSalarie('${s.id}')">Modifier</button></div></td></tr>`).join('');
-  if (!SALARIES.length) body = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Aucun salarié.</td></tr>';
-  document.getElementById('sal-table').innerHTML = `<table class="g-table"><thead><tr><th style="text-align:left;">Matricule</th><th style="text-align:left;">Nom</th><th style="text-align:left;">Emploi</th><th>Catégorie</th><th>Salaire cat.</th><th>Actif</th><th></th></tr></thead><tbody>${body}</tbody></table>`;
+  if (!SALARIES.length) body = '<tr><td colspan="7" class="ta-c hint">Aucun salarié.</td></tr>';
+  document.getElementById('sal-table').innerHTML = `<table class="g-table"><thead><tr><th class="ta-g">Matricule</th><th class="ta-g">Nom</th><th class="ta-g">Emploi</th><th>Catégorie</th><th>Salaire cat.</th><th>Actif</th><th></th></tr></thead><tbody>${body}</tbody></table>`;
 }
 function fillCategorieSelect(sel, val){
   sel.innerHTML = CATEGORIES.map(c => `<option value="${c.categorie}">${c.categorie}${c.libelle?' ('+c.libelle+')':''} — ${fmt(c.salaire_min)} F</option>`).join('');
@@ -1459,16 +1459,16 @@ async function loadSaisie(){
   const map = await loadSaisieMap(per);
   const actifs = SALARIES.filter(s=>s.actif!==false);
   const cols = [['jours_travailles','Jours'],['sursalaire','Sursalaire'],['astreinte','Astreinte'],['conge_paye','Congé payé'],['gratification','Gratification'],['retenue_divers','Retenue divers']];
-  let head = '<th style="text-align:left;">Matricule</th><th style="text-align:left;">Nom</th>' + cols.map(c=>`<th>${c[1]}</th>`).join('');
+  let head = '<th class="ta-g">Matricule</th><th class="ta-g">Nom</th>' + cols.map(c=>`<th>${c[1]}</th>`).join('');
   let body = actifs.map(s => {
     const v = map[s.id] || {};
     const cells = cols.map(c => {
       const def = c[0]==='jours_travailles' ? (v[c[0]]!=null?v[c[0]]:30) : (v[c[0]]||'');
       return `<td><input class="cell" type="number" step="1" value="${def}" data-sal="${s.id}" data-per="${per}" data-field="${c[0]}" onblur="saveSaisie(this)"${verrou ? ' disabled' : ''}></td>`;
     }).join('');
-    return `<tr><td style="text-align:left;">${escapeHTML(s.matricule)}</td><td style="text-align:left;">${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</td>${cells}</tr>`;
+    return `<tr><td class="ta-g">${escapeHTML(s.matricule)}</td><td class="ta-g">${escapeHTML([s.nom,s.prenom].filter(Boolean).join(' ')||'—')}</td>${cells}</tr>`;
   }).join('');
-  if (!actifs.length) body = '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Aucun salarié actif.</td></tr>';
+  if (!actifs.length) body = '<tr><td colspan="8" class="ta-c hint">Aucun salarié actif.</td></tr>';
   const avis = verrou
     ? `<div class="clt-alert clt-alert-warn">🔒 <strong>${MOIS_FR[mois-1]} ${annee} est clôturé.</strong> La saisie de paie de ce mois est en lecture seule : les charges de personnel sont déjà passées dans les états financiers. Pour la modifier, rouvrez le mois dans l'onglet « Clôture mensuelle ».</div>`
     : '';
@@ -1592,9 +1592,9 @@ async function renderBulletins(){
     masseNet+=b.net; totCotSal+=b.totalCotisSal; totCotPat+=b.totalCotisPat;
     totBrut+=b.baseImposable; totTransp+=b.primeTransport;
     return `<tr>
-      ${unSeulMois ? '' : `<td style="text-align:left;">${escapeHTML(MOIS_FR[L.mois-1] + ' ' + L.annee)}</td>`}
-      <td style="text-align:left;">${escapeHTML(b.matricule)}</td>
-      <td style="text-align:left;">${escapeHTML([b.nom,b.prenom].filter(Boolean).join(' ')||'—')}</td>
+      ${unSeulMois ? '' : `<td class="ta-g">${escapeHTML(MOIS_FR[L.mois-1] + ' ' + L.annee)}</td>`}
+      <td class="ta-g">${escapeHTML(b.matricule)}</td>
+      <td class="ta-g">${escapeHTML([b.nom,b.prenom].filter(Boolean).join(' ')||'—')}</td>
       <td>${escapeHTML(b.categorie||'—')}</td>
       <td>${fmt(b.baseImposable)}</td>
       <td>${fmt(b.totalCotisSal)}</td>
@@ -1605,7 +1605,7 @@ async function renderBulletins(){
   }).join('');
   const nbCol = unSeulMois ? 9 : 10;
   if (!LAST_BULLETINS.length){
-    body = `<tr><td colspan="${nbCol}" style="text-align:center;color:var(--muted);">${actifs.length ? 'Aucune paie saisie sur cette période.' : 'Aucun salarié actif.'}</td></tr>`;
+    body = `<tr><td colspan="${nbCol}" class="ta-c hint">${actifs.length ? 'Aucune paie saisie sur cette période.' : 'Aucun salarié actif.'}</td></tr>`;
   }
 
   document.getElementById('bul-kpis').innerHTML = `
@@ -1615,8 +1615,8 @@ async function renderBulletins(){
     <div class="kpi"><div class="kpi-label">Coût total employeur</div><div class="kpi-value">${fmtF(masseNet+totCotSal+totCotPat)}</div></div>`;
 
   tbl.innerHTML = `<table class="g-table"><thead><tr>
-    ${unSeulMois ? '' : '<th style="text-align:left;">Mois</th>'}
-    <th style="text-align:left;">Matricule</th><th style="text-align:left;">Nom</th><th>Cat.</th><th>Brut imposable</th><th>Cotis. sal.</th><th>Prime transp.</th><th>NET À PAYER</th><th>État</th><th></th></tr></thead>
+    ${unSeulMois ? '' : '<th class="ta-g">Mois</th>'}
+    <th class="ta-g">Matricule</th><th class="ta-g">Nom</th><th>Cat.</th><th>Brut imposable</th><th>Cotis. sal.</th><th>Prime transp.</th><th>NET À PAYER</th><th>État</th><th></th></tr></thead>
     <tbody>${body}</tbody>
     <tfoot><tr><td colspan="${unSeulMois ? 3 : 4}">TOTAL (${LAST_BULLETINS.length} bulletin${LAST_BULLETINS.length>1?'s':''})</td><td>${fmt(totBrut)}</td><td>${fmt(totCotSal)}</td><td>${fmt(totTransp)}</td><td><strong>${fmt(masseNet)}</strong></td><td></td><td></td></tr></tfoot></table>`;
 
@@ -1765,23 +1765,23 @@ function rendreBarreFigement(mois){
 
 function bulletinRowsHTML(b, annee, mois){
   const g=b.gains, r=b.retenues, p=b.patronales;
-  const line=(lbl,gain,ret)=>`<tr><td style="text-align:left;">${lbl(lbl)}</td><td style="text-align:right;">${gain!=null?fmt(gain):''}</td><td style="text-align:right;">${ret!=null?fmt(ret):''}</td></tr>`;
+  const line=(lbl,gain,ret)=>`<tr><td class="ta-g">${lbl(lbl)}</td><td class="ta-d">${gain!=null?fmt(gain):''}</td><td class="ta-d">${ret!=null?fmt(ret):''}</td></tr>`;
   function lbl(x){return x;}
   return `
-  <tr><th style="text-align:left;">Désignation</th><th style="text-align:right;">Gain</th><th style="text-align:right;">Retenue</th></tr>
-  <tr><td style="text-align:left;">Salaire catégoriel (${b.categorie})</td><td style="text-align:right;">${fmt(g.salaireCat)}</td><td></td></tr>
-  ${g.sursalaire?`<tr><td style="text-align:left;">Sursalaire</td><td style="text-align:right;">${fmt(g.sursalaire)}</td><td></td></tr>`:''}
-  ${g.primeAnc?`<tr><td style="text-align:left;">Prime d'ancienneté (${g.primeAncPct}%)</td><td style="text-align:right;">${fmt(g.primeAnc)}</td><td></td></tr>`:''}
-  ${g.astreinte?`<tr><td style="text-align:left;">Astreinte</td><td style="text-align:right;">${fmt(g.astreinte)}</td><td></td></tr>`:''}
-  ${g.congePaye?`<tr><td style="text-align:left;">Congé payé</td><td style="text-align:right;">${fmt(g.congePaye)}</td><td></td></tr>`:''}
-  ${g.gratification?`<tr><td style="text-align:left;">Gratification</td><td style="text-align:right;">${fmt(g.gratification)}</td><td></td></tr>`:''}
-  <tr style="font-weight:700;"><td style="text-align:left;">Total brut imposable</td><td style="text-align:right;">${fmt(b.baseImposable)}</td><td></td></tr>
-  <tr><td style="text-align:left;">ITS (impôt sur salaires)</td><td></td><td style="text-align:right;">${fmt(r.its)}</td></tr>
-  <tr><td style="text-align:left;">CMU (part salariale)</td><td></td><td style="text-align:right;">${fmt(r.cmuSal)}</td></tr>
-  <tr><td style="text-align:left;">CNPS (${pctFr(txConfig('cnps_sal'))} %)</td><td></td><td style="text-align:right;">${fmt(r.cnpsSal)}</td></tr>
-  <tr style="font-weight:700;"><td style="text-align:left;">Total retenues salariales</td><td></td><td style="text-align:right;">${fmt(b.totalCotisSal)}</td></tr>
-  <tr><td style="text-align:left;">Prime de transport</td><td style="text-align:right;">${fmt(b.primeTransport)}</td><td></td></tr>
-  ${b.retenueDivers?`<tr><td style="text-align:left;">Retenue divers</td><td></td><td style="text-align:right;">${fmt(b.retenueDivers)}</td></tr>`:''}`;
+  <tr><th class="ta-g">Désignation</th><th class="ta-d">Gain</th><th class="ta-d">Retenue</th></tr>
+  <tr><td class="ta-g">Salaire catégoriel (${b.categorie})</td><td class="ta-d">${fmt(g.salaireCat)}</td><td></td></tr>
+  ${g.sursalaire?`<tr><td class="ta-g">Sursalaire</td><td class="ta-d">${fmt(g.sursalaire)}</td><td></td></tr>`:''}
+  ${g.primeAnc?`<tr><td class="ta-g">Prime d'ancienneté (${g.primeAncPct}%)</td><td class="ta-d">${fmt(g.primeAnc)}</td><td></td></tr>`:''}
+  ${g.astreinte?`<tr><td class="ta-g">Astreinte</td><td class="ta-d">${fmt(g.astreinte)}</td><td></td></tr>`:''}
+  ${g.congePaye?`<tr><td class="ta-g">Congé payé</td><td class="ta-d">${fmt(g.congePaye)}</td><td></td></tr>`:''}
+  ${g.gratification?`<tr><td class="ta-g">Gratification</td><td class="ta-d">${fmt(g.gratification)}</td><td></td></tr>`:''}
+  <tr class="tx-gras"><td class="ta-g">Total brut imposable</td><td class="ta-d">${fmt(b.baseImposable)}</td><td></td></tr>
+  <tr><td class="ta-g">ITS (impôt sur salaires)</td><td></td><td class="ta-d">${fmt(r.its)}</td></tr>
+  <tr><td class="ta-g">CMU (part salariale)</td><td></td><td class="ta-d">${fmt(r.cmuSal)}</td></tr>
+  <tr><td class="ta-g">CNPS (${pctFr(txConfig('cnps_sal'))} %)</td><td></td><td class="ta-d">${fmt(r.cnpsSal)}</td></tr>
+  <tr class="tx-gras"><td class="ta-g">Total retenues salariales</td><td></td><td class="ta-d">${fmt(b.totalCotisSal)}</td></tr>
+  <tr><td class="ta-g">Prime de transport</td><td class="ta-d">${fmt(b.primeTransport)}</td><td></td></tr>
+  ${b.retenueDivers?`<tr><td class="ta-g">Retenue divers</td><td></td><td class="ta-d">${fmt(b.retenueDivers)}</td></tr>`:''}`;
 }
 function previewBulletin(i){
   const L = LAST_BULLETINS[i]; if (!L) return;
@@ -2191,15 +2191,15 @@ function renderEtatSynthese(){
   const nbMois = ETATS_PERIODE.mois.length;
 
   const body = lignes.map(l => `<tr>
-      <td style="text-align:left;">${escapeHTML(l.s.matricule)}</td>
-      <td style="text-align:left;">${escapeHTML([l.s.nom,l.s.prenom].filter(Boolean).join(' ')||'—')}</td>
-      <td>${l.payes}${l.payes < nbMois ? ` <span style="color:var(--muted);">/ ${nbMois}</span>` : ''}</td>
+      <td class="ta-g">${escapeHTML(l.s.matricule)}</td>
+      <td class="ta-g">${escapeHTML([l.s.nom,l.s.prenom].filter(Boolean).join(' ')||'—')}</td>
+      <td>${l.payes}${l.payes < nbMois ? ` <span class="hint">/ ${nbMois}</span>` : ''}</td>
       <td>${fmt(l.v.brut)}</td>
       <td>${fmt(l.v.cotSal)}</td>
       <td><strong>${fmt(l.v.net)}</strong></td>
       <td>${fmt(l.v.cotPat)}</td>
       <td>${fmt(l.v.cout)}</td></tr>`).join('');
-  const empty = !lignes.length ? '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Aucun salarié actif.</td></tr>' : '';
+  const empty = !lignes.length ? '<tr><td colspan="8" class="ta-c hint">Aucun salarié actif.</td></tr>' : '';
 
   const sub = libellePeriode(ETATS_PERIODE.mois) + ` · ${nbMois} mois`;
   document.getElementById('etat-kpis').innerHTML = `
@@ -2209,7 +2209,7 @@ function renderEtatSynthese(){
     <div class="kpi"><div class="kpi-label">Coût total employeur (période)</div><div class="kpi-value">${fmtF(total.cout)}</div></div>`;
 
   document.getElementById('etat-synthese').innerHTML = `<table class="g-table"><thead><tr>
-    <th style="text-align:left;">Matricule</th><th style="text-align:left;">Nom</th><th>Mois payés</th>
+    <th class="ta-g">Matricule</th><th class="ta-g">Nom</th><th>Mois payés</th>
     <th>Brut imposable</th><th>Cotis. sal.</th><th>Net versé</th><th>Charges patr.</th><th>Coût total</th></tr></thead>
     <tbody>${empty||body}</tbody>
     <tfoot><tr><td colspan="3">TOTAL (${lignes.length})</td><td>${fmt(total.brut)}</td><td>${fmt(total.cotSal)}</td><td><strong>${fmt(total.net)}</strong></td><td>${fmt(total.cotPat)}</td><td>${fmt(total.cout)}</td></tr></tfoot></table>`;
@@ -2239,7 +2239,7 @@ function renderFicheIndividuelle(){
   const entetes = enTetesMois(ETATS_PERIODE.mois);
   const largeur = entetes.length + 2; // Rubrique + les mois + Total
 
-  const head = '<th style="text-align:left;">Rubrique</th>'
+  const head = '<th class="ta-g">Rubrique</th>'
     + entetes.map(e => `<th>${escapeHTML(e)}</th>`).join('')
     + '<th>Total</th>';
 
@@ -2251,7 +2251,7 @@ function renderFicheIndividuelle(){
     const style = l.type === 'presence' ? ' style="background:var(--clt-teal-soft,#e6f4f2);font-weight:600;"'
                 : l.type === 'total'    ? ' style="font-weight:700;background:#f8fafc;"' : '';
     const tot = l.type === 'presence' ? l.total : fmt(l.total);
-    return `<tr${style}><td style="text-align:left;">${escapeHTML(l.lbl)}</td>${cells}<td style="font-weight:700;">${tot}</td></tr>`;
+    return `<tr${style}><td class="ta-g">${escapeHTML(l.lbl)}</td>${cells}<td class="tx-gras">${tot}</td></tr>`;
   }).join('');
 
   cont.innerHTML = `
@@ -2550,20 +2550,20 @@ function renderEtatsFinanciers(){
   const catRows = Object.keys(depParCat).sort().map(cat => {
     const v = moisSel===0 ? somme(depParCat[cat]) : depParCat[cat][moisSel-1];
     if (!v) return '';
-    return `<tr><td style="text-align:left;padding-left:22px;">${escapeHTML(cat)}</td><td></td><td>${fmt(v)}</td></tr>`;
+    return `<tr><td class="ta-g td-retrait">${escapeHTML(cat)}</td><td></td><td>${fmt(v)}</td></tr>`;
   }).join('');
   document.getElementById('fin-resultat').innerHTML = `<table class="g-table"><thead><tr>
-    <th style="text-align:left;">Poste</th><th>Produits</th><th>Charges</th></tr></thead><tbody>
-    <tr style="font-weight:700;background:#f1f5f9;"><td style="text-align:left;">PRODUITS D'EXPLOITATION</td><td>${fmt(produits)}</td><td></td></tr>
-    <tr><td style="text-align:left;padding-left:22px;">Recettes livraisons / transport</td><td>${fmt(produits)}</td><td></td></tr>
-    <tr style="font-weight:700;background:#f1f5f9;"><td style="text-align:left;">CHARGES D'EXPLOITATION</td><td></td><td>${fmt(chExpl)}</td></tr>
+    <th class="ta-g">Poste</th><th>Produits</th><th>Charges</th></tr></thead><tbody>
+    <tr class="tx-gras td-fond"><td class="ta-g">PRODUITS D'EXPLOITATION</td><td>${fmt(produits)}</td><td></td></tr>
+    <tr><td class="ta-g td-retrait">Recettes livraisons / transport</td><td>${fmt(produits)}</td><td></td></tr>
+    <tr class="tx-gras td-fond"><td class="ta-g">CHARGES D'EXPLOITATION</td><td></td><td>${fmt(chExpl)}</td></tr>
     ${catRows || '<tr><td style="text-align:left;padding-left:22px;color:var(--muted);">Aucune dépense saisie</td><td></td><td>0</td></tr>'}
-    <tr style="font-weight:700;background:#f1f5f9;"><td style="text-align:left;">CHARGES DE PERSONNEL</td><td></td><td>${fmt(chPers)}</td></tr>
-    <tr><td style="text-align:left;padding-left:22px;">Coût total employeur (net + cotisations)</td><td></td><td>${fmt(chPers)}</td></tr>
-    <tr style="font-weight:700;"><td style="text-align:left;">TOTAL</td><td>${fmt(produits)}</td><td>${fmt(totCharges)}</td></tr>
-    ${infoPaie ? `<tr style="color:var(--muted);font-style:italic;"><td style="text-align:left;" colspan="3">Pour information — dépenses saisies « liées à la paie » (salaires, ITS, CNPS, CMU) : ${fmtF(infoPaie)}. Non ajoutées ci-dessus : déjà incluses dans les charges de personnel.</td></tr>` : ''}
+    <tr class="tx-gras td-fond"><td class="ta-g">CHARGES DE PERSONNEL</td><td></td><td>${fmt(chPers)}</td></tr>
+    <tr><td class="ta-g td-retrait">Coût total employeur (net + cotisations)</td><td></td><td>${fmt(chPers)}</td></tr>
+    <tr class="tx-gras"><td class="ta-g">TOTAL</td><td>${fmt(produits)}</td><td>${fmt(totCharges)}</td></tr>
+    ${infoPaie ? `<tr style="color:var(--muted);font-style:italic;"><td class="ta-g" colspan="3">Pour information — dépenses saisies « liées à la paie » (salaires, ITS, CNPS, CMU) : ${fmtF(infoPaie)}. Non ajoutées ci-dessus : déjà incluses dans les charges de personnel.</td></tr>` : ''}
     </tbody>
-    <tfoot><tr><td style="text-align:left;">RÉSULTAT NET ${resultat>=0?'(bénéfice)':'(perte)'}</td><td colspan="2" style="text-align:right;color:${resultat>=0?'#0F766E':'#c0392b'};"><strong>${fmtF(resultat)}</strong></td></tr></tfoot></table>`;
+    <tfoot><tr><td class="ta-g">RÉSULTAT NET ${resultat>=0?'(bénéfice)':'(perte)'}</td><td colspan="2" style="text-align:right;color:${resultat>=0?'#0F766E':'#c0392b'};"><strong>${fmtF(resultat)}</strong></td></tr></tfoot></table>`;
 
   // Évolution mensuelle (toujours l'année entière)
   let mrows = '', cumRes = 0;
@@ -2571,15 +2571,15 @@ function renderEtatsFinanciers(){
     const r = recettes[m], d = depenses[m], p = personnel[m], res = r - d - p; cumRes += res;
     const hasData = r||d||p;
     mrows += `<tr${moisSel===m+1?' style="background:#e6f4f2;font-weight:600;"':''}>
-      <td style="text-align:left;">${MOIS_FR[m]}</td>
+      <td class="ta-g">${MOIS_FR[m]}</td>
       <td>${hasData?fmt(r):''}</td><td>${hasData?fmt(d):''}</td><td>${hasData?fmt(p):''}</td>
       <td style="color:${res>=0?'#0F766E':'#c0392b'};">${hasData?fmt(res):''}</td>
       <td>${hasData?fmt(cumRes):''}</td></tr>`;
   }
   document.getElementById('fin-mensuel').innerHTML = `<table class="g-table"><thead><tr>
-    <th style="text-align:left;">Mois</th><th>Recettes</th><th>Dépenses</th><th>Personnel</th><th>Résultat</th><th>Résultat cumulé</th></tr></thead>
+    <th class="ta-g">Mois</th><th>Recettes</th><th>Dépenses</th><th>Personnel</th><th>Résultat</th><th>Résultat cumulé</th></tr></thead>
     <tbody>${mrows}</tbody>
-    <tfoot><tr><td style="text-align:left;">ANNÉE ${annee}</td><td>${fmt(somme(recettes))}</td><td>${fmt(somme(depenses))}</td><td>${fmt(somme(personnel))}</td><td><strong>${fmt(somme(recettes)-somme(depenses)-somme(personnel))}</strong></td><td></td></tr></tfoot></table>`;
+    <tfoot><tr><td class="ta-g">ANNÉE ${annee}</td><td>${fmt(somme(recettes))}</td><td>${fmt(somme(depenses))}</td><td>${fmt(somme(personnel))}</td><td><strong>${fmt(somme(recettes)-somme(depenses)-somme(personnel))}</strong></td><td></td></tr></tfoot></table>`;
 
   // Carte « Bilan simplifié » retirée (Celtis) : un bilan partiel (sans immobilisations ni dettes)
   // prêtait à confusion ; le « Résultat cumulé » ci-dessus donne déjà la trésorerie générée.
@@ -2643,10 +2643,10 @@ function renderParametres(){
   setTx('p-plafond', 'plafond_social_pf');
   // grille
   let body = CATEGORIES.map(c => `<tr>
-    <td style="text-align:left;">${escapeHTML(c.categorie)}</td>
-    <td style="text-align:left;">${escapeHTML(c.libelle||'')}</td>
+    <td class="ta-g">${escapeHTML(c.categorie)}</td>
+    <td class="ta-g">${escapeHTML(c.libelle||'')}</td>
     <td><input class="cell" style="width:130px" type="number" step="0.01" value="${c.salaire_min}" data-cat="${escapeHTML(c.categorie)}" onblur="saveGrille(this)"></td></tr>`).join('');
-  document.getElementById('grille-table').innerHTML = `<table class="g-table"><thead><tr><th style="text-align:left;">Catégorie</th><th style="text-align:left;">Libellé</th><th>Salaire minimum (FCFA)</th></tr></thead><tbody>${body}</tbody></table>`;
+  document.getElementById('grille-table').innerHTML = `<table class="g-table"><thead><tr><th class="ta-g">Catégorie</th><th class="ta-g">Libellé</th><th>Salaire minimum (FCFA)</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 async function saveParametres(){
   const rec = {
@@ -2767,7 +2767,7 @@ function journalRowHTML(r){
   const act = JOURNAL_ACTIONS[op] || escapeHTML(String(op).replace(/^(insert|update|delete)_/, ''));
   const cible = r.target_type || r.table_cible;
   const tbl = JOURNAL_TABLES[cible] || escapeHTML(cible || '—');
-  return `<tr><td>${dt}</td><td>${acteur}</td><td>${act}</td><td>${tbl}</td><td style="text-align:left;">${journalChangementHTML(r.details)}</td></tr>`;
+  return `<tr><td>${dt}</td><td>${acteur}</td><td>${act}</td><td>${tbl}</td><td class="ta-g">${journalChangementHTML(r.details)}</td></tr>`;
 }
 // 3.9 (16/09/2026) : les erreurs JavaScript remontées par les pages, résumées par la base.
 async function loadErreursClient(){
@@ -2778,10 +2778,10 @@ async function loadErreursClient(){
     if (error) throw error;
     const lignes = data || [];
     if (!lignes.length){ wrap.innerHTML = '<div class="hint">Aucune erreur remontée ces 30 derniers jours.</div>'; return; }
-    wrap.innerHTML = `<table class="g-table"><thead><tr><th>Occurrences</th><th>Comptes</th><th style="text-align:left;">Page</th><th style="text-align:left;">Message</th><th>Version</th><th>Dernière</th></tr></thead><tbody>`
+    wrap.innerHTML = `<table class="g-table"><thead><tr><th>Occurrences</th><th>Comptes</th><th class="ta-g">Page</th><th class="ta-g">Message</th><th>Version</th><th>Dernière</th></tr></thead><tbody>`
       + lignes.map(l => `<tr title="${escapeHTML((l.exemple_source || '') + (l.exemple_ligne ? ':' + l.exemple_ligne : '') + (l.exemple_pile ? '\n' + l.exemple_pile : ''))}">
           <td><strong>${n(l.occurrences)}</strong></td><td>${n(l.comptes)}</td>
-          <td style="text-align:left;">${escapeHTML(l.page || '')}</td>
+          <td class="ta-g">${escapeHTML(l.page || '')}</td>
           <td style="text-align:left;white-space:normal;max-width:520px;">${escapeHTML(l.message || '')}${l.exemple_source ? `<div style="font-size:11px;color:var(--muted);">${escapeHTML(l.exemple_source)}${l.exemple_ligne ? ':' + n(l.exemple_ligne) : ''}</div>` : ''}</td>
           <td>${escapeHTML(l.version || '')}</td><td>${escapeHTML(String(l.derniere || '').replace('T', ' ').slice(0, 16))}</td></tr>`).join('')
       + '</tbody></table>';
@@ -2801,7 +2801,7 @@ async function loadJournal(){
   if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucune activité enregistrée pour le moment.</div>'; return; }
   JOURNAL_OFFSET = rows.length;
   const body = rows.map(journalRowHTML).join('');
-  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Date &amp; heure</th><th>Auteur</th><th>Action</th><th>Rubrique</th><th style="text-align:left;">Ce qui a changé</th></tr></thead><tbody id="journal-body">${body}</tbody></table>`
+  wrap.innerHTML = `<table class="g-table"><thead><tr><th>Date &amp; heure</th><th>Auteur</th><th>Action</th><th>Rubrique</th><th class="ta-g">Ce qui a changé</th></tr></thead><tbody id="journal-body">${body}</tbody></table>`
     + `<div id="journal-more-wrap" style="text-align:center;margin-top:10px;"></div>`;
   renderJournalMore(rows.length === JOURNAL_PAGE);
 }
@@ -2857,15 +2857,15 @@ async function loadArgentNonRemis(){
     return `<tr class="${urgent ? 'clt-row-urgent' : ''}">`
       + `<td>${escapeHTML(r.nom)}</td>`
       + copyCell(r.total_non_remis, {bold:true})
-      + `<td style="text-align:right;">${r.nb}</td>`
-      + `<td style="text-align:right;">${j} j${urgent ? ' ⚠️' : ''}</td>`
+      + `<td class="ta-d">${r.nb}</td>`
+      + `<td class="ta-d">${j} j${urgent ? ' ⚠️' : ''}</td>`
       + `<td>${frJour(r.date_plus_ancien)}</td></tr>`;
   }).join('');
   wrap.innerHTML = `<div class="clt-alert clt-alert-warn">`
     + `<div class="clt-alert-head">🔔 Argent encaissé non encore remis — total ${fmtF(tot)}</div>`
     + `<div class="g-table-wrap"><table class="g-table"><thead><tr>`
-    + `<th>Livreur</th><th style="text-align:right;">Montant non remis</th>`
-    + `<th style="text-align:right;">Colis</th><th style="text-align:right;">Ancienneté</th>`
+    + `<th>Livreur</th><th class="ta-d">Montant non remis</th>`
+    + `<th class="ta-d">Colis</th><th class="ta-d">Ancienneté</th>`
     + `<th>Depuis le</th></tr></thead><tbody>${items}</tbody></table></div>`
     + `<div class="hint" style="margin-top:6px;">Comptage sur le paiement. « Ancienneté » = nombre de jours depuis le plus ancien colis dont l'argent n'a pas été remis. ⚠️ = 3 jours ou plus.</div>`
     + `</div>`;
@@ -2879,7 +2879,7 @@ async function loadCaisseLivreurs(){
   const fin   = document.getElementById('caisse-fin')?.value || null;
   wrap.innerHTML = '<div class="hint">Chargement…</div>';
   const { data, error } = await supabaseClient.rpc('compta_caisse_livreurs_jour', { p_debut: debut, p_fin: fin });
-  if (error){ console.error('compta rpc', error); wrap.innerHTML = `<div class="hint" style="color:#b00;" title="${escapeHTML(error.message)}">⚠️ Impossible de charger ces données pour le moment. Réessayez dans un instant.</div>`; return; }
+  if (error){ console.error('compta rpc', error); wrap.innerHTML = `<div class="hint tx-rouge" title="${escapeHTML(error.message)}">⚠️ Impossible de charger ces données pour le moment. Réessayez dans un instant.</div>`; return; }
   const rows = data || [];
   if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucun colis livré sur la période.</div>'; return; }
 
@@ -2893,19 +2893,19 @@ async function loadCaisseLivreurs(){
     const body = list.map(r => {
       jArt+=n(r.total_article); jLiv+=n(r.total_livraison); jTot+=n(r.total);
       jRemis+=n(r.remis); jReste+=n(r.reste); jNb+=Number(r.nb);
-      return `<tr><td>${escapeHTML(r.nom)}</td><td style="text-align:right;">${r.nb}</td>`
+      return `<tr><td>${escapeHTML(r.nom)}</td><td class="ta-d">${r.nb}</td>`
            + copyCell(r.total_article) + copyCell(r.total_livraison) + copyCell(r.total)
            + copyCell(r.remis) + copyCell(r.reste, {bold:true}) + `</tr>`;
     }).join('');
     gArt+=jArt; gLiv+=jLiv; gTot+=jTot; gRemis+=jRemis; gReste+=jReste; gNb+=jNb;
     blocks += `<div class="clt-day-block"><div class="clt-day-head">📅 ${frJour(j)}</div>`
       + `<div class="g-table-wrap"><table class="g-table"><thead><tr>`
-      + `<th>Livreur</th><th style="text-align:right;">Colis</th>`
-      + `<th style="text-align:right;">Total article</th><th style="text-align:right;">Total livraison</th>`
-      + `<th style="text-align:right;">Total</th><th style="text-align:right;">Déjà remis</th>`
-      + `<th style="text-align:right;">Reste à remettre</th></tr></thead>`
+      + `<th>Livreur</th><th class="ta-d">Colis</th>`
+      + `<th class="ta-d">Total article</th><th class="ta-d">Total livraison</th>`
+      + `<th class="ta-d">Total</th><th class="ta-d">Déjà remis</th>`
+      + `<th class="ta-d">Reste à remettre</th></tr></thead>`
       + `<tbody>${body}</tbody>`
-      + `<tfoot><tr><th>Total du jour</th><th style="text-align:right;">${jNb}</th>`
+      + `<tfoot><tr><th>Total du jour</th><th class="ta-d">${jNb}</th>`
       + copyCell(jArt,{th:true}) + copyCell(jLiv,{th:true}) + copyCell(jTot,{th:true})
       + copyCell(jRemis,{th:true}) + copyCell(jReste,{th:true,bold:true})
       + `</tr></tfoot></table></div></div>`;
@@ -2927,7 +2927,7 @@ async function loadPointClients(){
   const fin   = document.getElementById('clients-fin')?.value || null;
   wrap.innerHTML = '<div class="hint">Chargement…</div>';
   const { data, error } = await supabaseClient.rpc('compta_point_clients_jour', { p_debut: debut, p_fin: fin });
-  if (error){ console.error('compta rpc', error); wrap.innerHTML = `<div class="hint" style="color:#b00;" title="${escapeHTML(error.message)}">⚠️ Impossible de charger ces données pour le moment. Réessayez dans un instant.</div>`; return; }
+  if (error){ console.error('compta rpc', error); wrap.innerHTML = `<div class="hint tx-rouge" title="${escapeHTML(error.message)}">⚠️ Impossible de charger ces données pour le moment. Réessayez dans un instant.</div>`; return; }
   const rows = data || [];
   if (!rows.length){ wrap.innerHTML = '<div class="hint">Aucun colis livré sur la période.</div>'; return; }
 
@@ -2940,16 +2940,16 @@ async function loadPointClients(){
     let jArt=0, jLiv=0, jNb=0;
     const body = list.map(r => {
       jArt+=n(r.total_article); jLiv+=n(r.total_livraison); jNb+=Number(r.nb);
-      return `<tr><td>${escapeHTML(r.client_nom)}</td><td style="text-align:right;">${r.nb}</td>`
+      return `<tr><td>${escapeHTML(r.client_nom)}</td><td class="ta-d">${r.nb}</td>`
            + copyCell(r.total_article) + copyCell(r.total_livraison) + `</tr>`;
     }).join('');
     gArt+=jArt; gLiv+=jLiv; gNb+=jNb;
     blocks += `<div class="clt-day-block"><div class="clt-day-head">📅 ${frJour(j)}</div>`
       + `<div class="g-table-wrap"><table class="g-table"><thead><tr>`
-      + `<th>Cliente (vendeuse)</th><th style="text-align:right;">Colis livrés</th>`
-      + `<th style="text-align:right;">Total article</th><th style="text-align:right;">Total livraison</th></tr></thead>`
+      + `<th>Cliente (vendeuse)</th><th class="ta-d">Colis livrés</th>`
+      + `<th class="ta-d">Total article</th><th class="ta-d">Total livraison</th></tr></thead>`
       + `<tbody>${body}</tbody>`
-      + `<tfoot><tr><th>Total du jour</th><th style="text-align:right;">${jNb}</th>`
+      + `<tfoot><tr><th>Total du jour</th><th class="ta-d">${jNb}</th>`
       + copyCell(jArt,{th:true}) + copyCell(jLiv,{th:true})
       + `</tr></tfoot></table></div></div>`;
   });
@@ -3001,7 +3001,7 @@ async function loadExpressCompta(){
   if (rMois.error || rCour.error){
     const e = rMois.error || rCour.error;
     console.error('express compta', e);
-    wMois.innerHTML = `<div class="hint" style="color:#b00;" title="${escapeHTML(e.message)}">⚠️ Impossible de charger les chiffres d'Express pour le moment. Réessayez dans un instant.</div>`;
+    wMois.innerHTML = `<div class="hint tx-rouge" title="${escapeHTML(e.message)}">⚠️ Impossible de charger les chiffres d'Express pour le moment. Réessayez dans un instant.</div>`;
     return;
   }
 
@@ -3014,29 +3014,29 @@ async function loadExpressCompta(){
       tCom += n(m.commission_due); tPrel += n(m.commission_prelevee); tRech += n(m.recharges_encaissees);
       const reste = n(m.commission_a_prelever);
       return `<tr><td>${escapeHTML(moisFr(m.mois))}</td>`
-        + `<td style="text-align:right;">${m.courses_livrees}</td>`
-        + `<td style="text-align:right;" class="hint">${m.courses_en_cours} / ${m.courses_annulees}</td>`
-        + `<td style="text-align:right;" class="hint">${fmtF(m.courses_encaissees_par_coursiers)}</td>`
-        + `<td style="text-align:right;"><strong>${fmtF(m.commission_due)}</strong></td>`
-        + `<td style="text-align:right;">${fmtF(m.commission_prelevee)}</td>`
+        + `<td class="ta-d">${m.courses_livrees}</td>`
+        + `<td class="ta-d hint">${m.courses_en_cours} / ${m.courses_annulees}</td>`
+        + `<td class="ta-d hint">${fmtF(m.courses_encaissees_par_coursiers)}</td>`
+        + `<td class="ta-d"><strong>${fmtF(m.commission_due)}</strong></td>`
+        + `<td class="ta-d">${fmtF(m.commission_prelevee)}</td>`
         + `<td style="text-align:right;${reste > 0 ? 'color:#b00;font-weight:600;' : ''}">${fmtF(reste)}</td>`
-        + `<td style="text-align:right;">${fmtF(m.recharges_encaissees)}</td>`
-        + `<td style="text-align:right;" class="hint">${fmtF(m.recharges_en_attente)}</td></tr>`;
+        + `<td class="ta-d">${fmtF(m.recharges_encaissees)}</td>`
+        + `<td class="ta-d hint">${fmtF(m.recharges_en_attente)}</td></tr>`;
     }).join('');
     wMois.innerHTML = `<table class="g-table"><thead><tr>`
-      + `<th>Mois</th><th style="text-align:right;">Courses livrées</th>`
-      + `<th style="text-align:right;">En cours / annulées</th>`
-      + `<th style="text-align:right;" title="Payé en espèces au coursier : cet argent ne passe pas par CLT.">Encaissé par les coursiers</th>`
-      + `<th style="text-align:right;" title="La recette de CLT.">Commission due</th>`
-      + `<th style="text-align:right;">Déjà prélevée</th><th style="text-align:right;">Reste à prélever</th>`
-      + `<th style="text-align:right;" title="Avances des coursiers : CLT les encaisse mais les leur doit encore.">Recharges encaissées</th>`
-      + `<th style="text-align:right;">En attente</th></tr></thead>`
+      + `<th>Mois</th><th class="ta-d">Courses livrées</th>`
+      + `<th class="ta-d">En cours / annulées</th>`
+      + `<th class="ta-d" title="Payé en espèces au coursier : cet argent ne passe pas par CLT.">Encaissé par les coursiers</th>`
+      + `<th class="ta-d" title="La recette de CLT.">Commission due</th>`
+      + `<th class="ta-d">Déjà prélevée</th><th class="ta-d">Reste à prélever</th>`
+      + `<th class="ta-d" title="Avances des coursiers : CLT les encaisse mais les leur doit encore.">Recharges encaissées</th>`
+      + `<th class="ta-d">En attente</th></tr></thead>`
       + `<tbody>${lignes}</tbody>`
       + `<tfoot><tr><th>Total</th><th></th><th></th><th></th>`
-      + `<th style="text-align:right;">${fmtF(tCom)}</th>`
-      + `<th style="text-align:right;">${fmtF(tPrel)}</th>`
-      + `<th style="text-align:right;">${fmtF(tCom - tPrel)}</th>`
-      + `<th style="text-align:right;">${fmtF(tRech)}</th><th></th></tr></tfoot></table>`;
+      + `<th class="ta-d">${fmtF(tCom)}</th>`
+      + `<th class="ta-d">${fmtF(tPrel)}</th>`
+      + `<th class="ta-d">${fmtF(tCom - tPrel)}</th>`
+      + `<th class="ta-d">${fmtF(tRech)}</th><th></th></tr></tfoot></table>`;
   }
 
   const cour = rCour.data || [];
@@ -3052,15 +3052,15 @@ async function loadExpressCompta(){
       // Un coursier qui n'a jamais rechargé n'a pas de portefeuille : il doit quand même sa
       // commission, et c'est précisément lui qu'un tableau bâti sur les portefeuilles oublie.
       + (c.sans_portefeuille ? '<div class="hint">jamais rechargé</div>' : '')
-      + `</td><td style="text-align:right;">${fmtF(c.solde_du_au_coursier)}</td>`
+      + `</td><td class="ta-d">${fmtF(c.solde_du_au_coursier)}</td>`
       + `<td style="text-align:right;${reste > 0 ? 'color:#b00;font-weight:600;' : ''}">${fmtF(reste)}</td></tr>`;
   }).join('');
   wCour.innerHTML = `<table class="g-table"><thead><tr><th>Coursier</th>`
-    + `<th style="text-align:right;" title="Avance non consommée : CLT la lui doit.">Solde dû au coursier</th>`
-    + `<th style="text-align:right;" title="Portefeuille en négatif (commissions prélevées au-delà de l'avance) et commissions pas encore prélevées : à recouvrer auprès du coursier.">Dû par le coursier</th>`
+    + `<th class="ta-d" title="Avance non consommée : CLT la lui doit.">Solde dû au coursier</th>`
+    + `<th class="ta-d" title="Portefeuille en négatif (commissions prélevées au-delà de l'avance) et commissions pas encore prélevées : à recouvrer auprès du coursier.">Dû par le coursier</th>`
     + `</tr></thead><tbody>${lc}</tbody>`
-    + `<tfoot><tr><th>Total</th><th style="text-align:right;">${fmtF(tSolde)}</th>`
-    + `<th style="text-align:right;">${fmtF(tReste)}</th></tr></tfoot></table>`;
+    + `<tfoot><tr><th>Total</th><th class="ta-d">${fmtF(tSolde)}</th>`
+    + `<th class="ta-d">${fmtF(tReste)}</th></tr></tfoot></table>`;
 }
 
 /* ============================================================================
@@ -3099,8 +3099,8 @@ async function loadFacturation(){
     });
   } catch(e){
     console.error('loadFacturation', e);
-    if (wrapClients) wrapClients.innerHTML = `<div class="hint" style="color:#b00;" title="${escapeHTML(e.message||'')}">⚠️ Impossible de charger les clients pour le moment. Réessayez dans un instant.</div>`;
-    if (wrapFact) wrapFact.innerHTML = `<div class="hint" style="color:#b00;">⚠️ Impossible de charger les factures pour le moment.</div>`;
+    if (wrapClients) wrapClients.innerHTML = `<div class="hint tx-rouge" title="${escapeHTML(e.message||'')}">⚠️ Impossible de charger les clients pour le moment. Réessayez dans un instant.</div>`;
+    if (wrapFact) wrapFact.innerHTML = `<div class="hint tx-rouge">⚠️ Impossible de charger les factures pour le moment.</div>`;
     return;
   }
   renderFacturation();
@@ -3142,8 +3142,8 @@ function renderFacturation(){
       <td><button class="btn btn-outline btn-sm" onclick="chargerClientFacturationDansFormulaire('${c.id}')">Modifier</button></td>
     </tr>`).join('');
   document.getElementById('fact-clients-table').innerHTML = `<table class="g-table"><thead><tr>
-      <th style="text-align:left;">Nom</th><th>Téléphone</th><th style="text-align:left;">Adresse</th><th>NCC</th><th>Statut</th><th></th>
-    </tr></thead><tbody>${bodyClients || '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aucun client</td></tr>'}</tbody></table>`;
+      <th class="ta-g">Nom</th><th>Téléphone</th><th class="ta-g">Adresse</th><th>NCC</th><th>Statut</th><th></th>
+    </tr></thead><tbody>${bodyClients || '<tr><td colspan="6" class="ta-c hint">Aucun client</td></tr>'}</tbody></table>`;
 
   // Sélecteur client de la nouvelle facture
   const sel = document.getElementById('nf-client');
@@ -3189,9 +3189,9 @@ function renderFacturation(){
     </tr>`;
   }).join('');
   document.getElementById('fact-table').innerHTML = `<table class="g-table"><thead><tr>
-      <th>N°</th><th style="text-align:left;">Client</th><th>Émission</th><th>Échéance</th>
+      <th>N°</th><th class="ta-g">Client</th><th>Émission</th><th>Échéance</th>
       <th>TTC</th><th>Solde dû</th><th>Statut</th><th></th>
-    </tr></thead><tbody>${bodyFact || '<tr><td colspan="8" style="text-align:center;color:var(--muted);">Aucune facture</td></tr>'}</tbody></table>`;
+    </tr></thead><tbody>${bodyFact || '<tr><td colspan="8" class="ta-c hint">Aucune facture</td></tr>'}</tbody></table>`;
 }
 
 async function enregistrerClientFacturation(){
@@ -3257,12 +3257,12 @@ function renderLignesFacture(){
       <td><input type="text" class="cell" style="width:100%;text-align:left;" value="${escapeHTML(l.designation)}" oninput="majLigneFacture(${i},'designation',this.value)" placeholder="Désignation"></td>
       <td><input type="number" class="cell" min="0" step="0.01" value="${l.quantite}" oninput="majLigneFacture(${i},'quantite',this.value)"></td>
       <td><input type="number" class="cell" min="0" step="1" value="${l.prix_unitaire}" oninput="majLigneFacture(${i},'prix_unitaire',this.value)"></td>
-      <td id="nf-ligne-montant-${i}" style="text-align:right;">${fmtF(n(l.quantite)*n(l.prix_unitaire))}</td>
+      <td id="nf-ligne-montant-${i}" class="ta-d">${fmtF(n(l.quantite)*n(l.prix_unitaire))}</td>
       <td><button class="btn btn-outline btn-sm" onclick="retirerLigneFacture(${i})">✕</button></td>
     </tr>`).join('');
   document.getElementById('nf-lignes-table').innerHTML = `<thead><tr>
-      <th style="text-align:left;">Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Montant</th><th></th>
-    </tr></thead><tbody>${body || '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Aucune ligne — cliquez « + Ajouter une ligne »</td></tr>'}</tbody>`;
+      <th class="ta-g">Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Montant</th><th></th>
+    </tr></thead><tbody>${body || '<tr><td colspan="5" class="ta-c hint">Aucune ligne — cliquez « + Ajouter une ligne »</td></tr>'}</tbody>`;
   rafraichirTotauxFacture();
 }
 function rafraichirTotauxFacture(){
@@ -3270,9 +3270,9 @@ function rafraichirTotauxFacture(){
   const assujetti = !PARAMS || PARAMS.tva_assujetti !== false;
   const tva = assujetti ? Math.round(ht*0.18) : 0;
   document.getElementById('nf-totaux').innerHTML = `<table class="g-table"><tbody>
-      <tr><td style="text-align:left;">Total HT (indicatif)</td>${copyCell(ht)}</tr>
-      <tr><td style="text-align:left;">TVA 18 % (indicatif)</td>${copyCell(tva)}</tr>
-      <tr style="font-weight:700;"><td style="text-align:left;">Total TTC (indicatif)</td>${copyCell(ht+tva)}</tr>
+      <tr><td class="ta-g">Total HT (indicatif)</td>${copyCell(ht)}</tr>
+      <tr><td class="ta-g">TVA 18 % (indicatif)</td>${copyCell(tva)}</tr>
+      <tr class="tx-gras"><td class="ta-g">Total TTC (indicatif)</td>${copyCell(ht+tva)}</tr>
     </tbody></table>
     <div class="hint">Montant indicatif — le total exact est recalculé par le serveur à la création de la facture.</div>`;
 }
@@ -3437,7 +3437,7 @@ function apercuFactureHTML(facture){
   const solde = n(facture.montant_ttc) - paye;
   const p = PARAMS || {};
   const corps = lignes.map(l => `<tr>
-      <td style="text-align:left;">${escapeHTML(l.designation)}</td>
+      <td class="ta-g">${escapeHTML(l.designation)}</td>
       <td>${fmt(l.quantite)}</td><td>${fmt(l.prix_unitaire)}</td>
       <td>${fmt(n(l.quantite)*n(l.prix_unitaire))}</td>
     </tr>`).join('');
@@ -3457,14 +3457,14 @@ function apercuFactureHTML(facture){
         ${client.telephone ? escapeHTML(client.telephone)+'<br>' : ''}
         ${client.ncc ? 'NCC : '+escapeHTML(client.ncc) : ''}
        </div>`
-    + `<table><thead><tr><th style="text-align:left;">Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Montant</th></tr></thead>
+    + `<table><thead><tr><th class="ta-g">Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Montant</th></tr></thead>
         <tbody>${corps}</tbody>
         <tfoot>
-          <tr><td colspan="3" style="text-align:right;">Total HT</td><td>${fmt(facture.montant_ht)}</td></tr>
-          <tr><td colspan="3" style="text-align:right;">TVA</td><td>${fmt(facture.montant_tva)}</td></tr>
-          <tr><td colspan="3" style="text-align:right;"><strong>Total TTC</strong></td><td><strong>${fmt(facture.montant_ttc)}</strong></td></tr>
-          ${paye ? `<tr><td colspan="3" style="text-align:right;">Déjà réglé</td><td>${fmt(paye)}</td></tr>
-          <tr><td colspan="3" style="text-align:right;"><strong>Solde dû</strong></td><td><strong>${fmt(solde>0?solde:0)}</strong></td></tr>` : ''}
+          <tr><td colspan="3" class="ta-d">Total HT</td><td>${fmt(facture.montant_ht)}</td></tr>
+          <tr><td colspan="3" class="ta-d">TVA</td><td>${fmt(facture.montant_tva)}</td></tr>
+          <tr><td colspan="3" class="ta-d"><strong>Total TTC</strong></td><td><strong>${fmt(facture.montant_ttc)}</strong></td></tr>
+          ${paye ? `<tr><td colspan="3" class="ta-d">Déjà réglé</td><td>${fmt(paye)}</td></tr>
+          <tr><td colspan="3" class="ta-d"><strong>Solde dû</strong></td><td><strong>${fmt(solde>0?solde:0)}</strong></td></tr>` : ''}
         </tfoot></table>`
     + (moyensPaiement ? `<div class="hint" style="margin-top:10px;">Moyens de paiement acceptés — ${moyensPaiement}</div>` : '')
     + piedDocumentImprimable(mentionsLegales || 'Montants en francs CFA.');
@@ -3522,7 +3522,7 @@ async function chargerComptaGenerale(){
     });
   } catch(e){
     console.error('chargerComptaGenerale', e);
-    if (wrapPlan) wrapPlan.innerHTML = `<div class="hint" style="color:#b00;" title="${escapeHTML(e.message||'')}">⚠️ Impossible de charger la comptabilité générale pour le moment.</div>`;
+    if (wrapPlan) wrapPlan.innerHTML = `<div class="hint tx-rouge" title="${escapeHTML(e.message||'')}">⚠️ Impossible de charger la comptabilité générale pour le moment.</div>`;
     return;
   }
   CG_CHARGE = true;
@@ -3532,11 +3532,11 @@ async function chargerComptaGenerale(){
 
 function renderPlanComptable(){
   const body = PLAN_COMPTABLE.map(c => `<tr>
-      <td>${escapeHTML(c.code)}</td><td style="text-align:left;">${escapeHTML(c.intitule)}</td><td>${c.classe}</td>
+      <td>${escapeHTML(c.code)}</td><td class="ta-g">${escapeHTML(c.intitule)}</td><td>${c.classe}</td>
     </tr>`).join('');
   document.getElementById('cg-plan-table').innerHTML = `<table class="g-table"><thead><tr>
-      <th>Code</th><th style="text-align:left;">Intitulé</th><th>Classe</th>
-    </tr></thead><tbody>${body || '<tr><td colspan="3" style="text-align:center;color:var(--muted);">Aucun compte</td></tr>'}</tbody></table>`;
+      <th>Code</th><th class="ta-g">Intitulé</th><th>Classe</th>
+    </tr></thead><tbody>${body || '<tr><td colspan="3" class="ta-c hint">Aucun compte</td></tr>'}</tbody></table>`;
   const sel = document.getElementById('gl-compte');
   if (sel){
     const cur = sel.value;
@@ -3591,8 +3591,8 @@ function renderLignesEcriture(){
       <td><button class="btn btn-outline btn-sm" onclick="retirerLigneEcriture(${i})">✕</button></td>
     </tr>`).join('');
   document.getElementById('ec-lignes-table').innerHTML = `<thead><tr>
-      <th>Compte</th><th style="text-align:left;">Libellé</th><th>Débit</th><th>Crédit</th><th></th>
-    </tr></thead><tbody>${body || '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Aucune ligne</td></tr>'}</tbody>`;
+      <th>Compte</th><th class="ta-g">Libellé</th><th>Débit</th><th>Crédit</th><th></th>
+    </tr></thead><tbody>${body || '<tr><td colspan="5" class="ta-c hint">Aucune ligne</td></tr>'}</tbody>`;
   rafraichirEquilibreEcran();
 }
 function rafraichirEquilibreEcran(){
@@ -3742,10 +3742,10 @@ function imprimerBalance(){
   if (!toutes.length){ showToast('Aucune écriture sur cette période.', true); return; }
   const { lignes, grandDebit, grandCredit, equilibree } = balanceGenerale(toutes, PLAN_COMPTABLE);
   const html = enteteDocumentImprimable('Balance générale', cgPeriodeTexte())
-    + (equilibree ? '' : `<div class="doc-identite" style="color:#b00;">⚠️ Balance déséquilibrée : total débit ${fmtF(grandDebit)} ≠ total crédit ${fmtF(grandCredit)}.</div>`)
-    + `<table><thead><tr><th>Code</th><th style="text-align:left;">Intitulé</th><th>Débit</th><th>Crédit</th><th>Solde débiteur</th><th>Solde créditeur</th></tr></thead><tbody>`
-    + lignes.map(l => `<tr><td>${escapeHTML(l.code)}</td><td style="text-align:left;">${escapeHTML(l.intitule)}</td><td>${fmt(l.debit)}</td><td>${fmt(l.credit)}</td><td>${fmt(l.soldeDebiteur)}</td><td>${fmt(l.soldeCrediteur)}</td></tr>`).join('')
-    + `</tbody><tfoot><tr><th colspan="2" style="text-align:left;">TOTAL</th><th>${fmt(grandDebit)}</th><th>${fmt(grandCredit)}</th><th></th><th></th></tr></tfoot></table>`
+    + (equilibree ? '' : `<div class="doc-identite tx-rouge">⚠️ Balance déséquilibrée : total débit ${fmtF(grandDebit)} ≠ total crédit ${fmtF(grandCredit)}.</div>`)
+    + `<table><thead><tr><th>Code</th><th class="ta-g">Intitulé</th><th>Débit</th><th>Crédit</th><th>Solde débiteur</th><th>Solde créditeur</th></tr></thead><tbody>`
+    + lignes.map(l => `<tr><td>${escapeHTML(l.code)}</td><td class="ta-g">${escapeHTML(l.intitule)}</td><td>${fmt(l.debit)}</td><td>${fmt(l.credit)}</td><td>${fmt(l.soldeDebiteur)}</td><td>${fmt(l.soldeCrediteur)}</td></tr>`).join('')
+    + `</tbody><tfoot><tr><th colspan="2" class="ta-g">TOTAL</th><th>${fmt(grandDebit)}</th><th>${fmt(grandCredit)}</th><th></th><th></th></tr></tfoot></table>`
     + piedDocumentImprimable('Partie double (SYSCOHADA) — écritures automatiques (dépenses, recettes, paie, factures) et manuelles.');
   ouvrirApercuImpression(html);
 }
@@ -3757,12 +3757,12 @@ function imprimerJournal(){
   ecritures.forEach(e => {
     (ECRITURE_LIGNES[e.id]||[]).forEach((l, i) => {
       totalD += n(l.debit); totalC += n(l.credit);
-      corps += `<tr><td>${i === 0 ? escapeHTML(e.date_ecriture||'') : ''}</td><td>${i === 0 ? escapeHTML(e.piece||'') : ''}</td><td style="text-align:left;">${i === 0 ? escapeHTML(e.libelle||'') : ''}</td><td>${escapeHTML(l.compte)}</td><td style="text-align:left;">${escapeHTML(intituleDe[l.compte]||'')}</td><td>${n(l.debit) ? fmt(l.debit) : ''}</td><td>${n(l.credit) ? fmt(l.credit) : ''}</td></tr>`;
+      corps += `<tr><td>${i === 0 ? escapeHTML(e.date_ecriture||'') : ''}</td><td>${i === 0 ? escapeHTML(e.piece||'') : ''}</td><td class="ta-g">${i === 0 ? escapeHTML(e.libelle||'') : ''}</td><td>${escapeHTML(l.compte)}</td><td class="ta-g">${escapeHTML(intituleDe[l.compte]||'')}</td><td>${n(l.debit) ? fmt(l.debit) : ''}</td><td>${n(l.credit) ? fmt(l.credit) : ''}</td></tr>`;
     });
   });
   const html = enteteDocumentImprimable('Journal général', cgPeriodeTexte())
-    + `<table><thead><tr><th>Date</th><th>Pièce</th><th style="text-align:left;">Libellé</th><th>Compte</th><th style="text-align:left;">Intitulé</th><th>Débit</th><th>Crédit</th></tr></thead><tbody>${corps}</tbody>`
-    + `<tfoot><tr><th colspan="5" style="text-align:left;">TOTAL (${ecritures.length} écriture(s))</th><th>${fmt(totalD)}</th><th>${fmt(totalC)}</th></tr></tfoot></table>`
+    + `<table><thead><tr><th>Date</th><th>Pièce</th><th class="ta-g">Libellé</th><th>Compte</th><th class="ta-g">Intitulé</th><th>Débit</th><th>Crédit</th></tr></thead><tbody>${corps}</tbody>`
+    + `<tfoot><tr><th colspan="5" class="ta-g">TOTAL (${ecritures.length} écriture(s))</th><th>${fmt(totalD)}</th><th>${fmt(totalC)}</th></tr></tfoot></table>`
     + piedDocumentImprimable('Partie double (SYSCOHADA) — écritures automatiques (dépenses, recettes, paie, factures) et manuelles.');
   ouvrirApercuImpression(html);
 }
@@ -3779,7 +3779,7 @@ function renderJournal(){
     return `<tr>
         <td>${escapeHTML(e.date_ecriture||'')}</td>
         <td>${escapeHTML(e.piece||'—')}</td>
-        <td style="text-align:left;">${escapeHTML(e.libelle||'')}</td>
+        <td class="ta-g">${escapeHTML(e.libelle||'')}</td>
         <td>${libelleSource[e.source]||escapeHTML(e.source||'')}</td>
         <td style="text-align:left;font-size:12px;">${detail}</td>
         ${copyCell(montant)}
@@ -3787,9 +3787,9 @@ function renderJournal(){
       </tr>`;
   }).join('');
   document.getElementById('cg-journal-table').innerHTML = `<table class="g-table"><thead><tr>
-      <th>Date</th><th>Pièce</th><th style="text-align:left;">Libellé</th><th>Source</th>
-      <th style="text-align:left;">Détail (débit/crédit)</th><th>Montant</th><th></th>
-    </tr></thead><tbody>${body || '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Aucune écriture</td></tr>'}</tbody></table>`;
+      <th>Date</th><th>Pièce</th><th class="ta-g">Libellé</th><th>Source</th>
+      <th class="ta-g">Détail (débit/crédit)</th><th>Montant</th><th></th>
+    </tr></thead><tbody>${body || '<tr><td colspan="7" class="ta-c hint">Aucune écriture</td></tr>'}</tbody></table>`;
 }
 function renderGrandLivre(){
   const compte = document.getElementById('gl-compte')?.value;
@@ -3808,27 +3808,27 @@ function renderGrandLivre(){
     solde += n(l.debit) - n(l.credit);
     return `<tr>
         <td>${escapeHTML(l.date||'')}</td><td>${escapeHTML(l.piece||'—')}</td>
-        <td style="text-align:left;">${escapeHTML(l.libelle||'')}</td>
+        <td class="ta-g">${escapeHTML(l.libelle||'')}</td>
         ${copyCell(l.debit)}${copyCell(l.credit)}${copyCell(solde)}
       </tr>`;
   }).join('');
   wrap.innerHTML = `<table class="g-table"><thead><tr>
-      <th>Date</th><th>Pièce</th><th style="text-align:left;">Libellé</th><th>Débit</th><th>Crédit</th><th>Solde progressif</th>
-    </tr></thead><tbody>${body || '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aucun mouvement sur ce compte</td></tr>'}</tbody></table>`;
+      <th>Date</th><th>Pièce</th><th class="ta-g">Libellé</th><th>Débit</th><th>Crédit</th><th>Solde progressif</th>
+    </tr></thead><tbody>${body || '<tr><td colspan="6" class="ta-c hint">Aucun mouvement sur ce compte</td></tr>'}</tbody></table>`;
 }
 function renderBalance(){
   const toutesLignes = [];
   ecrituresPeriode().forEach(e => { (ECRITURE_LIGNES[e.id]||[]).forEach(l => toutesLignes.push(l)); });
   const { lignes, grandDebit, grandCredit, equilibree } = balanceGenerale(toutesLignes, PLAN_COMPTABLE);
   const body = lignes.map(l => `<tr${l.horsPlan ? ' style="color:#dc2626;"' : ''}>
-      <td>${escapeHTML(l.code)}</td><td style="text-align:left;">${escapeHTML(l.intitule)}</td>
+      <td>${escapeHTML(l.code)}</td><td class="ta-g">${escapeHTML(l.intitule)}</td>
       ${copyCell(l.debit)}${copyCell(l.credit)}${copyCell(l.soldeDebiteur)}${copyCell(l.soldeCrediteur)}
     </tr>`).join('');
   const bandeau = equilibree ? '' : `<div class="clt-alert clt-alert-warn">⚠️ <strong>Balance déséquilibrée.</strong> Total débit (${fmtF(grandDebit)}) ≠ total crédit (${fmtF(grandCredit)}). Vérifiez les écritures ci-dessus dans le Journal.</div>`;
   document.getElementById('cg-balance-table').innerHTML = bandeau + `<table class="g-table"><thead><tr>
-      <th>Code</th><th style="text-align:left;">Intitulé</th><th>Débit</th><th>Crédit</th><th>Solde débiteur</th><th>Solde créditeur</th>
-    </tr></thead><tbody>${body || '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aucune écriture</td></tr>'}</tbody>
-    <tfoot><tr><th style="text-align:left;" colspan="2">TOTAL</th>${copyCell(grandDebit,{th:true})}${copyCell(grandCredit,{th:true})}<th></th><th></th></tr></tfoot></table>`;
+      <th>Code</th><th class="ta-g">Intitulé</th><th>Débit</th><th>Crédit</th><th>Solde débiteur</th><th>Solde créditeur</th>
+    </tr></thead><tbody>${body || '<tr><td colspan="6" class="ta-c hint">Aucune écriture</td></tr>'}</tbody>
+    <tfoot><tr><th class="ta-g" colspan="2">TOTAL</th>${copyCell(grandDebit,{th:true})}${copyCell(grandCredit,{th:true})}<th></th><th></th></tr></tfoot></table>`;
 }
 function renderTVA(){
   const periode = document.getElementById('tva-periode')?.value || '';
@@ -3886,26 +3886,26 @@ async function loadLivreCaisse(){
       solde += (isE?1:-1) * mt;
       return `<tr>
         <td>${escapeHTML(mv.date_mouvement)}</td>
-        <td style="text-align:left;">${escapeHTML(mv.libelle)}</td>
+        <td class="ta-g">${escapeHTML(mv.libelle)}</td>
         <td>${escapeHTML(mv.mode||'')}</td>
         <td style="color:#0F766E;">${isE?fmt(mt):''}</td>
         <td style="color:#c0392b;">${isE?'':fmt(mt)}</td>
         <td><strong>${fmt(solde)}</strong></td>
         <td><div class="row-actions"><button class="icon-btn danger" onclick="delMouvementCaisse('${mv.id}')">Suppr.</button></div></td></tr>`;
     }).join('');
-    if (!rows || !rows.length) body = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Aucun mouvement ce mois.</td></tr>';
+    if (!rows || !rows.length) body = '<tr><td colspan="7" class="ta-c hint">Aucun mouvement ce mois.</td></tr>';
   } catch(e){ showToast('Erreur chargement de la caisse', true); console.error(e); return; }
 
   const soldeFin = soldeDebut + entrees - sorties;
   document.getElementById('lc-table').innerHTML = `<table class="g-table"><thead><tr>
-    <th>Date</th><th style="text-align:left;">Libellé</th><th>Mode</th><th>Entrée</th><th>Sortie</th><th>Solde</th><th></th></tr></thead>
+    <th>Date</th><th class="ta-g">Libellé</th><th>Mode</th><th>Entrée</th><th>Sortie</th><th>Solde</th><th></th></tr></thead>
     <tbody>
-      <tr style="background:#f1f5f9;font-weight:600;"><td colspan="5" style="text-align:left;">Solde au début de ${MOIS_FR[mois-1]} ${annee}</td><td>${fmt(soldeDebut)}</td><td></td></tr>
+      <tr style="background:#f1f5f9;font-weight:600;"><td colspan="5" class="ta-g">Solde au début de ${MOIS_FR[mois-1]} ${annee}</td><td>${fmt(soldeDebut)}</td><td></td></tr>
       ${body}
     </tbody>
     <tfoot>
-      <tr><td colspan="3" style="text-align:left;">TOTAUX DU MOIS</td><td style="color:#0F766E;">${fmt(entrees)}</td><td style="color:#c0392b;">${fmt(sorties)}</td><td></td><td></td></tr>
-      <tr style="font-weight:700;"><td colspan="5" style="text-align:left;">SOLDE DE CLÔTURE — ${MOIS_FR[mois-1]} ${annee}</td><td>${fmt(soldeFin)}</td><td></td></tr>
+      <tr><td colspan="3" class="ta-g">TOTAUX DU MOIS</td><td style="color:#0F766E;">${fmt(entrees)}</td><td style="color:#c0392b;">${fmt(sorties)}</td><td></td><td></td></tr>
+      <tr class="tx-gras"><td colspan="5" class="ta-g">SOLDE DE CLÔTURE — ${MOIS_FR[mois-1]} ${annee}</td><td>${fmt(soldeFin)}</td><td></td></tr>
     </tfoot></table>`;
 }
 
@@ -4036,18 +4036,18 @@ async function loadEcheances(){
                 <button class="btn btn-sm" onclick="marquerEcheance('${o.code}','${periode}','${echeance||''}')">✓ Marquer fait</button>`;
     }
     return `<tr>
-      <td style="text-align:left;">${escapeHTML(o.libelle)}${isAnnuel?' <span style="color:var(--muted);font-size:11px;">(annuel)</span>':''}</td>
+      <td class="ta-g">${escapeHTML(o.libelle)}${isAnnuel?' <span style="color:var(--muted);font-size:11px;">(annuel)</span>':''}</td>
       <td>${echeance?frDateCourte(echeance):'—'}</td>
       <td>${statutHTML}</td>
       <td>${mtFait}</td>
       <td>${action}</td></tr>`;
   };
-  let body = `<tr style="background:#f1f5f9;font-weight:700;"><td colspan="5" style="text-align:left;">Mensuel — ${MOIS_FR[mois-1]} ${annee} (déclaré le mois suivant)</td></tr>`;
+  let body = `<tr style="background:#f1f5f9;font-weight:700;"><td colspan="5" class="ta-g">Mensuel — ${MOIS_FR[mois-1]} ${annee} (déclaré le mois suivant)</td></tr>`;
   OBLIG_MENS.forEach(o => { body += ligne(o, periodeM, echeanceMensuelle(annee, mois, o.jour), false); });
-  body += `<tr style="background:#f1f5f9;font-weight:700;"><td colspan="5" style="text-align:left;">Annuel — ${annee}</td></tr>`;
+  body += `<tr style="background:#f1f5f9;font-weight:700;"><td colspan="5" class="ta-g">Annuel — ${annee}</td></tr>`;
   OBLIG_ANN.forEach(o => { body += ligne(o, periodeA, `${annee}-${pad2(o.mois)}-${pad2(o.jour)}`, true); });
   document.getElementById('ech-table').innerHTML = `<table class="g-table"><thead><tr>
-    <th style="text-align:left;">Obligation</th><th>Échéance (indicative)</th><th>État</th><th>Montant</th><th>Action</th></tr></thead>
+    <th class="ta-g">Obligation</th><th>Échéance (indicative)</th><th>État</th><th>Montant</th><th>Action</th></tr></thead>
     <tbody>${body}</tbody></table>`;
 }
 
@@ -4116,14 +4116,14 @@ async function loadClotures(){
       action = `<button class="btn btn-sm" onclick="cloturerMois(${annee},${m})">🔒 Clôturer</button>`;
     }
     body += `<tr>
-      <td style="text-align:left;">${MOIS_FR[m-1]}</td>
+      <td class="ta-g">${MOIS_FR[m-1]}</td>
       <td>${fmt(rec[m-1])}</td>
       <td>${fmt(dep[m-1])}</td>
       <td>${badge}</td>
       <td>${action}</td></tr>`;
   }
   document.getElementById('clo-table').innerHTML = `<table class="g-table"><thead><tr>
-    <th style="text-align:left;">Mois</th><th>Recettes</th><th>Dépenses (saisies)</th><th>État</th><th>Action</th></tr></thead>
+    <th class="ta-g">Mois</th><th>Recettes</th><th>Dépenses (saisies)</th><th>État</th><th>Action</th></tr></thead>
     <tbody>${body}</tbody></table>`;
 }
 
@@ -4349,7 +4349,7 @@ function renderPrimes(){
     const tc = r.travail_correct === null || r.travail_correct === undefined ? r.travail_correct_propose : r.travail_correct;
     const raisons = [r.reclamations_fondees ? r.reclamations_fondees + ' réclam.' : '', r.echecs_sans_motif ? r.echecs_sans_motif + ' sans motif' : '', r.livres_sans_preuve ? r.livres_sans_preuve + ' sans preuve' : ''].filter(Boolean).join(', ');
     return `<tr class="${fige ? 'pr-valide' : ''}">
-      <td style="text-align:left;"><b>${escapeHTML(primesNomSalarie(r.salarie_id))}</b>${fige ? ' <span title="Validé">🔒</span>' : ''}</td>
+      <td class="ta-g"><b>${escapeHTML(primesNomSalarie(r.salarie_id))}</b>${fige ? ' <span title="Validé">🔒</span>' : ''}</td>
       <td>${s.formule || '—'}</td>
       <td>${r.jours_travailles}</td><td>${r.colis_confies}</td><td>${r.echecs_non_imputables}</td><td>${r.colis_livres}</td>
       <td>${r.taux_livraison == null ? '—' : Math.round(n(r.taux_livraison) * 100) + ' %'}</td>
@@ -4362,7 +4362,7 @@ function renderPrimes(){
       <td>${r.envoye_at ? '<span title="Décompte envoyé le ' + escapeHTML(String(r.envoye_at).slice(0, 10)) + '">💬</span>' : ''}</td>
     </tr>`;
   }).join('');
-  document.getElementById('pr-table').innerHTML = `<table class="g-table"><thead><tr>${head.map((h, i) => `<th${i === 0 ? ' style="text-align:left;"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>
+  document.getElementById('pr-table').innerHTML = `<table class="g-table"><thead><tr>${head.map((h, i) => `<th${i === 0 ? ' class="ta-g"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>
     <div class="hint" style="margin-top:8px;">Avance/retenue : en négatif (remboursement d’avance d’urgence, rachat de moto). Tout changement recalcule la ligne ; une ligne validée 🔒 ne bouge plus.</div>`;
 }
 

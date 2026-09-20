@@ -916,7 +916,7 @@ const cat = {
   // Récupérés depuis plus de deux jours et jamais passés en livraison : des statuts jamais
   // fermés qui encombrent les restes des livreurs (vu chez Gbei Franck : des « récupéré »
   // d'août encore en route le 7 septembre). (09/09/2026)
-  dormants:  colis.filter(c => (c.statut === 'recupere' || c.statut === 'en_attente') && jourDuColis(c) < isoMoinsJours(aujourdhui, 2)),
+  dormants:  colis.filter(c => (c.statut === 'recupere' || c.statut === 'en_attente') && jourDuColis(c) < isoMoinsJours(aujourdhui, SEUILS.colisDormantJours)),
   examiner:  colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && !vues.has(c.id)),
   /* LES RETOURS DÉTENUS (17/09/2026, point 7.3). Un colis revenu est chez le livreur jusqu'à
      ce qu'il le rende ; passé deux jours, c'est un retard que le bureau doit voir. Règle et
@@ -929,7 +929,7 @@ const cat = {
      D'où deux comptes, comme pour les retours : ce qui attend, et ce qui attend depuis trop
      longtemps (plus de deux jours, le même seuil que le reste de l'écran). */
   reclamations:     reclamationsClientes.filter(r => reclamationEnAttente(r)),
-  reclamationsTard: reclamationsClientes.filter(r => reclamationEnAttente(r) && (reclamationJours(r, aujourdhui) || 0) > 2),
+  reclamationsTard: reclamationsClientes.filter(r => reclamationEnAttente(r) && (reclamationJours(r, aujourdhui) || 0) > SEUILS.reclamationTardJours),
   // Les échecs que l'équipe n'a pas encore qualifiés (règlement des primes, 13/09/2026).
   qualifier: colis.filter(c => (c.statut === 'non_livre' || c.statut === 'retour') && c.non_livre_at && c.non_livre_at >= (typeof PRIMES_DEBUT !== 'undefined' ? PRIMES_DEBUT : '2026-10-01') && (c.echec_imputable === null || c.echec_imputable === undefined)),
 };
@@ -1041,7 +1041,7 @@ set('aujourdhui-actions', ouRien(
   pastille(nbFileBloquee, nbFileBloquee > 1 ? 'enregistrements bloqués hors réseau' : 'enregistrement bloqué hors réseau', 'file-bloquee', 'rouge'), 'Rien à faire'));
 set('aujourdhui-anomalies', ouRien(
   pastille(L.retard.length,   'en livraison depuis hier', 'retard', 'rouge') +
-  pastille(L.dormants.length, 'en route depuis plus de 2 jours', 'dormants', 'rouge') +
+  pastille(L.dormants.length, 'en route depuis plus de ' + SEUILS.colisDormantJours + ' jours', 'dormants', 'rouge') +
   pastille(L.examiner.length, 'non livrés ou retours', 'examiner', 'rouge') +
   pastille(L.retours.length, L.retours.length > 1 ? 'retours chez les livreurs' : 'retour chez un livreur', 'retours', 'ambre') +
   pastille(L.retoursTard.length, L.retoursTard.length > 1 ? 'retours en retard (plus de 2 jours)' : 'retour en retard (plus de 2 jours)', 'retours-tard', 'rouge') +
@@ -1079,7 +1079,7 @@ function renderReclamationsEquipe(){
     const j = reclamationJours(r);
     const depuis = j === 0 ? "aujourd'hui" : j === 1 ? 'hier' : 'il y a ' + j + ' jours';
     const c = r.colis_id && Array.isArray(allColis) ? allColis.find(x => x.id === r.colis_id) : null;
-    return `<div class="reclam-eq${(j || 0) > 2 ? ' reclam-eq--vieille' : ''}" data-reclam="${escapeHTML(r.id)}">
+    return `<div class="reclam-eq${(j || 0) > SEUILS.reclamationTardJours ? ' reclam-eq--vieille' : ''}" data-reclam="${escapeHTML(r.id)}">
       <div class="reclam-eq__texte"><b>${qui(r)}</b> · ${escapeHTML(motifReclamationTexte(r.motif))} · ${escapeHTML(depuis)}${r.statut === 'en_cours' ? ' · <span class="reclam-eq__etat">prise en charge</span>' : ''}${r.texte ? `<div class="reclam-eq__cite">« ${escapeHTML(r.texte)} »</div>` : ''}${c ? `<div class="reclam-eq__colis"><button type="button" class="lien-nu" data-ouvrir-colis="${escapeHTML(c.id)}">Colis ${escapeHTML(c.numero || '')}</button></div>` : ''}</div>
       <div class="reclam-eq__gestes">${r.statut !== 'en_cours' ? `<button type="button" class="btn btn-outline btn-sm" data-reclam-geste="en_cours">Je m'en occupe</button>` : ''}<button type="button" class="btn btn-sm" data-reclam-geste="resolue">Répondre et clore</button></div>
     </div>`;
@@ -1139,7 +1139,7 @@ function reclamationLigneEquipeHTML(c){
   if (!r) return '';
   const j = reclamationJours(r);
   const depuis = j === 0 ? "aujourd'hui" : j === 1 ? 'depuis hier' : 'depuis ' + j + ' jours';
-  return `<div class="reclam-equipe${(j || 0) > 2 ? ' reclam-equipe--vieille' : ''}">⚠️ ${(typeof reclamationAuteur === 'function' && reclamationAuteur(r) === 'livreur') ? 'Le livreur' : 'La cliente'} signale : ${escapeHTML(motifReclamationTexte(r.motif))} · ${escapeHTML(depuis)}${r.texte ? ' — « ' + escapeHTML(r.texte) + ' »' : ''}${r.statut === 'en_cours' ? ' · prise en charge' : ''}</div>`;
+  return `<div class="reclam-equipe${(j || 0) > SEUILS.reclamationTardJours ? ' reclam-equipe--vieille' : ''}">⚠️ ${(typeof reclamationAuteur === 'function' && reclamationAuteur(r) === 'livreur') ? 'Le livreur' : 'La cliente'} signale : ${escapeHTML(motifReclamationTexte(r.motif))} · ${escapeHTML(depuis)}${r.texte ? ' — « ' + escapeHTML(r.texte) + ' »' : ''}${r.statut === 'en_cours' ? ' · prise en charge' : ''}</div>`;
 }
 
 // Où mène chaque pastille. UN SEUL écouteur, posé une fois sur la carte.

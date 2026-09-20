@@ -1838,6 +1838,23 @@ function cltBrancherFiltreListe(champ, liste, options) {
    pas les numéros du site vitrine (accueil et page Contact) : ceux-là amènent un prospect au
    commercial, ceux-ci amènent une cliente ou un destinataire à la personne qui suit les colis.
    WhatsApp part sur la première ligne, la principale. */
+/* ==========================================================================================
+   LES SEUILS DE LA MAISON (20/09/2026, lot G) — en un seul endroit.
+   ==========================================================================================
+   Ils étaient écrits en dur, chacun dans son coin : « 2 » dans lib/retours.js, « > 2 » trois
+   fois dans l'espace équipe, « 3 » dans la file du livreur. Quand Celtis décide qu'un retour
+   se rend en trois jours et non deux, il faut le changer à UN endroit — celui-ci — et les
+   fonctions de la base (essentiel_compteurs, lib SQL) portent la même valeur, notée en
+   commentaire dans la migration. Chargé avant tout le reste : les blocs lib/ et les écrans
+   lisent SEUILS avec un repli sur l'ancienne valeur, pour ne jamais casser.
+   ========================================================================================== */
+const SEUILS = {
+  retourDelaiJours: 2,        // un colis revenu doit être rendu à la cliente sous ce délai
+  reclamationTardJours: 2,    // un signalement qui attend plus longtemps passe au rouge
+  colisDormantJours: 2,       // récupéré / en attente depuis plus de N jours : « dormant »
+  fileEssaisMax: 3,           // une mise à jour hors réseau refusée est retentée N fois, puis signalée
+};
+
 const CLT_CONTACT = {
   tel: '+2250779604761',        // premier : 07 79 60 47 61  — APPEL
   telSecond: '+2250170407312',  // second  : 01 70 40 73 12  — APPEL

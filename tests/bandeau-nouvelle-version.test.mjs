@@ -879,10 +879,14 @@ verifier(
    seulement, refus de la base traduit), le carnet d'adresses en base (profiles.express_adresses),
    la vue comptable par coursier corrigée (la dette est le solde négatif), la carte Leaflet la
    nuit, la documentation Wave mise d'accord avec le code. Migration
-   2026-09-20-express-carnet-et-compta.sql. Étiquette 20260920express2. */
+   2026-09-20-express-carnet-et-compta.sql. Étiquette 20260920express2.
+   v188, le 20/09/2026 — lot 20.G : le mode nuit de Gestion (37 règles), les seuils regroupés
+   dans SEUILS (clt-common.js), 216 attributs style de gestion.js devenus classes, le registre
+   des migrations complété (45 scripts, 176 objets), deux bancs de plus (les gestes du bureau ;
+   Gestion la nuit). Aucune migration. Étiquette 20260920gestion. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v187'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v188'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
