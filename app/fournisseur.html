@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920etiquettes">
+<link rel="stylesheet" href="style.css?v=20260920import">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920etiquettes"></script>
-<script src="splash.js?v=20260920etiquettes"></script>
+<script src="theme.js?v=20260920import"></script>
+<script src="splash.js?v=20260920import"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -182,6 +182,20 @@
   html[data-theme="dark"] .coller-zone{ background:#141F2E; border-color:#2E3E54; }
   html[data-theme="dark"] .coller-zone textarea{ background:#18243A; border-color:#33465F; color:#E6ECF3; }
   html[data-theme="dark"] .coller-resume .avertir{ color:#F0C98A; }
+  /* ---------- L'IMPORT D'UN FICHIER (20/09/2026) ---------- */
+  .import-bloc{ margin:10px 0 0; display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
+  .import-bloc .btn{ min-height:44px; }
+  .import-bloc .lien-nu{ min-height:44px; font-size:13.5px; }
+  .import-resume{ flex:1 1 100%; font-size:13px; line-height:1.5; border-radius:11px; padding:10px 12px; border:1px solid #dbe6f3; background:#f3f7fc; color:#334155; }
+  .import-resume.hidden{ display:none; }
+  .import-resume-tete{ font-weight:700; }
+  .import-resume--ok{ background:#edf8f1; border-color:#bfe3cd; color:#14532d; }
+  .import-resume--avertir{ background:#fff6ea; border-color:#f0d09a; color:#7a4b00; }
+  .import-resume--erreur{ background:#fdecea; border-color:#f3c5bf; color:#8a2318; }
+  html[data-theme="dark"] .import-resume{ background:#16212E; border-color:#2A3849; color:#CFE0F5; }
+  html[data-theme="dark"] .import-resume--ok{ background:#12332E; border-color:#1F5A4E; color:#B8F0CC; }
+  html[data-theme="dark"] .import-resume--avertir{ background:#2E2116; border-color:#7A4A1A; color:#F0C98A; }
+  html[data-theme="dark"] .import-resume--erreur{ background:#3A1A17; border-color:#7A2B22; color:#FF9D93; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -464,7 +478,15 @@
         <input type="file" id="lotfr-photos-library" accept="image/*" multiple class="hidden">
         <input type="file" id="lotfr-photos-camera" accept="image/*" capture="environment" multiple class="hidden">
       </div>
-      <div class="field-hint" style="font-size:12px; color:var(--muted); margin:6px 0 0;">Pas de photo sous la main ? <button type="button" class="lien-nu" id="lotfr-ligne-vide">Ajouter un colis sans photo</button>.</div>
+      <div class="field-hint" style="font-size:12px; color:var(--muted); margin:6px 0 0;">Pas de photo sous la main ? <button type="button" class="lien-nu" id="lotfr-ligne-vide">Ajouter un colis sans photo</button></div>
+      <!-- L'IMPORT D'UN FICHIER (20/09/2026). Il ne crée rien : il remplit les lignes de saisie
+           ci-dessous, que la cliente relit puis enregistre comme d'habitude. Lecture : app/import-de-colis.js. -->
+      <div class="import-bloc">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-importer-colis">📄 Importer un fichier (Excel ou CSV)</button>
+        <button type="button" class="lien-nu" id="btn-modele-import">Télécharger le modèle</button>
+        <input type="file" id="import-colis-fichier" accept=".csv,.txt,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden">
+        <div id="import-colis-resume" class="import-resume hidden" aria-live="polite"></div>
+      </div>
 
       <div id="lotfr-lignes"></div>
       <div id="lotfr-barre-wrap"></div>
@@ -587,24 +609,25 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920etiquettes"></script>
-<script src="lib/bibliotheques.js?v=20260920etiquettes"></script>
-<script src="lib/retours.js?v=20260920etiquettes"></script>
-<script src="lib/reclamations.js?v=20260920etiquettes"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920etiquettes"></script>
-<script src="lib/argent.js?v=20260920etiquettes"></script>
-<script src="lib/releve-cliente.js?v=20260920etiquettes"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920etiquettes"></script>
-<script src="lib/briques-argent.js?v=20260920etiquettes"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920etiquettes"></script>
-<script src="lib/annonce-de-remise.js?v=20260920etiquettes"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920etiquettes"></script>
-<script src="lib/primes.js?v=20260920etiquettes"></script>
-<script src="lib/doublons.js?v=20260920etiquettes"></script>
-<script src="config.js?v=20260920etiquettes"></script>
-<script src="etiquettes-et-scan.js?v=20260920etiquettes"></script>
-<script src="biometric-lock.js?v=20260920etiquettes"></script>
-<script src="clt-select-recherche.js?v=20260920etiquettes"></script>
+<script src="clt-common.js?v=20260920import"></script>
+<script src="lib/bibliotheques.js?v=20260920import"></script>
+<script src="lib/retours.js?v=20260920import"></script>
+<script src="lib/reclamations.js?v=20260920import"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920import"></script>
+<script src="lib/argent.js?v=20260920import"></script>
+<script src="lib/releve-cliente.js?v=20260920import"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920import"></script>
+<script src="lib/briques-argent.js?v=20260920import"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920import"></script>
+<script src="lib/annonce-de-remise.js?v=20260920import"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920import"></script>
+<script src="lib/primes.js?v=20260920import"></script>
+<script src="lib/doublons.js?v=20260920import"></script>
+<script src="config.js?v=20260920import"></script>
+<script src="etiquettes-et-scan.js?v=20260920import"></script>
+<script src="import-de-colis.js?v=20260920import"></script>
+<script src="biometric-lock.js?v=20260920import"></script>
+<script src="clt-select-recherche.js?v=20260920import"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3410,6 +3433,84 @@
     }
     return all;
   }
+
+  /* ---------- L'IMPORT D'UN FICHIER (20/09/2026) ----------
+     Le fichier est lu sur l'appareil — rien n'est envoyé nulle part. Chaque ligne reconnue
+     devient une ligne de saisie, remplie comme le fait « Coller le message du client » : les
+     champs écrits par la machine sont surlignés, et les mêmes signaux partent (la commune
+     recalcule le prix proposé, le montant recalcule le total, le téléphone cherche un doublon). */
+  (function brancherImport(){
+    const bouton = document.getElementById('btn-importer-colis'), champ = document.getElementById('import-colis-fichier');
+    const modele = document.getElementById('btn-modele-import'), resume = document.getElementById('import-colis-resume');
+    if (!bouton || !champ || !resume || !window.CLTImportColis) return;
+    const I = window.CLTImportColis;
+    const dire = (lignes, classe) => {   // du TEXTE, jamais du HTML : le contenu vient d'un fichier
+      resume.textContent = ''; resume.className = 'import-resume ' + classe;
+      lignes.forEach((t, k) => { const d = document.createElement('div'); if (k === 0) d.className = 'import-resume-tete'; d.textContent = t; resume.appendChild(d); });
+    };
+    bouton.addEventListener('click', () => champ.click());
+    if (modele) modele.addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([I.MODELE_CSV], { type: 'text/csv;charset=utf-8' }));
+      a.download = 'modele-colis-clt.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    });
+    async function tableauDuFichier(f){
+      if (/\.(xlsx|xls)$/i.test(f.name)) {
+        if (!await assurerXLSX()) throw new Error('lecteur Excel indisponible');
+        const classeur = XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: false });
+        const feuille = classeur.Sheets[classeur.SheetNames[0]];
+        return XLSX.utils.sheet_to_json(feuille, { header: 1, raw: false, defval: '', blankrows: true });
+      }
+      return I.lireCSV(await f.text());
+    }
+    champ.addEventListener('change', async () => {
+      const f = champ.files && champ.files[0];
+      champ.value = '';   // le même fichier, corrigé puis rechoisi, doit redéclencher la lecture
+      if (!f) return;
+      if (f.size > 2 * 1024 * 1024) { dire(['Ce fichier dépasse 2 Mo : ce n\u2019est sans doute pas une liste de colis.'], 'import-resume--erreur'); return; }
+      let r;
+      try { r = I.lignesAImporter(await tableauDuFichier(f), COMMUNES); }
+      catch (e) { console.error('Import :', e); dire(['Ce fichier n\u2019a pas pu être lu. Enregistrez-le au format CSV ou Excel (.xlsx), puis réessayez.'], 'import-resume--erreur'); return; }
+      if (r.erreur) { dire([r.erreur], 'import-resume--erreur'); return; }
+      r.lignes.forEach((x) => {
+        const l = lotfrAjouterLigne(null);
+        if (!l || !l.el) return;
+        const poser = (sel, valeur, evenements) => {
+          const el = l.el.querySelector(sel);
+          if (!el || valeur === null || valeur === undefined || valeur === '') return;
+          el.value = String(valeur);
+          if (typeof marquerRempliAuto === 'function') marquerRempliAuto(el);
+          (evenements || ['input']).forEach((ev) => el.dispatchEvent(new Event(ev, { bubbles: true })));
+        };
+        // La commune d'abord : c'est elle qui propose le prix de livraison ; un prix donné par le
+        // fichier passe APRÈS, pour ne pas être écrasé par la proposition.
+        poser('.lotfr-commune', x.commune, ['change']);
+        poser('.lotfr-dest', x.destination);
+        poser('.lotfr-tel', x.telephone, ['input', 'change']);
+        poser('.lotfr-art', x.montantArticle);
+        poser('.lotfr-liv', x.montantLivraison);
+        poser('.lotfr-desc', x.description);
+        poser('.lotfr-avant', x.aLivrerAvant, ['input', 'change']);
+        if (typeof noterDoublonEventuel === 'function') noterDoublonEventuel(l.el);
+      });
+      // Comme après « Ajouter un colis sans photo » : les lignes se numérotent et la barre
+      // « Enregistrer les N colis » se redessine. Sans cet appel, le formulaire était rempli… sans
+      // bouton pour l'enregistrer (vu dans le parcours, le jour même).
+      if (typeof lotfrRenumeroter === 'function') lotfrRenumeroter();
+      const aRevoir = r.lignes.filter((x) => x.avertissements.length);
+      const phrases = [`${r.lignes.length} colis ${r.lignes.length > 1 ? 'ont été posés' : 'a été posé'} dans le formulaire ci-dessous. Relisez-les, puis enregistrez comme d\u2019habitude : rien n\u2019est encore envoyé.`];
+      aRevoir.slice(0, 8).forEach((x) => phrases.push(`Ligne ${x.rang} : ${x.avertissements.join(' ; ')}.`));
+      if (aRevoir.length > 8) phrases.push(`… et ${aRevoir.length - 8} autre(s) ligne(s) à relire.`);
+      if (r.ignorees.length) phrases.push(`Ligne(s) ignorée(s), sans commune ni adresse : ${r.ignorees.map((g) => g.rang).join(', ')}.`);
+      if (r.tropLong) phrases.push(`Le fichier comptait ${r.tropLong} colis de plus : importez-les dans un second temps (${I.LIGNES_MAXI} à la fois).`);
+      if (r.inconnues.length) phrases.push(`Colonne(s) non utilisée(s) : ${r.inconnues.join(', ')}.`);
+      dire(phrases, aRevoir.length || r.ignorees.length ? 'import-resume--avertir' : 'import-resume--ok');
+      const premiere = document.querySelector('#lotfr-lignes > *:last-child');
+      if (premiere && r.lignes.length === 1) premiere.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+  })();
 
   // Les étiquettes portent sur la liste QU'ON VOIT : mêmes filtres que renderColisList, et
   // seulement les colis encore à livrer — étiqueter un colis déjà livré n'a pas de sens.

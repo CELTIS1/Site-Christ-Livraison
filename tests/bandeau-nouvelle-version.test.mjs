@@ -950,10 +950,18 @@ verifier(
    somme à remettre (aucune somme si un montant manque) ; 8 par A4, la planche seule s'imprime.
    Bureau et livreur : 📷 scanne l'étiquette et remplit la recherche. Lecteur du navigateur
    d'abord, jsQR sinon ; deux bibliothèques embarquées dans app/vendor (MIT, Apache-2.0), aucun
-   CDN. Aucune migration. Étiquette 20260920etiquettes. */
+   CDN. Aucune migration. Étiquette 20260920etiquettes.
+   v200, le 20/09/2026 — « ensuite » n° 5, l'import d'un fichier de colis (cliente) : Excel ou CSV.
+   L'import NE CRÉE RIEN : il remplit les lignes de saisie habituelles (lotfrAjouterLigne), que la
+   cliente relit et enregistre — donc la grille, l'alerte de doublon, les montants manquants, la
+   file hors réseau et la clé de création protègent un import comme une saisie. Lecture pure
+   app/import-de-colis.js (séparateurs, guillemets, « 15 000 F », « +225… », zéro de tête mangé
+   par Excel, communes et surnoms, dates) ; une ligne douteuse est posée AVEC ses avertissements,
+   une ligne sans commune ni adresse est ignorée et dite ; 60 à la fois ; modèle à télécharger.
+   Aucune migration. Étiquette 20260920import. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v199'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v200'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

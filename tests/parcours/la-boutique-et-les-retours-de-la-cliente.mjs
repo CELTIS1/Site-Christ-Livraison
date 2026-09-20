@@ -89,6 +89,21 @@ await page.emulateMedia({ media: 'screen' });
 await page.locator('#clt-etiquettes [data-etq="fermer"]').click();
 verifier('« Fermer » rend l\'écran d\'avant', (await page.locator('#clt-etiquettes').count()) === 0 && await page.evaluate(() => !document.documentElement.classList.contains('etq-ouvert')));
 
+titre('L\'import d\'un fichier : il remplit le formulaire, et c\'est la cliente qui enregistre (20/09/2026)');
+await page.locator('#clt-bottomnav .nav[data-target="section-ajouter"]').click();
+await dodo(600);
+const avantImport = monde.TABLES.colis.length;
+const fichier = '\uFEFFCommune;Adresse;Téléphone;Montant article;Description;Nom\r\ncocody angré;Riviera 3;+225 07 09 08 07 06;15 000 F;Robe;Mme K\r\nTombouctou;Centre;0701;offert;x;\r\n';
+await page.locator('#import-colis-fichier').setInputFiles({ name: 'colis.csv', mimeType: 'text/csv', buffer: Buffer.from(fichier, 'utf8') });
+await dodo(1500);
+const lignesPosees = await page.evaluate(() => [...document.querySelectorAll('#lotfr-lignes > *')].map((l) => ({ c: l.querySelector('.lotfr-commune').value, d: l.querySelector('.lotfr-dest').value, t: l.querySelector('.lotfr-tel').value, a: l.querySelector('.lotfr-art').value, liv: l.querySelector('.lotfr-liv').value })));
+verifier('deux lignes de saisie posées, la première complète', lignesPosees.length === 2 && lignesPosees[0].c === 'Cocody' && lignesPosees[0].d === 'Mme K — Riviera 3' && lignesPosees[0].t === '0709080706' && lignesPosees[0].a === '15000', JSON.stringify(lignesPosees));
+verifier('le prix de livraison a été PROPOSÉ par la grille, comme pour une saisie à la main', Number(lignesPosees[0].liv) >= 1000, lignesPosees[0].liv);
+const resumeImport = await page.locator('#import-colis-resume').innerText();
+verifier('le résumé dit ce qui est à relire, ligne par ligne, et que rien n\'est encore envoyé', /rien n.est encore envoyé/.test(resumeImport) && /Ligne 3 : commune « Tombouctou » non reconnue/.test(resumeImport), resumeImport);
+verifier('RIEN n\'a été écrit en base par l\'import', monde.TABLES.colis.length === avantImport && !monde.journal.some((j) => j.table === 'colis' && j.op === 'insert'));
+verifier('le bouton de toujours annonce les deux colis à enregistrer', /2 colis/.test(await page.locator('#lotfr-enregistrer').innerText()));
+
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();
