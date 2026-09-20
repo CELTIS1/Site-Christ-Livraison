@@ -15,10 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920delais">
+<link rel="stylesheet" href="style.css?v=20260920causes">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920delais"></script>
-<script src="splash.js?v=20260920delais"></script>
+<script src="theme.js?v=20260920causes"></script>
+<script src="splash.js?v=20260920causes"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -246,13 +246,22 @@
   .cds-qui{ list-style:none; margin:8px 0 0; padding:8px 0 0; border-top:1px dashed #e6d3ad; font-size:12.5px; display:grid; gap:3px; }
   .cds-qui li{ display:flex; justify-content:space-between; gap:10px; }
   .cds-table{ margin-top:12px; }
+  /* ---------- POURQUOI ÇA ÉCHOUE (20/09/2026) ---------- */
+  #cdd-causes{ padding:16px 18px; margin-bottom:16px; }
+  .cdc-phrase{ margin-top:12px; padding:9px 12px; border-radius:10px; background:#fff6ea; border:1px solid #f0d09a; color:#7a4b00; font-size:13.5px; font-weight:600; line-height:1.45; }
+  .cdc-part{ white-space:nowrap; min-width:150px; }
+  .cdc-part > span:last-child{ display:inline-block; min-width:40px; text-align:right; font-variant-numeric:tabular-nums; font-size:12.5px; color:#5b6473; }
+  .cdc-barre{ display:inline-block; vertical-align:middle; width:96px; height:8px; border-radius:4px; background:#eef2f1; overflow:hidden; margin-right:8px; }
+  .cdc-barre > span{ display:block; height:100%; background:#c2410c; border-radius:4px; }
+  .cdc-haut{ color:#9a2b1c; font-weight:800; }
+  .cdd-table.cda-table.cdc-table th:last-child{ text-align:left; }
   /* ---------- L'ANALYSE PROFONDE (20/09/2026, 12.2) ----------
      Trois vues dans la même boîte, une à la fois. Les pastilles d'état sont à la fois le résumé
      (cinq nombres lus d'un regard) et le filtre (un clic) : un seul objet pour deux gestes. */
   #cdd-analyse{ padding:16px 18px; margin-bottom:16px; }
   .cda-onglets{ display:inline-flex; background:var(--clt-teal-light); border-radius:11px; padding:3px; gap:2px; }
   .cda-onglet{ font:inherit; font-size:13px; font-weight:700; color:var(--clt-teal-dark); background:none; border:0;
-    border-radius:9px; padding:0 14px; min-height:40px; cursor:pointer; }
+    border-radius:9px; padding:0 14px; min-height:44px; cursor:pointer; }
   .cda-onglet--actif{ background:#fff; box-shadow:0 1px 3px rgba(15,40,50,.14); }
   .cda-corps{ margin-top:14px; }
   .cda-pastilles{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px; margin-bottom:12px; }
@@ -295,6 +304,8 @@
     #cdd-questions{ padding:14px; }
     #cdd-analyse{ padding:14px; }
     #cdd-semaine{ padding:14px; }
+    #cdd-causes{ padding:14px; }
+    #cdd-causes .cda-onglet{ padding:0 4px; font-size:12.5px; }
     .cds-nav{ width:100%; }
     .cds-auj{ flex:1; }
     .cds-vigilance{ grid-template-columns:1fr; }
@@ -632,6 +643,11 @@
   html[data-theme="dark"] .icon-btn.danger{ background:#3A1A17; color:#FF9D93; }
   html[data-theme="dark"] .bul-barre{ background:#141F2E; border-color:#2A3849; }
   html[data-theme="dark"] .cdd-table td{ border-bottom-color:#2A3849; }
+  html[data-theme="dark"] .cdc-phrase{ background:#2E2116; border-color:#7A4A1A; color:#F0C98A; }
+  html[data-theme="dark"] .cdc-barre{ background:#243247; }
+  html[data-theme="dark"] .cdc-barre > span{ background:#F28B55; }
+  html[data-theme="dark"] .cdc-haut{ color:#FF9D93; }
+  html[data-theme="dark"] .cdc-part > span:last-child{ color:#C9D3DF; }
   html[data-theme="dark"] .gbl-barre{ background:#111A27; border-right-color:#2A3849; }
   html[data-theme="dark"] .gbl-bloc + .gbl-bloc{ border-top-color:#2A3849; }
   html[data-theme="dark"] .gbl-onglet{ color:#E6ECF3; }
@@ -754,6 +770,10 @@
          touche pas au DOM et se vérifie donc hors navigateur ; la boîte est dessinée par
          app/console-du-dirigeant.js, qui lui passe les mêmes douze mois et le même mois choisi
          que la console juste au-dessus. -->
+    <!-- POURQUOI ÇA ÉCHOUE (20/09/2026) : les échecs du mois choisi, par motif, commune, livreur,
+         cliente. Règle : app/causes-des-echecs.js. Posée entre le bilan de la semaine et les
+         questions : c'est la suite naturelle de « les échecs ont bougé ». -->
+    <div class="card" id="cdd-causes"></div>
     <div class="card" id="cdd-questions"></div>
     <!-- L'ANALYSE PROFONDE (20/09/2026, feuille de route 12.2) — la console dit ce qui a changé
          pour la maison ; cette boîte dit POUR QUI : chaque cliente jugée à son propre rythme,
@@ -1658,33 +1678,34 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260920delais"></script>
-<script src="lib/bibliotheques.js?v=20260920delais"></script>
-<script src="lib/retours.js?v=20260920delais"></script>
-<script src="lib/reclamations.js?v=20260920delais"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920delais"></script>
-<script src="lib/argent.js?v=20260920delais"></script>
-<script src="lib/releve-cliente.js?v=20260920delais"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920delais"></script>
-<script src="lib/briques-argent.js?v=20260920delais"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920delais"></script>
-<script src="lib/annonce-de-remise.js?v=20260920delais"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920delais"></script>
-<script src="lib/primes.js?v=20260920delais"></script>
-<script src="lib/doublons.js?v=20260920delais"></script>
-<script src="config.js?v=20260920delais"></script>
-<script src="biometric-lock.js?v=20260920delais"></script>
-<script src="clt-select-recherche.js?v=20260920delais"></script>
-<script src="site-editeur.js?v=20260920delais"></script>
+<script src="clt-common.js?v=20260920causes"></script>
+<script src="lib/bibliotheques.js?v=20260920causes"></script>
+<script src="lib/retours.js?v=20260920causes"></script>
+<script src="lib/reclamations.js?v=20260920causes"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920causes"></script>
+<script src="lib/argent.js?v=20260920causes"></script>
+<script src="lib/releve-cliente.js?v=20260920causes"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920causes"></script>
+<script src="lib/briques-argent.js?v=20260920causes"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920causes"></script>
+<script src="lib/annonce-de-remise.js?v=20260920causes"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920causes"></script>
+<script src="lib/primes.js?v=20260920causes"></script>
+<script src="lib/doublons.js?v=20260920causes"></script>
+<script src="config.js?v=20260920causes"></script>
+<script src="biometric-lock.js?v=20260920causes"></script>
+<script src="clt-select-recherche.js?v=20260920causes"></script>
+<script src="site-editeur.js?v=20260920causes"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260920delais"></script>
-<script src="analyse-profonde.js?v=20260920delais"></script>
-<script src="ce-qui-a-change.js?v=20260920delais"></script>
-<script src="les-questions.js?v=20260920delais"></script>
-<script src="console-du-dirigeant.js?v=20260920delais"></script>
-<script src="gestion.js?v=20260920delais"></script>
+<script src="bilan-de-la-semaine.js?v=20260920causes"></script>
+<script src="causes-des-echecs.js?v=20260920causes"></script>
+<script src="analyse-profonde.js?v=20260920causes"></script>
+<script src="ce-qui-a-change.js?v=20260920causes"></script>
+<script src="les-questions.js?v=20260920causes"></script>
+<script src="console-du-dirigeant.js?v=20260920causes"></script>
+<script src="gestion.js?v=20260920causes"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="gestion-barre-laterale.js?v=20260920delais"></script>
+<script src="gestion-barre-laterale.js?v=20260920causes"></script>
 </body>
 </html>

@@ -110,7 +110,7 @@ verifier('l\'aide à l\'écran dit les mêmes seuils que la règle', /2 fois son
   && AP.REGLES.retard.fois === 2 && AP.REGLES.endormie.fois === 3 && AP.REGLES.perdue.fois === 6 && AP.REGLES.retard.plancher === 7 && AP.REGLES.endormie.plancher === 14 && AP.REGLES.perdue.plancher === 45
   && AP.REGLES.retard.defaut === 14 && AP.REGLES.endormie.defaut === 30 && AP.REGLES.perdue.defaut === 60);
 verifier('le mode nuit couvre la boîte', /html\[data-theme="dark"\] \.cda-pastille/.test(gestion) && /html\[data-theme="dark"\] \.cda-case/.test(gestion));
-verifier('chaque cible tactile fait au moins 40 px', /\.cda-onglet\{[^}]*min-height:40px/.test(gestion) && /\.cda-plus\{[^}]*min-height:44px/.test(gestion) && /\.cda-pastille\{[^}]*min-height:56px/.test(gestion));
+verifier('chaque cible tactile fait au moins 44 px', /\.cda-onglet\{[^}]*min-height:44px/.test(gestion) && /\.cda-plus\{[^}]*min-height:44px/.test(gestion) && /\.cda-pastille\{[^}]*min-height:56px/.test(gestion));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);

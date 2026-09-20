@@ -964,10 +964,14 @@ verifier(
    sinon « reporté au », sinon le lendemain de la récupération (SEUILS.promesseJours). À risque :
    promis aujourd'hui et pas récupéré à 11 h, pas parti à 14 h, ou sans personne pour le porter.
    L'essentiel gagne deux pastilles (à risque ; promesse dépassée) et la carte du bureau une
-   ligne — seulement quand ça presse. Aucune migration. Étiquette 20260920delais. */
+   ligne — seulement quand ça presse. Aucune migration. Étiquette 20260920delais.
+   v202, le 20/09/2026 — « ensuite » n° 7, les statistiques de causes : app/causes-des-echecs.js
+   (pur). Boîte « Pourquoi ça échoue » dans la console du dirigeant, sur le mois choisi : par
+   motif, commune, livreur, cliente ; taux sur les colis TENTÉS, jamais sous 5 colis ; « motif non
+   saisi » dit en toutes lettres. Une colonne de plus lue (motif_non_livraison), aucune lecture. Étiquette 20260920causes. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v201'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v202'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

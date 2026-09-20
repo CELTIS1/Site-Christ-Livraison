@@ -70,6 +70,7 @@
     'frais_additionnels_montant', 'frais_additionnels_regle_at',
     'echec_imputable', 'tentatives_livraison',
     'encaissement_remis',   // le bilan de la semaine : l'argent livré et pas encore remis
+    'motif_non_livraison',  // pourquoi ça échoue : le motif saisi par le livreur
   ].join(', ');
 
   async function lireTout() {
@@ -414,6 +415,77 @@
     dessinerQuestions();
     dessinerAnalyse();
     dessinerSemaine();
+    dessinerCauses();
+  }
+
+  /* --------------------------------------------------------------------------------------
+     POURQUOI ÇA ÉCHOUE (20/09/2026, « ensuite » n° 7)
+     --------------------------------------------------------------------------------------
+     Suit le mois choisi en haut de la console : quand « les échecs » passent au rouge là-haut,
+     la réponse est ici, sur le même mois. Règle : causes-des-echecs.js. Aucune lecture de plus.
+     -------------------------------------------------------------------------------------- */
+  let vueCauses = 'motif';   // 'motif' | 'commune' | 'livreur' | 'cliente'
+
+  function dessinerCauses() {
+    const boite = document.getElementById('cdd-causes');
+    const K = window.CLTCauses;
+    if (!boite || !donnees) return;
+    if (!K) { boite.innerHTML = '<div class="cdd-rien">Les causes ne sont pas chargées.</div>'; return; }
+    const A = R();
+    const mois = moisAffiche || donnees.moisFin;
+    const r = K.causes(donnees.colis, mois);
+    const motifs = (typeof MOTIFS_NON_LIVRAISON !== 'undefined') ? MOTIFS_NON_LIVRAISON : {};
+    const libelleMotif = (k) => (motifs[k] ? motifs[k].label : '');
+    const onglet = (id, nom) => `<button type="button" role="tab" class="cda-onglet${vueCauses === id ? ' cda-onglet--actif' : ''}" aria-selected="${vueCauses === id}" data-causes="${id}">${nom}</button>`;
+    const barre = (part) => `<span class="cdc-barre" aria-hidden="true"><span style="width:${Math.max(2, part)}%"></span></span>`;
+    let corps;
+    if (!r.echecs) corps = `<div class="cdd-rien">Aucun échec en ${ech(A.moisEnClair(mois))}${r.tentes ? ' sur ' + r.tentes + ' colis tentés' : ''}.</div>`;
+    else if (vueCauses === 'motif') {
+      corps = `<table class="cdd-table cda-table cdc-table"><thead><tr><th>Motif</th><th class="cdd-nombre">Échecs</th><th>Part des échecs</th></tr></thead><tbody>${r.parMotif.map((m) => `<tr>
+        <td data-label="Motif">${m.cle ? ech((motifs[m.cle] ? motifs[m.cle].icon + ' ' : '') + (libelleMotif(m.cle) || m.cle)) : '<span class="cdd-inconnu">Motif non saisi</span>'}</td>
+        <td data-label="Échecs" class="cdd-nombre"><strong>${m.echecs}</strong></td>
+        <td data-label="Part des échecs" class="cdc-part">${barre(m.part)}<span>${m.part} %</span></td></tr>`).join('')}</tbody></table>
+        <div class="cda-note">Selon le règlement des primes : ${r.imputables} imputable${r.imputables > 1 ? 's' : ''} au livreur, ${r.nonImputables} non imputable${r.nonImputables > 1 ? 's' : ''}${r.aQualifier ? ', ' + r.aQualifier + ' à qualifier' : ''}.</div>`;
+    } else {
+      const lignes = vueCauses === 'commune' ? r.parCommune : (vueCauses === 'livreur' ? r.parLivreur : r.parCliente);
+      const nom = (k) => vueCauses === 'commune' ? (k || 'Commune non renseignée') : (k ? nomDuCompte(k) : (vueCauses === 'livreur' ? 'Sans livreur' : 'Sans cliente'));
+      const titre = vueCauses === 'commune' ? 'Commune' : (vueCauses === 'livreur' ? 'Livreur' : 'Cliente');
+      corps = `<table class="cdd-table cda-table cdc-table"><thead><tr><th>${titre}</th><th class="cdd-nombre">Échecs</th><th class="cdd-nombre">Colis tentés</th><th class="cdd-nombre">Taux d'échec</th><th>Part des échecs</th></tr></thead><tbody>${lignes.slice(0, 12).map((e) => `<tr>
+        <td data-label="${titre}">${ech(nom(e.cle))}</td>
+        <td data-label="Échecs" class="cdd-nombre"><strong>${e.echecs}</strong></td>
+        <td data-label="Colis tentés" class="cdd-nombre">${e.tentes}</td>
+        <td data-label="Taux d'échec" class="cdd-nombre">${e.taux === null ? `<span class="cdd-inconnu" title="Moins de ${K.BASE_MINI} colis tentés : un taux n'aurait pas de sens.">—</span>` : `<span class="${r.taux !== null && e.taux >= r.taux + 10 ? 'cdc-haut' : ''}">${e.taux} %</span>`}</td>
+        <td data-label="Part des échecs" class="cdc-part">${barre(e.part)}<span>${e.part} %</span></td></tr>`).join('')}</tbody></table>
+        ${lignes.length > 12 ? `<div class="cda-note">Les 12 premières lignes sur ${lignes.length}.</div>` : ''}`;
+    }
+    const phrase = K.phraseDesCauses(r, libelleMotif);
+    boite.innerHTML = `
+      <div class="cdd-entete">
+        <div>
+          <h3 class="cdd-titre">Pourquoi ça échoue</h3>
+          <div class="cdd-sous">${ech(A.moisEnClair(mois))} — ${r.echecs} échec${r.echecs > 1 ? 's' : ''} sur ${r.tentes} colis tentés${r.taux === null ? '' : ' (' + r.taux + ' %)'}</div>
+        </div>
+        <div class="cda-onglets" role="tablist">${onglet('motif', 'Motif')}${onglet('commune', 'Commune')}${onglet('livreur', 'Livreur')}${onglet('cliente', 'Cliente')}</div>
+      </div>
+      ${phrase ? `<div class="cdc-phrase">${ech(phrase)}</div>` : ''}
+      <div class="cda-corps">${corps}</div>
+      <details class="eq-aide cdd-aide"><summary>ℹ️ Comment lire ces chiffres</summary>
+        <div class="cdd-aide-texte">
+          <p><strong>Un échec compte au jour de son sort</strong> (non livré ou retourné), pas au jour où le colis a été confié. Un retour est un échec dont la marchandise est revenue.</p>
+          <p><strong>Le taux d'échec</strong> se calcule sur les colis <em>tentés</em> (livrés + échecs). En dessous de ${K.BASE_MINI} colis tentés, il n'est pas affiché : « 1 sur 2 » n'est pas « 50 % d'échec ».</p>
+          <p><strong>« Motif non saisi »</strong> veut dire que le livreur n'a pas dit pourquoi. C'est une information, pas un oubli de l'écran.</p>
+          <p>Un taux en rouge dépasse la moyenne du mois d'au moins 10 points.</p>
+        </div>
+      </details>`;
+    if (boite.dataset.branche !== '1') {
+      boite.dataset.branche = '1';
+      boite.addEventListener('click', function (ev) {
+        const b = ev.target && ev.target.closest ? ev.target.closest('[data-causes]') : null;
+        if (!b) return;
+        vueCauses = b.getAttribute('data-causes');
+        dessinerCauses();
+      });
+    }
   }
 
   /* --------------------------------------------------------------------------------------
@@ -812,5 +884,5 @@
     rafraichir(true);
   }
 
-  window.CLTConsole = { init, rafraichir, axes, courbeHTML, moisProposables, reponseHTML, dessinerAnalyse, dessinerSemaine, COLONNES_COLIS };
+  window.CLTConsole = { init, rafraichir, axes, courbeHTML, moisProposables, reponseHTML, dessinerAnalyse, dessinerSemaine, dessinerCauses, COLONNES_COLIS };
 })();
