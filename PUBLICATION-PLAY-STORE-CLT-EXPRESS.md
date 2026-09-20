@@ -31,7 +31,7 @@ de navigateur. Pas besoin de réécrire l'app.
    compte « entreprise », Google demande une vérification d'identité (D-U-N-S ou
    documents de la SARL) qui peut prendre quelques jours — à lancer tôt.
 2. **Un logo 512×512** (déjà disponible : `images/icons/icon-512-client-express.png`).
-3. **Une bannière « feature graphic » 1024×500** (à créer — je peux vous la générer).
+3. **Une bannière « feature graphic » 1024×500** — faite : `images/banniere-play-1024x500.png`.
 4. **2 à 8 captures d'écran** du téléphone (min. 320 px de côté). À faire depuis
    l'app ouverte sur un téléphone, ou je peux les générer.
 
@@ -116,16 +116,79 @@ Sans cette étape, l'app s'ouvre avec une **barre d'adresse Chrome** disgracieus
 
 ## Étape 5 — Formulaires obligatoires (Play Console)
 
-- **Sécurité des données** : déclarer les données collectées. Pour CLT Express :
-  - Données de localisation (adresse de livraison), Nom, Numéro de téléphone.
-  - Utilisées pour : *fonctionnalité de l'app* (traiter la livraison).
-  - Chiffrées en transit : **Oui** (HTTPS). Pas de vente de données.
-- **Classification du contenu** : questionnaire → app **Tout public** (aucun
-  contenu sensible).
-- **Public cible** : adultes (18+) ou 13+ selon votre choix — pas destiné aux
-  enfants.
-- **Application gouvernementale / financière** : Non (le paiement est en espèces
-  à la livraison ; si Wave est ajouté plus tard, cochez « contient des paiements »).
+*Réécrit le 20 septembre 2026 (feuille de route 6.3). La première version de cette étape
+déclarait trois données ; l'application en traite davantage, et **un formulaire qui contredit
+la politique de confidentialité est un motif de refus**. Chaque ligne ci-dessous reprend ce que
+dit `politique-confidentialite.html` — si l'un change, l'autre doit changer le même jour.*
+
+### 5.1 Sécurité des données — les réponses, ligne par ligne
+
+Questions générales : l'application **collecte** des données : **Oui**. Toutes les données sont
+**chiffrées en transit** : **Oui** (HTTPS partout). L'utilisateur peut **demander la
+suppression** de ses données : **Oui** (depuis son compte, « Supprimer mon compte », ou par
+WhatsApp — section 6 de la politique). Données **vendues ou partagées avec des tiers** : **Non**.
+
+| Catégorie Play | Donnée | Collectée | Obligatoire | Pourquoi (cases à cocher) |
+|---|---|---|---|---|
+| Informations personnelles | Nom | Oui | Oui | Fonctionnalité de l'application ; Gestion du compte |
+| Informations personnelles | Numéro de téléphone | Oui | Oui | Fonctionnalité de l'application ; Gestion du compte |
+| Informations personnelles | Adresse (récupération, livraison) | Oui | Oui | Fonctionnalité de l'application |
+| Informations personnelles | Pièce d'identité (coursiers seulement) | Oui | Oui pour un coursier | Sécurité, prévention de la fraude (vérification d'identité, vue une fois par l'équipe) |
+| Position | Position précise | Oui | **Facultative** — seulement si le coursier accepte le partage pendant une course | Fonctionnalité de l'application (suivi de la course). Seule la dernière position est gardée : pas d'historique |
+| Position | Position approximative | Non | — | — |
+| Photos et vidéos | Photos (colis, preuve de livraison, photo de profil) | Oui | Facultative | Fonctionnalité de l'application |
+| Infos financières | Historique d'achats (courses et montants) | Oui | Oui | Fonctionnalité de l'application |
+| Infos financières | Infos de paiement (carte, compte) | **Non** — paiement en espèces à la livraison | — | — |
+| Identifiants de l'appareil | Adresse d'envoi des notifications | Oui | Facultative — si l'utilisateur active les notifications | Fonctionnalité de l'application |
+| Activité dans l'application | Interactions, journal technique d'erreurs | Oui | Oui | Analyse ; Diagnostic |
+| Messages | Messages échangés client ↔ coursier dans une course | Oui | Facultative | Fonctionnalité de l'application |
+| Contacts, agenda, santé, navigation web, audio | — | **Non** | — | — |
+
+Le déverrouillage par empreinte ou visage **n'est pas une donnée collectée** : il reste sur le
+téléphone, l'application ne reçoit rien (politique, section 2). Ne pas le déclarer.
+
+> **Le jour où Wave est branché** (feuille de route 5.3) : repasser sur ce formulaire. Le paiement
+> se fait chez Wave et nous ne voyons que le montant confirmé — « Infos de paiement » reste à
+> **Non**, mais la fiche doit cocher « contient des achats / paiements ».
+
+### 5.2 Les autres formulaires
+
+- **Classification du contenu** : questionnaire → **Tout public** (aucun contenu sensible, pas
+  de contenu généré et public : les messages sont privés, entre un client et son coursier).
+- **Public cible** : **18 ans et plus**. Pas destiné aux enfants (politique, section 7).
+- **Annonces** : l'application **ne contient pas** d'annonces.
+- **Application d'actualités / de santé / gouvernementale / financière** : **Non** à tout.
+- **Accès à l'application** : tout est derrière une connexion → fournir à Google **un compte de
+  démonstration client** (téléphone + mot de passe) dans « Accès aux applications ». Sans lui,
+  l'examinateur ne voit que l'écran de connexion et refuse. À créer par Celtis avant l'envoi.
+
+### 5.3 Le piège connu : « ce n'est qu'un site emballé »
+
+Google refuse les applications qui ne font qu'afficher un site (règle « fonctionnalité
+minimale »). Les nôtres ne sont pas dans ce cas, mais **il faut le montrer**, dans la description
+et dans les captures — l'examinateur ne devine pas :
+
+1. **Notifications** : le client est prévenu quand un coursier accepte, récupère, livre.
+2. **Hors connexion** : l'application s'ouvre et garde l'écran sans réseau (service worker,
+   page hors ligne, file d'attente côté coursier).
+3. **Appareil photo** : photo du colis à la commande, photo de preuve à la livraison.
+4. **Position en direct** : le client suit son coursier sur la carte.
+5. **Déverrouillage biométrique** : empreinte ou visage, propre à l'appareil.
+6. **Plein écran, sans barre d'adresse** : c'est l'étape 4 (assetlinks) — **une barre d'adresse
+   visible à l'examen est le premier signal « site emballé »**. Ne jamais envoyer pour examen
+   avant d'avoir vu l'application s'ouvrir en plein écran en test interne.
+
+La phrase à mettre en tête de la description longue : « Commandez un coursier, suivez-le en
+direct sur la carte, soyez prévenu à chaque étape — même avec un réseau faible. »
+
+### 5.4 Les captures
+
+Trois captures de départ (720 × 1280, format téléphone accepté par Play) ont été fabriquées le
+20/09 depuis l'application de démonstration : *Nouvelle course*, *Le prix avant de commander*,
+*Suivre sa course*. Elles sont sur le Bureau, dans le dossier « CLT - Play Store » (hors dépôt). Play en demande
+**au moins deux** ; **la capture qui convainc est celle de la carte avec le coursier en route**,
+et elle ne peut se faire que sur un vrai téléphone, avec une vraie course : à prendre par Celtis
+(bouton marche + volume bas) le jour du test interne.
 
 ---
 
@@ -202,11 +265,11 @@ Politique de confidentialité : https://christlivraison.ci/politique-confidentia
 | Compte Play Console (25 USD) | ⏳ À créer par vous |
 | Paquet `.aab` (PWABuilder) | ⏳ Étape 1 |
 | Icône 512×512 | ✅ Disponible |
-| Bannière 1024×500 | ⏳ À créer (je peux la générer) |
-| Captures d'écran | ⏳ À créer (je peux les générer) |
+| Bannière 1024×500 | ✅ Faite |
+| Captures d'écran | 🟡 Trois captures de départ faites le 20/09 ; celle de la carte en direct reste à prendre sur un vrai téléphone (5.4) |
 | Textes de la fiche (FR) | ✅ Fournis ci-dessus |
-| Formulaires Sécurité des données / Classification | ⏳ À remplir (guide ci-dessus) |
+| Formulaires Sécurité des données / Classification | ✅ Réponses prêtes, ligne par ligne (étape 5, réécrite le 20/09) — à recopier dans Play Console |
+| Compte de démonstration pour l'examinateur | ⏳ À créer par vous (5.2) |
+| Arguments contre « site emballé » | ✅ Rédigés (5.3) |
 
-**Prochaine action pour vous :** créer le compte Play Console (l'étape la plus
-longue à cause de la vérification d'identité). Pendant ce temps, je peux générer
-la bannière 1024×500 et des captures d'écran de présentation si vous le souhaitez.
+**Prochaines actions pour vous (dans l'ordre) :** 1) le compte Play Console et le numéro D-U-N-S (le plus long : vérification d'identité) ; 2) générer le `.aab` (étape 1) et noter l'empreinte ; 3) me donner l'empreinte — je la pose dans `.well-known/assetlinks.json` ; 4) test interne sur votre téléphone : plein écran, sans barre d'adresse ; 5) créer le compte de démonstration pour l'examinateur ; 6) recopier l'étape 5 dans Play Console ; 7) prendre la capture de la carte en direct ; 8) envoyer pour examen.
