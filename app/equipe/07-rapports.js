@@ -418,7 +418,8 @@ return `
 <button type="button" class="btn btn-outline btn-sm" id="releve-pdf">🖨️ PDF</button>
 <button type="button" class="btn btn-outline btn-sm" id="releve-excel">📊 Excel</button>
 <button type="button" class="btn btn-outline btn-sm" id="releve-word">📝 Word</button>
-<button type="button" class="btn btn-primary btn-sm" id="releve-envoyer" hidden>📤 Envoyer</button>
+<button type="button" class="btn btn-outline btn-sm" id="releve-partager" hidden>📎 Partager le PDF</button>
+<button type="button" class="btn btn-primary btn-sm" id="releve-envoyer">📤 Envoyer sur son WhatsApp</button>
 </div>
 ${releveMarqueHTML()}
 </div>`;
@@ -495,7 +496,14 @@ const env = document.getElementById('releve-envoyer');
 if (pdf) pdf.addEventListener('click', () => { telechargerRelevePDF(); releveRappelerDeCocher(); });
 if (xls) xls.addEventListener('click', () => { telechargerReleveExcel(); releveRappelerDeCocher(); });
 if (doc) doc.addEventListener('click', () => { telechargerReleveWord(); releveRappelerDeCocher(); });
-if (env && releveEnvoiPossible()) { env.hidden = false; env.addEventListener('click', () => { envoyerRelevePDF(); releveRappelerDeCocher(); }); }
+// 20/09/2026, Celtis : « derrière le bouton Envoyer, il faut que ce soit SON WhatsApp ; qu'on n'ait
+// pas à choisir quoi faire, ou quel compte ». « Envoyer » ouvre donc la conversation de cette
+// cliente, le point déjà écrit (point-par-whatsapp.js) — sur téléphone comme sur ordinateur. La
+// feuille de partage, qui sait joindre le PDF mais fait choisir l'application et le contact,
+// devient le second bouton, et seulement là où elle existe.
+if (env) env.addEventListener('click', () => { envoyerPointSurWhatsApp(); releveRappelerDeCocher(); });
+const part = document.getElementById('releve-partager');
+if (part && releveEnvoiPossible()) { part.hidden = false; part.addEventListener('click', () => { envoyerRelevePDF(); releveRappelerDeCocher(); }); }
 const marquer = document.getElementById('releve-marquer');
 if (marquer) marquer.addEventListener('click', releveMarquer);
 const demarquer = document.getElementById('releve-demarquer');
@@ -699,7 +707,23 @@ document.body.removeChild(a);
 setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-// ---- Envoi direct (WhatsApp et le reste), avec le PDF déjà attaché ----
+// ---- « Envoyer » : droit dans le WhatsApp de la cliente, le point déjà écrit ----
+function envoyerPointSurWhatsApp(){
+const d = releveEnCours();
+if (!d || !window.CLTPointWhatsApp) return;
+const f = fournisseurs.find(x => x.id === d.fid);
+const texte = CLTPointWhatsApp.texteDuPoint(d, { releveVousRevientTexte, relevePhraseDue });
+const lien = CLTPointWhatsApp.lienWhatsApp(f && f.phone, texte);
+if (!lien) {
+// Pas de numéro utilisable sur le compte : on le dit, et on retombe sur le partage du fichier.
+if (window.cltToast) cltToast("Ce compte n'a pas de numéro WhatsApp utilisable. Corrigez son téléphone dans Comptes, ou partagez le PDF.", { type: 'info' });
+if (releveEnvoiPossible()) envoyerRelevePDF(); else telechargerRelevePDF();
+return;
+}
+window.open(lien, '_blank', 'noopener');
+}
+
+// ---- Partage du fichier (la feuille du téléphone), avec le PDF déjà attaché ----
 async function envoyerRelevePDF(){
 const d = releveEnCours();
 if (!d) return;

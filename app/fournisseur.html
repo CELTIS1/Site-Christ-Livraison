@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920cartecolis">
+<link rel="stylesheet" href="style.css?v=20260920boutiques2">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920cartecolis"></script>
-<script src="splash.js?v=20260920cartecolis"></script>
+<script src="theme.js?v=20260920boutiques2"></script>
+<script src="splash.js?v=20260920boutiques2"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -361,6 +361,7 @@
   <div class="clt-toptabs" role="tablist">
   <button type="button" class="clt-toptab active" data-clttab="section-ajouter">➕ Ajouter</button>
   <button type="button" class="clt-toptab" data-clttab="section-colis">📦 Mes colis</button>
+  <button type="button" class="clt-toptab hidden" data-clttab="section-mes-boutiques" data-mb-onglet>🏬 Boutiques</button>
   <button type="button" class="clt-toptab" data-clttab="section-recap">📊 Récap</button>
   <button type="button" class="clt-toptab" data-clttab="section-retours">↩️ Retours<span class="rt-onglet-badge hidden" data-retours-badge></span></button>
   </div>
@@ -509,22 +510,30 @@
        livraison pour son compte, moins ce qui a déjà été reversé). Données agrégées côté
        serveur par la vue releve_fournisseur (chaque fournisseur ne voit que son relevé).    En TÊTE de l'onglet Récap depuis le 06/09/2026 (feuille de route 3.5) : c'est le chiffre
        que la cliente vient voir. -->
-  <!-- MES BOUTIQUES (20/09/2026, point 19.2). Celtis : « un fournisseur a plusieurs magasins, un
-       gérant par magasin ; le responsable doit se connecter sur chacun des comptes pour voir ce
-       qu'ils font ». Cette carte n'existe que pour un compte auquel le bureau a rattaché des
-       boutiques (mes_boutiques()). Elle montre, pour le jour choisi, le total de toutes les
-       boutiques puis une tuile par boutique ; un appui ouvre son point du jour et ses colis, en
-       lecture seule (la base ne lui ouvre que la lecture). En tête de l'onglet Récap, au-dessus
-       du relevé : c'est ce qu'un propriétaire vient voir. -->
+  <!-- MES BOUTIQUES (20/09/2026, point 19.2 — refait le même jour). Celtis : « un fournisseur a
+       plusieurs magasins, un gérant par magasin ; le responsable doit se connecter sur chacun des
+       comptes pour voir ce qu'ils font ». Puis, sur la première version : « tel que c'est disposé,
+       ça ne me plaît pas du tout ; qu'il puisse vraiment voir les colis de chaque compte, et les
+       consulter ». L'écran a donc SON ONGLET (il n'existe que pour un compte auquel le bureau a
+       rattaché des boutiques — mes_boutiques()), et suit le modèle des tableaux multi-magasins :
+       un sélecteur « Toutes / chaque boutique », des chiffres qui sont aussi le filtre, et une
+       liste dont chaque colis s'ouvre, en lecture seule (la base ne lui ouvre que la lecture).
+       Règle : app/mes-boutiques.js. -->
   <div class="card hidden" id="section-mes-boutiques">
     <div class="mb-tete">
       <h2 class="panel-subtitle" style="margin:0;">🏬 Mes boutiques</h2>
-      <input type="date" id="mb-date" style="max-width:170px;">
+      <div class="mb-jour" role="group" aria-label="Choisir le jour">
+        <button type="button" class="mb-jour-fleche" data-mb-jour="-1" aria-label="Jour précédent">‹</button>
+        <input type="date" id="mb-date" class="mb-jour-date" aria-label="Jour regardé">
+        <button type="button" class="mb-jour-fleche" data-mb-jour="1" aria-label="Jour suivant">›</button>
+        <button type="button" class="btn btn-outline btn-sm mb-jour-auj" data-mb-jour="0">Aujourd'hui</button>
+      </div>
     </div>
-    <div id="mb-libelle" style="font-size:12.5px; color:var(--muted); margin:0 0 10px;"></div>
+    <div id="mb-libelle" class="mb-libelle"></div>
+    <div class="mb-choix" id="mb-choix" role="tablist" aria-label="Choisir une boutique"></div>
     <div class="mb-total" id="mb-total"></div>
     <div class="mb-liste" id="mb-liste"></div>
-    <div id="mb-detail" style="margin-top:14px;"></div>
+    <div id="mb-detail"></div>
   </div>
 
   <div class="card" id="section-releve">
@@ -609,25 +618,26 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920cartecolis"></script>
-<script src="lib/bibliotheques.js?v=20260920cartecolis"></script>
-<script src="lib/retours.js?v=20260920cartecolis"></script>
-<script src="lib/reclamations.js?v=20260920cartecolis"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920cartecolis"></script>
-<script src="lib/argent.js?v=20260920cartecolis"></script>
-<script src="lib/releve-cliente.js?v=20260920cartecolis"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920cartecolis"></script>
-<script src="lib/briques-argent.js?v=20260920cartecolis"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920cartecolis"></script>
-<script src="lib/annonce-de-remise.js?v=20260920cartecolis"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920cartecolis"></script>
-<script src="lib/primes.js?v=20260920cartecolis"></script>
-<script src="lib/doublons.js?v=20260920cartecolis"></script>
-<script src="config.js?v=20260920cartecolis"></script>
-<script src="etiquettes-et-scan.js?v=20260920cartecolis"></script>
-<script src="import-de-colis.js?v=20260920cartecolis"></script>
-<script src="biometric-lock.js?v=20260920cartecolis"></script>
-<script src="clt-select-recherche.js?v=20260920cartecolis"></script>
+<script src="clt-common.js?v=20260920boutiques2"></script>
+<script src="lib/bibliotheques.js?v=20260920boutiques2"></script>
+<script src="lib/retours.js?v=20260920boutiques2"></script>
+<script src="lib/reclamations.js?v=20260920boutiques2"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920boutiques2"></script>
+<script src="lib/argent.js?v=20260920boutiques2"></script>
+<script src="lib/releve-cliente.js?v=20260920boutiques2"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920boutiques2"></script>
+<script src="lib/briques-argent.js?v=20260920boutiques2"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920boutiques2"></script>
+<script src="lib/annonce-de-remise.js?v=20260920boutiques2"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920boutiques2"></script>
+<script src="lib/primes.js?v=20260920boutiques2"></script>
+<script src="lib/doublons.js?v=20260920boutiques2"></script>
+<script src="config.js?v=20260920boutiques2"></script>
+<script src="mes-boutiques.js?v=20260920boutiques2"></script>
+<script src="etiquettes-et-scan.js?v=20260920boutiques2"></script>
+<script src="import-de-colis.js?v=20260920boutiques2"></script>
+<script src="biometric-lock.js?v=20260920boutiques2"></script>
+<script src="clt-select-recherche.js?v=20260920boutiques2"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -841,7 +851,7 @@
   }
 
   function showFournisseurTab(key){
-    ['section-ajouter','section-recap','section-colis','section-retours'].forEach(id => {
+    ['section-ajouter','section-recap','section-colis','section-retours','section-mes-boutiques'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.toggle('hidden', id !== key);
     });
@@ -856,9 +866,7 @@
     // que dans l'onglet Récap — plus dans Ajouter ni Mes colis.
     const releve = document.getElementById('section-releve');
     if (releve) releve.classList.toggle('hidden', key !== 'section-recap');
-    // « Mes boutiques » (19.2) : dans Récap aussi, et seulement si le compte en a.
-    const mb = document.getElementById('section-mes-boutiques');
-    if (mb) mb.classList.toggle('hidden', key !== 'section-recap' || !(mesBoutiques && mesBoutiques.length));
+    // « Mes boutiques » (19.2) a SON onglet depuis le 20/09 : c'est une des cinq sections ci-dessus.
     document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === key));
     document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === key));
     try { localStorage.setItem('clt_fournisseur_tab', key); } catch(e){}
@@ -2645,9 +2653,9 @@
     else mesBoutiques = data || [];
     const carte = document.getElementById('section-mes-boutiques');
     if (!carte) return;
+    // L'onglet « Boutiques » (en haut sur ordinateur, en bas sur téléphone) suit le rattachement.
+    document.querySelectorAll('[data-mb-onglet]').forEach(b => b.classList.toggle('hidden', !mesBoutiques.length));
     if (!mesBoutiques.length) { carte.classList.add('hidden'); return; }
-    const recap = document.getElementById('section-recap');
-    if (recap && !recap.classList.contains('hidden')) carte.classList.remove('hidden');
     const dateInput = document.getElementById('mb-date');
     if (dateInput && !dateInput.value) dateInput.value = todayLocalISODate();
     await chargerColisDesBoutiques();
@@ -2671,68 +2679,130 @@
   function mbColisDuJour(boutiqueId){
     return mbColis.filter(c => (!boutiqueId || c.fournisseur_id === boutiqueId) && jourDuColis(c) === mbJour);
   }
+  let mbGroupe = '';              // le filtre : une clé de compterLeJour, 'retours', ou '' (tout)
+  let mbRecherche = '';
+  let mbColisOuvert = null;       // l'identifiant du colis dont la fiche est dépliée
+  const mbRegles = () => ({ compterLeJour, totauxArgent, groupes: (typeof GROUPES_DU_JOUR !== 'undefined' ? GROUPES_DU_JOUR.cliente : []) });
+  const mbNomDe = (id) => { const b = mesBoutiques.find(x => x.id === id); return b ? (b.nom || b.full_name || 'Boutique') : 'Boutique'; };
+
   function renderMesBoutiques(){
-    const total = document.getElementById('mb-total');
-    const liste = document.getElementById('mb-liste');
-    const libelle = document.getElementById('mb-libelle');
-    if (!total || !liste) return;
-    const jourTexte = mbJour === todayLocalISODate() ? "Aujourd'hui" : new Date(mbJour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
+    const K = window.CLTMesBoutiques;
+    const total = document.getElementById('mb-total'), liste = document.getElementById('mb-liste');
+    const libelle = document.getElementById('mb-libelle'), choix = document.getElementById('mb-choix');
+    if (!total || !liste || !K) return;
+    if (mbBoutiqueRegardee && !mesBoutiques.some(b => b.id === mbBoutiqueRegardee)) mbBoutiqueRegardee = null;
+    const auj = mbJour === todayLocalISODate();
+    const jourTexte = auj ? "Aujourd'hui" : new Date(mbJour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
     const tous = mbColisDuJour(null);
     if (libelle) libelle.textContent = `${jourTexte} · ${mesBoutiques.length} boutique${mesBoutiques.length > 1 ? 's' : ''} · ${tous.length} colis`;
-    const compte = (colis) => { const par = {}; compterLeJour(colis, 'cliente').forEach(g => { par[g.cle] = g.count; }); par.retours = colis.filter(c => c.statut === 'retour').length; par.argent = totauxArgent(colis).articleEncaisse; return par; }; 
-    const t = compte(tous);
-    total.innerHTML = [
-      ['en_attente', 'En attente'], ['recuperes', 'Récupérés'], ['en_livraison', 'En livraison'], ['livres', 'Livrés'], ['non_livres', 'Non livrés'],
-    ].map(([k, l]) => `<div class="mb-tuile"><b>${t[k] || 0}</b><span>${l}</span></div>`).join('')
-      + `<div class="mb-tuile mb-tuile--argent"><b>${escapeHTML(formatMontant(t.argent) || '0 FCFA')}</b><span>Articles encaissés</span></div>`;
-    liste.innerHTML = mesBoutiques.map(b => {
-      const c = compte(mbColisDuJour(b.id));
-      const n = mbColisDuJour(b.id).length;
-      return `<button type="button" class="mb-boutique${mbBoutiqueRegardee === b.id ? ' mb-boutique--active' : ''}" data-mb-boutique="${escapeHTML(b.id)}" aria-pressed="${mbBoutiqueRegardee === b.id ? 'true' : 'false'}">
-        <div class="mb-nom">${escapeHTML(b.nom || 'Boutique')}</div>
-        <div class="mb-sous">${escapeHTML([b.full_name && b.full_name !== b.nom ? b.full_name : '', b.commune_recuperation].filter(Boolean).join(' · '))}</div>
-        <div class="mb-chiffres">
-          <span class="mb-chiffre">${n} colis</span>
-          <span class="mb-chiffre mb-chiffre--livre">${c.livres || 0} livré${(c.livres || 0) > 1 ? 's' : ''}</span>
-          ${c.non_livres ? `<span class="mb-chiffre mb-chiffre--non_livre">${c.non_livres} non livré${c.non_livres > 1 ? 's' : ''}</span>` : ''}
-          ${c.retours ? `<span class="mb-chiffre mb-chiffre--retour">${c.retours} retour${c.retours > 1 ? 's' : ''}</span>` : ''}
-          ${c.argent ? `<span class="mb-chiffre mb-chiffre--argent">${escapeHTML(formatMontant(c.argent))}</span>` : ''}
-        </div>
-      </button>`;
-    }).join('');
-    renderBoutiqueRegardee();
+    document.querySelectorAll('[data-mb-jour="0"], [data-mb-jour="1"]').forEach(b => { b.disabled = auj; });
+
+    // 1. Le sélecteur : « Toutes », puis chaque boutique, avec son nombre de colis du jour.
+    const resume = K.resumeParBoutique(mesBoutiques, tous, mbRegles());
+    const pastille = (id, nom, nb) => `<button type="button" role="tab" class="mb-pastille${(mbBoutiqueRegardee || '') === id ? ' mb-pastille--active' : ''}" aria-selected="${(mbBoutiqueRegardee || '') === id}" data-mb-boutique="${escapeHTML(id)}">${escapeHTML(nom)}<span>${nb}</span></button>`;
+    if (choix) choix.innerHTML = pastille('', 'Toutes', tous.length) + resume.map(r => pastille(r.id, r.nom, r.nb)).join('');
+
+    // 2. Les chiffres de la sélection — et ce sont eux, le filtre de la liste.
+    const selection = mbColisDuJour(mbBoutiqueRegardee);
+    const k = K.chiffres(selection, mbRegles());
+    total.innerHTML = compterLeJour(selection, 'cliente').map(g => `<button type="button" class="mb-tuile${mbGroupe === g.cle ? ' mb-tuile--active' : ''}" data-mb-groupe="${g.cle}" aria-pressed="${mbGroupe === g.cle}" style="--mb-teinte:${g.color}; --mb-fond:${g.bg};"><b>${g.count}</b><span>${escapeHTML(g.label)}</span></button>`).join('')
+      + `<div class="mb-tuile mb-tuile--argent"><b>${escapeHTML(formatMontant(k.encaisse) || '0 FCFA')}</b><span>Articles encaissés</span></div>`;
+
+    renderBoutiqueRegardee(resume, selection, k);
   }
-  /* Le point du jour d'UNE boutique : ses tuiles, puis ses colis, compacts, sans geste. */
-  function renderBoutiqueRegardee(){
-    const detail = document.getElementById('mb-detail');
-    if (!detail) return;
-    const b = mesBoutiques.find(x => x.id === mbBoutiqueRegardee);
-    if (!b) { detail.innerHTML = ''; return; }
-    const colis = mbColisDuJour(b.id);
-    const ordre = { en_livraison: 0, recupere: 1, en_attente: 2, livre: 3, non_livre: 4, retour: 5 };
-    const lignes = colis.slice().sort((a, z) => (ordre[a.statut] ?? 9) - (ordre[z.statut] ?? 9) || String(z.created_at).localeCompare(String(a.created_at)));
-    detail.innerHTML = `<div class="mb-detail-tete" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
-        <h3 style="margin:0; font-size:16px; color:var(--navy);">${escapeHTML(b.nom || 'Boutique')} — point du jour</h3>
-        <button type="button" class="btn btn-sm btn-outline" data-mb-fermer="1">← Toutes les boutiques</button>
+
+  /* Sous les chiffres : en vue « Toutes », une ligne par boutique (où elle en est) ; puis, dans
+     tous les cas, LES COLIS de la sélection — filtrables, cherchables, et qui s'ouvrent. */
+  function renderBoutiqueRegardee(resume, selection, k){
+    const K = window.CLTMesBoutiques;
+    const liste = document.getElementById('mb-liste'), detail = document.getElementById('mb-detail');
+    if (!liste || !detail || !K) return;
+    liste.innerHTML = mbBoutiqueRegardee ? '' : `<div class="mb-table" role="list">${resume.map(r => `
+      <button type="button" class="mb-ligne" role="listitem" data-mb-boutique="${escapeHTML(r.id)}">
+        <span class="mb-ligne-nom"><strong>${escapeHTML(r.nom)}</strong>${r.sous ? `<small>${escapeHTML(r.sous)}</small>` : ''}</span>
+        <span class="mb-ligne-avance" aria-hidden="true"><i style="width:${r.partLivres}%"></i><i class="mb-ligne-avance--echec" style="width:${r.partEchecs}%"></i></span>
+        <span class="mb-ligne-chiffres">${r.nb ? `<b>${r.livres}</b> livré${r.livres > 1 ? 's' : ''} sur ${r.nb}${r.echecs ? ` · <em>${r.echecs} non livré${r.echecs > 1 ? 's' : ''}</em>` : ''}` : 'Aucun colis ce jour-là'}</span>
+        <span class="mb-ligne-argent">${r.encaisse ? escapeHTML(formatMontant(r.encaisse)) : ''}</span>
+        <span class="mb-ligne-fleche" aria-hidden="true">›</span>
+      </button>`).join('')}</div>`;
+
+    const colis = K.filtrer(selection, { groupe: mbGroupe, recherche: mbRecherche }, mbRegles());
+    const groupeNom = mbGroupe === 'retours' ? 'Retours' : ((mbRegles().groupes.find(g => g.cle === mbGroupe) || {}).label || '');
+    const titre = (mbBoutiqueRegardee ? mbNomDe(mbBoutiqueRegardee) : 'Toutes les boutiques') + (groupeNom ? ' — ' + groupeNom.toLowerCase() : '');
+    detail.innerHTML = `
+      <div class="mb-colis-tete">
+        <h3>${escapeHTML(titre)} <span>${colis.length} colis</span></h3>
+        <input type="search" id="mb-recherche" class="mb-recherche" placeholder="Chercher : numéro, téléphone, commune…" value="${escapeHTML(mbRecherche)}" aria-label="Chercher un colis">
       </div>
-      <div class="mb-lecture">👁️ Lecture seule : ce que le gérant voit, sans pouvoir le modifier. Pour agir sur un colis, c'est le gérant ou CLT.</div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">${tuilesDuJourHTML(colis, 'cliente')}</div>
-      ${colis.length ? `<div style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">${ligneArgentCliente(colis)}</div>` : ''}
-      ${lignes.length ? `<div class="mb-colis">${lignes.map(c => {
-        const st = (typeof STATUTS !== 'undefined' && STATUTS[c.statut]) || { label: c.statut, color: '#5B6B7C', bg: '#EEF1F5' };
-        return `<div class="mb-colis-ligne">
-          <div class="mb-colis-haut"><span class="mb-colis-statut" style="background:${st.bg}; color:${st.color};">${escapeHTML(st.label)}</span><span class="mb-colis-montant">${escapeHTML(formatMontant(Number(c.montant_article) || 0) || '')}</span></div>
-          <div class="mb-colis-bas"><b>${escapeHTML(c.numero || '')}</b>${c.destination || c.commune_destination ? ' · ' + escapeHTML([c.commune_destination, c.destination].filter(Boolean).join(' — ')) : ''}${c.description ? '<div class="mb-colis-desc">' + escapeHTML(String(c.description).slice(0, 80)) + '</div>' : ''}${c.statut === 'retour' ? '<div class="mb-colis-retour">' + escapeHTML(retourTexte(c, 'cliente')) + '</div>' : ''}</div>
-        </div>`; }).join('')}</div>` : '<div class="empty-state">Aucun colis ce jour-là pour cette boutique.</div>'}`;
-    // On ne fait défiler que si le détail n'est pas déjà sous les yeux : sinon chaque appui
-    // faisait sauter la page (20/09, lot D).
-    const r = detail.getBoundingClientRect();
-    if (r.top < 0 || r.top > window.innerHeight * 0.6) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      <div class="mb-lecture">👁️ Lecture seule : ce que le gérant voit, sans pouvoir le modifier. Pour agir sur un colis, c'est le gérant ou CLT.${k.retours ? ` <button type="button" class="mb-lien" data-mb-groupe="retours">${k.retours} retour${k.retours > 1 ? 's' : ''} ce jour-là</button>` : ''}${(mbGroupe || mbRecherche) ? ' <button type="button" class="mb-lien" data-mb-tout="1">Tout afficher</button>' : ''}</div>
+      ${colis.length ? `<div class="mb-colis">${colis.map(mbColisHTML).join('')}</div>` : `<div class="empty-state">${selection.length ? 'Aucun colis ne correspond.' : 'Aucun colis ce jour-là' + (mbBoutiqueRegardee ? ' pour cette boutique.' : '.')}</div>`}`;
+  }
+
+  /* Un colis : une ligne qui se lit d'un regard, et qui se déplie en fiche. Aucun geste. */
+  function mbColisHTML(c){
+    const st = (typeof STATUTS !== 'undefined' && STATUTS[c.statut]) || { label: c.statut, color: '#5B6B7C', bg: '#EEF1F5' };
+    const ouvert = mbColisOuvert === c.id;
+    const montant = formatMontant(Number(montantArticleColis(c)) || 0) || '';
+    let fiche = '';
+    if (ouvert) {
+      const f = window.CLTMesBoutiques.ficheDuColis(c, {
+        formatMontant, montantArticle: montantArticleColis,
+        heure: (iso) => new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        jourCourt: (iso) => new Date(String(iso).length <= 10 ? iso + 'T12:00:00' : iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }),
+        libelleMotif: (cle) => (typeof MOTIFS_NON_LIVRAISON !== 'undefined' && MOTIFS_NON_LIVRAISON[cle]) ? MOTIFS_NON_LIVRAISON[cle].label : '',
+        nomDuLivreur: (id) => (livreursById[id] && livreursById[id].full_name) || 'Livreur CLT',
+      });
+      // +2250701020304 → « 07 01 02 03 04 » : un numéro se lit par paires, et on l'appelle d'un appui.
+      const telLisible = (t) => { const d = (typeof formatPhoneDisplay === 'function' ? formatPhoneDisplay(String(t)) : String(t)).replace(/\D/g, ''); return d.length === 10 ? d.replace(/(\d{2})(?=\d)/g, '$1 ') : String(t); };
+      const valeur = (l) => l.genre === 'tel' ? `<a href="tel:${escapeHTML(String(l.valeur).replace(/[^0-9+]/g, ''))}">${escapeHTML(telLisible(l.valeur))}</a>`
+        : l.genre === 'photo' ? `<a href="${escapeHTML(l.valeur)}" target="_blank" rel="noopener">Voir la photo</a>` : escapeHTML(l.valeur);
+      fiche = `<div class="mb-fiche" id="mb-fiche-${escapeHTML(c.id)}">
+        <dl>${f.lignes.map(l => `<div class="${l.genre === 'alerte' ? 'mb-fiche--alerte' : ''}"><dt>${escapeHTML(l.libelle)}</dt><dd>${valeur(l)}</dd></div>`).join('')}</dl>
+        ${f.etapes.length ? `<ol class="mb-etapes">${f.etapes.map(e => `<li><b>${escapeHTML(e.nom)}</b><span>${escapeHTML(e.quand)}</span></li>`).join('')}</ol>` : ''}
+        <a class="btn btn-outline btn-sm" href="${escapeHTML(buildTrackingLink(c.numero, c.id))}" target="_blank" rel="noopener">Ouvrir le suivi de ce colis</a>
+      </div>`;
+    }
+    return `<div class="mb-colis-ligne${ouvert ? ' mb-colis-ligne--ouverte' : ''}" data-mb-ligne="${escapeHTML(c.id)}">
+      <button type="button" class="mb-colis-bouton" data-mb-colis="${escapeHTML(c.id)}" aria-expanded="${ouvert}"${ouvert ? ` aria-controls="mb-fiche-${escapeHTML(c.id)}"` : ''}>
+        <span class="mb-colis-statut" style="background:${st.bg}; color:${st.color};">${escapeHTML(typeof statutTexte === 'function' ? statutTexte(c.statut, c) : st.label)}</span>
+        <span class="mb-colis-ou"><strong>${escapeHTML([c.commune_destination, c.destination].filter(Boolean).join(' — ') || '—')}</strong><small>${escapeHTML([(c.numero || '').replace(/^CLT-/, ''), mbBoutiqueRegardee ? '' : mbNomDe(c.fournisseur_id), c.description ? String(c.description).slice(0, 60) : ''].filter(Boolean).join(' · '))}</small></span>
+        <span class="mb-colis-montant">${escapeHTML(montant)}</span>
+        <span class="mb-colis-chevron" aria-hidden="true">${ouvert ? '▾' : '›'}</span>
+      </button>${fiche}
+    </div>`;
+  }
+
+  function mbChangerDeJour(delta){
+    const input = document.getElementById('mb-date');
+    if (!input) return;
+    const auj = todayLocalISODate();
+    if (delta === 0) input.value = auj;
+    else { const d = new Date((input.value || auj) + 'T12:00:00'); d.setDate(d.getDate() + delta); const iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); input.value = iso > auj ? auj : iso; }
+    mbColisOuvert = null;
+    chargerColisDesBoutiques();
   }
   document.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-mb-boutique]');
-    if (b) { mbBoutiqueRegardee = (mbBoutiqueRegardee === b.dataset.mbBoutique) ? null : b.dataset.mbBoutique; renderMesBoutiques(); return; }
-    if (e.target.closest('[data-mb-fermer]')) { mbBoutiqueRegardee = null; renderMesBoutiques(); const s = document.getElementById('section-mes-boutiques'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    const cible = e.target && e.target.closest ? e.target : null;
+    if (!cible || !cible.closest('#section-mes-boutiques')) return;
+    const j = cible.closest('[data-mb-jour]');
+    if (j) { mbChangerDeJour(Number(j.dataset.mbJour)); return; }
+    const b = cible.closest('[data-mb-boutique]');
+    if (b) { mbBoutiqueRegardee = b.dataset.mbBoutique || null; mbGroupe = ''; mbColisOuvert = null; renderMesBoutiques(); return; }
+    const g = cible.closest('[data-mb-groupe]');
+    if (g) { mbGroupe = (mbGroupe === g.dataset.mbGroupe) ? '' : g.dataset.mbGroupe; mbColisOuvert = null; renderMesBoutiques(); return; }
+    if (cible.closest('[data-mb-tout]')) { mbGroupe = ''; mbRecherche = ''; renderMesBoutiques(); return; }
+    const c = cible.closest('[data-mb-colis]');
+    if (c) { mbColisOuvert = (mbColisOuvert === c.dataset.mbColis) ? null : c.dataset.mbColis; renderMesBoutiques(); }
+  });
+  // La recherche filtre à la frappe, sans redessiner le champ (on perdrait le curseur) : seule
+  // la liste est refaite, et le champ reprend la main.
+  document.addEventListener('input', (e) => {
+    if (!e.target || e.target.id !== 'mb-recherche') return;
+    mbRecherche = e.target.value; mbColisOuvert = null;
+    const debut = e.target.selectionStart;
+    renderMesBoutiques();
+    const champ = document.getElementById('mb-recherche');
+    if (champ) { champ.focus(); try { champ.setSelectionRange(debut, debut); } catch (_e) { /* champ search sans sélection sur certains navigateurs */ } }
   });
   document.addEventListener('change', (e) => { if (e.target && e.target.id === 'mb-date') chargerColisDesBoutiques(); });
 
@@ -3833,6 +3903,11 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
     Mes colis
   </button>
+  <!-- N'existe que pour un propriétaire à qui le bureau a rattaché des boutiques (chargerMesBoutiques). -->
+  <button type="button" class="nav hidden" data-target="section-mes-boutiques" data-mb-onglet>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M10 20v-6h4v6"/></svg>
+    Boutiques
+  </button>
   <button type="button" class="nav" data-target="section-recap">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>
     Récap
@@ -3851,6 +3926,8 @@
     function currentContentTab(){
       let cur = 'section-ajouter';
       try { cur = localStorage.getItem('clt_fournisseur_tab') || 'section-ajouter'; } catch(e){}
+      // « Boutiques » n'est pas mémorisé comme écran d'ouverture : l'onglet n'existe qu'une fois les
+      // boutiques lues, et s'ouvrir sur une carte vide le temps de le savoir ferait un écran qui saute.
       if (!['section-ajouter','section-recap','section-colis','section-retours'].includes(cur)) cur = 'section-ajouter';
       return cur;
     }

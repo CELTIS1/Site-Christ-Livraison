@@ -86,7 +86,7 @@ verifier('les numéros du site vitrine ne traînent plus nulle part dans l\'appl
 verifier('le message WhatsApp est pré-rempli avec le numéro du colis',
   /blocBoutiqueHTML\(data\)\s*\}\s*\$\{blocContactHTML\(data\.numero \|\| '', !!data\.boutique_tel\)/.test(suivi) && /question sur le colis/.test(suivi));
 verifier('la boutique d\'abord (19.6) : son numéro en appel et en WhatsApp, puis « Une remarque sur la livraison ? Joindre CLT »',
-  /function blocBoutiqueHTML\(data\)/.test(suivi) && /Contactez \$\{escapeHTML\(nom\)\}/.test(suivi) && /wa\.me\/\$\{tel\.replace\('\+', ''\)\}/.test(suivi) && /Une remarque sur la livraison \? Joindre CLT/.test(suivi));
+  /function blocBoutiqueHTML\(data\)/.test(suivi) && /Contactez le fournisseur</.test(suivi) && !/escapeHTML\(nom\)|data\.boutique_nom/.test(suivi.replace(/\/\/[^\n]*/g, '')) && /wa\.me\/\$\{tel\.replace\('\+', ''\)\}/.test(suivi) && /Une remarque sur la livraison \? Joindre CLT/.test(suivi));
 verifier('le message « aucun colis ne correspond » propose aussi de joindre CLT',
   /joignez-nous si le problème persiste[\s\S]{0,60}blocContactHTML/.test(suivi));
 const fournisseur = lire('app/fournisseur.html');

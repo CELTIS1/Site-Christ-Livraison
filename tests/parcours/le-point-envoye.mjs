@@ -60,6 +60,19 @@ verifier('sortir le fichier n\'a RIEN coché : un téléchargement n\'est pas un
 verifier('mais le bouton passe devant, pour qu\'on y pense',
   (await page.locator('#releve-marquer.a-envoyer').count()) === 1);
 
+titre('3 bis. « Envoyer » : droit dans le WhatsApp de CETTE cliente (20/09/2026)');
+const envoyer = page.locator('#releve-envoyer');
+verifier('le bouton est là, visible, même sur un ordinateur qui ne sait pas « partager »', await envoyer.isVisible() && /WhatsApp/.test(await envoyer.innerText()));
+await envoyer.click();
+await dodo(600);
+const parti = await page.evaluate(() => window.__cltOuverts[window.__cltOuverts.length - 1] || '');
+const compteDeLaCliente = monde.PROFILS.find((p) => (p.company_name || p.full_name) === nomCliente);
+const numeroAttendu = '225' + String(compteDeLaCliente ? compteDeLaCliente.phone : '').replace(/\D/g, '').replace(/^225/, '');
+verifier('il ouvre wa.me sur le numéro du compte de cette cliente — rien à choisir', parti.indexOf('https://wa.me/' + numeroAttendu + '?text=') === 0, parti.slice(0, 80) + ' / attendu ' + numeroAttendu);
+const message = decodeURIComponent((parti.split('?text=')[1]) || '');
+verifier('le message est son point : le jour, le bilan, une ligne par colis, la somme qui lui revient', /voici votre point CLT du/.test(message) && /\*\d+ colis\*/.test(message) && /(Somme qui vous revient|Somme que vous devez)/.test(message), message.slice(0, 300));
+verifier('ouvrir WhatsApp n\'a RIEN coché non plus', monde.TABLES.points_envoyes.length === 0);
+
 titre('4. Cocher : l\'heure, le nom, et la liste qui suit');
 await marquer.click();
 await dodo(2000);

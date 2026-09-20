@@ -27,7 +27,7 @@ const chiffres = (s) => (s || '').replace(/[  \s]/g, '');
 titre('1. L\'espace de la cliente s\'ouvre');
 await N.ouvrirConnecte('fournisseur.html', CLIENTE2);
 verifier('la page est ouverte sans erreur, sur fournisseur.html', erreurs.length === 0 && /fournisseur\.html/.test(page.url()), erreurs.join('\n       '));
-verifier('sur téléphone, la barre du bas : Ajouter, Mes colis, Récap, Compte', (await page.locator('#clt-bottomnav .nav').count()) === 4 && await page.locator('#clt-bottomnav').isVisible());
+verifier('sur téléphone, la barre du bas : Ajouter, Mes colis, Récap, Retours (« Boutiques » reste caché : ce compte n\'en supervise aucune)', (await page.locator('#clt-bottomnav .nav:not(.hidden)').count()) === 4 && await page.locator('#clt-bottomnav').isVisible());
 verifier('son nom (Mariam Mode) est à l\'écran', /Mariam Mode/.test(await page.locator('body').innerText()));
 
 titre('2. « Mes colis » : ses quatre colis, pas ceux d\'Awa');

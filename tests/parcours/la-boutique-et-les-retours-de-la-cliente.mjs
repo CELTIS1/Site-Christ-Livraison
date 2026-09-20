@@ -39,7 +39,7 @@ await page.locator('#suivi-btn').click();
 await dodo(1000);
 const blocs = res.locator('.bloc-contact');
 verifier('deux blocs de contact', (await blocs.count()) === 2, String(await blocs.count()));
-verifier('le premier : « Contactez Awa Boutique », Appeler + WhatsApp vers SON numéro', /Contactez Awa Boutique/.test(await texte(blocs.nth(0))) && (await blocs.nth(0).locator('a[href="tel:+2250700000011"]').count()) === 1 && (await blocs.nth(0).locator('a[href^="https://wa.me/2250700000011"]').count()) === 1, await texte(blocs.nth(0)));
+verifier('le premier : « Contactez le fournisseur » (jamais le nom de la boutique), Appeler + WhatsApp vers SON numéro', /Contactez le fournisseur/.test(await texte(blocs.nth(0))) && !/Awa Boutique/.test(await texte(page.locator('body'))) && (await blocs.nth(0).locator('a[href="tel:+2250700000011"]').count()) === 1 && (await blocs.nth(0).locator('a[href^="https://wa.me/2250700000011"]').count()) === 1, await texte(blocs.nth(0)));
 verifier('le second : « Une remarque sur la livraison ? Joindre CLT », avec nos lignes', /remarque sur la livraison/.test(await texte(blocs.nth(1))) && (await blocs.nth(1).locator('a[href="tel:+2250779604761"]').count()) === 1 && (await blocs.nth(1).locator('a[href^="https://wa.me/2250546818640"]').count()) === 1, await texte(blocs.nth(1)));
 verifier('le message WhatsApp à la boutique cite le colis', new RegExp(encodeURIComponent(EN_ROUTE.numero)).test(await blocs.nth(0).locator('a[href^="https://wa.me/"]').getAttribute('href')));
 verifier('le livreur en route est nommé, comme avant', /Koffi Livreur/.test(await texte(res)));
@@ -48,7 +48,7 @@ verifier('aucune erreur sur la page publique', erreurs.length === 0, erreurs.joi
 titre('3. L\'espace cliente : plus de « Compte » en double, un onglet Retours à la place');
 await N.ouvrirConnecte('fournisseur.html', CLIENTE1);
 await dodo(1000);
-const bas = page.locator('#clt-bottomnav .nav');
+const bas = page.locator('#clt-bottomnav .nav:not(.hidden)');
 const libelles = (await bas.allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim());
 verifier('la barre du bas : Ajouter, Mes colis, Récap, Retours — pas de Compte', libelles.length === 4 && /Retours/.test(libelles[3]) && !libelles.some(l => /Compte/.test(l)), libelles.join(' | '));
 verifier('« Compte » reste dans le menu ☰, une seule fois', (await page.locator('#settings-dropdown #btn-mon-compte').count()) === 1);

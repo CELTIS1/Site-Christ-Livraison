@@ -973,10 +973,16 @@ verifier(
    pastille par commune de destination sur la carte Leaflet qui existait (livreurs en direct),
    la liste des communes à côté, liées ; « Voir ces colis » passe par la porte de L'essentiel.
    Règle pure app/colis-sur-la-carte.js ; écran app/equipe/16-les-colis-sur-la-carte.js.
-   La carte se montre dès qu'il y a un colis, même sans livreur en direct. Aucune lecture en plus. Étiquette 20260920cartecolis. */
+   La carte se montre dès qu'il y a un colis, même sans livreur en direct. Aucune lecture en plus. Étiquette 20260920cartecolis.
+   v204, le 20/09/2026 — trois retours de Celtis. (1) « Mes boutiques » du propriétaire refait sur
+   le modèle des tableaux multi-magasins : son onglet, un sélecteur Toutes / chaque boutique, des
+   chiffres qui filtrent, une ligne par boutique, et des colis qui s'ouvrent (fiche en lecture
+   seule) — règle app/mes-boutiques.js. (2) Page de suivi : « Contactez le fournisseur », plus le
+   nom de la boutique. (3) Le point de la cliente : « Envoyer » ouvre SON WhatsApp, le point écrit
+   (app/point-par-whatsapp.js) ; la feuille de partage devient « Partager le PDF ». Étiquette 20260920boutiques2. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v203'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v204'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

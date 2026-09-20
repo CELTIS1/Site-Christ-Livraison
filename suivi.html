@@ -525,11 +525,14 @@
   function blocBoutiqueHTML(data) {
     const tel = numeroCompose(data && data.boutique_tel);
     if (!tel) return '';
-    const nom = data.boutique_nom || 'la boutique';
+    // 20/09/2026, Celtis : « plutôt que le nom du fournisseur, mettre tout simplement fournisseur —
+    // le nom de la boutique, on met un nom comme ça, ce n'est pas forcément le bon ». Le nom saisi
+    // à l'inscription n'est pas toujours celui que le destinataire connaît ; « le fournisseur » est
+    // toujours juste. boutique_nom n'est donc plus affiché nulle part sur cette page.
     const message = "Bonjour, je vous contacte au sujet de ma commande" + (data.numero ? " (colis " + data.numero + ")" : "") + ".";
     return `
       <div class="bloc-contact">
-        <div class="bloc-contact-titre">Une question sur votre commande ? Contactez ${escapeHTML(nom)}</div>
+        <div class="bloc-contact-titre">Une question sur votre commande ? Contactez le fournisseur</div>
         <div class="bloc-contact-liens">
           <a class="contact-lien" href="tel:${tel}">📞 ${escapeHTML(numeroAffiche(tel))}</a>
           <a class="contact-lien" href="https://wa.me/${tel.replace('+', '')}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">🟢 WhatsApp</a>

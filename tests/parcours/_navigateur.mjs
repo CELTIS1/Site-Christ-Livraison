@@ -178,7 +178,9 @@ export async function ouvrirNavigateur(options) {
     window.__cltAlertes = [];
     window.alert = (m) => window.__cltAlertes.push(String(m));
     window.confirm = () => true;
-    window.open = () => null;
+    // Les liens ouverts (WhatsApp, suivi…) ne partent nulle part, mais on retient où ils allaient.
+    window.__cltOuverts = [];
+    window.open = (u) => { window.__cltOuverts.push(String(u)); return null; };
   });
 
   const erreurs = [];

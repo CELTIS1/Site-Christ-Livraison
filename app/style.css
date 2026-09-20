@@ -3392,41 +3392,104 @@ html[data-theme="dark"] .rt-puce, html[data-theme="dark"] .rt-badge{ filter:brig
 .bq-ligne{ color:var(--navy); }
 /* L'espace du propriétaire. */
 
-.mb-tete{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
-.mb-total{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-.mb-tuile{ flex:1 1 90px; min-width:90px; text-align:center; background:var(--grey-bg); border-radius:12px; padding:10px 8px; }
-.mb-tuile b{ display:block; font-size:22px; line-height:1.1; color:var(--navy); }
-.mb-tuile span{ font-size:11.5px; color:var(--muted); }
-.mb-tuile--argent b{ color:#1e6b3a; font-size:18px; }
-.mb-liste{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; }
-.mb-boutique{ text-align:left; background:var(--white); border:1px solid var(--border); border-radius:14px; padding:12px 14px; cursor:pointer; font:inherit; color:inherit; transition:box-shadow .15s, border-color .15s; }
-.mb-boutique:hover{ border-color:var(--navy); box-shadow:0 6px 18px rgba(27,67,116,.10); }
-.mb-boutique--active{ border-color:var(--orange); box-shadow:0 0 0 2px rgba(226,99,19,.18); }
-.mb-nom{ font-weight:800; font-size:15px; color:var(--navy); margin-bottom:2px; }
-.mb-sous{ font-size:12px; color:var(--muted); margin-bottom:8px; }
-.mb-chiffres{ display:flex; gap:6px; flex-wrap:wrap; }
-.mb-chiffre{ font-size:12.5px; padding:3px 8px; border-radius:999px; background:var(--grey-bg); font-weight:600; }
-.mb-chiffre--livre{ background:#E6F4EA; color:#1e6b3a; }
-.mb-chiffre--non_livre{ background:#fdeceb; color:#8f2018; }
-.mb-chiffre--retour{ background:#F2E8FA; color:#5b2a72; }
-.mb-chiffre--argent{ background:#E3ECF7; color:#1B4374; }
-.mb-retour{ margin:0 0 10px; }
-.mb-lecture{ font-size:12.5px; color:var(--muted); background:var(--grey-bg); border-radius:10px; padding:8px 12px; margin-bottom:10px; }
-html[data-theme="dark"] .mb-tuile, html[data-theme="dark"] .mb-lecture, html[data-theme="dark"] .mb-chiffre{ background:#1f2a3a; }
-/* Les pastilles colorées des boutiques gardaient leur fond pastel la nuit (vu le 20/09, lot D). */
-html[data-theme="dark"] .mb-chiffre{ color:#CFE0F5; }
-html[data-theme="dark"] .mb-chiffre--livre{ background:#153A26; color:#B8F0CC; }
-html[data-theme="dark"] .mb-chiffre--non_livre{ background:#3A1A17; color:#FF9D93; }
-html[data-theme="dark"] .mb-chiffre--retour{ background:#2E1F3A; color:#D9B8F0; }
-html[data-theme="dark"] .mb-chiffre--argent{ background:#1B2A3F; color:#9EC0E6; }
-html[data-theme="dark"] .mb-nom{ color:#E6ECF3; }
-html[data-theme="dark"] .mb-boutique{ background:#1a2230; }
-.mb-colis-ligne{ padding:8px 10px; border:1px solid var(--border); border-radius:10px; margin-bottom:6px; font-size:13px; }
-.mb-colis-haut{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }
-.mb-colis-statut{ padding:3px 8px; border-radius:999px; font-weight:700; font-size:12px; }
-.mb-colis-montant{ font-weight:700; white-space:nowrap; }
-.mb-colis-desc{ color:var(--muted); }
-.mb-colis-retour{ color:#5b2a72; font-weight:600; }
+/* Refait le 20/09/2026 sur le modèle des tableaux multi-magasins : un sélecteur, des chiffres
+   qui sont le filtre, une liste dont chaque colis s'ouvre. Règle : app/mes-boutiques.js. */
+.mb-tete{ display:flex; align-items:center; justify-content:space-between; gap:10px 14px; flex-wrap:wrap; margin-bottom:6px; }
+.mb-jour{ display:flex; align-items:center; gap:6px; flex:1 1 300px; min-width:0; max-width:420px; }
+.mb-jour-fleche{ width:44px; height:44px; flex:none; border:1px solid var(--border-strong); border-radius:12px; background:var(--white); color:var(--navy); font-size:22px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0 0 3px; }
+.mb-jour-fleche:disabled{ opacity:.35; cursor:default; }
+.mb-jour-fleche:not(:disabled):hover{ border-color:var(--navy); }
+.mb-jour-date{ height:44px; min-width:0; flex:1 1 128px; width:auto; padding:0 8px; border:1px solid var(--border-strong); border-radius:12px; font:inherit; font-size:14px; background:var(--white); color:inherit; }
+.mb-jour-auj{ min-height:44px; white-space:nowrap; padding-left:10px; padding-right:10px; }
+@media (max-width:480px){ .mb-jour-date{ font-size:13px; padding:0 6px; } .mb-jour{ gap:5px; } .mb-jour-auj{ font-size:13px; padding-left:8px; padding-right:8px; } }
+.mb-libelle{ font-size:13px; color:var(--muted); margin:0 0 12px; }
+.mb-choix{ display:flex; gap:8px; overflow-x:auto; padding:2px 2px 10px; margin:0 -2px 4px; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
+.mb-pastille{ flex:none; display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 14px; border:1px solid var(--border-strong); border-radius:999px; background:var(--white); color:var(--navy); font:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.mb-pastille span{ min-width:22px; padding:1px 7px; border-radius:999px; background:var(--grey-bg); color:var(--muted); font-size:12.5px; font-weight:800; text-align:center; }
+.mb-pastille--active{ background:var(--navy); border-color:var(--navy); color:#fff; }
+.mb-pastille--active span{ background:rgba(255,255,255,.2); color:#fff; }
+.mb-total{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin-bottom:14px; }
+.mb-tuile{ min-width:0; min-height:68px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; text-align:center; background:var(--mb-fond, var(--grey-bg)); border:2px solid transparent; border-radius:12px; padding:8px 4px; font:inherit; color:var(--mb-teinte, var(--navy)); }
+button.mb-tuile{ cursor:pointer; }
+button.mb-tuile:hover{ border-color:color-mix(in srgb, var(--mb-teinte, #1B4374) 35%, transparent); }
+.mb-tuile b{ display:block; font-size:22px; line-height:1.05; font-variant-numeric:tabular-nums; }
+.mb-tuile span{ font-size:12px; line-height:1.2; }
+.mb-tuile--active{ border-color:var(--mb-teinte, var(--navy)); box-shadow:0 0 0 3px color-mix(in srgb, var(--mb-teinte, #1B4374) 18%, transparent); }
+.mb-tuile--argent{ --mb-teinte:#1e6b3a; --mb-fond:#E6F4EA; }
+.mb-tuile--argent b{ font-size:15px; line-height:1.15; }
+.mb-liste{ margin-bottom:16px; }
+.mb-liste:empty{ display:none; }
+.mb-table{ border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--white); }
+.mb-ligne{ display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"nom fleche" "avance avance" "chiffres argent"; gap:6px 10px; align-items:center; width:100%; padding:12px 14px; background:none; border:0; font:inherit; color:inherit; text-align:left; cursor:pointer; }
+.mb-ligne + .mb-ligne{ border-top:1px solid var(--border); }
+.mb-ligne:hover{ background:var(--grey-bg); }
+.mb-ligne-nom{ grid-area:nom; min-width:0; display:flex; flex-direction:column; }
+.mb-ligne-nom strong{ font-size:15px; color:var(--navy); }
+.mb-ligne-nom small{ font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mb-ligne-avance{ grid-area:avance; display:flex; height:8px; border-radius:4px; overflow:hidden; background:#e8edf3; }
+.mb-ligne-avance i{ display:block; height:100%; background:#1f8a5b; }
+.mb-ligne-avance i.mb-ligne-avance--echec{ background:#c0392b; }
+.mb-ligne-chiffres{ grid-area:chiffres; font-size:13px; color:var(--muted); }
+.mb-ligne-chiffres b{ color:#1e6b3a; font-size:14px; }
+.mb-ligne-chiffres em{ font-style:normal; font-weight:700; color:#8f2018; }
+.mb-ligne-argent{ grid-area:argent; font-weight:800; font-size:13.5px; color:#1B4374; white-space:nowrap; text-align:right; }
+.mb-ligne-fleche{ grid-area:fleche; justify-self:end; color:var(--muted); font-size:20px; line-height:1; }
+.mb-colis-tete{ display:flex; align-items:center; justify-content:space-between; gap:10px 14px; flex-wrap:wrap; margin-bottom:8px; }
+.mb-colis-tete h3{ margin:0; font-size:16px; color:var(--navy); }
+.mb-colis-tete h3 span{ margin-left:6px; font-size:13px; font-weight:600; color:var(--muted); }
+.mb-recherche{ flex:1 1 220px; max-width:340px; height:44px; padding:0 14px; border:1px solid var(--border-strong); border-radius:12px; font:inherit; font-size:14px; background:var(--white); color:inherit; }
+.mb-lecture{ font-size:12.5px; color:var(--muted); background:var(--grey-bg); border-radius:10px; padding:8px 12px; margin-bottom:10px; line-height:1.5; }
+.mb-lien{ background:none; border:0; padding:0 0 0 4px; font:inherit; font-weight:700; color:var(--navy); text-decoration:underline; cursor:pointer; }
+.mb-colis{ border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--white); }
+.mb-colis-ligne + .mb-colis-ligne{ border-top:1px solid var(--border); }
+.mb-colis-bouton{ display:grid; grid-template-columns:minmax(0,1fr) auto auto; grid-template-areas:"statut montant chevron" "ou ou ou"; gap:6px 10px; align-items:center; width:100%; min-height:56px; padding:10px 14px; background:none; border:0; font:inherit; color:inherit; text-align:left; cursor:pointer; }
+.mb-colis-bouton:hover{ background:var(--grey-bg); }
+.mb-colis-bouton:focus-visible, .mb-ligne:focus-visible, .mb-pastille:focus-visible, .mb-tuile:focus-visible{ outline:2px solid var(--navy); outline-offset:-2px; }
+.mb-colis-ligne--ouverte{ background:#f6f9fd; box-shadow:inset 3px 0 0 var(--navy); }
+.mb-colis-statut{ grid-area:statut; justify-self:start; padding:3px 9px; border-radius:999px; font-weight:700; font-size:12px; white-space:nowrap; }
+.mb-colis-ou{ grid-area:ou; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.mb-colis-ou strong{ font-size:14px; font-weight:700; color:inherit; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mb-colis-ou small{ font-size:12.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mb-colis-montant{ grid-area:montant; font-weight:800; font-size:14px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.mb-colis-chevron{ grid-area:chevron; color:var(--muted); font-size:18px; width:14px; text-align:center; }
+.mb-fiche{ padding:2px 14px 14px; display:flex; flex-direction:column; gap:12px; align-items:flex-start; }
+.mb-fiche dl{ margin:0; width:100%; display:grid; grid-template-columns:1fr; gap:0; }
+.mb-fiche dl > div{ display:flex; justify-content:space-between; gap:16px; padding:7px 0; border-bottom:1px solid var(--border); font-size:13.5px; }
+.mb-fiche dt{ color:var(--muted); flex:none; }
+.mb-fiche dd{ margin:0; text-align:right; font-weight:600; min-width:0; overflow-wrap:anywhere; }
+.mb-fiche dd a{ color:var(--navy); }
+.mb-fiche--alerte dd{ color:#8f2018; }
+.mb-etapes{ list-style:none; margin:0; padding:0 0 0 14px; border-left:2px solid #cfd9e6; display:flex; flex-direction:column; gap:8px; font-size:13px; }
+.mb-etapes li{ position:relative; display:flex; gap:8px; flex-wrap:wrap; }
+.mb-etapes li::before{ content:''; position:absolute; left:-20px; top:5px; width:10px; height:10px; border-radius:50%; background:var(--navy); }
+.mb-etapes span{ color:var(--muted); }
+.mb-fiche .btn{ min-height:44px; }
+@media (min-width:720px){
+  .mb-total{ grid-template-columns:repeat(6, minmax(0, 1fr)); }
+  .mb-ligne{ grid-template-columns:minmax(160px,1.2fr) minmax(120px,1fr) minmax(170px,auto) minmax(90px,auto) 16px; grid-template-areas:"nom avance chiffres argent fleche"; gap:16px; min-height:60px; }
+  .mb-ligne-chiffres{ text-align:right; }
+  .mb-colis-bouton{ grid-template-columns:120px minmax(0,1fr) auto 16px; grid-template-areas:"statut ou montant chevron"; gap:14px; }
+  .mb-fiche{ padding-left:148px; }
+  .mb-fiche dl{ max-width:460px; }
+}
+html[data-theme="dark"] .mb-jour-fleche, html[data-theme="dark"] .mb-jour-date, html[data-theme="dark"] .mb-recherche, html[data-theme="dark"] .mb-pastille{ background:#1a2230; border-color:#33445c; color:#E6ECF3; }
+html[data-theme="dark"] .mb-pastille span{ background:#243247; color:#C9D3DF; }
+html[data-theme="dark"] .mb-pastille--active{ background:#2F6FD0; border-color:#2F6FD0; color:#fff; }
+html[data-theme="dark"] .mb-tuile{ background:color-mix(in srgb, var(--mb-teinte, #6FA8FF) 16%, #141c28); color:color-mix(in srgb, var(--mb-teinte, #6FA8FF) 35%, #ffffff); }
+html[data-theme="dark"] .mb-tuile--argent{ --mb-teinte:#4fd08a; }
+html[data-theme="dark"] .mb-lecture{ background:#1f2a3a; color:#AEBBCB; }
+html[data-theme="dark"] .mb-lien, html[data-theme="dark"] .mb-fiche dd a{ color:#8FB8FF; }
+html[data-theme="dark"] .mb-table, html[data-theme="dark"] .mb-colis{ background:#16202E; border-color:#2A3A50; }
+html[data-theme="dark"] .mb-ligne + .mb-ligne, html[data-theme="dark"] .mb-colis-ligne + .mb-colis-ligne, html[data-theme="dark"] .mb-fiche dl > div{ border-color:#243247; }
+html[data-theme="dark"] .mb-ligne:hover, html[data-theme="dark"] .mb-colis-bouton:hover{ background:#1B2839; }
+html[data-theme="dark"] .mb-ligne-nom strong, html[data-theme="dark"] .mb-colis-tete h3{ color:#E6ECF3; }
+html[data-theme="dark"] .mb-ligne-avance{ background:#243247; }
+html[data-theme="dark"] .mb-ligne-chiffres b{ color:#8FE3B5; }
+html[data-theme="dark"] .mb-ligne-chiffres em, html[data-theme="dark"] .mb-fiche--alerte dd{ color:#FF9D93; }
+html[data-theme="dark"] .mb-ligne-argent{ color:#9EC0E6; }
+html[data-theme="dark"] .mb-colis-ligne--ouverte{ background:#1B2A40; box-shadow:inset 3px 0 0 #6FA8FF; }
+html[data-theme="dark"] .mb-etapes{ border-left-color:#33445c; }
+html[data-theme="dark"] .mb-etapes li::before{ background:#6FA8FF; }
 /* Les colis de cette journée reportés à un autre jour, chez le livreur (20/09/2026). */
 .mes-reportes{ display:flex; flex-direction:column; gap:8px; margin:0 0 10px; padding:10px 12px; border-left:3px solid #d4a106; border-radius:10px; background:#FFF8E1; font-size:13px; font-weight:600; color:#6b4f00; line-height:1.45; }
 .mes-reportes .btn{ align-self:flex-start; }

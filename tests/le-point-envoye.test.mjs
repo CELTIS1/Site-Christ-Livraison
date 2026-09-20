@@ -52,8 +52,8 @@ titre('1. On coche à la main : télécharger n\'est pas envoyer');
   const barre = blocDe(equipe, 'brancherReleveBarre', 'equipe');
   verifier('aucune sortie de fichier ne pose la marque toute seule',
     !/marquer_point_envoye/.test(barre), barre.slice(0, 200));
-  verifier('les quatre sorties mettent seulement le bouton en évidence',
-    (barre.match(/releveRappelerDeCocher\(\)/g) || []).length === 4, barre);
+  verifier('les cinq sorties (PDF, Excel, Word, WhatsApp, partage du PDF) mettent seulement le bouton en évidence',
+    (barre.match(/releveRappelerDeCocher\(\)/g) || []).length === 5, barre);
   verifier('et c\'est un appui, un seul, qui écrit',
     /marquer\.addEventListener\('click', releveMarquer\)/.test(barre));
   verifier('la raison est écrite là où quelqu\'un la cherchera',

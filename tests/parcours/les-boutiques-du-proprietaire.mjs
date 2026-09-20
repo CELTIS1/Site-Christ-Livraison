@@ -7,9 +7,9 @@
    Ce parcours joue, dans un vrai Chromium :
      1. LE BUREAU rattache la boutique de Mariam au compte d'Awa (onglet Comptes, menu ⋮,
         « Boutiques supervisées ») ;
-     2. AWA ouvre son espace : « Mes boutiques » apparaît dans Récap, avec le total du jour et
-        une tuile Mariam Mode ; un appui ouvre le point du jour de Mariam et ses colis, sans
-        aucun bouton d'action (lecture seule) ;
+     2. AWA ouvre son espace : un onglet « Boutiques » est apparu. Le sélecteur (Toutes / Mariam
+        Mode), les chiffres qui filtrent, une ligne par boutique ; puis les colis de Mariam, qu'on
+        ouvre un par un — sans aucun bouton d'action (lecture seule) ;
      3. MARIAM, elle, ne voit rien de tout cela.
 
    Lancer à la main :  node tests/parcours/les-boutiques-du-proprietaire.mjs */
@@ -57,31 +57,56 @@ await dodo(500);
 verifier('la ligne du compte d\'Awa rappelle ce qu\'elle supervise', /Supervise 1 boutique : Mariam Mode/.test(await texte(ligneAwa)), await texte(ligneAwa));
 verifier('aucune erreur côté bureau', erreurs.length === 0, erreurs.join('\n       '));
 
-titre('2. Awa ouvre son espace : « Mes boutiques »');
+titre('2. Awa ouvre son espace : l\'onglet « Boutiques »');
 await N.ouvrirConnecte('fournisseur.html', CLIENTE1);
-await dodo(1000);
-await page.locator('#clt-bottomnav .nav[data-target="section-recap"]').click();
+await dodo(1200);
+const onglet = page.locator('#clt-bottomnav .nav[data-target="section-mes-boutiques"]');
+verifier('un cinquième onglet « Boutiques » est apparu dans la barre du bas', await onglet.isVisible() && /Boutiques/.test(await texte(onglet)));
+await onglet.click();
 await dodo(800);
 const carte = page.locator('#section-mes-boutiques');
-verifier('la carte « Mes boutiques » est là, en tête de Récap', await carte.isVisible(), await texte(page.locator('#section-recap-wrap, body')).then(t => t.slice(0, 100)));
+verifier('l\'écran « Mes boutiques » s\'ouvre, seul (ni le relevé, ni « Mes colis »)', await carte.isVisible() && !(await page.locator('#section-releve').isVisible()) && !(await page.locator('#section-colis').isVisible()));
 verifier('le libellé compte 1 boutique et 3 colis aujourd\'hui (les deux de Mariam, plus son colis n°4 du monde)', /1 boutique · 3 colis/.test(await texte(page.locator('#mb-libelle'))), await texte(page.locator('#mb-libelle')));
+verifier('le sélecteur : « Toutes 3 » choisie, puis « Mariam Mode 3 »', (await page.locator('#mb-choix .mb-pastille').count()) === 2 && /Toutes\s*3/.test(await texte(page.locator('#mb-choix .mb-pastille--active'))) && /Mariam Mode\s*3/.test(await texte(page.locator(`#mb-choix [data-mb-boutique="${CLIENTE2}"]`))));
 const total = await texte(page.locator('#mb-total'));
-verifier('le total du jour : 1 en livraison, 1 livré, 12 000 F encaissés', /1 En livraison/.test(total) && /1 Livrés/.test(total) && /12\s?000/.test(total), total);
-const tuile = page.locator(`[data-mb-boutique="${CLIENTE2}"]`);
-verifier('une tuile Mariam Mode : 3 colis, 1 livré, l\'argent', (await tuile.count()) === 1 && /Mariam Mode/.test(await texte(tuile)) && /3 colis/.test(await texte(tuile)) && /1 livré/.test(await texte(tuile)) && /12\s?000/.test(await texte(tuile)), await texte(tuile));
+verifier('les chiffres du jour : 1 en livraison, 1 livré, 12 000 F encaissés — six tuiles, toutes de la même taille', /1 En livraison/.test(total) && /1 Livrés/.test(total) && /12\s?000/.test(total) && await page.evaluate(() => { const t = [...document.querySelectorAll('#mb-total .mb-tuile')].map((e) => e.getBoundingClientRect()); return t.length === 6 && t.every((r) => Math.abs(r.width - t[0].width) < 1.5) && t.slice(0, 3).every((r) => Math.abs(r.height - t[0].height) < 1.5); }), total);
+const ligne = page.locator(`.mb-ligne[data-mb-boutique="${CLIENTE2}"]`);
+verifier('vue « Toutes » : une ligne Mariam Mode — 1 livré sur 3, sa barre d\'avancement, l\'argent', (await ligne.count()) === 1 && /Mariam Mode/.test(await texte(ligne)) && /1 livré sur 3/.test(await texte(ligne)) && /12\s?000/.test(await texte(ligne)) && (await ligne.locator('.mb-ligne-avance i').count()) === 2, await texte(ligne));
+verifier('sous les boutiques, les 3 colis de toutes les boutiques, chacun avec le nom de la sienne', (await page.locator('#mb-detail [data-mb-colis]').count()) === 3 && /Mariam Mode/.test(await texte(page.locator('#mb-detail [data-mb-colis]').first())));
 verifier('les colis de Mariam ne sont PAS dans « Mes colis » d\'Awa (ce ne sont pas les siens)', (await page.locator(`#colis-list .colis-item[data-id="${M1.id}"]`).count()) === 0);
+verifier('rien ne déborde en largeur, et le jour tient sur une ligne (date entière, « Aujourd\'hui » visible)', await page.evaluate(() => { const d = document.getElementById('mb-date'), a = document.querySelector('.mb-jour-auj').getBoundingClientRect(); return document.documentElement.scrollWidth <= innerWidth && d.scrollWidth <= d.clientWidth && a.right <= innerWidth; }));
+verifier('les flèches du jour sont carrées, 44 × 44', await page.evaluate(() => { const r = document.querySelector('.mb-jour-fleche').getBoundingClientRect(); return Math.round(r.width) === 44 && Math.round(r.height) === 44; }));
 
-titre('3. Un appui sur la boutique : son point du jour, en lecture seule');
-await tuile.click();
-await dodo(700);
+titre('3. Une boutique, ses colis, et un colis qu\'on ouvre — en lecture seule');
+await ligne.click();
+await dodo(600);
 const detail = page.locator('#mb-detail');
-verifier('le point du jour de Mariam s\'ouvre, marqué lecture seule', /Mariam Mode — point du jour/.test(await texte(detail)) && /Lecture seule/.test(await texte(detail)), await texte(detail).then(t => t.slice(0, 200)));
-verifier('ses deux colis sont listés avec leur statut et leur montant', /Ensemble pagne n°61/.test(await texte(detail)) && /Chaussures n°62/.test(await texte(detail)) && /Livré/.test(await texte(detail)) && /En livraison/.test(await texte(detail)) && /8\s?000/.test(await texte(detail)), await texte(detail));
-verifier('aucun bouton d\'action sur ces colis (pas de statut, pas de correction, pas de signalement)', (await detail.locator('.btn-etape, .btn-save, .status-select, [data-signaler], .btn-edit, .edit-mode').count()) === 0);
-verifier('la ligne d\'argent de la boutique est celle de toute cliente', /Vos articles/.test(await texte(detail)), await texte(detail));
-await detail.locator('[data-mb-fermer]').click();
-await dodo(500);
-verifier('« Toutes les boutiques » referme le détail', (await texte(detail)) === '');
+verifier('Mariam Mode est choisie : la liste des boutiques s\'efface, le titre et la marque « lecture seule » sont là', /Mariam Mode\s*3 colis/.test(await texte(detail.locator('h3'))) && /Lecture seule/.test(await texte(detail)) && (await page.locator('#mb-liste .mb-ligne').count()) === 0, (await texte(detail)).slice(0, 200));
+verifier('ses colis sont listés avec statut et montant, ce qui roule d\'abord', /Chaussures n°62/.test(await texte(detail)) && /Ensemble pagne n°61/.test(await texte(detail)) && /8\s?000/.test(await texte(detail)) && /En livraison/.test(await texte(detail.locator('[data-mb-colis]').first())), await texte(detail));
+await page.locator('#mb-total [data-mb-groupe="livres"]').click();
+await dodo(400);
+verifier('un appui sur le chiffre « Livrés » filtre la liste : 1 colis, et c\'est dit dans le titre', (await detail.locator('[data-mb-colis]').count()) === 1 && /livrés/.test(await texte(detail.locator('h3'))) && await page.locator('#mb-total [data-mb-groupe="livres"]').getAttribute('aria-pressed') === 'true');
+await detail.locator(`[data-mb-colis="${M1.id}"]`).click();
+await dodo(400);
+const fiche = detail.locator('.mb-fiche');
+verifier('le colis s\'ouvre : destinataire appelable, adresse, contenu, article, livraison, livreur', (await fiche.count()) === 1 && /Destinataire/.test(await texte(fiche)) && (await fiche.locator('a[href^="tel:"]').count()) === 1 && /Ensemble pagne n°61/.test(await texte(fiche)) && /12\s?000/.test(await texte(fiche)) && /Livreur/.test(await texte(fiche)), await texte(fiche));
+verifier('ses étapes avec l\'heure (enregistré, récupéré, livré), et le lien de suivi', /Enregistré/.test(await texte(fiche)) && /Récupéré/.test(await texte(fiche)) && /Livré/.test(await texte(fiche.locator('.mb-etapes'))) && /suivi\.html\?numero=/.test(await fiche.locator('a.btn').getAttribute('href')));
+verifier('aucun bouton d\'action (pas de statut, pas de correction, pas de signalement), et jamais la note interne', (await detail.locator('.btn-etape, .btn-save, .status-select, [data-signaler], .btn-edit, .edit-mode, select, textarea').count()) === 0 && !/note interne/i.test(await texte(fiche)));
+await detail.locator('#mb-recherche').fill('chaussures');
+await dodo(400);
+verifier('la recherche filtre à la frappe — et dit quand rien ne correspond au filtre en cours', /Aucun colis ne correspond/.test(await texte(detail)) && (await page.evaluate(() => document.activeElement && document.activeElement.id)) === 'mb-recherche');
+await detail.locator('[data-mb-tout]').click();
+await dodo(400);
+verifier('« Tout afficher » rend les 3 colis', (await detail.locator('[data-mb-colis]').count()) === 3);
+await page.locator('[data-mb-jour="-1"]').click();
+await dodo(900);
+verifier('‹ : la veille — le libellé le dit, et « Aujourd\'hui » y ramène', !/Aujourd'hui/.test(await texte(page.locator('#mb-libelle'))) && !(await page.locator('[data-mb-jour="0"]').isDisabled()));
+await page.locator('[data-mb-jour="0"]').click();
+await dodo(900);
+verifier('retour à aujourd\'hui : › et « Aujourd\'hui » s\'éteignent (on ne va pas dans le futur)', /Aujourd'hui · 1 boutique · 3 colis/.test(await texte(page.locator('#mb-libelle'))) && await page.locator('[data-mb-jour="1"]').isDisabled());
+await page.locator('#mb-choix [data-mb-boutique=""]').click();
+await dodo(400);
+verifier('« Toutes » ramène la liste des boutiques', (await page.locator('#mb-liste .mb-ligne').count()) === 1);
 verifier('aucune écriture n\'est partie vers la base depuis l\'espace d\'Awa', !monde.journal.some(j => j.table === 'colis' && (j.op === 'update' || j.op === 'insert') && (j.ids || []).includes(M1.id)));
 verifier('aucune erreur côté propriétaire', erreurs.length === 0, erreurs.join('\n       '));
 
@@ -90,7 +115,7 @@ await N.ouvrirConnecte('fournisseur.html', CLIENTE2);
 await dodo(1000);
 await page.locator('#clt-bottomnav .nav[data-target="section-recap"]').click();
 await dodo(600);
-verifier('pas de carte « Mes boutiques » chez la gérante', !(await page.locator('#section-mes-boutiques').isVisible().catch(() => false)));
+verifier('ni onglet « Boutiques », ni carte « Mes boutiques » chez la gérante', !(await page.locator('#clt-bottomnav .nav[data-target="section-mes-boutiques"]').isVisible().catch(() => false)) && !(await page.locator('#section-mes-boutiques').isVisible().catch(() => false)));
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();
