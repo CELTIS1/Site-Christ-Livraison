@@ -883,10 +883,18 @@ verifier(
    v188, le 20/09/2026 — lot 20.G : le mode nuit de Gestion (37 règles), les seuils regroupés
    dans SEUILS (clt-common.js), 216 attributs style de gestion.js devenus classes, le registre
    des migrations complété (45 scripts, 176 objets), deux bancs de plus (les gestes du bureau ;
-   Gestion la nuit). Aucune migration. Étiquette 20260920gestion. */
+   Gestion la nuit). Aucune migration. Étiquette 20260920gestion.
+   v189, le 20/09/2026 — lot 20.H : la sauvegarde de chaque nuit (.github/workflows/sauvegarde.yml :
+   pg_dump public + auth + storage, photos par sauvegarde/exporter-les-fichiers.mjs, un seul
+   fichier chiffré AES-256 gardé 30 jours, puis restauré la même nuit dans un Postgres 17 vierge
+   et compté), sauvegarde/README.md, sql/creation-des-tables.sql (profiles 23, colis 66,
+   activity_log 8). Relecture : « pg_restore --exit-on-error=false » n'existe pas et aurait fait
+   échouer l'exercice chaque nuit — retiré ; la phrase secrète passe par l'entrée standard ; une
+   phrase de moins de 24 caractères est refusée (dépôt public). Un banc de plus : la sauvegarde
+   de chaque nuit. Aucune migration. Étiquette 20260920sauvegarde. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v188'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v189'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

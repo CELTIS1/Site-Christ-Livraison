@@ -1,0 +1,171 @@
+# LA SAUVEGARDE DE CHAQUE NUIT — et l'exercice de restauration qui va avec (20/09/2026, lot 20.H)
+#
+# À quoi ça sert, en clair : la base (comptes, colis, argent, journal), les comptes de connexion
+# (Auth) et les photos (Storage) sont copiés chaque nuit HORS de Supabase et HORS du Mac de
+# Celtis, dans un fichier chiffré gardé 30 jours par GitHub. Puis, la même nuit, ce fichier est
+# rejoué dans une base Postgres vierge et compté : une sauvegarde qu'on n'a jamais restaurée
+# n'est qu'un espoir. Décidé le 20/09 (recommandé, sans abonnement) — voir Gestion › À faire.
+#
+# CE QU'IL FAUT UNE FOIS (Celtis, Settings › Secrets and variables › Actions) — jamais dans le code :
+#   SUPABASE_DB_URL            la chaîne de connexion Postgres du projet (Supabase › Connect › Session pooler, port 5432)
+#   SUPABASE_SERVICE_ROLE_KEY  la clé « service_role » (Supabase › Settings › API) — pour lire les photos
+#   SAUVEGARDE_CLE             une phrase secrète longue, inventée, gardée dans un gestionnaire de mots de passe :
+#                              sans elle, le fichier ne se déchiffre pas — ni par GitHub, ni par personne.
+#
+# Où sont les sauvegardes : ce dépôt › Actions › « Sauvegarde nocturne » › une exécution › Artifacts.
+# Comment restaurer : sauvegarde/README.md.
+
+name: Sauvegarde nocturne
+
+on:
+  schedule:
+    - cron: "30 2 * * *"   # 02:30 UTC = 02:30 à Abidjan, la nuit calme
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sauvegarder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt (le script d'export des photos)
+        uses: actions/checkout@v7
+
+      - name: Vérifier que les trois secrets sont posés
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          SR: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CLE: ${{ secrets.SAUVEGARDE_CLE }}
+        run: |
+          manque=""
+          [ -z "$DB" ]  && manque="$manque SUPABASE_DB_URL"
+          [ -z "$SR" ]  && manque="$manque SUPABASE_SERVICE_ROLE_KEY"
+          [ -z "$CLE" ] && manque="$manque SAUVEGARDE_CLE"
+          if [ -n "$manque" ]; then echo "::error::Secrets manquants :$manque — voir l'en-tête de ce fichier."; exit 1; fi
+          # Le dépôt est public : le fichier chiffré est téléchargeable par tout compte GitHub.
+          # Sa seule protection est la phrase — on refuse une phrase courte.
+          if [ "${#CLE}" -lt 24 ]; then echo "::error::SAUVEGARDE_CLE est trop courte (24 caractères au moins, six mots inventés) — voir sauvegarde/README.md."; exit 1; fi
+
+      - name: Installer le client Postgres 17 (celui de Supabase)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq curl ca-certificates gnupg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+          echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
+
+      - name: Installer Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      # 1. LA BASE — schémas public (tout le métier), auth (les comptes de connexion, mots de
+      #    passe hachés compris) et storage (la liste des fichiers). Format « custom » : compressé,
+      #    et pg_restore peut en rejouer une table seule. --no-owner / --no-privileges : les rôles
+      #    de Supabase n'existent pas ailleurs, on ne veut pas que la restauration bute dessus.
+      - name: Copier la base (public, auth, storage)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p sortie
+          pg_dump "$SUPABASE_DB_URL" --no-owner --no-privileges \
+            --schema=public --schema=auth --schema=storage \
+            --format=custom --file=sortie/base.dump
+          ls -la sortie/base.dump
+
+      # 2. LES PHOTOS — chaque bucket, chaque fichier, par l'API Storage avec la clé service.
+      - name: Copier les photos (Storage)
+        env:
+          SUPABASE_URL: https://xkfltqjbmolmdwdafzcx.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node sauvegarde/exporter-les-fichiers.mjs sortie/fichiers
+
+      # 3. UN SEUL FICHIER, CHIFFRÉ — AES-256 avec la phrase secrète. Sans la phrase, illisible.
+      - name: Assembler et chiffrer
+        env:
+          SAUVEGARDE_CLE: ${{ secrets.SAUVEGARDE_CLE }}
+        run: |
+          jour=$(date -u +%Y-%m-%d)
+          tar -czf "clt-sauvegarde-$jour.tar.gz" -C sortie .
+          # La phrase passe par l'entrée standard : jamais visible dans la liste des processus.
+          printf '%s' "$SAUVEGARDE_CLE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+              --symmetric --cipher-algo AES256 \
+              --output "clt-sauvegarde-$jour.tar.gz.gpg" "clt-sauvegarde-$jour.tar.gz"
+          rm -f "clt-sauvegarde-$jour.tar.gz"
+          rm -rf sortie
+          ls -la clt-sauvegarde-*.gpg
+          echo "JOUR=$jour" >> "$GITHUB_ENV"
+
+      - name: Garder 30 jours
+        uses: actions/upload-artifact@v4
+        with:
+          name: clt-sauvegarde-${{ env.JOUR }}
+          path: clt-sauvegarde-*.gpg
+          retention-days: 30
+          if-no-files-found: error
+
+  # L'EXERCICE DE RESTAURATION — chaque nuit, pas une fois par an. Une base Postgres vierge, la
+  # sauvegarde déchiffrée et rejouée, les tables comptées. Si ça casse, on le sait le matin.
+  restaurer:
+    needs: sauvegarder
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: exercice
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v7
+
+      - name: Installer le client Postgres 17
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq curl ca-certificates gnupg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+          echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Reprendre la sauvegarde de cette nuit
+        uses: actions/download-artifact@v4
+        with:
+          pattern: clt-sauvegarde-*
+          merge-multiple: true
+
+      - name: Déchiffrer et rejouer dans une base vierge
+        env:
+          SAUVEGARDE_CLE: ${{ secrets.SAUVEGARDE_CLE }}
+          PGPASSWORD: exercice
+        run: |
+          f=$(ls clt-sauvegarde-*.gpg | head -1)
+          printf '%s' "$SAUVEGARDE_CLE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+              --output sauvegarde.tar.gz --decrypt "$f"
+          mkdir -p exercice && tar -xzf sauvegarde.tar.gz -C exercice
+          psql -h localhost -U postgres -c "create database exercice_clt"
+          # Les schémas et rôles de Supabase n'existent pas ici : on les pose à blanc, et on
+          # tolère les avertissements sur ce qui leur appartient (extensions, grants).
+          psql -h localhost -U postgres -d exercice_clt -c "create schema if not exists auth; create schema if not exists storage; create schema if not exists extensions; create extension if not exists pgcrypto; create role anon; create role authenticated; create role service_role; create role supabase_admin;" || true
+          pg_restore -h localhost -U postgres -d exercice_clt --no-owner --no-privileges exercice/base.dump || echo "::warning::pg_restore a signalé des avertissements (attendu : objets propres à Supabase)."
+          echo "== Ce que la restauration a rendu =="
+          psql -h localhost -U postgres -d exercice_clt -At -c "
+            select 'profiles', count(*) from public.profiles
+            union all select 'colis', count(*) from public.colis
+            union all select 'activity_log', count(*) from public.activity_log
+            union all select 'auth.users', count(*) from auth.users
+            union all select 'storage.objects', count(*) from storage.objects;"
+          echo "== Fichiers copiés =="
+          find exercice/fichiers -type f | wc -l
+          # Le verdict : au moins un compte et un colis, sinon la nuit a produit un fichier vide.
+          n=$(psql -h localhost -U postgres -d exercice_clt -At -c "select count(*) from public.colis")
+          [ "$n" -gt 0 ] || { echo "::error::La sauvegarde restaurée ne contient aucun colis."; exit 1; }
+          echo "Exercice de restauration réussi : $n colis rejoués."

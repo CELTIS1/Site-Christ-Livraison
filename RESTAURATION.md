@@ -11,6 +11,8 @@ comment remettre CLT debout à partir d'une sauvegarde. Il ne suppose aucune mé
 
 ## Où sont les sauvegardes
 
+**Depuis le 20 septembre 2026 (lot 20.H), il y en a deux.** La sauvegarde **de chaque nuit**, automatique, chiffrée, gardée 30 jours et restaurée chaque nuit pour preuve : GitHub › Actions › « Sauvegarde nocturne » — tout est dit dans [`sauvegarde/README.md`](sauvegarde/README.md). Et la sauvegarde **à la main**, décrite ci-dessous, qui reste utile avant un gros changement.
+
 **Drive › `08 - Application & Technique` › `Sauvegardes` › un dossier par date.**
 
 Chaque dossier daté contient :

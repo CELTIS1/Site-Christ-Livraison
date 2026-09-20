@@ -34,6 +34,9 @@ __pycache__/
 *.sql
 *.dump
 *.backup
+# Une seule exception (lot 20.H) : la forme des trois tables qui portent l'entreprise — aucune
+# donnée, aucune règle d'accès ; rien que SCHEMA-DE-BASE.md ne dise déjà.
+!sql/creation-des-tables.sql
 
 # --- Guides internes de configuration (dossier privé, ne pas publier) ---
 _sql-prive/*.md
