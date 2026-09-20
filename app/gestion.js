@@ -3057,7 +3057,7 @@ async function loadExpressCompta(){
   }).join('');
   wCour.innerHTML = `<table class="g-table"><thead><tr><th>Coursier</th>`
     + `<th style="text-align:right;" title="Avance non consommée : CLT la lui doit.">Solde dû au coursier</th>`
-    + `<th style="text-align:right;" title="Courses livrées dont la commission n'a pas été prélevée.">Commission à prélever</th>`
+    + `<th style="text-align:right;" title="Portefeuille en négatif (commissions prélevées au-delà de l'avance) et commissions pas encore prélevées : à recouvrer auprès du coursier.">Dû par le coursier</th>`
     + `</tr></thead><tbody>${lc}</tbody>`
     + `<tfoot><tr><th>Total</th><th style="text-align:right;">${fmtF(tSolde)}</th>`
     + `<th style="text-align:right;">${fmtF(tReste)}</th></tr></tfoot></table>`;

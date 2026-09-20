@@ -54,7 +54,9 @@ verifier('il dit que la recharge est une avance que CLT doit encore',
 verifier('une seule phrase reste visible ; le détail est replié',
   /clt-alert-info">\s*<strong>[^<]{0,90}<\/strong>\s*<\/div>/.test(html));
 verifier('les colonnes portent ces mots-là', ['Encaissé par les coursiers', 'Commission due',
-  'Reste à prélever', 'Recharges encaissées', 'Solde dû au coursier', 'Commission à prélever']
+  // « Commission à prélever » est devenue « Dû par le coursier » le 20/09/2026 (20.F) : la
+  // commission est prélevée par le trigger, la dette d'un coursier est son solde négatif.
+  'Reste à prélever', 'Recharges encaissées', 'Solde dû au coursier', 'Dû par le coursier']
   .every(t => gestion.includes(t)));
 /* La faute qu'on ne veut jamais voir : un total qui mélange les natures. */
 verifier('aucun total ne mélange le prix des courses avec la commission',

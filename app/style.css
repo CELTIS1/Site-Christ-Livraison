@@ -1697,6 +1697,12 @@ html[data-theme="dark"]{
    On doit donc utiliser !important ici pour que TOUT le fond passe en sombre,
    et pas seulement les cartes. Fond profond, uni et élégant. */
 html[data-theme="dark"] body{ background:#0F1824 !important; color:#E6ECF3; }
+/* Les cartes Leaflet (Express, équipe) restaient un rectangle éclatant la nuit : les tuiles
+   OpenStreetMap sont assombries par un filtre, les contrôles et l'attribution suivent. (20/09, lot F) */
+html[data-theme="dark"] .leaflet-container{ background:#141D29; }
+html[data-theme="dark"] .leaflet-tile-pane{ filter:brightness(.72) contrast(1.05) saturate(.75); }
+html[data-theme="dark"] .leaflet-control-zoom a, html[data-theme="dark"] .leaflet-control-attribution{ background:#1C2739; color:#CFE0F5; border-color:#2E3E54; }
+html[data-theme="dark"] .leaflet-control-attribution a{ color:#9EC0E6; }
 html[data-theme="dark"] .wrap{ background:transparent; }
 
 /* Boutons pleins : garder un texte réellement blanc.

@@ -17,10 +17,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920site">
+<link rel="stylesheet" href="style.css?v=20260920express2">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920site"></script>
-<script src="splash.js?v=20260920site"></script>
+<script src="theme.js?v=20260920express2"></script>
+<script src="splash.js?v=20260920express2"></script>
 <style>
   /* ===== Thème violet CLT Express + rafraîchissement visuel (2026) ===== */
   :root{
@@ -129,6 +129,7 @@
   }
   .course-item:hover{ box-shadow:0 8px 22px rgba(76,29,149,0.10) !important; border-color:var(--clt-violet-line) !important; transform:translateY(-1px); }
   .course-item .info .desc{ font-size:14px; }
+  .course-annul-note{ font-size:12.5px; color:var(--muted); max-width:150px; text-align:right; line-height:1.35; margin-top:4px; }
   .course-item .coursier-info{ font-size:12px; color:var(--clt-violet-dark); margin-top:5px; font-weight:600; }
   .course-item .status-col > div{ color:var(--clt-violet-dark) !important; }
   .coursier-rep{ display:inline-flex; align-items:center; gap:3px; margin-left:6px; padding:1px 7px; border-radius:999px; background:#fff6e8; color:#8a4b00; font-weight:700; font-size:11px; border:1px solid #f4d9bd; }
@@ -617,10 +618,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920site"></script>
-<script src="express-config.js?v=20260920site"></script>
-<script src="biometric-lock.js?v=20260920site"></script>
-<script src="clt-select-recherche.js?v=20260920site"></script>
+<script src="clt-common.js?v=20260920express2"></script>
+<script src="express-config.js?v=20260920express2"></script>
+<script src="biometric-lock.js?v=20260920express2"></script>
+<script src="clt-select-recherche.js?v=20260920express2"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -849,7 +850,10 @@
         <div class="status-col">
           ${expressStatutBadgeHTML(c.status)}
           <div style="font-weight:700;color:var(--navy);">${formatMontant(c.prix_total)}</div>
-          ${canCancel ? `<button class="btn btn-sm btn-outline btn-cancel-course">Annuler</button>` : ''}
+          ${canCancel ? `<button class="btn btn-sm btn-outline btn-cancel-course">Annuler</button>`
+            : (['acceptee', 'recuperee'].includes(c.status)
+              ? `<div class="course-annul-note">Un coursier est en route : pour annuler, appelez-le ou joignez CLT.</div>`
+              : '')}
         </div>
       </div>
     `;
@@ -1022,11 +1026,22 @@
     box.querySelectorAll('.btn-cancel-course').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.closest('.course-item').dataset.id;
-        if (!(await cltConfirm({ title: 'Annuler cette course ?', sub: 'Le coursier sera notifié. Cette action est irréversible.', okLabel: 'Annuler la course', cancelLabel: 'Garder', danger: true }))) return;
+        /* L'ANNULATION ENCADRÉE (20/09/2026, lot F). Elle n'est possible que tant qu'aucun
+           coursier n'a accepté : la base le garantit (transition en_attente → annulee
+           seulement, trigger express_courses_figer_argent) ; l'écran le dit avant de laisser
+           faire, et traduit le refus de la base si la course a été prise entre-temps. */
+        const course = myCourses.find(x => x.id === id);
+        if (course && course.status !== 'en_attente') { cltToast('Un coursier a déjà pris cette course : appelez-le, ou joignez CLT.', { type: 'warning' }); return; }
+        if (!(await cltConfirm({ title: 'Annuler cette course ?', sub: 'Aucun coursier ne l\'a encore prise : elle disparaît, sans frais. Une fois acceptée, une course ne s\'annule plus depuis l\'application.', okLabel: 'Annuler la course', cancelLabel: 'Garder', danger: true }))) return;
         btn.disabled = true;
         const { error } = await supabaseClient.from('express_courses')
-          .update({ status: 'annulee', cancelled_at: new Date().toISOString() }).eq('id', id);
-        if (error) { cltToast('Erreur : ' + error.message, { type: 'error' }); btn.disabled = false; return; }
+          .update({ status: 'annulee', cancelled_at: new Date().toISOString() }).eq('id', id).eq('status', 'en_attente');
+        if (error) {
+          const prise = /transition_interdite/.test(error.message || '');
+          cltToast(prise ? 'Trop tard : un coursier vient de prendre cette course. Appelez-le, ou joignez CLT.' : 'Erreur : ' + error.message, { type: prise ? 'warning' : 'error' });
+          btn.disabled = false; await loadCourses(); return;
+        }
+        cltToast('Course annulée.', { type: 'success' });
         await loadCourses();
       });
     });
@@ -1551,12 +1566,36 @@
   // ============================================================
   function addrEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function addrStorageKey(){ return 'clt_express_addresses_' + (currentUser ? currentUser.id : 'anon'); }
+  /* LE CARNET VIT EN BASE (20/09/2026, lot F) : profiles.express_adresses. Le navigateur n'en
+     garde qu'une copie, pour le hors-ligne et pour les bases pas encore migrées. Au premier
+     chargement, un carnet local que la base ne connaît pas encore y est versé. */
+  let carnetAdresses = null;   // null = pas encore lu ; sinon la liste (source : la base)
   function loadSavedAddresses(){
+    if (Array.isArray(carnetAdresses)) return carnetAdresses;
     try { const v = JSON.parse(localStorage.getItem(addrStorageKey()) || '[]'); return Array.isArray(v) ? v : []; }
     catch(e){ return []; }
   }
   function saveSavedAddresses(list){
+    carnetAdresses = list;
     try { localStorage.setItem(addrStorageKey(), JSON.stringify(list)); } catch(e){}
+    if (!currentUser) return;
+    supabaseClient.from('profiles').update({ express_adresses: list }).eq('id', currentUser.id)
+      .then(({ error }) => { if (error) console.warn('Carnet non enregistré en base :', error.message); }, () => {});
+  }
+  async function chargerCarnetDepuisLaBase(profile){
+    // Lecture à part : si la colonne n'existe pas encore (migration pas jouée), le profil, lui,
+    // a déjà été lu et l'écran s'ouvre ; le carnet reste simplement local.
+    let enBase = null;
+    try {
+      const { data, error } = await supabaseClient.from('profiles').select('express_adresses').eq('id', profile.id).single();
+      if (!error && data && Array.isArray(data.express_adresses)) enBase = data.express_adresses;
+    } catch (e) { enBase = null; }
+    let local = [];
+    try { const v = JSON.parse(localStorage.getItem(addrStorageKey()) || '[]'); local = Array.isArray(v) ? v : []; } catch(e){}
+    if (enBase === null) { carnetAdresses = null; return; }   // colonne absente : on reste local
+    if (enBase.length) { carnetAdresses = enBase; try { localStorage.setItem(addrStorageKey(), JSON.stringify(enBase)); } catch(e){} return; }
+    if (local.length) { saveSavedAddresses(local); return; }   // premier passage : on verse le local en base
+    carnetAdresses = [];
   }
   function fillLegFromAddress(leg, commune, adresse){
     const sel = document.getElementById('course-' + leg + '-commune');
@@ -1647,6 +1686,7 @@
 
     document.getElementById('course-pickup-commune').innerHTML = communesOptionsHTML(null, 'Choisir une commune');
     document.getElementById('course-dropoff-commune').innerHTML = communesOptionsHTML(null, 'Choisir une commune');
+    await chargerCarnetDepuisLaBase(profile);
     initAddrBook();
 
     const { data: cfg } = await supabaseClient.from('express_config').select('*').eq('id', 1).single();

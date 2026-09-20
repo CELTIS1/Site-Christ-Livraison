@@ -874,10 +874,15 @@ verifier(
    numéro sur express-login, le code à 6 chiffres, Express « en espèces » dans les CGV et la
    politique, les tarifs en cartes sur téléphone, la FAQ au clavier, offline.html (noindex,
    numéro), installer.html dans le sitemap et avec son manifeste, les pages publiques
-   pré-cachées. Aucune migration. Étiquette 20260920site. */
+   pré-cachées. Aucune migration. Étiquette 20260920site.
+   v187, le 20/09/2026 — lot 20.F, Express : l'annulation encadrée côté client (en attente
+   seulement, refus de la base traduit), le carnet d'adresses en base (profiles.express_adresses),
+   la vue comptable par coursier corrigée (la dette est le solde négatif), la carte Leaflet la
+   nuit, la documentation Wave mise d'accord avec le code. Migration
+   2026-09-20-express-carnet-et-compta.sql. Étiquette 20260920express2. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v186'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v187'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
