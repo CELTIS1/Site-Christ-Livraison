@@ -3505,3 +3505,41 @@ html[data-theme="dark"] .reclam-eq__qui--livreur{ background:#3A2716; color:#F0A
 .reclam-eq__gestes .btn{ min-height:44px; }
 html[data-theme="dark"] .reclam-eq{ background:#3a2a1a; }
 html[data-theme="dark"] .reclam-eq--vieille{ background:#3A1A17; }
+
+/* ---- La densité du bureau sur ordinateur (feuille de route 14.2, 20/09/2026) ----------------
+   Au-dessus de 1 024 px seulement ; sur téléphone et tablette, rien ne change. Trois gestes, tous
+   en CSS, donc réversibles en retirant ce bloc :
+   1. la recherche, la date et le livreur tiennent sur UNE ligne (ils en prenaient trois) ;
+   2. une carte de colis déjà enregistré se lit en deux colonnes, sans la frise des étapes — le
+      badge de statut, à droite, dit la même chose en un mot. Mesuré sur 1 366 px : 520 px de haut
+      avant, moins de la moitié après, donc deux à trois fois plus de colis sous les yeux ;
+   3. la fiche en cours de saisie (celle qui porte « Enregistrer ») range ses champs en colonnes
+      au lieu d'une pile de 1 000 px.
+   Le vrai tableau (une ligne par colis, la fiche à côté) reste le chantier 9.6. */
+@media (min-width:1024px){
+  #panel-colis{ display:grid; grid-template-columns:minmax(280px,1fr) auto; column-gap:14px; align-items:center; }
+  #panel-colis > *{ grid-column:1 / -1; min-width:0; }
+  #panel-colis > .search-wrap{ grid-column:1; margin-bottom:12px; }
+  #panel-colis > .date-filter-wrap{ grid-column:2; margin-bottom:12px; flex-wrap:nowrap; }
+  #panel-colis > .date-filter-wrap label, #panel-colis > .date-filter-wrap .date-filter-clear{ white-space:nowrap; }
+  #panel-colis > .date-filter-wrap label[for="filtre-livreur-colis"]{ margin-left:4px !important; }
+  #panel-colis > .date-filter-wrap .clt-rs{ width:200px; flex:0 0 200px; }
+  #panel-colis > .date-filter-wrap select.date-filter-input{ max-width:200px; }
+
+  @media (max-width:1199px){
+    #panel-colis > .date-filter-wrap .clt-rs{ width:160px; flex:0 0 160px; }
+    #panel-colis > .date-filter-wrap select.date-filter-input{ max-width:160px; }
+    #panel-colis > .date-filter-wrap .date-filter-input[type="date"]{ max-width:150px; }
+  }
+
+  #colis-list .colis-item:not(:has(.btn-save)) .clt-stepper:not(.is-alert){ display:none; }
+  #colis-list .colis-item:not(:has(.btn-save)) .info{ columns:2; column-gap:32px; }
+  #colis-list .colis-item:not(:has(.btn-save)) .info > *{ break-inside:avoid; }
+  #colis-list .colis-item:has(.btn-save) .info{ columns:2; column-gap:32px; }
+  #colis-list .colis-item:has(.btn-save) .info > *{ break-inside:avoid; }
+}
+/* Vu le 20/09 en vérifiant 14.2 la nuit : le téléphone du destinataire, bleu marine sur fond nuit,
+   ne se lisait plus — c'est pourtant ce qu'on cherche en premier sur une carte. */
+html[data-theme="dark"] .colis-tel{ color:#8FC1FF; }
+html[data-theme="dark"] .colis-item .info .meta.colis-quoi{ color:#AEBBCB; }
+

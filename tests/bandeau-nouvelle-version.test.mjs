@@ -904,10 +904,14 @@ verifier(
    immobilisés). app/bilan-de-la-semaine.js reprend les définitions de la fonction serveur
    bilan-hebdomadaire, et le banc le-bilan-de-la-semaine fait tourner LES DEUX sur les mêmes
    colis. L'argent vient de totauxArgent. La console lit en plus encaissement_remis et dix
-   semaines d'express_courses. pointsEnClair arrondit au dixième (−9,2 points). Aucune migration. Étiquette 20260920semaine. */
+   semaines d'express_courses. pointsEnClair arrondit au dixième (−9,2 points). Aucune migration. Étiquette 20260920semaine.
+   v192, le 20/09/2026 — feuille de route 14.2, la densité du bureau sur ordinateur : un seul bloc
+   CSS au-dessus de 1 024 px (style.css). Recherche, date et livreur sur une ligne ; la carte d'un
+   colis enregistré en deux colonnes, sans la frise (sauf alerte) ; la fiche en saisie en deux
+   colonnes. Téléphone inchangé. Le numéro du destinataire se lit enfin la nuit. Aucune migration. Étiquette 20260920dense. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v191'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v192'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
