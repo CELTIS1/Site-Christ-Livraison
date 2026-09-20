@@ -919,10 +919,16 @@ verifier(
    colis ; le CSS cache les cartes sauf celle qu'on choisit, épinglée à droite (position fixe) —
    rien n'est déplacé, les gestes restent ceux de la carte, le choix survit au redessin. La
    colonne passe de 1 080 à 1 560 px sur cet écran-là seulement. Sous 1 200 px, rien ne change.
-   Parcours 20 (la-liste-et-la-fiche). Aucune migration. Étiquette 20260920fiche. */
+   Parcours 20 (la-liste-et-la-fiche). Aucune migration. Étiquette 20260920fiche.
+   v195, le 20/09/2026 — feuille de route 10.1, la chaîne de l'argent colis par colis : Finances
+   s'ouvre sur quatre cases (à encaisser → chez le livreur → en caisse → reversé), avec le montant,
+   le nombre de colis et l'âge du plus ancien ; un appui ouvre par personne puis colis par colis.
+   Règle pure app/chaine-de-l-argent.js, branchée sur lib/argent.js ; écran
+   app/equipe/15-la-chaine-de-l-argent.js, qui lit toute la base. Signale un colis reversé alors
+   que le livreur n'a pas remis (argent avancé par CLT). Aucune colonne nouvelle, aucune migration. Étiquette 20260920chaine. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v194'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v195'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

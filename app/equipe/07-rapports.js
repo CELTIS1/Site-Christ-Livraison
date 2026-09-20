@@ -1278,6 +1278,9 @@ async function comptaDettes(){
 
 async function renderCompta(){
 if (window.CLTPointDuJour) { CLTPointDuJour.init(); CLTPointDuJour.rafraichir(); }
+// La chaîne de l'argent (10.1) : relue à chaque fois que les finances se redessinent — donc après
+// chaque remise de caisse et chaque reversement.
+if (window.CLTChaineEcran) { CLTChaineEcran.init(); CLTChaineEcran.rafraichir(); }
 const summary = document.getElementById('compta-summary');
 const recapBox = document.getElementById('compta-recap');
 const detail = document.getElementById('compta-detail');

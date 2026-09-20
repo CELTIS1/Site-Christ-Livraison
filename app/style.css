@@ -3592,3 +3592,70 @@ html[data-theme="dark"] .eq-ligne-statut[data-statut="retour"]{ background:#2E21
 html[data-theme="dark"] .eq-ligne-statut[data-statut="en_livraison"], html[data-theme="dark"] .eq-ligne-statut[data-statut="recupere"]{ background:#1B2A3F; color:#9CC2F5; }
 @media print{ body.eq-large #colis-list{ width:auto; } body.eq-large #colis-list .colis-item{ display:flex; position:static; } body.eq-large #colis-list .eq-ligne{ display:none; } }
 
+/* ---- La chaîne de l'argent (feuille de route 10.1, 20/09/2026) --------------------------------
+   Quatre cases dans l'ordre où l'argent voyage. Elles sont à la fois le résumé et la porte : un
+   clic ouvre le détail dessous. Sur téléphone, elles s'empilent et les flèches pointent vers le
+   bas. Une case dont l'argent attend depuis trois jours ou plus s'entoure d'orange. */
+.chaine-argent{ margin:0 0 18px; padding:16px 18px; background:var(--card, #fff); border:1px solid var(--border, #e6ebf1); border-radius:16px; }
+.cha-entete{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.cha-titre{ margin:0; font-size:17px; color:var(--navy, #1B4374); }
+.cha-sous{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+.cha-nav{ display:inline-flex; gap:6px; align-items:center; }
+.cha-nav-btn, .cha-nav-auj{ font:inherit; font-weight:700; color:var(--navy, #1B4374); background:var(--card, #fff); border:1.5px solid var(--border-strong, #d7dee6); border-radius:10px; height:44px; cursor:pointer; }
+.cha-nav-btn{ width:44px; flex:0 0 44px; padding:0; font-size:20px; line-height:1; }
+.cha-nav-auj{ padding:0 14px; font-size:13px; }
+.cha-nav-btn:disabled, .cha-nav-auj:disabled{ opacity:.4; cursor:default; }
+.cha-cases{ display:grid; grid-template-columns:1fr auto 1fr auto 1fr auto 1fr; align-items:stretch; gap:8px; margin-top:14px; }
+.cha-fleche{ align-self:center; color:var(--muted); font-size:18px; }
+.cha-case{ font:inherit; text-align:left; cursor:pointer; display:flex; flex-direction:column; gap:2px; min-height:88px; padding:11px 13px;
+  border-radius:13px; border:1.5px solid var(--border, #e6ebf1); background:#f7f9fc; color:inherit; }
+.cha-case:hover{ border-color:var(--border-strong, #c9d3df); }
+.cha-case--ouverte{ border-color:var(--navy, #1B4374); background:#eef4fd; }
+.cha-case--vieux{ border-color:#E8A24A; background:#fff8ee; }
+.cha-case--reverse{ background:#f1faf5; }
+.cha-case-nom{ font-size:11.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+.cha-case-montant{ font-size:18px; font-weight:800; color:#1E2A38; font-variant-numeric:tabular-nums; }
+.cha-case-sous{ font-size:12px; color:var(--muted); }
+.cha-case:focus-visible{ outline:2px solid var(--navy, #1B4374); outline-offset:2px; }
+.cha-alerte{ margin-top:12px; padding:9px 12px; border-radius:10px; background:#fff6ea; border:1px solid #f0d09a; color:#8a5a00; font-size:12.5px; font-weight:600; line-height:1.45; }
+.cha-detail{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--border, #e6ebf1); }
+.cha-detail-tete{ font-size:11.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.cha-gens{ list-style:none; margin:0; padding:0; display:grid; gap:2px; }
+.cha-gens li{ display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:14px; align-items:baseline; padding:7px 4px; border-bottom:1px solid var(--border, #eef2f6); font-size:13.5px; }
+.cha-gens-nom{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cha-gens-nb{ font-size:12px; color:var(--muted); white-space:nowrap; }
+.cha-colis{ margin-top:10px; }
+.cha-colis > summary{ cursor:pointer; font-size:13px; font-weight:700; color:var(--navy, #1B4374); min-height:40px; display:flex; align-items:center; }
+.cha-table{ width:100%; border-collapse:collapse; font-size:12.5px; margin-top:4px; }
+.cha-table th, .cha-table td{ text-align:left; padding:7px 8px; border-bottom:1px solid var(--border, #eef2f6); }
+.cha-table th{ font-size:11.5px; color:var(--muted); font-weight:700; }
+.cha-table .cha-nombre, .cha-table th:last-child{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.cha-vieux td{ color:#8a4b00; font-weight:600; }
+.cha-vide, .cha-erreur{ font-size:13px; color:var(--muted); padding:8px 0; }
+.cha-erreur{ color:#9a2b1c; font-weight:600; }
+@media (max-width:760px){
+  .chaine-argent{ padding:14px; }
+  .cha-cases{ grid-template-columns:1fr; gap:4px; }
+  .cha-fleche{ justify-self:center; transform:rotate(90deg); line-height:1; }
+  .cha-case{ min-height:72px; }
+  .cha-nav{ width:100%; } .cha-nav-auj{ flex:1; }
+  .cha-gens li{ grid-template-columns:minmax(0,1fr) auto; } .cha-gens-nb{ grid-column:1; grid-row:2; }
+  .cha-gens li strong{ grid-row:1; grid-column:2; }
+  .cha-table thead{ display:none; }
+  .cha-table, .cha-table tbody, .cha-table tr, .cha-table td{ display:block; width:100%; }
+  .cha-table tr{ border:1px solid var(--border, #eef2f6); border-radius:10px; padding:6px 10px; margin-bottom:6px; }
+  .cha-table td{ border:0; padding:2px 0; display:flex; justify-content:space-between; gap:10px; }
+  .cha-table td::before{ content:attr(data-label); color:var(--muted); font-size:11.5px; font-weight:600; }
+}
+html[data-theme="dark"] .chaine-argent{ background:#16212E; border-color:#2A3849; }
+html[data-theme="dark"] .cha-titre, html[data-theme="dark"] .cha-colis > summary, html[data-theme="dark"] .cha-nav-btn, html[data-theme="dark"] .cha-nav-auj{ color:#9CC2F5; }
+html[data-theme="dark"] .cha-nav-btn, html[data-theme="dark"] .cha-nav-auj{ background:#141F2E; border-color:#33445A; }
+html[data-theme="dark"] .cha-case{ background:#1C2739; border-color:#2A3849; }
+html[data-theme="dark"] .cha-case--ouverte{ background:#1F3350; border-color:#8FC1FF; }
+html[data-theme="dark"] .cha-case--vieux{ background:#2E2116; border-color:#7A4A1A; }
+html[data-theme="dark"] .cha-case--reverse{ background:#12332E; }
+html[data-theme="dark"] .cha-case-montant{ color:#E6ECF3; }
+html[data-theme="dark"] .cha-alerte{ background:#2E2116; border-color:#7A4A1A; color:#F0C98A; }
+html[data-theme="dark"] .cha-vieux td{ color:#F0C98A; }
+html[data-theme="dark"] .cha-gens li, html[data-theme="dark"] .cha-table th, html[data-theme="dark"] .cha-table td, html[data-theme="dark"] .cha-detail{ border-color:#2A3849; }
+

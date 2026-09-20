@@ -124,6 +124,29 @@ verifier('le colis est revenu « à reverser »',
 verifier('et la fiche le dit', /annulé/.test(await page.locator('#cd-rev-historique').innerText().catch(() => '')),
   (await page.locator('#cd-rev-historique').innerText().catch(() => '')).slice(0, 200));
 
+titre('6. La chaîne de l\'argent (10.1) : où est l\'argent des articles, et depuis quand');
+// La fiche de la cliente du point 5 est encore ouverte : on la referme comme le ferait l'équipe.
+await page.locator('#cd-fiche-fermer').click();
+await dodo(500);
+await page.evaluate(() => showEquipeTab('finances'));
+await dodo(1800);
+const chaine = page.locator('#chaine-argent');
+verifier('quatre cases, dans l\'ordre où l\'argent voyage', (await chaine.locator('.cha-case').allInnerTexts()).map((t) => t.split('\n')[0].trim().toUpperCase()).join(' → ') === 'À ENCAISSER → CHEZ LE LIVREUR → EN CAISSE → REVERSÉ', (await chaine.locator('.cha-case').allInnerTexts()).join(' | ').slice(0, 300));
+verifier('chaque case dit un montant en FCFA et un nombre de colis', (await chaine.locator('.cha-case').allInnerTexts()).every((t) => /FCFA/.test(t) && /\d+ colis/.test(t)));
+/* Le reversement vient d'être défait au point 5 : ce colis-là doit être redevenu une dette —
+   chez le livreur ou en caisse — et non rester dans « Reversé ». La chaîne relit la base. */
+const sommeDue = await page.evaluate(() => [...document.querySelectorAll('#chaine-argent .cha-case--chez_livreur .cha-case-montant, #chaine-argent .cha-case--en_caisse .cha-case-montant')].map((e) => Number(e.textContent.replace(/\D/g, ''))).reduce((a, b) => a + b, 0));
+verifier('ce qui est dû aux clientes n\'est pas nul après la correction', sommeDue > 0, sommeDue);
+await chaine.locator('[data-etat="chez_livreur"]').click();
+await dodo(300);
+verifier('un appui ouvre « Qui doit remettre », par livreur, puis colis par colis', /Qui doit remettre/i.test(await chaine.innerText()) && (await chaine.locator('.cha-colis').count()) === 1);
+await chaine.locator('[data-jour="-1"]').click();
+await dodo(1200);
+verifier('‹ : le reversé d\'hier ; « Aujourd\'hui » redevient cliquable', !(await chaine.locator('.cha-nav-auj').isDisabled()));
+await chaine.locator('.cha-nav-auj').click();
+await dodo(1200);
+verifier('rien ne déborde de la boîte, sur un téléphone', await page.evaluate(() => { const b = document.getElementById('chaine-argent'); return b.scrollWidth <= b.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth; }));
+
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 await N.fermer();
 process.exit(bilan() ? 1 : 0);
