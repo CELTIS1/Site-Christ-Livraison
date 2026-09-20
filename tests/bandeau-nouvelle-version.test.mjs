@@ -931,10 +931,16 @@ verifier(
    numérotées dans l'ordre où l'on roule (plus proche voisin depuis la commune de chargement, puis
    décroisement 2-opt ; « à livrer avant le » en tête ; expéditions et communes inconnues à part).
    Règle pure app/ordre-de-livraison.js ; l'en-tête de groupe de config.js accepte une icône.
-   Le téléphone se souvient du choix. Aucune migration. Étiquette 20260920trajet. */
+   Le téléphone se souvient du choix. Aucune migration. Étiquette 20260920trajet.
+   v197, le 20/09/2026 — « ensuite » n° 2, la carte du livreur avec ses arrêts : sous « Par
+   trajet », « 🗺️ Voir le trajet » déplie un schéma SVG (aucune bibliothèque, aucune tuile : il
+   marche hors connexion) — arrêts numérotés, reliés dans l'ordre, départ, cadre réglé sur les
+   communes du jour, noms qui ne se recouvrent pas — et « Ouvrir le trajet dans Google Maps »
+   (origine, étapes, destination ; dix communes au plus, et c'est dit). Seuls des noms de
+   communes partent chez Google. Aucune migration. Étiquette 20260920carte. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v196'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v197'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

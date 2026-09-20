@@ -111,6 +111,12 @@ verifier('les deux colis de Marcory sont sous le même arrêt', /Marcory 2$/.tes
 const resume = await page.locator('#mes-trajet-resume').innerText();
 verifier('l\'ordre est dit en clair, avec son point de départ et sa limite (« à vol d\'oiseau »)', /depuis Adjamé/.test(resume) && /→/.test(resume) && /vol d'oiseau/.test(resume), resume);
 verifier('chaque carte dit sa cliente, puisque l\'en-tête ne la dit plus', (await page.locator('#mes-colis-list .day-group').first().locator('.mes-cliente').count()) >= 5);
+verifier('la carte du trajet est repliée d\'office', !(await page.locator('.mes-trajet-carte').evaluate((d) => d.open)));
+await page.locator('.mes-trajet-carte > summary').click();
+await dodo(400);
+verifier('dépliée : un schéma avec autant d\'arrêts numérotés que de communes', (await page.locator('.tr-schema .tr-arret').count()) === trajet.length && await page.locator('.tr-schema').isVisible());
+verifier('le schéma tient dans l\'écran du téléphone', await page.evaluate(() => { const r = document.querySelector('.tr-schema').getBoundingClientRect(); return r.width <= window.innerWidth && r.width > 250; }));
+verifier('« Ouvrir le trajet dans Google Maps » : un vrai lien d\'itinéraire, depuis Adjamé', /google\.com\/maps\/dir\//.test(await page.locator('.mes-trajet-maps').getAttribute('href')) && decodeURIComponent(await page.locator('.mes-trajet-maps').getAttribute('href')).includes('origin=Adjamé'));
 await page.reload();
 await dodo(3500);
 verifier('le téléphone s\'en souvient', await page.locator('#mes-vue [data-vue="trajet"]').getAttribute('aria-pressed') === 'true' && /^📍 1 · /.test((await enTetes())[0]));

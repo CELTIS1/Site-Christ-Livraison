@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920trajet">
+<link rel="stylesheet" href="style.css?v=20260920carte">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920trajet"></script>
-<script src="splash.js?v=20260920trajet"></script>
+<script src="theme.js?v=20260920carte"></script>
+<script src="splash.js?v=20260920carte"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -609,6 +609,25 @@
   .mes-trajet-resume{ font-size:13px; line-height:1.5; color:#44546a; background:#f3f7fc; border:1px solid #dbe6f3; border-radius:11px; padding:9px 12px; margin:0 0 12px; }
   .mes-trajet-resume.hidden{ display:none; }
   .mes-cliente{ font-weight:600; }
+  .mes-trajet-carte{ margin-top:8px; }
+  .mes-trajet-carte > summary{ cursor:pointer; font-weight:700; color:var(--navy, #1B4374); min-height:44px; display:flex; align-items:center; font-size:13.5px; }
+  .tr-schema{ display:block; width:100%; height:auto; background:#fff; border:1px solid #dbe6f3; border-radius:10px; }
+  .tr-ailleurs{ fill:#d5dde8; }
+  .tr-ligne{ fill:none; stroke:#1B4374; stroke-width:3; stroke-linejoin:round; stroke-linecap:round; stroke-dasharray:1 7; }
+  .tr-depart{ fill:#E26313; }
+  .tr-arret{ fill:#1B4374; stroke:#fff; stroke-width:3; }
+  .tr-arret--presse{ fill:#c0392b; }
+  .tr-rang{ fill:#fff; font-size:20px; font-weight:800; }
+  .tr-nom{ fill:#1E2A38; font-size:23px; font-weight:700; paint-order:stroke; stroke:#fff; stroke-width:5px; stroke-linejoin:round; }
+  .mes-trajet-note{ font-size:13px; color:#5b6473; margin:6px 0 8px; }
+  .mes-trajet-maps{ display:flex; align-items:center; justify-content:center; min-height:44px; text-decoration:none; }
+  html[data-theme="dark"] .tr-schema{ background:#0F1824; border-color:#2A3849; }
+  html[data-theme="dark"] .tr-ailleurs{ fill:#33445A; }
+  html[data-theme="dark"] .tr-ligne{ stroke:#8FC1FF; }
+  html[data-theme="dark"] .tr-arret{ fill:#2F6FBF; stroke:#0F1824; }
+  html[data-theme="dark"] .tr-nom{ fill:#E6ECF3; stroke:#0F1824; }
+  html[data-theme="dark"] .mes-trajet-carte > summary{ color:#9CC2F5; }
+  html[data-theme="dark"] .mes-trajet-note{ color:#C9D3DF; }
   html[data-theme="dark"] .mes-vue{ background:#1C2739; }
   html[data-theme="dark"] .mes-vue-btn{ color:#C9D3DF; }
   html[data-theme="dark"] .mes-vue-btn.active{ background:#0F1824; color:#9CC2F5; box-shadow:none; }
@@ -1009,24 +1028,24 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920trajet"></script>
-<script src="lib/bibliotheques.js?v=20260920trajet"></script>
-<script src="lib/retours.js?v=20260920trajet"></script>
-<script src="lib/reclamations.js?v=20260920trajet"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920trajet"></script>
-<script src="lib/argent.js?v=20260920trajet"></script>
-<script src="lib/releve-cliente.js?v=20260920trajet"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920trajet"></script>
-<script src="lib/briques-argent.js?v=20260920trajet"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920trajet"></script>
-<script src="lib/annonce-de-remise.js?v=20260920trajet"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920trajet"></script>
-<script src="lib/primes.js?v=20260920trajet"></script>
-<script src="lib/doublons.js?v=20260920trajet"></script>
-<script src="config.js?v=20260920trajet"></script>
+<script src="clt-common.js?v=20260920carte"></script>
+<script src="lib/bibliotheques.js?v=20260920carte"></script>
+<script src="lib/retours.js?v=20260920carte"></script>
+<script src="lib/reclamations.js?v=20260920carte"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920carte"></script>
+<script src="lib/argent.js?v=20260920carte"></script>
+<script src="lib/releve-cliente.js?v=20260920carte"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920carte"></script>
+<script src="lib/briques-argent.js?v=20260920carte"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920carte"></script>
+<script src="lib/annonce-de-remise.js?v=20260920carte"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920carte"></script>
+<script src="lib/primes.js?v=20260920carte"></script>
+<script src="lib/doublons.js?v=20260920carte"></script>
+<script src="config.js?v=20260920carte"></script>
 <!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
-<script src="ordre-de-livraison.js?v=20260920trajet"></script>
-<script src="biometric-lock.js?v=20260920trajet"></script>
+<script src="ordre-de-livraison.js?v=20260920carte"></script>
+<script src="biometric-lock.js?v=20260920carte"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3028,9 +3047,20 @@
       groupsMes.forEach(day => { day.clients.forEach(g => { g.icone = g.key === '~expedition' ? '🚌' : '📍'; }); day.clients.sort((a, b) => rangDe(a.key) - rangDe(b.key)); });
       if (boiteResume) {
         boiteResume.classList.toggle('hidden', !ordre.arrets.length);
-        boiteResume.textContent = ordre.arrets.length
-          ? `Ordre proposé${ordre.depart ? ' depuis ' + ordre.depart : ''} : ${ordre.arrets.map(a => a.commune).join(' → ')} — environ ${String(ordre.kmTotal).replace('.', ',')} km entre les communes, à vol d'oiseau. Dans chaque commune, c'est vous qui savez.`
-          : '';
+        /* LA CARTE DU TRAJET (20/09/2026). Un schéma dessiné ici même (aucune bibliothèque, aucune
+           tuile : il marche hors connexion et ne coûte pas un octet de forfait), replié d'office ;
+           et le vrai itinéraire, avec les routes et les ponts, dans Google Maps. */
+        const lien = ordre.arrets.length ? lienDuTrajet(ordre) : { url: '' };
+        cltPoserHTML(boiteResume, ordre.arrets.length
+          ? `<div class="mes-trajet-texte">Ordre proposé${ordre.depart ? ' depuis ' + escapeHTML(ordre.depart) : ''} : ${ordre.arrets.map(a => escapeHTML(a.commune)).join(' → ')} — environ ${String(ordre.kmTotal).replace('.', ',')} km entre les communes, à vol d'oiseau. Dans chaque commune, c'est vous qui savez.</div>
+             <details class="mes-trajet-carte"${trajetCarteOuverte ? ' open' : ''}><summary>🗺️ Voir le trajet</summary>
+               ${carteDuTrajetSVG(ordre)}
+               <div class="mes-trajet-note">Un schéma, pas un plan : il montre la forme de votre journée.${lien.complet === false ? ' Google Maps n\u2019accepte que dix communes : le lien s\u2019arrête à la dixième.' : ''}</div>
+               ${lien.url ? `<a class="btn btn-outline btn-sm mes-trajet-maps" href="${escapeHTML(lien.url)}" target="_blank" rel="noopener">🧭 Ouvrir le trajet dans Google Maps</a>` : ''}
+             </details>`
+          : '');
+        const carte = boiteResume.querySelector('.mes-trajet-carte');
+        if (carte && carte.dataset.branche !== '1') { carte.dataset.branche = '1'; carte.addEventListener('toggle', () => { trajetCarteOuverte = carte.open; }); }
       }
     } else {
       if (boiteResume) boiteResume.classList.add('hidden');
@@ -4202,6 +4232,7 @@
      « selectFilterMes is not defined » à chaque changement de date. On passe donc par ce
      point de rendez-vous, posé par cette portée-là au moment où elle se branche. */
   let redessinerFiltresMes = null;
+  let trajetCarteOuverte = false;   // le schéma du trajet, replié d'office ; le redessin garde son état
   // « Par cliente » ou « Par trajet » : le téléphone s'en souvient. (20/09/2026)
   let vueMes = (function () { try { return localStorage.getItem('clt_livreur_vue') === 'trajet' ? 'trajet' : 'cliente'; } catch (_e) { return 'cliente'; } })();
 

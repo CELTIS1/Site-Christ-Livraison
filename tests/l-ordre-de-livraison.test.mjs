@@ -10,8 +10,8 @@ let reussies = 0, echouees = 0;
 function verifier(t, c, d) { if (c) { reussies++; console.log('  ✅ ' + t); } else { echouees++; console.log('  ❌ ' + t + (d !== undefined ? '\n       → ' + String(typeof d === 'string' ? d : JSON.stringify(d)).slice(0, 400) : '')); } }
 
 const source = lire('app/ordre-de-livraison.js');
-const ctx = vm.createContext({ Math, Object, String, Number, estExpedition: (c) => c && c.commune_destination === 'Expédition' });
-vm.runInContext(source + '\nthis.O = { CENTRES_DES_COMMUNES, distanceEntreCommunesKm, communeDeDepart, ordreDeLivraison, rangsDeLivraison, longueurDuParcours };', ctx);
+const ctx = vm.createContext({ Math, Object, String, Number, encodeURIComponent, estExpedition: (c) => c && c.commune_destination === 'Expédition' });
+vm.runInContext(source + '\nthis.O = { CENTRES_DES_COMMUNES, distanceEntreCommunesKm, communeDeDepart, ordreDeLivraison, rangsDeLivraison, longueurDuParcours, carteDuTrajetSVG, lienDuTrajet, cadreDuSchema };', ctx);
 const O = ctx.O;
 const c = (dest, plus) => Object.assign({ commune_destination: dest, commune_recuperation: 'Adjamé' }, plus || {});
 const noms = (o) => o.arrets.map((a) => a.commune).join(' → ');
@@ -66,6 +66,31 @@ verifier('seuls les colis encore à faire entrent dans le trajet (un colis livr�
 verifier('l\'écran dit que c\'est un ordre PROPOSÉ, à vol d\'oiseau', /Ordre proposé/.test(livreur) && /à vol d'oiseau/.test(livreur) && /c'est vous qui savez/.test(livreur));
 verifier('l\'en-tête d\'un groupe peut porter une autre icône que 👤, et la troncature la garde', /\$\{client\.icone \|\| '👤'\}/.test(config) && /icone: client\.icone/.test(config));
 verifier('les deux boutons font 44 px ; mode nuit', /\.mes-vue-btn\{[^}]*min-height:44px/.test(livreur) && /html\[data-theme="dark"\] \.mes-vue\{/.test(livreur));
+
+console.log('\n7. La carte du trajet (« ensuite » n° 2) : un schéma sans bibliothèque, et le vrai itinéraire dans Maps');
+const svg = O.carteDuTrajetSVG(o);
+verifier('un SVG autonome : ni image, ni tuile, ni script, ni lien extérieur', /^<svg class="tr-schema" viewBox="0 0 610 \d+"/.test(svg) && !/<image|href=|<script|http/.test(svg));
+verifier('un arrêt numéroté par commune, dans l\'ordre, et le départ à part', (svg.match(/class="tr-arret/g) || []).length === 6 && (svg.match(/class="tr-rang"/g) || []).length === 6 && /class="tr-depart"/.test(svg) && />Départ</.test(svg));
+verifier('la ligne relie le départ puis les six arrêts (sept points)', (svg.match(/<polyline class="tr-ligne" points="([^"]+)"/)[1].split(' ').length) === 7);
+verifier('deux colis dans la même commune : « Marcory ×2 »', />Marcory ×2</.test(svg));
+verifier('lisible par un lecteur d\'écran : role="img" et un titre qui dit l\'ordre', /role="img" aria-label="Schéma du trajet : départ Adjamé, puis 1 /.test(svg) && /<title>/.test(svg));
+const pts = [...svg.matchAll(/<circle class="tr-arret[^"]*" cx="(\d+)" cy="(\d+)"/g)].map((m) => [+m[1], +m[2]]);
+const H = +svg.match(/viewBox="0 0 610 (\d+)"/)[1];
+verifier('tous les arrêts tiennent dans le cadre, avec de la marge pour les noms', pts.every(([x, y]) => x > 40 && x < 570 && y > 20 && y < H - 20), pts);
+verifier('le cadre se règle sur les communes du jour : deux voisines ne s\'écrasent pas au milieu d\'un district vide', (() => { const k = O.cadreDuSchema(['Marcory', 'Koumassi']); return (k.est - k.ouest) < 0.2 && (k.est - k.ouest) >= 0.1; })());
+const noms2 = [...svg.matchAll(/<text class="tr-nom" x="(-?\d+)" y="(-?\d+)" text-anchor="(\w+)">([^<]+)</g)].map((m) => { const L = m[4].length * 14, x = +m[1], y = +m[2]; const x1 = m[3] === 'start' ? x : (m[3] === 'end' ? x - L : x - L / 2); return { n: m[4], x1, x2: x1 + L, y1: y - 20, y2: y + 6 }; });
+const chevauche = noms2.some((a, i) => noms2.some((b, j) => j > i && a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1));
+verifier('sur cette tournée de six communes, aucun nom n\'en recouvre un autre', !chevauche, noms2);
+verifier('le texte est échappé', !/<b>/.test(O.carteDuTrajetSVG({ depart: '', kmTotal: 0, arrets: [{ rang: 1, commune: 'Cocody', colis: [], presse: false }] }).replace(/<\/?(svg|title|circle|polyline|text|rect|g)[^>]*>/g, '')));
+verifier('rien à dessiner : chaîne vide, pas un cadre vide', O.carteDuTrajetSVG({ arrets: [] }) === '' && O.carteDuTrajetSVG(null) === '');
+const lien = O.lienDuTrajet(o);
+verifier('le lien Google Maps : origine = départ, destination = dernier arrêt, étapes dans l\'ordre', /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&travelmode=driving&destination=/.test(lien.url) && decodeURIComponent(lien.url).includes('origin=Adjamé, Abidjan') && decodeURIComponent(lien.url).includes('destination=' + o.arrets[5].commune + ', Abidjan') && decodeURIComponent(lien.url.split('waypoints=')[1]).split('|').map((x) => x.split(',')[0]).join() === o.arrets.slice(0, 5).map((a) => a.commune).join(), decodeURIComponent(lien.url));
+verifier('six communes : le lien est complet', lien.complet === true);
+const douze = O.ordreDeLivraison(['Abobo', 'Anyama', 'Attécoubé', 'Bingerville', 'Cocody', 'Grand-Bassam', 'Koumassi', 'Marcory', 'Plateau', 'Port-Bouët', 'Songon', 'Treichville'].map((k) => c(k)));
+verifier('douze communes : Google Maps n\'en prend que dix — le lien s\'arrête là, et le DIT (complet = false)', O.lienDuTrajet(douze).complet === false && decodeURIComponent(O.lienDuTrajet(douze).url.split('waypoints=')[1]).split('|').length === 9);
+verifier('aucune adresse de destinataire ne part chez Google : seulement des noms de communes', !/destinataire|adresse|telephone/.test(source.slice(source.indexOf('function lienDuTrajet'))));
+verifier('chez le livreur : replié d\'office, le redessin garde son état, bouton de 44 px qui ouvre Maps dans un autre onglet', /let trajetCarteOuverte = false;/.test(livreur) && /carte\.addEventListener\('toggle'/.test(livreur) && /\.mes-trajet-maps\{[^}]*min-height:44px/.test(livreur) && /target="_blank" rel="noopener">🧭 Ouvrir le trajet dans Google Maps/.test(livreur));
+verifier('aucune bibliothèque de carte chargée chez le livreur', !/leaflet/i.test(livreur));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);
