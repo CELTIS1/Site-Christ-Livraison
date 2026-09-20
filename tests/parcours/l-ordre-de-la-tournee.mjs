@@ -88,6 +88,37 @@ verifier('avec les mêmes numéros de passage, 1 puis 2',
   /^1/.test(chezLui[0]) && /^2/.test(chezLui[1]), chezLui.join(' | '));
 verifier('et il n\'a pas les flèches : ranger la tournée est la décision du bureau',
   (await page.locator('#recup-tournee .tournee-fleche').count()) === 0);
+titre('5. Les LIVRAISONS aussi ont leur ordre : « Par trajet » (20/09/2026)');
+/* Cinq colis d'aujourd'hui, chargés à Adjamé, pour cinq communes aux quatre coins d'Abidjan. */
+const { colis: fabriquer, CLIENTE1: AWA } = await import('./_monde.mjs');
+let nid = 700;
+for (const commune of ['Port-Bouët', 'Marcory', 'Abobo', 'Koumassi', 'Marcory']) {
+  monde.TABLES.colis.push(fabriquer(++nid, { fournisseur_id: AWA, livreur_id: LIVREUR, livreur_collecte_id: LIVREUR, statut: 'recupere',
+    created_at: new Date().toISOString(), recupere_at: new Date().toISOString(), commune_recuperation: 'Adjamé', commune_destination: commune,
+    montant_article: 10000, montant_livraison: 1500, montant: 11500 }));
+}
+await page.reload();
+await dodo(3500);
+const enTetes = async () => (await page.locator('#mes-colis-list .day-group').first().locator('.client-group-header').allTextContents()).map(t => t.replace(/\s+/g, ' ').trim());
+verifier('d\'office, rien ne change : les colis sont rangés par cliente', (await enTetes()).every(t => /^👤/.test(t)) && await page.locator('#mes-vue [data-vue="cliente"]').getAttribute('aria-pressed') === 'true', (await enTetes()).join(' | '));
+await page.locator('#mes-vue [data-vue="trajet"]').click();
+await dodo(700);
+const trajet = await enTetes();
+verifier('« Par trajet » : les en-têtes deviennent des communes numérotées 1, 2, 3…', trajet.length >= 4 && trajet.every((t, i) => new RegExp('^📍 ' + (i + 1) + ' · ').test(t)), trajet.join(' | '));
+const rangDe = (nom) => trajet.findIndex(t => t.indexOf(nom) !== -1);
+verifier('le sud se fait d\'une traite : Marcory, Koumassi, Port-Bouët se suivent', Math.max(rangDe('Marcory'), rangDe('Koumassi'), rangDe('Port-Bouët')) - Math.min(rangDe('Marcory'), rangDe('Koumassi'), rangDe('Port-Bouët')) === 2, trajet.join(' | '));
+verifier('les deux colis de Marcory sont sous le même arrêt', /Marcory 2$/.test(trajet[rangDe('Marcory')]), trajet[rangDe('Marcory')]);
+const resume = await page.locator('#mes-trajet-resume').innerText();
+verifier('l\'ordre est dit en clair, avec son point de départ et sa limite (« à vol d\'oiseau »)', /depuis Adjamé/.test(resume) && /→/.test(resume) && /vol d'oiseau/.test(resume), resume);
+verifier('chaque carte dit sa cliente, puisque l\'en-tête ne la dit plus', (await page.locator('#mes-colis-list .day-group').first().locator('.mes-cliente').count()) >= 5);
+await page.reload();
+await dodo(3500);
+verifier('le téléphone s\'en souvient', await page.locator('#mes-vue [data-vue="trajet"]').getAttribute('aria-pressed') === 'true' && /^📍 1 · /.test((await enTetes())[0]));
+await page.locator('#mes-vue [data-vue="cliente"]').click();
+await dodo(600);
+verifier('et « Par cliente » ramène l\'écran de toujours', (await enTetes()).every(t => /^👤/.test(t)) && await page.locator('#mes-trajet-resume').isHidden());
+verifier('rien ne déborde', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();

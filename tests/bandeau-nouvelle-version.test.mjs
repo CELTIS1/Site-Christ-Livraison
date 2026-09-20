@@ -925,10 +925,16 @@ verifier(
    le nombre de colis et l'âge du plus ancien ; un appui ouvre par personne puis colis par colis.
    Règle pure app/chaine-de-l-argent.js, branchée sur lib/argent.js ; écran
    app/equipe/15-la-chaine-de-l-argent.js, qui lit toute la base. Signale un colis reversé alors
-   que le livreur n'a pas remis (argent avancé par CLT). Aucune colonne nouvelle, aucune migration. Étiquette 20260920chaine. */
+   que le livreur n'a pas remis (argent avancé par CLT). Aucune colonne nouvelle, aucune migration. Étiquette 20260920chaine.
+   v196, le 20/09/2026 — « ensuite » n° 1, l'ordre de passage des livraisons : chez le livreur,
+   « À faire » se lit « Par cliente » (d'office, inchangé) ou « Par trajet » — les communes
+   numérotées dans l'ordre où l'on roule (plus proche voisin depuis la commune de chargement, puis
+   décroisement 2-opt ; « à livrer avant le » en tête ; expéditions et communes inconnues à part).
+   Règle pure app/ordre-de-livraison.js ; l'en-tête de groupe de config.js accepte une icône.
+   Le téléphone se souvient du choix. Aucune migration. Étiquette 20260920trajet. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v195'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v196'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

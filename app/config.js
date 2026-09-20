@@ -1411,7 +1411,7 @@ function renderGroupedColisHTML(groups, itemRenderFn, groupActionFn) {
           const totalClient = client.total != null ? client.total : client.items.length;
           return `
           <div class="client-group">
-            <div class="client-group-header">👤 ${client.label} <span class="group-count">${totalClient}</span>${groupActionFn ? (groupActionFn(day.complet || day, client.complet || client) || '') : ''}</div>
+            <div class="client-group-header">${client.icone || '👤'} ${client.label} <span class="group-count">${totalClient}</span>${groupActionFn ? (groupActionFn(day.complet || day, client.complet || client) || '') : ''}</div>
             ${client.items.map((c, i) => itemRenderFn(c, totalClient - i)).join("")}
           </div>
         `;
@@ -1474,7 +1474,7 @@ function limiterGroupesColis(groups, limite) {
         const client = day.clients[k];
         const place = restant - items.length;
         const tranche = client.items.slice(0, place);
-        jour.clients.push({ key: client.key, label: client.label, total: client.items.length, complet: client, items: tranche });
+        jour.clients.push({ key: client.key, label: client.label, icone: client.icone, total: client.items.length, complet: client, items: tranche });
         items = items.concat(tranche);
       }
       // `items` du jour = ce qui est réellement affiché ce jour-là. Le compteur du bandeau,

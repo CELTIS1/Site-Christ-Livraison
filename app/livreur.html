@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920chaine">
+<link rel="stylesheet" href="style.css?v=20260920trajet">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920chaine"></script>
-<script src="splash.js?v=20260920chaine"></script>
+<script src="theme.js?v=20260920trajet"></script>
+<script src="splash.js?v=20260920trajet"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -601,6 +601,18 @@
   html[data-theme="dark"] .mon-mois__prime.gagnee b{ color:#5CC98A; }
   html[data-theme="dark"] .mon-mois__attente, html[data-theme="dark"] .mon-mois__aide{ color:#CFE0F5; }
   html[data-theme="dark"] .mon-mois__rythme{ background:#153A26; color:#B8F0CC; }
+  /* ---------- PAR CLIENTE / PAR TRAJET (20/09/2026) ---------- */
+  .mes-vue{ display:flex; gap:4px; background:#e9eef6; border-radius:12px; padding:4px; margin:0 0 10px; }
+  .mes-vue.hidden{ display:none; }
+  .mes-vue-btn{ flex:1; font:inherit; font-size:13.5px; font-weight:700; color:#44546a; background:none; border:0; border-radius:9px; min-height:44px; cursor:pointer; }
+  .mes-vue-btn.active{ background:#fff; color:var(--navy, #1B4374); box-shadow:0 1px 3px rgba(16,32,48,.14); }
+  .mes-trajet-resume{ font-size:13px; line-height:1.5; color:#44546a; background:#f3f7fc; border:1px solid #dbe6f3; border-radius:11px; padding:9px 12px; margin:0 0 12px; }
+  .mes-trajet-resume.hidden{ display:none; }
+  .mes-cliente{ font-weight:600; }
+  html[data-theme="dark"] .mes-vue{ background:#1C2739; }
+  html[data-theme="dark"] .mes-vue-btn{ color:#C9D3DF; }
+  html[data-theme="dark"] .mes-vue-btn.active{ background:#0F1824; color:#9CC2F5; box-shadow:none; }
+  html[data-theme="dark"] .mes-trajet-resume{ background:#16212E; border-color:#2A3849; color:#C9D3DF; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -907,6 +919,15 @@
         <button type="button" id="btn-toutes-dates-mes" class="date-filter-clear">Aujourd'hui</button>
       </div>
       </div>
+      <!-- L'ORDRE DE PASSAGE DES LIVRAISONS (20/09/2026). Deux façons de lire « À faire » : par
+           cliente (comme toujours) ou PAR TRAJET — les communes dans l'ordre où l'on roule, au
+           plus proche depuis le point de départ (ordre-de-livraison.js). Le téléphone se
+           souvient du choix. N'apparaît que sur « À faire », là où l'on prépare sa route. -->
+      <div id="mes-vue" class="mes-vue hidden" role="group" aria-label="Ranger mes colis">
+        <button type="button" class="mes-vue-btn" data-vue="cliente" aria-pressed="true">👤 Par cliente</button>
+        <button type="button" class="mes-vue-btn" data-vue="trajet" aria-pressed="false">🧭 Par trajet</button>
+      </div>
+      <div id="mes-trajet-resume" class="mes-trajet-resume hidden"></div>
       <div class="colis-list" id="mes-colis-list">
         <div class="empty-state">Chargement...</div>
       </div>
@@ -988,22 +1009,24 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920chaine"></script>
-<script src="lib/bibliotheques.js?v=20260920chaine"></script>
-<script src="lib/retours.js?v=20260920chaine"></script>
-<script src="lib/reclamations.js?v=20260920chaine"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920chaine"></script>
-<script src="lib/argent.js?v=20260920chaine"></script>
-<script src="lib/releve-cliente.js?v=20260920chaine"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920chaine"></script>
-<script src="lib/briques-argent.js?v=20260920chaine"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920chaine"></script>
-<script src="lib/annonce-de-remise.js?v=20260920chaine"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920chaine"></script>
-<script src="lib/primes.js?v=20260920chaine"></script>
-<script src="lib/doublons.js?v=20260920chaine"></script>
-<script src="config.js?v=20260920chaine"></script>
-<script src="biometric-lock.js?v=20260920chaine"></script>
+<script src="clt-common.js?v=20260920trajet"></script>
+<script src="lib/bibliotheques.js?v=20260920trajet"></script>
+<script src="lib/retours.js?v=20260920trajet"></script>
+<script src="lib/reclamations.js?v=20260920trajet"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920trajet"></script>
+<script src="lib/argent.js?v=20260920trajet"></script>
+<script src="lib/releve-cliente.js?v=20260920trajet"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920trajet"></script>
+<script src="lib/briques-argent.js?v=20260920trajet"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920trajet"></script>
+<script src="lib/annonce-de-remise.js?v=20260920trajet"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920trajet"></script>
+<script src="lib/primes.js?v=20260920trajet"></script>
+<script src="lib/doublons.js?v=20260920trajet"></script>
+<script src="config.js?v=20260920trajet"></script>
+<!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
+<script src="ordre-de-livraison.js?v=20260920trajet"></script>
+<script src="biometric-lock.js?v=20260920trajet"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2745,7 +2768,7 @@
     </div>`;
   }
 
-  function mesColisRowHTML(c, numeroClient){
+  function mesColisRowHTML(c, numeroClient, options){
     const thumb = c.photo_url
       ? `<img src="${escapeHTML(c.photo_url)}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
       : '';
@@ -2772,6 +2795,7 @@
                Arrivés : le téléphone du destinataire et le bouton WhatsApp, sous la destination.
                Le n° de suivi s'est glissé en petit après la description. -->
           <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
+          ${options && options.avecCliente ? `<div class="meta mes-cliente">👤 ${fournisseurLabel(c.fournisseur_id)}</div>` : ''}
           ${telephoneLigneHTML(c)}
           ${descriptionEtSuiviHTML(c)}
           ${montantsLigneHTML(c)}
@@ -2983,7 +3007,35 @@
     // Les colis « à livrer avant le » passent devant, les plus pressés en tête. (09/09/2026)
     const cleAvant = (c) => (STATUTS_A_FAIRE.indexOf(c.statut) !== -1 && /^\d{4}-\d{2}-\d{2}/.test(String(c.a_livrer_avant || ''))) ? String(c.a_livrer_avant).slice(0, 10) : '9999-99-99';
     filtered = filtered.slice().sort((a, b) => cleAvant(a).localeCompare(cleAvant(b)));
-    const groupsMes = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
+    /* PAR CLIENTE, OU PAR TRAJET (20/09/2026). Le trajet ne vaut que pour « À faire » : c'est la
+       route de la journée. Les groupes sont alors les COMMUNES, dans l'ordre proposé par
+       ordre-de-livraison.js ; chaque carte dit sa cliente, puisque l'en-tête ne la dit plus. */
+    const enTrajet = vueMes === 'trajet' && activeFilterMes === FILTRE_A_FAIRE && typeof ordreDeLivraison === 'function';
+    const boiteVue = document.getElementById('mes-vue'), boiteResume = document.getElementById('mes-trajet-resume');
+    if (boiteVue) {
+      boiteVue.classList.toggle('hidden', activeFilterMes !== FILTRE_A_FAIRE);
+      boiteVue.querySelectorAll('.mes-vue-btn').forEach(b => { const oui = b.dataset.vue === (enTrajet ? 'trajet' : 'cliente'); b.classList.toggle('active', oui); b.setAttribute('aria-pressed', oui ? 'true' : 'false'); });
+    }
+    let groupsMes;
+    if (enTrajet) {
+      const aLivrer = filtered.filter(c => STATUTS_A_FAIRE.indexOf(c.statut) !== -1);
+      const ordre = ordreDeLivraison(aLivrer);
+      const rangs = rangsDeLivraison(ordre);
+      const cleTrajet = (c) => estExpedition(c) ? '~expedition' : (rangs[c.commune_destination] ? c.commune_destination : '~sans');
+      const etiquette = (c) => { const k = cleTrajet(c); if (k === '~expedition') return 'Expéditions (gare)'; if (k === '~sans') return 'Commune à préciser'; const a = ordre.arrets[rangs[k] - 1]; return rangs[k] + ' · ' + escapeHTML(k) + (a && a.presse ? ' ⏰' : ''); };
+      groupsMes = groupColisByDayAndClient(filtered, cleTrajet, etiquette);
+      const rangDe = (k) => k === '~expedition' ? 9000 : (k === '~sans' ? 9001 : (rangs[k] || 8999));
+      groupsMes.forEach(day => { day.clients.forEach(g => { g.icone = g.key === '~expedition' ? '🚌' : '📍'; }); day.clients.sort((a, b) => rangDe(a.key) - rangDe(b.key)); });
+      if (boiteResume) {
+        boiteResume.classList.toggle('hidden', !ordre.arrets.length);
+        boiteResume.textContent = ordre.arrets.length
+          ? `Ordre proposé${ordre.depart ? ' depuis ' + ordre.depart : ''} : ${ordre.arrets.map(a => a.commune).join(' → ')} — environ ${String(ordre.kmTotal).replace('.', ',')} km entre les communes, à vol d'oiseau. Dans chaque commune, c'est vous qui savez.`
+          : '';
+      }
+    } else {
+      if (boiteResume) boiteResume.classList.add('hidden');
+      groupsMes = groupColisByDayAndClient(filtered, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
+    }
     // On ne dessine qu'une tranche ; le pied annonce le total et la suite arrive au défilement.
     // Exception : arrivé par un clic sur une notification (?colis=<id>), le colis visé doit être
     // dessiné même s'il est loin dans la liste, sinon le clic n'amènerait nulle part.
@@ -2999,7 +3051,8 @@
     // Rien n'a changé : on ne détruit pas les cartes. L'abonnement Realtime du livreur porte sur
     // TOUTE la table des colis — le moindre geste d'un collègue à l'autre bout de la ville
     // redessinait donc son écran, en pleine saisie de montant. (25/08/2026)
-    if (!cltPoserHTML(list, renderGroupedColisHTML(trMes.groups, mesColisRowHTML)
+    // En trajet, le rang « N° » d'un colis chez sa cliente n'a plus de sens : la carte ne le porte pas.
+    if (!cltPoserHTML(list, renderGroupedColisHTML(trMes.groups, enTrajet ? (c) => mesColisRowHTML(c, null, { avecCliente: true }) : mesColisRowHTML)
       + trancheColisPiedHTML(trMes.affiches, trMes.total)
       + reportesDeCeJourHTML(reportesDeCeJour, jourMes)
       + restesEnRouteHTML(restesEnRoute)
@@ -4149,6 +4202,8 @@
      « selectFilterMes is not defined » à chaque changement de date. On passe donc par ce
      point de rendez-vous, posé par cette portée-là au moment où elle se branche. */
   let redessinerFiltresMes = null;
+  // « Par cliente » ou « Par trajet » : le téléphone s'en souvient. (20/09/2026)
+  let vueMes = (function () { try { return localStorage.getItem('clt_livreur_vue') === 'trajet' ? 'trajet' : 'cliente'; } catch (_e) { return 'cliente'; } })();
 
   function poserLeJourDeLEcran(jour){
     const j = jour || todayLocalISODate();
@@ -4922,6 +4977,17 @@
     function selectFilterMes(val){ activeFilterMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }
     // Le rendez-vous annoncé plus haut : poserLeJourDeLEcran() redessine la rangée par ici.
     redessinerFiltresMes = () => renderFilters('filters-mes', activeFilterMes, selectFilterMes);
+    const boiteVueMes = document.getElementById('mes-vue');
+    if (boiteVueMes && boiteVueMes.dataset.branche !== '1') {
+      boiteVueMes.dataset.branche = '1';
+      boiteVueMes.addEventListener('click', (ev) => {
+        const b = ev.target && ev.target.closest ? ev.target.closest('.mes-vue-btn') : null;
+        if (!b || b.dataset.vue === vueMes) return;
+        vueMes = b.dataset.vue === 'trajet' ? 'trajet' : 'cliente';
+        try { localStorage.setItem('clt_livreur_vue', vueMes); } catch (_e) { /* mémoire pleine ou interdite : le choix vaut pour cette session */ }
+        renderMesColis();
+      });
+    }
     renderFilters('filters-mes', activeFilterMes, selectFilterMes);
 
     // Recherche avec anti-rebond (debounce) : évite de redessiner la liste à chaque frappe,
