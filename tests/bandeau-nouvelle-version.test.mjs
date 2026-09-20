@@ -897,10 +897,17 @@ verifier(
    perdue à 2, 3 et 6 fois ce rythme, planchers 7 / 14 / 45 jours ; trajectoire = droite sur 3 à 6
    mois ENTIERS ; fidélité par mois d'arrivée) et la boîte « Qui avance, qui s'éloigne » de la
    console (Clientes, Livreurs, Fidélité), sur les douze mois déjà lus. Pas de table
-   d'instantanés : colis porte déjà toutes les dates. Aucune migration. Étiquette 20260920analyse. */
+   d'instantanés : colis porte déjà toutes les dates. Aucune migration. Étiquette 20260920analyse.
+   v191, le 20/09/2026 — feuille de route 12.3, le bilan de la semaine a son écran : boîte
+   #cdd-semaine sous « Ce qui a changé » (sept jours glissants contre les sept d'avant, on remonte
+   de huit semaines au plus ; vigilance d'aujourd'hui : argent livré non remis par livreur, colis
+   immobilisés). app/bilan-de-la-semaine.js reprend les définitions de la fonction serveur
+   bilan-hebdomadaire, et le banc le-bilan-de-la-semaine fait tourner LES DEUX sur les mêmes
+   colis. L'argent vient de totauxArgent. La console lit en plus encaissement_remis et dix
+   semaines d'express_courses. pointsEnClair arrondit au dixième (−9,2 points). Aucune migration. Étiquette 20260920semaine. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v190'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v191'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

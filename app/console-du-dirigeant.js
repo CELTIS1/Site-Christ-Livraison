@@ -69,6 +69,7 @@
     'frais_soldes_at', 'reverse_au_fournisseur_at',
     'frais_additionnels_montant', 'frais_additionnels_regle_at',
     'echec_imputable', 'tentatives_livraison',
+    'encaissement_remis',   // le bilan de la semaine : l'argent livré et pas encore remis
   ].join(', ');
 
   async function lireTout() {
@@ -84,7 +85,7 @@
        règle du banc ce-qui-se-charge-pour-rien, et elle vaut aussi pour la base.
        Les profils, eux, SONT lus : la boîte à questions répond par des noms, et une réponse qui
        annonce « bbbbbbbb-bbbb-4bbb… a baissé » n'est pas une réponse. */
-    const [colis, profils, decomptes, recettes, depenses] = await Promise.all([
+    const [colis, profils, decomptes, recettes, depenses, express] = await Promise.all([
       cltLireTout(() => supabaseClient.from('colis').select(COLONNES_COLIS)
         .gte('created_at', debutFenetre + 'T00:00:00Z').order('id')).catch(() => []),
       // Le nom des gens, et rien de plus : ni téléphone, ni pièce, ni adresse. Une console qui
@@ -99,12 +100,17 @@
         .gte('date_recette', debutFenetre).order('id')).catch(() => []),
       cltLireTout(() => supabaseClient.from('gestion_depenses').select('annee, mois, categorie, montant')
         .in('annee', annees).order('id')).catch(() => []),
+      // Le bilan de la semaine compare aussi Express. Dix semaines suffisent (on remonte de huit
+      // au plus). Illisible → null, et les lignes Express disparaissent : illisible n'est pas zéro.
+      cltLireTout(() => supabaseClient.from('express_courses')
+        .select('id, created_at, delivered_at, cancelled_at, commission_montant')
+        .gte('created_at', new Date(Date.now() - 70 * 86400000).toISOString()).order('id')).catch(() => null),
     ]);
     // `aujourdHui` est passé plutôt que relu : les questions qui comptent des jours d'attente
     // doivent toutes compter depuis le MÊME jour, sinon deux réponses de la même page se
     // contredisent d'une seconde à l'autre autour de minuit.
     return {
-      moisFin, douze, colis, profils, decomptes, recettes, depenses,
+      moisFin, douze, colis, profils, decomptes, recettes, depenses, express,
       aujourdHui: new Date().toISOString().slice(0, 10),
     };
   }
@@ -407,6 +413,91 @@
     // qu'on lit juste au-dessus.
     dessinerQuestions();
     dessinerAnalyse();
+    dessinerSemaine();
+  }
+
+  /* --------------------------------------------------------------------------------------
+     LE BILAN DE LA SEMAINE (20/09/2026, feuille de route 12.3)
+     --------------------------------------------------------------------------------------
+     Le rapport du vendredi avait ses chiffres et pas d'écran. Les définitions sont celles du
+     serveur, reprises dans bilan-de-la-semaine.js et tenues d'accord par un banc ; la
+     comparaison et les couleurs sont celles de la console. S'ouvre sur les sept derniers jours ;
+     on remonte semaine par semaine, huit au plus. La vigilance (argent non remis, colis
+     immobilisés) est un état d'aujourd'hui : elle ne s'affiche que sur la semaine en cours.
+     -------------------------------------------------------------------------------------- */
+  let semainesEnArriere = 0;
+  const SEMAINES_MAXI = 8;
+  const jourCourt = (ms) => new Date(ms).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+
+  function dessinerSemaine() {
+    const boite = document.getElementById('cdd-semaine');
+    const B = window.CLTBilanSemaine;
+    if (!boite || !donnees) return;
+    if (!B) { boite.innerHTML = '<div class="cdd-rien">Le bilan de la semaine n\u2019est pas chargé.</div>'; return; }
+    const A = R();
+    const enCours = semainesEnArriere === 0;
+    // Aujourd'hui : jusqu'à maintenant, comme le serveur. Une semaine passée : des jours entiers.
+    const finDuJour = Date.parse(donnees.aujourdHui + 'T00:00:00Z') + B.JOUR;
+    const fin = enCours ? Date.now() : finDuJour - semainesEnArriere * 7 * B.JOUR;
+    const b = B.bilan(donnees, fin, {
+      enCours: enCours, nomDe: nomDuCompte,
+      argent: (typeof totauxArgent === 'function') ? ((l) => totauxArgent(l)) : null,
+    });
+    const mise = (l, v) => (v === null || v === undefined) ? '—' : (l.argent ? F(v) : (l.pourcent ? String(v).replace('.', ',') + ' %' : String(v)));
+    const corps = B.lignes(b).map((l) => {
+      const c = A.comparer(l.valeur, l.avant);
+      const v = A.verdictDuChangement({ nom: l.nom, comparaison: c, plusCEstMieux: l.plusCEstMieux, enPoints: l.enPoints, quoi: l.quoi, formater: (x) => mise(l, x) });
+      const p = PASTILLE[v.sens] || PASTILLE.neutre;
+      return `<tr>
+        <td data-label="Indicateur">${ech(l.nom)}</td>
+        <td data-label="Ces 7 jours" class="cdd-nombre"><strong>${ech(mise(l, l.valeur))}</strong></td>
+        <td data-label="Les 7 d\u2019avant" class="cdd-nombre cdd-avant">${ech(mise(l, l.avant))}</td>
+        <td data-label="Écart" class="cdd-nombre">${c.connu && v.resume && c.sens !== 'stable'
+          ? `<span class="cdd-ecart" style="background:${p.fond}; color:${p.texte};">${ech(v.resume)}</span>`
+          : `<span class="cdd-inconnu">${c.connu ? 'inchangé' : '—'}</span>`}</td>
+      </tr>`;
+    }).join('');
+    const vg = b.vigilance;
+    const vigilanceHTML = !vg ? '' : `
+      <div class="cds-vigilance">
+        <div class="cds-tuile${vg.nonRemis.colis ? ' cds-tuile--alerte' : ''}">
+          <div class="cds-tuile-nb">${ech(F(vg.nonRemis.montant))}</div>
+          <div class="cds-tuile-nom">livrés, encaissés, pas encore remis — ${vg.nonRemis.colis} colis</div>
+          ${vg.nonRemis.parLivreur.length ? `<ul class="cds-qui">${vg.nonRemis.parLivreur.map((e) => `<li><span>${ech(e.nom)}</span><strong>${ech(F(e.montant))}</strong></li>`).join('')}</ul>` : ''}
+        </div>
+        <div class="cds-tuile${vg.immobilises.nombre ? ' cds-tuile--alerte' : ''}">
+          <div class="cds-tuile-nb">${vg.immobilises.nombre}</div>
+          <div class="cds-tuile-nom">colis immobilisés depuis plus de 3 jours</div>
+        </div>
+      </div>`;
+    boite.innerHTML = `
+      <div class="cdd-entete">
+        <div>
+          <h3 class="cdd-titre">Le bilan de la semaine</h3>
+          <div class="cdd-sous">Du ${ech(jourCourt(b.fenetres.debut))} au ${ech(jourCourt(b.fenetres.fin - 1))}, comparé aux sept jours d'avant${enCours ? '' : ' — semaine passée'}</div>
+        </div>
+        <div class="cds-nav" role="group" aria-label="Changer de semaine">
+          <button type="button" class="cds-fleche" data-semaine="1" aria-label="Semaine précédente"${semainesEnArriere >= SEMAINES_MAXI ? ' disabled' : ''}>‹</button>
+          <button type="button" class="cds-auj" data-semaine="0"${enCours ? ' disabled' : ''}>Cette semaine</button>
+          <button type="button" class="cds-fleche" data-semaine="-1" aria-label="Semaine suivante"${enCours ? ' disabled' : ''}>›</button>
+        </div>
+      </div>
+      ${vigilanceHTML}
+      <table class="cdd-table cds-table">
+        <thead><tr><th>Indicateur</th><th>Ces 7 jours</th><th>Les 7 d'avant</th><th>Écart</th></tr></thead>
+        <tbody>${corps}</tbody>
+      </table>
+      <div class="cda-note">Les mêmes définitions que le rapport du vendredi : chaque colis compte au jour de son événement (confié, récupéré, livré, en échec, retourné). L'argent vient de l'addition de la maison, comme le point du jour.</div>`;
+    if (boite.dataset.branche !== '1') {
+      boite.dataset.branche = '1';
+      boite.addEventListener('click', function (ev) {
+        const cible = ev.target && ev.target.closest ? ev.target.closest('[data-semaine]') : null;
+        if (!cible || cible.disabled) return;
+        const pas = Number(cible.getAttribute('data-semaine'));
+        semainesEnArriere = pas === 0 ? 0 : Math.min(SEMAINES_MAXI, Math.max(0, semainesEnArriere + pas));
+        dessinerSemaine();
+      });
+    }
   }
 
   /* --------------------------------------------------------------------------------------
@@ -721,5 +812,5 @@
     rafraichir(true);
   }
 
-  window.CLTConsole = { init, rafraichir, axes, courbeHTML, moisProposables, reponseHTML, dessinerAnalyse, COLONNES_COLIS };
+  window.CLTConsole = { init, rafraichir, axes, courbeHTML, moisProposables, reponseHTML, dessinerAnalyse, dessinerSemaine, COLONNES_COLIS };
 })();

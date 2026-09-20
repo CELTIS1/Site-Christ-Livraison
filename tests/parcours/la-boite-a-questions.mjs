@@ -222,6 +222,21 @@ verifier('une pastille filtre la liste, et le dit quand elle est vide', /Aucune 
 verifier('aucune lecture de plus : l\'analyse vit sur les douze mois déjà lus', lectures() === avantAnalyse, lectures() - avantAnalyse);
 verifier('rien ne déborde de la boîte', await page.evaluate(() => { const b = document.getElementById('cdd-analyse'); return b.scrollWidth <= b.clientWidth + 1; }));
 
+titre('8 ter. Le bilan de la semaine (12.3)');
+const semaineTxt = await page.locator('#cdd-semaine').innerText();
+verifier('la boîte est remplie : neuf indicateurs, comparés aux sept jours d\'avant', (await page.locator('#cdd-semaine .cds-table tbody tr').count()) === 9 && /comparé aux sept jours d\'avant/.test(semaineTxt), semaineTxt.slice(0, 200));
+verifier('la vigilance d\'aujourd\'hui est là : argent non remis, colis immobilisés', (await page.locator('#cdd-semaine .cds-tuile').count()) === 2);
+verifier('Express sans course : pas de lignes de zéros', !/Express/.test(semaineTxt));
+verifier('« Cette semaine » et › sont éteints tant qu\'on est sur la semaine en cours', await page.locator('#cdd-semaine .cds-auj').isDisabled() && await page.locator('#cdd-semaine [data-semaine="-1"]').isDisabled());
+await page.locator('#cdd-semaine [data-semaine="1"]').click();
+await dodo(300);
+const passeeTxt = await page.locator('#cdd-semaine').innerText();
+verifier('‹ remonte d\'une semaine : c\'est dit, et la vigilance (un état d\'aujourd\'hui) s\'efface', /semaine passée/.test(passeeTxt) && (await page.locator('#cdd-semaine .cds-tuile').count()) === 0);
+await page.locator('#cdd-semaine .cds-auj').click();
+await dodo(300);
+verifier('« Cette semaine » y ramène', !/semaine passée/.test(await page.locator('#cdd-semaine').innerText()));
+verifier('les flèches sont carrées, 44 × 44 : pas d\'ovale', await page.evaluate(() => { const r = document.querySelector('#cdd-semaine .cds-fleche').getBoundingClientRect(); return Math.round(r.width) === 44 && Math.round(r.height) === 44; }));
+
 titre('9. Rien n\'a cassé, et rien n\'a été écrit');
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 /* UNE BOÎTE À QUESTIONS NE DOIT RIEN ÉCRIRE. Elle lit, elle répond. Le seul écrit toléré est le

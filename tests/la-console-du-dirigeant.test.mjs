@@ -235,9 +235,12 @@ titre('On ne lit en base que ce qu\'on affiche');
   const tables = [...nu.matchAll(/\.from\('([a-z_]+)'\)/g)].map((m) => m[1]);
   /* Cinq depuis le 18/09 au soir : `profiles` est entrée avec la boîte à questions, qui répond
      par des noms. Une réponse qui annonce « bbbbbbbb-bbbb-4bbb… a baissé » n'est pas une
-     réponse. Toute sixième table devra, elle aussi, être affichée quelque part. */
-  verifier('cinq tables lues, et les cinq servent à l\'écran',
-    tables.sort().join(' ') === 'colis gestion_depenses gestion_recettes primes_decomptes profiles',
+     réponse. Toute sixième table devra, elle aussi, être affichée quelque part.
+     Six depuis le 20/09 (12.3) : `express_courses`, dix semaines seulement, affichée par le bilan
+     de la semaine (courses livrées, annulées, commission) — et seulement s'il y a eu des courses. */
+  verifier('six tables lues, et les six servent à l\'écran',
+    tables.sort().join(' ') === 'colis express_courses gestion_depenses gestion_recettes primes_decomptes profiles'
+    && /Express : courses livrées/.test(fs.readFileSync(path.join(APP, 'bilan-de-la-semaine.js'), 'utf8')),
     tables.join(' '));
   /* Une console qui lit des données personnelles dont elle n'a pas l'usage est une console qui
      les expose : on demande le nom, et rien d'autre. */

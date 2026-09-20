@@ -15,10 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920analyse">
+<link rel="stylesheet" href="style.css?v=20260920semaine">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920analyse"></script>
-<script src="splash.js?v=20260920analyse"></script>
+<script src="theme.js?v=20260920semaine"></script>
+<script src="splash.js?v=20260920semaine"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -209,6 +209,23 @@
   .cdq-jnsp{ background:#fafbfc; }
   .cdq-jnsp-titre{ font-size:14px; font-weight:800; color:#5b6473; }
   .cdq-jnsp-txt{ font-size:13px; color:#5b6473; margin-top:4px; line-height:1.5; }
+  /* ---------- LE BILAN DE LA SEMAINE (20/09/2026, 12.3) ---------- */
+  #cdd-semaine{ padding:16px 18px; margin-bottom:16px; }
+  .cds-nav{ display:inline-flex; align-items:center; gap:6px; }
+  .cds-fleche, .cds-auj{ font:inherit; font-weight:700; color:var(--clt-teal-dark); background:#fff; cursor:pointer;
+    border:1.5px solid rgba(15,118,110,0.25); border-radius:10px; height:44px; }
+  .cds-fleche{ width:44px; flex:0 0 44px; font-size:20px; line-height:1; padding:0; }
+  .cds-auj{ font-size:13px; padding:0 14px; }
+  .cds-fleche:disabled, .cds-auj:disabled{ opacity:.4; cursor:default; }
+  .cds-vigilance{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; margin:14px 0 4px; }
+  .cds-tuile{ border:1px solid #e6ebea; border-radius:12px; padding:12px 14px; background:#fafbfc; }
+  .cds-tuile--alerte{ background:#fff6ea; border-color:#f0d09a; }
+  .cds-tuile-nb{ font-size:20px; font-weight:800; color:#2b3440; }
+  .cds-tuile--alerte .cds-tuile-nb{ color:#8a4b00; }
+  .cds-tuile-nom{ font-size:12.5px; color:#5b6473; margin-top:2px; }
+  .cds-qui{ list-style:none; margin:8px 0 0; padding:8px 0 0; border-top:1px dashed #e6d3ad; font-size:12.5px; display:grid; gap:3px; }
+  .cds-qui li{ display:flex; justify-content:space-between; gap:10px; }
+  .cds-table{ margin-top:12px; }
   /* ---------- L'ANALYSE PROFONDE (20/09/2026, 12.2) ----------
      Trois vues dans la même boîte, une à la fois. Les pastilles d'état sont à la fois le résumé
      (cinq nombres lus d'un regard) et le filtre (un clic) : un seul objet pour deux gestes. */
@@ -257,6 +274,20 @@
     #cdd-console{ padding:14px; }
     #cdd-questions{ padding:14px; }
     #cdd-analyse{ padding:14px; }
+    #cdd-semaine{ padding:14px; }
+    .cds-nav{ width:100%; }
+    .cds-auj{ flex:1; }
+    .cds-vigilance{ grid-template-columns:1fr; }
+    /* Douze cartes de quatre lignes faisaient six écrans de téléphone. Ici, une ligne par
+       indicateur : le nom et le chiffre, puis « avant » et l'écart, en petit. */
+    .cdd-table.cds-table tr{ display:grid; grid-template-columns:1fr auto; gap:1px 10px; align-items:center; padding:9px 12px; margin-bottom:6px; }
+    .cdd-table.cds-table td{ display:block; width:auto; padding:0; }
+    .cdd-table.cds-table td::before{ content:none; }
+    .cdd-table.cds-table td:first-child{ padding:0; font-weight:600; color:inherit; }
+    .cdd-table.cds-table td:nth-child(2){ text-align:right; font-size:15px; }
+    .cdd-table.cds-table td:nth-child(3){ grid-column:1; font-size:12px; text-align:left; }
+    .cdd-table.cds-table td:nth-child(3)::before{ content:'les 7 d\2019 avant : '; font-weight:400; color:inherit; font-size:12px; }
+    .cdd-table.cds-table td:nth-child(4){ text-align:right; font-size:12px; }
     .cda-onglets{ width:100%; }
     .cda-onglet{ flex:1; padding:0 6px; }
     .cda-pastilles{ grid-template-columns:repeat(3, minmax(0,1fr)); }
@@ -578,6 +609,13 @@
   html[data-theme="dark"] .icon-btn.danger{ background:#3A1A17; color:#FF9D93; }
   html[data-theme="dark"] .bul-barre{ background:#141F2E; border-color:#2A3849; }
   html[data-theme="dark"] .cdd-table td{ border-bottom-color:#2A3849; }
+  html[data-theme="dark"] .cds-fleche, html[data-theme="dark"] .cds-auj{ background:#141F2E; border-color:#2E4A47; }
+  html[data-theme="dark"] .cds-tuile{ background:#1C2739; border-color:#2A3849; }
+  html[data-theme="dark"] .cds-tuile--alerte{ background:#2E2116; border-color:#7A4A1A; }
+  html[data-theme="dark"] .cds-tuile-nb{ color:#E6ECF3; }
+  html[data-theme="dark"] .cds-tuile--alerte .cds-tuile-nb{ color:#F0C98A; }
+  html[data-theme="dark"] .cds-tuile-nom{ color:#C9D3DF; }
+  html[data-theme="dark"] .cds-qui{ border-top-color:#7A4A1A; }
   html[data-theme="dark"] .cdd-sous{ color:#AEBBCB; }
   html[data-theme="dark"] .cda-onglet--actif{ background:#0F766E; color:#fff; box-shadow:none; }
   html[data-theme="dark"] .cda-pastille{ background:#1C2739; color:#E6ECF3; }
@@ -676,6 +714,10 @@
          du travail, cochées ici. Dessinée par gestion.js (chargerAFaire). -->
     <div class="card" id="af-carte"></div>
     <div class="card" id="cdd-console"></div>
+    <!-- LE BILAN DE LA SEMAINE (20/09/2026, feuille de route 12.3) — le rapport du vendredi avait
+         ses chiffres et pas d'écran. Mêmes définitions que la fonction serveur bilan-hebdomadaire
+         (app/bilan-de-la-semaine.js, tenu d'accord par un banc), même comparaison que la console. -->
+    <div class="card" id="cdd-semaine"></div>
     <!-- LA BOÎTE À QUESTIONS (18/09/2026) — Celtis : « je veux pouvoir interagir, interroger, et
          avoir des réponses claires et précises ». Treize questions calculées exactement, sans
          aucune IA : un modèle se trompe précisément là où il faudrait qu'il ne se trompe pas,
@@ -1587,30 +1629,31 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260920analyse"></script>
-<script src="lib/bibliotheques.js?v=20260920analyse"></script>
-<script src="lib/retours.js?v=20260920analyse"></script>
-<script src="lib/reclamations.js?v=20260920analyse"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920analyse"></script>
-<script src="lib/argent.js?v=20260920analyse"></script>
-<script src="lib/releve-cliente.js?v=20260920analyse"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920analyse"></script>
-<script src="lib/briques-argent.js?v=20260920analyse"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920analyse"></script>
-<script src="lib/annonce-de-remise.js?v=20260920analyse"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920analyse"></script>
-<script src="lib/primes.js?v=20260920analyse"></script>
-<script src="lib/doublons.js?v=20260920analyse"></script>
-<script src="config.js?v=20260920analyse"></script>
-<script src="biometric-lock.js?v=20260920analyse"></script>
-<script src="clt-select-recherche.js?v=20260920analyse"></script>
-<script src="site-editeur.js?v=20260920analyse"></script>
+<script src="clt-common.js?v=20260920semaine"></script>
+<script src="lib/bibliotheques.js?v=20260920semaine"></script>
+<script src="lib/retours.js?v=20260920semaine"></script>
+<script src="lib/reclamations.js?v=20260920semaine"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920semaine"></script>
+<script src="lib/argent.js?v=20260920semaine"></script>
+<script src="lib/releve-cliente.js?v=20260920semaine"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920semaine"></script>
+<script src="lib/briques-argent.js?v=20260920semaine"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920semaine"></script>
+<script src="lib/annonce-de-remise.js?v=20260920semaine"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920semaine"></script>
+<script src="lib/primes.js?v=20260920semaine"></script>
+<script src="lib/doublons.js?v=20260920semaine"></script>
+<script src="config.js?v=20260920semaine"></script>
+<script src="biometric-lock.js?v=20260920semaine"></script>
+<script src="clt-select-recherche.js?v=20260920semaine"></script>
+<script src="site-editeur.js?v=20260920semaine"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="analyse-profonde.js?v=20260920analyse"></script>
-<script src="ce-qui-a-change.js?v=20260920analyse"></script>
-<script src="les-questions.js?v=20260920analyse"></script>
-<script src="console-du-dirigeant.js?v=20260920analyse"></script>
-<script src="gestion.js?v=20260920analyse"></script>
+<script src="bilan-de-la-semaine.js?v=20260920semaine"></script>
+<script src="analyse-profonde.js?v=20260920semaine"></script>
+<script src="ce-qui-a-change.js?v=20260920semaine"></script>
+<script src="les-questions.js?v=20260920semaine"></script>
+<script src="console-du-dirigeant.js?v=20260920semaine"></script>
+<script src="gestion.js?v=20260920semaine"></script>
 </body>
 </html>

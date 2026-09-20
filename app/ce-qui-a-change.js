@@ -293,8 +293,11 @@
      qui ne peut pas se confondre avec autre chose. */
   function pointsEnClair(c) {
     if (!c || !c.connu || c.ecart === 0) return "";
-    const n = Math.abs(c.ecart);
-    return (c.ecart > 0 ? "+" : "−") + n + (n > 1 ? " points" : " point");
+    // Arrondi au dixième, avec la virgule : 76,5 − 85,7 vaut −9,200000000000003 pour la machine
+    // (vu à l'écran le 20/09, sur le bilan de la semaine, dont les taux ont une décimale).
+    const n = Math.round(Math.abs(c.ecart) * 10) / 10;
+    if (n === 0) return "";
+    return (c.ecart > 0 ? "+" : "−") + String(n).replace(".", ",") + (n > 1 ? " points" : " point");
   }
 
   // « 12 de plus », « 3 de moins », « autant ». En valeur, toujours disponible — c'est ce qu'on
