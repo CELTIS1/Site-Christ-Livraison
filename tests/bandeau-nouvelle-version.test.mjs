@@ -913,10 +913,16 @@ verifier(
    1 200 px, app/gestion-barre-laterale.js LIT les onglets et sous-onglets de la page (il n'en
    déclare aucun), passe par switchTab / switchSub, et suit la largeur en direct ; en dessous,
    rien ne change. La nuit, les lignes paires des tableaux de Gestion se lisent enfin. Aucune
-   migration. Étiquette 20260920barre. */
+   migration. Étiquette 20260920barre.
+   v194, le 20/09/2026 — feuille de route 9.6, second volet : la liste et la fiche côte à côte.
+   Au-dessus de 1 200 px, app/equipe/14-liste-et-fiche.js pose une ligne devant chaque carte de
+   colis ; le CSS cache les cartes sauf celle qu'on choisit, épinglée à droite (position fixe) —
+   rien n'est déplacé, les gestes restent ceux de la carte, le choix survit au redessin. La
+   colonne passe de 1 080 à 1 560 px sur cet écran-là seulement. Sous 1 200 px, rien ne change.
+   Parcours 20 (la-liste-et-la-fiche). Aucune migration. Étiquette 20260920fiche. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v193'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v194'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

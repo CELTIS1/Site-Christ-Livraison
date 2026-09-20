@@ -3543,3 +3543,52 @@ html[data-theme="dark"] .reclam-eq--vieille{ background:#3A1A17; }
 html[data-theme="dark"] .colis-tel{ color:#8FC1FF; }
 html[data-theme="dark"] .colis-item .info .meta.colis-quoi{ color:#AEBBCB; }
 
+/* ---- La liste et la fiche côte à côte (feuille de route 9.6, second volet, 20/09/2026) -------
+   body.eq-large n'est posé que par equipe/14-liste-et-fiche.js, au-dessus de 1 200 px : la
+   colonne de 1 032 px s'élargit, chaque colis devient UNE LIGNE à gauche, et la carte du colis
+   choisi s'épingle à droite, à sa hauteur d'écran. Les autres cartes restent dans la page,
+   cachées : rien n'est déplacé, donc aucun geste n'est à rebrancher. */
+.eq-ligne{ display:none; }
+body.eq-large .wrap{ max-width:1560px; }
+body.eq-large #colis-list{ width:44%; min-width:460px; }
+body.eq-large #colis-list .colis-item{ display:none; }
+body.eq-large #colis-list .eq-ligne{
+  display:grid; grid-template-columns:92px minmax(0,1fr) auto auto; align-items:center; gap:12px;
+  width:100%; min-height:48px; padding:6px 12px; margin:0; text-align:left; font:inherit; cursor:pointer;
+  background:var(--card, #fff); color:inherit; border:0; border-bottom:1px solid var(--border, #e6ebf1);
+  border-left:3px solid transparent;
+}
+body.eq-large #colis-list .eq-ligne:hover{ background:#f3f7fc; }
+body.eq-large #colis-list .eq-ligne--choisie{ background:#eaf2fd; border-left-color:var(--navy, #1B4374); }
+body.eq-large #colis-list .eq-ligne--alerte{ border-left-color:#E26313; }
+body.eq-large #colis-list .eq-ligne:focus-visible{ outline:2px solid var(--navy, #1B4374); outline-offset:-2px; }
+.eq-ligne-num{ font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.eq-ligne-ou{ font-size:13.5px; font-weight:700; color:#1E2A38; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.eq-ligne-ou small{ display:block; font-size:11.5px; font-weight:500; color:var(--muted); }
+.eq-ligne-montant{ font-size:12.5px; font-weight:700; color:#1E2A38; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.eq-ligne-statut{ font-size:11.5px; font-weight:800; white-space:nowrap; padding:3px 9px; border-radius:999px; background:#eef2f7; color:#44546a; }
+.eq-ligne-statut[data-statut="livre"]{ background:#e3f5ea; color:#1f7a45; }
+.eq-ligne-statut[data-statut="non_livre"]{ background:#fde9e7; color:#a3352c; }
+.eq-ligne-statut[data-statut="retour"]{ background:#fdf1dc; color:#8a5a00; }
+.eq-ligne-statut[data-statut="en_livraison"], .eq-ligne-statut[data-statut="recupere"]{ background:#e6effb; color:#1B4374; }
+body.eq-large #colis-list .colis-item.eq-choisi{
+  display:flex; position:fixed; z-index:20; left:var(--eqf-gauche, 56%); top:var(--eqf-haut, 120px);
+  width:var(--eqf-largeur, 40%); max-height:calc(100vh - var(--eqf-haut, 120px) - 16px); overflow:auto;
+  margin:0; transform:none; box-shadow:0 10px 32px rgba(16,32,48,.14);
+}
+body.eq-large #colis-list .colis-item.eq-choisi:hover{ transform:none; }
+/* Dans la fiche, la place ne manque plus en hauteur : la frise revient, et la carte d'un colis
+   enregistré se lit sur une colonne (les deux colonnes de 14.2 servaient la pile de cartes). */
+body.eq-large #colis-list .colis-item.eq-choisi .clt-stepper{ display:flex !important; }
+body.eq-large #colis-list .colis-item.eq-choisi:not(:has(.btn-save)) .info{ columns:1; }
+html[data-theme="dark"] body.eq-large #colis-list .eq-ligne{ background:#16212E; border-bottom-color:#2A3849; }
+html[data-theme="dark"] body.eq-large #colis-list .eq-ligne:hover{ background:#1C2A3B; }
+html[data-theme="dark"] body.eq-large #colis-list .eq-ligne--choisie{ background:#1F3350; border-left-color:#8FC1FF; }
+html[data-theme="dark"] .eq-ligne-ou, html[data-theme="dark"] .eq-ligne-montant{ color:#E6ECF3; }
+html[data-theme="dark"] .eq-ligne-statut{ background:#243247; color:#C9D3DF; }
+html[data-theme="dark"] .eq-ligne-statut[data-statut="livre"]{ background:#12332E; color:#8FE3B5; }
+html[data-theme="dark"] .eq-ligne-statut[data-statut="non_livre"]{ background:#3A1A17; color:#FF9D93; }
+html[data-theme="dark"] .eq-ligne-statut[data-statut="retour"]{ background:#2E2116; color:#F0C98A; }
+html[data-theme="dark"] .eq-ligne-statut[data-statut="en_livraison"], html[data-theme="dark"] .eq-ligne-statut[data-statut="recupere"]{ background:#1B2A3F; color:#9CC2F5; }
+@media print{ body.eq-large #colis-list{ width:auto; } body.eq-large #colis-list .colis-item{ display:flex; position:static; } body.eq-large #colis-list .eq-ligne{ display:none; } }
+
