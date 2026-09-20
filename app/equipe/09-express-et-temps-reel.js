@@ -70,12 +70,8 @@ return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.la
 // formatMontant() vit dans clt-common.js, chargé par toutes les pages.
 
 function expressCoursRowHTML(course, clientName, courierName) {
-const isDelivered = course.status === 'livree';
-const commissionDue = isDelivered && !course.commission_reglee;
-let markerCommissionBtn = '';
-if (commissionDue) {
-markerCommissionBtn = `<button class="btn btn-sm btn-mark-commission" style="margin-right:4px;">✅ Commission reçue</button>`;
-}
+// 20/09/2026 (inventaire, 20.F) : la commission est réglée par le serveur à la livraison (déduite
+// du solde du coursier) — le bouton « Commission reçue » du bureau n'avait plus d'objet.
 return `
 <div class="colis-item" data-id="${course.id}">
 <div class="info">
@@ -86,7 +82,7 @@ return `
 ${commissionDue ? `<div class="meta" style="color:#c0392b; font-weight:600;">💰 Commission due et non réglée</div>` : ''}
 </div>
 <div class="status-col" style="flex-direction:column; align-items:flex-end; gap:4px;">
-${markerCommissionBtn}
+
 ${expressStatutBadgeHTML(course.status)}
 </div>
 </div>
@@ -147,20 +143,6 @@ const filtered = expressStatusFilter === 'tous' ? expressCourses : expressCourse
 // Les courses Express arrivent en temps réel : sans cette garde, la liste se reconstruisait à
 // chaque évènement, même quand rien n'y changeait. (25/08/2026)
 if (!cltPoserHTML(box, filtered.map(course => expressCoursRowHTML(course, clientsMap[course.client_id], couriersMap[course.coursier_id])).join(''))) { updateExpressStats(); return; }
-
-box.querySelectorAll('.btn-mark-commission').forEach(btn => {
-btn.addEventListener('click', async () => {
-const id = btn.closest('.colis-item').dataset.id;
-btn.disabled = true; btn.textContent = '...';
-const { error } = await supabaseClient.from('express_courses').update({ commission_reglee: true }).eq('id', id);
-if (error) {
-cltToast(friendlyErrorMessage(error.message), { type: 'error' });
-btn.disabled = false; btn.textContent = '✅ Commission reçue';
-return;
-}
-await loadExpressCourses();
-});
-});
 
 updateExpressStats();
 })();
@@ -445,8 +427,9 @@ document.getElementById('admin-section').classList.remove('hidden');
 document.getElementById('activity-log-section')?.classList.remove('hidden');
 // Refonte par onglets : réaffiche les sections et l'onglet Express réservés à l'administrateur.
 ['section-gerer-equipe','section-tous-comptes',
- 'section-express-courses','section-express-recharges',
+ 'section-express-courses','section-express-recharges','section-express-reglages',
  'eqtab-btn-express','bottomnav-express'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+if (typeof chargerReglagesExpress === 'function') chargerReglagesExpress();
 renderAccountFilters();
 await loadAllAccounts();
 // 05/09/2026 — Statistiques de visites et leur canal temps réel retirés de cet écran.
@@ -631,7 +614,14 @@ renderColis();
 // L'onglet sous les yeux relit la base comme s'il venait d'être ouvert.
 const onglet = document.querySelector('#clt-toptabs .clt-toptab.active');
 const cle = onglet ? onglet.dataset.eqtab : 'colis';
-if (cle === 'clients' && window.CLTClients) await CLTClients.rafraichir(true);
+// 20/09/2026 (inventaire) : la clé de l'onglet est « personnes » depuis le 18/09 ; « clients » ne
+// correspondait plus à rien, et Retours / Comptes n'étaient pas relus.
+if (cle === 'personnes') {
+  if (window.CLTClients) await CLTClients.rafraichir(true);
+  if (window.CLTLivreurs && typeof CLTLivreurs.rafraichir === 'function') await CLTLivreurs.rafraichir(true);
+}
+if (cle === 'retours' && typeof chargerRetours === 'function') await chargerRetours();
+if (cle === 'comptes') { if (typeof loadPending === 'function') await loadPending(); if (typeof loadAllAccounts === 'function') await loadAllAccounts(); }
 if (cle === 'programmation' && typeof chargerProgrammations === 'function') await chargerProgrammations();
 if (cle === 'finances') {
   if (typeof renderRapportJour === 'function' && !document.getElementById('rapport-jour')?.classList.contains('hidden')) await renderRapportJour();
@@ -644,6 +634,7 @@ if (cle === 'suivi') {
 if (cle === 'express') {
   if (typeof loadExpressCourses === 'function') await loadExpressCourses();
   if (typeof loadExpressRecharges === 'function') await loadExpressRecharges();
+  if (typeof chargerReglagesExpress === 'function') await chargerReglagesExpress();
 }
 },
 });
@@ -749,3 +740,44 @@ if (fresh.length > 0) setTimeout(() => window.livreurMap.invalidateSize(), 50);
 
 init();
 
+
+
+/* LES RÉGLAGES D'EXPRESS (20/09/2026, point 20.A) : la grille (base + km), la commission, le solde
+   minimum, le rayon de dispatch, l'estimation du délai et les numéros Mobile Money de CLT —
+   jusqu'ici modifiables uniquement dans l'éditeur SQL. Une seule ligne (express_config, id = 1),
+   écrite par l'équipe/admin (règle RLS existante). Tant que les numéros Mobile Money sont vides,
+   le coursier ne peut pas recharger : c'est le premier réglage à remplir. */
+const REGLAGES_EXPRESS = [
+  ['tarif_base', 'Prix de base (FCFA)', 'number'], ['tarif_par_km', 'Prix par km (FCFA)', 'number'],
+  ['commission_pct', 'Commission CLT (%)', 'pct'], ['solde_minimum', 'Solde minimum du coursier (FCFA)', 'number'],
+  ['rayon_dispatch_km', 'Rayon de dispatch (km)', 'number'], ['vitesse_moy_kmh', 'Vitesse moyenne retenue (km/h)', 'number'],
+  ['delai_prise_en_charge_min', 'Délai moyen de prise en charge (min)', 'number'],
+  ['momo_wave', 'Numéro Wave de CLT', 'tel'], ['momo_orange', 'Numéro Orange Money', 'tel'],
+  ['momo_mtn', 'Numéro MTN MoMo', 'tel'], ['momo_moov', 'Numéro Moov Money', 'tel'],
+];
+async function chargerReglagesExpress() {
+  const box = document.getElementById('express-reglages-form');
+  if (!box) return;
+  const { data, error } = await supabaseClient.from('express_config').select('*').eq('id', 1).maybeSingle();
+  if (error || !data) { box.innerHTML = '<div class="empty-state">Réglages indisponibles' + (error ? ' : ' + escapeHTML(friendlyErrorMessage(error.message)) : '') + '</div>'; return; }
+  box.innerHTML = REGLAGES_EXPRESS.map(([cle, libelle, type]) => {
+    const v = data[cle] == null ? '' : (type === 'pct' ? Math.round(Number(data[cle]) * 100) : data[cle]);
+    return `<label class="rx-champ"><span>${escapeHTML(libelle)}</span><input type="${type === 'tel' ? 'tel' : 'number'}" name="${cle}" value="${escapeHTML(String(v))}" ${type === 'tel' ? 'placeholder="07 00 00 00 00"' : 'min="0" step="any"'}></label>`;
+  }).join('') + `<div class="rx-pied"><button type="button" class="btn btn-sm" id="btn-express-reglages-enregistrer">Enregistrer les réglages</button><span class="rx-note">${data.momo_wave || data.momo_orange || data.momo_mtn || data.momo_moov ? '' : '⚠️ Aucun numéro Mobile Money : les coursiers ne peuvent pas recharger.'}</span></div>`;
+  document.getElementById('btn-express-reglages-enregistrer').addEventListener('click', async () => {
+    const patch = {};
+    REGLAGES_EXPRESS.forEach(([cle, , type]) => {
+      const raw = (box.querySelector(`[name="${cle}"]`)?.value || '').trim();
+      if (type === 'tel') patch[cle] = raw || null;
+      else if (raw !== '') patch[cle] = type === 'pct' ? Number(raw) / 100 : Number(raw);
+    });
+    patch.updated_at = new Date().toISOString();
+    const btn = document.getElementById('btn-express-reglages-enregistrer');
+    btn.disabled = true;
+    const { error: e2 } = await supabaseClient.from('express_config').update(patch).eq('id', 1);
+    btn.disabled = false;
+    if (e2) { cltToast(friendlyErrorMessage(e2.message), { type: 'error' }); return; }
+    cltToast('Réglages Express enregistrés.', { type: 'success' });
+    chargerReglagesExpress();
+  });
+}

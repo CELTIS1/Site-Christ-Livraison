@@ -17,10 +17,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920suivi">
+<link rel="stylesheet" href="style.css?v=20260920express">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920suivi"></script>
-<script src="splash.js?v=20260920suivi"></script>
+<script src="theme.js?v=20260920express"></script>
+<script src="splash.js?v=20260920express"></script>
 <style>
   .topbar{ background:#0D9488; }
   .topbar .brand .logo-mark{ background:#0b6e64; }
@@ -628,9 +628,9 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920suivi"></script>
-<script src="express-config.js?v=20260920suivi"></script>
-<script src="biometric-lock.js?v=20260920suivi"></script>
+<script src="clt-common.js?v=20260920express"></script>
+<script src="express-config.js?v=20260920express"></script>
+<script src="biometric-lock.js?v=20260920express"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -894,7 +894,7 @@
           ${expressStatutBadgeHTML(c.status)}
           <div style="font-weight:700;color:var(--navy);">${formatMontant(c.montant_coursier)}</div>
           ${itineraire}
-          ${canRecup ? `<button class="btn btn-sm btn-recup-course">J'ai récupéré le colis</button>` : ''}
+          ${canRecup ? `<button class="btn btn-sm btn-recup-course">J'ai récupéré le colis</button> <button type="button" class="btn btn-sm btn-outline btn-rendre-course">Je ne peux pas la faire</button>` : ''}
           ${canDeliver ? `<button class="btn btn-sm btn-deliver-course">Marquer livrée</button>` : ''}
           ${c.status === 'recuperee' && waveEnAttente ? `<div class="pay-tag pay-tag-wave-wait">🔒 Livraison possible dès que le client a payé en ligne</div>` : ''}
         </div>
@@ -939,22 +939,18 @@
         }
         const id = btn.closest('.course-item').dataset.id;
         btn.disabled = true; btn.textContent = 'Acceptation...';
-        const { data, error } = await supabaseClient.from('express_courses')
-          .update({ status: 'acceptee', coursier_id: currentUser.id, accepted_at: new Date().toISOString() })
-          .eq('id', id).eq('status', 'en_attente')
-          .select();
+        // Depuis le 20/09/2026 (20.A) : l'acceptation est une fonction serveur, atomique — la
+        // première acceptation gagne, la seconde reçoit « deja_prise » ; le solde minimum et le
+        // compte validé sont vérifiés là-bas. Le téléphone n'écrit plus dans la table.
+        const { error } = await supabaseClient.rpc('express_accepter_course', { p_course: id });
         if (error) {
-          cltToast('Cette course vient peut-être d\'être acceptée par un autre coursier. Erreur : ' + error.message, { type: 'error' });
-          btn.disabled = false; btn.textContent = 'Accepter';
-          await loadDisponibles();
-          return;
-        }
-        if (!data || !data.length) {
-          // Aucune ligne modifiée : course déjà prise, ou solde insuffisant (bloqué côté serveur).
-          if (!canAcceptCourses()) {
+          const m = String(error.message || '');
+          if (/solde_insuffisant/.test(m)) {
             if (await cltConfirm({ title: 'Solde insuffisant', sub: 'Votre solde ne permet pas d\'accepter cette course. Rechargez pour continuer.', okLabel: 'Recharger', cancelLabel: 'Plus tard' })) openRechargeModal();
-          } else {
+          } else if (/deja_prise/.test(m)) {
             cltToast('Cette course vient d\'être acceptée par un autre coursier.', { type: 'warning' });
+          } else {
+            cltToast('Erreur : ' + friendlyErrorMessage(m), { type: 'error' });
           }
           btn.disabled = false; btn.textContent = 'Accepter';
           await Promise.all([loadWallet(), loadDisponibles()]);
@@ -1001,6 +997,19 @@
           .eq('id', id).eq('coursier_id', currentUser.id);
         if (error) { cltToast('Erreur : ' + error.message, { type: 'error' }); btn.disabled = false; btn.textContent = "J'ai récupéré le colis"; return; }
         await loadMesCourses();
+      });
+    });
+    // Rendre une course acceptée (20/09/2026, 20.F) : moto en panne, client injoignable — elle
+    // redevient disponible pour les autres, au lieu de rester bloquée à son nom.
+    box.querySelectorAll('.btn-rendre-course').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('.course-item').dataset.id;
+        if (!(await cltConfirm({ title: 'Rendre cette course ?', sub: 'Elle redevient disponible pour les autres coursiers. À faire seulement si vous ne pouvez vraiment pas l\'assurer.', okLabel: 'Oui, la rendre', cancelLabel: 'Non' }))) return;
+        btn.disabled = true;
+        const { error } = await supabaseClient.rpc('express_rendre_course', { p_course: id });
+        if (error) { cltToast('Erreur : ' + friendlyErrorMessage(error.message), { type: 'error' }); btn.disabled = false; return; }
+        cltToast('Course rendue.', { type: 'info' });
+        await Promise.all([loadDisponibles(), loadMesCourses()]);
       });
     });
     box.querySelectorAll('.btn-deliver-course').forEach(btn => {
@@ -1347,14 +1356,11 @@
       renderDisponibles();
     } else {
       // Sans position (permission refusée / GPS indisponible), on ne peut pas filtrer par rayon.
-      // Repli sûr : on affiche les courses en attente sans filtre, en prévenant le coursier.
-      const { data, error } = await supabaseClient
-        .from('express_courses')
-        .select('*')
-        .eq('status', 'en_attente')
-        .order('created_at', { ascending: true });
+      // Repli sûr : la même fonction serveur, sans position, rend toutes les courses en attente
+      // (depuis le 20/09/2026 la table elle-même ne montre plus les courses en attente au coursier).
+      const { data, error } = await supabaseClient.rpc('express_courses_proximite', { p_lat: null, p_lng: null });
       if (error) { console.error(error); return; }
-      disponibles = data;
+      disponibles = data || [];
       dispatchMode = 'nolocation';
       renderDisponibles();
     }
@@ -1715,6 +1721,9 @@
         loadMesCourses();
       })
       .subscribe());
+    // Les courses en attente ne passent plus par le temps réel (le coursier ne les lit plus dans
+    // la table, 20/09/2026) : tant qu'il est disponible, la liste est relue toutes les 20 s.
+    setInterval(() => { if (currentProfile && currentProfile.disponible_express && document.visibilityState === 'visible') loadDisponibles(); }, 20000);
 
     // Solde et recharges en temps réel (validation par l'équipe -> crédit immédiat).
     trackChannel(supabaseClient

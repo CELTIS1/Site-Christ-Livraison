@@ -166,6 +166,7 @@
     // 🏍️ Express : courses + recharges (onglet entièrement réservé à l'admin)
     put('eqpanel-express', byId('section-express-courses'));
     put('eqpanel-express', byId('section-express-recharges'));
+    put('eqpanel-express', byId('section-express-reglages'));
 
     // Ces panneaux démarraient masqués (ancienne navigation interne par onglets
     // Colis/Journal/Rapports/Compta). Désormais rendus visibles en permanence
@@ -176,7 +177,7 @@
     // 20/09/2026 : sauf si init() est DÉJÀ passé par là (connexion résolue avant que ce fichier ne
     // s'exécute — profil en cache, réseau rapide) : on ne re-masque pas ce qu'il vient d'ouvrir.
     if (typeof isAdmin === 'undefined' || !isAdmin) ['section-gerer-equipe','section-tous-comptes',
-     'section-express-courses','section-express-recharges',
+     'section-express-courses','section-express-recharges','section-express-reglages',
      'eqtab-btn-express','bottomnav-express'].forEach(id => byId(id)?.classList.add('hidden'));
 
     // Neutralise le comportement repliable : toutes les sections restent ouvertes.

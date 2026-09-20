@@ -836,10 +836,17 @@ verifier(
    nos contacts ». L'onglet « Retours » remplace « Compte » chez la cliente (ses colis qui
    reviennent, tous jours confondus, les confirmations attendues en chiffre) ; la page de suivi
    donne la boutique d'abord (à qui prouve les quatre chiffres), CLT ensuite. Migration
-   2026-09-20-la-boutique-sur-le-suivi.sql (vue publique + suivi_colis). Étiquette 20260920suivi. */
+   2026-09-20-la-boutique-sur-le-suivi.sql (vue publique + suivi_colis). Étiquette 20260920suivi.
+   v181, le 20/09/2026 — lot 20.A de l'inventaire : l'argent et le statut d'une course Express ne
+   se modifient plus depuis un téléphone (trigger), l'acceptation est une fonction serveur
+   atomique, le destinataire n'est révélé qu'après acceptation, le client et le coursier voient
+   enfin l'autre partie, les fonctions des primes sont fermées, et le bureau règle Express dans
+   l'application (grille, commission, solde minimum, numéros Mobile Money). Actualiser relit
+   Personnes, Retours, Comptes. Migration 2026-09-20-express-l-argent-fige.sql. Étiquette
+   20260920express. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v180'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v181'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

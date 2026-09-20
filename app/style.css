@@ -3430,3 +3430,12 @@ html[data-theme="dark"] .mes-reportes{ background:#3a3010; color:#f3d98a; }
 html[data-theme="dark"] .clt-aide__article{ background:#1a2230; border-color:#2A3849; }
 html[data-theme="dark"] .clt-aide__astuce{ background:#3a2a1a; }
 html[data-theme="dark"] .clt-aide__media{ background:#243247; border-color:#2A3849; }
+
+/* LES RÉGLAGES D'EXPRESS (20/09/2026, 20.A) : une grille de champs courts, deux colonnes dès qu'il y a la place. */
+.rx-form{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px 14px; }
+.rx-champ{ display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:600; color:var(--muted); }
+.rx-champ input{ min-height:44px; padding:8px 12px; border:1px solid var(--border-strong); border-radius:10px; font:inherit; font-size:15px; background:var(--white); color:inherit; }
+.rx-pied{ grid-column:1 / -1; display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:4px; }
+.rx-note{ font-size:13px; color:#b3261e; }
+html[data-theme="dark"] .rx-champ input{ background:#1a2230; border-color:#2A3849; }
+html[data-theme="dark"] .rx-note{ color:#ff8a80; }
