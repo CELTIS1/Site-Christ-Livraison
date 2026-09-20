@@ -863,10 +863,15 @@ verifier(
    menu, une pastille « À rendre » avec son nombre, le mode nuit sur la feuille du motif, Mon
    mois et l'annonce de remise, « Expédié » dans les toasts, la photo gardée au rendu de fond,
    le lot hors réseau par la file, les signalements des livreurs dans L'essentiel. Migration
-   2026-09-20-le-livreur-signale.sql. Étiquette 20260920livreurs. */
+   2026-09-20-le-livreur-signale.sql. Étiquette 20260920livreurs.
+   v185, le 20/09/2026 — lot 20.D, la cliente : la file hors réseau de la saisie (IndexedDB,
+   photo comprise, clé de création), les retours au-delà de la page de 500, le mode nuit sur
+   la ligne de saisie, la zone de dépôt, les tuiles (qui lisent enfin --tile-color), 44 px
+   partout, le confirm() natif remplacé, le repli des sections retiré (code mort). Aucune
+   migration de schéma. Étiquette 20260920cliente. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v184'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v185'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

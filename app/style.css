@@ -714,6 +714,7 @@ html[data-theme="dark"] .sync-blocked-badge, html[data-theme="dark"] .montant-ma
 /* « non renseigné » à la place d'un montant. Le mot remplace un chiffre : il doit se lire comme
    un chiffre manquant, pas comme une note en passant. (18/09/2026) */
 .montant-absent{ color:#b3261e; font-weight:700; }
+html[data-theme="dark"] .montant-absent{ color:#ff9d93; }
 
 /* ---------- LOGIN ---------- */
 .login-page{
@@ -1441,6 +1442,15 @@ html[data-theme="dark"] .demande-ligne + .demande-ligne{ border-top-color:rgba(2
 .stat-tile-value{font-size:22px; font-weight:800; color:var(--navy); line-height:1.2; letter-spacing:-0.02em;}
 .stat-tile-label{font-size:11.5px; font-weight:600; color:var(--muted); line-height:1.3;}
 .stat-tile-total .stat-tile-label{color:rgba(255,255,255,0.85);}
+/* Les tuiles reçoivent --tile-color / --tile-bg depuis l'écran (cliente, gestion) ; ces variables
+   n'étaient lues par personne — toutes les tuiles restaient blanches et bleu marine (20/09, lot D).
+   La nuit, on garde le fond sombre et on ne colore que le chiffre. */
+.stat-tile{ background:var(--tile-bg, var(--white)); }
+.stat-tile-value{ color:var(--tile-color, var(--navy)); }
+html[data-theme="dark"] .stat-tile{ background:#1f2a3a; border-color:#2A3849; box-shadow:none; }
+html[data-theme="dark"] .stat-tile-value{ color:var(--tile-color, #E6ECF3); filter:brightness(1.35); }
+html[data-theme="dark"] .stat-tile-label{ color:#9DB0C4; }
+html[data-theme="dark"] .stat-tile-total{ background:var(--grad-navy-deep); }
 
 .trend-chart-title{font-size:13.5px; font-weight:700; color:var(--navy); margin:0 0 10px;}
 .trend-chart{
@@ -2412,6 +2422,9 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 .lot-depot-icone{ font-size:30px; line-height:1; margin-bottom:6px; }
 .lot-depot-titre{ font-weight:700; color:var(--clt-navy-dark,#12305a); font-size:15px; }
 .lot-depot-sous{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+html[data-theme="dark"] .lot-depot{ background:#141F2E; border-color:#33465F; }
+html[data-theme="dark"] .lot-depot.survol{ background:#1B2A3F; border-color:#9EC0E6; }
+html[data-theme="dark"] .lot-depot-titre{ color:#E6ECF3; }
 
 /* La photo passe devant, et de loin. Ce qu'on fait ici, c'est LIRE une étiquette
    manuscrite ; les champs, eux, reçoivent une commune et un numéro de téléphone,
@@ -2448,14 +2461,25 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
 .lot-etat.avertir{ color:#8a6100; }
 .lot-etat.erreur{ color:#b02a2a; font-weight:600; }
 .lot-enregistrer-un{ width:100%; margin-top:8px; }
+/* La ligne de saisie restait une carte blanche la nuit — chez la cliente ET au bureau (vu le
+   20/09/2026, lot D). */
+html[data-theme="dark"] .lot-ligne{ background:#141F2E; border-color:#2E3E54; }
+html[data-theme="dark"] .lot-photo img, html[data-theme="dark"] .lot-sansphoto{ background:#1C2739; }
+html[data-theme="dark"] .lot-num{ color:#E6ECF3; }
+html[data-theme="dark"] .lot-retirer{ color:#FF9D93; }
+html[data-theme="dark"] .lot-etat.ok{ color:#5CC98A; }
+html[data-theme="dark"] .lot-etat.avertir{ color:#F0C98A; }
+html[data-theme="dark"] .lot-etat.erreur{ color:#FF9D93; }
 
 /* Champ rempli par la machine (carnet) et pas encore relu : surligné jusqu'à ce qu'on y touche. */
 /* Rempli par la machine : surligné jusqu'à ce que quelqu'un le touche. La règle vaut sur les
    deux écrans de saisie depuis le 18/09/2026, plus seulement dans une ligne de lot. */
 .rempli-auto{ background:#fffbe6 !important; border-color:#e6c34a !important; }
+html[data-theme="dark"] .rempli-auto{ background:#3A3116 !important; border-color:#B8962E !important; color:#E6ECF3 !important; }
 /* D'OÙ VIENT LE PRIX PROPOSÉ. (18/09/2026) Une ligne discrète sous les deux montants : elle
    nomme le trajet et le tarif de la grille, et dit quand la personne s'en écarte. Discrète
    parce qu'elle accompagne — elle ne réclame rien, elle explique un chiffre déjà là. */
+html[data-theme="dark"] .lot-tarif-note{ color:#9FB3C8; }
 .lot-tarif-note{
   margin-top:4px; font-size:11.5px; color:#5b6473; line-height:1.35;
 }
@@ -3192,6 +3216,10 @@ html[data-theme="dark"] .clt-joindre{ color:#9DB8DA; }
      « Ajouter un colis sans photo » de la cliente, qui ne faisait que 19 px. Ils deviennent des
      boîtes pour pouvoir avoir une hauteur, tout en restant dans le fil du texte. */
   .colis-tel, .lien-nu{ display:inline-flex; align-items:center; min-height:44px; }
+  /* Chez la cliente (20/09/2026, lot D) : la croix du calendrier, « Retirer » sur une photo,
+     « Voir le parcours » d'un retour, et tout .btn-sm — 44 px au doigt, comme le reste. */
+  .date-filter-clear, .lot-retirer, .retour-parcours-btn, .btn-sm{ min-height:44px; }
+  .retour-parcours-btn{ display:inline-flex; align-items:center; }
   /* Les cases à cocher : 24 px, la mesure déjà retenue pour l'écran du livreur le 10 septembre
      (une case n'est pas un bouton — on la vise avec son étiquette, qui, elle, fait 44). */
   input[type="checkbox"], input[type="radio"]{ min-width:24px; min-height:24px; }
@@ -3379,6 +3407,13 @@ html[data-theme="dark"] .rt-puce, html[data-theme="dark"] .rt-badge{ filter:brig
 .mb-retour{ margin:0 0 10px; }
 .mb-lecture{ font-size:12.5px; color:var(--muted); background:var(--grey-bg); border-radius:10px; padding:8px 12px; margin-bottom:10px; }
 html[data-theme="dark"] .mb-tuile, html[data-theme="dark"] .mb-lecture, html[data-theme="dark"] .mb-chiffre{ background:#1f2a3a; }
+/* Les pastilles colorées des boutiques gardaient leur fond pastel la nuit (vu le 20/09, lot D). */
+html[data-theme="dark"] .mb-chiffre{ color:#CFE0F5; }
+html[data-theme="dark"] .mb-chiffre--livre{ background:#153A26; color:#B8F0CC; }
+html[data-theme="dark"] .mb-chiffre--non_livre{ background:#3A1A17; color:#FF9D93; }
+html[data-theme="dark"] .mb-chiffre--retour{ background:#2E1F3A; color:#D9B8F0; }
+html[data-theme="dark"] .mb-chiffre--argent{ background:#1B2A3F; color:#9EC0E6; }
+html[data-theme="dark"] .mb-nom{ color:#E6ECF3; }
 html[data-theme="dark"] .mb-boutique{ background:#1a2230; }
 .mb-colis-ligne{ padding:8px 10px; border:1px solid var(--border); border-radius:10px; margin-bottom:6px; font-size:13px; }
 .mb-colis-haut{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }

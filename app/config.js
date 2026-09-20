@@ -1134,18 +1134,6 @@ function buildTrackingLink(numero, id) {
     : `${location.origin}/suivi.html?id=${id}`;
 }
 
-// Phrase adaptée au statut, du point de vue du destinataire.
-function statutMessageClient(statut) {
-  return ({
-    en_attente:   "est bien enregistré",
-    recupere:     "a été récupéré par notre livreur",
-    en_livraison: "est en cours de livraison",
-    livre:        "a bien été livré",
-    non_livre:    "n'a pas pu être livré (nous allons vous recontacter)",
-    retour:       "est en cours de retour",
-  })[statut] || "vient d'être mis à jour";
-}
-
 // Délégation d'événement pour tout bouton ".btn-notify-wa" (dans un ".colis-item").
 // Ouvre WhatsApp avec un message pré-rempli contenant le statut + le lien de suivi.
 // - data-tel   : téléphone du destinataire (si connu) → destinataire pré-rempli.

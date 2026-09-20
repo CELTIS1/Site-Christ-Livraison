@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920livreurs">
+<link rel="stylesheet" href="style.css?v=20260920cliente">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920livreurs"></script>
-<script src="splash.js?v=20260920livreurs"></script>
+<script src="theme.js?v=20260920cliente"></script>
+<script src="splash.js?v=20260920cliente"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -175,7 +175,13 @@
   /* Téléphone du destinataire + WhatsApp sur la carte (05/09/2026). */
   .colis-contact{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:3px; }
   .colis-tel{ font-size:13.5px; font-weight:700; color:#1B4374; text-decoration:none; }
-  .colis-contact .btn-notify-wa{ padding:4px 10px; font-size:12px; margin:0; }
+  .colis-contact .btn-notify-wa{ padding:4px 10px; font-size:12px; margin:0; min-height:44px; }
+  /* Le mode nuit de cette page (20/09/2026, lot D) : le numéro, la zone « coller », les blocs
+     blancs qui restaient blancs. */
+  html[data-theme="dark"] .colis-tel{ color:#9EC0E6; }
+  html[data-theme="dark"] .coller-zone{ background:#141F2E; border-color:#2E3E54; }
+  html[data-theme="dark"] .coller-zone textarea{ background:#18243A; border-color:#33465F; color:#E6ECF3; }
+  html[data-theme="dark"] .coller-resume .avertir{ color:#F0C98A; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -382,10 +388,19 @@
   </div>
 
   <div class="card" id="section-ajouter">
-    <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'ajouter-content')">
-      <span class="collapse-arrow">▶</span> 📸 Ajouter des colis à partir des photos
-    </h2>
-    <div id="ajouter-content" class="collapsible-content">
+    <!-- Les sections de cette page ne se replient plus depuis longtemps (neutralizeCollapsibles
+         les dépliait toutes au chargement) : le HTML le dit maintenant directement, et les
+         cinq fonctions de repli sont parties avec lui. (20/09/2026, lot D) -->
+    <h2 class="panel-subtitle">📸 Ajouter des colis à partir des photos</h2>
+    <div id="ajouter-content" class="collapsible-content open" style="max-height:none">
+      <!-- LA FILE HORS RÉSEAU DE LA CLIENTE (20/09/2026, lot D). Jusqu'ici, sans réseau, la saisie
+           échouait avec un message d'erreur et la cliente devait tout ressaisir — le texte
+           promettait pourtant « en attente sur cet appareil ». Les colis s'écrivent maintenant
+           sur le téléphone et partent au retour de la connexion, photo comprise. -->
+      <div class="offline-queue-banner hidden" id="fr-file-banner">
+        <span id="fr-file-texte"></span>
+        <button type="button" class="btn btn-sm btn-outline" id="fr-file-envoyer">Envoyer maintenant</button>
+      </div>
 
       <!-- ========================================================================================
            SAISIE À PARTIR DES PHOTOS D'ÉTIQUETTES — 21 août 2026
@@ -518,10 +533,8 @@
   </div>
 
   <div class="card" id="section-recap">
-    <h2 class="panel-subtitle collapsible-header" id="recap-toggle" onclick="toggleRecap()">
-      <span class="collapse-arrow" id="recap-arrow">▶</span> Récapitulatif
-    </h2>
-    <div id="recap-content" class="collapsible-content">
+    <h2 class="panel-subtitle" id="recap-toggle">Récapitulatif</h2>
+    <div id="recap-content" class="collapsible-content open" style="max-height:none">
       <div class="recap-filters">
         <div class="field">
           <label>Choisir un mois</label>
@@ -571,23 +584,23 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920livreurs"></script>
-<script src="lib/bibliotheques.js?v=20260920livreurs"></script>
-<script src="lib/retours.js?v=20260920livreurs"></script>
-<script src="lib/reclamations.js?v=20260920livreurs"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920livreurs"></script>
-<script src="lib/argent.js?v=20260920livreurs"></script>
-<script src="lib/releve-cliente.js?v=20260920livreurs"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920livreurs"></script>
-<script src="lib/briques-argent.js?v=20260920livreurs"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920livreurs"></script>
-<script src="lib/annonce-de-remise.js?v=20260920livreurs"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920livreurs"></script>
-<script src="lib/primes.js?v=20260920livreurs"></script>
-<script src="lib/doublons.js?v=20260920livreurs"></script>
-<script src="config.js?v=20260920livreurs"></script>
-<script src="biometric-lock.js?v=20260920livreurs"></script>
-<script src="clt-select-recherche.js?v=20260920livreurs"></script>
+<script src="clt-common.js?v=20260920cliente"></script>
+<script src="lib/bibliotheques.js?v=20260920cliente"></script>
+<script src="lib/retours.js?v=20260920cliente"></script>
+<script src="lib/reclamations.js?v=20260920cliente"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920cliente"></script>
+<script src="lib/argent.js?v=20260920cliente"></script>
+<script src="lib/releve-cliente.js?v=20260920cliente"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920cliente"></script>
+<script src="lib/briques-argent.js?v=20260920cliente"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920cliente"></script>
+<script src="lib/annonce-de-remise.js?v=20260920cliente"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920cliente"></script>
+<script src="lib/primes.js?v=20260920cliente"></script>
+<script src="lib/doublons.js?v=20260920cliente"></script>
+<script src="config.js?v=20260920cliente"></script>
+<script src="biometric-lock.js?v=20260920cliente"></script>
+<script src="clt-select-recherche.js?v=20260920cliente"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -691,6 +704,8 @@
     document.body.appendChild(fond);
   }
   document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-aller-ajouter]');
+    if (a) { e.preventDefault(); showFournisseurTab('section-ajouter'); return; }
     const b = e.target.closest('[data-signaler]');
     if (b) { e.preventDefault(); e.stopPropagation(); ouvrirSignalement(b.dataset.signaler); }
   });
@@ -798,40 +813,6 @@
     data.forEach(l => { livreursById[l.id] = l; });
   }
 
-  function closeOtherSections(exceptContentId){
-    document.querySelectorAll('.card > .collapsible-content').forEach(c => {
-      if (c.id === exceptContentId) return;
-      if (c.classList.contains('open')){
-        collapseCollapsible(c);
-        const h = c.previousElementSibling;
-        const arr = h && h.querySelector('.collapse-arrow');
-        if (arr) arr.textContent = '▶';
-      }
-    });
-  }
-
-  // Sur mobile (surtout Safari/iOS), les colonnes/en-têtes "sticky" d'un tableau
-  // qui était masqué (max-height:0) ne se repositionnent pas toujours correctement
-  // une fois la section ré-ouverte. On force un recalcul de mise en page une fois
-  // l'animation d'ouverture terminée.
-  function refreshStickyTables(container){
-    if (!container) return;
-    const onEnd = (e) => {
-      if (e.target !== container || e.propertyName !== 'max-height') return;
-      container.removeEventListener('transitionend', onEnd);
-      const wraps = container.classList.contains('recap-table-wrap')
-        ? [container]
-        : container.querySelectorAll('.recap-table-wrap');
-      wraps.forEach(w => {
-        const prevDisplay = w.style.display;
-        w.style.display = 'none';
-        void w.offsetHeight; // force le reflow
-        w.style.display = prevDisplay;
-      });
-    };
-    container.addEventListener('transitionend', onEnd);
-  }
-
   function showFournisseurTab(key){
     ['section-ajouter','section-recap','section-colis','section-retours'].forEach(id => {
       const el = document.getElementById(id);
@@ -855,28 +836,10 @@
     document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === key));
     try { localStorage.setItem('clt_fournisseur_tab', key); } catch(e){}
   }
-  function neutralizeCollapsibles(){
-    document.querySelectorAll('.collapsible-content').forEach(c => { c.classList.add('open'); c.style.maxHeight = 'none'; });
-    document.querySelectorAll('.collapsible-header').forEach(h => {
-      h.removeAttribute('onclick'); h.style.cursor = 'default';
-      const arr = h.querySelector('.collapse-arrow'); if (arr) arr.style.display = 'none';
-    });
-  }
-
-  function toggleSection(header, contentId){
-    const content = document.getElementById(contentId);
-    const willOpen = !content.classList.contains('open');
-    if (willOpen) closeOtherSections(contentId);
-    if (willOpen) { expandCollapsible(content); } else { collapseCollapsible(content); }
-    const arrow = header.querySelector('.collapse-arrow');
-    if (arrow) arrow.textContent = willOpen ? '▼' : '▶';
-    if (willOpen) refreshStickyTables(content);
-  }
-
   /* L'observateur de l'ancienne barre de liens vivait ici : 47 lignes qui posaient un
      IntersectionObserver sur trois sections, à chaque ouverture de la page, pour souligner des
      liens masqués par display:none. Il savait aussi déplier une section repliable au clic —
-     sauf que neutralizeCollapsibles(), plus bas, les déplie déjà toutes et retire leur onclick.
+     sauf que les sections étaient déjà toutes dépliées au chargement (le repli est parti le 20/09/2026).
      Deux fois mort, donc, et pourtant exécuté à chaque chargement. Parti avec sa barre. */
 
   function matchesSearch(c, term){
@@ -1436,13 +1399,116 @@
 
   // Envoie une ligne. Renvoie true si elle peut quitter l'écran, false si elle doit rester sous
   // les yeux pour être corrigée.
+  /* ---------- LA FILE HORS RÉSEAU DE LA CLIENTE (20/09/2026, lot D) ----------
+     Même principe que chez le livreur : IndexedDB garde le colis tel qu'il a été saisi (photo
+     comprise, en Blob) ; au retour de la connexion, on envoie. La clé de création (cle_creation)
+     garantit qu'un colis parti « à moitié » n'est jamais créé deux fois. Une entrée refusée par
+     le serveur (pas une panne réseau) est retentée trois fois, puis signalée à la cliente avec
+     ce qu'il faut ressaisir — jamais perdue en silence. */
+  const FR_FILE_DB = 'clt-cliente-file';
+  const FR_FILE_STORE = 'colis';
+  const FR_FILE_MAX = 3;
+  let frFileEnvoiEnCours = false;
+  function frFileOuvrir(){
+    return new Promise((resolve, reject) => {
+      if (typeof indexedDB === 'undefined') return reject(new Error('pas d\'IndexedDB'));
+      const req = indexedDB.open(FR_FILE_DB, 1);
+      req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(FR_FILE_STORE)) db.createObjectStore(FR_FILE_STORE, { keyPath: 'key', autoIncrement: true }); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function frFileTx(mode, fn){
+    const db = await frFileOuvrir();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(FR_FILE_STORE, mode);
+      const r = fn(tx.objectStore(FR_FILE_STORE));
+      tx.oncomplete = () => resolve(r && r.result !== undefined ? r.result : undefined);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  const frFileAjouter = (e) => frFileTx('readwrite', st => st.add(e));
+  const frFileTout = () => frFileTx('readonly', st => st.getAll());
+  const frFileSupprimer = (key) => frFileTx('readwrite', st => st.delete(key));
+  const frFilePoser = (e) => frFileTx('readwrite', st => st.put(e));
+  function frEstPanneReseau(err){
+    if (!navigator.onLine) return true;
+    if (!err) return false;
+    if (err.status === 0 || err.status === 408 || err.status === 502 || err.status === 503 || err.status === 504) return true;
+    const m = String(err.message || err.error_description || err).toLowerCase();
+    return m.includes('fetch') || m.includes('network') || m.includes('load failed') || m.includes('timeout') || m.includes('délai');
+  }
+  async function frFileBandeau(){
+    const banner = document.getElementById('fr-file-banner');
+    const texte = document.getElementById('fr-file-texte');
+    if (!banner || !texte) return;
+    let entrees = [];
+    try { entrees = await frFileTout(); } catch (e) { entrees = []; }
+    if (!entrees.length) { banner.classList.add('hidden'); banner.classList.remove('offline-queue-banner--bloquee'); return; }
+    const bloquees = entrees.filter(e => e.bloquee);
+    const attente = entrees.length - bloquees.length;
+    const parts = [];
+    if (attente) parts.push(`📶 ${attente} colis en attente sur cet appareil${navigator.onLine ? ' — envoi en cours…' : ' : ils partiront dès le retour de la connexion.'}`);
+    if (bloquees.length) parts.push(`⚠️ ${bloquees.length} colis refusé${bloquees.length > 1 ? 's' : ''} par le serveur (${bloquees.map(e => (e.payload.description || e.payload.destination || 'sans nom') + ' — ' + e.motif).join(' ; ')}) : à ressaisir, puis « Retirer ».`);
+    texte.textContent = parts.join(' ');
+    banner.classList.remove('hidden');
+    banner.classList.toggle('offline-queue-banner--bloquee', bloquees.length > 0);
+    const btn = document.getElementById('fr-file-envoyer');
+    if (btn) btn.textContent = bloquees.length && !attente ? 'Retirer' : 'Envoyer maintenant';
+  }
+  async function frFileEnvoyer(){
+    if (frFileEnvoiEnCours || !navigator.onLine || !currentUser) return;
+    frFileEnvoiEnCours = true;
+    let partis = 0;
+    try {
+      const entrees = await frFileTout();
+      for (const e of entrees) {
+        if (e.bloquee) continue;
+        const payload = Object.assign({}, e.payload);
+        if (e.photo && !payload.photo_url) {
+          const url = await uploadPhoto(e.photo, currentUser.id).catch(() => null);
+          if (url) { payload.photo_url = url; e.payload.photo_url = url; await frFilePoser(e); }
+          else if (!navigator.onLine) break;
+        }
+        const error = await frInsererColis([payload]);
+        if (!error || estDoublonCleCreation(error)) { await frFileSupprimer(e.key); partis++; continue; }
+        if (frEstPanneReseau(error)) break;
+        e.tentatives = (e.tentatives || 0) + 1;
+        e.motif = friendlyErrorMessage(error.message);
+        if (e.tentatives >= FR_FILE_MAX) e.bloquee = true;
+        await frFilePoser(e);
+      }
+    } catch (err) { console.error('File cliente :', err); }
+    finally { frFileEnvoiEnCours = false; }
+    await frFileBandeau();
+    if (partis) {
+      cltToast(partis > 1 ? `${partis} colis en attente sont partis : ils sont dans votre liste.` : 'Le colis en attente est parti : il est dans votre liste.', { type: 'success', title: 'Connexion revenue' });
+      loadColis().catch(() => {});
+    }
+  }
+  async function frFileRetirerBloquees(){
+    const entrees = await frFileTout().catch(() => []);
+    for (const e of entrees) if (e.bloquee) await frFileSupprimer(e.key);
+    await frFileBandeau();
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('#fr-file-envoyer');
+    if (!b) return;
+    if (b.textContent === 'Retirer') { frFileRetirerBloquees(); return; }
+    if (!navigator.onLine) { cltToast('Toujours pas de connexion : les colis partiront dès qu\'elle revient.', { type: 'info' }); return; }
+    frFileEnvoyer();
+  });
+  window.addEventListener('online', () => { frFileEnvoyer(); });
+  window.addEventListener('offline', () => { frFileBandeau(); });
+  setInterval(() => { if (navigator.onLine) frFileEnvoyer(); }, 30000);
+
   async function lotfrEnvoyerUneLigne(l, rang, ctx, bilan, echecs){
     const s = lotfrLireLigne(l);
 
     let photo_url = null;
-    if (l.file) {
+    if (l.file && navigator.onLine) {
       photo_url = await uploadPhoto(l.file, currentUser.id);
-      if (!photo_url) bilan.photosPerdues++;
+      if (!photo_url && navigator.onLine) bilan.photosPerdues++;
     }
 
     const montant_article = s.montantArticle === '' ? null : Number(s.montantArticle);
@@ -1475,12 +1541,22 @@
       cle_creation: l.cle
     };
 
-    const error = await frInsererColis([payload]);
+    // Sans réseau, on n'essaie même pas : le colis va dans la file, photo comprise.
+    const error = navigator.onLine ? await frInsererColis([payload]) : { message: 'Failed to fetch', status: 0 };
 
     // Doublon sur la clé de création : ce colis avait déjà été enregistré par un envoi précédent
     // qui semblait avoir échoué. Il existe, une seule fois. C'est le résultat voulu.
     if (estDoublonCleCreation(error)) { bilan.dejaEnregistres++; return true; }
     if (!error) { bilan.crees++; return true; }
+    if (frEstPanneReseau(error)) {
+      // La file hors réseau : écrit sur l'appareil, envoyé au retour de la connexion (20/09).
+      try {
+        await frFileAjouter({ payload, photo: (l.file && !photo_url) ? l.file : null, quand: Date.now(), tentatives: 0 });
+        bilan.misEnAttente++;
+        frFileBandeau();
+        return true;
+      } catch (e) { console.error('File cliente :', e); }
+    }
     echecs.push({ rang, motif: friendlyErrorMessage(error.message) });
     return false;
   }
@@ -1736,7 +1812,7 @@
     if (barreWrap) barreWrap.addEventListener('click', (e) => {
       if (e.target.closest('#lotfr-enregistrer')) lotfrEnregistrer();
       else if (e.target.closest('#lotfr-tout-effacer')) {
-        if (confirm('Retirer toutes les photos et tout ce qui a été saisi dans cette liste ?')) lotfrToutEffacer();
+        cltConfirm({ title: 'Tout effacer ?', sub: 'Toutes les photos et tout ce qui a été saisi dans cette liste seront retirés.', okLabel: 'Tout effacer', cancelLabel: 'Garder' }).then(ok => { if (ok) lotfrToutEffacer(); });
       }
     });
 
@@ -2432,7 +2508,7 @@
     // absent du HTML comparé.
     const __emp = () => (colisHasMore ? '1' : '0') + ':' + resteAAfficher + ':' + (colisLoadingMore ? '1' : '0');
     if (!mesColis.length) {
-      __aChange = cltPoserHTML(list, `<div class="empty-state">Aucun colis pour le moment. Ajoutez votre premier colis ci-dessus.</div>`, __emp());
+      __aChange = cltPoserHTML(list, `<div class="empty-state">Aucun colis pour le moment.<br><button type="button" class="btn btn-sm" data-aller-ajouter style="margin-top:10px">📸 Ajouter mon premier colis</button></div>`, __emp());
     } else if (!filtered.length) {
       // Une journée vide le dit simplement, et propose le reste d'un appui : une cliente qui n'a
       // rien déposé ce matin retrouve ainsi ses colis d'hier encore en route. (07/09/2026)
@@ -2512,6 +2588,7 @@
     colisHasMore = data.length === COLIS_PAGE_SIZE;
     // Les signalements déjà envoyés, pour que le bouton laisse la place à leur état (point 7.2).
     await chargerMesReclamations();
+    await chargerRetoursHorsPage();
     renderColisList();
     chargerMaDemandeDePassage();
     chargerMesBoutiques();
@@ -2620,7 +2697,10 @@
           <div class="mb-colis-haut"><span class="mb-colis-statut" style="background:${st.bg}; color:${st.color};">${escapeHTML(st.label)}</span><span class="mb-colis-montant">${escapeHTML(formatMontant(Number(c.montant_article) || 0) || '')}</span></div>
           <div class="mb-colis-bas"><b>${escapeHTML(c.numero || '')}</b>${c.destination || c.commune_destination ? ' · ' + escapeHTML([c.commune_destination, c.destination].filter(Boolean).join(' — ')) : ''}${c.description ? '<div class="mb-colis-desc">' + escapeHTML(String(c.description).slice(0, 80)) + '</div>' : ''}${c.statut === 'retour' ? '<div class="mb-colis-retour">' + escapeHTML(retourTexte(c, 'cliente')) + '</div>' : ''}</div>
         </div>`; }).join('')}</div>` : '<div class="empty-state">Aucun colis ce jour-là pour cette boutique.</div>'}`;
-    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // On ne fait défiler que si le détail n'est pas déjà sous les yeux : sinon chaque appui
+    // faisait sauter la page (20/09, lot D).
+    const r = detail.getBoundingClientRect();
+    if (r.top < 0 || r.top > window.innerHeight * 0.6) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-mb-boutique]');
@@ -3032,15 +3112,6 @@
     }
   }
 
-  function toggleRecap(){
-    const content = document.getElementById('recap-content');
-    const willOpen = !content.classList.contains('open');
-    if (willOpen) closeOtherSections('recap-content');
-    if (willOpen) { expandCollapsible(content); } else { collapseCollapsible(content); }
-    document.getElementById('recap-arrow').textContent = willOpen ? '▼' : '▶';
-    if (willOpen) refreshStickyTables(content);
-  }
-
   // Icônes de statut : dérivées du référentiel central STATUTS (config.js) — source unique.
   const RECAP_ICONS = (typeof STATUT_ICONS !== 'undefined') ? STATUT_ICONS
     : { en_attente:'⏳', recupere:'📦', en_livraison:'🚚', livre:'✅', non_livre:'⚠️', retour:'↩️' };
@@ -3061,11 +3132,6 @@
         </div>
         ${tiles}
       </div>`;
-  }
-
-  function monthKey(iso){
-    if (!iso) return '';
-    return iso.slice(0, 7);
   }
 
   function monthLabel(key){
@@ -3147,11 +3213,29 @@
   /* L'onglet « Retours » (20/09/2026) : ses colis en retour, tous jours confondus — d'abord ceux
      qu'on lui demande de confirmer, puis ceux encore en route, puis les clos. Le chiffre sur
      l'onglet est ce qui attend d'elle : les confirmations. */
+  /* LES RETOURS AU-DELÀ DES 500 (20/09/2026, lot D). L'onglet Retours lisait la page des 500
+     colis les plus récents : un retour vieux de deux mois, jamais confirmé, en tombait sans
+     bruit — alors que c'est précisément celui qu'il faut voir. Une lecture à part va chercher
+     les retours plus anciens que la page ; ils s'ajoutent à la liste de l'onglet, et à elle seule. */
+  let mesRetoursHorsPage = [];
+  async function chargerRetoursHorsPage(){
+    mesRetoursHorsPage = [];
+    if (!colisHasMore || !mesColis.length || !currentUser) return;
+    const plusAncien = mesColis[mesColis.length - 1].created_at;
+    if (!plusAncien) return;
+    try {
+      const { data, error } = await supabaseClient.from('colis').select('*')
+        .eq('fournisseur_id', currentUser.id).eq('statut', 'retour').lt('created_at', plusAncien)
+        .order('created_at', { ascending: false }).limit(200);
+      if (!error && Array.isArray(data)) mesRetoursHorsPage = data;
+    } catch (e) { /* on montre au moins ceux de la page */ }
+  }
   function renderRetoursCliente(){
     const list = document.getElementById('retours-list');
     if (!list) return;
     const poids = (c) => retourAConfirmer(c) ? 0 : retourEnAttente(c) ? 1 : 2;
-    const retours = mesColis.filter(c => c.statut === 'retour').sort((a, b) => poids(a) - poids(b) || String(b.retour_at || b.non_livre_at || b.created_at || '').localeCompare(String(a.retour_at || a.non_livre_at || a.created_at || '')));
+    const dansLaPage = new Set(mesColis.map(c => c.id));
+    const retours = mesColis.filter(c => c.statut === 'retour').concat(mesRetoursHorsPage.filter(c => !dansLaPage.has(c.id))).sort((a, b) => poids(a) - poids(b) || String(b.retour_at || b.non_livre_at || b.created_at || '').localeCompare(String(a.retour_at || a.non_livre_at || a.created_at || '')));
     const aConfirmer = retours.filter(c => retourAConfirmer(c)).length;
     document.querySelectorAll('[data-retours-badge]').forEach(b => { b.textContent = aConfirmer ? String(aConfirmer) : ''; b.classList.toggle('hidden', !aConfirmer); });
     const html = retours.length
@@ -3530,6 +3614,8 @@
     }
 
     initLotFournisseur();
+    // La file hors réseau : ce qui attend sur l'appareil se voit, et repart si le réseau est là.
+    frFileBandeau().then(() => { if (navigator.onLine) frFileEnvoyer(); }).catch(() => {});
 
     // Carnet d'adresses : chargé sans bloquer l'affichage du reste. Les lignes déjà dessinées se
     // mettent à jour dès qu'il arrive — c'est une aide, elle a le droit d'apparaître une seconde
@@ -3649,7 +3735,6 @@
 <script>
   // Navigation par onglets : affiche une seule section à la fois, avec barre en haut (grand écran) et bas (petit écran).
   (function(){
-    neutralizeCollapsibles();
     const bar = document.getElementById('clt-bottomnav');
     function currentContentTab(){
       let cur = 'section-ajouter';

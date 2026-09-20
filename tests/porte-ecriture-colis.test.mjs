@@ -290,9 +290,11 @@ titre('Aucune écriture de colis ne contourne la porte');
   // photos, et la reprise après doublon. Le compte est écrit en dur exprès — le jour où un
   // troisième apparaît, ce test doit obliger celui qui l'ajoute à venir ici constater que son
   // chemin passe bien par la porte, plutôt que de le laisser filer.
+  // Un troisième chemin le 20/09/2026 (lot D) : la file hors réseau, qui renvoie les colis
+  // gardés sur l'appareil — par la même porte, constaté ici comme le commentaire l'exigeait.
   const appelsFournisseur = (fournisseur.match(/await frInsererColis\(/g) || []).length;
-  verifier('les deux chemins de la vendeuse passent par la porte (photos, reprise après doublon)',
-    appelsFournisseur === 2, appelsFournisseur + ' appels');
+  verifier('les trois chemins de la vendeuse passent par la porte (photos, reprise après doublon, file hors réseau)',
+    appelsFournisseur === 3, appelsFournisseur + ' appels');
 }
 
 /* ==========================================================================================
