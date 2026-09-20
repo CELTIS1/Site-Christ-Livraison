@@ -74,7 +74,8 @@ verifier('les motifs et le champ font 44 px', /\.reclam-motif\{[^}]*min-height:4
 console.log('\n5. Au bureau');
 verifier('les réclamations non résolues sont lues, les plus anciennes d\'abord',
   /neq\('statut', 'resolue'\)/.test(equipe) && /order\('created_at', \{ ascending: true \}\)/.test(equipe));
-verifier('une pastille compte ce qui est signalé', /'problèmes signalés par des clientes'/.test(equipe));
+verifier('une pastille compte ce qui est signalé — clientes et, depuis le 20/09 (20.C), livreurs', /'problèmes signalés'/.test(equipe) && /nbReclamationsLivreurs/.test(equipe) && /par des livreurs/.test(equipe));
+verifier('le panneau dit qui parle (Cliente / Livreur) et la réponse s\'adresse au bon', /reclam-eq__qui--livreur/.test(equipe) && /Votre réponse au livreur/.test(equipe));
 verifier('elle passe au rouge quand quelque chose traîne', /nbReclamationsTard \? 'rouge' : 'ambre'/.test(equipe));
 verifier('le bureau peut prendre en charge et répondre (20/09, 20.B) : la pastille redescend', /async function traiterReclamation\(id, geste\)/.test(equipe) && /statut: 'resolue', reponse: reponse \|\| null/.test(equipe) && /data-reclam-geste="en_cours"/.test(equipe) && /data-reclam-geste="resolue"/.test(equipe));
 verifier('« traîne » veut dire plus de deux jours, comme ailleurs sur cet écran', /reclamationJours\(r, aujourdhui\) \|\| 0\) > 2/.test(equipe));

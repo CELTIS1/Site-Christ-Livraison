@@ -71,9 +71,11 @@ titre('2.5 · Le haut de page');
   verifier('le repli se souvient de son état sur l\'appareil', /clt:livreur:journee-ouverte/.test(livreur));
   // Les pastilles
   const ctx = vm.createContext({});
-  vm.runInContext("const FILTRE_A_FAIRE = 'a_faire'; const FILTER_LABELS = { tous: 'Tous', livre: 'Livrés', non_livre: 'Non livrés', en_attente: 'x', recupere: 'y', en_livraison: 'z', retour: 'r' };\n" + livreur.match(/const FILTER_LABELS_MES = [^\n]+/)[0], ctx);
+  vm.runInContext("const FILTRE_A_FAIRE = 'a_faire'; const FILTRE_A_RENDRE = 'a_rendre'; const FILTER_LABELS = { tous: 'Tous', livre: 'Livrés', non_livre: 'Non livrés', en_attente: 'x', recupere: 'y', en_livraison: 'z', retour: 'r' };\n" + livreur.match(/const FILTER_LABELS_MES = [^\n]+/)[0], ctx);
   const cles = Object.keys(vm.runInContext('FILTER_LABELS_MES', ctx));
-  verifier('quatre pastilles, dans cet ordre : Ma journée, Livrés, Non livrés, Tous', cles.join(',') === 'a_faire,livre,non_livre,tous', cles.join(','));
+  // 20/09/2026 (20.C) : « À rendre » s'ajoute — les retours encore dans le sac, avec leur nombre.
+  verifier('cinq pastilles, dans cet ordre : Ma journée, Livrés, Non livrés, À rendre, Tous', cles.join(',') === 'a_faire,livre,non_livre,a_rendre,tous', cles.join(','));
+  verifier('« À rendre » porte le nombre de retours dans le sac et ignore le calendrier', /filter-chip-nb/.test(blocDe(livreur, 'renderFilters')) && /activeFilterMes === FILTRE_A_RENDRE \? colisARendre\(mine\)/.test(livreur));
   const filtres = blocDe(livreur, 'renderFilters');
   verifier('un bouton « 🔍 Filtrer » ferme la rangée, marqué quand une recherche ou une date est active', /id="btn-filtrer-mes"/.test(filtres) && /filtreActif \? ' a-un-filtre' : ''/.test(filtres) && /const filtreActif = !!\(searchMes \|\| filtreDateMes\)/.test(filtres));
   verifier('la recherche, le calendrier et la sélection sont dans un bloc replié par défaut', /<div id="mes-filtres-avances" class="mes-filtres-avances hidden">/.test(livreur) && livreur.indexOf('id="mes-filtres-avances"') < livreur.indexOf('id="search-mes"') && livreur.indexOf('id="search-mes"') < livreur.indexOf('id="btn-mode-lot-mes"'));

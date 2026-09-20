@@ -111,6 +111,7 @@ export function nouveauMonde() {
     boutiques_supervisees: [],
   };
   const journal = [];
+  const REFUS = new Set();
 
   /* Ce que font les deux triggers de la migration du 20/09 (retour_defauts, retour_journal),
      refait sur ce faux monde pour que les écrans voient la base « répondre » comme la vraie. Les
@@ -199,6 +200,13 @@ export function nouveauMonde() {
     let lignes = (TABLES[table] || []).slice();
     for (const f of q.filtres || []) lignes = appliquerFiltre(lignes, f);
     const maintenant = new Date().toISOString();
+    // Une panne à la demande (20/09/2026, 20.C) : un parcours pose des identifiants dans
+    // monde.REFUS et toute écriture sur ces colis est refusée « par le serveur » (pas une panne
+    // réseau) — c'est ainsi qu'on fabrique une file hors-ligne bloquée.
+    if (q.op === 'update' && table === 'colis' && REFUS.size && lignes.some(l => REFUS.has(l.id))) {
+      journal.push({ table, op: 'update-refuse', ids: lignes.map(l => l.id) });
+      return { data: null, error: { message: 'transition_interdite: essai', code: 'P0001' }, count: null };
+    }
     if (q.op === 'update') {
       lignes.forEach(l => {
         const v = Object.assign({}, q.valeurs);
@@ -441,6 +449,7 @@ export function nouveauMonde() {
         a_solder: aSolder.length, reste_a_remettre: aSolder.reduce((t, c) => t + total(c), 0),
         reclamations: (TABLES.reclamations_clientes || []).filter(r => r.statut !== 'resolue').length,
         reclamations_tard: (TABLES.reclamations_clientes || []).filter(r => r.statut !== 'resolue' && String(r.created_at || '').slice(0, 10) < moins(2)).length,
+        reclamations_livreurs: (TABLES.reclamations_clientes || []).filter(r => r.statut !== 'resolue' && r.auteur === 'livreur').length,
         demandes_passage: (TABLES.demandes_de_passage || []).filter(d => d.statut === 'en_attente' && d.jour >= auj).length,
         suppressions: (TABLES.profiles || []).filter(p => p.suppression_demandee_at).length,
         calcule_le: new Date().toISOString(),
@@ -458,5 +467,5 @@ export function nouveauMonde() {
     return { user: { id: compte.user_id, phone: compte.phone, user_metadata: { full_name: profil.full_name } }, error: null };
   }
 
-  return { TABLES, journal, executer, rpc, connexion, COMPTES, PROFILS };
+  return { TABLES, journal, REFUS, executer, rpc, connexion, COMPTES, PROFILS };
 }

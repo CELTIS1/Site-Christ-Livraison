@@ -531,7 +531,7 @@ return `
 }
 function colisRowHTML(c, numeroClient){
 const thumb = c.photo_url
-? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
+? `<img src="${escapeHTML(c.photo_url)}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
 : `<div class="thumb-placeholder">Pas de photo</div>`;
 // 3.2 (16/09/2026) : la liste des états vient d'etatsPossibles — sur une expédition, « En
 // livraison » n'y est pas — et chaque état porte le mot du colis (« Expédié », pas « Livré »).
@@ -580,7 +580,7 @@ ${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${eqLigneMontantsHTML(c)}
-${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
+${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${escapeHTML(c.photo_livraison_url)}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 <button type="button" class="btn btn-outline btn-sm btn-copy-tracking" style="margin-top:6px;">🔗 Copier le lien de suivi</button>
 ${estValide ? '' : `
 <!-- LA CLIENTE DU COLIS, MODIFIABLE. (13/09/2026, Celtis : « si je me suis trompé de vendeuse,
@@ -732,7 +732,7 @@ ${c.statut === 'retour' ? `<div class="retour-ligne${retourEnRetard(c) ? ' retou
      et le mot qu'elle a écrit. C'est la carte du colis qu'on ouvre pour lui répondre. -->
 ${reclamationLigneEquipeHTML(c)}
 ${eqLigneMontantsHTML(c)}
-${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
+${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${escapeHTML(c.photo_livraison_url)}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
 ${eqActionsRapidesHTML(c)}
 <div class="colis-quick-actions">
@@ -954,6 +954,7 @@ const L = {
 };
 const nbReclamations = base ? Number(base.reclamations || 0) : cat.reclamations.length;
 const nbReclamationsTard = base ? Number(base.reclamations_tard || 0) : cat.reclamationsTard.length;
+const nbReclamationsLivreurs = base ? Number(base.reclamations_livreurs || 0) : reclamationsClientes.filter(r => reclamationEnAttente(r) && r.auteur === 'livreur').length;
 const nbDemandesPassage = base ? Number(base.demandes_passage || 0) : 0;
 const nbSuppressions = base ? Number(base.suppressions || 0) : 0;
 const nbFileBloquee = Array.isArray(eqQueueEnMemoire) ? eqQueueEnMemoire.filter(x => x.bloquee).length : 0;
@@ -1045,7 +1046,7 @@ set('aujourdhui-anomalies', ouRien(
   pastille(L.retours.length, L.retours.length > 1 ? 'retours chez les livreurs' : 'retour chez un livreur', 'retours', 'ambre') +
   pastille(L.retoursTard.length, L.retoursTard.length > 1 ? 'retours en retard (plus de 2 jours)' : 'retour en retard (plus de 2 jours)', 'retours-tard', 'rouge') +
   pastille(L.litiges.length, L.litiges.length > 1 ? 'litiges : la cliente dit ne pas avoir reçu' : 'litige : la cliente dit ne pas avoir reçu', 'litiges', 'rouge') +
-  pastille(nbReclamations, nbReclamations > 1 ? 'problèmes signalés par des clientes' : 'problème signalé par une cliente', 'reclamations', nbReclamationsTard ? 'rouge' : 'ambre') +
+  pastille(nbReclamations, nbReclamations > 1 ? 'problèmes signalés' + (nbReclamationsLivreurs ? ' (dont ' + nbReclamationsLivreurs + ' par des livreurs)' : ' par des clientes') : (nbReclamationsLivreurs ? 'problème signalé par un livreur' : 'problème signalé par une cliente'), 'reclamations', nbReclamationsTard ? 'rouge' : 'ambre') +
   pastille(L.qualifier.length, L.qualifier.length > 1 ? 'échecs à qualifier' : 'échec à qualifier', 'qualifier', 'ambre'), 'Rien à examiner'));
 renderReclamationsEquipe();
 set('aujourdhui-argent', ouRien(
@@ -1067,14 +1068,19 @@ function renderReclamationsEquipe(){
   if (!box) return;
   const liste = Array.isArray(window.__reclamationsClientes) ? window.__reclamationsClientes : [];
   const nomCliente = (id) => { const f = (Array.isArray(fournisseurs) ? fournisseurs : []).find(x => x.id === id); return f ? (f.company_name || f.full_name || 'Cliente') : 'Cliente'; };
+  // Depuis le 20/09 (20.C), les livreurs signalent aussi : la même file, avec qui parle.
+  const nomLivreur = (id) => { const l = (Array.isArray(livreurs) ? livreurs : []).find(x => x.id === id); return l ? (l.full_name || 'Livreur') : 'Livreur'; };
+  const qui = (r) => (typeof reclamationAuteur === 'function' && reclamationAuteur(r) === 'livreur')
+    ? `<span class="reclam-eq__qui reclam-eq__qui--livreur">Livreur</span> ${escapeHTML(nomLivreur(r.livreur_id))}`
+    : `<span class="reclam-eq__qui">Cliente</span> ${escapeHTML(nomCliente(r.fournisseur_id))}`;
   if (!liste.length) { cltPoserHTML(box, ''); box.classList.add('hidden'); return; }
   box.classList.remove('hidden');
-  const html = `<div class="ess-groupe-titre">Signalements des clientes</div>` + liste.map(r => {
+  const html = `<div class="ess-groupe-titre">Signalements (clientes et livreurs)</div>` + liste.map(r => {
     const j = reclamationJours(r);
     const depuis = j === 0 ? "aujourd'hui" : j === 1 ? 'hier' : 'il y a ' + j + ' jours';
     const c = r.colis_id && Array.isArray(allColis) ? allColis.find(x => x.id === r.colis_id) : null;
     return `<div class="reclam-eq${(j || 0) > 2 ? ' reclam-eq--vieille' : ''}" data-reclam="${escapeHTML(r.id)}">
-      <div class="reclam-eq__texte"><b>${escapeHTML(nomCliente(r.fournisseur_id))}</b> · ${escapeHTML(motifReclamationTexte(r.motif))} · ${escapeHTML(depuis)}${r.statut === 'en_cours' ? ' · <span class="reclam-eq__etat">prise en charge</span>' : ''}${r.texte ? `<div class="reclam-eq__cite">« ${escapeHTML(r.texte)} »</div>` : ''}${c ? `<div class="reclam-eq__colis"><button type="button" class="lien-nu" data-ouvrir-colis="${escapeHTML(c.id)}">Colis ${escapeHTML(c.numero || '')}</button></div>` : ''}</div>
+      <div class="reclam-eq__texte"><b>${qui(r)}</b> · ${escapeHTML(motifReclamationTexte(r.motif))} · ${escapeHTML(depuis)}${r.statut === 'en_cours' ? ' · <span class="reclam-eq__etat">prise en charge</span>' : ''}${r.texte ? `<div class="reclam-eq__cite">« ${escapeHTML(r.texte)} »</div>` : ''}${c ? `<div class="reclam-eq__colis"><button type="button" class="lien-nu" data-ouvrir-colis="${escapeHTML(c.id)}">Colis ${escapeHTML(c.numero || '')}</button></div>` : ''}</div>
       <div class="reclam-eq__gestes">${r.statut !== 'en_cours' ? `<button type="button" class="btn btn-outline btn-sm" data-reclam-geste="en_cours">Je m'en occupe</button>` : ''}<button type="button" class="btn btn-sm" data-reclam-geste="resolue">Répondre et clore</button></div>
     </div>`;
   }).join('');
@@ -1085,7 +1091,8 @@ async function traiterReclamation(id, geste){
   if (!r) return;
   let reponse = null;
   if (geste === 'resolue') {
-    reponse = await cltPrompt({ title: 'Votre réponse à la cliente', sub: 'Elle la lira sous son signalement. Une phrase claire : ce qui a été fait, ou ce qui va se passer.', placeholder: 'Ex. : le colis a été retrouvé, il vous sera rendu demain matin.', okLabel: 'Envoyer et clore', maxLength: 500 });
+    const auLivreur = typeof reclamationAuteur === 'function' && reclamationAuteur(r) === 'livreur';
+    reponse = await cltPrompt({ title: auLivreur ? 'Votre réponse au livreur' : 'Votre réponse à la cliente', sub: (auLivreur ? 'Il' : 'Elle') + ' la lira sous son signalement. Une phrase claire : ce qui a été fait, ou ce qui va se passer.', placeholder: auLivreur ? 'Ex. : le colis a été remis « livré » par le bureau, rien à refaire.' : 'Ex. : le colis a été retrouvé, il vous sera rendu demain matin.', okLabel: 'Envoyer et clore', maxLength: 500 });
     if (reponse === null) return;
   }
   const patch = geste === 'resolue'
@@ -1093,7 +1100,7 @@ async function traiterReclamation(id, geste){
     : { statut: 'en_cours', traitee_par: currentUser ? currentUser.id : null };
   const { error } = await supabaseClient.from('reclamations_clientes').update(patch).eq('id', id);
   if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
-  cltToast(geste === 'resolue' ? 'Signalement clos : la cliente voit votre réponse.' : 'Signalement pris en charge.', { type: 'success' });
+  cltToast(geste === 'resolue' ? ((typeof reclamationAuteur === 'function' && reclamationAuteur(r) === 'livreur') ? 'Signalement clos : le livreur voit votre réponse.' : 'Signalement clos : la cliente voit votre réponse.') : 'Signalement pris en charge.', { type: 'success' });
   supabaseClient.from('activity_log').insert([{ action: 'reclamation_' + geste, target_id: r.colis_id || null, target_type: 'colis', details: { reclamation_id: id, motif: r.motif, reponse: reponse || null } }]).then(() => {}, () => {});
   await Promise.all([chargerReclamationsClientes(), chargerEssentielBase()]);
   renderAujourdhui();
@@ -1132,7 +1139,7 @@ function reclamationLigneEquipeHTML(c){
   if (!r) return '';
   const j = reclamationJours(r);
   const depuis = j === 0 ? "aujourd'hui" : j === 1 ? 'depuis hier' : 'depuis ' + j + ' jours';
-  return `<div class="reclam-equipe${(j || 0) > 2 ? ' reclam-equipe--vieille' : ''}">⚠️ La cliente signale : ${escapeHTML(motifReclamationTexte(r.motif))} · ${escapeHTML(depuis)}${r.texte ? ' — « ' + escapeHTML(r.texte) + ' »' : ''}${r.statut === 'en_cours' ? ' · prise en charge' : ''}</div>`;
+  return `<div class="reclam-equipe${(j || 0) > 2 ? ' reclam-equipe--vieille' : ''}">⚠️ ${(typeof reclamationAuteur === 'function' && reclamationAuteur(r) === 'livreur') ? 'Le livreur' : 'La cliente'} signale : ${escapeHTML(motifReclamationTexte(r.motif))} · ${escapeHTML(depuis)}${r.texte ? ' — « ' + escapeHTML(r.texte) + ' »' : ''}${r.statut === 'en_cours' ? ' · prise en charge' : ''}</div>`;
 }
 
 // Où mène chaque pastille. UN SEUL écouteur, posé une fois sur la carte.

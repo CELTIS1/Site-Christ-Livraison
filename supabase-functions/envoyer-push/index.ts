@@ -274,12 +274,15 @@ async function handleColis(record: any, oldRecord: any, eventType: string): Prom
 // qu'on l'a payée. Trois tables, trois webhooks (à créer dans Supabase, voir PUSH-SETUP.md).
 // ----------------------------------------------------------------------------
 async function handleReclamation(record: any, oldRecord: any, eventType: string): Promise<Response> {
-  const cliente = uuidOuRien(record.fournisseur_id);
+  // Depuis le 20/09/2026 (20.C), la table porte aussi les signalements des LIVREURS (auteur = 'livreur',
+  // livreur_id) : la réponse du bureau va à qui a parlé.
+  const livreur = record.auteur === "livreur";
+  const cliente = uuidOuRien(livreur ? record.livreur_id : record.fournisseur_id);
   const id = uuidOuRien(record.id);
-  if (!cliente || !id) return new Response("réclamation sans cliente", { status: 200 });
+  if (!cliente || !id) return new Response("réclamation sans auteur", { status: 200 });
   if (eventType === "INSERT") {
-    // Le bureau : une cliente signale — toast sonore à l'écran déjà, la notification pour qui n'a pas l'écran ouvert.
-    return await envoyer({ roles: ["equipe", "admin"], userIds: [] }, "📣 Une cliente signale un problème", "Voir L'essentiel.", `reclam-${id}`, "");
+    // Le bureau : quelqu'un signale — toast sonore à l'écran déjà, la notification pour qui n'a pas l'écran ouvert.
+    return await envoyer({ roles: ["equipe", "admin"], userIds: [] }, livreur ? "📣 Un livreur signale un problème" : "📣 Une cliente signale un problème", "Voir L'essentiel.", `reclam-${id}`, "");
   }
   const avant = oldRecord ? oldRecord.statut : null;
   if (record.statut === avant) return new Response("statut inchangé", { status: 200 });

@@ -373,8 +373,16 @@ for (const [fichier, vider] of [
     appelsVider >= 6, `${appelsVider} appel(s) à ${vider}()`);
   verifier(`${fichier} : la sélection est recalée sur la liste réelle à chaque rendu`,
     /forEach\(id => \{ if \(!filtered\.some/.test(src), 'recalage introuvable');
-  verifier(`${fichier} : le lot refuse de s'exécuter hors réseau plutôt que de faire semblant`,
-    /navigator\.onLine[\s\S]{0,400}actions en lot ne sont pas possibles/.test(src), 'garde-fou hors réseau introuvable');
+  // Hors réseau : le bureau refuse (il n'a pas de file d'attente) ; le livreur, depuis le
+  // 20/09/2026, verse le lot dans SA file hors-ligne, une entrée par colis — le même chemin que
+  // le geste unitaire, pour que rien ne fasse semblant d'être enregistré.
+  if (fichier === 'livreur.html') {
+    verifier(`${fichier} : hors réseau, le lot passe par la file d'attente, colis par colis`,
+      /if \(horsReseau\) \{[\s\S]{0,900}queueAdd\(\{ colisId: c\.id, statut/.test(src) && !/actions en lot ne sont pas possibles/.test(src), 'file hors réseau du lot introuvable');
+  } else {
+    verifier(`${fichier} : le lot refuse de s'exécuter hors réseau plutôt que de faire semblant`,
+      /navigator\.onLine[\s\S]{0,400}actions en lot ne sont pas possibles/.test(src), 'garde-fou hors réseau introuvable');
+  }
   // Les deux écrans passaient ici un troisième argument, true ou false, pour dire s'ils exigeaient
   // le code de confirmation. Le code retiré, ce réglage a disparu — et on contrôle qu'il n'est
   // revenu ni d'un côté ni de l'autre : un seul des deux écrans qui le repasserait suffirait à

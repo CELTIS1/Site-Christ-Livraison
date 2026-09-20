@@ -535,7 +535,7 @@ trackChannel(supabaseClient
 .channel('a-traiter-equipe')
 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reclamations_clientes' }, (payload) => {
   const r = payload && payload.new;
-  showTeamToast('📣', 'Une cliente signale un problème', r && typeof motifReclamationTexte === 'function' ? motifReclamationTexte(r.motif) : 'Voir L\'essentiel', true);
+  showTeamToast('📣', (r && r.auteur === 'livreur') ? 'Un livreur signale un problème' : 'Une cliente signale un problème', r && typeof motifReclamationTexte === 'function' ? motifReclamationTexte(r.motif) : 'Voir L\'essentiel', true);
   if (typeof chargerBilanDuJour === 'function') chargerBilanDuJour();
 })
 .on('postgres_changes', { event: '*', schema: 'public', table: 'demandes_de_passage' }, (payload) => {

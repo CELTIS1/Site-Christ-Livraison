@@ -135,7 +135,8 @@ function retourTexte(colis, pour, aujourdhui) {
     }
     if (pour === 'cliente') return 'Le livreur indique vous avoir rendu ce colis' + (q ? ' le ' + q : '') + '. L\'avez-vous bien récupéré ?';
     if (pour === 'equipe') return 'Rendu à la cliente' + (q ? ' le ' + q : '') + ' — elle n\'a pas encore confirmé.';
-    return 'Rendu à la cliente' + (q ? ' le ' + q : '') + '.';
+    // Le livreur aussi doit savoir que le retour n'est clos que quand elle confirme (20/09).
+    return 'Rendu à la cliente' + (q ? ' le ' + q : '') + ' — en attente de sa confirmation.';
   }
   if (d === 'litige') {
     if (pour === 'cliente') return 'Vous avez signalé ne pas avoir récupéré ce colis. CLT vous rappelle.';

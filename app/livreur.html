@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920songon">
+<link rel="stylesheet" href="style.css?v=20260920livreurs">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920songon"></script>
-<script src="splash.js?v=20260920songon"></script>
+<script src="theme.js?v=20260920livreurs"></script>
+<script src="splash.js?v=20260920livreurs"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -90,6 +90,10 @@
   }
   .search-input:focus{ border-color:var(--clt-orange) !important; background:#fff !important; }
   .filter-chip{ border-radius:999px !important; }
+  .filter-chip--alerte{ border-color:#E26313 !important; color:#C9550F; }
+  .filter-chip--alerte.active{ color:#fff; }
+  .filter-chip-nb{ display:inline-block; min-width:18px; padding:0 5px; border-radius:999px; background:#E26313; color:#fff; font-size:13px; font-weight:800; line-height:18px; text-align:center; }
+  html[data-theme="dark"] .filter-chip--alerte{ color:#F0A868; }
   .filter-chip.active{ background:var(--clt-orange) !important; border-color:var(--clt-orange) !important; color:#fff !important; }
 
   /* ---- Frise d'étapes (stepper) sur chaque colis assigné ---- */
@@ -495,7 +499,10 @@
   .colis-item .desc{ font-size:14.5px; }
 
   /* ---------- POURQUOI ? — le motif d'un échec (13/09/2026, règlement des primes) ---------- */
-  .motif-echec{ position:fixed; inset:0; z-index:1200; background:rgba(15,23,42,.45); display:flex; align-items:flex-end; justify-content:center; }
+  /* La feuille s'appelle « motif-echec-feuille » : « .motif-echec » tout court est l'encadré
+     d'information de style.css (la cliente et le bureau lisent le motif dedans) — deux règles
+     sous le même nom faisaient un encadré fixé plein écran dès qu'un motif s'affichait. (20/09) */
+  .motif-echec-feuille{ position:fixed; inset:0; z-index:1200; background:rgba(15,23,42,.45); display:flex; align-items:flex-end; justify-content:center; }
   .motif-echec__boite{ background:#fff; width:100%; max-width:520px; border-radius:18px 18px 0 0; padding:18px 16px calc(16px + env(safe-area-inset-bottom)); box-shadow:0 -8px 30px rgba(0,0,0,.18); }
   .motif-echec__titre{ font-weight:800; font-size:17px; color:#12305a; }
   .motif-echec__sous{ font-size:13.5px; color:#6b7686; margin-top:2px; }
@@ -517,9 +524,56 @@
   .motif-echec__rappel{ margin-top:8px; font-size:13px; font-weight:700; color:#b3261e; }
   .motif-echec-ligne__course{ display:block; margin-top:4px; font-size:13px; font-weight:700; color:#6b7686; }
   .motif-echec-ligne__course.payee{ color:#0f5a2c; }
+  html[data-theme="dark"] .motif-echec__boite{ background:#111A27; box-shadow:0 -8px 30px rgba(0,0,0,.5); }
+  html[data-theme="dark"] .motif-echec__titre{ color:#E6ECF3; }
+  html[data-theme="dark"] .motif-echec__sous, html[data-theme="dark"] .motif-echec__annuler{ color:#9FB3C8; }
+  html[data-theme="dark"] .motif-echec__prevenue{ background:#1B2A3F; color:#E6ECF3; }
+  html[data-theme="dark"] .motif-echec__motif, html[data-theme="dark"] .motif-echec__choix{ background:#18243A; border-color:#33465F; color:#E6ECF3; }
+  html[data-theme="dark"] .motif-echec__motif.actuel{ background:#3A2716; border-color:#E26313; }
+  html[data-theme="dark"] .motif-echec__motif:active{ background:#22314A; }
+  html[data-theme="dark"] .motif-echec__choix.actuel{ background:#153A26; border-color:#5CC98A; color:#B8F0CC; }
+  html[data-theme="dark"] .motif-echec-ligne{ background:#18243A; border-color:#33465F; color:#CFE0F5; }
+  html[data-theme="dark"] .motif-echec__course{ background:#3A2716; border-color:#7A4A1A; }
+  html[data-theme="dark"] .motif-echec__question{ color:#F0A868; }
+  html[data-theme="dark"] .motif-echec__rappel{ color:#FF8A80; }
   html[data-theme="dark"] .motif-echec-ligne__course{ color:#9FB3C8; }
   html[data-theme="dark"] .motif-echec-ligne__course.payee{ color:#5CC98A; }
 
+  /* Les deux bascules d'argent (livraison payée chez le fournisseur, article soldé) : des
+     classes, plus de couleurs écrites dans le HTML — le mode nuit ne pouvait pas les atteindre. */
+  .bascule-argent{ padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; background:transparent !important; border:1.5px solid #64748b; color:#334155; }
+  .bascule-argent--discret{ border-color:#cbd5e1; color:#64748b; }
+  .bascule-argent--oui{ color:#fff; }
+  .bascule-argent--vert{ background:#1e8f4e !important; border-color:#1e8f4e; }
+  .bascule-argent--marine{ background:#1B4374 !important; border-color:#1B4374; }
+  html[data-theme="dark"] .bascule-argent{ border-color:#5B7391; color:#CFE0F5; }
+  html[data-theme="dark"] .bascule-argent--discret{ border-color:#33465F; color:#9FB3C8; }
+  html[data-theme="dark"] .bascule-argent--oui{ color:#fff; }
+  html[data-theme="dark"] .bascule-argent--marine{ background:#2C63A8 !important; border-color:#2C63A8; }
+  /* ---------- ANNONCER MA REMISE : les styles sortent du HTML pour que la nuit les voie ---------- */
+  .annonce-bloc{ border:1.5px solid #cddcf0; background:#f4f8fd; border-radius:10px; padding:10px 12px; margin-bottom:12px; }
+  .annonce-bloc--indispo{ border-color:#e2e8f0; background:#f8fafc; font-size:13px; color:#64748b; }
+  .annonce-bloc__titre{ font-weight:800; color:#1B4374; font-size:13px; }
+  .annonce-bloc__sous{ margin-top:4px; font-size:13px; color:#5b6b80; line-height:1.45; }
+  .annonce-label{ display:block; font-size:13px; font-weight:600; color:#1B4374; margin-bottom:4px; }
+  .annonce-label--suite{ margin:8px 0 4px; }
+  .annonce-champ{ width:100%; border:1.5px solid #cbd5e1; border-radius:9px; padding:10px 12px; font-size:15px; box-sizing:border-box; min-height:44px; }
+  .annonce-champ--note{ font-size:14px; }
+  .annonce-clair{ margin-top:5px; font-size:13px; color:#5b6b80; }
+  html[data-theme="dark"] .annonce-bloc{ border-color:#2E4A6B; background:#141F2E; }
+  html[data-theme="dark"] .annonce-bloc--indispo{ border-color:#2E3E54; background:#1C2739; color:#9FB3C8; }
+  html[data-theme="dark"] .annonce-bloc__titre, html[data-theme="dark"] .annonce-label{ color:#9EC0E6; }
+  html[data-theme="dark"] .annonce-bloc__sous, html[data-theme="dark"] .annonce-clair{ color:#9FB3C8; }
+  html[data-theme="dark"] .annonce-champ{ background:#18243A; border-color:#33465F; color:#E6ECF3; }
+  /* La file bloquée : deux gestes sous le badge. Le signalement : le choix du colis. (20/09) */
+  .sync-blocked-gestes{ display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 4px; }
+  .sync-blocked-gestes .btn{ min-height:44px; font-size:13px; }
+  .sig-select{ width:100%; min-height:44px; border:1.5px solid #cbd5e1; border-radius:9px; padding:8px 10px; font-size:14px; margin:0 0 10px; background:#fff; color:#0f172a; }
+  .sig-liste{ margin-top:14px; padding-top:10px; border-top:1px solid #e6ebf2; }
+  .sig-liste__titre{ font-size:13px; font-weight:700; color:#6b7686; }
+  html[data-theme="dark"] .sig-select{ background:#18243A; border-color:#33465F; color:#E6ECF3; }
+  html[data-theme="dark"] .sig-liste{ border-top-color:#2A3849; }
+  html[data-theme="dark"] .sig-liste__titre{ color:#9FB3C8; }
   /* ---------- MON MOIS (13/09/2026) ---------- */
   .mon-mois{ background:#fff; border-radius:16px; padding:14px 14px 10px; margin:0 0 14px; box-shadow:0 4px 14px rgba(18,48,90,.08); border:1px solid #e6ebf2; }
   .mon-mois__tete{ display:flex; justify-content:space-between; align-items:baseline; font-weight:800; font-size:16px; color:#12305a; }
@@ -538,6 +592,15 @@
   .mon-mois__aide{ margin-top:8px; font-size:13.5px; color:#334155; }
   .mon-mois__aide summary{ min-height:44px; display:flex; align-items:center; color:#6b7686; font-weight:600; cursor:pointer; }
   .mon-mois__aide p{ margin:4px 0 6px; line-height:1.45; }
+  html[data-theme="dark"] .mon-mois{ background:#141F2E; border-color:#2E3E54; box-shadow:0 4px 14px rgba(0,0,0,.35); }
+  html[data-theme="dark"] .mon-mois__tete, html[data-theme="dark"] .mon-mois__total{ color:#E6ECF3; border-top-color:#9EC0E6; }
+  html[data-theme="dark"] .mon-mois__periode, html[data-theme="dark"] .mon-mois__chiffres span, html[data-theme="dark"] .mon-mois__prime, html[data-theme="dark"] .mon-mois__prime small, html[data-theme="dark"] .mon-mois__aide summary{ color:#9FB3C8; }
+  html[data-theme="dark"] .mon-mois__chiffres > div{ background:#1C2739; }
+  html[data-theme="dark"] .mon-mois__chiffres b, html[data-theme="dark"] .mon-mois__prime.gagnee{ color:#E6ECF3; }
+  html[data-theme="dark"] .mon-mois__prime{ border-top-color:#2A3849; }
+  html[data-theme="dark"] .mon-mois__prime.gagnee b{ color:#5CC98A; }
+  html[data-theme="dark"] .mon-mois__attente, html[data-theme="dark"] .mon-mois__aide{ color:#CFE0F5; }
+  html[data-theme="dark"] .mon-mois__rythme{ background:#153A26; color:#B8F0CC; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -576,6 +639,17 @@
           <div class="settings-groupe">
             <div class="settings-groupe-titre">Outils</div>
             <button type="button" id="btn-tarifs" onclick="cltAfficherTarifs()">📋 Grille tarifaire</button>
+          </div>
+          <!-- Besoin d'aide (20/09/2026, lot C) : le livreur n'avait ni les numéros du bureau ni
+               un moyen de dire ce qui coince, autrement qu'au téléphone. Les deux lignes sont
+               celles de CLT_CONTACT (clt-common.js) ; « Signaler un problème » écrit dans la
+               même file que les signalements des clientes, le bureau le lit dans L'essentiel. -->
+          <div class="settings-groupe">
+            <div class="settings-groupe-titre">Besoin d'aide</div>
+            <button type="button" id="btn-signaler-livreur">⚠️ Signaler un problème</button>
+            <a id="lien-appeler-clt" href="#">📞 Appeler CLT</a>
+            <a id="lien-appeler-clt-2" href="#">📞 Autre ligne</a>
+            <a id="lien-whatsapp-clt" href="#" target="_blank" rel="noopener">🟢 Écrire sur WhatsApp</a>
           </div>
           <div class="settings-groupe">
             <button type="button" class="danger" onclick="logout()">🚪 Se déconnecter</button>
@@ -914,22 +988,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920songon"></script>
-<script src="lib/bibliotheques.js?v=20260920songon"></script>
-<script src="lib/retours.js?v=20260920songon"></script>
-<script src="lib/reclamations.js?v=20260920songon"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920songon"></script>
-<script src="lib/argent.js?v=20260920songon"></script>
-<script src="lib/releve-cliente.js?v=20260920songon"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920songon"></script>
-<script src="lib/briques-argent.js?v=20260920songon"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920songon"></script>
-<script src="lib/annonce-de-remise.js?v=20260920songon"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920songon"></script>
-<script src="lib/primes.js?v=20260920songon"></script>
-<script src="lib/doublons.js?v=20260920songon"></script>
-<script src="config.js?v=20260920songon"></script>
-<script src="biometric-lock.js?v=20260920songon"></script>
+<script src="clt-common.js?v=20260920livreurs"></script>
+<script src="lib/bibliotheques.js?v=20260920livreurs"></script>
+<script src="lib/retours.js?v=20260920livreurs"></script>
+<script src="lib/reclamations.js?v=20260920livreurs"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920livreurs"></script>
+<script src="lib/argent.js?v=20260920livreurs"></script>
+<script src="lib/releve-cliente.js?v=20260920livreurs"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920livreurs"></script>
+<script src="lib/briques-argent.js?v=20260920livreurs"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920livreurs"></script>
+<script src="lib/annonce-de-remise.js?v=20260920livreurs"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920livreurs"></script>
+<script src="lib/primes.js?v=20260920livreurs"></script>
+<script src="lib/doublons.js?v=20260920livreurs"></script>
+<script src="config.js?v=20260920livreurs"></script>
+<script src="biometric-lock.js?v=20260920livreurs"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1029,7 +1103,12 @@
       // Le repli « Plus d'options » : une mise à jour temps réel ne doit pas le refermer au
       // nez de quelqu'un en train d'y saisir une observation ou d'y choisir une photo.
       const plus = item.querySelector('.colis-plus');
+      // La photo choisie mais pas encore envoyée (20/09/2026, lot C) : un rendu de fond
+      // (temps réel, bandeau hors-ligne) reconstruisait la carte et la photo prise devant la
+      // porte disparaissait sans un mot. On la garde, comme le reste de la saisie.
+      const photo = (typeof pickedGroupFile === 'function') ? pickedGroupFile(item.querySelector('.livraison-photo-input')) : null;
       snap[id] = {
+        photo: photo || undefined,
         plusOuvert: plus ? plus.open : undefined,
         fraisAddOuvert: fraisAddBloc ? fraisAddBloc.classList.contains('est-ouvert') : undefined,
         statut: sel ? sel.value : undefined,
@@ -1054,6 +1133,23 @@
     });
     return snap;
   }
+  /* Repose un fichier choisi dans un groupe photo reconstruit. DataTransfer est le seul moyen
+     d'écrire input.files ; s'il manque (vieux navigateur), on ne casse rien : la photo est
+     simplement à reprendre, comme avant. */
+  function remettrePhotoChoisie(groupe, fichier){
+    if (!groupe || !fichier) return;
+    try {
+      const cam = groupe.querySelector('.pick-camera');
+      if (!cam || typeof DataTransfer === 'undefined') return;
+      const dt = new DataTransfer();
+      dt.items.add(fichier);
+      cam.files = dt.files;
+      const lib = groupe.querySelector('.pick-library');
+      if (lib) lib.value = '';
+      const nom = groupe.querySelector('.photo-pick-filename');
+      if (nom) nom.textContent = '📎 ' + fichier.name;
+    } catch (e) { /* on se tait : la photo sera à reprendre */ }
+  }
   function restorePendingEdits(container, snap){
     if (!container || !snap) return;
     container.querySelectorAll('.colis-item').forEach(item => {
@@ -1071,6 +1167,7 @@
       const plus = item.querySelector('.colis-plus');
       if (plus && s.plusOuvert !== undefined) plus.open = s.plusOuvert;
       if (fraisAddBloc && s.fraisAddOuvert) fraisAddBloc.classList.add('est-ouvert');
+      if (s.photo && !recentWrites.has(id)) remettrePhotoChoisie(item.querySelector('.livraison-photo-input'), s.photo);
       // On ne restaure une saisie en cours que si elle diffère de la valeur affichée par défaut
       // (sinon rien à faire) — et jamais pour un colis qu'on vient d'enregistrer (recentWrites).
       const justSaved = recentWrites.has(id);
@@ -1220,6 +1317,7 @@
   const QUEUE_MAX_TENTATIVES = 3;
   let pendingSyncIds = new Set();
   let blockedSyncIds = new Set();
+  let blockedSyncMotifs = new Map();   // colisId → 'conflit' | 'refus'
   let syncInProgress = false;
 
   function openQueueDB(){
@@ -1301,13 +1399,14 @@
         || m.includes('load failed') || m.includes('timeout') || m.includes('délai');
   }
 
-  async function refreshOfflineBanner(){
+  async function refreshOfflineBanner(options){
     let entries = [];
     try { entries = await queueGetAll(); } catch(e) { console.error(e); }
     const bloquees = entries.filter(e => e.bloquee);
     const enAttente = entries.filter(e => !e.bloquee);
     pendingSyncIds = new Set(enAttente.map(e => e.colisId));
     blockedSyncIds = new Set(bloquees.map(e => e.colisId));
+    blockedSyncMotifs = new Map(bloquees.map(e => [e.colisId, e.motif || 'refus']));
     const banner = document.getElementById('offline-queue-banner');
     const text = document.getElementById('offline-queue-text');
     if (banner && text) {
@@ -1327,12 +1426,15 @@
         }
         if (bloquees.length) {
           const n = bloquees.length;
-          parts.push(`⚠️ ${n} mise${n > 1 ? 's' : ''} à jour n'${n > 1 ? 'ont' : 'a'} pas pu être enregistrée${n > 1 ? 's' : ''} : le${n > 1 ? 's' : ''} colis concerné${n > 1 ? 's' : ''} est signalé${n > 1 ? 's' : ''} dans la liste. Prévenez l'équipe.`);
+          parts.push(`⚠️ ${n} mise${n > 1 ? 's' : ''} à jour n'${n > 1 ? 'ont' : 'a'} pas pu être enregistrée${n > 1 ? 's' : ''} : sur ${n > 1 ? 'chaque' : 'le'} colis concerné, « Retenter » ou « Abandonner et prévenir le bureau ».`);
         }
         text.textContent = parts.join(' ');
       }
     }
-    renderAll();
+    // Après un geste du livreur, le rendu est immédiat (il attend de voir son colis changer) ;
+    // venu de la synchronisation ou du réseau, il est « de fond » : s'il tombe pendant une
+    // saisie ou une photo, il attend qu'elle finisse. (20/09/2026)
+    renderAll({ enFond: !!(options && options.enFond) });
   }
 
   // Envoie UNE entrée de la file. Renvoie :
@@ -1402,7 +1504,7 @@
   function decrireConflit(entry){
     const colis = allColis.find(c => c.id === entry.colisId);
     const nom = colis && colis.numero ? `Colis ${colis.numero}` : 'Un colis';
-    const libelle = s => (typeof STATUTS !== 'undefined' && s && STATUTS[s]) ? STATUTS[s].label : s;
+    const libelle = s => (typeof libelleStatut === 'function' && s) ? libelleStatut(s, colis) : s;
     const cote = entry.statutServeur && entry.statutServeur !== entry.baseStatut
       ? ` Il est passé à « ${libelle(entry.statutServeur)} » de leur côté.`
       : '';
@@ -1454,7 +1556,7 @@
           entry.bloquee = true;
           avertissements.push(issue === 'conflit'
             ? decrireConflit(entry)
-            : "Une mise à jour a été refusée par le serveur après plusieurs essais. Prévenez l'équipe.");
+            : "Une mise à jour a été refusée par le serveur après plusieurs essais : sur le colis, « Retenter » ou « Abandonner et prévenir le bureau ».");
         }
         await queuePut(entry);
       }
@@ -1462,12 +1564,163 @@
       console.error('Synchronisation hors-ligne :', e);
     } finally {
       syncInProgress = false;
-      await refreshOfflineBanner();
+      await refreshOfflineBanner({ enFond: true });
       if (avertissements.length && window.cltToast) {
         cltToast([...new Set(avertissements)].join(' '), { type: 'warning', duration: 9000 });
       }
     }
   }
+
+  /* LA FILE BLOQUÉE A DEUX GESTES (20/09/2026, lot C). Jusqu'ici une mise à jour refusée restait
+     dans la file pour toujours, avec « prévenez l'équipe » et rien pour le faire : le colis
+     gardait son badge rouge des semaines. « Retenter » remet l'entrée en course (le conflit a pu
+     être réglé au bureau) ; « Abandonner et prévenir le bureau » l'efface, recharge le colis tel
+     qu'il est en base, et OUVRE UN SIGNALEMENT au bureau avec ce que le livreur voulait
+     enregistrer — pour que rien ne se perde, même ce qui n'a pas pu s'écrire. */
+  async function entreesBloqueesDuColis(colisId){
+    const entries = await queueGetAll();
+    return entries.filter(e => e.bloquee && e.colisId === colisId);
+  }
+  async function retenterFileBloquee(colisId){
+    const entrees = await entreesBloqueesDuColis(colisId);
+    for (const e of entrees) { e.bloquee = false; e.tentatives = 0; delete e.motif; await queuePut(e); }
+    await refreshOfflineBanner();
+    if (!navigator.onLine) { cltToast("Sans réseau pour l'instant : la mise à jour repartira au retour de la connexion.", { type: 'info' }); return; }
+    await flushOfflineQueue();
+    const encore = await entreesBloqueesDuColis(colisId);
+    if (!encore.length) cltToast("C'est enregistré cette fois.", { type: 'success' });
+  }
+  async function abandonnerFileBloquee(colisId){
+    const entrees = await entreesBloqueesDuColis(colisId);
+    if (!entrees.length) return;
+    const colis = allColis.find(c => c.id === colisId);
+    const nom = colis && colis.numero ? 'Colis ' + colis.numero : 'Ce colis';
+    const ok = await cltConfirm({
+      title: 'Abandonner cette mise à jour ?',
+      sub: `${nom} gardera l'état que le bureau connaît. Le bureau recevra un signalement avec ce que vous vouliez enregistrer, pour le corriger avec vous.`,
+      okLabel: 'Abandonner et prévenir', cancelLabel: 'Garder',
+    });
+    if (!ok) return;
+    const detail = entrees.map(e => {
+      const st = e.statut ? libelleStatut(e.statut, colis) : 'modification';
+      const quand = e.timestamp ? new Date(e.timestamp).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      return `« ${st} »${quand ? ' le ' + quand : ''}${e.observation ? ' — ' + e.observation : ''}${e.motif === 'conflit' ? ' (le colis avait été modifié par l\'équipe)' : ' (refusé par le serveur)'}`;
+    }).join(' ; ');
+    for (const e of entrees) await queueDelete(e.key);
+    // Le signalement part si le réseau est là ; sinon, on le dit franchement.
+    const envoye = navigator.onLine ? await envoyerSignalementLivreur({ colisId, motif: 'maj_non_enregistree', texte: `Mise à jour non enregistrée sur ${nom} : ${detail}`.slice(0, 500), silencieux: true }) : false;
+    await refreshOfflineBanner();
+    if (navigator.onLine) await loadColis({ enFond: true }).catch(() => {});
+    cltToast(envoye
+      ? `${nom} : mise à jour abandonnée. Le bureau est prévenu et vous répondra.`
+      : `${nom} : mise à jour abandonnée. Le bureau n'a pas pu être prévenu (pas de réseau) : appelez-le, ou refaites « Signaler un problème » plus tard.`,
+      { type: envoye ? 'info' : 'warning', duration: 9000 });
+  }
+  document.addEventListener('click', (e) => {
+    const r = e.target.closest('[data-file-retenter]');
+    if (r) { e.preventDefault(); e.stopPropagation(); r.disabled = true; retenterFileBloquee(r.dataset.fileRetenter).finally(() => { r.disabled = false; }); return; }
+    const a = e.target.closest('[data-file-abandonner]');
+    if (a) { e.preventDefault(); e.stopPropagation(); abandonnerFileBloquee(a.dataset.fileAbandonner); }
+  });
+
+  /* SIGNALER UN PROBLÈME — côté livreur (20/09/2026, lot C). La même table et la même fenêtre
+     que la cliente (lib/reclamations.js, MOTIFS_SIGNALEMENT_LIVREUR), avec en plus le choix du
+     colis concerné parmi ceux de sa journée — facultatif : « problème d'argent » ou « l'application
+     ne marche pas » ne parlent d'aucun colis. Le bureau lit tout dans L'essentiel et répond ;
+     la réponse s'affiche ici, sous « Mes signalements » du menu. */
+  async function envoyerSignalementLivreur({ colisId, motif, texte, silencieux }){
+    if (!currentUser) return false;
+    const ligne = { auteur: 'livreur', livreur_id: currentUser.id, colis_id: colisId || null, motif, texte: texte || null };
+    const { error } = await supabaseClient.from('reclamations_clientes').insert(ligne);
+    if (error) {
+      console.error('Signalement livreur :', error);
+      if (!silencieux) cltToast("Le signalement n'a pas pu être envoyé. Réessayez, ou appelez le bureau.", { type: 'error' });
+      return false;
+    }
+    return true;
+  }
+  let mesSignalements = [];
+  async function chargerMesSignalements(){
+    if (!currentUser) return;
+    try {
+      const { data, error } = await supabaseClient.from('reclamations_clientes').select('*')
+        .eq('livreur_id', currentUser.id).order('created_at', { ascending: false }).limit(20);
+      if (!error && Array.isArray(data)) mesSignalements = data;
+    } catch (e) { /* avant migration : on continue sans */ }
+  }
+  function mesSignalementsHTML(){
+    if (!mesSignalements.length) return '';
+    return `<div class="sig-liste"><div class="sig-liste__titre">Mes derniers signalements</div>` + mesSignalements.slice(0, 5).map(r => {
+      const teinte = (typeof STATUTS_RECLAMATION !== 'undefined' && STATUTS_RECLAMATION[r.statut]) ? STATUTS_RECLAMATION[r.statut].teinte : 'ambre';
+      const c = r.colis_id ? allColis.find(x => x.id === r.colis_id) : null;
+      return `<div class="reclam-ligne reclam-${escapeHTML(teinte)}"><strong>${escapeHTML(motifReclamationTexte(r.motif))}${c && c.numero ? ' · colis ' + escapeHTML(c.numero) : ''}</strong><span>${escapeHTML(reclamationTexteCliente(r))}</span></div>`;
+    }).join('') + '</div>';
+  }
+  async function ouvrirSignalementLivreur(colisPreselectionne){
+    if (!currentUser) return;
+    const motifs = (typeof MOTIFS_SIGNALEMENT_LIVREUR !== 'undefined') ? MOTIFS_SIGNALEMENT_LIVREUR : { autre: { label: 'Autre', icon: '✍️' } };
+    const choix = Object.entries(motifs)
+      .map(([cle, m]) => `<button type="button" class="reclam-motif" data-motif="${escapeHTML(cle)}">${m.icon} ${escapeHTML(m.label)}</button>`).join('');
+    const mine = allColis.filter(c => c.livreur_id === currentUser.id || c.livreur_collecte_id === currentUser.id);
+    const duJour = (typeof colisDuJour === 'function') ? colisDuJour(mine, todayLocalISODate()) : mine;
+    const candidats = (duJour.length ? duJour : mine).slice(0, 60);
+    const options = `<option value="">— Aucun colis en particulier —</option>` + candidats.map(c =>
+      `<option value="${escapeHTML(c.id)}" ${c.id === colisPreselectionne ? 'selected' : ''}>${escapeHTML((c.numero || '') + (c.destination ? ' · ' + c.destination : '') + ' · ' + fournisseurNom(c.fournisseur_id))}</option>`).join('');
+    await chargerMesSignalements();
+    const fond = document.createElement('div');
+    fond.className = 'reclam-fond';
+    fond.id = 'signalement-livreur';
+    fond.innerHTML = `<div class="reclam-boite" role="dialog" aria-modal="true" aria-label="Signaler un problème">
+      <h3>Signaler un problème</h3>
+      <p>Le bureau le lit tout de suite et vous répond ici.</p>
+      <div class="reclam-motifs">${choix}</div>
+      <label for="sig-colis">Colis concerné (facultatif)</label>
+      <select id="sig-colis" class="sig-select">${options}</select>
+      <label for="sig-texte">Ce qui s'est passé (facultatif)</label>
+      <textarea id="sig-texte" rows="3" maxlength="500" placeholder="En quelques mots"></textarea>
+      <div class="reclam-gestes">
+        <button type="button" class="btn btn-outline btn-sm" data-sig="fermer">Annuler</button>
+        <button type="button" class="btn btn-sm" data-sig="envoyer" disabled>Envoyer</button>
+      </div>
+      ${mesSignalementsHTML()}
+    </div>`;
+    let motif = null;
+    const fermer = () => { document.removeEventListener('keydown', touche); fond.remove(); };
+    const touche = (e) => { if (e.key === 'Escape') fermer(); };
+    fond.addEventListener('click', async (e) => {
+      if (e.target === fond) return fermer();
+      const m = e.target.closest('.reclam-motif');
+      if (m) {
+        motif = m.dataset.motif;
+        fond.querySelectorAll('.reclam-motif').forEach(b => b.classList.toggle('est-choisi', b === m));
+        fond.querySelector('[data-sig="envoyer"]').disabled = false;
+        return;
+      }
+      const g = e.target.closest('[data-sig]');
+      if (!g) return;
+      if (g.dataset.sig === 'fermer') return fermer();
+      if (!motif) return;
+      g.disabled = true; g.textContent = 'Envoi…';
+      const colisId = fond.querySelector('#sig-colis').value || null;
+      const texte = (fond.querySelector('#sig-texte').value || '').trim() || null;
+      const ok = await envoyerSignalementLivreur({ colisId, motif, texte });
+      if (!ok) { g.disabled = false; g.textContent = 'Envoyer'; return; }
+      fermer();
+      cltToast('Signalement envoyé : le bureau va vous répondre.', { type: 'success', title: 'Bien reçu' });
+    });
+    document.addEventListener('keydown', touche);
+    document.body.appendChild(fond);
+  }
+  document.addEventListener('click', (e) => {
+    const sur = e.target.closest('[data-signaler-livreur]');
+    if (sur) { e.preventDefault(); e.stopPropagation(); ouvrirSignalementLivreur(sur.dataset.signalerLivreur); return; }
+    const b = e.target.closest('#btn-signaler-livreur');
+    if (!b) return;
+    e.preventDefault();
+    const dd = document.getElementById('settings-dropdown');
+    if (dd) dd.classList.remove('open');
+    ouvrirSignalementLivreur(null);
+  });
 
   function matchesSearch(c, term){
     if (!term) return true;
@@ -1499,7 +1752,14 @@
   const STATUTS_A_FAIRE = ['en_attente', 'recupere', 'en_livraison'];
   // 2.5 (10/09/2026) : quatre pastilles au lieu de huit — Ma journée, Livrés, Non livrés, Tous.
   // Les autres états se trouvent par « Tous » et la recherche.
-  const FILTER_LABELS_MES = { [FILTRE_A_FAIRE]: 'Ma journée', livre: FILTER_LABELS.livre, non_livre: FILTER_LABELS.non_livre, tous: FILTER_LABELS.tous };
+  // « À rendre » (20/09/2026, lot C) : les colis revenus que le livreur a encore dans son sac,
+  // ou qu'une cliente conteste. Ils dorment dans « Tous » — et un retour qui dort trois jours
+  // dans un sac est la première plainte des clientes. La pastille porte leur nombre.
+  const FILTRE_A_RENDRE = 'a_rendre';
+  const FILTER_LABELS_MES = { [FILTRE_A_FAIRE]: 'Ma journée', livre: FILTER_LABELS.livre, non_livre: FILTER_LABELS.non_livre, [FILTRE_A_RENDRE]: '↩️ À rendre', tous: FILTER_LABELS.tous };
+  function colisARendre(liste){
+    return (liste || []).filter(c => c.statut === 'retour' && typeof retourDetenteur === 'function' && ['livreur', 'litige'].includes(retourDetenteur(c)));
+  }
 
   // Les trois onglets, sous le nom que le code leur donne. « finance » s'appelait « tous »
   // jusqu'au 25 août 2026 : un téléphone qui a gardé l'ancien nom en mémoire est réorienté
@@ -1543,9 +1803,10 @@
     // FILTER_LABELS_MES : « À faire » en première pastille (05/09/2026). Cette rangée ne sert
     // qu'à Mes colis.
     const filtreActif = !!(searchMes || filtreDateMes);
+    const nbARendre = (currentUser ? colisARendre(allColis.filter(c => c.livreur_id === currentUser.id)) : []).length;
     if (!cltPoserHTML(box, Object.keys(FILTER_LABELS_MES).map(key =>
-      `<div class="filter-chip ${activeFilter===key?'active':''}" data-filter="${key}">${FILTER_LABELS_MES[key]}</div>`
-    ).join('') + `<button type="button" class="filter-chip filter-chip--outil${filtreActif ? ' a-un-filtre' : ''}" id="btn-filtrer-mes" aria-expanded="${mesFiltresOuverts ? 'true' : 'false'}" title="Recherche, calendrier, sélection multiple">🔍 Filtrer${filtreActif ? ' •' : ''}</button>`, (filtreActif ? '1' : '0') + (mesFiltresOuverts ? 'o' : 'f'))) return;
+      `<div class="filter-chip ${activeFilter===key?'active':''}${key === FILTRE_A_RENDRE && nbARendre ? ' filter-chip--alerte' : ''}" data-filter="${key}">${FILTER_LABELS_MES[key]}${key === FILTRE_A_RENDRE && nbARendre ? ` <span class="filter-chip-nb">${nbARendre}</span>` : ''}</div>`
+    ).join('') + `<button type="button" class="filter-chip filter-chip--outil${filtreActif ? ' a-un-filtre' : ''}" id="btn-filtrer-mes" aria-expanded="${mesFiltresOuverts ? 'true' : 'false'}" title="Recherche, calendrier, sélection multiple">🔍 Filtrer${filtreActif ? ' •' : ''}</button>`, (filtreActif ? '1' : '0') + (mesFiltresOuverts ? 'o' : 'f') + ':' + nbARendre)) return;
     box.querySelectorAll('.filter-chip[data-filter]').forEach(chip => {
       chip.addEventListener('click', () => onSelect(chip.dataset.filter));
     });
@@ -1575,12 +1836,6 @@
     return escapeHTML(fournisseurNom(id));
   }
 
-  function livreurLabel(id){
-    if (!id) return null;
-    const p = profilesById[id];
-    if (!p) return null;
-    return p.full_name || 'Livreur';
-  }
 
   // Retourne la ligne d'info "Collecte : <nom>" quand un livreur de collecte est assigné
   // (potentiellement différent du livreur de livraison courant) — voir colis.livreur_collecte_id.
@@ -1665,6 +1920,11 @@
     if (!('tentatives_livraison' in extra) && statut === 'non_livre' && existing && existing.statut !== 'non_livre') {
       extra.tentatives_livraison = tentativesPrecedentes + 1;
     }
+    // « Récupéré » depuis la carte fait la même chose que « Récupéré » depuis la tournée
+    // (marquerRecupereTout) : le colis n'est plus « en route vers la boutique ». (20/09/2026)
+    if (statut === 'recupere' && existing && existing.collecte_depart_at && !('collecte_depart_at' in extra)) {
+      extra.collecte_depart_at = null;
+    }
 
     /* POURQUOI ? (13/09/2026) Un colis qui passe « non livré » porte son motif, choisi par le
        livreur en deux touches (règlement des primes, art. 2). On demande AVANT d'écrire, comme
@@ -1742,7 +2002,11 @@
     // bloquer la mise à jour de statut.
     if (error && Object.keys(extra).length && /column|colonne|does not exist|n'existe pas/i.test(error.message || '')) {
       ({ error } = await supabaseClient.from('colis').update({ statut, observation, photo_livraison_url }).eq('id', id));
-      if (!error) { for (const k in extra) delete extra[k]; }
+      if (!error) {
+        // On le dit : un motif ou un compteur qui saute en silence, c'est une prime mal comptée.
+        cltToast("Le statut est enregistré, mais pas les détails (motif, tentatives) : la base n'est pas à jour. Prévenez le bureau.", { type: 'warning', duration: 9000 });
+        for (const k in extra) delete extra[k];
+      }
     }
     liberer();
     if (error) {
@@ -1782,7 +2046,8 @@
   // Message de confirmation, avec un « Annuler » de quelques secondes : un appui malencontreux
   // dans la poche ou en circulation ne doit pas coûter un appel à l'équipe pour corriger.
   function annoncerChangementStatut(colis, statut, res){
-    const libelle = (STATUTS[statut] && STATUTS[statut].label) || statut;
+    // libelleStatut : sur une expédition, « Livré » se dit « Expédié » (config.js). (20/09)
+    const libelle = libelleStatut(statut, colis);
     const nom = colis.numero ? ('Colis ' + colis.numero) : 'Ce colis';
     const suffixe = res.horsReseau ? " (sera envoyé au retour du réseau)" : '';
     cltToast(`${nom} : ${libelle}.${suffixe}`, {
@@ -1829,9 +2094,15 @@
         <button type="button" class="wa-invite__plus-tard">Plus tard</button>
       </div>`;
     document.body.appendChild(boite);
-    const fermer = () => { boite.remove(); };
+    let minuterie = null;
+    const fermer = () => { clearTimeout(minuterie); document.removeEventListener('keydown', touche); boite.remove(); };
+    const touche = (e) => { if (e.key === 'Escape') fermer(); };
+    document.addEventListener('keydown', touche);
     boite.querySelector('.wa-invite__plus-tard').addEventListener('click', fermer);
     boite.querySelector('.wa-invite__envoyer').addEventListener('click', () => setTimeout(fermer, 400));
+    // Sans réponse, l'invitation s'efface d'elle-même : c'est une proposition, pas un barrage
+    // — un livreur qui enchaîne trois livraisons ne doit pas fermer trois fenêtres. (20/09)
+    minuterie = setTimeout(fermer, 20000);
   }
   const STATUTS_A_PREVENIR = ['en_livraison', 'non_livre', 'livre'];
   function proposerMessageDestinataire(colis, statut){
@@ -1868,9 +2139,15 @@
         <button type="button" class="wa-invite__plus-tard">Plus tard</button>
       </div>`;
     document.body.appendChild(boite);
-    const fermer = () => { boite.remove(); };
+    let minuterie = null;
+    const fermer = () => { clearTimeout(minuterie); document.removeEventListener('keydown', touche); boite.remove(); };
+    const touche = (e) => { if (e.key === 'Escape') fermer(); };
+    document.addEventListener('keydown', touche);
     boite.querySelector('.wa-invite__plus-tard').addEventListener('click', fermer);
     boite.querySelector('.wa-invite__envoyer').addEventListener('click', () => setTimeout(fermer, 400));
+    // Sans réponse, l'invitation s'efface d'elle-même : c'est une proposition, pas un barrage
+    // — un livreur qui enchaîne trois livraisons ne doit pas fermer trois fenêtres. (20/09)
+    minuterie = setTimeout(fermer, 20000);
   }
 
   async function annulerChangementStatut(id, res){
@@ -1887,7 +2164,7 @@
         res.statutPrecedent === 'non_livre' ? { motif_non_livraison: avant.motif_non_livraison || null, vendeuse_prevenue: !!avant.vendeuse_prevenue, livraison_payee_non_livre: !!avant.livraison_payee_non_livre } : {})
     });
     if (!retour.ok) return;
-    const libelle = (STATUTS[res.statutPrecedent] && STATUTS[res.statutPrecedent].label) || res.statutPrecedent;
+    const libelle = libelleStatut(res.statutPrecedent, avant);
     cltToast(`Retour à l'état précédent : ${libelle}.`, { type: 'info', title: 'Annulé' });
   }
 
@@ -1948,16 +2225,7 @@
     const choisis = allColis.filter(c => lotMesIds.has(c.id));
     if (!choisis.length) return;
     const libelle = (STATUTS[statut] && STATUTS[statut].label) || statut;
-
-    // Hors réseau, on ne fait rien à moitié. La file d'attente hors-ligne est conçue pour des
-    // gestes unitaires (elle garde l'observation, la photo, l'état d'origine de chaque colis) ;
-    // y verser quinze colis d'un coup demanderait des garanties qu'elle n'offre pas encore.
-    // Plutôt que de laisser croire que c'est enregistré, on le dit et on renvoie au geste
-    // unitaire, qui lui, hors réseau, met correctement en attente.
-    if (!navigator.onLine) {
-      cltToast("Sans réseau, les actions en lot ne sont pas possibles. Marquez les colis un par un : ils seront mis en attente et partiront au retour de la connexion.", { type: 'warning', title: 'Hors connexion', duration: 9000 });
-      return;
-    }
+    const horsReseau = !navigator.onLine;
 
     // Le tri AVANT d'écrire : c'est lui qui permet d'annoncer la vérité au lieu de la découvrir.
     // Il séparait aussi les colis qui attendaient leur code de confirmation, pour prévenir avant
@@ -2007,6 +2275,32 @@
     const extraLot = motifLot ? Object.assign({ motif_non_livraison: motifLot.motif, vendeuse_prevenue: !!motifLot.prevenue },
       motifLot.payee === null ? {} : { livraison_payee_non_livre: !!motifLot.payee }) : null;
     if (extraLot) groupes.forEach(g => Object.assign(g.payload, extraLot));
+
+    /* HORS RÉSEAU (20/09/2026, lot C) : jusqu'ici le lot refusait de travailler sans connexion
+       et renvoyait au geste unitaire, colis par colis — quinze appuis au lieu d'un, au moment où
+       le livreur est dans un sous-sol. Le lot passe maintenant par la MÊME file d'attente que le
+       geste unitaire, une entrée par colis : chaque entrée garde son observation, son état de
+       départ et son motif, exactement comme si le livreur avait appuyé quinze fois. */
+    if (horsReseau) {
+      let enFile = 0;
+      for (const c of tri.eligibles) {
+        const extra = Object.assign({}, payloadLotColis(c, statut), extraLot || {});
+        delete extra.statut;
+        try {
+          await queueAdd({ colisId: c.id, statut, observation: c.observation || null, photo_livraison_url: c.photo_livraison_url || null, photoBlob: null, extra, userId: currentUser.id, timestamp: Date.now() });
+          const idx = allColis.findIndex(x => x.id === c.id);
+          if (idx !== -1) Object.assign(allColis[idx], horodatageLocalDuStatut(allColis[idx], statut), { statut }, extra);
+          lotMesIds.delete(c.id);
+          enFile++;
+        } catch (e) { console.error('Lot hors réseau :', e); }
+      }
+      await refreshOfflineBanner();
+      cltToast(enFile === tri.eligibles.length
+        ? `${enFile} colis « ${libelle} », enregistré${enFile > 1 ? 's' : ''} sur cet appareil : ils partiront au retour de la connexion.`
+        : `${enFile} colis sur ${tri.eligibles.length} ont pu être mis en attente. Refaites les autres une fois connecté.`,
+        { type: enFile === tri.eligibles.length ? 'info' : 'warning', title: 'Hors connexion', duration: 8000 });
+      return;
+    }
 
     const libelleBtn = bouton ? bouton.innerHTML : '';
     if (bouton) { bouton.disabled = true; bouton.textContent = 'Enregistrement…'; }
@@ -2453,7 +2747,7 @@
 
   function mesColisRowHTML(c, numeroClient){
     const thumb = c.photo_url
-      ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
+      ? `<img src="${escapeHTML(c.photo_url)}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
       : '';
     // Les états proposés dépendent du colis, depuis le 02/09/2026 : sur une expédition,
     // « En livraison » disparaît et « Livré / Non livré » deviennent « Expédié / Non expédié ».
@@ -2490,7 +2784,11 @@
         </div>
         <div class="status-col">
           ${blockedSyncIds.has(c.id)
-            ? `<div class="sync-pending-badge sync-blocked-badge">⚠️ Non enregistré — prévenez l'équipe</div>`
+            ? `<div class="sync-pending-badge sync-blocked-badge">⚠️ Non enregistré${blockedSyncMotifs.get(c.id) === 'conflit' ? ' — modifié par l\'équipe entre-temps' : ' — refusé par le serveur'}</div>
+               <div class="sync-blocked-gestes">
+                 <button type="button" class="btn btn-sm btn-outline" data-file-retenter="${escapeHTML(c.id)}">🔁 Retenter</button>
+                 <button type="button" class="btn btn-sm btn-outline" data-file-abandonner="${escapeHTML(c.id)}">Abandonner et prévenir le bureau</button>
+               </div>`
             : (pendingSyncIds.has(c.id) ? `<div class="sync-pending-badge">⏳ En attente de synchronisation</div>` : '')}
           <!-- UNE CARTE = UN GESTE. (10/09/2026, feuille de route 2.1) Le bouton principal dit
                l'étape suivante (prochaineEtape, config.js), le second l'échec ; un appui enregistre,
@@ -2523,6 +2821,7 @@
                 <span>Changer l'état</span>
                 <select class="status-select">${statutOptions}</select>
               </label>
+              <button type="button" class="reclam-bouton" data-signaler-livreur="${escapeHTML(c.id)}">⚠️ Signaler un problème sur ce colis</button>
               <!-- REPORTER À DEMAIN. (09/09/2026, Celtis) Un colis reçu aujourd'hui qu'on ne livrera
                    que demain change de jour : il sort du point de ce soir et entre dans la journée
                    de demain — chez le livreur, au bureau et chez la cliente (jourDuColis, config.js).
@@ -2556,13 +2855,13 @@
               <!-- Ces deux boutons parlent d'argent encaissé chez le destinataire. Sur une
                    expédition il n'y en a pas : il a déjà payé chez la vendeuse. Les proposer,
                    c'est inviter à cocher quelque chose qui n'a pas eu lieu. -->
-              ${estExpedition(c) ? '' : `              <button type="button" class="btn btn-sm btn-livraison-payee" data-paye="${c.livraison_payee ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.livraison_payee ? 'background:#1e8f4e !important; border:1.5px solid #1e8f4e; color:#fff;' : 'background:transparent !important; border:1.5px solid #64748b; color:#334155;'}" title="À cocher si le destinataire a DÉJÀ payé la livraison chez le fournisseur : vous ne l'encaissez pas à la porte, CLT la retient sur le relevé du fournisseur. Ne dit rien de l'article.">${c.livraison_payee ? '✅ Payée chez le fournisseur' : "Livraison déjà payée chez le fournisseur ?"}</button>
+              ${estExpedition(c) ? '' : `              <button type="button" class="btn btn-sm btn-livraison-payee bascule-argent${c.livraison_payee ? ' bascule-argent--oui bascule-argent--vert' : ''}" data-paye="${c.livraison_payee ? '1' : '0'}" title="À cocher si le destinataire a DÉJÀ payé la livraison chez le fournisseur : vous ne l'encaissez pas à la porte, CLT la retient sur le relevé du fournisseur. Ne dit rien de l'article.">${c.livraison_payee ? '✅ Payée chez le fournisseur' : "Livraison déjà payée chez le fournisseur ?"}</button>
               <!-- L'exception, et seulement l'exception. Depuis le 25/08/2026, un colis livré compte
                    par défaut comme encaissé : le livreur n'a rien à cocher dans le cas normal, ce qui
                    était l'ancien piège (personne ne cochait jamais, et les clientes lisaient 0 FCFA
                    encaissé alors que CLT tenait leur argent). Ce bouton ne sert qu'au cas rare où le
                    colis a été remis sans que l'argent de l'article rentre. -->
-              <button type="button" class="btn btn-sm btn-article-non-encaisse" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" style="padding:5px 12px; font-weight:600; font-size:13px; border-radius:8px; ${c.article_non_encaisse ? 'background:#1B4374 !important; border:1.5px solid #1B4374; color:#fff;' : 'background:transparent !important; border:1.5px solid #cbd5e1; color:#64748b;'}" title="À cocher si le destinataire a DÉJÀ payé l'article chez le fournisseur : vous n'encaissez pas l'article à la porte. La livraison, elle, s'encaisse normalement.">${c.article_non_encaisse ? '✅ Article soldé chez le fournisseur' : "Article déjà soldé chez le fournisseur ?"}</button>`}
+              <button type="button" class="btn btn-sm btn-article-non-encaisse bascule-argent${c.article_non_encaisse ? ' bascule-argent--oui bascule-argent--marine' : ' bascule-argent--discret'}" data-nonencaisse="${c.article_non_encaisse ? '1' : '0'}" title="À cocher si le destinataire a DÉJÀ payé l'article chez le fournisseur : vous n'encaissez pas l'article à la porte. La livraison, elle, s'encaisse normalement.">${c.article_non_encaisse ? '✅ Article soldé chez le fournisseur' : "Article déjà soldé chez le fournisseur ?"}</button>`}
               ${montantsChampsHTML(c)}
               <textarea class="obs-textarea" placeholder="Observation (ex : client absent, numéro injoignable...)">${c.observation ? escapeHTML(c.observation) : ''}</textarea>
               <button class="btn btn-sm btn-save">Enregistrer</button>
@@ -2633,6 +2932,9 @@
     }
     mesRendusRetenus = 0;
     if (window.CLTActualiser) CLTActualiser.viderAttente();
+    // La pastille « À rendre » porte un nombre : la rangée suit les colis (sans se réécrire si
+    // rien n'a changé — cltPoserHTML compare avant d'écrire, et le défilement latéral est gardé).
+    if (typeof redessinerFiltresMes === 'function' && redessinerFiltresMes) redessinerFiltresMes();
     const __anchor = captureScrollAnchor(list);
     const __pending = capturePendingEdits(list);
     const mine = allColis.filter(c => c.livreur_id === currentUser.id);
@@ -2652,8 +2954,10 @@
     const reportesDeCeJour = searchMes ? [] : mine.filter(c => colisReporte(c) && dayKey(c.created_at) === jourMes && jourDuColis(c) !== jourMes);
     let filtered = activeFilterMes === 'tous' ? mine
       : activeFilterMes === FILTRE_A_FAIRE ? colisDuJour(mine, jourMes)
+      : activeFilterMes === FILTRE_A_RENDRE ? colisARendre(mine)
       : mine.filter(c => c.statut === activeFilterMes);
-    filtered = filtered.filter(c => matchesSearch(c, searchMes) && (activeFilterMes === FILTRE_A_FAIRE || matchesDate(c, filtreDateMes)));
+    // « À rendre » ignore le calendrier : un retour d'il y a trois jours est justement celui qu'on cherche.
+    filtered = filtered.filter(c => matchesSearch(c, searchMes) && (activeFilterMes === FILTRE_A_FAIRE || activeFilterMes === FILTRE_A_RENDRE || matchesDate(c, filtreDateMes)));
     // Un colis coché puis supprimé, réassigné à quelqu'un d'autre ou passé hors des critères ne
     // doit plus compter dans la sélection : sinon le bouton annoncerait un nombre plus grand que
     // ce qu'il traiterait vraiment. On recale donc la sélection sur la liste réelle à chaque
@@ -2665,6 +2969,8 @@
         ? `<div class="empty-state">Aucun colis pour vous ce jour-là.</div>`
         : activeFilterMes === FILTRE_A_FAIRE && !searchMes
           ? `<div class="empty-state">Rien pour aujourd'hui 👍 — choisissez une date pour revoir un autre jour.</div>`
+        : activeFilterMes === FILTRE_A_RENDRE && !searchMes
+          ? `<div class="empty-state">Aucun colis à rendre : votre sac est vide 👍</div>`
           : `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`)
         + reportesDeCeJourHTML(reportesDeCeJour, jourMes)
       + restesEnRouteHTML(restesEnRoute)
@@ -3081,7 +3387,7 @@
   // de livraison. Ce serait donc lui demander de retenir un chiffre jusqu'au soir pour rien.
   function recupColisRowHTML(c){
     const thumb = c.photo_url
-      ? `<img src="${c.photo_url}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
+      ? `<img src="${escapeHTML(c.photo_url)}" class="thumb" alt="Photo du colis${c.description ? ' : ' + escapeHTML(c.description) : ''}">`
       : '';
     return `
       <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}">
@@ -3305,7 +3611,7 @@
       const dejaPayee = colis && colis.livraison_payee_non_livre ? 'oui' : (colis && colis.statut === 'non_livre' ? 'non' : '');
       const boite = document.createElement('div');
       boite.id = 'motif-echec';
-      boite.className = 'motif-echec';
+      boite.className = 'motif-echec-feuille';
       boite.setAttribute('role', 'dialog');
       boite.innerHTML = `
         <div class="motif-echec__boite">
@@ -3328,9 +3634,11 @@
           <button type="button" class="motif-echec__annuler">Annuler</button>
         </div>`;
       document.body.appendChild(boite);
-      const fermer = (valeur) => { boite.remove(); resolve(valeur); };
+      const touche = (e) => { if (e.key === 'Escape') fermer(null); };
+      const fermer = (valeur) => { document.removeEventListener('keydown', touche); boite.remove(); resolve(valeur); };
       boite.querySelector('.motif-echec__annuler').addEventListener('click', () => fermer(null));
       boite.addEventListener('click', (e) => { if (e.target === boite) fermer(null); });
+      document.addEventListener('keydown', touche);   // Échap ferme, comme toute fenêtre de l'application (20/09)
       // Oui ou non : un seul des deux reste allumé. Tant qu'aucun n'est choisi, le motif ne
       // ferme pas la fenêtre — Celtis : « il doit mettre oui ou non ». Le rappel se montre à ce
       // moment-là seulement, pour ne pas gronder quelqu'un qui n'a encore rien fait de mal.
@@ -3359,7 +3667,6 @@
      par la base (primes_en_cours : la même règle que le décompte du 1er). Affiché comme une
      estimation ; seul le décompte validé fait foi. La carte disparaît pour un livreur qui n'est
      pas concerné (indépendant, ou pas encore dans la paie). */
-  let monMoisDerniereCle = '';
   async function chargerMonMois(){
     const bloc = document.getElementById('mon-mois');
     if (!bloc || !supabaseClient || !currentUser) return;
@@ -3636,7 +3943,7 @@
     if (!box || !currentUser) return;
 
     if (annonceIndisponible){
-      cltPoserHTML(box, `<div style="border:1px solid #e2e8f0; background:#f8fafc; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; color:#64748b;">
+      cltPoserHTML(box, `<div class="annonce-bloc annonce-bloc--indispo">
         L'annonce de remise n'est pas encore activée sur ce compte. Vous pouvez continuer à
         remettre votre caisse comme d'habitude.
       </div>`);
@@ -3664,9 +3971,9 @@
     // rien de particulier à signaler n'a alors qu'un seul geste à faire.
     const porte = caisseEnMainDuLivreur(allColis, currentUser.id);
     const propose = colisHasMore ? '' : Math.round(Number(porte.montant) || 0);
-    if (cltPoserHTML(box, `<div style="border:1.5px solid #cddcf0; background:#f4f8fd; border-radius:10px; padding:10px 12px; margin-bottom:12px;">
-      <div style="font-weight:800; color:#1B4374; font-size:13px;">🙋 Annoncer ma remise</div>
-      <div style="margin-top:4px; font-size:13px; color:#5b6b80; line-height:1.45;">
+    if (cltPoserHTML(box, `<div class="annonce-bloc">
+      <div class="annonce-bloc__titre">🙋 Annoncer ma remise</div>
+      <div class="annonce-bloc__sous">
         Dites au bureau combien vous apportez, avant qu'il ne compte. Cela ne solde rien : c'est
         votre parole, écrite et datée.
       </div>
@@ -3678,19 +3985,17 @@
 
   function formulaireAnnonceHTML(montant, note){
     return `<div style="margin-top:8px;">
-      <label for="annonce-montant" style="display:block; font-size:13px; font-weight:600; color:#1B4374; margin-bottom:4px;">Montant que j'apporte (FCFA)</label>
-      <input type="number" id="annonce-montant" step="1" inputmode="numeric" value="${escapeHTML(String(montant))}"
-             style="width:100%; border:1.5px solid #cbd5e1; border-radius:9px; padding:10px 12px; font-size:15px; box-sizing:border-box;">
+      <label for="annonce-montant" class="annonce-label">Montant que j'apporte (FCFA)</label>
+      <input type="number" id="annonce-montant" step="1" inputmode="numeric" value="${escapeHTML(String(montant))}" class="annonce-champ">
       <!-- Un champ de type nombre ne sait pas espacer ses milliers : le livreur y lisait
            « 58000 » d'un bloc, alors que toute l'application écrit « 58 000 FCFA ». On garde le
            champ de nombres — c'est lui qui ouvre le clavier chiffré du téléphone — et on relit
            la somme juste en dessous, avec formatMontant, la même fonction que partout ailleurs.
            Vu à l'écran le 30 août 2026, pas déduit. -->
-      <div id="annonce-montant-clair" style="margin-top:5px; font-size:13px; color:#5b6b80;">${annonceMontantClair(montant)}</div>
-      <label for="annonce-note" style="display:block; font-size:13px; font-weight:600; color:#1B4374; margin:8px 0 4px;">Un mot, si besoin (facultatif)</label>
+      <div id="annonce-montant-clair" class="annonce-clair">${annonceMontantClair(montant)}</div>
+      <label for="annonce-note" class="annonce-label annonce-label--suite">Un mot, si besoin (facultatif)</label>
       <input type="text" id="annonce-note" maxlength="200" value="${escapeHTML(String(note || ''))}"
-             placeholder="Ex : il manque 5 000, réglés demain"
-             style="width:100%; border:1.5px solid #cbd5e1; border-radius:9px; padding:10px 12px; font-size:14px; box-sizing:border-box;">
+             placeholder="Ex : il manque 5 000, réglés demain" class="annonce-champ annonce-champ--note">
       <button type="button" id="btn-annoncer" class="btn" style="width:100%; margin-top:10px;">Envoyer mon annonce</button>
       <div id="annonce-msg" role="status" aria-live="polite" style="margin-top:6px; font-size:13px;"></div>
     </div>`;
@@ -4949,7 +5254,7 @@
   document.getElementById('btn-sync-now').addEventListener('click', () => { flushOfflineQueue(); });
   window.addEventListener('online', () => { flushOfflineQueue(); if (vueHorsLigne.active) loadColis(); });
   { const b = document.getElementById('btn-reessayer-lecture'); if (b) b.addEventListener('click', () => loadColis()); }
-  window.addEventListener('offline', () => { refreshOfflineBanner(); });
+  window.addEventListener('offline', () => { refreshOfflineBanner({ enFond: true }); });
   setInterval(() => { if (navigator.onLine) flushOfflineQueue(); }, 20000);
 
   init();

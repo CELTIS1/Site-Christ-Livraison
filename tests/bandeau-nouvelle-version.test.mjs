@@ -857,10 +857,16 @@ verifier(
    la 14ᵉ commune de la grille (2 000 F depuis Yopougon, 2 500 F depuis Attécoubé, Adjamé,
    Plateau, 3 000 F ailleurs), sur le site aussi ; la ligne d'expédition tient en six mots. Les
    décisions recommandées sont appliquées et notées dans « À faire par le gérant ». Aucune
-   migration de schéma. Étiquette 20260920songon. */
+   migration de schéma. Étiquette 20260920songon.
+   v184, le 20/09/2026 — lot 20.C, les livreurs : la file bloquée a deux gestes (« Retenter »,
+   « Abandonner et prévenir le bureau »), « Signaler un problème » et les numéros de CLT dans le
+   menu, une pastille « À rendre » avec son nombre, le mode nuit sur la feuille du motif, Mon
+   mois et l'annonce de remise, « Expédié » dans les toasts, la photo gardée au rendu de fond,
+   le lot hors réseau par la file, les signalements des livreurs dans L'essentiel. Migration
+   2026-09-20-le-livreur-signale.sql. Étiquette 20260920livreurs. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v183'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v184'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -26,6 +26,20 @@ const MOTIFS_RECLAMATION = {
   autre:           { label: "Autre",                        icon: "✍️" },
 };
 
+/* CE QU'UN LIVREUR PEUT DIRE (20/09/2026, lot C). Une liste fermée, comme celle de la cliente :
+   deux touches sur un téléphone, et des motifs qu'on peut compter. « Mise à jour non
+   enregistrée » est celui que la file hors réseau ouvre d'elle-même quand le serveur refuse. */
+const MOTIFS_SIGNALEMENT_LIVREUR = {
+  maj_non_enregistree:      { label: "Mise à jour non enregistrée",   icon: "📵" },
+  adresse_introuvable:      { label: "Adresse introuvable",           icon: "📍" },
+  destinataire_injoignable: { label: "Destinataire injoignable",      icon: "📴" },
+  colis_manquant:           { label: "Colis manquant ou pas remis",   icon: "📦" },
+  argent:                   { label: "Problème d'argent",             icon: "💰" },
+  incident:                 { label: "Incident, sécurité",            icon: "⚠️" },
+  application:              { label: "L'application ne marche pas",   icon: "📱" },
+  autre:                    { label: "Autre",                         icon: "✍️" },
+};
+
 const STATUTS_RECLAMATION = {
   ouverte:  { label: "Ouverte",     icon: "🔴", teinte: "rouge" },
   en_cours: { label: "En cours",    icon: "🟠", teinte: "ambre" },
@@ -33,8 +47,12 @@ const STATUTS_RECLAMATION = {
 };
 
 function motifReclamationTexte(cle) {
-  const m = MOTIFS_RECLAMATION[cle];
+  const m = MOTIFS_RECLAMATION[cle] || MOTIFS_SIGNALEMENT_LIVREUR[cle];
   return m ? (m.icon + ' ' + m.label) : String(cle || '');
+}
+/* Qui parle : 'livreur' ou 'cliente'. Les lignes d'avant le 20/09 n'ont pas la colonne. */
+function reclamationAuteur(r) {
+  return (r && r.auteur === 'livreur') ? 'livreur' : 'cliente';
 }
 function statutReclamationTexte(cle) {
   const s = STATUTS_RECLAMATION[cle];
