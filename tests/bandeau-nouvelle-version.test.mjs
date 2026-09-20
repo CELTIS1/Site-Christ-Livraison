@@ -979,10 +979,14 @@ verifier(
    chiffres qui filtrent, une ligne par boutique, et des colis qui s'ouvrent (fiche en lecture
    seule) — règle app/mes-boutiques.js. (2) Page de suivi : « Contactez le fournisseur », plus le
    nom de la boutique. (3) Le point de la cliente : « Envoyer » ouvre SON WhatsApp, le point écrit
-   (app/point-par-whatsapp.js) ; la feuille de partage devient « Partager le PDF ». Étiquette 20260920boutiques2. */
+   (app/point-par-whatsapp.js) ; la feuille de partage devient « Partager le PDF ». Étiquette 20260920boutiques2.
+   v205, le 20/09/2026 — le guide du gérant : Gestion › Guide (administrateur seul). Une fiche par
+   fonctionnalité livrée — ce que c'est, où, comment, à savoir, ce qui revient à Celtis — rangée
+   par espace, avec recherche, filtre « Ce qui vous attend » et « Y aller ». Contenu :
+   app/guide-du-gerant.json (à tenir à jour à chaque lot) ; écran : app/guide-du-gerant.js. Étiquette 20260920guide. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v204'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v205'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

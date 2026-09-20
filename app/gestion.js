@@ -4216,6 +4216,7 @@ async function init(){
   setDisp('tab-paie',      canPaie);
   setDisp('tab-journal',   isAdmin);        // journal de surveillance : patron seul
   setDisp('tab-site',      isAdmin);        // textes du site public : patron seul (16/09/2026)
+  setDisp('tab-guide',     isAdmin);        // le guide du gérant : patron seul (20/09/2026)
   setDisp('sub-paie-parametres', isAdmin);  // paramètres/grille : configuration réservée au patron
 
   // Sélecteurs de période

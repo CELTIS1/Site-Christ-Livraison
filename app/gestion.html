@@ -15,10 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920boutiques2">
+<link rel="stylesheet" href="style.css?v=20260920guide">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920boutiques2"></script>
-<script src="splash.js?v=20260920boutiques2"></script>
+<script src="theme.js?v=20260920guide"></script>
+<script src="splash.js?v=20260920guide"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -248,6 +248,38 @@
   .cds-table{ margin-top:12px; }
   /* ---------- POURQUOI ÇA ÉCHOUE (20/09/2026) ---------- */
   #cdd-causes{ padding:16px 18px; margin-bottom:16px; }
+  /* ---- Le guide du gérant (20/09/2026) ---- */
+  .gdg-tete-haut{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px 20px; flex-wrap:wrap; }
+  .gdg-recherche{ flex:1 1 240px; max-width:380px; height:44px; padding:0 14px; border:1px solid #cfd8e3; border-radius:12px; font:inherit; font-size:14px; background:#fff; color:inherit; }
+  .gdg-pastilles{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .gdg-pastille{ display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 14px; border:1px solid #cfd8e3; border-radius:999px; background:#fff; color:var(--clt-teal-dark); font:inherit; font-size:13.5px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .gdg-pastille span{ min-width:22px; padding:1px 7px; border-radius:999px; background:#eef2f1; color:#5b6473; font-size:12px; font-weight:800; text-align:center; }
+  .gdg-pastille--active{ background:var(--clt-teal-dark); border-color:var(--clt-teal-dark); color:#fff; }
+  .gdg-pastille--active span{ background:rgba(255,255,255,.22); color:#fff; }
+  .gdg-pastille:focus-visible, .gdg-recherche:focus-visible{ outline:2px solid var(--clt-teal-dark); outline-offset:2px; }
+  .gdg-groupe{ margin-top:22px; }
+  .gdg-groupe-titre{ display:flex; align-items:center; gap:8px; margin:0 2px 10px; font-size:13px; letter-spacing:.5px; text-transform:uppercase; color:#5b6473; }
+  .gdg-groupe-titre span{ padding:1px 8px; border-radius:999px; background:#e6efed; color:var(--clt-teal-dark); font-size:12px; letter-spacing:0; }
+  .gdg-grille{ display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px; align-items:start; margin-top:14px; }
+  .gdg-groupe .gdg-grille{ margin-top:0; }
+  .gdg-fiche{ background:#fff; border:1px solid #e3e9f1; border-radius:16px; padding:16px 18px; display:flex; flex-direction:column; gap:10px; box-shadow:0 1px 3px rgba(15,40,50,.05); }
+  .gdg-fiche--pour-vous{ border-color:#f0d09a; }
+  .gdg-fiche-tete{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .gdg-fiche-tete h3{ margin:0; font-size:16px; line-height:1.3; color:var(--clt-teal-dark); }
+  .gdg-marques{ display:flex; gap:6px; flex:none; flex-wrap:wrap; justify-content:flex-end; }
+  .gdg-marque{ font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:999px; background:#eef2f1; color:#44505f; white-space:nowrap; }
+  .gdg-marque--version{ background:#e8eef8; color:#1B4374; font-variant-numeric:tabular-nums; }
+  .gdg-bref{ margin:0; font-size:14.5px; line-height:1.5; color:#1f2937; }
+  .gdg-ou{ font-size:13px; line-height:1.45; color:#44505f; background:#f5f8f7; border-radius:10px; padding:8px 12px; }
+  .gdg-ou span{ display:inline-block; margin-right:8px; font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--clt-teal-dark); }
+  .gdg-etapes{ margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px; font-size:13.5px; line-height:1.5; color:#1f2937; }
+  .gdg-etapes li::marker{ font-weight:800; color:var(--clt-teal-dark); }
+  .gdg-savoir{ font-size:13px; line-height:1.5; color:#44505f; border-left:3px solid #cfd8e3; padding:2px 0 2px 12px; }
+  .gdg-pour-vous{ font-size:13px; line-height:1.5; color:#7a4b00; background:#fff6ea; border:1px solid #f0d09a; border-radius:10px; padding:8px 12px; }
+  .gdg-aller{ align-self:flex-start; min-height:44px; display:inline-flex; align-items:center; text-decoration:none; }
+  .gdg-vide{ margin-top:14px; padding:22px; border:1px dashed #cfd8e3; border-radius:14px; text-align:center; color:#5b6473; font-size:14px; }
+  .gdg-lien{ background:none; border:0; padding:0 0 0 6px; font:inherit; font-weight:700; color:var(--clt-teal-dark); text-decoration:underline; cursor:pointer; }
+  @media (max-width:700px){ .gdg-grille{ grid-template-columns:1fr; } .gdg-recherche{ max-width:none; } .gdg-pastilles{ flex-wrap:nowrap; overflow-x:auto; margin-left:-4px; margin-right:-4px; padding:2px 4px 8px; } }
   .cdc-phrase{ margin-top:12px; padding:9px 12px; border-radius:10px; background:#fff6ea; border:1px solid #f0d09a; color:#7a4b00; font-size:13.5px; font-weight:600; line-height:1.45; }
   .cdc-part{ white-space:nowrap; min-width:150px; }
   .cdc-part > span:last-child{ display:inline-block; min-width:40px; text-align:right; font-variant-numeric:tabular-nums; font-size:12.5px; color:#5b6473; }
@@ -643,6 +675,22 @@
   html[data-theme="dark"] .icon-btn.danger{ background:#3A1A17; color:#FF9D93; }
   html[data-theme="dark"] .bul-barre{ background:#141F2E; border-color:#2A3849; }
   html[data-theme="dark"] .cdd-table td{ border-bottom-color:#2A3849; }
+  html[data-theme="dark"] .gdg-recherche, html[data-theme="dark"] .gdg-pastille{ background:#16202E; border-color:#33445c; color:#E6ECF3; }
+  html[data-theme="dark"] .gdg-pastille span{ background:#243247; color:#C9D3DF; }
+  html[data-theme="dark"] .gdg-pastille--active{ background:#0F766E; border-color:#0F766E; color:#fff; }
+  html[data-theme="dark"] .gdg-groupe-titre{ color:#AEBBCB; }
+  html[data-theme="dark"] .gdg-groupe-titre span{ background:#1d3a3a; color:#7FE0D2; }
+  html[data-theme="dark"] .gdg-fiche{ background:#1B2636; border-color:#2A3A50; box-shadow:none; }
+  html[data-theme="dark"] .gdg-fiche--pour-vous{ border-color:#7A4A1A; }
+  html[data-theme="dark"] .gdg-fiche-tete h3{ color:#7FE0D2; }
+  html[data-theme="dark"] .gdg-marque{ background:#243247; color:#C9D3DF; }
+  html[data-theme="dark"] .gdg-marque--version{ background:#1B2A40; color:#9EC0E6; }
+  html[data-theme="dark"] .gdg-bref, html[data-theme="dark"] .gdg-etapes{ color:#E6ECF3; }
+  html[data-theme="dark"] .gdg-ou{ background:#16202E; color:#C9D3DF; }
+  html[data-theme="dark"] .gdg-ou span, html[data-theme="dark"] .gdg-etapes li::marker, html[data-theme="dark"] .gdg-lien{ color:#7FE0D2; }
+  html[data-theme="dark"] .gdg-savoir{ color:#AEBBCB; border-left-color:#33445c; }
+  html[data-theme="dark"] .gdg-pour-vous{ background:#2E2116; border-color:#7A4A1A; color:#F0C98A; }
+  html[data-theme="dark"] .gdg-vide{ border-color:#33445c; color:#AEBBCB; }
   html[data-theme="dark"] .cdc-phrase{ background:#2E2116; border-color:#7A4A1A; color:#F0C98A; }
   html[data-theme="dark"] .cdc-barre{ background:#243247; }
   html[data-theme="dark"] .cdc-barre > span{ background:#F28B55; }
@@ -733,6 +781,8 @@
     <div class="tab" id="tab-paie" data-tab="paie" onclick="switchTab('paie')">👥 Paie</div>
     <div class="tab" id="tab-journal" data-tab="journal" onclick="switchTab('journal')" style="display:none;">📜 Historique</div>
     <div class="tab" id="tab-site" data-tab="site" onclick="switchTab('site')" style="display:none;">🌐 Site</div>
+    <!-- Le guide du gérant (20/09/2026) : une fiche par fonctionnalité livrée. Administrateur seul. -->
+    <div class="tab" id="tab-guide" data-tab="guide" onclick="switchTab('guide')" style="display:none;">📘 Guide</div>
   </div>
   </div>
 
@@ -1514,6 +1564,24 @@
     </div>
   </div>
 
+  <!-- ============ LE GUIDE DU GÉRANT (admin uniquement) — 20/09/2026 ============
+       Celtis : « un résumé qui m'explique exactement chaque fonctionnalité, bref, clair, concis,
+       pour que je puisse les comprendre et les utiliser ». Contenu : app/guide-du-gerant.json ;
+       écran : app/guide-du-gerant.js. Ne lit rien en base, n'écrit rien. -->
+  <div class="section" id="sec-guide">
+    <div class="card gdg-tete">
+      <div class="gdg-tete-haut">
+        <div>
+          <h2 style="margin:0;">📘 Le guide du gérant</h2>
+          <div class="hint" id="gdg-sous" style="margin:4px 0 0;">Une fiche par fonctionnalité : ce que c'est, où la trouver, comment s'en servir.</div>
+        </div>
+        <input type="search" id="gdg-recherche" class="gdg-recherche" placeholder="Chercher : étiquette, WhatsApp, sauvegarde…" aria-label="Chercher dans le guide" autocomplete="off">
+      </div>
+      <div class="gdg-pastilles" id="gdg-pastilles" role="group" aria-label="Filtrer le guide"></div>
+    </div>
+    <div id="gdg-corps"></div>
+  </div>
+
   <!-- ============ LE SITE PUBLIC : SES TEXTES (admin uniquement) — 16/09/2026 ============
        L'ancien CMS (admin/) permettait d'éditer ces textes ; il est remplacé par cet onglet.
        Chaque section est repliée ; les listes s'ajoutent, se retirent, se réordonnent ;
@@ -1678,34 +1746,35 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260920boutiques2"></script>
-<script src="lib/bibliotheques.js?v=20260920boutiques2"></script>
-<script src="lib/retours.js?v=20260920boutiques2"></script>
-<script src="lib/reclamations.js?v=20260920boutiques2"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920boutiques2"></script>
-<script src="lib/argent.js?v=20260920boutiques2"></script>
-<script src="lib/releve-cliente.js?v=20260920boutiques2"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920boutiques2"></script>
-<script src="lib/briques-argent.js?v=20260920boutiques2"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920boutiques2"></script>
-<script src="lib/annonce-de-remise.js?v=20260920boutiques2"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920boutiques2"></script>
-<script src="lib/primes.js?v=20260920boutiques2"></script>
-<script src="lib/doublons.js?v=20260920boutiques2"></script>
-<script src="config.js?v=20260920boutiques2"></script>
-<script src="biometric-lock.js?v=20260920boutiques2"></script>
-<script src="clt-select-recherche.js?v=20260920boutiques2"></script>
-<script src="site-editeur.js?v=20260920boutiques2"></script>
+<script src="clt-common.js?v=20260920guide"></script>
+<script src="lib/bibliotheques.js?v=20260920guide"></script>
+<script src="lib/retours.js?v=20260920guide"></script>
+<script src="lib/reclamations.js?v=20260920guide"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920guide"></script>
+<script src="lib/argent.js?v=20260920guide"></script>
+<script src="lib/releve-cliente.js?v=20260920guide"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920guide"></script>
+<script src="lib/briques-argent.js?v=20260920guide"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920guide"></script>
+<script src="lib/annonce-de-remise.js?v=20260920guide"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920guide"></script>
+<script src="lib/primes.js?v=20260920guide"></script>
+<script src="lib/doublons.js?v=20260920guide"></script>
+<script src="config.js?v=20260920guide"></script>
+<script src="biometric-lock.js?v=20260920guide"></script>
+<script src="clt-select-recherche.js?v=20260920guide"></script>
+<script src="site-editeur.js?v=20260920guide"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260920boutiques2"></script>
-<script src="causes-des-echecs.js?v=20260920boutiques2"></script>
-<script src="analyse-profonde.js?v=20260920boutiques2"></script>
-<script src="ce-qui-a-change.js?v=20260920boutiques2"></script>
-<script src="les-questions.js?v=20260920boutiques2"></script>
-<script src="console-du-dirigeant.js?v=20260920boutiques2"></script>
-<script src="gestion.js?v=20260920boutiques2"></script>
+<script src="bilan-de-la-semaine.js?v=20260920guide"></script>
+<script src="causes-des-echecs.js?v=20260920guide"></script>
+<script src="analyse-profonde.js?v=20260920guide"></script>
+<script src="ce-qui-a-change.js?v=20260920guide"></script>
+<script src="les-questions.js?v=20260920guide"></script>
+<script src="console-du-dirigeant.js?v=20260920guide"></script>
+<script src="gestion.js?v=20260920guide"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="gestion-barre-laterale.js?v=20260920boutiques2"></script>
+<script src="guide-du-gerant.js?v=20260920guide"></script>
+<script src="gestion-barre-laterale.js?v=20260920guide"></script>
 </body>
 </html>
