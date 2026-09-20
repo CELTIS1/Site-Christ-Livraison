@@ -159,6 +159,15 @@ titre("Le bureau : d'office la date du jour, un bilan du jour exact, un champ é
   verifier('le champ « colis annoncés » tient sur la ligne de la note, sans paragraphe', /class="field-row prog-note-et-nombre"/.test(equipe) && /id="prog-nb-colis"[^>]*placeholder="—"/.test(equipe) && !/quand vous reposez la tournée avec le vrai nombre/.test(equipe));
 }
 
+titre("Le livreur voit ce qui a quitté sa journée (20/09/2026 — le cas Cédric)");
+{
+  const livreur = fs.readFileSync(path.join(APP, 'livreur.html'), 'utf8');
+  verifier('les colis reçus ce jour-là mais reportés ailleurs sont comptés à part', /const reportesDeCeJour = searchMes \? \[\] : mine\.filter\(c => colisReporte\(c\) && dayKey\(c\.created_at\) === jourMes && jourDuColis\(c\) !== jourMes\);/.test(livreur));
+  verifier('une ligne le dit au-dessus de la liste, avec le jour et « Voir »', /function reportesDeCeJourHTML/.test(livreur) && /plus dans le point de ce soir/.test(livreur) && /data-voir-reportes=/.test(livreur));
+  verifier('« Voir » place l\'écran sur la journée du report', /poserLeJourDeLEcran\(b\.dataset\.voirReportes\)/.test(livreur));
+  verifier('la ligne est posée dans les deux rendus de la liste', (livreur.match(/\+ reportesDeCeJourHTML\(reportesDeCeJour, jourMes\)/g) || []).length === 2);
+}
+
 titre("L'espace cliente aussi : le jour d'office, simple à comprendre (07/09/2026)");
 {
   const fournisseur = fs.readFileSync(path.join(APP, 'fournisseur.html'), 'utf8');

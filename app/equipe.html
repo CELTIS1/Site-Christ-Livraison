@@ -22,10 +22,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920boutiques">
+<link rel="stylesheet" href="style.css?v=20260920onglet">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920boutiques"></script>
-<script src="splash.js?v=20260920boutiques"></script>
+<script src="theme.js?v=20260920onglet"></script>
+<script src="splash.js?v=20260920onglet"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -553,15 +553,15 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
      entre les mains de la cliente, quel que soit son jour, rangé par niveau, avec le détenteur
      nommé, les jours écoulés et les gestes du bureau. Rempli par equipe/12-les-retours.js ;
      visible sur l'onglet Colis seulement, comme « L'essentiel ». -->
-<details class="card rt-carte" id="section-retours" open>
-<summary class="ess-entete rt-entete">
+<div class="card rt-carte" id="section-retours">
+<div class="ess-entete rt-entete">
 <h2 class="panel-subtitle">↩️ Retours et non livrés — où est chaque colis</h2>
 <span class="rt-resume" id="retours-resume">Chargement…</span>
-</summary>
+</div>
 <div class="rt-aide"><span>Un colis revenu passe de main en main : <b>chez le livreur</b> → <b>au bureau</b> (s'il le dépose) → <b>rendu à la cliente</b> → <b>confirmé par elle</b>. Règle : rendu le lendemain, deux jours au plus tard. Chaque passage est daté et signé ; « Historique » le montre.</span>
 <button type="button" class="btn btn-sm btn-outline" id="retours-rafraichir" title="Relire la base">⟳ Actualiser</button></div>
 <div class="rt-liste" id="retours-liste"><div class="rt-vide">Chargement…</div></div>
-</details>
+</div>
 
 <!-- Barre d'onglets (grands écrans). Les panneaux sont remplis dynamiquement au chargement
      en déplaçant les sections existantes (voir relocateEquipeSections()). -->
@@ -589,6 +589,10 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
      Rien n'est retiré : les deux tableaux sont là, entiers, derrière un sélecteur. -->
 <button type="button" class="clt-toptab" data-eqtab="personnes">👤 Personnes</button>
 <button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
+<!-- LES RETOURS ONT LEUR ONGLET (20/09/2026, Celtis : « dans un onglet, ce serait plus facile à
+     gérer plutôt que là où c'est : c'est très encombrant et long »). Sur téléphone, il est
+     derrière « Plus », comme Suivi et Comptes. -->
+<button type="button" class="clt-toptab" data-eqtab="retours">↩️ Retours</button>
 <button type="button" class="clt-toptab" data-eqtab="comptes">👥 Comptes</button>
 <button type="button" class="clt-toptab hidden" id="eqtab-btn-express" data-eqtab="express">🏍️ Express</button>
 </div>
@@ -606,6 +610,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
   </div>
 </div>
 <div class="eq-tabpanel hidden" id="eqpanel-finances"></div>
+<div class="eq-tabpanel hidden" id="eqpanel-retours"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-comptes"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-express"></div>
 
@@ -1673,36 +1678,36 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920boutiques"></script>
-<script src="lib/bibliotheques.js?v=20260920boutiques"></script>
-<script src="lib/retours.js?v=20260920boutiques"></script>
-<script src="lib/reclamations.js?v=20260920boutiques"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920boutiques"></script>
-<script src="lib/argent.js?v=20260920boutiques"></script>
-<script src="lib/releve-cliente.js?v=20260920boutiques"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920boutiques"></script>
-<script src="lib/briques-argent.js?v=20260920boutiques"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920boutiques"></script>
-<script src="lib/annonce-de-remise.js?v=20260920boutiques"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920boutiques"></script>
-<script src="lib/primes.js?v=20260920boutiques"></script>
-<script src="lib/doublons.js?v=20260920boutiques"></script>
-<script src="config.js?v=20260920boutiques"></script>
-<script src="clients-dashboard.js?v=20260920boutiques"></script>
-<script src="livreurs-dashboard.js?v=20260920boutiques"></script>
-<script src="point-du-jour.js?v=20260920boutiques"></script>
-<script src="biometric-lock.js?v=20260920boutiques"></script>
-<script src="clt-select-recherche.js?v=20260920boutiques"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260920boutiques"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260920boutiques"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260920boutiques"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260920boutiques"></script>
-<script src="equipe/04-actions.js?v=20260920boutiques"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260920boutiques"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260920boutiques"></script>
-<script src="equipe/07-rapports.js?v=20260920boutiques"></script>
-<script src="equipe/08-son-ecran.js?v=20260920boutiques"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260920boutiques"></script>
+<script src="clt-common.js?v=20260920onglet"></script>
+<script src="lib/bibliotheques.js?v=20260920onglet"></script>
+<script src="lib/retours.js?v=20260920onglet"></script>
+<script src="lib/reclamations.js?v=20260920onglet"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920onglet"></script>
+<script src="lib/argent.js?v=20260920onglet"></script>
+<script src="lib/releve-cliente.js?v=20260920onglet"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920onglet"></script>
+<script src="lib/briques-argent.js?v=20260920onglet"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920onglet"></script>
+<script src="lib/annonce-de-remise.js?v=20260920onglet"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920onglet"></script>
+<script src="lib/primes.js?v=20260920onglet"></script>
+<script src="lib/doublons.js?v=20260920onglet"></script>
+<script src="config.js?v=20260920onglet"></script>
+<script src="clients-dashboard.js?v=20260920onglet"></script>
+<script src="livreurs-dashboard.js?v=20260920onglet"></script>
+<script src="point-du-jour.js?v=20260920onglet"></script>
+<script src="biometric-lock.js?v=20260920onglet"></script>
+<script src="clt-select-recherche.js?v=20260920onglet"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260920onglet"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260920onglet"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260920onglet"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260920onglet"></script>
+<script src="equipe/04-actions.js?v=20260920onglet"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260920onglet"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260920onglet"></script>
+<script src="equipe/07-rapports.js?v=20260920onglet"></script>
+<script src="equipe/08-son-ecran.js?v=20260920onglet"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260920onglet"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1728,6 +1733,10 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.2c0-1.1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.9c0 2.6-5 1.4-5 3.9 0 1.2 1.1 1.9 2.5 1.9s2.5-.6 2.5-1.7"/></svg>
     Finances
   </button>
+  <button type="button" class="nav nav--dans-plus" data-nav="retours">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>
+    Retours
+  </button>
   <button type="button" class="nav nav--dans-plus" data-nav="comptes">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.1 2.9-5.3 6.5-5.3s6.5 2.2 6.5 5.3"/><path d="M16.5 5.2a3 3 0 0 1 0 5.6M18 14.9c2.2.6 3.8 2.3 3.8 4.6"/></svg>
     Comptes
@@ -1745,9 +1754,9 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260920boutiques"></script>
-<script src="equipe/11-chercher-partout.js?v=20260920boutiques"></script>
-<script src="equipe/12-les-retours.js?v=20260920boutiques"></script>
-<script src="equipe/13-les-boutiques.js?v=20260920boutiques"></script>
+<script src="equipe/10-onglets.js?v=20260920onglet"></script>
+<script src="equipe/11-chercher-partout.js?v=20260920onglet"></script>
+<script src="equipe/12-les-retours.js?v=20260920onglet"></script>
+<script src="equipe/13-les-boutiques.js?v=20260920onglet"></script>
 </body>
 </html>

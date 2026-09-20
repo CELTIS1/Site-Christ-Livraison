@@ -16,7 +16,7 @@
      que partout ailleurs on lit AUJOURD'HUI, et mélangés les deux se confondent : on programme
      en croyant modifier un colis du jour. Le remettre dedans reviendrait à racheter un défaut
      déjà payé. Le reste attend le compteur d'usage : en octobre on retirera sur preuve. */
-  const EQ_TABS = ['colis','programmation','suivi','personnes','finances','comptes','express'];
+  const EQ_TABS = ['colis','programmation','suivi','personnes','finances','retours','comptes','express'];
 
   /* Les anciens noms continuent de fonctionner : la barre du bas, un lien ailleurs dans le code,
      et surtout le dernier onglet gardé en mémoire sur le téléphone de chacun. Sans cette table,
@@ -39,10 +39,9 @@
     // Et la salutation avec elle (17/09/2026) : on ne dit bonjour qu'une fois, sur l'écran
     // d'accueil. Les autres onglets vont droit au travail.
     document.getElementById('eq-salutation')?.classList.toggle('hidden', key !== 'colis');
-    // Les retours (20/09/2026) : sur l'accueil aussi, relus à chaque retour sur l'onglet — un
-    // geste fait depuis un autre poste ou par un livreur doit apparaître sans recharger.
-    document.getElementById('section-retours')?.classList.toggle('hidden', key !== 'colis');
-    if (key === 'colis' && typeof chargerRetours === 'function') chargerRetours();
+    // Les retours (20/09/2026) ont leur onglet, relu à chaque ouverture — un geste fait depuis
+    // un autre poste ou par un livreur doit apparaître sans recharger.
+    if (key === 'retours' && typeof chargerRetours === 'function') chargerRetours();
     document.querySelectorAll('#clt-toptabs .clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.eqtab === key));
     document.querySelectorAll('#clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.nav === key));
     majBoutonPlus(key);
@@ -154,6 +153,9 @@
     //             + (admin) équipe & tous les comptes
     // 05/09/2026 — Ce qui attend une décision (validations, réinitialisations) passe en tête ;
     // les formulaires de création, repliés, viennent ensuite.
+    // ↩️ Retours : l'écran « où est chaque colis » (20/09/2026)
+    put('eqpanel-retours', byId('section-retours'));
+
     put('eqpanel-comptes', byId('section-pending'));
     put('eqpanel-comptes', byId('section-reset'));
     put('eqpanel-comptes', byId('section-client'));

@@ -1093,8 +1093,7 @@ switch (cle) {
   // 20/09/2026 : les retours ont leur écran (section-retours), avec le détenteur nommé et les
   // gestes du bureau. Les pastilles y mènent au lieu d'ouvrir une simple liste de colis.
   case 'retours': case 'retours-tard': {
-    const carte = document.getElementById('section-retours');
-    if (carte) { carte.open = true; carte.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (typeof chargerRetours === 'function') chargerRetours(); }
+    if (typeof showEquipeTab === 'function') { showEquipeTab('retours'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
     else listeColis('retour', '', cle === 'retours' ? L.retours : L.retoursTard);
     break;
   }

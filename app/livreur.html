@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920boutiques">
+<link rel="stylesheet" href="style.css?v=20260920onglet">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920boutiques"></script>
-<script src="splash.js?v=20260920boutiques"></script>
+<script src="theme.js?v=20260920onglet"></script>
+<script src="splash.js?v=20260920onglet"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -914,22 +914,22 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920boutiques"></script>
-<script src="lib/bibliotheques.js?v=20260920boutiques"></script>
-<script src="lib/retours.js?v=20260920boutiques"></script>
-<script src="lib/reclamations.js?v=20260920boutiques"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920boutiques"></script>
-<script src="lib/argent.js?v=20260920boutiques"></script>
-<script src="lib/releve-cliente.js?v=20260920boutiques"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920boutiques"></script>
-<script src="lib/briques-argent.js?v=20260920boutiques"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920boutiques"></script>
-<script src="lib/annonce-de-remise.js?v=20260920boutiques"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920boutiques"></script>
-<script src="lib/primes.js?v=20260920boutiques"></script>
-<script src="lib/doublons.js?v=20260920boutiques"></script>
-<script src="config.js?v=20260920boutiques"></script>
-<script src="biometric-lock.js?v=20260920boutiques"></script>
+<script src="clt-common.js?v=20260920onglet"></script>
+<script src="lib/bibliotheques.js?v=20260920onglet"></script>
+<script src="lib/retours.js?v=20260920onglet"></script>
+<script src="lib/reclamations.js?v=20260920onglet"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920onglet"></script>
+<script src="lib/argent.js?v=20260920onglet"></script>
+<script src="lib/releve-cliente.js?v=20260920onglet"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920onglet"></script>
+<script src="lib/briques-argent.js?v=20260920onglet"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920onglet"></script>
+<script src="lib/annonce-de-remise.js?v=20260920onglet"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920onglet"></script>
+<script src="lib/primes.js?v=20260920onglet"></script>
+<script src="lib/doublons.js?v=20260920onglet"></script>
+<script src="config.js?v=20260920onglet"></script>
+<script src="biometric-lock.js?v=20260920onglet"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2576,6 +2576,18 @@
      dans le titre ; ouverts, ce sont les mêmes cartes, avec les mêmes gestes. Le repli se
      souvient de son état le temps de la page, pour ne pas se refermer à chaque redessin. */
   let restesOuverts = false;
+  function reportesDeCeJourHTML(reportes, jour){
+    if (!reportes || !reportes.length) return '';
+    const parJour = {};
+    reportes.forEach(c => { const j = jourDuColis(c); parJour[j] = (parJour[j] || 0) + 1; });
+    const jours = Object.keys(parJour).sort();
+    const enClair = (j) => j === todayLocalISODate() ? "aujourd'hui" : new Date(j + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const n = reportes.length;
+    return `<div class="mes-reportes">
+      <span>⏭️ ${n} colis de cette journée ${n > 1 ? 'ont été reportés' : 'a été reporté'} ${jours.length === 1 ? 'au ' + escapeHTML(enClair(jours[0])) : 'à un autre jour'} : ${n > 1 ? 'ils ne comptent' : 'il ne compte'} plus dans le point de ce soir, ${n > 1 ? 'ils sont' : 'il est'} dans ${jours.length === 1 ? 'cette journée-là' : 'ces journées-là'}.</span>
+      ${jours.map(j => `<button type="button" class="btn btn-sm btn-outline" data-voir-reportes="${escapeHTML(j)}">Voir ${parJour[j] > 1 ? 'les ' + parJour[j] + ' colis' : 'le colis'} du ${escapeHTML(enClair(j))}</button>`).join('')}
+    </div>`;
+  }
   function restesEnRouteHTML(restes){
     if (!restes || !restes.length) return '';
     const groupes = groupColisByDayAndClient(restes, c => c.fournisseur_id, c => fournisseurLabel(c.fournisseur_id));
@@ -2585,6 +2597,17 @@
       ${renderGroupedColisHTML(groupes, mesColisRowHTML)}
     </details>`;
   }
+  /* « Voir les colis du … » (20/09/2026) : on se place sur la journée du report. */
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('#mes-colis-list [data-voir-reportes]');
+    if (!b) return;
+    e.preventDefault();
+    poserLeJourDeLEcran(b.dataset.voirReportes);
+    if (typeof redessinerFiltresMes === 'function') redessinerFiltresMes();
+    renderMesColis();
+    const liste = document.getElementById('mes-colis-list');
+    if (liste) liste.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   function brancherRestesEnRoute(list){
     const d = list.querySelector('.restes-en-route');
     if (d) d.addEventListener('toggle', () => { restesOuverts = d.open; });
@@ -2620,6 +2643,12 @@
     // Les restes n'ont de sens qu'AUJOURD'HUI : en revenant sur un jour passé, on regarde ce
     // jour-là et rien d'autre.
     const restesEnRoute = (activeFilterMes === FILTRE_A_FAIRE && !searchMes && jourMes === todayLocalISODate()) ? colisRestesEnRoute(mine, jourMes) : [];
+    /* LES COLIS DE CETTE JOURNÉE QUI ONT ÉTÉ REPORTÉS (20/09/2026). Celtis : « 15 colis assignés
+       le matin, le soir il n'en retrouve que 10 ou 11 ; on cherche, on ne retrouve pas ». Les
+       colis manquants avaient été REPORTÉS à demain (par lui ou par le bureau) : depuis le
+       09/09, un colis reporté appartient à son jour de report et quitte celui-ci — c'est voulu,
+       mais rien ne le disait ici. Le bureau a eu sa ligne le 18/09 ; le livreur a la sienne. */
+    const reportesDeCeJour = searchMes ? [] : mine.filter(c => colisReporte(c) && dayKey(c.created_at) === jourMes && jourDuColis(c) !== jourMes);
     let filtered = activeFilterMes === 'tous' ? mine
       : activeFilterMes === FILTRE_A_FAIRE ? colisDuJour(mine, jourMes)
       : mine.filter(c => c.statut === activeFilterMes);
@@ -2636,7 +2665,8 @@
         : activeFilterMes === FILTRE_A_FAIRE && !searchMes
           ? `<div class="empty-state">Rien pour aujourd'hui 👍 — choisissez une date pour revoir un autre jour.</div>`
           : `<div class="empty-state">Aucun colis assigné${activeFilterMes !== 'tous' || searchMes ? ' pour ces critères' : ''}.</div>`)
-        + restesEnRouteHTML(restesEnRoute)
+        + reportesDeCeJourHTML(reportesDeCeJour, jourMes)
+      + restesEnRouteHTML(restesEnRoute)
         + (lotMesActif ? barreLotHTML(0, 0, boutonsLotMes(), '') : ''))) return;
       brancherRestesEnRoute(list);
       if (lotMesActif) brancherBarreLotMes(list, []);
@@ -2664,6 +2694,7 @@
     // redessinait donc son écran, en pleine saisie de montant. (25/08/2026)
     if (!cltPoserHTML(list, renderGroupedColisHTML(trMes.groups, mesColisRowHTML)
       + trancheColisPiedHTML(trMes.affiches, trMes.total)
+      + reportesDeCeJourHTML(reportesDeCeJour, jourMes)
       + restesEnRouteHTML(restesEnRoute)
       + (lotMesActif ? barreLotHTML(lotMesIds.size, filtered.length, boutonsLotMes(), '') : ''))) return;
     brancherTrancheColis(list, () => { trancheMes += COLIS_TRANCHE; renderMesColis(); });

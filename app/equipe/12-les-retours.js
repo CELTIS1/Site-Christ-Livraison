@@ -19,7 +19,8 @@
    déplie à la demande.
 
    Il lit la base lui-même (pas allColis, qui ne garde qu'une page de la liste du jour), à
-   l'ouverture de l'onglet Colis et après chaque geste. */
+   l'ouverture de SON onglet « Retours » (derrière « Plus » sur téléphone, décision de Celtis du
+   20/09 : « dans un onglet, ce serait plus facile à gérer ») et après chaque geste. */
 
 let rtColis = [];
 let rtChargement = null;
@@ -104,6 +105,14 @@ function renderRetours(enErreur){
       + puce(nb.non_livre, nb.non_livre > 1 ? 'non livrés' : 'non livré', 'non_livre')
     : '<span class="rt-puce rt-puce--ok">Aucun colis en attente : tout est entre les mains des clientes.</span>';
   carte.classList.toggle('rt-carte--vide', !liste.length);
+  // Le chiffre sur l'onglet : ce qui brûle (litiges + retards), pour qu'on n'ait pas à l'ouvrir pour savoir.
+  const urgent = nb.litige + nb.retard;
+  document.querySelectorAll('#clt-toptabs [data-eqtab="retours"], #clt-bottomnav [data-nav="retours"], #bottomnav-feuille [data-nav="retours"]').forEach(b => {
+    let badge = b.querySelector('.rt-onglet-badge');
+    if (!urgent) { if (badge) badge.remove(); return; }
+    if (!badge) { badge = document.createElement('span'); badge.className = 'rt-onglet-badge'; b.appendChild(badge); }
+    badge.textContent = String(urgent);
+  });
   if (!liste.length) { corps.innerHTML = ''; return; }
 
   const moi = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : null;

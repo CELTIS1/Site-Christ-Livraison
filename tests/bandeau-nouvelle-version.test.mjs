@@ -810,10 +810,17 @@ verifier(
    ouvre au propriétaire la lecture — et rien que la lecture — des colis et du relevé de ses
    boutiques, et son espace gagne « Mes boutiques » en tête de Récap : total du jour, une tuile par
    boutique, le point du jour de chacune en lecture seule. Migration 2026-09-20-les-boutiques-
-   supervisees.sql. Étiquette 20260920boutiques. */
+   supervisees.sql. Étiquette 20260920boutiques.
+   v177, le 20/09/2026 — Celtis : « le travail pour les retours et non livrés, là où tu l'as mis,
+   c'est pas là qu'il faut qu'il soit : dans un onglet, rangé derrière les trois points » ; et
+   le cas Cédric : « 15 colis assignés le matin, le soir il n'en retrouve que 10 ou 11 » — les
+   colis manquants avaient été reportés à demain, ce que l'écran du livreur ne disait pas. Les
+   retours ont leur onglet « Retours » (derrière « Plus » sur téléphone) avec le chiffre de ce qui
+   brûle ; le livreur lit « N colis de cette journée ont été reportés au … — Voir » au-dessus de
+   sa liste. Aucune migration. Étiquette 20260920onglet. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v176'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v177'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

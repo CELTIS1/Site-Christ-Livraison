@@ -60,10 +60,11 @@ console.log('\n3. La barre du bas de l\'équipe (9.5)');
    « Personnes » (Celtis : « moins d'endroits à parcourir pour l'équipe et mieux ils
    maîtriseront »). La place libérée dans la barre du bas revient à « Personnes », qui remonte
    dans les quatre du quotidien ; seuls Suivi, Comptes et Express restent derrière « Plus ». */
+// 20/09/2026 : « Retours » a rejoint la feuille « Plus » (décision de Celtis) : cinq relégués.
 verifier('quatre onglets restent dans la barre, les autres passent derrière « Plus »',
-  (equipe.match(/nav--dans-plus/g) || []).length === 4, (equipe.match(/nav--dans-plus/g) || []).length);
-verifier('les relégués sont Suivi, Comptes et Express',
-  ['suivi', 'comptes', 'express'].every(k => new RegExp('nav--dans-plus[^>]*data-nav="' + k + '"').test(equipe)));
+  (equipe.match(/nav--dans-plus/g) || []).length === 5, (equipe.match(/nav--dans-plus/g) || []).length);
+verifier('les relégués sont Suivi, Retours, Comptes et Express',
+  ['suivi', 'retours', 'comptes', 'express'].every(k => new RegExp('nav--dans-plus[^>]*data-nav="' + k + '"').test(equipe)));
 verifier('et les quatre du quotidien sont Colis, Tournées, Personnes, Finances',
   ['colis', 'programmation', 'personnes', 'finances'].every(k =>
     new RegExp('class="nav(?! nav--dans-plus)[^"]*"[^>]*data-nav="' + k + '"').test(equipe)),

@@ -117,15 +117,16 @@ verifier('un non livré reste dans sa journée tant qu\'il n\'a pas décidé', /
 console.log('\n7. Le bureau : l\'écran des retours');
 const eq = lire('app/equipe/12-les-retours.js');
 const eqHtml = lire('app/equipe.html');
-verifier('une carte « où est chaque colis », chargée par son propre fichier', /id="section-retours"/.test(eqHtml) && /equipe\/12-les-retours\.js\?v=/.test(eqHtml));
+verifier('un onglet « Retours » à part (derrière « Plus » sur téléphone), chargé par son propre fichier', /data-eqtab="retours"/.test(eqHtml) && /nav nav--dans-plus" data-nav="retours"/.test(eqHtml) && /id="eqpanel-retours"/.test(eqHtml) && /put\('eqpanel-retours', byId\('section-retours'\)\)/.test(lire('app/equipe/10-onglets.js')) && /equipe\/12-les-retours\.js\?v=/.test(eqHtml));
 verifier('elle lit la base elle-même : retours non confirmés ET non livrés, quel que soit le jour', /\.in\('statut', \['retour', 'non_livre'\]\)\.is\('retour_confirme_at', null\)/.test(eq));
 verifier('et se replie sur les anciennes colonnes si la base n\'est pas migrée', /does not exist/.test(eq) && /retour_rendu_at, retour_rendu_par'\)/.test(eq));
 verifier('ce qui brûle d\'abord : litige, retard, livreur, bureau, à confirmer, non livré', /if \(n\.cle === 'litige'\) return 0;/.test(eq) && /if \(retourEnRetard\(c\)\) return 1;/.test(eq));
 verifier('le détenteur est nommé', /rtNomLivreur\(c\.retour_detenteur_livreur_id \|\| c\.livreur_id\)/.test(eq));
 verifier('les gestes viennent de retourGestes, avec un choix de livreur pour « confier »', /retourGestes\(c, 'equipe', moi\)/.test(eq) && /data-rt-livreur/.test(eq) && /retour_detenteur: 'livreur', retour_detenteur_livreur_id: sel\.value/.test(eq));
 verifier('l\'histoire se déplie et lit retours_mouvements', /from\('retours_mouvements'\)/.test(eq) && /retourHistoriqueHTML\(rtHistoires\[c\.id\]/.test(eq));
-verifier('les pastilles de l\'essentiel mènent à cet écran', /case 'retours': case 'retours-tard':/.test(lire('app/equipe/03-file-hors-reseau.js')));
-verifier('relu à chaque retour sur l\'onglet Colis, et après chaque geste', /if \(key === 'colis' && typeof chargerRetours === 'function'\) chargerRetours\(\);/.test(lire('app/equipe/10-onglets.js')) && /await chargerRetours\(\);/.test(eq));
+verifier('les pastilles de l\'essentiel mènent à cet onglet', /case 'retours': case 'retours-tard':[\s\S]{0,80}showEquipeTab\('retours'\)/.test(lire('app/equipe/03-file-hors-reseau.js')));
+verifier('relu à chaque ouverture de l\'onglet, et après chaque geste', /if \(key === 'retours' && typeof chargerRetours === 'function'\) chargerRetours\(\);/.test(lire('app/equipe/10-onglets.js')) && /await chargerRetours\(\);/.test(eq));
+verifier('l\'onglet porte le chiffre de ce qui brûle (litiges + retards)', /rt-onglet-badge/.test(eq) && /const urgent = nb\.litige \+ nb\.retard;/.test(eq));
 
 console.log('\n8. La cliente a le dernier mot');
 const f = lire('app/fournisseur.html');

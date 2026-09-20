@@ -3377,3 +3377,12 @@ html[data-theme="dark"] .mb-boutique{ background:#1a2230; }
 .mb-colis-montant{ font-weight:700; white-space:nowrap; }
 .mb-colis-desc{ color:var(--muted); }
 .mb-colis-retour{ color:#5b2a72; font-weight:600; }
+/* Les colis de cette journée reportés à un autre jour, chez le livreur (20/09/2026). */
+.mes-reportes{ display:flex; flex-direction:column; gap:8px; margin:0 0 10px; padding:10px 12px; border-left:3px solid #d4a106; border-radius:10px; background:#FFF8E1; font-size:13px; font-weight:600; color:#6b4f00; line-height:1.45; }
+.mes-reportes .btn{ align-self:flex-start; }
+html[data-theme="dark"] .mes-reportes{ background:#3a3010; color:#f3d98a; }
+/* Le chiffre sur l'onglet Retours : litiges + retards (20/09/2026). */
+.rt-onglet-badge{ display:inline-block; min-width:18px; height:18px; line-height:18px; padding:0 5px; margin-left:6px; border-radius:999px; background:#c0392b; color:#fff; font-size:11px; font-weight:800; text-align:center; vertical-align:middle; }
+#clt-bottomnav .nav, #bottomnav-feuille button{ position:relative; }
+#clt-bottomnav .rt-onglet-badge{ position:absolute; top:4px; right:10px; margin:0; }
+#bottomnav-feuille .rt-onglet-badge{ margin-left:8px; }
