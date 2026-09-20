@@ -865,6 +865,7 @@ async function deleteDocument(id, domaine){
  * TABLEAU DE BORD
  * ==========================================================================*/
 async function renderDashboard(){
+  chargerAFaire();
   const annee = parseInt(document.getElementById('dash-year').value);
   const mois  = parseInt(document.getElementById('dash-month').value);
   const debut = periodeStr(annee, mois);
@@ -4534,4 +4535,73 @@ async function renderDashboardPrimes(annee, mois){
       <div class="kpi ${aQualifier ? 'neg' : ''}" ${aller}><div class="kpi-label">Échecs à qualifier</div><div class="kpi-value">${aQualifier || 0}</div><div class="kpi-sub">non qualifié à la fin du mois = imputable</div></div>
       <div class="kpi" ${aller}><div class="kpi-label">Primes du mois</div><div class="kpi-value">${fmtF(totalPrimes)}</div><div class="kpi-sub">${decomptes.length ? (valides === decomptes.length ? 'validées' : 'brouillon') + (ldm ? ' · 🏆 ' + escapeHTML(primesNomSalarie(ldm.salarie_id)) : '') : 'pas encore calculées'}</div></div>`;
   } catch(e){ console.warn('Tuiles primes :', e); box.innerHTML = ''; }
+}
+
+
+/* ============================================================================
+   À FAIRE PAR LE GÉRANT (20/09/2026)
+   Celtis : « consigne dans mon compte Gestion tout ce que je dois faire, vérifier ou décider,
+   pour que je le consulte plus tard, plusieurs fois, avant de mettre en service ». Ce que font
+   les meilleurs (le « guide de démarrage » de Shopify, la liste de mise en service de Stripe) :
+   une liste courte, par priorité, avec pour chaque ligne le pourquoi, l'écran à ouvrir, et la
+   trace de qui a coché quand. Les lignes sont posées par les migrations au fil du travail.
+   ============================================================================ */
+const AF_GENRES = { decider: 'À décider', verifier: 'À vérifier', faire: 'À faire' };
+const AF_PRIORITES = { 1: 'Avant la mise en service', 2: 'Bientôt', 3: 'Quand vous pourrez' };
+let afLignes = [];
+async function chargerAFaire() {
+  const carte = document.getElementById('af-carte');
+  if (!carte || !ACCES.isAdmin) { if (carte) carte.classList.add('hidden'); return; }
+  const { data, error } = await supabaseClient.from('gestion_a_faire').select('*').order('priorite').order('cree_le');
+  if (error) { carte.classList.add('hidden'); return; }
+  afLignes = data || [];
+  carte.classList.remove('hidden');
+  renderAFaire();
+}
+function afLigneHTML(l) {
+  const fait = !!l.fait_le;
+  const lien = l.lien ? (l.lien === 'aide' ? `<button type="button" data-af-aide="1">❓ Voir dans l'aide</button>` : `<a href="${escapeHTML(l.lien)}">Ouvrir l'écran →</a>`) : '';
+  const quand = fait ? `Fait le ${new Date(l.fait_le).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })}` : (l.echeance ? `Échéance : ${new Date(l.echeance + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}` : `Depuis le ${new Date(l.cree_le).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })}`);
+  return `<div class="af-ligne${fait ? ' af-fait' : ''}" data-af="${l.id}">
+    <input type="checkbox" ${fait ? 'checked' : ''} aria-label="${fait ? 'Rouvrir' : 'Marquer comme fait'}">
+    <div>
+      <div class="af-titre">${escapeHTML(l.titre)}<span class="af-genre af-genre--${escapeHTML(l.genre)}">${AF_GENRES[l.genre] || l.genre}</span></div>
+      ${l.detail ? `<div class="af-detail">${escapeHTML(l.detail)}</div>` : ''}
+      <div class="af-pied"><span>${quand}</span>${lien}<button type="button" data-af-note="1">${l.note ? '✎ ' + escapeHTML(l.note) : 'Ajouter une note'}</button></div>
+    </div>
+  </div>`;
+}
+function renderAFaire() {
+  const carte = document.getElementById('af-carte');
+  const ouverts = afLignes.filter(l => !l.fait_le), faits = afLignes.filter(l => l.fait_le);
+  let html = `<div class="af-tete"><h2>📋 À faire par le gérant${ouverts.length ? `<span class="af-compte">${ouverts.length}</span>` : ''}</h2><span style="font-size:12.5px;color:var(--muted);">Ce que Claude a mis de côté pour vous : décisions, vérifications, interventions.</span></div>`;
+  if (!ouverts.length) html += '<div class="af-vide">Rien en attente. ✅</div>';
+  [1, 2, 3].forEach(p => {
+    const lignes = ouverts.filter(l => (l.priorite || 2) === p);
+    if (!lignes.length) return;
+    html += `<div class="af-groupe">${AF_PRIORITES[p]}</div>` + lignes.map(afLigneHTML).join('');
+  });
+  if (faits.length) html += `<details class="af-faits"><summary>${faits.length} fait${faits.length > 1 ? 's' : ''}</summary>${faits.map(afLigneHTML).join('')}</details>`;
+  carte.innerHTML = html;
+  carte.querySelectorAll('.af-ligne input[type=checkbox]').forEach(cb => cb.addEventListener('change', async () => {
+    const id = Number(cb.closest('.af-ligne').dataset.af);
+    const patch = cb.checked ? { fait_le: new Date().toISOString(), fait_par: PUSH_USER ? PUSH_USER.id : null } : { fait_le: null, fait_par: null };
+    const { error } = await supabaseClient.from('gestion_a_faire').update(patch).eq('id', id);
+    if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); cb.checked = !cb.checked; return; }
+    Object.assign(afLignes.find(l => l.id === id), patch);
+    renderAFaire();
+  }));
+  carte.querySelectorAll('[data-af-note]').forEach(b => b.addEventListener('click', async () => {
+    const id = Number(b.closest('.af-ligne').dataset.af);
+    const l = afLignes.find(x => x.id === id);
+    const note = typeof cltPrompt === 'function'
+      ? await cltPrompt({ title: 'Votre note', sub: l.titre, defaultValue: l.note || '', placeholder: 'Votre réponse, votre décision, un commentaire…', okLabel: 'Enregistrer', maxLength: 500 })
+      : window.prompt(l.titre, l.note || '');
+    if (note === null) return;
+    const { error } = await supabaseClient.from('gestion_a_faire').update({ note: note || null }).eq('id', id);
+    if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
+    l.note = note || null;
+    renderAFaire();
+  }));
+  carte.querySelectorAll('[data-af-aide]').forEach(b => b.addEventListener('click', () => { if (typeof cltAfficherAide === 'function') cltAfficherAide({ article: 'installer' }); }));
 }

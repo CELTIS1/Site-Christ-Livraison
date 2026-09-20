@@ -39,6 +39,27 @@
   /* Cartes chiffres (KPI) */
   /* Cartes compactes en permanence : la zone KPI reste discrète pour laisser voir le
      tableau, sans jamais changer de taille au défilement (aucun tremblement possible). */
+  /* À faire par le gérant (20/09/2026) */
+  .af-tete{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .af-tete h2{ margin:0; }
+  .af-compte{ display:inline-block; min-width:22px; padding:0 7px; border-radius:999px; background:#E26313; color:#fff; font-size:12px; font-weight:800; line-height:22px; text-align:center; margin-left:8px; }
+  .af-groupe{ font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+  .af-ligne{ display:grid; grid-template-columns:28px 1fr; gap:10px; padding:10px 0; border-top:1px solid rgba(15,118,110,0.12); }
+  .af-ligne input[type=checkbox]{ width:22px; height:22px; margin:2px 0 0; accent-color:#1a7d3c; cursor:pointer; }
+  .af-titre{ font-weight:700; color:var(--clt-teal-dark); }
+  .af-genre{ display:inline-block; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; margin-left:6px; vertical-align:middle; background:#EEF2F6; color:#5B6B7C; }
+  .af-genre--decider{ background:#FBE7D8; color:#C9550F; }
+  .af-genre--verifier{ background:#E3EEFB; color:#1B4374; }
+  .af-detail{ font-size:13.5px; color:#3a4658; margin-top:3px; line-height:1.45; }
+  .af-pied{ font-size:12.5px; color:var(--muted); margin-top:5px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .af-pied a, .af-pied button{ font:inherit; font-size:12.5px; color:var(--clt-teal-dark); background:none; border:0; padding:0; text-decoration:underline; cursor:pointer; min-height:28px; }
+  .af-fait .af-titre{ text-decoration:line-through; color:var(--muted); font-weight:600; }
+  .af-fait .af-detail{ display:none; }
+  .af-vide{ color:var(--muted); font-size:14px; padding:8px 0; }
+  details.af-faits summary{ cursor:pointer; color:var(--muted); font-size:13px; margin-top:12px; }
+  html[data-theme="dark"] .af-detail{ color:#C9D3DF; }
+  html[data-theme="dark"] .af-ligne{ border-top-color:#2A3849; }
+  html[data-theme="dark"] .af-genre{ background:#243247; color:#C9D3DF; }
   .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:16px; }
   .kpi{ background:#fff; border-radius:14px; padding:12px 15px; border:1px solid rgba(15,118,110,0.10); box-shadow:0 6px 20px rgba(11,90,84,0.06); }
   .kpi .kpi-label{ font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
@@ -540,6 +561,11 @@
          Les chiffres de gestion du mois (recette, objectif, trésorerie, masse salariale)
          restent juste en dessous, inchangés : la console dit ce qui BOUGE, eux disent où l'on
          en est. -->
+    <!-- À FAIRE PAR LE GÉRANT (20/09/2026) — Celtis : « consigne quelque part dans mon compte
+         Gestion tout ce que je dois faire, vérifier ou décider, pour que je le consulte plus
+         tard, plusieurs fois ». Table gestion_a_faire, lignes posées par les migrations au fil
+         du travail, cochées ici. Dessinée par gestion.js (chargerAFaire). -->
+    <div class="card" id="af-carte"></div>
     <div class="card" id="cdd-console"></div>
     <!-- LA BOÎTE À QUESTIONS (18/09/2026) — Celtis : « je veux pouvoir interagir, interroger, et
          avoir des réponses claires et précises ». Treize questions calculées exactement, sans
