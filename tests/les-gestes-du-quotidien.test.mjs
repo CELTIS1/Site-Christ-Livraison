@@ -60,13 +60,14 @@ console.log('\n3. La barre du bas de l\'équipe (9.5)');
    « Personnes » (Celtis : « moins d'endroits à parcourir pour l'équipe et mieux ils
    maîtriseront »). La place libérée dans la barre du bas revient à « Personnes », qui remonte
    dans les quatre du quotidien ; seuls Suivi, Comptes et Express restent derrière « Plus ». */
-// 20/09/2026 : « Retours » a rejoint la feuille « Plus » (décision de Celtis) : cinq relégués.
+// 20/09/2026, Celtis : « ce qu'on utilise le plus, c'est Colis, Tournées, Suivi — et la gestion des
+// retours en quatrième ; Finances, Personnes et le reste vont dans Plus ».
 verifier('quatre onglets restent dans la barre, les autres passent derrière « Plus »',
-  (equipe.match(/nav--dans-plus/g) || []).length === 5, (equipe.match(/nav--dans-plus/g) || []).length);
-verifier('les relégués sont Suivi, Retours, Comptes et Express',
-  ['suivi', 'retours', 'comptes', 'express'].every(k => new RegExp('nav--dans-plus[^>]*data-nav="' + k + '"').test(equipe)));
-verifier('et les quatre du quotidien sont Colis, Tournées, Personnes, Finances',
-  ['colis', 'programmation', 'personnes', 'finances'].every(k =>
+  (equipe.match(/class="nav nav--dans-plus/g) || []).length === 4, (equipe.match(/class="nav nav--dans-plus/g) || []).length);
+verifier('les relégués sont Finances, Personnes, Comptes et Express',
+  ['finances', 'personnes', 'comptes', 'express'].every(k => new RegExp('nav--dans-plus[^>]*data-nav="' + k + '"').test(equipe)));
+verifier('et les quatre du quotidien sont Colis, Tournées, Suivi, Retours',
+  ['colis', 'programmation', 'suivi', 'retours'].every(k =>
     new RegExp('class="nav(?! nav--dans-plus)[^"]*"[^>]*data-nav="' + k + '"').test(equipe)),
   (equipe.match(/class="nav[^"]*"[^>]*data-nav="[a-z]+"/g) || []).join(' '));
 verifier('rien n\'est retiré : la feuille reprend les mêmes boutons, sans les recopier',

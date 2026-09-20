@@ -22,10 +22,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920onglet">
+<link rel="stylesheet" href="style.css?v=20260920barre">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920onglet"></script>
-<script src="splash.js?v=20260920onglet"></script>
+<script src="theme.js?v=20260920barre"></script>
+<script src="splash.js?v=20260920barre"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -578,6 +578,11 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
      quoi on ne peut plus se dire où aller d'un appareil à l'autre. (28/08/2026) -->
 <button type="button" class="clt-toptab" data-eqtab="programmation">🗓️ Tournées</button>
 <button type="button" class="clt-toptab" data-eqtab="suivi">🗺️ Suivi</button>
+<!-- LES RETOURS ONT LEUR ONGLET (20/09/2026, Celtis : « dans un onglet, ce serait plus facile à
+     gérer plutôt que là où c'est : c'est très encombrant et long »). Sur téléphone, il est
+     derrière « Plus », comme Suivi et Comptes. -->
+<button type="button" class="clt-toptab" data-eqtab="retours">↩️ Retours</button>
+<button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
 <!-- CLIENTS ET LIVREURS N'EN FONT PLUS QU'UN : « PERSONNES ». (18/09/2026, Celtis : « il y a
      beaucoup d'onglets […] moins d'endroits à parcourir pour l'équipe et mieux ils
      maîtriseront ».)
@@ -588,11 +593,6 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
      fois la même chose — et de deviner, chaque fois, dans lequel des deux chercher.
      Rien n'est retiré : les deux tableaux sont là, entiers, derrière un sélecteur. -->
 <button type="button" class="clt-toptab" data-eqtab="personnes">👤 Personnes</button>
-<button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
-<!-- LES RETOURS ONT LEUR ONGLET (20/09/2026, Celtis : « dans un onglet, ce serait plus facile à
-     gérer plutôt que là où c'est : c'est très encombrant et long »). Sur téléphone, il est
-     derrière « Plus », comme Suivi et Comptes. -->
-<button type="button" class="clt-toptab" data-eqtab="retours">↩️ Retours</button>
 <button type="button" class="clt-toptab" data-eqtab="comptes">👥 Comptes</button>
 <button type="button" class="clt-toptab hidden" id="eqtab-btn-express" data-eqtab="express">🏍️ Express</button>
 </div>
@@ -1678,39 +1678,42 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920onglet"></script>
-<script src="lib/bibliotheques.js?v=20260920onglet"></script>
-<script src="lib/retours.js?v=20260920onglet"></script>
-<script src="lib/reclamations.js?v=20260920onglet"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920onglet"></script>
-<script src="lib/argent.js?v=20260920onglet"></script>
-<script src="lib/releve-cliente.js?v=20260920onglet"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920onglet"></script>
-<script src="lib/briques-argent.js?v=20260920onglet"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920onglet"></script>
-<script src="lib/annonce-de-remise.js?v=20260920onglet"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920onglet"></script>
-<script src="lib/primes.js?v=20260920onglet"></script>
-<script src="lib/doublons.js?v=20260920onglet"></script>
-<script src="config.js?v=20260920onglet"></script>
-<script src="clients-dashboard.js?v=20260920onglet"></script>
-<script src="livreurs-dashboard.js?v=20260920onglet"></script>
-<script src="point-du-jour.js?v=20260920onglet"></script>
-<script src="biometric-lock.js?v=20260920onglet"></script>
-<script src="clt-select-recherche.js?v=20260920onglet"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260920onglet"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260920onglet"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260920onglet"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260920onglet"></script>
-<script src="equipe/04-actions.js?v=20260920onglet"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260920onglet"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260920onglet"></script>
-<script src="equipe/07-rapports.js?v=20260920onglet"></script>
-<script src="equipe/08-son-ecran.js?v=20260920onglet"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260920onglet"></script>
+<script src="clt-common.js?v=20260920barre"></script>
+<script src="lib/bibliotheques.js?v=20260920barre"></script>
+<script src="lib/retours.js?v=20260920barre"></script>
+<script src="lib/reclamations.js?v=20260920barre"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920barre"></script>
+<script src="lib/argent.js?v=20260920barre"></script>
+<script src="lib/releve-cliente.js?v=20260920barre"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920barre"></script>
+<script src="lib/briques-argent.js?v=20260920barre"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920barre"></script>
+<script src="lib/annonce-de-remise.js?v=20260920barre"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920barre"></script>
+<script src="lib/primes.js?v=20260920barre"></script>
+<script src="lib/doublons.js?v=20260920barre"></script>
+<script src="config.js?v=20260920barre"></script>
+<script src="clients-dashboard.js?v=20260920barre"></script>
+<script src="livreurs-dashboard.js?v=20260920barre"></script>
+<script src="point-du-jour.js?v=20260920barre"></script>
+<script src="biometric-lock.js?v=20260920barre"></script>
+<script src="clt-select-recherche.js?v=20260920barre"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260920barre"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260920barre"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260920barre"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260920barre"></script>
+<script src="equipe/04-actions.js?v=20260920barre"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260920barre"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260920barre"></script>
+<script src="equipe/07-rapports.js?v=20260920barre"></script>
+<script src="equipe/08-son-ecran.js?v=20260920barre"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260920barre"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
+  <!-- QUATRE ONGLETS DU QUOTIDIEN (20/09/2026, Celtis : « les onglets qu'on utilise le plus,
+       c'est Colis, Tournées, Suivi — et la gestion des retours en quatrième ; Finances,
+       Personnes et le reste vont dans Plus »). Rien n'est retiré : tout reste à un appui. -->
   <button type="button" class="nav active" data-nav="colis">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
     Colis
@@ -1719,23 +1722,21 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/></svg>
     Tournées
   </button>
-  <button type="button" class="nav nav--dans-plus" data-nav="suivi">
+  <button type="button" class="nav" data-nav="suivi">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-11a7 7 0 0 0-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
     Suivi
   </button>
-  <!-- Clients et Livreurs n'en font plus qu'un (18/09/2026) : une entrée de moins dans la barre,
-       et « Personnes » remonte dans les quatre du quotidien puisque la place est libre. -->
-  <button type="button" class="nav" data-nav="personnes">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9.5" r="2.4"/><path d="M15 19c0-2.2 1.3-3.6 3-3.6s2.5 1.2 2.5 3"/></svg>
-    Personnes
+  <button type="button" class="nav" data-nav="retours">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>
+    Retours
   </button>
-  <button type="button" class="nav" data-nav="finances">
+  <button type="button" class="nav nav--dans-plus" data-nav="finances">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.2c0-1.1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.9c0 2.6-5 1.4-5 3.9 0 1.2 1.1 1.9 2.5 1.9s2.5-.6 2.5-1.7"/></svg>
     Finances
   </button>
-  <button type="button" class="nav nav--dans-plus" data-nav="retours">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>
-    Retours
+  <button type="button" class="nav nav--dans-plus" data-nav="personnes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9.5" r="2.4"/><path d="M15 19c0-2.2 1.3-3.6 3-3.6s2.5 1.2 2.5 3"/></svg>
+    Personnes
   </button>
   <button type="button" class="nav nav--dans-plus" data-nav="comptes">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.1 2.9-5.3 6.5-5.3s6.5 2.2 6.5 5.3"/><path d="M16.5 5.2a3 3 0 0 1 0 5.6M18 14.9c2.2.6 3.8 2.3 3.8 4.6"/></svg>
@@ -1754,9 +1755,9 @@ html[data-theme="dark"] #section-clients, html[data-theme="dark"] #section-livre
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260920onglet"></script>
-<script src="equipe/11-chercher-partout.js?v=20260920onglet"></script>
-<script src="equipe/12-les-retours.js?v=20260920onglet"></script>
-<script src="equipe/13-les-boutiques.js?v=20260920onglet"></script>
+<script src="equipe/10-onglets.js?v=20260920barre"></script>
+<script src="equipe/11-chercher-partout.js?v=20260920barre"></script>
+<script src="equipe/12-les-retours.js?v=20260920barre"></script>
+<script src="equipe/13-les-boutiques.js?v=20260920barre"></script>
 </body>
 </html>

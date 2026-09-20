@@ -817,10 +817,16 @@ verifier(
    colis manquants avaient été reportés à demain, ce que l'écran du livreur ne disait pas. Les
    retours ont leur onglet « Retours » (derrière « Plus » sur téléphone) avec le chiffre de ce qui
    brûle ; le livreur lit « N colis de cette journée ont été reportés au … — Voir » au-dessus de
-   sa liste. Aucune migration. Étiquette 20260920onglet. */
+   sa liste. Aucune migration. Étiquette 20260920onglet.
+   v178, le 20/09/2026 — Celtis : « les onglets qu'on utilise le plus, c'est Colis, Tournées,
+   Suivi — et la gestion des retours en quatrième ; Finances, Personnes et le reste vont dans
+   Plus ». La barre du bas est réordonnée. Et, trouvé en préparant le tutoriel : sur un téléphone
+   de 390 px, la carte d'un colis du bureau laissait 56 px à son texte (colonne de droite en
+   style « width:auto », quatre marges emboîtées) — la ligne badge + ⋮ passe au-dessus, les
+   marges se resserrent. Aucune migration. Étiquette 20260920barre. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v177'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v178'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

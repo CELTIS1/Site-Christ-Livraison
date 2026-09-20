@@ -3386,3 +3386,19 @@ html[data-theme="dark"] .mes-reportes{ background:#3a3010; color:#f3d98a; }
 #clt-bottomnav .nav, #bottomnav-feuille button{ position:relative; }
 #clt-bottomnav .rt-onglet-badge{ position:absolute; top:4px; right:10px; margin:0; }
 #bottomnav-feuille .rt-onglet-badge{ margin-left:8px; }
+/* LA CARTE DU BUREAU SUR TÉLÉPHONE (20/09/2026). La ligne compacte (badge + ⋮) est posée en
+   colonne de droite avec un style en ligne « width:auto » : sur 390 px elle laissait 56 px au
+   texte, qui s'empilait lettre à lettre. Sur téléphone, cette ligne passe au-dessus du texte,
+   sur toute la largeur. */
+@media(max-width:640px){
+  .colis-item > .status-col[style]{ width:100% !important; justify-content:space-between !important; order:-1; border-top:0; margin-top:0; padding-top:0; }
+  .colis-item > .status-col[style] + *{ width:100%; }
+  .colis-item .info{ flex:1 1 200px; }
+}
+/* LA LARGEUR UTILE SUR TÉLÉPHONE (20/09/2026). Mesuré à 390 px sur l'écran du bureau : page
+   24 px + carte 26 px + groupe 10 px + ligne 12 px de chaque côté, il restait 273 px pour une
+   carte de colis, et 56 px pour son texte. On resserre les marges là où l'écran est étroit. */
+@media(max-width:640px){
+  .wrap{ padding-left:12px; padding-right:12px; }
+  .card{ padding:16px 14px; }
+}

@@ -117,7 +117,7 @@ verifier('un non livré reste dans sa journée tant qu\'il n\'a pas décidé', /
 console.log('\n7. Le bureau : l\'écran des retours');
 const eq = lire('app/equipe/12-les-retours.js');
 const eqHtml = lire('app/equipe.html');
-verifier('un onglet « Retours » à part (derrière « Plus » sur téléphone), chargé par son propre fichier', /data-eqtab="retours"/.test(eqHtml) && /nav nav--dans-plus" data-nav="retours"/.test(eqHtml) && /id="eqpanel-retours"/.test(eqHtml) && /put\('eqpanel-retours', byId\('section-retours'\)\)/.test(lire('app/equipe/10-onglets.js')) && /equipe\/12-les-retours\.js\?v=/.test(eqHtml));
+verifier('un onglet « Retours » à part — le quatrième de la barre du téléphone (Celtis, 20/09) — chargé par son propre fichier', /data-eqtab="retours"/.test(eqHtml) && /class="nav" data-nav="retours"/.test(eqHtml) && /id="eqpanel-retours"/.test(eqHtml) && /put\('eqpanel-retours', byId\('section-retours'\)\)/.test(lire('app/equipe/10-onglets.js')) && /equipe\/12-les-retours\.js\?v=/.test(eqHtml));
 verifier('elle lit la base elle-même : retours non confirmés ET non livrés, quel que soit le jour', /\.in\('statut', \['retour', 'non_livre'\]\)\.is\('retour_confirme_at', null\)/.test(eq));
 verifier('et se replie sur les anciennes colonnes si la base n\'est pas migrée', /does not exist/.test(eq) && /retour_rendu_at, retour_rendu_par'\)/.test(eq));
 verifier('ce qui brûle d\'abord : litige, retard, livreur, bureau, à confirmer, non livré', /if \(n\.cle === 'litige'\) return 0;/.test(eq) && /if \(retourEnRetard\(c\)\) return 1;/.test(eq));

@@ -16,7 +16,7 @@
      que partout ailleurs on lit AUJOURD'HUI, et mélangés les deux se confondent : on programme
      en croyant modifier un colis du jour. Le remettre dedans reviendrait à racheter un défaut
      déjà payé. Le reste attend le compteur d'usage : en octobre on retirera sur preuve. */
-  const EQ_TABS = ['colis','programmation','suivi','personnes','finances','retours','comptes','express'];
+  const EQ_TABS = ['colis','programmation','suivi','retours','finances','personnes','comptes','express'];
 
   /* Les anciens noms continuent de fonctionner : la barre du bas, un lien ailleurs dans le code,
      et surtout le dernier onglet gardé en mémoire sur le téléphone de chacun. Sans cette table,
