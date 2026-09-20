@@ -111,6 +111,21 @@ await dodo(1000);
 const sig2 = (monde.TABLES.reclamations_clientes || []).find(r => r.auteur === 'livreur' && r.motif === 'argent');
 verifier('un signalement sans colis est en base, ouvert', !!sig2 && sig2.statut === 'ouverte' && !sig2.colis_id && /2 000/.test(sig2.texte), JSON.stringify(sig2));
 verifier('la fenêtre s\'est refermée', (await page.locator('#signalement-livreur').count()) === 0);
+titre('« Mon mois » dit ce que la journée ajoute à la prime de volume (20/09/2026)');
+/* Le barème entre en vigueur le 1er octobre : on donne au faux monde la réponse que la base fera
+   ce jour-là, et dix-huit colis livrés aujourd'hui par Koffi. */
+for (let i = 0; i < 18; i++) monde.TABLES.colis.push(colis(900 + i, { fournisseur_id: CLIENTE1, livreur_id: LIVREUR, statut: 'livre', created_at: new Date().toISOString(), livre_at: new Date().toISOString(), commune_destination: 'Cocody', montant_article: 1000, montant_livraison: 1500, montant: 2500, encaissement_remis: true }));
+monde.REPONSES_RPC.primes_en_cours = { eligible: true, periode: new Date().toISOString().slice(0, 10), colis_livres: 330, jours_travailles: 20, taux: 0.95, moyenne: 16.5, seuil_volume: 15, prime_volume_par_colis: 300, prime_volume: 9000, prime_reussite: 10000, prime_travail_correct: 10000, travail_correct_propose: true, prime_fidelite: 0, fidelite_active: false, prime_parrainage: 0, total_estime: 29000, prime_reussite_100: 20000, prime_travail_correct_montant: 10000 };
+await page.reload();
+await dodo(3000);
+await page.locator('text=Finance').last().click();
+await dodo(2000);
+const livresDuJour = await page.evaluate((moi) => allColis.filter((c) => c.livreur_id === moi && c.statut === 'livre' && String(c.livre_at || '').slice(0, 10) === new Date().toISOString().slice(0, 10)).length, LIVREUR);
+const jourTxt = (await page.locator('.mon-mois__jour').innerText()).replace(/\s+/g, ' ');
+verifier('« Aujourd\'hui : N livrés », et l\'effet sur la prime de volume au franc près', new RegExp('Aujourd.hui ' + livresDuJour + ' livrés').test(jourTxt) && new RegExp((livresDuJour - 15) + ' au-dessus du seuil de 15 : \\+ ' + ((livresDuJour - 15) * 300).toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA sur ma prime de volume').test(jourTxt), jourTxt);
+verifier('plus aucun « FCFA F » sur la carte', !/FCFA F\b/.test(await page.locator('#mon-mois').innerText()), (await page.locator('#mon-mois').innerText()).slice(0, 300));
+verifier('la carte tient dans l\'écran', await page.evaluate(() => { const b = document.getElementById('mon-mois'); return b.scrollWidth <= b.clientWidth + 1; }));
+
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();

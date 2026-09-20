@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920carte">
+<link rel="stylesheet" href="style.css?v=20260920prime">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920carte"></script>
-<script src="splash.js?v=20260920carte"></script>
+<script src="theme.js?v=20260920prime"></script>
+<script src="splash.js?v=20260920prime"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -588,6 +588,15 @@
   .mon-mois__prime small{ display:block; font-size:13px; color:#6b7686; }
   .mon-mois__total{ display:flex; justify-content:space-between; padding:10px 0 4px; border-top:2px solid #12305a; font-weight:800; font-size:15.5px; color:#12305a; }
   .mon-mois__attente{ margin:8px 0 4px; font-size:14px; line-height:1.45; color:#334155; }
+  .mon-mois__jour{ margin-top:8px; padding:10px 12px; border-radius:12px; background:#f3f7fc; border:1px solid #dbe6f3; }
+  .mon-mois__jour-tete{ display:flex; justify-content:space-between; align-items:baseline; font-size:14px; font-weight:700; color:#12305a; }
+  .mon-mois__jour-tete b{ font-size:16px; }
+  .mon-mois__jour-texte{ margin-top:3px; font-size:13.5px; line-height:1.45; color:#334155; }
+  .mon-mois__jour-texte b{ color:#1a7d3c; }
+  html[data-theme="dark"] .mon-mois__jour{ background:#16212E; border-color:#2A3849; }
+  html[data-theme="dark"] .mon-mois__jour-tete{ color:#E6ECF3; }
+  html[data-theme="dark"] .mon-mois__jour-texte{ color:#CFE0F5; }
+  html[data-theme="dark"] .mon-mois__jour-texte b{ color:#5CC98A; }
   .mon-mois__rythme{ margin-top:8px; padding:10px 12px; border-radius:12px; background:#e3f6ea; color:#14532d; font-size:14px; }
   .mon-mois__aide{ margin-top:8px; font-size:13.5px; color:#334155; }
   .mon-mois__aide summary{ min-height:44px; display:flex; align-items:center; color:#6b7686; font-weight:600; cursor:pointer; }
@@ -1028,24 +1037,24 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920carte"></script>
-<script src="lib/bibliotheques.js?v=20260920carte"></script>
-<script src="lib/retours.js?v=20260920carte"></script>
-<script src="lib/reclamations.js?v=20260920carte"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920carte"></script>
-<script src="lib/argent.js?v=20260920carte"></script>
-<script src="lib/releve-cliente.js?v=20260920carte"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920carte"></script>
-<script src="lib/briques-argent.js?v=20260920carte"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920carte"></script>
-<script src="lib/annonce-de-remise.js?v=20260920carte"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920carte"></script>
-<script src="lib/primes.js?v=20260920carte"></script>
-<script src="lib/doublons.js?v=20260920carte"></script>
-<script src="config.js?v=20260920carte"></script>
+<script src="clt-common.js?v=20260920prime"></script>
+<script src="lib/bibliotheques.js?v=20260920prime"></script>
+<script src="lib/retours.js?v=20260920prime"></script>
+<script src="lib/reclamations.js?v=20260920prime"></script>
+<script src="lib/communes-et-tarifs.js?v=20260920prime"></script>
+<script src="lib/argent.js?v=20260920prime"></script>
+<script src="lib/releve-cliente.js?v=20260920prime"></script>
+<script src="lib/papier-a-en-tete.js?v=20260920prime"></script>
+<script src="lib/briques-argent.js?v=20260920prime"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260920prime"></script>
+<script src="lib/annonce-de-remise.js?v=20260920prime"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260920prime"></script>
+<script src="lib/primes.js?v=20260920prime"></script>
+<script src="lib/doublons.js?v=20260920prime"></script>
+<script src="config.js?v=20260920prime"></script>
 <!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
-<script src="ordre-de-livraison.js?v=20260920carte"></script>
-<script src="biometric-lock.js?v=20260920carte"></script>
+<script src="ordre-de-livraison.js?v=20260920prime"></script>
+<script src="biometric-lock.js?v=20260920prime"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3764,7 +3773,9 @@
     }
     if (!data || (!data.eligible && !data.attente)) { bloc.classList.add('hidden'); return; }
     bloc.classList.remove('hidden');
-    const F = (v) => formatMontant(Math.round(Number(v) || 0)) + ' F';
+    // formatMontant écrit déjà « FCFA » : le « F » ajouté ici donnait « 10 000 FCFA F » sur toute
+    // la carte, y compris celle, déjà en service, qui annonce les primes d'octobre. (vu le 20/09/2026)
+    const F = (v) => formatMontant(Math.round(Number(v) || 0));
     if (data.attente) { renderMonMoisEnAttente(bloc, data, F); return; }
     const taux = data.taux === null || data.taux === undefined ? '—' : Math.round(Number(data.taux) * 100) + ' %';
     const moyenne = data.moyenne === null || data.moyenne === undefined ? '—' : (Math.round(Number(data.moyenne) * 10) / 10).toString().replace('.', ',');
@@ -3775,9 +3786,25 @@
     const lignes = [
       ['Prime de réussite', data.prime_reussite, data.taux !== null && Number(data.taux) >= 1 ? '100 % livrés' : (Number(data.taux) >= 0.9 ? '90 % et plus' : 'moins de 90 %')],
       ['Prime de travail correct', data.prime_travail_correct, data.travail_correct_propose ? 'rien à signaler' : (data.echecs_sans_motif ? `${data.echecs_sans_motif} échec sans motif` : (data.livres_sans_preuve ? `${data.livres_sans_preuve} livré sans photo ni code` : 'une réclamation'))],
-      ['Prime de volume', data.prime_volume, `au-delà de ${data.seuil_volume} colis/jour, ${formatMontant(data.prime_volume_par_colis)} F le colis`],
+      ['Prime de volume', data.prime_volume, `au-delà de ${data.seuil_volume} colis/jour, ${formatMontant(data.prime_volume_par_colis)} le colis`],
     ].concat(data.fidelite_active === false ? [] : [['Prime de fidélité', data.prime_fidelite, 'selon mon ancienneté']])
      .concat(Number(data.prime_parrainage) > 0 ? [['Prime de parrainage', data.prime_parrainage, 'un filleul a fini ses 3 mois']] : []);
+    /* AUJOURD'HUI, POUR MA PRIME DE VOLUME (20/09/2026). Pas un « gain du jour » inventé : un
+       livreur de CLT est salarié. L'effet exact de cette journée sur la seule prime qui en
+       dépend — voir effetDeLaJourneeSurLaPrimeDeVolume (lib/primes.js). */
+    const jourPrimes = todayLocalISODate();
+    const livresAuj = allColis.filter(c => c.livreur_id === currentUser.id && c.statut === 'livre' && String(c.livre_at || '').slice(0, 10) === jourPrimes).length;
+    const effet = (typeof effetDeLaJourneeSurLaPrimeDeVolume === 'function') ? effetDeLaJourneeSurLaPrimeDeVolume(data, livresAuj) : null;
+    const jourHTML = !effet ? '' : `<div class="mon-mois__jour">
+        <div class="mon-mois__jour-tete"><span>Aujourd'hui</span><b>${effet.livres} livré${effet.livres > 1 ? 's' : ''}</b></div>
+        <div class="mon-mois__jour-texte">${effet.gain > 0
+          ? `${effet.auDessus} au-dessus du seuil de ${effet.seuil} : <b>+ ${F(effet.gain)}</b> sur ma prime de volume.`
+          : effet.moisSousLeSeuil
+            ? `${effet.auDessus} au-dessus du seuil de ${effet.seuil} aujourd'hui. Ma moyenne du mois est encore en dessous : la prime de volume se joue sur le mois entier.`
+            : effet.livres === 0
+              ? `Au-delà de ${effet.seuil} colis livrés dans la journée, chaque colis compte pour ma prime de volume (${F(effet.parColis)} le colis).`
+              : `Encore ${effet.manque} colis pour atteindre le seuil de ${effet.seuil} ; au-delà, chaque colis compte pour ma prime de volume.`}</div>
+      </div>`;
     const html = `
       <div class="mon-mois__tete"><span>🏆 Mon mois</span><span class="mon-mois__periode">${escapeHTML(mois)}</span></div>
       <div class="mon-mois__chiffres">
@@ -3790,11 +3817,12 @@
         ${lignes.map(([nom, montant, note]) => `<div class="mon-mois__prime${Number(montant) > 0 ? ' gagnee' : ''}"><span>${nom}<small>${escapeHTML(note)}</small></span><b>${F(montant)}</b></div>`).join('')}
         <div class="mon-mois__total"><span>Primes en cours</span><b>${F(data.total_estime)}</b></div>
       </div>
+      ${jourHTML}
       ${aCeRythme !== null ? `<div class="mon-mois__rythme">À ce rythme, ce mois-ci : <b>${F(aCeRythme)}</b> de primes en plus de mon salaire.</div>` : ''}
       <details class="mon-mois__aide"><summary>Comment ça marche</summary>
         <p>Livrer tous mes colis : ${F(data.prime_reussite_100)}. Un travail correct tout le mois (application à jour, vendeuses prévenues, aucune réclamation) : ${F(data.prime_travail_correct_montant)}. Au-delà de ${data.seuil_volume} colis par jour en moyenne, chaque colis en plus : ${formatMontant(data.prime_volume_par_colis)} F. Le décompte officiel arrive le 1er du mois ; j'ai trois jours pour le contester.</p>
       </details>`;
-    cltPoserHTML(bloc, html, JSON.stringify([data.colis_livres, data.jours_travailles, data.total_estime, data.taux]));
+    cltPoserHTML(bloc, html, JSON.stringify([data.colis_livres, data.jours_travailles, data.total_estime, data.taux, livresAuj]));
   }
 
   // Avant l'entrée en vigueur du barème (1er octobre 2026), la carte annonce ce qui attend le
@@ -3805,7 +3833,7 @@
     const lignes = [
       ['Prime de réussite', data.prime_reussite_100, `100 % de mes colis livrés (${F(data.prime_reussite_90)} à partir de 90 %)`],
       ['Prime de travail correct', data.prime_travail_correct_montant, 'application à jour, vendeuses prévenues, aucune réclamation'],
-      ['Prime de volume', null, `au-delà de ${data.seuil_volume} colis par jour, ${formatMontant(data.prime_volume_par_colis)} F chaque colis en plus`],
+      ['Prime de volume', null, `au-delà de ${data.seuil_volume} colis par jour, ${formatMontant(data.prime_volume_par_colis)} chaque colis en plus`],
       ['Livreur du mois', data.prime_livreur_du_mois, 'le meilleur taux de réussite du mois'],
       ['Prime de parrainage', data.prime_parrainage, 'pour chaque livreur que je fais entrer et qui finit ses 3 mois'],
     ];

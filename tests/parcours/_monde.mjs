@@ -261,10 +261,12 @@ export function nouveauMonde() {
     return { data: lignes, error: null, count: total };
   }
 
+  const REPONSES_RPC = {};
   function rpc(nom, args, user) {
     journal.push({ op: 'rpc', nom, args });
     if (nom === 'annonce_remise_en_cours') return { data: null, error: null };
-    if (nom === 'primes_en_cours') return { data: null, error: null };
+    // Un parcours peut poser REPONSES_RPC.primes_en_cours pour voir la carte « Mon mois » vivante.
+    if (nom === 'primes_en_cours') return { data: REPONSES_RPC.primes_en_cours || null, error: null };
     /* LE SUIVI PUBLIC (points 1.7, 10.5, 19.6) : la même règle que la fonction en base — sans
        les quatre derniers chiffres du destinataire, le statut brut ; avec, la fiche, l'histoire
        et la boutique (nom, numéro). La vraie fonction est éprouvée dans un vrai Postgres
@@ -467,5 +469,5 @@ export function nouveauMonde() {
     return { user: { id: compte.user_id, phone: compte.phone, user_metadata: { full_name: profil.full_name } }, error: null };
   }
 
-  return { TABLES, journal, REFUS, executer, rpc, connexion, COMPTES, PROFILS };
+  return { TABLES, journal, REFUS, REPONSES_RPC, executer, rpc, connexion, COMPTES, PROFILS };
 }

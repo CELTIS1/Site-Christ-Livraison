@@ -80,6 +80,45 @@ function echecProposeNonImputable(colis) {
   return true;
 }
 
+/* CE QUE LA JOURNÉE D'AUJOURD'HUI AJOUTE À MA PRIME DE VOLUME. (20/09/2026, « ensuite » n° 3)
+
+   Les applications de coursiers affichent « vos gains du jour ». Chez CLT, un livreur est
+   SALARIÉ : il ne gagne pas à la course, et afficher un « gain du jour » inventé serait lui
+   mentir. Ce qui dépend vraiment de sa journée, c'est la prime de VOLUME (art. 6) : chaque colis
+   livré au-delà du seuil journalier, en moyenne sur le mois, rapporte un montant fixe.
+
+   On calcule donc L'EFFET EXACT DE CETTE JOURNÉE sur cette prime : la prime de volume du mois
+   AVEC aujourd'hui, moins ce qu'elle serait SANS aujourd'hui (mêmes livrés moins ceux du jour,
+   un jour travaillé de moins). Même formule que calculerPrimesLivreur — pas une seconde règle.
+     • la journée dépasse le seuil ET le mois est au-dessus : « + X F » ;
+     • la journée est sous le seuil : on dit combien de colis il manque — jamais un montant
+       négatif : une journée creuse ne « coûte » rien qui soit déjà acquis, la prime se joue sur
+       le mois entier, et l'écran le rappelle.
+   enCours : la réponse de primes_en_cours() ; livresAujourdHui : compté sur l'écran du livreur.
+   Rend null quand on ne peut rien dire d'honnête (barème pas en vigueur, seuil inconnu). */
+function effetDeLaJourneeSurLaPrimeDeVolume(enCours, livresAujourdHui) {
+  const d = enCours || {};
+  const n = (v) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+  const seuil = n(d.seuil_volume), parColis = n(d.prime_volume_par_colis);
+  if (!d.eligible && d.eligible !== undefined) return null;
+  if (seuil <= 0 || parColis <= 0) return null;
+  const t = Math.max(0, Math.floor(n(livresAujourdHui)));
+  const L = n(d.colis_livres), J = n(d.jours_travailles);
+  const volume = (livres, jours) => Math.max(0, livres - seuil * jours) * parColis;
+  // Aujourd'hui compte comme un jour travaillé dès le premier colis livré (c'est la règle de la base).
+  const avec = volume(L, J);
+  const sans = t > 0 ? volume(Math.max(0, L - t), Math.max(0, J - 1)) : avec;
+  const gain = Math.max(0, avec - sans);
+  return {
+    livres: t, seuil: seuil, parColis: parColis,
+    auDessus: Math.max(0, t - seuil), manque: Math.max(0, seuil - t),
+    gain: gain,
+    // La journée dépasse le seuil mais le mois, lui, est encore en dessous : rien n'est gagné
+    // aujourd'hui, et il faut le dire plutôt que d'afficher « + 900 F » qui ne viendront pas.
+    moisSousLeSeuil: t > seuil && gain === 0,
+  };
+}
+
 // La phrase du livreur : « à ce rythme, ce mois-ci : … F ». Projette la moyenne actuelle sur
 // les jours ouvrés restants (lundi–samedi) pour dire où il arrive s'il continue pareil.
 function projectionPrimesFinDeMois(enCours, params, aujourdHui) {

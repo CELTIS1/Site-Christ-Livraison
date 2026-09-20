@@ -937,10 +937,16 @@ verifier(
    marche hors connexion) — arrêts numérotés, reliés dans l'ordre, départ, cadre réglé sur les
    communes du jour, noms qui ne se recouvrent pas — et « Ouvrir le trajet dans Google Maps »
    (origine, étapes, destination ; dix communes au plus, et c'est dit). Seuls des noms de
-   communes partent chez Google. Aucune migration. Étiquette 20260920carte. */
+   communes partent chez Google. Aucune migration. Étiquette 20260920carte.
+   v198, le 20/09/2026 — « ensuite » n° 3, ce que la journée ajoute à ma prime : un livreur de CLT
+   est salarié, on n'invente pas de « gain du jour ». « Mon mois » gagne une ligne « Aujourd'hui » :
+   l'effet EXACT de la journée sur la prime de volume (effetDeLaJourneeSurLaPrimeDeVolume,
+   lib/primes.js — d'accord au franc près avec calculerPrimesLivreur ; jamais de montant négatif).
+   Corrigé : « 10 000 FCFA F » sur les deux cartes de primes, dont celle déjà en service.
+   Aucune migration. Étiquette 20260920prime. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v197'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v198'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
