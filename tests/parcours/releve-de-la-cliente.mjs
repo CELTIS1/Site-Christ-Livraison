@@ -59,6 +59,14 @@ verifier('aucun colis d\'Awa n\'apparaît (n°1, 3, 5, 7)', !/CLT-260916-0000[13
 titre('3. « Récap » : le relevé, ce que CLT lui doit');
 await page.locator('#clt-bottomnav .nav[data-target="section-recap"]').click();
 await dodo(1200);
+// 21/09/2026, Celtis : « mon relevé doit être replié, par défaut, et en bas ».
+const repli = page.locator('#releve-details');
+verifier('« Mon relevé » est REPLIÉ à l\'ouverture, et dit quand même l\'essentiel : « CLT vous doit : 35 000 FCFA »', (await repli.evaluate(d => d.open)) === false && /CLT vous doit : 35\s?000 FCFA/.test((await page.locator('#releve-resume').innerText()).replace(/\u202f|\u00a0/g, ' ')) && !(await page.locator('#releve-tiles').isVisible()), await page.locator('#releve-resume').innerText());
+const ordre = await page.evaluate(() => ['section-colis-jour', 'section-recap', 'section-releve'].map(id => Math.round(document.getElementById(id).getBoundingClientRect().top)));
+verifier('dans l\'ordre : le statut du jour, le récapitulatif, PUIS le relevé', ordre[0] < ordre[1] && ordre[1] < ordre[2], JSON.stringify(ordre));
+await page.locator('#releve-details > summary').click();
+await dodo(400);
+verifier('un appui le déplie : les tuiles apparaissent', await page.locator('#releve-tiles').isVisible());
 const tuiles = page.locator('#releve-tiles .stat-tile');
 verifier('les tuiles du relevé sont dessinées', (await tuiles.count()) >= 3, await tuiles.count());
 const tuile = async (libelle) => { const t = tuiles.filter({ hasText: libelle }).first(); return (await t.count()) ? chiffres(await t.locator('.stat-tile-value').textContent()) : null; };

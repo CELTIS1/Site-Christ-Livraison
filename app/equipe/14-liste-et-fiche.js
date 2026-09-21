@@ -136,6 +136,7 @@
     }
   }
 
+  let dernierY = 0;   // où l'écran était, avant qu'un redessin ne raccourcisse la page
   function demander() { if (enAttente) return; enAttente = true; (window.requestAnimationFrame || setTimeout)(poser, 16); }
 
   function init() {
@@ -157,10 +158,22 @@
       suivante.focus();
       choisir(suivante.dataset.pour, true);
     });
-    if (window.MutationObserver) observateur = new MutationObserver(demander);
+    /* L'ÉCRAN NE REMONTE PLUS TOUT SEUL. (21/09/2026, Celtis : « arrivé en bas, ça fait comme
+       un bug et ça remonte ».) Mesuré : sur grand écran la liste n'est faite QUE des lignes
+       compactes posées ici — les cartes sont cachées. Chaque fois que la liste est redessinée
+       (toutes les 25 s, à chaque colis qui bouge), les lignes disparaissaient jusqu'à l'image
+       suivante : la page passait de 8 400 à 1 000 px, le navigateur ramenait l'écran en haut,
+       puis les lignes revenaient — trop tard. On les repose donc TOUT DE SUITE (l'observateur
+       parle avant que le navigateur ne dessine), et si l'écran a quand même été ramené, on le
+       remet où il était. */
+    if (window.MutationObserver) observateur = new MutationObserver(function () {
+      const y = dernierY;
+      poser();
+      if (large() && y > 0 && window.scrollY < y - 2) window.scrollTo(0, y);
+    });
     (media.addEventListener ? media.addEventListener('change', demander) : media.addListener(demander));
     window.addEventListener('resize', placer);
-    window.addEventListener('scroll', placer, { passive: true });
+    window.addEventListener('scroll', function () { dernierY = window.scrollY; placer(); }, { passive: true });
     poser();
   }
 

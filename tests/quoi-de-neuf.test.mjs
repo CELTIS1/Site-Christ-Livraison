@@ -95,5 +95,28 @@ verifier('changement important (adresse, échéance, report, téléphone) : « C
 verifier('la cliente lit « est entre nos mains » pour un colis récupéré', /recupere: \{ title: "📦 Colis récupéré", verb: "est entre nos mains" \}/.test(push));
 verifier('l\'envoi reste limité aux identifiants valides (uuidOuRien) et aux abonnés', /uuidOuRien\(record\.livreur_id\)/.test(push) && /lireAbonnements\(dest\)/.test(push));
 
+console.log('\n4. À chacun ses nouveautés (21/09/2026)');
+{
+  const vm = await import('node:vm');
+  const i = commun.indexOf('var CLT_NOUVEAUTES_NEUTRE'), j = commun.indexOf('window.cltNouveautesPour');
+  const ctx = {}; vm.runInNewContext(commun.slice(i, j) + ';this.pour = cltNouveautesPour; this.lecteur = cltLecteurDeLaPage; this.NEUTRE = CLT_NOUVEAUTES_NEUTRE;', ctx);
+  const E = [
+    { date: 'j3', titre: 'Secret du bureau', points: ['Bureau › Retours : deux côtés.', 'Gestion : un nouveau tableau.'] },
+    { date: 'j2', titre: 'Mixte', points: ['Clientes : chaque colis porte sa date. « Détails » montre le reste.', 'Express : l\'aide est séparée. Livreurs : la pastille « Récup. » est juste.'] },
+    { date: 'j1', titre: 'Coursiers', points: ['Coursier : la référence est obligatoire. Un même envoi ne se déclare qu\'une fois.'], points_pour: { livreur: ['Livreurs : dit exprès pour vous.'] } },
+  ];
+  const eq = ctx.pour(E, 'equipe'), cl = ctx.pour(E, 'cliente'), lv = ctx.pour(E, 'livreur'), ex = ctx.pour(E, 'express'), pu = ctx.pour(E, 'public');
+  verifier('l\'équipe voit tout, titres compris, sans phrase neutre', eq.toutVoir && eq.entrees.length === 3 && eq.entrees[0].titre === 'Secret du bureau' && eq.neutre === '');
+  verifier('la cliente ne voit QUE ses phrases — la suite sans étiquette comprise — sous un titre neutre', cl.entrees.length === 1 && cl.entrees[0].titre === 'Nouveau pour vous' && cl.entrees[0].points.join('|') === 'Clientes : chaque colis porte sa date. « Détails » montre le reste.', JSON.stringify(cl));
+  verifier('dans un point partagé, le livreur ne lit que SA phrase ; `points_pour` lui parle quand on le veut', lv.entrees.map(e => e.points.join('|')).join(' ## ') === 'Livreurs : la pastille « Récup. » est juste. ## Livreurs : dit exprès pour vous.', JSON.stringify(lv));
+  verifier('Express voit ses deux entrées, pas celles du bureau', ex.entrees.length === 2 && !/Bureau|Gestion/.test(JSON.stringify(ex.entrees)));
+  verifier('tout le reste tient en UNE phrase neutre, quel que soit le nombre de mises à jour', [cl, lv, ex, pu].every(r => r.neutre === ctx.NEUTRE) && /Mise à jour effectuée/.test(ctx.NEUTRE));
+  verifier('le public (page de connexion) ne voit AUCUN détail', pu.entrees.length === 0 && pu.neutre === ctx.NEUTRE);
+  verifier('rien qui ne concerne le bureau ne fuit chez les autres', [cl, lv, ex, pu].every(r => !/Secret du bureau|deux côtés|nouveau tableau/.test(JSON.stringify(r))));
+  verifier('le lecteur se lit à la page', ctx.lecteur('/app/equipe.html') === 'equipe' && ctx.lecteur('/app/gestion.html?x=1') === 'equipe' && ctx.lecteur('/app/livreur.html') === 'livreur' && ctx.lecteur('/app/fournisseur.html#a') === 'cliente' && ctx.lecteur('/app/express-coursier.html') === 'express' && ctx.lecteur('/app/login.html') === 'public' && ctx.lecteur('/') === 'public');
+  verifier('le panneau passe par ce tri', /cltNouveautesPour\(entrees, options\.lecteur \|\| cltLecteurDeLaPage\(location\.pathname\)/.test(commun));
+  verifier('pas de « lookbehind » dans le fichier commun : les vieux iPhone ne le lisent pas, et toute l\'application tomberait', !/\(\?<[=!]/.test(commun));
+}
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

@@ -444,7 +444,25 @@ return id;
 function lotApresEnvoi(fournisseur_id){
 // Les destinataires du lot doivent figurer au carnet dès le colis suivant.
 carnetParClient.delete(fournisseur_id);
+lotCompleterLaFiche(fournisseur_id);
 loadColis();
+}
+
+/* La commune tapée pour une cliente qui n'en avait pas devient celle de sa fiche (21/09/2026) :
+   voir lieuAInscrireSurLaFiche(). Sans bloquer ni faire échouer la saisie : c'est un service. */
+async function lotCompleterLaFiche(fournisseur_id){
+if (typeof lieuAInscrireSurLaFiche !== 'function') return;
+const fiche = (fournisseurs || []).find(f => f.id === fournisseur_id);
+if (!fiche) return;
+const patch = lieuAInscrireSurLaFiche(fiche, {
+  commune_recuperation: (document.getElementById('lot-commune-recup') || {}).value || '',
+  adresse_recuperation: (document.getElementById('lot-adresse-recup') || {}).value || '',
+});
+if (!patch) return;
+const { error } = await supabaseClient.from('profiles').update(patch).eq('id', fournisseur_id);
+if (error) { console.error('Fiche cliente :', error); return; }
+Object.assign(fiche, patch);
+if (window.cltToast) cltToast('Commune de récupération enregistrée sur la fiche de ' + (fiche.company_name || fiche.full_name || 'la cliente') + ' : ' + patch.commune_recuperation + '. Elle sera proposée d\'office la prochaine fois.', { type: 'info', title: 'Fiche complétée' });
 }
 
 /* ---------- Un colis à la fois ---------- */

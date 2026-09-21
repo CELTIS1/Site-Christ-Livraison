@@ -174,6 +174,24 @@
    }
   },
   {
+   "id": "quoi-de-neuf",
+   "espace": "gestion",
+   "titre": "« Quoi de neuf » : à chacun ses nouveautés",
+   "enBref": "L'équipe voit tout ; clientes, livreurs et coursiers ne voient que ce qui les concerne, sinon une phrase neutre.",
+   "ou": "Le bandeau « Nouvelle version » de chaque espace, et la page de connexion",
+   "etapes": [
+    "Dans Équipe et Gestion : toutes les mises à jour, en détail.",
+    "Chez une cliente ou un livreur : seulement les phrases écrites pour eux (« Clientes : … », « Livreurs : … »).",
+    "Pour le reste : « Mise à jour effectuée : des améliorations pour le bon fonctionnement de l'application. »",
+    "Sur la page de connexion, avant de s'identifier : aucun détail."
+   ],
+   "aSavoir": "Le tri est fait par l'application, pas par la bonne volonté de celui qui écrit la note.",
+   "version": "v213",
+   "aller": {
+    "page": "gestion.html"
+   }
+  },
+  {
    "id": "essentiel",
    "espace": "bureau",
    "titre": "L'essentiel : ce qui presse, d'un regard",
@@ -234,10 +252,11 @@
    "etapes": [
     "Cliquez une ligne : sa fiche s'ouvre à droite, avec tous ses gestes habituels.",
     "Les flèches ↑ ↓ du clavier parcourent la liste.",
-    "Sous 1 200 px, l'écran redevient la pile de cartes du téléphone."
+    "Sous 1 200 px, l'écran redevient la pile de cartes du téléphone.",
+    "En bas à droite : « Aller en bas » et « Remonter », quand la liste est longue."
    ],
-   "aSavoir": "Les filtres tiennent sur une ligne et chaque colis prend deux fois moins de place (v192).",
-   "version": "v194",
+   "aSavoir": "Depuis la v213 l'écran ne remonte plus tout seul quand la liste se met à jour : on reste où l'on lisait.",
+   "version": "v213",
    "aller": {
     "page": "equipe.html"
    }

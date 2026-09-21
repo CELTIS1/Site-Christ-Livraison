@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260921adresse">
+<link rel="stylesheet" href="style.css?v=20260921stable">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260921adresse"></script>
-<script src="splash.js?v=20260921adresse"></script>
+<script src="theme.js?v=20260921stable"></script>
+<script src="splash.js?v=20260921stable"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -536,20 +536,6 @@
     <div id="mb-detail"></div>
   </div>
 
-  <div class="card" id="section-releve">
-    <h2 class="panel-subtitle" style="margin:0 0 4px;">💰 Mon relevé — ce que CLT vous doit</h2>
-    <div id="releve-libelle" style="font-size:12.5px; color:var(--muted); margin:2px 0 12px;">
-      Montant des articles encaissés pour vous à la livraison, et ce qu'il reste à vous reverser. Les frais de livraison ne sont pas inclus (ils reviennent à CLT).
-    </div>
-    <div id="releve-tiles" class="stat-tiles">
-      <div class="empty-state">Chargement...</div>
-    </div>
-    <div id="releve-detail" style="margin-top:12px;"></div>
-    <!-- Historique des reversements : quand, combien, sur combien de colis. Reste vide tant que
-         la vue historique_reversements_fournisseur n'existe pas en base (dégradation gracieuse). -->
-    <div id="releve-historique" style="margin-top:14px;"></div>
-  </div>
-
   <!-- Récapitulatif du JOUR (visible uniquement dans l'onglet Récap), présenté comme la carte
        « Ma tournée » du livreur : compteurs par statut (Récupérés, En cours, Livrés, Non livrés).
        Par défaut la journée du jour ; on peut choisir une autre date. Graphiques mensuels en dessous. -->
@@ -586,6 +572,26 @@
     </div>
   </div>
 
+  <!-- MON RELEVÉ : REPLIÉ D'OFFICE, ET PLACÉ SOUS LE RÉCAPITULATIF. (21/09/2026, Celtis : « ces
+       informations peuvent embrouiller le client ; par défaut c'est replié, et quand il veut, il
+       déplie ».) La ligne repliée dit quand même l'essentiel — ce que CLT lui doit — pour qu'elle
+       n'ait pas à déplier pour le savoir. Il se replie à chaque ouverture de l'écran. -->
+  <div class="card" id="section-releve">
+    <details id="releve-details" class="releve-repli">
+      <summary><span class="releve-repli__titre">💰 Mon relevé</span><span class="releve-repli__resume" id="releve-resume"></span></summary>
+      <div id="releve-libelle" style="font-size:12.5px; color:var(--muted); margin:10px 0 12px;">
+        Montant des articles encaissés pour vous à la livraison, et ce qu'il reste à vous reverser. Les frais de livraison ne sont pas inclus (ils reviennent à CLT).
+      </div>
+      <div id="releve-tiles" class="stat-tiles">
+        <div class="empty-state">Chargement...</div>
+      </div>
+      <div id="releve-detail" style="margin-top:12px;"></div>
+      <!-- Historique des reversements : quand, combien, sur combien de colis. Reste vide tant que
+           la vue historique_reversements_fournisseur n'existe pas en base (dégradation gracieuse). -->
+      <div id="releve-historique" style="margin-top:14px;"></div>
+    </details>
+  </div>
+
   <div class="card" id="section-colis">
     <h2>Mes colis</h2>
     <!-- LES COLIS QUI REVIENNENT (20/09/2026, point 19.1) : quel que soit leur jour — un retour
@@ -618,26 +624,26 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260921adresse"></script>
-<script src="lib/bibliotheques.js?v=20260921adresse"></script>
-<script src="lib/retours.js?v=20260921adresse"></script>
-<script src="lib/reclamations.js?v=20260921adresse"></script>
-<script src="lib/communes-et-tarifs.js?v=20260921adresse"></script>
-<script src="lib/argent.js?v=20260921adresse"></script>
-<script src="lib/releve-cliente.js?v=20260921adresse"></script>
-<script src="lib/papier-a-en-tete.js?v=20260921adresse"></script>
-<script src="lib/briques-argent.js?v=20260921adresse"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260921adresse"></script>
-<script src="lib/annonce-de-remise.js?v=20260921adresse"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260921adresse"></script>
-<script src="lib/primes.js?v=20260921adresse"></script>
-<script src="lib/doublons.js?v=20260921adresse"></script>
-<script src="config.js?v=20260921adresse"></script>
-<script src="mes-boutiques.js?v=20260921adresse"></script>
-<script src="etiquettes-et-scan.js?v=20260921adresse"></script>
-<script src="import-de-colis.js?v=20260921adresse"></script>
-<script src="biometric-lock.js?v=20260921adresse"></script>
-<script src="clt-select-recherche.js?v=20260921adresse"></script>
+<script src="clt-common.js?v=20260921stable"></script>
+<script src="lib/bibliotheques.js?v=20260921stable"></script>
+<script src="lib/retours.js?v=20260921stable"></script>
+<script src="lib/reclamations.js?v=20260921stable"></script>
+<script src="lib/communes-et-tarifs.js?v=20260921stable"></script>
+<script src="lib/argent.js?v=20260921stable"></script>
+<script src="lib/releve-cliente.js?v=20260921stable"></script>
+<script src="lib/papier-a-en-tete.js?v=20260921stable"></script>
+<script src="lib/briques-argent.js?v=20260921stable"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260921stable"></script>
+<script src="lib/annonce-de-remise.js?v=20260921stable"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260921stable"></script>
+<script src="lib/primes.js?v=20260921stable"></script>
+<script src="lib/doublons.js?v=20260921stable"></script>
+<script src="config.js?v=20260921stable"></script>
+<script src="mes-boutiques.js?v=20260921stable"></script>
+<script src="etiquettes-et-scan.js?v=20260921stable"></script>
+<script src="import-de-colis.js?v=20260921stable"></script>
+<script src="biometric-lock.js?v=20260921stable"></script>
+<script src="clt-select-recherche.js?v=20260921stable"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3052,6 +3058,9 @@
         ? { icon:'⏳', value:money(-net), label:'Vous devez à CLT', color:'#c0392b', bg:'#fdeaea' }
         : { icon:'⏳', value:money(net), label:'CLT vous doit', color:'#E26313', bg:'#FBE2CE' },
     ]);
+    // Replié, le relevé dit quand même l'essentiel (21/09/2026).
+    { const resume = document.getElementById('releve-resume');
+      if (resume) resume.textContent = net < 0 ? 'Vous devez à CLT : ' + money(-net) : 'CLT vous doit : ' + money(net); }
     cltPoserHTML(tiles, cards.map(t => `
       <div class="stat-tile" style="--tile-color:${t.color}; --tile-bg:${t.bg}">
         <div class="stat-tile-icon">${t.icon}</div>

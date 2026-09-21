@@ -142,7 +142,7 @@ vm.runInContext([
      simplement un total plus bas. C'est le pire des deux mondes, une série morte qui ne dit
      rien. Le décompte de la publication compte donc aussi les fichiers qui n'arrivent pas
      au bout. */
-  'departDeCollecte', 'messageDepartRecuperation', 'lienDepartRecuperation',
+  'departDeCollecte', 'departAncienDeCollecte', 'lieuRecuperationPourNouveauColis', 'lieuAInscrireSurLaFiche', 'messageDepartRecuperation', 'lienDepartRecuperation',
   /* Chaque jour, son affichage (07/09/2026) : le tri des colis hors programme par jour, et le
      message du bouton WhatsApp de la tournée. Même leçon : le dessin les appelle. */
   'dayKey', 'jourDuColis', 'colisHorsProgrammeDuJour', 'messageContactRecuperation', 'lienContactRecuperation',
@@ -1653,6 +1653,40 @@ verifier("et quand il y en a plusieurs, c'est le PREMIER départ qui compte",
   ]) === '2026-08-29T09:30:00Z',
   'l\u2019heure reculerait à chaque colis saisi pendant qu\u2019il roule');
 
+/* a bis) UN DÉPART NE VAUT QUE POUR SA JOURNÉE. (21/09/2026) Celtis, un matin à 8 h 51 : « il va
+   partir à 14 h, personne n'a mis 14 h ». En base : un colis du 27/08, un départ du 31/08, jamais
+   abouti — affiché « en route · parti à 14:00 » trois semaines plus tard. */
+const vieux = [{ id: 'a', collecte_depart_at: '2026-08-31T18:00:00+00:00' }, { id: 'b' }];
+verifier("un départ d'il y a trois semaines ne fait PAS dire « en route » aujourd'hui",
+  contexte.departDeCollecte(vieux, '2026-09-21') === null);
+verifier("… il est rendu à part, pour être dit avec sa date",
+  contexte.departAncienDeCollecte(vieux, '2026-09-21') === '2026-08-31T18:00:00+00:00');
+verifier("un départ du jour même reste « en route », et n'est pas « ancien »",
+  contexte.departDeCollecte([{ id: 'a', collecte_depart_at: '2026-09-21T08:10:00Z' }], '2026-09-21') === '2026-09-21T08:10:00Z'
+  && contexte.departAncienDeCollecte([{ id: 'a', collecte_depart_at: '2026-09-21T08:10:00Z' }], '2026-09-21') === null);
+verifier("parmi plusieurs vieux départs, c'est le plus RÉCENT qu'on cite",
+  contexte.departAncienDeCollecte([{ id: 'a', collecte_depart_at: '2026-08-31T18:00:00Z' }, { id: 'b', collecte_depart_at: '2026-09-15T10:54:00Z' }], '2026-09-21') === '2026-09-15T10:54:00Z');
+verifier("la tournée passe SON jour aux deux lectures, et le livreur réécrit l'heure quand il repart un autre jour",
+  (sourceConfig.match(/departAt: departDeCollecte\(aPrendre, jour\),\n\s+departAncienAt: departAncienDeCollecte\(aPrendre, jour\),/g) || []).length === 2
+  && /String\(c\.collecte_depart_at\)\.slice\(0, 10\) !== new Date\(\)\.toISOString\(\)\.slice\(0, 10\)/.test(livreur));
+verifier("le bureau dit le vieux départ avec sa date, jamais « en route »",
+  /\(!enRoute && l\.departAncienAt\)/.test(equipe) && /Un départ avait été signalé le/.test(equipe));
+verifier("les heures se lisent à l'heure d'Abidjan, où que soit l'écran",
+  (common.match(/timeZone: "Africa\/Abidjan"/g) || []).length >= 3);
+
+/* a ter) LA FICHE SE COMPLÈTE TOUTE SEULE, UNE FOIS. (21/09/2026) */
+verifier("fiche sans commune + commune tapée pour la fournée : elle s'inscrit sur la fiche, avec le repère",
+  JSON.stringify(contexte.lieuAInscrireSurLaFiche({ commune_recuperation: null, adresse_recuperation: '' }, { commune_recuperation: ' Cocody ', adresse_recuperation: 'Angré 8e' })) === '{"commune_recuperation":"Cocody","adresse_recuperation":"Angré 8e"}');
+verifier("fiche qui a DÉJÀ sa commune : on n'y touche jamais, même si la fournée part d'ailleurs",
+  contexte.lieuAInscrireSurLaFiche({ commune_recuperation: 'Yopougon' }, { commune_recuperation: 'Cocody', adresse_recuperation: 'dépôt' }) === null);
+verifier("rien de tapé : rien à écrire ; un repère déjà sur la fiche n'est pas écrasé",
+  contexte.lieuAInscrireSurLaFiche({}, { commune_recuperation: '  ' }) === null
+  && JSON.stringify(contexte.lieuAInscrireSurLaFiche({ adresse_recuperation: 'Zone 4' }, { commune_recuperation: 'Marcory', adresse_recuperation: 'ailleurs' })) === '{"commune_recuperation":"Marcory"}');
+verifier("la saisie du bureau l'appelle après chaque enregistrement réussi, sans jamais bloquer la saisie",
+  /lotCompleterLaFiche\(fournisseur_id\);\nloadColis\(\);/.test(equipe) && /if \(error\) \{ console\.error\('Fiche cliente :', error\); return; \}/.test(equipe));
+verifier("Tournées : le champ de date est recalé sur le jour réellement utilisé, à chaque chargement",
+  /champJourAffiche\.value !== jour\) champJourAffiche\.value = jour;/.test(equipe) && /id="prog-jour" autocomplete="off"/.test(equipe));
+
 // b) Le message lui-même, écrit une seule fois dans config.js pour les deux écrans.
 const msgComplet = contexte.messageDepartRecuperation({ livreurNom: 'Koffi', commune: 'Yopougon', nbColis: 3 });
 verifier("le message dit QUI vient", /Koffi/.test(msgComplet) && /Christ Livraison/.test(msgComplet), msgComplet);
@@ -1809,7 +1843,8 @@ verifier("et l'appuyer pour de vrai marque le départ des colis de CETTE cliente
 
 // h) Le geste qui change un statut demande confirmation. Un doigt qui glisse dans une cour de
 //    magasin ne doit pas déclarer récupérés des colis qui sont encore dans le carton.
-contexte.tourneeColis.forEach(c => { if (c.fournisseur_id === 'F1') c.collecte_depart_at = '2026-08-29T09:00:00Z'; });
+// (21/09/2026 : un départ ne vaut que pour SA journée — celui-ci est donc daté du jour de l'essai.)
+contexte.tourneeColis.forEach(c => { if (c.fournisseur_id === 'F1') c.collecte_depart_at = AUJ + 'T09:00:00Z'; });
 gestesPoses.length = 0;
 poseLivreur = '';
 renderMaTournee();

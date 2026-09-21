@@ -93,8 +93,9 @@ function cltNoterOngletOuvert(espace, onglet) {
 function formatDate(iso) {
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) +
-    " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  // À l'heure d'Abidjan, comme formatHeure (21/09/2026).
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", timeZone: "Africa/Abidjan" }) +
+    " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Abidjan" });
 }
 
 /* L'heure seule, sans la date. (29/08/2026)
@@ -105,7 +106,10 @@ function formatDate(iso) {
    heures différentes pour le même départ. */
 function formatHeure(iso) {
   if (!iso) return "";
-  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  // 21/09/2026 : l'heure est celle d'ABIDJAN, où que soit l'écran. Lue depuis un autre fuseau
+  // (le gérant en voyage), « parti à 18:00 » devenait « parti à 14:00 » : une heure que personne
+  // n'avait vécue. Les livreurs et les clientes, eux, sont à Abidjan : rien ne change pour eux.
+  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Abidjan" });
 }
 
 // ---------- La date du jour, telle que la personne la lit sur son téléphone ----------
@@ -1234,6 +1238,26 @@ async function cltInitPushButton(role, lireUserId){
       // Décalage au-dessus de la barre d'onglets basse, si la page en a une.
       if (document.querySelector(".clt-bottomnav")) btn.classList.add("clt-haut--barre");
 
+      /* « ALLER EN BAS », SON JUMEAU — au bureau seulement. (21/09/2026, Celtis : « quand il y a
+         beaucoup de colis, c'est assez lassant : un bouton pour aller en bas directement ».)
+         Posé juste au-dessus de « Remonter ». Il ne se montre que sur une page vraiment longue
+         (plus de trois écrans) et tant qu'on est loin du bas ; arrivé en bas, il s'efface.
+         Les clientes et les livreurs ne l'ont pas : leurs listes sont courtes, et un bouton de
+         plus sur un téléphone est un bouton de trop. */
+      var bas = null;
+      if (/(^|\/)equipe\.html$/.test(location.pathname)) {
+        bas = document.createElement("button");
+        bas.type = "button";
+        bas.className = "clt-haut clt-bas" + (btn.classList.contains("clt-haut--barre") ? " clt-haut--barre" : "");
+        bas.setAttribute("aria-label", "Aller en bas de la page");
+        bas.title = "Aller en bas";
+        bas.innerHTML =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" ' +
+          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>';
+        document.body.appendChild(bas);
+      }
+
       var reduire = false;
       try { reduire = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
 
@@ -1245,12 +1269,32 @@ async function cltInitPushButton(role, lireUserId){
         }
       });
 
+      if (bas) bas.addEventListener("click", function () {
+        var fond = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+        try { window.scrollTo({ top: fond, behavior: reduire ? "auto" : "smooth" }); } catch (e) { window.scrollTo(0, fond); }
+        // La page peut s'allonger pendant la descente (des colis finissent de se charger) : si l'on
+        // s'est arrêté à moins d'un écran du vrai bas, on finit le chemin.
+        setTimeout(function () {
+          var total = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+          var reste = total - ((window.pageYOffset || 0) + window.innerHeight);
+          if (reste > 2 && reste < window.innerHeight) { try { window.scrollTo({ top: total, behavior: "auto" }); } catch (e) { window.scrollTo(0, total); } }
+        }, 1100);
+      });
+
       // Seuil : un écran et demi. En dessous, remonter au doigt est immédiat et
       // le bouton ne ferait qu'encombrer.
-      var visible = false;
+      var visible = false, basVisible = false;
       function evaluer() {
         var y = window.pageYOffset || document.documentElement.scrollTop || 0;
         var doitEtreVisible = y > Math.max(320, window.innerHeight * 1.5);
+        if (bas) {
+          var total = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+          var reste = total - (y + window.innerHeight);
+          var montrerBas = total > window.innerHeight * 3 && reste > window.innerHeight * 1.5;
+          if (montrerBas !== basVisible) { basVisible = montrerBas; bas.classList.toggle("visible", montrerBas); }
+          // Seul à l'écran, « Aller en bas » prend la place du bas ; à deux, il se pose au-dessus.
+          bas.classList.toggle("clt-bas--seul", !doitEtreVisible);
+        }
         if (doitEtreVisible === visible) return;   // rien à faire : on évite de toucher au DOM
         visible = doitEtreVisible;
         btn.classList.toggle("visible", visible);
@@ -1342,6 +1386,63 @@ function cltUrlACote(nomFichier) {
   var src = (tous.length ? tous[tous.length - 1].src : "") || "";
   return src.replace(/[^/]*$/, "") + nomFichier;
 }
+/* À CHACUN SES NOUVEAUTÉS. (21/09/2026, Celtis : « du côté des clients, je ne veux pas qu'ils
+   voient tout ce qui est fait. S'il y a une mise à jour qui ne les concerne pas, ils voient juste
+   "mise à jour effectuée". Pareil pour les livreurs. Les détails, seulement quand ça les concerne.
+   C'est l'équipe qui peut tout recevoir. »)
+   La règle du 18/09 demandait déjà de la retenue à celui qui ÉCRIT la note ; celle-ci ne compte
+   plus sur lui : c'est le panneau qui trie.
+     • QUI LIT ? On le sait à la page : equipe.html et gestion.html → l'équipe, qui voit tout ;
+       livreur.html → le livreur ; fournisseur.html → la cliente ; les pages Express → Express ;
+       la page de connexion et tout le reste → le public, qui ne voit aucun détail.
+     • QU'EST-CE QUI LE CONCERNE ? Un point qui s'adresse à lui : il commence par son nom
+       (« Clientes : … », « Livreurs : … », « Coursier : … ») — c'est déjà ainsi que les notes
+       s'écrivent depuis le 18/09 — ou l'entrée le dit dans `pour` / `points_pour`.
+     • LE RESTE devient UNE phrase neutre, une seule, quel que soit le nombre de mises à jour.
+   Pur : ni DOM, ni réseau. Rend { toutVoir, entrees:[{date, titre, points}], neutre }. */
+var CLT_NOUVEAUTES_NEUTRE = "Mise à jour effectuée : des améliorations pour le bon fonctionnement de l'application.";
+var CLT_NOUVEAUTES_LECTEURS = {
+  cliente: /(^|[.;] )(Clientes?|Cliente ›|Espace cliente|Vendeuses?)\s*[:›]/,
+  livreur: /(^|[.;] )(Livreurs?|Livreur ›|Espace livreur)\s*[:›]/,
+  express: /(^|[.;] )(Coursiers?|Express|Client Express|Clients? Express)\s*[:›]/
+};
+function cltLecteurDeLaPage(chemin) {
+  var page = String(chemin || "").split("?")[0].split("#")[0].split("/").pop() || "";
+  if (/^(equipe|gestion)\.html$/.test(page)) return "equipe";
+  if (page === "livreur.html") return "livreur";
+  if (page === "fournisseur.html") return "cliente";
+  if (/^express-(client|coursier)\.html$/.test(page)) return "express";
+  return "public";
+}
+/* D'un point, ne garder que les phrases adressées au lecteur. « Express : … Livreurs : … » ne
+   montre au livreur que sa phrase ; une phrase sans étiquette suit celle d'avant. */
+function cltPartDuLecteur(point, motif) {
+  var phrases = String(point || "").replace(/([.!?])\s+(?=[A-ZÀ-Ý«])/g, "$1\u0001").split("\u0001"), aMoi = false, gardees = [];
+  phrases.forEach(function (ph) {
+    var etiquette = /^[A-ZÀ-Ý][^:›.]{1,40}\s*[:›]/.test(ph);
+    if (etiquette) aMoi = new RegExp("^" + motif.source.replace("(^|[.;] )", "")).test(ph);
+    if (aMoi) gardees.push(ph);
+  });
+  return gardees.join(" ");
+}
+function cltNouveautesPour(entrees, lecteur, max) {
+  var liste = (Array.isArray(entrees) ? entrees : []).slice(0, max || 6);
+  if (lecteur === "equipe") {
+    return { toutVoir: true, neutre: "", entrees: liste.map(function (e) { return { date: e.date || "", titre: e.titre || "Mise à jour", points: (e.points || []).slice() }; }) };
+  }
+  var motif = CLT_NOUVEAUTES_LECTEURS[lecteur] || null;
+  var gardees = [], ilYADuReste = false;
+  liste.forEach(function (e) {
+    var points = [];
+    if (e && e.points_pour && Array.isArray(e.points_pour[lecteur])) points = e.points_pour[lecteur].slice();
+    else if (motif) (e.points || []).forEach(function (pt) { var mien = cltPartDuLecteur(pt, motif); if (mien) points.push(mien); });
+    if (points.length) gardees.push({ date: e.date || "", titre: "Nouveau pour vous", points: points });
+    if (points.join(" ").length < (e.points || []).join(" ").length) ilYADuReste = true;
+  });
+  return { toutVoir: false, entrees: gardees, neutre: (ilYADuReste || !gardees.length) ? CLT_NOUVEAUTES_NEUTRE : "" };
+}
+window.cltNouveautesPour = cltNouveautesPour; window.cltLecteurDeLaPage = cltLecteurDeLaPage;
+
 function cltAfficherNouveautes(options) {
   options = options || {};
   var ancien = document.getElementById("clt-nouveautes");
@@ -1370,7 +1471,13 @@ function cltAfficherNouveautes(options) {
       corps.textContent = "";
       var entrees = (j && Array.isArray(j.entrees)) ? j.entrees : [];
       if (!entrees.length) { corps.textContent = "Rien à signaler pour le moment."; return; }
-      entrees.slice(0, options.max || 6).forEach(function (e, i) {
+      // À chacun ses nouveautés (21/09/2026) : l'équipe voit tout, les autres ce qui les concerne.
+      var tri = cltNouveautesPour(entrees, options.lecteur || cltLecteurDeLaPage(location.pathname), options.max || 6);
+      if (tri.neutre) {
+        var neutre = document.createElement("p"); neutre.className = "clt-nouveautes__neutre"; neutre.textContent = tri.neutre;
+        if (!tri.entrees.length) { corps.appendChild(neutre); return; }
+      }
+      tri.entrees.forEach(function (e, i) {
         var bloc = document.createElement("section"); bloc.className = "clt-nouveautes__entree" + (i === 0 ? " est-recente" : "");
         var h = document.createElement("h3"); h.textContent = e.titre || "Mise à jour";
         /* LA DATE SEULE, PAS L'ÉTIQUETTE. (18/09/2026) Ce panneau s'ouvre depuis la page de
@@ -1384,6 +1491,7 @@ function cltAfficherNouveautes(options) {
         (e.points || []).forEach(function (pt) { var li = document.createElement("li"); li.textContent = pt; ul.appendChild(li); });
         bloc.appendChild(h); bloc.appendChild(d); bloc.appendChild(ul); corps.appendChild(bloc);
       });
+      if (tri.neutre) corps.appendChild(neutre);
     })
     .catch(function () { corps.textContent = "Les nouveautés ne sont pas disponibles hors connexion."; });
   return { fermer: clore };

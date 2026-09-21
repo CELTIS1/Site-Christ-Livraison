@@ -374,6 +374,13 @@ function brancherBoutonsDemandes(racine){
 
 async function chargerProgrammations(){
 const jour = progGetJour();
+/* LE CHAMP MONTRE TOUJOURS LE JOUR QUI SERA ÉCRIT. (21/09/2026, Celtis : « il y a une date qui
+   s'affiche, une date qu'on n'a pas choisie ».) La journée réelle est progGetJour() ; le champ
+   n'en était qu'un reflet posé une fois à l'ouverture. Un onglet resté ouvert la nuit, ou un
+   navigateur qui restaure l'ancienne valeur au rechargement, et l'écran affichait un jour
+   pendant que « Ajouter à la tournée » écrivait sur un autre. On recale donc le champ ici, à
+   chaque chargement : une seule vérité, et c'est celle qu'on lit. */
+{ const champJourAffiche = document.getElementById('prog-jour'); if (champJourAffiche && champJourAffiche.value !== jour) champJourAffiche.value = jour; }
 progEnCours = true; progErreur = '';
 renderProgrammationBody();
 
@@ -642,6 +649,9 @@ ${fini
 : libelleAnnonceRecuperation(l)
 ? `<span class="tournee-annonce">${escapeHTML(libelleAnnonceRecuperation(l))}</span>${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}${enRoute ? ` · <span class="tournee-depart">parti à ${escapeHTML(formatHeure(l.departAt))}</span>` : ''}`
 : `<strong>${compte(l.nbAPrendre)}</strong> à prendre${l.nbDejaPris ? ` · <span class="tournee-pris">${l.nbDejaPris} déjà pris</span>` : ''}${enRoute ? ` · <span class="tournee-depart">parti à ${escapeHTML(formatHeure(l.departAt))}</span>` : ''}`}
+<!-- Un départ d'un AUTRE jour (21/09/2026) : le livreur était parti, la récupération n'a jamais
+     abouti. On le dit avec sa date — et surtout pas « en route ». -->
+${(!enRoute && l.departAncienAt) ? `<div class="tournee-rien tournee-rien--attente">⚠️ Un départ avait été signalé le ${escapeHTML(formatDate(l.departAncienAt))} — la récupération n'a pas abouti. À rappeler, ou à retirer si le colis n'existe plus.</div>` : ''}
 <!-- Ce que la cliente a annoncé, répété tel quel quand rien ne le dit déjà. Sans cette ligne,
      le champ de saisie est en écriture seule sur une tournée posée pour demain — et une
      annonce ne se relit jamais. (30/08/2026, ajouté en relecture) -->

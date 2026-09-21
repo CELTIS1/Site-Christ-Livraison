@@ -1445,7 +1445,9 @@ html[data-theme="dark"] .demande-ligne + .demande-ligne{ border-top-color:rgba(2
 /* Les tuiles reçoivent --tile-color / --tile-bg depuis l'écran (cliente, gestion) ; ces variables
    n'étaient lues par personne — toutes les tuiles restaient blanches et bleu marine (20/09, lot D).
    La nuit, on garde le fond sombre et on ne colore que le chiffre. */
-.stat-tile{ background:var(--tile-bg, var(--white)); }
+/* Sauf la tuile « Total », qui garde son fond marine : posée APRÈS sa règle, celle-ci la peignait
+   en blanc — chiffre blanc sur fond blanc, une tuile vide chez la cliente le jour (vu le 21/09/2026). */
+.stat-tile:not(.stat-tile-total){ background:var(--tile-bg, var(--white)); }
 .stat-tile-value{ color:var(--tile-color, var(--navy)); }
 html[data-theme="dark"] .stat-tile{ background:#1f2a3a; border-color:#2A3849; box-shadow:none; }
 html[data-theme="dark"] .stat-tile-value{ color:var(--tile-color, #E6ECF3); filter:brightness(1.35); }
@@ -2415,6 +2417,11 @@ html[data-theme="dark"] .clt-rs__panneau--feuille::before{ background:#3A4B60; }
     bottom:calc(74px + var(--clt-maj-h, 64px) + 12px + env(safe-area-inset-bottom, 0px));
   }
 }
+/* « Aller en bas » (21/09/2026) : le jumeau de « Remonter », posé 56 px au-dessus de lui — ou à sa
+   place quand il est seul. Mêmes décalages (barre d'onglets, bandeau de mise à jour). */
+.clt-bas{ margin-bottom:56px; background:#FFFFFF; color:var(--navy); border:1.5px solid var(--border-strong); }
+.clt-bas.clt-bas--seul{ margin-bottom:0; }
+html[data-theme="dark"] .clt-bas{ background:#1a2230; color:#d5deea; border-color:#2c3a50; }
 @media (prefers-reduced-motion: reduce){ .clt-haut{ transition:opacity .2s ease; transform:none; } }
 
 
@@ -2667,6 +2674,7 @@ html[data-theme="dark"] .pdj-cliente{ background:#1A2433; border-color:#2B3A4E; 
 .clt-nouveautes__entree h3 { margin: 0 0 2px; font-size: 15px; }
 .clt-nouveautes__entree.est-recente h3::before { content: "Nouveau"; display: inline-block; background: #E26313; color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; margin-right: 8px; vertical-align: middle; }
 .clt-nouveautes__date { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+.clt-nouveautes__neutre { margin: 10px 0 2px; padding: 10px 12px; border-radius: 10px; background: #F3F6FA; color: #3D4B5C; font-size: 13.5px; line-height: 1.45; }
 .clt-nouveautes__entree ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5; }
 .clt-nouveautes__entree li { margin: 3px 0; }
 /* LA NUIT (20/09/2026 — capture de Celtis, téléphone). Cette règle suivait le réglage du TÉLÉPHONE
@@ -2683,6 +2691,7 @@ html[data-theme="dark"] .clt-nouveautes__fermer:hover{ background:#243247; }
 html[data-theme="dark"] .clt-nouveautes__entree{ border-color:#2A3849; }
 html[data-theme="dark"] .clt-nouveautes__entree h3{ color:#E6ECF3; }
 html[data-theme="dark"] .clt-nouveautes__date{ color:#9DB0C4; }
+html[data-theme="dark"] .clt-nouveautes__neutre{ background:#1a2230; color:#c6d2e0; }
 html[data-theme="dark"] .clt-aide__contenu, html[data-theme="dark"] .clt-aide__contenu li{ color:#E6ECF3; }
 html[data-theme="dark"] .clt-aide__astuce{ color:#F3D9B8; }
 html[data-theme="dark"] .clt-aide__lien{ color:#9DB0C4; }
@@ -3944,3 +3953,14 @@ html[data-theme="dark"] .btn-colis-deplier{ color:#9EC0E6; }
 html[data-theme="dark"] .recharge-alerte{ color:#ff9d92; }
 .rx-champ--verrou input{ background:var(--grey-bg); color:var(--muted); cursor:not-allowed; }
 html[data-theme="dark"] .rx-champ--verrou input{ background:#141b27; color:#8d9bb0; }
+
+/* « Mon relevé » replié d'office chez la cliente (21/09/2026). */
+.releve-repli > summary{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; cursor:pointer; list-style:none; min-height:44px; font-weight:700; color:var(--navy); }
+.releve-repli > summary::-webkit-details-marker{ display:none; }
+.releve-repli__titre::before{ content:'▸'; display:inline-block; width:18px; color:var(--muted); }
+.releve-repli[open] .releve-repli__titre::before{ content:'▾'; }
+.releve-repli__titre{ flex:1 1 auto; font-size:15px; }
+.releve-repli__resume{ flex:0 0 auto; font-size:13.5px; font-weight:800; color:#E26313; white-space:nowrap; }
+.releve-repli[open] .releve-repli__resume{ display:none; }
+html[data-theme="dark"] .releve-repli > summary{ color:#9cc2f0; }
+html[data-theme="dark"] .releve-repli__resume{ color:#ffb27a; }

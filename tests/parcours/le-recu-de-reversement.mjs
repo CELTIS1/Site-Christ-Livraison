@@ -29,6 +29,9 @@ verifier('la page est ouverte sans erreur', erreurs.length === 0, erreurs.join('
 // Le relevé — et les reçus avec lui — vit dans l'onglet « Récap », celui qu'elle vient consulter.
 await page.locator('#clt-bottomnav .nav[data-target="section-recap"]').click();
 await dodo(1500);
+// Depuis le 21/09/2026 « Mon relevé » est replié d'office : la cliente le déplie pour lire ses reçus.
+await page.locator('#releve-details > summary').click();
+await new Promise(r => setTimeout(r, 400));
 const bloc = page.locator('#releve-historique');
 verifier('le bloc des reçus est là', (await bloc.count()) === 1 && /Mes reçus de reversement/.test(await bloc.innerText()),
   await bloc.innerText().catch(() => 'vide'));

@@ -96,13 +96,34 @@ function numeroInternational(tel) {
    répondre la même chose à « est-il en route ? ». Deux lectures séparées de la même colonne
    finiraient par diverger, et le bureau annoncerait un livreur en route quand son téléphone lui
    propose encore de partir. */
-function departDeCollecte(colisDeLaCliente) {
+/* UN DÉPART NE VAUT QUE POUR SA JOURNÉE. (21/09/2026)
+   Celtis, devant une carte « en route · parti à 14:00 » un matin à 8 h 51 : « personne n'a mis
+   14 h, ça va seul ». Mesuré en base : le colis datait du 27/08, et son départ du 31/08 à 18 h —
+   trois semaines plus tôt. Le livreur était parti ce jour-là, la récupération n'avait jamais
+   abouti, et l'heure, affichée SANS SA DATE, passait pour celle d'aujourd'hui (14:00 au lieu de
+   18:00 parce que l'écran était lu depuis un autre fuseau — voir formatHeure).
+   Quand `jour` est donné, seuls les départs DE CE JOUR-LÀ font dire « en route ». Les autres
+   sont rendus à part par departAncienDeCollecte(), pour être dits avec leur date. */
+function departDeCollecte(colisDeLaCliente, jour) {
   let tot = null;
   (colisDeLaCliente || []).forEach(function (c) {
     if (!c || !c.collecte_depart_at) return;
+    if (jour && String(c.collecte_depart_at).slice(0, 10) !== jour) return;
     if (tot === null || String(c.collecte_depart_at) < String(tot)) tot = c.collecte_depart_at;
   });
   return tot;
+}
+
+/* Le départ le plus récent d'un AUTRE jour que `jour` : un livreur était parti, la récupération
+   n'a pas abouti. Le bureau doit le savoir — avec la date, et sans « en route ». */
+function departAncienDeCollecte(colisDeLaCliente, jour) {
+  let tard = null;
+  (colisDeLaCliente || []).forEach(function (c) {
+    if (!c || !c.collecte_depart_at || !jour) return;
+    if (String(c.collecte_depart_at).slice(0, 10) >= jour) return;
+    if (tard === null || String(c.collecte_depart_at) > String(tard)) tard = c.collecte_depart_at;
+  });
+  return tard;
 }
 
 /* OÙ FAUT-IL ALLER LA CHERCHER ? (29/08/2026)
@@ -169,6 +190,24 @@ function lieuRecuperationPourNouveauColis(fiche) {
     commune_recuperation: commune === "" ? null : commune,
     adresse_recuperation: adresse === "" ? null : adresse,
   };
+}
+
+/* LA FICHE SE COMPLÈTE TOUTE SEULE, UNE FOIS. (21/09/2026)
+   Celtis : « lorsqu'il n'y a pas de commune renseignée et qu'on la renseigne, ça doit
+   s'actualiser dans son compte, pour ne pas que chaque fois on vienne saisir. »
+   Quand le bureau saisit des colis pour une cliente dont la fiche n'a PAS de commune de
+   récupération, et qu'il en tape une pour la fournée, cette commune devient celle de la fiche.
+   Rend ce qu'il faut écrire sur le profil, ou null.
+   On ne touche JAMAIS une fiche qui a déjà sa commune : la changer pour un jour (la cliente
+   est exceptionnellement à son dépôt) est un geste voulu, qui ne doit pas déménager son compte.
+   L'adresse suit la même règle, séparément. */
+function lieuAInscrireSurLaFiche(fiche, saisi) {
+  const f = lieuRecuperationPourNouveauColis(fiche);
+  const s = lieuRecuperationPourNouveauColis(saisi);
+  if (f.commune_recuperation || !s.commune_recuperation) return null;
+  const patch = { commune_recuperation: s.commune_recuperation };
+  if (!f.adresse_recuperation && s.adresse_recuperation) patch.adresse_recuperation = s.adresse_recuperation;
+  return patch;
 }
 
 /* Les tournées d'une journée, prêtes à dessiner.
@@ -249,7 +288,8 @@ function tourneesDeRecuperation(options) {
       nbDejaPris: dejaPris.length,
       idsAPrendre: aPrendre.map(function (c) { return c.id; }),
       // L'heure du départ, quand le livreur roule déjà vers elle. Voir departDeCollecte().
-      departAt: departDeCollecte(aPrendre),
+      departAt: departDeCollecte(aPrendre, jour),
+        departAncienAt: departAncienDeCollecte(aPrendre, jour),
       nbAnnonce: nbAnnonce,
       annonceReglee: annonceReglee,
       /* CE QUE LE LIVREUR A RÉELLEMENT PRIS. (06/09/2026, Celtis) Sur place, la cliente peut
@@ -380,7 +420,8 @@ function tourneesDeRecuperation(options) {
         // Une cliente hors programme est celle chez qui un départ a le plus de chances d'avoir
         // été déclenché la veille sans que la récupération aboutisse. Elle a donc plus besoin
         // de cette heure-là que les autres, pas moins. Voir departDeCollecte().
-        departAt: departDeCollecte(aPrendre),
+        departAt: departDeCollecte(aPrendre, jour),
+        departAncienAt: departAncienDeCollecte(aPrendre, jour),
         /* Une cliente hors programme n'a, par définition, aucune programmation aujourd'hui —
            donc personne n'a pris son appel ce matin et rien n'a été annoncé pour elle. Les trois
            champs existent quand même, et valent l'absence : une ligne dont la forme change selon
@@ -606,9 +647,12 @@ function libelleAnnonceRecuperation(ligne) {
   if (!(l.ecartAnnonce > 0)) return "";
   const reel = (l.nbAPrendre || 0) + (l.nbDejaPris || 0);
   if (reel >= l.nbAnnonce) return "";
-  const annonces = l.nbAnnonce + (l.nbAnnonce > 1 ? " annoncés" : " annoncé");
-  if (reel === 0) return annonces + " · aucun encore saisi";
-  return annonces + " · " + reel + (reel > 1 ? " saisis" : " saisi");
+  /* 21/09/2026, Celtis : « deux annoncés, un saisi : je ne sais pas ce que ça signifie ». On dit
+     donc QUI a annoncé, et OÙ c'est saisi : la cliente a promis N colis au téléphone, et
+     l'application n'en connaît encore que M. */
+  const annonces = l.nbAnnonce + (l.nbAnnonce > 1 ? " colis annoncés" : " colis annoncé") + " par la cliente";
+  if (reel === 0) return annonces + " · aucun encore saisi dans l'application";
+  return annonces + " · " + reel + (reel > 1 ? " saisis" : " seul saisi") + " dans l'application";
 }
 
 /* LA MÊME TOURNÉE, RANGÉE PAR LIVREUR. (28/08/2026)

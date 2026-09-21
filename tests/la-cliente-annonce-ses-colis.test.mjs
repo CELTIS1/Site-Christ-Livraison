@@ -97,7 +97,7 @@ const DEMAIN = '2026-08-31';
 
 const contexte = vm.createContext({ console, Set, Map, Number, String, Object, JSON, Math });
 vm.runInContext([
-  'aujourdhuiAbidjan', 'jourAbidjan', 'rangDeLaJournee', 'jourEvenementColis', 'departDeCollecte',
+  'aujourdhuiAbidjan', 'jourAbidjan', 'rangDeLaJournee', 'jourEvenementColis', 'departDeCollecte', 'departAncienDeCollecte',
   'colisAttenduAuPlusTard',
   'tourneesDeRecuperation', 'totalDesLignes', 'tourneesParLivreur',
   'programmationARecuperationAEcrire', 'raisonDeRefuserLaProgrammation',
@@ -234,13 +234,13 @@ verifier("un colis déjà ramassé compte comme trouvé, pas comme manquant",
    ========================================================================================== */
 titre("Ce que les deux écrans disent, mot pour mot");
 
-verifier("rien de saisi : « 3 annoncés · aucun encore saisi »",
-  libelleAnnonceRecuperation(troisAnnonces) === '3 annoncés · aucun encore saisi');
-verifier("deux sur trois : « 3 annoncés · 2 saisis »",
-  libelleAnnonceRecuperation(deuxSurTrois) === '3 annoncés · 2 saisis');
+verifier("rien de saisi : « 3 colis annoncés par la cliente · aucun encore saisi dans l'application »",
+  libelleAnnonceRecuperation(troisAnnonces) === "3 colis annoncés par la cliente · aucun encore saisi dans l'application");
+verifier("deux sur trois : « … · 2 saisis dans l'application »",
+  libelleAnnonceRecuperation(deuxSurTrois) === "3 colis annoncés par la cliente · 2 saisis dans l'application");
 verifier("le singulier est respecté",
   libelleAnnonceRecuperation(tournee({ nb_colis_annonce: 1 }, []).lignes[0])
-    === '1 annoncé · aucun encore saisi');
+    === "1 colis annoncé par la cliente · aucun encore saisi dans l'application");
 verifier("compte atteint : plus rien à dire",
   libelleAnnonceRecuperation(troisSurTrois) === '');
 verifier("sans annonce : plus rien à dire non plus",

@@ -786,6 +786,14 @@ function captureScrollAnchor(container) {
   const items = container.querySelectorAll("[data-id]");
   for (const item of items) {
     const rect = item.getBoundingClientRect();
+    /* UNE CARTE CACHÉE OU ÉPINGLÉE N'EST PAS UN REPÈRE. (21/09/2026) Sur grand écran, le bureau
+       lit des lignes compactes : les cartes sont cachées, sauf la fiche choisie, ÉPINGLÉE à
+       droite (position fixe). Elle seule avait un « bas » visible, donc c'est elle qu'on prenait
+       pour repère — et après le redessin, la même carte, pas encore épinglée, se trouvait tout
+       en haut de la page : l'écart valait des milliers de pixels et l'écran remontait d'un
+       coup. Celtis : « arrivé en bas, ça fait comme un bug et ça remonte. » */
+    if (!rect.width && !rect.height) continue;
+    if (typeof getComputedStyle === "function" && getComputedStyle(item).position === "fixed") continue;
     if (rect.bottom > 0) {
       return { id: item.dataset.id, top: rect.top };
     }
@@ -797,7 +805,9 @@ function restoreScrollAnchor(container, anchor) {
   if (!anchor || !container) return;
   const newItem = container.querySelector(`[data-id="${CSS.escape(anchor.id)}"]`);
   if (!newItem) return;
-  const delta = newItem.getBoundingClientRect().top - anchor.top;
+  const r = newItem.getBoundingClientRect();
+  if (!r.width && !r.height) return;   // carte cachée (grand écran) : aucun repère, on ne bouge pas
+  const delta = r.top - anchor.top;
   if (delta) window.scrollBy(0, delta);
 }
 

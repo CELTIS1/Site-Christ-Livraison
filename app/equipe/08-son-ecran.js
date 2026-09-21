@@ -1042,7 +1042,8 @@ const btnAjout = document.getElementById('btn-prog-ajouter');
 const body = document.getElementById('prog-body');
 
 if (champ) {
-if (!champ.value) champ.value = aujourdhuiAbidjan();
+// Toujours le jour d'Abidjan à l'ouverture, même si le navigateur a restauré une ancienne valeur (21/09/2026).
+champ.value = (typeof progGetJour === 'function') ? progGetJour() : aujourdhuiAbidjan();
 champ.addEventListener('change', () => {
 progJourChoisi = champ.value || null;
 chargerProgrammations();
