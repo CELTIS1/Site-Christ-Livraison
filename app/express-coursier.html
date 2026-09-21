@@ -17,10 +17,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260921recharges">
+<link rel="stylesheet" href="style.css?v=20260921especes">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260921recharges"></script>
-<script src="splash.js?v=20260921recharges"></script>
+<script src="theme.js?v=20260921especes"></script>
+<script src="splash.js?v=20260921especes"></script>
 <style>
   .topbar{ background:#0D9488; }
   .topbar .brand .logo-mark{ background:#0b6e64; }
@@ -109,6 +109,10 @@
     color:#0b6e64; margin:8px 0;
   }
   .momo-number-box strong{ font-size:16px; letter-spacing:0.5px; }
+  .momo-choice--especes{ flex:1 1 100%; display:flex; flex-direction:row; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:8px 12px; }
+  .momo-choice--especes .momo-emoji{ display:inline; margin:0; font-size:20px; }
+  .recharge-recu-wa{ display:flex; justify-content:center; text-align:center; width:100%; min-height:44px; align-items:center; margin-top:10px; text-decoration:none; }
+  .recharge-recu-note{ display:block; margin-top:6px; font-size:12px; font-weight:500; opacity:.85; }
   .recharge-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--border,#eee); font-size:13px; }
   .recharge-item:first-child{ border-top:none; }
 
@@ -419,17 +423,17 @@
     <button type="button" class="account-modal-close" id="recharge-modal-close" aria-label="Fermer" data-clt-fermer>✕</button>
     <h2 class="account-modal-title">Recharger mon solde</h2>
     <div id="recharge-msg"></div>
-    <p style="font-size:13px;color:var(--muted);margin:0 0 8px;">
-      Envoyez le montant par Mobile Money au numéro de CLT ci-dessous, puis déclarez votre envoi.
-      L'équipe valide et votre solde est crédité.
+    <p id="recharge-intro" style="font-size:13px;color:var(--muted);margin:0 0 8px;">
+      Par Mobile Money, d'où que vous soyez : envoyez le montant au numéro de CLT, puis déclarez votre envoi.
+      Ou en espèces, si vous passez au bureau. Dans les deux cas l'équipe valide, et votre solde est crédité.
     </p>
     <form id="form-recharge">
-      <label style="font-size:13px;font-weight:600;color:var(--navy);">1. Opérateur</label>
+      <label style="font-size:13px;font-weight:600;color:var(--navy);">1. Comment rechargez-vous ?</label>
       <div class="momo-grid" id="momo-grid"></div>
       <div class="momo-number-box hidden" id="momo-number-box"></div>
 
       <div class="field" style="margin-top:8px;">
-        <label>2. Montant envoyé</label>
+        <label id="recharge-montant-label">2. Montant envoyé</label>
         <div class="amount-input">
           <input type="number" id="recharge-montant" min="100" step="100" required placeholder="Ex : 2000" inputmode="numeric">
           <span class="amount-suffix">FCFA</span>
@@ -629,10 +633,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260921recharges"></script>
-<script src="express-config.js?v=20260921recharges"></script>
-<script src="recharges-express.js?v=20260921recharges"></script>
-<script src="biometric-lock.js?v=20260921recharges"></script>
+<script src="clt-common.js?v=20260921especes"></script>
+<script src="express-config.js?v=20260921especes"></script>
+<script src="recharges-express.js?v=20260921especes"></script>
+<script src="biometric-lock.js?v=20260921especes"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1276,12 +1280,10 @@
   function buildMomoGrid(){
     const grid = document.getElementById('momo-grid');
     const avail = EXPRESS_MOMO_OPERATEURS.filter(op => momoNumbers[op.key] || (op.key === 'wave' && waveEnLigneActif()));
-    if (!avail.length) {
-      grid.innerHTML = `<div style="font-size:13px;color:var(--muted);">Les numéros de recharge ne sont pas encore configurés. Contactez CLT Express.</div>`;
-      return;
-    }
+    // Second choix, toujours là (21/09/2026) : les espèces remises au bureau. Mobile Money reste en tête.
+    avail.push({ key: 'especes', label: 'Espèces au bureau', emoji: '💵' });
     grid.innerHTML = avail.map(op => `
-      <div class="momo-choice" data-op="${op.key}">
+      <div class="momo-choice${op.key === 'especes' ? ' momo-choice--especes' : ''}" data-op="${op.key}">
         ${op.logo || `<span class="momo-emoji">${op.emoji}</span>`}
         <span class="momo-choice-name">${escapeHTML(op.label)}</span>
       </div>
@@ -1304,7 +1306,13 @@
     const refField = document.getElementById('recharge-reference-field');
     const btn = document.getElementById('btn-submit-recharge');
     const wavePay = selectedOperateur === 'wave' && waveEnLigneActif();
-    if (wavePay) {
+    document.getElementById('recharge-montant-label').textContent = selectedOperateur === 'especes' ? '2. Montant remis' : '2. Montant envoyé';
+    if (selectedOperateur === 'especes') {
+      numBox.innerHTML = `💵 Remettez les billets à l'équipe, au bureau CLT. Déclarez le montant ici : l'équipe valide devant vous, et votre solde est crédité.`;
+      numBox.classList.remove('hidden');
+      refField.classList.add('hidden');
+      btn.textContent = 'Déclarer mon dépôt en espèces';
+    } else if (wavePay) {
       numBox.innerHTML = `💳 Vous allez payer directement avec <strong>Wave</strong>. Votre solde sera crédité automatiquement dès le paiement confirmé.`;
       numBox.classList.remove('hidden');
       refField.classList.add('hidden');
@@ -1320,6 +1328,9 @@
   function openRechargeModal(){
     selectedOperateur = null;
     document.getElementById('recharge-msg').innerHTML = '';
+    document.getElementById('form-recharge').classList.remove('hidden');
+    document.getElementById('recharge-intro').classList.remove('hidden');
+    document.getElementById('recharge-montant-label').textContent = '2. Montant envoyé';
     document.getElementById('momo-number-box').classList.add('hidden');
     document.getElementById('recharge-reference-field').classList.remove('hidden');
     document.getElementById('btn-submit-recharge').textContent = 'Déclarer mon envoi';
@@ -1618,9 +1629,13 @@
 
     // --- Déclaration manuelle (Orange / MTN / Moov, ou Wave hors ligne) ---
     // Sans API, c'est la référence qui relie la déclaration à l'envoi (21/09/2026) : obligatoire.
-    const ref = window.CLTRecharges ? CLTRecharges.verifierReference(reference) : { ok: !!reference, reference, erreur: 'Indiquez la référence de la transaction.' };
+    const enEspeces = selectedOperateur === 'especes';
+    const ref = enEspeces ? { ok: true, reference: '' } : (window.CLTRecharges ? CLTRecharges.verifierReference(reference) : { ok: !!reference, reference, erreur: 'Indiquez la référence de la transaction.' });
     if (!ref.ok) { msgBox.innerHTML = `<div class="msg msg-error">${escapeHTML(ref.erreur)}</div>`; document.getElementById('recharge-reference').focus(); return; }
-    if (mesRecharges.some(r => r.status !== 'refusee' && window.CLTRecharges && CLTRecharges.normaliserReference(r.reference) === ref.reference)) {
+    if (enEspeces && mesRecharges.some(r => r.status === 'en_attente' && r.operateur === 'especes')) {
+      msgBox.innerHTML = `<div class="msg msg-error">Vous avez déjà un dépôt en espèces en attente : l'équipe doit d'abord le valider.</div>`; return;
+    }
+    if (!enEspeces && mesRecharges.some(r => r.status !== 'refusee' && window.CLTRecharges && CLTRecharges.normaliserReference(r.reference) === ref.reference)) {
       msgBox.innerHTML = `<div class="msg msg-error">Vous avez déjà déclaré cet envoi (même référence). Un envoi ne se déclare qu'une fois.</div>`; return;
     }
     btn.disabled = true; btn.textContent = 'Envoi...';
@@ -1628,21 +1643,34 @@
       coursier_id: currentUser.id,
       montant: montant,
       operateur: selectedOperateur,
-      reference: reference,
+      reference: enEspeces ? null : reference,
       status: 'en_attente',
     });
-    btn.disabled = false; btn.textContent = 'Déclarer mon envoi';
+    btn.disabled = false; btn.textContent = enEspeces ? 'Déclarer mon dépôt en espèces' : 'Déclarer mon envoi';
     if (error) {
       // L'index unique de la base (une référence = un seul crédit) : le dire avec des mots.
       const dejaPrise = /duplicate key|unique|23505/i.test((error.code || '') + ' ' + (error.message || ''));
       msgBox.innerHTML = `<div class="msg msg-error">${dejaPrise ? 'Cette référence a déjà été déclarée. Un envoi ne se crédite qu\'une fois — vérifiez la référence, ou appelez CLT.' : 'Erreur : ' + friendlyErrorMessage(error.message)}</div>`; return;
     }
-    msgBox.innerHTML = `<div class="msg msg-success">Déclaration envoyée ! Dès que l'équipe l'aura validée, votre solde sera crédité.</div>`;
+    const operateurDit = momoOperateurLabel(selectedOperateur);
+    if (enEspeces) {
+      msgBox.innerHTML = `<div class="msg msg-success">Dépôt déclaré. Remettez les billets à l'équipe : elle valide, et votre solde est crédité.</div>`;
+    } else {
+      // Le reçu (21/09/2026) : un message WhatsApp déjà rédigé vers CLT ; il n'a plus qu'à joindre sa capture.
+      const wa = (typeof CLT_CONTACT !== 'undefined' && CLT_CONTACT.whatsapp && window.CLTRecharges)
+        ? 'https://wa.me/' + CLT_CONTACT.whatsapp + '?text=' + encodeURIComponent(CLTRecharges.messageDuRecu({ nom: (document.getElementById('user-name') || {}).textContent, montant, operateurLabel: operateurDit, reference })) : '';
+      msgBox.innerHTML = `<div class="msg msg-success">Déclaration envoyée ! Dès que l'équipe l'aura validée, votre solde sera crédité.${wa ? `<a class="btn btn-sm recharge-recu-wa" href="${escapeHTML(wa)}" target="_blank" rel="noopener">📎 Envoyer le reçu à CLT sur WhatsApp</a><span class="recharge-recu-note">Facultatif, mais l'équipe valide plus vite avec la capture du reçu.</span>` : ''}</div>`;
+    }
     e.target.reset();
+    // C'est fait : le formulaire s'efface, il ne reste que la confirmation (et le bouton du reçu).
+    e.target.classList.add('hidden');
+    document.getElementById('recharge-intro').classList.add('hidden');
     document.getElementById('momo-number-box').classList.add('hidden');
+    document.querySelectorAll('#momo-grid .momo-choice').forEach(c => c.classList.remove('selected'));
     selectedOperateur = null;
     await loadRecharges();
-    setTimeout(closeRechargeModal, 1800);
+    // Avec le bouton du reçu sous les yeux, on ne referme pas la fenêtre à sa place.
+    if (enEspeces) setTimeout(closeRechargeModal, 2500);
   });
 
   // Branche les sections de la modale « Mon compte » (photo, nom, numéro, mot de

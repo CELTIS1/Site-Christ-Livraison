@@ -12,12 +12,20 @@
      • une même référence ne crédite qu'UNE fois (ici pour l'écran ; en base par un index unique) ;
      • le bureau ne valide qu'après avoir vu CE montant et CETTE référence dans le compte de CLT.
 
+   DEUX VOIES (Celtis, 21/09 au soir) : Mobile Money d'abord — un coursier d'une autre commune
+   ne traverse pas Abidjan pour recharger — et, en second choix, ESPÈCES AU BUREAU : il déclare le
+   montant sur son téléphone, l'équipe reçoit les billets et valide. Pas de référence à saisir :
+   la preuve, ce sont les billets dans la main de celui qui valide (la base note qui a validé).
+   Et pour le reçu : un message WhatsApp déjà rédigé vers CLT, auquel il joint sa capture.
+
    Pur : ni DOM, ni base.
    ========================================================================================== */
 (function () {
   'use strict';
 
   const LONGUEUR_MIN = 6;
+  const ESPECES = 'especes';
+  function referenceRequise(operateur) { return operateur !== ESPECES; }
 
   /* « t_ab 12-cd » et « TAB12CD » sont la même transaction. */
   function normaliserReference(s) {
@@ -52,11 +60,21 @@
   /* Ce que le bureau doit savoir AVANT de créditer. niveau : 'ok' | 'sans_reference' | 'doublon'. */
   function controleAvantValidation(recharge, toutes) {
     if (!recharge) return { niveau: 'sans_reference', bloque: true, message: 'Recharge introuvable.' };
+    if (recharge.operateur === ESPECES) return { niveau: 'especes', bloque: false, titre: 'Espèces bien reçues en main ?', message: 'Ne validez que si les billets sont dans votre main, comptés. Le solde du coursier sera crédité aussitôt, et votre nom restera sur cette validation.' };
     const d = doublons(toutes)[recharge.id];
     if (d && d.length) return { niveau: 'doublon', bloque: true, message: 'Cette référence figure déjà sur une autre recharge : un même envoi ne se crédite qu\'une fois. Refusez celle-ci, ou corrigez avec le coursier.' };
-    if (!verifierReference(recharge.reference).ok) return { niveau: 'sans_reference', bloque: false, message: 'Sans référence, rien ne relie cette déclaration à un envoi. Ne validez qu\'après avoir trouvé ce montant, venant de ce numéro, dans le compte de CLT.' };
-    return { niveau: 'ok', bloque: false, message: 'Avant de valider : ouvrez le compte Mobile Money de CLT et retrouvez CE montant avec CETTE référence. Le solde du coursier sera crédité aussitôt.' };
+    if (!verifierReference(recharge.reference).ok) return { niveau: 'sans_reference', bloque: false, titre: 'Argent bien reçu sur le compte de CLT ?', message: 'Sans référence, rien ne relie cette déclaration à un envoi. Ne validez qu\'après avoir trouvé ce montant, venant de ce numéro, dans le compte de CLT.' };
+    return { niveau: 'ok', bloque: false, titre: 'Argent bien reçu sur le compte de CLT ?', message: 'Avant de valider : ouvrez le compte Mobile Money de CLT et retrouvez CE montant avec CETTE référence. Le solde du coursier sera crédité aussitôt.' };
   }
 
-  window.CLTRecharges = { LONGUEUR_MIN: LONGUEUR_MIN, normaliserReference: normaliserReference, verifierReference: verifierReference, doublons: doublons, controleAvantValidation: controleAvantValidation };
+  /* Le message qui accompagne le reçu sur WhatsApp : tout ce que le bureau doit rapprocher. */
+  function messageDuRecu(i) {
+    const o = i || {};
+    const montant = Number(o.montant) || 0;
+    return 'Bonjour CLT Express, ici ' + (String(o.nom || '').trim() || 'un coursier') + '. '
+      + 'Je viens de recharger mon solde : ' + String(montant).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA par ' + (o.operateurLabel || 'Mobile Money')
+      + ', référence ' + (o.reference || '—') + '. Je joins la capture du reçu.';
+  }
+
+  window.CLTRecharges = { ESPECES: ESPECES, referenceRequise: referenceRequise, messageDuRecu: messageDuRecu, LONGUEUR_MIN: LONGUEUR_MIN, normaliserReference: normaliserReference, verifierReference: verifierReference, doublons: doublons, controleAvantValidation: controleAvantValidation };
 })();

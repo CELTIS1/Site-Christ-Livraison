@@ -364,7 +364,8 @@
      "etapes": [
       "Vous encaissez le prix de la course en espèces. La part de CLT est déduite de votre solde, à chaque course livrée.",
       "Onglet « Solde » › « ➕ Recharger mon solde » : choisissez l'opérateur, envoyez le montant au numéro de CLT affiché, puis indiquez le montant et la RÉFÉRENCE du reçu (ou du SMS), et « Déclarer mon envoi ».",
-      "La référence est obligatoire : c'est elle qui prouve votre paiement. Un même envoi ne se déclare qu'une fois.",
+      "La référence est obligatoire : c'est elle qui prouve votre paiement. Un même envoi ne se déclare qu'une fois. « Envoyer le reçu à CLT sur WhatsApp » : joignez la capture, l'équipe valide plus vite.",
+      "Vous passez au bureau ? Choisissez « Espèces au bureau », indiquez le montant, remettez les billets : l'équipe valide devant vous.",
       "L'équipe valide : votre solde est crédité. « Mes recharges » dit où en est chaque envoi ; « Mes débits » liste chaque commission."
      ],
      "astuce": "Notez la référence reçue par SMS dans la déclaration : la validation est plus rapide."

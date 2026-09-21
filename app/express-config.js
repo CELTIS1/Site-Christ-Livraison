@@ -355,6 +355,7 @@ const EXPRESS_MOMO_OPERATEURS = [
 
 function momoOperateurLabel(key) {
   const op = EXPRESS_MOMO_OPERATEURS.find(o => o.key === key);
+  if (key === "especes") return "Espèces au bureau";
   return op ? op.label : (key || "");
 }
 

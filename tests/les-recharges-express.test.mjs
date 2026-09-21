@@ -41,6 +41,15 @@ verifier('doublon : la validation est BLOQUÉE', cb.niveau === 'doublon' && cb.b
 verifier('référence propre : on rappelle de la chercher dans le compte de CLT', cc.niveau === 'ok' && cc.bloque === false && /CE montant avec CETTE référence/.test(cc.message));
 verifier('ancienne déclaration sans référence : pas bloquée, mais avertie', ce.niveau === 'sans_reference' && ce.bloque === false && /Sans référence/.test(ce.message));
 
+console.log('\n3 bis. Deux voies : Mobile Money d\'abord, espèces au bureau ensuite (21/09 au soir)');
+const esp = { id: 'g', status: 'en_attente', operateur: 'especes', reference: null, montant: 5000 };
+const ctrlEsp = R.controleAvantValidation(esp, L.concat([esp]));
+verifier('en espèces, pas de référence à saisir ; en Mobile Money, toujours', R.referenceRequise('especes') === false && ['wave', 'orange', 'mtn', 'moov'].every((o) => R.referenceRequise(o) === true));
+verifier('au bureau, la question devient « Espèces bien reçues en main ? » — pas bloquée, et on rappelle que le nom reste', ctrlEsp.niveau === 'especes' && ctrlEsp.bloque === false && ctrlEsp.titre === 'Espèces bien reçues en main ?' && /billets sont dans votre main/.test(ctrlEsp.message) && /votre nom restera/.test(ctrlEsp.message));
+verifier('en Mobile Money, la question reste « Argent bien reçu sur le compte de CLT ? »', cc.titre === 'Argent bien reçu sur le compte de CLT ?' && ce.titre === cc.titre);
+verifier('deux dépôts en espèces ne sont jamais des « doublons de référence »', R.doublons([esp, Object.assign({}, esp, { id: 'h' })]).g === undefined);
+verifier('le message du reçu dit qui, combien, par où, quelle référence', R.messageDuRecu({ nom: 'Sery', montant: 3000, operateurLabel: 'Orange Money', reference: 'OM-123456' }) === 'Bonjour CLT Express, ici Sery. Je viens de recharger mon solde : 3 000 FCFA par Orange Money, référence OM-123456. Je joins la capture du reçu.', R.messageDuRecu({ nom: 'Sery', montant: 3000, operateurLabel: 'Orange Money', reference: 'OM-123456' }));
+
 console.log('\n4. La frontière et le branchement');
 const nu = source.replace(/\/\*[\s\S]*?\*\//g, '');
 verifier('pur : ni DOM, ni base', !/document\.|supabaseClient|fetch\(/.test(nu));
@@ -48,9 +57,14 @@ const coursier = lire('app/express-coursier.html'), equipe = lire('app/equipe.ht
 verifier('le coursier : la règle est chargée, la référence n\'est plus « facultative », et la déclaration passe par la règle', /recharges-express\.js\?v=/.test(coursier) && !/Référence de la transaction \(facultatif\)/.test(coursier) && /CLTRecharges\.verifierReference\(reference\)/.test(coursier) && !/reference: reference \|\| null/.test(coursier));
 verifier('le coursier : sa propre redite est arrêtée, et le refus de la base (index unique) est dit avec des mots', /Vous avez déjà déclaré cet envoi/.test(coursier) && /duplicate key\|unique\|23505/.test(coursier));
 verifier('le bureau : règle chargée avant l\'écran ; doublon signalé sur la ligne et validation bloquée', equipe.indexOf('recharges-express.js?v=') > 0 && equipe.indexOf('recharges-express.js?v=') < equipe.indexOf('equipe/09-express-et-temps-reel.js?v=') && /CLTRecharges\.doublons\(expressRecharges\)/.test(ecran) && /if \(controle\.bloque\)/.test(ecran));
-verifier('le bureau : la question posée est « Argent bien reçu sur le compte de CLT ? »', /Argent bien reçu sur le compte de CLT \?/.test(ecran) && !/title: 'Valider cette recharge \?'/.test(ecran));
+verifier('le bureau : la question posée est « Argent bien reçu sur le compte de CLT ? »', /Argent bien reçu sur le compte de CLT \?/.test(ecran + source) && !/title: 'Valider cette recharge \?'/.test(ecran));
 verifier('Wave automatique reste éteint tant que l\'API n\'est pas là', /const EXPRESS_WAVE_PAIEMENT_AUTO = false;/.test(lire('app/express-config.js')));
 verifier('l\'avertissement se lit aussi la nuit', /html\[data-theme="dark"\] \.recharge-alerte/.test(css));
+
+verifier('le coursier : « Espèces au bureau » est le DERNIER choix de la grille, sans référence, un seul dépôt en attente à la fois', /avail\.push\(\{ key: 'especes'/.test(coursier) && /reference: enEspeces \? null : reference/.test(coursier) && /déjà un dépôt en espèces en attente/.test(coursier));
+verifier('le coursier : le reçu part vers la ligne WhatsApp de CLT (CLT_CONTACT), message rédigé par la règle', /CLT_CONTACT\.whatsapp/.test(coursier) && /CLTRecharges\.messageDuRecu\(/.test(coursier) && /Envoyer le reçu à CLT sur WhatsApp/.test(coursier));
+verifier('les deux écrans nomment « Espèces au bureau »', /especes: 'Espèces au bureau'/.test(ecran) && /if \(key === "especes"\) return "Espèces au bureau";/.test(lire('app/express-config.js')));
+verifier('le bureau ne réclame pas de référence à un dépôt en espèces, et pose la question de la règle', /CLTRecharges\.referenceRequise\(r\.operateur\)/.test(ecran) && /title: controle\.titre \|\|/.test(ecran));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);

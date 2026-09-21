@@ -350,14 +350,14 @@
    "enBref": "Solde prépayé : la commission s'y prélève à chaque course. La référence de l'envoi prouve chaque recharge.",
    "ou": "Équipe › Express › « Recharges coursiers » ; Coursier › Solde › « Recharger mon solde »",
    "etapes": [
-    "Le coursier envoie l'argent au numéro Mobile Money de CLT, puis déclare le montant ET la référence du reçu (obligatoire).",
+    "Mobile Money d'abord, d'où qu'il soit : le coursier envoie l'argent au numéro de CLT, déclare le montant ET la référence du reçu, et peut envoyer la capture sur le WhatsApp de CLT.",
     "Le bureau retrouve ce montant et cette référence dans le compte de CLT, puis valide : le solde est crédité.",
     "Une référence déjà utilisée est signalée et ne se valide pas : un même envoi ne se crédite qu'une fois.",
-    "Sous le solde minimum, le coursier ne reçoit plus de courses tant qu'il n'a pas rechargé."
+    "Second choix, « Espèces au bureau » : il déclare le montant, l'équipe reçoit les billets et valide (« Espèces bien reçues en main ? »)."
    ],
-   "aSavoir": "C'est le modèle des plateformes de courses (solde prépayé, commission prélevée dessus). Le jour où Wave nous ouvre le paiement automatique, seule la validation à la main disparaît ; rien d'autre ne change.",
-   "pourVous": "Jouer une fois le fichier _sql-prive/2026-09-21-recharge-reference-unique.sql dans Supabase (éditeur SQL) : il verrouille en base « une référence = un seul crédit ».",
-   "version": "v209",
+   "aSavoir": "Sous le solde minimum, le coursier ne reçoit plus de courses tant qu'il n'a pas rechargé. C'est le modèle des plateformes de courses (solde prépayé, commission prélevée dessus). Le jour où Wave nous ouvre le paiement automatique, seule la validation à la main disparaît ; rien d'autre ne change.",
+   "pourVous": "Avant l'ouverture d'Express : dire à l'équipe qui a le droit de recevoir des espèces au bureau (le nom de celui qui valide reste enregistré).",
+   "version": "v210",
    "aller": {
     "page": "equipe.html"
    }

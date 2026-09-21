@@ -1019,10 +1019,19 @@ verifier(
    normalisée (espaces, tirets, casse) ; le bureau voit un doublon sur la ligne et ne peut pas le
    valider ; la question posée devient « Argent bien reçu sur le compte de CLT ? ». Verrou en base
    préparé (_sql-prive/2026-09-21-recharge-reference-unique.sql, index unique partiel, essayé dans
-   un vrai Postgres), à jouer par Celtis. Banc (17), parcours 24. Étiquette 20260921recharges. */
+   un vrai Postgres), à jouer par Celtis. Banc (17), parcours 24. Étiquette 20260921recharges.
+   v210, le 21/09/2026 — recharges Express : deux voies. Celtis : Mobile Money d'abord (« si le
+   livreur est dans une autre commune, il serait obligé de se déplacer »), espèces au bureau en
+   second choix, « et il envoie le reçu ou les références ». (1) « Espèces au bureau », dernier
+   choix de la grille : pas de référence, un seul dépôt en attente à la fois ; au bureau la
+   question devient « Espèces bien reçues en main ? » (la base garde validated_by). Aucune
+   migration : la politique d'insertion du coursier suffit. (2) Après une déclaration Mobile
+   Money, le formulaire s'efface et un bouton ouvre WhatsApp vers la ligne de CLT
+   (CLT_CONTACT.whatsapp), message rédigé par la règle (montant, opérateur, référence) ; il joint
+   sa capture. Banc (26), parcours 24 (15). Étiquette 20260921especes. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v209'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v210'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
