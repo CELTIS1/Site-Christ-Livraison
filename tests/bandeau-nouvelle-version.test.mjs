@@ -1184,10 +1184,21 @@ verifier(
    (2) La pastille du bouton ☰ comptait juste mais ne menait nulle part : le menu porte
    maintenant « Ce qui vous attend » (comptes à valider, mots de passe à refaire), chaque ligne
    ouvrant l'onglet Comptes à la bonne section ; et surtout l'onglet Comptes porte le chiffre,
-   ainsi que le bouton « Plus » qui le cache sur téléphone. Étiquette 20260921tournee. */
+   ainsi que le bouton « Plus » qui le cache sur téléphone. Étiquette 20260921tournee.
+   v224, le 21/09/2026 — Les notifications remises d'aplomb. Mesuré dans le projet en ligne :
+   la fonction serveur déployée datait du 16/09 (« en livraison » jamais notifié, tout le code
+   du 20/09 endormi) et il n'existait que deux branchements sur cinq. Surtout, l'équipe
+   recevait une notification par changement de statut et par colis — de l'ordre de 180 par
+   jour, ce qui rendait tout le reste invisible. Décision de Celtis : on coupe. L'équipe ne
+   reçoit plus que ce qui appelle une décision — une journée de cliente bouclée (« son point
+   peut être réglé »), le point d'un livreur avec son montant et son écart, un signalement,
+   une demande de passage. La cliente, elle, gagne trois choses : « en livraison », le MOTIF
+   sur un échec (elle lisait « n'a pas pu être livré » sans savoir pourquoi), et « un colis
+   vous a été rendu » — le seul moment où l'on attend un geste d'elle. En base : table
+   journees_bouclees et son déclencheur, éprouvés dans un vrai Postgres sur cinq cas. Étiquette 20260921notifs. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v223'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v224'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

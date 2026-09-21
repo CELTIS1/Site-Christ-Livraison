@@ -182,6 +182,69 @@ prévenir le bureau d'un nouveau signalement ou d'une nouvelle demande. Il faut,
 Tant que ce n'est pas fait, rien ne casse : les écrans montrent tout, seules les
 notifications sur le téléphone manquent.
 
+---
+
+## Qui reçoit quoi — la règle du 21 septembre 2026
+
+Celtis, le 21 : « les colis se remplissent, les points se remplissent, et puis on n'est pas
+informé. » Mesuré : l'équipe et l'administrateur recevaient une notification pour CHAQUE
+changement de statut de CHAQUE colis — de l'ordre de **180 par jour** à soixante colis. Un
+téléphone qui sonne cent quatre-vingts fois ne prévient plus de rien.
+
+La règle tient en une phrase : **on ne notifie une personne que de ce qu'elle ne peut pas voir
+autrement, ou de ce qui attend un geste d'elle.**
+
+| Qui | Reçoit |
+|---|---|
+| La cliente | Ses colis : récupéré, en livraison, livré, **non livré avec le motif**, retour. Et « le livreur dit vous l'avoir rendu », parce que c'est là qu'on attend sa confirmation. Plus : réponse à son signalement, demande de passage vue ou refusée, reversement. |
+| Le livreur | Ce qui lui est confié, une récupération à faire, un colis modifié sous ses pieds. |
+| L'équipe et l'admin | **Plus rien colis par colis.** Seulement ce qui appelle une décision : une journée de cliente bouclée, le point d'un livreur, un signalement, une demande de passage. Le reste se compte en permanence dans « L'essentiel ». |
+
+### Les deux nouvelles alertes du bureau
+
+- **Journée bouclée** — table `public.journees_bouclees`, une ligne par cliente et par jour,
+  écrite par le déclencheur `colis_journee_bouclee` quand plus aucun colis de ce jour-là n'est
+  « en attente », « récupéré » ou « en livraison ». Une seule fois (clé primaire) ; la ligne est
+  retirée si la journée se rouvre, pour pouvoir prévenir à nouveau ; les chiffres d'une ligne
+  existante sont corrigés par `on conflict do update`, ce qui ne renotifie pas puisque le
+  branchement écoute les INSERT. Ne s'écrit que pour aujourd'hui et hier : une correction faite
+  sur un colis du mois dernier ne doit pas faire sonner les téléphones.
+- **Point du livreur** — table `public.annonces_remise`, qui reçoit une ligne au moment où le
+  livreur valide sa remise sur son téléphone. Branchement sur INSERT.
+
+### Les sept branchements
+
+| Branchement | Table | Événements |
+|---|---|---|
+| `envoyer_push_colis` | `colis` | INSERT, UPDATE |
+| `envoyer_push_express_courses` | `express_courses` | INSERT, UPDATE |
+| `envoyer_push_reclamations` | `reclamations_clientes` | INSERT, UPDATE |
+| `envoyer_push_passages` | `demandes_de_passage` | INSERT, UPDATE |
+| `envoyer_push_reversements` | `reversements_clientes` | INSERT |
+| `envoyer_push_journees` | `journees_bouclees` | INSERT |
+| `envoyer_push_remises` | `annonces_remise` | INSERT |
+
+Les trois derniers du tableau, plus les deux du 20/09, sont posés par le script
+`_sql-prive/2026-09-21-branchements-des-notifications.sql` (sur le Mac, hors dépôt : ce dépôt
+est public). Ce script **recopie** le réglage de `envoyer_push_colis` — adresse, en-têtes,
+délai — d'un déclencheur à l'autre, à l'intérieur de la base, **sans jamais le faire remonter
+dans un résultat**.
+
+> **Règle née d'un incident, le 21/09/2026.** Une requête de vérification censée masquer le
+> secret avant affichage a échoué, et a fait remonter en clair le `CLT_WEBHOOK_SECRET` **et la
+> clé `service_role`** — tous deux présents dans l'en-tête du déclencheur. Ne JAMAIS demander à
+> la base d'afficher une définition de déclencheur qui porte un en-tête HTTP. Pour lister les
+> branchements, n'afficher que `tgname`, `relname` et l'état.
+
+### Ce qu'il reste à faire à la main, dans cet ordre
+
+1. Changer la clé `service_role` (Settings › API) et le secret `CLT_WEBHOOK_SECRET`
+   (Edge Functions › Secrets) — suite de l'incident ci-dessus.
+2. Recréer `envoyer_push_colis` dans Database › Webhooks avec les nouvelles valeurs.
+3. **Redéployer** `envoyer-push` (coller `index.ts`, Deploy).
+4. Jouer `2026-09-21-journee-bouclee.sql`, puis
+   `2026-09-21-branchements-des-notifications.sql`.
+
 ## État réel au 16 septembre 2026 (feuille de route 3.8, vérifié dans le tableau de bord)
 
 | Élément | État |

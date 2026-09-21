@@ -150,16 +150,22 @@ titre('Avec le secret : les destinataires sont des listes, jamais une chaîne as
   verifier("aucune requête n'utilise un filtre « or(...) » textuel", !f.journal.some(j => j.filtres.some(x => x.type === 'or')));
   const parRole = lectures.find(j => j.filtres.some(x => x.type === 'in' && x.colonne === 'role'));
   const parId = lectures.find(j => j.filtres.some(x => x.type === 'in' && x.colonne === 'user_id'));
-  verifier("les rôles équipe + admin sont demandés par une liste", parRole && JSON.stringify(parRole.filtres[0].valeurs) === JSON.stringify(['equipe', 'admin']));
+  /* 21/09/2026 — L'ÉQUIPE N'EST PLUS DANS CETTE LISTE, ET C'EST LE CHANGEMENT.
+     Elle recevait une notification par changement de statut et par colis : de l'ordre de 180
+     par jour. Un changement de statut n'appelle aucune décision du bureau, et « L'essentiel »
+     les compte tous, en permanence. On ne demande donc PLUS AUCUN rôle sur un colis : il ne
+     reste que des personnes nommées, celles pour qui ce colis-ci est un colis à elles. */
+  verifier("aucun RÔLE n'est demandé sur un colis : l'équipe ne reçoit plus le colis par colis",
+    !parRole, JSON.stringify(parRole && parRole.filtres));
   verifier("le livreur et la cliente d'un colis livré sont demandés par une liste d'identifiants",
     parId && parId.filtres[0].valeurs.includes(LIVREUR) && parId.filtres[0].valeurs.includes(CLIENTE), JSON.stringify(parId && parId.filtres));
   const cibles = f.envoisPush.map(e => e.endpoint).sort();
-  verifier("quatre pushs partent : équipe, admin, le livreur, la cliente — pas l'autre livreur",
-    JSON.stringify(cibles) === JSON.stringify(['https://push/admin-1', 'https://push/cliente', 'https://push/equipe-1', 'https://push/livreur']), JSON.stringify(cibles));
+  verifier("deux pushs partent : le livreur qui le porte, la cliente à qui il appartient",
+    JSON.stringify(cibles) === JSON.stringify(['https://push/cliente', 'https://push/livreur']), JSON.stringify(cibles));
   verifier('le lien profond mène au colis, chacun dans son écran',
     f.envoisPush.every(e => e.corps.url.endsWith('?colis=' + COLIS)) && f.envoisPush.find(e => e.endpoint.endsWith('/livreur')).corps.url.startsWith('/app/livreur.html'));
   verifier('le journal donne des nombres, pas le message',
-    f.journalConsole.some(([, m]) => /"destinataires":4/.test(m) && /"envoyes":4/.test(m)) && !f.journalConsole.some(([, m]) => /CLT-42/.test(m)));
+    f.journalConsole.some(([, m]) => /"destinataires":2/.test(m) && /"envoyes":2/.test(m)) && !f.journalConsole.some(([, m]) => /CLT-42/.test(m)));
 }
 
 titre("Ce qui ne ressemble pas à un identifiant n'atteint pas la base");
@@ -169,7 +175,11 @@ titre("Ce qui ne ressemble pas à un identifiant n'atteint pas la base");
   const r = await appeler(f.gestionnaire, trafique, { 'x-clt-webhook-secret': SECRET });
   verifier("l'appel est traité (200) mais les identifiants trafiqués sont ignorés",
     r.status === 200 && !f.journal.some(j => j.filtres.some(x => x.type === 'in' && x.colonne === 'user_id')));
-  verifier("seuls équipe et admin sont notifiés", f.envoisPush.length === 2);
+  /* Les deux identifiants étant trafiqués, il ne reste PERSONNE à prévenir — et depuis le
+     21/09 il n'y a plus de rôle pour rattraper le coup. On n'envoie donc rien, ce qui est
+     exactement ce qu'on veut : une tentative d'injection ne doit faire sonner aucun téléphone. */
+  verifier("personne n'est notifié : plus de rôle pour rattraper des identifiants trafiqués",
+    f.envoisPush.length === 0, JSON.stringify(f.envoisPush.map(e => e.endpoint)));
   const f2 = chargerFonction({ secretServeur: SECRET, abonnements });
   const sansId = { ...colisLivre, record: { ...colisLivre.record, id: 'pas-un-uuid' } };
   const r2 = await appeler(f2.gestionnaire, sansId, { 'x-clt-webhook-secret': SECRET });

@@ -237,6 +237,20 @@
    "version": "v223"
   },
   {
+   "id": "qui-recoit-quoi",
+   "espace": "bureau",
+   "titre": "Les notifications : qui reçoit quoi",
+   "enBref": "L'équipe ne reçoit plus le colis par colis, mais ce qui appelle une décision : une journée bouclée, le point d'un livreur, un signalement.",
+   "ou": "Sur le téléphone, une fois « Activer les notifications » accepté",
+   "etapes": [
+    "« ✅ Journée bouclée : Awa Boutique » — plus aucun de ses colis du jour n'est en cours : son point peut être réglé.",
+    "« 💰 Koffi a fait son point » — avec le montant annoncé, et l'écart s'il y en a un.",
+    "Les signalements et les demandes de passage continuent d'arriver."
+   ],
+   "aSavoir": "Avant le 21/09, chaque changement de statut de chaque colis faisait sonner l'équipe : environ 180 fois par jour. Les clientes et les livreurs, eux, gardent toutes leurs notifications.",
+   "version": "v224"
+  },
+  {
    "id": "a-risque",
    "espace": "bureau",
    "titre": "« À risque » avant le retard",

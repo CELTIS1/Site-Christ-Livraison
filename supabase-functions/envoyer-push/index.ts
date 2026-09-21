@@ -71,6 +71,30 @@ function memeSecret(recu: string | null, attendu: string): boolean {
   return diff === 0;
 }
 
+/* ----------------------------------------------------------------------------
+   QUI REÇOIT QUOI — LA RÈGLE DU 21 SEPTEMBRE 2026
+   ----------------------------------------------------------------------------
+   Celtis : « les colis se remplissent, les points se remplissent, et puis on n'est pas
+   informé. » Le constat, mesuré : l'équipe et l'administrateur recevaient une notification
+   pour CHAQUE changement de statut de CHAQUE colis. À soixante colis par jour et trois étapes
+   chacun, cela faisait de l'ordre de cent quatre-vingts notifications quotidiennes. Un
+   téléphone qui sonne cent quatre-vingts fois ne prévient plus de rien : il se tait dans la
+   tête de celui qui le porte. Ajouter deux alertes utiles là-dedans, c'était les enterrer.
+
+   LA RÈGLE, MAINTENANT, ET ELLE TIENT EN UNE PHRASE : on ne notifie une personne que de ce
+   qu'elle ne peut pas voir autrement, ou de ce qui attend un geste d'elle.
+
+     • LA CLIENTE reçoit tout ce qui concerne SON colis — récupéré, en livraison, livré, non
+       livré (avec le MOTIF : sans lui son premier geste est d'appeler le bureau), retour — et
+       le moment où le livreur dit le lui avoir rendu, parce que c'est là qu'on attend sa
+       confirmation. Pour elle, chaque colis est SON colis : rien n'est retiré.
+     • LE LIVREUR reçoit ce qui lui est confié et ce qui change sous ses pieds. Inchangé.
+     • L'ÉQUIPE ET L'ADMINISTRATEUR ne reçoivent plus le colis par colis. Ils ont « L'essentiel »,
+       qui compte en permanence et sur toute la base. Ils reçoivent ce qui demande une DÉCISION :
+       une cliente dont la journée est bouclée (on peut régler son point), un livreur qui vient
+       de faire son point, un signalement, une demande de passage, un litige.
+   ---------------------------------------------------------------------------- */
+
 // Libellés par statut colis. Les statuts non listés ne déclenchent pas de notification.
 const STATUT_INFO: Record<string, { title: string; verb: string }> = {
   recupere: { title: "📦 Colis récupéré", verb: "est entre nos mains" },
@@ -87,6 +111,17 @@ const EXPRESS_INFO: Record<string, { title: string; verb: string }> = {
   recuperee: { title: "📦 Colis récupéré", verb: "a été récupéré par le coursier" },
   livree: { title: "✅ Colis livré", verb: "a été livré" },
   annulee: { title: "❌ Course annulée", verb: "a été annulée" },
+};
+
+/* Les mots du livreur pour un échec, repris tels quels de app/lib/primes.js. Recopiés ici
+   parce qu'une fonction serveur ne partage pas le code du site — mais recopiés À L'IDENTIQUE :
+   la cliente doit lire sur son téléphone exactement ce que le bureau lit à l'écran. */
+const MOTIFS: Record<string, string> = {
+  client_absent: "client absent",
+  annule: "commande annulée",
+  mauvais_numero: "mauvais numéro ou adresse",
+  refus_client: "le client a refusé",
+  autre: "autre motif",
 };
 
 // Résout le lien profond d'une notification en fonction du rôle de l'abonné.
@@ -206,6 +241,22 @@ async function handleColis(record: any, oldRecord: any, eventType: string): Prom
   // importants (ci-dessous) ; s'il a changé, c'est lui qu'on annonce, et rien d'autre.
   const statutInchange = eventType === "UPDATE" && newStatut === (oldRecord ? oldRecord.statut : null);
   if (statutInchange) {
+    /* « LE LIVREUR DIT VOUS L'AVOIR RENDU » — LE SEUL MOMENT OÙ ON ATTEND UN GESTE D'ELLE.
+       (21/09/2026) Depuis le 20 septembre, un retour n'est clos que par la confirmation de la
+       cliente : c'est elle qui dit « oui, je l'ai » ou « non, je ne l'ai pas », et c'est cette
+       parole-là qui fait foi en cas de litige. Son écran le lui demande — avec un chiffre sur
+       son onglet Retours — mais rien ne l'en prévenait sur son téléphone. Elle pouvait donc
+       ignorer pendant des jours la seule chose qu'on lui demandait.
+       Le statut ne change pas (il reste « retour ») : c'est retour_rendu_at qui apparaît. On
+       ne notifie qu'à l'APPARITION de cette date, jamais sur les écritures suivantes. */
+    const rendu = record.retour_rendu_at;
+    const renduAvant = oldRecord ? oldRecord.retour_rendu_at : rendu;
+    const clienteDuRetour = uuidOuRien(record.fournisseur_id);
+    if (id0 && clienteDuRetour && rendu && !renduAvant && !record.retour_confirme_at) {
+      return await envoyer({ roles: [], userIds: [clienteDuRetour] }, "↩️ Un colis vous a été rendu",
+        `${ref0} : le livreur indique vous l'avoir remis. Confirmez-le dans « Mes retours » — ou dites-nous si vous ne l'avez pas.`,
+        `colis-${id0}-rendu`, `colis=${encodeURIComponent(id0)}`);
+    }
     // ---- Les assignations et les changements importants (16/09/2026, demande de Celtis) ----
     // Le livreur doit savoir sans ouvrir l'app : qu'un colis vient de lui être confié, qu'une
     // récupération lui est demandée, qu'une adresse ou une échéance a changé. Ces envois ne
@@ -249,21 +300,31 @@ async function handleColis(record: any, oldRecord: any, eventType: string): Prom
   if (!id) return new Response("identifiant invalide", { status: 200 });
 
   const ref = record.numero || record.description || "Un colis";
-  const body = `${ref} ${info.verb}`;
   const tag = `colis-${id}`;
+
+  /* LE MOTIF VOYAGE AVEC L'ÉCHEC. (21/09/2026) « ⚠️ CLT-260921-01806 n'a pas pu être livré »
+     ne dit pas à la vendeuse ce qu'elle doit faire ; « client absent » le lui dit. Sans le
+     motif, son premier geste est d'appeler le bureau — un appel par échec, tous les jours. */
+  const motif = (newStatut === "non_livre" && record.motif_non_livraison)
+    ? MOTIFS[String(record.motif_non_livraison)] || null : null;
+  const body = `${ref} ${info.verb}${motif ? " — " + motif : ""}`;
 
   // Statuts qui intéressent le CLIENT (fournisseur) : prise en charge, départ en livraison,
   // issues finales. « en_livraison » y est depuis le 20/09/2026 (inventaire, 20.B) : c'est
   // l'étape que la vendeuse et son acheteuse attendent le plus — Shopify et Jumia la notifient.
   const CLIENT_STATUTS = new Set(["recupere", "en_livraison", "livre", "non_livre", "retour"]);
 
-  // Destinataires : équipe + admin, plus le livreur assigné (s'il existe), plus le client
-  // propriétaire du colis uniquement pour les statuts ci-dessus.
-  const dest: Destinataires = { roles: ["equipe", "admin"], userIds: [] };
+  /* DESTINATAIRES — voir « QUI REÇOIT QUOI » en tête de fichier. (21/09/2026)
+     L'équipe et l'administrateur ne sont PLUS dans cette liste : un changement de statut de
+     colis n'appelle aucune décision de leur part, et « L'essentiel » les compte déjà tous, en
+     permanence, sur toute la base. Restent ceux pour qui ce colis-ci est un colis à eux : le
+     livreur qui le porte, et la cliente à qui il appartient. */
+  const dest: Destinataires = { roles: [], userIds: [] };
   const livreur = uuidOuRien(record.livreur_id);
   if (livreur) dest.userIds.push(livreur);
   const fournisseur = uuidOuRien(record.fournisseur_id);
   if (fournisseur && CLIENT_STATUTS.has(newStatut)) dest.userIds.push(fournisseur);
+  if (dest.userIds.length === 0) return new Response("aucun destinataire", { status: 200 });
 
   return await envoyer(dest, info.title, body, tag, `colis=${encodeURIComponent(id)}`);
 }
@@ -308,6 +369,61 @@ async function handleReversement(record: any, eventType: string): Promise<Respon
   if (!cliente || !id || eventType !== "INSERT") return new Response("rien à dire", { status: 200 });
   const montant = Number(record.montant) || 0;
   return await envoyer({ roles: [], userIds: [cliente] }, "💵 Reversement effectué", `${montant.toLocaleString("fr-FR")} FCFA vous ont été reversés${record.numero ? " (reçu " + record.numero + ")" : ""}. Le reçu est dans votre espace.`, `reversement-${id}`, "");
+}
+
+/* ----------------------------------------------------------------------------
+   CE QUI APPELLE UNE DÉCISION DU BUREAU (21/09/2026)
+   ----------------------------------------------------------------------------
+   Celtis : « lorsque tous les colis d'un fournisseur sont traités, il faudrait qu'on ait une
+   notification […] pour pouvoir déjà commencer à régler son point. […] Et lorsqu'un livreur
+   finit aussi son point, il faut qu'on soit informé. Ce sont des choses qui nous permettent
+   de faire les choses rapidement et efficacement. »
+
+   Ce sont les deux seules notifications que l'équipe reçoit désormais au fil de la journée,
+   et ce n'est pas un hasard : ce sont les deux seuls moments où un travail se termine et où
+   un autre peut commencer. Tout le reste s'attend, se compte et se lit dans « L'essentiel ».
+   ---------------------------------------------------------------------------- */
+
+/* La journée d'une cliente est bouclée : plus un seul de ses colis du jour n'est en cours.
+   La ligne est écrite par un déclencheur en base (journees_bouclees), une seule fois par
+   cliente et par jour — donc cette notification ne peut pas partir deux fois. */
+async function handleJourneeBouclee(record: any, eventType: string): Promise<Response> {
+  if (eventType !== "INSERT") return new Response("rien à dire", { status: 200 });
+  const id = uuidOuRien(record.fournisseur_id);
+  if (!id) return new Response("identifiant invalide", { status: 200 });
+  const nom = record.cliente_nom ? String(record.cliente_nom).slice(0, 60) : "Une cliente";
+  const n = Number(record.nb_colis) || 0;
+  const livres = Number(record.nb_livres) || 0;
+  const rates = n - livres;
+  const detail = n
+    ? `${n} colis · ${livres} livré${livres > 1 ? "s" : ""}${rates > 0 ? ` · ${rates} non livré${rates > 1 ? "s" : ""}` : ""}`
+    : "tous ses colis sont traités";
+  return await envoyer({ roles: ["equipe", "admin"], userIds: [] },
+    "✅ Journée bouclée : " + nom,
+    `${detail}. Son point peut être réglé.`,
+    `bouclee-${id}-${record.jour}`, "");
+}
+
+/* Un livreur vient d'annoncer sa remise : la ligne arrive dans annonces_remise au moment où
+   il valide sur son téléphone. Le bureau doit pouvoir l'attendre à la caisse plutôt que de
+   le découvrir le lendemain. Le montant est annoncé : c'est ce que le bureau va compter. */
+async function handleAnnonceRemise(record: any, eventType: string): Promise<Response> {
+  if (eventType !== "INSERT") return new Response("rien à dire", { status: 200 });
+  const livreur = uuidOuRien(record.livreur_id);
+  if (!livreur) return new Response("identifiant invalide", { status: 200 });
+  const montant = Number(record.montant_annonce) || 0;
+  const porte = Number(record.montant_porte);
+  const ecart = Number.isFinite(porte) ? porte - montant : 0;
+  let nom = "Un livreur";
+  try {
+    const { data } = await admin.from("profiles").select("full_name").eq("id", livreur).maybeSingle();
+    if (data && data.full_name) nom = String(data.full_name).slice(0, 60);
+  } catch (_e) { /* le nom est un confort : son absence ne doit pas retenir l'alerte */ }
+  const corps = `${montant.toLocaleString("fr-FR")} FCFA annoncés`
+    + (ecart ? ` · écart de ${ecart.toLocaleString("fr-FR")} FCFA avec ce qu'il porte` : "")
+    + (record.note ? ` · « ${String(record.note).slice(0, 80)} »` : "");
+  return await envoyer({ roles: ["equipe", "admin"], userIds: [] },
+    "💰 " + nom + " a fait son point", corps, `remise-${record.id}`, "");
 }
 
 // ----------------------------------------------------------------------------
@@ -384,6 +500,8 @@ Deno.serve(async (req) => {
     if (table === "reclamations_clientes") return await handleReclamation(record, oldRecord, eventType);
     if (table === "demandes_de_passage") return await handleDemandeDePassage(record, oldRecord, eventType);
     if (table === "reversements_clientes") return await handleReversement(record, eventType);
+    if (table === "journees_bouclees") return await handleJourneeBouclee(record, eventType);
+    if (table === "annonces_remise") return await handleAnnonceRemise(record, eventType);
     return await handleColis(record, oldRecord, eventType);
   } catch (e) {
     console.error("envoyer-push — erreur inattendue :", e);
