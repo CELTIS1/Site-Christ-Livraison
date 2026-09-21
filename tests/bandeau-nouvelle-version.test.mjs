@@ -1173,10 +1173,21 @@ verifier(
    « carte de cliente » est refermée sur #section-clients. (3) Changer d'onglet remonte la page
    d'un coup (jamais en glissant), repeint le panneau affiché et referme les menus « ⋮ » restés
    ouverts : plus de carte fantôme ni de barre d'onglets coincée au milieu. (4) Le menu « ⋮ »
-   d'une carte de compte s'ouvrait hors de l'écran sur téléphone ; le bouton rejoint le bord droit. Étiquette 20260921parjour. */
+   d'une carte de compte s'ouvrait hors de l'écran sur téléphone ; le bouton rejoint le bord droit. Étiquette 20260921parjour.
+   v223, le 21/09/2026 — La tournée dit ce qui reste, la pastille dit où aller. (1) Équipe ›
+   Tournées : une cliente dont tout est ramassé n'est plus une carte de 210 px au milieu du
+   programme mais une ligne de 40 px, descendue sous celles où il reste à passer, sous un titre
+   « Déjà récupéré chez N clientes » ; le titre du bloc annonce les deux (« 2 colis à prendre ·
+   3 récupérés »). La cause : `travailFini` exigeait `horsProgramme`, donc une PROGRAMMÉE finie
+   n'entrait dans aucun tiroir. Une carte dont la cliente a annoncé plus de colis que
+   l'application n'en connaît reste entière : ce n'est pas fini, c'est un appel à passer.
+   (2) La pastille du bouton ☰ comptait juste mais ne menait nulle part : le menu porte
+   maintenant « Ce qui vous attend » (comptes à valider, mots de passe à refaire), chaque ligne
+   ouvrant l'onglet Comptes à la bonne section ; et surtout l'onglet Comptes porte le chiffre,
+   ainsi que le bouton « Plus » qui le cache sur téléphone. Étiquette 20260921tournee. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v222'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v223'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

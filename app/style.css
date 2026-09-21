@@ -1608,6 +1608,17 @@ html[data-theme="dark"] .stat-tile-total{ background:var(--grad-navy-deep); }
   padding:7px 13px 3px; font-size:10.5px; font-weight:700; letter-spacing:.07em;
   text-transform:uppercase; color:var(--muted);
 }
+/* « CE QUI VOUS ATTEND » — le premier groupe, et le seul en couleur. (21/09/2026)
+   Il n'existe que quand la pastille du bouton porte un chiffre : c'est sa traduction en mots,
+   et il disparaît avec elle. Ambre plutôt que gris, parce qu'il annonce des gestes à faire au
+   milieu d'un menu qui n'annonce que des endroits où aller. */
+.settings-groupe--attente{ background:#fdf6e8; border-radius:10px; margin:-2px 0 4px; }
+.settings-groupe--attente .settings-groupe-titre{ color:#9a6400; }
+.settings-dropdown .settings-groupe--attente button{ color:#7a4f00; font-weight:700; }
+.settings-dropdown .settings-groupe--attente button:hover{ background:#f7e7c9; }
+html[data-theme="dark"] .settings-groupe--attente{ background:#3a2f18; }
+html[data-theme="dark"] .settings-dropdown .settings-groupe--attente button{ color:#f0cf8e; }
+html[data-theme="dark"] .settings-dropdown .settings-groupe--attente button:hover{ background:#4a3d20; }
 
 /* ---------- LE « ← RETOUR » PARTAGÉ (27/08/2026) ----------
    Posé automatiquement par clt-common.js en haut des fenêtres qui n'offraient
@@ -2977,6 +2988,52 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
   letter-spacing:.04em; margin:16px 0 8px;
 }
 .tournee-section-titre:first-of-type{margin-top:6px;}
+/* Ce qui est déjà dans le sac, dit dans le titre du livreur, en vert et sans majuscules : c'est
+   une bonne nouvelle, pas une consigne. (21/09/2026) */
+.tournee-titre-fait{color:#1e8f4e; text-transform:none; letter-spacing:0;}
+/* LA LIGNE D'UNE RÉCUPÉRATION FAITE. (21/09/2026, Celtis : « ça devrait occuper moins d'espace
+   […] à première vue, on a l'impression que les récupérations n'ont pas été faites. »)
+   Mesuré à 390 px : une carte de tournée fait 210 px de haut (nom, lieu, compte, deux boutons
+   de contact, deux gestes). Cette ligne en fait 40. Cinq clientes ramassées, ce sont 850 px qui
+   ne poussent plus vers le bas les deux où il reste à passer.
+   Elle reste LISIBLE, pas effacée : le travail fait se voit, il ne se devine pas. Le trait vert
+   à gauche est celui des cartes terminées, et le texte garde son contraste — une ligne à 50 %
+   d'opacité se lit comme désactivée, or il n'y a rien de désactivé ici. */
+.tournee-faite{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  border-left:3px solid #1e8f4e; background:var(--grey-bg);
+  border-radius:10px; padding:9px 12px; margin:0 0 6px;
+  font-size:13px; color:var(--navy);
+}
+.tournee-faite-coche{color:#1e8f4e; font-weight:800;}
+.tournee-faite-rang{
+  min-width:20px; height:20px; border-radius:50%; background:#d7e6dc; color:#166b3b;
+  font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center;
+}
+.tournee-faite-rang:empty{display:none;}
+.tournee-faite-nom{font-weight:700;}
+.tournee-faite-lieu{color:var(--muted); font-size:12px; flex:1 1 auto; min-width:0;}
+.tournee-faite-lieu--manquant{
+  border:0; background:none; font:inherit; font-size:12px; color:#b45309; font-weight:700;
+  text-decoration:underline; cursor:pointer; text-align:left; padding:0;
+}
+.tournee-faite-compte{color:#1e8f4e; font-weight:700; font-size:12.5px; white-space:nowrap;}
+/* Un écart avec ce que la cliente avait annoncé ne se replie jamais : il passe sur sa propre
+   ligne, en ambre, sous le reste. */
+.tournee-faite-ecart{flex:1 0 100%; color:#9a6400; font-size:12px; font-weight:600;}
+.tournee-faites-titre{
+  font-size:12px; font-weight:700; color:#1e8f4e; margin:12px 0 6px;
+}
+/* Sur téléphone, le lieu passe sous le nom plutôt que d'y pousser le compte à la ligne : on
+   veut lire « ✔ Fatou Tissus · 2 récupérés » d'un seul regard, et l'adresse en dessous, en
+   petit. (Mesuré à 390 px : deux lignes de 45 px au lieu de trois.) */
+@media(max-width:640px){
+  .tournee-faite-lieu{ order:3; flex:1 0 100%; padding-left:30px; }
+  .tournee-faite-compte{ order:2; margin-left:auto; }
+  .tournee-faite-ecart{ order:4; padding-left:30px; }
+}
+html[data-theme="dark"] .tournee-faite{background:#1c2739;}
+html[data-theme="dark"] .tournee-faite-rang{background:#22402f; color:#8fd6aa;}
 .tournee-repli{margin-top:16px; border-top:1px solid var(--border); padding-top:12px;}
 .tournee-repli > summary{
   list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px;

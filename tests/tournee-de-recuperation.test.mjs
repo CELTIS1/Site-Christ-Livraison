@@ -796,8 +796,46 @@ verifier("le téléphone de la cliente est là, et il est appelable",
   /href="tel:0700000001"/.test(poseHTML));
 verifier("la cliente sans rien est marquée sur sa carte",
   /Rien à récupérer pour l'instant/.test(poseHTML));
-verifier("chaque cliente programmée porte son bouton pour la retirer",
-  (poseHTML.match(/data-prog-retirer="/g) || []).length === 3);
+/* 21/09/2026 : « chaque cliente programmée » veut dire chaque cliente programmée OÙ IL RESTE
+   À PASSER. Celle dont tout est ramassé est devenue une ligne courte, sans gestes. Dans ce
+   décor-ci les trois programmées ont encore du travail, le compte ne bouge donc pas — mais la
+   raison, elle, est écrite. */
+/* Trois programmées dans ce décor : F1 (deux à prendre), F2 (rien encore saisi) et F3, dont
+   l'unique colis est déjà pris. Depuis le 21/09/2026, F3 n'est plus une carte — elle est une
+   ligne courte, sans gestes. Deux boutons « Retirer », donc, et non trois : retirer une
+   tournée accomplie n'a pas plus d'effet utile que d'en retirer une du repli. */
+verifier("chaque cliente programmée où il reste à passer porte son bouton pour la retirer",
+  (poseHTML.match(/data-prog-retirer="/g) || []).length === 2,
+  (poseHTML.match(/data-prog-retirer="[^"]*"/g) || []).join(' | '));
+verifier("… et F3, dont tout est ramassé, est devenue une ligne courte qui dit ce qui a été pris",
+  /class="tournee-faite"/.test(poseHTML) && /1 récupéré</.test(poseHTML)
+  && (poseHTML.match(/class="tournee-faite"/g) || []).length === 1,
+  poseHTML.slice(poseHTML.indexOf('tournee-faites-titre'), poseHTML.indexOf('tournee-faites-titre') + 400));
+verifier("la ligne courte ne porte plus ni contact ni geste : aucun d'eux n'aurait d'effet",
+  (() => {
+    const i = poseHTML.indexOf('<div class="tournee-faite"');
+    const bloc = poseHTML.slice(i, poseHTML.indexOf('</div>', poseHTML.indexOf('tournee-faite-compte')) + 6);
+    return i > 0 && !/tournee-contact/.test(bloc) && !/data-prog-retirer/.test(bloc) && !/data-prog-modifier/.test(bloc);
+  })(),
+  'une ligne terminée qui garderait « Appeler » ou « Retirer » ferait croire qu\'il reste à agir');
+/* L'ordre se lit DANS le bloc du livreur, pas sur la page entière : deux livreurs, deux blocs,
+   et le second commence forcément après la fin du premier. Ce qu'on vérifie, c'est qu'à
+   l'intérieur d'un bloc, rien de fait ne s'intercale entre les cartes qui restent. */
+verifier("les lignes faites descendent SOUS les cartes qui restent, sous leur propre titre",
+  (() => {
+    const i = poseHTML.indexOf('tournee-faites-titre');
+    if (i < 0) return false;
+    const debut = poseHTML.lastIndexOf('tournee-section-titre', i);
+    const suivant = poseHTML.indexOf('tournee-section-titre', i);
+    const bloc = poseHTML.slice(debut, suivant < 0 ? poseHTML.length : suivant);
+    const titre = bloc.indexOf('tournee-faites-titre');
+    return !bloc.slice(titre).includes('class="tournee-carte ')
+      && !bloc.slice(0, titre).includes('class="tournee-faite"');
+  })(),
+  'dans un bloc : les cartes ouvertes, puis « Déjà récupéré chez … », puis les lignes');
+verifier("le titre du bloc annonce les deux : ce qui reste à prendre, et ce qui est déjà pris",
+  /tournee-titre-fait">1 récupéré</.test(poseHTML) && /colis à prendre/.test(poseHTML),
+  (poseHTML.match(/class="tournee-section-titre">[\s\S]{0,160}/g) || []).join(' | '));
 
 /* CE QUE LE TÉLÉPHONE ÉCRIT, LE BUREAU LE LIT. (29/08/2026)
    Le livreur appuie sur « Je pars » ; l'heure s'écrit en base. Si le bureau ne la montre pas, il
@@ -869,7 +907,10 @@ const squelette = (src) => classesDeTournee(src).filter((c) => !c.includes('--')
    elles ne peuvent pas entrer dans la liste des nuances. Elles sont nommées ici, une par une,
    pour la même raison que les nuances le sont : une exception qu'on ne nomme pas s'élargit
    toute seule. Le RANG, lui, s'affiche des deux côtés — le livreur doit lire « 2e sur 5 ». */
-const PIECES_BUREAU_SEUL = ['tournee-fleche', 'tournee-ordre', 'tournee-ranger'];
+/* 21/09/2026 : la ligne courte d'une récupération faite est, elle aussi, propre au bureau.
+   Le téléphone du livreur n'en a pas besoin — il n'a qu'une tournée, la sienne, et il sait
+   très bien chez qui il est passé. */
+const PIECES_BUREAU_SEUL = ['tournee-faite', 'tournee-faite-coche', 'tournee-faite-compte', 'tournee-faite-ecart', 'tournee-faite-lieu', 'tournee-faite-nom', 'tournee-faite-rang', 'tournee-faites-titre', 'tournee-fleche', 'tournee-ordre', 'tournee-ranger', 'tournee-titre-fait'];
 const squeletteCommun = (src) => squelette(src).filter((c) => !PIECES_BUREAU_SEUL.includes(c));
 verifier("le bureau et le téléphone emploient exactement les mêmes pièces",
   squeletteCommun(equipe).length >= 12
@@ -886,7 +927,7 @@ verifier("et les pièces réservées au bureau sont exactement celles qu'on a no
    « Récupéré, tout » — le bureau REGARDE, il n'envoie pas quelqu'un sur la route depuis un
    fauteuil. Tout le reste, y compris « en route » et l'heure de départ, doit exister des deux
    côtés : l'information que le livreur écrit, le bureau doit pouvoir la lire. */
-const NUANCES_BUREAU_SEUL = ['tournee-marque--fait', 'tournee-repli--fait'];
+const NUANCES_BUREAU_SEUL = ['tournee-faite-lieu--manquant', 'tournee-marque--fait', 'tournee-repli--fait'];
 /* Deux nuances de plus côté téléphone depuis le 30/08/2026, et l'asymétrie est voulue.
    « Prévenir que j'arrive » est ce qui reste au livreur quand la cliente a annoncé des colis
    que le bureau n'a pas encore saisis : il peut la prévenir, mais son départ ne peut être
@@ -1050,12 +1091,18 @@ verifier("elle a le bouton qui pose une tournée, et il porte la cliente ET le l
    reste réservé aux programmées, c'est « Retirer » : on ne retire pas une tournée qui n'existe
    pas. Et les trois de modification portent leur nombre annoncé en troisième position, pour
    qu'on le relise au lieu de le deviner. */
-verifier("« Retirer » reste réservé aux trois clientes programmées",
-  (avecRepli.match(/data-prog-retirer="/g) || []).length === 3,
-  avecRepli.slice(0, 200));
+/* 21/09/2026 : « Retirer » et « Modifier » ne s'affichent plus non plus sur une programmée
+   dont tout est ramassé — elle est devenue une ligne courte, et retirer une tournée accomplie
+   n'a pas plus d'effet utile que d'en retirer une du repli. On compte donc les programmées
+   qui ont encore quelque chose à faire. */
+const programmeesOuvertes = (avecRepli.match(/data-prog-retirer="/g) || []).length;
+const cartesProgrammees = (avecRepli.match(/class="tournee-carte tournee-carte--(programme|rien)"/g) || []).length;
+verifier("« Retirer » reste réservé aux clientes programmées où il reste à passer",
+  programmeesOuvertes === cartesProgrammees && cartesProgrammees > 0,
+  'retirer : ' + programmeesOuvertes + ' · cartes programmées ouvertes : ' + cartesProgrammees);
 verifier("et « changer le livreur » s'ajoute pour elles, sans remplacer celui du repli",
-  (avecRepli.match(/data-prog-programmer="/g) || []).length === 4
-  && (avecRepli.match(/data-prog-programmer="[^"]*\|[^"|]*\|/g) || []).length === 3,
+  (avecRepli.match(/data-prog-programmer="/g) || []).length === programmeesOuvertes + 1
+  && (avecRepli.match(/data-prog-programmer="[^"]*\|[^"|]*\|/g) || []).length === programmeesOuvertes,
   (avecRepli.match(/data-prog-programmer="[^"]*"/g) || []).join(' | '));
 
 /* ==========================================================================================
@@ -1108,11 +1155,14 @@ verifier("et ce tiroir-là ne compte toujours que ce qui reste à aller chercher
 
 /* LES MOTS. « hors programme » veut dire « à faire, mais personne ne l'a prévu ». Sur un travail
    terminé, c'est un contresens : le bureau lirait un reste à faire là où il n'y a plus rien. */
-verifier("sa carte est marquée « déjà récupéré », et pas « hors programme »",
-  // La classe peut porter une nuance (tournee-marque--fait) : c'est le MOT qui est contrôlé,
-  // pas l'attribut. Un contrôle qui épingle l'attribut rougirait à la première retouche de
-  // couleur, et on prendrait l'habitude de le desserrer — c'est ainsi qu'un contrôle meurt.
-  /class="tournee-marque[^"]*">déjà récupéré</.test(replFait) && !/hors programme/.test(replFait),
+/* 21/09/2026 — elle n'est plus une CARTE mais une LIGNE (Celtis : « ça devrait occuper moins
+   d'espace […] on a l'impression que les récupérations n'ont pas été faites »). Le mot « déjà
+   récupéré » est passé dans le titre du tiroir, qui le dit une fois pour toutes ; la ligne, elle,
+   porte la coche et le compte. Ce qu'on contrôle n'a pas changé : le bureau doit lire un travail
+   FAIT, et jamais « hors programme », qui annoncerait un reste à faire. */
+verifier("elle est devenue une ligne courte, et jamais « hors programme »",
+  /class="tournee-faite"/.test(replFait) && !/class="tournee-carte /.test(replFait)
+  && /Déjà récupéré/.test(replFait) && !/hors programme/.test(replFait),
   replFait.slice(0, 500));
 /* LA COULEUR, ET L'ORDRE D'ÉCRITURE. Le mot juste ne suffit pas : la pastille doit sortir verte.
    Le 28/08/2026 elle sortait ambre en ligne — mesuré dans le navigateur, fond rgb(254,243,199)
@@ -1138,7 +1188,7 @@ verifier("et la pastille verte est écrite APRÈS l'ambre, sinon l'ambre gagne",
 /* AUCUN ZÉRO FABRIQUÉ, ICI NON PLUS. « 0 à prendre » se lit comme un manque ; il n'y a pas de
    manque, il y a un travail fait. La carte dit ce qui a été pris, et rien d'autre. */
 verifier("elle annonce ce qui a été pris, sans écrire de zéro à prendre",
-  /1 déjà pris/.test(replFait) && !/à prendre/.test(replFait), replFait.slice(0, 500));
+  /1 récupéré</.test(replFait) && !/à prendre/.test(replFait), replFait.slice(0, 500));
 /* AUCUN DES DEUX GESTES. « Retirer » n'a rien à retirer, et « Poser une tournée » proposerait
    d'envoyer quelqu'un chez une cliente où l'on est déjà passé. Un bouton sans effet utile est
    pire qu'un bouton absent : on croit avoir agi. */
@@ -2201,11 +2251,15 @@ contexte.fournisseurs = gardeFournisseurs.concat([
 contexte.progColis = COLIS_HP;
 poseHTML = '';
 renderProgrammationBody();
-const cartesFinies = poseHTML.split('<div class="tournee-carte').filter(m => m.includes('tournee-carte--fait'));
-verifier("le décor contient bien au moins une carte terminée, sinon le contrôle suivant ne mesure rien",
-  cartesFinies.length >= 1, poseHTML.slice(0, 400));
-verifier("même une carte terminée propose de réparer la fiche : l'occasion est bonne à prendre",
-  cartesFinies.every(c => /data-prog-lieu=/.test(c)), cartesFinies[0] || '');
+/* 21/09/2026 — une récupération faite est désormais une LIGNE (tournee-faite), plus une carte.
+   Ce qu'on vérifie n'a pas bougé d'un pouce : la commune manquante doit rester réparable là
+   même où l'on constate qu'elle manque, y compris sur ce qui est terminé. C'est le seul geste
+   qui a survécu au raccourcissement, et c'est voulu. */
+const lignesFinies = poseHTML.split('<div class="tournee-faite"').slice(1);
+verifier("le décor contient bien au moins une récupération terminée, sinon le contrôle suivant ne mesure rien",
+  lignesFinies.length >= 1, poseHTML.slice(0, 400));
+verifier("même une récupération terminée propose de réparer la fiche : l'occasion est bonne à prendre",
+  lignesFinies.every(c => /data-prog-lieu=/.test(c)), lignesFinies[0] || '');
 
 contexte.fournisseurs = gardeFournisseurs;
 contexte.progColis = COLIS;

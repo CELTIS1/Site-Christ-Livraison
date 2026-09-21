@@ -209,6 +209,34 @@
    }
   },
   {
+   "id": "tournee-faite",
+   "espace": "bureau",
+   "titre": "La tournée : ce qui reste, puis ce qui est fait",
+   "enBref": "Une cliente chez qui tout est ramassé devient une ligne courte, rangée sous celles où il reste à passer.",
+   "ou": "Équipe › Tournées",
+   "etapes": [
+    "En haut du bloc d'un livreur : les cartes entières, celles où il doit encore passer.",
+    "Dessous, « Déjà récupéré chez N clientes » : une ligne par cliente, avec ce qui a été pris.",
+    "Le titre du bloc dit les deux : « 2 colis à prendre · 3 récupérés »."
+   ],
+   "aSavoir": "Si la cliente avait annoncé plus de colis que l'application n'en connaît, sa carte reste entière : ce n'est pas fini, c'est un appel à passer.",
+   "version": "v223"
+  },
+  {
+   "id": "ce-qui-vous-attend",
+   "espace": "bureau",
+   "titre": "La pastille du menu ☰ dit où aller",
+   "enBref": "Le chiffre sur le bouton ☰ compte les comptes à valider et les mots de passe à refaire ; le menu les nomme et y mène.",
+   "ou": "Équipe, en haut à droite",
+   "etapes": [
+    "Ouvrez le menu ☰ : « Ce qui vous attend » est en tête, en ambre.",
+    "Un appui sur une ligne ouvre l'onglet Comptes, la bonne section déjà dépliée.",
+    "L'onglet Comptes porte le même chiffre ; sur téléphone, le bouton « Plus » aussi, puisque Comptes est derrière lui."
+   ],
+   "aSavoir": "Quand il n'y a plus rien, tout disparaît : pas de « 0 » qui ferait chercher.",
+   "version": "v223"
+  },
+  {
    "id": "a-risque",
    "espace": "bureau",
    "titre": "« À risque » avant le retard",

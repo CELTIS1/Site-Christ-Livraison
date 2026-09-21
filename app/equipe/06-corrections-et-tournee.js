@@ -519,12 +519,36 @@ const compte = (n) => colisConnus ? String(n) : '<span style="color:#8a94a3;">à
    répondent tous à la même question — trois définitions séparées finiraient par diverger. */
 const travailFini = (l) => l.horsProgramme && !l.nbAPrendre && l.nbDejaPris > 0;
 
+/* LA RÉCUPÉRATION FAITE NE RESSEMBLE PLUS À DU TRAVAIL QUI ATTEND. (21/09/2026)
+   Celtis : « lorsque le livreur a récupéré, la forme devrait changer et ça devrait occuper
+   moins d'espace. L'action a été menée. […] Quand on vient, à première vue, on a l'impression
+   que les récupérations n'ont pas été faites. »
+
+   Il avait raison, et la cause était nette : `travailFini` ci-dessus exige `horsProgramme`.
+   Une cliente PROGRAMMÉE dont tout est ramassé n'entrait donc dans aucun des trois tiroirs —
+   elle restait une grande carte au milieu du programme, avec ses quatre boutons, à la même
+   place et de la même taille que celles où personne n'est encore passé. Huit cartes pleines,
+   dont cinq finies : l'œil lit « il reste huit choses à faire ».
+
+   `recuperationFaite` pose la question sans le « hors programme » : plus rien à prendre, et
+   quelque chose a été pris. Elle sert à deux endroits — la carte devient une LIGNE, et la
+   ligne DESCEND sous celles qui restent, dans le bloc de son livreur.
+
+   UNE RÉSERVE, ET ELLE COMPTE. Tant que la cliente a annoncé plus de colis que l'application
+   n'en connaît (l'écart du 30/08), la carte reste entière : ce n'est pas fini, c'est un coup de
+   téléphone à passer ce soir. Réduire cette carte-là cacherait précisément ce qu'on cherche. */
+const ecartOuvert = (l) => (typeof libelleAnnonceRecuperation === 'function') && !!libelleAnnonceRecuperation(l);
+const recuperationFaite = (l) => !l.nbAPrendre && l.nbDejaPris > 0 && !ecartOuvert(l);
+
 /* LES DEUX BOUTS DE CHAQUE TOURNÉE. (18/09/2026, point 7.6) La première carte d'un livreur n'a
    nulle part où monter, la dernière nulle part où descendre. On retire la flèche au lieu de la
    laisser inerte : un bouton qui ne fait rien fait croire qu'on a agi, et on recommence.
    « Première » et « dernière » se comptent parmi les cartes RANGEABLES — les lignes hors
    programme et le travail fini n'en portent pas, ils ne peuvent donc pas servir de borne. */
-const rangeableCarte = (l) => !travailFini(l) && !l.horsProgramme;
+// 21/09/2026 : une récupération faite ne se range plus non plus — elle a quitté le trajet et
+// descend sous les autres. Sans cette ligne, elle aurait continué à servir de borne, et la
+// première carte RESTANTE aurait perdu sa flèche « monter » sans raison visible.
+const rangeableCarte = (l) => !travailFini(l) && !l.horsProgramme && !recuperationFaite(l);
 const bornesOrdre = { premiers: new Set(), derniers: new Set() };
 {
   const parLivreur = new Map();
@@ -539,7 +563,34 @@ const bornesOrdre = { premiers: new Set(), derniers: new Set() };
   });
 }
 
+/* LA LIGNE COURTE D'UNE RÉCUPÉRATION FAITE. (21/09/2026)
+   Ce qui reste, et pourquoi : le rang (on suit l'ordre de la tournée), le nom, le lieu en petit
+   (c'est ainsi qu'on reconnaît la cliente quand deux portent le même prénom), et ce qui a été
+   pris. Ce qui part : les deux boutons de contact et les deux gestes. Appeler une cliente chez
+   qui on est déjà passé, « Modifier » une tournée accomplie, « Retirer » ce qui est ramassé —
+   aucun des quatre n'a d'effet utile, et chacun coûtait une ligne à l'écran.
+   Ce qui RESTE malgré tout : la commune manquante se répare ici comme ailleurs (une fiche
+   fausse aujourd'hui le sera encore demain), et le compte confirmé par le livreur s'affiche
+   s'il ne colle pas avec l'annonce — un écart ne se replie jamais. */
+const ligneFaiteHTML = (l) => {
+const lieu = libelleLieuRecuperation(l.commune, l.adresse);
+const manquant = communeRecuperationManquante(l.commune);
+const ecart = l.nbAnnonce !== null && l.nbAnnonce !== undefined && l.nbPris !== null && l.nbPris !== undefined && l.nbPris !== l.nbAnnonce;
+return `
+<div class="tournee-faite">
+<span class="tournee-faite-coche" aria-hidden="true">✔</span>
+<span class="tournee-faite-rang">${l.rangTournee || ''}</span>
+<span class="tournee-faite-nom">${escapeHTML(l.clienteNom)}</span>
+${manquant
+? `<button type="button" class="tournee-faite-lieu tournee-faite-lieu--manquant" data-prog-lieu="${escapeHTML(l.fournisseurId)}">📍 ${escapeHTML(lieu)} — la renseigner</button>`
+: `<span class="tournee-faite-lieu">${escapeHTML(lieu)}</span>`}
+<span class="tournee-faite-compte">${l.nbDejaPris} récupéré${l.nbDejaPris > 1 ? 's' : ''}</span>
+${ecart && libelleColisPris(l) ? `<span class="tournee-faite-ecart">⚠️ ${escapeHTML(libelleColisPris(l))}</span>` : ''}
+</div>`;
+};
+
 const carteHTML = (l) => {
+if (recuperationFaite(l)) return ligneFaiteHTML(l);
 const contacts = l.telephone
 ? `<div class="tournee-contacts">
 <a class="tournee-contact tournee-contact--appel" href="tel:${escapeHTML(numeroCompose(l.telephone))}">📞 Appeler</a>
@@ -675,17 +726,30 @@ ${geste}
    s'affiche que si quelque chose a été rangé — sinon il n'aurait rien à défaire. */
 const blocLivreur = (g) => {
   const range = g.lignes.some(l => l.ordreTournee !== null && l.ordreTournee !== undefined);
+  /* CE QUI RESTE D'ABORD, CE QUI EST FAIT ENSUITE. (21/09/2026)
+     L'ordre de la tournée est celui du trajet, et il reste celui du trajet à l'intérieur de
+     chaque moitié. Mais une cliente chez qui on est passé n'a plus de place dans le trajet :
+     la laisser au milieu, c'est obliger l'œil à trier lui-même des cartes qui se ressemblent.
+     Les lignes faites descendent donc en bloc, sous un petit titre qui les annonce. */
+  const reste = g.lignes.filter(l => !recuperationFaite(l));
+  const faites = g.lignes.filter(recuperationFaite);
+  const prises = faites.reduce((n, l) => n + (l.nbDejaPris || 0), 0);
+  // Le titre dit les DEUX : ce qui attend, et ce qui est déjà dans le sac. Annoncer « 1 colis à
+  // prendre » sur un livreur qui en a déjà ramassé huit donnerait de lui une image fausse.
+  const aPrendre = colisConnus ? g.total.nbAPrendre + ' colis à prendre' : 'colis à venir';
+  const faitesTexte = prises ? ` · <span class="tournee-titre-fait">${prises} récupéré${prises > 1 ? 's' : ''}</span>` : '';
   return `
-<div class="tournee-section-titre">${escapeHTML(g.livreurNom)} · ${g.total.nbClientes} cliente${g.total.nbClientes > 1 ? 's' : ''} · ${colisConnus ? g.total.nbAPrendre + ' colis à prendre' : 'colis à venir'}${
+<div class="tournee-section-titre">${escapeHTML(g.livreurNom)} · ${g.total.nbClientes} cliente${g.total.nbClientes > 1 ? 's' : ''} · ${aPrendre}${faitesTexte}${
   range ? `<button type="button" class="tournee-ranger" data-prog-ranger="${escapeHTML(String(g.livreurId || ''))}" title="Effacer l'ordre posé à la main et revenir au rangement par commune">↺ Ranger par commune</button>` : ''}</div>
-${g.lignes.map(carteHTML).join('')}`;
+${reste.map(carteHTML).join('')}
+${faites.length ? `<div class="tournee-faites-titre">Déjà récupéré chez ${faites.length} cliente${faites.length > 1 ? 's' : ''}</div>${faites.map(carteHTML).join('')}` : ''}`;
 };
 
 // Ce qui est fait ne s'annonce pas en « colis à prendre » : ce serait un zéro, et un zéro se lit
 // comme un manque. Le titre du bloc annonce donc ce qui a été récupéré.
 const blocLivreurFait = (g) => `
 <div class="tournee-section-titre">${escapeHTML(g.livreurNom)} · ${g.total.nbClientes} cliente${g.total.nbClientes > 1 ? 's' : ''} · ${g.total.nbDejaPris} colis récupéré${g.total.nbDejaPris > 1 ? 's' : ''}</div>
-${g.lignes.map(carteHTML).join('')}`;
+${g.lignes.map(carteHTML).join('')}`;   // carteHTML rend d'elle-même la ligne courte ici : tout y est fait
 
 const programmees = lignes.filter(l => !l.horsProgramme);
 const confiees    = lignes.filter(l => l.horsProgramme && !travailFini(l));

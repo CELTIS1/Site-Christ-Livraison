@@ -167,10 +167,83 @@ el.classList.add('hidden');
 }
 }
 
-function refreshSettingsBadge(){
-const total = (pendingAccounts ? pendingAccounts.length : 0) + resetEnAttente();
-updateNotifBadge('settings-notif-badge', total);
+/* Poser (ou retirer) le chiffre sur un onglet, en haut comme en bas comme dans la feuille
+   « Plus ». Même dessin que celui des Retours (12-les-retours.js), écrit ici une fois pour
+   les deux. (21/09/2026) */
+function eqBadgeOnglet(cle, nombre){
+document.querySelectorAll(`#clt-toptabs [data-eqtab="${cle}"], #clt-bottomnav [data-nav="${cle}"], #bottomnav-feuille [data-nav="${cle}"]`).forEach(b => {
+  let badge = b.querySelector('.rt-onglet-badge');
+  if (!nombre) { if (badge) badge.remove(); return; }
+  if (!badge) { badge = document.createElement('span'); badge.className = 'rt-onglet-badge'; b.appendChild(badge); }
+  badge.textContent = String(nombre);
+});
+eqBadgeBoutonPlus();
 }
+
+/* ET « PLUS » PORTE CE QU'IL CACHE. (21/09/2026)
+   Sur téléphone, quatre onglets tiennent dans la barre du bas ; les autres — Comptes compris —
+   sont derrière « Plus ». Poser le chiffre sur l'onglet Comptes ne servirait donc à rien sur le
+   téléphone de Celtis : il est dans un tiroir fermé. « Plus » porte la somme de ce qu'il cache,
+   et c'est ce qui le fait ouvrir. On additionne les pastilles réellement posées, plutôt que de
+   recompter : le jour où un autre onglet relégué en portera une, elle comptera d'elle-même. */
+function eqBadgeBoutonPlus(){
+const bouton = document.getElementById('bottomnav-plus');
+if (!bouton) return;
+let somme = 0;
+document.querySelectorAll('#clt-bottomnav .nav--dans-plus .rt-onglet-badge').forEach(b => { somme += Number(b.textContent) || 0; });
+let badge = bouton.querySelector('.rt-onglet-badge');
+if (!somme) { if (badge) badge.remove(); return; }
+if (!badge) { badge = document.createElement('span'); badge.className = 'rt-onglet-badge'; bouton.appendChild(badge); }
+badge.textContent = String(somme);
+}
+
+/* LA PASTILLE DU MENU ☰ MÈNE ENFIN QUELQUE PART. (21/09/2026)
+
+   Celtis : « au niveau du bouton en haut à droite, ça affiche 3 sur mon écran, mais ça ne me
+   dit pas exactement où je dois partir. […] J'ai reçu des notifications pour les demandes
+   d'approbation, mais quand je vais au niveau du compte, il n'y a aucune notification là-bas.
+   Je ne comprends pas. »
+
+   Il n'y avait rien à comprendre : le chiffre était juste, le chemin n'existait pas. La
+   pastille compte les comptes à valider et les mots de passe à refaire — mais le menu qu'elle
+   ouvre ne contient que « Mon compte », « Grille tarifaire », « Se déconnecter ». Un compteur
+   posé sur une porte qui ne mène pas à ce qu'il compte.
+
+   Deux corrections, et la seconde est la vraie. (1) Le menu porte maintenant les deux lignes,
+   avec leur chiffre, et elles emmènent au bon endroit — ce sont les mêmes gestes que les
+   pastilles de « L'essentiel », `essentielAller`, écrit une fois. (2) Surtout : l'onglet
+   COMPTES porte le chiffre, en haut, en bas, et dans la feuille « Plus ». C'est là que la
+   chose se traite ; c'est là que le chiffre doit se voir, sans ouvrir un menu. »L'essentiel »
+   le disait déjà, mais seulement sur l'onglet Colis — Celtis était sur Retours. */
+function refreshSettingsBadge(){
+const nbComptes = pendingAccounts ? pendingAccounts.length : 0;
+const nbResets = resetEnAttente();
+const total = nbComptes + nbResets;
+updateNotifBadge('settings-notif-badge', total);
+eqBadgeOnglet('comptes', total);
+const groupe = document.getElementById('settings-groupe-attente');
+if (groupe) groupe.classList.toggle('hidden', !total);
+const poser = (id, n, texte) => {
+  const b = document.getElementById(id);
+  if (!b) return;
+  b.classList.toggle('hidden', !n);
+  b.textContent = texte(n);
+};
+poser('menu-comptes-a-valider', nbComptes, (n) => `👤 ${n} compte${n > 1 ? 's' : ''} à valider`);
+poser('menu-reinitialisations', nbResets, (n) => `🔑 ${n} mot${n > 1 ? 's' : ''} de passe à refaire`);
+}
+
+/* Les deux lignes du menu mènent là où « L'essentiel » mène déjà : même fonction, même onglet,
+   même section dépliée. Le menu se referme, sinon il resterait ouvert par-dessus l'écran
+   qu'on vient d'ouvrir. */
+document.addEventListener('click', (e) => {
+const b = e.target.closest('#menu-comptes-a-valider, #menu-reinitialisations');
+if (!b) return;
+e.preventDefault();
+const menu = document.getElementById('settings-dropdown');
+if (menu) menu.classList.remove('open');
+if (typeof essentielAller === 'function') essentielAller(b.id === 'menu-comptes-a-valider' ? 'comptes-a-valider' : 'reinitialisations');
+});
 
 function renderPending(){
 updateNotifBadge('pending-badge', pendingAccounts.length);
