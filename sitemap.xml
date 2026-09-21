@@ -3,7 +3,7 @@
      Les cinq fiches service vivent sur services.html?s=… : chacune a sa propre adresse, son
      propre titre et sa propre balise canonical (posée par le script de services.html). -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://christlivraison.ci/</loc><lastmod>2026-09-16</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://christlivraison.ci/</loc><lastmod>2026-09-21</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://christlivraison.ci/services.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://christlivraison.ci/services.html?s=express</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://christlivraison.ci/services.html?s=programmee</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
@@ -12,8 +12,8 @@
   <url><loc>https://christlivraison.ci/services.html?s=expedition</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://christlivraison.ci/express.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://christlivraison.ci/suivi.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://christlivraison.ci/tarifs.html</loc><lastmod>2026-09-16</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://christlivraison.ci/contact.html</loc><lastmod>2026-09-20</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://christlivraison.ci/tarifs.html</loc><lastmod>2026-09-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://christlivraison.ci/contact.html</loc><lastmod>2026-09-21</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://christlivraison.ci/installer.html</loc><lastmod>2026-09-20</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://christlivraison.ci/conditions-generales.html</loc><lastmod>2026-09-16</lastmod><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://christlivraison.ci/mentions-legales.html</loc><lastmod>2026-09-16</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
