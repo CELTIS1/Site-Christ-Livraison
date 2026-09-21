@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260921cocher">
+<link rel="stylesheet" href="style.css?v=20260921parjour">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260921cocher"></script>
-<script src="splash.js?v=20260921cocher"></script>
+<script src="theme.js?v=20260921parjour"></script>
+<script src="splash.js?v=20260921parjour"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -618,34 +618,50 @@
   <div class="card hidden" id="section-retours">
     <h2>Mes retours</h2>
     <p class="muted" style="margin:0 0 12px; font-size:13.5px;">Les colis qui n'ont pas pu être livrés et reviennent vers vous, où qu'ils soient. Quand le livreur vous en a rendu un, vous confirmez ici.</p>
+    <!-- PAR JOUR, ET AUJOURD'HUI PAR DÉFAUT (21/09/2026, Celtis : « quand on vient là, on scroll,
+         on trouve beaucoup de messages, beaucoup de choses. C'est trop »). Même barre que
+         « Statut des colis du jour » : une date, réglée sur aujourd'hui, et un bouton pour tout
+         voir. La date d'un retour est celle de son départ vers elle (voir retourJour). -->
+    <div class="rt-jour-barre">
+      <label for="retours-jour-date" class="rt-jour-label">Jour du retour</label>
+      <input type="date" id="retours-jour-date">
+      <button type="button" class="btn btn-sm btn-outline" id="retours-toutes-dates">Toutes les dates</button>
+    </div>
+    <div id="retours-jour-libelle" class="rt-jour-libelle"></div>
+    <!-- CE QUI ATTEND SA RÉPONSE NE SE RANGE PAS DANS UN JOUR. Un retour dont le livreur dit
+         l'avoir rendu attend SA confirmation, et c'est elle qui clôt le retour. Le filtrer par
+         date le ferait tomber dans une journée qu'on ne regarde plus — exactement le défaut
+         réglé le 20/09 (un retour de la semaine dernière est celui qu'il faut voir). Il reste
+         donc ici, au-dessus, toutes dates confondues, et clairement annoncé. -->
+    <div class="colis-list" id="retours-a-confirmer"></div>
     <div class="colis-list" id="retours-list">
       <div class="empty-state">Chargement...</div>
     </div>
   </div>
 </div>
 
-<script src="clt-common.js?v=20260921cocher"></script>
-<script src="numero-international.js?v=20260921cocher"></script>
-<script src="voir-un-compte.js?v=20260921cocher"></script>
-<script src="lib/bibliotheques.js?v=20260921cocher"></script>
-<script src="lib/retours.js?v=20260921cocher"></script>
-<script src="lib/reclamations.js?v=20260921cocher"></script>
-<script src="lib/communes-et-tarifs.js?v=20260921cocher"></script>
-<script src="lib/argent.js?v=20260921cocher"></script>
-<script src="lib/releve-cliente.js?v=20260921cocher"></script>
-<script src="lib/papier-a-en-tete.js?v=20260921cocher"></script>
-<script src="lib/briques-argent.js?v=20260921cocher"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260921cocher"></script>
-<script src="lib/annonce-de-remise.js?v=20260921cocher"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260921cocher"></script>
-<script src="lib/primes.js?v=20260921cocher"></script>
-<script src="lib/doublons.js?v=20260921cocher"></script>
-<script src="config.js?v=20260921cocher"></script>
-<script src="mes-boutiques.js?v=20260921cocher"></script>
-<script src="etiquettes-et-scan.js?v=20260921cocher"></script>
-<script src="import-de-colis.js?v=20260921cocher"></script>
-<script src="biometric-lock.js?v=20260921cocher"></script>
-<script src="clt-select-recherche.js?v=20260921cocher"></script>
+<script src="clt-common.js?v=20260921parjour"></script>
+<script src="numero-international.js?v=20260921parjour"></script>
+<script src="voir-un-compte.js?v=20260921parjour"></script>
+<script src="lib/bibliotheques.js?v=20260921parjour"></script>
+<script src="lib/retours.js?v=20260921parjour"></script>
+<script src="lib/reclamations.js?v=20260921parjour"></script>
+<script src="lib/communes-et-tarifs.js?v=20260921parjour"></script>
+<script src="lib/argent.js?v=20260921parjour"></script>
+<script src="lib/releve-cliente.js?v=20260921parjour"></script>
+<script src="lib/papier-a-en-tete.js?v=20260921parjour"></script>
+<script src="lib/briques-argent.js?v=20260921parjour"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260921parjour"></script>
+<script src="lib/annonce-de-remise.js?v=20260921parjour"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260921parjour"></script>
+<script src="lib/primes.js?v=20260921parjour"></script>
+<script src="lib/doublons.js?v=20260921parjour"></script>
+<script src="config.js?v=20260921parjour"></script>
+<script src="mes-boutiques.js?v=20260921parjour"></script>
+<script src="etiquettes-et-scan.js?v=20260921parjour"></script>
+<script src="import-de-colis.js?v=20260921parjour"></script>
+<script src="biometric-lock.js?v=20260921parjour"></script>
+<script src="clt-select-recherche.js?v=20260921parjour"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3396,19 +3412,74 @@
       if (!error && Array.isArray(data)) mesRetoursHorsPage = data;
     } catch (e) { /* on montre au moins ceux de la page */ }
   }
+  /* TOUS ses retours, dans l'ordre : ce qui attend sa réponse, puis ce qui est en route, puis
+     ce qui est clos. C'est la liste complète ; le tri par jour vient après, sur elle. */
+  function tousMesRetours(){
+    const poids = (c) => retourAConfirmer(c) ? 0 : retourEnAttente(c) ? 1 : 2;
+    const dansLaPage = new Set(mesColis.map(c => c.id));
+    return mesColis.filter(c => c.statut === 'retour')
+      .concat(mesRetoursHorsPage.filter(c => !dansLaPage.has(c.id)))
+      .sort((a, b) => poids(a) - poids(b) || String(b.retour_at || b.non_livre_at || b.created_at || '').localeCompare(String(a.retour_at || a.non_livre_at || a.created_at || '')));
+  }
+  /* Le jour regardé : '' veut dire « toutes les dates ». Au premier affichage, aujourd'hui. */
+  let retoursJour = null;
   function renderRetoursCliente(){
     const list = document.getElementById('retours-list');
     if (!list) return;
-    const poids = (c) => retourAConfirmer(c) ? 0 : retourEnAttente(c) ? 1 : 2;
-    const dansLaPage = new Set(mesColis.map(c => c.id));
-    const retours = mesColis.filter(c => c.statut === 'retour').concat(mesRetoursHorsPage.filter(c => !dansLaPage.has(c.id))).sort((a, b) => poids(a) - poids(b) || String(b.retour_at || b.non_livre_at || b.created_at || '').localeCompare(String(a.retour_at || a.non_livre_at || a.created_at || '')));
-    const aConfirmer = retours.filter(c => retourAConfirmer(c)).length;
-    document.querySelectorAll('[data-retours-badge]').forEach(b => { b.textContent = aConfirmer ? String(aConfirmer) : ''; b.classList.toggle('hidden', !aConfirmer); });
-    const html = retours.length
-      ? retours.map((c, i) => colisItemHTML(c, retours.length - i)).join('')
-      : '<div class="empty-state">Aucun colis ne revient vers vous.</div>';
+    const retours = tousMesRetours();
+    const aConfirmer = retours.filter(c => retourAConfirmer(c));
+    document.querySelectorAll('[data-retours-badge]').forEach(b => { b.textContent = aConfirmer.length ? String(aConfirmer.length) : ''; b.classList.toggle('hidden', !aConfirmer.length); });
+
+    const champ = document.getElementById('retours-jour-date');
+    if (retoursJour === null) retoursJour = todayLocalISODate();
+    if (champ && champ.value !== retoursJour) champ.value = retoursJour;
+
+    // Ce qui attend sa réponse : au-dessus, toutes dates confondues, et dit comme tel.
+    const boite = document.getElementById('retours-a-confirmer');
+    if (boite) {
+      const html = aConfirmer.length
+        ? `<div class="rt-jour-titre">À confirmer — ${aConfirmer.length} colis, toutes dates confondues</div>`
+          + aConfirmer.map((c, i) => colisItemHTML(c, aConfirmer.length - i)).join('')
+        : '';
+      if (cltPoserHTML(boite, html)) attachColisHandlers(boite);
+    }
+
+    // Et le reste, rangé sous le jour choisi.
+    const reste = retours.filter(c => !retourAConfirmer(c));
+    const duJour = retoursJour ? reste.filter(c => retourJour(c) === retoursJour) : reste;
+    const libelle = document.getElementById('retours-jour-libelle');
+    if (libelle) {
+      const jourTexte = !retoursJour ? 'Toutes les dates'
+        : (retoursJour === todayLocalISODate() ? "Aujourd'hui" : dayLabel(retoursJour + 'T12:00:00'));
+      const suite = duJour.length
+        ? `${duJour.length} colis${duJour.length > 1 ? ' reviennent' : ' revient'} vers vous ce jour-là`
+        : (reste.length ? `aucun ce jour-là — ${reste.length} en tout, sur d'autres dates` : 'aucun');
+      libelle.textContent = `${jourTexte} · ${suite}`;
+    }
+    const vide = aConfirmer.length
+      ? (reste.length ? `<div class="empty-state">Rien d'autre ce jour-là. <button type="button" class="mb-lien" id="retours-voir-tout">Voir toutes les dates</button></div>` : '')
+      : (reste.length
+        ? `<div class="empty-state">Aucun retour ce jour-là. <button type="button" class="mb-lien" id="retours-voir-tout">Voir toutes les dates</button></div>`
+        : '<div class="empty-state">Aucun colis ne revient vers vous.</div>');
+    const html = duJour.length
+      ? duJour.map((c, i) => colisItemHTML(c, duJour.length - i)).join('')
+      : vide;
     if (cltPoserHTML(list, html)) attachColisHandlers(list);
   }
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#retours-toutes-dates') || e.target.closest('#retours-voir-tout')) {
+      e.preventDefault();
+      retoursJour = '';
+      const champ = document.getElementById('retours-jour-date');
+      if (champ) champ.value = '';
+      renderRetoursCliente();
+    }
+  });
+  document.addEventListener('change', (e) => {
+    if (!e.target.closest('#retours-jour-date')) return;
+    retoursJour = e.target.value || '';
+    renderRetoursCliente();
+  });
   /* Une ligne, tous jours confondus, au-dessus de « Mes colis » : combien de colis reviennent vers
      elle, et combien attendent sa confirmation. Un appui mène à l'onglet Retours. */
   function retoursClienteLigneHTML(colis){

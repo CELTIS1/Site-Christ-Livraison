@@ -530,13 +530,15 @@
    "id": "retours-cliente",
    "espace": "cliente",
    "titre": "Ses retours dans leur onglet",
-   "enBref": "L'onglet « Retours » montre où est chaque colis revenu ; la cliente confirme la remise ou la conteste.",
+   "enBref": "L'onglet « Retours » s'ouvre sur le jour même ; la cliente confirme la remise ou la conteste.",
    "ou": "Cliente › Retours",
    "etapes": [
+    "Par défaut, les retours DU JOUR. Elle choisit une autre date, ou « Toutes les dates ».",
+    "Ce qui attend sa confirmation reste affiché quelle que soit la date : on ne le cache jamais.",
     "« Je l'ai bien reçu » clôt le retour.",
     "« Je ne l'ai pas reçu » ouvre un litige que le bureau voit en tête."
    ],
-   "version": "v180"
+   "version": "v222"
   },
   {
    "id": "cliente-carte",

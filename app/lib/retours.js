@@ -80,6 +80,20 @@ function retourNiveau(colis) {
 function retourDepart(colis) {
   return colis && (colis.retour_at || colis.non_livre_at) || null;
 }
+/* LE JOUR D'UN RETOUR — 21/09/2026, Celtis : « sur l'espace des clients, dans le côté retour,
+   je veux que ce soit affiché par date, et par défaut la date du jour. »
+   Le jour d'un retour, ce n'est PAS le jour où le colis avait été déposé chez nous : c'est le
+   jour où il est reparti vers sa cliente (retour_at, sinon l'échec de livraison qui l'a mis en
+   route). Un colis déposé le 2 et non livré le 19 est un retour du 19 — c'est ce jour-là qu'on
+   le cherche. À défaut de l'un et de l'autre (un vieux colis d'avant les dates de retour), on
+   retombe sur son jour de réception, pour qu'il ait toujours une date et ne disparaisse jamais.
+   Rend 'AAAA-MM-JJ', ou '' si le colis n'a aucune date du tout. */
+function retourJour(colis) {
+  const source = retourDepart(colis) || (colis && colis.created_at) || null;
+  if (!source) return '';
+  return typeof dayKey === 'function' ? dayKey(source) : String(source).slice(0, 10);
+}
+
 /* Le jour où il doit être rendu, au plus tard : 'AAAA-MM-JJ'. Rend null sans date de retour. */
 function retourEcheance(colis) {
   const depart = retourDepart(colis);

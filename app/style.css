@@ -3451,6 +3451,27 @@ html[data-theme="dark"] .rt-puce, html[data-theme="dark"] .rt-badge{ filter:brig
 .retour-parcours-btn{ display:inline-block; margin-top:8px; background:none; border:0; padding:0; font:inherit; font-size:12.5px; font-weight:700; color:var(--navy); cursor:pointer; }
 .retour-ligne .rt-histoire{ font-weight:500; }
 .retour-ligne--bouton{ display:block; width:100%; text-align:left; cursor:pointer; margin:0 0 10px; font:inherit; font-size:13px; font-weight:600; }
+/* LA BARRE DE JOUR DE « MES RETOURS » (21/09/2026). Réglée sur la même barre que « Statut des
+   colis du jour » de l'onglet Récap : la cliente la connaît déjà, et deux écrans qui font la
+   même chose ne s'apprennent qu'une fois. Sur téléphone, le champ prend la largeur restante et
+   le bouton passe dessous plutôt que de comprimer la date à six caractères. */
+.rt-jour-barre{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 6px; }
+.rt-jour-label{ font-size:12.5px; font-weight:700; color:var(--navy); }
+.rt-jour-barre input[type=date]{ max-width:180px; flex:0 1 180px; }
+.rt-jour-libelle{ font-size:12.5px; color:var(--muted); margin:0 0 12px; }
+/* Le titre du bloc « À confirmer » : il annonce que ces colis-là échappent au jour choisi.
+   Sans lui, on croirait à un doublon de la liste du dessous. */
+.rt-jour-titre{ font-size:12.5px; font-weight:800; color:var(--navy); margin:0 0 8px; }
+@media(max-width:640px){
+  /* Mesuré à 390 px : le champ « date » gonflait jusqu'à prendre toute la ligne et poussait
+     « Toutes les dates » sur une ligne à lui — trois lignes pour une barre de réglage, au-dessus
+     d'une liste qu'on est venu voir. Le libellé passe au-dessus ; la date et le bouton se
+     partagent la ligne suivante. */
+  .rt-jour-label{ flex:1 0 100%; }
+  .rt-jour-barre{ gap:8px; }
+  .rt-jour-barre input[type=date]{ flex:1 1 150px; max-width:none; min-width:0; }
+  .rt-jour-barre #retours-toutes-dates{ flex:0 0 auto; white-space:nowrap; }
+}
 /* Le second geste d'un retour (« Déposé au bureau ») n'est pas un échec : contour navy, pas rouge. */
 .colis-etapes .btn.btn-etape-secondaire{color:var(--navy); border-color:var(--border-strong);}
 
@@ -3579,7 +3600,19 @@ html[data-theme="dark"] .mes-reportes{ background:#3a3010; color:#f3d98a; }
   .colis-item > .status-col[style]{ width:100% !important; justify-content:space-between !important; order:-1; border-top:0; margin-top:0; padding-top:0; }
   .colis-item > .status-col[style] + *{ width:100%; }
   .colis-item .info{ flex:1 1 200px; }
+  /* LE MENU « ⋮ » QUI SORTAIT DE L'ÉCRAN (21/09/2026, capture de Celtis sur l'onglet Comptes).
+     Sur une carte de COLIS, cette ligne porte deux choses — le badge de statut à gauche, le ⋮
+     à droite — et « space-between » les écarte comme il faut. Sur une carte de COMPTE, elle ne
+     porte QUE le ⋮ : seul enfant, il se retrouvait collé au bord GAUCHE. Le menu, lui, est
+     ancré à droite de son bouton (« right:0 ») et s'ouvre donc vers la gauche : il partait
+     hors de l'écran, et on ne lisait plus que la fin des mots — « …che », « …e mot de ».
+     Le ⋮ rejoint le bord droit, comme sur toutes les autres cartes : même bouton, même place,
+     et le menu s'ouvre là où il y a la place de l'afficher. */
+  .colis-item > .status-col[style] > .actions-menu:only-child{ margin-left:auto; }
 }
+/* Et quoi qu'il arrive, un menu d'actions ne peut pas être plus large que l'écran : sur un
+   téléphone étroit, ses 200 px minimum dépassaient de toute façon. (21/09/2026) */
+.actions-dropdown{ max-width:calc(100vw - 32px); }
 /* LA LARGEUR UTILE SUR TÉLÉPHONE (20/09/2026). Mesuré à 390 px sur l'écran du bureau : page
    24 px + carte 26 px + groupe 10 px + ligne 12 px de chaque côté, il restait 273 px pour une
    carte de colis, et 56 px pour son texte. On resserre les marges là où l'écran est étroit. */

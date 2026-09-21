@@ -23,6 +23,25 @@
      tout le monde serait renvoyé sur « Colis » au premier chargement après la mise en ligne. */
   const EQ_TABS_ANCIENS = { clients: 'personnes', livreurs: 'personnes' };
 
+  /* Forcer le navigateur à reprendre la mise en page du panneau qu'on vient de montrer.
+     Un panneau qui sort de `display:none` n'a jamais été mesuré : ses éléments « collants »
+     (la barre d'onglets, les en-têtes de tableau) gardent la position qu'ils avaient dans
+     l'onglet précédent, et le dessin de l'ancien écran peut rester à l'écran par-dessus.
+     Lire `offsetHeight` oblige à recalculer ; la bascule d'opacité sur une image force le
+     redessin. Deux lignes, aucun effet visible, et le fantôme s'en va.
+     `forceStickyReflow` (00-etat-et-caisse.js) fait déjà ce travail pour les TABLEAUX collants
+     des onglets Suivi et Finances ; ici c'est le panneau entier, pour tous les onglets. */
+  function eqRepeindreLOnglet(panneau){
+    if (!panneau) return;
+    try {
+      void panneau.offsetHeight;
+      const wrap = document.querySelector('.clt-toptabs-wrap');
+      if (wrap) void wrap.offsetHeight;
+      panneau.style.opacity = '0.999';
+      requestAnimationFrame(() => { panneau.style.opacity = ''; });
+    } catch(e){ /* un onglet qui s'affiche ne doit jamais échouer pour un repeint */ }
+  }
+
   function showEquipeTab(key){
     if (EQ_TABS_ANCIENS[key]) { const vue = key; key = EQ_TABS_ANCIENS[key]; choisirPersonnes(vue === 'livreurs' ? 'livreurs' : 'clientes'); }
     if (!EQ_TABS.includes(key)) key = 'colis';
@@ -71,6 +90,29 @@
         forceStickyReflow(document.getElementById('panel-compta'));
       }
     }
+    /* ON ARRIVE EN HAUT DE L'ONGLET, ET L'ÉCRAN EST PROPRE. (21/09/2026)
+       Celtis, capture à l'appui : « dans l'onglet colis, lorsqu'on passe d'un onglet à celui-ci,
+       il y a comme ce défaut d'affichage » — une carte de colis posée de travers par-dessus le
+       tableau de bord, et la barre d'onglets coincée au milieu de la page.
+
+       LA CAUSE. Changer d'onglet ne remontait pas la page. La barre du bas le faisait déjà
+       (en glissant) ; la barre du HAUT, celle des grands écrans, ne le faisait pas du tout.
+       Si l'on était descendu loin dans Personnes — huit livreurs, une courbe, des signaux — et
+       qu'on touchait « Colis », on atterrissait au milieu de la liste des colis. Or les deux
+       panneaux n'ont pas la même hauteur : la page raccourcit d'un coup sous le point où l'on
+       se trouve, la barre d'onglets « collante » garde sa position d'avant, et le navigateur
+       laisse un morceau de l'écran précédent peint là où il était. D'où la carte fantôme.
+
+       LE REMÈDE, dans cet ordre. On remonte en haut D'UN COUP, jamais en glissant : un
+       défilement animé se déroule pendant que le panneau change de taille, et les deux se
+       battent — c'est la leçon du 17 septembre, déjà payée sur l'écran du livreur (v215).
+       Puis on force le navigateur à recalculer la barre collante et à repeindre le panneau
+       qu'on vient d'afficher, ce qu'il ne fait pas de lui-même quand il sortait de display:none.
+       Et on referme tout menu « ⋮ » resté ouvert : il appartenait à une carte de l'onglet qu'on
+       quitte, il n'a plus rien à désigner ici. */
+    document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
+    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch(e){ window.scrollTo(0, 0); }
+    eqRepeindreLOnglet(document.getElementById('eqpanel-'+key));
     try { localStorage.setItem('clt_equipe_tab_v2', key); } catch(e){}
     // Le compteur d'usage (18/09/2026) : pour retirer en octobre ce que personne n'ouvre, sur
     // preuve et non à l'opinion. Il ne note pas qui — voir cltNoterOngletOuvert.
@@ -236,10 +278,10 @@
       b.innerHTML = src.innerHTML;
       // Un onglet masqué dans la barre (Express, réservé) l'est aussi dans la feuille.
       if (src.classList.contains('hidden')) b.hidden = true;
-      b.addEventListener('click', () => {
-        showEquipeTab(b.dataset.nav);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      // showEquipeTab remonte la page lui-même, d'un coup (21/09/2026). Le défilement animé
+      // qui était ici se déroulait PENDANT que le panneau changeait de taille : les deux se
+      // battaient, et on s'arrêtait au milieu de nulle part.
+      b.addEventListener('click', () => showEquipeTab(b.dataset.nav));
       feuille.appendChild(b);
     });
     document.body.appendChild(voile);
@@ -273,10 +315,7 @@
     if (bar){
       bar.querySelectorAll('.nav').forEach(btn => {
         if (!btn.dataset.nav) return;              // le bouton « Plus » a son propre écouteur
-        btn.addEventListener('click', () => {
-          showEquipeTab(btn.dataset.nav);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+        btn.addEventListener('click', () => showEquipeTab(btn.dataset.nav));
       });
       construireFeuillePlus(bar);
     }

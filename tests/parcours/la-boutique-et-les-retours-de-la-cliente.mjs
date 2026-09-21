@@ -61,11 +61,21 @@ verifier('dans Mes colis, une ligne compte ses retours et mène à l\'onglet', (
 await ligne.click();
 await dodo(800);
 verifier('l\'onglet Retours s\'ouvre, Mes colis se cache', await page.locator('#section-retours').isVisible() && !(await page.locator('#section-colis').isVisible()));
+/* 21/09/2026 — l'onglet s'ouvre désormais SUR LE JOUR (Celtis : « quand on vient là, on scroll,
+   on trouve beaucoup de choses, c'est trop »). Les deux retours de ce monde datent d'hier et
+   d'il y a quatre jours : aucun n'est d'aujourd'hui. Ce que la cliente voit à l'ouverture, ce
+   n'est donc PAS rien — c'est ce qui attend sa réponse, qui échappe volontairement à la date. */
+const aConfirmer = page.locator('#retours-a-confirmer .colis-item');
 const cartes = page.locator('#retours-list .colis-item');
-verifier('ses deux retours, tous jours confondus, celui à confirmer en tête', (await cartes.count()) === 2 && (await cartes.nth(0).getAttribute('data-id')) === REVIENT.id, String(await cartes.count()));
-verifier('la question lui est posée sur le colis rendu, avec deux réponses', (await cartes.nth(0).locator('[data-retour-reponse="1"]').count()) === 1 && (await cartes.nth(0).locator('[data-retour-reponse="0"]').count()) === 1);
-verifier('le colis chez le livreur : « Chez le livreur » et « Joindre CLT »', /Chez le livreur/.test(await texte(cartes.nth(1))) && /Joindre CLT/.test(await texte(cartes.nth(1))), await texte(cartes.nth(1)));
-await cartes.nth(0).locator('[data-retour-reponse="1"]').click();
+verifier('à l\'ouverture : le colis à confirmer est là, bien qu\'il date d\'hier', (await aConfirmer.count()) === 1 && (await aConfirmer.nth(0).getAttribute('data-id')) === REVIENT.id, String(await aConfirmer.count()));
+verifier('… et le bloc dit pourquoi il échappe au jour', /À confirmer — 1 colis, toutes dates confondues/.test(await texte(page.locator('#retours-a-confirmer'))), await texte(page.locator('#retours-a-confirmer')));
+verifier('le retour d\'il y a quatre jours, lui, n\'encombre pas la journée', (await cartes.count()) === 0 && /Rien d'autre ce jour-là/.test(await texte(page.locator('#retours-list'))), await texte(page.locator('#retours-list')));
+verifier('la question lui est posée sur le colis rendu, avec deux réponses', (await aConfirmer.nth(0).locator('[data-retour-reponse="1"]').count()) === 1 && (await aConfirmer.nth(0).locator('[data-retour-reponse="0"]').count()) === 1);
+await page.locator('#retours-toutes-dates').click();
+await dodo(500);
+verifier('« Toutes les dates » ramène le colis chez le livreur : « Chez le livreur » et « Joindre CLT »', (await cartes.count()) === 1 && /Chez le livreur/.test(await texte(cartes.nth(0))) && /Joindre CLT/.test(await texte(cartes.nth(0))), await texte(cartes.nth(0)));
+verifier('et le colis à confirmer n\'est pas compté deux fois', (await aConfirmer.count()) === 1, String(await aConfirmer.count()));
+await aConfirmer.nth(0).locator('[data-retour-reponse="1"]').click();
 await dodo(400);
 verifier('on lui demande de confirmer', await page.locator('#clt-modal-ok').isVisible().catch(() => false));
 await page.locator('#clt-modal-ok').click();

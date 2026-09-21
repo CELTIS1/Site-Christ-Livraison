@@ -113,8 +113,15 @@ const bandeau = page.locator('[data-voir-retours]').first();
 verifier('une ligne compte ses colis qui reviennent et celui à confirmer', (await bandeau.count()) === 1 && /revient vers vous/.test(await texte(bandeau)) && /1 à confirmer/.test(await texte(bandeau)), await texte(bandeau));
 await bandeau.click();
 await dodo(800);
-const carteC = (id) => page.locator(`#retours-list .colis-item[data-id="${id}"]`).first();
-verifier('l\'onglet Retours s\'ouvre : ses retours, tous jours confondus, rien d\'autre', await page.locator('#section-retours').isVisible() && (await carteC(REVIENT.id).count()) === 1 && (await carteC(TRAINE.id).count()) === 1 && (await page.locator('#retours-list .colis-item').count()) === 2, String(await page.locator('#retours-list .colis-item').count()));
+/* 21/09/2026 — l'onglet s'ouvre désormais sur LE JOUR (Celtis : « on scroll, on trouve beaucoup
+   de choses, c'est trop »). Les deux retours de ce monde sont plus anciens : on demande donc
+   « Toutes les dates » pour retrouver la liste complète d'avant. Le colis à confirmer, lui, est
+   dans son bloc à part au-dessus — il échappe volontairement à la date. */
+verifier('l\'onglet Retours s\'ouvre sur le jour, avec la barre de date', await page.locator('#section-retours').isVisible() && (await page.locator('#retours-jour-date').count()) === 1);
+await page.locator('#retours-toutes-dates').click();
+await dodo(600);
+const carteC = (id) => page.locator(`#section-retours .colis-item[data-id="${id}"]`).first();
+verifier('« Toutes les dates » : ses deux retours, rien d\'autre', (await carteC(REVIENT.id).count()) === 1 && (await carteC(TRAINE.id).count()) === 1 && (await page.locator('#section-retours .colis-item').count()) === 2, String(await page.locator('#section-retours .colis-item').count()));
 verifier('le colis en retard chez le livreur : on reconnaît le retard, on promet un appel, et « Joindre CLT » est là', /pas encore pu vous être rendu/.test(await texte(carteC(TRAINE.id))) && /Joindre CLT/.test(await texte(carteC(TRAINE.id))) && /Chez le livreur/.test(await texte(carteC(TRAINE.id))), await texte(carteC(TRAINE.id)));
 verifier('le colis rendu : la question lui est posée, avec deux réponses', /L'avez-vous bien récupéré/.test(await texte(carteC(REVIENT.id))) && (await carteC(REVIENT.id).locator('[data-retour-reponse="1"]').count()) === 1 && (await carteC(REVIENT.id).locator('[data-retour-reponse="0"]').count()) === 1, await texte(carteC(REVIENT.id)));
 await carteC(REVIENT.id).locator('[data-retour-parcours]').click();

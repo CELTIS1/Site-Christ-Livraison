@@ -217,14 +217,25 @@
     const q = ldRecherche.trim().toLowerCase();
     const filtrees = ldTrier(lignes.filter((l) => !q || String(l.profil.full_name || '').toLowerCase().includes(q) || String(l.profil.phone || '').includes(q)));
     if (!filtrees.length) return '<div class="empty-state">Aucun livreur ne correspond.</div>';
-    return `<div class="table-wrap"><table class="cd-table"><thead><tr><th>Livreur</th><th>Livrés</th><th>Réussite</th><th>Par jour</th><th>Échecs</th><th>Dernier colis</th></tr></thead><tbody>
+    /* L'HABILLAGE DU TABLEAU — 21/09/2026, Celtis : « dans l'onglet personnes, les livreurs sont
+       listés mais pas bien espacés et on peut les confondre ».
+       Ce tableau-ci était le seul des tableaux de bord à ne porter que `cd-table`, qui ne règle
+       que l'alignement vertical des cellules. Il s'affichait donc en tableau BRUT : pas de
+       bordure, pas de fond d'en-tête, 1 px entre deux lignes — huit livreurs se lisaient comme
+       un bloc, et l'œil sautait d'une ligne à l'autre. Le tableau des clientes, lui, porte
+       depuis toujours `recap-table recap-table-cards` : bordures, en-tête figé, et repli en
+       cartes sur téléphone. C'est le même tableau, il prend le même habillage.
+       Les `data-label` ne sont pas décoratifs : sur téléphone, `recap-table-cards` les écrit
+       devant chaque valeur (« Réussite : 87 % »). Sans eux, on lirait une colonne de chiffres
+       nus. */
+    return `<div class="recap-table-wrap"><table class="recap-table recap-table-cards cd-table"><thead><tr><th>Livreur</th><th>Livrés</th><th>Réussite</th><th>Par jour</th><th>Échecs</th><th>Dernier colis</th></tr></thead><tbody>
       ${filtrees.map((l) => `<tr data-ld-fiche="${esc(l.profil.id)}" class="cd-ligne">
-        <td><b>${esc(l.profil.full_name || 'Livreur')}</b>${l.signaux.length ? ` <span class="cd-pastille">${l.signaux.length}</span>` : ''}</td>
-        <td>${l.livres} ${tendance(l.tendance)}</td>
-        <td>${l.taux === null ? '—' : `<b class="${l.taux < 80 ? 'ld-rouge' : l.taux >= 95 ? 'ld-vert' : ''}">${l.taux} %</b>`}</td>
-        <td>${l.moyenne === null ? '—' : String(l.moyenne).replace('.', ',')}</td>
-        <td>${l.stats.echecs}${l.stats.aQualifier ? ` <span class="cd-pastille">${l.stats.aQualifier} à qualifier</span>` : ''}</td>
-        <td>${l.dernier ? enClair(l.dernier) : '—'}</td>
+        <td data-label="Livreur"><b>${esc(l.profil.full_name || 'Livreur')}</b>${l.signaux.length ? ` <span class="cd-pastille">${l.signaux.length}</span>` : ''}</td>
+        <td data-label="Livrés" class="cd-cell-num">${l.livres} ${tendance(l.tendance)}</td>
+        <td data-label="Réussite" class="cd-cell-num">${l.taux === null ? '—' : `<b class="${l.taux < 80 ? 'ld-rouge' : l.taux >= 95 ? 'ld-vert' : ''}">${l.taux} %</b>`}</td>
+        <td data-label="Par jour" class="cd-cell-num">${l.moyenne === null ? '—' : String(l.moyenne).replace('.', ',')}</td>
+        <td data-label="Échecs" class="cd-cell-num">${l.stats.echecs}${l.stats.aQualifier ? ` <span class="cd-pastille">${l.stats.aQualifier} à qualifier</span>` : ''}</td>
+        <td data-label="Dernier colis" class="cd-cell-num">${l.dernier ? enClair(l.dernier) : '—'}</td>
       </tr>`).join('')}
     </tbody></table></div>`;
   }

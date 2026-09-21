@@ -65,6 +65,11 @@ verifier('il est dans Mes colis', cree && (await page.locator(`#colis-list .coli
 titre('3. Les retours au-delà de la page de 500');
 await page.locator('#clt-bottomnav .nav[data-target="section-retours"]').click();
 await dodo(800);
+/* 21/09/2026 — l'onglet s'ouvre sur le jour ; ce retour-ci a quarante jours. Ce qu'on vérifie
+   ici n'a pas changé : qu'il ait bien été ramené depuis la base malgré la page de 500. On lève
+   donc la date pour le retrouver. */
+await page.locator('#retours-toutes-dates').click();
+await dodo(600);
 verifier('le vieux retour (40 jours, plus ancien que les 500 colis chargés) est dans l\'onglet Retours', (await page.locator(`#retours-list .colis-item[data-id="${VIEUX.id}"]`).count()) === 1, await texte(page.locator('#retours-list')));
 
 titre('4. Une cliente sans colis a un bouton, pas une phrase');

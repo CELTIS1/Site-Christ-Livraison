@@ -1163,10 +1163,20 @@ verifier(
    neutre, la page de connexion rien. (4) Équipe › Colis sur grand écran : l'écran ne remonte plus
    (le repère de défilement était la fiche épinglée) ; bouton « Aller en bas ». (5) Cliente ›
    Récap : « Mon relevé » replié d'office, sous le récapitulatif ; la tuile « Total colis » n'est
-   plus blanche sur blanc. Bancs étendus, parcours 25. Étiquette 20260921cocher. */
+   plus blanche sur blanc. Bancs étendus, parcours 25. Étiquette 20260921cocher.
+   v222, le 21/09/2026 — Par jour, et l'écran propre. (1) Cliente › Retours : l'onglet s'ouvre sur
+   le jour du retour (retour_at, sinon l'échec — pas la date de dépôt), champ de date et « Toutes
+   les dates » ; ce qui attend sa confirmation reste au-dessus, toutes dates confondues, parce
+   qu'un retour jamais confirmé est justement celui qu'il faut voir. (2) Équipe › Personnes : le
+   tableau des livreurs, seul à n'avoir jamais reçu `recap-table`, s'affichait en tableau brut —
+   il prend l'habillage du tableau des clientes, et se replie en cartes sur téléphone ; la grille
+   « carte de cliente » est refermée sur #section-clients. (3) Changer d'onglet remonte la page
+   d'un coup (jamais en glissant), repeint le panneau affiché et referme les menus « ⋮ » restés
+   ouverts : plus de carte fantôme ni de barre d'onglets coincée au milieu. (4) Le menu « ⋮ »
+   d'une carte de compte s'ouvrait hors de l'écran sur téléphone ; le bouton rejoint le bord droit. Étiquette 20260921parjour. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v221'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v222'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
