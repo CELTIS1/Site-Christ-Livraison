@@ -1269,16 +1269,35 @@ async function cltInitPushButton(role, lireUserId){
         }
       });
 
+      /* « ALLER EN BAS » : UN SAUT SEC, PUIS TROIS RETOUCHES. (21/09/2026)
+         La première version glissait jusqu'en bas puis retouchait une fois, à heure fixe. Sur un
+         appareil lent — et sur le serveur qui contrôle chaque mise en ligne, d'où l'échec de la
+         v213 — la page s'allonge encore de quelques lignes en arrivant, et l'on restait à 67 px du
+         bas. Pire : la page est en « scroll-behavior: smooth », si bien qu'une retouche « auto »
+         redevenait une glissade. Les boîtes de messagerie font plus simple, et c'est ce qu'on fait
+         ici : on SAUTE en bas, sans glissade, puis on vérifie trois fois en deux secondes et demie
+         que la page ne s'est pas allongée. On lâche dès que la personne reprend la main. */
+      function sauterEnBas() {
+        var racine = document.documentElement, avant = racine.style.scrollBehavior;
+        var total = Math.max(racine.scrollHeight, document.body.scrollHeight);
+        racine.style.scrollBehavior = "auto";
+        window.scrollTo(0, total);
+        racine.style.scrollBehavior = avant;
+      }
       if (bas) bas.addEventListener("click", function () {
-        var fond = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
-        try { window.scrollTo({ top: fond, behavior: reduire ? "auto" : "smooth" }); } catch (e) { window.scrollTo(0, fond); }
-        // La page peut s'allonger pendant la descente (des colis finissent de se charger) : si l'on
-        // s'est arrêté à moins d'un écran du vrai bas, on finit le chemin.
-        setTimeout(function () {
-          var total = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
-          var reste = total - ((window.pageYOffset || 0) + window.innerHeight);
-          if (reste > 2 && reste < window.innerHeight) { try { window.scrollTo({ top: total, behavior: "auto" }); } catch (e) { window.scrollTo(0, total); } }
-        }, 1100);
+        var lache = false;
+        var lacher = function () { lache = true; };
+        ["touchstart", "wheel", "keydown", "mousedown"].forEach(function (ev) { window.addEventListener(ev, lacher, { passive: true, once: true }); });
+        sauterEnBas();
+        [400, 1200, 2500].forEach(function (ms) {
+          setTimeout(function () {
+            if (lache) return;
+            var e = document.scrollingElement || document.documentElement;
+            var reste = e.scrollHeight - e.scrollTop - e.clientHeight;
+            // Seulement si l'on est resté tout près du bas : sinon la personne (ou l'écran) est partie ailleurs.
+            if (reste > 2 && reste < e.clientHeight) sauterEnBas();
+          }, ms);
+        });
       });
 
       // Seuil : un écran et demi. En dessous, remonter au doigt est immédiat et

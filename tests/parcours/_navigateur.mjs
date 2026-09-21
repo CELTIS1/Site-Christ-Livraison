@@ -193,6 +193,9 @@ export async function ouvrirNavigateur(options) {
   };
   contexte.on('page', brancher);
   const page = await contexte.newPage();
+  /* Un serveur de contrôle est plus lent que le poste : CLT_LENT=4 ralentit le processeur du navigateur
+     d'autant, pour retrouver ici un parcours qui ne casse que là-bas (21/09/2026, échec de la v213). */
+  if (Number(process.env.CLT_LENT) > 1) { const cdp = await contexte.newCDPSession(page); await cdp.send('Emulation.setCPUThrottlingRate', { rate: Number(process.env.CLT_LENT) }); }
   brancher(page);
 
   /* Ouvrir une page déjà connectée avec un compte : on pose la session dans le stockage que

@@ -32,7 +32,9 @@ verifier('la liste est longue (plus de trois écrans)', p.total > 2700, JSON.str
 let b = await bouton('.clt-bas');
 verifier('le bouton « Aller en bas » est visible dès le haut de la page, rond, dans le coin', b.la && b.visible && b.rond && b.bas >= 10 && b.bas <= 40, JSON.stringify(b));
 await page.locator('.clt-bas').click();
-await dodo(2600);
+// Pas d'attente à heure fixe : un serveur de contrôle est plus lent que le poste. On attend que l'écran soit posé en bas.
+let calme = 0;
+for (let k = 0; k < 80 && calme < 6; k++) { await dodo(250); p = await ou(); calme = p.reste <= 2 ? calme + 1 : 0; }
 p = await ou();
 verifier('un appui : on est tout en bas', p.reste <= 2, JSON.stringify(p));
 b = await bouton('.clt-bas');
