@@ -49,7 +49,8 @@
   const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : null);
   const nomProfil = (p) => (p && (p.company_name || p.full_name)) || 'Cliente sans nom';
   const telNettoye = (t) => String(t || '').replace(/[^\d+]/g, '');
-  const telWhatsApp = (t) => { let n = telNettoye(t); if (!n) return ''; if (n.startsWith('+')) n = n.slice(1); else if (n.startsWith('0') && n.length === 10) n = '225' + n; return n; };
+  // Tous les pays (21/09/2026) : la règle de numero-international.js d'abord — elle relit aussi l'ancien défaut « 225 » posé devant un numéro étranger.
+  const telWhatsApp = (t) => { const lu = (typeof CLTNumero !== "undefined") ? CLTNumero.lire(t) : null; if (lu && lu.ok) return lu.chiffres; let n = telNettoye(t); if (!n) return ''; if (n.startsWith('+')) n = n.slice(1); else if (n.startsWith('0') && n.length === 10) n = '225' + n; return n; };
   const estEchec = (c) => c.statut === 'non_livre' || c.statut === 'retour';
   const estEnCours = (c) => c.statut === 'en_attente' || c.statut === 'recupere' || c.statut === 'en_livraison';
   const poser = (el, html) => { if (!el) return false; if (typeof cltPoserHTML === 'function') return cltPoserHTML(el, html); el.innerHTML = html; return true; };
@@ -293,7 +294,7 @@
 
   function cdContactHTML(l, grand) {
     if (!l.tel) return `<span class="cd-muet">pas de numéro</span>`;
-    const t = telNettoye(l.tel), w = telWhatsApp(l.tel);
+    const t = ((typeof CLTNumero !== "undefined") && CLTNumero.pourAppel(l.tel)) || telNettoye(l.tel), w = telWhatsApp(l.tel);
     return `<a class="cd-lien" href="tel:${esc(t)}" title="Appeler">📞${grand ? ' ' + esc(l.tel) : ''}</a>` +
       (w ? ` <a class="cd-lien cd-lien-wa" href="https://wa.me/${esc(w)}" target="_blank" rel="noopener" title="Écrire sur WhatsApp">💬${grand ? ' WhatsApp' : ''}</a>` : '');
   }

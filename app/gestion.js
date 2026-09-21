@@ -4435,7 +4435,8 @@ function ouvrirDecomptes(){
     const texte = texteDecompte(r);
     const wa = s.numero_wave || '';
     const num = String(wa).replace(/[^\d]/g, '');
-    const lienWa = num ? `https://wa.me/${num.startsWith('225') ? num : '225' + num}?text=${encodeURIComponent(texte)}` : '';
+    const numWa = ((typeof CLTNumero !== "undefined") && CLTNumero.pourWhatsApp(wa)) || (num.startsWith('225') ? num : '225' + num);   // tous les pays (21/09/2026)
+    const lienWa = num ? `https://wa.me/${numWa}?text=${encodeURIComponent(texte)}` : '';
     return `<div class="card" style="padding:10px 12px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
         <b>${escapeHTML(primesNomSalarie(r.salarie_id))}</b>

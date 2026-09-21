@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260921modifier">
+<link rel="stylesheet" href="style.css?v=20260921numeros2">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260921modifier"></script>
-<script src="splash.js?v=20260921modifier"></script>
+<script src="theme.js?v=20260921numeros2"></script>
+<script src="splash.js?v=20260921numeros2"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -624,27 +624,28 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260921modifier"></script>
-<script src="voir-un-compte.js?v=20260921modifier"></script>
-<script src="lib/bibliotheques.js?v=20260921modifier"></script>
-<script src="lib/retours.js?v=20260921modifier"></script>
-<script src="lib/reclamations.js?v=20260921modifier"></script>
-<script src="lib/communes-et-tarifs.js?v=20260921modifier"></script>
-<script src="lib/argent.js?v=20260921modifier"></script>
-<script src="lib/releve-cliente.js?v=20260921modifier"></script>
-<script src="lib/papier-a-en-tete.js?v=20260921modifier"></script>
-<script src="lib/briques-argent.js?v=20260921modifier"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260921modifier"></script>
-<script src="lib/annonce-de-remise.js?v=20260921modifier"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260921modifier"></script>
-<script src="lib/primes.js?v=20260921modifier"></script>
-<script src="lib/doublons.js?v=20260921modifier"></script>
-<script src="config.js?v=20260921modifier"></script>
-<script src="mes-boutiques.js?v=20260921modifier"></script>
-<script src="etiquettes-et-scan.js?v=20260921modifier"></script>
-<script src="import-de-colis.js?v=20260921modifier"></script>
-<script src="biometric-lock.js?v=20260921modifier"></script>
-<script src="clt-select-recherche.js?v=20260921modifier"></script>
+<script src="clt-common.js?v=20260921numeros2"></script>
+<script src="numero-international.js?v=20260921numeros2"></script>
+<script src="voir-un-compte.js?v=20260921numeros2"></script>
+<script src="lib/bibliotheques.js?v=20260921numeros2"></script>
+<script src="lib/retours.js?v=20260921numeros2"></script>
+<script src="lib/reclamations.js?v=20260921numeros2"></script>
+<script src="lib/communes-et-tarifs.js?v=20260921numeros2"></script>
+<script src="lib/argent.js?v=20260921numeros2"></script>
+<script src="lib/releve-cliente.js?v=20260921numeros2"></script>
+<script src="lib/papier-a-en-tete.js?v=20260921numeros2"></script>
+<script src="lib/briques-argent.js?v=20260921numeros2"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260921numeros2"></script>
+<script src="lib/annonce-de-remise.js?v=20260921numeros2"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260921numeros2"></script>
+<script src="lib/primes.js?v=20260921numeros2"></script>
+<script src="lib/doublons.js?v=20260921numeros2"></script>
+<script src="config.js?v=20260921numeros2"></script>
+<script src="mes-boutiques.js?v=20260921numeros2"></script>
+<script src="etiquettes-et-scan.js?v=20260921numeros2"></script>
+<script src="import-de-colis.js?v=20260921numeros2"></script>
+<script src="biometric-lock.js?v=20260921numeros2"></script>
+<script src="clt-select-recherche.js?v=20260921numeros2"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1209,7 +1210,7 @@
              voir comme tel. -->
         <div class="field">
           <label>Téléphone du destinataire <span class="champ-requis">obligatoire</span></label>
-          <input type="tel" class="lotfr-tel" inputmode="tel" placeholder="Ex : 07 01 02 03 04">
+          <input type="tel" class="lotfr-tel" inputmode="tel" placeholder="07 01 02 03 04 · étranger : +1 416…" title="Numéro ivoirien : 10 chiffres. Numéro étranger : l'indicatif du pays devant (+1, +33, +226…).">
         </div>
         <!-- « À livrer avant le » (09/09/2026) : facultatif, pour trier les urgences chez le livreur. -->
         <div class="field">
@@ -1573,7 +1574,7 @@
       adresse_recuperation: ctx.adresse_recuperation || null,
       jour_recuperation_prevu: ctx.jour_recuperation_prevu || null,
       // Normalisé au format international (225…) attendu par la notification WhatsApp.
-      destinataire_telephone: s.telephone ? toPhoneE164(s.telephone) : null,
+      destinataire_telephone: s.telephone ? (((typeof CLTNumero !== "undefined") && CLTNumero.aRangerComme(s.telephone, '225')) || toPhoneE164(s.telephone)) : null,
       livraison_payee: !!s.livraisonPayee,
       article_non_encaisse: !!s.articleSolde,
       a_livrer_avant: /^\d{4}-\d{2}-\d{2}$/.test(s.aLivrerAvant || '') ? s.aLivrerAvant : null,
@@ -2472,12 +2473,13 @@
           } else {
             let telDigits = telSaisi.replace(/[^0-9]/g, '');
             if (telDigits.startsWith('225')) telDigits = telDigits.slice(3);
-            if (typeof isValidPhoneCI === 'function' && !isValidPhoneCI(telDigits)) {
-              cltToast("Le téléphone du destinataire est invalide (10 chiffres attendus, ex. 0546818640). Corrigez-le ou laissez la case vide.", { type: 'warning', title: 'Numéro incorrect' });
+            const telLu = (typeof CLTNumero !== "undefined") ? CLTNumero.lire(telSaisi) : null;   // tous les pays (21/09/2026)
+            if (telLu ? !telLu.ok : (typeof isValidPhoneCI === 'function' && !isValidPhoneCI(telDigits))) {
+              cltToast("Le téléphone du destinataire n'est pas reconnu. Numéro ivoirien : 10 chiffres (ex. 05 46 81 86 40). Numéro étranger : l'indicatif devant (ex. +1 416 555 1234, +33 6 12 34 56 78). Corrigez-le ou laissez la case vide.", { type: 'warning', title: 'Numéro incorrect' });
               telInput.focus();
               return;
             }
-            destinataire_telephone = toPhoneE164(telDigits);
+            destinataire_telephone = telLu ? CLTNumero.aRangerComme(telSaisi, '225') : toPhoneE164(telDigits);
           }
         }
         // Les champs d'argent n'existent à l'écran que tant que le colis n'est pas parti. Passé

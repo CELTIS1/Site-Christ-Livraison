@@ -132,6 +132,8 @@ function boutonAppelDestinataireHTML(c) {
 function telephoneLisible(tel) {
   const brut = String(tel || '').trim();
   if (!brut) return '';
+  // Tous les pays (21/09/2026) : « +1 416 555 1234 » pour un étranger, « 07 00 00 00 11 » comme toujours pour un ivoirien.
+  if ((typeof CLTNumero !== "undefined") && CLTNumero.lire(brut).ok) return CLTNumero.lisible(brut);
   const chiffres = (typeof formatPhoneDisplay === 'function') ? formatPhoneDisplay(brut) : brut;
   // Dix chiffres : on groupe par deux. Autre forme : on rend tel quel, sans inventer.
   return /^\d{10}$/.test(chiffres) ? chiffres.replace(/(\d{2})(?=\d)/g, '$1 ') : chiffres;

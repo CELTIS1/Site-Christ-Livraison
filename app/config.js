@@ -1784,6 +1784,8 @@ function rafraichirBarreLot(barre, nb, total) {
 // Sert uniquement à reconnaître deux écritures du même numéro ("+225 07 01 02 03 04" et
 // "0701020304"), jamais à réécrire ce qui est enregistré en base.
 function cleTelCarnet(brut) {
+  const lu = (typeof CLTNumero !== "undefined") ? CLTNumero.lire(brut) : null;
+  if (lu && lu.ok && !lu.maison) return lu.e164;   // un numéro étranger garde son indicatif (21/09/2026)
   let n = String(brut || "").replace(/[^0-9]/g, "");
   if (n.startsWith("225")) n = n.slice(3);
   return n;
@@ -2385,8 +2387,8 @@ function verifierLotAvantEnvoi(lignes, options) {
       problemes.push({ rang: rang, motif: "il manque le numéro du destinataire" });
       return;
     }
-    if (telBrut && !numeroIvoirien(cleTelCarnet(telBrut))) {
-      problemes.push({ rang: rang, motif: "le numéro du destinataire n'est pas un numéro ivoirien à 10 chiffres" });
+    if (telBrut && !numeroIvoirien(cleTelCarnet(telBrut)) && !((typeof CLTNumero !== "undefined") && CLTNumero.lire(telBrut).ok)) {
+      problemes.push({ rang: rang, motif: "le numéro du destinataire n'est pas reconnu : 10 chiffres pour un numéro ivoirien, ou l'indicatif du pays devant (+1…, +33…)" });
       return;
     }
     if (!isValidMontant(ligne.montantArticle === "" ? null : ligne.montantArticle)
@@ -3229,6 +3231,7 @@ function toPhoneE164(raw) {
 
 function formatPhoneDisplay(e164) {
   if (!e164) return "";
+  { const lu = (typeof CLTNumero !== "undefined") ? CLTNumero.lire(e164) : null; if (lu && lu.ok && !lu.maison) return CLTNumero.lisible(e164); }
   let digits = e164.replace(/[^\d]/g, "");
   if (digits.startsWith("225")) digits = digits.slice(3);
   return digits;

@@ -29,6 +29,7 @@
 
   /* 07 00 00 00 11, +225 07…, 22507… → « 2250700000011 » (ce que wa.me attend). '' si inutilisable. */
   function numeroWhatsApp(brut) {
+    if ((typeof CLTNumero !== "undefined")) { const lu = CLTNumero.lire(brut); if (lu.ok) return lu.chiffres; }   // tous les pays (21/09/2026)
     let c = String(brut || '').replace(/\D/g, '');
     if (!c) return '';
     if (c.indexOf('00225') === 0) c = c.slice(2);

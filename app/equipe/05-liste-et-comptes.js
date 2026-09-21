@@ -524,12 +524,13 @@ destinataire_telephone = null;
 } else {
 let telDigits = telSaisi.replace(/[^0-9]/g, '');
 if (telDigits.startsWith('225')) telDigits = telDigits.slice(3);
-if (typeof isValidPhoneCI === 'function' && !isValidPhoneCI(telDigits)) {
-cltToast("Le téléphone du destinataire est invalide (10 chiffres attendus, ex. 0546818640). Corrigez-le ou laissez la case vide.", { type: 'warning' });
+const telLu = (typeof CLTNumero !== "undefined") ? CLTNumero.lire(telSaisi) : null;   // tous les pays (21/09/2026)
+if (telLu ? !telLu.ok : (typeof isValidPhoneCI === 'function' && !isValidPhoneCI(telDigits))) {
+cltToast("Le téléphone du destinataire n'est pas reconnu. Numéro ivoirien : 10 chiffres (ex. 05 46 81 86 40). Numéro étranger : l'indicatif devant (ex. +1 416 555 1234, +33 6 12 34 56 78). Corrigez-le ou laissez la case vide.", { type: 'warning' });
 telDestInput.focus();
 return;
 }
-destinataire_telephone = telDigits;
+destinataire_telephone = telLu ? CLTNumero.aRangerComme(telSaisi, 'dix') : telDigits;
 }
 }
 // Adresse de récupération : modifiable seulement tant que le colis n'est pas parti. Une fois

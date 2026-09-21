@@ -279,6 +279,23 @@
    }
   },
   {
+   "id": "numeros-etrangers",
+   "espace": "bureau",
+   "titre": "Les numéros étrangers (WhatsApp de l'étranger)",
+   "enBref": "Un numéro américain, canadien, français, burkinabé… s'enregistre avec son indicatif, et l'appel comme WhatsApp partent au bon numéro.",
+   "ou": "Partout où l'on saisit le téléphone d'un destinataire : Ajouter des colis, corriger un colis, importer un fichier",
+   "etapes": [
+    "Numéro ivoirien : rien ne change, 10 chiffres (07 01 02 03 04).",
+    "Numéro étranger : écrivez l'indicatif devant — +1 416 555 1234, +33 6 12 34 56 78, +226 70 12 34 56 (« 00 » marche aussi).",
+    "À l'écran il se lit « +1 416 555 1234 » ; « Appeler » et WhatsApp ouvrent ce numéro-là."
+   ],
+   "aSavoir": "Sans indicatif, un numéro étranger est refusé : on ne devine jamais un pays. Le numéro de CONNEXION d'un compte reste ivoirien ; si « 225 » a été posé devant un numéro étranger par le passé, WhatsApp retrouve quand même le bon numéro.",
+   "version": "v219",
+   "aller": {
+    "page": "equipe.html"
+   }
+  },
+  {
    "id": "voir-son-ecran",
    "espace": "bureau",
    "titre": "Voir l'écran d'un livreur ou d'une cliente",

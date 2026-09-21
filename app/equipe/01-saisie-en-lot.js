@@ -121,7 +121,7 @@ ${l.url
      yeux et elle se précise ensuite. -->
 <div class="field">
 <label>Téléphone du destinataire <span class="champ-requis">obligatoire</span></label>
-<input type="tel" class="lot-tel" inputmode="tel" placeholder="Ex : 07 01 02 03 04">
+<input type="tel" class="lot-tel" inputmode="tel" placeholder="07 01 02 03 04 · étranger : +1 416…" title="Numéro ivoirien : 10 chiffres. Numéro étranger : l'indicatif du pays devant (+1, +33, +226…).">
 </div>
 <!-- UN REPÈRE « 0 » SE LIT COMME UN ZÉRO. (18/09/2026) Les deux champs portaient « 0 » en
      repère de saisie : sur un écran où l'on vient justement de distinguer « livraison offerte,

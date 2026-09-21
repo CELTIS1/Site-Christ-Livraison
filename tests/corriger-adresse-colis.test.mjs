@@ -246,7 +246,7 @@ async function enregistrerClient({ tel, telOrigine, avecMontants, montants, repo
 {
   const { champs, alertes } = await enregistrerClient({ tel: '12345', telOrigine: '2250546818640', avecMontants: false });
   verifier('un téléphone invalide est arrêté avant la base, avec un message clair',
-    champs === undefined && alertes.length === 1 && /invalide/i.test(alertes[0]),
+    champs === undefined && alertes.length === 1 && /n.est pas reconnu/i.test(alertes[0]) && /indicatif/i.test(alertes[0]),
     JSON.stringify(alertes));
 }
 {
@@ -388,7 +388,7 @@ async function enregistrerEquipe({ tel, telOrigine, avecRecuperation, colisEnBas
 {
   const { payload, alertes } = await enregistrerEquipe({ tel: '999', telOrigine: '0546818640', avecRecuperation: false });
   verifier('un téléphone invalide est arrêté ici aussi',
-    payload === undefined && alertes.length === 1 && /invalide/i.test(alertes[0]),
+    payload === undefined && alertes.length === 1 && /n.est pas reconnu/i.test(alertes[0]) && /indicatif/i.test(alertes[0]),
     JSON.stringify(alertes));
 }
 

@@ -66,12 +66,18 @@ function rangDeLaJournee(jour, aujourdHui) {
    CE QU'ON NE SAIT PAS METTRE EN FORME, ON LE REND TEL QUEL plutôt que de rendre une chaîne
    vide. Un numéro étranger, ou une saisie à neuf chiffres, doit rester composable par le
    livreur : mieux vaut un lien imparfait qu'un bouton mort. */
+/* TOUS LES PAYS (21/09/2026) : la règle est dans numero-international.js. Un numéro étranger se compose
+   avec son « + » (« +14165551234 ») — sans lui, le téléphone appelait un numéro ivoirien qui n'existe pas. */
 function numeroCompose(tel) {
+  const n = (typeof CLTNumero !== "undefined") ? CLTNumero.lire(tel) : null;
+  if (n && n.ok && !n.maison) return n.e164;
   return String(tel === null || tel === undefined ? "" : tel).replace(/[^0-9]/g, "");
 }
 
 function numeroInternational(tel) {
-  let n = numeroCompose(tel);
+  const lu = (typeof CLTNumero !== "undefined") ? CLTNumero.lire(tel) : null;
+  if (lu && lu.ok) return lu.chiffres;          // ce que wa.me attend, quel que soit le pays
+  let n = String(tel === null || tel === undefined ? "" : tel).replace(/[^0-9]/g, "");
   if (!n) return "";
   // « 00 » est l'autre façon d'écrire le « + » : 00225… vaut +225…
   if (n.slice(0, 2) === "00") n = n.slice(2);
