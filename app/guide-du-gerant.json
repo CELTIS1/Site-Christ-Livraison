@@ -51,8 +51,8 @@
     "Lisez le détail ; « Ajouter une note » garde votre réponse.",
     "Cochez la case quand c'est traité : la ligne passe sous « faits », et se rouvre si besoin."
    ],
-   "aSavoir": "Rien n'est jamais bloqué en vous attendant : ce qui est recommandé est déjà appliqué, la note vous le dit.",
-   "version": "v182",
+   "aSavoir": "Cocher veut dire « fait de MON côté » : cela n'envoie rien à Claude — pour lui confier une ligne, dites-le-lui dans la conversation. Une ligne cochée n'est pas perdue : elle est sous « Faits », en bas ; décochez-la pour la rouvrir. Rien n'est bloqué en vous attendant.",
+   "version": "v221",
    "aller": {
     "tab": "dashboard",
     "ancre": "af-carte"

@@ -4551,6 +4551,7 @@ async function renderDashboardPrimes(annee, mois){
 const AF_GENRES = { decider: 'À décider', verifier: 'À vérifier', faire: 'À faire' };
 const AF_PRIORITES = { 1: 'Avant la mise en service', 2: 'Bientôt', 3: 'Quand vous pourrez' };
 let afLignes = [];
+let afFaitsOuverts = false;   // « Faits » s'ouvre après un cochage, pour montrer où la ligne est partie
 async function chargerAFaire() {
   const carte = document.getElementById('af-carte');
   if (!carte || !ACCES.isAdmin) { if (carte) carte.classList.add('hidden'); return; }
@@ -4577,13 +4578,16 @@ function renderAFaire() {
   const carte = document.getElementById('af-carte');
   const ouverts = afLignes.filter(l => !l.fait_le), faits = afLignes.filter(l => l.fait_le);
   let html = `<div class="af-tete"><h2>📋 À faire par le gérant${ouverts.length ? `<span class="af-compte">${ouverts.length}</span>` : ''}</h2><span style="font-size:12.5px;color:var(--muted);">Ce que Claude a mis de côté pour vous : décisions, vérifications, interventions.</span></div>`;
+  /* LE MODE D'EMPLOI, SUR LA CARTE. (21/09/2026) Celtis a coché trois lignes en pensant que cocher ENVOYAIT la tâche à
+     Claude ; elles ont quitté la liste et il les a crues perdues. La carte dit donc ce que fait la case, et où vont les lignes. */
+  html += `<div class="af-mode-emploi">Cochez une ligne <strong>quand c'est fait de votre côté</strong> : elle descend dans « Faits », tout en bas — décochez-la là pour la rouvrir. Cocher n'envoie rien à Claude : pour lui confier quelque chose, dites-le-lui dans la conversation. « Ajouter une note » garde votre décision sur la ligne.</div>`;
   if (!ouverts.length) html += '<div class="af-vide">Rien en attente. ✅</div>';
   [1, 2, 3].forEach(p => {
     const lignes = ouverts.filter(l => (l.priorite || 2) === p);
     if (!lignes.length) return;
     html += `<div class="af-groupe">${AF_PRIORITES[p]}</div>` + lignes.map(afLigneHTML).join('');
   });
-  if (faits.length) html += `<details class="af-faits"><summary>${faits.length} fait${faits.length > 1 ? 's' : ''}</summary>${faits.map(afLigneHTML).join('')}</details>`;
+  if (faits.length) html += `<details class="af-faits"${afFaitsOuverts ? ' open' : ''}><summary>✅ ${faits.length} fait${faits.length > 1 ? 's' : ''} — toucher pour voir, décocher pour rouvrir</summary>${faits.map(afLigneHTML).join('')}</details>`;
   carte.innerHTML = html;
   carte.querySelectorAll('.af-ligne input[type=checkbox]').forEach(cb => cb.addEventListener('change', async () => {
     const id = Number(cb.closest('.af-ligne').dataset.af);
@@ -4591,6 +4595,8 @@ function renderAFaire() {
     const { error } = await supabaseClient.from('gestion_a_faire').update(patch).eq('id', id);
     if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); cb.checked = !cb.checked; return; }
     Object.assign(afLignes.find(l => l.id === id), patch);
+    // Juste après avoir coché : « Faits » s'ouvre, pour qu'on VOIE où la ligne est partie — et qu'on puisse la décocher.
+    if (cb.checked) { afFaitsOuverts = true; if (window.cltToast) cltToast('La ligne est dans « Faits », en bas de la carte. Décochez-la pour la rouvrir.', { type: 'info', title: 'Marqué comme fait', duration: 6000 }); }
     renderAFaire();
   }));
   carte.querySelectorAll('[data-af-note]').forEach(b => b.addEventListener('click', async () => {

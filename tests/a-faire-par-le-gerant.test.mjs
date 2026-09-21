@@ -22,6 +22,9 @@ verifier('un lien ouvre l\'écran concerné, ou l\'aide', /Ouvrir l'écran →/.
 verifier('une note libre par ligne (la réponse de Celtis)', /data-af-note/.test(g) && /update\(\{ note: note \|\| null \}\)/.test(g));
 verifier('le texte est échappé', /escapeHTML\(l\.titre\)/.test(g) && /escapeHTML\(l\.detail\)/.test(g));
 verifier('les lignes faites sont repliées, pas effacées', /details class="af-faits"/.test(g));
+// 21/09/2026 : Celtis a coché en pensant que cela envoyait la tâche à Claude, et a cru les lignes perdues.
+verifier('la carte dit ce que fait la case : « quand c\'est fait de votre côté », où va la ligne, et que cocher n\'envoie rien à Claude', /quand c'est fait de votre côté/.test(g) && /elle descend dans « Faits »/.test(g) && /Cocher n'envoie rien à Claude/.test(g));
+verifier('après un cochage, « Faits » s\'ouvre et un message dit où la ligne est partie', /if \(cb\.checked\) \{ afFaitsOuverts = true;/.test(g) && /Décochez-la pour la rouvrir/.test(g) && /afFaitsOuverts \? ' open' : ''/.test(g));
 verifier('le style a une variante nuit', /html\[data-theme="dark"\] \.af-detail/.test(h));
 const MIG = path.join(RACINE, '_sql-prive', '2026-09-20-a-faire-par-le-gerant.sql');
 if (fs.existsSync(MIG)) {
