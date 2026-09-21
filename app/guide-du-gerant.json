@@ -401,6 +401,19 @@
    "aSavoir": "« Compte » a quitté la barre du bas (doublon) : « Mon compte » est dans le menu ☰."
   },
   {
+   "id": "recup-pastille",
+   "espace": "livreur",
+   "titre": "Récup. : la pastille et la liste disent la même chose",
+   "enBref": "Le nombre sur « Récup. » compte ce qui est à récupérer aujourd'hui, retards compris — exactement ce que la liste montre.",
+   "ou": "Livreur › Récup.",
+   "etapes": [
+    "Une récupération prévue avant et pas encore faite reste dans la journée, avec une ligne jaune qui le dit.",
+    "Ce qui est prévu pour plus tard n'est pas compté ; l'écran dit combien, et « Toutes » les montre."
+   ],
+   "aSavoir": "Si un livreur a un vieux colis « en attente » qui n'est plus à récupérer, c'est au bureau de le corriger ou de le supprimer : il disparaîtra de sa pastille.",
+   "version": "v207"
+  },
+  {
    "id": "import",
    "espace": "cliente",
    "titre": "Importer ses colis depuis un fichier",
@@ -451,6 +464,21 @@
    "version": "v180"
   },
   {
+   "id": "cliente-carte",
+   "espace": "cliente",
+   "titre": "La carte d'un colis, courte et datée",
+   "enBref": "Sur téléphone, chaque colis tient en trois lignes : où, quand, quoi — son statut et son montant. « Détails » montre le reste.",
+   "ou": "Cliente › Mes colis",
+   "etapes": [
+    "La date ouvre la ligne de chaque colis (« Aujourd'hui », « ven 18 sept »), quel que soit le filtre.",
+    "« Détails ▾ » déplie la carte sur place : téléphone, WhatsApp, frais, livreur, boutons. « Réduire ▴ » la referme.",
+    "Un colis non livré, un retour, un montant ou une adresse manquants ne sont jamais repliés."
+   ],
+   "aSavoir": "« Dupliquer », « Modifier » et « Supprimer » n'existent que sur un colis en attente saisi par la cliente elle-même. Un colis saisi par le bureau, ou déjà récupéré, ne se modifie plus (il reste « Corriger l'adresse », pour le livreur devant la mauvaise porte).",
+   "version": "v207",
+   "pourVous": "À décider : garder « Corriger l'adresse » après la récupération ? Je l'ai laissé (c'est lui qui sauve une livraison mal adressée) ; dites-moi si vous préférez le retirer."
+  },
+  {
    "id": "mes-boutiques",
    "espace": "proprietaire",
    "titre": "Mes boutiques (le propriétaire de plusieurs magasins)",
@@ -491,6 +519,19 @@
    "aSavoir": "Express n'est pas encore ouvert au public : tout est prêt, il reste vos réglages et la publication Play Store.",
    "pourVous": "Publication Play Store : le dossier est prêt (PUBLICATION-PLAY-STORE-CLT-EXPRESS.md, captures dans le dossier CLT) ; les étapes de compte sont à vous. Note « play-store-6-3 ».",
    "version": "v181–v187"
+  },
+  {
+   "id": "aide-par-role",
+   "espace": "express",
+   "titre": "Express : une aide pour le client, une pour le coursier",
+   "enBref": "Dans le menu ☰ d'Express, « Aide et tutoriels » montre à chacun SES gestes — et seulement les siens.",
+   "ou": "CLT Express › menu ☰ › « ❓ Aide et tutoriels »",
+   "etapes": [
+    "Le client : commander, ses adresses, suivre, annuler, payer et noter.",
+    "Le coursier : se mettre disponible, accepter, récupérer-livrer-encaisser, sa position, son solde, « solde insuffisant »."
+   ],
+   "aSavoir": "Les textes sont dans app/aide.json (chapitres express-client et express-coursier) : relisez-les, vous connaissez vos coursiers mieux que moi.",
+   "version": "v207"
   },
   {
    "id": "sauvegarde",

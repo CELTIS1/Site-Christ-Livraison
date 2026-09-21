@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260920nuit">
+<link rel="stylesheet" href="style.css?v=20260921cartes">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260920nuit"></script>
-<script src="splash.js?v=20260920nuit"></script>
+<script src="theme.js?v=20260921cartes"></script>
+<script src="splash.js?v=20260921cartes"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -618,26 +618,26 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260920nuit"></script>
-<script src="lib/bibliotheques.js?v=20260920nuit"></script>
-<script src="lib/retours.js?v=20260920nuit"></script>
-<script src="lib/reclamations.js?v=20260920nuit"></script>
-<script src="lib/communes-et-tarifs.js?v=20260920nuit"></script>
-<script src="lib/argent.js?v=20260920nuit"></script>
-<script src="lib/releve-cliente.js?v=20260920nuit"></script>
-<script src="lib/papier-a-en-tete.js?v=20260920nuit"></script>
-<script src="lib/briques-argent.js?v=20260920nuit"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260920nuit"></script>
-<script src="lib/annonce-de-remise.js?v=20260920nuit"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260920nuit"></script>
-<script src="lib/primes.js?v=20260920nuit"></script>
-<script src="lib/doublons.js?v=20260920nuit"></script>
-<script src="config.js?v=20260920nuit"></script>
-<script src="mes-boutiques.js?v=20260920nuit"></script>
-<script src="etiquettes-et-scan.js?v=20260920nuit"></script>
-<script src="import-de-colis.js?v=20260920nuit"></script>
-<script src="biometric-lock.js?v=20260920nuit"></script>
-<script src="clt-select-recherche.js?v=20260920nuit"></script>
+<script src="clt-common.js?v=20260921cartes"></script>
+<script src="lib/bibliotheques.js?v=20260921cartes"></script>
+<script src="lib/retours.js?v=20260921cartes"></script>
+<script src="lib/reclamations.js?v=20260921cartes"></script>
+<script src="lib/communes-et-tarifs.js?v=20260921cartes"></script>
+<script src="lib/argent.js?v=20260921cartes"></script>
+<script src="lib/releve-cliente.js?v=20260921cartes"></script>
+<script src="lib/papier-a-en-tete.js?v=20260921cartes"></script>
+<script src="lib/briques-argent.js?v=20260921cartes"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260921cartes"></script>
+<script src="lib/annonce-de-remise.js?v=20260921cartes"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260921cartes"></script>
+<script src="lib/primes.js?v=20260921cartes"></script>
+<script src="lib/doublons.js?v=20260921cartes"></script>
+<script src="config.js?v=20260921cartes"></script>
+<script src="mes-boutiques.js?v=20260921cartes"></script>
+<script src="etiquettes-et-scan.js?v=20260921cartes"></script>
+<script src="import-de-colis.js?v=20260921cartes"></script>
+<script src="biometric-lock.js?v=20260921cartes"></script>
+<script src="clt-select-recherche.js?v=20260921cartes"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2017,8 +2017,36 @@
   // protège rien toute seule.
   const COLIS_ADRESSE_CORRIGEABLE = ['en_attente', 'recupere', 'en_livraison', 'non_livre'];
 
+  /* 20/09/2026, Celtis : « quand le colis a été créé par l'équipe, ou qu'il est déjà en train
+     d'être traité, [la cliente] ne doit plus pouvoir modifier ». Un colis saisi par le bureau est
+     une écriture du bureau : la cliente le voit, le suit, mais ne le modifie ni ne le supprime. */
+  function colisCreeParLeBureau(c){
+    return !!c && (c.cree_par_role === 'equipe' || c.cree_par_role === 'admin');
+  }
   function colisToutModifiable(c){
-    return (c && c.statut) === 'en_attente';
+    return (c && c.statut) === 'en_attente' && !colisCreeParLeBureau(c);
+  }
+  /* « Dupliquer » sert à ressaisir vite un colis qu'on prépare : il n'a de sens que sur un colis
+     encore entre les mains de la cliente, et saisi par elle. */
+  function colisDuplicable(c){
+    return colisToutModifiable(c);
+  }
+  /* LA CARTE REPLIÉE (téléphone). Les colis dépliés par la cliente, retenus d'un dessin à l'autre.
+     Un colis qui DEMANDE quelque chose (non livré, retour, montant ou adresse manquants) s'ouvre
+     de lui-même : on ne cache pas ce qui attend un geste. */
+  const colisDeplies = new Set();
+  function colisDemandeAttention(c){
+    return !!c && (c.statut === 'non_livre' || c.statut === 'retour'
+      || (typeof mesReclamations !== 'undefined' && mesReclamations && !!mesReclamations[c.id])   // une réponse du bureau l'attend peut-être
+      || (colisToutModifiable(c) && typeof colisSansMontant === 'function' && colisSansMontant(c))
+      || (!c.commune_destination && !c.destination && colisAdresseCorrigeable(c)));
+  }
+  function colisDateHTML(c){
+    const jour = jourDuColis(c);
+    if (!jour) return '';
+    const d = new Date(jour + 'T12:00:00');
+    const texte = jour === todayLocalISODate() ? "Aujourd'hui" : d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '');
+    return `<span class="colis-date" title="${colisReporte(c) ? 'Reporté à ce jour' : 'Jour du colis'}">📅 ${escapeHTML(texte)}${colisReporte(c) ? ' (reporté)' : ''}</span>`;
   }
 
   function colisAdresseCorrigeable(c){
@@ -2079,17 +2107,27 @@
       : '';
     // Le quoi et le numéro sur une seule ligne. L'un des deux peut manquer sans casser l'autre.
     const quoi = colisDescriptionTexte(c);
-    const quoiEtNumero = (quoi || c.numero)
-      ? `<div class="meta colis-quoi">${quoi ? '📦 ' + escapeHTML(quoi) : ''}${quoi && c.numero ? ' · ' : ''}${c.numero ? 'N° ' + escapeHTML(c.numero) : ''}</div>`
-      : '';
+    // 20/09/2026, Celtis : « la date n'est pas marquée sur le colis ; on ne sait pas si c'était le
+    // colis de quand ». Elle ouvre la ligne, sur CHAQUE carte, quel que soit le filtre de date.
+    const quoiEtNumero = `<div class="meta colis-quoi">${colisDateHTML(c)}${quoi ? '<span>📦 ' + escapeHTML(quoi) + '</span>' : ''}${c.numero ? '<span>N° ' + escapeHTML(c.numero) + '</span>' : ''}</div>`;
+    // Le résumé de la carte repliée : le statut, l'argent de la cliente, et le bouton qui déplie.
+    const st = (typeof STATUTS !== 'undefined' && STATUTS[c.statut]) || { color: '#5B6B7C', bg: '#EEF1F5' };
+    const deplie = colisDeplies.has(c.id) || colisDemandeAttention(c);
+    const montantResume = colisADetailMontant(c) ? (montantArticleManquant(c) ? '<span class="montant-absent">montant non renseigné</span>' : escapeHTML(formatMontant(montantArticleColis(c)) || '0 FCFA')) : escapeHTML(formatMontant(c.montant) || '');
+    const resume = `<div class="colis-resume">
+        <span class="colis-resume-statut" style="background:${st.bg}; color:${st.color};">${escapeHTML(typeof statutTexte === 'function' ? statutTexte(c.statut, c) : c.statut)}</span>
+        <span class="colis-resume-montant">${montantResume}</span>
+        <button type="button" class="btn-colis-deplier" data-colis-deplier="${c.id}" aria-expanded="${deplie}">${deplie ? 'Réduire ▴' : 'Détails ▾'}</button>
+      </div>`;
     return `
-      <div class="colis-item" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-statut="${escapeHTML(c.statut || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-expedition="${estExpedition(c) ? '1' : '0'}">
+      <div class="colis-item${deplie ? '' : ' colis-item--replie'}" data-id="${c.id}" data-numero="${escapeHTML(c.numero || '')}" data-statut="${escapeHTML(c.statut || '')}" data-tel="${escapeHTML(c.destinataire_telephone || '')}" data-expedition="${estExpedition(c) ? '1' : '0'}">
         ${stepperHTML(c.statut, c)}
         ${thumb}
         <div class="info">
           <div class="view-mode">
             <div class="desc">${colisNumeroClientHTML(numeroClient)}${colisDestinationHTML(c)}</div>
             ${quoiEtNumero}
+            ${resume}
             <!-- Le téléphone du destinataire et « Prévenir sur WhatsApp » sur la carte (05/09/2026,
                  Celtis : l'indispensable qui manquait). La vendeuse prévient elle-même son client
                  en un appui ; le bouton passe par la délégation .btn-notify-wa de config.js, qui
@@ -2106,10 +2144,10 @@
                  mon prix » s'écrivaient pareil, et l'écart ne se découvrait que le soir, sur le
                  relevé. La règle est partagée avec le bureau et le livreur (lib/argent.js). -->
             ${colisADetailMontant(c) ? `
-              <div class="meta"><strong>Votre article : ${montantArticleManquant(c) ? '<span class="montant-absent">non renseigné</span>' : (formatMontant(montantArticleColis(c)) || '0 FCFA')}</strong> ${paiementBadgeHTML(c, 'cliente')}</div>
-              <div class="meta" style="font-size:12px; color:var(--muted);">Frais de livraison CLT : ${montantLivraisonManquant(c) ? '<span class="montant-absent">non renseignés</span>' : (formatMontant(montantLivraisonColis(c)) || '0 FCFA')}</div>
+              <div class="meta colis-detail"><strong>Votre article : ${montantArticleManquant(c) ? '<span class="montant-absent">non renseigné</span>' : (formatMontant(montantArticleColis(c)) || '0 FCFA')}</strong> ${paiementBadgeHTML(c, 'cliente')}</div>
+              <div class="meta colis-detail" style="font-size:12px; color:var(--muted);">Frais de livraison CLT : ${montantLivraisonManquant(c) ? '<span class="montant-absent">non renseignés</span>' : (formatMontant(montantLivraisonColis(c)) || '0 FCFA')}</div>
               ${colisSansMontant(c) && colisToutModifiable(c) ? `<div class="meta" style="color:#b3261e; font-weight:600;">⚠️ Complétez ce montant : sans lui, votre relevé du soir sera faux et le livreur ne saura pas quoi réclamer.</div>` : ''}
-            ` : (formatMontant(c.montant) ? `<div class="meta"><strong>Votre article : ${formatMontant(c.montant)}</strong> ${paiementBadgeHTML(c, 'cliente')}</div>` : '')}
+            ` : (formatMontant(c.montant) ? `<div class="meta colis-detail"><strong>Votre article : ${formatMontant(c.montant)}</strong> ${paiementBadgeHTML(c, 'cliente')}</div>` : '')}
             <!-- Le code de confirmation ne s'affiche plus ici depuis le 21 août 2026. Le livreur
                  ne le demande plus à la remise : continuer à écrire « à communiquer au
                  destinataire » sous un colis serait donc une consigne fausse, et c'est pire que
@@ -2134,7 +2172,7 @@
                  n'y a rien à signaler, le colis est encore en route. -->
             ${reclamationBlocHTML(c)}
             ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
-            ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${escapeHTML(c.photo_livraison_url)}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
+            ${c.photo_livraison_url ? `<div class="meta colis-detail">Preuve de livraison : <img src="${escapeHTML(c.photo_livraison_url)}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
           </div>
           <div class="edit-mode hidden">
             ${colisToutModifiable(c) ? '' : `
@@ -2190,7 +2228,7 @@
         </div>
         <div class="status-col">
           <button type="button" class="btn btn-sm btn-outline btn-copy-tracking">🔗 Lien de suivi</button>
-          <button type="button" class="btn btn-sm btn-outline btn-duplicate-colis">📋 Dupliquer</button>
+          ${colisDuplicable(c) ? `<button type="button" class="btn btn-sm btn-outline btn-duplicate-colis">📋 Dupliquer</button>` : ''}
           ${colisToutModifiable(c) ? `
             <button type="button" class="btn btn-sm btn-outline btn-edit-colis">Modifier</button>
             <button type="button" class="btn btn-sm btn-delete-colis" style="background:#c0392b;">Supprimer</button>
@@ -2504,6 +2542,19 @@
       });
     });
   }
+
+  // ---------- Déplier / réduire une carte (téléphone) ----------
+  document.addEventListener('click', (e) => {
+    const b = e.target && e.target.closest ? e.target.closest('[data-colis-deplier]') : null;
+    if (!b) return;
+    const id = b.dataset.colisDeplier, carte = b.closest('.colis-item');
+    const ouvrir = carte.classList.contains('colis-item--replie');
+    if (ouvrir) colisDeplies.add(id); else colisDeplies.delete(id);
+    // Sur place, sans redessiner la liste : la carte ne saute pas, le défilement ne bouge pas.
+    carte.classList.toggle('colis-item--replie', !ouvrir);
+    b.setAttribute('aria-expanded', String(ouvrir));
+    b.textContent = ouvrir ? 'Réduire ▴' : 'Détails ▾';
+  });
 
   // ---------- Dupliquer un colis existant ----------
   // Insère directement dans "Mes colis" une carte de copie (voir colisDraftHTML), déjà remplie

@@ -156,6 +156,7 @@ const fenetres = (() => {
     fournisseur.indexOf('const COLIS_ADRESSE_CORRIGEABLE') + 200).split('\n')[0];
   vm.runInContext([
     decl.replace(/^\s*const/, 'var'),
+    blocDe(fournisseur, 'colisCreeParLeBureau', 'fournisseur.html'),
     blocDe(fournisseur, 'colisToutModifiable', 'fournisseur.html'),
     blocDe(fournisseur, 'colisAdresseCorrigeable', 'fournisseur.html'),
   ].join('\n'), ctx);

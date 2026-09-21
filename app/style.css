@@ -2700,7 +2700,13 @@ html[data-theme="dark"] .clt-aide__lien{ color:#9DB0C4; }
 .clt-tarifs__zone small { color: #6b7280; font-size: 12px; font-style: italic; }
 .clt-tarifs__prix { flex: none; font-size: 15px; white-space: nowrap; }
 .clt-tarifs__note { font-size: 12px; color: #6b7280; margin: 10px 0 0; line-height: 1.45; }
-@media (prefers-color-scheme: dark) { .clt-tarifs__ligne { border-color: #1f2937; } .clt-tarifs__depart select { background: #1f2937; color: #e5e7eb; border-color: #374151; } .clt-tarifs__ligne.est-expedition { background: #0f2a35; } .clt-tarifs__intro, .clt-tarifs__note, .clt-tarifs__zone small, .clt-tarifs__depart label { color: #9ca3af; } }
+/* Même défaut que la boîte d'aide (20/09) : la grille suivait le réglage du TÉLÉPHONE (qui passe au
+   sombre tout seul le soir) et non le bouton ☾ de l'application — d'où des « caractéristiques
+   sombres » en mode jour. Elle suit maintenant l'application. */
+html[data-theme="dark"] .clt-tarifs__ligne{ border-color:#2A3849; }
+html[data-theme="dark"] .clt-tarifs__depart select{ background:#1B2635; color:#E6ECF3; border-color:#3A4B60; }
+html[data-theme="dark"] .clt-tarifs__ligne.est-expedition{ background:#0f2a35; }
+html[data-theme="dark"] .clt-tarifs__intro, html[data-theme="dark"] .clt-tarifs__note, html[data-theme="dark"] .clt-tarifs__zone small, html[data-theme="dark"] .clt-tarifs__depart label{ color:#9DB0C4; }
 .clt-maj-texte { font-weight: 600; white-space: nowrap; }
 .clt-maj-note { color: #b9c2cf; white-space: nowrap; }
 .clt-maj-ok {
@@ -3871,3 +3877,34 @@ html[data-theme="dark"] .csc-compteur{ background:#243a5a; color:#CFE0FF; }
   html{ min-height:100%; }
   body{ min-height:100vh; min-height:100dvh; }
 }
+/* 21/09/2026 — confirmé par Celtis sur son iPhone : ce remède (v206) a suffi chez la cliente. Il est
+   global : il vaut aussi pour le livreur, l'équipe et Express dès que leur écran est à jour. Un second
+   remède (barre posée par le haut) avait été préparé ; il n'a jamais été publié — on ne touche pas à
+   ce qui marche sans pouvoir l'essayer sur un iPhone. */
+
+/* Récupérations en retard, chez le livreur (20/09/2026) : même langage que « colis reportés ». */
+.recup-retard{ margin:0 0 10px; padding:10px 12px; border-left:3px solid #d4a106; border-radius:10px; background:#fff8e1; color:#5c4a00; font-size:13.5px; line-height:1.45; }
+html[data-theme="dark"] .recup-retard{ background:#3a3010; color:#f3d98a; }
+
+/* LA CARTE D'UN COLIS CHEZ LA CLIENTE, REPLIÉE (20/09/2026, Celtis : « beaucoup d'informations […]
+   sur un téléphone ça rend la carte très longue »). Mesurée : 650 px par colis sur un écran de
+   844. Repliée, la carte garde ce qu'on cherche des yeux — où, quand, quoi, le statut, son argent —
+   et « Détails » rend tout le reste, sur place. Ce qui demande un geste (non livré, retour, montant
+   ou adresse manquants) n'est jamais replié. Sur ordinateur, rien n'est replié. */
+.colis-quoi{ display:flex; flex-wrap:wrap; gap:2px 10px; align-items:baseline; }
+.colis-date{ font-weight:700; color:var(--navy); white-space:nowrap; }
+.colis-resume{ display:none; }
+@media (max-width:760px){
+  .colis-resume{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .colis-resume-statut{ flex:none; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+  .colis-resume-montant{ flex:1; min-width:0; font-weight:800; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .btn-colis-deplier{ flex:none; min-height:44px; padding:0 12px; margin:-6px -6px -6px 0; border:0; background:none; font:inherit; font-size:13px; font-weight:700; color:var(--navy); cursor:pointer; border-radius:10px; }
+  .btn-colis-deplier:active{ background:var(--grey-bg); }
+  .colis-item--replie .clt-stepper, .colis-item--replie .colis-contact, .colis-item--replie .colis-detail,
+  .colis-item--replie .livreur-meta, .colis-item--replie .obs-display, .colis-item--replie .status-col,
+  .colis-item--replie .reclam-ligne, .colis-item--replie .reclam-bouton, .colis-item--replie [data-signaler]{ display:none !important; }
+  /* Dépliée, la carte dit déjà son statut (la frise) et son argent (« Votre article ») : le résumé se tait, il ne reste que « Réduire ». */
+  .colis-item:not(.colis-item--replie) .colis-resume-montant, .colis-item:not(.colis-item--replie) .colis-resume-statut{ visibility:hidden; }
+}
+html[data-theme="dark"] .colis-date{ color:#9EC0E6; }
+html[data-theme="dark"] .btn-colis-deplier{ color:#9EC0E6; }

@@ -992,10 +992,17 @@ verifier(
    Même lot, sur captures de Celtis (iPhone) : la boîte « Aide et tutoriels » suivait le réglage du
    TÉLÉPHONE et non le bouton ☾ (étapes bleu nuit sur bleu nuit) ; la barre du bas de la cliente
    bougeait sur une page plus courte que l'écran (min-height:100dvh) ; chez le livreur, « Retours »
-   remplace « Compte » en bas. Les parcours ne dépendent plus de l'heure (tests/parcours/_horloge.mjs). Étiquette 20260920nuit. */
+   remplace « Compte » en bas. Les parcours ne dépendent plus de l'heure (tests/parcours/_horloge.mjs). Étiquette 20260920nuit.
+   v207, le 21/09/2026 — retours de Celtis, iPhone en main. (1) La grille tarifaire suivait encore le
+   réglage du téléphone (prefers-color-scheme) : boîtes sombres en mode jour, le soir. (2) Aide
+   d'Express : un chapitre pour le client, un pour le coursier (aide.json). (3) Cliente : la carte
+   d'un colis se replie sur téléphone (650 → 120 px), porte sa date ; Dupliquer / Modifier /
+   Supprimer réservés au colis en attente saisi par elle. (4) Barre du bas : le remède de la v206
+   est confirmé par Celtis sur iPhone ; rien de plus n'y est touché (un contrôle garde la règle).
+   (5) Livreur : la pastille « Récup. » et la liste comptent pareil (colisAttenduAuPlusTard). Étiquette 20260921cartes. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v206'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v207'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

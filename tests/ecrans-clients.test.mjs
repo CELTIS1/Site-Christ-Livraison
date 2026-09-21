@@ -267,7 +267,12 @@ titre('3. La carte d’un colis chez la vendeuse (fonction réellement exécuté
     poser(bloc('motifReclamationTexte', lire('lib/reclamations.js'), 'lib/reclamations.js'));
     poser(bloc('reclamationTexteCliente', lire('lib/reclamations.js'), 'lib/reclamations.js'));
     poser(bloc('reclamationJours', lire('lib/reclamations.js'), 'lib/reclamations.js'));
-    for (const f of ['colisAdresseCorrigeable', 'colisToutModifiable',
+    // 20/09/2026 : la carte se replie sur téléphone, porte sa date, et sait qui a saisi le colis.
+    poser('const colisDeplies = new Set();');
+    poser("function todayLocalISODate(){ return '2026-09-20'; }");
+    for (const f of ['dayKey', 'jourDuColis', 'colisReporte']) poser(bloc(f, config, 'config.js'));
+    for (const f of ['colisAdresseCorrigeable', 'colisCreeParLeBureau', 'colisToutModifiable', 'colisDuplicable',
+                     'colisDemandeAttention', 'colisDateHTML',
                      'reclamationBlocHTML', 'colisItemHTML']) {
       poser(bloc(f, fournisseur, 'fournisseur.html'));
     }
@@ -287,13 +292,32 @@ titre('3. La carte d’un colis chez la vendeuse (fonction réellement exécuté
     carte.slice(0, 200));
   verifier('mais une vraie photo, quand il y en a une, s’affiche toujours',
     /class="thumb" alt="Photo du colis/.test(rendreCarte({ ...COLIS, photo_url: 'https://x/p.jpg' }, 3)));
-  verifier('plus de ligne « Ajouté le … » (la date est déjà en tête de groupe)',
+  verifier('plus de ligne « Ajouté le … » à elle seule (la date ouvre la ligne du contenu)',
     !/Ajouté le/.test(carte));
   verifier('plus de ligne « N° de suivi » à elle seule',
     !/N° de suivi/.test(carte) && !/tracking-numero/.test(carte));
-  verifier('le numéro reste lisible, sur la ligne du contenu',
-    /📦 Deux pagnes wax · N° CLT-2026-0007/.test(carte),
-    carte.match(/<div class="meta colis-quoi">[^<]*/)?.[0] || 'ligne « quoi » introuvable');
+  verifier('la ligne du contenu : la DATE d\'abord (20/09/2026, Celtis : « on ne sait pas si c\'était le colis de quand »), puis le quoi, puis le numéro',
+    /<div class="meta colis-quoi"><span class="colis-date"[^>]*>📅 mer 26 août<\/span><span>📦 Deux pagnes wax<\/span><span>N° CLT-2026-0007<\/span><\/div>/.test(carte),
+    carte.match(/<div class="meta colis-quoi">.*/)?.[0].slice(0, 260) || 'ligne « quoi » introuvable');
+  verifier('un colis d\'aujourd\'hui dit « Aujourd\'hui », un colis reporté dit son jour de report',
+    /📅 Aujourd(&#39;|')hui<\/span>/.test(rendreCarte({ ...COLIS, created_at: '2026-09-20T08:00:00Z' }, 3))
+    && /📅 mar 22 sept \(reporté\)/.test(rendreCarte({ ...COLIS, created_at: '2026-09-20T08:00:00Z', reporte_au: '2026-09-22' }, 3)),
+    (rendreCarte({ ...COLIS, created_at: '2026-09-20T08:00:00Z', reporte_au: '2026-09-22' }, 3).match(/colis-date[^<]*<\/span>/) || [''])[0]);
+
+  // LA CARTE REPLIÉE ET LES BOUTONS (20/09/2026)
+  const enAttente = { ...COLIS, statut: 'en_attente', cree_par_role: 'fournisseur' };
+  verifier('en attente, saisi par la cliente : Dupliquer, Modifier, Supprimer',
+    /btn-duplicate-colis/.test(rendreCarte(enAttente, 1)) && />Modifier</.test(rendreCarte(enAttente, 1)) && /btn-delete-colis/.test(rendreCarte(enAttente, 1)));
+  verifier('en attente mais saisi par le BUREAU : ni Dupliquer, ni Modifier, ni Supprimer',
+    ['equipe', 'admin'].every((r) => { const h = rendreCarte({ ...enAttente, cree_par_role: r }, 1); return !/btn-duplicate-colis/.test(h) && !/>Modifier</.test(h) && !/btn-delete-colis/.test(h); }));
+  verifier('dès qu\'il est récupéré ou en route : plus de Dupliquer (il reste « Corriger l\'adresse », pour le livreur devant la mauvaise porte)',
+    ['recupere', 'en_livraison'].every((st) => { const h = rendreCarte({ ...enAttente, statut: st }, 1); return !/btn-duplicate-colis/.test(h) && /Corriger l'adresse/.test(h); }));
+  verifier('livré : aucun bouton de modification, seulement le lien de suivi',
+    (() => { const h = rendreCarte({ ...enAttente, statut: 'livre' }, 1); return !/btn-duplicate-colis|btn-edit-colis|btn-delete-colis/.test(h) && /btn-copy-tracking/.test(h); })());
+  verifier('un colis ordinaire est REPLIÉ, avec son résumé (statut, montant, « Détails »)',
+    /class="colis-item colis-item--replie"/.test(carte) && /class="colis-resume"/.test(carte) && /data-colis-deplier="[^"]+" aria-expanded="false">Détails ▾/.test(carte));
+  verifier('un colis qui demande un geste (non livré — et retour, par la même règle) n\'est JAMAIS replié',
+    ['non_livre'].every((st) => !/colis-item--replie/.test(rendreCarte({ ...COLIS, statut: st }, 1))) && /c.statut === 'non_livre' \|\| c.statut === 'retour'/.test(fournisseur));
 
   // Le point le moins évident de toute la série. La frise écrit le libellé de l'étape en cours
   // — « En livraison » — et la pastille écrivait exactement le même mot juste à côté. Compter

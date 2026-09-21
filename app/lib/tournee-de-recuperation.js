@@ -732,3 +732,27 @@ function demainAbidjan(aujourdHui) {
 }
 
 
+
+/* LES RÉCUPÉRATIONS QUI COMPTENT AUJOURD'HUI (20/09/2026, Celtis)
+   « Dans l'onglet Récup., il y a un nombre affiché sur le compte de Hamed pendant qu'il n'y a
+   rien — et cette confusion existe souvent chez les autres livreurs. »
+
+   La pastille comptait TOUTES les récupérations du livreur, toutes dates confondues ; la liste,
+   elle, s'ouvre sur aujourd'hui. Un colis confié il y a trois jours et jamais récupéré faisait
+   donc « 1 » sur l'onglet et « aucune récupération pour cette date » dessous.
+
+   UNE SEULE RÈGLE POUR LES DEUX, ET C'EST CELLE DE LA TOURNÉE (colisAttenduAuPlusTard, ci-dessus) :
+   « jamais avant » son jour prévu, mais « jamais après » n'existe pas — une récupération en retard
+   reste à faire, et ne se cache pas derrière le calendrier : c'est justement celle qu'il faut
+   voir. La carte « Ma tournée », la pastille de l'onglet et la liste comptent donc pareil.
+   `jourDe(colis)` dit de quel jour est un colis sans jour prévu (la maison : jourDuColis). */
+function jourDeRecuperation(c, jourDe) {
+  const prevu = c && c.jour_recuperation_prevu;
+  return (prevu !== null && prevu !== undefined && prevu !== "") ? String(prevu).slice(0, 10) : (c ? jourDe(c) : "");
+}
+function recuperationsAFaireLe(liste, jour, jourDe) {
+  return (liste || []).filter(function (c) { return !!c && colisAttenduAuPlusTard(c, jour) && jourDeRecuperation(c, jourDe) <= String(jour).slice(0, 10); });
+}
+function recuperationsEnRetard(liste, jour, jourDe) {
+  return recuperationsAFaireLe(liste, jour, jourDe).filter(function (c) { const j = jourDeRecuperation(c, jourDe); return !!j && j < String(jour).slice(0, 10); });
+}

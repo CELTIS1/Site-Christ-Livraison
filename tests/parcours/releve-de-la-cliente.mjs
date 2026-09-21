@@ -28,6 +28,22 @@ titre('1. L\'espace de la cliente s\'ouvre');
 await N.ouvrirConnecte('fournisseur.html', CLIENTE2);
 verifier('la page est ouverte sans erreur, sur fournisseur.html', erreurs.length === 0 && /fournisseur\.html/.test(page.url()), erreurs.join('\n       '));
 verifier('sur téléphone, la barre du bas : Ajouter, Mes colis, Récap, Retours (« Boutiques » reste caché : ce compte n\'en supervise aucune)', (await page.locator('#clt-bottomnav .nav:not(.hidden)').count()) === 4 && await page.locator('#clt-bottomnav').isVisible());
+/* LA BARRE DU BAS NE BOUGE PAS D'UN ONGLET À L'AUTRE (21/09/2026, Celtis : « quand tu cliques sur
+   Mes colis ça monte, sur les autres ça descend »). Ici, dans Chromium, elle n'a jamais bougé : ce
+   contrôle garde au moins la règle — même place sur une page courte et sur une page longue, collée
+   au bas de l'écran. Le défaut, lui, est propre à l'iPhone (application installée). */
+{
+  const places = [];
+  for (const cible of ['section-colis', 'section-recap', 'section-ajouter', 'section-retours']) {
+    await page.locator(`#clt-bottomnav .nav[data-target="${cible}"]`).click();
+    await dodo(500);
+    places.push(await page.evaluate(() => { const r = document.getElementById('clt-bottomnav').getBoundingClientRect(); return [Math.round(r.top), Math.round(r.bottom), innerHeight, Math.round(document.documentElement.scrollHeight)]; }));
+  }
+  verifier('même place sur les quatre onglets, pages courtes ou longues, et collée au bas de l\'écran', places.every((p) => p[0] === places[0][0] && Math.abs(p[1] - p[2]) <= 1), JSON.stringify(places));
+  verifier('aucune page n\'est plus courte que l\'écran (toutes se comportent comme les longues)', places.every((p) => p[3] >= p[2]), JSON.stringify(places));
+  await page.locator('#clt-bottomnav .nav[data-target="section-ajouter"]').click();
+  await dodo(400);
+}
 verifier('son nom (Mariam Mode) est à l\'écran', /Mariam Mode/.test(await page.locator('body').innerText()));
 
 titre('2. « Mes colis » : ses quatre colis, pas ceux d\'Awa');

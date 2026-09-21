@@ -9,6 +9,7 @@
 
 import { ouvrirNavigateur, verifier, titre, dodo, bilan } from './_navigateur.mjs';
 import { LIVREUR, CLIENTE1, nouveauMonde } from './_monde.mjs';
+import { CLIENT_EXPRESS } from './_monde.mjs';
 
 const monde = nouveauMonde();
 const N = await ouvrirNavigateur({ monde });
@@ -84,6 +85,18 @@ const nuit = await page.evaluate(() => {
 verifier('la boîte elle-même passe au sombre (elle suit le bouton ☾ de l\'application, pas le réglage du téléphone)', nuit.boiteSombre);
 verifier('titres, résumés, ÉTAPES, astuces, croix : tout est au-dessus de 4,5 de contraste', nuit.vus >= 5 && nuit.etapes >= 1 && nuit.faibles.length === 0, JSON.stringify(nuit));
 await page.evaluate(() => { document.documentElement.removeAttribute('data-theme'); });
+
+titre('Express : le client lit SES explications — et en mode jour la boîte reste claire, même si le téléphone est passé au sombre');
+await page.emulateMedia({ colorScheme: 'dark' });            // le téléphone passe au sombre le soir…
+await N.ouvrirConnecte('express-client.html', CLIENT_EXPRESS);
+await dodo(1500);
+await page.evaluate(() => { document.documentElement.removeAttribute('data-theme'); cltAfficherAide(); });   // …l'application, elle, est en mode jour
+await dodo(900);
+const ex = await page.evaluate(() => { const b = document.querySelector('#clt-aide .clt-nouveautes__boite'); const c = getComputedStyle(b).backgroundColor.match(/\d+/g).map(Number); return { clair: c[0] > 240 && c[1] > 240 && c[2] > 240, sections: [...b.querySelectorAll('.clt-aide__section h3')].map((h) => h.textContent), ids: [...b.querySelectorAll('.clt-aide__article')].map((a) => a.id) }; });
+verifier('la boîte est claire : elle suit l\'application, pas le téléphone', ex.clair, JSON.stringify(ex).slice(0, 200));
+verifier('deux chapitres : « je commande une course » et « Pour tout le monde »', ex.sections.length === 2 && /je commande/i.test(ex.sections[0]), ex.sections.join(' | '));
+verifier('cinq fiches du client (commander, adresses, suivre, annuler, payer) — aucune du coursier', ex.ids.filter((i) => /^aide-express-/.test(i)).length === 5 && !ex.ids.some((i) => /^aide-coursier-/.test(i)), ex.ids.join(','));
+await page.emulateMedia({ colorScheme: 'light' });
 
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 

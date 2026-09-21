@@ -1408,7 +1408,10 @@ function cltEspaceDeLaPage() {
   if (/livreur\.html/.test(p)) return "livreur";
   if (/fournisseur\.html/.test(p)) return "fournisseur";
   if (/equipe\.html|gestion\.html/.test(p)) return "equipe";
-  if (/express/.test(p)) return "express";
+  // 20/09/2026, Celtis : « le coursier a ses explications et le client aussi ». Deux chapitres, et
+  // chacun ne lit que le sien. La page de connexion d'Express montre celui du client.
+  if (/express-coursier/.test(p)) return "express-coursier";
+  if (/express/.test(p)) return "express-client";
   return null;
 }
 function cltAfficherAide(options) {
@@ -1483,7 +1486,7 @@ function cltAfficherAide(options) {
     .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
     .then(function (j) {
       var E = (j && j.espaces) || {};
-      var ordre = espace ? [espace, "tous"] : ["equipe", "livreur", "fournisseur", "express", "tous"];
+      var ordre = espace ? [espace, "tous"] : ["equipe", "livreur", "fournisseur", "express-client", "express-coursier", "tous"];
       sections = ordre.filter(function (k) { return E[k] && Array.isArray(E[k].articles) && E[k].articles.length; })
         .map(function (k) { return { cle: k, titre: E[k].titre || k, articles: E[k].articles }; });
       if (!sections.length) { corps.textContent = "Aucun article pour le moment."; return; }

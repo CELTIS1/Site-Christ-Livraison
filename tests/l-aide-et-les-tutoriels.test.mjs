@@ -25,7 +25,7 @@ function verifier(t, condition, detail) {
 console.log('\n1. Le contenu : app/aide.json');
 const aide = JSON.parse(lire('app/aide.json'));
 const E = aide.espaces || {};
-verifier('un chapitre par espace, plus « tous »', ['livreur', 'fournisseur', 'equipe', 'express', 'tous'].every(k => E[k] && Array.isArray(E[k].articles) && E[k].articles.length), Object.keys(E).join(','));
+verifier('un chapitre par espace, plus « tous »', ['livreur', 'fournisseur', 'equipe', 'express-client', 'express-coursier', 'tous'].every(k => E[k] && Array.isArray(E[k].articles) && E[k].articles.length), Object.keys(E).join(','));
 const tous = Object.keys(E).flatMap(k => E[k].articles.map(a => Object.assign({ espace: k }, a)));
 verifier('au moins vingt articles au total', tous.length >= 20, tous.length);
 verifier('chaque article a un id, un titre, un résumé et des étapes', tous.every(a => /^[a-z0-9-]+$/.test(a.id) && a.titre && a.resume && Array.isArray(a.etapes) && a.etapes.length), tous.filter(a => !(a.id && a.titre && a.resume && a.etapes && a.etapes.length)).map(a => a.id).join(','));
@@ -42,6 +42,9 @@ verifier('les contacts publiés sont ceux de l\'application — service clientè
 console.log('\n2. La mécanique : clt-common.js');
 const cc = lire('app/clt-common.js');
 verifier('cltAfficherAide existe, et lit aide.json à la demande', /function cltAfficherAide\(options\)/.test(cc) && /fetch\(cltUrlACote\("aide\.json"\), \{ cache: "no-store" \}\)/.test(cc));
+verifier('aucune feuille de style ne suit le réglage du TÉLÉPHONE (prefers-color-scheme) : le mode nuit, c\'est le bouton ☾ de l\'application — sinon un téléphone qui passe au sombre le soir assombrit des boîtes en plein « mode jour » (20/09)', ['app/style.css', 'app/fournisseur.html', 'app/livreur.html', 'app/equipe.html', 'app/gestion.html', 'app/express-client.html', 'app/express-coursier.html'].every(f => !/@media[^{]*prefers-color-scheme/.test(lire(f))));
+verifier('Express : à chacun son chapitre — le client n\'a aucun article du coursier, et inversement (Celtis, 20/09)', E['express-client'].articles.length >= 4 && E['express-coursier'].articles.length >= 5 && E['express-client'].articles.every(a => /^express-/.test(a.id)) && E['express-coursier'].articles.every(a => /^coursier-/.test(a.id)) && !/Accepter|solde|Recharger/i.test(JSON.stringify(E['express-client'])) && !/Commander cette livraison|Enregistrer cette adresse/.test(JSON.stringify(E['express-coursier'])));
+verifier('la page du coursier ouvre le chapitre du coursier, les autres pages d\'Express celui du client', /if \(\/express-coursier\/\.test\(p\)\) return "express-coursier";\s*\n\s*if \(\/express\/\.test\(p\)\) return "express-client";/.test(cc));
 verifier('l\'espace est déduit de la page (livreur, fournisseur, equipe, express)', /function cltEspaceDeLaPage\(\)/.test(cc) && /livreur\\\.html/.test(cc) && /equipe\\\.html\|gestion\\\.html/.test(cc));
 verifier('chaque espace ne lit que ses articles, plus « tous »', /var ordre = espace \? \[espace, "tous"\]/.test(cc));
 verifier('une recherche sans accents, sur titre, résumé, étapes et astuce', /normalize\("NFD"\)/.test(cc) && /\[a\.titre, a\.resume, \(a\.etapes \|\| \[\]\)\.join\(" "\), a\.astuce\]/.test(cc));

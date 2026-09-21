@@ -29,6 +29,11 @@ await dodo(1000);
 await page.locator('#clt-bottomnav .nav[data-target="section-colis"]').click();
 await dodo(500);
 const premier = page.locator(`#colis-list .colis-item[data-id="${LIVRE.id}"]`).first();
+// 21/09/2026 : sur téléphone la carte d'un colis livré est repliée ; « Signaler un problème » est
+// derrière « Détails » — un colis livré sans histoire n'a pas à l'afficher en permanence.
+verifier('la carte du colis livré est repliée, et « Signaler » n\'encombre pas la liste', await premier.evaluate((c) => c.classList.contains('colis-item--replie')) && !(await premier.locator('[data-signaler]').isVisible()));
+await premier.locator('[data-colis-deplier]').click();
+await dodo(300);
 await premier.locator('[data-signaler]').click();
 await dodo(400);
 await page.locator('.reclam-motif[data-motif="montant_faux"]').click();

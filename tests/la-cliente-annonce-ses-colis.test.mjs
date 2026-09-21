@@ -473,9 +473,9 @@ verifier("dans une vraie tournée, seuls les colis attendus aujourd'hui sont com
 verifier("et la cliente n'est pas marquée « rien à récupérer » pour autant",
   tourneeDuJour.rienARecuperer === false);
 
-verifier("la règle est écrite une seule fois, et les deux chemins de la tournée s'en servent",
+verifier("la règle est écrite une seule fois ; les deux chemins de la tournée s'en servent, et la pastille « Récup. » du livreur aussi (20/09)",
   (sourceConfig.match(/function colisAttenduAuPlusTard\s*\(/g) || []).length === 1
-  && (sourceConfig.match(/colisAttenduAuPlusTard\(c, jour\)/g) || []).length === 2,
+  && (sourceConfig.match(/colisAttenduAuPlusTard\(c, jour\)/g) || []).length === 3,
   'les clientes programmées ET les clientes hors programme doivent obéir à la même règle');
 
 titre("Ce que l'écran de la cliente demande et envoie");
