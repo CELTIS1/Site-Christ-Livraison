@@ -103,6 +103,37 @@ const geste = page.locator('#section-mes-colis button:visible, #mes-colis-list b
 if (await geste.count()) { await geste.click().catch(() => {}); await dodo(800); const ok = page.locator('#clt-modal-ok:visible'); if (await ok.count()) { await ok.click().catch(() => {}); await dodo(800); } }
 verifier('même en appuyant sur un bouton de l\'écran, la base ne bouge pas', photoDeLaBase() === avant);
 
+titre('3 bis. « ✏️ Modifier » : voulu, confirmé, tracé — puis les gestes passent, sous le nom de l\'administrateur');
+const bascule = page.locator('.clt-vue-compte__bascule');
+verifier('le bandeau propose « ✏️ Modifier »', /Modifier/.test((await bascule.textContent()) || ''));
+await bascule.click(); await dodo(500);
+verifier('une confirmation est demandée avant tout', await page.locator('#clt-modal-title').isVisible().catch(() => false));
+await page.locator('#clt-modal-cancel').click().catch(() => {}); await dodo(500);
+verifier('« Rester en lecture seule » : rien ne change, les écritures restent refusées', !(await page.locator('.clt-vue-compte--modifie').count()) && (await page.evaluate(async () => { const un = (await supabaseClient.from('colis').select('id').limit(1)).data[0]; return (await supabaseClient.from('colis').update({ observation: 'x' }).eq('id', un.id)).error; })) !== null);
+await bascule.click(); await dodo(500); await page.locator('#clt-modal-ok').click(); await dodo(900);
+const rouge = ((await page.locator('#clt-vue-compte').textContent()) || '').replace(/\s+/g, ' ');
+verifier('confirmé : le bandeau passe au rouge et dit « sous votre nom »', (await page.locator('.clt-vue-compte--modifie').count()) === 1 && /Vous MODIFIEZ son compte/.test(rouge) && /sous votre nom/.test(rouge) && /Lecture seule/.test(rouge), rouge);
+verifier('le passage en modification est noté', monde.TABLES.consultations_de_compte.some((c) => c.modification === true && c.admin_id === ADMIN && c.compte_id === LIVREUR), JSON.stringify(monde.TABLES.consultations_de_compte));
+const enModif = await page.evaluate(async (id) => {
+  const un = (await supabaseClient.from('colis').select('id').limit(1)).data[0];
+  const r = { colisId: un.id };
+  r.update = (await supabaseClient.from('colis').update({ observation: 'Corrigé par le gérant' }).eq('id', un.id)).error;
+  r.fiche = (await supabaseClient.from('profiles').update({ full_name: 'Changé' }).eq('id', id)).error;
+  r.identifiants = (await supabaseClient.auth.updateUser({ phone: '+2250000000000' })).error;
+  r.parole = (await supabaseClient.rpc('annoncer_ma_remise', { p_montant: 1 })).error;
+  r.fonction = (await supabaseClient.functions.invoke('admin-modifier-compte', { body: {} })).error;
+  r.primes = (await supabaseClient.rpc('primes_en_cours')).data;
+  return r;
+}, LIVREUR);
+const corrige = monde.TABLES.colis.find((c) => c.id === enModif.colisId);
+verifier('un geste de l\'écran est réellement enregistré', enModif.update === null && corrige.observation === 'Corrigé par le gérant', JSON.stringify(enModif.update));
+verifier('… et c\'est l\'ADMINISTRATEUR qui l\'a fait, pas le livreur', monde.journal.filter((j) => j.op === 'update' && j.table === 'colis' && (j.ids || []).includes(enModif.colisId)).length === 1 && monde.journal.filter((j) => j.op === 'update' && j.table === 'colis' && (j.ids || []).includes(enModif.colisId))[0].user === ADMIN, JSON.stringify(monde.journal.filter((j) => j.table === 'colis' && j.op === 'update').slice(-2)));
+verifier('la fiche du compte reste fermée (téléphone et mot de passe seraient ceux du gérant)', !!enModif.fiche && /Équipe › Comptes/.test(enModif.fiche.message) && !!enModif.identifiants && monde.PROFILS.find((p) => p.id === LIVREUR).full_name !== 'Changé');
+verifier('la parole de la personne n\'est pas signée à sa place : « je remets 1 F » est refusé, et on dit pourquoi', !!enModif.parole && /déclaration de la personne/.test(enModif.parole.message) && !(monde.TABLES.annonces_remise || []).some((a) => a.montant_annonce === 1));
+verifier('les fonctions du serveur restent fermées ; les lectures ne changent pas', !!enModif.fonction && enModif.primes && enModif.primes.marque === 'PRIMES-DE-KOFFI');
+await bascule.click(); await dodo(600);
+verifier('« 👁 Lecture seule » : un appui, et plus rien ne s\'écrit', !(await page.locator('.clt-vue-compte--modifie').count()) && (await page.evaluate(async (cid) => (await supabaseClient.from('colis').update({ observation: 'encore' }).eq('id', cid)).error, enModif.colisId)) !== null && monde.TABLES.colis.find((c) => c.id === enModif.colisId).observation === 'Corrigé par le gérant');
+
 titre('4. L\'écran de la cliente, pareil');
 await ouvrirCommeOnglet('fournisseur.html?voir=' + CLIENTE1, ADMIN);
 const bandeauC = ((await page.locator('#clt-vue-compte').textContent().catch(() => '')) || '').replace(/\s+/g, ' ');
@@ -135,7 +166,7 @@ await ouvrirCommeOnglet('fournisseur.html?voir=' + LIVREUR, ADMIN);
 verifier('l\'administrateur qui demande un livreur sur l\'écran cliente : rien ne s\'ouvre', /equipe\.html/.test(page.url()), page.url());
 await ouvrirCommeOnglet('livreur.html?voir=' + EQUIPE, ADMIN);
 verifier('ni l\'écran d\'un compte de l\'équipe', /equipe\.html/.test(page.url()), page.url());
-verifier('seules les deux vraies consultations ont été notées', monde.TABLES.consultations_de_compte.length === 2, JSON.stringify(monde.TABLES.consultations_de_compte));
+verifier('seules les deux vraies consultations ont été notées (plus le passage en modification)', monde.TABLES.consultations_de_compte.filter((c) => !c.modification).length === 2 && monde.TABLES.consultations_de_compte.length === 3, JSON.stringify(monde.TABLES.consultations_de_compte));
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();

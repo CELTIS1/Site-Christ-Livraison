@@ -282,15 +282,15 @@
    "id": "voir-son-ecran",
    "espace": "bureau",
    "titre": "Voir l'écran d'un livreur ou d'une cliente",
-   "enBref": "Vous ouvrez son écran avec ses données, exactement ce qu'il voit, sans pouvoir rien modifier par mégarde.",
+   "enBref": "Vous ouvrez son écran avec ses données, exactement ce qu'il voit. Lecture seule d'abord ; « ✏️ Modifier » si vous voulez agir.",
    "ou": "Équipe › Plus › Comptes › Tous les comptes › ⋮ sur la personne › « 👁 Voir son écran »",
    "etapes": [
     "Trouvez la personne dans « Tous les comptes », ouvrez son menu ⋮, puis « 👁 Voir son écran ».",
     "Son écran s'ouvre dans un nouvel onglet, sous un bandeau bleu nuit qui porte son nom.",
     "Regardez tout : ses colis, sa journée, son relevé, ses primes, ses boutiques. « Quitter » referme l'onglet."
    ],
-   "aSavoir": "Vous restez connecté sous votre nom : aucun mot de passe ne circule. Tout est en lecture seule ; pour agir, passez par l'écran Équipe. Chaque consultation est notée. Pour bloquer un compte : même menu, « ⏸ Suspendre le compte ».",
-   "version": "v217",
+   "aSavoir": "L'écran s'ouvre en lecture seule. « ✏️ Modifier » (bandeau) ouvre les gestes de l'écran, faits sous votre nom ; le bandeau devient rouge. Restent fermés : la fiche du compte (Équipe › Comptes) et les déclarations de la personne elle-même. Tout est noté.",
+   "version": "v218",
    "aller": {
     "page": "equipe.html"
    }

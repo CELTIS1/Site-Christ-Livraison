@@ -119,30 +119,72 @@
     return null;
   }
 
-  /* Que faire d'une opération pendant qu'on regarde : 'laisser' | 'detour' | 'vide' | 'refuser'.
+  /* LE MODE « ✏️ MODIFIER » (21/09/2026, Celtis : « je veux avoir la possibilité de modifier aussi »).
+     L'écran s'ouvre TOUJOURS en lecture seule ; l'administrateur passe en modification d'un geste voulu,
+     confirmé, et le bandeau devient rouge. Alors les gestes de l'écran passent — avec SES droits, et la
+     base retient que c'est LUI (cree_par, journaux). Trois choses restent fermées, et on dit pourquoi :
+       • la fiche du compte (nom, téléphone, mot de passe, suppression) : « changer le téléphone » changerait
+         celui de l'ADMINISTRATEUR, pas celui de la personne — cela se fait dans Équipe › Comptes ;
+       • les fonctions du serveur ;
+       • LA PAROLE DE LA PERSONNE : « j'ai bien reçu mon retour », « j'ai pris 3 colis », « je remets
+         11 500 F ». Ces gestes-là sont une déclaration de la personne, gardée comme telle (elle sert en cas
+         de litige). La base les refuse d'ailleurs à tout autre qu'elle. L'administrateur ne les signe pas
+         à sa place : il a les gestes du bureau, sous son propre nom, dans l'écran Équipe. */
+  const MODES = ['lecture', 'modification'];
+  const PAROLE_DE_LA_PERSONNE = ['confirmer_recuperation', 'annoncer_ma_remise', 'cliente_repond_au_retour'];
+  const TABLES_FERMEES = ['profiles'];
+
+  /* Que faire d'une opération : 'laisser' | 'detour' | 'vide' | 'refuser' | 'refuser-parole' | 'refuser-fiche'.
      'detour' : la lecture passe par lectureDeLaBase() ; 'vide' : une lecture personnelle qui n'a pas de
-     sens pour ce rôle (les primes d'une cliente) rend « rien », sans bruit. */
-  function sortDeLOperation(genre, nom, compte) {
+     sens pour ce rôle (les primes d'une cliente) rend « rien », sans bruit.
+     Sans mode, ou avec un mode inconnu : lecture seule. */
+  function sortDeLOperation(genre, nom, compte, mode) {
+    const modifie = mode === 'modification';
     if (genre === 'select') return 'laisser';
     if (genre === 'rpc') {
-      if (LECTURES_PERSONNELLES.indexOf(String(nom || '')) < 0) return 'refuser';
-      return lectureDeLaBase(nom, null, compte) ? 'detour' : 'vide';
+      if (LECTURES_PERSONNELLES.indexOf(String(nom || '')) >= 0) return lectureDeLaBase(nom, null, compte) ? 'detour' : 'vide';
+      if (modifie && PAROLE_DE_LA_PERSONNE.indexOf(String(nom || '')) >= 0) return 'refuser-parole';
+      return 'refuser';
     }
-    return 'refuser';   // insert, update, upsert, delete, fonction, fichier, présence
+    if (['insert', 'update', 'upsert', 'delete'].indexOf(genre) >= 0) {
+      if (!modifie) return 'refuser';
+      return TABLES_FERMEES.indexOf(String(nom || '')) >= 0 ? 'refuser-fiche' : 'laisser';
+    }
+    if (genre === 'fichier') return modifie ? 'laisser' : 'refuser';
+    if (genre === 'identifiants') return modifie ? 'refuser-fiche' : 'refuser';
+    return 'refuser';   // fonction du serveur, présence, et tout genre inconnu
   }
 
-  const MESSAGE_LECTURE_SEULE = 'Vous regardez ce compte en lecture seule : rien n\'a été modifié. Pour agir, passez par l\'écran Équipe.';
+  const MESSAGE_LECTURE_SEULE = 'Vous regardez ce compte en lecture seule : rien n\'a été modifié. Pour agir ici, passez en « ✏️ Modifier » sur le bandeau.';
+  const MESSAGES = {
+    'refuser': MESSAGE_LECTURE_SEULE,
+    'refuser-parole': 'Ce geste est la déclaration de la personne elle-même : il n\'est pas fait à sa place, et rien n\'a été modifié. Le bureau a le geste équivalent, sous votre nom, dans l\'écran Équipe.',
+    'refuser-fiche': 'La fiche du compte (nom, téléphone, mot de passe, suppression) ne se change pas d\'ici : rien n\'a été modifié. Passez par Équipe › Comptes › ⋮.',
+  };
+  function messageDuRefus(sort, mode) {
+    if (sort === 'refuser' && mode === 'modification') return 'Ce geste n\'est pas ouvert depuis l\'écran regardé : rien n\'a été modifié. Passez par l\'écran Équipe.';
+    return MESSAGES[sort] || MESSAGE_LECTURE_SEULE;
+  }
 
-  function bandeau(compte) {
+  function bandeau(compte, mode) {
     const nom = compte ? (compte.company_name || compte.full_name || 'ce compte') : 'ce compte';
     const role = compte ? (NOMS_DE_ROLE[compte.role] || '') : '';
-    // Le NOM d'abord : sur un téléphone la ligne est courte, et c'est lui qu'il ne faut jamais couper.
-    return { titre: nom + (role ? ' (' + role + ')' : ''), sousTitre: 'Vous regardez son écran — lecture seule, rien ne peut être modifié.', quitter: 'Quitter' };
+    const titre = nom + (role ? ' (' + role + ')' : '');   // le NOM d'abord : c'est lui qu'il ne faut jamais couper
+    if (mode === 'modification') {
+      return { mode: 'modification', titre: titre, sousTitre: 'Vous MODIFIEZ son compte — chaque geste est fait sous votre nom.', bascule: '👁 Lecture seule', quitter: 'Quitter' };
+    }
+    return { mode: 'lecture', titre: titre, sousTitre: 'Vous regardez son écran — lecture seule, rien ne peut être modifié.', bascule: '✏️ Modifier', quitter: 'Quitter' };
   }
+  const CONFIRMER_LA_MODIFICATION = {
+    titre: 'Passer en modification ?',
+    detail: 'Les gestes de cet écran seront réellement enregistrés, sous votre nom d\'administrateur. La personne verra les changements.',
+    oui: 'Oui, modifier', non: 'Rester en lecture seule',
+  };
 
   window.CLTVoirUnCompte = {
     lireDemande: lireDemande, peutRegarder: peutRegarder, peutEtreRegarde: peutEtreRegarde, lien: lien, bonnePage: bonnePage,
     filtreDeLaTable: filtreDeLaTable, filtreDesColis: filtreDesColis, boutiquesDe: boutiquesDe, lectureDeLaBase: lectureDeLaBase, sortDeLOperation: sortDeLOperation, bandeau: bandeau,
     MESSAGE_LECTURE_SEULE: MESSAGE_LECTURE_SEULE, LECTURES_PERSONNELLES: LECTURES_PERSONNELLES,
+    MODES: MODES, PAROLE_DE_LA_PERSONNE: PAROLE_DE_LA_PERSONNE, messageDuRefus: messageDuRefus, CONFIRMER_LA_MODIFICATION: CONFIRMER_LA_MODIFICATION,
   };
 })();

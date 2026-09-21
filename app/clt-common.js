@@ -341,7 +341,7 @@ function __cltEnsureModal() {
     'padding:12px 14px; border:1.5px solid #d6dee8; border-radius:10px; font-size:16px; ' +
     'text-align:center; margin-bottom:18px;" />' +
     '<div class="confirm-modal-actions">' +
-    '<button type="button" class="btn" id="clt-modal-cancel" data-clt-fermer style="background:#e5e9ef;color:#222;">Annuler</button>' +
+    '<button type="button" class="btn clt-modal-annuler" id="clt-modal-cancel" data-clt-fermer style="background:#e5e9ef;color:#222;">Annuler</button>' +
     '<button type="button" class="btn" id="clt-modal-ok">Confirmer</button>' +
     "</div></div>";
   document.body.appendChild(ov);
@@ -360,14 +360,14 @@ function __cltCloseModal(result) {
   __cltModalResolve = null;
   if (r) r(result);
 }
-function cltConfirm({ title, detail, sub, okLabel, cancelLabel, danger } = {}) {
+function cltConfirm({ title, detail, sub, okLabel, cancelLabel, danger, icon } = {}) {
   const ov = __cltEnsureModal();
   __cltCancelValue = false;
   document.getElementById("clt-modal-title").textContent = title || "Confirmer";
   const d = document.getElementById("clt-modal-detail");
   if (detail) { d.textContent = detail; d.style.display = ""; } else { d.style.display = "none"; }
   document.getElementById("clt-modal-sub").textContent = sub || "";
-  document.getElementById("clt-modal-icon").textContent = danger ? "🗑️" : "⚠️";
+  document.getElementById("clt-modal-icon").textContent = icon || (danger ? "🗑️" : "⚠️");   // icon : une corbeille ne va pas à tout (21/09/2026)
   document.getElementById("clt-modal-input").style.display = "none";
   const ok = document.getElementById("clt-modal-ok");
   ok.textContent = okLabel || "Confirmer";
@@ -2163,16 +2163,18 @@ if (typeof document !== 'undefined') {
    Rend le compte regardé, ou null si l'on ne regarde personne.
    (Ici et non dans config.js, qui tient son budget de lignes ; supabaseClient n'est lu qu'à l'appel.) */
 let cltCompteRegarde = null;
+let cltModeVue = 'lecture';        // 'lecture' | 'modification' — lu À CHAQUE geste : la bascule du bandeau agit tout de suite
+let cltNoterLaVue = null;          // écrit une ligne dans consultations_de_compte, malgré le verrou (posé par cltRegarderUnCompte)
 function cltRegarderUnCompte(compte) {
   const R = window.CLTVoirUnCompte;
   if (!R || !compte || cltCompteRegarde) return cltCompteRegarde;
   cltCompteRegarde = compte;
   let dernierAvis = 0;
-  const avertir = function () {
+  const avertir = function (message) {
     const t = Date.now();
     if (t - dernierAvis < 2500) return;
     dernierAvis = t;
-    if (window.cltToast) cltToast(R.MESSAGE_LECTURE_SEULE, { type: 'info', title: 'Lecture seule', duration: 6000 });
+    if (window.cltToast) cltToast(message, { type: 'info', title: cltModeVue === 'modification' ? 'Pas d\'ici' : 'Lecture seule', duration: 7000 });
   };
   // Une « requête » qui accepte tous les enchaînements (.eq().select().single()…) et ne part jamais.
   const reponse = function (erreur) {
@@ -2189,12 +2191,22 @@ function cltRegarderUnCompte(compte) {
     });
     return mandataire;
   };
-  const refuser = function () { avertir(); return reponse({ message: R.MESSAGE_LECTURE_SEULE, code: 'CLT_LECTURE_SEULE' }); };
+  const erreurDe = function (sort) { const m = R.messageDuRefus(sort, cltModeVue); avertir(m); return { message: m, code: 'CLT_LECTURE_SEULE' }; };
+  const refuser = function (sort) { return reponse(erreurDe(sort || 'refuser')); };
 
   const vraiFrom = supabaseClient.from.bind(supabaseClient);
+  cltNoterLaVue = function (modification) {
+    try { return vraiFrom('consultations_de_compte').insert({ admin_id: compte.lecteurId, compte_id: compte.id, compte_role: compte.role, modification: !!modification }); } catch (e) { return Promise.resolve(); }
+  };
   supabaseClient.from = function (table) {
     const q = vraiFrom(table);
-    ['insert', 'update', 'upsert', 'delete'].forEach(function (op) { q[op] = refuser; });
+    ['insert', 'update', 'upsert', 'delete'].forEach(function (op) {
+      const vrai = q[op].bind(q);
+      q[op] = function () {
+        const sort = R.sortDeLOperation(op, table, compte, cltModeVue);
+        return sort === 'laisser' ? vrai.apply(null, arguments) : refuser(sort);
+      };
+    });
     const tri = R.filtreDeLaTable(table, compte);
     if (tri) {
       const vraiSelect = q.select.bind(q);
@@ -2208,20 +2220,28 @@ function cltRegarderUnCompte(compte) {
   };
   const vraiRpc = supabaseClient.rpc.bind(supabaseClient);
   supabaseClient.rpc = function (nom, args) {
-    const sort = R.sortDeLOperation('rpc', nom, compte);
+    const sort = R.sortDeLOperation('rpc', nom, compte, cltModeVue);
     if (sort === 'detour') { const d = R.lectureDeLaBase(nom, args, compte); return vraiRpc(d.nom, d.args); }
-    return sort === 'vide' ? reponse(null) : refuser();
+    return sort === 'vide' ? reponse(null) : refuser(sort);
   };
-  try { supabaseClient.functions.invoke = function () { avertir(); return Promise.resolve({ data: null, error: { message: R.MESSAGE_LECTURE_SEULE } }); }; } catch (e) { /* client sans fonctions */ }
+  try { supabaseClient.functions.invoke = function () { return Promise.resolve({ data: null, error: erreurDe(R.sortDeLOperation('fonction', null, compte, cltModeVue)) }); }; } catch (e) { /* client sans fonctions */ }
   try {
     const vraiStockage = supabaseClient.storage.from.bind(supabaseClient.storage);
     supabaseClient.storage.from = function (seau) {
       const b = vraiStockage(seau);
-      ['upload', 'update', 'remove', 'move', 'copy', 'createSignedUploadUrl', 'uploadToSignedUrl'].forEach(function (op) { if (b[op]) b[op] = function () { avertir(); return Promise.resolve({ data: null, error: { message: R.MESSAGE_LECTURE_SEULE } }); }; });
+      ['upload', 'update', 'remove', 'move', 'copy', 'createSignedUploadUrl', 'uploadToSignedUrl'].forEach(function (op) {
+        if (!b[op]) return;
+        const vrai = b[op].bind(b);
+        b[op] = function () {
+          const sort = R.sortDeLOperation('fichier', seau, compte, cltModeVue);
+          return sort === 'laisser' ? vrai.apply(null, arguments) : Promise.resolve({ data: null, error: erreurDe(sort) });
+        };
+      });
       return b;
     };
   } catch (e) { /* client sans stockage */ }
-  try { supabaseClient.auth.updateUser = function () { avertir(); return Promise.resolve({ data: { user: null }, error: { message: R.MESSAGE_LECTURE_SEULE } }); }; } catch (e) { /* rien */ }
+  // Téléphone et mot de passe : ce seraient CEUX DE L'ADMINISTRATEUR. Fermé dans les deux modes.
+  try { supabaseClient.auth.updateUser = function () { return Promise.resolve({ data: { user: null }, error: erreurDe(R.sortDeLOperation('identifiants', null, compte, cltModeVue)) }); }; } catch (e) { /* rien */ }
   return cltCompteRegarde;
 }
 
@@ -2251,28 +2271,41 @@ async function cltOuvrirVueCompte(profilDuLecteur) {
   }
   // La consultation est notée AVANT le verrou (après, plus rien ne s'écrit). Sans la table, on regarde quand même.
   try { await supabaseClient.from('consultations_de_compte').insert({ admin_id: profilDuLecteur.id, compte_id: compte.id, compte_role: compte.role }); } catch (e) { /* table absente : pas bloquant */ }
+  compte.lecteurId = profilDuLecteur.id;
   cltRegarderUnCompte(compte);
   cltPoserBandeauVueCompte(compte);
   return { compte: compte };
 }
 
 function cltPoserBandeauVueCompte(compte) {
-  if (document.getElementById('clt-vue-compte')) return;
-  const t = window.CLTVoirUnCompte.bandeau(compte);
-  const b = document.createElement('div');
-  b.id = 'clt-vue-compte';
-  b.className = 'clt-vue-compte';
-  b.setAttribute('role', 'status');
-  b.innerHTML = '<span class="clt-vue-compte__oeil" aria-hidden="true">👁</span>'
+  const R = window.CLTVoirUnCompte;
+  let b = document.getElementById('clt-vue-compte');
+  const neuf = !b;
+  if (neuf) { b = document.createElement('div'); b.id = 'clt-vue-compte'; b.setAttribute('role', 'status'); }
+  const t = R.bandeau(compte, cltModeVue);
+  b.className = 'clt-vue-compte' + (t.mode === 'modification' ? ' clt-vue-compte--modifie' : '');
+  b.innerHTML = '<span class="clt-vue-compte__oeil" aria-hidden="true">' + (t.mode === 'modification' ? '✏️' : '👁') + '</span>'
     + '<span class="clt-vue-compte__texte"><strong>' + escapeHTML(t.titre) + '</strong><span>' + escapeHTML(t.sousTitre) + '</span></span>'
-    + '<button type="button" class="clt-vue-compte__quitter">' + escapeHTML(t.quitter) + '</button>';
-  b.querySelector('button').addEventListener('click', function () {
+    + '<span class="clt-vue-compte__boutons"><button type="button" class="clt-vue-compte__bascule">' + escapeHTML(t.bascule) + '</button>'
+    + '<button type="button" class="clt-vue-compte__quitter">' + escapeHTML(t.quitter) + '</button></span>';
+  b.querySelector('.clt-vue-compte__bascule').addEventListener('click', async function () {
+    if (cltModeVue === 'modification') { cltModeVue = 'lecture'; cltPoserBandeauVueCompte(compte); return; }
+    const c = R.CONFIRMER_LA_MODIFICATION;
+    const oui = await cltConfirm({ title: c.titre, detail: c.detail, okLabel: c.oui, cancelLabel: c.non, icon: '✏️' });
+    if (!oui) return;
+    cltModeVue = 'modification';
+    try { if (cltNoterLaVue) await cltNoterLaVue(true); } catch (e) { /* la trace n'empêche pas d'agir */ }
+    cltPoserBandeauVueCompte(compte);
+  });
+  b.querySelector('.clt-vue-compte__quitter').addEventListener('click', function () {
     // Ouvert dans un onglet à part depuis l'écran Équipe : on le referme ; sinon on y retourne.
     try { window.close(); } catch (e) { /* onglet non refermable */ }
     setTimeout(function () { window.location.href = 'equipe.html'; }, 150);
   });
+  document.documentElement.classList.toggle('clt-modifie-un-compte', t.mode === 'modification');
+  if (!neuf) return;
   const barre = document.querySelector('.topbar');
   if (barre) barre.insertBefore(b, barre.firstChild); else document.body.insertBefore(b, document.body.firstChild);
   document.documentElement.classList.add('clt-regarde-un-compte');
-  try { document.title = '👁 ' + (compte.company_name || compte.full_name || 'Compte') + ' — lecture seule'; } catch (e) { /* rien */ }
+  try { document.title = '👁 ' + (compte.company_name || compte.full_name || 'Compte') + ' — CLT'; } catch (e) { /* rien */ }
 }

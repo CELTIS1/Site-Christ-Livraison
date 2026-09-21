@@ -21,7 +21,7 @@ await N.ouvrirConnecte('equipe.html', ADMIN);
 await dodo(3500);
 // La journée entière se charge en deux temps (une page, puis tout le jour) : on attend la liste complète.
 for (let k = 0; k < 20 && (await page.locator('#colis-list .eq-ligne').count()) < 120; k++) { await page.mouse.wheel(0, 600); await dodo(500); }
-await page.evaluate(() => window.scrollTo(0, 0));
+await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
 await dodo(600);
 const ou = () => page.evaluate(() => ({ y: Math.round(scrollY), total: document.documentElement.scrollHeight, reste: Math.round(document.documentElement.scrollHeight - scrollY - innerHeight) }));
 const bouton = (sel) => page.evaluate((s) => { const b = document.querySelector(s); return b ? { la: true, visible: b.classList.contains('visible'), bas: Math.round(innerHeight - b.getBoundingClientRect().bottom), rond: Math.abs(b.getBoundingClientRect().width - b.getBoundingClientRect().height) < 1 } : { la: false }; }, sel);
@@ -52,8 +52,10 @@ p = await ou();
 verifier('un redessin direct non plus', Math.abs(p.y - avant) <= 40, JSON.stringify({ avant, apres: p.y }));
 
 titre('3. Au milieu de la liste : pareil, et les deux boutons se superposent proprement');
-await page.evaluate(() => window.scrollTo(0, 3000));
-await dodo(500);
+// Un saut SEC, puis on attend que l'écran soit posé : la page est en « scroll-behavior: smooth », et sur une
+// machine chargée la glissade vers 3000 n'était pas finie au moment de mesurer (échec une fois sur quatre, 21/09/2026).
+await page.evaluate(() => window.scrollTo({ top: 3000, behavior: 'instant' }));
+for (let k = 0, avantY = -1; k < 20; k++) { await dodo(200); const yy = (await ou()).y; if (yy === avantY && Math.abs(yy - 3000) <= 2) break; avantY = yy; }
 await page.evaluate(() => loadColis({ enFond: true }));
 await dodo(900);
 p = await ou();

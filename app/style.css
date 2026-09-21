@@ -3979,6 +3979,14 @@ html[data-theme="dark"] .releve-repli__resume{ color:#ffb27a; }
 .clt-vue-compte__texte{display:flex; flex-direction:column; min-width:0; flex:1;}
 .clt-vue-compte__texte strong{font-weight:700; overflow-wrap:anywhere;}
 .clt-vue-compte__texte span{opacity:.9; font-size:12px;}
+.clt-vue-compte__boutons{display:flex; gap:8px; flex:none; flex-wrap:wrap; justify-content:flex-end;}
+.clt-vue-compte__bascule{
+  min-height:44px; padding:0 14px; border-radius:10px; border:1.5px solid rgba(255,255,255,.8);
+  background:transparent; color:#fff; font-weight:700; font-size:13px; cursor:pointer;
+}
+.clt-vue-compte__bascule:hover{background:rgba(255,255,255,.14);}
+/* En modification : rouge, pour qu'on ne l'oublie pas une seconde. */
+.clt-vue-compte--modifie, html[data-theme="dark"] .clt-vue-compte--modifie{background:#9B1C1C; border-color:#FECACA;}
 .clt-vue-compte__quitter{
   flex:none; min-height:44px; padding:0 16px; border-radius:10px; border:0;
   background:#fff; color:#10243A; font-weight:700; font-size:13px; cursor:pointer;
@@ -3989,3 +3997,10 @@ html[data-theme="dark"] .clt-vue-compte{background:#0B1622; border-color:#5B7390
 html.clt-regarde-un-compte [data-cache-si-regarde]{display:none !important;}
 /* Sur grand écran la barre du haut tient sur une ligne : le bandeau prend la sienne, au-dessus, sans rien écraser. */
 html.clt-regarde-un-compte .topbar{flex-wrap:wrap;}
+/* La fiche du compte ne se change pas depuis l'écran regardé (téléphone et mot de passe seraient ceux de l'administrateur). */
+html.clt-regarde-un-compte #btn-request-delete, html.clt-regarde-un-compte #btn-send-phone-otp, html.clt-regarde-un-compte #btn-confirm-phone-otp{display:none !important;}
+@media (max-width:520px){ .clt-vue-compte{flex-wrap:wrap;} .clt-vue-compte__boutons{flex-basis:100%; justify-content:stretch;} .clt-vue-compte__boutons button{flex:1;} }
+/* « Annuler » d'une confirmation : gris, PARTOUT. Sur l'écran du livreur et de la cliente, la règle des boutons
+   (orange, vert) l'emportait sur son style : « Annuler » et « Confirmer » étaient de la même couleur. (21/09/2026) */
+#clt-modal-cancel.clt-modal-annuler{background:#e5e9ef !important; color:#1f2937 !important; box-shadow:none !important; border:0 !important;}
+html[data-theme="dark"] #clt-modal-cancel.clt-modal-annuler{background:#2A3A4D !important; color:#E6ECF3 !important;}

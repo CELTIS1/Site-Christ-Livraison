@@ -249,7 +249,7 @@
       "« Nouveau compte client » ou « Nouveau compte livreur » : nom, téléphone, mot de passe. Communiquez le mot de passe ; la personne le change dans « Mon compte ».",
       "Un propriétaire de plusieurs boutiques : sur son compte, ⋮ → « Boutiques supervisées » → rattacher les comptes de ses gérants.",
       "Suspendre, réinitialiser le mot de passe, corriger la fiche : même menu ⋮.",
-      "Administrateur : ⋮ → « 👁 Voir son écran » ouvre l'écran d'un livreur ou d'une cliente, avec ses données, en lecture seule."
+      "Administrateur : ⋮ → « 👁 Voir son écran » ouvre l'écran d'un livreur ou d'une cliente, avec ses données : lecture seule d'abord, « ✏️ Modifier » sur le bandeau pour agir sous votre nom."
      ]
     }
    ]

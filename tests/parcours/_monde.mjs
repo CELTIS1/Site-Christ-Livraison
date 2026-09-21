@@ -220,7 +220,7 @@ export function nouveauMonde() {
         Object.assign(l, v, { updated_at: maintenant });
         if (table === 'colis') effetsRetour(avant, l, q.user, maintenant);
       });
-      journal.push({ table, op: 'update', valeurs: q.valeurs, n: lignes.length, ids: lignes.map(l => l.id) });
+      journal.push({ table, op: 'update', valeurs: q.valeurs, n: lignes.length, ids: lignes.map(l => l.id), user: q.user || null });   // user : QUI écrit (21/09/2026, « Voir son écran »)
       return { data: lignes, error: null, count: lignes.length };
     }
     if (q.op === 'insert' || q.op === 'upsert') {
