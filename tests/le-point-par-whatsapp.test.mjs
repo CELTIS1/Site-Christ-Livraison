@@ -59,5 +59,15 @@ verifier('sans numéro utilisable : on le dit, et on retombe sur le fichier — 
 verifier('l\'envoi rappelle de cocher « Je viens de l\'envoyer » (ouvrir WhatsApp n\'est pas avoir envoyé)', /envoyerPointSurWhatsApp\(\); releveRappelerDeCocher\(\);/.test(rapports));
 verifier('la page charge la règle avant les rapports', page.indexOf('point-par-whatsapp.js?v=') > 0 && page.indexOf('point-par-whatsapp.js?v=') < page.indexOf('equipe/07-rapports.js?v='));
 
+console.log('\n5. Le mot qui accompagne le PDF (21/09/2026)');
+const dj = { date: '2026-09-21', dateLabel: 'Aujourd\'hui — lundi 21 septembre 2026', r: { totalEncaisse: 42500, nbLivres: 2, lignes: [{ statutCode: 'livre' }, { statutCode: 'livre' }, { statutCode: 'non_livre' }, { statutCode: 'en_livraison' }] } };
+const matin = P.texteAvecLePDF(dj, R, 9), soir = P.texteAvecLePDF(dj, R, 19), nuit = P.texteAvecLePDF(dj, R, 1);
+verifier('« Bonjour » le jour, « Bonsoir » à partir de 18 h — et encore après minuit', /^Bonjour, /.test(matin) && /^Bonsoir, /.test(soir) && /^Bonsoir, /.test(nuit) && /^Bonjour, /.test(P.texteAvecLePDF(dj, R, 17)));
+verifier('la journée en toutes lettres, sans « Aujourd\'hui — » : le message sera relu demain', /voici votre point de la journée du lundi 21 septembre 2026, en pièce jointe \(PDF\)\./.test(matin) && !/Aujourd/.test(matin));
+verifier('le bilan en une ligne, et LA somme du relevé, en gras', /4 colis : 2 livrés, 1 non livré, 1 en cours\./.test(matin) && /\*Somme qui vous revient : 42500 FCFA\*/.test(matin));
+verifier('court : le détail est dans le fichier (six lignes, pas la liste des colis)', matin.split('\n').length === 6 && /Christ Livraison & Transport$/.test(matin));
+verifier('un seul colis livré : pas de « 0 non livré » ni de « 0 en cours »', /1 colis : 1 livré\.$/m.test(P.texteAvecLePDF({ date: '2026-09-19', r: { totalEncaisse: 0, nbLivres: 1, lignes: [{ statutCode: 'livre' }] } }, R, 10)));
+verifier('le jour se lit sur la date du point, pas sur l\'horloge', /samedi 19 septembre 2026/.test(P.texteAvecLePDF({ date: '2026-09-19', r: { nbLivres: 0, lignes: [] } }, R, 10)));
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);

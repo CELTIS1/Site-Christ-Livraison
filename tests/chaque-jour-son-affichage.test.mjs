@@ -178,7 +178,10 @@ titre("L'espace cliente aussi : le jour d'office, simple à comprendre (07/09/20
   // Le Récap aussi (Celtis, 07/09/2026 : « côté client je ne remarque pas de changement » — il
   // regardait l'onglet Récap, resté sur « Tous les jours »).
   const jours = blocDe(fournisseur, 'populateJourSelect');
-  verifier("le Récap s'ouvre sur aujourd'hui tant que la cliente n'a rien choisi", /const voulu = recapJourChoisi === null \? \(moisCourant \? aujourdhui : ''\) : recapJourChoisi;/.test(jours));
+  // 21/09/2026 : le jour est déjà dit par « Statut des colis du jour », juste au-dessus. Le récapitulatif
+  // s'ouvre donc sur le MOIS — Celtis : « deux mêmes récapitulatifs ».
+  verifier("le jour est en haut (« Statut des colis du jour »), le Récap s'ouvre sur le mois : rien en double",
+    /const voulu = recapJourChoisi === null \? '' : recapJourChoisi;/.test(jours) && /if \(!dateInput\.value\) dateInput\.value = todayLocalISODate\(\);/.test(fournisseur));
   verifier("« Aujourd'hui » est dans la liste même sans colis", /liste\.unshift\(\{ key: aujourdhui, label: "Aujourd'hui", items: \[\] \}\)/.test(jours));
   verifier("une journée sans colis le dit en une phrase, avec « Voir tout le mois »", /<strong>Aujourd'hui<\/strong>, aucun colis enregistré pour l'instant\./.test(fournisseur) && /selectRecapDay\(''\)"[^>]*>← Voir tout le mois/.test(fournisseur));
   verifier('le choix de la cliente est respecté ensuite', /recapJourChoisi = document\.getElementById\('jour-select'\)\.value;/.test(fournisseur) && /recapJourChoisi = key;/.test(fournisseur));

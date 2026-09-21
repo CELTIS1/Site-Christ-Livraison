@@ -590,7 +590,7 @@ titre("Les boutons, sous le bilan");
 
 const barre = releveBarreHTML();
 for (const [quoi, id] of [['PDF', 'releve-pdf'], ['Excel', 'releve-excel'],
-  ['Word', 'releve-word'], ['Envoyer', 'releve-envoyer'], ['Partager le PDF', 'releve-partager']]) {
+  ['Word', 'releve-word'], ['Envoyer le PDF', 'releve-envoyer'], ['Message seul', 'releve-message']]) {
   verifier(`le bouton ${quoi} existe`, barre.includes('id="' + id + '"'));
 }
 
@@ -602,8 +602,11 @@ verifier("les boutons sont bien SOUS le tableau et sous la note, pas au-dessus",
 /* 20/09/2026 : « Envoyer » ouvre le WhatsApp de la cliente — cela marche partout, il est donc
    toujours là. C'est « Partager le PDF » (la feuille de partage du téléphone) qui dépend de
    l'appareil, et qui porte désormais la marque hidden. */
-verifier("« Envoyer » est toujours là ; « Partager le PDF » porte la marque hidden dans le code",
-  /id="releve-partager"[^>]*hidden/.test(barre) && !/id="releve-envoyer"[^>]*hidden/.test(barre),
+/* 21/09/2026, Celtis : « il faut que ça parte avec le fichier PDF, comme au départ ». « Envoyer »
+   partage le PDF (ou, sur ordinateur, le télécharge et ouvre sa conversation) ; « Message seul »
+   garde le point écrit en toutes lettres. Les deux marchent partout : aucun n'est caché. */
+verifier("« Envoyer le PDF » et « Message seul » sont toujours là, aucun bouton mort",
+  !/id="releve-envoyer"[^>]*hidden/.test(barre) && !/id="releve-message"[^>]*hidden/.test(barre) && !/releve-partager/.test(barre),
   "un bouton présent qui ne fait rien est pire que pas de bouton du tout");
 
 /* Ce contrôle-là ne suffisait pas, et il a menti. Il était vert le jour où le bouton s'affichait
@@ -672,9 +675,14 @@ const brancher = sansCommentaires(blocDe(equipe, 'brancherReleveBarre', 'equipe.
 verifier("les quatre boutons sont branchés", /releve-pdf/.test(brancher)
   && /releve-excel/.test(brancher) && /releve-word/.test(brancher) && /releve-envoyer/.test(brancher));
 
-verifier("« Partager le PDF » n'est démasqué qu'après vérification de l'appareil",
-  /part && releveEnvoiPossible\(\)/.test(brancher) && /part\.hidden\s*=\s*false/.test(brancher));
-verifier("« Envoyer » ouvre le WhatsApp de la cliente, sans rien faire choisir",
+const envoiPDF = sansCommentaires(blocDe(equipe, 'envoyerRelevePDF', 'equipe.html'));
+verifier("« Envoyer » part AVEC le PDF et le mot d'accompagnement (bonjour/bonsoir à l'heure d'Abidjan, la journée, la somme)",
+  /envoyerRelevePDF\(\)/.test(brancher) && /CLTPointWhatsApp\.texteAvecLePDF\(d, \{ relevePhraseDue \}, heure\)/.test(envoiPDF)
+  && /timeZone: 'Africa\/Abidjan'/.test(envoiPDF) && /navigator\.share\(\{ files: \[fichier\][^}]*text: mot \}\)/.test(envoiPDF));
+verifier("sans partage de fichier (ordinateur) : sa conversation s'ouvre D'ABORD (avant toute attente, sinon le navigateur la bloque), puis le PDF se télécharge",
+  /lienWhatsApp\(f && f\.phone, mot\)[\s\S]*window\.open\(lien[\s\S]*await telechargerRelevePDF\(\)/.test(envoiPDF)
+  && envoiPDF.indexOf('window.open(lien') < envoiPDF.indexOf('await releveConstruirePDF'));
+verifier("« Message seul » ouvre le WhatsApp de la cliente, sans rien faire choisir",
   /envoyerPointSurWhatsApp\(\)/.test(brancher)
   && /CLTPointWhatsApp\.lienWhatsApp\(f && f\.phone, texte\)/.test(sansCommentaires(blocDe(equipe, 'envoyerPointSurWhatsApp', 'equipe.html'))));
 

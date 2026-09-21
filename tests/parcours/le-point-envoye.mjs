@@ -60,9 +60,9 @@ verifier('sortir le fichier n\'a RIEN coché : un téléchargement n\'est pas un
 verifier('mais le bouton passe devant, pour qu\'on y pense',
   (await page.locator('#releve-marquer.a-envoyer').count()) === 1);
 
-titre('3 bis. « Envoyer » : droit dans le WhatsApp de CETTE cliente (20/09/2026)');
-const envoyer = page.locator('#releve-envoyer');
-verifier('le bouton est là, visible, même sur un ordinateur qui ne sait pas « partager »', await envoyer.isVisible() && /WhatsApp/.test(await envoyer.innerText()));
+titre('3 bis. « Message seul » : droit dans le WhatsApp de CETTE cliente (20/09/2026)');
+const envoyer = page.locator('#releve-message');
+verifier('le bouton est là, visible, même sur un ordinateur qui ne sait pas « partager »', await envoyer.isVisible() && /Message seul/.test(await envoyer.innerText()));
 await envoyer.click();
 await dodo(600);
 const parti = await page.evaluate(() => window.__cltOuverts[window.__cltOuverts.length - 1] || '');
@@ -72,6 +72,19 @@ verifier('il ouvre wa.me sur le numéro du compte de cette cliente — rien à c
 const message = decodeURIComponent((parti.split('?text=')[1]) || '');
 verifier('le message est son point : le jour, le bilan, une ligne par colis, la somme qui lui revient', /voici votre point CLT du/.test(message) && /\*\d+ colis\*/.test(message) && /(Somme qui vous revient|Somme que vous devez)/.test(message), message.slice(0, 300));
 verifier('ouvrir WhatsApp n\'a RIEN coché non plus', monde.TABLES.points_envoyes.length === 0);
+
+titre('3 ter. « Envoyer le PDF par WhatsApp » : le fichier ET le mot d\'accompagnement (21/09/2026)');
+const avecPdf = page.locator('#releve-envoyer');
+verifier('le bouton principal parle du PDF', await avecPdf.isVisible() && /PDF/.test(await avecPdf.innerText()) && /WhatsApp/.test(await avecPdf.innerText()));
+const avant = await page.evaluate(() => window.__cltOuverts.length);
+await avecPdf.click();
+await dodo(2500);
+const partiPdf = await page.evaluate((n) => window.__cltOuverts.length > n ? window.__cltOuverts[window.__cltOuverts.length - 1] : '', avant);
+verifier('sur un ordinateur : sa conversation s\'ouvre, sur SON numéro', partiPdf.indexOf('https://wa.me/' + numeroAttendu + '?text=') === 0, partiPdf.slice(0, 80));
+const mot = decodeURIComponent((partiPdf.split('?text=')[1]) || '');
+verifier('le mot salue selon l\'heure, dit le jour en toutes lettres et annonce le PDF', /^(Bonjour|Bonsoir), voici votre point de la journée du (lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) \d{1,2}(er)? \S+ \d{4}, en pièce jointe \(PDF\)\./.test(mot), mot.slice(0, 200));
+verifier('et il porte la somme, en gras', /\*(Somme qui vous revient|Somme que vous devez|Rien à régler)[^*]*\*/.test(mot) || /\*[^*]*FCFA[^*]*\*/.test(mot), mot);
+verifier('toujours rien de coché', monde.TABLES.points_envoyes.length === 0);
 
 titre('4. Cocher : l\'heure, le nom, et la liste qui suit');
 await marquer.click();

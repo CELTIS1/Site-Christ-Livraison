@@ -415,11 +415,11 @@ return `
 <div class="releve-barre">
 <div class="releve-barre-label">Relevé du soir — à envoyer à la cliente</div>
 <div class="releve-barre-boutons">
+<button type="button" class="btn btn-primary btn-sm" id="releve-envoyer" title="Le PDF du point, avec un mot d'accompagnement déjà écrit.">📤 Envoyer le PDF par WhatsApp</button>
 <button type="button" class="btn btn-outline btn-sm" id="releve-pdf">🖨️ PDF</button>
 <button type="button" class="btn btn-outline btn-sm" id="releve-excel">📊 Excel</button>
 <button type="button" class="btn btn-outline btn-sm" id="releve-word">📝 Word</button>
-<button type="button" class="btn btn-outline btn-sm" id="releve-partager" hidden>📎 Partager le PDF</button>
-<button type="button" class="btn btn-primary btn-sm" id="releve-envoyer">📤 Envoyer sur son WhatsApp</button>
+<button type="button" class="btn btn-outline btn-sm" id="releve-message" title="Ouvre sa conversation WhatsApp avec le point écrit en toutes lettres, sans fichier.">💬 Message seul</button>
 </div>
 ${releveMarqueHTML()}
 </div>`;
@@ -501,9 +501,13 @@ if (doc) doc.addEventListener('click', () => { telechargerReleveWord(); releveRa
 // cliente, le point déjà écrit (point-par-whatsapp.js) — sur téléphone comme sur ordinateur. La
 // feuille de partage, qui sait joindre le PDF mais fait choisir l'application et le contact,
 // devient le second bouton, et seulement là où elle existe.
-if (env) env.addEventListener('click', () => { envoyerPointSurWhatsApp(); releveRappelerDeCocher(); });
-const part = document.getElementById('releve-partager');
-if (part && releveEnvoiPossible()) { part.hidden = false; part.addEventListener('click', () => { envoyerRelevePDF(); releveRappelerDeCocher(); }); }
+// 21/09/2026, Celtis : « il faut que ça parte avec le fichier PDF, comme au départ ; si ce n'est
+// pas possible [contact + fichier], on revient à l'ancien système », avec un mot d'accompagnement
+// clair (bonjour/bonsoir, la journée, la somme). « Envoyer » partage donc LE PDF ; le point écrit
+// en toutes lettres, qui ouvre droit sa conversation, devient « Message seul ».
+if (env) env.addEventListener('click', () => { envoyerRelevePDF(); releveRappelerDeCocher(); });
+const msg = document.getElementById('releve-message');
+if (msg) msg.addEventListener('click', () => { envoyerPointSurWhatsApp(); releveRappelerDeCocher(); });
 const marquer = document.getElementById('releve-marquer');
 if (marquer) marquer.addEventListener('click', releveMarquer);
 const demarquer = document.getElementById('releve-demarquer');
@@ -728,15 +732,30 @@ async function envoyerRelevePDF(){
 const d = releveEnCours();
 if (!d) return;
 const nom = releveNomFichier(d.nom, d.date) + '.pdf';
+const heure = Number(new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', hour12: false, timeZone: 'Africa/Abidjan' }).slice(0, 2));
+const mot = window.CLTPointWhatsApp ? CLTPointWhatsApp.texteAvecLePDF(d, { relevePhraseDue }, heure) : relevePhraseDue(d.r);
+const partageDeFichiers = !!navigator.canShare && navigator.canShare({ files: [new File([''], nom, { type: 'application/pdf' })] });
+if (!partageDeFichiers) {
+  // Sur ordinateur, aucun partage de fichier : SA conversation s'ouvre tout de suite (avant toute
+  // attente, sinon le navigateur bloque la fenêtre), le mot déjà écrit, et le PDF se télécharge —
+  // il ne reste qu'à l'y glisser.
+  const f = fournisseurs.find(x => x.id === d.fid);
+  const lien = window.CLTPointWhatsApp ? CLTPointWhatsApp.lienWhatsApp(f && f.phone, mot) : '';
+  if (lien) window.open(lien, '_blank', 'noopener');
+  if (window.cltToast) cltToast(lien
+    ? 'Sa conversation WhatsApp est ouverte, le message est déjà écrit : glissez-y le PDF qui vient de se télécharger.'
+    : 'Le PDF se télécharge. Cette cliente n\'a pas de numéro sur son compte : envoyez-le depuis votre WhatsApp.', { type: 'info', title: 'Presque fini', duration: 9000 });
+  try { await telechargerRelevePDF(); } catch (e) { console.warn('[point] PDF non construit', e); }
+  return;
+}
 try {
 const blob = (await releveConstruirePDF(d)).output('blob');
 const fichier = new File([blob], nom, { type: 'application/pdf' });
-if (!navigator.canShare || !navigator.canShare({ files: [fichier] })) { telechargerRelevePDF(); return; }
-await navigator.share({ files: [fichier], title: d.nom + ' — ' + d.dateLabel, text: relevePhraseDue(d.r) });
+await navigator.share({ files: [fichier], title: d.nom + ' — ' + d.dateLabel, text: mot });
 } catch (e) {
 // L'utilisateur qui referme la feuille de partage déclenche AbortError : ce n'est pas une panne.
 if (e && e.name === 'AbortError') return;
-telechargerRelevePDF();
+try { await telechargerRelevePDF(); } catch (e2) { console.warn('[point] PDF non construit', e2); }
 }
 }
 

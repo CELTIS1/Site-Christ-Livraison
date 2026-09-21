@@ -67,10 +67,42 @@
     return out.join('\n');
   }
 
+  /* LE MOT QUI ACCOMPAGNE LE PDF. (21/09/2026, Celtis : « il faut que ça parte avec le fichier PDF.
+     Le texte : bonjour ou bonsoir en fonction de l'heure, voici votre point de la journée du…, et
+     le montant total. Un français clair, précis. »)
+     Court, parce que le détail est DANS le fichier : la salutation (bonsoir à partir de 18 h, à
+     l'heure d'Abidjan), le jour en toutes lettres, le bilan en une ligne, et LA somme — celle de
+     relevePhraseDue(), la même que sur le relevé. `heure` est passée en paramètre (0-23). */
+  function jourEnLettres(dateISO) {
+    const m = String(dateISO || '').match(/^\d{4}-\d{2}-\d{2}/);
+    if (!m) return '';
+    return new Date(m[0] + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  }
+  function texteAvecLePDF(d, R, heure) {
+    const r = (d && d.r) || { lignes: [], nbLivres: 0 };
+    const lignes = r.lignes || [];
+    const nonLivres = lignes.filter(function (l) { return l.statutCode === 'non_livre' || l.statutCode === 'retour'; }).length;
+    const livres = r.nbLivres || 0, enCours = Math.max(0, lignes.length - livres - nonLivres);
+    const bilan = [livres + ' livré' + (livres > 1 ? 's' : '')];
+    if (nonLivres) bilan.push(nonLivres + ' non livré' + (nonLivres > 1 ? 's' : ''));
+    if (enCours) bilan.push(enCours + ' en cours');
+    const h = Number(heure);
+    const salut = (h >= 18 || h < 4) ? 'Bonsoir' : 'Bonjour';
+    const jour = jourEnLettres(d && d.date);
+    return [
+      salut + ', voici votre point de la journée du ' + (jour || (d && d.dateLabel) || '') + ', en pièce jointe (PDF).',
+      '',
+      lignes.length + ' colis : ' + bilan.join(', ') + '.',
+      '*' + R.relevePhraseDue(r) + '*',
+      '',
+      'Christ Livraison & Transport'
+    ].join('\n');
+  }
+
   function lienWhatsApp(telephone, texte) {
     const n = numeroWhatsApp(telephone);
     return n ? 'https://wa.me/' + n + '?text=' + encodeURIComponent(texte || '') : '';
   }
 
-  window.CLTPointWhatsApp = { LIGNES_MAXI: LIGNES_MAXI, numeroWhatsApp: numeroWhatsApp, texteDuPoint: texteDuPoint, lienWhatsApp: lienWhatsApp };
+  window.CLTPointWhatsApp = { texteAvecLePDF: texteAvecLePDF, jourEnLettres: jourEnLettres, LIGNES_MAXI: LIGNES_MAXI, numeroWhatsApp: numeroWhatsApp, texteDuPoint: texteDuPoint, lienWhatsApp: lienWhatsApp };
 })();

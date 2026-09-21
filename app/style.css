@@ -985,6 +985,7 @@ html[data-theme="dark"] .montant-absent{ color:#ff9d93; }
   .releve-barre{padding:12px 12px;}
   .releve-barre-boutons{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
   .releve-barre-boutons .btn{width:100%; min-height:44px;}
+  .releve-barre-boutons #releve-envoyer{grid-column:1 / -1;}
 }
 html[data-theme="dark"] .releve-barre{background:#141D29; border-color:#3A4B60;}
 html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}

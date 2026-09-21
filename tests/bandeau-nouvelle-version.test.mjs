@@ -1059,10 +1059,23 @@ verifier(
    neutre, la page de connexion rien. (4) Équipe › Colis sur grand écran : l'écran ne remonte plus
    (le repère de défilement était la fiche épinglée) ; bouton « Aller en bas ». (5) Cliente ›
    Récap : « Mon relevé » replié d'office, sous le récapitulatif ; la tuile « Total colis » n'est
-   plus blanche sur blanc. Bancs étendus, parcours 25. Étiquette 20260921stable. */
+   plus blanche sur blanc. Bancs étendus, parcours 25. Étiquette 20260921stable.
+   v213, le 21/09/2026 — retours de Celtis, six sujets. (1) En base, pas dans le site : la cliente
+   ne pouvait plus confirmer un retour (le garde-fou colis_garde_champs_client refusait l'écriture
+   de cliente_repond_au_retour) — migration 2026-09-21-la-cliente-peut-repondre-au-retour.sql,
+   appliquée et essayée en production. (2) Tournées : un départ ne vaut que pour SA journée
+   (« parti à 14:00 » venait d'un départ du 31/08 sur un colis du 27/08) ; les heures se lisent à
+   l'heure d'Abidjan où que soit l'écran ; le champ de date est recalé sur le jour réellement
+   écrit ; « N colis annoncés par la cliente · M saisis dans l'application » ; la commune tapée
+   pour une cliente qui n'en avait pas s'inscrit sur sa fiche. (3) Quoi de neuf : le panneau trie
+   par lecteur (cltNouveautesPour) — équipe tout, les autres leurs phrases, sinon une phrase
+   neutre, la page de connexion rien. (4) Équipe › Colis sur grand écran : l'écran ne remonte plus
+   (le repère de défilement était la fiche épinglée) ; bouton « Aller en bas ». (5) Cliente ›
+   Récap : « Mon relevé » replié d'office, sous le récapitulatif ; la tuile « Total colis » n'est
+   plus blanche sur blanc. Bancs étendus, parcours 25. Étiquette 20260921point. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v213'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v214'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

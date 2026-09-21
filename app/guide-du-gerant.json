@@ -282,14 +282,14 @@
    "id": "point-whatsapp",
    "espace": "bureau",
    "titre": "Le point de la cliente, droit dans son WhatsApp",
-   "enBref": "« Envoyer » ouvre la conversation WhatsApp de cette cliente, son point du jour déjà écrit.",
-   "ou": "Équipe › Suivi › Récapitulatif par client › une cliente › « 📤 Envoyer sur son WhatsApp »",
+   "enBref": "Le point de la cliente part sur WhatsApp avec son PDF et un mot déjà écrit : bonjour ou bonsoir, le jour, la somme.",
+   "ou": "Équipe › Suivi › Récapitulatif par client › une cliente › « 📤 Envoyer le PDF par WhatsApp »",
    "etapes": [
     "Ouvrez la cliente, vérifiez son bilan.",
-    "« Envoyer » : WhatsApp s'ouvre sur SON numéro, message prêt — il reste à appuyer sur la flèche d'envoi.",
+    "« Envoyer le PDF par WhatsApp » : choisissez WhatsApp puis la cliente — le PDF et le mot d'accompagnement partent ensemble.",
     "Revenez cocher « ✅ Je viens de l'envoyer » : toute l'équipe voit que c'est fait, par qui, à quelle heure."
    ],
-   "aSavoir": "WhatsApp ne permet pas à un site de choisir le contact ET de joindre un fichier. Le PDF reste à côté (« PDF », « Partager le PDF »). Le numéro utilisé est le téléphone du compte.",
+   "aSavoir": "WhatsApp ne laisse pas un site choisir le contact ET joindre un fichier : avec le PDF, c'est vous qui choisissez la cliente. « 💬 Message seul » ouvre directement sa conversation, sans le PDF. Sur ordinateur, le PDF se télécharge et la conversation s'ouvre : glissez-y le fichier.",
    "version": "v204",
    "aller": {
     "page": "equipe.html"
