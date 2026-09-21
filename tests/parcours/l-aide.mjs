@@ -64,6 +64,27 @@ verifier('sur l\'article demandé, déplié', (await boite2.locator('#aide-clien
 const sections2 = await boite2.locator('.clt-aide__section h3').allInnerTexts();
 verifier('elle ne voit que « Clientes » et « Pour tout le monde »', sections2.length === 2 && /clientes/i.test(sections2[0]), sections2.join(' | '));
 verifier('le PDF du bureau ne lui est pas proposé', (await boite2.locator('a[href*="tutoriel-suivi"]').count()) === 0);
+titre('La nuit, sur un téléphone clair : l\'aide se LIT (capture de Celtis, 20/09/2026)');
+/* Le téléphone de Celtis est en clair, l'application en sombre : la boîte restait blanche et les
+   étapes s'écrivaient en bleu nuit sur les fiches passées au sombre. On mesure le contraste de
+   chaque texte de la boîte avec le premier fond opaque derrière lui. */
+await page.emulateMedia({ colorScheme: 'light' });
+await page.evaluate(() => { document.documentElement.setAttribute('data-theme', 'dark'); });
+await dodo(300);
+const nuit = await page.evaluate(() => {
+  const lum = (r, g, b) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+  const rgba = (c) => { const m = c.match(/[\d.]+/g).map(Number); return { r: m[0], g: m[1], b: m[2], a: m.length > 3 ? m[3] : 1 }; };
+  const fondDe = (el) => { for (let e = el; e; e = e.parentElement) { const c = rgba(getComputedStyle(e).backgroundColor); if (c.a >= 0.95) return c; } return { r: 255, g: 255, b: 255 }; };
+  const faibles = [], boite = document.querySelector('#clt-aide .clt-nouveautes__boite');
+  const cibles = [...boite.querySelectorAll('h2, h3, .clt-aide__titre, .clt-aide__resume, .clt-aide__contenu li, .clt-aide__astuce, .clt-aide__lien, .clt-nouveautes__fermer')].filter((e) => e.offsetParent);
+  cibles.forEach((el) => { const t = rgba(getComputedStyle(el).color), f = fondDe(el); const a = lum(t.r, t.g, t.b), b = lum(f.r, f.g, f.b); const k = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); if (k < 4.5) faibles.push(el.className + ' ' + k.toFixed(1)); });
+  const fb = rgba(getComputedStyle(boite).backgroundColor);
+  return { vus: cibles.length, etapes: boite.querySelectorAll('.clt-aide__contenu li').length, faibles: [...new Set(faibles)], boiteSombre: lum(fb.r, fb.g, fb.b) < 0.05 };
+});
+verifier('la boîte elle-même passe au sombre (elle suit le bouton ☾ de l\'application, pas le réglage du téléphone)', nuit.boiteSombre);
+verifier('titres, résumés, ÉTAPES, astuces, croix : tout est au-dessus de 4,5 de contraste', nuit.vus >= 5 && nuit.etapes >= 1 && nuit.faibles.length === 0, JSON.stringify(nuit));
+await page.evaluate(() => { document.documentElement.removeAttribute('data-theme'); });
+
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();

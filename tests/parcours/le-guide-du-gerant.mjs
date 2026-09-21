@@ -55,6 +55,27 @@ verifier('téléphone : rien ne déborde, pastilles de 44 px', await page.evalua
 await page.setViewportSize({ width: 1440, height: 900 });
 await dodo(600);
 verifier('ordinateur : les fiches sur plusieurs colonnes, et « Guide » dans la barre latérale', await page.evaluate(() => { const f = [...document.querySelectorAll('.gdg-fiche')].slice(0, 2).map((e) => e.getBoundingClientRect()); const b = document.querySelector('#gbl-barre [data-gbl-tab="guide"]'); return f[1].left > f[0].left && !!b && b.getAttribute('aria-current') === 'page' && document.documentElement.scrollWidth <= innerWidth; }));
+titre('5. La nuit : tout se LIT (contraste mesuré, pas supposé)');
+/* 20/09/2026 — Celtis : « en mode sombre, les écritures sont comme illisibles ». Le guide avait
+   ses règles de nuit, mais personne ne l'avait REGARDÉ la nuit, et la barre du haut écrivait en
+   bleu nuit sur son bandeau. On mesure donc : pour chaque texte, le contraste entre sa couleur et
+   le premier fond opaque derrière lui (formule WCAG). 4,5 au moins pour un texte courant. */
+await page.locator('#cltThemeToggle').click();
+await dodo(500);
+const faibles = await page.evaluate(() => {
+  const lum = (r, g, b) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+  const rgba = (c) => { const m = c.match(/[\d.]+/g).map(Number); return { r: m[0], g: m[1], b: m[2], a: m.length > 3 ? m[3] : 1 }; };
+  const fondDe = (el) => { for (let e = el; e; e = e.parentElement) { const cs = getComputedStyle(e); const c = rgba(cs.backgroundColor); if (c.a >= 0.95) return c; const img = cs.backgroundImage; if (img && img !== 'none') { const m = img.match(/rgba?\([^)]+\)/); if (m) return rgba(m[0]); } } return { r: 255, g: 255, b: 255, a: 1 }; };
+  const cibles = [...document.querySelectorAll('.topbar .brand, .topbar .role-pill, #sec-guide h2, #gdg-sous, .gdg-pastille, .gdg-groupe-titre, .gdg-fiche h3, .gdg-bref, .gdg-ou, .gdg-etapes li, .gdg-savoir, .gdg-pour-vous, .gdg-marque, .gdg-aller, #gbl-barre .gbl-onglet, #gbl-barre .gbl-item')];
+  const out = [];
+  cibles.forEach((el) => { if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') return; const t = rgba(getComputedStyle(el).color), f = fondDe(el); const a = lum(t.r, t.g, t.b), b = lum(f.r, f.g, f.b); const k = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); if (k < 4.5) out.push((el.className || el.tagName) + ' ' + k.toFixed(1)); });
+  return { nuit: document.documentElement.getAttribute('data-theme'), vus: cibles.length, faibles: [...new Set(out)] };
+});
+verifier('le mode nuit est bien actif, et plus de cent textes ont été mesurés', faibles.nuit === 'dark' && faibles.vus > 100, JSON.stringify(faibles).slice(0, 200));
+verifier('aucun texte du guide, de la barre du haut ni de la barre latérale sous 4,5 de contraste', faibles.faibles.length === 0, faibles.faibles.join(' | '));
+await page.locator('#cltThemeToggle').click();
+await dodo(300);
+
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();

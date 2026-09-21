@@ -1,6 +1,6 @@
 {
  "_lisez_moi": "LE GUIDE DU GÉRANT — une fiche par fonctionnalité livrée, lue par Gestion › Guide (app/guide-du-gerant.js). Écrit pour Celtis : ce que c'est, où c'est, comment s'en servir, en phrases courtes. À CHAQUE NOUVEAU LOT qui change ce qu'on voit ou ce qu'on fait, ajouter ou mettre à jour la fiche ici et la date « maj ». tests/le-guide-du-gerant.test.mjs vérifie la forme : identifiants uniques, espaces connus, longueurs (une fiche se lit en vingt secondes), « Y aller » vers un onglet qui existe. « pourVous » = un geste ou une décision qui revient à Celtis ; le retirer quand c'est fait.",
- "maj": "20 septembre 2026",
+ "maj": "21 septembre 2026",
  "espaces": [
   [
    "gestion",
@@ -390,13 +390,15 @@
    "espace": "livreur",
    "titre": "Le livreur n'est plus seul",
    "enBref": "« Signaler un problème », les numéros de CLT, et une pastille « À rendre » pour les retours dans le sac.",
-   "ou": "Livreur › menu ☰ ; pastille « À rendre » dans Ma journée",
+   "ou": "Livreur › menu ☰ ; onglet « Retours » de la barre du bas",
    "etapes": [
-    "Un signalement arrive dans L'essentiel du bureau.",
+    "« Retours » (barre du bas, avec son nombre) liste les colis revenus que le livreur a encore dans son sac.",
+    "Un signalement (« Signaler un problème », menu ☰) arrive dans L'essentiel du bureau.",
     "Une mise à jour refusée se retente, ou s'abandonne en prévenant le bureau — rien ne se perd.",
     "Un colis de la journée reporté à un autre jour est annoncé au-dessus de la liste."
    ],
-   "version": "v184"
+   "version": "v184, v206",
+   "aSavoir": "« Compte » a quitté la barre du bas (doublon) : « Mon compte » est dans le menu ☰."
   },
   {
    "id": "import",

@@ -11,6 +11,7 @@
    Tous :                 npm run parcours
    Prérequis, une fois :  npx playwright install chromium
    ========================================================================================== */
+import { FUSEAU, DECALAGE_MS, POSER_LE_DECALAGE } from './_horloge.mjs';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -138,7 +139,7 @@ export async function ouvrirNavigateur(options) {
   const navigateur = await chromium.launch({ headless: true });
   const contexte = await navigateur.newContext({
     viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2,
-    locale: 'fr-FR', timezoneId: 'Africa/Abidjan', serviceWorkers: 'block',
+    locale: 'fr-FR', timezoneId: FUSEAU, serviceWorkers: 'block',
     // Le livreur partage sa position : le téléphone factice est à Abidjan (Plateau).
     geolocation: { latitude: 5.3247, longitude: -4.0210 }, permissions: ['geolocation'],
   });
@@ -158,6 +159,8 @@ export async function ouvrirNavigateur(options) {
     const css = /\.css|fonts\.googleapis/.test(url);
     route.fulfill({ status: 200, contentType: css ? 'text/css' : 'text/javascript', body: css ? '' : corps });
   });
+  // La même horloge que le faux monde (voir _horloge.mjs) : sans effet en journée.
+  if (DECALAGE_MS) await contexte.addInitScript('(' + POSER_LE_DECALAGE + ')(' + DECALAGE_MS + ');');
   await contexte.exposeFunction('__cltBase', (json) => monde.executer(JSON.parse(json)));
   await contexte.exposeFunction('__cltRpc', (nom, args, user) => monde.rpc(nom, args, user));
   await contexte.exposeFunction('__cltConnexion', (phone, password) => monde.connexion(phone, password));

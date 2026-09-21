@@ -10,6 +10,7 @@
    d'aujourd'hui dans tous les états. Les mots de passe sont inventés : ils n'existent que là.
    ========================================================================================== */
 
+import './_horloge.mjs';   // avant toute date : fixe le fuseau des parcours (voir ce fichier)
 export const LIVREUR = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
 export const ADMIN = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa9';
 export const CLIENTE1 = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1';

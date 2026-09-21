@@ -43,6 +43,20 @@ verifier('la carte dit « À rendre à la cliente »', /À rendre/.test(await te
 await page.locator('#filters-mes .filter-chip[data-filter="a_faire"]').click();
 await dodo(500);
 
+titre('2 bis. La barre du bas : « Retours » à la place de « Compte » (20/09/2026)');
+const barre = page.locator('#clt-bottomnav .nav');
+const noms = (await barre.allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim());
+verifier('quatre onglets : Mes colis, Récup., Finance, Retours — « Compte » n\'y est plus (il est dans le menu ☰)', noms.length === 4 && /^Mes colis/.test(noms[0]) && /^Retours/.test(noms[3]) && !noms.some(n => /Compte/.test(n)) && (await page.locator('#btn-mon-compte').count()) === 1, noms.join(' | '));
+verifier('« Retours » porte le nombre de colis à rendre : 1', (await texte(page.locator('#retours-badge'))) === '1' && await page.locator('#retours-badge').isVisible());
+await page.locator('#clt-bottomnav [data-nav="retours"]').click();
+await dodo(600);
+verifier('un appui : le retour dans le sac s\'affiche, « Retours » est allumé, « Mes colis » ne l\'est plus', (await carte(RETOUR.id).count()) === 1 && (await page.locator('#mes-colis-list .colis-item').count()) === 1 && await page.evaluate(() => document.querySelector('#clt-bottomnav [data-nav="retours"]').classList.contains('active') && !document.querySelector('#clt-bottomnav [data-nav="mes"]').classList.contains('active')));
+verifier('la pastille « À rendre » choisie est amenée sous les yeux', await page.evaluate(() => { const c = document.querySelector('#filters-mes .filter-chip.active').getBoundingClientRect(); return c.left >= 0 && c.right <= innerWidth; }));
+await page.locator('#clt-bottomnav [data-nav="mes"]').click();
+await dodo(600);
+verifier('« Mes colis » ramène à « Ma journée »', await page.evaluate(() => document.querySelector('#filters-mes .filter-chip.active').dataset.filter === 'a_faire' && document.querySelector('#clt-bottomnav [data-nav="mes"]').classList.contains('active')));
+
+console.log(await page.evaluate(() => ({ f: document.querySelector('#filters-mes .filter-chip.active')?.dataset.filter, n: document.querySelectorAll('#mes-colis-list .colis-item').length, vis: [...document.querySelectorAll('#mes-colis-list .colis-item')].map(c => c.offsetParent !== null), panel: document.getElementById('panel-mes').className, b: [...document.querySelectorAll('#mes-colis-list .colis-item')].map(c => c.dataset.id.slice(-2) + ':' + c.dataset.statut + ':' + !!(c.querySelector('.btn-etape-principale') && c.querySelector('.btn-etape-principale').offsetParent)) })));
 titre('3. Deux mises à jour refusées par le serveur se bloquent dans la file');
 monde.REFUS.add(A.id); monde.REFUS.add(B.id);
 await carte(A.id).locator('.btn-etape-principale').click();

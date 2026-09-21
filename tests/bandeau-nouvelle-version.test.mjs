@@ -983,10 +983,19 @@ verifier(
    v205, le 20/09/2026 — le guide du gérant : Gestion › Guide (administrateur seul). Une fiche par
    fonctionnalité livrée — ce que c'est, où, comment, à savoir, ce qui revient à Celtis — rangée
    par espace, avec recherche, filtre « Ce qui vous attend » et « Y aller ». Contenu :
-   app/guide-du-gerant.json (à tenir à jour à chaque lot) ; écran : app/guide-du-gerant.js. Étiquette 20260920guide. */
+   app/guide-du-gerant.json (à tenir à jour à chaque lot) ; écran : app/guide-du-gerant.js. Étiquette 20260920guide.
+   v206, le 20/09/2026 — la nuit, relevé par Celtis. La barre du haut écrivait en bleu nuit sur son
+   bandeau dans TOUS les espaces (--white, couleur des surfaces la nuit, y servait de couleur de
+   texte) : elle redevient blanche. Gestion : aides « Comment lire », « rien à signaler » et
+   l'onglet Site (étiquettes, titres, compteurs) gardaient leurs gris de jour. Le parcours du guide
+   MESURE maintenant le contraste la nuit ; outil tests/parcours/_contraste-de-nuit.mjs.
+   Même lot, sur captures de Celtis (iPhone) : la boîte « Aide et tutoriels » suivait le réglage du
+   TÉLÉPHONE et non le bouton ☾ (étapes bleu nuit sur bleu nuit) ; la barre du bas de la cliente
+   bougeait sur une page plus courte que l'écran (min-height:100dvh) ; chez le livreur, « Retours »
+   remplace « Compte » en bas. Les parcours ne dépendent plus de l'heure (tests/parcours/_horloge.mjs). Étiquette 20260920nuit. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v205'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v206'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

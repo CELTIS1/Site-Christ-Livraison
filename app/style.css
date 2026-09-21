@@ -1673,6 +1673,14 @@ html[data-theme="dark"] .stat-tile-total{ background:var(--grad-navy-deep); }
 :root{ color-scheme:light; }
 html[data-theme="dark"]{ color-scheme:dark; }
 
+/* LA BARRE DU HAUT, LA NUIT (20/09/2026 — relevé par Celtis). En mode nuit, --white devient la
+   couleur des SURFACES (#1B2635). Or la barre du haut s'en sert comme couleur de TEXTE : le
+   titre, le rôle, les icônes passaient donc en bleu nuit sur le bandeau — illisibles, dans tous
+   les espaces. Dans la barre, --white redevient blanc ; le menu déroulant qu'elle contient est
+   une surface, il garde la valeur de nuit. */
+html[data-theme="dark"] .topbar{ --white:#FFFFFF; color:#FFFFFF; }
+html[data-theme="dark"] .topbar .settings-dropdown, html[data-theme="dark"] .topbar .notif-panel, html[data-theme="dark"] .topbar [role="menu"], html[data-theme="dark"] .topbar [role="dialog"]{ --white:#1B2635; }
+
 html[data-theme="dark"]{
   /* Accents lisibles sur fond sombre */
   --navy:#8FB8EC;            /* utilisé comme couleur de texte/accent */
@@ -1839,6 +1847,8 @@ html[data-theme="dark"] .clt-toptab.active{ background:#243247; }
 /* Barre de navigation basse (mobile) */
 html[data-theme="dark"] .clt-bottomnav{ background:#141D29; border-top-color:#2A3849; }
 html[data-theme="dark"] .clt-bottomnav .nav{ color:#9DB0C4; }
+/* 20/09 : la nuit, l'onglet actif gardait le gris des autres (la règle ci-dessus l'emportait) : on ne voyait plus où l'on était. */
+html[data-theme="dark"] .clt-bottomnav .nav.active{ color:#FFFFFF; background:rgba(255,255,255,.10); }
 
 /* Emplacements de carte + sélecteur de point */
 html[data-theme="dark"] .pin-map,
@@ -2659,7 +2669,23 @@ html[data-theme="dark"] .pdj-cliente{ background:#1A2433; border-color:#2B3A4E; 
 .clt-nouveautes__date { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
 .clt-nouveautes__entree ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5; }
 .clt-nouveautes__entree li { margin: 3px 0; }
-@media (prefers-color-scheme: dark) { .clt-nouveautes__boite { background: #111827; color: #e5e7eb; } .clt-nouveautes__tete { border-color: #1f2937; } .clt-nouveautes__entree { border-color: #1f2937; } }
+/* LA NUIT (20/09/2026 — capture de Celtis, téléphone). Cette règle suivait le réglage du TÉLÉPHONE
+   (prefers-color-scheme) alors que l'application a son propre bouton ☾ (data-theme). Téléphone clair,
+   application sombre : la boîte restait blanche avec son texte bleu nuit, pendant que les fiches de
+   l'aide, elles, passaient au sombre — les étapes s'écrivaient en bleu nuit sur bleu nuit, illisibles.
+   (Et l'inverse : téléphone sombre, application claire, donnait une boîte noire aux fiches blanches.)
+   Tout suit maintenant le bouton de l'application. */
+html[data-theme="dark"] .clt-nouveautes__boite{ background:#141C28; color:#E6ECF3; box-shadow:0 24px 60px rgba(0,0,0,.6); }
+html[data-theme="dark"] .clt-nouveautes__tete{ border-color:#2A3849; }
+html[data-theme="dark"] .clt-nouveautes__tete h2{ color:#E6ECF3; }
+html[data-theme="dark"] .clt-nouveautes__fermer{ color:#C9D3DF; }
+html[data-theme="dark"] .clt-nouveautes__fermer:hover{ background:#243247; }
+html[data-theme="dark"] .clt-nouveautes__entree{ border-color:#2A3849; }
+html[data-theme="dark"] .clt-nouveautes__entree h3{ color:#E6ECF3; }
+html[data-theme="dark"] .clt-nouveautes__date{ color:#9DB0C4; }
+html[data-theme="dark"] .clt-aide__contenu, html[data-theme="dark"] .clt-aide__contenu li{ color:#E6ECF3; }
+html[data-theme="dark"] .clt-aide__astuce{ color:#F3D9B8; }
+html[data-theme="dark"] .clt-aide__lien{ color:#9DB0C4; }
 .doublon-badge { background: #fff4e5 !important; color: #8a4b00 !important; border: 1px solid #f5c98a !important; }
 /* La grille tarifaire dans l'app (16/09/2026) : même fenêtre que « Quoi de neuf ? », une liste lisible. */
 .clt-tarifs__depart { display: flex; align-items: center; gap: 10px; padding: 12px 0 6px; }
@@ -3835,3 +3861,13 @@ html[data-theme="dark"] .csc-hors-titre{ color:#93A1B3; }
 .csc-compteur{ display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:22px; padding:0 7px; margin-left:6px; border-radius:999px; background:#e3ecf8; color:#12305a; font-size:12.5px; font-weight:800; vertical-align:middle; }
 .csc-compteur.hidden{ display:none; }
 html[data-theme="dark"] .csc-compteur{ background:#243a5a; color:#CFE0FF; }
+
+/* LA BARRE DU BAS NE BOUGE PLUS (20/09/2026 — captures de Celtis, iPhone). Chez la cliente, la barre
+   remontait sur « Mes colis » et redescendait sur « Récap » : sur une page plus COURTE que l'écran,
+   l'application installée sur iPhone ne cale plus un élément « fixé en bas » au même endroit que sur
+   une page longue. On ne laisse donc plus jamais la page être plus courte que l'écran : toutes les
+   pages se comportent comme les longues, et la barre garde sa place quel que soit le contenu. */
+@media (max-width:760px){
+  html{ min-height:100%; }
+  body{ min-height:100vh; min-height:100dvh; }
+}
