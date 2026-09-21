@@ -77,7 +77,13 @@ titre('2.5 · Le haut de page');
   verifier('cinq pastilles, dans cet ordre : Ma journée, Livrés, Non livrés, À rendre, Tous', cles.join(',') === 'a_faire,livre,non_livre,a_rendre,tous', cles.join(','));
   verifier('« À rendre » porte le nombre de retours dans le sac et ignore le calendrier', /filter-chip-nb/.test(blocDe(livreur, 'renderFilters')) && /activeFilterMes === FILTRE_A_RENDRE \? colisARendre\(mine\)/.test(livreur));
   const filtres = blocDe(livreur, 'renderFilters');
-  verifier('un bouton « 🔍 Filtrer » ferme la rangée, marqué quand une recherche ou une date est active', /id="btn-filtrer-mes"/.test(filtres) && /filtreActif \? ' a-un-filtre' : ''/.test(filtres) && /const filtreActif = !!\(searchMes \|\| filtreDateMes\)/.test(filtres));
+  /* 21/09/2026 — la date du jour est désormais posée d'office (Celtis : « la date du jour est
+     sélectionnée partout »). Tester `filtreDateMes` tel quel allumerait le point en permanence,
+     et un signal toujours allumé ne signale plus rien. Aujourd'hui EST la vue normale : le point
+     ne s'allume que pour une recherche, ou pour une AUTRE journée. */
+  verifier('un bouton « 🔍 Filtrer » ferme la rangée, marqué pour une recherche ou une AUTRE journée', /id="btn-filtrer-mes"/.test(filtres) && /filtreActif \? ' a-un-filtre' : ''/.test(filtres) && /const filtreActif = !!\(searchMes \|\| \(filtreDateMes && filtreDateMes !== todayLocalISODate\(\)\)\)/.test(filtres));
+  verifier('… et le bloc reste ouvert quand on vide la date : sinon le chemin du retour disparaît avec elle',
+    /mesFiltresOuverts = true;\s*\n\s*appliquerFiltresAvances\(\);/.test(livreur));
   verifier('la recherche, le calendrier et la sélection sont dans un bloc replié par défaut', /<div id="mes-filtres-avances" class="mes-filtres-avances hidden">/.test(livreur) && livreur.indexOf('id="mes-filtres-avances"') < livreur.indexOf('id="search-mes"') && livreur.indexOf('id="search-mes"') < livreur.indexOf('id="btn-mode-lot-mes"'));
   verifier('le bloc reste ouvert tant qu\'un filtre est actif', /bloc\.classList\.toggle\('hidden', !\(mesFiltresOuverts \|\| searchMes \|\| filtreDateMes\)\)/.test(blocDe(livreur, 'appliquerFiltresAvances')));
   verifier('la rangée se redessine quand la recherche ou la date change (le marqueur suit)', (livreur.match(/renderFilters\('filters-mes', activeFilterMes, selectFilterMes\)/g) || []).length >= 5);

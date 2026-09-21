@@ -384,24 +384,59 @@ async function handleReversement(record: any, eventType: string): Promise<Respon
    un autre peut commencer. Tout le reste s'attend, se compte et se lit dans « L'essentiel ».
    ---------------------------------------------------------------------------- */
 
-/* La journée d'une cliente est bouclée : plus un seul de ses colis du jour n'est en cours.
-   La ligne est écrite par un déclencheur en base (journees_bouclees), une seule fois par
-   cliente et par jour — donc cette notification ne peut pas partir deux fois. */
-async function handleJourneeBouclee(record: any, eventType: string): Promise<Response> {
-  if (eventType !== "INSERT") return new Response("rien à dire", { status: 200 });
+/* LA JOURNÉE D'UNE CLIENTE : BOUCLÉE, PUIS ÉVENTUELLEMENT CHANGÉE. (21/09/2026 au soir)
+
+   Celtis, en relisant : « il peut arriver qu'on fasse une livrée et qu'on modifie après. Il y a
+   cinq colis, un était non livré, plus tard le client appelle pour qu'on le livre. Et si on le
+   livre, on va changer le point. Qu'est-ce qui va se passer ? »
+
+   Sa question désignait le vrai risque, et la première version le traitait mal : selon le
+   chemin pris, ou bien un second « ✅ Journée bouclée » partait — sans dire que quelque chose
+   avait changé —, ou bien RIEN ne partait, et un point déjà réglé restait faux en silence.
+
+   Deux messages, donc, et ils ne disent pas la même chose :
+     • la PREMIÈRE fois (INSERT) : « son point peut être réglé » ;
+     • ensuite (UPDATE dont les chiffres bougent) : « sa journée a changé, le point est à
+       revoir » — avec ce qui a changé, chiffre contre chiffre.
+   Et rien du tout tant que la journée est marquée « en cours » : elle s'est rouverte, on
+   attend qu'elle se referme pour reparler. */
+function journeeDetail(n: number, livres: number): string {
+  const rates = n - livres;
+  return n
+    ? `${n} colis · ${livres} livré${livres > 1 ? "s" : ""}${rates > 0 ? ` · ${rates} non livré${rates > 1 ? "s" : ""}` : ""}`
+    : "tous ses colis sont traités";
+}
+async function handleJourneeBouclee(record: any, oldRecord: any, eventType: string): Promise<Response> {
   const id = uuidOuRien(record.fournisseur_id);
   if (!id) return new Response("identifiant invalide", { status: 200 });
+  // Une journée rouverte ne dit rien : on attend qu'elle se referme.
+  if (record.en_cours) return new Response("journée rouverte, rien à dire", { status: 200 });
+
   const nom = record.cliente_nom ? String(record.cliente_nom).slice(0, 60) : "Une cliente";
   const n = Number(record.nb_colis) || 0;
   const livres = Number(record.nb_livres) || 0;
-  const rates = n - livres;
-  const detail = n
-    ? `${n} colis · ${livres} livré${livres > 1 ? "s" : ""}${rates > 0 ? ` · ${rates} non livré${rates > 1 ? "s" : ""}` : ""}`
-    : "tous ses colis sont traités";
+  const tag = `bouclee-${id}-${record.jour}`;
+
+  if (eventType === "INSERT") {
+    return await envoyer({ roles: ["equipe", "admin"], userIds: [] },
+      "✅ Journée bouclée : " + nom,
+      `${journeeDetail(n, livres)}. Son point peut être réglé.`, tag, "");
+  }
+
+  // UPDATE : on ne parle que si les CHIFFRES ont bougé. Un déclencheur peut réécrire une ligne
+  // à l'identique (une correction d'observation, par exemple) ; cela ne concerne pas le bureau.
+  const nAvant = oldRecord ? Number(oldRecord.nb_colis) || 0 : n;
+  const livresAvant = oldRecord ? Number(oldRecord.nb_livres) || 0 : livres;
+  if (n === nAvant && livres === livresAvant) return new Response("rien n'a changé", { status: 200 });
+
+  // Ce qui a changé, dit chiffre contre chiffre : « 5 livrés au lieu de 4 ».
+  const changements: string[] = [];
+  if (livres !== livresAvant) changements.push(`${livres} livré${livres > 1 ? "s" : ""} au lieu de ${livresAvant}`);
+  if (n !== nAvant) changements.push(`${n} colis au lieu de ${nAvant}`);
   return await envoyer({ roles: ["equipe", "admin"], userIds: [] },
-    "✅ Journée bouclée : " + nom,
-    `${detail}. Son point peut être réglé.`,
-    `bouclee-${id}-${record.jour}`, "");
+    "♻️ La journée de " + nom + " a changé",
+    `${changements.join(" · ")}. Si son point est déjà réglé, il est à revoir.`,
+    tag + "-maj", "");
 }
 
 /* Un livreur vient d'annoncer sa remise : la ligne arrive dans annonces_remise au moment où
@@ -500,7 +535,7 @@ Deno.serve(async (req) => {
     if (table === "reclamations_clientes") return await handleReclamation(record, oldRecord, eventType);
     if (table === "demandes_de_passage") return await handleDemandeDePassage(record, oldRecord, eventType);
     if (table === "reversements_clientes") return await handleReversement(record, eventType);
-    if (table === "journees_bouclees") return await handleJourneeBouclee(record, eventType);
+    if (table === "journees_bouclees") return await handleJourneeBouclee(record, oldRecord, eventType);
     if (table === "annonces_remise") return await handleAnnonceRemise(record, eventType);
     return await handleColis(record, oldRecord, eventType);
   } catch (e) {

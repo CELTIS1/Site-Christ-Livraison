@@ -152,11 +152,16 @@ verifier('il redessine la rangée de filtres par un point de rendez-vous, pas pa
   && /redessinerFiltresMes = \(\) => renderFilters\('filters-mes'/.test(livreur));
 verifier('le calendrier de la carte passe par lui', /input\.addEventListener\('change', \(\) => poserLeJourDeLEcran\(input\.value\)\)/.test(livreur));
 verifier('celui de la liste aussi, quand une date est choisie',
-  /if \(e\.target\.value\) \{ poserLeJourDeLEcran\(e\.target\.value\); return; \}/.test(livreur));
+  /if \(e\.target\.value\) \{ poserLeJourDeLEcran\(e\.target\.value\); majBoutonDatesMes\(\); return; \}/.test(livreur));
 /* « Toutes les dates » reste possible sur la LISTE : une liste peut couvrir plusieurs jours,
    une carte fait le compte d'un seul. Ce n'est pas une divergence, c'est un choix dit à l'écran. */
 verifier('vider la date de la liste reste possible, et ne casse rien',
-  /filtreDateMes = '';\s*\n\s*remettreTrancheMesAZero/.test(livreur));
+  /filtreDateMes = '';\s*\n\s*majBoutonDatesMes\(\);\s*\n\s*remettreTrancheMesAZero/.test(livreur));
+/* 21/09/2026 — et le MOT du bouton dit où il mène, jamais où l'on est. Depuis que la date du
+   jour est posée d'office, un bouton figé sur « Aujourd'hui » n'aurait plus rien proposé. */
+verifier('le bouton bascule, et son mot suit : « Toutes les dates » ou « Aujourd\'hui »',
+  /b\.textContent = filtreDateMes \? 'Toutes les dates' : 'Aujourd\\'hui'/.test(livreur)
+  && /filtreDateMes = filtreDateMes \? '' : todayLocalISODate\(\);/.test(livreur));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);

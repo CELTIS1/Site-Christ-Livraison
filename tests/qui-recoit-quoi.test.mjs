@@ -41,6 +41,9 @@ function verifier(t, condition, detail) {
 const push = lire('supabase-functions/envoyer-push/index.ts');
 const setup = lire('supabase-functions/PUSH-SETUP.md');
 const primes = lire('app/lib/primes.js');
+// À plat, et sans les « > » des citations : le mode d'emploi coupe ses lignes où il veut,
+// et un contrôle qui dépend de l'endroit où une phrase se coupe ne tient rien.
+const setupPlat = setup.replace(/^>\s?/gm, '').replace(/\s+/g, ' ');
 
 // Le corps de handleColis, pour parler de CE qui s'y passe et non d'ailleurs.
 const handleColis = push.slice(push.indexOf('async function handleColis'), push.indexOf('async function handleReclamation'));
@@ -88,8 +91,28 @@ verifier('le point d\'un livreur prévient le bureau, avec le montant annoncé',
 verifier('… et l\'écart avec ce qu\'il porte, quand il y en a un',
   /const ecart = Number\.isFinite\(porte\) \? porte - montant : 0;/.test(push)
   && /écart de \$\{ecart\.toLocaleString\("fr-FR"\)\}/.test(push));
-verifier('les deux ne partent que sur une ligne NOUVELLE, jamais sur une correction',
-  (push.match(/if \(eventType !== "INSERT"\) return new Response\("rien à dire"/g) || []).length >= 2);
+verifier('le point d\'un livreur ne part que sur une ligne NOUVELLE',
+  /async function handleAnnonceRemise[\s\S]{0,200}if \(eventType !== "INSERT"\) return new Response\("rien à dire"/.test(push));
+
+console.log('\n3 bis. LA JOURNÉE QUI CHANGE APRÈS COUP — LA QUESTION DE CELTIS');
+/* Celtis, en relisant : « il y a cinq colis, un était non livré, plus tard le client appelle
+   pour qu'on le livre. Et si on le livre, on va changer le point. Qu'est-ce qui va se passer ? »
+   Le vrai danger n'est pas la seconde notification : c'est le point déjà réglé qui devient faux. */
+verifier('un premier bouclage dit « son point peut être réglé »',
+  /if \(eventType === "INSERT"\) \{\s*return await envoyer\(\{ roles: \["equipe", "admin"\][\s\S]{0,120}"✅ Journée bouclée : " \+ nom/.test(push));
+verifier('un changement après coup dit AUTRE CHOSE : « le point est à revoir »',
+  /"♻️ La journée de " \+ nom \+ " a changé"/.test(push)
+  && /Si son point est déjà réglé, il est à revoir/.test(push));
+verifier('… avec ce qui a changé, chiffre contre chiffre',
+  /\$\{livres\} livré\$\{livres > 1 \? "s" : ""\} au lieu de \$\{livresAvant\}/.test(push));
+verifier('une réécriture qui ne change aucun chiffre ne dit rien',
+  /if \(n === nAvant && livres === livresAvant\) return new Response\("rien n'a changé"/.test(push));
+verifier('et une journée ROUVERTE se tait : on attend qu\'elle se referme',
+  /if \(record\.en_cours\) return new Response\("journée rouverte, rien à dire"/.test(push));
+verifier('le mode d\'emploi décrit les deux messages, pas seulement le premier',
+  /DEUX MESSAGES, ET ILS NE DISENT PAS LA MÊME CHOSE/.test(setupPlat)
+  && /♻️ La journée de … a changé/.test(setupPlat)
+  && /le point déjà réglé qui devient faux/.test(setupPlat));
 verifier('le nom du livreur manquant ne retient pas l\'alerte : l\'argent passe avant le confort',
   /catch \(_e\) \{ \/\* le nom est un confort/.test(push));
 verifier('les deux tables sont aiguillées dans le routeur',
@@ -104,21 +127,18 @@ verifier('il dit le chiffre mesuré, qui est la raison de la coupe',
   /180 par jour/.test(setup));
 verifier('il définit « bouclée » : plus aucun colis du jour en attente, récupéré ou en livraison',
   /« en attente », « récupéré » ou « en livraison »/.test(setup));
-// À plat, et sans les « > » des citations : le mode d'emploi coupe ses lignes où il veut,
-// et un contrôle qui dépend de l'endroit où une phrase se coupe ne tient rien.
-const setupPlat = setup.replace(/^>\s?/gm, '').replace(/\s+/g, ' ');
-verifier('… et dit qu\'une journée rouverte peut prévenir à nouveau, sans renotifier sur correction',
-  /retirée si la journée se rouvre, pour pouvoir prévenir à nouveau/.test(setupPlat)
-  && /ne renotifie pas puisque le branchement écoute les INSERT/.test(setupPlat));
+verifier('… et dit ce que devient une journée ROUVERTE : silence, et sa ligne n\'est pas supprimée',
+  /Journée \*\*rouverte\*\* \(`en_cours = true`\) : silence/.test(setupPlat)
+  && /la supprimer ferait repartir un « premier bouclage »/.test(setupPlat));
 verifier('… et qu\'une correction sur un vieux colis ne fait pas sonner',
   /aujourd'hui et hier/.test(setup));
 verifier('les sept branchements sont listés avec leurs événements',
   ['envoyer_push_colis', 'envoyer_push_express_courses', 'envoyer_push_reclamations',
    'envoyer_push_passages', 'envoyer_push_reversements', 'envoyer_push_journees',
    'envoyer_push_remises'].every((n2) => setup.includes(n2)));
-verifier('reversements, journées et remises n\'écoutent que les INSERT',
+verifier('reversements et remises n\'écoutent que les INSERT ; les journées écoutent aussi les UPDATE',
   /`envoyer_push_reversements` \| `reversements_clientes` \| INSERT \|/.test(setup)
-  && /`envoyer_push_journees` \| `journees_bouclees` \| INSERT \|/.test(setup)
+  && /`envoyer_push_journees` \| `journees_bouclees` \| INSERT, UPDATE \|/.test(setup)
   && /`envoyer_push_remises` \| `annonces_remise` \| INSERT \|/.test(setup));
 
 console.log('\n5. L\'INCIDENT DU 21/09 A LAISSÉ UNE RÈGLE ÉCRITE');

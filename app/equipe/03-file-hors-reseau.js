@@ -848,6 +848,40 @@ return html;
 /* Les quatre chiffres du jour, demandés à la base et non à la liste chargée. Cinq comptages
    sans rapatrier une ligne (head: true). Le jour est celui d'Abidjan (= UTC), les bornes sont
    donc T00:00:00Z et T23:59:59.999Z. Une réponse en erreur laisse l'affichage approximatif. */
+/* LES JOURNÉES BOUCLÉES DONT LE POINT N'EST PAS ENCORE RÉGLÉ. (21/09/2026 au soir)
+
+   L'alerte « ✅ Journée bouclée » arrive sur le téléphone — mais une notification se lit une
+   fois et disparaît. Celui qui ouvre l'écran une heure plus tard doit pouvoir savoir combien
+   il en reste. C'est le rôle de cette pastille, et c'est la même règle des deux côtés : la
+   base écrit `journees_bouclees`, la notification la lit, l'écran la lit aussi.
+
+   « À RÉGLER » retranche celles dont le point est DÉJÀ parti (points_envoyes) : compter une
+   cliente déjà réglée ferait chercher un travail qui n'existe plus — et c'est précisément ce
+   qu'on reproche à un compteur.
+
+   LA TABLE PEUT NE PAS ENCORE EXISTER : tant que Celtis n'a pas joué la migration, la lecture
+   échoue. On le note une fois dans la console et la pastille reste à zéro. Un écran ne tombe
+   pas parce qu'une table manque. */
+let journeesBouclees = [];
+async function chargerJourneesBouclees(){
+if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+const jour = (typeof aujourdhuiAbidjan === 'function') ? aujourdhuiAbidjan() : todayLocalISODate();
+try {
+  const [bouclees, envoyes] = await Promise.all([
+    supabaseClient.from('journees_bouclees').select('fournisseur_id, cliente_nom, nb_colis, nb_livres').eq('jour', jour).eq('en_cours', false),
+    supabaseClient.from('points_envoyes').select('fournisseur_id').eq('jour', jour),
+  ]);
+  if (bouclees.error) {
+    if (!window.__bouclePrevenu) { window.__bouclePrevenu = true; console.warn('Journées bouclées indisponibles (migration 2026-09-21-journee-bouclee.sql ?) :', bouclees.error.message || bouclees.error); }
+    journeesBouclees = []; return;
+  }
+  // Une lecture des points envoyés qui échoue ne doit pas faire disparaître la pastille :
+  // on préfère annoncer une cliente déjà réglée que de n'annoncer personne.
+  const dejaRegles = new Set((envoyes.error ? [] : (envoyes.data || [])).map(x => x.fournisseur_id));
+  journeesBouclees = (bouclees.data || []).filter(j => !dejaRegles.has(j.fournisseur_id));
+} catch (e) { console.warn('Journées bouclées :', e && e.message ? e.message : e); journeesBouclees = []; }
+}
+
 let bilanDuJour = null;
 async function chargerBilanDuJour(){
 if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
@@ -871,7 +905,7 @@ try {
    faut redessiner, sinon la ligne « la cliente signale » n'apparaîtrait qu'au rafraîchissement
    suivant — et personne ne saurait qu'il a manqué quelque chose. */
 const avantReclam = Object.keys(window.__reclamationsParColis || {}).join(',');
-await Promise.all([chargerReclamationsClientes(), chargerEssentielBase()]);
+await Promise.all([chargerReclamationsClientes(), chargerEssentielBase(), chargerJourneesBouclees()]);
 if (Object.keys(window.__reclamationsParColis || {}).join(',') !== avantReclam && typeof renderColis === 'function') renderColis();
 renderAujourdhui();
 }
@@ -1000,7 +1034,10 @@ const money = n => formatMontant(Number(n) || 0) || '0 FCFA';
 const pastille = (valeur, label, aller, teinte) => {
   const vide = (valeur === 0 || valeur === '0 FCFA');
   if (vide) return '';
-  return `<button type="button" class="ess-tuile ${teinte === 'rouge' ? 'est-rouge' : 'est-ambre'}" data-aller="${aller}" title="Ouvrir"><span class="n">${valeur}</span><span>${label}</span></button>`;
+  // Trois teintes depuis le 21/09/2026 : rouge (ça presse), ambre (à faire), vert (du travail
+  // MÛR — une journée bouclée n'est pas une anomalie, c'est un point prêt à être réglé).
+  const classe = teinte === 'rouge' ? 'est-rouge' : teinte === 'vert' ? 'est-vert' : 'est-ambre';
+  return `<button type="button" class="ess-tuile ${classe}" data-aller="${aller}" title="Ouvrir"><span class="n">${valeur}</span><span>${label}</span></button>`;
 };
 const ouRien = (html, mot) => html || `<span class="ess-rien">✓ ${mot}</span>`;
 /* « Comptes à valider » et « mots de passe à refaire » restaient visibles à zéro, en gris et en
@@ -1055,7 +1092,9 @@ set('aujourdhui-actions', ouRien(
   pastille(nbReset,   'mots de passe à refaire', 'reinitialisations', 'ambre') +
   pastille(nbCodes,    nbCodes > 1 ? 'codes à dicter' : 'code à dicter', 'reinitialisations', 'rouge') +
   pastille(nbSuppressions, nbSuppressions > 1 ? 'suppressions de compte demandées' : 'suppression de compte demandée', 'suppressions', 'ambre') +
-  pastille(nbFileBloquee, nbFileBloquee > 1 ? 'enregistrements bloqués hors réseau' : 'enregistrement bloqué hors réseau', 'file-bloquee', 'rouge'), 'Rien à faire'));
+  pastille(nbFileBloquee, nbFileBloquee > 1 ? 'enregistrements bloqués hors réseau' : 'enregistrement bloqué hors réseau', 'file-bloquee', 'rouge') +
+  // Verte, et c'est voulu : ce n'est pas une anomalie, c'est du travail mûr. (21/09/2026)
+  pastille(journeesBouclees.length, journeesBouclees.length > 1 ? 'clientes bouclées · points à régler' : 'cliente bouclée · son point est à régler', 'points-a-regler', 'vert'), 'Rien à faire'));
 set('aujourdhui-anomalies', ouRien(
   pastille(L.aRisque.length, 'à risque : promis aujourd\'hui', 'a-risque', 'ambre') +
   pastille(L.promesseDepassee.length, L.promesseDepassee.length > 1 ? 'promesses dépassées' : 'promesse dépassée', 'promesse-depassee', 'rouge') +
@@ -1198,6 +1237,16 @@ const listeColis = (statut, livreur, ids) => {
 };
 const L = window.__essentielListes || {};
 switch (cle) {
+  /* Les points à régler mènent là où ils se règlent : Suivi › Récapitulatif par client, sur
+     le jour d'aujourd'hui, déplié. C'est de là que part « Envoyer le PDF par WhatsApp ». */
+  case 'points-a-regler': {
+    onglet('suivi');
+    const champ = document.getElementById('recap-date');
+    if (champ && !champ.value) { champ.value = (typeof aujourdhuiAbidjan === 'function') ? aujourdhuiAbidjan() : todayLocalISODate(); champ.dispatchEvent(new Event('change', { bubbles: true })); }
+    if (typeof recapExpanded !== 'undefined' && !recapExpanded && typeof toggleRecap === 'function') toggleRecap();
+    defiler('recap-fournisseur');
+    break;
+  }
   case 'comptes-a-valider': onglet('comptes'); ouvrir('pending-content'); defiler('section-pending'); break;
   case 'reinitialisations': onglet('comptes'); ouvrir('reset-content'); defiler('section-reset'); break;
   case 'sans-livreur': listeColis('sans_livreur', '', L.sansLivreur); break;

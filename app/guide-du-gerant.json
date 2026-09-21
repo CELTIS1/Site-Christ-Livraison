@@ -251,6 +251,34 @@
    "version": "v224"
   },
   {
+   "id": "points-a-regler",
+   "espace": "bureau",
+   "titre": "Les points à régler, comptés sur l'écran",
+   "enBref": "Une pastille verte dans « L'essentiel » compte les clientes dont la journée est bouclée et dont le point n'est pas encore parti.",
+   "ou": "Équipe › Colis, dans « L'essentiel »",
+   "etapes": [
+    "« 3 clientes bouclées · points à régler » : leur journée est finie, plus aucun colis en cours.",
+    "Un appui ouvre Suivi › Récapitulatif par client, sur aujourd'hui, déjà déplié.",
+    "Une cliente dont le point est déjà envoyé n'est plus comptée."
+   ],
+   "aSavoir": "Si la journée d'une cliente change après avoir été bouclée (un non livré finalement livré), une notification le dit : « la journée a changé, le point est à revoir ».",
+   "version": "v225"
+  },
+  {
+   "id": "livreur-date-du-jour",
+   "espace": "livreur",
+   "titre": "La date du jour, posée et visible",
+   "enBref": "L'écran du livreur s'ouvre sur aujourd'hui, date affichée. « Livrés » et « Non livrés » montrent le détail de ce jour-là.",
+   "ou": "Livreur › Mes colis",
+   "etapes": [
+    "« Ma journée » garde tous les colis du jour, même livrés ou non livrés.",
+    "« Livrés » se range sur le jour de LIVRAISON : un colis reçu hier et livré ce matin y figure.",
+    "Le bouton à côté du calendrier bascule : « Toutes les dates », puis « Aujourd'hui »."
+   ],
+   "aSavoir": "Les colis reçus avant et encore en route ne disparaissent pas : ils sont repliés sous la liste, dans « ⏳ colis encore en route, reçus avant — à finir ».",
+   "version": "v225"
+  },
+  {
    "id": "a-risque",
    "espace": "bureau",
    "titre": "« À risque » avant le retard",

@@ -117,6 +117,42 @@ const surTel = await page.evaluate(() => {
 verifier('elle tient dans l\'écran, sans débordement', surTel && !surTel.debordement && surTel.largeur <= 390, JSON.stringify(surTel));
 verifier('elle n\'est pas grisée : un travail fait se voit, il ne se devine pas', surTel && Number(surTel.opacite) >= 0.95, JSON.stringify(surTel));
 
+titre('4 bis. « L\'essentiel » : les points à régler ont leur pastille');
+/* L'alerte « ✅ Journée bouclée » arrive sur le téléphone — mais une notification se lit une
+   fois et disparaît. Celui qui ouvre l'écran une heure plus tard doit pouvoir savoir combien
+   il en reste. Awa est bouclée et son point n'est pas parti ; Mariam est bouclée mais son
+   point est DÉJÀ envoyé : elle ne doit pas être comptée. */
+await page.setViewportSize({ width: 1440, height: 900 });
+await dodo(600);
+// La fausse base vit du côté de Node : on y écrit d'ici, puis on demande à l'écran de relire.
+const jourAuj = new Date().toISOString().slice(0, 10);
+monde.TABLES.journees_bouclees.push(
+  { fournisseur_id: CLIENTE1, jour: jourAuj, cliente_nom: 'Awa Boutique', nb_colis: 4, nb_livres: 3, en_cours: false },
+  { fournisseur_id: CLIENTE2, jour: jourAuj, cliente_nom: 'Mariam Mode', nb_colis: 2, nb_livres: 2, en_cours: false },
+);
+monde.TABLES.points_envoyes.push({ id: 'pe-1', fournisseur_id: CLIENTE2, jour: jourAuj, envoye_par: null, envoye_le: new Date().toISOString() });
+await page.evaluate(() => showEquipeTab('colis'));
+await page.evaluate(() => chargerJourneesBouclees().then(() => renderAujourdhui()));
+await dodo(1500);
+const tuilePoints = page.locator('#section-aujourdhui .ess-tuile[data-aller="points-a-regler"]');
+verifier('la pastille compte UNE cliente : celle dont le point n\'est pas encore parti',
+  (await tuilePoints.count()) === 1 && /1/.test(await texte(tuilePoints)) && /point/.test(await texte(tuilePoints)),
+  await texte(page.locator('#aujourdhui-actions')));
+verifier('… et Mariam, déjà réglée, n\'y est pas comptée', !/2 clientes/.test(await texte(tuilePoints)), await texte(tuilePoints));
+verifier('elle est VERTE : ce n\'est pas une anomalie, c\'est du travail mûr',
+  /est-vert/.test(await tuilePoints.getAttribute('class')), await tuilePoints.getAttribute('class'));
+await tuilePoints.click();
+await dodo(1500);
+const arrivee2 = await page.evaluate(() => ({
+  onglet: !document.getElementById('eqpanel-suivi').classList.contains('hidden'),
+  recapOuvert: !!document.querySelector('#recap-fournisseur.open'),
+  date: (document.getElementById('recap-date') || {}).value || '',
+}));
+verifier('un appui mène à Suivi, le récapitulatif par client déplié, sur aujourd\'hui',
+  arrivee2.onglet && arrivee2.recapOuvert && arrivee2.date === jourAuj, JSON.stringify(arrivee2));
+await page.setViewportSize({ width: 390, height: 844 });
+await dodo(600);
+
 titre('5. Le menu ☰ : la pastille dit enfin où aller');
 await page.evaluate(() => showEquipeTab('retours'));   // là où Celtis était quand il l'a vue
 await dodo(1500);

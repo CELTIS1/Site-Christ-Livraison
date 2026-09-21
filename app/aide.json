@@ -7,13 +7,14 @@
     {
      "id": "livreur-journee",
      "titre": "Ma journée : ce que je vois en ouvrant l'application",
-     "resume": "La journée s'ouvre sur aujourd'hui. Ce qui date d'avant est replié en dessous.",
+     "resume": "L'écran s'ouvre sur aujourd'hui, date affichée. Ce qui date d'avant est replié en dessous.",
      "etapes": [
       "En haut, « Ma journée » résume : combien pas encore pris, en route, livrés, non livrés, à rendre.",
-      "La liste montre les colis d'aujourd'hui : reçus aujourd'hui, ou qui ont bougé aujourd'hui.",
+      "La liste montre les colis d'aujourd'hui : reçus aujourd'hui, ou qui ont bougé aujourd'hui. Un colis marqué livré RESTE dans la liste.",
       "Sous la liste, « ⏳ colis encore en route, reçus avant » : ce qui vous reste d'hier ou d'avant. Dépliez pour les voir.",
+      "« Livrés » et « Non livrés » montrent le détail de la journée affichée. « Livrés » suit le jour où vous avez livré : un colis reçu hier et livré ce matin y figure.",
       "Un colis de la journée reporté à un autre jour est annoncé au-dessus de la liste : « Voir les colis du … » vous y emmène.",
-      "Pour revenir à un jour passé : le champ date. « Aujourd'hui » vous ramène."
+      "Le bouton à côté du calendrier bascule : « Toutes les dates » pour tout revoir, puis « Aujourd'hui » pour revenir."
      ],
      "astuce": "Si un colis « manque », regardez d'abord la ligne des reportés et le pli « encore en route » : il est presque toujours là."
     },

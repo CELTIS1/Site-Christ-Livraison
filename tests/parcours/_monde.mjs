@@ -103,6 +103,9 @@ export function nouveauMonde() {
     /* LES MARQUES « POINT ENVOYÉ » (18/09/2026, point 11.7). Vide au départ : c'est le parcours
        qui coche, et qui vérifie que la marque se voit ensuite partout. */
     points_envoyes: [],
+    /* Les journées de cliente bouclées (21/09/2026) : écrites en vrai par un déclencheur de la
+       base, posées ici à la main pour que l'écran du bureau ait de quoi compter. */
+    journees_bouclees: [],
     /* LE JOURNAL DES RETOURS (20/09/2026, point 19.1). Vide au départ : en base, ce sont des
        triggers qui l'écrivent ; ici, c'est effetsRetour() qui refait leur travail à chaque
        mise à jour d'un colis. */

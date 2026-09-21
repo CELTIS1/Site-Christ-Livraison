@@ -204,11 +204,21 @@ autrement, ou de ce qui attend un geste d'elle.**
 
 - **Journée bouclée** — table `public.journees_bouclees`, une ligne par cliente et par jour,
   écrite par le déclencheur `colis_journee_bouclee` quand plus aucun colis de ce jour-là n'est
-  « en attente », « récupéré » ou « en livraison ». Une seule fois (clé primaire) ; la ligne est
-  retirée si la journée se rouvre, pour pouvoir prévenir à nouveau ; les chiffres d'une ligne
-  existante sont corrigés par `on conflict do update`, ce qui ne renotifie pas puisque le
-  branchement écoute les INSERT. Ne s'écrit que pour aujourd'hui et hier : une correction faite
-  sur un colis du mois dernier ne doit pas faire sonner les téléphones.
+  « en attente », « récupéré » ou « en livraison ». Ne s'écrit que pour aujourd'hui et hier :
+  une correction faite sur un colis du mois dernier ne doit pas faire sonner les téléphones.
+
+  **DEUX MESSAGES, ET ILS NE DISENT PAS LA MÊME CHOSE.** Celtis, le 21/09 au soir : « il peut
+  arriver qu'on fasse une livrée et qu'on modifie après. Il y a cinq colis, un était non livré,
+  plus tard le client appelle pour qu'on le livre. » Le vrai risque n'est pas la seconde
+  notification : c'est **le point déjà réglé qui devient faux**.
+    - Première écriture (INSERT) → « ✅ Journée bouclée : … Son point peut être réglé. »
+    - Écriture suivante dont les chiffres bougent (UPDATE) → « ♻️ La journée de … a changé —
+      5 livrés au lieu de 4. Si son point est déjà réglé, il est à revoir. »
+    - Journée **rouverte** (`en_cours = true`) : silence. La ligne n'est pas supprimée — la
+      supprimer ferait repartir un « premier bouclage » alors que le bureau a peut-être déjà
+      réglé le point. Elle se marque « en cours », et reparle quand elle se referme.
+    - Réécriture qui ne change aucun chiffre : silence.
+  C'est pourquoi le branchement des journées écoute **INSERT et UPDATE**, et non INSERT seul.
 - **Point du livreur** — table `public.annonces_remise`, qui reçoit une ligne au moment où le
   livreur valide sa remise sur son téléphone. Branchement sur INSERT.
 
@@ -221,7 +231,7 @@ autrement, ou de ce qui attend un geste d'elle.**
 | `envoyer_push_reclamations` | `reclamations_clientes` | INSERT, UPDATE |
 | `envoyer_push_passages` | `demandes_de_passage` | INSERT, UPDATE |
 | `envoyer_push_reversements` | `reversements_clientes` | INSERT |
-| `envoyer_push_journees` | `journees_bouclees` | INSERT |
+| `envoyer_push_journees` | `journees_bouclees` | INSERT, UPDATE |
 | `envoyer_push_remises` | `annonces_remise` | INSERT |
 
 Les trois derniers du tableau, plus les deux du 20/09, sont posés par le script

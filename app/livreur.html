@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260921notifs">
+<link rel="stylesheet" href="style.css?v=20260921journee">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260921notifs"></script>
-<script src="splash.js?v=20260921notifs"></script>
+<script src="theme.js?v=20260921journee"></script>
+<script src="splash.js?v=20260921journee"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -1039,27 +1039,27 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260921notifs"></script>
-<script src="numero-international.js?v=20260921notifs"></script>
-<script src="voir-un-compte.js?v=20260921notifs"></script>
-<script src="lib/bibliotheques.js?v=20260921notifs"></script>
-<script src="lib/retours.js?v=20260921notifs"></script>
-<script src="lib/reclamations.js?v=20260921notifs"></script>
-<script src="lib/communes-et-tarifs.js?v=20260921notifs"></script>
-<script src="lib/argent.js?v=20260921notifs"></script>
-<script src="lib/releve-cliente.js?v=20260921notifs"></script>
-<script src="lib/papier-a-en-tete.js?v=20260921notifs"></script>
-<script src="lib/briques-argent.js?v=20260921notifs"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260921notifs"></script>
-<script src="lib/annonce-de-remise.js?v=20260921notifs"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260921notifs"></script>
-<script src="lib/primes.js?v=20260921notifs"></script>
-<script src="lib/doublons.js?v=20260921notifs"></script>
-<script src="config.js?v=20260921notifs"></script>
-<script src="etiquettes-et-scan.js?v=20260921notifs"></script>
+<script src="clt-common.js?v=20260921journee"></script>
+<script src="numero-international.js?v=20260921journee"></script>
+<script src="voir-un-compte.js?v=20260921journee"></script>
+<script src="lib/bibliotheques.js?v=20260921journee"></script>
+<script src="lib/retours.js?v=20260921journee"></script>
+<script src="lib/reclamations.js?v=20260921journee"></script>
+<script src="lib/communes-et-tarifs.js?v=20260921journee"></script>
+<script src="lib/argent.js?v=20260921journee"></script>
+<script src="lib/releve-cliente.js?v=20260921journee"></script>
+<script src="lib/papier-a-en-tete.js?v=20260921journee"></script>
+<script src="lib/briques-argent.js?v=20260921journee"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260921journee"></script>
+<script src="lib/annonce-de-remise.js?v=20260921journee"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260921journee"></script>
+<script src="lib/primes.js?v=20260921journee"></script>
+<script src="lib/doublons.js?v=20260921journee"></script>
+<script src="config.js?v=20260921journee"></script>
+<script src="etiquettes-et-scan.js?v=20260921journee"></script>
 <!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
-<script src="ordre-de-livraison.js?v=20260921notifs"></script>
-<script src="biometric-lock.js?v=20260921notifs"></script>
+<script src="ordre-de-livraison.js?v=20260921journee"></script>
+<script src="biometric-lock.js?v=20260921journee"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1792,8 +1792,25 @@
     return desc.includes(t) || dest.includes(t) || fourn.includes(t) || numero.includes(t) || tel.includes(t);
   }
 
-  function matchesDate(c, dateStr){
+  /* CHAQUE ONGLET SE RANGE SUR SON PROPRE ÉVÉNEMENT. (21/09/2026)
+
+     Jusqu'ici, « Livrés » au 21 septembre voulait dire « colis REÇUS le 21 et livrés » : un
+     colis reçu hier et livré ce matin n'y figurait pas, alors que c'est du travail
+     d'aujourd'hui — et le livreur, lui, compte sa journée en livraisons faites. Le rangement
+     suit donc le statut regardé : livre_at pour « Livrés », non_livre_at pour « Non livrés ».
+     Partout ailleurs (« Tous », une recherche), c'est le jour de réception, comme avant :
+     c'est celui-là qui découpe l'argent du soir, et on n'y touche pas.
+     jourEvenementColis vient de config.js : même horodatage, même fuseau, pour les trois écrans. */
+  const DATE_DE_L_ONGLET = { livre: 'livre', non_livre: 'non_livre', retour: 'retour', recupere: 'recupere' };
+  function matchesDate(c, dateStr, statut){
     if (!dateStr) return true;
+    const evenement = DATE_DE_L_ONGLET[statut];
+    if (evenement && typeof jourEvenementColis === 'function') {
+      const j = jourEvenementColis(c, evenement);
+      // Un colis sans horodatage pour ce statut (ancien, ou saisi hors réseau) retombe sur son
+      // jour de réception : mieux vaut le montrer un jour approximatif que le perdre.
+      if (j) return j === dateStr;
+    }
     return jourDuColis(c) === dateStr;
   }
 
@@ -1863,7 +1880,11 @@
     // derniers sur un téléphone. On ne la réécrit donc que si le filtre actif a bougé. (25/08/2026)
     // FILTER_LABELS_MES : « À faire » en première pastille (05/09/2026). Cette rangée ne sert
     // qu'à Mes colis.
-    const filtreActif = !!(searchMes || filtreDateMes);
+    /* LE POINT SUR « FILTRER » VEUT DIRE « CE N'EST PAS LA VUE NORMALE ». (21/09/2026)
+       Depuis que la date du jour est posée d'office, la tester telle quelle allumerait le point
+       en permanence — et un signal toujours allumé ne signale plus rien. Aujourd'hui EST la vue
+       normale : seuls une recherche, ou une AUTRE journée, méritent le point. */
+    const filtreActif = !!(searchMes || (filtreDateMes && filtreDateMes !== todayLocalISODate()));
     const nbARendre = (currentUser ? colisARendre(allColis.filter(c => c.livreur_id === currentUser.id)) : []).length;
     if (!cltPoserHTML(box, Object.keys(FILTER_LABELS_MES).map(key =>
       `<div class="filter-chip ${activeFilter===key?'active':''}${key === FILTRE_A_RENDRE && nbARendre ? ' filter-chip--alerte' : ''}" data-filter="${key}">${FILTER_LABELS_MES[key]}${key === FILTRE_A_RENDRE && nbARendre ? ` <span class="filter-chip-nb">${nbARendre}</span>` : ''}</div>`
@@ -3023,7 +3044,7 @@
       : activeFilterMes === FILTRE_A_RENDRE ? colisARendre(mine)
       : mine.filter(c => c.statut === activeFilterMes);
     // « À rendre » ignore le calendrier : un retour d'il y a trois jours est justement celui qu'on cherche.
-    filtered = filtered.filter(c => matchesSearch(c, searchMes) && (activeFilterMes === FILTRE_A_FAIRE || activeFilterMes === FILTRE_A_RENDRE || matchesDate(c, filtreDateMes)));
+    filtered = filtered.filter(c => matchesSearch(c, searchMes) && (activeFilterMes === FILTRE_A_FAIRE || activeFilterMes === FILTRE_A_RENDRE || matchesDate(c, filtreDateMes, activeFilterMes)));
     // Un colis coché puis supprimé, réassigné à quelqu'un d'autre ou passé hors des critères ne
     // doit plus compter dans la sélection : sinon le bouton annoncerait un nombre plus grand que
     // ce qu'il traiterait vraiment. On recale donc la sélection sur la liste réelle à chaque
@@ -4292,6 +4313,13 @@
   // « Par cliente » ou « Par trajet » : le téléphone s'en souvient. (20/09/2026)
   let vueMes = (function () { try { return localStorage.getItem('clt_livreur_vue') === 'trajet' ? 'trajet' : 'cliente'; } catch (_e) { return 'cliente'; } })();
 
+  /* Le mot sur le bouton dit où il MÈNE, jamais où l'on est : « Toutes les dates » quand une
+     journée est posée, « Aujourd'hui » quand on regarde tout l'historique. (21/09/2026) */
+  function majBoutonDatesMes(){
+    const b = document.getElementById('btn-toutes-dates-mes');
+    if (b) b.textContent = filtreDateMes ? 'Toutes les dates' : 'Aujourd\'hui';
+  }
+
   function poserLeJourDeLEcran(jour){
     const j = jour || todayLocalISODate();
     argentJourDate = j;
@@ -5096,22 +5124,50 @@
       searchMesTimer = setTimeout(() => { searchMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); }, 350);
     });
 
-    // Toutes les dates à l'ouverture (Celtis, 05/09/2026) : c'est le filtre « À faire » qui
-    // fait le tri, et un colis de lundi encore en route doit se voir jeudi sans rien toucher.
-    filtreDateMes = '';
+    /* LA DATE DU JOUR, POSÉE ET VISIBLE. (21/09/2026)
+
+       Celtis : « il y a quand même pas mal de confusion qui font que le livreur se trompe.
+       La date du jour est sélectionnée partout, quel que soit l'endroit, quel que soit
+       l'onglet, quel que soit le bouton. »
+
+       Jusqu'ici le champ s'ouvrait VIDE (décision du 05/09), et cela produisait deux défauts
+       opposés sur le même écran :
+         • sur « Ma journée », le contenu était bien celui du jour — mais rien ne le disait. Le
+           livreur ne savait pas quelle journée il regardait.
+         • sur « Livrés » et « Non livrés », une date vide veut dire TOUT L'HISTORIQUE. Il
+           touchait « Livrés » et voyait des colis d'il y a trois semaines mêlés à ceux du
+           matin. C'est là que naissait la confusion, et c'est ce qu'on répare.
+
+       Ce qui NE change pas : les colis encore en route d'avant ne disparaissent pas. Ils sont
+       comptés et repliés sous la liste (restesEnRoute), comme depuis le 09/09 — une
+       marchandise en route ne s'efface pas parce qu'on a posé une date. Et le bouton à côté
+       du calendrier ouvre tout l'historique en un appui. */
+    filtreDateMes = todayLocalISODate();
     document.getElementById('filtre-date-mes').value = filtreDateMes;
+    majBoutonDatesMes();
     // Le calendrier de la liste commande la même journée que celui de la carte (point 9.4).
     // Le vider, c'est « toutes les dates » : la carte, elle, garde le jour d'aujourd'hui —
     // elle fait le compte d'UNE journée, une liste peut en couvrir plusieurs.
     document.getElementById('filtre-date-mes').addEventListener('change', (e) => {
-      if (e.target.value) { poserLeJourDeLEcran(e.target.value); return; }
+      if (e.target.value) { poserLeJourDeLEcran(e.target.value); majBoutonDatesMes(); return; }
       filtreDateMes = '';
+      majBoutonDatesMes();
       remettreTrancheMesAZero(); viderSelectionMes();
       renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis();
     });
+    // Le bouton bascule : d'une date posée vers tout l'historique, et de l'historique vers
+    // aujourd'hui. Un bouton qui ne fait qu'aller dans un sens laisse enfermé. (21/09/2026)
     document.getElementById('btn-toutes-dates-mes').addEventListener('click', () => {
-      filtreDateMes = '';
-      document.getElementById('filtre-date-mes').value = '';
+      filtreDateMes = filtreDateMes ? '' : todayLocalISODate();
+      document.getElementById('filtre-date-mes').value = filtreDateMes;
+      majBoutonDatesMes();
+      /* Le bloc des filtres se referme quand plus aucun filtre n'est posé — c'était sans
+         conséquence tant que la date s'ouvrait vide. Maintenant qu'elle porte le jour,
+         « Toutes les dates » la vide… et emportait le bouton avec elle : on se retrouvait
+         enfermé dans l'historique, sans le chemin du retour. On garde donc le bloc ouvert
+         dès qu'on a touché à ce bouton. (21/09/2026) */
+      mesFiltresOuverts = true;
+      appliquerFiltresAvances();
       remettreTrancheMesAZero();
       renderFilters('filters-mes', activeFilterMes, selectFilterMes);
       viderSelectionMes();
@@ -5164,7 +5220,7 @@
     // « Tous » une seule fois pour qu'il apparaisse. (10/09/2026, reste utile du point 2.2)
     cltFocusColisFromUrl({ onMiss: () => {
       if (activeFilterMes === 'tous' && !filtreDateMes) return;
-      activeFilterMes = 'tous'; filtreDateMes = ''; searchMes = '';
+      activeFilterMes = 'tous'; filtreDateMes = ''; searchMes = ''; majBoutonDatesMes();
       const champ = document.getElementById('search-mes'); if (champ) champ.value = '';
       const date = document.getElementById('filtre-date-mes'); if (date) date.value = '';
       remettreTrancheMesAZero(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis();

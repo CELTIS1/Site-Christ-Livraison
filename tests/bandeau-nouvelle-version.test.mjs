@@ -1195,10 +1195,22 @@ verifier(
    une demande de passage. La cliente, elle, gagne trois choses : « en livraison », le MOTIF
    sur un échec (elle lisait « n'a pas pu être livré » sans savoir pourquoi), et « un colis
    vous a été rendu » — le seul moment où l'on attend un geste d'elle. En base : table
-   journees_bouclees et son déclencheur, éprouvés dans un vrai Postgres sur cinq cas. Étiquette 20260921notifs. */
+   journees_bouclees et son déclencheur, éprouvés dans un vrai Postgres sur cinq cas. Étiquette 20260921notifs.
+   v225, le 21/09/2026 — La date du jour, et les points à régler. (1) Chez le LIVREUR, le champ
+   de date s'ouvrait vide : « Ma journée » montrait le bon jour sans le dire, et « Livrés » ou
+   « Non livrés », avec une date vide, montraient TOUT L'HISTORIQUE — des colis d'il y a trois
+   semaines mêlés à ceux du matin. La date du jour est posée et visible ; chaque onglet se range
+   désormais sur SON événement (livre_at pour « Livrés »), si bien qu'un colis reçu hier et livré
+   ce matin compte enfin dans la journée ; le bouton bascule entre « Toutes les dates » et
+   « Aujourd'hui », et le bloc des filtres ne se referme plus en emportant le chemin du retour.
+   (2) Au BUREAU, une pastille verte dans « L'essentiel » compte les clientes bouclées dont le
+   point n'est pas parti, et mène à Suivi › Récapitulatif par client, déplié sur le jour.
+   (3) La journée d'une cliente qui CHANGE après avoir été bouclée le dit maintenant autrement :
+   « ♻️ la journée a changé, le point est à revoir » — question de Celtis, et vrai risque, car un
+   point déjà réglé devenait faux en silence. Étiquette 20260921journee. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v224'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v225'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
