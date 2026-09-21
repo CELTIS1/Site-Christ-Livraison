@@ -1028,10 +1028,20 @@ verifier(
    migration : la politique d'insertion du coursier suffit. (2) Après une déclaration Mobile
    Money, le formulaire s'efface et un bouton ouvre WhatsApp vers la ligne de CLT
    (CLT_CONTACT.whatsapp), message rédigé par la règle (montant, opérateur, référence) ; il joint
-   sa capture. Banc (26), parcours 24 (15). Étiquette 20260921especes. */
+   sa capture. Banc (26), parcours 24 (15). Étiquette 20260921especes.
+   v211, le 21/09/2026 — les numéros Mobile Money de CLT. Celtis : Wave et Orange 07 89 81 81 40,
+   MTN 05 46 81 86 40, Moov plus tard ; « il faut que le livreur ne puisse pas modifier, pour éviter
+   les fraudes ». Constat : le coursier ne pouvait déjà que LIRE express_config (RLS), mais toute
+   l'équipe « opérations » pouvait écrire ces numéros par l'API. Verrou en base (trigger : admin
+   valide seul, ou éditeur SQL ; essayé dans un vrai Postgres) et numéros posés par le même fichier
+   _sql-prive/2026-09-21-numeros-mobile-money-verrouilles.sql, à jouer par Celtis. À l'écran : le
+   gérant confirme tout changement, numéro relu en clair ; champs grisés hors gérant ; chez le
+   coursier le numéro se lit « 07 89 81 81 40 », bouton « Copier », rien à modifier. Constat au
+   passage : l'onglet Express du bureau n'est visible que du gérant — c'est lui qui valide les
+   recharges. Banc (31), parcours 24 (20). Étiquette 20260921numeros. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v210'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v211'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

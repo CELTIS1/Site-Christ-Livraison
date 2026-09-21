@@ -76,5 +76,18 @@
       + ', référence ' + (o.reference || '—') + '. Je joins la capture du reçu.';
   }
 
-  window.CLTRecharges = { ESPECES: ESPECES, referenceRequise: referenceRequise, messageDuRecu: messageDuRecu, LONGUEUR_MIN: LONGUEUR_MIN, normaliserReference: normaliserReference, verifierReference: verifierReference, doublons: doublons, controleAvantValidation: controleAvantValidation };
+  /* Le numéro de CLT tel qu'on le lit : « 07 89 81 81 40 ». Ce qu'on copie, ce sont les chiffres seuls. */
+  function chiffresDuNumero(s) { return String(s === null || s === undefined ? '' : s).replace(/\D/g, ''); }
+  function afficherNumero(s) {
+    const c = chiffresDuNumero(s);
+    return c.length === 10 ? c.replace(/(\d{2})(?=\d)/g, '$1 ') : String(s || '').trim();
+  }
+  /* Les numéros Mobile Money de CLT ne se modifient que par le gérant (21/09/2026) : un numéro de
+     paiement remplacé, et les recharges partent ailleurs. Le verrou est en base ; ceci est pour l'écran. */
+  const CLES_NUMEROS = ['momo_wave', 'momo_orange', 'momo_mtn', 'momo_moov'];
+  function numerosModifies(avant, apres) {
+    return CLES_NUMEROS.filter(function (k) { return chiffresDuNumero((avant || {})[k]) !== chiffresDuNumero((apres || {})[k]); });
+  }
+
+  window.CLTRecharges = { chiffresDuNumero: chiffresDuNumero, afficherNumero: afficherNumero, CLES_NUMEROS: CLES_NUMEROS, numerosModifies: numerosModifies, ESPECES: ESPECES, referenceRequise: referenceRequise, messageDuRecu: messageDuRecu, LONGUEUR_MIN: LONGUEUR_MIN, normaliserReference: normaliserReference, verifierReference: verifierReference, doublons: doublons, controleAvantValidation: controleAvantValidation };
 })();

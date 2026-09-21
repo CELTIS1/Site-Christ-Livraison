@@ -15,9 +15,11 @@ import { ouvrirNavigateur, verifier, titre, dodo, bilan } from './_navigateur.mj
 import { ADMIN, nouveauMonde, iso } from './_monde.mjs';
 
 const COURSIER = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1';
+const EQUIPIER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa8';
 const monde = nouveauMonde();
+monde.PROFILS.push({ id: EQUIPIER, full_name: 'Aya Bureau', role: 'equipe', phone: '2250700000008', status: 'valide', avatar_url: null, company_name: null, acces_operations: true });
 monde.PROFILS.push({ id: COURSIER, full_name: 'Sery Coursier', role: 'coursier_express', phone: '2250700000031', status: 'valide', company_name: null, avatar_url: null, disponible_express: true, suppression_demandee_at: null, geoloc_consent_at: iso(-3) });
-Object.assign(monde.TABLES.express_config[0], { solde_minimum: 500, momo_wave: '0779604761', momo_orange: '0779604761', momo_mtn: null, momo_moov: null });
+Object.assign(monde.TABLES.express_config[0], { solde_minimum: 500, momo_wave: '0789818140', momo_orange: '0789818140', momo_mtn: '0546818640', momo_moov: null });
 monde.TABLES.express_wallets = [{ coursier_id: COURSIER, solde: 1000 }];
 monde.TABLES.express_recharges = [
   { id: 'r-ancienne', coursier_id: COURSIER, montant: 2000, operateur: 'wave', reference: 'T-AAA 111222', status: 'validee', created_at: iso(-2, 10) },
@@ -36,6 +38,7 @@ await page.evaluate(() => document.getElementById('btn-open-recharge').click());
 await dodo(500);
 verifier('la fenêtre de recharge est ouverte, et la référence n\'est plus « facultative »', await page.locator('#form-recharge').isVisible() && !/facultatif/i.test(await texte(page.locator('#recharge-reference-field'))) && /prouve votre paiement/.test(await texte(page.locator('#recharge-reference-field'))));
 await page.locator('#momo-grid .momo-choice[data-op="orange"]').click();
+verifier('le numéro de CLT se lit « 07 89 81 81 40 », avec « Copier » — et rien à modifier', /07 89 81 81 40/.test(await texte(page.locator('#momo-number-box'))) && (await page.locator('#momo-number-box .momo-copier').getAttribute('data-numero')) === '0789818140' && (await page.locator('#momo-number-box input, #momo-number-box [contenteditable]').count()) === 0, await texte(page.locator('#momo-number-box')));
 await page.locator('#recharge-montant').fill('3000');
 await page.locator('#btn-submit-recharge').click();
 await dodo(500);
@@ -82,7 +85,7 @@ await dodo(1500);
 await page.evaluate(() => document.getElementById('btn-open-recharge').click());
 await dodo(500);
 const choix = page.locator('#momo-grid .momo-choice');
-verifier('« Espèces au bureau » est le dernier choix, après Wave et Orange', (await choix.count()) === 3 && (await choix.last().getAttribute('data-op')) === 'especes' && /Espèces au bureau/.test(await texte(choix.last())));
+verifier('« Espèces au bureau » est le dernier choix, après Wave, Orange et MTN (Moov, vide, n\'apparaît pas)', (await choix.count()) === 4 && (await choix.last().getAttribute('data-op')) === 'especes' && /Espèces au bureau/.test(await texte(choix.last())));
 await choix.last().click();
 await dodo(300);
 verifier('pas de référence à saisir ; la consigne dit de remettre les billets au bureau', !(await page.locator('#recharge-reference-field').isVisible()) && /billets/.test(await texte(page.locator('#momo-number-box'))) && /espèces/.test(await texte(page.locator('#btn-submit-recharge'))));
@@ -101,6 +104,24 @@ verifier('au bureau : la ligne dit « Espèces au bureau », sans avertissement 
 await ligne(depot.id).locator('.btn-valider-recharge').click();
 await dodo(500);
 verifier('la question est « Espèces bien reçues en main ? »', /Espèces bien reçues en main/.test(await texte(page.locator('#confirm-modal-title'))), await texte(page.locator('#confirm-modal-title')));
+await page.locator('#confirm-modal-cancel, #confirm-modal .btn-outline').first().click().catch(() => {});
+await dodo(400);
+
+titre('4. Les numéros de paiement : le gérant seul');
+const champ = (cle) => page.locator(`#express-reglages-form [name="${cle}"]`);
+verifier('le gérant peut écrire dans les numéros', await champ('momo_wave').isEditable());
+await champ('momo_moov').fill('0101010101');
+await page.locator('#btn-express-reglages-enregistrer').click();
+await dodo(500);
+verifier('… mais un changement se confirme, numéro relu en clair', /numéro de paiement/.test(await texte(page.locator('#confirm-modal-title'))) && /01 01 01 01 01/.test(await texte(page.locator('#confirm-modal-detail'))), await texte(page.locator('#confirm-modal-detail')));
+await page.locator('#confirm-modal-cancel, #confirm-modal .btn-outline').first().click().catch(() => {});
+await dodo(400);
+verifier('annulé : rien n\'est écrit', !monde.TABLES.express_config[0].momo_moov);
+await N.ouvrirConnecte('equipe.html', EQUIPIER);
+await dodo(1500);
+// Aujourd'hui tout l'onglet Express est réservé au gérant ; si on l'ouvre un jour à l'équipe, les
+// numéros y seront grisés (09-express…, « verrou ») et la base les refusera (trigger du 21/09).
+verifier('une personne de l\'équipe ne voit ni l\'onglet Express ni ses réglages', !(await page.locator('#eqtab-btn-express').isVisible().catch(() => false)) && !(await page.locator('#section-express-reglages').isVisible().catch(() => false)));
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 
 await N.fermer();

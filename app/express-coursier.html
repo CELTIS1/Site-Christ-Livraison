@@ -17,10 +17,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260921especes">
+<link rel="stylesheet" href="style.css?v=20260921numeros">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260921especes"></script>
-<script src="splash.js?v=20260921especes"></script>
+<script src="theme.js?v=20260921numeros"></script>
+<script src="splash.js?v=20260921numeros"></script>
 <style>
   .topbar{ background:#0D9488; }
   .topbar .brand .logo-mark{ background:#0b6e64; }
@@ -111,6 +111,10 @@
   .momo-number-box strong{ font-size:16px; letter-spacing:0.5px; }
   .momo-choice--especes{ flex:1 1 100%; display:flex; flex-direction:row; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:8px 12px; }
   .momo-choice--especes .momo-emoji{ display:inline; margin:0; font-size:20px; }
+  .momo-numero{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:4px; }
+  .momo-numero strong{ white-space:nowrap; }
+  .momo-copier{ min-height:40px; flex:0 0 auto; }
+  .momo-numero-note{ display:block; margin-top:6px; font-size:12px; opacity:.85; }
   .recharge-recu-wa{ display:flex; justify-content:center; text-align:center; width:100%; min-height:44px; align-items:center; margin-top:10px; text-decoration:none; }
   .recharge-recu-note{ display:block; margin-top:6px; font-size:12px; font-weight:500; opacity:.85; }
   .recharge-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--border,#eee); font-size:13px; }
@@ -633,10 +637,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260921especes"></script>
-<script src="express-config.js?v=20260921especes"></script>
-<script src="recharges-express.js?v=20260921especes"></script>
-<script src="biometric-lock.js?v=20260921especes"></script>
+<script src="clt-common.js?v=20260921numeros"></script>
+<script src="express-config.js?v=20260921numeros"></script>
+<script src="recharges-express.js?v=20260921numeros"></script>
+<script src="biometric-lock.js?v=20260921numeros"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1318,7 +1322,9 @@
       refField.classList.add('hidden');
       btn.textContent = 'Payer avec Wave';
     } else {
-      numBox.innerHTML = `Envoyez le montant sur ce numéro <strong>${momoOperateurLabel(selectedOperateur)}</strong> :<br><strong>${escapeHTML(momoNumbers[selectedOperateur] || '')}</strong>`;
+      const numero = momoNumbers[selectedOperateur] || '';
+      const lisible = window.CLTRecharges ? CLTRecharges.afficherNumero(numero) : numero;
+      numBox.innerHTML = `Envoyez le montant sur ce numéro <strong>${momoOperateurLabel(selectedOperateur)}</strong> de CLT :<br><span class="momo-numero"><strong>${escapeHTML(lisible)}</strong>${numero ? `<button type="button" class="btn btn-sm btn-outline momo-copier" data-numero="${escapeHTML(window.CLTRecharges ? CLTRecharges.chiffresDuNumero(numero) : numero)}">Copier</button>` : ''}</span><span class="momo-numero-note">N'envoyez à aucun autre numéro : seul celui-ci est celui de CLT.</span>`;
       numBox.classList.toggle('hidden', !selectedOperateur);
       refField.classList.remove('hidden');
       btn.textContent = 'Déclarer mon envoi';
@@ -1602,6 +1608,15 @@
   document.getElementById('recharge-modal-close').addEventListener('click', closeRechargeModal);
   document.getElementById('recharge-modal-overlay').addEventListener('click', (e) => {
     if (e.target === document.getElementById('recharge-modal-overlay')) closeRechargeModal();
+  });
+
+  // « Copier » le numéro de CLT : moins de fautes de frappe au moment d'envoyer l'argent.
+  document.getElementById('momo-number-box').addEventListener('click', async (e) => {
+    const b = e.target.closest('.momo-copier');
+    if (!b) return;
+    try { await navigator.clipboard.writeText(b.dataset.numero); b.textContent = 'Copié ✓'; }
+    catch (err) { b.textContent = b.dataset.numero; }
+    setTimeout(() => { b.textContent = 'Copier'; }, 2000);
   });
 
   document.getElementById('form-recharge').addEventListener('submit', async (e) => {

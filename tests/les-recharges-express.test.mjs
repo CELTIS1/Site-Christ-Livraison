@@ -50,6 +50,11 @@ verifier('en Mobile Money, la question reste « Argent bien reçu sur le compte 
 verifier('deux dépôts en espèces ne sont jamais des « doublons de référence »', R.doublons([esp, Object.assign({}, esp, { id: 'h' })]).g === undefined);
 verifier('le message du reçu dit qui, combien, par où, quelle référence', R.messageDuRecu({ nom: 'Sery', montant: 3000, operateurLabel: 'Orange Money', reference: 'OM-123456' }) === 'Bonjour CLT Express, ici Sery. Je viens de recharger mon solde : 3 000 FCFA par Orange Money, référence OM-123456. Je joins la capture du reçu.', R.messageDuRecu({ nom: 'Sery', montant: 3000, operateurLabel: 'Orange Money', reference: 'OM-123456' }));
 
+console.log('\n3 ter. Les numéros Mobile Money de CLT : lisibles, copiables, et réservés au gérant');
+verifier('« 0789818140 » se lit « 07 89 81 81 40 » ; ce qu\'on copie, ce sont les chiffres', R.afficherNumero('0789818140') === '07 89 81 81 40' && R.afficherNumero(' 05-46 81.86 40 ') === '05 46 81 86 40' && R.chiffresDuNumero('07 89 81 81 40') === '0789818140');
+verifier('un numéro qui n\'a pas dix chiffres est rendu tel quel, jamais inventé', R.afficherNumero('+225 07 89 81 81 40') === '+225 07 89 81 81 40' && R.afficherNumero(null) === '');
+verifier('on sait dire quels numéros changent — un espace en plus n\'est pas un changement', JSON.stringify(R.numerosModifies({ momo_wave: '0789818140', momo_mtn: null }, { momo_wave: '07 89 81 81 40', momo_mtn: '0546818640', momo_moov: null })) === '["momo_mtn"]');
+
 console.log('\n4. La frontière et le branchement');
 const nu = source.replace(/\/\*[\s\S]*?\*\//g, '');
 verifier('pur : ni DOM, ni base', !/document\.|supabaseClient|fetch\(/.test(nu));
@@ -65,6 +70,9 @@ verifier('le coursier : « Espèces au bureau » est le DERNIER choix de la gril
 verifier('le coursier : le reçu part vers la ligne WhatsApp de CLT (CLT_CONTACT), message rédigé par la règle', /CLT_CONTACT\.whatsapp/.test(coursier) && /CLTRecharges\.messageDuRecu\(/.test(coursier) && /Envoyer le reçu à CLT sur WhatsApp/.test(coursier));
 verifier('les deux écrans nomment « Espèces au bureau »', /especes: 'Espèces au bureau'/.test(ecran) && /if \(key === "especes"\) return "Espèces au bureau";/.test(lire('app/express-config.js')));
 verifier('le bureau ne réclame pas de référence à un dépôt en espèces, et pose la question de la règle', /CLTRecharges\.referenceRequise\(r\.operateur\)/.test(ecran) && /title: controle\.titre \|\|/.test(ecran));
+
+verifier('Réglages : pour l\'équipe les numéros sont grisés et ne partent PAS dans l\'écriture ; le gérant confirme tout changement', /const verrou = type === 'tel' && !isAdmin;/.test(ecran) && /if \(type === 'tel'\) \{ if \(isAdmin\) patch\[cle\] = raw \|\| null; \}/.test(ecran) && /Changer un numéro de paiement de CLT \?/.test(ecran));
+verifier('le coursier lit le numéro, le copie, et ne peut rien y écrire (aucun champ, aucune écriture vers express_config)', /momo-copier/.test(coursier) && /CLTRecharges\.afficherNumero\(numero\)/.test(coursier) && !/from\('express_config'\)\s*\.(update|insert|upsert|delete)/.test(coursier) && /seul celui-ci est celui de CLT/.test(coursier));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);

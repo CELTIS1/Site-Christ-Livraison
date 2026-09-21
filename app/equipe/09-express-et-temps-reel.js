@@ -793,16 +793,24 @@ async function chargerReglagesExpress() {
   if (error || !data) { box.innerHTML = '<div class="empty-state">Réglages indisponibles' + (error ? ' : ' + escapeHTML(friendlyErrorMessage(error.message)) : '') + '</div>'; return; }
   box.innerHTML = REGLAGES_EXPRESS.map(([cle, libelle, type]) => {
     const v = data[cle] == null ? '' : (type === 'pct' ? Math.round(Number(data[cle]) * 100) : data[cle]);
-    return `<label class="rx-champ"><span>${escapeHTML(libelle)}</span><input type="${type === 'tel' ? 'tel' : 'number'}" name="${cle}" value="${escapeHTML(String(v))}" ${type === 'tel' ? 'placeholder="07 00 00 00 00"' : 'min="0" step="any"'}></label>`;
-  }).join('') + `<div class="rx-pied"><button type="button" class="btn btn-sm" id="btn-express-reglages-enregistrer">Enregistrer les réglages</button><span class="rx-note">${data.momo_wave || data.momo_orange || data.momo_mtn || data.momo_moov ? '' : '⚠️ Aucun numéro Mobile Money : les coursiers ne peuvent pas recharger.'}</span></div>`;
+    // Les numéros de paiement : le gérant seul (21/09/2026). Pour l'équipe, ils se lisent, grisés.
+    const verrou = type === 'tel' && !isAdmin;
+    return `<label class="rx-champ${verrou ? ' rx-champ--verrou' : ''}"><span>${escapeHTML(libelle)}${verrou ? ' 🔒' : ''}</span><input type="${type === 'tel' ? 'tel' : 'number'}" name="${cle}" value="${escapeHTML(String(v))}" ${type === 'tel' ? 'placeholder="07 00 00 00 00"' : 'min="0" step="any"'}${verrou ? ' readonly disabled title="Seul le gérant modifie les numéros Mobile Money de CLT."' : ''}></label>`;
+  }).join('') + `<div class="rx-pied"><button type="button" class="btn btn-sm" id="btn-express-reglages-enregistrer">Enregistrer les réglages</button><span class="rx-note">${data.momo_wave || data.momo_orange || data.momo_mtn || data.momo_moov ? '' : '⚠️ Aucun numéro Mobile Money : les coursiers ne peuvent pas recharger.'}${isAdmin ? '' : ' 🔒 Les numéros Mobile Money ne se modifient que par le gérant.'}</span></div>`;
   document.getElementById('btn-express-reglages-enregistrer').addEventListener('click', async () => {
     const patch = {};
     REGLAGES_EXPRESS.forEach(([cle, , type]) => {
       const raw = (box.querySelector(`[name="${cle}"]`)?.value || '').trim();
-      if (type === 'tel') patch[cle] = raw || null;
+      if (type === 'tel') { if (isAdmin) patch[cle] = raw || null; }
       else if (raw !== '') patch[cle] = type === 'pct' ? Number(raw) / 100 : Number(raw);
     });
     patch.updated_at = new Date().toISOString();
+    // Un numéro de paiement qui change : on le redit en toutes lettres avant d'écrire.
+    const changes = (isAdmin && window.CLTRecharges) ? CLTRecharges.numerosModifies(data, patch) : [];
+    if (changes.length) {
+      const dits = changes.map(k => (REGLAGES_EXPRESS.find(r => r[0] === k) || [k, k])[1] + ' : ' + (patch[k] ? CLTRecharges.afficherNumero(patch[k]) : 'retiré')).join(' · ');
+      if (!(await showConfirm({ title: 'Changer un numéro de paiement de CLT ?', detail: dits, sub: 'C\'est à ce numéro que les coursiers enverront leur argent dès maintenant. Relisez-le chiffre par chiffre.', okLabel: 'Oui, c\'est le bon numéro' }))) return;
+    }
     const btn = document.getElementById('btn-express-reglages-enregistrer');
     btn.disabled = true;
     const { error: e2 } = await supabaseClient.from('express_config').update(patch).eq('id', 1);

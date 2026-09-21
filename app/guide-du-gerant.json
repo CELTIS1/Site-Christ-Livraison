@@ -356,7 +356,7 @@
     "Second choix, « Espèces au bureau » : il déclare le montant, l'équipe reçoit les billets et valide (« Espèces bien reçues en main ? »)."
    ],
    "aSavoir": "Sous le solde minimum, le coursier ne reçoit plus de courses tant qu'il n'a pas rechargé. C'est le modèle des plateformes de courses (solde prépayé, commission prélevée dessus). Le jour où Wave nous ouvre le paiement automatique, seule la validation à la main disparaît ; rien d'autre ne change.",
-   "pourVous": "Avant l'ouverture d'Express : dire à l'équipe qui a le droit de recevoir des espèces au bureau (le nom de celui qui valide reste enregistré).",
+   "pourVous": "Aujourd'hui l'onglet Express n'est visible que du gérant : c'est donc vous qui validez les recharges. À décider avant l'ouverture : l'ouvrir ou non à une personne de confiance de l'équipe.",
    "version": "v210",
    "aller": {
     "page": "equipe.html"
@@ -372,8 +372,9 @@
     "Modifiez une valeur, puis « Enregistrer les réglages ».",
     "Tant que les numéros Mobile Money sont vides, un coursier ne peut pas recharger."
    ],
-   "pourVous": "À remplir avant l'ouverture d'Express : les numéros Wave / Orange / MTN / Moov de CLT.",
-   "version": "v181",
+   "aSavoir": "Les numéros Mobile Money ne se modifient que par le gérant, et tout changement se confirme, numéro relu en clair. Le coursier les lit et les copie ; il ne peut rien y écrire.",
+   "pourVous": "Jouer une fois _sql-prive/2026-09-21-numeros-mobile-money-verrouilles.sql dans Supabase : il pose Wave et Orange (07 89 81 81 40), MTN (05 46 81 86 40) et verrouille ces numéros. Moov : à ajouter plus tard, ici même.",
+   "version": "v211",
    "aller": {
     "page": "equipe.html"
    }
