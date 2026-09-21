@@ -284,10 +284,12 @@
    "ou": "Équipe › Retours (derrière « Plus » sur téléphone)",
    "etapes": [
     "Le chiffre sur l'onglet = ce qui presse (litiges + retards).",
-    "Chaque colis dit son détenteur : livreur, bureau, ou rendu à la cliente (avec photo).",
-    "La cliente confirme la remise — ou la conteste : c'est alors un litige, en tête de liste."
+    "Deux côtés, comme dans Personnes : « Retours » et « Non livrés », chacun avec son compte.",
+    "Chaque colis dit son détenteur (livreur, bureau, rendu à la cliente avec photo). La cliente confirme la remise — ou la conteste : litige, en tête de liste.",
+    "« Reprogrammer » : on choisit le jour et le livreur, et le colis repart en livraison — sans passer par « Modifier »."
    ],
-   "version": "v180",
+   "aSavoir": "« Reprogrammer » existe sur un non livré et sur un retour encore chez un livreur ou au bureau ; pas sur un colis déjà rendu à la cliente ni en litige. Le journal du retour garde la ligne « relance ».",
+   "version": "v208",
    "aller": {
     "page": "equipe.html"
    }

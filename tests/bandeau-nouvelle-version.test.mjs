@@ -999,10 +999,22 @@ verifier(
    d'un colis se replie sur téléphone (650 → 120 px), porte sa date ; Dupliquer / Modifier /
    Supprimer réservés au colis en attente saisi par elle. (4) Barre du bas : le remède de la v206
    est confirmé par Celtis sur iPhone ; rien de plus n'y est touché (un contrôle garde la règle).
-   (5) Livreur : la pastille « Récup. » et la liste comptent pareil (colisAttenduAuPlusTard). Étiquette 20260921cartes. */
+   (5) Livreur : la pastille « Récup. » et la liste comptent pareil (colisAttenduAuPlusTard). Étiquette 20260921cartes.
+   v208, le 21/09/2026 — « Retours » en deux côtés, et « Reprogrammer ». Celtis : « d'un côté les
+   retours, de l'autre les non livrés […] un bouton où on peut reprogrammer : on choisit notre date,
+   et le livreur ». (1) L'onglet Retours du bureau porte le sélecteur de Personnes : Retours | Non
+   livrés, chacun avec son compte ; le côté ouvert est retenu. (2) « Reprogrammer » déplie deux
+   champs sous la ligne (jour, livreur) ; règle pure app/reprogrammer.js : même écriture que
+   « Retenter » chez le livreur (en_livraison + reporte_au) plus livreur_id ; permis sur un non
+   livré et sur un retour chez un livreur ou au bureau, refusé sur un colis rendu ou en litige. La
+   base efface le détenteur et journalise « relance ». (3) Personnes : cinq sélecteurs CSS
+   « #section-clients, #section-livreurs .cd-… » visaient #section-clients LUI-MÊME (display:flex) :
+   la carte ne s'étirait pas sur grand écran et le choix de période n'était pas habillé. (4) Le
+   chiffre de l'onglet compte un litige en retard une fois, plus deux. (5) Sélecteur lisible la nuit.
+   Banc reprogrammer (26), parcours 23. Étiquette 20260921reprogrammer. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v207'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v208'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

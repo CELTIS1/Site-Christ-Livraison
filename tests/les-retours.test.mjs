@@ -126,7 +126,8 @@ verifier('les gestes viennent de retourGestes, avec un choix de livreur pour « 
 verifier('l\'histoire se déplie et lit retours_mouvements', /from\('retours_mouvements'\)/.test(eq) && /retourHistoriqueHTML\(rtHistoires\[c\.id\]/.test(eq));
 verifier('les pastilles de l\'essentiel mènent à cet onglet', /case 'retours': case 'retours-tard':[\s\S]{0,80}showEquipeTab\('retours'\)/.test(lire('app/equipe/03-file-hors-reseau.js')));
 verifier('relu à chaque ouverture de l\'onglet, et après chaque geste', /if \(key === 'retours' && typeof chargerRetours === 'function'\) chargerRetours\(\);/.test(lire('app/equipe/10-onglets.js')) && /await chargerRetours\(\);/.test(eq));
-verifier('l\'onglet porte le chiffre de ce qui brûle (litiges + retards)', /rt-onglet-badge/.test(eq) && /const urgent = nb\.litige \+ nb\.retard;/.test(eq));
+// 21/09/2026 : compté sur TOUS les colis (les deux côtés), et un litige en retard une seule fois.
+verifier('l\'onglet porte le chiffre de ce qui brûle (litiges + retards, chaque colis une fois)', /rt-onglet-badge/.test(eq) && /let urgent = 0; tous\.forEach\(c => \{ const n = retourNiveau\(c\); if \(\(n && n\.cle === 'litige'\) \|\| retourEnRetard\(c\)\) urgent\+\+; \}\);/.test(eq));
 
 console.log('\n8. La cliente a le dernier mot');
 const f = lire('app/fournisseur.html');
