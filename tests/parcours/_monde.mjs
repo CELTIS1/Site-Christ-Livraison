@@ -265,7 +265,20 @@ export function nouveauMonde() {
   const REPONSES_RPC = {};
   function rpc(nom, args, user) {
     journal.push({ op: 'rpc', nom, args });
-    if (nom === 'annonce_remise_en_cours') return { data: null, error: null };
+    if (nom === 'annonce_remise_en_cours') {
+      // Comme en base : la dernière annonce NON réglée du livreur demandé (null quand il n'y en a pas).
+      const a = (TABLES.annonces_remise || []).filter(x => x.livreur_id === (args && args.p_livreur_id) && !x.remise_id);
+      return { data: a.length ? [{ montant_annonce: a[a.length - 1].montant_annonce, montant_porte: a[a.length - 1].montant_porte || null, note: a[a.length - 1].note || null, annonce_le: a[a.length - 1].created_at, nb_annonces: a.length }] : null, error: null };
+    }
+    /* « VOIR SON ÉCRAN » SANS LIMITES (21/09/2026) : comme en base, deux lectures réservées à l'administrateur,
+       qui répondent pour la personne regardée. */
+    if (nom === 'primes_en_cours_de' || nom === 'mes_boutiques_de') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      if (!lecteur || lecteur.role !== 'admin') return { data: null, error: { message: "Réservé à l'administrateur." } };
+      if (nom === 'primes_en_cours_de') return { data: (REPONSES_RPC.primes_en_cours_de || {})[args && args.p_livreur] || null, error: null };
+      const idsDe = (TABLES.boutiques_supervisees || []).filter(b => b.superviseur_id === (args && args.p_superviseur)).map(b => b.fournisseur_id);
+      return { data: PROFILS.filter(p => idsDe.includes(p.id)).map(p => ({ id: p.id, nom: p.company_name || p.full_name, full_name: p.full_name, commune_recuperation: p.commune_recuperation || null, avatar_url: p.avatar_url || null })), error: null };
+    }
     // Un parcours peut poser REPONSES_RPC.primes_en_cours pour voir la carte « Mon mois » vivante.
     if (nom === 'primes_en_cours') return { data: REPONSES_RPC.primes_en_cours || null, error: null };
     /* LE SUIVI PUBLIC (points 1.7, 10.5, 19.6) : la même règle que la fonction en base — sans

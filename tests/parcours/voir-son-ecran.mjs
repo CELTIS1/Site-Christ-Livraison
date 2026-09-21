@@ -20,6 +20,14 @@ monde.PROFILS.push({ id: AUTRE_LIVREUR, full_name: 'Moussa D.', role: 'livreur',
 monde.PROFILS.push({ id: EQUIPE, full_name: 'Aïcha du bureau', role: 'equipe', phone: '2250700000008', status: 'valide', avatar_url: null, company_name: null, acces_operations: true });
 monde.TABLES.colis.push(colis(901, { numero: 'CLT-AUTRE-901', statut: 'en_livraison', created_at: iso(0, 8), fournisseur_id: CLIENTE2, livreur_id: AUTRE_LIVREUR, livreur_collecte_id: AUTRE_LIVREUR }));
 monde.TABLES.consultations_de_compte = [];
+/* SANS LIMITES (21/09/2026) : CLIENTE1 est PROPRIÉTAIRE et supervise la boutique CLIENTE2 ; une troisième
+   cliente n'a rien à voir avec elle. Le livreur a des primes en cours et une remise annoncée. */
+const CLIENTE3 = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3';
+monde.PROFILS.push({ id: CLIENTE3, full_name: 'Fatou', role: 'fournisseur', phone: '2250700000033', status: 'valide', avatar_url: null, company_name: 'Chez Fatou' });
+monde.TABLES.colis.push(colis(902, { numero: 'CLT-ETRANGER-902', statut: 'livre', created_at: iso(0, 8), fournisseur_id: CLIENTE3, livreur_id: AUTRE_LIVREUR }));
+monde.TABLES.boutiques_supervisees.push({ superviseur_id: CLIENTE1, fournisseur_id: CLIENTE2 });
+monde.REPONSES_RPC.primes_en_cours_de = { [LIVREUR]: { eligible: true, marque: 'PRIMES-DE-KOFFI' } };
+(monde.TABLES.annonces_remise ||= []).push({ id: 'an1', livreur_id: LIVREUR, montant_annonce: 11500, montant_porte: null, note: null, remise_id: null, created_at: iso(0, 17) });
 (monde.TABLES.reversements_clientes ||= []).push({ id: 'rv-autre', numero: 'REV-AUTRE-777', fournisseur_id: CLIENTE2, montant: 77700, nb_colis: 1, colis_ids: [], mode: 'especes', note: null, fait_le: iso(0, 10), annule_le: null, annule_motif: null });
 
 const N = await ouvrirNavigateur({ monde });
@@ -77,13 +85,17 @@ const essais = await page.evaluate(async (id) => {
   r.suppr = (await supabaseClient.from('colis').delete().eq('id', un.id)).error;
   r.rpc = (await supabaseClient.rpc('confirmer_recuperation', { p_programmation_id: 'p1', p_nb_pris: 3, p_note: null })).error;
   r.fonction = (await supabaseClient.functions.invoke('admin-modifier-compte', { body: {} })).error;
-  const lecture = await supabaseClient.rpc('primes_en_cours');
-  r.lecturePerso = { data: lecture.data, error: lecture.error };
+  r.primes = await supabaseClient.rpc('primes_en_cours');
+  r.annonce = await supabaseClient.rpc('annonce_remise_en_cours', { p_livreur_id: 'un-autre-identifiant' });
+  r.boutiquesChezUnLivreur = await supabaseClient.rpc('mes_boutiques');
+  r.fonctionAdminDirecte = (await supabaseClient.rpc('primes_en_cours_de', { p_livreur: id })).error;
   return r;
 }, LIVREUR);
 verifier('modifier, ajouter, remplacer, supprimer : refusés avant de partir', ['update', 'insert', 'upsert', 'suppr'].every((k) => essais[k] && essais[k].code === 'CLT_LECTURE_SEULE'), JSON.stringify(essais));
 verifier('les fonctions de la base et du serveur : refusées', !!essais.rpc && !!essais.fonction);
-verifier('une lecture « pour celui qui est connecté » rend « rien », sans erreur', essais.lecturePerso.data === null && essais.lecturePerso.error === null);
+verifier('SANS LIMITES — ses primes en cours sont les SIENNES (plus une carte vide)', !essais.primes.error && essais.primes.data && essais.primes.data.marque === 'PRIMES-DE-KOFFI', JSON.stringify(essais.primes));
+verifier('son annonce de remise aussi, et toujours pour LUI même si l\'écran passait un autre identifiant', !essais.annonce.error && Array.isArray(essais.annonce.data) && essais.annonce.data[0].montant_annonce === 11500, JSON.stringify(essais.annonce));
+verifier('une lecture qui n\'a pas de sens pour ce rôle rend « rien », sans erreur ; une fonction appelée hors de la règle est refusée', essais.boutiquesChezUnLivreur.data === null && essais.boutiquesChezUnLivreur.error === null && !!essais.fonctionAdminDirecte);
 verifier('la base n\'a pas bougé d\'une virgule', photoDeLaBase() === avant);
 verifier('et l\'écran a dit pourquoi', /lecture seule/i.test((await page.locator('.clt-toast, .toast, [class*="toast"]').first().textContent().catch(() => '')) || ''));
 // Un vrai bouton de l'écran : le premier geste proposé sur un colis.
@@ -99,6 +111,16 @@ const vusC = await page.evaluate(() => (typeof mesColis !== 'undefined' ? mesCol
 verifier('ses colis, et seulement les siens', vusC.length > 0 && vusC.every((f) => f === CLIENTE1), JSON.stringify(vusC.slice(0, 5)));
 const reversements = await page.evaluate(async () => (await supabaseClient.from('reversements_clientes').select('numero, fournisseur_id')).data || []);
 verifier('les reversements des AUTRES clientes ne lui sont pas montrés (l\'administrateur, lui, les voit tous)', !reversements.some((r) => r.numero === 'REV-AUTRE-777') && !/REV-AUTRE-777|77\s?700/.test(await page.locator('body').innerText()), JSON.stringify(reversements));
+const proprio = await page.evaluate(async ({ b, e }) => {
+  const mb = await supabaseClient.rpc('mes_boutiques');
+  const deLaBoutique = (await supabaseClient.from('colis').select('numero, fournisseur_id').in('fournisseur_id', [b])).data || [];
+  const etrangere = (await supabaseClient.from('colis').select('numero').in('fournisseur_id', [e])).data || [];
+  const tous = (await supabaseClient.from('colis').select('fournisseur_id')).data || [];
+  return { boutiques: (mb.data || []).map((x) => x.id), erreur: mb.error, deLaBoutique: deLaBoutique.length, etrangere: etrangere.length, proprietaires: Array.from(new Set(tous.map((c) => c.fournisseur_id))).sort() };
+}, { b: CLIENTE2, e: CLIENTE3 });
+verifier('SANS LIMITES — « Mes boutiques » de la propriétaire rend SES boutiques', !proprio.erreur && JSON.stringify(proprio.boutiques) === JSON.stringify([CLIENTE2]), JSON.stringify(proprio));
+verifier('les colis de sa boutique lui sont montrés, comme chez elle', proprio.deLaBoutique > 0, JSON.stringify(proprio));
+verifier('ceux d\'une cliente qui n\'a rien à voir avec elle : jamais', proprio.etrangere === 0 && JSON.stringify(proprio.proprietaires) === JSON.stringify([CLIENTE1, CLIENTE2].sort()), JSON.stringify(proprio));
 const avantC = photoDeLaBase();
 const refusC = await page.evaluate(async () => (await supabaseClient.from('colis').insert({ numero: 'PIRATE' })).error);
 verifier('elle non plus ne peut rien recevoir de faux : écriture refusée, base intacte', !!refusC && refusC.code === 'CLT_LECTURE_SEULE' && photoDeLaBase() === avantC);

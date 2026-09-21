@@ -287,10 +287,10 @@
    "etapes": [
     "Trouvez la personne dans « Tous les comptes », ouvrez son menu ⋮, puis « 👁 Voir son écran ».",
     "Son écran s'ouvre dans un nouvel onglet, sous un bandeau bleu nuit qui porte son nom.",
-    "Regardez tout : ses colis, sa journée, son relevé. « Quitter » referme l'onglet."
+    "Regardez tout : ses colis, sa journée, son relevé, ses primes, ses boutiques. « Quitter » referme l'onglet."
    ],
    "aSavoir": "Vous restez connecté sous votre nom : aucun mot de passe ne circule. Tout est en lecture seule ; pour agir, passez par l'écran Équipe. Chaque consultation est notée. Pour bloquer un compte : même menu, « ⏸ Suspendre le compte ».",
-   "version": "v216",
+   "version": "v217",
    "aller": {
     "page": "equipe.html"
    }

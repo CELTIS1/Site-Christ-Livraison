@@ -27,7 +27,7 @@
   const NOMS_DE_ROLE = { livreur: 'livreur', fournisseur: 'cliente' };
 
   /* Les fonctions de la base qui ne font que LIRE, mais pour « celui qui est connecté » : pendant
-     qu'on regarde, elles répondraient pour l'administrateur. On rend donc « rien », sans bruit. */
+     qu'on regarde, elles répondraient pour l'administrateur. Voir lectureDeLaBase(). */
   const LECTURES_PERSONNELLES = ['annonce_remise_en_cours', 'mes_boutiques', 'primes_en_cours'];
 
   function estIdentifiant(v) { return UUID.test(String(v || '')); }
@@ -74,21 +74,60 @@
      Rendu sous une forme que l'écran pose telle quelle sur sa requête ; null = rien à ajouter. */
   const TABLES_DU_LIVREUR = ['remises_caisse', 'annonces_remise', 'programmations_collecte', 'livreur_positions', 'reclamations_clientes'];
   const TABLES_DE_LA_CLIENTE = ['colis', 'reversements_clientes', 'releve_fournisseur', 'historique_reversements_fournisseur', 'demandes_de_passage', 'reclamations_clientes', 'programmations_collecte'];
+  /* Les boutiques supervisées, lues à l'ouverture et posées sur le compte : identifiants propres, sans doublon, sans lui-même. */
+  function boutiquesDe(compte) {
+    const vues = {};
+    return (compte && Array.isArray(compte.boutiques) ? compte.boutiques : [])
+      .map(function (b) { return String(b && b.id ? b.id : b || '').toLowerCase(); })
+      .filter(function (id) { if (!estIdentifiant(id) || id === String(compte.id).toLowerCase() || vues[id]) return false; vues[id] = true; return true; });
+  }
   function filtreDeLaTable(table, compte) {
     if (!compte || !estIdentifiant(compte.id)) return null;
     if (compte.role === 'livreur') {
       if (table === 'colis') return { type: 'or', valeur: ['livreur_id', 'livreur_collecte_id', 'retour_detenteur_livreur_id'].map(function (c) { return c + '.eq.' + compte.id; }).join(',') };
       return TABLES_DU_LIVREUR.indexOf(table) >= 0 ? { type: 'eq', colonne: 'livreur_id', valeur: compte.id } : null;
     }
-    if (compte.role === 'fournisseur') return TABLES_DE_LA_CLIENTE.indexOf(table) >= 0 ? { type: 'eq', colonne: 'fournisseur_id', valeur: compte.id } : null;
+    if (compte.role === 'fournisseur') {
+      if (TABLES_DE_LA_CLIENTE.indexOf(table) < 0) return null;
+      // Un PROPRIÉTAIRE voit aussi les colis des boutiques qu'il supervise (règle « superviseur » de la base,
+      // qui ne porte que sur les colis) : l'écran regardé les demande donc avec les siens. (21/09/2026)
+      const boutiques = table === 'colis' ? boutiquesDe(compte) : [];
+      if (boutiques.length) return { type: 'in', colonne: 'fournisseur_id', valeurs: [compte.id].concat(boutiques) };
+      return { type: 'eq', colonne: 'fournisseur_id', valeur: compte.id };
+    }
     return null;
   }
   function filtreDesColis(compte) { return filtreDeLaTable('colis', compte); }
 
-  /* Que faire d'une opération pendant qu'on regarde : 'laisser' | 'vide' | 'refuser'. */
-  function sortDeLOperation(genre, nom) {
+  /* LES LECTURES « POUR CELUI QUI EST CONNECTÉ ». Trois fonctions de la base répondent pour la personne
+     connectée — donc, pendant qu'on regarde, pour l'administrateur : l'écran les affichait vides. Celtis,
+     le 21 : « il faut me lever toutes les limites ». Chacune a maintenant son chemin, qui rend la réponse
+     de la personne REGARDÉE ; l'identifiant est toujours le sien, jamais celui que l'écran aurait passé :
+       annonce_remise_en_cours : la base l'ouvre déjà à l'administrateur, pour un livreur donné ;
+       primes_en_cours         → primes_en_cours_de(livreur)   (réservée à l'administrateur) ;
+       mes_boutiques           → mes_boutiques_de(superviseur) (réservée à l'administrateur).
+     Rend { nom, args } à appeler pour de bon, ou null. */
+  function lectureDeLaBase(nom, args, compte) {
+    if (!compte || !estIdentifiant(compte.id)) return null;
+    if (compte.role === 'livreur' && nom === 'annonce_remise_en_cours') return { nom: nom, args: { p_livreur_id: compte.id } };
+    if (compte.role === 'livreur' && nom === 'primes_en_cours') {
+      const a = { p_livreur: compte.id };
+      if (args && args.p_periode) a.p_periode = args.p_periode;
+      return { nom: 'primes_en_cours_de', args: a };
+    }
+    if (compte.role === 'fournisseur' && nom === 'mes_boutiques') return { nom: 'mes_boutiques_de', args: { p_superviseur: compte.id } };
+    return null;
+  }
+
+  /* Que faire d'une opération pendant qu'on regarde : 'laisser' | 'detour' | 'vide' | 'refuser'.
+     'detour' : la lecture passe par lectureDeLaBase() ; 'vide' : une lecture personnelle qui n'a pas de
+     sens pour ce rôle (les primes d'une cliente) rend « rien », sans bruit. */
+  function sortDeLOperation(genre, nom, compte) {
     if (genre === 'select') return 'laisser';
-    if (genre === 'rpc') return LECTURES_PERSONNELLES.indexOf(String(nom || '')) >= 0 ? 'vide' : 'refuser';
+    if (genre === 'rpc') {
+      if (LECTURES_PERSONNELLES.indexOf(String(nom || '')) < 0) return 'refuser';
+      return lectureDeLaBase(nom, null, compte) ? 'detour' : 'vide';
+    }
     return 'refuser';   // insert, update, upsert, delete, fonction, fichier, présence
   }
 
@@ -103,7 +142,7 @@
 
   window.CLTVoirUnCompte = {
     lireDemande: lireDemande, peutRegarder: peutRegarder, peutEtreRegarde: peutEtreRegarde, lien: lien, bonnePage: bonnePage,
-    filtreDeLaTable: filtreDeLaTable, filtreDesColis: filtreDesColis, sortDeLOperation: sortDeLOperation, bandeau: bandeau,
+    filtreDeLaTable: filtreDeLaTable, filtreDesColis: filtreDesColis, boutiquesDe: boutiquesDe, lectureDeLaBase: lectureDeLaBase, sortDeLOperation: sortDeLOperation, bandeau: bandeau,
     MESSAGE_LECTURE_SEULE: MESSAGE_LECTURE_SEULE, LECTURES_PERSONNELLES: LECTURES_PERSONNELLES,
   };
 })();

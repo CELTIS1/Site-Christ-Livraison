@@ -2200,13 +2200,17 @@ function cltRegarderUnCompte(compte) {
       const vraiSelect = q.select.bind(q);
       q.select = function () {
         const r = vraiSelect.apply(null, arguments);
-        return tri.type === 'or' ? r.or(tri.valeur) : r.eq(tri.colonne, tri.valeur);
+        if (tri.type === 'or') return r.or(tri.valeur);
+        return tri.type === 'in' ? r.in(tri.colonne, tri.valeurs) : r.eq(tri.colonne, tri.valeur);
       };
     }
     return q;
   };
-  supabaseClient.rpc = function (nom) {
-    return R.sortDeLOperation('rpc', nom) === 'vide' ? reponse(null) : refuser();
+  const vraiRpc = supabaseClient.rpc.bind(supabaseClient);
+  supabaseClient.rpc = function (nom, args) {
+    const sort = R.sortDeLOperation('rpc', nom, compte);
+    if (sort === 'detour') { const d = R.lectureDeLaBase(nom, args, compte); return vraiRpc(d.nom, d.args); }
+    return sort === 'vide' ? reponse(null) : refuser();
   };
   try { supabaseClient.functions.invoke = function () { avertir(); return Promise.resolve({ data: null, error: { message: R.MESSAGE_LECTURE_SEULE } }); }; } catch (e) { /* client sans fonctions */ }
   try {
@@ -2241,6 +2245,10 @@ async function cltOuvrirVueCompte(profilDuLecteur) {
   const peut = R.peutEtreRegarde(compte, profilDuLecteur);
   if (!peut.ok) return { refuse: peut.pourquoi };
   if (!R.bonnePage(compte, window.location.pathname)) return { refuse: 'Cet écran n\'est pas celui de ce compte.' };
+  // Un propriétaire : ses boutiques, pour que ses colis ET les leurs lui soient montrés, comme chez lui.
+  if (compte.role === 'fournisseur') {
+    try { const b = await supabaseClient.rpc('mes_boutiques_de', { p_superviseur: compte.id }); compte.boutiques = (b && Array.isArray(b.data)) ? b.data.map(function (x) { return x.id; }) : []; } catch (e) { compte.boutiques = []; }
+  }
   // La consultation est notée AVANT le verrou (après, plus rien ne s'écrit). Sans la table, on regarde quand même.
   try { await supabaseClient.from('consultations_de_compte').insert({ admin_id: profilDuLecteur.id, compte_id: compte.id, compte_role: compte.role }); } catch (e) { /* table absente : pas bloquant */ }
   cltRegarderUnCompte(compte);
