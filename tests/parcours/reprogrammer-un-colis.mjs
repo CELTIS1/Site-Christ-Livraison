@@ -19,8 +19,8 @@ import { LIVREUR, ADMIN, CLIENTE1, nouveauMonde, colis, iso, aujourdhui } from '
 const LIVREUR2 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';
 const monde = nouveauMonde();
 monde.TABLES.profiles.push({ id: LIVREUR2, full_name: 'Yao Second', role: 'livreur', phone: '2250700000002', status: 'valide', avatar_url: null, company_name: null });
-const RATE = colis(61, { statut: 'non_livre', recupere_at: iso(-1, 9), non_livre_at: iso(-1, 16), motif_non_livraison: 'client_absent', description: 'Pagne n°61', fournisseur_id: CLIENTE1, livreur_id: LIVREUR });
-const AU_BUREAU = colis(62, { statut: 'retour', recupere_at: iso(-3, 9), non_livre_at: iso(-2, 16), retour_at: iso(-1, 17), motif_non_livraison: 'client_absent', description: 'Sandales n°62', fournisseur_id: CLIENTE1, livreur_id: LIVREUR, retour_detenteur: 'bureau' });
+const RATE = colis(61, { statut: 'non_livre', recupere_at: iso(-1, 9), non_livre_at: iso(-1, 16), motif_non_livraison: 'client_absent', description: 'Pagne n°61', fournisseur_id: CLIENTE1, livreur_id: LIVREUR, commune_destination: 'Yopougon', destination: 'Niangon Sud, pharmacie Étoile', destinataire_telephone: '0707123456' });
+const AU_BUREAU = colis(62, { statut: 'retour', recupere_at: iso(-3, 9), non_livre_at: iso(-2, 16), retour_at: iso(-1, 17), motif_non_livraison: 'client_absent', description: 'Sandales n°62', fournisseur_id: CLIENTE1, livreur_id: LIVREUR, retour_detenteur: 'bureau', commune_destination: 'Cocody', destination: 'Angré 8e tranche', destinataire_telephone: '0505998877' });
 const RENDU = colis(63, { statut: 'retour', recupere_at: iso(-3, 9), non_livre_at: iso(-2, 16), retour_at: iso(-1, 17), motif_non_livraison: 'refus_client', description: 'Perruque n°63', fournisseur_id: CLIENTE1, livreur_id: LIVREUR, retour_detenteur: 'cliente', retour_rendu_at: iso(0, 8), retour_rendu_par: LIVREUR });
 monde.TABLES.colis.push(RATE, AU_BUREAU, RENDU);
 
@@ -50,6 +50,31 @@ await btnN.click();
 await dodo(400);
 verifier('côté Non livrés : que des non livrés, et l\'aide change de phrase', (await page.locator('#retours-liste .rt-ligne').count()) === nNonLivres && (await ligne(RATE.id).count()) === 1 && (await ligne(AU_BUREAU.id).count()) === 0 && /sacoche/.test(await texte(page.locator('#retours-aide'))));
 verifier('le choix est retenu sur cet appareil', (await page.evaluate(() => localStorage.getItem('clt_equipe_retours_vue'))) === 'non_livres');
+
+titre('1 bis. La date exacte, l\'adresse, et la recherche de la page');
+const hierCourt = new Date(Date.parse(hier + 'T12:00:00Z')).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+verifier('la carte dit « depuis hier » ET le jour exact', new RegExp('depuis hier · ' + hierCourt.replace(/\./g, '\\.')).test(await texte(ligne(RATE.id).locator('.rt-depuis'))), await texte(ligne(RATE.id).locator('.rt-depuis')));
+verifier('… la commune en gras, l\'adresse, et le téléphone du destinataire à appeler d\'un appui', (await texte(ligne(RATE.id).locator('.rt-adresse strong'))) === 'Yopougon' && /Niangon Sud, pharmacie Étoile/.test(await texte(ligne(RATE.id).locator('.rt-adresse'))) && (await ligne(RATE.id).locator('.rt-tel').getAttribute('href')) === 'tel:0707123456');
+const champR = page.locator('#retours-recherche');
+const bc = await boite(champR);
+verifier('le champ de recherche de la page : 44 px, dans l\'écran', bc.height >= 44 && bc.x >= 0 && bc.x + bc.width <= 390, JSON.stringify(bc));
+await champR.fill('etoile');
+await dodo(400);
+verifier('« etoile » (sans accent) : le colis de la pharmacie Étoile, seul, et « 1 sur n »', (await page.locator('#retours-liste .rt-ligne').count()) === 1 && (await ligne(RATE.id).count()) === 1 && (await texte(page.locator('#retours-recherche-n'))) === '1 sur ' + nNonLivres, await texte(page.locator('#retours-recherche-n')));
+await champR.fill('angre');
+await dodo(400);
+verifier('« angre » n\'est pas de ce côté : on le dit, et on propose l\'autre côté', /Rien ne correspond/.test(await texte(page.locator('#retours-liste'))) && /1 résultat côté « Retours »/.test(await texte(page.locator('#retours-liste [data-rt-autre-cote]'))), await texte(page.locator('#retours-liste')));
+await page.locator('#retours-liste [data-rt-autre-cote]').click();
+await dodo(400);
+verifier('un appui y emmène : côté Retours, le colis d\'Angré, la recherche gardée', (await ligne(AU_BUREAU.id).count()) === 1 && (await page.locator('#retours-liste .rt-ligne').count()) === 1 && (await champR.inputValue()) === 'angre');
+await champR.fill('0707 1234');
+await dodo(400);
+await btnN.click();
+await dodo(400);
+verifier('par le téléphone du destinataire, tapé avec un espace', (await page.locator('#retours-liste .rt-ligne').count()) === 1 && (await ligne(RATE.id).count()) === 1);
+await champR.fill('');
+await dodo(400);
+verifier('recherche vidée : toute la liste revient, le compteur s\'efface', (await page.locator('#retours-liste .rt-ligne').count()) === nNonLivres && (await texte(page.locator('#retours-recherche-n'))) === '');
 
 titre('2. Reprogrammer un non livré : un jour, un livreur');
 await ligne(RATE.id).locator('[data-rt-reprog]').click();

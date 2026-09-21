@@ -22,10 +22,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260921numeros">
+<link rel="stylesheet" href="style.css?v=20260921adresse">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260921numeros"></script>
-<script src="splash.js?v=20260921numeros"></script>
+<script src="theme.js?v=20260921adresse"></script>
+<script src="splash.js?v=20260921adresse"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -568,6 +568,12 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
 <div class="eq-bascule rt-bascule" role="tablist" aria-label="Retours ou non livrés">
   <button type="button" class="eq-bascule-btn active" data-rt-vue="retours" role="tab" aria-selected="true">↩️ Retours <span class="rt-bascule-n" id="rt-n-retours"></span></button>
   <button type="button" class="eq-bascule-btn" data-rt-vue="non_livres" role="tab" aria-selected="false">⚠️ Non livrés <span class="rt-bascule-n" id="rt-n-non-livres"></span></button>
+</div>
+<!-- La recherche de la page (21/09/2026, Celtis : « c'est à l'adresse qu'on regarde ») : elle filtre le
+     côté ouvert — numéro, cliente, commune, adresse, téléphone, livreur. -->
+<div class="rt-recherche">
+  <input type="search" id="retours-recherche" placeholder="Chercher ici : adresse, commune, n° de colis, téléphone, cliente…" aria-label="Chercher dans les retours et les non livrés" autocomplete="off">
+  <span class="rt-recherche-n" id="retours-recherche-n"></span>
 </div>
 <div class="rt-aide"><span id="retours-aide">Un colis revenu passe de main en main : <b>chez le livreur</b> → <b>au bureau</b> (s'il le dépose) → <b>rendu à la cliente</b> → <b>confirmé par elle</b>. Règle : rendu le lendemain, deux jours au plus tard. Chaque passage est daté et signé ; « Historique » le montre. <b>« Reprogrammer »</b> le renvoie en livraison, au jour et avec le livreur choisis.</span>
 <button type="button" class="btn btn-sm btn-outline" id="retours-rafraichir" title="Relire la base">⟳ Actualiser</button></div>
@@ -1705,41 +1711,41 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
   </div>
 </div>
 
-<script src="clt-common.js?v=20260921numeros"></script>
-<script src="lib/bibliotheques.js?v=20260921numeros"></script>
-<script src="lib/retours.js?v=20260921numeros"></script>
-<script src="lib/reclamations.js?v=20260921numeros"></script>
-<script src="lib/communes-et-tarifs.js?v=20260921numeros"></script>
-<script src="lib/argent.js?v=20260921numeros"></script>
-<script src="lib/releve-cliente.js?v=20260921numeros"></script>
-<script src="lib/papier-a-en-tete.js?v=20260921numeros"></script>
-<script src="lib/briques-argent.js?v=20260921numeros"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260921numeros"></script>
-<script src="lib/annonce-de-remise.js?v=20260921numeros"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260921numeros"></script>
-<script src="lib/primes.js?v=20260921numeros"></script>
-<script src="lib/doublons.js?v=20260921numeros"></script>
-<script src="config.js?v=20260921numeros"></script>
-<script src="delais-et-promesses.js?v=20260921numeros"></script>
-<script src="ordre-de-livraison.js?v=20260921numeros"></script>
-<script src="etiquettes-et-scan.js?v=20260921numeros"></script>
-<script src="clients-dashboard.js?v=20260921numeros"></script>
-<script src="livreurs-dashboard.js?v=20260921numeros"></script>
-<script src="point-du-jour.js?v=20260921numeros"></script>
-<script src="biometric-lock.js?v=20260921numeros"></script>
-<script src="clt-select-recherche.js?v=20260921numeros"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260921numeros"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260921numeros"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260921numeros"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260921numeros"></script>
-<script src="equipe/04-actions.js?v=20260921numeros"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260921numeros"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260921numeros"></script>
-<script src="point-par-whatsapp.js?v=20260921numeros"></script>
-<script src="equipe/07-rapports.js?v=20260921numeros"></script>
-<script src="equipe/08-son-ecran.js?v=20260921numeros"></script>
-<script src="recharges-express.js?v=20260921numeros"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260921numeros"></script>
+<script src="clt-common.js?v=20260921adresse"></script>
+<script src="lib/bibliotheques.js?v=20260921adresse"></script>
+<script src="lib/retours.js?v=20260921adresse"></script>
+<script src="lib/reclamations.js?v=20260921adresse"></script>
+<script src="lib/communes-et-tarifs.js?v=20260921adresse"></script>
+<script src="lib/argent.js?v=20260921adresse"></script>
+<script src="lib/releve-cliente.js?v=20260921adresse"></script>
+<script src="lib/papier-a-en-tete.js?v=20260921adresse"></script>
+<script src="lib/briques-argent.js?v=20260921adresse"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260921adresse"></script>
+<script src="lib/annonce-de-remise.js?v=20260921adresse"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260921adresse"></script>
+<script src="lib/primes.js?v=20260921adresse"></script>
+<script src="lib/doublons.js?v=20260921adresse"></script>
+<script src="config.js?v=20260921adresse"></script>
+<script src="delais-et-promesses.js?v=20260921adresse"></script>
+<script src="ordre-de-livraison.js?v=20260921adresse"></script>
+<script src="etiquettes-et-scan.js?v=20260921adresse"></script>
+<script src="clients-dashboard.js?v=20260921adresse"></script>
+<script src="livreurs-dashboard.js?v=20260921adresse"></script>
+<script src="point-du-jour.js?v=20260921adresse"></script>
+<script src="biometric-lock.js?v=20260921adresse"></script>
+<script src="clt-select-recherche.js?v=20260921adresse"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260921adresse"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260921adresse"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260921adresse"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260921adresse"></script>
+<script src="equipe/04-actions.js?v=20260921adresse"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260921adresse"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260921adresse"></script>
+<script src="point-par-whatsapp.js?v=20260921adresse"></script>
+<script src="equipe/07-rapports.js?v=20260921adresse"></script>
+<script src="equipe/08-son-ecran.js?v=20260921adresse"></script>
+<script src="recharges-express.js?v=20260921adresse"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260921adresse"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1787,17 +1793,18 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260921numeros"></script>
-<script src="equipe/11-chercher-partout.js?v=20260921numeros"></script>
-<script src="reprogrammer.js?v=20260921numeros"></script>
-<script src="equipe/12-les-retours.js?v=20260921numeros"></script>
-<script src="equipe/13-les-boutiques.js?v=20260921numeros"></script>
+<script src="equipe/10-onglets.js?v=20260921adresse"></script>
+<script src="equipe/11-chercher-partout.js?v=20260921adresse"></script>
+<script src="reprogrammer.js?v=20260921adresse"></script>
+<script src="retours-du-bureau.js?v=20260921adresse"></script>
+<script src="equipe/12-les-retours.js?v=20260921adresse"></script>
+<script src="equipe/13-les-boutiques.js?v=20260921adresse"></script>
 <!-- 9.6 : sur grand écran, la liste à gauche et la fiche à droite. Ne fait rien sous 1 200 px. -->
-<script src="equipe/14-liste-et-fiche.js?v=20260921numeros"></script>
-<script src="chaine-de-l-argent.js?v=20260921numeros"></script>
-<script src="equipe/15-la-chaine-de-l-argent.js?v=20260921numeros"></script>
+<script src="equipe/14-liste-et-fiche.js?v=20260921adresse"></script>
+<script src="chaine-de-l-argent.js?v=20260921adresse"></script>
+<script src="equipe/15-la-chaine-de-l-argent.js?v=20260921adresse"></script>
 <!-- 9.6 : les colis en route sur la carte du Suivi, une pastille par commune. -->
-<script src="colis-sur-la-carte.js?v=20260921numeros"></script>
-<script src="equipe/16-les-colis-sur-la-carte.js?v=20260921numeros"></script>
+<script src="colis-sur-la-carte.js?v=20260921adresse"></script>
+<script src="equipe/16-les-colis-sur-la-carte.js?v=20260921adresse"></script>
 </body>
 </html>

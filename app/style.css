@@ -3403,6 +3403,19 @@ html[data-theme="dark"] .ligne-cliquable:hover{ background:rgba(157,184,218,.10)
 .retour-reponse .btn{ flex:1 1 140px; }
 /* Deux côtés — Retours | Non livrés (21/09/2026) — et le panneau « Reprogrammer », déplié sous la ligne. */
 .rt-bascule{ margin:10px 0 4px; }
+/* La recherche de la page, la date exacte et l'adresse (21/09/2026). */
+.rt-recherche{ display:flex; align-items:center; gap:10px; margin:8px 0 4px; }
+.rt-recherche input{ flex:1 1 auto; min-width:0; min-height:44px; padding:9px 14px; border:1.5px solid var(--border); border-radius:11px; font:inherit; font-size:14px; background:var(--white); color:inherit; }
+.rt-recherche input:focus{ outline:none; border-color:#1B4374; box-shadow:0 0 0 3px rgba(27,67,116,.14); }
+.rt-recherche-n{ flex:0 0 auto; font-size:12.5px; font-weight:700; color:var(--muted); white-space:nowrap; }
+.rt-recherche-n:empty{ display:none; }
+.rt-date{ font-weight:700; color:var(--navy); }
+.rt-depuis--retard .rt-date{ color:inherit; }
+.rt-adresse{ margin-top:6px; font-size:13.5px; line-height:1.45; overflow-wrap:anywhere; }
+.rt-tel{ margin-left:6px; font-weight:700; color:var(--navy); white-space:nowrap; text-decoration:none; }
+.rt-lien{ background:none; border:0; padding:0; font:inherit; font-weight:700; color:var(--navy); text-decoration:underline; cursor:pointer; min-height:44px; }
+html[data-theme="dark"] .rt-recherche input{ background:#1a2230; border-color:#2c3a50; }
+html[data-theme="dark"] .rt-date, html[data-theme="dark"] .rt-tel, html[data-theme="dark"] .rt-lien{ color:#9cc2f0; }
 .rt-bascule .eq-bascule-btn{ white-space:nowrap; padding-left:8px; padding-right:8px; }
 html[data-theme="dark"] .eq-bascule-btn{ background:#1a2230; border-color:#2c3a50; color:#b9c4d4; }
 html[data-theme="dark"] .eq-bascule-btn.active{ background:#1B4374; border-color:#1B4374; color:#fff; }

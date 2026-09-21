@@ -213,7 +213,7 @@
      "resume": "L'onglet Retours liste tout ce qui n'est pas encore entre les mains de la cliente, du plus urgent au moins urgent.",
      "etapes": [
       "Niveaux : non livré (sacoche du livreur, sans décision) → chez le livreur → au bureau → rendu, à confirmer → confirmé. Et « litige » quand la cliente dit ne pas l'avoir.",
-      "Deux côtés en haut de l'écran : « Retours » et « Non livrés », chacun avec son nombre.",
+      "Deux côtés en haut de l'écran : « Retours » et « Non livrés », chacun avec son nombre. Dessous, « Chercher ici » : tapez un bout d'adresse, une commune, un numéro ou un téléphone.",
       "« Reprogrammer » : choisissez le jour et le livreur, puis « Enregistrer » ; le colis repart en livraison ce jour-là. Inutile de passer par « Modifier ».",
       "Autres gestes : « Reçu au bureau », « Rendu à la cliente », « Confier à un livreur », « Corriger — ce n'était pas rendu ».",
       "« Historique » sous chaque colis : chaque passage de main, daté et signé.",

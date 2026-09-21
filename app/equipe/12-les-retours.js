@@ -31,6 +31,7 @@ let rtHistoires = {};          // colis_id -> mouvements lus
 let rtVue = 'retours';
 try { if (localStorage.getItem('clt_equipe_retours_vue') === 'non_livres') rtVue = 'non_livres'; } catch (e) { /* stockage fermé : on reste sur Retours */ }
 let rtCoteChoisiALaMain = false;
+let rtRecherche = '';           // la recherche de la page : elle filtre le côté ouvert
 let rtReprog = null;           // le colis dont le panneau « Reprogrammer » est ouvert
 let rtReprogChoix = null;      // ce qu'on y a déjà choisi : une relecture de la base (temps réel) ne doit pas l'effacer
 const RT_AIDE = {
@@ -45,7 +46,7 @@ function rtChoisirVue(vue){
   renderRetours(false);
 }
 
-const RT_COLONNES = 'id, numero, statut, fournisseur_id, livreur_id, description, destination, commune_destination, ' +
+const RT_COLONNES = 'id, numero, statut, fournisseur_id, livreur_id, description, destination, commune_destination, destinataire_telephone, created_at, ' +
   'retour_at, non_livre_at, motif_non_livraison, tentatives_livraison, ' +
   'retour_detenteur, retour_detenteur_livreur_id, retour_rendu_at, retour_rendu_par, retour_rendu_photo_url, ' +
   'retour_confirme_at, retour_conteste_at, retour_conteste_texte';
@@ -61,7 +62,7 @@ async function chargerRetours(){
     // Base pas encore migrée : on lit sans les nouvelles colonnes, l'écran se déduit comme avant.
     if (error && /column|colonne|does not exist|n'existe pas/i.test(error.message || '')) {
       ({ data, error } = await supabaseClient.from('colis')
-        .select('id, numero, statut, fournisseur_id, livreur_id, description, destination, commune_destination, retour_at, non_livre_at, motif_non_livraison, tentatives_livraison, retour_rendu_at, retour_rendu_par')
+        .select('id, numero, statut, fournisseur_id, livreur_id, description, destination, commune_destination, destinataire_telephone, created_at, retour_at, non_livre_at, motif_non_livraison, tentatives_livraison, retour_rendu_at, retour_rendu_par')
         .in('statut', ['retour', 'non_livre']).order('retour_at', { ascending: true, nullsFirst: false }).limit(400));
     }
     if (error) { console.error('Retours :', error); renderRetours(true); return; }
@@ -86,6 +87,21 @@ function rtDepuis(c){
   const j = retourJoursEcoules(c);
   if (j === null) return '';
   return j === 0 ? "aujourd'hui" : j === 1 ? 'depuis hier' : 'depuis ' + j + ' jours';
+}
+/* LA DATE EXACTE, à côté de « depuis 3 jours » (21/09/2026) : le jour du retour, sinon de l'échec. */
+function rtDateCourte(c){ return window.CLTRetoursBureau ? CLTRetoursBureau.dateCourte(retourDepart(c)) : ''; }
+function rtDateLongue(c){ return typeof retourJourTexte === 'function' ? retourJourTexte(retourDepart(c)) : ''; }
+/* L'ADRESSE : c'est à elle que l'équipe reconnaît un colis. Commune en gras, adresse, et le
+   téléphone du destinataire, qu'on appelle d'un appui avant de reprogrammer. */
+function rtAdresseHTML(c){
+  const commune = (c.commune_destination || '').trim(), adresse = (c.destination || '').trim(), tel = (c.destinataire_telephone || '').trim();
+  if (!commune && !adresse && !tel) return '';
+  const telHref = tel.replace(/[^\d+]/g, '');
+  return `<div class="rt-adresse">📍 ${commune ? `<strong>${escapeHTML(commune)}</strong>` : ''}${commune && adresse ? ' — ' : ''}${escapeHTML(adresse)}${tel ? ` <a class="rt-tel" href="tel:${escapeHTML(telHref)}">📞 ${escapeHTML(tel)}</a>` : ''}</div>`;
+}
+function rtNomsPourRecherche(c){
+  const motif = c.motif_non_livraison && typeof MOTIFS_NON_LIVRAISON !== 'undefined' && MOTIFS_NON_LIVRAISON[c.motif_non_livraison] ? MOTIFS_NON_LIVRAISON[c.motif_non_livraison].label : '';
+  return { cliente: typeof fournisseurLabelPlain === 'function' ? fournisseurLabelPlain(c.fournisseur_id) : '', livreur: rtNomLivreur(c.retour_detenteur_livreur_id || c.livreur_id) || '', motif };
 }
 function rtNomLivreur(id){
   if (!id) return null;
@@ -114,7 +130,10 @@ function renderRetours(enErreur){
   const nbCotes = { retours: tous.filter(c => c.statut === 'retour').length, non_livres: tous.filter(c => c.statut === 'non_livre').length };
   // Le côté ouvert est vide et l'autre ne l'est pas : on montre celui où il y a à faire.
   if (!nbCotes[rtVue] && nbCotes[rtVue === 'retours' ? 'non_livres' : 'retours'] && !rtCoteChoisiALaMain) rtVue = rtVue === 'retours' ? 'non_livres' : 'retours';
-  const liste = tous.filter(c => (rtVue === 'non_livres') === (c.statut === 'non_livre'));
+  const duCote = tous.filter(c => (rtVue === 'non_livres') === (c.statut === 'non_livre'));
+  const liste = (rtRecherche && window.CLTRetoursBureau) ? duCote.filter(c => CLTRetoursBureau.correspond(c, rtRecherche, rtNomsPourRecherche(c))) : duCote;
+  const compteur = document.getElementById('retours-recherche-n');
+  if (compteur) compteur.textContent = rtRecherche ? (liste.length + ' sur ' + duCote.length) : '';
   document.querySelectorAll('#section-retours [data-rt-vue]').forEach(b => {
     const actif = b.dataset.rtVue === rtVue;
     b.classList.toggle('active', actif); b.setAttribute('aria-selected', actif ? 'true' : 'false');
@@ -142,7 +161,15 @@ function renderRetours(enErreur){
     if (!badge) { badge = document.createElement('span'); badge.className = 'rt-onglet-badge'; b.appendChild(badge); }
     badge.textContent = String(urgent);
   });
-  if (!liste.length) { corps.innerHTML = ''; return; }
+  if (!liste.length) {
+    // Rien trouvé : on le dit, et on dit si c'est de l'autre côté.
+    if (rtRecherche && window.CLTRetoursBureau) {
+      const ailleurs = tous.filter(c => (rtVue === 'non_livres') !== (c.statut === 'non_livre') && CLTRetoursBureau.correspond(c, rtRecherche, rtNomsPourRecherche(c))).length;
+      carte.classList.remove('rt-carte--vide');
+      corps.innerHTML = `<div class="rt-vide">Rien ne correspond à « ${escapeHTML(rtRecherche)} » de ce côté.${ailleurs ? ` <button type="button" class="rt-lien" data-rt-autre-cote="1">${ailleurs} résultat${ailleurs > 1 ? 's' : ''} côté « ${rtVue === 'retours' ? 'Non livrés' : 'Retours'} »</button>` : ''}</div>`;
+    } else corps.innerHTML = '';
+    return;
+  }
 
   const moi = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : null;
   corps.innerHTML = liste.map(c => {
@@ -163,9 +190,10 @@ function renderRetours(enErreur){
         </div>
         <div class="rt-niveau">
           <span class="rt-badge rt-badge--${escapeHTML(n ? n.cle : '')}">${escapeHTML(n ? n.label : '')}</span>
-          <span class="rt-depuis${retard ? ' rt-depuis--retard' : ''}">${retard ? '⏰ ' : ''}${escapeHTML(rtDepuis(c))}</span>
+          <span class="rt-depuis${retard ? ' rt-depuis--retard' : ''}" title="${c.statut === 'retour' ? 'Revenu le' : 'Non livré le'} ${escapeHTML(rtDateLongue(c))}">${retard ? '⏰ ' : ''}${escapeHTML(rtDepuis(c))}${rtDateCourte(c) ? ' · <span class="rt-date">' + escapeHTML(rtDateCourte(c)) + '</span>' : ''}</span>
         </div>
       </div>
+      ${rtAdresseHTML(c)}
       <div class="rt-ou">${escapeHTML(rtDetenteurTexte(c))}${motif ? ` <span class="rt-motif">· ${escapeHTML(motif)}</span>` : ''}${c.retour_conteste_texte ? `<div class="rt-conteste">« ${escapeHTML(c.retour_conteste_texte)} »</div>` : ''}</div>
       <div class="rt-gestes">
         ${peutReprog ? `<button type="button" class="btn btn-sm${c.statut === 'retour' ? ' btn-outline' : ''} rt-reprog-btn" data-rt-reprog="1" aria-expanded="${reprogOuvert ? 'true' : 'false'}">🗓️ Reprogrammer</button>` : ''}
@@ -301,6 +329,8 @@ document.addEventListener('change', async (e) => {
   delete rtHistoires[c.id];
   await chargerRetours();
 });
+document.getElementById('retours-recherche')?.addEventListener('input', (e) => { rtRecherche = e.target.value.trim(); rtReprog = null; rtReprogChoix = null; renderRetours(false); });
+document.addEventListener('click', (e) => { if (e.target.closest('#section-retours [data-rt-autre-cote]')) rtChoisirVue(rtVue === 'retours' ? 'non_livres' : 'retours'); });
 document.querySelectorAll('#section-retours [data-rt-vue]').forEach(b => b.addEventListener('click', () => rtChoisirVue(b.dataset.rtVue)));
 document.getElementById('retours-rafraichir')?.addEventListener('click', () => chargerRetours());
 

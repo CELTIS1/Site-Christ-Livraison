@@ -1038,10 +1038,18 @@ verifier(
    gérant confirme tout changement, numéro relu en clair ; champs grisés hors gérant ; chez le
    coursier le numéro se lit « 07 89 81 81 40 », bouton « Copier », rien à modifier. Constat au
    passage : l'onglet Express du bureau n'est visible que du gérant — c'est lui qui valide les
-   recharges. Banc (31), parcours 24 (20). Étiquette 20260921numeros. */
+   recharges. Banc (31), parcours 24 (20). Étiquette 20260921numeros.
+   v212, le 21/09/2026 — l'onglet Retours, suite. Celtis : « trois jours, c'est bien, mais ce n'est
+   pas précis : il faut la date » ; « un champ de recherche pour cette page » ; « c'est à l'adresse
+   qu'on regarde ». Des deux côtés (Retours, Non livrés) : la date exacte à côté de « depuis … »
+   (« depuis 3 jours · ven. 18 sept. ») ; sur chaque carte la commune en gras, l'adresse et le
+   téléphone du destinataire (appel d'un appui) ; un champ « Chercher ici » qui filtre le côté
+   ouvert (adresse, commune, numéro avec ou sans tirets, téléphone avec ou sans espaces, cliente,
+   livreur, motif ; sans accents), compte « n sur m » et propose l'autre côté quand c'est là que
+   ça se trouve. Règle pure app/retours-du-bureau.js. Banc (18), parcours 23 (29). Étiquette 20260921adresse. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v211'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v212'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
