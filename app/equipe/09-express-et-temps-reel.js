@@ -235,6 +235,8 @@ updateRechargeStats();
 if (!expressRecharges.length) { cltPoserHTML(box, `<div class="empty-state">Aucune recharge pour le moment.</div>`); return; }
 (async () => {
 const names = await rechargeCourierNames();
+// Sans API Wave, la référence fait foi (21/09/2026, recharges-express.js) : un même envoi ne se crédite qu'une fois.
+const enDouble = window.CLTRecharges ? CLTRecharges.doublons(expressRecharges) : {};
 if (!cltPoserHTML(box, expressRecharges.map(r => {
 const p = names[r.coursier_id];
 const who = p ? (p.full_name || 'Coursier') : 'Coursier';
@@ -247,7 +249,9 @@ return `
 <div class="info">
 <div class="desc">💰 ${formatMontant(r.montant)} · ${escapeHTML(MOMO_LABELS[r.operateur] || r.operateur || '')}</div>
 <div class="meta">Coursier : ${escapeHTML(who)}${p && p.phone ? ' · ' + escapeHTML(String(p.phone)) : ''}</div>
-<div class="meta">${r.reference ? 'Réf : ' + escapeHTML(r.reference) + ' · ' : ''}Déclarée le ${formatDate(r.created_at)}</div>
+<div class="meta">${r.reference ? 'Réf : <strong>' + escapeHTML(r.reference) + '</strong> · ' : ''}Déclarée le ${formatDate(r.created_at)}</div>
+${pending && enDouble[r.id] ? '<div class="meta recharge-alerte">⚠️ Référence déjà présente sur une autre recharge — ne pas créditer deux fois.</div>' : ''}
+${pending && !enDouble[r.id] && window.CLTRecharges && !CLTRecharges.verifierReference(r.reference).ok ? '<div class="meta recharge-alerte">⚠️ Sans référence : à vérifier dans le compte de CLT avant de valider.</div>' : ''}
 </div>
 <div class="status-col" style="flex-direction:column; align-items:flex-end; gap:4px;">
 ${actions}
@@ -259,7 +263,10 @@ ${expressRechargeBadgeHTML(r.status)}
 box.querySelectorAll('.btn-valider-recharge').forEach(btn => {
 btn.addEventListener('click', async () => {
 const id = btn.closest('.colis-item').dataset.id;
-if (!(await showConfirm({ title: 'Valider cette recharge ?', sub: 'Le solde du coursier sera crédité immédiatement.', okLabel: 'Valider' }))) return;
+const laRecharge = expressRecharges.find(x => x.id === id);
+const controle = window.CLTRecharges ? CLTRecharges.controleAvantValidation(laRecharge, expressRecharges) : { niveau: 'ok', bloque: false, message: 'Le solde du coursier sera crédité immédiatement.' };
+if (controle.bloque) { cltToast(controle.message, { type: 'warning', title: 'Recharge non validée' }); return; }
+if (!(await showConfirm({ title: 'Argent bien reçu sur le compte de CLT ?', detail: laRecharge ? formatMontant(laRecharge.montant) + (laRecharge.reference ? ' · réf. ' + laRecharge.reference : '') : '', sub: controle.message, okLabel: 'Oui, je l\'ai vu — valider' }))) return;
 btn.disabled = true; btn.textContent = '...';
 const { error } = await supabaseClient.from('express_recharges').update({ status: 'validee' }).eq('id', id).eq('status', 'en_attente');
 if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); btn.disabled = false; btn.textContent = '✅ Valider'; return; }

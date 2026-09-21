@@ -3925,3 +3925,7 @@ html[data-theme="dark"] .recup-retard{ background:#3a3010; color:#f3d98a; }
 }
 html[data-theme="dark"] .colis-date{ color:#9EC0E6; }
 html[data-theme="dark"] .btn-colis-deplier{ color:#9EC0E6; }
+
+/* Recharges Express sans API (21/09/2026) : l'avertissement sous une déclaration douteuse. */
+.recharge-alerte{ color:#8f2018; font-weight:700; }
+html[data-theme="dark"] .recharge-alerte{ color:#ff9d92; }

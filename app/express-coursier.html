@@ -17,10 +17,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260921reprogrammer">
+<link rel="stylesheet" href="style.css?v=20260921recharges">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260921reprogrammer"></script>
-<script src="splash.js?v=20260921reprogrammer"></script>
+<script src="theme.js?v=20260921recharges"></script>
+<script src="splash.js?v=20260921recharges"></script>
 <style>
   .topbar{ background:#0D9488; }
   .topbar .brand .logo-mark{ background:#0b6e64; }
@@ -436,8 +436,9 @@
         </div>
       </div>
       <div class="field" id="recharge-reference-field">
-        <label>3. Référence de la transaction (facultatif)</label>
-        <input type="text" id="recharge-reference" placeholder="Ex : ID Wave / Orange Money reçu par SMS">
+        <label>3. Référence de la transaction</label>
+        <input type="text" id="recharge-reference" autocapitalize="characters" autocomplete="off" placeholder="Ex : identifiant du reçu ou du SMS">
+        <div class="hint" style="font-size:12px;color:var(--muted);margin-top:4px;">Elle figure sur le reçu ou le SMS de votre envoi. C'est elle qui prouve votre paiement : sans elle, l'équipe ne peut pas créditer votre solde.</div>
       </div>
       <button type="submit" class="btn" id="btn-submit-recharge" style="width:100%;justify-content:center;margin-top:6px;">Déclarer mon envoi</button>
     </form>
@@ -628,9 +629,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260921reprogrammer"></script>
-<script src="express-config.js?v=20260921reprogrammer"></script>
-<script src="biometric-lock.js?v=20260921reprogrammer"></script>
+<script src="clt-common.js?v=20260921recharges"></script>
+<script src="express-config.js?v=20260921recharges"></script>
+<script src="recharges-express.js?v=20260921recharges"></script>
+<script src="biometric-lock.js?v=20260921recharges"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1615,16 +1617,26 @@
     }
 
     // --- Déclaration manuelle (Orange / MTN / Moov, ou Wave hors ligne) ---
+    // Sans API, c'est la référence qui relie la déclaration à l'envoi (21/09/2026) : obligatoire.
+    const ref = window.CLTRecharges ? CLTRecharges.verifierReference(reference) : { ok: !!reference, reference, erreur: 'Indiquez la référence de la transaction.' };
+    if (!ref.ok) { msgBox.innerHTML = `<div class="msg msg-error">${escapeHTML(ref.erreur)}</div>`; document.getElementById('recharge-reference').focus(); return; }
+    if (mesRecharges.some(r => r.status !== 'refusee' && window.CLTRecharges && CLTRecharges.normaliserReference(r.reference) === ref.reference)) {
+      msgBox.innerHTML = `<div class="msg msg-error">Vous avez déjà déclaré cet envoi (même référence). Un envoi ne se déclare qu'une fois.</div>`; return;
+    }
     btn.disabled = true; btn.textContent = 'Envoi...';
     const { error } = await supabaseClient.from('express_recharges').insert({
       coursier_id: currentUser.id,
       montant: montant,
       operateur: selectedOperateur,
-      reference: reference || null,
+      reference: reference,
       status: 'en_attente',
     });
     btn.disabled = false; btn.textContent = 'Déclarer mon envoi';
-    if (error) { msgBox.innerHTML = `<div class="msg msg-error">Erreur : ${friendlyErrorMessage(error.message)}</div>`; return; }
+    if (error) {
+      // L'index unique de la base (une référence = un seul crédit) : le dire avec des mots.
+      const dejaPrise = /duplicate key|unique|23505/i.test((error.code || '') + ' ' + (error.message || ''));
+      msgBox.innerHTML = `<div class="msg msg-error">${dejaPrise ? 'Cette référence a déjà été déclarée. Un envoi ne se crédite qu\'une fois — vérifiez la référence, ou appelez CLT.' : 'Erreur : ' + friendlyErrorMessage(error.message)}</div>`; return;
+    }
     msgBox.innerHTML = `<div class="msg msg-success">Déclaration envoyée ! Dès que l'équipe l'aura validée, votre solde sera crédité.</div>`;
     e.target.reset();
     document.getElementById('momo-number-box').classList.add('hidden');

@@ -1011,10 +1011,18 @@ verifier(
    « #section-clients, #section-livreurs .cd-… » visaient #section-clients LUI-MÊME (display:flex) :
    la carte ne s'étirait pas sur grand écran et le choix de période n'était pas habillé. (4) Le
    chiffre de l'onglet compte un litige en retard une fois, plus deux. (5) Sélecteur lisible la nuit.
-   Banc reprogrammer (26), parcours 23. Étiquette 20260921reprogrammer. */
+   Banc reprogrammer (26), parcours 23. Étiquette 20260921reprogrammer.
+   v209, le 21/09/2026 — l'argent des coursiers Express sans l'API Wave. Celtis : « s'il y a une
+   autre manière d'avoir notre argent, en sécurité, on le fait en attendant ». Le modèle prépayé
+   (solde, commission prélevée, solde minimum) était déjà là ; il manquait la preuve. Règle pure
+   app/recharges-express.js : la référence de la transaction devient OBLIGATOIRE chez le coursier,
+   normalisée (espaces, tirets, casse) ; le bureau voit un doublon sur la ligne et ne peut pas le
+   valider ; la question posée devient « Argent bien reçu sur le compte de CLT ? ». Verrou en base
+   préparé (_sql-prive/2026-09-21-recharge-reference-unique.sql, index unique partiel, essayé dans
+   un vrai Postgres), à jouer par Celtis. Banc (17), parcours 24. Étiquette 20260921recharges. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v208'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v209'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
