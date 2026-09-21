@@ -1033,6 +1033,13 @@ const editBtn = `<button type="button" class="btn-edit-account">✏️ Corriger 
 const boutiquesBtn = a.role === 'fournisseur'
 ? `<button type="button" class="btn-boutiques-supervisees">🏬 Boutiques supervisées${typeof nbBoutiquesSupervisees === 'function' && nbBoutiquesSupervisees(a.id) ? ' (' + nbBoutiquesSupervisees(a.id) + ')' : ''}</button>`
 : '';
+// « 👁 Voir son écran » (21/09/2026) : l'administrateur ouvre l'écran d'un livreur ou d'une cliente, avec
+// ses données, en lecture seule. La règle (qui regarde, qui se regarde) est dans voir-un-compte.js.
+const lienVoir = (window.CLTVoirUnCompte && isAdmin && currentUser && !estSuspendu)
+? CLTVoirUnCompte.lien(a, { id: currentUser.id, role: 'admin', status: 'valide' }) : '';
+const voirBtn = lienVoir
+? `<button type="button" class="btn-voir-compte" data-lien="${escapeHTML(lienVoir)}" title="Son écran, avec ses données. Lecture seule : rien ne peut être modifié.">👁 Voir son écran</button>`
+: '';
 // Réinitialisation : inutile sur un compte suspendu (il ne peut pas se connecter)
 // et inutile sur le sien (on change son mot de passe depuis « Mon compte »).
 const resetBtn = (isSelf || estSuspendu)
@@ -1065,6 +1072,7 @@ ${suspenduDetail}
 <div class="actions-menu">
 <button type="button" class="actions-menu-btn" aria-label="Actions du compte">⋮</button>
 <div class="actions-dropdown">
+${voirBtn}
 ${editBtn}
 ${boutiquesBtn}
 ${resetBtn}
@@ -1233,6 +1241,10 @@ btn.disabled = false; btn.textContent = '🔑 Réinitialiser le mot de passe';
 });
 
 // ---- Suspendre / réactiver -------------------------------------------------
+// Un nouvel onglet, SANS « noopener » : c'est ce qui lui donne une copie de la connexion de cet écran.
+box.querySelectorAll('.btn-voir-compte').forEach(btn => {
+btn.addEventListener('click', () => { window.open(btn.dataset.lien, '_blank'); });
+});
 box.querySelectorAll('.btn-suspend-account').forEach(btn => {
 btn.addEventListener('click', async (e) => {
 e.stopPropagation();

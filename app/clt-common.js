@@ -2154,3 +2154,117 @@ if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cltBrancherInstall);
   else cltBrancherInstall();
 }
+
+/* REGARDER UN COMPTE, EN LECTURE SEULE. La règle est dans voir-un-compte.js ; ici on l'applique au
+   client de la base, EN UN SEUL ENDROIT, pour qu'aucun bouton de l'écran regardé ne puisse écrire :
+     • toute écriture (ajout, modification, suppression, fonction, fichier) est refusée avant de partir ;
+     • les colis, le relevé, les reversements… sont demandés avec le tri que la base applique à la personne ;
+     • les lectures « pour celui qui est connecté » rendent « rien » plutôt que les données du gérant.
+   Rend le compte regardé, ou null si l'on ne regarde personne.
+   (Ici et non dans config.js, qui tient son budget de lignes ; supabaseClient n'est lu qu'à l'appel.) */
+let cltCompteRegarde = null;
+function cltRegarderUnCompte(compte) {
+  const R = window.CLTVoirUnCompte;
+  if (!R || !compte || cltCompteRegarde) return cltCompteRegarde;
+  cltCompteRegarde = compte;
+  let dernierAvis = 0;
+  const avertir = function () {
+    const t = Date.now();
+    if (t - dernierAvis < 2500) return;
+    dernierAvis = t;
+    if (window.cltToast) cltToast(R.MESSAGE_LECTURE_SEULE, { type: 'info', title: 'Lecture seule', duration: 6000 });
+  };
+  // Une « requête » qui accepte tous les enchaînements (.eq().select().single()…) et ne part jamais.
+  const reponse = function (erreur) {
+    const resultat = { data: null, error: erreur, count: null, status: erreur ? 403 : 200 };
+    const cible = function () {};
+    const mandataire = new Proxy(cible, {
+      get: function (_, cle) {
+        if (cle === 'then') return function (ok, ko) { return Promise.resolve(resultat).then(ok, ko); };
+        if (cle === 'catch') return function (ko) { return Promise.resolve(resultat).catch(ko); };
+        if (cle === 'finally') return function (f) { return Promise.resolve(resultat).finally(f); };
+        return function () { return mandataire; };
+      },
+      apply: function () { return mandataire; },
+    });
+    return mandataire;
+  };
+  const refuser = function () { avertir(); return reponse({ message: R.MESSAGE_LECTURE_SEULE, code: 'CLT_LECTURE_SEULE' }); };
+
+  const vraiFrom = supabaseClient.from.bind(supabaseClient);
+  supabaseClient.from = function (table) {
+    const q = vraiFrom(table);
+    ['insert', 'update', 'upsert', 'delete'].forEach(function (op) { q[op] = refuser; });
+    const tri = R.filtreDeLaTable(table, compte);
+    if (tri) {
+      const vraiSelect = q.select.bind(q);
+      q.select = function () {
+        const r = vraiSelect.apply(null, arguments);
+        return tri.type === 'or' ? r.or(tri.valeur) : r.eq(tri.colonne, tri.valeur);
+      };
+    }
+    return q;
+  };
+  supabaseClient.rpc = function (nom) {
+    return R.sortDeLOperation('rpc', nom) === 'vide' ? reponse(null) : refuser();
+  };
+  try { supabaseClient.functions.invoke = function () { avertir(); return Promise.resolve({ data: null, error: { message: R.MESSAGE_LECTURE_SEULE } }); }; } catch (e) { /* client sans fonctions */ }
+  try {
+    const vraiStockage = supabaseClient.storage.from.bind(supabaseClient.storage);
+    supabaseClient.storage.from = function (seau) {
+      const b = vraiStockage(seau);
+      ['upload', 'update', 'remove', 'move', 'copy', 'createSignedUploadUrl', 'uploadToSignedUrl'].forEach(function (op) { if (b[op]) b[op] = function () { avertir(); return Promise.resolve({ data: null, error: { message: R.MESSAGE_LECTURE_SEULE } }); }; });
+      return b;
+    };
+  } catch (e) { /* client sans stockage */ }
+  try { supabaseClient.auth.updateUser = function () { avertir(); return Promise.resolve({ data: { user: null }, error: { message: R.MESSAGE_LECTURE_SEULE } }); }; } catch (e) { /* rien */ }
+  return cltCompteRegarde;
+}
+
+/* « 👁 VOIR SON ÉCRAN » — l'ouverture, côté écran regardé (21/09/2026). La règle est dans
+   voir-un-compte.js, la lecture seule dans config.js (cltRegarderUnCompte). Ici : on lit « ?voir= »,
+   on vérifie que le lecteur est l'administrateur et que le compte va avec cette page, on note la
+   consultation, on verrouille les écritures, et on pose le bandeau.
+   Rend : null (on ne regarde personne, l'écran s'ouvre normalement)
+        | { refuse: 'pourquoi' } (demande non recevable : la page renvoie à l'écran Équipe)
+        | { compte } (on regarde : la page s'ouvre avec CE profil, sans verrou, sans présence, sans notifications). */
+async function cltOuvrirVueCompte(profilDuLecteur) {
+  const R = window.CLTVoirUnCompte;
+  const id = R ? R.lireDemande(window.location.search) : null;
+  if (!id) return null;
+  if (!R.peutRegarder(profilDuLecteur)) return { refuse: 'Seul l\'administrateur peut regarder l\'écran d\'un compte.' };
+  let compte = null;
+  try {
+    const { data } = await supabaseClient.from('profiles').select('*').eq('id', id).maybeSingle();
+    compte = data || null;
+  } catch (e) { compte = null; }
+  const peut = R.peutEtreRegarde(compte, profilDuLecteur);
+  if (!peut.ok) return { refuse: peut.pourquoi };
+  if (!R.bonnePage(compte, window.location.pathname)) return { refuse: 'Cet écran n\'est pas celui de ce compte.' };
+  // La consultation est notée AVANT le verrou (après, plus rien ne s'écrit). Sans la table, on regarde quand même.
+  try { await supabaseClient.from('consultations_de_compte').insert({ admin_id: profilDuLecteur.id, compte_id: compte.id, compte_role: compte.role }); } catch (e) { /* table absente : pas bloquant */ }
+  cltRegarderUnCompte(compte);
+  cltPoserBandeauVueCompte(compte);
+  return { compte: compte };
+}
+
+function cltPoserBandeauVueCompte(compte) {
+  if (document.getElementById('clt-vue-compte')) return;
+  const t = window.CLTVoirUnCompte.bandeau(compte);
+  const b = document.createElement('div');
+  b.id = 'clt-vue-compte';
+  b.className = 'clt-vue-compte';
+  b.setAttribute('role', 'status');
+  b.innerHTML = '<span class="clt-vue-compte__oeil" aria-hidden="true">👁</span>'
+    + '<span class="clt-vue-compte__texte"><strong>' + escapeHTML(t.titre) + '</strong><span>' + escapeHTML(t.sousTitre) + '</span></span>'
+    + '<button type="button" class="clt-vue-compte__quitter">' + escapeHTML(t.quitter) + '</button>';
+  b.querySelector('button').addEventListener('click', function () {
+    // Ouvert dans un onglet à part depuis l'écran Équipe : on le referme ; sinon on y retourne.
+    try { window.close(); } catch (e) { /* onglet non refermable */ }
+    setTimeout(function () { window.location.href = 'equipe.html'; }, 150);
+  });
+  const barre = document.querySelector('.topbar');
+  if (barre) barre.insertBefore(b, barre.firstChild); else document.body.insertBefore(b, document.body.firstChild);
+  document.documentElement.classList.add('clt-regarde-un-compte');
+  try { document.title = '👁 ' + (compte.company_name || compte.full_name || 'Compte') + ' — lecture seule'; } catch (e) { /* rien */ }
+}

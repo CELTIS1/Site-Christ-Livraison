@@ -28,7 +28,14 @@ if ('serviceWorker' in navigator) {
 // importe le stockage utilisé ici pour cette page-là.
 const _pwaCurrentPage = window.location.pathname.split('/').pop();
 const _pwaPersistentPages = ['livreur.html', 'fournisseur.html'];
-const _authStorage = _pwaPersistentPages.includes(_pwaCurrentPage)
+/* « 👁 Voir son écran » (21/09/2026) : l'administrateur ouvre l'écran d'un livreur ou d'une cliente
+   depuis l'écran Équipe, dans un nouvel onglet. Sa connexion vit dans le stockage de SESSION (celui
+   de l'écran Équipe, que le nouvel onglet reçoit en copie) : avec « ?voir= » dans l'adresse, c'est
+   donc là qu'on la lit — jamais dans la connexion durable d'un livreur qui aurait servi sur cet
+   appareil. Sans connexion d'administrateur, « ?voir= » ne donne rien : on retombe sur la page de
+   connexion. */
+const _cltVoirDemande = /[?&]voir=/.test(window.location.search);
+const _authStorage = (_pwaPersistentPages.includes(_pwaCurrentPage) && !_cltVoirDemande)
   ? window.localStorage
   : window.sessionStorage;
 
@@ -358,6 +365,8 @@ async function envoyerPositionCLT(userId, coords, onEnvoi) {
 }
 
 function startPositionSharing(userId, onError, onEnvoi) {
+  // Pendant que l'administrateur REGARDE un compte, il ne partage la position de personne (21/09/2026).
+  if (typeof cltCompteRegarde !== 'undefined' && cltCompteRegarde) return;
   positionSuivi = { userId, onError, onEnvoi, lastSentAt: (positionSuivi && positionSuivi.lastSentAt) || 0 };
   if (positionWatchId !== null) return; // déjà actif, rien à faire
   if (!("geolocation" in navigator)) {

@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260921bas">
+<link rel="stylesheet" href="style.css?v=20260921voir">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260921bas"></script>
-<script src="splash.js?v=20260921bas"></script>
+<script src="theme.js?v=20260921voir"></script>
+<script src="splash.js?v=20260921voir"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -692,7 +692,7 @@
             <a id="lien-whatsapp-clt" href="#" target="_blank" rel="noopener">🟢 Écrire sur WhatsApp</a>
           </div>
           <div class="settings-groupe">
-            <button type="button" class="danger" onclick="logout()">🚪 Se déconnecter</button>
+            <button type="button" class="danger" onclick="logout()" data-cache-si-regarde>🚪 Se déconnecter</button>
           </div>
         </div>
       </div>
@@ -1039,25 +1039,26 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260921bas"></script>
-<script src="lib/bibliotheques.js?v=20260921bas"></script>
-<script src="lib/retours.js?v=20260921bas"></script>
-<script src="lib/reclamations.js?v=20260921bas"></script>
-<script src="lib/communes-et-tarifs.js?v=20260921bas"></script>
-<script src="lib/argent.js?v=20260921bas"></script>
-<script src="lib/releve-cliente.js?v=20260921bas"></script>
-<script src="lib/papier-a-en-tete.js?v=20260921bas"></script>
-<script src="lib/briques-argent.js?v=20260921bas"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260921bas"></script>
-<script src="lib/annonce-de-remise.js?v=20260921bas"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260921bas"></script>
-<script src="lib/primes.js?v=20260921bas"></script>
-<script src="lib/doublons.js?v=20260921bas"></script>
-<script src="config.js?v=20260921bas"></script>
-<script src="etiquettes-et-scan.js?v=20260921bas"></script>
+<script src="clt-common.js?v=20260921voir"></script>
+<script src="voir-un-compte.js?v=20260921voir"></script>
+<script src="lib/bibliotheques.js?v=20260921voir"></script>
+<script src="lib/retours.js?v=20260921voir"></script>
+<script src="lib/reclamations.js?v=20260921voir"></script>
+<script src="lib/communes-et-tarifs.js?v=20260921voir"></script>
+<script src="lib/argent.js?v=20260921voir"></script>
+<script src="lib/releve-cliente.js?v=20260921voir"></script>
+<script src="lib/papier-a-en-tete.js?v=20260921voir"></script>
+<script src="lib/briques-argent.js?v=20260921voir"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260921voir"></script>
+<script src="lib/annonce-de-remise.js?v=20260921voir"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260921voir"></script>
+<script src="lib/primes.js?v=20260921voir"></script>
+<script src="lib/doublons.js?v=20260921voir"></script>
+<script src="config.js?v=20260921voir"></script>
+<script src="etiquettes-et-scan.js?v=20260921voir"></script>
 <!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
-<script src="ordre-de-livraison.js?v=20260921bas"></script>
-<script src="biometric-lock.js?v=20260921bas"></script>
+<script src="ordre-de-livraison.js?v=20260921voir"></script>
+<script src="biometric-lock.js?v=20260921voir"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1568,6 +1569,9 @@
   }
 
   async function flushOfflineQueue(){
+    // Pendant que l'administrateur REGARDE ce compte, la file d'envoi de cet appareil ne bouge pas : ses
+    // écritures seraient refusées, et comptées à tort comme des échecs (21/09/2026).
+    if (typeof cltCompteRegarde !== 'undefined' && cltCompteRegarde) return;
     if (syncInProgress || !navigator.onLine) return;
     syncInProgress = true;
     const avertissements = [];
@@ -5007,7 +5011,14 @@
        gardée sur l'appareil qui sert ; sans copie, on propose de réessayer. Jamais de
        redirection ni de déconnexion sur une panne de réseau. */
     const lecture = await chargerProfil(currentUser.id);
-    const profile = lecture.profil;
+    let profile = lecture.profil;
+    /* « 👁 Voir son écran » (21/09/2026) : l'administrateur regarde CE compte, en lecture seule. À partir
+       d'ici la page vit avec le profil et l'identifiant de la personne regardée ; les écritures sont
+       refusées dans config.js. Demande non recevable : retour à l'écran Équipe, rien ne s'ouvre. */
+    const vueCompte = (profile && !lecture.horsLigne) ? await cltOuvrirVueCompte(profile) : null;
+    if (vueCompte && vueCompte.refuse) { window.location.replace(profile.role === 'admin' || profile.role === 'equipe' ? 'equipe.html' : window.location.pathname); return; }
+    const onRegarde = !!(vueCompte && vueCompte.compte);
+    if (onRegarde) { profile = vueCompte.compte; currentUser = Object.assign({}, session.user, { id: profile.id }); }
     if (!profile && lecture.horsLigne) { afficherSansReseau(); return; }
     if (!profile || profile.role !== 'livreur') {
       if (profile && profile.role === 'equipe') {
@@ -5038,9 +5049,9 @@
     const prechargementTournee = chargerMaTournee();
     // --- Déverrouillage biométrique (Face ID / Touch ID / empreinte) — opt-in, par appareil ---
     // Verrou à l'ouverture si l'utilisateur l'a activé sur ce téléphone (sinon, sans effet).
-    if (window.CLTBioLock) { try { await CLTBioLock.guard(currentUser); } catch (e) {} }
+    if (window.CLTBioLock && !onRegarde) { try { await CLTBioLock.guard(currentUser); } catch (e) {} }
     // Proposer l'activation une seule fois (après le splash), si l'appareil est compatible et non déjà activé.
-    setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);
+    setTimeout(function () { if (window.CLTBioLock && !onRegarde) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);
 
     // Le nom que signent les messages WhatsApp rédigés par config.js (messageDestinataire).
     window.cltNomAffiche = profile.full_name || '';
@@ -5051,10 +5062,10 @@
     initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
     initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
     initSettingsMenu();
-    cltInitPushButton(profile.role, () => currentUser ? currentUser.id : null);
+    if (!onRegarde) cltInitPushButton(profile.role, () => currentUser ? currentUser.id : null);
     initDeleteAccountRequest({ profile, requestBtnId: 'btn-request-delete', cancelBtnId: 'btn-cancel-delete', msgId: 'account-delete-msg', stateContainerId: 'account-delete-state' });
     // Protégé par try/catch : une erreur de présence ne doit jamais bloquer le reste du tableau de bord.
-    try { initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
+    try { if (!onRegarde) initPresence(profile); } catch (e) { console.error('Erreur initialisation présence', e); }
 
     function selectFilterMes(val){ activeFilterMes = val; remettreTrancheMesAZero(); viderSelectionMes(); renderFilters('filters-mes', activeFilterMes, selectFilterMes); renderMesColis(); syncBottomNav(activePanel);
       // La pastille choisie reste sous les yeux (« À rendre » est la dernière de la rangée, hors écran sur un téléphone).
@@ -5258,7 +5269,8 @@
   // restent en orange : crier au loup pour un tunnel apprend au livreur à ignorer la pastille,
   // et le jour de la vraie panne, il l'ignorera aussi.
   function positionEtatLigne(faits, maintenant){
-    if (!faits.enTournee) return { visible: false, classe: '', texte: '', detail: '', detailClasse: '' };
+    // L'administrateur qui REGARDE ce compte ne partage la position de personne : la ligne n'a rien à dire (21/09/2026).
+    if (!faits.enTournee || (typeof cltCompteRegarde !== 'undefined' && cltCompteRegarde)) return { visible: false, classe: '', texte: '', detail: '', detailClasse: '' };
     if (faits.accordManquant) {
       return { visible: true, classe: 'est-attente', texte: 'Votre accord est demandé ci-dessus', detail: '', detailClasse: '' };
     }
