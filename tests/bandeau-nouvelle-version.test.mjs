@@ -1241,7 +1241,10 @@ verifier(
    cliente l'a remis, qui ne bouge plus jamais et qui ancre tout ce qui REND DES COMPTES, et celui
    où il faut s'en occuper, que le report déplace et qui ancre tout ce qui DISTRIBUE DU TRAVAIL.
    Sur le relevé, la ligne dit d'elle-même « reporté au 23/09 » ; l'argent ne bouge pas d'un franc.
-   Et la liste du bureau, où l'on cherche un colis, le montre désormais dans ses deux journées. Étiquette 20260922report. */
+   Et la liste du bureau, où l'on cherche un colis, le montre désormais dans ses deux journées.
+   Même lot : la notification d'un point ne dépose plus l'équipe sur la page d'accueil — elle ouvre
+   LE point concerné, encadré en orange jusqu'au premier toucher, et plusieurs points en attente
+   restent tous encadrés (17-le-point-a-voir.js). Étiquette 20260922report. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
   /CACHE_VERSION = 'clt-shell-v229'/.test(sw),

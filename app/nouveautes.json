@@ -8,7 +8,7 @@
       "points": [
         "Le point d'une vendeuse montre tous les colis qu'elle a remis ce jour-là, reportés compris, avec la mention « reporté au … ». L'argent dû ne change pas.",
         "Le point par livreur suit la même règle, et la liste du bureau montre le colis reporté dans ses deux journées.",
-        "« Ma journée » du livreur et la tournée continuent d'obéir au report : c'est à ça qu'il sert."
+        "Équipe : la notification d'un point ouvre directement ce point, encadré en orange tant qu'on n'y a pas touché."
       ]
     },
     {

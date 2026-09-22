@@ -92,7 +92,7 @@ verifier('equipe.html ne contient plus de grand script inline (moins de 60 ligne
 const fichiersEquipe = fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.endsWith('.js')).sort();
 // Douze depuis le 17/09/2026 (point 7.8) : 11-chercher-partout.js, la recherche unique.
 // Quinze depuis le 20/09/2026 (point 9.6) : 14-liste-et-fiche.js, la liste et la fiche côte à côte.
-verifier('dix-sept fichiers numérotés dans app/equipe/, du 00 au 16 (16 : les colis sur la carte, 9.6)', fichiersEquipe.length === 17 && fichiersEquipe.every((f, i) => f.startsWith(String(i).padStart(2, '0') + '-')), fichiersEquipe.join(', '));
+verifier('dix-huit fichiers numérotés dans app/equipe/, du 00 au 17 (17 : le point à voir, 22/09)', fichiersEquipe.length === 18 && fichiersEquipe.every((f, i) => f.startsWith(String(i).padStart(2, '0') + '-')), fichiersEquipe.join(', '));
 verifier('equipe.html les charge tous, dans l\'ordre, après config.js, même étiquette', (() => {
   const balises = [...equipeHtml.matchAll(/<script src="equipe\/([^"?]+)\?v=([^"]+)"><\/script>/g)];
   const etiquetteConfig = (equipeHtml.match(/<script src="config\.js\?v=([^"]+)">/) || [])[1];

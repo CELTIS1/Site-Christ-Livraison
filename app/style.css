@@ -1020,6 +1020,10 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
 .recap-point--oui{color:#1a7d3c; background:#e3f6ea;}
 .recap-point--non{color:#6b7686; background:#eef1f5;}
 .recap-client-card--fait{border-color:#bce6cd;}
+/* LE POINT À VOIR (22/09/2026) : la carte que la notification visait reste encadrée en orange,
+   avec « 🔔 à traiter », jusqu'à ce qu'on l'ouvre. Plusieurs notifications, plusieurs cadres. */
+.recap-client-card--a-voir{border:2px solid var(--orange); box-shadow:0 0 0 3px rgba(226,99,19,.18);}
+.recap-a-voir{margin-left:8px; padding:2px 8px; border-radius:999px; background:var(--orange); color:#fff; font-size:11.5px; font-weight:800; white-space:nowrap;}
 .recap-day-points{font-size:13px; font-weight:600; color:var(--navy); margin:2px 0 10px;}
 .recap-day-points--fini{color:#1a7d3c;}
 .recap-day-points strong{color:var(--orange);}

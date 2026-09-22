@@ -469,10 +469,16 @@ async function handleJourneeBouclee(record: any, oldRecord: any, eventType: stri
   const livres = Number(record.nb_livres) || 0;
   const tag = `bouclee-${id}-${record.jour}`;
 
+  /* LA NOTIFICATION CONDUIT EXACTEMENT LÀ (22/09/2026, Celtis : « lorsqu'on clique, ça nous
+     envoie sur le point concerné »). L'adresse porte la cliente ET le jour : l'écran de l'équipe
+     ouvre Suivi › Récapitulatif par client sur ce jour-là, et encadre sa carte jusqu'à ce qu'on
+     l'ouvre (app/equipe/17-le-point-a-voir.js). Le jour est celui de la REMISE — le même que le
+     point — depuis la migration du 22/09. */
+  const cible = `point=${encodeURIComponent(id)}&jour=${encodeURIComponent(String(record.jour || "").slice(0, 10))}`;
   if (eventType === "INSERT") {
     return await envoyer({ roles: ["equipe", "admin"], userIds: [] },
       "✅ Journée bouclée : " + nom,
-      `${journeeDetail(n, livres)}. Son point peut être réglé.`, tag, "");
+      `${journeeDetail(n, livres)}. Son point peut être réglé.`, tag, cible);
   }
 
   // UPDATE : on ne parle que si les CHIFFRES ont bougé. Un déclencheur peut réécrire une ligne
@@ -488,7 +494,7 @@ async function handleJourneeBouclee(record: any, oldRecord: any, eventType: stri
   return await envoyer({ roles: ["equipe", "admin"], userIds: [] },
     "♻️ La journée de " + nom + " a changé",
     `${changements.join(" · ")}. Si son point est déjà réglé, il est à revoir.`,
-    tag + "-maj", "");
+    tag + "-maj", cible);
 }
 
 /* Un livreur vient d'annoncer sa remise : la ligne arrive dans annonces_remise au moment où
@@ -509,8 +515,10 @@ async function handleAnnonceRemise(record: any, eventType: string): Promise<Resp
   const corps = `${montant.toLocaleString("fr-FR")} FCFA annoncés`
     + (ecart ? ` · écart de ${ecart.toLocaleString("fr-FR")} FCFA avec ce qu'il porte` : "")
     + (record.note ? ` · « ${String(record.note).slice(0, 80)} »` : "");
+  // Même précision que pour la cliente : la carte de CE livreur, dans le récapitulatif par
+  // livreur du jour, encadrée jusqu'à ce qu'on l'ouvre. (22/09/2026)
   return await envoyer({ roles: ["equipe", "admin"], userIds: [] },
-    "💰 " + nom + " a fait son point", corps, `remise-${record.id}`, "");
+    "💰 " + nom + " a fait son point", corps, `remise-${record.id}`, `point-livreur=${encodeURIComponent(livreur)}`);
 }
 
 // ----------------------------------------------------------------------------
