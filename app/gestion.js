@@ -4270,6 +4270,25 @@ async function init(){
 
   // Onglet ouvert par défaut selon le profil
   switchTab(isAdmin ? 'dashboard' : (canPaie ? 'paie' : 'compta'));
+  // LA NOTIFICATION DU DIMANCHE (22/09/2026) : « ?bilan=semaine » conduit au bilan de la semaine,
+  // encadré jusqu'au premier toucher — même geste que le point à voir dans l'espace équipe.
+  try {
+    if (isAdmin && new URLSearchParams(location.search).get('bilan') === 'semaine') {
+      history.replaceState(null, '', location.pathname);
+      let essais = 0;
+      const aller = () => {
+        const b = document.getElementById('cdd-semaine');
+        if (b && b.children.length) {
+          b.classList.add('recap-client-card--a-voir');
+          b.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          b.addEventListener('click', () => b.classList.remove('recap-client-card--a-voir'), { once: true });
+          return;
+        }
+        if (++essais < 30) setTimeout(aller, 300);
+      };
+      setTimeout(aller, 300);
+    }
+  } catch (e) { /* un lien mal formé n'empêche pas l'écran */ }
 
   // En-tête figé : mesure des décalages et mise en place des observateurs.
   initStickyHeader();

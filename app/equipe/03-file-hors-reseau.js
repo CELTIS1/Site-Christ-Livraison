@@ -1287,11 +1287,11 @@ switch (cle) {
   // 20/09/2026 : les retours ont leur écran (section-retours), avec le détenteur nommé et les
   // gestes du bureau. Les pastilles y mènent au lieu d'ouvrir une simple liste de colis.
   case 'retours': case 'retours-tard': {
-    if (typeof showEquipeTab === 'function') { showEquipeTab('retours'); if (typeof rtChoisirVue === 'function') rtChoisirVue('retours'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (typeof showEquipeTab === 'function') { showEquipeTab('retours'); if (typeof rtChoisirVue === 'function') rtChoisirVue('retours'); (typeof cltDefilerEnHaut === 'function' ? cltDefilerEnHaut(true) : window.scrollTo({ top: 0, behavior: 'smooth' })); }
     else listeColis('retour', '', cle === 'retours' ? L.retours : L.retoursTard);
     break;
   }
-  case 'litiges': { if (typeof showEquipeTab === 'function') { showEquipeTab('retours'); if (typeof rtChoisirVue === 'function') rtChoisirVue('retours'); window.scrollTo({ top: 0, behavior: 'smooth' }); } break; }
+  case 'litiges': { if (typeof showEquipeTab === 'function') { showEquipeTab('retours'); if (typeof rtChoisirVue === 'function') rtChoisirVue('retours'); (typeof cltDefilerEnHaut === 'function' ? cltDefilerEnHaut(true) : window.scrollTo({ top: 0, behavior: 'smooth' })); } break; }
   case 'demandes-passage': {
     // La pastille compte les demandes en attente d'aujourd'hui et des jours à venir ; la
     // tournée affichée est celle d'UN jour. On va au premier jour qui en a une, sinon le

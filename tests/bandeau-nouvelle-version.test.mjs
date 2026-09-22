@@ -1253,10 +1253,20 @@ verifier(
    porte le nom et conduit à la ligne (Tournées, ce jour-là, encadrée) ; « Programmer » pose la
    cliente dans le formulaire ; la tournée posée marque la demande traitée d'elle-même
    (déclencheur) et la cliente apprend qui passe. Et la barre d'onglets du bas, sur iPhone, est
-   posée sur sa propre couche pour ne plus suivre le défilement. Étiquette 20260922passage. */
+   posée sur sa propre couche pour ne plus suivre le défilement. Étiquette 20260922passage.
+   v231, le 22/09/2026 — LA COQUE. Celtis, après la v230 : « la barre du bas continue de bouger »
+   en faisant défiler, sur iPhone. Poser la barre sur sa propre couche n'a pas suffi : on fait
+   comme les applications natives — la page ne défile plus, le contenu (.wrap) défile dans un
+   cadre fixe entre l'en-tête et la barre, qui sont hors du défilement. « Remonter en haut »,
+   « Aller en bas » et le retour en haut au changement d'onglet passent par cltDefileur().
+   Espace équipe seulement, au téléphone ; les autres espaces suivront si Celtis confirme.
+   Même lot : LES RAPPORTS POUSSÉS. La base écrit le rapport (rapports_pousses), le branchement
+   envoyer_push_rapports le fait partir : le bilan de la semaine le dimanche à 8 h heure de l'Est
+   (été comme hiver : posé à 12 h et 13 h UTC, envoyé quand il est 8 h à Toronto), le résumé du
+   matin à 7 h d'Abidjan. Mêmes définitions que l'écran du bilan et que la caisse. Étiquette 20260922coque. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v230'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v231'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

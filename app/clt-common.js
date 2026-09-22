@@ -1337,6 +1337,28 @@ function cltInvitationMarquerLeCorps(bandeau, visible) {
    recouvrirait — et c'est justement là que se trouvent les boutons les plus
    utilisés.
    ===================================================================== */
+/* CE QUI DÉFILE (22/09/2026). Sur l'espace équipe, au téléphone, la page ne défile plus : c'est
+   .wrap qui défile dans un cadre fixe (la « coque », voir equipe.html) — sinon la barre du bas
+   suivait le défilement sur iPhone. Tout ce qui lit ou pose une position de défilement passe
+   donc par ici : l'élément qui défile vraiment, ou le document quand rien d'autre ne défile. */
+function cltDefileur() {
+  try {
+    var el = document.querySelector(".wrap");
+    if (el) {
+      var o = getComputedStyle(el).overflowY;
+      if ((o === "auto" || o === "scroll") && el.scrollHeight > el.clientHeight + 1) return el;
+      if ((o === "auto" || o === "scroll") && getComputedStyle(el).position === "fixed") return el;
+    }
+  } catch (e) { /* on retombe sur le document */ }
+  return document.scrollingElement || document.documentElement;
+}
+function cltDefilerEnHaut(doux) {
+  var el = cltDefileur();
+  var cible = (el === document.scrollingElement || el === document.documentElement) ? window : el;
+  try { cible.scrollTo({ top: 0, behavior: doux ? "smooth" : "auto" }); } catch (e) { cible.scrollTo(0, 0); }
+}
+window.cltDefileur = cltDefileur; window.cltDefilerEnHaut = cltDefilerEnHaut;
+
 (function () {
   try {
     if (window.__cltBoutonHaut) return;           // déjà installé
@@ -1386,13 +1408,7 @@ function cltInvitationMarquerLeCorps(bandeau, visible) {
       var reduire = false;
       try { reduire = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
 
-      btn.addEventListener("click", function () {
-        try {
-          window.scrollTo({ top: 0, behavior: reduire ? "auto" : "smooth" });
-        } catch (e) {
-          window.scrollTo(0, 0);                   // navigateur ancien
-        }
-      });
+      btn.addEventListener("click", function () { cltDefilerEnHaut(!reduire); });
 
       /* « ALLER EN BAS » : UN SAUT SEC, PUIS TROIS RETOUCHES. (21/09/2026)
          La première version glissait jusqu'en bas puis retouchait une fois, à heure fixe. Sur un
@@ -1403,11 +1419,13 @@ function cltInvitationMarquerLeCorps(bandeau, visible) {
          ici : on SAUTE en bas, sans glissade, puis on vérifie trois fois en deux secondes et demie
          que la page ne s'est pas allongée. On lâche dès que la personne reprend la main. */
       function sauterEnBas() {
-        var racine = document.documentElement, avant = racine.style.scrollBehavior;
-        var total = Math.max(racine.scrollHeight, document.body.scrollHeight);
-        racine.style.scrollBehavior = "auto";
-        window.scrollTo(0, total);
-        racine.style.scrollBehavior = avant;
+        var el = cltDefileur(), racine = document.documentElement;
+        var surDocument = (el === document.scrollingElement || el === racine);
+        var porteur = surDocument ? racine : el, avant = porteur.style.scrollBehavior;
+        var total = surDocument ? Math.max(racine.scrollHeight, document.body.scrollHeight) : el.scrollHeight;
+        porteur.style.scrollBehavior = "auto";
+        if (surDocument) window.scrollTo(0, total); else el.scrollTop = total;
+        porteur.style.scrollBehavior = avant;
       }
       if (bas) bas.addEventListener("click", function () {
         var lache = false;
@@ -1417,7 +1435,7 @@ function cltInvitationMarquerLeCorps(bandeau, visible) {
         [400, 1200, 2500].forEach(function (ms) {
           setTimeout(function () {
             if (lache) return;
-            var e = document.scrollingElement || document.documentElement;
+            var e = cltDefileur();
             var reste = e.scrollHeight - e.scrollTop - e.clientHeight;
             // Seulement si l'on est resté tout près du bas : sinon la personne (ou l'écran) est partie ailleurs.
             if (reste > 2 && reste < e.clientHeight) sauterEnBas();
@@ -1429,12 +1447,14 @@ function cltInvitationMarquerLeCorps(bandeau, visible) {
       // le bouton ne ferait qu'encombrer.
       var visible = false, basVisible = false;
       function evaluer() {
-        var y = window.pageYOffset || document.documentElement.scrollTop || 0;
-        var doitEtreVisible = y > Math.max(320, window.innerHeight * 1.5);
+        var e = cltDefileur(), surDocument = (e === document.scrollingElement || e === document.documentElement);
+        var y = surDocument ? (window.pageYOffset || document.documentElement.scrollTop || 0) : e.scrollTop;
+        var hauteurVue = surDocument ? window.innerHeight : e.clientHeight;
+        var doitEtreVisible = y > Math.max(320, hauteurVue * 1.5);
         if (bas) {
-          var total = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
-          var reste = total - (y + window.innerHeight);
-          var montrerBas = total > window.innerHeight * 3 && reste > window.innerHeight * 1.5;
+          var total = surDocument ? Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) : e.scrollHeight;
+          var reste = total - (y + hauteurVue);
+          var montrerBas = total > hauteurVue * 3 && reste > hauteurVue * 1.5;
           if (montrerBas !== basVisible) { basVisible = montrerBas; bas.classList.toggle("visible", montrerBas); }
           // Seul à l'écran, « Aller en bas » prend la place du bas ; à deux, il se pose au-dessus.
           bas.classList.toggle("clt-bas--seul", !doitEtreVisible);
@@ -1453,6 +1473,9 @@ function cltInvitationMarquerLeCorps(bandeau, visible) {
         window.requestAnimationFrame(function () { enAttente = false; evaluer(); });
       }
       window.addEventListener("scroll", auDefilement, { passive: true });
+      // La coque : le défilement n'atteint pas la fenêtre, on écoute l'élément lui-même.
+      var coque = document.querySelector(".wrap");
+      if (coque) coque.addEventListener("scroll", auDefilement, { passive: true });
       window.addEventListener("resize", auDefilement);
       evaluer();
     }

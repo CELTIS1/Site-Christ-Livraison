@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html class="eq-coque" lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
@@ -22,10 +22,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260922passage">
+<link rel="stylesheet" href="style.css?v=20260922coque">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260922passage"></script>
-<script src="splash.js?v=20260922passage"></script>
+<script src="theme.js?v=20260922coque"></script>
+<script src="splash.js?v=20260922coque"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -129,7 +129,23 @@
 
   /* ---- Barre de navigation basse (mobile uniquement) ---- */
   .clt-bottomnav{ display:none; }
+  /* LA COQUE (22/09/2026). Celtis, après la v230 : « mes onglets du bas se déplacent à chaque
+     mouvement », en faisant défiler, sur iPhone — et poser la barre sur sa propre couche n'a
+     pas suffi. Le vrai remède est celui des applications natives : la PAGE ne défile plus, c'est
+     le contenu (.wrap) qui défile dans un cadre fixe, entre l'en-tête et la barre. La barre
+     n'est plus un élément fixé au-dessus d'un document qui bouge sous elle : elle est hors du
+     défilement, il n'y a plus rien qui puisse la déplacer. cltDefileur() (clt-common.js) rend
+     l'élément qui défile, pour « Remonter en haut » et le retour en haut au changement d'onglet. */
   @media(max-width:760px){
+    html.eq-coque, html.eq-coque body{ height:100%; overflow:hidden; overscroll-behavior:none; }
+    html.eq-coque body{ padding-top:0 !important; }
+    html.eq-coque .wrap{
+      position:fixed; top:0; left:0; right:0; bottom:0; overflow-y:auto; overflow-x:hidden;
+      -webkit-overflow-scrolling:touch; overscroll-behavior:contain; scroll-behavior:smooth;
+      box-sizing:border-box; max-width:none; margin:0;
+      padding-top:calc(var(--clt-topbar-h, 0px) + 26px);
+      padding-bottom:calc(60px + env(safe-area-inset-bottom, 0px) + 32px);
+    }
     .clt-bottomnav{
       display:flex; position:fixed; left:0; right:0; bottom:0; z-index:200;
       align-items:center; justify-content:space-around;
@@ -1728,43 +1744,43 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
   </div>
 </div>
 
-<script src="clt-common.js?v=20260922passage"></script>
-<script src="numero-international.js?v=20260922passage"></script>
-<script src="voir-un-compte.js?v=20260922passage"></script>
-<script src="lib/bibliotheques.js?v=20260922passage"></script>
-<script src="lib/retours.js?v=20260922passage"></script>
-<script src="lib/reclamations.js?v=20260922passage"></script>
-<script src="lib/communes-et-tarifs.js?v=20260922passage"></script>
-<script src="lib/argent.js?v=20260922passage"></script>
-<script src="lib/releve-cliente.js?v=20260922passage"></script>
-<script src="lib/papier-a-en-tete.js?v=20260922passage"></script>
-<script src="lib/briques-argent.js?v=20260922passage"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260922passage"></script>
-<script src="lib/annonce-de-remise.js?v=20260922passage"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260922passage"></script>
-<script src="lib/primes.js?v=20260922passage"></script>
-<script src="lib/doublons.js?v=20260922passage"></script>
-<script src="config.js?v=20260922passage"></script>
-<script src="delais-et-promesses.js?v=20260922passage"></script>
-<script src="ordre-de-livraison.js?v=20260922passage"></script>
-<script src="etiquettes-et-scan.js?v=20260922passage"></script>
-<script src="clients-dashboard.js?v=20260922passage"></script>
-<script src="livreurs-dashboard.js?v=20260922passage"></script>
-<script src="point-du-jour.js?v=20260922passage"></script>
-<script src="biometric-lock.js?v=20260922passage"></script>
-<script src="clt-select-recherche.js?v=20260922passage"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260922passage"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260922passage"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260922passage"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260922passage"></script>
-<script src="equipe/04-actions.js?v=20260922passage"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260922passage"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260922passage"></script>
-<script src="point-par-whatsapp.js?v=20260922passage"></script>
-<script src="equipe/07-rapports.js?v=20260922passage"></script>
-<script src="equipe/08-son-ecran.js?v=20260922passage"></script>
-<script src="recharges-express.js?v=20260922passage"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260922passage"></script>
+<script src="clt-common.js?v=20260922coque"></script>
+<script src="numero-international.js?v=20260922coque"></script>
+<script src="voir-un-compte.js?v=20260922coque"></script>
+<script src="lib/bibliotheques.js?v=20260922coque"></script>
+<script src="lib/retours.js?v=20260922coque"></script>
+<script src="lib/reclamations.js?v=20260922coque"></script>
+<script src="lib/communes-et-tarifs.js?v=20260922coque"></script>
+<script src="lib/argent.js?v=20260922coque"></script>
+<script src="lib/releve-cliente.js?v=20260922coque"></script>
+<script src="lib/papier-a-en-tete.js?v=20260922coque"></script>
+<script src="lib/briques-argent.js?v=20260922coque"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260922coque"></script>
+<script src="lib/annonce-de-remise.js?v=20260922coque"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260922coque"></script>
+<script src="lib/primes.js?v=20260922coque"></script>
+<script src="lib/doublons.js?v=20260922coque"></script>
+<script src="config.js?v=20260922coque"></script>
+<script src="delais-et-promesses.js?v=20260922coque"></script>
+<script src="ordre-de-livraison.js?v=20260922coque"></script>
+<script src="etiquettes-et-scan.js?v=20260922coque"></script>
+<script src="clients-dashboard.js?v=20260922coque"></script>
+<script src="livreurs-dashboard.js?v=20260922coque"></script>
+<script src="point-du-jour.js?v=20260922coque"></script>
+<script src="biometric-lock.js?v=20260922coque"></script>
+<script src="clt-select-recherche.js?v=20260922coque"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260922coque"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260922coque"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260922coque"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260922coque"></script>
+<script src="equipe/04-actions.js?v=20260922coque"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260922coque"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260922coque"></script>
+<script src="point-par-whatsapp.js?v=20260922coque"></script>
+<script src="equipe/07-rapports.js?v=20260922coque"></script>
+<script src="equipe/08-son-ecran.js?v=20260922coque"></script>
+<script src="recharges-express.js?v=20260922coque"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260922coque"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1812,20 +1828,20 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260922passage"></script>
-<script src="equipe/11-chercher-partout.js?v=20260922passage"></script>
-<script src="reprogrammer.js?v=20260922passage"></script>
-<script src="retours-du-bureau.js?v=20260922passage"></script>
-<script src="equipe/12-les-retours.js?v=20260922passage"></script>
-<script src="equipe/13-les-boutiques.js?v=20260922passage"></script>
+<script src="equipe/10-onglets.js?v=20260922coque"></script>
+<script src="equipe/11-chercher-partout.js?v=20260922coque"></script>
+<script src="reprogrammer.js?v=20260922coque"></script>
+<script src="retours-du-bureau.js?v=20260922coque"></script>
+<script src="equipe/12-les-retours.js?v=20260922coque"></script>
+<script src="equipe/13-les-boutiques.js?v=20260922coque"></script>
 <!-- 9.6 : sur grand écran, la liste à gauche et la fiche à droite. Ne fait rien sous 1 200 px. -->
-<script src="equipe/14-liste-et-fiche.js?v=20260922passage"></script>
-<script src="chaine-de-l-argent.js?v=20260922passage"></script>
-<script src="equipe/15-la-chaine-de-l-argent.js?v=20260922passage"></script>
+<script src="equipe/14-liste-et-fiche.js?v=20260922coque"></script>
+<script src="chaine-de-l-argent.js?v=20260922coque"></script>
+<script src="equipe/15-la-chaine-de-l-argent.js?v=20260922coque"></script>
 <!-- 9.6 : les colis en route sur la carte du Suivi, une pastille par commune. -->
-<script src="colis-sur-la-carte.js?v=20260922passage"></script>
-<script src="equipe/16-les-colis-sur-la-carte.js?v=20260922passage"></script>
+<script src="colis-sur-la-carte.js?v=20260922coque"></script>
+<script src="equipe/16-les-colis-sur-la-carte.js?v=20260922coque"></script>
 <!-- Le point à voir (22/09/2026) : la notification conduit à la carte, qui reste encadrée tant qu'on ne l'a pas ouverte. -->
-<script src="equipe/17-le-point-a-voir.js?v=20260922passage"></script>
+<script src="equipe/17-le-point-a-voir.js?v=20260922coque"></script>
 </body>
 </html>

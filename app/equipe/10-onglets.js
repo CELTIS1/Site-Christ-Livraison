@@ -111,7 +111,8 @@
        Et on referme tout menu « ⋮ » resté ouvert : il appartenait à une carte de l'onglet qu'on
        quitte, il n'a plus rien à désigner ici. */
     document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
-    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch(e){ window.scrollTo(0, 0); }
+    if (typeof cltDefilerEnHaut === 'function') cltDefilerEnHaut(false);
+    else { try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch(e){ window.scrollTo(0, 0); } }
     eqRepeindreLOnglet(document.getElementById('eqpanel-'+key));
     try { localStorage.setItem('clt_equipe_tab_v2', key); } catch(e){}
     // Le compteur d'usage (18/09/2026) : pour retirer en octobre ce que personne n'ouvre, sur

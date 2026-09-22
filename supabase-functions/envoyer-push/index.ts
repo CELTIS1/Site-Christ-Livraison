@@ -248,7 +248,9 @@ async function envoyer(
   let expires = 0;
   const results = await Promise.allSettled(
     subs.map(async (s) => {
-      const url = `${baseUrlForRole(s.role)}?${urlParam}`;
+      // Une adresse complète (« /app/gestion.html?bilan=semaine ») est prise telle quelle : les
+      // rapports poussés (22/09/2026) visent un écran précis, pas l'accueil du rôle.
+      const url = urlParam.startsWith("/") ? urlParam : `${baseUrlForRole(s.role)}?${urlParam}`;
       const notif = JSON.stringify({ title, body, url, tag });
       const subscription = {
         endpoint: s.endpoint,
@@ -446,6 +448,18 @@ async function handleDemandeDePassage(record: any, oldRecord: any, eventType: st
   if (record.statut === "refusee") return await envoyer({ roles: [], userIds: [cliente] }, "❌ Pas de passage possible", `${jour ? "Le " + jour + " : " : ""}${record.motif_refus ? String(record.motif_refus).slice(0, 120) : "CLT ne pourra pas passer."} Vous pouvez demander un autre jour.`, `passage-${id}`, "");
   return new Response("rien à dire", { status: 200 });
 }
+/* LES RAPPORTS POUSSÉS (22/09/2026). La base écrit le rapport (rapports_pousses : le bilan du
+   dimanche pour l'administrateur, le résumé du matin pour l'équipe), et cette fonction ne fait
+   que le porter : rôles, titre, corps et adresse viennent de la ligne. Le texte est calculé en
+   base avec les mêmes définitions que l'écran du bilan et que la caisse. */
+async function handleRapport(record: any, eventType: string): Promise<Response> {
+  if (eventType !== "INSERT") return new Response("rien à dire", { status: 200 });
+  const id = uuidOuRien(record.id);
+  const roles = Array.isArray(record.roles) ? record.roles.map((r: unknown) => String(r)).filter((r: string) => /^[a-z_]+$/.test(r)) : [];
+  if (!id || roles.length === 0 || !record.titre || !record.corps) return new Response("rapport incomplet", { status: 200 });
+  const adresse = typeof record.adresse === "string" && record.adresse.startsWith("/app/") ? record.adresse : "";
+  return await envoyer({ roles, userIds: [] }, String(record.titre).slice(0, 90), String(record.corps).slice(0, 300), `rapport-${id}`, adresse);
+}
 async function handleReversement(record: any, eventType: string): Promise<Response> {
   const cliente = uuidOuRien(record.fournisseur_id);
   const id = uuidOuRien(record.id);
@@ -628,6 +642,7 @@ Deno.serve(async (req) => {
     if (table === "reversements_clientes") return await handleReversement(record, eventType);
     if (table === "journees_bouclees") return await handleJourneeBouclee(record, oldRecord, eventType);
     if (table === "annonces_remise") return await handleAnnonceRemise(record, eventType);
+    if (table === "rapports_pousses") return await handleRapport(record, eventType);
     return await handleColis(record, oldRecord, eventType);
   } catch (e) {
     console.error("envoyer-push — erreur inattendue :", e);
