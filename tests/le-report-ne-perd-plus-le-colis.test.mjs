@@ -160,5 +160,36 @@ console.log('\n5. Chaque écran demande la bonne chose — lu dans les fichiers'
     && !/jourDuColis\(c\) === dateStr/.test(lire('app/fournisseur.html')));
 }
 
+console.log('\n6. L\'alerte « journée bouclée » parle de la même journée que le point');
+{
+  const f = path.join(RACINE, '_sql-prive/2026-09-22-la-journee-bouclee-suit-le-jour-de-remise.sql');
+  if (!fs.existsSync(f)) console.log('   (_sql-prive absent de ce dépôt : contrôles sautés, ils tournent sur le Mac)');
+  else {
+    const m = lire('_sql-prive/2026-09-22-la-journee-bouclee-suit-le-jour-de-remise.sql');
+    /* LE CAS DE CELTIS, EN BASE. Elle remet trois colis le 21, un est reporté au 23. Le 23, il
+       est livré : c'est le point du 21 qui change, donc c'est la journée du 21 que l'alerte doit
+       nommer. Sans cette migration elle aurait parlé du 23 — une journée où la vendeuse n'a rien
+       remis — et le point du 21, déjà réglé, serait devenu faux en silence. */
+    verifier('la journée est celle de la REMISE, plus le jour de travail',
+      /\(c\.created_at at time zone 'Africa\/Abidjan'\)::date = p_jour/.test(m)
+      && !/public\.jour_du_colis\(c\) = r\.j/.test(m));
+    verifier('un colis reporté plus loin ne retient plus sa journée : elle peut boucler le soir même',
+      /coalesce\(c\.reporte_au, p_jour\) <= p_jour/.test(m));
+    verifier('jour_du_colis() n\'est pas touchée : elle sert toujours au travail',
+      !/create or replace function public\.jour_du_colis/.test(m));
+    verifier('le calcul sort du déclencheur, pour pouvoir être rejoué sur une journée existante',
+      /create or replace function public\.recalculer_journee_bouclee/.test(m)
+      && /perform public\.recalculer_journee_bouclee\(r\.f, r\.j\)/.test(m));
+    verifier('le déclencheur écoute toujours reporte_au : un report ne change plus la journée, mais change ce qui la retient',
+      /update of statut, fournisseur_id, reporte_au, created_at/.test(m));
+    verifier('la ligne n\'est pas supprimée quand la journée se rouvre : elle se marque « en cours »',
+      /set en_cours = true, maj_at = now\(\)/.test(m));
+    verifier('et l\'état d\'hier et d\'aujourd\'hui est recalculé, pour partir juste',
+      /delete from public\.journees_bouclees where jour >= v_auj - 1/.test(m));
+    verifier('la migration s\'enregistre au registre',
+      /migration_appliquee\('2026-09-22-la-journee-bouclee-suit-le-jour-de-remise\.sql'/.test(m));
+  }
+}
+
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);
