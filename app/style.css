@@ -4113,6 +4113,18 @@ html[data-theme="dark"] #clt-modal-cancel.clt-modal-annuler{background:#2A3A4D !
 /* Même règle et même valeur que .clt-maj-bandeau--barre : la barre d'onglets basse fait 60 px,
    le bandeau se pose juste au-dessus. Les deux doivent bouger ensemble le jour où elle change. */
 @media (max-width:760px){ .clt-invit-bandeau--barre{ bottom:calc(74px + env(safe-area-inset-bottom, 0px)); } }
+/* CE QUI VIT DÉJÀ EN BAS DE L'ÉCRAN DOIT SE POUSSER. Le bandeau passe devant tout (z-index 9998) :
+   sans ce décalage il avalerait « Remonter en haut », « Aller en bas », et surtout la barre du
+   geste de Gestion › Régulariser — c'est-à-dire le bouton qui valide une correction d'argent.
+   clt-common.js pose la classe sur le <body> et publie --clt-invit-h, la hauteur RÉELLE mesurée ;
+   la valeur de secours ne sert qu'au cas où le script n'aurait pas encore mesuré.
+   « Aller en bas » n'a pas sa propre règle : il suit « Remonter » par une marge (margin-bottom),
+   et le décaler séparément le décollerait de son jumeau. */
+.clt-invit-visible .clt-haut{ bottom:calc(12px + var(--clt-invit-h, 76px) + 12px + env(safe-area-inset-bottom, 0px)); }
+.clt-invit-visible .reg-barre{ bottom:calc(8px + var(--clt-invit-h, 76px) + 12px); }
+@media (max-width:760px){
+  .clt-invit-visible .clt-haut--barre{ bottom:calc(74px + var(--clt-invit-h, 76px) + 12px + env(safe-area-inset-bottom, 0px)); }
+}
 .clt-invit-texte{ flex:1 1 220px; }
 .clt-invit-bandeau button{
   min-height:44px; padding:0 16px; border:0; border-radius:10px;

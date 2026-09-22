@@ -1031,6 +1031,7 @@ async function cltInvitationNotifications(role, lireUserId) {
        la demande du navigateur sans répondre : on se fait discret quinze jours plutôt que de
        reposer la question au chargement suivant. */
     bandeau.remove();
+    cltInvitationMarquerLeCorps(bandeau, false);
     cltMasquerInvitation(CLT_INVIT_REPORT);
   });
   const plusTard = document.createElement('button');
@@ -1039,6 +1040,7 @@ async function cltInvitationNotifications(role, lireUserId) {
   plusTard.textContent = 'Plus tard';
   plusTard.addEventListener('click', function () {
     bandeau.remove();
+    cltInvitationMarquerLeCorps(bandeau, false);
     cltMasquerInvitation(CLT_INVIT_REPORT);
   });
 
@@ -1046,6 +1048,25 @@ async function cltInvitationNotifications(role, lireUserId) {
   bandeau.appendChild(plusTard);
   bandeau.appendChild(ok);
   document.body.appendChild(bandeau);
+  cltInvitationMarquerLeCorps(bandeau, true);
+}
+
+/* CE BANDEAU EST FIXÉ EN BAS : IL PASSE DEVANT CE QUI S'Y TROUVE DÉJÀ.
+   « Remonter en haut », « Aller en bas », et la barre du geste de Gestion › Régulariser vivent
+   au même endroit. On ne devine pas la hauteur du bandeau — elle va d'une ligne sur un
+   ordinateur à trois sur un téléphone étroit : on la MESURE et on la publie dans
+   --clt-invit-h, et la feuille de style décale ce qu'il faut. Même méthode que le bandeau
+   « Nouvelle version », pour qu'il n'y ait qu'une chose à corriger le jour où elle change. */
+function cltInvitationMarquerLeCorps(bandeau, visible) {
+  try { document.body.classList.toggle('clt-invit-visible', !!visible); } catch (e) { /* rien */ }
+  if (!visible) { try { document.documentElement.style.removeProperty('--clt-invit-h'); } catch (e) { /* rien */ } return; }
+  const mesurer = () => {
+    const h = bandeau.offsetHeight || 0;
+    if (h) document.documentElement.style.setProperty('--clt-invit-h', h + 'px');
+  };
+  mesurer();
+  if (window.ResizeObserver) { try { new ResizeObserver(mesurer).observe(bandeau); } catch (e) { /* rien */ } }
+  else window.addEventListener('resize', mesurer);
 }
 
 /* =====================================================================

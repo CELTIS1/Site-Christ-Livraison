@@ -105,6 +105,7 @@ function faireLeMonde(o) {
     bloc('async function cltEnregistrerAbonnementPush('),
     'function cltToast(){}',
     bloc('async function cltActiverPush('),
+    bloc('function cltInvitationMarquerLeCorps('),
     bloc('async function cltInvitationNotifications('),
   ].join('\n\n'), ctx);
   return { ctx, poses, fenetre };
@@ -191,6 +192,11 @@ console.log('\n6. Le branchement et le style');
   verifier('elle est appelée depuis le même endroit que le bouton du menu ☰', /cltInitPushButton[\s\S]{0,1600}cltInvitationNotifications\(role, userId\)/.test(src));
   verifier('le bouton du menu reste là pour qui le cherche', ['equipe.html', 'fournisseur.html', 'livreur.html', 'gestion.html', 'express-client.html', 'express-coursier.html'].every((f) => lire('app/' + f).includes('id="btn-activer-push"')));
   verifier('le style existe, avec des cibles de 44 px', /\.clt-invit-bandeau button\{[^}]*min-height:44px/.test(css));
+  verifier('il ne recouvre pas ce qui vit déjà en bas : « Remonter en haut » et la barre du geste se poussent',
+    /\.clt-invit-visible \.clt-haut\{[^}]*var\(--clt-invit-h/.test(css)
+    && /\.clt-invit-visible \.reg-barre\{[^}]*var\(--clt-invit-h/.test(css),
+    'sans ce décalage, le bandeau avale le bouton qui valide une correction d\'argent');
+  verifier('et la hauteur est MESURÉE, pas devinée', /--clt-invit-h/.test(lire('app/clt-common.js')) && /offsetHeight/.test(lire('app/clt-common.js')));
   verifier('et il se décale au-dessus de la barre d\'onglets', /\.clt-invit-bandeau--barre\{[^}]*bottom:calc\(74px/.test(css));
   verifier('le service worker sert la feuille de style et clt-common (rien de neuf à mettre en cache)', lire('sw.js').includes('clt-common.js') && lire('sw.js').includes('style.css'));
 }
