@@ -179,8 +179,13 @@ export function nouveauMonde() {
       case 'not': return lignes.filter(l => !(f.op === 'is' ? (l[f.c] === v || (v === null && l[f.c] === undefined)) : String(l[f.c]) === String(v)));
       case 'or': {
         // 'statut.eq.livre,frais_expedition.gt.0' : une ligne passe si l'une des conditions passe.
+        /* « null », « true », « false » sont des MOTS dans l'URL de PostgREST, pas des chaînes :
+           « retour_rendu_at.is.null » veut dire IS NULL. Jusqu'au 22/09/2026 ils arrivaient ici
+           comme le texte « null », que le filtre « is » comparait à la valeur de la colonne —
+           donc jamais vrai, et l'écran recevait une liste vide sans la moindre erreur. */
+        const mot = (x) => (x === 'null' ? null : x === 'true' ? true : x === 'false' ? false : isNaN(Number(x)) ? x : Number(x));
         const conditions = String(v).split(',').map(s => { const [c, op, ...reste] = s.split('.'); return { c, t: op, v: reste.join('.') }; });
-        return lignes.filter(l => conditions.some(cd => appliquerFiltre([l], { c: cd.c, t: cd.t, v: isNaN(Number(cd.v)) ? cd.v : Number(cd.v) }).length === 1));
+        return lignes.filter(l => conditions.some(cd => appliquerFiltre([l], { c: cd.c, t: cd.t, v: mot(cd.v) }).length === 1));
       }
       /* ilike : « contient », sans tenir compte de la casse ni des accents de casse. Ajouté le
          17/09/2026 (point 7.8) — il manquait, et son absence était SILENCIEUSE : la recherche
@@ -284,6 +289,65 @@ export function nouveauMonde() {
     }
     // Un parcours peut poser REPONSES_RPC.primes_en_cours pour voir la carte « Mon mois » vivante.
     if (nom === 'primes_en_cours') return { data: REPONSES_RPC.primes_en_cours || null, error: null };
+
+    /* RÉGULARISER (22/09/2026). On rejoue ici le CONTRAT des trois fonctions de la base —
+       administrateur seul, motif d'au moins dix caractères, date jamais au futur, colis déjà
+       à jour ignoré, copie de l'état d'avant, annulation qui restaure. Les vraies fonctions
+       sont éprouvées dans un vrai Postgres (dix-huit scénarios, 22/09) ; ici c'est l'ÉCRAN
+       qu'on éprouve, et il ne doit rien voir de différent. */
+    if (nom === 'regulariser_colis' || nom === 'defaire_regularisation' || nom === 'regularisations_faites') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      if (!lecteur || lecteur.role !== 'admin') return { data: null, error: { message: "Seul l'administrateur peut régulariser." } };
+      TABLES.regularisations = TABLES.regularisations || [];
+      const J = TABLES.regularisations;
+      if (nom === 'regularisations_faites') {
+        return { data: J.slice().reverse().map(r => ({ id: r.id, colis_id: r.colis_id, numero: (TABLES.colis.find(c => c.id === r.colis_id) || {}).numero || null,
+          action: r.action, motif: r.motif, evenement_le: r.evenement_le, fait_le: r.fait_le, fait_par_nom: lecteur.full_name, annulee_le: r.annulee_le || null })), error: null };
+      }
+      if (nom === 'defaire_regularisation') {
+        const r = J.find(x => x.id === Number(args && args.p_regularisation_id));
+        if (!r) return { data: null, error: { message: 'Régularisation introuvable.' } };
+        if (r.annulee_le) return { data: null, error: { message: 'Cette correction a déjà été défaite.' } };
+        if (J.some(x => x.colis_id === r.colis_id && x.id > r.id && x.action !== 'annulation' && !x.annulee_le)) {
+          return { data: null, error: { message: "Ce colis a été régularisé à nouveau depuis. Défaites d'abord la correction la plus récente." } };
+        }
+        const c = TABLES.colis.find(x => x.id === r.colis_id);
+        /* La vraie fonction repose CHAQUE colonne depuis la copie, y compris à null. Recopier
+           seulement les clés présentes laisserait vivre une date ajoutée par la correction —
+           et le parcours verrait un colis « défait » qui garde encore sa date de remise. */
+        ['retour_detenteur', 'retour_rendu_at', 'retour_rendu_par', 'encaissement_remis', 'encaissement_remis_at',
+         'frais_expedition_rembourse_at', 'reverse_au_fournisseur_at', 'regularise_at', 'regularise_par', 'regularise_motif']
+          .forEach((k) => { c[k] = r.avant[k] === undefined ? null : r.avant[k]; });
+        c.encaissement_remis = !!c.encaissement_remis;
+        J.push({ id: J.length + 1, colis_id: r.colis_id, action: 'annulation', motif: 'Annulation de la régularisation n° ' + r.id, evenement_le: r.evenement_le, avant: Object.assign({}, c), fait_le: new Date().toISOString(), annulee_le: null });
+        r.annulee_le = new Date().toISOString();
+        return { data: null, error: null };
+      }
+      const ids = (args && args.p_colis_ids) || [], acte = args && args.p_action, motif = String((args && args.p_motif) || '').trim();
+      const le = (args && args.p_le) || '';
+      if (!['retour_rendu', 'remise_faite', 'argent_reverse'].includes(acte)) return { data: null, error: { message: 'Action inconnue : ' + acte } };
+      if (motif.length < 10) return { data: null, error: { message: 'Le motif est obligatoire (dix caractères au moins).' } };
+      if (!le || le > aujourdhui) return { data: null, error: { message: "La date de l'événement ne peut pas être dans le futur." } };
+      if (!ids.length) return { data: null, error: { message: 'Aucun colis sélectionné.' } };
+      const moment = le + 'T12:00:00.000Z';
+      let traites = 0, ignores = 0;
+      for (const id of ids) {
+        const c = TABLES.colis.find(x => x.id === id);
+        if (!c) { ignores++; continue; }
+        if ((acte === 'retour_rendu' && c.retour_rendu_at) || (acte === 'remise_faite' && c.encaissement_remis)
+          || (acte === 'argent_reverse' && c.reverse_au_fournisseur_at)
+          || (acte === 'retour_rendu' && c.statut !== 'retour')) { ignores++; continue; }
+        J.push({ id: J.length + 1, colis_id: c.id, action: acte, motif, evenement_le: le, avant: Object.assign({}, c), fait_le: new Date().toISOString(), annulee_le: null });
+        if (acte === 'retour_rendu') { c.retour_detenteur = 'cliente'; c.retour_rendu_at = moment; }
+        else if (acte === 'remise_faite') {
+          c.encaissement_remis = true; c.encaissement_remis_at = moment;
+          if ((Number(c.frais_expedition) || 0) > 0) c.frais_expedition_rembourse_at = c.frais_expedition_rembourse_at || moment;
+        } else { c.reverse_au_fournisseur_at = moment; }
+        c.regularise_at = new Date().toISOString(); c.regularise_motif = motif;
+        traites++;
+      }
+      return { data: [{ traites, ignores }], error: null };
+    }
     /* LE SUIVI PUBLIC (points 1.7, 10.5, 19.6) : la même règle que la fonction en base — sans
        les quatre derniers chiffres du destinataire, le statut brut ; avec, la fiche, l'histoire
        et la boutique (nom, numéro). La vraie fonction est éprouvée dans un vrai Postgres

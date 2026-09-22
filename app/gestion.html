@@ -15,10 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260921journee">
+<link rel="stylesheet" href="style.css?v=20260922regulariser">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260921journee"></script>
-<script src="splash.js?v=20260921journee"></script>
+<script src="theme.js?v=20260922regulariser"></script>
+<script src="splash.js?v=20260922regulariser"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -251,6 +251,32 @@
   /* ---------- POURQUOI ÇA ÉCHOUE (20/09/2026) ---------- */
   #cdd-causes{ padding:16px 18px; margin-bottom:16px; }
   /* ---- Le guide du gérant (20/09/2026) ---- */
+  /* ---- Régulariser (22/09/2026) ---- */
+  .reg-pastilles{ display:flex; gap:8px; flex-wrap:wrap; }
+  .reg-pastille{ display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 14px; border:1px solid #cfd8e3; border-radius:999px; background:#fff; color:var(--clt-teal-dark); font:inherit; font-size:13.5px; font-weight:700; cursor:pointer; text-align:left; }
+  .reg-pastille .reg-compte{ min-width:22px; padding:1px 7px; border-radius:999px; background:#eef2f1; color:#5b6473; font-size:12px; font-weight:800; text-align:center; }
+  .reg-pastille--active{ background:var(--clt-teal-dark); border-color:var(--clt-teal-dark); color:#fff; }
+  .reg-pastille--active .reg-compte{ background:rgba(255,255,255,.22); color:#fff; }
+  .reg-pastille:focus-visible{ outline:2px solid var(--clt-teal-dark); outline-offset:2px; }
+  .reg-groupe{ margin-bottom:12px; }
+  .reg-groupe > summary{ cursor:pointer; font-size:15px; padding:2px 0; }
+  .reg-geste{ margin:10px 0 4px; }
+  .reg-case{ display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
+  .reg-case input{ width:20px; height:20px; }
+  /* La barre du geste colle au bas de l'écran : la sélection se fait en haut, la décision se
+     prend en bas, et l'une ne doit pas faire perdre l'autre de vue. */
+  .reg-barre{ position:sticky; bottom:8px; z-index:5; border:2px solid var(--clt-teal-dark); }
+  .reg-barre-champs{ display:flex; gap:12px; flex-wrap:wrap; margin:10px 0; }
+  .reg-barre-champs label{ display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:600; color:#44505f; }
+  .reg-barre-champs input{ height:44px; padding:0 12px; border:1px solid #cfd8e3; border-radius:10px; font:inherit; font-size:14px; background:#fff; color:inherit; }
+  .reg-motif-champ{ flex:1 1 320px; }
+  .reg-barre-bas{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .reg-defaite td{ opacity:.55; }
+  html[data-theme="dark"] .reg-pastille{ background:#16202E; border-color:#2A3849; }
+  html[data-theme="dark"] .reg-pastille .reg-compte{ background:#243247; color:#C9D3DF; }
+  html[data-theme="dark"] .reg-pastille--active{ color:#0F1824; }
+  html[data-theme="dark"] .reg-barre-champs label{ color:#AEBBCB; }
+  html[data-theme="dark"] .reg-barre-champs input{ background:#16202E; border-color:#2A3849; }
   .gdg-tete-haut{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px 20px; flex-wrap:wrap; }
   .gdg-recherche{ flex:1 1 240px; max-width:380px; height:44px; padding:0 14px; border:1px solid #cfd8e3; border-radius:12px; font:inherit; font-size:14px; background:#fff; color:inherit; }
   .gdg-pastilles{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
@@ -796,6 +822,8 @@
     <div class="tab" id="tab-site" data-tab="site" onclick="switchTab('site')" style="display:none;">🌐 Site</div>
     <!-- Le guide du gérant (20/09/2026) : une fiche par fonctionnalité livrée. Administrateur seul. -->
     <div class="tab" id="tab-guide" data-tab="guide" onclick="switchTab('guide')" style="display:none;">📘 Guide</div>
+    <!-- Régulariser (22/09/2026) : corriger l'histoire que l'application n'a pas vue passer. Administrateur seul. -->
+    <div class="tab" id="tab-regul" data-tab="regul" onclick="switchTab('regul')" style="display:none;">🩹 Régulariser</div>
   </div>
   </div>
 
@@ -1595,6 +1623,20 @@
     <div id="gdg-corps"></div>
   </div>
 
+  <!-- ============ RÉGULARISER (admin uniquement) — 22/09/2026 ============
+       Celtis : « il faut que je sois capable de rattraper tout, de corriger tout, de gérer tout
+       ce qui est comme anomalie ». L'application est entrée en service pendant que l'activité
+       tournait : des retours rendus, des remises faites, des vendeuses payées, dont aucun écran
+       n'a gardé trace. Règle : app/regulariser.js ; écran : app/regulariser-ecran.js ;
+       geste : regulariser_colis() en base, qui garde une copie de l'état d'avant. -->
+  <div class="section" id="sec-regul">
+    <div class="card">
+      <h2>🩹 Régulariser</h2>
+      <div class="hint">Corriger ce que l'application n'a pas vu passer — un retour rendu avant qu'un écran existe, une remise du soir jamais cochée, une vendeuse déjà payée. <strong>Rien n'est effacé :</strong> l'état d'avant est gardé, chaque correction est datée, motivée, signée, et peut être défaite. Le colis porte alors « régularisé par le bureau » — jamais « confirmé par la cliente », qui est sa parole à elle.</div>
+    </div>
+    <div id="reg-corps"></div>
+  </div>
+
   <!-- ============ LE SITE PUBLIC : SES TEXTES (admin uniquement) — 16/09/2026 ============
        L'ancien CMS (admin/) permettait d'éditer ces textes ; il est remplacé par cet onglet.
        Chaque section est repliée ; les listes s'ajoutent, se retirent, se réordonnent ;
@@ -1759,36 +1801,38 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260921journee"></script>
-<script src="numero-international.js?v=20260921journee"></script>
-<script src="lib/bibliotheques.js?v=20260921journee"></script>
-<script src="lib/retours.js?v=20260921journee"></script>
-<script src="lib/reclamations.js?v=20260921journee"></script>
-<script src="lib/communes-et-tarifs.js?v=20260921journee"></script>
-<script src="lib/argent.js?v=20260921journee"></script>
-<script src="lib/releve-cliente.js?v=20260921journee"></script>
-<script src="lib/papier-a-en-tete.js?v=20260921journee"></script>
-<script src="lib/briques-argent.js?v=20260921journee"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260921journee"></script>
-<script src="lib/annonce-de-remise.js?v=20260921journee"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260921journee"></script>
-<script src="lib/primes.js?v=20260921journee"></script>
-<script src="lib/doublons.js?v=20260921journee"></script>
-<script src="config.js?v=20260921journee"></script>
-<script src="biometric-lock.js?v=20260921journee"></script>
-<script src="clt-select-recherche.js?v=20260921journee"></script>
-<script src="site-editeur.js?v=20260921journee"></script>
+<script src="clt-common.js?v=20260922regulariser"></script>
+<script src="numero-international.js?v=20260922regulariser"></script>
+<script src="lib/bibliotheques.js?v=20260922regulariser"></script>
+<script src="lib/retours.js?v=20260922regulariser"></script>
+<script src="lib/reclamations.js?v=20260922regulariser"></script>
+<script src="lib/communes-et-tarifs.js?v=20260922regulariser"></script>
+<script src="lib/argent.js?v=20260922regulariser"></script>
+<script src="lib/releve-cliente.js?v=20260922regulariser"></script>
+<script src="lib/papier-a-en-tete.js?v=20260922regulariser"></script>
+<script src="lib/briques-argent.js?v=20260922regulariser"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260922regulariser"></script>
+<script src="lib/annonce-de-remise.js?v=20260922regulariser"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260922regulariser"></script>
+<script src="lib/primes.js?v=20260922regulariser"></script>
+<script src="lib/doublons.js?v=20260922regulariser"></script>
+<script src="config.js?v=20260922regulariser"></script>
+<script src="biometric-lock.js?v=20260922regulariser"></script>
+<script src="clt-select-recherche.js?v=20260922regulariser"></script>
+<script src="site-editeur.js?v=20260922regulariser"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260921journee"></script>
-<script src="causes-des-echecs.js?v=20260921journee"></script>
-<script src="analyse-profonde.js?v=20260921journee"></script>
-<script src="ce-qui-a-change.js?v=20260921journee"></script>
-<script src="les-questions.js?v=20260921journee"></script>
-<script src="console-du-dirigeant.js?v=20260921journee"></script>
-<script src="gestion.js?v=20260921journee"></script>
+<script src="bilan-de-la-semaine.js?v=20260922regulariser"></script>
+<script src="causes-des-echecs.js?v=20260922regulariser"></script>
+<script src="analyse-profonde.js?v=20260922regulariser"></script>
+<script src="ce-qui-a-change.js?v=20260922regulariser"></script>
+<script src="les-questions.js?v=20260922regulariser"></script>
+<script src="console-du-dirigeant.js?v=20260922regulariser"></script>
+<script src="gestion.js?v=20260922regulariser"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="guide-du-gerant.js?v=20260921journee"></script>
-<script src="gestion-barre-laterale.js?v=20260921journee"></script>
+<script src="guide-du-gerant.js?v=20260922regulariser"></script>
+<script src="regulariser.js?v=20260922regulariser"></script>
+<script src="regulariser-ecran.js?v=20260922regulariser"></script>
+<script src="gestion-barre-laterale.js?v=20260922regulariser"></script>
 </body>
 </html>

@@ -1207,10 +1207,18 @@ verifier(
    point n'est pas parti, et mène à Suivi › Récapitulatif par client, déplié sur le jour.
    (3) La journée d'une cliente qui CHANGE après avoir été bouclée le dit maintenant autrement :
    « ♻️ la journée a changé, le point est à revoir » — question de Celtis, et vrai risque, car un
-   point déjà réglé devenait faux en silence. Étiquette 20260921journee. */
+   point déjà réglé devenait faux en silence. Étiquette 20260921journee.
+   v226, le 22/09/2026 — RÉGULARISER. Gestion reçoit un onglet réservé à l'administrateur pour
+   corriger ce que l'application n'a pas vu passer : un retour rendu à la vendeuse avant qu'un
+   écran existe, une remise du soir jamais cochée avec son avance de gare, une cliente déjà
+   payée. Les colis sont rangés par cliente, ou par livreur pour les remises, le plus lourd en
+   premier ; le travail du jour n'est jamais proposé. Rien n'est effacé : l'état d'avant est
+   archivé hors de portée de l'application, chaque correction est datée, motivée, signée, et se
+   défait depuis le même écran. Le colis porte « régularisé par le bureau » — jamais « confirmé
+   par la cliente », qui reste sa parole à elle. Étiquette 20260922regulariser. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v225'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v226'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

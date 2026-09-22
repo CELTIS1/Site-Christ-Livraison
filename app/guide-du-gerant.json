@@ -1,724 +1,743 @@
 {
- "_lisez_moi": "LE GUIDE DU GÉRANT — une fiche par fonctionnalité livrée, lue par Gestion › Guide (app/guide-du-gerant.js). Écrit pour Celtis : ce que c'est, où c'est, comment s'en servir, en phrases courtes. À CHAQUE NOUVEAU LOT qui change ce qu'on voit ou ce qu'on fait, ajouter ou mettre à jour la fiche ici et la date « maj ». tests/le-guide-du-gerant.test.mjs vérifie la forme : identifiants uniques, espaces connus, longueurs (une fiche se lit en vingt secondes), « Y aller » vers un onglet qui existe. « pourVous » = un geste ou une décision qui revient à Celtis ; le retirer quand c'est fait.",
- "maj": "21 septembre 2026",
- "espaces": [
-  [
-   "gestion",
-   "Gestion"
+  "_lisez_moi": "LE GUIDE DU GÉRANT — une fiche par fonctionnalité livrée, lue par Gestion › Guide (app/guide-du-gerant.js). Écrit pour Celtis : ce que c'est, où c'est, comment s'en servir, en phrases courtes. À CHAQUE NOUVEAU LOT qui change ce qu'on voit ou ce qu'on fait, ajouter ou mettre à jour la fiche ici et la date « maj ». tests/le-guide-du-gerant.test.mjs vérifie la forme : identifiants uniques, espaces connus, longueurs (une fiche se lit en vingt secondes), « Y aller » vers un onglet qui existe. « pourVous » = un geste ou une décision qui revient à Celtis ; le retirer quand c'est fait.",
+  "maj": "22 septembre 2026",
+  "espaces": [
+    [
+      "gestion",
+      "Gestion"
+    ],
+    [
+      "bureau",
+      "Bureau (équipe)"
+    ],
+    [
+      "livreur",
+      "Livreur"
+    ],
+    [
+      "cliente",
+      "Cliente"
+    ],
+    [
+      "proprietaire",
+      "Propriétaire"
+    ],
+    [
+      "suivi",
+      "Suivi public"
+    ],
+    [
+      "express",
+      "Express"
+    ],
+    [
+      "securite",
+      "Sécurité et comptes"
+    ],
+    [
+      "outils",
+      "Vos outils du Mac"
+    ]
   ],
-  [
-   "bureau",
-   "Bureau (équipe)"
-  ],
-  [
-   "livreur",
-   "Livreur"
-  ],
-  [
-   "cliente",
-   "Cliente"
-  ],
-  [
-   "proprietaire",
-   "Propriétaire"
-  ],
-  [
-   "suivi",
-   "Suivi public"
-  ],
-  [
-   "express",
-   "Express"
-  ],
-  [
-   "securite",
-   "Sécurité et comptes"
-  ],
-  [
-   "outils",
-   "Vos outils du Mac"
+  "fiches": [
+    {
+      "id": "a-faire",
+      "espace": "gestion",
+      "titre": "À faire par le gérant",
+      "enBref": "La liste de ce qui attend VOTRE décision ou votre geste, écrite par Claude au fil du travail.",
+      "ou": "Gestion › Tableau de bord, tout en haut",
+      "etapes": [
+        "Chaque ligne porte son genre : « décider » = un choix à confirmer, « faire » = un geste que vous seul pouvez faire (mot de passe, compte, paiement).",
+        "Lisez le détail ; « Ajouter une note » garde votre réponse.",
+        "Cochez la case quand c'est traité : la ligne passe sous « faits », et se rouvre si besoin."
+      ],
+      "aSavoir": "Cocher veut dire « fait de MON côté » : cela n'envoie rien à Claude — pour lui confier une ligne, dites-le-lui dans la conversation. Une ligne cochée n'est pas perdue : elle est sous « Faits », en bas ; décochez-la pour la rouvrir. Rien n'est bloqué en vous attendant.",
+      "version": "v221",
+      "aller": {
+        "tab": "dashboard",
+        "ancre": "af-carte"
+      }
+    },
+    {
+      "id": "console",
+      "espace": "gestion",
+      "titre": "La console du dirigeant",
+      "enBref": "Les chiffres du mois comparés au mois d'avant, en vert ou en rouge selon que c'est bon ou mauvais.",
+      "ou": "Gestion › Tableau de bord › « Ce qui a changé »",
+      "etapes": [
+        "Choisissez l'année et le mois en haut.",
+        "Chaque ligne dit la valeur, celle du mois d'avant et l'écart.",
+        "Le mois choisi ici commande aussi « Pourquoi ça échoue » plus bas."
+      ],
+      "aller": {
+        "tab": "dashboard",
+        "ancre": "cdd-console"
+      }
+    },
+    {
+      "id": "semaine",
+      "espace": "gestion",
+      "titre": "Le bilan de la semaine",
+      "enBref": "Les sept derniers jours comparés aux sept d'avant : colis, réussite, argent — et l'argent pas encore remis.",
+      "ou": "Gestion › Tableau de bord › « Bilan de la semaine »",
+      "etapes": [
+        "Il s'ouvre sur les sept derniers jours.",
+        "‹ remonte d'une semaine (huit au plus) ; « Cette semaine » y ramène.",
+        "Les deux tuiles du bas (argent non remis, colis immobilisés) sont l'état d'aujourd'hui."
+      ],
+      "aSavoir": "Mêmes définitions que le rapport du vendredi : les deux ne peuvent pas se contredire.",
+      "version": "v191",
+      "aller": {
+        "tab": "dashboard",
+        "ancre": "cdd-semaine"
+      }
+    },
+    {
+      "id": "causes",
+      "espace": "gestion",
+      "titre": "Pourquoi ça échoue",
+      "enBref": "Les échecs du mois découpés par motif, par commune, par livreur et par cliente.",
+      "ou": "Gestion › Tableau de bord › « Pourquoi ça échoue »",
+      "etapes": [
+        "Choisissez le mois en haut de la console.",
+        "Passez d'un onglet à l'autre : Motif, Commune, Livreur, Cliente.",
+        "Un taux en rouge dépasse la moyenne du mois d'au moins 10 points."
+      ],
+      "aSavoir": "Pas de taux sous 5 colis tentés (« 1 sur 2 » n'est pas « 50 % d'échec »). « Motif non saisi » = le livreur n'a pas dit pourquoi.",
+      "version": "v202",
+      "aller": {
+        "tab": "dashboard",
+        "ancre": "cdd-causes"
+      }
+    },
+    {
+      "id": "analyse",
+      "espace": "gestion",
+      "titre": "Qui avance, qui s'éloigne",
+      "enBref": "Chaque cliente suivie à SON rythme : active, en retard, endormie, perdue — et la tendance de chaque livreur.",
+      "ou": "Gestion › Tableau de bord › « Qui avance, qui s'éloigne »",
+      "etapes": [
+        "Les pastilles du haut comptent les clientes par état ; un appui filtre la liste.",
+        "La liste est rangée dans l'ordre des appels à passer : les plus inquiétantes et les plus grosses d'abord.",
+        "Onglets Livreurs (douze mois) et Fidélité (qui reste, mois après mois)."
+      ],
+      "aSavoir": "Une cliente qui envoie deux fois par mois n'est pas « endormie » après 15 jours : ses seuils sont calculés sur ses propres habitudes.",
+      "version": "v190",
+      "aller": {
+        "tab": "dashboard",
+        "ancre": "cdd-analyse"
+      }
+    },
+    {
+      "id": "questions",
+      "espace": "gestion",
+      "titre": "La boîte à questions",
+      "enBref": "Des questions toutes faites sur votre activité, avec la réponse chiffrée.",
+      "ou": "Gestion › Tableau de bord › « Posez votre question »",
+      "etapes": [
+        "Appuyez sur une question, ou cherchez un mot.",
+        "La réponse cite ses nombres et dit quand elle n'en a pas assez pour conclure."
+      ],
+      "aller": {
+        "tab": "dashboard",
+        "ancre": "cdd-questions"
+      }
+    },
+    {
+      "id": "barre-laterale",
+      "espace": "gestion",
+      "titre": "Tout Gestion sous la main (ordinateur)",
+      "enBref": "Sur ordinateur, tous les écrans de Gestion sont listés à gauche, en permanence.",
+      "ou": "Gestion, écran de 1 200 px et plus",
+      "etapes": [
+        "Un clic ouvre directement le bon onglet et le bon sous-onglet.",
+        "Sur téléphone et tablette rien ne change : les onglets restent en haut."
+      ],
+      "aSavoir": "La barre lit les onglets de la page : un écran caché à un rôle y est caché aussi.",
+      "version": "v193"
+    },
+    {
+      "id": "guide",
+      "espace": "gestion",
+      "titre": "Ce guide",
+      "enBref": "Une fiche par fonctionnalité : ce que c'est, où la trouver, comment s'en servir.",
+      "ou": "Gestion › Guide (administrateur seulement)",
+      "etapes": [
+        "Filtrez par espace, ou cherchez un mot.",
+        "« Y aller » ouvre l'écran quand il est dans Gestion.",
+        "« Ce qui vous attend » ne garde que les fiches où un geste vous revient."
+      ],
+      "aSavoir": "Claude ajoute la fiche de chaque nouveau lot dans app/guide-du-gerant.json.",
+      "version": "v205",
+      "aller": {
+        "tab": "guide"
+      }
+    },
+    {
+      "id": "quoi-de-neuf",
+      "espace": "gestion",
+      "titre": "« Quoi de neuf » : à chacun ses nouveautés",
+      "enBref": "L'équipe voit tout ; clientes, livreurs et coursiers ne voient que ce qui les concerne, sinon une phrase neutre.",
+      "ou": "Le bandeau « Nouvelle version » de chaque espace, et la page de connexion",
+      "etapes": [
+        "Dans Équipe et Gestion : toutes les mises à jour, en détail.",
+        "Chez une cliente ou un livreur : seulement les phrases écrites pour eux (« Clientes : … », « Livreurs : … »).",
+        "Pour le reste : « Mise à jour effectuée : des améliorations pour le bon fonctionnement de l'application. »",
+        "Sur la page de connexion, avant de s'identifier : aucun détail."
+      ],
+      "aSavoir": "Le tri est fait par l'application, pas par la bonne volonté de celui qui écrit la note.",
+      "version": "v213",
+      "aller": {
+        "page": "gestion.html"
+      }
+    },
+    {
+      "id": "regulariser",
+      "espace": "gestion",
+      "titre": "Régulariser une anomalie",
+      "enBref": "Corriger ce que l'application n'a pas vu passer : retour déjà rendu, remise déjà faite, vendeuse déjà payée.",
+      "ou": "Gestion › Régulariser",
+      "etapes": [
+        "Choisissez laquelle des trois anomalies : l'écran range les colis par cliente, ou par livreur pour les remises, le plus lourd en premier.",
+        "Cochez les colis concernés, indiquez la DATE RÉELLE de ce qui s'est passé, et écrivez le motif — c'est lui qui expliquera la correction dans six mois.",
+        "« Régulariser » : une copie de l'état d'avant est gardée. « Vos corrections », plus bas, permet de défaire.",
+        "Le travail du jour n'est jamais proposé : un colis n'entre dans la liste que le lendemain de son événement."
+      ],
+      "aSavoir": "Le colis est marqué « régularisé par le bureau », daté et signé — jamais « confirmé par la cliente » : cette confirmation est sa parole à elle, gardée comme preuve en cas de litige. Régulariser une remise solde aussi l'avance de gare du livreur, quand il y en avait une.",
+      "pourVous": "Vous seul voyez cet onglet, et vous seul pouvez corriger.",
+      "version": "v226",
+      "aller": {
+        "tab": "regul"
+      }
+    },
+    {
+      "id": "essentiel",
+      "espace": "bureau",
+      "titre": "L'essentiel : ce qui presse, d'un regard",
+      "enBref": "Des pastilles qui comptent ce qui demande un geste aujourd'hui, et qui y mènent.",
+      "ou": "Équipe › Colis, en haut",
+      "etapes": [
+        "Chaque pastille est un compte : colis sans livreur, montants manquants, retards, signalements, comptes à valider…",
+        "Un appui ouvre exactement ces colis-là, surlignés jusqu'à ce qu'on les touche.",
+        "La carte se replie ; l'écran s'en souvient."
+      ],
+      "aSavoir": "Compté sur toute la base, pas seulement sur la page chargée.",
+      "version": "v182",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "tournee-faite",
+      "espace": "bureau",
+      "titre": "La tournée : ce qui reste, puis ce qui est fait",
+      "enBref": "Une cliente chez qui tout est ramassé devient une ligne courte, rangée sous celles où il reste à passer.",
+      "ou": "Équipe › Tournées",
+      "etapes": [
+        "En haut du bloc d'un livreur : les cartes entières, celles où il doit encore passer.",
+        "Dessous, « Déjà récupéré chez N clientes » : une ligne par cliente, avec ce qui a été pris.",
+        "Le titre du bloc dit les deux : « 2 colis à prendre · 3 récupérés »."
+      ],
+      "aSavoir": "Si la cliente avait annoncé plus de colis que l'application n'en connaît, sa carte reste entière : ce n'est pas fini, c'est un appel à passer.",
+      "version": "v223"
+    },
+    {
+      "id": "ce-qui-vous-attend",
+      "espace": "bureau",
+      "titre": "La pastille du menu ☰ dit où aller",
+      "enBref": "Le chiffre sur le bouton ☰ compte les comptes à valider et les mots de passe à refaire ; le menu les nomme et y mène.",
+      "ou": "Équipe, en haut à droite",
+      "etapes": [
+        "Ouvrez le menu ☰ : « Ce qui vous attend » est en tête, en ambre.",
+        "Un appui sur une ligne ouvre l'onglet Comptes, la bonne section déjà dépliée.",
+        "L'onglet Comptes porte le même chiffre ; sur téléphone, le bouton « Plus » aussi, puisque Comptes est derrière lui."
+      ],
+      "aSavoir": "Quand il n'y a plus rien, tout disparaît : pas de « 0 » qui ferait chercher.",
+      "version": "v223"
+    },
+    {
+      "id": "qui-recoit-quoi",
+      "espace": "bureau",
+      "titre": "Les notifications : qui reçoit quoi",
+      "enBref": "L'équipe ne reçoit plus le colis par colis, mais ce qui appelle une décision : une journée bouclée, le point d'un livreur, un signalement.",
+      "ou": "Sur le téléphone, une fois « Activer les notifications » accepté",
+      "etapes": [
+        "« ✅ Journée bouclée : Awa Boutique » — plus aucun de ses colis du jour n'est en cours : son point peut être réglé.",
+        "« 💰 Koffi a fait son point » — avec le montant annoncé, et l'écart s'il y en a un.",
+        "Les signalements et les demandes de passage continuent d'arriver."
+      ],
+      "aSavoir": "Avant le 21/09, chaque changement de statut de chaque colis faisait sonner l'équipe : environ 180 fois par jour. Les clientes et les livreurs, eux, gardent toutes leurs notifications.",
+      "version": "v224"
+    },
+    {
+      "id": "points-a-regler",
+      "espace": "bureau",
+      "titre": "Les points à régler, comptés sur l'écran",
+      "enBref": "Une pastille verte dans « L'essentiel » compte les clientes dont la journée est bouclée et dont le point n'est pas encore parti.",
+      "ou": "Équipe › Colis, dans « L'essentiel »",
+      "etapes": [
+        "« 3 clientes bouclées · points à régler » : leur journée est finie, plus aucun colis en cours.",
+        "Un appui ouvre Suivi › Récapitulatif par client, sur aujourd'hui, déjà déplié.",
+        "Une cliente dont le point est déjà envoyé n'est plus comptée."
+      ],
+      "aSavoir": "Si la journée d'une cliente change après avoir été bouclée (un non livré finalement livré), une notification le dit : « la journée a changé, le point est à revoir ».",
+      "version": "v225"
+    },
+    {
+      "id": "livreur-date-du-jour",
+      "espace": "livreur",
+      "titre": "La date du jour, posée et visible",
+      "enBref": "L'écran du livreur s'ouvre sur aujourd'hui, date affichée. « Livrés » et « Non livrés » montrent le détail de ce jour-là.",
+      "ou": "Livreur › Mes colis",
+      "etapes": [
+        "« Ma journée » garde tous les colis du jour, même livrés ou non livrés.",
+        "« Livrés » se range sur le jour de LIVRAISON : un colis reçu hier et livré ce matin y figure.",
+        "Le bouton à côté du calendrier bascule : « Toutes les dates », puis « Aujourd'hui »."
+      ],
+      "aSavoir": "Les colis reçus avant et encore en route ne disparaissent pas : ils sont repliés sous la liste, dans « ⏳ colis encore en route, reçus avant — à finir ».",
+      "version": "v225"
+    },
+    {
+      "id": "a-risque",
+      "espace": "bureau",
+      "titre": "« À risque » avant le retard",
+      "enBref": "Un colis promis aujourd'hui qui n'est pas là où il devrait être est signalé AVANT d'échouer.",
+      "ou": "Équipe › Colis › L'essentiel : pastilles « À risque » et « Promesse dépassée »",
+      "etapes": [
+        "Ambre « À risque » : promis aujourd'hui et pas récupéré à 11 h, pas parti à 14 h, ou sans livreur.",
+        "Rouge « Promesse dépassée » : le jour promis est passé.",
+        "La carte du colis dit pourquoi, en une ligne."
+      ],
+      "aSavoir": "La promesse = « à livrer avant le », sinon « reporté au », sinon le lendemain de la récupération.",
+      "pourVous": "À confirmer : le délai de la maison (J+1) et les heures 11 h / 14 h — déjà appliqués. Note « delais-reglages-21-6 » dans À faire.",
+      "version": "v201",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "carte-colis",
+      "espace": "bureau",
+      "titre": "Les colis en route sur la carte",
+      "enBref": "Une pastille par commune avec le nombre de colis, à côté des livreurs en direct.",
+      "ou": "Équipe › Suivi › « La carte »",
+      "etapes": [
+        "Orange : un colis sans livreur. Ambre : un colis à risque. Bleu : tout va bien.",
+        "Un clic sur une commune (liste ou carte) montre l'autre ; « Voir ces colis » ouvre l'onglet Colis sur ceux-là.",
+        "« Hors de la carte » : l'intérieur du pays ou une commune mal écrite — compté, jamais caché."
+      ],
+      "aSavoir": "La pastille est au centre de la commune, pas à l'adresse. Sur ordinateur la section s'ouvre seule ; sur téléphone elle est repliée.",
+      "version": "v203",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "liste-fiche",
+      "espace": "bureau",
+      "titre": "La liste à gauche, la fiche à droite (ordinateur)",
+      "enBref": "Sur grand écran : une ligne par colis, et la fiche du colis choisi épinglée à droite.",
+      "ou": "Équipe › Colis, écran de 1 200 px et plus",
+      "etapes": [
+        "Cliquez une ligne : sa fiche s'ouvre à droite, avec tous ses gestes habituels.",
+        "Les flèches ↑ ↓ du clavier parcourent la liste.",
+        "Sous 1 200 px, l'écran redevient la pile de cartes du téléphone.",
+        "En bas à droite : « Aller en bas » et « Remonter », quand la liste est longue."
+      ],
+      "aSavoir": "Depuis la v213 l'écran ne remonte plus tout seul quand la liste se met à jour : on reste où l'on lisait.",
+      "version": "v213",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "chaine-argent",
+      "espace": "bureau",
+      "titre": "Où est l'argent, colis par colis",
+      "enBref": "L'argent des articles suivi en quatre étapes : à encaisser → chez le livreur → en caisse → reversé.",
+      "ou": "Équipe › Finances › Comptabilité, « La chaîne de l'argent »",
+      "etapes": [
+        "Chaque colonne dit le montant, le nombre de colis et depuis combien de jours.",
+        "Ouvrez une colonne pour voir à qui est l'argent (quel livreur, quelle cliente).",
+        "Une alerte signale un colis reversé à la cliente alors que le livreur n'a pas remis : CLT a avancé la somme."
+      ],
+      "aSavoir": "Aucun calcul nouveau : ce sont les règles d'argent de la maison (relevé, caisse), mises bout à bout.",
+      "version": "v195",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "numeros-etrangers",
+      "espace": "bureau",
+      "titre": "Les numéros étrangers (WhatsApp de l'étranger)",
+      "enBref": "Un numéro américain, canadien, français, burkinabé… s'enregistre avec son indicatif, et l'appel comme WhatsApp partent au bon numéro.",
+      "ou": "Partout où l'on saisit le téléphone d'un destinataire : Ajouter des colis, corriger un colis, importer un fichier",
+      "etapes": [
+        "Numéro ivoirien : rien ne change, 10 chiffres (07 01 02 03 04).",
+        "Numéro étranger : écrivez l'indicatif devant — +1 416 555 1234, +33 6 12 34 56 78, +226 70 12 34 56 (« 00 » marche aussi).",
+        "À l'écran il se lit « +1 416 555 1234 » ; « Appeler » et WhatsApp ouvrent ce numéro-là."
+      ],
+      "aSavoir": "Sans indicatif, un numéro étranger est refusé : on ne devine jamais un pays. Le numéro de CONNEXION d'un compte reste ivoirien ; si « 225 » a été posé devant un numéro étranger par le passé, WhatsApp retrouve quand même le bon numéro.",
+      "version": "v219",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "voir-son-ecran",
+      "espace": "bureau",
+      "titre": "Voir l'écran d'un livreur ou d'une cliente",
+      "enBref": "Vous ouvrez son écran avec ses données, exactement ce qu'il voit. Lecture seule d'abord ; « ✏️ Modifier » si vous voulez agir.",
+      "ou": "Équipe › Plus › Comptes › Tous les comptes › ⋮ sur la personne › « 👁 Voir son écran »",
+      "etapes": [
+        "Trouvez la personne dans « Tous les comptes », ouvrez son menu ⋮, puis « 👁 Voir son écran ».",
+        "Son écran s'ouvre dans un nouvel onglet, sous un bandeau bleu nuit qui porte son nom.",
+        "Regardez tout : ses colis, sa journée, son relevé, ses primes, ses boutiques. « Quitter » referme l'onglet."
+      ],
+      "aSavoir": "L'écran s'ouvre en lecture seule. « ✏️ Modifier » (bandeau) ouvre les gestes de l'écran, faits sous votre nom ; le bandeau devient rouge. Restent fermés : la fiche du compte (Équipe › Comptes) et les déclarations de la personne elle-même. Tout est noté.",
+      "version": "v218",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "point-whatsapp",
+      "espace": "bureau",
+      "titre": "Le point de la cliente, droit dans son WhatsApp",
+      "enBref": "Le point de la cliente part sur WhatsApp avec son PDF et un mot déjà écrit : bonjour ou bonsoir, le jour, la somme.",
+      "ou": "Équipe › Suivi › Récapitulatif par client › une cliente › « 📤 Envoyer le PDF par WhatsApp »",
+      "etapes": [
+        "Ouvrez la cliente, vérifiez son bilan.",
+        "« Envoyer le PDF par WhatsApp » : choisissez WhatsApp puis la cliente — le PDF et le mot d'accompagnement partent ensemble.",
+        "Revenez cocher « ✅ Je viens de l'envoyer » : toute l'équipe voit que c'est fait, par qui, à quelle heure."
+      ],
+      "aSavoir": "WhatsApp ne laisse pas un site choisir le contact ET joindre un fichier : avec le PDF, c'est vous qui choisissez la cliente. « 💬 Message seul » ouvre directement sa conversation, sans le PDF. Sur ordinateur, le PDF se télécharge et la conversation s'ouvre : glissez-y le fichier.",
+      "version": "v204",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "retours",
+      "espace": "bureau",
+      "titre": "Les retours : on sait où est chaque colis",
+      "enBref": "Un onglet qui dit où est chaque colis revenu, chez qui, depuis quand — et les gestes pour le clore.",
+      "ou": "Équipe › Retours (derrière « Plus » sur téléphone)",
+      "etapes": [
+        "Le chiffre sur l'onglet = ce qui presse (litiges + retards).",
+        "Deux côtés, comme dans Personnes : « Retours » et « Non livrés », chacun avec son compte. « Chercher ici » filtre le côté ouvert : adresse, commune, n° de colis, téléphone.",
+        "Chaque carte dit l'adresse, le téléphone du destinataire, la date exacte à côté de « depuis 3 jours », et le détenteur. La cliente confirme la remise — ou la conteste : litige.",
+        "« Reprogrammer » : on choisit le jour et le livreur, et le colis repart en livraison — sans passer par « Modifier »."
+      ],
+      "aSavoir": "« Reprogrammer » existe sur un non livré et sur un retour encore chez un livreur ou au bureau ; pas sur un colis déjà rendu à la cliente ni en litige. Le journal du retour garde la ligne « relance ».",
+      "version": "v212",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "signalements",
+      "espace": "bureau",
+      "titre": "Signalements, passages, litiges : le bureau répond",
+      "enBref": "Les signalements des clientes ET des livreurs se prennent en charge et reçoivent une réponse.",
+      "ou": "Équipe › Colis › L'essentiel › « Signalements » ; Équipe › Tournées pour les demandes de passage",
+      "etapes": [
+        "Un signalement : « Je m'en occupe », puis une réponse écrite que la personne lira.",
+        "Une demande de passage se confirme ou se refuse avec un motif — elle ne disparaît plus en silence."
+      ],
+      "version": "v182",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "boutiques-rattacher",
+      "espace": "bureau",
+      "titre": "Rattacher des boutiques à un propriétaire",
+      "enBref": "Un propriétaire de plusieurs magasins voit tous leurs colis depuis son compte.",
+      "ou": "Équipe › Comptes › le compte du propriétaire › menu ⋮ › « Boutiques supervisées »",
+      "etapes": [
+        "Ouvrez le menu ⋮ du compte du propriétaire.",
+        "Choisissez chaque boutique (chacune a son propre compte gérant) et « Ajouter ».",
+        "« Retirer » défait le lien. La ligne du compte rappelle ce qu'il supervise."
+      ],
+      "aSavoir": "Le propriétaire LIT seulement : il ne peut rien modifier dans les boutiques.",
+      "version": "v181",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "scan",
+      "espace": "bureau",
+      "titre": "Scanner une étiquette",
+      "enBref": "Le bouton 📷 lit le code QR d'une étiquette et retrouve le colis.",
+      "ou": "Équipe › Colis, à côté de la recherche ; Livreur, en haut de la liste",
+      "etapes": [
+        "Appuyez sur 📷, visez l'étiquette.",
+        "Le colis s'ouvre, surligné."
+      ],
+      "aSavoir": "Testé avec une caméra simulée seulement.",
+      "pourVous": "À essayer une fois sur un vrai téléphone, avec une vraie étiquette imprimée.",
+      "version": "v199",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "express-recharges",
+      "espace": "bureau",
+      "titre": "Express : l'argent des coursiers, en attendant Wave",
+      "enBref": "Solde prépayé : la commission s'y prélève à chaque course. La référence de l'envoi prouve chaque recharge.",
+      "ou": "Équipe › Express › « Recharges coursiers » ; Coursier › Solde › « Recharger mon solde »",
+      "etapes": [
+        "Mobile Money d'abord, d'où qu'il soit : le coursier envoie l'argent au numéro de CLT, déclare le montant ET la référence du reçu, et peut envoyer la capture sur le WhatsApp de CLT.",
+        "Le bureau retrouve ce montant et cette référence dans le compte de CLT, puis valide : le solde est crédité.",
+        "Une référence déjà utilisée est signalée et ne se valide pas : un même envoi ne se crédite qu'une fois.",
+        "Second choix, « Espèces au bureau » : il déclare le montant, l'équipe reçoit les billets et valide (« Espèces bien reçues en main ? »)."
+      ],
+      "aSavoir": "Sous le solde minimum, le coursier ne reçoit plus de courses tant qu'il n'a pas rechargé. C'est le modèle des plateformes de courses (solde prépayé, commission prélevée dessus). Le jour où Wave nous ouvre le paiement automatique, seule la validation à la main disparaît ; rien d'autre ne change.",
+      "pourVous": "Aujourd'hui l'onglet Express n'est visible que du gérant : c'est donc vous qui validez les recharges. À décider avant l'ouverture : l'ouvrir ou non à une personne de confiance de l'équipe.",
+      "version": "v210",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "express-reglages",
+      "espace": "bureau",
+      "titre": "CLT Express : les réglages dans l'application",
+      "enBref": "La grille de prix, la commission, le solde minimum et les numéros Mobile Money se règlent à l'écran.",
+      "ou": "Équipe › Express › « CLT Express — Réglages »",
+      "etapes": [
+        "Modifiez une valeur, puis « Enregistrer les réglages ».",
+        "Tant que les numéros Mobile Money sont vides, un coursier ne peut pas recharger."
+      ],
+      "aSavoir": "Les numéros Mobile Money ne se modifient que par le gérant, et tout changement se confirme, numéro relu en clair. Le coursier les lit et les copie ; il ne peut rien y écrire.",
+      "pourVous": "Jouer une fois _sql-prive/2026-09-21-numeros-mobile-money-verrouilles.sql dans Supabase : il pose Wave et Orange (07 89 81 81 40), MTN (05 46 81 86 40) et verrouille ces numéros. Moov : à ajouter plus tard, ici même.",
+      "version": "v211",
+      "aller": {
+        "page": "equipe.html"
+      }
+    },
+    {
+      "id": "par-trajet",
+      "espace": "livreur",
+      "titre": "Mes colis dans l'ordre du trajet",
+      "enBref": "« Par trajet » range les colis du livreur par commune, dans l'ordre où l'on roule.",
+      "ou": "Livreur › Mes colis › bascule « Par cliente / Par trajet »",
+      "etapes": [
+        "Le livreur choisit « Par trajet » ; le téléphone s'en souvient.",
+        "Chaque colis porte son rang ; un colis « à livrer avant le » passe en tête.",
+        "« Voir le trajet » montre les arrêts sur un schéma, même sans connexion ; un bouton ouvre le tout dans Google Maps."
+      ],
+      "aSavoir": "C'est un ordre PROPOSÉ entre communes (à vol d'oiseau) ; dans une commune, c'est le livreur qui sait.",
+      "pourVous": "À décider : ouvrir « Par trajet » par défaut pour tous les livreurs ? Aujourd'hui c'est « Par cliente ».",
+      "version": "v196–v197"
+    },
+    {
+      "id": "prime-du-jour",
+      "espace": "livreur",
+      "titre": "Ce que la journée ajoute à ma prime",
+      "enBref": "Dans « Mon mois », une ligne dit ce que les livraisons d'aujourd'hui ajoutent à la prime de volume.",
+      "ou": "Livreur › carte « Mon mois »",
+      "etapes": [
+        "Le livreur lit : tant de colis aujourd'hui, tant de plus sur la prime.",
+        "C'est une estimation « en cours » ; le décompte du mois fait foi."
+      ],
+      "aSavoir": "Pas un « gain du jour » inventé : seule la prime de volume bouge avec une journée. Premier mois calculé par l'application : octobre 2026.",
+      "version": "v198"
+    },
+    {
+      "id": "livreur-seul",
+      "espace": "livreur",
+      "titre": "Le livreur n'est plus seul",
+      "enBref": "« Signaler un problème », les numéros de CLT, et une pastille « À rendre » pour les retours dans le sac.",
+      "ou": "Livreur › menu ☰ ; onglet « Retours » de la barre du bas",
+      "etapes": [
+        "« Retours » (barre du bas, avec son nombre) liste les colis revenus que le livreur a encore dans son sac.",
+        "Un signalement (« Signaler un problème », menu ☰) arrive dans L'essentiel du bureau.",
+        "Une mise à jour refusée se retente, ou s'abandonne en prévenant le bureau — rien ne se perd.",
+        "Un colis de la journée reporté à un autre jour est annoncé au-dessus de la liste."
+      ],
+      "version": "v184, v206",
+      "aSavoir": "« Compte » a quitté la barre du bas (doublon) : « Mon compte » est dans le menu ☰."
+    },
+    {
+      "id": "recup-pastille",
+      "espace": "livreur",
+      "titre": "Récup. : la pastille et la liste disent la même chose",
+      "enBref": "Le nombre sur « Récup. » compte ce qui est à récupérer aujourd'hui, retards compris — exactement ce que la liste montre.",
+      "ou": "Livreur › Récup.",
+      "etapes": [
+        "Une récupération prévue avant et pas encore faite reste dans la journée, avec une ligne jaune qui le dit.",
+        "Ce qui est prévu pour plus tard n'est pas compté ; l'écran dit combien, et « Toutes » les montre."
+      ],
+      "aSavoir": "Si un livreur a un vieux colis « en attente » qui n'est plus à récupérer, c'est au bureau de le corriger ou de le supprimer : il disparaîtra de sa pastille.",
+      "version": "v207"
+    },
+    {
+      "id": "import",
+      "espace": "cliente",
+      "titre": "Importer ses colis depuis un fichier",
+      "enBref": "Un fichier Excel ou CSV remplit le formulaire d'ajout ; la cliente relit, puis enregistre.",
+      "ou": "Cliente › Ajouter › « 📄 Importer un fichier (Excel ou CSV) »",
+      "etapes": [
+        "« Télécharger le modèle » donne les colonnes attendues.",
+        "Elle choisit son fichier : les lignes remplissent le formulaire (60 au plus).",
+        "Elle relit, corrige, puis « Enregistrer » comme d'habitude."
+      ],
+      "aSavoir": "Rien n'est enregistré sans relecture. Les montants « 15.000 », « 15 000 F » sont compris ; une commune inconnue est signalée.",
+      "version": "v200"
+    },
+    {
+      "id": "etiquettes",
+      "espace": "cliente",
+      "titre": "Des étiquettes à coller",
+      "enBref": "Une étiquette avec code QR pour chaque colis à livrer, huit par feuille A4.",
+      "ou": "Cliente › Mes colis › « 🏷️ Imprimer les étiquettes » ; Équipe › Colis › même bouton",
+      "etapes": [
+        "Appuyez : la feuille s'ouvre, prête à imprimer.",
+        "Le QR est le lien de suivi du colis : le destinataire peut aussi le scanner."
+      ],
+      "version": "v199"
+    },
+    {
+      "id": "hors-reseau",
+      "espace": "cliente",
+      "titre": "La saisie tient sans réseau",
+      "enBref": "Sans connexion, un colis saisi est gardé sur le téléphone et part tout seul au retour du réseau.",
+      "ou": "Cliente › Ajouter",
+      "etapes": [
+        "Un bandeau dit combien de colis attendent.",
+        "Au retour du réseau ils partent seuls ; rien à refaire."
+      ],
+      "version": "v185"
+    },
+    {
+      "id": "retours-cliente",
+      "espace": "cliente",
+      "titre": "Ses retours dans leur onglet",
+      "enBref": "L'onglet « Retours » s'ouvre sur le jour même ; la cliente confirme la remise ou la conteste.",
+      "ou": "Cliente › Retours",
+      "etapes": [
+        "Par défaut, les retours DU JOUR. Elle choisit une autre date, ou « Toutes les dates ».",
+        "Ce qui attend sa confirmation reste affiché quelle que soit la date : on ne le cache jamais.",
+        "« Je l'ai bien reçu » clôt le retour.",
+        "« Je ne l'ai pas reçu » ouvre un litige que le bureau voit en tête."
+      ],
+      "version": "v222"
+    },
+    {
+      "id": "cliente-carte",
+      "espace": "cliente",
+      "titre": "La carte d'un colis, courte et datée",
+      "enBref": "Sur téléphone, chaque colis tient en trois lignes : où, quand, quoi — son statut et son montant. « Détails » montre le reste.",
+      "ou": "Cliente › Mes colis",
+      "etapes": [
+        "La date ouvre la ligne de chaque colis (« Aujourd'hui », « ven 18 sept »), quel que soit le filtre.",
+        "« Détails ▾ » déplie la carte sur place : téléphone, WhatsApp, frais, livreur, boutons. « Réduire ▴ » la referme.",
+        "Un colis non livré, un retour, un montant ou une adresse manquants ne sont jamais repliés."
+      ],
+      "aSavoir": "« Dupliquer », « Modifier » et « Supprimer » n'existent que sur un colis en attente saisi par la cliente elle-même. Un colis saisi par le bureau, ou déjà récupéré, ne se modifie plus (il reste « Corriger l'adresse », pour le livreur devant la mauvaise porte).",
+      "version": "v207",
+      "pourVous": "À décider : garder « Corriger l'adresse » après la récupération ? Je l'ai laissé (c'est lui qui sauve une livraison mal adressée) ; dites-moi si vous préférez le retirer."
+    },
+    {
+      "id": "mes-boutiques",
+      "espace": "proprietaire",
+      "titre": "Mes boutiques (le propriétaire de plusieurs magasins)",
+      "enBref": "Un onglet « Boutiques » : toutes ses boutiques, leurs chiffres du jour, et chaque colis consultable.",
+      "ou": "Compte du propriétaire › onglet « 🏬 Boutiques » (n'existe que si le bureau lui a rattaché des boutiques)",
+      "etapes": [
+        "En haut : « Toutes », ou une boutique. Le jour se change avec ‹ › et « Aujourd'hui ».",
+        "Les six chiffres sont le filtre : un appui sur « Non livrés » ne montre que ceux-là.",
+        "Vue « Toutes » : une ligne par boutique avec sa barre d'avancement. Un appui l'ouvre.",
+        "Chaque colis s'ouvre : destinataire (appelable), adresse, montants, livreur, motif, étapes avec l'heure, lien de suivi."
+      ],
+      "aSavoir": "Lecture seule. La note interne du bureau n'y figure jamais.",
+      "version": "v204"
+    },
+    {
+      "id": "suivi-fournisseur",
+      "espace": "suivi",
+      "titre": "Le lien de suivi : « Contactez le fournisseur »",
+      "enBref": "Le destinataire peut joindre le fournisseur (appel, WhatsApp), puis CLT pour la livraison.",
+      "ou": "Page publique de suivi (lien envoyé au destinataire)",
+      "etapes": [
+        "Le bloc « Contactez le fournisseur » n'apparaît qu'après les quatre derniers chiffres du téléphone.",
+        "Le nom de la boutique n'est plus affiché : seulement « le fournisseur »."
+      ],
+      "version": "v204"
+    },
+    {
+      "id": "express-argent",
+      "espace": "express",
+      "titre": "Express : l'argent des courses protégé",
+      "enBref": "L'acceptation d'une course est immédiate et sans doublon ; le prix est figé à la commande.",
+      "ou": "CLT Express (client et coursier)",
+      "etapes": [
+        "Une course s'annule tant qu'aucun coursier ne l'a prise ; ensuite l'écran dit qui appeler.",
+        "« Je ne peux pas la faire » rend une course à la file.",
+        "Le carnet d'adresses (Domicile, Bureau…) suit le compte."
+      ],
+      "aSavoir": "Express n'est pas encore ouvert au public : tout est prêt, il reste vos réglages et la publication Play Store.",
+      "pourVous": "Publication Play Store : le dossier est prêt (PUBLICATION-PLAY-STORE-CLT-EXPRESS.md, captures dans le dossier CLT) ; les étapes de compte sont à vous. Note « play-store-6-3 ».",
+      "version": "v181–v187"
+    },
+    {
+      "id": "aide-par-role",
+      "espace": "express",
+      "titre": "Express : une aide pour le client, une pour le coursier",
+      "enBref": "Dans le menu ☰ d'Express, « Aide et tutoriels » montre à chacun SES gestes — et seulement les siens.",
+      "ou": "CLT Express › menu ☰ › « ❓ Aide et tutoriels »",
+      "etapes": [
+        "Le client : commander, ses adresses, suivre, annuler, payer et noter.",
+        "Le coursier : se mettre disponible, accepter, récupérer-livrer-encaisser, sa position, son solde, « solde insuffisant »."
+      ],
+      "aSavoir": "Les textes sont dans app/aide.json (chapitres express-client et express-coursier) : relisez-les, vous connaissez vos coursiers mieux que moi.",
+      "version": "v207"
+    },
+    {
+      "id": "sauvegarde",
+      "espace": "securite",
+      "titre": "La sauvegarde de chaque nuit",
+      "enBref": "Chaque nuit, la base est sauvegardée, chiffrée, puis RESTAURÉE pour vérifier qu'elle est lisible.",
+      "ou": "GitHub › Actions › « Sauvegarde nocturne » ; mode d'emploi : sauvegarde/README.md",
+      "etapes": [
+        "Posez les trois secrets GitHub décrits dans le README (vous seul : ce sont des mots de passe).",
+        "Lancez le workflow une fois à la main et vérifiez qu'il est vert.",
+        "Faites une fois l'exercice de restauration du README : une sauvegarde qu'on n'a jamais relue ne vaut rien."
+      ],
+      "aSavoir": "Tant que les secrets ne sont pas posés, AUCUNE sauvegarde nocturne ne tourne. Le dépôt étant public, les sauvegardes chiffrées sont téléchargeables par tous : la phrase de passe (24 caractères au moins) est la seule protection.",
+      "pourVous": "À faire : les trois secrets + un premier lancement (note « sauvegarde-secrets-20h »). À décider : passer le dépôt en privé (note « sauvegarde-depot-prive »).",
+      "version": "v189"
+    },
+    {
+      "id": "bilan-motos",
+      "espace": "securite",
+      "titre": "Bilan et motos : la séance avec le comptable",
+      "enBref": "Une note de décision prête pour le comptable : amortir les motos, et sur combien d'années.",
+      "ou": "Dossier CLT du Bureau › NOTE-DE-DECISION-8-6-BILAN-ET-MOTOS.md",
+      "etapes": [
+        "Lisez la note (trois décisions, une recommandation pour chacune).",
+        "Tenez la séance avec le comptable : je ne suis ni comptable ni fiscaliste."
+      ],
+      "pourVous": "À faire : la séance avec le comptable (note « bilan-motos-8-6 »)."
+    },
+    {
+      "id": "deux-gestes",
+      "espace": "outils",
+      "titre": "Mettre en ligne : les deux gestes",
+      "enBref": "1. Appliquer la mise à jour de Claude. 2. Mettre en ligne ce qui est validé.",
+      "ou": "Bureau › Christ Livraison & Transport SARL › Outils (double-clic)",
+      "etapes": [
+        "Claude dépose UN paquet (un fichier « clt-… ») à la racine du Bureau.",
+        "« Appliquer la mise à jour de Claude » : le paquet est appliqué puis effacé du Bureau.",
+        "« Mettre en ligne ce qui est validé » : la liste s'affiche, tapez o. Une à deux minutes plus tard, l'application propose « nouvelle version »."
+      ],
+      "aSavoir": "Si Claude a déjà posé la mise à jour lui-même, le premier geste répond « Rien à faire » : passez au second. Les anciens paquets sont dans « Paquets déjà remplacés »."
+    }
   ]
- ],
- "fiches": [
-  {
-   "id": "a-faire",
-   "espace": "gestion",
-   "titre": "À faire par le gérant",
-   "enBref": "La liste de ce qui attend VOTRE décision ou votre geste, écrite par Claude au fil du travail.",
-   "ou": "Gestion › Tableau de bord, tout en haut",
-   "etapes": [
-    "Chaque ligne porte son genre : « décider » = un choix à confirmer, « faire » = un geste que vous seul pouvez faire (mot de passe, compte, paiement).",
-    "Lisez le détail ; « Ajouter une note » garde votre réponse.",
-    "Cochez la case quand c'est traité : la ligne passe sous « faits », et se rouvre si besoin."
-   ],
-   "aSavoir": "Cocher veut dire « fait de MON côté » : cela n'envoie rien à Claude — pour lui confier une ligne, dites-le-lui dans la conversation. Une ligne cochée n'est pas perdue : elle est sous « Faits », en bas ; décochez-la pour la rouvrir. Rien n'est bloqué en vous attendant.",
-   "version": "v221",
-   "aller": {
-    "tab": "dashboard",
-    "ancre": "af-carte"
-   }
-  },
-  {
-   "id": "console",
-   "espace": "gestion",
-   "titre": "La console du dirigeant",
-   "enBref": "Les chiffres du mois comparés au mois d'avant, en vert ou en rouge selon que c'est bon ou mauvais.",
-   "ou": "Gestion › Tableau de bord › « Ce qui a changé »",
-   "etapes": [
-    "Choisissez l'année et le mois en haut.",
-    "Chaque ligne dit la valeur, celle du mois d'avant et l'écart.",
-    "Le mois choisi ici commande aussi « Pourquoi ça échoue » plus bas."
-   ],
-   "aller": {
-    "tab": "dashboard",
-    "ancre": "cdd-console"
-   }
-  },
-  {
-   "id": "semaine",
-   "espace": "gestion",
-   "titre": "Le bilan de la semaine",
-   "enBref": "Les sept derniers jours comparés aux sept d'avant : colis, réussite, argent — et l'argent pas encore remis.",
-   "ou": "Gestion › Tableau de bord › « Bilan de la semaine »",
-   "etapes": [
-    "Il s'ouvre sur les sept derniers jours.",
-    "‹ remonte d'une semaine (huit au plus) ; « Cette semaine » y ramène.",
-    "Les deux tuiles du bas (argent non remis, colis immobilisés) sont l'état d'aujourd'hui."
-   ],
-   "aSavoir": "Mêmes définitions que le rapport du vendredi : les deux ne peuvent pas se contredire.",
-   "version": "v191",
-   "aller": {
-    "tab": "dashboard",
-    "ancre": "cdd-semaine"
-   }
-  },
-  {
-   "id": "causes",
-   "espace": "gestion",
-   "titre": "Pourquoi ça échoue",
-   "enBref": "Les échecs du mois découpés par motif, par commune, par livreur et par cliente.",
-   "ou": "Gestion › Tableau de bord › « Pourquoi ça échoue »",
-   "etapes": [
-    "Choisissez le mois en haut de la console.",
-    "Passez d'un onglet à l'autre : Motif, Commune, Livreur, Cliente.",
-    "Un taux en rouge dépasse la moyenne du mois d'au moins 10 points."
-   ],
-   "aSavoir": "Pas de taux sous 5 colis tentés (« 1 sur 2 » n'est pas « 50 % d'échec »). « Motif non saisi » = le livreur n'a pas dit pourquoi.",
-   "version": "v202",
-   "aller": {
-    "tab": "dashboard",
-    "ancre": "cdd-causes"
-   }
-  },
-  {
-   "id": "analyse",
-   "espace": "gestion",
-   "titre": "Qui avance, qui s'éloigne",
-   "enBref": "Chaque cliente suivie à SON rythme : active, en retard, endormie, perdue — et la tendance de chaque livreur.",
-   "ou": "Gestion › Tableau de bord › « Qui avance, qui s'éloigne »",
-   "etapes": [
-    "Les pastilles du haut comptent les clientes par état ; un appui filtre la liste.",
-    "La liste est rangée dans l'ordre des appels à passer : les plus inquiétantes et les plus grosses d'abord.",
-    "Onglets Livreurs (douze mois) et Fidélité (qui reste, mois après mois)."
-   ],
-   "aSavoir": "Une cliente qui envoie deux fois par mois n'est pas « endormie » après 15 jours : ses seuils sont calculés sur ses propres habitudes.",
-   "version": "v190",
-   "aller": {
-    "tab": "dashboard",
-    "ancre": "cdd-analyse"
-   }
-  },
-  {
-   "id": "questions",
-   "espace": "gestion",
-   "titre": "La boîte à questions",
-   "enBref": "Des questions toutes faites sur votre activité, avec la réponse chiffrée.",
-   "ou": "Gestion › Tableau de bord › « Posez votre question »",
-   "etapes": [
-    "Appuyez sur une question, ou cherchez un mot.",
-    "La réponse cite ses nombres et dit quand elle n'en a pas assez pour conclure."
-   ],
-   "aller": {
-    "tab": "dashboard",
-    "ancre": "cdd-questions"
-   }
-  },
-  {
-   "id": "barre-laterale",
-   "espace": "gestion",
-   "titre": "Tout Gestion sous la main (ordinateur)",
-   "enBref": "Sur ordinateur, tous les écrans de Gestion sont listés à gauche, en permanence.",
-   "ou": "Gestion, écran de 1 200 px et plus",
-   "etapes": [
-    "Un clic ouvre directement le bon onglet et le bon sous-onglet.",
-    "Sur téléphone et tablette rien ne change : les onglets restent en haut."
-   ],
-   "aSavoir": "La barre lit les onglets de la page : un écran caché à un rôle y est caché aussi.",
-   "version": "v193"
-  },
-  {
-   "id": "guide",
-   "espace": "gestion",
-   "titre": "Ce guide",
-   "enBref": "Une fiche par fonctionnalité : ce que c'est, où la trouver, comment s'en servir.",
-   "ou": "Gestion › Guide (administrateur seulement)",
-   "etapes": [
-    "Filtrez par espace, ou cherchez un mot.",
-    "« Y aller » ouvre l'écran quand il est dans Gestion.",
-    "« Ce qui vous attend » ne garde que les fiches où un geste vous revient."
-   ],
-   "aSavoir": "Claude ajoute la fiche de chaque nouveau lot dans app/guide-du-gerant.json.",
-   "version": "v205",
-   "aller": {
-    "tab": "guide"
-   }
-  },
-  {
-   "id": "quoi-de-neuf",
-   "espace": "gestion",
-   "titre": "« Quoi de neuf » : à chacun ses nouveautés",
-   "enBref": "L'équipe voit tout ; clientes, livreurs et coursiers ne voient que ce qui les concerne, sinon une phrase neutre.",
-   "ou": "Le bandeau « Nouvelle version » de chaque espace, et la page de connexion",
-   "etapes": [
-    "Dans Équipe et Gestion : toutes les mises à jour, en détail.",
-    "Chez une cliente ou un livreur : seulement les phrases écrites pour eux (« Clientes : … », « Livreurs : … »).",
-    "Pour le reste : « Mise à jour effectuée : des améliorations pour le bon fonctionnement de l'application. »",
-    "Sur la page de connexion, avant de s'identifier : aucun détail."
-   ],
-   "aSavoir": "Le tri est fait par l'application, pas par la bonne volonté de celui qui écrit la note.",
-   "version": "v213",
-   "aller": {
-    "page": "gestion.html"
-   }
-  },
-  {
-   "id": "essentiel",
-   "espace": "bureau",
-   "titre": "L'essentiel : ce qui presse, d'un regard",
-   "enBref": "Des pastilles qui comptent ce qui demande un geste aujourd'hui, et qui y mènent.",
-   "ou": "Équipe › Colis, en haut",
-   "etapes": [
-    "Chaque pastille est un compte : colis sans livreur, montants manquants, retards, signalements, comptes à valider…",
-    "Un appui ouvre exactement ces colis-là, surlignés jusqu'à ce qu'on les touche.",
-    "La carte se replie ; l'écran s'en souvient."
-   ],
-   "aSavoir": "Compté sur toute la base, pas seulement sur la page chargée.",
-   "version": "v182",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "tournee-faite",
-   "espace": "bureau",
-   "titre": "La tournée : ce qui reste, puis ce qui est fait",
-   "enBref": "Une cliente chez qui tout est ramassé devient une ligne courte, rangée sous celles où il reste à passer.",
-   "ou": "Équipe › Tournées",
-   "etapes": [
-    "En haut du bloc d'un livreur : les cartes entières, celles où il doit encore passer.",
-    "Dessous, « Déjà récupéré chez N clientes » : une ligne par cliente, avec ce qui a été pris.",
-    "Le titre du bloc dit les deux : « 2 colis à prendre · 3 récupérés »."
-   ],
-   "aSavoir": "Si la cliente avait annoncé plus de colis que l'application n'en connaît, sa carte reste entière : ce n'est pas fini, c'est un appel à passer.",
-   "version": "v223"
-  },
-  {
-   "id": "ce-qui-vous-attend",
-   "espace": "bureau",
-   "titre": "La pastille du menu ☰ dit où aller",
-   "enBref": "Le chiffre sur le bouton ☰ compte les comptes à valider et les mots de passe à refaire ; le menu les nomme et y mène.",
-   "ou": "Équipe, en haut à droite",
-   "etapes": [
-    "Ouvrez le menu ☰ : « Ce qui vous attend » est en tête, en ambre.",
-    "Un appui sur une ligne ouvre l'onglet Comptes, la bonne section déjà dépliée.",
-    "L'onglet Comptes porte le même chiffre ; sur téléphone, le bouton « Plus » aussi, puisque Comptes est derrière lui."
-   ],
-   "aSavoir": "Quand il n'y a plus rien, tout disparaît : pas de « 0 » qui ferait chercher.",
-   "version": "v223"
-  },
-  {
-   "id": "qui-recoit-quoi",
-   "espace": "bureau",
-   "titre": "Les notifications : qui reçoit quoi",
-   "enBref": "L'équipe ne reçoit plus le colis par colis, mais ce qui appelle une décision : une journée bouclée, le point d'un livreur, un signalement.",
-   "ou": "Sur le téléphone, une fois « Activer les notifications » accepté",
-   "etapes": [
-    "« ✅ Journée bouclée : Awa Boutique » — plus aucun de ses colis du jour n'est en cours : son point peut être réglé.",
-    "« 💰 Koffi a fait son point » — avec le montant annoncé, et l'écart s'il y en a un.",
-    "Les signalements et les demandes de passage continuent d'arriver."
-   ],
-   "aSavoir": "Avant le 21/09, chaque changement de statut de chaque colis faisait sonner l'équipe : environ 180 fois par jour. Les clientes et les livreurs, eux, gardent toutes leurs notifications.",
-   "version": "v224"
-  },
-  {
-   "id": "points-a-regler",
-   "espace": "bureau",
-   "titre": "Les points à régler, comptés sur l'écran",
-   "enBref": "Une pastille verte dans « L'essentiel » compte les clientes dont la journée est bouclée et dont le point n'est pas encore parti.",
-   "ou": "Équipe › Colis, dans « L'essentiel »",
-   "etapes": [
-    "« 3 clientes bouclées · points à régler » : leur journée est finie, plus aucun colis en cours.",
-    "Un appui ouvre Suivi › Récapitulatif par client, sur aujourd'hui, déjà déplié.",
-    "Une cliente dont le point est déjà envoyé n'est plus comptée."
-   ],
-   "aSavoir": "Si la journée d'une cliente change après avoir été bouclée (un non livré finalement livré), une notification le dit : « la journée a changé, le point est à revoir ».",
-   "version": "v225"
-  },
-  {
-   "id": "livreur-date-du-jour",
-   "espace": "livreur",
-   "titre": "La date du jour, posée et visible",
-   "enBref": "L'écran du livreur s'ouvre sur aujourd'hui, date affichée. « Livrés » et « Non livrés » montrent le détail de ce jour-là.",
-   "ou": "Livreur › Mes colis",
-   "etapes": [
-    "« Ma journée » garde tous les colis du jour, même livrés ou non livrés.",
-    "« Livrés » se range sur le jour de LIVRAISON : un colis reçu hier et livré ce matin y figure.",
-    "Le bouton à côté du calendrier bascule : « Toutes les dates », puis « Aujourd'hui »."
-   ],
-   "aSavoir": "Les colis reçus avant et encore en route ne disparaissent pas : ils sont repliés sous la liste, dans « ⏳ colis encore en route, reçus avant — à finir ».",
-   "version": "v225"
-  },
-  {
-   "id": "a-risque",
-   "espace": "bureau",
-   "titre": "« À risque » avant le retard",
-   "enBref": "Un colis promis aujourd'hui qui n'est pas là où il devrait être est signalé AVANT d'échouer.",
-   "ou": "Équipe › Colis › L'essentiel : pastilles « À risque » et « Promesse dépassée »",
-   "etapes": [
-    "Ambre « À risque » : promis aujourd'hui et pas récupéré à 11 h, pas parti à 14 h, ou sans livreur.",
-    "Rouge « Promesse dépassée » : le jour promis est passé.",
-    "La carte du colis dit pourquoi, en une ligne."
-   ],
-   "aSavoir": "La promesse = « à livrer avant le », sinon « reporté au », sinon le lendemain de la récupération.",
-   "pourVous": "À confirmer : le délai de la maison (J+1) et les heures 11 h / 14 h — déjà appliqués. Note « delais-reglages-21-6 » dans À faire.",
-   "version": "v201",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "carte-colis",
-   "espace": "bureau",
-   "titre": "Les colis en route sur la carte",
-   "enBref": "Une pastille par commune avec le nombre de colis, à côté des livreurs en direct.",
-   "ou": "Équipe › Suivi › « La carte »",
-   "etapes": [
-    "Orange : un colis sans livreur. Ambre : un colis à risque. Bleu : tout va bien.",
-    "Un clic sur une commune (liste ou carte) montre l'autre ; « Voir ces colis » ouvre l'onglet Colis sur ceux-là.",
-    "« Hors de la carte » : l'intérieur du pays ou une commune mal écrite — compté, jamais caché."
-   ],
-   "aSavoir": "La pastille est au centre de la commune, pas à l'adresse. Sur ordinateur la section s'ouvre seule ; sur téléphone elle est repliée.",
-   "version": "v203",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "liste-fiche",
-   "espace": "bureau",
-   "titre": "La liste à gauche, la fiche à droite (ordinateur)",
-   "enBref": "Sur grand écran : une ligne par colis, et la fiche du colis choisi épinglée à droite.",
-   "ou": "Équipe › Colis, écran de 1 200 px et plus",
-   "etapes": [
-    "Cliquez une ligne : sa fiche s'ouvre à droite, avec tous ses gestes habituels.",
-    "Les flèches ↑ ↓ du clavier parcourent la liste.",
-    "Sous 1 200 px, l'écran redevient la pile de cartes du téléphone.",
-    "En bas à droite : « Aller en bas » et « Remonter », quand la liste est longue."
-   ],
-   "aSavoir": "Depuis la v213 l'écran ne remonte plus tout seul quand la liste se met à jour : on reste où l'on lisait.",
-   "version": "v213",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "chaine-argent",
-   "espace": "bureau",
-   "titre": "Où est l'argent, colis par colis",
-   "enBref": "L'argent des articles suivi en quatre étapes : à encaisser → chez le livreur → en caisse → reversé.",
-   "ou": "Équipe › Finances › Comptabilité, « La chaîne de l'argent »",
-   "etapes": [
-    "Chaque colonne dit le montant, le nombre de colis et depuis combien de jours.",
-    "Ouvrez une colonne pour voir à qui est l'argent (quel livreur, quelle cliente).",
-    "Une alerte signale un colis reversé à la cliente alors que le livreur n'a pas remis : CLT a avancé la somme."
-   ],
-   "aSavoir": "Aucun calcul nouveau : ce sont les règles d'argent de la maison (relevé, caisse), mises bout à bout.",
-   "version": "v195",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "numeros-etrangers",
-   "espace": "bureau",
-   "titre": "Les numéros étrangers (WhatsApp de l'étranger)",
-   "enBref": "Un numéro américain, canadien, français, burkinabé… s'enregistre avec son indicatif, et l'appel comme WhatsApp partent au bon numéro.",
-   "ou": "Partout où l'on saisit le téléphone d'un destinataire : Ajouter des colis, corriger un colis, importer un fichier",
-   "etapes": [
-    "Numéro ivoirien : rien ne change, 10 chiffres (07 01 02 03 04).",
-    "Numéro étranger : écrivez l'indicatif devant — +1 416 555 1234, +33 6 12 34 56 78, +226 70 12 34 56 (« 00 » marche aussi).",
-    "À l'écran il se lit « +1 416 555 1234 » ; « Appeler » et WhatsApp ouvrent ce numéro-là."
-   ],
-   "aSavoir": "Sans indicatif, un numéro étranger est refusé : on ne devine jamais un pays. Le numéro de CONNEXION d'un compte reste ivoirien ; si « 225 » a été posé devant un numéro étranger par le passé, WhatsApp retrouve quand même le bon numéro.",
-   "version": "v219",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "voir-son-ecran",
-   "espace": "bureau",
-   "titre": "Voir l'écran d'un livreur ou d'une cliente",
-   "enBref": "Vous ouvrez son écran avec ses données, exactement ce qu'il voit. Lecture seule d'abord ; « ✏️ Modifier » si vous voulez agir.",
-   "ou": "Équipe › Plus › Comptes › Tous les comptes › ⋮ sur la personne › « 👁 Voir son écran »",
-   "etapes": [
-    "Trouvez la personne dans « Tous les comptes », ouvrez son menu ⋮, puis « 👁 Voir son écran ».",
-    "Son écran s'ouvre dans un nouvel onglet, sous un bandeau bleu nuit qui porte son nom.",
-    "Regardez tout : ses colis, sa journée, son relevé, ses primes, ses boutiques. « Quitter » referme l'onglet."
-   ],
-   "aSavoir": "L'écran s'ouvre en lecture seule. « ✏️ Modifier » (bandeau) ouvre les gestes de l'écran, faits sous votre nom ; le bandeau devient rouge. Restent fermés : la fiche du compte (Équipe › Comptes) et les déclarations de la personne elle-même. Tout est noté.",
-   "version": "v218",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "point-whatsapp",
-   "espace": "bureau",
-   "titre": "Le point de la cliente, droit dans son WhatsApp",
-   "enBref": "Le point de la cliente part sur WhatsApp avec son PDF et un mot déjà écrit : bonjour ou bonsoir, le jour, la somme.",
-   "ou": "Équipe › Suivi › Récapitulatif par client › une cliente › « 📤 Envoyer le PDF par WhatsApp »",
-   "etapes": [
-    "Ouvrez la cliente, vérifiez son bilan.",
-    "« Envoyer le PDF par WhatsApp » : choisissez WhatsApp puis la cliente — le PDF et le mot d'accompagnement partent ensemble.",
-    "Revenez cocher « ✅ Je viens de l'envoyer » : toute l'équipe voit que c'est fait, par qui, à quelle heure."
-   ],
-   "aSavoir": "WhatsApp ne laisse pas un site choisir le contact ET joindre un fichier : avec le PDF, c'est vous qui choisissez la cliente. « 💬 Message seul » ouvre directement sa conversation, sans le PDF. Sur ordinateur, le PDF se télécharge et la conversation s'ouvre : glissez-y le fichier.",
-   "version": "v204",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "retours",
-   "espace": "bureau",
-   "titre": "Les retours : on sait où est chaque colis",
-   "enBref": "Un onglet qui dit où est chaque colis revenu, chez qui, depuis quand — et les gestes pour le clore.",
-   "ou": "Équipe › Retours (derrière « Plus » sur téléphone)",
-   "etapes": [
-    "Le chiffre sur l'onglet = ce qui presse (litiges + retards).",
-    "Deux côtés, comme dans Personnes : « Retours » et « Non livrés », chacun avec son compte. « Chercher ici » filtre le côté ouvert : adresse, commune, n° de colis, téléphone.",
-    "Chaque carte dit l'adresse, le téléphone du destinataire, la date exacte à côté de « depuis 3 jours », et le détenteur. La cliente confirme la remise — ou la conteste : litige.",
-    "« Reprogrammer » : on choisit le jour et le livreur, et le colis repart en livraison — sans passer par « Modifier »."
-   ],
-   "aSavoir": "« Reprogrammer » existe sur un non livré et sur un retour encore chez un livreur ou au bureau ; pas sur un colis déjà rendu à la cliente ni en litige. Le journal du retour garde la ligne « relance ».",
-   "version": "v212",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "signalements",
-   "espace": "bureau",
-   "titre": "Signalements, passages, litiges : le bureau répond",
-   "enBref": "Les signalements des clientes ET des livreurs se prennent en charge et reçoivent une réponse.",
-   "ou": "Équipe › Colis › L'essentiel › « Signalements » ; Équipe › Tournées pour les demandes de passage",
-   "etapes": [
-    "Un signalement : « Je m'en occupe », puis une réponse écrite que la personne lira.",
-    "Une demande de passage se confirme ou se refuse avec un motif — elle ne disparaît plus en silence."
-   ],
-   "version": "v182",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "boutiques-rattacher",
-   "espace": "bureau",
-   "titre": "Rattacher des boutiques à un propriétaire",
-   "enBref": "Un propriétaire de plusieurs magasins voit tous leurs colis depuis son compte.",
-   "ou": "Équipe › Comptes › le compte du propriétaire › menu ⋮ › « Boutiques supervisées »",
-   "etapes": [
-    "Ouvrez le menu ⋮ du compte du propriétaire.",
-    "Choisissez chaque boutique (chacune a son propre compte gérant) et « Ajouter ».",
-    "« Retirer » défait le lien. La ligne du compte rappelle ce qu'il supervise."
-   ],
-   "aSavoir": "Le propriétaire LIT seulement : il ne peut rien modifier dans les boutiques.",
-   "version": "v181",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "scan",
-   "espace": "bureau",
-   "titre": "Scanner une étiquette",
-   "enBref": "Le bouton 📷 lit le code QR d'une étiquette et retrouve le colis.",
-   "ou": "Équipe › Colis, à côté de la recherche ; Livreur, en haut de la liste",
-   "etapes": [
-    "Appuyez sur 📷, visez l'étiquette.",
-    "Le colis s'ouvre, surligné."
-   ],
-   "aSavoir": "Testé avec une caméra simulée seulement.",
-   "pourVous": "À essayer une fois sur un vrai téléphone, avec une vraie étiquette imprimée.",
-   "version": "v199",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "express-recharges",
-   "espace": "bureau",
-   "titre": "Express : l'argent des coursiers, en attendant Wave",
-   "enBref": "Solde prépayé : la commission s'y prélève à chaque course. La référence de l'envoi prouve chaque recharge.",
-   "ou": "Équipe › Express › « Recharges coursiers » ; Coursier › Solde › « Recharger mon solde »",
-   "etapes": [
-    "Mobile Money d'abord, d'où qu'il soit : le coursier envoie l'argent au numéro de CLT, déclare le montant ET la référence du reçu, et peut envoyer la capture sur le WhatsApp de CLT.",
-    "Le bureau retrouve ce montant et cette référence dans le compte de CLT, puis valide : le solde est crédité.",
-    "Une référence déjà utilisée est signalée et ne se valide pas : un même envoi ne se crédite qu'une fois.",
-    "Second choix, « Espèces au bureau » : il déclare le montant, l'équipe reçoit les billets et valide (« Espèces bien reçues en main ? »)."
-   ],
-   "aSavoir": "Sous le solde minimum, le coursier ne reçoit plus de courses tant qu'il n'a pas rechargé. C'est le modèle des plateformes de courses (solde prépayé, commission prélevée dessus). Le jour où Wave nous ouvre le paiement automatique, seule la validation à la main disparaît ; rien d'autre ne change.",
-   "pourVous": "Aujourd'hui l'onglet Express n'est visible que du gérant : c'est donc vous qui validez les recharges. À décider avant l'ouverture : l'ouvrir ou non à une personne de confiance de l'équipe.",
-   "version": "v210",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "express-reglages",
-   "espace": "bureau",
-   "titre": "CLT Express : les réglages dans l'application",
-   "enBref": "La grille de prix, la commission, le solde minimum et les numéros Mobile Money se règlent à l'écran.",
-   "ou": "Équipe › Express › « CLT Express — Réglages »",
-   "etapes": [
-    "Modifiez une valeur, puis « Enregistrer les réglages ».",
-    "Tant que les numéros Mobile Money sont vides, un coursier ne peut pas recharger."
-   ],
-   "aSavoir": "Les numéros Mobile Money ne se modifient que par le gérant, et tout changement se confirme, numéro relu en clair. Le coursier les lit et les copie ; il ne peut rien y écrire.",
-   "pourVous": "Jouer une fois _sql-prive/2026-09-21-numeros-mobile-money-verrouilles.sql dans Supabase : il pose Wave et Orange (07 89 81 81 40), MTN (05 46 81 86 40) et verrouille ces numéros. Moov : à ajouter plus tard, ici même.",
-   "version": "v211",
-   "aller": {
-    "page": "equipe.html"
-   }
-  },
-  {
-   "id": "par-trajet",
-   "espace": "livreur",
-   "titre": "Mes colis dans l'ordre du trajet",
-   "enBref": "« Par trajet » range les colis du livreur par commune, dans l'ordre où l'on roule.",
-   "ou": "Livreur › Mes colis › bascule « Par cliente / Par trajet »",
-   "etapes": [
-    "Le livreur choisit « Par trajet » ; le téléphone s'en souvient.",
-    "Chaque colis porte son rang ; un colis « à livrer avant le » passe en tête.",
-    "« Voir le trajet » montre les arrêts sur un schéma, même sans connexion ; un bouton ouvre le tout dans Google Maps."
-   ],
-   "aSavoir": "C'est un ordre PROPOSÉ entre communes (à vol d'oiseau) ; dans une commune, c'est le livreur qui sait.",
-   "pourVous": "À décider : ouvrir « Par trajet » par défaut pour tous les livreurs ? Aujourd'hui c'est « Par cliente ».",
-   "version": "v196–v197"
-  },
-  {
-   "id": "prime-du-jour",
-   "espace": "livreur",
-   "titre": "Ce que la journée ajoute à ma prime",
-   "enBref": "Dans « Mon mois », une ligne dit ce que les livraisons d'aujourd'hui ajoutent à la prime de volume.",
-   "ou": "Livreur › carte « Mon mois »",
-   "etapes": [
-    "Le livreur lit : tant de colis aujourd'hui, tant de plus sur la prime.",
-    "C'est une estimation « en cours » ; le décompte du mois fait foi."
-   ],
-   "aSavoir": "Pas un « gain du jour » inventé : seule la prime de volume bouge avec une journée. Premier mois calculé par l'application : octobre 2026.",
-   "version": "v198"
-  },
-  {
-   "id": "livreur-seul",
-   "espace": "livreur",
-   "titre": "Le livreur n'est plus seul",
-   "enBref": "« Signaler un problème », les numéros de CLT, et une pastille « À rendre » pour les retours dans le sac.",
-   "ou": "Livreur › menu ☰ ; onglet « Retours » de la barre du bas",
-   "etapes": [
-    "« Retours » (barre du bas, avec son nombre) liste les colis revenus que le livreur a encore dans son sac.",
-    "Un signalement (« Signaler un problème », menu ☰) arrive dans L'essentiel du bureau.",
-    "Une mise à jour refusée se retente, ou s'abandonne en prévenant le bureau — rien ne se perd.",
-    "Un colis de la journée reporté à un autre jour est annoncé au-dessus de la liste."
-   ],
-   "version": "v184, v206",
-   "aSavoir": "« Compte » a quitté la barre du bas (doublon) : « Mon compte » est dans le menu ☰."
-  },
-  {
-   "id": "recup-pastille",
-   "espace": "livreur",
-   "titre": "Récup. : la pastille et la liste disent la même chose",
-   "enBref": "Le nombre sur « Récup. » compte ce qui est à récupérer aujourd'hui, retards compris — exactement ce que la liste montre.",
-   "ou": "Livreur › Récup.",
-   "etapes": [
-    "Une récupération prévue avant et pas encore faite reste dans la journée, avec une ligne jaune qui le dit.",
-    "Ce qui est prévu pour plus tard n'est pas compté ; l'écran dit combien, et « Toutes » les montre."
-   ],
-   "aSavoir": "Si un livreur a un vieux colis « en attente » qui n'est plus à récupérer, c'est au bureau de le corriger ou de le supprimer : il disparaîtra de sa pastille.",
-   "version": "v207"
-  },
-  {
-   "id": "import",
-   "espace": "cliente",
-   "titre": "Importer ses colis depuis un fichier",
-   "enBref": "Un fichier Excel ou CSV remplit le formulaire d'ajout ; la cliente relit, puis enregistre.",
-   "ou": "Cliente › Ajouter › « 📄 Importer un fichier (Excel ou CSV) »",
-   "etapes": [
-    "« Télécharger le modèle » donne les colonnes attendues.",
-    "Elle choisit son fichier : les lignes remplissent le formulaire (60 au plus).",
-    "Elle relit, corrige, puis « Enregistrer » comme d'habitude."
-   ],
-   "aSavoir": "Rien n'est enregistré sans relecture. Les montants « 15.000 », « 15 000 F » sont compris ; une commune inconnue est signalée.",
-   "version": "v200"
-  },
-  {
-   "id": "etiquettes",
-   "espace": "cliente",
-   "titre": "Des étiquettes à coller",
-   "enBref": "Une étiquette avec code QR pour chaque colis à livrer, huit par feuille A4.",
-   "ou": "Cliente › Mes colis › « 🏷️ Imprimer les étiquettes » ; Équipe › Colis › même bouton",
-   "etapes": [
-    "Appuyez : la feuille s'ouvre, prête à imprimer.",
-    "Le QR est le lien de suivi du colis : le destinataire peut aussi le scanner."
-   ],
-   "version": "v199"
-  },
-  {
-   "id": "hors-reseau",
-   "espace": "cliente",
-   "titre": "La saisie tient sans réseau",
-   "enBref": "Sans connexion, un colis saisi est gardé sur le téléphone et part tout seul au retour du réseau.",
-   "ou": "Cliente › Ajouter",
-   "etapes": [
-    "Un bandeau dit combien de colis attendent.",
-    "Au retour du réseau ils partent seuls ; rien à refaire."
-   ],
-   "version": "v185"
-  },
-  {
-   "id": "retours-cliente",
-   "espace": "cliente",
-   "titre": "Ses retours dans leur onglet",
-   "enBref": "L'onglet « Retours » s'ouvre sur le jour même ; la cliente confirme la remise ou la conteste.",
-   "ou": "Cliente › Retours",
-   "etapes": [
-    "Par défaut, les retours DU JOUR. Elle choisit une autre date, ou « Toutes les dates ».",
-    "Ce qui attend sa confirmation reste affiché quelle que soit la date : on ne le cache jamais.",
-    "« Je l'ai bien reçu » clôt le retour.",
-    "« Je ne l'ai pas reçu » ouvre un litige que le bureau voit en tête."
-   ],
-   "version": "v222"
-  },
-  {
-   "id": "cliente-carte",
-   "espace": "cliente",
-   "titre": "La carte d'un colis, courte et datée",
-   "enBref": "Sur téléphone, chaque colis tient en trois lignes : où, quand, quoi — son statut et son montant. « Détails » montre le reste.",
-   "ou": "Cliente › Mes colis",
-   "etapes": [
-    "La date ouvre la ligne de chaque colis (« Aujourd'hui », « ven 18 sept »), quel que soit le filtre.",
-    "« Détails ▾ » déplie la carte sur place : téléphone, WhatsApp, frais, livreur, boutons. « Réduire ▴ » la referme.",
-    "Un colis non livré, un retour, un montant ou une adresse manquants ne sont jamais repliés."
-   ],
-   "aSavoir": "« Dupliquer », « Modifier » et « Supprimer » n'existent que sur un colis en attente saisi par la cliente elle-même. Un colis saisi par le bureau, ou déjà récupéré, ne se modifie plus (il reste « Corriger l'adresse », pour le livreur devant la mauvaise porte).",
-   "version": "v207",
-   "pourVous": "À décider : garder « Corriger l'adresse » après la récupération ? Je l'ai laissé (c'est lui qui sauve une livraison mal adressée) ; dites-moi si vous préférez le retirer."
-  },
-  {
-   "id": "mes-boutiques",
-   "espace": "proprietaire",
-   "titre": "Mes boutiques (le propriétaire de plusieurs magasins)",
-   "enBref": "Un onglet « Boutiques » : toutes ses boutiques, leurs chiffres du jour, et chaque colis consultable.",
-   "ou": "Compte du propriétaire › onglet « 🏬 Boutiques » (n'existe que si le bureau lui a rattaché des boutiques)",
-   "etapes": [
-    "En haut : « Toutes », ou une boutique. Le jour se change avec ‹ › et « Aujourd'hui ».",
-    "Les six chiffres sont le filtre : un appui sur « Non livrés » ne montre que ceux-là.",
-    "Vue « Toutes » : une ligne par boutique avec sa barre d'avancement. Un appui l'ouvre.",
-    "Chaque colis s'ouvre : destinataire (appelable), adresse, montants, livreur, motif, étapes avec l'heure, lien de suivi."
-   ],
-   "aSavoir": "Lecture seule. La note interne du bureau n'y figure jamais.",
-   "version": "v204"
-  },
-  {
-   "id": "suivi-fournisseur",
-   "espace": "suivi",
-   "titre": "Le lien de suivi : « Contactez le fournisseur »",
-   "enBref": "Le destinataire peut joindre le fournisseur (appel, WhatsApp), puis CLT pour la livraison.",
-   "ou": "Page publique de suivi (lien envoyé au destinataire)",
-   "etapes": [
-    "Le bloc « Contactez le fournisseur » n'apparaît qu'après les quatre derniers chiffres du téléphone.",
-    "Le nom de la boutique n'est plus affiché : seulement « le fournisseur »."
-   ],
-   "version": "v204"
-  },
-  {
-   "id": "express-argent",
-   "espace": "express",
-   "titre": "Express : l'argent des courses protégé",
-   "enBref": "L'acceptation d'une course est immédiate et sans doublon ; le prix est figé à la commande.",
-   "ou": "CLT Express (client et coursier)",
-   "etapes": [
-    "Une course s'annule tant qu'aucun coursier ne l'a prise ; ensuite l'écran dit qui appeler.",
-    "« Je ne peux pas la faire » rend une course à la file.",
-    "Le carnet d'adresses (Domicile, Bureau…) suit le compte."
-   ],
-   "aSavoir": "Express n'est pas encore ouvert au public : tout est prêt, il reste vos réglages et la publication Play Store.",
-   "pourVous": "Publication Play Store : le dossier est prêt (PUBLICATION-PLAY-STORE-CLT-EXPRESS.md, captures dans le dossier CLT) ; les étapes de compte sont à vous. Note « play-store-6-3 ».",
-   "version": "v181–v187"
-  },
-  {
-   "id": "aide-par-role",
-   "espace": "express",
-   "titre": "Express : une aide pour le client, une pour le coursier",
-   "enBref": "Dans le menu ☰ d'Express, « Aide et tutoriels » montre à chacun SES gestes — et seulement les siens.",
-   "ou": "CLT Express › menu ☰ › « ❓ Aide et tutoriels »",
-   "etapes": [
-    "Le client : commander, ses adresses, suivre, annuler, payer et noter.",
-    "Le coursier : se mettre disponible, accepter, récupérer-livrer-encaisser, sa position, son solde, « solde insuffisant »."
-   ],
-   "aSavoir": "Les textes sont dans app/aide.json (chapitres express-client et express-coursier) : relisez-les, vous connaissez vos coursiers mieux que moi.",
-   "version": "v207"
-  },
-  {
-   "id": "sauvegarde",
-   "espace": "securite",
-   "titre": "La sauvegarde de chaque nuit",
-   "enBref": "Chaque nuit, la base est sauvegardée, chiffrée, puis RESTAURÉE pour vérifier qu'elle est lisible.",
-   "ou": "GitHub › Actions › « Sauvegarde nocturne » ; mode d'emploi : sauvegarde/README.md",
-   "etapes": [
-    "Posez les trois secrets GitHub décrits dans le README (vous seul : ce sont des mots de passe).",
-    "Lancez le workflow une fois à la main et vérifiez qu'il est vert.",
-    "Faites une fois l'exercice de restauration du README : une sauvegarde qu'on n'a jamais relue ne vaut rien."
-   ],
-   "aSavoir": "Tant que les secrets ne sont pas posés, AUCUNE sauvegarde nocturne ne tourne. Le dépôt étant public, les sauvegardes chiffrées sont téléchargeables par tous : la phrase de passe (24 caractères au moins) est la seule protection.",
-   "pourVous": "À faire : les trois secrets + un premier lancement (note « sauvegarde-secrets-20h »). À décider : passer le dépôt en privé (note « sauvegarde-depot-prive »).",
-   "version": "v189"
-  },
-  {
-   "id": "bilan-motos",
-   "espace": "securite",
-   "titre": "Bilan et motos : la séance avec le comptable",
-   "enBref": "Une note de décision prête pour le comptable : amortir les motos, et sur combien d'années.",
-   "ou": "Dossier CLT du Bureau › NOTE-DE-DECISION-8-6-BILAN-ET-MOTOS.md",
-   "etapes": [
-    "Lisez la note (trois décisions, une recommandation pour chacune).",
-    "Tenez la séance avec le comptable : je ne suis ni comptable ni fiscaliste."
-   ],
-   "pourVous": "À faire : la séance avec le comptable (note « bilan-motos-8-6 »)."
-  },
-  {
-   "id": "deux-gestes",
-   "espace": "outils",
-   "titre": "Mettre en ligne : les deux gestes",
-   "enBref": "1. Appliquer la mise à jour de Claude. 2. Mettre en ligne ce qui est validé.",
-   "ou": "Bureau › Christ Livraison & Transport SARL › Outils (double-clic)",
-   "etapes": [
-    "Claude dépose UN paquet (un fichier « clt-… ») à la racine du Bureau.",
-    "« Appliquer la mise à jour de Claude » : le paquet est appliqué puis effacé du Bureau.",
-    "« Mettre en ligne ce qui est validé » : la liste s'affiche, tapez o. Une à deux minutes plus tard, l'application propose « nouvelle version »."
-   ],
-   "aSavoir": "Si Claude a déjà posé la mise à jour lui-même, le premier geste répond « Rien à faire » : passez au second. Les anciens paquets sont dans « Paquets déjà remplacés »."
-  }
- ]
 }

@@ -21,7 +21,7 @@ des politiques est dans les migrations et dans `_sql-prive/00-verifier-les-migra
 
 | Table | Rôle | Qui lit / qui écrit |
 |---|---|---|
-| `colis` | Le cœur : un colis, son expéditeur (`fournisseur_id`), destinataire, adresses, montants (article, livraison, `montant_total` calculé), statut, livreur, photos, dates. Douze politiques : la plus surveillée. | La cliente ses colis ; le livreur ceux de sa tournée ; équipe et admin tous. Le suivi public passe par la fonction `suivi_colis()` (numéro + quatre chiffres), jamais par la table. |
+| `colis` | Le cœur : un colis, son expéditeur (`fournisseur_id`), destinataire, adresses, montants (article, livraison, `montant_total` calculé), statut, livreur, photos, dates. Depuis le 22/09/2026, `regularise_at` / `regularise_par` / `regularise_motif` disent qu'une correction administrative a été posée sur ce colis — jamais `retour_confirme_at`, qui reste la parole de la cliente. Douze politiques : la plus surveillée. | La cliente ses colis ; le livreur ceux de sa tournée ; équipe et admin tous. Le suivi public passe par la fonction `suivi_colis()` (numéro + quatre chiffres), jamais par la table. |
 | `programmations_collecte` | « Demain, telle cliente est récupérée par tel livreur », posé la veille ; le colis créé le jour dit hérite du livreur. | Équipe et admin ; la cliente voit la sienne. |
 | `annonces_remise` | Le livreur annonce ce qu'il remet en caisse en fin de journée. | Le livreur écrit la sienne ; équipe lit. |
 | `remises_caisse`, `clotures_journee` | La caisse du jour et sa clôture. | Équipe et admin. |
@@ -30,6 +30,7 @@ des politiques est dans les migrations et dans `_sql-prive/00-verifier-les-migra
 | `reclamations_livreurs` | Réclamations écrites contre un livreur ; seules les « fondées » comptent dans les primes. | Équipe et admin. |
 | `suivi_tentatives` | Essais de quatre chiffres sur le suivi public, par numéro et par heure. | Personne directement : la fonction `suivi_colis()` seulement. |
 | `site_visits` | Compteur de visites anonyme du site. | Insertion anonyme ; lecture équipe. |
+| `archives.regularisations` | La copie de l'état d'avant chaque correction du bureau (Gestion › Régulariser) : le colis entier, l'action, la date réelle de l'événement, le motif, l'auteur. Rien n'y est effacé, même une correction défaite. | **Personne à travers l'API** : le schéma `archives` est retiré à `anon` et `authenticated`. Seuls l'éditeur SQL et les trois fonctions `regulariser_colis()` / `defaire_regularisation()` / `regularisations_faites()`, réservées à l'administrateur, y touchent. |
 
 ## Les primes des livreurs
 
