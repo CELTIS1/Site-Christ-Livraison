@@ -85,6 +85,8 @@ export function nouveauMonde() {
     reclamations_clientes: [],
     // Les demandes de passage (17/09, point 10.6) — refusables depuis le 20/09 (20.B).
     demandes_de_passage: [],
+    // Les rapports poussés (22/09/2026) : le bilan du dimanche, relu dans Gestion.
+    rapports_pousses: [],
     /* CLT Express (18/09/2026, point 5.5). Le tarif est celui relevé en production le 18/09 :
        500 F de base, 150 F du kilomètre. Un tarif inventé ici ferait un banc qui ne mesure rien. */
     express_config: [{ id: 1, tarif_base: 500, tarif_par_km: 150, commission_pct: 0.2, vitesse_moy_kmh: 18, delai_prise_en_charge_min: 10 }],
@@ -366,6 +368,29 @@ export function nouveauMonde() {
        à jour ignoré, copie de l'état d'avant, annulation qui restaure. Les vraies fonctions
        sont éprouvées dans un vrai Postgres (dix-huit scénarios, 22/09) ; ici c'est l'ÉCRAN
        qu'on éprouve, et il ne doit rien voir de différent. */
+    /* LES RAPPORTS REÇUS (22/09/2026) — jumeaux de rapports_recus() et rapport_recu_marquer(). */
+    if (nom === 'rapports_recus' || nom === 'rapport_recu_marquer') {
+      const maintenant = new Date().toISOString();
+      const profil = PROFILS.find(p => p.id === user);
+      const role = profil ? profil.role : null;
+      if (role !== 'admin' && role !== 'equipe') return { data: null, error: { message: "Réservé à l'équipe et à l'administration." } };
+      TABLES.rapports_pousses = TABLES.rapports_pousses || [];
+      if (nom === 'rapports_recus') {
+        const arch = !!(args && args.p_archives);
+        return { data: TABLES.rapports_pousses.filter(r => (r.roles || []).includes(role) && (!!r.archive_at === arch))
+          .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+          .map(r => ({ id: r.id, genre: r.genre, titre: r.titre, corps: r.corps, created_at: r.created_at, lu_at: r.lu_at || null, archive_at: r.archive_at || null })), error: null };
+      }
+      const r = TABLES.rapports_pousses.find(x => x.id === (args && args.p_id));
+      if (!r) return { data: null, error: { message: 'Rapport introuvable.' } };
+      const g = args.p_geste;
+      if (g === 'lu') { r.lu_at = r.lu_at || maintenant; r.lu_par = r.lu_par || user; }
+      else if (g === 'non_lu') { r.lu_at = null; r.lu_par = null; }
+      else if (g === 'archiver') { r.archive_at = maintenant; r.archive_par = user; r.lu_at = r.lu_at || maintenant; }
+      else if (g === 'restaurer') { r.archive_at = null; r.archive_par = null; }
+      else return { data: null, error: { message: 'Geste inconnu : ' + g } };
+      return { data: null, error: null };
+    }
     if (nom === 'regulariser_colis' || nom === 'defaire_regularisation' || nom === 'regularisations_faites') {
       const lecteur = PROFILS.find(p => p.id === user);
       if (!lecteur || lecteur.role !== 'admin') return { data: null, error: { message: "Seul l'administrateur peut régulariser." } };

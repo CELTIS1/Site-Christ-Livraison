@@ -35,8 +35,8 @@ else {
 }
 
 console.log('\n3. L\'écran du dimanche');
-const g = lire('app/gestion.js');
-verifier('gestion.html?bilan=semaine conduit au bilan de la semaine, encadré jusqu\'au premier toucher', /get\('bilan'\) === 'semaine'/.test(g) && /cdd-semaine/.test(g.slice(g.indexOf("get('bilan')"))) && /recap-client-card--a-voir/.test(g));
+const g = lire('app/rapports-recus-ecran.js');
+verifier('gestion.html?rapport=<id> (et ?bilan=semaine) conduit au rapport reçu, encadré jusqu\'au premier toucher', /p\.get\('rapport'\)/.test(g) && /p\.get\('bilan'\) === 'semaine'/.test(g) && /recap-client-card--a-voir/.test(g));
 verifier('le registre de déploiement connaît envoyer-push', /"envoyer-push"/.test(lire('supabase-functions/_deploye-le.json')));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);

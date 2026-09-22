@@ -868,6 +868,7 @@ async function deleteDocument(id, domaine){
  * ==========================================================================*/
 async function renderDashboard(){
   chargerAFaire();
+  if (window.CLTRapportsRecusEcran) CLTRapportsRecusEcran.charger();
   const annee = parseInt(document.getElementById('dash-year').value);
   const mois  = parseInt(document.getElementById('dash-month').value);
   const debut = periodeStr(annee, mois);
@@ -4270,25 +4271,8 @@ async function init(){
 
   // Onglet ouvert par défaut selon le profil
   switchTab(isAdmin ? 'dashboard' : (canPaie ? 'paie' : 'compta'));
-  // LA NOTIFICATION DU DIMANCHE (22/09/2026) : « ?bilan=semaine » conduit au bilan de la semaine,
-  // encadré jusqu'au premier toucher — même geste que le point à voir dans l'espace équipe.
-  try {
-    if (isAdmin && new URLSearchParams(location.search).get('bilan') === 'semaine') {
-      history.replaceState(null, '', location.pathname);
-      let essais = 0;
-      const aller = () => {
-        const b = document.getElementById('cdd-semaine');
-        if (b && b.children.length) {
-          b.classList.add('recap-client-card--a-voir');
-          b.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          b.addEventListener('click', () => b.classList.remove('recap-client-card--a-voir'), { once: true });
-          return;
-        }
-        if (++essais < 30) setTimeout(aller, 300);
-      };
-      setTimeout(aller, 300);
-    }
-  } catch (e) { /* un lien mal formé n'empêche pas l'écran */ }
+  // LES RAPPORTS REÇUS (22/09/2026) : la carte, et la notification du bilan (?rapport=<id>) qui y conduit.
+  if (isAdmin && window.CLTRapportsRecusEcran) CLTRapportsRecusEcran.ouvrir();
 
   // En-tête figé : mesure des décalages et mise en place des observateurs.
   initStickyHeader();

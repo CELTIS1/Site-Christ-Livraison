@@ -15,10 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260922coque">
+<link rel="stylesheet" href="style.css?v=20260922rapports">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260922coque"></script>
-<script src="splash.js?v=20260922coque"></script>
+<script src="theme.js?v=20260922rapports"></script>
+<script src="splash.js?v=20260922rapports"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -62,6 +62,24 @@
   html[data-theme="dark"] .af-detail{ color:#C9D3DF; }
   html[data-theme="dark"] .af-ligne{ border-top-color:#2A3849; }
   html[data-theme="dark"] .af-genre{ background:#243247; color:#C9D3DF; }
+  /* Rapports reçus (22/09/2026) */
+  .rap-sous{ font-size:12.5px; color:var(--muted); }
+  .rap-ligne{ padding:12px 0; border-top:1px solid rgba(15,118,110,0.12); }
+  .rap-ligne.recap-client-card--a-voir{ padding:12px; border-radius:12px; border-top:2px solid var(--orange); }
+  .rap-tete{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .rap-icone{ font-size:18px; }
+  .rap-titre{ font-weight:700; color:var(--clt-teal-dark); flex:1 1 auto; }
+  .rap-quand{ font-size:12.5px; color:var(--muted); }
+  .rap-corps{ margin:8px 0 0; padding:0 0 0 18px; font-size:14px; line-height:1.5; color:#1E2A38; }
+  .rap-corps li{ margin:2px 0; }
+  .rap-note{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+  .rap-gestes{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:8px; font-size:13px; }
+  .rap-case{ display:inline-flex; align-items:center; gap:7px; cursor:pointer; min-height:28px; }
+  .rap-case input{ width:20px; height:20px; accent-color:#1a7d3c; margin:0; }
+  .rap-lu .rap-titre{ font-weight:600; color:var(--muted); }
+  .rap-lu .rap-corps{ color:#5B6B7C; }
+  html[data-theme="dark"] .rap-ligne{ border-top-color:#2A3849; }
+  html[data-theme="dark"] .rap-corps{ color:#E6ECF3; }
   .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:16px; }
   .kpi{ background:#fff; border-radius:14px; padding:12px 15px; border:1px solid rgba(15,118,110,0.10); box-shadow:0 6px 20px rgba(11,90,84,0.06); }
   .kpi .kpi-label{ font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
@@ -855,6 +873,11 @@
          Gestion tout ce que je dois faire, vérifier ou décider, pour que je le consulte plus
          tard, plusieurs fois ». Table gestion_a_faire, lignes posées par les migrations au fil
          du travail, cochées ici. Dessinée par gestion.js (chargerAFaire). -->
+    <!-- LES RAPPORTS REÇUS (22/09/2026) — Celtis : « je ne retrouve pas la notification ; il faut
+         que je puisse la consulter, la reconsulter, la cocher ». Le bilan du dimanche et le résumé
+         du matin, gardés en base, relus ici, cochés lus ou archivés, jamais supprimés.
+         Règle : app/rapports-recus.js ; écran : app/rapports-recus-ecran.js. -->
+    <div class="card hidden" id="rap-carte"></div>
     <div class="card" id="af-carte"></div>
     <div class="card" id="cdd-console"></div>
     <!-- LE BILAN DE LA SEMAINE (20/09/2026, feuille de route 12.3) — le rapport du vendredi avait
@@ -1811,40 +1834,42 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260922coque"></script>
-<script src="numero-international.js?v=20260922coque"></script>
-<script src="lib/bibliotheques.js?v=20260922coque"></script>
-<script src="lib/retours.js?v=20260922coque"></script>
-<script src="lib/reclamations.js?v=20260922coque"></script>
-<script src="lib/communes-et-tarifs.js?v=20260922coque"></script>
-<script src="lib/argent.js?v=20260922coque"></script>
-<script src="lib/releve-cliente.js?v=20260922coque"></script>
-<script src="lib/papier-a-en-tete.js?v=20260922coque"></script>
-<script src="lib/briques-argent.js?v=20260922coque"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260922coque"></script>
-<script src="lib/annonce-de-remise.js?v=20260922coque"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260922coque"></script>
-<script src="lib/primes.js?v=20260922coque"></script>
-<script src="lib/doublons.js?v=20260922coque"></script>
-<script src="config.js?v=20260922coque"></script>
-<script src="biometric-lock.js?v=20260922coque"></script>
-<script src="clt-select-recherche.js?v=20260922coque"></script>
-<script src="site-editeur.js?v=20260922coque"></script>
+<script src="clt-common.js?v=20260922rapports"></script>
+<script src="numero-international.js?v=20260922rapports"></script>
+<script src="lib/bibliotheques.js?v=20260922rapports"></script>
+<script src="lib/retours.js?v=20260922rapports"></script>
+<script src="lib/reclamations.js?v=20260922rapports"></script>
+<script src="lib/communes-et-tarifs.js?v=20260922rapports"></script>
+<script src="lib/argent.js?v=20260922rapports"></script>
+<script src="lib/releve-cliente.js?v=20260922rapports"></script>
+<script src="lib/papier-a-en-tete.js?v=20260922rapports"></script>
+<script src="lib/briques-argent.js?v=20260922rapports"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260922rapports"></script>
+<script src="lib/annonce-de-remise.js?v=20260922rapports"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260922rapports"></script>
+<script src="lib/primes.js?v=20260922rapports"></script>
+<script src="lib/doublons.js?v=20260922rapports"></script>
+<script src="config.js?v=20260922rapports"></script>
+<script src="biometric-lock.js?v=20260922rapports"></script>
+<script src="clt-select-recherche.js?v=20260922rapports"></script>
+<script src="site-editeur.js?v=20260922rapports"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260922coque"></script>
-<script src="causes-des-echecs.js?v=20260922coque"></script>
-<script src="analyse-profonde.js?v=20260922coque"></script>
-<script src="ce-qui-a-change.js?v=20260922coque"></script>
-<script src="les-questions.js?v=20260922coque"></script>
-<script src="console-du-dirigeant.js?v=20260922coque"></script>
-<script src="gestion.js?v=20260922coque"></script>
+<script src="bilan-de-la-semaine.js?v=20260922rapports"></script>
+<script src="causes-des-echecs.js?v=20260922rapports"></script>
+<script src="analyse-profonde.js?v=20260922rapports"></script>
+<script src="ce-qui-a-change.js?v=20260922rapports"></script>
+<script src="les-questions.js?v=20260922rapports"></script>
+<script src="console-du-dirigeant.js?v=20260922rapports"></script>
+<script src="rapports-recus.js?v=20260922rapports"></script>
+<script src="rapports-recus-ecran.js?v=20260922rapports"></script>
+<script src="gestion.js?v=20260922rapports"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="guide-du-gerant.js?v=20260922coque"></script>
-<script src="avance-de-travail.js?v=20260922coque"></script>
-<script src="avance-de-travail-ecran.js?v=20260922coque"></script>
-<script src="regulariser.js?v=20260922coque"></script>
-<script src="regulariser-ecran.js?v=20260922coque"></script>
-<script src="gestion-barre-laterale.js?v=20260922coque"></script>
+<script src="guide-du-gerant.js?v=20260922rapports"></script>
+<script src="avance-de-travail.js?v=20260922rapports"></script>
+<script src="avance-de-travail-ecran.js?v=20260922rapports"></script>
+<script src="regulariser.js?v=20260922rapports"></script>
+<script src="regulariser-ecran.js?v=20260922rapports"></script>
+<script src="gestion-barre-laterale.js?v=20260922rapports"></script>
 </body>
 </html>

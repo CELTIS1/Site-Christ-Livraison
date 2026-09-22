@@ -1263,10 +1263,17 @@ verifier(
    Même lot : LES RAPPORTS POUSSÉS. La base écrit le rapport (rapports_pousses), le branchement
    envoyer_push_rapports le fait partir : le bilan de la semaine le dimanche à 8 h heure de l'Est
    (été comme hiver : posé à 12 h et 13 h UTC, envoyé quand il est 8 h à Toronto), le résumé du
-   matin à 7 h d'Abidjan. Mêmes définitions que l'écran du bilan et que la caisse. Étiquette 20260922coque. */
+   matin à 7 h d'Abidjan. Mêmes définitions que l'écran du bilan et que la caisse. Étiquette 20260922coque.
+   v232, le 22/09/2026 — LES RAPPORTS REÇUS. Celtis, après le premier bilan poussé : « je ne
+   retrouve pas la notification ; il faut que je puisse la consulter, la reconsulter, la cocher
+   pour la supprimer ou la laisser ». Une notification s'efface d'un geste ; le rapport, lui,
+   est écrit en base : la carte « Rapports reçus » de Gestion › Tableau de bord le relit, le
+   coche lu, l'archive (rangé en bas, restaurable) — jamais supprimé. La notification du bilan
+   porte ?rapport=<id> et conduit au rapport lui-même, encadré. Règle rapports-recus.js, écran
+   rapports-recus-ecran.js, RPC rapports_recus / rapport_recu_marquer. Étiquette 20260922rapports. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v231'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v232'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
