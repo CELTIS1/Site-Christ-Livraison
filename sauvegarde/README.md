@@ -18,7 +18,10 @@ Le tout est assemblé en `clt-sauvegarde-AAAA-MM-JJ.tar.gz`, chiffré en AES-256
 Dépôt GitHub › **Settings › Secrets and variables › Actions › New repository secret** :
 
 1. `SUPABASE_DB_URL` — Supabase › **Connect** › *Session pooler* (port 5432), en remplaçant `[YOUR-PASSWORD]` par le mot de passe de la base.
-2. `SUPABASE_SERVICE_ROLE_KEY` — Supabase › **Settings › API** › `service_role`.
+2. `SUPABASE_SECRET_KEY` — Supabase › **Settings › API Keys › Secret keys** › « New secret key », puis l'œil pour
+   révéler la valeur et la copier (elle commence par `sb_secret_`). **Depuis le 22/09/2026, une ancienne clé
+   « service_role » ne fonctionne plus** : les clés héritées ont été désactivées et leur signature révoquée,
+   à la suite de l'incident du 21/09 (feuille de route 21.29 et 21.34).
 3. `SAUVEGARDE_CLE` — une phrase longue inventée (six mots au moins, 24 caractères minimum : le workflow refuse plus court), notée dans un gestionnaire de mots de passe. **Si elle est perdue, les sauvegardes sont perdues.**
 
 > **À savoir — le dépôt est public.** Les artifacts d'un dépôt public sont téléchargeables par tout compte GitHub connecté. Le fichier est chiffré en AES-256 : sans la phrase, il ne vaut rien — mais la phrase est donc la **seule** protection des comptes et des pièces d'identité. Elle doit être longue, inventée, et n'exister nulle part ailleurs. Pour aller plus loin (recommandé dès que possible, gratuit) : faire tourner ce même workflow depuis un dépôt GitHub **privé**, où les artifacts ne sont visibles que de Celtis — noté dans Gestion › À faire.

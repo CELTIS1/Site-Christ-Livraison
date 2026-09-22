@@ -8,7 +8,9 @@
 #
 # CE QU'IL FAUT UNE FOIS (Celtis, Settings › Secrets and variables › Actions) — jamais dans le code :
 #   SUPABASE_DB_URL            la chaîne de connexion Postgres du projet (Supabase › Connect › Session pooler, port 5432)
-#   SUPABASE_SERVICE_ROLE_KEY  la clé « service_role » (Supabase › Settings › API) — pour lire les photos
+#   SUPABASE_SECRET_KEY        une clé secrète du projet (Supabase › Settings › API Keys › Secret keys,
+#                              elle commence par « sb_secret_ ») — pour lire les photos. Depuis le 22/09/2026
+#                              les clés héritées (service_role) sont désactivées : une ancienne clé ne marche plus.
 #   SAUVEGARDE_CLE             une phrase secrète longue, inventée, gardée dans un gestionnaire de mots de passe :
 #                              sans elle, le fichier ne se déchiffre pas — ni par GitHub, ni par personne.
 #
@@ -35,12 +37,12 @@ jobs:
       - name: Vérifier que les trois secrets sont posés
         env:
           DB: ${{ secrets.SUPABASE_DB_URL }}
-          SR: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SR: ${{ secrets.SUPABASE_SECRET_KEY }}
           CLE: ${{ secrets.SAUVEGARDE_CLE }}
         run: |
           manque=""
           [ -z "$DB" ]  && manque="$manque SUPABASE_DB_URL"
-          [ -z "$SR" ]  && manque="$manque SUPABASE_SERVICE_ROLE_KEY"
+          [ -z "$SR" ]  && manque="$manque SUPABASE_SECRET_KEY"
           [ -z "$CLE" ] && manque="$manque SAUVEGARDE_CLE"
           if [ -n "$manque" ]; then echo "::error::Secrets manquants :$manque — voir l'en-tête de ce fichier."; exit 1; fi
           # Le dépôt est public : le fichier chiffré est téléchargeable par tout compte GitHub.
@@ -80,7 +82,7 @@ jobs:
       - name: Copier les photos (Storage)
         env:
           SUPABASE_URL: https://xkfltqjbmolmdwdafzcx.supabase.co
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node sauvegarde/exporter-les-fichiers.mjs sortie/fichiers
 
       # 3. UN SEUL FICHIER, CHIFFRÉ — AES-256 avec la phrase secrète. Sans la phrase, illisible.

@@ -34,14 +34,18 @@ const yml = lire('.github/workflows/sauvegarde.yml'), script = lire('sauvegarde/
 const execute = yml.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
 
 console.log('\n2. Les trois secrets, par leur nom exact — et rien de secret en dur');
-const SECRETS = ['SUPABASE_DB_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SAUVEGARDE_CLE'];
+const SECRETS = ['SUPABASE_DB_URL', 'SUPABASE_SECRET_KEY', 'SAUVEGARDE_CLE'];
 for (const s of SECRETS) verifier(s + ' : lu depuis les secrets du dépôt, expliqué dans le README', execute.includes('${{ secrets.' + s + ' }}') && lisezMoi.includes('`' + s + '`'));
 const nommes = [...new Set([...execute.matchAll(/secrets\.([A-Z0-9_]+)/g)].map((m) => m[1]))].sort();
 verifier('aucun autre secret n\'est attendu', nommes.join() === [...SECRETS].sort().join(), nommes.join(', '));
 verifier('une exécution sans secrets s\'arrête tout de suite, en disant lesquels manquent', /Secrets manquants/.test(execute) && /exit 1/.test(execute));
 verifier('une phrase secrète courte est refusée (le dépôt est public : elle est la seule protection)', /\$\{#CLE\}" -lt 24/.test(execute) && /dépôt est public/.test(lisezMoi));
 verifier('aucune clé ni chaîne de connexion écrite en dur (workflow, script, README)', ![yml, script, lisezMoi].some((t) => /eyJ[A-Za-z0-9_-]{20,}|postgres(ql)?:\/\/[^\s"<\[]+:[^\s"<\[]+@/.test(t)));
-verifier('le script d\'export ne lit que l\'environnement', /process\.env\.SUPABASE_URL/.test(script) && /process\.env\.SUPABASE_SERVICE_ROLE_KEY/.test(script));
+verifier('le script d\'export ne lit que l\'environnement', /process\.env\.SUPABASE_URL/.test(script) && /process\.env\.SUPABASE_SECRET_KEY/.test(script));
+/* 22/09/2026 : les clés héritées sont désactivées sur le projet. Une sauvegarde qui échouerait
+   chaque nuit sur un « 401 » silencieux ne se verrait pas — le script doit le dire tout de suite. */
+verifier('le script refuse net une clé qui n\'est pas de la nouvelle génération, et dit pourquoi',
+  /startsWith\('sb_secret_'\)/.test(script) && /clés héritées/.test(script));
 verifier('le workflow ne demande que la lecture du dépôt', /permissions:\s*\n\s+contents: read/.test(execute));
 
 console.log('\n3. Chaque nuit, chiffré, gardé 30 jours');

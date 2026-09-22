@@ -11,11 +11,14 @@
    LE REMÈDE, ET CE QUE CE BANC GARDE. Chaque fonction lit désormais la NOUVELLE clé
    (`SUPABASE_SECRET_KEYS`) et ne retombe sur l'héritée qu'en second recours. Écrit ainsi, le
    même code marche avant la coupure et après : on peut déployer une fonction à la fois, sans
-   fenêtre de casse. Ce banc tient trois promesses :
+   fenêtre de casse. Ce banc tient quatre promesses :
      1. plus aucune fonction ne lit une clé héritée en direct ;
      2. le bloc est IDENTIQUE, caractère par caractère, dans les vingt — une copie qui dérive
         est une porte qui reste ouverte le jour de la coupure, et on ne la verrait pas ;
-     3. le bloc fait bien ce qu'il dit, éprouvé sur les formes que peut prendre le dictionnaire.
+     3. le bloc fait bien ce qu'il dit, éprouvé sur les formes que peut prendre le dictionnaire ;
+     4. et AILLEURS dans le dépôt — le site, la sauvegarde nocturne, les flux de travail —
+        plus rien n'attend une clé héritée. La coupure a eu lieu le 22/09 au matin : ce qui
+        l'attendrait encore échouerait, et pour la sauvegarde, échouerait en silence.
 
    Le troisième point demande d'EXÉCUTER du TypeScript depuis Node. On retire les annotations
    de type avec une liste explicite, et on refuse de continuer si l'une d'elles ne s'applique
@@ -160,6 +163,36 @@ console.log('\n5. L\'OUTIL QUI REPOSE LE BLOC EST LÀ, ET IL SAIT SE CONTRÔLER'
 const outil = lire('supabase-functions/_poser-le-bloc-des-cles.mjs');
 verifier('il existe et sait vérifier sans écrire (--verifier)', /--verifier/.test(outil));
 verifier('il pose le bloc après le dernier import, une seule fois', /dernierImport/.test(outil) && /indexOf\(DEBUT/.test(outil));
+
+console.log('\n6. AILLEURS DANS LE DÉPÔT : PLUS RIEN NE DOIT ATTENDRE UNE CLÉ HÉRITÉE');
+/* Le 22/09/2026, les clés héritées (anon, service_role) ont été DÉSACTIVÉES sur le projet et
+   leur signature révoquée. Tout ce qui les attendrait encore échouerait — et, pour la
+   sauvegarde nocturne, échouerait en silence, chaque nuit. Ce contrôle regarde donc hors des
+   fonctions : le site, la sauvegarde, les flux de travail. */
+const ailleurs = [
+  'sauvegarde/exporter-les-fichiers.mjs',
+  'sauvegarde/README.md',
+  '.github/workflows/sauvegarde.yml',
+  'app/config.js',
+  'app/express-config.js',
+];
+const encoreHeritees = ailleurs.filter((c) => {
+  const src = lire(c);
+  /* On accepte la MENTION de l'ancien nom là où elle explique qu'il ne marche plus, ou là où
+     il sert de second recours nommé. Ce qu'on refuse, c'est qu'on l'ATTENDE : un secret de
+     dépôt à ce nom, ou une lecture qui n'aurait pas d'autre source. */
+  if (/secrets\.SUPABASE_SERVICE_ROLE_KEY|secrets\.SUPABASE_ANON_KEY/.test(src)) return true;
+  if (/process\.env\.SUPABASE_SERVICE_ROLE_KEY/.test(src) && !/process\.env\.SUPABASE_SECRET_KEY/.test(src)) return true;
+  return false;
+});
+verifier('aucun fichier hors des fonctions n\'attend encore une clé héritée',
+  encoreHeritees.length === 0, encoreHeritees.join(', '));
+verifier('le site se connecte avec la clé publiable, pas avec une clé héritée',
+  /sb_publishable_/.test(lire('app/config.js')) && /sb_publishable_/.test(lire('app/express-config.js'))
+  && !/eyJ[A-Za-z0-9_-]{20,}/.test(lire('app/config.js')));
+/* Contrôle du contrôle : le motif doit attraper un secret de dépôt à l'ancien nom. */
+verifier('… et le motif attrape vraiment un secret de dépôt à l\'ancien nom',
+  /secrets\.SUPABASE_SERVICE_ROLE_KEY/.test('SR: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}'));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 if (echouees) process.exit(1);

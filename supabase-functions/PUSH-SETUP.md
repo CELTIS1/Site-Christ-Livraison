@@ -246,6 +246,41 @@ dans un résultat**.
 > la base d'afficher une définition de déclencheur qui porte un en-tête HTTP. Pour lister les
 > branchements, n'afficher que `tgname`, `relname` et l'état.
 
+> **Règle ÉLARGIE, après un second incident le 22/09/2026.** La règle ci-dessus visait un
+> geste précis ; elle ne couvrait pas le geste banal qui a refait fuiter une clé le lendemain.
+> En voulant seulement vérifier qu'une fenêtre de confirmation s'affichait, on a demandé au
+> navigateur **le texte de la page** — et ce texte contenait l'éditeur SQL, donc la clé qu'on
+> venait d'y coller. La règle qui compte est donc celle-ci :
+>
+> **Tant qu'une valeur secrète peut être à l'écran — éditeur SQL, formulaire, page de clés —
+> on ne demande NI le texte de la page, NI une capture d'écran, NI l'arbre d'accessibilité.
+> On ne pose que des questions dont la réponse est un NOMBRE ou un OUI/NON** : longueur du
+> texte, présence d'un préfixe, nombre d'occurrences, conformité à une expression régulière.
+> Ces contrôles suffisent à tout vérifier — y compris qu'un collage est complet et bien formé —
+> et ils ne font jamais remonter la valeur.
+>
+> Corollaire utile : pour savoir si une fenêtre de confirmation est apparue, interroger le
+> DOM sur sa PRÉSENCE (`document.querySelector('[role="alertdialog"]') !== null`), jamais en
+> lisant le texte de la page entière.
+
+> **DÉSACTIVER N'EST PAS RÉVOQUER — appris le 22/09/2026, dans la fenêtre de confirmation.**
+> Supabase écrit, sous « Disable JWT-based API keys » : *« This disables API keys when used in the
+> apikey header. They remain valid as a JWT. »* Autrement dit, ce bouton empêche d'utiliser `anon`
+> et `service_role` comme clé d'accès, mais **ne rend pas le jeton invalide** — et la clé publiable,
+> elle, est publique. Le geste qui referme vraiment est ailleurs :
+>
+> **Settings › JWT Keys › onglet « JWT Signing Keys » › ligne « Previous key — Legacy HS256 » ›
+> menu › « Revoke key »** (il demande de recopier l'identifiant de la clé pour confirmer).
+>
+> Il rend la SIGNATURE invalide : un jeton qu'on ne peut plus vérifier ne vaut plus rien, de quelque
+> façon qu'on le présente. Personne n'est déconnecté si le projet a migré vers une clé de signature
+> moderne — les sessions en cours sont signées par elle, et un jeton ne vit qu'une heure.
+
+> **Ce que les clés héritées ont laissé derrière elles.** Depuis leur désactivation, toute chose qui
+> attendrait `SUPABASE_SERVICE_ROLE_KEY` ou `SUPABASE_ANON_KEY` échoue — y compris en silence, comme
+> l'aurait fait la sauvegarde nocturne chaque nuit. Le banc `tests/les-cles-du-serveur.test.mjs`
+> monte la garde sur les vingt fonctions ET sur le reste du dépôt (site, sauvegarde, flux de travail).
+
 ### Ce qu'il reste à faire à la main, dans cet ordre
 
 1. Changer la clé `service_role` (Settings › API) et le secret `CLT_WEBHOOK_SECRET`

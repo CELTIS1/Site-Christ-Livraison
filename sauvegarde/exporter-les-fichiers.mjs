@@ -6,7 +6,16 @@
    les télécharge tous, bucket par bucket, dans un dossier — que la sauvegarde nocturne chiffre
    avec le reste. Il ne lit que deux variables d'environnement, jamais posées dans le code :
      SUPABASE_URL                 https://<projet>.supabase.co
-     SUPABASE_SERVICE_ROLE_KEY    la clé service (lit tout, y compris les buckets privés)
+     SUPABASE_SECRET_KEY          une clé secrète du projet (lit tout, y compris les buckets
+                                  privés) — Settings › API Keys › Secret keys, elle commence
+                                  par « sb_secret_ ».
+
+   MISE À JOUR DU 22/09/2026 — À LIRE AVANT DE POSER LES SECRETS GITHUB. Les clés héritées
+   (`anon`, `service_role`) ont été DÉSACTIVÉES sur ce projet ce matin-là, et l'ancienne clé de
+   signature révoquée, à la suite de l'incident 21.29. Une clé « service_role » ne fonctionne
+   donc plus du tout : ce script exige désormais une clé secrète de la nouvelle génération.
+   L'ancien nom de variable reste accepté pour ne rien casser chez qui l'aurait déjà posé, mais
+   il ne servira qu'à porter une valeur « sb_secret_… ».
 
    Usage :  node sauvegarde/exporter-les-fichiers.mjs <dossier de sortie>
    Rejouable : un fichier déjà présent avec la même taille n'est pas retéléchargé. */
@@ -14,9 +23,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const URL_BASE = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
-const CLE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+/* On accepte les deux noms : le nouveau d'abord, l'ancien en second recours — même règle que
+   dans les fonctions du serveur (supabase-functions/_cles-du-projet.ts). */
+const CLE = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const SORTIE = process.argv[2] || 'fichiers';
-if (!URL_BASE || !CLE) { console.error('SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY sont nécessaires.'); process.exit(1); }
+if (!URL_BASE || !CLE) { console.error('SUPABASE_URL et SUPABASE_SECRET_KEY sont nécessaires.'); process.exit(1); }
+/* Une clé héritée ne marche plus depuis le 22/09 : autant le dire ici, tout de suite, plutôt
+   que de laisser la sauvegarde échouer chaque nuit sur un « 401 » que personne ne lira. */
+if (!CLE.startsWith('sb_secret_')) {
+  console.error('La clé fournie ne commence pas par « sb_secret_ ». Depuis le 22/09/2026 les clés héritées (service_role) sont désactivées sur ce projet : créez une clé secrète dans Settings › API Keys › Secret keys, et posez-la dans le secret GitHub. Voir sauvegarde/README.md.');
+  process.exit(1);
+}
 
 const entetes = { apikey: CLE, Authorization: 'Bearer ' + CLE };
 async function json(url, corps) {
