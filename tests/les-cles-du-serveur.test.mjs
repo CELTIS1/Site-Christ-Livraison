@@ -29,6 +29,7 @@
    ========================================================================================== */
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -163,6 +164,36 @@ console.log('\n5. L\'OUTIL QUI REPOSE LE BLOC EST LÀ, ET IL SAIT SE CONTRÔLER'
 const outil = lire('supabase-functions/_poser-le-bloc-des-cles.mjs');
 verifier('il existe et sait vérifier sans écrire (--verifier)', /--verifier/.test(outil));
 verifier('il pose le bloc après le dernier import, une seule fois', /dernierImport/.test(outil) && /indexOf\(DEBUT/.test(outil));
+
+console.log('\n5 bis. CE QUI EST EN LIGNE CORRESPOND-IL À CE QUI EST ÉCRIT ICI ?');
+/* LE DÉFAUT QUE CE CONTRÔLE COMBLE. Rien, dans Supabase, ne dit qu'une fonction déployée est en
+   retard sur le dépôt. Le 22/09, QUATRE l'étaient — et « envoyer-push » l'était depuis six jours,
+   ce qui a laissé les notifications muettes sans que personne le sache. On inscrit donc
+   l'empreinte de ce qui a été déployé, et ce banc compare. Une fonction modifiée mais pas encore
+   redéployée fait rougir le banc : c'est voulu, c'est exactement le signal qui manquait. */
+const registre = JSON.parse(lire('supabase-functions/_deploye-le.json'));
+const inscrites = registre.fonctions || {};
+verifier('le registre des déploiements existe et dit à quoi il sert',
+  Array.isArray(registre._lisez_moi) && registre._lisez_moi.length >= 3);
+const absentesDuRegistre = fonctions.filter((n) => !inscrites[n]);
+const enTrop = Object.keys(inscrites).filter((n) => !fonctions.includes(n));
+verifier('chaque fonction du dépôt y figure', absentesDuRegistre.length === 0, absentesDuRegistre.join(', '));
+verifier('et le registre n\'invente aucune fonction', enTrop.length === 0, enTrop.join(', '));
+/* Une fonction qu'on a décidé de ne pas déployer doit dire POURQUOI, sinon c'est un oubli qui se
+   déguise en décision — exactement ce qui s'est passé avec bilan-hebdomadaire le 22/09. */
+const sansRaison = Object.entries(inscrites)
+  .filter(([, v]) => v.etat === 'non-deployee' && !(v.pourquoi && v.pourquoi.length > 40)).map(([n]) => n);
+verifier('une fonction non déployée dit pourquoi, en toutes lettres', sansRaison.length === 0, sansRaison.join(', '));
+const aRedeployer = Object.entries(inscrites).filter(([nom, v]) => {
+  if (v.etat !== 'deployee') return false;
+  return crypto.createHash('sha256').update(fs.readFileSync(path.join(DOSSIER, nom, 'index.ts'))).digest('hex') !== v.empreinte;
+}).map(([n]) => n);
+verifier('aucune fonction déployée n\'a changé depuis son déploiement',
+  aRedeployer.length === 0,
+  aRedeployer.length ? 'à REDÉPLOYER, puis mettre à jour supabase-functions/_deploye-le.json : ' + aRedeployer.join(', ') : '');
+/* Contrôle du contrôle : le calcul d'empreinte doit vraiment distinguer deux contenus. */
+verifier('… et la comparaison d\'empreintes distingue bien deux contenus (contrôle du contrôle)',
+  crypto.createHash('sha256').update('a').digest('hex') !== crypto.createHash('sha256').update('b').digest('hex'));
 
 console.log('\n6. AILLEURS DANS LE DÉPÔT : PLUS RIEN NE DOIT ATTENDRE UNE CLÉ HÉRITÉE');
 /* Le 22/09/2026, les clés héritées (anon, service_role) ont été DÉSACTIVÉES sur le projet et

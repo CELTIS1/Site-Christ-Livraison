@@ -1,0 +1,109 @@
+{
+  "_lisez_moi": [
+    "CE QUI EST RÉELLEMENT EN LIGNE, ET DEPUIS QUAND (22 septembre 2026).",
+    "Pourquoi ce fichier : rien, dans Supabase, ne dit qu'une fonction déployée est en retard sur le dépôt. Le 22/09, QUATRE l'étaient — et « envoyer-push » l'était depuis six jours, ce qui a laissé les notifications muettes sans que personne le sache.",
+    "Comment il sert : le banc tests/les-cles-du-serveur.test.mjs compare l'empreinte inscrite ici au fichier du dépôt. Elles diffèrent ? La fonction a changé depuis son déploiement, et le banc rougit jusqu'à ce qu'on la redéploie.",
+    "Donc : après avoir déployé une fonction, on remet son empreinte ici, dans le même lot. C'est le geste qui manquait.",
+    "Pour recalculer une empreinte : sha256sum supabase-functions/<nom>/index.ts"
+  ],
+  "fonctions": {
+    "admin-creer-equipe": {
+      "etat": "deployee",
+      "empreinte": "2ab1c9f71ebb99fa3b3a707b8592727b721b4aaf3df241dcfc305c49b21d5c13",
+      "le": "2026-09-22"
+    },
+    "admin-lancer-reset": {
+      "etat": "deployee",
+      "empreinte": "9912665f835627817e19368525e47aeecd6c6a000de21849a3db18fed777eb34",
+      "le": "2026-09-22"
+    },
+    "admin-modifier-compte": {
+      "etat": "deployee",
+      "empreinte": "6aabf1cd8645ffc81015f82b46a0e97e51870e9b4b8457926d487757a5cbb68d",
+      "le": "2026-09-22"
+    },
+    "admin-supprimer-compte": {
+      "etat": "deployee",
+      "empreinte": "c03ae6fc258f11688686decd0f13cfcd17d84e7f04d7c140b0620ac8abc21d32",
+      "le": "2026-09-22"
+    },
+    "admin-suspendre-compte": {
+      "etat": "deployee",
+      "empreinte": "dd1f450a16689f8db218a1340715c1b827e5c4a1b8f14329b90c52d087d05261",
+      "le": "2026-09-22"
+    },
+    "approuver-reset-password": {
+      "etat": "deployee",
+      "empreinte": "c6e9fa7b282adbb4a4a892d65bb88e60cd751e2b015b3641cc5cee6f15d70f9b",
+      "le": "2026-09-22"
+    },
+    "bilan-hebdomadaire": {
+      "etat": "non-deployee",
+      "pourquoi": "Décision documentée (README, inventaire du 16/09) : elle n'expose des chiffres qu'à un script extérieur, et ce script n'existe pas. L'écran « Le bilan de la semaine » (Gestion › Tableau de bord, depuis le 20/09) rend déjà le service. À déployer le jour où l'on voudra POUSSER le bilan du vendredi vers Celtis."
+    },
+    "creer-client": {
+      "etat": "deployee",
+      "empreinte": "d06057473e4279fb3158cd91a692a1ac607466d45e608cd5b3bed1360f9933b3",
+      "le": "2026-09-22"
+    },
+    "creer-livreur": {
+      "etat": "deployee",
+      "empreinte": "5cca34b831799b6d399a1c903a29fc6e3bbab86fd2daadcc4261285f9499e7a6",
+      "le": "2026-09-22"
+    },
+    "demander-reset-password": {
+      "etat": "deployee",
+      "empreinte": "52a3e7e83ddf181143ef88d5335f3734857ee99198514cd05741b3fb8916a40d",
+      "le": "2026-09-22"
+    },
+    "envoyer-code-express": {
+      "etat": "deployee",
+      "empreinte": "0c452cc755312f7531891f5f08333f19b233d89bdc8bdcf6121f1ca2b16f004d",
+      "le": "2026-09-22"
+    },
+    "envoyer-push": {
+      "etat": "deployee",
+      "empreinte": "d0a41f080b49d5f60caf40e298a31350dfb78dd46e3d962d69159682da895354",
+      "le": "2026-09-22"
+    },
+    "finaliser-reset-password": {
+      "etat": "deployee",
+      "empreinte": "d0ef0346a08f2f158cf0e8d2fbb792265b324721b8d2610603b27d1f658768f4",
+      "le": "2026-09-22"
+    },
+    "inscrire-client-express": {
+      "etat": "deployee",
+      "empreinte": "eb7529b323253ae984fedaac1e7943820c07432830ccce85616793df168aef54",
+      "le": "2026-09-22"
+    },
+    "inscrire-coursier-express": {
+      "etat": "deployee",
+      "empreinte": "024ee59fd4851a96e005e0c73f13c2ec9c217617f1e2e84801aa65c2e55ac31c",
+      "le": "2026-09-22"
+    },
+    "inscrire-fournisseur": {
+      "etat": "deployee",
+      "empreinte": "a557c9eb5837dea98edec9bf926b3e296d247467473beadfbf99386f8c414401",
+      "le": "2026-09-22"
+    },
+    "verifier-code-express": {
+      "etat": "deployee",
+      "empreinte": "9e6176297f9584b1b52c50b1468e30335302a30f78951726cf83122ccafe1f22",
+      "le": "2026-09-22"
+    },
+    "wave-initier-recharge": {
+      "etat": "non-deployee",
+      "pourquoi": "Décision de Celtis (21/09) : l'API Wave peut attendre 2027. En attendant, les coursiers rechargent par Mobile Money avec référence, ou en espèces au bureau."
+    },
+    "wave-payer-course": {
+      "etat": "deployee",
+      "empreinte": "d7d1f7a9ef3339fc86250f41032ca2968e357ad2cb9bce7f737a10ad34c00aa1",
+      "le": "2026-09-22"
+    },
+    "wave-webhook": {
+      "etat": "deployee",
+      "empreinte": "3f7c9e564b3b6dc6bb552433a0838b61768788043c1dd1044b8badcf6ab14a94",
+      "le": "2026-09-22"
+    }
+  }
+}

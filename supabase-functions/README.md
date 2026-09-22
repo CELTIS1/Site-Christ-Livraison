@@ -280,19 +280,31 @@ pas les colonnes de suspension, il recharge la liste sans elles et laisse un
 avertissement dans la console du navigateur plutôt que d'afficher une page vide.
 Ce filet est là pour éviter une panne, pas pour rendre l'étape facultative.
 
-## Inventaire vérifié le 16 septembre 2026 (feuille de route 3.8)
+## Ce qui est en ligne : `_deploye-le.json` (22 septembre 2026)
 
-Le tableau de bord montre **18 fonctions déployées**. Le dépôt en contient 20 dossiers ;
-les deux qui ne tournent pas sont connus et voulus : `wave-initier-recharge` (recharge Wave,
-en attente de la décision Wave — feuille de route 5.3) et `bilan-hebdomadaire` (bilan
-hebdomadaire, en attente de la clé Google / Publer — feuille de route 5.4). Les dix-huit autres
-correspondent, nom pour nom, aux dossiers. Dernières mises à jour vues : les cinq fonctions du
-10 septembre (`creer-livreur`, `envoyer-code-express`, `inscrire-client-express`,
-`inscrire-coursier-express`, `verifier-code-express`) ont bien été redéployées ;
-`envoyer-push`, `approuver-reset-password` et `finaliser-reset-password` datent du 5 septembre.
+**Le dépôt contient 20 dossiers ; 18 fonctions sont déployées.** Les deux qui ne tournent pas
+sont voulues, et le fichier dit pourquoi, en toutes lettres : `wave-initier-recharge` (l'API Wave
+peut attendre 2027, décision de Celtis du 21/09) et `bilan-hebdomadaire` (elle n'expose des
+chiffres qu'à un script extérieur qui n'existe pas ; l'écran « Le bilan de la semaine » de
+Gestion rend déjà le service depuis le 20/09).
 
-Pour refaire cet inventaire : Supabase › Edge Functions (la liste et sa colonne « Updated »),
-puis Database › Webhooks (les deux webhooks `envoyer_push_*`).
+**Le défaut que ce fichier comble.** Rien, dans Supabase, ne signale qu'une fonction déployée est
+en retard sur le dépôt. Le 22/09 au matin, **quatre** l'étaient (`admin-creer-equipe`,
+`admin-supprimer-compte`, `inscrire-fournisseur`, `wave-payer-course`) — et `envoyer-push`
+l'était depuis six jours, ce qui a laissé les notifications muettes sans que personne le sache.
+L'inventaire à la main, refait de temps en temps, ne suffit pas : celui du 16 septembre disait
+déjà 18 fonctions, et n'a pas vu que trois d'entre elles dormaient.
+
+`supabase-functions/_deploye-le.json` inscrit donc **l'empreinte de ce qui a été déployé**, et le
+banc `tests/les-cles-du-serveur.test.mjs` la compare au fichier du dépôt. Une fonction modifiée
+mais pas redéployée fait **rougir le banc**, en la nommant. C'est voulu : c'est le signal qui
+manquait.
+
+**Le geste à ne pas oublier :** après avoir déployé une fonction, remettre son empreinte dans
+`_deploye-le.json`, dans le même lot (`sha256sum supabase-functions/<nom>/index.ts`).
+
+Pour vérifier de visu quand même : Supabase › Edge Functions (la liste et sa colonne « Updated »),
+puis Database › Webhooks (les sept branchements `envoyer_push_*`).
 
 ## Journal des actions
 
