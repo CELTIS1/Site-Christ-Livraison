@@ -6,7 +6,8 @@
    toujours encadré, pour qu'on ne se trompe pas. Et si c'est plusieurs, pareil. »
 
    CE QUE FAIT LE SERVEUR : la notification « Journée bouclée » / « La journée a changé » porte
-   ?point=<cliente>&jour=<AAAA-MM-JJ> ; « X a fait son point » porte ?point-livreur=<livreur>.
+   ?point=<cliente>&jour=<AAAA-MM-JJ> ; « X a fait son point » porte ?point-livreur=<livreur> ;
+   « X demande un passage » porte ?passage=<demande>&jour=<AAAA-MM-JJ> (Tournées, ce jour-là).
    CE QUE FAIT CE FICHIER, en arrivant sur la page :
      1. il note le point à voir (cliente ou livreur, et le jour) dans une liste qui SURVIT au
         rechargement — plusieurs notifications s'y empilent ;
@@ -28,6 +29,9 @@
     const jour = /^\d{4}-\d{2}-\d{2}$/.test(p.get('jour') || '') ? p.get('jour') : '';
     if (p.get('point')) return { qui: 'cliente', id: p.get('point'), jour: jour };
     if (p.get('point-livreur')) return { qui: 'livreur', id: p.get('point-livreur'), jour: jour };
+    // La demande a un jour (celui de la tournée où la conduire), mais UNE demande n'a qu'une
+    // ligne : sa marque se retire par identifiant seul, d'où jour vide et jourTournee à part.
+    if (p.get('passage')) return { qui: 'passage', id: p.get('passage'), jour: '', jourTournee: jour };
     return null;
   }
   const cleDe = (x) => x.qui + ':' + x.id + ':' + (x.jour || '');
@@ -48,6 +52,17 @@
   /* ---- L'écran ---- */
   function marquer() {
     const liste = charger();
+    // La demande de passage : sa ligne dans la tournée du jour. Le jour est celui de la
+    // demande, donc de la ligne : on marque par identifiant seul.
+    document.querySelectorAll('#prog-body .demande-ligne[data-demande]').forEach((el) => {
+      const on = liste.some((y) => y.qui === 'passage' && y.id === el.dataset.demande);
+      el.classList.toggle('demande-ligne--a-voir', on);
+      el.querySelector('.recap-a-voir') && !on && el.querySelector('.recap-a-voir').remove();
+      if (on && !el.querySelector('.recap-a-voir')) {
+        const b = document.createElement('span'); b.className = 'recap-a-voir'; b.textContent = '🔔 à traiter';
+        const nom = el.querySelector('.demande-nom'); (nom || el).appendChild(b);
+      }
+    });
     const jourC = (typeof recapGetDate === 'function') ? recapGetDate() : '';
     const jourL = (typeof recaplGetDate === 'function') ? recaplGetDate() : '';
     document.querySelectorAll('#recap-body .recap-client-card[data-fid]').forEach((el) => {
@@ -70,8 +85,13 @@
     });
   }
 
+  /* Dire « vu » depuis l'écran (les boutons d'une demande de passage, par exemple). */
+  function vu(qui, id, jour) { garder(retirer(charger(), qui, id, jour)); marquer(); }
+
   /* Ouvrir une carte, c'est l'avoir vue : la marque s'en va. */
   function surClic(ev) {
+    const ligne = ev.target && ev.target.closest ? ev.target.closest('.demande-ligne[data-demande]') : null;
+    if (ligne) { garder(retirer(charger(), 'passage', ligne.dataset.demande, '')); return; }
     const el = ev.target && ev.target.closest ? ev.target.closest('.recap-client-card') : null;
     if (!el) return;
     const liste = charger();
@@ -79,8 +99,30 @@
     else if (el.dataset.lid) garder(retirer(liste, 'livreur', el.dataset.lid, (typeof recaplGetDate === 'function') ? recaplGetDate() : ''));
   }
 
+  /* Une demande de passage : Tournées, le jour de la demande, sa ligne. Si la ligne n'y est
+     plus (déjà programmée ou traitée entre-temps), la marque n'a plus d'objet : on l'ôte. */
+  function conduireAuPassage(x) {
+    // Le jour d'abord, l'onglet ensuite : l'onglet recharge la tournée du jour choisi, et
+    // deux chargements lancés dans l'autre ordre pourraient se doubler.
+    const champ = document.getElementById('prog-jour');
+    const jour = x.jourTournee || '';
+    if (champ && jour && champ.value !== jour) { champ.value = jour; champ.dispatchEvent(new Event('change', { bubbles: true })); }
+    if (typeof showEquipeTab === 'function') showEquipeTab('programmation');
+    let essais = 0;
+    const chercher = () => {
+      marquer();
+      const el = document.querySelector('.demande-ligne--a-voir');
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+      if (++essais < 20) { setTimeout(chercher, 300); return; }
+      const corps = document.getElementById('prog-body');
+      if (corps && !/Chargement/.test(corps.textContent || '')) garder(retirer(charger(), 'passage', x.id, ''));
+    };
+    setTimeout(chercher, 200);
+  }
+
   /* Conduire là où il faut : l'onglet, le jour, le bloc déplié, la carte. */
   function conduire(x) {
+    if (x.qui === 'passage') return conduireAuPassage(x);
     if (typeof showEquipeTab === 'function') showEquipeTab('suivi');
     const jour = x.jour || (typeof todayLocalISODate === 'function' ? todayLocalISODate() : '');
     const cliente = x.qui === 'cliente';
@@ -112,10 +154,10 @@
     document.addEventListener('click', surClic, true);
     // Les deux récapitulatifs se redessinent souvent : on remarque après chaque dessin.
     const obs = new MutationObserver(function () { marquer(); });
-    ['recap-body', 'recapl-body'].forEach((id) => { const b = document.getElementById(id); if (b) obs.observe(b, { childList: true }); });
+    ['recap-body', 'recapl-body', 'prog-body'].forEach((id) => { const b = document.getElementById(id); if (b) obs.observe(b, { childList: true, subtree: id === 'prog-body' }); });
     marquer();
   }
 
-  window.CLTPointAVoir = { lireDepuisURL: lireDepuisURL, ajouter: ajouter, retirer: retirer, estAVoir: estAVoir, cleDe: cleDe, marquer: marquer };
+  window.CLTPointAVoir = { lireDepuisURL: lireDepuisURL, ajouter: ajouter, retirer: retirer, estAVoir: estAVoir, cleDe: cleDe, marquer: marquer, vu: vu };
   if (typeof document !== 'undefined') { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init(); }
 })();

@@ -59,7 +59,8 @@ verifier('la raison est écrite dans le fichier, pas seulement dans une note de 
   /QUI REÇOIT QUOI/.test(push) && /cent quatre-vingts notifications/.test(push));
 verifier('mais l\'équipe reste prévenue de ce qui APPELLE UNE DÉCISION : signalements et demandes de passage',
   /roles: \["equipe", "admin"\], userIds: \[\] \}, livreur \? "📣 Un livreur signale un problème"/.test(push)
-  && /roles: \["equipe", "admin"\], userIds: \[\] \}, "🗓️ Demande de passage"/.test(push));
+  // 22/09 : la demande de passage dit désormais QUI (« Awa demande un passage ») et conduit à sa ligne.
+  && /roles: \["equipe", "admin"\], userIds: \[\] \}, "🗓️ " \+ nom \+ " demande un passage"/.test(push));
 
 console.log('\n2. LA CLIENTE, ELLE, GARDE TOUT — ET APPREND POURQUOI');
 verifier('ses cinq étapes sont là, « en livraison » comprise',

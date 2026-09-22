@@ -228,6 +228,7 @@ export function nouveauMonde() {
         Object.assign(l, v, { updated_at: maintenant });
         if (table === 'colis') effetsRetour(avant, l, q.user, maintenant);
         if (table === 'colis') consommeLAvance(avant, l, q.user, maintenant);
+        if (table === 'programmations_collecte') programmerTraiteLaDemande(l, q.user, maintenant);
       });
       journal.push({ table, op: 'update', valeurs: q.valeurs, n: lignes.length, ids: lignes.map(l => l.id), user: q.user || null });   // user : QUI écrit (21/09/2026, « Voir son écran »)
       return { data: lignes, error: null, count: lignes.length };
@@ -239,6 +240,7 @@ export function nouveauMonde() {
       rows.forEach(r => { if (table === 'reclamations_clientes' && r.statut === undefined) r.statut = 'ouverte'; if (table === 'demandes_de_passage' && r.statut === undefined) r.statut = 'en_attente'; });
       (TABLES[table] ||= []).push(...rows);
       if (table === 'colis') rows.forEach(r => consommeLAvance(null, r, q.user, maintenant));
+      if (table === 'programmations_collecte') rows.forEach(r => programmerTraiteLaDemande(r, q.user, maintenant));
       journal.push({ table, op: q.op, n: rows.length, valeurs: rows });
       return { data: q.unique ? rows[0] : rows, error: null, count: rows.length };
     }
@@ -276,6 +278,15 @@ export function nouveauMonde() {
      Quand un livreur À AVANCE pose un montant de gare ou un frais additionnel, cet argent est
      celui de CLT : une ligne de dépense s'écrit, et le colis ne lui rend plus rien le soir.
      On écrit la DIFFÉRENCE, pas le montant, exactement comme la base. */
+  /* PROGRAMMER, C'EST TRAITER (22/09/2026) — jumeau du déclencheur trg_programmation_traite_la_demande :
+     une tournée posée pour (jour, cliente) marque « traitee » la demande de passage en attente. */
+  function programmerTraiteLaDemande(p, user, maintenant) {
+    (TABLES.demandes_de_passage || []).forEach(d => {
+      if (d.jour === p.jour && d.fournisseur_id === p.fournisseur_id && d.statut === 'en_attente') {
+        d.statut = 'traitee'; d.traitee_par = user || null; d.traitee_at = maintenant;
+      }
+    });
+  }
   function consommeLAvance(avant, apres, user, maintenant) {
     if (!apres || !apres.livreur_id) return;
     const p = PROFILS.find(x => x.id === apres.livreur_id);

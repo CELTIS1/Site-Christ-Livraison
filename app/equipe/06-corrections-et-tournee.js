@@ -338,14 +338,25 @@ function blocDemandesHTML(){
   const dejaProgrammees = new Set((progLignes || []).map(p => p.fournisseur_id));
   const attentes = (progDemandes || []).filter(d => !dejaProgrammees.has(d.fournisseur_id));
   if (!attentes.length) return '';
+  /* 22/09/2026, Celtis : « on ne sait pas laquelle, et on a du mal à remonter jusqu'à elle ».
+     La ligne porte donc de quoi la reconnaître (nom, commune, téléphone, note) et UN geste qui
+     répond vraiment : « Programmer » pré-remplit la cliente dans le formulaire au-dessus. Dès
+     que la tournée est posée, la base marque la demande traitée d'elle-même et la cliente est
+     prévenue (déclencheur trg_programmation_traite_la_demande). « Traitée » reste pour le cas où
+     l'on a répondu autrement (rappel, passage hors tournée). L'attribut data-demande sert à la
+     notification, qui encadre CETTE ligne (17-le-point-a-voir.js). */
   const lignes = attentes.map(d => {
     const f = progFicheCliente(d.fournisseur_id) || {};
     const nom = f.nom || f.full_name || 'Cliente';
-    return `<li class="demande-ligne">
-        <span class="demande-nom">${escapeHTML(nom)}</span>
-        ${d.note ? `<span class="demande-note">${escapeHTML(d.note)}</span>` : ''}
-        <button type="button" class="btn btn-outline btn-sm btn-demande-traitee" data-demande="${escapeHTML(d.id)}">✅ Traitée</button>
-        <button type="button" class="btn btn-outline btn-sm btn-demande-refusee" data-demande="${escapeHTML(d.id)}">❌ Refuser</button>
+    const ou = [f.commune, f.telephone].filter(Boolean).join(' · ');
+    return `<li class="demande-ligne" data-demande="${escapeHTML(d.id)}">
+        <span class="demande-nom">${escapeHTML(nom)}${ou ? ` <span class="demande-ou">${escapeHTML(ou)}</span>` : ''}</span>
+        ${d.note ? `<span class="demande-note">« ${escapeHTML(d.note)} »</span>` : ''}
+        <span class="demande-gestes">
+          <button type="button" class="btn btn-primary btn-sm btn-demande-programmer" data-cliente="${escapeHTML(d.fournisseur_id)}">🗓️ Programmer</button>
+          <button type="button" class="btn btn-outline btn-sm btn-demande-traitee" data-demande="${escapeHTML(d.id)}">✅ Traitée</button>
+          <button type="button" class="btn btn-outline btn-sm btn-demande-refusee" data-demande="${escapeHTML(d.id)}">❌ Refuser</button>
+        </span>
       </li>`;
   }).join('');
   // Pas de classe « clt-alert » ici : elle n'existe que dans l'espace Gestion. Le bloc a la
@@ -353,7 +364,7 @@ function blocDemandesHTML(){
   return `<div class="demandes-de-passage">
       <div class="clt-alert-head">🗓️ ${attentes.length} cliente${attentes.length > 1 ? 's' : ''} ${attentes.length > 1 ? 'demandent' : 'demande'} un passage ce jour-là</div>
       <ul class="demandes-liste">${lignes}</ul>
-      <div class="meta" style="margin-top:6px;">Elles ne sont pas encore programmées. Choisissez-leur un livreur ci-dessus, puis marquez la demande traitée.</div>
+      <div class="meta" style="margin-top:6px;">« Programmer » choisit la cliente ci-dessus ; dès que la tournée est posée, sa demande est marquée traitée et elle est prévenue.</div>
     </div>`;
 }
 
@@ -364,6 +375,12 @@ function blocDemandesHTML(){
 function brancherBoutonsDemandes(racine){
   const dans = racine && typeof racine.querySelectorAll === 'function' ? racine : null;
   if (!dans) return;
+  dans.querySelectorAll('.btn-demande-programmer').forEach(b => {
+    b.addEventListener('click', () => {
+      if (typeof progPreremplir === 'function') progPreremplir(b.dataset.cliente + '|' + '');
+      if (window.CLTPointAVoir && b.closest('.demande-ligne')) CLTPointAVoir.vu('passage', b.closest('.demande-ligne').dataset.demande);
+    });
+  });
   dans.querySelectorAll('.btn-demande-traitee').forEach(b => {
     b.addEventListener('click', () => marquerDemandeTraitee(b.dataset.demande));
   });
@@ -840,7 +857,9 @@ const manquants = [];
 const poser = (id, valeur, quoi) => {
 const select = document.getElementById(id);
 if (!select) return;
-if (!valeur) { manquants.push(quoi); return; }
+// Pas de valeur, pas de reproche : « Programmer » depuis une demande de passage ne connaît
+// que la cliente — le livreur est justement ce que le bureau vient choisir. (22/09/2026)
+if (!valeur) { if (quoi !== 'le livreur') manquants.push(quoi); return; }
 const existe = Array.prototype.some.call(select.options, o => o.value === valeur);
 if (!existe) { manquants.push(quoi); return; }
 select.value = valeur;

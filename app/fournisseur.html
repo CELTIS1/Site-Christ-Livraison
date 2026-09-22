@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260922report">
+<link rel="stylesheet" href="style.css?v=20260922passage">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260922report"></script>
-<script src="splash.js?v=20260922report"></script>
+<script src="theme.js?v=20260922passage"></script>
+<script src="splash.js?v=20260922passage"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -640,28 +640,28 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260922report"></script>
-<script src="numero-international.js?v=20260922report"></script>
-<script src="voir-un-compte.js?v=20260922report"></script>
-<script src="lib/bibliotheques.js?v=20260922report"></script>
-<script src="lib/retours.js?v=20260922report"></script>
-<script src="lib/reclamations.js?v=20260922report"></script>
-<script src="lib/communes-et-tarifs.js?v=20260922report"></script>
-<script src="lib/argent.js?v=20260922report"></script>
-<script src="lib/releve-cliente.js?v=20260922report"></script>
-<script src="lib/papier-a-en-tete.js?v=20260922report"></script>
-<script src="lib/briques-argent.js?v=20260922report"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260922report"></script>
-<script src="lib/annonce-de-remise.js?v=20260922report"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260922report"></script>
-<script src="lib/primes.js?v=20260922report"></script>
-<script src="lib/doublons.js?v=20260922report"></script>
-<script src="config.js?v=20260922report"></script>
-<script src="mes-boutiques.js?v=20260922report"></script>
-<script src="etiquettes-et-scan.js?v=20260922report"></script>
-<script src="import-de-colis.js?v=20260922report"></script>
-<script src="biometric-lock.js?v=20260922report"></script>
-<script src="clt-select-recherche.js?v=20260922report"></script>
+<script src="clt-common.js?v=20260922passage"></script>
+<script src="numero-international.js?v=20260922passage"></script>
+<script src="voir-un-compte.js?v=20260922passage"></script>
+<script src="lib/bibliotheques.js?v=20260922passage"></script>
+<script src="lib/retours.js?v=20260922passage"></script>
+<script src="lib/reclamations.js?v=20260922passage"></script>
+<script src="lib/communes-et-tarifs.js?v=20260922passage"></script>
+<script src="lib/argent.js?v=20260922passage"></script>
+<script src="lib/releve-cliente.js?v=20260922passage"></script>
+<script src="lib/papier-a-en-tete.js?v=20260922passage"></script>
+<script src="lib/briques-argent.js?v=20260922passage"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260922passage"></script>
+<script src="lib/annonce-de-remise.js?v=20260922passage"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260922passage"></script>
+<script src="lib/primes.js?v=20260922passage"></script>
+<script src="lib/doublons.js?v=20260922passage"></script>
+<script src="config.js?v=20260922passage"></script>
+<script src="mes-boutiques.js?v=20260922passage"></script>
+<script src="etiquettes-et-scan.js?v=20260922passage"></script>
+<script src="import-de-colis.js?v=20260922passage"></script>
+<script src="biometric-lock.js?v=20260922passage"></script>
+<script src="clt-select-recherche.js?v=20260922passage"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -2950,15 +2950,20 @@
     if (!currentUser) return;
     // On ne regarde que les jours à venir (et aujourd'hui) : une demande de la semaine dernière
     // n'apprend rien à personne et encombrerait la carte.
-    const { data, error } = await supabaseClient
+    const lire = (colonnes) => supabaseClient
       .from('demandes_de_passage')
-      .select('id, jour, note, statut, motif_refus')
+      .select(colonnes)
       .eq('fournisseur_id', currentUser.id)
       .neq('statut', 'annulee')
       // Les jours à venir, et les trois derniers jours : un refus d'hier doit encore se lire.
       .gte('jour', isoMoinsJoursCliente(todayLocalISODate(), 3))
       .order('jour', { ascending: false })
       .limit(1);
+    let { data, error } = await lire('id, jour, note, statut, motif_refus');
+    // 22/09/2026 : du 20 au 22, motif_refus n'existait pas en base et cette lecture échouait —
+    // la cliente ne voyait plus même « demande envoyée ». La colonne existe désormais ; si une
+    // base ne l'a pas encore, on relit sans elle plutôt que de ne rien montrer.
+    if (error && /motif_refus/.test(error.message || '')) ({ data, error } = await lire('id, jour, note, statut'));
     // La table est née le 17/09/2026. Si le script n'est pas encore passé, on n'affiche rien
     // plutôt que de faire rougir la console d'une vendeuse : la carte reste utilisable.
     if (error) { maDemandeDePassage = null; renderMaDemandeDePassage(); return; }

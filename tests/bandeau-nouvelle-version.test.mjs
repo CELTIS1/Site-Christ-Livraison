@@ -1244,10 +1244,19 @@ verifier(
    Et la liste du bureau, où l'on cherche un colis, le montre désormais dans ses deux journées.
    Même lot : la notification d'un point ne dépose plus l'équipe sur la page d'accueil — elle ouvre
    LE point concerné, encadré en orange jusqu'au premier toucher, et plusieurs points en attente
-   restent tous encadrés (17-le-point-a-voir.js). Étiquette 20260922report. */
+   restent tous encadrés (17-le-point-a-voir.js). Étiquette 20260922report.
+   v230, le 22/09/2026 — LA DEMANDE DE PASSAGE, DE BOUT EN BOUT. Celtis : « on reçoit la
+   notification mais on ne sait pas laquelle, et on a du mal à remonter jusqu'à elle ; qu'on
+   puisse réagir, et qu'elle soit notifiée que sa demande a été traitée ». En regardant la base
+   avant d'écrire : la colonne motif_refus du lot 20.B n'avait jamais été créée — « Refuser »
+   échouait et la cliente ne voyait plus l'état de sa demande. Réparé. Puis : la notification
+   porte le nom et conduit à la ligne (Tournées, ce jour-là, encadrée) ; « Programmer » pose la
+   cliente dans le formulaire ; la tournée posée marque la demande traitée d'elle-même
+   (déclencheur) et la cliente apprend qui passe. Et la barre d'onglets du bas, sur iPhone, est
+   posée sur sa propre couche pour ne plus suivre le défilement. Étiquette 20260922passage. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v229'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v230'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

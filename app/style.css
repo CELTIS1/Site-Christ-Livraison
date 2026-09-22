@@ -1219,6 +1219,13 @@ html[data-theme="dark"] .recherche-ligne:hover, html[data-theme="dark"] .recherc
 .demande-ligne + .demande-ligne{ border-top:1px dashed rgba(138,75,0,.25); }
 .demande-nom{ font-weight:600; }
 .demande-note{ font-size:12.5px; color:var(--muted); flex:1 1 auto; }
+/* 22/09 : la ligne se reconnaît (commune · téléphone), ses gestes tiennent ensemble, et la
+   notification l'encadre comme une carte de point (même orange, même pastille « à traiter »). */
+.demande-ou{ font-weight:500; font-size:12.5px; color:var(--muted); margin-left:6px; }
+.demande-gestes{ display:flex; gap:6px; flex-wrap:wrap; margin-left:auto; }
+.demande-ligne--a-voir{ border:2px solid var(--orange); border-radius:10px; padding:8px 10px; box-shadow:0 0 0 3px rgba(226,99,19,.18); background:#fff; }
+.demande-ligne--a-voir + .demande-ligne, .demande-ligne + .demande-ligne--a-voir{ border-top:none; margin-top:6px; }
+html[data-theme="dark"] .demande-ligne--a-voir{ background:#1B2635; }
 html[data-theme="dark"] .demandes-de-passage{ background:#3a2c14; border-color:#7a5a20; }
 html[data-theme="dark"] .demandes-de-passage .clt-alert-head{ color:#f0c27a; }
 html[data-theme="dark"] .demande-ligne + .demande-ligne{ border-top-color:rgba(240,194,122,.2); }
@@ -1863,6 +1870,13 @@ html[data-theme="dark"] .clt-toptab{ color:#9DB0C4; }
 html[data-theme="dark"] .clt-toptab.active{ background:#243247; }
 
 /* Barre de navigation basse (mobile) */
+/* 22/09/2026, Celtis : « mes onglets du bas se déplacent à chaque mouvement » — pendant le
+   défilement, sur iPhone. La barre est fixée, mais iOS ne la peint sur sa propre couche que
+   s'il y est invité : sans cela elle suit le contenu d'un cran, puis se recale (le même défaut
+   qui avait fait passer l'en-tête de sticky à fixed). On la met sur sa couche, et on coupe
+   l'élastique du document (overscroll) qui l'emportait avec lui en haut et en bas de page. */
+.clt-bottomnav{ transform:translateZ(0); -webkit-backface-visibility:hidden; backface-visibility:hidden; will-change:transform; }
+@media (max-width:760px){ html:has(.clt-bottomnav){ overscroll-behavior-y:none; } }
 html[data-theme="dark"] .clt-bottomnav{ background:#141D29; border-top-color:#2A3849; }
 html[data-theme="dark"] .clt-bottomnav .nav{ color:#9DB0C4; }
 /* 20/09 : la nuit, l'onglet actif gardait le gris des autres (la règle ci-dessus l'emportait) : on ne voyait plus où l'on était. */

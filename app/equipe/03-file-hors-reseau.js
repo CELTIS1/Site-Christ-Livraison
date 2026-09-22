@@ -1292,7 +1292,22 @@ switch (cle) {
     break;
   }
   case 'litiges': { if (typeof showEquipeTab === 'function') { showEquipeTab('retours'); if (typeof rtChoisirVue === 'function') rtChoisirVue('retours'); window.scrollTo({ top: 0, behavior: 'smooth' }); } break; }
-  case 'demandes-passage': onglet('programmation'); defiler('section-programmation'); break;
+  case 'demandes-passage': {
+    // La pastille compte les demandes en attente d'aujourd'hui et des jours à venir ; la
+    // tournée affichée est celle d'UN jour. On va au premier jour qui en a une, sinon le
+    // bureau arriverait sur une tournée sans demande et croirait la pastille fausse. (22/09/2026)
+    const aller = () => { onglet('programmation'); defiler('section-programmation'); };
+    const auj = (typeof aujourdhuiAbidjan === 'function') ? aujourdhuiAbidjan() : '';
+    if (!auj || !window.supabaseClient) { aller(); break; }
+    supabaseClient.from('demandes_de_passage').select('jour').eq('statut', 'en_attente').gte('jour', auj).order('jour').limit(1)
+      .then(({ data }) => {
+        const jour = data && data[0] && data[0].jour;
+        const champ = document.getElementById('prog-jour');
+        if (jour && champ && champ.value !== jour) { champ.value = jour; champ.dispatchEvent(new Event('change', { bubbles: true })); }
+        aller();
+      }, aller);
+    break;
+  }
   case 'suppressions': onglet('comptes'); defiler('section-tous-comptes'); break;
   case 'file-bloquee': { onglet('colis'); const b = document.getElementById('eq-offline-banner'); if (b) { b.classList.remove('hidden'); defiler('eq-offline-banner'); } break; }
   case 'argent': onglet('finances'); if (typeof showMainTab === 'function') showMainTab('compta'); defiler('caisse-livreur'); break;

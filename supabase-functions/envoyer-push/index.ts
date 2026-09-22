@@ -408,10 +408,41 @@ async function handleDemandeDePassage(record: any, oldRecord: any, eventType: st
   const id = uuidOuRien(record.id);
   if (!cliente || !id) return new Response("demande sans cliente", { status: 200 });
   const jour = record.jour ? String(record.jour).split("-").reverse().join("/") : "";
-  if (eventType === "INSERT") return await envoyer({ roles: ["equipe", "admin"], userIds: [] }, "🗓️ Demande de passage", `Une cliente demande un passage${jour ? " le " + jour : ""}. Voir Tournées.`, `passage-${id}`, "");
+  if (eventType === "INSERT") {
+    // 22/09/2026, Celtis : « on reçoit la notification mais on ne sait pas laquelle, et on a du
+    // mal à remonter jusqu'à elle ». Le nom dans le titre, la note dans le corps, et l'adresse
+    // conduit à SA ligne dans la tournée de CE jour (17-le-point-a-voir.js), encadrée jusqu'au
+    // premier toucher.
+    let nom = "Une cliente";
+    try {
+      const { data } = await admin.from("profiles").select("company_name, full_name").eq("id", cliente).maybeSingle();
+      if (data && (data.company_name || data.full_name)) nom = String(data.company_name || data.full_name).slice(0, 60);
+    } catch (_e) { /* le nom est un confort : son absence ne doit pas retenir l'alerte */ }
+    const corps = `Passage souhaité${jour ? " le " + jour : ""}`
+      + (record.note ? ` · « ${String(record.note).slice(0, 80)} »` : "")
+      + ". Programmez-la : elle sera prévenue.";
+    const adresse = `passage=${encodeURIComponent(id)}` + (record.jour ? `&jour=${encodeURIComponent(String(record.jour))}` : "");
+    return await envoyer({ roles: ["equipe", "admin"], userIds: [] }, "🗓️ " + nom + " demande un passage", corps, `passage-${id}`, adresse);
+  }
   const avant = oldRecord ? oldRecord.statut : null;
   if (record.statut === avant) return new Response("statut inchangé", { status: 200 });
-  if (record.statut === "traitee") return await envoyer({ roles: [], userIds: [cliente] }, "👀 Votre demande de passage est vue", `CLT programme la tournée${jour ? " du " + jour : ""} ; le livreur vous confirmera.`, `passage-${id}`, "");
+  if (record.statut === "traitee") {
+    // Depuis le 22/09, programmer la tournée marque la demande traitée d'elle-même (déclencheur
+    // en base). Si un livreur est posé sur cette journée, on le nomme : c'est la vraie réponse.
+    let livreur = "";
+    try {
+      const { data: prog } = await admin.from("programmations_collecte").select("livreur_id").eq("jour", record.jour).eq("fournisseur_id", cliente).maybeSingle();
+      const lid = prog ? uuidOuRien(prog.livreur_id) : null;
+      if (lid) {
+        const { data: p } = await admin.from("profiles").select("full_name").eq("id", lid).maybeSingle();
+        if (p && p.full_name) livreur = String(p.full_name).slice(0, 60);
+      }
+    } catch (_e) { /* sans nom, la phrase générale suffit */ }
+    const corps = livreur
+      ? `CLT passe chez vous${jour ? " le " + jour : ""} : ${livreur} vous confirmera son passage.`
+      : `CLT programme la tournée${jour ? " du " + jour : ""} ; le livreur vous confirmera.`;
+    return await envoyer({ roles: [], userIds: [cliente] }, livreur ? "🚚 Passage programmé" : "👀 Votre demande de passage est vue", corps, `passage-${id}`, "");
+  }
   if (record.statut === "refusee") return await envoyer({ roles: [], userIds: [cliente] }, "❌ Pas de passage possible", `${jour ? "Le " + jour + " : " : ""}${record.motif_refus ? String(record.motif_refus).slice(0, 120) : "CLT ne pourra pas passer."} Vous pouvez demander un autre jour.`, `passage-${id}`, "");
   return new Response("rien à dire", { status: 200 });
 }

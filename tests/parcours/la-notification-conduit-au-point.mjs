@@ -1,4 +1,4 @@
-/* PARCOURS 34 — LA NOTIFICATION CONDUIT AU POINT, ET LA CARTE RESTE ENCADRÉE (22 septembre 2026)
+/* PARCOURS 34 — LA NOTIFICATION CONDUIT AU POINT (OU À LA DEMANDE DE PASSAGE), ET ÇA RESTE ENCADRÉ (22 septembre 2026)
    Celtis : « lorsqu'on clique, ça nous envoie sur le point concerné. Avec une couleur. Et tant
    qu'on n'a pas touché, il faut que ce soit toujours encadré. Et si c'est plusieurs, pareil. »
    On ouvre l'écran de l'équipe par l'adresse que porte la notification « Journée bouclée » :
@@ -6,10 +6,10 @@
    encadrée « 🔔 à traiter » — et le rester après un rechargement, jusqu'à ce qu'on l'ouvre.
    Lancer à la main :  node tests/parcours/la-notification-conduit-au-point.mjs */
 import { ouvrirNavigateur, verifier, titre, dodo, bilan } from './_navigateur.mjs';
-import { ADMIN, CLIENTE1, CLIENTE2, aujourdhui } from './_monde.mjs';
+import { ADMIN, CLIENTE1, CLIENTE2, LIVREUR, aujourdhui } from './_monde.mjs';
 
 const N = await ouvrirNavigateur();
-const { page, erreurs } = N;
+const { page, erreurs, monde } = N;
 const carte = (fid) => page.locator(`#recap-body .recap-client-card[data-fid="${fid}"]`).first();
 
 titre('1. On arrive par la notification : l\'écran conduit exactement là');
@@ -39,6 +39,37 @@ await page.evaluate(() => { showEquipeTab('suivi'); if (!document.getElementById
 await dodo(1500);
 verifier('après rechargement, la carte ouverte n\'est plus encadrée', await carte(CLIENTE2).evaluate((el) => !el.classList.contains('recap-client-card--a-voir')));
 verifier('mais celle qu\'on n\'a pas ouverte l\'est encore', await carte(CLIENTE1).evaluate((el) => el.classList.contains('recap-client-card--a-voir')));
+
+titre('4. Une demande de passage : la notification conduit à SA ligne, et programmer la traite');
+/* 22/09/2026, Celtis : « on reçoit la notification mais on ne sait pas laquelle, et on a du mal
+   à remonter jusqu'à elle ; qu'on puisse réagir, et qu'elle soit notifiée que sa demande a été
+   traitée ». Ici : Awa demande un passage DEMAIN (elle est programmée aujourd'hui, pas demain). */
+const demain = (() => { const d = new Date(aujourdhui + 'T12:00:00'); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
+const DEMANDE = 'dddddddd-0000-4000-8000-00000000pa55'.replace('pa55', '0001');
+monde.TABLES.demandes_de_passage.push({ id: DEMANDE, jour: demain, fournisseur_id: CLIENTE1, note: 'après 14 h', statut: 'en_attente', motif_refus: null });
+await N.ouvrirConnecte(`equipe.html?passage=${DEMANDE}&jour=${demain}`, ADMIN);
+await dodo(4000);
+const ligne = page.locator(`#prog-body .demande-ligne[data-demande="${DEMANDE}"]`).first();
+verifier('l\'onglet Tournées est ouvert', await page.evaluate(() => !!document.querySelector('#clt-toptabs .clt-toptab[data-eqtab="programmation"].active')));
+verifier('sur le jour de la demande', (await page.locator('#prog-jour').inputValue()) === demain);
+verifier('sa ligne est là, encadrée « à traiter », avec le nom, la commune et la note', (await ligne.count()) === 1
+  && await ligne.evaluate((el) => el.classList.contains('demande-ligne--a-voir') && /à traiter/.test(el.textContent) && /Awa/.test(el.textContent) && /après 14 h/.test(el.textContent)),
+  await ligne.textContent().catch(() => '(absente)'));
+await N.ouvrirConnecte('equipe.html', ADMIN);
+await dodo(3500);
+await page.evaluate((j) => { const c = document.getElementById('prog-jour'); c.value = j; c.dispatchEvent(new Event('change', { bubbles: true })); showEquipeTab('programmation'); }, demain);
+await dodo(1500);
+verifier('après rechargement, la ligne est TOUJOURS encadrée', await ligne.evaluate((el) => el.classList.contains('demande-ligne--a-voir')));
+await ligne.locator('.btn-demande-programmer').click();
+await dodo(600);
+verifier('« Programmer » pose la cliente dans le formulaire, sans rien écrire', (await page.locator('#prog-fournisseur').inputValue()) === CLIENTE1 && monde.TABLES.demandes_de_passage[0].statut === 'en_attente');
+verifier('et le cadre est tombé : on l\'a touchée', await ligne.evaluate((el) => !el.classList.contains('demande-ligne--a-voir')));
+await page.selectOption('#prog-livreur', LIVREUR);
+await page.locator('#btn-prog-ajouter').click();
+await dodo(1500);
+const d = monde.TABLES.demandes_de_passage[0];
+verifier('la tournée posée, la demande est « traitee » d\'elle-même (c\'est ce qui prévient la cliente)', d.statut === 'traitee' && !!d.traitee_at, JSON.stringify(d));
+verifier('et sa ligne a quitté le bloc des demandes', (await page.locator(`#prog-body .demande-ligne[data-demande="${DEMANDE}"]`).count()) === 0);
 
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 await N.fermer();
