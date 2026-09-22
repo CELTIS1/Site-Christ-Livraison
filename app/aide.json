@@ -1,440 +1,451 @@
 {
- "_lisez_moi": "Le centre d'aide de l'application (20/09/2026, point 19.5). Un article = { id, titre, resume, etapes[], astuce?, medias?[] }. Chaque média : { type: 'pdf' | 'video' | 'lien' | 'image', url, label }. Les articles sont rangés par espace : 'livreur', 'fournisseur' (les clientes), 'equipe' (le bureau), 'express-client' et 'express-coursier' (20/09/2026, Celtis : « le coursier a ses explications et le client aussi » — chacun ne lit que les siennes), et 'tous' (visible partout). Pour ajouter un article, on ajoute une entrée ici : aucun code à toucher. Un article s'ouvre directement avec #aide=<id> dans l'adresse. Règle d'écriture (Celtis) : court, concret, un geste par étape, pas de jargon.",
- "espaces": {
-  "livreur": {
-   "titre": "Livreurs — ma journée, mes colis, mon argent",
-   "articles": [
-    {
-     "id": "livreur-journee",
-     "titre": "Ma journée : ce que je vois en ouvrant l'application",
-     "resume": "L'écran s'ouvre sur aujourd'hui, date affichée. Ce qui date d'avant est replié en dessous.",
-     "etapes": [
-      "En haut, « Ma journée » résume : combien pas encore pris, en route, livrés, non livrés, à rendre.",
-      "La liste montre les colis d'aujourd'hui : reçus aujourd'hui, ou qui ont bougé aujourd'hui. Un colis marqué livré RESTE dans la liste.",
-      "Sous la liste, « ⏳ colis encore en route, reçus avant » : ce qui vous reste d'hier ou d'avant. Dépliez pour les voir.",
-      "« Livrés » et « Non livrés » montrent le détail de la journée affichée. « Livrés » suit le jour où vous avez livré : un colis reçu hier et livré ce matin y figure.",
-      "Un colis de la journée reporté à un autre jour est annoncé au-dessus de la liste : « Voir les colis du … » vous y emmène.",
-      "Le bouton à côté du calendrier bascule : « Toutes les dates » pour tout revoir, puis « Aujourd'hui » pour revenir."
-     ],
-     "astuce": "Si un colis « manque », regardez d'abord la ligne des reportés et le pli « encore en route » : il est presque toujours là."
+  "_lisez_moi": "Le centre d'aide de l'application (20/09/2026, point 19.5). Un article = { id, titre, resume, etapes[], astuce?, medias?[] }. Chaque média : { type: 'pdf' | 'video' | 'lien' | 'image', url, label }. Les articles sont rangés par espace : 'livreur', 'fournisseur' (les clientes), 'equipe' (le bureau), 'express-client' et 'express-coursier' (20/09/2026, Celtis : « le coursier a ses explications et le client aussi » — chacun ne lit que les siennes), et 'tous' (visible partout). Pour ajouter un article, on ajoute une entrée ici : aucun code à toucher. Un article s'ouvre directement avec #aide=<id> dans l'adresse. Règle d'écriture (Celtis) : court, concret, un geste par étape, pas de jargon.",
+  "espaces": {
+    "livreur": {
+      "titre": "Livreurs — ma journée, mes colis, mon argent",
+      "articles": [
+        {
+          "id": "livreur-journee",
+          "titre": "Ma journée : ce que je vois en ouvrant l'application",
+          "resume": "L'écran s'ouvre sur aujourd'hui, date affichée. Ce qui date d'avant est replié en dessous.",
+          "etapes": [
+            "En haut, « Ma journée » résume : combien pas encore pris, en route, livrés, non livrés, à rendre.",
+            "La liste montre les colis d'aujourd'hui : reçus aujourd'hui, ou qui ont bougé aujourd'hui. Un colis marqué livré RESTE dans la liste.",
+            "Sous la liste, « ⏳ colis encore en route, reçus avant » : ce qui vous reste d'hier ou d'avant. Dépliez pour les voir.",
+            "« Livrés » et « Non livrés » montrent le détail de la journée affichée. « Livrés » suit le jour où vous avez livré : un colis reçu hier et livré ce matin y figure.",
+            "Un colis de la journée reporté à un autre jour est annoncé au-dessus de la liste : « Voir les colis du … » vous y emmène.",
+            "Le bouton à côté du calendrier bascule : « Toutes les dates » pour tout revoir, puis « Aujourd'hui » pour revenir."
+          ],
+          "astuce": "Si un colis « manque », regardez d'abord la ligne des reportés et le pli « encore en route » : il est presque toujours là."
+        },
+        {
+          "id": "livreur-recuperer",
+          "titre": "Récupérer les colis chez une cliente",
+          "resume": "Un appui par colis, ou tout d'un coup.",
+          "etapes": [
+            "Onglet « Récup. » : la liste des clientes chez qui passer aujourd'hui, avec l'adresse, le téléphone et le nombre de colis annoncés.",
+            "Chez la cliente, appuyez « 📦 Récupéré » sur chaque colis — ou « Tout récupérer » quand vous avez tout.",
+            "Si un colis annoncé n'est pas prêt, laissez-le : le bureau le voit et décidera.",
+            "Une photo du colis est possible dès la récupération : elle sert de preuve si la description est contestée."
+          ]
+        },
+        {
+          "id": "livreur-livrer",
+          "titre": "Livrer un colis, et prendre la preuve",
+          "resume": "« Je pars livrer », puis « Livré » avec la photo. Le montant encaissé est écrit sur la carte.",
+          "etapes": [
+            "Sur la carte : « 🚚 Je pars livrer » quand vous démarrez. Le destinataire peut être prévenu par WhatsApp d'un appui.",
+            "Arrivé, « ✅ Livré ». Si l'argent encaissé diffère de ce qui est écrit, corrigez le montant sur la carte avant d'enregistrer : l'application vous pose la question.",
+            "Prenez la photo de la remise (📷). Elle vous protège en cas de contestation.",
+            "Le colis reste sur la carte du jour, marqué livré, avec l'argent que vous portez."
+          ],
+          "astuce": "Hors réseau, tout est gardé sur le téléphone et envoyé au retour de la connexion. Ne refaites pas le geste."
+        },
+        {
+          "id": "livreur-non-livre",
+          "titre": "Le destinataire est absent, refuse, ou a annulé",
+          "resume": "« ⚠️ Non livré » avec le motif. Puis vous décidez : nouvel essai, ou retour à la cliente.",
+          "etapes": [
+            "Appuyez « ⚠️ Non livré » : choisissez le motif (absent, refus, annulé, mauvais numéro…) et dites si la course a été payée.",
+            "Le colis reste dans votre sacoche et sous vos yeux, jusqu'à votre décision.",
+            "« 🚚 Nouvel essai » pour retenter (aujourd'hui ou reporté à demain), ou « ↩️ Je le rapporte à la cliente » pour le retour.",
+            "Une photo (porte close, refus) vaut mieux que la discussion du lendemain."
+          ]
+        },
+        {
+          "id": "livreur-retour",
+          "titre": "Rendre un colis revenu à sa cliente",
+          "resume": "Un colis revenu est à rendre le lendemain, deux jours au plus tard. Deux gestes : rendu, ou déposé au bureau.",
+          "etapes": [
+            "Le colis revenu porte « ↩️ À rendre à la cliente, au plus tard … ». Passé deux jours, la ligne devient rouge.",
+            "Quand vous le rendez : « ↩️ Rendu à la cliente », avec la photo de la remise. La cliente confirmera de son côté.",
+            "Si vous le déposez au bureau CLT : « 🏢 Déposé au bureau ». Le bureau en devient responsable.",
+            "Un colis rendu ou déposé ne compte plus dans ce que vous détenez."
+          ],
+          "astuce": "La photo de la remise est votre preuve si la cliente dit ne pas l'avoir reçu."
+        },
+        {
+          "id": "livreur-reporter",
+          "titre": "Reporter un colis à demain",
+          "resume": "Un colis qui ne partira pas aujourd'hui change de journée. Il n'est pas perdu.",
+          "etapes": [
+            "Sur la carte, « ⏭️ Reporter » puis le jour. Le colis quitte la journée d'aujourd'hui et rejoint celle du report.",
+            "Il ne compte plus dans le point de ce soir — c'est écrit au-dessus de la liste, avec « Voir les colis du … ».",
+            "« ↩️ Remettre à aujourd'hui » annule le report.",
+            "Vous pouvez prévenir la cliente d'un appui : un message est proposé."
+          ]
+        },
+        {
+          "id": "livreur-argent",
+          "titre": "Le point du soir : ce que je porte et ce que je remets",
+          "resume": "L'addition est écrite : encaissé − avancé de ma poche = à remettre.",
+          "etapes": [
+            "Onglet « Finance » : « Ce que vous portez » — l'argent encaissé sur vos colis du jour.",
+            "Les frais que vous avez payés de votre poche — la gare, le transport, et les frais additionnels — sont déduits : « Avancé de votre poche sur N colis ».",
+            "« Annoncer ma remise » envoie le chiffre au bureau avant que vous arriviez. Le bureau compte et confirme.",
+            "Gardez les reçus de la gare : ils sont retenus sur la vendeuse et vous sont remboursés."
+          ]
+        },
+        {
+          "id": "livreur-avance-de-travail",
+          "titre": "Mon avance de travail : l'argent de CLT que je porte",
+          "resume": "Si CLT vous a remis une avance, ce que vous payez à la gare sort de cette avance, plus de votre poche.",
+          "etapes": [
+            "Onglet « Finance », sous « Ce que vous portez » : « Mon avance de travail » et son solde. Le bloc n'apparaît que si vous en avez une.",
+            "Chaque montant que vous saisissez pour la gare ou pour un frais additionnel fait baisser l'avance, colis par colis — vous voyez la ligne apparaître.",
+            "Le soir, vous remettez simplement ce que vous avez encaissé : plus rien à soustraire.",
+            "Si le solde passe en négatif, c'est que vous avez dépassé l'avance : CLT vous doit cette somme. Dites-le au bureau, gardez les reçus."
+          ]
+        },
+        {
+          "id": "livreur-hors-reseau",
+          "titre": "Quand le réseau coupe",
+          "resume": "Continuez à travailler : tout est gardé sur le téléphone.",
+          "etapes": [
+            "Un bandeau « hors connexion » apparaît. Vos gestes (livré, non livré, photo) sont gardés sur l'appareil.",
+            "Au retour du réseau, tout part tout seul. « ⏳ En attente de synchronisation » disparaît carte par carte.",
+            "Si une carte reste marquée « Non enregistré », prévenez le bureau : le serveur a refusé ce geste-là.",
+            "Ne refaites pas un geste déjà fait hors réseau : il partira."
+          ]
+        }
+      ]
     },
-    {
-     "id": "livreur-recuperer",
-     "titre": "Récupérer les colis chez une cliente",
-     "resume": "Un appui par colis, ou tout d'un coup.",
-     "etapes": [
-      "Onglet « Récup. » : la liste des clientes chez qui passer aujourd'hui, avec l'adresse, le téléphone et le nombre de colis annoncés.",
-      "Chez la cliente, appuyez « 📦 Récupéré » sur chaque colis — ou « Tout récupérer » quand vous avez tout.",
-      "Si un colis annoncé n'est pas prêt, laissez-le : le bureau le voit et décidera.",
-      "Une photo du colis est possible dès la récupération : elle sert de preuve si la description est contestée."
-     ]
+    "fournisseur": {
+      "titre": "Clientes — mes colis, mon relevé, mes retours",
+      "articles": [
+        {
+          "id": "cliente-annoncer",
+          "titre": "Annoncer mes colis et demander un passage",
+          "resume": "Vous enregistrez vos colis ; CLT confirme le passage et vient les prendre.",
+          "etapes": [
+            "Onglet « Ajouter » : destination, téléphone du destinataire, description, montant de l'article et frais de livraison. Plusieurs colis d'un coup : « en lot ».",
+            "« Demander un passage » dit à CLT que vous avez des colis prêts. C'est un souhait : le passage est confirmé par le bureau, et vous le voyez.",
+            "Le jour du passage, le livreur marque chaque colis « Récupéré » : vous le voyez en temps réel dans « Mes colis ».",
+            "Vous pouvez corriger l'adresse, le téléphone et la description tant que le colis n'est pas parti ; les montants, appelez-nous."
+          ]
+        },
+        {
+          "id": "cliente-suivre",
+          "titre": "Suivre un colis",
+          "resume": "Chaque colis a sa frise : Assigné → Récupéré → En livraison → Livré.",
+          "etapes": [
+            "Onglet « Mes colis » : la journée d'aujourd'hui par défaut ; « Toutes les dates » ou une date précise pour le reste.",
+            "La frise en haut de chaque carte dit où il en est. Le nom du livreur et son téléphone sont sur la carte.",
+            "« Lien de suivi » copie une adresse à envoyer au destinataire : il suit son colis sans compte.",
+            "Un colis non livré porte le motif du livreur (absent, refus…) : vous le lisez sans appeler."
+          ]
+        },
+        {
+          "id": "cliente-releve",
+          "titre": "Mon relevé : ce que CLT me doit",
+          "resume": "L'argent de vos articles encaissé à la livraison, moins ce qui vous a déjà été reversé.",
+          "etapes": [
+            "Onglet « Récap » : « Mon relevé » en tête — total encaissé pour vous, déjà reversé, reste à percevoir.",
+            "Chaque reversement a son reçu, avec la liste des colis qu'il couvre.",
+            "Les frais d'expédition avancés par le livreur (gare) sont retenus sur votre relevé : ils sont écrits ligne par ligne.",
+            "Un chiffre vous semble faux ? « Signaler un problème » sur le colis, ou appelez-nous : la conversation laisse une trace."
+          ]
+        },
+        {
+          "id": "cliente-retour",
+          "titre": "Un colis revient : où est-il, et confirmer sa remise",
+          "resume": "L'onglet s'ouvre sur les retours du jour. Vous voyez entre quelles mains est chaque colis, et vous confirmez sa remise.",
+          "etapes": [
+            "Au-dessus de « Mes colis », une ligne compte vos colis qui reviennent. « Voir » les affiche.",
+            "L'onglet s'ouvre sur AUJOURD'HUI. Pour un autre jour, changez la date ; « Toutes les dates » montre tout.",
+            "Les colis que le livreur dit vous avoir rendus restent affichés en haut, quelle que soit la date : ce sont eux qui attendent votre réponse.",
+            "Quand le livreur indique vous l'avoir rendu, vous recevez une notification sur votre téléphone : c'est le seul moment où l'on attend une réponse de vous.",
+            "Sur la carte : « chez le livreur » (il vous le rapporte sous deux jours), « au bureau CLT », ou « rendu ».",
+            "Quand le livreur indique vous l'avoir rendu : « ✔ Oui, bien récupéré » clôt le retour ; « ✖ Non, je ne l'ai pas » ouvre un litige que CLT traite.",
+            "« Le parcours de ce colis » montre chaque passage de main, daté."
+          ]
+        },
+        {
+          "id": "cliente-signaler",
+          "titre": "Signaler un problème",
+          "resume": "Colis abîmé, montant faux, retard : un signalement en deux touches, et une réponse dans votre espace.",
+          "etapes": [
+            "Sur la carte du colis (livré, non livré ou revenu) : « ⚠️ Signaler un problème ».",
+            "Choisissez le motif, ajoutez un mot si vous voulez, envoyez.",
+            "Le bureau reçoit le signalement et vous répond ici même : l'état passe de « ouvert » à « en cours » puis « résolu »."
+          ]
+        },
+        {
+          "id": "cliente-boutiques",
+          "titre": "Plusieurs boutiques : « Mes boutiques »",
+          "resume": "Si vous avez plusieurs boutiques tenues par des gérants, votre compte peut toutes les voir.",
+          "etapes": [
+            "Demandez à CLT de rattacher les comptes de vos gérants à votre compte.",
+            "« Mes boutiques » apparaît en tête de Récap : le total du jour de toutes vos boutiques, puis une tuile par boutique.",
+            "Un appui sur une boutique ouvre son point du jour et ses colis — en lecture : les gérants restent responsables de leurs colis."
+          ]
+        }
+      ]
     },
-    {
-     "id": "livreur-livrer",
-     "titre": "Livrer un colis, et prendre la preuve",
-     "resume": "« Je pars livrer », puis « Livré » avec la photo. Le montant encaissé est écrit sur la carte.",
-     "etapes": [
-      "Sur la carte : « 🚚 Je pars livrer » quand vous démarrez. Le destinataire peut être prévenu par WhatsApp d'un appui.",
-      "Arrivé, « ✅ Livré ». Si l'argent encaissé diffère de ce qui est écrit, corrigez le montant sur la carte avant d'enregistrer : l'application vous pose la question.",
-      "Prenez la photo de la remise (📷). Elle vous protège en cas de contestation.",
-      "Le colis reste sur la carte du jour, marqué livré, avec l'argent que vous portez."
-     ],
-     "astuce": "Hors réseau, tout est gardé sur le téléphone et envoyé au retour de la connexion. Ne refaites pas le geste."
+    "equipe": {
+      "titre": "Bureau — le suivi au quotidien",
+      "articles": [
+        {
+          "id": "equipe-tutoriel",
+          "titre": "Le tutoriel complet : les gestes essentiels du suivi",
+          "resume": "Huit pages avec captures : le matin, le soir, chercher un colis, les retours niveau par niveau, ce qui est derrière « Plus ».",
+          "etapes": [
+            "Ouvrez le PDF ci-dessous. Il correspond à la version en ligne de l'application.",
+            "À faire lire à toute nouvelle personne du bureau le premier jour."
+          ],
+          "medias": [
+            {
+              "type": "pdf",
+              "url": "aide/tutoriel-suivi-espace-equipe.pdf",
+              "label": "Tutoriel — Les gestes essentiels du suivi (PDF, 8 pages)"
+            }
+          ]
+        },
+        {
+          "id": "equipe-accueil",
+          "titre": "Ouvrir la journée : L'essentiel",
+          "resume": "Tout ce qui attend, toutes dates confondues. Rouge = avant tout.",
+          "etapes": [
+            "« Aujourd'hui » : reçus, livrés, échecs, encore en cours.",
+            "« À faire » : colis sans livreur, à confier en collecte — chaque pastille ouvre la liste déjà filtrée.",
+            "« À examiner » : en livraison depuis hier, non livrés ou retours, retours en retard, réclamations.",
+            "« Argent non remis » : les livreurs qui n'ont pas rendu leur caisse. À zéro à la fermeture."
+          ]
+        },
+        {
+          "id": "equipe-chercher",
+          "titre": "Chercher un colis ou une personne",
+          "resume": "La barre en haut cherche tout : numéro, téléphone, nom, description, destination.",
+          "etapes": [
+            "Tapez au moins trois caractères, ou les huit derniers chiffres d'un téléphone.",
+            "Un appui sur un résultat ouvre le colis (dans sa journée) ou la fiche de la personne.",
+            "Un colis absent de sa journée a souvent été reporté : la ligne « reportés » au-dessus de la liste le dit, « Les voir » y emmène."
+          ]
+        },
+        {
+          "id": "equipe-retours",
+          "titre": "Retours et non livrés : où est chaque colis",
+          "resume": "L'onglet Retours liste tout ce qui n'est pas encore entre les mains de la cliente, du plus urgent au moins urgent.",
+          "etapes": [
+            "Niveaux : non livré (sacoche du livreur, sans décision) → chez le livreur → au bureau → rendu, à confirmer → confirmé. Et « litige » quand la cliente dit ne pas l'avoir.",
+            "Deux côtés en haut de l'écran : « Retours » et « Non livrés », chacun avec son nombre. Dessous, « Chercher ici » : tapez un bout d'adresse, une commune, un numéro ou un téléphone.",
+            "« Reprogrammer » : choisissez le jour et le livreur, puis « Enregistrer » ; le colis repart en livraison ce jour-là. Inutile de passer par « Modifier ».",
+            "Autres gestes : « Reçu au bureau », « Rendu à la cliente », « Confier à un livreur », « Corriger — ce n'était pas rendu ».",
+            "« Historique » sous chaque colis : chaque passage de main, daté et signé.",
+            "Chaque matin : traiter les lignes rouges (litiges, retards), puis appeler les clientes des « à confirmer » de plus de deux jours."
+          ]
+        },
+        {
+          "id": "equipe-tournees",
+          "titre": "Programmer les récupérations de demain",
+          "resume": "Tournées décide demain ; Colis vit aujourd'hui. Ne les confondez pas.",
+          "etapes": [
+            "Onglet Tournées, le soir : les clientes qui ont annoncé des colis ou demandé un passage.",
+            "Choisissez le livreur de collecte, confirmez. La cliente voit « passage confirmé », le livreur voit sa tournée.",
+            "Une demande de passage non confirmée n'envoie personne."
+          ]
+        },
+        {
+          "id": "equipe-remise",
+          "titre": "Le point du soir : remises et argent",
+          "resume": "Le livreur annonce, le bureau compte et confirme. L'écart est écrit.",
+          "etapes": [
+            "Le livreur annonce sa remise depuis son téléphone : encaissé − avancé de sa poche = à remettre.",
+            "Plus → Finances → Remises : comptez, confirmez. Un écart est enregistré tel quel.",
+            "Suivi → Corrections de montants : relire ce que les livreurs ont corrigé sur le terrain.",
+            "Finances → L'argent des clientes chez nous : reverser à une cliente, produire le reçu, corriger une erreur depuis les reçus."
+          ]
+        },
+        {
+          "id": "equipe-comptes",
+          "titre": "Créer un compte, rattacher des boutiques",
+          "resume": "Plus → Comptes. Le compte est actif tout de suite.",
+          "etapes": [
+            "« Nouveau compte client » ou « Nouveau compte livreur » : nom, téléphone, mot de passe. Communiquez le mot de passe ; la personne le change dans « Mon compte ».",
+            "Un propriétaire de plusieurs boutiques : sur son compte, ⋮ → « Boutiques supervisées » → rattacher les comptes de ses gérants.",
+            "Suspendre, réinitialiser le mot de passe, corriger la fiche : même menu ⋮.",
+            "Administrateur : ⋮ → « 👁 Voir son écran » ouvre l'écran d'un livreur ou d'une cliente, avec ses données : lecture seule d'abord, « ✏️ Modifier » sur le bandeau pour agir sous votre nom."
+          ]
+        }
+      ]
     },
-    {
-     "id": "livreur-non-livre",
-     "titre": "Le destinataire est absent, refuse, ou a annulé",
-     "resume": "« ⚠️ Non livré » avec le motif. Puis vous décidez : nouvel essai, ou retour à la cliente.",
-     "etapes": [
-      "Appuyez « ⚠️ Non livré » : choisissez le motif (absent, refus, annulé, mauvais numéro…) et dites si la course a été payée.",
-      "Le colis reste dans votre sacoche et sous vos yeux, jusqu'à votre décision.",
-      "« 🚚 Nouvel essai » pour retenter (aujourd'hui ou reporté à demain), ou « ↩️ Je le rapporte à la cliente » pour le retour.",
-      "Une photo (porte close, refus) vaut mieux que la discussion du lendemain."
-     ]
+    "express-client": {
+      "titre": "CLT Express — je commande une course",
+      "articles": [
+        {
+          "id": "express-commander",
+          "titre": "Commander une course",
+          "resume": "Un départ, une arrivée, le prix connu avant de confirmer.",
+          "etapes": [
+            "Onglet « Nouvelle » : choisissez la commune de récupération et celle de livraison, avec une adresse précise (quartier, repère).",
+            "Indiquez le téléphone du destinataire (obligatoire) et ce qu'il faut livrer. Une photo du colis aide le coursier à le reconnaître.",
+            "Le prix estimé, la distance et le délai s'affichent dès que les deux communes sont choisies.",
+            "« Commander cette livraison », relisez le récapitulatif, puis « Commander »."
+          ],
+          "astuce": "« 📍 Placer le point précis sur la carte » aux deux adresses : le prix affiché devient exactement celui qui sera facturé."
+        },
+        {
+          "id": "express-adresses",
+          "titre": "Mes adresses : Domicile, Bureau…",
+          "resume": "Enregistrez une adresse une fois, réutilisez-la d'un appui.",
+          "etapes": [
+            "Remplissez la commune et l'adresse précise, puis « ＋ Enregistrer cette adresse » et donnez-lui un nom.",
+            "La prochaine fois, touchez la puce « 📍 Domicile » : la commune et l'adresse se remplissent. Elle sert au départ comme à l'arrivée.",
+            "La croix × sur la puce la supprime."
+          ],
+          "astuce": "Vos adresses suivent votre compte : vous les retrouvez sur un autre téléphone."
+        },
+        {
+          "id": "express-suivre",
+          "titre": "Suivre ma course",
+          "resume": "Qui vient, où il est, et comment lui parler.",
+          "etapes": [
+            "Onglet « Mes courses » : la frise dit où en est la course — En attente, Coursier en route, Colis récupéré, Livrée.",
+            "Dès qu'un coursier accepte, vous voyez son nom, son numéro (appel ou WhatsApp) et sa position sur la carte.",
+            "« 💬 Discuter avec le coursier » pour un mot rapide : « je suis devant le portail »."
+          ],
+          "astuce": "« Dernière position il y a X min » : le coursier a perdu le réseau ou coupé le partage. Appelez-le."
+        },
+        {
+          "id": "express-annuler",
+          "titre": "Annuler une course",
+          "resume": "Possible tant qu'aucun coursier ne l'a prise — et c'est sans frais.",
+          "etapes": [
+            "Dans « Mes courses », le bouton « Annuler » est là tant que la course est « En attente d'un coursier ».",
+            "Une fois un coursier en route, la course ne s'annule plus depuis l'application : appelez-le, ou joignez CLT."
+          ]
+        },
+        {
+          "id": "express-payer",
+          "titre": "Payer, puis noter le coursier",
+          "resume": "En espèces, au coursier, à la livraison.",
+          "etapes": [
+            "Le montant à régler est rappelé dans « Mes courses » dès qu'un coursier est en route.",
+            "Vous payez en espèces au coursier, à la livraison. Si le paiement par Wave vous est proposé, un bouton apparaît au même endroit.",
+            "Après la livraison : « ⭐ Notez votre coursier ». Votre note aide les autres clients."
+          ]
+        }
+      ]
     },
-    {
-     "id": "livreur-retour",
-     "titre": "Rendre un colis revenu à sa cliente",
-     "resume": "Un colis revenu est à rendre le lendemain, deux jours au plus tard. Deux gestes : rendu, ou déposé au bureau.",
-     "etapes": [
-      "Le colis revenu porte « ↩️ À rendre à la cliente, au plus tard … ». Passé deux jours, la ligne devient rouge.",
-      "Quand vous le rendez : « ↩️ Rendu à la cliente », avec la photo de la remise. La cliente confirmera de son côté.",
-      "Si vous le déposez au bureau CLT : « 🏢 Déposé au bureau ». Le bureau en devient responsable.",
-      "Un colis rendu ou déposé ne compte plus dans ce que vous détenez."
-     ],
-     "astuce": "La photo de la remise est votre preuve si la cliente dit ne pas l'avoir reçu."
+    "express-coursier": {
+      "titre": "CLT Express — je fais des courses",
+      "articles": [
+        {
+          "id": "coursier-disponible",
+          "titre": "Me mettre disponible",
+          "resume": "Sans l'interrupteur, aucune course ne s'affiche.",
+          "etapes": [
+            "Onglet « Dispo » : allumez « Je suis disponible ». Les courses proches de vous apparaissent en dessous.",
+            "Autorisez la localisation : sans elle, toutes les courses s'affichent, même les plus lointaines.",
+            "Éteignez l'interrupteur quand vous arrêtez : vous ne serez plus sollicité."
+          ],
+          "astuce": "Une nouvelle course sonne et vibre, avec l'étiquette « NOUVEAU ». Gardez l'application ouverte."
+        },
+        {
+          "id": "coursier-accepter",
+          "titre": "Accepter une course",
+          "resume": "Le premier qui accepte l'emporte.",
+          "etapes": [
+            "Chaque course dit le trajet, sa distance, à combien de km elle est de vous, et ce qui vous revient.",
+            "« Accepter » : la course passe dans « Mes courses ». Si un autre a été plus rapide, l'écran vous le dit et elle disparaît.",
+            "Un empêchement AVANT d'avoir récupéré le colis ? « Je ne peux pas la faire » la rend aux autres coursiers."
+          ],
+          "astuce": "Ne rendez une course que si vous ne pouvez vraiment pas l'assurer : le client attend."
+        },
+        {
+          "id": "coursier-livrer",
+          "titre": "Récupérer, livrer, encaisser",
+          "resume": "Deux boutons, dans l'ordre : « J'ai récupéré le colis », puis « Marquer livrée ».",
+          "etapes": [
+            "« 🧭 Itinéraire » ouvre le trajet vers le point de récupération, puis vers la livraison.",
+            "Au départ : « J'ai récupéré le colis ». À l'arrivée : encaissez le montant affiché (« 💵 Espèces à encaisser »), puis « Marquer livrée ».",
+            "Un doute sur l'adresse ? Appelez le client ou le destinataire, ou « 💬 Discuter avec le client »."
+          ],
+          "astuce": "Si la course est payée en ligne (Wave), l'écran le dit : n'encaissez rien. Et tant que le paiement n'est pas confirmé, ne livrez pas."
+        },
+        {
+          "id": "coursier-position",
+          "titre": "Ma position pendant une course",
+          "resume": "Partagée toute seule pendant la course, effacée à la fin.",
+          "etapes": [
+            "À la première course, l'application demande votre accord : « J'ai compris et j'accepte ».",
+            "Pendant une course, le client et l'équipe voient où vous êtes. Dès qu'elle est livrée ou annulée, le partage s'arrête.",
+            "« Position non partagée — à autoriser » : autorisez la localisation pour l'application et vérifiez que le GPS est allumé. Le partage reprend tout seul."
+          ]
+        },
+        {
+          "id": "coursier-solde",
+          "titre": "Mon solde : pourquoi, et comment le recharger",
+          "resume": "La commission de CLT est prélevée sur votre solde ; sous le minimum, plus de courses.",
+          "etapes": [
+            "Vous encaissez le prix de la course en espèces. La part de CLT est déduite de votre solde, à chaque course livrée.",
+            "Onglet « Solde » › « ➕ Recharger mon solde » : choisissez l'opérateur, envoyez le montant au numéro de CLT affiché, puis indiquez le montant et la RÉFÉRENCE du reçu (ou du SMS), et « Déclarer mon envoi ».",
+            "La référence est obligatoire : c'est elle qui prouve votre paiement. Un même envoi ne se déclare qu'une fois. « Envoyer le reçu à CLT sur WhatsApp » : joignez la capture, l'équipe valide plus vite.",
+            "Vous passez au bureau ? Choisissez « Espèces au bureau », indiquez le montant, remettez les billets : l'équipe valide devant vous.",
+            "L'équipe valide : votre solde est crédité. « Mes recharges » dit où en est chaque envoi ; « Mes débits » liste chaque commission."
+          ],
+          "astuce": "Notez la référence reçue par SMS dans la déclaration : la validation est plus rapide."
+        },
+        {
+          "id": "coursier-bloque",
+          "titre": "« Solde insuffisant » : je ne peux plus accepter",
+          "resume": "Les boutons « Accepter » sont grisés tant que le solde est sous le minimum.",
+          "etapes": [
+            "Le minimum requis est écrit sous votre solde, dans l'onglet « Solde ».",
+            "Rechargez : dès que l'équipe a validé l'envoi, les courses redeviennent acceptables."
+          ]
+        }
+      ]
     },
-    {
-     "id": "livreur-reporter",
-     "titre": "Reporter un colis à demain",
-     "resume": "Un colis qui ne partira pas aujourd'hui change de journée. Il n'est pas perdu.",
-     "etapes": [
-      "Sur la carte, « ⏭️ Reporter » puis le jour. Le colis quitte la journée d'aujourd'hui et rejoint celle du report.",
-      "Il ne compte plus dans le point de ce soir — c'est écrit au-dessus de la liste, avec « Voir les colis du … ».",
-      "« ↩️ Remettre à aujourd'hui » annule le report.",
-      "Vous pouvez prévenir la cliente d'un appui : un message est proposé."
-     ]
-    },
-    {
-     "id": "livreur-argent",
-     "titre": "Le point du soir : ce que je porte et ce que je remets",
-     "resume": "L'addition est écrite : encaissé − avancé de ma poche = à remettre.",
-     "etapes": [
-      "Onglet « Finance » : « Ce que vous portez » — l'argent encaissé sur vos colis du jour.",
-      "Les frais que vous avez payés de votre poche sur les expéditions (gare, transport) sont déduits : « Avancé de votre poche sur N expéditions ».",
-      "« Annoncer ma remise » envoie le chiffre au bureau avant que vous arriviez. Le bureau compte et confirme.",
-      "Gardez les reçus de la gare : ils sont retenus sur la vendeuse et vous sont remboursés."
-     ]
-    },
-    {
-     "id": "livreur-hors-reseau",
-     "titre": "Quand le réseau coupe",
-     "resume": "Continuez à travailler : tout est gardé sur le téléphone.",
-     "etapes": [
-      "Un bandeau « hors connexion » apparaît. Vos gestes (livré, non livré, photo) sont gardés sur l'appareil.",
-      "Au retour du réseau, tout part tout seul. « ⏳ En attente de synchronisation » disparaît carte par carte.",
-      "Si une carte reste marquée « Non enregistré », prévenez le bureau : le serveur a refusé ce geste-là.",
-      "Ne refaites pas un geste déjà fait hors réseau : il partira."
-     ]
+    "tous": {
+      "titre": "Pour tout le monde",
+      "articles": [
+        {
+          "id": "installer",
+          "titre": "Installer l'application sur mon téléphone",
+          "resume": "Android : un bouton. iPhone : Partager → Sur l'écran d'accueil.",
+          "etapes": [
+            "Menu ☰ → « 📲 Installer l'application ».",
+            "Android (Chrome) et ordinateur : la fenêtre d'installation s'ouvre, acceptez. L'icône est sur l'écran d'accueil.",
+            "iPhone : ouvrez le site dans Safari, bouton Partager (le carré avec la flèche), puis « Sur l'écran d'accueil ». Le bouton de l'application vous montre la marche à suivre illustrée.",
+            "Une fois installée, l'application s'ouvre plein écran et vous reste connecté."
+          ],
+          "medias": [
+            {
+              "type": "lien",
+              "url": "/installer.html",
+              "label": "La marche à suivre illustrée, Android et iPhone"
+            }
+          ]
+        },
+        {
+          "id": "nouveautes",
+          "titre": "Quoi de neuf dans l'application",
+          "resume": "Chaque mise à jour est expliquée en deux lignes.",
+          "etapes": [
+            "Quand une mise à jour arrive, un bandeau le dit : « Mettre à jour », puis « Quoi de neuf ? ».",
+            "Vous pouvez relire les nouveautés à tout moment depuis la page de connexion."
+          ]
+        },
+        {
+          "id": "mon-compte",
+          "titre": "Mon compte : photo, nom, téléphone, mot de passe",
+          "resume": "Menu ☰ → Mon compte.",
+          "etapes": [
+            "Changez votre photo, votre nom, votre téléphone (un code de confirmation est envoyé) et votre mot de passe.",
+            "Mot de passe oublié : depuis la page de connexion, demandez une réinitialisation ; le bureau la valide."
+          ]
+        },
+        {
+          "id": "joindre",
+          "titre": "Joindre CLT",
+          "resume": "Appels : 07 79 60 47 61 ou 01 70 40 73 12 · WhatsApp : 05 46 81 86 40 · contact@christlivraison.ci",
+          "etapes": [
+            "Pour un colis précis, signalez-le d'abord dans l'application : la conversation part de là et laisse une trace.",
+            "Pour le reste, WhatsApp ou téléphone aux heures du bureau."
+          ]
+        }
+      ]
     }
-   ]
-  },
-  "fournisseur": {
-   "titre": "Clientes — mes colis, mon relevé, mes retours",
-   "articles": [
-    {
-     "id": "cliente-annoncer",
-     "titre": "Annoncer mes colis et demander un passage",
-     "resume": "Vous enregistrez vos colis ; CLT confirme le passage et vient les prendre.",
-     "etapes": [
-      "Onglet « Ajouter » : destination, téléphone du destinataire, description, montant de l'article et frais de livraison. Plusieurs colis d'un coup : « en lot ».",
-      "« Demander un passage » dit à CLT que vous avez des colis prêts. C'est un souhait : le passage est confirmé par le bureau, et vous le voyez.",
-      "Le jour du passage, le livreur marque chaque colis « Récupéré » : vous le voyez en temps réel dans « Mes colis ».",
-      "Vous pouvez corriger l'adresse, le téléphone et la description tant que le colis n'est pas parti ; les montants, appelez-nous."
-     ]
-    },
-    {
-     "id": "cliente-suivre",
-     "titre": "Suivre un colis",
-     "resume": "Chaque colis a sa frise : Assigné → Récupéré → En livraison → Livré.",
-     "etapes": [
-      "Onglet « Mes colis » : la journée d'aujourd'hui par défaut ; « Toutes les dates » ou une date précise pour le reste.",
-      "La frise en haut de chaque carte dit où il en est. Le nom du livreur et son téléphone sont sur la carte.",
-      "« Lien de suivi » copie une adresse à envoyer au destinataire : il suit son colis sans compte.",
-      "Un colis non livré porte le motif du livreur (absent, refus…) : vous le lisez sans appeler."
-     ]
-    },
-    {
-     "id": "cliente-releve",
-     "titre": "Mon relevé : ce que CLT me doit",
-     "resume": "L'argent de vos articles encaissé à la livraison, moins ce qui vous a déjà été reversé.",
-     "etapes": [
-      "Onglet « Récap » : « Mon relevé » en tête — total encaissé pour vous, déjà reversé, reste à percevoir.",
-      "Chaque reversement a son reçu, avec la liste des colis qu'il couvre.",
-      "Les frais d'expédition avancés par le livreur (gare) sont retenus sur votre relevé : ils sont écrits ligne par ligne.",
-      "Un chiffre vous semble faux ? « Signaler un problème » sur le colis, ou appelez-nous : la conversation laisse une trace."
-     ]
-    },
-    {
-     "id": "cliente-retour",
-     "titre": "Un colis revient : où est-il, et confirmer sa remise",
-     "resume": "L'onglet s'ouvre sur les retours du jour. Vous voyez entre quelles mains est chaque colis, et vous confirmez sa remise.",
-     "etapes": [
-      "Au-dessus de « Mes colis », une ligne compte vos colis qui reviennent. « Voir » les affiche.",
-      "L'onglet s'ouvre sur AUJOURD'HUI. Pour un autre jour, changez la date ; « Toutes les dates » montre tout.",
-      "Les colis que le livreur dit vous avoir rendus restent affichés en haut, quelle que soit la date : ce sont eux qui attendent votre réponse.",
-      "Quand le livreur indique vous l'avoir rendu, vous recevez une notification sur votre téléphone : c'est le seul moment où l'on attend une réponse de vous.",
-      "Sur la carte : « chez le livreur » (il vous le rapporte sous deux jours), « au bureau CLT », ou « rendu ».",
-      "Quand le livreur indique vous l'avoir rendu : « ✔ Oui, bien récupéré » clôt le retour ; « ✖ Non, je ne l'ai pas » ouvre un litige que CLT traite.",
-      "« Le parcours de ce colis » montre chaque passage de main, daté."
-     ]
-    },
-    {
-     "id": "cliente-signaler",
-     "titre": "Signaler un problème",
-     "resume": "Colis abîmé, montant faux, retard : un signalement en deux touches, et une réponse dans votre espace.",
-     "etapes": [
-      "Sur la carte du colis (livré, non livré ou revenu) : « ⚠️ Signaler un problème ».",
-      "Choisissez le motif, ajoutez un mot si vous voulez, envoyez.",
-      "Le bureau reçoit le signalement et vous répond ici même : l'état passe de « ouvert » à « en cours » puis « résolu »."
-     ]
-    },
-    {
-     "id": "cliente-boutiques",
-     "titre": "Plusieurs boutiques : « Mes boutiques »",
-     "resume": "Si vous avez plusieurs boutiques tenues par des gérants, votre compte peut toutes les voir.",
-     "etapes": [
-      "Demandez à CLT de rattacher les comptes de vos gérants à votre compte.",
-      "« Mes boutiques » apparaît en tête de Récap : le total du jour de toutes vos boutiques, puis une tuile par boutique.",
-      "Un appui sur une boutique ouvre son point du jour et ses colis — en lecture : les gérants restent responsables de leurs colis."
-     ]
-    }
-   ]
-  },
-  "equipe": {
-   "titre": "Bureau — le suivi au quotidien",
-   "articles": [
-    {
-     "id": "equipe-tutoriel",
-     "titre": "Le tutoriel complet : les gestes essentiels du suivi",
-     "resume": "Huit pages avec captures : le matin, le soir, chercher un colis, les retours niveau par niveau, ce qui est derrière « Plus ».",
-     "etapes": [
-      "Ouvrez le PDF ci-dessous. Il correspond à la version en ligne de l'application.",
-      "À faire lire à toute nouvelle personne du bureau le premier jour."
-     ],
-     "medias": [
-      {
-       "type": "pdf",
-       "url": "aide/tutoriel-suivi-espace-equipe.pdf",
-       "label": "Tutoriel — Les gestes essentiels du suivi (PDF, 8 pages)"
-      }
-     ]
-    },
-    {
-     "id": "equipe-accueil",
-     "titre": "Ouvrir la journée : L'essentiel",
-     "resume": "Tout ce qui attend, toutes dates confondues. Rouge = avant tout.",
-     "etapes": [
-      "« Aujourd'hui » : reçus, livrés, échecs, encore en cours.",
-      "« À faire » : colis sans livreur, à confier en collecte — chaque pastille ouvre la liste déjà filtrée.",
-      "« À examiner » : en livraison depuis hier, non livrés ou retours, retours en retard, réclamations.",
-      "« Argent non remis » : les livreurs qui n'ont pas rendu leur caisse. À zéro à la fermeture."
-     ]
-    },
-    {
-     "id": "equipe-chercher",
-     "titre": "Chercher un colis ou une personne",
-     "resume": "La barre en haut cherche tout : numéro, téléphone, nom, description, destination.",
-     "etapes": [
-      "Tapez au moins trois caractères, ou les huit derniers chiffres d'un téléphone.",
-      "Un appui sur un résultat ouvre le colis (dans sa journée) ou la fiche de la personne.",
-      "Un colis absent de sa journée a souvent été reporté : la ligne « reportés » au-dessus de la liste le dit, « Les voir » y emmène."
-     ]
-    },
-    {
-     "id": "equipe-retours",
-     "titre": "Retours et non livrés : où est chaque colis",
-     "resume": "L'onglet Retours liste tout ce qui n'est pas encore entre les mains de la cliente, du plus urgent au moins urgent.",
-     "etapes": [
-      "Niveaux : non livré (sacoche du livreur, sans décision) → chez le livreur → au bureau → rendu, à confirmer → confirmé. Et « litige » quand la cliente dit ne pas l'avoir.",
-      "Deux côtés en haut de l'écran : « Retours » et « Non livrés », chacun avec son nombre. Dessous, « Chercher ici » : tapez un bout d'adresse, une commune, un numéro ou un téléphone.",
-      "« Reprogrammer » : choisissez le jour et le livreur, puis « Enregistrer » ; le colis repart en livraison ce jour-là. Inutile de passer par « Modifier ».",
-      "Autres gestes : « Reçu au bureau », « Rendu à la cliente », « Confier à un livreur », « Corriger — ce n'était pas rendu ».",
-      "« Historique » sous chaque colis : chaque passage de main, daté et signé.",
-      "Chaque matin : traiter les lignes rouges (litiges, retards), puis appeler les clientes des « à confirmer » de plus de deux jours."
-     ]
-    },
-    {
-     "id": "equipe-tournees",
-     "titre": "Programmer les récupérations de demain",
-     "resume": "Tournées décide demain ; Colis vit aujourd'hui. Ne les confondez pas.",
-     "etapes": [
-      "Onglet Tournées, le soir : les clientes qui ont annoncé des colis ou demandé un passage.",
-      "Choisissez le livreur de collecte, confirmez. La cliente voit « passage confirmé », le livreur voit sa tournée.",
-      "Une demande de passage non confirmée n'envoie personne."
-     ]
-    },
-    {
-     "id": "equipe-remise",
-     "titre": "Le point du soir : remises et argent",
-     "resume": "Le livreur annonce, le bureau compte et confirme. L'écart est écrit.",
-     "etapes": [
-      "Le livreur annonce sa remise depuis son téléphone : encaissé − avancé de sa poche = à remettre.",
-      "Plus → Finances → Remises : comptez, confirmez. Un écart est enregistré tel quel.",
-      "Suivi → Corrections de montants : relire ce que les livreurs ont corrigé sur le terrain.",
-      "Finances → L'argent des clientes chez nous : reverser à une cliente, produire le reçu, corriger une erreur depuis les reçus."
-     ]
-    },
-    {
-     "id": "equipe-comptes",
-     "titre": "Créer un compte, rattacher des boutiques",
-     "resume": "Plus → Comptes. Le compte est actif tout de suite.",
-     "etapes": [
-      "« Nouveau compte client » ou « Nouveau compte livreur » : nom, téléphone, mot de passe. Communiquez le mot de passe ; la personne le change dans « Mon compte ».",
-      "Un propriétaire de plusieurs boutiques : sur son compte, ⋮ → « Boutiques supervisées » → rattacher les comptes de ses gérants.",
-      "Suspendre, réinitialiser le mot de passe, corriger la fiche : même menu ⋮.",
-      "Administrateur : ⋮ → « 👁 Voir son écran » ouvre l'écran d'un livreur ou d'une cliente, avec ses données : lecture seule d'abord, « ✏️ Modifier » sur le bandeau pour agir sous votre nom."
-     ]
-    }
-   ]
-  },
-  "express-client": {
-   "titre": "CLT Express — je commande une course",
-   "articles": [
-    {
-     "id": "express-commander",
-     "titre": "Commander une course",
-     "resume": "Un départ, une arrivée, le prix connu avant de confirmer.",
-     "etapes": [
-      "Onglet « Nouvelle » : choisissez la commune de récupération et celle de livraison, avec une adresse précise (quartier, repère).",
-      "Indiquez le téléphone du destinataire (obligatoire) et ce qu'il faut livrer. Une photo du colis aide le coursier à le reconnaître.",
-      "Le prix estimé, la distance et le délai s'affichent dès que les deux communes sont choisies.",
-      "« Commander cette livraison », relisez le récapitulatif, puis « Commander »."
-     ],
-     "astuce": "« 📍 Placer le point précis sur la carte » aux deux adresses : le prix affiché devient exactement celui qui sera facturé."
-    },
-    {
-     "id": "express-adresses",
-     "titre": "Mes adresses : Domicile, Bureau…",
-     "resume": "Enregistrez une adresse une fois, réutilisez-la d'un appui.",
-     "etapes": [
-      "Remplissez la commune et l'adresse précise, puis « ＋ Enregistrer cette adresse » et donnez-lui un nom.",
-      "La prochaine fois, touchez la puce « 📍 Domicile » : la commune et l'adresse se remplissent. Elle sert au départ comme à l'arrivée.",
-      "La croix × sur la puce la supprime."
-     ],
-     "astuce": "Vos adresses suivent votre compte : vous les retrouvez sur un autre téléphone."
-    },
-    {
-     "id": "express-suivre",
-     "titre": "Suivre ma course",
-     "resume": "Qui vient, où il est, et comment lui parler.",
-     "etapes": [
-      "Onglet « Mes courses » : la frise dit où en est la course — En attente, Coursier en route, Colis récupéré, Livrée.",
-      "Dès qu'un coursier accepte, vous voyez son nom, son numéro (appel ou WhatsApp) et sa position sur la carte.",
-      "« 💬 Discuter avec le coursier » pour un mot rapide : « je suis devant le portail »."
-     ],
-     "astuce": "« Dernière position il y a X min » : le coursier a perdu le réseau ou coupé le partage. Appelez-le."
-    },
-    {
-     "id": "express-annuler",
-     "titre": "Annuler une course",
-     "resume": "Possible tant qu'aucun coursier ne l'a prise — et c'est sans frais.",
-     "etapes": [
-      "Dans « Mes courses », le bouton « Annuler » est là tant que la course est « En attente d'un coursier ».",
-      "Une fois un coursier en route, la course ne s'annule plus depuis l'application : appelez-le, ou joignez CLT."
-     ]
-    },
-    {
-     "id": "express-payer",
-     "titre": "Payer, puis noter le coursier",
-     "resume": "En espèces, au coursier, à la livraison.",
-     "etapes": [
-      "Le montant à régler est rappelé dans « Mes courses » dès qu'un coursier est en route.",
-      "Vous payez en espèces au coursier, à la livraison. Si le paiement par Wave vous est proposé, un bouton apparaît au même endroit.",
-      "Après la livraison : « ⭐ Notez votre coursier ». Votre note aide les autres clients."
-     ]
-    }
-   ]
-  },
-  "express-coursier": {
-   "titre": "CLT Express — je fais des courses",
-   "articles": [
-    {
-     "id": "coursier-disponible",
-     "titre": "Me mettre disponible",
-     "resume": "Sans l'interrupteur, aucune course ne s'affiche.",
-     "etapes": [
-      "Onglet « Dispo » : allumez « Je suis disponible ». Les courses proches de vous apparaissent en dessous.",
-      "Autorisez la localisation : sans elle, toutes les courses s'affichent, même les plus lointaines.",
-      "Éteignez l'interrupteur quand vous arrêtez : vous ne serez plus sollicité."
-     ],
-     "astuce": "Une nouvelle course sonne et vibre, avec l'étiquette « NOUVEAU ». Gardez l'application ouverte."
-    },
-    {
-     "id": "coursier-accepter",
-     "titre": "Accepter une course",
-     "resume": "Le premier qui accepte l'emporte.",
-     "etapes": [
-      "Chaque course dit le trajet, sa distance, à combien de km elle est de vous, et ce qui vous revient.",
-      "« Accepter » : la course passe dans « Mes courses ». Si un autre a été plus rapide, l'écran vous le dit et elle disparaît.",
-      "Un empêchement AVANT d'avoir récupéré le colis ? « Je ne peux pas la faire » la rend aux autres coursiers."
-     ],
-     "astuce": "Ne rendez une course que si vous ne pouvez vraiment pas l'assurer : le client attend."
-    },
-    {
-     "id": "coursier-livrer",
-     "titre": "Récupérer, livrer, encaisser",
-     "resume": "Deux boutons, dans l'ordre : « J'ai récupéré le colis », puis « Marquer livrée ».",
-     "etapes": [
-      "« 🧭 Itinéraire » ouvre le trajet vers le point de récupération, puis vers la livraison.",
-      "Au départ : « J'ai récupéré le colis ». À l'arrivée : encaissez le montant affiché (« 💵 Espèces à encaisser »), puis « Marquer livrée ».",
-      "Un doute sur l'adresse ? Appelez le client ou le destinataire, ou « 💬 Discuter avec le client »."
-     ],
-     "astuce": "Si la course est payée en ligne (Wave), l'écran le dit : n'encaissez rien. Et tant que le paiement n'est pas confirmé, ne livrez pas."
-    },
-    {
-     "id": "coursier-position",
-     "titre": "Ma position pendant une course",
-     "resume": "Partagée toute seule pendant la course, effacée à la fin.",
-     "etapes": [
-      "À la première course, l'application demande votre accord : « J'ai compris et j'accepte ».",
-      "Pendant une course, le client et l'équipe voient où vous êtes. Dès qu'elle est livrée ou annulée, le partage s'arrête.",
-      "« Position non partagée — à autoriser » : autorisez la localisation pour l'application et vérifiez que le GPS est allumé. Le partage reprend tout seul."
-     ]
-    },
-    {
-     "id": "coursier-solde",
-     "titre": "Mon solde : pourquoi, et comment le recharger",
-     "resume": "La commission de CLT est prélevée sur votre solde ; sous le minimum, plus de courses.",
-     "etapes": [
-      "Vous encaissez le prix de la course en espèces. La part de CLT est déduite de votre solde, à chaque course livrée.",
-      "Onglet « Solde » › « ➕ Recharger mon solde » : choisissez l'opérateur, envoyez le montant au numéro de CLT affiché, puis indiquez le montant et la RÉFÉRENCE du reçu (ou du SMS), et « Déclarer mon envoi ».",
-      "La référence est obligatoire : c'est elle qui prouve votre paiement. Un même envoi ne se déclare qu'une fois. « Envoyer le reçu à CLT sur WhatsApp » : joignez la capture, l'équipe valide plus vite.",
-      "Vous passez au bureau ? Choisissez « Espèces au bureau », indiquez le montant, remettez les billets : l'équipe valide devant vous.",
-      "L'équipe valide : votre solde est crédité. « Mes recharges » dit où en est chaque envoi ; « Mes débits » liste chaque commission."
-     ],
-     "astuce": "Notez la référence reçue par SMS dans la déclaration : la validation est plus rapide."
-    },
-    {
-     "id": "coursier-bloque",
-     "titre": "« Solde insuffisant » : je ne peux plus accepter",
-     "resume": "Les boutons « Accepter » sont grisés tant que le solde est sous le minimum.",
-     "etapes": [
-      "Le minimum requis est écrit sous votre solde, dans l'onglet « Solde ».",
-      "Rechargez : dès que l'équipe a validé l'envoi, les courses redeviennent acceptables."
-     ]
-    }
-   ]
-  },
-  "tous": {
-   "titre": "Pour tout le monde",
-   "articles": [
-    {
-     "id": "installer",
-     "titre": "Installer l'application sur mon téléphone",
-     "resume": "Android : un bouton. iPhone : Partager → Sur l'écran d'accueil.",
-     "etapes": [
-      "Menu ☰ → « 📲 Installer l'application ».",
-      "Android (Chrome) et ordinateur : la fenêtre d'installation s'ouvre, acceptez. L'icône est sur l'écran d'accueil.",
-      "iPhone : ouvrez le site dans Safari, bouton Partager (le carré avec la flèche), puis « Sur l'écran d'accueil ». Le bouton de l'application vous montre la marche à suivre illustrée.",
-      "Une fois installée, l'application s'ouvre plein écran et vous reste connecté."
-     ],
-     "medias": [
-      {
-       "type": "lien",
-       "url": "/installer.html",
-       "label": "La marche à suivre illustrée, Android et iPhone"
-      }
-     ]
-    },
-    {
-     "id": "nouveautes",
-     "titre": "Quoi de neuf dans l'application",
-     "resume": "Chaque mise à jour est expliquée en deux lignes.",
-     "etapes": [
-      "Quand une mise à jour arrive, un bandeau le dit : « Mettre à jour », puis « Quoi de neuf ? ».",
-      "Vous pouvez relire les nouveautés à tout moment depuis la page de connexion."
-     ]
-    },
-    {
-     "id": "mon-compte",
-     "titre": "Mon compte : photo, nom, téléphone, mot de passe",
-     "resume": "Menu ☰ → Mon compte.",
-     "etapes": [
-      "Changez votre photo, votre nom, votre téléphone (un code de confirmation est envoyé) et votre mot de passe.",
-      "Mot de passe oublié : depuis la page de connexion, demandez une réinitialisation ; le bureau la valide."
-     ]
-    },
-    {
-     "id": "joindre",
-     "titre": "Joindre CLT",
-     "resume": "Appels : 07 79 60 47 61 ou 01 70 40 73 12 · WhatsApp : 05 46 81 86 40 · contact@christlivraison.ci",
-     "etapes": [
-      "Pour un colis précis, signalez-le d'abord dans l'application : la conversation part de là et laisse une trace.",
-      "Pour le reste, WhatsApp ou téléphone aux heures du bureau."
-     ]
-    }
-   ]
   }
- }
 }

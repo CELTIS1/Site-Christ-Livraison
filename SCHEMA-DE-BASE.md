@@ -26,6 +26,7 @@ des politiques est dans les migrations et dans `_sql-prive/00-verifier-les-migra
 | `annonces_remise` | Le livreur annonce ce qu'il remet en caisse en fin de journée. | Le livreur écrit la sienne ; équipe lit. |
 | `remises_caisse`, `clotures_journee` | La caisse du jour et sa clôture. | Équipe et admin. |
 | `reversements_clientes` | Le reçu de chaque remise d'argent de CLT à une vendeuse. | Équipe et admin ; la cliente lit les siens. |
+| `avances_de_travail` | L'avance que CLT confie à un livreur pour payer la gare, mouvement par mouvement (dotation, dépense, remboursement, correction). Les dépenses sont écrites par un déclencheur quand un montant de gare ou un frais additionnel est saisi sur un colis. Le solde est la somme ; négatif veut dire que CLT lui doit. | Le livreur lit la sienne ; équipe et admin lisent tout. **Personne n'y écrit directement** : `avance_de_travail_mouvement()` et `avance_de_travail_fermer()` sont réservées à l'administrateur. |
 | `livreur_positions` | Dernière position de chaque livreur (une ligne, remplacée), seulement quand il partage. Purgée toutes les 10 min si dormante. | Le livreur écrit la sienne ; équipe et admin lisent. |
 | `reclamations_livreurs` | Réclamations écrites contre un livreur ; seules les « fondées » comptent dans les primes. | Équipe et admin. |
 | `suivi_tentatives` | Essais de quatre chiffres sur le suivi public, par numéro et par heure. | Personne directement : la fonction `suivi_colis()` seulement. |

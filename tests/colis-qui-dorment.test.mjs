@@ -107,6 +107,7 @@ vm.runInContext([
   'montantArticleEncaisse',
   'montantLivraisonEncaissee',
   'fraisExpeditionARembourser',
+  'fraisAdditionnelsColis', 'fraisAdditionnelsARembourser',
   'montantEnMainDuLivreur',
   'jourAbidjan',
   'joursEntreAbidjan',

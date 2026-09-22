@@ -1215,10 +1215,18 @@ verifier(
    premier ; le travail du jour n'est jamais proposé. Rien n'est effacé : l'état d'avant est
    archivé hors de portée de l'application, chaque correction est datée, motivée, signée, et se
    défait depuis le même écran. Le colis porte « régularisé par le bureau » — jamais « confirmé
-   par la cliente », qui reste sa parole à elle. Étiquette 20260922regulariser. */
+   par la cliente », qui reste sa parole à elle. Étiquette 20260922regulariser.
+   v227, le 22/09/2026 — LE POINT DU LIVREUR. Deux corrections sur le même argent. Les frais
+   additionnels sortaient de la poche du livreur depuis le 16/09 sans que rien ne les lui rende :
+   ils se retranchent maintenant de son point du soir, comme l'avance de gare, et les écrans
+   disent « Avancé de sa poche » au lieu de « Avancé à la gare ». Et l'AVANCE DE TRAVAIL arrive :
+   CLT confie une somme au livreur, ce qu'il pose à la gare sort de cette avance, et le soir il
+   remet simplement ce qu'il a encaissé — plus aucune soustraction. Les dépenses s'écrivent
+   toutes seules, colis par colis ; le solde se lit dans Gestion et sur l'écran du livreur, avec
+   la phrase qui l'explique ; un solde négatif dit que CLT lui doit cette somme. Étiquette 20260922point. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v226'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v227'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

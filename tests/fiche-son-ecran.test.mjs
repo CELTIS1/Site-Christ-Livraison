@@ -158,6 +158,7 @@ vm.runInContext([
   'fraisAdditionnelsColis', 'fraisAdditionnelsRegle', 'fraisAdditionnelsAReclamer', 'fraisAdditionnelsADevoir',
   'montantNetADevoir',
   'fraisExpeditionARembourser',
+  'fraisAdditionnelsColis', 'fraisAdditionnelsARembourser',
   'montantEnMainDuLivreur',
   'montantManquantALaLivraison',
   'totauxArgent',

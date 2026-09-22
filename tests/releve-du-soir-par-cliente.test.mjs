@@ -106,7 +106,7 @@ vm.runInContext([
   'estExpedition', 'colisADetailMontant', 'montantArticleColis', 'montantLivraisonColis',
   'montantTotalColis', 'fraisExpeditionColis', 'fraisSoldes', 'fraisCourseColis', 'fraisCourseAcquis', 'fraisCourseADevoir', 'montantArticleReverse', 'articleEncaisse', 'livraisonEncaissee', 'coursePayeeSansLivraison',
   'montantArticleEncaisse', 'montantLivraisonEncaissee', 'montantArticleADevoir',
-  'fraisExpeditionADevoir', 'fraisAdditionnelsColis', 'fraisAdditionnelsRegle', 'fraisAdditionnelsAReclamer', 'fraisAdditionnelsADevoir', 'montantNetADevoir', 'fraisExpeditionARembourser',
+  'fraisExpeditionADevoir', 'fraisAdditionnelsColis', 'fraisAdditionnelsRegle', 'fraisAdditionnelsAReclamer', 'fraisAdditionnelsADevoir', 'fraisAdditionnelsARembourser', 'montantNetADevoir', 'fraisExpeditionARembourser',
   'montantEnMainDuLivreur', 'montantManquantALaLivraison', 'totauxArgent',
   'piedTotalHTML', 'echapperAttribut', 'statutBadgeHTML',
   'libelleStatut', 'iconeStatut', 'statutTexte', 'colisDestinationTexte', 'releveCliente', 'releveVousRevientTexte', 'releveVousRevientCouleur', 'releveTotalTextes', 'relevePiedCellules',

@@ -227,6 +227,7 @@ export function nouveauMonde() {
         const avant = Object.assign({}, l);
         Object.assign(l, v, { updated_at: maintenant });
         if (table === 'colis') effetsRetour(avant, l, q.user, maintenant);
+        if (table === 'colis') consommeLAvance(avant, l, q.user, maintenant);
       });
       journal.push({ table, op: 'update', valeurs: q.valeurs, n: lignes.length, ids: lignes.map(l => l.id), user: q.user || null });   // user : QUI écrit (21/09/2026, « Voir son écran »)
       return { data: lignes, error: null, count: lignes.length };
@@ -237,6 +238,7 @@ export function nouveauMonde() {
       // Les valeurs par défaut de la base, pour les tables où l'écran ne les envoie pas.
       rows.forEach(r => { if (table === 'reclamations_clientes' && r.statut === undefined) r.statut = 'ouverte'; if (table === 'demandes_de_passage' && r.statut === undefined) r.statut = 'en_attente'; });
       (TABLES[table] ||= []).push(...rows);
+      if (table === 'colis') rows.forEach(r => consommeLAvance(null, r, q.user, maintenant));
       journal.push({ table, op: q.op, n: rows.length, valeurs: rows });
       return { data: q.unique ? rows[0] : rows, error: null, count: rows.length };
     }
@@ -270,6 +272,26 @@ export function nouveauMonde() {
     return { data: lignes, error: null, count: total };
   }
 
+  /* L'AVANCE DE TRAVAIL (22/09/2026) — le jumeau du déclencheur colis_avance_de_travail.
+     Quand un livreur À AVANCE pose un montant de gare ou un frais additionnel, cet argent est
+     celui de CLT : une ligne de dépense s'écrit, et le colis ne lui rend plus rien le soir.
+     On écrit la DIFFÉRENCE, pas le montant, exactement comme la base. */
+  function consommeLAvance(avant, apres, user, maintenant) {
+    if (!apres || !apres.livreur_id) return;
+    const p = PROFILS.find(x => x.id === apres.livreur_id);
+    if (!p || !p.avance_de_travail_active) return;
+    const somme = (c) => (Number((c || {}).frais_expedition) || 0) + (Number((c || {}).frais_additionnels_montant) || 0);
+    const delta = somme(apres) - somme(avant);
+    if (!delta) return;
+    (TABLES.avances_de_travail ||= []).push({
+      id: (TABLES.avances_de_travail || []).length + 1, livreur_id: apres.livreur_id, montant: -delta,
+      genre: 'depense', motif: delta > 0 ? 'Payé à la gare, sur l\'avance de travail' : 'Correction du montant payé à la gare',
+      colis_id: apres.id, le: String(maintenant).slice(0, 10), cree_par: user || null, created_at: maintenant,
+    });
+    if ((Number(apres.frais_expedition) || 0) > 0 && !apres.frais_expedition_rembourse_at) apres.frais_expedition_rembourse_at = maintenant;
+    if ((Number(apres.frais_additionnels_montant) || 0) > 0 && !apres.frais_additionnels_rembourse_at) apres.frais_additionnels_rembourse_at = maintenant;
+  }
+
   const REPONSES_RPC = {};
   function rpc(nom, args, user) {
     journal.push({ op: 'rpc', nom, args });
@@ -289,6 +311,44 @@ export function nouveauMonde() {
     }
     // Un parcours peut poser REPONSES_RPC.primes_en_cours pour voir la carte « Mon mois » vivante.
     if (nom === 'primes_en_cours') return { data: REPONSES_RPC.primes_en_cours || null, error: null };
+
+    /* L'AVANCE DE TRAVAIL (22/09/2026) — le contrat des trois fonctions de la base. Les vraies
+       sont éprouvées dans un vrai Postgres (quinze scénarios, 22/09) ; ici c'est l'ÉCRAN. */
+    if (nom === 'avances_de_travail_soldes' || nom === 'avance_de_travail_mouvement' || nom === 'avance_de_travail_fermer') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      TABLES.avances_de_travail ||= [];
+      const M = TABLES.avances_de_travail;
+      const soldeDe = (id) => M.filter(x => x.livreur_id === id).reduce((t, x) => t + (Number(x.montant) || 0), 0);
+      if (nom === 'avances_de_travail_soldes') {
+        if (!lecteur || !['admin', 'equipe'].includes(lecteur.role)) return { data: null, error: { message: "Réservé à l'équipe." } };
+        const ids = PROFILS.filter(p => p.role === 'livreur' && (p.avance_de_travail_active || M.some(x => x.livreur_id === p.id)));
+        return { data: ids.map(p => ({ livreur_id: p.id, nom: p.full_name, active: !!p.avance_de_travail_active,
+          solde: soldeDe(p.id),
+          dote: M.filter(x => x.livreur_id === p.id && x.montant > 0).reduce((t, x) => t + x.montant, 0),
+          depense: -M.filter(x => x.livreur_id === p.id && x.genre === 'depense').reduce((t, x) => t + x.montant, 0),
+          dernier_le: M.filter(x => x.livreur_id === p.id).map(x => x.le).sort().pop() || null,
+          nb_mouvements: M.filter(x => x.livreur_id === p.id).length })), error: null };
+      }
+      if (!lecteur || lecteur.role !== 'admin') return { data: null, error: { message: "Seul l'administrateur pose ou reprend une avance de travail." } };
+      if (nom === 'avance_de_travail_fermer') {
+        const id = args && args.p_livreur_id;
+        if (soldeDe(id) !== 0) return { data: null, error: { message: "Le compte n'est pas à zéro : soldez-le d'abord." } };
+        const p = PROFILS.find(x => x.id === id); if (p) p.avance_de_travail_active = false;
+        return { data: null, error: null };
+      }
+      const { p_livreur_id: id, p_montant: montant, p_genre: genre, p_motif: motif } = args || {};
+      if (!['dotation', 'remboursement', 'correction'].includes(genre)) return { data: null, error: { message: 'Genre inconnu : ' + genre } };
+      if (!montant) return { data: null, error: { message: 'Le montant ne peut pas être nul.' } };
+      if (genre === 'dotation' && montant < 0) return { data: null, error: { message: "Une dotation ajoute de l'argent : le montant doit être positif." } };
+      if (genre === 'remboursement' && montant > 0) return { data: null, error: { message: "Un remboursement retire de l'avance : le montant doit être négatif." } };
+      if (String(motif || '').trim().length < 10) return { data: null, error: { message: 'Le motif est obligatoire (dix caractères au moins).' } };
+      if (Math.abs(montant) > 5000000) return { data: null, error: { message: "Au-dessus de cinq millions, on vérifie d'abord." } };
+      if (!PROFILS.some(p => p.id === id && p.role === 'livreur')) return { data: null, error: { message: "Cette personne n'est pas un livreur." } };
+      M.push({ id: M.length + 1, livreur_id: id, montant, genre, motif: String(motif).trim(), colis_id: null,
+               le: new Date().toISOString().slice(0, 10), cree_par: user, created_at: new Date().toISOString() });
+      if (genre === 'dotation') { const p = PROFILS.find(x => x.id === id); if (p) p.avance_de_travail_active = true; }
+      return { data: M.length, error: null };
+    }
 
     /* RÉGULARISER (22/09/2026). On rejoue ici le CONTRAT des trois fonctions de la base —
        administrateur seul, motif d'au moins dix caractères, date jamais au futur, colis déjà

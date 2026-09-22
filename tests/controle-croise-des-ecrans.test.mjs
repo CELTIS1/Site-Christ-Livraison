@@ -42,7 +42,7 @@
      4. CHAQUE TABLEAU D'ARGENT PORTE SA LIGNE DE TOTAL, ET ELLE SE RECOMPOSE.
         Autant de cellules au pied que de colonnes en tête — une ligne de total décalée d'une
         colonne est pire que pas de ligne du tout. Et les colonnes doivent se recomposer :
-        articles + livraisons − avancé à la gare = total en main.
+        articles + livraisons − avancé de sa poche = total en main.
 
    Lancer à la main :  node tests/controle-croise-des-ecrans.test.mjs
    Renvoie un code d'erreur si une vérification échoue. */
@@ -119,6 +119,7 @@ vm.runInContext([
   'fraisAdditionnelsColis', 'fraisAdditionnelsRegle', 'fraisAdditionnelsAReclamer', 'fraisAdditionnelsADevoir',
   'montantNetADevoir',
   'fraisExpeditionARembourser',
+  'fraisAdditionnelsColis', 'fraisAdditionnelsARembourser',
   'montantEnMainDuLivreur',
   'montantManquantALaLivraison',
   'totauxArgent',
@@ -203,8 +204,8 @@ verifier("l'ancien calcul, lui, donnait bien 14 000 — l'écart valait l'avance
   `ancien ${ancienCalcul}, écart ${ancienCalcul - enMainReel}`);
 
 verifier("l'avance payée est affichée à part, en clair, et non fondue dans le total",
-  celluleChiffre(html, 'L1', 'Avancé à la gare') === -3000,
-  `obtenu ${cellule(html, 'L1', 'Avancé à la gare')}`);
+  celluleChiffre(html, 'L1', 'Avancé de sa poche') === -3000,
+  `obtenu ${cellule(html, 'L1', 'Avancé de sa poche')}`);
 
 verifier("le total du tableau de l'équipe est celui de totauxArgent(), la troisième voie",
   totauxArgent(journee).totalEnMain === enMainReel,
@@ -346,7 +347,7 @@ const sansAvance = journee.filter(c => c.statut === 'livre');
 const htmlSansAvance = tableauEquipe(sansAvance);
 const compteSans = colonnesEtPied(htmlSansAvance);
 verifier("sans avance : la colonne disparaît au lieu d'afficher une colonne de zéros",
-  !/Avancé à la gare/.test(htmlSansAvance));
+  !/Avancé de sa poche/.test(htmlSansAvance));
 verifier("sans avance : le pied rétrécit d'autant, il ne reste pas décalé d'une colonne",
   compteSans && compteSans.entetes === compteSans.pied
   && compteSans.entetes === compte.entetes - 1,
@@ -355,9 +356,9 @@ verifier("sans avance : le pied rétrécit d'autant, il ne reste pas décalé d'
 // La recomposition, sur la ligne du livreur : articles + livraisons − avancé = total en main.
 const art = celluleChiffre(html, 'L1', 'Articles');
 const liv = celluleChiffre(html, 'L1', 'Livraisons');
-const gare = celluleChiffre(html, 'L1', 'Avancé à la gare');
+const gare = celluleChiffre(html, 'L1', 'Avancé de sa poche');
 const tot = celluleChiffre(html, 'L1', 'Total en main');
-verifier("articles + livraisons − avancé à la gare = total en main",
+verifier("articles + livraisons − avancé de sa poche = total en main",
   art + liv + gare === tot,
   `${art} + ${liv} + (${gare}) = ${art + liv + gare}, attendu ${tot}`);
 

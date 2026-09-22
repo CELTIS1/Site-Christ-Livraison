@@ -942,6 +942,110 @@ async function cltInitPushButton(role, lireUserId){
       btn.textContent = '🔔 Notifications activées ✓';
     }
   } catch (e) { /* silencieux */ }
+  // L'invitation, une fois la situation connue : elle ne s'affiche que si personne
+  // n'est abonné sur cet appareil. Voir ci-dessous.
+  cltInvitationNotifications(role, userId);
+}
+
+/* =====================================================================
+   L'INVITATION AUX NOTIFICATIONS — 22 septembre 2026
+   ---------------------------------------------------------------------
+   CE QU'ON A MESURÉ LE 21/09, ET QUI EXPLIQUE TOUT. La chaîne des
+   notifications a été remise d'aplomb pendant deux jours : sept
+   branchements, les bons messages, les bonnes personnes. Et pourtant rien
+   n'arrivait — parce que la table `push_subscriptions` ne contenait que
+   TROIS appareils dans tout le système, et AUCUNE cliente. Il n'y avait
+   personne au bout du fil.
+
+   POURQUOI. Le seul endroit où l'on peut s'abonner est un bouton rangé
+   dans le menu ☰, sous « Mon espace ». Personne n'ouvre un menu pour
+   chercher une fonction dont il ignore l'existence. Une fonctionnalité
+   qu'il faut deviner n'existe pas.
+
+   CE QU'ON FAIT. Le même bandeau discret que « Nouvelle version », en bas
+   de l'écran, au-dessus de la barre d'onglets quand il y en a une : une
+   phrase qui dit ce que la personne va RECEVOIR — pas « activer les
+   notifications », qui ne promet rien — et deux boutons.
+
+   ET CE QU'ON NE FAIT PAS : insister. « Plus tard » fait taire l'invitation
+   deux semaines sur cet appareil ; un refus du navigateur la fait taire un
+   mois, parce que réclamer une permission déjà refusée est inutile et
+   agaçant. Le bouton du menu ☰ reste là pour qui le cherche.
+   ===================================================================== */
+const CLT_INVIT_CLE = 'clt-invitation-notifications';
+const CLT_INVIT_REPORT = 14 * 24 * 3600 * 1000;   // « plus tard »
+
+/* Ce que chacun va RECEVOIR. Une promesse, jamais un réglage. */
+const CLT_INVIT_PROMESSES = {
+  fournisseur: 'Soyez prévenue dès qu\u2019un de vos colis est récupéré, livré, ou vous revient — même application fermée.',
+  livreur: 'Soyez prévenu des colis qu\u2019on vous confie et de ce que le bureau vous demande — même application fermée.',
+  equipe: 'Soyez prévenu quand une cliente a fini sa journée, qu\u2019un livreur fait son point, ou qu\u2019un signalement arrive.',
+  admin: 'Soyez prévenu des journées bouclées, des points des livreurs et des signalements — même application fermée.',
+  client_express: 'Soyez prévenu quand un coursier accepte votre course et quand elle est livrée.',
+  coursier_express: 'Soyez prévenu dès qu\u2019une course vous est proposée — même application fermée.',
+};
+function cltPromesseNotifications(role) {
+  return CLT_INVIT_PROMESSES[role] || 'Soyez prévenu des événements importants, même quand l\u2019application est fermée.';
+}
+
+function cltInvitationMasqueeJusqua() {
+  try { return Number(localStorage.getItem(CLT_INVIT_CLE)) || 0; } catch (e) { return 0; }
+}
+function cltMasquerInvitation(duree) {
+  try { localStorage.setItem(CLT_INVIT_CLE, String(Date.now() + duree)); } catch (e) { /* mode privé */ }
+}
+
+async function cltInvitationNotifications(role, lireUserId) {
+  if (!cltPushDisponible()) return;
+  if (typeof Notification !== 'undefined' && Notification.permission === 'denied') return;
+  if (Date.now() < cltInvitationMasqueeJusqua()) return;
+  // Déjà abonné sur cet appareil : il n'y a rien à proposer.
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub && Notification.permission === 'granted') return;
+  } catch (e) { return; }
+  if (!document.body) return;
+  if (document.getElementById('clt-invit-notifs')) return;
+
+  const bandeau = document.createElement('div');
+  bandeau.id = 'clt-invit-notifs';
+  bandeau.className = 'clt-invit-bandeau';
+  bandeau.setAttribute('role', 'status');
+  if (document.querySelector('.clt-bottomnav')) bandeau.classList.add('clt-invit-bandeau--barre');
+
+  const texte = document.createElement('span');
+  texte.className = 'clt-invit-texte';
+  texte.textContent = '\ud83d\udd14 ' + cltPromesseNotifications(role);
+  const ok = document.createElement('button');
+  ok.type = 'button';
+  ok.className = 'clt-invit-ok';
+  ok.textContent = 'Activer';
+  ok.addEventListener('click', async function () {
+    let id = null;
+    try { id = lireUserId ? lireUserId() : null; } catch (e) { id = null; }
+    await cltActiverPush(role, id);
+    /* L'invitation a été faite : on la retire quoi qu'il arrive. Si c'est accepté, la
+       vérification d'abonnement au prochain chargement suffira à la taire ; si le navigateur
+       a refusé, le test « denied » en tête la taira aussi. Reste le cas où la personne ferme
+       la demande du navigateur sans répondre : on se fait discret quinze jours plutôt que de
+       reposer la question au chargement suivant. */
+    bandeau.remove();
+    cltMasquerInvitation(CLT_INVIT_REPORT);
+  });
+  const plusTard = document.createElement('button');
+  plusTard.type = 'button';
+  plusTard.className = 'clt-invit-plus-tard';
+  plusTard.textContent = 'Plus tard';
+  plusTard.addEventListener('click', function () {
+    bandeau.remove();
+    cltMasquerInvitation(CLT_INVIT_REPORT);
+  });
+
+  bandeau.appendChild(texte);
+  bandeau.appendChild(plusTard);
+  bandeau.appendChild(ok);
+  document.body.appendChild(bandeau);
 }
 
 /* =====================================================================

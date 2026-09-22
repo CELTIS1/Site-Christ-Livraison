@@ -62,6 +62,7 @@ vm.runInContext([
   'montantArticleReverse', 'articleEncaisse', 'livraisonEncaissee', 'fraisAdditionnelsRegle',
   'coursePayeeSansLivraison', 'montantCoursePayeeSansLivraison',
   'montantArticleEncaisse', 'montantLivraisonEncaissee', 'fraisExpeditionARembourser',
+  'fraisAdditionnelsColis', 'fraisAdditionnelsARembourser',
   'fraisExpeditionADevoir', 'montantArticleADevoir',
   'montantEnMainDuLivreur', 'montantManquantALaLivraison', 'totauxArgent', 'caisseParLivreur',
 ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), ctx);

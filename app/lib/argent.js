@@ -528,6 +528,29 @@ function fraisAdditionnelsADevoir(c) {
   return fraisAdditionnelsColis(c);
 }
 
+/* Frais additionnels encore à REMBOURSER AU LIVREUR — 22 septembre 2026.
+
+   LE TROU, NOMMÉ PAR CELTIS LE 22/09 : « s'il a payé des frais additionnels, il faut que ce
+   soit retranché dans son point ET dans l'argent de la vendeuse ». Depuis le 16/09, les frais
+   additionnels se retenaient bien sur la vendeuse (fraisAdditionnelsADevoir ci-dessus), mais
+   NULLE PART ils ne sortaient de ce qu'on réclamait au livreur le soir. Or ce sont des billets
+   qu'il a sortis de sa poche à la gare, exactement comme l'avance d'expédition. Résultat : on
+   lui réclamait une somme qu'il n'avait plus, et l'écart se retrouvait dans son point du soir
+   sans que rien à l'écran ne l'explique. C'est le cas de Gbei Franck.
+
+   TROIS DATES, ET ELLES NE VEULENT PAS LA MÊME CHOSE. Ne pas les mélanger :
+     frais_additionnels_regle_at        la VENDEUSE a réglé ces frais à CLT
+     frais_additionnels_rembourse_at    CLT a rendu ces billets AU LIVREUR
+   La première éteint la retenue sur la vendeuse, la seconde éteint la déduction sur le livreur.
+   Elles sont indépendantes : la vendeuse peut n'avoir rien réglé alors qu'on a déjà remboursé
+   le livreur, et l'inverse. Les confondre, c'est rembourser deux fois ou jamais. C'est la même
+   séparation que frais_soldes_at / frais_expedition_rembourse_at, posée le 2 septembre. */
+function fraisAdditionnelsARembourser(c) {
+  if (!c) return 0;
+  if (c.frais_additionnels_rembourse_at) return 0;
+  return fraisAdditionnelsColis(c);
+}
+
 /* LES DEUX NOMS, ÉCRITS UNE SEULE FOIS.
    Celtis les a arrêtés le 31 août : « frais d'expédition pour ce que le transporteur prend, et
    les frais de course pour ce que le livreur gagne par rapport au travail qu'il effectue ».
@@ -702,15 +725,17 @@ function fraisExpeditionARembourser(c) {
 // Ce que le livreur a réellement en main sur ce colis : les deux poches, mais seulement si
 // elles sont rentrées. Un colis remis sans que l'argent suive ne pèse rien dans sa caisse.
 //
-// Les frais d'expédition s'en retranchent, parce qu'ils sont sortis de cette même poche : c'est
-// le livreur qui a payé la gare, en billets, avant de rentrer. Le soir, ce qu'il remet à CLT est
+// Les frais d'expédition ET les frais additionnels s'en retranchent, parce qu'ils sont sortis de
+// cette même poche : c'est le livreur qui a payé la gare, en billets, avant de rentrer. Les
+// additionnels ont été oubliés de ce calcul du 16/09 au 22/09 — voir fraisAdditionnelsARembourser. Le soir, ce qu'il remet à CLT est
 // allégé d'autant, et le justificatif de la gare fait le reste. Ne pas les déduire ici
 // reviendrait à lui réclamer une somme qu'il n'a plus.
 //
 // On déduit l'avance ENCORE DUE, pas l'avance payée : une fois remboursée, elle a retrouvé sa
 // poche et n'a plus à peser sur sa caisse. Voir fraisExpeditionARembourser ci-dessus.
 function montantEnMainDuLivreur(c) {
-  return montantArticleEncaisse(c) + montantLivraisonEncaissee(c) - fraisExpeditionARembourser(c);
+  return montantArticleEncaisse(c) + montantLivraisonEncaissee(c)
+       - fraisExpeditionARembourser(c) - fraisAdditionnelsARembourser(c);
 }
 
 // Argent qu'on aurait dû encaisser à la livraison et qui manque (l'exception cochée).
@@ -872,7 +897,8 @@ function totauxArgent(colis) {
 
    DEUX ENSEMBLES DISJOINTS, et c'est le cœur de la règle :
      • idsAremettre        — colis LIVRÉS dont l'argent n'est pas encore remis ;
-     • idsFraisARembourser — colis PAS ENCORE LIVRÉS portant une avance de gare non remboursée.
+     • idsFraisARembourser — colis PAS ENCORE LIVRÉS portant une avance non remboursée (gare
+                             ou frais additionnels).
    Le second ne doit jamais être marqué « remis » : le jour de la livraison, son argent sera
    réclamé en entier. On n'y pose que la date de remboursement de l'avance, pour que l'avance ne
    soit pas déduite une seconde fois.
@@ -885,7 +911,11 @@ function totauxArgent(colis) {
    -------------------------------------------------------------------------------------------- */
 function caisseParLivreur(colis) {
   const liste = Array.isArray(colis) ? colis : [];
-  const avanceDue = (c) => Number(fraisExpeditionARembourser(c)) || 0;
+  /* CE QUE LE LIVREUR A AVANCÉ DE SA POCHE et que CLT ne lui a pas encore rendu. Les DEUX
+     frais, depuis le 22/09/2026 : l'avance de gare et les frais additionnels, qui sortent de
+     la même poche le même jour. Jusque-là seule la gare était comptée, et on réclamait au
+     livreur, le soir, une somme qu'il n'avait plus. */
+  const avanceDue = (c) => (Number(fraisExpeditionARembourser(c)) || 0) + (Number(fraisAdditionnelsARembourser(c)) || 0);
   const parLivreur = {};
   const ligneDe = (key) => {
     if (!parLivreur[key]) {

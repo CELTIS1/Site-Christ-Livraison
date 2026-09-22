@@ -4094,3 +4094,31 @@ html.clt-regarde-un-compte #btn-request-delete, html.clt-regarde-un-compte #btn-
    (orange, vert) l'emportait sur son style : « Annuler » et « Confirmer » étaient de la même couleur. (21/09/2026) */
 #clt-modal-cancel.clt-modal-annuler{background:#e5e9ef !important; color:#1f2937 !important; box-shadow:none !important; border:0 !important;}
 html[data-theme="dark"] #clt-modal-cancel.clt-modal-annuler{background:#2A3A4D !important; color:#E6ECF3 !important;}
+
+/* ============================================================================================
+   L'INVITATION AUX NOTIFICATIONS (22/09/2026)
+   Le 21/09, la chaîne des notifications a été remise d'aplomb — et rien n'arrivait, parce que
+   trois appareils seulement étaient abonnés dans tout le système, et aucune cliente. Le seul
+   endroit où s'abonner était un bouton rangé dans le menu ☰ : une fonctionnalité qu'il faut
+   deviner n'existe pas. Même place et même sobriété que le bandeau « Nouvelle version » : en
+   bas, au-dessus de la barre d'onglets quand il y en a une, jamais par-dessus le travail.
+   ============================================================================================ */
+.clt-invit-bandeau{
+  position:fixed; left:12px; right:12px; bottom:12px; z-index:9998;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:12px 14px; border-radius:14px;
+  background:rgba(27,67,116,.96); color:#fff; box-shadow:0 10px 30px rgba(16,40,70,.28);
+  font-size:14px; line-height:1.4;
+}
+/* Même règle et même valeur que .clt-maj-bandeau--barre : la barre d'onglets basse fait 60 px,
+   le bandeau se pose juste au-dessus. Les deux doivent bouger ensemble le jour où elle change. */
+@media (max-width:760px){ .clt-invit-bandeau--barre{ bottom:calc(74px + env(safe-area-inset-bottom, 0px)); } }
+.clt-invit-texte{ flex:1 1 220px; }
+.clt-invit-bandeau button{
+  min-height:44px; padding:0 16px; border:0; border-radius:10px;
+  font:inherit; font-weight:700; cursor:pointer;
+}
+.clt-invit-ok{ background:#E26313; color:#fff; }
+.clt-invit-plus-tard{ background:rgba(255,255,255,.16); color:#fff; }
+.clt-invit-bandeau button:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+@media (max-width:520px){ .clt-invit-bandeau{ font-size:13.5px; } .clt-invit-bandeau button{ flex:1 1 auto; } }

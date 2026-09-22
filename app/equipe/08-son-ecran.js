@@ -454,7 +454,7 @@ const cellulesGare = (contenu) => colonneGare ? contenu : '';
 if (!cltPoserHTML(box, `
 <div class="recap-table-wrap">
 <table class="recap-table recap-table-cards">
-<thead><tr><th>Livreur</th><th>Colis livrés</th><th>Articles</th><th>Livraisons</th>${cellulesGare('<th>Avancé à la gare</th>')}<th>Total en main</th><th>Déjà remis</th><th>Reste à remettre</th><th></th></tr></thead>
+<thead><tr><th>Livreur</th><th>Colis livrés</th><th>Articles</th><th>Livraisons</th>${cellulesGare('<th>Avancé de sa poche</th>')}<th>Total en main</th><th>Déjà remis</th><th>Reste à remettre</th><th></th></tr></thead>
 <tbody>
 ${lignes.map(r => `
 <tr data-livreur="${r.id}">
@@ -462,7 +462,7 @@ ${lignes.map(r => `
 <td data-label="Colis livrés">${r.nb}${r.manquant > 0 ? ` <span title="Colis remis sans que l'argent rentre" style="color:#c0392b;">(−${formatMontant(r.manquant)})</span>` : ''}</td>
 <td data-label="Articles">${formatMontant(r.article) || '0 FCFA'}</td>
 <td data-label="Livraisons">${formatMontant(r.livraison) || '0 FCFA'}</td>
-${cellulesGare(`<td data-label="Avancé à la gare" title="Argent que le livreur a payé à la gare et que CLT doit lui rendre" style="color:${r.gare > 0 ? COULEUR_NEGATIF_CLT : 'inherit'};${r.gare > 0 ? ' font-weight:700;' : ''}">${r.gare > 0 ? '−' + formatMontant(r.gare) : '0 FCFA'}</td>`)}
+${cellulesGare(`<td data-label="Avancé de sa poche" title="Argent que le livreur a payé de sa poche — gare et frais additionnels — et que CLT doit lui rendre" style="color:${r.gare > 0 ? COULEUR_NEGATIF_CLT : 'inherit'};${r.gare > 0 ? ' font-weight:700;' : ''}">${r.gare > 0 ? '−' + formatMontant(r.gare) : '0 FCFA'}</td>`)}
 <td data-label="Total en main">${formatMontant(r.total) || '0 FCFA'}</td>
 <td data-label="Déjà remis">${formatMontant(r.remis) || '0 FCFA'}</td>
 <td data-label="Reste à remettre" style="color:${r.reste > 0 ? '#c0392b' : r.reste < 0 ? '#E26313' : '#1a7d3c'}; font-weight:700;">${formatMontant(r.reste) || '0 FCFA'}${r.reste < 0 ? ` <span style="font-weight:400;" title="L'avance de gare dépasse l'argent encaissé : c'est CLT qui doit au livreur">(CLT lui doit)</span>` : ''}</td>
@@ -478,7 +478,7 @@ ${piedTotalHTML([
 { texte: somme('nb') + (totalManquant > 0 ? ` (−${formatMontant(totalManquant)})` : ''), label: 'Colis livrés' },
 { texte: formatMontant(somme('article')) || '0 FCFA', label: 'Articles' },
 { texte: formatMontant(somme('livraison')) || '0 FCFA', label: 'Livraisons' },
-...(colonneGare ? [{ texte: '−' + formatMontant(somme('gare')), couleur: COULEUR_NEGATIF_CLT, label: 'Avancé à la gare' }] : []),
+...(colonneGare ? [{ texte: '−' + formatMontant(somme('gare')), couleur: COULEUR_NEGATIF_CLT, label: 'Avancé de sa poche' }] : []),
 { texte: formatMontant(somme('total')) || '0 FCFA', label: 'Total en main' },
 { texte: formatMontant(somme('remis')) || '0 FCFA', label: 'Déjà remis' },
 { texte: formatMontant(somme('reste')) || '0 FCFA', couleur: somme('reste') > 0 ? '#c0392b' : somme('reste') < 0 ? '#E26313' : '#1a7d3c', label: 'Reste à remettre' },

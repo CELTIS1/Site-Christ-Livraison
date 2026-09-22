@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260922regulariser">
+<link rel="stylesheet" href="style.css?v=20260922point">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260922regulariser"></script>
-<script src="splash.js?v=20260922regulariser"></script>
+<script src="theme.js?v=20260922point"></script>
+<script src="splash.js?v=20260922point"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -904,6 +904,9 @@
            carte que le livreur a sous les yeux au moment où il marque un colis « livré », et que
            ce geste-là est le seul que la base voit se répéter tous les jours. -->
       <div id="caisse-en-main"></div>
+      <!-- L'avance de travail (22/09/2026) : ce que CLT lui a confié pour payer la gare. N'apparaît
+           que s'il en a une. Lecture seule — c'est l'administrateur qui la pose et la reprend. -->
+      <div id="mon-avance-de-travail"></div>
     </div>
     </div>
   </details>
@@ -1039,27 +1042,28 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260922regulariser"></script>
-<script src="numero-international.js?v=20260922regulariser"></script>
-<script src="voir-un-compte.js?v=20260922regulariser"></script>
-<script src="lib/bibliotheques.js?v=20260922regulariser"></script>
-<script src="lib/retours.js?v=20260922regulariser"></script>
-<script src="lib/reclamations.js?v=20260922regulariser"></script>
-<script src="lib/communes-et-tarifs.js?v=20260922regulariser"></script>
-<script src="lib/argent.js?v=20260922regulariser"></script>
-<script src="lib/releve-cliente.js?v=20260922regulariser"></script>
-<script src="lib/papier-a-en-tete.js?v=20260922regulariser"></script>
-<script src="lib/briques-argent.js?v=20260922regulariser"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260922regulariser"></script>
-<script src="lib/annonce-de-remise.js?v=20260922regulariser"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260922regulariser"></script>
-<script src="lib/primes.js?v=20260922regulariser"></script>
-<script src="lib/doublons.js?v=20260922regulariser"></script>
-<script src="config.js?v=20260922regulariser"></script>
-<script src="etiquettes-et-scan.js?v=20260922regulariser"></script>
+<script src="clt-common.js?v=20260922point"></script>
+<script src="numero-international.js?v=20260922point"></script>
+<script src="voir-un-compte.js?v=20260922point"></script>
+<script src="lib/bibliotheques.js?v=20260922point"></script>
+<script src="lib/retours.js?v=20260922point"></script>
+<script src="lib/reclamations.js?v=20260922point"></script>
+<script src="lib/communes-et-tarifs.js?v=20260922point"></script>
+<script src="lib/argent.js?v=20260922point"></script>
+<script src="lib/releve-cliente.js?v=20260922point"></script>
+<script src="lib/papier-a-en-tete.js?v=20260922point"></script>
+<script src="lib/briques-argent.js?v=20260922point"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260922point"></script>
+<script src="lib/annonce-de-remise.js?v=20260922point"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260922point"></script>
+<script src="lib/primes.js?v=20260922point"></script>
+<script src="lib/doublons.js?v=20260922point"></script>
+<script src="config.js?v=20260922point"></script>
+<script src="avance-de-travail.js?v=20260922point"></script>
+<script src="etiquettes-et-scan.js?v=20260922point"></script>
 <!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
-<script src="ordre-de-livraison.js?v=20260922regulariser"></script>
-<script src="biometric-lock.js?v=20260922regulariser"></script>
+<script src="ordre-de-livraison.js?v=20260922point"></script>
+<script src="biometric-lock.js?v=20260922point"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -4053,6 +4057,44 @@
       { complet: !colisHasMore }));
   }
 
+  /* ---- MON AVANCE DE TRAVAIL (22/09/2026) ------------------------------------------------
+     Celtis, le 22 : « on va donner de l'argent à l'agent livreur pour éviter de rentrer dans
+     beaucoup de calculs ». Quand un livreur a une avance, l'argent qu'il pose à la gare n'est
+     plus le sien : le soir il remet simplement ce qu'il a encaissé. Encore faut-il qu'il sache
+     COMBIEN de l'argent de CLT il a en main — sans quoi il répond d'une somme qu'il ne connaît
+     pas. Lecture seule : la règle d'accès de la base ne lui montre que ses propres mouvements,
+     et lui seul ne peut rien y écrire.
+
+     Si la table n'existe pas encore (script SQL pas joué), le bloc reste vide et le reste de
+     l'écran continue de fonctionner. Une nouveauté non déployée ne doit jamais casser l'écran
+     d'un homme qui travaille. */
+  async function renderMonAvanceDeTravail(){
+    const box = document.getElementById('mon-avance-de-travail');
+    if (!box || !currentUser || !window.CLTAvanceDeTravail) return;
+    const { data, error } = await supabaseClient.from('avances_de_travail')
+      .select('id, montant, genre, motif, le')
+      .eq('livreur_id', currentUser.id)
+      .order('id', { ascending: false })
+      .limit(50);
+    if (error || !data || !data.length) { cltPoserHTML(box, ''); return; }
+    const A = window.CLTAvanceDeTravail;
+    const solde = A.solde(data);
+    const m = (v) => A.sou(v);
+    const lignes = data.slice(0, 6).map((x) => {
+      const v = Number(x.montant) || 0;
+      return `<div style="display:flex; justify-content:space-between; gap:8px; font-size:13px; color:#44505f;">
+        <span>${escapeHTML(A.libelleGenre(x.genre))} <span style="color:#8a93a0;">${escapeHTML(String(x.le || '').split('-').reverse().join('/'))}</span></span>
+        <strong style="color:${v < 0 ? '#8a4b12' : '#1a7d3c'};">${v > 0 ? '+' : ''}${escapeHTML(m(v))}</strong></div>`;
+    }).join('');
+    cltPoserHTML(box, `<div style="margin-top:10px; padding:12px 14px; border-radius:12px; background:#f4f8fc; border:1px solid #dbe6f2;">
+      <div style="font-size:13px; font-weight:700; color:#1B4374;">Mon avance de travail</div>
+      <div style="margin-top:4px; font-size:18px; font-weight:700; color:${solde < 0 ? '#1a7d3c' : '#1B4374'};">${escapeHTML(m(solde))}</div>
+      <div style="margin-top:2px; font-size:13px; color:#64748b;">${escapeHTML(A.phraseDuSolde(solde, 'Vous'))}</div>
+      <div style="margin-top:8px; display:flex; flex-direction:column; gap:3px;">${lignes}</div>
+      <div style="margin-top:6px; font-size:13px; color:#6b7686;">Ce que vous payez à la gare sort de cette avance : le soir, vous remettez seulement ce que vous avez encaissé.</div>
+    </div>`);
+  }
+
   // ---- L'ANNONCE DE MA REMISE -------------------------------------------------------------
   //
   // Ajouté le 29 août 2026. Le livreur annonce ce qu'il apporte AVANT que le bureau ne compte.
@@ -4220,6 +4262,7 @@
     }
     monAnnonceEnCours = null;      // on relit la base plutôt que de deviner ce qu'elle a écrit
     await chargerAnnonceEtRemises();
+    renderMonAvanceDeTravail().catch(() => {});
   }
 
   // Journée en toutes lettres, pour les messages ("le mardi 25 août 2026").
@@ -5211,6 +5254,9 @@
     // L'annonce de remise, sans bloquer non plus, et pour la même raison : un livreur dont la
     // base n'a pas encore reçu le script SQL doit voir ses colis comme avant.
     chargerAnnonceEtRemises();
+    // L'avance de travail, une seule lecture, sans bloquer : la plupart des livreurs n'en ont
+    // pas, et le bloc reste alors vide.
+    renderMonAvanceDeTravail().catch(() => {});
     await refreshOfflineBanner();
     flushOfflineQueue();
 

@@ -307,6 +307,8 @@ function switchSub(group, sub){
   if (typeof cltNoterOngletOuvert === 'function') cltNoterOngletOuvert('gestion', group + '/' + sub);
   // Rafraîchit les vues comptables issues des colis à l'ouverture de l'onglet.
   if (group === 'compta' && sub === 'caisse')  loadCaisseLivreurs();
+  // L'avance de travail vit sous la caisse des livreurs (22/09/2026) : même écran, même argent.
+  if (group === 'compta' && sub === 'caisse' && window.CLTAvanceDeTravailEcran) CLTAvanceDeTravailEcran.ouvrir();
   if (group === 'compta' && sub === 'clients') loadPointClients();
   if (group === 'compta' && sub === 'express') loadExpressCompta();
   if (group === 'compta' && sub === 'livrecaisse') loadLivreCaisse();
@@ -4178,6 +4180,9 @@ async function init(){
   const canPaie   = isAdmin || (!!profile && profile.acces_paie === true);
   const canCompta = isAdmin || (!!profile && profile.acces_compta === true);
   ACCES = { isAdmin, canPaie, canCompta };
+  // Les écrans chargés à côté (avance de travail, régulariser) lisent les capacités ici :
+  // `let ACCES` vit dans la portée du script, pas sur window, et un fichier voisin ne la verrait pas.
+  window.ACCES = ACCES;
 
   if (!profile || (!isAdmin && !canPaie && !canCompta)){
     // Aucun droit sur le module Gestion. On renvoie vers le tableau de bord

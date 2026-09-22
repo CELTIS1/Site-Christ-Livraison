@@ -401,6 +401,7 @@ if (!fs.existsSync(CHEMIN_SQL)) {
     'colisADetailMontant', 'montantArticleColis', 'montantLivraisonColis',
     'fraisExpeditionColis', 'articleEncaisse', 'livraisonEncaissee', 'coursePayeeSansLivraison',
     'montantArticleEncaisse', 'montantLivraisonEncaissee', 'fraisExpeditionARembourser',
+    'fraisAdditionnelsColis', 'fraisAdditionnelsARembourser',
     'montantEnMainDuLivreur',
   ].map(n => blocDe(sourceConfig, n, 'config.js')).join('\n\n'), contexteRegle);
   const COMMUNE_EXP = vm.runInContext('COMMUNE_EXPEDITION', contexteRegle);

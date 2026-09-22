@@ -211,6 +211,26 @@
       }
     },
     {
+      "id": "avance-de-travail",
+      "espace": "gestion",
+      "titre": "L'avance de travail d'un livreur",
+      "enBref": "CLT lui remet une somme pour payer la gare : le soir, il remet seulement ce qu'il a encaissé.",
+      "ou": "Gestion › Comptabilité › Caisse livreurs, sous le tableau",
+      "etapes": [
+        "« Donner une avance à un livreur » : le montant, et le motif. À partir de là, ce qu'il paie à la gare sort de cette avance, plus de sa poche.",
+        "Les dépenses s'écrivent toutes seules, colis par colis : vous les voyez avec le numéro du colis en cliquant sur « Voir ».",
+        "« Reprendre » quand il vous rend de l'argent. « Fermer l'arrangement » quand le compte est à zéro : il repasse au modèle d'avant.",
+        "Un solde NÉGATIF veut dire qu'il a dépassé l'avance : c'est CLT qui lui doit cette somme."
+      ],
+      "aSavoir": "Le livreur voit son avance sur son propre écran, en lecture seule. Vous seul pouvez donner, reprendre, corriger ou fermer. Rien n'est jamais effacé : chaque mouvement porte son motif, sa date et son auteur.",
+      "pourVous": "Le montant de l'avance est une décision, pas un calcul : c'est à vous de le fixer et de le réajuster.",
+      "version": "v227",
+      "aller": {
+        "tab": "compta",
+        "sub": "caisse"
+      }
+    },
+    {
       "id": "essentiel",
       "espace": "bureau",
       "titre": "L'essentiel : ce qui presse, d'un regard",
@@ -725,6 +745,22 @@
         "Tenez la séance avec le comptable : je ne suis ni comptable ni fiscaliste."
       ],
       "pourVous": "À faire : la séance avec le comptable (note « bilan-motos-8-6 »)."
+    },
+    {
+      "id": "invitation-notifications",
+      "espace": "securite",
+      "titre": "Faire activer les notifications",
+      "enBref": "Chaque espace propose désormais lui-même les notifications, en disant ce que la personne va recevoir.",
+      "ou": "Sur chaque écran, en bas, à la première ouverture",
+      "etapes": [
+        "Un bandeau discret propose d'activer, avec une phrase qui dit ce que CETTE personne recevra — une cliente ne lit pas la même chose qu'un livreur.",
+        "« Plus tard » le fait taire deux semaines sur cet appareil ; un refus du navigateur le fait taire pour de bon.",
+        "Le bouton du menu ☰ › Mon espace reste là pour qui le cherche.",
+        "Sur iPhone, il faut d'abord installer l'application sur l'écran d'accueil : le bandeau le rappelle si besoin."
+      ],
+      "aSavoir": "Le 21/09, la chaîne des notifications a été remise d'aplomb — et rien n'arrivait, parce que trois appareils seulement étaient abonnés dans tout le système, et aucune cliente. Le bouton était rangé dans un menu : une fonctionnalité qu'il faut deviner n'existe pas.",
+      "pourVous": "Le vrai levier n'est pas technique : proposez-le à l'équipe et aux clientes, l'application fait le reste.",
+      "version": "v227"
     },
     {
       "id": "deux-gestes",

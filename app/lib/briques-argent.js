@@ -117,7 +117,7 @@ function caisseEnMainHTML(releve, options) {
     return cadre('#cfe3d4', '#f2f9f4', `
         <div style="margin-top:4px; font-size:18px; font-weight:700; color:#1a7d3c;">CLT vous doit ${m(-montant)}</div>
         <div style="margin-top:4px; font-size:12px; color:#64748b;">
-          Avance${r.nbAvances > 1 ? 's' : ''} laissée${r.nbAvances > 1 ? 's' : ''} à la gare et pas encore remboursée${r.nbAvances > 1 ? 's' : ''} : gardez le reçu.
+          Frais avancé${r.nbAvances > 1 ? 's' : ''} de votre poche et pas encore remboursé${r.nbAvances > 1 ? 's' : ''} : gardez les reçus.
         </div>`);
   }
 
@@ -161,9 +161,9 @@ function caisseEnMainHTML(releve, options) {
   const avances = gare > 0
     ? `<div style="margin-top:8px; padding:8px 10px; border-radius:8px; background:#fff7ed; border:1px solid #f5d9b8; font-size:12px; color:#3a2a14;">
           <div style="display:flex; justify-content:space-between; gap:8px;"><span>Encaissé sur vos colis</span><strong>${m(r.encaisse)}</strong></div>
-          <div style="display:flex; justify-content:space-between; gap:8px; color:#8a4b12;"><span>🚌 Avancé de votre poche sur ${r.nbAvances} expédition${r.nbAvances > 1 ? 's' : ''}</span><strong>− ${m(gare)}</strong></div>
+          <div style="display:flex; justify-content:space-between; gap:8px; color:#8a4b12;"><span>🚌 Avancé de votre poche sur ${r.nbAvances} colis</span><strong>− ${m(gare)}</strong></div>
           <div style="display:flex; justify-content:space-between; gap:8px; border-top:1px solid #f5d9b8; margin-top:4px; padding-top:4px;"><span>À remettre à CLT</span><strong>${m(montant)}</strong></div>
-          <div style="margin-top:4px; font-size:11px; color:#6b7686;">Gardez les reçus de la gare : c'est cette somme que CLT retient sur la cliente.</div>
+          <div style="margin-top:4px; font-size:11px; color:#6b7686;">Gare et frais additionnels : gardez les reçus, c'est cette somme que CLT retient sur la cliente.</div>
         </div>`
     : '';
 
