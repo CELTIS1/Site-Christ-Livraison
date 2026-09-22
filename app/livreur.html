@@ -2971,7 +2971,7 @@
     const enClair = (j) => j === todayLocalISODate() ? "aujourd'hui" : new Date(j + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     const n = reportes.length;
     return `<div class="mes-reportes">
-      <span>⏭️ ${n} colis de cette journée ${n > 1 ? 'ont été reportés' : 'a été reporté'} ${jours.length === 1 ? 'au ' + escapeHTML(enClair(jours[0])) : 'à un autre jour'} : ${n > 1 ? 'ils ne comptent' : 'il ne compte'} plus dans le point de ce soir, ${n > 1 ? 'ils sont' : 'il est'} dans ${jours.length === 1 ? 'cette journée-là' : 'ces journées-là'}.</span>
+      <span>⏭️ ${n} colis de cette journée ${n > 1 ? 'ont été reportés' : 'a été reporté'} ${jours.length === 1 ? 'au ' + escapeHTML(enClair(jours[0])) : 'à un autre jour'} : ${n > 1 ? 'ils ne sont plus' : 'il n\'est plus'} dans cette liste, ${n > 1 ? 'ils vous attendent' : 'il vous attend'} ${jours.length === 1 ? 'ce jour-là' : 'ces jours-là'}.</span>
       ${jours.map(j => `<button type="button" class="btn btn-sm btn-outline" data-voir-reportes="${escapeHTML(j)}">Voir ${parJour[j] > 1 ? 'les ' + parJour[j] + ' colis' : 'le colis'} du ${escapeHTML(enClair(j))}</button>`).join('')}
     </div>`;
   }
