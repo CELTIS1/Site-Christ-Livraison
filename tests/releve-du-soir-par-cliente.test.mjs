@@ -109,7 +109,8 @@ vm.runInContext([
   'fraisExpeditionADevoir', 'fraisAdditionnelsColis', 'fraisAdditionnelsRegle', 'fraisAdditionnelsAReclamer', 'fraisAdditionnelsADevoir', 'fraisAdditionnelsARembourser', 'montantNetADevoir', 'fraisExpeditionARembourser',
   'montantEnMainDuLivreur', 'montantManquantALaLivraison', 'totauxArgent',
   'piedTotalHTML', 'echapperAttribut', 'statutBadgeHTML',
-  'libelleStatut', 'iconeStatut', 'statutTexte', 'colisDestinationTexte', 'releveCliente', 'releveVousRevientTexte', 'releveVousRevientCouleur', 'releveTotalTextes', 'relevePiedCellules',
+  'libelleStatut', 'iconeStatut', 'statutTexte', 'colisDestinationTexte',
+  'dayKey', 'jourDuColis', 'colisReporte', 'jourCourtFR', 'releveCliente', 'releveVousRevientTexte', 'releveVousRevientCouleur', 'releveTotalTextes', 'relevePiedCellules',
   'texteAplatiPourPDF', 'celluleAplatiePourPDF', 'nouveauPDF',
   'relevePhraseDue', 'releveDetailRetenues', 'releveRetenuesParColis', 'releveRetenuesLignesTexte', 'releveNomFichier',
   // Le relevé du soir ne dessine plus son en-tête : il passe par le papier à en-tête de la

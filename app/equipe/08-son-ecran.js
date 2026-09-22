@@ -58,10 +58,18 @@ if (overlay) overlay.classList.add('hidden');
 // (created_at), comme partout ailleurs : c'est la journée telle que le livreur et la gestion la
 // découpent quand ils font le point le soir. Prendre ici la date de LIVRAISON donnerait un autre
 // paquet de colis que celui de son téléphone — et donc, à nouveau, deux chiffres.
+/* « DESSINÉ PAR LE MÊME CODE QUE SON ÉCRAN » — alors c'est la MÊME règle de jour, et elle n'est
+   pas la même pour les deux. (22/09/2026) Le téléphone du livreur range ses colis par jour de
+   TRAVAIL : un colis reporté à demain quitte sa journée d'aujourd'hui, et c'est à ça que le
+   report sert. L'espace de la cliente, lui, les range par jour de RÉCEPTION : celui où elle les
+   a remis, qui ne bouge jamais. Prendre une seule des deux règles ici ferait mentir la promesse
+   du sous-titre pour l'un ou pour l'autre. */
 function ficheEcranColis(){
 if (!__ficheCtx) return [];
-const champ = __ficheCtx.qui === 'livreur' ? 'livreur_id' : 'fournisseur_id';
-return (allColis || []).filter(c => c && c[champ] === __ficheCtx.id && jourDuColis(c) === __ficheCtx.jour);
+const estLivreur = __ficheCtx.qui === 'livreur';
+const champ = estLivreur ? 'livreur_id' : 'fournisseur_id';
+const jourDe = estLivreur ? jourDuColis : jourDeReceptionColis;
+return (allColis || []).filter(c => c && c[champ] === __ficheCtx.id && jourDe(c) === __ficheCtx.jour);
 }
 
 function renderFicheEcran(){

@@ -1232,10 +1232,19 @@ verifier(
    livreur, qu'une livraison payée d'avance non plus, qu'un colis « argent pas rentré » ne compte
    pas, que les frais avancés s'en retranchent — et elle oubliait les courses payées sur un colis
    non livré. Le commentaire du code disait pourtant « mêmes règles que la caisse livreur ».
-   Corrigé des deux côtés : la base n'écrit plus la règle, elle l'appelle. Étiquette 20260922essentiel. */
+   Corrigé des deux côtés : la base n'écrit plus la règle, elle l'appelle. Étiquette 20260922essentiel.
+   v229, le 22/09/2026 — LE REPORT DÉPLACE LE TRAVAIL, PAS LE JOUR DU COLIS. Celtis : « on fait le
+   point de la vendeuse sur la base des colis qu'elle nous a donné le jour J ; si on en a reporté
+   un et qu'il ne figure pas dans son point du soir, elle va dire où est passé le colis ». Mesuré
+   avant de corriger : quinze colis reportés en quatorze jours, douze points de vendeuse faussés —
+   environ deux par jour. Un colis a deux jours, et une seule date n'y suffisait pas : celui où la
+   cliente l'a remis, qui ne bouge plus jamais et qui ancre tout ce qui REND DES COMPTES, et celui
+   où il faut s'en occuper, que le report déplace et qui ancre tout ce qui DISTRIBUE DU TRAVAIL.
+   Sur le relevé, la ligne dit d'elle-même « reporté au 23/09 » ; l'argent ne bouge pas d'un franc.
+   Et la liste du bureau, où l'on cherche un colis, le montre désormais dans ses deux journées. Étiquette 20260922report. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v228'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v229'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

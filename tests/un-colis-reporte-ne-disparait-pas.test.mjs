@@ -59,8 +59,14 @@ verifier('« Les voir » pose le filtre sur ce jour-là au lieu de le faire devi
   && /getElementById\('filtre-date-colis'\)/.test(equipe));
 
 titre('2. La carte porte la mention, et le geste qui ramène le colis');
-verifier('la carte du bureau dit le report et d\'où le colis vient',
-  /colis-reporte">⏭️ Reporté au/.test(equipe) && /il a quitté la journée du/.test(equipe));
+/* 22/09/2026 — LE COLIS NE QUITTE PLUS RIEN. La liste du bureau le montre désormais dans les
+   DEUX journées : celle où la cliente l'a remis et celle du report. La carte le dit donc
+   autrement : elle nomme le jour de report, rappelle le jour de réception, et précise qu'il
+   compte toujours dans celui-là. C'est ce qui permet à l'équipe de répondre à une vendeuse sans
+   aller vérifier ailleurs. */
+verifier('la carte du bureau dit le report, rappelle le jour de réception, et dit qu\'il y compte toujours',
+  /colis-reporte">⏭️ Reporté au/.test(equipe) && /et toujours compté dans cette journée-là/.test(equipe)
+  && !/il a quitté la journée du/.test(equipe));
 verifier('le téléphone du livreur le disait déjà : les deux écrans parlent maintenant pareil',
   /Reporté au/.test(livreur) && /colisReporte\(c\)/.test(livreur));
 verifier('le geste efface le report, il ne le déplace pas',
@@ -80,7 +86,7 @@ verifier('un colis livré : l\'argent déjà compté est nommé',
 verifier('un colis non livré : le motif et la course partent avec lui',
   /Ce colis est marqué non livré[\s\S]{0,120}?motif de l'échec/.test(equipe));
 verifier('un colis reporté : la boîte propose le geste qui règle le problème SANS supprimer',
-  /colisReporte\(colisASupprimer\)[\s\S]{0,320}?Le remettre à sa journée » le ramène sans le supprimer/.test(equipe));
+  /colisReporte\(colisASupprimer\)[\s\S]{0,360}?Le remettre à sa journée » annule le report sans le supprimer/.test(equipe));
 verifier('le numéro perdu est nommé : il manquera dans la suite',
   /ne sera pas réattribué/.test(equipe));
 verifier('et la trace : la suppression s\'inscrit au journal, mais le colis ne revient pas',

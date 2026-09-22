@@ -96,8 +96,9 @@ titre('1. Les jours passés des récapitulatifs se rechargent, avec les colis re
 {
   const past = blocDe(equipe, 'recapLoadPastDay', 'equipe.html');
   verifier('recapLoadPastDay(date, { forcer }) relit un jour déjà en cache quand on le lui demande', /const forcer = !!\(options && options\.forcer\)/.test(past) && /if \(recapDayCache\[date\] && !forcer\)/.test(past));
-  verifier('il ramène les colis reçus ce jour-là OU reportés à ce jour, et garde ceux dont c\'est le jour (jourDuColis)',
-    /\.or\(`reporte_au\.eq\.\$\{date\},and\(created_at\.gte\.\$\{date\}T00:00:00,created_at\.lte\.\$\{date\}T23:59:59\)`\)/.test(past) && /filter\(c => jourDuColis\(c\) === date\)/.test(past));
+  verifier('il ramène les colis REÇUS ce jour-là, et eux seuls : les deux récapitulatifs sont des points, ils s\'ancrent sur le jour de réception (22/09/2026)',
+    /\.gte\('created_at', `\$\{date\}T00:00:00`\)/.test(past) && /\.lte\('created_at', `\$\{date\}T23:59:59`\)/.test(past)
+    && /filter\(c => jourDeReceptionColis\(c\) === date\)/.test(past) && !/reporte_au\.eq/.test(past));
   verifier('un rechargement d\'un jour déjà affiché ne repasse pas par « Chargement… »', /if \(!recapDayCache\[date\]\) recapRedessinerLesDeux\(\);/.test(past));
   const recharge = blocDe(equipe, 'recapRechargerJoursPasses', 'equipe.html');
   verifier('recapRechargerJoursPasses oublie les jours que personne ne regarde et recharge ceux à l\'écran (par client ET par livreur)',

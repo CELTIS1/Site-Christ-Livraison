@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260922essentiel">
+<link rel="stylesheet" href="style.css?v=20260922report">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260922essentiel"></script>
-<script src="splash.js?v=20260922essentiel"></script>
+<script src="theme.js?v=20260922report"></script>
+<script src="splash.js?v=20260922report"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -640,28 +640,28 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260922essentiel"></script>
-<script src="numero-international.js?v=20260922essentiel"></script>
-<script src="voir-un-compte.js?v=20260922essentiel"></script>
-<script src="lib/bibliotheques.js?v=20260922essentiel"></script>
-<script src="lib/retours.js?v=20260922essentiel"></script>
-<script src="lib/reclamations.js?v=20260922essentiel"></script>
-<script src="lib/communes-et-tarifs.js?v=20260922essentiel"></script>
-<script src="lib/argent.js?v=20260922essentiel"></script>
-<script src="lib/releve-cliente.js?v=20260922essentiel"></script>
-<script src="lib/papier-a-en-tete.js?v=20260922essentiel"></script>
-<script src="lib/briques-argent.js?v=20260922essentiel"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260922essentiel"></script>
-<script src="lib/annonce-de-remise.js?v=20260922essentiel"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260922essentiel"></script>
-<script src="lib/primes.js?v=20260922essentiel"></script>
-<script src="lib/doublons.js?v=20260922essentiel"></script>
-<script src="config.js?v=20260922essentiel"></script>
-<script src="mes-boutiques.js?v=20260922essentiel"></script>
-<script src="etiquettes-et-scan.js?v=20260922essentiel"></script>
-<script src="import-de-colis.js?v=20260922essentiel"></script>
-<script src="biometric-lock.js?v=20260922essentiel"></script>
-<script src="clt-select-recherche.js?v=20260922essentiel"></script>
+<script src="clt-common.js?v=20260922report"></script>
+<script src="numero-international.js?v=20260922report"></script>
+<script src="voir-un-compte.js?v=20260922report"></script>
+<script src="lib/bibliotheques.js?v=20260922report"></script>
+<script src="lib/retours.js?v=20260922report"></script>
+<script src="lib/reclamations.js?v=20260922report"></script>
+<script src="lib/communes-et-tarifs.js?v=20260922report"></script>
+<script src="lib/argent.js?v=20260922report"></script>
+<script src="lib/releve-cliente.js?v=20260922report"></script>
+<script src="lib/papier-a-en-tete.js?v=20260922report"></script>
+<script src="lib/briques-argent.js?v=20260922report"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260922report"></script>
+<script src="lib/annonce-de-remise.js?v=20260922report"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260922report"></script>
+<script src="lib/primes.js?v=20260922report"></script>
+<script src="lib/doublons.js?v=20260922report"></script>
+<script src="config.js?v=20260922report"></script>
+<script src="mes-boutiques.js?v=20260922report"></script>
+<script src="etiquettes-et-scan.js?v=20260922report"></script>
+<script src="import-de-colis.js?v=20260922report"></script>
+<script src="biometric-lock.js?v=20260922report"></script>
+<script src="clt-select-recherche.js?v=20260922report"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -912,9 +912,16 @@
     return desc.includes(t) || dest.includes(t) || communeDest.includes(t) || numero.includes(t) || tel.includes(t);
   }
 
+  /* LES JOURNÉES DE LA CLIENTE S'ANCRENT SUR LE JOUR OÙ ELLE A REMIS LE COLIS, et ce jour-là ne
+     bouge jamais. (22/09/2026, Celtis : « on fait le point de la vendeuse sur la base des colis
+     qu'elle nous a donné le jour J. Si on a reporté un seul colis au lendemain et que ça ne
+     figure pas dans son point du soir, elle va être confuse, elle va dire où est passé le
+     colis. ») Un report est une décision de NOTRE côté sur QUAND on retente ; il n'a jamais rien
+     dit sur le jour où elle nous a confié la marchandise. Voir jourDeReceptionColis dans
+     config.js : deux questions, deux fonctions. */
   function matchesDate(c, dateStr){
     if (!dateStr) return true;
-    return jourDuColis(c) === dateStr;
+    return jourDeReceptionColis(c) === dateStr;
   }
 
   // todayLocalISODate() vit dans clt-common.js, chargé plus haut dans la page.
@@ -2068,12 +2075,16 @@
       || (colisToutModifiable(c) && typeof colisSansMontant === 'function' && colisSansMontant(c))
       || (!c.commune_destination && !c.destination && colisAdresseCorrigeable(c)));
   }
+  /* La pastille porte le jour où ELLE a remis le colis — c'est sous ce jour-là que sa carte vit
+     désormais — et, s'il a été reporté, DIT à quel jour il l'a été. Avant le 22/09 elle portait
+     le jour de report, ce qui revenait à lui annoncer que son colis d'hier datait de demain. */
   function colisDateHTML(c){
-    const jour = jourDuColis(c);
+    const jour = jourDeReceptionColis(c);
     if (!jour) return '';
     const d = new Date(jour + 'T12:00:00');
     const texte = jour === todayLocalISODate() ? "Aujourd'hui" : d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '');
-    return `<span class="colis-date" title="${colisReporte(c) ? 'Reporté à ce jour' : 'Jour du colis'}">📅 ${escapeHTML(texte)}${colisReporte(c) ? ' (reporté)' : ''}</span>`;
+    const versJour = colisReporte(c) ? new Date(jourDuColis(c) + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace(/\./g, '') : '';
+    return `<span class="colis-date" title="${colisReporte(c) ? 'Remis ce jour-là ; nouvelle tentative le ' + escapeHTML(versJour) : 'Jour où vous nous l\'avez remis'}">📅 ${escapeHTML(texte)}${colisReporte(c) ? ' · ⏭️ ' + escapeHTML(versJour) : ''}</span>`;
   }
 
   function colisAdresseCorrigeable(c){
@@ -2720,7 +2731,8 @@
      Ce qu'il voit : pour le jour choisi, le total de toutes ses boutiques (mêmes découpages que
      les tuiles d'une cliente : lib/vocabulaire-de-la-journee.js), une tuile par boutique, et en
      appuyant sur l'une d'elles, son point du jour et ses colis — une liste compacte, sans aucun
-     bouton d'action, parce qu'il n'en a aucun. Même règle de jour que partout : jourDuColis. */
+     bouton d'action, parce qu'il n'en a aucun. Même règle de jour que les autres écrans de la
+     cliente : le jour où elle a remis le colis (jourDeReceptionColis), jamais le jour de report. */
   let mesBoutiques = [];          // { id, nom, full_name, commune_recuperation }
   let mbColis = [];               // les colis des boutiques, lus pour la période regardée
   let mbJour = null;
@@ -2756,7 +2768,7 @@
     renderMesBoutiques();
   }
   function mbColisDuJour(boutiqueId){
-    return mbColis.filter(c => (!boutiqueId || c.fournisseur_id === boutiqueId) && jourDuColis(c) === mbJour);
+    return mbColis.filter(c => (!boutiqueId || c.fournisseur_id === boutiqueId) && jourDeReceptionColis(c) === mbJour);
   }
   let mbGroupe = '';              // le filtre : une clé de compterLeJour, 'retours', ou '' (tout)
   let mbRecherche = '';
@@ -3322,7 +3334,7 @@
 
   function populateMoisSelect(){
     const select = document.getElementById('mois-select');
-    const keys = Array.from(new Set(mesColis.map(c => jourDuColis(c).slice(0, 7)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
+    const keys = Array.from(new Set(mesColis.map(c => jourDeReceptionColis(c).slice(0, 7)))).filter(Boolean).sort((a, b) => b.localeCompare(a));
     const previousValue = select.value;
     // Les mois disponibles ne changent pas toutes les 25 secondes. Reconstruire cette liste à
     // l'identique suffisait pourtant à faire disparaître le panneau d'une liste déroulante
@@ -3372,7 +3384,7 @@
     if (!box || !dateInput) return;
     if (!dateInput.value) dateInput.value = todayLocalISODate();
     const jour = dateInput.value;
-    const duJour = mesColis.filter(c => jourDuColis(c) === jour);
+    const duJour = mesColis.filter(c => jourDeReceptionColis(c) === jour);
     // 17/09/2026, point 9.4 : ces cinq tuiles étaient recopiées ici, avec leurs statuts écrits
     // à la main, et l'une d'elles s'appelait « En cours » alors qu'elle ne comptait que les
     // colis en livraison — pendant que « En cours » désignait deux autres ensembles chez le
@@ -3514,7 +3526,7 @@
       populateJourSelect([]);
       return;
     }
-    const colisDuMois = mesColis.filter(c => jourDuColis(c).slice(0, 7) === selected);
+    const colisDuMois = mesColis.filter(c => jourDeReceptionColis(c).slice(0, 7) === selected);
     if (!colisDuMois.length) {
       cltPoserHTML(box, `<div class="empty-state">Aucun colis pour ce mois.</div>`);
       populateJourSelect([]);
@@ -3614,7 +3626,7 @@
     const src = source || mesColis;
     const selected = document.getElementById('mois-select').value;
     if (!selected) return [];
-    const colisDuMois = src.filter(c => jourDuColis(c).slice(0, 7) === selected);
+    const colisDuMois = src.filter(c => jourDeReceptionColis(c).slice(0, 7) === selected);
     const jourSelected = document.getElementById('jour-select').value;
     if (jourSelected) {
       const groups = groupColisByDay(colisDuMois, 'created_at');

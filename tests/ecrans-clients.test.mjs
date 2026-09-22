@@ -270,7 +270,7 @@ titre('3. La carte d’un colis chez la vendeuse (fonction réellement exécuté
     // 20/09/2026 : la carte se replie sur téléphone, porte sa date, et sait qui a saisi le colis.
     poser('const colisDeplies = new Set();');
     poser("function todayLocalISODate(){ return '2026-09-20'; }");
-    for (const f of ['dayKey', 'jourDuColis', 'colisReporte']) poser(bloc(f, config, 'config.js'));
+    for (const f of ['dayKey', 'jourDeReceptionColis', 'jourDuColis', 'colisReporte']) poser(bloc(f, config, 'config.js'));
     for (const f of ['colisAdresseCorrigeable', 'colisCreeParLeBureau', 'colisToutModifiable', 'colisDuplicable',
                      'colisDemandeAttention', 'colisDateHTML',
                      'reclamationBlocHTML', 'colisItemHTML']) {
@@ -299,10 +299,20 @@ titre('3. La carte d’un colis chez la vendeuse (fonction réellement exécuté
   verifier('la ligne du contenu : la DATE d\'abord (20/09/2026, Celtis : « on ne sait pas si c\'était le colis de quand »), puis le quoi, puis le numéro',
     /<div class="meta colis-quoi"><span class="colis-date"[^>]*>📅 mer 26 août<\/span><span>📦 Deux pagnes wax<\/span><span>N° CLT-2026-0007<\/span><\/div>/.test(carte),
     carte.match(/<div class="meta colis-quoi">.*/)?.[0].slice(0, 260) || 'ligne « quoi » introuvable');
-  verifier('un colis d\'aujourd\'hui dit « Aujourd\'hui », un colis reporté dit son jour de report',
-    /📅 Aujourd(&#39;|')hui<\/span>/.test(rendreCarte({ ...COLIS, created_at: '2026-09-20T08:00:00Z' }, 3))
-    && /📅 mar 22 sept \(reporté\)/.test(rendreCarte({ ...COLIS, created_at: '2026-09-20T08:00:00Z', reporte_au: '2026-09-22' }, 3)),
-    (rendreCarte({ ...COLIS, created_at: '2026-09-20T08:00:00Z', reporte_au: '2026-09-22' }, 3).match(/colis-date[^<]*<\/span>/) || [''])[0]);
+  /* 22/09/2026 — LA PASTILLE PORTE LE JOUR OÙ ELLE A REMIS LE COLIS, ET DIT LE REPORT À CÔTÉ.
+     Avant, elle portait le jour de report : la cliente lisait que son colis d'avant-hier datait
+     de demain, et sa carte quittait la journée où elle l'avait déposé. Celtis, ce jour-là :
+     « elle va être confuse, elle va dire où est passé le colis ». La carte reste donc à sa place
+     et la pastille explique, en deux temps : le jour de la remise, puis ⏭️ la nouvelle tentative. */
+  const carteReportee = rendreCarte({ ...COLIS, created_at: '2026-09-18T08:00:00Z', reporte_au: '2026-09-22' }, 3);
+  verifier('un colis d\'aujourd\'hui dit « Aujourd\'hui »',
+    /📅 Aujourd(&#39;|')hui<\/span>/.test(rendreCarte({ ...COLIS, created_at: '2026-09-20T08:00:00Z' }, 3)));
+  verifier('un colis reporté garde le jour où elle l\'a remis, et dit vers quand il est reporté',
+    /📅 ven 18 sept · ⏭️ 22 sept<\/span>/.test(carteReportee),
+    (carteReportee.match(/colis-date[^<]*<\/span>/) || [''])[0]);
+  verifier('et l\'infobulle le dit en toutes lettres, pas en jargon',
+    /title="Remis ce jour-là ; nouvelle tentative le 22 sept"/.test(carteReportee),
+    (carteReportee.match(/title="[^"]*"/) || [''])[0]);
 
   // LA CARTE REPLIÉE ET LES BOUTONS (20/09/2026)
   const enAttente = { ...COLIS, statut: 'en_attente', cree_par_role: 'fournisseur' };

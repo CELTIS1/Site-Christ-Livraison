@@ -386,10 +386,16 @@ titre("Une seule définition de « la journée »");
 const jourClient = blocDe(equipe, 'recapDayColis', 'equipe.html');
 const jourLivreur = blocDe(equipe, 'recaplDayColis', 'equipe.html');
 
-verifier("les deux récapitulatifs découpent la journée avec jourDuColis (réception, ou jour reporté), comme la fiche",
-  /jourDuColis\(c\) === date/.test(jourClient)
-  && /jourDuColis\(c\) === date/.test(jourLivreur)
-  && /jourDuColis\(c\) === __ficheCtx\.jour/.test(blocDe(equipe, 'ficheEcranColis', 'equipe.html')),
+/* 22/09/2026 — LES DEUX RÉCAPITULATIFS SONT DES POINTS. Ils s'ancrent donc sur le jour où la
+   cliente a REMIS ses colis, qui ne bouge jamais, et non sur le jour de travail que le report
+   déplace : sans cela, un colis reporté au lendemain quittait le point du soir de la vendeuse
+   qui l'avait confié le matin. La fiche « Son écran », elle, prend la règle de la personne
+   regardée — travail pour un livreur, réception pour une cliente — parce qu'elle promet de
+   dessiner l'écran de cette personne-là. */
+verifier("les deux récapitulatifs s'ancrent sur le jour de réception, et la fiche prend la règle de la personne regardée",
+  /jourDeReceptionColis\(c\) === date/.test(jourClient)
+  && /jourDeReceptionColis\(c\) === date/.test(jourLivreur)
+  && /const jourDe = estLivreur \? jourDuColis : jourDeReceptionColis/.test(blocDe(equipe, 'ficheEcranColis', 'equipe.html')),
   "trois découpages de « aujourd'hui » pour trois écrans, c'est la fabrique à écarts");
 
 verifier("les deux récapitulatifs se partagent le cache des jours passés",

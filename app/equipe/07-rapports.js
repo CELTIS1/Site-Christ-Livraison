@@ -46,9 +46,13 @@ return recaplSelectedDate || todayLocalISODate();
 // Le jour choisi ici est indépendant de celui du récapitulatif par client : on regarde souvent
 // la tournée d'hier tout en gardant la journée d'aujourd'hui sous les yeux au-dessus. Le cache
 // des jours passés, lui, est commun — un jour rapatrié une fois sert aux deux.
+/* LE RÉCAPITULATIF PAR LIVREUR EST UN POINT LUI AUSSI : même ancre que celui par client, LE JOUR
+   DE RÉCEPTION. Ce qu'on a confié au livreur ce jour-là reste dans le point de ce jour-là, même
+   reporté — sinon le soir on lui réclame des comptes sur une liste dont un colis a disparu.
+   (22/09/2026 ; voir jourDeReceptionColis et son commentaire dans config.js.) */
 function recaplDayColis(){
 const date = recaplGetDate();
-if (date === todayLocalISODate()) return (allColis || []).filter(c => jourDuColis(c) === date);
+if (date === todayLocalISODate()) return (allColis || []).filter(c => jourDeReceptionColis(c) === date);
 return recapDayCache[date] || [];
 }
 

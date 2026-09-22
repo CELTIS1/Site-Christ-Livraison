@@ -1350,11 +1350,23 @@ function dayLabel(iso) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-/* LE JOUR D'UN COLIS PEUT ÊTRE REPORTÉ. (09/09/2026, Celtis : « un colis reporté au lendemain
-   reste dans le point du soir et, le lendemain, n'apparaît nulle part : il reste dans l'oubli. »)
-   Le jour d'un colis, c'est son jour de réception (created_at) — sauf si quelqu'un l'a reporté :
-   colis.reporte_au. Alors c'est CE jour-là qui compte, partout : la journée du livreur, son
-   argent du soir, la liste du bureau, les jours de la cliente. Une seule fonction pour le dire. */
+/* UN COLIS A DEUX JOURS, ET UNE SEULE DATE NE PEUT PAS RÉPONDRE AUX DEUX QUESTIONS.
+
+     jourDeReceptionColis(c) — LE JOUR OÙ LA CLIENTE L'A REMIS. Il ne bouge jamais, quoi qu'on
+       reporte. C'est l'ancre de tout ce qui REND DES COMPTES : les deux récapitulatifs, le
+       relevé du soir, le point WhatsApp, les journées de la cliente.
+     jourDuColis(c) — LE JOUR OÙ IL FAUT S'EN OCCUPER. Le report le déplace, et c'est à ça qu'il
+       sert. C'est l'ancre de tout ce qui DISTRIBUE DU TRAVAIL : « Ma journée » du livreur, la
+       tournée de récupération, « L'essentiel » du bureau.
+
+   Les deux demandes de Celtis qui ont mené là (09/09 : « reporté, il reste dans l'oubli le
+   lendemain » ; 22/09 : « reporté, il disparaît du point de la vendeuse »), la mesure qui a
+   tranché, et la liste nommée des écrans de chaque famille sont dans le banc
+   tests/le-report-ne-perd-plus-le-colis.test.mjs. Avant d'ajouter un écran, demandez-vous s'il
+   rend des comptes ou s'il distribue du travail. */
+function jourDeReceptionColis(c) {
+  return c && c.created_at ? dayKey(c.created_at) : "";
+}
 function jourDuColis(c) {
   if (!c) return "";
   const r = c.reporte_au ? String(c.reporte_au).slice(0, 10) : "";

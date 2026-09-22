@@ -1110,15 +1110,18 @@ renderRecapBody();
 
 // Colis du jour sélectionné : aujourd'hui => on filtre les colis déjà en mémoire
 // (500 plus récents = tous ceux du jour, en direct) ; un jour passé => cache rapatrié.
+/* LE RÉCAPITULATIF PAR CLIENT EST UN POINT : il s'ancre sur LE JOUR OÙ LA CLIENTE A REMIS SES
+   COLIS, et ce jour-là ne bouge jamais. (22/09/2026, Celtis : « on fait le point de la vendeuse
+   sur la base des colis qu'elle nous a donné le jour J. Si on a reporté un seul colis au
+   lendemain et que ça ne figure pas dans son point du soir, elle va être confuse. ») Un colis
+   reporté reste donc ici, à sa place, marqué « reporté au … » — il ne doit rien tant qu'il n'est
+   pas livré, le total ne bouge pas d'un franc, mais elle le retrouve. Voir jourDeReceptionColis
+   et son commentaire dans config.js : ce sont deux questions, et deux fonctions.
+   dayKey() et non un découpage de la chaîne ISO : le découpage lit l'heure de Greenwich,
+   dayKey lit l'heure du téléphone. Une seule définition de « aujourd'hui », celle de config.js. */
 function recapDayColis(){
 const date = recapGetDate();
-if (date === todayLocalISODate()) {
-// dayKey() et non un découpage de la chaîne ISO : le découpage lit l'heure de Greenwich,
-// dayKey lit l'heure du téléphone. Ici les deux coïncident, mais la fiche « Son écran » et
-// le récapitulatif par livreur emploient dayKey — trois définitions de « aujourd'hui » pour
-// trois écrans, c'est la fabrique à écarts. Une seule, celle de config.js.
-return allColis.filter(c => jourDuColis(c) === date);
-}
+if (date === todayLocalISODate()) return allColis.filter(c => jourDeReceptionColis(c) === date);
 return recapDayCache[date] || [];
 }
 
@@ -1132,18 +1135,20 @@ recapJoursEnCours[date] = true;
 // Pas d'écran « Chargement… » quand on rafraîchit un jour déjà affiché : le tableau reste, et
 // se remplace d'un coup quand la base a répondu.
 if (!recapDayCache[date]) recapRedessinerLesDeux();
-// Le jour d'un colis, c'est jourDuColis() : le jour de réception, ou le jour où il a été
-// reporté. On ramène donc les colis reçus ce jour-là ET ceux qui y ont été reportés, puis on
-// garde ceux dont c'est vraiment le jour — un colis reçu la veille et reporté à ce jour compte
-// ici, un colis reçu ce jour-là mais reporté au lendemain n'y compte plus. (10/09/2026)
+/* LES DEUX RÉCAPITULATIFS SONT DES POINTS : leur jour est LE JOUR DE RÉCEPTION (22/09/2026).
+   On ramène donc les colis reçus ce jour-là, et eux seuls. Jusqu'au 22/09 cette requête ramenait
+   aussi ceux REPORTÉS à ce jour-là, puis gardait ceux dont c'était le jour de travail : un colis
+   reçu le 21 et reporté au 22 quittait donc le point du 21 — celui de la vendeuse qui l'avait
+   remis ce jour-là — pour apparaître dans le point du 22, où elle ne l'attendait pas. */
 const { data, error } = await supabaseClient
 .from('colis')
 .select('*')
-.or(`reporte_au.eq.${date},and(created_at.gte.${date}T00:00:00,created_at.lte.${date}T23:59:59)`)
+.gte('created_at', `${date}T00:00:00`)
+.lte('created_at', `${date}T23:59:59`)
 .order('created_at', { ascending: false });
 delete recapJoursEnCours[date];
 if (error) { console.error(error); if (!recapDayCache[date]) recapDayCache[date] = []; }
-else recapDayCache[date] = (data || []).filter(c => jourDuColis(c) === date);
+else recapDayCache[date] = (data || []).filter(c => jourDeReceptionColis(c) === date);
 recapRedessinerLesDeux();
 }
 

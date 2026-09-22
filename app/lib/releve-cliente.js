@@ -48,6 +48,13 @@ const RELEVE_COLONNES = ['Téléphone', 'Adresse', 'Statut', 'Article', 'Vous re
 // sous les siens lisent la même explication.
 const RELEVE_NOTE = "La colonne « Article » dit ce qui a été enregistré. La colonne « Vous revient » dit ce que CLT vous doit réellement, colis par colis : l'article encaissé pour vous, moins ce que vous devez à CLT. Son total est la somme à vous reverser. Les frais de livraison des colis ordinaires ne figurent pas dans ce tableau : ils sont payés par le destinataire et reviennent à CLT. Sur une expédition, en revanche, le destinataire vous a déjà payée : CLT n'encaisse rien pour vous, et deux frais se retiennent — les frais d'expédition (ce que prend le transporteur) et les frais de course (le déplacement du livreur). Un troisième frais, imprévu et ponctuel (attente, détour…), peut aussi se retenir, avec son motif — il n'apparaît que si le livreur en a signalé un. La ligne apparaît alors en négatif.";
 
+/* « 2026-09-23 » → « 23/09 ». Court, parce que la mention vit à l'intérieur d'une colonne déjà
+   pleine, et qu'un relevé se lit souvent sur un téléphone. */
+function jourCourtFR(iso) {
+  const j = String(iso || '').slice(0, 10).split('-');
+  return j.length === 3 ? j[2] + '/' + j[1] : String(iso || '');
+}
+
 // Construit le relevé d'une liste de colis : les lignes et les totaux, en données brutes.
 // Aucune mise en forme ici — chaque sortie habille ces mêmes nombres à sa façon.
 function releveCliente(colis) {
@@ -59,7 +66,15 @@ function releveCliente(colis) {
     // on voyait des tirets sans savoir pour quelle commune »). Une seule règle : colisDestinationTexte().
     adresse:     colisDestinationTexte(c),
     statutCode:  (c && c.statut) || '',
-    statut:      statutTexte(c && c.statut, c),
+    /* LE COLIS REPORTÉ LE DIT LUI-MÊME. (22/09/2026, Celtis : « elle va être confuse, elle va
+       dire où est passé le colis. ») Depuis ce jour, un colis reporté reste dans le point de la
+       journée où sa cliente l'a remis — encore faut-il que la ligne explique pourquoi il n'est
+       pas livré, sans quoi on aurait simplement déplacé la question. La mention est posée DANS
+       la colonne « Statut », et non à côté, pour que les quatre sorties (écran, WhatsApp, Excel,
+       PDF) la portent sans qu'aucune ait à y penser. */
+    statut:      statutTexte(c && c.statut, c) + (colisReporte(c) ? ' \u00b7 report\u00e9 au ' + jourCourtFR(jourDuColis(c)) : ''),
+    reporte:     colisReporte(c),
+    reporteAu:   colisReporte(c) ? jourDuColis(c) : '',
     article:     Number(montantArticleColis(c)) || 0,
     // Ce que CLT doit sur CE colis, retenues faites. Sur une expédition c'est un nombre négatif,
     // et il doit le rester : c'est ainsi que la vendeuse voit ce qu'elle doit, ligne par ligne.

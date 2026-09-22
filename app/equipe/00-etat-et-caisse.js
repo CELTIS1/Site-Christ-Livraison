@@ -507,9 +507,17 @@ const tel = (c.destinataire_telephone || '').toLowerCase();
 return desc.includes(t) || dest.includes(t) || fourn.includes(t) || numero.includes(t) || tel.includes(t);
 }
 
+/* LA LISTE DU BUREAU EST LA SEULE À RÉPONDRE OUI AUX DEUX JOURS, ET C'EST VOULU (22/09/2026).
+   Ce n'est pas un point — un point doit être EXACTEMENT ce qu'une personne a remis ce jour-là —
+   et ce n'est pas non plus une tournée. C'est la liste où le bureau cherche un colis. Un colis
+   reporté doit donc s'y trouver sous sa journée de réception (celle où la cliente l'a remis, que
+   l'équipe consulte pour lui répondre) ET sous sa journée de report (celle où il faut le faire).
+   Sa carte porte « ⏭️ Reporté au … » avec le bouton pour le ramener : rien n'est ambigu.
+   Jusqu'au 22/09 il quittait la première, et le commentaire de eqReportes raconte ce que ça a
+   coûté — l'équipe a supprimé des colis pour les recréer. */
 function matchesDate(c, dateStr){
 if (!dateStr) return true;
-return jourDuColis(c) === dateStr;
+return jourDeReceptionColis(c) === dateStr || jourDuColis(c) === dateStr;
 }
 
 // todayLocalISODate() vit dans clt-common.js, chargé par toutes les pages.

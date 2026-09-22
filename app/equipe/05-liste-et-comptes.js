@@ -263,8 +263,8 @@ const ligneReportes = eqReportes.length
        ⏭️ <strong>${eqReportes.length}</strong> colis de cette journée ${eqReportes.length > 1 ? 'ont été reportés' : 'a été reporté'}
        à ${escapeHTML(dayLabel(jourDuColis(eqReportes[0]) + 'T12:00:00').toLowerCase())}${
          new Set(eqReportes.map(c => jourDuColis(c))).size > 1 ? ' ou plus tard' : ''} :
-       ${eqReportes.length > 1 ? 'ils ne sont plus' : 'il n\'est plus'} dans cette liste.
-       <button type="button" class="btn btn-sm btn-outline" id="eq-voir-reportes">Les voir</button>
+       ${eqReportes.length > 1 ? 'ils restent' : 'il reste'} dans cette liste, marqué${eqReportes.length > 1 ? 's' : ''} ⏭️ — et ${eqReportes.length > 1 ? 'ils apparaissent' : 'il apparaît'} aussi dans la journée de report.
+       <button type="button" class="btn btn-sm btn-outline" id="eq-voir-reportes">Aller à cette journée</button>
      </div>`
   : '';
 
@@ -666,7 +666,7 @@ const dangers = [];
 if (colisASupprimer) {
   if (colisASupprimer.statut === 'livre') dangers.push("Ce colis est LIVRÉ : son argent est compté dans le point du livreur et dans le relevé de la cliente. Le supprimer efface ces montants.");
   else if (colisASupprimer.statut === 'non_livre') dangers.push("Ce colis est marqué non livré : le motif de l'échec et la course du livreur partent avec lui.");
-  if (colisReporte(colisASupprimer)) dangers.push("Ce colis est reporté au " + dayLabel(jourDuColis(colisASupprimer) + 'T12:00:00').toLowerCase() + " : c'est pour cela qu'il ne s'affiche pas dans sa journée de réception. Le bouton « Le remettre à sa journée » le ramène sans le supprimer.");
+  if (colisReporte(colisASupprimer)) dangers.push("Ce colis est reporté au " + dayLabel(jourDuColis(colisASupprimer) + 'T12:00:00').toLowerCase() + " : il s'affiche dans les deux journées, la sienne et celle du report. Le bouton « Le remettre à sa journée » annule le report sans le supprimer.");
   if (colisASupprimer.numero) dangers.push("Le numéro " + colisASupprimer.numero + " ne sera pas réattribué : il manquera dans la suite des numéros.");
 }
 dangers.push("La suppression est enregistrée au journal (qui, quand, et le colis entier) — mais le colis, lui, ne revient pas.");

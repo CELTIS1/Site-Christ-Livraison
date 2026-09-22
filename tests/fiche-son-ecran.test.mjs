@@ -544,8 +544,15 @@ verifier("la fiche ne dépend pas de CSS.escape, absent des vieux Android de l'�
 titre("La fiche découpe la journée comme le téléphone");
 
 const filtre = blocDe(equipe, 'ficheEcranColis', 'equipe.html');
-verifier("la fiche découpe sur le jour du colis (réception, ou jour reporté depuis le 09/09/2026), comme partout ailleurs",
-  /jourDuColis\(c\)/.test(filtre)
+/* 22/09/2026 — LA FICHE PREND LA RÈGLE DE LA PERSONNE REGARDÉE, et c'est justement ce qui tient
+   la promesse de son sous-titre (« dessiné par le même code que son écran »). Le téléphone du
+   livreur range par jour de TRAVAIL : un colis reporté à demain quitte aujourd'hui, c'est à ça
+   que le report sert. L'espace de la cliente range par jour de RÉCEPTION : celui où elle a remis
+   le colis, qui ne bouge jamais. Une seule des deux règles ici ferait mentir la fiche pour
+   l'autre. */
+verifier("la fiche découpe comme l'écran qu'elle imite : travail pour le livreur, réception pour la cliente",
+  /const jourDe = estLivreur \? jourDuColis : jourDeReceptionColis/.test(filtre)
+  && /jourDe\(c\) === __ficheCtx\.jour/.test(filtre)
   && !/delivered_at|livre_at|date_livraison/.test(filtre),
   "un autre découpage donnerait un autre paquet de colis, et donc deux chiffres sans qu'aucun calcul ne soit faux");
 
