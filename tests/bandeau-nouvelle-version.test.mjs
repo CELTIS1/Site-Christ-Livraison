@@ -1223,10 +1223,19 @@ verifier(
    CLT confie une somme au livreur, ce qu'il pose à la gare sort de cette avance, et le soir il
    remet simplement ce qu'il a encaissé — plus aucune soustraction. Les dépenses s'écrivent
    toutes seules, colis par colis ; le solde se lit dans Gestion et sur l'écran du livreur, avec
-   la phrase qui l'explique ; un solde négatif dit que CLT lui doit cette somme. Étiquette 20260922point. */
+   la phrase qui l'explique ; un solde négatif dit que CLT lui doit cette somme. Étiquette 20260922point.
+   v228, le 22/09/2026 — « L'ESSENTIEL » COMPTE COMME LA CAISSE. Mesuré en production : la
+   pastille « argent non remis » de l'écran de l'équipe annonçait 1 517 000 FCFA là où la caisse
+   livreurs et le téléphone du livreur en comptaient 1 449 400 — soixante-sept mille six cents
+   francs d'écart, tous les soirs, entre deux écrans du même bureau. Elle additionnait article +
+   livraison sans condition : elle ignorait qu'une expédition n'a rien mis dans la poche du
+   livreur, qu'une livraison payée d'avance non plus, qu'un colis « argent pas rentré » ne compte
+   pas, que les frais avancés s'en retranchent — et elle oubliait les courses payées sur un colis
+   non livré. Le commentaire du code disait pourtant « mêmes règles que la caisse livreur ».
+   Corrigé des deux côtés : la base n'écrit plus la règle, elle l'appelle. Étiquette 20260922essentiel. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v227'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v228'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

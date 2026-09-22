@@ -574,7 +574,28 @@ export function nouveauMonde() {
       const jour = (c) => (c.reporte_au ? String(c.reporte_au).slice(0, 10) : String(c.created_at || '').slice(0, 10));
       const det = (c) => c.statut !== 'retour' ? null : (c.retour_detenteur || (c.retour_rendu_at ? 'cliente' : 'livreur'));
       const ids = (f) => TABLES.colis.filter(f).map(c => c.id);
-      const total = (c) => (c.montant_article != null || c.montant_livraison != null) ? (Number(c.montant_article) || 0) + (Number(c.montant_livraison) || 0) : (Number(c.montant) || 0);
+      /* L'ARGENT NON REMIS, COMME LA CAISSE (22/09/2026). La fausse base additionnait
+         article + livraison sans condition — le même défaut que la vraie fonction, corrigé le
+         même jour : une expédition n'a rien mis dans la poche du livreur, un colis « argent pas
+         rentré » non plus, et les frais avancés s'en retranchent. Jumeau de
+         essentiel_compteurs_calcul() en base et du repli de 03-file-hors-reseau.js. */
+      const expedition = (c) => String(c.commune_destination || '').trim() === 'Expédition (intérieur)';
+      const enMain = (c) => {
+        let m = 0;
+        if (c.statut === 'livre' && !c.article_non_encaisse && !expedition(c)) {
+          m += (c.montant_article != null || c.montant_livraison != null) ? (Number(c.montant_article) || 0) : (Number(c.montant) || 0);
+        }
+        if (c.statut === 'livre' && !c.livraison_non_encaissee && !c.livraison_payee && !expedition(c)) {
+          m += (c.montant_article != null || c.montant_livraison != null) ? (Number(c.montant_livraison) || 0) : 0;
+        }
+        if (c.statut !== 'livre' && c.livraison_payee_non_livre && !c.livraison_payee && !expedition(c)) {
+          m += (c.montant_article != null || c.montant_livraison != null) ? (Number(c.montant_livraison) || 0) : 0;
+        }
+        if (!c.frais_expedition_rembourse_at) m -= Number(c.frais_expedition) || 0;
+        if (!c.frais_additionnels_rembourse_at) m -= Number(c.frais_additionnels_montant) || 0;
+        return m;
+      };
+      const coursePayeeSansLivraison = (c) => c.statut !== 'livre' && c.livraison_payee_non_livre && !c.livraison_payee && !expedition(c);
       const aSolder = TABLES.colis.filter(c => c.statut === 'livre' && !c.encaissement_remis);
       return { data: {
         sans_livreur: ids(c => !c.livreur_id && !['livre', 'non_livre', 'retour'].includes(c.statut)),
@@ -589,7 +610,8 @@ export function nouveauMonde() {
         litiges: ids(c => det(c) === 'litige'),
         qualifier: ids(c => (c.statut === 'non_livre' || c.statut === 'retour') && c.non_livre_at && c.non_livre_at >= '2026-10-01' && c.echec_imputable == null),
         frais_additionnels: ids(c => (Number(c.frais_additionnels_montant) || 0) > 0 && !c.frais_additionnels_regle_at),
-        a_solder: aSolder.length, reste_a_remettre: aSolder.reduce((t, c) => t + total(c), 0),
+        a_solder: aSolder.length,
+        reste_a_remettre: TABLES.colis.filter(c => !c.encaissement_remis && (c.statut === 'livre' || coursePayeeSansLivraison(c))).reduce((t, c) => t + enMain(c), 0),
         reclamations: (TABLES.reclamations_clientes || []).filter(r => r.statut !== 'resolue').length,
         reclamations_tard: (TABLES.reclamations_clientes || []).filter(r => r.statut !== 'resolue' && String(r.created_at || '').slice(0, 10) < moins(2)).length,
         reclamations_livreurs: (TABLES.reclamations_clientes || []).filter(r => r.statut !== 'resolue' && r.auteur === 'livreur').length,

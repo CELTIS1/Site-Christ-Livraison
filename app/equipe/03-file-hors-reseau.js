@@ -1013,14 +1013,33 @@ const nbPending = (typeof pendingAccounts !== 'undefined' && pendingAccounts) ? 
 const nbReset = resetEnAttente();
 // Les demandes approuvées qui attendent que l'équipe dicte le code (06/09/2026, point 1.3).
 const nbCodes = (typeof resetRequests !== 'undefined' && resetRequests) ? resetRequests.filter(r => r.status === 'approuve').length : 0;
-// Argent non remis : mêmes règles que la caisse livreur — colis livrés pas encore soldés.
+/* ARGENT NON REMIS — MÊMES RÈGLES QUE LA CAISSE LIVREUR, ET CETTE FOIS C'EST VRAI (22/09/2026).
+
+   Le commentaire au-dessus de ces lignes disait « mêmes règles que la caisse livreur » depuis
+   l'origine, et il était FAUX des deux côtés : la pastille additionnait montantTotalColis()
+   — article + livraison, sans condition — alors que la caisse, elle, passe par
+   montantEnMainDuLivreur(), qui sait qu'une expédition n'a rien mis dans la poche du livreur,
+   qu'une livraison payée d'avance non plus, qu'un colis marqué « argent pas rentré » ne compte
+   pas, et que les frais avancés de sa poche s'en retranchent.
+
+   MESURÉ EN PRODUCTION LE 22/09 : la pastille annonçait 1 517 000 FCFA là où la règle de la
+   maison en comptait 1 449 400. Soixante-sept mille six cents francs d'écart, tous les soirs,
+   entre deux écrans du même bureau. C'est la forme exacte de l'incident du 25 août — 11 000 sur
+   le téléphone du livreur, 14 000 dans le tableau — et il n'avait jamais été refermé ici.
+
+   Corrigé des deux côtés le même jour : essentiel_compteurs() en base appelle désormais
+   montant_en_main_du_livreur(), et ce repli-ci appelle montantEnMainDuLivreur(). Le banc
+   tests/l-essentiel-compte-comme-la-caisse les tient d'accord.
+
+   ET LA COURSE PAYÉE SANS LIVRAISON ENTRE AUSSI : ces billets sont dans sa poche même si le
+   colis n'est pas livré (règle du 18/09). La pastille les oubliait. */
 let resteARemettre = 0, nbASolder = 0;
 if (base) { resteARemettre = Number(base.reste_a_remettre || 0); nbASolder = Number(base.a_solder || 0); }
 else colis.forEach(c => {
-  if (c.statut === 'livre' && !c.encaissement_remis){
-    resteARemettre += (typeof montantTotalColis === 'function' ? Number(montantTotalColis(c)) : 0) || 0;
-    nbASolder++;
-  }
+  const enMain = () => (typeof montantEnMainDuLivreur === 'function' ? Number(montantEnMainDuLivreur(c)) : 0) || 0;
+  if (c.encaissement_remis) return;
+  if (c.statut === 'livre') { resteARemettre += enMain(); nbASolder++; }
+  else if (typeof coursePayeeSansLivraison === 'function' && coursePayeeSansLivraison(c)) resteARemettre += enMain();
 });
 // Frais additionnels non réglés, toutes dates confondues (16/09/2026, chantier 3) : on ne veut
 // pas en oublier un dans la pile des colis passés.
