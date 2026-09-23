@@ -57,7 +57,7 @@ if (fs.existsSync(mig)) {
   verifier('table notifications : user_id → profiles, titre, corps, url, param, cree_le, lu_le', /create table if not exists public\.notifications/.test(m) && /user_id\s+uuid not null references public\.profiles\(id\) on delete cascade/.test(m) && /lu_le\s+timestamptz/.test(m));
   verifier('RLS : chacun lit et met à jour LES SIENNES ; anon exclu ; ni insert ni delete côté écran', /enable row level security/.test(m) && /revoke all on public\.notifications from anon/.test(m) && /for select to authenticated using \(user_id = auth\.uid\(\)\)/.test(m) && /for update to authenticated using \(user_id = auth\.uid\(\)\)/.test(m) && !/for insert/.test(m) && !/for delete/.test(m));
   verifier('un déclencheur ne laisse bouger que lu_le depuis l’écran', /notifications_seul_lu_le/.test(m) && /auth\.role\(\) = 'authenticated'/.test(m));
-  verifier('ménage à 90 jours, Realtime, trace de migration', /interval '90 days'/.test(m) && /supabase_realtime add table public\.notifications/.test(m) && /migration_appliquee\('2026-09-23-notifications-recues\.sql'/.test(m));
+  verifier('ménage à 90 jours, Realtime, trace de migration', /interval '90 days'/.test(m) && /lu_le < now\(\) - interval '30 days'/.test(m) && /supabase_realtime add table public\.notifications/.test(m) && /migration_appliquee\('2026-09-23-notifications-recues\.sql'/.test(m));
 } else {
   console.log('  (migration privée absente de cette copie : banc de la base sauté)');
 }
@@ -68,6 +68,7 @@ const css = lire('app/style.css');
 verifier('le style : rond, pastille, panneau compact (≤ 360 px), 44 px sur téléphone, mode nuit', /\.clt-cloche\{/.test(css) && /\.clt-cloche-badge\{/.test(css) && /\.notif-panel\{[^}]*min\(360px/.test(css) && /\.clt-cloche\{ width:44px; height:44px; \}/.test(css) && /html\[data-theme="dark"\] \.notif-panel\{/.test(css));
 const ecran = lire('app/cloche.js');
 verifier('l’écran ne se pose pas quand l’administrateur regarde l’écran d’un autre (?voir=)', /\[\?&\]voir=/.test(ecran));
+verifier('les lues descendent sous « déjà lues », repliées, sans rien effacer', /details class="notif-lues"/.test(ecran) && /déjà lue/.test(ecran));
 verifier('l’écran ne fait que lire et marquer lu : jamais d’insert ni de delete', /from\('notifications'\)\s*\.select/.test(ecran) && /from\('notifications'\)\.update\(\{ lu_le: quand \}\)/.test(ecran) && !/from\('notifications'\)\.(insert|delete)/.test(ecran));
 verifier('le parcours navigateur existe et est lancé par GitHub', fs.existsSync(path.join(RACINE, 'tests/parcours/la-cloche.mjs')) && /'la-cloche\.mjs'/.test(lire('tests/parcours/lancer.mjs')));
 

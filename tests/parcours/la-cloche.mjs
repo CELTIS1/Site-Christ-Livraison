@@ -30,7 +30,13 @@ const journal = () => monde.journal.filter((j) => j.table === 'notifications');
 titre('1. La cloche est là, avec ses non-lues');
 await N.ouvrirConnecte('livreur.html', LIVREUR);
 await dodo(1500);
-verifier('un rond 🔔 dans la barre du haut, à gauche des autres', await page.locator('.topbar .topbar-actions .clt-cloche').count() === 1);
+verifier('un rond 🔔 dans la barre du haut, entre l\'identité et les boutons', await page.locator('.topbar .user-info--groupes > .clt-cloche-wrap .clt-cloche').count() === 1);
+{ // Sur téléphone (Celtis, 23/09) : PAS sur la ligne du thème et du menu — sur la ligne de l'identité, tout à droite, sous le menu.
+  const cloche = await page.locator('.clt-cloche').boundingBox(), menu = await page.locator('#settings-menu-btn').boundingBox(), nom = await page.locator('#user-name').boundingBox();
+  verifier('sur téléphone, la cloche est SOUS le menu (ligne d\'en dessous), pas à côté', cloche && menu && cloche.y >= menu.y + menu.height - 2, JSON.stringify({ cloche, menu }));
+  verifier('… sur la ligne de l\'identité, tout à droite', nom && cloche && Math.abs((cloche.y + cloche.height / 2) - (nom.y + nom.height / 2)) < 14 && cloche.x + cloche.width >= 390 - 20, JSON.stringify({ cloche, nom }));
+  verifier('le bouton 🔄 « Actualiser » n\'est plus dans la barre', await page.locator('#btn-actualiser').count() === 0);
+}
 verifier('la pastille dit 2 (les siennes seulement — la cliente en a une autre)', (await page.locator('.clt-cloche-badge').textContent()) === '2');
 const rond = await page.locator('.clt-cloche').boundingBox();
 verifier('le rond fait 44 px sur téléphone (règle de la maison)', rond && Math.round(rond.width) === 44 && Math.round(rond.height) === 44, JSON.stringify(rond));
@@ -41,9 +47,9 @@ verifier('le panneau s\'ouvre', await page.locator('.notif-panel').isVisible());
 const boite = await page.locator('.notif-panel').boundingBox();
 verifier('il ne prend pas tout l\'écran : ≤ 360 px de large, posé à droite sous la barre', boite && boite.width <= 366 && boite.x + boite.width <= 390 && boite.x + boite.width >= 370, JSON.stringify(boite));
 const jours = await page.locator('.notif-jour').allTextContents();
-verifier('deux groupes : « Aujourd’hui » puis « Hier »', jours.join('|') === 'Aujourd’hui|Hier', jours);
+verifier('les jours : « Aujourd’hui » (non-lues) puis « Hier » (sous les lues)', jours.join('|') === 'Aujourd’hui|Hier', jours);
 const lignes = await page.locator('.notif-ligne').allTextContents();
-verifier('trois lignes, les plus récentes d\'abord', lignes.length === 3 && /Colis reporté/.test(lignes[0]) && /Récupération demandée/.test(lignes[1]) && /Colis livré/.test(lignes[2]), lignes);
+verifier('trois lignes : les deux non-lues d\'abord, la lue sous « déjà lue »', lignes.length === 3 && /Colis reporté/.test(lignes[0]) && /Récupération demandée/.test(lignes[1]) && /Colis livré/.test(lignes[2]) && await page.locator('.notif-lues .notif-ligne[data-notif="3"]').count() === 1, lignes);
 verifier('les deux non-lues sont marquées, la lue non', await page.locator('.notif-ligne--non-lue').count() === 2 && !(await page.locator('.notif-ligne[data-notif="3"]').evaluate((el) => el.classList.contains('notif-ligne--non-lue'))));
 const gras = await page.locator('.notif-ligne[data-notif="1"] .notif-titre').evaluate((el) => Number(getComputedStyle(el).fontWeight));
 verifier('le titre d\'une non-lue est en gras', gras >= 700, gras);
@@ -67,6 +73,9 @@ const tout = journal().filter((j) => j.op === 'update').pop();
 verifier('la base reçoit lu_le pour ce qui restait (la ligne 2)', tout && tout.ids.join() === '2', JSON.stringify(tout));
 verifier('la pastille s\'éteint', await page.locator('.clt-cloche-badge').isHidden());
 verifier('le bouton « Tout marquer lu » disparaît, les lignes restent (rien n\'est effacé)', await page.locator('.notif-tout-lu').count() === 0 && await page.locator('.notif-ligne').count() === 3);
+verifier('les lues sont descendues sous « 3 déjà lues », repliées ; en haut, « Rien de nouveau »', (await page.locator('.notif-lues > summary').textContent()).trim() === '3 déjà lues' && !(await page.locator('.notif-lues').evaluate((d) => d.open)) && /Rien de nouveau/.test(await page.locator('.notif-vide').textContent()));
+await page.locator('.notif-lues > summary').click(); await dodo(300);
+verifier('un appui les déplie, toujours consultables', await page.locator('.notif-lues').evaluate((d) => d.open) && await page.locator('.notif-lues .notif-ligne').count() === 3);
 await page.keyboard.press('Escape'); await dodo(300);
 verifier('Échap ferme le panneau', await page.locator('.notif-panel').isHidden());
 

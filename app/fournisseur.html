@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260923cloche">
+<link rel="stylesheet" href="style.css?v=20260923placement">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260923cloche"></script>
+<script src="theme.js?v=20260923placement"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260923cloche" defer></script>
-<script src="cloche.js?v=20260923cloche" defer></script>
-<script src="splash.js?v=20260923cloche"></script>
+<script src="notifications-recues.js?v=20260923placement" defer></script>
+<script src="cloche.js?v=20260923placement" defer></script>
+<script src="splash.js?v=20260923placement"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -233,7 +233,7 @@
       <span class="role-pill">Client</span>
     </div>
     <div class="topbar-actions">
-      <button type="button" class="clt-actualiser" id="btn-actualiser" title="Actualiser maintenant" aria-label="Actualiser les données"><span class="clt-actualiser-icone" aria-hidden="true">🔄</span><span class="clt-actualiser-badge" hidden></span></button>
+      <!-- Le bouton 🔄 « Actualiser » est parti le 23/09/2026 (Celtis : « je ne vois plus trop son utilité, tout est instantané ») : le temps réel et les rendus retenus pendant la saisie continuent seuls (CLTActualiser reste, sans bouton). -->
       <div class="settings-menu">
         <button type="button" class="settings-menu-btn" id="settings-menu-btn" aria-label="Menu"></button>
         <div class="settings-dropdown" id="settings-dropdown">
@@ -674,30 +674,30 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260923cloche"></script>
-<script src="numero-international.js?v=20260923cloche"></script>
-<script src="voir-un-compte.js?v=20260923cloche"></script>
-<script src="lib/bibliotheques.js?v=20260923cloche"></script>
-<script src="lib/retours.js?v=20260923cloche"></script>
-<script src="lib/reclamations.js?v=20260923cloche"></script>
-<script src="lib/communes-et-tarifs.js?v=20260923cloche"></script>
-<script src="lib/argent.js?v=20260923cloche"></script>
-<script src="lib/releve-cliente.js?v=20260923cloche"></script>
-<script src="lib/papier-a-en-tete.js?v=20260923cloche"></script>
-<script src="lib/briques-argent.js?v=20260923cloche"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260923cloche"></script>
-<script src="lib/annonce-de-remise.js?v=20260923cloche"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260923cloche"></script>
-<script src="lib/primes.js?v=20260923cloche"></script>
-<script src="lib/doublons.js?v=20260923cloche"></script>
-<script src="config.js?v=20260923cloche"></script>
-<script src="activite-de-la-cliente.js?v=20260923cloche"></script>
-<script src="activite-ecran.js?v=20260923cloche"></script>
-<script src="mes-boutiques.js?v=20260923cloche"></script>
-<script src="etiquettes-et-scan.js?v=20260923cloche"></script>
-<script src="import-de-colis.js?v=20260923cloche"></script>
-<script src="biometric-lock.js?v=20260923cloche"></script>
-<script src="clt-select-recherche.js?v=20260923cloche"></script>
+<script src="clt-common.js?v=20260923placement"></script>
+<script src="numero-international.js?v=20260923placement"></script>
+<script src="voir-un-compte.js?v=20260923placement"></script>
+<script src="lib/bibliotheques.js?v=20260923placement"></script>
+<script src="lib/retours.js?v=20260923placement"></script>
+<script src="lib/reclamations.js?v=20260923placement"></script>
+<script src="lib/communes-et-tarifs.js?v=20260923placement"></script>
+<script src="lib/argent.js?v=20260923placement"></script>
+<script src="lib/releve-cliente.js?v=20260923placement"></script>
+<script src="lib/papier-a-en-tete.js?v=20260923placement"></script>
+<script src="lib/briques-argent.js?v=20260923placement"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260923placement"></script>
+<script src="lib/annonce-de-remise.js?v=20260923placement"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260923placement"></script>
+<script src="lib/primes.js?v=20260923placement"></script>
+<script src="lib/doublons.js?v=20260923placement"></script>
+<script src="config.js?v=20260923placement"></script>
+<script src="activite-de-la-cliente.js?v=20260923placement"></script>
+<script src="activite-ecran.js?v=20260923placement"></script>
+<script src="mes-boutiques.js?v=20260923placement"></script>
+<script src="etiquettes-et-scan.js?v=20260923placement"></script>
+<script src="import-de-colis.js?v=20260923placement"></script>
+<script src="biometric-lock.js?v=20260923placement"></script>
+<script src="clt-select-recherche.js?v=20260923placement"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;

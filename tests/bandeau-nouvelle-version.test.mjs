@@ -1323,10 +1323,18 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    pastille des non-lues, panneau compact par jour, un appui marque lu et ouvre l'objet, « Tout
    marquer lu », Realtime, ménage à 90 jours. Règle app/notifications-recues.js, écran app/cloche.js,
    migration _sql-prive/2026-09-23-notifications-recues.sql, banc les-notifications-recues,
-   parcours la-cloche. Étiquette 20260923cloche. */
+   parcours la-cloche. Étiquette 20260923cloche.
+   v240, le 23/09/2026 — LA CLOCHE À SA PLACE, LE BOUTON 🔄 S'EN VA. Celtis : « le bouton
+   d'actualisation n'a plus sa place, tout est instantané » ; « la cloche juste en bas du menu
+   déroulant, bien espacé, à gauche comme à droite » ; « une fois utilisée, qu'elle aille ailleurs
+   ou disparaisse ». Sur téléphone la cloche est sur la ligne de l'identité, à droite, sous le menu
+   (le titre garde toujours sa ligne avec les deux ronds, même à 320 px) ; sur ordinateur entre
+   l'identité et les boutons. Les lues repliées sous « déjà lues » ; ménage 30 j lues / 90 j
+   non-lues (fonction mise à jour en base). Le bouton 🔄 retiré des trois pages qui l'avaient.
+   Étiquette 20260923placement. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v239'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v240'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -364,14 +364,12 @@ titre('Une mise à jour n’efface jamais une saisie en cours');
 // Demande du 25/08/2026 : « il faudrait mettre un bouton de rafraîchissement dans l'onglet du
 // haut […] Ça sera plus facile et plus accessible pour tout le monde. » Donc les TROIS espaces,
 // pas seulement celui de l'équipe.
-titre('Le bouton « Actualiser » du bandeau est branché partout');
+titre('Le rafraîchissement du bandeau (le bouton 🔄 est parti le 23/09/2026, le mécanisme reste)');
 for (const fichier of ['equipe.html', 'livreur.html', 'fournisseur.html']) {
   const src = lireAvecCode(APP, fichier);
-  verifier(`${fichier} : le bouton est bien dans le bandeau du haut`,
-    /id="btn-actualiser"/.test(src));
-  verifier(`${fichier} : il annonce ce qu'il fait aux lecteurs d'écran`,
-    /id="btn-actualiser"[^>]*aria-label=/.test(src) || /aria-label="[^"]*[Aa]ctualiser[^"]*"/.test(src));
-  verifier(`${fichier} : il est réellement branché à un rafraîchissement`,
+  verifier(`${fichier} : plus de bouton 🔄 dans le bandeau (Celtis, 23/09/2026 : « tout est instantané »)`,
+    !/id="btn-actualiser"/.test(src));
+  verifier(`${fichier} : le rafraîchissement automatique reste branché (temps réel, retour au premier plan)`,
     /CLTActualiser\.installer\(/.test(src));
 }
 

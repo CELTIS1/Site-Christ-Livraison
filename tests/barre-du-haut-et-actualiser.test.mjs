@@ -147,13 +147,13 @@ for (const [nom, src] of PAGES) {
     /class="settings-menu"/.test(zoneActions));
 }
 
-// Trois pages seulement ont un bouton 🔄 ; les deux espaces Express n'en ont pas. On garde le
-// compte, pour qu'un futur copier-coller n'en fasse pas apparaître deux dans la même page —
-// CLTActualiser ne pilote qu'un bouton à la fois et le second resterait inerte.
+// Le bouton 🔄 est PARTI de toutes les pages le 23/09/2026 (Celtis : « il est moins utilisé, je ne
+// vois plus trop son utilité, tout est instantané ; ça dégage de la place »). Le temps réel et les
+// rendus retenus pendant la saisie continuent sans lui ; CLTActualiser.installer() rend null et
+// signalerEnAttente() ne dessine rien. Aucune page ne doit le faire réapparaître.
 for (const [nom, src] of PAGES) {
   const n = (src.match(/id="btn-actualiser"/g) || []).length;
-  const attendu = ['equipe.html', 'fournisseur.html', 'livreur.html'].includes(nom) ? 1 : 0;
-  verifier(`${nom} porte ${attendu} bouton d\u2019actualisation`, n === attendu, 'trouvé : ' + n);
+  verifier(`${nom} n\u2019a plus de bouton d\u2019actualisation (retiré le 23/09/2026)`, n === 0, 'trouvé : ' + n);
 }
 
 titre('2b. Le CSS qui tient cette barre');
@@ -178,8 +178,10 @@ verifier('elle ne s\u2019applique jamais à tous les en-têtes sans distinction'
 // C'est ce qui remet la roue dentée en haut à droite, donc son menu à l'intérieur de l'écran.
 verifier('sur téléphone, les boutons passent en première ligne',
   /\.topbar-actions\s*\{[^}]*order:\s*1/.test(css));
-verifier('et l\u2019identité prend la seconde ligne entière',
-  /\.topbar-identite\s*\{[^}]*order:\s*2[^}]*width:\s*100%/.test(css));
+// Depuis le 23/09/2026 la seconde ligne est partagée : l'identité à gauche, la cloche 🔔 à droite
+// (base « 100 % moins le rond », ce qui interdit aux boutons de s'y glisser).
+verifier('et l\u2019identité prend la seconde ligne, avec la cloche à sa droite',
+  /\.topbar-identite\s*\{[^}]*order:\s*2[^}]*flex:\s*1 1 calc\(100% - 60px\)/.test(css) && /\.clt-cloche-wrap\{order:3; flex:0 0 auto; margin-left:auto;\}/.test(css));
 
 // Filet de sécurité : même si un jour la barre repartait de travers, le menu ne pourrait plus
 // être plus large que l'écran.
@@ -513,8 +515,9 @@ for (const [nom, motif] of Object.entries(BRANCHEMENTS)) {
   // L'identifiant demandé doit être celui du bouton présent dans la page : une faute de frappe
   // ici ne casse rien, ne signale rien, et rend simplement le bouton inerte à vie.
   const demande = (src.match(/CLTActualiser\.installer\(\{\s*\n?\s*id:\s*'([^']+)'/) || [])[1];
-  verifier(`${nom} vise le bon identifiant de bouton`,
-    demande === 'btn-actualiser' && src.includes(`id="${demande}"`), 'demandé : ' + demande);
+  // Depuis le 23/09/2026 le bouton n'est plus dans la page : l'installation rend null et c'est voulu.
+  verifier(`${nom} vise l'identifiant convenu (le bouton, lui, n'existe plus)`,
+    demande === 'btn-actualiser', 'demandé : ' + demande);
 }
 
 // L'espace Équipe a une particularité : un anti-rebond de 3 s protège les déclencheurs

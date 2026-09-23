@@ -21,7 +21,7 @@
   const esc = (s) => (typeof escapeHTML === 'function') ? escapeHTML(String(s == null ? '' : s)) : String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const LIMITE = 100;
 
-  let notifs = [], ouvert = false, userId = null, bouton, badge, panneau, canal = null;
+  let notifs = [], ouvert = false, luesOuvertes = false, userId = null, bouton, badge, panneau, canal = null;
 
   function pageCourante() { return location.pathname.replace(/^.*\//, '') || 'equipe.html'; }
 
@@ -63,12 +63,20 @@
         <strong>Notifications${c.nonLues ? ` <span class="notif-compte">${c.nonLues}</span>` : ''}</strong>
         ${c.nonLues ? '<button type="button" class="notif-tout-lu">Tout marquer lu</button>' : ''}
       </div>`;
+    /* Ce qui est lu descend (Celtis, 23/09/2026 : « une fois utilisée, il faut qu'elle aille ailleurs
+       ou disparaisse ») : les non-lues d'abord, par jour ; les lues repliées en bas, sous « déjà
+       lues », toujours consultables ; la base les efface au bout de 30 jours (90 pour les non-lues). */
+    const nonLues = R().nonLues(notifs), lues = notifs.filter((n) => n.lu_le);
+    const groupes = (liste) => R().grouperParJour(liste).map((g) => `<div class="notif-jour">${esc(g.jour)}</div>${g.lignes.map(ligneHTML).join('')}`).join('');
     if (!notifs.length) {
-      html += '<div class="notif-vide">Aucune notification pour l’instant.<br><small>Elles restent ici 90 jours, à relire quand vous voulez.</small></div>';
+      html += '<div class="notif-vide">Aucune notification pour l’instant.<br><small>Elles restent ici 90 jours (30 jours une fois lues), à relire quand vous voulez.</small></div>';
     } else {
-      html += R().grouperParJour(notifs).map((g) => `<div class="notif-jour">${esc(g.jour)}</div>${g.lignes.map(ligneHTML).join('')}`).join('');
+      html += nonLues.length ? groupes(nonLues) : '<div class="notif-vide">Rien de nouveau.</div>';
+      if (lues.length) html += `<details class="notif-lues"${luesOuvertes ? ' open' : ''}><summary>${lues.length} déjà lue${lues.length > 1 ? 's' : ''}</summary>${groupes(lues)}</details>`;
     }
     panneau.innerHTML = html;
+    const det = panneau.querySelector('.notif-lues');
+    if (det) det.addEventListener('toggle', () => { luesOuvertes = det.open; });
     const toutLu = panneau.querySelector('.notif-tout-lu');
     if (toutLu) toutLu.addEventListener('click', marquerToutLu);
     panneau.querySelectorAll('.notif-ligne').forEach((b) => b.addEventListener('click', () => ouvrirLigne(b.dataset.notif)));
@@ -123,13 +131,22 @@
 
   function poser() {
     if (/[?&]voir=/.test(location.search)) return;
-    const groupe = document.querySelector('.topbar .topbar-actions');
-    if (!groupe || document.querySelector('.clt-cloche')) return;
+    /* Où se pose la cloche (Celtis, 23/09/2026 : « pas sur la même ligne que le thème et le menu ;
+       juste en bas du menu déroulant, bien espacé, à gauche comme à droite »). Elle est un enfant
+       direct du groupe .user-info, entre l'identité et les boutons : sur ordinateur (une ligne)
+       elle se lit avant le thème et le menu ; sur téléphone, où les deux groupes deviennent des
+       lignes de la barre, elle prend la ligne de l'identité, tout à droite, sous le menu — la photo
+       et le nom à gauche, la cloche à droite. Voir .clt-cloche-wrap dans style.css. */
+    const actions = document.querySelector('.topbar .topbar-actions');
+    const groupe = document.querySelector('.topbar .user-info--groupes');
+    if ((!groupe && !actions) || document.querySelector('.clt-cloche')) return;
     const wrap = document.createElement('div');
     wrap.className = 'clt-cloche-wrap';
     wrap.innerHTML = `<button type="button" class="clt-cloche" aria-label="Notifications" aria-haspopup="dialog" aria-expanded="false"><span class="clt-cloche-icone" aria-hidden="true">🔔</span><span class="clt-cloche-badge" hidden></span></button>
       <div class="notif-panel" role="dialog" aria-label="Notifications" hidden></div>`;
-    groupe.insertBefore(wrap, groupe.firstChild);
+    if (groupe && actions && actions.parentNode === groupe) groupe.insertBefore(wrap, actions);
+    else if (actions) actions.insertBefore(wrap, actions.firstChild);
+    else groupe.appendChild(wrap);
     bouton = wrap.querySelector('.clt-cloche'); badge = wrap.querySelector('.clt-cloche-badge'); panneau = wrap.querySelector('.notif-panel');
     bouton.addEventListener('click', () => (ouvert ? fermer() : ouvrir()));
   }

@@ -104,7 +104,10 @@ input,textarea,select{font-family:inherit;}
      La ligne 1 est aussi ce que demandait le vide à droite du titre : le bouton
      « Actualiser » y monte au lieu de traîner en bas. */
   .topbar{flex-wrap:wrap; gap:10px 8px; padding:12px 16px; padding-top:calc(12px + env(safe-area-inset-top));}
-  .topbar .brand{font-size:14px; flex:1 1 auto; min-width:0;}
+  /* flex-basis 0 (23/09/2026) : le titre partage TOUJOURS sa ligne avec les deux ronds, quitte à
+     se replier sur deux lignes sur un écran très étroit (320 px). Avant, un titre long envoyait
+     les ronds seuls sur une deuxième ligne, et la cloche sur une troisième. */
+  .topbar .brand{font-size:14px; flex:1 1 0; min-width:0;}
   /* Ce `display:contents` ne s'applique qu'aux en-têtes qui portent réellement les deux groupes
      (classe posée dans le HTML). L'écran Gestion a un en-tête d'une autre forme — un lien de
      retour et deux boutons larges, ni photo ni roue dentée — et garde le sien tel quel. Un
@@ -112,7 +115,12 @@ input,textarea,select{font-family:inherit;}
      personne l'ait demandé ni regardé. */
   .topbar .user-info--groupes{display:contents;}
   .topbar-actions{order:1; margin-left:0;}
-  .topbar-identite{order:2; width:100%; flex-wrap:wrap; gap:8px 10px; font-size:13px;}
+  /* Ligne 2 : l'identité à gauche, la cloche 🔔 à droite (23/09/2026). L'identité ne prend plus
+     toute la largeur : elle laisse la place du rond, sous le menu. */
+  .topbar-identite{order:2; flex:1 1 calc(100% - 60px); min-width:0; flex-wrap:wrap; gap:8px 10px; font-size:13px;}
+  /* La base « 100 % moins le rond » force la ligne : les boutons du thème et du menu ne peuvent
+     pas tenir à côté de l'identité, ils restent en haut avec le titre (qui se replie s'il le faut). */
+  .clt-cloche-wrap{order:3; flex:0 0 auto; margin-left:auto;}
   .topbar .user-info #user-name{max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .btn-logout{padding:7px 14px; font-size:12.5px;}
 }
@@ -4215,7 +4223,10 @@ html[data-theme="dark"] .frais-additionnels-block label[style*="color:#8a1f11"]{
    posé sous le bouton (ordinateur) ou sous la barre, contre le bord droit
    (téléphone) — jamais une page entière. Les non-lues en gras, une pastille.
    ===================================================================== */
-.clt-cloche-wrap{ position:relative; flex-shrink:0; }
+.clt-cloche-wrap{ position:relative; flex-shrink:0; display:flex; align-items:center; }
+/* Sur ordinateur, la cloche est entre l'identité et les boutons ; l'écart avec eux est celui du groupe. */
+.topbar .user-info > .clt-cloche-wrap{ margin-left:auto; }
+.topbar .user-info > .clt-cloche-wrap + .topbar-actions{ margin-left:0; }
 .clt-cloche{
   position:relative; background:rgba(255,255,255,0.16); border:none; color:#fff;
   width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:15px;
@@ -4259,6 +4270,13 @@ html[data-theme="dark"] .frais-additionnels-block label[style*="color:#8a1f11"]{
 .notif-ligne--non-lue .notif-corps{ color:var(--text, #1E2A38); }
 .notif-heure{ font-size:11.5px; color:var(--muted); flex-shrink:0; margin-top:2px; }
 .notif-vide{ padding:22px 16px; text-align:center; color:var(--muted); font-size:13.5px; line-height:1.5; }
+.notif-lues{ border-top:1px solid var(--border); }
+.notif-lues > summary{ list-style:none; cursor:pointer; padding:11px 14px; font-size:12.5px; font-weight:700; color:var(--muted); min-height:44px; display:flex; align-items:center; gap:8px; }
+.notif-lues > summary::-webkit-details-marker{ display:none; }
+.notif-lues > summary::before{ content:"▸"; font-size:11px; transition:transform .15s ease; }
+.notif-lues[open] > summary::before{ transform:rotate(90deg); }
+.notif-lues .notif-ligne{ opacity:.8; }
+html[data-theme="dark"] .notif-lues{ border-top-color:#2A3849; }
 @media(max-width:760px){
   .clt-cloche{ width:44px; height:44px; font-size:18px; }
   .notif-panel{ position:fixed; top:calc(var(--h-topbar, 100px) + 8px); left:auto; right:12px; width:min(360px, calc(100vw - 24px)); max-height:calc(100vh - var(--h-topbar, 100px) - 28px); }
