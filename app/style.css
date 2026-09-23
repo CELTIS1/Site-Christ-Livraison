@@ -1528,7 +1528,11 @@ html[data-theme="dark"] .stat-tile-total{ background:var(--grad-navy-deep); }
 .pwd-modal{
   background:var(--white); border-radius:18px; padding:28px 24px; width:100%; max-width:360px;
   text-align:center; box-shadow:var(--shadow-lg);
+  /* 23/09/2026 : la fiche d'un compte cliente a gagné « Son activité » — la boîte défile
+     au lieu de sortir de l'écran. */
+  max-height:calc(100dvh - 40px); overflow-y:auto; -webkit-overflow-scrolling:touch;
 }
+.pwd-modal:has(#fiche-activite-box:not(.hidden)){ max-width:440px; }
 .pwd-modal-icon{font-size:34px; margin-bottom:6px;}
 .pwd-modal-title{color:var(--navy); font-size:18px; margin-bottom:6px; font-weight:700;}
 .pwd-modal-sub{color:var(--muted); font-size:13px; margin-bottom:18px;}
@@ -1660,6 +1664,16 @@ html[data-theme="dark"] .settings-dropdown .settings-groupe--attente button:hove
 }
 .account-modal-close:hover{background:#eef1f5; color:#1E2A38;}
 .account-modal-divider{border:none; border-top:1px solid #EEF1F5; margin:22px 0;}
+/* Mon activité (23/09/2026) — le même formulaire chez la cliente et dans la fiche du bureau. */
+.act-intro{font-size:12.5px; color:var(--muted); line-height:1.45; margin:0 0 12px;}
+.act-canaux{display:flex; flex-wrap:wrap; gap:8px;}
+.act-chip{display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 12px; border:1.5px solid var(--border); border-radius:999px; font-size:13px; color:var(--navy); cursor:pointer; user-select:none; background:var(--white);}
+.act-chip:has(input:checked){border-color:var(--navy); background:#EAF0F8; font-weight:600;}
+.act-chip input{margin:0; width:16px; height:16px; accent-color:var(--navy);}
+.act-consent{display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--navy); line-height:1.4; margin:4px 0 14px; cursor:pointer;}
+.act-consent input{margin-top:2px; width:18px; height:18px; flex:none; accent-color:var(--orange);}
+.act-resume{color:var(--navy) !important;}
+.act-badge{margin-left:6px; color:#1B4374; background:#EAF0F8;}
 .account-modal .btn-sm{margin-right:10px; margin-top:4px;}
 
 @media(max-width:640px){
@@ -1783,6 +1797,12 @@ html[data-theme="dark"] .account-modal-close{ background:#243247; }
 
 /* Séparateurs à couleur fixe */
 html[data-theme="dark"] .account-modal-divider{ border-top-color:#2A3849; }
+html[data-theme="dark"] .act-chip{ background:#1B2635; border-color:#2A3849; color:#E6ECF3; }
+html[data-theme="dark"] .act-chip:has(input:checked){ background:#243247; border-color:#7FA6D6; }
+html[data-theme="dark"] .act-consent{ color:#E6ECF3; }
+html[data-theme="dark"] .act-intro{ color:#A9B7C6; }
+html[data-theme="dark"] .act-resume{ color:#C7D5E4 !important; }
+html[data-theme="dark"] .act-badge{ color:#BFD3EA; background:#243247; }
 html[data-theme="dark"] .settings-groupe + .settings-groupe{ border-top-color:#2A3849; }
 /* Le titre de section suit --muted, redéfini plus haut pour le mode sombre : rien à ajouter. */
 

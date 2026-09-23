@@ -15,10 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260923fixe">
+<link rel="stylesheet" href="style.css?v=20260923activite">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260923fixe"></script>
-<script src="splash.js?v=20260923fixe"></script>
+<script src="theme.js?v=20260923activite"></script>
+<script src="splash.js?v=20260923activite"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -384,6 +384,11 @@
     background:color-mix(in srgb, #0f766e calc(var(--cda-part) * 0.55), transparent); }
   .cda-case--partiel{ font-style:italic; font-weight:600; opacity:.75; }
   .cda-note{ font-size:12.5px; color:#5b6473; margin-top:9px; line-height:1.5; }
+  .qvq-oui{ color:#1f7a4d; font-weight:700; }
+  .qvq-table th, .qvq-table td{ text-align:left; }
+  .qvq-table td.cdd-nombre, .qvq-table th.cdd-nombre{ text-align:right; }
+  .qvq-lien{ margin-left:4px; text-decoration:none; color:var(--clt-teal-dark); }
+  #cdd-qui-vend-quoi{ padding:16px 18px; margin-bottom:16px; }
   .cdd-aide{ margin-top:14px; }
   .cdd-aide-texte{ font-size:12.5px; color:#5b6473; line-height:1.55; }
   .cdd-aide-texte p{ margin:0 0 7px; }
@@ -755,6 +760,7 @@
   html[data-theme="dark"] .gdg-pour-vous{ background:#2E2116; border-color:#7A4A1A; color:#F0C98A; }
   html[data-theme="dark"] .gdg-vide{ border-color:#33445c; color:#AEBBCB; }
   html[data-theme="dark"] .cdc-phrase{ background:#2E2116; border-color:#7A4A1A; color:#F0C98A; }
+  html[data-theme="dark"] .qvq-oui{ color:#7FD3A5; }
   html[data-theme="dark"] .cdc-barre{ background:#243247; }
   html[data-theme="dark"] .cdc-barre > span{ background:#F28B55; }
   html[data-theme="dark"] .cdc-haut{ color:#FF9D93; }
@@ -900,6 +906,10 @@
          cliente. Règle : app/causes-des-echecs.js. Posée entre le bilan de la semaine et les
          questions : c'est la suite naturelle de « les échecs ont bougé ». -->
     <div class="card" id="cdd-causes"></div>
+    <!-- QUI VEND QUOI (23/09/2026) — Celtis : « savoir quel vendeur vend tel produit, c'est une mine
+         d'informations ». Les fiches activité des clientes, par secteur, par canal, et la liste.
+         Règle : app/activite-de-la-cliente.js ; écran : app/qui-vend-quoi.js. -->
+    <div class="card" id="cdd-qui-vend-quoi"></div>
     <div class="card" id="cdd-questions"></div>
     <!-- L'ANALYSE PROFONDE (20/09/2026, feuille de route 12.2) — la console dit ce qui a changé
          pour la maison ; cette boîte dit POUR QUI : chaque cliente jugée à son propre rythme,
@@ -1839,42 +1849,44 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260923fixe"></script>
-<script src="numero-international.js?v=20260923fixe"></script>
-<script src="lib/bibliotheques.js?v=20260923fixe"></script>
-<script src="lib/retours.js?v=20260923fixe"></script>
-<script src="lib/reclamations.js?v=20260923fixe"></script>
-<script src="lib/communes-et-tarifs.js?v=20260923fixe"></script>
-<script src="lib/argent.js?v=20260923fixe"></script>
-<script src="lib/releve-cliente.js?v=20260923fixe"></script>
-<script src="lib/papier-a-en-tete.js?v=20260923fixe"></script>
-<script src="lib/briques-argent.js?v=20260923fixe"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260923fixe"></script>
-<script src="lib/annonce-de-remise.js?v=20260923fixe"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260923fixe"></script>
-<script src="lib/primes.js?v=20260923fixe"></script>
-<script src="lib/doublons.js?v=20260923fixe"></script>
-<script src="config.js?v=20260923fixe"></script>
-<script src="biometric-lock.js?v=20260923fixe"></script>
-<script src="clt-select-recherche.js?v=20260923fixe"></script>
-<script src="site-editeur.js?v=20260923fixe"></script>
+<script src="clt-common.js?v=20260923activite"></script>
+<script src="numero-international.js?v=20260923activite"></script>
+<script src="lib/bibliotheques.js?v=20260923activite"></script>
+<script src="lib/retours.js?v=20260923activite"></script>
+<script src="lib/reclamations.js?v=20260923activite"></script>
+<script src="lib/communes-et-tarifs.js?v=20260923activite"></script>
+<script src="lib/argent.js?v=20260923activite"></script>
+<script src="lib/releve-cliente.js?v=20260923activite"></script>
+<script src="lib/papier-a-en-tete.js?v=20260923activite"></script>
+<script src="lib/briques-argent.js?v=20260923activite"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260923activite"></script>
+<script src="lib/annonce-de-remise.js?v=20260923activite"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260923activite"></script>
+<script src="lib/primes.js?v=20260923activite"></script>
+<script src="lib/doublons.js?v=20260923activite"></script>
+<script src="config.js?v=20260923activite"></script>
+<script src="biometric-lock.js?v=20260923activite"></script>
+<script src="clt-select-recherche.js?v=20260923activite"></script>
+<script src="site-editeur.js?v=20260923activite"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260923fixe"></script>
-<script src="causes-des-echecs.js?v=20260923fixe"></script>
-<script src="analyse-profonde.js?v=20260923fixe"></script>
-<script src="ce-qui-a-change.js?v=20260923fixe"></script>
-<script src="les-questions.js?v=20260923fixe"></script>
-<script src="console-du-dirigeant.js?v=20260923fixe"></script>
-<script src="rapports-recus.js?v=20260923fixe"></script>
-<script src="rapports-recus-ecran.js?v=20260923fixe"></script>
-<script src="gestion.js?v=20260923fixe"></script>
+<script src="bilan-de-la-semaine.js?v=20260923activite"></script>
+<script src="causes-des-echecs.js?v=20260923activite"></script>
+<script src="activite-de-la-cliente.js?v=20260923activite"></script>
+<script src="qui-vend-quoi.js?v=20260923activite"></script>
+<script src="analyse-profonde.js?v=20260923activite"></script>
+<script src="ce-qui-a-change.js?v=20260923activite"></script>
+<script src="les-questions.js?v=20260923activite"></script>
+<script src="console-du-dirigeant.js?v=20260923activite"></script>
+<script src="rapports-recus.js?v=20260923activite"></script>
+<script src="rapports-recus-ecran.js?v=20260923activite"></script>
+<script src="gestion.js?v=20260923activite"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="guide-du-gerant.js?v=20260923fixe"></script>
-<script src="avance-de-travail.js?v=20260923fixe"></script>
-<script src="avance-de-travail-ecran.js?v=20260923fixe"></script>
-<script src="regulariser.js?v=20260923fixe"></script>
-<script src="regulariser-ecran.js?v=20260923fixe"></script>
-<script src="gestion-barre-laterale.js?v=20260923fixe"></script>
+<script src="guide-du-gerant.js?v=20260923activite"></script>
+<script src="avance-de-travail.js?v=20260923activite"></script>
+<script src="avance-de-travail-ecran.js?v=20260923activite"></script>
+<script src="regulariser.js?v=20260923activite"></script>
+<script src="regulariser-ecran.js?v=20260923activite"></script>
+<script src="gestion-barre-laterale.js?v=20260923activite"></script>
 </body>
 </html>

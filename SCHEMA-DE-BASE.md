@@ -13,6 +13,7 @@ des politiques est dans les migrations et dans `_sql-prive/00-verifier-les-migra
 | Table | Rôle | Qui lit / qui écrit |
 |---|---|---|
 | `profiles` | Un compte = une ligne : nom, téléphone, rôle (`admin`, `equipe`, `livreur`, `fournisseur`, `client_express`, `coursier_express`), photo, statut (validé, suspendu). | Chacun sa ligne ; équipe et admin toutes. Création et changements de rôle par fonctions serveur seulement. |
+| `activites_clientes` | La fiche activité d'une cliente (23/09/2026) : secteur, ce qu'elle vend, où (canaux), lien, et son accord pour être présentée par CLT. Une ligne par compte `fournisseur`. | La cliente sa ligne ; accès opérations et admin toutes. Pas de suppression depuis l'application. |
 | `demandes_reset_password` | Fenêtres de 30 minutes pour choisir un nouveau mot de passe. | Fonctions serveur ; l'équipe voit les demandes en attente. |
 | `push_subscriptions` | Abonnements aux notifications (une ligne par appareil). | Chacun les siens ; l'envoi (`envoyer-push`) lit tout côté serveur. |
 | `activity_log` | Journal des gestes importants (qui a fait quoi, quand). | Équipe et admin en lecture ; écrit par déclencheurs et fonctions. |

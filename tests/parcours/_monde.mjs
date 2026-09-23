@@ -240,6 +240,8 @@ export function nouveauMonde() {
       rows.forEach(r => { if (table === 'colis') { if (r.statut === undefined) r.statut = 'en_attente'; if (!r.numero) r.numero = 'CLT-TEST-' + String(TABLES.colis.length + 1).padStart(5, '0'); } });
       // Les valeurs par défaut de la base, pour les tables où l'écran ne les envoie pas.
       rows.forEach(r => { if (table === 'reclamations_clientes' && r.statut === undefined) r.statut = 'ouverte'; if (table === 'demandes_de_passage' && r.statut === undefined) r.statut = 'en_attente'; });
+      // L'activité de la cliente (23/09/2026) : une ligne par compte — un upsert remplace la sienne.
+      if (table === 'activites_clientes') { const ids = new Set(rows.map(r => r.profile_id)); TABLES[table] = (TABLES[table] || []).filter(l => !ids.has(l.profile_id)); }
       (TABLES[table] ||= []).push(...rows);
       if (table === 'colis') rows.forEach(r => consommeLAvance(null, r, q.user, maintenant));
       if (table === 'programmations_collecte') rows.forEach(r => programmerTraiteLaDemande(r, q.user, maintenant));

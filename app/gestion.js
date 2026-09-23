@@ -869,6 +869,7 @@ async function deleteDocument(id, domaine){
 async function renderDashboard(){
   chargerAFaire();
   if (window.CLTRapportsRecusEcran) CLTRapportsRecusEcran.charger();
+  if (window.CLTQuiVendQuoi) CLTQuiVendQuoi.charger();
   const annee = parseInt(document.getElementById('dash-year').value);
   const mois  = parseInt(document.getElementById('dash-month').value);
   const debut = periodeStr(annee, mois);

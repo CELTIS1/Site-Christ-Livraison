@@ -1294,10 +1294,20 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    Celtis, après v235 : « l'onglet est en haut, il laisse trop de vide en bas ; qu'il revienne
    en bas et qu'il soit fixe en bas, pareil pour toute l'équipe. » La coque (v231, puis la
    colonne v235) est retirée : la barre est position:fixed; bottom:0 comme avant v231. Le
-   parcours la-coque-de-l-equipe est supprimé. Étiquette 20260923fixe. */
+   parcours la-coque-de-l-equipe est supprimé. Étiquette 20260923fixe.
+   v237, le 23/09/2026 — L'ACTIVITÉ DE LA CLIENTE, ET « QUI VEND QUOI ». Celtis : « que les clientes
+   renseignent le type d'activité qu'elles font ; on saura quel vendeur vend quel produit ; c'est une
+   mine d'informations pour la publicité, orienter, interconnecter ». Cliente › Mon compte › Mon
+   activité : secteur (liste fermée), ce qu'elle vend, où (canaux), sa page, et la case « J'accepte
+   que CLT présente mon activité » — sans elle rien n'est publié. Bureau : résumé sous le nom dans
+   Comptes, bloc « Son activité » dans Corriger la fiche. Gestion › Tableau de bord : « Qui vend
+   quoi » (secteur, canal, liste). Règle app/activite-de-la-cliente.js, écran partagé
+   app/activite-ecran.js, boîte app/qui-vend-quoi.js, table activites_clientes (RLS : sa ligne,
+   opérations, admin), banc, parcours l-activite-de-la-cliente. La fiche du compte défile au lieu
+   de sortir de l'écran. Étiquette 20260923activite. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v236'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v237'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

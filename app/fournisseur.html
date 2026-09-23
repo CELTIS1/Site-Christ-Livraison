@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260923fixe">
+<link rel="stylesheet" href="style.css?v=20260923activite">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260923fixe"></script>
-<script src="splash.js?v=20260923fixe"></script>
+<script src="theme.js?v=20260923activite"></script>
+<script src="splash.js?v=20260923activite"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -289,6 +289,36 @@
         </div>
       </div>
       <button type="submit" class="btn btn-outline btn-sm" id="btn-save-profile-info">Enregistrer</button>
+    </form>
+    <hr class="account-modal-divider">
+
+    <!-- MON ACTIVITÉ (23/09/2026) : ce que la cliente vend et où. Cinq champs, rien d'obligatoire.
+         Règle : app/activite-de-la-cliente.js ; table : activites_clientes (sa ligne à elle).
+         La case « présenter mon activité » est le seul accord qui autorise CLT à en parler. -->
+    <h3 class="account-modal-title" style="font-size:15px; margin-bottom:4px;">Mon activité</h3>
+    <p class="act-intro">Dites-nous ce que vous vendez : CLT saura mieux vous servir, et pourra vous mettre en avant si vous le souhaitez.</p>
+    <div id="act-msg"></div>
+    <form id="form-activite" data-clt-activite>
+      <div class="field-row">
+        <div class="field">
+          <label for="act-secteur">Secteur</label>
+          <select id="act-secteur" data-act="secteur"><option value="">— Choisir —</option></select>
+        </div>
+        <div class="field">
+          <label for="act-produits">Ce que vous vendez</label>
+          <input type="text" id="act-produits" data-act="produits" maxlength="140" placeholder="Ex. : robes wax, sacs, chaussures">
+        </div>
+      </div>
+      <div class="field">
+        <label>Où vous vendez</label>
+        <div class="act-canaux" data-act="canaux"></div>
+      </div>
+      <div class="field">
+        <label for="act-lien">Votre page ou catalogue (facultatif)</label>
+        <input type="text" id="act-lien" data-act="lien" inputmode="url" autocapitalize="none" placeholder="instagram.com/votreboutique">
+      </div>
+      <label class="act-consent"><input type="checkbox" id="act-presentable" data-act="presentable"> <span>J'accepte que CLT présente mon activité (site, réseaux sociaux). Sans cette case, rien n'est publié.</span></label>
+      <button type="submit" class="btn btn-outline btn-sm" id="btn-save-activite">Enregistrer mon activité</button>
     </form>
     <hr class="account-modal-divider">
 
@@ -640,28 +670,30 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260923fixe"></script>
-<script src="numero-international.js?v=20260923fixe"></script>
-<script src="voir-un-compte.js?v=20260923fixe"></script>
-<script src="lib/bibliotheques.js?v=20260923fixe"></script>
-<script src="lib/retours.js?v=20260923fixe"></script>
-<script src="lib/reclamations.js?v=20260923fixe"></script>
-<script src="lib/communes-et-tarifs.js?v=20260923fixe"></script>
-<script src="lib/argent.js?v=20260923fixe"></script>
-<script src="lib/releve-cliente.js?v=20260923fixe"></script>
-<script src="lib/papier-a-en-tete.js?v=20260923fixe"></script>
-<script src="lib/briques-argent.js?v=20260923fixe"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260923fixe"></script>
-<script src="lib/annonce-de-remise.js?v=20260923fixe"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260923fixe"></script>
-<script src="lib/primes.js?v=20260923fixe"></script>
-<script src="lib/doublons.js?v=20260923fixe"></script>
-<script src="config.js?v=20260923fixe"></script>
-<script src="mes-boutiques.js?v=20260923fixe"></script>
-<script src="etiquettes-et-scan.js?v=20260923fixe"></script>
-<script src="import-de-colis.js?v=20260923fixe"></script>
-<script src="biometric-lock.js?v=20260923fixe"></script>
-<script src="clt-select-recherche.js?v=20260923fixe"></script>
+<script src="clt-common.js?v=20260923activite"></script>
+<script src="numero-international.js?v=20260923activite"></script>
+<script src="voir-un-compte.js?v=20260923activite"></script>
+<script src="lib/bibliotheques.js?v=20260923activite"></script>
+<script src="lib/retours.js?v=20260923activite"></script>
+<script src="lib/reclamations.js?v=20260923activite"></script>
+<script src="lib/communes-et-tarifs.js?v=20260923activite"></script>
+<script src="lib/argent.js?v=20260923activite"></script>
+<script src="lib/releve-cliente.js?v=20260923activite"></script>
+<script src="lib/papier-a-en-tete.js?v=20260923activite"></script>
+<script src="lib/briques-argent.js?v=20260923activite"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260923activite"></script>
+<script src="lib/annonce-de-remise.js?v=20260923activite"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260923activite"></script>
+<script src="lib/primes.js?v=20260923activite"></script>
+<script src="lib/doublons.js?v=20260923activite"></script>
+<script src="config.js?v=20260923activite"></script>
+<script src="activite-de-la-cliente.js?v=20260923activite"></script>
+<script src="activite-ecran.js?v=20260923activite"></script>
+<script src="mes-boutiques.js?v=20260923activite"></script>
+<script src="etiquettes-et-scan.js?v=20260923activite"></script>
+<script src="import-de-colis.js?v=20260923activite"></script>
+<script src="biometric-lock.js?v=20260923activite"></script>
+<script src="clt-select-recherche.js?v=20260923activite"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3924,6 +3956,8 @@
     document.getElementById('user-first-name').textContent = profile ? (profile.full_name || '') : '';
     initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', cameraInputId: 'avatar-input-camera', libraryInputId: 'avatar-input-library', statusId: 'avatar-msg' });
     initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', companyNameId: 'profile-company-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
+    // Mon activité (23/09/2026) : sa fiche à elle, lue et écrite dans activites_clientes.
+    if (window.CLTActiviteEcran) CLTActiviteEcran.brancher(document.getElementById('form-activite'), profile.id, { msg: document.getElementById('act-msg') });
     initPhoneChangeForm({ profile, currentPhoneId: 'phone-current', newPhoneId: 'phone-new', otpRowId: 'phone-otp-row', otpCodeId: 'phone-otp-code', sendBtnId: 'btn-send-phone-otp', confirmBtnId: 'btn-confirm-phone-otp', cancelBtnId: 'btn-cancel-phone-otp', msgId: 'phone-change-msg' });
     initSettingsMenu();
     if (!onRegarde) cltInitPushButton(profile.role, () => currentUser ? currentUser.id : null);

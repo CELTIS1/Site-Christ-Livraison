@@ -950,12 +950,31 @@ async function lireComptes(debut, fin){
   return await requete(COLONNES_COMPTES_BASE);
 }
 
+// L'activité de chaque cliente (23/09/2026), lue d'un coup avec la liste : une ligne de résumé
+// sous le nom (« Mode et vêtements · robes wax · WhatsApp, Instagram »).
+let activitesParCompte = {};
+async function chargerActivites(){
+  if (!window.CLTActiviteEcran) return;
+  try {
+    const lignes = await CLTActiviteEcran.lireToutes();
+    activitesParCompte = {};
+    lignes.forEach((l) => { activitesParCompte[l.profile_id] = l; });
+  } catch (e) { /* table absente ou droits : la liste vit sans */ }
+}
+function activiteLigneHTML(id){
+  const a = activitesParCompte[id];
+  if (!a || !window.CLTActivite) return '';
+  const r = CLTActivite.resume(a);
+  if (!r) return '';
+  return '<div class="meta act-resume">🛍️ ' + escapeHTML(r) + (a.presentable ? ' <span class="badge act-badge">Présentable</span>' : '') + '</div>';
+}
 async function loadAllAccounts(){
 accountsOffset = 0;
 accountsHasMore = true;
 const { data, error } = await lireComptes(0, ACCOUNTS_PAGE_SIZE - 1);
 if (error) { console.error(error); return; }
 allAccounts = data;
+await chargerActivites();
 accountsOffset = data.length;
 accountsHasMore = data.length === ACCOUNTS_PAGE_SIZE;
 renderAllAccounts();
@@ -1066,6 +1085,7 @@ return `
 <div class="info">
 <div class="desc">${onlineDot}${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}${suspenduBadge}${a.suppression_demandee_at ? ' <span class="badge" style="color:#c0392b; background:#fce4e2;">🗑 Suppression demandée</span>' : ''}</div>
 <div class="meta">Rôle : ${escapeHTML(roleDisplayLabel(a.role))}${a.phone ? ' · Tél : ' + escapeHTML(a.phone) : ''} · Statut : ${escapeHTML(statutCompteLabel(a.status))}${a.suppression_demandee_at ? ' · <span style="color:#c0392b;">Suppression demandée le ' + escapeHTML(formatDate(a.suppression_demandee_at)) + '</span>' : ''}</div>
+${a.role === 'fournisseur' ? activiteLigneHTML(a.id) : ''}
 ${typeof boutiquesLigneHTML === 'function' ? boutiquesLigneHTML(a.id) : ''}
 ${suspenduDetail}
 </div>
@@ -1432,6 +1452,15 @@ function showFicheModal(id){
   // inviterait à remplir un champ qui ne sert nulle part ailleurs.
   document.getElementById('fiche-modal-societe-box').style.display =
     (a.role === 'fournisseur') ? '' : 'none';
+  // Son activité (23/09/2026) : le bloc n'existe que pour une cliente, et se charge à l'ouverture.
+  const actBox = document.getElementById('fiche-activite-box');
+  if (actBox) {
+    actBox.classList.toggle('hidden', a.role !== 'fournisseur');
+    const actMsg = document.getElementById('fiche-act-msg'); if (actMsg) actMsg.innerHTML = '';
+    if (a.role === 'fournisseur' && window.CLTActiviteEcran) {
+      CLTActiviteEcran.brancher(document.getElementById('fiche-activite'), a.id, { msg: actMsg, apres: (v) => { activitesParCompte[a.id] = v; renderAllAccounts(); } });
+    }
+  }
   document.getElementById('fiche-modal-msg').innerHTML = '';
   document.getElementById('fiche-modal-overlay').classList.remove('hidden');
 }

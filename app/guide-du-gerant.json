@@ -1,6 +1,6 @@
 {
   "_lisez_moi": "LE GUIDE DU GÉRANT — une fiche par fonctionnalité livrée, lue par Gestion › Guide (app/guide-du-gerant.js). Écrit pour Celtis : ce que c'est, où c'est, comment s'en servir, en phrases courtes. À CHAQUE NOUVEAU LOT qui change ce qu'on voit ou ce qu'on fait, ajouter ou mettre à jour la fiche ici et la date « maj ». tests/le-guide-du-gerant.test.mjs vérifie la forme : identifiants uniques, espaces connus, longueurs (une fiche se lit en vingt secondes), « Y aller » vers un onglet qui existe. « pourVous » = un geste ou une décision qui revient à Celtis ; le retirer quand c'est fait.",
-  "maj": "22 septembre 2026",
+  "maj": "23 septembre 2026",
   "espaces": [
     [
       "gestion",
@@ -880,6 +880,20 @@
       ],
       "pourVous": "Relisez ces quatre articles et dites ce qui manque ou ce qui n'est pas clair : l'aide se corrige sans code.",
       "version": "v233"
+    },
+    {
+      "id": "activite-clientes",
+      "espace": "gestion",
+      "titre": "Qui vend quoi : l'activité de chaque cliente",
+      "enBref": "Chaque cliente peut dire ce qu'elle vend, où, et si elle accepte que CLT la présente. Gestion additionne tout dans « Qui vend quoi ».",
+      "ou": "Cliente › ☰ › Mon compte › Mon activité · Bureau › Comptes › Corriger la fiche › Son activité · Gestion › Tableau de bord › Qui vend quoi",
+      "etapes": [
+        "La cliente remplit cinq champs : secteur, ce qu'elle vend, où elle vend (WhatsApp, Instagram…), sa page, et la case « J'accepte que CLT présente mon activité ».",
+        "Le bureau voit le résumé sous son nom dans Comptes, et peut remplir ou corriger pour elle (au téléphone, à la récupération).",
+        "Dans Gestion, « Qui vend quoi » compte par secteur, par canal, et liste les clientes ; « Présentable » = elle a dit oui."
+      ],
+      "pourVous": "Faites remplir la fiche à vos clientes (une ligne « À faire par le gérant » vous le rappelle). Rien n'est publié sans la case cochée : c'est votre garantie et la leur. C'est la matière du lot 3 : les mettre en avant sur le site et les réseaux.",
+      "version": "v237"
     }
   ]
 }
