@@ -724,7 +724,7 @@ ${eqDelaiHTML(c)}
      du livreur l'affiche depuis le 09/09 ; le bureau, lui, voyait le colis s'effacer de sa
      journée sans un mot. Ne parvenant pas à les faire revenir, l'équipe a supprimé des colis
      pour les recréer. La mention, et le geste pour le ramener, sont donc ici aussi. -->
-${colisReporte(c) ? `<div class="meta colis-reporte">⏭️ Reporté au <strong>${escapeHTML(dayLabel(jourDuColis(c) + 'T12:00:00').toLowerCase())}</strong> — reçu le ${escapeHTML(dayLabel(dayKey(c.created_at) + 'T12:00:00').toLowerCase())}, et toujours compté dans cette journée-là
+${colisReporte(c) ? `<div class="meta colis-reporte">⏭️ Reporté au <strong>${escapeHTML(dayLabel(jourDuColis(c) + 'T12:00:00').toLowerCase())}</strong> — reçu ${escapeHTML((function (l) { return /^(aujourd|hier|demain)/i.test(l) ? l : 'le ' + l; })(dayLabel(dayKey(c.created_at) + 'T12:00:00').toLowerCase()))}, et toujours compté dans cette journée-là
   <button type="button" class="btn btn-sm btn-outline eq-annuler-report" data-annuler-report="${c.id}">↩️ Le remettre à sa journée</button>
 </div>` : ''}
 ${livreurLine}

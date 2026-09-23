@@ -1277,10 +1277,15 @@ verifier(
    corriger / examiné, demande de passage, notifications), deux mis à jour (tournées, retours) ;
    sept fiches du Guide du gérant (rapports reçus, bilan du dimanche, notifications, colis
    reporté, demande de passage, coque, aide de l'équipe). Aucun code : aide.json et
-   guide-du-gerant.json. Étiquette 20260922tutoriels. */
+   guide-du-gerant.json. Étiquette 20260922tutoriels.
+   v234, le 23/09/2026 — LE TUTORIEL DU BUREAU, REFAIT. Le PDF de huit pages datait du 20/09,
+   avant le colis reporté, les notifications précises, les demandes de passage et les rapports.
+   Onze pages, captures prises sur le faux monde au format téléphone (outils/tutoriel-equipe :
+   captures.mjs puis pdf.mjs, rejouables à chaque changement d'écran). Au passage : « reçu le
+   aujourd'hui » devient « reçu aujourd'hui » sur la carte du colis reporté. Étiquette 20260923tutoriel. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v233'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v234'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

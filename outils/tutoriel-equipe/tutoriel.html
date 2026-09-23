@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Les gestes essentiels du suivi — Espace Équipe</title>
+<style>
+  @page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; color: #1E2A38; font-size: 11.2pt; line-height: 1.5; }
+  .page { page-break-after: always; position: relative; min-height: 262mm; }
+  .page:last-child { page-break-after: auto; }
+  h1 { font-size: 26pt; color: #1B4374; margin: 0 0 4mm; line-height: 1.15; }
+  h2 { font-size: 15.5pt; color: #1B4374; margin: 0 0 3mm; padding-bottom: 1.5mm; border-bottom: 2px solid #E26313; }
+  h3 { font-size: 11.5pt; color: #1B4374; margin: 4mm 0 1.5mm; }
+  p { margin: 0 0 2.2mm; }
+  .cols { display: grid; grid-template-columns: 1fr 74mm; gap: 6mm; align-items: start; }
+  .cols.large { grid-template-columns: 1fr 72mm; }
+  figure { margin: 0; text-align: center; }
+  figure img { width: 100%; border: 1px solid #D5DCE5; border-radius: 10px; }
+  figcaption { font-size: 8.5pt; color: #5B6B7C; margin-top: 1.5mm; }
+  ol.etapes { list-style: none; padding: 0; margin: 0 0 2mm; counter-reset: e; }
+  ol.etapes li { position: relative; padding-left: 8mm; margin: 0 0 2mm; counter-increment: e; }
+  ol.etapes li::before { content: counter(e); position: absolute; left: 0; top: 0.3mm; width: 5.6mm; height: 5.6mm; border-radius: 50%; background: #1B4374; color: #fff; font-weight: 700; font-size: 8.5pt; text-align: center; line-height: 5.6mm; }
+  .btn { display: inline-block; padding: 0 1.6mm; border: 1px solid #B8C4D3; border-radius: 4px; background: #F4F6F9; font-weight: 600; font-size: 9.5pt; white-space: nowrap; }
+  .note { background: #FFF5E6; border: 1px solid #FFCF8A; border-radius: 8px; padding: 2.4mm 3mm; margin: 2.5mm 0; font-size: 10pt; }
+  .note.rouge { background: #FDECEC; border-color: #F1B0B0; }
+  .note.vert { background: #EAF7EF; border-color: #A8DDB9; }
+  .note b { color: #8A4B00; }
+  .note.rouge b { color: #B42318; }
+  .note.vert b { color: #1F7A46; }
+  table { border-collapse: collapse; width: 100%; font-size: 9.6pt; margin: 2mm 0; }
+  th, td { border: 1px solid #D5DCE5; padding: 1.6mm 2mm; vertical-align: top; text-align: left; }
+  th { background: #EEF2F6; color: #1B4374; }
+  .pied { position: absolute; left: 0; right: 0; bottom: 0; font-size: 8.3pt; color: #7A8794; text-align: center; border-top: 1px solid #E5EAF0; padding-top: 1.5mm; }
+  .couv { text-align: left; padding-top: 30mm; }
+  .couv .marque { font-size: 12pt; font-weight: 700; color: #E26313; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 14mm; }
+  .couv .sous { font-size: 14pt; color: #3A4658; margin-bottom: 12mm; }
+  .couv .cadre { background: #F4F6F9; border-radius: 12px; padding: 5mm 6mm; margin-bottom: 6mm; }
+  .couv .version { color: #7A8794; font-size: 9.5pt; margin-top: 16mm; }
+  .deux { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+  .cadre-orange { border: 2px solid #E26313; border-radius: 8px; padding: 1.5mm 2.5mm; display: inline-block; font-weight: 700; }
+  .pill { display: inline-block; background: #E26313; color: #fff; border-radius: 999px; padding: 0 2mm; font-size: 8.5pt; font-weight: 800; }
+  .sommaire { columns: 2; column-gap: 8mm; font-size: 10.5pt; }
+  .sommaire div { margin-bottom: 1.6mm; }
+  .sommaire span { color: #E26313; font-weight: 700; margin-right: 1.5mm; }
+</style>
+</head>
+<body>
+
+<!-- 1. COUVERTURE -->
+<section class="page couv">
+  <div class="marque">Christ Livraison &amp; Transport SARL</div>
+  <h1>Les gestes essentiels du suivi</h1>
+  <div class="sous">Espace Équipe — ce qu'on fait chaque jour, dans l'ordre, et où le trouver.</div>
+  <div class="cadre">
+    <p><b>Pour qui :</b> le bureau (équipe et administrateurs), sur téléphone ou sur ordinateur.</p>
+    <p><b>Les quatre onglets du quotidien</b> — <span class="btn">📦 Colis</span> <span class="btn">🗓️ Tournées</span> <span class="btn">📍 Suivi</span> <span class="btn">↩️ Retours</span> — toujours dans la barre du bas. Le reste (Finances, Personnes, Comptes, Express) est derrière <span class="btn">⋯ Plus</span>.</p>
+    <p style="margin:0"><b>La règle d'or :</b> tout ce qui se passe sur un colis s'enregistre dans l'application, au moment où ça se passe. Ce qui n'est pas dans l'application n'existe pas pour les autres.</p>
+  </div>
+  <h3>Sommaire</h3>
+  <div class="sommaire">
+    <div><span>1</span> Ouvrir la journée — L'essentiel</div>
+    <div><span>2</span> Un colis, de la réception à la livraison</div>
+    <div><span>3</span> Modifier un colis, corriger, « examiné »</div>
+    <div><span>4</span> Le colis reporté : deux jours, un seul point</div>
+    <div><span>5</span> Tournées — préparer demain, les demandes de passage</div>
+    <div><span>6</span> Les notifications : elles conduisent au point</div>
+    <div><span>7</span> Suivi — les livreurs, les points, le soir</div>
+    <div><span>8</span> Retours et non livrés — où est chaque colis</div>
+    <div><span>9</span> Derrière « Plus »</div>
+    <div><span>10</span> Les réflexes qui évitent les appels</div>
+  </div>
+  <div class="version">Version du 23 septembre 2026 · application v233 · Dans l'application : ☰ → ❓ Aide et tutoriels → « Bureau »</div>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 1 / 11</div>
+</section>
+
+<!-- 2. ACCUEIL -->
+<section class="page">
+  <h2>1 · Ouvrir la journée — L'essentiel</h2>
+  <div class="cols">
+    <div>
+      <p>L'onglet <span class="btn">📦 Colis</span> s'ouvre sur <b>L'essentiel</b> : tout ce qui attend, toutes dates confondues. On le lit de haut en bas, une fois le matin, une fois le soir.</p>
+      <ol class="etapes">
+        <li><b>Aujourd'hui</b> — reçus, livrés, échecs, encore en cours. Le chiffre « encore en cours » doit descendre au fil de la journée.</li>
+        <li><b>À faire</b> — chaque pastille est un geste qui n'attend que vous : colis sans livreur, à confier en collecte, montants à compléter, demande de passage à programmer. Appuyez : l'écran s'ouvre déjà au bon endroit.</li>
+        <li><b>À examiner</b> — ce qui cloche : en livraison depuis hier, non livrés ou retours, retours en retard, signalements. <b>Rouge = à traiter avant tout.</b></li>
+        <li><b>Argent non remis</b> — les livreurs qui n'ont pas encore rendu leur caisse, et le nombre de colis à solder.</li>
+      </ol>
+      <div class="note"><b>Le réflexe :</b> tant qu'une pastille rouge est là, la journée n'est pas finie.</div>
+      <h3>Chercher partout</h3>
+      <p>La barre en haut cherche tout : un numéro de colis, un téléphone (même les 8 derniers chiffres), un nom de cliente, une description, une destination. Un appui sur le résultat ouvre la fiche — le colis dans sa journée, ou la personne.</p>
+      <div class="note vert"><b>Une cliente appelle pour « mon colis d'hier » :</b> tapez son numéro de téléphone dans la barre. Vous avez ses colis avant qu'elle ait fini sa phrase.</div>
+      <h3>Le résumé du matin</h3>
+      <p>Chaque matin à 7 h, une notification « ☀️ Ce matin chez CLT » résume hier en trois nombres et dit ce qui attend. Elle ouvre cet écran.</p>
+    </div>
+    <figure><img src="captures/01-accueil.png" alt=""><figcaption>L'accueil sur téléphone : L'essentiel, puis les quatre onglets.</figcaption></figure>
+  </div>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 2 / 11</div>
+</section>
+
+<!-- 3. UN COLIS -->
+<section class="page">
+  <h2>2 · Un colis, de la réception à la livraison</h2>
+  <div class="cols">
+    <div>
+      <h3>Enregistrer un colis</h3>
+      <ol class="etapes">
+        <li>Onglet <span class="btn">📦 Colis</span> → <span class="btn">➕ Nouveau colis</span> (ou la saisie en lot pour plusieurs colis d'une même cliente, ou 📸 depuis les photos).</li>
+        <li>Cliente, destination, téléphone du destinataire, description, <b>montant de l'article et frais de livraison</b>. Les montants sont indispensables : c'est ce que le livreur encaisse et ce que CLT reverse.</li>
+        <li>Choisissez le livreur de collecte (qui va chercher) ; le livreur de livraison peut être le même ou un autre.</li>
+      </ol>
+      <h3>Faire avancer un colis</h3>
+      <p>Sur chaque carte, la frise dit où en est le colis : <b>Assigné → Récupéré → En livraison → Livré</b>. Les boutons sous la carte font le geste suivant en un appui : <span class="btn">✅ Livré</span>, <span class="btn">🚚 En livraison</span>, <span class="btn">⚠️ Non livré</span>. Le menu <span class="btn">⋮</span> porte <b>Modifier</b> et <b>Supprimer</b>.</p>
+      <div class="note rouge"><b>Ne supprimez pas un colis pour le recréer.</b> Un colis qui a « disparu » de la journée a presque toujours été reporté : voir le chapitre 4. Une suppression laisse une trace, et l'argent d'un colis supprimé doit être régularisé en Gestion.</div>
+      <h3>Ce que la cliente voit</h3>
+      <p>Chaque geste lui parvient : récupéré, en livraison, livré (avec le motif en cas d'échec), retour. Son relevé se calcule tout seul à partir des montants du colis. Un colis livré sans clic « Livré » restera « en livraison » — et la cliente ne verra jamais son argent arriver.</p>
+    </div>
+    <figure><img src="captures/02-carte-colis.png" alt=""><figcaption>La carte d'un colis : le destinataire, la récupération, les montants, puis les gestes.</figcaption></figure>
+  </div>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 3 / 11</div>
+</section>
+
+<!-- 4. MODIFIER -->
+<section class="page">
+  <h2>3 · Modifier un colis, corriger une erreur, marquer « examiné »</h2>
+  <div class="cols">
+    <div>
+      <p>Tout se corrige depuis la carte du colis. <b>Chaque correction est datée et signée</b> dans l'historique du colis : on peut toujours répondre à « qui a changé ça ? ».</p>
+      <ol class="etapes">
+        <li><b>Ouvrir la carte</b> : dans Colis (sa journée, ou « Toutes les dates »), ou par la recherche en haut.</li>
+        <li><span class="btn">⋮</span> → <span class="btn">✏️ Modifier</span> : cliente, livreur de collecte, livreur de livraison, commune et adresse de destination, téléphone, montants (article, livraison), frais d'expédition, frais additionnels, <b>jour du colis</b>, « à livrer avant le ». Puis <span class="btn">Enregistrer</span>.</li>
+        <li><b>Un montant manque ?</b> L'écran vous prévient avant d'enregistrer, et L'essentiel compte « montants à compléter » tant que ce n'est pas fait. Un colis sans montant fausse le relevé de la cliente et la caisse du livreur.</li>
+        <li><b>Vérifier un non livré ou un retour</b> : ouvrir sa carte le marque « examiné » pour tout le bureau — il quitte « À examiner » dans L'essentiel. Vous n'avez rien d'autre à cocher.</li>
+        <li><b>Un colis saisi par erreur</b> : <span class="btn">⋮</span> → <span class="btn">🗑 Supprimer</span>. Jamais pour « recommencer » un colis existant.</li>
+      </ol>
+      <div class="note"><b>Raccourci pour un colis revenu :</b> pour changer seulement le jour et le livreur, passez par Retours → <span class="btn">Reprogrammer</span>. C'est plus court que Modifier, et le colis repart en livraison ce jour-là.</div>
+      <div class="note vert"><b>Les corrections du terrain :</b> quand un livreur corrige un montant sur place (article moins cher, livraison offerte), vous le relisez le soir dans Suivi → Corrections de montants.</div>
+    </div>
+    <figure><img src="captures/03-modifier-colis.png" alt=""><figcaption>Le formulaire de modification : « Jour du colis » et « À livrer avant le ».</figcaption></figure>
+  </div>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 4 / 11</div>
+</section>
+
+<!-- 5. REPORTÉ -->
+<section class="page">
+  <h2>4 · Le colis reporté : deux jours, un seul point</h2>
+  <div class="cols">
+    <div>
+      <p>Un colis a <b>deux jours</b> : le jour où la cliente l'a <b>remis</b> (c'est ce jour-là qu'on lui fait son point) et le jour où il faut <b>s'en occuper</b> (c'est ce jour-là que le livreur le voit dans sa journée). Reporter un colis ne déplace que le second.</p>
+      <h3>Reporter</h3>
+      <ol class="etapes">
+        <li>Sur la carte : <span class="btn">⋮</span> → <span class="btn">✏️ Modifier</span> → <b>Jour du colis</b> : choisissez la nouvelle date → <span class="btn">Enregistrer</span>. Le livreur peut aussi reporter depuis son téléphone.</li>
+        <li>Le colis <b>reste dans sa journée de réception</b>, marqué ⏭️ « Reporté au … — reçu le …, et toujours compté dans cette journée-là ».</li>
+        <li>Il apparaît <b>aussi</b> dans la journée de report : dans « Ma journée » du livreur et dans la tournée.</li>
+      </ol>
+      <h3>Le point de la vendeuse ne bouge pas</h3>
+      <p>Le colis reste dans le point du jour où elle l'a remis, avec la mention « reporté au … », à <b>0 F</b> tant qu'il n'est pas livré. Le jour où il est livré, son montant entre dans <b>ce point-là</b> — et vous recevez la notification « la journée a changé, le point est à revoir » sur ce jour de remise. C'est normal : c'est le point de ce jour qui vient de changer.</p>
+      <h3>Annuler un report</h3>
+      <p>Sur la carte, <span class="btn">↩️ Le remettre à sa journée</span>. Ou ✏️ Modifier → remettez le jour de réception.</p>
+      <div class="note rouge"><b>Vérifier qu'aucun reporté ne dort :</b> la ligne « ⏭️ N colis de cette journée ont été reportés » en haut de la liste, avec « Aller à cette journée ». Un reporté ni livré ni rendu après son jour ressort dans L'essentiel (« dormants »). À regarder chaque matin.</div>
+    </div>
+    <figure><img src="captures/04-colis-reporte.png" alt=""><figcaption>Un colis reporté, dans sa journée de réception : la mention, et le bouton pour annuler.</figcaption></figure>
+  </div>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 5 / 11</div>
+</section>
+
+<!-- 6. TOURNÉES -->
+<section class="page">
+  <h2>5 · Tournées — préparer demain, les demandes de passage</h2>
+  <div class="cols">
+    <div>
+      <p>L'onglet <span class="btn">🗓️ Tournées</span> sert à <b>décider demain</b> pendant que tout le reste de l'écran parle d'aujourd'hui. C'est pour cela qu'il est à part.</p>
+      <ol class="etapes">
+        <li>Le soir, ouvrez Tournées (bouton <span class="btn">Demain</span>). Les clientes qui ont demandé un passage sont dans le bloc ambre en haut, avec nom, commune · téléphone, et leur note.</li>
+        <li>Sur une demande : <span class="btn">🗓️ Programmer</span> pose la cliente dans le formulaire au-dessus. Choisissez le livreur, <span class="btn">Ajouter à la tournée</span>.</li>
+        <li><b>Dès que la tournée est posée, la demande est traitée toute seule</b> et la cliente reçoit « 🚚 Passage programmé — [livreur] vous confirmera ». Vous n'avez pas d'autre geste à faire.</li>
+        <li>Impossible ce jour-là ? <span class="btn">❌ Refuser</span> avec un motif : la cliente le lit et peut demander un autre jour. <span class="btn">✅ Traitée</span> si vous avez répondu autrement (appel, passage hors tournée).</li>
+      </ol>
+      <p>Le lendemain matin, le livreur voit sa tournée dans l'ordre, avec l'adresse et le téléphone ; le bureau voit dans Suivi qui est parti et où.</p>
+      <div class="note"><b>À ne pas confondre :</b> Tournées = ce qu'on programme pour demain. Colis = ce qui se passe aujourd'hui. Modifier un colis du jour se fait dans Colis, jamais dans Tournées.</div>
+      <div class="note rouge"><b>Une demande de passage non programmée n'envoie personne.</b> Refusez-la avec un motif plutôt que de la laisser : la cliente attend un livreur qui ne viendra pas.</div>
+    </div>
+    <figure><img src="captures/05-tournees-demande.png" alt=""><figcaption>Une demande de passage, encadrée après la notification : Programmer, Traitée, Refuser.</figcaption></figure>
+  </div>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 6 / 11</div>
+</section>
+
+<!-- 7. NOTIFICATIONS -->
+<section class="page">
+  <h2>6 · Les notifications : elles conduisent au point</h2>
+  <div class="cols">
+    <div>
+      <p>Chaque notification du bureau ouvre <b>exactement l'endroit concerné</b>, encadré en orange avec <span class="pill">🔔 à traiter</span> tant que vous n'y avez pas touché — même s'il y en a plusieurs.</p>
+      <table>
+        <tr><th>La notification</th><th>Où elle vous emmène</th></tr>
+        <tr><td>« 📒 Journée bouclée » / « ♻️ la journée a changé »</td><td>Suivi → le point de <b>cette</b> vendeuse, <b>ce</b> jour-là, déplié et encadré. On peut lui faire (ou refaire) son point.</td></tr>
+        <tr><td>« 💰 [Livreur] a fait son point »</td><td>Suivi → sa carte dans le point par livreur, encadrée. On compte, on confirme la remise.</td></tr>
+        <tr><td>« 🗓️ [Cliente] demande un passage »</td><td>Tournées → sa ligne, le bon jour, encadrée. Programmer, Traitée ou Refuser.</td></tr>
+        <tr><td>« 📣 Une cliente signale un problème »</td><td>L'essentiel → le panneau des signalements : « Je m'en occupe », puis « Répondre et clore ».</td></tr>
+        <tr><td>« ☀️ Ce matin chez CLT » (7 h)</td><td>L'essentiel. Hier en trois nombres, puis ce qui attend.</td></tr>
+      </table>
+      <ol class="etapes">
+        <li>Le cadre <b>survit au rechargement</b> et ne tombe qu'au premier toucher de ce point.</li>
+        <li>Plusieurs notifications = plusieurs cadres ; chacun tombe seul. Rien ne s'efface tant que vous n'avez pas touché.</li>
+        <li>Pas de notification ? Acceptez l'invitation (bandeau en bas de l'écran, ou ☰ → notifications) et installez l'application sur l'écran d'accueil (☰ → Installer).</li>
+      </ol>
+    </div>
+    <figure><img src="captures/06-suivi-point-encadre.png" alt=""><figcaption>Après « Journée bouclée » : le point de la vendeuse, encadré « à traiter ».</figcaption></figure>
+  </div>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 7 / 11</div>
+</section>
+
+<!-- 8. SUIVI -->
+<section class="page">
+  <h2>7 · Suivi — les livreurs, les points, le soir</h2>
+  <div class="cols">
+    <div>
+      <ol class="etapes">
+        <li><b>Présence</b> — qui est connecté maintenant (point vert), qui ne l'est pas.</li>
+        <li><b>La carte</b> — la position des livreurs en tournée, en temps réel, quand ils ont accepté le partage. Un livreur immobile depuis longtemps avec des colis « en livraison » : on l'appelle.</li>
+        <li><b>Le point par cliente</b> — pour chaque vendeuse, les colis qu'elle a <b>remis ce jour-là</b>, reportés compris, et ce qui lui revient. « Envoyer le point » lui envoie le relevé (WhatsApp, Excel, PDF). Un point déjà envoyé qui change : la mention « ♻️ à revoir ».</li>
+        <li><b>Le point par livreur</b> — ce que chaque livreur a encaissé et ce qu'il doit remettre : article + livraison − ce qu'il a avancé de sa poche (gare, frais additionnels).</li>
+        <li><b>Le journal</b> — chaque geste horodaté : qui a marqué quoi, quand. <b>Corrections de montants</b> — ce que les livreurs ont corrigé sur le terrain : à relire chaque soir.</li>
+      </ol>
+      <h3>Le point du soir</h3>
+      <ol class="etapes">
+        <li>Le livreur annonce sa remise depuis son téléphone : « ce que je porte », avec l'addition encaissé − avancé de ma poche = à remettre. Vous recevez « [Livreur] a fait son point ».</li>
+        <li>Le bureau compte, puis confirme la remise (<span class="btn">⋯ Plus</span> → Finances → Remises). L'écart, s'il y en a un, est écrit noir sur blanc.</li>
+        <li>« Argent non remis » sur l'accueil doit être à zéro à la fermeture.</li>
+      </ol>
+      <div class="note"><b>L'avance de travail :</b> quand un livreur a une avance de CLT, ses frais avancés sont pris dessus, pas sur sa poche. Son solde se voit sur son écran et dans Gestion › Caisse livreurs.</div>
+    </div>
+    <figure><img src="captures/09-suivi-livreur.png" alt=""><figcaption>Suivi : le point par livreur, sous le point par cliente.</figcaption></figure>
+  </div>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 8 / 11</div>
+</section>
+
+<!-- 9. RETOURS -->
+<section class="page" style="font-size:9.9pt">
+  <h2>8 · Retours et non livrés — où est chaque colis</h2>
+  <div class="cols">
+    <div>
+      <p>L'onglet <span class="btn">↩️ Retours</span> liste tout ce qui n'est pas encore entre les mains de la cliente, quel que soit le jour, du plus urgent au moins urgent. Le chiffre rouge sur l'onglet = litiges + retards. Deux côtés en haut : <b>Retours</b> et <b>Non livrés</b> ; dessous, « Chercher ici ».</p>
+      <table style="font-size:9pt">
+        <tr><th style="width:24%">Niveau</th><th>Ce que ça veut dire</th><th style="width:36%">Le geste du bureau</th></tr>
+        <tr><td><b>Non livré</b></td><td>Le livreur a échoué ; le colis est dans sa sacoche, sans décision.</td><td><span class="btn">Reprogrammer</span> (jour + livreur, il repart) ou <span class="btn">Le livreur le rapporte</span>.</td></tr>
+        <tr><td><b>Chez le livreur</b></td><td>Revenu, le livreur le garde. Il doit le rendre le lendemain, deux jours au plus tard.</td><td><span class="btn">Reçu au bureau</span> · <span class="btn">Rendu à la cliente</span> · <span class="btn">Confier à un livreur</span></td></tr>
+        <tr><td><b>Au bureau</b></td><td>Déposé à CLT. C'est le bureau qui doit le rendre.</td><td><span class="btn">Rendu à la cliente</span> ou <span class="btn">Confier à un livreur</span></td></tr>
+        <tr><td><b>Rendu — à confirmer</b></td><td>Le livreur dit l'avoir rendu ; la cliente n'a pas encore dit oui.</td><td>Attendre sa confirmation ; <span class="btn">Corriger</span> si ce n'était pas rendu.</td></tr>
+        <tr><td><b>Confirmé</b></td><td>La cliente a dit « bien récupéré ». Le colis sort de la liste.</td><td>Rien : c'est clos.</td></tr>
+        <tr><td><b>Litige</b></td><td>La cliente dit « je ne l'ai pas ». Une réclamation est ouverte.</td><td>Appeler, trancher : <span class="btn">Confier à un livreur</span> ou <span class="btn">Rendu en main propre</span>.</td></tr>
+      </table>
+      <p><b>Historique</b> sous chaque colis montre chaque passage de main, daté et signé. C'est ce qu'on lit avant de rappeler une cliente.</p>
+      <div class="note"><b>Un colis reporté n'est pas un retour :</b> il n'est ni revenu ni en échec, il attend son jour. Voir le chapitre 4. Un colis revenu chez la cliente ne quitte jamais son point : il y reste à 0 F.</div>
+      <div class="note rouge"><b>Chaque matin :</b> ouvrir Retours, traiter les lignes rouges (litiges, retards), puis appeler les clientes des « à confirmer » de plus de deux jours.</div>
+    </div>
+    <figure><img src="captures/07-retours.png" alt=""><figcaption>L'onglet Retours : Retours / Non livrés, la recherche, les cartes avec leurs gestes.</figcaption></figure>
+  </div>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 9 / 11</div>
+</section>
+
+<!-- 10. PLUS -->
+<section class="page">
+  <h2>9 · Derrière « Plus » — Finances, Personnes, Comptes, Express</h2>
+  <div class="cols">
+    <div>
+      <h3>Finances</h3>
+      <ol class="etapes">
+        <li><b>Remises</b> — confirmer l'argent rendu par chaque livreur le soir.</li>
+        <li><b>L'argent des clientes chez nous</b> — ce que CLT doit à chaque cliente. Appuyer sur une cliente ouvre sa fiche ; <span class="btn">Reverser</span> enregistre le reversement et produit le reçu numéroté. Une erreur se corrige depuis les reçus.</li>
+        <li><b>Vue par jour / par mois</b> — les chiffres de l'activité.</li>
+      </ol>
+      <h3>Personnes</h3>
+      <p>Clientes et livreurs : période glissante, tendance, signaux (une cliente qui baisse, un livreur qui échoue plus). Un appui ouvre la fiche. Administrateur : <span class="btn">⋮</span> → <b>👁 Voir son écran</b> ouvre l'écran d'un livreur ou d'une cliente avec ses données, en lecture seule d'abord.</p>
+      <h3>Comptes</h3>
+      <ol class="etapes">
+        <li><b>Nouveau compte client / livreur</b> — actif tout de suite ; communiquez le mot de passe, la personne le change ensuite dans « Mon compte ».</li>
+        <li><b>Boutiques supervisées</b> — un propriétaire de plusieurs boutiques : sur son compte, <span class="btn">⋮</span> → Boutiques supervisées → rattacher les comptes de ses gérants.</li>
+        <li><b>Suspendre / réinitialiser le mot de passe</b> — depuis le même menu ⋮.</li>
+      </ol>
+      <h3>Express</h3>
+      <p>Les courses CLT Express (clients et coursiers), les recharges de solde à valider, les réglages. Réservé à l'administrateur.</p>
+    </div>
+    <figure><img src="captures/08-plus.png" alt=""><figcaption>« Plus » ouvre le reste, sans rien retirer aux quatre onglets.</figcaption></figure>
+  </div>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 10 / 11</div>
+</section>
+
+<!-- 11. RÉFLEXES -->
+<section class="page">
+  <h2>10 · Les réflexes qui évitent les appels</h2>
+  <div class="deux">
+    <div>
+      <h3>Le matin</h3>
+      <ol class="etapes">
+        <li>Lire « ☀️ Ce matin chez CLT », puis l'accueil : vider « À faire ».</li>
+        <li>Retours : traiter le rouge.</li>
+        <li>Colis : chaque colis du jour a un livreur ; les reportés d'hier sont dans la journée d'aujourd'hui.</li>
+        <li>Suivi : les livreurs sont partis ? La carte le dit.</li>
+      </ol>
+      <h3>Le soir</h3>
+      <ol class="etapes">
+        <li>Suivi → Corrections de montants : relire.</li>
+        <li>Les points des vendeuses : à chaque « Journée bouclée », faire le point et l'envoyer.</li>
+        <li>Finances → Remises : confirmer chaque caisse.</li>
+        <li>Tournées : programmer demain, répondre à chaque demande de passage.</li>
+        <li>Accueil : « Argent non remis » à zéro, pastilles rouges à zéro.</li>
+      </ol>
+    </div>
+    <div>
+      <h3>Quand on cherche un colis</h3>
+      <p>1. La barre « Chercher partout ». 2. S'il n'est pas dans la journée : la ligne « reportés » au-dessus de la liste, ou « Toutes les dates ». 3. S'il est non livré ou revenu : l'onglet Retours dit entre quelles mains il est.</p>
+      <h3>Quand une cliente se plaint</h3>
+      <p>Son signalement est dans « À examiner » (pastille signalements). On y répond depuis sa fiche ; elle lit la réponse dans son espace. Si elle dit « mon colis a disparu » : c'est presque toujours un reporté (chapitre 4).</p>
+      <h3>Quand une notification arrive</h3>
+      <p>On la touche : elle ouvre le bon point, encadré. On traite, on touche le cadre. Rien ne se perd si on attend : le cadre reste.</p>
+      <h3>Installer l'application</h3>
+      <p>Menu ☰ → <span class="btn">Installer l'application</span>. Sur Android/Chrome et sur ordinateur, ça installe directement. Sur iPhone : Safari → Partager → « Sur l'écran d'accueil » (la marche à suivre s'ouvre toute seule). Puis accepter les notifications.</p>
+      <div class="note rouge"><b>Ce qui n'est pas dans l'application n'existe pas.</b> Un colis livré sans clic « Livré » restera « en livraison » — et la cliente ne verra jamais son argent arriver dans son relevé.</div>
+    </div>
+  </div>
+  <p style="margin-top:8mm; text-align:center; color:#5B6B7C; font-size:9.5pt">Christ Livraison &amp; Transport SARL · christlivraison.ci · contact@christlivraison.ci · Service clientèle 07 79 60 47 61 / 01 70 40 73 12 · WhatsApp 05 46 81 86 40</p>
+  <div class="pied">Christ Livraison &amp; Transport — Les gestes essentiels du suivi — page 11 / 11</div>
+</section>
+
+</body>
+</html>

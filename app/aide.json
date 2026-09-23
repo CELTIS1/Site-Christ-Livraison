@@ -188,7 +188,7 @@
         {
           "id": "equipe-tutoriel",
           "titre": "Le tutoriel complet : les gestes essentiels du suivi",
-          "resume": "Huit pages avec captures : le matin, le soir, chercher un colis, les retours niveau par niveau, ce qui est derrière « Plus ».",
+          "resume": "Onze pages avec captures : le matin, un colis, modifier, le colis reporté, les tournées et demandes de passage, les notifications, le suivi, les retours, « Plus », les réflexes.",
           "etapes": [
             "Ouvrez le PDF ci-dessous. Il correspond à la version en ligne de l'application.",
             "À faire lire à toute nouvelle personne du bureau le premier jour."
@@ -197,7 +197,7 @@
             {
               "type": "pdf",
               "url": "aide/tutoriel-suivi-espace-equipe.pdf",
-              "label": "Tutoriel — Les gestes essentiels du suivi (PDF, 8 pages)"
+              "label": "Tutoriel — Les gestes essentiels du suivi (PDF, 11 pages, 23 septembre 2026)"
             }
           ]
         },
