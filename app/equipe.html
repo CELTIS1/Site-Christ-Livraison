@@ -22,10 +22,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260923tutoriel">
+<link rel="stylesheet" href="style.css?v=20260923barre">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260923tutoriel"></script>
-<script src="splash.js?v=20260923tutoriel"></script>
+<script src="theme.js?v=20260923barre"></script>
+<script src="splash.js?v=20260923barre"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -137,15 +137,27 @@
      défilement, il n'y a plus rien qui puisse la déplacer. cltDefileur() (clt-common.js) rend
      l'élément qui défile, pour « Remonter en haut » et le retour en haut au changement d'onglet. */
   @media(max-width:760px){
-    html.eq-coque, html.eq-coque body{ height:100%; overflow:hidden; overscroll-behavior:none; }
-    html.eq-coque body{ padding-top:0 !important; }
+    /* 23/09 : la première coque fixait la barre au bas de la « fenêtre » avec html/body en
+       overflow:hidden — sur l'iPhone de Celtis, la barre s'est retrouvée remontée, avec un vide
+       dessous : en application installée, iOS ne donne pas toute la hauteur à une page qu'il
+       croit non défilante. On ne fixe plus rien au bas de la fenêtre : le corps est une colonne
+       de la hauteur de l'écran (100dvh), le contenu prend le milieu et défile, la barre est
+       simplement posée EN DESSOUS, dans le flux — là où finit l'écran, quoi qu'en pense iOS. */
+    html.eq-coque body{
+      height:100vh; height:100dvh; overflow:hidden; overscroll-behavior:none;
+      display:flex; flex-direction:column; padding-top:0 !important; padding-bottom:0 !important; margin:0;
+    }
     html.eq-coque .wrap{
-      position:fixed; top:0; left:0; right:0; bottom:0; overflow-y:auto; overflow-x:hidden;
+      position:static; flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;
       -webkit-overflow-scrolling:touch; overscroll-behavior:contain; scroll-behavior:smooth;
       box-sizing:border-box; max-width:none; margin:0;
       padding-top:calc(var(--clt-topbar-h, 0px) + 26px);
-      padding-bottom:calc(60px + env(safe-area-inset-bottom, 0px) + 32px);
+      padding-bottom:32px;
     }
+    /* Ce qui vit hors du .wrap mais n'est pas fixé (fenêtres modales cachées, gabarits) ne doit
+       pas prendre de place dans la colonne. */
+    html.eq-coque body > :not(.wrap):not(.clt-bottomnav):not(.topbar){ flex:none; }
+    html.eq-coque .clt-bottomnav{ position:static; flex:none; }
     .clt-bottomnav{
       display:flex; position:fixed; left:0; right:0; bottom:0; z-index:200;
       align-items:center; justify-content:space-around;
@@ -1744,43 +1756,43 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
   </div>
 </div>
 
-<script src="clt-common.js?v=20260923tutoriel"></script>
-<script src="numero-international.js?v=20260923tutoriel"></script>
-<script src="voir-un-compte.js?v=20260923tutoriel"></script>
-<script src="lib/bibliotheques.js?v=20260923tutoriel"></script>
-<script src="lib/retours.js?v=20260923tutoriel"></script>
-<script src="lib/reclamations.js?v=20260923tutoriel"></script>
-<script src="lib/communes-et-tarifs.js?v=20260923tutoriel"></script>
-<script src="lib/argent.js?v=20260923tutoriel"></script>
-<script src="lib/releve-cliente.js?v=20260923tutoriel"></script>
-<script src="lib/papier-a-en-tete.js?v=20260923tutoriel"></script>
-<script src="lib/briques-argent.js?v=20260923tutoriel"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260923tutoriel"></script>
-<script src="lib/annonce-de-remise.js?v=20260923tutoriel"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260923tutoriel"></script>
-<script src="lib/primes.js?v=20260923tutoriel"></script>
-<script src="lib/doublons.js?v=20260923tutoriel"></script>
-<script src="config.js?v=20260923tutoriel"></script>
-<script src="delais-et-promesses.js?v=20260923tutoriel"></script>
-<script src="ordre-de-livraison.js?v=20260923tutoriel"></script>
-<script src="etiquettes-et-scan.js?v=20260923tutoriel"></script>
-<script src="clients-dashboard.js?v=20260923tutoriel"></script>
-<script src="livreurs-dashboard.js?v=20260923tutoriel"></script>
-<script src="point-du-jour.js?v=20260923tutoriel"></script>
-<script src="biometric-lock.js?v=20260923tutoriel"></script>
-<script src="clt-select-recherche.js?v=20260923tutoriel"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260923tutoriel"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260923tutoriel"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260923tutoriel"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260923tutoriel"></script>
-<script src="equipe/04-actions.js?v=20260923tutoriel"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260923tutoriel"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260923tutoriel"></script>
-<script src="point-par-whatsapp.js?v=20260923tutoriel"></script>
-<script src="equipe/07-rapports.js?v=20260923tutoriel"></script>
-<script src="equipe/08-son-ecran.js?v=20260923tutoriel"></script>
-<script src="recharges-express.js?v=20260923tutoriel"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260923tutoriel"></script>
+<script src="clt-common.js?v=20260923barre"></script>
+<script src="numero-international.js?v=20260923barre"></script>
+<script src="voir-un-compte.js?v=20260923barre"></script>
+<script src="lib/bibliotheques.js?v=20260923barre"></script>
+<script src="lib/retours.js?v=20260923barre"></script>
+<script src="lib/reclamations.js?v=20260923barre"></script>
+<script src="lib/communes-et-tarifs.js?v=20260923barre"></script>
+<script src="lib/argent.js?v=20260923barre"></script>
+<script src="lib/releve-cliente.js?v=20260923barre"></script>
+<script src="lib/papier-a-en-tete.js?v=20260923barre"></script>
+<script src="lib/briques-argent.js?v=20260923barre"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260923barre"></script>
+<script src="lib/annonce-de-remise.js?v=20260923barre"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260923barre"></script>
+<script src="lib/primes.js?v=20260923barre"></script>
+<script src="lib/doublons.js?v=20260923barre"></script>
+<script src="config.js?v=20260923barre"></script>
+<script src="delais-et-promesses.js?v=20260923barre"></script>
+<script src="ordre-de-livraison.js?v=20260923barre"></script>
+<script src="etiquettes-et-scan.js?v=20260923barre"></script>
+<script src="clients-dashboard.js?v=20260923barre"></script>
+<script src="livreurs-dashboard.js?v=20260923barre"></script>
+<script src="point-du-jour.js?v=20260923barre"></script>
+<script src="biometric-lock.js?v=20260923barre"></script>
+<script src="clt-select-recherche.js?v=20260923barre"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260923barre"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260923barre"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260923barre"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260923barre"></script>
+<script src="equipe/04-actions.js?v=20260923barre"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260923barre"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260923barre"></script>
+<script src="point-par-whatsapp.js?v=20260923barre"></script>
+<script src="equipe/07-rapports.js?v=20260923barre"></script>
+<script src="equipe/08-son-ecran.js?v=20260923barre"></script>
+<script src="recharges-express.js?v=20260923barre"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260923barre"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1828,20 +1840,20 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260923tutoriel"></script>
-<script src="equipe/11-chercher-partout.js?v=20260923tutoriel"></script>
-<script src="reprogrammer.js?v=20260923tutoriel"></script>
-<script src="retours-du-bureau.js?v=20260923tutoriel"></script>
-<script src="equipe/12-les-retours.js?v=20260923tutoriel"></script>
-<script src="equipe/13-les-boutiques.js?v=20260923tutoriel"></script>
+<script src="equipe/10-onglets.js?v=20260923barre"></script>
+<script src="equipe/11-chercher-partout.js?v=20260923barre"></script>
+<script src="reprogrammer.js?v=20260923barre"></script>
+<script src="retours-du-bureau.js?v=20260923barre"></script>
+<script src="equipe/12-les-retours.js?v=20260923barre"></script>
+<script src="equipe/13-les-boutiques.js?v=20260923barre"></script>
 <!-- 9.6 : sur grand écran, la liste à gauche et la fiche à droite. Ne fait rien sous 1 200 px. -->
-<script src="equipe/14-liste-et-fiche.js?v=20260923tutoriel"></script>
-<script src="chaine-de-l-argent.js?v=20260923tutoriel"></script>
-<script src="equipe/15-la-chaine-de-l-argent.js?v=20260923tutoriel"></script>
+<script src="equipe/14-liste-et-fiche.js?v=20260923barre"></script>
+<script src="chaine-de-l-argent.js?v=20260923barre"></script>
+<script src="equipe/15-la-chaine-de-l-argent.js?v=20260923barre"></script>
 <!-- 9.6 : les colis en route sur la carte du Suivi, une pastille par commune. -->
-<script src="colis-sur-la-carte.js?v=20260923tutoriel"></script>
-<script src="equipe/16-les-colis-sur-la-carte.js?v=20260923tutoriel"></script>
+<script src="colis-sur-la-carte.js?v=20260923barre"></script>
+<script src="equipe/16-les-colis-sur-la-carte.js?v=20260923barre"></script>
 <!-- Le point à voir (22/09/2026) : la notification conduit à la carte, qui reste encadrée tant qu'on ne l'a pas ouverte. -->
-<script src="equipe/17-le-point-a-voir.js?v=20260923tutoriel"></script>
+<script src="equipe/17-le-point-a-voir.js?v=20260923barre"></script>
 </body>
 </html>

@@ -16,9 +16,12 @@ await N.ouvrirConnecte('equipe.html', ADMIN);
 await dodo(3500);
 const etat = await page.evaluate(() => {
   const w = document.querySelector('.wrap'), cs = getComputedStyle(w);
-  return { position: cs.position, overflow: cs.overflowY, docOverflow: getComputedStyle(document.documentElement).overflowY, defileur: cltDefileur() === w, haut: w.scrollHeight > w.clientHeight };
+  const b = getComputedStyle(document.body), nav = document.getElementById('clt-bottomnav'), r = nav.getBoundingClientRect();
+  return { overflow: cs.overflowY, corps: b.display + '/' + b.overflowY, defileur: cltDefileur() === w, haut: w.scrollHeight > w.clientHeight,
+    navEnFlux: getComputedStyle(nav).position === 'static', navEnBas: Math.abs(r.bottom - window.innerHeight) < 1 };
 });
-verifier('.wrap est le cadre fixe qui défile, et le document ne défile plus', etat.position === 'fixed' && etat.overflow === 'auto' && etat.docOverflow === 'hidden' && etat.defileur, etat);
+verifier('le corps est une colonne qui ne défile pas ; .wrap prend le milieu et défile', etat.corps === 'flex/hidden' && etat.overflow === 'auto' && etat.defileur, etat);
+verifier('la barre est dans le flux, posée exactement au bas de l\'écran (pas fixée à une fenêtre qu\'iOS raccourcit)', etat.navEnFlux && etat.navEnBas, etat);
 verifier('il y a de quoi défiler', etat.haut, etat);
 
 const barreAvant = await page.evaluate(() => document.getElementById('clt-bottomnav').getBoundingClientRect().top);

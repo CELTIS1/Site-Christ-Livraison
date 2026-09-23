@@ -100,11 +100,20 @@
         + `<th>Livreur</th><th class="ta-d">Solde</th><th class="ta-d">Donné</th><th class="ta-d">Dépensé</th><th>Dernier mouvement</th><th></th>`
         + `</tr></thead><tbody>${soldes.map(ligneHTML).join('')}</tbody></table></div>`
       : `<div class="hint">Aucun livreur ne travaille encore avec une avance.${estAdmin() ? ' Choisissez-en un ci-dessous pour commencer.' : ''}</div>`;
+    /* 23/09/2026, Celtis : « je suis venu dans la gestion, j'ai regardé, mais je ne sais pas quoi
+       faire ; il n'y a pas d'action ». Le bouton était en bas, discret. Le geste est maintenant EN
+       HAUT, en couleur, avec la marche à suivre en trois lignes. */
+    const marche = estAdmin()
+      ? `<div class="adt-marche"><div class="adt-gestes"><button type="button" class="btn btn-sm" data-adt-geste="dotation" data-adt-livreur="">💵 Donner une avance à un livreur…</button></div>`
+        + `<ol class="hint" style="margin:8px 0 0 18px; padding:0;"><li>Appuyez sur le bouton, choisissez le livreur, tapez le montant que vous lui remettez en main et un motif (dix caractères au moins).</li>`
+        + `<li>C'est tout : dès ce moment, ses frais de gare et frais additionnels sortent de cette avance, colis par colis, et son point du soir en tient compte.</li>`
+        + `<li>Plus tard : « Donner » pour recharger, « Reprendre » quand il vous rend de l'argent, « Fermer l'arrangement » pour arrêter.</li></ol></div>`
+      : '';
     boite.innerHTML = `<div class="card">`
       + `<h2>Avances de travail</h2>`
       + `<div class="hint">CLT remet une somme au livreur ; ce qu'il paie à la gare sort de cette avance, plus de sa poche, et le soir il ne remet que ce qu'il a encaissé. Les dépenses s'écrivent toutes seules, colis par colis. <strong>Un solde négatif veut dire que CLT lui doit cette somme.</strong></div>`
+      + marche
       + corps
-      + (estAdmin() ? `<div class="adt-gestes" style="margin-top:12px;"><button type="button" class="btn btn-sm" data-adt-geste="dotation" data-adt-livreur="">Donner une avance à un livreur…</button></div>` : '')
       + `</div>`;
   }
 

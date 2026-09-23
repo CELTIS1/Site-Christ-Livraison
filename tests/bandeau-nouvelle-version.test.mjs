@@ -1282,10 +1282,17 @@ verifier(
    avant le colis reporté, les notifications précises, les demandes de passage et les rapports.
    Onze pages, captures prises sur le faux monde au format téléphone (outils/tutoriel-equipe :
    captures.mjs puis pdf.mjs, rejouables à chaque changement d'écran). Au passage : « reçu le
-   aujourd'hui » devient « reçu aujourd'hui » sur la carte du colis reporté. Étiquette 20260923tutoriel. */
+   aujourd'hui » devient « reçu aujourd'hui » sur la carte du colis reporté. Étiquette 20260923tutoriel.
+   v235, le 23/09/2026 — LA BARRE, À SA PLACE. Celtis, capture à l'appui : avec la coque (v231),
+   la barre du bas « est montée », un vide sous elle. En application installée, iOS ne donne pas
+   toute la hauteur à une page en overflow:hidden, et un élément fixé au bas de cette fenêtre
+   raccourcie remonte. On ne fixe plus rien : le corps est une colonne de 100dvh, le contenu
+   défile au milieu, la barre est posée EN DESSOUS dans le flux. Et l'avance de travail :
+   « je ne sais pas quoi faire, il n'y a pas d'action » — le bouton était en bas, discret ;
+   il est en haut, orange, avec la marche à suivre en trois lignes. Étiquette 20260923barre. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v234'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v235'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
