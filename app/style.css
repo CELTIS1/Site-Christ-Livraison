@@ -42,6 +42,10 @@ body{
   font-family:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   color:#1E2A38;
   background:var(--grey-bg);
+  /* Au moins la hauteur de l'écran : les espaces cliente et livreur peignent un dégradé sur le corps
+     de page, et quand la page est courte (ordinateur, onglet presque vide) ce dégradé se répétait
+     sous le contenu — une bande de couleur au milieu de l'écran (vu le 23/09/2026, lot 2). */
+  min-height:100vh;
   line-height:1.55;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
@@ -756,6 +760,13 @@ html[data-theme="dark"] .montant-absent{ color:#ff9d93; }
 .tab.active{color:var(--navy); background:var(--white); box-shadow:var(--shadow-xs);}
 .hidden{display:none !important;}
 
+/* Sur téléphone, le lien fixé en haut à gauche passait SUR le haut de la carte, et le bouton de
+   thème flottant SUR son coin bas (vu le 23/09/2026, lot 2). Les deux vont dans une bande réservée
+   au-dessus de la carte : le lien à gauche, le bouton à droite. */
+@media(max-width:760px){
+  .login-page{ padding-top:calc(70px + env(safe-area-inset-top, 0px)); padding-bottom:calc(24px + env(safe-area-inset-bottom, 0px)); align-items:flex-start; }
+  .login-box{ padding:28px 22px; }
+}
 @media(max-width:640px){
   .tabs{overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; margin-bottom:16px;}
   .tabs::-webkit-scrollbar{display:none;}
@@ -1462,7 +1473,10 @@ html[data-theme="dark"] .demande-ligne + .demande-ligne{ border-top-color:rgba(2
 .stat-tile:not(.stat-tile-total){ background:var(--tile-bg, var(--white)); }
 .stat-tile-value{ color:var(--tile-color, var(--navy)); }
 html[data-theme="dark"] .stat-tile{ background:#1f2a3a; border-color:#2A3849; box-shadow:none; }
-html[data-theme="dark"] .stat-tile-value{ color:var(--tile-color, #E6ECF3); filter:brightness(1.35); }
+/* Le marine #1B4374 passé en brightness(1.35) restait à 1,4 de contraste sur la tuile sombre
+   (23/09/2026, lot 2) : on mélange la couleur de la tuile avec du blanc, ce qui éclaircit chaque
+   teinte d'autant et garde le vert vert, le rouge rouge. */
+html[data-theme="dark"] .stat-tile-value{ color:color-mix(in srgb, var(--tile-color, #E6ECF3) 55%, #fff); }
 html[data-theme="dark"] .stat-tile-label{ color:#9DB0C4; }
 html[data-theme="dark"] .stat-tile-total{ background:var(--grad-navy-deep); }
 
@@ -1827,8 +1841,10 @@ html[data-theme="dark"] .theme-toggle{
 @media(max-width:760px){
   .theme-toggle{
     width:42px; height:42px; font-size:17px;
-    left:auto; right:14px;
-    bottom:calc(18px + env(safe-area-inset-bottom));
+    /* En haut à droite, en face du lien « ← Accueil / ← Site », depuis le 23/09/2026 (lot 2) :
+       en bas, il passait sur le coin de la carte de connexion. La page réserve la bande du haut. */
+    left:auto; right:14px; bottom:auto;
+    top:calc(14px + env(safe-area-inset-top, 0px));
   }
 }
 
@@ -1982,6 +1998,16 @@ html[data-theme="dark"] #colis-du-jour div[style*="color:#1B4374"],
 html[data-theme="dark"] #tournee-summary div[style*="color:#1B4374"]{ color:#7FB0EA !important; }
 html[data-theme="dark"] #colis-du-jour div[style*="color:#8a94a3"],
 html[data-theme="dark"] #tournee-summary div[style*="color:#8a94a3"]{ color:#AEB9C7 !important; }
+/* Les tuiles à fond pastel écrites en ligne (tuilesDuJourHTML, argentTuilesHTML) — chez le livreur,
+   la cliente et l'équipe. La nuit, la tuile passe en sombre et chaque couleur de statut s'éclaircit :
+   le vert #1a7d3c et le rouge #c0392b tombaient à 2,5 et 2,4 de contraste, la tuile d'argent
+   restait claire avec son chiffre bleu pâle dessus (1,9). Mesuré le 23/09/2026, lot 2. */
+html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"][style*="background:#"]{ background:#243247 !important; }
+html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#1a7d3c"]{ color:#5FD98A !important; }
+html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#c0392b"]{ color:#FF8A7A !important; }
+html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#E26313"]{ color:#F6A25B !important; }
+html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#1B4374"]{ color:#7FB0EA !important; }
+html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#8a94a3"]{ color:#AEB9C7 !important; }
 
 /* Phrases de récapitulatif (« vous avez enregistré … colis ») : texte gris
    foncé #333 sur fond sombre → texte clair, fond légèrement contrasté. */
@@ -2590,6 +2616,7 @@ html[data-theme="dark"] .lot-tarif-note{ color:#9FB3C8; }
   border:none; background:none; padding:0; font:inherit; cursor:pointer;
   color:var(--primary, #1B4374); text-decoration:underline;
 }
+html[data-theme="dark"] .lien-nu{ color:#7FB0EA; }
 
 /* Les deux cases « payé » d'un colis, côte à côte.
    Révisé le 21 août 2026 : elles passaient l'une sous l'autre sur téléphone et mangeaient une
@@ -3254,7 +3281,10 @@ html[data-theme="dark"] .sans-reseau__titre{ color:#f1f5f9; }
 .restes-en-route > summary{ cursor:pointer; font-weight:700; color:#8a4b12; list-style:none; }
 .restes-en-route > summary::-webkit-details-marker{ display:none; }
 .restes-en-route__aide{ font-size:12.5px; color:var(--muted); margin:6px 0 10px; }
-html[data-theme="dark"] .restes-en-route{ background:#2a2114; }
+html[data-theme="dark"] .restes-en-route{ background:#2a2114; border-color:#a86a12; }
+/* Le brun #8a4b12 sur ce fond de nuit tombait à 2,3 (23/09/2026, lot 2) : même ambre clair que .eq-reportes. */
+html[data-theme="dark"] .restes-en-route > summary, html[data-theme="dark"] .colis-avant, html[data-theme="dark"] .colis-report__etat{ color:#E8C391; }
+html[data-theme="dark"] .colis-avant--urgent{ color:#FF8A7A; }
 
 /* Reporter à demain (09/09/2026) */
 .colis-report{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px; }
@@ -4172,3 +4202,9 @@ html[data-theme="dark"] #clt-modal-cancel.clt-modal-annuler{background:#2A3A4D !
 .clt-invit-plus-tard{ background:rgba(255,255,255,.16); color:#fff; }
 .clt-invit-bandeau button:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
 @media (max-width:520px){ .clt-invit-bandeau{ font-size:13.5px; } .clt-invit-bandeau button{ flex:1 1 auto; } }
+
+/* Le bloc « frais additionnels » de la fiche colis (équipe) : son fond rosé était écrit en ligne et
+   restait clair la nuit, avec un libellé gris dessus (2,1 de contraste — 23/09/2026, lot 2). */
+.frais-additionnels-block{ background:#fff9f8; }
+html[data-theme="dark"] .frais-additionnels-block{ background:#2A1917; border-color:#7a4a44 !important; }
+html[data-theme="dark"] .frais-additionnels-block label[style*="color:#8a1f11"]{ color:#FF9D93 !important; }

@@ -523,7 +523,7 @@ return `<div class="meta">Article : ${article} · Livraison : ${livraison} · <s
 function eqFraisAdditionnelsEditHTML(c){
 const montant = (c.frais_additionnels_montant !== null && c.frais_additionnels_montant !== undefined && Number(c.frais_additionnels_montant)) ? c.frais_additionnels_montant : '';
 return `
-<div class="frais-additionnels-block" style="margin-top:8px; padding:10px; border:1.5px dashed #f0b3a8; border-radius:8px; max-width:420px; background:#fff9f8;">
+<div class="frais-additionnels-block" style="margin-top:8px; padding:10px; border:1.5px dashed #f0b3a8; border-radius:8px; max-width:420px;">
 <label style="font-size:11.5px; font-weight:700; display:block; margin-bottom:6px; color:#8a1f11;">💰 Frais additionnels (non prévus au départ)</label>
 <div class="montant-group">
 <div class="montant-field">

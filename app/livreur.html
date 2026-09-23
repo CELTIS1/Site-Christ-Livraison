@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260923activite">
+<link rel="stylesheet" href="style.css?v=20260923epure">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260923activite"></script>
-<script src="splash.js?v=20260923activite"></script>
+<script src="theme.js?v=20260923epure"></script>
+<script src="splash.js?v=20260923epure"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -113,6 +113,7 @@
   .clt-stepper .st.done::before, .clt-stepper .st.now::before{ background:#1a7d3c; }
   .clt-stepper.is-alert .st.now .c{ background:#c0392b; box-shadow:0 0 0 4px rgba(192,57,43,.18); }
   .clt-stepper.is-alert .st.now .l{ color:#c0392b; }
+  html[data-theme="dark"] .clt-stepper.is-alert .st.now .l{ color:#FF8A7A; }
 
   /* ---- Barre de navigation basse (mobile uniquement) ---- */
   .clt-bottomnav{ display:none; }
@@ -212,6 +213,7 @@
   }
   .montants-titre{ font-size:13px; font-weight:800; color:#1B4374; display:block; }
   .montants-avis{ font-size:13px; line-height:1.4; margin:6px 0 0; color:#4A6486; }
+  html[data-theme="dark"] .montants-avis{ color:#9DB0C4; }
   .montants-grille{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
   /* « .montants-bloc .montant-case » et non « .montant-case » seul : la case est un <label> dans
      un .field, et style.css pose « .field label{display:block} », plus précis qu'une classe seule.
@@ -364,6 +366,7 @@
   .journee-repli[open] > summary::after{ transform:rotate(180deg); }
   .journee-resume__chiffres{ font-weight:700; color:#1B4374; }
   .journee-resume__main{ color:#1a7d3c; font-weight:600; }
+  html[data-theme="dark"] .journee-resume__main{ color:#5FD98A; }
   .journee-resume__main:empty{ display:none; }
   .journee-repli__corps{ padding:0 12px 10px; }
   html[data-theme="dark"] .journee-resume__chiffres{ color:#CFE0F5; }
@@ -409,6 +412,9 @@
   .filters{ flex-wrap:nowrap !important; overflow-x:auto; scrollbar-width:none; margin-bottom:12px !important; padding-bottom:2px; }
   .filters::-webkit-scrollbar{ display:none; }
   .filter-chip{ flex:0 0 auto; }
+  /* Sur ordinateur la colonne est plus large mais bornée : le bouton « Filtrer » sortait quand même
+     du cadre, coupé à « 🔍 F » (23/09/2026, lot 2). Là, on laisse la rangée se replier. */
+  @media(min-width:761px){ .filters{ flex-wrap:wrap !important; overflow:visible; } }
   .search-wrap{ margin-bottom:10px !important; display:flex; gap:8px; align-items:center; }
   .search-wrap .search-input{ flex:1 1 auto; min-width:0; }
   .search-wrap .btn-mode-lot{ flex:0 0 auto; margin-left:0 !important; }
@@ -916,6 +922,10 @@
   <button type="button" class="clt-toptab active" data-clttab="mes">📦 Mes colis</button>
   <button type="button" class="clt-toptab" data-clttab="recup">🔄 Récupérations <span class="clttab-badge hidden" id="recup-badge-top"></span></button>
   <button type="button" class="clt-toptab" data-clttab="finance">💰 Finance</button>
+  <!-- Le même « Retours » que la barre du bas (lot 2, 23/09/2026) : sur ordinateur, la barre du
+       haut n'avait que trois entrées et l'on ne trouvait les colis à rendre qu'en connaissant
+       la pastille « À rendre ». Même panneau que Mes colis, ouvert sur cette pastille. -->
+  <button type="button" class="clt-toptab" data-clttab="retours">↩️ Retours <span class="clttab-badge hidden" id="retours-badge-top"></span></button>
   </div>
   </div>
 
@@ -1042,28 +1052,28 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260923activite"></script>
-<script src="numero-international.js?v=20260923activite"></script>
-<script src="voir-un-compte.js?v=20260923activite"></script>
-<script src="lib/bibliotheques.js?v=20260923activite"></script>
-<script src="lib/retours.js?v=20260923activite"></script>
-<script src="lib/reclamations.js?v=20260923activite"></script>
-<script src="lib/communes-et-tarifs.js?v=20260923activite"></script>
-<script src="lib/argent.js?v=20260923activite"></script>
-<script src="lib/releve-cliente.js?v=20260923activite"></script>
-<script src="lib/papier-a-en-tete.js?v=20260923activite"></script>
-<script src="lib/briques-argent.js?v=20260923activite"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260923activite"></script>
-<script src="lib/annonce-de-remise.js?v=20260923activite"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260923activite"></script>
-<script src="lib/primes.js?v=20260923activite"></script>
-<script src="lib/doublons.js?v=20260923activite"></script>
-<script src="config.js?v=20260923activite"></script>
-<script src="avance-de-travail.js?v=20260923activite"></script>
-<script src="etiquettes-et-scan.js?v=20260923activite"></script>
+<script src="clt-common.js?v=20260923epure"></script>
+<script src="numero-international.js?v=20260923epure"></script>
+<script src="voir-un-compte.js?v=20260923epure"></script>
+<script src="lib/bibliotheques.js?v=20260923epure"></script>
+<script src="lib/retours.js?v=20260923epure"></script>
+<script src="lib/reclamations.js?v=20260923epure"></script>
+<script src="lib/communes-et-tarifs.js?v=20260923epure"></script>
+<script src="lib/argent.js?v=20260923epure"></script>
+<script src="lib/releve-cliente.js?v=20260923epure"></script>
+<script src="lib/papier-a-en-tete.js?v=20260923epure"></script>
+<script src="lib/briques-argent.js?v=20260923epure"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260923epure"></script>
+<script src="lib/annonce-de-remise.js?v=20260923epure"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260923epure"></script>
+<script src="lib/primes.js?v=20260923epure"></script>
+<script src="lib/doublons.js?v=20260923epure"></script>
+<script src="config.js?v=20260923epure"></script>
+<script src="avance-de-travail.js?v=20260923epure"></script>
+<script src="etiquettes-et-scan.js?v=20260923epure"></script>
 <!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
-<script src="ordre-de-livraison.js?v=20260923activite"></script>
-<script src="biometric-lock.js?v=20260923activite"></script>
+<script src="ordre-de-livraison.js?v=20260923epure"></script>
+<script src="biometric-lock.js?v=20260923epure"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1859,8 +1869,7 @@
     document.getElementById('panel-mes').classList.toggle('hidden', which !== 'mes');
     document.getElementById('panel-recup').classList.toggle('hidden', which !== 'recup');
     document.getElementById('panel-finance').classList.toggle('hidden', which !== 'finance');
-    document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === which));
-    syncBottomNav(which);
+    syncBottomNav(which);   // allume aussi la barre du haut (même règle pour les deux)
     syncArgentCard();
     if (which === 'finance') chargerMonMois();
     try { localStorage.setItem('clt_livreur_tab', which); } catch(e){}
@@ -1875,6 +1884,7 @@
     // Sur « Mes colis » avec la pastille « À rendre », c'est « Retours » qui est allumé.
     const cle = (which === 'mes' && activeFilterMes === FILTRE_A_RENDRE) ? 'retours' : which;
     bar.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.nav === cle));
+    document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === cle));
   }
 
   function renderFilters(containerId, activeFilter, onSelect){
@@ -3023,8 +3033,8 @@
     // rien n'a changé — cltPoserHTML compare avant d'écrire, et le défilement latéral est gardé).
     if (typeof redessinerFiltresMes === 'function' && redessinerFiltresMes) redessinerFiltresMes();
     { // Le nombre de retours à rendre, sur l'onglet « Retours » de la barre du bas.
-      const n = colisARendre(allColis.filter(c => c.livreur_id === currentUser.id)).length, pastille = document.getElementById('retours-badge');
-      if (pastille) { pastille.textContent = n > 99 ? '99+' : String(n); pastille.classList.toggle('hidden', !n); }
+      const n = colisARendre(allColis.filter(c => c.livreur_id === currentUser.id)).length;
+      ['retours-badge', 'retours-badge-top'].forEach(id => { const pastille = document.getElementById(id); if (pastille) { pastille.textContent = n > 99 ? '99+' : String(n); pastille.classList.toggle('hidden', !n); } });
     }
     const __anchor = captureScrollAnchor(list);
     const __pending = capturePendingEdits(list);
@@ -5613,7 +5623,15 @@
   // Câblage de la barre d'onglets du haut (grands écrans)
   document.querySelectorAll('.clt-toptab').forEach(btn => {
     btn.addEventListener('click', () => {
-      showTab(btn.dataset.clttab);
+      const cible = btn.dataset.clttab;
+      // « Retours » et « Mes colis » : même panneau, même règle que la barre du bas.
+      if (cible === 'retours'){
+        showTab('mes');
+        if (typeof window.cltChoisirFiltreMes === 'function') window.cltChoisirFiltreMes(FILTRE_A_RENDRE);
+      } else {
+        if (cible === 'mes' && activeFilterMes === FILTRE_A_RENDRE && typeof window.cltChoisirFiltreMes === 'function') window.cltChoisirFiltreMes(FILTRE_A_FAIRE);
+        showTab(cible);
+      }
       window.scrollTo({ top:0, behavior:'smooth' });
     });
   });

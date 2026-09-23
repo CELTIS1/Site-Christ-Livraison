@@ -1304,10 +1304,21 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    quoi » (secteur, canal, liste). Règle app/activite-de-la-cliente.js, écran partagé
    app/activite-ecran.js, boîte app/qui-vend-quoi.js, table activites_clientes (RLS : sa ligne,
    opérations, admin), banc, parcours l-activite-de-la-cliente. La fiche du compte défile au lieu
-   de sortir de l'écran. Étiquette 20260923activite. */
+   de sortir de l'écran. Étiquette 20260923activite.
+   v238, le 23/09/2026 — LA REVUE « ÉPURÉ » DE TOUS LES ESPACES (lot 2). Chaque espace passé en
+   revue sur téléphone, ordinateur, clair et nuit, avec une lampe à contraste (tests/parcours/
+   _contraste-partout.mjs) et un outil de captures (_captures-epure.mjs). Corrigé en un paquet :
+   la nuit, les tuiles du jour et d'argent (vert, rouge, orange, marine éclaircis, fond sombre), la
+   pastille active de Régulariser (illisible, 1,1), « Ajouter un colis sans photo », les libellés
+   Express « Point de récupération / livraison », les restes en route et « à livrer avant », le
+   bloc frais additionnels ; sur téléphone, les pages de connexion (le lien « Accueil / Site » et
+   le bouton de thème ne chevauchent plus la carte), la ligne d'aide Express (un lien par ligne,
+   numéro entier) ; sur ordinateur, la bande de dégradé répétée sous les pages courtes
+   (body min-height), l'onglet « Retours » manquant en haut chez le livreur, la rangée de filtres
+   qui se replie ; le texte vide « Mes courses » d'Express. Étiquette 20260923epure. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v237'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v238'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -17,17 +17,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260923activite">
+  <link rel="stylesheet" href="style.css?v=20260923epure">
   <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-  <script src="theme.js?v=20260923activite"></script>
-  <script src="splash.js?v=20260923activite"></script>
+  <script src="theme.js?v=20260923epure"></script>
+  <script src="splash.js?v=20260923epure"></script>
   <style>
     /* CLT Express utilise le violet comme couleur de marque, à la place du bleu marine du
        portail interne, pour bien montrer qu'il s'agit d'un produit distinct. */
     :root{ --clt-accent:#6D28D9; }
     .login-page{ background: linear-gradient(160deg, #8b5cf6 0%, #6D28D9 45%, #4c1d95 100%); }
-    .login-aide{ margin-top:16px; text-align:center; font-size:13px; color:#5b6472; }
-    .login-aide a{ color:#6D28D9; font-weight:600; text-decoration:none; display:inline-block; min-height:44px; line-height:44px; }
+    /* Une ligne par lien, et un numéro qui ne se coupe jamais en deux (« 05 46 81 / 86 40 » sur
+       téléphone, vu le 23/09/2026, lot 2). Le séparateur « · » est parti avec. */
+    .login-aide{ margin-top:16px; text-align:center; font-size:13px; color:#5b6472; display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .login-aide a{ color:#6D28D9; font-weight:600; text-decoration:none; display:inline-block; min-height:44px; line-height:44px; white-space:nowrap; }
     .login-box .logo-mark{ background:linear-gradient(160deg,#8b5cf6 0%, #4c1d95 100%); }
     .login-box .login-title, .login-box .btn:not(.btn-outline){ color:inherit; }
     .btn:not(.btn-outline){
@@ -207,13 +209,13 @@
       </div>
 
       <!-- Un numéro pour qui bloque à la porte (20/09, lot E) : le même que partout, CLT_CONTACT. -->
-      <div class="login-aide" id="express-login-aide">Une question ? <a id="lien-appeler-clt" href="#">📞 Appeler CLT</a> · <a id="lien-whatsapp-clt" href="#" target="_blank" rel="noopener">🟢 WhatsApp</a></div>
+      <div class="login-aide" id="express-login-aide">Une question ? <a id="lien-appeler-clt" href="#">📞 Appeler CLT</a> <a id="lien-whatsapp-clt" href="#" target="_blank" rel="noopener">🟢 WhatsApp</a></div>
     </div>
   </div>
 
-<script src="clt-common.js?v=20260923activite"></script>
-<script src="express-config.js?v=20260923activite"></script>
-<script src="biometric-login.js?v=20260923activite"></script>
+<script src="clt-common.js?v=20260923epure"></script>
+<script src="express-config.js?v=20260923epure"></script>
+<script src="biometric-login.js?v=20260923epure"></script>
 <script>
   let regRole = 'client_express';
   let kycFile = null;
