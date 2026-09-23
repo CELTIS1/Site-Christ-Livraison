@@ -1289,10 +1289,15 @@ verifier(
    raccourcie remonte. On ne fixe plus rien : le corps est une colonne de 100dvh, le contenu
    défile au milieu, la barre est posée EN DESSOUS dans le flux. Et l'avance de travail :
    « je ne sais pas quoi faire, il n'y a pas d'action » — le bouton était en bas, discret ;
-   il est en haut, orange, avec la marche à suivre en trois lignes. Étiquette 20260923barre. */
+   il est en haut, orange, avec la marche à suivre en trois lignes. Étiquette 20260923barre.
+v236 — 23 septembre 2026 — La barre du bas, fixée en bas
+   Celtis, après v235 : « l'onglet est en haut, il laisse trop de vide en bas ; qu'il revienne
+   en bas et qu'il soit fixe en bas, pareil pour toute l'équipe. » La coque (v231, puis la
+   colonne v235) est retirée : la barre est position:fixed; bottom:0 comme avant v231. Le
+   parcours la-coque-de-l-equipe est supprimé. Étiquette 20260923fixe. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v235'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v236'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

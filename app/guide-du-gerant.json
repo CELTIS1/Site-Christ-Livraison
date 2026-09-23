@@ -857,15 +857,15 @@
     {
       "id": "coque",
       "espace": "bureau",
-      "titre": "La barre du bas ne bouge plus (téléphone)",
-      "enBref": "Sur l'espace équipe au téléphone, la page ne défile plus : c'est le contenu qui défile dans un cadre fixe, comme une application native.",
+      "titre": "La barre du bas, fixée en bas (téléphone)",
+      "enBref": "Sur l'espace équipe au téléphone, la barre d'onglets est de nouveau fixée au bas de l'écran, comme avant v231.",
       "ou": "Espace équipe, sur téléphone",
       "etapes": [
-        "L'en-tête et la barre d'onglets sont hors du défilement : plus rien ne peut les déplacer.",
+        "La barre reste au bas de l'écran pendant que la page défile ; elle ne monte plus et ne laisse plus de vide en dessous.",
         "« Remonter en haut », « Aller en bas » et le retour en haut au changement d'onglet marchent comme avant."
       ],
-      "pourVous": "Dites si ça tient sur votre iPhone après la mise à jour : si oui, la même coque sera posée sur les espaces livreur, cliente et Gestion.",
-      "version": "v231"
+      "pourVous": "Si elle bouge encore sur votre iPhone, dites-le avec une capture : on cherchera la cause sans toucher à la page entière.",
+      "version": "v236"
     },
     {
       "id": "aide-equipe",
