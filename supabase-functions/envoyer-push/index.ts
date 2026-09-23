@@ -221,6 +221,34 @@ async function lireAbonnements(dest: Destinataires): Promise<{ subs: Abonnement[
   return { subs: [...parEndpoint.values()], error: null };
 }
 
+/* LA CLOCHE 🔔 (23/09/2026). Celtis : « quand on a consulté une fois, c'est parti, on ne peut plus
+   consulter encore ». Une notification poussée ne vivait que sur le téléphone. Désormais chaque
+   envoi est AUSSI écrit dans public.notifications, une ligne par destinataire — y compris ceux qui
+   n'ont pas d'abonnement push : la cloche de leur espace la leur montre quand même. Les rôles sont
+   résolus en personnes (comptes valides) ; une adresse complète va dans `url`, un paramètre
+   (« colis=… ») dans `param`, et c'est l'écran du lecteur qui le colle à sa propre page.
+   Une écriture qui échoue ne bloque jamais l'envoi du push : on le note, et on continue. */
+async function garderEnBase(dest: Destinataires, title: string, body: string, tag: string, urlParam: string): Promise<void> {
+  try {
+    const ids = new Set<string>(dest.userIds);
+    if (dest.roles.length > 0) {
+      const { data, error } = await admin.from("profiles").select("id").in("role", dest.roles).eq("status", "valide");
+      if (error) { console.error("Lecture des profils pour la cloche échouée :", error); }
+      for (const p of (data ?? []) as { id: string }[]) ids.add(p.id);
+    }
+    if (ids.size === 0) return;
+    const absolue = urlParam.startsWith("/");
+    const lignes = [...ids].map((user_id) => ({
+      user_id, titre: title.slice(0, 200), corps: body.slice(0, 1000), tag,
+      url: absolue ? urlParam : null, param: absolue ? null : urlParam,
+    }));
+    const { error } = await admin.from("notifications").insert(lignes);
+    if (error) console.error("Écriture dans notifications échouée :", error);
+  } catch (err) {
+    console.error("Cloche : écriture impossible :", err);
+  }
+}
+
 // Envoie une notification à tous les abonnements des destinataires.
 // urlParam est ajouté au lien profond (ex. "colis=123" ou "course=456") pour
 // qu'un clic amène directement à l'élément concerné.
@@ -231,6 +259,7 @@ async function envoyer(
   tag: string,
   urlParam: string,
 ): Promise<Response> {
+  await garderEnBase(dest, title, body, tag, urlParam);
   const { subs, error } = await lireAbonnements(dest);
 
   if (error) {

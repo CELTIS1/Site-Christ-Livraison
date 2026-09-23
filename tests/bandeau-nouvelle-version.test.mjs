@@ -1315,10 +1315,18 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    le bouton de thème ne chevauchent plus la carte), la ligne d'aide Express (un lien par ligne,
    numéro entier) ; sur ordinateur, la bande de dégradé répétée sous les pages courtes
    (body min-height), l'onglet « Retours » manquant en haut chez le livreur, la rangée de filtres
-   qui se replie ; le texte vide « Mes courses » d'Express. Étiquette 20260923epure. */
+   qui se replie ; le texte vide « Mes courses » d'Express. Étiquette 20260923epure.
+   v239, le 23/09/2026 — LA CLOCHE 🔔 : LES NOTIFICATIONS REÇUES SE RETROUVENT. Celtis : « quand on
+   a consulté une fois, c'est parti, on ne peut plus consulter encore. Comment on fait pour pouvoir
+   retrouver ? » envoyer-push garde une copie de chaque envoi dans public.notifications (une ligne
+   par destinataire, même sans abonnement push) ; chaque espace a une cloche dans la barre du haut :
+   pastille des non-lues, panneau compact par jour, un appui marque lu et ouvre l'objet, « Tout
+   marquer lu », Realtime, ménage à 90 jours. Règle app/notifications-recues.js, écran app/cloche.js,
+   migration _sql-prive/2026-09-23-notifications-recues.sql, banc les-notifications-recues,
+   parcours la-cloche. Étiquette 20260923cloche. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v238'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v239'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

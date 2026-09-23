@@ -87,8 +87,9 @@ verifier('sous 760 px, il s\'ancre au bord droit de l\'écran et non au bouton',
   /@media\(max-width:760px\)\{\s*\.settings-dropdown\{[^}]*position:fixed;[^}]*left:auto; right:12px/s.test(style));
 verifier('il garde une largeur de menu (272 px au plus), pas toute la largeur',
   /@media\(max-width:760px\)\{\s*\.settings-dropdown\{[^}]*width:min\(272px, calc\(100vw - 24px\)\)/s.test(style));
-verifier('sur téléphone, les trois ronds de la barre font 44 px (règle 2.4) et restent ronds',
-  /\.settings-menu-btn, \.theme-toggle--entete, \.clt-actualiser\{ width:44px; height:44px; \}/.test(style));
+// Quatre ronds depuis la cloche 🔔 (23/09/2026) : la règle vaut pour elle aussi.
+verifier('sur téléphone, les quatre ronds de la barre font 44 px (règle 2.4) et restent ronds',
+  /\.settings-menu-btn, \.theme-toggle--entete, \.clt-actualiser, \.clt-cloche\{ width:44px; height:44px; \}/.test(style));
 
 console.log('\n5. La barre de Gestion ne déborde plus');
 const gestionHtml = lire('app/gestion.html');
