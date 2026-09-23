@@ -774,6 +774,112 @@
         "« Mettre en ligne ce qui est validé » : la liste s'affiche, tapez o. Une à deux minutes plus tard, l'application propose « nouvelle version »."
       ],
       "aSavoir": "Si Claude a déjà posé la mise à jour lui-même, le premier geste répond « Rien à faire » : passez au second. Les anciens paquets sont dans « Paquets déjà remplacés »."
+    },
+    {
+      "id": "rapports-recus",
+      "espace": "gestion",
+      "titre": "Rapports reçus : relire le bilan et le résumé du matin",
+      "enBref": "Vos rapports poussés restent ici, à relire quand vous voulez : lus, archivés, jamais supprimés.",
+      "ou": "Gestion › Tableau de bord, tout en haut, carte « 📬 Rapports reçus »",
+      "etapes": [
+        "Le nombre orange à côté du titre = rapports pas encore lus. Chaque rapport porte sa date (heure d'Abidjan) et se lit ligne par ligne.",
+        "Cochez « Marquer comme lu » quand vous l'avez analysé ; décochez pour le remettre en « à lire ».",
+        "« 🗄️ Archiver » range le rapport en bas, sous « archivés » — il reste consultable, et « Remettre dans la liste » le fait revenir.",
+        "La notification du dimanche ouvre directement le rapport concerné, encadré « 🔔 nouveau » jusqu'à ce que vous le touchiez."
+      ],
+      "aSavoir": "Rien n'est jamais supprimé : archiver, c'est ranger. Vous recevez aussi le résumé du matin de l'équipe (7 h à Abidjan), qui atterrit dans la même carte.",
+      "version": "v232",
+      "aller": {
+        "tab": "dashboard",
+        "ancre": "rap-carte"
+      }
+    },
+    {
+      "id": "bilan-dimanche",
+      "espace": "gestion",
+      "titre": "Le bilan du dimanche, poussé sur votre téléphone",
+      "enBref": "Chaque dimanche à 8 h (heure de l'Est), la semaine close en une notification : colis, réussite, argent à remettre.",
+      "ou": "Notification « 📊 Bilan de la semaine », puis Gestion › Tableau de bord › Rapports reçus",
+      "etapes": [
+        "Du dimanche 0 h au samedi minuit, comparée à la semaine d'avant (entre parenthèses) : confiés, livrés, échecs, retours, taux de réussite, argent encore à remettre.",
+        "Mêmes définitions que l'écran « Le bilan de la semaine » ; l'argent non remis est celui de la caisse livreurs.",
+        "L'heure suit Toronto toute l'année (été comme hiver). Si vous rentrez à Abidjan, dites-le : ce sera 8 h d'Abidjan."
+      ],
+      "aSavoir": "Le résumé du matin (7 h Abidjan) part à l'équipe et à vous : hier en trois nombres, puis ce qui attend (sans livreur, montants à compléter, demandes de passage, signalements).",
+      "version": "v231",
+      "aller": {
+        "tab": "dashboard",
+        "ancre": "rap-carte"
+      }
+    },
+    {
+      "id": "notifications-precises",
+      "espace": "bureau",
+      "titre": "Les notifications conduisent au point, encadré",
+      "enBref": "Une notification ouvre exactement l'endroit concerné, encadré en orange tant qu'on n'y a pas touché.",
+      "ou": "Espace équipe, en touchant une notification",
+      "etapes": [
+        "« Journée bouclée » / « la journée a changé » → Suivi, le point de cette vendeuse, ce jour-là, déplié et encadré « 🔔 à traiter ».",
+        "« [Livreur] a fait son point » → sa carte dans le point par livreur. « [Cliente] demande un passage » → sa ligne dans Tournées, le bon jour.",
+        "Le cadre survit au rechargement et ne tombe qu'au premier toucher de ce point. Plusieurs notifications, plusieurs cadres, chacun tombe seul."
+      ],
+      "version": "v229"
+    },
+    {
+      "id": "colis-reporte",
+      "espace": "bureau",
+      "titre": "Le colis reporté : deux jours, un seul point",
+      "enBref": "Un colis a le jour où la cliente l'a remis (le point) et le jour où il faut s'en occuper (le travail). Le report ne déplace que le travail.",
+      "ou": "Espace équipe › Colis (carte du colis) et Suivi (les points)",
+      "etapes": [
+        "Reporter : ⋮ → ✏️ Modifier → « Jour du colis ». Annuler : « ↩️ Le remettre à sa journée » sur la carte.",
+        "Le colis reste dans sa journée de réception, marqué ⏭️, et apparaît aussi dans la journée de report (« Ma journée » du livreur, la tournée).",
+        "Le point de la vendeuse ne change pas : le colis y reste, « reporté au … », à 0 F. Livré plus tard, son montant entre dans ce même point et l'alerte « la journée a changé » part.",
+        "Un reporté jamais travaillé ressort dans L'essentiel (« dormants ») : à regarder chaque matin."
+      ],
+      "aSavoir": "Avant le 22/09, un colis reporté disparaissait du point de sa vendeuse et de celui du livreur : quinze colis en deux semaines, douze points faussés. C'est réparé, et l'aide de l'équipe l'explique (« Le colis reporté »).",
+      "version": "v229"
+    },
+    {
+      "id": "demande-passage",
+      "espace": "bureau",
+      "titre": "Une cliente demande un passage : programmer, c'est traiter",
+      "enBref": "La notification dit qui demande et ouvre sa ligne dans Tournées ; poser la tournée prévient la cliente tout seul.",
+      "ou": "Espace équipe › Tournées, bloc ambre « demande un passage »",
+      "etapes": [
+        "Sur la ligne (nom, commune · téléphone, note) : « 🗓️ Programmer » pose la cliente dans le formulaire ; choisir le livreur, « Ajouter à la tournée ».",
+        "La demande passe « traitée » d'elle-même et la cliente reçoit « Passage programmé — [livreur] vous confirmera ».",
+        "« ❌ Refuser » avec un motif (la cliente le lit) ; « ✅ Traitée » si on a répondu autrement."
+      ],
+      "aSavoir": "Trouvé le 22/09 : « Refuser » échouait depuis le 20/09, une colonne n'avait jamais été créée en base, et la cliente ne voyait plus l'état de sa demande. Réparé.",
+      "version": "v230"
+    },
+    {
+      "id": "coque",
+      "espace": "bureau",
+      "titre": "La barre du bas ne bouge plus (téléphone)",
+      "enBref": "Sur l'espace équipe au téléphone, la page ne défile plus : c'est le contenu qui défile dans un cadre fixe, comme une application native.",
+      "ou": "Espace équipe, sur téléphone",
+      "etapes": [
+        "L'en-tête et la barre d'onglets sont hors du défilement : plus rien ne peut les déplacer.",
+        "« Remonter en haut », « Aller en bas » et le retour en haut au changement d'onglet marchent comme avant."
+      ],
+      "pourVous": "Dites si ça tient sur votre iPhone après la mise à jour : si oui, la même coque sera posée sur les espaces livreur, cliente et Gestion.",
+      "version": "v231"
+    },
+    {
+      "id": "aide-equipe",
+      "espace": "bureau",
+      "titre": "L'aide de l'équipe : retours, reporté, modifier, demandes",
+      "enBref": "Le centre d'aide (☰ → ❓ Aide et tutoriels) a maintenant les gestes que Celtis veut voir maîtrisés par le bureau.",
+      "ou": "Espace équipe › ☰ › ❓ Aide et tutoriels › « Bureau »",
+      "etapes": [
+        "« Retours et non livrés : où est chaque colis » — les niveaux, reprogrammer, l'historique.",
+        "« Le colis reporté », « Modifier un colis, corriger, examiné », « Une cliente demande un passage », « Les notifications ».",
+        "À faire lire à toute nouvelle personne du bureau, avec le tutoriel PDF."
+      ],
+      "pourVous": "Relisez ces quatre articles et dites ce qui manque ou ce qui n'est pas clair : l'aide se corrige sans code.",
+      "version": "v233"
     }
   ]
 }

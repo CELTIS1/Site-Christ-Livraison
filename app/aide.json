@@ -232,17 +232,69 @@
             "« Reprogrammer » : choisissez le jour et le livreur, puis « Enregistrer » ; le colis repart en livraison ce jour-là. Inutile de passer par « Modifier ».",
             "Autres gestes : « Reçu au bureau », « Rendu à la cliente », « Confier à un livreur », « Corriger — ce n'était pas rendu ».",
             "« Historique » sous chaque colis : chaque passage de main, daté et signé.",
-            "Chaque matin : traiter les lignes rouges (litiges, retards), puis appeler les clientes des « à confirmer » de plus de deux jours."
+            "Chaque matin : traiter les lignes rouges (litiges, retards), puis appeler les clientes des « à confirmer » de plus de deux jours.",
+            "Un colis revenu chez la cliente ne quitte jamais son point : il y reste à 0 F. Un colis simplement reporté n'est PAS un retour : voir « Le colis reporté »."
           ]
+        },
+        {
+          "id": "equipe-colis-reporte",
+          "titre": "Le colis reporté : où il est, comment le reporter, comment annuler",
+          "resume": "Un colis a deux jours : celui où la cliente l'a remis (le point) et celui où il faut s'en occuper (le travail). Le report ne change que le second.",
+          "etapes": [
+            "Reporter : sur la carte du colis, ⋮ → ✏️ Modifier → « Jour du colis » : choisissez la nouvelle date → Enregistrer. Le livreur peut aussi le faire depuis son téléphone.",
+            "Où il est ensuite : il reste dans sa journée de réception, marqué ⏭️ « Reporté au … — reçu le …, et toujours compté dans cette journée-là » ; ET il apparaît dans la journée de report, pour le livreur.",
+            "Le point de la vendeuse ne bouge pas : le colis reste dans le point du jour où elle l'a remis, « reporté au … », à 0 F. Le jour où il est livré, son montant entre dans CE point-là et vous recevez « la journée a changé ».",
+            "Annuler un report : sur la carte, « ↩️ Le remettre à sa journée ». Ou ✏️ Modifier → remettez le jour de réception.",
+            "Vérifier qu'aucun reporté ne dort : la ligne « ⏭️ N colis de cette journée ont été reportés » en haut de la liste, et « Aller à cette journée »."
+          ],
+          "astuce": "Un colis reporté qui n'est ni livré ni rendu après son jour de report ressort dans L'essentiel (« dormants »). Regardez-le le matin."
+        },
+        {
+          "id": "equipe-modifier-colis",
+          "titre": "Modifier un colis, corriger une erreur, marquer « examiné »",
+          "resume": "Tout se corrige depuis la carte du colis. Chaque correction est datée et signée dans son historique.",
+          "etapes": [
+            "Ouvrir la carte : dans Colis (sa journée, ou « Toutes les dates »), ou par la recherche en haut (numéro, téléphone, nom).",
+            "⋮ → ✏️ Modifier : cliente, livreur, destination et téléphone, montants (article, livraison), frais d'expédition, frais additionnels, jour du colis, à livrer avant le. Enregistrer.",
+            "Un montant manque ? L'écran vous prévient avant d'enregistrer, et L'essentiel compte « montants à compléter » tant que ce n'est pas fait.",
+            "Un non livré ou un retour que vous avez regardé : ouvrir sa carte le marque « examiné » pour tout le bureau — il quitte « À examiner » dans L'essentiel.",
+            "Un colis saisi par erreur : ⋮ → 🗑 Supprimer. La suppression laisse une trace et peut être régularisée par la gestion."
+          ],
+          "astuce": "Pour changer seulement le jour et le livreur d'un colis revenu, passez par Retours → « Reprogrammer » : c'est plus court que Modifier."
+        },
+        {
+          "id": "equipe-demande-passage",
+          "titre": "Une cliente demande un passage : la programmer, la prévenir",
+          "resume": "La notification dit qui demande et ouvre sa ligne dans Tournées, encadrée. Programmer la tournée prévient la cliente tout seul.",
+          "etapes": [
+            "Touchez la notification « 🗓️ [Nom] demande un passage » : Tournées s'ouvre sur le bon jour, la ligne de la cliente est encadrée en orange « à traiter » jusqu'à ce que vous la touchiez.",
+            "Sur la ligne : nom, commune · téléphone, sa note. « 🗓️ Programmer » pose la cliente dans le formulaire au-dessus : choisissez le livreur, « Ajouter à la tournée ».",
+            "Dès que la tournée est posée, la demande est marquée traitée et la cliente reçoit « Passage programmé — [livreur] vous confirmera ».",
+            "Impossible ce jour-là ? « ❌ Refuser » avec un motif : la cliente le lit et peut demander un autre jour. « ✅ Traitée » si vous avez répondu autrement (appel, passage hors tournée).",
+            "Sans notification : la pastille « demande de passage à programmer » dans L'essentiel vous emmène au premier jour qui en a une."
+          ]
+        },
+        {
+          "id": "equipe-notifications",
+          "titre": "Les notifications : ce qu'elles disent, où elles vous emmènent",
+          "resume": "Chaque notification du bureau ouvre exactement l'endroit concerné, encadré en orange tant que vous n'y avez pas touché — même s'il y en a plusieurs.",
+          "etapes": [
+            "« Journée bouclée » / « la journée a changé » : Suivi → le point de CETTE vendeuse, ce jour-là, déplié et encadré « 🔔 à traiter ».",
+            "« [Livreur] a fait son point » : Suivi → sa carte dans le point par livreur, encadrée.",
+            "« [Cliente] demande un passage » : Tournées → sa ligne, le bon jour, encadrée.",
+            "Le cadre reste après un rechargement et ne tombe qu'au premier toucher de CE point. Plusieurs notifications = plusieurs cadres, chacun tombe seul.",
+            "Chaque matin à 7 h : « ☀️ Ce matin chez CLT » — hier en trois nombres, et ce qui attend (sans livreur, montants à compléter, demandes de passage…). Elle ouvre L'essentiel."
+          ],
+          "astuce": "Pas de notification ? Vérifiez que vous avez accepté l'invitation (bandeau en bas, ou ☰ → notifications) et que l'application est installée sur l'écran d'accueil."
         },
         {
           "id": "equipe-tournees",
           "titre": "Programmer les récupérations de demain",
           "resume": "Tournées décide demain ; Colis vit aujourd'hui. Ne les confondez pas.",
           "etapes": [
-            "Onglet Tournées, le soir : les clientes qui ont annoncé des colis ou demandé un passage.",
-            "Choisissez le livreur de collecte, confirmez. La cliente voit « passage confirmé », le livreur voit sa tournée.",
-            "Une demande de passage non confirmée n'envoie personne."
+            "Onglet Tournées, le soir : les clientes qui ont annoncé des colis ou demandé un passage (bloc ambre en haut).",
+            "Sur une demande : « 🗓️ Programmer » pose la cliente dans le formulaire ; choisissez le livreur, « Ajouter à la tournée ». La demande est traitée d'elle-même et la cliente prévenue.",
+            "Le livreur voit sa tournée le matin, dans l'ordre. Une demande de passage non programmée n'envoie personne — refusez-la avec un motif plutôt que de la laisser."
           ]
         },
         {

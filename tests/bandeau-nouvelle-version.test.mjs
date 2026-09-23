@@ -1270,10 +1270,17 @@ verifier(
    est écrit en base : la carte « Rapports reçus » de Gestion › Tableau de bord le relit, le
    coche lu, l'archive (rangé en bas, restaurable) — jamais supprimé. La notification du bilan
    porte ?rapport=<id> et conduit au rapport lui-même, encadré. Règle rapports-recus.js, écran
-   rapports-recus-ecran.js, RPC rapports_recus / rapport_recu_marquer. Étiquette 20260922rapports. */
+   rapports-recus-ecran.js, RPC rapports_recus / rapport_recu_marquer. Étiquette 20260922rapports.
+   v233, le 22/09/2026 — LES TUTORIELS. Celtis : « consigne ça dans les tutoriels — l'équipe doit
+   savoir gérer les retours, modifier un colis, vérifier, le colis reporté ; et moi, comment
+   consulter mes messages ». Quatre articles d'aide pour le bureau (colis reporté, modifier /
+   corriger / examiné, demande de passage, notifications), deux mis à jour (tournées, retours) ;
+   sept fiches du Guide du gérant (rapports reçus, bilan du dimanche, notifications, colis
+   reporté, demande de passage, coque, aide de l'équipe). Aucun code : aide.json et
+   guide-du-gerant.json. Étiquette 20260922tutoriels. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v232'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v233'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
