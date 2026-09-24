@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260925bureau">
+<link rel="stylesheet" href="style.css?v=20260925video">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260925bureau"></script>
+<script src="theme.js?v=20260925video"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260925bureau" defer></script>
-<script src="cloche.js?v=20260925bureau" defer></script>
-<script src="splash.js?v=20260925bureau"></script>
+<script src="notifications-recues.js?v=20260925video" defer></script>
+<script src="cloche.js?v=20260925video" defer></script>
+<script src="splash.js?v=20260925video"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -954,7 +954,7 @@
          barre segmentée du haut. Retirée le 05/09/2026 : code mort. Sa pastille #recup-badge
          est partie sur le bouton « Récup. » de la barre du bas. -->
 
-    <div id="panel-mes">
+    <div id="panel-mes" data-aide-panneau="livreur-livrer">
       <!-- Libellés raccourcis pour que la ligne tienne sur UNE ligne : à quatre éléments et
            390 px de large, « Toutes les dates » et « Sélection multiple » la faisaient se
            replier en deux, soit 79 px au lieu de 40. Le calendrier se passe du mot « Date »,
@@ -996,7 +996,7 @@
       </div>
     </div>
 
-    <div id="panel-recup" class="hidden">
+    <div id="panel-recup" class="hidden" data-aide-panneau="livreur-recuperer">
       <!-- La phrase d'introduction de l'onglet est partie le 05/09/2026 (Celtis : moins de
            texte sur téléphone) ; le bouton « Je pars » explique lui-même ce qu'il fait. -->
 
@@ -1031,7 +1031,7 @@
          avec le calendrier de la carte « L'argent de ma journée », juste au-dessus, qui remonte
          à n'importe quelle date. Le tableau ci-dessous détaille cette même journée cliente par
          cliente, et chaque ligne se déplie sur ses colis. -->
-    <div id="panel-finance" class="hidden">
+    <div id="panel-finance" class="hidden" data-aide-panneau="livreur-argent">
       <!-- Phrase d'introduction retirée le 05/09/2026 (Celtis : moins de texte). -->
 
       <!-- MON MOIS (13/09/2026). Le règlement des primes, vu du livreur : mes chiffres du mois et
@@ -1072,29 +1072,29 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260925bureau"></script>
-<script src="numero-international.js?v=20260925bureau"></script>
-<script src="voir-un-compte.js?v=20260925bureau"></script>
-<script src="lib/bibliotheques.js?v=20260925bureau"></script>
-<script src="lib/retours.js?v=20260925bureau"></script>
-<script src="lib/reclamations.js?v=20260925bureau"></script>
-<script src="lib/communes-et-tarifs.js?v=20260925bureau"></script>
-<script src="lib/argent.js?v=20260925bureau"></script>
-<script src="lib/releve-cliente.js?v=20260925bureau"></script>
-<script src="lib/papier-a-en-tete.js?v=20260925bureau"></script>
-<script src="lib/briques-argent.js?v=20260925bureau"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260925bureau"></script>
-<script src="lib/traces-de-report.js?v=20260925bureau"></script>
-<script src="lib/annonce-de-remise.js?v=20260925bureau"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260925bureau"></script>
-<script src="lib/primes.js?v=20260925bureau"></script>
-<script src="lib/doublons.js?v=20260925bureau"></script>
-<script src="config.js?v=20260925bureau"></script>
-<script src="avance-de-travail.js?v=20260925bureau"></script>
-<script src="etiquettes-et-scan.js?v=20260925bureau"></script>
+<script src="clt-common.js?v=20260925video"></script>
+<script src="numero-international.js?v=20260925video"></script>
+<script src="voir-un-compte.js?v=20260925video"></script>
+<script src="lib/bibliotheques.js?v=20260925video"></script>
+<script src="lib/retours.js?v=20260925video"></script>
+<script src="lib/reclamations.js?v=20260925video"></script>
+<script src="lib/communes-et-tarifs.js?v=20260925video"></script>
+<script src="lib/argent.js?v=20260925video"></script>
+<script src="lib/releve-cliente.js?v=20260925video"></script>
+<script src="lib/papier-a-en-tete.js?v=20260925video"></script>
+<script src="lib/briques-argent.js?v=20260925video"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260925video"></script>
+<script src="lib/traces-de-report.js?v=20260925video"></script>
+<script src="lib/annonce-de-remise.js?v=20260925video"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260925video"></script>
+<script src="lib/primes.js?v=20260925video"></script>
+<script src="lib/doublons.js?v=20260925video"></script>
+<script src="config.js?v=20260925video"></script>
+<script src="avance-de-travail.js?v=20260925video"></script>
+<script src="etiquettes-et-scan.js?v=20260925video"></script>
 <!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
-<script src="ordre-de-livraison.js?v=20260925bureau"></script>
-<script src="biometric-lock.js?v=20260925bureau"></script>
+<script src="ordre-de-livraison.js?v=20260925video"></script>
+<script src="biometric-lock.js?v=20260925video"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -5603,7 +5603,13 @@
           if (typeof showTab === 'function') showTab(target);
         }
         const main = document.getElementById('section-main');
-        if (main) main.scrollIntoView({ behavior:'smooth', block:'start' });
+        // Le haut de l'onglet se cale SOUS la barre du haut (fixe), pas dessous (25/09/2026, lot 16 :
+        // vu à la capture — le premier titre, et le lien « Comment faire ? », passaient sous la barre).
+        if (main) {
+          const barre = document.querySelector('.topbar');
+          const decal = barre ? barre.getBoundingClientRect().bottom + 8 : 0;
+          window.scrollTo({ top: Math.max(0, main.getBoundingClientRect().top + window.scrollY - decal), behavior:'smooth' });
+        }
       });
     });
     // Restaure le dernier onglet consulté après un rechargement.

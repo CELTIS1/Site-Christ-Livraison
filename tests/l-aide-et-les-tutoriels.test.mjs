@@ -47,7 +47,8 @@ verifier('Express : à chacun son chapitre — le client n\'a aucun article du c
 verifier('la page du coursier ouvre le chapitre du coursier, les autres pages d\'Express celui du client', /if \(\/express-coursier\/\.test\(p\)\) return "express-coursier";\s*\n\s*if \(\/express\/\.test\(p\)\) return "express-client";/.test(cc));
 verifier('l\'espace est déduit de la page (livreur, fournisseur, equipe, express)', /function cltEspaceDeLaPage\(\)/.test(cc) && /livreur\\\.html/.test(cc) && /equipe\\\.html\|gestion\\\.html/.test(cc));
 verifier('chaque espace ne lit que ses articles, plus « tous »', /var ordre = espace \? \[espace, "tous"\]/.test(cc));
-verifier('une recherche sans accents, sur titre, résumé, étapes et astuce', /normalize\("NFD"\)/.test(cc) && /\[a\.titre, a\.resume, \(a\.etapes \|\| \[\]\)\.join\(" "\), a\.astuce\]/.test(cc));
+// 25/09/2026 (lot 16) : la recherche lit aussi le titre des vidéos (« annoncer ma remise » trouve la fiche de l'argent).
+verifier('une recherche sans accents, sur titre, résumé, étapes, astuce et titres des vidéos', /normalize\("NFD"\)/.test(cc) && /\[a\.titre, a\.resume, \(a\.etapes \|\| \[\]\)\.join\(" "\), a\.astuce, \(a\.medias \|\| \[\]\)\.map/.test(cc));
 verifier('l\'entrée du menu ☰ « ❓ Aide et tutoriels » est posée après la grille tarifaire', /b\.textContent = "❓ Aide et tutoriels"/.test(cc) && /tarifs\.parentNode\.insertBefore\(b, tarifs\.nextSibling\)/.test(cc));
 verifier('#aide=<id> ouvre directement l\'article, et « Copier le lien » le fabrique', /#aide=\(\[a-z0-9-\]\+\)/.test(cc) && /"#aide=" \+ b\.dataset\.aideLien/.test(cc));
 verifier('le HTML des articles est échappé', /esc\(a\.titre\)/.test(cc) && /esc\(e\)/.test(cc));

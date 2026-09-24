@@ -74,7 +74,7 @@
    sans ce numéro, un téléphone déjà installé continuerait de servir les anciennes
    pages depuis son cache, et la cliente ne verrait jamais le nouveau champ. */
 
-const CACHE_VERSION = 'clt-shell-v255';
+const CACHE_VERSION = 'clt-shell-v256';
 
 // Domaines CDN dont on met les bibliothèques (à version fixe) en cache pour permettre le
 // démarrage hors-ligne. On ne met JAMAIS en cache *.supabase.co (données/auth) — voir plus bas.
@@ -236,6 +236,10 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.endsWith('/app/version.json')) return;
   // Même règle pour les nouveautés (16/09/2026) : lues à la demande, toujours fraîches.
   if (url.pathname.endsWith('/app/nouveautes.json')) return;
+  // Les vidéos des tutoriels (25/09/2026, lot 16) : le navigateur les demande par morceaux
+  // (réponses 206) ; une réponse partielle mise en cache serait resservie tronquée. On ne les
+  // intercepte pas : le cache HTTP normal s'en charge.
+  if (url.pathname.indexOf('/app/aide/videos/') !== -1) return;
 
   // Ressources d'un autre domaine :
   //   • bibliothèques CDN à version fixe (supabase-js, Leaflet, xlsx, jsPDF, police) → "cache d'abord"

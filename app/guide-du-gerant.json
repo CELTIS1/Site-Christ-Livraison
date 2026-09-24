@@ -1,6 +1,6 @@
 {
   "_lisez_moi": "LE GUIDE DU GÉRANT — une fiche par fonctionnalité livrée, lue par Gestion › Guide (app/guide-du-gerant.js). Écrit pour Celtis : ce que c'est, où c'est, comment s'en servir, en phrases courtes. À CHAQUE NOUVEAU LOT qui change ce qu'on voit ou ce qu'on fait, ajouter ou mettre à jour la fiche ici et la date « maj ». tests/le-guide-du-gerant.test.mjs vérifie la forme : identifiants uniques, espaces connus, longueurs (une fiche se lit en vingt secondes), « Y aller » vers un onglet qui existe. « pourVous » = un geste ou une décision qui revient à Celtis ; le retirer quand c'est fait.",
-  "maj": "25 septembre 2026",
+  "maj": "25/09/2026",
   "espaces": [
     [
       "gestion",
@@ -54,6 +54,19 @@
       "aSavoir": "Seuils du dossier « Le rôle du dirigeant » (échec < 8 % / > 12 %, imputables 3 / 5 %, non remis et non reversé = 0, écarts ≤ 2, sans livreur ≤ 3, délai ≤ 1 j, endormies ≤ 10). Règle app/dix-chiffres.js. Comptes et Express restent dans l'équipe jusqu'au chantier P.",
       "version": "v255",
       "pourVous": "Le mardi : Bureau › les dix chiffres, puis « À faire », puis Argent › Ce qui manque."
+    },
+    {
+      "id": "apprendre-par-la-video",
+      "espace": "gestion",
+      "titre": "Apprendre par la vidéo : une vidéo par geste",
+      "enBref": "Chaque geste qui compte a sa vidéo d'écran (20 à 40 s, sous-titrée, sans voix) dans l'aide de son espace.",
+      "ou": "Menu ☰ › Aide et tutoriels › « 🎬 Vidéos » ; ou « 🎬 Comment faire ? » en tête des onglets",
+      "etapes": [
+        "Envoyer une vidéo à quelqu'un : ouvrir la fiche, « Copier le lien », coller sur WhatsApp — le lien ouvre la fiche avec sa vidéo dans SON application.",
+        "Former un nouveau livreur : lui faire regarder les quatre vidéos du livreur (récupérer, livrer, non livré, annoncer ma remise) avant sa première tournée.",
+        "Une vidéo n'est téléchargée qu'à l'appui : rien ne coûte de données tant qu'on ne la lance pas."
+      ],
+      "aSavoir": "Les vidéos sont fabriquées par Claude à partir de l'application elle-même (tests/parcours/_tutoriels.mjs) : quand un écran change, la vidéo est refaite dans la même mise à jour. Pas de voix : ça se lit en 3G et sans son, en tournée."
     },
     {
       "id": "l-argent",

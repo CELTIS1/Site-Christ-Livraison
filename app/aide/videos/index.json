@@ -1,0 +1,103 @@
+{
+  "_lisez_moi": "Vidéos des tutoriels, fabriquées par tests/parcours/_tutoriels.mjs (Playwright + ffmpeg) : une par geste, 390 × 844, sans voix, sous-titrées dans l'image.",
+  "videos": [
+    {
+      "id": "livreur-je-pars-recupere",
+      "espace": "livreur",
+      "titre": "Partir chez la cliente, puis « Récupéré »",
+      "url": "aide/videos/livreur-je-pars-recupere.mp4",
+      "affiche": "aide/videos/livreur-je-pars-recupere.jpg"
+    },
+    {
+      "id": "livreur-livre-photo",
+      "espace": "livreur",
+      "titre": "Livrer un colis, avec la photo de preuve",
+      "url": "aide/videos/livreur-livre-photo.mp4",
+      "affiche": "aide/videos/livreur-livre-photo.jpg"
+    },
+    {
+      "id": "livreur-non-livre-a-rendre",
+      "espace": "livreur",
+      "titre": "Non livré : le motif, puis « À rendre »",
+      "url": "aide/videos/livreur-non-livre-a-rendre.mp4",
+      "affiche": "aide/videos/livreur-non-livre-a-rendre.jpg"
+    },
+    {
+      "id": "livreur-annoncer-remise",
+      "espace": "livreur",
+      "titre": "Le soir : annoncer ma remise",
+      "url": "aide/videos/livreur-annoncer-remise.mp4",
+      "affiche": "aide/videos/livreur-annoncer-remise.jpg"
+    },
+    {
+      "id": "cliente-demander-passage",
+      "espace": "cliente",
+      "titre": "Demander un passage",
+      "url": "aide/videos/cliente-demander-passage.mp4",
+      "affiche": "aide/videos/cliente-demander-passage.jpg"
+    },
+    {
+      "id": "cliente-ajouter-colis",
+      "espace": "cliente",
+      "titre": "Enregistrer un colis moi-même",
+      "url": "aide/videos/cliente-ajouter-colis.mp4",
+      "affiche": "aide/videos/cliente-ajouter-colis.jpg"
+    },
+    {
+      "id": "cliente-suivre-signaler",
+      "espace": "cliente",
+      "titre": "Suivre un colis, signaler un problème",
+      "url": "aide/videos/cliente-suivre-signaler.mp4",
+      "affiche": "aide/videos/cliente-suivre-signaler.jpg"
+    },
+    {
+      "id": "cliente-confirmer-retour",
+      "espace": "cliente",
+      "titre": "Un colis revient : confirmer que je l'ai reçu",
+      "url": "aide/videos/cliente-confirmer-retour.mp4",
+      "affiche": "aide/videos/cliente-confirmer-retour.jpg"
+    },
+    {
+      "id": "equipe-que-faire",
+      "espace": "equipe",
+      "titre": "« À traiter » : un non livré, « Que faire ? »",
+      "url": "aide/videos/equipe-que-faire.mp4",
+      "affiche": "aide/videos/equipe-que-faire.jpg"
+    },
+    {
+      "id": "equipe-programmer-demande",
+      "espace": "equipe",
+      "titre": "Une demande de passage : « Programmer »",
+      "url": "aide/videos/equipe-programmer-demande.mp4",
+      "affiche": "aide/videos/equipe-programmer-demande.jpg"
+    },
+    {
+      "id": "equipe-marquer-recuperes",
+      "espace": "equipe",
+      "titre": "Le livreur a pris sans valider : « Marquer récupérés à sa place »",
+      "url": "aide/videos/equipe-marquer-recuperes.mp4",
+      "affiche": "aide/videos/equipe-marquer-recuperes.jpg"
+    },
+    {
+      "id": "equipe-remise-livreur",
+      "espace": "equipe",
+      "titre": "Argent : la remise du livreur",
+      "url": "aide/videos/equipe-remise-livreur.mp4",
+      "affiche": "aide/videos/equipe-remise-livreur.jpg"
+    },
+    {
+      "id": "equipe-reverser-cliente",
+      "espace": "equipe",
+      "titre": "Argent : reverser à une cliente",
+      "url": "aide/videos/equipe-reverser-cliente.mp4",
+      "affiche": "aide/videos/equipe-reverser-cliente.jpg"
+    },
+    {
+      "id": "equipe-dossiers-comptes",
+      "espace": "equipe",
+      "titre": "Une demande de compte : accepter, refuser, joindre",
+      "url": "aide/videos/equipe-dossiers-comptes.mp4",
+      "affiche": "aide/videos/equipe-dossiers-comptes.jpg"
+    }
+  ]
+}

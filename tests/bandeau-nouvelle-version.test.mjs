@@ -1445,10 +1445,11 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    l'administrateur et aux accès paie / compta. En tête du tableau de bord : les dix chiffres de la
    semaine (règle app/dix-chiffres.js, seuils du dossier « Le rôle du dirigeant »), chaque tuile menant
    à l'onglet de l'équipe par postMessage. equipe.html?onglet=… ouvre un onglet donné. Parcours
-   le-bureau-du-gerant (14). Étiquette 20260925bureau. */
+   le-bureau-du-gerant (14). Étiquette 20260925bureau.
+   v256, le 25/09/2026 — Apprendre par la vidéo (chantier N, lot 16) : quatorze vidéos d'écran fabriquées à partir de l'application elle-même (tests/parcours/_tutoriels.mjs), une par geste, rattachées aux fiches d'aide de chaque espace ; vue « Vidéos » dans l'aide ; lien « Comment faire ? » en tête des onglets. Étiquette 20260925video. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v255'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v256'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

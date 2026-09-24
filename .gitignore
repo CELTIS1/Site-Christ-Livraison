@@ -66,3 +66,6 @@ _verif-*.html
 *.log
 npm-debug.log*
 outils/tutoriel-equipe/captures/
+
+# Les enregistrements bruts (WebM) des tutoriels : seuls les MP4 de app/aide/videos/ sont publiés.
+tests/parcours/_videos-brutes/

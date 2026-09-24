@@ -1720,6 +1720,7 @@ function cltAfficherAide(options) {
   ov.innerHTML = '<div class="clt-nouveautes__boite clt-aide__boite">'
     + '<div class="clt-nouveautes__tete"><h2>❓ Aide et tutoriels</h2><button type="button" class="clt-nouveautes__fermer" aria-label="Fermer">×</button></div>'
     + '<div class="clt-aide__recherche"><input type="search" placeholder="Chercher un geste, un mot…" aria-label="Chercher dans l\'aide" autocomplete="off"></div>'
+    + '<div class="clt-aide__vues" role="tablist" aria-label="Fiches ou vidéos"><button type="button" class="clt-aide__vue active" data-aide-vue="tout" role="tab" aria-selected="true">📖 Toutes les fiches</button><button type="button" class="clt-aide__vue" data-aide-vue="videos" role="tab" aria-selected="false">🎬 Vidéos</button></div>'
     + '<div class="clt-nouveautes__corps clt-aide__corps">Chargement…</div></div>';
   var corps = ov.querySelector(".clt-aide__corps");
   var champ = ov.querySelector("input");
@@ -1737,34 +1738,49 @@ function cltAfficherAide(options) {
   function normaliser(t) { return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
   function mediaHTML(m) {
     var url = /^https?:|^\//.test(m.url || "") ? m.url : base + (m.url || "");
-    var icone = m.type === "pdf" ? "📄" : m.type === "video" ? "🎬" : m.type === "image" ? "🖼️" : "🔗";
+    /* APPRENDRE PAR LA VIDÉO (25/09/2026, chantier N, lot 16) — Celtis : « une vidéo pour chaque
+       geste, pour qu'il puisse lire et voir ». Une vidéo se regarde ICI, dans la fiche, pas dans un
+       onglet à part : affiche légère d'abord (preload="none" : rien n'est téléchargé tant qu'on
+       n'appuie pas — on est souvent en 3G), lecture dans la page sur iPhone (playsinline). Les
+       vidéos sont fabriquées par tests/parcours/_tutoriels.mjs : l'écran réel, 390 px, sous-titré. */
+    if (m.type === "video") {
+      var affiche = m.affiche ? (/^https?:|^\//.test(m.affiche) ? m.affiche : base + m.affiche) : "";
+      return '<figure class="clt-aide__video"><video controls preload="none" playsinline' + (affiche ? ' poster="' + esc(affiche) + '"' : '') + ' src="' + esc(url) + '" aria-label="' + esc(m.label || "Vidéo") + '"></video>'
+        + '<figcaption>🎬 ' + esc(m.label || "La vidéo du geste") + (m.duree ? ' · ' + esc(m.duree) : '') + '</figcaption></figure>';
+    }
+    var icone = m.type === "pdf" ? "📄" : m.type === "image" ? "🖼️" : "🔗";
     return '<a class="clt-aide__media" href="' + esc(url) + '" target="_blank" rel="noopener">' + icone + ' ' + esc(m.label || m.url) + '</a>';
   }
+  function aUneVideo(a) { return (a.medias || []).some(function (m) { return m.type === "video"; }); }
+  var vue = options.vue === "videos" ? "videos" : "tout";
   function dessiner(filtre) {
     var q = normaliser(filtre);
     var html = "", total = 0;
     sections.forEach(function (sec) {
       var articles = sec.articles.filter(function (a) {
+        if (vue === "videos" && !aUneVideo(a)) return false;
         if (!q) return true;
-        return normaliser([a.titre, a.resume, (a.etapes || []).join(" "), a.astuce].join(" ")).indexOf(q) !== -1;
+        return normaliser([a.titre, a.resume, (a.etapes || []).join(" "), a.astuce, (a.medias || []).map(function (m) { return m.label; }).join(" ")].join(" ")).indexOf(q) !== -1;
       });
       if (!articles.length) return;
       total += articles.length;
       html += '<section class="clt-aide__section"><h3>' + esc(sec.titre) + '</h3>';
       articles.forEach(function (a) {
-        var ouvert = options.article === a.id || (!!q && articles.length <= 3);
+        var ouvert = options.article === a.id || (!!q && articles.length <= 3) || vue === "videos";
         html += '<details class="clt-aide__article" id="aide-' + esc(a.id) + '"' + (ouvert ? ' open' : '') + '>'
           + '<summary><span class="clt-aide__titre">' + esc(a.titre) + '</span>' + (a.resume ? '<span class="clt-aide__resume">' + esc(a.resume) + '</span>' : '') + '</summary>'
           + '<div class="clt-aide__contenu">'
+          // La vidéo d'abord (on VOIT le geste), puis les étapes (on le LIT), puis les documents.
+          + (a.medias || []).filter(function (m) { return m.type === "video"; }).map(mediaHTML).join("")
           + ((a.etapes || []).length ? '<ol>' + a.etapes.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join("") + '</ol>' : '')
           + (a.astuce ? '<div class="clt-aide__astuce">💡 ' + esc(a.astuce) + '</div>' : '')
-          + ((a.medias || []).length ? '<div class="clt-aide__medias">' + a.medias.map(mediaHTML).join("") + '</div>' : '')
+          + ((a.medias || []).some(function (m) { return m.type !== "video"; }) ? '<div class="clt-aide__medias">' + a.medias.filter(function (m) { return m.type !== "video"; }).map(mediaHTML).join("") + '</div>' : '')
           + '<button type="button" class="clt-aide__lien" data-aide-lien="' + esc(a.id) + '" title="Copier le lien de cet article">🔗 Copier le lien</button>'
           + '</div></details>';
       });
       html += '</section>';
     });
-    corps.innerHTML = html || '<div class="clt-aide__vide">Rien ne correspond à « ' + esc(filtre) + ' ». Essayez un autre mot, ou appelez-nous : ' + CLT_CONTACT.affiche + '.</div>';
+    corps.innerHTML = html || (vue === "videos" && !q ? '<div class="clt-aide__vide">Pas encore de vidéo pour cet espace.</div>' : '<div class="clt-aide__vide">Rien ne correspond à « ' + esc(filtre) + ' ». Essayez un autre mot, ou appelez-nous : ' + CLT_CONTACT.affiche + '.</div>');
     if (options.article && !q) {
       var cible = corps.querySelector("#aide-" + options.article);
       if (cible) { cible.scrollIntoView({ block: "start" }); options.article = null; }
@@ -1779,6 +1795,18 @@ function cltAfficherAide(options) {
     else window.prompt("Copiez ce lien :", lien);
   });
   champ.addEventListener("input", function () { dessiner(champ.value.trim()); });
+  ov.querySelectorAll("[data-aide-vue]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      vue = b.dataset.aideVue;
+      ov.querySelectorAll("[data-aide-vue]").forEach(function (x) { var actif = x === b; x.classList.toggle("active", actif); x.setAttribute("aria-selected", actif ? "true" : "false"); });
+      // On quitte la vue « Vidéos » : les fiches ouvertes le restent ; le filtre, lui, est relu.
+      dessiner(champ.value.trim());
+      if (vue === "videos") { var v = corps.querySelector("video"); if (v) v.scrollIntoView({ block: "start" }); }
+    });
+  });
+  if (vue === "videos") { var bv = ov.querySelector('[data-aide-vue="videos"]'); if (bv) { bv.classList.add("active"); bv.setAttribute("aria-selected", "true"); ov.querySelector('[data-aide-vue="tout"]').classList.remove("active"); } }
+  /* Une seule vidéo à la fois : en lancer une met les autres en pause (on ne s'entend pas à deux). */
+  corps.addEventListener("play", function (e) { if (e.target.tagName !== "VIDEO") return; corps.querySelectorAll("video").forEach(function (v) { if (v !== e.target) v.pause(); }); }, true);
   fetch(cltUrlACote("aide.json"), { cache: "no-store" })
     .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
     .then(function (j) {
@@ -1811,9 +1839,30 @@ function cltBrancherAide() {
       if (outils) outils.appendChild(b); else menu.insertBefore(b, menu.firstChild);
     }
   }
+  /* « Comment faire ? » DEPUIS L'ÉCRAN (25/09/2026, lot 16). Un panneau qui porte
+     data-aide-panneau="<id de fiche>" reçoit, en tête, un petit lien 🎬 « Comment faire ? » qui
+     ouvre la fiche du geste, sa vidéo en haut. C'est l'aide à l'endroit où on en a besoin, sans
+     passer par le menu — et rien de plus qu'une ligne discrète, à droite. */
+  document.querySelectorAll("[data-aide-panneau]").forEach(function (p) {
+    if (p.querySelector(":scope > .clt-aide-entree")) return;
+    var d = document.createElement("div");
+    d.className = "clt-aide-entree";
+    d.innerHTML = '<button type="button" class="clt-aide-entree__btn" data-aide-ouvrir="' + p.dataset.aidePanneau.replace(/[^a-z0-9-]/gi, "") + '">🎬 Comment faire ?</button>';
+    p.insertBefore(d, p.firstChild);
+  });
+  if (!window.__cltAideBranchee) {   // une seule écoute, même si cltBrancherAide est rappelé (faux document des bancs compris)
+    window.__cltAideBranchee = true;
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-aide-ouvrir]");
+      if (!b) return;
+      e.preventDefault();
+      cltAfficherAide({ article: b.dataset.aideOuvrir });
+    });
+  }
   var m = /#aide=([a-z0-9-]+)/i.exec(location.hash || "");
   if (m) cltAfficherAide({ article: m[1] });
 }
+window.cltBrancherAide = cltBrancherAide;
 if (typeof document !== "undefined") {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", cltBrancherAide);
   else cltBrancherAide();

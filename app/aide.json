@@ -1,5 +1,5 @@
 {
-  "_lisez_moi": "Le centre d'aide de l'application (20/09/2026, point 19.5). Un article = { id, titre, resume, etapes[], astuce?, medias?[] }. Chaque média : { type: 'pdf' | 'video' | 'lien' | 'image', url, label }. Les articles sont rangés par espace : 'livreur', 'fournisseur' (les clientes), 'equipe' (le bureau), 'express-client' et 'express-coursier' (20/09/2026, Celtis : « le coursier a ses explications et le client aussi » — chacun ne lit que les siennes), et 'tous' (visible partout). Pour ajouter un article, on ajoute une entrée ici : aucun code à toucher. Un article s'ouvre directement avec #aide=<id> dans l'adresse. Règle d'écriture (Celtis) : court, concret, un geste par étape, pas de jargon.",
+  "_lisez_moi": "Le centre d'aide de l'application (20/09/2026, point 19.5). Un article = { id, titre, resume, etapes[], astuce?, medias?[] }. Chaque média : { type: 'pdf' | 'video' | 'lien' | 'image', url, label }. Les articles sont rangés par espace : 'livreur', 'fournisseur' (les clientes), 'equipe' (le bureau), 'express-client' et 'express-coursier' (20/09/2026, Celtis : « le coursier a ses explications et le client aussi » — chacun ne lit que les siennes), et 'tous' (visible partout). Pour ajouter un article, on ajoute une entrée ici : aucun code à toucher. Un article s'ouvre directement avec #aide=<id> dans l'adresse. Règle d'écriture (Celtis) : court, concret, un geste par étape, pas de jargon. Depuis le 25/09/2026 (lot 16), un média { type: 'video', url, affiche, label, duree } est une vidéo d'écran fabriquée par tests/parcours/_tutoriels.mjs (une par geste, 390 px, sous-titrée, sans voix, < 250 Ko) : elle se lit dans la fiche, en tête ; la vue « 🎬 Vidéos » de l'aide ne montre que ces fiches ; un panneau d'écran qui porte data-aide-panneau=\"<id>\" reçoit un lien « Comment faire ? » vers sa fiche.",
   "espaces": {
     "livreur": {
       "titre": "Livreurs — ma journée, mes colis, mon argent",
@@ -27,6 +27,15 @@
             "Chez la cliente, appuyez « 📦 Récupéré » sur chaque colis — ou « Tout récupérer » quand vous avez tout.",
             "Si un colis annoncé n'est pas prêt, laissez-le : le bureau le voit et décidera.",
             "Une photo du colis est possible dès la récupération : elle sert de preuve si la description est contestée."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/livreur-je-pars-recupere.mp4",
+              "affiche": "aide/videos/livreur-je-pars-recupere.jpg",
+              "label": "Partir chez la cliente, puis « Récupéré »",
+              "duree": "32 s"
+            }
           ]
         },
         {
@@ -39,7 +48,16 @@
             "Prenez la photo de la remise (📷). Elle vous protège en cas de contestation.",
             "Le colis reste sur la carte du jour, marqué livré, avec l'argent que vous portez."
           ],
-          "astuce": "Hors réseau, tout est gardé sur le téléphone et envoyé au retour de la connexion. Ne refaites pas le geste."
+          "astuce": "Hors réseau, tout est gardé sur le téléphone et envoyé au retour de la connexion. Ne refaites pas le geste.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/livreur-livre-photo.mp4",
+              "affiche": "aide/videos/livreur-livre-photo.jpg",
+              "label": "Livrer un colis, avec la photo de preuve",
+              "duree": "27 s"
+            }
+          ]
         },
         {
           "id": "livreur-non-livre",
@@ -50,6 +68,15 @@
             "Le colis reste dans votre sacoche et sous vos yeux, jusqu'à votre décision.",
             "« 🚚 Nouvel essai » pour retenter (aujourd'hui ou reporté à demain), ou « ↩️ Je le rapporte à la cliente » pour le retour.",
             "Une photo (porte close, refus) vaut mieux que la discussion du lendemain."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/livreur-non-livre-a-rendre.mp4",
+              "affiche": "aide/videos/livreur-non-livre-a-rendre.jpg",
+              "label": "Non livré : le motif, puis « À rendre »",
+              "duree": "29 s"
+            }
           ]
         },
         {
@@ -84,6 +111,15 @@
             "Les frais que vous avez payés de votre poche — la gare, le transport, et les frais additionnels — sont déduits : « Avancé de votre poche sur N colis ».",
             "« Annoncer ma remise » envoie le chiffre au bureau avant que vous arriviez. Le bureau compte et confirme.",
             "Gardez les reçus de la gare : ils sont retenus sur la vendeuse et vous sont remboursés."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/livreur-annoncer-remise.mp4",
+              "affiche": "aide/videos/livreur-annoncer-remise.jpg",
+              "label": "Le soir : annoncer ma remise",
+              "duree": "23 s"
+            }
           ]
         },
         {
@@ -122,6 +158,22 @@
             "C'est un souhait : le bureau programme la tournée et vous voyez « Demande vue par CLT » ; si CLT ne peut pas passer, vous lisez le motif et demandez un autre jour.",
             "Pour enregistrer vos colis vous-même, dépliez « Ajouter des colis à partir des photos » : photographiez les étiquettes, on lit et on tape à côté. Plusieurs colis d'un coup.",
             "Le jour du passage, le livreur marque chaque colis « Récupéré » : vous le voyez en temps réel dans « Mes colis ». Adresse, téléphone et description se corrigent tant que le colis n'est pas parti ; les montants, appelez-nous."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/cliente-demander-passage.mp4",
+              "affiche": "aide/videos/cliente-demander-passage.jpg",
+              "label": "Demander un passage",
+              "duree": "27 s"
+            },
+            {
+              "type": "video",
+              "url": "aide/videos/cliente-ajouter-colis.mp4",
+              "affiche": "aide/videos/cliente-ajouter-colis.jpg",
+              "label": "Enregistrer un colis moi-même",
+              "duree": "21 s"
+            }
           ]
         },
         {
@@ -133,6 +185,15 @@
             "La frise en haut de chaque carte dit où il en est. Le nom du livreur et son téléphone sont sur la carte.",
             "« Lien de suivi » copie une adresse à envoyer au destinataire : il suit son colis sans compte.",
             "Un colis non livré porte le motif du livreur (absent, refus…) : vous le lisez sans appeler."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/cliente-suivre-signaler.mp4",
+              "affiche": "aide/videos/cliente-suivre-signaler.jpg",
+              "label": "Suivre un colis, signaler un problème",
+              "duree": "17 s"
+            }
           ]
         },
         {
@@ -158,6 +219,15 @@
             "Sur la carte : « chez le livreur » (il vous le rapporte sous deux jours), « au bureau CLT », ou « rendu ».",
             "Quand le livreur indique vous l'avoir rendu : « ✔ Oui, bien récupéré » clôt le retour ; « ✖ Non, je ne l'ai pas » ouvre un litige que CLT traite.",
             "« Le parcours de ce colis » montre chaque passage de main, daté."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/cliente-confirmer-retour.mp4",
+              "affiche": "aide/videos/cliente-confirmer-retour.jpg",
+              "label": "Un colis revient : confirmer que je l'ai reçu",
+              "duree": "16 s"
+            }
           ]
         },
         {
@@ -168,6 +238,15 @@
             "Sur la carte du colis (livré, non livré ou revenu) : « ⚠️ Signaler un problème ».",
             "Choisissez le motif, ajoutez un mot si vous voulez, envoyez.",
             "Le bureau reçoit le signalement et vous répond ici même : l'état passe de « ouvert » à « en cours » puis « résolu »."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/cliente-suivre-signaler.mp4",
+              "affiche": "aide/videos/cliente-suivre-signaler.jpg",
+              "label": "Suivre un colis, signaler un problème",
+              "duree": "17 s"
+            }
           ]
         },
         {
@@ -231,6 +310,15 @@
             "Sur chaque ligne, un seul bouton : « Que faire ? ». Il n'ouvre que les issues possibles, chacune expliquée en une phrase. Choisir, confirmer : c'est enregistré et tracé.",
             "Non livré : réessayer un autre jour · le livreur le rapporte · appeler le destinataire. Retour : reçu au bureau · rendu à la cliente · confier à un livreur · reprogrammer · historique.",
             "Reporté dû : le remettre à sa journée · changer le jour. Signalement : je m'en occupe · répondre et clore. Demande : programmer (Tournées s'ouvre tout rempli) · traitée · refuser avec motif."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-que-faire.mp4",
+              "affiche": "aide/videos/equipe-que-faire.jpg",
+              "label": "« À traiter » : un non livré, « Que faire ? »",
+              "duree": "26 s"
+            }
           ]
         },
         {
@@ -270,6 +358,15 @@
             "Dès que la tournée est posée, la demande est marquée traitée et la cliente reçoit « Passage programmé — [livreur] vous confirmera ».",
             "Impossible ce jour-là ? « ❌ Refuser » avec un motif : la cliente le lit et peut demander un autre jour. « ✅ Traitée » si vous avez répondu autrement (appel, passage hors tournée).",
             "Sans notification : la pastille « demande de passage à programmer » dans L'essentiel vous emmène au premier jour qui en a une."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-programmer-demande.mp4",
+              "affiche": "aide/videos/equipe-programmer-demande.jpg",
+              "label": "Une demande de passage : « Programmer »",
+              "duree": "24 s"
+            }
           ]
         },
         {
@@ -294,6 +391,15 @@
             "Sur une demande : « 🗓️ Programmer » pose la cliente dans le formulaire ; choisissez le livreur, « Ajouter à la tournée ». La demande est traitée d'elle-même et la cliente prévenue.",
             "Le livreur voit sa tournée le matin, dans l'ordre. Une demande de passage non programmée n'envoie personne — refusez-la avec un motif plutôt que de la laisser.",
             "Le livreur a pris sans valider ? Sur sa carte, « 📦 Marquer récupérés (n) à sa place » passe ses colis à « récupéré » et confirme le nombre au nom du bureau. Seulement si vous savez qu'il les a pris."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-marquer-recuperes.mp4",
+              "affiche": "aide/videos/equipe-marquer-recuperes.jpg",
+              "label": "Le livreur a pris sans valider : « Marquer récupérés à sa place »",
+              "duree": "21 s"
+            }
           ]
         },
         {
@@ -305,6 +411,22 @@
             "« Reversement aux clientes » : par cliente, les articles encaissés moins les frais retenus, depuis quand. « Reverser » choisit les colis et le mode, et écrit le reçu numéroté qu'elle reçoit.",
             "« Ce qui manque » : non remis depuis plus d'un jour, non reversé depuis 3 jours, écarts de la semaine, annonces sans remise. Le chiffre sur l'onglet le compte ; un appui mène à la ligne.",
             "« Rapports & compta » : vue par jour, par livreur, chaîne de l'argent, compta par cliente, exports, clôture, export mensuel — comme avant."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-remise-livreur.mp4",
+              "affiche": "aide/videos/equipe-remise-livreur.jpg",
+              "label": "Argent : la remise du livreur",
+              "duree": "23 s"
+            },
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-reverser-cliente.mp4",
+              "affiche": "aide/videos/equipe-reverser-cliente.jpg",
+              "label": "Argent : reverser à une cliente",
+              "duree": "29 s"
+            }
           ]
         },
         {
@@ -316,6 +438,15 @@
             "Sur chaque dossier : « Appeler », « WhatsApp » (message prêt selon l'état), « Voir la pièce » (coursier Express), « Le code » (Express au numéro pas encore vérifié).",
             "« Accepter » ouvre le compte tout de suite. « Refuser » demande un motif : la personne le lit sur sa page de connexion et dans le message WhatsApp. « Réexaminer » remet en attente.",
             "Administrateur : « Suspendre » et « Rétablir » depuis le dossier, avec motif — le compte et son historique restent."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-dossiers-comptes.mp4",
+              "affiche": "aide/videos/equipe-dossiers-comptes.jpg",
+              "label": "Une demande de compte : accepter, refuser, joindre",
+              "duree": "26 s"
+            }
           ]
         },
         {
@@ -489,6 +620,17 @@
               "label": "La marche à suivre illustrée, Android et iPhone"
             }
           ]
+        },
+        {
+          "id": "les-videos",
+          "titre": "Les vidéos : voir le geste avant de le faire",
+          "resume": "En haut de l'aide, « 🎬 Vidéos » ne garde que les fiches qui ont une vidéo. Sur les écrans, « Comment faire ? » ouvre la bonne fiche.",
+          "etapes": [
+            "Appuyez sur « 🎬 Vidéos » : chaque fiche s'ouvre avec sa vidéo (20 à 40 s, sans son, sous-titrée).",
+            "Appuyez sur la vidéo pour la lancer : rien n'est téléchargé avant.",
+            "Depuis un onglet, le lien « 🎬 Comment faire ? » en haut à droite ouvre directement la fiche de ce geste."
+          ],
+          "astuce": "Pour envoyer une vidéo à quelqu'un : « Copier le lien » sous la fiche, puis coller sur WhatsApp."
         },
         {
           "id": "nouveautes",

@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260925bureau">
+<link rel="stylesheet" href="style.css?v=20260925video">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260925bureau"></script>
+<script src="theme.js?v=20260925video"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260925bureau" defer></script>
-<script src="cloche.js?v=20260925bureau" defer></script>
-<script src="splash.js?v=20260925bureau"></script>
+<script src="notifications-recues.js?v=20260925video" defer></script>
+<script src="cloche.js?v=20260925video" defer></script>
+<script src="splash.js?v=20260925video"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -445,7 +445,7 @@
     <button type="button" class="btn" id="passage-envoyer">Demander le passage</button>
   </div>
 
-  <div class="card" id="section-ajouter">
+  <div class="card" id="section-ajouter" data-aide-panneau="cliente-annoncer">
     <!-- Les sections de cette page ne se replient plus depuis longtemps (neutralizeCollapsibles
          les dépliait toutes au chargement) : le HTML le dit maintenant directement, et les
          cinq fonctions de repli sont parties avec lui. (20/09/2026, lot D) -->
@@ -643,7 +643,7 @@
     </details>
   </div>
 
-  <div class="card" id="section-colis">
+  <div class="card" id="section-colis" data-aide-panneau="cliente-suivre">
     <h2>Mes colis</h2>
     <!-- LES COLIS QUI REVIENNENT (20/09/2026, point 19.1) : quel que soit leur jour — un retour
          de la semaine dernière est justement celui qu'il faut voir. Rempli par renderColisList. -->
@@ -666,7 +666,7 @@
   <!-- LES COLIS QUI REVIENNENT (20/09/2026, point 19.6) : leur onglet, tous jours confondus. Un
        retour de la semaine dernière est justement celui qu'il faut voir. Ceux qui attendent la
        confirmation de la cliente passent en tête. Rempli par renderRetoursCliente. -->
-  <div class="card hidden" id="section-retours">
+  <div class="card hidden" id="section-retours" data-aide-panneau="cliente-retour">
     <h2>Mes retours</h2>
     <p class="muted" style="margin:0 0 12px; font-size:13.5px;">Les colis qui n'ont pas pu être livrés et reviennent vers vous, où qu'ils soient. Quand le livreur vous en a rendu un, vous confirmez ici.</p>
     <!-- PAR JOUR, ET AUJOURD'HUI PAR DÉFAUT (21/09/2026, Celtis : « quand on vient là, on scroll,
@@ -691,32 +691,32 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260925bureau"></script>
-<script src="numero-international.js?v=20260925bureau"></script>
-<script src="voir-un-compte.js?v=20260925bureau"></script>
-<script src="lib/bibliotheques.js?v=20260925bureau"></script>
-<script src="lib/retours.js?v=20260925bureau"></script>
-<script src="lib/reclamations.js?v=20260925bureau"></script>
-<script src="lib/communes-et-tarifs.js?v=20260925bureau"></script>
-<script src="lib/argent.js?v=20260925bureau"></script>
-<script src="lib/releve-cliente.js?v=20260925bureau"></script>
-<script src="lib/papier-a-en-tete.js?v=20260925bureau"></script>
-<script src="lib/briques-argent.js?v=20260925bureau"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260925bureau"></script>
-<script src="lib/traces-de-report.js?v=20260925bureau"></script>
-<script src="lib/annonce-de-remise.js?v=20260925bureau"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260925bureau"></script>
-<script src="lib/primes.js?v=20260925bureau"></script>
-<script src="lib/doublons.js?v=20260925bureau"></script>
-<script src="config.js?v=20260925bureau"></script>
-<script src="demande-de-passage.js?v=20260925bureau"></script>
-<script src="activite-de-la-cliente.js?v=20260925bureau"></script>
-<script src="activite-ecran.js?v=20260925bureau"></script>
-<script src="mes-boutiques.js?v=20260925bureau"></script>
-<script src="etiquettes-et-scan.js?v=20260925bureau"></script>
-<script src="import-de-colis.js?v=20260925bureau"></script>
-<script src="biometric-lock.js?v=20260925bureau"></script>
-<script src="clt-select-recherche.js?v=20260925bureau"></script>
+<script src="clt-common.js?v=20260925video"></script>
+<script src="numero-international.js?v=20260925video"></script>
+<script src="voir-un-compte.js?v=20260925video"></script>
+<script src="lib/bibliotheques.js?v=20260925video"></script>
+<script src="lib/retours.js?v=20260925video"></script>
+<script src="lib/reclamations.js?v=20260925video"></script>
+<script src="lib/communes-et-tarifs.js?v=20260925video"></script>
+<script src="lib/argent.js?v=20260925video"></script>
+<script src="lib/releve-cliente.js?v=20260925video"></script>
+<script src="lib/papier-a-en-tete.js?v=20260925video"></script>
+<script src="lib/briques-argent.js?v=20260925video"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260925video"></script>
+<script src="lib/traces-de-report.js?v=20260925video"></script>
+<script src="lib/annonce-de-remise.js?v=20260925video"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260925video"></script>
+<script src="lib/primes.js?v=20260925video"></script>
+<script src="lib/doublons.js?v=20260925video"></script>
+<script src="config.js?v=20260925video"></script>
+<script src="demande-de-passage.js?v=20260925video"></script>
+<script src="activite-de-la-cliente.js?v=20260925video"></script>
+<script src="activite-ecran.js?v=20260925video"></script>
+<script src="mes-boutiques.js?v=20260925video"></script>
+<script src="etiquettes-et-scan.js?v=20260925video"></script>
+<script src="import-de-colis.js?v=20260925video"></script>
+<script src="biometric-lock.js?v=20260925video"></script>
+<script src="clt-select-recherche.js?v=20260925video"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;

@@ -4664,3 +4664,21 @@ html[data-theme="dark"] .dix-val{ color:#E6ECF3; }
 html[data-theme="dark"] .dix-tuile--bon{ border-left-color:#5fd39a; }
 html[data-theme="dark"] .dix-tuile--regarder{ border-left-color:#f0c27a; }
 html[data-theme="dark"] .dix-tuile--alerte{ border-left-color:#ff9a8c; }
+
+/* APPRENDRE PAR LA VIDÉO (25/09/2026, chantier N, lot 16). La vidéo d'un geste se regarde dans la
+   fiche : cadre arrondi, affiche avant la lecture, hauteur bornée pour qu'un téléphone (vidéo
+   verticale 390 × 844) ne se retrouve pas avec un écran de vidéo et rien d'autre. Deux vues en
+   tête de l'aide : toutes les fiches, ou seulement celles qui ont une vidéo. Et sur les écrans,
+   une ligne discrète « 🎬 Comment faire ? » (44 px, à droite) qui ouvre la fiche du geste. */
+.clt-aide__vues{ display:flex; gap:8px; padding:6px 18px 2px; }
+.clt-aide__vue{ min-height:40px; padding:6px 14px; border:1px solid var(--border-strong); border-radius:999px; background:var(--white); color:var(--navy); font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
+.clt-aide__vue.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
+.clt-aide__video{ margin:4px 0 12px; }
+.clt-aide__video video{ display:block; width:100%; max-height:min(62vh, 520px); border-radius:14px; background:#0f1722; object-fit:contain; }
+.clt-aide__video figcaption{ font-size:12.5px; color:var(--muted); margin-top:6px; }
+.clt-aide-entree{ display:flex; justify-content:flex-end; margin:0 0 2px; }
+.clt-aide-entree__btn{ min-height:44px; padding:8px 12px; border:0; background:none; color:var(--navy); font:inherit; font-size:13.5px; font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:3px; border-radius:10px; }
+.clt-aide-entree__btn:hover{ background:var(--grey-bg); text-decoration:none; }
+html[data-theme="dark"] .clt-aide__vue{ background:#1a2230; border-color:#2A3849; color:#E6ECF3; }
+html[data-theme="dark"] .clt-aide__vue.active{ background:#E6ECF3; color:#0f1722; border-color:#E6ECF3; }
+html[data-theme="dark"] .clt-aide-entree__btn{ color:#BFD0E6; }
