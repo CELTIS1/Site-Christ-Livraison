@@ -100,7 +100,7 @@ ${l.url
 <div class="lot-champs">
 <div class="lot-entete">
 <span class="lot-num">Colis</span>
-<button type="button" class="lot-retirer">Retirer cette photo</button>
+<button type="button" class="lot-retirer">${l.url ? "Retirer cette photo" : "Retirer cette ligne"}</button>
 </div>
 <!-- La commune de destination a suivi l'ancienne saisie unitaire ici le 26/08/2026, quand
      celle-ci a été retirée : c'était le seul endroit de l'espace Équipe où elle se renseignait,
@@ -441,11 +441,30 @@ return id;
 }
 
 // Ce qu'il faut refaire une fois que des colis sont partis, quel que soit le chemin emprunté.
-function lotApresEnvoi(fournisseur_id){
+function lotApresEnvoi(fournisseur_id, ctx){
 // Les destinataires du lot doivent figurer au carnet dès le colis suivant.
 carnetParClient.delete(fournisseur_id);
 lotCompleterLaFiche(fournisseur_id);
 loadColis();
+/* DE LA CRÉATION AU LIVREUR SANS QUITTER L'ÉCRAN (25/09/2026, lot 17 — C22). Le bloc « À confier »
+   se recharge ; et si le lot est parti sans livreur (« à confier plus tard »), il s'ouvre sur cette
+   cliente, ses colis cochés : le geste suivant est déjà sous les yeux. */
+document.dispatchEvent(new CustomEvent('clt:colis-change', { detail: { fournisseur_id } }));
+if (ctx && !ctx.livreurCollectePropose && typeof aConfierMontrer === 'function') aConfierMontrer(fournisseur_id);
+}
+
+// Une ligne sans photo (25/09/2026, lot 17) : le même formulaire, la vignette dit « Pas de photo ».
+function lotAjouterLigneVide(){
+const conteneur = document.getElementById('lot-lignes');
+if (!conteneur) return;
+const l = { id: nouvelleCleColis(), file: null, url: '', cle: nouvelleCleColis(), el: null };
+l.el = lotCreerElement(l);
+lotLignes.push(l);
+conteneur.appendChild(l.el);
+lotRenumeroter();
+lotDessinerBarre();
+const champ = l.el.querySelector('.lot-tel');
+if (champ) { l.el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => champ.focus(), 300); }
 }
 
 /* La commune tapée pour une cliente qui n'en avait pas devient celle de sa fiche (21/09/2026) :
@@ -559,7 +578,7 @@ if (btn) { btn.disabled = false; btn.textContent = '✔ Enregistrer ce colis'; }
 if (partie) {
 lotRetirer(l.id);
 lotMsg(resumeEnvoiLotTexte(bilan), bilan.photosPerdues ? 'info' : 'success');
-lotApresEnvoi(fournisseur_id);
+lotApresEnvoi(fournisseur_id, ctx);
 } else {
 lotMsg(resumeProblemesLotTexte(echecs), 'error');
 }
@@ -621,7 +640,7 @@ let texte = resumeEnvoiLotTexte(bilan);
 if (echecs.length) texte += ' ' + resumeProblemesLotTexte(echecs).replace(/^Rien n\u2019a été enregistré\. À corriger : /, 'Non enregistré : ');
 lotMsg(texte, echecs.length ? 'error' : (bilan.photosPerdues ? 'info' : 'success'));
 
-lotApresEnvoi(fournisseur_id);
+lotApresEnvoi(fournisseur_id, ctx);
 }
 
 function initLotColis(){
@@ -696,6 +715,10 @@ if (e.target.classList && e.target.classList.contains('rempli-auto')) e.target.c
 conteneur.addEventListener('change', (e) => {
 if (e.target.classList && e.target.classList.contains('lot-tel')) lotCompleterDepuisCarnet(e.target);
 });
+
+// « Ajouter un colis sans photo » (25/09/2026, lot 17) : le bouton est dans le bloc des photos, hors de la barre.
+const boutonVide = document.getElementById('lot-ligne-vide');
+if (boutonVide) boutonVide.addEventListener('click', () => { const d = document.querySelector('#section-lot-colis details'); if (d) d.open = true; lotAjouterLigneVide(); });
 
 const barreWrap = document.getElementById('lot-barre-wrap');
 if (barreWrap) barreWrap.addEventListener('click', (e) => {

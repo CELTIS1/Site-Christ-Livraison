@@ -221,6 +221,8 @@ export function nouveauMonde() {
     if (q.op === 'update') {
       lignes.forEach(l => {
         const v = Object.assign({}, q.valeurs);
+        // colis_en_main_a_l_assignation (16/09) : un livreur posé sur un colis « en attente » créé par l'équipe, sans collecte → « récupéré ».
+        if (table === 'colis' && v.livreur_id && v.livreur_id !== l.livreur_id && l.statut === 'en_attente' && !v.statut && ['equipe', 'admin'].includes(l.cree_par_role) && !l.livreur_collecte_id && !v.livreur_collecte_id && !l.collecte_depart_at) v.statut = 'recupere';
         if (table === 'colis' && v.statut && v.statut !== l.statut) {
           const champ = { recupere: 'recupere_at', livre: 'livre_at', non_livre: 'non_livre_at', retour: 'retour_at' }[v.statut];
           if (champ && !l[champ]) v[champ] = maintenant;
@@ -242,6 +244,19 @@ export function nouveauMonde() {
       rows.forEach(r => { if (table === 'reclamations_clientes' && r.statut === undefined) r.statut = 'ouverte'; if (table === 'demandes_de_passage' && r.statut === undefined) r.statut = 'en_attente'; });
       // L'activité de la cliente (23/09/2026) : une ligne par compte — un upsert remplace la sienne.
       if (table === 'activites_clientes') { const ids = new Set(rows.map(r => r.profile_id)); TABLES[table] = (TABLES[table] || []).filter(l => !ids.has(l.profile_id)); }
+      /* LES DÉCLENCHEURS DE LA CRÉATION D'UN COLIS (25/09/2026, lot 17), dans l'ordre de la base :
+         1. colis_en_main_a_la_creation — créé par l'équipe, sans livreur de collecte, sans jour prévu,
+            et (SQL du 25/09) sans tournée programmée chez la cliente ce jour-là → il naît « récupéré » ;
+         2. colis_applique_programmation — sans livreur de collecte, une tournée ce jour-là → son livreur. */
+      if (table === 'colis') rows.forEach(r => {
+        const role = (PROFILS.find(p => p.id === q.user) || {}).role || null;
+        if (!r.cree_par) r.cree_par = q.user || null;
+        if (!r.cree_par_role) r.cree_par_role = role;
+        const jour = String(r.created_at).slice(0, 10);
+        const tournee = (TABLES.programmations_collecte || []).find(p => p.fournisseur_id === r.fournisseur_id && p.jour === jour);
+        if (r.statut === 'en_attente' && ['equipe', 'admin'].includes(role) && !r.livreur_collecte_id && !r.jour_recuperation_prevu && !tournee) { r.statut = 'recupere'; r.recupere_at = maintenant; }
+        if (!r.livreur_collecte_id && tournee && tournee.livreur_id) r.livreur_collecte_id = tournee.livreur_id;
+      });
       (TABLES[table] ||= []).push(...rows);
       if (table === 'colis') rows.forEach(r => consommeLAvance(null, r, q.user, maintenant));
       if (table === 'programmations_collecte') rows.forEach(r => programmerTraiteLaDemande(r, q.user, maintenant));

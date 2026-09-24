@@ -100,8 +100,9 @@ titre('2. On peut les voir, et donc les assigner');
   verifier('« L\'essentiel » compte les colis sans livreur, en rouge',
     /sansLivreur: colis\.filter\(c => !c\.livreur_id/.test(equipe)
     && /pastille\(L\.sansLivreur\.length,[^)]*'sans-livreur', 'rouge'\)/.test(equipe));
-  verifier('et la pastille conduit à la liste filtrée, prête à assigner',
-    /case 'sans-livreur': listeColis\('sans_livreur', '', L\.sansLivreur\)/.test(equipe));
+  // 25/09/2026 (lot 17) : la pastille mène au bloc « À confier » (un livreur, un bouton par cliente) ; la liste filtrée reste le repli.
+  verifier('et la pastille conduit au bloc « À confier » (repli : la liste filtrée)',
+    /case 'sans-livreur': if \(typeof aConfierMontrer === 'function'\) aConfierMontrer\(\); else listeColis\('sans_livreur', '', L\.sansLivreur\)/.test(equipe));
 }
 
 /* ==========================================================================================

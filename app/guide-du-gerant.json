@@ -69,6 +69,19 @@
       "aSavoir": "Les vidéos sont fabriquées par Claude à partir de l'application elle-même (tests/parcours/_tutoriels.mjs) : quand un écran change, la vidéo est refaite dans la même mise à jour. Pas de voix : ça se lit en 3G et sans son, en tournée."
     },
     {
+      "id": "creer-et-confier",
+      "espace": "bureau",
+      "titre": "Créer un colis, puis le confier",
+      "enBref": "La saisie tient en trois champs par colis (photo ou pas) ; ce qui attend un livreur est en tête de l'onglet Colis, un bouton par cliente.",
+      "ou": "Équipe › Colis › « À confier » (en tête) et « ➕ Nouveaux colis »",
+      "etapes": [
+        "Mesuré avant : 47 à 54 gestes pour trois colis, confiés un par un dans « Modifier ». Après : une douzaine.",
+        "« À confier plus tard » veut dire à confier plus tard : plus aucun livreur deviné en silence.",
+        "SQL du 25/09 (à jouer) : un colis créé au bureau un jour de tournée chez la cliente reste « en attente » et va au livreur de la tournée."
+      ],
+      "aSavoir": "Le bloc lit toute la base, pas seulement la page affichée : un colis oublié d'avant-hier reste dedans, en orange, jusqu'à ce qu'il ait quelqu'un."
+    },
+    {
       "id": "l-argent",
       "espace": "bureau",
       "titre": "L'argent en deux écrans (et ce qui manque)",

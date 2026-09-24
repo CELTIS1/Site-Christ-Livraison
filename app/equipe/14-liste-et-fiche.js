@@ -96,6 +96,10 @@
     racine.setProperty('--eqf-gauche', Math.round(l.right + 20) + 'px');
     racine.setProperty('--eqf-largeur', Math.max(320, Math.round(p.right - l.right - 20)) + 'px');
     racine.setProperty('--eqf-haut', Math.round(Math.max(l.top, plancher)) + 'px');
+    /* La liste peut être poussée sous le pli par ce qui la précède (« À confier », la saisie —
+       25/09/2026, lot 17). Tant qu'elle n'est pas à l'écran, la fiche ne l'est pas non plus :
+       épinglée à côté d'une liste qu'on ne voit pas, elle recouvrirait les blocs du dessus. */
+    document.body.classList.toggle('eq-fiche-hors-ecran', l.top > window.innerHeight - 160);
   }
 
   function poser() {

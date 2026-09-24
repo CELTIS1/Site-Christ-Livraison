@@ -3939,6 +3939,7 @@ body.eq-large #colis-list .eq-ligne:focus-visible{ outline:2px solid var(--navy,
 .eq-ligne-statut[data-statut="non_livre"]{ background:#fde9e7; color:#a3352c; }
 .eq-ligne-statut[data-statut="retour"]{ background:#fdf1dc; color:#8a5a00; }
 .eq-ligne-statut[data-statut="en_livraison"], .eq-ligne-statut[data-statut="recupere"]{ background:#e6effb; color:#1B4374; }
+body.eq-large.eq-fiche-hors-ecran #colis-list .colis-item.eq-choisi{ display:none; }   /* la liste est sous le pli (25/09/2026) */
 body.eq-large #colis-list .colis-item.eq-choisi{
   display:flex; position:fixed; z-index:20; left:var(--eqf-gauche, 56%); top:var(--eqf-haut, 120px);
   width:var(--eqf-largeur, 40%); max-height:calc(100vh - var(--eqf-haut, 120px) - 16px); overflow:auto;
@@ -4682,3 +4683,38 @@ html[data-theme="dark"] .dix-tuile--alerte{ border-left-color:#ff9a8c; }
 html[data-theme="dark"] .clt-aide__vue{ background:#1a2230; border-color:#2A3849; color:#E6ECF3; }
 html[data-theme="dark"] .clt-aide__vue.active{ background:#E6ECF3; color:#0f1722; border-color:#E6ECF3; }
 html[data-theme="dark"] .clt-aide-entree__btn{ color:#BFD0E6; }
+
+/* À CONFIER (25/09/2026, chantier N, lot 17 — C22). En tête de l'onglet Colis : ce qui attend un
+   livreur, par cliente, le plus ancien en premier. Une carte par cliente : ses colis (cases,
+   cochées), un choix de livreur, un bouton « Confier (n) ». Un groupe en retard (créé avant
+   aujourd'hui) porte un liseré orange encre. */
+.confier-entete{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; margin-bottom:10px; }
+.confier-titre{ font-size:17px; font-weight:800; color:var(--navy); }
+.confier-sous{ font-size:13px; color:var(--muted); }
+.confier-vide{ padding:10px 2px; color:var(--muted); font-size:14px; }
+.confier-groupe{ border:1px solid var(--border); border-left:4px solid var(--navy); border-radius:14px; padding:12px 14px; margin-bottom:10px; background:var(--white); }
+.confier-groupe.confier-retard{ border-left-color:#BF5210; }
+.confier-groupe.confier-mise{ box-shadow:0 0 0 3px rgba(226,99,19,.35); }
+.confier-groupe-tete{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 12px; margin-bottom:6px; }
+.confier-nom{ font-weight:700; font-size:15px; }
+.confier-compte{ font-size:13px; color:var(--muted); }
+.confier-retard .confier-compte b{ color:#BF5210; }
+.confier-liste{ display:flex; flex-direction:column; gap:2px; margin-bottom:8px; }
+.confier-colis{ display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; min-height:44px; padding:4px 0; font-size:14px; cursor:pointer; border-top:1px solid var(--border); }
+.confier-colis:first-child{ border-top:0; }
+.confier-colis input{ width:22px; height:22px; accent-color:var(--navy); }
+.confier-colis-texte{ display:flex; flex-direction:column; min-width:0; }
+.confier-colis-texte b{ white-space:nowrap; font-size:13.5px; }
+.confier-colis-ou{ font-size:13px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.confier-etat{ font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+html[data-theme="dark"] .confier-colis{ border-top-color:#2A3849; }
+.confier-etat--livrer{ background:#E8F1FB; color:#1B4374; }
+.confier-etat--recuperer{ background:#FBE7D8; color:#8A3A0B; }
+.confier-gestes{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.confier-gestes .confier-livreur, .confier-gestes .clt-select-recherche{ flex:1 1 200px; min-width:0; }
+.confier-ok{ min-height:44px; padding:8px 18px; flex:0 0 auto; }
+html[data-theme="dark"] .confier-groupe{ background:#1a2230; border-color:#2A3849; border-left-color:#7FA8DA; }
+html[data-theme="dark"] .confier-groupe.confier-retard{ border-left-color:#F0A070; }
+html[data-theme="dark"] .confier-retard .confier-compte b{ color:#F0A070; }
+html[data-theme="dark"] .confier-etat--livrer{ background:#243247; color:#BFD0E6; }
+html[data-theme="dark"] .confier-etat--recuperer{ background:#3a2a1a; color:#F0C8A8; }

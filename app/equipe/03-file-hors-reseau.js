@@ -361,8 +361,13 @@ return c.statut !== 'en_attente' || !!c.observation || !!c.livreur_collecte_id;
 // colis du jour). (08/09/2026)
 function lotLivreurCollecteChoisi(fournisseurId){
 const champ = document.getElementById('lot-livreur-collecte');
-const choisi = (champ && champ.value) || '';
-return choisi || clienteCollecteDriverToday(fournisseurId);
+/* CE QUE LE CHAMP DIT EST CE QUI PART (25/09/2026, lot 17). Jusqu'ici, « — À confier plus tard — »
+   laissé tel quel envoyait quand même le livreur des colis du jour de la cliente, en silence : le
+   bureau croyait ne rien avoir décidé et le colis partait chez quelqu'un. La proposition est déjà
+   posée DANS le champ (lotProposerLivreurCollecte) ; vide, c'est vide. Sans champ (autre écran),
+   on garde l'ancienne déduction. */
+if (champ) return champ.value || '';
+return clienteCollecteDriverToday(fournisseurId);
 }
 // Quand la cliente change, on propose le livreur de sa tournée du jour (programmation), sinon
 // celui de ses colis du jour — sans écraser un choix déjà fait à la main.
@@ -1268,10 +1273,11 @@ switch (cle) {
   }
   case 'comptes-a-valider': onglet('comptes'); ouvrir('pending-content'); defiler('section-pending'); break;
   case 'reinitialisations': onglet('comptes'); ouvrir('reset-content'); defiler('section-reset'); break;
-  case 'sans-livreur': listeColis('sans_livreur', '', L.sansLivreur); break;
+  // 25/09/2026 (lot 17) : « à confier » mène au bloc À confier, un livreur et un bouton par cliente — pas à un filtre.
+  case 'sans-livreur': if (typeof aConfierMontrer === 'function') aConfierMontrer(); else listeColis('sans_livreur', '', L.sansLivreur); break;
   case 'montant-manquant': listeColis('montant_manquant', '', L.montantManquant); break;
-  case 'collecte':  listeColis('en_attente', '', L.collecte); break;
-  case 'livraison': listeColis('recupere', '__aucun', L.livraison); break;
+  case 'collecte':  if (typeof aConfierMontrer === 'function') aConfierMontrer(); else listeColis('en_attente', '', L.collecte); break;
+  case 'livraison': if (typeof aConfierMontrer === 'function') aConfierMontrer(); else listeColis('recupere', '__aucun', L.livraison); break;
   case 'retard':    listeColis('en_livraison', '', L.retard); break;
   case 'dormants':  listeColis('tous', '', L.dormants); break;
   case 'a-risque':  listeColis('tous', '', L.aRisque); break;

@@ -1446,10 +1446,11 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    semaine (règle app/dix-chiffres.js, seuils du dossier « Le rôle du dirigeant »), chaque tuile menant
    à l'onglet de l'équipe par postMessage. equipe.html?onglet=… ouvre un onglet donné. Parcours
    le-bureau-du-gerant (14). Étiquette 20260925bureau.
-   v256, le 25/09/2026 — Apprendre par la vidéo (chantier N, lot 16) : quatorze vidéos d'écran fabriquées à partir de l'application elle-même (tests/parcours/_tutoriels.mjs), une par geste, rattachées aux fiches d'aide de chaque espace ; vue « Vidéos » dans l'aide ; lien « Comment faire ? » en tête des onglets. Étiquette 20260925video. */
+   v256, le 25/09/2026 — Apprendre par la vidéo (chantier N, lot 16) : quatorze vidéos d'écran fabriquées à partir de l'application elle-même (tests/parcours/_tutoriels.mjs), une par geste, rattachées aux fiches d'aide de chaque espace ; vue « Vidéos » dans l'aide ; lien « Comment faire ? » en tête des onglets. Étiquette 20260925video.
+   v257, le 25/09/2026 — Créer un colis, puis le confier (chantier N, lot 17, C22) : bloc « À confier » en tête de l'onglet Colis (règle app/a-confier.js, écran equipe/19-a-confier.js), ligne sans photo dans la saisie, « À confier plus tard » respecté ; SQL : la tournée garde le colis en attente. Étiquette 20260925confier. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v256'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v257'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -336,6 +336,18 @@
           "astuce": "Un colis reporté qui n'est ni livré ni rendu après son jour de report ressort dans L'essentiel (« dormants »). Regardez-le le matin."
         },
         {
+          "id": "equipe-confier",
+          "titre": "Créer un colis, puis le confier — sans gymnastique",
+          "resume": "« Nouveaux colis » : photos ou sans photo, trois champs par colis. Puis « À confier », en tête de l'onglet : un livreur, un bouton par cliente.",
+          "etapes": [
+            "Onglet Colis › « ➕ Nouveaux colis » : choisissez la cliente, puis « Choisir les photos » ou « Ajouter un colis sans photo ». Téléphone obligatoire, montants proposés par la grille.",
+            "Livreur qui récupère : laissez « À confier plus tard » si vous ne savez pas encore qui livrera — rien ne part chez personne.",
+            "« Enregistrer » : le bloc « À confier » s'ouvre sur cette cliente, ses colis cochés. Choisissez le livreur, appuyez « Confier (n) ». C'est tout.",
+            "Un colis encore chez la cliente va au livreur en récupération ; un colis déjà entre nos mains lui va en livraison — le bloc le dit sur chaque ligne."
+          ],
+          "astuce": "Un colis qu'on ne veut pas confier tout de suite : décochez-le, il reste dans le bloc. « Annuler » dans le message remet tout comme avant."
+        },
+        {
           "id": "equipe-modifier-colis",
           "titre": "Modifier un colis, corriger une erreur, marquer « examiné »",
           "resume": "Tout se corrige depuis la carte du colis. Chaque correction est datée et signée dans son historique.",

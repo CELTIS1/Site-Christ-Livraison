@@ -17,6 +17,9 @@ await N.ouvrirConnecte('equipe.html', ADMIN);
 await dodo(3500);
 await page.locator('#btn-toutes-dates-colis').click();
 await dodo(900);
+// 25/09/2026 (lot 17) : « À confier » et la saisie précèdent la liste ; on amène la liste à l'écran, comme une personne le ferait.
+await page.evaluate(() => document.getElementById('colis-list').scrollIntoView({ block: 'start' }));
+await dodo(500);
 const etat = () => page.evaluate(() => {
   const vis = (e) => !!e && getComputedStyle(e).display !== 'none';
   const cartes = [...document.querySelectorAll('#colis-list .colis-item')];
@@ -96,6 +99,8 @@ e = await etat();
 verifier('plus de lignes, plus de fiche épinglée, toutes les cartes visibles', !e.large && e.lignes === 0 && e.choisi === '' && e.visibles === e.cartes, JSON.stringify(e));
 await page.setViewportSize({ width: 1440, height: 900 });
 await dodo(700);
+await page.evaluate(() => document.getElementById('colis-list').scrollIntoView({ block: 'start' }));
+await dodo(500);
 e = await etat();
 verifier('et de retour à 1 440 px, la liste et la fiche reviennent', e.large && e.lignes === e.cartes && e.visibles === 1, JSON.stringify(e));
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
