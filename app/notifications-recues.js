@@ -64,11 +64,22 @@
   /* Où mène une notification. Une adresse complète (`url`) est prise telle quelle ; un paramètre
      (`param`, « colis=… ») se colle à la page du lecteur — jamais à celle d'un autre rôle. Rien
      des deux : la notification se lit, elle ne mène nulle part. */
+  /* La page qui sait OUVRIR l'objet, selon la page d'où l'on lit (24/09/2026, Celtis : « quand je
+     clique, ça ne m'envoie nulle part ») : un colis se trouve sur l'écran du rôle — Gestion n'a
+     pas de liste de colis, c'est l'écran Équipe qui l'a ; une course, sur l'écran Express. */
+  const PAGE_POUR = {
+    colis: { 'livreur.html': 'livreur.html', 'fournisseur.html': 'fournisseur.html', 'equipe.html': 'equipe.html', 'gestion.html': 'equipe.html' },
+    course: { 'express-client.html': 'express-client.html', 'express-coursier.html': 'express-coursier.html' },
+    passage: { 'equipe.html': 'equipe.html', 'gestion.html': 'equipe.html' },
+  };
   function lien(n, pageCourante) {
     if (!n) return null;
     if (n.url && /^\/app\//.test(n.url)) return n.url;
-    if (n.param && /^[a-z]+=[A-Za-z0-9-]+$/.test(n.param)) return (pageCourante || '') + '?' + n.param;
-    return null;
+    const m = String(n.param || '').match(/^([a-z-]+)=([A-Za-z0-9-]+)$/);
+    if (!m) return null;
+    const pages = PAGE_POUR[m[1]];
+    const page = pages ? (pages[pageCourante] || null) : (pageCourante || null);
+    return page ? page + '?' + n.param : null;
   }
 
   /* Le petit signe devant le titre : le titre des pushs commence déjà par un pictogramme

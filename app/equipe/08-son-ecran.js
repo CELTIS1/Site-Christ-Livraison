@@ -88,14 +88,17 @@ if (sub) sub.textContent = estLivreur
 : "L'écran de cette cliente, dessiné par le même code que son espace.";
 
 const colis = ficheEcranColis();
-if (!colis.length){
+// Les colis qui ont QUITTÉ cette journée chez ce livreur (24/09/2026, lib/traces-de-report.js) :
+// grisés dans le tableau, comme sur son point.
+const traces = estLivreur ? tracesDuJour(allColis || [], __ficheCtx.jour, { livreurId: __ficheCtx.id }) : [];
+if (!colis.length && !traces.length){
 cltPoserHTML(corps, `<div class="empty-state">Aucun colis reçu le ${ficheJourEnClair(__ficheCtx.jour)}.</div>
 <div class="fiche-ecran-avertissement">Si vous attendiez des colis ici, ils sont peut-être plus anciens que ce qui est chargé : ouvrez la comptabilité et remontez l'historique avec « Charger plus », puis revenez.</div>`);
 return;
 }
 
 const t = totauxArgent(colis);
-const corpsHTML = estLivreur ? ficheLivreurHTML(colis, t) : ficheClienteHTML(colis, t);
+const corpsHTML = estLivreur ? ficheLivreurHTML(colis, t, traces) : ficheClienteHTML(colis, t);
 if (!cltPoserHTML(corps, corpsHTML)) return;
 brancherFinanceDepliage(corps, ficheEcranDepliees);
 brancherFicheCorrections(corps);
@@ -103,7 +106,7 @@ brancherFicheCorrections(corps);
 
 // Ce que voit le livreur : sa tournée, son argent, ses colis cliente par cliente.
 // Les trois blocs sortent des fonctions de config.js — les mêmes que livreur.html appelle.
-function ficheLivreurHTML(colis, t){
+function ficheLivreurHTML(colis, t, traces){
 return `
 <div class="fiche-ecran-bloc">
 <div class="fiche-ecran-bloc-titre">Sa tournée du jour</div>
@@ -122,6 +125,7 @@ cleDe: c => c.fournisseur_id || 'inconnu',
 nomDe: fournisseurLabel,
 depliees: ficheEcranDepliees,
 actionsHTML: ficheCorrectionsHTML,
+  traces: traces || [],
 })}
 <div class="fiche-ecran-avertissement">Ce total est celui que son téléphone affiche pour cette journée, au franc près : il sort de la même fonction de calcul. Un écart ne pourrait venir que d'une journée différente — vérifiez la date ci-dessus.</div>
 </div>`;

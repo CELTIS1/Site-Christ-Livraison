@@ -784,7 +784,7 @@ titre('L\'onglet Finance du livreur');
     !blocDe(livreur, 'renderArgentDuJour').includes('recap-table'),
     'le tableau dans la carte, c\'est ce qui allongeait « Mes colis » sans qu\'on l\'ait demandé');
   verifier('la carte et le tableau parlent de la même journée',
-    blocDe(livreur, 'renderArgentDuJour').includes('renderFinanceDetail(duJour, t, jour)'),
+    blocDe(livreur, 'renderArgentDuJour').includes('renderFinanceDetail(duJour, t, jour, traces)'),
     'deux journées différentes affichées côte à côte, c\'est la pire des ambiguïtés');
 
   // -- La carte s'efface sur Récupérations ---------------------------------------------------

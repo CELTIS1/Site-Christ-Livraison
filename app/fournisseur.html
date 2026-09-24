@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260923placement">
+<link rel="stylesheet" href="style.css?v=20260924traces">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260923placement"></script>
+<script src="theme.js?v=20260924traces"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260923placement" defer></script>
-<script src="cloche.js?v=20260923placement" defer></script>
-<script src="splash.js?v=20260923placement"></script>
+<script src="notifications-recues.js?v=20260924traces" defer></script>
+<script src="cloche.js?v=20260924traces" defer></script>
+<script src="splash.js?v=20260924traces"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -674,30 +674,31 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260923placement"></script>
-<script src="numero-international.js?v=20260923placement"></script>
-<script src="voir-un-compte.js?v=20260923placement"></script>
-<script src="lib/bibliotheques.js?v=20260923placement"></script>
-<script src="lib/retours.js?v=20260923placement"></script>
-<script src="lib/reclamations.js?v=20260923placement"></script>
-<script src="lib/communes-et-tarifs.js?v=20260923placement"></script>
-<script src="lib/argent.js?v=20260923placement"></script>
-<script src="lib/releve-cliente.js?v=20260923placement"></script>
-<script src="lib/papier-a-en-tete.js?v=20260923placement"></script>
-<script src="lib/briques-argent.js?v=20260923placement"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260923placement"></script>
-<script src="lib/annonce-de-remise.js?v=20260923placement"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260923placement"></script>
-<script src="lib/primes.js?v=20260923placement"></script>
-<script src="lib/doublons.js?v=20260923placement"></script>
-<script src="config.js?v=20260923placement"></script>
-<script src="activite-de-la-cliente.js?v=20260923placement"></script>
-<script src="activite-ecran.js?v=20260923placement"></script>
-<script src="mes-boutiques.js?v=20260923placement"></script>
-<script src="etiquettes-et-scan.js?v=20260923placement"></script>
-<script src="import-de-colis.js?v=20260923placement"></script>
-<script src="biometric-lock.js?v=20260923placement"></script>
-<script src="clt-select-recherche.js?v=20260923placement"></script>
+<script src="clt-common.js?v=20260924traces"></script>
+<script src="numero-international.js?v=20260924traces"></script>
+<script src="voir-un-compte.js?v=20260924traces"></script>
+<script src="lib/bibliotheques.js?v=20260924traces"></script>
+<script src="lib/retours.js?v=20260924traces"></script>
+<script src="lib/reclamations.js?v=20260924traces"></script>
+<script src="lib/communes-et-tarifs.js?v=20260924traces"></script>
+<script src="lib/argent.js?v=20260924traces"></script>
+<script src="lib/releve-cliente.js?v=20260924traces"></script>
+<script src="lib/papier-a-en-tete.js?v=20260924traces"></script>
+<script src="lib/briques-argent.js?v=20260924traces"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260924traces"></script>
+<script src="lib/traces-de-report.js?v=20260924traces"></script>
+<script src="lib/annonce-de-remise.js?v=20260924traces"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260924traces"></script>
+<script src="lib/primes.js?v=20260924traces"></script>
+<script src="lib/doublons.js?v=20260924traces"></script>
+<script src="config.js?v=20260924traces"></script>
+<script src="activite-de-la-cliente.js?v=20260924traces"></script>
+<script src="activite-ecran.js?v=20260924traces"></script>
+<script src="mes-boutiques.js?v=20260924traces"></script>
+<script src="etiquettes-et-scan.js?v=20260924traces"></script>
+<script src="import-de-colis.js?v=20260924traces"></script>
+<script src="biometric-lock.js?v=20260924traces"></script>
+<script src="clt-select-recherche.js?v=20260924traces"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3951,6 +3952,19 @@
     filtreDate = todayLocalISODate();
     { const fd = document.getElementById('filtre-date-colis'); if (fd) fd.value = filtreDate; }
     const prechargement = (async () => { await loadLivreurs(); await Promise.all([loadColis(), loadReleve()]); })();
+    /* La notification (ou la cloche) mène au colis (24/09/2026) : ?colis=<id> ouvre « Mes colis »,
+       surligne la carte ; si elle n'est pas dans la journée du jour, on montre toutes les dates. */
+    if (new URLSearchParams(location.search).get('colis') && typeof cltFocusColisFromUrl === 'function') {
+      showFournisseurTab('section-colis');
+      cltFocusColisFromUrl({ onMiss: () => {
+        if (!filtreDate && !searchColis) return;
+        filtreDate = ''; searchColis = '';
+        const fd = document.getElementById('filtre-date-colis'); if (fd) fd.value = '';
+        const ch = document.getElementById('search-colis'); if (ch) ch.value = '';
+        remettreTrancheColisAZero(); renderColisList();
+        cltToast('Ce colis n\'est pas dans la journée du jour : la liste montre toutes les dates.', { type: 'info' });
+      } });
+    }
     if (window.CLTBioLock && !onRegarde) { try { await CLTBioLock.guard(currentUser); } catch (e) {} }
     // Proposer l'activation une seule fois (après le splash), si l'appareil est compatible et non déjà activé.
     setTimeout(function () { if (window.CLTBioLock && !onRegarde) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);

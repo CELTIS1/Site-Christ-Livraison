@@ -38,6 +38,9 @@ verifier('une liste vide ne casse rien', R.grouperParJour([]).length === 0 && R.
 
 console.log('\n3. Où mène une notification');
 verifier('un paramètre « colis=… » se colle à la page du LECTEUR', R.lien({ param: 'colis=abc-123' }, 'livreur.html') === 'livreur.html?colis=abc-123');
+verifier('depuis Gestion, un colis s\'ouvre sur l\'écran Équipe (Gestion n\'a pas de liste de colis)', R.lien({ param: 'colis=abc-123' }, 'gestion.html') === 'equipe.html?colis=abc-123');
+verifier('une course s\'ouvre sur l\'écran Express du lecteur, et nulle part ailleurs', R.lien({ param: 'course=c-1' }, 'express-coursier.html') === 'express-coursier.html?course=c-1' && R.lien({ param: 'course=c-1' }, 'equipe.html') === null);
+verifier('une demande de passage s\'ouvre sur l\'écran Équipe', R.lien({ param: 'passage=p-1' }, 'gestion.html') === 'equipe.html?passage=p-1');
 verifier('une adresse complète de l’app est prise telle quelle', R.lien({ url: '/app/gestion.html?bilan=semaine' }, 'equipe.html') === '/app/gestion.html?bilan=semaine');
 verifier('une adresse hors de l’app est refusée', R.lien({ url: 'https://exemple.invalid/x' }, 'equipe.html') === null);
 verifier('un paramètre bricolé est refusé', R.lien({ param: 'colis=1&x=<script>' }, 'equipe.html') === null);

@@ -265,14 +265,38 @@ function financeLignes(colis, options) {
     const k = cleDe(c);
     (groupes[k] = groupes[k] || []).push(c);
   });
+  /* LES TRACES (24/09/2026, lib/traces-de-report.js) : les colis qui ont QUITTÉ cette journée
+     (reportés ailleurs, ou remis à leur journée d'origine). Ils ne comptent dans aucun total —
+     ils n'ont pas été traités ce jour-là — mais ils restent sous les yeux, grisés, avec la
+     mention. Une cliente qui n'a que des traces ce jour-là a quand même sa ligne. */
+  const traces = Array.isArray(o.traces) ? o.traces : [];
+  const tracesPar = {};
+  traces.forEach(tr => { const k = cleDe(tr.colis); (tracesPar[k] = tracesPar[k] || []).push(tr); });
+  Object.keys(tracesPar).forEach(k => { if (!groupes[k]) groupes[k] = []; });
   const lignes = Object.keys(groupes).map(k => ({
     cle: k,
     nom: nomDe(k),
     colis: groupes[k],
+    traces: tracesPar[k] || [],
     t: totauxArgent(groupes[k]),
   })).sort((a, b) => b.t.totalEncaisse - a.t.totalEncaisse);
 
-  return { t, lignes, colonneGare: t.fraisExpedition > 0 };
+  return { t, lignes, traces, colonneGare: t.fraisExpedition > 0 };
+}
+
+/* La ligne grisée d'un colis qui a quitté la journée : le numéro, la destination, la mention. */
+function financeTraceHTML(tr) {
+  const c = tr.colis || {};
+  return `
+        <div class="finance-colis finance-colis--trace" data-colis="${echapperAttribut(c.id || '')}">
+          <div class="finance-colis-tete">
+            <div class="finance-colis-titre">
+              ${c.numero ? `<span class="finance-colis-num">${escapeHTML(c.numero)}</span>` : ''}
+              <span>${colisDestinationHTML(c)}</span>
+            </div>
+            <div class="finance-colis-badges"><span class="badge badge-trace">⏭️ ${escapeHTML(traceTexte(tr))}</span></div>
+          </div>
+        </div>`;
 }
 
 function financeTableauHTML(colis, options) {
@@ -281,8 +305,9 @@ function financeTableauHTML(colis, options) {
   const depliees = o.depliees || new Set();
   const titreGroupe = o.titreGroupe || 'Cliente';
 
-  const { t, lignes, colonneGare } = financeLignes(colis, o);
+  const { t, lignes, traces, colonneGare } = financeLignes(colis, o);
   const nbColonnes = colonneGare ? 6 : 5;
+  const phraseTraces = tracesPhraseDuJour(t.nb, traces);
 
   // Un groupe qui n'a plus de colis ne doit pas rester « déplié » en mémoire.
   const clesPresentes = new Set(lignes.map(l => l.cle));
@@ -294,19 +319,20 @@ function financeTableauHTML(colis, options) {
     return `
       <tr class="finance-ligne${ouverte ? ' ouverte' : ''}" data-cliente="${cle}" role="button" tabindex="0" aria-expanded="${ouverte ? 'true' : 'false'}">
         <td data-label="${echapperAttribut(titreGroupe)}"><span class="finance-cliente"><span class="finance-chevron" aria-hidden="true">${ouverte ? '▾' : '▸'}</span>${l.nom}</span></td>
-        <td data-label="Livrés">${l.t.nbLivres} / ${l.t.nb}</td>
+        <td data-label="Livrés">${l.t.nbLivres} / ${l.t.nb}${l.traces && l.traces.length ? ` <span class="finance-trace-nb" title="${echapperAttribut(l.traces.map(traceTexte).join(' ; '))}">+${l.traces.length} ⏭️</span>` : ''}</td>
         <td data-label="Articles">${l.t.articleEncaisse ? m(l.t.articleEncaisse) : '<span style="color:#6b7686;">—</span>'}</td>
         <td data-label="Livraison">${l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '<span style="color:#6b7686;">—</span>'}</td>
         ${colonneGare ? `<td data-label="Gare">${l.t.fraisExpedition ? `<span style="color:${COULEUR_NEGATIF_CLT}; font-weight:700;">−${m(l.t.fraisExpedition)}</span>` : '<span style="color:#6b7686;">—</span>'}</td>` : ''}
         <td data-label="Total"><strong>${l.t.totalEnMain ? m(l.t.totalEnMain) : '—'}</strong></td>
       </tr>
       <tr class="finance-detail-ligne${ouverte ? '' : ' hidden'}" data-detail="${cle}">
-        <td class="finance-detail-cell" colspan="${nbColonnes}">${financeColisHTML(l.colis, o.actionsHTML)}</td>
+        <td class="finance-detail-cell" colspan="${nbColonnes}">${l.colis.length ? financeColisHTML(l.colis, o.actionsHTML) : ''}${(l.traces || []).map(financeTraceHTML).join('')}</td>
       </tr>`;
   }).join('');
 
   return `
       <div class="recap-table-wrap"${o.id ? ` id="${echapperAttribut(o.id)}"` : ''}>
+        ${phraseTraces ? `<div class="finance-traces-phrase">⏭️ ${escapeHTML(phraseTraces)}</div>` : ''}
         <table class="recap-table recap-table-cards argent-jour-table">
           <thead><tr><th>${escapeHTML(titreGroupe)}</th><th>Livrés</th><th>Articles</th><th>Livraison</th>${colonneGare ? '<th>Gare</th>' : ''}<th>Total</th></tr></thead>
           <tbody>${corpsLignes}</tbody>
@@ -349,10 +375,22 @@ function financeTableauHTML(colis, options) {
 // `avecObservations` dit si, sur la journée entière, au moins un colis porte une observation :
 // la colonne « Observation » — toujours la dernière, comme sur l'écran du livreur — reçoit alors
 // une bonne part de la largeur ; sinon elle reste discrète et la description du colis respire.
-function pointColisTableauCLT(colis, colonneGare, avecObservations) {
+function pointColisTableauCLT(colis, colonneGare, avecObservations, traces) {
   const m = n => formatMontant(n) || '0 FCFA';
   const tete = ['Colis', 'Statut', 'Article', 'Livraison'].concat(colonneGare ? ['Gare'] : []).concat(['En main', 'Observation']);
   const derniere = tete.length - 1;
+  /* Les colis qui ont quitté la journée (24/09/2026) : une ligne grisée en fin de tableau, la
+     mention dans « Statut », des tirets partout ailleurs — rien à encaisser ce jour-là. */
+  const GRIS = { textColor: [130, 138, 150], fontStyle: 'italic' };
+  const rangeesTraces = (traces || []).map(tr => {
+    const c = tr.colis || {};
+    return [
+      { content: [c.numero, colisDestinationTexte(c), colisDescriptionTexte(c)].filter(Boolean).join(' · ') || '—', styles: GRIS },
+      { content: traceTexte(tr), styles: GRIS },
+      { content: '—', styles: GRIS }, { content: '—', styles: GRIS },
+    ].concat(colonneGare ? [{ content: '—', styles: GRIS }] : [])
+     .concat([{ content: '—', styles: GRIS }, { content: '—', styles: GRIS }]);
+  });
   const corps = financeColisOrdonnes(colis).map(c => {
     const quoi = colisDescriptionTexte(c);
     const enMain = montantEnMainDuLivreur(c);
@@ -372,7 +410,7 @@ function pointColisTableauCLT(colis, colonneGare, avecObservations) {
     colonnesRestantes: restantes,
     styles: { fontSize: 7.6, cellPadding: 1.5 },
     head: [tete],
-    body: corps.length ? corps : [[{ content: 'Aucun colis.', colSpan: tete.length }]],
+    body: (corps.length || rangeesTraces.length) ? corps.concat(rangeesTraces) : [[{ content: 'Aucun colis.', colSpan: tete.length }]],
     // Tous les montants à droite, milliers sous milliers : c'est ce qui permet de vérifier une
     // addition à l'œil sans la refaire. Les déclarer colonnes d'argent leur donne en plus une
     // largeur mesurée sur les montants réellement présents, ce qui rend la place gagnée à la
@@ -391,7 +429,8 @@ function pointColisTableauCLT(colis, colonneGare, avecObservations) {
 function pointDuLivreurPlan(colis, options) {
   const o = options || {};
   const m = n => formatMontant(n) || '0 FCFA';
-  const { t, lignes, colonneGare } = financeLignes(colis, o);
+  const { t, lignes, traces, colonneGare } = financeLignes(colis, o);
+  const phraseTraces = tracesPhraseDuJour(t.nb, traces);
 
   const tete = ['Cliente', 'Livrés', 'Articles', 'Livraison'].concat(colonneGare ? ['Gare'] : []).concat(['Total']);
   const resume = {
@@ -399,7 +438,7 @@ function pointDuLivreurPlan(colis, options) {
     head: [tete],
     body: lignes.map(l => [
       l.nom,
-      l.t.nbLivres + ' / ' + l.t.nb,
+      l.t.nbLivres + ' / ' + l.t.nb + (l.traces && l.traces.length ? ' (+' + l.traces.length + ' reporté' + (l.traces.length > 1 ? 's' : '') + ')' : ''),
       l.t.articleEncaisse ? m(l.t.articleEncaisse) : '—',
       l.t.livraisonEncaissee ? m(l.t.livraisonEncaissee) : '—',
     ].concat(colonneGare ? [l.t.fraisExpedition ? '−' + m(l.t.fraisExpedition) : '—'] : [])
@@ -424,14 +463,15 @@ function pointDuLivreurPlan(colis, options) {
   // d'argent sont donc mesurées UNE FOIS sur les colis de toute la journée, et les mêmes largeurs
   // servent à tous les tableaux.
   const avecObservations = aDesObservations(colis);
-  const tableaux = lignes.map(l => pointColisTableauCLT(l.colis, colonneGare, avecObservations));
+  const tableaux = lignes.map(l => pointColisTableauCLT(l.colis, colonneGare, avecObservations, l.traces));
   const rangeesJour = tableaux.reduce((acc, tb) => acc.concat(tb.body), []);
   tableaux.forEach(tb => { tb.colonnesArgentRangees = [].concat(tb.head, rangeesJour); });
 
-  const sections = [{ tableau: resume }];
+  // La phrase des traces coiffe le tableau des clientes : « 16 colis reçus · 2 reportés · 14 traités ce jour ».
+  const sections = [{ tableau: resume, titre: phraseTraces || undefined }];
   lignes.forEach((l, i) => {
     sections.push({
-      titre: `${l.nom}  —  ${l.t.nbLivres} / ${l.t.nb} livré(s)  ·  en main ${m(l.t.totalEnMain)}`,
+      titre: `${l.nom}  —  ${l.t.nbLivres} / ${l.t.nb} livré(s)${l.traces && l.traces.length ? `  ·  ${l.traces.length} reporté(s)` : ''}  ·  en main ${m(l.t.totalEnMain)}`,
       tableau: tableaux[i],
     });
   });
@@ -441,16 +481,18 @@ function pointDuLivreurPlan(colis, options) {
     sousTitre: o.nomLivreur || '',
     mention: o.dateLabel || '',
     sections,
-    apres: [
+    apres: (phraseTraces ? [{ texte: 'Les colis reportés ou remis à leur journée d’origine figurent en gris sous leur cliente, avec la mention : ils ont été reçus ce jour-là mais n’ont rien à encaisser ce jour-là. Ils comptent dans la journée où ils sont traités.', taille: 8, couleur: [110, 118, 134] }] : []).concat([
       { texte: 'Somme qui doit rester en main : ' + m(t.totalEnMain), taille: 11.5, gras: true, couleur: [26, 125, 60] },
       { texte: "Ce point reprend la journée telle qu'elle est enregistrée au moment de l'édition. "
              + "Il ne remplace pas la remise à la caisse : c'est la caisse qui arrête le compte.", taille: 8, avant: 7 },
-    ],
+    ]),
     // Le nom du fichier porte la date : deux points de deux journées différentes ne doivent pas
     // se recouvrir dans le dossier de téléchargement du téléphone.
     nomFichier: nomFichierCLT('point', o.nomLivreur, o.dateISO) + '.pdf',
     totalEnMain: t.totalEnMain,
     nbColis: t.nb,
+    nbTraces: traces.length,
+    phraseTraces,
   };
 }
 

@@ -176,6 +176,8 @@ vm.runInContext([
   'financeColisHTML',
   'financeLignes',
   'financeTableauHTML',
+  // 24/09/2026 : les traces de report (lib/traces-de-report.js) que le tableau dessine en gris.
+  'tracesDeReportDuColis', 'tracesDuJour', 'traceJourCourt', 'traceTexte', 'tracesPhraseDuJour', 'financeTraceHTML',
   'argentClienteLigneHTML',
   'releveClienteTuilesHTML',
   // 17/09/2026, point 9.4 : tourneeTuilesHTML ne fait plus que déléguer au découpage du

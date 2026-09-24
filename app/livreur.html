@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260923placement">
+<link rel="stylesheet" href="style.css?v=20260924traces">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260923placement"></script>
+<script src="theme.js?v=20260924traces"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260923placement" defer></script>
-<script src="cloche.js?v=20260923placement" defer></script>
-<script src="splash.js?v=20260923placement"></script>
+<script src="notifications-recues.js?v=20260924traces" defer></script>
+<script src="cloche.js?v=20260924traces" defer></script>
+<script src="splash.js?v=20260924traces"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -1055,28 +1055,29 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260923placement"></script>
-<script src="numero-international.js?v=20260923placement"></script>
-<script src="voir-un-compte.js?v=20260923placement"></script>
-<script src="lib/bibliotheques.js?v=20260923placement"></script>
-<script src="lib/retours.js?v=20260923placement"></script>
-<script src="lib/reclamations.js?v=20260923placement"></script>
-<script src="lib/communes-et-tarifs.js?v=20260923placement"></script>
-<script src="lib/argent.js?v=20260923placement"></script>
-<script src="lib/releve-cliente.js?v=20260923placement"></script>
-<script src="lib/papier-a-en-tete.js?v=20260923placement"></script>
-<script src="lib/briques-argent.js?v=20260923placement"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260923placement"></script>
-<script src="lib/annonce-de-remise.js?v=20260923placement"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260923placement"></script>
-<script src="lib/primes.js?v=20260923placement"></script>
-<script src="lib/doublons.js?v=20260923placement"></script>
-<script src="config.js?v=20260923placement"></script>
-<script src="avance-de-travail.js?v=20260923placement"></script>
-<script src="etiquettes-et-scan.js?v=20260923placement"></script>
+<script src="clt-common.js?v=20260924traces"></script>
+<script src="numero-international.js?v=20260924traces"></script>
+<script src="voir-un-compte.js?v=20260924traces"></script>
+<script src="lib/bibliotheques.js?v=20260924traces"></script>
+<script src="lib/retours.js?v=20260924traces"></script>
+<script src="lib/reclamations.js?v=20260924traces"></script>
+<script src="lib/communes-et-tarifs.js?v=20260924traces"></script>
+<script src="lib/argent.js?v=20260924traces"></script>
+<script src="lib/releve-cliente.js?v=20260924traces"></script>
+<script src="lib/papier-a-en-tete.js?v=20260924traces"></script>
+<script src="lib/briques-argent.js?v=20260924traces"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260924traces"></script>
+<script src="lib/traces-de-report.js?v=20260924traces"></script>
+<script src="lib/annonce-de-remise.js?v=20260924traces"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260924traces"></script>
+<script src="lib/primes.js?v=20260924traces"></script>
+<script src="lib/doublons.js?v=20260924traces"></script>
+<script src="config.js?v=20260924traces"></script>
+<script src="avance-de-travail.js?v=20260924traces"></script>
+<script src="etiquettes-et-scan.js?v=20260924traces"></script>
 <!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
-<script src="ordre-de-livraison.js?v=20260923placement"></script>
-<script src="biometric-lock.js?v=20260923placement"></script>
+<script src="ordre-de-livraison.js?v=20260924traces"></script>
+<script src="biometric-lock.js?v=20260924traces"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -4005,6 +4006,13 @@
     if (!currentUser) return [];
     return allColis.filter(c => c.livreur_id === currentUser.id && jourDuColis(c) === jour);
   }
+  /* Les colis qui ont QUITTÉ cette journée (24/09/2026, Celtis : « il faut que ça laisse des
+     traces ») : reportés ailleurs, ou remis à leur journée d'origine. Ils ne comptent pas dans
+     l'argent de la journée, mais le point les montre, grisés, avec la mention. */
+  function tracesDeLaJournee(jour){
+    if (!currentUser || typeof tracesDuJour !== 'function') return [];
+    return tracesDuJour(allColis, jour, { livreurId: currentUser.id });
+  }
 
   function renderArgentDuJour(){
     const box = document.getElementById('argent-jour-corps');
@@ -4015,7 +4023,8 @@
     if (input && input.value !== jour) input.value = jour;
 
     const duJour = colisDeLaJournee(jour);
-    if (!duJour.length){
+    const traces = tracesDeLaJournee(jour);
+    if (!duJour.length && !traces.length){
       cltPoserHTML(box, `<div style="font-size:13px; color:#6b7686;">Aucun colis reçu ce jour-là.</div>`);
       if (detail){
         // L'empreinte porte sur l'état du bouton « Charger plus », qui est ajouté APRÈS coup et
@@ -4039,7 +4048,7 @@
       <div class="journee-tuiles journee-tuiles-argent">${argentTuilesHTML(t)}</div>
       <details class="journee-detail"><summary>Ce que ça veut dire</summary>${argentResumeHTML(t, 'livreur')}</details>`);
 
-    renderFinanceDetail(duJour, t, jour);
+    renderFinanceDetail(duJour, t, jour, traces);
   }
 
   // ---- Ce que je porte pour CLT, toutes journées confondues ------------------------------
@@ -4298,7 +4307,7 @@
   // le détail qu'on est en train de lire se refermerait tout seul sous les yeux du livreur.
   const financeDepliees = new Set();
 
-  function renderFinanceDetail(duJour, t, jour){
+  function renderFinanceDetail(duJour, t, jour, traces){
     const detail = document.getElementById('finance-detail');
     if (!detail) return;
 
@@ -4316,6 +4325,7 @@
       cleDe: c => c.fournisseur_id || 'inconnu',
       nomDe: fournisseurLabel,
       depliees: financeDepliees,
+      traces: traces || [],
     });
     if (!cltPoserHTML(detail, html, (colisHasMore ? '1' : '0') + ':' + (colisLoadingMore ? '1' : '0'))) return;
     appendColisLoadMore(detail);
@@ -4433,7 +4443,8 @@
       if (bouton.disabled) return;
       const jour = argentJourDate || todayLocalISODate();
       const duJour = colisDeLaJournee(jour);
-      if (!duJour.length){
+      const traces = tracesDeLaJournee(jour);
+      if (!duJour.length && !traces.length){
         dire('Aucun colis le ' + jourEnClair(jour) + " : il n'y a rien à éditer.", true);
         return;
       }
@@ -4451,10 +4462,11 @@
           dateISO: jour,
           nomDe: fournisseurNom,
           cleDe: c => c.fournisseur_id || 'inconnu',
+          traces,
         });
         const doc = await documentCLT(plan);
         doc.save(plan.nomFichier);
-        dire(plan.nbColis + ' colis · en main ' + (formatMontant(plan.totalEnMain) || '0 FCFA'));
+        dire(plan.nbColis + ' colis' + (plan.nbTraces ? ' · ' + plan.nbTraces + ' reporté' + (plan.nbTraces > 1 ? 's' : '') : '') + ' · en main ' + (formatMontant(plan.totalEnMain) || '0 FCFA'));
       } catch (e) {
         console.error(e);
         dire("Le document n'a pas pu être produit.", true);

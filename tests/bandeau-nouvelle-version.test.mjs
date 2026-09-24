@@ -1331,10 +1331,22 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    (le titre garde toujours sa ligne avec les deux ronds, même à 320 px) ; sur ordinateur entre
    l'identité et les boutons. Les lues repliées sous « déjà lues » ; ménage 30 j lues / 90 j
    non-lues (fonction mise à jour en base). Le bouton 🔄 retiré des trois pages qui l'avaient.
-   Étiquette 20260923placement. */
+   Étiquette 20260923placement.
+   v241, le 24/09/2026 — LES TRACES DE REPORT. Celtis : « hier il a reporté deux colis au lendemain ;
+   dans son point, les deux n'y figurent pas. Il faut que ça laisse des traces. » Constaté sur
+   CLT-260922-02029 : reporté, puis « remis à sa journée » par le bureau — plus aucune trace. La base
+   tient colis.historique_reports (déclencheur, l'écran n'y écrit pas) ; le point du livreur (écran,
+   PDF, fiche du bureau) montre en gris les colis qui ont quitté la journée, « Reporté au 24/09 » ou
+   « Report annulé · remis au 22/09 », et dit « 16 colis reçus · 2 reportés · 14 traités ce jour ».
+   Le relevé de la cliente dit l'issue au bon temps : « Livré le 24/09 » au lieu de « Livré ·
+   reporté au 24/09 ». Règle lib/traces-de-report.js, banc les-traces-de-report. Même paquet : la
+   cloche MÈNE à l'objet (Celtis : « quand je clique, ça ne m'envoie nulle part ») — un colis
+   s'ouvre sur l'écran du rôle (Gestion → Équipe), une course sur l'écran Express ; la page de la
+   cliente et les deux pages Express savent désormais ouvrir « ?colis= » / « ?course= » (onglet,
+   défilement, surlignage jusqu'au toucher, toutes dates si besoin). Étiquette 20260924traces. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v240'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v241'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

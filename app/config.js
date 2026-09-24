@@ -1363,7 +1363,9 @@ function dayLabel(iso) {
    lendemain » ; 22/09 : « reporté, il disparaît du point de la vendeuse »), la mesure qui a
    tranché, et la liste nommée des écrans de chaque famille sont dans le banc
    tests/le-report-ne-perd-plus-le-colis.test.mjs. Avant d'ajouter un écran, demandez-vous s'il
-   rend des comptes ou s'il distribue du travail. */
+   rend des comptes ou s'il distribue du travail.
+   Les TRACES d'un report (24/09/2026) — ce qui a quitté une journée — sont dans app/lib/traces-de-report.js
+   (colonne colis.historique_reports, tenue par la base). */
 function jourDeReceptionColis(c) {
   return c && c.created_at ? dayKey(c.created_at) : "";
 }

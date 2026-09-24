@@ -55,6 +55,20 @@ function jourCourtFR(iso) {
   return j.length === 3 ? j[2] + '/' + j[1] : String(iso || '');
 }
 
+/* Le complément de la colonne « Statut » : « · reporté au 24/09 » tant que le colis attend, « le 24/09 »
+   quand l'issue (livré, non livré, retour) est tombée un autre jour que celui de la remise. Rien
+   quand tout s'est passé le jour même. */
+function releveMentionDeJour(c) {
+  if (!c) return '';
+  const recu = jourDeReceptionColis(c);
+  const issue = { livre: c.livre_at, non_livre: c.non_livre_at, retour: c.retour_at }[c.statut];
+  if (issue) {
+    const j = dayKey(issue);
+    return (j && recu && j !== recu) ? ' le ' + jourCourtFR(j) : '';
+  }
+  return colisReporte(c) ? ' \u00b7 report\u00e9 au ' + jourCourtFR(jourDuColis(c)) : '';
+}
+
 // Construit le relevé d'une liste de colis : les lignes et les totaux, en données brutes.
 // Aucune mise en forme ici — chaque sortie habille ces mêmes nombres à sa façon.
 function releveCliente(colis) {
@@ -72,7 +86,12 @@ function releveCliente(colis) {
        pas livré, sans quoi on aurait simplement déplacé la question. La mention est posée DANS
        la colonne « Statut », et non à côté, pour que les quatre sorties (écran, WhatsApp, Excel,
        PDF) la portent sans qu'aucune ait à y penser. */
-    statut:      statutTexte(c && c.statut, c) + (colisReporte(c) ? ' \u00b7 report\u00e9 au ' + jourCourtFR(jourDuColis(c)) : ''),
+    /* ET IL LE DIT AU BON TEMPS. (24/09/2026, Celtis : « dans le point des vendeuses, on voit en même
+       temps reporté et livré le même jour, c'est bizarre. ») Tant que le colis attend, la ligne dit
+       « En attente · reporté au 24/09 » — c'est l'explication. Une fois livré (ou non livré,
+       revenu), elle dit ce qui s'est passé et QUAND, si ce n'est pas le jour où la cliente l'a
+       remis : « Livré le 24/09 ». Le report n'est plus une nouvelle, l'issue l'a remplacé. */
+    statut:      statutTexte(c && c.statut, c) + releveMentionDeJour(c),
     reporte:     colisReporte(c),
     reporteAu:   colisReporte(c) ? jourDuColis(c) : '',
     article:     Number(montantArticleColis(c)) || 0,

@@ -13,7 +13,7 @@
 
    Lancer à la main :  node tests/parcours/la-cloche.mjs */
 import { ouvrirNavigateur, verifier, titre, dodo, bilan } from './_navigateur.mjs';
-import { nouveauMonde, iso, ADMIN, LIVREUR, CLIENTE1 } from './_monde.mjs';
+import { nouveauMonde, iso, ADMIN, LIVREUR, CLIENTE1, CLIENT_EXPRESS } from './_monde.mjs';
 
 const monde = nouveauMonde();
 const COLIS3 = 'cccccccc-cccc-4ccc-8ccc-000000000003';
@@ -102,6 +102,24 @@ await page.goto(N.base + '/app/manifest-login.json', { waitUntil: 'domcontentloa
 await page.evaluate((u) => { sessionStorage.clear(); localStorage.removeItem('clt-faux-session'); const user = { id: u.id, phone: u.phone, user_metadata: { full_name: 'Le Gérant' } }; sessionStorage.setItem('clt-faux-session', JSON.stringify({ access_token: 'jeton.' + btoa(unescape(encodeURIComponent(JSON.stringify(user)))), refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user })); }, { id: ADMIN, phone: '2250700000009' });
 await page.goto(N.base + '/app/livreur.html?voir=' + LIVREUR, { waitUntil: 'load' }).catch(() => {}); await dodo(2500);
 verifier('l\'administrateur qui regarde l\'écran d\'un livreur n\'y voit pas SA cloche', await page.locator('.clt-cloche').count() === 0);
+
+titre('6. Un appui mène AU colis — chez la cliente aussi, même sur un colis d\'un autre jour (24/09)');
+await page.setViewportSize({ width: 390, height: 844 });
+const COLIS6 = 'cccccccc-cccc-4ccc-8ccc-000000000005';   // reçu hier, non livré : pas dans « aujourd'hui »
+monde.TABLES.notifications.push({ id: 9, user_id: CLIENTE1, titre: '⚠️ Échec de livraison', corps: 'Votre colis n°5 n’a pas pu être livré.', tag: 'colis-6', url: null, param: 'colis=' + COLIS6, cree_le: iso(0, 9), lu_le: null });
+await N.ouvrirConnecte('fournisseur.html', CLIENTE1); await dodo(1500);
+await page.locator('.clt-cloche').click(); await dodo(600);
+await page.locator('.notif-ligne[data-notif="9"]').click(); await dodo(3500);
+verifier('la page est revenue sur SON écran, onglet « Mes colis » ouvert', /fournisseur\.html/.test(page.url()) && !(await page.locator('#section-colis').evaluate((el) => el.classList.contains('hidden'))));
+verifier('la carte du colis est là, surlignée (la liste est passée sur toutes les dates)', await page.locator('.colis-item[data-id="' + COLIS6 + '"].colis-a-voir').count() === 1);
+
+titre('7. … et à la course, chez le client Express');
+monde.TABLES.express_courses = [{ id: 'eeeeeeee-1111-4eee-8eee-eeeeeeeeeee1', client_id: CLIENT_EXPRESS, coursier_id: null, status: 'en_attente', pickup_commune: 'Cocody', pickup_adresse: 'Riviera 3', dropoff_commune: 'Marcory', dropoff_adresse: 'Zone 4', prix: 1500, distance_km: 6, created_at: iso(0, 8), updated_at: iso(0, 8), description: 'Documents', photo_colis_path: null, note_client: null, note_coursier: null, code_livraison: null }];
+monde.TABLES.notifications.push({ id: 10, user_id: CLIENT_EXPRESS, titre: '🚴 Course acceptée', corps: 'Votre course a été acceptée.', tag: 'course-1', url: null, param: 'course=eeeeeeee-1111-4eee-8eee-eeeeeeeeeee1', cree_le: iso(0, 9), lu_le: null });
+await N.ouvrirConnecte('express-client.html', CLIENT_EXPRESS); await dodo(1500);
+await page.locator('.clt-cloche').click(); await dodo(600);
+await page.locator('.notif-ligne[data-notif="10"]').click(); await dodo(3500);
+verifier('l\'onglet « Mes courses » s\'ouvre et la carte de la course est surlignée', !(await page.locator('#section-courses').evaluate((el) => el.classList.contains('hidden'))) && await page.locator('.course-item[data-id="eeeeeeee-1111-4eee-8eee-eeeeeeeeeee1"].colis-a-voir').count() === 1, await page.locator('#section-courses').innerText().catch(() => '').then((t) => t.slice(0, 200)));
 
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n'));
 await N.fermer();

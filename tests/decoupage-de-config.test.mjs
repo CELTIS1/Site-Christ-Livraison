@@ -42,6 +42,8 @@ const BLOCS = [
   // Point 9.4 (17/09/2026) : le mot et les statuts qu'il recouvre, écrits une seule fois pour
   // les trois écrans. Doit être chargé avant annonce-de-remise.js, qui n'a plus les tuiles.
   { fichier: 'lib/vocabulaire-de-la-journee.js', reperes: ['compterLeJour', 'tuilesDuJourHTML', 'tourneeTuilesHTML', 'resumeDuJourTexte'], constantes: ['GROUPES_DU_JOUR'] },
+  // 24/09/2026 : ce qui a quitté une journée (report, report annulé), lu dans colis.historique_reports.
+  { fichier: 'lib/traces-de-report.js', reperes: ['tracesDeReportDuColis', 'tracesDuJour', 'traceTexte', 'tracesPhraseDuJour'], constantes: [] },
   { fichier: 'lib/annonce-de-remise.js', reperes: [], constantes: [] },
   { fichier: 'lib/tournee-de-recuperation.js', reperes: ['lieuRecuperationPourNouveauColis'], constantes: [] },
   { fichier: 'lib/primes.js', reperes: ['calculerPrimesLivreur', 'projectionPrimesFinDeMois'], constantes: ['PRIMES_DEBUT', 'PRIMES_PARAMETRES_DEFAUT'] },

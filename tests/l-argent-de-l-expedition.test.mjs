@@ -139,7 +139,7 @@ vm.runInContext([
     'fraisSoldes', 'etatsPossibles', 'stepperHTML',
     'chezLeFournisseur', 'paiementInfo',
     'totauxArgent', 'libelleStatut', 'iconeStatut', 'statutTexte', 'colisDestinationTexte',
-    'dayKey', 'jourDuColis', 'colisReporte', 'jourCourtFR', 'releveCliente',
+    'dayKey', 'jourDuColis', 'jourDeReceptionColis', 'colisReporte', 'jourCourtFR', 'releveMentionDeJour', 'releveCliente',
     'releveTotalTextes', 'relevePhraseDue', 'releveRetenuesParColis', 'releveDetailRetenues',
   ].map(n => blocDe(sourceConfig, n, 'config.js')),
   // releveCliente cite RELEVE_COLONNES ; statutTexte cite STATUTS, absent hors navigateur.

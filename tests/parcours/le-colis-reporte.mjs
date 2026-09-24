@@ -37,11 +37,15 @@ const texteListe = async () => ((await liste.innerText().catch(() => '')) || '')
 
 titre("1. La journée d'aujourd'hui dit ce qui l'a quittée");
 await N.ouvrirConnecte('equipe.html', ADMIN);
+// La liste se dessine une première fois avant que le filtre « aujourd'hui » soit posé, puis une
+// seconde avec la ligne des reportés : on attend celle-ci (une fois sur trois, on lisait la première).
+await page.locator('#colis-list .eq-reportes').first().waitFor({ timeout: 8000 }).catch(() => {});
 verifier('la page est ouverte sans erreur', erreurs.length === 0, erreurs.join('\n       '));
 verifier("le filtre de date est bien sur aujourd'hui", (await page.locator('#filtre-date-colis').inputValue()) === aujourdhui);
 verifier("LE POINT QUI COMPTE : le colis reporté EST dans la liste de sa journée", (await carte().count()) === 1, await texteListe());
 verifier('sa carte le dit, et dit qu\'il compte toujours dans cette journée', /Reporté au/.test(await texteListe()) && /toujours compté dans cette journée-là/.test(await texteListe()), await texteListe());
-verifier('une ligne le résume au-dessus de la liste', (await ligne.count()) === 1, await texteListe());
+await ligne.first().waitFor({ timeout: 8000 }).catch(() => {});
+verifier('une ligne le résume au-dessus de la liste', (await ligne.count()) === 1, 'lignes : ' + (await ligne.count()) + ' · ' + (await texteListe()).slice(0, 80));
 const dit = ((await ligne.innerText().catch(() => '')) || '').replace(/\s+/g, ' ').trim();
 verifier('elle compte les colis reportés et dit qu\'ils RESTENT là', /1\s+colis de cette journée a été reporté/.test(dit) && /il reste dans cette liste/.test(dit), dit);
 verifier('elle propose d\'aller voir la journée de report', (await page.locator('#eq-voir-reportes').count()) === 1);
