@@ -36,7 +36,7 @@ function argentTuilesHTML(t) {
   const m = n => formatMontant(n) || '0 FCFA';
   return [
     { v: m(t.articleEncaisse),    l: 'Articles encaissés',   c: '#1B4374', bg: '#e5edf5' },
-    { v: m(t.livraisonEncaissee), l: 'Livraisons encaissées', c: '#E26313', bg: '#FBE2CE' },
+    { v: m(t.livraisonEncaissee), l: 'Livraisons encaissées', c: '#A84608', bg: '#FBE2CE' },
   ].concat(t.fraisExpedition > 0
     ? [{ v: '−' + m(t.fraisExpedition), l: 'Payé à la gare', c: COULEUR_NEGATIF_CLT, bg: FOND_NEGATIF_CLT }]
     : []
@@ -59,7 +59,7 @@ function argentResumeHTML(t, pourQui) {
   const garde = cotEquipe ? 'le reçu de la gare est sa seule preuve' : 'gardez le reçu de la gare';
 
   const phrase = `
-      <div style="margin-top:8px; font-size:12px; color:#64748b;">
+      <div style="margin-top:8px; font-size:12px; color:#5b6573;">
         ${t.nbLivres} colis livré${t.nbLivres > 1 ? 's' : ''} sur ${t.nb} reçu${t.nb > 1 ? 's' : ''} ce jour-là.
         Les articles (${m(t.articleEncaisse)}) appartiennent aux clientes : ${remet}.
       </div>`;
@@ -100,7 +100,7 @@ function caisseEnMainHTML(releve, options) {
 
   if (!o.complet) {
     return cadre('#e2e8f0', '#f8fafc', `
-        <div style="margin-top:6px; font-size:12px; color:#64748b;">
+        <div style="margin-top:6px; font-size:12px; color:#5b6573;">
           Le compte n'est pas encore possible : tout votre historique n'est pas chargé sur ce
           téléphone. Ouvrez l'onglet Finance et appuyez sur « Charger plus » jusqu'au bout.
           Mieux vaut pas de chiffre qu'un chiffre trop bas.
@@ -116,7 +116,7 @@ function caisseEnMainHTML(releve, options) {
   if (montant < 0) {
     return cadre('#cfe3d4', '#f2f9f4', `
         <div style="margin-top:4px; font-size:18px; font-weight:700; color:#1a7d3c;">CLT vous doit ${m(-montant)}</div>
-        <div style="margin-top:4px; font-size:12px; color:#64748b;">
+        <div style="margin-top:4px; font-size:12px; color:#5b6573;">
           Frais avancé${r.nbAvances > 1 ? 's' : ''} de votre poche et pas encore remboursé${r.nbAvances > 1 ? 's' : ''} : gardez les reçus.
         </div>`);
   }
@@ -124,7 +124,7 @@ function caisseEnMainHTML(releve, options) {
   if (!nb) {
     return cadre('#cfe3d4', '#f2f9f4', `
         <div style="margin-top:4px; font-size:15px; font-weight:700; color:#1a7d3c;">Rien à remettre ✓</div>
-        <div style="margin-top:4px; font-size:12px; color:#64748b;">
+        <div style="margin-top:4px; font-size:12px; color:#5b6573;">
           Tout l'argent encaissé jusqu'ici a été remis à CLT.
         </div>`);
   }
@@ -143,7 +143,7 @@ function caisseEnMainHTML(releve, options) {
 
   const retard = enRetard
     ? `<div style="margin-top:6px; font-size:12px; color:#c0392b; font-weight:600;">⚠️ Cet argent a passé la nuit dehors. Remettez-le à CLT et faites enregistrer la remise.</div>`
-    : `<div style="margin-top:6px; font-size:12px; color:#64748b;">À remettre à CLT en fin de tournée.</div>`;
+    : `<div style="margin-top:6px; font-size:12px; color:#5b6573;">À remettre à CLT en fin de tournée.</div>`;
 
   // On dit sur combien de colis l'âge est un minorant. Sans cette ligne, « au moins 10 jours »
   // ressemble à une précaution de style ; avec elle, on sait d'où vient l'incertitude.

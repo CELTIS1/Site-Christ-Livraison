@@ -19,18 +19,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924rester">
+<link rel="stylesheet" href="style.css?v=20260924livreur">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260924rester"></script>
+<script src="theme.js?v=20260924livreur"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260924rester" defer></script>
-<script src="cloche.js?v=20260924rester" defer></script>
-<script src="splash.js?v=20260924rester"></script>
+<script src="notifications-recues.js?v=20260924livreur" defer></script>
+<script src="cloche.js?v=20260924livreur" defer></script>
+<script src="splash.js?v=20260924livreur"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
      ============================================================ */
-  :root{ --clt-orange:#E26313; --clt-orange-dark:#c14f0a; --clt-accent:#EE6A17; }
+  /* --clt-orange-encre (24/09/2026) : l'orange de la marque, assombri, pour un texte ou un fond de
+     bouton avec du blanc dessus — contraste 4,7 au lieu de 3,5. Le grand orange reste pour les aplats. */
+  :root{ --clt-orange:#E26313; --clt-orange-dark:#BF5210; --clt-orange-encre:#BF5210; --clt-accent:#EE6A17; }
+  html[data-theme="dark"]{ --clt-orange-encre:#F58A45; }
   body{
     background:linear-gradient(180deg,#fff5ee 0%, #f5f7fa 260px, #f5f7fa 100%) !important;
   }
@@ -97,7 +100,8 @@
   .filter-chip--alerte.active{ color:#fff; }
   .filter-chip-nb{ display:inline-block; min-width:18px; padding:0 5px; border-radius:999px; background:#E26313; color:#fff; font-size:13px; font-weight:800; line-height:18px; text-align:center; }
   html[data-theme="dark"] .filter-chip--alerte{ color:#F0A868; }
-  .filter-chip.active{ background:var(--clt-orange) !important; border-color:var(--clt-orange) !important; color:#fff !important; }
+  .filter-chip.active{ background:var(--clt-orange-encre) !important; border-color:var(--clt-orange-encre) !important; color:#fff !important; }
+  html[data-theme="dark"] .filter-chip.active{ background:#BF5210 !important; border-color:#BF5210 !important; }
 
   /* ---- Frise d'étapes (stepper) sur chaque colis assigné ---- */
   .clt-stepper{ display:flex; align-items:flex-start; margin:2px 0 12px; width:100%; flex-basis:100%; order:-1; padding:4px 4px 10px; border-bottom:1px solid #f1f3f7; }
@@ -109,8 +113,9 @@
   }
   .clt-stepper .st.done .c{ background:#1a7d3c; color:#fff; }
   .clt-stepper .st.now  .c{ background:var(--clt-orange); color:#fff; box-shadow:0 0 0 4px rgba(226,99,19,.18); }
-  .clt-stepper .st .l{ font-size:13px; color:#6b7280; margin-top:5px; font-weight:500; line-height:1.2; }
-  .clt-stepper .st.now .l{ color:var(--clt-orange-dark); font-weight:700; }
+  .clt-stepper .st .l{ font-size:13px; color:#5b6573; margin-top:5px; font-weight:500; line-height:1.2; }
+  .clt-stepper .st.now .l{ color:#A84608; font-weight:700; }
+  html[data-theme="dark"] .clt-stepper .st.now .l{ color:#F58A45; }
   .clt-stepper .st::before{ content:''; position:absolute; top:12px; left:-50%; width:100%; height:3px; background:#e9edf3; z-index:1; }
   .clt-stepper .st:first-child::before{ display:none; }
   .clt-stepper .st.done::before, .clt-stepper .st.now::before{ background:#1a7d3c; }
@@ -137,7 +142,7 @@
       border-radius:14px; transition:color .15s, background .15s;
       -webkit-tap-highlight-color:transparent;
     }
-    .clt-bottomnav .nav.active{ color:var(--clt-orange); background:rgba(232,114,44,.12); }
+    .clt-bottomnav .nav.active{ color:var(--clt-orange-encre); background:rgba(232,114,44,.12); }
     .clt-bottomnav .nav svg{ width:23px; height:23px; }
     /* On réserve la hauteur de la barre + la safe-area pour que le contenu ne passe pas dessous. */
     body{ padding-bottom:calc(60px + env(safe-area-inset-bottom)); }
@@ -159,7 +164,7 @@
     transition:background .18s ease, color .18s ease, box-shadow .18s ease; -webkit-tap-highlight-color:transparent;
   }
   .clt-toptab:hover{ color:#E26313; }
-  .clt-toptab.active{ background:#fff; color:#E26313; box-shadow:0 4px 12px rgba(18,48,90,0.13); }
+  .clt-toptab.active{ background:#fff; color:var(--clt-orange-encre); box-shadow:0 4px 12px rgba(18,48,90,0.13); }
   /* L'ancienne barre d'onglets interne est remplacée par la barre segmentée du haut. */
   @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
 
@@ -392,7 +397,7 @@
   html[data-theme="dark"] .journee-reste{ color:#E9B27A; }
   html[data-theme="dark"] .journee-argent{ border-top-color:#2A3849; }
   .journee-entete{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
-  .journee-titre{ font-size:13px; color:#64748b; font-weight:600; }
+  .journee-titre{ font-size:13px; color:#5b6573; font-weight:600; }
   html[data-theme="dark"] .journee-titre{ color:#9DB0C4; }
   .journee-entete input[type="date"]{
     font-size:13px; padding:4px 6px; border:1px solid #e2e8f0; border-radius:8px !important; background:transparent;
@@ -421,6 +426,17 @@
   .search-wrap{ margin-bottom:10px !important; display:flex; gap:8px; align-items:center; }
   .search-wrap .search-input{ flex:1 1 auto; min-width:0; }
   .search-wrap .btn-mode-lot{ flex:0 0 auto; margin-left:0 !important; }
+  /* Petits téléphones (≤ 360 px, 24/09/2026 chantier N) : la recherche prend toute la ligne, le scan
+     et « Sélection » passent dessous ; la date et « Aujourd'hui » se replient au lieu de sortir. */
+  @media(max-width:360px){
+    .search-wrap{ flex-wrap:wrap; }
+    .search-wrap .search-input, .search-wrap > .clt-rech{ flex:1 1 100%; }
+    .search-wrap .btn-mode-lot{ flex:1 1 auto; }
+    body .date-filter-wrap{ flex-wrap:wrap !important; overflow:visible; }
+    body .date-filter-wrap .date-filter-clear{ flex:0 0 auto; white-space:nowrap; }
+    body .search-wrap::before{ top:22px; z-index:1; }   /* la loupe reste dans le champ (44 px), pas au milieu des deux lignes */
+    .topbar .brand{ font-size:13px; }
+  }
   /* Le champ de date natif prend toute la largeur qu'on lui laisse ; « 26/08/2026 » tient
      largement dans 132 px, et le reste de la ligne peut alors exister. */
   .date-filter-input{ max-width:142px; }
@@ -441,7 +457,7 @@
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .btn-point-pdf:disabled{ opacity:.55; cursor:default; }
-  .point-pdf-etat{ display:block; margin-top:6px; font-size:13px; color:#64748b; text-align:center; }
+  .point-pdf-etat{ display:block; margin-top:6px; font-size:13px; color:#5b6573; text-align:center; }
   .point-pdf-etat.erreur{ color:#b91c1c; }
   html[data-theme="dark"] .btn-point-pdf{ background:#2C63A8; }
   html[data-theme="dark"] .point-pdf-etat{ color:#9DB0C4; }
@@ -454,7 +470,8 @@
   .colis-tel-ligne{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:3px; }
   .colis-tel{ font-size:13.5px; font-weight:700; color:#1B4374; text-decoration:none; }
   /* Les boutons de la ligne d'appel viennent de style.css (.colis-tel-ligne .btn-appel), les mêmes qu'au bureau. */
-  .colis-suivi-num{ font-size:13px; color:#6b7686; font-weight:500; margin-left:6px; }
+  .colis-suivi-num{ font-size:13px; color:#5b6573; font-weight:500; margin-left:6px; }
+  html[data-theme="dark"] .colis-suivi-num{ color:#9AA6B6; }
   html[data-theme="dark"] .colis-tel{ color:#9EC0E6; }
 
   /* ---------- Pastille du nombre de récupérations (05/09/2026) ----------
@@ -499,7 +516,7 @@
   .clt-toptab, .clt-actualiser, .btn-mode-lot, .btn-reporter, .btn-retenter, .btn-livraison-payee,
   .btn-article-non-encaisse, .restes-en-route > summary, .date-filter-icone{ min-height:44px; }
   .filter-chip{ display:inline-flex; align-items:center; padding:10px 16px; font-size:13.5px; }
-  .date-filter-clear{ padding:10px 14px; font-size:13.5px; }
+  .date-filter-clear{ padding:10px 14px; font-size:13.5px; color:var(--clt-orange-encre); }
   .colis-tel-ligne .btn-appel, .colis-tel-ligne .btn-notify-wa{ min-height:44px; padding:8px 12px; font-size:13px; }
   .colis-item input[type="checkbox"], .lot-check{ width:24px; height:24px; }
   .montant-case input, .frais-exp-input, .obs-textarea, .report-date{ min-height:44px; font-size:15px; }
@@ -1055,29 +1072,29 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260924rester"></script>
-<script src="numero-international.js?v=20260924rester"></script>
-<script src="voir-un-compte.js?v=20260924rester"></script>
-<script src="lib/bibliotheques.js?v=20260924rester"></script>
-<script src="lib/retours.js?v=20260924rester"></script>
-<script src="lib/reclamations.js?v=20260924rester"></script>
-<script src="lib/communes-et-tarifs.js?v=20260924rester"></script>
-<script src="lib/argent.js?v=20260924rester"></script>
-<script src="lib/releve-cliente.js?v=20260924rester"></script>
-<script src="lib/papier-a-en-tete.js?v=20260924rester"></script>
-<script src="lib/briques-argent.js?v=20260924rester"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260924rester"></script>
-<script src="lib/traces-de-report.js?v=20260924rester"></script>
-<script src="lib/annonce-de-remise.js?v=20260924rester"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260924rester"></script>
-<script src="lib/primes.js?v=20260924rester"></script>
-<script src="lib/doublons.js?v=20260924rester"></script>
-<script src="config.js?v=20260924rester"></script>
-<script src="avance-de-travail.js?v=20260924rester"></script>
-<script src="etiquettes-et-scan.js?v=20260924rester"></script>
+<script src="clt-common.js?v=20260924livreur"></script>
+<script src="numero-international.js?v=20260924livreur"></script>
+<script src="voir-un-compte.js?v=20260924livreur"></script>
+<script src="lib/bibliotheques.js?v=20260924livreur"></script>
+<script src="lib/retours.js?v=20260924livreur"></script>
+<script src="lib/reclamations.js?v=20260924livreur"></script>
+<script src="lib/communes-et-tarifs.js?v=20260924livreur"></script>
+<script src="lib/argent.js?v=20260924livreur"></script>
+<script src="lib/releve-cliente.js?v=20260924livreur"></script>
+<script src="lib/papier-a-en-tete.js?v=20260924livreur"></script>
+<script src="lib/briques-argent.js?v=20260924livreur"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260924livreur"></script>
+<script src="lib/traces-de-report.js?v=20260924livreur"></script>
+<script src="lib/annonce-de-remise.js?v=20260924livreur"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260924livreur"></script>
+<script src="lib/primes.js?v=20260924livreur"></script>
+<script src="lib/doublons.js?v=20260924livreur"></script>
+<script src="config.js?v=20260924livreur"></script>
+<script src="avance-de-travail.js?v=20260924livreur"></script>
+<script src="etiquettes-et-scan.js?v=20260924livreur"></script>
 <!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
-<script src="ordre-de-livraison.js?v=20260924rester"></script>
-<script src="biometric-lock.js?v=20260924rester"></script>
+<script src="ordre-de-livraison.js?v=20260924livreur"></script>
+<script src="biometric-lock.js?v=20260924livreur"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;

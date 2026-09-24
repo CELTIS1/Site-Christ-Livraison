@@ -1368,10 +1368,16 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    redessinées), l'objet glissait. cltGarderEnVue (clt-common.js) retient l'objet — par sélecteur,
    donc même après un redessin — pendant 8 s, et rend la main dès que la personne fait défiler ;
    cltCalerEnHaut ouvre un point calé sur son début ; « ← Clientes » ramène sur la carte. Parcours
-   arriver-et-rester (11, ancrage coupé, liste redessinée, contrôle du contrôle). Étiquette 20260924rester. */
+   arriver-et-rester (11, ancrage coupé, liste redessinée, contrôle du contrôle). Étiquette 20260924rester.
+   v245, le 24/09/2026 — ESPACE LIVREUR AU CRIBLE (chantier N, lot 3). Lampe _audit-espace.mjs :
+   4 largeurs × clair/nuit × 6 écrans, mesure débordement, cibles < 44 px, contraste < 4,5, erreurs
+   JS. Trouvé et corrigé : statuts (config.js STATUTS) et orange « encre » #BF5210 pour tout texte ou
+   fond avec du blanc dessus (3,5 → 4,7) ; tournée (ambre #b45309, vert #167a42) ; briques d'argent
+   et tuiles la nuit ; « Tout marquer lu » 44 px ; à 320 px, recherche + scan + Sélection et date +
+   « Aujourd'hui » se replient au lieu de sortir. Étiquette 20260924livreur. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v244'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v245'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

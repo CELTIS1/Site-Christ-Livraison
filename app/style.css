@@ -141,7 +141,7 @@ input,textarea,select{font-family:inherit;}
 /* ---------- AVATAR / PHOTO DE PROFIL ---------- */
 .avatar{border-radius:50%; object-fit:cover; flex-shrink:0; background:var(--grey-bg);}
 .avatar-placeholder{
-  display:flex; align-items:center; justify-content:center; background:var(--orange); color:var(--white);
+  display:flex; align-items:center; justify-content:center; background:#BF5210; color:var(--white);   /* orange « encre » : initiales lisibles (4,7) — 24/09/2026 */
   font-weight:700; letter-spacing:.3px; font-family:'Inter', Arial, sans-serif;
 }
 .topbar .user-info .avatar, .topbar .user-info .avatar-placeholder{border:2px solid rgba(255,255,255,0.35);}
@@ -796,7 +796,7 @@ html[data-theme="dark"] .montant-absent{ color:#ff9d93; }
 /* ---------- SEARCH ---------- */
 .search-wrap{position:relative; margin-bottom:18px;}
 .search-wrap::before{
-  content:""; position:absolute; left:15px; top:50%; width:15px; height:15px; transform:translateY(-50%);
+  content:""; position:absolute; left:15px; top:50%; width:15px; height:15px; transform:translateY(-50%); z-index:1;
   background:var(--muted);
   -webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>') center/contain no-repeat;
   mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>') center/contain no-repeat;
@@ -2004,8 +2004,8 @@ html[data-theme="dark"] div[style*="color:#6b7280"]{ color:#9DB0C4 !important; }
    rouge) restent inchangés car déjà lisibles. */
 html[data-theme="dark"] #colis-du-jour div[style*="color:#1B4374"],
 html[data-theme="dark"] #tournee-summary div[style*="color:#1B4374"]{ color:#7FB0EA !important; }
-html[data-theme="dark"] #colis-du-jour div[style*="color:#8a94a3"],
-html[data-theme="dark"] #tournee-summary div[style*="color:#8a94a3"]{ color:#AEB9C7 !important; }
+html[data-theme="dark"] #colis-du-jour div[style*="color:#5b6573"],
+html[data-theme="dark"] #tournee-summary div[style*="color:#5b6573"]{ color:#AEB9C7 !important; }
 /* Les tuiles à fond pastel écrites en ligne (tuilesDuJourHTML, argentTuilesHTML) — chez le livreur,
    la cliente et l'équipe. La nuit, la tuile passe en sombre et chaque couleur de statut s'éclaircit :
    le vert #1a7d3c et le rouge #c0392b tombaient à 2,5 et 2,4 de contraste, la tuile d'argent
@@ -2015,7 +2015,12 @@ html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:cent
 html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#c0392b"]{ color:#FF8A7A !important; }
 html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#E26313"]{ color:#F6A25B !important; }
 html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#1B4374"]{ color:#7FB0EA !important; }
-html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#8a94a3"]{ color:#AEB9C7 !important; }
+html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#5b6573"]{ color:#AEB9C7 !important; }
+/* 24/09/2026 (chantier N) : les teintes de statut assombries pour le jour (#A84608, #B33426, #7D3A9A) ont
+   leur pendant clair la nuit, dans ces mêmes tuiles. */
+html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#A84608"]{ color:#F58A45 !important; }
+html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#B33426"]{ color:#F08A7E !important; }
+html[data-theme="dark"] div[style*="border-radius:10px"][style*="text-align:center"] > div[style*="color:#7D3A9A"]{ color:#C9A0E0 !important; }
 
 /* Phrases de récapitulatif (« vous avez enregistré … colis ») : texte gris
    foncé #333 sur fond sombre → texte clair, fond légèrement contrasté. */
@@ -3015,7 +3020,7 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
 .tournee-note{margin-top:4px; font-size:13px; color:#b45309;}
 .tournee-compte{margin-top:8px; font-size:13.5px; color:var(--muted);}
 .tournee-compte strong{color:var(--navy); font-size:15px;}
-.tournee-compte .tournee-pris{color:#1e8f4e;}
+.tournee-compte .tournee-pris{color:#167a42;}
 .tournee-rien{color:var(--muted); font-style:italic;}
 /* CE QUE LA CLIENTE A ANNONCÉ, ET QU'ON N'A PAS ENCORE. (30/08/2026)
    Ambre, comme le lieu manquant : ce n'est pas une erreur — la cliente a très bien pu garder un
@@ -3039,7 +3044,7 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
 .tournee-contact:active{transform:translateY(1px);}
 .tournee-contact--appel{background:var(--grad-navy); color:#fff;}
 .tournee-contact--appel:hover{box-shadow:0 4px 12px rgba(27,67,116,.24);}
-.tournee-contact--whatsapp{background:#1f9d55; color:#fff;}
+.tournee-contact--whatsapp{background:#167a42; color:#fff;}
 .tournee-contact--whatsapp:hover{box-shadow:0 4px 12px rgba(31,157,85,.28);}
 /* Sans numéro, pas de bouton mort : un mot qui dit quoi faire à la place. */
 .tournee-contact--absent{
@@ -3063,7 +3068,7 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
 .tournee-section-titre:first-of-type{margin-top:6px;}
 /* Ce qui est déjà dans le sac, dit dans le titre du livreur, en vert et sans majuscules : c'est
    une bonne nouvelle, pas une consigne. (21/09/2026) */
-.tournee-titre-fait{color:#1e8f4e; text-transform:none; letter-spacing:0;}
+.tournee-titre-fait{color:#167a42; text-transform:none; letter-spacing:0;}
 /* LA LIGNE D'UNE RÉCUPÉRATION FAITE. (21/09/2026, Celtis : « ça devrait occuper moins d'espace
    […] à première vue, on a l'impression que les récupérations n'ont pas été faites. »)
    Mesuré à 390 px : une carte de tournée fait 210 px de haut (nom, lieu, compte, deux boutons
@@ -3078,7 +3083,7 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
   border-radius:10px; padding:9px 12px; margin:0 0 6px;
   font-size:13px; color:var(--navy);
 }
-.tournee-faite-coche{color:#1e8f4e; font-weight:800;}
+.tournee-faite-coche{color:#167a42; font-weight:800;}
 .tournee-faite-rang{
   min-width:20px; height:20px; border-radius:50%; background:#d7e6dc; color:#166b3b;
   font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center;
@@ -3090,12 +3095,12 @@ html[data-theme="dark"] .geoloc-consent-detail > summary { color: #9DB0C4; }
   border:0; background:none; font:inherit; font-size:12px; color:#b45309; font-weight:700;
   text-decoration:underline; cursor:pointer; text-align:left; padding:0;
 }
-.tournee-faite-compte{color:#1e8f4e; font-weight:700; font-size:12.5px; white-space:nowrap;}
+.tournee-faite-compte{color:#167a42; font-weight:700; font-size:12.5px; white-space:nowrap;}
 /* Un écart avec ce que la cliente avait annoncé ne se replie jamais : il passe sur sa propre
    ligne, en ambre, sous le reste. */
 .tournee-faite-ecart{flex:1 0 100%; color:#9a6400; font-size:12px; font-weight:600;}
 .tournee-faites-titre{
-  font-size:12px; font-weight:700; color:#1e8f4e; margin:12px 0 6px;
+  font-size:12px; font-weight:700; color:#167a42; margin:12px 0 6px;
 }
 /* Sur téléphone, le lieu passe sous le nom plutôt que d'y pousser le compte à la ligne : on
    veut lire « ✔ Fatou Tissus · 2 récupérés » d'un seul regard, et l'adresse en dessous, en
@@ -3204,20 +3209,21 @@ html[data-theme="dark"] .tournee-carte--programme{border-left-color:#2fae6b;}
 .tournee-geste[disabled]{opacity:.6; cursor:default;}
 /* Partir : l'ambre du mouvement, la même que « hors programme ». Ce n'est pas un
    avertissement, c'est « il reste à faire ». */
-.tournee-geste--partir{background:#d97706;}
+.tournee-geste--partir{background:#b45309;}
 .tournee-geste--partir:hover{box-shadow:0 4px 12px rgba(217,119,6,.30);}
 /* Ramasser : le vert du travail fini, celui du programme et de « déjà récupéré ». */
-.tournee-geste--recuperer{background:#1e8f4e;}
+.tournee-geste--recuperer{background:#167a42;}
 /* La confirmation du nombre pris (06/09/2026) : la même pièce sur le téléphone et au bureau
    (.tournee-pris-confirme) ; sur le téléphone, l'état « --saisie » porte le chiffre à corriger. */
-.tournee-pris-confirme{margin-top:10px; font-size:13.5px; font-weight:700; color:#1e8f4e; display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px;}
-.tournee-pris-confirme--ecart{color:#c0392b;}
+.tournee-pris-confirme{margin-top:10px; font-size:13.5px; font-weight:700; color:#167a42; display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px;}
+.tournee-pris-confirme--ecart{color:#B33426;}
 .tournee-pris-note{flex-basis:100%; font-weight:500; color:#5b6b80; font-size:12.5px;}
 .tournee-pris-confirme--saisie{display:block; padding:10px 12px; border-radius:12px; background:rgba(30,143,78,.06); border:1px dashed rgba(30,143,78,.45);}
-.tournee-pris-confirme--saisie label{display:block; font-size:13px; font-weight:700; color:#1e8f4e; margin-bottom:6px;}
+.tournee-pris-confirme--saisie label{display:block; font-size:13px; font-weight:700; color:#167a42; margin-bottom:6px;}
+html[data-theme="dark"] .tournee-pris-confirme, html[data-theme="dark"] .tournee-pris-confirme--saisie label{color:#5ed19a;}
 .pris-ligne{display:flex; gap:8px; align-items:stretch;}
 .pris-input{width:88px; min-height:44px; font-size:18px; font-weight:800; text-align:center; border:1.5px solid var(--border, #d6dde6); border-radius:10px; background:#fff; color:var(--text, #1f2937);}
-.tournee-geste--confirmer{flex:1; margin-top:0; background:#1e8f4e; color:#fff;}
+.tournee-geste--confirmer{flex:1; margin-top:0; background:#167a42; color:#fff;}
 .tournee-geste--corriger{min-height:36px; margin-top:0; padding:0 12px; border-radius:999px; border:1px solid rgba(30,143,78,.5); background:transparent; color:#1e8f4e; font-weight:700; font-size:12.5px; width:auto;}
 html[data-theme="dark"] .pris-input{background:#0f1722; color:#e5edf5;}
 html[data-theme="dark"] .tournee-pris-confirme--saisie{background:rgba(30,143,78,.12);}
@@ -4251,7 +4257,7 @@ html[data-theme="dark"] .frais-additionnels-block label[style*="color:#8a1f11"]{
 .notif-panel[hidden]{ display:none; }
 .notif-tete{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-bottom:1px solid var(--border); font-size:14.5px; }
 .notif-compte{ display:inline-block; min-width:20px; padding:0 6px; border-radius:10px; background:var(--orange, #E26313); color:#fff; font-size:11.5px; font-weight:800; line-height:20px; text-align:center; vertical-align:middle; }
-.notif-tout-lu{ border:none; background:none; color:var(--primary, #1B4374); font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; min-height:32px; padding:0 6px; border-radius:8px; }
+.notif-tout-lu{ border:none; background:none; color:var(--primary, #1B4374); font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; min-height:44px; padding:0 8px; border-radius:8px; }
 .notif-tout-lu:hover{ background:var(--grey-bg); }
 .notif-jour{ padding:10px 14px 4px; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
 .notif-ligne{
@@ -4315,3 +4321,17 @@ html[data-theme="dark"] .clt-rech-x:hover{ color:#fff; }
 
 /* Le point d'une cliente / d'un livreur s'ouvre calé sur son début, sous les barres fixes (24/09/2026). */
 #recap-body, #recapl-body{ scroll-margin-top:130px; }
+
+/* Nuit, espace Livreur › Finance (24/09/2026, chantier N) : les teintes écrites en ligne dans les briques
+   d'argent (phrase grise, montants verts) s'éclaircissent sur le fond sombre — hors pastilles, qui
+   gardent leur fond clair. */
+html[data-theme="dark"] #panel-finance [style*="color:#5b6573"]:not([style*="background"]),
+html[data-theme="dark"] #argent-jour-card [style*="color:#5b6573"]:not([style*="background"]){ color:#AEB9C7 !important; }
+html[data-theme="dark"] #panel-finance td[style*="color:#1a7d3c"], html[data-theme="dark"] #panel-finance strong[style*="color:#1a7d3c"],
+html[data-theme="dark"] #panel-finance div[style*="color:#1a7d3c"]:not([style*="background"]),
+html[data-theme="dark"] #argent-jour-card [style*="color:#1a7d3c"]:not([style*="background"]){ color:#5FD98A !important; }
+html[data-theme="dark"] #argent-jour-card div[style*="border-radius:10px"][style*="background:#"],
+html[data-theme="dark"] #panel-finance div[style*="border-radius:10px"][style*="background:#"]:not([style*="text-align:center"]){ background:#243247 !important; border-color:#3A4A60 !important; }
+html[data-theme="dark"] #argent-jour-card [style*="color:#475569"], html[data-theme="dark"] #panel-finance [style*="color:#475569"]{ color:#C9D6E5 !important; }
+html[data-theme="dark"] #argent-jour-card [style*="color:#c0392b"], html[data-theme="dark"] #panel-finance div[style*="color:#c0392b"]:not([style*="background"]){ color:#FF8A7A !important; }
+html[data-theme="dark"] #argent-jour-card [style*="color:#1B4374"]:not([style*="background"]), html[data-theme="dark"] #panel-finance div[style*="color:#1B4374"]:not([style*="background"]){ color:#9DC1F0 !important; }

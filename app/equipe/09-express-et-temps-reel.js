@@ -54,7 +54,7 @@ let expressCourses = [];
 let expressStatusFilter = 'tous';
 
 const EXPRESS_STATUTS = {
-en_attente: { label: "En attente d'un coursier", color: "#8a94a3", bg: "#eef0f3" },
+en_attente: { label: "En attente d'un coursier", color: "#5b6573", bg: "#eef0f3" },
 acceptee:   { label: "Coursier en route",         color: "#0D9488", bg: "#dcf5f2" },
 livree:     { label: "Livrée",                    color: "#1a7d3c", bg: "#e3f6ea" },
 annulee:    { label: "Annulée",                   color: "#c0392b", bg: "#fce4e2" },

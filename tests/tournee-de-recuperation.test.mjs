@@ -1919,8 +1919,10 @@ verifier("et une fois confirmé, il écrit",
    récupéré » en ambre le 28/08/2026 — une variante et sa base ont le même poids (une classe
    chacune), donc c'est la DERNIÈRE écrite qui gagne, en silence. */
 verifier("les deux gestes du livreur sont vraiment habillés, chacun de sa couleur",
-  /\.tournee-geste--partir\{[^}]*background:#d97706/.test(feuilleStyle.replace(/\s*\n\s*/g, ''))
-  && /\.tournee-geste--recuperer\{[^}]*background:#1e8f4e/.test(feuilleStyle.replace(/\s*\n\s*/g, '')),
+  // 24/09/2026 : ambre #b45309 et vert #167a42 — les mêmes teintes, assombries pour que le blanc
+  // dessus se lise à 5 de contraste (3,2 et 4,1 avant).
+  /\.tournee-geste--partir\{[^}]*background:#b45309/.test(feuilleStyle.replace(/\s*\n\s*/g, ''))
+  && /\.tournee-geste--recuperer\{[^}]*background:#167a42/.test(feuilleStyle.replace(/\s*\n\s*/g, '')),
   'une classe sans règle en face ne colore rien');
 verifier("et « en route » a sa couleur, sur la carte comme sur la pastille",
   /\.tournee-carte--route\{[^}]*border-left-color:var\(--navy\)/.test(feuilleStyle.replace(/\s*\n\s*/g, ''))

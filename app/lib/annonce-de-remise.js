@@ -137,7 +137,7 @@ function monAnnonceHTML(annonce, maintenant) {
 function mesRemisesHTML(lignes) {
   const l = Array.isArray(lignes) ? lignes : [];
   if (!l.length) {
-    return `<div style="font-size:12.5px; color:#64748b;">Aucune remise enregistrée pour vous jusqu'ici.</div>`;
+    return `<div style="font-size:12.5px; color:var(--muted);">Aucune remise enregistrée pour vous jusqu'ici.</div>`;
   }
   const m = n => escapeHTML(formatMontant(Math.abs(Math.round(Number(n) || 0))) || '0 FCFA');
   const p = n => String(n).padStart(2, '0');
@@ -583,7 +583,7 @@ function releveClienteTuilesHTML(colis) {
     // du relevé. Une tuile « CLT lui doit −5 500 » se lirait de travers un soir de fatigue.
     t.netADevoir < 0
       ? { icon:'⏳', value:m(-t.netADevoir), label:'Elle doit à CLT', color:'#c0392b', bg:'#fdeaea' }
-      : { icon:'⏳', value:m(t.netADevoir), label:'CLT lui doit', color:'#E26313', bg:'#FBE2CE' },
+      : { icon:'⏳', value:m(t.netADevoir), label:'CLT lui doit', color:'#A84608', bg:'#FBE2CE' },
   ]).map(x => `
       <div class="stat-tile" style="--tile-color:${x.color}; --tile-bg:${x.bg}">
         <div class="stat-tile-icon">${x.icon}</div>

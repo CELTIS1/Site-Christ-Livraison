@@ -97,7 +97,7 @@ verifier('« Koffi Livreur · 4 clientes · 2 colis à prendre · 3 récupérés
   /koffi livreur/i.test(titreBloc) && /2 colis à prendre/i.test(titreBloc) && /3 récupérés/.test(titreBloc), titreBloc);
 verifier('… et « 3 récupérés » reste en minuscules et en vert, au milieu des capitales',
   /3 récupérés/.test(titreBloc) && !/3 RÉCUPÉRÉS/.test(titreBloc)
-  && (await page.evaluate(() => getComputedStyle(document.querySelector('#prog-body .tournee-titre-fait')).color)) === 'rgb(30, 143, 78)',
+  && (await page.evaluate(() => getComputedStyle(document.querySelector('#prog-body .tournee-titre-fait')).color)) === 'rgb(22, 122, 66)',   // vert « encre » #167a42 depuis le 24/09/2026 (contraste 5,4)
   titreBloc);
 verifier('le TOTAL du bas compte toujours tout, comme avant',
   /2<\/strong> à prendre/.test(await page.locator('#prog-body').innerHTML())

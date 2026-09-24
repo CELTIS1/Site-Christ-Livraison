@@ -70,7 +70,7 @@ function compterLeJour(colis, decoupage) {
   const liste = colis || [];
   const groupes = GROUPES_DU_JOUR[decoupage] || GROUPES_DU_JOUR.livreur;
   return groupes.map(function (g) {
-    const ref = (typeof STATUTS !== 'undefined' && STATUTS[g.teinte]) || { color: '#8a94a3', bg: '#eef0f3' };
+    const ref = (typeof STATUTS !== 'undefined' && STATUTS[g.teinte]) || { color: '#5b6573', bg: '#eef0f3' };
     return {
       cle: g.cle,
       label: g.label,

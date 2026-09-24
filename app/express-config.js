@@ -317,7 +317,7 @@ function estimateEtaExpress(distanceKm, config) {
 
 // ---------- Statuts d'une course ----------
 const EXPRESS_STATUTS = {
-  en_attente: { label: "En attente d'un coursier", color: "#8a94a3", bg: "#eef0f3" },
+  en_attente: { label: "En attente d'un coursier", color: "#5b6573", bg: "#eef0f3" },
   acceptee:   { label: "Coursier en route",         color: "#0D9488", bg: "#dcf5f2" },
   recuperee:  { label: "Colis récupéré, en route",  color: "#b26a00", bg: "#fdeede" },
   livree:     { label: "Livrée",                    color: "#1a7d3c", bg: "#e3f6ea" },

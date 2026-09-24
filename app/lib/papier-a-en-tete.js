@@ -780,7 +780,7 @@ function chezLeFournisseur(pourQui) {
 // L'ordre des cas compte : on annonce d'abord ce qui appelle une action.
 // `pourQui` vaut 'cliente' sur son propre espace, rien ailleurs : voir chezLeFournisseur().
 function paiementInfo(c, pourQui) {
-  if (!c) return { label: "—", color: "#8a94a3", bg: "#eef0f3" };
+  if (!c) return { label: "—", color: "#5b6573", bg: "#eef0f3" };
   const ou = chezLeFournisseur(pourQui);
   if (c.statut !== 'livre') {
     /* LA COURSE PAYÉE SANS LIVRAISON (18/09/2026, Celtis). Le livreur s'est déplacé, le client a
@@ -789,7 +789,7 @@ function paiementInfo(c, pourQui) {
        parce que c'est le seul de ces libellés qui parle d'un billet réellement reçu. */
     if (coursePayeeSansLivraison(c)) return { label: "Déplacement payé — " + (formatMontant(montantLivraisonColis(c)) || '0 FCFA'), color: "#1a7d3c", bg: "#e3f6ea" };
     if (c.livraison_payee) return { label: "Livraison déjà payée " + ou, color: "#E26313", bg: "#FBE2CE" };
-    return { label: "Pas encore encaissé", color: "#8a94a3", bg: "#eef0f3" };
+    return { label: "Pas encore encaissé", color: "#5b6573", bg: "#eef0f3" };
   }
   const manque = montantManquantALaLivraison(c);
   if (manque > 0) return { label: "Argent non encaissé", color: "#c0392b", bg: "#fce4e2" };

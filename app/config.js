@@ -446,13 +446,14 @@ window.addEventListener("beforeunload", () => {
 // Référentiel des statuts d'un colis — SOURCE UNIQUE (libellé + couleurs + icône).
 // Tous les espaces (fournisseur, livreur, équipe, gestion) doivent dériver leurs
 // libellés, couleurs et icônes de statut d'ici, pour rester cohérents partout.
+/* Teintes des statuts (24/09/2026) : texte assombri pour lire ≥ 4,5 de contraste sur sa pastille. */
 const STATUTS = {
-  en_attente:   { label: "En attente",   color: "#8a94a3", bg: "#eef0f3", icon: "⏳" },
+  en_attente:   { label: "En attente",   color: "#5b6573", bg: "#eef0f3", icon: "⏳" },
   recupere:     { label: "Récupéré",     color: "#1B4374", bg: "#e5edf5", icon: "📦" },
-  en_livraison: { label: "En livraison", color: "#E26313", bg: "#FBE2CE", icon: "🚚" },
+  en_livraison: { label: "En livraison", color: "#A84608", bg: "#FBE2CE", icon: "🚚" },
   livre:        { label: "Livré",        color: "#1a7d3c", bg: "#e3f6ea", icon: "✅" },
-  non_livre:    { label: "Non livré",    color: "#c0392b", bg: "#fce4e2", icon: "⚠️" },
-  retour:       { label: "Retour",       color: "#8e44ad", bg: "#f2e8fa", icon: "↩️" },
+  non_livre:    { label: "Non livré",    color: "#B33426", bg: "#fce4e2", icon: "⚠️" },
+  retour:       { label: "Retour",       color: "#7D3A9A", bg: "#f2e8fa", icon: "↩️" },
 };
 
 /* ============================================================================================
