@@ -1438,10 +1438,17 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    « Reverser » = le geste de la fiche, reçu numéroté), Ce qui manque (non remis > 1 j, non reversé
    ≥ 3 j, écarts de remise sur 7 jours, annonces sans remise ; pastille sur l'onglet), Rapports &
    compta (tout le reste, rangé). Règle app/argent-a-suivre.js, écran equipe/18-l-argent.js.
-   Parcours l-argent-en-deux-ecrans (14). Étiquette 20260925argent. */
+   Parcours l-argent-en-deux-ecrans (14). Étiquette 20260925argent.
+   v255, le 25/09/2026 — le Bureau du gérant (chantier N, lot 15). Un seul espace : Gestion vit
+   derrière l'onglet « Bureau » de l'application de l'équipe (cadre gestion.html?integre=1, chargé à
+   la première ouverture, sans sa barre du haut, même session ; « Plein écran » à part), réservé à
+   l'administrateur et aux accès paie / compta. En tête du tableau de bord : les dix chiffres de la
+   semaine (règle app/dix-chiffres.js, seuils du dossier « Le rôle du dirigeant »), chaque tuile menant
+   à l'onglet de l'équipe par postMessage. equipe.html?onglet=… ouvre un onglet donné. Parcours
+   le-bureau-du-gerant (14). Étiquette 20260925bureau. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v254'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v255'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

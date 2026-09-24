@@ -327,7 +327,7 @@ try {
 const rt = supabaseClient.realtime;
 if (rt && typeof rt.connect === 'function' && !rt.isConnected()) rt.connect();
 // Rejoint les canaux qui ne seraient pas (ou plus) actifs après une coupure de socket.
-supabaseClient.getChannels().forEach(ch => { if (ch.state !== 'joined') { try { ch.subscribe(); } catch (e) {} } });
+if (typeof supabaseClient.getChannels === 'function') supabaseClient.getChannels().forEach(ch => { if (ch.state !== 'joined') { try { ch.subscribe(); } catch (e) {} } });
 } catch (e) { console.error('reconnectRealtime', e); }
 try {
 const tasks = [loadColisEnFond(), loadPending(), loadResetRequests(), loadFournisseurs(), loadLivreurs()];
@@ -437,7 +437,8 @@ document.getElementById('activity-log-section')?.classList.remove('hidden');
 // Refonte par onglets : réaffiche les sections et l'onglet Express réservés à l'administrateur.
 ['section-gerer-equipe','section-tous-comptes',
  'section-express-courses','section-express-recharges','section-express-reglages',
- 'eqtab-btn-express','bottomnav-express'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+ 'eqtab-btn-express','bottomnav-express','eqtab-btn-bureau','bottomnav-bureau'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+document.querySelectorAll('#bottomnav-feuille [data-nav="express"], #bottomnav-feuille [data-nav="bureau"]').forEach(b => { b.hidden = false; });
 if (typeof chargerReglagesExpress === 'function') chargerReglagesExpress();
 renderAccountFilters();
 await loadAllAccounts();
@@ -448,6 +449,9 @@ await loadAllAccounts();
 // même s'ils ne sont pas administrateurs. Le contrôle réel se fait côté base (RLS).
 if (!isAdmin && (profile.acces_paie === true || profile.acces_compta === true)) {
 document.getElementById('lien-gestion')?.classList.remove('hidden');
+// Le Bureau (lot 15) : le même droit ouvre l'onglet intégré.
+['eqtab-btn-bureau','bottomnav-bureau'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+document.querySelectorAll('#bottomnav-feuille [data-nav="bureau"]').forEach(b => { b.hidden = false; });
 }
 
 // Recherche : on attend que la frappe se calme avant de redessiner. Taper « KOUAME » c'est six

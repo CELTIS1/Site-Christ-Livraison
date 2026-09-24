@@ -328,6 +328,16 @@
             "Suspendre, réinitialiser le mot de passe, corriger la fiche : même menu ⋮.",
             "Administrateur : ⋮ → « 👁 Voir son écran » ouvre l'écran d'un livreur ou d'une cliente, avec ses données : lecture seule d'abord, « ✏️ Modifier » sur le bandeau pour agir sous votre nom."
           ]
+        },
+        {
+          "id": "equipe-bureau",
+          "titre": "Le Bureau du gérant : Gestion dans la même application",
+          "resume": "Plus → Bureau. Tableau de bord, argent & compta, paie, comptes, réglages, guide — sans changer d'application.",
+          "etapes": [
+            "Onglet « Bureau » (administrateur, ou accès paie / compta) : Gestion s'ouvre dans un cadre, même connexion. « Plein écran » l'ouvre à part si besoin.",
+            "En tête du tableau de bord : les dix chiffres de la semaine, chacun avec son verdict (vert, orange, rouge). Un appui ouvre l'onglet de l'équipe concerné.",
+            "Le mardi : les dix chiffres, « À faire par le gérant », puis Argent › Ce qui manque. Deux minutes chacun."
+          ]
         }
       ]
     },

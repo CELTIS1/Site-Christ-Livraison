@@ -4633,3 +4633,34 @@ html[data-theme="dark"] .argent-manque-ligne{ background:#1B2635; border-color:#
 html[data-theme="dark"] .argent-manque-ligne b{ color:#9EC0E6; }
 html[data-theme="dark"] .argent-manque-ligne .argent-ambre{ color:#f0c27a; }
 @media (min-width:761px){ .argent-ligne{ grid-template-columns:1fr auto auto; } .argent-gestes{ grid-column:auto; } }
+
+/* ==========================================================================================
+   LE BUREAU DU GÉRANT (chantier N, lot 15, 25/09/2026). Gestion dans un cadre de l'application de
+   l'équipe ; gestion.html intégré cache sa barre du haut. Les dix chiffres : dix tuiles, trois verdicts.
+   ========================================================================================== */
+.bureau-carte{ padding:10px 10px 0; }
+.bureau-entete{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:2px 6px 10px; font-weight:700; color:var(--navy); }
+.bureau-entete .btn{ min-height:40px; }
+.bureau-cadre{ display:block; width:100%; height:calc(100dvh - var(--h-topbar, 64px) - 120px); min-height:480px; border:0; border-radius:12px; background:var(--grey-bg); }
+@media (max-width:760px){ .bureau-cadre{ height:calc(100dvh - var(--h-topbar, 64px) - 60px - env(safe-area-inset-bottom) - 96px); } }
+html.integre .topbar{ display:none !important; }
+html.integre body{ padding-top:0 !important; }
+html.integre .clt-cloche-wrap{ display:none !important; }
+.dix-carte{ padding:16px; }
+.dix-entete{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.dix-titre{ font-weight:800; font-size:17px; color:var(--navy); }
+.dix-sous{ font-size:13px; color:var(--muted); margin-top:2px; }
+.dix-grille{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:8px; }
+.dix-tuile{ display:flex; flex-direction:column; gap:3px; min-height:44px; padding:10px 12px; border-radius:12px; border:1px solid var(--border); border-left:5px solid var(--border-strong); background:var(--white); color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.dix-tuile:hover{ border-color:var(--navy); }
+.dix-tuile--bon{ border-left-color:#167a42; }
+.dix-tuile--regarder{ border-left-color:#b45309; }
+.dix-tuile--alerte{ border-left-color:#a32d22; }
+.dix-num{ font-size:11px; font-weight:700; color:var(--muted); }
+.dix-lib{ font-size:13px; color:var(--muted); line-height:1.3; }
+.dix-val{ font-size:15px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; }
+html[data-theme="dark"] .dix-tuile{ background:#1B2635; border-color:#2A3849; }
+html[data-theme="dark"] .dix-val{ color:#E6ECF3; }
+html[data-theme="dark"] .dix-tuile--bon{ border-left-color:#5fd39a; }
+html[data-theme="dark"] .dix-tuile--regarder{ border-left-color:#f0c27a; }
+html[data-theme="dark"] .dix-tuile--alerte{ border-left-color:#ff9a8c; }

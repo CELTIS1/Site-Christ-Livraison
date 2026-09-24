@@ -281,7 +281,7 @@ function showToast(msg, isErr){
 function switchTab(tab){
   document.querySelectorAll('.tabs .tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   ['dashboard','compta','paie','journal','site'].forEach(s => { const el = document.getElementById('sec-'+s); if (el) el.classList.toggle('active', s === tab); });
-  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'dashboard') { renderDashboard(); if (window.CLTDixChiffresEcran) CLTDixChiffresEcran.charger(); }
   if (tab === 'journal') { loadJournal(); loadErreursClient(); }
   if (tab === 'site' && window.CLTSiteEditeur) CLTSiteEditeur.init();
   // Les cinq onglets du haut sont notés eux aussi : c'est la seule façon de savoir, en octobre,
@@ -4215,6 +4215,8 @@ async function init(){
   // débordaient de l'écran du téléphone. Ils sont maintenant dans le menu commun, ouvert et
   // refermé par la même fonction que dans les autres espaces (config.js).
   initSettingsMenu();
+  // Intégré dans l'application de l'équipe (lot 15) : « Retour équipe » n'a plus de sens, on est dedans.
+  if (document.documentElement.classList.contains('integre')) document.querySelectorAll('#settings-dropdown a[href="equipe.html"]').forEach(a => { a.hidden = true; });
 
   // Onglets visibles selon les capacités
   const setDisp = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };

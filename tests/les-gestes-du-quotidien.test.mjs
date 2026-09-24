@@ -62,10 +62,11 @@ console.log('\n3. La barre du bas de l\'équipe (9.5)');
    dans les quatre du quotidien ; seuls Suivi, Comptes et Express restent derrière « Plus ». */
 // 20/09/2026, Celtis : « ce qu'on utilise le plus, c'est Colis, Tournées, Suivi — et la gestion des
 // retours en quatrième ; Finances, Personnes et le reste vont dans Plus ».
-verifier('quatre onglets restent dans la barre, les autres passent derrière « Plus »',
-  (equipe.match(/class="nav nav--dans-plus/g) || []).length === 4, (equipe.match(/class="nav nav--dans-plus/g) || []).length);
-verifier('les relégués sont Finances, Personnes, Comptes et Express',
-  ['finances', 'personnes', 'comptes', 'express'].every(k => new RegExp('nav--dans-plus[^>]*data-nav="' + k + '"').test(equipe)));
+// 25/09/2026 (lot 15) : un cinquième relégué, « Bureau » (Gestion intégrée), réservé comme Express.
+verifier('quatre onglets restent dans la barre, les cinq autres passent derrière « Plus »',
+  (equipe.match(/class="nav nav--dans-plus/g) || []).length === 5, (equipe.match(/class="nav nav--dans-plus/g) || []).length);
+verifier('les relégués sont Argent (finances), Personnes, Comptes, Express et Bureau',
+  ['finances', 'personnes', 'comptes', 'express', 'bureau'].every(k => new RegExp('nav--dans-plus[^>]*data-nav="' + k + '"').test(equipe)));
 verifier('et les quatre du quotidien sont Colis, Tournées, Suivi, Retours',
   ['colis', 'programmation', 'suivi', 'retours'].every(k =>
     new RegExp('class="nav(?! nav--dans-plus)[^"]*"[^>]*data-nav="' + k + '"').test(equipe)),

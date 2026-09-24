@@ -137,12 +137,12 @@ export async function ouvrirNavigateur(options) {
   const monde = (options && options.monde) || nouveauMonde();
   const { serveur, base } = await servirLeSite();
   const navigateur = await chromium.launch({ headless: true });
-  const contexte = await navigateur.newContext({
+  const contexte = await navigateur.newContext(Object.assign({
     viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2,
     locale: 'fr-FR', timezoneId: FUSEAU, serviceWorkers: 'block',
     // Le livreur partage sa position : le téléphone factice est à Abidjan (Plateau).
     geolocation: { latitude: 5.3247, longitude: -4.0210 }, permissions: ['geolocation'],
-  });
+  }, (options && options.contexte) || {}));   // `contexte` : options en plus (ex. recordVideo pour les tutoriels, lot 16)
   // Tout autre appel vers l'extérieur (la vraie base, WhatsApp, une carte…) est refusé net.
   // (Enregistré en premier : Playwright consulte les routes de la dernière à la première.)
   await contexte.route(/^https?:\/\/(?!127\.0\.0\.1)/, (route) => route.abort('blockedbyclient'));

@@ -41,6 +41,21 @@
   ],
   "fiches": [
     {
+      "id": "le-bureau",
+      "espace": "gestion",
+      "titre": "Le Bureau du gérant et les dix chiffres",
+      "enBref": "Gestion vit derrière l'onglet « Bureau » de l'application de l'équipe ; le tableau de bord ouvre sur dix chiffres avec leur verdict.",
+      "ou": "Espace équipe › Bureau (ou gestion.html en plein écran) › Tableau de bord, en tête",
+      "etapes": [
+        "Ouvrir Bureau : Gestion se charge dans un cadre à la première ouverture, même session ; « Plein écran » l'ouvre à part.",
+        "Lire les dix chiffres : livrés, échecs, imputables, non remis, reversements en retard, écarts, sans livreur, délai de passage, clientes actives, signalements.",
+        "Un appui sur une tuile ouvre l'onglet de l'équipe qui règle le chiffre."
+      ],
+      "aSavoir": "Seuils du dossier « Le rôle du dirigeant » (échec < 8 % / > 12 %, imputables 3 / 5 %, non remis et non reversé = 0, écarts ≤ 2, sans livreur ≤ 3, délai ≤ 1 j, endormies ≤ 10). Règle app/dix-chiffres.js. Comptes et Express restent dans l'équipe jusqu'au chantier P.",
+      "version": "v255",
+      "pourVous": "Le mardi : Bureau › les dix chiffres, puis « À faire », puis Argent › Ce qui manque."
+    },
+    {
       "id": "l-argent",
       "espace": "bureau",
       "titre": "L'argent en deux écrans (et ce qui manque)",

@@ -16,7 +16,7 @@
      que partout ailleurs on lit AUJOURD'HUI, et mélangés les deux se confondent : on programme
      en croyant modifier un colis du jour. Le remettre dedans reviendrait à racheter un défaut
      déjà payé. Le reste attend le compteur d'usage : en octobre on retirera sur preuve. */
-  const EQ_TABS = ['colis','programmation','suivi','retours','finances','personnes','comptes','express'];
+  const EQ_TABS = ['colis','programmation','suivi','retours','finances','personnes','comptes','express','bureau'];
 
   /* Les anciens noms continuent de fonctionner : la barre du bas, un lien ailleurs dans le code,
      et surtout le dernier onglet gardé en mémoire sur le téléphone de chacun. Sans cette table,
@@ -61,6 +61,18 @@
     // Les retours (20/09/2026) ont leur onglet, relu à chaque ouverture — un geste fait depuis
     // un autre poste ou par un livreur doit apparaître sans recharger.
     if (key === 'retours' && typeof chargerRetours === 'function') chargerRetours();
+    /* LE BUREAU (lot 15, 25/09/2026) : Gestion, intégrée dans un cadre, chargée à la PREMIÈRE
+       ouverture seulement (une page de 4 600 lignes ne se charge pas pour un onglet qu'on
+       n'ouvre pas). Même session, même connexion : gestion.html?integre=1 cache sa barre du
+       haut et parle à cette page par postMessage (« ouvrir-onglet »). */
+    if (key === 'bureau') {
+      const hote = document.getElementById('bureau-cadre-hote');
+      if (hote && !hote.querySelector('iframe')) {
+        const f = document.createElement('iframe');
+        f.className = 'bureau-cadre'; f.src = 'gestion.html?integre=1'; f.title = 'Le Bureau du gérant (Gestion)'; f.setAttribute('loading', 'lazy');
+        hote.appendChild(f);
+      }
+    }
     document.querySelectorAll('#clt-toptabs .clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.eqtab === key));
     document.querySelectorAll('#clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.nav === key));
     majBoutonPlus(key);
@@ -332,7 +344,13 @@
     // Une notification (?colis=<id>) mène au colis : donc à l'onglet Colis, même si on avait
     // laissé l'écran sur Clients ou Finances. (05/09/2026)
     const lienColis = new URLSearchParams(location.search).get('colis');
-    showEquipeTab(lienColis ? 'colis' : saved);
+    // ?onglet=… (lot 15) : une tuile des dix chiffres ouverte dans un onglet à part arrive au bon endroit.
+    const lienOnglet = new URLSearchParams(location.search).get('onglet');
+    showEquipeTab(lienColis ? 'colis' : (lienOnglet && EQ_TABS.includes(lienOnglet) ? lienOnglet : saved));
+    window.addEventListener('message', (e) => {
+      if (e.origin !== location.origin || !e.data || e.data.clt !== 'ouvrir-onglet') return;
+      if (EQ_TABS.includes(e.data.onglet)) showEquipeTab(e.data.onglet);
+    });
   })();
 
   /* « L'essentiel » se replie, et l'écran s'en souvient (point 9.6, 17/09/2026).
