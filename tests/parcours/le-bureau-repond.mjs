@@ -44,12 +44,20 @@ const reclam = monde.TABLES.reclamations_clientes[0];
 verifier('le signalement est en base, ouvert', !!reclam && reclam.statut === 'ouverte' && reclam.motif === 'montant_faux', JSON.stringify(reclam));
 await page.locator('#clt-bottomnav .nav[data-target="section-ajouter"]').click();
 await dodo(400);
+// Lot 11 (24/09/2026) : la saisie par photos est repliée derrière son titre ; la demande de passage,
+// elle, est ouverte en tête — c'est le geste le plus court.
+verifier('la saisie par photos est repliée, la demande de passage est visible', !(await page.locator('#ajouter-content').isVisible()) && (await page.locator('#passage-envoyer').isVisible()));
 await page.locator('#passage-jour').fill(demain);
+await page.locator('#passage-nb').fill('4');
 await page.locator('#passage-note').fill('Après 14 h');
 await page.locator('#passage-envoyer').click();
 await dodo(1000);
 const demande = monde.TABLES.demandes_de_passage[0];
-verifier('la demande de passage est en base, en attente', !!demande && demande.statut === 'en_attente' && demande.jour === demain, JSON.stringify(demande));
+verifier('la demande de passage est en base, en attente, avec le nombre de colis', !!demande && demande.statut === 'en_attente' && demande.jour === demain && demande.nb_colis === 4, JSON.stringify(demande));
+verifier('la cliente relit ce qu\'elle a indiqué (4 colis · « Après 14 h »)', /4 colis/.test(await texte(page.locator('#passage-en-cours'))) && /Après 14 h/.test(await texte(page.locator('#passage-en-cours'))), await texte(page.locator('#passage-en-cours')));
+await page.locator('#ajouter-titre').click();
+await dodo(300);
+verifier('un appui sur le titre déplie la saisie par photos', await page.locator('#ajouter-content').isVisible());
 verifier('aucune erreur côté cliente', erreurs.length === 0, erreurs.join('\n       '));
 
 titre('2. Le bureau voit tout dans L\'essentiel — compté par la base');
@@ -86,6 +94,14 @@ const jourInput = prog.locator('input[type="date"]').first();
 if (await jourInput.count()) { await jourInput.fill(demain); await jourInput.dispatchEvent('change'); await dodo(900); }
 const refuser = page.locator('.btn-demande-refusee').first();
 verifier('la demande est là, avec « Refuser » à côté de « Traitée »', (await refuser.count()) === 1 && (await page.locator('.btn-demande-traitee').count()) === 1);
+// Lot 11 : la ligne dit combien (pastille « 4 colis »), et « Programmer » remplit le formulaire —
+// cliente, nombre, note — sans rien ressaisir ; le bureau ne choisit plus que le livreur.
+const ligneDemande = page.locator('.demande-ligne').first();
+verifier('la ligne porte « 4 colis » et la note', /4 colis/.test(await texte(ligneDemande)) && /Après 14 h/.test(await texte(ligneDemande)), await texte(ligneDemande));
+await page.locator('.btn-demande-programmer').first().click();
+await dodo(500);
+verifier('« Programmer » a rempli la cliente, le nombre annoncé (4) et la note', (await page.locator('#prog-fournisseur').inputValue()) === CLIENTE1 && (await page.locator('#prog-nb-colis').inputValue()) === '4' && (await page.locator('#prog-note').inputValue()) === 'Après 14 h', [await page.locator('#prog-fournisseur').inputValue(), await page.locator('#prog-nb-colis').inputValue(), await page.locator('#prog-note').inputValue()].join(' / '));
+verifier('le livreur reste à choisir', (await page.locator('#prog-livreur').inputValue()) === '');
 await refuser.click();
 await dodo(400);
 await page.locator('#clt-modal-input').fill('Aucun livreur à Yopougon demain');

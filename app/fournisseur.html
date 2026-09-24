@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924iphone">
+<link rel="stylesheet" href="style.css?v=20260924passage">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260924iphone"></script>
+<script src="theme.js?v=20260924passage"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260924iphone" defer></script>
-<script src="cloche.js?v=20260924iphone" defer></script>
-<script src="splash.js?v=20260924iphone"></script>
+<script src="notifications-recues.js?v=20260924passage" defer></script>
+<script src="cloche.js?v=20260924passage" defer></script>
+<script src="splash.js?v=20260924passage"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -429,9 +429,18 @@
         </div>
       </div>
     </div>
-    <div class="field">
-      <label>À préciser&nbsp;? <span class="hint" style="background:none;padding:0;margin:0;">(facultatif)</span></label>
-      <input type="text" id="passage-note" maxlength="200" placeholder="Ex : après 14 h, ou beaucoup de colis">
+    <!-- COMBIEN, ET QUOI PRÉCISER (lot 11, 24/09/2026). Celtis : « lui donner la possibilité de saisir
+         le nombre de colis qu'il souhaite qu'on vienne récupérer, et une note ». Le bureau retrouve
+         ces deux champs remplis quand il programme la tournée : il vérifie, il ne ressaisit pas. -->
+    <div class="field-row passage-nb-et-note">
+      <div class="field passage-nb-champ">
+        <label for="passage-nb">Combien de colis&nbsp;? <span class="hint" style="background:none;padding:0;margin:0;">(à peu près)</span></label>
+        <input type="number" id="passage-nb" inputmode="numeric" min="1" max="500" step="1" placeholder="Ex : 5">
+      </div>
+      <div class="field">
+        <label for="passage-note">À préciser&nbsp;? <span class="hint" style="background:none;padding:0;margin:0;">(facultatif)</span></label>
+        <input type="text" id="passage-note" maxlength="200" placeholder="Ex : après 14 h, portail bleu">
+      </div>
     </div>
     <button type="button" class="btn" id="passage-envoyer">Demander le passage</button>
   </div>
@@ -440,8 +449,16 @@
     <!-- Les sections de cette page ne se replient plus depuis longtemps (neutralizeCollapsibles
          les dépliait toutes au chargement) : le HTML le dit maintenant directement, et les
          cinq fonctions de repli sont parties avec lui. (20/09/2026, lot D) -->
-    <h2 class="panel-subtitle">📸 Ajouter des colis à partir des photos</h2>
-    <div id="ajouter-content" class="collapsible-content open" style="max-height:none">
+    <!-- REPLIÉE PAR DÉFAUT (lot 11, 24/09/2026). Celtis : « ici il va ajouter des colis à partir des
+         photos, c'est bien, mais il faut que ce soit replié ». La vendeuse qui n'a qu'une phrase à
+         dire ne traverse plus le formulaire ; celle qui saisit l'ouvre d'un appui, et l'appareil s'en
+         souvient. Elle s'ouvre d'elle-même quand des colis attendent dans la file hors réseau. -->
+    <button type="button" class="ajouter-titre" id="ajouter-titre" aria-expanded="false" aria-controls="ajouter-content">
+      <span class="ajouter-titre-texte">📸 Ajouter des colis à partir des photos</span>
+      <span class="ajouter-titre-sous">Photographiez vos étiquettes, on lit et on tape à côté</span>
+      <span class="ajouter-titre-chev" aria-hidden="true">›</span>
+    </button>
+    <div id="ajouter-content" class="ajouter-content" hidden>
       <!-- LA FILE HORS RÉSEAU DE LA CLIENTE (20/09/2026, lot D). Jusqu'ici, sans réseau, la saisie
            échouait avec un message d'erreur et la cliente devait tout ressaisir — le texte
            promettait pourtant « en attente sur cet appareil ». Les colis s'écrivent maintenant
@@ -674,31 +691,32 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260924iphone"></script>
-<script src="numero-international.js?v=20260924iphone"></script>
-<script src="voir-un-compte.js?v=20260924iphone"></script>
-<script src="lib/bibliotheques.js?v=20260924iphone"></script>
-<script src="lib/retours.js?v=20260924iphone"></script>
-<script src="lib/reclamations.js?v=20260924iphone"></script>
-<script src="lib/communes-et-tarifs.js?v=20260924iphone"></script>
-<script src="lib/argent.js?v=20260924iphone"></script>
-<script src="lib/releve-cliente.js?v=20260924iphone"></script>
-<script src="lib/papier-a-en-tete.js?v=20260924iphone"></script>
-<script src="lib/briques-argent.js?v=20260924iphone"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260924iphone"></script>
-<script src="lib/traces-de-report.js?v=20260924iphone"></script>
-<script src="lib/annonce-de-remise.js?v=20260924iphone"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260924iphone"></script>
-<script src="lib/primes.js?v=20260924iphone"></script>
-<script src="lib/doublons.js?v=20260924iphone"></script>
-<script src="config.js?v=20260924iphone"></script>
-<script src="activite-de-la-cliente.js?v=20260924iphone"></script>
-<script src="activite-ecran.js?v=20260924iphone"></script>
-<script src="mes-boutiques.js?v=20260924iphone"></script>
-<script src="etiquettes-et-scan.js?v=20260924iphone"></script>
-<script src="import-de-colis.js?v=20260924iphone"></script>
-<script src="biometric-lock.js?v=20260924iphone"></script>
-<script src="clt-select-recherche.js?v=20260924iphone"></script>
+<script src="clt-common.js?v=20260924passage"></script>
+<script src="numero-international.js?v=20260924passage"></script>
+<script src="voir-un-compte.js?v=20260924passage"></script>
+<script src="lib/bibliotheques.js?v=20260924passage"></script>
+<script src="lib/retours.js?v=20260924passage"></script>
+<script src="lib/reclamations.js?v=20260924passage"></script>
+<script src="lib/communes-et-tarifs.js?v=20260924passage"></script>
+<script src="lib/argent.js?v=20260924passage"></script>
+<script src="lib/releve-cliente.js?v=20260924passage"></script>
+<script src="lib/papier-a-en-tete.js?v=20260924passage"></script>
+<script src="lib/briques-argent.js?v=20260924passage"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260924passage"></script>
+<script src="lib/traces-de-report.js?v=20260924passage"></script>
+<script src="lib/annonce-de-remise.js?v=20260924passage"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260924passage"></script>
+<script src="lib/primes.js?v=20260924passage"></script>
+<script src="lib/doublons.js?v=20260924passage"></script>
+<script src="config.js?v=20260924passage"></script>
+<script src="demande-de-passage.js?v=20260924passage"></script>
+<script src="activite-de-la-cliente.js?v=20260924passage"></script>
+<script src="activite-ecran.js?v=20260924passage"></script>
+<script src="mes-boutiques.js?v=20260924passage"></script>
+<script src="etiquettes-et-scan.js?v=20260924passage"></script>
+<script src="import-de-colis.js?v=20260924passage"></script>
+<script src="biometric-lock.js?v=20260924passage"></script>
+<script src="clt-select-recherche.js?v=20260924passage"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1539,6 +1557,8 @@
     let entrees = [];
     try { entrees = await frFileTout(); } catch (e) { entrees = []; }
     if (!entrees.length) { banner.classList.add('hidden'); banner.classList.remove('offline-queue-banner--bloquee'); return; }
+    // Le bandeau vit dans la saisie repliée (lot 11) : on la déplie, sans toucher au choix mémorisé.
+    if (typeof ouvrirAjouter === 'function') ouvrirAjouter(true, false);
     const bloquees = entrees.filter(e => e.bloquee);
     const attente = entrees.length - bloquees.length;
     const parts = [];
@@ -2969,7 +2989,7 @@
     cltPoserHTML(box, `
       <div class="clt-alert ${refusee ? 'clt-alert-warn' : traitee ? 'clt-alert-ok' : 'clt-alert-warn'}" style="margin-bottom:14px;">
         <strong>${titre}</strong> pour ${escapeHTML(passageJourEnClair(d.jour))}.
-        ${d.note ? '<br><span class="hint" style="background:none;padding:0;margin:0;">Votre précision : ' + escapeHTML(d.note) + '</span>' : ''}
+        ${(window.CLTDemandeDePassage && CLTDemandeDePassage.resumeDemande(d)) ? '<br><span class="hint" style="background:none;padding:0;margin:0;">Vous avez indiqué : ' + escapeHTML(CLTDemandeDePassage.resumeDemande(d)) + '</span>' : ''}
         ${refusee ? '<br>' + (d.motif_refus ? 'CLT : « ' + escapeHTML(d.motif_refus) + ' »' : 'CLT ne pourra pas passer ce jour-là.') + ' Vous pouvez demander un autre jour.' : traitee ? '<br>Le bureau programme la tournée ; le livreur prévenu vous confirmera son passage.' : '<br>En attente de confirmation par CLT.'}
         ${(!refusee && !passe) ? '<br><button type="button" class="btn btn-outline btn-sm" id="passage-annuler" style="margin-top:8px;">Annuler cette demande</button>' : ''}
       </div>`);
@@ -2991,10 +3011,12 @@
       .gte('jour', isoMoinsJoursCliente(todayLocalISODate(), 3))
       .order('jour', { ascending: false })
       .limit(1);
-    let { data, error } = await lire('id, jour, note, statut, motif_refus');
+    let { data, error } = await lire('id, jour, note, statut, motif_refus, nb_colis');
     // 22/09/2026 : du 20 au 22, motif_refus n'existait pas en base et cette lecture échouait —
     // la cliente ne voyait plus même « demande envoyée ». La colonne existe désormais ; si une
-    // base ne l'a pas encore, on relit sans elle plutôt que de ne rien montrer.
+    // base ne l'a pas encore, on relit sans elle plutôt que de ne rien montrer. Même repli pour
+    // nb_colis (lot 11, 24/09/2026).
+    if (error && /nb_colis/.test(error.message || '')) ({ data, error } = await lire('id, jour, note, statut, motif_refus'));
     if (error && /motif_refus/.test(error.message || '')) ({ data, error } = await lire('id, jour, note, statut'));
     // La table est née le 17/09/2026. Si le script n'est pas encore passé, on n'affiche rien
     // plutôt que de faire rougir la console d'une vendeuse : la carte reste utilisable.
@@ -3017,16 +3039,31 @@
       return;
     }
     const note = (noteEl && noteEl.value.trim()) || null;
+    // Le nombre de colis (lot 11) : un entier de 1 à 500, ou rien. La règle est dans
+    // demande-de-passage.js ; le bureau relira exactement ce chiffre dans sa tournée.
+    const nbEl = document.getElementById('passage-nb');
+    const nb = (window.CLTDemandeDePassage && nbEl) ? CLTDemandeDePassage.nbColisDemande(nbEl.value) : null;
+    if (nbEl && nbEl.value.trim() !== '' && nb === null) {
+      await cltConfirm({ title: 'Combien de colis ?', sub: 'Indiquez un nombre entier, de 1 à 500 — ou laissez la case vide si vous ne savez pas encore.', okLabel: "J'ai compris", cancelLabel: 'Fermer' });
+      return;
+    }
     btn.disabled = true; const libelle = btn.textContent; btn.textContent = 'Envoi…';
-    const { error } = await supabaseClient.from('demandes_de_passage')
-      .upsert({ fournisseur_id: currentUser.id, jour, note, statut: 'en_attente' },
+    let { error } = await supabaseClient.from('demandes_de_passage')
+      .upsert({ fournisseur_id: currentUser.id, jour, note, nb_colis: nb, statut: 'en_attente' },
               { onConflict: 'jour,fournisseur_id' });
+    // Si la base n'a pas encore la colonne nb_colis, la demande part sans le nombre plutôt que
+    // de ne pas partir : le jour et la note sont l'essentiel.
+    if (error && /nb_colis/.test(error.message || '')) {
+      ({ error } = await supabaseClient.from('demandes_de_passage')
+        .upsert({ fournisseur_id: currentUser.id, jour, note, statut: 'en_attente' }, { onConflict: 'jour,fournisseur_id' }));
+    }
     btn.disabled = false; btn.textContent = libelle;
     if (error) {
       await cltConfirm({ title: 'Demande non envoyée', sub: "Elle n'a pas pu partir. Vérifiez votre connexion et réessayez.", okLabel: "J'ai compris", cancelLabel: 'Fermer' });
       return;
     }
     if (noteEl) noteEl.value = '';
+    if (nbEl) nbEl.value = '';
     cltToast('Demande envoyée pour ' + passageJourEnClair(jour) + '. CLT vous confirmera.', { type: 'success', title: 'Bien reçu' });
     chargerMaDemandeDePassage();
   }
@@ -3054,6 +3091,27 @@
     document.getElementById('passage-demain').addEventListener('click', () => { jourEl.value = demainISO; });
     document.getElementById('passage-aujourdhui').addEventListener('click', () => { jourEl.value = auj; });
     document.getElementById('passage-envoyer').addEventListener('click', envoyerMaDemandeDePassage);
+  })();
+
+  /* LA SAISIE PAR PHOTOS, REPLIÉE (lot 11, 24/09/2026). Un seul bouton, aria-expanded, l'état
+     mémorisé sur l'appareil (clé clt-cliente-ajouter-ouvert). ouvrirAjouter() est aussi appelée
+     quand la file hors réseau a quelque chose à montrer : un colis en attente ne doit jamais
+     être caché derrière un titre replié. */
+  function ouvrirAjouter(ouvert, memoriser){
+    const titre = document.getElementById('ajouter-titre');
+    const contenu = document.getElementById('ajouter-content');
+    if (!titre || !contenu) return;
+    contenu.hidden = !ouvert;
+    titre.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+    if (memoriser) { try { localStorage.setItem('clt-cliente-ajouter-ouvert', ouvert ? '1' : '0'); } catch (e) { /* stockage indisponible : on n'insiste pas */ } }
+  }
+  (function brancherRepliAjouter(){
+    const titre = document.getElementById('ajouter-titre');
+    if (!titre) return;
+    let ouvert = false;
+    try { ouvert = localStorage.getItem('clt-cliente-ajouter-ouvert') === '1'; } catch (e) { ouvert = false; }
+    ouvrirAjouter(ouvert, false);
+    titre.addEventListener('click', () => ouvrirAjouter(titre.getAttribute('aria-expanded') !== 'true', true));
   })();
 
   async function loadMoreColis(){

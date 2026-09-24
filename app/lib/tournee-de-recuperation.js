@@ -303,6 +303,8 @@ function tourneesDeRecuperation(options) {
          carte (fonction confirmer_recuperation) ; le bureau lit les deux chiffres côte à côte. */
       nbPris: (p.nb_colis_pris === undefined || p.nb_colis_pris === null) ? null : Number(p.nb_colis_pris),
       prisConfirmeAt: p.pris_confirme_at || null,
+      // Qui a confirmé (lot 11, 24/09/2026) : le livreur, ou le bureau à sa place.
+      prisConfirmePar: p.pris_confirme_par || null,
       prisNote: p.pris_note || "",
       /* L'écart n'a de sens qu'une fois la journée connue, et seulement s'il manque quelque
          chose : saisir PLUS que ce qui était annoncé n'est pas un problème, c'est une cliente

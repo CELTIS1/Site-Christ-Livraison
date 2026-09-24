@@ -1409,10 +1409,17 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    v250, le 24/09/2026 — LA PAGE COMPTE SUR IPHONE (chantier N, lot 10). Celtis, iPhone 15 Plus : la
    photo se confondait avec la Dynamic Island et la flèche ← tout en haut ne répondait pas (barre
    d'état iOS) : l'en-tête et la flèche descendent de env(safe-area-inset-top). Les trois raccourcis
-   sont centrés (flex) au lieu d'une grille à quatre colonnes. Étiquette 20260924iphone. */
+   sont centrés (flex) au lieu d'une grille à quatre colonnes. Étiquette 20260924iphone.
+   v251, le 24/09/2026 — la demande de passage de bout en bout (chantier N, lot 11). La cliente dit
+   combien de colis (demandes_de_passage.nb_colis) en plus du jour et de la note ; la ligne du bureau
+   porte « 📦 N colis » et « Programmer » remplit cliente, nombre annoncé et note dans la tournée (clé
+   unique CLTDemandeDePassage.cleDePreremplissage). Le bureau peut « Marquer récupérés (n) à sa place »
+   et « Confirmer n pris à sa place » depuis la carte de la tournée (confirmer_recuperation ouverte à
+   l'équipe, pris_confirme_par tracé, journal). La saisie par photos de la cliente est repliée derrière
+   un titre-bouton, mémorisé, qui s'ouvre seul quand la file hors réseau a quelque chose. Étiquette 20260924passage. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v250'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v251'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

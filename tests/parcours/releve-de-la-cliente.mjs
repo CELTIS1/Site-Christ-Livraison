@@ -115,6 +115,8 @@ verifier('aucune erreur JavaScript', erreurs.length === 0, erreurs.join('\n     
 titre('7. Un colis qui existe déjà : l\'app prévient avant de créer');
 await page.locator('#clt-bottomnav .nav[data-target="section-ajouter"]').click();
 await dodo(500);
+// Lot 11 (24/09/2026) : la saisie par photos est repliée derrière son titre ; on l'ouvre comme la vendeuse.
+if (!(await page.locator('#ajouter-content').isVisible())) { await page.locator('#ajouter-titre').click(); await dodo(300); }
 await page.locator('#lotfr-ligne-vide').click();
 await dodo(400);
 const ligne = page.locator('#lotfr-lignes .lotfr-tel').first();

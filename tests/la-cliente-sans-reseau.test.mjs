@@ -36,7 +36,8 @@ verifier('44 px : la croix du calendrier, « Retirer », « Voir le parcours »,
 
 console.log('\n4. Le code mort est parti');
 verifier('plus de repli des sections (neutralizeCollapsibles, toggleSection, toggleRecap, closeOtherSections, refreshStickyTables)', !/function neutralizeCollapsibles|function toggleSection|function toggleRecap|function closeOtherSections|function refreshStickyTables/.test(fo) && !/onclick="toggleSection|onclick="toggleRecap/.test(fo));
-verifier('les sections sont dépliées par le HTML lui-même', /id="ajouter-content" class="collapsible-content open"/.test(fo) && /id="recap-content" class="collapsible-content open"/.test(fo));
+// 24/09/2026 (lot 11) : la saisie par photos se replie de nouveau, mais par un vrai bouton (aria-expanded), pas par l'ancien code.
+verifier('le récap est déplié par le HTML lui-même ; la saisie par photos a son bouton de repli', /id="recap-content" class="collapsible-content open"/.test(fo) && /id="ajouter-titre"[^>]*aria-expanded=/.test(fo));
 verifier('monthKey (cliente) et statutMessageClient (config.js) n\'existaient que pour eux-mêmes', !/function monthKey\(/.test(fo) && !/function statutMessageClient\(/.test(cf));
 verifier('le parcours 19 est là et lancé', fs.existsSync(path.join(RACINE, 'tests/parcours/la-cliente-sans-reseau.mjs')) && /la-cliente-sans-reseau\.mjs/.test(lire('tests/parcours/lancer.mjs')));
 

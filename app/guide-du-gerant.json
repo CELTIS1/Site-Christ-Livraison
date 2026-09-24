@@ -1,6 +1,6 @@
 {
   "_lisez_moi": "LE GUIDE DU GÉRANT — une fiche par fonctionnalité livrée, lue par Gestion › Guide (app/guide-du-gerant.js). Écrit pour Celtis : ce que c'est, où c'est, comment s'en servir, en phrases courtes. À CHAQUE NOUVEAU LOT qui change ce qu'on voit ou ce qu'on fait, ajouter ou mettre à jour la fiche ici et la date « maj ». tests/le-guide-du-gerant.test.mjs vérifie la forme : identifiants uniques, espaces connus, longueurs (une fiche se lit en vingt secondes), « Y aller » vers un onglet qui existe. « pourVous » = un geste ou une décision qui revient à Celtis ; le retirer quand c'est fait.",
-  "maj": "23 septembre 2026",
+  "maj": "24 septembre 2026",
   "espaces": [
     [
       "gestion",
@@ -40,6 +40,20 @@
     ]
   ],
   "fiches": [
+    {
+      "id": "recupere-par-le-bureau",
+      "espace": "bureau",
+      "titre": "Marquer récupéré à la place du livreur",
+      "enBref": "Quand un livreur a pris les colis sans le valider, le bureau le fait pour lui, depuis Tournées, et c'est tracé.",
+      "ou": "Espace équipe › Tournées, carte de la cliente, bouton « 📦 Marquer récupérés (n) à sa place »",
+      "etapes": [
+        "Vérifier par téléphone que le livreur a bien les colis (le bouton demande confirmation et nomme le livreur).",
+        "Les colis passent « récupéré » à son nom, le départ est effacé, le nombre pris est confirmé « par le bureau » — la carte devient une ligne courte.",
+        "Colis déjà récupérés mais nombre jamais confirmé : « ✔ Confirmer n pris à sa place ». Jamais sur une journée à venir."
+      ],
+      "aSavoir": "Base : confirmer_recuperation() accepte l'équipe et l'administrateur (sept derniers jours) et note pris_confirme_par ; le journal d'activité garde « recuperation_marquee_par_le_bureau ». Le geste « Je pars » reste réservé au téléphone du livreur.",
+      "version": "v251"
+    },
     {
       "id": "a-faire",
       "espace": "gestion",
@@ -843,16 +857,16 @@
     {
       "id": "demande-passage",
       "espace": "bureau",
-      "titre": "Une cliente demande un passage : programmer, c'est traiter",
-      "enBref": "La notification dit qui demande et ouvre sa ligne dans Tournées ; poser la tournée prévient la cliente tout seul.",
+      "titre": "Une cliente demande un passage : tout est déjà rempli",
+      "enBref": "La cliente dit le jour, combien de colis et une note ; « Programmer » remplit la tournée, le bureau choisit le livreur.",
       "ou": "Espace équipe › Tournées, bloc ambre « demande un passage »",
       "etapes": [
-        "Sur la ligne (nom, commune · téléphone, note) : « 🗓️ Programmer » pose la cliente dans le formulaire ; choisir le livreur, « Ajouter à la tournée ».",
+        "Sur la ligne : nom, « 📦 N colis », commune · téléphone, note. « 🗓️ Programmer » remplit cliente, nombre et note dans le formulaire ; choisir le livreur, « Ajouter à la tournée ».",
         "La demande passe « traitée » d'elle-même et la cliente reçoit « Passage programmé — [livreur] vous confirmera ».",
         "« ❌ Refuser » avec un motif (la cliente le lit) ; « ✅ Traitée » si on a répondu autrement."
       ],
-      "aSavoir": "Trouvé le 22/09 : « Refuser » échouait depuis le 20/09, une colonne n'avait jamais été créée en base, et la cliente ne voyait plus l'état de sa demande. Réparé.",
-      "version": "v230"
+      "aSavoir": "Lot 11 (24/09) : le nombre de colis annoncé par la cliente est en base (nb_colis) et repris tel quel dans « Colis annoncés » de la tournée. Ancien défaut du 20-22/09 (Refuser) réparé.",
+      "version": "v251"
     },
     {
       "id": "coque",

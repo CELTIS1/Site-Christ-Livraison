@@ -1256,6 +1256,39 @@ html[data-theme="dark"] .demande-ligne--a-voir{ background:#1B2635; }
 html[data-theme="dark"] .demandes-de-passage{ background:#3a2c14; border-color:#7a5a20; }
 html[data-theme="dark"] .demandes-de-passage .clt-alert-head{ color:#f0c27a; }
 html[data-theme="dark"] .demande-ligne + .demande-ligne{ border-top-color:rgba(240,194,122,.2); }
+/* LOT 11 (24/09/2026) — la demande dit COMBIEN : la ligne du bureau porte le nombre en évidence,
+   et « Programmer » le relit dans la tournée. Le bouton « Marquer récupérés » du bureau reprend
+   le vert du geste du livreur : même geste, même couleur, deux écrans. */
+.demande-nb{ display:inline-flex; align-items:center; min-height:26px; padding:0 9px; border-radius:999px; background:#fff; border:1px solid #ffcf8a; color:#8a4b00; font-weight:700; font-size:12.5px; margin-left:6px; }
+html[data-theme="dark"] .demande-nb{ background:#1B2635; border-color:#7a5a20; color:#f0c27a; }
+.tournee-bureau-gestes{ margin-top:0; }
+.tournee-bureau-gestes .btn{ min-height:44px; }
+.tournee-pris-par{ font-weight:600; }
+/* Chez la cliente (fournisseur.html) : nombre et note côte à côte sur grand écran, l'un sous l'autre
+   sur téléphone ; la saisie par photos derrière un titre-bouton de 52 px, chevron qui tourne. */
+.passage-nb-et-note{ display:flex; gap:12px; flex-wrap:wrap; }
+.passage-nb-et-note .field{ flex:1 1 240px; }
+.passage-nb-et-note .passage-nb-champ{ flex:0 1 210px; }
+.passage-nb-et-note .field label{ white-space:nowrap; }
+.passage-nb-et-note input{ min-height:44px; }
+.passage-nb-et-note input[type=number]{ width:100%; padding:11px 13px; border:1.5px solid var(--border-strong); border-radius:12px; font-size:16px; background:var(--white); box-sizing:border-box; }
+.passage-nb-et-note input[type=number]:focus{ outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light); }
+html[data-theme="dark"] .passage-nb-et-note input[type=number]{ background:#18243A; border-color:#33465F; color:#E6ECF3; }
+.ajouter-titre{
+  display:flex; align-items:center; gap:10px; width:100%; min-height:52px; padding:8px 4px; margin:0;
+  background:none; border:0; border-radius:10px; text-align:left; cursor:pointer; color:inherit; font:inherit;
+}
+.ajouter-titre:hover{ background:var(--grey-bg); }
+.ajouter-titre:focus-visible{ outline:2px solid var(--orange); outline-offset:2px; }
+.ajouter-titre-texte{ font-weight:800; font-size:16.5px; color:var(--navy); }
+.ajouter-titre-sous{ flex:1 1 auto; font-size:12.5px; color:var(--muted); }
+.ajouter-titre-chev{ font-size:26px; line-height:1; color:var(--muted); transition:transform .18s; transform:rotate(0deg); }
+.ajouter-titre[aria-expanded="true"] .ajouter-titre-chev{ transform:rotate(90deg); }
+.ajouter-titre[aria-expanded="true"]{ margin-bottom:10px; }
+.ajouter-content[hidden]{ display:none; }
+@media (max-width:640px){ .ajouter-titre-sous{ flex-basis:100%; order:3; padding-left:0; } .ajouter-titre{ flex-wrap:wrap; } }
+html[data-theme="dark"] .ajouter-titre:hover{ background:#18243A; }
+html[data-theme="dark"] .ajouter-titre-texte{ color:#9EC0E6; }
 .argent-jour-table th, .argent-jour-table td{padding:8px 10px; font-size:12.5px;}
 
 /* ---- Les colis qui dorment (29/08/2026) ---------------------------------------------------
@@ -3236,6 +3269,11 @@ html[data-theme="dark"] .tournee-carte--programme{border-left-color:#2fae6b;}
 .tournee-geste--partir:hover{box-shadow:0 4px 12px rgba(217,119,6,.30);}
 /* Ramasser : le vert du travail fini, celui du programme et de « déjà récupéré ». */
 .tournee-geste--recuperer{background:#167a42;}
+/* Le bureau fait le geste à la place du livreur (lot 11, 24/09/2026) : le même vert que « Récupéré,
+   tout » sur le téléphone, mais en contour — c'est un geste de rattrapage, pas le geste normal. */
+.tournee-geste--bureau-recuperer{ background:transparent !important; border:1.5px solid #167a42 !important; color:#167a42 !important; font-weight:700; }
+.tournee-geste--bureau-recuperer:hover{ background:rgba(22,122,66,.08) !important; }
+html[data-theme="dark"] .tournee-geste--bureau-recuperer{ border-color:#5fd39a !important; color:#5fd39a !important; }
 /* La confirmation du nombre pris (06/09/2026) : la même pièce sur le téléphone et au bureau
    (.tournee-pris-confirme) ; sur le téléphone, l'état « --saisie » porte le chiffre à corriger. */
 .tournee-pris-confirme{margin-top:10px; font-size:13.5px; font-weight:700; color:#167a42; display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px;}

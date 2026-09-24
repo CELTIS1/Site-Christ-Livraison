@@ -174,10 +174,10 @@ vm.runInContext(['formatMontant', 'escapeHTML', 'formatHeure'].map(n => blocDe(c
    le bac à sable doit les avoir — sinon le banc tombe sur un ReferenceError au lieu de vérifier
    quoi que ce soit. progDemandes est déclaré vide : les bancs de la tournée ne parlent pas de
    demandes, et un bloc absent ne doit pas changer une seule de leurs lignes. */
-vm.runInContext('let progDemandes = [];', contexte);
+vm.runInContext('let progDemandes = []; let progLignesRendues = [];', contexte);
 vm.runInContext([
   'progGetJour', 'progFicheCliente', 'progNomLivreur', 'blocDemandesHTML',
-  'brancherBoutonsDemandes', 'renderProgrammationBody',
+  'brancherBoutonsDemandes', 'brancherGestesDuBureau', 'renderProgrammationBody',
 ].map(n => blocDe(equipe, n, 'equipe.html')).join('\n\n'), contexte);
 
 vm.runInContext([
@@ -910,7 +910,10 @@ const squelette = (src) => classesDeTournee(src).filter((c) => !c.includes('--')
 /* 21/09/2026 : la ligne courte d'une récupération faite est, elle aussi, propre au bureau.
    Le téléphone du livreur n'en a pas besoin — il n'a qu'une tournée, la sienne, et il sait
    très bien chez qui il est passé. */
-const PIECES_BUREAU_SEUL = ['tournee-faite', 'tournee-faite-coche', 'tournee-faite-compte', 'tournee-faite-ecart', 'tournee-faite-lieu', 'tournee-faite-nom', 'tournee-faite-rang', 'tournee-faites-titre', 'tournee-fleche', 'tournee-ordre', 'tournee-ranger', 'tournee-titre-fait'];
+/* 24/09/2026 (lot 11) : le bureau peut faire le geste du livreur à sa place — « Marquer récupérés »
+   et « Confirmer … pris » (Celtis : « souvent le livreur a pris mais il n'a pas validé »). Ces deux
+   boutons, et « confirmé par le bureau », n'existent que sur l'écran du bureau. */
+const PIECES_BUREAU_SEUL = ['tournee-bureau-gestes', 'tournee-faite', 'tournee-faite-coche', 'tournee-faite-compte', 'tournee-faite-ecart', 'tournee-faite-lieu', 'tournee-faite-nom', 'tournee-faite-rang', 'tournee-faites-titre', 'tournee-fleche', 'tournee-ordre', 'tournee-pris-par', 'tournee-ranger', 'tournee-titre-fait'];
 const squeletteCommun = (src) => squelette(src).filter((c) => !PIECES_BUREAU_SEUL.includes(c));
 verifier("le bureau et le téléphone emploient exactement les mêmes pièces",
   squeletteCommun(equipe).length >= 12
@@ -927,7 +930,7 @@ verifier("et les pièces réservées au bureau sont exactement celles qu'on a no
    « Récupéré, tout » — le bureau REGARDE, il n'envoie pas quelqu'un sur la route depuis un
    fauteuil. Tout le reste, y compris « en route » et l'heure de départ, doit exister des deux
    côtés : l'information que le livreur écrit, le bureau doit pouvoir la lire. */
-const NUANCES_BUREAU_SEUL = ['tournee-faite-lieu--manquant', 'tournee-marque--fait', 'tournee-repli--fait'];
+const NUANCES_BUREAU_SEUL = ['tournee-faite-lieu--manquant', 'tournee-geste--bureau-recuperer', 'tournee-marque--fait', 'tournee-repli--fait'];
 /* Deux nuances de plus côté téléphone depuis le 30/08/2026, et l'asymétrie est voulue.
    « Prévenir que j'arrive » est ce qui reste au livreur quand la cliente a annoncé des colis
    que le bureau n'a pas encore saisis : il peut la prévenir, mais son départ ne peut être

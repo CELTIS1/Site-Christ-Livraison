@@ -117,6 +117,36 @@ const surTel = await page.evaluate(() => {
 verifier('elle tient dans l\'écran, sans débordement', surTel && !surTel.debordement && surTel.largeur <= 390, JSON.stringify(surTel));
 verifier('elle n\'est pas grisée : un travail fait se voit, il ne se devine pas', surTel && Number(surTel.opacite) >= 0.95, JSON.stringify(surTel));
 
+titre('4 ter. Le bureau marque récupéré à la place du livreur (lot 11, 24/09/2026)');
+/* Celtis : « souvent le livreur a pris, mais il n'a pas validé parce qu'il ne maîtrise pas.
+   Nous, à notre niveau, il faut qu'on puisse valider. » Sur la carte d'Awa (programmée, un
+   colis à prendre), le bureau a le bouton ; il confirme ; le colis passe à « récupéré » au nom
+   du livreur, le nombre pris est confirmé par la base au nom du bureau, la carte devient une
+   ligne courte. Sur une journée à venir, le bouton n'existe pas. */
+await page.setViewportSize({ width: 1440, height: 900 });
+await dodo(500);
+const carteAwa = page.locator('#prog-body .tournee-carte', { hasText: 'Awa Boutique' }).first();
+const btnRecup = carteAwa.locator('[data-prog-recuperer]');
+verifier('la carte d\'Awa porte « Marquer récupérés (1) à sa place »', (await btnRecup.count()) === 1 && /Marquer récupérés \(1\)/.test(await texte(btnRecup)), await texte(carteAwa));
+await btnRecup.click();
+await dodo(400);
+verifier('on demande confirmation, en nommant le livreur', /au nom de/.test(await texte(page.locator('#clt-modal-sub'))) && /Marquer récupérés/.test(await texte(page.locator('#clt-modal-ok'))), await texte(page.locator('#clt-modal-sub')));
+await page.locator('#clt-modal-ok').click();
+await dodo(1500);
+const c901 = monde.TABLES.colis.find(c => c.numero === 'CLT-RESTE-1');
+const p1 = monde.TABLES.programmations_collecte.find(p => p.id === 'p1');
+verifier('en base : le colis est récupéré, heure posée, départ effacé', c901 && c901.statut === 'recupere' && !!c901.recupere_at && !c901.collecte_depart_at, JSON.stringify(c901));
+verifier('en base : le nombre pris (1) est confirmé au nom du bureau', p1 && p1.nb_colis_pris === 1 && p1.pris_confirme_par === ADMIN, JSON.stringify(p1));
+verifier('le journal d\'activité garde la trace', monde.TABLES.activity_log.some(a => a.action === 'recuperation_marquee_par_le_bureau'));
+verifier('la carte d\'Awa est devenue une ligne courte : trois lignes faites, une carte', (await page.locator('#prog-body .tournee-faite').count()) === 3 && (await page.locator('#prog-body .tournee-carte').count()) === 1, String(await page.locator('#prog-body .tournee-faite').count()) + ' / ' + String(await page.locator('#prog-body .tournee-carte').count()));
+{
+  const demain = (() => { const d = new Date(aujourdhui + 'T12:00:00'); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
+  const jourInput = page.locator('#prog-jour');
+  await jourInput.fill(demain); await jourInput.dispatchEvent('change'); await dodo(900);
+  verifier('sur une journée à venir, aucun geste du bureau', (await page.locator('#prog-body [data-prog-recuperer], #prog-body [data-prog-confirmer-pris]').count()) === 0);
+  await jourInput.fill(aujourdhui); await jourInput.dispatchEvent('change'); await dodo(900);
+}
+
 titre('4 bis. « L\'essentiel » : les points à régler ont leur pastille');
 /* L'alerte « ✅ Journée bouclée » arrive sur le téléphone — mais une notification se lit une
    fois et disparaît. Celui qui ouvre l'écran une heure plus tard doit pouvoir savoir combien

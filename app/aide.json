@@ -118,10 +118,10 @@
           "titre": "Annoncer mes colis et demander un passage",
           "resume": "Vous enregistrez vos colis ; CLT confirme le passage et vient les prendre.",
           "etapes": [
-            "Onglet « Ajouter » : destination, téléphone du destinataire, description, montant de l'article et frais de livraison. Plusieurs colis d'un coup : « en lot ».",
-            "« Demander un passage » dit à CLT que vous avez des colis prêts. C'est un souhait : le passage est confirmé par le bureau, et vous le voyez.",
-            "Le jour du passage, le livreur marque chaque colis « Récupéré » : vous le voyez en temps réel dans « Mes colis ».",
-            "Vous pouvez corriger l'adresse, le téléphone et la description tant que le colis n'est pas parti ; les montants, appelez-nous."
+            "Onglet « Ajouter » : « Demander un passage ». Choisissez le jour (« Demain » en un appui), dites combien de colis à peu près, une précision si besoin (« après 14 h »), puis « Demander le passage ».",
+            "C'est un souhait : le bureau programme la tournée et vous voyez « Demande vue par CLT » ; si CLT ne peut pas passer, vous lisez le motif et demandez un autre jour.",
+            "Pour enregistrer vos colis vous-même, dépliez « Ajouter des colis à partir des photos » : photographiez les étiquettes, on lit et on tape à côté. Plusieurs colis d'un coup.",
+            "Le jour du passage, le livreur marque chaque colis « Récupéré » : vous le voyez en temps réel dans « Mes colis ». Adresse, téléphone et description se corrigent tant que le colis n'est pas parti ; les montants, appelez-nous."
           ]
         },
         {
@@ -268,7 +268,7 @@
           "resume": "La notification dit qui demande et ouvre sa ligne dans Tournées, encadrée. Programmer la tournée prévient la cliente tout seul.",
           "etapes": [
             "Touchez la notification « 🗓️ [Nom] demande un passage » : Tournées s'ouvre sur le bon jour, la ligne de la cliente est encadrée en orange « à traiter » jusqu'à ce que vous la touchiez.",
-            "Sur la ligne : nom, commune · téléphone, sa note. « 🗓️ Programmer » pose la cliente dans le formulaire au-dessus : choisissez le livreur, « Ajouter à la tournée ».",
+            "Sur la ligne : nom, « 📦 N colis » annoncés, commune · téléphone, note. « 🗓️ Programmer » remplit le formulaire (cliente, nombre, note) : vous vérifiez, choisissez le livreur, « Ajouter à la tournée ».",
             "Dès que la tournée est posée, la demande est marquée traitée et la cliente reçoit « Passage programmé — [livreur] vous confirmera ».",
             "Impossible ce jour-là ? « ❌ Refuser » avec un motif : la cliente le lit et peut demander un autre jour. « ✅ Traitée » si vous avez répondu autrement (appel, passage hors tournée).",
             "Sans notification : la pastille « demande de passage à programmer » dans L'essentiel vous emmène au premier jour qui en a une."
@@ -294,7 +294,8 @@
           "etapes": [
             "Onglet Tournées, le soir : les clientes qui ont annoncé des colis ou demandé un passage (bloc ambre en haut).",
             "Sur une demande : « 🗓️ Programmer » pose la cliente dans le formulaire ; choisissez le livreur, « Ajouter à la tournée ». La demande est traitée d'elle-même et la cliente prévenue.",
-            "Le livreur voit sa tournée le matin, dans l'ordre. Une demande de passage non programmée n'envoie personne — refusez-la avec un motif plutôt que de la laisser."
+            "Le livreur voit sa tournée le matin, dans l'ordre. Une demande de passage non programmée n'envoie personne — refusez-la avec un motif plutôt que de la laisser.",
+            "Le livreur a pris sans valider ? Sur sa carte, « 📦 Marquer récupérés (n) à sa place » passe ses colis à « récupéré » et confirme le nombre au nom du bureau. Seulement si vous savez qu'il les a pris."
           ]
         },
         {

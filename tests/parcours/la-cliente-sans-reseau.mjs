@@ -30,6 +30,8 @@ await page.locator('#clt-bottomnav .nav[data-target="section-ajouter"]').click()
 await dodo(500);
 await contexte.setOffline(true);
 await dodo(300);
+// Lot 11 (24/09/2026) : la saisie par photos est repliée derrière son titre ; on l'ouvre comme la vendeuse.
+if (!(await page.locator('#ajouter-content').isVisible())) { await page.locator('#ajouter-titre').click(); await dodo(300); }
 await page.locator('#lotfr-ligne-vide').click();
 await dodo(400);
 await page.locator('#lotfr-lignes select.lotfr-commune').first().selectOption('Cocody').catch(() => null);

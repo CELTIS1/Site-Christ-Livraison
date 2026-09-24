@@ -327,6 +327,21 @@ export function nouveauMonde() {
     // Un parcours peut poser REPONSES_RPC.primes_en_cours pour voir la carte « Mon mois » vivante.
     if (nom === 'primes_en_cours') return { data: REPONSES_RPC.primes_en_cours || null, error: null };
 
+    /* CONFIRMER LE NOMBRE PRIS (06/09/2026 ; ouverte au bureau le 24/09/2026, lot 11) — le contrat
+       de confirmer_recuperation : le livreur de la ligne, ou l'équipe / l'administrateur à sa place,
+       et la base note qui l'a fait (pris_confirme_par). La vraie fonction est éprouvée en Postgres. */
+    if (nom === 'confirmer_recuperation') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      const ligne = (TABLES.programmations_collecte || []).find(p => String(p.id) === String(args && args.p_programmation_id));
+      if (!ligne) return { data: null, error: { message: 'Récupération introuvable' } };
+      const bureau = lecteur && (lecteur.role === 'admin' || lecteur.role === 'equipe');
+      if (!bureau && ligne.livreur_id !== user) return { data: null, error: { message: "Cette récupération n'est pas la vôtre" } };
+      const nb = Number(args && args.p_nb_pris);
+      if (!Number.isFinite(nb) || nb < 0 || nb > 500) return { data: null, error: { message: 'Nombre de colis pris invalide' } };
+      Object.assign(ligne, { nb_colis_pris: nb, pris_confirme_at: new Date().toISOString(), pris_confirme_par: user, pris_note: (args && args.p_note) || null, annonce_reglee_at: ligne.annonce_reglee_at || new Date().toISOString() });
+      return { data: [{ id: ligne.id, nb_colis_pris: nb, pris_confirme_at: ligne.pris_confirme_at, pris_note: ligne.pris_note, annonce_reglee_at: ligne.annonce_reglee_at }], error: null };
+    }
+
     /* L'AVANCE DE TRAVAIL (22/09/2026) — le contrat des trois fonctions de la base. Les vraies
        sont éprouvées dans un vrai Postgres (quinze scénarios, 22/09) ; ici c'est l'ÉCRAN. */
     if (nom === 'avances_de_travail_soldes' || nom === 'avance_de_travail_mouvement' || nom === 'avance_de_travail_fermer') {

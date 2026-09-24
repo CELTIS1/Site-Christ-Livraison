@@ -301,9 +301,14 @@ let progDemandes = [];
 async function lireDemandesDePassage(jour){
   const { data, error } = await supabaseClient
     .from('demandes_de_passage')
-    .select('id, jour, fournisseur_id, note, statut')
+    .select('id, jour, fournisseur_id, note, statut, nb_colis')
     .eq('jour', jour)
     .eq('statut', 'en_attente');
+  // nb_colis est né le 24/09/2026 (lot 11) : si le script n'est pas passé, on relit sans lui.
+  if (error && /nb_colis/.test(error.message || '')) {
+    const relu = await supabaseClient.from('demandes_de_passage').select('id, jour, fournisseur_id, note, statut').eq('jour', jour).eq('statut', 'en_attente');
+    if (!relu.error) return relu.data || [];
+  }
   if (error) { console.warn('Demandes de passage indisponibles :', error.message || error); return []; }
   return data || [];
 }
@@ -349,11 +354,18 @@ function blocDemandesHTML(){
     const f = progFicheCliente(d.fournisseur_id) || {};
     const nom = f.nom || f.full_name || 'Cliente';
     const ou = [f.commune, f.telephone].filter(Boolean).join(' · ');
+    /* LOT 11 (24/09/2026) : la cliente dit combien de colis. Le nombre est en pastille, le reste
+       (note) dans la même phrase que chez elle (CLTDemandeDePassage.resumeDemande), et le bouton
+       « Programmer » emporte la clé complète — cliente, nombre, note — vers le formulaire. */
+    const R = window.CLTDemandeDePassage;
+    const nb = R ? R.nbColisDemande(d.nb_colis) : null;
+    const resume = R ? R.resumeDemande({ note: d.note }) : (d.note ? '« ' + d.note + ' »' : '');
+    const cle = R ? R.cleDePreremplissage(d) : (d.fournisseur_id + '|||');
     return `<li class="demande-ligne" data-demande="${escapeHTML(d.id)}">
-        <span class="demande-nom">${escapeHTML(nom)}${ou ? ` <span class="demande-ou">${escapeHTML(ou)}</span>` : ''}</span>
-        ${d.note ? `<span class="demande-note">« ${escapeHTML(d.note)} »</span>` : ''}
+        <span class="demande-nom">${escapeHTML(nom)}${nb !== null ? ` <span class="demande-nb">📦 ${nb} colis</span>` : ''}${ou ? ` <span class="demande-ou">${escapeHTML(ou)}</span>` : ''}</span>
+        ${resume ? `<span class="demande-note">${escapeHTML(resume)}</span>` : ''}
         <span class="demande-gestes">
-          <button type="button" class="btn btn-primary btn-sm btn-demande-programmer" data-cliente="${escapeHTML(d.fournisseur_id)}">🗓️ Programmer</button>
+          <button type="button" class="btn btn-primary btn-sm btn-demande-programmer" data-cliente="${escapeHTML(d.fournisseur_id)}" data-cle="${escapeHTML(cle)}">🗓️ Programmer</button>
           <button type="button" class="btn btn-outline btn-sm btn-demande-traitee" data-demande="${escapeHTML(d.id)}">✅ Traitée</button>
           <button type="button" class="btn btn-outline btn-sm btn-demande-refusee" data-demande="${escapeHTML(d.id)}">❌ Refuser</button>
         </span>
@@ -364,7 +376,7 @@ function blocDemandesHTML(){
   return `<div class="demandes-de-passage">
       <div class="clt-alert-head">🗓️ ${attentes.length} cliente${attentes.length > 1 ? 's' : ''} ${attentes.length > 1 ? 'demandent' : 'demande'} un passage ce jour-là</div>
       <ul class="demandes-liste">${lignes}</ul>
-      <div class="meta" style="margin-top:6px;">« Programmer » choisit la cliente ci-dessus ; dès que la tournée est posée, sa demande est marquée traitée et elle est prévenue.</div>
+      <div class="meta" style="margin-top:6px;">« Programmer » remplit le formulaire ci-dessus (cliente, nombre de colis, note) : vous choisissez le livreur et vous validez. Dès que la tournée est posée, sa demande est marquée traitée et elle est prévenue.</div>
     </div>`;
 }
 
@@ -377,7 +389,9 @@ function brancherBoutonsDemandes(racine){
   if (!dans) return;
   dans.querySelectorAll('.btn-demande-programmer').forEach(b => {
     b.addEventListener('click', () => {
-      if (typeof progPreremplir === 'function') progPreremplir(b.dataset.cliente + '|' + '');
+      // La clé complète (cliente|livreur vide|nombre|note) vient de CLTDemandeDePassage.cleDePreremplissage :
+      // le bureau retrouve ce que la cliente a écrit et ne choisit plus que le livreur (lot 11).
+      if (typeof progPreremplir === 'function') progPreremplir(b.dataset.cle || (b.dataset.cliente + '|||'));
       if (window.CLTPointAVoir && b.closest('.demande-ligne')) CLTPointAVoir.vu('passage', b.closest('.demande-ligne').dataset.demande);
     });
   });
@@ -388,6 +402,58 @@ function brancherBoutonsDemandes(racine){
     b.addEventListener('click', () => refuserDemandeDePassage(b.dataset.demande));
   });
 }
+
+/* LES DEUX GESTES DU BUREAU SUR LA TOURNÉE (lot 11, 24/09/2026) — voir bureauGestesHTML. */
+async function bureauMarquerRecuperes(fournisseurId, progId, livreurId){
+  const jour = progGetJour();
+  const l = (progLignesRendues || []).find(x => String(x.fournisseurId) === String(fournisseurId) && String(x.id || '') === String(progId || ''))
+         || (progLignesRendues || []).find(x => String(x.fournisseurId) === String(fournisseurId));
+  if (!l || !l.idsAPrendre || !l.idsAPrendre.length) { cltToast('Rien à marquer : ses colis sont déjà récupérés.', { type: 'info' }); return; }
+  const n = l.idsAPrendre.length;
+  const ok = await cltConfirm({
+    title: 'Marquer comme récupérés à la place du livreur ?',
+    sub: `Les ${n} colis de ${l.clienteNom} passeront au statut « récupéré » au nom de ${l.livreurNom}. À faire seulement si vous savez qu'il les a bien pris.`,
+    okLabel: 'Marquer récupérés',
+  });
+  if (!ok) return;
+  const nowIso = new Date().toISOString();
+  const maj = { statut: 'recupere', recupere_at: nowIso, collecte_depart_at: null };
+  let { error } = await supabaseClient.from('colis').update(maj).in('id', l.idsAPrendre);
+  if (error && /column|colonne|does not exist|n'existe pas/i.test(error.message || '')) ({ error } = await supabaseClient.from('colis').update({ statut: 'recupere' }).in('id', l.idsAPrendre));
+  if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
+  // Un colis sans livreur hérite de celui de la ligne : c'est lui qui l'a dans sa sacoche.
+  if (livreurId) {
+    const sansLivreur = l.idsAPrendre.filter(id => { const c = (allColis || []).find(x => x.id === id); return c && !c.livreur_id; });
+    if (sansLivreur.length) await supabaseClient.from('colis').update({ livreur_id: livreurId }).in('id', sansLivreur);
+  }
+  l.idsAPrendre.forEach(id => { const c = (allColis || []).find(x => x.id === id); if (c) Object.assign(c, maj, (livreurId && !c.livreur_id) ? { livreur_id: livreurId } : {}); });
+  supabaseClient.from('activity_log').insert([{ action: 'recuperation_marquee_par_le_bureau', target_id: progId || null, target_type: 'programmations_collecte', details: { fournisseur_id: fournisseurId, jour, nb: n, livreur_id: livreurId || null, colis: l.idsAPrendre } }]).then(() => {}, () => {});
+  // Le nombre pris, confirmé dans la même écriture que celle du téléphone.
+  if (progId) {
+    const { error: e2 } = await supabaseClient.rpc('confirmer_recuperation', { p_programmation_id: progId, p_nb_pris: (l.nbDejaPris || 0) + n, p_note: 'Confirmé par le bureau' });
+    if (e2) console.warn('Nombre pris non confirmé :', e2.message || e2);
+  }
+  cltToast(`${n} colis de ${l.clienteNom} marqués récupérés, au nom de ${l.livreurNom}.`, { type: 'success', title: "C'est enregistré" });
+  chargerProgrammations();
+  if (typeof renderColis === 'function') renderColis();
+}
+async function bureauConfirmerPris(progId, propose){
+  const rep = await cltPrompt({ title: 'Combien de colis a-t-il pris ?', sub: 'Le chiffre que le livreur aurait confirmé sur place.', placeholder: 'Nombre de colis', defaultValue: String(propose || ''), inputMode: 'numeric', okLabel: 'Confirmer' });
+  if (rep === null || rep === undefined) return;
+  const nb = parseInt(String(rep).replace(/\D/g, ''), 10);
+  if (!Number.isFinite(nb) || nb < 0) { cltToast('Indiquez un nombre de colis.', { type: 'warning' }); return; }
+  const { error } = await supabaseClient.rpc('confirmer_recuperation', { p_programmation_id: progId, p_nb_pris: nb, p_note: 'Confirmé par le bureau' });
+  if (error) { cltToast("Impossible de confirmer pour l'instant (" + (error.message || 'réseau') + ').', { type: 'error' }); return; }
+  cltToast(nb + ' colis pris — confirmé par le bureau.', { type: 'success' });
+  chargerProgrammations();
+}
+function brancherGestesDuBureau(racine){
+  const dans = racine && typeof racine.querySelectorAll === 'function' ? racine : null;
+  if (!dans) return;
+  dans.querySelectorAll('[data-prog-recuperer]').forEach(b => b.addEventListener('click', () => bureauMarquerRecuperes(b.dataset.progRecuperer, b.dataset.progId, b.dataset.livreur)));
+  dans.querySelectorAll('[data-prog-confirmer-pris]').forEach(b => b.addEventListener('click', () => bureauConfirmerPris(b.dataset.progConfirmerPris, b.dataset.propose)));
+}
+let progLignesRendues = [];
 
 async function chargerProgrammations(){
 const jour = progGetJour();
@@ -419,7 +485,9 @@ const lireProgrammations = (colonnes) => supabaseClient
 .select(colonnes)
 .eq('jour', jour);
 
-let { data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_note, ordre_tournee');
+let { data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_confirme_par, pris_note, ordre_tournee');
+// pris_confirme_par est né le 24/09/2026 (lot 11) : sans lui, on relit comme avant.
+if (error && /pris_confirme_par/.test(error.message || '')) ({ data, error } = await lireProgrammations('id, jour, fournisseur_id, livreur_id, note, nb_colis_annonce, annonce_reglee_at, nb_colis_pris, pris_confirme_at, pris_note, ordre_tournee'));
     if (error && colonneAbsente(error)) {
       // L'ordre de la tournée est né le 18/09/2026 : sans lui, on retombe sur le rangement par
       // commune, qui ne demande aucune colonne. Dégradé, pas tombé.
@@ -489,6 +557,7 @@ horsProgramme: true,
 travailFait: true,
 });
 const { lignes, total, colisConnus } = tournee;
+progLignesRendues = lignes;
 const dateLabel = recapDayLabel(jour);
 
 /* LES RESTES DES JOURS PASSÉS. (07/09/2026, Celtis : « chaque jour, son affichage »)
@@ -606,6 +675,34 @@ ${ecart && libelleColisPris(l) ? `<span class="tournee-faite-ecart">⚠️ ${esc
 </div>`;
 };
 
+/* LE BUREAU PEUT FAIRE LE GESTE DU LIVREUR. (lot 11, 24/09/2026)
+   Celtis : « je remarque que souvent le livreur a pris, mais il n'a pas validé parce qu'il ne
+   maîtrise pas. Nous, à notre niveau, si on est capable de valider une fois qu'on a la
+   confirmation… » Jusqu'ici la carte du bureau REGARDAIT seulement (« le téléphone agit »).
+   Ce principe reste vrai pour « Je pars » — on ne fait pas partir quelqu'un qui n'est pas dans
+   la pièce — mais pas pour « récupéré » : le colis EST dans la sacoche du livreur, le bureau
+   le sait par téléphone, et un colis jamais marqué récupéré fausse l'argent de la journée.
+   Deux gestes, jamais sur une journée à venir, chacun avec une confirmation :
+     — « Marquer récupérés (n) » : les colis en attente chez elle passent à « récupéré », au nom
+       du livreur de la ligne ; puis le nombre pris est confirmé dans la même écriture que celle
+       du téléphone (confirmer_recuperation), qui note QUI l'a fait (pris_confirme_par).
+     — « Confirmer … pris » : quand les colis sont déjà récupérés mais que personne n'a confirmé
+       le nombre. */
+const bureauGestesHTML = (l) => {
+  if (!colisConnus || l.rienARecuperer) return '';
+  const gestes = [];
+  if (l.idsAPrendre && l.idsAPrendre.length) {
+    gestes.push(`<button type="button" class="btn btn-sm tournee-geste tournee-geste--bureau-recuperer" data-prog-recuperer="${escapeHTML(l.fournisseurId)}" data-prog-id="${escapeHTML(l.id || '')}" data-livreur="${escapeHTML(String(l.livreurId || ''))}">📦 Marquer récupérés (${l.idsAPrendre.length}) à sa place</button>`);
+  } else if (l.id && !l.horsProgramme && l.nbDejaPris > 0 && (l.nbPris === null || l.nbPris === undefined)) {
+    gestes.push(`<button type="button" class="btn btn-outline btn-sm tournee-geste" data-prog-confirmer-pris="${escapeHTML(l.id)}" data-propose="${l.nbDejaPris}">✔ Confirmer ${l.nbDejaPris} pris à sa place</button>`);
+  }
+  if (!gestes.length) return '';
+  return `<div class="tournee-bureau-gestes">${gestes.join('')}</div>`;
+};
+const bureauQuiAConfirme = (l) => {
+  if (!l.prisConfirmePar || l.prisConfirmePar === l.livreurId) return 'le livreur';
+  return 'le bureau';
+};
 const carteHTML = (l) => {
 if (recuperationFaite(l)) return ligneFaiteHTML(l);
 const contacts = l.telephone
@@ -726,10 +823,11 @@ ${(!enRoute && l.departAncienAt) ? `<div class="tournee-rien tournee-rien--atten
 ${(!libelleAnnonceRecuperation(l) && libelleAnnoncePosee(l)) ? `<div class="tournee-rien tournee-rien--attente">${escapeHTML(libelleAnnoncePosee(l))}</div>` : ''}
 <!-- Ce que le livreur a confirmé sur place (06/09/2026) : la même phrase que sur son téléphone,
      libelleColisPris() dans config.js. En rouge dès que ça ne colle pas avec l'annonce. -->
-${libelleColisPris(l) ? `<div class="tournee-pris-confirme${(l.nbAnnonce !== null && l.nbAnnonce !== undefined && l.nbPris !== l.nbAnnonce) ? ' tournee-pris-confirme--ecart' : ''}">✔ ${escapeHTML(libelleColisPris(l))}${l.prisConfirmeAt ? ` · confirmé par le livreur à ${escapeHTML(formatHeure(l.prisConfirmeAt))}` : ''}${l.prisNote ? `<div class="tournee-pris-note">${escapeHTML(l.prisNote)}</div>` : ''}</div>` : ''}
+${libelleColisPris(l) ? `<div class="tournee-pris-confirme${(l.nbAnnonce !== null && l.nbAnnonce !== undefined && l.nbPris !== l.nbAnnonce) ? ' tournee-pris-confirme--ecart' : ''}">✔ ${escapeHTML(libelleColisPris(l))}${l.prisConfirmeAt ? ` · confirmé par <span class="tournee-pris-par">${escapeHTML(bureauQuiAConfirme(l))}</span> à ${escapeHTML(formatHeure(l.prisConfirmeAt))}` : ''}${l.prisNote ? `<div class="tournee-pris-note">${escapeHTML(l.prisNote)}</div>` : ''}</div>` : ''}
 </div>
 ${contacts}
 ${geste}
+${bureauGestesHTML(l)}
 </div>`;
 };
 
@@ -835,6 +933,7 @@ ${colisConnus
 : `La journée n'est pas encore arrivée : aucun colis n'existe pour elle. Les comptes se rempliront tout seuls à mesure que les colis seront saisis, et chacun se rattachera au livreur désigné ici.`}
 </div>` : ''}`);
 brancherBoutonsDemandes(body);
+brancherGestesDuBureau(body);
 }
 
 /* POSER UNE TOURNÉE POUR UNE CLIENTE DU REPLI, SANS LA RETAPER. (28/08/2026)
