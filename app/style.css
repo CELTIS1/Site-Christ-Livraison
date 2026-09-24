@@ -109,7 +109,11 @@ input,textarea,select{font-family:inherit;}
   /* flex-basis 0 (23/09/2026) : le titre partage TOUJOURS sa ligne avec les deux ronds, quitte à
      se replier sur deux lignes sur un écran très étroit (320 px). Avant, un titre long envoyait
      les ronds seuls sur une deuxième ligne, et la cloche sur une troisième. */
-  .topbar .brand{font-size:14px; flex:1 1 0; min-width:0;}
+  /* Base 140 px (24/09/2026, v249) : depuis que la lune a quitté la barre, il ne reste qu'un rond en
+     haut, et l'identité (base « 100 % moins le rond ») tenait alors à côté de ☰ sur la ligne 1, en
+     écrasant le titre à 0 px (« Espace / Colis / Livreur » en trois lignes sur le logo). Une base
+     de 140 px pour le titre force l'identité à passer en ligne 2, quelle que soit la largeur. */
+  .topbar .brand{font-size:14px; flex:1 1 140px; min-width:0;}
   /* Ce `display:contents` ne s'applique qu'aux en-têtes qui portent réellement les deux groupes
      (classe posée dans le HTML). L'écran Gestion a un en-tête d'une autre forme — un lien de
      retour et deux boutons larges, ni photo ni roue dentée — et garde le sien tel quel. Un
@@ -120,8 +124,8 @@ input,textarea,select{font-family:inherit;}
   /* Ligne 2 : l'identité à gauche, la cloche 🔔 à droite (23/09/2026). L'identité ne prend plus
      toute la largeur : elle laisse la place du rond, sous le menu. */
   .topbar-identite{order:2; flex:1 1 calc(100% - 60px); min-width:0; flex-wrap:wrap; gap:8px 10px; font-size:13px;}
-  /* La base « 100 % moins le rond » force la ligne : les boutons du thème et du menu ne peuvent
-     pas tenir à côté de l'identité, ils restent en haut avec le titre (qui se replie s'il le faut). */
+  /* Avec la base de 140 px du titre, l'identité ne peut pas tenir en ligne 1 : le rond ☰ reste en
+     haut avec le titre, l'identité et la cloche forment la ligne 2. */
   .clt-cloche-wrap{order:3; flex:0 0 auto; margin-left:auto;}
   .topbar .user-info #user-name{max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .btn-logout{padding:7px 14px; font-size:12.5px;}
