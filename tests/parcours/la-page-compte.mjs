@@ -53,7 +53,11 @@ verifier('✕ referme la fenêtre : on est de retour SUR la page Compte, pas sur
 await page.locator('#btn-tarifs').click(); await dodo(600);
 verifier('« Grille tarifaire » s\'ouvre par-dessus, la page reste', await ouvert());
 await page.keyboard.press('Escape'); await dodo(400);
-verifier('Échap referme la grille — et la page Compte est toujours là', await ouvert());
+verifier('Échap referme la grille — et la page Compte est toujours là', await ouvert() && (await page.locator('#clt-tarifs').count()) === 0);
+verifier('la grille, retirée du document, a quitté la pile des couches (sinon Échap ne fermerait plus rien)', JSON.stringify(await page.evaluate(() => window.cltCouchesOuvertes())) === '["Menu"]', await page.evaluate(() => window.cltCouchesOuvertes()));
+await page.keyboard.press('Escape'); await dodo(400);
+verifier('un second Échap referme la page Compte', !(await ouvert()));
+await page.locator('#settings-menu-btn').click(); await dodo(500);
 await page.locator('.sd-retour').click(); await dodo(400);
 verifier('← ramène à l\'application', !(await ouvert()));
 

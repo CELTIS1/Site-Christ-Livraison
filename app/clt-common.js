@@ -552,6 +552,11 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
   // pose ni ne retire rien. Toucher l'historique deux fois dans le même instant le désynchronise.
   function synchroniser() {
     var entrees = 0, sorties = 0;
+    // Une fenêtre construite en JavaScript (grille tarifaire, aide, nouveautés) se ferme en se
+    // RETIRANT du document, pas en changeant de classe (24/09/2026, v249). Retirée, elle n'est plus
+    // peinte, mais elle ne doit pas non plus rester déclarée : la même fenêtre revient sous un
+    // nouvel élément, et la liste grossirait à chaque ouverture.
+    for (var i = couches.length - 1; i >= 0; i--) if (!couches[i].element.isConnected) { var k = pile.indexOf(couches[i]); if (k !== -1) { pile.splice(k, 1); sorties++; } couches.splice(i, 1); }
     couches.forEach(function (c) {
       var ouverte = estOuverte(c);
       var dansLaPile = pile.indexOf(c) !== -1;
@@ -722,6 +727,8 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
           else balayer(n);
           balayerOnglets(n);        // les onglets d'un écran construit après coup comptent aussi
         });
+        // Une fenêtre qui s'en va (ov.remove()) ne change aucun attribut : c'est ici qu'on le voit.
+        if (lot.removedNodes.length) synchroniser();
       });
     }).observe(document.body, { childList: true });
   }

@@ -107,6 +107,9 @@ verifier('changer de commune redessine (Yopougon → Anyama 2 500 F)', /Anyama[\
 await page.keyboard.press('Escape');
 await dodo(200);
 verifier('Échap ferme la fenêtre', (await page.locator('#clt-tarifs').count()) === 0);
+verifier('… et laisse la page Compte ouverte dessous (v249 : on revient SUR la page, pas sur l\'écran d\'avant)', await page.evaluate(() => document.getElementById('settings-dropdown').classList.contains('open')));
+await page.keyboard.press('Escape'); await dodo(300);
+verifier('un second Échap referme la page Compte', !(await page.evaluate(() => document.getElementById('settings-dropdown').classList.contains('open'))));
 verifier('aucune erreur JavaScript', erreurs.length === 0, erreurs.join('\n       '));
 
 titre('7. Un colis qui existe déjà : l\'app prévient avant de créer');

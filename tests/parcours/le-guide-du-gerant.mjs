@@ -60,8 +60,10 @@ titre('5. La nuit : tout se LIT (contraste mesuré, pas supposé)');
    ses règles de nuit, mais personne ne l'avait REGARDÉ la nuit, et la barre du haut écrivait en
    bleu nuit sur son bandeau. On mesure donc : pour chaque texte, le contraste entre sa couleur et
    le premier fond opaque derrière lui (formule WCAG). 4,5 au moins pour un texte courant. */
-await page.locator('#cltThemeToggle').click();
-await dodo(500);
+// v249 : la lune a quitté la barre du haut ; le thème se règle dans la page Compte (☰ → « Nuit »).
+await page.locator('#settings-menu-btn').click(); await dodo(400);
+await page.locator('.sd-rac', { hasText: 'Nuit' }).click(); await dodo(400);
+await page.keyboard.press('Escape'); await dodo(300);
 const faibles = await page.evaluate(() => {
   const lum = (r, g, b) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
   const rgba = (c) => { const m = c.match(/[\d.]+/g).map(Number); return { r: m[0], g: m[1], b: m[2], a: m.length > 3 ? m[3] : 1 }; };
@@ -73,7 +75,7 @@ const faibles = await page.evaluate(() => {
 });
 verifier('le mode nuit est bien actif, et plus de cent textes ont été mesurés', faibles.nuit === 'dark' && faibles.vus > 100, JSON.stringify(faibles).slice(0, 200));
 verifier('aucun texte du guide, de la barre du haut ni de la barre latérale sous 4,5 de contraste', faibles.faibles.length === 0, faibles.faibles.join(' | '));
-await page.locator('#cltThemeToggle').click();
+await page.evaluate(() => window.cltBasculerTheme());   // retour au jour (v249 : la lune n'est plus dans la barre)
 await dodo(300);
 
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
