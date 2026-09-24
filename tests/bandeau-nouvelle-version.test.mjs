@@ -1416,10 +1416,18 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    unique CLTDemandeDePassage.cleDePreremplissage). Le bureau peut « Marquer récupérés (n) à sa place »
    et « Confirmer n pris à sa place » depuis la carte de la tournée (confirmer_recuperation ouverte à
    l'équipe, pris_confirme_par tracé, journal). La saisie par photos de la cliente est repliée derrière
-   un titre-bouton, mémorisé, qui s'ouvre seul quand la file hors réseau a quelque chose. Étiquette 20260924passage. */
+   un titre-bouton, mémorisé, qui s'ouvre seul quand la file hors réseau a quelque chose. Étiquette 20260924passage.
+   v252, le 24/09/2026 — les dossiers de comptes (chantier N, lot 12). Une demande de compte n'est
+   plus une ligne qui s'efface : Équipe › Comptes › « Dossiers de comptes » en quatre segments (En
+   attente · Acceptés · Refusés · Suspendus), carte avec photo, rôle, téléphone lisible, commune, état
+   teinté « Accepté / Refusé par X le … · motif », gestes Appeler / WhatsApp (message prêt selon
+   l'état, tout indicatif) / Voir la pièce (visionneuse dans l'application) / Le code / Accepter /
+   Refuser avec motif / Réexaminer / Suspendre / Rétablir. Règles dans app/dossiers-de-comptes.js ;
+   profiles.decision_at / decision_par / decision_motif (SQL du lot 12) ; la personne refusée lit le
+   motif sur express-login. Parcours les-dossiers-de-comptes (18). Étiquette 20260924dossiers. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v251'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v252'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

@@ -53,11 +53,14 @@ async function requireAuth() {
 }
 
 async function getExpressProfile(userId) {
-  const { data, error } = await supabaseClient
+  const COLS = "id, role, full_name, phone, status, created_at, avatar_url, disponible_express, suppression_demandee_at, geoloc_consent_at, telephone_verifie_at";
+  let { data, error } = await supabaseClient
     .from("profiles")
-    .select("id, role, full_name, phone, status, created_at, avatar_url, disponible_express, suppression_demandee_at, geoloc_consent_at, telephone_verifie_at")
+    .select(COLS + ", decision_motif")
     .eq("id", userId)
     .single();
+  // decision_motif est né le 24/09/2026 (lot 12, dossiers de comptes) : sans lui, on relit sans.
+  if (error && /decision_motif/.test(error.message || "")) ({ data, error } = await supabaseClient.from("profiles").select(COLS).eq("id", userId).single());
   if (error) {
     console.error("Erreur chargement profil:", error);
     return null;

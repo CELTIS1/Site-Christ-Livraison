@@ -17,10 +17,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260924passage">
+  <link rel="stylesheet" href="style.css?v=20260924dossiers">
   <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-  <script src="theme.js?v=20260924passage"></script>
-  <script src="splash.js?v=20260924passage"></script>
+  <script src="theme.js?v=20260924dossiers"></script>
+  <script src="splash.js?v=20260924dossiers"></script>
   <style>
     /* CLT Express utilise le violet comme couleur de marque, à la place du bleu marine du
        portail interne, pour bien montrer qu'il s'agit d'un produit distinct. */
@@ -213,9 +213,9 @@
     </div>
   </div>
 
-<script src="clt-common.js?v=20260924passage"></script>
-<script src="express-config.js?v=20260924passage"></script>
-<script src="biometric-login.js?v=20260924passage"></script>
+<script src="clt-common.js?v=20260924dossiers"></script>
+<script src="express-config.js?v=20260924dossiers"></script>
+<script src="biometric-login.js?v=20260924dossiers"></script>
 <script>
   let regRole = 'client_express';
   let kycFile = null;
@@ -425,7 +425,8 @@
       stopWaiting();
       document.getElementById('waiting-box').classList.add('hidden');
       document.getElementById('form-connexion-login').classList.remove('hidden');
-      showMsg("Votre demande de compte a été refusée. Contactez notre équipe pour plus d'informations.", "error");
+      // Lot 12 (24/09/2026) : la personne lit le motif écrit par le bureau, pas seulement « refusée ».
+      showMsg("Votre demande de compte a été refusée" + (profile.decision_motif ? " : « " + profile.decision_motif + " »" : "") + ". Contactez notre équipe pour compléter votre dossier.", "error");
       return true;
     }
     return false;
@@ -480,7 +481,8 @@
     }
     if (profile && profile.status === 'rejete') {
       await supabaseClient.auth.signOut();
-      showMsg("Votre demande de compte a été refusée. Contactez notre équipe pour plus d'informations.", "error");
+      // Lot 12 (24/09/2026) : la personne lit le motif écrit par le bureau, pas seulement « refusée ».
+      showMsg("Votre demande de compte a été refusée" + (profile.decision_motif ? " : « " + profile.decision_motif + " »" : "") + ". Contactez notre équipe pour compléter votre dossier.", "error");
       return false;
     }
     if (profile && profile.status === 'suspendu') {

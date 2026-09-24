@@ -44,7 +44,8 @@ if (existe('_sql-prive/2026-08-controle-ecriture-anonyme.sql') && existe('_sql-p
 }
 
 console.log('\n5. La validation d\'un compte');
-verifier('valider : status = valide ; rejeter : une question, puis status = rejete', /update\(\{ status: 'valide' \}\)\.eq\('id', id\)/.test(e02) && /title: 'Rejeter ce compte \?'/.test(e02) && /update\(\{ status: 'rejete' \}\)\.eq\('id', id\)/.test(e02));
+// 24/09/2026 (lot 12) : accepter / refuser passent par ecritureDecision (statut + qui + quand + motif) ; refuser pose une question avec motif.
+verifier('accepter : status = valide ; refuser : une question avec motif, puis status = rejete', /R\.ecritureDecision\(geste/.test(e02) && /title: 'Refuser ce dossier \?'/.test(e02) && /status: 'valide'/.test(lire('app/dossiers-de-comptes.js')) && /status: 'rejete'/.test(lire('app/dossiers-de-comptes.js')));
 verifier('la liste des comptes en attente se recharge après chaque geste', (e02.match(/await loadPending\(\)/g) || []).length >= 2);
 verifier('un compte Express reçoit son code de vérification par la fonction serveur, pas par SMS payant', /callAdminFunction\('envoyer-code-express', \{ user_id: id \}\)/.test(e02));
 

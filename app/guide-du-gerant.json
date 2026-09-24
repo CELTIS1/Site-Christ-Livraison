@@ -41,6 +41,21 @@
   ],
   "fiches": [
     {
+      "id": "dossiers-de-comptes",
+      "espace": "bureau",
+      "titre": "Les dossiers de comptes (Express et clientes)",
+      "enBref": "Une demande de compte ne disparaît plus : elle a un état, une histoire, ses pièces, et on joint la personne en un geste.",
+      "ou": "Espace équipe › Comptes › « Dossiers de comptes » (En attente · Acceptés · Refusés · Suspendus)",
+      "etapes": [
+        "Ouvrir le dossier : nom, rôle, téléphone, commune, photo, « Voir la pièce » (dans l'application), état « En attente depuis le … / numéro vérifié ».",
+        "« Appeler » ou « WhatsApp » (message prêt) pour finaliser ; « Le code » pour un Express au numéro non vérifié.",
+        "« Accepter », ou « Refuser » avec un motif (lu par la personne) ; plus tard « Réexaminer », « Suspendre », « Rétablir »."
+      ],
+      "aSavoir": "Base : profiles.decision_at / decision_par / decision_motif (SQL du lot 12 : sans lui, le statut change mais « qui / quand / motif » ne sont pas gardés). Acceptés = 60 derniers jours ; le reste est dans « Tous les comptes ». Journal : dossier_accepter / refuser / reexaminer.",
+      "version": "v252",
+      "pourVous": "Jouer `_sql-prive/2026-09-24-les-dossiers-de-comptes.sql` dans Supabase (2 minutes, rejouable)."
+    },
+    {
       "id": "recupere-par-le-bureau",
       "espace": "bureau",
       "titre": "Marquer récupéré à la place du livreur",

@@ -310,6 +310,17 @@
           ]
         },
         {
+          "id": "equipe-dossiers",
+          "titre": "Les dossiers de comptes : accepter, refuser, joindre",
+          "resume": "Une demande de compte est un dossier qui garde tout : pièce, photo, contact, qui a décidé et pourquoi.",
+          "etapes": [
+            "Comptes › « Dossiers de comptes » : quatre onglets — En attente, Acceptés, Refusés, Suspendus. Rien ne disparaît quand vous décidez : le dossier change d'onglet.",
+            "Sur chaque dossier : « Appeler », « WhatsApp » (message prêt selon l'état), « Voir la pièce » (coursier Express), « Le code » (Express au numéro pas encore vérifié).",
+            "« Accepter » ouvre le compte tout de suite. « Refuser » demande un motif : la personne le lit sur sa page de connexion et dans le message WhatsApp. « Réexaminer » remet en attente.",
+            "Administrateur : « Suspendre » et « Rétablir » depuis le dossier, avec motif — le compte et son historique restent."
+          ]
+        },
+        {
           "id": "equipe-comptes",
           "titre": "Créer un compte, rattacher des boutiques",
           "resume": "Plus → Comptes. Le compte est actif tout de suite.",

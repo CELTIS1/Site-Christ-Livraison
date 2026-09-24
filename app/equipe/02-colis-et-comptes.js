@@ -110,41 +110,212 @@ if (!role) return 'Rôle inconnu';
 return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
-function pendingRowHTML(p){
-let pieceHtml = '';
-if (p.role === 'coursier_express' && p.piece_identite_path) {
-pieceHtml = `<button class="btn btn-sm btn-voir-piece" style="margin-bottom:4px; margin-right:4px;">📷 Voir la pièce</button>`;
+/* LES DOSSIERS DE COMPTES (chantier N, lot 12, 24/09/2026). Celtis : « il suffit que je valide et
+   tout disparaît ; que je refuse, tout disparaît. J'ai besoin de pouvoir les écrire ou les appeler ».
+   Une demande n'est plus une ligne qui s'efface : c'est un dossier avec un état (en attente,
+   accepté, refusé, suspendu), son histoire (qui, quand, pourquoi), sa pièce et sa photo, et deux
+   façons de joindre la personne. Les règles (états, gestes, message) sont dans
+   app/dossiers-de-comptes.js ; ici, l'écran. `pendingAccounts` reste la liste des dossiers EN
+   ATTENTE : L'essentiel et les pastilles comptent dessus. */
+let dossiersComptes = [];
+let dossiersSegment = 'attente';
+
+function dossierNomDe(id){
+  if (!id) return 'le bureau';
+  if (typeof currentUser !== 'undefined' && currentUser && id === currentUser.id) return 'vous';
+  const l = (typeof livreurs !== 'undefined' ? livreurs : []).find(x => x.id === id);
+  if (l && l.full_name) return l.full_name;
+  const d = dossiersComptes.find(x => x.id === id);
+  return d && d.full_name ? d.full_name : 'le bureau';
 }
-// LE CODE DE L'ÉQUIPE (10/09/2026, feuille de route 1.8). Un compte Express naît en attente,
-// son numéro non prouvé : « Envoyer le code » tire un code à 6 chiffres (fonction serveur),
-// l'affiche ici une seule fois et ouvre WhatsApp au numéro du compte avec le message prêt.
-// Un client s'ouvre tout seul dès qu'il saisit le bon code ; un coursier attend « Valider ».
-const estExpress = p.role === 'client_express' || p.role === 'coursier_express';
-const verifie = !!p.telephone_verifie_at;
-const codeHtml = estExpress
-? (verifie
-  ? `<div class="meta" style="color:#1a7d3c; font-weight:700;">✅ Numéro vérifié</div>`
-  : `<div class="meta" style="color:#b7791f; font-weight:700;">📲 Numéro pas encore vérifié</div><div class="code-express-zone"></div>`)
-: '';
-const boutonCode = estExpress && !verifie
-? `<button class="btn btn-sm btn-envoyer-code" style="margin-bottom:4px; margin-right:4px;" title="Tirer un code à 6 chiffres et l'envoyer sur WhatsApp">📲 Envoyer le code</button>`
-: '';
-return `
-<div class="colis-item" data-id="${p.id}">
-<div class="info">
-<div class="desc">${p.full_name ? escapeHTML(p.full_name) : '(sans nom)'}${p.company_name ? ' — ' + escapeHTML(p.company_name) : ''}</div>
-<div class="meta">Rôle demandé : ${escapeHTML(roleDisplayLabel(p.role))}${p.phone ? ' · Tél : ' + escapeHTML(p.phone) : ''}</div>
-${codeHtml}
-</div>
-<div class="status-col">
-${pieceHtml}
-${boutonCode}
-<button class="btn btn-sm btn-valider" style="margin-bottom:4px;">Valider</button>
-<button class="btn btn-sm btn-rejeter" style="background:#c0392b;">Rejeter</button>
-</div>
-</div>
-`;
+
+function dossierHTML(p){
+  const R = window.CLTDossiersDeComptes;
+  const etat = R.etatDuDossier(p, { nomDe: dossierNomDe, formatDate: (d) => formatDate(d) });
+  const gestes = R.gestesDuDossier(p, { estAdmin: !!isAdmin });
+  const tel = p.phone ? escapeHTML(window.CLTNumero ? CLTNumero.lisible(p.phone) : p.phone) : '';
+  const lieu = [p.commune_recuperation, p.adresse_recuperation].filter(Boolean).join(' · ');
+  const initiales = (p.full_name || p.company_name || '?').trim().split(/\s+/).map(m => m[0]).join('').slice(0, 2).toUpperCase();
+  const avatar = p.avatar_url
+    ? `<img class="dossier-avatar" src="${escapeHTML(p.avatar_url)}" alt="" loading="lazy">`
+    : `<span class="dossier-avatar dossier-avatar--vide" aria-hidden="true">${escapeHTML(initiales)}</span>`;
+  const B = {
+    appeler: `<a class="btn btn-outline btn-sm" href="tel:${escapeHTML(window.CLTNumero ? CLTNumero.pourAppel(p.phone) : p.phone)}">📞 Appeler</a>`,
+    whatsapp: `<a class="btn btn-outline btn-sm dossier-whatsapp" target="_blank" rel="noopener" href="https://wa.me/${escapeHTML(window.CLTNumero ? CLTNumero.pourWhatsApp(p.phone) : String(p.phone).replace(/\D/g, ''))}?text=${encodeURIComponent(R.messageWhatsApp(p))}">💬 WhatsApp</a>`,
+    piece: `<button type="button" class="btn btn-outline btn-sm btn-voir-piece">🪪 Voir la pièce</button>`,
+    code: `<button type="button" class="btn btn-outline btn-sm btn-envoyer-code" title="Tirer un code à 6 chiffres et l'envoyer sur WhatsApp">📲 Le code</button>`,
+    accepter: `<button type="button" class="btn btn-sm btn-dossier-accepter" data-geste="accepter">✅ Accepter</button>`,
+    refuser: `<button type="button" class="btn btn-outline btn-sm btn-dossier-refuser" data-geste="refuser">❌ Refuser</button>`,
+    reexaminer: `<button type="button" class="btn btn-outline btn-sm" data-geste="reexaminer">↩️ Réexaminer</button>`,
+    suspendre: `<button type="button" class="btn btn-outline btn-sm btn-dossier-refuser" data-geste="suspendre">⛔ Suspendre</button>`,
+    retablir: `<button type="button" class="btn btn-outline btn-sm" data-geste="retablir">✅ Rétablir</button>`,
+  };
+  const estExpress = R.estExpress(p);
+  const codeZone = (estExpress && !p.telephone_verifie_at && p.status === 'en_attente') ? '<div class="code-express-zone"></div>' : '';
+  return `
+<div class="colis-item dossier-carte" data-id="${escapeHTML(p.id)}" data-segment="${etat.segment}">
+  <div class="dossier-tete">
+    ${avatar}
+    <div class="dossier-identite">
+      <div class="desc">${p.full_name ? escapeHTML(p.full_name) : '(sans nom)'}${p.company_name ? ' — ' + escapeHTML(p.company_name) : ''}</div>
+      <div class="meta"><span class="dossier-role">${escapeHTML(R.libelleRole(p.role))}</span>${tel ? ' · ' + tel : ' · <em>sans téléphone</em>'}${lieu ? ' · ' + escapeHTML(lieu) : ''}</div>
+      <div class="dossier-etat dossier-etat--${etat.teinte}">${escapeHTML(etat.texte)}</div>
+      ${codeZone}
+    </div>
+  </div>
+  <div class="dossier-gestes">${gestes.map(g => B[g] || '').join('')}</div>
+</div>`;
 }
+
+function dossiersDuSegment(){
+  const R = window.CLTDossiersDeComptes;
+  return dossiersComptes.filter(p => R.segmentDuDossier(p) === dossiersSegment);
+}
+
+function renderPending(){
+  updateNotifBadge('pending-badge', pendingAccounts.length);
+  refreshSettingsBadge();
+  const R = window.CLTDossiersDeComptes;
+  // Les quatre segments portent leur compte ; « En attente » garde sa pastille.
+  const n = R.compterParSegment(dossiersComptes);
+  document.querySelectorAll('[data-dossiers-segment]').forEach(b => {
+    const cle = b.dataset.dossiersSegment;
+    const nb = n[cle] || 0;
+    const lib = (R.SEGMENTS.find(s => s.cle === cle) || {}).libelle || cle;
+    b.textContent = lib + (nb ? ' (' + nb + ')' : '');
+    b.classList.toggle('active', cle === dossiersSegment);
+    b.setAttribute('aria-selected', cle === dossiersSegment ? 'true' : 'false');
+  });
+  const box = document.getElementById('pending-list');
+  const liste = dossiersDuSegment();
+  if (!liste.length) {
+    const vide = { attente: 'Aucune demande en attente.', acceptes: 'Aucun compte accepté ces 60 derniers jours.', refuses: 'Aucun dossier refusé.', suspendus: 'Aucun compte suspendu.' };
+    cltPoserHTML(box, `<div class="empty-state">${vide[dossiersSegment] || ''}</div>`);
+    return;
+  }
+  // Si rien n'a changé, on ne détruit pas les cartes : leurs boutons gardent leurs écouteurs.
+  if (!cltPoserHTML(box, liste.map(dossierHTML).join(''))) return;
+  brancherGestesDesDossiers(box);
+  if (typeof cltFiltrerListe === 'function') cltFiltrerListe('pending-list');
+}
+
+/* La pièce d'identité s'ouvre DANS l'application (visionneuse), pas dans un onglet qu'on perd :
+   l'adresse signée ne vit que 60 secondes, et sur téléphone un nouvel onglet fait sortir de
+   l'écran des dossiers. Échap ou un appui n'importe où la referme. */
+async function ouvrirPieceDuDossier(p, btn){
+  btn.disabled = true; const avant = btn.textContent; btn.textContent = '…';
+  try {
+    const { data, error } = await supabaseClient.storage.from('express-kyc').createSignedUrl(p.piece_identite_path, 60);
+    if (error || !data) { cltToast("La pièce n'a pas pu être chargée (fichier introuvable ou réseau).", { type: 'error' }); return; }
+    let v = document.getElementById('dossier-piece-visionneuse');
+    if (!v) {
+      v = document.createElement('div'); v.id = 'dossier-piece-visionneuse'; v.className = 'dossier-visionneuse'; v.setAttribute('data-clt-couche', '1');
+      v.innerHTML = '<button type="button" class="dossier-visionneuse-fermer" aria-label="Fermer" data-clt-fermer>✕</button><img alt="Pièce d\'identité">';
+      v.addEventListener('click', () => { v.hidden = true; });
+      document.body.appendChild(v);
+    }
+    v.querySelector('img').src = data.signedUrl;
+    v.hidden = false;
+  } catch (err) {
+    console.error(err); cltToast('Erreur réseau. Vérifiez votre connexion et réessayez.', { type: 'error' });
+  } finally { btn.disabled = false; btn.textContent = avant; }
+}
+
+async function deciderDossier(p, geste, btn){
+  const R = window.CLTDossiersDeComptes;
+  let motif = null;
+  if (geste === 'refuser') {
+    motif = await cltPrompt({ title: 'Refuser ce dossier ?', sub: (p.full_name || p.phone || '') + ' — la personne lira ce motif sur sa page de connexion et dans le message WhatsApp.', placeholder: 'Ex. : pièce d\'identité illisible, numéro injoignable', okLabel: 'Refuser', maxLength: 200 });
+    if (motif === null) return;
+  } else if (geste === 'accepter') {
+    if (!(await cltConfirm({ title: 'Ouvrir ce compte ?', sub: (p.full_name || p.phone || '') + ' pourra se connecter tout de suite comme ' + R.libelleRole(p.role) + '.', okLabel: 'Accepter' }))) return;
+  }
+  const ecriture = R.ecritureDecision(geste, currentUser ? currentUser.id : null, motif);
+  if (!ecriture) return;
+  btn.disabled = true; const avant = btn.textContent; btn.textContent = '…';
+  let { error } = await supabaseClient.from('profiles').update(ecriture).eq('id', p.id);
+  // Les colonnes de décision sont nées le 24/09/2026 : sans elles, on écrit au moins le statut.
+  if (error && /decision_/.test(error.message || '')) ({ error } = await supabaseClient.from('profiles').update({ status: ecriture.status }).eq('id', p.id));
+  btn.disabled = false; btn.textContent = avant;
+  if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
+  supabaseClient.from('activity_log').insert([{ action: 'dossier_' + geste, target_id: p.id, target_type: 'profiles', details: { full_name: p.full_name, phone: p.phone, role: p.role, motif: motif || null } }]).then(() => {}, () => {});
+  const dit = { accepter: 'Compte ouvert : le dossier passe dans « Acceptés ».', refuser: 'Dossier refusé, motif enregistré : il reste lisible dans « Refusés ».', reexaminer: 'Dossier remis en attente.' };
+  cltToast(dit[geste] || 'Enregistré.', { type: 'success' });
+  await loadPending();
+}
+
+function brancherGestesDesDossiers(box){
+  box.querySelectorAll('.btn-voir-piece').forEach(btn => btn.addEventListener('click', () => {
+    const p = dossiersComptes.find(x => x.id === btn.closest('.dossier-carte').dataset.id);
+    if (p && p.piece_identite_path) ouvrirPieceDuDossier(p, btn);
+  }));
+  box.querySelectorAll('.btn-envoyer-code').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const item = btn.closest('.dossier-carte');
+      const id = item.dataset.id;
+      const compte = dossiersComptes.find(a => a.id === id);
+      const zone = item.querySelector('.code-express-zone');
+      btn.disabled = true; const texteAvant = btn.textContent; btn.textContent = '...';
+      try {
+        const r = await callAdminFunction('envoyer-code-express', { user_id: id });
+        const prenom = (compte && compte.full_name ? compte.full_name.split(' ')[0] : '');
+        if (zone) zone.innerHTML = `<div class="meta code-express-boite">Code : <strong>${escapeHTML(r.code)}</strong> · valable 30 min ·
+<a href="${escapeHTML(lienWhatsAppCodeExpress(r.phone, r.code, prenom))}" target="_blank" rel="noopener" style="font-weight:700;">💬 Envoyer sur WhatsApp</a></div>`;
+        if (window.cltToast) cltToast('Code tiré. Envoyez-le sur WhatsApp : la personne le saisit sur sa page de connexion.', { type: 'success' });
+      } catch (err) {
+        cltToast(friendlyErrorMessage(err.message), { type: 'error' });
+      } finally { btn.disabled = false; btn.textContent = texteAvant; }
+    });
+  });
+  box.querySelectorAll('[data-geste]').forEach(btn => btn.addEventListener('click', async () => {
+    const p = dossiersComptes.find(x => x.id === btn.closest('.dossier-carte').dataset.id);
+    if (!p) return;
+    const geste = btn.dataset.geste;
+    if (geste === 'suspendre' || geste === 'retablir') {
+      // Le même chemin que « Tous les comptes » : la fonction serveur, qui garde l'historique.
+      if (typeof suspendreOuRetablirCompte === 'function') { await suspendreOuRetablirCompte(p.id, geste === 'suspendre'); await loadPending(); }
+      return;
+    }
+    await deciderDossier(p, geste, btn);
+  }));
+}
+
+/* Suspendre / rétablir depuis un dossier : le même chemin que « Tous les comptes » (fonction serveur
+   admin-suspendre-compte, historique gardé). Renvoie vrai si c'est fait. */
+async function suspendreOuRetablirCompte(id, suspendre){
+  const p = dossiersComptes.find(x => x.id === id) || (typeof allAccounts !== 'undefined' ? (allAccounts || []).find(x => x.id === id) : null) || {};
+  if (suspendre) {
+    const motif = await showConfirm({
+      title: 'Suspendre ce compte ?', detail: p.full_name || p.phone || '',
+      sub: "L'accès est coupé immédiatement. Rien n'est effacé — le compte, son historique et ses colis restent, et vous pourrez le rétablir.",
+      okLabel: 'Suspendre', danger: true,
+      saisie: { label: 'Motif (facultatif, visible dans le dossier et le journal)', placeholder: 'Ex : comportement signalé' },
+    });
+    if (motif === null) return false;
+    try { await callAdminFunction('admin-suspendre-compte', { user_id: id, suspendre: true, motif }); }
+    catch (err) { cltToast(friendlyErrorMessage(err.message), { type: 'error' }); return false; }
+  } else {
+    if (!(await cltConfirm({ title: 'Rétablir ce compte ?', sub: (p.full_name || p.phone || '') + ' pourra se reconnecter tout de suite.', okLabel: 'Rétablir' }))) return false;
+    try { await callAdminFunction('admin-suspendre-compte', { user_id: id, suspendre: false }); }
+    catch (err) { cltToast(friendlyErrorMessage(err.message), { type: 'error' }); return false; }
+  }
+  cltToast(suspendre ? 'Compte suspendu : le dossier passe dans « Suspendus ».' : 'Compte rétabli.', { type: 'success' });
+  if (typeof loadAllAccounts === 'function' && typeof allAccounts !== 'undefined') loadAllAccounts().catch(() => {});
+  return true;
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-dossiers-segment]');
+  if (!b) return;
+  dossiersSegment = b.dataset.dossiersSegment;
+  renderPending();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const v = document.getElementById('dossier-piece-visionneuse');
+  if (v && !v.hidden) v.hidden = true;
+});
 
 // Le message WhatsApp qui porte le code, prêt à partir. Le numéro est celui du compte (sans
 // « + »), tel que wa.me l'attend.
@@ -245,119 +416,32 @@ if (menu) menu.classList.remove('open');
 if (typeof essentielAller === 'function') essentielAller(b.id === 'menu-comptes-a-valider' ? 'comptes-a-valider' : 'reinitialisations');
 });
 
-function renderPending(){
-updateNotifBadge('pending-badge', pendingAccounts.length);
-refreshSettingsBadge();
-const box = document.getElementById('pending-list');
-if (!pendingAccounts.length) {
-cltPoserHTML(box, `<div class="empty-state">Aucun compte en attente de validation.</div>`);
-return;
-}
-// Si rien n'a changé, on ne détruit pas les lignes : leurs boutons gardent leurs écouteurs.
-if (!cltPoserHTML(box, pendingAccounts.map(pendingRowHTML).join(''))) return;
-
-box.querySelectorAll('.btn-voir-piece').forEach(btn => {
-btn.addEventListener('click', async () => {
-const id = btn.closest('.colis-item').dataset.id;
-const account = pendingAccounts.find(p => p.id === id);
-if (!account || !account.piece_identite_path) return;
-btn.disabled = true;
-btn.textContent = '...';
-try {
-const { data, error } = await supabaseClient
-.storage.from('express-kyc')
-.createSignedUrl(account.piece_identite_path, 60);
-if (error || !data) {
-cltToast('Erreur : impossible de charger la pièce d\'identité (fichier introuvable ou erreur réseau).', { type: 'error' });
-btn.disabled = false;
-btn.textContent = '📷 Voir la pièce';
-return;
-}
-window.open(data.signedUrl, '_blank');
-btn.disabled = false;
-btn.textContent = '📷 Voir la pièce';
-} catch (err) {
-console.error('Erreur lors de l\'accès à la pièce d\'identité :', err);
-cltToast('Erreur réseau. Vérifiez votre connexion et réessayez.', { type: 'error' });
-btn.disabled = false;
-btn.textContent = '📷 Voir la pièce';
-}
-});
-});
-
-box.querySelectorAll('.btn-envoyer-code').forEach(btn => {
-btn.addEventListener('click', async (e) => {
-e.stopPropagation();
-const item = btn.closest('.colis-item');
-const id = item.dataset.id;
-const compte = pendingAccounts.find(a => a.id === id);
-const zone = item.querySelector('.code-express-zone');
-btn.disabled = true; const texteAvant = btn.textContent; btn.textContent = '...';
-try {
-const r = await callAdminFunction('envoyer-code-express', { user_id: id });
-const prenom = (compte && compte.full_name ? compte.full_name.split(' ')[0] : '');
-if (zone) zone.innerHTML = `<div class="meta" style="margin-top:4px; padding:8px 10px; background:#fff8ef; border:1.5px solid #E26313; border-radius:8px; color:#1B4374;">
-Code : <strong style="font-size:16px; letter-spacing:2px;">${escapeHTML(r.code)}</strong> · valable 30 min ·
-<a href="${escapeHTML(lienWhatsAppCodeExpress(r.phone, r.code, prenom))}" target="_blank" rel="noopener" style="font-weight:700;">💬 Envoyer sur WhatsApp</a>
-</div>`;
-if (window.cltToast) cltToast('Code tiré. Envoyez-le sur WhatsApp : la personne le saisit sur sa page de connexion.', { type: 'success' });
-} catch (err) {
-cltToast(friendlyErrorMessage(err.message), { type: 'error' });
-} finally {
-btn.disabled = false; btn.textContent = texteAvant;
-}
-});
-});
-
-box.querySelectorAll('.btn-valider').forEach(btn => {
-btn.addEventListener('click', async () => {
-const id = btn.closest('.colis-item').dataset.id;
-btn.disabled = true; btn.textContent = '...';
-const { error } = await supabaseClient.from('profiles').update({ status: 'valide' }).eq('id', id);
-if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); btn.disabled = false; btn.textContent = 'Valider'; return; }
-await loadPending();
-});
-});
-box.querySelectorAll('.btn-rejeter').forEach(btn => {
-btn.addEventListener('click', async () => {
-const id = btn.closest('.colis-item').dataset.id;
-const account = pendingAccounts.find(p => p.id === id);
-const ok = await showConfirm({
-  title: 'Rejeter ce compte ?',
-  detail: account ? (account.full_name || account.phone || '(sans nom)') : null,
-  sub: "La demande d'inscription sera rejetée. La personne pourra refaire une demande plus tard.",
-  okLabel: 'Rejeter',
-  danger: true
-});
-if (!ok) return;
-btn.disabled = true; btn.textContent = '...';
-const { error } = await supabaseClient.from('profiles').update({ status: 'rejete' }).eq('id', id);
-if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); btn.disabled = false; btn.textContent = 'Rejeter'; return; }
-await loadPending();
-});
-});
-renderAujourdhui();
-}
-
 let __pendingIdsSeen = null; // null = premier chargement : on ne veut pas d'alerte au démarrage de la page
 async function loadPending(){
-const { data, error } = await supabaseClient
-.from('profiles')
-.select('id, role, full_name, company_name, phone, status, piece_identite_path, telephone_verifie_at')
-.eq('status', 'en_attente')
-.order('full_name');
-if (error) { console.error(error); return; }
-
-if (__pendingIdsSeen) {
-const nouveaux = data.filter(p => !__pendingIdsSeen.has(p.id));
-nouveaux.forEach(p => {
-showTeamToast('🔔', 'Nouvelle demande de compte', (p.full_name || p.phone || 'Un client') + ' souhaite se connecter / créer un compte — validation requise.', true);
-});
-}
-__pendingIdsSeen = new Set(data.map(p => p.id));
-
-pendingAccounts = data;
-renderPending();
+  const COLS = 'id, role, full_name, company_name, phone, status, piece_identite_path, telephone_verifie_at, avatar_url, commune_recuperation, adresse_recuperation, created_at, suspendu_at, suspendu_par, suspendu_motif';
+  const COLS_DECISION = COLS + ', decision_at, decision_par, decision_motif';
+  // Les quatre états, mais les comptes ACCEPTÉS seulement sur 60 jours : au-delà, ce ne sont plus
+  // des dossiers, ce sont les comptes de la maison (« Tous les comptes » les a).
+  const depuis = new Date(Date.now() - 60 * 86400000).toISOString();
+  const lire = (cols) => supabaseClient.from('profiles').select(cols)
+    .in('status', ['en_attente', 'valide', 'rejete', 'suspendu'])
+    .or(`status.neq.valide,created_at.gte.${depuis}`)
+    .order('created_at', { ascending: false }).limit(300);
+  let { data, error } = await lire(COLS_DECISION);
+  // Les colonnes de décision sont nées le 24/09/2026 : sans les colonnes de décision, on relit.
+  if (error && /decision_/.test(error.message || '')) ({ data, error } = await lire(COLS));
+  if (error) { console.error(error); return; }
+  data = data || [];
+  const attente = data.filter(p => p.status === 'en_attente');
+  if (__pendingIdsSeen) {
+    attente.filter(p => !__pendingIdsSeen.has(p.id)).forEach(p => {
+      showTeamToast('🔔', 'Nouvelle demande de compte', (p.full_name || p.phone || 'Un client') + ' souhaite se connecter / créer un compte — validation requise.', true);
+    });
+  }
+  __pendingIdsSeen = new Set(attente.map(p => p.id));
+  dossiersComptes = data;
+  pendingAccounts = attente;
+  renderPending();
 }
 
 function resetRowHTML(r){

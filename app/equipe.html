@@ -22,13 +22,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924passage">
+<link rel="stylesheet" href="style.css?v=20260924dossiers">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260924passage"></script>
+<script src="theme.js?v=20260924dossiers"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260924passage" defer></script>
-<script src="cloche.js?v=20260924passage" defer></script>
-<script src="splash.js?v=20260924passage"></script>
+<script src="notifications-recues.js?v=20260924dossiers" defer></script>
+<script src="cloche.js?v=20260924dossiers" defer></script>
+<script src="splash.js?v=20260924dossiers"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -683,12 +683,21 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
 </div>
 </div>
 
+<!-- LES DOSSIERS DE COMPTES (chantier N, lot 12, 24/09/2026). Une demande n'est plus une ligne qui
+     s'efface quand on décide : quatre segments (en attente, acceptés, refusés, suspendus), la pièce
+     et la photo consultables, appel et WhatsApp, qui a décidé et pourquoi. Règles : app/dossiers-de-comptes.js. -->
 <div class="card" id="section-pending">
 <h2 class="panel-subtitle collapsible-header" onclick="toggleSection(this,'pending-content')">
-<span class="collapse-arrow">▶</span> Comptes en attente de validation <span id="pending-badge" class="alert-badge hidden">0</span>
+<span class="collapse-arrow">▶</span> Dossiers de comptes <span id="pending-badge" class="alert-badge hidden">0</span>
 </h2>
 <div id="pending-content" class="collapsible-content">
-<div class="search-wrap"><input type="search" id="search-pending" class="search-input" data-filtre-liste="pending-list" placeholder="Rechercher un compte en attente (nom, téléphone…)"></div>
+<div class="dossiers-segments" role="tablist" aria-label="État des dossiers">
+<button type="button" class="dossiers-segment active" role="tab" data-dossiers-segment="attente">En attente</button>
+<button type="button" class="dossiers-segment" role="tab" data-dossiers-segment="acceptes">Acceptés</button>
+<button type="button" class="dossiers-segment" role="tab" data-dossiers-segment="refuses">Refusés</button>
+<button type="button" class="dossiers-segment" role="tab" data-dossiers-segment="suspendus">Suspendus</button>
+</div>
+<div class="search-wrap"><input type="search" id="search-pending" class="search-input" data-filtre-liste="pending-list" placeholder="Rechercher un dossier (nom, boutique, téléphone…)"></div>
 <div id="pending-list">
 <div class="empty-state">Chargement...</div>
 </div>
@@ -1759,47 +1768,48 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
   </div>
 </div>
 
-<script src="clt-common.js?v=20260924passage"></script>
-<script src="numero-international.js?v=20260924passage"></script>
-<script src="voir-un-compte.js?v=20260924passage"></script>
-<script src="lib/bibliotheques.js?v=20260924passage"></script>
-<script src="lib/retours.js?v=20260924passage"></script>
-<script src="lib/reclamations.js?v=20260924passage"></script>
-<script src="lib/communes-et-tarifs.js?v=20260924passage"></script>
-<script src="lib/argent.js?v=20260924passage"></script>
-<script src="lib/releve-cliente.js?v=20260924passage"></script>
-<script src="lib/papier-a-en-tete.js?v=20260924passage"></script>
-<script src="lib/briques-argent.js?v=20260924passage"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260924passage"></script>
-<script src="lib/traces-de-report.js?v=20260924passage"></script>
-<script src="lib/annonce-de-remise.js?v=20260924passage"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260924passage"></script>
-<script src="lib/primes.js?v=20260924passage"></script>
-<script src="lib/doublons.js?v=20260924passage"></script>
-<script src="config.js?v=20260924passage"></script>
-<script src="demande-de-passage.js?v=20260924passage"></script>
-<script src="activite-de-la-cliente.js?v=20260924passage"></script>
-<script src="activite-ecran.js?v=20260924passage"></script>
-<script src="delais-et-promesses.js?v=20260924passage"></script>
-<script src="ordre-de-livraison.js?v=20260924passage"></script>
-<script src="etiquettes-et-scan.js?v=20260924passage"></script>
-<script src="clients-dashboard.js?v=20260924passage"></script>
-<script src="livreurs-dashboard.js?v=20260924passage"></script>
-<script src="point-du-jour.js?v=20260924passage"></script>
-<script src="biometric-lock.js?v=20260924passage"></script>
-<script src="clt-select-recherche.js?v=20260924passage"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260924passage"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260924passage"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260924passage"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260924passage"></script>
-<script src="equipe/04-actions.js?v=20260924passage"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260924passage"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260924passage"></script>
-<script src="point-par-whatsapp.js?v=20260924passage"></script>
-<script src="equipe/07-rapports.js?v=20260924passage"></script>
-<script src="equipe/08-son-ecran.js?v=20260924passage"></script>
-<script src="recharges-express.js?v=20260924passage"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260924passage"></script>
+<script src="clt-common.js?v=20260924dossiers"></script>
+<script src="numero-international.js?v=20260924dossiers"></script>
+<script src="voir-un-compte.js?v=20260924dossiers"></script>
+<script src="lib/bibliotheques.js?v=20260924dossiers"></script>
+<script src="lib/retours.js?v=20260924dossiers"></script>
+<script src="lib/reclamations.js?v=20260924dossiers"></script>
+<script src="lib/communes-et-tarifs.js?v=20260924dossiers"></script>
+<script src="lib/argent.js?v=20260924dossiers"></script>
+<script src="lib/releve-cliente.js?v=20260924dossiers"></script>
+<script src="lib/papier-a-en-tete.js?v=20260924dossiers"></script>
+<script src="lib/briques-argent.js?v=20260924dossiers"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260924dossiers"></script>
+<script src="lib/traces-de-report.js?v=20260924dossiers"></script>
+<script src="lib/annonce-de-remise.js?v=20260924dossiers"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260924dossiers"></script>
+<script src="lib/primes.js?v=20260924dossiers"></script>
+<script src="lib/doublons.js?v=20260924dossiers"></script>
+<script src="config.js?v=20260924dossiers"></script>
+<script src="demande-de-passage.js?v=20260924dossiers"></script>
+<script src="dossiers-de-comptes.js?v=20260924dossiers"></script>
+<script src="activite-de-la-cliente.js?v=20260924dossiers"></script>
+<script src="activite-ecran.js?v=20260924dossiers"></script>
+<script src="delais-et-promesses.js?v=20260924dossiers"></script>
+<script src="ordre-de-livraison.js?v=20260924dossiers"></script>
+<script src="etiquettes-et-scan.js?v=20260924dossiers"></script>
+<script src="clients-dashboard.js?v=20260924dossiers"></script>
+<script src="livreurs-dashboard.js?v=20260924dossiers"></script>
+<script src="point-du-jour.js?v=20260924dossiers"></script>
+<script src="biometric-lock.js?v=20260924dossiers"></script>
+<script src="clt-select-recherche.js?v=20260924dossiers"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260924dossiers"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260924dossiers"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260924dossiers"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260924dossiers"></script>
+<script src="equipe/04-actions.js?v=20260924dossiers"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260924dossiers"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260924dossiers"></script>
+<script src="point-par-whatsapp.js?v=20260924dossiers"></script>
+<script src="equipe/07-rapports.js?v=20260924dossiers"></script>
+<script src="equipe/08-son-ecran.js?v=20260924dossiers"></script>
+<script src="recharges-express.js?v=20260924dossiers"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260924dossiers"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1847,20 +1857,20 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260924passage"></script>
-<script src="equipe/11-chercher-partout.js?v=20260924passage"></script>
-<script src="reprogrammer.js?v=20260924passage"></script>
-<script src="retours-du-bureau.js?v=20260924passage"></script>
-<script src="equipe/12-les-retours.js?v=20260924passage"></script>
-<script src="equipe/13-les-boutiques.js?v=20260924passage"></script>
+<script src="equipe/10-onglets.js?v=20260924dossiers"></script>
+<script src="equipe/11-chercher-partout.js?v=20260924dossiers"></script>
+<script src="reprogrammer.js?v=20260924dossiers"></script>
+<script src="retours-du-bureau.js?v=20260924dossiers"></script>
+<script src="equipe/12-les-retours.js?v=20260924dossiers"></script>
+<script src="equipe/13-les-boutiques.js?v=20260924dossiers"></script>
 <!-- 9.6 : sur grand écran, la liste à gauche et la fiche à droite. Ne fait rien sous 1 200 px. -->
-<script src="equipe/14-liste-et-fiche.js?v=20260924passage"></script>
-<script src="chaine-de-l-argent.js?v=20260924passage"></script>
-<script src="equipe/15-la-chaine-de-l-argent.js?v=20260924passage"></script>
+<script src="equipe/14-liste-et-fiche.js?v=20260924dossiers"></script>
+<script src="chaine-de-l-argent.js?v=20260924dossiers"></script>
+<script src="equipe/15-la-chaine-de-l-argent.js?v=20260924dossiers"></script>
 <!-- 9.6 : les colis en route sur la carte du Suivi, une pastille par commune. -->
-<script src="colis-sur-la-carte.js?v=20260924passage"></script>
-<script src="equipe/16-les-colis-sur-la-carte.js?v=20260924passage"></script>
+<script src="colis-sur-la-carte.js?v=20260924dossiers"></script>
+<script src="equipe/16-les-colis-sur-la-carte.js?v=20260924dossiers"></script>
 <!-- Le point à voir (22/09/2026) : la notification conduit à la carte, qui reste encadrée tant qu'on ne l'a pas ouverte. -->
-<script src="equipe/17-le-point-a-voir.js?v=20260924passage"></script>
+<script src="equipe/17-le-point-a-voir.js?v=20260924dossiers"></script>
 </body>
 </html>

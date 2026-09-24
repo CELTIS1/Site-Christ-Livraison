@@ -4513,3 +4513,44 @@ html[data-theme="dark"] .clt-skelette > i{ background:linear-gradient(90deg, #24
 body{ animation:cltPage .22s ease-out; }
 @keyframes cltPage{ from{ opacity:0; } to{ opacity:1; } }
 @media(prefers-reduced-motion:reduce){ body{ animation:none; } }
+
+/* ==========================================================================================
+   LES DOSSIERS DE COMPTES (chantier N, lot 12, 24/09/2026) — Équipe › Comptes.
+   Segments comme dans Personnes ; carte = photo / identité / état teinté / gestes de 44 px ;
+   visionneuse de pièce dans l'application. Teintes « encre » lisibles la nuit.
+   ========================================================================================== */
+.dossiers-segments{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 12px; }
+.dossiers-segment{ min-height:44px; padding:0 14px; border-radius:999px; border:1.5px solid var(--border-strong); background:var(--white); color:var(--muted); font:inherit; font-weight:600; font-size:13.5px; cursor:pointer; }
+.dossiers-segment.active{ background:var(--navy); border-color:var(--navy); color:#fff; }
+html[data-theme="dark"] .dossiers-segment{ background:#18243A; border-color:#33465F; color:#9DB0C4; }
+html[data-theme="dark"] .dossiers-segment.active{ background:#8FB8EC; border-color:#8FB8EC; color:#0F1824; }
+.dossier-carte{ display:block; padding:12px 14px; }
+.dossier-tete{ display:flex; gap:12px; align-items:flex-start; }
+.dossier-avatar{ width:44px; height:44px; border-radius:50%; object-fit:cover; flex:0 0 44px; background:var(--grey-bg); }
+.dossier-avatar--vide{ display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:var(--navy); background:var(--orange-light); }
+.dossier-identite{ flex:1 1 auto; min-width:0; }
+.dossier-identite .desc{ font-weight:700; }
+.dossier-role{ font-weight:600; color:var(--navy); }
+.dossier-etat{ display:inline-block; margin-top:6px; padding:3px 10px; border-radius:999px; font-size:12.5px; font-weight:600; }
+.dossier-etat--ambre{ background:#fff5e6; color:#8a4b00; }
+.dossier-etat--vert{ background:#e6f4ea; color:#167a42; }
+.dossier-etat--rouge{ background:#fde8e6; color:#a32d22; }
+.dossier-etat--gris{ background:var(--grey-bg); color:var(--muted); }
+html[data-theme="dark"] .dossier-carte{ background:#1B2635; }
+html[data-theme="dark"] .dossier-etat--ambre{ background:#3a2c14; color:#f0c27a; }
+html[data-theme="dark"] .dossier-etat--vert{ background:#14301f; color:#5fd39a; }
+html[data-theme="dark"] .dossier-etat--rouge{ background:#3a1c1a; color:#ff9a8c; }
+html[data-theme="dark"] .dossier-avatar--vide{ background:#3A2617; color:#9EC0E6; }
+.dossier-gestes{ display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.dossier-gestes .btn{ min-height:44px; display:inline-flex; align-items:center; text-decoration:none; }
+.btn-dossier-refuser{ border-color:#a32d22; color:#a32d22; }
+.btn-dossier-refuser:hover{ background:#fde8e6; }
+html[data-theme="dark"] .btn-dossier-refuser{ border-color:#ff9a8c; color:#ff9a8c; }
+.code-express-boite{ margin-top:6px; padding:8px 10px; background:#fff8ef; border:1.5px solid #E26313; border-radius:8px; color:#1B4374; }
+.code-express-boite strong{ font-size:16px; letter-spacing:2px; }
+html[data-theme="dark"] .code-express-boite{ background:#3a2617; color:#E6ECF3; }
+.dossier-visionneuse{ position:fixed; inset:0; z-index:960; background:rgba(10,20,35,.92); display:flex; align-items:center; justify-content:center; padding:16px; cursor:zoom-out; }
+.dossier-visionneuse[hidden]{ display:none; }
+.dossier-visionneuse img{ max-width:100%; max-height:100%; border-radius:10px; box-shadow:0 18px 44px rgba(0,0,0,.5); background:#fff; }
+.dossier-visionneuse-fermer{ position:absolute; top:calc(12px + env(safe-area-inset-top)); right:12px; width:44px; height:44px; border-radius:50%; border:0; background:#fff; color:#1B4374; font-size:20px; font-weight:800; cursor:pointer; }
+@media (max-width:640px){ .dossier-gestes .btn{ flex:1 1 calc(50% - 6px); justify-content:center; } }

@@ -284,8 +284,9 @@ titre('Les écrans : la page Express attend le code, l\'équipe l\'envoie');
   verifier('le code part à verifier-code-express avec le numéro en attente', /functions\/v1\/verifier-code-express/.test(login) && /body: JSON\.stringify\(\{ phone: waitingPhone, code \}\)/.test(login));
   verifier('client comme coursier : après l\'inscription, la page attend le code (plus de connexion directe du client)', /showWaiting\(phone, password\);/.test(login) && !/Client : compte validé automatiquement/.test(login));
   verifier('l\'attente reflète l\'état : « numéro confirmé — pièce en cours » quand telephone_verifie_at est posé', /profile\.telephone_verifie_at/.test(login) && /Numéro confirmé — pièce en cours de vérification/.test(login));
-  verifier('le profil Express est lu avec telephone_verifie_at', /telephone_verifie_at"\)/.test(cfg));
-  verifier('équipe : « 📲 Envoyer le code » sur un compte Express non vérifié, « ✅ Numéro vérifié » sinon', /btn-envoyer-code/.test(equipe) && /✅ Numéro vérifié/.test(equipe) && /telephone_verifie_at'\)/.test(equipe));
+  verifier('le profil Express est lu avec telephone_verifie_at (et decision_motif depuis le lot 12)', /telephone_verifie_at"/.test(cfg) && /decision_motif/.test(cfg));
+  // 24/09/2026 (lot 12) : l'état « numéro vérifié / pas encore vérifié » est écrit par la règle des dossiers (dossiers-de-comptes.js).
+verifier('équipe : « 📲 Envoyer le code » sur un compte Express non vérifié, « numéro vérifié » sinon', /btn-envoyer-code/.test(equipe) && /numéro vérifié/.test(fs.readFileSync(path.join(RACINE, 'app', 'dossiers-de-comptes.js'), 'utf8')) && /telephone_verifie_at/.test(equipe));
   verifier('équipe : le code est demandé à envoyer-code-express et le lien WhatsApp porte le code et le numéro', /callAdminFunction\('envoyer-code-express', \{ user_id: id \}\)/.test(equipe) && /https:\/\/wa\.me\/\$\{num\}\?text=/.test(equipe));
 }
 
