@@ -4312,3 +4312,6 @@ html[data-theme="dark"] .finance-traces-phrase{ background:#2a2114; border-color
 .clt-rech-x:hover, .clt-rech-x:focus-visible{ color:var(--navy); outline:none; }
 .clt-rech-x:focus-visible{ box-shadow:0 0 0 3px var(--orange-light); }
 html[data-theme="dark"] .clt-rech-x:hover{ color:#fff; }
+
+/* Le point d'une cliente / d'un livreur s'ouvre calé sur son début, sous les barres fixes (24/09/2026). */
+#recap-body, #recapl-body{ scroll-margin-top:130px; }

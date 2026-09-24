@@ -80,7 +80,7 @@ const colisJour = recaplDayColis();
 if (recaplSelectedLivreur) {
 if (!cltPoserHTML(body, renderRecapLivreurBilan(recaplSelectedLivreur, colisJour))) return;
 const back = document.getElementById('recapl-back');
-if (back) back.addEventListener('click', () => { recaplSelectedLivreur = null; renderRecapLivreurBody(); });
+if (back) back.addEventListener('click', () => { const lid = recaplSelectedLivreur; recaplSelectedLivreur = null; renderRecapLivreurBody(); const carte = document.querySelector('.recap-client-card[data-lid="' + String(lid || '').replace(/[^0-9a-z-]/gi, '') + '"]'); if (carte && typeof cltGarderEnVue === 'function') { carte.scrollIntoView({ block: 'center' }); cltGarderEnVue(carte, 3000); } });
 // « Son écran » s'ouvre sur la journée déjà choisie ici, sinon les deux tableaux ne
 // parleraient pas des mêmes colis.
 const ecran = document.getElementById('recapl-ecran');
@@ -174,6 +174,7 @@ zoneListe.querySelectorAll('.recap-client-card').forEach(btn => {
 btn.addEventListener('click', () => {
 recaplSelectedLivreur = btn.dataset.lid;
 renderRecapLivreurBody();
+if (typeof cltCalerEnHaut === 'function') cltCalerEnHaut(document.getElementById('recapl-body'));
 });
 });
 }

@@ -407,6 +407,9 @@ setTimeout(() => {
 let item = null;
 document.querySelectorAll('#colis-list .colis-item').forEach(el => { if (el.dataset.id === id) item = el; });
 if (item && item.scrollIntoView) item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+// Par sélecteur (une liste redessinée remplace ses cartes), sans CSS.escape : un identifiant de colis
+// est un uuid, rien à échapper.
+if (item && typeof cltGarderEnVue === 'function' && /^[0-9a-f-]+$/i.test(item.dataset.id || '')) cltGarderEnVue('.colis-item[data-id="' + item.dataset.id + '"]');
 }, 120);
 }
 window.eqOuvrirModificationColis = eqOuvrirModificationColis;

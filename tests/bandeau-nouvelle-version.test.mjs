@@ -1360,10 +1360,18 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    seul composant (clt-common.js) équipe chaque champ : croix ✕ 44 px, Échap, et une seule règle
    « un colis correspond » (cltColisCorrespond : sans accent, téléphone sans espaces, n° sans
    tirets) remplace trois copies ; les champs ne sont plus jamais redessinés pendant la frappe
-   (zones fixes), et cltPoserHTML rend le focus en filet de sécurité. Étiquette 20260924recherche. */
+   (zones fixes), et cltPoserHTML rend le focus en filet de sécurité. Étiquette 20260924recherche.
+   v244, le 24/09/2026 — ARRIVER ET RESTER (chantier N, lot 2). Celtis : « la notification te
+   présente la page, et puis l'écran défile pour aller en haut ou bien descend ; ça ne reste pas
+   fixe » ; « le point d'une vendeuse : il faut que ça te montre le début du point ». Safari n'a pas
+   l'ancrage de défilement de Chrome : quand la page continue de charger (blocs, photos, listes
+   redessinées), l'objet glissait. cltGarderEnVue (clt-common.js) retient l'objet — par sélecteur,
+   donc même après un redessin — pendant 8 s, et rend la main dès que la personne fait défiler ;
+   cltCalerEnHaut ouvre un point calé sur son début ; « ← Clientes » ramène sur la carte. Parcours
+   arriver-et-rester (11, ancrage coupé, liste redessinée, contrôle du contrôle). Étiquette 20260924rester. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v243'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v244'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

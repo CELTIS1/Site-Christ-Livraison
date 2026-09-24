@@ -1103,6 +1103,7 @@ function cltFocusElementFromUrl(param, selecteur, opts) {
       // Un objet replié (le relevé de la cliente est dans un <details>) : on déplie, sinon rien ne défile.
       for (let d = el.closest("details"); d; d = d.parentElement && d.parentElement.closest("details")) d.open = true;
       try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { el.scrollIntoView(); }
+      if (typeof cltGarderEnVue === "function") cltGarderEnVue(selecteur(id));   // et il y RESTE pendant que la page finit de charger
       el.classList.add("colis-deeplink-highlight", "clt-objet-a-voir"); (opts.classes || []).forEach((c) => el.classList.add(c));
       el.addEventListener("pointerdown", () => el.classList.remove("clt-objet-a-voir"), { once: true });
       setTimeout(() => el.classList.remove("colis-deeplink-highlight"), 4200);

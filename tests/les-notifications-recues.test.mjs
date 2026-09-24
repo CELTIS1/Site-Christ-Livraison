@@ -86,9 +86,11 @@ verifier('les six espaces chargent la règle et l’écran, et ont la barre où 
 const css = lire('app/style.css');
 verifier('le style : rond, pastille, panneau compact (≤ 360 px), 44 px sur téléphone, mode nuit', /\.clt-cloche\{/.test(css) && /\.clt-cloche-badge\{/.test(css) && /\.notif-panel\{[^}]*min\(360px/.test(css) && /\.clt-cloche\{ width:44px; height:44px; \}/.test(css) && /html\[data-theme="dark"\] \.notif-panel\{/.test(css));
 const ecran = lire('app/cloche.js');
+const commun = lire('app/clt-common.js');
 verifier('l’écran ne se pose pas quand l’administrateur regarde l’écran d’un autre (?voir=)', /\[\?&\]voir=/.test(ecran));
 verifier('les lues descendent sous « déjà lues », repliées, sans rien effacer', /details class="notif-lues"/.test(ecran) && /déjà lue/.test(ecran));
 verifier('l’écran ne fait que lire et marquer lu : jamais d’insert ni de delete', /from\('notifications'\)\s*\.select/.test(ecran) && /from\('notifications'\)\.update\(\{ lu_le: quand \}\)/.test(ecran) && !/from\('notifications'\)\.(insert|delete)/.test(ecran));
+verifier('arriver ET rester (24/09) : le garde cltGarderEnVue suit un sélecteur, s\'arrête si la personne fait défiler, et sert aux colis, aux points et aux passages', /function cltGarderEnVue\(cible, ms, bloc\)/.test(commun) && /\['wheel', 'touchmove', 'keydown', 'pointerdown'\]\.forEach\(\(ev\) => window\.addEventListener\(ev, arreter, true\)\)/.test(commun) && /cltGarderEnVue\(selecteur\(id\)\)/.test(lire('app/config.js')) && (lire('app/equipe/17-le-point-a-voir.js').match(/cltGarderEnVue\('/g) || []).length === 2 && /cltCalerEnHaut\(document\.getElementById\('recap-body'\)\)/.test(lire('app/equipe/06-corrections-et-tournee.js')) && /cltCalerEnHaut\(document\.getElementById\('recapl-body'\)\)/.test(lire('app/equipe/07-rapports.js')) && /#recap-body, #recapl-body\{ scroll-margin-top:130px; \}/.test(css) && fs.existsSync(path.join(RACINE, 'tests/parcours/arriver-et-rester.mjs')) && /'arriver-et-rester\.mjs'/.test(lire('tests/parcours/lancer.mjs')));
 verifier('le parcours navigateur existe et est lancé par GitHub', fs.existsSync(path.join(RACINE, 'tests/parcours/la-cloche.mjs')) && /'la-cloche\.mjs'/.test(lire('tests/parcours/lancer.mjs')));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);

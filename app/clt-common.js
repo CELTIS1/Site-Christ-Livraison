@@ -2553,3 +2553,58 @@ function cltPoserBandeauVueCompte(compte) {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
   window.cltEquiperRecherche = equiperTout;
 })();
+
+/* ==========================================================================================
+   ARRIVER ET RESTER (24 septembre 2026)
+   Celtis : « la notification te présente la page, et puis l'écran défile pour aller en haut ou
+   bien descend ; ça ne reste pas fixe ». Après un lien profond, la page continue de charger :
+   listes redessinées, photos qui arrivent, blocs qui grandissent au-dessus de l'objet — et
+   l'objet glisse hors de l'écran. cltGarderEnVue(el) le retient au milieu pendant quelques
+   secondes : à chaque redessin ou changement de taille, s'il a bougé de plus de quelques pixels,
+   on le remet — sauf si c'est la personne qui a fait défiler (molette, doigt, clavier) : elle
+   reprend la main tout de suite. Rend une fonction qui arrête la garde.
+   ========================================================================================== */
+function cltGarderEnVue(cible, ms, bloc) {
+  // `cible` : l'élément, ou un sélecteur CSS — préférable, car une liste redessinée remplace ses
+  // cartes : l'élément d'origine disparaît, le sélecteur retrouve la nouvelle.
+  const trouver = () => { try { return typeof cible === 'string' ? document.querySelector(cible) : (cible && document.contains(cible) ? cible : null); } catch (e) { return null; } };
+  if (!trouver()) return function () {};
+  const duree = ms || 8000;
+  let fini = false, dernierY = null, timer = null, obs = null, res = null;
+  const position = (el) => { const r = el.getBoundingClientRect(); return Math.round(bloc === 'start' ? r.top : r.top + r.height / 2); };
+  const remettre = () => {
+    if (fini) return;
+    const el = trouver();
+    if (!el) return;
+    const y = position(el);
+    if (dernierY !== null && Math.abs(y - dernierY) < 6) return;
+    try { el.scrollIntoView({ behavior: 'auto', block: bloc === 'start' ? 'start' : 'center' }); } catch (e) { try { el.scrollIntoView(); } catch (e2) { /* rien */ } }
+    dernierY = position(el);
+  };
+  const arreter = () => {
+    if (fini) return;
+    fini = true;
+    clearTimeout(timer);
+    ['wheel', 'touchmove', 'keydown', 'pointerdown'].forEach((ev) => window.removeEventListener(ev, arreter, true));
+    if (obs) obs.disconnect();
+    if (res) res.disconnect();
+  };
+  ['wheel', 'touchmove', 'keydown', 'pointerdown'].forEach((ev) => window.addEventListener(ev, arreter, true));
+  if (typeof MutationObserver === 'function') { obs = new MutationObserver(() => requestAnimationFrame(remettre)); obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style', 'src'] }); }
+  if (typeof ResizeObserver === 'function') { res = new ResizeObserver(() => requestAnimationFrame(remettre)); res.observe(document.body); }
+  // Le défilement doux du premier appel est en cours : on attend qu'il se pose avant de mesurer.
+  setTimeout(() => { const el = trouver(); if (el) dernierY = position(el); remettre(); }, 450);
+  timer = setTimeout(arreter, duree);
+  return arreter;
+}
+window.cltGarderEnVue = cltGarderEnVue;
+
+/* Ouvrir une fiche À LA PLACE d'une liste (le point d'une cliente, d'un livreur) : l'écran se cale
+   sur le DÉBUT de la fiche, sous la barre du haut, et y reste le temps que la fiche finisse de se
+   dessiner. « ← Retour » ramène à la carte qu'on avait ouverte, à sa place. (24/09/2026) */
+function cltCalerEnHaut(el) {
+  if (!el || !el.scrollIntoView) return;
+  try { el.scrollIntoView({ behavior: 'auto', block: 'start' }); } catch (e) { el.scrollIntoView(); }
+  if (typeof cltGarderEnVue === 'function') cltGarderEnVue(el, 4000, 'start');
+}
+window.cltCalerEnHaut = cltCalerEnHaut;

@@ -1220,7 +1220,7 @@ const colisJour = recapDayColis();
 if (recapSelectedFournisseur) {
 if (!cltPoserHTML(body, renderRecapBilan(recapSelectedFournisseur, colisJour))) return;
 const back = document.getElementById('recap-back');
-if (back) back.addEventListener('click', () => { recapSelectedFournisseur = null; renderRecapBody(); });
+if (back) back.addEventListener('click', () => { const fid = recapSelectedFournisseur; recapSelectedFournisseur = null; renderRecapBody(); const carte = document.querySelector('.recap-client-card[data-fid="' + String(fid || '').replace(/[^0-9a-z-]/gi, '') + '"]'); if (carte && typeof cltGarderEnVue === 'function') { carte.scrollIntoView({ block: 'center' }); cltGarderEnVue(carte, 3000); } });
 // « Son écran » ouvre la fiche sur la journée déjà choisie ici : c'est le même jour que
 // le tableau qu'on est en train de lire, sinon les deux ne parleraient pas des mêmes colis.
 const ecran = document.getElementById('recap-ecran');
@@ -1308,6 +1308,9 @@ zoneListe.querySelectorAll('.recap-client-card').forEach(btn => {
 btn.addEventListener('click', () => {
 recapSelectedFournisseur = btn.dataset.fid;
 renderRecapBody();
+// Le point s'ouvre à la place de la liste : l'écran se cale sur SON début (24/09/2026, Celtis :
+// « quand tu cliques sur le point d'une vendeuse, la page vient et puis ça t'envoie en bas »).
+if (typeof cltCalerEnHaut === 'function') cltCalerEnHaut(document.getElementById('recap-body'));
 });
 });
 }

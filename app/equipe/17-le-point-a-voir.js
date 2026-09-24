@@ -112,7 +112,7 @@
     const chercher = () => {
       marquer();
       const el = document.querySelector('.demande-ligne--a-voir');
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (typeof cltGarderEnVue === 'function') cltGarderEnVue('.demande-ligne--a-voir'); return; }
       if (++essais < 20) { setTimeout(chercher, 300); return; }
       const corps = document.getElementById('prog-body');
       if (corps && !/Chargement/.test(corps.textContent || '')) garder(retirer(charger(), 'passage', x.id, ''));
@@ -137,7 +137,7 @@
     const chercher = () => {
       marquer();
       const el = document.querySelector('.recap-client-card--a-voir');
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (typeof cltGarderEnVue === 'function') cltGarderEnVue('.recap-client-card--a-voir'); return; }
       if (++essais < 20) setTimeout(chercher, 300);
     };
     setTimeout(chercher, 200);
