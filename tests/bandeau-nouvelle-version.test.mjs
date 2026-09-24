@@ -1393,10 +1393,16 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    boutons, mêmes ids, mêmes écouteurs : clt-common.js les habille (« LA PAGE COMPTE ») et pose le
    menu sous <body> (la barre du haut avait son propre contexte d'empilement). Couche déclarée :
    Échap et retour du téléphone la ferment. « WhatsApp » tout court, bulle verte dessinée.
-   Parcours la-page-compte (20). Étiquette 20260924compte. */
+   Parcours la-page-compte (20). Étiquette 20260924compte.
+   v248, le 24/09/2026 — LA FINITION (chantier N, lot 8). Squelettes : clt-common.js remplace
+   « Chargement… » (état vide) par trois lignes qui ondulent (.clt-skelette) ; transitions : un
+   panneau qui s'ouvre fond en 180 ms (opacité seule), un bouton pressé s'enfonce, la page fond en
+   entrée ; rythme : arrondi 16 px, cartes 16 × 14 px et 14 px d'écart sur téléphone, titres 16 px ; « réduire les
+   animations » respecté. Charte d'écran v1 (chantier K) posée dans 08 - Application & Technique.
+   Étiquette 20260924finition. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v247'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v248'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

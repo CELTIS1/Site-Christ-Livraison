@@ -2735,3 +2735,34 @@ window.cltCalerEnHaut = cltCalerEnHaut;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installer); else installer();
   window.cltInstallerPageCompte = installer;
 })();
+
+/* ==========================================================================================
+   LES SQUELETTES (24/09/2026, chantier N lot 8). « Chargement… » écrit dans un état vide devient
+   trois lignes grises qui ondulent — la forme de ce qui arrive, comme dans les applications
+   qu'on connaît. Purement visuel : la page continue de remplacer l'état vide comme avant.
+   ========================================================================================== */
+(function () {
+  if (typeof document === 'undefined') return;
+  const CHARGEMENT = /^\s*(⏳\s*)?Chargement(\.\.\.|…)?\s*$/i;
+  function squelette(el) {
+    if (!el || el.dataset.skelette === '1' || !CHARGEMENT.test(el.textContent || '')) return;
+    el.dataset.skelette = '1';
+    el.classList.add('clt-skelette');
+    el.setAttribute('aria-busy', 'true'); el.setAttribute('aria-label', 'Chargement');
+    el.textContent = '';
+    el.appendChild(document.createElement('i')); el.appendChild(document.createElement('i')); el.appendChild(document.createElement('i'));
+  }
+  function balayer(racine) {
+    const r = racine && racine.querySelectorAll ? racine : document;
+    if (r !== document && r.matches && r.matches('.empty-state')) squelette(r);
+    r.querySelectorAll('.empty-state').forEach(squelette);
+  }
+  function demarrer() {
+    balayer(document);
+    if (typeof MutationObserver !== 'function') return;
+    new MutationObserver((lots) => lots.forEach((m) => {
+      m.addedNodes.forEach((n) => { if (n.nodeType === 1) balayer(n); else if (n.nodeType === 3 && n.parentElement && n.parentElement.classList.contains('empty-state')) squelette(n.parentElement); });
+    })).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
+})();

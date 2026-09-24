@@ -4436,3 +4436,32 @@ html[data-theme="dark"] .sd .settings-groupe > :not(:first-child)::before{ backg
 html[data-theme="dark"] .sd button.danger .sd-ico{ background:#3a2320; }
 .sd-ico--wa{ background:#E8F8EE; }
 html[data-theme="dark"] .sd-ico--wa{ background:#173A25; }
+
+/* ==========================================================================================
+   LA FINITION (24/09/2026, chantier N lot 8) — ce qui fait « fini » : des squelettes pendant le
+   chargement, des transitions courtes, un rythme d'espacement unique. Toujours désactivé quand le
+   téléphone demande moins d'animations.
+   ========================================================================================== */
+/* 1. Squelettes : clt-common.js remplace « Chargement… » par trois lignes qui ondulent. */
+.clt-skelette{ display:flex; flex-direction:column; gap:10px; padding:14px 4px; }
+.clt-skelette > i{ display:block; height:14px; border-radius:7px; background:linear-gradient(90deg, #E9EEF4 0%, #F6F8FB 45%, #E9EEF4 90%); background-size:220% 100%; animation:cltOnde 1.2s ease-in-out infinite; }
+.clt-skelette > i:nth-child(1){ width:62%; height:18px; } .clt-skelette > i:nth-child(2){ width:88%; } .clt-skelette > i:nth-child(3){ width:74%; }
+@keyframes cltOnde{ 0%{ background-position:120% 0; } 100%{ background-position:-120% 0; } }
+html[data-theme="dark"] .clt-skelette > i{ background:linear-gradient(90deg, #243247 0%, #2E3E56 45%, #243247 90%); background-size:220% 100%; }
+/* 2. Transitions : un panneau qui s'ouvre fond et monte de 6 px ; un bouton pressé s'enfonce. */
+/* Opacité seule : une translation créerait, le temps de l'animation, un repère pour les éléments fixes du panneau. */
+@keyframes cltEntree{ from{ opacity:.45; } to{ opacity:1; } }
+[id^="panel-"]:not(.hidden), [id^="section-"]:not(.hidden), .eq-tabpanel, .tab-content:not(.hidden){ animation:cltEntree .18s ease-out; }
+.btn:active, .clt-toptab:active, .clt-bottomnav .nav:active, .filter-chip:active, .sd-rac:active, .sd .settings-groupe > button:active, .sd .settings-groupe > a:active{ transform:scale(.97); transition:transform .08s ease; }
+.btn, .clt-toptab, .filter-chip, .colis-item, .recap-client-card{ transition:transform .12s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease; }
+@media(prefers-reduced-motion:reduce){
+  [id^="panel-"], [id^="section-"], .eq-tabpanel, .tab-content, .clt-skelette > i{ animation:none !important; }
+  .btn:active, .clt-toptab:active, .clt-bottomnav .nav:active, .filter-chip:active{ transform:none; }
+}
+/* 3. Rythme : mêmes arrondis, mêmes marges, sur téléphone des cartes qui respirent sans gaspiller. */
+.card{ border-radius:16px; }
+@media(max-width:760px){ .card{ padding:16px 14px; margin-bottom:14px; border-radius:16px; } .card h2, .panel-subtitle{ font-size:16px; } }
+/* 4. Pas de flash blanc à l'ouverture : la page fond en entrée une fois posée. */
+body{ animation:cltPage .22s ease-out; }
+@keyframes cltPage{ from{ opacity:0; } to{ opacity:1; } }
+@media(prefers-reduced-motion:reduce){ body{ animation:none; } }
