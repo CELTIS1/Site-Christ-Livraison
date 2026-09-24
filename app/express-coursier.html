@@ -17,13 +17,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924livreur">
+<link rel="stylesheet" href="style.css?v=20260924crible">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260924livreur"></script>
+<script src="theme.js?v=20260924crible"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260924livreur" defer></script>
-<script src="cloche.js?v=20260924livreur" defer></script>
-<script src="splash.js?v=20260924livreur"></script>
+<script src="notifications-recues.js?v=20260924crible" defer></script>
+<script src="cloche.js?v=20260924crible" defer></script>
+<script src="splash.js?v=20260924crible"></script>
 <style>
   .topbar{ background:#0D9488; }
   .topbar .brand .logo-mark{ background:#0b6e64; }
@@ -208,7 +208,7 @@
       border-radius:14px; transition:color .15s, background .15s;
       -webkit-tap-highlight-color:transparent;
     }
-    .clt-bottomnav .nav.active{ color:#0D9488; background:rgba(13,148,136,.12); }
+    .clt-bottomnav .nav.active{ color:#0F766E; background:rgba(13,148,136,.12); }   /* teal « encre » 5,5 (24/09/2026) */
     .clt-bottomnav .nav svg{ width:22px; height:22px; }
     /* On réserve la hauteur de la barre + la safe-area pour que le contenu ne passe pas dessous. */
     body{ padding-bottom:calc(60px + env(safe-area-inset-bottom)); }
@@ -230,7 +230,7 @@
     transition:background .18s ease, color .18s ease, box-shadow .18s ease; -webkit-tap-highlight-color:transparent;
   }
   .clt-toptab:hover{ color:#0D9488; }
-  .clt-toptab.active{ background:#fff; color:#0D9488; box-shadow:0 4px 12px rgba(18,48,90,0.13); }
+  .clt-toptab.active{ background:#fff; color:#0F766E; box-shadow:0 4px 12px rgba(18,48,90,0.13); }
   .clt-tabpanel{ animation:clttabfade .18s ease; }
   @keyframes clttabfade{ from{opacity:.35;} to{opacity:1;} }
   @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
@@ -640,10 +640,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260924livreur"></script>
-<script src="express-config.js?v=20260924livreur"></script>
-<script src="recharges-express.js?v=20260924livreur"></script>
-<script src="biometric-lock.js?v=20260924livreur"></script>
+<script src="clt-common.js?v=20260924crible"></script>
+<script src="express-config.js?v=20260924crible"></script>
+<script src="recharges-express.js?v=20260924crible"></script>
+<script src="biometric-lock.js?v=20260924crible"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;

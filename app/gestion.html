@@ -15,15 +15,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924livreur">
+<link rel="stylesheet" href="style.css?v=20260924crible">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260924livreur"></script>
+<script src="theme.js?v=20260924crible"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260924livreur" defer></script>
-<script src="cloche.js?v=20260924livreur" defer></script>
-<script src="splash.js?v=20260924livreur"></script>
+<script src="notifications-recues.js?v=20260924crible" defer></script>
+<script src="cloche.js?v=20260924crible" defer></script>
+<script src="splash.js?v=20260924crible"></script>
 <style>
-  :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#16a34a; --clt-red:#dc2626; --clt-amber:#d97706; --clt-accent:#0F766E; }
+  :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#15803d; --clt-red:#b91c1c; --clt-amber:#b45309; --clt-accent:#0F766E; }   /* vert/rouge/ambre assombris : ≥ 4,5 sur blanc (24/09/2026) */
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
   .topbar{ background:linear-gradient(135deg,#12857b 0%, #0F766E 55%, #0b5a54 100%) !important; box-shadow:0 6px 20px rgba(11,90,84,0.22) !important; }
   .wrap{ padding-top:22px; max-width:1180px; }
@@ -186,12 +186,12 @@
   .cdd-table th, .cdd-table td{ padding:8px 10px; border-bottom:1px solid #eef2f1; text-align:left; }
   .cdd-table th{ background:var(--clt-teal-light); color:var(--clt-teal-dark); font-weight:700; font-size:12px; white-space:nowrap; }
   .cdd-table td.cdd-nombre, .cdd-table th:nth-child(2), .cdd-table th:nth-child(3), .cdd-table th:nth-child(4){ text-align:right; }
-  .cdd-avant{ color:#8a94a3; }
+  .cdd-avant{ color:#5b6573; }
   .cdd-ecart{ display:inline-block; padding:2px 8px; border-radius:7px; font-weight:800; font-size:12.5px; white-space:nowrap; }
-  .cdd-inconnu{ color:#8a94a3; }
+  .cdd-inconnu{ color:#5b6573; }
   .cdd-courbe-cell{ text-align:right; width:130px; }
   .cdd-courbe{ vertical-align:middle; overflow:visible; }
-  .cdd-courbe-vide{ font-size:11.5px; color:#8a94a3; }
+  .cdd-courbe-vide{ font-size:11.5px; color:#5b6573; }
   /* ---------- LA BOÎTE À QUESTIONS (18/09/2026) ----------
      Une question est un bouton pleine largeur, et la réponse s'ouvre SOUS elle plutôt que dans
      un panneau à côté : on lit la question et sa réponse d'un seul regard, sans avoir à se
@@ -245,7 +245,7 @@
   .gbl-onglet, .gbl-item{ font:inherit; display:flex; align-items:center; width:100%; text-align:left; background:none; border:0; cursor:pointer; border-radius:9px; }
   .gbl-onglet{ font-size:14px; font-weight:800; color:#1f2937; min-height:42px; padding:0 10px; }
   .gbl-onglet--actif{ color:var(--clt-teal-dark); }
-  .gbl-etiquette{ font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8a94a3; padding:10px 10px 3px; }
+  .gbl-etiquette{ font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#5b6573; padding:10px 10px 3px; }
   .gbl-item{ font-size:13.5px; font-weight:600; color:#4a5768; min-height:36px; padding:0 10px 0 14px; border-left:3px solid transparent; border-radius:0 9px 9px 0; }
   .gbl-onglet:hover, .gbl-item:hover{ background:#f1f6f5; }
   .gbl-item--actif, .gbl-onglet--actif[aria-current="page"]{ background:var(--clt-teal-light); color:var(--clt-teal-dark); }
@@ -434,7 +434,7 @@
     .cdd-table, .cdd-table tbody, .cdd-table tr, .cdd-table td{ display:block; width:100%; }
     .cdd-table tr{ border:1px solid #eef2f1; border-radius:11px; padding:8px 10px; margin-bottom:8px; background:#fff; }
     .cdd-table td{ border:0; padding:3px 0; display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .cdd-table td::before{ content:attr(data-label); font-size:11.5px; color:#8a94a3; font-weight:600; }
+    .cdd-table td::before{ content:attr(data-label); font-size:11.5px; color:#5b6573; font-weight:600; }
     .cdd-table td:first-child{ font-weight:700; color:var(--clt-teal-dark); padding-bottom:5px; }
     .cdd-table td:first-child::before{ content:none; }
     .cdd-courbe-cell{ width:auto; }
@@ -469,7 +469,7 @@
   .se-champ input, .se-champ textarea{ width:100%; box-sizing:border-box; border:1px solid #cbd5e1; border-radius:8px; padding:9px 10px; font:inherit; font-size:14px; }
   .se-champ textarea{ min-height:64px; resize:vertical; }
   .se-champ-court input{ max-width:140px; }
-  .se-aide{ font-size:11.5px; color:#94a3b8; margin-top:3px; }
+  .se-aide{ font-size:11.5px; color:#5b6573; margin-top:3px; }
   .se-liste{ border:1px dashed #cbd5e1; border-radius:10px; padding:10px 12px; margin:12px 0; background:#fafcfc; }
   .se-liste-tete{ display:flex; justify-content:space-between; font-weight:700; color:#334155; margin-bottom:6px; }
   .se-compte{ background:#e6f4f2; color:var(--clt-teal-dark); border-radius:999px; padding:1px 9px; font-size:12px; }
@@ -484,7 +484,7 @@
   .se-fiche-corps{ padding:0 12px 12px; }
   .se-image-ligne{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .se-image-ligne input{ flex:1; min-width:180px; }
-  .se-apercu{ width:72px; height:54px; object-fit:cover; border-radius:8px; border:1px solid #e2e8f0; background:#f1f5f9; display:inline-flex; align-items:center; justify-content:center; color:#94a3b8; }
+  .se-apercu{ width:72px; height:54px; object-fit:cover; border-radius:8px; border:1px solid #e2e8f0; background:#f1f5f9; display:inline-flex; align-items:center; justify-content:center; color:#5b6573; }
   table.g-table input.cell-auto{ background:#eef6ff; color:#12305a; cursor:default; }
   .cell-auto-badge{ font-size:12px; margin-left:4px; }
   table.g-table input.cell:hover{ border-color:#dfe7e5; }
@@ -633,7 +633,7 @@
   .doc-imprimable .doc-coord{ font-size:11px; color:#64748b; line-height:1.55; margin-top:3px; }
   .doc-imprimable .doc-titre{ text-align:right; font-weight:700; font-size:14px; color:var(--clt-teal-dark); text-transform:uppercase; letter-spacing:.04em; }
   .doc-imprimable .doc-periode{ text-align:right; font-size:12px; color:#475569; margin-top:3px; }
-  .doc-imprimable .doc-edite{ font-size:10.5px; color:#94a3b8; }
+  .doc-imprimable .doc-edite{ font-size:10.5px; color:#5b6573; }
   .doc-imprimable .doc-identite{ font-size:12px; color:#334155; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:7px 10px; margin-bottom:10px; }
   .doc-imprimable table{ width:100%; border-collapse:collapse; font-size:11px; }
   .doc-imprimable th, .doc-imprimable td{ border:1px solid #cbd5e1; padding:4px 6px; text-align:right; white-space:nowrap; }
@@ -645,7 +645,7 @@
   .doc-imprimable tr.lig-pres td{ font-weight:600; background:#eef7f5; }
   .doc-imprimable .doc-signatures{ display:flex; gap:60px; margin-top:26px; }
   .doc-imprimable .doc-signatures > div{ flex:1; border-top:1px solid #94a3b8; padding-top:5px; font-size:11px; color:#64748b; }
-  .doc-imprimable .doc-pied{ display:flex; justify-content:space-between; gap:16px; margin-top:16px; padding-top:8px; border-top:1px solid #e2e8f0; font-size:10px; color:#94a3b8; }
+  .doc-imprimable .doc-pied{ display:flex; justify-content:space-between; gap:16px; margin-top:16px; padding-top:8px; border-top:1px solid #e2e8f0; font-size:10px; color:#5b6573; }
 
   @media(max-width:640px){ .modal .grid2{ grid-template-columns:1fr; } }
 
@@ -806,6 +806,7 @@
   html[data-theme="dark"] .se-champ label{ color:#C9D3DF; }
   html[data-theme="dark"] .se-liste-tete{ color:#E6ECF3; }
   html[data-theme="dark"] .se-aide{ color:#9DB0C4; }
+  html[data-theme="dark"] .gbl-etiquette, html[data-theme="dark"] .cdd-avant, html[data-theme="dark"] .cdd-inconnu, html[data-theme="dark"] .cdd-courbe-vide{ color:#9DB0C4; }
   html[data-theme="dark"] .se-compte{ background:#1d3a3a; color:#7FE0D2; }
   html[data-theme="dark"] .se-btn-retirer{ color:#FF9D93; }
   html[data-theme="dark"] .modal, html[data-theme="dark"] .clt-motif-boite{ background:#141F2E; color:#E6ECF3; }
@@ -1855,45 +1856,45 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260924livreur"></script>
-<script src="numero-international.js?v=20260924livreur"></script>
-<script src="lib/bibliotheques.js?v=20260924livreur"></script>
-<script src="lib/retours.js?v=20260924livreur"></script>
-<script src="lib/reclamations.js?v=20260924livreur"></script>
-<script src="lib/communes-et-tarifs.js?v=20260924livreur"></script>
-<script src="lib/argent.js?v=20260924livreur"></script>
-<script src="lib/releve-cliente.js?v=20260924livreur"></script>
-<script src="lib/papier-a-en-tete.js?v=20260924livreur"></script>
-<script src="lib/briques-argent.js?v=20260924livreur"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260924livreur"></script>
-<script src="lib/traces-de-report.js?v=20260924livreur"></script>
-<script src="lib/annonce-de-remise.js?v=20260924livreur"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260924livreur"></script>
-<script src="lib/primes.js?v=20260924livreur"></script>
-<script src="lib/doublons.js?v=20260924livreur"></script>
-<script src="config.js?v=20260924livreur"></script>
-<script src="biometric-lock.js?v=20260924livreur"></script>
-<script src="clt-select-recherche.js?v=20260924livreur"></script>
-<script src="site-editeur.js?v=20260924livreur"></script>
+<script src="clt-common.js?v=20260924crible"></script>
+<script src="numero-international.js?v=20260924crible"></script>
+<script src="lib/bibliotheques.js?v=20260924crible"></script>
+<script src="lib/retours.js?v=20260924crible"></script>
+<script src="lib/reclamations.js?v=20260924crible"></script>
+<script src="lib/communes-et-tarifs.js?v=20260924crible"></script>
+<script src="lib/argent.js?v=20260924crible"></script>
+<script src="lib/releve-cliente.js?v=20260924crible"></script>
+<script src="lib/papier-a-en-tete.js?v=20260924crible"></script>
+<script src="lib/briques-argent.js?v=20260924crible"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260924crible"></script>
+<script src="lib/traces-de-report.js?v=20260924crible"></script>
+<script src="lib/annonce-de-remise.js?v=20260924crible"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260924crible"></script>
+<script src="lib/primes.js?v=20260924crible"></script>
+<script src="lib/doublons.js?v=20260924crible"></script>
+<script src="config.js?v=20260924crible"></script>
+<script src="biometric-lock.js?v=20260924crible"></script>
+<script src="clt-select-recherche.js?v=20260924crible"></script>
+<script src="site-editeur.js?v=20260924crible"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260924livreur"></script>
-<script src="causes-des-echecs.js?v=20260924livreur"></script>
-<script src="activite-de-la-cliente.js?v=20260924livreur"></script>
-<script src="qui-vend-quoi.js?v=20260924livreur"></script>
-<script src="analyse-profonde.js?v=20260924livreur"></script>
-<script src="ce-qui-a-change.js?v=20260924livreur"></script>
-<script src="les-questions.js?v=20260924livreur"></script>
-<script src="console-du-dirigeant.js?v=20260924livreur"></script>
-<script src="rapports-recus.js?v=20260924livreur"></script>
-<script src="rapports-recus-ecran.js?v=20260924livreur"></script>
-<script src="gestion.js?v=20260924livreur"></script>
+<script src="bilan-de-la-semaine.js?v=20260924crible"></script>
+<script src="causes-des-echecs.js?v=20260924crible"></script>
+<script src="activite-de-la-cliente.js?v=20260924crible"></script>
+<script src="qui-vend-quoi.js?v=20260924crible"></script>
+<script src="analyse-profonde.js?v=20260924crible"></script>
+<script src="ce-qui-a-change.js?v=20260924crible"></script>
+<script src="les-questions.js?v=20260924crible"></script>
+<script src="console-du-dirigeant.js?v=20260924crible"></script>
+<script src="rapports-recus.js?v=20260924crible"></script>
+<script src="rapports-recus-ecran.js?v=20260924crible"></script>
+<script src="gestion.js?v=20260924crible"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="guide-du-gerant.js?v=20260924livreur"></script>
-<script src="avance-de-travail.js?v=20260924livreur"></script>
-<script src="avance-de-travail-ecran.js?v=20260924livreur"></script>
-<script src="regulariser.js?v=20260924livreur"></script>
-<script src="regulariser-ecran.js?v=20260924livreur"></script>
-<script src="gestion-barre-laterale.js?v=20260924livreur"></script>
+<script src="guide-du-gerant.js?v=20260924crible"></script>
+<script src="avance-de-travail.js?v=20260924crible"></script>
+<script src="avance-de-travail-ecran.js?v=20260924crible"></script>
+<script src="regulariser.js?v=20260924crible"></script>
+<script src="regulariser-ecran.js?v=20260924crible"></script>
+<script src="gestion-barre-laterale.js?v=20260924crible"></script>
 </body>
 </html>

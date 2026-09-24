@@ -16,6 +16,8 @@
   --orange:#E26313;
   --orange-hover:#C9550F;
   --orange-light:#FBE7D8;
+  --orange-encre:#BF5210;    /* l'orange qui porte du texte, ou du blanc dessus : contraste ≥ 4,7 (24/09/2026) */
+  --orange-encre-pastel:#A84608;   /* le même, sur une pastille orange pâle : ≥ 4,7 */
   --muted:#5B6B7C;
   --white:#FFFFFF;
   --grey-bg:#F6F7F9;
@@ -141,7 +143,7 @@ input,textarea,select{font-family:inherit;}
 /* ---------- AVATAR / PHOTO DE PROFIL ---------- */
 .avatar{border-radius:50%; object-fit:cover; flex-shrink:0; background:var(--grey-bg);}
 .avatar-placeholder{
-  display:flex; align-items:center; justify-content:center; background:#BF5210; color:var(--white);   /* orange « encre » : initiales lisibles (4,7) — 24/09/2026 */
+  display:flex; align-items:center; justify-content:center; background:#BF5210; color:#fff;   /* orange « encre », initiales blanches jour et nuit (4,7) — 24/09/2026 */
   font-weight:700; letter-spacing:.3px; font-family:'Inter', Arial, sans-serif;
 }
 .topbar .user-info .avatar, .topbar .user-info .avatar-placeholder{border:2px solid rgba(255,255,255,0.35);}
@@ -332,7 +334,7 @@ input, select, textarea{ font-size:16px !important; }
 .montant-group .montant-field-frais-exp label{ text-transform:none; letter-spacing:0; }
 .montant-group{ flex-wrap:wrap; }
 .montant-total-preview{margin-top:10px; font-size:12.5px; color:var(--muted); text-align:right;}
-.montant-total-preview strong{color:var(--orange); font-size:14px;}
+.montant-total-preview strong{color:var(--orange-encre); font-size:14px;}
 
 /* ---------- PAIEMENT ---------- */
 .payment-checks{display:flex; flex-wrap:wrap; gap:10px; margin:2px 0 16px;}
@@ -818,12 +820,14 @@ html[data-theme="dark"] .montant-absent{ color:#ff9d93; }
 }
 .date-filter-input:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-light);}
 .date-filter-clear{
-  background:none; border:none; color:var(--orange); font-size:12.5px; font-weight:700; padding:4px 2px;
+  background:none; border:none; color:var(--orange-encre); font-size:12.5px; font-weight:700; padding:4px 2px;
 }
 .date-filter-clear:hover{text-decoration:underline;}
 @media(max-width:640px){
   .date-filter-wrap{gap:6px 10px;}
-  .date-filter-input{flex:1; min-width:0;}
+  /* 24/09/2026 : jamais moins de 140 px, sinon le champ se réduisait à son icône et la date choisie
+     n'était plus lisible (cliente, 390 px) ; les boutons passent à la ligne d'après. */
+  .date-filter-input{flex:1 1 140px; min-width:140px;}
 }
 
 /* ---------- ALERTES ---------- */
@@ -922,7 +926,7 @@ html[data-theme="dark"] .montant-absent{ color:#ff9d93; }
 .recap-table .btn-sm{padding:6px 11px; font-size:11.5px;}
 .compta-quick-dates{display:flex; gap:8px; margin:4px 0 14px; flex-wrap:wrap;}
 
-@media(max-width:640px){
+@media(max-width:800px){   /* 640 → 800 le 24/09/2026 : à 768 px, sept colonnes débordaient de 31 px ; en cartes, tout se lit */
   .recap-table-cards thead{display:none;}
   .recap-table-cards, .recap-table-cards tbody, .recap-table-cards tfoot, .recap-table-cards tr, .recap-table-cards td{display:block; width:100%;}
   .recap-table-cards{border:none;}
@@ -1024,7 +1028,7 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
 .recap-client-card:active{transform:scale(.99);}
 .recap-client-name{font-weight:700; color:var(--navy); font-size:14.5px; line-height:1.3;}
 .recap-client-meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
-.recap-client-count{background:var(--orange-light); color:var(--orange); padding:3px 10px; border-radius:var(--radius-pill); font-size:12px; font-weight:700;}
+.recap-client-count{background:var(--orange-light); color:var(--orange-encre-pastel); padding:3px 10px; border-radius:var(--radius-pill); font-size:12px; font-weight:700;}
 .recap-client-amount{color:var(--muted); font-size:12.5px; font-weight:600;}
 /* ---------- LE POINT A-T-IL ÉTÉ ENVOYÉ À CETTE CLIENTE ? (18/09/2026) ----------
    Celtis : « quand le point est envoyé ou pas, il n'y a aucune méthode pour vérifier ». Le soir,
@@ -1037,7 +1041,7 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
   font-size:11.5px; font-weight:700; white-space:nowrap; vertical-align:middle;
 }
 .recap-point--oui{color:#1a7d3c; background:#e3f6ea;}
-.recap-point--non{color:#6b7686; background:#eef1f5;}
+.recap-point--non{color:#5b6573; background:#eef1f5;}
 .recap-client-card--fait{border-color:#bce6cd;}
 /* LE POINT À VOIR (22/09/2026) : la carte que la notification visait reste encadrée en orange,
    avec « 🔔 à traiter », jusqu'à ce qu'on l'ouvre. Plusieurs notifications, plusieurs cadres. */
@@ -1045,7 +1049,7 @@ html[data-theme="dark"] .releve-barre-label{color:#E6ECF3;}
 .recap-a-voir{margin-left:8px; padding:2px 8px; border-radius:999px; background:var(--orange); color:#fff; font-size:11.5px; font-weight:800; white-space:nowrap;}
 .recap-day-points{font-size:13px; font-weight:600; color:var(--navy); margin:2px 0 10px;}
 .recap-day-points--fini{color:#1a7d3c;}
-.recap-day-points strong{color:var(--orange);}
+.recap-day-points strong{color:var(--orange-encre);}
 .recap-day-points--fini strong{color:#1a7d3c;}
 /* La marque dans la barre du relevé : sous les quatre boutons, séparée par un filet — c'est un
    geste d'un autre ordre, il ne produit pas de fichier, il dit que le fichier est parti. */
@@ -1104,7 +1108,7 @@ html[data-theme="dark"] .releve-marque .btn.a-envoyer{background:rgba(30,143,78,
   font-size:14.5px; line-height:1.6; color:#333; background:var(--orange-light); border-radius:var(--radius-sm);
   padding:12px 16px; margin:0 0 16px 0; border:1px solid rgba(226,99,19,0.25);
 }
-.recap-montant strong{color:var(--orange);}
+.recap-montant strong{color:var(--orange-encre-pastel);}
 
 /* ---- L'argent, tel qu'il se lit (règle du 25/08/2026) ------------------------------------
    Deux poches, deux traitements visuels, jamais additionnées :
@@ -1471,7 +1475,7 @@ html[data-theme="dark"] .demande-ligne + .demande-ligne{ border-top-color:rgba(2
 .stat-tile-total .stat-tile-value, .stat-tile-total .stat-tile-label{color:var(--white);}
 .stat-tile-icon{font-size:20px; line-height:1;}
 .stat-tile-value{font-size:22px; font-weight:800; color:var(--navy); line-height:1.2; letter-spacing:-0.02em;}
-.stat-tile-label{font-size:11.5px; font-weight:600; color:var(--muted); line-height:1.3;}
+.stat-tile-label{font-size:11.5px; font-weight:600; color:#485767; line-height:1.3;}   /* un cran plus sombre que --muted : ≥ 4,5 sur les tuiles pastel (24/09/2026) */
 .stat-tile-total .stat-tile-label{color:rgba(255,255,255,0.85);}
 /* Les tuiles reçoivent --tile-color / --tile-bg depuis l'écran (cliente, gestion) ; ces variables
    n'étaient lues par personne — toutes les tuiles restaient blanches et bleu marine (20/09, lot D).
@@ -1514,7 +1518,7 @@ html[data-theme="dark"] .stat-tile-total{ background:var(--grad-navy-deep); }
 .day-recap-row:hover{border-color:var(--orange); background:#fff9f4;}
 .day-recap-date{font-weight:700; color:var(--navy); font-size:13px; text-transform:capitalize; flex-shrink:0;}
 .day-recap-count{
-  background:var(--orange-light); color:var(--orange); padding:2px 10px; border-radius:var(--radius-pill); font-size:11.5px; font-weight:700;
+  background:var(--orange-light); color:var(--orange-encre-pastel); padding:2px 10px; border-radius:var(--radius-pill); font-size:11.5px; font-weight:700;
   flex-shrink:0;
 }
 .day-recap-pills{display:flex; flex-wrap:wrap; gap:6px; flex:1 1 auto;}
@@ -1681,8 +1685,8 @@ html[data-theme="dark"] .settings-dropdown .settings-groupe--attente button:hove
 }
 .account-modal-title{color:var(--navy); font-size:18px; margin-bottom:18px; font-weight:700;}
 .account-modal-close{
-  position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%; border:none;
-  background:var(--grey-bg); color:var(--muted); font-size:15px; display:flex; align-items:center; justify-content:center;
+  position:absolute; top:8px; right:8px; width:44px; height:44px; border-radius:50%; border:none;   /* 30 → 44 px (24/09/2026) */
+  background:var(--grey-bg); color:var(--muted); font-size:17px; display:flex; align-items:center; justify-content:center;
 }
 .account-modal-close:hover{background:#eef1f5; color:#1E2A38;}
 .account-modal-divider{border:none; border-top:1px solid #EEF1F5; margin:22px 0;}
@@ -1747,6 +1751,8 @@ html[data-theme="dark"]{
   --navy:#8FB8EC;            /* utilisé comme couleur de texte/accent */
   --navy-dark:#0E2136;
   --muted:#9DB0C4;
+  --orange-encre:#F58A45;
+  --orange-encre-pastel:#F58A45;
   /* Surfaces & bordures */
   --white:#1B2635;           /* cartes, champs, encarts */
   --grey-bg:#0F1824;         /* fond de page */
@@ -2051,7 +2057,7 @@ html[data-theme="dark"] #argent-jour-corps div[style*="color:#1B4374"]{ color:#7
 /* Espace Équipe : lien « Gestion » (gris foncé) dans le menu réglages. */
 html[data-theme="dark"] a[style*="color:#222"]{ color:#C9D6E5 !important; }
 /* Petites mentions vertes « Soldé / Écart 0 FCFA » posées sur fond sombre. */
-html[data-theme="dark"] span[style*="color:#1a7d3c"]{ color:#5FD98A !important; }
+html[data-theme="dark"] span[style*="color:#1a7d3c"]:not([style*="background"]){ color:#5FD98A !important; }   /* pas les pastilles à fond clair (24/09/2026) */
 /* Espace Express — nom du fichier KYC (vert) sur carte sombre. */
 html[data-theme="dark"] .kyc-filename{ color:#5FD98A; }
 
@@ -2298,7 +2304,7 @@ html[data-theme="dark"] .confirm-modal-icon{ background:color-mix(in srgb, var(-
   flex:1 1 auto; min-width:0;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.clt-rs__libelle--vide{ color:#9AA6B4; font-weight:400; }
+.clt-rs__libelle--vide{ color:#6B7686; font-weight:400; }   /* 2,5 → 4,7 : un vide se lit aussi (24/09/2026) */
 
 /* Chevron dessiné en CSS : pas d'image à charger, et il pivote à l'ouverture. */
 .clt-rs__chevron{
@@ -2417,7 +2423,7 @@ html.clt-rs-fige, html.clt-rs-fige body{ overflow:hidden; }
 /* ---------- Mode sombre ---------- */
 html[data-theme="dark"] .clt-rs__champ{ background:#141D29; color:#E6ECF3; border-color:#2A3849; }
 html[data-theme="dark"] .clt-rs__champ:disabled{ background:#111925; color:#7E8CA0; }
-html[data-theme="dark"] .clt-rs__libelle--vide{ color:#7E8CA0; }
+html[data-theme="dark"] .clt-rs__libelle--vide{ color:#9DB0C4; }
 html[data-theme="dark"] .clt-rs__panneau{ background:#1B2635; border-color:rgba(255,255,255,.08); }
 html[data-theme="dark"] .clt-rs__barre{ border-bottom-color:#2A3849; }
 html[data-theme="dark"] .clt-rs__saisie{ background:#141D29 !important; color:#E6ECF3; border-color:#2A3849; }
@@ -2712,7 +2718,8 @@ html[data-theme="dark"] .lien-nu{ color:#7FB0EA; }
 .pdj-lab{ font-size:11.5px; font-weight:600; color:var(--muted); margin-top:3px; }
 .pdj-sous{ font-size:11px; color:var(--muted); margin-top:2px; }
 .pdj-verif{ font-size:12px; color:var(--muted); margin-top:6px; font-variant-numeric:tabular-nums; }
-.pdj-verif.ok{ color:#1a7d3c; } .pdj-verif.ko{ color:#c0392b; font-weight:700; }
+.pdj-verif.ok{ color:#1a7d3c; } .pdj-verif.ko{ color:#B33426; font-weight:700; }
+html[data-theme="dark"] .pdj-verif.ok{ color:#5FD98A; } html[data-theme="dark"] .pdj-verif.ko{ color:#FF8A7A; }
 .pdj-recette{ margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--grad-navy-deep, #1B4374); color:#fff; display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 12px; }
 .pdj-recette span{ font-size:12.5px; opacity:.85; } .pdj-recette strong{ font-size:20px; } .pdj-recette small{ flex-basis:100%; font-size:11.5px; opacity:.8; }
 .pdj-recette span em{ display:block; font-style:normal; font-size:11px; opacity:.75; }
@@ -2723,6 +2730,15 @@ html[data-theme="dark"] .lien-nu{ color:#7FB0EA; }
 .pdj-recette-manque{ background:#fff6ea; color:#8a5a00; border:1px solid #f0d09a; margin-top:6px; }
 .pdj-recette-plein{ background:#eaf6ef; color:#14663a; border:1px solid #b6dfc6; margin-top:6px; }
 html[data-theme="dark"] .pdj-recette-manque{ background:rgba(138,90,0,.22); border-color:rgba(240,208,154,.35); color:#ffd894; }
+/* La nuit, les deux blocs pastel du point du jour passent en sombre — sinon le texte, déjà éclairci, ne
+   se lisait plus dessus (1,3 à 2,1 mesurés le 24/09/2026, chantier N). Et les montants rouges/verts
+   s'éclaircissent. */
+html[data-theme="dark"] .pdj-clientes{ background:#1A2433; }
+html[data-theme="dark"] .pdj-clt{ background:#2A2118; }
+html[data-theme="dark"] .pdj-val[style*="color:#c0392b"], html[data-theme="dark"] .pdj-val[style*="color:#B33426"]{ color:#FF8A7A !important; }
+html[data-theme="dark"] .pdj-val[style*="color:#1a7d3c"]{ color:#5FD98A !important; }
+html[data-theme="dark"] .pdj-val[style*="color:#E26313"], html[data-theme="dark"] .pdj-val[style*="color:#BF5210"]{ color:#F6A25B !important; }
+html[data-theme="dark"] .pdj-phrase strong[style*="color:#c0392b"], html[data-theme="dark"] .pdj-bloc strong[style*="color:#c0392b"]{ color:#FF8A7A !important; }
 html[data-theme="dark"] .pdj-recette-plein{ background:rgba(20,102,58,.22); border-color:rgba(182,223,198,.35); color:#9fe3bb; }
 .pdj-note{ font-size:12.5px; color:var(--muted); margin-top:8px; }
 .pdj-table{ margin-top:10px; }
@@ -2738,8 +2754,10 @@ html[data-theme="dark"] .pdj-recette-plein{ background:rgba(20,102,58,.22); bord
 .pdj-cliente-age{ font-size:11.5px; color:var(--muted); }
 /* Celles qui attendent depuis 3 jours ou plus : un filet rouge, pas un bloc rouge. */
 .pdj-cliente-ancienne{ border-left-color:#c0392b; }
-.pdj-cliente-ancienne strong{ color:#c0392b; }
-.pdj-cliente-ancienne .pdj-cliente-age{ color:#c0392b; }
+.pdj-cliente-ancienne strong{ color:#B33426; }
+html[data-theme="dark"] .pdj-cliente-ancienne strong{ color:#FF8A7A; }
+.pdj-cliente-ancienne .pdj-cliente-age{ color:#B33426; }
+html[data-theme="dark"] .pdj-cliente-ancienne .pdj-cliente-age{ color:#FF8A7A; }
 /* « + N autre(s) » est un vrai bouton depuis le 19/09/2026 : il déplie la liste. */
 .pdj-cliente-plus{ display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 12px; font-size:12.5px; font-weight:700; color:var(--navy); cursor:pointer; border-style:dashed; border-left-style:dashed; text-align:center; }
 .pdj-cliente-plus:hover{ border-color:#1B4374; border-left-color:#1B4374; }
@@ -2935,6 +2953,7 @@ html[data-theme="dark"] .position-pastille:not(.est-active):not(.est-attente):no
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 40px;   /* 28 → 40 px : une ligne qu'on touche (24/09/2026) */
   font-size: 13px;
   font-weight: 600;
   color: #1B4374;
@@ -3561,7 +3580,7 @@ html[data-theme="dark"] .ligne-cliquable:hover{ background:rgba(157,184,218,.10)
 .rt-date{ font-weight:700; color:var(--navy); }
 .rt-depuis--retard .rt-date{ color:inherit; }
 .rt-adresse{ margin-top:6px; font-size:13.5px; line-height:1.45; overflow-wrap:anywhere; }
-.rt-tel{ margin-left:6px; font-weight:700; color:var(--navy); white-space:nowrap; text-decoration:none; }
+.rt-tel{ margin-left:6px; font-weight:700; color:var(--navy); white-space:nowrap; text-decoration:none; display:inline-block; padding:8px 0; margin:-8px 0 -8px 6px; }   /* cible de 32+ px sans bouger la ligne (24/09/2026) */
 .rt-lien{ background:none; border:0; padding:0; font:inherit; font-weight:700; color:var(--navy); text-decoration:underline; cursor:pointer; min-height:44px; }
 html[data-theme="dark"] .rt-recherche input{ background:#1a2230; border-color:#2c3a50; }
 html[data-theme="dark"] .rt-date, html[data-theme="dark"] .rt-tel, html[data-theme="dark"] .rt-lien{ color:#9cc2f0; }
@@ -4133,7 +4152,7 @@ html[data-theme="dark"] .rx-champ--verrou input{ background:#141b27; color:#8d9b
 .releve-repli__titre::before{ content:'▸'; display:inline-block; width:18px; color:var(--muted); }
 .releve-repli[open] .releve-repli__titre::before{ content:'▾'; }
 .releve-repli__titre{ flex:1 1 auto; font-size:15px; }
-.releve-repli__resume{ flex:0 0 auto; font-size:13.5px; font-weight:800; color:#E26313; white-space:nowrap; }
+.releve-repli__resume{ flex:0 0 auto; font-size:13.5px; font-weight:800; color:var(--orange-encre); white-space:nowrap; }
 .releve-repli[open] .releve-repli__resume{ display:none; }
 html[data-theme="dark"] .releve-repli > summary{ color:#9cc2f0; }
 html[data-theme="dark"] .releve-repli__resume{ color:#ffb27a; }
@@ -4335,3 +4354,11 @@ html[data-theme="dark"] #panel-finance div[style*="border-radius:10px"][style*="
 html[data-theme="dark"] #argent-jour-card [style*="color:#475569"], html[data-theme="dark"] #panel-finance [style*="color:#475569"]{ color:#C9D6E5 !important; }
 html[data-theme="dark"] #argent-jour-card [style*="color:#c0392b"], html[data-theme="dark"] #panel-finance div[style*="color:#c0392b"]:not([style*="background"]){ color:#FF8A7A !important; }
 html[data-theme="dark"] #argent-jour-card [style*="color:#1B4374"]:not([style*="background"]), html[data-theme="dark"] #panel-finance div[style*="color:#1B4374"]:not([style*="background"]){ color:#9DC1F0 !important; }
+
+/* Nuit, espace Équipe (24/09/2026, chantier N) : les rouges et verts écrits en ligne dans les tableaux et
+   phrases (montants dus, écarts, « soldé ») s'éclaircissent — hors pastilles à fond clair. */
+html[data-theme="dark"] :is(td, th, strong, em, b, div.meta, p, li)[style*="color:#c0392b"]:not([style*="background"]),
+html[data-theme="dark"] :is(td, th, strong, em, b, div.meta, p, li, span)[style*="color:#B33426"]:not([style*="background"]){ color:#FF8A7A !important; }
+html[data-theme="dark"] :is(td, th, strong, em, b, div.meta, p, li)[style*="color:#1a7d3c"]:not([style*="background"]){ color:#5FD98A !important; }
+html[data-theme="dark"] :is(td, th, strong, em, b, div.meta, p, li, span)[style*="color:#A84608"]:not([style*="background"]),
+html[data-theme="dark"] :is(td, th, strong, em, b, div.meta, p, li, span)[style*="color:#BF5210"]:not([style*="background"]){ color:#F6A25B !important; }

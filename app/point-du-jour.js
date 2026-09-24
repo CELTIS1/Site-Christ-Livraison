@@ -211,7 +211,7 @@
     opts = opts || {};
     return `<div class="pdj-tuile${opts.classe ? ' ' + opts.classe : ''}" ${opts.title ? `title="${esc(opts.title)}"` : ''}><div class="pdj-val" style="${opts.couleur ? 'color:' + opts.couleur : ''}">${valeur}</div><div class="pdj-lab">${esc(label)}</div>${opts.sous ? `<div class="pdj-sous">${opts.sous}</div>` : ''}</div>`;
   }
-  const ROUGE = '#c0392b', VERT = '#1a7d3c', ORANGE = '#E26313';
+  const ROUGE = '#B33426', VERT = '#1a7d3c', ORANGE = '#BF5210';   // teintes « encre » : ≥ 4,5 sur blanc (24/09/2026)
 
   function html(r, j) {
     const a = r.articles, l = r.livraison, k = r.caisse;

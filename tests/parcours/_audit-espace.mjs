@@ -75,7 +75,7 @@ for (const largeur of LARGEURS) {
     for (const n of E.navs) {
       const avantErreurs = erreurs.length;
       try {
-        if (n === '__menu') { await page.locator('.settings-menu-btn, #btn-menu, .menu-btn').first().click({ timeout: 3000 }); }
+        if (n === '__menu') { await page.keyboard.press('Escape'); await dodo(300); const fermer = page.locator('#account-modal-close'); if (await fermer.isVisible().catch(() => false)) await fermer.click(); await page.locator('.settings-menu-btn, #btn-menu, .menu-btn').first().click({ timeout: 3000 }); }
         else if (n === '__cloche') { await page.keyboard.press('Escape'); await dodo(200); await page.locator('.clt-cloche').first().click({ timeout: 3000 }); }
         else if (n === '__compte') { const b = page.locator('.nav[data-target="__compte"], .nav[data-nav="compte"]').first(); if (await b.isVisible().catch(() => false)) await b.click(); }
         else if (E.fn) await page.evaluate(([f, n]) => window[f](n), [E.fn, n]);

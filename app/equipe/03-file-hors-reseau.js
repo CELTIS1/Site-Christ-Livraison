@@ -585,7 +585,7 @@ ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(col
 ${eqLigneClientHTML(c)}
 ${eqLigneDestinationHTML(c)}
 ${eqBoutonsAppelHTML(c)}
-${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
+${c.commune_recuperation ? `<div class="meta" style="color:var(--orange-encre-pastel, #A84608); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${eqLigneMontantsHTML(c)}
@@ -714,7 +714,7 @@ ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(col
 ${eqLigneClientHTML(c)}
 ${eqLigneDestinationHTML(c)}
 ${eqBoutonsAppelHTML(c)}
-${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
+${c.commune_recuperation ? `<div class="meta" style="color:var(--orange-encre-pastel, #A84608); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 ${collecteLine}
 <div class="meta">Ajouté le ${formatDate(c.created_at)}</div>
 ${eqDelaiHTML(c)}

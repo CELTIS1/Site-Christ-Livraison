@@ -22,13 +22,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924livreur">
+<link rel="stylesheet" href="style.css?v=20260924crible">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260924livreur"></script>
+<script src="theme.js?v=20260924crible"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260924livreur" defer></script>
-<script src="cloche.js?v=20260924livreur" defer></script>
-<script src="splash.js?v=20260924livreur"></script>
+<script src="notifications-recues.js?v=20260924crible" defer></script>
+<script src="cloche.js?v=20260924crible" defer></script>
+<script src="splash.js?v=20260924crible"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -223,6 +223,12 @@
   .eq-tabpanel{ animation:eqfade .18s ease; }
   @keyframes eqfade{ from{ opacity:.35; } to{ opacity:1; } }
 
+  /* Tablette (761–1100 px, 24/09/2026 chantier N) : huit onglets ne tiennent pas sur une ligne — « Express »
+     sortait du cadre, coupé. La rangée se replie sur deux lignes, chaque onglet garde sa largeur. */
+  @media(max-width:1100px){
+    .clt-toptabs{ flex-wrap:wrap; }
+    .clt-toptab{ flex:1 1 auto; padding:10px 12px; font-size:13.5px; }
+  }
   /* Sur petit écran : la barre d'onglets du haut disparaît au profit de la barre du bas (Option C) */
   @media(max-width:760px){
     .clt-toptabs-wrap{ display:none !important; }
@@ -502,8 +508,8 @@
 #section-aujourdhui .ess-tuile:hover{ border-color:var(--border-strong); box-shadow:var(--shadow-xs); }
 #section-aujourdhui .ess-tuile .n{ display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 7px; border-radius:999px; font-size:13px; font-weight:800; letter-spacing:-0.02em; color:#fff; background:currentColor; }
 #section-aujourdhui .ess-tuile .n{ color:#fff; }
-#section-aujourdhui .ess-tuile.est-ambre .n{ background:#E26313; }
-#section-aujourdhui .ess-tuile.est-rouge .n{ background:#D6534A; }
+#section-aujourdhui .ess-tuile.est-ambre .n{ background:#BF5210; }   /* orange « encre », blanc dessus 4,7 (24/09/2026) */
+#section-aujourdhui .ess-tuile.est-rouge .n{ background:#C0392B; }   /* 4,0 → 5,1 */
 #section-aujourdhui .ess-rien{ display:inline-flex; align-items:center; min-height:36px; font-size:12.5px; font-weight:600; color:var(--muted); }
 /* Le bilan du jour : quatre chiffres en ligne, sans bordure — on les lit, on ne les touche pas. */
 #section-aujourdhui .ess-stat{ display:inline-flex; align-items:baseline; gap:5px; font-size:12.5px; color:var(--muted); font-weight:600; padding:6px 0; margin-right:14px; }
@@ -1487,7 +1493,7 @@ saisis ensuite lui seront rattachés automatiquement.
 #section-clients .cd-barre, #section-livreurs .cd-barre{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
 #section-clients .cd-barre .page-sub, #section-livreurs .cd-barre .page-sub{ margin:0; flex:1 1 260px; }
 #section-clients .cd-periodes, #section-livreurs .cd-periodes{ display:inline-flex; gap:4px; background:var(--grey-bg); border-radius:999px; padding:3px; }
-#section-clients .cd-periodes button, #section-livreurs .cd-periodes button{ border:0; background:transparent; border-radius:999px; padding:6px 12px; font:inherit; font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer; min-height:32px; }
+#section-clients .cd-periodes button, #section-livreurs .cd-periodes button{ border:0; background:transparent; border-radius:999px; padding:6px 12px; font:inherit; font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer; min-height:40px; }   /* 32 → 40 px (24/09/2026) */
 #section-clients .cd-periodes button.active, #section-livreurs .cd-periodes button.active{ background:var(--white); color:var(--navy); box-shadow:var(--shadow-xs); }
 /* Livreurs (13/09/2026) : les échecs à qualifier, la fiche, les réclamations. */
 .ld-qual-liste{ display:grid; gap:8px; }
@@ -1567,6 +1573,7 @@ saisis ensuite lui seront rattachés automatiquement.
 .cd-lien{ text-decoration:none; font-size:14px; padding:4px 6px; border-radius:8px; border:1px solid var(--border); background:var(--white); color:var(--navy); white-space:nowrap; }
 .cd-lien:hover{ border-color:var(--navy); }
 .cd-rouge{ color:#b3362d; }
+html[data-theme="dark"] .cd-rouge{ color:#FF8A7A; }
 .cd-muet{ color:var(--muted); }
 .cd-note{ font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.45; }
 /* La fiche */
@@ -1752,46 +1759,46 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
   </div>
 </div>
 
-<script src="clt-common.js?v=20260924livreur"></script>
-<script src="numero-international.js?v=20260924livreur"></script>
-<script src="voir-un-compte.js?v=20260924livreur"></script>
-<script src="lib/bibliotheques.js?v=20260924livreur"></script>
-<script src="lib/retours.js?v=20260924livreur"></script>
-<script src="lib/reclamations.js?v=20260924livreur"></script>
-<script src="lib/communes-et-tarifs.js?v=20260924livreur"></script>
-<script src="lib/argent.js?v=20260924livreur"></script>
-<script src="lib/releve-cliente.js?v=20260924livreur"></script>
-<script src="lib/papier-a-en-tete.js?v=20260924livreur"></script>
-<script src="lib/briques-argent.js?v=20260924livreur"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260924livreur"></script>
-<script src="lib/traces-de-report.js?v=20260924livreur"></script>
-<script src="lib/annonce-de-remise.js?v=20260924livreur"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260924livreur"></script>
-<script src="lib/primes.js?v=20260924livreur"></script>
-<script src="lib/doublons.js?v=20260924livreur"></script>
-<script src="config.js?v=20260924livreur"></script>
-<script src="activite-de-la-cliente.js?v=20260924livreur"></script>
-<script src="activite-ecran.js?v=20260924livreur"></script>
-<script src="delais-et-promesses.js?v=20260924livreur"></script>
-<script src="ordre-de-livraison.js?v=20260924livreur"></script>
-<script src="etiquettes-et-scan.js?v=20260924livreur"></script>
-<script src="clients-dashboard.js?v=20260924livreur"></script>
-<script src="livreurs-dashboard.js?v=20260924livreur"></script>
-<script src="point-du-jour.js?v=20260924livreur"></script>
-<script src="biometric-lock.js?v=20260924livreur"></script>
-<script src="clt-select-recherche.js?v=20260924livreur"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260924livreur"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260924livreur"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260924livreur"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260924livreur"></script>
-<script src="equipe/04-actions.js?v=20260924livreur"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260924livreur"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260924livreur"></script>
-<script src="point-par-whatsapp.js?v=20260924livreur"></script>
-<script src="equipe/07-rapports.js?v=20260924livreur"></script>
-<script src="equipe/08-son-ecran.js?v=20260924livreur"></script>
-<script src="recharges-express.js?v=20260924livreur"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260924livreur"></script>
+<script src="clt-common.js?v=20260924crible"></script>
+<script src="numero-international.js?v=20260924crible"></script>
+<script src="voir-un-compte.js?v=20260924crible"></script>
+<script src="lib/bibliotheques.js?v=20260924crible"></script>
+<script src="lib/retours.js?v=20260924crible"></script>
+<script src="lib/reclamations.js?v=20260924crible"></script>
+<script src="lib/communes-et-tarifs.js?v=20260924crible"></script>
+<script src="lib/argent.js?v=20260924crible"></script>
+<script src="lib/releve-cliente.js?v=20260924crible"></script>
+<script src="lib/papier-a-en-tete.js?v=20260924crible"></script>
+<script src="lib/briques-argent.js?v=20260924crible"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260924crible"></script>
+<script src="lib/traces-de-report.js?v=20260924crible"></script>
+<script src="lib/annonce-de-remise.js?v=20260924crible"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260924crible"></script>
+<script src="lib/primes.js?v=20260924crible"></script>
+<script src="lib/doublons.js?v=20260924crible"></script>
+<script src="config.js?v=20260924crible"></script>
+<script src="activite-de-la-cliente.js?v=20260924crible"></script>
+<script src="activite-ecran.js?v=20260924crible"></script>
+<script src="delais-et-promesses.js?v=20260924crible"></script>
+<script src="ordre-de-livraison.js?v=20260924crible"></script>
+<script src="etiquettes-et-scan.js?v=20260924crible"></script>
+<script src="clients-dashboard.js?v=20260924crible"></script>
+<script src="livreurs-dashboard.js?v=20260924crible"></script>
+<script src="point-du-jour.js?v=20260924crible"></script>
+<script src="biometric-lock.js?v=20260924crible"></script>
+<script src="clt-select-recherche.js?v=20260924crible"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260924crible"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260924crible"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260924crible"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260924crible"></script>
+<script src="equipe/04-actions.js?v=20260924crible"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260924crible"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260924crible"></script>
+<script src="point-par-whatsapp.js?v=20260924crible"></script>
+<script src="equipe/07-rapports.js?v=20260924crible"></script>
+<script src="equipe/08-son-ecran.js?v=20260924crible"></script>
+<script src="recharges-express.js?v=20260924crible"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260924crible"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1839,20 +1846,20 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260924livreur"></script>
-<script src="equipe/11-chercher-partout.js?v=20260924livreur"></script>
-<script src="reprogrammer.js?v=20260924livreur"></script>
-<script src="retours-du-bureau.js?v=20260924livreur"></script>
-<script src="equipe/12-les-retours.js?v=20260924livreur"></script>
-<script src="equipe/13-les-boutiques.js?v=20260924livreur"></script>
+<script src="equipe/10-onglets.js?v=20260924crible"></script>
+<script src="equipe/11-chercher-partout.js?v=20260924crible"></script>
+<script src="reprogrammer.js?v=20260924crible"></script>
+<script src="retours-du-bureau.js?v=20260924crible"></script>
+<script src="equipe/12-les-retours.js?v=20260924crible"></script>
+<script src="equipe/13-les-boutiques.js?v=20260924crible"></script>
 <!-- 9.6 : sur grand écran, la liste à gauche et la fiche à droite. Ne fait rien sous 1 200 px. -->
-<script src="equipe/14-liste-et-fiche.js?v=20260924livreur"></script>
-<script src="chaine-de-l-argent.js?v=20260924livreur"></script>
-<script src="equipe/15-la-chaine-de-l-argent.js?v=20260924livreur"></script>
+<script src="equipe/14-liste-et-fiche.js?v=20260924crible"></script>
+<script src="chaine-de-l-argent.js?v=20260924crible"></script>
+<script src="equipe/15-la-chaine-de-l-argent.js?v=20260924crible"></script>
 <!-- 9.6 : les colis en route sur la carte du Suivi, une pastille par commune. -->
-<script src="colis-sur-la-carte.js?v=20260924livreur"></script>
-<script src="equipe/16-les-colis-sur-la-carte.js?v=20260924livreur"></script>
+<script src="colis-sur-la-carte.js?v=20260924crible"></script>
+<script src="equipe/16-les-colis-sur-la-carte.js?v=20260924crible"></script>
 <!-- Le point à voir (22/09/2026) : la notification conduit à la carte, qui reste encadrée tant qu'on ne l'a pas ouverte. -->
-<script src="equipe/17-le-point-a-voir.js?v=20260924livreur"></script>
+<script src="equipe/17-le-point-a-voir.js?v=20260924crible"></script>
 </body>
 </html>

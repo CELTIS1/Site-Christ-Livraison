@@ -919,7 +919,7 @@ ${colisDescriptionTexte(c) ? `<div class="meta colis-quoi">📦 ${escapeHTML(col
 ${eqLigneClientHTML(c)}
 ${eqLigneDestinationHTML(c)}
 ${eqBoutonsAppelHTML(c)}
-${c.commune_recuperation ? `<div class="meta" style="color:var(--accent, #E26313); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
+${c.commune_recuperation ? `<div class="meta" style="color:var(--orange-encre-pastel, #A84608); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 <div class="meta">${formatDate(c.created_at)}</div>
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}

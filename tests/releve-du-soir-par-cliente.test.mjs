@@ -426,8 +426,8 @@ const mediaAvant = regleGauche
   : -1;
 verifier("la feuille de style ramène à gauche les cellules de total sans libellé, sur petit écran",
   !!regleGauche && mediaAvant >= 0
-  && /max-width:\s*640px/.test(feuille.slice(mediaAvant, mediaAvant + 40)),
-  regleGauche ? 'la règle existe mais pas sous @media(max-width:640px)' : 'la règle manque');
+  && /max-width:\s*(640|800)px/.test(feuille.slice(mediaAvant, mediaAvant + 40)),   // 800 depuis le 24/09/2026 (cartes aussi sur tablette)
+  regleGauche ? 'la règle existe mais pas sous @media(max-width:640px ou 800px)' : 'la règle manque');
 
 /* Le PDF s'écrit dans une police WinAnsi, qui ne connaît pas l'espace fine
    insécable (U+202F) que formatMontant place entre les milliers : jsPDF

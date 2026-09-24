@@ -19,18 +19,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924livreur">
+<link rel="stylesheet" href="style.css?v=20260924crible">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260924livreur"></script>
+<script src="theme.js?v=20260924crible"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260924livreur" defer></script>
-<script src="cloche.js?v=20260924livreur" defer></script>
-<script src="splash.js?v=20260924livreur"></script>
+<script src="notifications-recues.js?v=20260924crible" defer></script>
+<script src="cloche.js?v=20260924crible" defer></script>
+<script src="splash.js?v=20260924crible"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
      ============================================================ */
-  :root{ --clt-green:#1F8A5B; --clt-green-dark:#166b46; --clt-accent:#1F9E67; }
+  :root{ --clt-green:#1F8A5B; --clt-green-dark:#166b46; --clt-green-encre:#167A42; --clt-accent:#1F9E67; }   /* vert « encre » pour le texte (5,4) — 24/09/2026 */
   .hidden{ display:none !important; }
   body{
     background:linear-gradient(180deg,#eefaf3 0%, #f5f7fa 260px, #f5f7fa 100%) !important;
@@ -129,7 +129,7 @@
       border-radius:14px; transition:color .15s, background .15s;
       -webkit-tap-highlight-color:transparent;
     }
-    .clt-bottomnav .nav.active{ color:#1F8A5B; background:rgba(31,138,91,.12); }
+    .clt-bottomnav .nav.active{ color:var(--clt-green-encre); background:rgba(31,138,91,.12); }
     .clt-bottomnav .nav svg{ width:23px; height:23px; }
     /* On réserve la hauteur de la barre + la safe-area pour que le contenu ne passe pas dessous. */
     body{ padding-bottom:calc(60px + env(safe-area-inset-bottom)); }
@@ -151,7 +151,7 @@
     transition:background .18s ease, color .18s ease, box-shadow .18s ease; -webkit-tap-highlight-color:transparent;
   }
   .clt-toptab:hover{ color:#1F8A5B; }
-  .clt-toptab.active{ background:#fff; color:#1F8A5B; box-shadow:0 4px 12px rgba(18,48,90,0.13); }
+  .clt-toptab.active{ background:#fff; color:var(--clt-green-encre); box-shadow:0 4px 12px rgba(18,48,90,0.13); }
   @media(max-width:760px){ .clt-toptabs-wrap{ display:none !important; } }
 
   /* ---- Coller la commande (ajout du 21 août 2026) ----
@@ -169,7 +169,7 @@
   }
   .coller-actions{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
   .coller-resume{ margin-top:10px; font-size:13px; line-height:1.5; }
-  .coller-resume .ok{ color:#1F8A5B; font-weight:600; }
+  .coller-resume .ok{ color:var(--clt-green-encre); font-weight:600; }
   .coller-resume .avertir{ color:#9a6400; }
   /* Un champ rempli par la machine reste marqué TANT QUE L'ŒIL N'EST PAS PASSÉ DESSUS : la
      marque ne disparaît qu'au moment où la personne touche elle-même le champ. C'est ce qui
@@ -674,31 +674,31 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260924livreur"></script>
-<script src="numero-international.js?v=20260924livreur"></script>
-<script src="voir-un-compte.js?v=20260924livreur"></script>
-<script src="lib/bibliotheques.js?v=20260924livreur"></script>
-<script src="lib/retours.js?v=20260924livreur"></script>
-<script src="lib/reclamations.js?v=20260924livreur"></script>
-<script src="lib/communes-et-tarifs.js?v=20260924livreur"></script>
-<script src="lib/argent.js?v=20260924livreur"></script>
-<script src="lib/releve-cliente.js?v=20260924livreur"></script>
-<script src="lib/papier-a-en-tete.js?v=20260924livreur"></script>
-<script src="lib/briques-argent.js?v=20260924livreur"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260924livreur"></script>
-<script src="lib/traces-de-report.js?v=20260924livreur"></script>
-<script src="lib/annonce-de-remise.js?v=20260924livreur"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260924livreur"></script>
-<script src="lib/primes.js?v=20260924livreur"></script>
-<script src="lib/doublons.js?v=20260924livreur"></script>
-<script src="config.js?v=20260924livreur"></script>
-<script src="activite-de-la-cliente.js?v=20260924livreur"></script>
-<script src="activite-ecran.js?v=20260924livreur"></script>
-<script src="mes-boutiques.js?v=20260924livreur"></script>
-<script src="etiquettes-et-scan.js?v=20260924livreur"></script>
-<script src="import-de-colis.js?v=20260924livreur"></script>
-<script src="biometric-lock.js?v=20260924livreur"></script>
-<script src="clt-select-recherche.js?v=20260924livreur"></script>
+<script src="clt-common.js?v=20260924crible"></script>
+<script src="numero-international.js?v=20260924crible"></script>
+<script src="voir-un-compte.js?v=20260924crible"></script>
+<script src="lib/bibliotheques.js?v=20260924crible"></script>
+<script src="lib/retours.js?v=20260924crible"></script>
+<script src="lib/reclamations.js?v=20260924crible"></script>
+<script src="lib/communes-et-tarifs.js?v=20260924crible"></script>
+<script src="lib/argent.js?v=20260924crible"></script>
+<script src="lib/releve-cliente.js?v=20260924crible"></script>
+<script src="lib/papier-a-en-tete.js?v=20260924crible"></script>
+<script src="lib/briques-argent.js?v=20260924crible"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260924crible"></script>
+<script src="lib/traces-de-report.js?v=20260924crible"></script>
+<script src="lib/annonce-de-remise.js?v=20260924crible"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260924crible"></script>
+<script src="lib/primes.js?v=20260924crible"></script>
+<script src="lib/doublons.js?v=20260924crible"></script>
+<script src="config.js?v=20260924crible"></script>
+<script src="activite-de-la-cliente.js?v=20260924crible"></script>
+<script src="activite-ecran.js?v=20260924crible"></script>
+<script src="mes-boutiques.js?v=20260924crible"></script>
+<script src="etiquettes-et-scan.js?v=20260924crible"></script>
+<script src="import-de-colis.js?v=20260924crible"></script>
+<script src="biometric-lock.js?v=20260924crible"></script>
+<script src="clt-select-recherche.js?v=20260924crible"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;

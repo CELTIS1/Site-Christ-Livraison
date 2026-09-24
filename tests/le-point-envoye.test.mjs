@@ -91,7 +91,7 @@ titre('3. Elle se voit depuis la liste, sans ouvrir une fiche');
   verifier('quand tout est fait, il le dit autrement qu\'avec un zéro',
     /Toutes les clientes ont eu leur point/.test(equipe));
   verifier('le gris, pas le rouge : ne pas avoir encore envoyé n\'est pas une faute',
-    /\.recap-point--non\{color:#6b7686/.test(style));
+    /\.recap-point--non\{color:#5b6573/.test(style));   // gris assombri le 24/09/2026 (4,1 → 5,2), toujours gris
   verifier('les deux pastilles et le compte ont leur variante sombre',
     /html\[data-theme="dark"\] \.recap-point--oui\{/.test(style)
     && /html\[data-theme="dark"\] \.recap-point--non\{/.test(style)

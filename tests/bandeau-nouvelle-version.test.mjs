@@ -1374,10 +1374,20 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    JS. Trouvé et corrigé : statuts (config.js STATUTS) et orange « encre » #BF5210 pour tout texte ou
    fond avec du blanc dessus (3,5 → 4,7) ; tournée (ambre #b45309, vert #167a42) ; briques d'argent
    et tuiles la nuit ; « Tout marquer lu » 44 px ; à 320 px, recherche + scan + Sélection et date +
-   « Aujourd'hui » se replient au lieu de sortir. Étiquette 20260924livreur. */
+   « Aujourd'hui » se replient au lieu de sortir. Étiquette 20260924livreur.
+   v246, le 24/09/2026 — ESPACES CLIENTE ET ÉQUIPE AU CRIBLE (chantier N, lots 4 et 5). Même lampe.
+   Cliente (56 écrans) : le champ de date se réduisait à son icône sur téléphone (min 140 px), vert
+   « encre » #167A42 pour les onglets actifs, orange encre pour « Aujourd'hui », relevé, montants sur
+   pastel (--orange-encre-pastel #A84608), libellés de tuiles #485767. Équipe (82 écrans) : Finances
+   la nuit (blocs pastel du point du jour restés clairs → sombres, rouges/verts éclaircis), pastilles
+   « Livré » la nuit (règle span trop large), placeholders des listes 2,5 → 4,7, « 7 j / 30 j / 90 j »
+   40 px, téléphone des retours 36 px, tablette : huit onglets sur deux lignes, tableaux en cartes
+   jusqu'à 800 px. Gestion (32 écrans) : gris #8a94a3 → #5b6573, vert/rouge/ambre assombris. Express client et
+   coursier : teal « encre » #0F766E, chips et boutons ≥ 40 px, fermeture de la fenêtre Compte 44 px.
+   Étiquette 20260924crible. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v245'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v246'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
