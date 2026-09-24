@@ -4390,9 +4390,13 @@ html.sd-ouvert .clt-haut{ display:none; }
 @media(max-width:760px){ .settings-dropdown.sd{ width:100vw; box-shadow:none; } .sd-fond{ display:none; } }
 
 /* L'en-tête : ←, photo, nom, rôle · numéro. */
-.sd-tete{ position:relative; text-align:center; padding:14px 0 6px; }
+/* Zone sûre iOS (25/09/2026, v250 — Celtis, iPhone 15 Plus : « la photo se confond avec la Dynamic
+   Island, et la flèche ← tout en haut ne réagit pas »). La page est en position fixe et prend tout
+   l'écran (viewport-fit=cover) : sans ce retrait, l'en-tête monte sous la barre d'état, où iOS
+   garde les touches pour lui. L'en-tête descend donc de la hauteur de la zone sûre, plus 8 px. */
+.sd-tete{ position:relative; text-align:center; padding:calc(14px + env(safe-area-inset-top, 0px)) 0 6px; }
 .sd .sd-retour{
-  position:absolute; left:-4px; top:10px; width:44px; height:44px; min-height:0; padding:0; border:none; background:none; border-radius:50%;
+  position:absolute; left:-4px; top:calc(10px + env(safe-area-inset-top, 0px)); width:44px; height:44px; min-height:0; padding:0; border:none; background:none; border-radius:50%;
   color:var(--navy); cursor:pointer; display:flex; align-items:center; justify-content:center;
 }
 .sd-retour::before{ content:""; width:12px; height:12px; border-left:2.5px solid currentColor; border-bottom:2.5px solid currentColor; transform:translateX(3px) rotate(45deg); border-radius:1px; }
@@ -4401,10 +4405,11 @@ html.sd-ouvert .clt-haut{ display:none; }
 .sd-avatar img, .sd-avatar .avatar, .sd-avatar .avatar-placeholder{ width:100% !important; height:100% !important; border-radius:50%; object-fit:cover; font-size:30px !important; border:none !important; background:#BF5210 !important; }
 .sd-nom{ font-size:22px; font-weight:800; color:var(--navy); letter-spacing:-.01em; line-height:1.15; }
 .sd-sous{ font-size:14px; color:var(--muted); margin-top:4px; }
-/* Les quatre raccourcis ronds. */
-.sd-raccourcis{ display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin:14px 0 18px; }
+/* Les raccourcis ronds, centrés quel que soit leur nombre (trois depuis v249 ; v250 : plus de grille
+   à quatre colonnes qui laissait un trou à droite). */
+.sd-raccourcis{ display:flex; justify-content:center; gap:22px; margin:14px 0 18px; }
 .sd-raccourcis.hidden{ display:none; }
-.sd-rac{ border:none; background:none; padding:4px 0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:7px; font-family:inherit; color:var(--navy); }
+.sd-rac{ flex:0 0 76px; border:none; background:none; padding:4px 0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:7px; font-family:inherit; color:var(--navy); }
 .sd-rac-ico{ width:56px; height:56px; border-radius:50%; background:var(--white); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 2px 8px rgba(18,48,90,.08); transition:transform .15s ease, background .15s ease; }
 .sd-rac:hover .sd-rac-ico, .sd-rac:active .sd-rac-ico{ transform:scale(.96); background:#EEF2F8; }
 .sd-rac-txt{ font-size:12.5px; font-weight:600; }

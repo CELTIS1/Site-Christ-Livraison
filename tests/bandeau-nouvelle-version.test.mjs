@@ -1405,10 +1405,14 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    referme SUR la page, pas sur l'écran d'avant : ces fenêtres sont des couches (data-clt-couche /
    data-clt-fermer), la page monte à z-index 950 et masque la barre du haut. Plus de raccourci
    « Alertes » (la cloche est sur l'écran) ; le thème se règle ici et seulement ici (plus de lune
-   dans la barre). Parcours la-page-compte (26). Étiquette 20260924reglages. */
+   dans la barre). Parcours la-page-compte (26). Étiquette 20260924reglages.
+   v250, le 24/09/2026 — LA PAGE COMPTE SUR IPHONE (chantier N, lot 10). Celtis, iPhone 15 Plus : la
+   photo se confondait avec la Dynamic Island et la flèche ← tout en haut ne répondait pas (barre
+   d'état iOS) : l'en-tête et la flèche descendent de env(safe-area-inset-top). Les trois raccourcis
+   sont centrés (flex) au lieu d'une grille à quatre colonnes. Étiquette 20260924iphone. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v249'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v250'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

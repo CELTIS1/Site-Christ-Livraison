@@ -14,6 +14,8 @@
 import { ouvrirNavigateur, verifier, titre, dodo, bilan } from './_navigateur.mjs';
 import { nouveauMonde, ADMIN, LIVREUR, CLIENTE1, CLIENT_EXPRESS } from './_monde.mjs';
 
+import fs from 'node:fs';
+const css = fs.readFileSync(new URL('../../app/style.css', import.meta.url), 'utf8');
 const monde = nouveauMonde();
 const N = await ouvrirNavigateur({ monde });
 const { page, erreurs } = N;
@@ -29,6 +31,8 @@ verifier('elle prend tout l\'écran (390 × 844)', boite && Math.round(boite.wid
 verifier('la barre du bas est dessous : au point où elle est, c\'est la page qu\'on touche', await page.evaluate(() => { const el = document.elementFromPoint(60, 820); return !!(el && el.closest('#settings-dropdown')); }));
 verifier('en tête : le nom et le rôle', (await page.locator('.sd-nom').textContent()).trim() === 'Koffi Livreur' && /Livreur/.test(await page.locator('.sd-sous').textContent()));
 verifier('trois raccourcis ronds : Compte, Aide, Nuit — pas d\'« Alertes » (la cloche est sur l\'écran principal)', (await page.locator('.sd-rac-txt').allTextContents()).join('|') === 'Compte|Aide|Nuit', await page.locator('.sd-rac-txt').allTextContents());
+verifier('les raccourcis sont centrés (v250 : même marge à gauche et à droite, à 2 px près)', await page.evaluate(() => { const r = [...document.querySelectorAll('.sd-rac')].map((e) => e.getBoundingClientRect()); return Math.abs(r[0].left - (innerWidth - r[r.length - 1].right)) <= 2; }));
+verifier('l\'en-tête et la flèche ← descendent de la zone sûre iOS (env(safe-area-inset-top)) — iPhone 15 Plus : photo sous la Dynamic Island, flèche injoignable', /\.sd-tete\{[^}]*env\(safe-area-inset-top/.test(css) && /\.sd \.sd-retour\{[^}]*env\(safe-area-inset-top/.test(css));
 verifier('le bouton lune a quitté la barre du haut : le thème se règle ici, et seulement ici', await page.locator('.topbar .theme-toggle').count() === 0 && await page.locator('#cltThemeToggle').isHidden());
 verifier('sans la lune, le titre garde sa ligne avec ☰ (≥ 200 px de large) et l\'identité passe dessous — pas de titre écrasé à 0 px sur le logo', await page.evaluate(() => { const b = document.querySelector('.topbar .brand').getBoundingClientRect(); const i = document.querySelector('.topbar-identite').getBoundingClientRect(); return b.width >= 200 && i.top >= b.bottom - 2; }));
 const lignes = await page.locator('#settings-dropdown .settings-groupe > button:not(.sd-cache), #settings-dropdown .settings-groupe > a:not(.sd-cache)').evaluateAll((els) => els.filter((e) => e.offsetParent !== null).map((e) => { const r = e.getBoundingClientRect(); return { h: Math.round(r.height), w: Math.round(r.width), ico: !!e.querySelector('.sd-ico'), chev: !!e.querySelector('.sd-chev'), t: e.textContent.trim().slice(0, 20) }; }));
