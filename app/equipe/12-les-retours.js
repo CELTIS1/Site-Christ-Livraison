@@ -28,21 +28,20 @@ let rtOuverts = new Set();     // les colis dont l'histoire est dépliée
 let rtHistoires = {};          // colis_id -> mouvements lus
 /* DEUX CÔTÉS (21/09/2026, Celtis : « d'un côté les retours, de l'autre les non livrés »), comme
    le sélecteur de « Personnes ». L'écran se souvient du dernier côté ouvert. */
-let rtVue = 'retours';
-try { if (localStorage.getItem('clt_equipe_retours_vue') === 'non_livres') rtVue = 'non_livres'; } catch (e) { /* stockage fermé : on reste sur Retours */ }
+let rtVue = 'tout';
+try { const v = localStorage.getItem('clt_equipe_retours_vue'); if (v && ['tout', 'retours', 'non_livres', 'reportes', 'signalements', 'demandes'].includes(v)) rtVue = v; } catch (e) { /* stockage fermé : on reste sur Tout */ }
 let rtCoteChoisiALaMain = false;
-let rtRecherche = '';           // la recherche de la page : elle filtre le côté ouvert
+let rtRecherche = '';           // la recherche de la page : elle filtre la vue ouverte
 let rtReprog = null;           // le colis dont le panneau « Reprogrammer » est ouvert
 let rtReprogChoix = null;      // ce qu'on y a déjà choisi : une relecture de la base (temps réel) ne doit pas l'effacer
-const RT_AIDE = {
-  retours: 'Un colis revenu passe de main en main : <b>chez le livreur</b> → <b>au bureau</b> (s\'il le dépose) → <b>rendu à la cliente</b> → <b>confirmé par elle</b>. Règle : rendu le lendemain, deux jours au plus tard. Chaque passage est daté et signé ; « Historique » le montre. <b>« Reprogrammer »</b> le renvoie en livraison, au jour et avec le livreur choisis.',
-  non_livres: 'Un colis non livré est encore dans la sacoche de son livreur, sans décision. Deux issues : <b>« Reprogrammer »</b> — un jour, un livreur, et il repart en livraison — ou <b>« Le livreur le rapporte »</b>, et il passe du côté des retours.',
-};
+let rtChoixOuvert = null;      // la ligne dont « Que faire ? » est déplié (clé de ligne)
+let rtReportes = [];           // colis reportés dus (reporte_au ≤ aujourd'hui, pas livrés)
+let rtDemandes = [];           // demandes de passage en attente
 function rtChoisirVue(vue){
-  rtVue = vue === 'non_livres' ? 'non_livres' : 'retours';
+  rtVue = ['tout', 'retours', 'non_livres', 'reportes', 'signalements', 'demandes'].includes(vue) ? vue : 'tout';
   rtCoteChoisiALaMain = true;
   try { localStorage.setItem('clt_equipe_retours_vue', rtVue); } catch (e) { /* sans importance */ }
-  rtReprog = null; rtReprogChoix = null;
+  rtReprog = null; rtReprogChoix = null; rtChoixOuvert = null;
   renderRetours(false);
 }
 
@@ -67,22 +66,19 @@ async function chargerRetours(){
     }
     if (error) { console.error('Retours :', error); renderRetours(true); return; }
     rtColis = (data || []).filter(c => !retourClos(c));
+    /* Lot 13 : les reportés DUS (le jour est arrivé et le colis attend encore) et les demandes de
+       passage en attente rejoignent la même liste. Lus à part, tolérants (table ou colonne absente). */
+    const auj = todayLocalISODate();
+    const rep = await supabaseClient.from('colis').select(RT_COLONNES + ', reporte_au').in('statut', ['en_attente', 'recupere', 'en_livraison']).not('reporte_au', 'is', null).lte('reporte_au', auj).order('reporte_au', { ascending: true }).limit(200);
+    rtReportes = rep.error ? [] : (rep.data || []);
+    const dem = await supabaseClient.from('demandes_de_passage').select('id, jour, fournisseur_id, note, statut, nb_colis').eq('statut', 'en_attente').gte('jour', auj).order('jour', { ascending: true }).limit(100);
+    rtDemandes = dem.error ? [] : (dem.data || []);
     renderRetours(false);
   })();
   try { await rtChargement; } finally { rtChargement = null; }
 }
 
-/* L'ordre de lecture : ce qui brûle d'abord. */
-function rtPoids(c){
-  const n = retourNiveau(c);
-  if (!n) return 9;
-  if (n.cle === 'litige') return 0;
-  if (retourEnRetard(c)) return 1;
-  if (n.cle === 'livreur') return 2;
-  if (n.cle === 'bureau') return 3;
-  if (n.cle === 'cliente') return 4;
-  return 5; // non livré
-}
+/* L'ordre de lecture vient de la règle (CLTATraiter.lignesATraiter) : ce qui brûle d'abord. */
 function rtDepuis(c){
   const j = retourJoursEcoules(c);
   if (j === null) return '';
@@ -120,41 +116,60 @@ function rtDetenteurTexte(c){
   return n.icone + ' ' + n.label;
 }
 
+function rtLignes(){
+  const A = window.CLTATraiter;
+  return A.lignesATraiter({ colis: rtColis, reportes: rtReportes, reclamations: Array.isArray(window.__reclamationsClientes) ? window.__reclamationsClientes : [], demandes: rtDemandes }, todayLocalISODate(), { retourNiveau, retourEnRetard, retourDepart });
+}
+function rtLigneCorrespond(l, q){
+  if (!q) return true;
+  if (l.colis) return window.CLTRetoursBureau ? CLTRetoursBureau.correspond(l.colis, q, rtNomsPourRecherche(l.colis)) : true;
+  const norm = (t) => (typeof cltNormaliserTexte === 'function' ? cltNormaliserTexte(String(t || '')) : String(t || '').toLowerCase());
+  const nq = norm(q);
+  if (l.reclamation) { const r = l.reclamation; return norm([fournisseurLabelPlain(r.fournisseur_id), rtNomLivreur(r.livreur_id), typeof motifReclamationTexte === 'function' ? motifReclamationTexte(r.motif) : r.motif, r.texte].join(' ')).indexOf(nq) !== -1; }
+  if (l.demande) { const d = l.demande; const f = typeof progFicheCliente === 'function' ? (progFicheCliente(d.fournisseur_id) || {}) : {}; return norm([fournisseurLabelPlain(d.fournisseur_id), f.commune, f.telephone, d.note].join(' ')).indexOf(nq) !== -1; }
+  return false;
+}
+/* Petites aides de date (lot 13) : « 25/09 », demain, poser le jour de Tournées. */
+function rtJourCourt(iso){ const j = String(iso || '').slice(0, 10); return /^\d{4}-\d{2}-\d{2}$/.test(j) ? j.slice(8, 10) + '/' + j.slice(5, 7) : j; }
+function rtDemainISO(){ const d = new Date(todayLocalISODate() + 'T12:00:00'); d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function rtPoserJourTournee(jour){ if (typeof progJourChoisi !== 'undefined') progJourChoisi = jour; const champ = document.getElementById('prog-jour'); if (champ) champ.value = jour; }
+const RT_GENRE_ICONE = { non_livres: '⚠️', retours: '↩️', reportes: '⏭️', signalements: '🛎️', demandes: '🗓️' };
+const RT_GENRE_LIBELLE = { non_livres: 'Non livré', retours: 'Retour', reportes: 'Reporté', signalements: 'Signalement', demandes: 'Demande de passage' };
+
 function renderRetours(enErreur){
   const carte = document.getElementById('section-retours');
   const corps = document.getElementById('retours-liste');
   const resume = document.getElementById('retours-resume');
   if (!carte || !corps) return;
-  if (enErreur) { corps.innerHTML = '<div class="rt-vide">Impossible de lire les retours pour l\'instant.</div>'; return; }
-  const tous = rtColis.slice().sort((a, b) => rtPoids(a) - rtPoids(b) || String(a.retour_at || a.non_livre_at || '').localeCompare(String(b.retour_at || b.non_livre_at || '')));
-  const nbCotes = { retours: tous.filter(c => c.statut === 'retour').length, non_livres: tous.filter(c => c.statut === 'non_livre').length };
-  // Le côté ouvert est vide et l'autre ne l'est pas : on montre celui où il y a à faire.
-  if (!nbCotes[rtVue] && nbCotes[rtVue === 'retours' ? 'non_livres' : 'retours'] && !rtCoteChoisiALaMain) rtVue = rtVue === 'retours' ? 'non_livres' : 'retours';
-  const duCote = tous.filter(c => (rtVue === 'non_livres') === (c.statut === 'non_livre'));
-  const liste = (rtRecherche && window.CLTRetoursBureau) ? duCote.filter(c => CLTRetoursBureau.correspond(c, rtRecherche, rtNomsPourRecherche(c))) : duCote;
+  if (enErreur) { corps.innerHTML = '<div class="rt-vide">Impossible de lire ce qui est à traiter pour l\'instant.</div>'; return; }
+  const A = window.CLTATraiter;
+  const tous = rtLignes();
+  const n = A.compterParGenre(tous);
+  // La vue ouverte est vide et une autre ne l'est pas : on ouvre « Tout » (à moins d'un choix explicite).
+  if (rtVue !== 'tout' && !n[rtVue] && n.tout && !rtCoteChoisiALaMain) rtVue = 'tout';
+  const duCote = rtVue === 'tout' ? tous : tous.filter(l => l.genre === rtVue);
+  const liste = rtRecherche ? duCote.filter(l => rtLigneCorrespond(l, rtRecherche)) : duCote;
   const compteur = document.getElementById('retours-recherche-n');
   if (compteur) compteur.textContent = rtRecherche ? (liste.length + ' sur ' + duCote.length) : '';
   document.querySelectorAll('#section-retours [data-rt-vue]').forEach(b => {
     const actif = b.dataset.rtVue === rtVue;
     b.classList.toggle('active', actif); b.setAttribute('aria-selected', actif ? 'true' : 'false');
   });
-  const poser = (id, n) => { const e = document.getElementById(id); if (e) e.textContent = n ? String(n) : ''; };
-  poser('rt-n-retours', nbCotes.retours); poser('rt-n-non-livres', nbCotes.non_livres);
-  const aide = document.getElementById('retours-aide'); if (aide) aide.innerHTML = RT_AIDE[rtVue];
-  const nb = { litige: 0, retard: 0, livreur: 0, bureau: 0, cliente: 0, non_livre: 0 };
-  liste.forEach(c => { const n = retourNiveau(c); if (n) nb[n.cle] = (nb[n.cle] || 0) + 1; if (retourEnRetard(c)) nb.retard++; });
-  let urgent = 0; tous.forEach(c => { const n = retourNiveau(c); if ((n && n.cle === 'litige') || retourEnRetard(c)) urgent++; });
-  const puce = (n, txt, classe) => n ? `<span class="rt-puce rt-puce--${classe}">${n} ${txt}</span>` : '';
+  const poser = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v ? String(v) : ''; };
+  poser('rt-n-tout', n.tout); poser('rt-n-retours', n.retours); poser('rt-n-non-livres', n.non_livres); poser('rt-n-reportes', n.reportes); poser('rt-n-signalements', n.signalements); poser('rt-n-demandes', n.demandes);
+  const aide = document.getElementById('retours-aide'); if (aide) aide.innerHTML = A.AIDE[rtVue] || A.AIDE.tout;
+  // Le résumé : ce qui brûle, puis chaque genre.
+  const nb = { litige: 0, retard: 0 };
+  liste.forEach(l => { if (l.colis && l.genre === 'retours') { const niv = retourNiveau(l.colis); if (niv && niv.cle === 'litige') nb.litige++; if (retourEnRetard(l.colis)) nb.retard++; } });
+  const puce = (k, txt, classe) => k ? `<span class="rt-puce rt-puce--${classe}">${k} ${txt}</span>` : '';
   if (resume) resume.innerHTML = liste.length
-    ? puce(nb.litige, nb.litige > 1 ? 'litiges' : 'litige', 'litige')
-      + puce(nb.retard, 'en retard', 'retard')
-      + puce(nb.livreur, 'chez les livreurs', 'livreur')
-      + puce(nb.bureau, 'au bureau', 'bureau')
-      + puce(nb.cliente, 'à confirmer', 'cliente')
-      + puce(nb.non_livre, nb.non_livre > 1 ? 'non livrés' : 'non livré', 'non_livre')
-    : `<span class="rt-puce rt-puce--ok">${tous.length ? (rtVue === 'non_livres' ? 'Aucun colis non livré en attente.' : 'Aucun retour en attente de ce côté.') : 'Aucun colis en attente : tout est entre les mains des clientes.'}</span>`;
+    ? puce(nb.litige, nb.litige > 1 ? 'litiges' : 'litige', 'litige') + puce(nb.retard, 'en retard', 'retard')
+      + puce(n.non_livres, n.non_livres > 1 ? 'non livrés' : 'non livré', 'non_livre') + puce(n.retours, n.retours > 1 ? 'retours' : 'retour', 'livreur')
+      + puce(n.reportes, n.reportes > 1 ? 'reportés dus' : 'reporté dû', 'bureau') + puce(n.signalements, n.signalements > 1 ? 'signalements' : 'signalement', 'cliente') + puce(n.demandes, n.demandes > 1 ? 'demandes' : 'demande', 'demande')
+    : `<span class="rt-puce rt-puce--ok">${tous.length ? 'Rien de ce genre à traiter.' : 'Rien à traiter : tout est réglé.'}</span>`;
   carte.classList.toggle('rt-carte--vide', !liste.length);
   // Le chiffre sur l'onglet : ce qui brûle (litiges + retards), pour qu'on n'ait pas à l'ouvrir pour savoir.
+  const urgent = n.urgent;
   document.querySelectorAll('#clt-toptabs [data-eqtab="retours"], #clt-bottomnav [data-nav="retours"], #bottomnav-feuille [data-nav="retours"]').forEach(b => {
     let badge = b.querySelector('.rt-onglet-badge');
     if (!urgent) { if (badge) badge.remove(); return; }
@@ -162,51 +177,86 @@ function renderRetours(enErreur){
     badge.textContent = String(urgent);
   });
   if (!liste.length) {
-    // Rien trouvé : on le dit, et on dit si c'est de l'autre côté.
-    if (rtRecherche && window.CLTRetoursBureau) {
-      const ailleurs = tous.filter(c => (rtVue === 'non_livres') !== (c.statut === 'non_livre') && CLTRetoursBureau.correspond(c, rtRecherche, rtNomsPourRecherche(c))).length;
+    if (rtRecherche) {
+      const ailleurs = tous.filter(l => l.genre !== rtVue && rtLigneCorrespond(l, rtRecherche)).length;
       carte.classList.remove('rt-carte--vide');
-      corps.innerHTML = `<div class="rt-vide">Rien ne correspond à « ${escapeHTML(rtRecherche)} » de ce côté.${ailleurs ? ` <button type="button" class="rt-lien" data-rt-autre-cote="1">${ailleurs} résultat${ailleurs > 1 ? 's' : ''} côté « ${rtVue === 'retours' ? 'Non livrés' : 'Retours'} »</button>` : ''}</div>`;
+      corps.innerHTML = `<div class="rt-vide">Rien ne correspond à « ${escapeHTML(rtRecherche)} » ici.${ailleurs && rtVue !== 'tout' ? ` <button type="button" class="rt-lien" data-rt-autre-cote="1">${ailleurs} résultat${ailleurs > 1 ? 's' : ''} dans « Tout »</button>` : ''}</div>`;
     } else corps.innerHTML = '';
     return;
   }
+  corps.innerHTML = liste.map(rtLigneHTML).join('');
+}
 
-  const moi = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : null;
-  corps.innerHTML = liste.map(c => {
-    const n = retourNiveau(c);
-    const retard = retourEnRetard(c);
-    const gestes = c.statut === 'retour' ? retourGestes(c, 'equipe', moi) : [{ cle: 'vers_retour', libelle: '↩️ Le livreur le rapporte (retour)', patch: { statut: 'retour' }, confirm: { title: 'Ce colis part en retour ?', detail: 'Colis ' + (c.numero || ''), sub: 'Il reste chez son livreur, qui doit le rendre à la cliente sous deux jours.', okLabel: 'Oui, en retour', cancelLabel: 'Annuler' } }];
-    const motif = c.motif_non_livraison && typeof MOTIFS_NON_LIVRAISON !== 'undefined' && MOTIFS_NON_LIVRAISON[c.motif_non_livraison]
-      ? MOTIFS_NON_LIVRAISON[c.motif_non_livraison].icon + ' ' + MOTIFS_NON_LIVRAISON[c.motif_non_livraison].label : '';
-    const ouvert = rtOuverts.has(c.id);
-    const peutReprog = !!(window.CLTReprogrammer && CLTReprogrammer.peutReprogrammer(c).ok);
-    const reprogOuvert = peutReprog && rtReprog === c.id;
-    return `<div class="rt-ligne rt-ligne--${escapeHTML(n ? n.cle : '')}${retard ? ' rt-ligne--retard' : ''}" data-rt-id="${escapeHTML(c.id)}">
-      <div class="rt-tete">
-        <div class="rt-qui">
-          <span class="rt-numero">${escapeHTML(c.numero || '—')}</span>
-          <span class="rt-cliente">${fournisseurLabel(c.fournisseur_id)}</span>
-          ${c.description ? `<span class="rt-desc">${escapeHTML(String(c.description).slice(0, 60))}</span>` : ''}
-        </div>
-        <div class="rt-niveau">
-          <span class="rt-badge rt-badge--${escapeHTML(n ? n.cle : '')}">${escapeHTML(n ? n.label : '')}</span>
-          <span class="rt-depuis${retard ? ' rt-depuis--retard' : ''}" title="${c.statut === 'retour' ? 'Revenu le' : 'Non livré le'} ${escapeHTML(rtDateLongue(c))}">${retard ? '⏰ ' : ''}${escapeHTML(rtDepuis(c))}${rtDateCourte(c) ? ' · <span class="rt-date">' + escapeHTML(rtDateCourte(c)) + '</span>' : ''}</span>
-        </div>
-      </div>
-      ${rtAdresseHTML(c)}
-      <div class="rt-ou">${escapeHTML(rtDetenteurTexte(c))}${motif ? ` <span class="rt-motif">· ${escapeHTML(motif)}</span>` : ''}${c.retour_conteste_texte ? `<div class="rt-conteste">« ${escapeHTML(c.retour_conteste_texte)} »</div>` : ''}</div>
-      <div class="rt-gestes">
-        ${peutReprog ? `<button type="button" class="btn btn-sm${c.statut === 'retour' ? ' btn-outline' : ''} rt-reprog-btn" data-rt-reprog="1" aria-expanded="${reprogOuvert ? 'true' : 'false'}">🗓️ Reprogrammer</button>` : ''}
-        ${gestes.map(g => g.choisirLivreur
-          ? `<span class="rt-confier"><select class="rt-select" data-rt-livreur><option value="">${escapeHTML(g.libelle)}…</option>${(typeof livreurs !== 'undefined' ? livreurs : []).map(l => `<option value="${escapeHTML(l.id)}">${escapeHTML(l.full_name || 'Livreur')}</option>`).join('')}</select></span>`
-          : `<button type="button" class="btn btn-sm${g.cle === 'rendu_cliente' ? '' : ' btn-outline'}" data-rt-geste="${escapeHTML(g.cle)}">${escapeHTML(g.libelle)}</button>`).join('')}
-        ${c.statut === 'retour' ? `<button type="button" class="btn btn-sm btn-outline rt-histoire-btn" data-rt-histoire="1" aria-expanded="${ouvert ? 'true' : 'false'}">${ouvert ? '▾' : '▸'} Historique</button>` : ''}
-        ${c.retour_rendu_photo_url ? `<a class="rt-photo" href="${escapeHTML(c.retour_rendu_photo_url)}" target="_blank" rel="noopener">📷 Preuve de remise</a>` : ''}
-      </div>
-      ${reprogOuvert ? rtReprogHTML(c) : ''}
-      ${ouvert ? `<div class="rt-histoire">${rtHistoires[c.id] ? retourHistoriqueHTML(rtHistoires[c.id], rtNoms()) : 'Chargement…'}</div>` : ''}
-    </div>`;
-  }).join('');
+/* UNE LIGNE = QUI, OÙ, DEPUIS QUAND, ET « QUE FAIRE ? ». Les gestes ne sont plus posés sur la
+   ligne : ils sont dans le panneau, chacun avec sa phrase. Les attributs data-rt-* restent ceux
+   des parcours (le panneau est dans la ligne). */
+function rtLigneHTML(l){
+  const A = window.CLTATraiter;
+  const ouvert = rtChoixOuvert === l.cle;
+  const genre = `<span class="rt-genre rt-genre--${escapeHTML(l.genre)}">${RT_GENRE_ICONE[l.genre] || ''} ${escapeHTML(RT_GENRE_LIBELLE[l.genre] || '')}</span>`;
+  let tete = '', ou = '', attrs = '';
+  if (l.colis) {
+    const c = l.colis, niv = l.genre === 'retours' ? retourNiveau(c) : null, retard = l.genre === 'retours' && retourEnRetard(c);
+    const motif = c.motif_non_livraison && typeof MOTIFS_NON_LIVRAISON !== 'undefined' && MOTIFS_NON_LIVRAISON[c.motif_non_livraison] ? MOTIFS_NON_LIVRAISON[c.motif_non_livraison].icon + ' ' + MOTIFS_NON_LIVRAISON[c.motif_non_livraison].label : '';
+    attrs = ` data-rt-id="${escapeHTML(c.id)}"`;
+    tete = `<div class="rt-qui"><span class="rt-numero">${escapeHTML(c.numero || '—')}</span><span class="rt-cliente">${fournisseurLabel(c.fournisseur_id)}</span>${c.description ? `<span class="rt-desc">${escapeHTML(String(c.description).slice(0, 60))}</span>` : ''}</div>
+      <div class="rt-niveau">${niv ? `<span class="rt-badge rt-badge--${escapeHTML(niv.cle)}">${escapeHTML(niv.label)}</span>` : ''}<span class="rt-depuis${retard ? ' rt-depuis--retard' : ''}" title="${escapeHTML(rtDateLongue(c))}">${retard ? '⏰ ' : ''}${escapeHTML(l.genre === 'reportes' ? l.depuis : rtDepuis(c))}${l.genre !== 'reportes' && rtDateCourte(c) ? ' · <span class="rt-date">' + escapeHTML(rtDateCourte(c)) + '</span>' : ''}${l.genre === 'reportes' && c.reporte_au ? ' · <span class="rt-date">' + escapeHTML(rtJourCourt(String(c.reporte_au).slice(0, 10))) + '</span>' : ''}</span></div>`;
+    ou = rtAdresseHTML(c) + `<div class="rt-ou">${l.genre === 'reportes' ? escapeHTML('⏭️ Reporté au ' + rtJourCourt(String(c.reporte_au).slice(0, 10)) + ' · ' + libelleStatut(c.statut, c) + (rtNomLivreur(c.livreur_id) ? ' · ' + rtNomLivreur(c.livreur_id) : '')) : escapeHTML(rtDetenteurTexte(c))}${motif ? ` <span class="rt-motif">· ${escapeHTML(motif)}</span>` : ''}${c.retour_conteste_texte ? `<div class="rt-conteste">« ${escapeHTML(c.retour_conteste_texte)} »</div>` : ''}</div>`;
+  } else if (l.reclamation) {
+    const r = l.reclamation;
+    const auteurLivreur = typeof reclamationAuteur === 'function' && reclamationAuteur(r) === 'livreur';
+    const qui = auteurLivreur ? 'Livreur · ' + (rtNomLivreur(r.livreur_id) || 'Livreur') : 'Cliente · ' + fournisseurLabelPlain(r.fournisseur_id);
+    const c = r.colis_id && Array.isArray(allColis) ? allColis.find(x => x.id === r.colis_id) : null;
+    attrs = ` data-reclam="${escapeHTML(r.id)}"`;
+    tete = `<div class="rt-qui"><span class="rt-cliente">${escapeHTML(qui)}</span><span class="rt-desc">${escapeHTML(typeof motifReclamationTexte === 'function' ? motifReclamationTexte(r.motif) : (r.motif || ''))}</span></div>
+      <div class="rt-niveau">${r.statut === 'en_cours' ? '<span class="rt-badge rt-badge--bureau">prise en charge</span>' : ''}<span class="rt-depuis">${escapeHTML(l.depuis)}</span></div>`;
+    ou = `<div class="rt-ou">${r.texte ? `« ${escapeHTML(r.texte)} »` : ''}${c ? ` <button type="button" class="lien-nu" data-ouvrir-colis="${escapeHTML(c.id)}">Colis ${escapeHTML(c.numero || '')}</button>` : ''}</div>`;
+  } else if (l.demande) {
+    const d = l.demande, f = typeof progFicheCliente === 'function' ? (progFicheCliente(d.fournisseur_id) || {}) : {};
+    const R = window.CLTDemandeDePassage;
+    attrs = ` data-demande="${escapeHTML(d.id)}"`;
+    tete = `<div class="rt-qui"><span class="rt-cliente">${fournisseurLabel(d.fournisseur_id)}</span>${R && R.nbColisDemande(d.nb_colis) !== null ? `<span class="demande-nb">📦 ${R.nbColisDemande(d.nb_colis)} colis</span>` : ''}</div>
+      <div class="rt-niveau"><span class="rt-depuis">${escapeHTML(l.depuis)} · <span class="rt-date">${escapeHTML(rtJourCourt(d.jour))}</span></span></div>`;
+    ou = `<div class="rt-ou">${[f.commune, f.telephone].filter(Boolean).map(escapeHTML).join(' · ')}${d.note ? ` <span class="rt-motif">· « ${escapeHTML(d.note)} »</span>` : ''}</div>`;
+  }
+  const choix = ouvert ? A.choixQueFaire(l, { retourGestes: (c) => retourGestes(c, 'equipe', currentUser ? currentUser.id : null), peutReprogrammer: (c) => !!(window.CLTReprogrammer && CLTReprogrammer.peutReprogrammer(c).ok) }) : [];
+  const reprogOuvert = ouvert && l.colis && rtReprog === l.colis.id;
+  const histOuvert = ouvert && l.colis && rtOuverts.has(l.colis.id);
+  return `<div class="rt-ligne rt-ligne--${escapeHTML(l.genre)}${l.niveau ? ' rt-ligne--' + escapeHTML(l.niveau) : ''}${l.urgence < 1 ? ' rt-ligne--retard' : ''}${ouvert ? ' rt-ligne--ouverte' : ''}" data-rt-cle="${escapeHTML(l.cle)}"${attrs}>
+    <div class="rt-tete">${genre}${tete}</div>
+    ${ou}
+    <div class="rt-gestes">
+      <button type="button" class="btn btn-sm rt-quefaire${ouvert ? ' btn-outline' : ''}" data-rt-quefaire="1" aria-expanded="${ouvert ? 'true' : 'false'}">${ouvert ? '✕ Fermer' : '🧭 Que faire ?'}</button>
+      ${l.colis && l.colis.retour_rendu_photo_url ? `<a class="rt-photo" href="${escapeHTML(l.colis.retour_rendu_photo_url)}" target="_blank" rel="noopener">📷 Preuve de remise</a>` : ''}
+    </div>
+    ${ouvert ? `<div class="rt-choix" role="group" aria-label="Que faire ?">${choix.map(x => rtChoixHTML(l, x)).join('')}</div>` : ''}
+    ${reprogOuvert ? rtReprogHTML(l.colis) : ''}
+    ${l.genre === 'reportes' && ouvert && rtReprog === 'jour:' + l.colis.id ? rtChangerJourHTML(l.colis) : ''}
+    ${histOuvert ? `<div class="rt-histoire">${rtHistoires[l.colis.id] ? retourHistoriqueHTML(rtHistoires[l.colis.id], rtNoms()) : 'Chargement…'}</div>` : ''}
+  </div>`;
+}
+function rtChoixHTML(l, x){
+  const expl = x.explication ? `<span class="rt-choix-expl">${escapeHTML(x.explication)}</span>` : '';
+  if (x.action === 'confier') {
+    return `<label class="rt-choix-item rt-confier"><span class="rt-choix-lib">${escapeHTML(x.libelle)}</span>${expl}<select class="rt-select" data-rt-livreur><option value="">Choisir le livreur…</option>${(typeof livreurs !== 'undefined' ? livreurs : []).map(li => `<option value="${escapeHTML(li.id)}">${escapeHTML(li.full_name || 'Livreur')}</option>`).join('')}</select></label>`;
+  }
+  if (x.action === 'appeler') return `<a class="rt-choix-item" href="tel:${escapeHTML(String(x.telephone).replace(/[^\d+]/g, ''))}"><span class="rt-choix-lib">${escapeHTML(x.libelle)}</span>${expl}</a>`;
+  const attr = x.action === 'reprog' ? 'data-rt-reprog="1"'
+    : x.action === 'historique' ? 'data-rt-histoire="1"'
+    : x.action === 'remettre' ? 'data-rt-remettre="1"'
+    : x.action === 'changer_jour' ? 'data-rt-changer-jour="1"'
+    : x.action === 'reclam' ? `data-reclam-geste="${escapeHTML(x.cle)}"`
+    : x.action === 'demande' ? `data-rt-demande="${escapeHTML(x.cle)}"`
+    : `data-rt-geste="${escapeHTML(x.cle)}"`;
+  return `<button type="button" class="rt-choix-item${x.danger ? ' rt-choix-item--danger' : ''}" ${attr}><span class="rt-choix-lib">${escapeHTML(x.libelle)}</span>${expl}</button>`;
+}
+/* Changer le jour d'un colis reporté : un champ, un bouton — la trace est écrite par la base. */
+function rtChangerJourHTML(c){
+  const auj = todayLocalISODate();
+  return `<div class="rt-reprog" data-rt-jour-panneau>
+    <label class="rt-reprog-champ"><span>Nouveau jour</span><input type="date" class="rt-jour-input" value="${escapeHTML(rtDemainISO())}" min="${escapeHTML(auj)}"></label>
+    <div class="rt-reprog-boutons"><button type="button" class="btn btn-sm" data-rt-jour-ok="1">Enregistrer</button><button type="button" class="btn btn-sm btn-outline" data-rt-reprog-annuler="1">Annuler</button></div>
+  </div>`;
 }
 
 /* LE PANNEAU « REPROGRAMMER » : deux champs et un bouton, dépliés SOUS la ligne — pas de fenêtre
@@ -268,11 +318,11 @@ async function rtAppliquer(c, geste, bouton){
     const ok = await cltConfirm({ title: g.confirm.title, detail: (c.numero ? 'Colis ' + c.numero : 'Ce colis') + ' — ' + fournisseurLabelPlain(c.fournisseur_id), sub: g.confirm.sub, okLabel: g.confirm.okLabel, cancelLabel: g.confirm.cancelLabel });
     if (!ok) return;
   }
-  if (bouton) { bouton.disabled = true; bouton.textContent = '…'; }
+  if (bouton) { bouton.disabled = true; }
   const { error } = await supabaseClient.from('colis').update(g.patch).eq('id', c.id);
   if (error) {
     cltToast(friendlyErrorMessage(error.message), { type: 'error' });
-    if (bouton) { bouton.disabled = false; bouton.textContent = g.libelle; }
+    if (bouton) { bouton.disabled = false; }
     return;
   }
   cltToast((c.numero ? 'Colis ' + c.numero : 'Colis') + ' : ' + g.libelle.replace(/^[^\wÀ-ÿ]+/, '') + '.', { type: 'success', title: "C'est enregistré" });
@@ -285,12 +335,61 @@ async function rtAppliquer(c, geste, bouton){
 document.addEventListener('click', async (e) => {
   const ligne = e.target.closest('#section-retours .rt-ligne');
   if (!ligne) return;
-  const c = rtColis.find(x => x.id === ligne.dataset.rtId);
-  if (!c) return;
+  const cle = ligne.dataset.rtCle;
+  if (e.target.closest('[data-rt-quefaire]')) {
+    rtChoixOuvert = rtChoixOuvert === cle ? null : cle;
+    rtReprog = null; rtReprogChoix = null;
+    renderRetours(false);
+    // Le panneau s'ouvre sous la ligne : on l'amène dans l'écran s'il est en bas.
+    const ouverte = [...document.querySelectorAll('#section-retours .rt-ligne')].find(x => x.dataset.rtCle === cle)?.querySelector('.rt-choix');
+    if (ouverte && ouverte.getBoundingClientRect().bottom > window.innerHeight) ouverte.scrollIntoView({ block: 'nearest' });
+    return;
+  }
+  const c = ligne.dataset.rtId ? rtColis.concat(rtReportes).find(x => x.id === ligne.dataset.rtId) : null;
+  // Une demande de passage : trois issues, les mêmes fonctions que dans Tournées.
+  const bd = e.target.closest('[data-rt-demande]');
+  if (bd && ligne.dataset.demande) {
+    const d = rtDemandes.find(x => x.id === ligne.dataset.demande);
+    if (!d) return;
+    if (bd.dataset.rtDemande === 'programmer') {
+      rtPoserJourTournee(d.jour);
+      if (typeof showEquipeTab === 'function') showEquipeTab('programmation');
+      if (typeof chargerProgrammations === 'function') await chargerProgrammations();
+      if (typeof progPreremplir === 'function') progPreremplir(window.CLTDemandeDePassage ? CLTDemandeDePassage.cleDePreremplissage(d) : (d.fournisseur_id + '|||'));
+      return;
+    }
+    if (bd.dataset.rtDemande === 'traitee' && typeof marquerDemandeTraitee === 'function') { await marquerDemandeTraitee(d.id); await chargerRetours(); return; }
+    if (bd.dataset.rtDemande === 'refusee' && typeof refuserDemandeDePassage === 'function') { await refuserDemandeDePassage(d.id); await chargerRetours(); return; }
+    return;
+  }
+  if (!c) return;   // un signalement : ses gestes sont pris par 03-file-hors-reseau.js ([data-reclam-geste])
   if (e.target.closest('[data-rt-reprog]')) { rtReprog = rtReprog === c.id ? null : c.id; rtReprogChoix = null; renderRetours(false); return; }
+  if (e.target.closest('[data-rt-changer-jour]')) { rtReprog = rtReprog === 'jour:' + c.id ? null : 'jour:' + c.id; renderRetours(false); return; }
   if (e.target.closest('[data-rt-reprog-annuler]')) { rtReprog = null; rtReprogChoix = null; renderRetours(false); return; }
   const btnOk = e.target.closest('[data-rt-reprog-ok]');
   if (btnOk) { await rtReprogrammer(c, ligne, btnOk); return; }
+  const btnJour = e.target.closest('[data-rt-jour-ok]');
+  if (btnJour) {
+    const inp = ligne.querySelector('.rt-jour-input'); const jour = inp ? inp.value : '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(jour) || jour < todayLocalISODate()) { cltToast('Choisissez un jour à venir.', { type: 'warning' }); return; }
+    btnJour.disabled = true;
+    const { error } = await supabaseClient.from('colis').update({ reporte_au: jour }).eq('id', c.id);
+    btnJour.disabled = false;
+    if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
+    cltToast((c.numero ? 'Colis ' + c.numero : 'Colis') + ' : reporté au ' + rtJourCourt(jour) + '.', { type: 'success', title: "C'est enregistré" });
+    rtReprog = null; await chargerRetours(); if (typeof loadColisEnFond === 'function') loadColisEnFond();
+    return;
+  }
+  const btnRemettre = e.target.closest('[data-rt-remettre]');
+  if (btnRemettre) {
+    const ok = await cltConfirm({ title: 'Le remettre à sa journée ?', detail: (c.numero ? 'Colis ' + c.numero : 'Ce colis') + ' — ' + fournisseurLabelPlain(c.fournisseur_id), sub: 'Le report est annulé : le colis revient dans la journée où il a été reçu. La trace du report reste.', okLabel: 'Oui, remettre', cancelLabel: 'Annuler' });
+    if (!ok) return;
+    const { error } = await supabaseClient.from('colis').update({ reporte_au: null }).eq('id', c.id);
+    if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
+    cltToast((c.numero ? 'Colis ' + c.numero : 'Colis') + ' : remis à sa journée.', { type: 'success', title: "C'est enregistré" });
+    await chargerRetours(); if (typeof loadColisEnFond === 'function') loadColisEnFond();
+    return;
+  }
   const btnH = e.target.closest('[data-rt-histoire]');
   if (btnH) {
     if (rtOuverts.has(c.id)) rtOuverts.delete(c.id); else rtOuverts.add(c.id);
@@ -300,11 +399,11 @@ document.addEventListener('click', async (e) => {
   }
   const btn = e.target.closest('[data-rt-geste]');
   if (btn) {
-    const cle = btn.dataset.rtGeste;
-    if (cle === 'vers_retour') {
-      await rtAppliquer(c, { cle, libelle: '↩️ En retour', patch: { statut: 'retour' }, confirm: { title: 'Ce colis part en retour ?', sub: 'Il reste chez son livreur, qui doit le rendre à la cliente sous deux jours.', okLabel: 'Oui, en retour', cancelLabel: 'Annuler' } }, btn);
+    const g = btn.dataset.rtGeste;
+    if (g === 'vers_retour') {
+      await rtAppliquer(c, { cle: g, libelle: '↩️ En retour', patch: { statut: 'retour' }, confirm: { title: 'Ce colis part en retour ?', sub: 'Il reste chez son livreur, qui doit le rendre à la cliente sous deux jours.', okLabel: 'Oui, en retour', cancelLabel: 'Annuler' } }, btn);
     } else {
-      await rtAppliquer(c, { cle }, btn);
+      await rtAppliquer(c, { cle: g }, btn);
     }
   }
 });
@@ -329,8 +428,8 @@ document.addEventListener('change', async (e) => {
   delete rtHistoires[c.id];
   await chargerRetours();
 });
-document.getElementById('retours-recherche')?.addEventListener('input', (e) => { rtRecherche = e.target.value.trim(); rtReprog = null; rtReprogChoix = null; renderRetours(false); });
-document.addEventListener('click', (e) => { if (e.target.closest('#section-retours [data-rt-autre-cote]')) rtChoisirVue(rtVue === 'retours' ? 'non_livres' : 'retours'); });
+document.getElementById('retours-recherche')?.addEventListener('input', (e) => { rtRecherche = e.target.value.trim(); rtReprog = null; rtReprogChoix = null; rtChoixOuvert = null; renderRetours(false); });
+document.addEventListener('click', (e) => { if (e.target.closest('#section-retours [data-rt-autre-cote]')) rtChoisirVue('tout'); });
 document.querySelectorAll('#section-retours [data-rt-vue]').forEach(b => b.addEventListener('click', () => rtChoisirVue(b.dataset.rtVue)));
 document.getElementById('retours-rafraichir')?.addEventListener('click', () => chargerRetours());
 

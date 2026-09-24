@@ -38,8 +38,8 @@ verifier('pur : ni DOM, ni base', !/document\.|supabaseClient|fetch\(/.test(nu))
 const page = lire('app/equipe.html'), ecran = lire('app/equipe/12-les-retours.js'), css = lire('app/style.css');
 verifier('la page charge la règle avant l\'écran, et porte le champ de recherche de la page', page.indexOf('retours-du-bureau.js?v=') > 0 && page.indexOf('retours-du-bureau.js?v=') < page.indexOf('equipe/12-les-retours.js?v=') && /id="retours-recherche"/.test(page) && /id="retours-recherche-n"/.test(page));
 verifier('l\'écran lit le téléphone du destinataire, dans les deux lectures de la base', (ecran.match(/destinataire_telephone, created_at/g) || []).length === 2);
-verifier('la recherche filtre le côté OUVERT, compte « n sur m », et signale ce qui est de l\'autre côté', /duCote\.filter\(c => CLTRetoursBureau\.correspond\(/.test(ecran) && /liste\.length \+ ' sur ' \+ duCote\.length/.test(ecran) && /data-rt-autre-cote/.test(ecran));
-verifier('chaque carte porte la date exacte à côté de « depuis … », et l\'adresse (commune, adresse, téléphone)', /rtDateCourte\(c\)/.test(ecran) && /class="rt-date"/.test(ecran) && /\$\{rtAdresseHTML\(c\)\}/.test(ecran) && /class="rt-tel" href="tel:/.test(ecran));
+verifier('la recherche filtre la vue OUVERTE, compte « n sur m », et signale ce qui est ailleurs (lot 13 : rtLigneCorrespond, toutes les lignes)', /duCote\.filter\(l => rtLigneCorrespond\(l, rtRecherche\)\)/.test(ecran) && /CLTRetoursBureau\.correspond\(l\.colis, q, rtNomsPourRecherche\(l\.colis\)\)/.test(ecran) && /liste\.length \+ ' sur ' \+ duCote\.length/.test(ecran) && /data-rt-autre-cote/.test(ecran));
+verifier('chaque carte porte la date exacte à côté de « depuis … », et l\'adresse (commune, adresse, téléphone)', /rtDateCourte\(c\)/.test(ecran) && /class="rt-date"/.test(ecran) && /rtAdresseHTML\(c\) \+/.test(ecran) && /class="rt-tel" href="tel:/.test(ecran));
 verifier('le champ fait 44 px ; la date et le téléphone se lisent la nuit', /\.rt-recherche input\{[^}]*min-height:44px/.test(css) && /html\[data-theme="dark"\] \.rt-date, html\[data-theme="dark"\] \.rt-tel/.test(css));
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);

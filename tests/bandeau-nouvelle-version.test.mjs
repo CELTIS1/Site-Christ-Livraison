@@ -1424,10 +1424,17 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    l'état, tout indicatif) / Voir la pièce (visionneuse dans l'application) / Le code / Accepter /
    Refuser avec motif / Réexaminer / Suspendre / Rétablir. Règles dans app/dossiers-de-comptes.js ;
    profiles.decision_at / decision_par / decision_motif (SQL du lot 12) ; la personne refusée lit le
-   motif sur express-login. Parcours les-dossiers-de-comptes (18). Étiquette 20260924dossiers. */
+   motif sur express-login. Parcours les-dossiers-de-comptes (18). Étiquette 20260924dossiers.
+   v253, le 25/09/2026 — « À traiter » (chantier N, lot 13). L'onglet Retours de l'équipe devient
+   « À traiter » : une seule liste — non livrés, retours, reportés dus, signalements, demandes de
+   passage — six vues avec leur compte, le plus urgent en premier, et UN bouton par ligne, « Que
+   faire ? », qui n'ouvre que les issues possibles, chacune expliquée en une phrase (règle
+   app/a-traiter.js ; écritures inchangées : lib/retours.js, reprogrammer.js). « Programmer » sur
+   une demande ouvre Tournées sur le jour, pré-rempli. Chez le livreur, l'onglet Retours s'appelle
+   « À rendre ». Parcours a-traiter (18), le-colis-qui-revient et reprogrammer-un-colis adaptés. Étiquette 20260925atraiter. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v252'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v253'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

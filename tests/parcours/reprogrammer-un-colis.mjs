@@ -42,10 +42,13 @@ const btnR = page.locator('#section-retours [data-rt-vue="retours"]'), btnN = pa
 const nRetours = monde.TABLES.colis.filter(c => c.statut === 'retour' && !(c.retour_detenteur === 'cliente' && c.retour_confirme_at)).length;
 const nNonLivres = monde.TABLES.colis.filter(c => c.statut === 'non_livre').length;
 verifier('chaque bouton porte son compte', (await texte(btnR)) === '↩️ Retours ' + nRetours && (await texte(btnN)) === '⚠️ Non livrés ' + nNonLivres, (await texte(btnR)) + ' | ' + (await texte(btnN)));
-verifier('côté Retours : que des retours — le non livré n\'y est pas', (await page.locator('#retours-liste .rt-ligne').count()) === nRetours && (await ligne(RATE.id).count()) === 0 && (await ligne(AU_BUREAU.id).count()) === 1);
+// 25/09/2026 (lot 13) : l'écran s'ouvre sur « Tout » ; on choisit « Retours ».
+await btnR.click();
+await dodo(400);
+verifier('vue Retours : que des retours — le non livré n\'y est pas', (await page.locator('#retours-liste .rt-ligne').count()) === nRetours && (await ligne(RATE.id).count()) === 0 && (await ligne(AU_BUREAU.id).count()) === 1);
 const boite = async (l) => l.boundingBox();
 const bR = await boite(btnR), bN = await boite(btnN);
-verifier('sur téléphone, les deux boutons tiennent côte à côte, sur une ligne chacun (44 px au moins)', Math.abs(bR.y - bN.y) < 2 && bR.height >= 44 && bR.height < 60 && bN.height < 60, JSON.stringify([bR, bN]));
+verifier('sur téléphone, les boutons de vue font 44 px et tiennent dans l\'écran (six vues, deux lignes)', bR.height >= 44 && bR.height < 60 && bN.height >= 44 && bN.height < 60 && bR.x + bR.width <= 390 && bN.x + bN.width <= 390, JSON.stringify([bR, bN]));
 await btnN.click();
 await dodo(400);
 verifier('côté Non livrés : que des non livrés, et l\'aide change de phrase', (await page.locator('#retours-liste .rt-ligne').count()) === nNonLivres && (await ligne(RATE.id).count()) === 1 && (await ligne(AU_BUREAU.id).count()) === 0 && /sacoche/.test(await texte(page.locator('#retours-aide'))));
@@ -63,10 +66,10 @@ await dodo(400);
 verifier('« etoile » (sans accent) : le colis de la pharmacie Étoile, seul, et « 1 sur n »', (await page.locator('#retours-liste .rt-ligne').count()) === 1 && (await ligne(RATE.id).count()) === 1 && (await texte(page.locator('#retours-recherche-n'))) === '1 sur ' + nNonLivres, await texte(page.locator('#retours-recherche-n')));
 await champR.fill('angre');
 await dodo(400);
-verifier('« angre » n\'est pas de ce côté : on le dit, et on propose l\'autre côté', /Rien ne correspond/.test(await texte(page.locator('#retours-liste'))) && /1 résultat côté « Retours »/.test(await texte(page.locator('#retours-liste [data-rt-autre-cote]'))), await texte(page.locator('#retours-liste')));
+verifier('« angre » n\'est pas dans cette vue : on le dit, et on propose « Tout »', /Rien ne correspond/.test(await texte(page.locator('#retours-liste'))) && /1 résultat dans « Tout »/.test(await texte(page.locator('#retours-liste [data-rt-autre-cote]'))), await texte(page.locator('#retours-liste')));
 await page.locator('#retours-liste [data-rt-autre-cote]').click();
 await dodo(400);
-verifier('un appui y emmène : côté Retours, le colis d\'Angré, la recherche gardée', (await ligne(AU_BUREAU.id).count()) === 1 && (await page.locator('#retours-liste .rt-ligne').count()) === 1 && (await champR.inputValue()) === 'angre');
+verifier('un appui y emmène : dans « Tout », le colis d\'Angré seul, la recherche gardée', (await ligne(AU_BUREAU.id).count()) === 1 && (await page.locator('#retours-liste .rt-ligne').count()) === 1 && (await champR.inputValue()) === 'angre');
 await champR.fill('0707 1234');
 await dodo(400);
 await btnN.click();
@@ -77,6 +80,10 @@ await dodo(400);
 verifier('recherche vidée : toute la liste revient, le compteur s\'efface', (await page.locator('#retours-liste .rt-ligne').count()) === nNonLivres && (await texte(page.locator('#retours-recherche-n'))) === '');
 
 titre('2. Reprogrammer un non livré : un jour, un livreur');
+// Lot 13 : « Que faire ? » d'abord — trois issues pour un non livré, chacune expliquée.
+await ligne(RATE.id).locator('[data-rt-quefaire]').click();
+await dodo(400);
+verifier('« Que faire ? » propose : réessayer un autre jour, le rapporter, appeler le destinataire', (await ligne(RATE.id).locator('.rt-choix [data-rt-reprog]').count()) === 1 && (await ligne(RATE.id).locator('.rt-choix [data-rt-geste="vers_retour"]').count()) === 1 && (await ligne(RATE.id).locator('.rt-choix a[href^="tel:"]').count()) === 1 && /repart en livraison/.test(await texte(ligne(RATE.id).locator('.rt-choix'))), await texte(ligne(RATE.id).locator('.rt-choix')));
 await ligne(RATE.id).locator('[data-rt-reprog]').click();
 await dodo(300);
 const panneau = ligne(RATE.id).locator('.rt-reprog');
@@ -97,7 +104,10 @@ verifier('il quitte la liste, et le compte baisse', (await ligne(RATE.id).count(
 titre('3. Reprogrammer un retour déposé au bureau');
 await btnR.click();
 await dodo(400);
-verifier('le colis rendu à la cliente ne porte PAS « Reprogrammer » ; celui du bureau, si', (await ligne(RENDU.id).locator('[data-rt-reprog]').count()) === 0 && (await ligne(AU_BUREAU.id).locator('[data-rt-reprog]').count()) === 1);
+await ligne(RENDU.id).locator('[data-rt-quefaire]').click(); await dodo(300);
+const rendusChoix = await ligne(RENDU.id).locator('.rt-choix [data-rt-reprog]').count();
+await ligne(AU_BUREAU.id).locator('[data-rt-quefaire]').click(); await dodo(300);
+verifier('le colis rendu à la cliente ne propose PAS « Reprogrammer » ; celui du bureau, si', rendusChoix === 0 && (await ligne(AU_BUREAU.id).locator('[data-rt-reprog]').count()) === 1);
 await ligne(AU_BUREAU.id).locator('[data-rt-reprog]').click();
 await dodo(300);
 await ligne(AU_BUREAU.id).locator('[data-rt-reprog-annuler]').click();

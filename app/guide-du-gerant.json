@@ -1,6 +1,6 @@
 {
   "_lisez_moi": "LE GUIDE DU GÉRANT — une fiche par fonctionnalité livrée, lue par Gestion › Guide (app/guide-du-gerant.js). Écrit pour Celtis : ce que c'est, où c'est, comment s'en servir, en phrases courtes. À CHAQUE NOUVEAU LOT qui change ce qu'on voit ou ce qu'on fait, ajouter ou mettre à jour la fiche ici et la date « maj ». tests/le-guide-du-gerant.test.mjs vérifie la forme : identifiants uniques, espaces connus, longueurs (une fiche se lit en vingt secondes), « Y aller » vers un onglet qui existe. « pourVous » = un geste ou une décision qui revient à Celtis ; le retirer quand c'est fait.",
-  "maj": "24 septembre 2026",
+  "maj": "25 septembre 2026",
   "espaces": [
     [
       "gestion",
@@ -40,6 +40,20 @@
     ]
   ],
   "fiches": [
+    {
+      "id": "a-traiter",
+      "espace": "bureau",
+      "titre": "« À traiter » : une liste, un bouton « Que faire ? »",
+      "enBref": "Retours, non livrés, reportés dus, signalements et demandes de passage dans une seule liste ; chaque ligne n'a qu'un bouton.",
+      "ou": "Espace équipe › À traiter (ancien onglet Retours) ; chez le livreur, l'onglet s'appelle « À rendre »",
+      "etapes": [
+        "Six vues avec leur compte ; le chiffre sur l'onglet compte ce qui brûle (litiges, retours en retard).",
+        "« Que faire ? » ouvre, sous la ligne, les seules issues possibles, chacune avec une phrase : la nouvelle personne choisit sans connaître les règles.",
+        "Les gestes écrivent comme avant (règles de lib/retours.js, reprogrammer.js) : rien de nouveau en base, tout tracé."
+      ],
+      "aSavoir": "Règle dans app/a-traiter.js. Comparé à Shopify (commandes « à traiter », une action par ligne) et Onfleet (une tâche en échec a un menu d'issues). Ce qu'on a retiré : cinq boutons par ligne, deux côtés, quatre portes pour le report.",
+      "version": "v253"
+    },
     {
       "id": "dossiers-de-comptes",
       "espace": "bureau",

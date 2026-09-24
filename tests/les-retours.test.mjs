@@ -120,14 +120,15 @@ const eqHtml = lire('app/equipe.html');
 verifier('un onglet « Retours » à part — le quatrième de la barre du téléphone (Celtis, 20/09) — chargé par son propre fichier', /data-eqtab="retours"/.test(eqHtml) && /class="nav" data-nav="retours"/.test(eqHtml) && /id="eqpanel-retours"/.test(eqHtml) && /put\('eqpanel-retours', byId\('section-retours'\)\)/.test(lire('app/equipe/10-onglets.js')) && /equipe\/12-les-retours\.js\?v=/.test(eqHtml));
 verifier('elle lit la base elle-même : retours non confirmés ET non livrés, quel que soit le jour', /\.in\('statut', \['retour', 'non_livre'\]\)\.is\('retour_confirme_at', null\)/.test(eq));
 verifier('et se replie sur les anciennes colonnes si la base n\'est pas migrée', /does not exist/.test(eq) && /retour_rendu_at, retour_rendu_par'\)/.test(eq));
-verifier('ce qui brûle d\'abord : litige, retard, livreur, bureau, à confirmer, non livré', /if \(n\.cle === 'litige'\) return 0;/.test(eq) && /if \(retourEnRetard\(c\)\) return 1;/.test(eq));
+// 25/09/2026 (lot 13) : l'ordre vient de la règle a-traiter.js — litiges et retards (urgence 0), puis ce qui attend depuis plus d'un jour, puis le reste.
+verifier('ce qui brûle d\'abord : litige et retard, puis ce qui attend depuis plus d\'un jour', /urgence: brule \? \(\(n && n\.cle === 'litige'\) \? 0 : 0\.5\) : 2/.test(lire('app/a-traiter.js')) && /lignes\.sort\(function \(a, b\) \{ return a\.urgence - b\.urgence/.test(lire('app/a-traiter.js')));
 verifier('le détenteur est nommé', /rtNomLivreur\(c\.retour_detenteur_livreur_id \|\| c\.livreur_id\)/.test(eq));
-verifier('les gestes viennent de retourGestes, avec un choix de livreur pour « confier »', /retourGestes\(c, 'equipe', moi\)/.test(eq) && /data-rt-livreur/.test(eq) && /retour_detenteur: 'livreur', retour_detenteur_livreur_id: sel\.value/.test(eq));
-verifier('l\'histoire se déplie et lit retours_mouvements', /from\('retours_mouvements'\)/.test(eq) && /retourHistoriqueHTML\(rtHistoires\[c\.id\]/.test(eq));
+verifier('les gestes viennent de retourGestes, avec un choix de livreur pour « confier »', /retourGestes\(c, 'equipe', currentUser \? currentUser\.id : null\)/.test(eq) && /data-rt-livreur/.test(eq) && /retour_detenteur: 'livreur', retour_detenteur_livreur_id: sel\.value/.test(eq));
+verifier('l\'histoire se déplie et lit retours_mouvements', /from\('retours_mouvements'\)/.test(eq) && /retourHistoriqueHTML\(rtHistoires\[l\.colis\.id\]/.test(eq));
 verifier('les pastilles de l\'essentiel mènent à cet onglet', /case 'retours': case 'retours-tard':[\s\S]{0,80}showEquipeTab\('retours'\)/.test(lire('app/equipe/03-file-hors-reseau.js')));
 verifier('relu à chaque ouverture de l\'onglet, et après chaque geste', /if \(key === 'retours' && typeof chargerRetours === 'function'\) chargerRetours\(\);/.test(lire('app/equipe/10-onglets.js')) && /await chargerRetours\(\);/.test(eq));
 // 21/09/2026 : compté sur TOUS les colis (les deux côtés), et un litige en retard une seule fois.
-verifier('l\'onglet porte le chiffre de ce qui brûle (litiges + retards, chaque colis une fois)', /rt-onglet-badge/.test(eq) && /let urgent = 0; tous\.forEach\(c => \{ const n = retourNiveau\(c\); if \(\(n && n\.cle === 'litige'\) \|\| retourEnRetard\(c\)\) urgent\+\+; \}\);/.test(eq));
+verifier('l\'onglet porte le chiffre de ce qui brûle (litiges + retards, chaque colis une fois)', /rt-onglet-badge/.test(eq) && /const urgent = n\.urgent;/.test(eq) && /const brule = \(n && n\.cle === 'litige'\) \|\| enRetard\(c\);/.test(lire('app/a-traiter.js')));
 
 console.log('\n8. La cliente a le dernier mot');
 const f = lire('app/fournisseur.html');

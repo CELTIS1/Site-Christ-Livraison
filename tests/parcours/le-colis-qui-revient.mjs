@@ -75,13 +75,19 @@ await page.evaluate(() => showEquipeTab('retours'));
 await dodo(800);
 verifier('l\'onglet « Retours » ouvre l\'écran', await carteRt.isVisible());
 const ligneRt = (id) => page.locator(`#retours-liste .rt-ligne[data-rt-id="${id}"]`).first();
+// 25/09/2026 (lot 13) : une ligne porte UN bouton, « Que faire ? » ; les issues sont dans le panneau qu'il ouvre.
+const queFaire = async (id) => { const l = ligneRt(id); if ((await l.locator('.rt-choix').count()) === 0) { await l.locator('[data-rt-quefaire]').click(); await dodo(400); } };
 verifier('les deux colis y sont — et le colis livré du monde n\'y est pas', (await ligneRt(REVIENT.id).count()) === 1 && (await ligneRt(TRAINE.id).count()) === 1 && (await page.locator('#retours-liste .rt-ligne').count()) >= 2, await texte(page.locator('#retours-resume')));
 const resume = await texte(page.locator('#retours-resume'));
 // 21/09/2026 : les non livrés ont leur côté — le résumé de « Retours » n'en parle plus, c'est le bouton « Non livrés » qui les compte.
-verifier('le résumé compte : 1 en retard, chez les livreurs, 1 à confirmer ; le non livré du monde est de l\'autre côté', /1 en retard/.test(resume) && /à confirmer/.test(resume) && !/non livré/.test(resume) && /Non livrés 1/.test(await texte(page.locator('#section-retours [data-rt-vue="non_livres"]'))), resume + ' | ' + await texte(page.locator('#section-retours [data-rt-vue="non_livres"]')));
+// 25/09/2026 (lot 13) : la vue « Tout » ouvre d'abord ; le résumé compte par genre, et « Non livrés » porte son compte.
+verifier('le résumé compte : 1 en retard, les retours, et le non livré du monde ; « Non livrés 1 »', /1 en retard/.test(resume) && /retours/.test(resume) && /non livré/.test(resume) && /Non livrés 1/.test(await texte(page.locator('#section-retours [data-rt-vue="non_livres"]'))), resume + ' | ' + await texte(page.locator('#section-retours [data-rt-vue="non_livres"]')));
 verifier('le colis en retard est en tête, nommé avec son livreur, en rouge', (await page.locator('#retours-liste .rt-ligne').first().getAttribute('data-rt-id')) === TRAINE.id && /Koffi Livreur/.test(await texte(ligneRt(TRAINE.id))) && (await ligneRt(TRAINE.id).locator('.rt-depuis--retard').count()) === 1, await texte(ligneRt(TRAINE.id)));
-verifier('le colis rendu porte « Rendu à la cliente — à confirmer » et le geste « Corriger »', /à confirmer/.test(await texte(ligneRt(REVIENT.id))) && (await ligneRt(REVIENT.id).locator('[data-rt-geste="pas_rendu"]').count()) === 1, await texte(ligneRt(REVIENT.id)));
-verifier('le colis chez le livreur : reçu au bureau, rendu, et un choix de livreur pour confier', (await ligneRt(TRAINE.id).locator('[data-rt-geste="recu_bureau"]').count()) === 1 && (await ligneRt(TRAINE.id).locator('[data-rt-geste="rendu_cliente"]').count()) === 1 && (await ligneRt(TRAINE.id).locator('[data-rt-livreur]').count()) === 1);
+verifier('chaque ligne porte UN bouton « Que faire ? », et aucun geste à nu', (await ligneRt(REVIENT.id).locator('[data-rt-quefaire]').count()) === 1 && (await ligneRt(REVIENT.id).locator('[data-rt-geste]').count()) === 0);
+await queFaire(REVIENT.id);
+verifier('le colis rendu porte « Rendu à la cliente — à confirmer » ; « Que faire ? » propose « Corriger », avec sa phrase', /à confirmer/.test(await texte(ligneRt(REVIENT.id))) && (await ligneRt(REVIENT.id).locator('[data-rt-geste="pas_rendu"]').count()) === 1 && /repasse au bureau/.test(await texte(ligneRt(REVIENT.id).locator('.rt-choix'))), await texte(ligneRt(REVIENT.id)));
+await queFaire(TRAINE.id);
+verifier('le colis chez le livreur : reçu au bureau, rendu, un choix de livreur pour confier — et le premier panneau s\'est refermé', (await ligneRt(TRAINE.id).locator('[data-rt-geste="recu_bureau"]').count()) === 1 && (await ligneRt(TRAINE.id).locator('[data-rt-geste="rendu_cliente"]').count()) === 1 && (await ligneRt(TRAINE.id).locator('[data-rt-livreur]').count()) === 1 && (await ligneRt(REVIENT.id).locator('.rt-choix').count()) === 0);
 
 titre('4. Le bureau agit : historique, reçu au bureau, confié à un livreur');
 await ligneRt(TRAINE.id).locator('[data-rt-histoire]').click();
@@ -94,6 +100,7 @@ await page.locator('#clt-modal-ok').click();
 await dodo(1200);
 verifier('le colis est au bureau, plus aucun livreur détenteur', TRAINE.retour_detenteur === 'bureau' && TRAINE.retour_detenteur_livreur_id === null, JSON.stringify({ d: TRAINE.retour_detenteur, l: TRAINE.retour_detenteur_livreur_id }));
 verifier('l\'écran le dit : « Déposé au bureau CLT »', /Déposé au bureau/.test(await texte(ligneRt(TRAINE.id))), await texte(ligneRt(TRAINE.id)));
+await queFaire(TRAINE.id);
 await ligneRt(TRAINE.id).locator('[data-rt-livreur]').selectOption(LIVREUR);
 await dodo(400);
 verifier('confier demande confirmation, en nommant le livreur', /Confier ce colis à Koffi Livreur/.test(await texte(page.locator('#clt-modal-title'))), await texte(page.locator('#clt-modal-title')));
@@ -149,6 +156,7 @@ await page.evaluate(() => showEquipeTab('retours'));
 await dodo(800);
 verifier('l\'onglet porte le chiffre de ce qui brûle : 2 (1 litige + 1 retard)', (await texte(page.locator('#clt-toptabs [data-eqtab="retours"] .rt-onglet-badge'))) === '2', await texte(page.locator('#clt-toptabs [data-eqtab="retours"]')));
 verifier('le litige est la première ligne', (await page.locator('#retours-liste .rt-ligne').first().getAttribute('data-rt-id')) === REVIENT.id);
+await queFaire(REVIENT.id);
 verifier('elle porte le mot de la cliente et les gestes « confier » / « rendu en main propre »', /Personne n'est venu/.test(await texte(ligneRt(REVIENT.id))) && (await ligneRt(REVIENT.id).locator('[data-rt-livreur]').count()) === 1 && (await ligneRt(REVIENT.id).locator('[data-rt-geste="rendu_cliente"]').count()) === 1, await texte(ligneRt(REVIENT.id)));
 verifier('le résumé compte le litige', /1 litige/.test(await texte(page.locator('#retours-resume'))), await texte(page.locator('#retours-resume')));
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));

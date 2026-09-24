@@ -49,7 +49,7 @@ await dodo(500);
 titre('2 bis. La barre du bas : « Retours » à la place de « Compte » (20/09/2026)');
 const barre = page.locator('#clt-bottomnav .nav');
 const noms = (await barre.allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim());
-verifier('quatre onglets : Mes colis, Récup., Finance, Retours — « Compte » n\'y est plus (il est dans le menu ☰)', noms.length === 4 && /^Mes colis/.test(noms[0]) && /^Retours/.test(noms[3]) && !noms.some(n => /Compte/.test(n)) && (await page.locator('#btn-mon-compte').count()) === 1, noms.join(' | '));
+verifier('quatre onglets : Mes colis, Récup., Finance, À rendre (ex-Retours, lot 13) — « Compte » n\'y est plus (il est dans le menu ☰)', noms.length === 4 && /^Mes colis/.test(noms[0]) && /^À rendre/.test(noms[3]) && !noms.some(n => /Compte/.test(n)) && (await page.locator('#btn-mon-compte').count()) === 1, noms.join(' | '));
 verifier('« Retours » porte le nombre de colis à rendre : 1', (await texte(page.locator('#retours-badge'))) === '1' && await page.locator('#retours-badge').isVisible());
 await page.locator('#clt-bottomnav [data-nav="retours"]').click();
 await dodo(600);

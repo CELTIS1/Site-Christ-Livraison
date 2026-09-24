@@ -224,16 +224,13 @@
         },
         {
           "id": "equipe-retours",
-          "titre": "Retours et non livrés : où est chaque colis",
-          "resume": "L'onglet Retours liste tout ce qui n'est pas encore entre les mains de la cliente, du plus urgent au moins urgent.",
+          "titre": "« À traiter » : une liste, un bouton « Que faire ? »",
+          "resume": "Non livrés, retours, reportés dus, signalements, demandes de passage — tout ce qui attend une décision, le plus urgent en premier.",
           "etapes": [
-            "Niveaux : non livré (sacoche du livreur, sans décision) → chez le livreur → au bureau → rendu, à confirmer → confirmé. Et « litige » quand la cliente dit ne pas l'avoir.",
-            "Deux côtés en haut de l'écran : « Retours » et « Non livrés », chacun avec son nombre. Dessous, « Chercher ici » : tapez un bout d'adresse, une commune, un numéro ou un téléphone.",
-            "« Reprogrammer » : choisissez le jour et le livreur, puis « Enregistrer » ; le colis repart en livraison ce jour-là. Inutile de passer par « Modifier ».",
-            "Autres gestes : « Reçu au bureau », « Rendu à la cliente », « Confier à un livreur », « Corriger — ce n'était pas rendu ».",
-            "« Historique » sous chaque colis : chaque passage de main, daté et signé.",
-            "Chaque matin : traiter les lignes rouges (litiges, retards), puis appeler les clientes des « à confirmer » de plus de deux jours.",
-            "Un colis revenu chez la cliente ne quitte jamais son point : il y reste à 0 F. Un colis simplement reporté n'est PAS un retour : voir « Le colis reporté »."
+            "Onglet « À traiter » : six vues (Tout, Non livrés, Retours, Reportés, Signalements, Demandes), chacune avec son compte. Le chiffre sur l'onglet = ce qui brûle (litiges, retours en retard).",
+            "Sur chaque ligne, un seul bouton : « Que faire ? ». Il n'ouvre que les issues possibles, chacune expliquée en une phrase. Choisir, confirmer : c'est enregistré et tracé.",
+            "Non livré : réessayer un autre jour · le livreur le rapporte · appeler le destinataire. Retour : reçu au bureau · rendu à la cliente · confier à un livreur · reprogrammer · historique.",
+            "Reporté dû : le remettre à sa journée · changer le jour. Signalement : je m'en occupe · répondre et clore. Demande : programmer (Tournées s'ouvre tout rempli) · traitée · refuser avec motif."
           ]
         },
         {
@@ -245,7 +242,8 @@
             "Où il est ensuite : il reste dans sa journée de réception, marqué ⏭️ « Reporté au … — reçu le …, et toujours compté dans cette journée-là » ; ET il apparaît dans la journée de report, pour le livreur.",
             "Le point de la vendeuse ne bouge pas : le colis reste dans le point du jour où elle l'a remis, « reporté au … », à 0 F. Le jour où il est livré, son montant entre dans CE point-là et vous recevez « la journée a changé ».",
             "Annuler un report : sur la carte, « ↩️ Le remettre à sa journée ». Ou ✏️ Modifier → remettez le jour de réception.",
-            "Vérifier qu'aucun reporté ne dort : la ligne « ⏭️ N colis de cette journée ont été reportés » en haut de la liste, et « Aller à cette journée »."
+            "Vérifier qu'aucun reporté ne dort : la ligne « ⏭️ N colis de cette journée ont été reportés » en haut de la liste, et « Aller à cette journée ».",
+            "Un reporté dont le jour est arrivé et qui attend encore apparaît dans « À traiter › Reportés » : « Que faire ? » → le remettre à sa journée, ou changer le jour."
           ],
           "astuce": "Un colis reporté qui n'est ni livré ni rendu après son jour de report ressort dans L'essentiel (« dormants »). Regardez-le le matin."
         },
