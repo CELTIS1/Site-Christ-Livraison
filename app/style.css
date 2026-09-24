@@ -4594,3 +4594,42 @@ html[data-theme="dark"] .rt-choix-item--danger{ border-color:#7a3a33; }
 html[data-theme="dark"] .rt-choix-item--danger .rt-choix-lib{ color:#ff9a8c; }
 @media (min-width:761px){ .rt-choix{ flex-direction:row; flex-wrap:wrap; } .rt-choix-item{ flex:1 1 260px; width:auto; } }
 @media (max-width:640px){ #section-retours .rt-resume{ display:none; } }
+
+/* ==========================================================================================
+   L'ARGENT (chantier N, lot 14, 25/09/2026) — Équipe › Argent. Quatre vues ; une ligne = qui,
+   combien, depuis quand, un geste. Urgent = liseré rouge. Teintes « encre » lisibles la nuit.
+   ========================================================================================== */
+.argent-vues{ flex-wrap:wrap; margin-top:10px; }
+.argent-vues .eq-bascule-btn{ min-height:44px; }
+.argent-entete .panel-subtitle{ margin-bottom:4px; }
+.argent-total{ font-size:13.5px; color:var(--muted); margin:0 0 10px; }
+.argent-total strong{ color:var(--navy); font-size:15px; }
+.argent-sep{ font-size:12.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin:14px 0 6px; }
+.argent-ligne{ display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:center; padding:10px 12px; border:1px solid var(--border); border-left:4px solid var(--border-strong); border-radius:12px; background:var(--white); margin-bottom:8px; }
+.argent-ligne--urgent{ border-left-color:#a32d22; }
+.argent-ligne--vise{ box-shadow:0 0 0 3px rgba(226,99,19,.35); }
+.argent-qui{ display:flex; flex-direction:column; min-width:0; }
+.argent-nom{ font-weight:700; }
+.argent-sous{ font-size:12.5px; color:var(--muted); }
+.argent-sous b{ color:#a32d22; }
+.argent-montant{ font-weight:800; font-size:16px; color:var(--navy); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.argent-montant--doit{ color:#8a4b00; font-size:14px; }
+.argent-gestes{ grid-column:1 / -1; display:flex; gap:6px; flex-wrap:wrap; }
+.argent-gestes .btn{ min-height:44px; }
+.argent-vide{ padding:14px; border-radius:12px; background:#e6f4ea; color:#167a42; font-weight:600; }
+.argent-bloc{ margin-bottom:14px; }
+.argent-bloc-titre{ font-weight:700; color:var(--navy); margin:0 0 6px; }
+.argent-manque-ligne{ display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; min-height:48px; padding:8px 12px; margin-bottom:6px; border:1px solid var(--border); border-radius:10px; background:var(--white); color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.argent-manque-ligne:hover{ border-color:var(--navy); }
+.argent-manque-ligne b{ white-space:nowrap; color:var(--navy); font-variant-numeric:tabular-nums; }
+.argent-manque-ligne .argent-rouge{ color:#a32d22; }
+.argent-manque-ligne .argent-ambre{ color:#8a4b00; }
+html[data-theme="dark"] .argent-ligne{ background:#1B2635; border-color:#2A3849; }
+html[data-theme="dark"] .argent-montant{ color:#9EC0E6; }
+html[data-theme="dark"] .argent-montant--doit{ color:#f0c27a; }
+html[data-theme="dark"] .argent-sous b, html[data-theme="dark"] .argent-manque-ligne .argent-rouge{ color:#ff9a8c; }
+html[data-theme="dark"] .argent-vide{ background:#14301f; color:#5fd39a; }
+html[data-theme="dark"] .argent-manque-ligne{ background:#1B2635; border-color:#2A3849; }
+html[data-theme="dark"] .argent-manque-ligne b{ color:#9EC0E6; }
+html[data-theme="dark"] .argent-manque-ligne .argent-ambre{ color:#f0c27a; }
+@media (min-width:761px){ .argent-ligne{ grid-template-columns:1fr auto auto; } .argent-gestes{ grid-column:auto; } }

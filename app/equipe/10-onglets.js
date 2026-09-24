@@ -83,6 +83,7 @@
     // la lecture pour un écran que personne n'a demandé.
     if (key === 'personnes') rafraichirPersonnes();
     if (key === 'finances'){
+      if (typeof chargerArgent === 'function') chargerArgent();
       // 05/09/2026 — « Vue par jour » restait sur « Chargement… » : on la calcule à l'ouverture.
       if (typeof showRapportSubTab === 'function') showRapportSubTab('jour');
       if (typeof forceStickyReflow === 'function'){
@@ -191,8 +192,13 @@
     brancherPersonnes();
 
     // 💰 Finances : rapports + comptabilité (les statistiques de visites ont été retirées le 05/09/2026)
-    put('eqpanel-finances', wrapInCard(byId('panel-rapports')));
-    put('eqpanel-finances', wrapInCard(byId('panel-compta')));
+    /* LOT 14 (25/09/2026) : l'onglet devient « Argent », en quatre vues. Le point du jour, la caisse
+       et l'historique des remises vont dans « Remise du livreur » ; rapports, chaîne, compta,
+       clôture et exports dans « Rapports & compta ». Rien n'est réécrit, tout est rangé. */
+    put('argent-vue-remise', wrapInCard(byId('point-du-jour')));
+    { const c = document.createElement('div'); c.className = 'card'; c.appendChild(byId('argent-bloc-caisse')); c.appendChild(byId('argent-bloc-remises')); put('argent-vue-remise', c); }
+    put('argent-vue-rapports', wrapInCard(byId('panel-rapports')));
+    put('argent-vue-rapports', wrapInCard(byId('panel-compta')));
 
     // 👥 Comptes : créer client + créer livreur + comptes en attente + réinitialisations
     //             + (admin) équipe & tous les comptes

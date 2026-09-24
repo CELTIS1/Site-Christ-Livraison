@@ -22,13 +22,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260925atraiter">
+<link rel="stylesheet" href="style.css?v=20260925argent">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260925atraiter"></script>
+<script src="theme.js?v=20260925argent"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260925atraiter" defer></script>
-<script src="cloche.js?v=20260925atraiter" defer></script>
-<script src="splash.js?v=20260925atraiter"></script>
+<script src="notifications-recues.js?v=20260925argent" defer></script>
+<script src="cloche.js?v=20260925argent" defer></script>
+<script src="splash.js?v=20260925argent"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -629,7 +629,7 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
      gérer plutôt que là où c'est : c'est très encombrant et long »). Sur téléphone, il est
      derrière « Plus », comme Suivi et Comptes. -->
 <button type="button" class="clt-toptab" data-eqtab="retours">🧭 À traiter</button>
-<button type="button" class="clt-toptab" data-eqtab="finances">💰 Finances</button>
+<button type="button" class="clt-toptab" data-eqtab="finances">💰 Argent</button>
 <!-- CLIENTS ET LIVREURS N'EN FONT PLUS QU'UN : « PERSONNES ». (18/09/2026, Celtis : « il y a
      beaucoup d'onglets […] moins d'endroits à parcourir pour l'équipe et mieux ils
      maîtriseront ».)
@@ -656,7 +656,31 @@ html[data-theme="dark"] #section-aujourdhui .ess-tuile.est-vert{ background:#162
     <button type="button" class="eq-bascule-btn" data-personnes="livreurs" role="tab" aria-selected="false">🏍️ Livreurs</button>
   </div>
 </div>
-<div class="eq-tabpanel hidden" id="eqpanel-finances"></div>
+<!-- L'ARGENT (chantier N, lot 14, 25/09/2026). Celtis : « la remise de l'argent côté livreur, et nous
+     qui devons reverser aux clientes : très simple, et qu'on puisse le maîtriser ». Quatre vues sous un
+     seul onglet ; les blocs existants sont rangés dedans par relocateEquipeSections. Règle :
+     app/argent-a-suivre.js ; écran : app/equipe/18-l-argent.js. -->
+<div class="eq-tabpanel hidden" id="eqpanel-finances">
+  <div class="card argent-entete" id="section-argent">
+    <h2 class="panel-subtitle">💰 L'argent — ce qui rentre, ce qui est remis, ce qui est reversé</h2>
+    <div class="eq-bascule rt-bascule argent-vues" role="tablist" aria-label="Quelle vue de l'argent">
+      <button type="button" class="eq-bascule-btn active" data-argent-vue="remise" role="tab" aria-selected="true">🏍️ Remise du livreur <span class="rt-bascule-n"></span></button>
+      <button type="button" class="eq-bascule-btn" data-argent-vue="reversement" role="tab" aria-selected="false">💸 Reversement aux clientes <span class="rt-bascule-n"></span></button>
+      <button type="button" class="eq-bascule-btn" data-argent-vue="manque" role="tab" aria-selected="false">🔎 Ce qui manque <span class="rt-bascule-n"></span></button>
+      <button type="button" class="eq-bascule-btn" data-argent-vue="rapports" role="tab" aria-selected="false">📊 Rapports &amp; compta</button>
+    </div>
+  </div>
+  <div id="argent-vue-remise" class="argent-vue">
+    <div class="card"><h3 class="panel-subtitle" style="margin-top:0;">💵 À remettre ce soir</h3><div class="page-sub" style="margin-bottom:8px;">Chaque livreur, ce qu'il porte encore, depuis quand. « Marquer comme remis » ouvre la remise : attendu, annoncé, reçu, écart.</div><div id="argent-remises-attendues"><div class="empty-state">Chargement…</div></div></div>
+  </div>
+  <div id="argent-vue-reversement" class="argent-vue hidden">
+    <div class="card"><h3 class="panel-subtitle" style="margin-top:0;">💸 Ce que CLT doit aux clientes</h3><div class="page-sub" style="margin-bottom:8px;">Par cliente : les articles encaissés pour elle, moins les frais retenus. « Reverser » choisit les colis, le mode, et écrit le reçu numéroté qu'elle reçoit.</div><div id="argent-reversements"><div class="empty-state">Chargement…</div></div></div>
+  </div>
+  <div id="argent-vue-manque" class="argent-vue hidden">
+    <div class="card"><h3 class="panel-subtitle" style="margin-top:0;">🔎 Ce qui manque</h3><div class="page-sub" style="margin-bottom:8px;">Non remis depuis plus d'un jour, non reversé depuis trois jours, écarts de remise de la semaine, annonces sans remise. Un appui mène à la ligne.</div><div id="argent-manque"><div class="empty-state">Chargement…</div></div></div>
+  </div>
+  <div id="argent-vue-rapports" class="argent-vue hidden"></div>
+</div>
 <div class="eq-tabpanel hidden" id="eqpanel-retours"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-comptes"></div>
 <div class="eq-tabpanel hidden" id="eqpanel-express"></div>
@@ -1199,15 +1223,19 @@ saisis ensuite lui seront rattachés automatiquement.
 <div class="recap-table-wrap" id="compta-detail" style="margin-top:20px;">
 <div class="empty-state">Chargement...</div>
 </div>
-<h3 class="panel-subtitle" style="margin-top:24px;">💵 Caisse par livreur (à remettre)</h3>
-<div class="page-sub" style="margin-bottom:8px;">Argent encaissé à la livraison par chaque livreur, et ce qu'il reste à remettre à l'entreprise.</div>
+<div id="argent-bloc-caisse">
+<h3 class="panel-subtitle" style="margin-top:24px;">💵 Caisse par livreur, en détail</h3>
+<div class="page-sub" style="margin-bottom:8px;">Sur la période choisie dans « Rapports &amp; compta » : encaissé, avancé, remis, reste à remettre.</div>
 <div class="recap-table-wrap" id="caisse-livreur">
 <div class="empty-state">Chargement...</div>
 </div>
+</div>
+<div id="argent-bloc-remises">
 <h3 class="panel-subtitle" style="margin-top:24px;">🧾 Historique des remises &amp; écarts</h3>
 <div class="page-sub" style="margin-bottom:8px;">Chaque remise enregistre le montant réellement reçu et l'écart avec le montant attendu. Un écart négatif signale un manque à vérifier.</div>
 <div class="recap-table-wrap" id="remises-historique">
 <div class="empty-state">Chargement...</div>
+</div>
 </div>
 <div style="display:flex; gap:8px; margin-top:14px;">
 <button type="button" class="btn btn-outline btn-sm" id="btn-export-excel">Exporter en Excel</button>
@@ -1774,49 +1802,50 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
   </div>
 </div>
 
-<script src="clt-common.js?v=20260925atraiter"></script>
-<script src="numero-international.js?v=20260925atraiter"></script>
-<script src="voir-un-compte.js?v=20260925atraiter"></script>
-<script src="lib/bibliotheques.js?v=20260925atraiter"></script>
-<script src="lib/retours.js?v=20260925atraiter"></script>
-<script src="lib/reclamations.js?v=20260925atraiter"></script>
-<script src="lib/communes-et-tarifs.js?v=20260925atraiter"></script>
-<script src="lib/argent.js?v=20260925atraiter"></script>
-<script src="lib/releve-cliente.js?v=20260925atraiter"></script>
-<script src="lib/papier-a-en-tete.js?v=20260925atraiter"></script>
-<script src="lib/briques-argent.js?v=20260925atraiter"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260925atraiter"></script>
-<script src="lib/traces-de-report.js?v=20260925atraiter"></script>
-<script src="lib/annonce-de-remise.js?v=20260925atraiter"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260925atraiter"></script>
-<script src="lib/primes.js?v=20260925atraiter"></script>
-<script src="lib/doublons.js?v=20260925atraiter"></script>
-<script src="config.js?v=20260925atraiter"></script>
-<script src="demande-de-passage.js?v=20260925atraiter"></script>
-<script src="dossiers-de-comptes.js?v=20260925atraiter"></script>
-<script src="a-traiter.js?v=20260925atraiter"></script>
-<script src="activite-de-la-cliente.js?v=20260925atraiter"></script>
-<script src="activite-ecran.js?v=20260925atraiter"></script>
-<script src="delais-et-promesses.js?v=20260925atraiter"></script>
-<script src="ordre-de-livraison.js?v=20260925atraiter"></script>
-<script src="etiquettes-et-scan.js?v=20260925atraiter"></script>
-<script src="clients-dashboard.js?v=20260925atraiter"></script>
-<script src="livreurs-dashboard.js?v=20260925atraiter"></script>
-<script src="point-du-jour.js?v=20260925atraiter"></script>
-<script src="biometric-lock.js?v=20260925atraiter"></script>
-<script src="clt-select-recherche.js?v=20260925atraiter"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260925atraiter"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260925atraiter"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260925atraiter"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260925atraiter"></script>
-<script src="equipe/04-actions.js?v=20260925atraiter"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260925atraiter"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260925atraiter"></script>
-<script src="point-par-whatsapp.js?v=20260925atraiter"></script>
-<script src="equipe/07-rapports.js?v=20260925atraiter"></script>
-<script src="equipe/08-son-ecran.js?v=20260925atraiter"></script>
-<script src="recharges-express.js?v=20260925atraiter"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260925atraiter"></script>
+<script src="clt-common.js?v=20260925argent"></script>
+<script src="numero-international.js?v=20260925argent"></script>
+<script src="voir-un-compte.js?v=20260925argent"></script>
+<script src="lib/bibliotheques.js?v=20260925argent"></script>
+<script src="lib/retours.js?v=20260925argent"></script>
+<script src="lib/reclamations.js?v=20260925argent"></script>
+<script src="lib/communes-et-tarifs.js?v=20260925argent"></script>
+<script src="lib/argent.js?v=20260925argent"></script>
+<script src="lib/releve-cliente.js?v=20260925argent"></script>
+<script src="lib/papier-a-en-tete.js?v=20260925argent"></script>
+<script src="lib/briques-argent.js?v=20260925argent"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260925argent"></script>
+<script src="lib/traces-de-report.js?v=20260925argent"></script>
+<script src="lib/annonce-de-remise.js?v=20260925argent"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260925argent"></script>
+<script src="lib/primes.js?v=20260925argent"></script>
+<script src="lib/doublons.js?v=20260925argent"></script>
+<script src="config.js?v=20260925argent"></script>
+<script src="demande-de-passage.js?v=20260925argent"></script>
+<script src="dossiers-de-comptes.js?v=20260925argent"></script>
+<script src="a-traiter.js?v=20260925argent"></script>
+<script src="argent-a-suivre.js?v=20260925argent"></script>
+<script src="activite-de-la-cliente.js?v=20260925argent"></script>
+<script src="activite-ecran.js?v=20260925argent"></script>
+<script src="delais-et-promesses.js?v=20260925argent"></script>
+<script src="ordre-de-livraison.js?v=20260925argent"></script>
+<script src="etiquettes-et-scan.js?v=20260925argent"></script>
+<script src="clients-dashboard.js?v=20260925argent"></script>
+<script src="livreurs-dashboard.js?v=20260925argent"></script>
+<script src="point-du-jour.js?v=20260925argent"></script>
+<script src="biometric-lock.js?v=20260925argent"></script>
+<script src="clt-select-recherche.js?v=20260925argent"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260925argent"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260925argent"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260925argent"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260925argent"></script>
+<script src="equipe/04-actions.js?v=20260925argent"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260925argent"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260925argent"></script>
+<script src="point-par-whatsapp.js?v=20260925argent"></script>
+<script src="equipe/07-rapports.js?v=20260925argent"></script>
+<script src="equipe/08-son-ecran.js?v=20260925argent"></script>
+<script src="recharges-express.js?v=20260925argent"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260925argent"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -1841,7 +1870,7 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
   </button>
   <button type="button" class="nav nav--dans-plus" data-nav="finances">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.2c0-1.1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.9c0 2.6-5 1.4-5 3.9 0 1.2 1.1 1.9 2.5 1.9s2.5-.6 2.5-1.7"/></svg>
-    Finances
+    Argent
   </button>
   <button type="button" class="nav nav--dans-plus" data-nav="personnes">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9.5" r="2.4"/><path d="M15 19c0-2.2 1.3-3.6 3-3.6s2.5 1.2 2.5 3"/></svg>
@@ -1864,20 +1893,21 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="equipe/10-onglets.js?v=20260925atraiter"></script>
-<script src="equipe/11-chercher-partout.js?v=20260925atraiter"></script>
-<script src="reprogrammer.js?v=20260925atraiter"></script>
-<script src="retours-du-bureau.js?v=20260925atraiter"></script>
-<script src="equipe/12-les-retours.js?v=20260925atraiter"></script>
-<script src="equipe/13-les-boutiques.js?v=20260925atraiter"></script>
+<script src="equipe/10-onglets.js?v=20260925argent"></script>
+<script src="equipe/11-chercher-partout.js?v=20260925argent"></script>
+<script src="reprogrammer.js?v=20260925argent"></script>
+<script src="retours-du-bureau.js?v=20260925argent"></script>
+<script src="equipe/12-les-retours.js?v=20260925argent"></script>
+<script src="equipe/13-les-boutiques.js?v=20260925argent"></script>
 <!-- 9.6 : sur grand écran, la liste à gauche et la fiche à droite. Ne fait rien sous 1 200 px. -->
-<script src="equipe/14-liste-et-fiche.js?v=20260925atraiter"></script>
-<script src="chaine-de-l-argent.js?v=20260925atraiter"></script>
-<script src="equipe/15-la-chaine-de-l-argent.js?v=20260925atraiter"></script>
+<script src="equipe/14-liste-et-fiche.js?v=20260925argent"></script>
+<script src="chaine-de-l-argent.js?v=20260925argent"></script>
+<script src="equipe/15-la-chaine-de-l-argent.js?v=20260925argent"></script>
 <!-- 9.6 : les colis en route sur la carte du Suivi, une pastille par commune. -->
-<script src="colis-sur-la-carte.js?v=20260925atraiter"></script>
-<script src="equipe/16-les-colis-sur-la-carte.js?v=20260925atraiter"></script>
+<script src="colis-sur-la-carte.js?v=20260925argent"></script>
+<script src="equipe/16-les-colis-sur-la-carte.js?v=20260925argent"></script>
 <!-- Le point à voir (22/09/2026) : la notification conduit à la carte, qui reste encadrée tant qu'on ne l'a pas ouverte. -->
-<script src="equipe/17-le-point-a-voir.js?v=20260925atraiter"></script>
+<script src="equipe/17-le-point-a-voir.js?v=20260925argent"></script>
+<script src="equipe/18-l-argent.js?v=20260925argent"></script>
 </body>
 </html>

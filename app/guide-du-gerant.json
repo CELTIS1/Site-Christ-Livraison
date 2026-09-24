@@ -41,6 +41,21 @@
   ],
   "fiches": [
     {
+      "id": "l-argent",
+      "espace": "bureau",
+      "titre": "L'argent en deux écrans (et ce qui manque)",
+      "enBref": "Un onglet « Argent » : Remise du livreur · Reversement aux clientes · Ce qui manque · Rapports & compta — un geste par vue.",
+      "ou": "Espace équipe › Argent (ancien onglet Finances)",
+      "etapes": [
+        "Remise du livreur : la liste courte (qui, combien, depuis quand, en retard au-delà d'un jour) ; « Marquer comme remis » ouvre la remise avec l'annonce du livreur.",
+        "Reversement aux clientes : le net dû par cliente (montantNetADevoir), urgent dès 3 jours ; « Reverser » = le geste de la fiche cliente, reçu numéroté.",
+        "Ce qui manque : à remettre > 1 j, à reverser ≥ 3 j, écarts de remise (7 jours), annonces sans remise ; la pastille de l'onglet les compte."
+      ],
+      "aSavoir": "Règle : app/argent-a-suivre.js (seuils écrits une fois). Rien de nouveau en base ; les huit endroits d'avant sont rangés dans les quatre vues, rien n'est supprimé. Comparé à DHL eCommerce / Sendy : caisse et reversements tenus séparément, contrôlés par le gérant.",
+      "version": "v254",
+      "pourVous": "Le mardi : vue « Ce qui manque » (2 minutes) — c'est le contrôle du gérant."
+    },
+    {
       "id": "a-traiter",
       "espace": "bureau",
       "titre": "« À traiter » : une liste, un bouton « Que faire ? »",

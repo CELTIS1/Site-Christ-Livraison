@@ -1431,10 +1431,17 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    faire ? », qui n'ouvre que les issues possibles, chacune expliquée en une phrase (règle
    app/a-traiter.js ; écritures inchangées : lib/retours.js, reprogrammer.js). « Programmer » sur
    une demande ouvre Tournées sur le jour, pré-rempli. Chez le livreur, l'onglet Retours s'appelle
-   « À rendre ». Parcours a-traiter (18), le-colis-qui-revient et reprogrammer-un-colis adaptés. Étiquette 20260925atraiter. */
+   « À rendre ». Parcours a-traiter (18), le-colis-qui-revient et reprogrammer-un-colis adaptés. Étiquette 20260925atraiter.
+   v254, le 25/09/2026 — l'argent en deux écrans (chantier N, lot 14). L'onglet Finances devient
+   « Argent », en quatre vues : Remise du livreur (qui porte quoi, depuis quand, « Marquer comme
+   remis » ouvre la remise avec l'annonce), Reversement aux clientes (le net dû par cliente,
+   « Reverser » = le geste de la fiche, reçu numéroté), Ce qui manque (non remis > 1 j, non reversé
+   ≥ 3 j, écarts de remise sur 7 jours, annonces sans remise ; pastille sur l'onglet), Rapports &
+   compta (tout le reste, rangé). Règle app/argent-a-suivre.js, écran equipe/18-l-argent.js.
+   Parcours l-argent-en-deux-ecrans (14). Étiquette 20260925argent. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v253'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v254'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

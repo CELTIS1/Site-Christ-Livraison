@@ -298,13 +298,13 @@
         },
         {
           "id": "equipe-remise",
-          "titre": "Le point du soir : remises et argent",
-          "resume": "Le livreur annonce, le bureau compte et confirme. L'écart est écrit.",
+          "titre": "L'argent : remise du livreur, reversement aux clientes, ce qui manque",
+          "resume": "Un seul onglet « Argent », quatre vues. Chaque vue a son geste : Marquer comme remis, Reverser, aller à la ligne.",
           "etapes": [
-            "Le livreur annonce sa remise depuis son téléphone : encaissé − avancé de sa poche = à remettre.",
-            "Plus → Finances → Remises : comptez, confirmez. Un écart est enregistré tel quel.",
-            "Suivi → Corrections de montants : relire ce que les livreurs ont corrigé sur le terrain.",
-            "Finances → L'argent des clientes chez nous : reverser à une cliente, produire le reçu, corriger une erreur depuis les reçus."
+            "« Remise du livreur » : qui porte encore de l'argent, combien, depuis quand. « Marquer comme remis » ouvre la remise : attendu, ce qu'il a annoncé, reçu, écart. Le point du jour et l'historique suivent.",
+            "« Reversement aux clientes » : par cliente, les articles encaissés moins les frais retenus, depuis quand. « Reverser » choisit les colis et le mode, et écrit le reçu numéroté qu'elle reçoit.",
+            "« Ce qui manque » : non remis depuis plus d'un jour, non reversé depuis 3 jours, écarts de la semaine, annonces sans remise. Le chiffre sur l'onglet le compte ; un appui mène à la ligne.",
+            "« Rapports & compta » : vue par jour, par livreur, chaîne de l'argent, compta par cliente, exports, clôture, export mensuel — comme avant."
           ]
         },
         {

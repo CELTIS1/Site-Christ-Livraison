@@ -626,6 +626,7 @@
     cdOuvrirFiche(clientId);
     // Le point du jour compte le même argent : il doit suivre sans qu'on recharge la page.
     if (window.CLTPointDuJour && typeof window.CLTPointDuJour.rafraichir === 'function') window.CLTPointDuJour.rafraichir(true);
+    document.dispatchEvent(new CustomEvent('clt:argent-change'));
   }
   /* IMPRIMER UN REÇU. (18/09/2026, point 10.3) Le document est celui de papier-a-en-tete.js,
      le même que celui que la cliente télécharge de son côté : un seul papier pour une seule
@@ -673,6 +674,7 @@
     if (cdOuvrirFiche(clientId)) cdAmener('historique');
     // Le point du jour affiche le même argent : il doit le voir tout de suite.
     if (window.CLTPointDuJour && typeof window.CLTPointDuJour.rafraichir === 'function') window.CLTPointDuJour.rafraichir(true);
+    document.dispatchEvent(new CustomEvent('clt:argent-change'));
   }
 
   /* ELLE REND MAINTENANT VRAI OU FAUX. (19/09/2026, Celtis : « lorsqu'on clique ça ne se

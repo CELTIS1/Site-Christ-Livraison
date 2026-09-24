@@ -418,6 +418,7 @@ document.getElementById('remise-modal-form').addEventListener('submit', async (e
     showTeamToast(ecart === 0 ? '✅' : '⚠️', 'Remise enregistrée', detail, false);
   }
   renderCompta();
+  document.dispatchEvent(new CustomEvent('clt:argent-change'));
 });
 
 function closeOtherSections(exceptContentId){

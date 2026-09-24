@@ -129,6 +129,9 @@ titre('6. La chaîne de l\'argent (10.1) : où est l\'argent des articles, et de
 await page.locator('#cd-fiche-fermer').click();
 await dodo(500);
 await page.evaluate(() => showEquipeTab('finances'));
+await dodo(600);
+// 25/09/2026 (lot 14) : la chaîne vit dans la vue « Rapports & compta » de l'onglet Argent.
+await page.evaluate(() => argentChoisirVue('rapports'));
 await dodo(1800);
 const chaine = page.locator('#chaine-argent');
 verifier('quatre cases, dans l\'ordre où l\'argent voyage', (await chaine.locator('.cha-case').allInnerTexts()).map((t) => t.split('\n')[0].trim().toUpperCase()).join(' → ') === 'À ENCAISSER → CHEZ LE LIVREUR → EN CAISSE → REVERSÉ', (await chaine.locator('.cha-case').allInnerTexts()).join(' | ').slice(0, 300));
