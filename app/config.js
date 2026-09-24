@@ -3371,20 +3371,14 @@ function initSettingsMenu() {
     e.stopPropagation();
     dropdown.classList.toggle("open");
   });
+  // 24/09/2026 : le menu est une page Compte (clt-common.js). Elle ne se ferme que par son ←, le fond
+  // assombri (ordinateur), Échap ou le retour du téléphone — JAMAIS parce qu'on a ouvert une fenêtre
+  // depuis elle : « Mon compte », « Grille tarifaire », « Aide » s'ouvrent par-dessus, et se referment
+  // SUR la page Compte. Celtis : « quand tu fermes, il te retourne dans l'écran d'avant » — plus maintenant.
   document.addEventListener("click", (e) => {
-    if (dropdown.classList.contains("open") && !dropdown.contains(e.target) && e.target !== btn) {
-      dropdown.classList.remove("open");
-    }
+    if (dropdown.classList.contains("open") && e.target.closest && e.target.closest(".sd-fond")) dropdown.classList.remove("open");
   });
-  if (monCompteBtn) {
-    monCompteBtn.addEventListener("click", () => {
-      dropdown.classList.remove("open");
-      openAccountModal();
-    });
-  }
-  // « 📋 Grille tarifaire » (16/09/2026) : le menu se referme, la fenêtre s'ouvre (onclick de la page).
-  const tarifsBtn = document.getElementById("btn-tarifs");
-  if (tarifsBtn) tarifsBtn.addEventListener("click", () => dropdown.classList.remove("open"));
+  if (monCompteBtn) monCompteBtn.addEventListener("click", () => openAccountModal());
   if (closeBtn) closeBtn.addEventListener("click", closeAccountModal);
   if (overlay) {
     overlay.addEventListener("click", (e) => { if (e.target === overlay) closeAccountModal(); });

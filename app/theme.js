@@ -86,6 +86,14 @@
     // La solution de repli sur .user-info n'est pas décorative : insertBefore exige que le
     // repère soit un ENFANT DIRECT du conteneur visé. Si un écran n'a pas encore le groupe,
     // c'est .user-info qui est le parent de la roue, et l'insertion doit s'y faire.
+    // 24/09/2026 : quand l'espace a une page Compte (menu ☰), le thème se règle LÀ et seulement là :
+    // le bouton existe (la page l'actionne) mais ne s'affiche pas dans la barre du haut.
+    if (document.getElementById('settings-dropdown')) {
+      b.className = 'theme-toggle theme-toggle--entete hidden';
+      document.body.appendChild(b);
+      apply(resolved());
+      return;
+    }
     var groupeEntete = document.querySelector('.topbar .topbar-actions')
                     || document.querySelector('.topbar .user-info');
     var reglages = groupeEntete && groupeEntete.querySelector('.settings-menu');

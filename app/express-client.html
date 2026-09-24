@@ -17,13 +17,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924finition">
+<link rel="stylesheet" href="style.css?v=20260924reglages">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260924finition"></script>
+<script src="theme.js?v=20260924reglages"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260924finition" defer></script>
-<script src="cloche.js?v=20260924finition" defer></script>
-<script src="splash.js?v=20260924finition"></script>
+<script src="notifications-recues.js?v=20260924reglages" defer></script>
+<script src="cloche.js?v=20260924reglages" defer></script>
+<script src="splash.js?v=20260924reglages"></script>
 <style>
   /* ===== Thème violet CLT Express + rafraîchissement visuel (2026) ===== */
   :root{
@@ -624,10 +624,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260924finition"></script>
-<script src="express-config.js?v=20260924finition"></script>
-<script src="biometric-lock.js?v=20260924finition"></script>
-<script src="clt-select-recherche.js?v=20260924finition"></script>
+<script src="clt-common.js?v=20260924reglages"></script>
+<script src="express-config.js?v=20260924reglages"></script>
+<script src="biometric-lock.js?v=20260924reglages"></script>
+<script src="clt-select-recherche.js?v=20260924reglages"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1546,10 +1546,12 @@
     const closeBtn = document.getElementById('account-modal-close');
     if (!btn || !dropdown) return;
     btn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('open'); });
+    // 24/09/2026 : la page Compte ne se ferme que par son ←, le fond, Échap ou le retour ; les fenêtres
+    // ouvertes depuis elle se referment SUR elle (voir config.js).
     document.addEventListener('click', (e) => {
-      if (dropdown.classList.contains('open') && !dropdown.contains(e.target) && e.target !== btn) dropdown.classList.remove('open');
+      if (dropdown.classList.contains('open') && e.target.closest && e.target.closest('.sd-fond')) dropdown.classList.remove('open');
     });
-    if (monCompteBtn) monCompteBtn.addEventListener('click', () => { dropdown.classList.remove('open'); overlay.classList.remove('hidden'); });
+    if (monCompteBtn) monCompteBtn.addEventListener('click', () => { overlay.classList.remove('hidden'); });
     if (closeBtn) closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
     if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.add('hidden'); });
   }

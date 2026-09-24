@@ -4372,16 +4372,17 @@ html[data-theme="dark"] :is(td, th, strong, em, b, div.meta, p, li, span)[style*
 .settings-dropdown.sd{
   position:fixed; top:0; right:0; bottom:0; left:auto; width:min(380px, 100vw);
   max-width:none; max-height:none; height:auto; border-radius:0; border:none; padding:0 16px 32px;
-  background:var(--grey-bg); box-shadow:-12px 0 40px rgba(18,48,90,.18); z-index:3000;
+  background:var(--grey-bg); box-shadow:-12px 0 40px rgba(18,48,90,.18); z-index:950;   /* au-dessus des barres (100, 200), sous les fenêtres (1000+) qui s'ouvrent depuis elle */
   overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
   transform:translateX(100%); transition:transform .26s cubic-bezier(.2,.8,.2,1); visibility:hidden; display:block;
 }
 /* Fermée, elle disparaît tout de suite (la pile des couches lit la visibilité) ; ouverte, elle glisse. */
 .settings-dropdown.sd.open{ transform:none; visibility:visible; }
 @media(prefers-reduced-motion:reduce){ .settings-dropdown.sd{ transition:none; } }
-.sd-fond{ position:fixed; inset:0; background:rgba(18,50,82,.45); z-index:2990; opacity:0; visibility:hidden; transition:opacity .26s ease, visibility 0s linear .26s; }
+.sd-fond{ position:fixed; inset:0; background:rgba(18,50,82,.45); z-index:940; opacity:0; visibility:hidden; transition:opacity .26s ease, visibility 0s linear .26s; }
 html.sd-ouvert .sd-fond{ opacity:1; visibility:visible; transition:opacity .26s ease; }
 html.sd-ouvert{ overflow:hidden; }
+html.sd-ouvert .clt-haut{ display:none; }
 @media(max-width:760px){ .settings-dropdown.sd{ width:100vw; box-shadow:none; } .sd-fond{ display:none; } }
 
 /* L'en-tête : ←, photo, nom, rôle · numéro. */

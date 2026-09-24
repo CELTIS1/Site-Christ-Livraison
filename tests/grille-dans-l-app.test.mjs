@@ -34,13 +34,13 @@ for (const f of ['app/fournisseur.html', 'app/livreur.html', 'app/equipe.html', 
   verifier(f + ' : aucun onglet ajouté pour ça', !/data-(clttab|eqtab|tab)="tarifs"/.test(h));
 }
 verifier('la cliente voit d\'abord SA commune de départ (commune_recuperation)', /cltAfficherTarifs\(\{ depart: [^}]*commune_recuperation/.test(lire('app/fournisseur.html')));
-verifier('le menu se referme quand on ouvre la grille (config.js)', /btn-tarifs[\s\S]{0,200}classList\.remove\("open"\)/.test(lire('app/config.js')));
+verifier('depuis le 24/09 (page Compte, v249) la grille s\'ouvre PAR-DESSUS la page Compte : config.js ne referme plus le menu', !/btn-tarifs[\s\S]{0,200}classList\.remove\("open"\)/.test(lire('app/config.js')));
 
 console.log('\n3. La fenêtre : hors réseau, fermable, expédition et suppléments');
 const common = lire('app/clt-common.js');
 const bloc = common.slice(common.indexOf('function cltAfficherTarifs'), common.indexOf('window.cltAfficherTarifs'));
 verifier('aucune lecture réseau (pas de fetch ni de supabaseClient)', !/fetch\(|supabaseClient/.test(bloc));
-verifier('se ferme par ×, Échap et clic sur le fond', /Escape/.test(bloc) && /e\.target === ov/.test(bloc) && /fermer\.addEventListener/.test(bloc));
+verifier('se ferme par ×, clic sur le fond, et Échap via la pile de couches (data-clt-couche / data-clt-fermer), sans clavier à elle', /data-clt-couche/.test(bloc) && /data-clt-fermer/.test(bloc) && !/Escape/.test(bloc) && /e\.target === ov/.test(bloc) && /fermer\.addEventListener/.test(bloc));
 verifier('dit l\'expédition (2 500 – 3 000 F depuis Adjamé ou Yopougon, 3 000 F ailleurs) et les suppléments', /Adjamé" \|\| d === "Yopougon"/.test(bloc) && /2 500 – 3 000 F/.test(bloc) && /express \+ 1 500 F/.test(bloc));
 verifier('le style de la fenêtre existe (clt-tarifs__ligne, pastille, prix)', ['.clt-tarifs__ligne', '.clt-tarifs__pastille', '.clt-tarifs__prix', '.clt-tarifs__depart select'].every(c => lire('app/style.css').includes(c)));
 

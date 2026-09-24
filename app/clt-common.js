@@ -1638,11 +1638,12 @@ function cltAfficherNouveautes(options) {
   var corps = document.createElement("div"); corps.className = "clt-nouveautes__corps";
   corps.textContent = "Chargement…";
   boite.appendChild(tete); boite.appendChild(corps); ov.appendChild(boite);
-  function clore() { ov.remove(); document.removeEventListener("keydown", surTouche); }
-  function surTouche(e) { if (e.key === "Escape") clore(); }
+  function clore() { ov.remove(); }
+  // Une couche comme les autres (24/09/2026) : Échap et le retour du téléphone ferment CETTE fenêtre, pas
+  // la page Compte qui est dessous.
+  ov.setAttribute("data-clt-couche", ov.id || "Fenêtre"); fermer.setAttribute("data-clt-fermer", "");
   fermer.addEventListener("click", clore);
   ov.addEventListener("click", function (e) { if (e.target === ov) clore(); });
-  document.addEventListener("keydown", surTouche);
   document.body.appendChild(ov);
   fermer.focus();
   fetch(cltUrlACote("nouveautes.json"), { cache: "no-store" })
@@ -1715,11 +1716,12 @@ function cltAfficherAide(options) {
     + '<div class="clt-nouveautes__corps clt-aide__corps">Chargement…</div></div>';
   var corps = ov.querySelector(".clt-aide__corps");
   var champ = ov.querySelector("input");
-  function clore() { ov.remove(); document.removeEventListener("keydown", surTouche); if (/#aide=/.test(location.hash)) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} } }
-  function surTouche(e) { if (e.key === "Escape") clore(); }
+  function clore() { ov.remove(); if (/#aide=/.test(location.hash)) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} } }
+  // Une couche comme les autres (24/09/2026) : Échap et le retour du téléphone ferment CETTE fenêtre, pas
+  // la page Compte qui est dessous.
+  ov.setAttribute("data-clt-couche", ov.id || "Aide"); ov.querySelector(".clt-nouveautes__fermer").setAttribute("data-clt-fermer", "");
   ov.querySelector(".clt-nouveautes__fermer").addEventListener("click", clore);
   ov.addEventListener("click", function (e) { if (e.target === ov) clore(); });
-  document.addEventListener("keydown", surTouche);
   document.body.appendChild(ov);
 
   var esc = function (v) { return (typeof escapeHTML === "function") ? escapeHTML(String(v == null ? "" : v)) : String(v == null ? "" : v); };
@@ -1887,11 +1889,12 @@ function cltAfficherTarifs(options) {
   sel.addEventListener("change", dessiner); dessiner();
   corps.appendChild(choix); corps.appendChild(intro); corps.appendChild(liste); corps.appendChild(pied);
   boite.appendChild(tete); boite.appendChild(corps); ov.appendChild(boite); document.body.appendChild(ov);
-  function clore() { ov.remove(); document.removeEventListener("keydown", surTouche); }
-  function surTouche(e) { if (e.key === "Escape") clore(); }
+  function clore() { ov.remove(); }
+  // Une couche comme les autres (24/09/2026) : Échap et le retour du téléphone ferment CETTE fenêtre, pas
+  // la page Compte qui est dessous.
+  ov.setAttribute("data-clt-couche", ov.id || "Fenêtre"); fermer.setAttribute("data-clt-fermer", "");
   fermer.addEventListener("click", clore);
   ov.addEventListener("click", function (e) { if (e.target === ov) clore(); });
-  document.addEventListener("keydown", surTouche);
   return ov;
 }
 window.cltAfficherTarifs = cltAfficherTarifs;
@@ -2694,14 +2697,19 @@ window.cltCalerEnHaut = cltCalerEnHaut;
       const push = document.getElementById('btn-activer-push');
       const aide = document.getElementById('btn-aide');
       const theme = document.querySelector('.theme-toggle');
-      const sig = [!!compte, !!push, !!aide, !!theme].join('');
+      const nuit = document.documentElement.getAttribute('data-theme') === 'dark';
+      const sig = [!!compte, !!aide, !!theme, nuit].join('');
       if (sig === signature) return;   // rien de nouveau : on ne redessine pas (sinon l'observateur tournerait en rond)
       signature = sig;
       r.textContent = '';
       if (compte) { raccourci('👤', 'Compte', () => compte.click()); compte.classList.add('sd-cache'); }
-      if (push) { raccourci('🔔', 'Alertes', () => push.click()); push.classList.add('sd-cache'); }
+      // Pas de raccourci « Alertes » : la cloche est déjà sur l'écran principal (Celtis, 24/09). « Activer
+      // les notifications » reste une ligne de réglage dans la liste.
+      if (push) push.classList.remove('sd-cache');
       if (aide) { raccourci('❓', 'Aide', () => aide.click()); aide.classList.add('sd-cache'); }
-      if (theme) raccourci('🌓', 'Thème', () => { if (typeof window.cltBasculerTheme === 'function') window.cltBasculerTheme(); else theme.click(); });
+      // Le thème ne se règle qu'ici (le bouton lune a quitté la barre du haut) ; le raccourci dit l'état
+      // qu'on obtiendra : « Nuit » en mode jour, « Jour » en mode nuit.
+      if (theme) raccourci(nuit ? '☀️' : '🌙', nuit ? 'Jour' : 'Nuit', () => { if (typeof window.cltBasculerTheme === 'function') window.cltBasculerTheme(); else theme.click(); poser(); });
       r.classList.toggle('hidden', !r.children.length);
     };
     poser();
@@ -2724,6 +2732,7 @@ window.cltCalerEnHaut = cltCalerEnHaut;
     if (typeof MutationObserver === 'function') new MutationObserver(() => tout()).observe(menu, { childList: true, subtree: true });
     // Le fond assombri sur ordinateur, et le verrou du défilement de la page derrière.
     const fond = document.createElement('div'); fond.className = 'sd-fond'; document.body.appendChild(fond);
+    if (typeof MutationObserver === 'function') new MutationObserver(() => { if (menu.__sdPoser) menu.__sdPoser(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     const suivre = () => {
       const ouvert = menu.classList.contains('open');
       document.documentElement.classList.toggle('sd-ouvert', ouvert);

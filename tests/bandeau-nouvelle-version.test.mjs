@@ -1399,10 +1399,16 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    panneau qui s'ouvre fond en 180 ms (opacité seule), un bouton pressé s'enfonce, la page fond en
    entrée ; rythme : arrondi 16 px, cartes 16 × 14 px et 14 px d'écart sur téléphone, titres 16 px ; « réduire les
    animations » respecté. Charte d'écran v1 (chantier K) posée dans 08 - Application & Technique.
-   Étiquette 20260924finition. */
+   Étiquette 20260924finition.
+   v249, le 24/09/2026 — LA PAGE COMPTE, VRAI ESPACE DE RÉGLAGES (chantier N, lot 9). Ce qui
+   s'ouvre depuis la page (Mon compte, Aide, Grille tarifaire, Nouveautés) s'ouvre PAR-DESSUS et se
+   referme SUR la page, pas sur l'écran d'avant : ces fenêtres sont des couches (data-clt-couche /
+   data-clt-fermer), la page monte à z-index 950 et masque la barre du haut. Plus de raccourci
+   « Alertes » (la cloche est sur l'écran) ; le thème se règle ici et seulement ici (plus de lune
+   dans la barre). Parcours la-page-compte (26). Étiquette 20260924reglages. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v248'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v249'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
