@@ -728,7 +728,7 @@ function cltPrompt({ title, sub, placeholder, okLabel, inputMode, maxLength, def
           balayerOnglets(n);        // les onglets d'un écran construit après coup comptent aussi
         });
         // Une fenêtre qui s'en va (ov.remove()) ne change aucun attribut : c'est ici qu'on le voit.
-        if (lot.removedNodes.length) synchroniser();
+        if (lot.removedNodes && lot.removedNodes.length) synchroniser();
       });
     }).observe(document.body, { childList: true });
   }
