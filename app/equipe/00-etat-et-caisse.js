@@ -496,16 +496,7 @@ if (id === '__aucun') return !c.livreur_id;
 return c.livreur_id === id;
 }
 
-function matchesSearch(c, term){
-if (!term) return true;
-const t = term.toLowerCase();
-const desc = (c.description || '').toLowerCase();
-const dest = (c.destination || '').toLowerCase();
-const fourn = fournisseurLabel(c.fournisseur_id).toLowerCase();
-const numero = (c.numero || '').toLowerCase();
-const tel = (c.destinataire_telephone || '').toLowerCase();
-return desc.includes(t) || dest.includes(t) || fourn.includes(t) || numero.includes(t) || tel.includes(t);
-}
+function matchesSearch(c, term){ return cltColisCorrespond(c, term, fournisseurLabel(c.fournisseur_id)); }
 
 /* LA LISTE DU BUREAU EST LA SEULE À RÉPONDRE OUI AUX DEUX JOURS, ET C'EST VOULU (22/09/2026).
    Ce n'est pas un point — un point doit être EXACTEMENT ce qu'une personne a remis ce jour-là —

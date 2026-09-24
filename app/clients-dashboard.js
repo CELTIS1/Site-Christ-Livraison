@@ -300,8 +300,8 @@
   }
 
   function cdListeHTML(lignes) {
-    const q = cdRecherche.trim().toLowerCase();
-    let vis = lignes.filter((l) => !q || l.nom.toLowerCase().includes(q) || l.commune.toLowerCase().includes(q) || telNettoye(l.tel).includes(q.replace(/\s/g, '')));
+    const q = cltNormaliserTexte(cdRecherche);
+    let vis = lignes.filter((l) => !q || cltNormaliserTexte(l.nom).includes(q) || cltNormaliserTexte(l.commune).includes(q) || telNettoye(l.tel).includes(q.replace(/\s/g, '')));
     vis = cdTrier(vis);
     if (!vis.length) return `<div class="cd-vide">Aucune cliente ne correspond.</div>`;
     const lignesHTML = vis.map((l) => `

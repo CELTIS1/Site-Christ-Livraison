@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924partout">
+<link rel="stylesheet" href="style.css?v=20260924recherche">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260924partout"></script>
+<script src="theme.js?v=20260924recherche"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260924partout" defer></script>
-<script src="cloche.js?v=20260924partout" defer></script>
-<script src="splash.js?v=20260924partout"></script>
+<script src="notifications-recues.js?v=20260924recherche" defer></script>
+<script src="cloche.js?v=20260924recherche" defer></script>
+<script src="splash.js?v=20260924recherche"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -674,31 +674,31 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260924partout"></script>
-<script src="numero-international.js?v=20260924partout"></script>
-<script src="voir-un-compte.js?v=20260924partout"></script>
-<script src="lib/bibliotheques.js?v=20260924partout"></script>
-<script src="lib/retours.js?v=20260924partout"></script>
-<script src="lib/reclamations.js?v=20260924partout"></script>
-<script src="lib/communes-et-tarifs.js?v=20260924partout"></script>
-<script src="lib/argent.js?v=20260924partout"></script>
-<script src="lib/releve-cliente.js?v=20260924partout"></script>
-<script src="lib/papier-a-en-tete.js?v=20260924partout"></script>
-<script src="lib/briques-argent.js?v=20260924partout"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260924partout"></script>
-<script src="lib/traces-de-report.js?v=20260924partout"></script>
-<script src="lib/annonce-de-remise.js?v=20260924partout"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260924partout"></script>
-<script src="lib/primes.js?v=20260924partout"></script>
-<script src="lib/doublons.js?v=20260924partout"></script>
-<script src="config.js?v=20260924partout"></script>
-<script src="activite-de-la-cliente.js?v=20260924partout"></script>
-<script src="activite-ecran.js?v=20260924partout"></script>
-<script src="mes-boutiques.js?v=20260924partout"></script>
-<script src="etiquettes-et-scan.js?v=20260924partout"></script>
-<script src="import-de-colis.js?v=20260924partout"></script>
-<script src="biometric-lock.js?v=20260924partout"></script>
-<script src="clt-select-recherche.js?v=20260924partout"></script>
+<script src="clt-common.js?v=20260924recherche"></script>
+<script src="numero-international.js?v=20260924recherche"></script>
+<script src="voir-un-compte.js?v=20260924recherche"></script>
+<script src="lib/bibliotheques.js?v=20260924recherche"></script>
+<script src="lib/retours.js?v=20260924recherche"></script>
+<script src="lib/reclamations.js?v=20260924recherche"></script>
+<script src="lib/communes-et-tarifs.js?v=20260924recherche"></script>
+<script src="lib/argent.js?v=20260924recherche"></script>
+<script src="lib/releve-cliente.js?v=20260924recherche"></script>
+<script src="lib/papier-a-en-tete.js?v=20260924recherche"></script>
+<script src="lib/briques-argent.js?v=20260924recherche"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260924recherche"></script>
+<script src="lib/traces-de-report.js?v=20260924recherche"></script>
+<script src="lib/annonce-de-remise.js?v=20260924recherche"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260924recherche"></script>
+<script src="lib/primes.js?v=20260924recherche"></script>
+<script src="lib/doublons.js?v=20260924recherche"></script>
+<script src="config.js?v=20260924recherche"></script>
+<script src="activite-de-la-cliente.js?v=20260924recherche"></script>
+<script src="activite-ecran.js?v=20260924recherche"></script>
+<script src="mes-boutiques.js?v=20260924recherche"></script>
+<script src="etiquettes-et-scan.js?v=20260924recherche"></script>
+<script src="import-de-colis.js?v=20260924recherche"></script>
+<script src="biometric-lock.js?v=20260924recherche"></script>
+<script src="clt-select-recherche.js?v=20260924recherche"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -938,16 +938,7 @@
      sauf que les sections étaient déjà toutes dépliées au chargement (le repli est parti le 20/09/2026).
      Deux fois mort, donc, et pourtant exécuté à chaque chargement. Parti avec sa barre. */
 
-  function matchesSearch(c, term){
-    if (!term) return true;
-    const t = term.toLowerCase();
-    const desc = (c.description || '').toLowerCase();
-    const dest = (c.destination || '').toLowerCase();
-    const communeDest = (c.commune_destination || '').toLowerCase();
-    const numero = (c.numero || '').toLowerCase();
-    const tel = (c.destinataire_telephone || '').toLowerCase();
-    return desc.includes(t) || dest.includes(t) || communeDest.includes(t) || numero.includes(t) || tel.includes(t);
-  }
+  function matchesSearch(c, term){ return cltColisCorrespond(c, term, ''); }
 
   /* LES JOURNÉES DE LA CLIENTE S'ANCRENT SUR LE JOUR OÙ ELLE A REMIS LE COLIS, et ce jour-là ne
      bouge jamais. (22/09/2026, Celtis : « on fait le point de la vendeuse sur la base des colis
@@ -2857,11 +2848,19 @@
     const colis = K.filtrer(selection, { groupe: mbGroupe, recherche: mbRecherche }, mbRegles());
     const groupeNom = mbGroupe === 'retours' ? 'Retours' : ((mbRegles().groupes.find(g => g.cle === mbGroupe) || {}).label || '');
     const titre = (mbBoutiqueRegardee ? mbNomDe(mbBoutiqueRegardee) : 'Toutes les boutiques') + (groupeNom ? ' — ' + groupeNom.toLowerCase() : '');
-    detail.innerHTML = `
+    // 24/09/2026 : le champ de recherche n'est posé qu'une fois (sinon, sur téléphone, le clavier
+    // se fermait à chaque lettre) ; le titre et la liste, eux, se redessinent.
+    if (!detail.querySelector('#mb-recherche')) {
+      detail.innerHTML = `
       <div class="mb-colis-tete">
-        <h3>${escapeHTML(titre)} <span>${colis.length} colis</span></h3>
+        <h3 id="mb-titre"></h3>
         <input type="search" id="mb-recherche" class="mb-recherche" placeholder="Chercher : numéro, téléphone, commune…" value="${escapeHTML(mbRecherche)}" aria-label="Chercher un colis">
       </div>
+      <div id="mb-corps"></div>`;
+    }
+    document.getElementById('mb-titre').innerHTML = `${escapeHTML(titre)} <span>${colis.length} colis</span>`;
+    { const ch = document.getElementById('mb-recherche'); if (ch.value !== mbRecherche) { ch.value = mbRecherche; ch.dispatchEvent(new Event('search', { bubbles: true })); } }
+    document.getElementById('mb-corps').innerHTML = `
       <div class="mb-lecture">👁️ Lecture seule : ce que le gérant voit, sans pouvoir le modifier. Pour agir sur un colis, c'est le gérant ou CLT.${k.retours ? ` <button type="button" class="mb-lien" data-mb-groupe="retours">${k.retours} retour${k.retours > 1 ? 's' : ''} ce jour-là</button>` : ''}${(mbGroupe || mbRecherche) ? ' <button type="button" class="mb-lien" data-mb-tout="1">Tout afficher</button>' : ''}</div>
       ${colis.length ? `<div class="mb-colis">${colis.map(mbColisHTML).join('')}</div>` : `<div class="empty-state">${selection.length ? 'Aucun colis ne correspond.' : 'Aucun colis ce jour-là' + (mbBoutiqueRegardee ? ' pour cette boutique.' : '.')}</div>`}`;
   }
@@ -2922,15 +2921,11 @@
     const c = cible.closest('[data-mb-colis]');
     if (c) { mbColisOuvert = (mbColisOuvert === c.dataset.mbColis) ? null : c.dataset.mbColis; renderMesBoutiques(); }
   });
-  // La recherche filtre à la frappe, sans redessiner le champ (on perdrait le curseur) : seule
-  // la liste est refaite, et le champ reprend la main.
+  // La recherche filtre à la frappe : seule la liste est refaite, le champ ne bouge pas.
   document.addEventListener('input', (e) => {
     if (!e.target || e.target.id !== 'mb-recherche') return;
     mbRecherche = e.target.value; mbColisOuvert = null;
-    const debut = e.target.selectionStart;
     renderMesBoutiques();
-    const champ = document.getElementById('mb-recherche');
-    if (champ) { champ.focus(); try { champ.setSelectionRange(debut, debut); } catch (_e) { /* champ search sans sélection sur certains navigateurs */ } }
   });
   document.addEventListener('change', (e) => { if (e.target && e.target.id === 'mb-date') chargerColisDesBoutiques(); });
 

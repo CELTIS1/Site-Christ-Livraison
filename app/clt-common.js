@@ -206,7 +206,20 @@ function cltPoserHTML(element, html, empreinte) {
   // rien et il faut redessiner, sans quoi l'écran resterait blanc.
   if (__cltDernierHTML.get(element) === cle && element.childNodes.length) return false;
   __cltDernierHTML.set(element, cle);
+  // Un champ de saisie qui a le focus à l'intérieur (24/09/2026, Celtis : « on tape, mais rien ne
+  // cherche ») : on le redessine quand même, mais on lui rend son texte, son curseur et le focus.
+  // Sur téléphone, un champ détruit pendant la frappe fermait le clavier après la première lettre.
+  const actif = typeof document !== 'undefined' ? document.activeElement : null;
+  const garder = actif && element.contains(actif) && actif.id && /^(INPUT|TEXTAREA)$/.test(actif.tagName)
+    ? { id: actif.id, valeur: actif.value, debut: actif.selectionStart, fin: actif.selectionEnd } : null;
   element.innerHTML = html;
+  if (garder) {
+    const nouveau = document.getElementById(garder.id);
+    if (nouveau && element.contains(nouveau)) {
+      if (nouveau.value !== garder.valeur) nouveau.value = garder.valeur;
+      try { nouveau.focus({ preventScroll: true }); nouveau.setSelectionRange(garder.debut, garder.fin); } catch (e) { /* type sans curseur */ }
+    }
+  }
   return true;
 }
 
@@ -2059,6 +2072,24 @@ function cltNormaliserTexte(texte) {
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase().replace(/\s+/g, ' ').trim();
 }
+/* Un colis correspond-il à ce qu'on a tapé ? Une seule règle pour l'équipe, la cliente et le
+   livreur (24/09/2026 — avant, trois copies, sans accent ni téléphone avec espaces). Chaque mot
+   tapé doit se trouver quelque part : n° de suivi, description, destination, commune,
+   destinataire, téléphone (chiffres seuls : « 0708 » trouve « 07 08 … »), nom de la cliente. */
+function cltColisCorrespond(c, terme, libelleCliente) {
+  const q = cltNormaliserTexte(terme);
+  if (!q || !c) return true;
+  const texte = cltNormaliserTexte([c.numero, c.description, c.destination, c.commune_destination, c.destinataire_nom, c.destinataire_telephone, libelleCliente || ''].join(' '));
+  const tel = String(c.destinataire_telephone || '').replace(/\D/g, '');
+  const numeroNu = cltNormaliserTexte(c.numero).replace(/[^a-z0-9]/g, '');   // « 26091600052 » trouve CLT-260916-00052
+  return q.split(' ').every((m) => {
+    if (texte.indexOf(m) !== -1) return true;
+    const nu = m.replace(/[^a-z0-9]/g, '');
+    if (nu.length >= 4 && numeroNu.indexOf(nu) !== -1) return true;
+    const ch = m.replace(/\D/g, '');
+    return ch.length >= 3 && tel.indexOf(ch) !== -1;
+  });
+}
 function cltBrancherFiltreListe(champ, liste, options) {
   if (!champ || !liste || liste.dataset.cltFiltreBranche === '1') return;
   liste.dataset.cltFiltreBranche = '1';
@@ -2457,3 +2488,68 @@ function cltPoserBandeauVueCompte(compte) {
   document.documentElement.classList.add('clt-regarde-un-compte');
   try { document.title = '👁 ' + (compte.company_name || compte.full_name || 'Compte') + ' — CLT'; } catch (e) { /* rien */ }
 }
+
+/* ==========================================================================================
+   LA BARRE DE RECHERCHE — un seul composant pour les six espaces (24 septembre 2026)
+   Celtis : « il faut que les barres de recherche soient efficaces et qu'elles pointent là où il
+   faut […] et vers la fin, le signe de croix qu'on peut cliquer pour effacer directement, comme
+   c'est fait avec d'autres systèmes ». Chaque champ de recherche (input[type=search] ou
+   .search-input) reçoit, sans rien changer à sa page : une croix ✕ à droite (44 px, visible dès
+   qu'il y a du texte) qui vide le champ et relance la recherche ; Échap fait pareil. La croix du
+   navigateur (WebKit) est masquée pour ne pas en avoir deux. Les champs qui naissent plus tard
+   (listes redessinées) sont équipés au vol.
+   ========================================================================================== */
+(function () {
+  const SEL = 'input[type="search"], input.search-input';
+  function equiper(input) {
+    if (!input || input.dataset.cltRech === '1' || input.type === 'hidden') return;
+    input.dataset.cltRech = '1';
+    const wrap = document.createElement('span');
+    wrap.className = 'clt-rech';
+    // L'enveloppe prend la place que le champ avait (largeur maximale, part de flex) : la croix
+    // reste collée au bord du champ, pas au bord de la page.
+    try {
+      const cs = getComputedStyle(input);
+      if (cs.maxWidth && cs.maxWidth !== 'none') { wrap.style.maxWidth = cs.maxWidth; input.style.maxWidth = 'none'; }
+      if (input.parentNode && getComputedStyle(input.parentNode).display.indexOf('flex') !== -1) {
+        wrap.style.flex = cs.flex; wrap.style.minWidth = cs.minWidth; input.style.flex = 'none'; input.style.minWidth = '0';
+      }
+    } catch (e) { /* style illisible : l'enveloppe prend toute la largeur */ }
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const x = document.createElement('button');
+    x.type = 'button'; x.className = 'clt-rech-x'; x.setAttribute('aria-label', 'Effacer la recherche'); x.title = 'Effacer';
+    x.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z" fill="currentColor"/></svg>';
+    wrap.appendChild(x);
+    const montrer = () => { wrap.classList.toggle('clt-rech--pleine', !!input.value); };
+    const effacer = () => {
+      if (!input.value) return;
+      input.value = '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('search', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      montrer();
+    };
+    // mousedown plutôt que click : le champ garde le focus (le clavier du téléphone reste ouvert).
+    x.addEventListener('mousedown', (e) => { e.preventDefault(); effacer(); input.focus(); });
+    x.addEventListener('touchend', (e) => { e.preventDefault(); effacer(); input.focus(); }, { passive: false });
+    input.addEventListener('input', montrer);
+    input.addEventListener('search', montrer);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Escape' && input.value) { e.preventDefault(); e.stopPropagation(); effacer(); } });
+    montrer();
+  }
+  function equiperTout(racine) {
+    const r = racine && racine.querySelectorAll ? racine : document;
+    if (r !== document && r.matches && r.matches(SEL)) equiper(r);
+    r.querySelectorAll(SEL).forEach(equiper);
+  }
+  function demarrer() {
+    equiperTout(document);
+    if (typeof MutationObserver !== 'function') return;
+    new MutationObserver((mutations) => {
+      mutations.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType === 1) equiperTout(n); }));
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
+  window.cltEquiperRecherche = equiperTout;
+})();

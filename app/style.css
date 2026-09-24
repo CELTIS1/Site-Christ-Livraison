@@ -4299,3 +4299,16 @@ html[data-theme="dark"] .notif-ligne--non-lue .notif-corps{ color:#E6ECF3; }
 html[data-theme="dark"] .badge-trace{ background:#243247; color:#AEB9C7; border-color:#3A4B60; }
 html[data-theme="dark"] .finance-trace-nb{ color:#E8C391; }
 html[data-theme="dark"] .finance-traces-phrase{ background:#2a2114; border-color:#5a4520; border-left-color:#E08A2E; color:#E8C391; }
+
+/* ---------- LA BARRE DE RECHERCHE : une croix pour effacer (24/09/2026, clt-common.js) ---------- */
+.clt-rech{ position:relative; display:block; flex:1 1 auto; min-width:0; }
+.clt-rech > input{ width:100%; padding-right:44px !important; box-sizing:border-box; }
+.clt-rech > input::-webkit-search-cancel-button, .clt-rech > input::-webkit-search-decoration{ -webkit-appearance:none; appearance:none; display:none; }
+.clt-rech-x{
+  position:absolute; right:0; top:50%; transform:translateY(-50%); width:44px; height:44px; margin:0; padding:0;
+  border:0; background:transparent; color:var(--muted); cursor:pointer; display:none; align-items:center; justify-content:center; border-radius:50%;
+}
+.clt-rech--pleine > .clt-rech-x{ display:flex; }
+.clt-rech-x:hover, .clt-rech-x:focus-visible{ color:var(--navy); outline:none; }
+.clt-rech-x:focus-visible{ box-shadow:0 0 0 3px var(--orange-light); }
+html[data-theme="dark"] .clt-rech-x:hover{ color:#fff; }

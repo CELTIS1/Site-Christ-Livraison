@@ -125,8 +125,8 @@ return { id, nb: list.length, nbLivres: t.nbLivres, reste: money.reste, remis: m
 // passe les appels le soir. À égalité, celui qui a le plus de colis en attente.
 lignes.sort((a, b) => (b.reste - a.reste) || ((b.nb - b.nbLivres) - (a.nb - a.nbLivres)));
 
-const q = recaplSearchText.trim().toLowerCase();
-if (q) lignes = lignes.filter(l => livreurNomSimple(l.id).toLowerCase().includes(q));
+const q = cltNormaliserTexte(recaplSearchText);
+if (q) lignes = lignes.filter(l => { const p = livreurs.find(x => x.id === l.id); return cltNormaliserTexte(livreurNomSimple(l.id) + ' ' + (p && p.phone ? p.phone : '')).indexOf(q) !== -1; });
 
 const totalAssignes = assignes.length;
 const totalLivres = totauxArgent(assignes).nbLivres;
@@ -142,11 +142,23 @@ ${recaplResteHTML(l.reste)}
 </span>
 </button>`).join('');
 
-if (!cltPoserHTML(body, `
+// 24/09/2026 : trois zones fixes (haut, champ jamais redessiné, liste) — voir renderRecapBody.
+if (!body.querySelector(':scope > .recap-zones')) {
+cltPoserHTML(body, `<div class="recap-zones"><div id="recapl-haut"></div><div id="recapl-recherche"></div><div id="recapl-liste"></div></div>`);
+}
+cltPoserHTML(document.getElementById('recapl-haut'), `
 <div class="recap-day-summary">${dateLabel} · <strong>${nbLivreurs}</strong> livreur${nbLivreurs > 1 ? 's' : ''} · <strong>${totalLivres}</strong> / <strong>${totalAssignes}</strong> colis livré${totalAssignes > 1 ? 's' : ''}</div>
-<div class="recap-search-wrap">
+`);
+if (!document.getElementById('recapl-search')) {
+cltPoserHTML(document.getElementById('recapl-recherche'), `<div class="recap-search-wrap">
 <input type="search" id="recapl-search" class="recap-search" placeholder="Rechercher un livreur…" value="${escapeHTML(recaplSearchText)}">
-</div>
+</div>`);
+const input = document.getElementById('recapl-search');
+input.addEventListener('input', () => { recaplSearchText = input.value; renderRecapLivreurBody(); });
+input.addEventListener('search', () => { recaplSearchText = input.value; renderRecapLivreurBody(); });
+}
+const zoneListe = document.getElementById('recapl-liste');
+if (!cltPoserHTML(zoneListe, `
 ${lignes.length ? `<div class="recap-client-list">${cards}</div>` : `<div class="empty-state">Aucun livreur ne correspond à « ${escapeHTML(recaplSearchText)} ».</div>`}
 <div class="recapl-total">
 <span>TOTAL — ${nbLivreurs} livreur${nbLivreurs > 1 ? 's' : ''}</span>
@@ -158,16 +170,7 @@ La ligne TOTAL porte sur <strong>tous</strong> les livreurs de la journée, y co
 Le montant « à remettre » sort du même calcul que la <strong>Caisse par livreur</strong> de la comptabilité : les deux écrans ne peuvent pas donner deux sommes différentes.
 </div></details>`)) return;
 
-const input = document.getElementById('recapl-search');
-if (input) input.addEventListener('input', () => {
-recaplSearchText = input.value;
-const pos = input.selectionStart;
-renderRecapLivreurBody();
-const again = document.getElementById('recapl-search');
-if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) {} }
-});
-
-body.querySelectorAll('.recap-client-card').forEach(btn => {
+zoneListe.querySelectorAll('.recap-client-card').forEach(btn => {
 btn.addEventListener('click', () => {
 recaplSelectedLivreur = btn.dataset.lid;
 renderRecapLivreurBody();

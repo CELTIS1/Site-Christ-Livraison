@@ -214,8 +214,8 @@
   }
 
   function ldListeHTML(lignes) {
-    const q = ldRecherche.trim().toLowerCase();
-    const filtrees = ldTrier(lignes.filter((l) => !q || String(l.profil.full_name || '').toLowerCase().includes(q) || String(l.profil.phone || '').includes(q)));
+    const q = cltNormaliserTexte(ldRecherche);
+    const filtrees = ldTrier(lignes.filter((l) => !q || cltNormaliserTexte(l.profil.full_name).includes(q) || String(l.profil.phone || '').replace(/\s/g, '').includes(q.replace(/\s/g, ''))));
     if (!filtrees.length) return '<div class="empty-state">Aucun livreur ne correspond.</div>';
     /* L'HABILLAGE DU TABLEAU — 21/09/2026, Celtis : « dans l'onglet personnes, les livreurs sont
        listés mais pas bien espacés et on peut les confondre ».

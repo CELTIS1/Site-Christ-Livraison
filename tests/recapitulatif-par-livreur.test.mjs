@@ -330,8 +330,9 @@ verifier("le récapitulatif se redessine avec les autres tableaux de la page",
 
 verifier("il ne se réécrit pas quand rien n'a changé",
   /if \(!cltPoserHTML\(body, renderRecapLivreurBilan\(/.test(listeLivreur)
-  && /if \(!cltPoserHTML\(body, `/.test(listeLivreur),
-  "redessiner un contenu identique efface la recherche en cours de frappe");
+  && /if \(!cltPoserHTML\(zoneListe, `/.test(listeLivreur)
+  && /if \(!document\.getElementById\('recapl-search'\)\)/.test(listeLivreur),
+  "redessiner un contenu identique efface la recherche en cours de frappe ; depuis le 24/09, le champ n'est même plus dans la zone redessinée");
 
 /* ============================================================================================
    5. LE HAUT DE LA FICHE « SON ÉCRAN » EST ATTEIGNABLE SUR UN TÉLÉPHONE

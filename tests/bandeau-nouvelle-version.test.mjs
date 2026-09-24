@@ -1352,10 +1352,18 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    aussi depuis Gestion ; passage et reçu → carte et Récap de la cliente), l'écran cliente ouvre
    « ?passage= » et « ?reversement= » (cltFocusElementFromUrl, config.js). Le parcours de la cloche
    a fait tomber un bogue caché depuis v196 : la liste Express de l'équipe lisait une variable
-   disparue (commissionDue) et tombait dès qu'une course existait — retirée. Étiquette 20260924partout. */
+   disparue (commissionDue) et tombait dès qu'une course existait — retirée. Étiquette 20260924partout.
+   v243, le 24/09/2026 — LES BARRES DE RECHERCHE. Celtis : « quand on clique pour chercher, ça ne
+   sélectionne pas ; on tape, mais rien ne cherche ; et vers la fin, le signe de croix pour effacer ».
+   Cause : cinq barres (Suivi clientes/livreurs, Mes boutiques, Personnes clientes/livreurs) étaient
+   détruites et redessinées à chaque lettre — sur téléphone, le clavier se fermait. Désormais un
+   seul composant (clt-common.js) équipe chaque champ : croix ✕ 44 px, Échap, et une seule règle
+   « un colis correspond » (cltColisCorrespond : sans accent, téléphone sans espaces, n° sans
+   tirets) remplace trois copies ; les champs ne sont plus jamais redessinés pendant la frappe
+   (zones fixes), et cltPoserHTML rend le focus en filet de sécurité. Étiquette 20260924recherche. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v242'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v243'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

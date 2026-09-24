@@ -1240,8 +1240,9 @@ let clients = Object.values(parClient)
 .map(c => ({ id: c.id, nb: c.colis.length, t: totauxArgent(c.colis) }))
 .sort((a, b) => b.nb - a.nb);
 
-const q = recapSearchText.trim().toLowerCase();
-if (q) clients = clients.filter(c => fournisseurLabelPlain(c.id).toLowerCase().includes(q));
+// Sans accent ni majuscule, sur le nom ET le téléphone (24/09/2026).
+const q = cltNormaliserTexte(recapSearchText);
+if (q) clients = clients.filter(c => { const p = fournisseurs.find(x => x.id === c.id); return cltNormaliserTexte(fournisseurLabelPlain(c.id) + ' ' + (p && p.phone ? p.phone : '')).indexOf(q) !== -1; });
 
 const dateLabel = recapDayLabel(recapGetDate());
 const totalColis = colisJour.length;
@@ -1284,9 +1285,15 @@ const ligneEnvoyes = marques
 
 const tJour = totauxArgent(colisJour);
 
-// Ce bloc contient un champ de recherche. Le réécrire à l'identique toutes les 25 secondes
-// suffisait à faire perdre le curseur et les lettres en train d'être tapées dedans.
-if (!cltPoserHTML(body, `
+// Ce bloc contient un champ de recherche. 24/09/2026 (Celtis : « on tape, mais rien ne cherche ») :
+// sur téléphone, redessiner le champ à chaque lettre fermait le clavier. Trois zones fixes,
+// posées une fois : le haut (résumé, export), le champ (jamais redessiné), la liste (la seule qui
+// bouge en tapant). La vue « bilan » et l'état vide remplacent tout, et les zones renaissent.
+if (!body.querySelector(':scope > .recap-zones')) {
+cltPoserHTML(body, `<div class="recap-zones"><div id="recap-haut"></div><div id="recap-recherche"></div><div id="recap-liste"></div></div>`);
+}
+const zoneHaut = document.getElementById('recap-haut'), zoneRech = document.getElementById('recap-recherche'), zoneListe = document.getElementById('recap-liste');
+if (cltPoserHTML(zoneHaut, `
 <div class="recap-day-summary">${dateLabel} · <strong>${totalClients}</strong> cliente${totalClients > 1 ? 's' : ''} · <strong>${totalColis}</strong> colis · <strong>${tJour.nbLivres}</strong> livré${tJour.nbLivres > 1 ? 's' : ''}</div>
 <div class="recap-day-money">
 Articles enregistrés : <strong>${formatMontant(tJour.articleEnregistre) || '0 FCFA'}</strong> ·
@@ -1294,13 +1301,10 @@ Articles encaissés : <strong>${formatMontant(tJour.articleEncaisse) || '0 FCFA'
 Frais de livraison CLT : <strong>${formatMontant(tJour.recetteLivraison) || '0 FCFA'}</strong>
 </div>
 ${ligneEnvoyes}
-${recapExportBarHTML()}
-${recapSearchBarHTML()}
-${clients.length ? `<div class="recap-client-list">${cards}</div>` : `<div class="empty-state">Aucune cliente ne correspond à « ${escapeHTML(recapSearchText)} ».</div>`}`)) return;
-
-wireRecapExport();
-wireRecapSearch();
-body.querySelectorAll('.recap-client-card').forEach(btn => {
+${recapExportBarHTML()}`)) wireRecapExport();
+if (!document.getElementById('recap-search')) { cltPoserHTML(zoneRech, recapSearchBarHTML()); wireRecapSearch(); }
+if (!cltPoserHTML(zoneListe, clients.length ? `<div class="recap-client-list">${cards}</div>` : `<div class="empty-state">Aucune cliente ne correspond à « ${escapeHTML(recapSearchText)} ».</div>`)) return;
+zoneListe.querySelectorAll('.recap-client-card').forEach(btn => {
 btn.addEventListener('click', () => {
 recapSelectedFournisseur = btn.dataset.fid;
 renderRecapBody();
@@ -1315,17 +1319,12 @@ return `
 </div>`;
 }
 
-// Ré-rend la liste à chaque frappe tout en conservant le focus et la position du curseur.
+// Ne redessine que la liste (zone #recap-liste) : le champ, lui, ne bouge jamais.
 function wireRecapSearch(){
 const input = document.getElementById('recap-search');
 if (!input) return;
-input.addEventListener('input', () => {
-recapSearchText = input.value;
-const pos = input.selectionStart;
-renderRecapBody();
-const again = document.getElementById('recap-search');
-if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) {} }
-});
+input.addEventListener('input', () => { recapSearchText = input.value; renderRecapBody(); });
+input.addEventListener('search', () => { recapSearchText = input.value; renderRecapBody(); });
 }
 
 // Bilan détaillé d'une cliente : ses colis du jour, colonnes téléphone / adresse / statut /
