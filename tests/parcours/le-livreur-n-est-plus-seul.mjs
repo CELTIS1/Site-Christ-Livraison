@@ -31,7 +31,10 @@ titre('1. Le menu du livreur : joindre CLT, signaler un problème');
 await N.ouvrirConnecte('livreur.html', LIVREUR);
 await dodo(1200);
 const menu = page.locator('#settings-dropdown');
+// Depuis le 24/09/2026 le menu est une page (visibilité cachée tant qu'elle est fermée) : on l'ouvre pour lire.
+await page.locator('#settings-menu-btn').click(); await dodo(500);
 verifier('« Besoin d\'aide » : Signaler un problème, Appeler CLT, Autre ligne, WhatsApp', (await menu.locator('#btn-signaler-livreur').count()) === 1 && /07 79 60 47 61/.test(await menu.locator('#lien-appeler-clt').innerText()) && (await menu.locator('#lien-whatsapp-clt').getAttribute('href') || '').startsWith('https://wa.me/'), await texte(menu));
+await page.keyboard.press('Escape'); await dodo(300);
 
 titre('2. « À rendre » : le retour dans le sac a sa pastille');
 const chipRendre = page.locator('#filters-mes .filter-chip[data-filter="a_rendre"]');

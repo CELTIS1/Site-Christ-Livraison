@@ -4362,3 +4362,77 @@ html[data-theme="dark"] :is(td, th, strong, em, b, div.meta, p, li, span)[style*
 html[data-theme="dark"] :is(td, th, strong, em, b, div.meta, p, li)[style*="color:#1a7d3c"]:not([style*="background"]){ color:#5FD98A !important; }
 html[data-theme="dark"] :is(td, th, strong, em, b, div.meta, p, li, span)[style*="color:#A84608"]:not([style*="background"]),
 html[data-theme="dark"] :is(td, th, strong, em, b, div.meta, p, li, span)[style*="color:#BF5210"]:not([style*="background"]){ color:#F6A25B !important; }
+
+/* ==========================================================================================
+   LA PAGE COMPTE (24/09/2026, chantier N lot 7) — le menu ☰ devient une page, comme chez Yango.
+   Téléphone : pleine page qui glisse depuis la droite. Ordinateur : panneau de 380 px à droite,
+   fond assombri. Les groupes sont des cartes, chaque action une ligne de 56 px avec son icône
+   dans un rond et un chevron. Voir clt-common.js (« LA PAGE COMPTE »).
+   ========================================================================================== */
+.settings-dropdown.sd{
+  position:fixed; top:0; right:0; bottom:0; left:auto; width:min(380px, 100vw);
+  max-width:none; max-height:none; height:auto; border-radius:0; border:none; padding:0 16px 32px;
+  background:var(--grey-bg); box-shadow:-12px 0 40px rgba(18,48,90,.18); z-index:3000;
+  overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  transform:translateX(100%); transition:transform .26s cubic-bezier(.2,.8,.2,1); visibility:hidden; display:block;
+}
+/* Fermée, elle disparaît tout de suite (la pile des couches lit la visibilité) ; ouverte, elle glisse. */
+.settings-dropdown.sd.open{ transform:none; visibility:visible; }
+@media(prefers-reduced-motion:reduce){ .settings-dropdown.sd{ transition:none; } }
+.sd-fond{ position:fixed; inset:0; background:rgba(18,50,82,.45); z-index:2990; opacity:0; visibility:hidden; transition:opacity .26s ease, visibility 0s linear .26s; }
+html.sd-ouvert .sd-fond{ opacity:1; visibility:visible; transition:opacity .26s ease; }
+html.sd-ouvert{ overflow:hidden; }
+@media(max-width:760px){ .settings-dropdown.sd{ width:100vw; box-shadow:none; } .sd-fond{ display:none; } }
+
+/* L'en-tête : ←, photo, nom, rôle · numéro. */
+.sd-tete{ position:relative; text-align:center; padding:14px 0 6px; }
+.sd .sd-retour{
+  position:absolute; left:-4px; top:10px; width:44px; height:44px; min-height:0; padding:0; border:none; background:none; border-radius:50%;
+  color:var(--navy); cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.sd-retour::before{ content:""; width:12px; height:12px; border-left:2.5px solid currentColor; border-bottom:2.5px solid currentColor; transform:translateX(3px) rotate(45deg); border-radius:1px; }
+.sd-retour:hover{ background:rgba(27,67,116,.08); }
+.sd-avatar{ width:88px; height:88px; border-radius:50%; margin:6px auto 10px; background:#BF5210; color:#fff; font-size:30px; font-weight:800; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 6px 18px rgba(18,48,90,.15); }
+.sd-avatar img, .sd-avatar .avatar, .sd-avatar .avatar-placeholder{ width:100% !important; height:100% !important; border-radius:50%; object-fit:cover; font-size:30px !important; border:none !important; background:#BF5210 !important; }
+.sd-nom{ font-size:22px; font-weight:800; color:var(--navy); letter-spacing:-.01em; line-height:1.15; }
+.sd-sous{ font-size:14px; color:var(--muted); margin-top:4px; }
+/* Les quatre raccourcis ronds. */
+.sd-raccourcis{ display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin:14px 0 18px; }
+.sd-raccourcis.hidden{ display:none; }
+.sd-rac{ border:none; background:none; padding:4px 0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:7px; font-family:inherit; color:var(--navy); }
+.sd-rac-ico{ width:56px; height:56px; border-radius:50%; background:var(--white); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 2px 8px rgba(18,48,90,.08); transition:transform .15s ease, background .15s ease; }
+.sd-rac:hover .sd-rac-ico, .sd-rac:active .sd-rac-ico{ transform:scale(.96); background:#EEF2F8; }
+.sd-rac-txt{ font-size:12.5px; font-weight:600; }
+/* Les cartes et leurs lignes. */
+.sd .settings-groupe{ background:var(--white); border-radius:18px; padding:4px; margin:0 0 12px; border:none; }
+.sd .settings-groupe + .settings-groupe{ margin-top:0; padding-top:4px; border-top:none; }
+.sd .settings-groupe-titre{ padding:8px 12px 4px; }
+.sd .settings-groupe > button, .sd .settings-groupe > a, .sd > button, .sd > a{
+  min-height:56px; padding:8px 8px 8px 10px; border-radius:14px; font-size:15px; font-weight:600; gap:12px; position:relative;
+}
+.sd .settings-groupe > button + button, .sd .settings-groupe > a + a, .sd .settings-groupe > button + a, .sd .settings-groupe > a + button{ margin-top:0; }
+.sd .settings-groupe > :not(:first-child):not(.settings-groupe-titre):not(.hidden)::before{
+  content:""; position:absolute; left:62px; right:12px; top:0; height:1px; background:var(--border);
+}
+.sd .settings-groupe-titre + *::before{ display:none; }
+.sd-ico{ width:40px; height:40px; border-radius:50%; background:var(--grey-bg); display:inline-flex; align-items:center; justify-content:center; font-size:18px; flex:0 0 40px; }
+.sd-txt{ flex:1 1 auto; min-width:0; }
+.sd-chev{ width:10px; height:10px; border-right:2px solid var(--muted); border-bottom:2px solid var(--muted); transform:rotate(-45deg); margin-right:8px; flex:0 0 auto; opacity:.7; }
+.sd .settings-dropdown button.danger .sd-ico, .sd button.danger .sd-ico{ background:#fceceb; }
+.sd .sd-cache{ display:none !important; }
+/* Un groupe dont toutes les lignes sont parties dans les raccourcis n'affiche pas un titre pour rien. */
+.sd .settings-groupe:not(:has(> :is(button, a):not(.sd-cache):not(.hidden))){ display:none; }
+.sd .settings-groupe--attente{ background:#fdf6e8; }
+/* Nuit */
+html[data-theme="dark"] .settings-dropdown.sd{ background:#0F1824; box-shadow:-12px 0 40px rgba(0,0,0,.5); }
+html[data-theme="dark"] .sd-retour{ color:#E6ECF3; }
+html[data-theme="dark"] .sd-nom{ color:#E6ECF3; }
+html[data-theme="dark"] .sd-rac{ color:#E6ECF3; }
+html[data-theme="dark"] .sd-rac-ico{ background:#1B2635; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+html[data-theme="dark"] .sd-rac:hover .sd-rac-ico{ background:#243247; }
+html[data-theme="dark"] .sd .settings-groupe{ background:#1B2635; }
+html[data-theme="dark"] .sd-ico{ background:#243247; }
+html[data-theme="dark"] .sd .settings-groupe > :not(:first-child)::before{ background:#2A3849; }
+html[data-theme="dark"] .sd button.danger .sd-ico{ background:#3a2320; }
+.sd-ico--wa{ background:#E8F8EE; }
+html[data-theme="dark"] .sd-ico--wa{ background:#173A25; }

@@ -1384,10 +1384,19 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    40 px, téléphone des retours 36 px, tablette : huit onglets sur deux lignes, tableaux en cartes
    jusqu'à 800 px. Gestion (32 écrans) : gris #8a94a3 → #5b6573, vert/rouge/ambre assombris. Express client et
    coursier : teal « encre » #0F766E, chips et boutons ≥ 40 px, fermeture de la fenêtre Compte 44 px.
-   Étiquette 20260924crible. */
+   Étiquette 20260924crible.
+   v247, le 24/09/2026 — LA PAGE COMPTE (chantier N, lot 7). Celtis, capture de Yango : « là,
+   c'est très bien disposé, et ça prend carrément la page ». Le menu ☰ (settings-dropdown) devient
+   une page pleine sur téléphone (glisse depuis la droite, ←) et un panneau de 380 px à droite sur
+   ordinateur (fond assombri) : photo, nom, rôle · numéro, quatre raccourcis ronds (Compte, Alertes,
+   Aide, Thème), les groupes en cartes, une ligne de 56 px par action avec icône et chevron. Mêmes
+   boutons, mêmes ids, mêmes écouteurs : clt-common.js les habille (« LA PAGE COMPTE ») et pose le
+   menu sous <body> (la barre du haut avait son propre contexte d'empilement). Couche déclarée :
+   Échap et retour du téléphone la ferment. « WhatsApp » tout court, bulle verte dessinée.
+   Parcours la-page-compte (20). Étiquette 20260924compte. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v246'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v247'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

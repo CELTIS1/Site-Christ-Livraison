@@ -69,11 +69,13 @@
     var b = document.createElement('button');
     b.id = 'cltThemeToggle';
     b.type = 'button';
-    b.addEventListener('click', function () {
+    function basculer() {
       var next = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
       try { localStorage.setItem(KEY, next); } catch (e) {}
       apply(next);
-    });
+    }
+    b.addEventListener('click', basculer);
+    window.cltBasculerTheme = basculer;   // la page Compte (clt-common.js) bascule sans passer par un clic
 
     // On vise le groupe de droite de l'en-tête (avatar, nom, rôle, réglages) et
     // on s'insère juste AVANT la roue dentée : le réglage d'éclairage se lit

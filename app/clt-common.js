@@ -2212,7 +2212,8 @@ function cltBrancherContact() {
   const tel2 = document.getElementById('lien-appeler-clt-2');
   if (tel2) { tel2.setAttribute('href', 'tel:' + CLT_CONTACT.telSecond); tel2.textContent = '📞 Autre ligne · ' + CLT_CONTACT.afficheSecond; }
   const wa = document.getElementById('lien-whatsapp-clt');
-  if (wa) { wa.setAttribute('href', 'https://wa.me/' + CLT_CONTACT.whatsapp); wa.textContent = '🟢 Écrire sur WhatsApp · ' + CLT_CONTACT.afficheWhatsapp; }
+  // 24/09/2026, Celtis : « juste WhatsApp » — un appui ouvre la conversation, le numéro n'a pas à s'afficher.
+  if (wa) { wa.setAttribute('href', 'https://wa.me/' + CLT_CONTACT.whatsapp); wa.textContent = 'WhatsApp'; wa.title = CLT_CONTACT.afficheWhatsapp; }
 }
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cltBrancherContact);
@@ -2608,3 +2609,129 @@ function cltCalerEnHaut(el) {
   if (typeof cltGarderEnVue === 'function') cltGarderEnVue(el, 4000, 'start');
 }
 window.cltCalerEnHaut = cltCalerEnHaut;
+
+/* ==========================================================================================
+   LA PAGE COMPTE (24 septembre 2026, chantier N lot 7)
+   Celtis, capture de Yango à l'appui : « là, c'est très bien disposé, et ça prend carrément la
+   page ». Le menu ☰ de chaque espace était un menu déroulant serré sous le bouton. Il devient
+   une PAGE : pleine sur téléphone (elle glisse depuis la droite, ← pour revenir), panneau latéral
+   de 380 px sur ordinateur. En tête, la photo (ou les initiales), le nom, le rôle, le numéro ;
+   dessous quatre raccourcis ronds (Compte, Alertes, Aide, Thème) ; puis les groupes d'aujourd'hui
+   en cartes, une ligne par action — icône dans un rond, libellé, chevron.
+   RIEN ne change dans ce que font les boutons : ce sont les mêmes éléments, aux mêmes
+   identifiants, avec les mêmes écouteurs. On ne fait que les habiller (des <span> autour du
+   texte) et poser une en-tête devant. Les boutons qui naissent plus tard (Aide, Installer)
+   sont habillés au vol.
+   ========================================================================================== */
+(function () {
+  if (typeof document === 'undefined') return;
+  const PICTO = /^(\p{Extended_Pictographic}(?:️)?(?:‍\p{Extended_Pictographic})*)\s*/u;
+  function habiller(el) {
+    if (!el || el.dataset.sd === '1' || el.classList.contains('sd-retour') || el.closest('.sd-tete, .sd-raccourcis')) return;
+    el.dataset.sd = '1';
+    const texte = (el.textContent || '').trim();
+    const m = texte.match(PICTO);
+    let picto = m ? m[1] : '•';
+    const libelle = m ? texte.slice(m[0].length) : texte;
+    // WhatsApp : une bulle verte dessinée, pas un rond vert (le logo de la marque n'est pas à nous).
+    if (el.id === 'lien-whatsapp-clt') picto = '';
+    // On garde les nœuds d'origine hors du chemin ? Non : on remplace le texte par trois spans.
+    // Les écouteurs sont sur l'élément lui-même, pas sur son texte : ils restent.
+    el.textContent = '';
+    const i = document.createElement('span'); i.className = 'sd-ico'; i.setAttribute('aria-hidden', 'true');
+    if (picto) i.textContent = picto;
+    else { i.classList.add('sd-ico--wa'); i.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z" fill="#25D366"/><path d="M9.2 8.2c.2-.4.4-.4.7-.4h.5c.2 0 .4 0 .6.4l.8 1.9c.1.2.1.4 0 .6l-.5.7c-.1.2-.2.3 0 .6.4.7 1 1.4 1.7 1.9.3.2.5.3.7.4l.7-.6c.2-.2.4-.2.7 0l1.8.9c.3.1.4.3.4.5 0 .6-.3 1.3-.9 1.6-.5.3-1.2.4-1.9.2-1.6-.5-3.1-1.6-4.3-3.2-.9-1.1-1.4-2.2-1.5-3.2 0-.9.2-1.7.5-2.3z" fill="#fff"/></svg>'; }
+    const t = document.createElement('span'); t.className = 'sd-txt'; t.textContent = libelle;
+    const c = document.createElement('span'); c.className = 'sd-chev'; c.setAttribute('aria-hidden', 'true');
+    el.appendChild(i); el.appendChild(t); el.appendChild(c);
+  }
+  function tete(menu) {
+    if (menu.querySelector('.sd-tete')) return;
+    const nom = (document.getElementById('user-name') || {}).textContent || '';
+    const role = (document.querySelector('.topbar .role-pill') || {}).textContent || '';
+    const avatarSrc = document.getElementById('user-avatar-topbar');
+    const t = document.createElement('div');
+    t.className = 'sd-tete';
+    t.innerHTML = '<button type="button" class="sd-retour" aria-label="Revenir" data-clt-fermer></button>'
+      + '<div class="sd-avatar"></div>'
+      + '<div class="sd-nom"></div><div class="sd-sous"></div>';
+    t.querySelector('.sd-nom').textContent = nom.trim() || 'Mon compte';
+    const tel = (window.currentProfile && window.currentProfile.phone) ? String(window.currentProfile.phone) : '';
+    t.querySelector('.sd-sous').textContent = [role.trim(), tel].filter(Boolean).join(' · ');
+    const av = t.querySelector('.sd-avatar');
+    const majAvatar = () => {
+      const n = ((document.getElementById('user-name') || {}).textContent || '').trim();
+      const r = ((document.querySelector('.topbar .role-pill') || {}).textContent || '').trim();
+      const tel = (window.currentProfile && window.currentProfile.phone) ? String(window.currentProfile.phone) : '';
+      // Sans nom affiché (Gestion ne montre que le rôle) : le rôle tient lieu de nom.
+      const titre = n || r.replace(/^\S+\s+/, '') || 'Mon compte';
+      t.querySelector('.sd-nom').textContent = titre;
+      t.querySelector('.sd-sous').textContent = [n ? r : '', tel].filter(Boolean).join(' · ');
+      av.innerHTML = avatarSrc ? avatarSrc.innerHTML : '';
+      if (!av.firstChild) av.textContent = (titre.split(/\s+/).map((x) => x[0]).join('').slice(0, 2) || 'C').toUpperCase();
+    };
+    majAvatar();
+    menu.__sdRafraichir = majAvatar;
+    if (avatarSrc && typeof MutationObserver === 'function') new MutationObserver(majAvatar).observe(avatarSrc, { childList: true, subtree: true, attributes: true });
+    t.querySelector('.sd-retour').addEventListener('click', (e) => { e.stopPropagation(); menu.classList.remove('open'); });
+    menu.insertBefore(t, menu.firstChild);
+    // Les raccourcis : quatre ronds qui actionnent des boutons déjà là (ou le thème).
+    const r = document.createElement('div');
+    r.className = 'sd-raccourcis';
+    menu.insertBefore(r, t.nextSibling);
+    const raccourci = (picto, libelle, action) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'sd-rac';
+      b.innerHTML = '<span class="sd-rac-ico" aria-hidden="true"></span><span class="sd-rac-txt"></span>';
+      b.querySelector('.sd-rac-ico').textContent = picto; b.querySelector('.sd-rac-txt').textContent = libelle;
+      b.addEventListener('click', (e) => { e.stopPropagation(); action(); });
+      r.appendChild(b);
+      return b;
+    };
+    let signature = '';
+    const poser = () => {
+      const compte = document.getElementById('btn-mon-compte');
+      const push = document.getElementById('btn-activer-push');
+      const aide = document.getElementById('btn-aide');
+      const theme = document.querySelector('.theme-toggle');
+      const sig = [!!compte, !!push, !!aide, !!theme].join('');
+      if (sig === signature) return;   // rien de nouveau : on ne redessine pas (sinon l'observateur tournerait en rond)
+      signature = sig;
+      r.textContent = '';
+      if (compte) { raccourci('👤', 'Compte', () => compte.click()); compte.classList.add('sd-cache'); }
+      if (push) { raccourci('🔔', 'Alertes', () => push.click()); push.classList.add('sd-cache'); }
+      if (aide) { raccourci('❓', 'Aide', () => aide.click()); aide.classList.add('sd-cache'); }
+      if (theme) raccourci('🌓', 'Thème', () => { if (typeof window.cltBasculerTheme === 'function') window.cltBasculerTheme(); else theme.click(); });
+      r.classList.toggle('hidden', !r.children.length);
+    };
+    poser();
+    menu.__sdPoser = poser;
+  }
+  function installer() {
+    const menu = document.getElementById('settings-dropdown');
+    if (!menu || menu.dataset.sdInstalle === '1') return;
+    menu.dataset.sdInstalle = '1';
+    menu.classList.add('sd');
+    // Sortie de la barre du haut : posée sous <body>, la page passe au-dessus de tout (la barre du
+    // haut a son propre contexte d'empilement, qui l'aurait gardée sous la barre du bas).
+    document.body.appendChild(menu);
+    if (!menu.hasAttribute('data-clt-couche')) menu.setAttribute('data-clt-couche', 'Menu');
+    tete(menu);
+    // Une couche comme les autres : Échap et le bouton retour du téléphone la referment.
+    if (typeof window.cltEnregistrerCouche === 'function') window.cltEnregistrerCouche(menu);
+    const tout = () => { menu.querySelectorAll('.settings-groupe > button, .settings-groupe > a, .settings-dropdown > button, .settings-dropdown > a').forEach(habiller); if (menu.__sdPoser) menu.__sdPoser(); };
+    tout();
+    if (typeof MutationObserver === 'function') new MutationObserver(() => tout()).observe(menu, { childList: true, subtree: true });
+    // Le fond assombri sur ordinateur, et le verrou du défilement de la page derrière.
+    const fond = document.createElement('div'); fond.className = 'sd-fond'; document.body.appendChild(fond);
+    const suivre = () => {
+      const ouvert = menu.classList.contains('open');
+      document.documentElement.classList.toggle('sd-ouvert', ouvert);
+      if (ouvert && menu.__sdRafraichir) menu.__sdRafraichir();   // le nom et la photo arrivent après le chargement
+    };
+    if (typeof MutationObserver === 'function') new MutationObserver(suivre).observe(menu, { attributes: true, attributeFilter: ['class'] });
+    suivre();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installer); else installer();
+  window.cltInstallerPageCompte = installer;
+})();
