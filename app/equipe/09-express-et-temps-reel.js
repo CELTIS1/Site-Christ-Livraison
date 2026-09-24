@@ -72,6 +72,9 @@ return `<span class="badge" style="color:${s.color}; background:${s.bg};">${s.la
 function expressCoursRowHTML(course, clientName, courierName) {
 // 20/09/2026 (inventaire, 20.F) : la commission est réglée par le serveur à la livraison (déduite
 // du solde du coursier) — le bouton « Commission reçue » du bureau n'avait plus d'objet.
+// 24/09/2026 : la mention « Commission due et non réglée » lisait une variable qui n'existait
+// plus (ReferenceError : la liste Express de l'équipe tombait dès qu'une course existait).
+// Trouvé par le parcours de la cloche ; retirée, la commission n'étant plus due à la main.
 return `
 <div class="colis-item" data-id="${course.id}">
 <div class="info">
@@ -79,7 +82,6 @@ return `
 <div class="meta">Client : ${escapeHTML(clientName || '?')}${course.destinataire_nom ? ' · Destinataire : ' + escapeHTML(course.destinataire_nom) : ''}</div>
 <div class="meta">Coursier : ${escapeHTML(courierName || 'En attente')} · Distance : ${course.distance_km || '?'} km</div>
 <div class="meta">Prix : ${formatMontant(course.prix_total)} · Commission : ${formatMontant(course.commission_montant)}</div>
-${commissionDue ? `<div class="meta" style="color:#c0392b; font-weight:600;">💰 Commission due et non réglée</div>` : ''}
 </div>
 <div class="status-col" style="flex-direction:column; align-items:flex-end; gap:4px;">
 

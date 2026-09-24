@@ -1343,10 +1343,19 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    cloche MÈNE à l'objet (Celtis : « quand je clique, ça ne m'envoie nulle part ») — un colis
    s'ouvre sur l'écran du rôle (Gestion → Équipe), une course sur l'écran Express ; la page de la
    cliente et les deux pages Express savent désormais ouvrir « ?colis= » / « ?course= » (onglet,
-   défilement, surlignage jusqu'au toucher, toutes dates si besoin). Étiquette 20260924traces. */
+   défilement, surlignage jusqu'au toucher, toutes dates si besoin). Étiquette 20260924traces.
+   v242, le 24/09/2026 — LA CLOCHE MÈNE PARTOUT. Celtis : « quand on clique, ça ne nous envoie pas
+   où il faut ». Relecture des 14 sortes de notifications : 6 n'avaient aucune cible (signalements,
+   passage vu/programmé/refusé, reversement) et 3 étaient refusées par la règle (« &jour= »). Le
+   serveur donne à chacune une cible (signalement → colis=, passage=, reversement=), la règle
+   accepte le jour et sait la page de chaque objet selon qui lit (point → Suivi de l'écran Équipe,
+   aussi depuis Gestion ; passage et reçu → carte et Récap de la cliente), l'écran cliente ouvre
+   « ?passage= » et « ?reversement= » (cltFocusElementFromUrl, config.js). Le parcours de la cloche
+   a fait tomber un bogue caché depuis v196 : la liste Express de l'équipe lisait une variable
+   disparue (commissionDue) et tombait dès qu'une course existait — retirée. Étiquette 20260924partout. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v241'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v242'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

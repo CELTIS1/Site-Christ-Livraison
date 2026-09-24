@@ -41,6 +41,14 @@ verifier('un paramètre « colis=… » se colle à la page du LECTEUR', R.lien(
 verifier('depuis Gestion, un colis s\'ouvre sur l\'écran Équipe (Gestion n\'a pas de liste de colis)', R.lien({ param: 'colis=abc-123' }, 'gestion.html') === 'equipe.html?colis=abc-123');
 verifier('une course s\'ouvre sur l\'écran Express du lecteur, et nulle part ailleurs', R.lien({ param: 'course=c-1' }, 'express-coursier.html') === 'express-coursier.html?course=c-1' && R.lien({ param: 'course=c-1' }, 'equipe.html') === null);
 verifier('une demande de passage s\'ouvre sur l\'écran Équipe', R.lien({ param: 'passage=p-1' }, 'gestion.html') === 'equipe.html?passage=p-1');
+console.log('\n3 bis. Chaque sorte de notification mène quelque part (24/09/2026 : « quand je clique, ça ne m\'envoie nulle part »)');
+verifier('« X demande un passage » (équipe) : Tournées, ce jour-là — le jour est accepté', R.lien({ param: 'passage=p-1&jour=2026-09-25' }, 'equipe.html') === 'equipe.html?passage=p-1&jour=2026-09-25');
+verifier('« Passage vu / programmé / refusé » (cliente) : sa carte Demander un passage', R.lien({ param: 'passage=p-1' }, 'fournisseur.html') === 'fournisseur.html?passage=p-1');
+verifier('« Journée bouclée » / « La journée a changé » : Suivi, le point de cette cliente, ce jour — aussi depuis Gestion', R.lien({ param: 'point=c-1&jour=2026-09-24' }, 'equipe.html') === 'equipe.html?point=c-1&jour=2026-09-24' && R.lien({ param: 'point=c-1&jour=2026-09-24' }, 'gestion.html') === 'equipe.html?point=c-1&jour=2026-09-24');
+verifier('« X a fait son point » : Suivi, la carte de ce livreur', R.lien({ param: 'point-livreur=l-1' }, 'gestion.html') === 'equipe.html?point-livreur=l-1');
+verifier('« Reversement effectué » : Récap de la cliente, sur le reçu', R.lien({ param: 'reversement=r-1' }, 'fournisseur.html') === 'fournisseur.html?reversement=r-1');
+verifier('un point ou un reçu ne s\'ouvrent pas sur un écran qui ne les a pas', R.lien({ param: 'point=c-1&jour=2026-09-24' }, 'livreur.html') === null && R.lien({ param: 'reversement=r-1' }, 'equipe.html') === null);
+verifier('un jour mal formé est refusé', R.lien({ param: 'point=c-1&jour=demain' }, 'equipe.html') === null && R.lien({ param: 'colis=1&jour=2026-09-24&x=1' }, 'equipe.html') === null);
 verifier('une adresse complète de l’app est prise telle quelle', R.lien({ url: '/app/gestion.html?bilan=semaine' }, 'equipe.html') === '/app/gestion.html?bilan=semaine');
 verifier('une adresse hors de l’app est refusée', R.lien({ url: 'https://exemple.invalid/x' }, 'equipe.html') === null);
 verifier('un paramètre bricolé est refusé', R.lien({ param: 'colis=1&x=<script>' }, 'equipe.html') === null);
@@ -53,6 +61,14 @@ const fn = lire('supabase-functions/envoyer-push/index.ts');
 verifier('envoyer-push garde une copie de chaque envoi (garderEnBase), avant même de lire les abonnements', /async function garderEnBase/.test(fn) && fn.indexOf('await garderEnBase(dest, title, body, tag, urlParam)') < fn.indexOf('const { subs, error } = await lireAbonnements(dest)'));
 verifier('les rôles sont résolus en comptes valides, une ligne par personne', /from\("profiles"\)\.select\("id"\)\.in\("role", dest\.roles\)\.eq\("status", "valide"\)/.test(fn) && /from\("notifications"\)\.insert\(lignes\)/.test(fn));
 verifier('une adresse complète va dans url, un paramètre dans param', /url: absolue \? urlParam : null, param: absolue \? null : urlParam/.test(fn));
+{
+  // Chaque envoi porte une cible : on relit tous les appels envoyer(…) de la fonction serveur.
+  const appels = fn.split(/await envoyer\(/).slice(1).map((x) => x.slice(0, 700));
+  const sansCible = appels.filter((x) => /,\s*""\);/.test(x.split('\n').slice(0, 4).join('\n')));
+  verifier('aucun envoi sans cible : signalement → colis=, passage → passage=, reversement → reversement=', appels.length >= 14 && sansCible.length === 0 && /`reclam-\$\{id\}`, cibleReclam/.test(fn) && /`passage-\$\{id\}`, `passage=\$\{encodeURIComponent\(id\)\}`/.test(fn) && /`reversement-\$\{id\}`, `reversement=\$\{encodeURIComponent\(id\)\}`/.test(fn), { appels: appels.length, sansCible: sansCible.map((x) => x.slice(0, 80)) });
+  const four = lire('app/fournisseur.html');
+  verifier('l\'écran cliente ouvre la demande de passage (Ajouter) et le reçu (Récap) depuis l\'adresse', /get\('passage'\)[\s\S]{0,120}showFournisseurTab\('section-ajouter'\)/.test(four) && /get\('reversement'\)[\s\S]{0,120}showFournisseurTab\('section-recap'\)/.test(four) && /class="recu-ligne[^"]*" data-id=/.test(four) && /function cltFocusElementFromUrl/.test(lire('app/config.js')));
+}
 verifier('une écriture qui échoue ne bloque pas le push (try/catch, console.error)', /catch \(err\) \{\s*console\.error\("Cloche/.test(fn));
 const mig = path.join(RACINE, '_sql-prive/2026-09-23-notifications-recues.sql');
 if (fs.existsSync(mig)) {

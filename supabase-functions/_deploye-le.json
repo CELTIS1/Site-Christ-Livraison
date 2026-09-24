@@ -63,8 +63,8 @@
     },
     "envoyer-push": {
       "etat": "deployee",
-      "empreinte": "a4b9ffb63d33e54ea704e548e8ca1dd7e1b0621201b500b6184e4346ac559326",
-      "le": "2026-09-23"
+      "empreinte": "2747d06837852c6fd5018b77a74efc72c1bd41f0398227e2b1b9b761c9cd6d26",
+      "le": "2026-09-24"
     },
     "finaliser-reset-password": {
       "etat": "deployee",

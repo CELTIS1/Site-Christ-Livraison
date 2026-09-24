@@ -424,14 +424,18 @@ async function handleReclamation(record: any, oldRecord: any, eventType: string)
   const cliente = uuidOuRien(livreur ? record.livreur_id : record.fournisseur_id);
   const id = uuidOuRien(record.id);
   if (!cliente || !id) return new Response("réclamation sans auteur", { status: 200 });
+  // 24/09/2026 : un signalement porte toujours un colis ; l'équipe, la cliente et le livreur en
+  // voient la ligne sur la carte de CE colis. La cloche y mène.
+  const colisDuSignalement = uuidOuRien(record.colis_id);
+  const cibleReclam = colisDuSignalement ? `colis=${encodeURIComponent(colisDuSignalement)}` : "";
   if (eventType === "INSERT") {
     // Le bureau : quelqu'un signale — toast sonore à l'écran déjà, la notification pour qui n'a pas l'écran ouvert.
-    return await envoyer({ roles: ["equipe", "admin"], userIds: [] }, livreur ? "📣 Un livreur signale un problème" : "📣 Une cliente signale un problème", "Voir L'essentiel.", `reclam-${id}`, "");
+    return await envoyer({ roles: ["equipe", "admin"], userIds: [] }, livreur ? "📣 Un livreur signale un problème" : "📣 Une cliente signale un problème", "Voir L'essentiel.", `reclam-${id}`, cibleReclam);
   }
   const avant = oldRecord ? oldRecord.statut : null;
   if (record.statut === avant) return new Response("statut inchangé", { status: 200 });
-  if (record.statut === "en_cours") return await envoyer({ roles: [], userIds: [cliente] }, "👀 Votre signalement est pris en charge", "CLT s'en occupe et revient vers vous.", `reclam-${id}`, "");
-  if (record.statut === "resolue") return await envoyer({ roles: [], userIds: [cliente] }, "✅ CLT a répondu à votre signalement", record.reponse ? String(record.reponse).slice(0, 140) : "Signalement traité.", `reclam-${id}`, "");
+  if (record.statut === "en_cours") return await envoyer({ roles: [], userIds: [cliente] }, "👀 Votre signalement est pris en charge", "CLT s'en occupe et revient vers vous.", `reclam-${id}`, cibleReclam);
+  if (record.statut === "resolue") return await envoyer({ roles: [], userIds: [cliente] }, "✅ CLT a répondu à votre signalement", record.reponse ? String(record.reponse).slice(0, 140) : "Signalement traité.", `reclam-${id}`, cibleReclam);
   return new Response("rien à dire", { status: 200 });
 }
 async function handleDemandeDePassage(record: any, oldRecord: any, eventType: string): Promise<Response> {
@@ -472,9 +476,9 @@ async function handleDemandeDePassage(record: any, oldRecord: any, eventType: st
     const corps = livreur
       ? `CLT passe chez vous${jour ? " le " + jour : ""} : ${livreur} vous confirmera son passage.`
       : `CLT programme la tournée${jour ? " du " + jour : ""} ; le livreur vous confirmera.`;
-    return await envoyer({ roles: [], userIds: [cliente] }, livreur ? "🚚 Passage programmé" : "👀 Votre demande de passage est vue", corps, `passage-${id}`, "");
+    return await envoyer({ roles: [], userIds: [cliente] }, livreur ? "🚚 Passage programmé" : "👀 Votre demande de passage est vue", corps, `passage-${id}`, `passage=${encodeURIComponent(id)}`);
   }
-  if (record.statut === "refusee") return await envoyer({ roles: [], userIds: [cliente] }, "❌ Pas de passage possible", `${jour ? "Le " + jour + " : " : ""}${record.motif_refus ? String(record.motif_refus).slice(0, 120) : "CLT ne pourra pas passer."} Vous pouvez demander un autre jour.`, `passage-${id}`, "");
+  if (record.statut === "refusee") return await envoyer({ roles: [], userIds: [cliente] }, "❌ Pas de passage possible", `${jour ? "Le " + jour + " : " : ""}${record.motif_refus ? String(record.motif_refus).slice(0, 120) : "CLT ne pourra pas passer."} Vous pouvez demander un autre jour.`, `passage-${id}`, `passage=${encodeURIComponent(id)}`);
   return new Response("rien à dire", { status: 200 });
 }
 /* LES RAPPORTS POUSSÉS (22/09/2026). La base écrit le rapport (rapports_pousses : le bilan du
@@ -494,7 +498,7 @@ async function handleReversement(record: any, eventType: string): Promise<Respon
   const id = uuidOuRien(record.id);
   if (!cliente || !id || eventType !== "INSERT") return new Response("rien à dire", { status: 200 });
   const montant = Number(record.montant) || 0;
-  return await envoyer({ roles: [], userIds: [cliente] }, "💵 Reversement effectué", `${montant.toLocaleString("fr-FR")} FCFA vous ont été reversés${record.numero ? " (reçu " + record.numero + ")" : ""}. Le reçu est dans votre espace.`, `reversement-${id}`, "");
+  return await envoyer({ roles: [], userIds: [cliente] }, "💵 Reversement effectué", `${montant.toLocaleString("fr-FR")} FCFA vous ont été reversés${record.numero ? " (reçu " + record.numero + ")" : ""}. Le reçu est dans votre espace.`, `reversement-${id}`, `reversement=${encodeURIComponent(id)}`);
 }
 
 /* ----------------------------------------------------------------------------

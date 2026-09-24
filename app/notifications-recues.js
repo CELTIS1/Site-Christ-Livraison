@@ -67,15 +67,27 @@
   /* La page qui sait OUVRIR l'objet, selon la page d'où l'on lit (24/09/2026, Celtis : « quand je
      clique, ça ne m'envoie nulle part ») : un colis se trouve sur l'écran du rôle — Gestion n'a
      pas de liste de colis, c'est l'écran Équipe qui l'a ; une course, sur l'écran Express. */
+  /* 24/09/2026, Celtis : « la notification est là, mais quand je clique, ça ne m'envoie nulle
+     part ». Chaque sorte d'objet a SA page selon qui lit : un signalement est sur la carte du
+     colis (colis=…), un point de cliente ou de livreur sur Suivi de l'écran Équipe, une demande
+     de passage sur Tournées (équipe) ou sur la carte « Demander un passage » (cliente), un
+     reversement sur le reçu, dans Récap (cliente). */
+  const EQUIPE = { 'equipe.html': 'equipe.html', 'gestion.html': 'equipe.html' };
   const PAGE_POUR = {
     colis: { 'livreur.html': 'livreur.html', 'fournisseur.html': 'fournisseur.html', 'equipe.html': 'equipe.html', 'gestion.html': 'equipe.html' },
     course: { 'express-client.html': 'express-client.html', 'express-coursier.html': 'express-coursier.html' },
-    passage: { 'equipe.html': 'equipe.html', 'gestion.html': 'equipe.html' },
+    passage: { 'equipe.html': 'equipe.html', 'gestion.html': 'equipe.html', 'fournisseur.html': 'fournisseur.html' },
+    point: EQUIPE,
+    'point-livreur': EQUIPE,
+    reversement: { 'fournisseur.html': 'fournisseur.html' },
   };
+  /* Le paramètre porte l'identifiant, et parfois le jour (« point=…&jour=2026-09-24 ») : rien
+     d'autre n'est accepté, jamais une adresse bricolée. */
+  const PARAM = /^([a-z-]+)=([A-Za-z0-9-]+)(?:&jour=\d{4}-\d{2}-\d{2})?$/;
   function lien(n, pageCourante) {
     if (!n) return null;
     if (n.url && /^\/app\//.test(n.url)) return n.url;
-    const m = String(n.param || '').match(/^([a-z-]+)=([A-Za-z0-9-]+)$/);
+    const m = String(n.param || '').match(PARAM);
     if (!m) return null;
     const pages = PAGE_POUR[m[1]];
     const page = pages ? (pages[pageCourante] || null) : (pageCourante || null);

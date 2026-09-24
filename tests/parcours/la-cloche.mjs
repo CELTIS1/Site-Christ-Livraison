@@ -13,7 +13,7 @@
 
    Lancer à la main :  node tests/parcours/la-cloche.mjs */
 import { ouvrirNavigateur, verifier, titre, dodo, bilan } from './_navigateur.mjs';
-import { nouveauMonde, iso, ADMIN, LIVREUR, CLIENTE1, CLIENT_EXPRESS } from './_monde.mjs';
+import { nouveauMonde, iso, aujourdhui, ADMIN, LIVREUR, CLIENTE1, CLIENTE2, CLIENT_EXPRESS } from './_monde.mjs';
 
 const monde = nouveauMonde();
 const COLIS3 = 'cccccccc-cccc-4ccc-8ccc-000000000003';
@@ -120,6 +120,39 @@ await N.ouvrirConnecte('express-client.html', CLIENT_EXPRESS); await dodo(1500);
 await page.locator('.clt-cloche').click(); await dodo(600);
 await page.locator('.notif-ligne[data-notif="10"]').click(); await dodo(3500);
 verifier('l\'onglet « Mes courses » s\'ouvre et la carte de la course est surlignée', !(await page.locator('#section-courses').evaluate((el) => el.classList.contains('hidden'))) && await page.locator('.course-item[data-id="eeeeeeee-1111-4eee-8eee-eeeeeeeeeee1"].colis-a-voir').count() === 1, await page.locator('#section-courses').innerText().catch(() => '').then((t) => t.slice(0, 200)));
+
+titre('8. La cloche mène partout (24/09) : le point d\'une cliente, depuis Gestion, s\'ouvre sur Suivi de l\'écran Équipe');
+await page.setViewportSize({ width: 1280, height: 900 });
+monde.TABLES.notifications.push({ id: 11, user_id: ADMIN, titre: '📗 Journée bouclée', corps: 'Mariam Mode : 1 colis, 10 000 FCFA.', tag: 'journee-x', url: null, param: 'point=' + CLIENTE2 + '&jour=' + aujourdhui, cree_le: iso(0, 9), lu_le: null });
+await N.ouvrirConnecte('gestion.html', ADMIN); await dodo(1500);
+await page.locator('.clt-cloche').click(); await dodo(600);
+verifier('la ligne a une destination (pas de « sans lien »)', (await page.locator('.notif-ligne[data-notif="11"]').getAttribute('data-sans-lien')) === null);
+await page.locator('.notif-ligne[data-notif="11"]').click(); await dodo(3500);
+verifier('la page est passée sur Équipe, onglet Suivi, le récapitulatif par client déplié sur ce jour', /equipe\.html/.test(page.url()) && await page.evaluate(() => !!document.querySelector('#clt-toptabs .clt-toptab[data-eqtab="suivi"].active')) && await page.evaluate(() => document.getElementById('recap-fournisseur').classList.contains('open')) && (await page.locator('#recap-date').inputValue()) === aujourdhui);
+verifier('la carte de la cliente visée est encadrée « à traiter »', await page.locator('.recap-client-card[data-fid="' + CLIENTE2 + '"].recap-client-card--a-voir').count() === 1);
+
+titre('9. … à la demande de passage, chez la cliente (« Passage vu »)');
+await page.setViewportSize({ width: 390, height: 844 });
+const DEMANDE = 'dddddddd-0000-4000-8000-000000000001';
+monde.TABLES.demandes_de_passage.push({ id: DEMANDE, jour: aujourdhui, fournisseur_id: CLIENTE1, note: 'après 14 h', statut: 'traitee', motif_refus: null });
+monde.TABLES.notifications.push({ id: 12, user_id: CLIENTE1, titre: '👀 Votre demande de passage est vue', corps: 'CLT programme la tournée.', tag: 'passage-1', url: null, param: 'passage=' + DEMANDE, cree_le: iso(0, 9), lu_le: null });
+await N.ouvrirConnecte('fournisseur.html', CLIENTE1); await dodo(1500);
+verifier('avant l\'appui, la cliente est sur « Mes colis » (l\'onglet gardé) : la carte du passage n\'est pas visible', await page.locator('#section-passage').evaluate((el) => el.classList.contains('hidden')));
+await page.locator('.clt-cloche').click(); await dodo(600);
+await page.locator('.notif-ligne[data-notif="12"]').click(); await dodo(3500);
+verifier('l\'onglet Ajouter est ouvert (c\'est là qu\'est « Demander un passage »), la demande visible et encadrée', /fournisseur\.html/.test(page.url()) && !(await page.locator('#section-passage').evaluate((el) => el.classList.contains('hidden'))) && /Demande vue par CLT/.test(await page.locator('#passage-en-cours').textContent()) && await page.locator('#passage-en-cours .clt-alert.colis-deeplink-highlight').count() === 1);
+verifier('l\'adresse est nettoyée', await page.evaluate(() => !location.search));
+verifier('… et la demande est à l\'écran', await page.locator('#passage-en-cours .clt-alert').evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }));
+
+titre('10. … et au reçu de reversement, dans Récap');
+const RECU = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1';
+monde.TABLES.notifications.push({ id: 13, user_id: CLIENTE2, titre: '💵 Reversement effectué', corps: '10 000 FCFA vous ont été reversés (reçu REV-2026-0004).', tag: 'reversement-1', url: null, param: 'reversement=' + RECU, cree_le: iso(0, 9), lu_le: null });
+await N.ouvrirConnecte('fournisseur.html', CLIENTE2); await dodo(1500);
+await page.locator('.clt-cloche').click(); await dodo(600);
+await page.locator('.notif-ligne[data-notif="13"]').click(); await dodo(3500);
+verifier('l\'onglet Récap est ouvert et le reçu REV-2026-0004 est encadré', !(await page.locator('#section-recap').evaluate((el) => el.classList.contains('hidden'))) && await page.locator('.recu-ligne[data-id="' + RECU + '"].colis-deeplink-highlight').count() === 1 && /REV-2026-0004/.test(await page.locator('.recu-ligne[data-id="' + RECU + '"]').textContent()));
+const visible = async (sel) => page.locator(sel).evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.height > 0; });
+verifier('… et il est VRAIMENT à l\'écran : le relevé (replié) s\'est déplié, la page a défilé jusqu\'au reçu', await page.locator('#releve-details').evaluate((d) => d.open) && await visible('.recu-ligne[data-id="' + RECU + '"]'), await page.evaluate(() => [scrollY, document.querySelector('.recu-ligne').getBoundingClientRect().top]));
 
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n'));
 await N.fermer();

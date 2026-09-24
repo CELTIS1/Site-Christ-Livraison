@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924traces">
+<link rel="stylesheet" href="style.css?v=20260924partout">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260924traces"></script>
+<script src="theme.js?v=20260924partout"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260924traces" defer></script>
-<script src="cloche.js?v=20260924traces" defer></script>
-<script src="splash.js?v=20260924traces"></script>
+<script src="notifications-recues.js?v=20260924partout" defer></script>
+<script src="cloche.js?v=20260924partout" defer></script>
+<script src="splash.js?v=20260924partout"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -674,31 +674,31 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260924traces"></script>
-<script src="numero-international.js?v=20260924traces"></script>
-<script src="voir-un-compte.js?v=20260924traces"></script>
-<script src="lib/bibliotheques.js?v=20260924traces"></script>
-<script src="lib/retours.js?v=20260924traces"></script>
-<script src="lib/reclamations.js?v=20260924traces"></script>
-<script src="lib/communes-et-tarifs.js?v=20260924traces"></script>
-<script src="lib/argent.js?v=20260924traces"></script>
-<script src="lib/releve-cliente.js?v=20260924traces"></script>
-<script src="lib/papier-a-en-tete.js?v=20260924traces"></script>
-<script src="lib/briques-argent.js?v=20260924traces"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260924traces"></script>
-<script src="lib/traces-de-report.js?v=20260924traces"></script>
-<script src="lib/annonce-de-remise.js?v=20260924traces"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260924traces"></script>
-<script src="lib/primes.js?v=20260924traces"></script>
-<script src="lib/doublons.js?v=20260924traces"></script>
-<script src="config.js?v=20260924traces"></script>
-<script src="activite-de-la-cliente.js?v=20260924traces"></script>
-<script src="activite-ecran.js?v=20260924traces"></script>
-<script src="mes-boutiques.js?v=20260924traces"></script>
-<script src="etiquettes-et-scan.js?v=20260924traces"></script>
-<script src="import-de-colis.js?v=20260924traces"></script>
-<script src="biometric-lock.js?v=20260924traces"></script>
-<script src="clt-select-recherche.js?v=20260924traces"></script>
+<script src="clt-common.js?v=20260924partout"></script>
+<script src="numero-international.js?v=20260924partout"></script>
+<script src="voir-un-compte.js?v=20260924partout"></script>
+<script src="lib/bibliotheques.js?v=20260924partout"></script>
+<script src="lib/retours.js?v=20260924partout"></script>
+<script src="lib/reclamations.js?v=20260924partout"></script>
+<script src="lib/communes-et-tarifs.js?v=20260924partout"></script>
+<script src="lib/argent.js?v=20260924partout"></script>
+<script src="lib/releve-cliente.js?v=20260924partout"></script>
+<script src="lib/papier-a-en-tete.js?v=20260924partout"></script>
+<script src="lib/briques-argent.js?v=20260924partout"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260924partout"></script>
+<script src="lib/traces-de-report.js?v=20260924partout"></script>
+<script src="lib/annonce-de-remise.js?v=20260924partout"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260924partout"></script>
+<script src="lib/primes.js?v=20260924partout"></script>
+<script src="lib/doublons.js?v=20260924partout"></script>
+<script src="config.js?v=20260924partout"></script>
+<script src="activite-de-la-cliente.js?v=20260924partout"></script>
+<script src="activite-ecran.js?v=20260924partout"></script>
+<script src="mes-boutiques.js?v=20260924partout"></script>
+<script src="etiquettes-et-scan.js?v=20260924partout"></script>
+<script src="import-de-colis.js?v=20260924partout"></script>
+<script src="biometric-lock.js?v=20260924partout"></script>
+<script src="clt-select-recherche.js?v=20260924partout"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -3297,7 +3297,7 @@
     if (!cltPoserHTML(box, `
       <div style="font-size:13px; font-weight:600; margin:0 0 6px;">Mes reçus de reversement</div>
       ${visibles.map(l => `
-        <div class="recu-ligne${l.annule_le ? ' recu-ligne--annule' : ''}">
+        <div class="recu-ligne${l.annule_le ? ' recu-ligne--annule' : ''}" data-id="${escapeHTML(l.id)}">
           <div class="recu-ligne__gauche">
             <span class="recu-numero">${escapeHTML(l.numero || 'Sans numéro')}</span>
             <span class="recu-jour">${escapeHTML(jourLabel(l.fait_le))} · ${Number(l.nb_colis) || 0} colis${l.annule_le ? ' · <strong>annulé</strong>' : ''}</span>
@@ -3963,6 +3963,20 @@
         const ch = document.getElementById('search-colis'); if (ch) ch.value = '';
         remettreTrancheColisAZero(); renderColisList();
         cltToast('Ce colis n\'est pas dans la journée du jour : la liste montre toutes les dates.', { type: 'info' });
+      } });
+    }
+    /* La cloche mène aussi à la demande de passage (« vue », « programmée », « refusée ») et au
+       reçu de reversement (24/09/2026). L'onglet d'abord, l'objet encadré ensuite. */
+    if (new URLSearchParams(location.search).get('passage') && typeof cltFocusElementFromUrl === 'function') {
+      showFournisseurTab('section-ajouter');
+      cltFocusElementFromUrl('passage', () => '#passage-en-cours .clt-alert', { onMiss: () => {
+        cltToast('Cette demande de passage n\'est plus affichée : le jour est passé ou elle a été annulée.', { type: 'info' });
+      } });
+    }
+    if (new URLSearchParams(location.search).get('reversement') && typeof cltFocusElementFromUrl === 'function') {
+      showFournisseurTab('section-recap');
+      cltFocusElementFromUrl('reversement', (id) => '.recu-ligne[data-id="' + CSS.escape(id) + '"]', { onMiss: () => {
+        cltToast('Ce reçu n\'est pas dans les derniers affichés : « Afficher plus » sous Mes reçus de reversement.', { type: 'info' });
       } });
     }
     if (window.CLTBioLock && !onRegarde) { try { await CLTBioLock.guard(currentUser); } catch (e) {} }

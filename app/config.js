@@ -1051,7 +1051,7 @@ function __cltEnsureHighlightStyle() {
     "@keyframes cltDeeplinkPulse{0%{box-shadow:0 0 0 0 rgba(226,99,19,.55);}" +
     "70%{box-shadow:0 0 0 10px rgba(226,99,19,0);}100%{box-shadow:0 0 0 0 rgba(226,99,19,0);}}" +
     ".colis-deeplink-highlight{animation:cltDeeplinkPulse 1.2s ease-out 3;}" +
-    ".colis-item.colis-a-voir{outline:3px solid #E26313 !important;outline-offset:2px;" +
+    ".colis-item.colis-a-voir,.clt-objet-a-voir{outline:3px solid #E26313 !important;outline-offset:2px;" +
     "box-shadow:0 0 0 6px rgba(226,99,19,.14) !important;transition:outline .3s ease, box-shadow .3s ease;}";
   document.head.appendChild(st);
 }
@@ -1085,35 +1085,45 @@ document.addEventListener("pointerdown", (e) => {
   try { document.dispatchEvent(new CustomEvent("clt:colis-vu", { detail: { id: el.dataset.id, statut: el.dataset.statut } })); } catch (err) {}
 }, true);
 
+/* La notification (ou la cloche) mène à l'objet : on attend qu'il soit rendu, on le fait défiler
+   au milieu, on l'encadre jusqu'au toucher, puis on retire le paramètre de l'adresse. `selecteur(id)`
+   rend le sélecteur CSS ; `onMiss` est appelé une fois — vers le 4e essai pour un colis (la page
+   élargit la vue, ex. retirer le filtre « aujourd'hui »), à la fin sinon (l'écran dit pourquoi). */
+function cltFocusElementFromUrl(param, selecteur, opts) {
+  opts = opts || {};
+  const id = new URLSearchParams(location.search).get(param);
+  if (!id) return;
+  __cltEnsureHighlightStyle();
+  let tries = 0, missFired = false;
+  const maxTries = opts.maxTries || 25; // ~7,5 s max (25 × 300 ms)
+  const attempt = () => {
+    let el = null;
+    try { el = document.querySelector(selecteur(id)); } catch (e) { el = null; }
+    if (el) {
+      // Un objet replié (le relevé de la cliente est dans un <details>) : on déplie, sinon rien ne défile.
+      for (let d = el.closest("details"); d; d = d.parentElement && d.parentElement.closest("details")) d.open = true;
+      try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { el.scrollIntoView(); }
+      el.classList.add("colis-deeplink-highlight", "clt-objet-a-voir"); (opts.classes || []).forEach((c) => el.classList.add(c));
+      el.addEventListener("pointerdown", () => el.classList.remove("clt-objet-a-voir"), { once: true });
+      setTimeout(() => el.classList.remove("colis-deeplink-highlight"), 4200);
+      try { history.replaceState(null, "", location.pathname); } catch (e) {}
+      return;
+    }
+    const fin = tries++ >= maxTries;
+    if (!missFired && (fin || (opts.missTot && tries >= 4)) && typeof opts.onMiss === "function") { missFired = true; try { opts.onMiss(id); } catch (e) {} }
+    if (fin) { try { history.replaceState(null, "", location.pathname); } catch (e) {} return; }
+    setTimeout(attempt, 300);
+  };
+  attempt();
+}
+/* Un colis : `.colis-item[data-id]`, marqué « à voir » jusqu'à ce qu'on le touche. */
 function cltFocusColisFromUrl(opts) {
   opts = opts || {};
   const param = opts.param || "colis";
   const id = new URLSearchParams(location.search).get(param);
   if (!id) return;
-  __cltEnsureHighlightStyle();
   cltMarquerColisAVoir(id);
-  let tries = 0;
-  let missFired = false;
-  const maxTries = opts.maxTries || 25; // ~7,5 s max (25 × 300 ms)
-  const attempt = () => {
-    const el = document.querySelector('.colis-item[data-id="' + CSS.escape(id) + '"]');
-    if (el) {
-      try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { el.scrollIntoView(); }
-      el.classList.add("colis-deeplink-highlight", "colis-a-voir");
-      setTimeout(() => el.classList.remove("colis-deeplink-highlight"), 4200);
-      // On retire le paramètre de l'URL pour ne pas re-surligner à chaque nouveau rendu.
-      try { history.replaceState(null, "", location.pathname); } catch (e) {}
-      return;
-    }
-    // Colis introuvable au bout de quelques essais : on laisse la page tenter d'élargir la vue
-    // (ex : retirer le filtre de date « aujourd'hui » côté équipe), une seule fois.
-    if (!missFired && tries >= 4 && typeof opts.onMiss === "function") {
-      missFired = true;
-      try { opts.onMiss(id); } catch (e) {}
-    }
-    if (tries++ < maxTries) setTimeout(attempt, 300);
-  };
-  attempt();
+  cltFocusElementFromUrl(param, (x) => '.colis-item[data-id="' + CSS.escape(x) + '"]', { onMiss: opts.onMiss, maxTries: opts.maxTries, missTot: true, classes: ["colis-a-voir"] });
 }
 
 // isValidCiPhone(), la modale cltConfirm()/cltPrompt() et son échafaudage
