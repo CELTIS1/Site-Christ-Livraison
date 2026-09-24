@@ -1,0 +1,121 @@
+/* LA PEAU v2 — charte d'écran v2 (chantier N, lot 18 — C21, 25 septembre 2026)
+   ==========================================================================================
+   Celtis (24/09) : « mes interfaces ne sont pas très professionnelles, ça reste un peu brut […]
+   là (Yango), c'est très bien disposé ». Référence : Uber Driver / Yango (barre du haut calme,
+   couleur unie), Shopify (cartes sans bordure sur fond gris, ombre douce), Linear (une seule
+   famille de tailles, mouvement discret).
+
+   UNE feuille, chargée EN DERNIER par les six espaces, après style.css et après le <style> de la
+   page. Elle ne touche ni le HTML ni les identifiants ni les écouteurs : elle recouvre. Deux
+   jetons par espace, posés dans le <style> de chaque page :
+       --clt-accent        la couleur de l'espace (aplats)
+       --clt-accent-encre  la même, assombrie, pour du texte ou du blanc dessus (contraste ≥ 4,5)
+   Ce que la peau change, et rien d'autre :
+     1. le fond de page : uni (fini le dégradé par espace) ;
+     2. la barre du haut : couleur unie de l'espace, sans halo, ombre courte ;
+     3. les cartes : sans bordure, ombre douce, arrondi 16 — la couleur vient du contenu ;
+     4. les boutons : aplat « encre » de l'espace, sans dégradé ni halo ;
+     5. les onglets (haut et bas) : une seule règle pour les six espaces, actif = encre ;
+        les icônes en trait remplacent les émojis (clt-common.js : cltPeauIcones) ;
+     6. trois tailles : titre 17 · texte 15 · secondaire 13 ; champs 44 px, arrondi 12.
+   Mode nuit : mêmes règles, surfaces #1B2635 sur #0F1824, encre éclaircie par la page.
+   Mesuré par les lampes tests/parcours/_audit-espace.mjs et _contraste-partout.mjs. */
+
+:root{
+  --peau-accent: var(--clt-accent, #1B4374);
+  --peau-encre: var(--clt-accent-encre, var(--clt-accent, #1B4374));
+  --peau-fond: #F5F7FA;
+  --peau-surface: #FFFFFF;
+  --peau-texte: #1E2A38;
+  --peau-texte-2: #5B6B7C;
+  --peau-ligne: #E6EAF0;
+  --peau-ombre: 0 1px 2px rgba(16,24,40,.06), 0 2px 8px rgba(16,24,40,.05);
+  --peau-ombre-haute: 0 8px 24px rgba(16,24,40,.10);
+  --peau-r: 16px;
+  --peau-r-sm: 12px;
+  --t-titre: 17px;
+  --t-texte: 15px;
+  --t-second: 13px;
+}
+html[data-theme="dark"]{
+  --peau-fond: #0F1824;
+  --peau-surface: #1B2635;
+  --peau-texte: #E6ECF3;
+  --peau-texte-2: #9DB0C4;
+  --peau-ligne: #2A3849;
+  --peau-ombre: 0 1px 2px rgba(0,0,0,.40), 0 2px 8px rgba(0,0,0,.35);
+  --peau-ombre-haute: 0 10px 28px rgba(0,0,0,.55);
+}
+
+/* 1. LE FOND — uni. Le dégradé « signature » de chaque espace disait la marque ; la couleur de la
+   barre du haut la dit déjà. Un fond uni laisse les cartes respirer. */
+body{ background:var(--peau-fond) !important; color:var(--peau-texte); font-size:var(--t-texte); }
+
+/* 2. LA BARRE DU HAUT — la couleur de l'espace, unie, comme Uber Driver. */
+.topbar{
+  background:var(--peau-encre) !important;
+  box-shadow:0 1px 0 rgba(0,0,0,.06), 0 2px 10px rgba(16,24,40,.12) !important;
+}
+.topbar .brand .logo-mark{ background:rgba(255,255,255,.18) !important; box-shadow:none !important; }
+.topbar .role-pill{ background:rgba(255,255,255,.18) !important; }
+html[data-theme="dark"] .topbar{ background:var(--peau-surface) !important; border-bottom:1px solid var(--peau-ligne); color:#fff; }
+html[data-theme="dark"] .topbar .brand .logo-mark{ background:var(--peau-encre) !important; }
+
+/* 3. LES CARTES — sans bordure. La carte est un papier posé sur le fond ; ce sont ses ombres
+   qui la détachent, pas un trait. Le liseré de statut des colis reste : il porte un sens. */
+.card{
+  background:var(--peau-surface) !important; border:0 !important; border-radius:var(--peau-r) !important;
+  box-shadow:var(--peau-ombre) !important;
+}
+.card .card{ box-shadow:none !important; border:1px solid var(--peau-ligne) !important; }
+.colis-item{ border-top:0; border-right:0; border-bottom:0; border-radius:var(--peau-r-sm); box-shadow:var(--peau-ombre); background:var(--peau-surface); }
+.colis-item:hover{ box-shadow:var(--peau-ombre-haute); }
+.recap-client-card, .stat-tile, .confier-groupe, .rt-ligne, .dix-tuile, .clt-aide__article{ box-shadow:var(--peau-ombre); }
+.recap-client-card, .stat-tile{ border-color:transparent; }
+
+/* 4. LES BOUTONS — un aplat « encre », arrondi 12, sans halo. La couleur elle-même est posée dans
+   le <style> de chaque page (la règle .btn:not(.btn-outline) qui portait le dégradé porte maintenant
+   var(--clt-accent-encre)) : même poids, même ordre qu'avant — ce qui passait devant le dégradé
+   (Livré en vert, Rendu en violet, WhatsApp, cases-boutons) passe devant l'encre pareil. */
+.btn-outline{ background:var(--peau-surface); border:1.5px solid var(--peau-ligne); color:var(--peau-encre); border-radius:var(--peau-r-sm); box-shadow:none; }
+.btn-outline:hover{ border-color:var(--peau-encre); }
+html[data-theme="dark"] .btn-outline{ color:#E6ECF3; }
+/* L'encre reste la même la nuit : un bouton plein garde du blanc dessus (≥ 4,5 sur les six encres).
+   Les bascules « transparentes » du livreur (cases-boutons) ne prennent pas l'encre : elles la
+   prenaient déjà avant, en dégradé, avec un texte gris dessus — vu par la lampe le 25/09. */
+.btn.bascule-argent{ background:transparent !important; box-shadow:none !important; }
+
+/* 5. LES ONGLETS — une seule règle pour les six espaces (le CSS des pages reste, recouvert). */
+.clt-toptabs-wrap{ background:var(--peau-fond) !important; }
+.clt-toptabs{ background:var(--peau-surface) !important; border:0 !important; box-shadow:var(--peau-ombre) !important; border-radius:14px !important; padding:5px !important; gap:4px !important; }
+.clt-toptab{ color:var(--peau-texte-2) !important; font-weight:600 !important; font-size:14px !important; border-radius:10px !important; gap:8px !important; }
+.clt-toptab:hover{ color:var(--peau-encre) !important; background:color-mix(in srgb, var(--peau-accent) 8%, transparent) !important; }
+.clt-toptab.active{ background:color-mix(in srgb, var(--peau-accent) 12%, transparent) !important; color:var(--peau-encre) !important; box-shadow:none !important; }
+.clt-toptab .clt-ico{ width:18px; height:18px; flex:none; }
+html[data-theme="dark"] .clt-toptab.active{ background:color-mix(in srgb, var(--peau-accent) 22%, transparent) !important; color:#fff !important; }
+.clt-bottomnav{ background:var(--peau-surface) !important; border-top:1px solid var(--peau-ligne) !important; box-shadow:0 -2px 12px rgba(16,24,40,.06) !important; }
+.clt-bottomnav .nav{ color:var(--peau-texte-2) !important; font-size:11.5px !important; font-weight:600 !important; gap:4px !important; border-radius:12px !important; }
+.clt-bottomnav .nav.active{ color:var(--peau-encre) !important; background:color-mix(in srgb, var(--peau-accent) 12%, transparent) !important; }
+.clt-bottomnav .nav svg{ width:24px !important; height:24px !important; }
+html[data-theme="dark"] .clt-bottomnav .nav.active{ color:#fff !important; background:color-mix(in srgb, var(--peau-accent) 24%, transparent) !important; }
+/* La feuille « Plus » de l'équipe et les pastilles gardent leurs règles ; seule la pastille prend l'encre. */
+.rt-onglet-badge, .nav-badge, .clttab-badge{ background:var(--peau-encre); }
+
+/* 6. TROIS TAILLES, ET LES CHAMPS. */
+.panel-subtitle, .card h2, .card > h3, .page-title{ font-size:var(--t-titre) !important; font-weight:700; letter-spacing:-.2px; }
+.page-title--salut{ font-size:20px !important; }
+.meta, .muted, .card .meta, small{ font-size:var(--t-second); color:var(--peau-texte-2); }
+input[type="text"], input[type="tel"], input[type="number"], input[type="date"], input[type="search"], input[type="email"], input[type="password"], select, textarea{
+  border-radius:var(--peau-r-sm); border-color:var(--peau-ligne); font-size:var(--t-texte);
+}
+input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--peau-encre); box-shadow:0 0 0 3px color-mix(in srgb, var(--peau-accent) 18%, transparent); }
+@media(max-width:760px){
+  .card{ padding:16px 14px !important; margin-bottom:12px !important; }
+  input[type="text"], input[type="tel"], input[type="number"], input[type="date"], input[type="search"], select{ min-height:44px; }
+}
+
+/* Les pages de connexion : la même carte, le même bouton. */
+.login-box{ border:0 !important; box-shadow:var(--peau-ombre-haute) !important; border-radius:20px !important; }
+
+/* Gestion intégrée dans l'onglet Bureau (v255) : pas de fond gris derrière un cadre déjà posé sur une carte. */
+html.integre body{ background:var(--peau-surface) !important; }

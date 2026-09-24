@@ -17,10 +17,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260925confier">
+  <link rel="stylesheet" href="style.css?v=20260925peau">
   <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-  <script src="theme.js?v=20260925confier"></script>
-  <script src="splash.js?v=20260925confier"></script>
+  <script src="theme.js?v=20260925peau"></script>
+  <script src="splash.js?v=20260925peau"></script>
   <style>
     /* CLT Express utilise le violet comme couleur de marque, à la place du bleu marine du
        portail interne, pour bien montrer qu'il s'agit d'un produit distinct. */
@@ -33,8 +33,8 @@
     .login-box .logo-mark{ background:linear-gradient(160deg,#8b5cf6 0%, #4c1d95 100%); }
     .login-box .login-title, .login-box .btn:not(.btn-outline){ color:inherit; }
     .btn:not(.btn-outline){
-      background:linear-gradient(135deg,#7c3aed 0%, #4c1d95 100%) !important;
-      box-shadow:0 8px 18px rgba(76,29,149,0.26) !important;
+      background:var(--clt-accent-encre) !important; /* peau v2 (25/09/2026) : un aplat « encre », plus de dégradé */
+      box-shadow:none !important;
       transition:transform .15s ease, box-shadow .15s ease !important;
     }
     .btn:not(.btn-outline):hover{ transform:translateY(-1px) !important; box-shadow:0 12px 24px rgba(76,29,149,0.32) !important; }
@@ -61,7 +61,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.js"
           integrity="sha384-qafw21c/iciq0VXsi9FzkfoQv5I/V0iqE4lSNcKXPnW9/UTJLnv5CcN4FHxVLnKg"
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  </head>
+  <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
+<style>:root{ --clt-accent-encre:#5B21B6; }</style>
+<link rel="stylesheet" href="peau.css?v=20260925peau">
+</head>
 <body>
   <div class="login-page">
     <!-- Retour vers la page Express du site, comme login.html a son « ← Accueil » (20/09, lot E). -->
@@ -213,9 +216,9 @@
     </div>
   </div>
 
-<script src="clt-common.js?v=20260925confier"></script>
-<script src="express-config.js?v=20260925confier"></script>
-<script src="biometric-login.js?v=20260925confier"></script>
+<script src="clt-common.js?v=20260925peau"></script>
+<script src="express-config.js?v=20260925peau"></script>
+<script src="biometric-login.js?v=20260925peau"></script>
 <script>
   let regRole = 'client_express';
   let kycFile = null;

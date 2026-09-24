@@ -82,6 +82,19 @@
       "aSavoir": "Le bloc lit toute la base, pas seulement la page affichée : un colis oublié d'avant-hier reste dedans, en orange, jusqu'à ce qu'il ait quelqu'un."
     },
     {
+      "id": "la-peau-v2",
+      "espace": "gestion",
+      "titre": "La peau v2 : une feuille, deux jetons par espace",
+      "enBref": "Le rendu des six espaces vient d'une seule feuille (app/peau.css) : fond uni, barre unie, cartes sans bordure, icônes en trait.",
+      "ou": "Tous les espaces ; la charte est dans 08 - Application & Technique › CHARTE-D-ECRAN-CLT (v2)",
+      "etapes": [
+        "Changer la couleur d'un espace : deux lignes dans le <style> de sa page (--clt-accent, --clt-accent-encre) ; rien d'autre.",
+        "Revenir à l'ancien rendu : retirer la ligne peau.css d'une page — tout le reste est intact.",
+        "Vérifier : lampes _contraste-partout (≥ 4,5) et _audit-espace (44 px, débordements), parcours la-peau-v2."
+      ],
+      "aSavoir": "Les émojis des onglets du haut sont remplacés par les icônes en trait de la barre du bas (une seule source) ; ceux des boutons restent pour l'instant — lot suivant si Celtis le veut."
+    },
+    {
       "id": "l-argent",
       "espace": "bureau",
       "titre": "L'argent en deux écrans (et ce qui manque)",

@@ -17,17 +17,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260925confier">
+<link rel="stylesheet" href="style.css?v=20260925peau">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260925confier"></script>
+<script src="theme.js?v=20260925peau"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260925confier" defer></script>
-<script src="cloche.js?v=20260925confier" defer></script>
-<script src="splash.js?v=20260925confier"></script>
+<script src="notifications-recues.js?v=20260925peau" defer></script>
+<script src="cloche.js?v=20260925peau" defer></script>
+<script src="splash.js?v=20260925peau"></script>
 <style>
   .topbar{ background:#0D9488; }
   .topbar .brand .logo-mark{ background:#0b6e64; }
-  .btn:not(.btn-outline){ background:#0D9488 !important; }
   .role-pill{ background:rgba(255,255,255,0.18) !important; }
 
   .avail-card{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
@@ -146,9 +145,9 @@
     border:1px solid rgba(13,148,136,0.08) !important;
   }
   .btn:not(.btn-outline){
-    background:linear-gradient(135deg,#0f9b8e 0%, #0b6e64 100%) !important;
+    background:var(--clt-accent-encre) !important; /* peau v2 (25/09/2026) : un aplat « encre », plus de dégradé */
     border-radius:12px !important;
-    box-shadow:0 8px 18px rgba(11,110,100,0.24) !important;
+    box-shadow:none !important;
     transition:transform .15s ease, box-shadow .15s ease !important;
   }
   .btn:not(.btn-outline):hover{
@@ -307,6 +306,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.js"
         integrity="sha384-qafw21c/iciq0VXsi9FzkfoQv5I/V0iqE4lSNcKXPnW9/UTJLnv5CcN4FHxVLnKg"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
+<style>:root{ --clt-accent-encre:#0F766E; }</style>
+<link rel="stylesheet" href="peau.css?v=20260925peau">
 </head>
 <body>
 
@@ -640,10 +642,10 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260925confier"></script>
-<script src="express-config.js?v=20260925confier"></script>
-<script src="recharges-express.js?v=20260925confier"></script>
-<script src="biometric-lock.js?v=20260925confier"></script>
+<script src="clt-common.js?v=20260925peau"></script>
+<script src="express-config.js?v=20260925peau"></script>
+<script src="recharges-express.js?v=20260925peau"></script>
+<script src="biometric-lock.js?v=20260925peau"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;

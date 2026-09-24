@@ -1563,6 +1563,9 @@ html[data-theme="dark"] .stat-tile-total{ background:var(--grad-navy-deep); }
   display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:var(--radius-pill); font-size:11.5px; font-weight:600;
   color:var(--pill-color, var(--navy)); background:var(--pill-bg, var(--grey-bg)); white-space:nowrap;
 }
+/* La nuit, le fond pastel clair de STATUTS.bg sous une teinte éclaircie ne se lit pas (1,6 — lampe du 25/09) :
+   fond sombre uni, la teinte éclaircie reste. */
+html[data-theme="dark"] .mini-pill{ background:#243247; }
 
 @media(min-width:641px) and (max-width:1024px){ .stat-tiles{grid-template-columns:repeat(3, 1fr);} }
 @media(max-width:640px){

@@ -1869,6 +1869,39 @@ if (typeof document !== "undefined") {
 }
 
 /* =====================================================================
+   LA PEAU v2 — LES ICÔNES EN TRAIT DES ONGLETS DU HAUT (25/09/2026, lot 18)
+   ---------------------------------------------------------------------
+   Les onglets du bas portent déjà des icônes en trait (SVG, stroke currentColor) ; ceux du
+   haut portaient un émoji. Une seule source : l'onglet du haut reprend l'icône de l'onglet du
+   bas qui a la même clé, et perd son émoji. Rien d'autre ne change (texte, identifiants,
+   écouteurs) ; un onglet sans jumeau en bas garde son émoji.
+   ===================================================================== */
+function cltPeauIcones() {
+  if (typeof document === "undefined") return;
+  var bas = document.getElementById("clt-bottomnav");
+  if (!bas) return;
+  var EMOJI = /^[\s\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{1F1E6}-\u{1F1FF}\u{2190}-\u{21FF}\u{2300}-\u{23FF}\u{3030}\u{303D}\u{3297}\u{3299}\u{00A9}\u{00AE}\u{2122}\u{2139}\u{2194}-\u{2199}\u{21A9}\u{21AA}\u{231A}\u{231B}\u{2328}\u{23CF}\u{23E9}-\u{23F3}\u{23F8}-\u{23FA}\u{24C2}\u{25AA}\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}]+/u;
+  document.querySelectorAll(".clt-toptab").forEach(function (tab) {
+    if (tab.querySelector(".clt-ico")) return;
+    var cle = tab.dataset.clttab || tab.dataset.eqtab;
+    if (!cle) return;
+    var jumeau = bas.querySelector('[data-nav="' + cle + '"] svg, [data-target="' + cle + '"] svg, [data-target="section-' + cle + '"] svg');
+    if (!jumeau) return;
+    var ico = jumeau.cloneNode(true);
+    ico.classList.add("clt-ico"); ico.setAttribute("aria-hidden", "true"); ico.removeAttribute("width"); ico.removeAttribute("height");
+    var texte = null;
+    for (var i = 0; i < tab.childNodes.length; i++) { var n = tab.childNodes[i]; if (n.nodeType === 3 && n.nodeValue.trim()) { texte = n; break; } }
+    if (texte) texte.nodeValue = texte.nodeValue.replace(EMOJI, "").replace(/^\s+/, "");
+    tab.insertBefore(ico, tab.firstChild);
+  });
+}
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", cltPeauIcones);
+  else cltPeauIcones();
+}
+window.cltPeauIcones = cltPeauIcones;
+
+/* =====================================================================
    LA GRILLE TARIFAIRE, DANS L'APP — 16 septembre 2026 (demande de Celtis)
    ---------------------------------------------------------------------
    « Que la grille soit disponible sur tous les comptes, consultable à tout moment, sans onglet
