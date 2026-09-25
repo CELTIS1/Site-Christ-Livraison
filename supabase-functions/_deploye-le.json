@@ -38,8 +38,10 @@
       "le": "2026-09-22"
     },
     "assistant-repondre": {
-      "etat": "non-deployee",
-      "pourquoi": "À déployer par Celtis (26/09, étage 3 de l'assistant) : Edge Functions › Deploy a new function › « assistant-repondre » › coller supabase-functions/assistant-repondre/index.ts › Deploy ; puis Secrets › ANTHROPIC_API_KEY (sa clé Anthropic, jamais dans le chat). Sans clé, la fonction rend { repli: true } et l'assistant marche comme avant."
+      "etat": "deployee",
+      "empreinte": "f452228fa1bed9f3629aff4568571faad2c39e5be1c614535c387d1703edd89a",
+      "le": "2026-09-26",
+      "note": "Déployée par Celtis le 26/09 (Verify JWT activé) ; secret ANTHROPIC_API_KEY posé le 26/09 ; testée en vrai : l'assistant répond."
     },
     "bilan-hebdomadaire": {
       "etat": "non-deployee",
