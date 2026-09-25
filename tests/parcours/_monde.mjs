@@ -90,7 +90,7 @@ export function nouveauMonde() {
     /* CLT Express (18/09/2026, point 5.5). Le tarif est celui relevé en production le 18/09 :
        500 F de base, 150 F du kilomètre. Un tarif inventé ici ferait un banc qui ne mesure rien. */
     express_config: [{ id: 1, tarif_base: 500, tarif_par_km: 150, commission_pct: 0.2, vitesse_moy_kmh: 18, delai_prise_en_charge_min: 10 }],
-    express_courses: [], express_messages: [], express_course_positions: [],
+    express_courses: [], express_messages: [], express_course_positions: [], express_reclamations: [],
     /* UN REÇU DE REVERSEMENT DÉJÀ ÉCRIT (18/09/2026, point 10.3), avec son numéro : la cliente
        Mariam a été payée pour son colis n°2, livré. C'est la pièce que les deux écrans impriment. */
     reversements_clientes: [{
@@ -257,7 +257,7 @@ export function nouveauMonde() {
       const rows = [].concat(q.valeurs).map((v, i) => Object.assign({ id: `nouveau-${Date.now()}-${i}`, created_at: maintenant }, v));
       rows.forEach(r => { if (table === 'colis') { if (r.statut === undefined) r.statut = 'en_attente'; if (!r.numero) r.numero = 'CLT-TEST-' + String(TABLES.colis.length + 1).padStart(5, '0'); } });
       // Les valeurs par défaut de la base, pour les tables où l'écran ne les envoie pas.
-      rows.forEach(r => { if (table === 'reclamations_clientes' && r.statut === undefined) r.statut = 'ouverte'; if (table === 'demandes_de_passage' && r.statut === undefined) r.statut = 'en_attente'; });
+      rows.forEach(r => { if ((table === 'reclamations_clientes' || table === 'express_reclamations') && r.statut === undefined) r.statut = 'ouverte'; if (table === 'demandes_de_passage' && r.statut === undefined) r.statut = 'en_attente'; });
       // L'activité de la cliente (23/09/2026) : une ligne par compte — un upsert remplace la sienne.
       if (table === 'activites_clientes') { const ids = new Set(rows.map(r => r.profile_id)); TABLES[table] = (TABLES[table] || []).filter(l => !ids.has(l.profile_id)); }
       /* LES DÉCLENCHEURS DE LA CRÉATION D'UN COLIS (25/09/2026, lot 17), dans l'ordre de la base :

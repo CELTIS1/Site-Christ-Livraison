@@ -713,6 +713,10 @@ if (isAdmin) trackChannel(supabaseClient
 .on('postgres_changes', { event: '*', schema: 'public', table: 'express_courses' }, () => {
 loadExpressCourses();
 })
+// Un litige Express qui arrive (25/09/2026, lot P-2) : la liste « À traiter » se recharge.
+.on('postgres_changes', { event: '*', schema: 'public', table: 'express_reclamations' }, () => {
+if (typeof chargerRetours === 'function') chargerRetours();
+})
 .subscribe());
 
 // Carte en direct des livreurs ayant activé le partage de position (voir livreur.html).

@@ -64,7 +64,9 @@ verifier('les bouts suivent : la nouvelle première n\'a plus de « monter »',
 titre('3. Le retour au rangement par commune');
 verifier('maintenant qu\'un ordre est posé, le bureau peut le défaire',
   (await page.locator('#prog-body .tournee-ranger').count()) === 1);
-await page.locator('#prog-body .tournee-ranger').click();
+// Clic dans la page (la liste se redessine d'elle-même : un clic Playwright peut tomber entre deux dessins), puis on attend la base.
+await page.evaluate(() => { const b = document.querySelector('#prog-body .tournee-ranger'); if (b) b.click(); });
+for (let i = 0; i < 10 && !monde.TABLES.programmations_collecte.every(p => p.ordre_tournee === null); i++) await dodo(500);
 await dodo(2000);
 verifier('la tournée est retombée sur l\'ordre des communes',
   /Mariam/.test((await noms())[0]), (await noms()).join(' | '));

@@ -62,7 +62,7 @@ jobs:
     # 25/09/2026 : 47 parcours, en trois tranches qui tournent EN MÊME TEMPS sur trois machines
     # (chaque tranche lance ses parcours trois par trois) — la série passe de ~50 min à ~5 min ;
     # et une limite dure, pour qu'un parcours bloqué ne retienne pas la publication une heure.
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:

@@ -30,15 +30,19 @@ verifier('la seconde cliente est encadrée', await carte(CLIENTE1).evaluate((el)
 verifier('et la première l\'est TOUJOURS : rien ne s\'efface tant qu\'on n\'a pas touché', await carte(CLIENTE2).evaluate((el) => el.classList.contains('recap-client-card--a-voir')));
 
 titre('3. Ouvrir la carte, c\'est l\'avoir vue');
-await carte(CLIENTE2).click();
+// On clique la carte dans la page (un clic Playwright peut tomber sur la voisine si la liste se redessine entre-temps).
+await page.evaluate((fid) => { const el = document.querySelector(`#recap-body .recap-client-card[data-fid="${fid}"]`); if (el) el.click(); }, CLIENTE2);
 await dodo(800);
+const memoire = await page.evaluate(() => localStorage.getItem('clt:equipe:points-a-voir'));
 await page.evaluate(() => { const b = document.querySelector('#recap-body .btn-back, #recap-body [data-recap-retour]'); if (b) b.click(); });
 await N.ouvrirConnecte('equipe.html', ADMIN);
 await dodo(3500);
 await page.evaluate(() => { showEquipeTab('suivi'); if (!document.getElementById('recap-fournisseur').classList.contains('open')) toggleRecap(); });
 await dodo(1500);
+// Sous charge (trois parcours en parallèle), le cadre peut arriver un peu après le dessin : on attend jusqu'à 8 s.
+for (let i = 0; i < 16; i++) { if (await carte(CLIENTE1).evaluate((el) => el.classList.contains('recap-client-card--a-voir')).catch(() => false)) break; await dodo(500); }
 verifier('après rechargement, la carte ouverte n\'est plus encadrée', await carte(CLIENTE2).evaluate((el) => !el.classList.contains('recap-client-card--a-voir')));
-verifier('mais celle qu\'on n\'a pas ouverte l\'est encore', await carte(CLIENTE1).evaluate((el) => el.classList.contains('recap-client-card--a-voir')));
+verifier('mais celle qu\'on n\'a pas ouverte l\'est encore', await carte(CLIENTE1).evaluate((el) => el.classList.contains('recap-client-card--a-voir')), 'mémoire avant rechargement : ' + memoire);
 
 titre('4. Une demande de passage : la notification conduit à SA ligne, et programmer la traite');
 /* 22/09/2026, Celtis : « on reçoit la notification mais on ne sait pas laquelle, et on a du mal

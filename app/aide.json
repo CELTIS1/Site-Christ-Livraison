@@ -493,6 +493,17 @@
             "Chaque geste est tracé au nom du bureau ; « Marquer livrée » règle la commission comme si le coursier avait appuyé."
           ],
           "astuce": "Le filtre « Récupérées » montre les colis en route vers la livraison : c'est là qu'on appelle si le client s'inquiète."
+        },
+        {
+          "id": "equipe-litiges-express",
+          "titre": "Les litiges Express dans « À traiter »",
+          "resume": "Un client ou un coursier a signalé un problème sur une course : la vue « Litiges Express », un bouton « Que faire ? ».",
+          "etapes": [
+            "À traiter › « 🛵 Litiges Express » : qui, le motif, le mot, la course ; un litige de plus d'un jour passe en rouge.",
+            "« Que faire ? » : Ouvrir le dossier de la course (chronologie, argent, gestes du bureau) · Je m'en occupe · Répondre et clore.",
+            "« Répondre et clore » envoie votre phrase : la personne la lit sous sa course, dans son application."
+          ],
+          "astuce": "Répondre dans les 24 h : c'est le délai promis à l'écran, et l'un des dix chiffres du gérant compte les signalements qui dépassent."
         }
       ]
     },
@@ -551,6 +562,17 @@
             "Vous payez en espèces au coursier, à la livraison. Si le paiement par Wave vous est proposé, un bouton apparaît au même endroit.",
             "Après la livraison : « ⭐ Notez votre coursier ». Votre note aide les autres clients."
           ]
+        },
+        {
+          "id": "express-signaler",
+          "titre": "Signaler un problème sur une course",
+          "resume": "Sous la course, « ⚠️ Signaler un problème » : un motif, un mot, envoyé. CLT répond sous la course dans les 24 h.",
+          "etapes": [
+            "Mes courses › la course (les livrées sont sous « Terminées ») › « ⚠️ Signaler un problème ».",
+            "Choisissez ce qui s'est passé (colis abîmé, jamais reçu, retard, coursier absent, montant, comportement, autre) et ajoutez un mot si besoin.",
+            "Vous lisez ensuite, au même endroit : « reçu », « pris en charge », puis la réponse de CLT."
+          ],
+          "astuce": "Pour une urgence (coursier injoignable pendant la course), appelez CLT : le signalement, c'est pour ce qui se règle après."
         }
       ]
     },
@@ -620,6 +642,16 @@
           "etapes": [
             "Le minimum requis est écrit sous votre solde, dans l'onglet « Solde ».",
             "Rechargez : dès que l'équipe a validé l'envoi, les courses redeviennent acceptables."
+          ]
+        },
+        {
+          "id": "coursier-signaler",
+          "titre": "Signaler un problème sur une course",
+          "resume": "Client injoignable, adresse introuvable, colis refusé, paiement, incident : dites-le sous la course, le bureau vous répond.",
+          "etapes": [
+            "Mes courses › la course › « ⚠️ Signaler un problème » ; choisissez le motif, ajoutez un mot.",
+            "Le bureau lit votre signalement dans « À traiter » et vous répond au même endroit dans les 24 h.",
+            "Un incident (sécurité) : appelez CLT en plus, tout de suite."
           ]
         }
       ]

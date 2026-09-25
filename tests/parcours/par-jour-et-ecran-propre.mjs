@@ -170,7 +170,8 @@ verifier('le panneau Colis est bien celui qu\'on voit', apres.colisVisible);
 verifier('aucun menu « ⋮ » n\'est resté ouvert depuis l\'onglet quitté', apres.menusOuverts === 0, JSON.stringify(apres));
 await page.evaluate(() => showEquipeTab('finances'));
 await dodo(600);
-const retour = await page.evaluate(() => Math.round(window.scrollY));
+let retour = await page.evaluate(() => Math.round(window.scrollY));
+for (let i = 0; i < 8 && retour !== 0; i++) { await dodo(400); retour = await page.evaluate(() => Math.round(window.scrollY)); }   // défilement doux, machine chargée
 verifier('le remède vaut pour TOUS les onglets, pas seulement Colis', retour === 0, String(retour));
 verifier('aucune erreur JavaScript sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));
 

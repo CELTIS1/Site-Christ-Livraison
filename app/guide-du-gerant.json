@@ -108,6 +108,19 @@
       "aSavoir": "Trouvé en écrivant le parcours de bout en bout : une course commandée SANS épingle est invisible pour un coursier géolocalisé (la fonction de proximité exige des coordonnées). Corrigé au lot P-4."
     },
     {
+      "id": "express-litiges",
+      "espace": "express",
+      "titre": "Express : les litiges et le support",
+      "enBref": "Client et coursier signalent un problème sous la course ; le bureau le traite dans « À traiter » et répond au même endroit.",
+      "ou": "Équipe › À traiter › « 🛵 Litiges Express » ; côté client et coursier, sous la course",
+      "etapes": [
+        "Le délai promis : 24 h. Un litige plus vieux brûle (rouge) et compte dans les dix chiffres.",
+        "« Ouvrir le dossier » donne tout pour trancher ; les gestes du bureau (annuler, attribuer…) sont là.",
+        "SQL du 25/09 à jouer : la table des litiges (chacun ne lit que les siens, le bureau voit tout, temps réel)."
+      ],
+      "aSavoir": "Pas encore : le remboursement (lot P-5) et la suspension automatique d'un coursier mal noté (lot P-3)."
+    },
+    {
       "id": "l-argent",
       "espace": "bureau",
       "titre": "L'argent en deux écrans (et ce qui manque)",

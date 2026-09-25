@@ -4744,3 +4744,23 @@ html[data-theme="dark"] .express-attente--urgent{ color:#F58A45; }
 .express-geste__coursier{ min-width:180px; }
 @media(max-width:640px){ .express-geste{ grid-template-columns:1fr; } }
 html[data-theme="dark"] .express-geste{ background:#243247; }
+
+/* SIGNALER UN PROBLÈME SUR UNE COURSE EXPRESS (25/09/2026, chantier P, lot P-2). */
+.litige-signaler{ margin-top:8px; }
+.litige-etat{ margin-top:8px; padding:8px 10px; border-radius:10px; background:#FBE7D8; font-size:13.5px; line-height:1.45; }
+.litige-etat--en_cours{ background:#FDF3D6; }
+.litige-etat--resolue{ background:#E3F6EA; }
+.litige-corps{ padding:4px 18px 18px; }
+.litige-motifs{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+.litige-motif{ min-height:48px; text-align:left; padding:10px 14px; border:1.5px solid var(--border-strong); border-radius:12px; background:var(--white); font:inherit; font-size:15px; cursor:pointer; color:inherit; }
+.litige-motif.actuel{ border-color:var(--navy); background:#E8F1FB; font-weight:700; }
+.litige-label{ display:block; font-size:13.5px; font-weight:600; }
+.litige-texte{ display:block; width:100%; margin-top:6px; padding:10px 12px; border:1px solid var(--border-strong); border-radius:12px; font:inherit; font-size:15px; resize:vertical; }
+.litige-pied{ margin-top:12px; }
+.litige-pied .btn{ min-height:44px; width:100%; justify-content:center; }
+html[data-theme="dark"] .litige-etat{ background:#3a2a1a; }
+html[data-theme="dark"] .litige-etat--en_cours{ background:#3a3320; }
+html[data-theme="dark"] .litige-etat--resolue{ background:#1f3a2a; }
+html[data-theme="dark"] .litige-motif{ background:#1a2230; border-color:#3A4B60; }
+html[data-theme="dark"] .litige-motif.actuel{ background:#243247; border-color:#8FB8EC; }
+html[data-theme="dark"] .litige-texte{ background:#1a2230; border-color:#3A4B60; color:#E6ECF3; }

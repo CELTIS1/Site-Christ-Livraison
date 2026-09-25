@@ -30,6 +30,7 @@
     { cle: 'reportes', libelle: 'Reportés' },
     { cle: 'signalements', libelle: 'Signalements' },
     { cle: 'demandes', libelle: 'Demandes' },
+    { cle: 'litiges', libelle: 'Litiges Express' },   // 25/09/2026, chantier P, lot P-2
   ];
 
   const AIDE = {
@@ -39,6 +40,7 @@
     reportes: 'Un colis reporté dont le jour est arrivé (ou passé) et qui n\'est toujours pas livré. Deux issues : <b>le remettre à sa journée</b> d\'origine, ou <b>changer le jour</b>.',
     signalements: 'Une cliente ou un livreur a signalé un problème. <b>« Je m\'en occupe »</b> le prend en charge ; <b>« Répondre et clore »</b> envoie la réponse, qu\'ils lisent sous leur signalement.',
     demandes: 'Une cliente demande un passage. <b>« Programmer »</b> ouvre la tournée de ce jour avec tout rempli ; <b>« Refuser »</b> lui envoie le motif ; <b>« Traitée »</b> si vous avez répondu autrement.',
+    litiges: 'Un client ou un coursier Express a signalé un problème sur une course. <b>« Ouvrir le dossier »</b> montre tout (chronologie, argent, gestes) ; <b>« Je m\'en occupe »</b> le prend en charge ; <b>« Répondre et clore »</b> envoie la réponse, lue sous le signalement. Un litige de plus d\'un jour brûle.',
   };
 
   function joursEntre(iso, aujourdhui) {
@@ -81,6 +83,13 @@
       const j = joursEntre(r.created_at, aujourdhui);
       lignes.push({ genre: 'signalements', cle: 'reclam:' + r.id, id: r.id, reclamation: r, urgence: (j || 0) >= 1 ? 1 : 2, jours: j, depuis: depuisTexte(j), tri: String(r.created_at || '') });
     });
+    /* Les litiges Express (25/09/2026, lot P-2) : un signalement sur une course, par le client ou le
+       coursier. Le jour même : urgence 1 ; dès le lendemain : 0 — le cahier des charges fixe le
+       délai de réponse à 24 h. */
+    (S.litiges || []).forEach(function (r) {
+      const j = joursEntre(r.created_at, aujourdhui);
+      lignes.push({ genre: 'litiges', cle: 'litige:' + r.id, id: r.id, litige: r, urgence: (j || 0) >= 1 ? 0 : 1, jours: j, depuis: depuisTexte(j), tri: String(r.created_at || '') });
+    });
     (S.demandes || []).forEach(function (d) {
       const j = joursEntre(d.jour, aujourdhui);   // ≤ 0 : à venir
       lignes.push({ genre: 'demandes', cle: 'demande:' + d.id, id: d.id, demande: d, urgence: j >= 0 ? 1 : 3, jours: j, depuis: j === 0 ? "pour aujourd'hui" : j === -1 ? 'pour demain' : j < 0 ? 'pour dans ' + (-j) + ' jours' : 'jour passé', tri: String(d.jour || '') });
@@ -90,7 +99,7 @@
   }
 
   function compterParGenre(lignes) {
-    const n = { tout: 0, non_livres: 0, retours: 0, reportes: 0, signalements: 0, demandes: 0, urgent: 0 };
+    const n = { tout: 0, non_livres: 0, retours: 0, reportes: 0, signalements: 0, demandes: 0, litiges: 0, urgent: 0 };
     (lignes || []).forEach(function (l) { n.tout += 1; n[l.genre] = (n[l.genre] || 0) + 1; if (l.urgence < 1) n.urgent += 1; });
     return n;
   }
@@ -132,6 +141,13 @@
       const r = ligne.reclamation || {};
       if (r.statut !== 'en_cours') choix.push({ cle: 'en_cours', libelle: '🙋 Je m\'en occupe', explication: 'La personne voit « prise en charge » ; le signalement reste ouvert.', action: 'reclam' });
       choix.push({ cle: 'resolue', libelle: '✅ Répondre et clore', explication: 'Votre réponse est envoyée et lue sous le signalement.', action: 'reclam' });
+      return choix;
+    }
+    if (ligne.genre === 'litiges') {
+      const r = ligne.litige || {};
+      choix.push({ cle: 'dossier', libelle: '📂 Ouvrir le dossier de la course', explication: 'Chronologie, argent, chat, et les gestes du bureau (attribuer, marquer, annuler).', action: 'litige' });
+      if (r.statut !== 'en_cours') choix.push({ cle: 'en_cours', libelle: '🙋 Je m\'en occupe', explication: 'La personne voit « prise en charge » ; le litige reste ouvert.', action: 'litige' });
+      choix.push({ cle: 'resolue', libelle: '✅ Répondre et clore', explication: 'Votre réponse est envoyée et lue sous le signalement, dans son application.', action: 'litige' });
       return choix;
     }
     if (ligne.genre === 'demandes') {

@@ -95,7 +95,8 @@ await dodo(900);
 const ex = await page.evaluate(() => { const b = document.querySelector('#clt-aide .clt-nouveautes__boite'); const c = getComputedStyle(b).backgroundColor.match(/\d+/g).map(Number); return { clair: c[0] > 240 && c[1] > 240 && c[2] > 240, sections: [...b.querySelectorAll('.clt-aide__section h3')].map((h) => h.textContent), ids: [...b.querySelectorAll('.clt-aide__article')].map((a) => a.id) }; });
 verifier('la boîte est claire : elle suit l\'application, pas le téléphone', ex.clair, JSON.stringify(ex).slice(0, 200));
 verifier('deux chapitres : « je commande une course » et « Pour tout le monde »', ex.sections.length === 2 && /je commande/i.test(ex.sections[0]), ex.sections.join(' | '));
-verifier('cinq fiches du client (commander, adresses, suivre, annuler, payer) — aucune du coursier', ex.ids.filter((i) => /^aide-express-/.test(i)).length === 5 && !ex.ids.some((i) => /^aide-coursier-/.test(i)), ex.ids.join(','));
+// 25/09/2026 (lot P-2) : sixième fiche, « Signaler un problème sur une course ».
+verifier('six fiches du client (commander, adresses, suivre, annuler, payer, signaler) — aucune du coursier', ex.ids.filter((i) => /^aide-express-/.test(i)).length === 6 && !ex.ids.some((i) => /^aide-coursier-/.test(i)), ex.ids.join(','));
 await page.emulateMedia({ colorScheme: 'light' });
 
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));

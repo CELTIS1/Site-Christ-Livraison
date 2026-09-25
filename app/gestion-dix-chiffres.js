@@ -19,7 +19,8 @@
       q(supabaseClient.from('colis').select('id, statut, created_at, livre_at, non_livre_at, echec_imputable, fournisseur_id, livreur_id, livreur_collecte_id').gte('created_at', depuis60).limit(5000)),
       q(supabaseClient.from('colis').select('*').eq('statut', 'livre').is('reverse_au_fournisseur_at', null).limit(2000)),
       q(supabaseClient.from('colis').select('*').eq('statut', 'livre').or('encaissement_remis.is.null,encaissement_remis.eq.false').limit(2000)),
-      q(supabaseClient.from('reclamations_clientes').select('id, statut, created_at').in('statut', ['ouverte', 'en_cours']).limit(500)),
+      // Les signalements des clientes et des livreurs, et depuis le 25/09 (lot P-2) les litiges Express : la même alerte.
+      Promise.all([q(supabaseClient.from('reclamations_clientes').select('id, statut, created_at').in('statut', ['ouverte', 'en_cours']).limit(500)), q(supabaseClient.from('express_reclamations').select('id, statut, created_at').in('statut', ['ouverte', 'en_cours']).limit(500))]).then(([a, b]) => a.concat(b)),
       q(supabaseClient.from('demandes_de_passage').select('id, created_at, traitee_at, statut').gte('created_at', depuis30).limit(500)),
       q(supabaseClient.from('remises_caisse').select('id, livreur_id, ecart, created_at').gte('created_at', depuis7).limit(200)),
     ]);

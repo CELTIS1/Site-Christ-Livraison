@@ -40,6 +40,26 @@ const MOTIFS_SIGNALEMENT_LIVREUR = {
   autre:                    { label: "Autre",                         icon: "✍️" },
 };
 
+/* CE QU'ON PEUT SIGNALER SUR UNE COURSE EXPRESS (25/09/2026, chantier P, lot P-2). Deux listes
+   fermées, une par côté ; le bureau les lit dans « À traiter » (Litiges Express). */
+const MOTIFS_LITIGE_CLIENT_EXPRESS = {
+  colis_abime:       { label: "Colis abîmé ou ouvert",          icon: "📦" },
+  jamais_recu:       { label: "Colis jamais reçu",              icon: "❓" },
+  retard:            { label: "Trop de retard",                 icon: "⏰" },
+  coursier_absent:   { label: "Le coursier n'est pas venu",     icon: "🛵" },
+  montant_faux:      { label: "Montant demandé incorrect",      icon: "💰" },
+  comportement:      { label: "Comportement du coursier",       icon: "🙅" },
+  autre:             { label: "Autre",                          icon: "✍️" },
+};
+const MOTIFS_LITIGE_COURSIER_EXPRESS = {
+  client_injoignable:  { label: "Client ou destinataire injoignable", icon: "📴" },
+  adresse_introuvable: { label: "Adresse introuvable",               icon: "📍" },
+  colis_refuse:        { label: "Colis refusé à l'arrivée",          icon: "🚫" },
+  paiement:            { label: "Paiement refusé ou incomplet",      icon: "💰" },
+  incident:            { label: "Incident, sécurité",                icon: "⚠️" },
+  autre:               { label: "Autre",                             icon: "✍️" },
+};
+
 const STATUTS_RECLAMATION = {
   ouverte:  { label: "Ouverte",     icon: "🔴", teinte: "rouge" },
   en_cours: { label: "En cours",    icon: "🟠", teinte: "ambre" },
@@ -47,7 +67,7 @@ const STATUTS_RECLAMATION = {
 };
 
 function motifReclamationTexte(cle) {
-  const m = MOTIFS_RECLAMATION[cle] || MOTIFS_SIGNALEMENT_LIVREUR[cle];
+  const m = MOTIFS_RECLAMATION[cle] || MOTIFS_SIGNALEMENT_LIVREUR[cle] || MOTIFS_LITIGE_CLIENT_EXPRESS[cle] || MOTIFS_LITIGE_COURSIER_EXPRESS[cle];
   return m ? (m.icon + ' ' + m.label) : String(cle || '');
 }
 /* Qui parle : 'livreur' ou 'cliente'. Les lignes d'avant le 20/09 n'ont pas la colonne. */

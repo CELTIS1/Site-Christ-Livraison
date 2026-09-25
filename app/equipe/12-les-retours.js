@@ -73,6 +73,7 @@ async function chargerRetours(){
     rtReportes = rep.error ? [] : (rep.data || []);
     const dem = await supabaseClient.from('demandes_de_passage').select('id, jour, fournisseur_id, note, statut, nb_colis').eq('statut', 'en_attente').gte('jour', auj).order('jour', { ascending: true }).limit(100);
     rtDemandes = dem.error ? [] : (dem.data || []);
+    await chargerLitigesExpress();   // 25/09/2026, lot P-2 : les litiges Express, dans la même liste
     renderRetours(false);
   })();
   try { await rtChargement; } finally { rtChargement = null; }
@@ -118,7 +119,7 @@ function rtDetenteurTexte(c){
 
 function rtLignes(){
   const A = window.CLTATraiter;
-  return A.lignesATraiter({ colis: rtColis, reportes: rtReportes, reclamations: Array.isArray(window.__reclamationsClientes) ? window.__reclamationsClientes : [], demandes: rtDemandes }, todayLocalISODate(), { retourNiveau, retourEnRetard, retourDepart });
+  return A.lignesATraiter({ colis: rtColis, reportes: rtReportes, reclamations: Array.isArray(window.__reclamationsClientes) ? window.__reclamationsClientes : [], demandes: rtDemandes, litiges: Array.isArray(window.__litigesExpress) ? window.__litigesExpress : [] }, todayLocalISODate(), { retourNiveau, retourEnRetard, retourDepart });
 }
 function rtLigneCorrespond(l, q){
   if (!q) return true;
@@ -133,8 +134,8 @@ function rtLigneCorrespond(l, q){
 function rtJourCourt(iso){ const j = String(iso || '').slice(0, 10); return /^\d{4}-\d{2}-\d{2}$/.test(j) ? j.slice(8, 10) + '/' + j.slice(5, 7) : j; }
 function rtDemainISO(){ const d = new Date(todayLocalISODate() + 'T12:00:00'); d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function rtPoserJourTournee(jour){ if (typeof progJourChoisi !== 'undefined') progJourChoisi = jour; const champ = document.getElementById('prog-jour'); if (champ) champ.value = jour; }
-const RT_GENRE_ICONE = { non_livres: '⚠️', retours: '↩️', reportes: '⏭️', signalements: '🛎️', demandes: '🗓️' };
-const RT_GENRE_LIBELLE = { non_livres: 'Non livré', retours: 'Retour', reportes: 'Reporté', signalements: 'Signalement', demandes: 'Demande de passage' };
+const RT_GENRE_ICONE = { non_livres: '⚠️', retours: '↩️', reportes: '⏭️', signalements: '🛎️', demandes: '🗓️', litiges: '🛵' };
+const RT_GENRE_LIBELLE = { non_livres: 'Non livré', retours: 'Retour', reportes: 'Reporté', signalements: 'Signalement', demandes: 'Demande de passage', litiges: 'Litige Express' };
 
 function renderRetours(enErreur){
   const carte = document.getElementById('section-retours');
@@ -156,7 +157,7 @@ function renderRetours(enErreur){
     b.classList.toggle('active', actif); b.setAttribute('aria-selected', actif ? 'true' : 'false');
   });
   const poser = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v ? String(v) : ''; };
-  poser('rt-n-tout', n.tout); poser('rt-n-retours', n.retours); poser('rt-n-non-livres', n.non_livres); poser('rt-n-reportes', n.reportes); poser('rt-n-signalements', n.signalements); poser('rt-n-demandes', n.demandes);
+  poser('rt-n-tout', n.tout); poser('rt-n-retours', n.retours); poser('rt-n-non-livres', n.non_livres); poser('rt-n-reportes', n.reportes); poser('rt-n-signalements', n.signalements); poser('rt-n-demandes', n.demandes); poser('rt-n-litiges', n.litiges);
   const aide = document.getElementById('retours-aide'); if (aide) aide.innerHTML = A.AIDE[rtVue] || A.AIDE.tout;
   // Le résumé : ce qui brûle, puis chaque genre.
   const nb = { litige: 0, retard: 0 };
@@ -211,6 +212,16 @@ function rtLigneHTML(l){
     tete = `<div class="rt-qui"><span class="rt-cliente">${escapeHTML(qui)}</span><span class="rt-desc">${escapeHTML(typeof motifReclamationTexte === 'function' ? motifReclamationTexte(r.motif) : (r.motif || ''))}</span></div>
       <div class="rt-niveau">${r.statut === 'en_cours' ? '<span class="rt-badge rt-badge--bureau">prise en charge</span>' : ''}<span class="rt-depuis">${escapeHTML(l.depuis)}</span></div>`;
     ou = `<div class="rt-ou">${r.texte ? `« ${escapeHTML(r.texte)} »` : ''}${c ? ` <button type="button" class="lien-nu" data-ouvrir-colis="${escapeHTML(c.id)}">Colis ${escapeHTML(c.numero || '')}</button>` : ''}</div>`;
+  } else if (l.litige) {
+    /* Un litige Express (25/09/2026, lot P-2) : qui (client ou coursier, nom), le motif, la course. */
+    const r = l.litige;
+    const nomAuteur = (window.__litigesNoms || {})[r.auteur_id] || (r.auteur_role === 'coursier_express' ? 'Coursier' : 'Client');
+    const qui = (r.auteur_role === 'coursier_express' ? 'Coursier · ' : 'Client Express · ') + nomAuteur;
+    const c = (window.__litigesCourses || {})[r.course_id];
+    attrs = ` data-litige="${escapeHTML(r.id)}" data-litige-course="${escapeHTML(r.course_id)}"`;
+    tete = `<div class="rt-qui"><span class="rt-cliente">${escapeHTML(qui)}</span><span class="rt-desc">${escapeHTML(typeof motifReclamationTexte === 'function' ? motifReclamationTexte(r.motif) : (r.motif || ''))}</span></div>
+      <div class="rt-niveau">${r.statut === 'en_cours' ? '<span class="rt-badge rt-badge--bureau">prise en charge</span>' : ''}<span class="rt-depuis${l.urgence < 1 ? ' rt-depuis--retard' : ''}">${l.urgence < 1 ? '⏰ ' : ''}${escapeHTML(l.depuis)}</span></div>`;
+    ou = `<div class="rt-ou">${r.texte ? `« ${escapeHTML(r.texte)} »` : ''}${c ? ` <span class="rt-motif">· ${escapeHTML((c.adresse_recuperation || '?') + ' → ' + (c.adresse_livraison || '?'))}</span>` : ''}</div>`;
   } else if (l.demande) {
     const d = l.demande, f = typeof progFicheCliente === 'function' ? (progFicheCliente(d.fournisseur_id) || {}) : {};
     const R = window.CLTDemandeDePassage;
@@ -247,6 +258,7 @@ function rtChoixHTML(l, x){
     : x.action === 'changer_jour' ? 'data-rt-changer-jour="1"'
     : x.action === 'reclam' ? `data-reclam-geste="${escapeHTML(x.cle)}"`
     : x.action === 'demande' ? `data-rt-demande="${escapeHTML(x.cle)}"`
+    : x.action === 'litige' ? `data-litige-geste="${escapeHTML(x.cle)}"`
     : `data-rt-geste="${escapeHTML(x.cle)}"`;
   return `<button type="button" class="rt-choix-item${x.danger ? ' rt-choix-item--danger' : ''}" ${attr}><span class="rt-choix-lib">${escapeHTML(x.libelle)}</span>${expl}</button>`;
 }
@@ -444,3 +456,48 @@ document.getElementById('retours-rafraichir')?.addEventListener('click', () => c
     else if (++essais > 200) clearInterval(minuteur);   // une minute : la page n'a pas démarré, on n'insiste pas
   }, 300);
 })();
+
+
+/* ---------- LES LITIGES EXPRESS (25/09/2026, chantier P, lot P-2) ----------
+   Lus dans express_reclamations (non résolus), avec le nom des auteurs et la course ; le bureau
+   ouvre le dossier, prend en charge, ou répond et clôt — la réponse est lue sous le signalement,
+   dans l'application du client ou du coursier. Si la table n'existe pas encore, on continue sans. */
+window.__litigesExpress = [];
+window.__litigesNoms = {};
+window.__litigesCourses = {};
+async function chargerLitigesExpress(){
+  try {
+    const { data, error } = await supabaseClient.from('express_reclamations').select('*').neq('statut', 'resolue').order('created_at', { ascending: true }).limit(300);
+    if (error) throw error;
+    window.__litigesExpress = data || [];
+    const ids = [...new Set(window.__litigesExpress.map(r => r.auteur_id))], courses = [...new Set(window.__litigesExpress.map(r => r.course_id))];
+    if (ids.length) { const { data: p } = await supabaseClient.from('profiles').select('id, full_name').in('id', ids); (p || []).forEach(x => { window.__litigesNoms[x.id] = x.full_name; }); }
+    if (courses.length) { const { data: c } = await supabaseClient.from('express_courses').select('id, adresse_recuperation, adresse_livraison, status').in('id', courses); (c || []).forEach(x => { window.__litigesCourses[x.id] = x; }); }
+  } catch (e) { window.__litigesExpress = []; }
+}
+async function traiterLitigeExpress(id, geste){
+  const r = (window.__litigesExpress || []).find(x => x.id === id);
+  if (!r) return;
+  if (geste === 'dossier') { if (typeof ouvrirDossierExpress === 'function') ouvrirDossierExpress(r.course_id); return; }
+  let reponse = null;
+  if (geste === 'resolue') {
+    const auCoursier = r.auteur_role === 'coursier_express';
+    reponse = await cltPrompt({ title: auCoursier ? 'Votre réponse au coursier' : 'Votre réponse au client', sub: (auCoursier ? 'Il' : 'Il') + ' la lira sous son signalement. Une phrase claire : ce qui a été fait, ou ce qui va se passer.', placeholder: 'Ex. : nous avons appelé le coursier, le colis vous est livré ce soir.', okLabel: 'Envoyer et clore', maxLength: 500 });
+    if (reponse === null) return;
+  }
+  const patch = geste === 'resolue'
+    ? { statut: 'resolue', reponse: reponse || null, traitee_at: new Date().toISOString(), traitee_par: currentUser ? currentUser.id : null }
+    : { statut: 'en_cours', traitee_par: currentUser ? currentUser.id : null };
+  const { error } = await supabaseClient.from('express_reclamations').update(patch).eq('id', id);
+  if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
+  cltToast(geste === 'resolue' ? 'Litige clos : la personne voit votre réponse.' : 'Litige pris en charge.', { type: 'success' });
+  supabaseClient.from('activity_log').insert([{ action: 'litige_express_' + geste, target_id: r.course_id, target_type: 'express_courses', details: { litige_id: id, motif: r.motif, reponse: reponse || null } }]).then(() => {}, () => {});
+  await chargerLitigesExpress();
+  if (typeof renderRetours === 'function') renderRetours();
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-litige-geste]');
+  if (!b) return;
+  const ligne = b.closest('[data-litige]');
+  if (ligne) traiterLitigeExpress(ligne.dataset.litige, b.dataset.litigeGeste);
+});
