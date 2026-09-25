@@ -4871,3 +4871,4 @@ html[data-theme="dark"] .clt-assistant__fiche, html[data-theme="dark"] .clt-assi
 html[data-theme="dark"] .clt-assistant__avatar{ background:#243247; }
 html[data-theme="dark"] .clt-assistant__humain{ color:#7fe4d6; }
 .clt-assistant.hidden, .clt-assistant[hidden]{ display:none !important; }
+.dix-phrase{ font-size:12px; color:var(--muted, #5b6573); }

@@ -616,6 +616,17 @@
               "duree": "17 s"
             }
           ]
+        },
+        {
+          "id": "equipe-argent-express",
+          "titre": "CLT Express : la dette, les frais d'annulation, le remboursement",
+          "resume": "Un coursier peut devoir jusqu'à 2 000 F ; annuler une course acceptée peut facturer 500 F au client (crédités au coursier) ; un litige clos peut porter un remboursement.",
+          "etapes": [
+            "Dossier d'une course acceptée › « Annuler la course » : après le motif, « Facturer 500 F au client ? » — « Oui » si c'est le client qui a renoncé (les frais vont au coursier), « Non » si l'annulation vient de CLT ou du coursier.",
+            "À traiter › Litiges Express › « Répondre et clore » sur un litige du client : le montant remboursé (0 si aucun), puis le mode (espèces / Wave, ou geste sur une prochaine course).",
+            "Gestion › Tableau de bord › « CLT Express — les chiffres de la semaine » : dix tuiles (courses, livrées, CA, coursiers, note, litiges, sans coursier, dette, recharges, remboursé) ; chacune mène à l'onglet utile."
+          ],
+          "astuce": "Les seuils sont dans express_config : dette_max (−2 000), frais_annulation (500), solde_minimum (avertissement)."
         }
       ]
     },
@@ -870,11 +881,12 @@
         },
         {
           "id": "coursier-bloque",
-          "titre": "« Solde insuffisant » : je ne peux plus accepter",
-          "resume": "Les boutons « Accepter » sont grisés tant que le solde est sous le minimum.",
+          "titre": "« Dette dépassée » : je ne peux plus accepter",
+          "resume": "La commission de chaque course est débitée de votre solde, qui peut passer en négatif jusqu'à 2 000 F ; au-delà, plus d'acceptation tant que vous n'avez pas rechargé.",
           "etapes": [
-            "Le minimum requis est écrit sous votre solde, dans l'onglet « Solde ».",
-            "Rechargez : dès que l'équipe a validé l'envoi, les courses redeviennent acceptables."
+            "Votre solde s'affiche dans « Solde » ; en dessous, la phrase dit si vous êtes en dette et jusqu'où vous pouvez aller.",
+            "Sous −2 000 F, « Accepter » est désactivé et la base refuse : rechargez (voir la fiche « Mon solde »).",
+            "Une course annulée par le client après votre acceptation vous crédite 500 F de frais, automatiquement."
           ],
           "medias": [
             {
@@ -884,7 +896,8 @@
               "label": "Recharger mon solde",
               "duree": "23 s"
             }
-          ]
+          ],
+          "astuce": "Rechargez avant d'être bloqué : sous le minimum conseillé, la phrase le dit déjà."
         },
         {
           "id": "coursier-signaler",

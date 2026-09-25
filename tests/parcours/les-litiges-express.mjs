@@ -80,6 +80,9 @@ await ligneClient2.locator('[data-litige-geste="resolue"]').click();
 await dodo(500);
 await page.locator('#clt-modal-input').fill('Nous avons vu la photo : la course vous est remboursée demain.');
 await okModal();
+// Lot P-5 : pour un litige du client, le bureau note le remboursement (0 = aucun).
+await page.locator('#clt-modal-input').fill('0');
+await okModal();
 await dodo(800);
 verifier('« Répondre et clore » : résolue, réponse, heure, auteur ; la ligne a quitté la liste (reste le litige du coursier)', lit.statut === 'resolue' && /remboursée demain/.test(lit.reponse) && !!lit.traitee_at && (await page.locator('#retours-liste .rt-ligne[data-litige]').count()) === 1 && (await texte(page.locator('#rt-n-litiges'))) === '1', JSON.stringify([lit.statut, lit.reponse]));
 

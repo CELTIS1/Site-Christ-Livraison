@@ -17,13 +17,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260925assistant">
+<link rel="stylesheet" href="style.css?v=20260925argent-express">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260925assistant"></script>
+<script src="theme.js?v=20260925argent-express"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260925assistant" defer></script>
-<script src="cloche.js?v=20260925assistant" defer></script>
-<script src="splash.js?v=20260925assistant"></script>
+<script src="notifications-recues.js?v=20260925argent-express" defer></script>
+<script src="cloche.js?v=20260925argent-express" defer></script>
+<script src="splash.js?v=20260925argent-express"></script>
 <style>
   .topbar{ background:#0D9488; }
   .topbar .brand .logo-mark{ background:#0b6e64; }
@@ -308,7 +308,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#0F766E; }</style>
-<link rel="stylesheet" href="peau.css?v=20260925assistant">
+<link rel="stylesheet" href="peau.css?v=20260925argent-express">
 </head>
 <body>
 
@@ -642,17 +642,17 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260925assistant"></script>
-<script src="assistant.js?v=20260925assistant"></script>
-<script src="lib/reclamations.js?v=20260925assistant"></script>
-<script src="express-litige.js?v=20260925assistant"></script>
-  <script src="express-preuve.js?v=20260925assistant"></script>
-  <script src="express-conditions-texte.js?v=20260925assistant"></script>
-  <script src="express-notation.js?v=20260925assistant"></script>
-  <script src="express-conditions.js?v=20260925assistant"></script>
-<script src="express-config.js?v=20260925assistant"></script>
-<script src="recharges-express.js?v=20260925assistant"></script>
-<script src="biometric-lock.js?v=20260925assistant"></script>
+<script src="clt-common.js?v=20260925argent-express"></script>
+<script src="assistant.js?v=20260925argent-express"></script>
+<script src="lib/reclamations.js?v=20260925argent-express"></script>
+<script src="express-litige.js?v=20260925argent-express"></script>
+  <script src="express-preuve.js?v=20260925argent-express"></script>
+  <script src="express-conditions-texte.js?v=20260925argent-express"></script>
+  <script src="express-notation.js?v=20260925argent-express"></script>
+  <script src="express-conditions.js?v=20260925argent-express"></script>
+<script src="express-config.js?v=20260925argent-express"></script>
+<script src="recharges-express.js?v=20260925argent-express"></script>
+<script src="biometric-lock.js?v=20260925argent-express"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -680,7 +680,11 @@
     __realtimeChannels.forEach(ch => supabaseClient.removeChannel(ch));
   });
 
-  function canAcceptCourses(){ return walletSolde >= soldeMinimum; }
+  /* Lot P-5 (25/09/2026) : c'est la DETTE qui bloque (dette_max, −2 000 F par défaut), le solde minimum
+     n'est plus qu'un avertissement « rechargez ». Sans la colonne en base, on garde l'ancien seuil. */
+  let detteMax = null;
+  function canAcceptCourses(){ return detteMax !== null ? walletSolde >= detteMax : walletSolde >= soldeMinimum; }
+  function sousLeMinimum(){ return walletSolde < soldeMinimum; }
 
   function openLightbox(url){
     const ov = document.createElement('div');
@@ -971,6 +975,8 @@
           const m = String(error.message || '');
           if (/solde_insuffisant/.test(m)) {
             if (await cltConfirm({ title: 'Solde insuffisant', sub: 'Votre solde ne permet pas d\'accepter cette course. Rechargez pour continuer.', okLabel: 'Recharger', cancelLabel: 'Plus tard' })) openRechargeModal();
+          } else if (/dette_depassee/.test(m)) {
+            if (await cltConfirm({ title: 'Dette dépassée', sub: 'Votre dette dépasse ' + formatMontant(detteMax !== null ? -detteMax : 2000) + ' : rechargez pour reprendre les courses.', okLabel: 'Recharger', cancelLabel: 'Plus tard' })) openRechargeModal();
           } else if (/deja_prise/.test(m)) {
             cltToast('Cette course vient d\'être acceptée par un autre coursier.', { type: 'warning' });
           } else if (/coursier_suspendu/.test(m)) {
@@ -1260,10 +1266,10 @@
   function renderWallet(){
     const box = document.getElementById('wallet-solde-box');
     document.getElementById('wallet-solde').textContent = formatMontant(walletSolde);
-    document.getElementById('wallet-min').textContent = soldeMinimum > 0
-      ? `Minimum requis pour recevoir des courses : ${formatMontant(soldeMinimum)}`
-      : 'La commission de chaque course est déduite de ce solde.';
-    if (canAcceptCourses()) box.classList.remove('is-low'); else box.classList.add('is-low');
+    document.getElementById('wallet-min').textContent = detteMax !== null
+      ? (walletSolde < 0 ? `Vous êtes en dette de ${formatMontant(-walletSolde)} : au-delà de ${formatMontant(-detteMax)}, plus de course. Rechargez.` : (sousLeMinimum() && soldeMinimum > 0 ? `Sous ${formatMontant(soldeMinimum)} : pensez à recharger (dette possible jusqu'à ${formatMontant(-detteMax)}).` : 'La commission de chaque course est déduite de ce solde.'))
+      : (soldeMinimum > 0 ? `Minimum requis pour recevoir des courses : ${formatMontant(soldeMinimum)}` : 'La commission de chaque course est déduite de ce solde.');
+    if (canAcceptCourses() && !sousLeMinimum()) box.classList.remove('is-low'); else box.classList.add('is-low');
     document.getElementById('banner-lowbalance').classList.toggle('hidden', canAcceptCourses());
   }
 
@@ -1800,6 +1806,9 @@
       soldeMinimum = Number(cfg.solde_minimum) || 0;
       momoNumbers = { wave: cfg.momo_wave, orange: cfg.momo_orange, mtn: cfg.momo_mtn, moov: cfg.momo_moov };
     }
+    // Lot P-5 : le plafond de dette (colonne du 25/09 ; absente = ancien seuil).
+    const dm = await supabaseClient.from('express_config').select('dette_max').eq('id', 1).single();
+    if (!dm.error && dm.data && dm.data.dette_max != null) { detteMax = Number(dm.data.dette_max); renderWallet(); }
     // Lot P-3 : ma note (les dernières courses) et, s'il y a lieu, le bandeau « compte suspendu ».
     if (window.CLTConditions) {
       const seuils = await supabaseClient.from('express_config').select('note_surveillance, note_suspension, notes_minimum').eq('id', 1).single();

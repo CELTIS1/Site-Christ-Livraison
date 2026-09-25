@@ -160,6 +160,19 @@
       "aSavoir": "L'estimation du temps d'acceptation côté client et la note du client côté coursier (§ 3.3) ne sont pas faites : petit lot à part si le terrain le demande."
     },
     {
+      "id": "express-argent-tenu",
+      "espace": "express",
+      "titre": "Express : l'argent tenu",
+      "enBref": "Dette d'un coursier plafonnée à −2 000 F, 500 F de frais si le client annule après acceptation, remboursement noté sur un litige.",
+      "ou": "Coursier › Solde ; Équipe › dossier d'une course › Annuler ; À traiter › Litiges ; Gestion › Tableau de bord",
+      "etapes": [
+        "Décisions (2) et (3) du 25/09 appliquées : dette_max −2 000 F bloque l'acceptation (par la base) ; solde_minimum n'est plus qu'un avertissement.",
+        "Les frais d'annulation sont crédités au coursier par la base, une fois ; le dossier les écrit. Le remboursement d'un litige est compté dans les chiffres Express.",
+        "SQL du 25/09 à jouer : 2026-09-25-express-l-argent-tenu.sql (colonnes, express_accepter_course, déclencheur des frais)."
+      ],
+      "aSavoir": "Le remboursement en ligne (portefeuille client) attend le paiement Wave (2027) : aujourd'hui c'est espèces, Wave à la main, ou un geste sur la prochaine course."
+    },
+    {
       "id": "l-argent",
       "espace": "bureau",
       "titre": "L'argent en deux écrans (et ce qui manque)",

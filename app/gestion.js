@@ -281,7 +281,7 @@ function showToast(msg, isErr){
 function switchTab(tab){
   document.querySelectorAll('.tabs .tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   ['dashboard','compta','paie','journal','site'].forEach(s => { const el = document.getElementById('sec-'+s); if (el) el.classList.toggle('active', s === tab); });
-  if (tab === 'dashboard') { renderDashboard(); if (window.CLTDixChiffresEcran) CLTDixChiffresEcran.charger(); }
+  if (tab === 'dashboard') { renderDashboard(); if (window.CLTDixChiffresEcran) CLTDixChiffresEcran.charger(); if (window.CLTExpressChiffresEcran) CLTExpressChiffresEcran.charger(); }
   if (tab === 'journal') { loadJournal(); loadErreursClient(); }
   if (tab === 'site' && window.CLTSiteEditeur) CLTSiteEditeur.init();
   // Les cinq onglets du haut sont notés eux aussi : c'est la seule façon de savoir, en octobre,

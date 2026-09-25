@@ -195,13 +195,25 @@ async function expressFaireGeste(bouton) {
     if (!motif || !motif.trim()) return;
     Object.assign(patch, { status: 'annulee', cancelled_at: maintenant, annulation_motif: motif.trim(), annulation_par: moi });
     detail = { motif: motif.trim() };
+    /* Lot P-5 (25/09/2026), décision (3) : une course déjà acceptée qu'on annule à la demande du client
+       lui coûte les frais d'annulation (express_config.frais_annulation, 500 F), crédités au coursier
+       lésé par la base. Le bureau choisit : c'est lui qui sait si c'est le client qui a renoncé. */
+    const courseAnnulee = expressCourses.find(x => x.id === id);
+    if (courseAnnulee && ['acceptee', 'recuperee'].includes(courseAnnulee.status) && courseAnnulee.coursier_id) {
+      const cfg = await supabaseClient.from('express_config').select('frais_annulation').eq('id', 1).maybeSingle();
+      const frais = cfg.data && cfg.data.frais_annulation != null ? Number(cfg.data.frais_annulation) : null;
+      if (frais) {
+        const facturer = await cltConfirm({ title: 'Facturer ' + formatMontant(frais) + ' d\'annulation au client ?', sub: 'Le client a renoncé après qu\'un coursier a accepté : les frais lui sont demandés et crédités au coursier. « Non » si l\'annulation vient de CLT ou du coursier.', okLabel: 'Oui, facturer', cancelLabel: 'Non, sans frais' });
+        if (facturer) { patch.annulation_frais = frais; detail.frais = frais; }
+      }
+    }
   } else return;
   bouton.disabled = true;
   const complet = Object.assign({ bureau_geste: geste, bureau_geste_par: moi, bureau_geste_at: maintenant }, patch);
   let { error } = await supabaseClient.from('express_courses').update(complet).eq('id', id);
   // Repli tant que le SQL du 25/09 n'est pas joué : on écrit sans les colonnes de trace.
   if (error && /column|colonne|schema cache/i.test(error.message || '')) {
-    const sansTrace = Object.assign({}, patch); delete sansTrace.annulation_motif; delete sansTrace.annulation_par;
+    const sansTrace = Object.assign({}, patch); delete sansTrace.annulation_motif; delete sansTrace.annulation_par; delete sansTrace.annulation_frais;
     ({ error } = await supabaseClient.from('express_courses').update(sansTrace).eq('id', id));
   }
   bouton.disabled = false;

@@ -498,10 +498,24 @@ async function traiterLitigeExpress(id, geste){
     reponse = await cltPrompt({ title: auCoursier ? 'Votre réponse au coursier' : 'Votre réponse au client', sub: (auCoursier ? 'Il' : 'Il') + ' la lira sous son signalement. Une phrase claire : ce qui a été fait, ou ce qui va se passer.', placeholder: 'Ex. : nous avons appelé le coursier, le colis vous est livré ce soir.', okLabel: 'Envoyer et clore', maxLength: 500 });
     if (reponse === null) return;
   }
+  /* Lot P-5 (25/09/2026) : le remboursement typé. À la clôture d'un litige du CLIENT, le bureau peut noter
+     ce qui lui est rendu (montant, mode) ; 0 = rien. Lu dans le dossier et les chiffres Express. */
+  let remboursement = null;
+  if (geste === 'resolue' && r.auteur_role === 'client_express') {
+    const m = await cltPrompt({ title: 'Remboursé au client ?', sub: 'Le montant rendu au client pour ce litige, en francs (0 si aucun). Il sera écrit sur le litige et compté dans les chiffres Express.', placeholder: '0', inputMode: 'numeric', defaultValue: '0', okLabel: 'Continuer' });
+    if (m === null) return;
+    const montant = Math.max(0, Math.round(Number(String(m).replace(/[^\d]/g, '')) || 0));
+    if (montant > 0) {
+      const mode = await cltConfirm({ title: 'Comment ?', sub: montant.toLocaleString('fr-FR') + ' F rendus au client : en espèces ou par Wave (« Oui »), ou en geste sur une prochaine course (« Non »).', okLabel: 'Espèces / Wave', cancelLabel: 'Geste commercial' });
+      remboursement = { remboursement: montant, remboursement_mode: mode ? 'especes' : 'geste' };
+    }
+  }
   const patch = geste === 'resolue'
-    ? { statut: 'resolue', reponse: reponse || null, traitee_at: new Date().toISOString(), traitee_par: currentUser ? currentUser.id : null }
+    ? Object.assign({ statut: 'resolue', reponse: reponse || null, traitee_at: new Date().toISOString(), traitee_par: currentUser ? currentUser.id : null }, remboursement || {})
     : { statut: 'en_cours', traitee_par: currentUser ? currentUser.id : null };
-  const { error } = await supabaseClient.from('express_reclamations').update(patch).eq('id', id);
+  let { error } = await supabaseClient.from('express_reclamations').update(patch).eq('id', id);
+  // Colonnes de remboursement absentes (SQL du 25/09 pas joué) : on clôt sans elles.
+  if (error && patch.remboursement != null && /remboursement|schema cache/i.test(error.message || '')) { const sans = Object.assign({}, patch); delete sans.remboursement; delete sans.remboursement_mode; ({ error } = await supabaseClient.from('express_reclamations').update(sans).eq('id', id)); }
   if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
   cltToast(geste === 'resolue' ? 'Litige clos : la personne voit votre réponse.' : 'Litige pris en charge.', { type: 'success' });
   supabaseClient.from('activity_log').insert([{ action: 'litige_express_' + geste, target_id: r.course_id, target_type: 'express_courses', details: { litige_id: id, motif: r.motif, reponse: reponse || null } }]).then(() => {}, () => {});

@@ -63,7 +63,7 @@
     if (c.recuperee_at) e.push({ quand: c.recuperee_at, quoi: 'Colis récupéré', qui: nom(c.coursier_id, 'le coursier') });
     if (c.delivered_at) e.push({ quand: c.delivered_at, quoi: 'Livrée' + ((c.paiement_mode || 'especes') === 'especes' ? ' · payée en espèces' : ' · payée en ligne') + preuveMot(c), qui: nom(c.coursier_id, 'le coursier') });
     if (c.preuve_type === 'client' && c.preuve_at) e.push({ quand: c.preuve_at, quoi: 'Réception confirmée par le client', qui: nom(c.client_id, 'le client') });
-    if (c.cancelled_at) e.push({ quand: c.cancelled_at, quoi: 'Annulée' + (c.annulation_motif ? ' — ' + c.annulation_motif : ''), qui: c.annulation_par ? nom(c.annulation_par, 'le bureau') : nom(c.client_id, 'le client') });
+    if (c.cancelled_at) e.push({ quand: c.cancelled_at, quoi: 'Annulée' + (c.annulation_motif ? ' — ' + c.annulation_motif : '') + (c.annulation_frais ? ' · ' + Number(c.annulation_frais).toLocaleString('fr-FR') + ' F de frais au client, crédités au coursier' : ''), qui: c.annulation_par ? nom(c.annulation_par, 'le bureau') : nom(c.client_id, 'le client') });
     if (c.note_client) e.push({ quand: c.delivered_at || c.created_at, quoi: 'Le client note le coursier ' + c.note_client + '/5' + (c.avis_client ? ' — « ' + c.avis_client + ' »' : ''), qui: nom(c.client_id, 'le client') });
     if (c.note_coursier) e.push({ quand: c.delivered_at || c.created_at, quoi: 'Le coursier note le client ' + c.note_coursier + '/5' + (c.avis_coursier ? ' — « ' + c.avis_coursier + ' »' : ''), qui: nom(c.coursier_id, 'le coursier') });
     return e.sort((a, b) => String(a.quand).localeCompare(String(b.quand)));

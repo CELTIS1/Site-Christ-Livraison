@@ -234,6 +234,14 @@ export function nouveauMonde() {
       }
       lignes.forEach(l => {
         const v = Object.assign({}, q.valeurs);
+        // express_crediter_frais_annulation (lot P-5) : les frais d'annulation vont au coursier, une fois.
+        if (table === 'express_courses' && v.status === 'annulee' && Number(v.annulation_frais) > 0 && l.coursier_id && !l.annulation_frais_credite_at) {
+          TABLES.express_wallets ||= [];
+          let wf = TABLES.express_wallets.find(x => x.coursier_id === l.coursier_id);
+          if (!wf) { wf = { coursier_id: l.coursier_id, solde: 0 }; TABLES.express_wallets.push(wf); }
+          wf.solde += Number(v.annulation_frais);
+          v.annulation_frais_credite_at = maintenant;
+        }
         if (table === 'express_courses' && v.status === 'livree' && l.status !== 'livree' && (l.paiement_mode || 'especes') === 'especes') {
           TABLES.express_wallets ||= [];
           let w = TABLES.express_wallets.find(x => x.coursier_id === l.coursier_id);
@@ -414,7 +422,10 @@ export function nouveauMonde() {
       if (nom === 'express_accepter_course') {
         if (!lecteur || lecteur.role !== 'coursier_express' || lecteur.status !== 'valide') return { data: null, error: { message: 'pas_coursier_valide' } };
         const w = (TABLES.express_wallets || []).find(x => x.coursier_id === user);
-        if ((w ? w.solde : 0) < ((TABLES.express_config || [])[0] || {}).solde_minimum || 0) return { data: null, error: { message: 'solde_insuffisant' } };
+        const cfgA = (TABLES.express_config || [])[0] || {};
+        // Lot P-5 (25/09/2026) : quand dette_max est posé, c'est la dette qui bloque ; sinon l'ancien seuil.
+        if (cfgA.dette_max != null) { if ((w ? w.solde : 0) < cfgA.dette_max) return { data: null, error: { message: 'dette_depassee' } }; }
+        else if ((w ? w.solde : 0) < (cfgA.solde_minimum || 0)) return { data: null, error: { message: 'solde_insuffisant' } };
         if (!c || c.status !== 'en_attente' || c.coursier_id) return { data: null, error: { message: 'deja_prise' } };
         if (lecteur.express_suspendu_at) return { data: null, error: { message: 'coursier_suspendu' } };   // express_refuser_suspendu (lot P-3)
         Object.assign(c, { status: 'acceptee', coursier_id: user, accepted_at: new Date().toISOString() });
