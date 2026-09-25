@@ -284,6 +284,7 @@ function switchTab(tab){
   if (tab === 'dashboard') { renderDashboard(); if (window.CLTDixChiffresEcran) CLTDixChiffresEcran.charger(); if (window.CLTExpressChiffresEcran) CLTExpressChiffresEcran.charger(); if (window.CLTDossierLivreurEcran) CLTDossierLivreurEcran.carteTableau(); }
   if (tab === 'journal') { loadJournal(); loadErreursClient(); }
   if (tab === 'site' && window.CLTSiteEditeur) CLTSiteEditeur.init();
+  if (tab === 'site' && window.CLTAvisEcran) CLTAvisEcran.charger(); // les avis des clients (26/09/2026, v284)
   // Les cinq onglets du haut sont notés eux aussi : c'est la seule façon de savoir, en octobre,
   // si l'un d'eux (le Site, par exemple) ne s'ouvre jamais. (18/09/2026)
   if (typeof cltNoterOngletOuvert === 'function') cltNoterOngletOuvert('gestion', tab);

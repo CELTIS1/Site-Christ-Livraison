@@ -15,14 +15,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260926soldes">
+<link rel="stylesheet" href="style.css?v=20260926avis">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
 <script>/* Intégré dans l'application de l'équipe (lot 15) : gestion.html?integre=1 cache sa barre du haut. */if(/[?&]integre=1/.test(location.search)){document.documentElement.classList.add('integre');}</script>
-<script src="theme.js?v=20260926soldes"></script>
+<script src="theme.js?v=20260926avis"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260926soldes" defer></script>
-<script src="cloche.js?v=20260926soldes" defer></script>
-<script src="splash.js?v=20260926soldes"></script>
+<script src="notifications-recues.js?v=20260926avis" defer></script>
+<script src="cloche.js?v=20260926avis" defer></script>
+<script src="splash.js?v=20260926avis"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#15803d; --clt-red:#b91c1c; --clt-amber:#b45309; --clt-accent:#0F766E; }   /* vert/rouge/ambre assombris : ≥ 4,5 sur blanc (24/09/2026) */
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -953,10 +953,49 @@
   html[data-theme="dark"] .pa-champ select{ background:#0F1722; color:#E6ECF3; border-color:#3A4A5E; }
   html[data-theme="dark"] .pa-tarif{ color:#AEBBCB; }
   html[data-theme="dark"] .pa-avert{ background:#2B2016; color:#F5D0A9; }
+  /* LES AVIS (26/09/2026, v284). */
+  .av-titre-ligne{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .av-titre-ligne .btn{ min-height:44px; }
+  .av-chiffres{ display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; margin:12px 0; }
+  .av-chiffres > div{ background:#F6F8FB; border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; }
+  .av-chiffres strong{ font-size:22px; color:#123252; } .av-chiffres span{ font-size:12.5px; color:#5B6573; }
+  .av-chiffres .av-alerte{ background:#FDE8E6; } .av-chiffres .av-alerte strong{ color:#9F1F16; }
+  .av-livreurs summary{ cursor:pointer; min-height:44px; display:flex; align-items:center; font-weight:700; }
+  .av-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .av-table th{ text-align:left; font-size:12px; color:#5B6573; font-weight:600; padding:6px 8px; border-bottom:1px solid #E3E8EF; }
+  .av-table td{ padding:7px 8px; border-bottom:1px solid #EEF1F5; vertical-align:top; }
+  .av-table .av-dernier{ color:#5B6573; font-style:italic; }
+  .av-surveiller td{ background:#FFF6F4; }
+  .av-etoiles{ color:#D98A00; letter-spacing:1px; white-space:nowrap; }
+  .av-filtres{ display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 8px; }
+  .av-filtre{ min-height:40px; padding:0 14px; border-radius:999px; border:1.5px solid #CBD2D9; background:#fff; color:#374151; font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+  .av-filtre.actif{ background:#0F766E; border-color:#0F766E; color:#fff; }
+  .av-avis{ border:1px solid #E3E8EF; border-left:4px solid #F2A516; border-radius:12px; padding:10px 12px; margin:8px 0; }
+  .av-avis--bas{ border-left-color:#DC2626; }
+  .av-tete{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; font-size:13.5px; }
+  .av-quand{ color:#5B6573; font-size:12.5px; }
+  .av-etat{ font-size:12px; font-weight:700; padding:2px 9px; border-radius:999px; background:#EEF1F5; color:#374151; }
+  .av-etat--publie{ background:#E3F4EC; color:#11663F; } .av-etat--pret{ background:#FBE7D8; color:#8A3A09; } .av-etat--bas{ background:#FDE8E6; color:#9F1F16; }
+  .av-ligne{ display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline; margin-top:6px; font-size:13.5px; }
+  .av-mot{ font-weight:700; min-width:140px; } .av-sans{ color:#8A94A3; font-size:12.5px; } .av-com{ flex-basis:100%; color:#1F2937; }
+  .av-pied{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; font-size:12.5px; color:#5B6573; }
+  .av-pied .btn{ min-height:44px; }
+  .av-vide{ background:#F6F8FB; border-radius:12px; padding:12px 14px; font-size:13.5px; color:#374151; margin-top:10px; }
+  @media (max-width:640px){ .av-chiffres{ grid-template-columns:repeat(2, minmax(0,1fr)); } .av-table th:nth-child(5), .av-table td:nth-child(5){ display:none; } .av-mot{ min-width:0; } }
+  html[data-theme="dark"] .av-chiffres > div, html[data-theme="dark"] .av-vide{ background:#141F2E; color:#D5DEE9; }
+  html[data-theme="dark"] .av-chiffres strong{ color:#E6ECF3; } html[data-theme="dark"] .av-chiffres span, html[data-theme="dark"] .av-quand, html[data-theme="dark"] .av-pied, html[data-theme="dark"] .av-table th, html[data-theme="dark"] .av-table .av-dernier{ color:#AEBBCB; }
+  html[data-theme="dark"] .av-chiffres .av-alerte{ background:#3A1D1B; } html[data-theme="dark"] .av-chiffres .av-alerte strong{ color:#F6B8B1; }
+  html[data-theme="dark"] .av-table th, html[data-theme="dark"] .av-table td{ border-color:#2A3849; }
+  html[data-theme="dark"] .av-surveiller td{ background:#2A1A1A; }
+  html[data-theme="dark"] .av-etoiles{ color:#F5C04A; }
+  html[data-theme="dark"] .av-filtre{ background:#141F2E; border-color:#3A4A5E; color:#D5DEE9; } html[data-theme="dark"] .av-filtre.actif{ background:#0F766E; color:#fff; }
+  html[data-theme="dark"] .av-avis{ border-color:#2A3849; border-left-color:#F5C04A; } html[data-theme="dark"] .av-avis--bas{ border-left-color:#F87171; }
+  html[data-theme="dark"] .av-com{ color:#E6ECF3; }
+  html[data-theme="dark"] .av-etat{ background:#1E2A3A; color:#D5DEE9; } html[data-theme="dark"] .av-etat--publie{ background:#16352A; color:#93E2B8; } html[data-theme="dark"] .av-etat--pret{ background:#3A2A18; color:#F5C38E; } html[data-theme="dark"] .av-etat--bas{ background:#3A1D1B; color:#F6B8B1; }
 </style>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#0F766E; }</style>
-<link rel="stylesheet" href="peau.css?v=20260926soldes">
+<link rel="stylesheet" href="peau.css?v=20260926avis">
 </head>
 <body>
 <div class="topbar">
@@ -1864,6 +1903,12 @@
        Enregistrer publie à la seconde. -->
   <div class="section" id="sec-site">
     <div id="section-site">
+      <!-- LES AVIS (26/09/2026, v284) : ce que les destinataires disent après livraison ; « Publier sur le site ». -->
+      <div class="card" id="av-carte">
+        <div class="av-titre-ligne"><h2>⭐ Avis des clients</h2><button type="button" class="btn btn-outline btn-sm" id="av-actualiser">↻ Actualiser</button></div>
+        <div class="hint">Après la livraison, le destinataire note son livreur et CLT (1 à 5 étoiles) depuis la page de suivi. Rien ne paraît sur le site sans votre choix, et seulement si son auteur l’a accepté. La note moyenne du site compte <strong>tous</strong> les avis, dès 5.</div>
+        <div id="av-contenu"></div>
+      </div>
       <div class="card">
         <h2>Les textes du site</h2>
         <div class="hint">Modifiez un texte, puis <strong>Enregistrer</strong> : le site public change à la seconde, sans mise en ligne. Ouvrez une section pour voir ses champs ; dans une liste, ↑ ↓ réordonnent et ✕ retire.</div>
@@ -2022,56 +2067,58 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260926soldes"></script>
-<script src="assistant.js?v=20260926soldes"></script>
-<script src="numero-international.js?v=20260926soldes"></script>
-<script src="lib/bibliotheques.js?v=20260926soldes"></script>
-<script src="lib/retours.js?v=20260926soldes"></script>
-<script src="lib/reclamations.js?v=20260926soldes"></script>
-<script src="lib/communes-et-tarifs.js?v=20260926soldes"></script>
-<script src="lib/argent.js?v=20260926soldes"></script>
-<script src="lib/releve-cliente.js?v=20260926soldes"></script>
-<script src="lib/papier-a-en-tete.js?v=20260926soldes"></script>
-<script src="lib/briques-argent.js?v=20260926soldes"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260926soldes"></script>
-<script src="lib/traces-de-report.js?v=20260926soldes"></script>
-<script src="lib/annonce-de-remise.js?v=20260926soldes"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260926soldes"></script>
-<script src="lib/primes.js?v=20260926soldes"></script>
-<script src="lib/doublons.js?v=20260926soldes"></script>
-<script src="config.js?v=20260926soldes"></script>
-<script src="biometric-lock.js?v=20260926soldes"></script>
-<script src="clt-select-recherche.js?v=20260926soldes"></script>
-<script src="site-editeur.js?v=20260926soldes"></script>
+<script src="clt-common.js?v=20260926avis"></script>
+<script src="assistant.js?v=20260926avis"></script>
+<script src="numero-international.js?v=20260926avis"></script>
+<script src="lib/bibliotheques.js?v=20260926avis"></script>
+<script src="lib/retours.js?v=20260926avis"></script>
+<script src="lib/reclamations.js?v=20260926avis"></script>
+<script src="lib/communes-et-tarifs.js?v=20260926avis"></script>
+<script src="lib/argent.js?v=20260926avis"></script>
+<script src="lib/releve-cliente.js?v=20260926avis"></script>
+<script src="lib/papier-a-en-tete.js?v=20260926avis"></script>
+<script src="lib/briques-argent.js?v=20260926avis"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260926avis"></script>
+<script src="lib/traces-de-report.js?v=20260926avis"></script>
+<script src="lib/annonce-de-remise.js?v=20260926avis"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260926avis"></script>
+<script src="lib/primes.js?v=20260926avis"></script>
+<script src="lib/doublons.js?v=20260926avis"></script>
+<script src="config.js?v=20260926avis"></script>
+<script src="biometric-lock.js?v=20260926avis"></script>
+<script src="clt-select-recherche.js?v=20260926avis"></script>
+<script src="site-editeur.js?v=20260926avis"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260926soldes"></script>
-<script src="argent-a-suivre.js?v=20260926soldes"></script>
-<script src="dix-chiffres.js?v=20260926soldes"></script>
-<script src="gestion-dix-chiffres.js?v=20260926soldes"></script>
-<script src="express-chiffres.js?v=20260926soldes"></script>
-<script src="gestion-express-chiffres.js?v=20260926soldes"></script>
-<script src="causes-des-echecs.js?v=20260926soldes"></script>
-<script src="activite-de-la-cliente.js?v=20260926soldes"></script>
-<script src="qui-vend-quoi.js?v=20260926soldes"></script>
-<script src="analyse-profonde.js?v=20260926soldes"></script>
-<script src="ce-qui-a-change.js?v=20260926soldes"></script>
-<script src="les-questions.js?v=20260926soldes"></script>
-<script src="console-du-dirigeant.js?v=20260926soldes"></script>
-<script src="rapports-recus.js?v=20260926soldes"></script>
-<script src="rapports-recus-ecran.js?v=20260926soldes"></script>
-<script src="partenaires.js?v=20260926soldes"></script>
-<script src="partenaires-ecran.js?v=20260926soldes"></script>
-<script src="dossier-du-livreur.js?v=20260926soldes"></script>
-<script src="dossier-du-livreur-ecran.js?v=20260926soldes"></script>
-<script src="gestion.js?v=20260926soldes"></script>
+<script src="bilan-de-la-semaine.js?v=20260926avis"></script>
+<script src="argent-a-suivre.js?v=20260926avis"></script>
+<script src="dix-chiffres.js?v=20260926avis"></script>
+<script src="gestion-dix-chiffres.js?v=20260926avis"></script>
+<script src="express-chiffres.js?v=20260926avis"></script>
+<script src="gestion-express-chiffres.js?v=20260926avis"></script>
+<script src="causes-des-echecs.js?v=20260926avis"></script>
+<script src="activite-de-la-cliente.js?v=20260926avis"></script>
+<script src="qui-vend-quoi.js?v=20260926avis"></script>
+<script src="analyse-profonde.js?v=20260926avis"></script>
+<script src="ce-qui-a-change.js?v=20260926avis"></script>
+<script src="les-questions.js?v=20260926avis"></script>
+<script src="console-du-dirigeant.js?v=20260926avis"></script>
+<script src="rapports-recus.js?v=20260926avis"></script>
+<script src="rapports-recus-ecran.js?v=20260926avis"></script>
+<script src="partenaires.js?v=20260926avis"></script>
+<script src="partenaires-ecran.js?v=20260926avis"></script>
+<script src="dossier-du-livreur.js?v=20260926avis"></script>
+<script src="dossier-du-livreur-ecran.js?v=20260926avis"></script>
+<script src="avis.js?v=20260926avis"></script>
+<script src="avis-ecran.js?v=20260926avis"></script>
+<script src="gestion.js?v=20260926avis"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="guide-du-gerant.js?v=20260926soldes"></script>
-<script src="avance-de-travail.js?v=20260926soldes"></script>
-<script src="avance-de-travail-ecran.js?v=20260926soldes"></script>
-<script src="regulariser.js?v=20260926soldes"></script>
-<script src="regulariser-ecran.js?v=20260926soldes"></script>
-<script src="gestion-barre-laterale.js?v=20260926soldes"></script>
-<script src="gestion-replier.js?v=20260926soldes"></script>
+<script src="guide-du-gerant.js?v=20260926avis"></script>
+<script src="avance-de-travail.js?v=20260926avis"></script>
+<script src="avance-de-travail-ecran.js?v=20260926avis"></script>
+<script src="regulariser.js?v=20260926avis"></script>
+<script src="regulariser-ecran.js?v=20260926avis"></script>
+<script src="gestion-barre-laterale.js?v=20260926avis"></script>
+<script src="gestion-replier.js?v=20260926avis"></script>
 </body>
 </html>

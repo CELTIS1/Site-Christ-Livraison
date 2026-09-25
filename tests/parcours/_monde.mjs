@@ -426,6 +426,53 @@ export function nouveauMonde() {
       Object.assign(pa, { cle_api_fin: cle.slice(-4), cle_api_creee_le: new Date().toISOString() });
       return { data: cle, error: null };
     }
+    /* LES AVIS (26/09/2026, v284) — le contrat de _sql-prive/2026-09-26-les-avis.sql, relu en base
+       le 26/09 : numéro + 4 chiffres, colis livré, un avis par colis ; publier = admin + accord. */
+    if (nom === 'avis_lire' || nom === 'avis_donner') {
+      TABLES.avis_colis = TABLES.avis_colis || [];
+      const c = TABLES.colis.find(x => String(x.numero || '').toUpperCase() === String((args && args.p_numero) || '').trim().toUpperCase());
+      const bon = c && String((args && args.p_chiffres) || '').replace(/\D/g, '') === String(c.destinataire_telephone || '').replace(/\D/g, '').slice(-4);
+      if (!bon) return { data: nom === 'avis_lire' ? { possible: false, raison: 'verification' } : { ok: false, erreur: 'verification' }, error: null };
+      if (c.statut !== 'livre') return { data: nom === 'avis_lire' ? { possible: false, raison: 'pas_livre' } : { ok: false, erreur: 'pas_livre' }, error: null };
+      const fin = new Date(new Date(c.livre_at || c.updated_at || Date.now()).getTime() + 30 * 86400000).toISOString();
+      const a = TABLES.avis_colis.find(x => x.colis_id === c.id);
+      if (nom === 'avis_lire') {
+        const l = PROFILS.find(p => p.id === c.livreur_id);
+        return { data: { possible: true, raison: null, modifiable_jusqu_au: fin, livreur_prenom: l ? l.full_name : null, avis: a ? Object.assign({}, a) : null }, error: null };
+      }
+      const n = (v) => (v >= 1 && v <= 5 ? Number(v) : null);
+      if (n(args.p_note_livreur) == null && n(args.p_note_clt) == null) return { data: { ok: false, erreur: 'aucune_note' }, error: null };
+      const champs = { note_livreur: n(args.p_note_livreur), commentaire_livreur: args.p_commentaire_livreur || null, note_clt: n(args.p_note_clt), commentaire_clt: args.p_commentaire_clt || null, prenom: args.p_prenom || null, accord_publication: !!args.p_accord_publication, maj_le: new Date().toISOString() };
+      if (a) { Object.assign(a, champs, { publie: false, nb_modifications: (a.nb_modifications || 0) + 1 }); return { data: { ok: true, nouveau: false }, error: null }; }
+      TABLES.avis_colis.push(Object.assign({ colis_id: c.id, livreur_id: c.livreur_id, commune: c.commune_destination, publie: false, cree_le: new Date().toISOString(), nb_modifications: 0 }, champs));
+      return { data: { ok: true, nouveau: true }, error: null };
+    }
+    if (nom === 'avis_bureau') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      if (!lecteur || !['admin', 'equipe'].includes(lecteur.role)) return { data: null, error: { message: 'reserve_au_bureau' } };
+      return { data: (TABLES.avis_colis || []).map(a => {
+        const c = TABLES.colis.find(x => x.id === a.colis_id) || {};
+        const l = PROFILS.find(p => p.id === a.livreur_id); const f = PROFILS.find(p => p.id === c.fournisseur_id);
+        return Object.assign({}, a, { numero: c.numero, livreur_nom: l ? l.full_name : 'Livreur inconnu', boutique: f ? (f.company_name || f.full_name) : null });
+      }).sort((x, y) => String(y.maj_le).localeCompare(String(x.maj_le))), error: null };
+    }
+    if (nom === 'avis_publier') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      if (!lecteur || lecteur.role !== 'admin') return { data: null, error: { message: 'reserve_admin' } };
+      const a = (TABLES.avis_colis || []).find(x => x.colis_id === (args && args.p_colis));
+      if (!a) return { data: { ok: false, erreur: 'introuvable' }, error: null };
+      if (args.p_publier && !a.accord_publication) return { data: { ok: false, erreur: 'sans_accord' }, error: null };
+      if (args.p_publier && !(a.commentaire_clt || a.commentaire_livreur)) return { data: { ok: false, erreur: 'sans_commentaire' }, error: null };
+      Object.assign(a, { publie: !!args.p_publier, publie_le: args.p_publier ? new Date().toISOString() : null });
+      return { data: { ok: true }, error: null };
+    }
+    if (nom === 'site_avis') {
+      const l = TABLES.avis_colis || [];
+      const moy = (v) => { const x = v.filter(y => y != null); return x.length ? Math.round(x.reduce((s2, y) => s2 + y, 0) / x.length * 10) / 10 : null; };
+      return { data: { nombre: l.length, moyenne: moy(l.map(a => a.note_clt != null ? a.note_clt : a.note_livreur)), moyenne_livreurs: moy(l.map(a => a.note_livreur)),
+        avis: l.filter(a => a.publie && a.accord_publication && (a.commentaire_clt || a.commentaire_livreur)).sort((x, y) => String(y.publie_le || y.cree_le).localeCompare(String(x.publie_le || x.cree_le))).slice(0, 24)
+          .map(a => ({ note: a.note_clt != null ? a.note_clt : a.note_livreur, texte: a.commentaire_clt || a.commentaire_livreur, prenom: a.prenom || '', commune: a.commune || '', mois: String(a.publie_le || a.cree_le).slice(0, 7) })) }, error: null };
+    }
     /* mon_dossier_livreur (25/09/2026, lot T) : l'état des pièces du livreur connecté, sans fichier ni note. */
     if (nom === 'mon_dossier_livreur') {
       const sal = (TABLES.gestion_salaries || []).filter(x => x.livreur_id === user && x.actif !== false).map(x => x.id);

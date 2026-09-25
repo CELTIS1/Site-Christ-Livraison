@@ -96,7 +96,7 @@
   .suivi-form button:disabled{opacity:0.6; cursor:default;}
   .form-hint{font-size:12.5px; color:var(--muted); margin-bottom:20px;}
 
-  .result-box{margin-top:28px; display:none;}
+  .result-box{margin-top:18px; display:none;}
   .result-box.visible{display:block;}
 
   .badge{
@@ -104,19 +104,36 @@
   }
   .result-row{
     display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
-    padding:14px 0; border-bottom:1px solid #EEF1F5; font-size:14.5px;
+    padding:9px 0; border-bottom:1px solid #EEF1F5; font-size:14px;
   }
   .result-row:last-child{border-bottom:none;}
   .result-row .label{color:var(--muted); flex-shrink:0;}
   .result-row .value{color:#222; font-weight:600; text-align:right;}
 
-  .result-photo-wrap{margin-top:4px;}
-  .result-photo-label{margin-top:16px; font-size:12.5px; font-weight:700; color:var(--navy);}
-  .result-photo-label + .result-photo{margin-top:8px;}
-  .result-photo{
-    width:100%; max-height:360px; object-fit:cover; border-radius:14px; margin-top:14px;
-    box-shadow:0 4px 14px rgba(27,67,116,0.12);
+  /* LES PHOTOS EN VIGNETTES (26/09/2026, v284). Celtis : « sur la page de suivi, la photo prend
+     beaucoup de place ». Deux vignettes côte à côte (le colis, la preuve de livraison) ; un toucher
+     les ouvre en grand, un toucher ou Échap referme. La page tient sur un écran, l'avis se voit. */
+  .photos-rang{display:flex; gap:10px; padding:10px 0 4px; border-bottom:1px solid #EEF1F5;}
+  .photo-vignette{
+    display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:none; padding:0;
+    cursor:zoom-in; font-family:inherit; color:var(--muted); font-size:12px; font-weight:600; min-width:44px;
   }
+  .photo-vignette img{
+    width:84px; height:84px; object-fit:cover; border-radius:12px; border:1px solid #E3E8EF;
+    box-shadow:0 2px 8px rgba(27,67,116,0.10);
+  }
+  .photo-vignette:focus-visible img{outline:3px solid var(--orange); outline-offset:2px;}
+  .visionneuse{
+    position:fixed; inset:0; z-index:100; background:rgba(9,20,36,0.88); display:flex; align-items:center;
+    justify-content:center; padding:18px; cursor:zoom-out;
+  }
+  .visionneuse[hidden]{display:none;}
+  .visionneuse img{max-width:100%; max-height:86vh; border-radius:12px; object-fit:contain; box-shadow:0 10px 40px rgba(0,0,0,.4);}
+  .visionneuse-fermer{
+    position:absolute; top:14px; right:14px; width:44px; height:44px; border-radius:50%; border:none;
+    background:rgba(255,255,255,0.92); color:var(--navy); font-size:20px; font-weight:700; cursor:pointer;
+  }
+  .visionneuse-legende{position:absolute; bottom:16px; left:0; right:0; text-align:center; color:#fff; font-size:13.5px;}
 
   .msg-error, .msg-notfound{
     background:#fce4e2; color:#c0392b; border-radius:10px; padding:14px 16px; font-size:14px; margin-top:24px;
@@ -126,14 +143,14 @@
   }
 
   .live-indicator{
-    display:flex; align-items:center; gap:8px; margin-top:18px; font-size:12.5px; color:var(--muted);
+    display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12.5px; color:var(--muted);
   }
   /* L'histoire du colis (point 10.5, 17/09/2026). Une liste, pas une frise à puces colorées :
      sur un téléphone, l'étape et son heure doivent tenir sur une ligne et rester lisibles. */
-  .histoire{ margin-top:14px; padding-top:12px; border-top:1px solid rgba(0,0,0,.08); }
+  .histoire{ margin-top:6px; padding-top:8px; border-top:1px solid rgba(0,0,0,.08); }
   .histoire-titre{ font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; opacity:.6; margin-bottom:8px; }
   .histoire-liste{ list-style:none; margin:0; padding:0; }
-  .histoire-etape{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:6px 0; }
+  .histoire-etape{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:4px 0; font-size:14px; }
   .histoire-etape + .histoire-etape{ border-top:1px dashed rgba(0,0,0,.07); }
   .histoire-quoi{ font-weight:600; }
   .histoire-quand{ font-size:13.5px; opacity:.75; text-align:right; white-space:nowrap; }
@@ -142,7 +159,7 @@
      d'abord voir où est son colis ; le contact ne sert qu'ensuite, quand la réponse ne lui suffit
      pas. Deux liens de 44 px, comme partout ailleurs dans la maison. */
   .bloc-contact{
-    margin-top:18px; padding-top:16px; border-top:1px solid var(--section-tint);
+    margin-top:14px; padding-top:12px; border-top:1px solid var(--section-tint);
   }
   .bloc-contact-titre{
     font-size:13px; font-weight:600; color:var(--muted); margin-bottom:10px;
@@ -164,9 +181,57 @@
     50%{opacity:0.55; box-shadow:0 0 0 5px rgba(26,125,60,0);}
   }
 
+  /* VOTRE AVIS (26/09/2026, v284) : deux notes (le livreur, CLT), deux mots facultatifs. Posé sous
+     le résultat, hors de la zone qui s'actualise toutes les 15 s : ce qu'on tape n'est jamais effacé. */
+  .avis{margin-top:18px; border:1.5px solid var(--orange-light); background:#FFFBF7; border-radius:16px; padding:16px 16px 14px;}
+  .avis[hidden]{display:none;}
+  .contacts-replies{margin-top:10px; border-top:1px solid var(--section-tint);}
+  .contacts-replies summary{cursor:pointer; min-height:44px; display:flex; align-items:center; font-size:13.5px; font-weight:600; color:var(--navy); list-style:none;}
+  .contacts-replies summary::-webkit-details-marker{display:none;}
+  .contacts-replies summary::before{content:'▸'; margin-right:8px; transition:transform .15s;}
+  .contacts-replies[open] summary::before{transform:rotate(90deg);}
+  .contacts-replies .bloc-contact:first-of-type{margin-top:4px;}
+  .avis-titre{font-family:'Poppins', Arial, sans-serif; font-size:17px; color:var(--navy); font-weight:700;}
+  .avis-sous{font-size:13px; color:var(--muted); margin:2px 0 10px;}
+  .avis-bloc{padding:10px 0; border-top:1px solid #F3E4D8;}
+  .avis-bloc:first-of-type{border-top:none; padding-top:4px;}
+  .avis-qui{font-size:14px; font-weight:700; color:#222; margin-bottom:4px;}
+  .etoiles{display:flex; align-items:center; gap:2px; border:none; padding:0; margin:0;}
+  .etoiles legend{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);}
+  .etoile{position:relative; width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+    font-size:30px; line-height:1; color:#D5DCE4; transition:transform .1s ease, color .1s ease;}
+  .etoile input{position:absolute; opacity:0; width:1px; height:1px;}
+  .etoile.allumee{color:#F2A516;}
+  .etoile:active{transform:scale(1.15);}
+  .etoile:has(input:focus-visible){outline:3px solid var(--navy); outline-offset:-4px; border-radius:10px;}
+  .etoiles-mot{margin-left:8px; font-size:13px; font-weight:700; color:var(--muted); min-width:70px;}
+  .avis textarea, .avis input[type=text]{
+    width:100%; margin-top:6px; padding:10px 12px; border:1.5px solid #DCE3EB; border-radius:10px; font-size:14.5px;
+    font-family:inherit; color:#222; background:#fff; resize:vertical;
+  }
+  .avis textarea{min-height:52px;}
+  .avis textarea:focus, .avis input[type=text]:focus{outline:none; border-color:var(--navy);}
+  .avis-accord{display:flex; gap:10px; align-items:flex-start; font-size:13.5px; color:#333; margin-top:10px; cursor:pointer; min-height:44px;}
+  .avis-accord input{width:22px; height:22px; flex-shrink:0; margin-top:1px; accent-color:var(--orange);}
+  .avis-envoyer{margin-top:10px; width:100%; min-height:48px; background:var(--orange); color:#fff; border:none; border-radius:12px;
+    font-size:15.5px; font-weight:700; cursor:pointer; font-family:inherit;}
+  .avis-envoyer:disabled{opacity:.6; cursor:default;}
+  .avis-retour{margin-top:8px; font-size:13.5px; border-radius:10px; padding:10px 12px;}
+  .avis-retour--ok{background:#e3f6ea; color:#1a7d3c;}
+  .avis-retour--ko{background:#fce4e2; color:#c0392b;}
+  .avis-merci{font-size:14px; color:#333;}
+  .avis-merci .etoiles-lecture{color:#F2A516; letter-spacing:1px;}
+  .avis-modifier{margin-top:10px; min-height:44px; padding:0 18px; border-radius:999px; border:1.5px solid var(--navy); background:#fff;
+    color:var(--navy); font-weight:700; font-size:14px; cursor:pointer; font-family:inherit;}
+
   @media (max-width:520px){
     .suivi-form{flex-direction:column;}
-    .suivi-card{padding:32px 22px;}
+    .suivi-card{padding:22px 16px; border-radius:16px;}
+    .suivi-card h1{font-size:22px;}
+    .suivi-card .sub{font-size:13.5px; margin-bottom:16px;}
+    main{padding:18px 0;}
+    .container{padding:0 12px;}
+    .photo-vignette img{width:76px; height:76px;}
   }
 
   footer{text-align:center; padding:24px; color:var(--muted); font-size:13px;}
@@ -207,6 +272,8 @@
       <p class="form-hint">Le numéro de suivi vous a été communiqué lors du dépôt du colis. Les 4 derniers chiffres du téléphone du destinataire servent à protéger vos informations : sans eux, seul l'état du colis s'affiche.</p>
 
       <div id="suivi-result" class="result-box"></div>
+      <!-- Hors de #suivi-result : l'actualisation (15 s) ne touche jamais au formulaire d'avis. -->
+      <section id="suivi-avis" class="avis" hidden aria-live="polite"></section>
     </div>
   </div>
 </main>
@@ -215,6 +282,12 @@
   &copy; <span id="year"></span> Christ Livraison & Transport SARL. Tous droits réservés.
 </footer>
 
+<div id="visionneuse" class="visionneuse" hidden role="dialog" aria-modal="true" aria-label="Photo en grand">
+  <button type="button" class="visionneuse-fermer" aria-label="Fermer">✕</button>
+  <img alt="">
+  <div class="visionneuse-legende"></div>
+</div>
+<script src="app/avis.js?v=20260926avis"></script>
 <script>
   document.getElementById("year").textContent = new Date().getFullYear();
 
@@ -405,6 +478,188 @@
       </div>`;
   }
 
+  /* LES PHOTOS EN VIGNETTES (26/09/2026, v284) — un toucher pour agrandir. */
+  // escapeHTML (plus haut) passe par textContent : il n'échappe pas les guillemets. Dans un attribut, celui-ci.
+  function escAttr(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function photosHTML(data) {
+    const v = [];
+    if (data.photo_url) v.push({ url: data.photo_url, mot: 'Le colis', alt: 'Photo du colis' + (data.description ? ' : ' + data.description : '') });
+    if (data.photo_livraison_url) v.push({ url: data.photo_livraison_url, mot: 'Preuve de livraison', alt: 'Photo de preuve de livraison' });
+    if (!v.length) return '';
+    return '<div class="photos-rang">' + v.map(x => `
+        <button type="button" class="photo-vignette" data-grand="${escAttr(x.url)}" data-legende="${escAttr(x.mot)}" aria-label="Agrandir : ${escAttr(x.mot)}">
+          <img src="${escAttr(x.url)}" alt="${escAttr(x.alt)}" loading="lazy">
+          <span>${x.mot === 'Preuve de livraison' ? '📸 ' : ''}${escapeHTML(x.mot)}</span>
+        </button>`).join('') + '</div>';
+  }
+  const visionneuse = document.getElementById('visionneuse');
+  let focusAvantVisionneuse = null;
+  function ouvrirVisionneuse(url, legende) {
+    focusAvantVisionneuse = document.activeElement;
+    visionneuse.querySelector('img').src = url;
+    visionneuse.querySelector('img').alt = legende || 'Photo';
+    visionneuse.querySelector('.visionneuse-legende').textContent = legende || '';
+    visionneuse.hidden = false;
+    visionneuse.querySelector('.visionneuse-fermer').focus();
+  }
+  function fermerVisionneuse() {
+    if (visionneuse.hidden) return;
+    visionneuse.hidden = true;
+    visionneuse.querySelector('img').removeAttribute('src');
+    try { if (focusAvantVisionneuse) focusAvantVisionneuse.focus(); } catch (e) {}
+  }
+  visionneuse.addEventListener('click', fermerVisionneuse);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerVisionneuse(); });
+  document.getElementById('suivi-result').addEventListener('click', (e) => {
+    const b = e.target.closest('.photo-vignette');
+    if (b) ouvrirVisionneuse(b.dataset.grand, b.dataset.legende);
+  });
+
+  /* VOTRE AVIS (26/09/2026, v284) — le livreur et CLT, de 1 à 5 étoiles.
+     Seulement pour un colis LIVRÉ et pour qui a prouvé les 4 chiffres (le serveur revérifie :
+     avis_lire / avis_donner). Un avis par colis, modifiable 30 jours. Règles : app/avis.js. */
+  const zoneAvis = document.getElementById('suivi-avis');
+  let contactsOuverts = false;
+  let avisCle = '';          // numéro|chiffres déjà chargés : on ne recharge pas à chaque actualisation
+  let avisEtat = null;       // la réponse d'avis_lire
+  let avisBrouillon = null;  // ce que la personne a tapé (gardé si l'envoi échoue)
+  const A = window.CLTAvis;
+
+  function cacherAvis() { zoneAvis.hidden = true; zoneAvis.innerHTML = ''; avisCle = ''; avisEtat = null; avisBrouillon = null; }
+
+  async function chargerAvis(numero, chiffres) {
+    const cle = numero + '|' + chiffres;
+    if (cle === avisCle) return;
+    avisCle = cle;
+    const { data, error } = await supabaseClient.rpc('avis_lire', { p_numero: numero, p_chiffres: chiffres });
+    if (avisCle !== cle) return; // une autre recherche est partie entre-temps
+    if (error || !data || !data.possible) {
+      // Base pas encore prête, chiffres refusés, ou plus de 30 jours : on ne montre rien, sans bruit.
+      if (data && data.raison === 'trop_tard' && data.avis) { avisEtat = data; dessinerMerci(false); return; }
+      zoneAvis.hidden = true; return;
+    }
+    avisEtat = data;
+    if (data.avis) dessinerMerci(true); else dessinerFormulaire(null);
+    if (new URLSearchParams(location.search).has('avis')) {
+      setTimeout(() => { try { zoneAvis.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }, 150);
+    }
+  }
+
+  function etoilesChamp(nom, legende, valeur) {
+    const v = A.note(valeur);
+    let h = `<fieldset class="etoiles" data-etoiles="${nom}"><legend>${escapeHTML(legende)}</legend>`;
+    for (let n = 1; n <= 5; n++) {
+      h += `<label class="etoile${v && n <= v ? ' allumee' : ''}" title="${n} sur 5 — ${A.MOTS_NOTE[n]}"><input type="radio" name="${nom}" value="${n}"${v === n ? ' checked' : ''} aria-label="${n} sur 5, ${A.MOTS_NOTE[n]}">★</label>`;
+    }
+    return h + `<span class="etoiles-mot" data-mot>${v ? A.MOTS_NOTE[v] : ''}</span></fieldset>`;
+  }
+
+  function dessinerFormulaire(avant) {
+    const a = avant || {};
+    const liv = avisEtat && avisEtat.livreur_prenom ? escapeHTML(avisEtat.livreur_prenom) : '';
+    zoneAvis.innerHTML = `
+      <div class="avis-titre">⭐ Votre avis compte</div>
+      <div class="avis-sous">Une minute : il nous aide à bien choisir et à bien former nos livreurs.</div>
+      <form id="avis-form" novalidate>
+        <div class="avis-bloc">
+          <div class="avis-qui">Votre livreur${liv ? ' : ' + liv : ''}</div>
+          ${etoilesChamp('note-livreur', 'Note du livreur', a.note_livreur)}
+          <textarea id="avis-com-livreur" maxlength="${A.MAX_COMMENTAIRE}" rows="2" placeholder="Un mot pour votre livreur (facultatif)">${escapeHTML(a.commentaire_livreur || '')}</textarea>
+        </div>
+        <div class="avis-bloc">
+          <div class="avis-qui">Christ Livraison &amp; Transport</div>
+          ${etoilesChamp('note-clt', 'Note de CLT', a.note_clt)}
+          <textarea id="avis-com-clt" maxlength="${A.MAX_COMMENTAIRE}" rows="2" placeholder="Un mot sur notre service (facultatif)">${escapeHTML(a.commentaire_clt || '')}</textarea>
+        </div>
+        <div class="avis-bloc">
+          <input type="text" id="avis-prenom" maxlength="40" autocomplete="given-name" placeholder="Votre prénom (facultatif)" value="${escAttr(a.prenom || '')}">
+          <label class="avis-accord"><input type="checkbox" id="avis-accord"${a.accord_publication ? ' checked' : ''}>
+            <span>J'accepte que mon avis (prénom et commune seulement) paraisse sur le site de CLT.</span></label>
+        </div>
+        <button type="submit" class="avis-envoyer" id="avis-envoyer">${avant ? 'Enregistrer mes changements' : 'Envoyer mon avis'}</button>
+        <div id="avis-retour" class="avis-retour" hidden></div>
+      </form>`;
+    zoneAvis.hidden = false;
+    zoneAvis.querySelectorAll('[data-etoiles]').forEach((fs) => {
+      fs.addEventListener('change', () => {
+        const v = Number((fs.querySelector('input:checked') || {}).value || 0);
+        fs.querySelectorAll('.etoile').forEach((l, i) => l.classList.toggle('allumee', i < v));
+        fs.querySelector('[data-mot]').textContent = v ? A.MOTS_NOTE[v] : '';
+      });
+    });
+    zoneAvis.querySelector('#avis-form').addEventListener('submit', envoyerAvis);
+  }
+
+  function lireFormulaire() {
+    const val = (nom) => { const x = zoneAvis.querySelector(`input[name="${nom}"]:checked`); return x ? Number(x.value) : null; };
+    return {
+      noteLivreur: val('note-livreur'), noteClt: val('note-clt'),
+      commentaireLivreur: zoneAvis.querySelector('#avis-com-livreur').value,
+      commentaireClt: zoneAvis.querySelector('#avis-com-clt').value,
+      prenom: zoneAvis.querySelector('#avis-prenom').value,
+      accord: zoneAvis.querySelector('#avis-accord').checked,
+    };
+  }
+
+  function retourAvis(texte, ok) {
+    const r = zoneAvis.querySelector('#avis-retour');
+    if (!r) return;
+    r.hidden = false; r.textContent = texte;
+    r.className = 'avis-retour ' + (ok ? 'avis-retour--ok' : 'avis-retour--ko');
+  }
+
+  async function envoyerAvis(e) {
+    e.preventDefault();
+    avisBrouillon = lireFormulaire();
+    const s = A.saisie(avisBrouillon);
+    if (!s.ok) { retourAvis(A.messageErreur(s.erreur), false); return; }
+    const [numero, chiffres] = avisCle.split('|');
+    const bouton = zoneAvis.querySelector('#avis-envoyer');
+    bouton.disabled = true; bouton.textContent = 'Envoi…';
+    let rep;
+    try { rep = await supabaseClient.rpc('avis_donner', Object.assign({ p_numero: numero, p_chiffres: chiffres }, s.saisie)); }
+    catch (x) { rep = { error: { message: 'reseau' } }; }
+    bouton.disabled = false; bouton.textContent = avisEtat && avisEtat.avis ? 'Enregistrer mes changements' : 'Envoyer mon avis';
+    if (rep.error || !rep.data || !rep.data.ok) {
+      const code = rep.data && rep.data.erreur ? rep.data.erreur : (rep.error && /fetch|network|reseau/i.test(rep.error.message || '') ? 'reseau' : '');
+      retourAvis(A.messageErreur(code), false);
+      return;
+    }
+    avisEtat.avis = {
+      note_livreur: s.saisie.p_note_livreur, commentaire_livreur: s.saisie.p_commentaire_livreur,
+      note_clt: s.saisie.p_note_clt, commentaire_clt: s.saisie.p_commentaire_clt,
+      prenom: s.saisie.p_prenom, accord_publication: s.saisie.p_accord_publication,
+    };
+    avisBrouillon = null;
+    dessinerMerci(true, true);
+  }
+
+  function dessinerMerci(modifiable, vientDEnvoyer) {
+    const a = (avisEtat && avisEtat.avis) || {};
+    const ligne = (mot, n) => n ? `<div>${mot} : <span class="etoiles-lecture" aria-label="${n} sur 5">${A.etoiles(n)}</span> <strong>${A.MOTS_NOTE[n]}</strong></div>` : '';
+    const jusqu = avisEtat && avisEtat.modifiable_jusqu_au ? new Date(avisEtat.modifiable_jusqu_au).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '';
+    zoneAvis.innerHTML = `
+      <div class="avis-titre">${vientDEnvoyer ? '🙏 Merci pour votre avis !' : '⭐ Votre avis'}</div>
+      <div class="avis-merci">
+        ${ligne('Votre livreur', A.note(a.note_livreur))}
+        ${ligne('CLT', A.note(a.note_clt))}
+        ${vientDEnvoyer ? '<div class="avis-sous" style="margin-top:6px;">Il est bien arrivé chez nous. Chaque avis est lu par l\'équipe.</div>' : ''}
+      </div>
+      ${modifiable ? `<button type="button" class="avis-modifier" id="avis-modifier">✏️ Modifier mon avis</button>
+        ${jusqu ? `<div class="avis-sous" style="margin-top:6px;">Modifiable jusqu'au ${escapeHTML(jusqu)}.</div>` : ''}` : ''}`;
+    zoneAvis.hidden = false;
+    const b = zoneAvis.querySelector('#avis-modifier');
+    if (b) b.addEventListener('click', () => dessinerFormulaire(a));
+  }
+
+  function avisApresRendu(data) {
+    if (!A || !data || reponseBrute(data) || data.statut !== 'livre' || !currentChiffres || !data.numero) {
+      if (!data || data.statut !== 'livre' || reponseBrute(data)) cacherAvis();
+      return;
+    }
+    chargerAvis(data.numero, currentChiffres);
+  }
+
   function renderColis(data) {
     const now = new Date();
     const heure = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -424,28 +679,18 @@
           <span class="value">${formatDate(data.created_at)}</span>
         </div>
         <div class="msg-chiffres">
-          ${faux ? `<strong>Ces chiffres ne correspondent pas.</strong> ` : ''}Pour voir le détail (adresse, photo, montant), entrez les <strong>4 derniers chiffres du numéro de téléphone du destinataire</strong> dans le champ ci-dessus, puis Rechercher.
+          ${faux ? `<strong>Ces chiffres ne correspondent pas.</strong> ` : ''}Pour voir le détail (adresse, photo, montant)${data.statut === 'livre' ? ' et donner votre avis sur la livraison' : ''}, entrez les <strong>4 derniers chiffres du numéro de téléphone du destinataire</strong> dans le champ ci-dessus, puis Rechercher.
         </div>
         <div class="live-indicator">
           <span class="live-dot"></span>
           Actualisation automatique active — dernière vérification à ${heure}
         </div>`;
+      cacherAvis();
       return;
     }
     const destinationLabel = [data.commune_destination, data.destination].filter(Boolean).join(" — ") || "—";
     const montantTotal = formatMontant(montantTotalColis(data));
     resultBox.innerHTML = `
-      ${data.photo_url ? `
-        <div class="result-photo-wrap">
-          <img src="${data.photo_url}" class="result-photo" alt="Photo du colis${data.description ? ' : ' + escapeHTML(data.description) : ''}">
-        </div>
-      ` : ''}
-      ${data.photo_livraison_url ? `
-        <div class="result-photo-wrap">
-          <div class="result-photo-label">📸 Preuve de livraison</div>
-          <img src="${data.photo_livraison_url}" class="result-photo" alt="Photo de preuve de livraison">
-        </div>
-      ` : ''}
       <div class="result-row">
         <span class="label">Numéro de suivi</span>
         <span class="value">${escapeHTML(data.numero || "—")}</span>
@@ -454,6 +699,7 @@
         <span class="label">Statut</span>
         <span class="value">${statutBadgeHTML(data.statut)}</span>
       </div>
+      ${photosHTML(data)}
       <div class="result-row">
         <span class="label">Description</span>
         <span class="value">${escapeHTML(data.description || "—")}</span>
@@ -488,9 +734,15 @@
         <span class="live-dot"></span>
         Actualisation automatique active — dernière vérification à ${heure}
       </div>
-      ${blocBoutiqueHTML(data)}
-      ${blocContactHTML(data.numero || '', !!data.boutique_tel)}
+      ${data.statut === 'livre'
+        /* Livré (26/09/2026, v284) : les contacts se replient sous une ligne, pour que l'avis se voie
+           sans défiler. Ils restent à un toucher ; l'état ouvert survit à l'actualisation. */
+        ? `<details class="contacts-replies"${contactsOuverts ? ' open' : ''}><summary>Une question sur ce colis ? Contacter le fournisseur ou CLT</summary>${blocBoutiqueHTML(data)}${blocContactHTML(data.numero || '', !!data.boutique_tel)}</details>`
+        : blocBoutiqueHTML(data) + blocContactHTML(data.numero || '', !!data.boutique_tel)}
     `;
+    const rep = resultBox.querySelector('.contacts-replies');
+    if (rep) rep.addEventListener('toggle', () => { contactsOuverts = rep.open; });
+    avisApresRendu(data);
   }
 
   /* Joindre CLT depuis la page de suivi (17/09/2026). Le destinataire qui voit « Non livré »
@@ -571,6 +823,7 @@
     currentChiffres = String(chiffres || '').replace(/\D/g, '').slice(-4);
 
     stopAutoRefresh();
+    cacherAvis();
     btn.disabled = true;
     btn.textContent = "Recherche...";
     resultBox.className = "result-box visible";

@@ -1273,7 +1273,12 @@ function messageDestinataire(infos) {
   const i = infos || {};
   const qui = (i.livreurNom || "").trim();
   const ref = i.numero ? " " + String(i.numero).trim() : "";
-  const lien = i.lienSuivi ? "\nSuivez-le ici : " + i.lienSuivi : "";
+  /* LES AVIS (26/09/2026, v284) : une fois livré, le lien ouvre la page de suivi sur « Votre avis »
+     (livreur + CLT, 1 à 5 étoiles). C'est ce message qui fait venir les avis. */
+  const lien = !i.lienSuivi ? ""
+    : (i.statut === "livre" && !i.expedition)
+      ? "\nVotre avis sur la livraison compte (1 minute) : " + i.lienSuivi + (String(i.lienSuivi).indexOf("?") === -1 ? "?" : "&") + "avis=1"
+      : "\nSuivez-le ici : " + i.lienSuivi;
   /* Trois voix (20/09/2026, 20.B) : le livreur parle à la première personne ; l'expéditeur (la
      cliente qui prévient son acheteuse depuis son propre WhatsApp) parle de CLT à la troisième ;
      et une expédition ne se « livre » pas, elle part en gare (libelleStatut, config.js). */

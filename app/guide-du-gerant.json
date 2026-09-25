@@ -55,6 +55,21 @@
       "version": "v283"
     },
     {
+      "id": "les-avis",
+      "espace": "gestion",
+      "titre": "Les avis des clients (livreur et CLT)",
+      "enBref": "Après livraison, le destinataire note son livreur et CLT (1 à 5 étoiles) sur la page de suivi. Vous choisissez ce qui paraît sur le site.",
+      "ou": "Gestion › 🌐 Site › « ⭐ Avis des clients » ; page de suivi (après les 4 chiffres) ; site › Ce que disent nos clients",
+      "etapes": [
+        "Le message « livré » du livreur contient le lien « Votre avis sur la livraison compte » : il ouvre la page de suivi sur l'avis.",
+        "Dans Gestion › Site : les chiffres (nombre, note de CLT, note des livreurs, avis bas), puis chaque livreur avec sa moyenne — « à suivre » sous 3,5 sur au moins 3 avis.",
+        "Filtre « À publier » : les avis dont l'auteur a accepté le site. « 🌐 Publier sur le site » ; « Retirer du site » à tout moment.",
+        "Sur le site : vos témoignages choisis restent en tête, en grand ; dessous, la note moyenne (dès 5 avis) et les avis publiés, sur deux lignes."
+      ],
+      "aSavoir": "La moyenne du site compte TOUS les avis, pas seulement ceux que vous publiez : c'est ce qui la rend crédible. Un avis modifié par son auteur quitte le site jusqu'à ce que vous le republiiez. Un avis bas : appelez le destinataire, c'est souvent le meilleur moment pour garder un client.",
+      "version": "v284"
+    },
+    {
       "id": "partenaires",
       "espace": "gestion",
       "titre": "Les partenaires (Générale CI)",

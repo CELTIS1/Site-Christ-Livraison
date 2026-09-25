@@ -597,6 +597,46 @@
     .testimonial-card{padding:12px 10px;}
   }
 
+  /* LES AVIS (26/09/2026, v284). Celtis : « les premiers commentaires en tête, un peu plus
+     grands ; ensuite les commentaires des gens, en dessous, sur une ou deux lignes ». En tête, les
+     témoignages choisis (éditeur du site) ; dessous, la note moyenne (tous les avis, dès 5) et les
+     avis des destinataires que l'admin a publiés — avec leur accord. */
+  @media (min-width:681px){ .testimonials-grid{grid-template-columns:repeat(2, minmax(0,1fr)); max-width:980px; margin:0 auto;} }
+  .testimonial-card.vedette .testimonial-text{font-size:16px; line-height:1.55; color:#2c3a48;}
+  .testimonial-card.vedette .testimonial-stars{font-size:17px; color:#F2A516; letter-spacing:1px;}
+  .testimonial-card.vedette .testimonial-name{font-size:15.5px;}
+  .avis-site{margin-top:34px;}
+  .avis-site[hidden]{display:none;}
+  .avis-note{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 14px; text-align:center; margin-bottom:18px;}
+  .avis-note-chiffre{font-family:'Poppins', Arial, sans-serif; font-size:34px; font-weight:700; color:var(--navy); line-height:1;}
+  .avis-note-etoiles{font-size:22px; color:#F2A516; letter-spacing:2px;}
+  .avis-note-texte{flex-basis:100%; font-size:13px; color:#6b7888;}
+  .avis-liste{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px 18px; list-style:none; margin:0; padding:0;}
+  .avis-item{background:var(--white); border:1px solid #ECEFF3; border-radius:12px; padding:11px 14px;}
+  .avis-item-haut{display:flex; justify-content:space-between; gap:10px; align-items:baseline;}
+  .avis-item-etoiles{color:#F2A516; font-size:13.5px; letter-spacing:1px; white-space:nowrap;}
+  .avis-item-qui{font-size:12px; color:#8a97a6; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .avis-item-texte{margin-top:3px; font-size:13.5px; line-height:1.45; color:#3d4a58;
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;}
+  .avis-item.ouvert .avis-item-texte{-webkit-line-clamp:unset; display:block;}
+  .avis-item[data-long]{cursor:pointer;}
+  .avis-plus-bas{display:flex; justify-content:center; gap:10px 18px; flex-wrap:wrap; margin-top:16px; align-items:center;}
+  .avis-voir-plus{min-height:44px; padding:0 20px; border-radius:999px; border:1.5px solid var(--navy); background:var(--white); color:var(--navy); font-weight:700; font-size:14px; cursor:pointer; font-family:inherit;}
+  .avis-donner{font-size:13.5px; color:var(--navy); font-weight:600; text-decoration:underline; text-underline-offset:3px; min-height:44px; display:inline-flex; align-items:center;}
+  @media (max-width:680px){
+    /* En tête, sur téléphone : les témoignages glissent un par un, en grand (plus de texte coupé à 12 px). */
+    .testimonials-grid{display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:12px; padding-bottom:6px; -webkit-overflow-scrolling:touch; scrollbar-width:none;}
+    .testimonials-grid::-webkit-scrollbar{display:none;}
+    .testimonial-card.vedette{flex:0 0 84%; scroll-snap-align:start; padding:18px 16px;}
+    .testimonial-card.vedette .testimonial-text{font-size:15px; -webkit-line-clamp:unset; display:block;}
+    .testimonial-card.vedette .testimonial-stars{font-size:15px;}
+    .testimonial-card.vedette .testimonial-name{font-size:14px;}
+    .testimonial-card.vedette .testimonial-role{font-size:12px;}
+    .avis-liste{grid-template-columns:1fr; gap:8px;}
+    .avis-note-chiffre{font-size:28px;}
+    .avis-site{margin-top:24px;}
+  }
+
   /* ---------- COVERAGE ---------- */
   .pill-light{
     background:var(--orange-light); color:var(--orange); font-size:12.5px; letter-spacing:1px;
@@ -1350,10 +1390,22 @@
     <h2 class="section-title reveal" id="testimonialsTitle">Ce que disent nos clients</h2>
     <p class="section-sub reveal" id="testimonialsSubtitle">Quelques retours de nos clients et partenaires.</p>
     <div class="testimonials-grid" id="testimonialsGrid">
-      <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Si la fiabilité avait un visage, ce serait vous. Vous êtes notre livreur favori !"</p><div class="testimonial-name">Djény Jeans</div><div class="testimonial-role">Vendeuse en ligne</div></div>
-      <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Livraison rapide, point détaillé en fin de journée et fluidité des transactions."</p><div class="testimonial-name">L'intello</div><div class="testimonial-role">Cliente, Abidjan</div></div>
-      <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Très fiable, rapide et efficace ! Tu es le meilleur."</p><div class="testimonial-name">Nelly</div><div class="testimonial-role">Vendeuse, Abidjan</div></div>
-      <div class="testimonial-card reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Rapide, sécurisé, fiable."</p><div class="testimonial-name">M. Elegence</div><div class="testimonial-role">Cliente, Abidjan</div></div>
+      <div class="testimonial-card vedette reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Si la fiabilité avait un visage, ce serait vous. Vous êtes notre livreur favori !"</p><div class="testimonial-name">Djény Jeans</div><div class="testimonial-role">Vendeuse en ligne</div></div>
+      <div class="testimonial-card vedette reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Livraison rapide, point détaillé en fin de journée et fluidité des transactions."</p><div class="testimonial-name">L'intello</div><div class="testimonial-role">Cliente, Abidjan</div></div>
+      <div class="testimonial-card vedette reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Très fiable, rapide et efficace ! Tu es le meilleur."</p><div class="testimonial-name">Nelly</div><div class="testimonial-role">Vendeuse, Abidjan</div></div>
+      <div class="testimonial-card vedette reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Rapide, sécurisé, fiable."</p><div class="testimonial-name">M. Elegence</div><div class="testimonial-role">Cliente, Abidjan</div></div>
+    </div>
+    <div class="avis-site" id="avisSite" hidden>
+      <div class="avis-note" id="avisNote" hidden>
+        <span class="avis-note-chiffre" id="avisNoteChiffre"></span>
+        <span class="avis-note-etoiles" id="avisNoteEtoiles" aria-hidden="true"></span>
+        <span class="avis-note-texte" id="avisNoteTexte"></span>
+      </div>
+      <ul class="avis-liste" id="avisListe"></ul>
+      <div class="avis-plus-bas">
+        <button type="button" class="avis-voir-plus" id="avisVoirPlus" hidden>Voir plus d'avis</button>
+        <a class="avis-donner" href="suivi.html">Livré par CLT ? Donnez votre avis depuis la page de suivi</a>
+      </div>
     </div>
   </div>
 </section>
@@ -1531,6 +1583,7 @@
 <button type="button" class="back-to-top" id="backToTop" aria-label="Remonter en haut de la page"><i class="fa-solid fa-arrow-up"></i></button>
 
 
+<script src="app/avis.js?v=20260926avis"></script>
 <script>
   function toggleMenu(){
     document.getElementById('navLinks').classList.toggle('open');
@@ -1693,7 +1746,7 @@
 
   function testimonialCardHTML(t, i){
     const delay = reducedMotion ? 0 : (i % 3) * 0.12;
-    return `<div class="testimonial-card reveal" style="transition-delay:${delay}s"><div class="testimonial-stars">${starsHTML(t.rating)}</div><p class="testimonial-text">"${escapeHTML(t.text)}"</p><div class="testimonial-name">${escapeHTML(t.name)}</div><div class="testimonial-role">${escapeHTML(t.role)}</div></div>`;
+    return `<div class="testimonial-card vedette reveal" style="transition-delay:${delay}s"><div class="testimonial-stars">${starsHTML(t.rating)}</div><p class="testimonial-text">"${escapeHTML(t.text)}"</p><div class="testimonial-name">${escapeHTML(t.name)}</div><div class="testimonial-role">${escapeHTML(t.role)}</div></div>`;
   }
 
   function chipButtonHTML(z, i){
@@ -1854,6 +1907,44 @@
         if (tel) wa.href = 'https://wa.me/' + tel + '?text=' + encodeURIComponent('Bonjour ' + v.nom + ', je vous ai trouvée sur le site de CLT (vendeuse de la semaine). Je voudrais commander.'); else wa.hidden = true;
         s.removeAttribute('hidden');
       }).catch(function(){ /* pas de fiche, pas de section */ });
+  })();
+  /* LES AVIS DES DESTINATAIRES (26/09/2026, v284) — site_avis() : la moyenne de TOUS les avis
+     (montrée dès 5 avis) et les avis publiés par l'admin, avec l'accord de leur auteur. Six d'abord,
+     le reste au bouton. Sans réseau ou sans avis : la section reste cachée, les témoignages restent. */
+  (function avisDesClients(){
+    var URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co", CLE = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
+    var A = window.CLTAvis; if (!A) return;
+    fetch(URL_BASE + '/rest/v1/rpc/site_avis', { method: 'POST', headers: { 'apikey': CLE, 'Authorization': 'Bearer ' + CLE, 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(d){ window.__cltAvisSite = d; afficherAvis(d); })
+      .catch(function(){ /* pas d'avis : rien */ });
+    function afficherAvis(d){
+      if (!d) return;
+      var bloc = document.getElementById('avisSite'); if (!bloc) return;
+      var phrase = A.phraseMoyenne(d);
+      if (phrase) {
+        document.getElementById('avisNoteChiffre').textContent = A.moyenneTexte(d.moyenne);
+        document.getElementById('avisNoteEtoiles').textContent = A.etoiles(d.moyenne);
+        document.getElementById('avisNoteTexte').textContent = 'Note moyenne sur 5, donnée par ' + Number(d.nombre).toLocaleString('fr-FR') + ' destinataires après livraison';
+        document.getElementById('avisNote').hidden = false;
+      }
+      var liste = Array.isArray(d.avis) ? d.avis.filter(function(a){ return a && a.texte; }) : [];
+      var ul = document.getElementById('avisListe');
+      ul.innerHTML = liste.map(function(a, i){
+        var court = A.texteCourt(a.texte, 400);
+        return '<li class="avis-item"' + (i >= 6 ? ' hidden' : '') + (court.length > 110 ? ' data-long' : '') + '>' +
+          '<div class="avis-item-haut"><span class="avis-item-etoiles" aria-label="' + A.note(a.note) + ' sur 5">' + A.etoiles(a.note) + '</span>' +
+          '<span class="avis-item-qui">' + escapeHTML(A.signature(a)) + (a.mois ? ' · ' + escapeHTML(A.moisTexte(a.mois)) : '') + '</span></div>' +
+          '<p class="avis-item-texte">« ' + escapeHTML(court) + ' »</p></li>';
+      }).join('');
+      ul.addEventListener('click', function(e){ var li = e.target.closest('.avis-item[data-long]'); if (li) li.classList.toggle('ouvert'); });
+      var plus = document.getElementById('avisVoirPlus');
+      if (liste.length > 6) {
+        plus.hidden = false;
+        plus.addEventListener('click', function(){ ul.querySelectorAll('.avis-item[hidden]').forEach(function(li){ li.hidden = false; }); plus.hidden = true; });
+      }
+      if (phrase || liste.length) bloc.hidden = false;
+    }
   })();
   /* Ce qu'on mesure (S-1) : les clics sur « Commencer sur WhatsApp », comptés sans rien d'autre (stats_visites, si présent). */
   document.addEventListener('click', function(e){
