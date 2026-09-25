@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
       id: idPousse, genre, roles: ["admin"], titre, corps, adresse: "/app/gestion.html?rapport=" + idPousse, detail: analyse,
     }).select("id").single();
     if (ePousse) throw ePousse;
-    await supabaseAdmin.from("rapports_usage").update({ analyse, statut, rapport_id: pousse.id }).eq("id", id);
+    await supabaseAdmin.from("rapports_usage").update({ analyse_ia: analyse, statut, rapport_id: pousse.id }).eq("id", id);
     return json({ ok: true, statut, rapport: pousse.id });
   } catch (e) {
     console.error("rapport-usage :", e);
