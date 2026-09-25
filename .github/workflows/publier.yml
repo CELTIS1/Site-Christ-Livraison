@@ -80,9 +80,11 @@ jobs:
           # Deux fichiers de contrôle, un seul commit. Celui qui nous a réveillés est vert
           # (voir le « if » du job). Il reste à s'assurer que l'autre l'est aussi, sur le
           # MÊME commit — sinon un push pourrait passer parce qu'un seul des deux a fini.
-          # On interroge les exécutions par commit ; on attend jusqu'à 20 minutes.
+          # On interroge les exécutions par commit ; on attend jusqu'à 60 minutes (25/09/2026 :
+          # avec 47 parcours, l'ancienne limite de 20 minutes faisait échouer la publication
+          # alors que le contrôle finissait vert quelques minutes plus tard).
           attendus='"Contrôles automatiques" "Vérifier les empreintes des bibliothèques externes"'
-          for essai in $(seq 1 40); do
+          for essai in $(seq 1 120); do
             manque=""
             for nom in "Contrôles automatiques" "Vérifier les empreintes des bibliothèques externes"; do
               etat="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${SHA}&per_page=50" \
@@ -99,10 +101,10 @@ jobs:
               echo "Les deux contrôles sont verts sur $SHA."
               exit 0
             fi
-            echo "En attente de :$manque (essai $essai/40)…"
+            echo "En attente de :$manque (essai $essai/120)…"
             sleep 30
           done
-          echo "Un contrôle n'a pas rendu son verdict en 20 minutes : par prudence, rien n'est publié."
+          echo "Un contrôle n'a pas rendu son verdict en 60 minutes : par prudence, rien n'est publié."
           exit 1
 
       - name: Récupérer le site (exactement le commit contrôlé)

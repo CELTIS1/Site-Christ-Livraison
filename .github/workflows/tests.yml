@@ -20,6 +20,7 @@ on:
 jobs:
   tester:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # Ces deux outils sont fournis par GitHub, pas par nous. Ils étaient restés en v4,
       # trois versions en arrière : GitHub avertissait à chaque publication qu'ils tournent
@@ -58,6 +59,14 @@ jobs:
   # travail à part, pour que les bancs restent rapides même si le navigateur met du temps.
   parcours:
     runs-on: ubuntu-latest
+    # 25/09/2026 : 47 parcours, en trois tranches qui tournent EN MÊME TEMPS sur trois machines
+    # (chaque tranche lance ses parcours trois par trois) — la série passe de ~50 min à ~5 min ;
+    # et une limite dure, pour qu'un parcours bloqué ne retienne pas la publication une heure.
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        tranche: [1, 2, 3]
     steps:
       - name: Récupérer le site
         uses: actions/checkout@v7
@@ -73,5 +82,7 @@ jobs:
       - name: Installer Chromium pour Playwright
         run: npx playwright install --with-deps chromium
 
-      - name: Les trois parcours (connexion du livreur, livraison d'un colis, relevé de la cliente)
+      - name: Les parcours dans un vrai navigateur (tranche ${{ matrix.tranche }} sur 3)
+        env:
+          TRANCHE: ${{ matrix.tranche }}/3
         run: npm run parcours

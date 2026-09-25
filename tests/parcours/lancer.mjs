@@ -12,11 +12,16 @@ const PARCOURS = ['connexion-livreur.mjs', 'livraison-d-un-colis.mjs', 'releve-d
    l'un après l'autre ; à trois de front, 15 à 20. La sortie de chacun est gardée et affichée d'un
    bloc à sa fin, pour rester lisible. PARALLELE=1 rend l'ancien enchaînement. */
 const PARALLELE = Math.max(1, Number(process.env.PARALLELE) || 3);
+/* TRANCHE=i/n (25/09/2026) : ne lancer que la i-ième tranche sur n — GitHub fait tourner trois
+   machines en même temps, chacune avec sa tranche. Sans TRANCHE, tout. */
+const tranche = /^(\d+)\/(\d+)$/.exec(process.env.TRANCHE || '');
+const PARCOURS_A_LANCER = tranche ? PARCOURS.filter((_, i) => i % Number(tranche[2]) === Number(tranche[1]) - 1) : PARCOURS;
+if (tranche) console.log('Tranche ' + tranche[1] + ' sur ' + tranche[2] + ' : ' + PARCOURS_A_LANCER.length + ' parcours.');
 const resultats = [];
 let suivant = 0;
 async function ouvrier() {
-  while (suivant < PARCOURS.length) {
-    const p = PARCOURS[suivant++];
+  while (suivant < PARCOURS_A_LANCER.length) {
+    const p = PARCOURS_A_LANCER[suivant++];
     const debut = Date.now();
     // spawn (asynchrone), pas spawnSync : trois processus doivent vraiment tourner en même temps.
     const r = await new Promise((res) => {
@@ -33,5 +38,5 @@ async function ouvrier() {
 }
 await Promise.all(Array.from({ length: PARALLELE }, () => new Promise((res) => setTimeout(() => ouvrier().then(res), 0))));
 console.log('\n══════════ Bilan ══════════');
-PARCOURS.forEach(p => { const r = resultats.find(x => x.p === p); console.log((r && r.ok ? '  ✅ ' : '  ❌ ') + p); });
-process.exit(resultats.length === PARCOURS.length && resultats.every(r => r.ok) ? 0 : 1);
+PARCOURS_A_LANCER.forEach(p => { const r = resultats.find(x => x.p === p); console.log((r && r.ok ? '  ✅ ' : '  ❌ ') + p); });
+process.exit(resultats.length === PARCOURS_A_LANCER.length && resultats.every(r => r.ok) ? 0 : 1);
